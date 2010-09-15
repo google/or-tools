@@ -1,0 +1,198 @@
+# Please edit the following:
+GFLAGS_DIR=..\\gflags-1.3
+ZLIB_DIR=..\\zlib-1.2.5
+ZLIB_NAME=zlib.lib
+
+#  ----- No more editing below -----
+
+DEBUG=/O2 -DNDEBUG /MD
+CCC=cl /EHsc
+
+GFLAGS_INC = /I$(GFLAGS_DIR)\\src\\windows /I$(GFLAGS_DIR)\\src
+ZLIB_INC = /I$(ZLIB_DIR)
+CFLAGS= -nologo $(SYSCFLAGS) $(DEBUG) /I.  $(GFLAGS_INC) $(ZLIB_INC)
+
+LD = cl /EHsc
+GFLAGS_LNK =
+ZLIB_LNK = $(ZLIB_DIR)/$(ZLIB_NAME)
+LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK)
+GFLAGS_CFLAGS=/I$(GFLAGS_DIR)\\src\\windows /I$(GFLAGS_DIR)\\src /D_USRDLL /D_WINDLL
+
+# Real targets
+
+BINARIES=nqueens.exe golomb.exe magic_square.exe cryptarithm.exe
+
+all: $(BINARIES)
+
+LIBS = cp.lib util.lib base.lib gflags.lib
+
+libs: $(LIBS)
+clean:
+	del *.lib
+	del objs\\*.obj
+	del  $(BINARIES)
+	del *.dll
+
+# CP Lib.
+
+CP_LIB_OBJS = \
+	objs/alldiff_cst.obj\
+	objs/assignment.obj\
+	objs/constraint_solver.obj\
+	objs/constraints.obj\
+	objs/count_cst.obj\
+	objs/element.obj\
+	objs/expr_array.obj\
+	objs/expr_cst.obj\
+	objs/expressions.obj\
+	objs/interval.obj\
+	objs/local_search.obj\
+	objs/pack.obj\
+	objs/range_cst.obj\
+	objs/sched_search.obj\
+	objs/search.obj\
+	objs/table.obj\
+	objs/timetabling.obj\
+	objs/utilities.obj
+
+objs/alldiff_cst.obj:constraint_solver/alldiff_cst.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/alldiff_cst.cc /Foobjs/alldiff_cst.obj
+
+objs/assignment.obj:constraint_solver/assignment.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/assignment.cc /Foobjs/assignment.obj
+
+objs/constraint_solver.obj:constraint_solver/constraint_solver.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/constraint_solver.cc /Foobjs/constraint_solver.obj
+
+objs/constraints.obj:constraint_solver/constraints.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/constraints.cc /Foobjs/constraints.obj
+
+objs/count_cst.obj:constraint_solver/count_cst.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/count_cst.cc /Foobjs/count_cst.obj
+
+objs/element.obj:constraint_solver/element.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/element.cc /Foobjs/element.obj
+
+objs/expr_array.obj:constraint_solver/expr_array.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/expr_array.cc /Foobjs/expr_array.obj
+
+objs/expr_cst.obj:constraint_solver/expr_cst.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/expr_cst.cc /Foobjs/expr_cst.obj
+
+objs/expressions.obj:constraint_solver/expressions.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/expressions.cc /Foobjs/expressions.obj
+
+objs/interval.obj:constraint_solver/interval.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/interval.cc /Foobjs/interval.obj
+
+objs/local_search.obj:constraint_solver/local_search.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/local_search.cc /Foobjs/local_search.obj
+
+objs/pack.obj:constraint_solver/pack.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/pack.cc /Foobjs/pack.obj
+
+objs/range_cst.obj:constraint_solver/range_cst.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/range_cst.cc /Foobjs/range_cst.obj
+
+objs/sched_search.obj:constraint_solver/sched_search.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/sched_search.cc /Foobjs/sched_search.obj
+
+objs/search.obj:constraint_solver/search.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/search.cc /Foobjs/search.obj
+
+objs/table.obj:constraint_solver/table.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/table.cc /Foobjs/table.obj
+
+objs/timetabling.obj:constraint_solver/timetabling.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/timetabling.cc /Foobjs/timetabling.obj
+
+objs/utilities.obj:constraint_solver/utilities.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/utilities.cc /Foobjs/utilities.obj
+
+cp.lib: $(CP_LIB_OBJS)
+	lib /OUT:cp.lib $(CP_LIB_OBJS)
+
+# Util library.
+
+UTIL_LIB_OBJS=\
+	objs/bitset.obj
+
+objs/bitset.obj:util/bitset.cc
+	$(CCC) $(CFLAGS) -c util/bitset.cc /Foobjs/bitset.obj
+
+util.lib: $(UTIL_LIB_OBJS)
+	lib /OUT:util.lib $(UTIL_LIB_OBJS)
+
+# Base library.
+
+BASE_LIB_OBJS=\
+	objs/bitmap.obj\
+	objs/callback.obj\
+	objs/random.obj\
+	objs/stringpiece.obj\
+	objs/stringprintf.obj\
+	objs/util.obj
+
+objs/bitmap.obj:base/bitmap.cc
+	$(CCC) $(CFLAGS) -c base/bitmap.cc /Foobjs/bitmap.obj
+objs/callback.obj:base/callback.cc
+	$(CCC) $(CFLAGS) -c base/callback.cc /Foobjs/callback.obj
+objs/random.obj:base/random.cc
+	$(CCC) $(CFLAGS) -c base/random.cc /Foobjs/random.obj
+objs/stringpiece.obj:base/stringpiece.cc
+	$(CCC) $(CFLAGS) -c base/stringpiece.cc /Foobjs/stringpiece.obj
+objs/stringprintf.obj:base/stringprintf.cc
+	$(CCC) $(CFLAGS) -c base/stringprintf.cc /Foobjs/stringprintf.obj
+objs/util.obj:base/util.cc
+	$(CCC) $(CFLAGS) -c base/util.cc /Foobjs/util.obj
+
+base.lib: $(BASE_LIB_OBJS)
+	lib /OUT:base.lib $(BASE_LIB_OBJS)
+
+GFLAGS_LIB_OBJS =\
+	objs/gflags.obj\
+	objs/gflags_completions.obj\
+	objs/gflags_reporting.obj\
+	objs/port.obj
+
+objs/gflags.obj:$(GFLAGS_DIR)/src/gflags.cc
+	$(CCC) $(GFLAGS_CFLAGS) -c $(GFLAGS_DIR)/src/gflags.cc /Foobjs/gflags.obj
+
+objs/gflags_completions.obj:$(GFLAGS_DIR)/src/gflags_completions.cc
+	$(CCC) $(GFLAGS_CFLAGS) -c $(GFLAGS_DIR)/src/gflags_completions.cc /Foobjs/gflags_completions.obj
+
+objs/gflags_reporting.obj:$(GFLAGS_DIR)/src/gflags_reporting.cc
+	$(CCC) $(GFLAGS_CFLAGS) -c $(GFLAGS_DIR)/src/gflags_reporting.cc /Foobjs/gflags_reporting.obj
+
+objs/port.obj:$(GFLAGS_DIR)/src/windows/port.cc
+	$(CCC) $(GFLAGS_CFLAGS) -c $(GFLAGS_DIR)/src/windows/port.cc /Foobjs/port.obj
+
+gflags.lib: $(GFLAGS_LIB_OBJS)
+	link /DLL /OUT:gflags.dll $(GFLAGS_LIB_OBJS)
+
+# Examples
+
+objs/cryptarithm.obj:examples/cryptarithm.cc
+	$(CCC) $(CFLAGS) -c examples/cryptarithm.cc /Foobjs/cryptarithm.obj
+
+cryptarithm.exe: $(LIBS) objs/cryptarithm.obj
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.obj $(LIBS) /Fecryptarithm.exe
+
+objs/golomb.obj:examples/golomb.cc
+	$(CCC) $(CFLAGS) -c examples/golomb.cc /Foobjs/golomb.obj
+
+golomb.exe: $(LIBS) objs/golomb.obj
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.obj $(LIBS) /Fegolomb.exe
+
+objs/magic_square.obj:examples/magic_square.cc
+	$(CCC) $(CFLAGS) -c examples/magic_square.cc /Foobjs/magic_square.obj
+
+magic_square.exe: $(LIBS) objs/magic_square.obj
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.obj $(LIBS) /Femagic_square.exe
+
+objs/nqueens.obj: examples/nqueens.cc
+	$(CCC) $(CFLAGS) -c examples/nqueens.cc /Foobjs/nqueens.obj
+
+nqueens.exe: $(LIBS) objs/nqueens.obj
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.obj $(LIBS) /Fenqueens.exe
+
