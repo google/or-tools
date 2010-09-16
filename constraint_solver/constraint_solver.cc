@@ -801,11 +801,7 @@ class Search {
   friend class Solver;
  private:
   // Jumps back to the previous choice point, Checks if it was correctly set.
-  void JumpBack() {
-    ClearBuffer();
-    longjmp(fail_buffer_, 0);
-  }
-
+  void JumpBack();
   void ClearBuffer() {
     CHECK(jmpbuf_filled_);
     jmpbuf_filled_ = false;
@@ -827,13 +823,40 @@ class Search {
   bool jmpbuf_filled_;
 };
 
+// Backtrack is implemented using 3 primitives:
+// CP_TRY to start searching
+// CP_DOFAIL to signal a failure. The program will continue on the CP_ONFAIL
+// primitive.
+// FAST_BACKTRACK protects an implementation of backtrack using
+// setjmp/longjmp.  The clean portable way is to use exception,
+// unfortunately, it can be much slower.  Thus we use ideas from
+// Prolog and other CP/CLP implementation and implement failing and
+// backtracking using setjmp/longjmp.
+#define FAST_BACKTRACK
+#if defined(FAST_BACKTRACK)
 // We cannot use a method/function for this as we would loose the
-// context of the setjmp.
-#define CP_TRY(search) \
+// context in the setjmp implementation.
+#define CP_TRY(search)                                              \
   CHECK(!search->jmpbuf_filled_) << "Fail() called outside search"; \
   search->jmpbuf_filled_ = true;                                    \
   if (setjmp(search->fail_buffer_) == 0)
 #define CP_ONFAIL else
+#define CP_DOFAIL(search) longjmp(search->fail_buffer_, 0)
+#else
+class FailException {};
+#define CP_TRY(search)                                                 \
+  CHECK(!search->jmpbuf_filled_) << "Fail() called outside search";    \
+  search->jmpbuf_filled_ = true;                                       \
+  try
+#define CP_ONFAIL catch(FailException&)
+#define CP_DOFAIL(search) throw FailException()
+#endif
+
+
+void Search::JumpBack() {
+  ClearBuffer();
+  CP_DOFAIL(this);
+}
 
 void Search::SetBranchSelector(
     ResultCallback1<Solver::DecisionModification, Solver*>* const bs) {
