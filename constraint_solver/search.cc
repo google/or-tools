@@ -25,6 +25,9 @@
 #include "base/random.h"
 #include "constraint_solver/constraint_solveri.h"
 
+DEFINE_bool(cp_use_sparse_gls_penalties, false,
+            "Use sparse implementation to store Guided Local Search penalties");
+
 namespace operations_research {
 
 // ---------- Search Log ---------
@@ -2345,6 +2348,55 @@ SearchMonitor* Solver::MakeSimulatedAnnealing(bool maximize,
 
 typedef pair<int64, int64> Arc;
 
+// Base GLS penalties abstract class. Maintains the penalty frequency for each
+// (variable, value) arc.
+class GuidedLocalSearchPenalties {
+ public:
+  virtual ~GuidedLocalSearchPenalties() {}
+  virtual bool HasValues() const = 0;
+  virtual void Increment(const Arc& arc) = 0;
+  virtual int64 Value(const Arc& arc) const = 0;
+};
+
+// Dense GLS penalties implementation using a matrix to store penalties.
+class GuidedLocalSearchPenaltiesTable : public GuidedLocalSearchPenalties {
+ public:
+  explicit GuidedLocalSearchPenaltiesTable(int size);
+  virtual ~GuidedLocalSearchPenaltiesTable() {}
+  virtual bool HasValues() const { return has_values_; }
+  virtual void Increment(const Arc& arc);
+  virtual int64 Value(const Arc& arc) const;
+ private:
+  vector<vector<int64> > penalties_;
+  bool has_values_;
+};
+
+GuidedLocalSearchPenaltiesTable::GuidedLocalSearchPenaltiesTable(int size)
+  : penalties_(size), has_values_(false) {
+}
+
+void GuidedLocalSearchPenaltiesTable::Increment(const Arc& arc) {
+  vector<int64>& first_penalties = penalties_[arc.first];
+  const int64 second = arc.second;
+  if (second >= first_penalties.size()) {
+    first_penalties.resize(second + 1, 0LL);
+  }
+  ++first_penalties[second];
+  has_values_ = true;
+}
+
+int64 GuidedLocalSearchPenaltiesTable::Value(const Arc& arc) const {
+  const vector<int64>& first_penalties = penalties_[arc.first];
+  const int64 second = arc.second;
+  if (second >= first_penalties.size()) {
+    return 0LL;
+  } else {
+    return first_penalties[second];
+  }
+}
+
+// Sparse GLS penalties implementation using a hash_map to store penalties.
+
 #if defined(_MSC_VER)
 // The following class defines a hash function for arcs
 class ArcHasher : public stdext::hash_compare <Arc> {
@@ -2362,12 +2414,13 @@ class ArcHasher : public stdext::hash_compare <Arc> {
   }
 };
 #endif
-class GuidedLocalSearchPenalties {
+class GuidedLocalSearchPenaltiesMap : public GuidedLocalSearchPenalties {
  public:
-  explicit GuidedLocalSearchPenalties(int size);
-  bool HasValues() const { return (penalties_.size() != 0); }
-  void Increment(const Arc& arc);
-  int64 Value(const Arc& arc) const;
+  explicit GuidedLocalSearchPenaltiesMap(int size);
+  virtual ~GuidedLocalSearchPenaltiesMap() {}
+  virtual bool HasValues() const { return (penalties_.size() != 0); }
+  virtual void Increment(const Arc& arc);
+  virtual int64 Value(const Arc& arc) const;
  private:
   Bitmap penalized_;
 #if defined(_MSC_VER)
@@ -2377,19 +2430,19 @@ class GuidedLocalSearchPenalties {
 #endif
 };
 
-GuidedLocalSearchPenalties::GuidedLocalSearchPenalties(int size)
+GuidedLocalSearchPenaltiesMap::GuidedLocalSearchPenaltiesMap(int size)
   : penalized_(size, false) {}
 
-void GuidedLocalSearchPenalties::Increment(const Arc& arc) {
+void GuidedLocalSearchPenaltiesMap::Increment(const Arc& arc) {
   ++penalties_[arc];
   penalized_.Set(arc.first, true);
 }
 
-int64 GuidedLocalSearchPenalties::Value(const Arc& arc) const {
+int64 GuidedLocalSearchPenaltiesMap::Value(const Arc& arc) const {
   if (penalized_.Get(arc.first)) {
-    return FindWithDefault(penalties_, arc, 0);
+    return FindWithDefault(penalties_, arc, 0LL);
   }
-  return 0;
+  return 0LL;
 }
 
 class GuidedLocalSearch : public Metaheuristic {
@@ -2441,7 +2494,7 @@ class GuidedLocalSearch : public Metaheuristic {
   const int64 size_;
   hash_map<const IntVar*, int64> indices_;
   const double penalty_factor_;
-  GuidedLocalSearchPenalties penalties_;
+  scoped_ptr<GuidedLocalSearchPenalties> penalties_;
   scoped_array<int64> current_penalized_values_;
   scoped_array<int64> delta_cache_;
   bool incremental_;
@@ -2461,7 +2514,6 @@ GuidedLocalSearch::GuidedLocalSearch(Solver* const s,
       old_penalized_value_(0),
       size_(size),
       penalty_factor_(penalty_factor),
-      penalties_(size),
       incremental_(false) {
   DCHECK_GE(size_, 0);
   if (size_ > 0) {
@@ -2475,6 +2527,11 @@ GuidedLocalSearch::GuidedLocalSearch(Solver* const s,
   }
   for (int i = 0; i < size; ++i) {
     indices_[vars_[i]] = i;
+  }
+  if (FLAGS_cp_use_sparse_gls_penalties) {
+    penalties_.reset(new GuidedLocalSearchPenaltiesMap(size));
+  } else {
+    penalties_.reset(new GuidedLocalSearchPenaltiesTable(size));
   }
 }
 
@@ -2500,7 +2557,7 @@ void GuidedLocalSearch::ApplyDecision(Decision* const d) {
   }
   vector<IntVar*> elements;
   assignment_penalized_value_ = 0;
-  if (penalties_.HasValues()) {
+  if (penalties_->HasValues()) {
     for (int i = 0; i < size_; ++i) {
       IntExpr* expr = MakeElementPenalty(i);
       elements.push_back(expr->Var());
@@ -2551,7 +2608,7 @@ bool GuidedLocalSearch::RejectSolution() {
 // GLS filtering; compute the penalized value corresponding to the delta and
 // modify objective bound accordingly.
 bool GuidedLocalSearch::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
-  if ((delta != NULL || deltadelta != NULL) && penalties_.HasValues()) {
+  if ((delta != NULL || deltadelta != NULL) && penalties_->HasValues()) {
     int64 penalty = 0;
     if (!deltadelta->Empty()) {
       if (!incremental_) {
@@ -2632,17 +2689,17 @@ bool GuidedLocalSearch::LocalOptimum() {
     const int64 value =
         (var_value != i) ? AssignmentPenalty(assignment_, i, var_value) : 0;
     const Arc arc(i, var_value);
-    const int64 penalty = penalties_.Value(arc);
+    const int64 penalty = penalties_->Value(arc);
     utility[i] = pair<Arc, double>(arc, value / (penalty + 1.0));
   }
   Comparator comparator;
   std::sort(utility.begin(), utility.end(), comparator);
   int64 utility_value = utility[0].second;
-  penalties_.Increment(utility[0].first);
+  penalties_->Increment(utility[0].first);
   for (int i = 1;
        i < utility.size() && utility_value == utility[i].second;
        ++i) {
-    penalties_.Increment(utility[i].first);
+    penalties_->Increment(utility[i].first);
   }
   if (maximize_) {
     current_ = kint64min;
@@ -2730,7 +2787,7 @@ bool BinaryGuidedLocalSearch::EvaluateElementValue(
 // Penalized value for (i, j) = penalty_factor_ * penalty(i, j) * cost (i, j)
 int64 BinaryGuidedLocalSearch::PenalizedValue(int64 i, int64 j) {
   const Arc arc(i, j);
-  const int64 penalty = penalties_.Value(arc);
+  const int64 penalty = penalties_->Value(arc);
   if (penalty != 0) {  // objective_function_->Run(i, j) can be costly
     const int64 penalized_value =
         penalty_factor_ * penalty * objective_function_->Run(i, j);
@@ -2845,7 +2902,7 @@ bool TernaryGuidedLocalSearch::EvaluateElementValue(
 // Penalized value for (i, j) = penalty_factor_ * penalty(i, j) * cost (i, j)
 int64 TernaryGuidedLocalSearch::PenalizedValue(int64 i, int64 j, int64 k) {
   const Arc arc(i, j);
-  const int64 penalty = penalties_.Value(arc);
+  const int64 penalty = penalties_->Value(arc);
   if (penalty != 0) {  // objective_function_->Run(i, j, k) can be costly
     const int64 penalized_value =
         penalty_factor_ * penalty * objective_function_->Run(i, j, k);
