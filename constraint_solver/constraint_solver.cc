@@ -829,13 +829,11 @@ class Search {
 
 // We cannot use a method/function for this as we would loose the
 // context of the setjmp.
-#if defined(CP_TRY)  // This should never happen, better safe than sorry.
-#undef  CP_TRY
-#endif
 #define CP_TRY(search) \
   CHECK(!search->jmpbuf_filled_) << "Fail() called outside search"; \
   search->jmpbuf_filled_ = true;                                    \
   if (setjmp(search->fail_buffer_) == 0)
+#define CP_ONFAIL else
 
 void Search::SetBranchSelector(
     ResultCallback1<Solver::DecisionModification, Solver*>* const bs) {
@@ -1724,7 +1722,7 @@ bool Solver::NextSolution() {
           PushSentinel(ROOT_NODE_SENTINEL);
           state_ = IN_SEARCH;
           search->ClearBuffer();
-        } else {
+        } CP_ONFAIL {
           queue_->Clear();
           BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
           state_ = PROBLEM_INFEASIBLE;
@@ -1806,7 +1804,7 @@ bool Solver::NextSolution() {
       }
       result = true;
       finish = true;
-    } else {
+    } CP_ONFAIL {
       queue_->Clear();
       if (search->should_finish()) {
         fd = NULL;
@@ -1884,7 +1882,7 @@ bool Solver::CheckAssignment(Assignment* const solution) {
     // TODO(user): Why INFEASIBLE?
     state_ = PROBLEM_INFEASIBLE;
     return true;
-  } else {
+  } CP_ONFAIL {
     Constraint* const ct = constraints_list_[constraints_];
     if (ct->name().empty()) {
       VLOG(1) << "Failing constraint = "
