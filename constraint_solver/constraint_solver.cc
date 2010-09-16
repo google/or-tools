@@ -803,7 +803,7 @@ class Search {
   // Jumps back to the previous choice point, Checks if it was correctly set.
   void JumpBack();
   void ClearBuffer() {
-    CHECK(jmpbuf_filled_);
+    CHECK(jmpbuf_filled_) << "Internal error in backtracking";
     jmpbuf_filled_ = false;
   }
 
@@ -825,37 +825,37 @@ class Search {
 
 // Backtrack is implemented using 3 primitives:
 // CP_TRY to start searching
-// CP_DOFAIL to signal a failure. The program will continue on the CP_ONFAIL
+// CP_DO_FAIL to signal a failure. The program will continue on the CP_ON_FAIL
 // primitive.
-// FAST_BACKTRACK protects an implementation of backtrack using
-// setjmp/longjmp.  The clean portable way is to use exception,
+// CP_FAST_BACKTRACK protects an implementation of backtrack using
+// setjmp/longjmp.  The clean portable way is to use exceptions,
 // unfortunately, it can be much slower.  Thus we use ideas from
-// Prolog and other CP/CLP implementation and implement failing and
-// backtracking using setjmp/longjmp.
-#define FAST_BACKTRACK
-#if defined(FAST_BACKTRACK)
-// We cannot use a method/function for this as we would loose the
+// Prolog, CP/CLP implementations, continuations in C and implement failing
+// and backtracking using setjmp/longjmp.
+#define CP_FAST_BACKTRACK
+#if defined(CP_FAST_BACKTRACK)
+// We cannot use a method/function for this as we would lose the
 // context in the setjmp implementation.
 #define CP_TRY(search)                                              \
   CHECK(!search->jmpbuf_filled_) << "Fail() called outside search"; \
   search->jmpbuf_filled_ = true;                                    \
   if (setjmp(search->fail_buffer_) == 0)
-#define CP_ONFAIL else
-#define CP_DOFAIL(search) longjmp(search->fail_buffer_, 0)
-#else
+#define CP_ON_FAIL else
+#define CP_DO_FAIL(search) longjmp(search->fail_buffer_, 1)
+#else  // CP_FAST_BACKTRACK
 class FailException {};
 #define CP_TRY(search)                                                 \
   CHECK(!search->jmpbuf_filled_) << "Fail() called outside search";    \
   search->jmpbuf_filled_ = true;                                       \
   try
-#define CP_ONFAIL catch(FailException&)
-#define CP_DOFAIL(search) throw FailException()
-#endif
+#define CP_ON_FAIL catch(FailException&)
+#define CP_DO_FAIL(search) throw FailException()
+#endif  // CP_FAST_BACKTRACK
 
 
 void Search::JumpBack() {
   ClearBuffer();
-  CP_DOFAIL(this);
+  CP_DO_FAIL(this);
 }
 
 void Search::SetBranchSelector(
@@ -1745,7 +1745,7 @@ bool Solver::NextSolution() {
           PushSentinel(ROOT_NODE_SENTINEL);
           state_ = IN_SEARCH;
           search->ClearBuffer();
-        } CP_ONFAIL {
+        } CP_ON_FAIL {
           queue_->Clear();
           BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
           state_ = PROBLEM_INFEASIBLE;
@@ -1827,7 +1827,7 @@ bool Solver::NextSolution() {
       }
       result = true;
       finish = true;
-    } CP_ONFAIL {
+    } CP_ON_FAIL {
       queue_->Clear();
       if (search->should_finish()) {
         fd = NULL;
@@ -1905,7 +1905,7 @@ bool Solver::CheckAssignment(Assignment* const solution) {
     // TODO(user): Why INFEASIBLE?
     state_ = PROBLEM_INFEASIBLE;
     return true;
-  } CP_ONFAIL {
+  } CP_ON_FAIL {
     Constraint* const ct = constraints_list_[constraints_];
     if (ct->name().empty()) {
       VLOG(1) << "Failing constraint = "
