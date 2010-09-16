@@ -1921,8 +1921,6 @@ bool Solver::CheckAssignment(Assignment* const solution) {
   }
 }
 
-#undef CP_TRY  // We no longer need it.
-
 bool Solver::NestedSolve(DecisionBuilder* const db,
                    bool restore,
                    const vector<SearchMonitor*>& monitors) {
@@ -2095,5 +2093,9 @@ void Constraint::PostAndPropagate() {
   InitialPropagate();
   UnfreezeQueue();
 }
+
+#undef CP_TRY  // We no longer need those.
+#undef CP_ON_FAIL
+#undef CP_DO_FAIL
 
 }  // namespace operations_research
