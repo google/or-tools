@@ -22,11 +22,12 @@ GFLAGS_CFLAGS=/I$(GFLAGS_DIR)\\src\\windows /I$(GFLAGS_DIR)\\src /D_USRDLL /D_WI
 
 BINARIES=nqueens.exe golomb.exe magic_square.exe cryptarithm.exe
 
-all: $(BINARIES)
+all: libs $(BINARIES)
 
 LIBS = cp.lib util.lib base.lib gflags.lib
 
 libs: $(LIBS)
+
 clean:
 	del *.lib
 	del objs\\*.obj
@@ -122,6 +123,17 @@ objs/bitset.obj:util/bitset.cc
 
 util.lib: $(UTIL_LIB_OBJS)
 	lib /OUT:util.lib $(UTIL_LIB_OBJS)
+
+# Algorithms library.
+
+ALGORITHMS_LIB_OBJS=\
+	objs/hungarian.obj
+
+objs/hungarian.obj:algorithms/hungarian.cc
+	$(CCC) $(CFLAGS) -c algorithms/hungarian.cc /Foobjs/hungarian.obj
+
+algorithms.lib: $(ALGORITHMS_LIB_OBJS)
+	lib /OUT:algorithms.lib $(ALGORITHMS_LIB_OBJS)
 
 # Base library.
 

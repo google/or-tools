@@ -37,15 +37,16 @@ LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK)
 
 BINARIES=nqueens golomb magic_square cryptarithm
 
-all: $(BINARIES) pylib
+all: libs $(BINARIES) pylib
 
-libs: libcp.a libutil.a libbase.a
+libs: libcp.a libutil.a libbase.a libalgorithms.a
 
 clean:
 	rm -f *.a
 	rm -f objs/*.o
 	rm -f $(BINARIES)
 	rm constraint_solver/*wrap*
+	rm -f *.so
 
 # CP Lib.
 
@@ -136,6 +137,17 @@ objs/bitset.o:util/bitset.cc
 
 libutil.a: $(UTIL_LIB_OBJS)
 	ar rv libutil.a $(UTIL_LIB_OBJS)
+
+# Algorithms library.
+
+ALGORITHMS_LIB_OBJS=\
+	objs/hungarian.o
+
+objs/hungarian.o:algorithms/hungarian.cc
+	$(CCC) $(CFLAGS) -c algorithms/hungarian.cc -o objs/hungarian.o
+
+libalgorithms.a: $(ALGORITHMS_LIB_OBJS)
+	ar rv libalgorithms.a $(ALGORITHMS_LIB_OBJS)
 
 # Base library.
 
