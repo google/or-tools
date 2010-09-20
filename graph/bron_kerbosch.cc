@@ -132,7 +132,7 @@ void Search(ResultCallback2<bool, int, int>* const graph,
 
 #if defined(_MSC_VER)
 // The following class defines a hash function for arcs
-class IntPairHasher : public stdext::hash_compare <Arc> {
+class IntPairHasher : public stdext::hash_compare <pair<int, int> > {
  public:
   size_t operator() (const pair<int, int>& a) const {
     uint64 x = a.first;
