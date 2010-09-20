@@ -24,7 +24,7 @@ BINARIES=nqueens.exe golomb.exe magic_square.exe cryptarithm.exe
 
 all: libs $(BINARIES)
 
-LIBS = cp.lib util.lib base.lib gflags.lib
+LIBS = cp.lib util.lib base.lib gflags.lib algorithms.lib graph.lib
 
 libs: $(LIBS)
 
@@ -123,6 +123,17 @@ objs/bitset.obj:util/bitset.cc
 
 util.lib: $(UTIL_LIB_OBJS)
 	lib /OUT:util.lib $(UTIL_LIB_OBJS)
+
+# Graph library.
+
+GRAPH_LIB_OBJS=\
+	objs/bron_kerbosch.obj
+
+objs/bron_kerbosch.obj:graph/bron_kerbosch.cc
+	$(CCC) $(CFLAGS) -c graph/bron_kerbosch.cc /Foobjs/bron_kerbosch.obj
+
+graph.lib: $(GRAPH_LIB_OBJS)
+	lib /OUT:graph.lib $(GRAPH_LIB_OBJS)
 
 # Algorithms library.
 

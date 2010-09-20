@@ -39,7 +39,7 @@ BINARIES=nqueens golomb magic_square cryptarithm
 
 all: libs $(BINARIES) pylib
 
-libs: libcp.a libutil.a libbase.a libalgorithms.a
+libs: libcp.a libutil.a libbase.a libalgorithms.a libgraph.a
 
 clean:
 	rm -f *.a
@@ -137,6 +137,17 @@ objs/bitset.o:util/bitset.cc
 
 libutil.a: $(UTIL_LIB_OBJS)
 	ar rv libutil.a $(UTIL_LIB_OBJS)
+
+# Graph library.
+
+GRAPH_LIB_OBJS=\
+	objs/bron_kerbosch.o
+
+objs/bron_kerbosch.o:graph/bron_kerbosch.cc
+	$(CCC) $(CFLAGS) -c graph/bron_kerbosch.cc -o objs/bron_kerbosch.o
+
+libgraph.a: $(GRAPH_LIB_OBJS)
+	ar rv libgraph.a $(GRAPH_LIB_OBJS)
 
 # Algorithms library.
 
