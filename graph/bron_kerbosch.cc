@@ -130,6 +130,24 @@ void Search(ResultCallback2<bool, int, int>* const graph,
   }
 }
 
+#if defined(_MSC_VER)
+// The following class defines a hash function for arcs
+class IntPairHasher : public stdext::hash_compare <Arc> {
+ public:
+  size_t operator() (const pair<int, int>& a) const {
+    uint64 x = a.first;
+    uint64 y = GG_ULONGLONG(0xe08c1d668b756f82);
+    uint64 z = a.second;
+    mix(x, y, z);
+    return z;
+  }
+  bool operator() (const pair<int, int>& a1, const pair<int, int>& a2) const {
+    return a1.first < a2.first ||
+        (a1.first == a2.first && a1.second < a2.second);
+  }
+};
+#endif
+
 class FindAndEliminate {
  public:
   FindAndEliminate(ResultCallback2<bool, int, int>* const graph,
@@ -162,7 +180,11 @@ class FindAndEliminate {
   ResultCallback2<bool, int, int>* const graph_;
   int node_count_;
   ResultCallback1<bool, const vector<int>&>* const callback_;
+#if defined(_MSC_VER)
+  hash_set<pair<int, int>, IntPairHasher> visited_;
+#else
   hash_set<pair<int, int> > visited_;
+#endif
 };
 }  // namespace
 
