@@ -154,7 +154,7 @@ objs/bellman_ford.o:graph/bellman_ford.cc
 objs/dijkstra.o:graph/dijkstra.cc
 	$(CCC) $(CFLAGS) -c graph/dijkstra.cc /Foobjs/dijkstra.obj
 
-libshortestpaths.a: $(SHORTESTPATHS_LIB_OBJS)
+shortestpaths.lib: $(SHORTESTPATHS_LIB_OBJS)
 	lib /OUT:shortestpaths.lib $(SHORTESTPATHS_LIB_OBJS)
 
 # Algorithms library.
