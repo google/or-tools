@@ -24,7 +24,14 @@ BINARIES=nqueens.exe golomb.exe magic_square.exe cryptarithm.exe
 
 all: libs $(BINARIES)
 
-LIBS = cp.lib util.lib base.lib gflags.lib algorithms.lib graph.lib
+LIBS = \
+	cp.lib \
+	util.lib \
+	base.lib \
+	gflags.lib \
+	algorithms.lib \
+	graph.lib \
+	shortestpaths.lib
 
 libs: $(LIBS)
 
@@ -134,6 +141,21 @@ objs/bron_kerbosch.obj:graph/bron_kerbosch.cc
 
 graph.lib: $(GRAPH_LIB_OBJS)
 	lib /OUT:graph.lib $(GRAPH_LIB_OBJS)
+
+# Shortestpaths library.
+
+SHORTESTPATHS_LIB_OBJS=\
+	objs/bellman_ford.obj \
+	objs/dijkstra.obj
+
+objs/bellman_ford.o:graph/bellman_ford.cc
+	$(CCC) $(CFLAGS) -c graph/bellman_ford.cc /Foobjs/bellman_ford.obj
+
+objs/dijkstra.o:graph/dijkstra.cc
+	$(CCC) $(CFLAGS) -c graph/dijkstra.cc /Foobjs/dijkstra.obj
+
+libshortestpaths.a: $(SHORTESTPATHS_LIB_OBJS)
+	lib /OUT:shortestpaths.lib $(SHORTESTPATHS_LIB_OBJS)
 
 # Algorithms library.
 

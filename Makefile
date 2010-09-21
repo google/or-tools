@@ -39,7 +39,13 @@ BINARIES=nqueens golomb magic_square cryptarithm
 
 all: libs $(BINARIES) pylib
 
-libs: libcp.a libutil.a libbase.a libalgorithms.a libgraph.a
+libs: \
+	libcp.a            \
+	libutil.a          \
+	libbase.a          \
+	libalgorithms.a    \
+	libgraph.a         \
+	libshortestpaths.a
 
 clean:
 	rm -f *.a
@@ -148,6 +154,21 @@ objs/bron_kerbosch.o:graph/bron_kerbosch.cc
 
 libgraph.a: $(GRAPH_LIB_OBJS)
 	ar rv libgraph.a $(GRAPH_LIB_OBJS)
+
+# Shortestpaths library.
+
+SHORTESTPATHS_LIB_OBJS=\
+	objs/bellman_ford.o \
+	objs/dijkstra.o
+
+objs/bellman_ford.o:graph/bellman_ford.cc
+	$(CCC) $(CFLAGS) -c graph/bellman_ford.cc -o objs/bellman_ford.o
+
+objs/dijkstra.o:graph/dijkstra.cc
+	$(CCC) $(CFLAGS) -c graph/dijkstra.cc -o objs/dijkstra.o
+
+libshortestpaths.a: $(SHORTESTPATHS_LIB_OBJS)
+	ar rv libshortestpaths.a $(SHORTESTPATHS_LIB_OBJS)
 
 # Algorithms library.
 
