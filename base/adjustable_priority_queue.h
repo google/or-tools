@@ -34,9 +34,9 @@ template<typename T> class AdjustablePriorityQueue {
   }
 
   void Remove(T* const val) {
-    int i = val->GetHeapIndex();
-    if (i == Size() - 1) {
-      elems_.resize(Size()-1);
+    const int i = val->GetHeapIndex();
+    if (i == elems_.size() - 1) {
+      elems_.pop_back();
       return;
     }
     elems_[i] = elems_.back();
@@ -71,18 +71,18 @@ template<typename T> class AdjustablePriorityQueue {
 
   int Size() const { return elems_.size(); }
 
-  bool IsEmpty() const { return elems_.size() == 0; }
+  bool IsEmpty() const { return elems_.empty(); }
 
-  void Clear() { elems_.resize(0); }
+  void Clear() { elems_.clear(); }
 
   void CheckValid() const {
-    for (int i = 0; i < Size(); ++i) {
-      int left_child = 1 + 2 * i;
-      if (left_child < Size()) {
+    for (int i = 0; i < elems_.size(); ++i) {
+      const int left_child = 1 + 2 * i;
+      if (left_child < elems_.size()) {
         CHECK_GE(elems_[i], elems_[left_child]);
       }
-      int right_child = left_child + 1;
-      if (right_child < Size()) {
+      const int right_child = left_child + 1;
+      if (right_child < elems_.size()) {
         CHECK_GE(elems_[i], elems_[right_child]);
       }
     }
