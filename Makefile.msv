@@ -25,7 +25,7 @@ BINARIES=nqueens.exe golomb.exe magic_square.exe cryptarithm.exe
 all: libs $(BINARIES)
 
 LIBS = \
-	cp.lib \
+	constraint_solver.lib \
 	util.lib \
 	base.lib \
 	gflags.lib \
@@ -117,8 +117,8 @@ objs/timetabling.obj:constraint_solver/timetabling.cc
 objs/utilities.obj:constraint_solver/utilities.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/utilities.cc /Foobjs/utilities.obj
 
-cp.lib: $(CP_LIB_OBJS)
-	lib /OUT:cp.lib $(CP_LIB_OBJS)
+constraint_solver.lib: $(CP_LIB_OBJS)
+	lib /OUT:constraint_solver.lib $(CP_LIB_OBJS)
 
 # Util library.
 

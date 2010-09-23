@@ -232,7 +232,7 @@ SearchMonitor* Solver::MakeSearchLog(int period, IntVar* const obj,
 
 class SearchTrace : public SearchMonitor {
  public:
-  explicit SearchTrace(Solver* const s, const string& prefix)
+  SearchTrace(Solver* const s, const string& prefix)
       : SearchMonitor(s), prefix_(prefix) {}
   virtual ~SearchTrace() {}
 
@@ -833,8 +833,8 @@ int64 CenterValueSelector::Select(const IntVar* const v, int64 id) {
 
 class CheapestValueSelector : public ValueSelector {
  public:
-  explicit CheapestValueSelector(ResultCallback2<int64, int64, int64>* eval,
-                                 ResultCallback1<int64, int64>* tie_breaker)
+  CheapestValueSelector(ResultCallback2<int64, int64, int64>* eval,
+                        ResultCallback1<int64, int64>* tie_breaker)
       : eval_(eval), tie_breaker_(tie_breaker) {}
   virtual ~CheapestValueSelector() {}
   virtual int64 Select(const IntVar* const v, int64 id);

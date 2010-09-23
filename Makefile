@@ -39,13 +39,15 @@ BINARIES=nqueens golomb magic_square cryptarithm
 
 all: libs $(BINARIES) pylib
 
-libs: \
-	libcp.a            \
+LIBS = \
+	libconstraint_solver.a            \
 	libutil.a          \
 	libbase.a          \
 	libalgorithms.a    \
 	libgraph.a         \
 	libshortestpaths.a
+
+libs: $(LIBS)
 
 clean:
 	rm -f *.a
@@ -54,7 +56,7 @@ clean:
 	rm constraint_solver/*wrap*
 	rm -f *.so
 
-# CP Lib.
+# Constraint Solver Lib.
 
 CP_LIB_OBJS = \
 	objs/alldiff_cst.o\
@@ -130,8 +132,8 @@ objs/timetabling.o:constraint_solver/timetabling.cc
 objs/utilities.o:constraint_solver/utilities.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/utilities.cc -o objs/utilities.o
 
-libcp.a: $(CP_LIB_OBJS)
-	ar rv libcp.a $(CP_LIB_OBJS)
+libconstraint_solver.a: $(CP_LIB_OBJS)
+	ar rv libconstraint_solver.a $(CP_LIB_OBJS)
 
 # Util library.
 
@@ -212,26 +214,26 @@ libbase.a: $(BASE_LIB_OBJS)
 objs/cryptarithm.o:examples/cryptarithm.cc
 	$(CCC) $(CFLAGS) -c examples/cryptarithm.cc -o objs/cryptarithm.o
 
-cryptarithm: libutil.a libcp.a libbase.a objs/cryptarithm.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.o libcp.a libutil.a libbase.a -o cryptarithm
+cryptarithm: $(LIBS) objs/cryptarithm.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.o $(LIBS) -o cryptarithm
 
 objs/golomb.o:examples/golomb.cc
 	$(CCC) $(CFLAGS) -c examples/golomb.cc -o objs/golomb.o
 
-golomb: libutil.a libcp.a libbase.a objs/golomb.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.o libcp.a libutil.a libbase.a -o golomb
+golomb: $(LIBS) objs/golomb.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.o $(LIBS) -o golomb
 
 objs/magic_square.o:examples/magic_square.cc
 	$(CCC) $(CFLAGS) -c examples/magic_square.cc -o objs/magic_square.o
 
-magic_square: libutil.a libcp.a libbase.a objs/magic_square.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.o libcp.a libutil.a libbase.a -o magic_square
+magic_square: $(LIBS) objs/magic_square.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.o $(LIBS) -o magic_square
 
 objs/nqueens.o: examples/nqueens.cc
 	$(CCC) $(CFLAGS) -c examples/nqueens.cc -o objs/nqueens.o
 
-nqueens: libutil.a libcp.a libbase.a objs/nqueens.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.o libcp.a libutil.a libbase.a -o nqueens
+nqueens: $(LIBS) objs/nqueens.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.o $(LIBS) -o nqueens
 
 # SWIG
 
@@ -246,5 +248,5 @@ objs/constraint_solver_wrap.o: constraint_solver/constraint_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c constraint_solver/constraint_solver_wrap.cc -o objs/constraint_solver_wrap.o
 
 _pywrapcp.so: objs/constraint_solver_wrap.o $(LIBS)
-	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o libcp.a libutil.a libbase.a $(GFLAGS_LNK)
+	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o $(LIBS) $(GFLAGS_LNK)
 

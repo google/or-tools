@@ -131,4 +131,4 @@ template<typename T> class AdjustablePriorityQueue {
 };
 }  // namespace operations_research
 
-#endif // BASE_ADJUSTABLE_PRIORITY_QUEUE_H
+#endif  // BASE_ADJUSTABLE_PRIORITY_QUEUE_H
