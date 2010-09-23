@@ -56,15 +56,27 @@
 #define LOG(severity) LOG_ ## severity.stream()
 #define LG LOG_INFO.stream()
 
+namespace operations_research {
+class DateLogger {
+ public:
+  DateLogger();
+  char* const HumanDate();
+ private:
+  char buffer_[9];
+};
+}  // namespace operations_research
+
 class LogMessage {
  public:
   LogMessage(const char* file, int line) {
-    std::cerr << file << ":" << line << ": ";
+    std::cerr << "[" << pretty_date_.HumanDate() << "] "
+              << file << ":" << line << ": ";
   }
   ~LogMessage() { std::cerr << "\n"; }
   std::ostream& stream() { return std::cerr; }
 
  private:
+  operations_research::DateLogger pretty_date_;
   DISALLOW_COPY_AND_ASSIGN(LogMessage);
 };
 

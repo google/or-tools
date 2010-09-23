@@ -173,6 +173,7 @@ algorithms.lib: $(ALGORITHMS_LIB_OBJS)
 BASE_LIB_OBJS=\
 	objs/bitmap.obj\
 	objs/callback.obj\
+	objs/logging.obj\
 	objs/random.obj\
 	objs/stringpiece.obj\
 	objs/stringprintf.obj\
@@ -182,6 +183,8 @@ objs/bitmap.obj:base/bitmap.cc
 	$(CCC) $(CFLAGS) -c base/bitmap.cc /Foobjs/bitmap.obj
 objs/callback.obj:base/callback.cc
 	$(CCC) $(CFLAGS) -c base/callback.cc /Foobjs/callback.obj
+objs/logging.obj:base/logging.cc
+	$(CCC) $(CFLAGS) -c base/logging.cc /Foobjs/logging.obj
 objs/random.obj:base/random.cc
 	$(CCC) $(CFLAGS) -c base/random.cc /Foobjs/random.obj
 objs/stringpiece.obj:base/stringpiece.cc

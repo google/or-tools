@@ -188,6 +188,7 @@ libalgorithms.a: $(ALGORITHMS_LIB_OBJS)
 BASE_LIB_OBJS=\
 	objs/bitmap.o\
 	objs/callback.o\
+	objs/logging.o\
 	objs/random.o\
 	objs/stringpiece.o\
 	objs/stringprintf.o\
@@ -197,6 +198,8 @@ objs/bitmap.o:base/bitmap.cc
 	$(CCC) $(CFLAGS) -c base/bitmap.cc -o objs/bitmap.o
 objs/callback.o:base/callback.cc
 	$(CCC) $(CFLAGS) -c base/callback.cc -o objs/callback.o
+objs/logging.o:base/logging.cc
+	$(CCC) $(CFLAGS) -c base/logging.cc -o objs/logging.o
 objs/random.o:base/random.cc
 	$(CCC) $(CFLAGS) -c base/random.cc -o objs/random.o
 objs/stringpiece.o:base/stringpiece.cc
