@@ -25,7 +25,7 @@ DateLogger::DateLogger() {
 
 char* const DateLogger::HumanDate() {
 #if defined(_MSC_VER)
-  strtime_s(buffer_, 9);
+  _strtime_s(buffer_, 9);
 #else
   time_t time_value = time(NULL);
   struct tm* const now = localtime(&time_value);
