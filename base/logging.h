@@ -43,7 +43,7 @@
 #define LOG_FATAL LogMessageFatal(__FILE__, __LINE__)
 #define LOG_QFATAL LOG_FATAL
 
-#define VLOG(x) if((x)>0){}else LOG_INFO.stream()
+#define VLOG(x) if((x)>0){} else LOG_INFO.stream()
 
 #ifdef NDEBUG
 #define DEBUG_MODE 0

@@ -25,11 +25,13 @@ DateLogger::DateLogger() {
 
 char* const DateLogger::HumanDate() {
 #if defined(_MSC_VER)
-  _strtime_s(buffer_, 9);
+  _strtime_s(buffer_, sizeof(buffer_));
 #else
   time_t time_value = time(NULL);
-  struct tm* const now = localtime(&time_value);
-  sprintf(buffer_, "%02d:%02d:%02d\0", now->tm_hour, now->tm_min, now->tm_sec);
+  struct tm now;
+  localtime_r(&time_value, &now);
+  snprintf(buffer_, sizeof(buffer_), "%02d:%02d:%02d\0",
+           now.tm_hour, now.tm_min, now.tm_sec);
 #endif
   return buffer_;
 }
