@@ -17,7 +17,6 @@
 //  distinct solutions: http://www.research.att.com/~njas/sequences/A002562
 
 #include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
@@ -60,7 +59,7 @@ class MyFirstSolutionCollector : public SolutionCollector {
 };
 
 MyFirstSolutionCollector::MyFirstSolutionCollector(Solver* const s,
-                                               const Assignment* a)
+                                                   const Assignment* a)
     : SolutionCollector(s, a), done_(false) {}
 
 
@@ -79,7 +78,7 @@ bool MyFirstSolutionCollector::RejectSolution() {
   }
   return true;
 }
-
+  
 string MyFirstSolutionCollector::DebugString() const {
   if (prototype_.get() == NULL) {
     return "MyFirstSolutionCollector()";
@@ -138,7 +137,7 @@ class SY : public NQueenSymmetry {
   }
 };
 
-// Symmetry 1 diagonal axis.
+// Symmetry first diagonal axis.
 class SD1 : public NQueenSymmetry {
  public:
   SD1(Solver* const s, const vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
@@ -207,61 +206,58 @@ class R270 : public NQueenSymmetry {
 
 void NQueens(int size) {
   CHECK_GE(size, 1);
-  scoped_ptr<Solver> s(new Solver("nqueens"));
-
+  Solver s("nqueens");
+  
   // model
   vector<IntVar*> queens;
   for (int i = 0; i < size; ++i) {
-    queens.push_back(
-      s->MakeIntVar(0, size - 1, StringPrintf("queen%04d", i)));
+    queens.push_back(s.MakeIntVar(0, size - 1, StringPrintf("queen%04d", i)));
   }
-  s->AddConstraint(s->MakeAllDifferent(queens, FLAGS_use_range));
+  s.AddConstraint(s.MakeAllDifferent(queens, FLAGS_use_range));
 
-  vector<IntVar*> vars;
-  vars.resize(size);
+  vector<IntVar*> vars(size);
   for (int i = 0; i < size; ++i) {
-    vars[i] = s->MakeSum(queens[i], i)->Var();
+    vars[i] = s.MakeSum(queens[i], i)->Var();
   }
-  s->AddConstraint(s->MakeAllDifferent(vars, FLAGS_use_range));
+  s.AddConstraint(s.MakeAllDifferent(vars, FLAGS_use_range));
   for (int i = 0; i < size; ++i) {
-    vars[i] = s->MakeSum(queens[i], -i)->Var();
+    vars[i] = s.MakeSum(queens[i], -i)->Var();
   }
-  s->AddConstraint(s->MakeAllDifferent(vars, FLAGS_use_range));
+  s.AddConstraint(s.MakeAllDifferent(vars, FLAGS_use_range));
 
-  SolutionCollector * const c1 = s->MakeAllSolutionCollector(NULL);
-  Assignment * a = new Assignment(s.get());   // store first solution
+  SolutionCollector* const c1 = s.MakeAllSolutionCollector(NULL);
+  Assignment* const a = new Assignment(&s);   // store first solution
   a->Add(queens);
-  SolutionCollector * const c2 =
-      s->RevAlloc(new MyFirstSolutionCollector(s.get(), a));
+  SolutionCollector* const c2 = s.RevAlloc(new MyFirstSolutionCollector(&s, a));
   delete a;
   vector<SearchMonitor*> monitors;
   monitors.push_back(c1);
   monitors.push_back(c2);
-  DecisionBuilder* const db = s->MakePhase(queens,
-                                           Solver::CHOOSE_FIRST_UNBOUND,
-                                           Solver::ASSIGN_MIN_VALUE);
+  DecisionBuilder* const db = s.MakePhase(queens,
+                                          Solver::CHOOSE_FIRST_UNBOUND,
+                                          Solver::ASSIGN_MIN_VALUE);
   if (FLAGS_use_symmetry) {
     vector<SymmetryBreaker*> breakers;
-    NQueenSymmetry* sx = s->RevAlloc(new SX(s.get(), queens));
+    NQueenSymmetry* sx = s.RevAlloc(new SX(&s, queens));
     breakers.push_back(sx);
-    NQueenSymmetry* sy = s->RevAlloc(new SY(s.get(), queens));
+    NQueenSymmetry* sy = s.RevAlloc(new SY(&s, queens));
     breakers.push_back(sy);
-    NQueenSymmetry* sd1 = s->RevAlloc(new SD1(s.get(), queens));
+    NQueenSymmetry* sd1 = s.RevAlloc(new SD1(&s, queens));
     breakers.push_back(sd1);
-    NQueenSymmetry* sd2 = s->RevAlloc(new SD2(s.get(), queens));
+    NQueenSymmetry* sd2 = s.RevAlloc(new SD2(&s, queens));
     breakers.push_back(sd2);
-    NQueenSymmetry* r90 = s->RevAlloc(new R90(s.get(), queens));
+    NQueenSymmetry* r90 = s.RevAlloc(new R90(&s, queens));
     breakers.push_back(r90);
-    NQueenSymmetry* r180 = s->RevAlloc(new R180(s.get(), queens));
+    NQueenSymmetry* r180 = s.RevAlloc(new R180(&s, queens));
     breakers.push_back(r180);
-    NQueenSymmetry* r270 = s->RevAlloc(new R270(s.get(), queens));
+    NQueenSymmetry* r270 = s.RevAlloc(new R270(&s, queens));
     breakers.push_back(r270);
-    SearchMonitor* symmetry_manager = s->MakeSymmetryManager(breakers);
+    SearchMonitor* symmetry_manager = s.MakeSymmetryManager(breakers);
     monitors.push_back(symmetry_manager);
   }
 
   for (int loop = 0; loop < FLAGS_nb_loops; ++loop) {
-    s->Solve(db, monitors);  // go!
+    s.Solve(db, monitors);  // go!
   }
 
   const int num_solutions = c1->solution_count();
@@ -280,7 +276,7 @@ void NQueens(int size) {
     }
   }
   printf("========= number of solutions:%d\n", num_solutions);
-  printf("          number of failures: %lld\n", s->failures());
+  printf("          number of failures: %lld\n", s.failures());
   if (FLAGS_use_symmetry) {
     if (size - 1 < kKnownUniqueSolutions) {
       CHECK_EQ(num_solutions, kNumUniqueSolutions[size - 1] * FLAGS_nb_loops);
@@ -295,7 +291,7 @@ void NQueens(int size) {
     }
   }
 }
-
+  
 }   // namespace operations_research
 
 int main(int argc, char **argv) {
