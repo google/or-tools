@@ -48,35 +48,34 @@ namespace operations_research {
 
 void GolombRuler(int size) {
   CHECK_GE(size, 1);
-  scoped_ptr<Solver> s(new Solver("golomb"));
+  Solver s("golomb");
 
   // model
-  vector<IntVar*> ticks;
-  ticks.resize(size);
-  ticks[0] = s->MakeIntConst(0, "");      // X(0) = 0
+  vector<IntVar*> ticks(size);
+  ticks[0] = s.MakeIntConst(0);      // X(0) = 0
   const int64 max = 1 + size * size * size;
   for (int i = 1; i < size; ++i) {
-    ticks[i] = s->MakeIntVar(1, max, StringPrintf("X%02d", i));
+    ticks[i] = s.MakeIntVar(1, max, StringPrintf("X%02d", i));
   }
   vector<IntVar*> diffs;
   for (int i = 0; i < size; ++i) {
     for (int j = i + 1; j < size; ++j) {
-      IntVar* const diff = s->MakeDifference(ticks[j], ticks[i])->Var();
+      IntVar* const diff = s.MakeDifference(ticks[j], ticks[i])->Var();
       diffs.push_back(diff);
       diff->SetMin(1);
     }
   }
-  s->AddConstraint(s->MakeAllDifferent(diffs, FLAGS_use_range));
+  s.AddConstraint(s.MakeAllDifferent(diffs, FLAGS_use_range));
 
-  OptimizeVar* length = s->MakeMinimize(ticks[size-1], 1);
-  Assignment * a = new Assignment(s.get());   // store first solution
+  OptimizeVar* const length = s.MakeMinimize(ticks[size-1], 1);
+  Assignment* const a = new Assignment(&s);   // store first solution
   a->Add(ticks);
-  SolutionCollector* collector = s->MakeLastSolutionCollector(a);
+  SolutionCollector* const collector = s.MakeLastSolutionCollector(a);
   delete a;
-  DecisionBuilder* const db = s->MakePhase(ticks,
-                                           Solver::CHOOSE_FIRST_UNBOUND,
-                                           Solver::ASSIGN_MIN_VALUE);
-  s->Solve(db, collector, length);  // go!
+  DecisionBuilder* const db = s.MakePhase(ticks,
+                                          Solver::CHOOSE_FIRST_UNBOUND,
+                                          Solver::ASSIGN_MIN_VALUE);
+  s.Solve(db, collector, length);  // go!
   CHECK_EQ(collector->solution_count(), 1);
   const int64 result = collector->solution(0)->Value(ticks[size-1]);
   const int num_failures = collector->failures(0);

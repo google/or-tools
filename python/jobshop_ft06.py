@@ -22,12 +22,7 @@ The objective is to minimize the maximum completion time of all
 jobs. This is called the makespan.
 """
 
-
-
 from constraint_solver import pywrapcp
-
-
-
 
 def main(unused_argv):
   # Create the solver.
@@ -107,5 +102,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  
   main("cp sample")
