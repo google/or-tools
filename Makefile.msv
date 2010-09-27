@@ -2,6 +2,9 @@
 GFLAGS_DIR=..\\gflags-1.3
 ZLIB_DIR=..\\zlib-1.2.5
 ZLIB_NAME=zlib.lib
+SWIG_BINARY=..\\swigwin-2.0.0\\swig.exe
+PYTHON_INC=/Ic:\\Python27\\include
+PYTHON_LNK=c:\\Python27\\libs\\python27.lib
 
 #  ----- No more editing below -----
 
@@ -40,6 +43,10 @@ clean:
 	del objs\\*.obj
 	del  $(BINARIES)
 	del *.dll
+	del *.exp
+	del constraint_solver\constraint_solver_wrap.cc
+	del constraint_solver\_pywrapcp.pyd
+	del constraint_solver\pywrapcp.py
 
 # CP Lib.
 
@@ -244,3 +251,21 @@ objs/nqueens.obj: examples/nqueens.cc
 nqueens.exe: $(LIBS) objs/nqueens.obj
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.obj $(LIBS) /Fenqueens.exe
 
+
+# SWIG
+
+pylib: constraint_solver/_pywrapcp.pyd constraint_solver/pywrapcp.py $(LIBS)
+
+constraint_solver/pywrapcp.py: constraint_solver/constraint_solver.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h base/base.swig
+	$(SWIG_BINARY) -c++ -python -o constraint_solver/constraint_solver_wrap.cc -module pywrapcp constraint_solver/constraint_solver.swig
+
+constraint_solver/constraint_solver_wrap.cc: constraint_solver/pywrapcp.py
+
+objs/constraint_solver_wrap.obj: constraint_solver/constraint_solver_wrap.cc
+	$(CCC) $(CFLAGS) $(PYTHON_INC) /I__WIN32__ -c constraint_solver/constraint_solver_wrap.cc /Foobjs/constraint_solver_wrap.obj
+
+_pywrapcp.dll: objs/constraint_solver_wrap.obj $(LIBS)
+	link /DLL /OUT:_pywrapcp.dll objs/constraint_solver_wrap.obj $(LIBS) $(LDFLAGS) $(PYTHON_LNK)
+
+constraint_solver/_pywrapcp.pyd: _pywrapcp.dll
+	copy _pywrapcp.dll constraint_solver\\_pywrapcp.pyd

@@ -42,8 +42,13 @@
 
 %{
 #include <vector>
-#include <ext/hash_set>
+#ifdef __GNUC__
 #include <ext/hash_map>
+#include <ext/hash_set>
+#else
+#include <hash_map>
+#include <hash_set>
+#endif
 #include <set>
 #include <map>
 #include <string>
