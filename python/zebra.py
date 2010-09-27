@@ -39,7 +39,6 @@ from constraint_solver import pywrapcp
 
 
 
-
 def main(unused_argv):
   # Create the solver.
   solver = pywrapcp.Solver('zebra')

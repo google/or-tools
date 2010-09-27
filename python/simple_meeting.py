@@ -25,7 +25,11 @@ The goal is to find a meeting and a room such that all m mandatory people are
 in the meeting and a maximum of non mandatory people are also in the meeting.
 """
 
+
+
 from constraint_solver import pywrapcp
+
+
 
 def main(unused_argv):
   # Create the solver.

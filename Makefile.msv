@@ -48,9 +48,9 @@ clean:
 	del constraint_solver\_pywrapcp.pyd
 	del constraint_solver\pywrapcp.py
 
-# CP Lib.
+# Constraint Solver Lib.
 
-CP_LIB_OBJS = \
+CONSTRAINT_SOLVER_LIB_OBJS = \
 	objs/alldiff_cst.obj\
 	objs/assignment.obj\
 	objs/constraint_solver.obj\
@@ -124,8 +124,8 @@ objs/timetabling.obj:constraint_solver/timetabling.cc
 objs/utilities.obj:constraint_solver/utilities.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/utilities.cc /Foobjs/utilities.obj
 
-constraint_solver.lib: $(CP_LIB_OBJS)
-	lib /OUT:constraint_solver.lib $(CP_LIB_OBJS)
+constraint_solver.lib: $(CONSTRAINT_SOLVER_LIB_OBJS)
+	lib /OUT:constraint_solver.lib $(CONSTRAINT_SOLVER_LIB_OBJS)
 
 # Util library.
 

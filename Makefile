@@ -58,7 +58,7 @@ clean:
 
 # Constraint Solver Lib.
 
-CP_LIB_OBJS = \
+CONSTRAINT_SOLVER_LIB_OBJS = \
 	objs/alldiff_cst.o\
 	objs/assignment.o\
 	objs/constraint_solver.o\
@@ -132,8 +132,8 @@ objs/timetabling.o:constraint_solver/timetabling.cc
 objs/utilities.o:constraint_solver/utilities.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/utilities.cc -o objs/utilities.o
 
-libconstraint_solver.a: $(CP_LIB_OBJS)
-	ar rv libconstraint_solver.a $(CP_LIB_OBJS)
+libconstraint_solver.a: $(CONSTRAINT_SOLVER_LIB_OBJS)
+	ar rv libconstraint_solver.a $(CONSTRAINT_SOLVER_LIB_OBJS)
 
 # Util library.
 
