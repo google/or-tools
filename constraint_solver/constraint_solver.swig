@@ -191,6 +191,7 @@ class PyLNS : public BaseLNS {
 %rename (AllSolutionCollector) MakeAllSolutionCollector;
 %rename (AllowedAssignments) MakeAllowedAssignments;
 %rename (AssignVariableValue) MakeAssignVariableValue;
+%rename (AssignVariableValues) MakeAssignVariableValues;
 %rename (Assignment) MakeAssignment;
 %rename (BestValueSolutionCollector) MakeBestValueSolutionCollector;
 %rename (BetweenCt) MakeBetweenCt;
@@ -199,9 +200,11 @@ class PyLNS : public BaseLNS {
 %rename (ConvexPiecewiseExpr) MakeConvexPiecewiseExpr;
 %rename (Count) MakeCount;
 %rename (CustomLimit) MakeCustomLimit;
+%rename (DecisionBuilderFromAssignment) MakeDecisionBuilderFromAssignment;
 %rename (Distribute) MakeDistribute;
 %rename (Element) MakeElement;
 %rename (FailDecision) MakeFailDecision;
+%rename (FalseConstraint) MakeFalseConstraint;
 %rename (FirstSolutionCollector) MakeFirstSolutionCollector;
 %rename (FixedDurationIntervalVar) MakeFixedDurationIntervalVar;
 %rename (FixedInterval) MakeFixedInterval;
@@ -241,6 +244,7 @@ class PyLNS : public BaseLNS {
 %rename (NoCycle) MakeNoCycle;
 %rename (Operator) MakeOperator;
 %rename (Optimize) MakeOptimize;
+%rename (Pack) MakePack;
 %rename (PathCumul) MakePathCumul;
 %rename (Phase) MakePhase;
 %rename (RestoreAssignment) MakeRestoreAssignment;
@@ -259,7 +263,10 @@ class PyLNS : public BaseLNS {
 %rename (SumEquality) MakeSumEquality;
 %rename (SumGreaterOrEqual) MakeSumGreaterOrEqual;
 %rename (SumLessOrEqual) MakeSumLessOrEqual;
+%rename (SymmetryManager) MakeSymmetryManager;
 %rename (TabuSearch) MakeTabuSearch;
+%rename (TemporalDisjunction) MakeTemporalDisjunction;
+%rename (TrueConstraint) MakeTrueConstraint;
 
 namespace operations_research {
 %{
