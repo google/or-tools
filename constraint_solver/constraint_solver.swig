@@ -195,8 +195,10 @@ class PyLNS : public BaseLNS {
 %rename (BestValueSolutionCollector) MakeBestValueSolutionCollector;
 %rename (BetweenCt) MakeBetweenCt;
 %rename (BoolVar) MakeBoolVar;
+%rename (ConstantRestart) MakeConstantRestart;
 %rename (ConvexPiecewiseExpr) MakeConvexPiecewiseExpr;
 %rename (Count) MakeCount;
+%rename (CustomLimit) MakeCustomLimit;
 %rename (Distribute) MakeDistribute;
 %rename (Element) MakeElement;
 %rename (FailDecision) MakeFailDecision;
@@ -209,8 +211,11 @@ class PyLNS : public BaseLNS {
 %rename (IsBetweenCt) MakeIsBetweenCt;
 %rename (IsDifferentCstCt) MakeIsDifferentCstCt;
 %rename (IsDifferentCstVar) MakeIsDifferentCstVar;
+%rename (IsDifferentCt) MakeIsDifferentCt;
+%rename (IsDifferentVar) MakeIsDifferentVar;
 %rename (IsEqualCstCt) MakeIsEqualCstCt;
 %rename (IsEqualCstVar) MakeIsEqualCstVar;
+%rename (IsEqualCt) MakeIsEqualCt;
 %rename (IsEqualVar) MakeIsEqualVar;
 %rename (IsGreaterCstCt) MakeIsGreaterCstCt;
 %rename (IsGreaterCstVar) MakeIsGreaterCstVar;
@@ -224,7 +229,6 @@ class PyLNS : public BaseLNS {
 %rename (IsMemberVar) MakeIsMemberVar;
 %rename (LastSolutionCollector) MakeLastSolutionCollector;
 %rename (Limit) MakeLimit;
-%rename (CustomLimit) MakeCustomLimit;
 %rename (LocalSearchPhase) MakeLocalSearchPhase;
 %rename (LocalSearchPhaseParameters) MakeLocalSearchPhaseParameters;
 %rename (LubyRestart) MakeLubyRestart;
@@ -240,7 +244,6 @@ class PyLNS : public BaseLNS {
 %rename (PathCumul) MakePathCumul;
 %rename (Phase) MakePhase;
 %rename (RestoreAssignment) MakeRestoreAssignment;
-%rename (SolveOnce) MakeSolveOnce;
 %rename (ScalProd) MakeScalProd;
 %rename (ScalProdEquality) MakeScalProdEquality;
 %rename (ScalProdGreaterOrEqual) MakeScalProdGreaterOrEqual;
@@ -250,6 +253,7 @@ class PyLNS : public BaseLNS {
 %rename (SemiContinuousExpr) MakeSemiContinuousExpr;
 %rename (Sequence) MakeSequence;
 %rename (SimulatedAnnealing) MakeSimulatedAnnealing;
+%rename (SolveOnce) MakeSolveOnce;
 %rename (StoreAssignment) MakeStoreAssignment;
 %rename (Sum) MakeSum;
 %rename (SumEquality) MakeSumEquality;
