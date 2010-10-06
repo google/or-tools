@@ -96,6 +96,7 @@ void IntVarLocalSearchOperator::Start(const Assignment* assignment) {
     activated_.Set(i, activated);
     was_activated_.Set(i, activated);
   }
+  OnStart();
 }
 
 void IntVarLocalSearchOperator::SetValue(int64 index, int64 value) {
@@ -190,8 +191,7 @@ bool BaseLNS::MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
   return false;
 }
 
-void BaseLNS::Start(const Assignment* assignment) {
-  IntVarLocalSearchOperator::Start(assignment);
+void BaseLNS::OnStart() {
   InitFragments();
 }
 
@@ -252,8 +252,7 @@ bool ChangeValue::MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
   return false;
 }
 
-void ChangeValue::Start(const Assignment* assignment) {
-  IntVarLocalSearchOperator::Start(assignment);
+void ChangeValue::OnStart() {
   index_ = 0;
 }
 
@@ -296,9 +295,9 @@ PathOperator::PathOperator(const IntVar* const* next_vars,
   }
 }
 
-void PathOperator::Start(const Assignment* assignment) {
-  IntVarLocalSearchOperator::Start(assignment);
+void PathOperator::OnStart() {
   InitializeBaseNodes();
+  OnNodeInitialization();
 }
 
 bool PathOperator::MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
@@ -539,11 +538,9 @@ class TwoOpt : public PathOperator {
   }
   virtual ~TwoOpt() {}
   virtual bool MakeNeighbor();
-  virtual void Start(const Assignment* assignment) {
-    PathOperator::Start(assignment);
-    last_ = -1;
-  }
   virtual bool IsIncremental() const { return true; }
+ protected:
+  virtual void OnNodeInitialization() { last_ = -1; }
  private:
   int64 last_base_;
   int64 last_;
@@ -720,15 +717,18 @@ class MakeActiveOperator : public PathOperator {
                      int size)
       : PathOperator(vars, secondary_vars, size, 1), inactive_node_(0) {}
   virtual ~MakeActiveOperator() {}
-  virtual void Start(const Assignment* assignment);
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual bool MakeNeighbor();
+ protected:
+  virtual void OnNodeInitialization();
  private:
   int inactive_node_;
 };
 
-void MakeActiveOperator::Start(const Assignment* assignment) {
-  PathOperator::Start(assignment);
+// TODO(user): Add a base class for operators changing the state of a node
+// (active/non-active) to factor outwhich share the same code in
+// OnNodeInitialization().
+void MakeActiveOperator::OnNodeInitialization() {
   for (int i = 0; i < Size(); ++i) {
     if (IsInactive(i)) {
       inactive_node_ = i;
@@ -795,15 +795,15 @@ class SwapActiveOperator : public PathOperator {
                      int size)
       : PathOperator(vars, secondary_vars, size, 1), inactive_node_(0) {}
   virtual ~SwapActiveOperator() {}
-  virtual void Start(const Assignment* assignment);
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual bool MakeNeighbor();
+ protected:
+  virtual void OnNodeInitialization();
  private:
   int inactive_node_;
 };
 
-void SwapActiveOperator::Start(const Assignment* assignment) {
-  PathOperator::Start(assignment);
+void SwapActiveOperator::OnNodeInitialization() {
   for (int i = 0; i < Size(); ++i) {
     if (IsInactive(i)) {
       inactive_node_ = i;
@@ -856,15 +856,15 @@ class ExtendedSwapActiveOperator : public PathOperator {
                              int size)
       : PathOperator(vars, secondary_vars, size, 2), inactive_node_(0) {}
   virtual ~ExtendedSwapActiveOperator() {}
-  virtual void Start(const Assignment* assignment);
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual bool MakeNeighbor();
+ protected:
+  virtual void OnNodeInitialization();
  private:
   int inactive_node_;
 };
 
-void ExtendedSwapActiveOperator::Start(const Assignment* assignment) {
-  PathOperator::Start(assignment);
+void ExtendedSwapActiveOperator::OnNodeInitialization() {
   for (int i = 0; i < Size(); ++i) {
     if (IsInactive(i)) {
       inactive_node_ = i;
@@ -942,7 +942,7 @@ TSPOpt::TSPOpt(const IntVar* const* vars,
 bool TSPOpt::MakeNeighbor() {
   vector<int64> nodes;
   int64 chain_end = BaseNode(0);
-  int64 chain_path = (!ignore_path_vars_) ? Path(chain_end) : 0;
+  int64 chain_path = Path(chain_end);
   for (int i = 0; i < chain_length_ + 1; ++i) {
     nodes.push_back(chain_end);
     if (IsPathEnd(chain_end)) {
@@ -1056,7 +1056,7 @@ bool TSPLns::MakeNeighbor() {
   vector<int64> meta_node_costs;
   int64 cost = 0;
   int64 node = StartNode(0);
-  int64 node_path = (!ignore_path_vars_) ? Path(node) : 0;
+  int64 node_path = Path(node);
   while (!IsPathEnd(node)) {
     int64 next = Next(node);
     if (ContainsKey(breaks_set, node)) {
@@ -1116,13 +1116,12 @@ bool TSPLns::MakeNeighbor() {
 class NearestNeighbors {
  public:
   NearestNeighbors(Solver::IndexEvaluator3* evaluator,
-                   const IntVar* const* vars,
-                   const IntVar* const* secondary_vars,
-                   int vars_size, int size);
-  void Initialize(const Assignment* assignment);
+                   const PathOperator& path_operator,
+                   int size);
+  void Initialize();
   const vector<int>& Neighbors(int index) const;
  private:
-  void ComputeNearest(int row, int path);
+  void ComputeNearest(int row);
   static void Pivot(int start,
                     int end,
                     int* neighbors,
@@ -1132,9 +1131,7 @@ class NearestNeighbors {
 
   vector<vector<int> > neighbors_;
   Solver::IndexEvaluator3* evaluator_;
-  scoped_array<IntVar*> vars_;
-  scoped_array<IntVar*> secondary_vars_;
-  int vars_size_;
+  const PathOperator& path_operator_;
   const int size_;
   bool initialized_;
 
@@ -1142,41 +1139,20 @@ class NearestNeighbors {
 };
 
 NearestNeighbors::NearestNeighbors(Solver::IndexEvaluator3* evaluator,
-                                   const IntVar* const* vars,
-                                   const IntVar* const* secondary_vars,
-                                   int vars_size,
+                                   const PathOperator& path_operator,
                                    int size)
     : evaluator_(evaluator),
-      vars_(NULL),
-      secondary_vars_(NULL),
-      vars_size_(vars_size),
+      path_operator_(path_operator),
       size_(size),
-      initialized_(false) {
-  CHECK_GE(vars_size_, 0);
-  if (vars_size_ > 0) {
-    vars_.reset(new IntVar*[vars_size_]);
-    memcpy(vars_.get(), vars, vars_size_ * sizeof(*vars));
-    if (secondary_vars != NULL) {
-      secondary_vars_.reset(new IntVar*[vars_size_]);
-      memcpy(secondary_vars_.get(),
-             secondary_vars,
-             vars_size_ * sizeof(*secondary_vars));
-    }
-  }
-}
+      initialized_(false) {}
 
-void NearestNeighbors::Initialize(const Assignment* assignment) {
+void NearestNeighbors::Initialize() {
   // TODO(user): recompute if node changes path ?
   if (!initialized_) {
     initialized_ = true;
-    for (int i = 0; i < vars_size_; ++i) {
+    for (int i = 0; i < path_operator_.number_of_nexts(); ++i) {
       neighbors_.push_back(vector<int>());
-      if (secondary_vars_.get() != NULL
-          && assignment->Bound(secondary_vars_[i])) {
-        ComputeNearest(i, assignment->Value(secondary_vars_[i]));
-      } else {
-        ComputeNearest(i, 0);
-      }
+      ComputeNearest(i);
     }
   }
 }
@@ -1185,9 +1161,10 @@ const vector<int>& NearestNeighbors::Neighbors(int index) const {
   return neighbors_[index];
 }
 
-void NearestNeighbors::ComputeNearest(int row, int path) {
-  // Find size_ nearest neighbors for row of index 'row'
-  const IntVar* var = vars_[row];
+void NearestNeighbors::ComputeNearest(int row) {
+  // Find size_ nearest neighbors for row of index 'row'.
+  const int path = path_operator_.Path(row);
+  const IntVar* var = path_operator_.Var(row);
   const int64 var_min = var->Min();
   const int var_size = var->Max() - var_min + 1;
   scoped_array<int> neighbors(new int[var_size]);
@@ -1256,8 +1233,9 @@ class LinKernighan : public PathOperator {
                bool owner,  // Owner of callback
                bool topt);
   virtual ~LinKernighan();
-  virtual void Start(const Assignment* assignment);
   virtual bool MakeNeighbor();
+ protected:
+  virtual void OnNodeInitialization();
  private:
   static const int kNeighbors;
 
@@ -1283,7 +1261,7 @@ LinKernighan::LinKernighan(const IntVar* const* vars,
     : PathOperator(vars, secondary_vars, size, 1),
       evaluator_(evaluator),
       owner_(owner),
-      neighbors_(evaluator, vars, secondary_vars, size, kNeighbors),
+      neighbors_(evaluator, *this, kNeighbors),
       topt_(topt) {}
 
 LinKernighan::~LinKernighan() {
@@ -1292,16 +1270,15 @@ LinKernighan::~LinKernighan() {
   }
 }
 
-void LinKernighan::Start(const Assignment* assignment) {
-  PathOperator::Start(assignment);
-  neighbors_.Initialize(assignment);
+void LinKernighan::OnNodeInitialization() {
+  neighbors_.Initialize();
 }
 
 bool LinKernighan::MakeNeighbor() {
   marked_.clear();
   int64 node = BaseNode(0);
   if (IsPathEnd(node)) return false;
-  int64 path = (!ignore_path_vars_) ? Path(node) : 0;
+  int64 path = Path(node);
   int64 base = node;
   int64 next = Next(node);
   if (IsPathEnd(next)) return false;
@@ -1373,7 +1350,7 @@ const int LinKernighan::kNeighbors = 5 + 1;
 bool LinKernighan::InFromOut(int64 in_i, int64 in_j, int64* out, int64* gain) {
   const vector<int>& nexts = neighbors_.Neighbors(in_j);
   int64 best_gain = kint64min;
-  int64 path = (!ignore_path_vars_) ? Path(in_i) : 0;
+  int64 path = Path(in_i);
   int64 out_cost = evaluator_->Run(in_i, in_j, path);
   const int64 current_gain = *gain + out_cost;
   for (int k = 0; k < nexts.size(); ++k) {

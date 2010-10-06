@@ -36,10 +36,12 @@ def main(unused_argv):
   solver.Add(solver.Distribute(all_vars, all_values, all_vars))
   solver.Add(solver.Sum(all_vars) == size)
 
-  solver.Solve(solver.Phase(all_vars,
-                            solver.CHOOSE_FIRST_UNBOUND,
-                            solver.ASSIGN_MIN_VALUE))
+  solver.NewSearch(solver.Phase(all_vars,
+                                solver.CHOOSE_FIRST_UNBOUND,
+                                solver.ASSIGN_MIN_VALUE))
+  solver.NextSolution()
   print all_vars
+  solver.EndSearch()
 
 
 if __name__ == '__main__':

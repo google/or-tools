@@ -71,7 +71,7 @@ void SearchLog::ExitSearch() {
   OutputLine(buffer);
 }
 
-bool SearchLog::RejectSolution() {
+bool SearchLog::AtSolution() {
   Maintain();
   const int depth = solver()->SearchDepth();
   string obj_str = "";
@@ -273,9 +273,13 @@ class SearchTrace : public SearchMonitor {
   virtual void EndInitialPropagation() {
     LG << prefix_ << " EndInitialPropagation()";
   }
-  virtual bool RejectSolution() {
-    LG << prefix_ << " RejectSolution()";
+  virtual bool AtSolution() {
+    LG << prefix_ << " AtSolution()";
     return false;
+  }
+  virtual bool AcceptSolution() {
+    LG << prefix_ << " AcceptSolution()";
+    return true;
   }
   virtual void NoMoreSolutions() {
     LG << prefix_ << " NoMoreSolutions()";
@@ -1707,10 +1711,7 @@ class FirstSolutionCollector : public SolutionCollector {
   FirstSolutionCollector(Solver* const s, const Assignment* a);
   virtual ~FirstSolutionCollector();
   virtual void EnterSearch();
-  virtual bool RejectSolution();
-  void Check();
-  virtual void BeginNextDecision(DecisionBuilder* const b);
-  virtual void RefuteDecision(Decision* const d);
+  virtual bool AtSolution();
   virtual string DebugString() const;
  private:
   bool done_;
@@ -1728,26 +1729,12 @@ void FirstSolutionCollector::EnterSearch() {
   done_ = false;
 }
 
-bool FirstSolutionCollector::RejectSolution() {
+bool FirstSolutionCollector::AtSolution() {
   if (!done_) {
     PushSolution();
     done_ = true;
   }
-  return true;
-}
-
-void FirstSolutionCollector::Check() {
-  if (done_) {
-    solver()->Fail();
-  }
-}
-
-void FirstSolutionCollector::BeginNextDecision(DecisionBuilder* const b) {
-  Check();
-}
-
-void FirstSolutionCollector::RefuteDecision(Decision* const d) {
-  Check();
+  return false;
 }
 
 string FirstSolutionCollector::DebugString() const {
@@ -1769,7 +1756,7 @@ class LastSolutionCollector : public SolutionCollector {
  public:
   LastSolutionCollector(Solver* const s, const Assignment* a);
   virtual ~LastSolutionCollector();
-  virtual bool RejectSolution();
+  virtual bool AtSolution();
   virtual string DebugString() const;
 };
 
@@ -1780,7 +1767,7 @@ LastSolutionCollector::LastSolutionCollector(Solver* const s,
 
 LastSolutionCollector::~LastSolutionCollector() {}
 
-bool LastSolutionCollector::RejectSolution() {
+bool LastSolutionCollector::AtSolution() {
   PopSolution();
   PushSolution();
   return true;
@@ -1807,7 +1794,7 @@ class BestValueSolutionCollector : public SolutionCollector {
                              bool maximize);
   virtual ~BestValueSolutionCollector() {}
   virtual void EnterSearch();
-  virtual bool RejectSolution();
+  virtual bool AtSolution();
   virtual string DebugString() const;
  public:
   const bool maximize_;
@@ -1827,7 +1814,7 @@ void BestValueSolutionCollector::EnterSearch() {
   best_ = maximize_ ? kint64min : kint64max;
 }
 
-bool BestValueSolutionCollector::RejectSolution() {
+bool BestValueSolutionCollector::AtSolution() {
   if (prototype_.get() != NULL) {
     const IntVar* objective = prototype_->Objective();
     if (objective != NULL) {
@@ -1865,7 +1852,7 @@ class AllSolutionCollector : public SolutionCollector {
  public:
   AllSolutionCollector(Solver* const s, const Assignment* a);
   virtual ~AllSolutionCollector();
-  virtual bool RejectSolution();
+  virtual bool AtSolution();
   virtual string DebugString() const;
 };
 
@@ -1874,7 +1861,7 @@ AllSolutionCollector::AllSolutionCollector(Solver* const s, const Assignment* a)
 
 AllSolutionCollector::~AllSolutionCollector() {}
 
-bool AllSolutionCollector::RejectSolution()  {
+bool AllSolutionCollector::AtSolution()  {
   PushSolution();
   return true;
 }
@@ -1925,14 +1912,24 @@ void OptimizeVar::RefuteDecision(Decision* d) {
   ApplyBound();
 }
 
-bool OptimizeVar::RejectSolution() {
+bool OptimizeVar::AcceptSolution() {
+  const int64 val = var_->Value();
+  // This code should never returns false in sequential mode because
+  // ApplyBound should have been called before. In parallel, this is
+  // no longer true. That is why we keep it there, just in case.
+  return (maximize_ && val > best_) || (!maximize_ && val < best_);
+}
+
+bool OptimizeVar::AtSolution() {
   int64 val = var_->Value();
   if (maximize_) {
-    best_ = std::max(val, best_);
+    CHECK_GT(val, best_);
+    best_ = val;
   } else {
-    best_ = std::min(val, best_);
+    CHECK_LT(val, best_);
+    best_ = val;
   }
-  return solver()->CurrentlyInSolve();
+  return true;
 }
 
 string OptimizeVar::DebugString() const {
@@ -2016,7 +2013,7 @@ class TabuSearch : public Metaheuristic {
   virtual ~TabuSearch() {}
   virtual void EnterSearch();
   virtual void ApplyDecision(Decision* d);
-  virtual bool RejectSolution();
+  virtual bool AtSolution();
   virtual bool LocalOptimum();
   virtual void AcceptNeighbor();
   virtual string DebugString() const {
@@ -2140,7 +2137,7 @@ void TabuSearch::ApplyDecision(Decision* const d) {
   s->AddConstraint(s->MakeNonEquality(objective_, last_));
 }
 
-bool TabuSearch::RejectSolution() {
+bool TabuSearch::AtSolution() {
   int64 val = objective_->Value();
   if (maximize_) {
     best_ = std::max(val, best_);
@@ -2167,7 +2164,7 @@ bool TabuSearch::RejectSolution() {
   }
   assignment_.Store();
 
-  return solver()->CurrentlyInSolve();
+  return true;
 }
 
 bool TabuSearch::LocalOptimum() {
@@ -2247,7 +2244,7 @@ class SimulatedAnnealing : public Metaheuristic {
   virtual ~SimulatedAnnealing() {}
   virtual void EnterSearch();
   virtual void ApplyDecision(Decision* d);
-  virtual bool RejectSolution();
+  virtual bool AtSolution();
   virtual bool LocalOptimum();
   virtual void AcceptNeighbor();
   virtual string DebugString() const {
@@ -2298,7 +2295,7 @@ void SimulatedAnnealing::ApplyDecision(Decision* const d) {
   }
 }
 
-bool SimulatedAnnealing::RejectSolution() {
+bool SimulatedAnnealing::AtSolution() {
   const int64 val = objective_->Value();
   if (maximize_) {
     best_ = std::max(val, best_);
@@ -2306,7 +2303,7 @@ bool SimulatedAnnealing::RejectSolution() {
     best_ = std::min(val, best_);
   }
   current_ = val;
-  return solver()->CurrentlyInSolve();
+  return true;
 }
 
 bool SimulatedAnnealing::LocalOptimum() {
@@ -2458,7 +2455,7 @@ class GuidedLocalSearch : public Metaheuristic {
   virtual void EnterSearch();
   virtual bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
   virtual void ApplyDecision(Decision* d);
-  virtual bool RejectSolution();
+  virtual bool AtSolution();
   virtual bool LocalOptimum();
   virtual int64 AssignmentElementPenalty(const Assignment& assignment,
                                          int index) = 0;
@@ -2591,7 +2588,7 @@ void GuidedLocalSearch::ApplyDecision(Decision* const d) {
   }
 }
 
-bool GuidedLocalSearch::RejectSolution() {
+bool GuidedLocalSearch::AtSolution() {
   current_ = objective_->Value();
   if (maximize_) {
     best_ = std::max(current_, best_);
@@ -2602,7 +2599,7 @@ bool GuidedLocalSearch::RejectSolution() {
     current_ += penalized_objective_->Value();
   }
   assignment_.Store();
-  return solver()->CurrentlyInSolve();
+  return true;
 }
 
 // GLS filtering; compute the penalized value corresponding to the delta and

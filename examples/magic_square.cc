@@ -68,7 +68,8 @@ void MagicSquare(int grid_size) {
                                                Solver::CHOOSE_FIRST_UNBOUND,
                                                Solver::ASSIGN_MIN_VALUE);
 
-  if (solver.Solve(db)) {
+  solver.NewSearch(db);
+  if (solver.NextSolution()) {
     for (int n = 0; n < grid_size; ++n) {
       string output;
       for (int m = 0; m < grid_size; ++m) {   // extract row indices
@@ -81,6 +82,7 @@ void MagicSquare(int grid_size) {
   } else {
     LG << "No solution found!";
   }
+  solver.EndSearch();
 }
 
 }  // namespace operations_research
@@ -96,4 +98,3 @@ int main(int argc, char **argv) {
   }
   return 0;
 }
-

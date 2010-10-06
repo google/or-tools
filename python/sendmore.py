@@ -49,9 +49,12 @@ def main(unused_argv):
 
   solver.Add(solver.AllDifferent(letters, True))
 
-  solver.Solve(solver.Phase(letters, solver.INT_VAR_DEFAULT,
-                            solver.INT_VALUE_DEFAULT))
+  solver.NewSearch(solver.Phase(letters,
+                                solver.INT_VAR_DEFAULT,
+                                solver.INT_VALUE_DEFAULT))
+  solver.NextSolution()
   print letters
+  solver.EndSearch()
 
 
 if __name__ == '__main__':

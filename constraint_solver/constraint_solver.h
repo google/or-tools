@@ -31,15 +31,17 @@
 //   s.AddConstraint(ct_heads);
 //   DecisionBuilder* const db = s.Phase(p, r, Solver::CHOOSE_FIRST_UNBOUND,
 //                                       Solver::ASSIGN_MIN_VALUE);
-//   s.Solve(db);
+//   s.NewSearch(db);
+//   CHECK(s.NextSolution());
 //   LG << "rabbits -> " << r->Value() << ", pheasants -> " << p->Value();
 //   LG << s.DebugString();
+//   s.EndSearch();
 // }
 //
 // which outputs:
 // rabbits -> 8, pheasants -> 12
 // Solver(name = "pheasant",
-//        state = AFTER_SUCCESS,
+//        state = OUTSIDE_SEARCH,
 //        branches = 0,
 //        fails = 0,
 //        decisions = 0
@@ -162,11 +164,11 @@ class Solver {
 
   // This enum represents the state of the solver w.r.t. the search.
   enum SolverState {
-    OUTSIDE_SEARCH,
-    IN_SEARCH,
-    AFTER_SUCCESS,
-    AFTER_FAILURE,
-    PROBLEM_INFEASIBLE
+    OUTSIDE_SEARCH,     // Before search, after search.
+    IN_SEARCH,          // Executing the search code.
+    AT_SOLUTION,        // After successful NextSolution and before EndSearch.
+    NO_MORE_SOLUTIONS,  // After failed NextSolution and before EndSearch.
+    PROBLEM_INFEASIBLE  // After search, the model is infeasible.
   };
 
   enum IntVarStrategy {
@@ -310,9 +312,15 @@ class Solver {
 
   // search
 
-  // Top level solve using a decision builder and up to three search monitors,
-  // usually one for the objective, one for the limits and one to collect
-  // solutions.
+  // Top level solve using a decision builder and up to four search
+  // monitors, usually one for the objective, one for the limits and
+  // one to collect solutions. Please note that the search is
+  // backtracked when the Solve() exits. Thus, solutions and values
+  // should be exported either using a decision builder, or a solution
+  // collector. You can also decompose with a NewSearch(db),
+  // NextSolution(), EndSearch() and access each feasible solution
+  // after each successful call to NextSolution().  Solve() returns
+  // true if the search has found solutions, false otherwise.
   bool Solve(DecisionBuilder* const db, const vector<SearchMonitor*>& monitors);
   bool Solve(DecisionBuilder* const db,
              SearchMonitor* const * monitors, int size);
@@ -1664,6 +1672,7 @@ class Solver {
   LessEqualCstCache* less_equal_var_cst_cache_;
   scoped_ptr<Decision> fail_decision_;
   int constraints_;
+  bool solution_found_;
 
   DISALLOW_COPY_AND_ASSIGN(Solver);
 };
@@ -1918,10 +1927,15 @@ class SearchMonitor : public BaseObject {
   // After the initial propagation.
   virtual void EndInitialPropagation();
 
-  // This method is called when a solution is found. If 'true' is
-  // returned, this last solution is discarded and the search proceeds
-  // with the next one.
-  virtual bool RejectSolution();
+  // This method is called when a solution is found. It asserts of the
+  // solution is valid. A value of false indicate that the solution
+  // should be discarded.
+  virtual bool AcceptSolution();
+
+  // This method is called when a valid solution is found. If the
+  // return value is true, then search will resume after. If the result
+  // is false, then search will stop there..
+  virtual bool AtSolution();
 
   // When the search tree is finished.
   virtual void NoMoreSolutions();
@@ -2207,7 +2221,8 @@ class OptimizeVar : public SearchMonitor {
   virtual void EnterSearch();
   virtual void RestartSearch();
   virtual void RefuteDecision(Decision* d);
-  virtual bool RejectSolution();
+  virtual bool AtSolution();
+  virtual bool AcceptSolution();
   virtual string DebugString() const;
 
   void ApplyBound();

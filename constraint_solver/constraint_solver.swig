@@ -232,6 +232,7 @@ class PyLNS : public BaseLNS {
 %rename (IsMemberVar) MakeIsMemberVar;
 %rename (LastSolutionCollector) MakeLastSolutionCollector;
 %rename (Limit) MakeLimit;
+// Do not define MakeLocalSearchObjectiveFilter
 %rename (LocalSearchPhase) MakeLocalSearchPhase;
 %rename (LocalSearchPhaseParameters) MakeLocalSearchPhaseParameters;
 %rename (LubyRestart) MakeLubyRestart;
@@ -1413,16 +1414,20 @@ class LongResultCallback2 {
 %rename (makeAllSolutionCollector) MakeAllSolutionCollector;
 %rename (makeAllowedAssignment) MakeAllowedAssignments;
 %rename (makeAssignVariableValue) MakeAssignVariableValue;
+%rename (makeAssignVariableValues) MakeAssignVariableValues;
 %rename (makeAssignment) MakeAssignment;
 %rename (makeBestValueSolutionCollector) MakeBestValueSolutionCollector;
 %rename (makeBetweenCt) MakeBetweenCt;
 %rename (makeBoolVar) MakeBoolVar;
+%rename (makeConstantRestart) MakeConstantRestart;
 %rename (makeConvexPiecewiseExpr) MakeConvexPiecewiseExpr;
 %rename (makeCount) MakeCount;
 %rename (makeCustomLimit) MakeCustomLimit;
+%rename (makeDecisionBuilderFromAssignment) MakeDecisionBuilderFromAssignment;
 %rename (makeDistribute) MakeDistribute;
 %rename (makeElement) MakeElement;
 %rename (makeFailDecision) MakeFailDecision;
+%rename (makeFalseConstraint) MakeFalseConstraint;
 %rename (makeFirstSolutionCollector) MakeFirstSolutionCollector;
 %rename (makeFixedDurationIntervalVar) MakeFixedDurationIntervalVar;
 %rename (makeFixedInterval) MakeFixedInterval;
@@ -1432,8 +1437,11 @@ class LongResultCallback2 {
 %rename (makeIsBetweenCt) MakeIsBetweenCt;
 %rename (makeIsDifferentCstCt) MakeIsDifferentCstCt;
 %rename (makeIsDifferentCstVar) MakeIsDifferentCstVar;
+%rename (makeIsDifferentCstCt) MakeIsDifferentCt;
+%rename (makeIsDifferentCstVar) MakeIsDifferentVar;
 %rename (makeIsEqualCstCt) MakeIsEqualCstCt;
 %rename (makeIsEqualCstVar) MakeIsEqualCstVar;
+%rename (makeIsEqualVar) MakeIsEqualCt;
 %rename (makeIsEqualVar) MakeIsEqualVar;
 %rename (makeIsGreaterCstCt) MakeIsGreaterCstCt;
 %rename (makeIsGreaterCstVar) MakeIsGreaterCstVar;
@@ -1449,6 +1457,7 @@ class LongResultCallback2 {
 %rename (makeLimit) MakeLimit;
 %rename (makeLocalSearchObjectiveFilter) MakeLocalSearchObjectiveFilter;
 %rename (makeLocalSearchPhase) MakeLocalSearchPhase;
+%rename (makeLocalSearchPhaseParameters) MakeLocalSearchPhaseParameters;
 %rename (makeLubyRestart) MakeLubyRestart;
 %rename (makeMapDomain) MakeMapDomain;
 %rename (makeMax) MakeMax;
@@ -1459,10 +1468,10 @@ class LongResultCallback2 {
 %rename (makeNoCycle) MakeNoCycle;
 %rename (makeOperator) MakeOperator;
 %rename (makeOptimize) MakeOptimize;
+%rename (makePack) MakePack;
 %rename (makePathCumul) MakePathCumul;
 %rename (makePhase) MakePhase;
 %rename (makeRestoreAssignment) MakeRestoreAssignment;
-%rename (makeSolveOnce) MakeSolveOnce;
 %rename (makeScalProd) MakeScalProd;
 %rename (makeScalProdEquality) MakeScalProdEquality;
 %rename (makeScalProdGreaterOrEqual) MakeScalProdGreaterOrEqual;
@@ -1472,12 +1481,17 @@ class LongResultCallback2 {
 %rename (makeSemiContinuousExpr) MakeSemiContinuousExpr;
 %rename (makeSequence) MakeSequence;
 %rename (makeSimulatedAnnealing) MakeSimulatedAnnealing;
+%rename (makeSolveOnce) MakeSolveOnce;
 %rename (makeStoreAssignment) MakeStoreAssignment;
 %rename (makeSum) MakeSum;
 %rename (makeSumEquality) MakeSumEquality;
 %rename (makeSumGreaterOrEqual) MakeSumGreaterOrEqual;
 %rename (makeSumLessOrEqual) MakeSumLessOrEqual;
+%rename (makeSymmetryManager) MakeSymmetryManager;
 %rename (makeTabuSearch) MakeTabuSearch;
+%rename (makeTemporalDisjunction) MakeTemporalDisjunction;
+%rename (makeTrueConstraint) MakeTrueConstraint;
+// Java only.
 %rename (makeGuidedLocalSearch) MakeGuidedLocalSearch;
 %rename (value) Value;
 

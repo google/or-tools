@@ -47,46 +47,6 @@ static const int kKnownUniqueSolutions = 19;
 
 namespace operations_research {
 
-class MyFirstSolutionCollector : public SolutionCollector {
- public:
-  MyFirstSolutionCollector(Solver* const s, const Assignment* a);
-  virtual ~MyFirstSolutionCollector();
-  virtual void EnterSearch();
-  virtual bool RejectSolution();
-  virtual string DebugString() const;
- private:
-  bool done_;
-};
-
-MyFirstSolutionCollector::MyFirstSolutionCollector(Solver* const s,
-                                                   const Assignment* a)
-    : SolutionCollector(s, a), done_(false) {}
-
-
-MyFirstSolutionCollector::~MyFirstSolutionCollector() {}
-
-void MyFirstSolutionCollector::EnterSearch() {
-  SolutionCollector::EnterSearch();
-  done_ = false;
-}
-
-bool MyFirstSolutionCollector::RejectSolution() {
-  if (!done_) {
-    PushSolution();
-    done_ = true;
-    return false;
-  }
-  return true;
-}
-  
-string MyFirstSolutionCollector::DebugString() const {
-  if (prototype_.get() == NULL) {
-    return "MyFirstSolutionCollector()";
-  } else {
-    return "MyFirstSolutionCollector(" + prototype_->DebugString() + ")";
-  }
-}
-
 class NQueenSymmetry : public SymmetryBreaker {
  public:
   NQueenSymmetry(Solver* const s, const vector<IntVar*>& vars)
@@ -207,7 +167,7 @@ class R270 : public NQueenSymmetry {
 void NQueens(int size) {
   CHECK_GE(size, 1);
   Solver s("nqueens");
-  
+
   // model
   vector<IntVar*> queens;
   for (int i = 0; i < size; ++i) {
@@ -228,7 +188,7 @@ void NQueens(int size) {
   SolutionCollector* const c1 = s.MakeAllSolutionCollector(NULL);
   Assignment* const a = new Assignment(&s);   // store first solution
   a->Add(queens);
-  SolutionCollector* const c2 = s.RevAlloc(new MyFirstSolutionCollector(&s, a));
+  SolutionCollector* const c2 = s.MakeFirstSolutionCollector(a);
   delete a;
   vector<SearchMonitor*> monitors;
   monitors.push_back(c1);
@@ -291,7 +251,6 @@ void NQueens(int size) {
     }
   }
 }
-  
 }   // namespace operations_research
 
 int main(int argc, char **argv) {

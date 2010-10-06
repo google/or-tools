@@ -759,7 +759,8 @@ class Search {
   void EndFail();
   void BeginInitialPropagation();
   void EndInitialPropagation();
-  bool RejectSolution();
+  bool AtSolution();
+  bool AcceptSolution();
   void NoMoreSolutions();
   bool LocalOptimum();
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
@@ -1053,16 +1054,28 @@ void Search::EndInitialPropagation() {
   }
 }
 
-bool Search::RejectSolution() {
-  bool res = false;
+bool Search::AcceptSolution() {
+  bool valid = true;
   for (vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
-    if ((*it)->RejectSolution()) {
-      res = true;
+    if (!(*it)->AcceptSolution()) {
+      valid = false;
     }
   }
-  return res;
+  return valid;
+}
+
+bool Search::AtSolution() {
+  bool should_continue = false;
+  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+       it != monitors_.end();
+       ++it) {
+    if ((*it)->AtSolution()) {
+      should_continue = true;
+    }
+  }
+  return should_continue;
 }
 
 void Search::NoMoreSolutions() {
@@ -1090,7 +1103,9 @@ bool Search::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
   for (vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
-    accept = accept && (*it)->AcceptDelta(delta, deltadelta);
+    if (!(*it)->AcceptDelta(delta, deltadelta)) {
+      accept = false;
+    }
   }
   return accept;
 }
@@ -1177,7 +1192,8 @@ Solver::Solver(const string& name)
       greater_equal_var_cst_cache_(NULL),
       less_equal_var_cst_cache_(NULL),
       fail_decision_(new FailDecision()),
-      constraints_(0) {
+      constraints_(0),
+      solution_found_(false) {
   for (int i = 0; i < kNumPriorities; ++i) {
     demon_runs_[i] = 0;
   }
@@ -1216,11 +1232,11 @@ string Solver::DebugString() const {
     case IN_SEARCH:
       out += "IN_SEARCH";
       break;
-    case AFTER_SUCCESS:
-      out += "AFTER_SUCCESS";
+    case AT_SOLUTION:
+      out += "AT_SOLUTION";
       break;
-    case AFTER_FAILURE:
-      out += "AFTER_FAILURE";
+    case NO_MORE_SOLUTIONS:
+      out += "NO_MORE_SOLUTIONS";
       break;
     case PROBLEM_INFEASIBLE:
       out += "PROBLEM_INFEASIBLE";
@@ -1327,10 +1343,10 @@ void Solver::check_alloc_state() {
   switch (state_) {
     case OUTSIDE_SEARCH:
     case IN_SEARCH:
-    case AFTER_FAILURE:
+    case NO_MORE_SOLUTIONS:
     case PROBLEM_INFEASIBLE:
       break;
-    case AFTER_SUCCESS:
+    case AT_SOLUTION:
       LOG(FATAL) << "allocating at a leaf node";
   }
 }
@@ -1466,9 +1482,9 @@ bool Solver::Solve(DecisionBuilder* const db,
                    int size) {
   NewSearch(db, monitors, size);
   searches_.back()->set_created_by_solve(true);  // Overwrites default.
-  bool res = NextSolution();
+  NextSolution();
   EndSearch();
-  return res;
+  return solution_found_;
 }
 
 void Solver::NewSearch(DecisionBuilder* const db,
@@ -1534,6 +1550,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
 
   BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
   state_ = OUTSIDE_SEARCH;
+  solution_found_ = false;
 
   // Push monitors and enter search.
   for (int i = 0; i < size; ++i) {
@@ -1611,7 +1628,7 @@ void Solver::RestartSearch() {
   Search* const search = searches_.back();
   CHECK_NE(0, search->sentinel_pushed_);
   if (searches_.size() == 1) {  // top level.
-    CHECK(state_ == AFTER_SUCCESS || state_ == AFTER_FAILURE);
+    CHECK(state_ == AT_SOLUTION || state_ == NO_MORE_SOLUTIONS);
     if (search->sentinel_pushed_ > 1) {
       BacktrackToSentinel(ROOT_NODE_SENTINEL);
     }
@@ -1727,11 +1744,11 @@ bool Solver::NextSolution() {
     switch (state_) {
       case PROBLEM_INFEASIBLE:
         return false;
-      case AFTER_FAILURE:
+      case NO_MORE_SOLUTIONS:
         return false;
-      case AFTER_SUCCESS: {
+      case AT_SOLUTION: {
         if (BacktrackOneLevel(&fd)) {  // No more solutions.
-          state_ = AFTER_FAILURE;
+          state_ = NO_MORE_SOLUTIONS;
           return false;
         }
         state_ = IN_SEARCH;
@@ -1822,11 +1839,17 @@ bool Solver::NextSolution() {
         }
       }
       search->IncrementSolutionCounter();
-      if (search->RejectSolution()) {
+      if (search->AcceptSolution()) {
+        solution_found_ = true;
+        if (!search->AtSolution() || !CurrentlyInSolve()) {
+          result = true;
+          finish = true;
+        } else {
+          Fail();
+        }
+      } else {
         Fail();
       }
-      result = true;
-      finish = true;
     } CP_ON_FAIL {
       queue_->Clear();
       if (search->should_finish()) {
@@ -1860,7 +1883,7 @@ bool Solver::NextSolution() {
     search->ClearBuffer();
   }
   if (top_level) {  // Manage state after NextSolution().
-    state_ = (result ? AFTER_SUCCESS : AFTER_FAILURE);
+    state_ = (result ? AT_SOLUTION : NO_MORE_SOLUTIONS);
   }
   return result;
 }
@@ -1868,12 +1891,10 @@ bool Solver::NextSolution() {
 void Solver::EndSearch() {
   CHECK_EQ(1, searches_.size());
   Search* const search = searches_.back();
-  if (state_ != AFTER_SUCCESS) {  // We keep the state of the solver in case
-    // of success for easy access of values of variables.
-    BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
-  }
+  BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
   search->ExitSearch();
   search->Clear();
+  state_ = OUTSIDE_SEARCH;
 }
 
 bool Solver::CheckAssignment(Assignment* const solution) {
@@ -1922,14 +1943,14 @@ bool Solver::CheckAssignment(Assignment* const solution) {
 }
 
 bool Solver::NestedSolve(DecisionBuilder* const db,
-                   bool restore,
-                   const vector<SearchMonitor*>& monitors) {
+                         bool restore,
+                         const vector<SearchMonitor*>& monitors) {
   return NestedSolve(db, restore,  monitors.data(), monitors.size());
 }
 
 bool Solver::NestedSolve(DecisionBuilder* const db,
-                   bool restore,
-                   SearchMonitor* const m1) {
+                         bool restore,
+                         SearchMonitor* const m1) {
   vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   return NestedSolve(db, restore, monitors.data(), monitors.size());
@@ -1940,9 +1961,9 @@ bool Solver::NestedSolve(DecisionBuilder* const db, bool restore) {
 }
 
 bool Solver::NestedSolve(DecisionBuilder* const db,
-                   bool restore,
-                   SearchMonitor* const m1,
-                   SearchMonitor* const m2) {
+                         bool restore,
+                         SearchMonitor* const m1,
+                         SearchMonitor* const m2) {
   vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
@@ -1950,10 +1971,10 @@ bool Solver::NestedSolve(DecisionBuilder* const db,
 }
 
 bool Solver::NestedSolve(DecisionBuilder* const db,
-                   bool restore,
-                   SearchMonitor* const m1,
-                   SearchMonitor* const m2,
-                   SearchMonitor* const m3) {
+                         bool restore,
+                         SearchMonitor* const m1,
+                         SearchMonitor* const m2,
+                         SearchMonitor* const m3) {
   vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
@@ -1965,14 +1986,15 @@ bool Solver::NestedSolve(DecisionBuilder* const db,
                          bool restore,
                          SearchMonitor* const * monitors,
                          int size) {
-  scoped_ptr<Search> new_search(new Search(this));
+  Search new_search(this);
   for (int i = 0; i < size; ++i) {
-    new_search->push_monitor(monitors[i]);
+    new_search.push_monitor(monitors[i]);
   }
-  searches_.push_back(new_search.get());
-  new_search->EnterSearch();
+  searches_.push_back(&new_search);
+  searches_.back()->set_created_by_solve(true);  // Overwrites default.
+  new_search.EnterSearch();
   PushSentinel(INITIAL_SEARCH_SENTINEL);
-  new_search->set_decision_builder(db);
+  new_search.set_decision_builder(db);
   bool res = NextSolution();
   if (res) {
     if (restore) {
@@ -1981,8 +2003,8 @@ bool Solver::NestedSolve(DecisionBuilder* const db,
       JumpToSentinelWhenNested();
     }
   }
-  new_search->ExitSearch();
-  new_search->Clear();
+  new_search.ExitSearch();
+  new_search.Clear();
   searches_.pop_back();
   return res;
 }
@@ -2067,7 +2089,8 @@ void SearchMonitor::BeginFail() {}
 void SearchMonitor::EndFail() {}
 void SearchMonitor::BeginInitialPropagation() {}
 void SearchMonitor::EndInitialPropagation() {}
-bool SearchMonitor::RejectSolution() { return false; }
+bool SearchMonitor::AcceptSolution() { return true; }
+bool SearchMonitor::AtSolution() { return false; }
 void SearchMonitor::NoMoreSolutions() {}
 bool SearchMonitor::LocalOptimum() { return false; }
 bool SearchMonitor::AcceptDelta(Assignment* delta,

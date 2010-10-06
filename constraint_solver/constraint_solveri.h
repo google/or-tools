@@ -416,21 +416,29 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
  public:
   IntVarLocalSearchOperator(const IntVar* const* vars, int size);
   virtual ~IntVarLocalSearchOperator();
+  // This method should not be overridden. Override OnStart() instead which is
+  // called before exiting this method.
   virtual void Start(const Assignment* assignment);
   virtual bool IsIncremental() const { return false; }
   int Size() const { return size_; }
+  // Returns the value in the current assignment of the variable of given index.
   int64 Value(int64 index) const {
     DCHECK_LT(index, size_);
     return values_[index];
   }
+  // Returns the variable of given index.
+  IntVar* Var(int64 index) const { return vars_[index]; }
   virtual bool SkipUnchanged(int index) const { return false; }
  protected:
+  // Called by Start() after synchronizing the operator with the current
+  // assignment. Should be overridden instead of Start() to avoid calling
+  // IntVarLocalSearchOperator::Start explicitly.
+  virtual void OnStart() {}
   int64 OldValue(int64 index) const { return old_values_[index]; }
   void SetValue(int64 index, int64 value);
   bool Activated(int64 index) const;
   void Activate(int64 index);
   void Deactivate(int64 index);
-  IntVar* Var(int64 index) const { return vars_[index]; }
   bool ApplyChanges(Assignment* delta, Assignment* deltadelta) const;
   void RevertChanges(bool incremental);
   void AddVars(const IntVar* const* vars, int size);
@@ -454,7 +462,7 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
 // This is the base class for building an LNS operator. An LNS fragment is a
 // collection of variables which will be relaxed. Fragments are build with
 // NextFragment(), which returns false if there are no more fragments to build.
-// Optionally one can redefine InitFragments, which is called from
+// Optionally one can override InitFragments, which is called from
 // LocalSearchOperator::Start to initialize fragment data.
 //
 // Here's a sample relaxing each variable:
@@ -483,10 +491,13 @@ class BaseLNS : public IntVarLocalSearchOperator {
  public:
   BaseLNS(const IntVar* const* vars, int size);
   virtual ~BaseLNS();
+  // This method should not be overridden (it calls NextFragment()).
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
-  virtual void Start(const Assignment* assignment);
   virtual void InitFragments();
   virtual bool NextFragment(vector<int>* fragment) = 0;
+ protected:
+  // This method should not be overridden. Override InitFragments() instead.
+  virtual void OnStart();
 };
 
 // ----- ChangeValue Operators -----
@@ -502,7 +513,8 @@ class ChangeValue : public IntVarLocalSearchOperator {
   virtual ~ChangeValue();
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual int64 ModifyValue(int64 index, int64 value) = 0;
-  virtual void Start(const Assignment* assignment);
+ protected:
+  virtual void OnStart();
  private:
   int index_;
 };
@@ -520,7 +532,7 @@ class ChangeValue : public IntVarLocalSearchOperator {
 // - path iterators: operators need a given number of nodes to define a
 //   neighbor; this class provides the iteration on a given number of (base)
 //   nodes which can be used to define a neighbor (through the BaseNode method)
-// Subclasses only need to redefine MakeNeighbor to create neighbors using
+// Subclasses only need to override MakeNeighbor to create neighbors using
 // the services above (no direct manipulation of assignments).
 
 class PathOperator : public IntVarLocalSearchOperator {
@@ -530,40 +542,44 @@ class PathOperator : public IntVarLocalSearchOperator {
                int size,
                int number_of_base_nodes);
   virtual ~PathOperator() {}
-  virtual void Start(const Assignment* assignement);
   virtual bool MakeNeighbor() = 0;
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
+
+  // TODO(user): Make the following methods protected.
   virtual bool SkipUnchanged(int index) const;
+
+  // Returns the index of the node after the node of index node_index in the
+  // current assignment.
+  int64 Next(int64 node_index) const {
+    DCHECK(!IsPathEnd(node_index));
+    return Value(node_index);
+  }
+
+  // Returns the index of the path to which the node of index node_index
+  // belongs in the current assignment.
+  int64 Path(int64 node_index) const {
+    return ignore_path_vars_ ? 0LL : Value(node_index + number_of_nexts_);
+  }
+
+  // Number of next variables.
+  int number_of_nexts() const { return number_of_nexts_; }
  protected:
-  // Returns the index of the variable corresponding to the ith base node
+  virtual void OnStart();
+  // Called by OnStart() after initializing node information. Should be
+  // overriden instead of OnStart() to avoid calling PathOperator::OnStart
+  // explicitly.
+  virtual void OnNodeInitialization() {}
+  // Returns the index of the variable corresponding to the ith base node.
   int64 BaseNode(int i) const { return base_nodes_[i]; }
   int64 StartNode(int i) const { return path_starts_[base_paths_[i]]; }
 
-  // Returns the index of the node after i in the current assignment
-  int64 Next(int64 i) const {
-    DCHECK(!IsPathEnd(i));
-    return Value(i);
+  int64 OldNext(int64 node_index) const {
+    DCHECK(!IsPathEnd(node_index));
+    return OldValue(node_index);
   }
 
-  int64 OldNext(int64 i) const {
-    DCHECK(!IsPathEnd(i));
-    return OldValue(i);
-  }
-
-  int64 Path(int64 i) const {
-    if (ignore_path_vars_) {
-      return 0;
-    } else {
-      return Value(i + number_of_nexts_);
-    }
-  }
-
-  int64 OldPath(int64 i) const {
-    if (ignore_path_vars_) {
-      return 0;
-    } else {
-      return OldValue(i + number_of_nexts_);
-    }
+  int64 OldPath(int64 node_index) const {
+    return ignore_path_vars_ ? 0LL : OldValue(node_index + number_of_nexts_);
   }
 
   // Moves the chain starting after the node before_chain and ending at the node
@@ -739,7 +755,7 @@ class SearchLog : public SearchMonitor {
   virtual ~SearchLog();
   virtual void EnterSearch();
   virtual void ExitSearch();
-  virtual bool RejectSolution();
+  virtual bool AtSolution();
   virtual void BeginFail();
   virtual void NoMoreSolutions();
   virtual void ApplyDecision(Decision* const decision);
@@ -749,7 +765,7 @@ class SearchLog : public SearchMonitor {
   virtual void BeginInitialPropagation();
   virtual void EndInitialPropagation();
  protected:
-  /** Bottleneck function used for all UI related output. */
+  /* Bottleneck function used for all UI related output. */
   virtual void OutputLine(const string& line);
  private:
   static string MemoryUsage();

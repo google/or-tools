@@ -103,9 +103,10 @@ def main(unused_argv):
               tea, coffee, water, milk, fruit_juice,
               red, green, yellow, blue, ivory]
 
-  if solver.Solve(solver.Phase(all_vars,
-                               solver.INT_VAR_DEFAULT,
-                               solver.INT_VALUE_DEFAULT)):
+  solver.NewSearch(solver.Phase(all_vars,
+                                solver.INT_VAR_DEFAULT,
+                                solver.INT_VALUE_DEFAULT))
+  if solver.NextSolution():
     people = [englishman, spaniard, japanese, ukrainian, norwegian]
     water_drinker = [p for p in people if p.Value() == water.Value()][0]
     zebra_owner = [p for p in people if p.Value() == zebra.Value()][0]
@@ -113,6 +114,7 @@ def main(unused_argv):
     print 'The %s owns the zebra.' % zebra_owner.name()
   else:
     print 'No solutions to the zebra problem, this is unusual!'
+  solver.EndSearch()
 
 
 if __name__ == '__main__':

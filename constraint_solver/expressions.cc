@@ -25,7 +25,9 @@
 #include "util/bitset.h"
 
 DEFINE_bool(cp_disable_expression_optimization, false,
-            "disable special optimization when creating expressions");
+            "Disable special optimization when creating expressions.");
+DEFINE_bool(cp_share_int_consts, true,
+            "Share IntConst's with the same value.");
 
 #if defined(_MSC_VER)
 #pragma warning(disable : 4351 4355)
@@ -1643,7 +1645,11 @@ IntVar* BuildDomainIntVar(Solver* const s, const int64* const values, int size,
 
 
 IntVar* Solver::MakeIntConst(int64 val, const string& name) {
-  if (name.empty() &&
+  // If IntConst is going to be named after its creation,
+  // cp_share_int_consts should be set to false otherwise names can potentially
+  // be overwritten.
+  if (FLAGS_cp_share_int_consts &&
+      name.empty() &&
       val >= MIN_CACHED_INT_CONST && val <= MAX_CACHED_INT_CONST) {
     return cached_constants_[val - MIN_CACHED_INT_CONST];
   }
@@ -1651,10 +1657,7 @@ IntVar* Solver::MakeIntConst(int64 val, const string& name) {
 }
 
 IntVar* Solver::MakeIntConst(int64 val) {
-  if (val >= MIN_CACHED_INT_CONST && val <= MAX_CACHED_INT_CONST) {
-    return cached_constants_[val - MIN_CACHED_INT_CONST];
-  }
-  return RevAlloc(new IntConst(this, val, ""));
+  return MakeIntConst(val, "");
 }
 
 void Solver::InitCachedIntConstants() {

@@ -43,13 +43,14 @@ def main():
                     solver.INT_VALUE_DEFAULT)
 
   # And solve.
-  solver.Solve(db)
+  solver.NewSearch(db)
+  solver.NextSolution()
 
   # Display output.
-  print solver
   print pheasant
   print rabbit
-
+  solver.EndSearch()
+  print solver
 
 if __name__ == "__main__":
   main()

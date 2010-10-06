@@ -27,17 +27,17 @@
 namespace operations_research {
 
 void Cryptoarithmetics() {
-  scoped_ptr<Solver> solver(new Solver("cryptarithm"));
+  Solver solver("cryptarithm");
 
   // model with carry
-  IntVar* s = solver->MakeIntVar(1, 9, "s");
-  IntVar* m = solver->MakeIntVar(1, 9, "m");
-  IntVar* o = solver->MakeIntVar(0, 9, "o");
-  IntVar* e = solver->MakeIntVar(0, 9, "e");
-  IntVar* n = solver->MakeIntVar(0, 9, "n");
-  IntVar* d = solver->MakeIntVar(0, 9, "d");
-  IntVar* r = solver->MakeIntVar(0, 9, "r");
-  IntVar* y = solver->MakeIntVar(0, 9, "y");
+  IntVar* s = solver.MakeIntVar(1, 9, "s");
+  IntVar* m = solver.MakeIntVar(1, 9, "m");
+  IntVar* o = solver.MakeIntVar(0, 9, "o");
+  IntVar* e = solver.MakeIntVar(0, 9, "e");
+  IntVar* n = solver.MakeIntVar(0, 9, "n");
+  IntVar* d = solver.MakeIntVar(0, 9, "d");
+  IntVar* r = solver.MakeIntVar(0, 9, "r");
+  IntVar* y = solver.MakeIntVar(0, 9, "y");
 
   vector<IntVar*> letters;
   letters.push_back(s);
@@ -49,35 +49,35 @@ void Cryptoarithmetics() {
   letters.push_back(r);
   letters.push_back(y);
 
-  solver->AddConstraint(solver->MakeAllDifferent(letters, false));
+  solver.AddConstraint(solver.MakeAllDifferent(letters, false));
 
   // carry variables
-  IntVar* c1 = solver->MakeIntVar(0, 1, "c1");
-  IntVar* c2 = solver->MakeIntVar(0, 1, "c2");
-  IntVar* c3 = solver->MakeIntVar(0, 1, "c3");
+  IntVar* c1 = solver.MakeIntVar(0, 1, "c1");
+  IntVar* c2 = solver.MakeIntVar(0, 1, "c2");
+  IntVar* c3 = solver.MakeIntVar(0, 1, "c3");
 
   // initial constraint is separated into four small constraints
-  IntVar* v1 = solver->MakeSum(e, d)->Var();
-  IntVar* v2 = solver->MakeSum(y, solver->MakeProd(c1, 10))->Var();
-  solver->AddConstraint(solver->MakeEquality(v1, v2));
+  IntVar* v1 = solver.MakeSum(e, d)->Var();
+  IntVar* v2 = solver.MakeSum(y, solver.MakeProd(c1, 10))->Var();
+  solver.AddConstraint(solver.MakeEquality(v1, v2));
 
-  v1 = solver->MakeSum(solver->MakeSum(c1, n), r)->Var();
-  v2 = solver->MakeSum(e, solver->MakeProd(c2, 10))->Var();
-  solver->AddConstraint(solver->MakeEquality(v1, v2));
+  v1 = solver.MakeSum(solver.MakeSum(c1, n), r)->Var();
+  v2 = solver.MakeSum(e, solver.MakeProd(c2, 10))->Var();
+  solver.AddConstraint(solver.MakeEquality(v1, v2));
 
-  v1 = solver->MakeSum(solver->MakeSum(c2, e), o)->Var();
-  v2 = solver->MakeSum(n, solver->MakeProd(c3, 10))->Var();
-  solver->AddConstraint(solver->MakeEquality(v1, v2));
+  v1 = solver.MakeSum(solver.MakeSum(c2, e), o)->Var();
+  v2 = solver.MakeSum(n, solver.MakeProd(c3, 10))->Var();
+  solver.AddConstraint(solver.MakeEquality(v1, v2));
 
-  v1 = solver->MakeSum(solver->MakeSum(c3, s), m)->Var();
-  v2 = solver->MakeSum(o, solver->MakeProd(m, 10))->Var();
-  solver->AddConstraint(solver->MakeEquality(v1, v2));
+  v1 = solver.MakeSum(solver.MakeSum(c3, s), m)->Var();
+  v2 = solver.MakeSum(o, solver.MakeProd(m, 10))->Var();
+  solver.AddConstraint(solver.MakeEquality(v1, v2));
 
-  DecisionBuilder* const db = solver->MakePhase(letters,
-                                                Solver::CHOOSE_FIRST_UNBOUND,
-                                                Solver::ASSIGN_MIN_VALUE);
-
-  if (solver->Solve(db)) {
+  DecisionBuilder* const db = solver.MakePhase(letters,
+                                               Solver::CHOOSE_FIRST_UNBOUND,
+                                               Solver::ASSIGN_MIN_VALUE);
+  solver.NewSearch(db);
+  if (solver.NextSolution()) {
     CHECK_EQ(s->Value(), 9);
     CHECK_EQ(m->Value(), 1);
     CHECK_EQ(o->Value(), 0);
@@ -96,8 +96,9 @@ void Cryptoarithmetics() {
     LG << "R=" << r->Value();
     LG << "Y=" << y->Value();
   } else {
-    LG << "Cannot solve problem: number of failures " << solver->failures();
+    LG << "Cannot solve problem: number of failures " << solver.failures();
   }
+  solver.EndSearch();
 }
 
 }   // namespace operations_research
