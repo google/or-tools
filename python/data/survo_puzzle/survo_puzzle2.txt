@@ -1,0 +1,8 @@
+2
+3
+9,12
+9, 7, 5
+0, 0, 3
+0, 6, 0
+# http://en.wikipedia.org/wiki/Survo_Puzzle, second example
+# difficulty 0

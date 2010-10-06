@@ -1,0 +1,10 @@
+4
+4
+51,36,32,17
+51,42,26,17
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+0, 0, 0, 0
+# http://en.wikipedia.org/wiki/Survo_Puzzle, under "Swapping method"
+# (open puzzle)

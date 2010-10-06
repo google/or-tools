@@ -1,0 +1,8 @@
+3
+4
+30,18,30
+27,16,10,25
+0,6,0,0
+8,0,0,0
+0,0,3,0
+# http://en.wikipedia.org/wiki/Survo_Puzzle, first example

@@ -1,0 +1,19 @@
+10
+. . . . . . . . . 1 
+. . . . . . . . 1 . 
+. . . . . . . 1 . . 
+. . . . . . 2 . . . 
+. . . . . 1 . . . . 
+. . . . 1 . . . . . 
+. . . 1 . . . . . . 
+. . 1 . . . . . . . 
+. 1 . . . . . . . . 
+1 . . . . . . . . . 
+% Quasigroup completion problem. 
+% This problem file is used by 
+% http://www.hakank.org/comet/quasigroup_completion.co
+% 
+% Problem from http://www.cs.cornell.edu/gomes/QUASIdemo.html
+% (n = 10)
+% Pattern #5
+% Note: There are no solutions to this problem.

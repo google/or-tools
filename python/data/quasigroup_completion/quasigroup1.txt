@@ -1,0 +1,18 @@
+5
+1 . . . 4
+. 5 . . .
+4 . . 2 .
+. 4 . . .
+. . 5 . 1
+% Quasigroup completion problem. 
+% This problem file is used by 
+% http://www.hakank.org/comet/quasigroup_completion.co
+% 
+% Example from Ruben Martins and Inès Lynce
+% Breaking Local Symmetries in Quasigroup Completion Problems, page 3
+% The solution is unique:
+% 1 3 2 5 4
+% 2 5 4 1 3
+% 4 1 3 2 5
+% 5 4 1 3 2
+% 3 2 5 4 1

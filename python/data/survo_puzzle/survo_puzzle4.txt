@@ -1,0 +1,10 @@
+3
+4
+24,15,39
+21,10,18,29
+7, 0, 5, 0
+0, 1, 0, 0
+0, 0, 11, 0
+# http://en.wikipedia.org/wiki/Survo_Puzzle, third example
+# difficulty 150 ("open puzzle", i.e. no hints)
+# It's an unique solution.

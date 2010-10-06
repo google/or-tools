@@ -1,0 +1,12 @@
+4
+1 . . .
+. . . 3
+3 . . .
+. . . 1
+% Quasigroup completion problem. 
+% This problem file is used by 
+% http://www.hakank.org/comet/quasigroup_completion.co
+% 
+% Example from Global Constraint Catalogue
+% http://www.emn.fr/x-info/sdemasse/gccat/sec2.7.108.html
+% 12 solutions.

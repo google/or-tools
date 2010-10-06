@@ -1,0 +1,11 @@
+4
+0 1 0 0
+0 0 2 0
+0 3 0 0
+0 0 0 4
+% Quasigroup completion problem. 
+% This problem file is used by 
+% http://www.hakank.org/comet/quasigroup_completion.co
+% 
+% Example from Gomes & Shmoys, page 7
+% Two solutions.

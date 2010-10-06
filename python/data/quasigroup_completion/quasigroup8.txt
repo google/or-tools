@@ -1,0 +1,23 @@
+10
+1 . . . . . . . . . 
+2 1 . . . . . . . 4 
+3 2 1 . . . . . 4 . 
+. 3 2 1 . . . 4 . . 
+. . 3 2 1 . 4 . . . 
+. . . 3 2 1 . . . . 
+. . . . 3 2 1 . . . 
+. . . 4 . 3 2 1 . . 
+. . 4 . . . 3 2 1 . 
+. 4 . . . . . 3 2 1
+% Quasigroup completion problem. 
+% This problem file is used by 
+% http://www.hakank.org/comet/quasigroup_completion.co
+% 
+% Problem from http://www.cs.cornell.edu/gomes/QUASIdemo.html
+% (n = 10)
+% Pattern #4. 
+%  dark red   = 1
+%  light blue = 2
+%  dark blue  = 3
+%  light red  = 4
+% Note: There are no solutions to this problem.
