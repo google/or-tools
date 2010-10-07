@@ -16,18 +16,18 @@
 
   Set partition and set covering in Google CP Solver.
 
-  Example from the Swedish book 
-  Lundgren, Roennqvist, Vaebrand 
-  'Optimeringslaera' (translation: 'Optimization theory'), 
+  Example from the Swedish book
+  Lundgren, Roennqvist, Vaebrand
+  'Optimeringslaera' (translation: 'Optimization theory'),
   page 408.
 
   * Set partition:
-    We want to minimize the cost of the alternatives which covers all the 
-    objects, i.e. all objects must be choosen. The requirement is than an 
+    We want to minimize the cost of the alternatives which covers all the
+    objects, i.e. all objects must be choosen. The requirement is than an
     object may be selected _exactly_ once.
 
     Note: This is 1-based representation
- 
+
     Alternative        Cost        Object
     1                  19           1,6
     2                  16           2,6,8
@@ -39,13 +39,13 @@
     8                  17           4,5,8
     9                  16           3,6,8
     10                 15           1,6,7
-    
-    The problem has a unique solution of z = 49 where alternatives 
+
+    The problem has a unique solution of z = 49 where alternatives
          3, 5, and 9
-    is selected. 
- 
+    is selected.
+
   * Set covering:
-    If we, however, allow that an object is selected _more than one time_, 
+    If we, however, allow that an object is selected _more than one time_,
     then the solution is z = 45 (i.e. less cost than the first problem),
     and the alternatives
          4, 8, and 10
@@ -84,7 +84,7 @@ def main(set_partition=1):
 
     # the alternatives, and their objects
     a = [
-      # 1 2 3 4 5 6 7 8    the objects 
+      # 1 2 3 4 5 6 7 8    the objects
         [1,0,0,0,0,1,0,0],  # alternative 1
         [0,1,0,0,0,1,0,1],  # alternative 2
         [1,0,0,1,0,0,1,0],  # alternative 3
@@ -100,7 +100,7 @@ def main(set_partition=1):
     #
     # declare variables
     #
-    x = [solver.IntVar(0,1, 'x[%i]' % i) for i in range(num_alternatives)]
+    x = [solver.IntVar(0, 1, 'x[%i]' % i) for i in range(num_alternatives)]
 
     #
     # constraints
@@ -110,15 +110,19 @@ def main(set_partition=1):
     # to be minimized
     z = solver.ScalProd(x,costs)
 
-    # 
+    #
     for j in range(num_objects):
         if set_partition == 1:
-            solver.Add(solver.Sum([x[i]*a[i][j]
-                               for i in range(num_alternatives)]) == 1)
+          solver.Add(
+              solver.SumGreaterOrEqual([x[i] * a[i][j]
+                                        for i in range(num_alternatives)],
+                                       1))
         else:
-            solver.Add(solver.Sum([x[i]*a[i][j]
-                               for i in range(num_alternatives)]) >= 1)
-            
+            solver.Add(
+                solver.SumGreaterOrEqual([x[i] * a[i][j]
+                                          for i in range(num_alternatives)],
+                                         1))
+
 
     objective = solver.Minimize(z, 1)
 
@@ -136,7 +140,7 @@ def main(set_partition=1):
                  [collector, objective])
 
     print "z:", collector.objective_value(0)
-    print "selected alternatives:", [i+1 for i in range(num_alternatives)
+    print "selected alternatives:", [i + 1 for i in range(num_alternatives)
                  if collector.Value(0, x[i]) == 1]
 
     print "failures:", solver.failures()
@@ -147,6 +151,6 @@ def main(set_partition=1):
 if __name__ == '__main__':
     print "Set partition:"
     main(1)
-    
+
     print "\nSet covering:"
     main(0)

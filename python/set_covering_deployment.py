@@ -19,11 +19,11 @@
   From http://mathworld.wolfram.com/SetCoveringDeployment.html
   '''
   Set covering deployment (sometimes written 'set-covering deployment'
-  and abbreviated SCDP for 'set covering deployment problem') seeks 
-  an optimal stationing of troops in a set of regions so that a 
-  relatively small number of troop units can control a large 
-  geographic region. ReVelle and Rosing (2000) first described 
-  this in a study of Emperor Constantine the Great's mobile field 
+  and abbreviated SCDP for 'set covering deployment problem') seeks
+  an optimal stationing of troops in a set of regions so that a
+  relatively small number of troop units can control a large
+  geographic region. ReVelle and Rosing (2000) first described
+  this in a study of Emperor Constantine the Great's mobile field
   army placements to secure the Roman Empire.
   '''
 
@@ -49,13 +49,19 @@ def main():
     #
     # data
     #
-    
-    n = 8 # number of countries
-    countries = ["Alexandria", "Asia Minor", "Britain", "Byzantium", "Gaul", "Iberia", "Rome", "Tunis"];
 
+    countries = ["Alexandria",
+                 "Asia Minor",
+                 "Britain",
+                 "Byzantium",
+                 "Gaul",
+                 "Iberia",
+                 "Rome",
+                 "Tunis"]
+    n = len(countries)
 
     # the incidence matrix (neighbours)
-    mat = [ 
+    mat = [
         [0, 1, 0, 1, 0, 0, 1, 1],
         [1, 0, 0, 1, 0, 0, 0, 0],
         [0, 0, 0, 0, 1, 1, 0, 0],
@@ -72,10 +78,10 @@ def main():
     #
 
     # First army
-    X = [solver.IntVar(0,1, 'X[%i]' % i) for i in range(n)]
-    
+    X = [solver.IntVar(0, 1, 'X[%i]' % i) for i in range(n)]
+
     # Second (reserv) army
-    Y = [solver.IntVar(0,1, 'Y[%i]' % i) for i in range(n)]    
+    Y = [solver.IntVar(0, 1, 'Y[%i]' % i) for i in range(n)]
 
     #
     # constraints
@@ -96,7 +102,8 @@ def main():
     # Constraint 2: There should always be an backup army near every city
     #
     for i in range(n):
-        solver.Add((X[i] + solver.Sum([Y[j] for j in range(n) if mat[i][j] == 1])) >= 1)
+      neighbors = solver.Sum([Y[j] for j in range(n) if mat[i][j] == 1])
+      solver.Add(X[i] + neighbors >= 1)
 
     objective = solver.Minimize(num_armies, 1)
 
@@ -117,7 +124,7 @@ def main():
 
     print "num_armies:", collector.objective_value(0)
     print "X:", [collector.Value(0, X[i]) for i in range(n)]
-    print "Y:", [collector.Value(0, Y[i]) for i in range(n)]    
+    print "Y:", [collector.Value(0, Y[i]) for i in range(n)]
 
     for i in range(n):
         if collector.Value(0, X[i]) == 1:

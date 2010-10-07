@@ -34,7 +34,7 @@
 from constraint_solver import pywrapcp
 
 def main(unused_argv):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Set covering')
 
@@ -64,11 +64,11 @@ def main(unused_argv):
 
     # objective to minimize
     z = solver.Sum(x)
-    
+
     # ensure that all cities are covered
     for i in range(num_cities):
         b = [x[j] for j in range(num_cities) if distance[i][j] <= min_distance]
-        solver.Add(solver.Sum(b) >= 1)
+        solver.Add(solver.SumGreaterOrEqual(b, 1))
 
     objective = solver.Minimize(z, 1)
 
@@ -87,7 +87,7 @@ def main(unused_argv):
 
     print "z:", collector.objective_value(0)
     print "x:", [collector.Value(0, x[i]) for i in range(num_cities)]
-    
+
     print "failures:", solver.failures()
     print "branches:", solver.branches()
     print "wall_time:", solver.wall_time()

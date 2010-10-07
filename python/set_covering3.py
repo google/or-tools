@@ -16,11 +16,11 @@
 
   Set covering in Google CP Solver.
 
-  Problem from 
+  Problem from
   Katta G. Murty: 'Optimization Models for Decision Making', page 302f
   http://ioe.engin.umich.edu/people/fac/books/murty/opti_model/junior-7.pdf
- 
-  10 senators making a committee, where there must at least be one 
+
+  10 senators making a committee, where there must at least be one
   representative from each group:
   group:        senators:
   southern      1 2 3 4 5
@@ -49,7 +49,7 @@
 from constraint_solver import pywrapcp
 
 def main(unused_argv):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Set covering')
 
@@ -58,7 +58,7 @@ def main(unused_argv):
     #
     num_groups = 6
     num_senators = 10
-    
+
     # which group does a senator belong to?
     belongs = [
         [1, 1, 1, 1, 1, 0, 0, 0, 0, 0],   # 1 southern
@@ -73,7 +73,7 @@ def main(unused_argv):
     #
     # declare variables
     #
-    x = [solver.IntVar(0,1, 'x[%i]' % i) for i in range(num_senators)]
+    x = [solver.IntVar(0, 1, 'x[%i]' % i) for i in range(num_senators)]
 
     #
     # constraints
@@ -81,12 +81,14 @@ def main(unused_argv):
 
     # number of assigned senators (to minimize)
     z = solver.Sum(x)
-    
+
     # ensure that each group is covered by at least
     # one senator
     for i in range(num_groups):
-        solver.Add(solver.Sum([x[j]*belongs[i][j]
-                               for j in range(num_senators)]) >= 1)
+        solver.Add(
+            solver.SumGreaterOrEqual([x[j]*belongs[i][j]
+                                      for j in range(num_senators)],
+                                     1))
 
     objective = solver.Minimize(z, 1)
 
@@ -110,7 +112,7 @@ def main(unused_argv):
             print "Senator", j+1, "belongs to these groups:",
             for i in range(num_groups):
                 if belongs[i][j] == 1:
-                    print i+1,
+                    print i + 1,
             print
 
     print

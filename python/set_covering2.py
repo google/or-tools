@@ -36,7 +36,7 @@
 from constraint_solver import pywrapcp
 
 def main(unused_argv):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Set covering')
 
@@ -46,7 +46,7 @@ def main(unused_argv):
     n = 8 # maximum number of corners
     num_streets = 11 # number of connected streets
 
-    
+
     # corners of each street
     # Note: 1-based (handled below)
     corner = [
@@ -66,7 +66,7 @@ def main(unused_argv):
     #
     # declare variables
     #
-    x = [solver.IntVar(0,1, 'x[%i]' % i) for i in range(n)]
+    x = [solver.IntVar(0, 1, 'x[%i]' % i) for i in range(n)]
 
     #
     # constraints
@@ -74,11 +74,11 @@ def main(unused_argv):
 
     # number of telephones, to be minimized
     z = solver.Sum(x)
-    
+
     # ensure that all corners are covered
     for i in range(num_streets):
         # also, convert to 0-based
-        solver.Add(solver.Sum([x[j-1] for j in corner[i]]) >= 1)
+        solver.Add(solver.SumGreaterOrEqual([x[j - 1] for j in corner[i]], 1))
 
     objective = solver.Minimize(z, 1)
 
@@ -97,7 +97,7 @@ def main(unused_argv):
 
     print "z:", collector.objective_value(0)
     print "x:", [collector.Value(0, x[i]) for i in range(n)]
-    
+
     print "failures:", solver.failures()
     print "branches:", solver.branches()
     print "wall_time:", solver.wall_time()
