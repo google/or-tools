@@ -200,7 +200,10 @@ def PrintMatrix(game):
   cols = len(game[0])
   for i in range(rows):
     for j in range(cols):
-      print '% 2s' % game[i][j],
+      if game[i][j] == 0:
+        print ' .',
+      else:
+        print '% 2s' % game[i][j],
     print
   print
 
