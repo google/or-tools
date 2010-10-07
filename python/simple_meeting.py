@@ -174,12 +174,18 @@ def main(unused_argv):
   for c in all_calendars:
     solver.Add(c)
 
+  # Build decision builder.
+  # Chosse the location.
   vars_phase = solver.Phase([meeting_location, people_count],
                             solver.INT_VAR_SIMPLE,
                             solver.INT_VALUE_SIMPLE)
 
+  # Solve people calendars conflicts.
   sequence_phase = solver.Phase(all_calendars, solver.SEQUENCE_DEFAULT)
-  main_phase = solver.Compose([sequence_phase, vars_phase])
+  # Schedule meeting at the earliest possible time.
+  meeting_phase = solver.Phase([meeting], solver.INTERVAL_DEFAULT)
+  # And compose.
+  main_phase = solver.Compose([sequence_phase, vars_phase, meeting_phase])
 
   solution = solver.Assignment()
   solution.Add(meeting_location)
@@ -194,12 +200,11 @@ def main(unused_argv):
   solver.Solve(main_phase, [collector, search_log, objective])
 
   if collector.solution_count() > 0:
-    current = collector.solution(0)
 
     print ('we could schedule %d persons in room %d starting at quarter %d' %
-           (current.Value(people_count),
-            current.Value(meeting_location),
-            current.StartMin(meeting)))
+           (collector.Value(0, people_count),
+            collector.Value(0, meeting_location),
+            collector.StartValue(0, meeting)))
 
 
 if __name__ == '__main__':

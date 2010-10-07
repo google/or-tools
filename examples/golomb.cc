@@ -77,7 +77,7 @@ void GolombRuler(int size) {
                                           Solver::ASSIGN_MIN_VALUE);
   s.Solve(db, collector, length);  // go!
   CHECK_EQ(collector->solution_count(), 1);
-  const int64 result = collector->solution(0)->Value(ticks[size-1]);
+  const int64 result = collector->Value(0, ticks[size-1]);
   const int num_failures = collector->failures(0);
   printf("N = %d, optimal length = %d (fails:%d)\n",
     size, static_cast<int>(result), num_failures);
@@ -86,7 +86,7 @@ void GolombRuler(int size) {
   }
   if (FLAGS_print) {
     for (int i = 0; i < size; ++i) {
-      const int64 tick = collector->solution(0)->Value(ticks[i]);
+      const int64 tick = collector->Value(0, ticks[i]);
       printf("%d ", static_cast<int>(tick));
     }
     printf("\n");

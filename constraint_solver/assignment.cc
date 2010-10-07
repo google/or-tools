@@ -341,12 +341,20 @@ int64 Assignment::StartMax(const IntervalVar* const v) const {
   return interval_var_container_.Element(v).StartMax();
 }
 
+int64 Assignment::StartValue(const IntervalVar* const v) const {
+  return interval_var_container_.Element(v).StartValue();
+}
+
 int64 Assignment::DurationMin(const IntervalVar* const v) const {
   return interval_var_container_.Element(v).DurationMin();
 }
 
 int64 Assignment::DurationMax(const IntervalVar* const v) const {
   return interval_var_container_.Element(v).DurationMax();
+}
+
+int64 Assignment::DurationValue(const IntervalVar* const v) const {
+  return interval_var_container_.Element(v).DurationValue();
 }
 
 int64 Assignment::EndMin(const IntervalVar* const v) const {
@@ -357,12 +365,20 @@ int64 Assignment::EndMax(const IntervalVar* const v) const {
   return interval_var_container_.Element(v).EndMax();
 }
 
+int64 Assignment::EndValue(const IntervalVar* const v) const {
+  return interval_var_container_.Element(v).EndValue();
+}
+
 int64 Assignment::PerformedMin(const IntervalVar* const v) const {
   return interval_var_container_.Element(v).PerformedMin();
 }
 
 int64 Assignment::PerformedMax(const IntervalVar* const v) const {
   return interval_var_container_.Element(v).PerformedMax();
+}
+
+int64 Assignment::PerformedValue(const IntervalVar* const v) const {
+  return interval_var_container_.Element(v).PerformedValue();
 }
 
 void Assignment::SetStartMin(const IntervalVar* const v, int64 m) {

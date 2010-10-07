@@ -225,9 +225,8 @@ void NQueens(int size) {
     int print_max = FLAGS_print_all ? num_solutions : FLAGS_print ? 1 : 0;
     for (int n = 0; n < print_max; ++n) {
       printf("--- solution #%d\n", n);
-      const Assignment * const b = c2->solution(n);
       for (int i = 0; i < size; ++i) {
-        const int pos = static_cast<int>(b->Value(queens[i]));
+        const int pos = static_cast<int>(c2->Value(n, queens[i]));
         for (int k = 0; k < pos; ++k) printf(" . ");
         printf("%2d ", i);
         for (int k = pos + 1; k < size; ++k) printf(" . ");

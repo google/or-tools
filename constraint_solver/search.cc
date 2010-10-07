@@ -1703,6 +1703,31 @@ int64 SolutionCollector::objective_value(int n) const {
   return objective_values_[n];
 }
 
+int64 SolutionCollector::Value(int n, IntVar* const var) const {
+  check_index(n);
+  return solutions_[n]->Value(var);
+}
+
+int64 SolutionCollector::StartValue(int n, IntervalVar* const var) const {
+  check_index(n);
+  return solutions_[n]->StartValue(var);
+}
+
+int64 SolutionCollector::DurationValue(int n, IntervalVar* const var) const {
+  check_index(n);
+  return solutions_[n]->DurationValue(var);
+}
+
+int64 SolutionCollector::EndValue(int n, IntervalVar* const var) const {
+  check_index(n);
+  return solutions_[n]->EndValue(var);
+}
+
+int64 SolutionCollector::PerformedValue(int n, IntervalVar* const var) const {
+  check_index(n);
+  return solutions_[n]->PerformedValue(var);
+}
+
 // ----- First Solution Collector -----
 
 // Collect first solution, useful when looking satisfaction problems

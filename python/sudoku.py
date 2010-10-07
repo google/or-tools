@@ -83,9 +83,8 @@ def main(unused_argv):
   solver.Solve(vars_phase, [collector])
 
   if collector.solution_count() == 1:
-    current = collector.solution(0)
     for i in line:
-      print [int(current.Value(grid[(i, j)])) for j in line]
+      print [int(collector.Value(0, grid[(i, j)])) for j in line]
 
 
 if __name__ == '__main__':

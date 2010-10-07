@@ -62,8 +62,7 @@ def main(unused_argv):
                             solver.ASSIGN_MIN_VALUE),
                [objective, collector])
   for i in range(0, collector.solution_count()):
-    current = collector.solution(i)
-    obj_value = current.Value(marks[size -1])
+    obj_value = collector.Value(i, marks[size -1])
     time = collector.wall_time(i)
     branches = collector.branches(i)
     failures = collector.failures(i)

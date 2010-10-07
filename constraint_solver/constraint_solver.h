@@ -2183,6 +2183,21 @@ class SolutionCollector : public SearchMonitor {
   // Returns the objective value of the nth solution.
   int64 objective_value(int n) const;
 
+  // This is a short-cut to get the Value of 'var' in the nth solution.
+  int64 Value(int n, IntVar* const var) const;
+
+  // This is a short-cut to get the StartValue of 'var' in the nth solution.
+  int64 StartValue(int n, IntervalVar* const var) const;
+
+  // This is a short-cut to get the DurationValue of 'var' in the nth solution.
+  int64 EndValue(int n, IntervalVar* const var) const;
+
+  // This is a short-cut to get the StartValue of 'var' in the nth solution.
+  int64 DurationValue(int n, IntervalVar* const var) const;
+
+  // This is a short-cut to get the PerformedValue of 'var' in the nth solution.
+  int64 PerformedValue(int n, IntervalVar* const var) const;
+
  protected:
   // Push the current state as a new solution.
   void PushSolution();
@@ -2508,12 +2523,28 @@ class IntervalVarElement : public AssignmentElement {
 
   int64 StartMin() const { return start_min_; }
   int64 StartMax() const { return start_max_; }
+  int64 StartValue() const {
+    CHECK_EQ(start_max_, start_min_);
+    return start_max_;
+  }
   int64 DurationMin() const { return duration_min_; }
   int64 DurationMax() const { return duration_max_; }
+  int64 DurationValue() const {
+    CHECK_EQ(duration_max_, duration_min_);
+    return duration_max_;
+  }
   int64 EndMin() const { return end_min_; }
   int64 EndMax() const { return end_max_; }
+  int64 EndValue() const {
+    CHECK_EQ(end_max_, end_min_);
+    return end_max_;
+  }
   int64 PerformedMin() const { return performed_min_; }
   int64 PerformedMax() const { return performed_max_; }
+  int64 PerformedValue() const {
+    CHECK_EQ(performed_max_, performed_min_);
+    return performed_max_;
+  }
   void SetStartMin(int64 m) { start_min_ = m; }
   void SetStartMax(int64 m) { start_max_ = m; }
   void SetStartRange(int64 mi, int64 ma) {
@@ -2726,12 +2757,16 @@ class Assignment : public PropagationBaseObject {
   IntervalVarElement& FastAdd(IntervalVar* const v);
   int64 StartMin(const IntervalVar* const v) const;
   int64 StartMax(const IntervalVar* const v) const;
+  int64 StartValue(const IntervalVar* const v) const;
   int64 DurationMin(const IntervalVar* const v) const;
   int64 DurationMax(const IntervalVar* const v) const;
+  int64 DurationValue(const IntervalVar* const c) const;
   int64 EndMin(const IntervalVar* const v) const;
   int64 EndMax(const IntervalVar* const v) const;
+  int64 EndValue(const IntervalVar* const v) const;
   int64 PerformedMin(const IntervalVar* const v) const;
   int64 PerformedMax(const IntervalVar* const v) const;
+  int64 PerformedValue(const IntervalVar* const v) const;
   void SetStartMin(const IntervalVar* const v, int64 m);
   void SetStartMax(const IntervalVar* const v, int64 m);
   void SetStartRange(const IntervalVar* const v, int64 mi, int64 ma);
