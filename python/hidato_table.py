@@ -1,5 +1,4 @@
 # Copyright 2010 Google
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,11 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
 
-  Hidato puzzle in Google CP Solver.
+"""Hidato puzzle in Google CP Solver.
 
-  http://www.shockwave.com/gamelanding/hidato.jsp
   http://www.hidato.com/
   '''
   Puzzles start semi-filled with numbered tiles.
@@ -29,108 +26,110 @@
 
 from constraint_solver import pywrapcp
 
-def BuildTuples(r, c):
+
+def BuildPairs(rows, cols):
+  """Build closeness pairs for consecutive numbers.
+
+  Build set of allowed pairs such that two consecutive numbers touch
+  each other in the grid.
+
+  Returns:
+    A list of pairs for allowed consecutive position of numbers.
+
+  Args:
+    rows: the number of rows in the grid
+    cols: the number of columns in the grid
+  """
   results = []
-  for x in range(r):
-    for y in range(c):
+  for x in range(rows):
+    for y in range(cols):
       for dx in (-1, 0, 1):
         for dy in (-1, 0, 1):
           if (x + dx >= 0 and
-              x + dx < r and
+              x + dx < rows and
               y + dy >= 0 and
-              y + dy < c and
+              y + dy < cols and
               (dx != 0 or dy != 0)):
-            results.append((x * c + y, (x + dx) * c + (y + dy)))
+            results.append((x * cols + y, (x + dx) * cols + (y + dy)))
   return results
 
-def main():
 
+def main(unused_argv):
+  for model in range(1, 7):
+    print
+    print '----- Solving problem %i -----' % model
+    print
+    Solve(model)
+
+
+def Solve(model):
+  """Solve the given model."""
   # Create the solver.
-  solver = pywrapcp.Solver('n-queens')
+  solver = pywrapcp.Solver('hidato-table')
 
   #
-  # data
+  # models, a 0 indicates an open cell which number is not yet known.
   #
   #
-  # Simple problem
-  #
-  # r = 3
-  # c = r
-  # puzzle = [
-  #     [6,0,9],
-  #     [0,2,8],
-  #     [1,0,0]
-  #     ]
+  puzzle = None
+  if model == 1:
+    # Simple problem
+    puzzle = [[6, 0, 9],
+              [0, 2, 8],
+              [1, 0, 0]]
 
+  elif model == 2:
+    puzzle = [[0, 44, 41, 0, 0, 0, 0],
+              [0, 43, 0, 28, 29, 0, 0],
+              [0, 1, 0, 0, 0, 33, 0],
+              [0, 2, 25, 4, 34, 0, 36],
+              [49, 16, 0, 23, 0, 0, 0],
+              [0, 19, 0, 0, 12, 7, 0],
+              [0, 0, 0, 14, 0, 0, 0]]
 
-  #     r = 7
-  #     c = 7
-  #     puzzle =  [
-  #         [0,44,41, 0, 0, 0, 0],
-  #         [0,43, 0,28,29, 0, 0],
-  #         [0, 1, 0, 0, 0,33, 0],
-  #         [0, 2,25, 4,34, 0,36],
-  #         [49,16, 0,23, 0, 0, 0],
-  #         [0,19, 0, 0,12, 7, 0],
-  #         [0, 0, 0,14, 0, 0, 0]
-  #         ]
+  elif model == 3:
+    # Problems from the book:
+    # Gyora Bededek: "Hidato: 2000 Pure Logic Puzzles"
+    # Problem 1 (Practice)
+    puzzle = [[0, 0, 20, 0, 0],
+              [0, 0, 0, 16, 18],
+              [22, 0, 15, 0, 0],
+              [23, 0, 1, 14, 11],
+              [0, 25, 0, 0, 12]]
 
+  elif model == 4:
+    # problem 2 (Practice)
+    puzzle = [[0, 0, 0, 0, 14],
+              [0, 18, 12, 0, 0],
+              [0, 0, 17, 4, 5],
+              [0, 0, 7, 0, 0],
+              [9, 8, 25, 1, 0]]
 
-  # Problems from the book:
-  # Gyora Bededek: "Hidato: 2000 Pure Logic Puzzles"
-
-  # Problem 1 (Practice)
-  # r = 5
-  # c = r
-  # puzzle = [
-  #    [ 0, 0,20, 0, 0],
-  #    [ 0, 0, 0,16,18],
-  #    [22, 0,15, 0, 0],
-  #    [23, 0, 1,14,11],
-  #    [ 0,25, 0, 0,12],
-  #    ]
-
-
-#     # problem 2 (Practice)
-#  r = 5
-#  c = r
-#  puzzle= [
-#      [0, 0, 0, 0,14],
-#      [0,18,12, 0, 0],
-#      [0, 0,17, 4, 5],
-#      [0, 0, 7, 0, 0],
-#      [9, 8,25, 1, 0],
-#      ];
-
+  elif model == 5:
   # problem 3 (Beginner)
-  #     r = 6
-  #     c = r
-  #     puzzle =  [
-  #         [ 0, 26,0, 0, 0,18],
-  #         [ 0, 0,27, 0, 0,19],
-  #         [31,23, 0, 0,14, 0],
-  #         [ 0,33, 8, 0,15, 1],
-  #         [ 0, 0, 0, 5, 0, 0],
-  #         [35,36, 0,10, 0, 0]
-  #         ];
+    puzzle = [[0, 26, 0, 0, 0, 18],
+              [0, 0, 27, 0, 0, 19],
+              [31, 23, 0, 0, 14, 0],
+              [0, 33, 8, 0, 15, 1],
+              [0, 0, 0, 5, 0, 0],
+              [35, 36, 0, 10, 0, 0]]
 
+  elif model == 6:
+    # Problem 15 (Intermediate)
+    puzzle = [[64, 0, 0, 0, 0, 0, 0, 0],
+              [1, 63, 0, 59, 15, 57, 53, 0],
+              [0, 4, 0, 14, 0, 0, 0, 0],
+              [3, 0, 11, 0, 20, 19, 0, 50],
+              [0, 0, 0, 0, 22, 0, 48, 40],
+              [9, 0, 0, 32, 23, 0, 0, 41],
+              [27, 0, 0, 0, 36, 0, 46, 0],
+              [28, 30, 0, 35, 0, 0, 0, 0]]
 
-  # Problem 15 (Intermediate)
-  # Note: This takes very long time to solve...
-  r = 8
-  c = r
-  puzzle = [
-      [64, 0, 0, 0, 0, 0, 0, 0],
-      [ 1,63, 0,59,15,57,53, 0],
-      [ 0, 4, 0,14, 0, 0, 0, 0],
-      [ 3, 0,11, 0,20,19, 0,50],
-      [ 0, 0, 0, 0,22, 0,48,40],
-      [ 9, 0, 0,32,23, 0, 0,41],
-      [27, 0, 0, 0,36, 0,46, 0],
-      [28,30, 0,35, 0, 0, 0, 0]
-      ]
+  r = len(puzzle)
+  c = len(puzzle[0])
 
-  print_game(puzzle, r, c)
+  print 'Initial game (%i x %i)' % (r, c)
+  PrintMatrix(puzzle)
 
   #
   # declare variables
@@ -150,8 +149,9 @@ def main():
       if puzzle[i][j] > 0:
         solver.Add(positions[puzzle[i][j] - 1] == i * c + j)
 
-  # Positions are closed another. Use a table.
-  close_tuples = BuildTuples(r, c)
+  # Consecutive numbers much touch each other in the grid.
+  # We use an allowed assignment constraint to model it.
+  close_tuples = BuildPairs(r, c)
   for k in range(1, r * c - 1):
     solver.Add(solver.AllowedAssignments((positions[k], positions[k + 1]),
                                          close_tuples))
@@ -169,37 +169,41 @@ def main():
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print_board(positions, r, c, num_solutions)
-    print
+    PrintOneSolution(positions, r, c, num_solutions)
 
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.failures()
-  print "branches:", solver.branches()
-  print "wall_time:", solver.wall_time()
+  print 'num_solutions:', num_solutions
+  print 'failures:', solver.failures()
+  print 'branches:', solver.branches()
+  print 'wall_time:', solver.wall_time()
 
 
-def print_board(positions, rows, cols, num_solution):
+def PrintOneSolution(positions, rows, cols, num_solution):
+  """Print a current solution."""
   print 'Solution %i:' % num_solution
-  for i in range(rows):
-    for j in range(cols):
-      index = i * rows + j
-      for k in range(rows * cols):
-        if positions[k].Value() == index:
-          print "% 2s" % (k + 1),
-    print ''
+  # Create empty board.
+  board = []
+  for unused_i in range(rows):
+    board.append([0] * cols)
+  # Fill board with solution value.
+  for k in range(rows * cols):
+    position = positions[k].Value()
+    board[position / cols][position % cols] = k + 1
+  # Print the board.
+  PrintMatrix(board)
 
-def print_game(game, rows, cols):
-  print 'Initial game (%i x %i)' % (rows, cols)
+
+def PrintMatrix(game):
+  """Pretty print of a matrix."""
+  rows = len(game)
+  cols = len(game[0])
   for i in range(rows):
     for j in range(cols):
-      print "% 2s" % game[i][j],
-    print ''
+      print '% 2s' % game[i][j],
+    print
   print
-
 
 
 if __name__ == '__main__':
-    main()
+  main("cp sample")
