@@ -2189,10 +2189,10 @@ class SolutionCollector : public SearchMonitor {
   // This is a short-cut to get the StartValue of 'var' in the nth solution.
   int64 StartValue(int n, IntervalVar* const var) const;
 
-  // This is a short-cut to get the DurationValue of 'var' in the nth solution.
+  // This is a short-cut to get the EndValue of 'var' in the nth solution.
   int64 EndValue(int n, IntervalVar* const var) const;
 
-  // This is a short-cut to get the StartValue of 'var' in the nth solution.
+  // This is a short-cut to get the DurationValue of 'var' in the nth solution.
   int64 DurationValue(int n, IntervalVar* const var) const;
 
   // This is a short-cut to get the PerformedValue of 'var' in the nth solution.
