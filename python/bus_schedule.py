@@ -1,26 +1,26 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
   Bus scheduling in Google CP Solver.
 
-  
+
   Problem from Taha "Introduction to Operations Research", page 58.
 
   This is a slightly more general model than Taha's.
-  
+
   Compare with the following models:
   * MiniZinc: http://www.hakank.org/minizinc/bus_scheduling.mzn
   * Comet   : http://www.hakank.org/comet/bus_schedule.co
@@ -28,7 +28,7 @@
   * Gecode  : http://www.hakank.org/gecode/bus_schedule.cpp
   * Tailor/Essence'  : http://www.hakank.org/tailor/bus_schedule.eprime
   * SICStus: http://hakank.org/sicstus/bus_schedule.pl
-  
+
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 
@@ -41,7 +41,7 @@ from constraint_solver import pywrapcp
 
 
 def main(num_buses_check=0):
-   
+
     # Create the solver.
     solver = pywrapcp.Solver('Bus scheduling')
 
@@ -74,7 +74,7 @@ def main(num_buses_check=0):
     #
     solution = solver.Assignment()
     solution.Add(x)
-    solution.Add(num_buses)    
+    solution.Add(num_buses)
 
     collector = solver.AllSolutionCollector(solution)
     cargs = [collector]
@@ -83,10 +83,10 @@ def main(num_buses_check=0):
     if num_buses_check == 0:
         objective = solver.Minimize(num_buses, 1)
         cargs.extend([objective])
-    
 
 
-    
+
+
     solver.Solve(solver.Phase(x,
                               solver.CHOOSE_FIRST_UNBOUND,
                               solver.ASSIGN_MIN_VALUE),
@@ -95,9 +95,8 @@ def main(num_buses_check=0):
     num_solutions = collector.solution_count()
     num_buses_check_value = 0
     for s in range(num_solutions):
-        current = collector.solution(s)
-        print "x:", [current.Value(x[i]) for i in range(len(x))],
-        num_buses_check_value = current.Value(num_buses)
+        print "x:", [collector.Value(s, x[i]) for i in range(len(x))],
+        num_buses_check_value = collector.Value(s, num_buses)
         print " num_buses:", num_buses_check_value
 
     print
@@ -108,7 +107,7 @@ def main(num_buses_check=0):
     print
     if num_buses_check == 0:
         return num_buses_check_value
-    
+
 if __name__ == '__main__':
     print "Check for minimun number of buses"
     num_buses_check = main()

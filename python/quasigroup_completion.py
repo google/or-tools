@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -24,17 +24,17 @@
   Ivars Peterson "Completing Latin Squares"
   http://www.maa.org/mathland/mathtrek_5_8_00.html
   '''
-    Using only the numbers 1, 2, 3, and 4, arrange four sets of these numbers into 
-    a four-by-four array so that no column or row contains the same two numbers. 
+    Using only the numbers 1, 2, 3, and 4, arrange four sets of these numbers into
+    a four-by-four array so that no column or row contains the same two numbers.
     The result is known as a Latin square.
     ...
-    The so-called quasigroup completion problem concerns a table that is correctly 
-    but only partially filled in. The question is whether the remaining blanks in 
-    the table can be filled in to obtain a complete Latin square (or a proper 
+    The so-called quasigroup completion problem concerns a table that is correctly
+    but only partially filled in. The question is whether the remaining blanks in
+    the table can be filled in to obtain a complete Latin square (or a proper
     quasigroup multiplication table).
     '''
-    
-    Compare with the following models: 
+
+    Compare with the following models:
     * Choco: http://www.hakank.org/choco/QuasigroupCompletion.java
     * Comet: http://www.hakank.org/comet/quasigroup_completion.co
     * ECLiPSE: http://www.hakank.org/eclipse/quasigroup_completion.ecl
@@ -66,7 +66,7 @@ default_puzzle = [
     ]
 
 def main(puzzle="", n=0):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Quasigroup completion')
 
@@ -80,7 +80,7 @@ def main(puzzle="", n=0):
 
     print "Problem:"
     print_game(puzzle, n,n)
-   
+
 
     # declare variables
     x = {}
@@ -93,7 +93,7 @@ def main(puzzle="", n=0):
     #
     # constraints
     #
-    
+
     #
     # set the clues
     #
@@ -102,20 +102,20 @@ def main(puzzle="", n=0):
             if puzzle[i][j] > X:
                 solver.Add(x[i,j] == puzzle[i][j])
 
-    
+
 
     #
     # rows and columns must be different
     #
     for i in range(n):
-        solver.Add(solver.AllDifferent([x[i,j] for j in range(n)], True)) 
+        solver.Add(solver.AllDifferent([x[i,j] for j in range(n)], True))
         solver.Add(solver.AllDifferent([x[j,i] for j in range(n)], True))
 
     #
     # solution and search
     #
     solution = solver.Assignment()
-    solution.Add(xflat)             
+    solution.Add(xflat)
 
     # This version prints out the solution directly, and
     # don't collect them as solver.FirstSolutionCollector(solution) do
@@ -123,7 +123,7 @@ def main(puzzle="", n=0):
     db = solver.Phase(xflat,
                  solver.INT_VAR_SIMPLE,
                  solver.ASSIGN_MIN_VALUE)
-    
+
     solver.NewSearch(db)
     num_solutions = 0
     while solver.NextSolution():
@@ -134,7 +134,7 @@ def main(puzzle="", n=0):
             for j in range(n):
                 print xval[i*n+j],
             print
-        print        
+        print
     solver.EndSearch()
 
     if num_solutions == 0:
@@ -143,7 +143,7 @@ def main(puzzle="", n=0):
     # # Note: AllSolution may take very much RAM, hence I choose to
     # # show just the first solution.
     # # collector = solver.AllSolutionCollector(solution)
-    # collector = solver.FirstSolutionCollector(solution)                   
+    # collector = solver.FirstSolutionCollector(solution)
     # solver.Solve(solver.Phase([x[(i,j)] for i in range(n) for j in range(n)],
     #                           solver.CHOOSE_FIRST_UNBOUND,
     #                           solver.ASSIGN_MIN_VALUE),
@@ -154,8 +154,7 @@ def main(puzzle="", n=0):
     # if num_solutions > 0:
     #     print "\nJust showing the first solution..."
     #     for s in range(num_solutions):
-    #         current = collector.solution(s)
-    #         xval = [current.Value(x[(i,j)]) for i in range(n) for j in range(n)]
+    #         xval = [collector.Value(s, x[(i,j)]) for i in range(n) for j in range(n)]
     #         for i in range(n):
     #             for j in range(n):
     #                 print xval[i*n+j],
@@ -202,7 +201,7 @@ def print_game(game, rows, cols):
         for j in range(cols):
             print "% 2s" % game[i][j],
         print ''
-            
+
 
 
 if __name__ == '__main__':
@@ -211,6 +210,6 @@ if __name__ == '__main__':
         file = sys.argv[1]
         print "Problem instance from", file
         [game, n] = read_problem(file)
-        main(game, n)    
-    else:    
-        main()    
+        main(game, n)
+    else:
+        main()

@@ -1,23 +1,23 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 
   xkcd problem (Knapsack)  in Google CP Solver.
 
   http://xkcd.com/287/
 
-  Some amount (or none) of each dish should be ordered to give a total 
+  Some amount (or none) of each dish should be ordered to give a total
   of exact 15.05
 
 
@@ -40,7 +40,7 @@ from constraint_solver import pywrapcp
 
 
 def main():
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('xkcd knapsack')
 
@@ -50,7 +50,7 @@ def main():
     num_prices = 6
     # for price and total: multiplied by 100 to be able to use integers
     price = [215, 275, 335, 355, 420, 580]
-    total = 1505 
+    total = 1505
 
     products = ["mixed fruit", "french fries", "side salad",
                 "host wings", "mozzarella sticks", "samples place"]
@@ -74,10 +74,10 @@ def main():
     solution.Add([x[i] for i in range(num_prices)])
     solution.Add(z)
 
-   
-    collector = solver.AllSolutionCollector(solution)               
+
+    collector = solver.AllSolutionCollector(solution)
     # collector = solver.FirstSolutionCollector(solution)
-    # search_log = solver.SearchLog(100, x[0])    
+    # search_log = solver.SearchLog(100, x[0])
     solver.Solve(solver.Phase([x[i] for i in range(num_prices)],
                               solver.INT_VAR_SIMPLE,
                               solver.ASSIGN_MIN_VALUE),
@@ -88,9 +88,8 @@ def main():
     print "num_solutions: ", num_solutions
     if num_solutions > 0:
         for s in range(num_solutions):
-            current = collector.solution(s)
-            print "z:", current.Value(z)
-            xval = [current.Value(x[i]) for i in range(num_prices)]
+            print "z:", collector.Value(s, z)
+            xval = [collector.Value(s, x[i]) for i in range(num_prices)]
             print "x:", xval
             for i in range(num_prices):
                 if xval[i] > 0:

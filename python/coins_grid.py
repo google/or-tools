@@ -101,11 +101,10 @@ def main(unused_argv):
                             solver.ASSIGN_MAX_VALUE),
                [collector, search_log, objective])
 
-  current = collector.solution(0)
   print "objective:", collector.objective_value(0)
   for i in range(n):
     for j in range(n):
-      print current.Value(x[(i, j)]),
+      print collector.Value(0, x[(i, j)]),
     print
   print
 

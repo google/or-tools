@@ -1,21 +1,21 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
   toNum in Google CP Solver.
-  
+
   Convert a number <-> array of int in a specific base.
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
@@ -43,7 +43,7 @@ def main(unused_argv):
     # data
     n    = 4
     base = 10
-    
+
     # declare variables
     x = [solver.IntVar(0,n-1, 'x%i' % i) for i in range(n)]
     y = solver.IntVar(0,10**n-1, 'y')
@@ -52,7 +52,7 @@ def main(unused_argv):
     # constraints
     #
     # solver.Add(solver.AllDifferent([x[i] for i in range(n)], True))
-    solver.Add(solver.AllDifferent(x, True))    
+    solver.Add(solver.AllDifferent(x, True))
     # solver.Add(x[0] > 0) # just for fun
 
     toNum(solver, x, y, base)
@@ -62,8 +62,8 @@ def main(unused_argv):
     #
     solution = solver.Assignment()
     solution.Add([x[i] for i in range(n)])
-    solution.Add(y)               
-    
+    solution.Add(y)
+
     collector = solver.AllSolutionCollector(solution)
     solver.Solve(solver.Phase([x[i] for i in range(n)],
                               solver.CHOOSE_FIRST_UNBOUND,
@@ -72,15 +72,14 @@ def main(unused_argv):
 
     num_solutions = collector.solution_count()
     for s in range(num_solutions):
-        current = collector.solution(s)
-        print "x:", [current.Value(x[i]) for i in range(n)]
-        print "y:", current.Value(y)
+        print "x:", [collector.Value(s, x[i]) for i in range(n)]
+        print "y:", collector.Value(s, y)
         print
-    
+
     print "failures:", solver.failures()
     print "branches:", solver.branches()
     print "wall_time:", solver.wall_time()
-    
+
 
 if __name__ == '__main__':
     main("cp sample")

@@ -33,8 +33,7 @@ def dudeney(n):
                [collector])
 
   for i in range(collector.solution_count()):
-    current = collector.solution(i)
-    nbsol = current.Value(nb)
+    nbsol = collector.Value(i, nb)
     print nbsol
 
   print "#fails:",solver.failures()

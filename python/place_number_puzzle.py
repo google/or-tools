@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -21,7 +21,7 @@
   Place numbers 1 through 8 on nodes
   - each number appears exactly once
   - no connected nodes have consecutive numbers
-       2 - 5 
+       2 - 5
      / | X | \
    1 - 3 - 6 - 8
      \ | X | /
@@ -33,8 +33,8 @@
   * Comet: http://www.hakank.org/comet/place_number_puzzle.co
   * ECLiPSe: http://www.hakank.org/eclipse/place_number_puzzle.ecl
   * SICStus Prolog: http://www.hakank.org/sicstus/place_number_puzzle.pl
-  * Gecode: http://www.hakank.org/gecode/place_number_puzzle.cpp 
-  
+  * Gecode: http://www.hakank.org/gecode/place_number_puzzle.cpp
+
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 
@@ -45,7 +45,7 @@ import string
 from constraint_solver import pywrapcp
 
 def main():
-   
+
     # Create the solver.
     solver = pywrapcp.Solver('Place number')
 
@@ -87,7 +87,7 @@ def main():
         [8,6],
         [8,7]
         ]
-    
+
 
     # declare variables
     x = [solver.IntVar(1, n, "x%i"%i) for i in range(n)]
@@ -113,7 +113,7 @@ def main():
     solution.Add(x)
 
     collector = solver.AllSolutionCollector(solution)
-    
+
     solver.Solve(solver.Phase(x,
                               solver.CHOOSE_FIRST_UNBOUND,
                               solver.ASSIGN_MIN_VALUE),
@@ -121,8 +121,7 @@ def main():
 
     num_solutions = collector.solution_count()
     for s in range(num_solutions):
-        current = collector.solution(s)
-        print "x:", [current.Value(x[i]) for i in range(len(x))]
+        print "x:", [collector.Value(s, x[i]) for i in range(len(x))]
 
     print
     print "num_solutions:", num_solutions
@@ -130,6 +129,6 @@ def main():
     print "branches:", solver.branches()
     print "wall_time:", solver.wall_time()
     print
-    
+
 if __name__ == '__main__':
     main()

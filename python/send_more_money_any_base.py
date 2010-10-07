@@ -1,23 +1,23 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
   SEND+MORE=MONEY in 'any' base in Google CP Solver.
 
   Alphametic problem SEND+MORE=MONEY in any base.
-  
+
   Examples:
   Base 10 has one solution:
      {9, 5, 6, 7, 1, 0, 8, 2}
@@ -25,7 +25,7 @@
      {10, 5, 6, 8, 1, 0, 9, 2}
      {10, 6, 7, 8, 1, 0, 9, 3}
      {10, 7, 8, 6, 1, 0, 9, 2}
-  
+
   Also, compare with the following models:
   * Comet   : http://www.hakank.org/comet/send_more_money_any_base.co
   * ECLiPSE : http://www.hakank.org/eclipse/send_more_money_any_base.ecl
@@ -36,7 +36,7 @@
   * Zinc: http://www.hakank.org/minizinc/send_more_money_any_base.zinc
   * SICStus: http://www.hakank.org/sicstus/send_more_money_any_base.pl
 
-  
+
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 
@@ -47,7 +47,7 @@ import string
 from constraint_solver import pywrapcp
 
 def main(base=10):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Send most money')
 
@@ -63,7 +63,7 @@ def main(base=10):
     o = solver.IntVar(0,base-1,'o')
     r = solver.IntVar(0,base-1,'r')
     y = solver.IntVar(0,base-1,'y')
-   
+
     x = [s,e,n,d,m,o,r,y]
 
 
@@ -87,7 +87,7 @@ def main(base=10):
     solution.Add(x)
 
     collector = solver.AllSolutionCollector(solution)
-    
+
     solver.Solve(solver.Phase(x,
                               solver.CHOOSE_FIRST_UNBOUND,
                               solver.ASSIGN_MAX_VALUE),
@@ -96,8 +96,7 @@ def main(base=10):
     num_solutions = collector.solution_count()
     money_val = 0
     for s in range(num_solutions):
-        current = collector.solution(s)
-        print "x:", [current.Value(x[i]) for i in range(len(x))]
+        print "x:", [collector.Value(s, x[i]) for i in range(len(x))]
 
     print
     print "num_solutions:", num_solutions
@@ -106,12 +105,12 @@ def main(base=10):
     print "wall_time:", solver.wall_time()
     print
 
-    
+
 base = 10
 if __name__ == '__main__':
     # for base in range(10,30):
     #    main(base)
     if len(sys.argv) > 1:
         base=string.atoi(sys.argv[1])
-        
+
     main(base)

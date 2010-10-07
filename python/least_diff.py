@@ -1,23 +1,23 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
   Least diff problem in Google CP Solver.
 
   This model solves the following problem:
- 
+
   What is the smallest difference between two numbers X - Y
   if you must use all the digits (0..9) exactly once.
 
@@ -52,12 +52,12 @@ def main(unused_argv):
   c = solver.IntVar(digits, 'c')
   d = solver.IntVar(digits, 'd')
   e = solver.IntVar(digits, 'e')
-  
+
   f = solver.IntVar(digits, 'f')
   g = solver.IntVar(digits, 'g')
   h = solver.IntVar(digits, 'h')
   i = solver.IntVar(digits, 'i')
-  j = solver.IntVar(digits, 'j')  
+  j = solver.IntVar(digits, 'j')
 
   letters = [a,b,c,d,e,f,g,h,i,j]
 
@@ -71,7 +71,7 @@ def main(unused_argv):
   solver.Add(x == 10000*a +1000*b +100*c +10*d + e)
   solver.Add(y == 10000*f +1000*g +100*h +10*i + j)
   solver.Add(diff == x - y)
-  solver.Add(diff > 0)  
+  solver.Add(diff > 0)
   solver.Add(solver.AllDifferent(letters, True))
 
   # objective
@@ -97,21 +97,20 @@ def main(unused_argv):
                             [objective, search_log, collector])
 
   # get the first (and only) solution
-  current = collector.solution(0)
 
-  xval = current.Value(x)
-  yval = current.Value(y)
-  diffval = current.Value(diff)  
+  xval = collector.Value(0, x)
+  yval = collector.Value(0, y)
+  diffval = collector.Value(0, diff)
   print "x:", xval
   print "y:", yval
   print "diff:", diffval
   print xval,"-", yval,"=", diffval
-  print [("abcdefghij"[i],current.Value(letters[i])) for i in range(10)]
+  print [("abcdefghij"[i], collector.Value(0, letters[i])) for i in range(10)]
   print
   print "failures:", solver.failures()
   print "branches:", solver.branches()
   print "wall_time:", solver.wall_time()
   print
-  
+
 if __name__ == '__main__':
   main("cp sample")

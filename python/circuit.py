@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -27,15 +27,15 @@
   x: [3, 2, 0, 1]
   x: [1, 2, 3, 0]
   x: [2, 3, 1, 0]
-  
+
   The 'orbit' method that is used here is based on some
   observations on permutation orbits.
 
   Compare with the following models:
   * MiniZinc: http://www.hakank.org/minizinc/circuit_test.mzn
   * Gecode: http://www.hakank.org/gecode/circuit_orbit.mzn
- 
-  
+
+
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 
@@ -52,14 +52,14 @@ from constraint_solver import pywrapcp
 # Note: This assumes that x is has the domain 0..len(x)-1,
 #       i.e. 0-based.
 #
-def circuit(solver, x):  
+def circuit(solver, x):
     n = len(x)
     z = [solver.IntVar(0, n-1, 'z%i' % i) for i in range(n)]
 
     solver.Add(solver.AllDifferent(x, True))
-    solver.Add(solver.AllDifferent(z, True))    
+    solver.Add(solver.AllDifferent(z, True))
 
-    # put the orbit of x[0] in in z[0..n-1]        
+    # put the orbit of x[0] in in z[0..n-1]
     solver.Add(z[0] == x[0])
     for i in range(1,n-1):
         # The following constraint give the error
@@ -81,7 +81,7 @@ def circuit(solver, x):
 
 
 def main(n=5):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Send most money')
 
@@ -105,7 +105,7 @@ def main(n=5):
     solution.Add(x)
 
     collector = solver.AllSolutionCollector(solution)
-    
+
     solver.Solve(solver.Phase(x,
                               solver.CHOOSE_FIRST_UNBOUND,
                               solver.ASSIGN_MIN_VALUE),
@@ -113,8 +113,7 @@ def main(n=5):
 
     num_solutions = collector.solution_count()
     for s in range(num_solutions):
-        current = collector.solution(s)
-        print "x:", [current.Value(x[i]) for i in range(len(x))]
+        print "x:", [collector.Value(s, x[i]) for i in range(len(x))]
 
     print
     print "num_solutions:", num_solutions
@@ -123,10 +122,10 @@ def main(n=5):
     print "wall_time:", solver.wall_time()
     print
 
-    
+
 n = 5
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         n=string.atoi(sys.argv[1])
-        
+
     main(n)

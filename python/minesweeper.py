@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -19,11 +19,11 @@
   From gecode/examples/minesweeper.cc:
   '''
   A specification is a square matrix of characters. Alphanumeric
-  characters represent the number of mines adjacent to that field. 
-  Dots represent fields with an unknown number of mines adjacent to 
+  characters represent the number of mines adjacent to that field.
+  Dots represent fields with an unknown number of mines adjacent to
   it (or an actual mine).
   '''
-  
+
   E.g.
        '..2.3.'
        '2.....'
@@ -32,13 +32,13 @@
        '.....3'
        '.3.3..'
 
-  
+
   Also see:
   * http://www.janko.at/Raetsel/Minesweeper/index.htm
 
   * http://en.wikipedia.org/wiki/Minesweeper_(computer_game)
- 
-  * Ian Stewart on Minesweeper: 
+
+  * Ian Stewart on Minesweeper:
     http://www.claymath.org/Popular_Lectures/Minesweeper/
 
   * Richard Kaye's Minesweeper Pages
@@ -81,14 +81,14 @@ default_game = [
 
 
 def main(game="", r="", c=""):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Minesweeper')
 
     #
     # data
     #
-    
+
     # Set default problem
     if game == "":
         game = default_game
@@ -97,12 +97,12 @@ def main(game="", r="", c=""):
     else:
         print "rows:", r, " cols:", c
 
-    
+
     #
     # Default problem from "Some Minesweeper Configurations",page 3
     # (same as problem instance minesweeper_config3.txt)
     # It has 4 solutions
-    # 
+    #
     # r = 8
     # c = 8
     # X = -1
@@ -116,7 +116,7 @@ def main(game="", r="", c=""):
     #     [0,1,X,4,X,X,X,3],
     #     [0,1,2,X,2,3,X,2]
     #     ]
-    
+
     S = [-1,0,1]  # for the neighbors of "this" cell
 
     # print problem instance
@@ -163,8 +163,8 @@ def main(game="", r="", c=""):
     #
     solution = solver.Assignment()
     solution.Add([mines[(i,j)] for i in range(r) for j in range(c)])
-    
-    collector = solver.AllSolutionCollector(solution)               
+
+    collector = solver.AllSolutionCollector(solution)
     solver.Solve(solver.Phase([mines[(i,j)] for i in range(r) for j in range(c)],
                               solver.INT_VAR_SIMPLE,
                               solver.ASSIGN_MIN_VALUE),
@@ -174,8 +174,8 @@ def main(game="", r="", c=""):
     print "num_solutions: ", num_solutions
     if num_solutions > 0:
         for s in range(num_solutions):
-            current = collector.solution(s)
-            minesval = [current.Value(mines[(i,j)]) for i in range(r) for j in range(c)]
+            minesval = [collector.Value(s, mines[(i,j)])
+                        for i in range(r) for j in range(c)]
             for i in range(r):
                 for j in range(c):
                     print minesval[i*c+j],
@@ -227,15 +227,15 @@ def print_game(game, rows, cols):
         for j in range(cols):
             print game[i][j],
         print ''
-            
 
 
-if __name__ == '__main__':   
+
+if __name__ == '__main__':
     if len(sys.argv) > 1:
         file = sys.argv[1]
         print "Problem instance from", file
         [game, rows, cols] = read_problem(file)
         # print_game(game, rows, cols)
-        main(game, rows, cols)    
-    else:    
+        main(game, rows, cols)
+    else:
         main()
