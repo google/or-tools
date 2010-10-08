@@ -1269,10 +1269,10 @@ static bool PyCallbackBool(PyObject* pyfunc) {
   Constraint* MapTo(const vector<IntVar*>& vars) {
     return self->solver()->MakeMapDomain(self->Var(), vars);
   }
-  IntExpr* Element(const vector<int64>& vars) {
+  IntExpr* IndexOf(const vector<int64>& vars) {
     return self->solver()->MakeElement(vars, self->Var());
   }
-  IntExpr* Element(const vector<IntVar*>& vars) {
+  IntExpr* IndexOf(const vector<IntVar*>& vars) {
     return self->solver()->MakeElement(vars, self->Var());
   }
 }
