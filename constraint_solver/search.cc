@@ -262,10 +262,10 @@ class SearchTrace : public SearchMonitor {
     LG << prefix_ << " RefuteDecision(" << d << ") ";
   }
   virtual void BeginFail() {
-    LG << prefix_ << " BeginFail()";
+    LG << prefix_ << " BeginFail(" << solver()->SearchDepth() << ")";
   }
   virtual void EndFail() {
-    LG << prefix_ << " EndFail()";
+    LG << prefix_ << " EndFail(" << solver()->SearchDepth() << ")";
   }
   virtual void BeginInitialPropagation() {
     LG << prefix_ << " BeginInitialPropagation()";

@@ -1563,6 +1563,10 @@ class Solver {
 
   Decision* balancing_decision() const { return balancing_decision_.get(); }
 
+  // Internal
+  void set_fail_intercept(Closure* const c) { fail_intercept_ = c; }
+  void clear_fail_intercept() { fail_intercept_ = NULL; }
+
   friend class Queue;
   friend class PropagationBaseObject;
   friend class DomainIntVar;
@@ -1657,6 +1661,8 @@ class Solver {
   SimpleRevFIFO<Action*>* fail_hooks_;
   uint64 fail_stamp_;
   scoped_ptr<Decision> balancing_decision_;
+  // intercept failures
+  Closure* fail_intercept_;
 
   // interval of constants cached, inclusive:
   enum { MIN_CACHED_INT_CONST = -8, MAX_CACHED_INT_CONST = 8 };

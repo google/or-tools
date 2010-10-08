@@ -1185,6 +1185,7 @@ Solver::Solver(const string& name)
       fail_hooks_(NULL),
       fail_stamp_(GG_ULONGLONG(1)),
       balancing_decision_(new BalancingDecision),
+      fail_intercept_(NULL),
       true_constraint_(NULL),
       false_constraint_(NULL),
       equality_var_cst_cache_(NULL),
@@ -2010,6 +2011,10 @@ bool Solver::NestedSolve(DecisionBuilder* const db,
 }
 
 void Solver::Fail() {
+  if (fail_intercept_) {
+    fail_intercept_->Run();
+    return;
+  }
   ConstraintSolverFailHere();
   fails_++;
   searches_.back()->BeginFail();

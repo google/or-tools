@@ -12,12 +12,25 @@
 // limitations under the License.
 
 %include base/base.swig
+%include exception.i
+
 
 // Include the file we want to wrap a first time.
 #ifdef SWIGPYTHON
 %{
+#include <setjmp.h>
+
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+
+struct FailureProtect {
+  jmp_buf exception_buffer;
+  void JumpBack() {
+    longjmp(exception_buffer, 1);
+  }
+};
+
+
 
 namespace operations_research {
 class CallPyDecisionBuilder : public DecisionBuilder {
@@ -25,7 +38,7 @@ class CallPyDecisionBuilder : public DecisionBuilder {
   CallPyDecisionBuilder(PyObject* pydb) : pysolver_(NULL), pyarg_(NULL) {
     Py_INCREF(pydb);
     pydb_ = pydb;
-    func_ = PyObject_GetAttrString(pydb_, "Next");
+    func_ = PyObject_GetAttrString(pydb_, "NextWrapper");
     Py_XINCREF(func_);
     str_func_ = PyObject_GetAttrString(pydb_, "DebugString");
     Py_XINCREF(str_func_);
@@ -204,6 +217,19 @@ class PyLNS : public BaseLNS {
 }  // namespace operations_research
 %}
 
+namespace operations_research {
+%pythoncode {
+class PyDecisionBuilder(object):
+  def NextWrapper(self, solver):
+    result = None
+    try:
+      result = self.Next(solver)
+    except Exception:
+      return solver.FailDecision()
+    return result
+}
+}
+
 // Define the renaming of methods.
 %rename (Add) AddConstraint;
 %rename (AllDifferent) MakeAllDifferent;
@@ -293,18 +319,13 @@ namespace operations_research {
 %{
 static string PyCallbackString(PyObject* pyfunc) {
    string result;
-   char tmp_result[256];
    PyObject* arglist = Py_BuildValue("()");
    PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
    Py_DECREF(arglist);
    if (pyresult) {
-     strcpy(tmp_result, PyString_AsString(pyresult));
-     result = tmp_result;
+     result = PyString_AsString(pyresult);
+     Py_DECREF(pyresult);
    }
-   else {
-     result = "";
-   }
-   Py_XDECREF(pyresult);
    return result;
 }
 %}
@@ -1305,6 +1326,60 @@ static bool PyCallbackBool(PyObject* pyfunc) {
   int __len__() {
     return self->Size();
   }
+}
+
+// Protect from failure
+#define PREPROTECT\
+  FailureProtect protect;\
+  Closure* const intercept = \
+      NewCallback<>(&protect, &FailureProtect::JumpBack);\
+  solver->set_fail_intercept(intercept);\
+  if (setjmp(protect.exception_buffer) == 0) {
+
+#define POSTPROTECT\
+    solver->clear_fail_intercept();\
+    delete intercept;\
+  } else {\
+    solver->clear_fail_intercept();\
+    PyErr_SetString(PyExc_IndexError, "fail");\
+    SWIG_fail;\
+  }
+
+%exception IntExpr::SetValue(int64 v) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception IntExpr::SetMin(int64 v) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception IntExpr::SetMax(int64 v) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception IntExpr::SetRange(int64 mi, int64 ma) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception IntVar::RemoveValue(int64 v) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception Solver::AddConstraint(Constraint* const ct) {
+  operations_research::Solver* const solver = arg1;
+  PREPROTECT
+    $action
+  POSTPROTECT
 }
 }  // namespace operations_research
 #endif  // SWIGPYTHON
