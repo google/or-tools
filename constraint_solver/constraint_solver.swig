@@ -27,6 +27,8 @@ class CallPyDecisionBuilder : public DecisionBuilder {
     pydb_ = pydb;
     func_ = PyObject_GetAttrString(pydb_, "Next");
     Py_XINCREF(func_);
+    str_func_ = PyObject_GetAttrString(pydb_, "DebugString");
+    Py_XINCREF(str_func_);
   }
 
   virtual ~CallPyDecisionBuilder() {
@@ -34,6 +36,8 @@ class CallPyDecisionBuilder : public DecisionBuilder {
     pydb_ = NULL;
     Py_XDECREF(func_);
     func_ = NULL;
+    Py_XDECREF(str_func_);
+    str_func_ = NULL;
     Py_XDECREF(pysolver_);
     pysolver_ = NULL;
     Py_XDECREF(pyarg_);
@@ -57,6 +61,20 @@ class CallPyDecisionBuilder : public DecisionBuilder {
         LOG(INFO) << "Error in type from python Decision";
       }
       Py_DECREF(pyresult);
+    } else {  // something went wrong, we fail.
+      s->Fail();
+    }
+    return result;
+  }
+
+  virtual string DebugString() const {
+    string result = "PyDecisionBuilder";
+    if (str_func_) {
+      PyObject* pyresult = PyEval_CallObject(str_func_, NULL);
+      if (pyresult) {
+        result = PyString_AsString(pyresult);
+        Py_DECREF(pyresult);
+      }
     }
     return result;
   }
@@ -65,6 +83,7 @@ class CallPyDecisionBuilder : public DecisionBuilder {
   PyObject* pyarg_;
   PyObject* pydb_;
   PyObject* func_;
+  PyObject* str_func_;
 };
 
 class PyLNSNoValues : public BaseLNS {
@@ -191,6 +210,7 @@ class PyLNS : public BaseLNS {
 %rename (AllSolutionCollector) MakeAllSolutionCollector;
 %rename (AllowedAssignments) MakeAllowedAssignments;
 %rename (AssignVariableValue) MakeAssignVariableValue;
+%rename (AssignVariableValueOrFail) MakeAssignVariableValueOrFail;
 %rename (AssignVariableValues) MakeAssignVariableValues;
 %rename (Assignment) MakeAssignment;
 %rename (BestValueSolutionCollector) MakeBestValueSolutionCollector;

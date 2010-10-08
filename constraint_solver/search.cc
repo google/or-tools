@@ -1135,6 +1135,45 @@ Decision* Solver::MakeAssignVariableValue(IntVar* const v, int64 val) {
   return RevAlloc(new AssignOneVariableValue(v, val));
 }
 
+// ----- AssignOneVariableValueOrFail decision -----
+
+class AssignOneVariableValueOrFail : public Decision {
+ public:
+  AssignOneVariableValueOrFail(IntVar* const v, int64 val);
+  virtual ~AssignOneVariableValueOrFail() {}
+  virtual void Apply(Solver* const s);
+  virtual void Refute(Solver* const s);
+  virtual string DebugString() const;
+  virtual void Accept(DecisionVisitor* const visitor) const {
+    visitor->VisitSetVariableValue(var_, value_);
+  }
+ private:
+  IntVar* const var_;
+  int64 value_;
+};
+
+AssignOneVariableValueOrFail::AssignOneVariableValueOrFail(IntVar* const v,
+                                                           int64 val)
+    : var_(v), value_(val) {
+}
+
+string AssignOneVariableValueOrFail::DebugString() const {
+  return StringPrintf("[%s == %" GG_LL_FORMAT "d]",
+                      var_->DebugString().c_str(), value_);
+}
+
+void AssignOneVariableValueOrFail::Apply(Solver* const s) {
+  var_->SetValue(value_);
+}
+
+void AssignOneVariableValueOrFail::Refute(Solver* const s) {
+  s->Fail();
+}
+
+Decision* Solver::MakeAssignVariableValueOrFail(IntVar* const v, int64 val) {
+  return RevAlloc(new AssignOneVariableValueOrFail(v, val));
+}
+
 // ----- AssignVariablesValues decision -----
 
 class AssignVariablesValues : public Decision {

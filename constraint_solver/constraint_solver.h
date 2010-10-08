@@ -1149,6 +1149,7 @@ class Solver {
 
   // ----- Decisions -----
   Decision* MakeAssignVariableValue(IntVar* const var, int64 value);
+  Decision* MakeAssignVariableValueOrFail(IntVar* const var, int64 value);
   Decision* MakeAssignVariablesValues(const IntVar* const* vars, int size,
                                       const int64* const values);
   Decision* MakeAssignVariablesValues(const vector<IntVar*>& vars,
