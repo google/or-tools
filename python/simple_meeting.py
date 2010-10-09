@@ -165,7 +165,7 @@ def main(unused_argv):
                                            for p in all_rooms]))
   # Persons must fit in the room.
   sizes = [room_sizes[r] for r in all_rooms]
-  solver.Add(people_count <= (meeting_location - 1).Element(sizes))
+  solver.Add(people_count <= (meeting_location - 1).IndexOf(sizes))
 
   # Add sequence constraints.
   all_calendars = []
