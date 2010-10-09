@@ -1741,6 +1741,11 @@ bool Solver::NextSolution() {
   Decision* fd = NULL;
   const bool top_level = (searches_.size() == 1);
 
+  if (top_level && state_ == OUTSIDE_SEARCH && !search->decision_builder()) {
+    LOG(WARNING) << "NextSolution() called without a NewSearch before";
+    return false;
+  }
+
   if (top_level) {  // Manage top level state.
     switch (state_) {
       case PROBLEM_INFEASIBLE:
