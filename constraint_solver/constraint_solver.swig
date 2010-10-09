@@ -1381,6 +1381,12 @@ static bool PyCallbackBool(PyObject* pyfunc) {
     $action
   POSTPROTECT
 }
+%exception Solver::Fail() {
+  operations_research::Solver* const solver = arg1;
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
 }  // namespace operations_research
 #endif  // SWIGPYTHON
 
