@@ -1203,6 +1203,7 @@ Solver::Solver(const string& name)
   InitCachedIntConstants();  // to be called after the SENTINEL is set.
   InitCachedConstraint();  // Cache the true constraint.
   InitBoolVarCaches();
+  timer_->Restart();
 }
 
 Solver::~Solver() {

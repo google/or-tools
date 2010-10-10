@@ -3213,6 +3213,7 @@ bool RegularLimit::CheckTime() {
   if (wall_time_ != kint64max && next_check_ <= check_count_) {
     Solver* const s = solver();
     int64 time_delta = s->wall_time() -  wall_time_offset_;
+    LOG(INFO) << "time delta = " << time_delta;
     if (smart_time_check_
         && check_count_ > kCheckWarmupIterations
         && time_delta > 0) {
