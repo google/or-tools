@@ -43,8 +43,50 @@ int64 ACMRandom::Next64() {
   return (next - 1) * 2147483646L + Next();
 }
 
+namespace {
+inline uint32 Word32At(const void *p) {
+  uint32 t;
+  memcpy(&t, p, sizeof(t));
+  return t;
+}
+}  // namespace
+
 int32 ACMRandom::HostnamePidTimeSeed() {
+#if defined(__GNUC__)
+  char name[PATH_MAX + 20];      // need 12 bytes for 3 'empty' uint32's
+  assert(sizeof(name) - PATH_MAX > sizeof(uint32) * 3);
+
+  if (gethostname(name, PATH_MAX) != 0) {
+    return 0;
+  }
+  const int namelen = strlen(name);
+  for (int i = 0; i < sizeof(uint32) * 3; ++i) {
+    name[namelen + i] = '\0';   // so we mix 0's once we get to end-of-string
+  }
+
+  uint32 a = getpid();
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  uint32 b = ((tv.tv_sec + tv.tv_usec) & GG_ULONGLONG(0xffffffff));
+  uint32 c = 0;
+  for (int i = 0; i < namelen; i += sizeof(uint32) * 3) {
+    a += Word32At(name + i);
+    b += Word32At(name + i + sizeof(uint32));
+    c += Word32At(name + i + sizeof(uint32) + sizeof(uint32));
+    mix(a,b,c);
+  }
+  c += namelen;                      // one final mix
+  mix(a,b,c);
+  return static_cast<int32>(c);      // I guess the seed can be negative
+#elif defined(_MSC_VER)
+  uint64 a = GetTickCount();
+  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);
+  uint64 c = GetCurrentProcessId();
+  mix(a, b, c);
+  return c;
+#else
   return 0;
+#endif
 }
 
 int32 ACMRandom::DeterministicSeed() { return 0; }
