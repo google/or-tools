@@ -170,6 +170,8 @@ class WallTimer {
   DISALLOW_COPY_AND_ASSIGN(WallTimer);
 };
 
+int64 GetMemoryUsage();
+
 }  // namespace operations_research
 
 

@@ -1258,12 +1258,8 @@ string Solver::DebugString() const {
 }
 
 int64 Solver::MemoryUsage() {
-  // FIXME: Implement the real thing.
-     return 0ll;
-
+  return GetMemoryUsage();
 }
-
-
 
 int64 Solver::wall_time() const {
   return timer_->GetInMs();

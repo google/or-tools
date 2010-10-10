@@ -205,8 +205,16 @@ void SearchLog::OutputLine(const string& line) {
 }
 
 string SearchLog::MemoryUsage() {
-  return StringPrintf("memory used = %" GG_LL_FORMAT "d", Solver::MemoryUsage());
-
+  int64 memory_usage = Solver::MemoryUsage();
+  if (memory_usage > 0x200000) {
+    return StringPrintf("memory used = %.2lf MB",
+                        memory_usage  * 1.0 / 1024 / 1024);
+  } else if (memory_usage > 0x1000) {
+    return StringPrintf("memory used = %" GG_LL_FORMAT "d KB",
+                        memory_usage / 1024);
+  } else {
+    return StringPrintf("memory used = %" GG_LL_FORMAT "d", memory_usage);
+  }
 }
 
 SearchMonitor* Solver::MakeSearchLog(int period) {
