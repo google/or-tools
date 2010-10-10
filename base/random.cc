@@ -51,6 +51,10 @@ inline uint32 Word32At(const void *p) {
 }
 }  // namespace
 
+#if defined(__GNUC__) && defined(__linux__)
+#include <linux/limits.h>
+#endif
+
 int32 ACMRandom::HostnamePidTimeSeed() {
 #if defined(__GNUC__)
   char name[PATH_MAX + 20];      // need 12 bytes for 3 'empty' uint32's
