@@ -108,7 +108,31 @@ int64 GetMemoryUsage () {
   //  int64 virtual_memory = t_info.virtual_size;
   return resident_memory;
 }
-#else
+#elif defined(__GNUC__)   // LINUX
+int64 GetMemoryUsage() {
+  return 0;
+}
+#elif DEFINED(_MSC_VER)  // WINDOWS
+#include <windows.h>
+#include <stdio.h>
+#include <psapi.h>
+
+int64 GetMemoryInfo() {
+  HANDLE hProcess;
+  PROCESS_MEMORY_COUNTERS pmc;
+  hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
+                         FALSE,
+                         GetCurrentProcess());
+  int64 memory = 0;
+  if (hProcess) {
+    if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) {
+      memory = pmc.WorkingSetSize;
+    }
+    Closehandle(hProcess);
+  }
+  return memory;
+}
+#else  // Unknown, returning 0.
 int64 GetMemoryUsage() {
   return 0;
 }
