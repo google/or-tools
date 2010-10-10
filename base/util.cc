@@ -110,9 +110,18 @@ int64 GetMemoryUsage () {
 }
 #elif defined(__GNUC__)   // LINUX
 int64 GetMemoryUsage() {
-  return 0;
+  unsigned size = 0;
+  int result;
+  char buf[30];
+  snprintf(buf, 30, "/proc/%u/statm", (unsigned)getpid());
+  FILE* pf = fopen(buf, "r");
+  if (pf) {
+    result = fscanf(pf, "%u", &size);
+  }
+  fclose(pf);
+  return size * GG_LONGLONG(1024);
 }
-#elif DEFINED(_MSC_VER)  // WINDOWS
+#elif defined(_MSC_VER)  // WINDOWS
 #include <windows.h>
 #include <stdio.h>
 #include <psapi.h>
