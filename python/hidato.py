@@ -34,7 +34,8 @@
   * ECLiPSe: http://hakank.org/eclipse/hidato.ecl
   * SICStus: http://hakank.org/sicstus/hidato.pl
 
-
+  Note: This model is very slow. Please see Laurent Perron's much faster
+        (and more elegant) model: hidato_table.py .
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
