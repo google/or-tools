@@ -1564,6 +1564,7 @@ class Solver {
   Decision* balancing_decision() const { return balancing_decision_.get(); }
 
   // Internal
+  // set_fail_intercept does not take ownership of the closure.
   void set_fail_intercept(Closure* const c) { fail_intercept_ = c; }
   void clear_fail_intercept() { fail_intercept_ = NULL; }
 

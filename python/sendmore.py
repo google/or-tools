@@ -20,8 +20,11 @@ Each letter corresponds to one figure and all letters have different values.
 
 
 
+from google.apputils import app
+import gflags
 from constraint_solver import pywrapcp
 
+FLAGS = gflags.FLAGS
 
 
 def main(unused_argv):
@@ -58,4 +61,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  main("cp sample")
+  app.run()

@@ -23,8 +23,11 @@ of the rule.
 
 
 
+from google.apputils import app
+import gflags
 from constraint_solver import pywrapcp
 
+FLAGS = gflags.FLAGS
 
 # We disable the following warning because it is a false positive on constraints
 # like: solver.Add(x == 0)
@@ -76,4 +79,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  main("cp sample")
+  app.run()

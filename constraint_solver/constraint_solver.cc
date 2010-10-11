@@ -1258,8 +1258,11 @@ string Solver::DebugString() const {
 }
 
 int64 Solver::MemoryUsage() {
-  return GetMemoryUsage();
+  return GetProcessMemoryUsage();
+
 }
+
+
 
 int64 Solver::wall_time() const {
   return timer_->GetInMs();
@@ -1538,6 +1541,9 @@ void Solver::NewSearch(DecisionBuilder* const db,
                        SearchMonitor* const * monitors,
                        int size) {
   // TODO(user) : reset statistics
+
+  CHECK_NOTNULL(db);
+  DCHECK_GE(size, 0);
 
   if (state_ == IN_SEARCH) {
     LOG(FATAL) << "Use NestedSolve() inside search";

@@ -205,7 +205,7 @@ void SearchLog::OutputLine(const string& line) {
 }
 
 string SearchLog::MemoryUsage() {
-  int64 memory_usage = Solver::MemoryUsage();
+  const int64 memory_usage = Solver::MemoryUsage();
   if (memory_usage > 0x200000) {
     return StringPrintf("memory used = %.2lf MB",
                         memory_usage  * 1.0 / 1024 / 1024);
@@ -215,6 +215,7 @@ string SearchLog::MemoryUsage() {
   } else {
     return StringPrintf("memory used = %" GG_LL_FORMAT "d", memory_usage);
   }
+
 }
 
 SearchMonitor* Solver::MakeSearchLog(int period) {
@@ -1147,7 +1148,7 @@ Decision* Solver::MakeAssignVariableValue(IntVar* const v, int64 val) {
 
 class AssignOneVariableValueOrFail : public Decision {
  public:
-  AssignOneVariableValueOrFail(IntVar* const v, int64 val);
+  AssignOneVariableValueOrFail(IntVar* const v, int64 value);
   virtual ~AssignOneVariableValueOrFail() {}
   virtual void Apply(Solver* const s);
   virtual void Refute(Solver* const s);
@@ -1157,12 +1158,12 @@ class AssignOneVariableValueOrFail : public Decision {
   }
  private:
   IntVar* const var_;
-  int64 value_;
+  const int64 value_;
 };
 
 AssignOneVariableValueOrFail::AssignOneVariableValueOrFail(IntVar* const v,
-                                                           int64 val)
-    : var_(v), value_(val) {
+                                                           int64 value)
+    : var_(v), value_(value) {
 }
 
 string AssignOneVariableValueOrFail::DebugString() const {
@@ -1178,8 +1179,8 @@ void AssignOneVariableValueOrFail::Refute(Solver* const s) {
   s->Fail();
 }
 
-Decision* Solver::MakeAssignVariableValueOrFail(IntVar* const v, int64 val) {
-  return RevAlloc(new AssignOneVariableValueOrFail(v, val));
+Decision* Solver::MakeAssignVariableValueOrFail(IntVar* const v, int64 value) {
+  return RevAlloc(new AssignOneVariableValueOrFail(v, value));
 }
 
 // ----- AssignVariablesValues decision -----

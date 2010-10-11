@@ -87,13 +87,13 @@ int64 WallTimer::GetInMs() const {
 #endif
 }
 
-// GetUsedMemory
+// GetProcessMemoryUsage
 
 #if defined(__APPLE__) && defined(__GNUC__)
 #include <mach/mach_init.h>
 #include <mach/task.h>
 
-int64 GetMemoryUsage () {
+int64 GetProcessMemoryUsage () {
   task_t task = MACH_PORT_NULL;
   struct task_basic_info t_info;
   mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
@@ -109,7 +109,7 @@ int64 GetMemoryUsage () {
   return resident_memory;
 }
 #elif defined(__GNUC__)   // LINUX
-int64 GetMemoryUsage() {
+int64 GetProcessMemoryUsage() {
   unsigned size = 0;
   int result;
   char buf[30];
@@ -126,7 +126,7 @@ int64 GetMemoryUsage() {
 #include <stdio.h>
 #include <psapi.h>
 
-int64 GetMemoryInfo() {
+int64 GetProcessMemoryUsage() {
   HANDLE hProcess;
   PROCESS_MEMORY_COUNTERS pmc;
   hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
@@ -142,7 +142,7 @@ int64 GetMemoryInfo() {
   return memory;
 }
 #else  // Unknown, returning 0.
-int64 GetMemoryUsage() {
+int64 GetProcessMemoryUsage() {
   return 0;
 }
 #endif

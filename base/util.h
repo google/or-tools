@@ -170,7 +170,8 @@ class WallTimer {
   DISALLOW_COPY_AND_ASSIGN(WallTimer);
 };
 
-int64 GetMemoryUsage();
+// Returns the memory usage of the process.
+int64 GetProcessMemoryUsage();
 
 }  // namespace operations_research
 
