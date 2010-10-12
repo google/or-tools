@@ -53,13 +53,13 @@ def ReadData(filename):
   colors = [x[1] for x in wc]
   loss = [min(filter(lambda x: x >= c, capacity)) - c
           for c in range(max_capacity + 1)]
-  # colorOrders = [filter(lambda o: colors[o] == c, range(nb_slabs))
-  #               for c in range(1, nb_colors + 1)]
+  color_orders = [filter(lambda o: colors[o] == c, range(nb_slabs))
+                      for c in range(1, nb_colors + 1)]
   print 'Solving steel mill with', nb_slabs, 'slabs'
-  return (nb_slabs, capacity, max_capacity, weights, colors, loss)
+  return (nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders)
 
+#------------------dedicated search for this problem-----------
 
-  #------------------dedicated search for this problem-----------
 
 class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
   '''Dedicated Decision Builder for steel mill slab.
@@ -112,8 +112,9 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
 
 def main(unused_argv):
   #------------------solver and variable declaration-------------
-  (nb_slabs, capacity, max_capacity, weights, colors, loss) = \
+  (nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders) = \
       ReadData(FLAGS.data)
+  nb_colors = len(color_orders)
   solver = pywrapcp.Solver('Steel Mill Slab')
   x = [solver.IntVar(0, nb_slabs - 1, 'x' + str(i))
        for i in range(nb_slabs)]
@@ -122,15 +123,22 @@ def main(unused_argv):
 
   #-------------------post of the constraints--------------
 
+  # Bin Packing.
   BinPacking(solver, x, weights, load_vars)
+  # At most two colors per slab.
+  for s in range(nb_slabs):
+    solver.Add(solver.SumLessOrEqual(
+        [solver.Max([solver.IsEqualCstVar(x[c], s) for c in o])
+         for o in color_orders], 2))
+
+  #----------------Objective-------------------------------
+
   objective_var = \
       solver.Sum([load_vars[s].IndexOf(loss) for s in range(nb_slabs)]).Var()
-  solver.Add(objective_var == 0)
-  #TODO: add the atmost two different color per slab constraints
+  objective = solver.Minimize(objective_var, 1)
 
   #------------start the search and optimization-----------
 
-  objective = solver.Minimize(objective_var, 1)
   db = SteelDecisionBuilder(x, nb_slabs, weights)
   search_log = solver.SearchLog(100000, objective_var)
   solver.NewSearch(db, [objective, search_log])
