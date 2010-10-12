@@ -33,6 +33,7 @@ IntVar* BuildDomainIntVar(Solver* const s,
 
 void LinkVarExpr(Solver* const s, IntExpr* const expr, IntVar* const var);
 
+// ----- BaseIntExprElement -----
 
 class BaseIntExprElement : public BaseIntExpr {
  public:
@@ -161,6 +162,80 @@ void BaseIntExprElement::UpdateSupports() const {
   }
 }
 
+// ----- IntElementConstraint -----
+
+class IntElementConstraint : public Constraint {
+ public:
+  IntElementConstraint(Solver* const s,
+                       const int64* const values,
+                       int size,
+                       IntVar* const index,
+                       IntVar* const elem)
+      : Constraint(s),
+        values_(new int64[size]),
+        size_(size),
+        index_(index),
+        elem_(elem),
+        index_iterator_(index_->MakeDomainIterator(true)) {
+    CHECK_NOTNULL(values);
+    CHECK_NOTNULL(index);
+    CHECK_NOTNULL(elem);
+    memcpy(values_.get(), values, size_ * sizeof(*values));
+  }
+
+  virtual void Post() {
+    Demon* const d =
+        solver()->MakeDelayedConstraintInitialPropagateCallback(this);
+    index_->WhenDomain(d);
+    elem_->WhenRange(d);
+  }
+
+  virtual void InitialPropagate() {
+    index_->SetRange(0, size_ - 1);
+    const int64 elem_min = elem_->Min();
+    const int64 elem_max = elem_->Max();
+    int64 new_min = elem_max;
+    int64 new_max = elem_min;
+    to_remove_.clear();
+    for (index_iterator_->Init();
+         index_iterator_->Ok();
+         index_iterator_->Next()) {
+      const int64 index = index_iterator_->Value();
+      const int64 value = values_[index];
+      if (value < elem_min || value > elem_max) {
+        to_remove_.push_back(index);
+      } else {
+        if (value < new_min) {
+          new_min = value;
+        }
+        if (value > new_max) {
+          new_max = value;
+        }
+      }
+    }
+    elem_->SetRange(new_min, new_max);
+    if (!to_remove_.empty()) {
+      index_->RemoveValues(to_remove_);
+    }
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("IntElementConstraint(values, %d, %s, %s)",
+                        size_,
+                        index_->DebugString().c_str(),
+                        elem_->DebugString().c_str());
+  }
+ private:
+  scoped_array<int64> values_;
+  const int size_;
+  IntVar* const index_;
+  IntVar* const elem_;
+  IntVarIterator* const index_iterator_;
+  vector<int64> to_remove_;
+};
+
+// ----- IntExprElement
+
 class IntExprElement : public BaseIntExprElement {
  public:
   IntExprElement(Solver* const s, const int64* const vals, int size,
@@ -174,8 +249,11 @@ class IntExprElement : public BaseIntExprElement {
     Solver* const s = solver();
     IntVar* const var = BuildDomainIntVar(s, values_, size_, "");
     AddDelegateName("Var", var);
-    // TODO(user) : replace by dedicated constraint.
-    LinkVarExpr(s, this, var);
+    s->AddConstraint(s->RevAlloc(new IntElementConstraint(s,
+                                                          values_,
+                                                          size_,
+                                                          expr_,
+                                                          var)));
     return var;
   }
  protected:
@@ -229,7 +307,6 @@ class IncreasingIntExprElement : public BaseIntExpr {
     Solver* const s = solver();
     IntVar* const var = BuildDomainIntVar(s, values_.get(), size_, "");
     AddDelegateName("Var", var);
-    // TODO(user) : replace by dedicated constraint.
     LinkVarExpr(s, this, var);
     return var;
   }
