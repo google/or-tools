@@ -205,17 +205,23 @@ void SearchLog::OutputLine(const string& line) {
 }
 
 string SearchLog::MemoryUsage() {
+  static const int64 kDisplayThreshold = 2;
+  static const int64 kKiloByte = 1024;
+  static const int64 kMegaByte = kKiloByte * kKiloByte;
+  static const int64 kGigaByte = kMegaByte * kKiloByte;
   const int64 memory_usage = Solver::MemoryUsage();
-  if (memory_usage > 0x200000) {
+  if (memory_usage > kDisplayThreshold * kGigaByte) {
+    return StringPrintf("memory used = %.2lf GB",
+                        memory_usage  * 1.0 / kGigaByte);
+  } else if (memory_usage > kDisplayThreshold * kMegaByte) {
     return StringPrintf("memory used = %.2lf MB",
-                        memory_usage  * 1.0 / 1024 / 1024);
-  } else if (memory_usage > 0x1000) {
-    return StringPrintf("memory used = %" GG_LL_FORMAT "d KB",
-                        memory_usage / 1024);
+                        memory_usage  * 1.0 / kMegaByte);
+  } else if (memory_usage > kDisplayThreshold * kKiloByte) {
+    return StringPrintf("memory used = %2lf KB",
+                        memory_usage * 1.0 / kKiloByte);
   } else {
     return StringPrintf("memory used = %" GG_LL_FORMAT "d", memory_usage);
   }
-
 }
 
 SearchMonitor* Solver::MakeSearchLog(int period) {

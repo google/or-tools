@@ -105,7 +105,6 @@ int64 GetProcessMemoryUsage () {
     return -1;
   }
   int64 resident_memory = t_info.resident_size;
-  //  int64 virtual_memory = t_info.virtual_size;
   return resident_memory;
 }
 #elif defined(__GNUC__)   // LINUX
