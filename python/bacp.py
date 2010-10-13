@@ -23,18 +23,14 @@ gflags.DEFINE_string('data', 'python/data/bacp/bacp12.txt',
 
 #----------------helper for binpacking posting----------------
 
-
 def BinPacking(solver, binvars, weights, loadvars):
   '''post the load constraint on bins.
 
   constraints forall j: loadvars[j] == sum_i (binvars[i] == j) * weights[i])
   '''
-  for j in range(len(loadvars)):
-    b = [solver.IsEqualCstVar(binvars[i], j) for i in range(len(binvars))]
-    solver.Add(solver.ScalProd(b, weights) == loadvars[j])
-#  pack = solver.Pack(binvars, len(loadvars))
-#  pack.AddWeightedSumEqualVarDimension(weights, loadvars);
-#  solver.Add(pack)
+  pack = solver.Pack(binvars, len(loadvars))
+  pack.AddWeightedSumEqualVarDimension(weights, loadvars);
+  solver.Add(pack)
   solver.Add(solver.SumEquality(loadvars, sum(weights)))
 
 #------------------------------data reading-------------------
@@ -42,11 +38,11 @@ def BinPacking(solver, binvars, weights, loadvars):
 def ReadData(filename):
   '''Read data from <filename>.'''
   f = open(filename)
-  nb_courses, nb_periods, min_credit, max_credit, nb_prereqs = [int(nb) for nb in f.readline().split()]
+  nb_courses, nb_periods, min_credit, max_credit, nb_prereqs =\
+      [int(nb) for nb in f.readline().split()]
   credits = [int(nb) for nb in f.readline().split()]
   prereq  = [int(nb) for nb in f.readline().split()]
-  print len(prereq)
-  prereq  = [(prereq[i*2],prereq[i*2+1]) for i in range(nb_prereqs)]
+  prereq  = [(prereq[i * 2],prereq[i * 2 + 1]) for i in range(nb_prereqs)]
   return (credits ,nb_periods, prereq)
 
 
@@ -57,36 +53,34 @@ def main(unused_argv):
   credits ,nb_periods, prereq = ReadData(FLAGS.data)
   nb_courses = len(credits)
 
+  solver = pywrapcp.Solver('Balanced Academic Curriculum Problem')
 
-  solver = pywrapcp.Solver('Steel Mill Slab')
-
-
-  x = [solver.IntVar(0, nb_periods - 1, 'x' + str(i)) for i in range(nb_courses)]
-  load_vars = [solver.IntVar(0, sum(credits) , 'load_vars' + str(i)) for i in range(nb_periods)]
+  x = [solver.IntVar(0, nb_periods - 1, 'x' + str(i))
+       for i in range(nb_courses)]
+  load_vars = [solver.IntVar(0, sum(credits), 'load_vars' + str(i))
+               for i in range(nb_periods)]
 
   #-------------------post of the constraints--------------
 
-  #Bin Packing.
+  # Bin Packing.
   BinPacking(solver, x, credits, load_vars)
-  print prereq
+  # Add dependencies.
   for i,j in prereq:
       solver.Add(x[i] < x[j])
 
   #----------------Objective-------------------------------
 
-  objective_var = \
-      solver.Max(load_vars).Var()
+  objective_var = solver.Max(load_vars)
   objective = solver.Minimize(objective_var, 1)
 
   #------------start the search and optimization-----------
 
-  db = solver.Phase(x, solver.CHOOSE_MIN_SIZE_LOWEST_MIN, solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(x,
+                    solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                    solver.INT_VALUE_DEFAULT)
 
   search_log = solver.SearchLog(100000, objective_var)
-  solver.NewSearch(db, [objective, search_log])
-  while solver.NextSolution():
-    print 'Objective:', objective_var.Value()
-  solver.EndSearch()
+  solver.Solve(db, [objective, search_log])
 
 
 if __name__ == '__main__':
