@@ -527,6 +527,144 @@ class DimensionLessThanConstant : public Dimension {
   int ranked_size_;
 };
 
+class DimensionWeightedSumEqVar : public Dimension {
+ public:
+  class VarDemon : public Demon {
+   public:
+    explicit VarDemon(DimensionWeightedSumEqVar* const dim,
+                      int index) : dim_(dim), index_(index) {}
+    virtual ~VarDemon() {}
+
+    virtual void Run(Solver* const s) {
+      dim_->PushFromTop(index_);
+    }
+   private:
+    DimensionWeightedSumEqVar* const dim_;
+    const int index_;
+  };
+
+  DimensionWeightedSumEqVar(Solver* const s,
+                            Pack* const p,
+                            const int64* const weights,
+                            int vars_count,
+                            IntVar* const * loads,
+                            int bins_count)
+      : Dimension(s, p),
+        vars_count_(vars_count),
+        weights_(new int64[vars_count_]),
+        bins_count_(bins_count),
+        loads_(new IntVar*[bins_count_]),
+        first_unbound_backward_vector_(bins_count, Rev<int>(0)),
+        sum_of_bound_variables_vector_(bins_count, Rev<int64>(0LL)),
+        sum_of_all_variables_vector_(bins_count, Rev<int64>(0LL)),
+        ranked_(new int64[vars_count_]),
+        ranked_size_(vars_count_) {
+    DCHECK(weights);
+    DCHECK(loads);
+    DCHECK_GT(vars_count, 0);
+    DCHECK_GT(bins_count, 0);
+    memcpy(weights_, weights, vars_count * sizeof(*weights));
+    memcpy(loads_.get(), loads, bins_count * sizeof(*loads));
+    for (int i = 0; i < vars_count_; ++i) {
+      ranked_[i] = i;
+    }
+    ranked_size_ = SortIndexByWeight(ranked_, weights_, vars_count_);
+  }
+
+  virtual ~DimensionWeightedSumEqVar() {
+    delete [] weights_;
+    delete [] ranked_;
+  }
+
+  virtual string DebugString() const {
+    return "DimensionWeightedSumEqVar";
+  }
+
+  virtual void Post() {
+    for (int i = 0; i < bins_count_; ++i) {
+      Demon* const d = solver()->RevAlloc(new VarDemon(this, i));
+      loads_[i]->WhenRange(d);
+    }
+  }
+
+  void PushFromTop(int64 bin_index) {
+    IntVar* const load = loads_[bin_index];
+    load->SetRange(sum_of_bound_variables_vector_[bin_index].Value(),
+                   sum_of_all_variables_vector_[bin_index].Value());
+    const int64 slack_up =
+        load->Max() - sum_of_bound_variables_vector_[bin_index].Value();
+    const int64 slack_down =
+        sum_of_all_variables_vector_[bin_index].Value() - load->Min();
+    int64 last_unbound = first_unbound_backward_vector_[bin_index].Value();
+    for (; last_unbound >= 0; --last_unbound) {
+      const int64 var_index = ranked_[last_unbound];
+      const int64 weight = weights_[var_index];
+      if (IsUndecided(var_index, bin_index)) {
+        if (weight > slack_up) {
+          SetImpossible(var_index, bin_index);
+        } else if (weight > slack_down) {
+          Assign(var_index, bin_index);
+        } else {
+          break;
+        }
+      }
+    }
+    first_unbound_backward_vector_[bin_index].SetValue(solver(), last_unbound);
+  }
+
+  virtual void InitialPropagate(int64 bin_index,
+                                const vector<int64>& forced,
+                                const vector<int64>& undecided) {
+    Solver* const s = solver();
+    int64 sum = 0LL;
+    for (ConstIter<vector<int64> > it(forced); !it.at_end(); ++it) {
+      sum += weights_[*it];
+    }
+    sum_of_bound_variables_vector_[bin_index].SetValue(s, sum);
+    for (ConstIter<vector<int64> > it(undecided); !it.at_end(); ++it) {
+      sum += weights_[*it];
+    }
+    sum_of_all_variables_vector_[bin_index].SetValue(s, sum);
+    first_unbound_backward_vector_[bin_index].SetValue(s, ranked_size_ - 1);
+    PushFromTop(bin_index);
+  }
+
+  virtual void EndInitialPropagate() {}
+
+  virtual void Propagate(int64 bin_index,
+                         const vector<int64>& forced,
+                         const vector<int64>& removed) {
+    Solver* const s = solver();
+    int64 down = sum_of_bound_variables_vector_[bin_index].Value();
+    for (ConstIter<vector<int64> > it(forced); !it.at_end(); ++it) {
+      down += weights_[*it];
+    }
+    sum_of_bound_variables_vector_[bin_index].SetValue(s, down);
+    int64 up = sum_of_all_variables_vector_[bin_index].Value();
+    for (ConstIter<vector<int64> > it(removed); !it.at_end(); ++it) {
+      up -= weights_[*it];
+    }
+    sum_of_all_variables_vector_[bin_index].SetValue(s, up);
+    PushFromTop(bin_index);
+  }
+  virtual void InitialPropagateUnassigned(const vector<int64>& assigned,
+                                          const vector<int64>& unassigned) {}
+  virtual void PropagateUnassigned(const vector<int64>& assigned,
+                                   const vector<int64>& unassigned) {}
+
+  virtual void EndPropagate() {}
+ private:
+  const int vars_count_;
+  int64* weights_;
+  const int bins_count_;
+  scoped_array<IntVar*> loads_;
+  vector<Rev<int> > first_unbound_backward_vector_;
+  vector<Rev<int64> > sum_of_bound_variables_vector_;
+  vector<Rev<int64> > sum_of_all_variables_vector_;
+  int64* ranked_;
+  int ranked_size_;
+};
+
 class AssignedWeightedSumDimension : public Dimension {
  public:
   class VarDemon : public Demon {
@@ -884,6 +1022,21 @@ void Pack::AddWeightedSumLessOrEqualConstantDimension(
                                                 weights.size(),
                                                 bounds.data(),
                                                 bounds.size()));
+  dims_.push_back(dim);
+}
+
+void Pack::AddWeightedSumEqualVarDimension(const vector<int64>& weights,
+                                           const vector<IntVar*>& loads) {
+  DCHECK_EQ(weights.size(), vsize_);
+  DCHECK_EQ(loads.size(), bins_);
+  Solver* const s = solver();
+  Dimension* const dim =
+      s->RevAlloc(new DimensionWeightedSumEqVar(s,
+                                                this,
+                                                weights.data(),
+                                                weights.size(),
+                                                loads.data(),
+                                                loads.size()));
   dims_.push_back(dim);
 }
 

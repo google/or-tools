@@ -2943,6 +2943,11 @@ class Pack : public Constraint {
   void AddWeightedSumLessOrEqualConstantDimension(const vector<int64>& weights,
                                                   const vector<int64>& bounds);
 
+  // This dimension imposes that for all bins b, the weighted sum
+  // (weights[i]) of all objects i assigned to 'b' is equal to loads[b].
+  void AddWeightedSumEqualVarDimension(const vector<int64>& weights,
+                                       const vector<IntVar*>& loads);
+
   // This dimension enforces that cost_var == sum of weights[i] for
   // all objects 'i' assigned to a bin.
   void AddWeightedSumOfAssignedDimension(const vector<int64>& weights,

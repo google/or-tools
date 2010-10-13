@@ -27,15 +27,15 @@ gflags.DEFINE_string('data', 'python/data/steel_mill/steel_mill_slab.txt',
 #----------------helper for binpacking posting----------------
 
 
-def BinPacking(cp, binvars, weights, loadvars):
+def BinPacking(solver, binvars, weights, loadvars):
   '''post the load constraint on bins.
 
   constraints forall j: loadvars[j] == sum_i (binvars[i] == j) * weights[i])
   '''
-  for j in range(len(loadvars)):
-    b = [cp.IsEqualCstVar(binvars[i], j) for i in range(len(binvars))]
-    cp.Add(cp.ScalProd(b, weights) == loadvars[j])
-  cp.Add(cp.SumEquality(loadvars, sum(weights)))
+  pack = solver.Pack(binvars, len(binvars))
+  pack.AddWeightedSumEqualVarDimension(weights, loadvars);
+  solver.Add(pack)
+  solver.Add(solver.SumEquality(loadvars, sum(weights)))
 
 #------------------------------data reading-------------------
 
@@ -65,11 +65,12 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
   '''Dedicated Decision Builder for steel mill slab.
 
   Search for the steel mill slab problem with Dynamic Symmetry
-  Breaking during search is an adaptation (for binary tree) from the paper of Pascal Van Hentenryck and
-  Laurent Michel CPAIOR-2008.
+  Breaking during search is an adaptation (for binary tree) from the
+  paper of Pascal Van Hentenryck and Laurent Michel CPAIOR-2008.
 
   The value heuristic comes from the paper
-  Solving Steel Mill Slab Problems with Constraint-Based Techniques: CP, LNS, and CBLS,
+  Solving Steel Mill Slab Problems with Constraint-Based Techniques:
+    CP, LNS, and CBLS,
   Schaus et. al. to appear in Constraints 2010
   '''
 
@@ -87,11 +88,14 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
     if var:
       v = self.MaxBound()
       if v + 1 == var.Min():
+        # Symmetry breaking. If you need to assign to a new bin,
+        # select the first one.
         solver.Add(var == v + 1)
         return self.Next(solver)
       else:
-        #value heuristic (important for difficult problem):
-        #  try first to place the order in the slab that will induce the least increase of the loss
+        # value heuristic (important for difficult problem):
+        #   try first to place the order in the slab that will induce
+        #   the least increase of the loss
         loads = self.getLoads()
         l,v =  min((self.__losstab[loads[i]+weight],i)
                    for i in range(var.Min(),var.Max()+1)
