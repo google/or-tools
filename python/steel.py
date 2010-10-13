@@ -1,4 +1,4 @@
-#   Copyright 2010 Pierre Schaus pschaus@gmail.com, Laurent Perron
+#   Copyright 2010 Pierre Schaus pschaus@gmail.com, lperron@google.com
 #
 #   Licensed under the Apache License, Version 2.0 (the 'License');
 #   you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
 from google.apputils import app
 import gflags
 from constraint_solver import pywrapcp
-from time import time
-from random import randint
-import sys
 
 FLAGS = gflags.FLAGS
 
