@@ -141,11 +141,14 @@ def main(unused_argv):
 
   db = SteelDecisionBuilder(x, nb_slabs, weights)
   search_log = solver.SearchLog(100000, objective_var)
-  solver.NewSearch(db, [objective, search_log])
+  solver.NewSearch(db, [objective])
   while solver.NextSolution():
     print 'Objective:', objective_var.Value(),\
-        'check:', sum(loss[load_vars[s].Min()] for s in range(nb_slabs))
+        'check:', sum(loss[load_vars[s].Min()] for s in range(nb_slabs)),\
+        ', time = ', solver.wall_time(), 'ms'
   solver.EndSearch()
+  print 'time =', solver.wall_time(), 'ms'
+  print 'failures =', solver.failures()
 
 
 if __name__ == '__main__':
