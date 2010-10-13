@@ -54,7 +54,7 @@ def ReadData(filename):
   loss = [min(filter(lambda x: x >= c, capacity)) - c
           for c in range(max_capacity + 1)]
   color_orders = [filter(lambda o: colors[o] == c, range(nb_slabs))
-                      for c in range(1, nb_colors + 1)]
+                  for c in range(1, nb_colors + 1)]
   print 'Solving steel mill with', nb_slabs, 'slabs'
   return (nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders)
 
@@ -97,12 +97,12 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
 
   def NextVar(self):
     ''' mindom size heuristic with tie break on the weights of orders '''
-    res = [(self.__x[o].Size(), -self.__weights[o], self.__x[o])
+    res = [(self.__x[o].Size(), -self.__weights[o], o, self.__x[o])
            for o in range(self.__nb_slabs)
            if self.__x[o].Size() > 1]
     if res:
       res.sort()
-      return res[0][2]
+      return res[0][3]
     else:
       return None
 

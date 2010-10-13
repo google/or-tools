@@ -358,7 +358,6 @@ template <class T> class NoCompressionTrailPacker : public TrailPacker<T> {
     block_str.CopyToString(packed_block);
   }
   virtual void Unpack(const string& packed_block, addrval<T>* block) {
-    DCHECK(packed_block != NULL);
     DCHECK(block != NULL);
     memcpy(block, packed_block.c_str(), packed_block.size());
   }
@@ -390,7 +389,6 @@ template <class T> class ZlibTrailPacker : public TrailPacker<T> {
   }
 
   virtual void Unpack(const string& packed_block, addrval<T>* block) {
-    DCHECK(packed_block != NULL);
     DCHECK(block != NULL);
     uLongf size = this->input_size();
     const int result =
