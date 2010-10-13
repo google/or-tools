@@ -26,8 +26,8 @@ static inline int64 TimevalToUsec(const timeval &tv) {
 }  // namespace
 #endif
 
-WallTimer::WallTimer() :
-    start_usec_(0LL), sum_usec_(0LL), has_started_(false) {}
+WallTimer::WallTimer()
+  : start_usec_(0LL), sum_usec_(0LL), has_started_(false) {}
 
 void WallTimer::Start() {  // Just save when we started
 #if defined(_MSC_VER)
@@ -61,7 +61,8 @@ bool WallTimer::Reset() {  // As if we had hit Stop() first
 }
 
 void WallTimer::Restart() {
-  Reset(); Start();
+  Reset();
+  Start();
 }
 
 bool WallTimer::IsRunning() const {

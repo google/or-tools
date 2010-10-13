@@ -531,8 +531,8 @@ class DimensionWeightedSumEqVar : public Dimension {
  public:
   class VarDemon : public Demon {
    public:
-    explicit VarDemon(DimensionWeightedSumEqVar* const dim,
-                      int index) : dim_(dim), index_(index) {}
+    VarDemon(DimensionWeightedSumEqVar* const dim, int index)
+        : dim_(dim), index_(index) {}
     virtual ~VarDemon() {}
 
     virtual void Run(Solver* const s) {
@@ -547,7 +547,7 @@ class DimensionWeightedSumEqVar : public Dimension {
                             Pack* const p,
                             const int64* const weights,
                             int vars_count,
-                            IntVar* const * loads,
+                            IntVar* const* loads,
                             int bins_count)
       : Dimension(s, p),
         vars_count_(vars_count),
@@ -564,7 +564,7 @@ class DimensionWeightedSumEqVar : public Dimension {
     DCHECK_GT(vars_count, 0);
     DCHECK_GT(bins_count, 0);
     memcpy(weights_, weights, vars_count * sizeof(*weights));
-    memcpy(loads_.get(), loads, bins_count * sizeof(*loads));
+    memcpy(loads_, loads, bins_count * sizeof(*loads));
     for (int i = 0; i < vars_count_; ++i) {
       ranked_[i] = i;
     }
@@ -573,6 +573,7 @@ class DimensionWeightedSumEqVar : public Dimension {
 
   virtual ~DimensionWeightedSumEqVar() {
     delete [] weights_;
+    delete [] loads_;
     delete [] ranked_;
   }
 
@@ -589,12 +590,13 @@ class DimensionWeightedSumEqVar : public Dimension {
 
   void PushFromTop(int64 bin_index) {
     IntVar* const load = loads_[bin_index];
-    load->SetRange(sum_of_bound_variables_vector_[bin_index].Value(),
-                   sum_of_all_variables_vector_[bin_index].Value());
-    const int64 slack_up =
-        load->Max() - sum_of_bound_variables_vector_[bin_index].Value();
-    const int64 slack_down =
-        sum_of_all_variables_vector_[bin_index].Value() - load->Min();
+    const int64 sum_min = sum_of_bound_variables_vector_[bin_index].Value();
+    const int64 sum_max = sum_of_all_variables_vector_[bin_index].Value();
+    load->SetRange(sum_min, sum_max);
+    const int64 slack_up = load->Max() - sum_min;
+    const int64 slack_down = sum_max - load->Min();
+    DCHECK_GE(slack_down, 0);
+    DCHECK_GE(slack_up, 0);
     int64 last_unbound = first_unbound_backward_vector_[bin_index].Value();
     for (; last_unbound >= 0; --last_unbound) {
       const int64 var_index = ranked_[last_unbound];
@@ -657,7 +659,7 @@ class DimensionWeightedSumEqVar : public Dimension {
   const int vars_count_;
   int64* weights_;
   const int bins_count_;
-  scoped_array<IntVar*> loads_;
+  IntVar** loads_;
   vector<Rev<int> > first_unbound_backward_vector_;
   vector<Rev<int64> > sum_of_bound_variables_vector_;
   vector<Rev<int64> > sum_of_all_variables_vector_;
@@ -1012,8 +1014,8 @@ class CountUsedBinDimension : public Dimension {
 void Pack::AddWeightedSumLessOrEqualConstantDimension(
     const vector<int64>& weights,
     const vector<int64>& bounds) {
-  DCHECK_EQ(weights.size(), vsize_);
-  DCHECK_EQ(bounds.size(), bins_);
+  CHECK_EQ(weights.size(), vsize_);
+  CHECK_EQ(bounds.size(), bins_);
   Solver* const s = solver();
   Dimension* const dim =
       s->RevAlloc(new DimensionLessThanConstant(s,
@@ -1027,8 +1029,8 @@ void Pack::AddWeightedSumLessOrEqualConstantDimension(
 
 void Pack::AddWeightedSumEqualVarDimension(const vector<int64>& weights,
                                            const vector<IntVar*>& loads) {
-  DCHECK_EQ(weights.size(), vsize_);
-  DCHECK_EQ(loads.size(), bins_);
+  CHECK_EQ(weights.size(), vsize_);
+  CHECK_EQ(loads.size(), bins_);
   Solver* const s = solver();
   Dimension* const dim =
       s->RevAlloc(new DimensionWeightedSumEqVar(s,
@@ -1042,7 +1044,7 @@ void Pack::AddWeightedSumEqualVarDimension(const vector<int64>& weights,
 
 void Pack::AddWeightedSumOfAssignedDimension(const vector<int64>& weights,
                                              IntVar* const cost_var) {
-  DCHECK_EQ(weights.size(), vsize_);
+  CHECK_EQ(weights.size(), vsize_);
   Solver* const s = solver();
   Dimension* const dim =
       s->RevAlloc(new AssignedWeightedSumDimension(s,
