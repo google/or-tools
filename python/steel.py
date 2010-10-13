@@ -118,7 +118,7 @@ def main(unused_argv):
   solver = pywrapcp.Solver('Steel Mill Slab')
   x = [solver.IntVar(0, nb_slabs - 1, 'x' + str(i))
        for i in range(nb_slabs)]
-  load_vars = [solver.IntVar(0, max_capacity - 1, 'load_vars' + str(i))
+  load_vars = [solver.IntVar(0, max_capacity, 'load_vars' + str(i))
                for i in range(nb_slabs)]
 
   #-------------------post of the constraints--------------
