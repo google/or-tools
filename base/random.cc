@@ -55,6 +55,10 @@ static inline uint32 Word32At(const char *ptr) {
 #if defined(__GNUC__) && defined(__linux__)
 #include <linux/limits.h>
 #endif
+#if defined(_MSC_VER)
+#include <windows.h>
+#define PATH_MAX 4096
+#endif
 
 int32 ACMRandom::HostnamePidTimeSeed() {
   char name[PATH_MAX + 20];      // need 12 bytes for 3 'empty' uint32's
@@ -72,7 +76,7 @@ int32 ACMRandom::HostnamePidTimeSeed() {
   struct timeval tv;
   gettimeofday(&tv, NULL);
   uint32 b = static_cast<uint32>((tv.tv_sec + tv.tv_usec) & 0xffffffff);
-#elif defined(__MSC_VER)
+#elif defined(_MSC_VER)
   uint32 a = GetCurrentProcessId();
   uint32 b = GetTickCount();
 #else  // Do not know what to do, returning 0.

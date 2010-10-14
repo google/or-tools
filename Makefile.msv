@@ -18,7 +18,7 @@ CFLAGS= -nologo $(SYSCFLAGS) $(DEBUG) /I.  $(GFLAGS_INC) $(ZLIB_INC)
 LD = cl /EHsc
 GFLAGS_LNK =
 ZLIB_LNK = $(ZLIB_DIR)/$(ZLIB_NAME)
-LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK)
+LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) psapi.lib ws2_32.lib
 GFLAGS_CFLAGS=/I$(GFLAGS_DIR)\\src\\windows /I$(GFLAGS_DIR)\\src /D_USRDLL /D_WINDLL
 
 # Real targets

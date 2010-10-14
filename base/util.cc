@@ -131,13 +131,13 @@ int64 GetProcessMemoryUsage() {
   PROCESS_MEMORY_COUNTERS pmc;
   hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
                          FALSE,
-                         GetCurrentProcess());
+                         GetCurrentProcessId());
   int64 memory = 0;
   if (hProcess) {
     if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) {
       memory = pmc.WorkingSetSize;
     }
-    Closehandle(hProcess);
+    CloseHandle(hProcess);
   }
   return memory;
 }
