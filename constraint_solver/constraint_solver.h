@@ -416,7 +416,7 @@ class Solver {
   // Current memory usage in bytes
   static int64 MemoryUsage();
 
-  
+
 
   // wall_time() in ms since the creation of the solver.
   int64 wall_time() const;
@@ -1143,7 +1143,7 @@ class Solver {
                                      SymmetryBreaker* const v3,
                                      SymmetryBreaker* const v4);
 
-  
+
 
   // ----- Search Decicions and Decision Builders -----
 
@@ -1425,22 +1425,22 @@ class Solver {
                                         DecisionBuilder* first_solution,
                                         LocalSearchPhaseParameters* parameters);
 
-  
+
 
   // Solution Pool.
   SolutionPool* MakeDefaultSolutionPool();
 
   // Local Search Phase Parameters
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* ls_operator,
-      DecisionBuilder* sub_decision_builder);
+      LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* ls_operator,
-      DecisionBuilder* sub_decision_builder,
+      LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder,
       SearchLimit* const limit);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* ls_operator,
-      DecisionBuilder* sub_decision_builder,
+      LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder,
       SearchLimit* const limit,
       const vector<LocalSearchFilter*>& filters);
 
@@ -2488,7 +2488,7 @@ class IntVarElement : public AssignmentElement {
     max_ = var_->Max();
   }
   void Restore() { var_->SetRange(min_, max_); }
-  
+
 
   int64 Min() const { return min_; }
   void SetMin(int64 m) { min_ = m; }
@@ -2527,7 +2527,7 @@ class IntervalVarElement : public AssignmentElement {
   IntervalVar* Var() const { return var_; }
   void Store();
   void Restore();
-  
+
 
   int64 StartMin() const { return start_min_; }
   int64 StartMax() const { return start_max_; }
@@ -2730,7 +2730,7 @@ class Assignment : public PropagationBaseObject {
   void Store();
   void Restore();
 
-  
+
 
   void AddObjective(IntVar* const v);
   IntVar* Objective() const;
