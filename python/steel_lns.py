@@ -24,6 +24,9 @@ gflags.DEFINE_string('data',
                      'path to data file')
 gflags.DEFINE_integer('lns_fragment_size', 5, 'size of the random lns fragment')
 gflags.DEFINE_integer('lns_random_seed', 0, 'seed for the lns random generator')
+gflags.DEFINE_integer('lns_fail_limit',
+                      30,
+                      'fail limit when exploring fragments')
 
 
 # ---------- helper for binpacking posting ----------
@@ -197,11 +200,17 @@ def main(unused_argv):
   inner_db = solver.Phase(x,
                           solver.CHOOSE_RANDOM,
                           solver.ASSIGN_MIN_VALUE)
+  inner_limit = solver.Limit(2000000000,
+                             2000000000,
+                             FLAGS.lns_fail_limit,
+                             2000000000)
+  continuation_db = solver.SolveOnce(inner_db, inner_limit)
+
   rand = random.Random()
   rand.seed(FLAGS.lns_random_seed)
   local_search_operator = solver.LNSOperator(x, SteelLns(rand))
   local_search_parameters = solver.LocalSearchPhaseParameters(
-      local_search_operator, inner_db)
+      local_search_operator, continuation_db)
   local_search_db = solver.LocalSearchPhase(first_solution,
                                             local_search_parameters)
 

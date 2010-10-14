@@ -1440,14 +1440,14 @@ class CompoundOperator : public LocalSearchOperator {
  public:
   CompoundOperator(
       const vector<LocalSearchOperator*>& operators,
-      ResultCallback2<int64, int, int>* evaluator);
+      ResultCallback2<int64, int, int>* const evaluator);
   virtual ~CompoundOperator() {}
   virtual void Start(const Assignment* assignment);
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
  private:
   class OperatorComparator {
    public:
-    OperatorComparator(ResultCallback2<int64, int, int>* evaluator,
+    OperatorComparator(ResultCallback2<int64, int, int>* const evaluator,
                        int active_operator)
         : evaluator_(evaluator), active_operator_(active_operator) {
       evaluator_->CheckIsRepeatable();
@@ -1475,7 +1475,7 @@ class CompoundOperator : public LocalSearchOperator {
 
 CompoundOperator::CompoundOperator(
     const vector<LocalSearchOperator*>& operators,
-    ResultCallback2<int64, int, int>* evaluator)
+    ResultCallback2<int64, int, int>* const evaluator)
       : index_(0),
         size_(operators.size()),
         operators_(new LocalSearchOperator*[size_]),
@@ -1549,7 +1549,7 @@ LocalSearchOperator* Solver::ConcatenateOperators(
 
 LocalSearchOperator* Solver::ConcatenateOperators(
     const vector<LocalSearchOperator*>& ops,
-    ResultCallback2<int64, int, int>* evaluator) {
+    ResultCallback2<int64, int, int>* const evaluator) {
   return RevAlloc(new CompoundOperator(ops, evaluator));
 }
 
@@ -1712,7 +1712,7 @@ LocalSearchOperator* Solver::MakeOperator(const IntVar* const* vars,
 
 LocalSearchOperator* Solver::MakeOperator(
     const vector<IntVar*>& vars,
-    Solver::IndexEvaluator3* evaluator,
+    Solver::IndexEvaluator3* const evaluator,
     Solver::EvaluatorLocalSearchOperators op) {
   return MakeOperator(vars.data(), vars.size(), evaluator, op);
 }
@@ -1720,7 +1720,7 @@ LocalSearchOperator* Solver::MakeOperator(
 LocalSearchOperator* Solver::MakeOperator(
     const IntVar* const* vars,
     int size,
-    Solver::IndexEvaluator3* evaluator,
+    Solver::IndexEvaluator3* const evaluator,
     Solver::EvaluatorLocalSearchOperators op) {
   return MakeOperator(vars, NULL, size, evaluator, op);
 }
@@ -1728,7 +1728,7 @@ LocalSearchOperator* Solver::MakeOperator(
 LocalSearchOperator* Solver::MakeOperator(
     const vector<IntVar*>& vars,
     const vector<IntVar*>& secondary_vars,
-    Solver::IndexEvaluator3* evaluator,
+    Solver::IndexEvaluator3* const evaluator,
     Solver::EvaluatorLocalSearchOperators op) {
   return MakeOperator(vars.data(),
                       secondary_vars.data(),
@@ -1741,7 +1741,7 @@ LocalSearchOperator* Solver::MakeOperator(
     const IntVar* const* vars,
     const IntVar* const* secondary_vars,
     int size,
-    Solver::IndexEvaluator3* evaluator,
+    Solver::IndexEvaluator3* const evaluator,
     Solver::EvaluatorLocalSearchOperators op) {
   LocalSearchOperator* result = NULL;
   switch (op) {
@@ -2532,8 +2532,8 @@ class LocalSearchPhaseParameters : public BaseObject {
 };
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
-    LocalSearchOperator* ls_operator,
-    DecisionBuilder* sub_decision_builder) {
+    LocalSearchOperator* const ls_operator,
+    DecisionBuilder* const sub_decision_builder) {
   return MakeLocalSearchPhaseParameters(MakeDefaultSolutionPool(),
                                         ls_operator,
                                         sub_decision_builder,
@@ -2542,8 +2542,8 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
 }
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
-    LocalSearchOperator* ls_operator,
-    DecisionBuilder* sub_decision_builder,
+    LocalSearchOperator* const ls_operator,
+    DecisionBuilder* const sub_decision_builder,
     SearchLimit* const limit) {
   return MakeLocalSearchPhaseParameters(MakeDefaultSolutionPool(),
                                         ls_operator,
@@ -2553,8 +2553,8 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
 }
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
-    LocalSearchOperator* ls_operator,
-    DecisionBuilder* sub_decision_builder,
+    LocalSearchOperator* const ls_operator,
+    DecisionBuilder* const sub_decision_builder,
     SearchLimit* const limit,
     const vector<LocalSearchFilter*>& filters) {
   return MakeLocalSearchPhaseParameters(MakeDefaultSolutionPool(),
@@ -2566,8 +2566,8 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
     SolutionPool* const pool,
-    LocalSearchOperator* ls_operator,
-    DecisionBuilder* sub_decision_builder) {
+    LocalSearchOperator* const ls_operator,
+    DecisionBuilder* const sub_decision_builder) {
   return MakeLocalSearchPhaseParameters(pool,
                                         ls_operator,
                                         sub_decision_builder,
@@ -2577,8 +2577,8 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
     SolutionPool* const pool,
-    LocalSearchOperator* ls_operator,
-    DecisionBuilder* sub_decision_builder,
+    LocalSearchOperator* const ls_operator,
+    DecisionBuilder* const sub_decision_builder,
     SearchLimit* const limit) {
   return MakeLocalSearchPhaseParameters(pool,
                                         ls_operator,
@@ -2589,8 +2589,8 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
     SolutionPool* const pool,
-    LocalSearchOperator* ls_operator,
-    DecisionBuilder* sub_decision_builder,
+    LocalSearchOperator* const ls_operator,
+    DecisionBuilder* const sub_decision_builder,
     SearchLimit* const limit,
     const vector<LocalSearchFilter*>& filters) {
   return RevAlloc(new LocalSearchPhaseParameters(pool,

@@ -21,23 +21,21 @@ namespace operations_research {
 
 void Bitmap::Resize(uint32 size, bool fill) {
   const uint32 new_array_size = BitLength64(size);
-  if (size  < array_size_) {
-    array_size_ = size;
-  } else if (size > array_size_) {
-    if (new_array_size > array_size_) {
-      const uint32 old_maxsize = maxsize_;
-      const uint32 old_array_size = array_size_;
-      array_size_ = new_array_size;
-      maxsize_ = size;
-      uint64* new_map = new uint64[array_size_];
-      memcpy(new_map, map_, array_size_ * sizeof(*map_));
-      delete [] map_;
-      map_ = new_map;
-    }
-    for (uint32 index = maxsize_; index < size; ++index) {
-      Set(index, fill);
-    }
-    array_size_ = size;
+  const uint32 old_maxsize = maxsize_;
+  if (new_array_size <= array_size_) {
+    maxsize_ = size;
+  } else {
+    const uint32 old_array_size = array_size_;
+    array_size_ = new_array_size;
+    maxsize_ = size;
+    uint64* new_map = new uint64[array_size_];
+    memcpy(new_map, map_, old_array_size * sizeof(*map_));
+    delete [] map_;
+    map_ = new_map;
+  }
+  // TODO(user) : optimize next loop.
+  for (uint32 index = old_maxsize; index < size; ++index) {
+    Set(index, fill);
   }
 }
 }  // namespace operations_research

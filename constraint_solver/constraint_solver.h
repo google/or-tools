@@ -416,7 +416,7 @@ class Solver {
   // Current memory usage in bytes
   static int64 MemoryUsage();
 
-
+  
 
   // wall_time() in ms since the creation of the solver.
   int64 wall_time() const;
@@ -1143,7 +1143,7 @@ class Solver {
                                      SymmetryBreaker* const v3,
                                      SymmetryBreaker* const v4);
 
-
+  
 
   // ----- Search Decicions and Decision Builders -----
 
@@ -1333,20 +1333,20 @@ class Solver {
   // TODO(user): Make the callback a IndexEvaluator2 when there are no
   // secondary variables.
   LocalSearchOperator* MakeOperator(const vector<IntVar*>& vars,
-                                    IndexEvaluator3* evaluator,
+                                    IndexEvaluator3* const evaluator,
                                     EvaluatorLocalSearchOperators op);
   LocalSearchOperator* MakeOperator(const IntVar* const* vars,
                                     int size,
-                                    IndexEvaluator3* evaluator,
+                                    IndexEvaluator3* const evaluator,
                                     EvaluatorLocalSearchOperators op);
   LocalSearchOperator* MakeOperator(const vector<IntVar*>& vars,
                                     const vector<IntVar*>& secondary_vars,
-                                    IndexEvaluator3* evaluator,
+                                    IndexEvaluator3* const evaluator,
                                     EvaluatorLocalSearchOperators op);
   LocalSearchOperator* MakeOperator(const IntVar* const* vars,
                                     const IntVar* const* secondary_vars,
                                     int size,
-                                    IndexEvaluator3* evaluator,
+                                    IndexEvaluator3* const evaluator,
                                     EvaluatorLocalSearchOperators op);
   // Creates a local search operator which concatenates a vector of operators.
   // Each operator from the vector is called sequentially. By default, when a
@@ -1383,7 +1383,7 @@ class Solver {
       const vector<LocalSearchOperator*>& ops, bool restart);
   LocalSearchOperator* ConcatenateOperators(
       const vector<LocalSearchOperator*>& ops,
-      ResultCallback2<int64, int, int>* evaluator);
+      ResultCallback2<int64, int, int>* const evaluator);
   // Randomized version of local search concatenator; calls a random operator at
   // each call to MakeNextNeighbor().
   LocalSearchOperator* RandomConcatenateOperators(
@@ -1416,31 +1416,34 @@ class Solver {
   // TODO(user): Make a variant which runs a local search after each
   //                solution found in a dfs
 
-  DecisionBuilder* MakeLocalSearchPhase(Assignment* assignment,
-                                        LocalSearchPhaseParameters* parameters);
-  DecisionBuilder* MakeLocalSearchPhase(const vector<IntVar*>& vars,
-                                        DecisionBuilder* first_solution,
-                                        LocalSearchPhaseParameters* parameters);
-  DecisionBuilder* MakeLocalSearchPhase(IntVar* const* vars, int size,
-                                        DecisionBuilder* first_solution,
-                                        LocalSearchPhaseParameters* parameters);
+  DecisionBuilder* MakeLocalSearchPhase(
+      Assignment* const assignment,
+      LocalSearchPhaseParameters* const parameters);
+  DecisionBuilder* MakeLocalSearchPhase(
+      const vector<IntVar*>& vars,
+      DecisionBuilder* const first_solution,
+      LocalSearchPhaseParameters* const parameters);
+  DecisionBuilder* MakeLocalSearchPhase(
+      IntVar* const* vars, int size,
+      DecisionBuilder* const first_solution,
+      LocalSearchPhaseParameters* const parameters);
 
-
+  
 
   // Solution Pool.
   SolutionPool* MakeDefaultSolutionPool();
 
   // Local Search Phase Parameters
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* const ls_operator,
-      DecisionBuilder* const sub_decision_builder);
+      LocalSearchOperator* ls_operator,
+      DecisionBuilder* sub_decision_builder);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* const ls_operator,
-      DecisionBuilder* const sub_decision_builder,
+      LocalSearchOperator* ls_operator,
+      DecisionBuilder* sub_decision_builder,
       SearchLimit* const limit);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* const ls_operator,
-      DecisionBuilder* const sub_decision_builder,
+      LocalSearchOperator* ls_operator,
+      DecisionBuilder* sub_decision_builder,
       SearchLimit* const limit,
       const vector<LocalSearchFilter*>& filters);
 
@@ -2488,7 +2491,7 @@ class IntVarElement : public AssignmentElement {
     max_ = var_->Max();
   }
   void Restore() { var_->SetRange(min_, max_); }
-
+  
 
   int64 Min() const { return min_; }
   void SetMin(int64 m) { min_ = m; }
@@ -2527,7 +2530,7 @@ class IntervalVarElement : public AssignmentElement {
   IntervalVar* Var() const { return var_; }
   void Store();
   void Restore();
-
+  
 
   int64 StartMin() const { return start_min_; }
   int64 StartMax() const { return start_max_; }
@@ -2730,7 +2733,7 @@ class Assignment : public PropagationBaseObject {
   void Store();
   void Restore();
 
-
+  
 
   void AddObjective(IntVar* const v);
   IntVar* Objective() const;
