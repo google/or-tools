@@ -22,7 +22,9 @@ FLAGS = gflags.FLAGS
 gflags.DEFINE_string('data',
                      'python/data/steel_mill/steel_mill_slab.txt',
                      'path to data file')
-gflags.DEFINE_integer('lns_fragment_size', 5, 'size of the random lns fragment')
+gflags.DEFINE_integer('lns_fragment_size',
+                      10,
+                      'size of the random lns fragment')
 gflags.DEFINE_integer('lns_random_seed', 0, 'seed for the lns random generator')
 gflags.DEFINE_integer('lns_fail_limit',
                       30,
@@ -197,15 +199,18 @@ def main(unused_argv):
   solver.Solve(first_solution_db)
   print 'initial cost =', first_solution.ObjectiveValue()
 
+  # To search a fragment, we use a basic randomized decision builder.
   inner_db = solver.Phase(x,
                           solver.CHOOSE_RANDOM,
                           solver.ASSIGN_MIN_VALUE)
+  # The most important aspect is to limit the time exploring each fragment.
   inner_limit = solver.Limit(2000000000,
                              2000000000,
                              FLAGS.lns_fail_limit,
                              2000000000)
   continuation_db = solver.SolveOnce(inner_db, inner_limit)
 
+  # Now, we create the LNS objects.
   rand = random.Random()
   rand.seed(FLAGS.lns_random_seed)
   local_search_operator = solver.LNSOperator(x, SteelLns(rand))
@@ -217,11 +222,11 @@ def main(unused_argv):
   print 'using LNS to improve the initial solution'
 
   search_log = solver.SearchLog(100000, objective_var)
-  solver.Solve(local_search_db, [objective, search_log])
-#  while solver.NextSolution():
-#    print 'Objective:', objective_var.Value(),\
-#        'check:', sum(loss[load_vars[s].Min()] for s in range(nb_slabs))
-#  solver.EndSearch()
+  solver.NewSearch(local_search_db, [objective, search_log])
+  while solver.NextSolution():
+    print 'Objective:', objective_var.Value(),\
+        'check:', sum(loss[load_vars[s].Min()] for s in range(nb_slabs))
+  solver.EndSearch()
 
 
 if __name__ == '__main__':
