@@ -2223,7 +2223,7 @@ LSOperation* OperationFromEnum(Solver::LocalSearchOperation op_enum) {
 LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
     const IntVar* const* vars,
     int size,
-    Solver::IndexEvaluator2* values,
+    Solver::IndexEvaluator2* const values,
     const IntVar* const objective,
     Solver::LocalSearchFilterBound filter_enum,
     Solver::LocalSearchOperation op_enum) {
@@ -2237,7 +2237,7 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
 
 LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
     const vector<IntVar*>& vars,
-    Solver::IndexEvaluator2* values,
+    Solver::IndexEvaluator2* const values,
     const IntVar* const objective,
     Solver::LocalSearchFilterBound filter_enum,
     Solver::LocalSearchOperation op_enum) {
@@ -2253,7 +2253,7 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
     const IntVar* const* vars,
     const IntVar* const* secondary_vars,
     int size,
-    Solver::IndexEvaluator3* values,
+    Solver::IndexEvaluator3* const values,
     const IntVar* const objective,
     Solver::LocalSearchFilterBound filter_enum,
     Solver::LocalSearchOperation op_enum) {

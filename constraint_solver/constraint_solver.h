@@ -1435,31 +1435,31 @@ class Solver {
 
   // Local Search Phase Parameters
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* ls_operator,
-      DecisionBuilder* sub_decision_builder);
+      LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* ls_operator,
-      DecisionBuilder* sub_decision_builder,
+      LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder,
       SearchLimit* const limit);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* ls_operator,
-      DecisionBuilder* sub_decision_builder,
+      LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder,
       SearchLimit* const limit,
       const vector<LocalSearchFilter*>& filters);
 
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
       SolutionPool* const pool,
-      LocalSearchOperator* ls_operator,
-      DecisionBuilder* sub_decision_builder);
+      LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
       SolutionPool* const pool,
-      LocalSearchOperator* ls_operator,
-      DecisionBuilder* sub_decision_builder,
+      LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder,
       SearchLimit* const limit);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
       SolutionPool* const pool,
-      LocalSearchOperator* ls_operator,
-      DecisionBuilder* sub_decision_builder,
+      LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder,
       SearchLimit* const limit,
       const vector<LocalSearchFilter*>& filters);
 
@@ -1468,13 +1468,13 @@ class Solver {
   LocalSearchFilter* MakeLocalSearchObjectiveFilter(
       const IntVar* const* vars,
       int size,
-      IndexEvaluator2* values,
+      IndexEvaluator2* const values,
       const IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum,
       Solver::LocalSearchOperation op_enum);
   LocalSearchFilter* MakeLocalSearchObjectiveFilter(
       const vector<IntVar*>& vars,
-      IndexEvaluator2* values,
+      IndexEvaluator2* const values,
       const IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum,
       Solver::LocalSearchOperation op_enum);
@@ -1482,7 +1482,7 @@ class Solver {
       const IntVar* const* vars,
       const IntVar* const* secondary_vars,
       int size,
-      ResultCallback3<int64, int64, int64, int64>* values,
+      ResultCallback3<int64, int64, int64, int64>* const values,
       const IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum,
       Solver::LocalSearchOperation op_enum);

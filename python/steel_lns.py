@@ -200,6 +200,7 @@ def main(unused_argv):
   print 'initial cost =', first_solution.ObjectiveValue()
 
   # To search a fragment, we use a basic randomized decision builder.
+  # We can also use assign_db instead of inner_db.
   inner_db = solver.Phase(x,
                           solver.CHOOSE_RANDOM,
                           solver.ASSIGN_MIN_VALUE)
