@@ -16,6 +16,9 @@
 namespace operations_research {
 
 int32 ACMRandom::Next() {
+  if (seed_ == 0) {
+    seed_ = 0x14fd4603;  // Arbitrary random constant
+  }
   const int32 M = 2147483647L;   // 2^31-1
   const int32 A = 16807;
   // In effect, we are computing seed_ = (seed_ * A) % M, where M = 2^31-1
@@ -31,7 +34,8 @@ int32 ACMRandom::Next() {
     lo &= M;
     ++lo;
   }
-  return (seed_ = static_cast<int32>(lo));
+  seed_ = static_cast<int32>(lo);
+  return seed_;
 }
 
 int32 ACMRandom::Uniform(int32 n) {
