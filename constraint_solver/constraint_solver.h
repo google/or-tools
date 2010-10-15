@@ -51,6 +51,9 @@
 //
 // More infos: go/operations_research
 //
+// Global remark: many functions and methods in this file can take as argument
+// either a const vector<IntVar>& or a IntVar* const* and a size; the two
+// signatures are equivalent, size defining the number of variables.
 
 #ifndef CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
 #define CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
@@ -1149,6 +1152,9 @@ class Solver {
 
   // ----- Decisions -----
   Decision* MakeAssignVariableValue(IntVar* const var, int64 value);
+  Decision* MakeSplitVariableDomain(IntVar* const var,
+                                    int64 value,
+                                    bool start_with_lower_half);
   Decision* MakeAssignVariableValueOrFail(IntVar* const var, int64 value);
   Decision* MakeAssignVariablesValues(const IntVar* const* vars, int size,
                                       const int64* const values);
@@ -1348,6 +1354,27 @@ class Solver {
                                     int size,
                                     IndexEvaluator3* const evaluator,
                                     EvaluatorLocalSearchOperators op);
+
+  // Creates a large neighborhood search operator which creates fragments (set
+  // of relaxed variables) with up to number_of_variables random variables
+  // (sampling with replacement is performed meaning that at most
+  // number_of_variables variables are selected). Warning: this operator will
+  // always return neighbors; using it without a search limit will result in a
+  // non-ending search.
+  // Optionally a random seed can be specified.
+  LocalSearchOperator* MakeRandomLNSOperator(const vector<IntVar*>& vars,
+                                             int number_of_variables);
+  LocalSearchOperator* MakeRandomLNSOperator(const vector<IntVar*>& vars,
+                                             int number_of_variables,
+                                             int32 seed);
+  LocalSearchOperator* MakeRandomLNSOperator(const IntVar* const* vars,
+                                             int size,
+                                             int number_of_variables);
+  LocalSearchOperator* MakeRandomLNSOperator(const IntVar* const* vars,
+                                             int size,
+                                             int number_of_variables,
+                                             int32 seed);
+
   // Creates a local search operator which concatenates a vector of operators.
   // Each operator from the vector is called sequentially. By default, when a
   // neighbor is found the neighborhood exploration restarts from the last
@@ -1789,6 +1816,9 @@ class DecisionVisitor : public BaseObject {
   DecisionVisitor() {}
   virtual ~DecisionVisitor() {}
   virtual void VisitSetVariableValue(IntVar* const var, int64 value);
+  virtual void VisitSplitVariableDomain(IntVar* const var,
+                                        int64 value,
+                                        bool start_with_lower_half);
   virtual void VisitUnknownDecision();
  private:
   DISALLOW_COPY_AND_ASSIGN(DecisionVisitor);

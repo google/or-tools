@@ -1189,6 +1189,62 @@ Decision* Solver::MakeAssignVariableValueOrFail(IntVar* const v, int64 value) {
   return RevAlloc(new AssignOneVariableValueOrFail(v, value));
 }
 
+// ----- AssignOneVariableValue decision -----
+
+class SplitOneVariable : public Decision {
+ public:
+  SplitOneVariable(IntVar* const v, int64 val, bool start_with_lower_half);
+  virtual ~SplitOneVariable() {}
+  virtual void Apply(Solver* const s);
+  virtual void Refute(Solver* const s);
+  virtual string DebugString() const;
+  virtual void Accept(DecisionVisitor* const visitor) const {
+    visitor->VisitSplitVariableDomain(var_, value_, start_with_lower_half_);
+  }
+ private:
+  IntVar* const var_;
+  const int64 value_;
+  const bool start_with_lower_half_;
+};
+
+SplitOneVariable::SplitOneVariable(IntVar* const v,
+                                   int64 val,
+                                   bool start_with_lower_half)
+    : var_(v), value_(val), start_with_lower_half_(start_with_lower_half) {
+}
+
+string SplitOneVariable::DebugString() const {
+  if (start_with_lower_half_) {
+    return StringPrintf("[%s <= %" GG_LL_FORMAT "d]",
+                        var_->DebugString().c_str(), value_);
+  } else {
+    return StringPrintf("[%s >= %" GG_LL_FORMAT "d]",
+                        var_->DebugString().c_str(), value_);
+  }
+}
+
+void SplitOneVariable::Apply(Solver* const s) {
+  if (start_with_lower_half_) {
+    var_->SetMax(value_);
+  } else {
+    var_->SetMin(value_);
+  }
+}
+
+void SplitOneVariable::Refute(Solver* const s) {
+  if (start_with_lower_half_) {
+    var_->SetMin(value_ + 1);
+  } else {
+    var_->SetMax(value_ - 1);
+  }
+}
+
+Decision* Solver::MakeSplitVariableDomain(IntVar* const v,
+                                          int64 val,
+                                          bool start_with_lower_half) {
+  return RevAlloc(new SplitOneVariable(v, val, start_with_lower_half));
+}
+
 // ----- AssignVariablesValues decision -----
 
 class AssignVariablesValues : public Decision {

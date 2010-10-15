@@ -230,6 +230,66 @@ bool SimpleLNS::NextFragment(vector<int>* fragment) {
   }
 }
 
+// ----- Random Large Neighborhood Search operator -----
+
+// Frees up to number_of_variables random variables.
+
+class RandomLNS : public BaseLNS {
+ public:
+  RandomLNS(const IntVar* const* vars,
+            int size,
+            int number_of_variables,
+            int32 seed)
+      : BaseLNS(vars, size),
+        rand_(seed),
+        number_of_variables_(number_of_variables) {
+    CHECK_GT(number_of_variables_, 0);
+    CHECK_LE(number_of_variables_, Size());
+  }
+  ~RandomLNS() {}
+  virtual bool NextFragment(vector<int>* fragment);
+ private:
+  ACMRandom rand_;
+  const int number_of_variables_;
+};
+
+bool RandomLNS::NextFragment(vector<int>* fragment) {
+  for (int i = 0; i < number_of_variables_; ++i) {
+    fragment->push_back(rand_.Uniform(Size()));
+  }
+  return true;
+}
+
+LocalSearchOperator* Solver::MakeRandomLNSOperator(const vector<IntVar*>& vars,
+                                                   int number_of_variables) {
+  return MakeRandomLNSOperator(vars.data(), vars.size(), number_of_variables);
+}
+
+LocalSearchOperator* Solver::MakeRandomLNSOperator(const vector<IntVar*>& vars,
+                                                   int number_of_variables,
+                                                   int32 seed) {
+  return MakeRandomLNSOperator(vars.data(),
+                               vars.size(),
+                               number_of_variables,
+                               seed);
+}
+
+LocalSearchOperator* Solver::MakeRandomLNSOperator(const IntVar* const* vars,
+                                                   int size,
+                                                   int number_of_variables) {
+  return MakeRandomLNSOperator(vars,
+                               size,
+                               number_of_variables,
+                               ACMRandom::HostnamePidTimeSeed());
+}
+
+LocalSearchOperator* Solver::MakeRandomLNSOperator(const IntVar* const* vars,
+                                                   int size,
+                                                   int number_of_variables,
+                                                   int32 seed) {
+  return RevAlloc(new RandomLNS(vars, size, number_of_variables, seed));
+}
+
 // ----- ChangeValue Operators -----
 
 ChangeValue::ChangeValue(const IntVar* const* vars, int size)

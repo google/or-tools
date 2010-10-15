@@ -290,6 +290,7 @@ class PyDecisionBuilder(object):
 %rename (Minimize) MakeMinimize;
 %rename (NoCycle) MakeNoCycle;
 %rename (Operator) MakeOperator;
+%rename (RandomLNSOperator) MakeRandomLNSOperator;
 %rename (Optimize) MakeOptimize;
 %rename (Pack) MakePack;
 %rename (PathCumul) MakePathCumul;
@@ -305,6 +306,7 @@ class PyDecisionBuilder(object):
 %rename (Sequence) MakeSequence;
 %rename (SimulatedAnnealing) MakeSimulatedAnnealing;
 %rename (SolveOnce) MakeSolveOnce;
+%rename (SplitVariableDomain) MakeSplitVariableDomain;
 %rename (StoreAssignment) MakeStoreAssignment;
 %rename (Sum) MakeSum;
 %rename (SumEquality) MakeSumEquality;
@@ -1509,6 +1511,13 @@ class LongResultCallback2 {
 %ignore Solver::MakeScalProdGreaterOrEqual(IntVar* const* vars,
                                            const int* const coefs,
                                            int size);
+%ignore Solver::MakeRandomLNSOperator(const IntVar* const* vars,
+                                      int size,
+                                      int number_of_variables);
+%ignore Solver::MakeRandomLNSOperator(const IntVar* const* vars,
+                                      int size,
+                                      int number_of_variables,
+                                      int32 seed);
 
 %rename (addConstraint) AddConstraint;
 %rename (makeAllDifferent) MakeAllDifferent;
@@ -1568,6 +1577,7 @@ class LongResultCallback2 {
 %rename (makeMinimize) MakeMinimize;
 %rename (makeNoCycle) MakeNoCycle;
 %rename (makeOperator) MakeOperator;
+%rename (makeRandomLNSOperator) MakeRandomLNSOperator;
 %rename (makeOptimize) MakeOptimize;
 %rename (makePack) MakePack;
 %rename (makePathCumul) MakePathCumul;
@@ -1583,6 +1593,7 @@ class LongResultCallback2 {
 %rename (makeSequence) MakeSequence;
 %rename (makeSimulatedAnnealing) MakeSimulatedAnnealing;
 %rename (makeSolveOnce) MakeSolveOnce;
+%rename (makeSplitVariableDomain) MakeSplitVariableDomain;
 %rename (makeStoreAssignment) MakeStoreAssignment;
 %rename (makeSum) MakeSum;
 %rename (makeSumEquality) MakeSumEquality;
@@ -1605,4 +1616,5 @@ class LongResultCallback2 {
 // Define templates instantiation after wrapping.
 namespace operations_research {
 %template(RevInteger) Rev<int64>;
+%template(RevBool) Rev<bool>;
 }

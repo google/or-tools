@@ -2084,6 +2084,9 @@ void Decision::Accept(DecisionVisitor* const visitor) const {
 }
 
 void DecisionVisitor::VisitSetVariableValue(IntVar* const var, int64 value) {}
+void DecisionVisitor::VisitSplitVariableDomain(IntVar* const var,
+                                               int64 value,
+                                               bool lower) {}
 void DecisionVisitor::VisitUnknownDecision() {}
 
 // ---------- Search Monitor ----------
