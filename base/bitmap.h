@@ -23,7 +23,7 @@ class Bitmap {
   // Constructor : This one will allocate on a uint32 boundary
   // fill: true = initialize with 1's, false = initialize with 0's
   explicit Bitmap(uint32 size, bool fill = false)
-      : maxsize_(size),
+      : max_size_(size),
         array_size_(BitLength64(size)),
         map_(new uint64[array_size_]) {
     // initialize all of the bits
@@ -41,11 +41,11 @@ class Bitmap {
   void Resize(uint32 size, bool fill = false);
 
   bool Get(uint32 index) const {
-    assert(maxsize_ == 0 || index < maxsize_);
+    assert(max_size_ == 0 || index < max_size_);
     return IsBitSet64(map_, index);
   }
   void Set(uint32 index, bool value) {
-    assert(maxsize_ == 0 || index < maxsize_);
+    assert(max_size_ == 0 || index < max_size_);
     if ( value ) {
       SetBit64(map_, index);
     } else {
@@ -62,7 +62,7 @@ class Bitmap {
   void Clear() { SetAll(false); }
 
  private:
-  uint32 maxsize_;          // the upper bound of the bitmap
+  uint32 max_size_;          // the upper bound of the bitmap
   uint32 array_size_;
   uint64* map_;             // the bitmap
 };
