@@ -1,6 +1,6 @@
 # Please edit the following:
 PYTHON_VER=2.6
-GFLAGS_DIR=../gflags-1.3
+GFLAGS_DIR=../gflags-1.4
 SWIG_BINARY=swig
 ZLIB_DIR=../zlib-1.2.5
 
@@ -14,8 +14,6 @@ CCC=g++
 
 GFLAGS_INC = -I$(GFLAGS_DIR)/include
 ZLIB_INC = -I$(ZLIB_DIR)/include
-CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. -DARCH_K8 $(GFLAGS_INC) $(ZLIB_INC) \
-        -Wno-deprecated
 
 # ----- OS Dependent -----
 OS=$(shell uname -s)
@@ -24,13 +22,22 @@ ifeq ($(OS),Linux)
 LD = gcc -shared
 GFLAGS_LNK = -Wl,-rpath $(GFLAGS_DIR)/lib -L$(GFLAGS_DIR)/lib -lgflags
 ZLIB_LNK = -Wl,-rpath $(ZLIB_DIR)/lib -L$(ZLIB_DIR)/lib -lz
+LBITS := $(shell getconf LONG_BIT)
+ifeq ($(LBITS),64)
+   ARCH=ARCH_K8
+else
+   ARCH=
+endif
 endif
 ifeq ($(OS),Darwin) # Assume Mac Os X
 LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress
 GFLAGS_LNK = -L$(GFLAGS_DIR)/lib -lgflags
 ZLIB_LNK = -L$(ZLIB_DIR)/lib -lz
+ARCH=ARCH_K8
 endif
 
+CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. $(GFLAGS_INC) $(ZLIB_INC) $(ARCH_FLAGS) \
+        -Wno-deprecated
 LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK)
 
 # Real targets
