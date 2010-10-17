@@ -24,7 +24,7 @@ GFLAGS_LNK = -Wl,-rpath $(GFLAGS_DIR)/lib -L$(GFLAGS_DIR)/lib -lgflags
 ZLIB_LNK = -Wl,-rpath $(ZLIB_DIR)/lib -L$(ZLIB_DIR)/lib -lz
 LBITS := $(shell getconf LONG_BIT)
 ifeq ($(LBITS),64)
-   ARCH=ARCH_K8
+   ARCH=-DARCH_K8
 else
    ARCH=
 endif
@@ -33,10 +33,10 @@ ifeq ($(OS),Darwin) # Assume Mac Os X
 LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress
 GFLAGS_LNK = -L$(GFLAGS_DIR)/lib -lgflags
 ZLIB_LNK = -L$(ZLIB_DIR)/lib -lz
-ARCH=ARCH_K8
+ARCH=-DARCH_K8
 endif
 
-CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. $(GFLAGS_INC) $(ZLIB_INC) $(ARCH_FLAGS) \
+CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. $(GFLAGS_INC) $(ZLIB_INC) $(ARCH) \
         -Wno-deprecated
 LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK)
 
