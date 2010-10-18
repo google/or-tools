@@ -42,11 +42,10 @@ LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK)
 
 # Real targets
 
-BINARIES=nqueens golomb magic_square cryptarithm
+all:
+	@echo Please define target: cplibs, cpexe, pycp, clean
 
-all: libs $(BINARIES) pylib
-
-LIBS = \
+CPLIBS = \
 	libconstraint_solver.a            \
 	libutil.a          \
 	libbase.a          \
@@ -54,7 +53,11 @@ LIBS = \
 	libgraph.a         \
 	libshortestpaths.a
 
-libs: $(LIBS)
+cplibs: $(CPLIBS)
+
+BINARIES=nqueens golomb magic_square cryptarithm
+
+cpexe: $(BINARIES)
 
 clean:
 	rm -f *.a
@@ -224,30 +227,30 @@ libbase.a: $(BASE_LIB_OBJS)
 objs/cryptarithm.o:examples/cryptarithm.cc
 	$(CCC) $(CFLAGS) -c examples/cryptarithm.cc -o objs/cryptarithm.o
 
-cryptarithm: $(LIBS) objs/cryptarithm.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.o $(LIBS) -o cryptarithm
+cryptarithm: $(CPLIBS) objs/cryptarithm.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.o $(CPLIBS) -o cryptarithm
 
 objs/golomb.o:examples/golomb.cc
 	$(CCC) $(CFLAGS) -c examples/golomb.cc -o objs/golomb.o
 
-golomb: $(LIBS) objs/golomb.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.o $(LIBS) -o golomb
+golomb: $(CPLIBS) objs/golomb.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.o $(CPLIBS) -o golomb
 
 objs/magic_square.o:examples/magic_square.cc
 	$(CCC) $(CFLAGS) -c examples/magic_square.cc -o objs/magic_square.o
 
-magic_square: $(LIBS) objs/magic_square.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.o $(LIBS) -o magic_square
+magic_square: $(CPLIBS) objs/magic_square.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.o $(CPLIBS) -o magic_square
 
 objs/nqueens.o: examples/nqueens.cc
 	$(CCC) $(CFLAGS) -c examples/nqueens.cc -o objs/nqueens.o
 
-nqueens: $(LIBS) objs/nqueens.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.o $(LIBS) -o nqueens
+nqueens: $(CPLIBS) objs/nqueens.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.o $(CPLIBS) -o nqueens
 
 # SWIG
 
-pylib: _pywrapcp.so constraint_solver/pywrapcp.py $(LIBS)
+pycp: _pywrapcp.so constraint_solver/pywrapcp.py $(CPLIBS)
 
 constraint_solver/pywrapcp.py: constraint_solver/constraint_solver.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h base/base.swig
 	$(SWIG_BINARY) -c++ -python -o constraint_solver/constraint_solver_wrap.cc -module pywrapcp constraint_solver/constraint_solver.swig
@@ -257,6 +260,5 @@ constraint_solver/constraint_solver_wrap.cc: constraint_solver/pywrapcp.py
 objs/constraint_solver_wrap.o: constraint_solver/constraint_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c constraint_solver/constraint_solver_wrap.cc -o objs/constraint_solver_wrap.o
 
-_pywrapcp.so: objs/constraint_solver_wrap.o $(LIBS)
-	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o $(LIBS) $(GFLAGS_LNK)
-
+_pywrapcp.so: objs/constraint_solver_wrap.o $(CPLIBS)
+	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o $(CPLIBS) $(GFLAGS_LNK)

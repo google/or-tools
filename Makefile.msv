@@ -23,11 +23,10 @@ GFLAGS_CFLAGS=/I$(GFLAGS_DIR)\\src\\windows /I$(GFLAGS_DIR)\\src /D_USRDLL /D_WI
 
 # Real targets
 
-BINARIES=nqueens.exe golomb.exe magic_square.exe cryptarithm.exe
+all:
+	@echo Please define target: cplibs, cpexe, pycp, clean
 
-all: libs $(BINARIES)
-
-LIBS = \
+CPLIBS = \
 	constraint_solver.lib \
 	util.lib \
 	base.lib \
@@ -36,7 +35,11 @@ LIBS = \
 	graph.lib \
 	shortestpaths.lib
 
-libs: $(LIBS)
+cplibs: $(CPLIBS)
+
+BINARIES=nqueens.exe golomb.exe magic_square.exe cryptarithm.exe
+
+cpexe: $(BINARIES)
 
 clean:
 	del *.lib
@@ -230,31 +233,31 @@ gflags.lib: $(GFLAGS_LIB_OBJS)
 objs/cryptarithm.obj:examples/cryptarithm.cc
 	$(CCC) $(CFLAGS) -c examples/cryptarithm.cc /Foobjs/cryptarithm.obj
 
-cryptarithm.exe: $(LIBS) objs/cryptarithm.obj
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.obj $(LIBS) /Fecryptarithm.exe
+cryptarithm.exe: $(CPLIBS) objs/cryptarithm.obj
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.obj $(CPLIBS) /Fecryptarithm.exe
 
 objs/golomb.obj:examples/golomb.cc
 	$(CCC) $(CFLAGS) -c examples/golomb.cc /Foobjs/golomb.obj
 
-golomb.exe: $(LIBS) objs/golomb.obj
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.obj $(LIBS) /Fegolomb.exe
+golomb.exe: $(CPLIBS) objs/golomb.obj
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.obj $(CPLIBS) /Fegolomb.exe
 
 objs/magic_square.obj:examples/magic_square.cc
 	$(CCC) $(CFLAGS) -c examples/magic_square.cc /Foobjs/magic_square.obj
 
-magic_square.exe: $(LIBS) objs/magic_square.obj
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.obj $(LIBS) /Femagic_square.exe
+magic_square.exe: $(CPLIBS) objs/magic_square.obj
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.obj $(CPLIBS) /Femagic_square.exe
 
 objs/nqueens.obj: examples/nqueens.cc
 	$(CCC) $(CFLAGS) -c examples/nqueens.cc /Foobjs/nqueens.obj
 
-nqueens.exe: $(LIBS) objs/nqueens.obj
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.obj $(LIBS) /Fenqueens.exe
+nqueens.exe: $(CPLIBS) objs/nqueens.obj
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.obj $(CPLIBS) /Fenqueens.exe
 
 
 # SWIG
 
-pylib: constraint_solver/_pywrapcp.pyd constraint_solver/pywrapcp.py $(LIBS)
+pycp: constraint_solver/_pywrapcp.pyd constraint_solver/pywrapcp.py $(CPLIBS)
 
 constraint_solver/pywrapcp.py: constraint_solver/constraint_solver.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h base/base.swig
 	$(SWIG_BINARY) -c++ -python -o constraint_solver/constraint_solver_wrap.cc -module pywrapcp constraint_solver/constraint_solver.swig
@@ -264,8 +267,8 @@ constraint_solver/constraint_solver_wrap.cc: constraint_solver/pywrapcp.py
 objs/constraint_solver_wrap.obj: constraint_solver/constraint_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) /I__WIN32__ -c constraint_solver/constraint_solver_wrap.cc /Foobjs/constraint_solver_wrap.obj
 
-_pywrapcp.dll: objs/constraint_solver_wrap.obj $(LIBS)
-	link /DLL /OUT:_pywrapcp.dll objs/constraint_solver_wrap.obj $(LIBS) $(LDFLAGS) $(PYTHON_LNK)
+_pywrapcp.dll: objs/constraint_solver_wrap.obj $(CPLIBS)
+	link /DLL /OUT:_pywrapcp.dll objs/constraint_solver_wrap.obj $(CPLIBS) $(LDFLAGS) $(PYTHON_LNK)
 
 constraint_solver/_pywrapcp.pyd: _pywrapcp.dll
 	copy _pywrapcp.dll constraint_solver\\_pywrapcp.pyd
