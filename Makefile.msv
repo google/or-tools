@@ -1,5 +1,5 @@
 # Please edit the following:
-GFLAGS_DIR=..\\gflags-1.3
+GFLAGS_DIR=..\\gflags-1.4
 ZLIB_DIR=..\\zlib-1.2.5
 ZLIB_NAME=zlib.lib
 SWIG_BINARY=..\\swigwin-2.0.0\\swig.exe
