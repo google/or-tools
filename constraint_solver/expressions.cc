@@ -1412,6 +1412,7 @@ class BooleanVar : public IntVar {
   virtual int VarType() const { return BOOLEAN_VAR; }
 
   friend class TimesBooleanPosIntExpr;
+  friend class TimesBooleanIntExpr;
   friend class TimesPosCstBoolVar;
   friend void RestoreBoolValue(BooleanVar* const var);
  private:
@@ -3319,6 +3320,165 @@ bool TimesBooleanPosIntExpr::Bound() const {
           (boolvar_->value_ != kUnboundBooleanVarValue && expr_->Bound()));
 }
 
+// ----- TimesBooleanIntExpr -----
+
+class TimesBooleanIntExpr : public BaseIntExpr {
+ public:
+  TimesBooleanIntExpr(Solver* const s, BooleanVar* const b, IntExpr* const e)
+      : BaseIntExpr(s), boolvar_(b), expr_(e) {}
+  virtual ~TimesBooleanIntExpr() {}
+  virtual int64 Min() const {
+    switch (boolvar_->value_) {
+      case 0: {
+        return 0LL;
+      }
+      case 1: {
+        return expr_->Min();
+      }
+      case 2: {
+        return std::min(0LL, expr_->Min());
+      }
+    }
+  }
+  virtual void SetMin(int64 m);
+  virtual int64 Max() const {
+    switch (boolvar_->value_) {
+      case 0: {
+        return 0LL;
+      }
+      case 1: {
+        return expr_->Max();
+      }
+      case 2: {
+        return std::max(0LL, expr_->Max());
+      }
+    }
+  }
+  virtual void SetMax(int64 m);
+  virtual void Range(int64* mi, int64* ma);
+  virtual void SetRange(int64 mi, int64 ma);
+  virtual bool Bound() const;
+  virtual string DebugString() const {
+    return StringPrintf("(%s * %s)",
+                        boolvar_->DebugString().c_str(),
+                        expr_->DebugString().c_str());
+  }
+  virtual void WhenRange(Demon* d) {
+    boolvar_->WhenRange(d);
+    expr_->WhenRange(d);
+  }
+ private:
+  BooleanVar* const boolvar_;
+  IntExpr* const expr_;
+};
+
+void TimesBooleanIntExpr::SetMin(int64 m) {
+  switch (boolvar_->value_) {
+    case 0: {
+      if (m > 0) {
+        solver()->Fail();
+      }
+      break;
+    }
+    case 1: {
+      expr_->SetMin(m);
+      break;
+    }
+    case 2: {  // kUnboundBooleanVarValue
+      if (m > 0) {
+        boolvar_->SetValue(1);
+        expr_->SetMin(m);
+      } else if (m == 0 && expr_->Max() < 0) {
+        boolvar_->SetValue(0);
+      }
+    }
+  }
+}
+
+void TimesBooleanIntExpr::SetMax(int64 m) {
+  switch (boolvar_->value_) {
+    case 0: {
+      if (m < 0) {
+        solver()->Fail();
+      }
+      break;
+    }
+    case 1: {
+      expr_->SetMax(m);
+      break;
+    }
+    case 2: {  // kUnboundBooleanVarValue
+      if (m < 0) {
+        boolvar_->SetValue(1);
+        expr_->SetMax(m);
+      } else if (m == 0 && expr_->Min() > 0) {
+        boolvar_->SetValue(0);
+      }
+    }
+  }
+}
+
+void TimesBooleanIntExpr::Range(int64* mi, int64* ma) {
+  switch (boolvar_->value_) {
+    case 0: {
+      *mi = 0;
+      *ma = 0;
+      break;
+    }
+    case 1: {
+      *mi = expr_->Min();
+      *ma = expr_->Max();
+      break;
+    }
+    case 2: {
+      *mi = std::min(0LL, expr_->Min());
+      *ma = std::max(0LL, expr_->Max());
+      break;
+    }
+  }
+}
+
+void TimesBooleanIntExpr::SetRange(int64 mi, int64 ma) {
+  if (mi > ma) {
+    solver()->Fail();
+  }
+  switch (boolvar_->value_) {
+    case 0: {
+      if (mi > 0 || ma < 0) {
+        solver()->Fail();
+      }
+      break;
+    }
+    case 1: {
+      expr_->SetRange(mi, ma);
+      break;
+    }
+    case 2: {
+      if (mi > 0) {
+        boolvar_->SetValue(1);
+        expr_->SetMin(mi);
+      } else if (mi == 0 && expr_->Max() < 0) {
+        boolvar_->SetValue(0);
+      }
+      if (ma < 0) {
+        boolvar_->SetValue(1);
+        expr_->SetMax(ma);
+      } else if (ma == 0 && expr_->Min() > 0) {
+        boolvar_->SetValue(0);
+      }
+      break;
+    }
+  }
+
+  SetMin(mi);
+  SetMax(ma);
+}
+
+bool TimesBooleanIntExpr::Bound() const {
+  return (boolvar_->value_ == 0 ||
+          (expr_->Bound() && boolvar_->value_ != kUnboundBooleanVarValue));
+}
+
 IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
   if (l->Bound()) {
     return MakeProd(r, l->Min());
@@ -3329,22 +3489,32 @@ IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
   if (l == r) {
     return MakeSquare(l);
   }
-  CHECK_GE(l->Min(), 0);
-  CHECK_GE(r->Min(), 0);
   CHECK_EQ(this, l->solver());
   CHECK_EQ(this, r->solver());
   if (l->IsVar() &&
       reinterpret_cast<IntVar*>(l)->VarType() == BOOLEAN_VAR) {
-    return RevAlloc(
-        new TimesBooleanPosIntExpr(this,
-                                   reinterpret_cast<BooleanVar*>(l), r));
+    if (r->Min() >= 0) {
+      return RevAlloc(
+          new TimesBooleanPosIntExpr(this,
+                                     reinterpret_cast<BooleanVar*>(l), r));
+    } else {
+      return RevAlloc(
+          new TimesBooleanIntExpr(this, reinterpret_cast<BooleanVar*>(l), r));
+    }
   }
   if (r->IsVar() &&
       reinterpret_cast<IntVar*>(r)->VarType() == BOOLEAN_VAR) {
-    return RevAlloc(
-        new TimesBooleanPosIntExpr(this,
-                                   reinterpret_cast<BooleanVar*>(r), l));
+    if (l->Min() >= 0) {
+      return RevAlloc(
+          new TimesBooleanPosIntExpr(this,
+                                     reinterpret_cast<BooleanVar*>(r), l));
+    } else {
+      return RevAlloc(
+          new TimesBooleanIntExpr(this, reinterpret_cast<BooleanVar*>(r), l));
+    }
   }
+  CHECK_GE(l->Min(), 0);
+  CHECK_GE(r->Min(), 0);
   return RevAlloc(new TimesIntPosExpr(this, l, r));
 }
 

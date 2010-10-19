@@ -4,24 +4,31 @@ GFLAGS_DIR=../gflags-1.4
 SWIG_BINARY=swig
 ZLIB_DIR=../zlib-1.2.5
 
-#  ----- No more editing below -----
+#  ----- You should not need to modify the following, unless the -----
+#  ----- configuration is not standard ------
 
+# This is need to find python.h
 PYTHON_INC=-I/usr/include/python$(PYTHON_VER) -I/usr/lib/python$(PYTHON_VER)
+# This is needed to find gflags/gflags.h
+GFLAGS_INC = -I$(GFLAGS_DIR)/include
+# This is needed to find zlib.h
+ZLIB_INC = -I$(ZLIB_DIR)/include
 
+# Compilation flags
 DEBUG=-O -DNDEBUG
 SYSCFLAGS=-fPIC
 CCC=g++
-
-GFLAGS_INC = -I$(GFLAGS_DIR)/include
-ZLIB_INC = -I$(ZLIB_DIR)/include
 
 # ----- OS Dependent -----
 OS=$(shell uname -s)
 
 ifeq ($(OS),Linux)
 LD = gcc -shared
+# This is needed to find libgflags.a
 GFLAGS_LNK = -Wl,-rpath $(GFLAGS_DIR)/lib -L$(GFLAGS_DIR)/lib -lgflags
+# This is needed to find libz.a
 ZLIB_LNK = -Wl,-rpath $(ZLIB_DIR)/lib -L$(ZLIB_DIR)/lib -lz
+# Detect 32 bit or 64 bit OS and define ARCH flags correctly.
 LBITS := $(shell getconf LONG_BIT)
 ifeq ($(LBITS),64)
    ARCH=-DARCH_K8
@@ -55,7 +62,11 @@ CPLIBS = \
 
 cplibs: $(CPLIBS)
 
-BINARIES=nqueens golomb magic_square cryptarithm
+BINARIES = \
+	nqueens \
+	golomb \
+	magic_square \
+	cryptarithm
 
 cpexe: $(BINARIES)
 
