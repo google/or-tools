@@ -91,36 +91,32 @@ def main():
 
     x_flat = [x[i,j] for i in range(rows) for j in range(cols)]
 
-    row_sums = [solver.IntVar(0, 300, "row_sums(%i)" % i) for i in range(rows)]
-    col_sums = [solver.IntVar(0, 300, "col_sums(%i)" % j) for j in range(cols)]
-
-    row_signs = [solver.IntVar(-1, 1, "row_signs(%i)" % i) for i in range(rows)]
-    col_signs = [solver.IntVar(-1, 1, "col_signs(%i)" % j) for j in range(cols)]
-
-    # total sum: to be minimized
-    total_sum = solver.IntVar(0, 1000, "total_sum")
+    row_signs = [solver.IntVar([-1, 1], "row_signs(%i)" % i)
+                 for i in range(rows)]
+    col_signs = [solver.IntVar([-1, 1], "col_signs(%i)" % j)
+                 for j in range(cols)]
 
     #
     # constraints
     #
     for i in range(rows):
         for j in range(cols):
-            solver.Add(x[i,j] == data[i][j]*row_signs[i]*col_signs[j])
+            solver.Add(x[i, j] == data[i][j] * row_signs[i] * col_signs[j])
 
-    total_sum_a = [data[i][j]*row_signs[i]*col_signs[j]
-                   for i in range(rows) for j in range(cols) ]
-    solver.Add(total_sum == solver.Sum(total_sum_a))
+    total_sum = solver.Sum([x[i, j] for i in range(rows) for j in range(cols)])
 
     # row sums
+    row_sums = [solver.Sum([x[i, j] for j in range(cols)]).Var()
+                for i in range(rows)]
+    # >= 0
     for i in range(rows):
-        s = [row_signs[i]*col_signs[j]*data[i][j] for j in range(cols)]
-        solver.Add(row_sums[i] == solver.Sum(s))
+      row_sums[i].SetMin(0)
 
     # column sums
+    col_sums = [solver.Sum([x[i, j] for i in range(rows)]).Var()
+                for j in range(cols)]
     for j in range(cols):
-        s = [row_signs[i]*col_signs[j]*data[i][j] for i in range(rows)]
-        solver.Add(col_sums[j] == solver.Sum(s))
-
+      col_sums[j].SetMin(0)
 
     # objective
     objective = solver.Minimize(total_sum, 1)
@@ -128,15 +124,16 @@ def main():
     #
     # search and result
     #
-    db = solver.Phase(x_flat + row_sums + col_sums,
-                 solver.INT_VAR_SIMPLE,
-                 solver.INT_VALUE_SIMPLE)
+    db = solver.Phase(row_signs + col_signs,
+                      solver.INT_VAR_SIMPLE,
+                      solver.INT_VALUE_SIMPLE)
 
     solver.NewSearch(db, [objective])
 
     num_solutions = 0
     while solver.NextSolution():
         num_solutions += 1
+        print "Sum =", objective.best()
         print "row_sums:", [row_sums[i].Value() for i in range(rows)]
         print "col_sums:", [col_sums[j].Value() for j in range(cols)]
         for i in range(rows):
