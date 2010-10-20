@@ -17,11 +17,9 @@
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
-
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
 #include "base/stl_util-inl.h"
-
 #include "base/random.h"
 #include "constraint_solver/constraint_solveri.h"
 
@@ -2418,7 +2416,6 @@ void SimulatedAnnealing::ApplyDecision(Decision* const d) {
     return;
   }
   const int64  energy_bound = Temperature() * log(rand_.RndFloat());
-
   if (maximize_) {
     const int64 bound =
         (current_ > kint64min) ? current_ + step_ + energy_bound : current_;

@@ -17,10 +17,8 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
-
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
-
 #include "constraint_solver/constraint_solver.h"
 
 namespace operations_research {
@@ -58,7 +56,6 @@ void IntVarElement::Copy(const IntVarElement& element) {
     Deactivate();
   }
 }
-
 
 
 string IntVarElement::DebugString() const {
@@ -138,7 +135,6 @@ void IntervalVarElement::Restore() {
     var_->SetEndRange(end_min_, end_max_);
   }
 }
-
 
 
 string IntervalVarElement::DebugString() const {
@@ -231,9 +227,7 @@ void IdToElementMap(AssignmentContainer<V, E>* container,
   }
 }
 
-
 }  // namespace
-
 
 
 string Assignment::DebugString() const {

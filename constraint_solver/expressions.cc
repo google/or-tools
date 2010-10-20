@@ -1683,7 +1683,7 @@ class PlusCstIntVar : public IntVar {
       return iterator_->Value() + cst_;
     }
    private:
-    int64 cst_;
+    const int64 cst_;
   };
   PlusCstIntVar(Solver* const s, IntVar* v, int64 c);
   virtual ~PlusCstIntVar();
@@ -1723,8 +1723,8 @@ class PlusCstIntVar : public IntVar {
   virtual string DebugString() const;
   virtual int VarType() const { return VAR_ADD_CST; }
  private:
-  IntVar* var_;
-  int64 cst_;
+  IntVar* const var_;
+  const int64 cst_;
 };
 
 PlusCstIntVar::PlusCstIntVar(Solver* const s, IntVar* v, int64 c)
@@ -1811,7 +1811,7 @@ class PlusCstDomainIntVar : public IntVar {
       return iterator_->Value() + cst_;
     }
    private:
-    int64 cst_;
+    const int64 cst_;
   };
   PlusCstDomainIntVar(Solver* const s, DomainIntVar* v, int64 c);
   virtual ~PlusCstDomainIntVar();
@@ -1851,8 +1851,8 @@ class PlusCstDomainIntVar : public IntVar {
   virtual string DebugString() const;
   virtual int VarType() const { return DOMAIN_INT_VAR_ADD_CST; }
  private:
-  DomainIntVar* var_;
-  int64 cst_;
+  DomainIntVar* const var_;
+  const int64 cst_;
 };
 
 PlusCstDomainIntVar::PlusCstDomainIntVar(Solver* const s,
@@ -1941,7 +1941,7 @@ class SubCstIntVar : public IntVar {
       return cst_ - iterator_->Value();
     }
    private:
-    int64 cst_;
+    const int64 cst_;
   };
 
   SubCstIntVar(Solver* const s, IntVar* v, int64 c);
@@ -1981,8 +1981,8 @@ class SubCstIntVar : public IntVar {
   virtual string DebugString() const;
   virtual int VarType() const { return CST_SUB_VAR; }
  private:
-  IntVar* var_;
-  int64 cst_;
+  IntVar* const var_;
+  const int64 cst_;
 };
 
 SubCstIntVar::SubCstIntVar(Solver* const s, IntVar* v, int64 c)
@@ -2104,7 +2104,7 @@ class OppIntVar : public IntVar {
   virtual string DebugString() const;
   virtual int VarType() const { return OPP_VAR; }
  private:
-  IntVar* var_;
+  IntVar* const var_;
 };
 
 OppIntVar::OppIntVar(Solver* const s, IntVar* v) : IntVar(s), var_(v) {}
@@ -2208,7 +2208,7 @@ class TimesPosCstIntVar : public IntVar {
       return iterator_->Value() * cst_;
     }
    private:
-    int64 cst_;
+    const int64 cst_;
   };
 
   TimesPosCstIntVar(Solver* const s, IntVar* v, int64 c);
@@ -2248,8 +2248,8 @@ class TimesPosCstIntVar : public IntVar {
   virtual string DebugString() const;
   virtual int VarType() const { return VAR_TIMES_POS_CST; }
  private:
-  IntVar* var_;
-  int64 cst_;
+  IntVar* const var_;
+  const int64 cst_;
 };
 
 // ----- TimesPosCstIntVar -----
@@ -2608,7 +2608,7 @@ IntVar* BaseIntExpr::Var() {
 IntVar* BaseIntExpr::CastToVar() {
   int64 vmin, vmax;
   Range(&vmin, &vmax);
-  IntVar* var = solver()->MakeIntVar(vmin, vmax);
+  IntVar* const var = solver()->MakeIntVar(vmin, vmax);
   AddDelegateName("Var", var);
   LinkVarExpr(solver(), this, var);
   return var;
@@ -2662,10 +2662,10 @@ class PlusIntExpr : public BaseIntExpr {
 };
 
 void PlusIntExpr::SetRange(int64 l, int64 u) {
-  int64 l1 = left_->Min();
-  int64 l2 = right_->Min();
-  int64 u1 = left_->Max();
-  int64 u2 = right_->Max();
+  const int64 l1 = left_->Min();
+  const int64 l2 = right_->Min();
+  const int64 u1 = left_->Max();
+  const int64 u2 = right_->Max();
   if (l > l1 + l2) {
     left_->SetMin(l - u2);
     right_->SetMin(l - u1);
@@ -2722,12 +2722,12 @@ class PlusIntCstExpr : public BaseIntExpr {
 
  private:
   IntExpr* const expr_;
-  int64 value_;
+  const int64 value_;
 };
 
 IntVar* PlusIntCstExpr::CastToVar() {
   Solver* const s = solver();
-  IntVar* var = expr_->Var();
+  IntVar* const var = expr_->Var();
   IntVar* cast = NULL;
   switch (var->VarType()) {
     case DOMAIN_INT_VAR:
@@ -2791,10 +2791,10 @@ class SubIntExpr : public BaseIntExpr {
 };
 
 void SubIntExpr::SetRange(int64 l, int64 u) {
-  int64 l1 = left_->Min();
-  int64 l2 = right_->Min();
-  int64 u1 = left_->Max();
-  int64 u2 = right_->Max();
+  const int64 l1 = left_->Min();
+  const int64 l2 = right_->Min();
+  const int64 u1 = left_->Max();
+  const int64 u2 = right_->Max();
   if (l > l1 - u2) {
     left_->SetMin(l + l2);
     right_->SetMax(u1 - l);
@@ -2966,7 +2966,7 @@ class SubIntCstExpr : public BaseIntExpr {
   virtual IntVar* CastToVar();
  private:
   IntExpr* const expr_;
-  int64 value_;
+  const int64 value_;
 };
 
 IntVar* SubIntCstExpr::CastToVar() {
@@ -3062,7 +3062,7 @@ class TimesIntPosCstExpr : public BaseIntExpr {
   virtual IntVar* CastToVar();
  private:
   IntExpr* const expr_;
-  int64 value_;
+  const int64 value_;
 };
 
 TimesIntPosCstExpr::TimesIntPosCstExpr(Solver* const s,
@@ -3122,7 +3122,7 @@ class TimesIntNegCstExpr : public BaseIntExpr {
   }
  private:
   IntExpr* const expr_;
-  int64 value_;
+  const int64 value_;
 };
 
 TimesIntNegCstExpr::TimesIntNegCstExpr(Solver* const s,
@@ -3205,8 +3205,8 @@ class TimesIntPosExpr : public BaseIntExpr {
 };
 
 void TimesIntPosExpr::SetMin(int64 m) {
-  int64 lmax = left_->Max();
-  int64 rmax = right_->Max();
+  const int64 lmax = left_->Max();
+  const int64 rmax = right_->Max();
   // Ok for m == 0 due to left_ and right_ being positive
   left_->SetMin(rmax ? PosIntDivUp(m, rmax) : m);
   right_->SetMin(lmax ? PosIntDivUp(m, lmax) : m);
@@ -3218,8 +3218,8 @@ void TimesIntPosExpr::SetMax(int64 m) {
 }
 
 void TimesIntPosExpr::SetRange(int64 mi, int64 ma) {
-  int64 lmax = left_->Max();
-  int64 rmax = right_->Max();
+  const int64 lmax = left_->Max();
+  const int64 rmax = right_->Max();
   // Ok for m == 0 due to left_ and right_ being positive
   left_->SetMin(rmax ? PosIntDivUp(mi, rmax) : mi);
   right_->SetMin(lmax ? PosIntDivUp(mi, lmax) : mi);
@@ -3452,7 +3452,8 @@ class TimesBooleanIntExpr : public BaseIntExpr {
       case 1: {
         return expr_->Min();
       }
-      case 2: {
+      default: {
+        DCHECK_EQ(kUnboundBooleanVarValue, boolvar_->value_);
         return std::min(0LL, expr_->Min());
       }
     }
@@ -3466,7 +3467,8 @@ class TimesBooleanIntExpr : public BaseIntExpr {
       case 1: {
         return expr_->Max();
       }
-      case 2: {
+      default: {
+        DCHECK_EQ(kUnboundBooleanVarValue, boolvar_->value_);
         return std::max(0LL, expr_->Max());
       }
     }
@@ -3593,7 +3595,9 @@ void TimesBooleanIntExpr::SetRange(int64 mi, int64 ma) {
 
 bool TimesBooleanIntExpr::Bound() const {
   return (boolvar_->value_ == 0 ||
-          (expr_->Bound() && boolvar_->value_ != kUnboundBooleanVarValue));
+          (expr_->Bound() && (
+              boolvar_->value_ != kUnboundBooleanVarValue ||
+              expr_->Max() == 0)));
 }
 
 IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
@@ -3633,7 +3637,8 @@ IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
   if (l->Min() >= 0 && r->Min() >= 0) {
     return RevAlloc(new TimesIntPosExpr(this, l, r));
   } else {
-    return RevAlloc(new TimesIntExpr(this, l, r));
+    LOG(FATAL) << "Not yet implemented";
+    return NULL;
   }
 }
 
@@ -3985,7 +3990,7 @@ class MinCstIntExpr : public BaseIntExpr {
   }
  private:
   IntExpr* const expr_;
-  int64 value_;
+  const int64 value_;
 };
 
 IntExpr* Solver::MakeMin(IntExpr* const e, int64 v) {
@@ -4104,7 +4109,7 @@ class MaxCstIntExpr : public BaseIntExpr {
   }
  private:
   IntExpr* const expr_;
-  int64 value_;
+  const int64 value_;
 };
 
 IntExpr* Solver::MakeMax(IntExpr* const e, int64 v) {

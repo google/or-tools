@@ -28,14 +28,10 @@
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
-
 #include "zlib.h"
-
 #include "base/stringpiece.h"
 #include "base/map-util.h"
-
 #include "constraint_solver/constraint_solveri.h"
-
 
 DEFINE_int32(cp_compressed_trail_block_size, 8000,
              "compressed trail block size (number of addrvals per block)");
@@ -46,7 +42,6 @@ DEFINE_bool(cp_show_constraints, false,
 DEFINE_int32(cp_trail_compression_level, 1,
              "Compression level for the trail, 0, no compression, "
              "1 = compress with zlib");
-
 
 void ConstraintSolverFailHere() {
   VLOG(3) << "Fail";
@@ -344,7 +339,6 @@ template <class T> class TrailPacker {
 };
 
 
-
 template <class T> class NoCompressionTrailPacker : public TrailPacker<T> {
  public:
   explicit NoCompressionTrailPacker(int block_size)
@@ -421,10 +415,8 @@ template <class T> class CompressedTrail {
         packer_.reset(new NoCompressionTrailPacker<T>(block_size));
         break;
       }
-
       default: {
 packer_.reset(new ZlibTrailPacker<T>(block_size));
-
         break;
       }
     }
@@ -851,7 +843,6 @@ class FailException {};
 #define CP_DO_FAIL(search) throw FailException()
 #endif  // CP_FAST_BACKTRACK
 
-
 void Search::JumpBack() {
   ClearBuffer();
   CP_DO_FAIL(this);
@@ -1152,7 +1143,6 @@ class BalancingDecision : public Decision {
 }
 
 
-
 // ------------------ Solver class -----------------
 
 // These magic numbers are there to make sure we pop the correct
@@ -1257,9 +1247,7 @@ string Solver::DebugString() const {
 
 int64 Solver::MemoryUsage() {
   return GetProcessMemoryUsage();
-
 }
-
 
 
 int64 Solver::wall_time() const {

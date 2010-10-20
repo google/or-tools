@@ -52,7 +52,6 @@ string BaseAllDifferent::DebugStringInternal(const string& name) const {
 }
 
 
-
 //-----------------------------------------------------------------------------
 // ValueAllDifferent
 

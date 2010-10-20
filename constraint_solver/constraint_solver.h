@@ -58,7 +58,6 @@
 #ifndef CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
 #define CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
 
-
 #include <vector>
 #include <string>
 
@@ -76,7 +75,6 @@
 class File;
 using operations_research::WallTimer;
 #define ClockTimer WallTimer
-
 
 namespace operations_research {
 
@@ -419,7 +417,6 @@ class Solver {
   // Current memory usage in bytes
   static int64 MemoryUsage();
 
-  
 
   // wall_time() in ms since the creation of the solver.
   int64 wall_time() const;
@@ -1123,7 +1120,6 @@ class Solver {
                                IntVar* objective,
                                ResultCallback<string>* display_callback);
 
-
   // ----- Search Trace ------
 
   // Create a search monitor that will trace precisely the behavior of the
@@ -1146,7 +1142,6 @@ class Solver {
                                      SymmetryBreaker* const v3,
                                      SymmetryBreaker* const v4);
 
-  
 
   // ----- Search Decicions and Decision Builders -----
 
@@ -1455,7 +1450,6 @@ class Solver {
       DecisionBuilder* const first_solution,
       LocalSearchPhaseParameters* const parameters);
 
-  
 
   // Solution Pool.
   SolutionPool* MakeDefaultSolutionPool();
@@ -2521,7 +2515,6 @@ class IntVarElement : public AssignmentElement {
     max_ = var_->Max();
   }
   void Restore() { var_->SetRange(min_, max_); }
-  
 
   int64 Min() const { return min_; }
   void SetMin(int64 m) { min_ = m; }
@@ -2560,7 +2553,6 @@ class IntervalVarElement : public AssignmentElement {
   IntervalVar* Var() const { return var_; }
   void Store();
   void Restore();
-  
 
   int64 StartMin() const { return start_min_; }
   int64 StartMax() const { return start_max_; }
@@ -2763,7 +2755,6 @@ class Assignment : public PropagationBaseObject {
   void Store();
   void Restore();
 
-  
 
   void AddObjective(IntVar* const v);
   IntVar* Objective() const;
@@ -3057,7 +3048,6 @@ class SolutionPool : public BaseObject {
   // an external one.
   virtual bool SyncNeeded(Assignment* const local_assignment) = 0;
 };
-
 
 }  // namespace operations_research
 #endif  // CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_

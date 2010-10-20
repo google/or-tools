@@ -164,6 +164,9 @@ void BaseIntExprElement::UpdateSupports() const {
 
 // ----- IntElementConstraint -----
 
+// This constraint implements 'elem' == 'values'['index'].
+// It scans the bounds of 'elem' to propagate on the domain of 'index'.
+// It scans the domain of 'index' to compute the new bounds of 'elem'.
 class IntElementConstraint : public Constraint {
  public:
   IntElementConstraint(Solver* const s,

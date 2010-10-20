@@ -2496,23 +2496,22 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
       if (!limit_->Check()
           && ls_operator_->MakeNextNeighbor(delta, deltadelta)) {
         solver->neighbors_ += 1;
-        if (!delta->Empty()) {
-          // All filters must be called for incrementality reasons, except if
-          // delta is empty.
-          // TODO(user): Don't call both if no filter is incremental and one
-          // of them returned false.
-          const bool mh_filter = solver->AcceptDelta(delta, deltadelta);
-          const bool move_filter = FilterAccept(delta, deltadelta);
-          if (mh_filter && move_filter) {
-            solver->filtered_neighbors_ += 1;
-            assignment_copy->Copy(reference_assignment_.get());
-            assignment_copy->Copy(delta);
-            if (solver->NestedSolve(restore, false)) {
-              solver->accepted_neighbors_ += 1;
-              assignment_->Store();
-              neighbor_found_ = true;
-              return NULL;
-            }
+        // All filters must be called for incrementality reasons.
+        // Empty deltas must also be sent to incremental filters; can be needed
+        // to resync filters on non-incremental (empty) moves.
+        // TODO(user): Don't call both if no filter is incremental and one
+        // of them returned false.
+        const bool mh_filter = solver->AcceptDelta(delta, deltadelta);
+        const bool move_filter = FilterAccept(delta, deltadelta);
+        if (mh_filter && move_filter) {
+          solver->filtered_neighbors_ += 1;
+          assignment_copy->Copy(reference_assignment_.get());
+          assignment_copy->Copy(delta);
+          if (solver->NestedSolve(restore, false)) {
+            solver->accepted_neighbors_ += 1;
+            assignment_->Store();
+            neighbor_found_ = true;
+            return NULL;
           }
         }
       } else {
@@ -2850,7 +2849,6 @@ DecisionBuilder* Solver::MakeLocalSearchPhase(
                                   parameters->limit(),
                                   parameters->filters()));
 }
-
 
 
 }  // namespace operations_research
