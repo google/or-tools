@@ -3166,6 +3166,15 @@ IntExpr* Solver::MakeProd(IntExpr* const e, int64 v) {
 
 // ----- TimesIntPosExpr -----
 
+namespace {
+void SetPosPosMaxExpr(IntExpr* const expr, IntExpr* const from, int64 m) {
+  const int64 from_min = from->Min();
+  if (0 != from_min)
+    expr->SetMax(PosIntDivDown(m, from_min));
+  // else do nothing: 0 is supporting any value from expr
+}
+}  // namespace
+
 class TimesIntPosExpr : public BaseIntExpr {
  public:
   TimesIntPosExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
@@ -3180,7 +3189,6 @@ class TimesIntPosExpr : public BaseIntExpr {
   }
   virtual void SetMax(int64 m);
   virtual void SetRange(int64 mi, int64 ma);
-  static void SetMaxExpr(IntExpr* const expr, IntExpr* const from, int64 m);
   virtual bool Bound() const;
   virtual string DebugString() const {
     return StringPrintf("(%s * %s)",
@@ -3205,17 +3213,8 @@ void TimesIntPosExpr::SetMin(int64 m) {
 }
 
 void TimesIntPosExpr::SetMax(int64 m) {
-  SetMaxExpr(left_, right_, m);
-  SetMaxExpr(right_, left_, m);
-}
-
-void TimesIntPosExpr::SetMaxExpr(IntExpr* const expr,
-                                 IntExpr* const from,
-                                 int64 m) {
-  const int64 from_min = from->Min();
-  if (0 != from_min)
-    expr->SetMax(PosIntDivDown(m, from_min));
-  // else do nothing: 0 is supporting any value from expr
+  SetPosPosMaxExpr(left_, right_, m);
+  SetPosPosMaxExpr(right_, left_, m);
 }
 
 void TimesIntPosExpr::SetRange(int64 mi, int64 ma) {
@@ -3224,13 +3223,131 @@ void TimesIntPosExpr::SetRange(int64 mi, int64 ma) {
   // Ok for m == 0 due to left_ and right_ being positive
   left_->SetMin(rmax ? PosIntDivUp(mi, rmax) : mi);
   right_->SetMin(lmax ? PosIntDivUp(mi, lmax) : mi);
-  SetMaxExpr(left_, right_, ma);
-  SetMaxExpr(right_, left_, ma);
+  SetPosPosMaxExpr(left_, right_, ma);
+  SetPosPosMaxExpr(right_, left_, ma);
 }
 
 bool TimesIntPosExpr::Bound() const {
   return (left_->Max() == 0 ||
           right_->Max() == 0 ||
+          (left_->Bound() && right_->Bound()));
+}
+
+// ----- TimesIntPosExpr -----
+
+class TimesIntExpr : public BaseIntExpr {
+ public:
+  TimesIntExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
+      : BaseIntExpr(s), left_(l), right_(r) {}
+  virtual ~TimesIntExpr() {}
+  virtual int64 Min() const {
+    const int64 lmin = left_->Min();
+    const int64 lmax = left_->Max();
+    const int64 rmin = right_->Min();
+    const int64 rmax = right_->Max();
+    return std::min(std::min(lmin * rmin, lmin * rmax),
+                    std::min(lmax * rmin, lmax * rmin));
+  }
+  virtual void SetMin(int64 m);
+  virtual int64 Max() const {
+    const int64 lmin = left_->Min();
+    const int64 lmax = left_->Max();
+    const int64 rmin = right_->Min();
+    const int64 rmax = right_->Max();
+    return std::max(std::max(lmin * rmin, lmin * rmax),
+                    std::max(lmax * rmin, lmax * rmin));
+  }
+  virtual void SetMax(int64 m);
+  virtual void SetRange(int64 mi, int64 ma);
+  virtual bool Bound() const;
+  virtual string DebugString() const {
+    return StringPrintf("(%s * %s)",
+                        left_->DebugString().c_str(),
+                        right_->DebugString().c_str());
+  }
+  virtual void WhenRange(Demon* d) {
+    left_->WhenRange(d);
+    right_->WhenRange(d);
+  }
+ private:
+  IntExpr* const left_;
+  IntExpr* const right_;
+};
+
+void TimesIntExpr::SetMin(int64 m) {
+  const int64 lmin = left_->Min();
+  const int64 lmax = left_->Max();
+  const int64 rmin = right_->Min();
+  const int64 rmax = right_->Max();
+  if (lmin >= 0) {
+    if (rmin >= 0) {
+      left_->SetMin(rmax ? PosIntDivUp(m, rmax) : m);
+      right_->SetMin(lmax ? PosIntDivUp(m, lmax) : m);
+    } else if (rmax <= 0) {
+      const int64 minus_m = -m;
+      const int64 minus_rmin = -rmax;
+      const int64 minus_rmax = -rmin;
+      // SetMax(minus_m) on left * (minus_right)
+
+    } else {  // rmin < 0 && rmax > 0
+
+    }
+  } else if (lmax <= 0) {
+    if (rmin >= 0) {
+
+    } else if (rmax <= 0) {
+
+    } else {  // rmin < 0 && rmax > 0
+
+    }
+  } else if (rmin >= 0) {  // lmin < 0 && lmax > 0
+
+  } else if (rmax <= 0) {  // lmin < 0 && lmax > 0
+
+  } else {  // lmin < 0 && lmax > 0 && rmin < 0 && rmax > 0
+
+  }
+}
+
+void TimesIntExpr::SetMax(int64 m) {
+  const int64 lmin = left_->Min();
+  const int64 lmax = left_->Max();
+  const int64 rmin = right_->Min();
+  const int64 rmax = right_->Max();
+  if (lmin >= 0) {
+    if (rmin >= 0) {
+      SetPosPosMaxExpr(left_, right_, m);
+      SetPosPosMaxExpr(right_, left_, m);
+    } else if (rmax <= 0) {
+
+    } else {
+
+    }
+  } else if (lmax <= 0) {
+    if (rmin >= 0) {
+
+    } else if (rmax <= 0) {
+
+    } else {
+
+    }
+  } else if (rmin >= 0) {
+
+  } else if (rmax <= 0) {
+
+  } else {
+
+  }
+}
+
+void TimesIntExpr::SetRange(int64 mi, int64 ma) {
+  SetMin(mi);
+  SetMax(ma);
+}
+
+bool TimesIntExpr::Bound() const {
+  return ((left_->Bound() && left_->Max() == 0) ||
+          (right_->Bound() && right_->Max() == 0) ||
           (left_->Bound() && right_->Bound()));
 }
 
@@ -3513,9 +3630,11 @@ IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
           new TimesBooleanIntExpr(this, reinterpret_cast<BooleanVar*>(r), l));
     }
   }
-  CHECK_GE(l->Min(), 0);
-  CHECK_GE(r->Min(), 0);
-  return RevAlloc(new TimesIntPosExpr(this, l, r));
+  if (l->Min() >= 0 && r->Min() >= 0) {
+    return RevAlloc(new TimesIntPosExpr(this, l, r));
+  } else {
+    return RevAlloc(new TimesIntExpr(this, l, r));
+  }
 }
 
 IntExpr* Solver::MakeDiv(IntExpr* const numerator, IntExpr* const denominator) {
