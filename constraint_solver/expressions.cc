@@ -2662,17 +2662,17 @@ class PlusIntExpr : public BaseIntExpr {
 };
 
 void PlusIntExpr::SetRange(int64 l, int64 u) {
-  const int64 l1 = left_->Min();
-  const int64 l2 = right_->Min();
-  const int64 u1 = left_->Max();
-  const int64 u2 = right_->Max();
-  if (l > l1 + l2) {
-    left_->SetMin(l - u2);
-    right_->SetMin(l - u1);
+  const int64 left_min = left_->Min();
+  const int64 left_max = right_->Min();
+  const int64 right_min = left_->Max();
+  const int64 right_max = right_->Max();
+  if (l > left_min + left_max) {
+    left_->SetMin(l - right_max);
+    right_->SetMin(l - right_min);
   }
-  if (u < u1 + u2) {
-    left_->SetMax(u - l2);
-    right_->SetMax(u - l1);
+  if (u < right_min + right_max) {
+    left_->SetMax(u - left_max);
+    right_->SetMax(u - left_min);
   }
 }
 
@@ -2791,17 +2791,17 @@ class SubIntExpr : public BaseIntExpr {
 };
 
 void SubIntExpr::SetRange(int64 l, int64 u) {
-  const int64 l1 = left_->Min();
-  const int64 l2 = right_->Min();
-  const int64 u1 = left_->Max();
-  const int64 u2 = right_->Max();
-  if (l > l1 - u2) {
-    left_->SetMin(l + l2);
-    right_->SetMax(u1 - l);
+  const int64 left_min = left_->Min();
+  const int64 left_max = right_->Min();
+  const int64 right_min = left_->Max();
+  const int64 right_max = right_->Max();
+  if (l > left_min - right_max) {
+    left_->SetMin(l + left_max);
+    right_->SetMax(right_min - l);
   }
-  if (u < u1 - l2) {
-    left_->SetMax(u + u2);
-    right_->SetMin(l1 - u);
+  if (u < right_min - left_max) {
+    left_->SetMax(u + right_max);
+    right_->SetMin(left_min - u);
   }
 }
 
@@ -3167,11 +3167,62 @@ IntExpr* Solver::MakeProd(IntExpr* const e, int64 v) {
 // ----- TimesIntPosExpr -----
 
 namespace {
-void SetPosPosMaxExpr(IntExpr* const expr, IntExpr* const from, int64 m) {
-  const int64 from_min = from->Min();
-  if (0 != from_min)
-    expr->SetMax(PosIntDivDown(m, from_min));
-  // else do nothing: 0 is supporting any value from expr
+// Propagates set_min on left * right, left and right >= 0.
+void SetPosPosMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
+  const int64 lmax = left->Max();
+  const int64 rmax = right->Max();
+  if (m > lmax * rmax) {
+    left->solver()->Fail();
+  }
+  // Ok for m == 0 due to left and right being positive
+  if (0 != rmax) {
+    left->SetMin(PosIntDivUp(m, rmax));
+  }
+  if (0 != lmax) {
+    right->SetMin(PosIntDivUp(m, lmax));
+  }
+}
+
+// Propagates set_max on left * right, left and right >= 0.
+void SetPosPosMaxExpr(IntExpr* const left, IntExpr* const right, int64 m) {
+  const int64 lmin = left->Min();
+  const int64 rmin = right->Min();
+  if (m < lmin * rmin) {
+    left->solver()->Fail();
+  }
+  if (0 != lmin) {
+    right->SetMax(PosIntDivDown(m, lmin));
+  }
+  if (0 != rmin) {
+    left->SetMax(PosIntDivDown(m, rmin));
+  }
+  // else do nothing: 0 is supporting any value from other expr.
+}
+
+// Propagates set_min on left * right, left >= 0 and right <= 0.
+// Actually does left * (-right) >= -m.
+void SetPosNegMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
+  const int64 lmin = left->Min();
+  const int64 rmin = -right->Max();
+  if (0 != lmin) {
+    minus_right->SetMax(PosIntDivDown(-m, lmin));
+  }
+  if (0 != rmin) {
+    left->SetMax(PosIntDivDown(-m, rmin));
+  }
+  // else do nothing: 0 is supporting any value from other expr.
+}
+
+// Propagates set_max on left * right, left >= 0 and right <= 0.
+// Actually does left * (-right) <= -m.
+void SetPosNegMaxExpr(IntExpr* const left, IntExpr* const right, int64 m) {
+  const int64 lmax = left->Max();
+  const int64 minusrmax = -right->Min();
+  DCHECK_GE(lmax, 0);
+  DCHECK_GE(rmax, 0);
+  // Ok for m == 0 due to left and right being positive
+  left->SetMin(rmax ? PosIntDivUp(-m, rmax) : -m);
+  minus_right->SetMin(lmax ? PosIntDivUp(-m, lmax) : -m);
 }
 }  // namespace
 
@@ -3188,7 +3239,6 @@ class TimesIntPosExpr : public BaseIntExpr {
     return (left_->Max() * right_->Max());
   }
   virtual void SetMax(int64 m);
-  virtual void SetRange(int64 mi, int64 ma);
   virtual bool Bound() const;
   virtual string DebugString() const {
     return StringPrintf("(%s * %s)",
@@ -3205,26 +3255,11 @@ class TimesIntPosExpr : public BaseIntExpr {
 };
 
 void TimesIntPosExpr::SetMin(int64 m) {
-  const int64 lmax = left_->Max();
-  const int64 rmax = right_->Max();
-  // Ok for m == 0 due to left_ and right_ being positive
-  left_->SetMin(rmax ? PosIntDivUp(m, rmax) : m);
-  right_->SetMin(lmax ? PosIntDivUp(m, lmax) : m);
+  SetPosPosMinExpr(left_, right_, m);
 }
 
 void TimesIntPosExpr::SetMax(int64 m) {
   SetPosPosMaxExpr(left_, right_, m);
-  SetPosPosMaxExpr(right_, left_, m);
-}
-
-void TimesIntPosExpr::SetRange(int64 mi, int64 ma) {
-  const int64 lmax = left_->Max();
-  const int64 rmax = right_->Max();
-  // Ok for m == 0 due to left_ and right_ being positive
-  left_->SetMin(rmax ? PosIntDivUp(mi, rmax) : mi);
-  right_->SetMin(lmax ? PosIntDivUp(mi, lmax) : mi);
-  SetPosPosMaxExpr(left_, right_, ma);
-  SetPosPosMaxExpr(right_, left_, ma);
 }
 
 bool TimesIntPosExpr::Bound() const {
@@ -3232,8 +3267,6 @@ bool TimesIntPosExpr::Bound() const {
           right_->Max() == 0 ||
           (left_->Bound() && right_->Bound()));
 }
-
-// ----- TimesIntPosExpr -----
 
 class TimesIntExpr : public BaseIntExpr {
  public:
@@ -3281,20 +3314,15 @@ void TimesIntExpr::SetMin(int64 m) {
   const int64 rmax = right_->Max();
   if (lmin >= 0) {
     if (rmin >= 0) {
-      left_->SetMin(rmax ? PosIntDivUp(m, rmax) : m);
-      right_->SetMin(lmax ? PosIntDivUp(m, lmax) : m);
+      SetPosPosMinExpr(left_, right_, m);
     } else if (rmax <= 0) {
-      const int64 minus_m = -m;
-      const int64 minus_rmin = -rmax;
-      const int64 minus_rmax = -rmin;
-      // SetMax(minus_m) on left * (minus_right)
-
+      SetPosNegMinExpr(left_, right_, m);
     } else {  // rmin < 0 && rmax > 0
 
     }
   } else if (lmax <= 0) {
     if (rmin >= 0) {
-
+      SetPosNegMinExpr(right_, left_, m);
     } else if (rmax <= 0) {
 
     } else {  // rmin < 0 && rmax > 0
@@ -3317,15 +3345,14 @@ void TimesIntExpr::SetMax(int64 m) {
   if (lmin >= 0) {
     if (rmin >= 0) {
       SetPosPosMaxExpr(left_, right_, m);
-      SetPosPosMaxExpr(right_, left_, m);
     } else if (rmax <= 0) {
-
+      SetPosNegMaxExpr(left_, right_, m);
     } else {
 
     }
   } else if (lmax <= 0) {
     if (rmin >= 0) {
-
+      SetPosNegMaxExpr(right_, left_, m);
     } else if (rmax <= 0) {
 
     } else {
@@ -3503,8 +3530,9 @@ void TimesBooleanIntExpr::SetMin(int64 m) {
       expr_->SetMin(m);
       break;
     }
-    case 2: {  // kUnboundBooleanVarValue
-      if (m > 0) {
+    default: {
+      DCHECK_EQ(kUnboundBooleanVarValue, boolvar_->value_);
+      if (m > 0) {  // 0 is no longer possible for boolvar because min > 0.
         boolvar_->SetValue(1);
         expr_->SetMin(m);
       } else if (m == 0 && expr_->Max() < 0) {
@@ -3526,8 +3554,9 @@ void TimesBooleanIntExpr::SetMax(int64 m) {
       expr_->SetMax(m);
       break;
     }
-    case 2: {  // kUnboundBooleanVarValue
-      if (m < 0) {
+    default: {
+      DCHECK_EQ(kUnboundBooleanVarValue, boolvar_->value_);
+      if (m < 0) {  // 0 is no longer possible for boolvar because max < 0.
         boolvar_->SetValue(1);
         expr_->SetMax(m);
       } else if (m == 0 && expr_->Min() > 0) {
@@ -3549,7 +3578,8 @@ void TimesBooleanIntExpr::Range(int64* mi, int64* ma) {
       *ma = expr_->Max();
       break;
     }
-    case 2: {
+    default: {
+      DCHECK_EQ(kUnboundBooleanVarValue, boolvar_->value_);
       *mi = std::min(0LL, expr_->Min());
       *ma = std::max(0LL, expr_->Max());
       break;
@@ -3572,7 +3602,8 @@ void TimesBooleanIntExpr::SetRange(int64 mi, int64 ma) {
       expr_->SetRange(mi, ma);
       break;
     }
-    case 2: {
+    default: {
+      DCHECK_EQ(kUnboundBooleanVarValue, boolvar_->value_);
       if (mi > 0) {
         boolvar_->SetValue(1);
         expr_->SetMin(mi);
@@ -3588,9 +3619,6 @@ void TimesBooleanIntExpr::SetRange(int64 mi, int64 ma) {
       break;
     }
   }
-
-  SetMin(mi);
-  SetMax(ma);
 }
 
 bool TimesBooleanIntExpr::Bound() const {
