@@ -3234,7 +3234,7 @@ void SetPosGenMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
     }
   } else {  // m < 0
     if (0 != lmin) {  // We cannot deduce anything if 0 is in the domain.
-      right->SetMin(-PosIntDivDown(-m, lmax));
+      right->SetMin(-PosIntDivDown(-m, lmin));
     }
   }
 }
