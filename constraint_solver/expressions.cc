@@ -3176,12 +3176,14 @@ void SetPosPosMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
   if (m > lmax * rmax) {
     left->solver()->Fail();
   }
-  // Ok for m == 0 due to left and right being positive
-  if (0 != rmax) {
-    left->SetMin(PosIntDivUp(m, rmax));
-  }
-  if (0 != lmax) {
-    right->SetMin(PosIntDivUp(m, lmax));
+  if (m > left->Min() * right->Min()) {
+    // Ok for m == 0 due to left and right being positive
+    if (0 != rmax) {
+      left->SetMin(PosIntDivUp(m, rmax));
+    }
+    if (0 != lmax) {
+      right->SetMin(PosIntDivUp(m, lmax));
+    }
   }
 }
 
@@ -3194,14 +3196,17 @@ void SetPosPosMaxExpr(IntExpr* const left, IntExpr* const right, int64 m) {
   if (m < lmin * rmin) {
     left->solver()->Fail();
   }
-  if (0 != lmin) {
-    right->SetMax(PosIntDivDown(m, lmin));
+  if (m < left->Max() * right->Max()) {
+    if (0 != lmin) {
+      right->SetMax(PosIntDivDown(m, lmin));
+    }
+    if (0 != rmin) {
+      left->SetMax(PosIntDivDown(m, rmin));
+    }
+    // else do nothing: 0 is supporting any value from other expr.
   }
-  if (0 != rmin) {
-    left->SetMax(PosIntDivDown(m, rmin));
-  }
-  // else do nothing: 0 is supporting any value from other expr.
 }
+
 // Propagates set_min on left * right, left >= 0, right across 0.
 void SetPosGenMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
   DCHECK_GE(left->Min(), 0);
@@ -3228,7 +3233,7 @@ void SetPosGenMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
       right->SetMin(0);
     }
   } else {  // m < 0
-    if (0 != lmax) {
+    if (0 != lmin) {  // We cannot deduce anything if 0 is in the domain.
       right->SetMin(-PosIntDivDown(-m, lmax));
     }
   }
