@@ -3247,6 +3247,13 @@ void SetGenGenMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
   if (m > std::max(lmin * rmin, lmax * rmax)) {
     left->solver()->Fail();
   }
+  if (m > lmin * rmin) {  // Must be positive section * positive section.
+    left->SetMin(PosIntDivUp(m, rmax));
+    right->SetMin(PosIntDivUp(m, lmax));
+  } else if (m > lmax * rmax) {  // Negative section * negative section.
+    left->SetMax(-PosIntDivUp(m, -rmin));
+    right->SetMax(-PosIntDivUp(m, -lmin));
+  }
 }
 
 void TimesSetMin(IntExpr* const left,
@@ -3544,7 +3551,7 @@ void TimesBooleanIntExpr::SetMin(int64 m) {
       if (m > 0) {  // 0 is no longer possible for boolvar because min > 0.
         boolvar_->SetValue(1);
         expr_->SetMin(m);
-      } else if (m == 0 && expr_->Max() < 0) {
+      } else if (m <= 0 && expr_->Max() < m) {
         boolvar_->SetValue(0);
       }
     }
@@ -3568,7 +3575,7 @@ void TimesBooleanIntExpr::SetMax(int64 m) {
       if (m < 0) {  // 0 is no longer possible for boolvar because max < 0.
         boolvar_->SetValue(1);
         expr_->SetMax(m);
-      } else if (m == 0 && expr_->Min() > 0) {
+      } else if (m >= 0 && expr_->Min() > m) {
         boolvar_->SetValue(0);
       }
     }
