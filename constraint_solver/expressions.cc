@@ -3212,27 +3212,21 @@ void SetPosGenMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
   DCHECK_GE(left->Min(), 0);
   DCHECK_GT(right->Max(), 0);
   DCHECK_LT(right->Min(), 0);
-  const int64 lmin = left->Min();
   const int64 lmax = left->Max();
   const int64 rmax = right->Max();
   if (m > lmax * rmax) {
     left->solver()->Fail();
   }
-  if (m > 0) {  // We know that right will be pushed into positive land.
-    // Ok for m == 0 due to left and right being positive
-    if (0 != rmax) {
-      left->SetMin(PosIntDivUp(m, rmax));
-    }
-    if (0 != lmax) {
-      right->SetMin(PosIntDivUp(m, lmax));
-    } else {
-      right->SetMin(0);
-    }
+  if (m > 0) {  // We deduce right > 0.
+    right->SetMin(1);
+    SetPosPosMinExpr(left, right, m);
   } else if (m == 0) {
+    const int64 lmin = left->Min();
     if (lmin > 0) {
       right->SetMin(0);
     }
   } else {  // m < 0
+    const int64 lmin = left->Min();
     if (0 != lmin) {  // We cannot deduce anything if 0 is in the domain.
       right->SetMin(-PosIntDivDown(-m, lmin));
     }
@@ -3253,11 +3247,44 @@ void SetGenGenMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
     left->solver()->Fail();
   }
 }
+
+void TimesSetMin(IntExpr* const left,
+                 IntExpr* const right,
+                 IntExpr* const minus_left,
+                 IntExpr* const minus_right,
+                 int m) {
+  if (left->Min() >= 0) {
+    if (right->Min() >= 0) {
+      SetPosPosMinExpr(left, right, m);
+    } else if (right->Max() <= 0) {
+      SetPosPosMaxExpr(left, minus_right, -m);
+    } else {  // right->Min() < 0 && right->Max() > 0
+      SetPosGenMinExpr(left, right, m);
+    }
+  } else if (left->Max() <= 0) {
+    if (right->Min() >= 0) {
+      SetPosPosMaxExpr(right, minus_left, -m);
+    } else if (right->Max() <= 0) {
+      SetPosPosMinExpr(minus_left, minus_right, m);
+    } else {  // right->Min() < 0 && right->Max() > 0
+      SetPosGenMinExpr(minus_left, minus_right, m);
+    }
+  } else if (right->Min() >= 0) {  // left->Min() < 0 && left->Max() > 0
+    SetPosGenMinExpr(right, left, m);
+  } else if (right->Max() <= 0) {  // left->Min() < 0 && left->Max() > 0
+    SetPosGenMinExpr(minus_right, minus_left, m);
+  } else {  // left->Min() < 0 && left->Max() > 0 &&
+            // right->Min() < 0 && right->Max() > 0
+    SetGenGenMinExpr(left, right, m);
+  }
+}
 }  // namespace
 
 class TimesIntExpr : public BaseIntExpr {
  public:
-  TimesIntExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
+  TimesIntExpr(Solver* const s,
+               IntExpr* const l,
+               IntExpr* const r)
       : BaseIntExpr(s),
         left_(l),
         right_(r),
@@ -3297,73 +3324,22 @@ class TimesIntExpr : public BaseIntExpr {
   IntExpr* const right_;
   IntExpr* const minus_left_;
   IntExpr* const minus_right_;
-
 };
 
 void TimesIntExpr::SetMin(int64 m) {
-  const int64 lmin = left_->Min();
-  const int64 lmax = left_->Max();
-  const int64 rmin = right_->Min();
-  const int64 rmax = right_->Max();
-  if (lmin >= 0) {
-    if (rmin >= 0) {
-      SetPosPosMinExpr(left_, right_, m);
-    } else if (rmax <= 0) {
-      SetPosPosMaxExpr(left_, minus_right_, -m);
-    } else {  // rmin < 0 && rmax > 0
-      SetPosGenMinExpr(left_, right_, m);
-    }
-  } else if (lmax <= 0) {
-    if (rmin >= 0) {
-      SetPosPosMaxExpr(right_, minus_left_, -m);
-    } else if (rmax <= 0) {
-      SetPosPosMinExpr(minus_left_, minus_right_, m);
-    } else {  // rmin < 0 && rmax > 0
-      SetPosGenMinExpr(minus_left_, minus_right_, m);
-    }
-  } else if (rmin >= 0) {  // lmin < 0 && lmax > 0
-    SetPosGenMinExpr(right_, left_, m);
-  } else if (rmax <= 0) {  // lmin < 0 && lmax > 0
-    SetPosGenMinExpr(minus_right_, minus_left_, m);
-  } else {  // lmin < 0 && lmax > 0 && rmin < 0 && rmax > 0
-    SetGenGenMinExpr(left_, right_, m);
-  }
+  TimesSetMin(left_, right_, minus_left_, minus_right_, m);
 }
 
 void TimesIntExpr::SetMax(int64 m) {
-  const int64 lmin = left_->Min();
-  const int64 lmax = left_->Max();
-  const int64 rmin = right_->Min();
-  const int64 rmax = right_->Max();
-  if (lmin >= 0) {
-    if (rmin >= 0) {
-      SetPosPosMaxExpr(left_, right_, m);
-    } else if (rmax <= 0) {
-      SetPosPosMinExpr(left_, minus_right_, -m);
-    } else {
-      SetPosGenMinExpr(left_, minus_right_, -m);
-    }
-  } else if (lmax <= 0) {
-    if (rmin >= 0) {
-      SetPosPosMinExpr(minus_left_, right_, -m);
-    } else if (rmax <= 0) {
-      SetPosPosMaxExpr(minus_left_, minus_right_, m);
-    } else {
-      SetPosGenMinExpr(minus_left_, right_, -m);
-    }
-  } else if (rmin >= 0) {
-    SetPosGenMinExpr(right_, minus_left_, -m);
-  } else if (rmax <= 0) {
-    SetPosGenMinExpr(minus_right_, left_, -m);
-  } else {
-    SetGenGenMinExpr(left_, minus_right_, -m);
-  }
+  TimesSetMin(left_, minus_right_, minus_left_, right_, -m);
 }
 
 bool TimesIntExpr::Bound() const {
-  return ((left_->Bound() && left_->Max() == 0) ||
-          (right_->Bound() && right_->Max() == 0) ||
-          (left_->Bound() && right_->Bound()));
+  const bool left_bound = left_->Bound();
+  const bool right_bound = right_->Bound();
+  return ((left_bound && left_->Max() == 0) ||
+          (right_bound && right_->Max() == 0) ||
+          (left_bound && right_bound));
 }
 
 // ----- TimesIntPosExpr -----
