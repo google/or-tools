@@ -3217,9 +3217,10 @@ void SetPosGenMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
   if (m > lmax * rmax) {
     left->solver()->Fail();
   }
+  DCHECK_GT(left->Max(), 0);
   if (m > 0) {  // We deduce right > 0.
-    right->SetMin(1);
-    SetPosPosMinExpr(left, right, m);
+    left->SetMin(PosIntDivUp(m, rmax));
+    right->SetMin(PosIntDivUp(m, lmax));
   } else if (m == 0) {
     const int64 lmin = left->Min();
     if (lmin > 0) {
