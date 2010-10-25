@@ -2415,7 +2415,7 @@ void SimulatedAnnealing::ApplyDecision(Decision* const d) {
   if (d == s->balancing_decision()) {
     return;
   }
-  const int64  energy_bound = Temperature() * log(rand_.RndFloat());
+  const int64  energy_bound = Temperature() * log2(rand_.RndFloat());
   if (maximize_) {
     const int64 bound =
         (current_ > kint64min) ? current_ + step_ + energy_bound : current_;
