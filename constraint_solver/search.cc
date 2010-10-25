@@ -2413,7 +2413,7 @@ void SimulatedAnnealing::EnterSearch() {
 #if defined(_MSC_VER)
 namespace {
 double log2(double x) {
-  return log(x) / log(2);
+  return log(x) / log(static_cast<double>(2.0));
 }  // namespace
 #endif
 
