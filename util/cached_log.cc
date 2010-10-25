@@ -22,7 +22,7 @@ CachedLog::~CachedLog() {}
 namespace {
 double FastLog2(int64 input) {
 #if defined(_MSC_VER)
-  return log(input) / log(2);
+  return log(static_cast<double>(input)) / log(2.0L);
 #else
   return log2(input);
 #endif
