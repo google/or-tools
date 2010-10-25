@@ -2410,20 +2410,16 @@ void SimulatedAnnealing::EnterSearch() {
   current_ = best_;
 }
 
-#if defined(_MSC_VER)
-namespace {
-double log2(double x) {
-  return log(x) / log(2.0L);
-}
-}  // namespace
-#endif
-
 void SimulatedAnnealing::ApplyDecision(Decision* const d) {
   Solver* const s = solver();
   if (d == s->balancing_decision()) {
     return;
   }
+#if defined(_MSC_VER)
+  const int64  energy_bound = Temperature() * log(rand_.RndFloat()) / log(2.0L);
+#else
   const int64  energy_bound = Temperature() * log2(rand_.RndFloat());
+#endif
   if (maximize_) {
     const int64 bound =
         (current_ > kint64min) ? current_ + step_ + energy_bound : current_;
