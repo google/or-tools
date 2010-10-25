@@ -12,12 +12,10 @@
 // limitations under the License.
 
 #include <algorithm>
-
 #include <vector>
 
 #include "base/callback.h"
 #include "base/util.h"
-
 #include "graph/graph.h"
 
 namespace operations_research {

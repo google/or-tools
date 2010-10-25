@@ -21,7 +21,6 @@
 
 #include "base/util.h"
 
-
 namespace operations_research {
 
 // Basic bit operations

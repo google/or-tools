@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <vector>
 
 #include "base/callback.h"
@@ -21,7 +20,6 @@
 
 #include "graph/shortestpaths.h"
 #include "base/adjustable_priority_queue.h"
-
 
 DECLARE_int32(shortestpaths_disconnected_distance);
 

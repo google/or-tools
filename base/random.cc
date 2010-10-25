@@ -34,8 +34,7 @@ int32 ACMRandom::Next() {
     lo &= M;
     ++lo;
   }
-  seed_ = static_cast<int32>(lo);
-  return seed_;
+  return (seed_ = static_cast<int32>(lo));
 }
 
 int32 ACMRandom::Uniform(int32 n) {

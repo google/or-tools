@@ -133,10 +133,13 @@ constraint_solver.lib: $(CONSTRAINT_SOLVER_LIB_OBJS)
 # Util library.
 
 UTIL_LIB_OBJS=\
-	objs/bitset.obj
+	objs/bitset.obj \
+	objs/cached_log.obj
 
 objs/bitset.obj:util/bitset.cc
 	$(CCC) $(CFLAGS) -c util/bitset.cc /Foobjs/bitset.obj
+objs/cached_log.obj:util/cached_log.cc
+	$(CCC) $(CFLAGS) -c util/cached_log.cc /Foobjs/cached_log.obj
 
 util.lib: $(UTIL_LIB_OBJS)
 	lib /OUT:util.lib $(UTIL_LIB_OBJS)

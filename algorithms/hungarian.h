@@ -31,7 +31,6 @@
 #define ALGORITHMS_HUNGARIAN_H_
 
 #include "base/util.h"
-
 #include <vector>
 
 namespace operations_research {

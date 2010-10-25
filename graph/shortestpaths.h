@@ -24,9 +24,7 @@
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 
-
 namespace operations_research {
-
 
 // Dijsktra Shortest path with callback based description of the graph.
 // The callback returns the distance between two nodes, a distance of

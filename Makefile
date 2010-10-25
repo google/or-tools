@@ -159,10 +159,14 @@ libconstraint_solver.a: $(CONSTRAINT_SOLVER_LIB_OBJS)
 # Util library.
 
 UTIL_LIB_OBJS=\
-	objs/bitset.o
+	objs/bitset.o \
+	objs/cached_log.o
 
 objs/bitset.o:util/bitset.cc
 	$(CCC) $(CFLAGS) -c util/bitset.cc -o objs/bitset.o
+
+objs/cached_log.o:util/cached_log.cc
+	$(CCC) $(CFLAGS) -c util/cached_log.cc -o objs/cached_log.o
 
 libutil.a: $(UTIL_LIB_OBJS)
 	ar rv libutil.a $(UTIL_LIB_OBJS)
