@@ -2414,6 +2414,7 @@ void SimulatedAnnealing::EnterSearch() {
 namespace {
 double log2(double x) {
   return log(x) / log(static_cast<double>(2.0));
+}
 }  // namespace
 #endif
 
