@@ -20,17 +20,9 @@ CachedLog::CachedLog() {}
 CachedLog::~CachedLog() {}
 
 namespace {
-const double kLn2 = 0.0;
-
-void InitLn2() {
-  if (kLn2 == 0.0) {
-    kLn2 = log(2);
-  }
-}
-
 double FastLog2(int64 input) {
 #if defined(_MSC_VER)
-  return log(input) / kLn2;
+  return log(input) / log(2);
 #else
   return log2(input);
 #endif

@@ -2410,6 +2410,13 @@ void SimulatedAnnealing::EnterSearch() {
   current_ = best_;
 }
 
+#if defined(_MSC_VER)
+namespace {
+double log2(double x) {
+  return log(x) / log(2);
+}  // namespace
+#endif
+
 void SimulatedAnnealing::ApplyDecision(Decision* const d) {
   Solver* const s = solver();
   if (d == s->balancing_decision()) {
