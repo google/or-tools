@@ -30,9 +30,6 @@ double FastLog2(int64 input) {
 }
 
 void CachedLog::Init(int size) {
-#if defined(_MSC_VER)
-  InitLn2();
-#endif
   CHECK(cache_.empty());
   CHECK_GT(size, 0);
   cache_.resize(size, 0.0);
