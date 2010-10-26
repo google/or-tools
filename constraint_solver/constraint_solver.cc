@@ -95,7 +95,7 @@ class Queue {
       : solver_(s),
         free_cells_(NULL),
         stamp_(1),
-        frozen_(false),
+        freeze_level_(0),
         in_process_(false),
         clear_action_(NULL) {
     for (int i = 0; i < Solver::kNumPriorities; ++i) {
@@ -120,14 +120,13 @@ class Queue {
   }
 
   void Freeze() {
-    CHECK(!frozen_);
-    frozen_ = true;
+    freeze_level_++;
     stamp_++;
   }
 
   void Unfreeze() {
-    frozen_ = false;
-    Process();
+    freeze_level_--;
+    ProcessIfUnfrozen();
   }
 
   Demon* NextDemon(Solver::DemonPriority prio) {
@@ -204,9 +203,7 @@ class Queue {
         lasts_[prio]->next_ = cell;
         lasts_[prio] = cell;
       }
-      if (!frozen_) {
-        Process();
-      }
+      ProcessIfUnfrozen();
     }
   }
 
@@ -222,7 +219,7 @@ class Queue {
     if (clear_action_ != NULL)
       clear_action_->Run(solver_);
     clear_action_ = NULL;
-    frozen_ = false;
+    freeze_level_ = 0;
     in_process_ = false;
   }
 
@@ -242,12 +239,20 @@ class Queue {
     clear_action_ = NULL;
   }
  private:
+  void ProcessIfUnfrozen() {
+    if (freeze_level_ == 0) {
+      Process();
+    }
+  }
+
   Solver* const solver_;
   Cell* firsts_[Solver::kNumPriorities];
   Cell* lasts_[Solver::kNumPriorities];
   Cell* free_cells_;
   uint64 stamp_;
-  bool frozen_;
+  // The number of nested freeze levels. The queue is frozen if and only if
+  // freeze_level_ > 0.
+  uint32 freeze_level_;
   bool in_process_;
   Action* clear_action_;
 };
