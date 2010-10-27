@@ -1105,61 +1105,7 @@ string LambdaThetaTree::DebugString() const {
   return out;
 }
 
-// ----- MirrorIntervalVar -----
-
-class MirrorIntervalVar : public IntervalVar {
- public:
-  MirrorIntervalVar(Solver* const s, IntervalVar* const t)
-      : IntervalVar(s, "Mirror<" + t->name() + ">"), t_(t) {}
-  virtual ~MirrorIntervalVar() {}
-
-  // These methods query, set and watch the start position of the
-  // interval var.
-  virtual int64 StartMin() const { return -t_->EndMax(); }
-  virtual int64 StartMax() const { return -t_->EndMin(); }
-  virtual void SetStartMin(int64 m) { t_->SetEndMax(-m); }
-  virtual void SetStartMax(int64 m) { t_->SetEndMin(-m); }
-  virtual void SetStartRange(int64 mi, int64 ma) { t_->SetEndRange(-ma, -mi); }
-  virtual void WhenStartRange(Demon* const d) { t_->WhenEndRange(d); }
-  virtual void WhenStartBound(Demon* const d) { t_->WhenEndBound(d); }
-
-  // These methods query, set and watch the duration of the interval var.
-  virtual int64 DurationMin() const { return t_->DurationMin(); }
-  virtual int64 DurationMax() const { return t_->DurationMax(); }
-  virtual void SetDurationMin(int64 m) { t_->SetDurationMin(m); }
-  virtual void SetDurationMax(int64 m) { t_->SetDurationMax(m); }
-  virtual void SetDurationRange(int64 mi, int64 ma) {
-    t_->SetDurationRange(mi, ma);
-  }
-  virtual void WhenDurationRange(Demon* const d) { t_->WhenDurationRange(d); }
-  virtual void WhenDurationBound(Demon* const d) { t_->WhenDurationBound(d); }
-
-  // These methods query, set and watch the end position of the interval var.
-  virtual int64 EndMin() const { return -t_->StartMax(); }
-  virtual int64 EndMax() const { return -t_->StartMin(); }
-  virtual void SetEndMin(int64 m) { t_->SetStartMax(-m); }
-  virtual void SetEndMax(int64 m) { t_->SetStartMin(-m); }
-  virtual void SetEndRange(int64 mi, int64 ma) { t_->SetStartRange(-ma, -mi); }
-  virtual void WhenEndRange(Demon* const d) { t_->WhenStartRange(d); }
-  virtual void WhenEndBound(Demon* const d) { t_->WhenStartBound(d); }
-
-  // These methods query, set and watches the performed status of the
-  // interval var.
-  virtual bool PerformedMin() const { return t_->PerformedMin(); }
-  virtual bool PerformedMax() const { return t_->PerformedMax(); }
-  virtual void SetPerformed(bool val) { t_->SetPerformed(val); }
-  virtual void WhenPerformedBound(Demon* const d) { t_->WhenPerformedBound(d); }
-
- private:
-  IntervalVar* const t_;
-  DISALLOW_COPY_AND_ASSIGN(MirrorIntervalVar);
-};
-
 }  // namespace
-
-IntervalVar* MakeMirrorInterval(Solver* const s, IntervalVar* const t) {
-  return s->RevAlloc(new MirrorIntervalVar(s, t));
-}
 
 class SequenceConstraintOnPerformed : public Constraint {
  public:
@@ -1219,7 +1165,7 @@ SequenceConstraintOnPerformed::SequenceConstraintOnPerformed(
     lct_.push_back(w);
     lst_.push_back(w);
     new_est_.push_back(kint64min);
-    IntervalVar* m = MakeMirrorInterval(s, intervals_[i]);
+    IntervalVar* m = s->MakeMirrorInterval(intervals_[i]);
     w = new IntervalWrapper(i, m);
     mwrappers_.push_back(w);
     mect_.push_back(w);

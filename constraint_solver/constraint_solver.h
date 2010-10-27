@@ -914,6 +914,10 @@ class Solver {
                                  int64 duration,
                                  const string& name);
 
+  // Create an interval var that is the mirror image of the given one, that is,
+  // the interval var obtained by reversing the axis.
+  IntervalVar* MakeMirrorInterval(IntervalVar* const interval_var);
+
   // ----- scheduling constraints -----
 
   // This method creates a relation between an interval var and a

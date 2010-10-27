@@ -25,6 +25,60 @@ namespace operations_research {
 
 // ----- Interval Var -----
 
+// ----- MirrorIntervalVar -----
+
+class MirrorIntervalVar : public IntervalVar {
+ public:
+  MirrorIntervalVar(Solver* const s, IntervalVar* const t)
+      : IntervalVar(s, "Mirror<" + t->name() + ">"), t_(t) {}
+  virtual ~MirrorIntervalVar() {}
+
+  // These methods query, set and watch the start position of the
+  // interval var.
+  virtual int64 StartMin() const { return -t_->EndMax(); }
+  virtual int64 StartMax() const { return -t_->EndMin(); }
+  virtual void SetStartMin(int64 m) { t_->SetEndMax(-m); }
+  virtual void SetStartMax(int64 m) { t_->SetEndMin(-m); }
+  virtual void SetStartRange(int64 mi, int64 ma) { t_->SetEndRange(-ma, -mi); }
+  virtual void WhenStartRange(Demon* const d) { t_->WhenEndRange(d); }
+  virtual void WhenStartBound(Demon* const d) { t_->WhenEndBound(d); }
+
+  // These methods query, set and watch the duration of the interval var.
+  virtual int64 DurationMin() const { return t_->DurationMin(); }
+  virtual int64 DurationMax() const { return t_->DurationMax(); }
+  virtual void SetDurationMin(int64 m) { t_->SetDurationMin(m); }
+  virtual void SetDurationMax(int64 m) { t_->SetDurationMax(m); }
+  virtual void SetDurationRange(int64 mi, int64 ma) {
+    t_->SetDurationRange(mi, ma);
+  }
+  virtual void WhenDurationRange(Demon* const d) { t_->WhenDurationRange(d); }
+  virtual void WhenDurationBound(Demon* const d) { t_->WhenDurationBound(d); }
+
+  // These methods query, set and watch the end position of the interval var.
+  virtual int64 EndMin() const { return -t_->StartMax(); }
+  virtual int64 EndMax() const { return -t_->StartMin(); }
+  virtual void SetEndMin(int64 m) { t_->SetStartMax(-m); }
+  virtual void SetEndMax(int64 m) { t_->SetStartMin(-m); }
+  virtual void SetEndRange(int64 mi, int64 ma) { t_->SetStartRange(-ma, -mi); }
+  virtual void WhenEndRange(Demon* const d) { t_->WhenStartRange(d); }
+  virtual void WhenEndBound(Demon* const d) { t_->WhenStartBound(d); }
+
+  // These methods query, set and watches the performed status of the
+  // interval var.
+  virtual bool PerformedMin() const { return t_->PerformedMin(); }
+  virtual bool PerformedMax() const { return t_->PerformedMax(); }
+  virtual void SetPerformed(bool val) { t_->SetPerformed(val); }
+  virtual void WhenPerformedBound(Demon* const d) { t_->WhenPerformedBound(d); }
+
+ private:
+  IntervalVar* const t_;
+  DISALLOW_COPY_AND_ASSIGN(MirrorIntervalVar);
+};
+
+IntervalVar* Solver::MakeMirrorInterval(IntervalVar* const t) {
+  return RevAlloc(new MirrorIntervalVar(this, t));
+}
+
 class IntervalVarStartExpr : public BaseIntExpr {
  public:
   explicit IntervalVarStartExpr(IntervalVar* const i)
