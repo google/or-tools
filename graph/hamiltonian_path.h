@@ -39,7 +39,7 @@
 // Here is how the algorithm works:
 // Let us denote the nodes to be visited by their indices 0..n-1
 // Let us pick 0 as the starting node.
-// Let d(i,j) denote the distance (or cost) from i to j
+// Let d(i,j) denote the distance (or cost) from i to j.
 // f(S,j) where S is a set of nodes and j is a node is defined as follows:
 // f(S,j) = min(i in S, f(S\{i}, i) + d(i,j))
 //
@@ -82,15 +82,8 @@
 #include "util/bitset.h"
 
 namespace operations_research {
-// Currently in 2010, 26 is the maximum you can solve with
-// 24 Gigs of RAM, and it takes several minutes.
-// Considering the complexity of the algorithm (n*2^n), and that
-// there are very good ways to solve TSP with more than 32 cities,
-// we limit ourselves to 32 cites.
-// This is why we define the type NodeSet to be 32-bit wide.
-typedef uint32 NodeSet;
 
-typedef int Node;
+typedef int PathNodeIndex;
 
 template <typename T> class HamiltonianPathSolver {
 // HamiltonianPathSolver computes a minimum Hamiltonian path over a graph
@@ -98,12 +91,21 @@ template <typename T> class HamiltonianPathSolver {
 // The Hamiltonian path can be closed, in this case it's a Hamiltonian cycle,
 // i.e. the algorithm solves the Travelling Salesman Problem.
 // Example:
+
 // vector<vector<int> > cost_mat;
 // ... fill in cost matrix
-// HamiltonianPathSolver<int> mhp(cost_mat);    // no computation done
-// printf("%d\n", mhp.TravelingSalesmanCost();  // computation done and stored
+// HamiltonianPathSolver<int> mhp(cost_mat);     // no computation done
+// printf("%d\n", mhp.TravelingSalesmanCost());  // computation done and stored
 
  public:
+  // Currently in 2010, 26 is the maximum you can solve with
+  // 24 Gigs of RAM, and it takes several minutes.
+  // Considering the complexity of the algorithm (n*2^n), and that
+  // there are very good ways to solve TSP with more than 32 cities,
+  // we limit ourselves to 32 cites.
+  // This is why we define the type NodeSet to be 32-bit wide.
+  typedef uint32 NodeSet;
+
   explicit HamiltonianPathSolver(const vector<vector<T> >& cost);
   ~HamiltonianPathSolver();
 
@@ -114,13 +116,13 @@ template <typename T> class HamiltonianPathSolver {
   T HamiltonianCost();
 
   // Returns the Hamiltonian path in the vector pointed to by the argument.
-  void HamiltonianPath(vector<Node>* path);
+  void HamiltonianPath(vector<PathNodeIndex>* path);
 
   // Returns the cost of the TSP tour.
   T TravelingSalesmanCost();
 
   // Returns the TSP tour in the vector pointed to by the argument.
-  void TravelingSalesmanPath(vector<Node>* path);
+  void TravelingSalesmanPath(vector<PathNodeIndex>* path);
 
   // Returns true if there won't be precision issues.
   // This is always true for integers, but not for floating-point types.
@@ -131,14 +133,14 @@ template <typename T> class HamiltonianPathSolver {
 
  private:
 
-  // Initializes robust_
+  // Initializes robust_.
   void CheckRobustness();
 
-  // Initializes verifies_triangle_inequality_
+  // Initializes verifies_triangle_inequality_.
   void CheckTriangleInequality();
 
   // Perfoms the Dynamic Programming iteration.
-  void ComputeShortestPath(NodeSet s, Node dest);
+  void ComputeShortestPath(NodeSet s, PathNodeIndex dest);
 
   // Copies the cost matrix passed as argument to the internal data structure.
   void CopyCostMatrix(const vector<vector<T> >& cost);
@@ -149,8 +151,9 @@ template <typename T> class HamiltonianPathSolver {
   // Frees memory. Used in destructor and ChangeCostMatrix.
   void Free();
 
-  // Computes path by looking at the information in memory_
-  void Path(Node end, vector<Node>* path);
+  // Computes path by looking at the information in memory_.
+  void Path(PathNodeIndex end,
+            vector<PathNodeIndex>* path);
 
   // Does all the Dynamic Progamming iterations. Calls ComputeShortestPath.
   void Solve();
@@ -160,7 +163,7 @@ template <typename T> class HamiltonianPathSolver {
   bool               robustness_checked_;
   bool               triangle_inequality_checked_;
   bool               solved_;
-  Node               num_nodes_;
+  PathNodeIndex      num_nodes_;
   T**                cost_;
   NodeSet            two_power_num_nodes_;
   T**                memory_;
@@ -197,6 +200,7 @@ void HamiltonianPathSolver<T>::Free() {
     delete [] cost_;
   }
 }
+
 
 
 template <typename T> void HamiltonianPathSolver<T>::
@@ -253,9 +257,12 @@ void HamiltonianPathSolver<T>::CheckRobustness() {
   }
   // We determine if the range of the cost matrix is going to
   // make the algorithm not robust because of precision issues.
-  // TODO(user): check that min_cost is positive
-  robust_ = (min_cost >
-             num_nodes_ * max_cost * std::numeric_limits<T>::epsilon());
+  if (min_cost < 0) {
+    robust_ = false;
+  } else {
+    robust_ = (min_cost >
+               num_nodes_ * max_cost * std::numeric_limits<T>::epsilon());
+  }
   robustness_checked_ = true;
 }
 
@@ -308,7 +315,8 @@ void HamiltonianPathSolver<T>::Init(const vector<vector<T> >& cost) {
 }
 
 template <typename T>
-void HamiltonianPathSolver<T>::ComputeShortestPath(NodeSet subset, Node dest) {
+void HamiltonianPathSolver<T>::ComputeShortestPath(NodeSet subset,
+                                                   PathNodeIndex dest) {
   // We iterate on the set bits in the NodeSet subset, instead of checking
   // which bits are set as in the loop:
   // for (int src = 0; src < num_nodes_; ++src) {
@@ -317,13 +325,14 @@ void HamiltonianPathSolver<T>::ComputeShortestPath(NodeSet subset, Node dest) {
   // This results in a 30% gain.
 
   const NodeSet first_singleton = LeastSignificantBitWord32(subset);
-  const Node first_src = LeastSignificantBitPosition32(first_singleton);
+  const PathNodeIndex first_src =
+                                 LeastSignificantBitPosition32(first_singleton);
   NodeSet start_subset = subset - first_singleton;
   T min_cost = memory_[first_src][start_subset] + cost_[first_src][dest];
   NodeSet copy = start_subset;
   while (copy != 0) {
     const NodeSet singleton = LeastSignificantBitWord32(copy);
-    const Node src = LeastSignificantBitPosition32(singleton);
+    const PathNodeIndex src = LeastSignificantBitPosition32(singleton);
     const NodeSet new_subset = subset - singleton;
     const T cost = memory_[src][new_subset] + cost_[src][dest];
     if (cost < min_cost) {
@@ -336,11 +345,11 @@ void HamiltonianPathSolver<T>::ComputeShortestPath(NodeSet subset, Node dest) {
 
 template <typename T> void HamiltonianPathSolver<T>::Solve() {
   if (solved_) return;
-  for (Node dest = 0; dest < num_nodes_; ++dest) {
+  for (PathNodeIndex dest = 0; dest < num_nodes_; ++dest) {
     memory_[dest][0] = cost_[0][dest];
   }
   for (NodeSet subset = 1; subset < two_power_num_nodes_; ++subset) {
-    for (Node dest = 0; dest < num_nodes_; ++dest) {
+    for (PathNodeIndex dest = 0; dest < num_nodes_; ++dest) {
       ComputeShortestPath(subset, dest);
     }
   }
@@ -356,8 +365,8 @@ template <typename T> T HamiltonianPathSolver<T>::HamiltonianCost() {
   return memory_[num_nodes_ - 1][two_power_num_nodes_ - 1];
 }
 
-template <typename T>
-void HamiltonianPathSolver<T>::HamiltonianPath(vector<Node>* path) {
+template <typename T> void HamiltonianPathSolver<T>::
+    HamiltonianPath(vector<PathNodeIndex>* path) {
   if (num_nodes_ <= 1) {
     path->resize(1);
     (*path)[0] = 0;
@@ -397,8 +406,9 @@ void HamiltonianPathSolver<T>::HamiltonianPath(vector<Node>* path) {
 // when using this trick.
 
 template <typename T>
-void HamiltonianPathSolver<T>::Path(Node end, vector<Node>* path) {
-  Node dest = end;
+void HamiltonianPathSolver<T>::Path(PathNodeIndex end,
+                                    vector<PathNodeIndex>* path) {
+  PathNodeIndex dest = end;
   NodeSet current_set = two_power_num_nodes_ - 1;
   // It may happen that node 0 be on a segment (node i, node j), in which case
   // it would appear in the middle of the path. We explicitly remove it from
@@ -409,7 +419,7 @@ void HamiltonianPathSolver<T>::Path(Node end, vector<Node>* path) {
     NodeSet copy = current_set;
     while (copy != 0) {
       const NodeSet singleton = LeastSignificantBitWord32(copy);
-      const Node src = LeastSignificantBitPosition32(singleton);
+      const PathNodeIndex src = LeastSignificantBitPosition32(singleton);
       const NodeSet incumbent_set = current_set - singleton;
       const double current_cost = memory_[dest][current_set];
       const double incumbent_cost = memory_[src][incumbent_set]
@@ -437,8 +447,8 @@ template <typename T> T HamiltonianPathSolver<T>::TravelingSalesmanCost() {
   return memory_[0][two_power_num_nodes_ - 1];
 }
 
-template <typename T>
-void HamiltonianPathSolver<T>::TravelingSalesmanPath(vector<Node>* path) {
+template <typename T> void HamiltonianPathSolver<T>::
+    TravelingSalesmanPath(vector<PathNodeIndex>* path) {
   if (num_nodes_ <= 1) {
     path->resize(1);
     (*path)[0] = 0;

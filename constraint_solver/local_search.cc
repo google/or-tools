@@ -1023,7 +1023,7 @@ bool TSPOpt::MakeNeighbor() {
     }
   }
   hamiltonian_path_solver_.ChangeCostMatrix(cost_);
-  vector<Node> path;
+  vector<PathNodeIndex> path;
   hamiltonian_path_solver_.TravelingSalesmanPath(&path);
   CHECK_EQ(size + 1, path.size());
   for (int i = 0; i < size - 1; ++i) {
@@ -1143,7 +1143,7 @@ bool TSPLns::MakeNeighbor() {
   }
   // Solve TSP and inject solution in delta (only if it leads to a new solution)
   hamiltonian_path_solver_.ChangeCostMatrix(cost_);
-  vector<Node> path;
+  vector<PathNodeIndex> path;
   hamiltonian_path_solver_.TravelingSalesmanPath(&path);
   bool nochange = true;
   for (int i = 0; i < path.size() - 1; ++i) {
