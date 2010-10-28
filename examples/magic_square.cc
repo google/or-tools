@@ -28,6 +28,7 @@ DEFINE_int32(size, 0, "Size of the magic square");
 DEFINE_bool(impact, false, "Use impact search");
 DEFINE_int32(impact_size, 30, "Default size of impact search");
 DEFINE_int32(restart, -1, "parameter for constant restart monitor");
+DEFINE_bool(luby, false, "Use luby sequence instead of constant restart");
 
 namespace operations_research {
 
@@ -64,7 +65,7 @@ void MagicSquare(int grid_size) {
   // To break a simple symmetry: the upper right corner
   // must be less than the lower left corner
   solver.AddConstraint(solver.MakeLess(vars[grid_size - 1],
-                             vars[(grid_size - 1) * grid_size]));
+                                       vars[(grid_size - 1) * grid_size]));
   // TODO(user) use local search
 
   DecisionBuilder* const db = FLAGS_impact?
@@ -75,7 +76,9 @@ void MagicSquare(int grid_size) {
 
   SearchMonitor* const log = solver.MakeSearchLog(100000);
   SearchMonitor* const restart = FLAGS_restart != -1?
-      solver.MakeConstantRestart(FLAGS_restart):
+      (FLAGS_luby?
+       solver.MakeLubyRestart(FLAGS_restart):
+       solver.MakeConstantRestart(FLAGS_restart)):
       NULL;
   solver.NewSearch(db, log, restart);
   if (solver.NextSolution()) {
