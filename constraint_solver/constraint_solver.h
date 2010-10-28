@@ -1226,6 +1226,13 @@ class Solver {
                              IndexEvaluator2* val_eval,
                              IndexEvaluator1* tie_breaker);
 
+  DecisionBuilder* MakeImpactPhase(const IntVar* const* vars,
+                                   int size,
+                                   int64 restart_frequency);
+
+  DecisionBuilder* MakeImpactPhase(const vector<IntVar*>& vars,
+                                   int64 restart_frequency);
+
   // shortcuts for small arrays.
   DecisionBuilder* MakePhase(IntVar* const v0,
                              IntVarStrategy var_str,
@@ -1275,6 +1282,7 @@ class Solver {
                              IndexEvaluator2* evaluator,
                              IndexEvaluator1* tie_breaker,
                              EvaluatorStrategy str);
+
   // Scheduling phases.
 
   DecisionBuilder* MakePhase(const vector<IntervalVar*>& intervals,

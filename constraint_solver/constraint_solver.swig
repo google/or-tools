@@ -254,6 +254,7 @@ class PyDecisionBuilder(object):
 %rename (FirstSolutionCollector) MakeFirstSolutionCollector;
 %rename (FixedDurationIntervalVar) MakeFixedDurationIntervalVar;
 %rename (FixedInterval) MakeFixedInterval;
+%rename (ImpactPhase) MakeImpactPhase;
 %rename (IntConst) MakeIntConst;
 %rename (IntVar) MakeIntVar;
 %rename (IntervalVarRelation) MakeIntervalVarRelation;

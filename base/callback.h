@@ -2205,4 +2205,278 @@ NewPermanentCallback(R (*function)(P1), P1 p1) {
   return new _FunctionResultCallback_1_0<false, R, P1>(function, p1);
 }
 
+template <bool del, class R, class T, class P1, class P2>
+class _ConstMemberResultCallback_2_0 : public ResultCallback<R> {
+ public:
+  typedef ResultCallback<R> base;
+  typedef R (T::*MemberSignature)(P1,P2) const;
+
+ private:
+  const T* object_;
+  MemberSignature member_;
+  P1 p1_;
+  P2 p2_;
+
+ public:
+  inline _ConstMemberResultCallback_2_0(const T* object, MemberSignature member, P1 p1, P2 p2)
+    : ResultCallback<R>(),
+      object_(object),
+      member_(member),      p1_(p1),      p2_(p2) { }
+
+  virtual bool IsRepeatable() const {
+    return !del;
+  }
+
+  virtual void CheckIsRepeatable() const {
+    if (del) CallbackUtils_::FailIsRepeatable("ResultCallback<R>");
+  }
+
+  virtual R Run() {
+    if (!del) {
+      R result = (object_->*member_)(p1_,p2_);
+      return result;
+    } else {
+      R result = (object_->*member_)(p1_,p2_);
+      //  zero out the pointer to ensure segfault if used again
+      member_ = NULL;
+      delete this;
+      return result;
+    }
+  }
+};
+
+template <bool del, class T, class P1, class P2>
+class _ConstMemberResultCallback_2_0<del, void, T, P1, P2> : public Closure {
+ public:
+  typedef Closure base;
+  typedef void (T::*MemberSignature)(P1,P2) const;
+
+ private:
+  const T* object_;
+  MemberSignature member_;
+  P1 p1_;
+  P2 p2_;
+
+ public:
+  inline _ConstMemberResultCallback_2_0(const T* object, MemberSignature member, P1 p1, P2 p2)
+    : Closure(),
+      object_(object),
+      member_(member),      p1_(p1),      p2_(p2) { }
+
+  virtual bool IsRepeatable() const {
+    return !del;
+  }
+
+  virtual void CheckIsRepeatable() const {
+    if (del) CallbackUtils_::FailIsRepeatable("Closure");
+  }
+
+  virtual void Run() {
+    if (!del) {
+      (object_->*member_)(p1_,p2_);
+    } else {
+      (object_->*member_)(p1_,p2_);
+      //  zero out the pointer to ensure segfault if used again
+      member_ = NULL;
+      delete this;
+    }
+  }
+};
+
+#ifndef SWIG
+template <class T1, class T2, class R, class P1, class P2>
+inline typename _ConstMemberResultCallback_2_0<true,R,T1,P1,P2>::base*
+NewCallback(const T1* obj, R (T2::*member)(P1,P2) const, P1 p1, P2 p2) {
+  return new _ConstMemberResultCallback_2_0<true,R,T1,P1,P2>(obj, member, p1, p2);
+}
+#endif
+
+#ifndef SWIG
+template <class T1, class T2, class R, class P1, class P2>
+inline typename _ConstMemberResultCallback_2_0<false,R,T1,P1,P2>::base*
+NewPermanentCallback(const T1* obj, R (T2::*member)(P1,P2) const, P1 p1, P2 p2) {
+  return new _ConstMemberResultCallback_2_0<false,R,T1,P1,P2>(obj, member, p1, p2);
+}
+#endif
+
+template <bool del, class R, class T, class P1, class P2>
+class _MemberResultCallback_2_0 : public ResultCallback<R> {
+ public:
+  typedef ResultCallback<R> base;
+  typedef R (T::*MemberSignature)(P1,P2) ;
+
+ private:
+   T* object_;
+  MemberSignature member_;
+  P1 p1_;
+  P2 p2_;
+
+ public:
+  inline _MemberResultCallback_2_0( T* object, MemberSignature member, P1 p1, P2 p2)
+    : ResultCallback<R>(),
+      object_(object),
+      member_(member),      p1_(p1),      p2_(p2) { }
+
+  virtual bool IsRepeatable() const {
+    return !del;
+  }
+
+  virtual void CheckIsRepeatable() const {
+    if (del) CallbackUtils_::FailIsRepeatable("ResultCallback<R>");
+  }
+
+  virtual R Run() {
+    if (!del) {
+      R result = (object_->*member_)(p1_,p2_);
+      return result;
+    } else {
+      R result = (object_->*member_)(p1_,p2_);
+      //  zero out the pointer to ensure segfault if used again
+      member_ = NULL;
+      delete this;
+      return result;
+    }
+  }
+};
+
+template <bool del, class T, class P1, class P2>
+class _MemberResultCallback_2_0<del, void, T, P1, P2> : public Closure {
+ public:
+  typedef Closure base;
+  typedef void (T::*MemberSignature)(P1,P2) ;
+
+ private:
+   T* object_;
+  MemberSignature member_;
+  P1 p1_;
+  P2 p2_;
+
+ public:
+  inline _MemberResultCallback_2_0( T* object, MemberSignature member, P1 p1, P2 p2)
+    : Closure(),
+      object_(object),
+      member_(member),      p1_(p1),      p2_(p2) { }
+
+  virtual bool IsRepeatable() const {
+    return !del;
+  }
+
+  virtual void CheckIsRepeatable() const {
+    if (del) CallbackUtils_::FailIsRepeatable("Closure");
+  }
+
+  virtual void Run() {
+    if (!del) {
+      (object_->*member_)(p1_,p2_);
+    } else {
+      (object_->*member_)(p1_,p2_);
+      //  zero out the pointer to ensure segfault if used again
+      member_ = NULL;
+      delete this;
+    }
+  }
+};
+
+#ifndef SWIG
+template <class T1, class T2, class R, class P1, class P2>
+inline typename _MemberResultCallback_2_0<true,R,T1,P1,P2>::base*
+NewCallback( T1* obj, R (T2::*member)(P1,P2) , P1 p1, P2 p2) {
+  return new _MemberResultCallback_2_0<true,R,T1,P1,P2>(obj, member, p1, p2);
+}
+#endif
+
+#ifndef SWIG
+template <class T1, class T2, class R, class P1, class P2>
+inline typename _MemberResultCallback_2_0<false,R,T1,P1,P2>::base*
+NewPermanentCallback( T1* obj, R (T2::*member)(P1,P2) , P1 p1, P2 p2) {
+  return new _MemberResultCallback_2_0<false,R,T1,P1,P2>(obj, member, p1, p2);
+}
+#endif
+
+template <bool del, class R, class P1, class P2>
+class _FunctionResultCallback_2_0 : public ResultCallback<R> {
+ public:
+  typedef ResultCallback<R> base;
+  typedef R (*FunctionSignature)(P1,P2);
+
+ private:
+  FunctionSignature function_;
+  P1 p1_;
+  P2 p2_;
+
+ public:
+  inline _FunctionResultCallback_2_0(FunctionSignature function, P1 p1, P2 p2)
+    : ResultCallback<R>(),
+      function_(function),      p1_(p1),      p2_(p2) { }
+
+  virtual bool IsRepeatable() const {
+    return !del;
+  }
+
+  virtual void CheckIsRepeatable() const {
+    if (del) CallbackUtils_::FailIsRepeatable("ResultCallback<R>");
+  }
+
+  virtual R Run() {
+    if (!del) {
+      R result = (*function_)(p1_,p2_);
+      return result;
+    } else {
+      R result = (*function_)(p1_,p2_);
+      //  zero out the pointer to ensure segfault if used again
+      function_ = NULL;
+      delete this;
+      return result;
+    }
+  }
+};
+
+template <bool del, class P1, class P2>
+class _FunctionResultCallback_2_0<del, void, P1, P2> : public Closure {
+ public:
+  typedef Closure base;
+  typedef void (*FunctionSignature)(P1,P2);
+
+ private:
+  FunctionSignature function_;
+  P1 p1_;
+  P2 p2_;
+
+ public:
+  inline _FunctionResultCallback_2_0(FunctionSignature function, P1 p1, P2 p2)
+    : Closure(),
+      function_(function),      p1_(p1),      p2_(p2) { }
+
+  virtual bool IsRepeatable() const {
+    return !del;
+  }
+
+  virtual void CheckIsRepeatable() const {
+    if (del) CallbackUtils_::FailIsRepeatable("Closure");
+  }
+
+  virtual void Run() {
+    if (!del) {
+      (*function_)(p1_,p2_);
+    } else {
+      (*function_)(p1_,p2_);
+      //  zero out the pointer to ensure segfault if used again
+      function_ = NULL;
+      delete this;
+    }
+  }
+};
+
+template <class R, class P1, class P2>
+inline typename _FunctionResultCallback_2_0<true,R,P1,P2>::base*
+NewCallback(R (*function)(P1,P2), P1 p1, P2 p2) {
+  return new _FunctionResultCallback_2_0<true,R,P1,P2>(function, p1, p2);
+}
+
+template <class R, class P1, class P2>
+inline typename _FunctionResultCallback_2_0<false,R,P1,P2>::base*
+NewPermanentCallback(R (*function)(P1,P2), P1 p1, P2 p2) {
+  return new _FunctionResultCallback_2_0<false,R,P1,P2>(function, p1, p2);
+}
+
 #endif  // BASE_CALLBACK_H

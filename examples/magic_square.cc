@@ -25,6 +25,9 @@
 #include "constraint_solver/constraint_solver.h"
 
 DEFINE_int32(size, 0, "Size of the magic square");
+DEFINE_bool(impact, false, "Use impact search");
+DEFINE_int32(impact_size, 30, "Default size of impact search");
+DEFINE_int32(restart, -1, "parameter for constant restart monitor");
 
 namespace operations_research {
 
@@ -64,11 +67,17 @@ void MagicSquare(int grid_size) {
                              vars[(grid_size - 1) * grid_size]));
   // TODO(user) use local search
 
-  DecisionBuilder* const db = solver.MakePhase(vars,
-                                               Solver::CHOOSE_FIRST_UNBOUND,
-                                               Solver::ASSIGN_MIN_VALUE);
+  DecisionBuilder* const db = FLAGS_impact?
+      solver.MakeImpactPhase(vars, FLAGS_impact_size):
+      solver.MakePhase(vars,
+                       Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE);
 
-  solver.NewSearch(db);
+  SearchMonitor* const log = solver.MakeSearchLog(100000);
+  SearchMonitor* const restart = FLAGS_restart != -1?
+      solver.MakeConstantRestart(FLAGS_restart):
+      NULL;
+  solver.NewSearch(db, log, restart);
   if (solver.NextSolution()) {
     for (int n = 0; n < grid_size; ++n) {
       string output;

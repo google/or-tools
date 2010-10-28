@@ -85,6 +85,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	objs/constraint_solver.o\
 	objs/constraints.o\
 	objs/count_cst.o\
+	objs/default_search.o\
 	objs/element.o\
 	objs/expr_array.o\
 	objs/expr_cst.o\
@@ -113,6 +114,9 @@ objs/constraints.o:constraint_solver/constraints.cc
 
 objs/count_cst.o:constraint_solver/count_cst.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/count_cst.cc -o objs/count_cst.o
+
+objs/default_search.o:constraint_solver/default_search.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/default_search.cc -o objs/default_search.o
 
 objs/element.o:constraint_solver/element.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/element.cc -o objs/element.o
