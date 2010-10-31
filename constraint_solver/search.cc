@@ -61,11 +61,17 @@ void SearchLog::EnterSearch() {
 }
 
 void SearchLog::ExitSearch() {
+  const int64 branches = solver()->branches();
+  int64 ms = timer_->GetInMs();
+  if (ms == 0) {
+    ms = 1;
+  }
   const string buffer = StringPrintf(
       "End search (time = %" GG_LL_FORMAT "d ms, branches = %"
-      GG_LL_FORMAT "d, failures = %" GG_LL_FORMAT "d, %s)",
-      timer_->GetInMs(), solver()->branches(), solver()->failures(),
-      MemoryUsage().c_str());
+      GG_LL_FORMAT "d, failures = %" GG_LL_FORMAT
+      "d, %s, speed = %d branches/s)",
+      ms, branches, solver()->failures(),
+      MemoryUsage().c_str(), branches * 1000 / ms);
   OutputLine(buffer);
 }
 
@@ -78,13 +84,15 @@ bool SearchLog::AtSolution() {
     obj_str = StringPrintf("objective value = %" GG_LL_FORMAT "d, ", current);
     if (current >= objective_min_) {
       StringAppendF(&obj_str,
-                    "objective minimum = %" GG_LL_FORMAT "d, ", objective_min_);
+                    "objective minimum = %" GG_LL_FORMAT "d, ",
+                    objective_min_);
     } else {
       objective_min_ = current;
     }
     if (current <= objective_max_) {
       StringAppendF(&obj_str,
-                    "objective maximum = %" GG_LL_FORMAT "d, ", objective_max_);
+                    "objective maximum = %" GG_LL_FORMAT "d, ",
+                    objective_max_);
     } else {
       objective_max_ = current;
     }
@@ -193,7 +201,7 @@ void SearchLog::EndInitialPropagation() {
   const int64 delta = std::max(timer_->GetInMs() - tick_, 0LL);
   const string buffer = StringPrintf(
       "Root node processed (time = %" GG_LL_FORMAT
-      "d ms, constraints = %d, memory = %s)",
+      "d ms, constraints = %d, %s)",
       delta, solver()->constraints(), MemoryUsage().c_str());
   OutputLine(buffer);
 }
