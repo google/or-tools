@@ -93,6 +93,18 @@ template<> struct hash<int64> {
   size_t operator()(int64 x) const { return static_cast<size_t>(x); }
 };
 
+template<> struct hash<std::string> {
+  size_t operator()(const std::string& x) const {
+    size_t hash = 0;
+    int c;
+    const char* s = x.c_str();
+    while (c = *s++) {
+      hash = ((hash << 5) + hash) ^ c;
+    }
+    return hash;
+  }
+};
+
 inline uint32 Hash32NumWithSeed(uint32 num, uint32 c) {
   uint32 b = 0x9e3779b9UL;            // the golden ratio; an arbitrary value
   operations_research::mix(num, b, c);
