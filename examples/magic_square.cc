@@ -28,7 +28,8 @@ DEFINE_int32(size, 0, "Size of the magic square");
 DEFINE_bool(impact, false, "Use impact search");
 DEFINE_int32(impact_size, 30, "Default size of impact search");
 DEFINE_int32(restart, -1, "parameter for constant restart monitor");
-DEFINE_bool(luby, false, "Use luby sequence instead of constant restart");
+DEFINE_bool(luby, false,
+            "Use luby restart monitor instead of constant restart monitor");
 
 namespace operations_research {
 
@@ -74,13 +75,18 @@ void MagicSquare(int grid_size) {
                        Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_MIN_VALUE);
 
+  vector<SearchMonitor*> monitors;
   SearchMonitor* const log = solver.MakeSearchLog(100000);
+  monitors.push_back(log);
   SearchMonitor* const restart = FLAGS_restart != -1?
       (FLAGS_luby?
        solver.MakeLubyRestart(FLAGS_restart):
        solver.MakeConstantRestart(FLAGS_restart)):
       NULL;
-  solver.NewSearch(db, log, restart);
+  if (restart) {
+    monitors.push_back(restart);
+  }
+  solver.NewSearch(db, monitors);
   if (solver.NextSolution()) {
     for (int n = 0; n < grid_size; ++n) {
       string output;
