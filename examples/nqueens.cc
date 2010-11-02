@@ -17,6 +17,7 @@
 //  distinct solutions: http://www.research.att.com/~njas/sequences/A002562
 
 #include "base/commandlineflags.h"
+#include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
