@@ -69,7 +69,7 @@ void SearchLog::ExitSearch() {
   const string buffer = StringPrintf(
       "End search (time = %" GG_LL_FORMAT "d ms, branches = %"
       GG_LL_FORMAT "d, failures = %" GG_LL_FORMAT
-      "d, %s, speed = %d branches/s)",
+      "d, %s, speed = %" GG_LL_FORMAT "d branches/s)",
       ms, branches, solver()->failures(),
       MemoryUsage().c_str(), branches * 1000 / ms);
   OutputLine(buffer);
