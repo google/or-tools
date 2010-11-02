@@ -65,8 +65,8 @@ class MirrorIntervalVar : public IntervalVar {
 
   // These methods query, set and watches the performed status of the
   // interval var.
-  virtual bool PerformedMin() const { return t_->PerformedMin(); }
-  virtual bool PerformedMax() const { return t_->PerformedMax(); }
+  virtual bool MustBePerformed() const { return t_->MustBePerformed(); }
+  virtual bool MayBePerformed() const { return t_->MayBePerformed(); }
   virtual void SetPerformed(bool val) { t_->SetPerformed(val); }
   virtual void WhenPerformedBound(Demon* const d) { t_->WhenPerformedBound(d); }
 
@@ -224,7 +224,8 @@ class IntervalVarPerformedExpr : public BaseIntExpr {
   virtual ~IntervalVarPerformedExpr() {}
 
   virtual int64 Min() const {
-    return interval_->PerformedMin();
+    // Returns 0ll or 1ll
+    return static_cast<int64>(interval_->MustBePerformed());
   }
 
   virtual void SetMin(int64 m) {
@@ -236,7 +237,8 @@ class IntervalVarPerformedExpr : public BaseIntExpr {
   }
 
   virtual int64 Max() const {
-    return interval_->PerformedMax();
+    // Returns 0ll or 1ll
+    return static_cast<int64>(interval_->MayBePerformed());
   }
 
   virtual void SetMax(int64 m) {
@@ -257,7 +259,7 @@ class IntervalVarPerformedExpr : public BaseIntExpr {
   }
 
   virtual bool Bound() const {
-    return interval_->PerformedMin() == interval_->PerformedMax();
+    return interval_->IsPerformedBound();
   }
 
   virtual void WhenRange(Demon* d) {
@@ -381,8 +383,8 @@ class FixedDurationIntervalVar : public IntervalVar {
     start_bound_demons_.PushIfNotTop(solver(), d);
   }
 
-  virtual bool PerformedMin() const;
-  virtual bool PerformedMax() const;
+  virtual bool MustBePerformed() const;
+  virtual bool MayBePerformed() const;
   virtual void SetPerformed(bool val);
   virtual void WhenPerformedBound(Demon* const d) {
     performed_bound_demons_.PushIfNotTop(solver(), d);
@@ -640,11 +642,11 @@ void FixedDurationIntervalVar::SetDurationRange(int64 mi, int64 ma) {
   }
 }
 
-bool FixedDurationIntervalVar::PerformedMin() const {
+bool FixedDurationIntervalVar::MustBePerformed() const {
   return (performed_ == 1);
 }
 
-bool FixedDurationIntervalVar::PerformedMax() const {
+bool FixedDurationIntervalVar::MayBePerformed() const {
   return (performed_ != 0);
 }
 
@@ -733,8 +735,8 @@ class FixedInterval : public IntervalVar {
   virtual void WhenEndRange(Demon* const d)  {}
   virtual void WhenEndBound(Demon* const d) {}
 
-  virtual bool PerformedMin() const { return true; }
-  virtual bool PerformedMax() const { return true; }
+  virtual bool MustBePerformed() const { return true; }
+  virtual bool MayBePerformed() const { return true; }
   virtual void SetPerformed(bool val);
   virtual void WhenPerformedBound(Demon* const d) {}
   virtual string DebugString() const;

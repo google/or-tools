@@ -70,7 +70,7 @@ class IntervalUnaryRelation : public Constraint {
 };
 
 void IntervalUnaryRelation::Post() {
-  if (t_->PerformedMax() != 0) {
+  if (t_->MayBePerformed()) {
     Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
     t_->WhenStartRange(d);
     t_->WhenDurationRange(d);
@@ -80,7 +80,7 @@ void IntervalUnaryRelation::Post() {
 }
 
 void IntervalUnaryRelation::InitialPropagate() {
-  if (t_->PerformedMax() == 1) {
+  if (t_->MayBePerformed()) {
     switch (rel_) {
       case Solver::ENDS_AFTER:
         t_->SetEndMin(d_);
@@ -149,7 +149,13 @@ class IntervalBinaryRelation : public Constraint {
 };
 
 void IntervalBinaryRelation::Post() {
-  if (t1_->PerformedMin() + t2_->PerformedMin() >= 1) {
+  if (t1_->MustBePerformed() || t2_->MustBePerformed()) {
+    // TODO(user): This was, before lhm's modifications:
+    // if (t1_->PerformedMin() + t2_->PerformedMin() >= 1) {
+    // the new expression corresponds exactly to that. However, I suspect it
+    // is actually intended to be:
+    // if (t1_->MayBePerformed() && t2_->MayBePerformed())
+    // Please let me know -- lhm.
     Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
     t1_->WhenStartRange(d);
     t1_->WhenDurationRange(d);
@@ -166,66 +172,66 @@ void IntervalBinaryRelation::Post() {
 void IntervalBinaryRelation::InitialPropagate() {
   switch (rel_) {
     case Solver::ENDS_AFTER_END:
-      if (t2_->PerformedMin() == 1 && t1_->PerformedMax() != 0) {
+      if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
         t1_->SetEndMin(t2_->EndMin());
       }
-      if (t1_->PerformedMin() == 1 && t2_->PerformedMax() != 0) {
+      if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
         t2_->SetEndMax(t1_->EndMax());
       }
       break;
     case Solver::ENDS_AFTER_START:
-      if (t2_->PerformedMin() == 1 && t1_->PerformedMax() != 0) {
+      if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
         t1_->SetEndMin(t2_->StartMin());
       }
-      if (t1_->PerformedMin() == 1 && t2_->PerformedMax() != 0) {
+      if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
         t2_->SetStartMax(t1_->EndMax());
       }
       break;
     case Solver::ENDS_AT_END:
-      if (t2_->PerformedMin() == 1 && t1_->PerformedMax() != 0) {
+      if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
         t1_->SetEndRange(t2_->EndMin(), t2_->EndMax());
       }
-      if (t1_->PerformedMin() == 1 && t2_->PerformedMax() != 0) {
+      if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
         t2_->SetEndRange(t1_->EndMin(), t1_->EndMax());
       }
       break;
     case Solver::ENDS_AT_START:
-      if (t2_->PerformedMin() == 1 && t1_->PerformedMax() != 0) {
+      if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
         t1_->SetEndRange(t2_->StartMin(), t2_->StartMax());
       }
-      if (t1_->PerformedMin() == 1 && t2_->PerformedMax() != 0) {
+      if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
         t2_->SetStartRange(t1_->EndMin(), t1_->EndMax());
       }
       break;
     case Solver::STARTS_AFTER_END:
-      if (t2_->PerformedMin() == 1 && t1_->PerformedMax() != 0) {
+      if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
         t1_->SetStartMin(t2_->EndMin());
       }
-      if (t1_->PerformedMin() == 1 && t2_->PerformedMax() != 0) {
+      if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
         t2_->SetEndMax(t1_->StartMax());
       }
       break;
     case Solver::STARTS_AFTER_START:
-      if (t2_->PerformedMin() == 1 && t1_->PerformedMax() != 0) {
+      if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
         t1_->SetStartMin(t2_->StartMin());
       }
-      if (t1_->PerformedMin() == 1 && t2_->PerformedMax() != 0) {
+      if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
         t2_->SetEndMax(t1_->StartMax());
       }
       break;
     case Solver::STARTS_AT_END:
-      if (t2_->PerformedMin() == 1 && t1_->PerformedMax() != 0) {
+      if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
         t1_->SetStartRange(t2_->EndMin(), t2_->EndMax());
       }
-      if (t1_->PerformedMin() == 1 && t2_->PerformedMax() != 0) {
+      if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
         t2_->SetEndRange(t1_->StartMin(), t1_->StartMax());
       }
       break;
     case Solver::STARTS_AT_START:
-      if (t2_->PerformedMin() == 1 && t1_->PerformedMax() != 0) {
+      if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
         t1_->SetStartRange(t2_->StartMin(), t2_->StartMax());
       }
-      if (t1_->PerformedMin() == 1 && t2_->PerformedMax() != 0) {
+      if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
         t2_->SetStartRange(t1_->StartMin(), t1_->StartMax());
       }
       break;
@@ -313,8 +319,8 @@ string TemporalDisjunction::DebugString() const {
 
 void TemporalDisjunction::TryToDecide() {
   DCHECK_EQ(UNDECIDED, state_);
-  if (t1_->PerformedMax() + t2_->PerformedMax() == 2 &&
-      t1_->PerformedMin() + t2_->PerformedMin() > 0) {
+  if (t1_->MayBePerformed() && t2_->MayBePerformed() &&
+      (t1_->MustBePerformed() || t2_->MustBePerformed())) {
     if (t1_->EndMin() > t2_->StartMax()) {
       Decide(TWO_BEFORE_ONE);
     } else if (t2_->EndMin() > t1_->StartMax()) {
@@ -326,13 +332,13 @@ void TemporalDisjunction::TryToDecide() {
 void TemporalDisjunction::RangeDemon1() {
   switch (state_) {
     case ONE_BEFORE_TWO: {
-      if (t1_->PerformedMin() == 1 && t2_->PerformedMax() != 0) {
+      if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
         t2_->SetStartMin(t1_->EndMin());
       }
       break;
     }
     case TWO_BEFORE_ONE: {
-      if (t1_->PerformedMin() == 1 && t2_->PerformedMax() != 0) {
+      if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
         t2_->SetEndMax(t1_->StartMax());
       }
       break;
@@ -344,16 +350,16 @@ void TemporalDisjunction::RangeDemon1() {
 }
 
 void TemporalDisjunction::RangeDemon2() {
-  if (t1_->PerformedMax() == 1 || t2_->PerformedMax() == 1) {
+  if (t1_->MayBePerformed() || t2_->MayBePerformed()) {
     switch (state_) {
       case ONE_BEFORE_TWO: {
-        if (t2_->PerformedMin() == 1 && t1_->PerformedMax() != 0) {
+        if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
           t1_->SetEndMax(t2_->StartMax());
         }
         break;
       }
       case TWO_BEFORE_ONE: {
-        if (t2_->PerformedMin() == 1 && t1_->PerformedMax() != 0) {
+        if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
           t1_->SetStartMin(t2_->EndMin());
         }
         break;
@@ -407,7 +413,7 @@ Constraint* Solver::MakeTemporalDisjunction(IntervalVar* const t1,
 // ----- Sequence -----
 
 Constraint* MakeSequenceConstraintOnPerformed(
-    Solver* const s, const IntervalVar* const * intervals, int size);
+    Solver* const s, IntervalVar* const * intervals, int size);
 
 Sequence::Sequence(Solver* const s,
                    const IntervalVar* const * intervals,
@@ -445,9 +451,9 @@ void Sequence::Post() {
   int all_performed = 0;
   int all_decided = 0;
   for (int i = 0; i < size_; ++i) {
-    if (intervals_[i]->PerformedMax() == 0) {
+    if (!intervals_[i]->MayBePerformed()) {
       all_decided++;
-    } else if (intervals_[i]->PerformedMin() == 1) {
+    } else if (intervals_[i]->MustBePerformed()) {
       all_decided++;
       all_performed++;
     }
@@ -460,7 +466,7 @@ void Sequence::Post() {
   } else if (all_decided == size_ && all_performed > 1) {
     vector<IntervalVar*> performed;
     for (int i = 0; i < size_; ++i) {
-      if (intervals_[i]->PerformedMin() == 1) {
+      if (intervals_[i]->MustBePerformed()) {
         performed.push_back(intervals_[i]);
       }
     }
@@ -497,17 +503,17 @@ void Sequence::Apply(int i, int j) {
     TryToDecide(i, j);
   }
   if (s == ONE_BEFORE_TWO) {
-    if (t1->PerformedMin() == 1 && t2->PerformedMax() != 0) {
+    if (t1->MustBePerformed() && t2->MayBePerformed()) {
       t2->SetStartMin(t1->EndMin());
     }
-    if (t2->PerformedMin() == 1 && t1->PerformedMax() != 0) {
+    if (t2->MustBePerformed() && t1->MayBePerformed()) {
       t1->SetEndMax(t2->StartMax());
     }
   } else if (s == TWO_BEFORE_ONE) {
-    if (t1->PerformedMin() == 1 && t2->PerformedMax() != 0) {
+    if (t1->MustBePerformed() && t2->MayBePerformed()) {
       t2->SetEndMax(t1->StartMax());
     }
-    if (t2->PerformedMin() == 1 && t1->PerformedMax() != 0) {
+    if (t2->MustBePerformed() && t1->MayBePerformed()) {
       t1->SetStartMin(t2->EndMin());
     }
   }
@@ -518,8 +524,8 @@ void Sequence::TryToDecide(int i, int j) {
   DCHECK_EQ(UNDECIDED, states_[i][j]);
   IntervalVar* t1 = intervals_[i];
   IntervalVar* t2 = intervals_[j];
-  if (t1->PerformedMax() + t2->PerformedMax() == 2 &&
-      t1->PerformedMin() + t2->PerformedMin() > 0) {
+  if (t1->MayBePerformed() && t2->MayBePerformed() &&
+      (t1->MustBePerformed() || t2->MustBePerformed())) {
     if (t1->EndMin() > t2->StartMax()) {
       Decide(TWO_BEFORE_ONE, i, j);
     } else if (t2->EndMin() > t1->StartMax()) {
@@ -558,8 +564,8 @@ void Sequence::DurationRange(int64* dmin, int64* dmax) const {
   int64 dur_max = 0;
   for (int i = 0; i < size_; ++i) {
     IntervalVar* t = intervals_[i];
-    if (t->PerformedMax() == 1) {
-      if (t->PerformedMin() == 1) {
+    if (t->MayBePerformed()) {
+      if (t->MustBePerformed()) {
         dur_min += t->DurationMin();
       }
       dur_max += t->DurationMax();
@@ -574,7 +580,7 @@ void Sequence::HorizonRange(int64* hmin, int64* hmax) const {
   int64 hor_max = kint64min;
   for (int i = 0; i < size_; ++i) {
     IntervalVar* t = intervals_[i];
-    if (t->PerformedMax() == 1) {
+    if (t->MayBePerformed()) {
       const int64 tmin = t->StartMin();
       const int64 tmax = t->EndMax();
       if (tmin < hor_min) {
@@ -594,7 +600,7 @@ void Sequence::ActiveHorizonRange(int64* hmin, int64* hmax) const {
   int64 hor_max = kint64min;
   for (int i = 0; i < size_; ++i) {
     IntervalVar* t = intervals_[i];
-    if (t->PerformedMax() == 1 && ranks_[i] >= current_rank_) {
+    if (t->MayBePerformed() && ranks_[i] >= current_rank_) {
       const int64 tmin = t->StartMin();
       const int64 tmax = t->EndMax();
       if (tmin < hor_min) {
@@ -612,7 +618,7 @@ void Sequence::ActiveHorizonRange(int64* hmin, int64* hmax) const {
 int Sequence::Ranked() const {
   int count = 0;
   for (int i = 0; i < size_; ++i) {
-    if (ranks_[i] < current_rank_ && intervals_[i]->PerformedMax() != 0) {
+    if (ranks_[i] < current_rank_ && intervals_[i]->MayBePerformed()) {
       count++;
     }
   }
@@ -622,8 +628,7 @@ int Sequence::Ranked() const {
 int Sequence::NotRanked() const {
   int count = 0;
   for (int i = 0; i < size_; ++i) {
-    if (ranks_[i] >= current_rank_ &&
-        intervals_[i]->PerformedMax() != 0) {
+    if (ranks_[i] >= current_rank_ && intervals_[i]->MayBePerformed()) {
       count++;
     }
   }
@@ -633,7 +638,7 @@ int Sequence::NotRanked() const {
 int Sequence::Active() const {
   int count = 0;
   for (int i = 0; i < size_; ++i) {
-    if (intervals_[i]->PerformedMax() != 0) {
+    if (intervals_[i]->MayBePerformed()) {
       count++;
     }
   }
@@ -643,7 +648,7 @@ int Sequence::Active() const {
 int Sequence::Fixed() const {
   int count = 0;
   for (int i = 0; i < size_; ++i) {
-    if (intervals_[i]->PerformedMin() == 1 &&
+    if (intervals_[i]->MustBePerformed() &&
         intervals_[i]->StartMin() == intervals_[i]->StartMax()) {
       count++;
     }
@@ -657,7 +662,7 @@ void Sequence::ComputePossibleRanks() {
       int before = 0;
       int after = 0;
       for (int j = 0; j < i; ++j) {
-        if (intervals_[j]->PerformedMin() == 1) {
+        if (intervals_[j]->MustBePerformed()) {
           State s = states_[j][i];
           if (s == ONE_BEFORE_TWO) {
             before++;
@@ -667,7 +672,7 @@ void Sequence::ComputePossibleRanks() {
         }
       }
       for (int j = i + 1; j < size_; ++j) {
-        if (intervals_[j]->PerformedMin() == 1) {
+        if (intervals_[j]->MustBePerformed()) {
           State s = states_[i][j];
           if (s == ONE_BEFORE_TWO) {
             after++;
@@ -694,7 +699,7 @@ void Sequence::RankFirst(int index) {
   for (int i = 0; i < size_; ++i) {
     if (i != index &&
         ranks_[i] >= current_rank_ &&
-        intervals_[i]->PerformedMax() != 0LL) {
+        intervals_[i]->MayBePerformed()) {
       s->SaveAndSetValue(&ranks_[i], current_rank_ + 1);
       if (i < index) {
         Decide(TWO_BEFORE_ONE, i, index);
@@ -712,7 +717,7 @@ void Sequence::RankNotFirst(int index) {
   int count = 0;
   int support = -1;
   for (int i = 0; i < size_; ++i) {
-    if (ranks_[i] == current_rank_ && intervals_[i]->PerformedMax() == 1) {
+    if (ranks_[i] == current_rank_ && intervals_[i]->MayBePerformed()) {
       count++;
       support = i;
     }
@@ -720,7 +725,7 @@ void Sequence::RankNotFirst(int index) {
   if (count == 0) {
     solver()->Fail();
   }
-  if (count == 1 && intervals_[support]->PerformedMin() == 1) {
+  if (count == 1 && intervals_[support]->MustBePerformed()) {
     RankFirst(support);
   }
 }
@@ -1105,133 +1110,102 @@ string LambdaThetaTree::DebugString() const {
   return out;
 }
 
-}  // namespace
-
-class SequenceConstraintOnPerformed : public Constraint {
+// One half of the SequenceConstraintOnPerformed. Must be coupled with a
+// mirrored version to do the whole propagation.
+class SequenceConstraintOnPerformedOneSided {
  public:
-  SequenceConstraintOnPerformed(Solver* const s,
-                                const IntervalVar* const * intervals,
-                                int size);
-  virtual ~SequenceConstraintOnPerformed();
-
-  virtual void Post() {
-    Demon* d = MakeDelayedConstraintDemon0(
-        solver(),
-        this,
-        &SequenceConstraintOnPerformed::InitialPropagate,
-        "InitialPropagate");
-    for (int32 i = 0; i < size_; ++i) {
-      intervals_[i]->WhenStartRange(d);
-      intervals_[i]->WhenDurationRange(d);
-      intervals_[i]->WhenEndRange(d);
-    }
+  SequenceConstraintOnPerformedOneSided(Solver* const solver,
+                                        IntervalVar* const * intervals,
+                                        int size,
+                                        bool mirror);
+  ~SequenceConstraintOnPerformedOneSided() {
+    STLDeleteElements(&wrappers_);
   }
-  virtual void InitialPropagate();
-
+  int size() const { return size_; }
+  IntervalVar* const * intervals() { return intervals_.get(); }
   void UpdateEst();
   void OverloadChecking();
   bool DetectablePrecedences();
   bool NotFirstNotLast();
   bool EdgeFinder();
+
  private:
+  Solver* const solver_;
   scoped_array<IntervalVar*> intervals_;
   const int size_;
-  ThetaTree theta_tree_;
   vector<IntervalWrapper*> wrappers_;
+
+  // --- All the following member variables are essentially used as local ones:
+  // no invariant is maintained about them, except for the fact that the vectors
+  // always contains all the considered intervals, so any function that wants to
+  // use them must first sort them in the right order.
+
+  ThetaTree theta_tree_;
   vector<IntervalWrapper*> ect_;
   vector<IntervalWrapper*> est_;
   vector<IntervalWrapper*> lct_;
   vector<IntervalWrapper*> lst_;
   vector<int64> new_est_;
-  vector<IntervalWrapper*> mwrappers_;
-  vector<IntervalWrapper*> mect_;
-  vector<IntervalWrapper*> mest_;
-  vector<IntervalWrapper*> mlct_;
-  vector<IntervalWrapper*> mlst_;
   vector<int64> new_lct_;
   LambdaThetaTree lt_tree_;
 };
 
-SequenceConstraintOnPerformed::SequenceConstraintOnPerformed(
-    Solver* const s, const IntervalVar* const * intervals, int size)
-    : Constraint(s), intervals_(new IntervalVar*[size]),
-      size_(size), theta_tree_(size), lt_tree_(size) {
-  memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
+SequenceConstraintOnPerformedOneSided::SequenceConstraintOnPerformedOneSided(
+    Solver* const solver,
+    IntervalVar* const * intervals,
+    int size,
+    bool mirror)
+  : solver_(solver),
+    intervals_(new IntervalVar*[size]),
+    size_(size), theta_tree_(size), lt_tree_(size) {
+  // Populate of the array of intervals
+  if (mirror) {
+    for (int i = 0; i < size; ++i) {
+      intervals_[i] = solver->MakeMirrorInterval(intervals[i]);
+    }
+  } else {
+    memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
+  }
   for (int i = 0; i < size; ++i) {
-    IntervalWrapper* w = new IntervalWrapper(i, intervals_[i]);
+    IntervalWrapper* const w = new IntervalWrapper(i, intervals_[i]);
     wrappers_.push_back(w);
     ect_.push_back(w);
     est_.push_back(w);
     lct_.push_back(w);
     lst_.push_back(w);
     new_est_.push_back(kint64min);
-    IntervalVar* m = s->MakeMirrorInterval(intervals_[i]);
-    w = new IntervalWrapper(i, m);
-    mwrappers_.push_back(w);
-    mect_.push_back(w);
-    mest_.push_back(w);
-    mlct_.push_back(w);
-    mlst_.push_back(w);
     new_lct_.push_back(kint64max);
   }
 }
 
-SequenceConstraintOnPerformed::~SequenceConstraintOnPerformed() {
-  STLDeleteElements(&wrappers_);
-  STLDeleteElements(&mwrappers_);
-}
-
-void SequenceConstraintOnPerformed::UpdateEst() {
+void SequenceConstraintOnPerformedOneSided::UpdateEst() {
   std::sort(est_.begin(), est_.end(), CompareESTLT);
   for (int i = 0; i < size_; ++i) {
     est_[i]->set_est_pos(i);
   }
-  std::sort(mest_.begin(), mest_.end(), CompareESTLT);
-  for (int i = 0; i < size_; ++i) {
-    mest_[i]->set_est_pos(i);
-  }
 }
 
-void SequenceConstraintOnPerformed::InitialPropagate() {
-  do {
-    do {
-      do {
-        OverloadChecking();
-      } while (DetectablePrecedences());
-    } while (NotFirstNotLast());
-  } while (EdgeFinder());
-}
-
-void SequenceConstraintOnPerformed::OverloadChecking() {
+void SequenceConstraintOnPerformedOneSided::OverloadChecking() {
   // Init
   UpdateEst();
-
-  // One direction
   std::sort(lct_.begin(), lct_.end(), CompareLCTLT);
   theta_tree_.Clear();
-  for (int i = 0; i < size_; ++i) {
-    IntervalWrapper* iw = lct_[i];
-    theta_tree_.Insert(iw->interval(), iw->est_pos());
-    if (theta_tree_.ECT() > iw->interval()->EndMax()) {
-      solver()->Fail();
-    }
-  }
 
-  // Other direction
-  std::sort(mlct_.begin(), mlct_.end(), CompareLCTLT);
-  theta_tree_.Clear();
   for (int i = 0; i < size_; ++i) {
-    IntervalWrapper* iw = mlct_[i];
+    IntervalWrapper* const iw = lct_[i];
     theta_tree_.Insert(iw->interval(), iw->est_pos());
     if (theta_tree_.ECT() > iw->interval()->EndMax()) {
-      solver()->Fail();
+      solver_->Fail();
     }
   }
 }
 
-bool SequenceConstraintOnPerformed::DetectablePrecedences() {
+bool SequenceConstraintOnPerformedOneSided::DetectablePrecedences() {
   // Init
   UpdateEst();
+  for (int i = 0; i < size_; ++i) {
+    new_est_[i] = kint64min;
+  }
 
   // Propagate in one direction
   std::sort(ect_.begin(), ect_.end(), CompareECTLT);
@@ -1239,7 +1213,7 @@ bool SequenceConstraintOnPerformed::DetectablePrecedences() {
   theta_tree_.Clear();
   int j = 0;
   for (int i = 0; i < size_; ++i) {
-    IntervalWrapper* twi = ect_[i];
+    IntervalWrapper* const twi = ect_[i];
     if (j < size_) {
       IntervalWrapper* twj = lst_[j];
       while (twi->interval()->EndMin() > twj->interval()->StartMax()) {
@@ -1266,39 +1240,6 @@ bool SequenceConstraintOnPerformed::DetectablePrecedences() {
     }
   }
 
-  // Propagate in other direction
-  std::sort(mect_.begin(), mect_.end(), CompareECTLT);
-  std::sort(mlst_.begin(), mlst_.end(), CompareLSTLT);
-  theta_tree_.Clear();
-  j = 0;
-  for (int i = 0; i < size_; ++i) {
-    IntervalWrapper* twi = mect_[i];
-    if (j < size_) {
-      IntervalWrapper* twj = mlst_[j];
-      while (twi->interval()->EndMin() > twj->interval()->StartMax()) {
-        theta_tree_.Insert(twj->interval(), twj->est_pos());
-        j++;
-        if (j == size_)
-          break;
-        twj = mlst_[j];
-      }
-    }
-    const int64 lcti = twi->interval()->StartMin();
-    bool inserted = theta_tree_.Inserted(twi->est_pos());
-    if (inserted) {
-      theta_tree_.Remove(twi->est_pos());
-    }
-    const int64 olcti = theta_tree_.ECT();
-    if (inserted) {
-      theta_tree_.Insert(twi->interval(), twi->est_pos());
-    }
-    if (olcti > lcti) {
-      new_lct_[twi->index()] = -olcti;
-    } else {
-      new_lct_[twi->index()] = kint64max;
-    }
-  }
-
   // Apply modifications
   bool modified = false;
   for (int i = 0; i < size_; ++i) {
@@ -1306,23 +1247,18 @@ bool SequenceConstraintOnPerformed::DetectablePrecedences() {
       modified = true;
       intervals_[i]->SetStartMin(new_est_[i]);
     }
-    if (new_lct_[i] != kint64max) {
-      modified = true;
-      intervals_[i]->SetEndMax(new_lct_[i]);
-    }
   }
   return modified;
 }
 
-bool SequenceConstraintOnPerformed::NotFirstNotLast() {
+bool SequenceConstraintOnPerformedOneSided::NotFirstNotLast() {
   // Init
   UpdateEst();
   for (int i = 0; i < size_; ++i) {
     new_lct_[i] = intervals_[i]->EndMax();
-    new_est_[i] = intervals_[i]->StartMin();
   }
 
-  // Push in one direction.
+  // Push in one direction: update the latest completion time
   std::sort(lst_.begin(), lst_.end(), CompareLSTLT);
   std::sort(lct_.begin(), lct_.end(), CompareLCTLT);
   theta_tree_.Clear();
@@ -1351,54 +1287,22 @@ bool SequenceConstraintOnPerformed::NotFirstNotLast() {
     }
   }
 
-  // Push in other direction.
-  std::sort(mlst_.begin(), mlst_.end(), CompareLSTLT);
-  std::sort(mlct_.begin(), mlct_.end(), CompareLCTLT);
-  theta_tree_.Clear();
-  j = 0;
-  for (int i = 0; i < size_; ++i) {
-    IntervalWrapper* twi = mlct_[i];
-    while (j < size_ &&
-           twi->interval()->EndMax() > mlst_[j]->interval()->StartMax()) {
-      if (j > 0 && theta_tree_.ECT() > mlst_[j]->interval()->StartMax()) {
-        new_est_[mlst_[j]->index()] = -mlst_[j - 1]->interval()->StartMax();
-      }
-      theta_tree_.Insert(mlst_[j]->interval(), mlst_[j]->est_pos());
-      j++;
-    }
-    bool inserted = theta_tree_.Inserted(twi->est_pos());
-    if (inserted) {
-      theta_tree_.Remove(twi->est_pos());
-    }
-    const int64 mect_theta_less_i = theta_tree_.ECT();
-    if (inserted) {
-      theta_tree_.Insert(twi->interval(), twi->est_pos());
-    }
-    if (mect_theta_less_i > twi->interval()->EndMax() && j > 0) {
-      new_est_[twi->index()] =
-          max(new_est_[twi->index()], -mlst_[j - 1]->interval()->EndMax());
-    }
-  }
-
   // Apply modifications
   bool modified = false;
   for (int i = 0; i < size_; ++i) {
-    if (intervals_[i]->EndMax() > new_lct_[i] ||
-        intervals_[i]->StartMin() < new_est_[i]) {
+    if (intervals_[i]->EndMax() > new_lct_[i]) {
       modified = true;
-      intervals_[i]->SetStartMin(new_est_[i]);
       intervals_[i]->SetEndMax(new_lct_[i]);
     }
   }
   return modified;
 }
 
-bool SequenceConstraintOnPerformed::EdgeFinder() {
+bool SequenceConstraintOnPerformedOneSided::EdgeFinder() {
   // Init
   UpdateEst();
   for (int i = 0; i < size_; ++i) {
     new_est_[i] = intervals_[i]->StartMin();
-    new_lct_[i] = intervals_[i]->EndMax();
   }
 
   // Push in one direction.
@@ -1417,7 +1321,7 @@ bool SequenceConstraintOnPerformed::EdgeFinder() {
     }
     twj = lct_[j];
     if (lt_tree_.ECT() > twj->interval()->EndMax()) {
-      solver()->Fail();  // Resource is overloaded
+      solver_->Fail();  // Resource is overloaded
     }
     while (lt_tree_.ECT_opt() > twj->interval()->EndMax()) {
       const int i = lt_tree_.Responsible_opt();
@@ -1430,51 +1334,70 @@ bool SequenceConstraintOnPerformed::EdgeFinder() {
     }
   } while (j >= 0);
 
-  // Push in other direction.
-  std::sort(mlct_.begin(), mlct_.end(), CompareLCTLT);
-  lt_tree_.Clear();
-  for (int i = 0; i < size_; ++i) {
-    lt_tree_.Insert(mest_[i]->interval(), i);
-    DCHECK_EQ(i, mest_[i]->est_pos());
-  }
-  j = size_ - 1;
-  twj = mlct_[j];
-  do {
-    lt_tree_.Grey(twj->est_pos());
-    if (--j < 0) {
-      break;
-    }
-    twj = mlct_[j];
-    if (lt_tree_.ECT() > twj->interval()->EndMax()) {
-      solver()->Fail();  // Resource is overloaded
-    }
-    while (lt_tree_.ECT_opt() > twj->interval()->EndMax()) {
-      const int i = lt_tree_.Responsible_opt();
-      DCHECK_GE(i, 0);
-      const int act_i = mest_[i]->index();
-      if (-lt_tree_.ECT() < new_lct_[act_i]) {
-        new_lct_[act_i] = -lt_tree_.ECT();
-      }
-      lt_tree_.Remove(i);
-    }
-  } while (j >= 0);
-
   // Apply modifications.
   bool modified = false;
   for (int i = 0; i < size_; ++i) {
-    if (intervals_[i]->EndMax() > new_lct_[i] ||
-        intervals_[i]->StartMin() < new_est_[i]) {
+    if (intervals_[i]->StartMin() < new_est_[i]) {
       modified = true;
       intervals_[i]->SetStartMin(new_est_[i]);
-      intervals_[i]->SetEndMax(new_lct_[i]);
     }
   }
   return modified;
 }
 
+class SequenceConstraintOnPerformed : public Constraint {
+ public:
+  SequenceConstraintOnPerformed(Solver* const s,
+                                IntervalVar* const * intervals,
+                                int size);
+  virtual ~SequenceConstraintOnPerformed() { }
+
+  virtual void Post() {
+    Demon* d = MakeDelayedConstraintDemon0(
+        solver(),
+        this,
+        &SequenceConstraintOnPerformed::InitialPropagate,
+        "InitialPropagate");
+    for (int32 i = 0; i < straight_.size(); ++i) {
+      IntervalVar* interval_var = straight_.intervals()[i];
+      interval_var->WhenStartRange(d);
+      interval_var->WhenDurationRange(d);
+      interval_var->WhenEndRange(d);
+    }
+  }
+
+  virtual void InitialPropagate() {
+    do {
+      do {
+        do {
+          straight_.OverloadChecking();
+          mirror_.OverloadChecking();
+        } while (straight_.DetectablePrecedences() ||
+            mirror_.DetectablePrecedences());
+      } while (straight_.NotFirstNotLast() ||
+          mirror_.NotFirstNotLast());
+    } while (straight_.EdgeFinder() ||
+        mirror_.EdgeFinder());
+  }
+
+ private:
+  SequenceConstraintOnPerformedOneSided straight_;
+  SequenceConstraintOnPerformedOneSided mirror_;
+};
+
+SequenceConstraintOnPerformed::SequenceConstraintOnPerformed(Solver* const s,
+                                IntervalVar* const * intervals,
+                                int size)
+: Constraint(s),
+  straight_(s, intervals, size, false),
+  mirror_(s, intervals, size, true) {
+}
+
+}  // namespace
+
 Constraint* MakeSequenceConstraintOnPerformed(Solver* const s,
-                          const IntervalVar* const * intervals,
-                          int size) {
+                                              IntervalVar* const * intervals,
+                                              int size) {
   return s->RevAlloc(new SequenceConstraintOnPerformed(s, intervals, size));
 }
 

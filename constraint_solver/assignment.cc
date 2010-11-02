@@ -113,8 +113,8 @@ void IntervalVarElement::Copy(const IntervalVarElement& element) {
 }
 
 void IntervalVarElement::Store() {
-  performed_min_ = var_->PerformedMin();
-  performed_max_ = var_->PerformedMax();
+  performed_min_ = static_cast<int64>(var_->MustBePerformed());
+  performed_max_ = static_cast<int64>(var_->MayBePerformed());
   if (performed_max_ != 0LL) {
     start_min_ = var_->StartMin();
     start_max_ = var_->StartMax();

@@ -69,7 +69,7 @@ class SetTimesForward : public DecisionBuilder {
     int refuted = 0;
     for (int i = 0; i < size_; ++i) {
       IntervalVar* const v = vars_[i];
-      if (v->PerformedMax() != 0LL && v->StartMax() > v->StartMin()) {
+      if (v->MayBePerformed() && v->StartMax() > v->StartMin()) {
         if (v->StartMin() >= markers_[i] &&
                   (v->StartMin() < best_est ||
                    (v->StartMin() == best_est && v->EndMax() < best_lct))) {
@@ -176,7 +176,7 @@ class RankFirstSequences : public DecisionBuilder {
       for (int i = 0; i < seq->size(); ++i) {
         if (seq->PossibleFirst(i)) {
           IntervalVar* t = seq->Interval(i);
-          if (t->PerformedMax() != 0LL && t->StartMin() < smin) {
+          if (t->MayBePerformed() && t->StartMin() < smin) {
             index = i;
             smin = t->StartMin();
           }

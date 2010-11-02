@@ -2387,8 +2387,11 @@ class IntervalVar : public PropagationBaseObject {
 
   // These methods query, set and watches the performed status of the
   // interval var.
-  virtual bool PerformedMin() const = 0;
-  virtual bool PerformedMax() const = 0;
+  virtual bool MustBePerformed() const = 0;
+  virtual bool MayBePerformed() const = 0;
+  bool IsPerformedBound() {
+    return MustBePerformed() == MayBePerformed();
+  }
   virtual void SetPerformed(bool val) = 0;
   virtual void WhenPerformedBound(Demon* const d) = 0;
 
