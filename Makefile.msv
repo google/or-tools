@@ -85,7 +85,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 objs/alldiff_cst.obj:constraint_solver/alldiff_cst.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/alldiff_cst.cc /Foobjs/alldiff_cst.obj
 
-objs/assignment.obj:constraint_solver/assignment.cc
+objs/assignment.obj:constraint_solver/assignment.cc constraint_solver/assignment.pb.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/assignment.cc /Foobjs/assignment.obj
 
 constraint_solver/assignment.pb.cc:constraint_solver/assignment.proto

@@ -111,7 +111,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 objs/alldiff_cst.o:constraint_solver/alldiff_cst.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/alldiff_cst.cc -o objs/alldiff_cst.o
 
-objs/assignment.o:constraint_solver/assignment.cc
+objs/assignment.o:constraint_solver/assignment.cc constraint_solver/assignment.pb.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/assignment.cc -o objs/assignment.o
 
 objs/assignment.pb.o:constraint_solver/assignment.pb.cc
