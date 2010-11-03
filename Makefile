@@ -32,7 +32,7 @@ GFLAGS_LNK = -Wl,-rpath $(GFLAGS_DIR)/lib -L$(GFLAGS_DIR)/lib -lgflags
 # This is needed to find libz.a
 ZLIB_LNK = -Wl,-rpath $(ZLIB_DIR)/lib -L$(ZLIB_DIR)/lib -lz
 # This is needed to find libprotobuf.a
-PROTOBUF_LNK = -Wl,-rpath $(PROTOBUF_DIR)/lib -L$(PROTOBUF_DIR)/lib -lprotobuf
+PROTOBUF_LNK = -Wl,-rpath $(PROTOBUF_DIR)/lib -L$(PROTOBUF_DIR)/lib -lprotobuf -lpthread
 # Detect 32 bit or 64 bit OS and define ARCH flags correctly.
 LBITS := $(shell getconf LONG_BIT)
 ifeq ($(LBITS),64)
