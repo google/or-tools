@@ -92,4 +92,36 @@ void StringAppendF(string* dst, const char* format, ...) {
   va_end(ap);
 }
 
+// ----- StrCat -----
+
+string StrCat(const string& s1, const string& s2) {
+  string result = s1;
+  result += s2;
+  return result;
+}
+
+string StrCat(const string& s1, const char* const s2) {
+  string result = s1;
+  result += s2;
+  return result;
+}
+
+string StrCat(const char* const s1, const char* const s2) {
+  return StringPrintf("%s%s", s1, s2);
+}
+
+string StrCat(const char* const s1, const string& s2) {
+  string result = s1;
+  result += s2;
+  return result;
+}
+
+string StrCat(int64 a1, const char* const s2) {
+  return StringPrintf("%ld%s", a1, s2);
+}
+
+string StrCat(const char* const s1, int64 a2) {
+  return StringPrintf("%s%ld", s1, a2);
+}
+
 }  // namespace operations_research
