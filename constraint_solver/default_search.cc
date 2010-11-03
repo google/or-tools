@@ -32,6 +32,8 @@ DEFINE_int32(cp_impact_heuristic_frequency, 500,
              "Fun heuristic every 'num' nodes.");
 DEFINE_int32(cp_impact_heuristic_limit, 30,
              "Fail limit when running an heuristic.");
+DEFINE_bool(cp_impact_run_all_heuristics, false,
+            "Run all heuristics instead of a random one.");
 
 namespace operations_research {
 
@@ -202,7 +204,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
     int64 IntervalStart(int index) const {
       const int64 length = var_max_ - var_min_ + 1;
-      return (var_min_ + length * index / split_index_);
+      return (var_min_ + length * index / split_size_);
     }
 
     virtual Decision* Next(Solver* const solver) {
@@ -214,10 +216,14 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       if (split_index_ == split_size_) {
         return NULL;
       }
-      split_index_++;
       updater_.var_ = var_;
-      updater_.value_min_ = IntervalStart(split_index_ - 1);
-      updater_.value_max_ = IntervalStart(split_index_) - 1;
+      updater_.value_min_ = IntervalStart(split_index_);
+      split_index_++;
+      if (split_index_ == split_size_) {
+        updater_.value_max_ = var_max_;
+      } else {
+        updater_.value_max_ = IntervalStart(split_index_) - 1;
+      }
       return &updater_;
     }
 
@@ -256,7 +262,8 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
   // ----- Main method -----
 
-  ImpactDecisionBuilder(const IntVar* const* vars,
+  ImpactDecisionBuilder(Solver* const solver,
+                        const IntVar* const* vars,
                         int size,
                         int64 restart_frequency)
       : size_(size),
@@ -273,7 +280,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         heuristic_limit_(NULL),
         random_(FLAGS_cp_impact_seed),
         runner_(NewPermanentCallback(this,
-                                     &ImpactDecisionBuilder::RunOneHeuristic)),
+                                     &ImpactDecisionBuilder::RunHeuristics)),
         heuristic_branch_count_(0) {
     CHECK_GE(size_, 0);
     if (size_ > 0) {
@@ -290,9 +297,63 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       impacts_[i].resize(vars_[i]->Max() - vars_[i]->Min() + 1,
                          kFailureImpact);
     }
+    InitHeuristics(solver);
   }
 
   virtual ~ImpactDecisionBuilder() {}
+
+  void InitHeuristics(Solver* const solver) {
+    DecisionBuilder* db = NULL;
+    string heuristic_name;
+
+    db = solver->MakePhase(vars_.get(),
+                           size_,
+                           Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
+                           Solver::ASSIGN_MIN_VALUE);
+    heuristic_name = "AssignMinValueToMinDomainSize";
+    heuristics_.push_back(db);
+    heuristics_names_.push_back(heuristic_name);
+
+    db = solver->MakePhase(vars_.get(),
+                           size_,
+                           Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX,
+                           Solver::ASSIGN_MAX_VALUE);
+    heuristic_name = "AssignMaxValueToMinDomainSize";
+    heuristics_.push_back(db);
+    heuristics_names_.push_back(heuristic_name);
+
+    db = solver->MakePhase(vars_.get(),
+                           size_,
+                           Solver::CHOOSE_FIRST_UNBOUND,
+                           Solver::ASSIGN_RANDOM_VALUE);
+    heuristic_name = "AssignRandomValueToFirstUnbound";
+    heuristics_.push_back(db);
+    heuristics_names_.push_back(heuristic_name);
+
+    db = solver->MakePhase(vars_.get(),
+                           size_,
+                           Solver::CHOOSE_RANDOM,
+                           Solver::ASSIGN_MIN_VALUE);
+    heuristic_name = "AssignMinValueToRandomVariable";
+    heuristics_.push_back(db);
+    heuristics_names_.push_back(heuristic_name);
+
+    db = solver->MakePhase(vars_.get(),
+                           size_,
+                           Solver::CHOOSE_RANDOM,
+                           Solver::ASSIGN_CENTER_VALUE);
+    heuristic_name = "AssignCenterValueToRandomVariable";
+    heuristics_.push_back(db);
+    heuristics_names_.push_back(heuristic_name);
+
+    CHECK_EQ(heuristics_names_.size(), heuristics_.size());
+
+    heuristic_limit_ =
+        solver->MakeLimit(kint64max,  // time.
+                          kint64max,  // branches.
+                          FLAGS_cp_impact_heuristic_limit,  // failures.
+                          kint64max);  // solutions.
+  }
 
   double LogSearchSpaceSize() {
     double result = 0.0;
@@ -456,64 +517,30 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     return (*var_index != -1);
   }
 
-  bool RunOneHeuristic(Solver* const solver) {
-    DecisionBuilder* db = NULL;
-    string heuristic_name;
-    switch (random_.Uniform(5)) {
-      case 0: {
-        db = solver->MakePhase(vars_.get(),
-                               size_,
-                               Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
-                               Solver::ASSIGN_MIN_VALUE);
-        heuristic_name = "AssignMinValueToMinDomainSize";
-        break;
-      }
-      case 1: {
-        db = solver->MakePhase(vars_.get(),
-                               size_,
-                               Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX,
-                               Solver::ASSIGN_MAX_VALUE);
-        heuristic_name = "AssignMaxValueToMinDomainSize";
-        break;
-      }
-      case 2: {
-        db = solver->MakePhase(vars_.get(),
-                               size_,
-                               Solver::CHOOSE_FIRST_UNBOUND,
-                               Solver::ASSIGN_RANDOM_VALUE);
-        heuristic_name = "AssignRandomValueToFirstUnbound";
-        break;
-      }
-      case 3: {
-        db = solver->MakePhase(vars_.get(),
-                               size_,
-                               Solver::CHOOSE_RANDOM,
-                               Solver::ASSIGN_MIN_VALUE);
-        heuristic_name = "AssignMinValueToRandomVariable";
-        break;
-      }
-      case 4: {
-        db = solver->MakePhase(vars_.get(),
-                               size_,
-                               Solver::CHOOSE_RANDOM,
-                               Solver::ASSIGN_CENTER_VALUE);
-        heuristic_name = "AssignCenterValueToRandomVariable";
-        break;
-      }
-    }
-    SearchMonitor* const heuristic_limit =
-        solver->MakeLimit(kint64max,  // time.
-                          kint64max,  // branches.
-                          FLAGS_cp_impact_heuristic_limit,  // failures.
-                          kint64max);  // solutions.
+  bool RunOneHeuristic(Solver* const solver, int index) {
+    DecisionBuilder* const db = heuristics_[index];
+    const string heuristic_name = heuristics_names_[index];
 
-    const bool result = solver->NestedSolve(db, false, heuristic_limit);
+    const bool result = solver->NestedSolve(db, false, heuristic_limit_);
     if (result) {
       LOG(INFO) << "Solution found by heuristic " << heuristic_name;
     }
     return result;
   }
 
+  bool RunHeuristics(Solver* const solver) {
+    if (FLAGS_cp_impact_run_all_heuristics) {
+      for (int index = 0; index < heuristics_.size(); ++index) {
+        if (RunOneHeuristic(solver, index)) {
+          return true;
+        }
+      }
+      return false;
+    } else {
+      const int index = random_.Uniform(heuristics_.size());
+      return RunOneHeuristic(solver, index);
+    }
+  }
 
   virtual Decision* Next(Solver* const s) {
     if (!init_done_) {
@@ -561,6 +588,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   scoped_array<IntVarIterator*> domain_iterators_;
   int64 init_count_;
   vector<DecisionBuilder*> heuristics_;
+  vector<string> heuristics_names_;
   SearchMonitor* heuristic_limit_;
   ACMRandom random_;
   RunHeuristic runner_;
@@ -578,6 +606,9 @@ DecisionBuilder* Solver::MakeImpactPhase(const vector<IntVar*>& vars,
 DecisionBuilder* Solver::MakeImpactPhase(const IntVar* const* vars,
                                          int size,
                                          int64 restart_frequency) {
-  return RevAlloc(new ImpactDecisionBuilder(vars, size, restart_frequency));
+  return RevAlloc(new ImpactDecisionBuilder(this,
+                                            vars,
+                                            size,
+                                            restart_frequency));
 }
 }  // namespace operations_research
