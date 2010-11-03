@@ -1,0 +1,48 @@
+// Copyright 2009 Google Inc. All Rights Reserved.
+// Author: vfurnon@google.com (Vincent Furnon)
+
+syntax = "proto2";
+
+package operations_research;
+
+// Storage for IntVars
+message IntVarAssignmentProto {
+  required string var_id = 1;
+  required int64 min = 2;
+  required int64 max = 3;
+  required bool active = 4;
+}
+
+// Storage for IntervalVars
+message IntervalVarAssignmentProto {
+  required string var_id = 1;
+  required int64 start_min = 2;
+  required int64 start_max = 3;
+  required int64 duration_min = 4;
+  required int64 duration_max = 5;
+  required int64 end_min = 6;
+  required int64 end_max = 7;
+  required int64 performed_min = 8;
+  required int64 performed_max = 9;
+  required bool active = 10;
+}
+
+// This optional message indicates how the assignment was produced.
+message WorkerInfo {
+  optional int32 worker_id = 1;
+  optional string bns = 2;
+}
+
+message NeighborsInfo {
+  repeated WorkerInfo neighbor = 1;
+}
+
+// Global container for all assignment variables and objective
+message AssignmentProto {
+  repeated IntVarAssignmentProto int_var_assignment = 1;
+  repeated IntervalVarAssignmentProto interval_var_assignment = 2;
+  optional IntVarAssignmentProto objective = 3;
+  optional WorkerInfo worker_info = 4;
+  optional bool is_valid = 5 [default = true];
+}
+
