@@ -548,16 +548,23 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       init_done_ = true;
     }
 
-    if (fail_stamp_ != 0) {
-      if (s->fail_stamp() == fail_stamp_) {
-        UpdateAfterAssignment();
+    if (current_var_index_ == -1 && fail_stamp_ != 0) {
+      // After solution.
+      fail_stamp_ = s->fail_stamp();
+      current_log_space_ = LogSearchSpaceSize();
+    } else {
+      if (fail_stamp_ != 0) {
+        if (s->fail_stamp() == fail_stamp_) {
+          UpdateAfterAssignment();
+        } else {
+          UpdateAfterFailure();
+          fail_stamp_ = s->fail_stamp();
+        }
       } else {
-        UpdateAfterFailure();
         fail_stamp_ = s->fail_stamp();
       }
-    } else {
-      fail_stamp_ = s->fail_stamp();
     }
+
     ++heuristic_branch_count_;
     if (heuristic_branch_count_ % FLAGS_cp_impact_heuristic_frequency == 0) {
       return &runner_;
