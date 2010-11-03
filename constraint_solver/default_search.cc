@@ -257,7 +257,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       }
       virtual void Refute(Solver* const solver) {}
    private:
-    ResultCallback1<bool, Solver*>* update_impact_callback_;
+    scoped_ptr<ResultCallback1<bool, Solver*> >  update_impact_callback_;
   };
 
   // ----- Main method -----
@@ -550,7 +550,6 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
     if (current_var_index_ == -1 && fail_stamp_ != 0) {
       // After solution.
-      fail_stamp_ = s->fail_stamp();
       current_log_space_ = LogSearchSpaceSize();
     } else {
       if (fail_stamp_ != 0) {
@@ -558,12 +557,10 @@ class ImpactDecisionBuilder : public DecisionBuilder {
           UpdateAfterAssignment();
         } else {
           UpdateAfterFailure();
-          fail_stamp_ = s->fail_stamp();
         }
-      } else {
-        fail_stamp_ = s->fail_stamp();
       }
     }
+    fail_stamp_ = s->fail_stamp();
 
     ++heuristic_branch_count_;
     if (heuristic_branch_count_ % FLAGS_cp_impact_heuristic_frequency == 0) {
