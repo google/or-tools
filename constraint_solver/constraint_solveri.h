@@ -667,15 +667,23 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   IntVarLocalSearchFilter(const IntVar* const* vars, int size);
   ~IntVarLocalSearchFilter();
  protected:
+  // Add variables to "track" to the filter.
+  void AddVars(const IntVar* const* vars, int size);
+  // This method should not be overridden. Override OnSynchronize() instead
+  // which is called before exiting this method.
+  virtual void Synchronize(const Assignment* assignment);
+  virtual void OnSynchronize() {}
   bool FindIndex(const IntVar* const var, int64* index) const {
     DCHECK(index != NULL);
     return FindCopy(var_to_index_, var, index);
   }
-  int size() const { return size_; }
-  IntVar* Vars(int index) const { return vars_[index]; }
+  int Size() const { return size_; }
+  IntVar* Var(int index) const { return vars_[index]; }
+  int64 Value(int index) const { return values_[index]; }
  private:
   scoped_array<IntVar*> vars_;
-  const int size_;
+  scoped_array<int64> values_;
+  int size_;
   hash_map<const IntVar*, int64> var_to_index_;
 };
 
