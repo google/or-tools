@@ -19,65 +19,7 @@ operations_research-1.0/
   python/            <- Python examples
   util/              <- More utilities needed by the constraint solver
 
-First, you will need to install the google-gflags library, compile it
-and install it.  It can be obtained at the following address:
+For installation, please refer to the following web page:
 
-  http://code.google.com/p/google-gflags/
+http://code.google.com/p/or-tools/wiki/AGettingStarted
 
-By default, the makefile assumes the installation path is
-../gflags-1.3 from the Makefile, thus at the same level as the
-operations_research directory.
-
-Then you need to install zlib. The makefile default path is
-../zlib-1.2.5 from the location of the makefile.
-
-Please edit the top of the makefile to accomodate your installation.
-
-On Microsoft Windows, please do the following:
-  - decompress the gflags directory, do not compile it
-  - modify the Makefile.msv to point to the source of the gflags source
-    directory.
-  - install the zlib source archive, step into it
-    and run "nmake -f win32/Makefile.msc" directly at this point.
-    (please note that there is a bug in zlib-1.2.5 makefile as the OBJS
-     list of files misses the inffast.obj entry).
-  - modify the Makefile.msv to point to the root of the zlib source tree.
-
-You can then compile the library, examples (linux, mac, and windows)
-and python wrapping (linux, mac):
-
-  make (linux, mac)
-  nmake -f Makefile.msv (windows)
-
-To compile in debug mode, please use
-
-  make DEBUG=-g (linux, mac)
-  nmake -f Makefile.msv DEBUG="/Od /Zi"
-
-You can clean everything using
-
-  make clean (linux, mac)
-  nmake -f Makefile.msv clean (windows)
-
-When everything is compiled, you will find under operations_research:
-  3 libraries (libcp.a, libutil.a and libbase.a) for unix, or
-  4 libraries (cp.lib, util.lib, base.lib and gflags.dll) for Windows
-  One binary per C++ example (e.g. nqueens or nqueens.exe on Windows)
-  A C++ wrapping library (_pywrapcp.so)
-
-You can execute C++ examples just by running then:
-
-  ./magic_square (linux, mac)
-  magic_square.exe (windows)
-
-For the python examples, as we have not installed the
-constraint_solver module, we need to use the following command:
-
-PYTHONPATH= <python_binary> python/<sample.py>
-
-As in
-
-  PYTHONPATH= python2.6 python/golomb8.py
-
-This has been tested with python 2.5 and 2.6.
-The wrapping using SWIG has been tested with SWIG 1.3.40 and 1.3.31.
