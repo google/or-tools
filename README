@@ -1,7 +1,7 @@
 This file describes how to install the constraint-solver library and
 run the c++ and python examples. This has been tested under ubuntu
-10.10, Mac OS X Snow Leopard with xcode 3.2.3, and Microsoft Windows
-with Visual Studio 2010 express C++.
+10.04 and 10.10, Mac OS X Snow Leopard with xcode 3.2.3, and 3.2.4,
+and Microsoft Windows with Visual Studio 2010 express C++.
 
 Upon untarring the given operation_research tar file, you will get the
 following structure:
@@ -11,6 +11,7 @@ operations_research-1.0/
   Makefile           <- Makefile for unix platform (ubuntu linux, mac os X)
   Makefile.msv       <- Makefile for Microsoft Visual Studio
   README             <- This file
+  algorithms/        <- Directory containing basic algorithms.
   base/              <- Directory containing basic utilities.
   constraint_solver/ <- The main directory for the constraint solver library
   examples/          <- C++ examples
