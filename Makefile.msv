@@ -3,6 +3,9 @@ GFLAGS_DIR=..\\gflags-1.4
 ZLIB_DIR=..\\zlib-1.2.5
 ZLIB_NAME=zlib.lib
 SWIG_BINARY=..\\swigwin-2.0.0\\swig.exe
+PROTOBUF_DIR=..\\protobuf-2.3.0
+
+# This describes the python installation.
 PYTHON_INC=/Ic:\\Python27\\include
 PYTHON_LNK=c:\\Python27\\libs\\python27.lib
 
@@ -13,12 +16,15 @@ CCC=cl /EHsc
 
 GFLAGS_INC = /I$(GFLAGS_DIR)\\src\\windows /I$(GFLAGS_DIR)\\src
 ZLIB_INC = /I$(ZLIB_DIR)
-CFLAGS= -nologo $(SYSCFLAGS) $(DEBUG) /I.  $(GFLAGS_INC) $(ZLIB_INC)
+PROTOBUF_INC = /I$(PROTOBUF_DIR)\\include
+CFLAGS= -nologo $(SYSCFLAGS) $(DEBUG) /I.  $(GFLAGS_INC) $(ZLIB_INC)\
+	 $(PROTOBUF_INC)
 
 LD = cl /EHsc
 GFLAGS_LNK =
 ZLIB_LNK = $(ZLIB_DIR)/$(ZLIB_NAME)
-LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) psapi.lib ws2_32.lib
+PROTOBUF_LNK = $(PROTOBUF_DIR)\\lib\\protobuf.lib
+LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) psapi.lib ws2_32.lib
 GFLAGS_CFLAGS=/I$(GFLAGS_DIR)\\src\\windows /I$(GFLAGS_DIR)\\src /D_USRDLL /D_WINDLL
 
 # Real targets
@@ -50,12 +56,14 @@ clean:
 	del constraint_solver\constraint_solver_wrap.cc
 	del constraint_solver\_pywrapcp.pyd
 	del constraint_solver\pywrapcp.py
+	del constraint_solver\assignment.pb.*
 
 # Constraint Solver Lib.
 
 CONSTRAINT_SOLVER_LIB_OBJS = \
 	objs/alldiff_cst.obj\
 	objs/assignment.obj\
+	objs/assignment.pb.obj\
 	objs/constraint_solver.obj\
 	objs/constraints.obj\
 	objs/count_cst.obj\
@@ -79,6 +87,12 @@ objs/alldiff_cst.obj:constraint_solver/alldiff_cst.cc
 
 objs/assignment.obj:constraint_solver/assignment.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/assignment.cc /Foobjs/assignment.obj
+
+constraint_solver/assignment.pb.cc:constraint_solver/assignment.proto
+	$(PROTOBUF_DIR)\\bin\\protoc --proto_path=constraint_solver --cpp_out=constraint_solver constraint_solver\\assignment.proto
+
+objs/assignment.pb.obj:constraint_solver/assignment.pb.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/assignment.pb.cc /Foobjs/assignment.pb.obj
 
 objs/constraint_solver.obj:constraint_solver/constraint_solver.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/constraint_solver.cc /Foobjs/constraint_solver.obj

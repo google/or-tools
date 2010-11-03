@@ -19,6 +19,7 @@
 #include "base/stringprintf.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
+#include "constraint_solver/assignment.pb.h"
 #include "constraint_solver/constraint_solver.h"
 
 namespace operations_research {
@@ -57,6 +58,24 @@ void IntVarElement::Copy(const IntVarElement& element) {
   }
 }
 
+void IntVarElement::StoreFromProto(
+    const IntVarAssignmentProto& int_var_assignment_proto) {
+  min_ = int_var_assignment_proto.min();
+  max_ = int_var_assignment_proto.max();
+  if (int_var_assignment_proto.active()) {
+    Activate();
+  } else {
+    Deactivate();
+  }
+}
+
+void IntVarElement::RestoreToProto(
+    IntVarAssignmentProto* int_var_assignment_proto) const {
+  int_var_assignment_proto->set_var_id(var_->name());
+  int_var_assignment_proto->set_min(min_);
+  int_var_assignment_proto->set_max(max_);
+  int_var_assignment_proto->set_active(Activated());
+}
 
 string IntVarElement::DebugString() const {
   if (Activated()) {
@@ -136,6 +155,36 @@ void IntervalVarElement::Restore() {
   }
 }
 
+void IntervalVarElement::StoreFromProto(
+    const IntervalVarAssignmentProto& interval_var_assignment_proto) {
+  start_min_ = interval_var_assignment_proto.start_min();
+  start_max_ = interval_var_assignment_proto.start_max();
+  duration_min_ = interval_var_assignment_proto.duration_min();
+  duration_max_ = interval_var_assignment_proto.duration_max();
+  end_min_ = interval_var_assignment_proto.end_min();
+  end_max_ = interval_var_assignment_proto.end_max();
+  performed_min_ = interval_var_assignment_proto.performed_min();
+  performed_max_ = interval_var_assignment_proto.performed_max();
+  if (interval_var_assignment_proto.active()) {
+    Activate();
+  } else {
+    Deactivate();
+  }
+}
+
+void IntervalVarElement::RestoreToProto(
+    IntervalVarAssignmentProto* interval_var_assignment_proto) const {
+  interval_var_assignment_proto->set_var_id(var_->name());
+  interval_var_assignment_proto->set_start_min(start_min_);
+  interval_var_assignment_proto->set_start_max(start_max_);
+  interval_var_assignment_proto->set_duration_min(duration_min_);
+  interval_var_assignment_proto->set_duration_max(duration_max_);
+  interval_var_assignment_proto->set_end_min(end_min_);
+  interval_var_assignment_proto->set_end_max(end_max_);
+  interval_var_assignment_proto->set_performed_min(performed_min_);
+  interval_var_assignment_proto->set_performed_max(performed_max_);
+  interval_var_assignment_proto->set_active(Activated());
+}
 
 string IntervalVarElement::DebugString() const {
   if (Activated()) {
@@ -227,8 +276,122 @@ void IdToElementMap(AssignmentContainer<V, E>* container,
   }
 }
 
+template <class E, class P>
+void LoadElement(const hash_map<string, E*>& id_to_element_map,
+                 const P& proto) {
+  const string& var_id = proto.var_id();
+  CHECK(!var_id.empty());
+  E* element = NULL;
+  if (FindCopy(id_to_element_map, var_id, &element)) {
+    element->StoreFromProto(proto);
+  } else {
+    LOG(INFO) << "Variable " << var_id
+              << " not in assignment; skipping variable";
+  }
+}
 }  // namespace
 
+
+void Assignment::Load(const AssignmentProto& assignment_proto) {
+  bool fast_load =
+      (int_var_container_.Size() == assignment_proto.int_var_assignment_size());
+  for (int i = 0;
+       fast_load && i < assignment_proto.int_var_assignment_size();
+       ++i) {
+    IntVarElement& element = int_var_container_.MutableElement(i);
+    const IntVarAssignmentProto& proto = assignment_proto.int_var_assignment(i);
+    if (element.Var()->name() == proto.var_id()) {
+      element.StoreFromProto(proto);
+    } else {
+      fast_load = false;
+    }
+  }
+  if (!fast_load) {
+    hash_map<string, IntVarElement*> id_to_int_var_element_map;
+    IdToElementMap<IntVar, IntVarElement>(&int_var_container_,
+                                          &id_to_int_var_element_map);
+    for (int i = 0; i < assignment_proto.int_var_assignment_size(); ++i) {
+      LoadElement<IntVarElement, IntVarAssignmentProto>(
+          id_to_int_var_element_map,
+          assignment_proto.int_var_assignment(i));
+    }
+  }
+  fast_load =
+      (interval_var_container_.Size()
+       == assignment_proto.interval_var_assignment_size());
+  for (int i = 0;
+       fast_load && i < assignment_proto.interval_var_assignment_size();
+       ++i) {
+    IntervalVarElement& element = interval_var_container_.MutableElement(i);
+    const IntervalVarAssignmentProto& proto =
+        assignment_proto.interval_var_assignment(i);
+    if (element.Var()->name() == proto.var_id()) {
+      element.StoreFromProto(proto);
+    } else {
+      fast_load = false;
+    }
+  }
+  if (!fast_load) {
+    hash_map<string, IntervalVarElement*> id_to_interval_var_element_map;
+    IdToElementMap<IntervalVar, IntervalVarElement>(
+        &interval_var_container_,
+        &id_to_interval_var_element_map);
+    for (int i = 0; i < assignment_proto.interval_var_assignment_size(); ++i) {
+      LoadElement<IntervalVarElement, IntervalVarAssignmentProto>(
+          id_to_interval_var_element_map,
+          assignment_proto.interval_var_assignment(i));
+    }
+  }
+  if (assignment_proto.has_objective()) {
+    const IntVarAssignmentProto& objective = assignment_proto.objective();
+    const string objective_id = objective.var_id();
+    CHECK(!objective_id.empty());
+    if (HasObjective() && objective_id.compare(Objective()->name()) == 0) {
+      SetObjectiveRange(objective.min(), objective.max());
+      if (objective.active()) {
+        ActivateObjective();
+      } else {
+        DeactivateObjective();
+      }
+    }
+  }
+}
+
+
+void Assignment::Save(AssignmentProto* const assignment_proto) {
+  assignment_proto->Clear();
+  for (int i = 0; i < int_var_container_.Size(); ++i) {
+    const IntVarElement& element = int_var_container_.Element(i);
+    const IntVar* const var = element.Var();
+    const string& name = var->name();
+    if (!name.empty()) {
+      IntVarAssignmentProto* int_var_assignment_proto =
+          assignment_proto->add_int_var_assignment();
+      element.RestoreToProto(int_var_assignment_proto);
+    }
+  }
+  for (int i = 0; i < interval_var_container_.Size(); ++i) {
+    const IntervalVarElement& element = interval_var_container_.Element(i);
+    const IntervalVar* var = element.Var();
+    const string& name = var->name();
+    if (!name.empty()) {
+      IntervalVarAssignmentProto* interval_var_assignment_proto =
+          assignment_proto->add_interval_var_assignment();
+      element.RestoreToProto(interval_var_assignment_proto);
+    }
+  }
+  if (HasObjective()) {
+    const IntVar* objective = Objective();
+    const string& name = objective->name();
+    if (!name.empty()) {
+      IntVarAssignmentProto* objective = assignment_proto->mutable_objective();
+      objective->set_var_id(name);
+      objective->set_min(ObjectiveMin());
+      objective->set_max(ObjectiveMax());
+      objective->set_active(ActivatedObjective());
+    }
+  }
+}
 
 string Assignment::DebugString() const {
   string out = "Assignment(";

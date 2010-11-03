@@ -3,6 +3,7 @@ PYTHON_VER=2.6
 GFLAGS_DIR=../gflags-1.4
 SWIG_BINARY=swig
 ZLIB_DIR=../zlib-1.2.5
+PROTOBUF_DIR=../protobuf-2.3.0
 
 #  ----- You should not need to modify the following, unless the -----
 #  ----- configuration is not standard ------
@@ -13,6 +14,8 @@ PYTHON_INC=-I/usr/include/python$(PYTHON_VER) -I/usr/lib/python$(PYTHON_VER)
 GFLAGS_INC = -I$(GFLAGS_DIR)/include
 # This is needed to find zlib.h
 ZLIB_INC = -I$(ZLIB_DIR)/include
+# This is needed to find protocol buffers.
+PROTOBUF_INC = -I$(PROTOBUF_DIR)/include
 
 # Compilation flags
 DEBUG=-O -DNDEBUG
@@ -28,6 +31,8 @@ LD = gcc -shared
 GFLAGS_LNK = -Wl,-rpath $(GFLAGS_DIR)/lib -L$(GFLAGS_DIR)/lib -lgflags
 # This is needed to find libz.a
 ZLIB_LNK = -Wl,-rpath $(ZLIB_DIR)/lib -L$(ZLIB_DIR)/lib -lz
+# This is needed to find libprotobuf.a
+PROTOBUF_LNK = -Wl,-rpath $(PROTOBUF_DIR)/lib -L$(PROTOBUF_DIR)/lib -lprotobuf
 # Detect 32 bit or 64 bit OS and define ARCH flags correctly.
 LBITS := $(shell getconf LONG_BIT)
 ifeq ($(LBITS),64)
@@ -40,12 +45,13 @@ ifeq ($(OS),Darwin) # Assume Mac Os X
 LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress
 GFLAGS_LNK = -L$(GFLAGS_DIR)/lib -lgflags
 ZLIB_LNK = -L$(ZLIB_DIR)/lib -lz
+PROTOBUF_LNK = -L$(PROTOBUF_DIR)/lib -lprotobuf
 ARCH=-DARCH_K8
 endif
 
 CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. $(GFLAGS_INC) $(ZLIB_INC) $(ARCH) \
-        -Wno-deprecated
-LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK)
+        -Wno-deprecated $(PROTOBUF_INC)
+LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK)
 
 # Real targets
 
@@ -74,7 +80,8 @@ clean:
 	rm -f *.a
 	rm -f objs/*.o
 	rm -f $(BINARIES)
-	rm constraint_solver/*wrap*
+	rm -f constraint_solver/*wrap*
+	rm -f constraint_solver/assignment.pb.*
 	rm -f *.so
 
 # Constraint Solver Lib.
@@ -82,6 +89,7 @@ clean:
 CONSTRAINT_SOLVER_LIB_OBJS = \
 	objs/alldiff_cst.o\
 	objs/assignment.o\
+	objs/assignment.pb.o\
 	objs/constraint_solver.o\
 	objs/constraints.o\
 	objs/count_cst.o\
@@ -105,6 +113,12 @@ objs/alldiff_cst.o:constraint_solver/alldiff_cst.cc
 
 objs/assignment.o:constraint_solver/assignment.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/assignment.cc -o objs/assignment.o
+
+objs/assignment.pb.o:constraint_solver/assignment.pb.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/assignment.pb.cc -o objs/assignment.pb.o
+
+constraint_solver/assignment.pb.cc:constraint_solver/assignment.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=constraint_solver --cpp_out=constraint_solver constraint_solver/assignment.proto
 
 objs/constraint_solver.o:constraint_solver/constraint_solver.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/constraint_solver.cc -o objs/constraint_solver.o
@@ -280,4 +294,4 @@ objs/constraint_solver_wrap.o: constraint_solver/constraint_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c constraint_solver/constraint_solver_wrap.cc -o objs/constraint_solver_wrap.o
 
 _pywrapcp.so: objs/constraint_solver_wrap.o $(CPLIBS)
-	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o $(CPLIBS) $(GFLAGS_LNK)
+	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o $(CPLIBS) $(GFLAGS_LNK) $(PROTOBUF_LNK)

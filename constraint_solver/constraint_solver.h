@@ -2530,6 +2530,8 @@ class IntVarElement : public AssignmentElement {
     max_ = var_->Max();
   }
   void Restore() { var_->SetRange(min_, max_); }
+  void StoreFromProto(const IntVarAssignmentProto& int_var_assignment_proto);
+  void RestoreToProto(IntVarAssignmentProto* int_var_assignment_proto) const;
 
   int64 Min() const { return min_; }
   void SetMin(int64 m) { min_ = m; }
@@ -2568,6 +2570,10 @@ class IntervalVarElement : public AssignmentElement {
   IntervalVar* Var() const { return var_; }
   void Store();
   void Restore();
+  void StoreFromProto(
+      const IntervalVarAssignmentProto& interval_var_assignment_proto);
+  void RestoreToProto(
+      IntervalVarAssignmentProto* interval_var_assignment_proto) const;
 
   int64 StartMin() const { return start_min_; }
   int64 StartMax() const { return start_max_; }
@@ -2770,6 +2776,8 @@ class Assignment : public PropagationBaseObject {
   void Store();
   void Restore();
 
+  void Load(const AssignmentProto& proto);
+  void Save(AssignmentProto* const proto);
 
   void AddObjective(IntVar* const v);
   IntVar* Objective() const;
