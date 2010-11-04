@@ -28,19 +28,22 @@ DEFINE_int32(cp_impact_divider, 5, "Divider for continuous update.");
 DEFINE_int32(cp_impact_splits, 64,
              "Level of domain splitting when initializing impacts.");
 DEFINE_int32(cp_impact_seed, 1, "Seed for impact random number generator.");
-DEFINE_int32(cp_impact_heuristic_frequency, 500,
+DEFINE_int32(cp_impact_heuristic_frequency, 200,
              "Fun heuristic every 'num' nodes.");
 DEFINE_int32(cp_impact_heuristic_limit, 30,
              "Fail limit when running an heuristic.");
-DEFINE_bool(cp_impact_run_all_heuristics, false,
+DEFINE_bool(cp_impact_run_all_heuristics, true,
             "Run all heuristics instead of a random one.");
+DEFINE_bool(cp_impact_select_max_impact_value, false,
+            "Select the value with maximum impact");
 
 namespace operations_research {
 
 // Useful constants.
 namespace {
 const int kLogCacheSize = 1000;
-const double kFailureImpact = 1.0;
+const double kMaximalImpact = 1.0;
+const double kInitFailureImpact = 2.0;
 
 // ---------- ImpactDecisionBuilder ----------
 
@@ -295,7 +298,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       // This will be overwritten to real impact values on valid domain
       // values during the FirstRun() method.
       impacts_[i].resize(vars_[i]->Max() - vars_[i]->Min() + 1,
-                         kFailureImpact);
+                         kInitFailureImpact);
     }
     InitHeuristics(solver);
   }
@@ -374,23 +377,18 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
   void InitImpact(int var_index, int64 value) {
     const double log_space = LogSearchSpaceSize();
-    const double impact = kFailureImpact - log_space / current_log_space_;
+    const double impact = kMaximalImpact - log_space / current_log_space_;
     const int64 value_index = value - original_min_[var_index];
     impacts_[var_index][value_index] = impact;
-    if (impact != kFailureImpact) {
-      init_count_++;
-    }
-  }
-
-  void InitImpactAfterFailure(int var_index, int64 value) {
-    const int64 value_index = value - original_min_[var_index];
-    impacts_[var_index][value_index] = kFailureImpact;
+    init_count_++;
   }
 
   void FirstRun(Solver* const solver) {
-    LOG(INFO) << "Init impacts on " << size_ << " variables";
-    const int64 init_time = solver->wall_time();
     current_log_space_ = LogSearchSpaceSize();
+    LOG(INFO) << "Init impacts on " << size_
+              << " variables, log2(SearchSpace) = "
+              << current_log_space_;
+    const int64 init_time = solver->wall_time();
     InitVarImpacts db;
     InitVarImpactsWithSplits dbs(FLAGS_cp_impact_splits);
     vector<int64> removed_values;
@@ -422,6 +420,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       init_count_ = 0;
       // Use NestedSolve() to scan all values of one variable.
       solver->NestedSolve(init_db, true);
+
       // If we have not initialized all values, then they can be removed.
       // As the iterator is not stable w.r.t. deletion, we need to store
       // removed values in an intermediate vector.
@@ -430,15 +429,13 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         for (iterator->Init(); iterator->Ok(); iterator->Next()) {
           const int64 value = iterator->Value();
           const int64 value_index = value - original_min_[var_index];
-          if (impacts_[var_index][value_index] == kFailureImpact) {
+          if (impacts_[var_index][value_index] == kInitFailureImpact) {
             removed_values.push_back(value);
           }
         }
         CHECK(!removed_values.empty());
         removed_counter += removed_values.size();
         const double old_log = log_.Log2(var->Size());
-        VLOG(1) << "Var " << var_index << " has " << removed_values.size()
-                << " values removed";
         var->RemoveValues(removed_values);
         current_log_space_ += log_.Log2(var->Size()) - old_log;
       }
@@ -458,13 +455,13 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   void UpdateAfterAssignment() {
     CHECK_GT(current_log_space_, 0.0);
     const double log_space = LogSearchSpaceSize();
-    const double impact = kFailureImpact - log_space / current_log_space_;
+    const double impact = kMaximalImpact - log_space / current_log_space_;
     UpdateImpact(current_var_index_, current_value_, impact);
     current_log_space_ = log_space;
   }
 
   void UpdateAfterFailure() {
-    UpdateImpact(current_var_index_, current_value_, kFailureImpact);
+    UpdateImpact(current_var_index_, current_value_, kMaximalImpact);
     current_log_space_ = LogSearchSpaceSize();
   }
 
@@ -477,17 +474,33 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     CHECK_NOTNULL(min_impact_value);
     CHECK_NOTNULL(sum_impacts);
     *sum_impacts = 0.0;
-    double best_impact = kFailureImpact + 1.0;  // >= kFailureImpact
-    *min_impact_value = -1;
-    IntVarIterator* const it = domain_iterators_[var_index];
-    for (it->Init(); it->Ok(); it->Next()) {
-      const int64 value = it->Value();
-      const int64 value_index = value - original_min_[var_index];
-      const double current_impact = impacts_[var_index][value_index];
-      *sum_impacts += current_impact;
-      if (current_impact < best_impact) {
-        best_impact = current_impact;
-        *min_impact_value = value;
+    if (FLAGS_cp_impact_select_max_impact_value) {
+      double best_impact = -1.0;//kMaximalImpact + 2.0;  // >= kMaximalImpact
+      *min_impact_value = -1;
+      IntVarIterator* const it = domain_iterators_[var_index];
+      for (it->Init(); it->Ok(); it->Next()) {
+        const int64 value = it->Value();
+        const int64 value_index = value - original_min_[var_index];
+        const double current_impact = impacts_[var_index][value_index];
+        *sum_impacts += current_impact;
+        if (current_impact > best_impact) {
+          best_impact = current_impact;
+          *min_impact_value = value;
+        }
+      }
+    } else {
+      double best_impact = kMaximalImpact + 2.0;  // >= kMaximalImpact
+      *min_impact_value = -1;
+      IntVarIterator* const it = domain_iterators_[var_index];
+      for (it->Init(); it->Ok(); it->Next()) {
+        const int64 value = it->Value();
+        const int64 value_index = value - original_min_[var_index];
+        const double current_impact = impacts_[var_index][value_index];
+        *sum_impacts += current_impact;
+        if (current_impact < best_impact) {
+          best_impact = current_impact;
+          *min_impact_value = value;
+        }
       }
     }
   }
