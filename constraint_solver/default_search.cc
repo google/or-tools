@@ -593,7 +593,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     }
 
     if (current_var_index_ == -1 && fail_stamp_ != 0) {
-      // After solution.
+      // After solution or after heuristics.
       current_log_space_ = LogSearchSpaceSize();
     } else {
       if (fail_stamp_ != 0) {
