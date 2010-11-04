@@ -25,17 +25,6 @@
 #include "util/cached_log.h"
 
 DEFINE_int32(cp_impact_divider, 5, "Divider for continuous update.");
-DEFINE_int32(cp_impact_splits, 64,
-             "Level of domain splitting when initializing impacts.");
-DEFINE_int32(cp_impact_seed, 1, "Seed for impact random number generator.");
-DEFINE_int32(cp_impact_heuristic_frequency, 200,
-             "Fun heuristic every 'num' nodes.");
-DEFINE_int32(cp_impact_heuristic_limit, 30,
-             "Fail limit when running an heuristic.");
-DEFINE_bool(cp_impact_run_all_heuristics, true,
-            "Run all heuristics instead of a random one.");
-DEFINE_bool(cp_impact_select_max_impact_value, false,
-            "Select the value with maximum impact");
 
 namespace operations_research {
 
@@ -268,9 +257,9 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   ImpactDecisionBuilder(Solver* const solver,
                         const IntVar* const* vars,
                         int size,
-                        int64 restart_frequency)
+                        const DefaultPhaseParameters& parameters)
       : size_(size),
-        restart_frequency_(restart_frequency),
+        parameters_(parameters),
         impacts_(size_),
         original_min_(size_, 0LL),
         init_done_(false),
@@ -281,7 +270,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         domain_iterators_(new IntVarIterator*[size_]),
         init_count_(-1),
         heuristic_limit_(NULL),
-        random_(FLAGS_cp_impact_seed),
+        random_(parameters_.random_seed),
         runner_(NewPermanentCallback(this,
                                      &ImpactDecisionBuilder::RunHeuristics)),
         heuristic_branch_count_(0) {
@@ -354,7 +343,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     heuristic_limit_ =
         solver->MakeLimit(kint64max,  // time.
                           kint64max,  // branches.
-                          FLAGS_cp_impact_heuristic_limit,  // failures.
+                          parameters_.heuristic_failure_limit,  // failures.
                           kint64max);  // solutions.
   }
 
@@ -390,7 +379,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
               << current_log_space_;
     const int64 init_time = solver->wall_time();
     InitVarImpacts db;
-    InitVarImpactsWithSplits dbs(FLAGS_cp_impact_splits);
+    InitVarImpactsWithSplits dbs(parameters_.initialization_splits);
     vector<int64> removed_values;
     int64 removed_counter = 0;
     scoped_ptr<Callback2<int, int64> > update_impact_callback(
@@ -406,12 +395,12 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       }
       IntVarIterator* const iterator = domain_iterators_[var_index];
       DecisionBuilder* init_db = NULL;
-      if (var->Max() - var->Min() < FLAGS_cp_impact_splits) {
+      if (var->Max() - var->Min() < parameters_.initialization_splits) {
         // The domain is small enough, we scan it completely.
         db.Init(var, iterator, var_index);
         init_db = &db;
       } else {
-        // The domain is too big, we scan it in FLAGS_cp_impact_splits
+        // The domain is too big, we scan it in initialization_splits
         // intervals.
         dbs.Init(var, iterator, var_index);
         init_db = &dbs;
@@ -469,38 +458,54 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   // of the impacts of all values in its domain, along with the value
   // with minimal impact.
   void ScanVarImpacts(int var_index,
-                      int64* const min_impact_value,
-                      double* const sum_impacts) {
-    CHECK_NOTNULL(min_impact_value);
-    CHECK_NOTNULL(sum_impacts);
-    *sum_impacts = 0.0;
-    if (FLAGS_cp_impact_select_max_impact_value) {
-      double best_impact = -1.0;  // kMaximalImpact + 2.0;  // >= kMaximalImpact
-      *min_impact_value = -1;
-      IntVarIterator* const it = domain_iterators_[var_index];
-      for (it->Init(); it->Ok(); it->Next()) {
-        const int64 value = it->Value();
-        const int64 value_index = value - original_min_[var_index];
-        const double current_impact = impacts_[var_index][value_index];
-        *sum_impacts += current_impact;
-        if (current_impact > best_impact) {
-          best_impact = current_impact;
-          *min_impact_value = value;
-        }
+                      int64* const best_impact_value,
+                      double* const var_impacts) {
+    CHECK_NOTNULL(best_impact_value);
+    CHECK_NOTNULL(var_impacts);
+    double max_impact = -1.0;
+    double min_impact = kMaximalImpact + 2.0;
+    double sum_var_impact = 0.0;
+    int64 min_impact_value = -1;
+    int64 max_impact_value = -1;
+    IntVarIterator* const it = domain_iterators_[var_index];
+    for (it->Init(); it->Ok(); it->Next()) {
+      const int64 value = it->Value();
+      const int64 value_index = value - original_min_[var_index];
+      const double current_impact = impacts_[var_index][value_index];
+      sum_var_impact += current_impact;
+      if (current_impact > max_impact) {
+        max_impact = current_impact;
+        max_impact_value = value;
       }
-    } else {
-      double best_impact = kMaximalImpact + 2.0;  // >= kMaximalImpact
-      *min_impact_value = -1;
-      IntVarIterator* const it = domain_iterators_[var_index];
-      for (it->Init(); it->Ok(); it->Next()) {
-        const int64 value = it->Value();
-        const int64 value_index = value - original_min_[var_index];
-        const double current_impact = impacts_[var_index][value_index];
-        *sum_impacts += current_impact;
-        if (current_impact < best_impact) {
-          best_impact = current_impact;
-          *min_impact_value = value;
-        }
+      if (current_impact < min_impact) {
+        min_impact = current_impact;
+        min_impact_value = value;
+      }
+    }
+
+    switch (parameters_.var_selection_schema) {
+      case DefaultPhaseParameters::CHOOSE_MAX_AVERAGE_IMPACT: {
+        *var_impacts = sum_var_impact / vars_[var_index]->Size();
+        break;
+      }
+      case DefaultPhaseParameters::CHOOSE_MAX_VALUE_IMPACT: {
+        *var_impacts = max_impact_value;
+        break;
+      }
+      default: {
+        *var_impacts = sum_var_impact;
+        break;
+      }
+    }
+
+    switch (parameters_.value_selection_schema) {
+      case DefaultPhaseParameters::SELECT_MIN_IMPACT: {
+        *best_impact_value = min_impact_value;
+        break;
+      }
+      case DefaultPhaseParameters::SELECT_MAX_IMPACT: {
+        *best_impact_value = max_impact_value;
+        break;
       }
     }
   }
@@ -514,16 +519,16 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     CHECK_NOTNULL(value);
     *var_index = -1;
     *value = 0;
-    double best_sum_impact = 0.0;
+    double best_var_impact = 0.0;
     for (int i = 0; i < size_; ++i) {
       if (!vars_[i]->Bound()) {
         int64 current_value = 0;
-        double current_sum_impact = 0.0;
-        ScanVarImpacts(i, &current_value, &current_sum_impact);
-        if (current_sum_impact > best_sum_impact) {
+        double current_var_impact = 0.0;
+        ScanVarImpacts(i, &current_value, &current_var_impact);
+        if (current_var_impact > best_var_impact) {
           *var_index = i;
           *value = current_value;
-          best_sum_impact = current_sum_impact;
+          best_var_impact = current_var_impact;
         }
       }
     }
@@ -542,7 +547,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   }
 
   bool RunHeuristics(Solver* const solver) {
-    if (FLAGS_cp_impact_run_all_heuristics) {
+    if (parameters_.run_all_heuristics) {
       for (int index = 0; index < heuristics_.size(); ++index) {
         if (RunOneHeuristic(solver, index)) {
           return true;
@@ -576,7 +581,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     fail_stamp_ = s->fail_stamp();
 
     ++heuristic_branch_count_;
-    if (heuristic_branch_count_ % FLAGS_cp_impact_heuristic_frequency == 0) {
+    if (heuristic_branch_count_ % parameters_.heuristic_frequency == 0) {
       return &runner_;
     }
     current_var_index_ = -1;
@@ -591,7 +596,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
  private:
   scoped_array<IntVar*> vars_;
   const int size_;
-  const int64 restart_frequency_;
+  DefaultPhaseParameters parameters_;
   CachedLog log_;
   // impacts_[i][j] stores the average search space reduction when assigning
   // original_min_[i] + j to variable i.
@@ -615,17 +620,29 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
 // ---------- API ----------
 
-DecisionBuilder* Solver::MakeImpactPhase(const vector<IntVar*>& vars,
-                                         int64 restart_frequency) {
-  return MakeImpactPhase(vars.data(), vars.size(), restart_frequency);
+DecisionBuilder* Solver::MakeDefaultPhase(const vector<IntVar*>& vars) {
+  DefaultPhaseParameters parameters;
+  return MakeDefaultPhase(vars.data(), vars.size(), parameters);
 }
 
-DecisionBuilder* Solver::MakeImpactPhase(const IntVar* const* vars,
-                                         int size,
-                                         int64 restart_frequency) {
+DecisionBuilder* Solver::MakeDefaultPhase(
+    const vector<IntVar*>& vars,
+    const DefaultPhaseParameters& parameters) {
+  return MakeDefaultPhase(vars.data(), vars.size(), parameters);
+}
+
+DecisionBuilder* Solver::MakeDefaultPhase(
+    const IntVar* const* vars,
+    int size,
+    const DefaultPhaseParameters& parameters) {
   return RevAlloc(new ImpactDecisionBuilder(this,
                                             vars,
                                             size,
-                                            restart_frequency));
+                                            parameters));
+}
+
+DecisionBuilder* Solver::MakeDefaultPhase(const IntVar* const* vars, int size) {
+  DefaultPhaseParameters parameters;
+  return MakeDefaultPhase(vars, size, parameters);
 }
 }  // namespace operations_research

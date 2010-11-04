@@ -247,6 +247,7 @@ class PyDecisionBuilder(object):
 %rename (Count) MakeCount;
 %rename (CustomLimit) MakeCustomLimit;
 %rename (DecisionBuilderFromAssignment) MakeDecisionBuilderFromAssignment;
+%rename (DefaultPhase) MakeDefaultPhase;
 %rename (Distribute) MakeDistribute;
 %rename (Element) MakeElement;
 %rename (FailDecision) MakeFailDecision;
@@ -254,7 +255,6 @@ class PyDecisionBuilder(object):
 %rename (FirstSolutionCollector) MakeFirstSolutionCollector;
 %rename (FixedDurationIntervalVar) MakeFixedDurationIntervalVar;
 %rename (FixedInterval) MakeFixedInterval;
-%rename (ImpactPhase) MakeImpactPhase;
 %rename (IntConst) MakeIntConst;
 %rename (IntVar) MakeIntVar;
 %rename (IntervalVarRelation) MakeIntervalVarRelation;

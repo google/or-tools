@@ -26,10 +26,17 @@
 
 DEFINE_int32(size, 0, "Size of the magic square");
 DEFINE_bool(impact, false, "Use impact search");
-DEFINE_int32(impact_size, 30, "Default size of impact search");
 DEFINE_int32(restart, -1, "parameter for constant restart monitor");
 DEFINE_bool(luby, false,
             "Use luby restart monitor instead of constant restart monitor");
+DEFINE_bool(run_all_heuristics, false, "Run all heuristics");
+DEFINE_int32(heuristics_frequency, 200, "Frequency to run all heuristics");
+DEFINE_int32(choose_var_strategy, false,
+            "Selection strategy for variable: 0 = max sum impact, "
+             "1 = max average impact, "
+             "2 = max individual impact");
+DEFINE_bool(select_max_impact_value, false,
+            "Select the value with max impact instead of min impact");
 
 namespace operations_research {
 
@@ -69,8 +76,32 @@ void MagicSquare(int grid_size) {
                                        vars[(grid_size - 1) * grid_size]));
   // TODO(user) use local search
 
+  DefaultPhaseParameters parameters;
+  parameters.run_all_heuristics = FLAGS_run_all_heuristics;
+  parameters.heuristic_frequency = FLAGS_heuristics_frequency;
+  switch (FLAGS_choose_var_strategy) {
+    case 0: {
+      parameters.var_selection_schema =
+          DefaultPhaseParameters::CHOOSE_MAX_SUM_IMPACT;
+      break;
+    }
+    case 1: {
+      parameters.var_selection_schema =
+          DefaultPhaseParameters::CHOOSE_MAX_AVERAGE_IMPACT;
+      break;
+    }
+    case 2: {
+      parameters.var_selection_schema =
+          DefaultPhaseParameters::CHOOSE_MAX_VALUE_IMPACT;
+      break;
+    }
+  }
+  parameters.value_selection_schema = FLAGS_select_max_impact_value?
+      DefaultPhaseParameters::SELECT_MAX_IMPACT:
+      DefaultPhaseParameters::SELECT_MIN_IMPACT;
+
   DecisionBuilder* const db = FLAGS_impact?
-      solver.MakeImpactPhase(vars, FLAGS_impact_size):
+      solver.MakeDefaultPhase(vars, parameters):
       solver.MakePhase(vars,
                        Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_MIN_VALUE);

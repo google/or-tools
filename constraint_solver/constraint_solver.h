@@ -132,6 +132,50 @@ enum MarkerType {
   REVERSIBLE_ACTION
 };
 
+// This struct holds all parameters for the default search.
+struct DefaultPhaseParameters {
+ public:
+  enum VariableSelection {
+    CHOOSE_MAX_SUM_IMPACT,
+    CHOOSE_MAX_AVERAGE_IMPACT,
+    CHOOSE_MAX_VALUE_IMPACT,
+  };
+
+  enum ValueSelection {
+    SELECT_MIN_IMPACT,
+    SELECT_MAX_IMPACT
+  };
+
+  DefaultPhaseParameters()
+      : var_selection_schema(CHOOSE_MAX_SUM_IMPACT),
+        value_selection_schema(SELECT_MIN_IMPACT),
+        initialization_splits(100),
+        run_all_heuristics(true),
+        heuristic_frequency(100),
+        heuristic_failure_limit(30),
+        random_seed(0) {}
+
+  // This parameter describes how the next variable to instantiate
+  // will be chosen.
+  VariableSelection var_selection_schema;
+  // This parameter describes which value to select for a given var.
+  ValueSelection value_selection_schema;
+  // This parameter indicates the maximum number of intervals the
+  // initialization of impacts will scan per variable.
+  int initialization_splits;
+  // The default phase will run heuristic periodcally. This parameter
+  // indicates if we should run all heuristics, or a randomly selected
+  // one.
+  bool run_all_heuristics;
+  // This indicates the distance in nodes between each run of the heuristics.
+  int heuristic_frequency;
+  // This indicates the failure limit for each heuristic that we run.
+  int heuristic_failure_limit;
+  // This seed is used to initialize the random part in some heuristics.
+  int random_seed;
+};
+
+
 /////////////////////////////////////////////////////////////////////
 //
 // Solver Class
@@ -1226,12 +1270,13 @@ class Solver {
                              IndexEvaluator2* val_eval,
                              IndexEvaluator1* tie_breaker);
 
-  DecisionBuilder* MakeImpactPhase(const IntVar* const* vars,
-                                   int size,
-                                   int64 restart_frequency);
-
-  DecisionBuilder* MakeImpactPhase(const vector<IntVar*>& vars,
-                                   int64 restart_frequency);
+  DecisionBuilder* MakeDefaultPhase(const IntVar* const* vars, int size);
+  DecisionBuilder* MakeDefaultPhase(const vector<IntVar*>& vars);
+  DecisionBuilder* MakeDefaultPhase(const IntVar* const* vars,
+                                    int size,
+                                    const DefaultPhaseParameters& parameters);
+  DecisionBuilder* MakeDefaultPhase(const vector<IntVar*>& vars,
+                                    const DefaultPhaseParameters& parameters);
 
   // shortcuts for small arrays.
   DecisionBuilder* MakePhase(IntVar* const v0,
