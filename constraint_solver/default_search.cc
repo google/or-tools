@@ -24,7 +24,7 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "util/cached_log.h"
 
-DEFINE_int32(cp_impact_divider, 5, "Divider for continuous update.");
+DEFINE_int32(cp_impact_divider, 10, "Divider for continuous update.");
 
 namespace operations_research {
 
@@ -582,6 +582,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
     ++heuristic_branch_count_;
     if (heuristic_branch_count_ % parameters_.heuristic_frequency == 0) {
+      current_var_index_ = -1;
       return &runner_;
     }
     current_var_index_ = -1;
