@@ -304,7 +304,8 @@ class ImpactDecisionBuilder : public DecisionBuilder {
                            Solver::ASSIGN_MIN_VALUE);
     heuristic_name = "AssignMinValueToMinDomainSize";
     heuristics_.push_back(db);
-    heuristics_names_.push_back(heuristic_name);
+    heuristic_names_.push_back(heuristic_name);
+    heuristic_runs_.push_back(1);
 
     db = solver->MakePhase(vars_.get(),
                            size_,
@@ -312,7 +313,17 @@ class ImpactDecisionBuilder : public DecisionBuilder {
                            Solver::ASSIGN_MAX_VALUE);
     heuristic_name = "AssignMaxValueToMinDomainSize";
     heuristics_.push_back(db);
-    heuristics_names_.push_back(heuristic_name);
+    heuristic_names_.push_back(heuristic_name);
+    heuristic_runs_.push_back(1);
+
+    db = solver->MakePhase(vars_.get(),
+                           size_,
+                           Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
+                           Solver::ASSIGN_CENTER_VALUE);
+    heuristic_name = "AssignCenterValueToMinDomainSize";
+    heuristics_.push_back(db);
+    heuristic_names_.push_back(heuristic_name);
+    heuristic_runs_.push_back(1);
 
     db = solver->MakePhase(vars_.get(),
                            size_,
@@ -320,7 +331,8 @@ class ImpactDecisionBuilder : public DecisionBuilder {
                            Solver::ASSIGN_RANDOM_VALUE);
     heuristic_name = "AssignRandomValueToFirstUnbound";
     heuristics_.push_back(db);
-    heuristics_names_.push_back(heuristic_name);
+    heuristic_names_.push_back(heuristic_name);
+    heuristic_runs_.push_back(3);
 
     db = solver->MakePhase(vars_.get(),
                            size_,
@@ -328,17 +340,29 @@ class ImpactDecisionBuilder : public DecisionBuilder {
                            Solver::ASSIGN_MIN_VALUE);
     heuristic_name = "AssignMinValueToRandomVariable";
     heuristics_.push_back(db);
-    heuristics_names_.push_back(heuristic_name);
+    heuristic_names_.push_back(heuristic_name);
+    heuristic_runs_.push_back(2);
 
     db = solver->MakePhase(vars_.get(),
                            size_,
                            Solver::CHOOSE_RANDOM,
-                           Solver::ASSIGN_CENTER_VALUE);
-    heuristic_name = "AssignCenterValueToRandomVariable";
+                           Solver::ASSIGN_MAX_VALUE);
+    heuristic_name = "AssignMaxValueToRandomVariable";
     heuristics_.push_back(db);
-    heuristics_names_.push_back(heuristic_name);
+    heuristic_names_.push_back(heuristic_name);
+    heuristic_runs_.push_back(2);
 
-    CHECK_EQ(heuristics_names_.size(), heuristics_.size());
+    db = solver->MakePhase(vars_.get(),
+                           size_,
+                           Solver::CHOOSE_RANDOM,
+                           Solver::ASSIGN_RANDOM_VALUE);
+    heuristic_name = "AssignRandomValueToRandomVariable";
+    heuristics_.push_back(db);
+    heuristic_names_.push_back(heuristic_name);
+    heuristic_runs_.push_back(2);
+
+    CHECK_EQ(heuristic_names_.size(), heuristics_.size());
+    CHECK_EQ(heuristic_runs_.size(), heuristics_.size());
 
     heuristic_limit_ =
         solver->MakeLimit(kint64max,  // time.
@@ -450,7 +474,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   }
 
   void UpdateAfterFailure() {
-    UpdateImpact(current_var_index_, current_value_, kMaximalImpact);
+    UpdateImpact(current_var_index_, current_value_, kInitFailureImpact);
     current_log_space_ = LogSearchSpaceSize();
   }
 
@@ -537,7 +561,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
   bool RunOneHeuristic(Solver* const solver, int index) {
     DecisionBuilder* const db = heuristics_[index];
-    const string heuristic_name = heuristics_names_[index];
+    const string heuristic_name = heuristic_names_[index];
 
     const bool result = solver->NestedSolve(db, false, heuristic_limit_);
     if (result) {
@@ -549,8 +573,10 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   bool RunHeuristics(Solver* const solver) {
     if (parameters_.run_all_heuristics) {
       for (int index = 0; index < heuristics_.size(); ++index) {
-        if (RunOneHeuristic(solver, index)) {
-          return true;
+        for (int run = 0; run < heuristic_runs_[index]; ++run) {
+          if (RunOneHeuristic(solver, index)) {
+            return true;
+          }
         }
       }
       return false;
@@ -611,7 +637,8 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   scoped_array<IntVarIterator*> domain_iterators_;
   int64 init_count_;
   vector<DecisionBuilder*> heuristics_;
-  vector<string> heuristics_names_;
+  vector<int> heuristic_runs_;
+  vector<string> heuristic_names_;
   SearchMonitor* heuristic_limit_;
   ACMRandom random_;
   RunHeuristic runner_;
