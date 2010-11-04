@@ -149,13 +149,7 @@ class IntervalBinaryRelation : public Constraint {
 };
 
 void IntervalBinaryRelation::Post() {
-  if (t1_->MustBePerformed() || t2_->MustBePerformed()) {
-    // TODO(user): This was, before lhm's modifications:
-    // if (t1_->PerformedMin() + t2_->PerformedMin() >= 1) {
-    // the new expression corresponds exactly to that. However, I suspect it
-    // is actually intended to be:
-    // if (t1_->MayBePerformed() && t2_->MayBePerformed())
-    // Please let me know -- lhm.
+  if (t1_->MayBePerformed() && t2_->MayBePerformed()) {
     Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
     t1_->WhenStartRange(d);
     t1_->WhenDurationRange(d);

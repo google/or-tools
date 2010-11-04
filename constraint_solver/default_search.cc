@@ -475,7 +475,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     CHECK_NOTNULL(sum_impacts);
     *sum_impacts = 0.0;
     if (FLAGS_cp_impact_select_max_impact_value) {
-      double best_impact = -1.0;//kMaximalImpact + 2.0;  // >= kMaximalImpact
+      double best_impact = -1.0;  // kMaximalImpact + 2.0;  // >= kMaximalImpact
       *min_impact_value = -1;
       IntVarIterator* const it = domain_iterators_[var_index];
       for (it->Init(); it->Ok(); it->Next()) {

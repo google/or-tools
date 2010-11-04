@@ -2423,7 +2423,7 @@ void SimulatedAnnealing::ApplyDecision(Decision* const d) {
   if (d == s->balancing_decision()) {
     return;
   }
-#if defined(_MSC_VER)
+  #if defined(_MSC_VER)
   const int64  energy_bound = Temperature() * log(rand_.RndFloat()) / log(2.0L);
 #else
   const int64  energy_bound = Temperature() * log2(rand_.RndFloat());
