@@ -31,7 +31,8 @@ namespace operations_research {
 // Useful constants.
 namespace {
 const int kLogCacheSize = 1000;
-const double kMaximalImpact = 1.0;
+const double kPerfectImpact = 1.0;
+const double kFailureImpact = 1.0;
 const double kInitFailureImpact = 2.0;
 
 // ---------- ImpactDecisionBuilder ----------
@@ -390,7 +391,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
   void InitImpact(int var_index, int64 value) {
     const double log_space = LogSearchSpaceSize();
-    const double impact = kMaximalImpact - log_space / current_log_space_;
+    const double impact = kPerfectImpact - log_space / current_log_space_;
     const int64 value_index = value - original_min_[var_index];
     impacts_[var_index][value_index] = impact;
     init_count_++;
@@ -468,13 +469,13 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   void UpdateAfterAssignment() {
     CHECK_GT(current_log_space_, 0.0);
     const double log_space = LogSearchSpaceSize();
-    const double impact = kMaximalImpact - log_space / current_log_space_;
+    const double impact = kPerfectImpact - log_space / current_log_space_;
     UpdateImpact(current_var_index_, current_value_, impact);
     current_log_space_ = log_space;
   }
 
   void UpdateAfterFailure() {
-    UpdateImpact(current_var_index_, current_value_, kInitFailureImpact);
+    UpdateImpact(current_var_index_, current_value_, kFailureImpact);
     current_log_space_ = LogSearchSpaceSize();
   }
 
@@ -487,7 +488,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     CHECK_NOTNULL(best_impact_value);
     CHECK_NOTNULL(var_impacts);
     double max_impact = -1.0;
-    double min_impact = kMaximalImpact + 2.0;
+    double min_impact = kPerfectImpact + 2.0;
     double sum_var_impact = 0.0;
     int64 min_impact_value = -1;
     int64 max_impact_value = -1;
