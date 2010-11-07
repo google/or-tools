@@ -652,4 +652,68 @@ Constraint* Solver::MakeAllowedAssignments(
   return RevAlloc(new PositiveTableConstraint(this, vars, tuples));
 }
 
+// ---------- DFA ----------
+
+class TransitionConstraint : public Constraint {
+ public:
+  TransitionConstraint(Solver* const s,
+                       const vector<IntVar*>& vars,
+                       const vector<vector<int64> >& transition_table,
+                       int64 initial_state,
+                       const vector<int64>& accepting_states)
+      : Constraint(s),
+        vars_(vars),
+        transition_table_(transition_table),
+        initial_state_(initial_state),
+        accepting_states_(accepting_states) {}
+
+  virtual ~TransitionConstraint() {}
+
+  virtual void Post() {
+    Solver* const s = solver();
+    int64 state_min = kint64max;
+    int64 state_max = kint64min;
+    const int nb_vars = vars_.size();
+    for (int i = 0; i < transition_table_.size(); ++i) {
+      CHECK_EQ(3, transition_table_[i].size());
+      state_max = std::max(state_max, transition_table_[i][0]);
+      state_max = std::max(state_max, transition_table_[i][2]);
+      state_min = std::min(state_min, transition_table_[i][0]);
+      state_min = std::min(state_min, transition_table_[i][2]);
+    }
+
+    vector<IntVar*> states;
+    states.push_back(s->MakeIntConst(initial_state_));
+    for (int var_index = 1; var_index < nb_vars; ++var_index) {
+      states.push_back(s->MakeIntVar(state_min, state_max));
+    }
+    states.push_back(s->MakeIntVar(accepting_states_));
+    CHECK_EQ(nb_vars + 1, states.size());
+
+    for (int var_index = 0; var_index < nb_vars; ++var_index) {
+      vector<IntVar*> tmp_vars;
+      tmp_vars.push_back(states[var_index]);
+      tmp_vars.push_back(vars_[var_index]);
+      tmp_vars.push_back(states[var_index + 1]);
+      s->AddConstraint(s->MakeAllowedAssignments(tmp_vars, transition_table_));
+    }
+  }
+
+  virtual void InitialPropagate() {}
+ private:
+  const vector<IntVar*> vars_;
+  const vector<vector<int64> > transition_table_;
+  const int64 initial_state_;
+  const vector<int64> accepting_states_;
+};
+
+Constraint* Solver::MakeTransitionConstraint(
+    const vector<IntVar*>& vars,
+    const vector<vector<int64> >& transition_table,
+    int64 initial_state,
+    const vector<int64>& accepting_states) {
+  return RevAlloc(new TransitionConstraint(this, vars, transition_table,
+                                           initial_state, accepting_states));
+}
+
 }  // namespace operations_research

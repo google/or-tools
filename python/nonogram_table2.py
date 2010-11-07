@@ -104,31 +104,14 @@ def regular(x, Q, S, d, q0, F):
 
   d2 = []
   for i in range(Q + 1):
-    for j in range(S):
+    for j in range(1, S + 1):
       if i == 0:
         d2.append((0, j, 0))
       else:
-        d2.append((i, j, d[i - 1][j]))
+        d2.append((i, j, d[i - 1][j - 1]))
 
-  # If x has index set m..n, then a[m-1] holds the initial state
-  # (q0), and a[i+1] holds the state we're in after processing
-  # x[i].  If a[n] is in F, then we succeed (ie. accept the
-  # string).
-  x_range = range(0, len(x))
-  m = 0
-  n = len(x)
+  solver.Add(solver.TransitionConstraint(x, d2, q0, F))
 
-  a = [solver.IntVar(0, Q + 1, 'a[%i]' % i) for i in range(m, n + 1)]
-
-    # Check that the final state is in F
-  solver.Add(solver.MemberCt(a[-1], F))
-    # First state is q0
-  solver.Add(a[m] == q0)
-  for i in x_range:
-    solver.Add(x[i] >= 1)
-    solver.Add(x[i] <= S)
-    # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-    solver.Add(solver.AllowedAssignments((a[i], x[i] - 1, a[i + 1]), d2))
 
 #
 # Make a transition (automaton) matrix from a

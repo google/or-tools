@@ -932,6 +932,18 @@ class Solver {
   Constraint* MakeAllowedAssignments(const vector<IntVar*>& vars,
                                      const vector<vector<int64> >& tuples);
 
+  // This constraint create a finite automata that will check the
+  // sequence of variables vars. It will use a transition table called
+  // 'transitions'. Each transition is a triple
+  //    (current_state, variable_value, new_state).
+  // states must be > 0. The 0 state is reserved for a fail state.
+  // The initial state is given, and the set of accepted states is decribed
+  // by 'accepting_states'.
+  Constraint* MakeTransitionConstraint(const vector<IntVar*>& vars,
+                                       const vector<vector<int64> >& transitions,
+                                       int64 initial_state,
+                                       const vector<int64>& accepting_states);
+
   // ----- Packing constraint -----
 
   // This constraint packs all variables onto 'number_of_bins'

@@ -316,6 +316,7 @@ class PyDecisionBuilder(object):
 %rename (SymmetryManager) MakeSymmetryManager;
 %rename (TabuSearch) MakeTabuSearch;
 %rename (TemporalDisjunction) MakeTemporalDisjunction;
+%rename (TransitionConstraint) MakeTransitionConstraint;
 %rename (TrueConstraint) MakeTrueConstraint;
 
 namespace operations_research {
