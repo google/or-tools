@@ -936,9 +936,9 @@ class Solver {
   // sequence of variables vars. It will use a transition table called
   // 'transitions'. Each transition is a triple
   //    (current_state, variable_value, new_state).
-  // states must be > 0. The 0 state is reserved for a fail state.
   // The initial state is given, and the set of accepted states is decribed
-  // by 'accepting_states'.
+  // by 'accepting_states'. These states are hidden inside the constraint.
+  // Only the transitions (i.e. the variables) are visible.
   Constraint* MakeTransitionConstraint(const vector<IntVar*>& vars,
                                        const vector<vector<int64> >& transitions,
                                        int64 initial_state,
