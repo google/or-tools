@@ -18,7 +18,7 @@ ZLIB_INC = -I$(ZLIB_DIR)/include
 PROTOBUF_INC = -I$(PROTOBUF_DIR)/include
 
 # Compilation flags
-DEBUG=-O -DNDEBUG
+DEBUG=-O3 -DNDEBUG
 SYSCFLAGS=-fPIC
 CCC=g++
 
