@@ -26,6 +26,7 @@ DEFINE_bool(cp_use_compact_table, true,
             "Use compact table constraint when possible.");
 
 namespace operations_research {
+namespace {
 
 // ----- Positive Table Constraint -----
 
@@ -43,8 +44,6 @@ namespace operations_research {
 //   - Or scan removed tuples and mark variables for reexam
 //   - Do a bitset intersection between modified parts of the bitset
 //       and variable-value masks.
-
-
 class BasePositiveTableConstraint : public Constraint {
  public:
   BasePositiveTableConstraint(Solver* const s,
@@ -55,10 +54,7 @@ class BasePositiveTableConstraint : public Constraint {
       : Constraint(s),
         tuple_count_(tuple_count),
         arity_(arity),
-        length_(BitLength64(tuple_count)),
         vars_(new IntVar*[arity]),
-        actives_(new uint64[length_]),
-        stamps_(new uint64[length_]),
         holes_(new IntVarIterator*[arity]),
         iterators_(new IntVarIterator*[arity]) {
     // Copy vars.
@@ -76,10 +72,7 @@ class BasePositiveTableConstraint : public Constraint {
       : Constraint(s),
         tuple_count_(tuples.size()),
         arity_(vars.size()),
-        length_(BitLength64(tuple_count_)),
         vars_(new IntVar*[arity_]),
-        actives_(new uint64[length_]),
-        stamps_(new uint64[length_]),
         holes_(new IntVarIterator*[arity_]),
         iterators_(new IntVarIterator*[arity_]) {
     // Copy vars.
@@ -95,10 +88,7 @@ class BasePositiveTableConstraint : public Constraint {
  protected:
   const int tuple_count_;
   const int arity_;
-  const int length_;
   scoped_array<IntVar*> vars_;
-  scoped_array<uint64> actives_;
-  scoped_array<uint64> stamps_;
   scoped_array<IntVarIterator*> holes_;
   scoped_array<IntVarIterator*> iterators_;
   vector<int64> to_remove_;
@@ -111,7 +101,10 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
                           const int64* const * tuples,
                           int tuple_count,
                           int arity)
-      : BasePositiveTableConstraint(s, vars, tuples, tuple_count, arity) {
+      : BasePositiveTableConstraint(s, vars, tuples, tuple_count, arity),
+        length_(BitLength64(tuple_count)),
+        actives_(new uint64[length_]),
+        stamps_(new uint64[length_]) {
     masks_.clear();
     masks_.resize(arity_);
     for (int i = 0; i < tuple_count_; ++i) {
@@ -122,7 +115,10 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   PositiveTableConstraint(Solver* const s,
                           const vector<IntVar*> & vars,
                           const vector<vector<int64> >& tuples)
-      : BasePositiveTableConstraint(s, vars, tuples) {
+      : BasePositiveTableConstraint(s, vars, tuples),
+        length_(BitLength64(tuples.size())),
+        actives_(new uint64[length_]),
+        stamps_(new uint64[length_]) {
     masks_.clear();
     masks_.resize(arity_);
     for (int i = 0; i < tuple_count_; ++i) {
@@ -292,6 +288,9 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
+  const int length_;
+  scoped_array<uint64> actives_;
+  scoped_array<uint64> stamps_;
   vector<hash_map<int64, uint64*> > masks_;
 };
 
@@ -305,6 +304,9 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
                                  int tuple_count,
                                  int arity)
       : BasePositiveTableConstraint(s, vars, tuples, tuple_count, arity),
+        length_(BitLength64(tuple_count)),
+        actives_(new uint64[length_]),
+        stamps_(new uint64[length_]),
         tuples_(new int64*[tuple_count_]),
         original_min_(new int64[arity_]),
         temp_mask_(new uint64[length_]),
@@ -320,6 +322,9 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
                                  const vector<IntVar*> & vars,
                                  const vector<vector<int64> >& tuples)
       : BasePositiveTableConstraint(s, vars, tuples),
+        length_(BitLength64(tuples.size())),
+        actives_(new uint64[length_]),
+        stamps_(new uint64[length_]),
         tuples_(new int64*[tuple_count_]),
         original_min_(new int64[arity_]),
         temp_mask_(new uint64[length_]),
@@ -391,7 +396,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
       const int64 span = vars_[i]->Max() - original_min_[i] + 1;
       masks_[i].resize(span);
       for (int j = 0; j < span; ++j) {
-        masks_[i][j] = GG_ULONGLONG(0);
+        masks_[i][j] = NULL;
       }
     }
     for (int tuple_index = 0; tuple_index < tuple_count_; ++tuple_index) {
@@ -601,6 +606,9 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   virtual string DebugString() const { return "PositiveTableConstraint"; }
 
  private:
+  const int length_;
+  scoped_array<uint64> actives_;
+  scoped_array<uint64> stamps_;
   scoped_array<int64*> tuples_;
   vector<vector<uint64*> > masks_;
   scoped_array<int64> original_min_;
@@ -611,8 +619,224 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   Demon* demon_;
 };
 
-namespace {
-bool HasCompactDomains(const IntVar* const * vars, int arity) {
+// ----- Small Compact Table. -----
+
+class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
+ public:
+  SmallCompactPositiveTableConstraint(Solver* const s,
+                                      const IntVar* const * vars,
+                                      const int64* const * tuples,
+                                      int tuple_count,
+                                      int arity)
+      : BasePositiveTableConstraint(s, vars, tuples, tuple_count, arity),
+        actives_(0),
+        stamp_(0),
+        tuples_(new int64*[tuple_count_]),
+        original_min_(new int64[arity_]),
+        demon_(NULL) {
+    // Copy tuples
+    for (int i = 0; i < tuple_count_; ++i) {
+      tuples_[i] = new int64[arity_];
+      memcpy(tuples_[i], tuples[i], arity_ * sizeof(*tuples[i]));
+    }
+  }
+
+  SmallCompactPositiveTableConstraint(Solver* const s,
+                                      const vector<IntVar*> & vars,
+                                      const vector<vector<int64> >& tuples)
+      : BasePositiveTableConstraint(s, vars, tuples),
+        actives_(0),
+        stamp_(0),
+        tuples_(new int64*[tuple_count_]),
+        original_min_(new int64[arity_]),
+        demon_(NULL) {
+    CHECK_LT(tuples.size(), sizeof(uint64));
+    // Copy tuples
+    for (int i = 0; i < tuple_count_; ++i) {
+      CHECK_EQ(arity_, tuples[i].size());
+      tuples_[i] = new int64[arity_];
+      memcpy(tuples_[i], tuples[i].data(), arity_ * sizeof(tuples[i][0]));
+    }
+  }
+
+  virtual ~SmallCompactPositiveTableConstraint() {
+    for (int i = 0; i < tuple_count_; ++i) {
+      delete[] tuples_[i];
+      tuples_[i] = NULL;
+    }
+    for (int i = 0; i < arity_; ++i) {
+      delete [] masks_[i];
+      masks_[i] = NULL;
+    }
+  }
+
+  virtual void Post() {
+    demon_ = MakeDelayedConstraintDemon0(
+        solver(),
+        this,
+        &SmallCompactPositiveTableConstraint::Propagate,
+        "Propagate");
+    DCHECK_GE(stamp, 1);
+    for (int i = 0; i < arity_; ++i) {
+      if (!vars_[i]->Bound()) {
+        Demon* const u = MakeConstraintDemon1(
+            solver(),
+            this,
+            &SmallCompactPositiveTableConstraint::Update,
+            "Update",
+            i);
+        vars_[i]->WhenDomain(u);
+      }
+    }
+    stamp_ = solver()->stamp() - 1;
+    actives_ = 0;
+  }
+
+  virtual void InitialPropagate() {
+    // Build masks.
+    masks_.clear();
+    masks_.resize(arity_);
+    for (int i = 0; i < arity_; ++i) {
+      original_min_[i] = vars_[i]->Min();
+      const int64 span = vars_[i]->Max() - original_min_[i] + 1;
+      masks_[i] = new uint64[span];
+      memset(masks_[i], 0, span * sizeof(masks_[i][0]));
+    }
+
+    // Compute actives_ and update masks.
+    for (int tuple_index = 0; tuple_index < tuple_count_; ++tuple_index) {
+      bool ok = true;
+      for (int var_index = 0; var_index < arity_; ++var_index) {
+        const int64 value = tuples_[tuple_index][var_index];
+        if (!vars_[var_index]->Contains(value)) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) {
+        actives_ |= OneBit64(tuple_index);
+        for (int var_index = 0; var_index < arity_; ++var_index) {
+          const int64 value_index =
+              tuples_[tuple_index][var_index] - original_min_[var_index];
+          masks_[var_index][value_index] |= OneBit64(tuple_index);
+        }
+      }
+    }
+    if (!actives_) {
+      solver()->Fail();
+    }
+
+    // remove unreached values.
+    for (int var_index = 0; var_index < arity_; ++var_index) {
+      IntVar* const var = vars_[var_index];
+      const int64 original_min = original_min_[var_index];
+      to_remove_.clear();
+      IntVarIterator* const it = iterators_[var_index];
+      for (it->Init(); it->Ok(); it->Next()) {
+        const int64 value = it->Value();
+        if (!masks_[var_index][value - original_min]) {
+          to_remove_.push_back(value);
+        }
+      }
+      if (to_remove_.size() > 0) {
+        var->RemoveValues(to_remove_);
+      }
+    }
+  }
+
+  void SaveActives() {
+    const uint64 current_stamp = solver()->stamp();
+    if (stamp_ < current_stamp) {
+      stamp_ = current_stamp;
+      solver()->SaveValue(&actives_);
+    }
+  }
+
+  void Propagate() {
+    // This methods scans all values of all variables to see if they
+    // are still supported.
+    // This method is not attached to any particular variable, but is pushed
+    // at a delayed priority and awakened by Update(var_index).
+
+    // We cache actives_.
+    const uint64 actives = actives_;
+
+    // We scan all variables and check their domains.
+    for (int var_index = 0; var_index < arity_; ++var_index) {
+      const uint64* const var_mask = masks_[var_index];
+      const int64 original_min = original_min_[var_index];
+      IntVar* const var = vars_[var_index];
+      if (var->Bound()) {
+        if ((var_mask[var->Min() - original_min] & actives) == 0) {
+          solver()->Fail();
+        }
+      } else {
+        to_remove_.clear();
+        IntVarIterator* const it = iterators_[var_index];
+        for (it->Init(); it->Ok(); it->Next()) {
+          const int64 value = it->Value();
+          if ((var_mask[value - original_min] & actives) == 0) {
+            to_remove_.push_back(value);
+          }
+        }
+        if (to_remove_.size() == var->Size()) {
+          solver()->Fail();
+        } else if (to_remove_.size() > 0) {
+          vars_[var_index]->RemoveValues(to_remove_);
+        }
+      }
+    }
+  }
+
+  void Update(int var_index) {
+    // This method will update the set of active tuples by masking out all
+    // tuples attached to values of the variables that have been removed.
+
+    // We first collect the complete set of tuples to blank out in temp_mask.
+    IntVar* const var = vars_[var_index];
+    const int64 original_min = original_min_[var_index];
+    uint64 temp_mask = 0;
+    const uint64* const var_mask = masks_[var_index];
+    const int64 oldmax = var->OldMax();
+    const int64 vmin = var->Min();
+    const int64 vmax = var->Max();
+
+    for (int64 value = var->OldMin(); value < vmin; ++value) {
+      temp_mask |= var_mask[value - original_min];
+    }
+    IntVarIterator* const hole = holes_[var_index];
+    for (hole->Init(); hole->Ok(); hole->Next()) {
+      temp_mask |= var_mask[hole->Value() - original_min];
+    }
+    for (int64 value = vmax + 1; value <= oldmax; ++value) {
+      temp_mask |= var_mask[value - original_min];
+    }
+    // Then we apply this mask to actives_.
+    if (temp_mask & actives_) {
+      SaveActives();
+      actives_ &= ~temp_mask;
+      if (actives_) {
+        Enqueue(demon_);
+      } else {
+        solver()->Fail();
+      }
+    }
+  }
+
+  virtual string DebugString() const {
+    return "SmallCompactPositiveTableConstraint";
+  }
+ private:
+  uint64 actives_;
+  uint64 stamp_;
+  scoped_array<int64*> tuples_;
+  vector<uint64*> masks_;
+  scoped_array<int64> original_min_;
+  Demon* demon_;
+};
+
+
+bool HasSmallCompactDomains(const IntVar* const * vars, int arity) {
   int64 sum_of_spans = 0LL;
   int64 sum_of_sizes = 0LL;
   for (int i = 0; i < arity; ++i) {
@@ -629,7 +853,7 @@ Constraint* Solver::MakeAllowedAssignments(const IntVar* const * vars,
                                            const int64* const * tuples,
                                            int tuple_count,
                                            int arity) {
-  if (FLAGS_cp_use_compact_table && HasCompactDomains(vars, arity)) {
+  if (FLAGS_cp_use_compact_table && HasSmallCompactDomains(vars, arity)) {
     return RevAlloc(new CompactPositiveTableConstraint(this,
                                                        vars,
                                                        tuples,
@@ -646,8 +870,13 @@ Constraint* Solver::MakeAllowedAssignments(const IntVar* const * vars,
 Constraint* Solver::MakeAllowedAssignments(
     const vector<IntVar*>& vars, const vector<vector<int64> >& tuples) {
   if (FLAGS_cp_use_compact_table
-      && HasCompactDomains(vars.data(), vars.size())) {
-    return RevAlloc(new CompactPositiveTableConstraint(this, vars, tuples));
+      && HasSmallCompactDomains(vars.data(), vars.size())) {
+    if (tuples.size() < sizeof(uint64)) {
+      return RevAlloc(
+          new SmallCompactPositiveTableConstraint(this, vars, tuples));
+    } else {
+      return RevAlloc(new CompactPositiveTableConstraint(this, vars, tuples));
+    }
   }
   return RevAlloc(new PositiveTableConstraint(this, vars, tuples));
 }
