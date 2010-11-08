@@ -81,7 +81,7 @@ def make_transition_tuples(pattern):
   # this is for handling 0-clues. It generates
   # just the minimal state
   if num_states == 0:
-    return ((0, 0, 0))
+    return [(1, 0, 1)], 1
 
   tuples = []
 
@@ -114,6 +114,7 @@ def make_transition_tuples(pattern):
 def check_rule(rules, y):
   cleaned_rule = [rules[i] for i in range(len(rules)) if rules[i] > 0]
   (transition_tuples, last_state) = make_transition_tuples(cleaned_rule)
+  
   initial_state = 1
   accepting_states = [last_state]
 
