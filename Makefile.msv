@@ -23,7 +23,7 @@ CFLAGS= -nologo $(SYSCFLAGS) $(DEBUG) /I.  $(GFLAGS_INC) $(ZLIB_INC)\
 LD = cl /EHsc
 GFLAGS_LNK =
 ZLIB_LNK = $(ZLIB_DIR)/$(ZLIB_NAME)
-PROTOBUF_LNK = $(PROTOBUF_DIR)\\lib\\protobuf.lib
+PROTOBUF_LNK = $(PROTOBUF_DIR)\\lib\\libprotobuf.lib
 LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) psapi.lib ws2_32.lib
 GFLAGS_CFLAGS=/I$(GFLAGS_DIR)\\src\\windows /I$(GFLAGS_DIR)\\src /D_USRDLL /D_WINDLL
 
