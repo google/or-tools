@@ -650,7 +650,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         tuples_(new int64*[tuple_count_]),
         original_min_(new int64[arity_]),
         demon_(NULL) {
-    CHECK_LT(tuples.size(), sizeof(uint64));
+    CHECK_LT(tuples.size(), 64);
     // Copy tuples
     for (int i = 0; i < tuple_count_; ++i) {
       CHECK_EQ(arity_, tuples[i].size());
@@ -871,7 +871,7 @@ Constraint* Solver::MakeAllowedAssignments(
     const vector<IntVar*>& vars, const vector<vector<int64> >& tuples) {
   if (FLAGS_cp_use_compact_table
       && HasSmallCompactDomains(vars.data(), vars.size())) {
-    if (tuples.size() < sizeof(uint64)) {
+    if (tuples.size() < 64) {
       return RevAlloc(
           new SmallCompactPositiveTableConstraint(this, vars, tuples));
     } else {
