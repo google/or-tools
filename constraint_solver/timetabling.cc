@@ -406,7 +406,7 @@ Constraint* Solver::MakeTemporalDisjunction(IntervalVar* const t1,
 
 // ----- Sequence -----
 
-Constraint* MakeSequenceConstraintOnPerformed(
+Constraint* MakeDecomposedSequenceConstraint(
     Solver* const s, IntervalVar* const * intervals, int size);
 
 Sequence::Sequence(Solver* const s,
@@ -442,36 +442,10 @@ void Sequence::Post() {
     t->WhenStartRange(d);
     t->WhenEndRange(d);
   }
-  int all_performed = 0;
-  int all_decided = 0;
-  for (int i = 0; i < size_; ++i) {
-    if (!intervals_[i]->MayBePerformed()) {
-      all_decided++;
-    } else if (intervals_[i]->MustBePerformed()) {
-      all_decided++;
-      all_performed++;
-    }
-  }
-  if (all_performed == size_) {
-    Constraint* ct = MakeSequenceConstraintOnPerformed(solver(),
-                                                       intervals_.get(),
-                                                       size_);
-    solver()->AddConstraint(ct);
-  } else if (all_decided == size_ && all_performed > 1) {
-    vector<IntervalVar*> performed;
-    for (int i = 0; i < size_; ++i) {
-      if (intervals_[i]->MustBePerformed()) {
-        performed.push_back(intervals_[i]);
-      }
-    }
-    Constraint* ct = MakeSequenceConstraintOnPerformed(solver(),
-                                                       performed.data(),
-                                                       performed.size());
-    solver()->AddConstraint(ct);
-  }
+  Constraint* ct =
+      MakeDecomposedSequenceConstraint(solver(), intervals_.get(), size_);
+  solver()->AddConstraint(ct);
 }
-
-// TODO(user) : Post constraint when all is decided too
 
 void Sequence::InitialPropagate() {
   for (int i = 0; i < size_; ++i) {
@@ -761,26 +735,36 @@ class IntervalWrapper {
   DISALLOW_COPY_AND_ASSIGN(IntervalWrapper);
 };
 
-  // This method is used by the STL sort.
-bool CompareESTLT(const IntervalWrapper* const w1,
+// Comparison methods, used by the STL sort.
+bool StartMinLessThan(const IntervalWrapper* const w1,
                   const IntervalWrapper* const w2) {
   return (w1->interval()->StartMin() < w2->interval()->StartMin());
 }
-bool CompareLCTLT(const IntervalWrapper* const w1,
+
+bool EndMaxLessThan(const IntervalWrapper* const w1,
                   const IntervalWrapper* const w2) {
   return (w1->interval()->EndMax() < w2->interval()->EndMax());
 }
-bool CompareLSTLT(const IntervalWrapper* const w1,
+
+bool StartMaxLessThan(const IntervalWrapper* const w1,
                   const IntervalWrapper* const w2) {
   return (w1->interval()->StartMax() < w2->interval()->StartMax());
 }
-bool CompareECTLT(const IntervalWrapper* const w1,
+
+bool EndMinLessThan(const IntervalWrapper* const w1,
                   const IntervalWrapper* const w2) {
   return (w1->interval()->EndMin() < w2->interval()->EndMin());
 }
 
 // This is based on Petr Vilim (public) PhD work. All names comes from his work.
-// see http://vilim.eu/petr
+// See http://vilim.eu/petr.
+// A theta-tree is a container for a set of intervals supporting the following
+// operations:
+// * Insertions and deletion in O(log size_), with size_ the maximal number of
+//     tasks the tree may contain;
+// * Querying the following quantity in O(1):
+//     Max_{subset S of the set of contained intervals} (
+//             Min_{i in S}(i.StartMin) + Sum_{i in S}(i.DurationMin) )
 class ThetaTree : public BaseObject {
  public:
 
@@ -818,14 +802,20 @@ class ThetaTree : public BaseObject {
 };
 
 ThetaTree::ThetaTree(int size) : size_(size) {
-  // Compute the number of internal nodes
+  // The tasks will be stored at the leaves only.
+  // Non-leaf nodes will exist only to do the computations.
+  // Compute the number of non-leaf nodes.
   isize_ = 1;
   while (isize_ < size) {
     isize_ <<= 1;
   }
   isize_--;
-  // Resize a bit bigger such that the bottom layer is full.
-  nodes_.resize((isize_ << 1) + 1);
+  isize_ = max(isize_, 1);
+  // The number of leaves is isize_ + 1, so the total number of nodes is
+  // 2 * isize_ + 1.
+  const int num_nodes_in_tree = (isize_ << 1) + 1;
+  DCHECK_GE(num_nodes_in_tree, 3);
+  nodes_.resize(num_nodes_in_tree);
 }
 
 void ThetaTree::Clear() {
@@ -896,6 +886,7 @@ string ThetaTree::DebugString() const {
 
 // ----- Lambda Theta Tree -----
 
+// TODO(user) Can we merge tLambdaThetaTree and ThetaTree?
 class LambdaThetaTree : public BaseObject {
  public:
 
@@ -953,8 +944,11 @@ LambdaThetaTree::LambdaThetaTree(int size) : size_(size) {
     isize_ <<= 1;
   }
   isize_--;
+  isize_ = max(isize_, 1);
   // Resize a bit bigger such that the bottom layer is full.
-  nodes_.resize((isize_ << 1) + 1);
+  const int num_nodes_in_tree = (isize_ << 1) + 1;
+  DCHECK_GE(num_nodes_in_tree, 3);
+  nodes_.resize(num_nodes_in_tree);
 }
 
 void LambdaThetaTree::Clear() {
@@ -1104,15 +1098,126 @@ string LambdaThetaTree::DebugString() const {
   return out;
 }
 
-// One half of the SequenceConstraintOnPerformed. Must be coupled with a
-// mirrored version to do the whole propagation.
-class SequenceConstraintOnPerformedOneSided {
+// -------------- Not Last -----------------------------------------
+
+// A class that implements the 'Not-Last' propagation algorithm for the unary
+// resource constraint.
+class NotLast {
  public:
-  SequenceConstraintOnPerformedOneSided(Solver* const solver,
-                                        IntervalVar* const * intervals,
-                                        int size,
-                                        bool mirror);
-  ~SequenceConstraintOnPerformedOneSided() {
+  NotLast(Solver* const solver,
+          IntervalVar* const * intervals,
+          int size,
+          bool mirror);
+  ~NotLast();
+  bool Propagate();
+
+ private:
+  const int size_;
+  // The interval variables on which propagation is done. As not-last pushes
+  // to the left, these are open on left for optional intervals.
+  scoped_array<IntervalVar*> intervals_;
+  ThetaTree theta_tree_;
+  vector<IntervalWrapper*> est_;
+  vector<IntervalWrapper*> lct_;
+  vector<IntervalWrapper*> lst_;
+  vector<int64> new_lct_;
+  DISALLOW_COPY_AND_ASSIGN(NotLast);
+};
+
+NotLast::NotLast(Solver* const solver,
+                 IntervalVar* const * intervals,
+                 int size,
+                 bool mirror)
+: size_(size),
+  intervals_(new IntervalVar*[size]),
+  theta_tree_(size),
+  est_(size),
+  lct_(size),
+  lst_(size),
+  new_lct_(size, -1LL) {
+  CHECK_GE(size_, 0);
+  // Populate
+  for (int i = 0; i < size; ++i) {
+    IntervalVar* underlying = NULL;
+    if (mirror) {
+      underlying = solver->MakeMirrorInterval(intervals[i]);
+    } else {
+      underlying = intervals[i];
+    }
+    intervals_[i] = solver->MakeIntervalRelaxedMin(underlying);
+    est_[i] = new IntervalWrapper(i, intervals_[i]);
+    lct_[i] = est_[i];
+    lst_[i] = est_[i];
+  }
+}
+
+NotLast::~NotLast() {
+  STLDeleteElements(&est_);
+}
+
+bool NotLast::Propagate() {
+  // ---- Init ----
+  theta_tree_.Clear();
+  for (int i = 0; i < size_; ++i) {
+    new_lct_[i] = intervals_[i]->EndMax();
+  }
+  sort(lst_.begin(), lst_.end(), StartMaxLessThan);
+  sort(lct_.begin(), lct_.end(), EndMaxLessThan);
+  // Update EST
+  sort(est_.begin(), est_.end(), StartMinLessThan);
+  for (int i = 0; i < size_; ++i) {
+    est_[i]->set_est_pos(i);
+  }
+
+  // --- Execute ----
+  int j = 0;
+  for (int i = 0; i < size_; ++i) {
+    IntervalWrapper* const twi = lct_[i];
+    while (j < size_ &&
+           twi->interval()->EndMax() > lst_[j]->interval()->StartMax()) {
+      if (j > 0 && theta_tree_.ECT() > lst_[j]->interval()->StartMax()) {
+        new_lct_[lst_[j]->index()] = lst_[j - 1]->interval()->StartMax();
+      }
+      theta_tree_.Insert(lst_[j]->interval(), lst_[j]->est_pos());
+      j++;
+    }
+    const bool inserted = theta_tree_.Inserted(twi->est_pos());
+    if (inserted) {
+      theta_tree_.Remove(twi->est_pos());
+    }
+    const int64 ect_theta_less_i = theta_tree_.ECT();
+    if (inserted) {
+      theta_tree_.Insert(twi->interval(), twi->est_pos());
+    }
+    if (ect_theta_less_i > twi->interval()->EndMax() && j > 0) {
+      new_lct_[twi->index()] =
+          min(new_lct_[twi->index()], lst_[j - 1]->interval()->EndMax());
+    }
+  }
+
+  // Apply modifications
+  bool modified = false;
+  for (int i = 0; i < size_; ++i) {
+    if (intervals_[i]->EndMax() > new_lct_[i]) {
+      modified = true;
+      intervals_[i]->SetEndMax(new_lct_[i]);
+    }
+  }
+  return modified;
+}
+
+// ------ Edge finder + detectable precedences -------------
+
+// A class that implements two propagation algorithms: edge finding and
+// detectable precedences. These algorithms both push intervals to the right,
+// which is why they are grouped together.
+class EdgeFinderAndDetectablePrecedences {
+ public:
+  EdgeFinderAndDetectablePrecedences(Solver* const solver,
+                                     IntervalVar* const * intervals,
+                                     int size,
+                                     bool mirror);
+  ~EdgeFinderAndDetectablePrecedences() {
     STLDeleteElements(&wrappers_);
   }
   int size() const { return size_; }
@@ -1120,11 +1225,12 @@ class SequenceConstraintOnPerformedOneSided {
   void UpdateEst();
   void OverloadChecking();
   bool DetectablePrecedences();
-  bool NotFirstNotLast();
   bool EdgeFinder();
 
  private:
   Solver* const solver_;
+  // The interval variables on which propagation is done. As these algorithms
+  // push to the right, these are open on right for optional intervals.
   scoped_array<IntervalVar*> intervals_;
   const int size_;
   vector<IntervalWrapper*> wrappers_;
@@ -1144,7 +1250,7 @@ class SequenceConstraintOnPerformedOneSided {
   LambdaThetaTree lt_tree_;
 };
 
-SequenceConstraintOnPerformedOneSided::SequenceConstraintOnPerformedOneSided(
+EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
     Solver* const solver,
     IntervalVar* const * intervals,
     int size,
@@ -1153,12 +1259,14 @@ SequenceConstraintOnPerformedOneSided::SequenceConstraintOnPerformedOneSided(
     intervals_(new IntervalVar*[size]),
     size_(size), theta_tree_(size), lt_tree_(size) {
   // Populate of the array of intervals
-  if (mirror) {
-    for (int i = 0; i < size; ++i) {
-      intervals_[i] = solver->MakeMirrorInterval(intervals[i]);
+  for (int i = 0; i < size; ++i) {
+    IntervalVar* underlying = NULL;
+    if (mirror) {
+      underlying = solver->MakeMirrorInterval(intervals[i]);
+    } else {
+      underlying = intervals[i];
     }
-  } else {
-    memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
+    intervals_[i] = solver->MakeIntervalRelaxedMax(underlying);
   }
   for (int i = 0; i < size; ++i) {
     IntervalWrapper* const w = new IntervalWrapper(i, intervals_[i]);
@@ -1168,21 +1276,20 @@ SequenceConstraintOnPerformedOneSided::SequenceConstraintOnPerformedOneSided(
     lct_.push_back(w);
     lst_.push_back(w);
     new_est_.push_back(kint64min);
-    new_lct_.push_back(kint64max);
   }
 }
 
-void SequenceConstraintOnPerformedOneSided::UpdateEst() {
-  std::sort(est_.begin(), est_.end(), CompareESTLT);
+void EdgeFinderAndDetectablePrecedences::UpdateEst() {
+  std::sort(est_.begin(), est_.end(), StartMinLessThan);
   for (int i = 0; i < size_; ++i) {
     est_[i]->set_est_pos(i);
   }
 }
 
-void SequenceConstraintOnPerformedOneSided::OverloadChecking() {
+void EdgeFinderAndDetectablePrecedences::OverloadChecking() {
   // Init
   UpdateEst();
-  std::sort(lct_.begin(), lct_.end(), CompareLCTLT);
+  std::sort(lct_.begin(), lct_.end(), EndMaxLessThan);
   theta_tree_.Clear();
 
   for (int i = 0; i < size_; ++i) {
@@ -1194,7 +1301,7 @@ void SequenceConstraintOnPerformedOneSided::OverloadChecking() {
   }
 }
 
-bool SequenceConstraintOnPerformedOneSided::DetectablePrecedences() {
+bool EdgeFinderAndDetectablePrecedences::DetectablePrecedences() {
   // Init
   UpdateEst();
   for (int i = 0; i < size_; ++i) {
@@ -1202,8 +1309,8 @@ bool SequenceConstraintOnPerformedOneSided::DetectablePrecedences() {
   }
 
   // Propagate in one direction
-  std::sort(ect_.begin(), ect_.end(), CompareECTLT);
-  std::sort(lst_.begin(), lst_.end(), CompareLSTLT);
+  std::sort(ect_.begin(), ect_.end(), EndMinLessThan);
+  std::sort(lst_.begin(), lst_.end(), StartMaxLessThan);
   theta_tree_.Clear();
   int j = 0;
   for (int i = 0; i < size_; ++i) {
@@ -1245,54 +1352,7 @@ bool SequenceConstraintOnPerformedOneSided::DetectablePrecedences() {
   return modified;
 }
 
-bool SequenceConstraintOnPerformedOneSided::NotFirstNotLast() {
-  // Init
-  UpdateEst();
-  for (int i = 0; i < size_; ++i) {
-    new_lct_[i] = intervals_[i]->EndMax();
-  }
-
-  // Push in one direction: update the latest completion time
-  std::sort(lst_.begin(), lst_.end(), CompareLSTLT);
-  std::sort(lct_.begin(), lct_.end(), CompareLCTLT);
-  theta_tree_.Clear();
-  int j = 0;
-  for (int i = 0; i < size_; ++i) {
-    IntervalWrapper* twi = lct_[i];
-    while (j < size_ &&
-           twi->interval()->EndMax() > lst_[j]->interval()->StartMax()) {
-      if (j > 0 && theta_tree_.ECT() > lst_[j]->interval()->StartMax()) {
-        new_lct_[lst_[j]->index()] = lst_[j - 1]->interval()->StartMax();
-      }
-      theta_tree_.Insert(lst_[j]->interval(), lst_[j]->est_pos());
-      j++;
-    }
-    bool inserted = theta_tree_.Inserted(twi->est_pos());
-    if (inserted) {
-      theta_tree_.Remove(twi->est_pos());
-    }
-    const int64 ect_theta_less_i = theta_tree_.ECT();
-    if (inserted) {
-      theta_tree_.Insert(twi->interval(), twi->est_pos());
-    }
-    if (ect_theta_less_i > twi->interval()->EndMax() && j > 0) {
-      new_lct_[twi->index()] =
-          min(new_lct_[twi->index()], lst_[j - 1]->interval()->EndMax());
-    }
-  }
-
-  // Apply modifications
-  bool modified = false;
-  for (int i = 0; i < size_; ++i) {
-    if (intervals_[i]->EndMax() > new_lct_[i]) {
-      modified = true;
-      intervals_[i]->SetEndMax(new_lct_[i]);
-    }
-  }
-  return modified;
-}
-
-bool SequenceConstraintOnPerformedOneSided::EdgeFinder() {
+bool EdgeFinderAndDetectablePrecedences::EdgeFinder() {
   // Init
   UpdateEst();
   for (int i = 0; i < size_; ++i) {
@@ -1300,20 +1360,15 @@ bool SequenceConstraintOnPerformedOneSided::EdgeFinder() {
   }
 
   // Push in one direction.
-  std::sort(lct_.begin(), lct_.end(), CompareLCTLT);
+  std::sort(lct_.begin(), lct_.end(), EndMaxLessThan);
   lt_tree_.Clear();
   for (int i = 0; i < size_; ++i) {
     lt_tree_.Insert(est_[i]->interval(), i);
     DCHECK_EQ(i, est_[i]->est_pos());
   }
-  int j = size_ - 1;
-  IntervalWrapper* twj = lct_[j];
-  do {
-    lt_tree_.Grey(twj->est_pos());
-    if (--j < 0) {
-      break;
-    }
-    twj = lct_[j];
+  for (int j = size_ - 2; j >= 0; --j) {
+    lt_tree_.Grey(lct_[j+1]->est_pos());
+    IntervalWrapper* const twj = lct_[j];
     if (lt_tree_.ECT() > twj->interval()->EndMax()) {
       solver_->Fail();  // Resource is overloaded
     }
@@ -1326,7 +1381,7 @@ bool SequenceConstraintOnPerformedOneSided::EdgeFinder() {
       }
       lt_tree_.Remove(i);
     }
-  } while (j >= 0);
+  }
 
   // Apply modifications.
   bool modified = false;
@@ -1339,18 +1394,22 @@ bool SequenceConstraintOnPerformedOneSided::EdgeFinder() {
   return modified;
 }
 
-class SequenceConstraintOnPerformed : public Constraint {
+// ----------------- Sequence Constraint Decomposed  ------------
+
+// A class that stores several propagators for the sequence constraint, and
+// calls them until a fixpoint is reached.
+class DecomposedSequenceConstraint : public Constraint {
  public:
-  SequenceConstraintOnPerformed(Solver* const s,
-                                IntervalVar* const * intervals,
-                                int size);
-  virtual ~SequenceConstraintOnPerformed() { }
+  DecomposedSequenceConstraint(Solver* const s,
+                               IntervalVar* const * intervals,
+                               int size);
+  virtual ~DecomposedSequenceConstraint() { }
 
   virtual void Post() {
     Demon* d = MakeDelayedConstraintDemon0(
         solver(),
         this,
-        &SequenceConstraintOnPerformed::InitialPropagate,
+        &DecomposedSequenceConstraint::InitialPropagate,
         "InitialPropagate");
     for (int32 i = 0; i < straight_.size(); ++i) {
       IntervalVar* interval_var = straight_.intervals()[i];
@@ -1368,31 +1427,48 @@ class SequenceConstraintOnPerformed : public Constraint {
           mirror_.OverloadChecking();
         } while (straight_.DetectablePrecedences() ||
             mirror_.DetectablePrecedences());
-      } while (straight_.NotFirstNotLast() ||
-          mirror_.NotFirstNotLast());
+      } while (straight_not_last_.Propagate() ||
+          mirror_not_last_.Propagate());
     } while (straight_.EdgeFinder() ||
         mirror_.EdgeFinder());
   }
 
  private:
-  SequenceConstraintOnPerformedOneSided straight_;
-  SequenceConstraintOnPerformedOneSided mirror_;
+  EdgeFinderAndDetectablePrecedences straight_;
+  EdgeFinderAndDetectablePrecedences mirror_;
+  NotLast straight_not_last_;
+  NotLast mirror_not_last_;
+  DISALLOW_COPY_AND_ASSIGN(DecomposedSequenceConstraint);
 };
 
-SequenceConstraintOnPerformed::SequenceConstraintOnPerformed(Solver* const s,
-                                IntervalVar* const * intervals,
-                                int size)
-: Constraint(s),
-  straight_(s, intervals, size, false),
-  mirror_(s, intervals, size, true) {
+DecomposedSequenceConstraint::DecomposedSequenceConstraint(
+    Solver* const s,
+    IntervalVar* const * intervals,
+    int size)
+  : Constraint(s),
+    straight_(s, intervals, size, false),
+    mirror_(s, intervals, size, true),
+    straight_not_last_(s, intervals, size, false),
+    mirror_not_last_(s, intervals, size, true) {
 }
 
 }  // namespace
 
-Constraint* MakeSequenceConstraintOnPerformed(Solver* const s,
-                                              IntervalVar* const * intervals,
-                                              int size) {
-  return s->RevAlloc(new SequenceConstraintOnPerformed(s, intervals, size));
+Constraint* MakeDecomposedSequenceConstraint(Solver* const s,
+                                             IntervalVar* const * intervals,
+                                             int size) {
+  // Finds all intervals that may be performed
+  vector<IntervalVar*> may_be_performed;
+  may_be_performed.reserve(size);
+  for (int i = 0; i < size; ++i) {
+    if (intervals[i]->MayBePerformed()) {
+      may_be_performed.push_back(intervals[i]);
+    }
+  }
+  return s->RevAlloc(
+      new DecomposedSequenceConstraint(s,
+                                       may_be_performed.data(),
+                                       may_be_performed.size()));
 }
 
 }  // namespace operations_research

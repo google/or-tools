@@ -975,6 +975,42 @@ class Solver {
   // the interval var obtained by reversing the axis.
   IntervalVar* MakeMirrorInterval(IntervalVar* const interval_var);
 
+  // Creates and returns an interval variable that wraps around the given one,
+  // relaxing the min start and end. Relaxing means making unbounded when
+  // optional.
+  //
+  // More precisely, such an interval variable behaves as follows:
+  // * When the underlying must be performed, the returned interval variable
+  //     behaves exactly as the underlying;
+  // * When the underlying may or may not be performed, the returned interval
+  //     variable behaves like the underlying, except that it is unbounded on
+  //     the min side;
+  // * When the underlying cannot be performed, the returned interval variable
+  //     is of duration 0 and must be performed in an interval unbounded on both
+  //     sides.
+  //
+  // This is very useful to implement propagators that may only modify
+  // the start max or end max.
+  IntervalVar* MakeIntervalRelaxedMin(IntervalVar* const interval_var);
+
+  // Creates and returns an interval variable that wraps around the given one,
+  // relaxing the max start and end. Relaxing means making unbounded when
+  // optional.
+  //
+  // More precisely, such an interval variable behaves as follows:
+  // * When the underlying must be performed, the returned interval variable
+  //     behaves exactly as the underlying;
+  // * When the underlying may or may not be performed, the returned interval
+  //     variable behaves like the underlying, except that it is unbounded on
+  //     the max side;
+  // * When the underlying cannot be performed, the returned interval variable
+  //     is of duration 0 and must be performed in an interval unbounded on both
+  //     sides.
+  //
+  // This is very useful to implement propagators that may only modify
+  // the start min or end min.
+IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
+
   // ----- scheduling constraints -----
 
   // This method creates a relation between an interval var and a
@@ -2407,8 +2443,12 @@ class SearchLimit : public SearchMonitor {
 // than end, duration < 0...)
 class IntervalVar : public PropagationBaseObject {
  public:
-  IntervalVar(Solver* const s, const string& name)
-      : PropagationBaseObject(s),
+  // The smallest acceptable value to be returned by StartMin()
+  static const int64 kMinValidValue;
+  // The largest acceptable value to be returned by EndMax()
+  static const int64 kMaxValidValue;
+  IntervalVar(Solver* const solver, const string& name)
+      : PropagationBaseObject(solver),
     start_expr_(NULL), duration_expr_(NULL), end_expr_(NULL),
     performed_expr_(NULL) {
     set_name(name);
@@ -2447,6 +2487,7 @@ class IntervalVar : public PropagationBaseObject {
   // interval var.
   virtual bool MustBePerformed() const = 0;
   virtual bool MayBePerformed() const = 0;
+  bool CannotBePerformed() const { return !MayBePerformed(); }
   bool IsPerformedBound() {
     return MustBePerformed() == MayBePerformed();
   }

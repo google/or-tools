@@ -25,6 +25,9 @@ namespace operations_research {
 
 // ----- Interval Var -----
 
+const int64 IntervalVar::kMinValidValue = kint64min >> 2;
+const int64 IntervalVar::kMaxValidValue = kint64max >> 2;
+
 // ----- MirrorIntervalVar -----
 
 class MirrorIntervalVar : public IntervalVar {
@@ -77,6 +80,171 @@ class MirrorIntervalVar : public IntervalVar {
 
 IntervalVar* Solver::MakeMirrorInterval(IntervalVar* const t) {
   return RevAlloc(new MirrorIntervalVar(this, t));
+}
+
+// An IntervalVar that passes all function calls to an underlying interval
+// variable as long as it is not prohibited, and that interprets prohibited
+// intervals as intervals of duration 0 that must be executed between
+// [kMinValidValue and kMaxValidValue].
+//
+// Such interval variables have a very similar behavior to others.
+// Invariants such as StartMin() + DurationMin() <= EndMin() that are maintained
+// for traditional interval variables are maintained for instances of
+// AlwaysPerformedIntervalVarWrapper. However, there is no monotonicity of the
+// values returned by the start/end getters. For example, during a given
+// propagation, three successive calls to StartMin could return,
+// in this order, 1, 2, and kMinValidValue.
+//
+// This class exists so that we can easily implement the
+// IntervalVarRelaxedMax and IntervalVarRelaxedMin classes below.
+class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
+ public:
+  explicit AlwaysPerformedIntervalVarWrapper(IntervalVar* const t)
+      : IntervalVar(t->solver(),
+                    StrCat("AlwaysPerformed<", t->name(), ">")),
+        t_(t) {}
+  virtual ~AlwaysPerformedIntervalVarWrapper() {}
+  virtual int64 StartMin() const {
+    return MayUnderlyingBePerformed()? t_->StartMin() : kMinValidValue;
+  }
+  virtual int64 StartMax() const {
+    return MayUnderlyingBePerformed() ? t_->StartMax() : kMaxValidValue;
+  }
+  virtual void SetStartMin(int64 m) { t_->SetStartMin(m); }
+  virtual void SetStartMax(int64 m) { t_->SetStartMax(m); }
+  virtual void SetStartRange(int64 mi, int64 ma) { t_->SetStartRange(mi, ma); }
+  virtual void WhenStartRange(Demon* const d) { t_->WhenStartRange(d); }
+  virtual void WhenStartBound(Demon* const d) { t_->WhenStartBound(d); }
+  virtual int64 DurationMin() const {
+    return MayUnderlyingBePerformed() ? t_->DurationMin() : 0LL;
+  }
+  virtual int64 DurationMax() const {
+    return MayUnderlyingBePerformed() ? t_->DurationMax() : 0LL;
+  }
+  virtual void SetDurationMin(int64 m) { t_->SetDurationMin(m); }
+  virtual void SetDurationMax(int64 m) { t_->SetDurationMax(m); }
+  virtual void SetDurationRange(int64 mi, int64 ma) {
+    t_->SetDurationRange(mi, ma);
+  }
+  virtual void WhenDurationRange(Demon* const d) { t_->WhenDurationRange(d); }
+  virtual void WhenDurationBound(Demon* const d) { t_->WhenDurationBound(d); }
+  virtual int64 EndMin() const {
+    return MayUnderlyingBePerformed() ? t_->EndMin() : kMinValidValue;
+  }
+  virtual int64 EndMax() const {
+    return MayUnderlyingBePerformed() ? t_->EndMax() : kMaxValidValue;
+  }
+  virtual void SetEndMin(int64 m) { t_->SetEndMin(m); }
+  virtual void SetEndMax(int64 m) { t_->SetEndMax(m); }
+  virtual void SetEndRange(int64 mi, int64 ma) { t_->SetEndRange(mi, ma); }
+  virtual void WhenEndRange(Demon* const d) { t_->WhenEndRange(d); }
+  virtual void WhenEndBound(Demon* const d) { t_->WhenEndBound(d); }
+  virtual bool MustBePerformed() const { return true; }
+  virtual bool MayBePerformed() const { return true; }
+  virtual void SetPerformed(bool val) {
+    // An AlwaysPerformedIntervalVarWrapper interval variable is always
+    // performed. So setting it to be performed does not change anything,
+    // and setting it not to be performed is inconsistent and should cause
+    // a failure.
+    if (!val) {
+      solver()->Fail();
+    }
+  }
+  virtual void WhenPerformedBound(Demon* const d) { t_->WhenPerformedBound(d); }
+ protected:
+  const IntervalVar* const underlying() const { return t_; }
+  bool MayUnderlyingBePerformed() const {
+    return underlying()->MayBePerformed();
+  }
+ private:
+  IntervalVar* const t_;
+  DISALLOW_COPY_AND_ASSIGN(AlwaysPerformedIntervalVarWrapper);
+};
+
+// An interval variable that wraps around an underlying one, relaxing the max
+// start and end. Relaxing means making unbounded when optional.
+//
+// More precisely, such an interval variable behaves as follows:
+// * When the underlying must be performed, this interval variable behaves
+//     exactly as the underlying;
+// * When the underlying may or may not be performed, this interval variable
+//     behaves like the underlying, except that it is unbounded on the max side;
+// * When the underlying cannot be performed, this interval variable is of
+//      duration 0 and must be performed in an interval unbounded on both sides.
+//
+// This class is very useful to implement propagators that may only modify
+// the start min or end min.
+class IntervalVarRelaxedMax : public AlwaysPerformedIntervalVarWrapper {
+ public:
+  explicit IntervalVarRelaxedMax(IntervalVar* const t)
+  : AlwaysPerformedIntervalVarWrapper(t) {}
+  virtual ~IntervalVarRelaxedMax() {}
+  virtual int64 StartMax() const {
+    // It matters to use DurationMin() and not underlying()->DurationMin() here.
+    return underlying()->MustBePerformed() ?
+        underlying()->StartMax() : (kMaxValidValue - DurationMin());
+  }
+  virtual void SetStartMax(int64 m) {
+    LOG(FATAL)
+        << "Calling SetStartMax on a IntervalVarRelaxedMax is not supported, "
+        << "as it seems there is no legitimate use case.";
+  }
+  virtual int64 EndMax() const {
+    return underlying()->MustBePerformed() ?
+        underlying()->EndMax() : kMaxValidValue;
+  }
+  virtual void SetEndMax(int64 m) {
+    LOG(FATAL)
+        << "Calling SetEndMax on a IntervalVarRelaxedMax is not supported, "
+        << "as it seems there is no legitimate use case.";
+  }
+};
+
+IntervalVar* Solver::MakeIntervalRelaxedMax(IntervalVar* const interval_var) {
+  return RevAlloc(new IntervalVarRelaxedMax(interval_var));
+}
+
+// An interval variable that wraps around an underlying one, relaxing the min
+// start and end. Relaxing means making unbounded when optional.
+//
+// More precisely, such an interval variable behaves as follows:
+// * When the underlying must be performed, this interval variable behaves
+//     exactly as the underlying;
+// * When the underlying may or may not be performed, this interval variable
+//     behaves like the underlying, except that it is unbounded on the min side;
+// * When the underlying cannot be performed, this interval variable is of
+//      duration 0 and must be performed in an interval unbounded on both sides.
+//
+// This class is very useful to implement propagators that may only modify
+// the start max or end max.
+class IntervalVarRelaxedMin : public AlwaysPerformedIntervalVarWrapper {
+ public:
+  explicit IntervalVarRelaxedMin(IntervalVar* const t)
+      : AlwaysPerformedIntervalVarWrapper(t) {}
+  virtual ~IntervalVarRelaxedMin() {}
+  virtual int64 StartMin() const {
+    return underlying()->MustBePerformed() ?
+        underlying()->StartMin() : kMinValidValue;
+  }
+  virtual void SetStartMin(int64 m) {
+    LOG(FATAL)
+        << "Calling SetStartMin on a IntervalVarRelaxedMin is not supported, "
+        << "as it seems there is no legitimate use case.";
+  }
+  virtual int64 EndMin() const {
+    // It matters to use DurationMin() and not underlying()->DurationMin() here.
+    return underlying()->MustBePerformed() ?
+        underlying()->EndMin() : (kMinValidValue + DurationMin());
+  }
+  virtual void SetEndMin(int64 m) {
+    LOG(FATAL)
+      << "Calling SetEndMin on a IntervalVarRelaxedMin is not supported, "
+      << "as it seems there is no legitimate use case.";
+  }
+};
+
+IntervalVar* Solver::MakeIntervalRelaxedMin(IntervalVar* const interval_var) {
+  return RevAlloc(new IntervalVarRelaxedMin(interval_var));
 }
 
 class IntervalVarStartExpr : public BaseIntExpr {
