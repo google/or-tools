@@ -101,7 +101,7 @@ class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
  public:
   explicit AlwaysPerformedIntervalVarWrapper(IntervalVar* const t)
       : IntervalVar(t->solver(),
-                    StrCat("AlwaysPerformed<", t->name(), ">")),
+                    StringPrintf("AlwaysPerformed<%s>", t->name().c_str())),
         t_(t) {}
   virtual ~AlwaysPerformedIntervalVarWrapper() {}
   virtual int64 StartMin() const {
