@@ -515,7 +515,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     CHECK_NOTNULL(best_impact_value);
     CHECK_NOTNULL(var_impacts);
     double max_impact = -1.0;
-    double min_impact = numeric_limits<double>::max();
+    double min_impact = std::numeric_limits<double>::max();
     double sum_var_impact = 0.0;
     int64 min_impact_value = -1;
     int64 max_impact_value = -1;
