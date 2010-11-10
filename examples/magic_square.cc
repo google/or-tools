@@ -30,8 +30,8 @@ DEFINE_int32(restart, -1, "parameter for constant restart monitor");
 DEFINE_bool(luby, false,
             "Use luby restart monitor instead of constant restart monitor");
 DEFINE_bool(run_all_heuristics, false, "Run all heuristics");
-DEFINE_int32(heuristics_frequency, 200, "Frequency to run all heuristics");
-DEFINE_int32(choose_var_strategy, false,
+DEFINE_int32(heuristics_period, 200, "Frequency to run all heuristics");
+DEFINE_int32(choose_var_strategy, 0,
             "Selection strategy for variable: 0 = max sum impact, "
              "1 = max average impact, "
              "2 = max individual impact");
@@ -78,7 +78,7 @@ void MagicSquare(int grid_size) {
 
   DefaultPhaseParameters parameters;
   parameters.run_all_heuristics = FLAGS_run_all_heuristics;
-  parameters.heuristic_frequency = FLAGS_heuristics_frequency;
+  parameters.heuristic_period = FLAGS_heuristics_period;
   switch (FLAGS_choose_var_strategy) {
     case 0: {
       parameters.var_selection_schema =
@@ -94,6 +94,9 @@ void MagicSquare(int grid_size) {
       parameters.var_selection_schema =
           DefaultPhaseParameters::CHOOSE_MAX_VALUE_IMPACT;
       break;
+    }
+    default: {
+      LOG(FATAL) << "Should not be here";
     }
   }
   parameters.value_selection_schema = FLAGS_select_max_impact_value?
