@@ -24,6 +24,8 @@
 
 DEFINE_bool(cp_use_compact_table, true,
             "Use compact table constraint when possible.");
+DEFINE_bool(cp_use_small_table, true,
+            "Use small compact table constraint when possible.");
 
 namespace operations_research {
 namespace {
@@ -676,7 +678,6 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         this,
         &SmallCompactPositiveTableConstraint::Propagate,
         "Propagate");
-    DCHECK_GE(stamp, 1);
     for (int i = 0; i < arity_; ++i) {
       if (!vars_[i]->Bound()) {
         Demon* const u = MakeConstraintDemon1(
@@ -836,7 +837,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
 };
 
 
-bool HasSmallCompactDomains(const IntVar* const * vars, int arity) {
+bool HasCompactDomains(const IntVar* const * vars, int arity) {
   int64 sum_of_spans = 0LL;
   int64 sum_of_sizes = 0LL;
   for (int i = 0; i < arity; ++i) {
@@ -853,12 +854,20 @@ Constraint* Solver::MakeAllowedAssignments(const IntVar* const * vars,
                                            const int64* const * tuples,
                                            int tuple_count,
                                            int arity) {
-  if (FLAGS_cp_use_compact_table && HasSmallCompactDomains(vars, arity)) {
-    return RevAlloc(new CompactPositiveTableConstraint(this,
-                                                       vars,
-                                                       tuples,
-                                                       tuple_count,
-                                                       arity));
+  if (FLAGS_cp_use_compact_table && HasCompactDomains(vars, arity)) {
+    if (tuple_count < 64 && FLAGS_cp_use_small_table) {
+      return RevAlloc(new SmallCompactPositiveTableConstraint(this,
+                                                              vars,
+                                                              tuples,
+                                                              tuple_count,
+                                                              arity));
+    } else {
+      return RevAlloc(new CompactPositiveTableConstraint(this,
+                                                         vars,
+                                                         tuples,
+                                                         tuple_count,
+                                                         arity));
+    }
   }
   return RevAlloc(new PositiveTableConstraint(this,
                                               vars,
@@ -870,8 +879,8 @@ Constraint* Solver::MakeAllowedAssignments(const IntVar* const * vars,
 Constraint* Solver::MakeAllowedAssignments(
     const vector<IntVar*>& vars, const vector<vector<int64> >& tuples) {
   if (FLAGS_cp_use_compact_table
-      && HasSmallCompactDomains(vars.data(), vars.size())) {
-    if (tuples.size() < 64) {
+      && HasCompactDomains(vars.data(), vars.size())) {
+    if (tuples.size() < 64 && FLAGS_cp_use_small_table) {
       return RevAlloc(
           new SmallCompactPositiveTableConstraint(this, vars, tuples));
     } else {
