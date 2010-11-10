@@ -39,7 +39,7 @@ DEFINE_bool(cp_store_names, true, "store object names");
 DEFINE_bool(cp_trace_demons, false, "trace all demon executions");
 DEFINE_bool(cp_show_constraints, false,
             "show all constraints added to the solver");
-DEFINE_int32(cp_trail_compression_level, 1,
+DEFINE_int32(cp_trail_compression_level, 0,
              "Compression level for the trail, 0, no compression, "
              "1 = compress with zlib");
 
