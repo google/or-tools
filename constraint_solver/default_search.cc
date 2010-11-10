@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <limits>
+
 #include "base/callback.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -29,11 +31,17 @@ DEFINE_int32(cp_impact_divider, 10, "Divider for continuous update.");
 namespace operations_research {
 
 // Useful constants.
+const int DefaultPhaseParameters::kDefaultNumberOfSplits = 100;
+const int DefaultPhaseParameters::kDefaultHeuristicPeriod = 100;
+const int DefaultPhaseParameters::kDefaultHeuristicNumFailuresLimit = 30;
+const int DefaultPhaseParameters::kDefaultSeed = 0;
+
 namespace {
 const int kLogCacheSize = 1000;
 const double kPerfectImpact = 1.0;
 const double kFailureImpact = 1.0;
 const double kInitFailureImpact = 2.0;
+
 
 // ---------- ImpactDecisionBuilder ----------
 
@@ -235,6 +243,25 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     AssignIntervalCallFail updater_;
   };
 
+  // ----- Heuristic wrapper -----
+
+  struct HeuristicWrapper {
+    HeuristicWrapper(Solver* const solver,
+                     IntVar* const* vars,
+                     int size,
+                     Solver::IntVarStrategy var_strategy,
+                     Solver::IntValueStrategy value_strategy,
+                     const string& heuristic_name,
+                     int heuristic_runs)
+        : phase(solver->MakePhase(vars, size, var_strategy, value_strategy)),
+          name(heuristic_name),
+          runs(heuristic_runs) {}
+
+    DecisionBuilder* const phase;
+    const string name;
+    const int runs;
+  };
+
   // ----- heuristic helper ------
 
   class RunHeuristic : public Decision {
@@ -293,82 +320,82 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     InitHeuristics(solver);
   }
 
-  virtual ~ImpactDecisionBuilder() {}
+  virtual ~ImpactDecisionBuilder() {
+    STLDeleteElements(&heuristics_);
+  }
 
   void InitHeuristics(Solver* const solver) {
-    DecisionBuilder* db = NULL;
-    string heuristic_name;
+    const int kRunOnce = 1;
+    const int kRunMore = 2;
+    const int kRunALot = 3;
 
-    db = solver->MakePhase(vars_.get(),
-                           size_,
-                           Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
-                           Solver::ASSIGN_MIN_VALUE);
-    heuristic_name = "AssignMinValueToMinDomainSize";
-    heuristics_.push_back(db);
-    heuristic_names_.push_back(heuristic_name);
-    heuristic_runs_.push_back(1);
+    heuristics_.push_back(
+        new HeuristicWrapper(solver,
+                             vars_.get(),
+                             size_,
+                             Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
+                             Solver::ASSIGN_MIN_VALUE,
+                             "AssignMinValueToMinDomainSize",
+                             kRunOnce));
 
-    db = solver->MakePhase(vars_.get(),
-                           size_,
-                           Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX,
-                           Solver::ASSIGN_MAX_VALUE);
-    heuristic_name = "AssignMaxValueToMinDomainSize";
-    heuristics_.push_back(db);
-    heuristic_names_.push_back(heuristic_name);
-    heuristic_runs_.push_back(1);
+    heuristics_.push_back(
+        new HeuristicWrapper(solver,
+                             vars_.get(),
+                             size_,
+                             Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX,
+                             Solver::ASSIGN_MAX_VALUE,
+                             "AssignMaxValueToMinDomainSize",
+                             kRunOnce));
 
-    db = solver->MakePhase(vars_.get(),
-                           size_,
-                           Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
-                           Solver::ASSIGN_CENTER_VALUE);
-    heuristic_name = "AssignCenterValueToMinDomainSize";
-    heuristics_.push_back(db);
-    heuristic_names_.push_back(heuristic_name);
-    heuristic_runs_.push_back(1);
+    heuristics_.push_back(
+        new HeuristicWrapper(solver,
+                             vars_.get(),
+                             size_,
+                             Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
+                             Solver::ASSIGN_CENTER_VALUE,
+                             "AssignCenterValueToMinDomainSize",
+                             kRunOnce));
 
-    db = solver->MakePhase(vars_.get(),
-                           size_,
-                           Solver::CHOOSE_FIRST_UNBOUND,
-                           Solver::ASSIGN_RANDOM_VALUE);
-    heuristic_name = "AssignRandomValueToFirstUnbound";
-    heuristics_.push_back(db);
-    heuristic_names_.push_back(heuristic_name);
-    heuristic_runs_.push_back(3);
+    heuristics_.push_back(
+        new HeuristicWrapper(solver,
+                             vars_.get(),
+                             size_,
+                             Solver::CHOOSE_FIRST_UNBOUND,
+                             Solver::ASSIGN_RANDOM_VALUE,
+                             "AssignRandomValueToFirstUnbound",
+                             kRunALot));
 
-    db = solver->MakePhase(vars_.get(),
-                           size_,
-                           Solver::CHOOSE_RANDOM,
-                           Solver::ASSIGN_MIN_VALUE);
-    heuristic_name = "AssignMinValueToRandomVariable";
-    heuristics_.push_back(db);
-    heuristic_names_.push_back(heuristic_name);
-    heuristic_runs_.push_back(2);
+    heuristics_.push_back(
+        new HeuristicWrapper(solver,
+                             vars_.get(),
+                             size_,
+                             Solver::CHOOSE_RANDOM,
+                             Solver::ASSIGN_MIN_VALUE,
+                             "AssignMinValueToRandomVariable",
+                             kRunMore));
 
-    db = solver->MakePhase(vars_.get(),
-                           size_,
-                           Solver::CHOOSE_RANDOM,
-                           Solver::ASSIGN_MAX_VALUE);
-    heuristic_name = "AssignMaxValueToRandomVariable";
-    heuristics_.push_back(db);
-    heuristic_names_.push_back(heuristic_name);
-    heuristic_runs_.push_back(2);
+    heuristics_.push_back(
+        new HeuristicWrapper(solver,
+                             vars_.get(),
+                             size_,
+                             Solver::CHOOSE_RANDOM,
+                             Solver::ASSIGN_MAX_VALUE,
+                             "AssignMaxValueToRandomVariable",
+                             kRunMore));
 
-    db = solver->MakePhase(vars_.get(),
-                           size_,
-                           Solver::CHOOSE_RANDOM,
-                           Solver::ASSIGN_RANDOM_VALUE);
-    heuristic_name = "AssignRandomValueToRandomVariable";
-    heuristics_.push_back(db);
-    heuristic_names_.push_back(heuristic_name);
-    heuristic_runs_.push_back(2);
-
-    CHECK_EQ(heuristic_names_.size(), heuristics_.size());
-    CHECK_EQ(heuristic_runs_.size(), heuristics_.size());
+    heuristics_.push_back(
+        new HeuristicWrapper(solver,
+                             vars_.get(),
+                             size_,
+                             Solver::CHOOSE_RANDOM,
+                             Solver::ASSIGN_RANDOM_VALUE,
+                             "AssignRandomValueToRandomVariable",
+                             kRunMore));
 
     heuristic_limit_ =
         solver->MakeLimit(kint64max,  // time.
                           kint64max,  // branches.
-                          parameters_.heuristic_failure_limit,  // failures.
+                          parameters_.heuristic_num_failures_limit,  // fails.
                           kint64max);  // solutions.
   }
 
@@ -403,14 +430,14 @@ class ImpactDecisionBuilder : public DecisionBuilder {
               << " variables, log2(SearchSpace) = "
               << current_log_space_;
     const int64 init_time = solver->wall_time();
-    InitVarImpacts db;
-    InitVarImpactsWithSplits dbs(parameters_.initialization_splits);
+    InitVarImpacts without_splits;
+    InitVarImpactsWithSplits with_splits(parameters_.initialization_splits);
     vector<int64> removed_values;
     int64 removed_counter = 0;
     scoped_ptr<Callback2<int, int64> > update_impact_callback(
         NewPermanentCallback(this, &ImpactDecisionBuilder::InitImpact));
-    db.update_impact_callback_ = update_impact_callback.get();
-    dbs.update_impact_callback_ = update_impact_callback.get();
+    without_splits.update_impact_callback_ = update_impact_callback.get();
+    with_splits.update_impact_callback_ = update_impact_callback.get();
 
     // Loop on the variables, scan domains and initialize impacts.
     for (int var_index = 0; var_index < size_; ++var_index) {
@@ -419,21 +446,21 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         continue;
       }
       IntVarIterator* const iterator = domain_iterators_[var_index];
-      DecisionBuilder* init_db = NULL;
+      DecisionBuilder* init_decision_builder = NULL;
       if (var->Max() - var->Min() < parameters_.initialization_splits) {
         // The domain is small enough, we scan it completely.
-        db.Init(var, iterator, var_index);
-        init_db = &db;
+        without_splits.Init(var, iterator, var_index);
+        init_decision_builder = &without_splits;
       } else {
         // The domain is too big, we scan it in initialization_splits
         // intervals.
-        dbs.Init(var, iterator, var_index);
-        init_db = &dbs;
+        with_splits.Init(var, iterator, var_index);
+        init_decision_builder = &with_splits;
       }
       // Reset the number of impacts initialized.
       init_count_ = 0;
       // Use NestedSolve() to scan all values of one variable.
-      solver->NestedSolve(init_db, true);
+      solver->NestedSolve(init_decision_builder, true);
 
       // If we have not initialized all values, then they can be removed.
       // As the iterator is not stable w.r.t. deletion, we need to store
@@ -488,7 +515,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     CHECK_NOTNULL(best_impact_value);
     CHECK_NOTNULL(var_impacts);
     double max_impact = -1.0;
-    double min_impact = kPerfectImpact + 2.0;
+    double min_impact = numeric_limits<double>::max();
     double sum_var_impact = 0.0;
     int64 min_impact_value = -1;
     int64 max_impact_value = -1;
@@ -561,12 +588,12 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   }
 
   bool RunOneHeuristic(Solver* const solver, int index) {
-    DecisionBuilder* const db = heuristics_[index];
-    const string heuristic_name = heuristic_names_[index];
+    HeuristicWrapper* const wrapper = heuristics_[index];
 
-    const bool result = solver->NestedSolve(db, false, heuristic_limit_);
+    const bool result =
+        solver->NestedSolve(wrapper->phase, false, heuristic_limit_);
     if (result) {
-      LOG(INFO) << "Solution found by heuristic " << heuristic_name;
+      LOG(INFO) << "Solution found by heuristic " << wrapper->name;
     }
     return result;
   }
@@ -574,7 +601,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   bool RunHeuristics(Solver* const solver) {
     if (parameters_.run_all_heuristics) {
       for (int index = 0; index < heuristics_.size(); ++index) {
-        for (int run = 0; run < heuristic_runs_[index]; ++run) {
+        for (int run = 0; run < heuristics_[index]->runs; ++run) {
           if (RunOneHeuristic(solver, index)) {
             return true;
           }
@@ -608,7 +635,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     fail_stamp_ = s->fail_stamp();
 
     ++heuristic_branch_count_;
-    if (heuristic_branch_count_ % parameters_.heuristic_frequency == 0) {
+    if (heuristic_branch_count_ % parameters_.heuristic_period == 0) {
       current_var_index_ = -1;
       return &runner_;
     }
@@ -637,9 +664,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   int64 current_value_;
   scoped_array<IntVarIterator*> domain_iterators_;
   int64 init_count_;
-  vector<DecisionBuilder*> heuristics_;
-  vector<int> heuristic_runs_;
-  vector<string> heuristic_names_;
+  vector<HeuristicWrapper*> heuristics_;
   SearchMonitor* heuristic_limit_;
   ACMRandom random_;
   RunHeuristic runner_;

@@ -135,43 +135,47 @@ enum MarkerType {
 // This struct holds all parameters for the default search.
 struct DefaultPhaseParameters {
  public:
+  static const int kDefaultNumberOfSplits;
+  static const int kDefaultHeuristicPeriod;
+  static const int kDefaultHeuristicNumFailuresLimit;
+  static const int kDefaultSeed;
   enum VariableSelection {
-    CHOOSE_MAX_SUM_IMPACT,
-    CHOOSE_MAX_AVERAGE_IMPACT,
-    CHOOSE_MAX_VALUE_IMPACT,
+    CHOOSE_MAX_SUM_IMPACT = 0,
+    CHOOSE_MAX_AVERAGE_IMPACT = 1,
+    CHOOSE_MAX_VALUE_IMPACT = 2,
   };
 
   enum ValueSelection {
-    SELECT_MIN_IMPACT,
-    SELECT_MAX_IMPACT
+    SELECT_MIN_IMPACT = 0,
+    SELECT_MAX_IMPACT = 1,
   };
 
   DefaultPhaseParameters()
       : var_selection_schema(CHOOSE_MAX_SUM_IMPACT),
         value_selection_schema(SELECT_MIN_IMPACT),
-        initialization_splits(100),
+        initialization_splits(kDefaultNumberOfSplits),
         run_all_heuristics(true),
-        heuristic_frequency(100),
-        heuristic_failure_limit(30),
-        random_seed(0) {}
+        heuristic_period(kDefaultHeuristicPeriod),
+        heuristic_num_failures_limit(kDefaultHeuristicNumFailuresLimit),
+        random_seed(kDefaultSeed) {}
 
   // This parameter describes how the next variable to instantiate
   // will be chosen.
   VariableSelection var_selection_schema;
   // This parameter describes which value to select for a given var.
   ValueSelection value_selection_schema;
-  // This parameter indicates the maximum number of intervals the
-  // initialization of impacts will scan per variable.
+  // Maximum number of intervals the initialization of impacts will scan
+  // per variable.
   int initialization_splits;
-  // The default phase will run heuristic periodcally. This parameter
+  // The default phase will run heuristic periodically. This parameter
   // indicates if we should run all heuristics, or a randomly selected
   // one.
   bool run_all_heuristics;
-  // This indicates the distance in nodes between each run of the heuristics.
-  int heuristic_frequency;
-  // This indicates the failure limit for each heuristic that we run.
-  int heuristic_failure_limit;
-  // This seed is used to initialize the random part in some heuristics.
+  // The distance in nodes between each run of the heuristics.
+  int heuristic_period;
+  // The failure limit for each heuristic that we run.
+  int heuristic_num_failures_limit;
+  // Seed used to initialize the random part in some heuristics.
   int random_seed;
 };
 
