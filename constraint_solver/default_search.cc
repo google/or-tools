@@ -514,7 +514,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
                       double* const var_impacts) {
     CHECK_NOTNULL(best_impact_value);
     CHECK_NOTNULL(var_impacts);
-    double max_impact = -1.0;
+    double max_impact = -std::numeric_limits<double>::max();
     double min_impact = std::numeric_limits<double>::max();
     double sum_var_impact = 0.0;
     int64 min_impact_value = -1;
@@ -541,7 +541,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         break;
       }
       case DefaultPhaseParameters::CHOOSE_MAX_VALUE_IMPACT: {
-        *var_impacts = max_impact_value;
+        *var_impacts = max_impact;
         break;
       }
       default: {
@@ -571,7 +571,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     CHECK_NOTNULL(value);
     *var_index = -1;
     *value = 0;
-    double best_var_impact = 0.0;
+    double best_var_impact = -std::numeric_limits<double>.max();
     for (int i = 0; i < size_; ++i) {
       if (!vars_[i]->Bound()) {
         int64 current_value = 0;
