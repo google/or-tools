@@ -936,8 +936,8 @@ class Solver {
   Constraint* MakeAllowedAssignments(const vector<IntVar*>& vars,
                                      const vector<vector<int64> >& tuples);
 
-  // This constraint create a finite automata that will check the
-  // sequence of variables vars. It will use a transition table called
+  // This constraint create a finite automaton that will check the
+  // sequence of variables vars. It uses a transition table called
   // 'transitions'. Each transition is a triple
   //    (current_state, variable_value, new_state).
   // The initial state is given, and the set of accepted states is decribed
