@@ -1,0 +1,254 @@
+// Copyright 2010 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// This protobuf describes a generalization of bin packing that we
+// call placement problems. The goal is to place multi-dimensional
+// items within multi-dimensional bins. Each item can have multiple
+// possible shapes (different combination of dimensions).
+// The objective can include:
+//   - Unassigned cost on objects.
+//   - Usage cost per dimension per bin (with possible over subscription),
+//     or per bin used.
+//   - Smoothing objective, costs.
+
+syntax = "proto2";
+option cc_api_version = 1;
+option java_api_version = 1;
+option py_api_version = 1;
+
+package operations_research;
+
+// ---------- Bins ----------
+
+// One dimension of a bin. If soft_max_capacity is undefined, then it
+// is equal to hard_max_capacity. If hard_max_capacity is
+// undefined, then the max capacity is potentially infinite. A
+// undefined cost component is equal to zero.  The total cost is the following:
+//   usage = 0 -> 0
+//   0 < usage <= soft_max_capacity :
+//       usage * usage_linear_cost + usage_fixed_cost
+//   soft_max_capacity < usage <= hard_max_capacity:
+//       usage * usage_linear_cost +
+//       (usage - soft_max_capacity) * oversubscription_linear_cost) +
+//       usage_fixed_cost + oversubscription_fixed_cost.
+message BinDimension {
+  optional string dimension_id = 1;
+  optional int64 soft_max_capacity = 2 [default = 0];
+  optional int64 hard_max_capacity = 3 [default = 0];
+  optional int64 usage_fixed_cost = 4 [default = 0];
+  optional int64 usage_linear_cost = 5 [default = 0];
+  optional int64 oversubscription_fixed_cost = 6 [default = 0];
+  optional int64 oversubscription_linear_cost = 7 [default = 0];
+}
+
+// The shape of the bin.
+message BinShape {
+  repeated BinDimension dimensions = 1;
+}
+
+// A complete bin with a unique shape, a number of occurences,
+// and a fixed usage cost.
+message Bin {
+  optional string bin_id = 1;
+  required BinShape shape = 2;
+  optional int64 occurences = 3 [default = 1];
+  optional int64 usage_cost = 4 [default = 0];
+}
+
+// Grouping of bins will use BinList groups.
+message BinList {
+  repeated string bin_id = 1;
+}
+
+// --------- Items ----------
+
+// One dimension as a component of a shape.
+message ItemDimension {
+  // Can be omitted if the total number of dimensions is one.
+  optional string dimension_id = 1;
+  // The size of the item in this dimension for a given shape.
+  required int64 usage = 2;
+}
+
+// A complete shape.
+message ItemShape {
+  // Useful to report a solution.
+  optional string shape_id = 1;
+  repeated ItemDimension dimensions = 2;
+}
+
+// One item with possibly multiple shapes.
+// unassigned_cost will apply if the item is not placed in any bin.
+// occurences specify the number of identical items of this type in
+// the problem.  An empty possible_bins list actually means that the
+// item can go in any bin.
+message Item {
+  required string item_id = 1;
+  repeated ItemShape shapes = 2;
+  optional int64 unassigned_cost = 3 [default = 0];
+  optional int64 occurences = 4 [default = 1];
+  optional BinList possible_bins = 5;
+}
+
+// Grouping of items will use ItemList groups.
+message ItemList {
+  repeated string item_id = 1;
+}
+
+
+// ---------- Additional Constraints ----------
+
+// ----- Bin Partition -----
+
+// This represents a partition of bins. A partition is valid if a bin
+// does not appear in two BinList.  A partition is complete if each
+// bin appears in the BinList list, or it the list is empty (an empty
+// list is equivalent to a list containing all bins). Constraints will
+// only accept valid mappings. Constraints will ignore bins and items
+// attached to bins not listed in an incomplete mapping.  If bins have
+// multiple occurences, then all of them appear together in the same
+// group, unless the separate_bin_instances is set to true. Please
+// note that separate_bin_instances is meaningful only if all groups
+// are singletons.
+//
+// TODO(user) : Find a better way to enforce validity.
+message BinPartition {
+  required string partition_id = 1;
+  optional bool separate_bin_instances = 2 [default = false];
+  repeated BinList groups = 3;
+}
+
+// ----- Incompatibility Constraints ------
+
+// Items cannot appear simultaneously in the same group of bins.  To
+// this effect, a partition is used.  Then any of the two given items cannot
+// appear in bins appearing in the same BinList. The violation cost is paid
+// once even if more than two items appear in the violation. If the
+// violation_cost is undefined, then the constraint is considered
+// hard.
+message IncompatibilityConstraint {
+  required string partition_id = 1;
+  required ItemList items = 2;
+  optional int64 violation_cost = 3 [default = 0];
+}
+
+// ----- Colocation Constraints -----
+
+// Items should be in the same group of bins. To this effect, a
+// BinPartition is used. Then the given items must use bins in the
+// same BinList. The violation cost is paid once even if more than two
+// items appear in the violation. If the violation_cost is undefined,
+// then the constraint is considered hard.  If per_item is true, then
+// the constraints specifies that at least one occurence of each item
+// must coexist in each partition, and not all of them.
+message ColocationConstraint {
+  required string partition_id = 1;
+  required ItemList items = 2;
+  optional int64 violation_cost = 3 [default = 0];
+  optional bool per_item = 4 [default = false];
+}
+
+// ----- Dependency Constraints -----
+
+// Items should be in the same group of bins. To this effect, a BinPartition is
+// used. Items in the primary_item_list ItemList depend on items in the
+// dependency_item_list ItemList. Every item in the primary_item_list ItemList
+// must be in the same BinList as an item in the dependency_item_list ItemList.
+// The violation cost is paid once for each element in primary_item_list that is
+// not in the same BinList with an element from dependency_item_list. If the
+// violation_cost is undefined, then the constraint is considered hard.
+message DependencyConstraint {
+  required string partition_id = 1;
+  required ItemList primary_item_list = 2;
+  required ItemList dependency_item_list = 3;
+  optional int64 violation_cost = 4 [default = 0];
+}
+
+// ----- Diversity Constraints -----
+
+// Items should cover k out of n Bin groups. To this effect, a BinPartition is
+// used. Items in items must be present in at least k out of the n groups that
+// make up the BinPartition. The violation cost is paid once if the constraint
+// is not fulfilled. If the violation_cost is undefined, then the constraint is
+// considered hard.
+message DiversityConstraint {
+  required string partition_id = 1;
+  required ItemList items = 2;
+  required int32 covered_bin_lists = 3;
+  optional int64 violation_cost = 4 [default = 0];
+}
+
+
+// ---------- Placement Objective ----------
+
+// You can assign a coefficient for each component of the cost.  If a
+// given cost spans across multiple objects (bins, items, dimensions),
+// you can specify if the resulting cost is the sum or the max of all
+// individual costs. Finally, you can specify an additive constant.
+message PlacementObjective {
+  required bool maximize = 1;
+  optional int64 dimension_cost_coefficient = 2 [default = 0];
+  optional bool dimension_cost_is_max = 3 [default = false];
+  optional int64 unassigned_cost_coefficient = 4 [default = 0];
+  optional bool unassigned_cost_is_max = 5 [default = false];
+  optional int64 bin_cost_coefficient = 6 [default = 0];
+  optional bool bin_cost_is_max = 7 [default = false];
+  optional int64 incompatibilities_cost_coefficient = 8 [default = 0];
+  optional bool incompatibilies_cost_is_max = 9;
+  optional int64 colocations_cost_coefficient = 10 [default = 0];
+  optional bool colocations_cost_is_max = 11;
+  optional int64 offset = 12 [default = 0];
+}
+
+// ---------- Placement Problem Input ----------
+
+message PlacementProblemInput {
+  // Problem ID.
+  optional string problem_id = 1;
+  // Items.
+  repeated Item items = 2;
+  // Bins.
+  repeated Bin bins = 3;
+  // Partitions of resources.
+  repeated BinPartition partitions = 4;
+  // Constraints.
+  repeated IncompatibilityConstraint incompatibilities = 5;
+  repeated ColocationConstraint colocations = 6;
+  repeated DependencyConstraint dependencies = 7;
+  repeated DiversityConstraint diversities = 8;
+  // Objective.
+  required PlacementObjective objective = 9;
+  optional int64 best_known_total_cost = 10;
+}
+
+// Full output.
+message PlacementProblemOutput {
+  // Cost reporting.
+  optional int64 total_dimension_cost = 1;
+  optional int64 total_unassigned_cost = 2;
+  optional int64 total_place_cost = 3;
+  optional int64 total_incompatibilities_cost = 4;
+  optional int64 total_colocations_cost = 5;
+  optional int64 total_cost = 6;
+  // Placed objects.
+  message PlacedItem {
+    required string item_id = 1;
+    optional int64 item_occurence = 2 [default = 0];
+    required string bin_id = 3;
+    optional int64 bin_occurence = 4 [default = 0];
+    optional string shape_id = 5;
+  }
+  repeated PlacedItem solution = 7;
+}
+
+
