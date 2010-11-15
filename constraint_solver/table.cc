@@ -77,7 +77,7 @@ class BasePositiveTableConstraint : public Constraint {
         holes_(new IntVarIterator*[arity_]),
         iterators_(new IntVarIterator*[arity_]) {
     // Copy vars.
-    memcpy(vars_.get(), vars.data(), arity_ * sizeof(vars[0]));
+    memcpy(vars_.get(), vars.data(), arity_ * sizeof(*vars.data()));
     // Create hole iterators
     for (int i = 0; i < arity_; ++i) {
       holes_[i] = vars_[i]->MakeHoleIterator(true);
@@ -369,19 +369,21 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  bool IsTupleSupported(int tuple_index) {
+    for (int var_index = 0; var_index < arity_; ++var_index) {
+      const int64 value = tuples_[tuple_index][var_index];
+      if (!vars_[var_index]->Contains(value)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void BuildStructures() {
     // Build active_ structure.
     bool found_one = false;
     for (int tuple_index = 0; tuple_index < tuple_count_; ++tuple_index) {
-      bool ok = true;
-      for (int var_index = 0; var_index < arity_; ++var_index) {
-        const int64 value = tuples_[tuple_index][var_index];
-        if (!vars_[var_index]->Contains(value)) {
-          ok = false;
-          break;
-        }
-      }
-      if (ok) {
+      if (IsTupleSupported(tuple_index)) {
         SetBit64(active_tuples_.get(), tuple_index);
         found_one = true;
       }
@@ -389,7 +391,9 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     if (!found_one) {
       solver()->Fail();
     }
+  }
 
+  void BuildMasks() {
     // Build masks.
     masks_.clear();
     masks_.resize(arity_);
@@ -401,6 +405,9 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         masks_[i][j] = NULL;
       }
     }
+  }
+
+  void FillMasks() {
     for (int tuple_index = 0; tuple_index < tuple_count_; ++tuple_index) {
       if (IsBitSet64(active_tuples_.get(), tuple_index)) {
         for (int var_index = 0; var_index < arity_; ++var_index) {
@@ -418,7 +425,9 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         }
       }
     }
+  }
 
+  void ComputeMasksBoundaries() {
     // Store boundaries of non zero parts of masks.
     starts_.clear();
     starts_.resize(arity_);
@@ -446,6 +455,9 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         }
       }
     }
+  }
+
+  void RemoveUnsupportedValues() {
     // remove unreached values.
     for (int var_index = 0; var_index < arity_; ++var_index) {
       IntVar* const var = vars_[var_index];
@@ -461,6 +473,14 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         var->RemoveValues(to_remove_);
       }
     }
+  }
+
+  virtual void InitialPropagate() {
+    BuildStructures();
+    BuildMasks();
+    FillMasks();
+    ComputeMasksBoundaries();
+    RemoveUnsupportedValues();
   }
 
   bool Supported(int var_index, int64 value_index) {
@@ -491,7 +511,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     // This method is not attached to any particular variable, but is pushed
     // at a delayed priority when Update(var_index) deems it necessary.
     const uint64 current_stamp = solver()->stamp();
-    memset(temp_mask_.get(), 0, length_ * sizeof(temp_mask_[0]));
+    memset(temp_mask_.get(), 0, length_ * sizeof(*temp_mask_.get()));
     for (int var_index = 0; var_index < arity_; ++var_index) {
       to_remove_.clear();
       IntVarIterator* const it = iterators_[var_index];
@@ -548,7 +568,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     IntVar* const var = vars_[var_index];
     const int64 omin = original_min_[var_index];
     bool changed = false;
-    memset(temp_mask_.get(), 0, length_ * sizeof(temp_mask_[0]));
+    memset(temp_mask_.get(), 0, length_ * sizeof(*temp_mask_.get()));
     const int64 oldmax = var->OldMax();
     const int64 vmin = var->Min();
     const int64 vmax = var->Max();
@@ -633,6 +653,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
 
 // ----- Small Compact Table. -----
 
+// TODO(user): regroup code with CompactPositiveTableConstraint.
+
 class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
  public:
   SmallCompactPositiveTableConstraint(Solver* const s,
@@ -644,15 +666,19 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         active_tuples_(0),
         stamp_(0),
         tuples_(new int64*[tuple_count_]),
+        masks_(new uint64*[arity_]),
         original_min_(new int64[arity_]),
         demon_(NULL) {
     CHECK_GE(tuple_count_, 0);
+    CHECK_LE(tuple_count_, kBitsInUint64);
     CHECK_GE(arity_, 0);
     // Copy tuples
     for (int i = 0; i < tuple_count_; ++i) {
       tuples_[i] = new int64[arity_];
       memcpy(tuples_[i], tuples[i], arity_ * sizeof(*tuples[i]));
     }
+    // Zero masks
+    memset(masks_.get(), 0, arity_ * sizeof(*masks_.get()));
   }
 
   SmallCompactPositiveTableConstraint(Solver* const s,
@@ -662,6 +688,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         active_tuples_(0),
         stamp_(0),
         tuples_(new int64*[tuple_count_]),
+        masks_(new uint64*[arity_]),
         original_min_(new int64[arity_]),
         demon_(NULL) {
     CHECK_GE(tuple_count_, 0);
@@ -673,6 +700,8 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       tuples_[i] = new int64[arity_];
       memcpy(tuples_[i], tuples[i].data(), arity_ * sizeof(tuples[i][0]));
     }
+    // Zero masks
+    memset(masks_.get(), 0, arity_ * sizeof(*masks_.get()));
   }
 
   virtual ~SmallCompactPositiveTableConstraint() {
@@ -704,38 +733,39 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       }
     }
     stamp_ = solver()->stamp() - 1;
-    active_tuples_ = 0;
   }
 
   void InitMasks() {
     // Build masks.
-    masks_.clear();
-    masks_.resize(arity_);
     for (int i = 0; i < arity_; ++i) {
       original_min_[i] = vars_[i]->Min();
       const int64 span = vars_[i]->Max() - original_min_[i] + 1;
       masks_[i] = new uint64[span];
-      memset(masks_[i], 0, span * sizeof(masks_[i][0]));
+      memset(masks_[i], 0, span * sizeof(*masks_[i]));
     }
   }
 
+  bool IsTupleSupported(int tuple_index) {
+    for (int var_index = 0; var_index < arity_; ++var_index) {
+      const int64 value = tuples_[tuple_index][var_index];
+      if (!vars_[var_index]->Contains(value)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   void ComputeActiveTuples() {
+    active_tuples_ = 0;
    // Compute active_tuples_ and update masks.
     for (int tuple_index = 0; tuple_index < tuple_count_; ++tuple_index) {
-      bool ok = true;
-      for (int var_index = 0; var_index < arity_; ++var_index) {
-        const int64 value = tuples_[tuple_index][var_index];
-        if (!vars_[var_index]->Contains(value)) {
-          ok = false;
-          break;
-        }
-      }
-      if (ok) {
-        active_tuples_ |= OneBit64(tuple_index);
+      if (IsTupleSupported(tuple_index)) {
+        const uint64 local_mask = OneBit64(tuple_index);
+        active_tuples_ |= local_mask;
         for (int var_index = 0; var_index < arity_; ++var_index) {
           const int64 value_index =
               tuples_[tuple_index][var_index] - original_min_[var_index];
-          masks_[var_index][value_index] |= OneBit64(tuple_index);
+          masks_[var_index][value_index] |= local_mask;
         }
       }
     }
@@ -753,7 +783,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       IntVarIterator* const it = iterators_[var_index];
       for (it->Init(); it->Ok(); it->Next()) {
         const int64 value = it->Value();
-        if (!masks_[var_index][value - original_min]) {
+        if (masks_[var_index][value - original_min] == 0) {
           to_remove_.push_back(value);
         }
       }
@@ -859,7 +889,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   // All allowed tuples.
   scoped_array<int64*> tuples_;
   // The masks per value per variable.
-  vector<uint64*> masks_;
+  scoped_array<uint64*> masks_;
   // The min on the vars at creation time.
   scoped_array<int64> original_min_;
   Demon* demon_;
@@ -921,6 +951,11 @@ Constraint* Solver::MakeAllowedAssignments(
 
 // ---------- Deterministic Finite Automaton ----------
 
+// This constraint implements a finite automaton when transitions are
+// the values of the variables in the array.
+// that is state[i+1] = transition[var[i]][state[i]] if
+// (state[i], var[i],  state[i+1]) in the transition table.
+// There is only one possible transition for a state/value pair.
 class TransitionConstraint : public Constraint {
  public:
   static const int kStatePosition;
@@ -930,12 +965,12 @@ class TransitionConstraint : public Constraint {
                        const vector<IntVar*>& vars,
                        const vector<vector<int64> >& transition_table,
                        int64 initial_state,
-                       const vector<int64>& accepting_states)
+                       const vector<int64>& final_states)
       : Constraint(s),
         vars_(vars),
         transition_table_(transition_table),
         initial_state_(initial_state),
-        accepting_states_(accepting_states) {}
+        final_states_(final_states) {}
 
   virtual ~TransitionConstraint() {}
 
@@ -957,7 +992,7 @@ class TransitionConstraint : public Constraint {
     for (int var_index = 1; var_index < nb_vars; ++var_index) {
       states.push_back(s->MakeIntVar(state_min, state_max));
     }
-    states.push_back(s->MakeIntVar(accepting_states_));
+    states.push_back(s->MakeIntVar(final_states_));
     CHECK_EQ(nb_vars + 1, states.size());
 
     for (int var_index = 0; var_index < nb_vars; ++var_index) {
@@ -977,8 +1012,8 @@ class TransitionConstraint : public Constraint {
   const vector<vector<int64> > transition_table_;
   // The initial state before the first transition.
   const int64 initial_state_;
-  // Vector of accepting state after the last transision.
-  const vector<int64> accepting_states_;
+  // Vector of final state after the last transision.
+  const vector<int64> final_states_;
 };
 
 // TODO(user): create transition struct.
@@ -991,9 +1026,9 @@ Constraint* Solver::MakeTransitionConstraint(
     const vector<IntVar*>& vars,
     const vector<vector<int64> >& transition_table,
     int64 initial_state,
-    const vector<int64>& accepting_states) {
+    const vector<int64>& final_states) {
   return RevAlloc(new TransitionConstraint(this, vars, transition_table,
-                                           initial_state, accepting_states));
+                                           initial_state, final_states));
 }
 
 }  // namespace operations_research

@@ -941,13 +941,13 @@ class Solver {
   // 'transitions'. Each transition is a triple
   //    (current_state, variable_value, new_state).
   // The initial state is given, and the set of accepted states is decribed
-  // by 'accepting_states'. These states are hidden inside the constraint.
+  // by 'final_states'. These states are hidden inside the constraint.
   // Only the transitions (i.e. the variables) are visible.
   Constraint* MakeTransitionConstraint(
       const vector<IntVar*>& vars,
       const vector<vector<int64> >& transitions,
       int64 initial_state,
-      const vector<int64>& accepting_states);
+      const vector<int64>& final_states);
 
   // ----- Packing constraint -----
 
