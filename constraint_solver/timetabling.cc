@@ -1037,7 +1037,9 @@ void LambdaThetaTree::ReComputeAux(int pos) {
       n.ect_opt = ect3;
       n.responsible_ect = responsible_ect(left(pos));
     }
-    DCHECK_NE(-1, n.responsible_processing);
+    DCHECK_GE(n.processing_opt, n.processing);
+    DCHECK((n.responsible_processing != -1) ||
+           (n.processing_opt == n.processing));
   }
 }
 
@@ -1423,8 +1425,9 @@ class DecomposedSequenceConstraint : public Constraint {
     do {
       do {
         do {
+          // OverloadChecking is symmetrical. It has the same effect on the
+          // straight and the mirrored version.
           straight_.OverloadChecking();
-          mirror_.OverloadChecking();
         } while (straight_.DetectablePrecedences() ||
             mirror_.DetectablePrecedences());
       } while (straight_not_last_.Propagate() ||
