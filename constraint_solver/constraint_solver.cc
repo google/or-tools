@@ -97,7 +97,8 @@ class Queue {
         stamp_(1),
         freeze_level_(0),
         in_process_(false),
-        clear_action_(NULL) {
+        clear_action_(NULL),
+        in_add_(false) {
     for (int i = 0; i < Solver::kNumPriorities; ++i) {
       firsts_[i] = NULL;
       lasts_[i] = NULL;
@@ -221,6 +222,8 @@ class Queue {
     clear_action_ = NULL;
     freeze_level_ = 0;
     in_process_ = false;
+    in_add_ = false;
+    to_add_.clear();
   }
 
   void increase_stamp() {
@@ -237,6 +240,25 @@ class Queue {
 
   void clear_action_on_fail() {
     clear_action_ = NULL;
+  }
+
+  void AddConstraint(Constraint* const c) {
+    to_add_.push_back(c);
+    ProcessConstraints();
+  }
+
+  void ProcessConstraints() {
+    if (!in_add_) {
+      in_add_ = true;
+      // We cannot store to_add_.size() as constraints can add other
+      // constraints.
+      for (int counter = 0; counter < to_add_.size(); ++counter) {
+        Constraint* const constraint = to_add_[counter];
+        constraint->PostAndPropagate();
+      }
+      in_add_ = false;
+      to_add_.clear();
+    }
   }
  private:
   void ProcessIfUnfrozen() {
@@ -255,6 +277,8 @@ class Queue {
   uint32 freeze_level_;
   bool in_process_;
   Action* clear_action_;
+  vector<Constraint*> to_add_;
+  bool in_add_;
 };
 
 // ------------------ StateMarker / StateInfo struct -----------
@@ -1398,7 +1422,7 @@ void Solver::clear_queue_action_on_fail() {
 
 void Solver::AddConstraint(Constraint* const c) {
   if (state_ == IN_SEARCH) {
-    c->PostAndPropagate();
+    queue_->AddConstraint(c);
   } else {
     if (FLAGS_cp_show_constraints) {
       LOG(INFO) << c->DebugString();
