@@ -18,6 +18,7 @@
 #include "base/stringprintf.h"
 #include "base/stl_util-inl.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/monoid_operation_tree.h"
 
 namespace operations_research {
 
@@ -756,6 +757,42 @@ bool EndMinLessThan(const IntervalWrapper* const w1,
   return (w1->interval()->EndMin() < w2->interval()->EndMin());
 }
 
+
+// ----------------- Theta-Trees --------------------------------
+
+// Node of a Theta-tree
+class ThetaNode {
+ public:
+  // Identity element
+  ThetaNode() : total_processing_(0), total_ect_(kint64min) {}
+  // Single interval element
+  explicit ThetaNode(const IntervalVar* const interval)
+  : total_processing_(interval->DurationMin()),
+    total_ect_(interval->EndMin()) {}
+  void Set(const ThetaNode& node) {
+    total_ect_ = node.total_ect_;
+    total_processing_ = node.total_processing_;
+  }
+  void Compute(const ThetaNode& left, const ThetaNode& right) {
+    total_processing_ = left.total_processing_ + right.total_processing_;
+    total_ect_ = max(left.total_ect_ + right.total_processing_,
+                     right.total_ect_);
+  }
+  int64 total_ect() const { return total_ect_; }
+  bool IsIdentity() const {
+    return total_processing_ == 0LL && total_ect_ == kint64min;
+  }
+  string DebugString() const {
+    return StringPrintf(
+        "ThetaNode{ p = %" GG_LL_FORMAT "d, e = %" GG_LL_FORMAT "d }",
+        total_processing_, total_ect_ < 0LL ? -1LL : total_ect_);
+  }
+ private:
+  int64 total_processing_;
+  int64 total_ect_;
+  DISALLOW_COPY_AND_ASSIGN(ThetaNode);
+};
+
 // This is based on Petr Vilim (public) PhD work. All names comes from his work.
 // See http://vilim.eu/petr.
 // A theta-tree is a container for a set of intervals supporting the following
@@ -765,339 +802,160 @@ bool EndMinLessThan(const IntervalWrapper* const w1,
 // * Querying the following quantity in O(1):
 //     Max_{subset S of the set of contained intervals} (
 //             Min_{i in S}(i.StartMin) + Sum_{i in S}(i.DurationMin) )
-class ThetaTree : public BaseObject {
+class ThetaTree : public MonoidOperationTree<ThetaNode> {
  public:
-
-  struct Node {
-    Node() : interval(NULL), total_processing(0), total_ect(kint64min) {}
-    IntervalVar* interval;
-    int64 total_processing;
-    int64 total_ect;
-  };
-
-  explicit ThetaTree(int size);
+  explicit ThetaTree(int size)
+  : MonoidOperationTree<ThetaNode>(size) {}
   virtual ~ThetaTree() {}
-
-  void Insert(IntervalVar* const t, int pos);
-  void Remove(int pos);
-  int64 ECT() { return ect(0); }
-  void Clear();
-  bool Inserted(int pos) {
-    return nodes_[pos + isize_].interval != NULL;
+  int64 ECT() const { return result().total_ect(); }
+  void Insert(const IntervalWrapper* const interval_wrapper) {
+    ThetaNode thetaNode(interval_wrapper->interval());
+    Set(interval_wrapper->est_pos(), thetaNode);
   }
-
-  virtual string DebugString() const;
+  void Remove(const IntervalWrapper* interval_wrapper) {
+    Reset(interval_wrapper->est_pos());
+  }
+  bool IsInserted(const IntervalWrapper* interval_wrapper) {
+    return !GetOperand(interval_wrapper->est_pos()).IsIdentity();
+  }
  private:
-  void ReCompute(int pos);
-  void ReComputeAux(int pos);
-  int64 processing(int pos) { return nodes_[pos].total_processing; }
-  int64 ect(int pos) { return nodes_[pos].total_ect; }
-  int father(int pos) const { return (pos - 1) >> 1; }
-  int left(int pos) const { return (pos << 1) + 1; }
-  int right(int pos) const { return (pos + 1) << 1; }
-
-  const int size_;
-  int isize_;
-  vector<Node> nodes_;
+  DISALLOW_COPY_AND_ASSIGN(ThetaTree);
 };
 
-ThetaTree::ThetaTree(int size) : size_(size) {
-  // The tasks will be stored at the leaves only.
-  // Non-leaf nodes will exist only to do the computations.
-  // Compute the number of non-leaf nodes.
-  isize_ = 1;
-  while (isize_ < size) {
-    isize_ <<= 1;
-  }
-  isize_--;
-  isize_ = max(isize_, 1);
-  // The number of leaves is isize_ + 1, so the total number of nodes is
-  // 2 * isize_ + 1.
-  const int num_nodes_in_tree = (isize_ << 1) + 1;
-  DCHECK_GE(num_nodes_in_tree, 3);
-  nodes_.resize(num_nodes_in_tree);
-}
+// ----------------- Lambda Theta Tree -----------------------
 
-void ThetaTree::Clear() {
-  for (vector<Node>::iterator it = nodes_.begin();
-       it != nodes_.end();
-       ++it) {
-    (*it).interval = NULL;
-    (*it).total_processing = 0LL;
-    (*it).total_ect = kint64min;
-  }
-}
-
-void ThetaTree::Insert(IntervalVar* const t, int pos) {
-  const int curr_pos = isize_ + pos;
-  Node& n = nodes_[curr_pos];
-  DCHECK(n.interval == NULL);
-  n.interval = t;
-  n.total_ect = t->EndMin();
-  n.total_processing = t->DurationMin();
-  ReCompute(father(curr_pos));
-}
-
-void ThetaTree::Remove(int pos) {
-  const int curr_pos = isize_ + pos;
-  Node& n = nodes_[curr_pos];
-  DCHECK(n.interval != NULL);
-  n.interval = NULL;
-  n.total_ect = kint64min;
-  n.total_processing = 0LL;
-  ReCompute(father(curr_pos));
-}
-
-void ThetaTree::ReComputeAux(int pos) {
-  const int64 pl = processing(left(pos));
-  const int64 pr = processing(right(pos));
-  nodes_[pos].total_processing = pl + pr;
-  const int64 el = ect(left(pos));
-  const int64 er = ect(right(pos));
-  const int64 en = max(er, el + pr);
-  nodes_[pos].total_ect = en;
-}
-
-void ThetaTree::ReCompute(int pos) {
-  while (pos > 0) {
-    ReComputeAux(pos);
-    pos = father(pos);
-  }
-  // Fast recompute the top node. We do not need all info.
-  nodes_[0].total_ect = max(nodes_[2].total_ect,
-                            nodes_[1].total_ect + nodes_[2].total_processing);
-}
-
-string ThetaTree::DebugString() const {
-  string out;
-  for (int i = 0; i < isize_ + size_; ++i) {
-    int64 p = nodes_[i].total_processing;
-    int64 e = nodes_[i].total_ect;
-    IntervalVar* t = nodes_[i].interval;
-    StringAppendF(&out, "(%d: p = %" GG_LL_FORMAT "d, e = %"
-                  GG_LL_FORMAT "d", i, p, (e < 0 ? -1 : e));
-    if (t != NULL) {
-      StringAppendF(&out, ", t = %s", t->DebugString().c_str());
-    }
-    out += ") ";
-  }
-  return out;
-}
-
-// ----- Lambda Theta Tree -----
-
-// TODO(user) Can we merge tLambdaThetaTree and ThetaTree?
-class LambdaThetaTree : public BaseObject {
+class LambdaThetaNode {
  public:
+  // Special value of responsible_XXX variables indicating there is no
+  // responsible task for XXX.
+  static const int NONE;
 
-  struct ENode {
-    ENode() : interval(NULL), processing(0LL), ect(kint64min),
-             processing_opt(0LL), ect_opt(kint64min),
-             responsible_ect(-1), responsible_processing(-1) {}
-    IntervalVar* interval;
-    int64 processing;
-    int64 ect;
-    int64 processing_opt;
-    int64 ect_opt;
-    int responsible_ect;
-    int responsible_processing;
-  };
-
-  explicit LambdaThetaTree(int size);
-  virtual ~LambdaThetaTree() {}
-
-  void Insert(IntervalVar* const t, int pos);
-  void Grey(int pos);
-  void Remove(int pos);
-  int64 ECT() { return ect(0); }
-  int64 ECT_opt() { return ect_opt(0); }
-  int Responsible_opt() { return responsible_ect(0); }
-  void Clear();
-  bool Inserted(int pos) {
-    return nodes_[pos + isize_].interval != NULL;
+  // Identity element
+  LambdaThetaNode()
+  : processing_(0LL),
+    ect_(kint64min),
+    processing_opt_(0LL),
+    ect_opt_(kint64min),
+    responsible_ect_(NONE),
+    responsible_processing_(NONE) {}
+  // Constructor for a single interval in the Theta set
+  explicit LambdaThetaNode(const IntervalVar* const interval)
+  : processing_(interval->DurationMin()),
+    ect_(interval->EndMin()),
+    processing_opt_(interval->DurationMin()),
+    ect_opt_(interval->EndMin()),
+    responsible_ect_(NONE),
+    responsible_processing_(NONE) {}
+  // Constructor for a single interval in the Lambda set
+  // est_position is the index of the given interval in the est vector
+  LambdaThetaNode(const IntervalVar* const interval, int est_position)
+  : processing_(0LL),
+    ect_(kint64min),
+    processing_opt_(interval->DurationMin()),
+    ect_opt_(interval->EndMin()),
+    responsible_ect_(est_position),
+    responsible_processing_(est_position) {}
+  void Set(const LambdaThetaNode& node) {
+    processing_ = node.processing_;
+    ect_ = node.ect_;
+    processing_opt_ = node.processing_opt_;
+    ect_opt_ = node.ect_opt_;
+    responsible_ect_ = node.responsible_ect_;
+    responsible_processing_ = node.responsible_processing_;
   }
-  virtual string DebugString() const;
+  void Compute(const LambdaThetaNode& left, const LambdaThetaNode& right);
+  const int64 ect() const { return ect_; }
+  const int64 ect_opt() const { return ect_opt_; }
+  const int responsible_ect() const { return responsible_ect_; }
+  string DebugString() const {
+    return StringPrintf(
+        "LambdaThetaNode{ p = %" GG_LL_FORMAT "d, "
+        "e = %" GG_LL_FORMAT "d, "
+        "p_opt = %" GG_LL_FORMAT "d (resp. %d), "
+        "e_opt = %" GG_LL_FORMAT "d (resp. %d) }",
+        processing_, ect_ < 0LL ? -1LL : ect_,
+            processing_opt_, responsible_processing_,
+            ect_opt_, responsible_ect_);
+  }
+
  private:
-  void ReCompute(int pos);
-  void ReComputeAux(int pos);
-  void ReComputeTop();
-  int64 processing(int pos) { return nodes_[pos].processing; }
-  int64 ect(int pos) { return nodes_[pos].ect; }
-  int64 processing_opt(int pos) { return nodes_[pos].processing_opt; }
-  int64 ect_opt(int pos) { return nodes_[pos].ect_opt; }
-  int responsible_ect(int pos) { return nodes_[pos].responsible_ect; }
-  int responsible_processing(int pos) {
-    return nodes_[pos].responsible_processing;
-  }
-  int father(int pos) const { return (pos - 1) >> 1; }
-  int left(int pos) const { return (pos << 1) + 1; }
-  int right(int pos) const { return (pos + 1) << 1; }
-  const int size_;
-  int isize_;
-  vector<ENode> nodes_;
+  // Total processing time of intervals in Theta.
+  int64 processing_;
+  // Earliest completion of intervals in Theta.
+  int64 ect_;
+  // Maximum processing time of intervals in Theta, plus at most one in Lambda.
+  int64 processing_opt_;
+  // Maximum ECT of intervals in Theta, plus at most one in Lambda.
+  int64 ect_opt_;
+  // Index of the interval in Lambda chosen in the computation of ect_opt_, or
+  // NONE if none.
+  int responsible_ect_;
+  // Index of the interval in Lambda chosen in the computation of
+  // processing_opt_, or NONE if none.
+  int responsible_processing_;
+
+  DISALLOW_COPY_AND_ASSIGN(LambdaThetaNode);
 };
 
-LambdaThetaTree::LambdaThetaTree(int size) : size_(size) {
-  // Compute the number of internal nodes
-  isize_ = 1;
-  while (isize_ < size) {
-    isize_ <<= 1;
+const int LambdaThetaNode::NONE = -1;
+
+class LambdaThetaTree : public MonoidOperationTree<LambdaThetaNode> {
+ public:
+  explicit LambdaThetaTree(int size)
+  : MonoidOperationTree<LambdaThetaNode>(size) {}
+  virtual ~LambdaThetaTree() {}
+  void Insert(const IntervalWrapper* iw) {
+    LambdaThetaNode lambdaThetaNode(iw->interval());
+    Set(iw->est_pos(), lambdaThetaNode);
   }
-  isize_--;
-  isize_ = max(isize_, 1);
-  // Resize a bit bigger such that the bottom layer is full.
-  const int num_nodes_in_tree = (isize_ << 1) + 1;
-  DCHECK_GE(num_nodes_in_tree, 3);
-  nodes_.resize(num_nodes_in_tree);
-}
-
-void LambdaThetaTree::Clear() {
-  for (vector<ENode>::iterator it = nodes_.begin();
-       it != nodes_.end();
-       ++it) {
-    (*it).interval = NULL;
-    (*it).processing = 0LL;
-    (*it).ect = kint64min;
-    (*it).processing_opt = 0LL;
-    (*it).ect_opt = kint64min;
-    (*it).responsible_ect = -1;
-    (*it).responsible_processing = -1;
+  void Grey(const IntervalWrapper* iw) {
+    LambdaThetaNode greyNode(iw->interval(), iw->est_pos());
+    Set(iw->est_pos(), greyNode);
   }
-}
+  int64 ECT() const { return result().ect(); }
+  int64 ECT_opt() const { return result().ect_opt(); }
+  int Responsible_opt() const { return result().responsible_ect(); }
 
-void LambdaThetaTree::Insert(IntervalVar* const t, int pos) {
-  const int curr_pos = isize_ + pos;
-  ENode& n = nodes_[curr_pos];
-  DCHECK(n.interval == NULL);
-  n.interval = t;
-  n.ect = t->EndMin();
-  n.processing = t->DurationMin();
-  n.ect_opt = t->EndMin();
-  n.processing_opt = t->DurationMin();
-  n.responsible_ect = -1;
-  n.responsible_processing = -1;
-  ReCompute(father(curr_pos));
-}
+ private:
+  DISALLOW_COPY_AND_ASSIGN(LambdaThetaTree);
+};
 
-void LambdaThetaTree::Grey(int pos) {
-  const int curr_pos = isize_ + pos;
-  ENode& n = nodes_[curr_pos];
-  DCHECK(n.interval != NULL);
-  n.ect = kint64min;
-  n.processing = 0LL;
-  n.responsible_ect = pos;
-  n.responsible_processing = pos;
-  ReCompute(father(curr_pos));
-}
-
-void LambdaThetaTree::Remove(int pos) {
-  const int curr_pos = isize_ + pos;
-  ENode& n = nodes_[curr_pos];
-  DCHECK(n.interval != NULL);
-  n.interval = NULL;
-  n.ect = kint64min;
-  n.processing = 0LL;
-  n.ect_opt = kint64min;
-  n.processing_opt = 0LL;
-  n.responsible_ect = -1;
-  n.responsible_processing = -1;
-  ReCompute(father(curr_pos));
-}
-
-void LambdaThetaTree::ReComputeAux(int pos) {
-  ENode& n = nodes_[pos];
-  const int64 pr = processing(right(pos));
-  n.processing = processing(left(pos)) + pr;
-  n.ect =  max(ect(right(pos)), ect(left(pos)) + pr);
-  if (responsible_ect(left(pos)) == -1 && responsible_ect(right(pos)) == -1) {
-    n.processing_opt = n.processing;
-    n.ect_opt = n.ect;
-    n.responsible_ect = -1;
-    n.responsible_processing = -1;
+void LambdaThetaNode::Compute(const LambdaThetaNode& left,
+                              const LambdaThetaNode& right) {
+  processing_ = left.processing_ + right.processing_;
+  ect_ =  max(right.ect_, left.ect_ + right.processing_);
+  if (left.responsible_ect_ == NONE && right.responsible_ect_ == NONE) {
+    processing_opt_ = processing_;
+    ect_opt_ = ect_;
+    responsible_ect_ = NONE;
+    responsible_processing_ = NONE;
   } else {
-    const int64 lo = processing_opt(left(pos)) + processing(right(pos));
-    const int64 ro = processing(left(pos)) + processing_opt(right(pos));
+    const int64 lo = left.processing_opt_ + right.processing_;
+    const int64 ro = left.processing_ + right.processing_opt_;
     if (lo > ro) {
-      n.processing_opt = lo;
-      n.responsible_processing = responsible_processing(left(pos));
+      processing_opt_ = lo;
+      responsible_processing_ = left.responsible_processing_;
     } else {
-      n.processing_opt = ro;
-      n.responsible_processing = responsible_processing(right(pos));
+      processing_opt_ = ro;
+      responsible_processing_ = right.responsible_processing_;
     }
-    const int64 ect1 = ect_opt(right(pos));
-    const int64 ect2 = ect(left(pos)) + processing_opt(right(pos));
-    const int64 ect3 = ect_opt(left(pos)) + processing(right(pos));
+    const int64 ect1 = right.ect_opt_;
+    const int64 ect2 = left.ect_ + right.processing_opt_;
+    const int64 ect3 = left.ect_opt_ + right.processing_;
     if (ect1 >= ect2 && ect1 >= ect3) {  // ect1 max
-      n.ect_opt = ect1;
-      n.responsible_ect = responsible_ect(right(pos));
+      ect_opt_ = ect1;
+      responsible_ect_ = right.responsible_ect_;
     } else if (ect2 >= ect1 && ect2 >= ect3) {  // ect2 max
-      n.ect_opt = ect2;
-      n.responsible_ect = responsible_processing(right(pos));
+      ect_opt_ = ect2;
+      responsible_ect_ = right.responsible_processing_;
     } else {  // ect3 max
-      n.ect_opt = ect3;
-      n.responsible_ect = responsible_ect(left(pos));
+      ect_opt_ = ect3;
+      responsible_ect_ = left.responsible_ect_;
     }
-    DCHECK_GE(n.processing_opt, n.processing);
-    DCHECK((n.responsible_processing != -1) ||
-           (n.processing_opt == n.processing));
+    DCHECK_GE(processing_opt_, processing_);
+    DCHECK((responsible_processing_ != NONE) ||
+           (processing_opt_ == processing_));
   }
-}
-
-void LambdaThetaTree::ReComputeTop() {
-  ENode& n = nodes_[0];
-  n.ect = max(ect(2), ect(1) + processing(2));
-  if (responsible_ect(1) == -1 && responsible_ect(2) == -1) {
-    n.processing_opt = n.processing;
-    n.ect_opt = n.ect;
-    n.responsible_ect = -1;
-    n.responsible_processing = -1;
-  } else {
-    const int64 ect1 = ect_opt(2);
-    const int64 ect2 = ect(1) + processing_opt(2);
-    const int64 ect3 = ect_opt(1) + processing(2);
-    if (ect1 >= ect2 && ect1 >= ect3) {
-      n.ect_opt = ect1;
-      n.responsible_ect = responsible_ect(2);
-    } else if (ect2 >= ect1 && ect2 >= ect3) {
-      n.ect_opt = ect2;
-      n.responsible_ect = responsible_processing(2);
-    } else {  // ect3 >= ect1 && ect3 >= ect2
-      n.ect_opt = ect3;
-      n.responsible_ect = responsible_ect(1);
-    }
-  }
-}
-
-void LambdaThetaTree::ReCompute(int pos) {
-  DCHECK_LT(pos, isize_);
-  while (pos > 0) {
-    ReComputeAux(pos);
-    pos = father(pos);
-  }
-  ReComputeTop();
-}
-
-string LambdaThetaTree::DebugString() const {
-  string out;
-  for (int i = 0; i < isize_ + size_; ++i) {
-    int64 p = nodes_[i].processing;
-    int64 e = nodes_[i].ect;
-    int64 po = nodes_[i].processing_opt;
-    int64 eo = nodes_[i].ect_opt;
-    int re = nodes_[i].responsible_ect;
-    int rp = nodes_[i].responsible_processing;
-    IntervalVar* t = nodes_[i].interval;
-    StringAppendF(&out,
-                  "(%d: p = %" GG_LL_FORMAT "d, e = %"
-                  GG_LL_FORMAT "d, po = %" GG_LL_FORMAT "d, "
-                  "eo = %" GG_LL_FORMAT "d, re = %d, rp = %d",
-                  i, p, (e < 0 ? -1 : e), po, (eo < 0 ? -1 : eo), re, rp);
-    if (t != NULL) {
-      StringAppendF(&out, ", t = %s", t->DebugString().c_str());
-    }
-    out += ") ";
-  }
-  return out;
 }
 
 // -------------- Not Last -----------------------------------------
@@ -1180,16 +1038,16 @@ bool NotLast::Propagate() {
       if (j > 0 && theta_tree_.ECT() > lst_[j]->interval()->StartMax()) {
         new_lct_[lst_[j]->index()] = lst_[j - 1]->interval()->StartMax();
       }
-      theta_tree_.Insert(lst_[j]->interval(), lst_[j]->est_pos());
+      theta_tree_.Insert(lst_[j]);
       j++;
     }
-    const bool inserted = theta_tree_.Inserted(twi->est_pos());
+    const bool inserted = theta_tree_.IsInserted(twi);
     if (inserted) {
-      theta_tree_.Remove(twi->est_pos());
+      theta_tree_.Remove(twi);
     }
     const int64 ect_theta_less_i = theta_tree_.ECT();
     if (inserted) {
-      theta_tree_.Insert(twi->interval(), twi->est_pos());
+      theta_tree_.Insert(twi);
     }
     if (ect_theta_less_i > twi->interval()->EndMax() && j > 0) {
       new_lct_[twi->index()] =
@@ -1296,7 +1154,7 @@ void EdgeFinderAndDetectablePrecedences::OverloadChecking() {
 
   for (int i = 0; i < size_; ++i) {
     IntervalWrapper* const iw = lct_[i];
-    theta_tree_.Insert(iw->interval(), iw->est_pos());
+    theta_tree_.Insert(iw);
     if (theta_tree_.ECT() > iw->interval()->EndMax()) {
       solver_->Fail();
     }
@@ -1320,7 +1178,7 @@ bool EdgeFinderAndDetectablePrecedences::DetectablePrecedences() {
     if (j < size_) {
       IntervalWrapper* twj = lst_[j];
       while (twi->interval()->EndMin() > twj->interval()->StartMax()) {
-        theta_tree_.Insert(twj->interval(), twj->est_pos());
+        theta_tree_.Insert(twj);
         j++;
         if (j == size_)
           break;
@@ -1328,13 +1186,13 @@ bool EdgeFinderAndDetectablePrecedences::DetectablePrecedences() {
       }
     }
     const int64 esti = twi->interval()->StartMin();
-    bool inserted = theta_tree_.Inserted(twi->est_pos());
+    bool inserted = theta_tree_.IsInserted(twi);
     if (inserted) {
-      theta_tree_.Remove(twi->est_pos());
+      theta_tree_.Remove(twi);
     }
     const int64 oesti = theta_tree_.ECT();
     if (inserted) {
-      theta_tree_.Insert(twi->interval(), twi->est_pos());
+      theta_tree_.Insert(twi);
     }
     if (oesti > esti) {
       new_est_[twi->index()] = oesti;
@@ -1365,11 +1223,11 @@ bool EdgeFinderAndDetectablePrecedences::EdgeFinder() {
   std::sort(lct_.begin(), lct_.end(), EndMaxLessThan);
   lt_tree_.Clear();
   for (int i = 0; i < size_; ++i) {
-    lt_tree_.Insert(est_[i]->interval(), i);
+    lt_tree_.Insert(est_[i]);
     DCHECK_EQ(i, est_[i]->est_pos());
   }
   for (int j = size_ - 2; j >= 0; --j) {
-    lt_tree_.Grey(lct_[j+1]->est_pos());
+    lt_tree_.Grey(lct_[j+1]);
     IntervalWrapper* const twj = lct_[j];
     if (lt_tree_.ECT() > twj->interval()->EndMax()) {
       solver_->Fail();  // Resource is overloaded
@@ -1381,7 +1239,7 @@ bool EdgeFinderAndDetectablePrecedences::EdgeFinder() {
       if (lt_tree_.ECT() > new_est_[act_i]) {
         new_est_[act_i] = lt_tree_.ECT();
       }
-      lt_tree_.Remove(i);
+      lt_tree_.Reset(i);
     }
   }
 
