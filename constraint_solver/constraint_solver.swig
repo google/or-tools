@@ -1418,6 +1418,14 @@ class LongResultCallback2 {
   }
   virtual ~LongResultCallback2() {}
 };
+class LongResultCallback3 {
+ public:
+  virtual int64 run(int64, int64, int64) = 0;
+  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback() {
+    return NewPermanentCallback(this, &LongResultCallback3::run);
+  }
+  virtual ~LongResultCallback3() {}
+};
 %}
 
 class LongResultCallback1 {
@@ -1432,6 +1440,12 @@ class LongResultCallback2 {
   ResultCallback2<int64, int64, int64>* GetPermanentCallback();
   virtual ~LongResultCallback2();
 };
+class LongResultCallback3 {
+ public:
+  virtual int64 run(int64, int64, int64) = 0;
+  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback();
+  virtual ~LongResultCallback3();
+};
 
 // Typemaps for callbacks in java.
 %typemap(jstype) ResultCallback1<int64, int64>* "LongResultCallback1";
@@ -1439,6 +1453,11 @@ class LongResultCallback2 {
 
 %typemap(jstype) ResultCallback2<int64, int64, int64>* "LongResultCallback2";
 %typemap(javain) ResultCallback2<int64, int64, int64>* "SWIGTYPE_p_ResultCallback2Tlong_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
+
+%typemap(jstype) ResultCallback3<int64, int64, int64, int64>*
+"LongResultCallback3";
+%typemap(javain) ResultCallback3<int64, int64, int64, int64>*
+ "SWIGTYPE_p_ResultCallback3Tlong_long_long_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
 
 // Typemaps to represent const vector<int64>& arguments as arrays of long.
 %typemap(jni) const vector<int64>& "jobjectArray"
@@ -1605,9 +1624,13 @@ class LongResultCallback2 {
 %rename (makeTabuSearch) MakeTabuSearch;
 %rename (makeTemporalDisjunction) MakeTemporalDisjunction;
 %rename (makeTrueConstraint) MakeTrueConstraint;
-// Java only.
 %rename (makeGuidedLocalSearch) MakeGuidedLocalSearch;
-%rename (value) Value;
+%rename (value) *::Value;
+%rename (min) *::Min;
+%rename (max) *::Max;
+%rename (setMin) *::SetMin;
+%rename (setMax) *::SetMax;
+%rename (setRange) *::SetRange;
 
 #endif  // SWIGJAVA
 
