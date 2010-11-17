@@ -924,38 +924,31 @@ void LambdaThetaNode::Compute(const LambdaThetaNode& left,
                               const LambdaThetaNode& right) {
   processing_ = left.processing_ + right.processing_;
   ect_ =  max(right.ect_, left.ect_ + right.processing_);
-  if (left.responsible_ect_ == NONE && right.responsible_ect_ == NONE) {
-    processing_opt_ = processing_;
-    ect_opt_ = ect_;
-    responsible_ect_ = NONE;
-    responsible_processing_ = NONE;
+  const int64 processing_left_opt = left.processing_opt_ + right.processing_;
+  const int64 processing_right_opt = left.processing_ + right.processing_opt_;
+  if (processing_left_opt > processing_right_opt) {
+    processing_opt_ = processing_left_opt;
+    responsible_processing_ = left.responsible_processing_;
   } else {
-    const int64 lo = left.processing_opt_ + right.processing_;
-    const int64 ro = left.processing_ + right.processing_opt_;
-    if (lo > ro) {
-      processing_opt_ = lo;
-      responsible_processing_ = left.responsible_processing_;
-    } else {
-      processing_opt_ = ro;
-      responsible_processing_ = right.responsible_processing_;
-    }
-    const int64 ect1 = right.ect_opt_;
-    const int64 ect2 = left.ect_ + right.processing_opt_;
-    const int64 ect3 = left.ect_opt_ + right.processing_;
-    if (ect1 >= ect2 && ect1 >= ect3) {  // ect1 max
-      ect_opt_ = ect1;
-      responsible_ect_ = right.responsible_ect_;
-    } else if (ect2 >= ect1 && ect2 >= ect3) {  // ect2 max
-      ect_opt_ = ect2;
-      responsible_ect_ = right.responsible_processing_;
-    } else {  // ect3 max
-      ect_opt_ = ect3;
-      responsible_ect_ = left.responsible_ect_;
-    }
-    DCHECK_GE(processing_opt_, processing_);
-    DCHECK((responsible_processing_ != NONE) ||
-           (processing_opt_ == processing_));
+    processing_opt_ = processing_right_opt;
+    responsible_processing_ = right.responsible_processing_;
   }
+  const int64 ect1 = right.ect_opt_;
+  const int64 ect2 = left.ect_ + right.processing_opt_;
+  const int64 ect3 = left.ect_opt_ + right.processing_;
+  if (ect1 >= ect2 && ect1 >= ect3) {  // ect1 max
+    ect_opt_ = ect1;
+    responsible_ect_ = right.responsible_ect_;
+  } else if (ect2 >= ect1 && ect2 >= ect3) {  // ect2 max
+    ect_opt_ = ect2;
+    responsible_ect_ = right.responsible_processing_;
+  } else {  // ect3 max
+    ect_opt_ = ect3;
+    responsible_ect_ = left.responsible_ect_;
+  }
+  DCHECK_GE(processing_opt_, processing_);
+  DCHECK((responsible_processing_ != -1) ||
+         (processing_opt_ == processing_));
 }
 
 // -------------- Not Last -----------------------------------------
