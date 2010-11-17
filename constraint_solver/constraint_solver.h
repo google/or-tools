@@ -2498,7 +2498,10 @@ class IntervalVar : public PropagationBaseObject {
   virtual void SetPerformed(bool val) = 0;
   virtual void WhenPerformedBound(Demon* const d) = 0;
 
-  // These methods creates expressions encapsulating the start, end
+  // Attaches a demon awakened when anything about this interval changes.
+  void WhenAnything(Demon* const d);
+
+  // These methods create expressions encapsulating the start, end
   // and duration of the interval var. Please note that these must not
   // be used if the interval var is unperformed.
   IntExpr* StartExpr();

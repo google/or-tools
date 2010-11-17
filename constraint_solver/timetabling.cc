@@ -73,10 +73,7 @@ class IntervalUnaryRelation : public Constraint {
 void IntervalUnaryRelation::Post() {
   if (t_->MayBePerformed()) {
     Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
-    t_->WhenStartRange(d);
-    t_->WhenDurationRange(d);
-    t_->WhenEndRange(d);
-    t_->WhenPerformedBound(d);
+    t_->WhenAnything(d);
   }
 }
 
@@ -152,14 +149,8 @@ class IntervalBinaryRelation : public Constraint {
 void IntervalBinaryRelation::Post() {
   if (t1_->MayBePerformed() && t2_->MayBePerformed()) {
     Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
-    t1_->WhenStartRange(d);
-    t1_->WhenDurationRange(d);
-    t1_->WhenEndRange(d);
-    t1_->WhenPerformedBound(d);
-    t2_->WhenStartRange(d);
-    t2_->WhenDurationRange(d);
-    t2_->WhenEndRange(d);
-    t2_->WhenPerformedBound(d);
+    t1_->WhenAnything(d);
+    t2_->WhenAnything(d);
   }
 }
 
@@ -274,12 +265,12 @@ void TemporalDisjunction::Post() {
                                   this,
                                   &TemporalDisjunction::RangeDemon1,
                                   "RangeDemon1");
-  t1_->WhenStartRange(d);
+  t1_->WhenAnything(d);
   d = MakeConstraintDemon0(s,
                            this,
                            &TemporalDisjunction::RangeDemon2,
                            "RangeDemon2");
-  t2_->WhenStartRange(d);
+  t2_->WhenAnything(d);
   if (alt_ != NULL) {
     d = MakeConstraintDemon0(s,
                              this,
@@ -440,8 +431,7 @@ void Sequence::Post() {
                                     &Sequence::RangeChanged,
                                     "RangeChanged",
                                     i);
-    t->WhenStartRange(d);
-    t->WhenEndRange(d);
+    t->WhenAnything(d);
   }
   Constraint* ct =
       MakeDecomposedSequenceConstraint(solver(), intervals_.get(), size_);
@@ -1265,10 +1255,7 @@ class DecomposedSequenceConstraint : public Constraint {
         &DecomposedSequenceConstraint::InitialPropagate,
         "InitialPropagate");
     for (int32 i = 0; i < straight_.size(); ++i) {
-      IntervalVar* interval_var = straight_.intervals()[i];
-      interval_var->WhenStartRange(d);
-      interval_var->WhenDurationRange(d);
-      interval_var->WhenEndRange(d);
+      straight_.intervals()[i]->WhenAnything(d);
     }
   }
 

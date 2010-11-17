@@ -442,6 +442,13 @@ class IntervalVarPerformedExpr : public BaseIntExpr {
   DISALLOW_COPY_AND_ASSIGN(IntervalVarPerformedExpr);
 };
 
+void IntervalVar::WhenAnything(Demon* const d) {
+  WhenDurationRange(d);
+  WhenStartRange(d);
+  WhenEndRange(d);
+  WhenPerformedBound(d);
+}
+
 IntExpr* IntervalVar::StartExpr() {
   if (start_expr_ == NULL) {
     solver()->SaveValue(reinterpret_cast<void**>(&start_expr_));
