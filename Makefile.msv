@@ -77,6 +77,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	objs/local_search.obj\
 	objs/pack.obj\
 	objs/range_cst.obj\
+	objs/resource.obj\
 	objs/sched_search.obj\
 	objs/search.obj\
 	objs/table.obj\
@@ -130,6 +131,9 @@ objs/pack.obj:constraint_solver/pack.cc
 
 objs/range_cst.obj:constraint_solver/range_cst.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/range_cst.cc /Foobjs/range_cst.obj
+
+objs/resource.obj:constraint_solver/resource.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/resource.cc /Foobjs/resource.obj
 
 objs/sched_search.obj:constraint_solver/sched_search.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/sched_search.cc /Foobjs/sched_search.obj
@@ -203,7 +207,7 @@ librouting.a: $(ROUTING_LIB_OBJS)
 # Algorithms library.
 
 ALGORITHMS_LIB_OBJS=\
-	objs/hungarian.obj
+	objs/hungarian.obj 
 
 objs/hungarian.obj:algorithms/hungarian.cc
 	$(CCC) $(CFLAGS) -c algorithms/hungarian.cc /Foobjs/hungarian.obj
