@@ -199,15 +199,15 @@ ROUTING_LIB_OBJS=\
 	objs/routing.obj
 
 objs/routing.obj:constraint_solver/routing.cc
-	$(CCC) $(CFLAGS) -c constraint_solver/routing.cc /Foobjs/routing.o
+	$(CCC) $(CFLAGS) -c constraint_solver/routing.cc /Foobjs/routing.obj
 
-librouting.a: $(ROUTING_LIB_OBJS)
+routing.lib: $(ROUTING_LIB_OBJS)
 	lib /OUT:routing.lib $(ROUTING_LIB_OBJS)
 
 # Algorithms library.
 
 ALGORITHMS_LIB_OBJS=\
-	objs/hungarian.obj 
+	objs/hungarian.obj
 
 objs/hungarian.obj:algorithms/hungarian.cc
 	$(CCC) $(CFLAGS) -c algorithms/hungarian.cc /Foobjs/hungarian.obj
