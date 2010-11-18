@@ -33,6 +33,7 @@ all:
 	@echo Please define target: cplibs, cpexe, pycp, clean
 
 CPLIBS = \
+	routing.lib \
 	constraint_solver.lib \
 	util.lib \
 	base.lib \
@@ -43,7 +44,7 @@ CPLIBS = \
 
 cplibs: $(CPLIBS)
 
-BINARIES=nqueens.exe golomb.exe magic_square.exe cryptarithm.exe
+BINARIES=nqueens.exe golomb.exe magic_square.exe cryptarithm.exe tsp.exe
 
 cpexe: $(BINARIES)
 
@@ -188,6 +189,17 @@ objs/dijkstra.obj:graph/dijkstra.cc
 shortestpaths.lib: $(SHORTESTPATHS_LIB_OBJS)
 	lib /OUT:shortestpaths.lib $(SHORTESTPATHS_LIB_OBJS)
 
+# Routing library.
+
+ROUTING_LIB_OBJS=\
+	objs/routing.obj
+
+objs/routing.obj:constraint_solver/routing.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/routing.cc /Foobjs/routing.o
+
+librouting.a: $(ROUTING_LIB_OBJS)
+	lib /OUT:routing.lib $(ROUTING_LIB_OBJS)
+
 # Algorithms library.
 
 ALGORITHMS_LIB_OBJS=\
@@ -275,10 +287,18 @@ objs/nqueens.obj: examples/nqueens.cc
 nqueens.exe: $(CPLIBS) objs/nqueens.obj
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.obj $(CPLIBS) /Fenqueens.exe
 
+objs/tsp.obj: examples/tsp.cc
+	$(CCC) $(CFLAGS) -c examples/tsp.cc /Foobjs/tsp.obj
+
+tsp.exe: $(CPLIBS) objs/tsp.obj
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.obj $(CPLIBS) /Fetsp.exe
+
 
 # SWIG
 
-pycp: constraint_solver/_pywrapcp.pyd constraint_solver/pywrapcp.py $(CPLIBS)
+# pywrapcp
+
+pycp: constraint_solver/_pywrapcp.pyd constraint_solver/pywrapcp.py constraint_solver/_pywraprouting.pyd constraint_solver/pywraprouting.py $(CPLIBS)
 
 constraint_solver/pywrapcp.py: constraint_solver/constraint_solver.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h base/base.swig
 	$(SWIG_BINARY) -c++ -python -o constraint_solver/constraint_solver_wrap.cc -module pywrapcp constraint_solver/constraint_solver.swig
@@ -293,3 +313,20 @@ _pywrapcp.dll: objs/constraint_solver_wrap.obj $(CPLIBS)
 
 constraint_solver/_pywrapcp.pyd: _pywrapcp.dll
 	copy _pywrapcp.dll constraint_solver\\_pywrapcp.pyd
+
+# pywraprouting
+
+constraint_solver/pywraprouting.py: constraint_solver/routing.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h constraint_solver/routing.h base/base.swig
+	$(SWIG_BINARY) -c++ -python -o constraint_solver/routing_wrap.cc -module pywraprouting constraint_solver/routing.swig
+
+constraint_solver/routing_wrap.cc: constraint_solver/pywraprouting.py
+
+objs/routing_wrap.obj: constraint_solver/routing_wrap.cc
+	$(CCC) $(CFLAGS) $(PYTHON_INC) /I__WIN32__ -c constraint_solver/routing_wrap.cc /Foobjs/routing_wrap.obj
+
+_pywraprouting.dll: objs/routing_wrap.obj $(CPLIBS)
+	link /DLL /OUT:_pywraprouting.dll objs/routing_wrap.obj $(CPLIBS) $(LDFLAGS) $(PYTHON_LNK)
+
+constraint_solver/_pywraprouting.pyd: _pywraprouting.dll
+	copy _pywraprouting.dll constraint_solver\\_pywraprouting.pyd
+

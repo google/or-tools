@@ -8,7 +8,7 @@ PROTOBUF_DIR=../protobuf-2.3.0
 #  ----- You should not need to modify the following, unless the -----
 #  ----- configuration is not standard ------
 
-# This is need to find python.h
+# This is needed to find python.h
 PYTHON_INC=-I/usr/include/python$(PYTHON_VER) -I/usr/lib/python$(PYTHON_VER)
 # This is needed to find gflags/gflags.h
 GFLAGS_INC = -I$(GFLAGS_DIR)/include
@@ -59,6 +59,7 @@ all:
 	@echo Please define target: cplibs, cpexe, pycp, clean
 
 CPLIBS = \
+	librouting.a       \
 	libconstraint_solver.a            \
 	libutil.a          \
 	libbase.a          \
@@ -69,10 +70,11 @@ CPLIBS = \
 cplibs: $(CPLIBS)
 
 BINARIES = \
-	nqueens \
+	cryptarithm \
 	golomb \
 	magic_square \
-	cryptarithm
+	nqueens \
+	tsp
 
 cpexe: $(BINARIES)
 
@@ -215,6 +217,17 @@ objs/dijkstra.o:graph/dijkstra.cc
 libshortestpaths.a: $(SHORTESTPATHS_LIB_OBJS)
 	ar rv libshortestpaths.a $(SHORTESTPATHS_LIB_OBJS)
 
+# Routing library.
+
+ROUTING_LIB_OBJS=\
+	objs/routing.o
+
+objs/routing.o:constraint_solver/routing.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/routing.cc -o objs/routing.o
+
+librouting.a: $(ROUTING_LIB_OBJS)
+	ar rv librouting.a $(ROUTING_LIB_OBJS)
+
 # Algorithms library.
 
 ALGORITHMS_LIB_OBJS=\
@@ -281,9 +294,17 @@ objs/nqueens.o: examples/nqueens.cc
 nqueens: $(CPLIBS) objs/nqueens.o
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.o $(CPLIBS) -o nqueens
 
+objs/tsp.o: examples/tsp.cc
+	$(CCC) $(CFLAGS) -c examples/tsp.cc -o objs/tsp.o
+
+tsp: $(CPLIBS) objs/tsp.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.o $(CPLIBS) -o tsp
+
 # SWIG
 
-pycp: _pywrapcp.so constraint_solver/pywrapcp.py $(CPLIBS)
+# pywrapcp
+
+pycp: _pywrapcp.so constraint_solver/pywrapcp.py _pywraprouting.so constraint_solver/pywraprouting.py $(CPLIBS)
 
 constraint_solver/pywrapcp.py: constraint_solver/constraint_solver.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h base/base.swig
 	$(SWIG_BINARY) -c++ -python -o constraint_solver/constraint_solver_wrap.cc -module pywrapcp constraint_solver/constraint_solver.swig
@@ -295,3 +316,16 @@ objs/constraint_solver_wrap.o: constraint_solver/constraint_solver_wrap.cc
 
 _pywrapcp.so: objs/constraint_solver_wrap.o $(CPLIBS)
 	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o $(CPLIBS) $(GFLAGS_LNK) $(PROTOBUF_LNK)
+
+# pywraprouting
+
+constraint_solver/pywraprouting.py: constraint_solver/routing.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h constraint_solver/routing.h base/base.swig
+	$(SWIG_BINARY) -c++ -python -o constraint_solver/routing_wrap.cc -module pywraprouting constraint_solver/routing.swig
+
+constraint_solver/routing_wrap.cc: constraint_solver/pywraprouting.py
+
+objs/routing_wrap.o: constraint_solver/routing_wrap.cc
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c constraint_solver/routing_wrap.cc -o objs/routing_wrap.o
+
+_pywraprouting.so: objs/routing_wrap.o $(CPLIBS)
+	$(LD) -o _pywraprouting.so objs/routing_wrap.o $(CPLIBS) $(GFLAGS_LNK) $(PROTOBUF_LNK)
