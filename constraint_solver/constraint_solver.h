@@ -1050,6 +1050,37 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
   Sequence* MakeSequence(const IntervalVar* const * intervals, int size,
                          const string& name);
 
+  // This constraint forces that, for any integer t, the sum of the demands
+  // corresponding to an interval containing t does not exceed the given
+  // capacity.
+  //
+  // Intervals and demands are arrays that should both be of the given size.
+  //
+  // Demands should only contain non-negative values. Zero values are supported,
+  // and the corresponding intervals are filtered out, as they neither impact
+  // nor are impacted by this constraint.
+  Constraint* MakeCumulative(
+      IntervalVar* const * intervals,
+      const int64 * demands,
+      int size,
+      int64 capacity,
+      const string& name);
+
+  // This constraint forces that, for any integer t, the sum of the demands
+  // corresponding to an interval containing t does not exceed the given
+  // capacity.
+  //
+  // Intervals and demands should be vectors of equal size.
+  //
+  // Demands should only contain non-negative values. Zero values are supported,
+  // and the corresponding intervals are filtered out, as they neither impact
+  // nor are impacted by this constraint.
+  Constraint* MakeCumulative(
+      vector<IntervalVar*>& intervals,
+      const vector<int64>& demands,
+      int64 capacity,
+      const string& name);
+
   // ----- Assignments -----
 
   // This method creates an empty assignment.
