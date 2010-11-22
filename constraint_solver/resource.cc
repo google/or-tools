@@ -1289,12 +1289,11 @@ class CumulativeConstraint : public Constraint {
 
 // ----------------- Factory methods -------------------------------
 
-Constraint* Solver::MakeCumulative(
-      IntervalVar* const * intervals,
-      const int64 * demands,
-      int size,
-      int64 capacity,
-      const string& name) {
+Constraint* Solver::MakeCumulative(IntervalVar* const* intervals,
+                                   const int64* demands,
+                                   int size,
+                                   int64 capacity,
+                                   const string& name) {
   for (int i = 0; i < size; ++i) {
     CHECK_GE(demands[i], 0);
   }
@@ -1302,13 +1301,12 @@ Constraint* Solver::MakeCumulative(
       this, intervals, demands, size, capacity, name));
 }
 
-Constraint* Solver::MakeCumulative(
-      vector<IntervalVar*>& intervals,
-      const vector<int64>& demands,
-      int64 capacity,
-      const string& name) {
+Constraint* Solver::MakeCumulative(const vector<IntervalVar*>& intervals,
+                                   const vector<int64>& demands,
+                                   int64 capacity,
+                                   const string& name) {
   CHECK_EQ(intervals.size(), demands.size());
-  IntervalVar** intervals_array = intervals.data();
+  IntervalVar* const* intervals_array = intervals.data();
   const int64* demands_array = demands.data();
   const int size = intervals.size();
   return MakeCumulative(intervals_array, demands_array, size, capacity, name);

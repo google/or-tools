@@ -245,6 +245,7 @@ class PyDecisionBuilder(object):
 %rename (ConstantRestart) MakeConstantRestart;
 %rename (ConvexPiecewiseExpr) MakeConvexPiecewiseExpr;
 %rename (Count) MakeCount;
+%rename (Cumulative) MakeCumulative;
 %rename (CustomLimit) MakeCustomLimit;
 %rename (DecisionBuilderFromAssignment) MakeDecisionBuilderFromAssignment;
 %rename (DefaultPhase) MakeDefaultPhase;
@@ -1231,6 +1232,11 @@ static bool PyCallbackBool(PyObject* pyfunc) {
                         DecisionBuilder* const db2,
                         DecisionBuilder* const db3,
                         DecisionBuilder* const db4);
+%ignore Solver::MakeCumulative(IntervalVar* const * intervals,
+                               const int64 * demands,
+                               int size,
+                               int64 capacity,
+                               const string& name);
 
 // Add arithmetic operators to integer expressions.
 %extend IntExpr {
@@ -1553,6 +1559,7 @@ class LongResultCallback3 {
 %rename (makeConstantRestart) MakeConstantRestart;
 %rename (makeConvexPiecewiseExpr) MakeConvexPiecewiseExpr;
 %rename (makeCount) MakeCount;
+%rename (makeCumulative) MakeCumulative;
 %rename (makeCustomLimit) MakeCustomLimit;
 %rename (makeDecisionBuilderFromAssignment) MakeDecisionBuilderFromAssignment;
 %rename (makeDistribute) MakeDistribute;
