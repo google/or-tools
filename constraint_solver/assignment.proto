@@ -15,7 +15,7 @@ syntax = "proto2";
 
 package operations_research;
 
-// Storage for IntVars
+// Storage for IntVars.
 message IntVarAssignmentProto {
   required string var_id = 1;
   required int64 min = 2;
@@ -23,7 +23,7 @@ message IntVarAssignmentProto {
   required bool active = 4;
 }
 
-// Storage for IntervalVars
+// Storage for IntervalVars.
 message IntervalVarAssignmentProto {
   required string var_id = 1;
   required int64 start_min = 2;
@@ -47,7 +47,7 @@ message NeighborsInfo {
   repeated WorkerInfo neighbor = 1;
 }
 
-// Global container for all assignment variables and objective
+// Global container for all assignment variables and objective.
 message AssignmentProto {
   repeated IntVarAssignmentProto int_var_assignment = 1;
   repeated IntervalVarAssignmentProto interval_var_assignment = 2;

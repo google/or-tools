@@ -138,6 +138,7 @@ int MonoidOperationTree<T>::ComputeLeafOffset(int size) {
 
 template<class T>
 int MonoidOperationTree<T>::ComputeNumberOfNodes(int leaf_offset) {
+  // leaf_offset should be a power of 2 minus 1.
   DCHECK_EQ(0, (leaf_offset) & (leaf_offset+1));
   const int num_leaves = leaf_offset + 1;
   const int num_nodes = leaf_offset + num_leaves;

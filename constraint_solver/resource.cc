@@ -632,7 +632,12 @@ class LambdaThetaNode {
       energetic_end_min_opt_ = ect3;
       argmax_energetic_end_min_opt_ = left.argmax_energetic_end_min_opt_;
     }
+    // The processing time, with one grey interval, should be no less than
+    // without any grey interval.
     DCHECK(energy_opt_ >= energy_);
+    // If there is no responsible grey interval for the processing time,
+    // the processing time with a grey interval should equal the one
+    // without.
     DCHECK((argmax_energy_opt_ != kNone) || (energy_opt_ == energy_));
   }
 
@@ -722,7 +727,7 @@ class CumulativeLambdaThetaTree : public MonoidOperationTree<LambdaThetaNode> {
   int64 ConvertEnergeticEndMinToEndMin(int64 energetic_end_min) const {
     // Computes ceil(energetic_end_min / capacity_), without using doubles.
     const int64 numerator = energetic_end_min + capacity_ - 1;
-    DCHECK(numerator >= 0);  // NOLINT - DCHECK_GE not supported
+    DCHECK_GE(numerator, 0);  // Overflow.
     return numerator / capacity_;
   }
   const int64 capacity_;
