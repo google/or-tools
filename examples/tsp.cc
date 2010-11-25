@@ -15,8 +15,8 @@
 //
 // This is a sample using the routing library to solve a Traveling Salesman
 // Problem.
-// Description of the problem can be found here:
-// //http://en.wikipedia.org/wiki/Travelling_salesman_problem.
+// The description of the problem can be found here:
+// http://en.wikipedia.org/wiki/Travelling_salesman_problem.
 // For small problems one can use the hamiltonian path library directly (cf
 // graph/hamiltonian_path.h).
 // The optimization engine uses local search to improve solutions, first

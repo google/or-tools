@@ -15,8 +15,8 @@
 
    This is a sample using the routing library python wrapper to solve a
    Traveling Salesman Problem.
-   Description of the problem can be found here:
-   //http://en.wikipedia.org/wiki/Travelling_salesman_problem.
+   The description of the problem can be found here:
+   http://en.wikipedia.org/wiki/Travelling_salesman_problem.
    The optimization engine uses local search to improve solutions, first
    solutions being generated using a cheapest addition heuristic.
    Optionally one can randomly forbid a set of random connections between nodes
