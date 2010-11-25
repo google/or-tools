@@ -25,27 +25,45 @@ template <class T> class sparsetable {
 
   void resize(int new_size) {
     CHECK_GE(new_size, 0);
-    size_ = new_size_;
-    elements_.resize((size_ + kBlockSize - 1) / kBlockSize);
+    size_ = new_size;
+    const int reduced_size = (size_ + kBlockSize - 1) / kBlockSize;
+    if (reduced_size != elements_.size()) {
+      elements_.resize(reduced_size);
+      masks_.resize(reduced_size, 0U);
+    }
   }
 
-  const T& get(int index) {
+  const T& get(int index) const {
     DCHECK_GE(index, 0);
     DCHECK_LT(index, size_);
+    DCHECK(test(index));
     return elements_[index / kBlockSize][index % kBlockSize];
   }
 
   void set(int index, const T& elem) {
-    elements_[index / kBlockSize][index % kBlockSize] = elem;
+    const int offset = index / kBlockSize;
+    const int pos = index % kBlockSize;
+    if (elements_[offset].size() == 0) {
+      elements_[offset].resize(kBlockSize);
+    }
+    elements_[offset][index % kBlockSize] = elem;
+    masks_[offset] |= (1U << pos);
+  }
+
+  bool test(int index) const {
+    const int offset = index / kBlockSize;
+    const int pos = index % kBlockSize;
+    return ((masks_[offset] & (1U << pos)) != 0);
   }
 
   int size() const { return size_; }
  private:
-  static const int kBlockSize = 16;
+  static const int kBlockSize = 32;
 
   int size_;
   vector<vector<T> > elements_;
+  vector<uint32> masks_;
 };
 }
 
-#endir // BASE_SPARSETABLE_H
+#endif  // BASE_SPARSETABLE_H
