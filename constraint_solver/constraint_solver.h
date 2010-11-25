@@ -68,7 +68,7 @@
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
-#include "base/util.h"
+#include "base/strutil.h"
 #include "base/map-util.h"
 #include "base/random.h"
 
@@ -1880,7 +1880,11 @@ class PropagationBaseObject : public BaseObject {
   virtual ~PropagationBaseObject() {}
 
   virtual string DebugString() const {
-    return "PropagationBaseObject";
+    if (name().empty()) {
+      return "PropagationBaseObject";
+    } else {
+      return StringPrintf("PropagationBaseObject: %s", name().c_str());
+    }
   }
   Solver* solver() const { return solver_; }
   // This method freezes the propagation queue. It is useful when you
