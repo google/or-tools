@@ -60,23 +60,25 @@ all:
 
 CPLIBS = \
 	librouting.a       \
-	libconstraint_solver.a            \
+	libconstraint_solver.a
+
+BASE_LIBS = \
 	libutil.a          \
 	libbase.a          \
 	libalgorithms.a    \
 	libgraph.a         \
 	libshortestpaths.a
 
-cplibs: $(CPLIBS)
+cplibs: $(CPLIBS) $(BASE_LIBS)
 
-BINARIES = \
+CPBINARIES = \
 	cryptarithm \
 	golomb \
 	magic_square \
 	nqueens \
 	tsp
 
-cpexe: $(BINARIES)
+cpexe: $(CPBINARIES)
 
 clean:
 	rm -f *.a
@@ -114,7 +116,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 objs/alldiff_cst.o:constraint_solver/alldiff_cst.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/alldiff_cst.cc -o objs/alldiff_cst.o
 
-objs/assignment.o:constraint_solver/assignment.cc constraint_solver/assignment.pb.cc
+objs/assignment.o:constraint_solver/assignment.cc constraint_solver/assignment.pb.h
 	$(CCC) $(CFLAGS) -c constraint_solver/assignment.cc -o objs/assignment.o
 
 objs/assignment.pb.o:constraint_solver/assignment.pb.cc
@@ -122,6 +124,8 @@ objs/assignment.pb.o:constraint_solver/assignment.pb.cc
 
 constraint_solver/assignment.pb.cc:constraint_solver/assignment.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=constraint_solver --cpp_out=constraint_solver constraint_solver/assignment.proto
+
+constraint_solver/assignment.pb.h:constraint_solver/assignment.pb.cc
 
 objs/constraint_solver.o:constraint_solver/constraint_solver.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/constraint_solver.cc -o objs/constraint_solver.o
@@ -252,6 +256,7 @@ BASE_LIB_OBJS=\
 	objs/random.o\
 	objs/stringpiece.o\
 	objs/stringprintf.o\
+	objs/timer.o\
 	objs/util.o
 
 objs/bitmap.o:base/bitmap.cc
@@ -266,49 +271,53 @@ objs/stringpiece.o:base/stringpiece.cc
 	$(CCC) $(CFLAGS) -c base/stringpiece.cc -o objs/stringpiece.o
 objs/stringprintf.o:base/stringprintf.cc
 	$(CCC) $(CFLAGS) -c base/stringprintf.cc -o objs/stringprintf.o
+objs/timer.o:base/timer.cc
+	$(CCC) $(CFLAGS) -c base/timer.cc -o objs/timer.o
 objs/util.o:base/util.cc
 	$(CCC) $(CFLAGS) -c base/util.cc -o objs/util.o
 
 libbase.a: $(BASE_LIB_OBJS)
 	ar rv libbase.a $(BASE_LIB_OBJS)
 
-# Examples
+# Pure CP Examples
 
 objs/cryptarithm.o:examples/cryptarithm.cc
 	$(CCC) $(CFLAGS) -c examples/cryptarithm.cc -o objs/cryptarithm.o
 
-cryptarithm: $(CPLIBS) objs/cryptarithm.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.o $(CPLIBS) -o cryptarithm
+cryptarithm: $(CPLIBS) $(BASE_LIBS) objs/cryptarithm.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.o $(CPLIBS) $(BASE_LIBS) -o cryptarithm
 
 objs/golomb.o:examples/golomb.cc
 	$(CCC) $(CFLAGS) -c examples/golomb.cc -o objs/golomb.o
 
-golomb: $(CPLIBS) objs/golomb.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.o $(CPLIBS) -o golomb
+golomb: $(CPLIBS) $(BASE_LIBS) objs/golomb.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.o $(CPLIBS) $(BASE_LIBS) -o golomb
 
 objs/magic_square.o:examples/magic_square.cc
 	$(CCC) $(CFLAGS) -c examples/magic_square.cc -o objs/magic_square.o
 
-magic_square: $(CPLIBS) objs/magic_square.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.o $(CPLIBS) -o magic_square
+magic_square: $(CPLIBS) $(BASE_LIBS) objs/magic_square.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.o $(CPLIBS) $(BASE_LIBS) -o magic_square
 
 objs/nqueens.o: examples/nqueens.cc
 	$(CCC) $(CFLAGS) -c examples/nqueens.cc -o objs/nqueens.o
 
-nqueens: $(CPLIBS) objs/nqueens.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.o $(CPLIBS) -o nqueens
+nqueens: $(CPLIBS) $(BASE_LIBS) objs/nqueens.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.o $(CPLIBS) $(BASE_LIBS) -o nqueens
+
+# Routing Examples
 
 objs/tsp.o: examples/tsp.cc
 	$(CCC) $(CFLAGS) -c examples/tsp.cc -o objs/tsp.o
 
-tsp: $(CPLIBS) objs/tsp.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.o $(CPLIBS) -o tsp
+tsp: $(CPLIBS) $(BASE_LIBS) objs/tsp.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.o $(CPLIBS) $(BASE_LIBS) -o tsp
 
 # SWIG
 
 # pywrapcp
 
-pycp: _pywrapcp.so constraint_solver/pywrapcp.py _pywraprouting.so constraint_solver/pywraprouting.py $(CPLIBS)
+pycp: _pywrapcp.so constraint_solver/pywrapcp.py _pywraprouting.so constraint_solver/pywraprouting.py $(CPLIBS) $(BASE_LIBS)
 
 constraint_solver/pywrapcp.py: constraint_solver/constraint_solver.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h base/base.swig
 	$(SWIG_BINARY) -c++ -python -o constraint_solver/constraint_solver_wrap.cc -module pywrapcp constraint_solver/constraint_solver.swig
@@ -318,8 +327,8 @@ constraint_solver/constraint_solver_wrap.cc: constraint_solver/pywrapcp.py
 objs/constraint_solver_wrap.o: constraint_solver/constraint_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c constraint_solver/constraint_solver_wrap.cc -o objs/constraint_solver_wrap.o
 
-_pywrapcp.so: objs/constraint_solver_wrap.o $(CPLIBS)
-	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o $(CPLIBS) $(GFLAGS_LNK) $(PROTOBUF_LNK)
+_pywrapcp.so: objs/constraint_solver_wrap.o $(CPLIBS) $(BASE_LIBS)
+	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o $(CPLIBS) $(BASE_LIBS) $(GFLAGS_LNK) $(PROTOBUF_LNK)
 
 # pywraprouting
 
@@ -331,5 +340,5 @@ constraint_solver/routing_wrap.cc: constraint_solver/pywraprouting.py
 objs/routing_wrap.o: constraint_solver/routing_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c constraint_solver/routing_wrap.cc -o objs/routing_wrap.o
 
-_pywraprouting.so: objs/routing_wrap.o $(CPLIBS)
-	$(LD) -o _pywraprouting.so objs/routing_wrap.o $(CPLIBS) $(GFLAGS_LNK) $(PROTOBUF_LNK)
+_pywraprouting.so: objs/routing_wrap.o $(CPLIBS) $(BASE_LIBS)
+	$(LD) -o _pywraprouting.so objs/routing_wrap.o $(CPLIBS) $(BASE_LIBS) $(GFLAGS_LNK) $(PROTOBUF_LNK)

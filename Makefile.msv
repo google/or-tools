@@ -224,6 +224,7 @@ BASE_LIB_OBJS=\
 	objs/random.obj\
 	objs/stringpiece.obj\
 	objs/stringprintf.obj\
+	objs/timer.obj\
 	objs/util.obj
 
 objs/bitmap.obj:base/bitmap.cc
@@ -238,6 +239,8 @@ objs/stringpiece.obj:base/stringpiece.cc
 	$(CCC) $(CFLAGS) -c base/stringpiece.cc /Foobjs/stringpiece.obj
 objs/stringprintf.obj:base/stringprintf.cc
 	$(CCC) $(CFLAGS) -c base/stringprintf.cc /Foobjs/stringprintf.obj
+objs/timer.obj:base/timer.cc
+	$(CCC) $(CFLAGS) -c base/timer.cc /Foobjs/timer.obj
 objs/util.obj:base/util.cc
 	$(CCC) $(CFLAGS) -c base/util.cc /Foobjs/util.obj
 

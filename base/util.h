@@ -21,10 +21,6 @@
 #include <stddef.h>         // For size_t
 #include <assert.h>
 #include <stdarg.h>
-#if !defined(_MSC_VER)
-#include <sys/time.h>
-#endif
-#include <time.h>
 
 // C++
 #include <list>
@@ -54,6 +50,7 @@ namespace operations_research {
 #include "base/basictypes.h"
 #include "base/macros.h"
 #include "base/logging.h"
+#include "base/timer.h"
 
 namespace operations_research {
 static inline void mix(uint32& a, uint32& b, uint32& c) {     // 32bit version
@@ -164,23 +161,6 @@ using std::hash_set;
 namespace operations_research {
 class StringPiece;
 
-class WallTimer {
- public:
-  WallTimer();
-
-  void Start();
-  void Stop();
-  bool Reset();
-  void Restart();
-  bool IsRunning() const;
-  int64 GetInMs() const;
- private:
-  int64 start_usec_;  // start time in microseconds.
-  int64 sum_usec_;    // sum of time diffs in microseconds.
-  bool has_started_;
-
-  DISALLOW_COPY_AND_ASSIGN(WallTimer);
-};
 
 // Returns the memory usage of the process.
 int64 GetProcessMemoryUsage();
