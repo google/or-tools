@@ -11,6 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if !defined(_MSC_VER)
+#include <sys/time.h>
+#endif
+#include <time.h>
 #include "base/random.h"
 
 namespace operations_research {
