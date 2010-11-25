@@ -47,6 +47,20 @@ FindOrNull(const Collection& collection,
   return &it->second;
 }
 
+// Perform a lookup in a map or hash_map.
+// Same as above but the returned pointer is not const and can be used to change
+// the stored value.
+template <class Collection>
+typename Collection::value_type::second_type*
+FindOrNull(Collection& collection,
+           const typename Collection::value_type::first_type& key) {
+  typename Collection::iterator it = collection.find(key);
+  if (it == collection.end()) {
+    return 0;
+  }
+  return &it->second;
+}
+
 // Perform a lookup in a map or hash_map whose values are pointers.
 // If the key is present a const pointer to the associated value is returned,
 // otherwise a NULL pointer is returned.
