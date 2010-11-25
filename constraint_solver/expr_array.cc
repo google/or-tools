@@ -96,6 +96,10 @@ string ArrayExpr::DebugStringInternal(const string& name) const {
 
 // ---------- Sum Array ----------
 
+// Some of these optimizations here are described in:
+// Bounds Consistency Techniques for Long Linear Constraints (2002)
+// by Warwick Harvey and Joachim Schimp
+
 // ----- Sum Array Ct -----
 
 // This constraint implements sum(vars) == var.  It is delayed such
