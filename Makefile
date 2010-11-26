@@ -73,6 +73,7 @@ cplibs: $(CPLIBS) $(BASE_LIBS)
 
 CPBINARIES = \
 	cryptarithm \
+        cvrptw \
 	golomb \
 	magic_square \
 	nqueens \
@@ -239,7 +240,7 @@ librouting.a: $(ROUTING_LIB_OBJS)
 # Algorithms library.
 
 ALGORITHMS_LIB_OBJS=\
-	objs/hungarian.o 
+	objs/hungarian.o
 
 objs/hungarian.o:algorithms/hungarian.cc
 	$(CCC) $(CFLAGS) -c algorithms/hungarian.cc -o objs/hungarian.o
@@ -286,6 +287,12 @@ objs/cryptarithm.o:examples/cryptarithm.cc
 
 cryptarithm: $(CPLIBS) $(BASE_LIBS) objs/cryptarithm.o
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.o $(CPLIBS) $(BASE_LIBS) -o cryptarithm
+
+objs/cvrptw.o: examples/cvrptw.cc
+	$(CCC) $(CFLAGS) -c examples/cvrptw.cc -o objs/cvrptw.o
+
+cvrptw: $(CPLIBS) $(BASE_LIBS) objs/cvrptw.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cvrptw.o $(CPLIBS) $(BASE_LIBS) -o cvrptw
 
 objs/golomb.o:examples/golomb.cc
 	$(CCC) $(CFLAGS) -c examples/golomb.cc -o objs/golomb.o

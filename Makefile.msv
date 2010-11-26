@@ -44,7 +44,7 @@ CPLIBS = \
 
 cplibs: $(CPLIBS)
 
-BINARIES=nqueens.exe golomb.exe magic_square.exe cryptarithm.exe tsp.exe
+BINARIES=nqueens.exe golomb.exe magic_square.exe cryptarithm.exe tsp.exe cvrptw.exe
 
 cpexe: $(BINARIES)
 
@@ -275,6 +275,12 @@ objs/cryptarithm.obj:examples/cryptarithm.cc
 
 cryptarithm.exe: $(CPLIBS) objs/cryptarithm.obj
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.obj $(CPLIBS) /Fecryptarithm.exe
+
+objs/cvrptw.obj: examples/cvrptw.cc
+	$(CCC) $(CFLAGS) -c examples/cvrptw.cc /Foobjs/cvrptw.obj
+
+cvrptw.exe: $(CPLIBS) $(BASE_LIBS) objs/cvrptw.obj
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cvrptw.obj $(CPLIBS) $(BASE_LIBS) /Fecvrptw.exe
 
 objs/golomb.obj:examples/golomb.cc
 	$(CCC) $(CFLAGS) -c examples/golomb.cc /Foobjs/golomb.obj
