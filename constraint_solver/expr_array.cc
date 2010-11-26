@@ -97,8 +97,11 @@ string ArrayExpr::DebugStringInternal(const string& name) const {
 // ---------- Sum Array ----------
 
 // Some of these optimizations here are described in:
-// Bounds Consistency Techniques for Long Linear Constraints (2002)
-// by Warwick Harvey and Joachim Schimp
+// "Bounds consistency techniques for long linear constraints".  In
+// Workshop on Techniques for Implementing Constraint Programming
+// Systems (TRICS), a workshop of CP 2002, N. Beldiceanu, W. Harvey,
+// Martin Henz, Francois Laburthe, Eric Monfroy, Tobias Müller,
+// Laurent Perron and Christian Schulte editors, pages 39–46, 2002.
 
 // ----- Sum Array Ct -----
 
@@ -163,27 +166,20 @@ void SumArrayCt::InitialPropagate() {
 
   int64 cmin = sum;
   int64 cmax = sum;
+  int64 diameter = 0;
   for (int i = start; i <= end; ++i) {
-    cmin += vars_[i]->Min();
-    cmax += vars_[i]->Max();
+    const int64 local_min = vars_[i]->Min();
+    const int64 local_max = vars_[i]->Max();
+    cmin += local_min;
+    cmax += local_max;
+    diameter = std::max(diameter, local_max - local_min);
   }
   var_->SetRange(cmin, cmax);
 
   const int64 vmin = var_->Min();
   const int64 vmax = var_->Max();
-  if (vmax >= cmax && vmin <= cmin) {
-    return;
-  }
-
-  int64 diameter = -1;
-  for (int i = start; i <= end; ++i) {
-    const int64 vdiameter = vars_[i]->Max() - vars_[i]->Min();
-    if (vdiameter > diameter) {
-      diameter = vdiameter;
-    }
-  }
-
-  if (vmax - vmin > diameter) {
+  // The second condition is rule 5 in the above paper.
+  if ((vmax >= cmax && vmin <= cmin) || vmax - vmin > diameter) {
     return;
   }
 
@@ -231,62 +227,57 @@ class SumArray : public ArrayExpr {
 
 SumArray::~SumArray() {}
 
-SumArray::SumArray(Solver* const s, const IntVar* const* vars, int size)
-    : ArrayExpr(s, vars, size) {}
+SumArray::SumArray(Solver* const solver, const IntVar* const* vars, int size)
+    : ArrayExpr(solver, vars, size) {}
 
 int64 SumArray::Min() const {
-  int64 min = 0;
+  int64 computed_min = 0;
   for (int i = 0; i < size_; ++i) {
-    min += vars_[i]->Min();
+    computed_min += vars_[i]->Min();
   }
-  return min;
+  return computed_min;
 }
 
-void SumArray::SetMin(int64 m) {
-  SetRange(m, kint64max);
+void SumArray::SetMin(int64 new_min) {
+  SetRange(new_min, kint64max);
 }
 
 int64 SumArray::Max() const {
-  int64 max = 0;
+  int64 computed_max = 0;
   for (int i = 0; i < size_; ++i) {
-    max += vars_[i]->Max();
+    computed_max += vars_[i]->Max();
   }
-  return max;
+  return computed_max;
 }
 
-void SumArray::SetMax(int64 m) {
-  SetRange(kint64min, m);
+void SumArray::SetMax(int64 new_max) {
+  SetRange(kint64min, new_max);
 }
 
-void SumArray::SetRange(int64 l, int64 u) {
+void SumArray::SetRange(int64 new_min, int64 new_max) {
   int64 current_min = 0;
   int64 current_max = 0;
-  int64 diameter = -1;
+  int64 diameter = 0;
   for (int i = 0; i < size_; ++i) {
     const int64 vmin = vars_[i]->Min();
     const int64 vmax = vars_[i]->Max();
     current_min += vmin;
     current_max += vmax;
-    const int64 vdiameter = vmax - vmin;
-    if (vdiameter > diameter) {
-      diameter = vdiameter;
-    }
+    diameter = std::max(diameter, vmax - vmin);
   }
-  if (u >= current_max && l <= current_min) {
+  new_max = std::min(current_max, new_max);
+  new_min = std::max(new_min, current_min);
+  if ((new_max >= current_max && new_min <= current_min) ||
+      new_max - new_min > diameter) {
     return;
   }
-  if (u < current_min || l > current_max) {
+  if (new_max < current_min || new_min > current_max) {
     solver()->Fail();
-  }
-  u = std::min(current_max, u);
-  l = std::max(l, current_min);
-  if (u - l > diameter) {
-    return;
   }
   for (int i = 0; i < size_; ++i) {
     const int64 other_min = current_min - vars_[i]->Min();
     const int64 other_max = current_max - vars_[i]->Max();
-    vars_[i]->SetRange(l - other_max, u - other_min);
+    vars_[i]->SetRange(new_min - other_max, new_max - other_min);
   }
 }
 
@@ -294,9 +285,9 @@ string SumArray::DebugString() const {
   return DebugStringInternal("SumArray");
 }
 
-void SumArray::WhenRange(Demon* d) {
+void SumArray::WhenRange(Demon* demon) {
   for (int i = 0; i < size_; ++i) {
-    vars_[i]->WhenRange(d);
+    vars_[i]->WhenRange(demon);
   }
 }
 
