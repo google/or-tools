@@ -21,11 +21,10 @@ CFLAGS= -nologo $(SYSCFLAGS) $(DEBUG) /I.  $(GFLAGS_INC) $(ZLIB_INC)\
 	 $(PROTOBUF_INC)
 
 LD = cl /EHsc
-GFLAGS_LNK =
+GFLAGS_LNK = $(GFLAGS_DIR)\\vsprojects\\libgflags\\Release\\libgflags.lib
 ZLIB_LNK = $(ZLIB_DIR)/$(ZLIB_NAME)
 PROTOBUF_LNK = $(PROTOBUF_DIR)\\lib\\libprotobuf.lib
 LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) psapi.lib ws2_32.lib
-GFLAGS_CFLAGS=/I$(GFLAGS_DIR)\\src\\windows /I$(GFLAGS_DIR)\\src /D_USRDLL /D_WINDLL
 
 # Real targets
 
@@ -37,7 +36,6 @@ CPLIBS = \
 	constraint_solver.lib \
 	util.lib \
 	base.lib \
-	gflags.lib \
 	algorithms.lib \
 	graph.lib \
 	shortestpaths.lib
@@ -153,6 +151,10 @@ objs/utilities.obj:constraint_solver/utilities.cc
 constraint_solver.lib: $(CONSTRAINT_SOLVER_LIB_OBJS)
 	lib /OUT:constraint_solver.lib $(CONSTRAINT_SOLVER_LIB_OBJS)
 
+# GFlags copy library.
+libgflags.dll: $(GFLAGS_DIR)\vsprojects\libgflags\Release\libgflags.dll
+	       copy $(GFLAGS_DIR)\vsprojects\libgflags\Release\libgflags.dll .
+
 # Util library.
 
 UTIL_LIB_OBJS=\
@@ -247,64 +249,43 @@ objs/util.obj:base/util.cc
 base.lib: $(BASE_LIB_OBJS)
 	lib /OUT:base.lib $(BASE_LIB_OBJS)
 
-GFLAGS_LIB_OBJS =\
-	objs/gflags.obj\
-	objs/gflags_completions.obj\
-	objs/gflags_reporting.obj\
-	objs/port.obj
-
-objs/gflags.obj:$(GFLAGS_DIR)/src/gflags.cc
-	$(CCC) $(GFLAGS_CFLAGS) -c $(GFLAGS_DIR)/src/gflags.cc /Foobjs/gflags.obj
-
-objs/gflags_completions.obj:$(GFLAGS_DIR)/src/gflags_completions.cc
-	$(CCC) $(GFLAGS_CFLAGS) -c $(GFLAGS_DIR)/src/gflags_completions.cc /Foobjs/gflags_completions.obj
-
-objs/gflags_reporting.obj:$(GFLAGS_DIR)/src/gflags_reporting.cc
-	$(CCC) $(GFLAGS_CFLAGS) -c $(GFLAGS_DIR)/src/gflags_reporting.cc /Foobjs/gflags_reporting.obj
-
-objs/port.obj:$(GFLAGS_DIR)/src/windows/port.cc
-	$(CCC) $(GFLAGS_CFLAGS) -c $(GFLAGS_DIR)/src/windows/port.cc /Foobjs/port.obj
-
-gflags.lib: $(GFLAGS_LIB_OBJS)
-	link /DLL /OUT:gflags.dll $(GFLAGS_LIB_OBJS)
-
 # Examples
 
 objs/cryptarithm.obj:examples/cryptarithm.cc
 	$(CCC) $(CFLAGS) -c examples/cryptarithm.cc /Foobjs/cryptarithm.obj
 
-cryptarithm.exe: $(CPLIBS) objs/cryptarithm.obj
+cryptarithm.exe: $(CPLIBS) objs/cryptarithm.obj libgflags.dll
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.obj $(CPLIBS) /Fecryptarithm.exe
 
 objs/cvrptw.obj: examples/cvrptw.cc
 	$(CCC) $(CFLAGS) -c examples/cvrptw.cc /Foobjs/cvrptw.obj
 
-cvrptw.exe: $(CPLIBS) $(BASE_LIBS) objs/cvrptw.obj
+cvrptw.exe: $(CPLIBS) $(BASE_LIBS) objs/cvrptw.obj libgflags.dll
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cvrptw.obj $(CPLIBS) $(BASE_LIBS) /Fecvrptw.exe
 
 objs/golomb.obj:examples/golomb.cc
 	$(CCC) $(CFLAGS) -c examples/golomb.cc /Foobjs/golomb.obj
 
-golomb.exe: $(CPLIBS) objs/golomb.obj
+golomb.exe: $(CPLIBS) objs/golomb.obj libgflags.dll
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.obj $(CPLIBS) /Fegolomb.exe
 
 objs/magic_square.obj:examples/magic_square.cc
 	$(CCC) $(CFLAGS) -c examples/magic_square.cc /Foobjs/magic_square.obj
 
-magic_square.exe: $(CPLIBS) objs/magic_square.obj
+magic_square.exe: $(CPLIBS) objs/magic_square.obj libgflags.dll
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.obj $(CPLIBS) /Femagic_square.exe
 
 objs/nqueens.obj: examples/nqueens.cc
 	$(CCC) $(CFLAGS) -c examples/nqueens.cc /Foobjs/nqueens.obj
 
-nqueens.exe: $(CPLIBS) objs/nqueens.obj
+nqueens.exe: $(CPLIBS) objs/nqueens.obj libgflags.dll
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.obj $(CPLIBS) /Fenqueens.exe
 
 objs/tsp.obj: examples/tsp.cc
 	$(CCC) $(CFLAGS) -c examples/tsp.cc /Foobjs/tsp.obj
 
-tsp.exe: $(CPLIBS) objs/tsp.obj
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.obj $(CPLIBS) /Fetsp.exe
+tsp.exe: $(CPLIBS) objs/tsp.obj libgflags.dll
+	$(CCC) $(CFLAGS) objs/tsp.obj $(CPLIBS) $(LDFLAGS) /Fetsp.exe
 
 
 # SWIG
@@ -321,7 +302,7 @@ constraint_solver/constraint_solver_wrap.cc: constraint_solver/pywrapcp.py
 objs/constraint_solver_wrap.obj: constraint_solver/constraint_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) /I__WIN32__ -c constraint_solver/constraint_solver_wrap.cc /Foobjs/constraint_solver_wrap.obj
 
-_pywrapcp.dll: objs/constraint_solver_wrap.obj $(CPLIBS)
+_pywrapcp.dll: objs/constraint_solver_wrap.obj $(CPLIBS) libgflags.dll
 	link /DLL /OUT:_pywrapcp.dll objs/constraint_solver_wrap.obj $(CPLIBS) $(LDFLAGS) $(PYTHON_LNK)
 
 constraint_solver/_pywrapcp.pyd: _pywrapcp.dll
@@ -337,7 +318,7 @@ constraint_solver/routing_wrap.cc: constraint_solver/pywraprouting.py
 objs/routing_wrap.obj: constraint_solver/routing_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) /I__WIN32__ -c constraint_solver/routing_wrap.cc /Foobjs/routing_wrap.obj
 
-_pywraprouting.dll: objs/routing_wrap.obj $(CPLIBS)
+_pywraprouting.dll: objs/routing_wrap.obj $(CPLIBS) libgflags.dll
 	link /DLL /OUT:_pywraprouting.dll objs/routing_wrap.obj $(CPLIBS) $(LDFLAGS) $(PYTHON_LNK)
 
 constraint_solver/_pywraprouting.pyd: _pywraprouting.dll
