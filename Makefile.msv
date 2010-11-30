@@ -11,8 +11,8 @@ PYTHON_LNK=c:\\Python27\\libs\\python27.lib
 
 #  ----- No more editing below -----
 
-DEBUG=/O2 -DNDEBUG /MD
-CCC=cl /EHsc
+DEBUG=/O2 -DNDEBUG
+CCC=cl /EHsc /MD
 
 GFLAGS_INC = /I$(GFLAGS_DIR)\\src\\windows /I$(GFLAGS_DIR)\\src
 ZLIB_INC = /I$(ZLIB_DIR)
