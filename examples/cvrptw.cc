@@ -23,8 +23,6 @@
 #include <vector>
 
 #include "base/callback.h"
-#include "base/scoped_ptr.h"
-#include "base/stringprintf.h"
 #include "constraint_solver/routing.h"
 #include "base/random.h"
 
@@ -34,11 +32,10 @@ using operations_research::RoutingModel;
 using operations_research::Solver;
 using operations_research::ACMRandom;
 using operations_research::StrCat;
+using operations_research::StringAppendF;
+using operations_research::StringPrintf;
 using operations_research::scoped_array;
 using operations_research::scoped_ptr;
-using operations_research::StringPrintf;
-using operations_research::StringAppendF;
-
 
 DEFINE_int32(vrp_orders, 100, "Nodes in the problem.");
 DEFINE_int32(vrp_vehicles, 20, "Size of Traveling Salesman Problem instance.");
@@ -62,18 +59,20 @@ int32 GetSeed() {
 class LocationContainer {
  public:
   explicit LocationContainer(int64 speed)
-      : randomizer_(GetSeed()), speed_(speed) {}
+      : randomizer_(GetSeed()), speed_(speed) {
+    CHECK_LT(0, speed_);
+  }
   void AddLocation(int64 x, int64 y) {
     locations_.push_back(Location(x, y));
   }
   void AddRandomLocation(int64 x_max, int64 y_max) {
     AddLocation(randomizer_.Uniform(x_max + 1), randomizer_.Uniform(y_max + 1));
   }
-  int64 Manhattan(int64 from, int64 to) const {
+  int64 ManhattanDistance(int64 from, int64 to) const {
     return locations_[from].DistanceTo(locations_[to]);
   }
   int64 ManhattanTime(int64 from, int64 to) const {
-    return Manhattan(from, to) / speed_;
+    return ManhattanDistance(from, to) / speed_;
   }
  private:
   class Location {
@@ -81,11 +80,11 @@ class LocationContainer {
     Location() : x_(0), y_(0) {}
     Location(int64 x, int64 y) : x_(x), y_(y) {}
     int64 DistanceTo(const Location& location) const {
-      const int64 x_delta = x_ - location.x_;
-      const int64 y_delta = y_ - location.y_;
-      return std::max(x_delta, -x_delta) + std::max(y_delta, -y_delta);
+      return Abs(x_ - location.x_) + Abs(y_ - location.y_);
     }
    private:
+    static int64 Abs(int64 value) { return std::max(value, -value); }
+
     int64 x_;
     int64 y_;
   };
@@ -98,7 +97,9 @@ class LocationContainer {
 // Random demand.
 class RandomDemand {
  public:
-  RandomDemand(int size, int64 depot) : size_(size), depot_(depot) {}
+  RandomDemand(int size, int64 depot) : size_(size), depot_(depot) {
+    CHECK_LT(0, size_);
+  }
   void Initialize() {
     const int64 kDemandMax = 5;
     const int64 kDemandMin = 1;
@@ -106,7 +107,7 @@ class RandomDemand {
     ACMRandom randomizer(GetSeed());
     for (int order = 0; order < size_; ++order) {
       if (order == depot_) {
-        demand_[order] = 0LL;
+        demand_[order] = 0;
       } else {
         demand_[order] =
             kDemandMin + randomizer.Uniform(kDemandMax - kDemandMin + 1);
@@ -151,7 +152,11 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
   string dropped;
   for (int order = 1; order < routing.nodes(); ++order) {
     if (plan.Value(routing.NextVar(order)) == order) {
-      StringAppendF(&dropped, " %d", order);
+      if (dropped.empty()) {
+        StringAppendF(&dropped, " %d", order);
+      } else {
+        StringAppendF(&dropped, ", %d", order);
+      }
     }
   }
   if (!dropped.empty()) {
@@ -160,7 +165,7 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
 
   // Display actual output for each vehicle.
   for (int route_number = 0;
-       route_number < FLAGS_vrp_vehicles;
+       route_number < routing.vehicles();
        ++route_number) {
     int64 order = routing.Start(route_number);
     StringAppendF(&plan_output, "Route %d: ", route_number);
@@ -191,11 +196,12 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
 
 int main(int argc, char **argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
-  CHECK_GT(FLAGS_vrp_orders, 0) << "Specify an instance size greater than 0.";
+  CHECK_LT(0, FLAGS_vrp_orders) << "Specify an instance size greater than 0.";
+  CHECK_LT(0, FLAGS_vrp_vehicles) << "Specify a non-null vehicle fleet size.";
   // VRP of size FLAGS_vrp_size.
   // Nodes are indexed from 0 to FLAGS_vrp_orders, the starts and ends of
   // the routes are at node 0.
-  const int64 kDepot = 0LL;
+  const int64 kDepot = 0;
   RoutingModel routing(FLAGS_vrp_orders + 1, FLAGS_vrp_vehicles);
   routing.SetDepot(kDepot);
   // Setting first solution heuristic (cheapest addition).
@@ -214,14 +220,15 @@ int main(int argc, char **argv) {
 
   // Setting the cost function.
   routing.SetCost(NewPermanentCallback(&locations,
-                                       &LocationContainer::Manhattan));
+                                       &LocationContainer::ManhattanDistance));
 
   // Adding capacity dimension constraints.
   const int64 kVehicleCapacity = 40;
+  const int64 kNullCapacitySlack = 0;
   RandomDemand demand(routing.nodes(), kDepot);
   demand.Initialize();
   routing.AddDimension(NewPermanentCallback(&demand, &RandomDemand::Demand),
-                       0, kVehicleCapacity, kCapacity);
+                       kNullCapacitySlack, kVehicleCapacity, kCapacity);
 
   // Adding time dimension constraints.
   const int64 kTimePerDemandUnit = 300;
