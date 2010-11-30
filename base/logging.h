@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_LOGGING_H
-#define BASE_LOGGING_H
+#ifndef BASE_LOGGING_H_
+#define BASE_LOGGING_H_
 
 #include <stdlib.h>
-#include <iostream>
+#include <iostream>  // NOLINT
 #include "base/macros.h"
 
 // Debug-only checking.
@@ -28,13 +28,14 @@
 #define DCHECK_GT(val1, val2) assert((val1) > (val2))
 
 // Always-on checking
-#define CHECK(x)	if(x){}else LogMessageFatal(__FILE__, __LINE__).stream() << "Check failed: " #x
-#define CHECK_LT(x, y)	CHECK((x) < (y))
-#define CHECK_GT(x, y)	CHECK((x) > (y))
-#define CHECK_LE(x, y)	CHECK((x) <= (y))
-#define CHECK_GE(x, y)	CHECK((x) >= (y))
-#define CHECK_EQ(x, y)	CHECK((x) == (y))
-#define CHECK_NE(x, y)	CHECK((x) != (y))
+#define CHECK(x) \
+  if (!(x)) LogMessageFatal(__FILE__, __LINE__).stream() << "Check failed: " #x
+#define CHECK_LT(x, y) CHECK((x) < (y))
+#define CHECK_GT(x, y) CHECK((x) > (y))
+#define CHECK_LE(x, y) CHECK((x) <= (y))
+#define CHECK_GE(x, y) CHECK((x) >= (y))
+#define CHECK_EQ(x, y) CHECK((x) == (y))
+#define CHECK_NE(x, y) CHECK((x) != (y))
 #define CHECK_NOTNULL(x) CHECK((x) != NULL)
 
 #define LOG_INFO LogMessage(__FILE__, __LINE__)
@@ -43,7 +44,7 @@
 #define LOG_FATAL LogMessageFatal(__FILE__, __LINE__)
 #define LOG_QFATAL LOG_FATAL
 
-#define VLOG(x) if((x)>0){} else LOG_INFO.stream()
+#define VLOG(x) if ((x) <= 0) LOG_INFO.stream()
 
 #ifdef NDEBUG
 #define DEBUG_MODE 0
@@ -92,4 +93,4 @@ class LogMessageFatal : public LogMessage {
   DISALLOW_COPY_AND_ASSIGN(LogMessageFatal);
 };
 
-#endif  // BASE_LOGGING_H
+#endif  // BASE_LOGGING_H_

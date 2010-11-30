@@ -11,10 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_MAP_UTIL_H
-#define BASE_MAP_UTIL_H
+#ifndef BASE_MAP_UTIL_H_
+#define BASE_MAP_UTIL_H_
 
-#include <base/util.h>
+#include <utility>
+#include "base/util.h"
 
 namespace operations_research {
 
@@ -52,7 +53,7 @@ FindOrNull(const Collection& collection,
 // the stored value.
 template <class Collection>
 typename Collection::value_type::second_type*
-FindOrNull(Collection& collection,
+FindOrNull(Collection& collection,  // NOLINT
            const typename Collection::value_type::first_type& key) {
   typename Collection::iterator it = collection.find(key);
   if (it == collection.end()) {
@@ -141,4 +142,4 @@ FindOrDie(const Collection& collection,
 }
 }  // namespace operations_research
 
-#endif  // BASE_MAP_UTIL_H
+#endif  // BASE_MAP_UTIL_H_

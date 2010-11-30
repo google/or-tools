@@ -11,9 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_COMMANDLINEFLAGS_H
-#define BASE_COMMANDLINEFLAGS_H
+#ifndef BASE_COMMANDLINEFLAGS_H_
+#define BASE_COMMANDLINEFLAGS_H_
 
 #include "gflags/gflags.h"
 
-#endif  // BASE_COMMANDLINEFLAGS_H
+#endif  // BASE_COMMANDLINEFLAGS_H_

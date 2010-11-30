@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_TIMER_H
-#define BASE_TIMER_H
+#ifndef BASE_TIMER_H_
+#define BASE_TIMER_H_
 
 #include "base/basictypes.h"
 #include "base/macros.h"
@@ -37,4 +37,4 @@ class WallTimer {
   DISALLOW_COPY_AND_ASSIGN(WallTimer);
 };
 }  // namespace operations_research
-#endif  // BASE_TIMER_H
+#endif  // BASE_TIMER_H_

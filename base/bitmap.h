@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_BITMAP_H
-#define BASE_BITMAP_H
+#ifndef BASE_BITMAP_H_
+#define BASE_BITMAP_H_
 
 #include "util/bitset.h"
 
@@ -69,4 +69,4 @@ class Bitmap {
 
 }  // namespace operations_research
 
-#endif  // BASE_BITMAP_H
+#endif  // BASE_BITMAP_H_

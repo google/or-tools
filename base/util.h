@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_UTIL_H
-#define BASE_UTIL_H
+#ifndef BASE_UTIL_H_
+#define BASE_UTIL_H_
 
 // C
 #include <stdio.h>
@@ -159,13 +159,9 @@ using std::hash_set;
 #endif  // SWIG
 
 namespace operations_research {
-class StringPiece;
-
-
 // Returns the memory usage of the process.
 int64 GetProcessMemoryUsage();
-
 }  // namespace operations_research
 
 
-#endif  // BASE_UTIL_H
+#endif  // BASE_UTIL_H_

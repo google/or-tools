@@ -18,8 +18,8 @@
 #include "base/logging.h"
 #include "base/macros.h"
 
-#ifndef BASE_ADJUSTABLE_PRIORITY_QUEUE_H
-#define BASE_ADJUSTABLE_PRIORITY_QUEUE_H
+#ifndef BASE_ADJUSTABLE_PRIORITY_QUEUE_H_
+#define BASE_ADJUSTABLE_PRIORITY_QUEUE_H_
 
 namespace operations_research {
 
@@ -131,4 +131,4 @@ template<typename T> class AdjustablePriorityQueue {
 };
 }  // namespace operations_research
 
-#endif  // BASE_ADJUSTABLE_PRIORITY_QUEUE_H
+#endif  // BASE_ADJUSTABLE_PRIORITY_QUEUE_H_

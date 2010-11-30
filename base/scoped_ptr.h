@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_SCOPED_PTR_H
-#define BASE_SCOPED_PTR_H
+#ifndef BASE_SCOPED_PTR_H_
+#define BASE_SCOPED_PTR_H_
 
 //  This is an implementation designed to match the anticipated future TR2
 //  implementation of the scoped_ptr class, and its closely-related brethren,
@@ -378,4 +378,4 @@ bool operator!=(C* p, const scoped_ptr_malloc<C, FP>& b) {
 }
 }  // namespace operations_research
 
-#endif  // BASE_SCOPED_PTR_H
+#endif  // BASE_SCOPED_PTR_H_

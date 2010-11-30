@@ -16,22 +16,16 @@
 #ifndef BASE_BASICTYPES_H_
 #define BASE_BASICTYPES_H_
 
-// These typedefs are also defined in base/google.swig. In the
-// SWIG environment, we use those definitions and avoid duplicate
-// definitions here with an ifdef. The definitions should be the
-// same in both files, and ideally be only defined in this file.
 #ifndef SWIG
 // Standard typedefs
-// All Google2 code is compiled with -funsigned-char to make "char"
-// unsigned.  Google2 code therefore doesn't need a "uchar" type.
 typedef signed char         schar;
 typedef signed char         int8;
-typedef short               int16;
+typedef short               int16;  // NOLINT
 typedef int                 int32;
 #ifdef COMPILER_MSVC
-typedef __int64             int64;
+typedef __int64             int64;  // NOLINT
 #else
-typedef long long           int64;
+typedef long long           int64;  // NOLINT
 #endif /* COMPILER_MSVC */
 
 // NOTE: unsigned types are DANGEROUS in loops and other arithmetical
@@ -41,12 +35,12 @@ typedef long long           int64;
 // use assertions for this.
 
 typedef unsigned char      uint8;
-typedef unsigned short     uint16;
+typedef unsigned short     uint16;  // NOLINT
 typedef unsigned int       uint32;
 #ifdef COMPILER_MSVC
 typedef unsigned __int64   uint64;
 #else
-typedef unsigned long long uint64;
+typedef unsigned long long uint64;  // NOLINT
 #endif /* COMPILER_MSVC */
 
 // A type to represent a Unicode code-point value. As of Unicode 4.0,
@@ -62,11 +56,11 @@ typedef signed int         char32;
 // (http://www.opengroup.org/public/tech/aspen/lp64_wp.htm), hence
 // their ints are only 32 bits. We want to use the same fundamental
 // type on all archs if possible to preserve *printf() compatability.
-typedef unsigned long      uword_t;
+typedef unsigned long      uword_t;  // NOLINT
 
 // A signed natural machine word. In general you want to use "int"
 // rather than "sword_t"
-typedef long sword_t;
+typedef long sword_t;  // NOLINT
 
 #endif /* SWIG */
 
@@ -96,18 +90,21 @@ typedef long sword_t;
 #endif  // COMPILER_MSVC
 
 
-static const uint8  kuint8max  = (( uint8) 0xFF);
-static const uint16 kuint16max = ((uint16) 0xFFFF);
-static const uint32 kuint32max = ((uint32) 0xFFFFFFFF);
-static const uint64 kuint64max = ((uint64) GG_LONGLONG(0xFFFFFFFFFFFFFFFF));
-static const  int8  kint8min   = ((  int8) 0x80);
-static const  int8  kint8max   = ((  int8) 0x7F);
-static const  int16 kint16min  = (( int16) 0x8000);
-static const  int16 kint16max  = (( int16) 0x7FFF);
-static const  int32 kint32min  = (( int32) 0x80000000);
-static const  int32 kint32max  = (( int32) 0x7FFFFFFF);
-static const  int64 kint64min  = (( int64) GG_LONGLONG(0x8000000000000000));
-static const  int64 kint64max  = (( int64) GG_LONGLONG(0x7FFFFFFFFFFFFFFF));
+static const uint8  kuint8max  = static_cast<uint8>(0xFF);
+static const uint16 kuint16max = static_cast<uint16>(0xFFFF);
+static const uint32 kuint32max = static_cast<uint32>(0xFFFFFFFF);
+static const uint64 kuint64max =
+    static_cast<uint64>(GG_LONGLONG(0xFFFFFFFFFFFFFFFF));
+static const  int8  kint8min   = static_cast<int8>(0x80);
+static const  int8  kint8max   = static_cast<int8>(0x7F);
+static const  int16 kint16min  = static_cast<int16>(0x8000);
+static const  int16 kint16max  = static_cast<int16>(0x7FFF);
+static const  int32 kint32min  = static_cast<int32>(0x80000000);
+static const  int32 kint32max  = static_cast<int32>(0x7FFFFFFF);
+static const  int64 kint64min  =
+    static_cast<int64>(GG_LONGLONG(0x8000000000000000));
+static const  int64 kint64max  =
+    static_cast<int64>(GG_LONGLONG(0x7FFFFFFFFFFFFFFF));
 
 
 #endif  // BASE_BASICTYPES_H_

@@ -22,10 +22,11 @@
 // Systematic usage of StringPiece is encouraged as it will reduce unnecessary
 // conversions from "const char*" to "string" and back again.
 
-#ifndef BASE_STRINGPIECE_H
-#define BASE_STRINGPIECE_H
+#ifndef BASE_STRINGPIECE_H_
+#define BASE_STRINGPIECE_H_
 
 #include <string.h>
+#include <algorithm>
 #include <iosfwd>
 #include <string>
 
@@ -41,9 +42,9 @@ class StringPiece {
   // in a "const char*" or a "string" wherever a "StringPiece" is
   // expected.
   StringPiece() : ptr_(NULL), length_(0) { }
-  StringPiece(const char* str)
+  StringPiece(const char* str)  // NOLINT
     : ptr_(str), length_((str == NULL) ? 0 : static_cast<int>(strlen(str))) { }
-  StringPiece(const std::string& str)
+  StringPiece(const std::string& str)  // NOLINT
     : ptr_(str.data()), length_(static_cast<int>(str.size())) { }
   StringPiece(const char* offset, int len) : ptr_(offset), length_(len) { }
 
@@ -56,8 +57,14 @@ class StringPiece {
   int length() const { return length_; }
   bool empty() const { return length_ == 0; }
 
-  void clear() { ptr_ = NULL; length_ = 0; }
-  void set(const char* data, int len) { ptr_ = data; length_ = len; }
+  void clear() {
+    ptr_ = NULL;
+    length_ = 0;
+  }
+  void set(const char* data, int len) {
+    ptr_ = data;
+    length_ = len;
+  }
   void set(const char* str) {
     ptr_ = str;
     if (str != NULL)
@@ -153,31 +160,38 @@ class StringPiece {
 
 }  // namespace operations_research
 
-bool operator==(const operations_research::StringPiece& x, const operations_research::StringPiece& y);
+bool operator==(const operations_research::StringPiece& x,
+                const operations_research::StringPiece& y);
 
-inline bool operator!=(const operations_research::StringPiece& x, const operations_research::StringPiece& y) {
+inline bool operator!=(const operations_research::StringPiece& x,
+                       const operations_research::StringPiece& y) {
   return !(x == y);
 }
 
-inline bool operator<(const operations_research::StringPiece& x, const operations_research::StringPiece& y) {
+inline bool operator<(const operations_research::StringPiece& x,
+                      const operations_research::StringPiece& y) {
   const int r = memcmp(x.data(), y.data(),
                        std::min(x.size(), y.size()));
   return ((r < 0) || ((r == 0) && (x.size() < y.size())));
 }
 
-inline bool operator>(const operations_research::StringPiece& x, const operations_research::StringPiece& y) {
+inline bool operator>(const operations_research::StringPiece& x,
+                      const operations_research::StringPiece& y) {
   return y < x;
 }
 
-inline bool operator<=(const operations_research::StringPiece& x, const operations_research::StringPiece& y) {
+inline bool operator<=(const operations_research::StringPiece& x,
+                       const operations_research::StringPiece& y) {
   return !(x > y);
 }
 
-inline bool operator>=(const operations_research::StringPiece& x, const operations_research::StringPiece& y) {
+inline bool operator>=(const operations_research::StringPiece& x,
+                       const operations_research::StringPiece& y) {
   return !(x < y);
 }
 
 // allow StringPiece to be logged
-extern std::ostream& operator<<(std::ostream& o, const operations_research::StringPiece& piece);
+extern std::ostream& operator<<(std::ostream& o,
+                                const operations_research::StringPiece& piece);
 
-#endif  // BASE_STRINGPIECE_H
+#endif  // BASE_STRINGPIECE_H_

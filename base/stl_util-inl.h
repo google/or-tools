@@ -11,10 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_STL_UTIL_INL_H__
-#define BASE_STL_UTIL_INL_H__
+#ifndef BASE_STL_UTIL_INL_H_
+#define BASE_STL_UTIL_INL_H_
 
-#include <base/util.h>
+#include <string>
+#include "base/util.h"
 
 namespace operations_research {
 
@@ -97,4 +98,4 @@ void STLDeleteValues(T *v) {
 
 }  // namespace operations_research
 
-#endif  // BASE_STL_UTIL_INL_H__
+#endif  // BASE_STL_UTIL_INL_H_

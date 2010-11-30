@@ -11,12 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_CONCISE_ITERATOR_H
-#define BASE_CONCISE_ITERATOR_H
+#ifndef BASE_CONCISE_ITERATOR_H_
+#define BASE_CONCISE_ITERATOR_H_
 
-#include "base/util.h"
 #include <deque>
 #include <vector>
+
+#include "base/util.h"
 
 
 using std::deque;
@@ -93,8 +94,15 @@ class ConstIter {
   const value_type& operator*() const { return iterator_.operator*(); }
   const container_type* const_container() const { return container_; }
   const_iterator_type const_iterator() const { return iterator_; }
-  ConstIter& operator++() { ++iterator_; return *this; }
-  ConstIter operator++(int) { ConstIter a = *this; ++(*this); return a; }
+  ConstIter& operator++() {
+    ++iterator_;
+    return *this;
+  }
+  ConstIter operator++(int unused) {
+    ConstIter a = *this;
+    ++(*this);
+    return a;
+  }
   bool at_end() const { return iterator_ == container_->end(); }
 
  private:
@@ -112,7 +120,7 @@ class MutableIter {
   typedef typename Container::iterator iterator_type;
   typedef typename Container::const_iterator const_iterator_type;
 
-  explicit MutableIter(container_type& container)
+  explicit MutableIter(container_type& container)  // NOLINT
       : container_(&container), iterator_(container.begin()) {}
   MutableIter(const MutableIter& source) {
     container_ = source.container_;
@@ -132,12 +140,20 @@ class MutableIter {
   const_iterator_type const_iterator() const { return iterator_; }
   container_type* container() const { return container_; }
   iterator_type iterator() const { return iterator_; }
-  MutableIter& operator++() { ++iterator_; return *this; }
-  MutableIter operator++(int) { MutableIter a = *this; ++(*this); return a; }
+  MutableIter& operator++() {
+    ++iterator_;
+    return *this;
+  }
+  MutableIter operator++(int unused) {
+    MutableIter a = *this;
+    ++(*this);
+    return a;
+  }
   bool at_end() const { return iterator_ == container_->end(); }
   MutableIter& erase() {
-    Eraser<Container>::erase(container_, &iterator_); return *this; }
-
+    Eraser<Container>::erase(container_, &iterator_);
+    return *this;
+  }
  private:
   container_type* container_;
   iterator_type iterator_;
@@ -170,9 +186,15 @@ class ConstReverseIter {
   const container_type* const_container() const { return container_; }
   const_reverse_iterator_type const_reverse_iterator() const {
     return iterator_; }
-  ConstReverseIter& operator++() { ++iterator_; return *this; }
-  ConstReverseIter operator++(int) {
-    ConstReverseIter a = *this; ++(*this); return a; }
+  ConstReverseIter& operator++() {
+    ++iterator_;
+    return *this;
+  }
+  ConstReverseIter operator++(int unused) {
+    ConstReverseIter a = *this;
+    ++(*this);
+    return a;
+  }
   bool at_end() const { return iterator_ == container_->rend(); }
 
  private:
@@ -189,7 +211,7 @@ class MutableReverseIter {
   typedef typename Container::const_reverse_iterator
       const_reverse_iterator_type;
 
-  explicit MutableReverseIter(container_type& container)
+  explicit MutableReverseIter(container_type& container)  // NOLINT
       : container_(&container), iterator_(container.rbegin()) {}
   MutableReverseIter(const MutableReverseIter& source) {
     container_ = source.container_;
@@ -210,9 +232,15 @@ class MutableReverseIter {
     return iterator_; }
   container_type* container() const { return container_; }
   reverse_iterator_type reverse_iterator() const { return iterator_; }
-  MutableReverseIter& operator++() { ++iterator_; return *this; }
-  MutableReverseIter operator++(int) {
-    MutableReverseIter a = *this; ++(*this); return a; }
+  MutableReverseIter& operator++() {
+    ++iterator_;
+    return *this;
+  }
+  MutableReverseIter operator++(int unused) {
+    MutableReverseIter a = *this;
+    ++(*this);
+    return a;
+  }
   bool at_end() const { return iterator_ == container_->rend(); }
   // erase(reverse_iterator) is not supported by STL containers.
 
@@ -260,4 +288,4 @@ class Eraser<deque<T> > {
 };
 }  // namespace operations_research
 
-#endif  // BASE_CONCISE_ITERATOR_H
+#endif  // BASE_CONCISE_ITERATOR_H_

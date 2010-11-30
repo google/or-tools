@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_SPARSETABLE_H
-#define BASE_SPARSETABLE_H
+#ifndef BASE_SPARSETABLE_H_
+#define BASE_SPARSETABLE_H_
 
 #include <vector>
 #include "base/logging.h"
@@ -66,4 +66,4 @@ template <class T> class sparsetable {
 };
 }
 
-#endif  // BASE_SPARSETABLE_H
+#endif  // BASE_SPARSETABLE_H_
