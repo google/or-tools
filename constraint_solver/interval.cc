@@ -25,8 +25,10 @@ namespace operations_research {
 
 // ----- Interval Var -----
 
-const int64 IntervalVar::kMinValidValue = kint64min >> 2;
+// It's good to have the two extreme values being symmetrical around zero: it
+// makes mirroring easier.
 const int64 IntervalVar::kMaxValidValue = kint64max >> 2;
+const int64 IntervalVar::kMinValidValue = -kMaxValidValue;
 
 // ----- MirrorIntervalVar -----
 
