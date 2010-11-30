@@ -20,10 +20,10 @@
 #include <vector>
 
 #include "base/callback-types.h"
-#include "base/scoped_ptr.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/scoped_ptr.h"
 #include "base/bitmap.h"
 #include "base/map-util.h"
 #include "constraint_solver/constraint_solver.h"

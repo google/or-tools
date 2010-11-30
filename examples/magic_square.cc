@@ -19,7 +19,6 @@
 // We do not handle odd orders with the trivial method here.
 
 #include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
