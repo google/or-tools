@@ -31,14 +31,6 @@ namespace operations_research {
 // ----------------------------------------------------------------------
 // HasSuffixString()
 //    Return true if str ends in suffix.
-// StripSuffixString()
-//    Given a string and a putative suffix, returns the string minus the
-//    suffix string if the suffix matches, otherwise the original
-//    string.
-// TryStripSuffixString()
-//    Like StripSuffixString, but return true if the suffix was
-//    successfully matched.  Write the output to *result.
-//    It is safe for result to point back to the input string.
 // ----------------------------------------------------------------------
 
 inline bool HasSuffixString(const StringPiece& str,
