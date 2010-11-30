@@ -171,10 +171,9 @@ template <class T, class P> class CallMethod1 : public Demon {
   }
 
   virtual string DebugString() const {
-    ostringstream out;
-    out << "CallMethod_" << name_ << "(" << constraint_->DebugString()
-        << ", " << param1_ << ")";
-    return out.str();
+    return StrCat(StrCat("CallMethod_", name_),
+                  StrCat("(", constraint_->DebugString(), ", "),
+                  StrCat(param1_, ")"));
   }
  private:
   T* const constraint_;
@@ -213,10 +212,10 @@ template <class T, class P, class Q> class CallMethod2 : public Demon {
   }
 
   virtual string DebugString() const {
-    ostringstream out;
-    out << "CallMethod_" << name_ << "(" << constraint_
-        << ", " << param1_ << ", " << param2_ << ")";
-    return out.str();
+    return StrCat(StrCat("CallMethod_", name_),
+                  StrCat("(", constraint_->DebugString()),
+                  StrCat(", ", param1_),
+                  StrCat(", ", param2_, ")"));
   }
  private:
   T* const constraint_;
@@ -301,10 +300,9 @@ template <class T, class P> class DelayedCallMethod1 : public Demon {
   }
 
   virtual string DebugString() const {
-    ostringstream out;
-    out << "DelayedCallMethod_" << name_ << "(" << constraint_->DebugString()
-        << ", " << param1_ << ")";
-    return out.str();
+    return StrCat(StrCat("DelayedCallMethod_", name_),
+                  StrCat("(", constraint_->DebugString(), ", "),
+                  StrCat(param1_, ")"));
   }
  private:
   T* const constraint_;
@@ -347,10 +345,10 @@ template <class T, class P, class Q> class DelayedCallMethod2 : public Demon {
   }
 
   virtual string DebugString() const {
-    ostringstream out;
-    out << "DelayedCallMethod_" << name_ << "(" << constraint_
-        << ", " << param1_ << ", " << param2_ << ")";
-    return out.str();
+    return StrCat(StrCat("DelayedCallMethod_", name_),
+                  StrCat("(", constraint_->DebugString()),
+                  StrCat(", ", param1_),
+                  StrCat(", ", param2_, ")"));
   }
  private:
   T* const constraint_;
