@@ -89,9 +89,6 @@ DEFINE_int64(routing_max_cache_size, 1000,
 DEFINE_bool(routing_trace, false, "Routing: trace search.");
 DEFINE_bool(routing_use_homogeneous_costs, true,
             "Routing: use homogeneous cost model when possible.");
-// Temporary flag until we define routing parameters.
-DEFINE_bool(routing_gzip_compress_trail, false,
-            "use gzip to compress the trail, zippy otherwise");
 
 namespace operations_research {
 
@@ -355,9 +352,6 @@ RoutingModel::RoutingModel(int nodes, int vehicles)
       ls_limit_(NULL),
       lns_limit_(NULL) {
   SolverParameters parameters;
-  parameters.compress_trail = FLAGS_routing_gzip_compress_trail ?
-      SolverParameters::COMPRESS_WITH_GZIP :
-      SolverParameters::COMPRESS_WITH_ZIPPY;
   solver_.reset(new Solver("Routing", parameters));
   Initialize();
 }
@@ -391,9 +385,6 @@ RoutingModel::RoutingModel(int nodes,
       ls_limit_(NULL),
       lns_limit_(NULL) {
   SolverParameters parameters;
-  parameters.compress_trail = FLAGS_routing_gzip_compress_trail ?
-      SolverParameters::COMPRESS_WITH_GZIP :
-      SolverParameters::COMPRESS_WITH_ZIPPY;
   solver_.reset(new Solver("Routing", parameters));
   CHECK_EQ(vehicles, start_end.size());
   hash_set<int> depot_set;
@@ -436,9 +427,6 @@ RoutingModel::RoutingModel(int nodes,
       ls_limit_(NULL),
       lns_limit_(NULL) {
   SolverParameters parameters;
-  parameters.compress_trail = FLAGS_routing_gzip_compress_trail ?
-      SolverParameters::COMPRESS_WITH_GZIP :
-      SolverParameters::COMPRESS_WITH_ZIPPY;
   solver_.reset(new Solver("Routing", parameters));
   CHECK_EQ(vehicles, starts.size());
   CHECK_EQ(vehicles, ends.size());
