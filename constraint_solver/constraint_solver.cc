@@ -77,40 +77,112 @@ string Action::DebugString() const {
 
 // ------------------ Queue class ------------------
 
-class Queue {
+class SinglePriorityQueue {
+ public:
+  virtual ~SinglePriorityQueue() {}
+  virtual Demon* NextDemon() = 0;
+  virtual void Enqueue(Demon* const d) = 0;
+  virtual void AfterFailure() = 0;
+  virtual void Init() = 0;
+  virtual bool Empty() const = 0;
+};
+
+class FifoPriorityQueue : public SinglePriorityQueue {
  public:
   struct Cell {
-    explicit Cell(Demon* d) : demon_(d), next_(NULL) {}
-    Demon* demon_;
-    Cell* next_;
+    explicit Cell(Demon* const d) : demon(d), next(NULL) {}
+    Demon* demon;
+    Cell* next;
   };
 
+  FifoPriorityQueue() : first_(NULL), last_(NULL), free_cells_(NULL) {}
+
+  virtual ~FifoPriorityQueue() {
+    while (first_ != NULL) {
+      Cell* const tmp = first_;
+      first_ = tmp->next;
+      delete tmp;
+    }
+    while (free_cells_ != NULL) {
+      Cell* const tmp = free_cells_;
+      free_cells_ = tmp->next;
+      delete tmp;
+    }
+  }
+
+  virtual bool Empty() const {
+    return first_ == NULL;
+  }
+
+  virtual Demon* NextDemon() {
+    if (first_ != NULL) {
+      DCHECK(last_ != NULL);
+      Cell* const tmp_cell = first_;
+      Demon* const demon = tmp_cell->demon;
+      first_ = tmp_cell->next;
+      if (first_ == NULL) {
+        last_ = NULL;
+      }
+      tmp_cell->next = free_cells_;
+      free_cells_ = tmp_cell;
+      return demon;
+    }
+    return NULL;
+  }
+
+  virtual void Enqueue(Demon* const d) {
+    Cell* cell = free_cells_;
+    if (cell != NULL) {
+      cell->demon = d;
+      free_cells_ = cell->next;
+      cell->next = NULL;
+    } else {
+      cell = new Cell(d);
+    }
+    if (last_ != NULL) {
+      last_->next = cell;
+      last_ = cell;
+    } else {
+      first_ = cell;
+      last_ = cell;
+    }
+  }
+
+  virtual void AfterFailure() {
+    if (first_ != NULL) {
+      last_->next = free_cells_;
+      free_cells_ = first_;
+      first_ = NULL;
+      last_ = NULL;
+    }
+  }
+
+  virtual void Init() {}
+ private:
+  Cell* first_;
+  Cell* last_;
+  Cell* free_cells_;
+};
+
+class Queue {
+ public:
   explicit Queue(Solver* const s)
       : solver_(s),
-        free_cells_(NULL),
         stamp_(1),
         freeze_level_(0),
         in_process_(false),
         clear_action_(NULL),
         in_add_(false) {
     for (int i = 0; i < Solver::kNumPriorities; ++i) {
-      firsts_[i] = NULL;
-      lasts_[i] = NULL;
+      containers_[i] = new FifoPriorityQueue();
+      containers_[i]->Init();
     }
   }
 
   ~Queue() {
     for (int i = 0; i < Solver::kNumPriorities; ++i) {
-      while (firsts_[i] != NULL) {
-        Cell* tmp = firsts_[i];
-        firsts_[i] = tmp->next_;
-        delete tmp;
-      }
-    }
-    while (free_cells_ != NULL) {
-      Cell* tmp = free_cells_;
-      free_cells_ = tmp->next_;
-      delete tmp;
+      delete containers_[i];
+      containers_[i] = NULL;
     }
   }
 
@@ -124,38 +196,23 @@ class Queue {
     ProcessIfUnfrozen();
   }
 
-  Demon* NextDemon(Solver::DemonPriority prio) {
-    if (firsts_[prio] != NULL) {
-      DCHECK(lasts_[prio] != NULL);
-      Cell* tmp = firsts_[prio];
-      Demon* res = tmp->demon_;
-      firsts_[prio] = tmp->next_;
-      tmp->next_ = free_cells_;
-      free_cells_ = tmp;
-      if (firsts_[prio] == NULL) {
-        lasts_[prio] = NULL;
-      }
-      return res;
-    }
-    return NULL;
-  }
-
   void ProcessOneDemon(Solver::DemonPriority prio) {
-    Demon* d = NextDemon(prio);
+    Demon* const demon = containers_[prio]->NextDemon();
     // A NULL demon will just be ignored
-    if (d != NULL) {
+    if (demon != NULL) {
       if (FLAGS_cp_trace_demons) {
-        LG << "### Running demon (" << prio << "):" << d << " ###";
+        LG << "### Running demon (" << prio << "):"
+           << demon->DebugString() << " ###";
       }
-      d->set_stamp(stamp_ - 1);
-      DCHECK_EQ(prio, d->priority());
+      demon->set_stamp(stamp_ - 1);
+      DCHECK_EQ(prio, demon->priority());
       solver_->demon_runs_[prio]++;
-      d->Run(solver_);
+      demon->Run(solver_);
     }
   }
 
   void ProcessDemons() {
-    while (firsts_[Solver::NORMAL_PRIORITY] != NULL) {
+    while (!containers_[Solver::NORMAL_PRIORITY]->Empty()) {
       ProcessOneDemon(Solver::NORMAL_PRIORITY);
     }
   }
@@ -163,12 +220,12 @@ class Queue {
   void Process() {
     if (!in_process_) {
       in_process_ = true;
-      while (firsts_[Solver::NORMAL_PRIORITY]  != NULL ||
-             firsts_[Solver::VAR_PRIORITY] != NULL ||
-             firsts_[Solver::DELAYED_PRIORITY]  != NULL) {
-        while (firsts_[Solver::NORMAL_PRIORITY] != NULL ||
-               firsts_[Solver::VAR_PRIORITY] != NULL) {
-          while (firsts_[Solver::NORMAL_PRIORITY] != NULL) {
+      while (!containers_[Solver::VAR_PRIORITY]->Empty() ||
+             !containers_[Solver::NORMAL_PRIORITY]->Empty() ||
+             !containers_[Solver::DELAYED_PRIORITY]->Empty()) {
+        while (!containers_[Solver::VAR_PRIORITY]->Empty() ||
+               !containers_[Solver::NORMAL_PRIORITY]->Empty()) {
+          while (!containers_[Solver::NORMAL_PRIORITY]->Empty()) {
             ProcessOneDemon(Solver::NORMAL_PRIORITY);
           }
           ProcessOneDemon(Solver::VAR_PRIORITY);
@@ -179,41 +236,22 @@ class Queue {
     }
   }
 
-  void Enqueue(Demon* d) {
-    if (d->stamp() < stamp_) {
-      d->set_stamp(stamp_);
-      const Solver::DemonPriority prio = d->priority();
-      Cell* cell = free_cells_;
-      if (cell == NULL) {
-        cell = new Cell(d);
-      } else {
-        cell->demon_ = d;
-        free_cells_ = cell->next_;
-        cell->next_ = NULL;
-      }
-      if (lasts_[prio] == NULL) {
-        firsts_[prio] = cell;
-        lasts_[prio] = cell;
-      } else {
-        lasts_[prio]->next_ = cell;
-        lasts_[prio] = cell;
-      }
+  void Enqueue(Demon* const demon) {
+    if (demon->stamp() < stamp_) {
+      demon->set_stamp(stamp_);
+      containers_[demon->priority()]->Enqueue(demon);
       ProcessIfUnfrozen();
     }
   }
 
-  void Clear() {
+  void AfterFailure() {
     for (int i = 0; i < Solver::kNumPriorities; ++i) {
-      if (firsts_[i] != NULL) {
-        lasts_[i]->next_ = free_cells_;
-        free_cells_ = firsts_[i];
-        firsts_[i] = NULL;
-        lasts_[i] = NULL;
-      }
+      containers_[i]->AfterFailure();
     }
-    if (clear_action_ != NULL)
+    if (clear_action_ != NULL) {
       clear_action_->Run(solver_);
-    clear_action_ = NULL;
+      clear_action_ = NULL;
+    }
     freeze_level_ = 0;
     in_process_ = false;
     in_add_ = false;
@@ -228,7 +266,7 @@ class Queue {
     return stamp_;
   }
 
-  void set_action_on_fail(Action* a) {
+  void set_action_on_fail(Action* const a) {
     clear_action_ = a;
   }
 
@@ -262,9 +300,7 @@ class Queue {
   }
 
   Solver* const solver_;
-  Cell* firsts_[Solver::kNumPriorities];
-  Cell* lasts_[Solver::kNumPriorities];
-  Cell* free_cells_;
+  SinglePriorityQueue* containers_[Solver::kNumPriorities];
   uint64 stamp_;
   // The number of nested freeze levels. The queue is frozen if and only if
   // freeze_level_ > 0.
@@ -1271,8 +1307,8 @@ Solver::~Solver() {
   delete search;
 }
 
-SolverParameters::TrailCompression kDefaultTrailCompression =
-         SolverParameters::NO_COMPRESSION;
+const SolverParameters::TrailCompression
+SolverParameters::kDefaultTrailCompression = SolverParameters::NO_COMPRESSION;
 const int SolverParameters::kDefaultTrailBlockSize = 8000;
 const int SolverParameters::kDefaultArraySplitSize = 16;
 const bool SolverParameters::kDefaultNameStoring = true;
@@ -1822,7 +1858,7 @@ bool Solver::NextSolution() {
           state_ = IN_SEARCH;
           search->ClearBuffer();
         } CP_ON_FAIL {
-          queue_->Clear();
+          queue_->AfterFailure();
           BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
           state_ = PROBLEM_INFEASIBLE;
           return false;
@@ -1910,7 +1946,7 @@ bool Solver::NextSolution() {
         Fail();
       }
     } CP_ON_FAIL {
-      queue_->Clear();
+      queue_->AfterFailure();
       if (search->should_finish()) {
         fd = NULL;
         BacktrackToSentinel(top_level ?
@@ -1994,7 +2030,7 @@ bool Solver::CheckAssignment(Assignment* const solution) {
       VLOG(1) << "Failing constraint = " << ct->name() << ":"
               << constraints_list_[constraints_]->DebugString();
     }
-    queue_->Clear();
+    queue_->AfterFailure();
     BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
     state_ = PROBLEM_INFEASIBLE;
     return false;
