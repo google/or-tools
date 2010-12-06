@@ -20,9 +20,6 @@
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solveri.h"
 
-DEFINE_int32(cp_split_threshold, 16,
-             "Theshold for log splitting of big arrays in sum/min/max");
-
 namespace operations_research {
 
 // ----- Base array classes -----
@@ -1236,6 +1233,7 @@ IntExpr* BuildLogSplitArray(Solver* const s,
                             IntVar* const* vars,
                             int size,
                             BuildOp op) {
+  const int split_size = s->parameters().array_split_size;
   if (size == 0) {
     return s->MakeIntConst(0LL);
   } else if (size == 1) {
@@ -1249,8 +1247,8 @@ IntExpr* BuildLogSplitArray(Solver* const s,
       case MAX_OP:
         return s->MakeMax(vars[0], vars[1]);
     };
-  } else if (size > FLAGS_cp_split_threshold) {
-    const int nb_blocks = (size - 1) / FLAGS_cp_split_threshold + 1;
+  } else if (size > split_size) {
+    const int nb_blocks = (size - 1) / split_size + 1;
     const int block_size = (size + nb_blocks - 1) / nb_blocks;
     vector<IntVar*> top_vector;
     int start = 0;

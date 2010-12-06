@@ -33,15 +33,9 @@
 #include "base/map-util.h"
 #include "constraint_solver/constraint_solveri.h"
 
-DEFINE_int32(cp_compressed_trail_block_size, 8000,
-             "compressed trail block size (number of addrvals per block)");
-DEFINE_bool(cp_store_names, true, "store object names");
 DEFINE_bool(cp_trace_demons, false, "trace all demon executions");
 DEFINE_bool(cp_show_constraints, false,
             "show all constraints added to the solver");
-DEFINE_int32(cp_trail_compression_level, 0,
-             "Compression level for the trail, 0, no compression, "
-             "1 = compress with zlib");
 
 void ConstraintSolverFailHere() {
   VLOG(3) << "Fail";
@@ -430,7 +424,8 @@ template <class T> class ZlibTrailPacker : public TrailPacker<T> {
 
 template <class T> class CompressedTrail {
  public:
-  CompressedTrail(int block_size, int compression_level)
+  CompressedTrail(int block_size,
+                  SolverParameters::TrailCompression compression_level)
       : block_size_(block_size),
         blocks_(NULL),
         free_blocks_(NULL),
@@ -440,12 +435,12 @@ template <class T> class CompressedTrail {
         current_(0),
         size_(0) {
     switch (compression_level) {
-      case 0: {
+      case SolverParameters::NO_COMPRESSION: {
         packer_.reset(new NoCompressionTrailPacker<T>(block_size));
         break;
       }
-      default: {
-packer_.reset(new ZlibTrailPacker<T>(block_size));
+      case SolverParameters::COMPRESS_WITH_ZLIB: {
+        packer_.reset(new ZlibTrailPacker<T>(block_size));
         break;
       }
     }
@@ -568,15 +563,11 @@ struct Trail {
   vector<void*> rev_memory_;
   vector<void**> rev_memory_array_;
 
-  Trail()
-      : rev_ints_(FLAGS_cp_compressed_trail_block_size,
-                  FLAGS_cp_trail_compression_level),
-        rev_int64s_(FLAGS_cp_compressed_trail_block_size,
-                    FLAGS_cp_trail_compression_level),
-        rev_uint64s_(FLAGS_cp_compressed_trail_block_size,
-                     FLAGS_cp_trail_compression_level),
-        rev_ptrs_(FLAGS_cp_compressed_trail_block_size,
-                  FLAGS_cp_trail_compression_level) {}
+  Trail(int block_size, SolverParameters::TrailCompression compression_level)
+      : rev_ints_(block_size, compression_level),
+        rev_int64s_(block_size, compression_level),
+        rev_uint64s_(block_size, compression_level),
+        rev_ptrs_(block_size, compression_level) {}
 
   void BacktrackTo(StateMarker* m) {
     int target = m->rev_int_index_;
@@ -1184,10 +1175,11 @@ enum SentinelMarker {
 };
 }
 
-Solver::Solver(const string& name)
+Solver::Solver(const string& name, const SolverParameters& parameters)
     : name_(name),
+      parameters_(parameters),
       queue_(new Queue(this)),
-      trail_(new Trail()),
+      trail_(new Trail(parameters.trail_block_size, parameters.compress_trail)),
       state_(OUTSIDE_SEARCH),
       branches_(0),
       fails_(0),
@@ -1212,6 +1204,43 @@ Solver::Solver(const string& name)
       fail_decision_(new FailDecision()),
       constraints_(0),
       solution_found_(false) {
+  Init();
+}
+
+Solver::Solver(const string& name)
+    : name_(name),
+      parameters_(),
+      queue_(new Queue(this)),
+      trail_(new Trail(parameters_.trail_block_size,
+                       parameters_.compress_trail)),
+      state_(OUTSIDE_SEARCH),
+      branches_(0),
+      fails_(0),
+      decisions_(0),
+      neighbors_(0),
+      filtered_neighbors_(0),
+      accepted_neighbors_(0),
+      variable_cleaner_(new VariableQueueCleaner()),
+      timer_(new ClockTimer),
+      searches_(),
+      random_(ACMRandom::DeterministicSeed()),
+      fail_hooks_(NULL),
+      fail_stamp_(GG_ULONGLONG(1)),
+      balancing_decision_(new BalancingDecision),
+      fail_intercept_(NULL),
+      true_constraint_(NULL),
+      false_constraint_(NULL),
+      equality_var_cst_cache_(NULL),
+      unequality_var_cst_cache_(NULL),
+      greater_equal_var_cst_cache_(NULL),
+      less_equal_var_cst_cache_(NULL),
+      fail_decision_(new FailDecision()),
+      constraints_(0),
+      solution_found_(false) {
+  Init();
+}
+
+void Solver::Init() {
   for (int i = 0; i < kNumPriorities; ++i) {
     demon_runs_[i] = 0;
   }
@@ -1241,6 +1270,12 @@ Solver::~Solver() {
       << "non empty list of searches when ending the solver";
   delete search;
 }
+
+SolverParameters::TrailCompression kDefaultTrailCompression =
+         SolverParameters::NO_COMPRESSION;
+const int SolverParameters::kDefaultTrailBlockSize = 8000;
+const int SolverParameters::kDefaultArraySplitSize = 16;
+const bool SolverParameters::kDefaultNameStoring = true;
 
 string Solver::DebugString() const {
   string out = "Solver(name = \"" + name_ + "\", state = ";
@@ -2065,7 +2100,7 @@ string Solver::GetName(const PropagationBaseObject* object) const {
 }
 
 void Solver::SetName(const PropagationBaseObject* object, const string& name) {
-  if (FLAGS_cp_store_names
+  if (parameters_.store_names
       && GetName(object).compare(name) != 0) {  // in particular if name.empty()
     propagation_object_names_[object] = name;
   }

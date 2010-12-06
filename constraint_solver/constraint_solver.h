@@ -61,6 +61,8 @@
 #include <vector>
 #include <string>
 
+
+
 #include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -130,6 +132,40 @@ enum MarkerType {
   SIMPLE_MARKER,
   CHOICE_POINT,
   REVERSIBLE_ACTION
+};
+
+// This struct holds all parameters for the Solver object.
+struct SolverParameters {
+ public:
+  enum TrailCompression {
+    NO_COMPRESSION,
+    COMPRESS_WITH_ZLIB
+  };
+
+  static const TrailCompression kDefaultTrailCompression;
+  static const int kDefaultTrailBlockSize;
+  static const int kDefaultArraySplitSize;
+  static const bool kDefaultNameStoring;
+
+  SolverParameters()
+      : compress_trail(kDefaultTrailCompression),
+        trail_block_size(kDefaultTrailBlockSize),
+        array_split_size(kDefaultArraySplitSize),
+        store_names(kDefaultNameStoring) {}
+
+  // This parameter indicates if the solver should compress the trail
+  // during the search. No compression means the solver will be faster,
+  // but will use more memory.
+  TrailCompression compress_trail;
+  // This parameter indicates the default size of a block of the trail.
+  // Compression applies at the block level.
+  int trail_block_size;
+  // When a sum/min/max operations is applied on a large array, this
+  // array is recursively split into blocks of size 'array_split_size'.
+  int array_split_size;
+  // This parameters indicates if the solver should store the names of
+  // the objets it manages.
+  bool store_names;
 };
 
 // This struct holds all parameters for the default search.
@@ -331,7 +367,14 @@ class Solver {
   };
 
   explicit Solver(const string& modelname);
+  Solver(const string& modelname, const SolverParameters& parameters);
   ~Solver();
+
+  // Init.
+  void Init();
+
+  // Read-only Parameters.
+  const SolverParameters& parameters() const { return parameters_; }
 
   // reversibility
 
@@ -1228,6 +1271,7 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
   // this happens at a leaf the corresponding solution will be rejected.
   SearchLimit* MakeCustomLimit(ResultCallback<bool>* limiter);
 
+
   // ----- Search Log -----
 
   // Create a search monitor that will display a periodic search log
@@ -1803,6 +1847,7 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
   void SetName(const PropagationBaseObject* object, const string& name);
 
   const string name_;
+  const SolverParameters parameters_;
   hash_map<const PropagationBaseObject*, string> propagation_object_names_;
   hash_map<const PropagationBaseObject*,
            pair<string, const PropagationBaseObject*> > delegate_objects_;
