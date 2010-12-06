@@ -77,6 +77,12 @@ class MonoidOperationTree {
     return nodes_[PositionOfLeaf(argument_index)];
   }
 
+  // Dive down a branch of the operation tree, and then come back up.
+  template <class Diver>
+  void DiveInTree(Diver* diver) const {
+    DiveInTree(0, diver);
+  }
+
   string DebugString() const;
 
  private:
@@ -96,6 +102,18 @@ class MonoidOperationTree {
 
   // Returns the position of the leaf node of given index.
   int PositionOfLeaf(int index) const { return leaf_offset_ + index; }
+
+  // Returns true if the node of given position is a leaf.
+  bool IsLeaf(int position) const { return position >= leaf_offset_; }
+
+  // Returns the index of the argument stored in the node of given position.
+  int ArgumentIndexOfLeafPosition(int position) const {
+    DCHECK(IsLeaf(position));
+    return position - leaf_offset_;
+  }
+
+  template <class Diver>
+  void DiveInTree(int position, Diver* diver) const;
 
   static int father(int pos) { return (pos - 1) >> 1; }
   static int left(int pos) { return (pos << 1) + 1; }
@@ -214,6 +232,32 @@ string MonoidOperationTree<T>::DebugString() const {
                   nodes_[i].DebugString().c_str());
   }
   return out;
+}
+
+template <class T>
+template <class Diver>
+void MonoidOperationTree<T>::DiveInTree(int position, Diver* diver) const {
+  // Are we at a leaf?
+  if (IsLeaf(position)) {
+    const int index = ArgumentIndexOfLeafPosition(position);
+    const T& argument = nodes_[position];
+    diver->OnArgumentReached(index, argument);
+  } else {
+    const T& current = nodes_[position];
+    const T& left_child = nodes_[left(position)];
+    const T& right_child = nodes_[right(position)];
+    if (diver->ChooseGoLeft(current, left_child, right_child)) {
+      // Go left
+      DiveInTree(left(position), diver);
+      // Come back up
+      diver->OnComeBackFromLeft(current, left_child, right_child);
+    } else {
+      // Go right
+      DiveInTree(right(position), diver);
+      // Come back up
+      diver->OnComeBackFromRight(current, left_child, right_child);
+    }
+  }
 }
 
 }  // namespace operations_research

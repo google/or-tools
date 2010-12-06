@@ -25,9 +25,28 @@
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
+//#include "strings/join.h"
 #include "base/stl_util-inl.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/monoid_operation_tree.h"
+
+
+// TODO(user) Should these remains flags, or should they move to
+// SolverParameters?
+DEFINE_bool(cp_use_cumulative_edge_finder, true,
+            "Use the O(n log n) cumulative edge finding algorithm described "
+            "in 'Edge Finding Filtering Algorithm for Discrete  Cumulative "
+            "Resources in O(kn log n)' by Petr Vilim, CP 2009.");
+DEFINE_bool(cp_use_cumulative_time_table, true,
+            "Use a O(n^2) cumulative time table propagation algorithm.");
+DEFINE_bool(cp_use_sequence_high_demand_tasks, true,
+            "Use a sequence constraints for cumulative tasks that have a "
+            "demand greater than half of the capacity of the resource.");
+DEFINE_bool(cp_use_all_possible_disjunctions, true,
+            "Post temporal disjunctions for all pairs of tasks sharing a "
+            "cumulative resource and that cannot overlap because the sum of "
+            "their demand exceeds the capacity.");
+
 
 namespace operations_research {
 
@@ -339,6 +358,19 @@ Sequence* Solver::MakeSequence(const IntervalVar* const * intervals, int size,
 
 namespace {
 
+// Returns the ceil of the ratio of two integers.
+// numerator may be any integer: positive, negative, or zero.
+// denominator must be non-zero, positive or negative.
+int64 CeilOfRatio(int64 numerator, int64 denominator) {
+  DCHECK_NE(denominator, 0);
+  const int64 rounded_toward_zero = numerator / denominator;
+  const bool needs_one_more = numerator > (rounded_toward_zero * denominator);
+  const int64 one_if_needed = static_cast<int64>(needs_one_more);
+  const int64 ceil_of_ratio = rounded_toward_zero + one_if_needed;
+  DCHECK_GE(denominator * ceil_of_ratio, numerator);
+  return ceil_of_ratio;
+}
+
 // A DisjunctiveTask is a non-preemptive task sharing a disjunctive resource.
 // That is, it corresponds to an interval, and this interval cannot overlap with
 // any other interval of a DisjunctiveTask sharing the same resource.
@@ -450,10 +482,16 @@ bool EndMinLessThan(const IndexedTask<Task>* const w1,
   return (w1->EndMin() < w2->EndMin());
 }
 
-template<class Task, typename Compare>
-void Sort(vector<IndexedTask<Task>*>* vector, Compare compare) {
+template<typename T, typename Compare>
+void Sort(vector<T>* vector, Compare compare) {
   std::sort(vector->begin(), vector->end(), compare);
 }
+
+bool TaskStartMinLessThan(const CumulativeTask* const task1,
+                          const CumulativeTask* const task2) {
+  return (task1->interval()->StartMin() < task2->interval()->StartMin());
+}
+
 
 // ----------------- Theta-Trees --------------------------------
 
@@ -711,25 +749,20 @@ class CumulativeLambdaThetaTree : public MonoidOperationTree<LambdaThetaNode> {
     Set(indexed_task->start_min_index(), greyNode);
   }
   int64 energetic_end_min() const { return result().energetic_end_min(); }
+  int64 energetic_end_min_opt() const {
+    return result().energetic_end_min_opt();
+  }
   int64 ECT() const {
-    return ConvertEnergeticEndMinToEndMin(energetic_end_min());
+    return CeilOfRatio(energetic_end_min(), capacity_);
   }
   int64 ECT_opt() const {
-    return ConvertEnergeticEndMinToEndMin(result().energetic_end_min_opt());
+    return CeilOfRatio(result().energetic_end_min_opt(), capacity_);
   }
-  int Responsible_opt() const {
+  int argmax_energetic_end_min_opt() const {
     return result().argmax_energetic_end_min_opt();
   }
 
  private:
-  // Takes the energetic end min of a set of tasks and returns the end min of
-  // that set of tasks.
-  int64 ConvertEnergeticEndMinToEndMin(int64 energetic_end_min) const {
-    // Computes ceil(energetic_end_min / capacity_), without using doubles.
-    const int64 numerator = energetic_end_min + capacity_ - 1;
-    DCHECK_GE(numerator, 0);  // Overflow.
-    return numerator / capacity_;
-  }
   const int64 capacity_;
   DISALLOW_COPY_AND_ASSIGN(CumulativeLambdaThetaTree);
 };
@@ -1004,15 +1037,13 @@ bool EdgeFinderAndDetectablePrecedences::EdgeFinder() {
   for (int j = size_ - 2; j >= 0; --j) {
     lt_tree_.Grey(by_end_max_[j+1]);
     DisjunctiveIndexedTask* const twj = by_end_max_[j];
-    if (lt_tree_.ECT() > twj->EndMax()) {
-      solver_->Fail();  // Resource is overloaded
-    }
+    // We should have checked for overloading earlier.
+    DCHECK_LE(lt_tree_.ECT(), twj->EndMax());
     while (lt_tree_.ECT_opt() > twj->EndMax()) {
       const int i = lt_tree_.Responsible_opt();
       DCHECK_GE(i, 0);
-      const int act_i = by_start_min_[i]->start_min_index();
-      if (lt_tree_.ECT() > new_est_[act_i]) {
-        new_est_[act_i] = lt_tree_.ECT();
+      if (lt_tree_.ECT() > new_est_[i]) {
+        new_est_[i] = lt_tree_.ECT();
       }
       lt_tree_.Reset(i);
     }
@@ -1114,6 +1145,221 @@ CumulativeTask* MakeTask(Solver* solver, IntervalVar* interval, int64 demand) {
   return solver->RevAlloc(new CumulativeTask(interval, demand));
 }
 
+// A cumulative Theta node, where two energies, corresponding to 2 capacities,
+// are stored.
+class DualCapacityThetaNode {
+ public:
+  // Special value for task indices meaning 'no such task'.
+  static const int kNone;
+
+  // Identity constructor
+  DualCapacityThetaNode()
+  : energy_(0LL),
+    energetic_end_min_(kint64min),
+    residual_energetic_end_min_(kint64min) {}
+
+  // Constructor for a single cumulative task in the Theta set
+  DualCapacityThetaNode(int64 capacity, int64 residual_capacity,
+                        const CumulativeTask& task)
+  : energy_(task.EnergyMin()),
+    energetic_end_min_(
+        capacity * task.interval()->StartMin() + energy_),
+    residual_energetic_end_min_(
+        residual_capacity * task.interval()->StartMin() + energy_) {}
+
+  // Getters
+  int64 energy() const { return energy_; }
+  int64 energetic_end_min() const { return energetic_end_min_; }
+  int64 residual_energetic_end_min() const {
+    return residual_energetic_end_min_;
+  }
+
+  // Copy from the given node
+  void Set(const DualCapacityThetaNode& node) {
+    energy_ = node.energy_;
+    energetic_end_min_ = node.energetic_end_min_;
+    residual_energetic_end_min_ = node.residual_energetic_end_min_;
+  }
+
+  // Sets this DualCapacityThetaNode to the result of the natural binary
+  // operation over the two given operands, corresponding to the following set
+  // operation: Theta = left.Theta union right.Theta
+  //
+  // No set operation actually occur: we only maintain the relevant quantities
+  // associated with such sets.
+  void Compute(const DualCapacityThetaNode& left,
+               const DualCapacityThetaNode& right) {
+    energy_ = left.energy_ + right.energy_;
+    energetic_end_min_ =
+        max(left.energetic_end_min_ + right.energy_,
+            right.energetic_end_min_);
+    residual_energetic_end_min_ =
+        max(left.residual_energetic_end_min_ + right.energy_,
+            right.residual_energetic_end_min_);
+  }
+ private:
+  // Amount of resource consumed by the Theta set, in units of demand X time.
+  // This is energy(Theta).
+  int64 energy_;
+
+  // Max_{subset S of Theta} (capacity * start_min(S) + energy(S))
+  int64 energetic_end_min_;
+
+  // Max_{subset S of Theta} (residual_capacity * start_min(S) + energy(S))
+  int64 residual_energetic_end_min_;
+  DISALLOW_COPY_AND_ASSIGN(DualCapacityThetaNode);
+};
+
+const int DualCapacityThetaNode::kNone = -1;
+
+// A tree for dual capacity theta nodes
+class DualCapacityThetaTree : public
+  MonoidOperationTree<DualCapacityThetaNode> {
+ public:
+  static const int64 kNotInitialized;
+  DualCapacityThetaTree(int size, int64 capacity)
+  : MonoidOperationTree<DualCapacityThetaNode>(size),
+    capacity_(capacity),
+    residual_capacity_(-1) {}
+  virtual ~DualCapacityThetaTree() {}
+  void Insert(const CumulativeIndexedTask* indexed_task) {
+    DualCapacityThetaNode thetaNode(
+        capacity_, residual_capacity_, indexed_task->task());
+    Set(indexed_task->start_min_index(), thetaNode);
+  }
+  void SetResidualCapacity(int residual_capacity) {
+    Clear();
+    DCHECK_LE(0, residual_capacity);
+    DCHECK_LE(residual_capacity, capacity_);
+    residual_capacity_ = residual_capacity;
+  }
+
+ private:
+  const int64 capacity_;
+  int64 residual_capacity_;
+  DISALLOW_COPY_AND_ASSIGN(DualCapacityThetaTree);
+};
+
+const int64 DualCapacityThetaTree::kNotInitialized = -1LL;
+
+// An object that can dive down a branch of a DualCapacityThetaTree to compute
+// Env(j, c) in Petr Vilim's notations.
+//
+// In 'Edge finding filtering algorithm for discrete cumulative resources in
+// O(kn log n)' by Petr Vilim, this corresponds to line 6--8 in algorithm 1.3,
+// plus all of algorithm 1.2.
+//
+// http://vilim.eu/petr/cp2009.pdf
+// Note: use the version pointed to by this pointer, not the version from the
+// conference proceedings, which has a few errors.
+class EnvJCComputeDiver {
+ public:
+  static const int64 kNotAvailable;
+  explicit EnvJCComputeDiver(int energy_threshold)
+  : energy_threshold_(energy_threshold),
+    energy_alpha_(kNotAvailable),
+    energetic_end_min_alpha_(kNotAvailable) {}
+  void OnArgumentReached(int index, const DualCapacityThetaNode& argument) {
+    energy_alpha_ = argument.energy();
+    energetic_end_min_alpha_ = argument.energetic_end_min();
+    // We should reach a leaf that is not the identity
+    DCHECK_GT(energetic_end_min_alpha_, kint64min);
+  }
+  bool ChooseGoLeft(const DualCapacityThetaNode& current,
+                    const DualCapacityThetaNode& left_child,
+                    const DualCapacityThetaNode& right_child) {
+    if (right_child.residual_energetic_end_min() > energy_threshold_) {
+      return false;  // enough energy on right
+    } else {
+      energy_threshold_ -= right_child.energy();
+      return true;
+    }
+  }
+  void OnComeBackFromLeft(const DualCapacityThetaNode& current,
+                          const DualCapacityThetaNode& left_child,
+                          const DualCapacityThetaNode& right_child) {
+    // The left subtree intersects the alpha set.
+    // The right subtree does not intersect the alpha set.
+    // The energy_alpha_ and energetic_end_min_alpha_ previously
+    // computed are valid for this node too: there's nothing to do.
+  }
+  void OnComeBackFromRight(const DualCapacityThetaNode& current,
+                           const DualCapacityThetaNode& left_child,
+                           const DualCapacityThetaNode& right_child) {
+    // The left subtree is included in the alpha set.
+    // The right subtree intersects the alpha set.
+    energetic_end_min_alpha_ =
+        max(energetic_end_min_alpha_,
+            left_child.energetic_end_min() + energy_alpha_);
+    energy_alpha_ += left_child.energy();
+  }
+  int64 GetEnvJC(const DualCapacityThetaNode& root) const {
+    const int64 energy = root.energy();
+    const int64 energy_beta = energy - energy_alpha_;
+    return energetic_end_min_alpha_ + energy_beta;
+  }
+
+ private:
+  // Energy threshold such that if a set has an energetic_end_min greater than
+  // the threshold, then it can push tasks that must end at or after the
+  // currently considered end max.
+  //
+  // Used when diving down only.
+  int64 energy_threshold_;
+
+  // Energy of the alpha set, that is, the set of tasks whose start min does not
+  // exceed the max start min of a set with excess residual energy.
+  //
+  // Used when swimming up only.
+  int64 energy_alpha_;
+
+  // Energetic end min of the alpha set.
+  //
+  // Used when swimming up only.
+  int64 energetic_end_min_alpha_;
+};
+
+const int64 EnvJCComputeDiver::kNotAvailable = -1LL;
+
+// A closure-like object that updates an interval.
+class StartMinUpdater {
+ public:
+  StartMinUpdater(IntervalVar* interval, int64 new_start_min)
+      : interval_(interval), new_start_min_(new_start_min) {}
+  void Run() {
+    interval_->SetStartMin(new_start_min_);
+  }
+ private:
+  IntervalVar* interval_;
+  int64 new_start_min_;
+};
+
+// In all the following, the term 'update' means 'a potential new start min for
+// a task'. The edge-finding algorithm is in two phase: one compute potential
+// new start mins, the other detects whether they are applicable or not for each
+// task.
+
+// Collection of all updates (i.e., potential new start mins) for a given value
+// of the demand.
+class UpdatesForADemand {
+ public:
+  explicit UpdatesForADemand(int size)
+  : updates_(size, 0), up_to_date_(false) {
+  }
+  const vector<int64>& updates() { return updates_; }
+  bool up_to_date() const { return up_to_date_; }
+  void Reset() { up_to_date_ = false; }
+  void SetUpdate(int index, int64 update) {
+    DCHECK(!up_to_date_);
+    updates_[index] = update;
+  }
+  void SetUpToDate() { up_to_date_ = true; }
+ private:
+  vector<int64> updates_;
+  bool up_to_date_;
+  DISALLOW_COPY_AND_ASSIGN(UpdatesForADemand);
+};
+
 // One-sided cumulative edge finder.
 class EdgeFinder : public Constraint {
  public:
@@ -1125,6 +1371,7 @@ class EdgeFinder : public Constraint {
     size_(tasks.size()),
     by_start_min_(size_),
     by_end_max_(size_),
+    by_end_min_(size_),
     lt_tree_(size_, capacity_) {
     // Populate
     for (int i = 0; i < size_; ++i) {
@@ -1132,17 +1379,23 @@ class EdgeFinder : public Constraint {
           new CumulativeIndexedTask(*tasks[i]);
       by_start_min_[i] = indexed_task;
       by_end_max_[i] = indexed_task;
+      by_end_min_[i] = indexed_task;
+      const int64 demand = indexed_task->task().demand();
+      // Create the UpdateForADemand if needed (the [] operator calls the
+      // constructor). May rehash.
+      if (update_map_[demand] == NULL) {
+        update_map_[demand] = new UpdatesForADemand(size_);
+      }
     }
   }
   virtual ~EdgeFinder() {
     STLDeleteElements(&by_start_min_);
+    STLDeleteValues(&update_map_);
   }
-
-  int size() const { return size_; }
 
   virtual void Post() {
     // Add the demons
-    for (int i = 0; i < size(); ++i) {
+    for (int i = 0; i < size_; ++i) {
       IntervalVar* const interval =
           by_start_min_[i]->mutable_interval();
       // Delay propagation, as this constraint is not incremental: we pay
@@ -1153,31 +1406,132 @@ class EdgeFinder : public Constraint {
     }
   }
 
+  // The propagation algorithms: checks for overloading, computes new start mins
+  // according to the edge-finding rules, and applies them.
   virtual void InitialPropagate() {
     InitPropagation();
+    PropagateBasedOnEndMinGreaterThanEndMax();
     FillInTree();
-    // TODO(user) adjust start mins
+    PropagateBasedOnEnergy();
+    ApplyNewBounds();
   }
 
  private:
+  // Sets the fields in a proper state to run the propagation algorithm.
   void InitPropagation() {
-    // Sort by start min
+    // Clear the update stack
+    new_start_min_.clear();
+    // Sort by start min.
     Sort(&by_start_min_, StartMinLessThan<CumulativeTask>);
     for (int i = 0; i < size_; ++i) {
       by_start_min_[i]->set_start_min_index(i);
     }
-    // Sort by end max
+    // Sort by end max.
     Sort(&by_end_max_, EndMaxLessThan<CumulativeTask>);
-    // Clear tree
+    // Sort by end min.
+    Sort(&by_end_min_, EndMinLessThan<CumulativeTask>);
+    // Clear tree.
     lt_tree_.Clear();
+    // Clear updates
+    typedef UpdateMap::iterator iterator;
+    for (iterator it = update_map_.begin(); it != update_map_.end(); ++it) {
+      it->second->Reset();
+    }
   }
 
-  // Fill the theta-lambda-tree, and check for overloading
+  // Computes all possible update values for tasks of given demand, and stores
+  // these values in update_map_[demand].
+  // Runs in O(n log n).
+  // This corresponds to lines 2--13 in algorithm 1.3 in Petr Vilim's paper.
+  void ComputeConditionalStartMins(int64 demand) {
+    DCHECK_GT(demand, 0);
+    UpdatesForADemand* const updates = update_map_[demand];
+    DCHECK(!updates->up_to_date());
+    DualCapacityThetaTree dual_capa_tree(size_, capacity_);
+    const int64 residual_capacity = capacity_ - demand;
+    dual_capa_tree.SetResidualCapacity(residual_capacity);
+    // It's important to initialize the update at IntervalVar::kMinValidValue
+    // rather than at kInt64min, because its opposite may be used if it's a
+    // mirror variable, and
+    // -kInt64min = -(-kInt64max - 1) = kInt64max + 1 = -kInt64min
+    int64 update = IntervalVar::kMinValidValue;
+    for (int i = 0; i < size_; ++i) {
+      const int64 current_end_max = by_end_max_[i]->EndMax();
+      dual_capa_tree.Insert(by_end_max_[i]);
+      const int64 energy_threshold = residual_capacity * current_end_max;
+      const DualCapacityThetaNode& root = dual_capa_tree.result();
+      const int64 res_energetic_end_min = root.residual_energetic_end_min();
+      if (res_energetic_end_min > energy_threshold) {
+        EnvJCComputeDiver diver(energy_threshold);
+        dual_capa_tree.DiveInTree(&diver);
+        const int64 enjv = diver.GetEnvJC(dual_capa_tree.result());
+        const int64 numerator = enjv - energy_threshold;
+        const int64 diff = CeilOfRatio(numerator, demand);
+        update = std::max(update, diff);
+      }
+      updates->SetUpdate(i, update);
+    }
+    updates->SetUpToDate();
+  }
+
+  // Returns the new start min that can be inferred for task_to_push if it is
+  // proved that it cannot end before by_end_max[end_max_index] does.
+  int64 ConditionalStartMin(const CumulativeIndexedTask& task_to_push,
+                            int end_max_index) {
+    const int64 demand = task_to_push.task().demand();
+    if (!update_map_[demand]->up_to_date()) {
+      ComputeConditionalStartMins(demand);
+    }
+    DCHECK(update_map_[demand]->up_to_date());
+    return update_map_[demand]->updates().at(end_max_index);
+  }
+
+  // Propagates by discovering all end-after-end relationships purely based on
+  // comparisons between end mins and end maxes: there is no energetic reasoning
+  // here, but this allow updates that the standard edge-finding detection rule
+  // misses.
+  // See paragraph 6.2 in http://vilim.eu/petr/cp2009.pdf.
+  void PropagateBasedOnEndMinGreaterThanEndMax() {
+    int end_max_index = 0;
+    int64 max_start_min = kint64min;
+    for (int i = 0; i < size_; ++i) {
+      CumulativeIndexedTask* const task = by_end_min_[i];
+      const int64 end_min = task->EndMin();
+      while (end_max_index < size_ &&
+             by_end_max_[end_max_index]->EndMax() <= end_min) {
+        max_start_min = std::max(max_start_min,
+                                 by_end_max_[end_max_index]->StartMin());
+        ++end_max_index;
+      }
+      if (end_max_index > 0 &&
+          task->StartMin() <= max_start_min &&
+          task->EndMax() > task->EndMin()) {
+        DCHECK_LE(by_end_max_[end_max_index - 1]->EndMax(), end_min);
+        // The update is valid and may be interesting:
+        // * If task->StartMin() > max_start_min, then all tasks whose end_max
+        //     is less than or equal to end_min have a start min that is less
+        //     than task->StartMin(). In this case, any update we could
+        //     compute would also be computed by the standard edge-finding
+        //     rule. It's better not to compute it, then: it may not be
+        //     needed.
+        // * If task->EndMax() <= task->EndMin(), that means the end max is
+        //     bound. In that case, 'task' itself belong to the set of tasks
+        //     that must end before end_min, which may cause the result of
+        //     ConditionalStartMin(task, end_max_index - 1) not to be a valid
+        //     update.
+        const int64 update = ConditionalStartMin(*task, end_max_index - 1);
+        StartMinUpdater startMinUpdater(task->mutable_interval(), update);
+        new_start_min_.push_back(startMinUpdater);
+      }
+    }
+  }
+
+  // Fill the theta-lambda-tree, and check for overloading.
   void FillInTree() {
     for (int i = 0; i < size_; ++i) {
       CumulativeIndexedTask* const indexed_task = by_end_max_[i];
       lt_tree_.Insert(indexed_task);
-      // Maximum energetic end min without overload
+      // Maximum energetic end min without overload.
       const int64 max_feasible = capacity_ * indexed_task->EndMax();
       if (lt_tree_.energetic_end_min() > max_feasible) {
         solver()->Fail();
@@ -1185,12 +1539,253 @@ class EdgeFinder : public Constraint {
     }
   }
 
+  // The heart of the propagation algorithm. Should be called with all tasks
+  // being in the Theta set. It detects tasks that need to be pushed.
+  void PropagateBasedOnEnergy() {
+    for (int j = size_ - 2; j >= 0; --j) {
+      lt_tree_.Grey(by_end_max_[j+1]);
+      CumulativeIndexedTask* const twj = by_end_max_[j];
+      // We should have checked for overload earlier.
+      DCHECK_LE(lt_tree_.energetic_end_min(), capacity_ * twj->EndMax());
+      while (lt_tree_.energetic_end_min_opt() > capacity_ * twj->EndMax()) {
+        const int i = lt_tree_.argmax_energetic_end_min_opt();
+        DCHECK_GE(i, 0);
+        PropagateTaskCannotEndBefore(i, j);
+        lt_tree_.Reset(i);
+      }
+    }
+  }
+
+  // Takes into account the fact that the task of given index cannot end before
+  // the given new end min.
+  void PropagateTaskCannotEndBefore(int start_min_index, int end_max_index) {
+    CumulativeIndexedTask* const task_to_push = by_start_min_[start_min_index];
+    const int64 update = ConditionalStartMin(*task_to_push, end_max_index);
+    StartMinUpdater startMinUpdater(task_to_push->mutable_interval(), update);
+    new_start_min_.push_back(startMinUpdater);
+  }
+
+  // Applies the previously computed updates.
+  void ApplyNewBounds() {
+    for (int i = 0; i < new_start_min_.size(); ++i) {
+      new_start_min_[i].Run();
+    }
+  }
+
+  // Capacity of the cumulative resource.
   const int64 capacity_;
+
+  // Number of tasks sharing this cumulative resource.
   const int size_;
+
+  // Cumulative tasks, ordered by non-decreasing start min.
   vector<CumulativeIndexedTask*> by_start_min_;
+
+  // Cumulative tasks, ordered by non-decreasing end max.
   vector<CumulativeIndexedTask*> by_end_max_;
+
+  // Cumulative tasks, ordered by non-decreasing end min.
+  vector<CumulativeIndexedTask*> by_end_min_;
+
+  // Cumulative theta-lamba tree.
   CumulativeLambdaThetaTree lt_tree_;
+
+  // Stack of updates to the new start min to do.
+  vector<StartMinUpdater> new_start_min_;
+
+  typedef hash_map<int64, UpdatesForADemand*> UpdateMap;
+
+  // update_map_[d][i] is an integer such that if a task
+  // whose demand is d cannot end before by_end_max_[i], then it cannot start
+  // before update_map_[d][i].
+  UpdateMap update_map_;
+
   DISALLOW_COPY_AND_ASSIGN(EdgeFinder);
+};
+
+// A point in time where the usage profile changes.
+// Starting from time (included), the usage is what it was immediately before
+// time, plus the delta.
+//
+// Example:
+// Consider the following vector of ProfileDelta's:
+// { t=1, d=+3}, { t=4, d=+1 }, { t=5, d=-2}, { t=8, d=-1}
+// This represents the following usage profile:
+//
+// usage
+// 4 |                   ****.
+// 3 |       ************.   .
+// 2 |       .           .   ************.
+// 1 |       .           .   .           .
+// 0 |*******----------------------------*******************-> time
+//       0   1   2   3   4   5   6   7   8   9
+//
+// Note that the usage profile is right-continuous (see
+// http://en.wikipedia.org/wiki/Left-continuous#Directional_continuity).
+// This is because intervals for tasks are always closed on the start side
+// and open on the end side.
+struct ProfileDelta {
+  ProfileDelta(int64 _time, int64 _delta) : time(_time), delta(_delta) {}
+  int64 time;
+  int64 delta;
+};
+
+bool TimeLessThan(const ProfileDelta& delta1, const ProfileDelta& delta2) {
+  return delta1.time < delta2.time;
+}
+
+// Cumulative time-table.
+//
+// This class implements a propagator for the CumulativeConstraint which is not
+// incremental, and where a call to InitialPropagate() takes time which is
+// O(n^2) and Omega(n log n) with n the number of cumulative tasks.
+//
+// Despite the high complexity, this propagator is needed, because of those
+// implemented, it is the only one that satisfy that if all instantiated, no
+// contradiction will be detected if and only if the constraint is satisfied.
+//
+// The implementation is quite naive, and could certainly be improved, for
+// example by maintaining the profile incrementally.
+class CumulativeTimeTable : public Constraint {
+ public:
+  CumulativeTimeTable(Solver* const solver,
+            const vector<CumulativeTask*>& tasks,
+            int64 capacity)
+  : Constraint(solver),
+    by_start_min_(tasks),
+    capacity_(capacity) {
+    // There may be up to 2 delta's per interval (one on each side),
+    // plus two sentinels
+    const int profile_max_size = 2 * NumTasks() + 2;
+    profile_non_unique_time_.reserve(profile_max_size);
+    profile_unique_time_.reserve(profile_max_size);
+  }
+  virtual void InitialPropagate() {
+    BuildProfile();
+    PushTasks();
+  }
+  virtual void Post() {
+    Demon* d = MakeDelayedConstraintDemon0(
+        solver(),
+        this,
+        &CumulativeTimeTable::InitialPropagate,
+        "InitialPropagate");
+    for (int i = 0; i < NumTasks(); ++i) {
+      by_start_min_[i]->mutable_interval()->WhenAnything(d);
+    }
+  }
+  int NumTasks() const { return by_start_min_.size(); }
+
+ private:
+
+  // Build the usage profile. Runs in O(n log n).
+  void BuildProfile() {
+    // Build profile with non unique time
+    profile_non_unique_time_.clear();
+    for (int i = 0; i < NumTasks(); ++i) {
+      const CumulativeTask* task = by_start_min_[i];
+      const IntervalVar* const interval = task->interval();
+      const int64 start_max = interval->StartMax();
+      const int64 end_min = interval->EndMin();
+      if (interval->MustBePerformed() && start_max < end_min) {
+        const int64 demand = task->demand();
+        profile_non_unique_time_.push_back(ProfileDelta(start_max, +demand));
+        profile_non_unique_time_.push_back(ProfileDelta(end_min, -demand));
+      }
+    }
+    // Sort
+    std::sort(profile_non_unique_time_.begin(),
+              profile_non_unique_time_.end(),
+              TimeLessThan);
+    // Build profile with unique times
+    int64 usage = 0;
+    profile_unique_time_.clear();
+    profile_unique_time_.push_back(ProfileDelta(kint64min, 0));
+    for (int i = 0; i < profile_non_unique_time_.size(); ++i) {
+      const ProfileDelta& profile_delta = profile_non_unique_time_[i];
+      if (profile_delta.time == profile_unique_time_.back().time) {
+        profile_unique_time_.back().delta += profile_delta.delta;
+      } else {
+        if (usage > capacity_) {
+          solver()->Fail();
+        }
+        profile_unique_time_.push_back(profile_delta);
+      }
+      usage += profile_delta.delta;
+    }
+    DCHECK_EQ(0, usage);
+    profile_unique_time_.push_back(ProfileDelta(kint64max, 0));
+  }
+
+  // Update the start min for all tasks. Runs in O(n^2) and Omega(n).
+  void PushTasks() {
+    Sort(&by_start_min_, TaskStartMinLessThan);
+    int64 usage = 0;
+    int profile_index = 0;
+    for (int task_index = 0 ; task_index < NumTasks(); ++task_index) {
+      CumulativeTask* const task = by_start_min_[task_index];
+      while (task->interval()->StartMin() >
+        profile_unique_time_[profile_index].time) {
+        DCHECK(profile_index < profile_unique_time_.size());
+        ++profile_index;
+        usage += profile_unique_time_[profile_index].delta;
+      }
+      PushTask(task, profile_index, usage);
+    }
+  }
+
+  // Push the given task to new_start_min, defined as the smallest integer such
+  // that the profile usage for all tasks, excluding the current one, does not
+  // exceed capacity_ - task->demand() on the interval
+  // [new_start_min, new_start_min + task->interval()->DurationMin() ).
+  void PushTask(CumulativeTask* const task,
+                  int profile_index,
+                  int64 usage) {
+      const IntervalVar* const interval = task->interval();
+      int64 new_start_min = interval->StartMin();
+      // Influence of current task
+      const int64 start_max = interval->StartMax();
+      const int64 end_min = interval->EndMin();
+      ProfileDelta delta_start(start_max, 0);
+      ProfileDelta delta_end(end_min, 0);
+      const int64 demand = task->demand();
+      if (interval->MustBePerformed() && start_max < end_min) {
+        delta_start.delta = +demand;
+        delta_end.delta = -demand;
+      }
+      const int64 residual_capacity = capacity_ - demand;
+      const int64 duration = task->interval()->DurationMin();
+      while (profile_unique_time_[profile_index].time <
+             duration + new_start_min) {
+        const ProfileDelta& profile_delta = profile_unique_time_[profile_index];
+        DCHECK(profile_index < profile_unique_time_.size());
+        // Compensate for current task
+        if (profile_delta.time == delta_start.time) {
+          usage -= delta_start.delta;
+        }
+        if (profile_delta.time == delta_end.time) {
+          usage -= delta_end.delta;
+        }
+        // Increment time
+        ++profile_index;
+        DCHECK(profile_index < profile_unique_time_.size());
+        // Does it fit?
+        if (usage > residual_capacity) {
+          new_start_min = profile_unique_time_[profile_index].time;
+        }
+        usage += profile_unique_time_[profile_index].delta;
+      }
+      task->mutable_interval()->SetStartMin(new_start_min);
+    }
+
+  typedef vector<ProfileDelta> Profile;
+
+  Profile profile_unique_time_;
+  Profile profile_non_unique_time_;
+  vector<CumulativeTask*> by_start_min_;
+  const int64 capacity_;
+
+  DISALLOW_COPY_AND_ASSIGN(CumulativeTimeTable);
 };
 
 class CumulativeConstraint : public Constraint {
@@ -1211,14 +1806,23 @@ class CumulativeConstraint : public Constraint {
   }
 
   virtual void Post() {
-    // Note that this is different from the way things work in the disjunctive
-    // case, where we post a single DecomposedSequenceConstraint that manages
-    // the demons and the fixed point algorithm. The reason is that here we have
-    // only one propagator, versus several for the disjunctive case. Because of
-    // this, there is no reason to do the fixpoint by hand, and we can just rely
-    // on the solver to call the propagators in arbitrary order.
-    PostOneSidedEdgeFinder(false);
-    PostOneSidedEdgeFinder(true);
+    // For the cumulative constraint, there are many propagators, and they
+    // don't dominate each other. So the strongest propagation is obtained
+    // by posting a bunch of different propagators.
+    if (FLAGS_cp_use_cumulative_time_table) {
+      PostOneSidedConstraint(false, false);
+      PostOneSidedConstraint(true, false);
+    }
+    if (FLAGS_cp_use_cumulative_edge_finder) {
+      PostOneSidedConstraint(false, true);
+      PostOneSidedConstraint(true, true);
+    }
+    if (FLAGS_cp_use_sequence_high_demand_tasks) {
+      PostHighDemandSequenceConstraint();
+    }
+    if (FLAGS_cp_use_all_possible_disjunctions) {
+      PostAllDisjunctions();
+    }
   }
 
   virtual void InitialPropagate() {
@@ -1226,6 +1830,56 @@ class CumulativeConstraint : public Constraint {
   }
 
  private:
+  // Post temporal disjunctions for tasks that cannot overlap.
+  void PostAllDisjunctions() {
+    for (int i = 0; i < size_; ++i) {
+      IntervalVar* interval_i = tasks_[i]->mutable_interval();
+      if (interval_i->MayBePerformed()) {
+        for (int j = i + 1; j < size_; ++j) {
+          IntervalVar* interval_j = tasks_[j]->mutable_interval();
+          if (interval_j->MayBePerformed()) {
+            if (tasks_[i]->demand() + tasks_[j]->demand() > capacity_) {
+              Constraint* const constraint =
+                  solver()->MakeTemporalDisjunction(interval_i, interval_j);
+              solver()->AddConstraint(constraint);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Post a Sequence constraint for tasks that requires strictly more than half
+  // of the resource
+  void PostHighDemandSequenceConstraint() {
+    Constraint* constraint = NULL;
+    {  // Need a block to avoid memory leaks in case the AddConstraint fails
+      vector<IntervalVar*> high_demand_intervals;
+      high_demand_intervals.reserve(size_);
+      for (int i = 0; i < size_; ++i) {
+        const int64 demand = tasks_[i]->demand();
+        // Consider two tasks with demand d1 and d2 such that
+        // d1 * 2 > capacity_ and d2 * 2 > capacity_.
+        // Then d1 + d2 = 1/2 (d1 * 2 + d2 * 2)
+        //              > 1/2 (capacity_ + capacity_)
+        //              > capacity_.
+        // Therefore these two tasks cannot overlap.
+        if (demand * 2 > capacity_ && tasks_[i]->interval()->MayBePerformed()) {
+          high_demand_intervals.push_back(tasks_[i]->mutable_interval());
+        }
+      }
+      if (high_demand_intervals.size() >= 2) {
+        // If there are less than 2 such intervals, the constraint would do
+        // nothing
+        string seq_name = StrCat(name(), "-HighDemandSequence");
+        constraint = solver()->MakeSequence(high_demand_intervals, seq_name);
+      }
+    }
+    if (constraint != NULL) {
+      solver()->AddConstraint(constraint);
+    }
+  }
+
   // Creates a possibly mirrored relaxed task corresponding to the given task.
   CumulativeTask* MakeRelaxedTask(CumulativeTask* original_task, bool mirror) {
     IntervalVar* const original_interval = original_task->mutable_interval();
@@ -1257,27 +1911,32 @@ class CumulativeConstraint : public Constraint {
     }
   }
 
-  // Makes and return an edge-finder, or NULL if it is not necessary.
-  Constraint* MakeEdgeFinder(bool mirror) {
+  // Makes and return an edge-finder or a time table, or NULL if it is not
+  // necessary.
+  Constraint* MakeOneSidedConstraint(bool mirror, bool edge_finder) {
     vector<CumulativeTask*> useful_tasks;
     PopulateVectorUsefulTasks(mirror, &useful_tasks);
     if (useful_tasks.empty()) {
       return NULL;
     } else {
-      EdgeFinder* const ef = new EdgeFinder(solver(), useful_tasks, capacity_);
-      return solver()->RevAlloc(ef);
+      Constraint* constraint;
+      if (edge_finder) {
+        constraint = new EdgeFinder(solver(), useful_tasks, capacity_);
+      } else {
+        constraint = new CumulativeTimeTable(solver(), useful_tasks, capacity_);
+      }
+      return solver()->RevAlloc(constraint);
     }
   }
 
   // Post a straight or mirrored edge-finder, if needed
-  void PostOneSidedEdgeFinder(bool mirror) {
-    Constraint* edgeFinder = MakeEdgeFinder(mirror);
-    if (edgeFinder != NULL) {
-      solver()->AddConstraint(edgeFinder);
+  void PostOneSidedConstraint(bool mirror, bool edge_finder) {
+    Constraint* constraint = MakeOneSidedConstraint(mirror, edge_finder);
+    if (constraint != NULL) {
+      solver()->AddConstraint(constraint);
     }
   }
 
- private:
   // Capacity of the cumulative resource
   const int64 capacity_;
 
