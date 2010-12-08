@@ -31,7 +31,6 @@ using operations_research::IntVar;
 using operations_research::RoutingModel;
 using operations_research::Solver;
 using operations_research::ACMRandom;
-using operations_research::StrCat;
 using operations_research::StringAppendF;
 using operations_research::StringPrintf;
 using operations_research::scoped_array;

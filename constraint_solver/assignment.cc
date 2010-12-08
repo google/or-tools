@@ -12,7 +12,6 @@
 // limitations under the License.
 
 #include <map>
-#include <sstream>
 
 #include "base/integral_types.h"
 #include "base/logging.h"

@@ -25,7 +25,6 @@
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
-//#include "strings/join.h"
 #include "base/stl_util-inl.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/monoid_operation_tree.h"

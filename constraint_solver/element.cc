@@ -12,7 +12,6 @@
 // limitations under the License.
 
 #include <algorithm>
-#include <sstream>
 #include <string>
 
 #include "base/callback.h"
