@@ -1097,7 +1097,7 @@ void DomainIntVar::SetMin(int64 m)  {
     }
   } else {
     CheckOldMin();
-    const uint64 stamp = solver()->fail_stamp();
+    const uint64 stamp = solver()->stamp();
     if (min_stamp_ == stamp) {
       min_ = (bits_ == NULL ?
               m :
@@ -1130,7 +1130,7 @@ void DomainIntVar::SetMax(int64 m) {
     }
   } else {
     CheckOldMax();
-    const uint64 stamp = solver()->fail_stamp();
+    const uint64 stamp = solver()->stamp();
     if (max_stamp_ == stamp) {
       max_ = (bits_ == NULL ?
               m :
@@ -1168,7 +1168,7 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
         solver()->Fail();
       }
     } else {
-      const uint64 stamp = solver()->fail_stamp();
+      const uint64 stamp = solver()->stamp();
       if (mi > min_) {
         CheckOldMin();
         if (min_stamp_ == stamp) {
