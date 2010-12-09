@@ -321,7 +321,9 @@ class DomainIntVar : public IntVar {
   int64 old_max_;
   int64 new_min_;
   int64 new_max_;
+  // stamp for the min_ of the var.
   uint64 min_stamp_;
+  // stamp for the max_ of the var.
   uint64 max_stamp_;
   SimpleRevFIFO<Demon*> bound_demons_;
   SimpleRevFIFO<Demon*> range_demons_;
@@ -1098,16 +1100,14 @@ void DomainIntVar::SetMin(int64 m)  {
   } else {
     CheckOldMin();
     const uint64 stamp = solver()->stamp();
+    const int64 new_min = (bits_ == NULL ?
+                           m :
+                           bits_->ComputeNewMin(m, min_, max_));
     if (min_stamp_ == stamp) {
-      min_ = (bits_ == NULL ?
-              m :
-              bits_->ComputeNewMin(m, min_, max_));
+      min_ = new_min;
     } else {
       min_stamp_ = stamp;
-      solver()->SaveAndSetValue(&min_,
-                                (bits_ == NULL ?
-                                 m :
-                                 bits_->ComputeNewMin(m, min_, max_)));
+      solver()->SaveAndSetValue(&min_, new_min);
     }
     if (min_ > max_) {
       solver()->Fail();
@@ -1131,16 +1131,14 @@ void DomainIntVar::SetMax(int64 m) {
   } else {
     CheckOldMax();
     const uint64 stamp = solver()->stamp();
+    const int64 new_max = (bits_ == NULL ?
+                           m :
+                           bits_->ComputeNewMax(m, min_, max_));
     if (max_stamp_ == stamp) {
-      max_ = (bits_ == NULL ?
-              m :
-              bits_->ComputeNewMax(m, min_, max_));
+      max_ = new_max;
     } else {
-      solver()->SaveAndSetValue(&max_,
-                                (bits_ == NULL ?
-                                 m :
-                                 bits_->ComputeNewMax(m, min_, max_)));
       max_stamp_ = stamp;
+      solver()->SaveAndSetValue(&max_, new_max);
     }
     if (min_ > max_) {
       solver()->Fail();
@@ -1171,16 +1169,14 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
       const uint64 stamp = solver()->stamp();
       if (mi > min_) {
         CheckOldMin();
+        const int64 new_min = (bits_ == NULL ?
+                               mi :
+                               bits_->ComputeNewMin(mi, min_, max_));
         if (min_stamp_ == stamp) {
-          min_ = (bits_ == NULL ?
-                  mi :
-                  bits_->ComputeNewMin(mi, min_, max_));
+          min_ = new_min;
         } else {
           min_stamp_ = stamp;
-          solver()->SaveAndSetValue(&min_,
-                                    (bits_ == NULL ?
-                                     mi :
-                                     bits_->ComputeNewMin(mi, min_, max_)));
+          solver()->SaveAndSetValue(&min_, new_min);
         }
       }
       if (min_ > ma) {
@@ -1188,16 +1184,14 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
       }
       if (ma < max_) {
         CheckOldMax();
+        const int64 new_max = (bits_ == NULL ?
+                               ma :
+                               bits_->ComputeNewMax(ma, min_, max_));
         if (max_stamp_ == stamp) {
-          max_ = (bits_ == NULL ?
-                  ma :
-                  bits_->ComputeNewMax(ma, min_, max_));
+          max_ = new_max;
         } else {
           max_stamp_ = stamp;
-          solver()->SaveAndSetValue(&max_,
-                                    (bits_ == NULL ?
-                                     ma :
-                                     bits_->ComputeNewMax(ma, min_, max_)));
+          solver()->SaveAndSetValue(&max_, new_max);
         }
       }
       if (min_ > max_) {
