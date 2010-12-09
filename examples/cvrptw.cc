@@ -36,6 +36,7 @@ using operations_research::StringPrintf;
 using operations_research::scoped_array;
 using operations_research::scoped_ptr;
 
+
 DEFINE_int32(vrp_orders, 100, "Nodes in the problem.");
 DEFINE_int32(vrp_vehicles, 20, "Size of Traveling Salesman Problem instance.");
 DEFINE_bool(vrp_use_deterministic_random_seed, false,
