@@ -1738,44 +1738,60 @@ class CumulativeTimeTable : public Constraint {
   // exceed capacity_ - task->demand() on the interval
   // [new_start_min, new_start_min + task->interval()->DurationMin() ).
   void PushTask(CumulativeTask* const task,
-                  int profile_index,
-                  int64 usage) {
-      const IntervalVar* const interval = task->interval();
-      int64 new_start_min = interval->StartMin();
-      // Influence of current task
-      const int64 start_max = interval->StartMax();
-      const int64 end_min = interval->EndMin();
-      ProfileDelta delta_start(start_max, 0);
-      ProfileDelta delta_end(end_min, 0);
-      const int64 demand = task->demand();
-      if (interval->MustBePerformed() && start_max < end_min) {
-        delta_start.delta = +demand;
-        delta_end.delta = -demand;
+                int profile_index,
+                int64 usage) {
+    const IntervalVar* const interval = task->interval();
+    int64 new_start_min = interval->StartMin();
+    const int64 demand = task->demand();
+    const int64 residual_capacity = capacity_ - demand;
+    const int64 duration = task->interval()->DurationMin();
+
+    // First, treat the case where we're already past the start min
+    if (profile_unique_time_[profile_index].time > interval->StartMin()) {
+      // There was no profile delta at a time between interval->StartMin()
+      // (included) and the current one.
+      // As we don't delete delta's of 0 value, this means the current task
+      // does not contribute to the usage before:
+      DCHECK(
+          (interval->StartMax() >= profile_unique_time_[profile_index].time) ||
+          (interval->StartMax() >= interval->EndMin()));
+      int64 usage_before = usage - profile_unique_time_[profile_index].delta;
+      if (usage_before > residual_capacity) {
+        new_start_min = profile_unique_time_[profile_index].time;
       }
-      const int64 residual_capacity = capacity_ - demand;
-      const int64 duration = task->interval()->DurationMin();
-      while (profile_unique_time_[profile_index].time <
-             duration + new_start_min) {
-        const ProfileDelta& profile_delta = profile_unique_time_[profile_index];
-        DCHECK(profile_index < profile_unique_time_.size());
-        // Compensate for current task
-        if (profile_delta.time == delta_start.time) {
-          usage -= delta_start.delta;
-        }
-        if (profile_delta.time == delta_end.time) {
-          usage -= delta_end.delta;
-        }
-        // Increment time
-        ++profile_index;
-        DCHECK(profile_index < profile_unique_time_.size());
-        // Does it fit?
-        if (usage > residual_capacity) {
-          new_start_min = profile_unique_time_[profile_index].time;
-        }
-        usage += profile_unique_time_[profile_index].delta;
-      }
-      task->mutable_interval()->SetStartMin(new_start_min);
     }
+
+    // Influence of current task
+    const int64 start_max = interval->StartMax();
+    const int64 end_min = interval->EndMin();
+    ProfileDelta delta_start(start_max, 0);
+    ProfileDelta delta_end(end_min, 0);
+    if (interval->MustBePerformed() && start_max < end_min) {
+      delta_start.delta = +demand;
+      delta_end.delta = -demand;
+    }
+    while (profile_unique_time_[profile_index].time <
+        duration + new_start_min) {
+      const ProfileDelta& profile_delta = profile_unique_time_[profile_index];
+      DCHECK(profile_index < profile_unique_time_.size());
+      // Compensate for current task
+      if (profile_delta.time == delta_start.time) {
+        usage -= delta_start.delta;
+      }
+      if (profile_delta.time == delta_end.time) {
+        usage -= delta_end.delta;
+      }
+      // Increment time
+      ++profile_index;
+      DCHECK(profile_index < profile_unique_time_.size());
+      // Does it fit?
+      if (usage > residual_capacity) {
+        new_start_min = profile_unique_time_[profile_index].time;
+      }
+      usage += profile_unique_time_[profile_index].delta;
+    }
+    task->mutable_interval()->SetStartMin(new_start_min);
+  }
 
   typedef vector<ProfileDelta> Profile;
 
