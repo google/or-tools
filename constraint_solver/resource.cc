@@ -1740,23 +1740,29 @@ class CumulativeTimeTable : public Constraint {
   void PushTask(CumulativeTask* const task,
                 int profile_index,
                 int64 usage) {
+    // Init
     const IntervalVar* const interval = task->interval();
-    int64 new_start_min = interval->StartMin();
     const int64 demand = task->demand();
     const int64 residual_capacity = capacity_ - demand;
     const int64 duration = task->interval()->DurationMin();
+    const ProfileDelta& first_prof_delta = profile_unique_time_[profile_index];
 
-    // First, treat the case where we're already past the start min
-    if (profile_unique_time_[profile_index].time > interval->StartMin()) {
+    int64 new_start_min = interval->StartMin();
+
+    DCHECK_GE(first_prof_delta.time, interval->StartMin());
+    // The check above is with a '>='. Let's first treat the '>' case
+    if (first_prof_delta.time > interval->StartMin()) {
       // There was no profile delta at a time between interval->StartMin()
       // (included) and the current one.
       // As we don't delete delta's of 0 value, this means the current task
       // does not contribute to the usage before:
       DCHECK(
-          (interval->StartMax() >= profile_unique_time_[profile_index].time) ||
+          (interval->StartMax() >= first_prof_delta.time) ||
           (interval->StartMax() >= interval->EndMin()));
-      int64 usage_before = usage - profile_unique_time_[profile_index].delta;
-      if (usage_before > residual_capacity) {
+      // The 'usage' given in argument is valid at first_prof_delta.time. To
+      // compute the usage at the start min, we need to remove the last delta.
+      const int64 usage_at_start_min = usage - first_prof_delta.delta;
+      if (usage_at_start_min > residual_capacity) {
         new_start_min = profile_unique_time_[profile_index].time;
       }
     }
