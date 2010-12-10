@@ -318,6 +318,8 @@ class PyDecisionBuilder(object):
 %rename (TabuSearch) MakeTabuSearch;
 %rename (TemporalDisjunction) MakeTemporalDisjunction;
 %rename (TransitionConstraint) MakeTransitionConstraint;
+%rename (TreeMonitor) MakeTreeMonitor;
+%rename (TreeMonitorString) MakeTreeMonitorString;
 %rename (TrueConstraint) MakeTrueConstraint;
 
 namespace operations_research {
@@ -1069,7 +1071,7 @@ static bool PyCallbackBool(PyObject* pyfunc) {
                           ResultCallback1<bool, int64>* callback = NULL) {
     return self->MakeNoCycle(nexts, active, callback, false);
   }
-
+  
   SearchMonitor* SearchLogWithCallback(int period,
                                        ResultCallback<string>* callback) {
     return self->MakeSearchLog(period, callback);
@@ -1631,6 +1633,8 @@ class LongResultCallback3 {
 %rename (makeTabuSearch) MakeTabuSearch;
 %rename (makeTemporalDisjunction) MakeTemporalDisjunction;
 %rename (makeTrueConstraint) MakeTrueConstraint;
+%rename (makeTreeMonitor) MakeTreeMonitor;
+%rename (makeTreeMonitorString) MakeTreeMonitorString;
 %rename (makeGuidedLocalSearch) MakeGuidedLocalSearch;
 %rename (value) *::Value;
 %rename (min) *::Min;

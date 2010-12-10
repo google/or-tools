@@ -61,8 +61,6 @@
 #include <vector>
 #include <string>
 
-
-
 #include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -1271,6 +1269,37 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
   // this happens at a leaf the corresponding solution will be rejected.
   SearchLimit* MakeCustomLimit(ResultCallback<bool>* limiter);
 
+  // ----- Tree Monitor -----
+  // Creates a tree monitor that outputs a detailed overview of the
+  // decision phase in cpviz format. Automatically writes result to
+  // Files file_tree and file_visualization when the search finishes.
+  SearchMonitor* MakeTreeMonitor(const IntVar* const* vars, int size,
+                                 string const& file_tree,
+                                 string const& file_visualization);
+
+  // Creates a tree monitor that outputs a detailed overview of the
+  // decision phase in cpviz format. Automatically writes result to
+  // Files file_tree and file_visualization when the search finishes.
+  SearchMonitor* MakeTreeMonitor(const vector<IntVar*>& vars,
+                                 string const& file_tree,
+                                 string const& file_visualization);
+
+
+  // Creates a tree monitor that outputs a detailed overview of the
+  // decision phase in cpviz format. The XML data is copied to tree_xml
+  // and visualization_xml as the search finishes. The tree monitor does
+  // not take ownership of either string.
+  SearchMonitor* MakeTreeMonitorString(const IntVar* const* vars, int size,
+                                       string* const tree_xml,
+                                       string* const visualization_xml);
+
+  // Creates a tree monitor that outputs a detailed overview of the
+  // decision phase in cpviz format. The XML data is copied to tree_xml
+  // and visualization_xml as the search finishes. The tree monitor does
+  // not take ownership of either string.
+  SearchMonitor* MakeTreeMonitorString(const vector<IntVar*>& vars,
+                                       string* const tree_xml,
+                                       string* const visualization_xml);
 
   // ----- Search Log -----
 
@@ -3255,6 +3284,7 @@ class SolutionPool : public BaseObject {
   // an external one.
   virtual bool SyncNeeded(Assignment* const local_assignment) = 0;
 };
+
 
 }  // namespace operations_research
 #endif  // CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_

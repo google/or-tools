@@ -80,6 +80,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	objs/search.obj\
 	objs/table.obj\
 	objs/timetabling.obj\
+	objs/tree_monitor.obj\
 	objs/utilities.obj
 
 objs/alldiff_cst.obj:constraint_solver/alldiff_cst.cc
@@ -145,6 +146,9 @@ objs/table.obj:constraint_solver/table.cc
 objs/timetabling.obj:constraint_solver/timetabling.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/timetabling.cc /Foobjs/timetabling.obj
 
+objs/tree_monitor.obj:constraint_solver/tree_monitor.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/tree_monitor.cc /Foobjs/tree_monitor.obj
+
 objs/utilities.obj:constraint_solver/utilities.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/utilities.cc /Foobjs/utilities.obj
 
@@ -159,12 +163,15 @@ libgflags.dll: $(GFLAGS_DIR)\vsprojects\libgflags\Release\libgflags.dll
 
 UTIL_LIB_OBJS=\
 	objs/bitset.obj \
-	objs/cached_log.obj
+	objs/cached_log.obj \
+	objs/xml_helper.obj
 
 objs/bitset.obj:util/bitset.cc
 	$(CCC) $(CFLAGS) -c util/bitset.cc /Foobjs/bitset.obj
 objs/cached_log.obj:util/cached_log.cc
 	$(CCC) $(CFLAGS) -c util/cached_log.cc /Foobjs/cached_log.obj
+objs/xml_helper.obj:util/xml_helper.cc
+	$(CCC) $(CFLAGS) -c util/xml_helper.cc /Foobjs/xml_helper.obj
 
 util.lib: $(UTIL_LIB_OBJS)
 	lib /OUT:util.lib $(UTIL_LIB_OBJS)

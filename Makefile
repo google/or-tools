@@ -112,6 +112,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	objs/search.o\
 	objs/table.o\
 	objs/timetabling.o\
+	objs/tree_monitor.o\
 	objs/utilities.o
 
 objs/alldiff_cst.o:constraint_solver/alldiff_cst.cc
@@ -179,6 +180,9 @@ objs/table.o:constraint_solver/table.cc
 objs/timetabling.o:constraint_solver/timetabling.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/timetabling.cc -o objs/timetabling.o
 
+objs/tree_monitor.o:constraint_solver/tree_monitor.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/tree_monitor.cc -o objs/tree_monitor.o
+
 objs/utilities.o:constraint_solver/utilities.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/utilities.cc -o objs/utilities.o
 
@@ -189,13 +193,17 @@ libconstraint_solver.a: $(CONSTRAINT_SOLVER_LIB_OBJS)
 
 UTIL_LIB_OBJS=\
 	objs/bitset.o \
-	objs/cached_log.o
+	objs/cached_log.o \
+	objs/xml_helper.o
 
 objs/bitset.o:util/bitset.cc
 	$(CCC) $(CFLAGS) -c util/bitset.cc -o objs/bitset.o
 
 objs/cached_log.o:util/cached_log.cc
 	$(CCC) $(CFLAGS) -c util/cached_log.cc -o objs/cached_log.o
+
+objs/xml_helper.o:util/xml_helper.cc
+	$(CCC) $(CFLAGS) -c util/xml_helper.cc -o objs/xml_helper.o
 
 libutil.a: $(UTIL_LIB_OBJS)
 	ar rv libutil.a $(UTIL_LIB_OBJS)
