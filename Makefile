@@ -320,6 +320,12 @@ objs/nqueens.o: examples/nqueens.cc
 nqueens: $(CPLIBS) $(BASE_LIBS) objs/nqueens.o
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.o $(CPLIBS) $(BASE_LIBS) -o nqueens
 
+objs/tricks.o: examples/tricks.cc
+	$(CCC) $(CFLAGS) -c examples/tricks.cc -o objs/tricks.o
+
+tricks: $(CPLIBS) $(BASE_LIBS) objs/tricks.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tricks.o $(CPLIBS) $(BASE_LIBS) -o tricks
+
 # Routing Examples
 
 objs/tsp.o: examples/tsp.cc
