@@ -291,10 +291,10 @@ class VarEqualVarPlusOffset : public ArithmeticConstraint {
   int64 right_offset_;
 };
 
-class ScalProdOpConstant : public ArithmeticConstraint {
+class ScalProdInRange : public ArithmeticConstraint {
  public:
-  ScalProdOpConstant(int64 lb, int64 ub) : lb_(lb), ub_(ub) {}
-  virtual ~ScalProdOpConstant() {}
+  ScalProdInRange(int64 lb, int64 ub) : lb_(lb), ub_(ub) {}
+  virtual ~ScalProdInRange() {}
 
   void AddTerm(int var_index, int64 coefficient) {
     // TODO(lperron): Check not present.
@@ -457,8 +457,8 @@ class GlobalArithmeticConstraint : public Constraint {
   int MakeScalProdGreaterOrEqualConstant(const vector<IntVar*> vars,
                                          const vector<int64> coefficients, 
                                          int64 constant) {
-    ScalProdOpConstant* const constraint =
-        new ScalProdOpConstant(constant, kint64max);
+    ScalProdInRange* const constraint =
+        new ScalProdInRange(constant, kint64max);
     for (int index = 0; index < vars.size(); ++index) {
       constraint->AddTerm(VarIndex(vars[index]), coefficients[index]);
     }
@@ -468,8 +468,8 @@ class GlobalArithmeticConstraint : public Constraint {
   int MakeScalProdLessOrEqualConstant(const vector<IntVar*> vars,
                                       const vector<int64> coefficients, 
                                       int64 constant) {
-    ScalProdOpConstant* const constraint =
-        new ScalProdOpConstant(kint64min, constant);    
+    ScalProdInRange* const constraint =
+        new ScalProdInRange(kint64min, constant);    
     for (int index = 0; index < vars.size(); ++index) {
       constraint->AddTerm(VarIndex(vars[index]), coefficients[index]);
     }
@@ -479,8 +479,8 @@ class GlobalArithmeticConstraint : public Constraint {
   int MakeScalProdEqualConstant(const vector<IntVar*> vars,
                                 const vector<int64> coefficients, 
                                 int64 constant) {
-    ScalProdOpConstant* const constraint =
-        new ScalProdOpConstant(constant, constant);    
+    ScalProdInRange* const constraint =
+        new ScalProdInRange(constant, constant);    
     for (int index = 0; index < vars.size(); ++index) {
       constraint->AddTerm(VarIndex(vars[index]), coefficients[index]);
     }
@@ -489,8 +489,8 @@ class GlobalArithmeticConstraint : public Constraint {
 
   int MakeSumGreaterOrEqualConstant(const vector<IntVar*> vars,
                                     int64 constant) {
-    ScalProdOpConstant* const constraint =
-        new ScalProdOpConstant(constant, kint64max);
+    ScalProdInRange* const constraint =
+        new ScalProdInRange(constant, kint64max);
     for (int index = 0; index < vars.size(); ++index) {
       constraint->AddTerm(VarIndex(vars[index]), 1);
     }
@@ -498,8 +498,8 @@ class GlobalArithmeticConstraint : public Constraint {
   }
 
   int MakeSumLessOrEqualConstant(const vector<IntVar*> vars, int64 constant) {
-    ScalProdOpConstant* const constraint =
-        new ScalProdOpConstant(kint64min, constant);    
+    ScalProdInRange* const constraint =
+        new ScalProdInRange(kint64min, constant);    
     for (int index = 0; index < vars.size(); ++index) {
       constraint->AddTerm(VarIndex(vars[index]), 1);
     }
@@ -507,8 +507,8 @@ class GlobalArithmeticConstraint : public Constraint {
   }
 
   int MakeSumEqualConstant(const vector<IntVar*> vars, int64 constant) {
-    ScalProdOpConstant* const constraint =
-        new ScalProdOpConstant(constant, constant);    
+    ScalProdInRange* const constraint =
+        new ScalProdInRange(constant, constant);    
     for (int index = 0; index < vars.size(); ++index) {
       constraint->AddTerm(VarIndex(vars[index]), 1);
     }
