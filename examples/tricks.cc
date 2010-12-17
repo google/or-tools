@@ -291,10 +291,10 @@ class VarEqualVarPlusOffset : public ArithmeticConstraint {
   int64 right_offset_;
 };
 
-class ScalProdInRange : public ArithmeticConstraint {
+class RowConstraint : public ArithmeticConstraint {
  public:
-  ScalProdInRange(int64 lb, int64 ub) : lb_(lb), ub_(ub) {}
-  virtual ~ScalProdInRange() {}
+  RowConstraint(int64 lb, int64 ub) : lb_(lb), ub_(ub) {}
+  virtual ~RowConstraint() {}
 
   void AddTerm(int var_index, int64 coefficient) {
     // TODO(lperron): Check not present.
@@ -457,8 +457,7 @@ class GlobalArithmeticConstraint : public Constraint {
   int MakeScalProdGreaterOrEqualConstant(const vector<IntVar*> vars,
                                          const vector<int64> coefficients, 
                                          int64 constant) {
-    ScalProdInRange* const constraint =
-        new ScalProdInRange(constant, kint64max);
+    RowConstraint* const constraint = new RowConstraint(constant, kint64max);
     for (int index = 0; index < vars.size(); ++index) {
       constraint->AddTerm(VarIndex(vars[index]), coefficients[index]);
     }
@@ -468,8 +467,7 @@ class GlobalArithmeticConstraint : public Constraint {
   int MakeScalProdLessOrEqualConstant(const vector<IntVar*> vars,
                                       const vector<int64> coefficients, 
                                       int64 constant) {
-    ScalProdInRange* const constraint =
-        new ScalProdInRange(kint64min, constant);    
+    RowConstraint* const constraint = new RowConstraint(kint64min, constant);
     for (int index = 0; index < vars.size(); ++index) {
       constraint->AddTerm(VarIndex(vars[index]), coefficients[index]);
     }
@@ -479,8 +477,7 @@ class GlobalArithmeticConstraint : public Constraint {
   int MakeScalProdEqualConstant(const vector<IntVar*> vars,
                                 const vector<int64> coefficients, 
                                 int64 constant) {
-    ScalProdInRange* const constraint =
-        new ScalProdInRange(constant, constant);    
+    RowConstraint* const constraint = new RowConstraint(constant, constant);    
     for (int index = 0; index < vars.size(); ++index) {
       constraint->AddTerm(VarIndex(vars[index]), coefficients[index]);
     }
@@ -489,8 +486,7 @@ class GlobalArithmeticConstraint : public Constraint {
 
   int MakeSumGreaterOrEqualConstant(const vector<IntVar*> vars,
                                     int64 constant) {
-    ScalProdInRange* const constraint =
-        new ScalProdInRange(constant, kint64max);
+    RowConstraint* const constraint = new RowConstraint(constant, kint64max);
     for (int index = 0; index < vars.size(); ++index) {
       constraint->AddTerm(VarIndex(vars[index]), 1);
     }
@@ -498,8 +494,7 @@ class GlobalArithmeticConstraint : public Constraint {
   }
 
   int MakeSumLessOrEqualConstant(const vector<IntVar*> vars, int64 constant) {
-    ScalProdInRange* const constraint =
-        new ScalProdInRange(kint64min, constant);    
+    RowConstraint* const constraint = new RowConstraint(kint64min, constant);
     for (int index = 0; index < vars.size(); ++index) {
       constraint->AddTerm(VarIndex(vars[index]), 1);
     }
@@ -507,8 +502,7 @@ class GlobalArithmeticConstraint : public Constraint {
   }
 
   int MakeSumEqualConstant(const vector<IntVar*> vars, int64 constant) {
-    ScalProdInRange* const constraint =
-        new ScalProdInRange(constant, constant);    
+    RowConstraint* const constraint = new RowConstraint(constant, constant);
     for (int index = 0; index < vars.size(); ++index) {
       constraint->AddTerm(VarIndex(vars[index]), 1);
     }
@@ -519,7 +513,7 @@ class GlobalArithmeticConstraint : public Constraint {
                         const vector<IntVar*> vars, 
                         const vector<int64> coefficients, 
                         int64 ub) {
-    ScalProdInRange* const constraint = new ScalProdInRange(lb, ub);    
+    RowConstraint* const constraint = new RowConstraint(lb, ub);    
     for (int index = 0; index < vars.size(); ++index) {
       constraint->AddTerm(VarIndex(vars[index]), coefficients[index]);
     }
@@ -530,7 +524,7 @@ class GlobalArithmeticConstraint : public Constraint {
                         IntVar* const v1, 
                         int64 coeff1,
                         int64 ub) {
-    ScalProdInRange* const constraint = new ScalProdInRange(lb, ub);    
+    RowConstraint* const constraint = new RowConstraint(lb, ub);    
     constraint->AddTerm(VarIndex(v1), coeff1);
     return Store(constraint);
   }
@@ -541,7 +535,7 @@ class GlobalArithmeticConstraint : public Constraint {
                         IntVar* const v2, 
                         int64 coeff2,
                         int64 ub) {
-    ScalProdInRange* const constraint = new ScalProdInRange(lb, ub);    
+    RowConstraint* const constraint = new RowConstraint(lb, ub);    
     constraint->AddTerm(VarIndex(v1), coeff1);
     constraint->AddTerm(VarIndex(v2), coeff2);
     return Store(constraint);
@@ -555,7 +549,7 @@ class GlobalArithmeticConstraint : public Constraint {
                         IntVar* const v3, 
                         int64 coeff3,
                         int64 ub) {
-    ScalProdInRange* const constraint = new ScalProdInRange(lb, ub);    
+    RowConstraint* const constraint = new RowConstraint(lb, ub);    
     constraint->AddTerm(VarIndex(v1), coeff1);
     constraint->AddTerm(VarIndex(v2), coeff2);
     constraint->AddTerm(VarIndex(v3), coeff3);
@@ -572,7 +566,7 @@ class GlobalArithmeticConstraint : public Constraint {
                         IntVar* const v4, 
                         int64 coeff4,
                         int64 ub) {
-    ScalProdInRange* const constraint = new ScalProdInRange(lb, ub);    
+    RowConstraint* const constraint = new RowConstraint(lb, ub);    
     constraint->AddTerm(VarIndex(v1), coeff1);
     constraint->AddTerm(VarIndex(v2), coeff2);
     constraint->AddTerm(VarIndex(v3), coeff3);
