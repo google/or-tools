@@ -515,6 +515,71 @@ class GlobalArithmeticConstraint : public Constraint {
     return Store(constraint);
   }
 
+  int MakeRowConstraint(int64 lb, 
+                        const vector<IntVar*> vars, 
+                        const vector<int64> coefficients, 
+                        int64 ub) {
+    ScalProdInRange* const constraint = new ScalProdInRange(lb, ub);    
+    for (int index = 0; index < vars.size(); ++index) {
+      constraint->AddTerm(VarIndex(vars[index]), coefficients[index]);
+    }
+    return Store(constraint);
+  }
+
+  int MakeRowConstraint(int64 lb, 
+                        IntVar* const v1, 
+                        int64 coeff1,
+                        int64 ub) {
+    ScalProdInRange* const constraint = new ScalProdInRange(lb, ub);    
+    constraint->AddTerm(VarIndex(v1), coeff1);
+    return Store(constraint);
+  }
+
+  int MakeRowConstraint(int64 lb, 
+                        IntVar* const v1, 
+                        int64 coeff1,
+                        IntVar* const v2, 
+                        int64 coeff2,
+                        int64 ub) {
+    ScalProdInRange* const constraint = new ScalProdInRange(lb, ub);    
+    constraint->AddTerm(VarIndex(v1), coeff1);
+    constraint->AddTerm(VarIndex(v2), coeff2);
+    return Store(constraint);
+  }
+
+  int MakeRowConstraint(int64 lb, 
+                        IntVar* const v1, 
+                        int64 coeff1,
+                        IntVar* const v2, 
+                        int64 coeff2,
+                        IntVar* const v3, 
+                        int64 coeff3,
+                        int64 ub) {
+    ScalProdInRange* const constraint = new ScalProdInRange(lb, ub);    
+    constraint->AddTerm(VarIndex(v1), coeff1);
+    constraint->AddTerm(VarIndex(v2), coeff2);
+    constraint->AddTerm(VarIndex(v3), coeff3);
+    return Store(constraint);
+  }
+
+  int MakeRowConstraint(int64 lb, 
+                        IntVar* const v1, 
+                        int64 coeff1,
+                        IntVar* const v2, 
+                        int64 coeff2,
+                        IntVar* const v3, 
+                        int64 coeff3,
+                        IntVar* const v4, 
+                        int64 coeff4,
+                        int64 ub) {
+    ScalProdInRange* const constraint = new ScalProdInRange(lb, ub);    
+    constraint->AddTerm(VarIndex(v1), coeff1);
+    constraint->AddTerm(VarIndex(v2), coeff2);
+    constraint->AddTerm(VarIndex(v3), coeff3);
+    constraint->AddTerm(VarIndex(v4), coeff4);
+    return Store(constraint);
+  }
+
   int MakeOrConstraint(int left_constraint_index, int right_constraint_index) {
     OrConstraint* const constraint =
         new OrConstraint(constraints_[left_constraint_index],
@@ -568,22 +633,10 @@ void DeepSearchTreeArith(int size) {
 
   global->Add(global->MakeVarEqualVarPlusOffset(v1, v2, 0));
   global->Add(global->MakeVarEqualVarPlusOffset(v2, v3, 0));
-  vector<IntVar*> vars;
-  vars.push_back(v1);
-  vars.push_back(v2);
-  vars.push_back(v3);
-  vector<int64> coefficients;
-  coefficients.push_back(-1);
-  coefficients.push_back(-1);
-  coefficients.push_back(1);
   const int left = 
-      global->MakeScalProdGreaterOrEqualConstant(vars, coefficients, 0);
-  coefficients.clear();
-  coefficients.push_back(-1);
-  coefficients.push_back(1);
-  coefficients.push_back(-1);
+      global->MakeRowConstraint(0, v1, -1, v2, -1, v3, 1, kint64max);
   const int right = 
-      global->MakeScalProdGreaterOrEqualConstant(vars, coefficients, 0);
+      global->MakeRowConstraint(0, v1, -1, v2, 1, v3, -1, kint64max);
   global->Add(global->MakeOrConstraint(left, right));
 
   global->Post();
@@ -601,19 +654,8 @@ void SlowPropagationArith(int size) {
   GlobalArithmeticConstraint* const global =
       solver.RevAlloc(new GlobalArithmeticConstraint(&solver));
   
-  vector<IntVar*> vars;
-  vars.push_back(v1);
-  vars.push_back(v2);
-  vector<int64> coefficients;
-  coefficients.push_back(1);
-  coefficients.push_back(-1);
-  global->Add(
-      global->MakeScalProdGreaterOrEqualConstant(vars, coefficients, 1));
-  coefficients.clear();
-  coefficients.push_back(-1);
-  coefficients.push_back(1);
-  global->Add(
-      global->MakeScalProdGreaterOrEqualConstant(vars, coefficients, 0));
+  global->Add(global->MakeRowConstraint(1, v1, 1, v2, -1, kint64max));
+  global->Add(global->MakeRowConstraint(0, v1, -1, v2, 1, kint64max));
 
   global->Post();
 }
