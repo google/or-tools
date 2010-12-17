@@ -323,8 +323,11 @@ nqueens: $(CPLIBS) $(BASE_LIBS) objs/nqueens.o
 objs/tricks.o: examples/tricks.cc
 	$(CCC) $(CFLAGS) -c examples/tricks.cc -o objs/tricks.o
 
-tricks: $(CPLIBS) $(BASE_LIBS) objs/tricks.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tricks.o $(CPLIBS) $(BASE_LIBS) -o tricks
+objs/global_arith.o: examples/global_arith.cc
+	$(CCC) $(CFLAGS) -c examples/global_arith.cc -o objs/global_arith.o
+
+tricks: $(CPLIBS) $(BASE_LIBS) objs/tricks.o objs/global_arith.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tricks.o objs/global_arith.o $(CPLIBS) $(BASE_LIBS) -o tricks
 
 # Routing Examples
 
