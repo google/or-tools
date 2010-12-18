@@ -17,6 +17,14 @@ namespace operations_research {
 class ArithmeticPropagator;
 class ArithmeticConstraint;
 
+class ConstraintRef {
+ public:
+  ConstraintRef(int constraint_index) : constraint_index_(constraint_index) {}
+  int constraint_index() const { return constraint_index_; }
+ private:
+  const int constraint_index_;
+};
+
 class GlobalArithmeticConstraint : public Constraint {
  public:
   GlobalArithmeticConstraint(Solver* const solver);
@@ -26,59 +34,62 @@ class GlobalArithmeticConstraint : public Constraint {
   virtual void InitialPropagate();
   void Update(int var_index);
 
-  int MakeVarEqualVarPlusOffset(IntVar* const left_var,
-                                IntVar* const right_var,
-                                int64 right_offset);
-  int MakeScalProdGreaterOrEqualConstant(const vector<IntVar*> vars,
-                                         const vector<int64> coefficients,
-                                         int64 constant);
-  int MakeScalProdLessOrEqualConstant(const vector<IntVar*> vars,
-                                      const vector<int64> coefficients,
-                                      int64 constant);
-  int MakeScalProdEqualConstant(const vector<IntVar*> vars,
-                                const vector<int64> coefficients,
-                                int64 constant);
-  int MakeSumGreaterOrEqualConstant(const vector<IntVar*> vars, int64 constant);
-  int MakeSumLessOrEqualConstant(const vector<IntVar*> vars, int64 constant);
-  int MakeSumEqualConstant(const vector<IntVar*> vars, int64 constant);
-  int MakeRowConstraint(int64 lb,
-                        const vector<IntVar*> vars,
-                        const vector<int64> coefficients,
-                        int64 ub);
-  int MakeRowConstraint(int64 lb,
-                        IntVar* const v1,
-                        int64 coeff1,
-                        int64 ub);
-  int MakeRowConstraint(int64 lb,
-                        IntVar* const v1,
-                        int64 coeff1,
-                        IntVar* const v2,
-                        int64 coeff2,
-                        int64 ub);
-  int MakeRowConstraint(int64 lb,
-                        IntVar* const v1,
-                        int64 coeff1,
-                        IntVar* const v2,
-                        int64 coeff2,
-                        IntVar* const v3,
-                        int64 coeff3,
-                        int64 ub);
-  int MakeRowConstraint(int64 lb,
-                        IntVar* const v1,
-                        int64 coeff1,
-                        IntVar* const v2,
-                        int64 coeff2,
-                        IntVar* const v3,
-                        int64 coeff3,
-                        IntVar* const v4,
-                        int64 coeff4,
-                        int64 ub);
-  int MakeOrConstraint(int left_constraint_index, int right_constraint_index);
+  ConstraintRef MakeScalProdGreaterOrEqualConstant(
+      const vector<IntVar*> vars,
+      const vector<int64> coefficients,
+      int64 constant);
+  ConstraintRef MakeScalProdLessOrEqualConstant(
+      const vector<IntVar*> vars,
+      const vector<int64> coefficients,
+      int64 constant);
+  ConstraintRef MakeScalProdEqualConstant(const vector<IntVar*> vars,
+                                          const vector<int64> coefficients,
+                                          int64 constant);
+  ConstraintRef MakeSumGreaterOrEqualConstant(const vector<IntVar*> vars,
+                                              int64 constant);
+  ConstraintRef MakeSumLessOrEqualConstant(const vector<IntVar*> vars,
+                                           int64 constant);
+  ConstraintRef MakeSumEqualConstant(const vector<IntVar*> vars,
+                                     int64 constant);
+  ConstraintRef MakeRowConstraint(int64 lb,
+                                  const vector<IntVar*> vars,
+                                  const vector<int64> coefficients,
+                                  int64 ub);
+  ConstraintRef MakeRowConstraint(int64 lb,
+                                  IntVar* const v1,
+                                  int64 coeff1,
+                                  int64 ub);
+  ConstraintRef MakeRowConstraint(int64 lb,
+                                  IntVar* const v1,
+                                  int64 coeff1,
+                                  IntVar* const v2,
+                                  int64 coeff2,
+                                  int64 ub);
+  ConstraintRef MakeRowConstraint(int64 lb,
+                                  IntVar* const v1,
+                                  int64 coeff1,
+                                  IntVar* const v2,
+                                  int64 coeff2,
+                                  IntVar* const v3,
+                                  int64 coeff3,
+                                  int64 ub);
+  ConstraintRef MakeRowConstraint(int64 lb,
+                                  IntVar* const v1,
+                                  int64 coeff1,
+                                  IntVar* const v2,
+                                  int64 coeff2,
+                                  IntVar* const v3,
+                                  int64 coeff3,
+                                  IntVar* const v4,
+                                  int64 coeff4,
+                                  int64 ub);
+  ConstraintRef MakeOrConstraint(ConstraintRef left_constraint_index,
+                                 ConstraintRef right_constraint_index);
 
-  void Add(int constraint_index);
+  void Add(ConstraintRef constraint_index);
  private:
   int VarIndex(IntVar* const var);
-  int Store(ArithmeticConstraint* const constraint);
+  ConstraintRef Store(ArithmeticConstraint* const constraint);
 
   scoped_ptr<ArithmeticPropagator> propagator_;
   hash_map<IntVar*, int> var_indices_;

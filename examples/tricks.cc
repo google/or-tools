@@ -36,14 +36,12 @@ void DeepSearchTreeArith(int size) {
   GlobalArithmeticConstraint* const global =
       solver.RevAlloc(new GlobalArithmeticConstraint(&solver));
 
+  global->Add(global->MakeRowConstraint(0, v1, 1, v2, -1, 0));
+  global->Add(global->MakeRowConstraint(0, v2, 1, v3, -1, 0));
 
-  global->Add(global->MakeVarEqualVarPlusOffset(v1, v2, 0));
-  global->Add(global->MakeVarEqualVarPlusOffset(v2, v3, 0));
-  const int left =
-      global->MakeRowConstraint(0, v1, -1, v2, -1, v3, 1, kint64max);
-  const int right =
-      global->MakeRowConstraint(0, v1, -1, v2, 1, v3, -1, kint64max);
-  global->Add(global->MakeOrConstraint(left, right));
+  global->Add(global->MakeOrConstraint(
+      global->MakeRowConstraint(0, v1, -1, v2, -1, v3, 1, kint64max),
+      global->MakeRowConstraint(0, v1, -1, v2, 1, v3, -1, kint64max)));
 
   global->Post();
 }
