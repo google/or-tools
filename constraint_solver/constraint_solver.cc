@@ -2130,7 +2130,7 @@ string Solver::GetName(const PropagationBaseObject* object) const {
   if (delegate_object != NULL) {
     const string& prefix = delegate_object->first;
     const PropagationBaseObject* delegate = delegate_object->second;
-    return prefix + "<" + delegate->DebugString() + ">";
+    return prefix + "<" + delegate->name() + ">";
   }
   return empty_name_;
 }

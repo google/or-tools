@@ -1271,35 +1271,73 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
 
   // ----- Tree Monitor -----
   // Creates a tree monitor that outputs a detailed overview of the
-  // decision phase in cpviz format. Automatically writes result to
-  // Files file_tree and file_visualization when the search finishes.
+  // decision phase in cpviz format. The XML data is written to files
+  // file_tree and file_visualization as the search finishes.
   SearchMonitor* MakeTreeMonitor(const IntVar* const* vars, int size,
                                  string const& file_tree,
                                  string const& file_visualization);
 
   // Creates a tree monitor that outputs a detailed overview of the
-  // decision phase in cpviz format. Automatically writes result to
-  // Files file_tree and file_visualization when the search finishes.
+  // decision phase in cpviz format. The XML data is written to files
+  // file_tree and file_visualization as the search finishes.
   SearchMonitor* MakeTreeMonitor(const vector<IntVar*>& vars,
                                  string const& file_tree,
                                  string const& file_visualization);
 
+  // Creates a tree monitor that outputs a detailed overview of the
+  // decision phase in cpviz format. The XML data is written to files
+  // file_config, file_tree and file_visualization as the search
+  // finishes.
+  SearchMonitor* MakeTreeMonitor(const IntVar* const* vars, int size,
+                                 string const& file_config,
+                                 string const& file_tree,
+                                 string const& file_visualization);
+
+  // Creates a tree monitor that outputs a detailed overview of the
+  // decision phase in cpviz format. The XML data is written to files
+  // file_config, file_tree and file_visualization as the search
+  // finishes.
+  SearchMonitor* MakeTreeMonitor(const vector<IntVar*>& vars,
+                                 string const& file_config,
+                                 string const& file_tree,
+                                 string const& file_visualization);
+
+#if !defined(SWIG)
+  // Creates a tree monitor that outputs a detailed overview of the
+  // decision phase in cpviz format. The XML data is copied to tree_xml
+  // and visualization_xml as the search finishes. The tree monitor does
+  // not take ownership of either string.
+  SearchMonitor* MakeTreeMonitor(const IntVar* const* vars, int size,
+                                 string* const tree_xml,
+                                 string* const visualization_xml);
 
   // Creates a tree monitor that outputs a detailed overview of the
   // decision phase in cpviz format. The XML data is copied to tree_xml
   // and visualization_xml as the search finishes. The tree monitor does
   // not take ownership of either string.
-  SearchMonitor* MakeTreeMonitorString(const IntVar* const* vars, int size,
-                                       string* const tree_xml,
-                                       string* const visualization_xml);
+  SearchMonitor* MakeTreeMonitor(const vector<IntVar*>& vars,
+                                 string* const tree_xml,
+                                 string* const visualization_xml);
 
   // Creates a tree monitor that outputs a detailed overview of the
-  // decision phase in cpviz format. The XML data is copied to tree_xml
-  // and visualization_xml as the search finishes. The tree monitor does
-  // not take ownership of either string.
-  SearchMonitor* MakeTreeMonitorString(const vector<IntVar*>& vars,
-                                       string* const tree_xml,
-                                       string* const visualization_xml);
+  // decision phase in cpviz format. The XML data is copied to config_xml,
+  // tree_xml and visualization_xml as the search finishes. The tree monitor
+  // does not take ownership of these strings.
+  SearchMonitor* MakeTreeMonitor(const IntVar* const* vars, int size,
+                                 string* const config_xml,
+                                 string* const tree_xml,
+                                 string* const visualization_xml);
+
+  // Creates a tree monitor that outputs a detailed overview of the
+  // decision phase in cpviz format. The XML data is copied to config_xml,
+  // tree_xml and visualization_xml as the search finishes. The tree monitor
+  // does not take ownership of these strings.
+  SearchMonitor* MakeTreeMonitor(const vector<IntVar*>& vars,
+                                 string* const config_xml,
+                                 string* const tree_xml,
+                                 string* const visualization_xml);
+
+#endif
 
   // ----- Search Log -----
 
@@ -1990,7 +2028,7 @@ class PropagationBaseObject : public BaseObject {
   }
 
   // Naming
-  string name() const;
+  virtual string name() const;
   void set_name(const string& name);
 
  private:

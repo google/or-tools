@@ -21,9 +21,104 @@
 
 namespace operations_research {
 
+const char* kConfigXml =
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+    "<configuration version=\"1.0\" directory=\"/tmp\">\n"
+    "    <tool show=\"tree\" fileroot=\"tree\" display=\"expanded\""
+    " repeat=\"all\"/>\n"
+    "    <tool show=\"viz\" fileroot=\"viz\" repeat=\"all\"/>\n"
+    "</configuration>";
+
 class XmlHelper;
 
 class TreeNode;
+
+// String comparator that compares strings naturally, even those
+// including integer numbers.
+struct NaturalLess {
+  bool operator()(const string& s1, const string& s2) const {
+    int start = 0;
+    int length = std::min(s1.length(), s2.length());
+
+    // Ignore common characters at the beginning.
+    while (start < length && s1[start] == s2[start] &&
+           (s1[start] < '0' || s1[start] > '9')) {
+      ++start;
+    }
+
+    // If one string is the substring of another, then the shorter string is
+    // smaller.
+    if (start == length) {
+      return s1.length() < s2.length();
+    }
+
+    int number_s1 = 0;
+    int number_s2 = 0;
+
+    // Extract a number if we have one.
+    for (int i = start; i < s1.length() && s1[i] >= '0' && s1[i] <= '9'; ++i) {
+      number_s1 = number_s1 * 10 + (s1[i] - '0');
+    }
+
+    for (int i = start; i < s2.length() && s2[i] >= '0' && s2[i] <= '9'; ++i) {
+      number_s2 = number_s2 * 10 + (s2[i] - '0');
+    }
+
+    // Do a numerical comparison only if there are two numbers.
+    if (number_s1 && number_s2) {
+      return number_s1 < number_s2;
+    }
+
+    return s1.compare(s2) < 0;
+  }
+};
+
+
+// TreeDecisionVisitor is used to gain access to the variables and values
+// involved in a decision.
+class TreeDecisionVisitor : public DecisionVisitor {
+ public:
+  TreeDecisionVisitor() {}
+  virtual ~TreeDecisionVisitor() {}
+
+  virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
+    name_ = var->name();
+    value_ = value;
+    valid_ = true;
+  }
+
+  virtual void VisitSplitVariableDomain(IntVar* const var,
+                                        int64 value,
+                                        bool start_with_lower_half) {
+    name_ = var->name();
+    value_ = value;
+    valid_ = true;
+  }
+
+  virtual void VisitUnknownDecision() {
+    valid_ = false;
+  }
+
+  // Indicates whether name and value can be called.
+  bool valid() { return valid_; }
+
+  // Returns the name of the current variable.
+  const string& name() {
+    CHECK(valid_);
+    return name_;
+  }
+
+  // Returns the value of the current variable.
+  int64 value() {
+    CHECK(valid_);
+    return value_;
+  }
+
+ private:
+  string name_;
+  int64 value_;
+  bool valid_;
+};
 
 // The TreeMonitor may be attached to a search to obtain an output in CPViz
 // format (http://sourceforge.net/projects/cpviz/). It produces both the
@@ -46,6 +141,14 @@ class TreeMonitor: public SearchMonitor {
   TreeMonitor(Solver* const solver, const IntVar* const* vars, int size,
               string* const tree_xml, string* const visualization_xml);
 
+  TreeMonitor(Solver* const solver, const IntVar* const* vars, int size,
+              string const& filename_config, string const& filename_tree,
+              string const& filename_visualizer);
+
+  TreeMonitor(Solver* const solver, const IntVar* const* vars, int size,
+              string* const config_xml, string* const tree_xml,
+              string* const visualization_xml);
+
   ~TreeMonitor();
 
   // Callback for the beginning of the search.
@@ -55,7 +158,6 @@ class TreeMonitor: public SearchMonitor {
   // The decision is empty if a solution has been reached.
   virtual void EndNextDecision(DecisionBuilder* const decision_builder,
                                Decision* const decision);
-
   // Callback for the end of the search.
   virtual void ExitSearch();
 
@@ -73,42 +175,30 @@ class TreeMonitor: public SearchMonitor {
   // after a solution is found.
   virtual void RefuteDecision(Decision* const decision);
 
- private:
-  // Strips the additional descriptions from IntVar and returns the
-  // original name.
-  static string BaseName(string const& name);
+  // Strips characters that cause problems with CPViz from attributes
+  static string StripSpecialCharacters(string attribute);
 
+ private:
   // Registers vars and sets Min and Max accordingly.
   void Init(const IntVar* const* vars, int size);
 
+  string* const config_xml_;
   TreeNode* current_node_;
+  const string filename_config_;
   const string filename_tree_;
   const string filename_visualizer_;
   int id_counter_;
+  string last_decision_;
+  hash_map<string, int64> last_value_;
   string last_variable_;
   int64 min_;
   int64 max_;
   scoped_ptr<TreeNode> root_node_;
-  hash_map<string, int64> last_value_;
   int search_level_;
-  IntVarMap vars_;
   string* const tree_xml_;
+  IntVarMap vars_;
   string* const visualization_xml_;
 };
-
-SearchMonitor* Solver::MakeTreeMonitorString(const IntVar* const* vars,
-                                             int size, string* const tree_xml,
-                                             string* const visualization_xml) {
-  return RevAlloc(new TreeMonitor(this, vars, size, tree_xml,
-                                  visualization_xml));
-}
-
-SearchMonitor* Solver::MakeTreeMonitorString(const vector<IntVar*>& vars,
-                                             string* const tree_xml,
-                                             string* const visualization_xml) {
-  return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), tree_xml,
-                                  visualization_xml));
-}
 
 SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars, int size,
                                        string const& file_tree,
@@ -124,15 +214,64 @@ SearchMonitor* Solver::MakeTreeMonitor(const vector<IntVar*>& vars,
                                   file_visualization));
 }
 
+SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars, int size,
+                                       string const& file_config,
+                                       string const& file_tree,
+                                       string const& file_visualization) {
+  return RevAlloc(new TreeMonitor(this, vars, size, file_config, file_tree,
+                                  file_visualization));
+}
+
+SearchMonitor* Solver::MakeTreeMonitor(const vector<IntVar*>& vars,
+                                       string const& file_config,
+                                       string const& file_tree,
+                                       string const& file_visualization) {
+  return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), file_config,
+                                  file_tree, file_visualization));
+}
+
+#if !defined(SWIG)
+SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars,
+                                       int size, string* const tree_xml,
+                                       string* const visualization_xml) {
+  return RevAlloc(new TreeMonitor(this, vars, size, tree_xml,
+                                  visualization_xml));
+}
+
+SearchMonitor* Solver::MakeTreeMonitor(const vector<IntVar*>& vars,
+                                       string* const tree_xml,
+                                       string* const visualization_xml) {
+  return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), tree_xml,
+                                  visualization_xml));
+}
+
+SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars,
+                                       int size, string* const config_xml,
+                                       string* const tree_xml,
+                                       string* const visualization_xml) {
+  return RevAlloc(new TreeMonitor(this, vars, size, config_xml, tree_xml,
+                                  visualization_xml));
+}
+
+SearchMonitor* Solver::MakeTreeMonitor(const vector<IntVar*>& vars,
+                                       string* const config_xml,
+                                       string* const tree_xml,
+                                       string* const visualization_xml) {
+  return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), config_xml,
+                                  tree_xml, visualization_xml));
+}
+#endif
+
 // Represents a node in the decision phase. Can either be the root node, a
 // successful attempt, a failure or a solution.
 class TreeNode {
  public:
-  typedef hash_map<string, vector<int64> > DomainMap;
+  typedef std::map<string, vector<int64>, NaturalLess> DomainMap;
   enum TreeNodeType { ROOT, TRY, FAIL, SOLUTION };
 
   TreeNode(TreeNode* parent, int id)
-    : id_(id),
+    : cycles_(1),
+      id_(id),
       name_(""),
       node_type_(TRY),
       parent_(parent) {}
@@ -184,51 +323,30 @@ class TreeNode {
   void set_node_type(TreeNodeType node_type) { node_type_ = node_type; }
 
   // Returns the parent node or NULL if node has no parent.
-  TreeNode* parent() const { return parent_; }
-
-  // Return the first child or NULL if it does not exist
-  TreeNode const* FirstChild() const {
-    return children_.size() ? children_[0] : NULL;
+  TreeNode* Parent() {
+    return --cycles_ ? this : parent_;
   }
 
-  // Checks whether the provided domain matches the domain of the node.
-  // Disregards changes of the currently active variable.
-  bool DomainEquals(TreeMonitor::IntVarMap const& vars) {
-    for (ConstIter<TreeMonitor::IntVarMap> it(vars); !it.at_end(); ++it) {
-      // Do not check changes in the current variable, as we want to skip
-      // a possible change of the decision variable to see if other variables
-      // have changed.
-      if (it->first == name_) {
-        continue;
-      }
-
-      int counter = 0;
-      scoped_ptr<IntVarIterator> intvar_it(
-          it->second->MakeDomainIterator(false));
-
-      for (intvar_it->Init(); intvar_it->Ok(); intvar_it->Next()) {
-        if (domain_[it->first][counter++] != intvar_it->Value()) {
-          return false;
-        }
-      }
-
-      if (counter != (domain_[it->first]).size()) {
-        return false;
-      }
-    }
-    return true;
+  // Adds a cycle instead of duplicate nodes.
+  void AddCycle() {
+    cycles_++;
   }
 
   // Adds a new child, initializes it and returns the corresponding pointer.
-  bool AddChild(int id, string name, hash_map<string, int64> const& last_value,
+  bool AddChild(int id, const string& name,
+                hash_map<string, int64> const& last_value, bool is_final_node,
                 TreeMonitor::IntVarMap const& vars, TreeNode** child) {
     CHECK_NOTNULL(child);
 
-    for (int i = 0; i < children_.size(); ++i) {
-      // Reuse the branch if the domains match.
-      if (children_[i]->DomainEquals(vars)) {
-        *child = children_[i];
-        return false;
+    if (!is_final_node) {
+      for (int i = 0; i < children_.size(); ++i) {
+        // Reuse existing branch if possible
+        if (children_[i]->name_ == name &&
+            branch_values_[i] == FindOrDie(last_value, name_)) {
+          children_[i]->AddCycle();
+          *child = children_[i];
+          return false;
+        }
       }
     }
 
@@ -236,8 +354,9 @@ class TreeNode {
     tree_node->set_name(name);
     tree_node->SetDomain(vars);
     children_.push_back(tree_node);
-    branch_values_.push_back(last_value.find(name_)->second);
+    branch_values_.push_back(FindOrDie(last_value, name_));
     *child = tree_node;
+
     return true;
   }
 
@@ -245,26 +364,28 @@ class TreeNode {
   void GenerateVisualizationXML(XmlHelper* const visualization_writer) {
     CHECK_NOTNULL(visualization_writer);
 
-    // The root node referes to the imaginary tree node '-1'.
-    const int kRootTreeNodeId = -1;
     // There currently is only support for one visualizer.
-    const int kVisualizerState = 1;
+    const int kVisualizerState = 0;
 
     visualization_writer->StartElement("state");
     visualization_writer->AddAttribute("id", id_);
-    visualization_writer->AddAttribute("tree_node",
-                                       id_ ? id_ : kRootTreeNodeId);
+    visualization_writer->AddAttribute("tree_node", id_);
     visualization_writer->StartElement("visualizer_state");
     visualization_writer->AddAttribute("id", kVisualizerState);
 
-    const DomainMap domain = parent_ ?  parent_->domain() : domain_;
+    int index = 0;
+    int name = -1;
 
-    for (ConstIter<DomainMap> it(domain); !it.at_end(); ++it) {
+    for (ConstIter<DomainMap> it(domain_); !it.at_end(); ++it) {
       vector<int64> current = it->second;
       visualization_writer->StartElement(current.size() == 1 ?
                                          "integer" :
                                          "dvar");
-      visualization_writer->AddAttribute("index", it->first);
+      visualization_writer->AddAttribute("index", ++index);
+
+      if (it->first == name_) {
+        name = index;
+      }
 
       if (current.size() > 1
           && current.size() == (current.back() - current[0] + 1)) {
@@ -291,14 +412,14 @@ class TreeNode {
 
     if (node_type_ == FAIL) {
       visualization_writer->StartElement("failed");
-      visualization_writer->AddAttribute("index", name_);
+      visualization_writer->AddAttribute("index", name);
       visualization_writer->AddAttribute(
           "value",
           StringPrintf("%" GG_LL_FORMAT "d", parent_->branch_value(0)));
       visualization_writer->EndElement();  // failed
     } else if (node_type_ == TRY) {
       visualization_writer->StartElement("focus");
-      visualization_writer->AddAttribute("index", name_);
+      visualization_writer->AddAttribute("index", name);
       visualization_writer->EndElement();  // focus
     }
 
@@ -327,10 +448,11 @@ class TreeNode {
       TreeNode* child = children_[i];
       tree_writer->StartElement(kElementName[child->node_type_]);
       tree_writer->AddAttribute("id", child->id_);
-      tree_writer->AddAttribute("parent", id());
-      tree_writer->AddAttribute("name", name());
+      tree_writer->AddAttribute("parent", id_);
+      tree_writer->AddAttribute("name",
+                                TreeMonitor::StripSpecialCharacters(name_));
 
-      if (name().empty()) {
+      if (name_.empty()) {
         tree_writer->AddAttribute("size", "0");
         tree_writer->AddAttribute("value", "0");
       } else {
@@ -338,6 +460,7 @@ class TreeNode {
         const DomainMap domain = parent_ && parent_->children_.size() ?
                                  parent_->children_[0]->domain() :
                                  domain_;
+
         tree_writer->AddAttribute(
             "size",  StringPrintf("%zu", FindOrDie(domain, name_).size()));
         tree_writer->AddAttribute("value", StringPrintf("%" GG_LL_FORMAT "d",
@@ -360,6 +483,7 @@ class TreeNode {
  private:
   vector<int64> branch_values_;
   vector<TreeNode*> children_;
+  int cycles_;
   DomainMap domain_;
   const int id_;
   string name_;
@@ -371,7 +495,9 @@ TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
                          int size, string const& filename_tree,
                          string const& filename_visualizer)
     : SearchMonitor(solver),
+      config_xml_(NULL),
       current_node_(NULL),
+      filename_config_(""),
       filename_tree_(filename_tree),
       filename_visualizer_(filename_visualizer),
       root_node_(NULL),
@@ -388,7 +514,9 @@ TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
                          int size, string* const tree_xml,
                          string* const visualization_xml)
     : SearchMonitor(solver),
+      config_xml_(NULL),
       current_node_(NULL),
+      filename_config_(""),
       filename_tree_(""),
       filename_visualizer_(""),
       root_node_(NULL),
@@ -397,6 +525,49 @@ TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
       visualization_xml_(visualization_xml) {
   CHECK_NOTNULL(solver);
   CHECK_NOTNULL(vars);
+  CHECK_NOTNULL(tree_xml);
+  CHECK_NOTNULL(visualization_xml);
+
+  Init(vars, size);
+}
+
+TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
+                         int size, string const& filename_config,
+                         string const& filename_tree,
+                         string const& filename_visualizer)
+    : SearchMonitor(solver),
+      config_xml_(NULL),
+      current_node_(NULL),
+      filename_config_(filename_config),
+      filename_tree_(filename_tree),
+      filename_visualizer_(filename_visualizer),
+      root_node_(NULL),
+      search_level_(0),
+      tree_xml_(NULL),
+      visualization_xml_(NULL) {
+  CHECK_NOTNULL(solver);
+  CHECK_NOTNULL(vars);
+
+  Init(vars, size);
+}
+
+TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
+                         int size, string* const config_xml,
+                         string* const tree_xml,
+                         string* const visualization_xml)
+    : SearchMonitor(solver),
+      config_xml_(config_xml),
+      current_node_(NULL),
+      filename_config_(""),
+      filename_tree_(""),
+      filename_visualizer_(""),
+      root_node_(NULL),
+      search_level_(0),
+      tree_xml_(tree_xml),
+      visualization_xml_(visualization_xml) {
+  CHECK_NOTNULL(solver);
+  CHECK_NOTNULL(vars);
+  CHECK_NOTNULL(config_xml);
   CHECK_NOTNULL(tree_xml);
   CHECK_NOTNULL(visualization_xml);
 
@@ -414,7 +585,7 @@ void TreeMonitor::Init(const IntVar* const* vars, int size) {
     min_ = std::min(min_, vars[i]->Min());
     max_ = std::max(max_, vars[i]->Max());
 
-    string name = BaseName(vars[i]->name());
+    string name = vars[i]->name();
 
     if (name.empty()) {
       name = StringPrintf("%d", i);
@@ -441,60 +612,30 @@ void TreeMonitor::EnterSearch() {
 
 void TreeMonitor::EndNextDecision(DecisionBuilder* const decision_builder,
                                   Decision* const decision) {
-  const string kDomainStartToken = "(";
-  const string kDomainEndToken = ") == ";
-
   if (decision) {
-    string value_str;
+    TreeDecisionVisitor visitor;
+    decision->Accept(&visitor);
 
-    // Extract the required data from the DebugString, as there is no obvious
-    // way to extract the name and the value of the variable affected by the
-    // decision.
-    // TODO(user): Find better solution.
-    // Debug string is "[Name(Domain) == Value]".
-    string debug_string = decision->DebugString();
-
-    // Get the name of the variable.
-    size_t pos = debug_string.find(kDomainStartToken);
-    if (pos != string::npos) {
-      last_variable_ = debug_string.substr(1, pos - 1);
-    }
-
-    // Get the value of the variable.
-    pos = debug_string.find(kDomainEndToken);
-
-    if (pos != string::npos) {
-      string value_str = debug_string.substr(pos + 5,
-                                             debug_string.length() - pos - 6);
-
-      last_value_[last_variable_]  = atol(value_str.c_str());
+    if (visitor.valid()) {
+      last_variable_ = visitor.name();
+      last_value_[last_variable_] = visitor.value();
     }
   }
 
-  if (current_node_->AddChild(id_counter_, last_variable_, last_value_, vars_,
-                              &current_node_)) {
-    ++id_counter_;
+  if (!decision || decision->DebugString() != last_decision_) {
+    if (current_node_->AddChild(id_counter_, last_variable_, last_value_,
+                                !decision , vars_, &current_node_)) {
+      ++id_counter_;
+    }
+  } else {
+    current_node_->AddCycle();
   }
+
+  last_decision_ = decision ? decision->DebugString() : "";
 
   if (!decision) {
     current_node_->set_node_type(TreeNode::SOLUTION);
   }
-}
-
-string TreeMonitor::BaseName(string const& name) {
-  // Some IntVar desciptors return "Var(Name(DebugString))".
-  // Extract the name.
-  int start = name.find('(');
-
-  if (start != string::npos) {
-    int end = name.find('(', start + 1);
-
-    if (end != string::npos) {
-      return name.substr(start+1, end-start-1);
-    }
-  }
-
-  return name;
 }
 
 void TreeMonitor::RefuteDecision(Decision* const decision) {
@@ -507,23 +648,22 @@ void TreeMonitor::RefuteDecision(Decision* const decision) {
     // Solver calls RefuteDecision even on success if it looks for
     // more than one solution.
     // Just go back to the previous decision.
-    current_node_ = current_node_->parent();
-  } else if (current_node_->node_type() == TreeNode::TRY
-             && current_node_->id() == id_counter_ -1) {
+    current_node_ = current_node_->Parent();
+  } else if (current_node_->node_type() == TreeNode::TRY) {
     // Add an extra node in case of a failure, so we can see the failed
     // decision.
     current_node_->set_node_type(TreeNode::TRY);
 
-    if (current_node_->AddChild(id_counter_, current_node_->parent()->name(),
-                                last_value_, vars_, &current_node_)) {
+    if (current_node_->AddChild(id_counter_, last_variable_,
+                                last_value_, true, vars_, &current_node_)) {
       ++id_counter_;
     }
 
     current_node_->set_node_type(TreeNode::FAIL);
-    current_node_ = current_node_->parent();
+    current_node_ = current_node_->Parent();
   }
 
-  current_node_ = current_node_->parent();
+  current_node_ = current_node_->Parent();
 }
 
 string TreeMonitor::GenerateTreeXML() const {
@@ -555,11 +695,14 @@ string TreeMonitor::GenerateVisualizationXML() const {
   xml_writer.AddAttribute("xsi:noNamespaceSchemaLocation", "visualization.xsd");
 
   xml_writer.StartElement("visualizer");
-  xml_writer.AddAttribute("id", 1);
+  xml_writer.AddAttribute("id", 0);
   xml_writer.AddAttribute("type", "vector");
   xml_writer.AddAttribute("display", "expanded");
   xml_writer.AddAttribute("min", StringPrintf("%" GG_LL_FORMAT "d", min_));
   xml_writer.AddAttribute("max", StringPrintf("%" GG_LL_FORMAT "d", max_));
+  xml_writer.AddAttribute("width", StringPrintf("%zd", vars_.size()));
+  xml_writer.AddAttribute("height",
+                          StringPrintf("%" GG_LL_FORMAT "d", max_ - min_ + 1));
   xml_writer.EndElement();  // End of element: visualizer
 
   root_node_->GenerateVisualizationXML(&xml_writer);
@@ -600,10 +743,51 @@ void TreeMonitor::ExitSearch() {
       } else {
         LG << "Failed to gain write access to file: " << filename_tree_;
       }
+
+      if(!filename_config_.empty()) {
+        std::ofstream file_config_(filename_config_.c_str());
+
+        if (file_config_.is_open()) {
+          file_config_ << kConfigXml;
+          file_config_.close();
+        } else {
+          LG << "Failed to gain write access to file: " << filename_config_;
+        }
+      }
     } else {
+      CHECK_NOTNULL(tree_xml_);
       *tree_xml_ = GenerateTreeXML();
+
+      CHECK_NOTNULL(visualization_xml_);
       *visualization_xml_ = GenerateVisualizationXML();
+
+      if (config_xml_) {
+        *config_xml_ = kConfigXml;
+      }
     }
   }
+}
+
+string TreeMonitor::StripSpecialCharacters(string attribute) {
+  // Numbers, characters, dashes, underscored, brackets, colons, slashes,
+  // periods, question marks, and parentheses are allowed
+  const char* kAllowedCharacters = "0123456789abcdefghijklmnopqrstuvwxyz"
+                                   "ABCDEFGHIJKLMNOPQRSTUVWXYZ_-[]:/.?()";
+
+  set<char> character_set;
+
+  char* allowed = const_cast<char*>(kAllowedCharacters);
+
+  while (*allowed) {
+    character_set.insert(*(allowed++));
+  }
+
+  for (int i = 0; i < attribute.length(); ++i) {
+    if (character_set.find(attribute[i]) == character_set.end()) {
+      attribute.replace(i,1,"_");
+    }
+  }
+
+  return attribute;
 }
 }  // namespace

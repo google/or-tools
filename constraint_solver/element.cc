@@ -243,6 +243,9 @@ class IntExprElement : public BaseIntExprElement {
   IntExprElement(Solver* const s, const int64* const vals, int size,
                  IntVar* const expr);
   virtual ~IntExprElement();
+  virtual string name() const {
+    return StringPrintf("IntElement(values, %s)", expr_->name().c_str());
+  }
   virtual string DebugString() const {
     return StringPrintf("IntElement(values, %d, %s)",
                         size_, expr_->DebugString().c_str());
@@ -298,6 +301,9 @@ class IncreasingIntExprElement : public BaseIntExpr {
   virtual void SetRange(int64 mi, int64 ma);
   virtual bool Bound() const { return (index_->Bound()); }
   // TODO(user) : improve me, the previous test is not always true
+  virtual string name() const {
+    return StringPrintf("IntElement(values, %s)", index_->name().c_str());
+  }
   virtual string DebugString() const {
     return StringPrintf("IntElement(values, %d, %s)",
                         size_, index_->DebugString().c_str());
@@ -492,6 +498,9 @@ class IntExprFunctionElement : public BaseIntExprElement {
                          IntVar* const expr,
                          bool del);
   virtual ~IntExprFunctionElement();
+  virtual string name() const {
+    return StringPrintf("IntFunctionElement(%s)", expr_->name().c_str());
+  }
   virtual string DebugString() const {
     return StringPrintf("IntFunctionElement(%s)", expr_->DebugString().c_str());
   }
@@ -921,6 +930,9 @@ class IntExprArrayElement : public BaseIntExpr {
   virtual void SetMax(int64 m);
   virtual void SetRange(int64 mi, int64 ma);
   virtual bool Bound() const;
+  virtual string name() const {
+    return StringPrintf("IntArrayElement(vars, %s)", var_->name().c_str());
+  }
   virtual string DebugString() const {
     return StringPrintf("IntArrayElement(vars, %d, %s)",
                         size_, var_->DebugString().c_str());

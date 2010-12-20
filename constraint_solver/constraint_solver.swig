@@ -14,7 +14,6 @@
 %include base/base.swig
 %include exception.i
 
-
 // Include the file we want to wrap a first time.
 #ifdef SWIGPYTHON
 %{
@@ -29,8 +28,6 @@ struct FailureProtect {
     longjmp(exception_buffer, 1);
   }
 };
-
-
 
 namespace operations_research {
 class CallPyDecisionBuilder : public DecisionBuilder {
@@ -319,7 +316,6 @@ class PyDecisionBuilder(object):
 %rename (TemporalDisjunction) MakeTemporalDisjunction;
 %rename (TransitionConstraint) MakeTransitionConstraint;
 %rename (TreeMonitor) MakeTreeMonitor;
-%rename (TreeMonitorString) MakeTreeMonitorString;
 %rename (TrueConstraint) MakeTrueConstraint;
 
 namespace operations_research {
@@ -1065,7 +1061,7 @@ static bool PyCallbackBool(PyObject* pyfunc) {
 // Add display methods on Solver and remove DebugString method.
 %ignore Solver::DebugString;
 
-%extend Solver {
+%extend Solver {  
   Constraint* TreeNoCycle(const vector<IntVar*>& nexts,
                           const vector<IntVar*>& active,
                           ResultCallback1<bool, int64>* callback = NULL) {
@@ -1634,7 +1630,6 @@ class LongResultCallback3 {
 %rename (makeTemporalDisjunction) MakeTemporalDisjunction;
 %rename (makeTrueConstraint) MakeTrueConstraint;
 %rename (makeTreeMonitor) MakeTreeMonitor;
-%rename (makeTreeMonitorString) MakeTreeMonitorString;
 %rename (makeGuidedLocalSearch) MakeGuidedLocalSearch;
 %rename (value) *::Value;
 %rename (min) *::Min;

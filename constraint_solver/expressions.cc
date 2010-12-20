@@ -2674,6 +2674,11 @@ class PlusIntExpr : public BaseIntExpr {
     right_->SetMax(m - left_->Min());
   }
   virtual bool Bound() const { return (left_->Bound() && right_->Bound()); }
+  virtual string name() const {
+    return StringPrintf("(%s + %s)",
+                        left_->name().c_str(),
+                        right_->name().c_str());
+  }
   virtual string DebugString() const {
     return StringPrintf("(%s + %s)",
                         left_->DebugString().c_str(),
@@ -2738,6 +2743,10 @@ class PlusIntCstExpr : public BaseIntExpr {
     expr_->SetMax(m - value_);
   }
   virtual bool Bound() const { return (expr_->Bound()); }
+  virtual string name() const {
+    return StringPrintf("(%s + %" GG_LL_FORMAT "d)",
+                        expr_->name().c_str(), value_);
+  }
   virtual string DebugString() const {
     return StringPrintf("(%s + %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), value_);
@@ -2803,6 +2812,11 @@ class SubIntExpr : public BaseIntExpr {
     right_->SetMin(left_->Min() - m);
   }
   virtual bool Bound() const { return (left_->Bound() && right_->Bound()); }
+  virtual string name() const {
+    return StringPrintf("(%s - %s)",
+                        left_->name().c_str(),
+                        right_->name().c_str());
+  }
   virtual string DebugString() const {
     return StringPrintf("(%s - %s)",
                         left_->DebugString().c_str(),
@@ -2983,6 +2997,10 @@ class SubIntCstExpr : public BaseIntExpr {
     expr_->SetMin(value_ - m);
   }
   virtual bool Bound() const { return (expr_->Bound()); }
+  virtual string name() const {
+    return StringPrintf("(%" GG_LL_FORMAT "d - %s)",
+                        value_, expr_->name().c_str());
+  }
   virtual string DebugString() const {
     return StringPrintf("(%" GG_LL_FORMAT "d - %s)",
                         value_, expr_->DebugString().c_str());
@@ -3034,6 +3052,9 @@ class OppIntExpr : public BaseIntExpr {
     expr_->SetMin(-m);
   }
   virtual bool Bound() const { return (expr_->Bound()); }
+  virtual string name() const {
+    return StringPrintf("(-%s)", expr_->name().c_str());
+  }
   virtual string DebugString() const {
     return StringPrintf("(-%s)", expr_->DebugString().c_str());
   }
@@ -3079,6 +3100,10 @@ class TimesIntPosCstExpr : public BaseIntExpr {
   }
   virtual void SetMax(int64 m);
   virtual bool Bound() const { return (expr_->Bound()); }
+  virtual string name() const {
+    return StringPrintf("(%s * %" GG_LL_FORMAT "d)",
+                        expr_->name().c_str(), value_);
+  }
   virtual string DebugString() const {
     return StringPrintf("(%s * %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), value_);
@@ -3140,6 +3165,10 @@ class TimesIntNegCstExpr : public BaseIntExpr {
   }
   virtual void SetMax(int64 m);
   virtual bool Bound() const { return (expr_->Bound()); }
+  virtual string name() const {
+    return StringPrintf("(%s * %" GG_LL_FORMAT "d)",
+                        expr_->name().c_str(), value_);
+  }
   virtual string DebugString() const {
     return StringPrintf("(%s * %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), value_);
@@ -3345,6 +3374,11 @@ class TimesIntExpr : public BaseIntExpr {
   }
   virtual void SetMax(int64 m);
   virtual bool Bound() const;
+  virtual string name() const {
+    return StringPrintf("(%s * %s)",
+                        left_->name().c_str(),
+                        right_->name().c_str());
+  }
   virtual string DebugString() const {
     return StringPrintf("(%s * %s)",
                         left_->DebugString().c_str(),
@@ -3393,6 +3427,11 @@ class TimesIntPosExpr : public BaseIntExpr {
   }
   virtual void SetMax(int64 m);
   virtual bool Bound() const;
+  virtual string name() const {
+    return StringPrintf("(%s * %s)",
+                        left_->name().c_str(),
+                        right_->name().c_str());
+  }
   virtual string DebugString() const {
     return StringPrintf("(%s * %s)",
                         left_->DebugString().c_str(),
@@ -3439,6 +3478,11 @@ class TimesBooleanPosIntExpr : public BaseIntExpr {
   virtual void Range(int64* mi, int64* ma);
   virtual void SetRange(int64 mi, int64 ma);
   virtual bool Bound() const;
+  virtual string name() const {
+    return StringPrintf("(%s * %s)",
+                        boolvar_->name().c_str(),
+                        expr_->name().c_str());
+  }
   virtual string DebugString() const {
     return StringPrintf("(%s * %s)",
                         boolvar_->DebugString().c_str(),
@@ -3547,6 +3591,11 @@ class TimesBooleanIntExpr : public BaseIntExpr {
   virtual void Range(int64* mi, int64* ma);
   virtual void SetRange(int64 mi, int64 ma);
   virtual bool Bound() const;
+  virtual string name() const {
+    return StringPrintf("(%s * %s)",
+                        boolvar_->name().c_str(),
+                        expr_->name().c_str());
+  }
   virtual string DebugString() const {
     return StringPrintf("(%s * %s)",
                         boolvar_->DebugString().c_str(),
@@ -3750,6 +3799,10 @@ class DivIntPosCstExpr : public BaseIntExpr {
   virtual void SetMax(int64 m) {
     expr_->SetMax((m + 1) * value_ - 1);
   }
+  virtual string name() const {
+    return StringPrintf("(%s div %" GG_LL_FORMAT "d)",
+                        expr_->name().c_str(), value_);
+  }
   virtual string DebugString() const {
     return StringPrintf("(%s div %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), value_);
@@ -3800,6 +3853,9 @@ class IntAbs : public BaseIntExpr {
   }
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
+  }
+  virtual string name() const {
+    return StringPrintf("IntAbs(%s)", expr_->name().c_str());
   }
   virtual string DebugString() const {
     return StringPrintf("IntAbs(%s)", expr_->DebugString().c_str());
@@ -3905,6 +3961,9 @@ class IntSquare : public BaseIntExpr {
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
+  virtual string name() const {
+    return StringPrintf("IntSquare(%s)", expr_->name().c_str());
+  }
   virtual string DebugString() const {
     return StringPrintf("IntSquare(%s)", expr_->DebugString().c_str());
   }
@@ -3944,6 +4003,9 @@ class PosIntSquare : public BaseIntExpr {
   }
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
+  }
+  virtual string name() const {
+    return StringPrintf("PosIntSquare(%s)", expr_->name().c_str());
   }
   virtual string DebugString() const {
     return StringPrintf("PosIntSquare(%s)", expr_->DebugString().c_str());
@@ -3992,6 +4054,10 @@ class MinIntExpr : public BaseIntExpr {
     if (right_->Min() > m) {
       left_->SetMax(m);
     }
+  }
+  virtual string name() const {
+    return StringPrintf("MinIntExpr(%s, %s)", left_->name().c_str(),
+                        right_->name().c_str());
   }
   virtual string DebugString() const {
     return StringPrintf("MinIntExpr(%s, %s)",
@@ -4050,6 +4116,10 @@ class MinCstIntExpr : public BaseIntExpr {
   }
   virtual bool Bound() const {
     return (expr_->Bound() || expr_->Min() >= value_);
+  }
+  virtual string name() const {
+    return StringPrintf("MinCstIntExpr(%s, %" GG_LL_FORMAT "d)",
+                        expr_->name().c_str(), value_);
   }
   virtual string DebugString() const {
     return StringPrintf("MinCstIntExpr(%s, %" GG_LL_FORMAT "d)",
@@ -4112,6 +4182,10 @@ class MaxIntExpr : public BaseIntExpr {
     left_->SetMax(m);
     right_->SetMax(m);
   }
+  virtual string name() const {
+    return StringPrintf("MaxIntExpr(%s, %s)", left_->name().c_str(),
+                        right_->name().c_str());
+  }
   virtual string DebugString() const {
     return StringPrintf("MaxIntExpr(%s, %s)",
                         left_->DebugString().c_str(),
@@ -4169,6 +4243,10 @@ class MaxCstIntExpr : public BaseIntExpr {
   }
   virtual bool Bound() const {
     return (expr_->Bound() || expr_->Max() <= value_);
+  }
+  virtual string name() const {
+    return StringPrintf("MaxCstIntExpr(%s, %" GG_LL_FORMAT "d)",
+                        expr_->name().c_str(), value_);
   }
   virtual string DebugString() const {
     return StringPrintf("MaxCstIntExpr(%s, %" GG_LL_FORMAT "d)",
@@ -4280,6 +4358,13 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
       }
     }
   }
+  virtual string name() const {
+    return StringPrintf(
+        "ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT "d, ed = %"
+        GG_LL_FORMAT "d, ld = %" GG_LL_FORMAT "d, lc = %" GG_LL_FORMAT "d)",
+        var_->name().c_str(),
+        early_cost_, early_date_, late_date_, late_cost_);
+  }
   virtual string DebugString() const {
     return StringPrintf(
         "ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT "d, ed = %"
@@ -4349,6 +4434,11 @@ class SemiContinuousExpr : public BaseIntExpr {
       expr_->SetMax(y);
     }
   }
+  virtual string name() const {
+    return StringPrintf("SemiContinuous(%s, fixed_charge = %" GG_LL_FORMAT
+                        "d, step = %" GG_LL_FORMAT "d)",
+                        expr_->name().c_str(), fixed_charge_, step_);
+  }
   virtual string DebugString() const {
     return StringPrintf("SemiContinuous(%s, fixed_charge = %" GG_LL_FORMAT
                         "d, step = %" GG_LL_FORMAT "d)",
@@ -4401,6 +4491,11 @@ class SemiContinuousStepOneExpr : public BaseIntExpr {
       expr_->SetMax(m - fixed_charge_);
     }
   }
+  virtual string name() const {
+    return StringPrintf("SemiContinuousStepOne(%s, fixed_charge = %"
+                        GG_LL_FORMAT "d)",
+                        expr_->name().c_str(), fixed_charge_);
+  }
   virtual string DebugString() const {
     return StringPrintf("SemiContinuousStepOne(%s, fixed_charge = %"
                         GG_LL_FORMAT "d)",
@@ -4449,6 +4544,11 @@ class SemiContinuousStepZeroExpr : public BaseIntExpr {
     if (m < fixed_charge_) {
       expr_->SetMax(0);
     }
+  }
+  virtual string name() const {
+    return StringPrintf("SemiContinuousStepZero(%s, fixed_charge = %"
+        GG_LL_FORMAT "d)",
+        expr_->name().c_str(), fixed_charge_);
   }
   virtual string DebugString() const {
     return StringPrintf("SemiContinuousStepZero(%s, fixed_charge = %"
