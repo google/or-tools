@@ -75,19 +75,35 @@ bool WallTimer::IsRunning() const {
 int64 WallTimer::GetInMs() const {
 #if defined(_MSC_VER)
   int64 local_sum_usec = sum_usec_;
-  if ( has_started_ ) {           // need to include current time too
+  if (has_started_) {           // need to include current time too
     local_sum_usec += clock() - start_usec_;
   }
   return local_sum_usec;
 #elif defined(__GNUC__)
   static const int64 kMilliSecInMicroSec = 1000LL;
   int64 local_sum_usec = sum_usec_;
-  if ( has_started_ ) {           // need to include current time too
+  if (has_started_) {           // need to include current time too
     struct timeval tv;
     gettimeofday(&tv, NULL);
     local_sum_usec += TimevalToUsec(tv) - start_usec_;
   }
   return local_sum_usec / kMilliSecInMicroSec;
+#endif
+}
+
+int64 WallTimer::GetTimeInMicroSeconds() {
+#if defined(_MSC_VER)
+  static const int64 kSecInMicroSec = 1000000LL;
+  LARGE_INTEGER now;
+  LARGE_INTEGER freq;
+
+  QueryPerformanceCounter(&now);
+  QueryPerformanceFrequency(&freq);
+  return now.QuadPart * kSecInMicroSec / freq.QuadPart;
+#elif defined(__GNUC__)
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return TimevalToUsec(tv);
 #endif
 }
 

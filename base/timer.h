@@ -29,6 +29,7 @@ class WallTimer {
   bool IsRunning() const;
   int64 GetInMs() const;
   double Get() const;
+  static int64 GetTimeInMicroSeconds();
  private:
   int64 start_usec_;  // start time in microseconds.
   int64 sum_usec_;    // sum of time diffs in microseconds.
