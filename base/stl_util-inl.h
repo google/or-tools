@@ -39,6 +39,22 @@ void STLDeleteContainerPointers(ForwardIterator begin,
   }
 }
 
+// STLDeleteContainerPairSecondPointers()
+//  For a range within a container of pairs, calls delete
+//  (non-array version) on the SECOND item in the pairs.
+// NOTE: Like STLDeleteContainerPointers, deleting behind the iterator.
+// Deleting the value does not always invalidate the iterator, but it may
+// do so if the key is a pointer into the value object.
+template <class ForwardIterator>
+void STLDeleteContainerPairSecondPointers(ForwardIterator begin,
+                                          ForwardIterator end) {
+  while (begin != end) {
+    ForwardIterator temp = begin;
+    ++begin;
+    delete temp->second;
+  }
+}
+
 // Inside Google, this function implements a horrible, disgusting hack in which
 // we reach into the string's private implementation and resize it without
 // initializing the new bytes.  In some cases doing this can significantly
