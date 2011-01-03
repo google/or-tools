@@ -14,6 +14,7 @@
 #ifndef BASE_LOGGING_H_
 #define BASE_LOGGING_H_
 
+#include <assert.h>
 #include <stdlib.h>
 #include <iostream>  // NOLINT
 #include "base/macros.h"
