@@ -17,6 +17,7 @@
 #include <windows.h>
 #endif
 #include <time.h>
+#include "base/logging.h"
 #include "base/timer.h"
 
 namespace operations_research {
@@ -46,7 +47,7 @@ void WallTimer::Start() {  // Just save when we started
 }
 
 void WallTimer::Stop() {   // Update total time, 1st time it's called
-  if ( has_started_ ) {           // so two Stop()s is safe
+  if (has_started_) {           // so two Stop()s is safe
 #if defined(_MSC_VER)
     sum_usec_ += clock() - start_usec_;
 #elif defined(__GNUC__)
@@ -111,5 +112,35 @@ int64 WallTimer::GetTimeInMicroSeconds() {
 
 double WallTimer::Get() const {
   return GetInMs() / 1000.0;
+}
+// ----- CycleTimer -----
+
+CycleTimer::CycleTimer() : time_in_us_(0), state_(INIT) {}
+
+void CycleTimer::Start() {
+  DCHECK_EQ(INIT, state_);
+  state_ = STARTED;
+  time_in_us_ = WallTimer::GetTimeInMicroSeconds();
+}
+
+void CycleTimer::Stop() {
+  DCHECK_EQ(STARTED, state_);
+  state_ = STOPPED;
+  time_in_us_ = WallTimer::GetTimeInMicroSeconds() - time_in_us_;
+}
+
+void CycleTimer::Reset() {
+  state_ = INIT;
+  time_in_us_ = 0;
+}
+
+int64 CycleTimer::GetInUsec() const {
+  DCHECK_EQ(STOPPED, state_);
+  return time_in_us_;
+}
+
+int64 CycleTimer::GetInMs() const {
+  const int64 kMsInUsec = 1000;
+  return GetInUsec() / kMsInUsec;
 }
 }  // namespace operations_research

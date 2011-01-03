@@ -30,12 +30,33 @@ class WallTimer {
   int64 GetInMs() const;
   double Get() const;
   static int64 GetTimeInMicroSeconds();
+
  private:
   int64 start_usec_;  // start time in microseconds.
   int64 sum_usec_;    // sum of time diffs in microseconds.
   bool has_started_;
 
   DISALLOW_COPY_AND_ASSIGN(WallTimer);
+};
+
+// This class of timer is very precise and potentially more expensive than
+// the WallTimer class.
+class CycleTimer {
+ public:
+  CycleTimer();
+  void Reset();
+  void Start();
+  void Stop();
+  int64 GetInUsec() const;
+  int64 GetInMs() const;
+ private:
+  enum State {
+    INIT,
+    STARTED,
+    STOPPED
+  };
+  int64 time_in_us_;
+  State state_;
 };
 }  // namespace operations_research
 #endif  // BASE_TIMER_H_
