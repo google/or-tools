@@ -23,7 +23,7 @@ namespace operations_research {
 
 const char* kConfigXml =
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-    "<configuration version=\"1.0\" directory=\"/tmp\">\n"
+    "<configuration version=\"1.0\">\n"
     "    <tool show=\"tree\" fileroot=\"tree\" display=\"expanded\""
     " repeat=\"all\"/>\n"
     "    <tool show=\"viz\" fileroot=\"viz\" repeat=\"all\"/>\n"
@@ -40,36 +40,47 @@ struct NaturalLess {
     int start = 0;
     int length = std::min(s1.length(), s2.length());
 
-    // Ignore common characters at the beginning.
-    while (start < length && s1[start] == s2[start] &&
-           (s1[start] < '0' || s1[start] > '9')) {
-      ++start;
+    while (start < length) {
+      // Ignore common characters at the beginning.
+      while (start < length && s1[start] == s2[start] &&
+          (s1[start] < '0' || s1[start] > '9')) {
+        ++start;
+      }
+
+      // If one string is the substring of another, then the shorter string is
+      // smaller.
+      if (start == length) {
+        return s1.length() < s2.length();
+      }
+
+      int number_s1 = 0;
+      int number_s2 = 0;
+
+      // Extract a number if we have one.
+      for (int i = start;
+           i < s1.length() && s1[i] >= '0' && s1[i] <= '9';
+           ++i) {
+        number_s1 = number_s1 * 10 + (s1[i] - '0');
+      }
+
+      for (; start < s2.length() && s2[start] >= '0' && s2[start] <= '9';
+           ++start) {
+        number_s2 = number_s2 * 10 + (s2[start] - '0');
+      }
+
+      // Do a numerical comparison only if there are two numbers.
+      if (number_s1 && number_s2) {
+        // If we have similar numbers followed by other characters, we have to
+        // check the rest of the string.
+        if (number_s1 != number_s2) {
+          return number_s1 < number_s2;
+        }
+      } else {
+        return s1.compare(s2) < 0;
+      }
     }
 
-    // If one string is the substring of another, then the shorter string is
-    // smaller.
-    if (start == length) {
-      return s1.length() < s2.length();
-    }
-
-    int number_s1 = 0;
-    int number_s2 = 0;
-
-    // Extract a number if we have one.
-    for (int i = start; i < s1.length() && s1[i] >= '0' && s1[i] <= '9'; ++i) {
-      number_s1 = number_s1 * 10 + (s1[i] - '0');
-    }
-
-    for (int i = start; i < s2.length() && s2[i] >= '0' && s2[i] <= '9'; ++i) {
-      number_s2 = number_s2 * 10 + (s2[i] - '0');
-    }
-
-    // Do a numerical comparison only if there are two numbers.
-    if (number_s1 && number_s2) {
-      return number_s1 < number_s2;
-    }
-
-    return s1.compare(s2) < 0;
+    return s1.length() < s2.length();
   }
 };
 
