@@ -72,6 +72,7 @@ BASE_LIBS = \
 cplibs: $(CPLIBS) $(BASE_LIBS)
 
 CPBINARIES = \
+	costas_array \
 	cryptarithm \
         cvrptw \
 	golomb \
@@ -84,7 +85,7 @@ cpexe: $(CPBINARIES)
 clean:
 	rm -f *.a
 	rm -f objs/*.o
-	rm -f $(BINARIES)
+	rm -f $(CPBINARIES)
 	rm -f constraint_solver/*wrap*
 	rm -f constraint_solver/assignment.pb.*
 	rm -f *.so
@@ -99,6 +100,8 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	objs/constraints.o\
 	objs/count_cst.o\
 	objs/default_search.o\
+	objs/demon_profiler.o\
+	objs/demon_profiler.pb.o\
 	objs/element.o\
 	objs/expr_array.o\
 	objs/expr_cst.o\
@@ -140,6 +143,17 @@ objs/count_cst.o:constraint_solver/count_cst.cc
 
 objs/default_search.o:constraint_solver/default_search.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/default_search.cc -o objs/default_search.o
+
+objs/demon_profiler.o:constraint_solver/demon_profiler.cc constraint_solver/demon_profiler.pb.h
+	$(CCC) $(CFLAGS) -c constraint_solver/demon_profiler.cc -o objs/demon_profiler.o
+
+objs/demon_profiler.pb.o:constraint_solver/demon_profiler.pb.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/demon_profiler.pb.cc -o objs/demon_profiler.pb.o
+
+constraint_solver/demon_profiler.pb.cc:constraint_solver/demon_profiler.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=constraint_solver --cpp_out=constraint_solver constraint_solver/demon_profiler.proto
+
+constraint_solver/demon_profiler.pb.h:constraint_solver/demon_profiler.pb.cc
 
 objs/element.o:constraint_solver/element.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/element.cc -o objs/element.o
@@ -248,10 +262,14 @@ librouting.a: $(ROUTING_LIB_OBJS)
 # Algorithms library.
 
 ALGORITHMS_LIB_OBJS=\
-	objs/hungarian.o
+	objs/hungarian.o \
+	objs/knapsack_solver.o
 
 objs/hungarian.o:algorithms/hungarian.cc
 	$(CCC) $(CFLAGS) -c algorithms/hungarian.cc -o objs/hungarian.o
+
+objs/knapsack_solver.o:algorithms/knapsack_solver.cc
+	$(CCC) $(CFLAGS) -c algorithms/knapsack_solver.cc -o objs/knapsack_solver.o
 
 libalgorithms.a: $(ALGORITHMS_LIB_OBJS)
 	ar rv libalgorithms.a $(ALGORITHMS_LIB_OBJS)
@@ -289,6 +307,12 @@ libbase.a: $(BASE_LIB_OBJS)
 	ar rv libbase.a $(BASE_LIB_OBJS)
 
 # Pure CP Examples
+
+objs/costas_array.o: examples/costas_array.cc
+	$(CCC) $(CFLAGS) -c examples/costas_array.cc -o objs/costas_array.o
+
+costas_array: $(CPLIBS) $(BASE_LIBS) objs/costas_array.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/costas_array.o $(CPLIBS) $(BASE_LIBS) -o costas_array
 
 objs/cryptarithm.o:examples/cryptarithm.cc
 	$(CCC) $(CFLAGS) -c examples/cryptarithm.cc -o objs/cryptarithm.o

@@ -33,23 +33,32 @@ all:
 
 CPLIBS = \
 	routing.lib \
-	constraint_solver.lib \
+	constraint_solver.lib
+
+BASE_LIBS = \
 	util.lib \
 	base.lib \
 	algorithms.lib \
 	graph.lib \
 	shortestpaths.lib
 
-cplibs: $(CPLIBS)
+cplibs: $(CPLIBS) $(BASE_LIBS)
 
-BINARIES=nqueens.exe golomb.exe magic_square.exe cryptarithm.exe tsp.exe cvrptw.exe
+CPBINARIES= \
+          costas_array \
+          cryptarithm.exe \
+          cvrptw.exe \
+          golomb.exe \
+          magic_square.exe \
+          queens.exe \
+          tsp.exee
 
-cpexe: $(BINARIES)
+cpexe: $(CPBINARIES)
 
 clean:
 	del *.lib
 	del objs\\*.obj
-	del  $(BINARIES)
+	del  $(CPBINARIES)
 	del *.dll
 	del *.exp
 	del constraint_solver\constraint_solver_wrap.cc
@@ -67,6 +76,8 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	objs/constraints.obj\
 	objs/count_cst.obj\
 	objs/default_search.obj\
+	objs/demon_profiler.obj\
+	objs/demon_profiler.pb.obj\
 	objs/element.obj\
 	objs/expr_array.obj\
 	objs/expr_cst.obj\
@@ -86,7 +97,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 objs/alldiff_cst.obj:constraint_solver/alldiff_cst.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/alldiff_cst.cc /Foobjs/alldiff_cst.obj
 
-objs/assignment.obj:constraint_solver/assignment.cc constraint_solver/assignment.pb.cc
+objs/assignment.obj:constraint_solver/assignment.cc constraint_solver/assignment.pb.h
 	$(CCC) $(CFLAGS) -c constraint_solver/assignment.cc /Foobjs/assignment.obj
 
 constraint_solver/assignment.pb.cc:constraint_solver/assignment.proto
@@ -94,6 +105,8 @@ constraint_solver/assignment.pb.cc:constraint_solver/assignment.proto
 
 objs/assignment.pb.obj:constraint_solver/assignment.pb.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/assignment.pb.cc /Foobjs/assignment.pb.obj
+
+constraint_solver/assignment.pb.h:constraint_solver/assignment.pb.cc
 
 objs/constraint_solver.obj:constraint_solver/constraint_solver.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/constraint_solver.cc /Foobjs/constraint_solver.obj
@@ -106,6 +119,17 @@ objs/count_cst.obj:constraint_solver/count_cst.cc
 
 objs/default_search.obj:constraint_solver/default_search.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/default_search.cc /Foobjs/default_search.obj
+
+objs/demon_profiler.obj:constraint_solver/demon_profiler.cc constraint_solver/demon_profiler.pb.h
+	$(CCC) $(CFLAGS) -c constraint_solver/demon_profiler.cc /Foobjs/demon_profiler.obj
+
+constraint_solver/demon_profiler.pb.cc:constraint_solver/demon_profiler.proto
+	$(PROTOBUF_DIR)\\bin\\protoc --proto_path=constraint_solver --cpp_out=constraint_solver constraint_solver\\demon_profiler.proto
+
+objs/demon_profiler.pb.obj:constraint_solver/demon_profiler.pb.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/demon_profiler.pb.cc /Foobjs/demon_profiler.pb.obj
+
+constraint_solver/demon_profiler.pb.h:constraint_solver/demon_profiler.pb.cc
 
 objs/element.obj:constraint_solver/element.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/element.cc /Foobjs/element.obj
@@ -216,10 +240,14 @@ routing.lib: $(ROUTING_LIB_OBJS)
 # Algorithms library.
 
 ALGORITHMS_LIB_OBJS=\
-	objs/hungarian.obj
+	objs/hungarian.obj \
+	objs/knapsack_solver.obj
 
 objs/hungarian.obj:algorithms/hungarian.cc
 	$(CCC) $(CFLAGS) -c algorithms/hungarian.cc /Foobjs/hungarian.obj
+
+objs/knapsack_solver.obj:algorithms/knapsack_solver.cc
+	$(CCC) $(CFLAGS) -c algorithms/knapsack_solver.cc /Foobjs/knapsack_solver.obj
 
 algorithms.lib: $(ALGORITHMS_LIB_OBJS)
 	lib /OUT:algorithms.lib $(ALGORITHMS_LIB_OBJS)
@@ -256,13 +284,20 @@ objs/util.obj:base/util.cc
 base.lib: $(BASE_LIB_OBJS)
 	lib /OUT:base.lib $(BASE_LIB_OBJS)
 
-# Examples
+
+# Pure CP Examples
+
+objs/costas_array.obj: examples/costas_array.cc
+	$(CCC) $(CFLAGS) -c examples/costas_array.cc /Foobjs/costas_array.obj
+
+costas_array.exe: $(CPLIBS) $(BASE_LIBS) objs/costas_array.obj libgflags.dll
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/costas_array.obj $(CPLIBS) $(BASE_LIBS) /Fecostas_array.exe
 
 objs/cryptarithm.obj:examples/cryptarithm.cc
 	$(CCC) $(CFLAGS) -c examples/cryptarithm.cc /Foobjs/cryptarithm.obj
 
-cryptarithm.exe: $(CPLIBS) objs/cryptarithm.obj libgflags.dll
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.obj $(CPLIBS) /Fecryptarithm.exe
+cryptarithm.exe: $(CPLIBS) $(BASE_LIBS) objs/cryptarithm.obj libgflags.dll
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.obj $(CPLIBS) $(BASE_LIBS) /Fecryptarithm.exe
 
 objs/cvrptw.obj: examples/cvrptw.cc
 	$(CCC) $(CFLAGS) -c examples/cvrptw.cc /Foobjs/cvrptw.obj
@@ -273,33 +308,33 @@ cvrptw.exe: $(CPLIBS) $(BASE_LIBS) objs/cvrptw.obj libgflags.dll
 objs/golomb.obj:examples/golomb.cc
 	$(CCC) $(CFLAGS) -c examples/golomb.cc /Foobjs/golomb.obj
 
-golomb.exe: $(CPLIBS) objs/golomb.obj libgflags.dll
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.obj $(CPLIBS) /Fegolomb.exe
+golomb.exe: $(CPLIBS) $(BASE_LIBS) objs/golomb.obj libgflags.dll
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.obj $(CPLIBS) $(BASE_LIBS) /Fegolomb.exe
 
 objs/magic_square.obj:examples/magic_square.cc
 	$(CCC) $(CFLAGS) -c examples/magic_square.cc /Foobjs/magic_square.obj
 
-magic_square.exe: $(CPLIBS) objs/magic_square.obj libgflags.dll
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.obj $(CPLIBS) /Femagic_square.exe
+magic_square.exe: $(CPLIBS) $(BASE_LIBS) objs/magic_square.obj libgflags.dll
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.obj $(CPLIBS) $(BASE_LIBS) /Femagic_square.exe
 
 objs/nqueens.obj: examples/nqueens.cc
 	$(CCC) $(CFLAGS) -c examples/nqueens.cc /Foobjs/nqueens.obj
 
-nqueens.exe: $(CPLIBS) objs/nqueens.obj libgflags.dll
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.obj $(CPLIBS) /Fenqueens.exe
+nqueens.exe: $(CPLIBS) $(BASE_LIBS) objs/nqueens.obj libgflags.dll
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.obj $(CPLIBS) $(BASE_LIBS) /Fenqueens.exe
 
 objs/tsp.obj: examples/tsp.cc
 	$(CCC) $(CFLAGS) -c examples/tsp.cc /Foobjs/tsp.obj
 
-tsp.exe: $(CPLIBS) objs/tsp.obj libgflags.dll
-	$(CCC) $(CFLAGS) objs/tsp.obj $(CPLIBS) $(LDFLAGS) /Fetsp.exe
+tsp.exe: $(CPLIBS) $(BASE_LIBS) objs/tsp.obj libgflags.dll
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.obj $(CPLIBS) $(BASE_LIBS) /Fetsp.exe
 
 
 # SWIG
 
 # pywrapcp
 
-pycp: constraint_solver/_pywrapcp.pyd constraint_solver/pywrapcp.py constraint_solver/_pywraprouting.pyd constraint_solver/pywraprouting.py $(CPLIBS)
+pycp: constraint_solver/_pywrapcp.pyd constraint_solver/pywrapcp.py constraint_solver/_pywraprouting.pyd constraint_solver/pywraprouting.py $(CPLIBS) $(BASE_LIBS)
 
 constraint_solver/pywrapcp.py: constraint_solver/constraint_solver.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h base/base.swig
 	$(SWIG_BINARY) -c++ -python -o constraint_solver/constraint_solver_wrap.cc -module pywrapcp constraint_solver/constraint_solver.swig
@@ -309,8 +344,8 @@ constraint_solver/constraint_solver_wrap.cc: constraint_solver/pywrapcp.py
 objs/constraint_solver_wrap.obj: constraint_solver/constraint_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) /I__WIN32__ -c constraint_solver/constraint_solver_wrap.cc /Foobjs/constraint_solver_wrap.obj
 
-_pywrapcp.dll: objs/constraint_solver_wrap.obj $(CPLIBS) libgflags.dll
-	link /DLL /OUT:_pywrapcp.dll objs/constraint_solver_wrap.obj $(CPLIBS) $(LDFLAGS) $(PYTHON_LNK)
+_pywrapcp.dll: objs/constraint_solver_wrap.obj $(CPLIBS) $(BASE_LIBS) libgflags.dll
+	link /DLL /OUT:_pywrapcp.dll objs/constraint_solver_wrap.obj $(CPLIBS) $(BASE_LIBS) $(LDFLAGS) $(PYTHON_LNK)
 
 constraint_solver/_pywrapcp.pyd: _pywrapcp.dll
 	copy _pywrapcp.dll constraint_solver\\_pywrapcp.pyd
@@ -325,8 +360,8 @@ constraint_solver/routing_wrap.cc: constraint_solver/pywraprouting.py
 objs/routing_wrap.obj: constraint_solver/routing_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) /I__WIN32__ -c constraint_solver/routing_wrap.cc /Foobjs/routing_wrap.obj
 
-_pywraprouting.dll: objs/routing_wrap.obj $(CPLIBS) libgflags.dll
-	link /DLL /OUT:_pywraprouting.dll objs/routing_wrap.obj $(CPLIBS) $(LDFLAGS) $(PYTHON_LNK)
+_pywraprouting.dll: objs/routing_wrap.obj $(CPLIBS) $(BASE_LIBS) libgflags.dll
+	link /DLL /OUT:_pywraprouting.dll objs/routing_wrap.obj $(CPLIBS) $(BASE_LIBS) $(LDFLAGS) $(PYTHON_LNK)
 
 constraint_solver/_pywraprouting.pyd: _pywraprouting.dll
 	copy _pywraprouting.dll constraint_solver\\_pywraprouting.pyd
