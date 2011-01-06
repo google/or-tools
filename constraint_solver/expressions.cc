@@ -266,17 +266,17 @@ class DomainIntVar : public IntVar {
   void CreateBits();
   virtual void WhenBound(Demon* d) {
     if (min_ != max_) {
-      bound_demons_.PushIfNotTop(solver(), d);
+      bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
     }
   }
   virtual void WhenRange(Demon* d) {
     if (min_ != max_) {
-      range_demons_.PushIfNotTop(solver(), d);
+      range_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
     }
   }
   virtual void WhenDomain(Demon* d) {
     if (min_ != max_) {
-      domain_demons_.PushIfNotTop(solver(), d);
+      domain_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
     }
   }
 
@@ -1400,17 +1400,17 @@ class BooleanVar : public IntVar {
   virtual void RemoveInterval(int64 l, int64 u);
   virtual void WhenBound(Demon* d) {
     if (value_ == kUnboundBooleanVarValue) {
-      bound_demons_.PushIfNotTop(solver(), d);
+      bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
     }
   }
   virtual void WhenRange(Demon* d) {
     if (value_ == kUnboundBooleanVarValue) {
-      bound_demons_.PushIfNotTop(solver(), d);
+      bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
     }
   }
   virtual void WhenDomain(Demon* d) {
     if (value_ == kUnboundBooleanVarValue) {
-      bound_demons_.PushIfNotTop(solver(), d);
+      bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
     }
   }
   void Process();

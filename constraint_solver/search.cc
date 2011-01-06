@@ -1730,12 +1730,45 @@ DecisionBuilder* Solver::MakeDecisionBuilderFromAssignment(
 
 // ----- Base Class -----
 
-SolutionCollector::SolutionCollector(Solver* const s, const Assignment* a)
+SolutionCollector::SolutionCollector(Solver* const s, const Assignment* const a)
     : SearchMonitor(s), prototype_(a == NULL ? NULL : new Assignment(a)) {}
+
+SolutionCollector::SolutionCollector(Solver* const s)
+    : SearchMonitor(s), prototype_(new Assignment(s)) {}
 
 SolutionCollector::~SolutionCollector() {
   STLDeleteElements(&solutions_);
   STLDeleteElements(&recycle_solutions_);
+}
+
+void SolutionCollector::Add(IntVar* const var) {
+  if (prototype_.get() != NULL) {
+    prototype_->Add(var);
+  }
+}
+
+void SolutionCollector::Add(const vector<IntVar*>& vars)  {
+  if (prototype_.get() != NULL) {
+    prototype_->Add(vars);
+  }
+}
+
+void SolutionCollector::Add(IntervalVar* const var)  {
+  if (prototype_.get() != NULL) {
+    prototype_->Add(var);
+  }
+}
+
+void SolutionCollector::Add(const vector<IntervalVar*>& vars)  {
+  if (prototype_.get() != NULL) {
+    prototype_->Add(vars);
+  }
+}
+
+void SolutionCollector::AddObjective(IntVar* const objective)  {
+  if (prototype_.get() != NULL && objective != NULL) {
+    prototype_->AddObjective(objective);
+  }
 }
 
 void SolutionCollector::EnterSearch() {
@@ -1851,7 +1884,8 @@ int64 SolutionCollector::PerformedValue(int n, IntervalVar* const var) const {
 // Collect first solution, useful when looking satisfaction problems
 class FirstSolutionCollector : public SolutionCollector {
  public:
-  FirstSolutionCollector(Solver* const s, const Assignment* a);
+  FirstSolutionCollector(Solver* const s, const Assignment* const a);
+  explicit FirstSolutionCollector(Solver* const s);
   virtual ~FirstSolutionCollector();
   virtual void EnterSearch();
   virtual bool AtSolution();
@@ -1861,9 +1895,11 @@ class FirstSolutionCollector : public SolutionCollector {
 };
 
 FirstSolutionCollector::FirstSolutionCollector(Solver* const s,
-                                               const Assignment* a)
+                                               const Assignment* const a)
     : SolutionCollector(s, a), done_(false) {}
 
+FirstSolutionCollector::FirstSolutionCollector(Solver* const s)
+    : SolutionCollector(s), done_(false) {}
 
 FirstSolutionCollector::~FirstSolutionCollector() {}
 
@@ -1888,8 +1924,13 @@ string FirstSolutionCollector::DebugString() const {
   }
 }
 
-SolutionCollector* Solver::MakeFirstSolutionCollector(const Assignment* a) {
+SolutionCollector* Solver::MakeFirstSolutionCollector(
+    const Assignment* const a) {
   return RevAlloc(new FirstSolutionCollector(this, a));
+}
+
+SolutionCollector* Solver::MakeFirstSolutionCollector() {
+  return RevAlloc(new FirstSolutionCollector(this));
 }
 
 // ----- Last Solution Collector -----
@@ -1897,15 +1938,19 @@ SolutionCollector* Solver::MakeFirstSolutionCollector(const Assignment* a) {
 // Collect last solution, useful when optimizing
 class LastSolutionCollector : public SolutionCollector {
  public:
-  LastSolutionCollector(Solver* const s, const Assignment* a);
+  LastSolutionCollector(Solver* const s, const Assignment* const a);
+  explicit LastSolutionCollector(Solver* const s);
   virtual ~LastSolutionCollector();
   virtual bool AtSolution();
   virtual string DebugString() const;
 };
 
 LastSolutionCollector::LastSolutionCollector(Solver* const s,
-                                             const Assignment* a)
+                                             const Assignment* const a)
     : SolutionCollector(s, a) {}
+
+LastSolutionCollector::LastSolutionCollector(Solver* const s)
+    : SolutionCollector(s) {}
 
 
 LastSolutionCollector::~LastSolutionCollector() {}
@@ -1924,8 +1969,13 @@ string LastSolutionCollector::DebugString() const {
   }
 }
 
-SolutionCollector* Solver::MakeLastSolutionCollector(const Assignment* a) {
+SolutionCollector* Solver::MakeLastSolutionCollector(
+    const Assignment* const a) {
   return RevAlloc(new LastSolutionCollector(this, a));
+}
+
+SolutionCollector* Solver::MakeLastSolutionCollector() {
+  return RevAlloc(new LastSolutionCollector(this));
 }
 
 // ----- Best Solution Collector -----
@@ -1933,8 +1983,9 @@ SolutionCollector* Solver::MakeLastSolutionCollector(const Assignment* a) {
 class BestValueSolutionCollector : public SolutionCollector {
  public:
   BestValueSolutionCollector(Solver* const s,
-                             const Assignment* a,
+                             const Assignment* const a,
                              bool maximize);
+  BestValueSolutionCollector(Solver* const s, bool maximize);
   virtual ~BestValueSolutionCollector() {}
   virtual void EnterSearch();
   virtual bool AtSolution();
@@ -1946,9 +1997,15 @@ class BestValueSolutionCollector : public SolutionCollector {
 
 BestValueSolutionCollector::BestValueSolutionCollector(
     Solver* const s,
-    const Assignment* a,
+    const Assignment* const a,
     bool maximize)
     : SolutionCollector(s, a),
+      maximize_(maximize),
+      best_(maximize ? kint64min : kint64max) {}
+
+BestValueSolutionCollector::BestValueSolutionCollector(Solver* const s,
+                                                       bool maximize)
+    : SolutionCollector(s),
       maximize_(maximize),
       best_(maximize ? kint64min : kint64max) {}
 
@@ -1983,9 +2040,13 @@ string BestValueSolutionCollector::DebugString() const {
   }
 }
 
-SolutionCollector* Solver::MakeBestValueSolutionCollector(const Assignment* a,
-                                                          bool maximize) {
+SolutionCollector* Solver::MakeBestValueSolutionCollector(
+    const Assignment* const a, bool maximize) {
   return RevAlloc(new BestValueSolutionCollector(this, a, maximize));
+}
+
+SolutionCollector* Solver::MakeBestValueSolutionCollector(bool maximize) {
+  return RevAlloc(new BestValueSolutionCollector(this, maximize));
 }
 
 // ----- All Solution Collector -----
@@ -1993,14 +2054,19 @@ SolutionCollector* Solver::MakeBestValueSolutionCollector(const Assignment* a,
 // collect all solutions
 class AllSolutionCollector : public SolutionCollector {
  public:
-  AllSolutionCollector(Solver* const s, const Assignment* a);
+  AllSolutionCollector(Solver* const s, const Assignment* const a);
+  explicit AllSolutionCollector(Solver* const s);
   virtual ~AllSolutionCollector();
   virtual bool AtSolution();
   virtual string DebugString() const;
 };
 
-AllSolutionCollector::AllSolutionCollector(Solver* const s, const Assignment* a)
+AllSolutionCollector::AllSolutionCollector(Solver* const s,
+                                           const Assignment* const a)
     : SolutionCollector(s, a) {}
+
+AllSolutionCollector::AllSolutionCollector(Solver* const s)
+    : SolutionCollector(s) {}
 
 AllSolutionCollector::~AllSolutionCollector() {}
 
@@ -2017,13 +2083,20 @@ string AllSolutionCollector::DebugString() const {
   }
 }
 
-SolutionCollector* Solver::MakeAllSolutionCollector(const Assignment* a) {
+SolutionCollector* Solver::MakeAllSolutionCollector(const Assignment* const a) {
   return RevAlloc(new AllSolutionCollector(this, a));
+}
+
+SolutionCollector* Solver::MakeAllSolutionCollector() {
+  return RevAlloc(new AllSolutionCollector(this));
 }
 
 // ---------- Objective Management ----------
 
-OptimizeVar::OptimizeVar(Solver* const s, bool maximize, IntVar* a, int64 step)
+OptimizeVar::OptimizeVar(Solver* const s,
+                         bool maximize,
+                         IntVar* const a,
+                         int64 step)
     : SearchMonitor(s), var_(a), step_(step), best_(kint64max),
       maximize_(maximize) {
   CHECK_GT(step, 0);
@@ -2051,7 +2124,7 @@ void OptimizeVar::ApplyBound() {
   }
 }
 
-void OptimizeVar::RefuteDecision(Decision* d) {
+void OptimizeVar::RefuteDecision(Decision* const d) {
   ApplyBound();
 }
 
@@ -2110,7 +2183,7 @@ class Metaheuristic : public SearchMonitor {
                 IntVar* objective,
                 int64 step);
   virtual ~Metaheuristic() {}
-  virtual void RefuteDecision(Decision* d);
+  virtual void RefuteDecision(Decision* const d);
  protected:
   IntVar* const objective_;
   int64 step_;

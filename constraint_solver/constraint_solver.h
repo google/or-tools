@@ -89,6 +89,8 @@ class Decision;
 class DecisionBuilder;
 class DecisionVisitor;
 class Demon;
+class DemonMonitor;
+class DemonProfiler;
 class Dimension;
 class DomainIntVar;
 class EqualityVarCstCache;
@@ -140,16 +142,23 @@ struct SolverParameters {
     COMPRESS_WITH_ZLIB
   };
 
+  enum ProfileLevel {
+    NO_PROFILING,
+    NORMAL_PROFILING
+  };
+
   static const TrailCompression kDefaultTrailCompression;
   static const int kDefaultTrailBlockSize;
   static const int kDefaultArraySplitSize;
   static const bool kDefaultNameStoring;
+  static const ProfileLevel kDefaultProfileLevel;
 
   SolverParameters()
       : compress_trail(kDefaultTrailCompression),
         trail_block_size(kDefaultTrailBlockSize),
         array_split_size(kDefaultArraySplitSize),
-        store_names(kDefaultNameStoring) {}
+        store_names(kDefaultNameStoring),
+        profile_level(kDefaultProfileLevel) {}
 
   // This parameter indicates if the solver should compress the trail
   // during the search. No compression means the solver will be faster,
@@ -164,6 +173,10 @@ struct SolverParameters {
   // This parameters indicates if the solver should store the names of
   // the objets it manages.
   bool store_names;
+  // Support for profiling propagation. LIGHT supports only a reduced
+  // version of the summary. COMPLETE supports the full version of the
+  // summary, as well as the csv export.
+  ProfileLevel profile_level;
 };
 
 // This struct holds all parameters for the default search.
@@ -212,7 +225,6 @@ struct DefaultPhaseParameters {
   // Seed used to initialize the random part in some heuristics.
   int random_seed;
 };
-
 
 /////////////////////////////////////////////////////////////////////
 //
@@ -1011,6 +1023,17 @@ class Solver {
                                             bool optional,
                                             const string& name);
 
+  // This method fills the vector with 'count' interval var built with
+  // the corresponding parameters.
+  void MakeFixedDurationIntervalVarArray(int count,
+                                         int64 start_min,
+                                         int64 start_max,
+                                         int64 duration,
+                                         bool optional,
+                                         const string& name,
+                                         vector<IntervalVar*>* array);
+
+
   // Create an fixed and performed interval.
   IntervalVar* MakeFixedInterval(int64 start,
                                  int64 duration,
@@ -1131,20 +1154,38 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
   // ----- Solution Collectors -----
 
   // Collect the first solution of the search.
-  SolutionCollector* MakeFirstSolutionCollector(const Assignment* a);
+  SolutionCollector* MakeFirstSolutionCollector(
+      const Assignment* const assignment);
+  // Collect the first solution of the search. The variables will need to
+  // be added later.
+  SolutionCollector* MakeFirstSolutionCollector();
 
   // Collect the last solution of the search.
-  SolutionCollector* MakeLastSolutionCollector(const Assignment* a);
+  SolutionCollector* MakeLastSolutionCollector(
+      const Assignment* const assignment);
+  // Collect the last solution of the search. The variables will need to
+  // be added later.
+  SolutionCollector* MakeLastSolutionCollector();
 
   // Collect the solution corresponding to the optimal value of the objective
   // of 'a'; if 'a' does not have an objective no solution is collected. This
   // collector only collects one solution corresponding to the best objective
   // value (the first one found).
-  SolutionCollector* MakeBestValueSolutionCollector(const Assignment* a,
-                                                    bool maximize);
+  SolutionCollector* MakeBestValueSolutionCollector(
+      const Assignment* const assignment, bool maximize);
+  // Collect the solution corresponding to the optimal value of the
+  // objective of 'a'; if 'a' does not have an objective no solution
+  // is collected. This collector only collects one solution
+  // corresponding to the best objective value (the first one
+  // found). The variables will need to be added later.
+  SolutionCollector* MakeBestValueSolutionCollector(bool maximize);
 
   // Collect all solutions of the search.
-  SolutionCollector* MakeAllSolutionCollector(const Assignment* a);
+  SolutionCollector* MakeAllSolutionCollector(
+      const Assignment* const assignment);
+  // Collect all solutions of the search. The variables will need to
+  // be added later.
+  SolutionCollector* MakeAllSolutionCollector();
 
   // ----- Objective -----
 
@@ -1491,6 +1532,21 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
                              IntVarStrategy var_str,
                              IntValueStrategy val_str);
 
+  // ----- Scheduling Decisions -----
+
+  // Returns a decision that tries to schedule a task at a given time.
+  // On the Apply branch, it will set that interval var as performed and set
+  // its start to 'est'. On the Refute branch, it will just update the
+  // 'marker' to 'est' + 1. This decision is used in the
+  // INTERVAL_SET_TIMES_FORWARD strategy.
+  Decision* MakeScheduleOrPostpone(IntervalVar* const var,
+                                   int64 est,
+                                   int64* const marker);
+
+  // Returns a decision that tries to rank first the ith interval var
+  // in the sequence variable.
+  Decision* MakeTryRankFirst(Sequence* const sequence, int index);
+
   // Returns a decision builder which assigns values to variables which
   // minimize the values returned by the evaluator. The arguments passed to the
   // evaluator callback are the indices of the variables in vars and the values
@@ -1826,6 +1882,11 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
   // Add a fail hook, that is an action that will be called after each failure.
   void AddFailHook(Action* a);
 
+  // This method exports the profiling information in a human readable overview.
+  // The parameter profile_level used to create the solver must be
+  // different from NO_PROFILING.
+  void ExportProfilingOverview(const string& filename);
+
   // This functions returns true wether the current search has been
   // created using a Solve() call instead of a NewSearch 0ne. It
   // returns false if the solver is not is search at all.
@@ -1841,21 +1902,26 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
   // set_fail_intercept does not take ownership of the closure.
   void set_fail_intercept(Closure* const c) { fail_intercept_ = c; }
   void clear_fail_intercept() { fail_intercept_ = NULL; }
+  // Access to demon monitor.
+  DemonMonitor* demon_monitor() const { return demon_monitor_; }
 
-  friend class Queue;
-  friend class PropagationBaseObject;
-  friend class DomainIntVar;
-  friend class UndoBranchSelector;
-  friend class SearchMonitor;
-  friend class VarCstCache;
-  friend class BooleanVar;
   friend class BaseIntExpr;
+  friend class BooleanVar;
+  friend class DemonProfiler;
+  friend class DomainIntVar;
   friend class FindOneNeighbor;
+  friend class FixedDurationIntervalVar;
+  friend class PropagationBaseObject;
+  friend class Queue;
+  friend class SearchMonitor;
+  friend class UndoBranchSelector;
+  friend class VarCstCache;
 #ifndef SWIG
   template<class> friend class SimpleRevFIFO;
 #endif
 
  private:
+  void NotifyFailureToDemonMonitor();
   void PushState(MarkerType t, const StateInfo& info);
   MarkerType PopState(StateInfo* info);
   void PushSentinel(int magic_code);
@@ -1883,6 +1949,9 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
     InternalSaveValue(reinterpret_cast<void**>(valptr));
   }
   void InternalSaveBooleanVarValue(BooleanVar* const var);
+
+  // Adds a new demon and wraps it inside a DemonProfiler if necessary.
+  Demon* RegisterDemon(Demon* const d);
 
   int* SafeRevAlloc(int* ptr);
   int64* SafeRevAlloc(int64* ptr);
@@ -1939,6 +2008,8 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
   scoped_ptr<Decision> balancing_decision_;
   // intercept failures
   Closure* fail_intercept_;
+  // Demon monitor
+  DemonMonitor* const demon_monitor_;
 
   // interval of constants cached, inclusive:
   enum { MIN_CACHED_INT_CONST = -8, MAX_CACHED_INT_CONST = 8 };
@@ -1955,6 +2026,7 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
   LessEqualCstCache* less_equal_var_cst_cache_;
   scoped_ptr<Decision> fail_decision_;
   int constraints_;
+
   bool solution_found_;
 
   DISALLOW_COPY_AND_ASSIGN(Solver);
@@ -2068,6 +2140,8 @@ class DecisionVisitor : public BaseObject {
   virtual void VisitSplitVariableDomain(IntVar* const var,
                                         int64 value,
                                         bool start_with_lower_half);
+  virtual void VisitScheduleOrPostpone(IntervalVar* const var, int64 est);
+  virtual void VisitTryRankFirst(Sequence* const sequence, int index);
   virtual void VisitUnknownDecision();
  private:
   DISALLOW_COPY_AND_ASSIGN(DecisionVisitor);
@@ -2448,8 +2522,16 @@ class IntVar : public IntExpr {
 // from the collector used.
 class SolutionCollector : public SearchMonitor {
  public:
-  SolutionCollector(Solver* const s, const Assignment* a);
+  SolutionCollector(Solver* const s, const Assignment* assignment);
+  explicit SolutionCollector(Solver* const s);
   virtual ~SolutionCollector();
+
+  // Add API
+  void Add(IntVar* const var);
+  void Add(const vector<IntVar*>& vars);
+  void Add(IntervalVar* const var);
+  void Add(const vector<IntervalVar*>& vars);
+  void AddObjective(IntVar* const objective);
 
   // Beginning of the search.
   virtual void EnterSearch();
@@ -2495,7 +2577,7 @@ class SolutionCollector : public SearchMonitor {
   void PopSolution();
 
   void check_index(int n) const;
-  scoped_ptr<const Assignment> prototype_;
+  scoped_ptr<Assignment> prototype_;
   vector<Assignment*> solutions_;
   vector<Assignment*> recycle_solutions_;
   vector<int64> times_;
@@ -2513,7 +2595,7 @@ class SolutionCollector : public SearchMonitor {
 // improvement step.
 class OptimizeVar : public SearchMonitor {
  public:
-  OptimizeVar(Solver* const s, bool maximize, IntVar* a, int64 step);
+  OptimizeVar(Solver* const s, bool maximize, IntVar* const a, int64 step);
   virtual ~OptimizeVar();
 
   // Returns the best value found during search.
@@ -2909,6 +2991,7 @@ template <class V, class E> class AssignmentContainer {
  public:
   AssignmentContainer() {}
   E& Add(V* const var) {
+    CHECK_NOTNULL(var);
     int index = -1;
     if (!Find(var, &index)) {
       return FastAdd(var);
@@ -2918,6 +3001,7 @@ template <class V, class E> class AssignmentContainer {
   }
   // Adds element without checking its presence in the container.
   E& FastAdd(V* const var) {
+    DCHECK(var != NULL);
     E e(var);
     elements_.push_back(e);
     if (elements_map_.size() != 0) {

@@ -23,6 +23,7 @@ namespace operations_research {
 // ----- Decisions and DecisionBuilders on interval vars -----
 
 // TODO(user) : treat optional intervals
+// TODO(user) : Call DecisionVisitor and pass name of variable
 class ScheduleOrPostpone : public Decision {
  public:
   ScheduleOrPostpone(IntervalVar* const var, int64 est, int64* const marker)
@@ -38,6 +39,11 @@ class ScheduleOrPostpone : public Decision {
     s->SaveAndSetValue(marker_, est_ + 1);
   }
 
+  virtual void Accept(DecisionVisitor* const visitor) const {
+    CHECK_NOTNULL(visitor);
+    visitor->VisitScheduleOrPostpone(var_, est_);
+  }
+
   virtual string DebugString() const {
     return StringPrintf("ScheduleOrPostpone(%s at %" GG_LL_FORMAT "d)",
                         var_->DebugString().c_str(), est_);
@@ -47,6 +53,14 @@ class ScheduleOrPostpone : public Decision {
   const int64 est_;
   int64* const marker_;
 };
+
+Decision* Solver::MakeScheduleOrPostpone(IntervalVar* const var,
+                                         int64 est,
+                                         int64* const marker) {
+  CHECK_NOTNULL(var);
+  CHECK_NOTNULL(marker);
+  return RevAlloc(new ScheduleOrPostpone(var, est, marker));
+}
 
 class SetTimesForward : public DecisionBuilder {
  public:
@@ -125,6 +139,11 @@ class TryRankFirst : public Decision {
     sequence_->RankNotFirst(index_);
   }
 
+  void Accept(DecisionVisitor* const visitor) const {
+    CHECK_NOTNULL(visitor);
+    visitor->VisitTryRankFirst(sequence_, index_);
+  }
+
   virtual string DebugString() const {
     return StringPrintf("TryRankFirst(%s, %d)",
                         sequence_->DebugString().c_str(), index_);
@@ -133,6 +152,11 @@ class TryRankFirst : public Decision {
   Sequence* const sequence_;
   const int index_;
 };
+
+Decision* Solver::MakeTryRankFirst(Sequence* const sequence, int index) {
+  CHECK_NOTNULL(sequence);
+  return RevAlloc(new TryRankFirst(sequence, index));
+}
 
 class RankFirstSequences : public DecisionBuilder {
  public:

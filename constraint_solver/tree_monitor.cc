@@ -106,6 +106,19 @@ class TreeDecisionVisitor : public DecisionVisitor {
     valid_ = true;
   }
 
+  virtual void VisitScheduleOrPostpone(IntervalVar* const var, int64 est) {
+    name_ = var->name();
+    value_ = est;
+    valid_ = true;
+  }
+
+  virtual void VisitTryRankFirst(Sequence* const sequence, int index) {
+    name_ = sequence->name();
+    value_ = index;
+    valid_ = true;
+  }
+
+
   virtual void VisitUnknownDecision() {
     valid_ = false;
   }

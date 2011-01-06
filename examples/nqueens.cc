@@ -185,14 +185,12 @@ void NQueens(int size) {
   }
   s.AddConstraint(s.MakeAllDifferent(vars, FLAGS_use_range));
 
-  SolutionCollector* const c1 = s.MakeAllSolutionCollector(NULL);
-  Assignment* const a = new Assignment(&s);   // store first solution
-  a->Add(queens);
-  SolutionCollector* const c2 = s.MakeFirstSolutionCollector(a);
-  delete a;
+  SolutionCollector* const solution_counter = s.MakeAllSolutionCollector(NULL);
+  SolutionCollector* const collector = s.MakeFirstSolutionCollector();
+  collector->Add(queens);
   vector<SearchMonitor*> monitors;
-  monitors.push_back(c1);
-  monitors.push_back(c2);
+  monitors.push_back(solution_counter);
+  monitors.push_back(collector);
   DecisionBuilder* const db = s.MakePhase(queens,
                                           Solver::CHOOSE_FIRST_UNBOUND,
                                           Solver::ASSIGN_MIN_VALUE);
@@ -220,13 +218,13 @@ void NQueens(int size) {
     s.Solve(db, monitors);  // go!
   }
 
-  const int num_solutions = c1->solution_count();
+  const int num_solutions = solution_counter->solution_count();
   if (num_solutions > 0 && size < kKnownSolutions) {
     int print_max = FLAGS_print_all ? num_solutions : FLAGS_print ? 1 : 0;
     for (int n = 0; n < print_max; ++n) {
       printf("--- solution #%d\n", n);
       for (int i = 0; i < size; ++i) {
-        const int pos = static_cast<int>(c2->Value(n, queens[i]));
+        const int pos = static_cast<int>(collector->Value(n, queens[i]));
         for (int k = 0; k < pos; ++k) printf(" . ");
         printf("%2d ", i);
         for (int k = pos + 1; k < size; ++k) printf(" . ");

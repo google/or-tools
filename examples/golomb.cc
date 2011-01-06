@@ -67,10 +67,8 @@ void GolombRuler(int size) {
   s.AddConstraint(s.MakeAllDifferent(diffs, FLAGS_use_range));
 
   OptimizeVar* const length = s.MakeMinimize(ticks[size-1], 1);
-  Assignment* const a = new Assignment(&s);   // store first solution
-  a->Add(ticks);
-  SolutionCollector* const collector = s.MakeLastSolutionCollector(a);
-  delete a;
+  SolutionCollector* const collector = s.MakeLastSolutionCollector();
+  collector->Add(ticks);
   DecisionBuilder* const db = s.MakePhase(ticks,
                                           Solver::CHOOSE_FIRST_UNBOUND,
                                           Solver::ASSIGN_MIN_VALUE);

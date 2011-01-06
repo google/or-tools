@@ -47,6 +47,16 @@ void ConstraintSolverFailHere() {
 
 namespace operations_research {
 
+// ----- Forward Declarations -----
+extern DemonMonitor* BuildDemonMonitor(SolverParameters::ProfileLevel level);
+extern void DeleteDemonMonitor(DemonMonitor* const monitor);
+extern void DemonMonitorStartInitialPropagation(DemonMonitor* const monitor,
+                                                Constraint* const constraint);
+extern void DemonMonitorEndInitialPropagation(DemonMonitor* const monitor,
+                                              Constraint* const constraint);
+extern void DemonMonitorRestartSearch(DemonMonitor* const monitor);
+
+
 // ------------------ Demon class ----------------
 
 Solver::DemonPriority Demon::priority() const {
@@ -286,6 +296,7 @@ class Queue {
       // constraints.
       for (int counter = 0; counter < to_add_.size(); ++counter) {
         Constraint* const constraint = to_add_[counter];
+        // TODO(user): Add profiling to initial propagation
         constraint->PostAndPropagate();
       }
       in_add_ = false;
@@ -1231,6 +1242,7 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       fail_stamp_(GG_ULONGLONG(1)),
       balancing_decision_(new BalancingDecision),
       fail_intercept_(NULL),
+      demon_monitor_(BuildDemonMonitor(parameters.profile_level)),
       true_constraint_(NULL),
       false_constraint_(NULL),
       equality_var_cst_cache_(NULL),
@@ -1264,6 +1276,7 @@ Solver::Solver(const string& name)
       fail_stamp_(GG_ULONGLONG(1)),
       balancing_decision_(new BalancingDecision),
       fail_intercept_(NULL),
+      demon_monitor_(BuildDemonMonitor(parameters_.profile_level)),
       true_constraint_(NULL),
       false_constraint_(NULL),
       equality_var_cst_cache_(NULL),
@@ -1305,6 +1318,7 @@ Solver::~Solver() {
   CHECK(searches_.empty())
       << "non empty list of searches when ending the solver";
   delete search;
+  DeleteDemonMonitor(demon_monitor_);
 }
 
 const SolverParameters::TrailCompression
@@ -1312,6 +1326,8 @@ SolverParameters::kDefaultTrailCompression = SolverParameters::NO_COMPRESSION;
 const int SolverParameters::kDefaultTrailBlockSize = 8000;
 const int SolverParameters::kDefaultArraySplitSize = 16;
 const bool SolverParameters::kDefaultNameStoring = true;
+const SolverParameters::ProfileLevel SolverParameters::kDefaultProfileLevel =
+         SolverParameters::NO_PROFILING;
 
 string Solver::DebugString() const {
   string out = "Solver(name = \"" + name_ + "\", state = ";
@@ -1506,7 +1522,14 @@ void Solver::ProcessConstraints() {
   for (constraints_ = 0;
        constraints_ < constraints_list_.size();
        ++constraints_) {
-    constraints_list_[constraints_]->PostAndPropagate();
+    Constraint* const constraint = constraints_list_[constraints_];
+    if (parameters_.profile_level != SolverParameters::NO_PROFILING) {
+      DemonMonitorStartInitialPropagation(demon_monitor_, constraint);
+    }
+    constraint->PostAndPropagate();
+    if (parameters_.profile_level != SolverParameters::NO_PROFILING) {
+      DemonMonitorEndInitialPropagation(demon_monitor_, constraint);
+    }
   }
 }
 
@@ -1733,6 +1756,12 @@ void Solver::RestartSearch() {
     CHECK_EQ(0, search->sentinel_pushed_);
     PushSentinel(INITIAL_SEARCH_SENTINEL);
   }
+
+  if (parameters_.profile_level != SolverParameters::NO_PROFILING) {
+    CHECK_NOTNULL(demon_monitor_);
+    DemonMonitorRestartSearch(demon_monitor_);
+  }
+
   search->RestartSearch();
 }
 
@@ -2111,6 +2140,7 @@ void Solver::Fail() {
   }
   ConstraintSolverFailHere();
   fails_++;
+  NotifyFailureToDemonMonitor();
   searches_.back()->BeginFail();
   if (FLAGS_cp_trace_demons) {
     LOG(INFO) << "### Failure ###";
@@ -2176,6 +2206,9 @@ void DecisionVisitor::VisitSplitVariableDomain(IntVar* const var,
                                                int64 value,
                                                bool lower) {}
 void DecisionVisitor::VisitUnknownDecision() {}
+void DecisionVisitor::VisitScheduleOrPostpone(IntervalVar* const var,
+                                              int64 est) {}
+void DecisionVisitor::VisitTryRankFirst(Sequence* const sequence, int index) {}
 
 // ---------- Search Monitor ----------
 

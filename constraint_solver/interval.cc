@@ -534,10 +534,10 @@ class FixedDurationIntervalVar : public IntervalVar {
   virtual void SetStartMax(int64 m);
   virtual void SetStartRange(int64 mi, int64 ma);
   virtual void WhenStartRange(Demon* const d) {
-    start_range_demons_.PushIfNotTop(solver(), d);
+    start_range_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
   }
   virtual void WhenStartBound(Demon* const d) {
-    start_bound_demons_.PushIfNotTop(solver(), d);
+    start_bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
   }
 
   virtual int64 DurationMin() const;
@@ -554,17 +554,17 @@ class FixedDurationIntervalVar : public IntervalVar {
   virtual void SetEndMax(int64 m);
   virtual void SetEndRange(int64 mi, int64 ma);
   virtual void WhenEndRange(Demon* const d)  {
-    start_range_demons_.PushIfNotTop(solver(), d);
+    start_range_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
   }
   virtual void WhenEndBound(Demon* const d) {
-    start_bound_demons_.PushIfNotTop(solver(), d);
+    start_bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
   }
 
   virtual bool MustBePerformed() const;
   virtual bool MayBePerformed() const;
   virtual void SetPerformed(bool val);
   virtual void WhenPerformedBound(Demon* const d) {
-    performed_bound_demons_.PushIfNotTop(solver(), d);
+    performed_bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
   }
   void Process();
   void ClearInProcess();
@@ -1023,6 +1023,23 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(int64 start_min,
                                                duration, optional, name));
 }
 
-
-
+void Solver::MakeFixedDurationIntervalVarArray(int count,
+                                               int64 start_min,
+                                               int64 start_max,
+                                               int64 duration,
+                                               bool optional,
+                                               const string& name,
+                                               vector<IntervalVar*>* array) {
+  CHECK_GT(count, 0);
+  CHECK_NOTNULL(array);
+  array->clear();
+  for (int i = 0; i < count; ++i) {
+    const string var_name = StringPrintf("%s%i", name.c_str(), i);
+    array->push_back(MakeFixedDurationIntervalVar(start_min,
+                                                  start_max,
+                                                  duration,
+                                                  optional,
+                                                  var_name));
+  }
+}
 }  // namespace operations_research

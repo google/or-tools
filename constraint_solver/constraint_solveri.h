@@ -24,6 +24,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
+#include "base/timer.h"
 #include "base/bitmap.h"
 #include "base/map-util.h"
 #include "constraint_solver/constraint_solver.h"
@@ -788,8 +789,6 @@ class SearchLog : public SearchMonitor {
   int sliding_min_depth_;
   int sliding_max_depth_;
 };
-
-
 }  // namespace operations_research
 
 #endif  // CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
