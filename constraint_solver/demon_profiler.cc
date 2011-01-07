@@ -105,6 +105,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
       demon_run->add_end_time(CurrentTime());
       demon_run->set_failures(demon_run->failures() + 1);
       active_demon_ = NULL;
+      // active_constraint_ can be non null in case of initial propagation.
       active_constraint_ = NULL;
     } else if (active_constraint_ != NULL) {
       ConstraintRuns* const ct_run = constraint_map_[active_constraint_];
