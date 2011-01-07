@@ -552,13 +552,13 @@ ConstraintRef GlobalArithmeticConstraint::MakeOrConstraint(
     ConstraintRef left_ref,
     ConstraintRef right_ref) {
   OrConstraint* const constraint =
-      new OrConstraint(constraints_[left_ref.constraint_index()],
-                       constraints_[right_ref.constraint_index()]);
+      new OrConstraint(constraints_[left_ref.index()],
+                       constraints_[right_ref.index()]);
   return Store(constraint);
 }
 
 void GlobalArithmeticConstraint::Add(ConstraintRef ref) {
-  propagator_->AddConstraint(constraints_[ref.constraint_index()]);
+  propagator_->AddConstraint(constraints_[ref.index()]);
 }
 
 int GlobalArithmeticConstraint::VarIndex(IntVar* const var) {

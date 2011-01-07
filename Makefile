@@ -40,6 +40,7 @@ ifeq ($(LBITS),64)
 else
    ARCH=
 endif
+SYS_LNK=-lrt
 endif
 ifeq ($(OS),Darwin) # Assume Mac Os X
 LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress
@@ -47,11 +48,12 @@ GFLAGS_LNK = -L$(GFLAGS_DIR)/lib -lgflags
 ZLIB_LNK = -L$(ZLIB_DIR)/lib -lz
 PROTOBUF_LNK = -L$(PROTOBUF_DIR)/lib -lprotobuf
 ARCH=-DARCH_K8
+SYS_LNK=
 endif
 
 CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. $(GFLAGS_INC) $(ZLIB_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC)
-LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK)
+LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
 
 # Real targets
 

@@ -103,10 +103,20 @@ int64 WallTimer::GetTimeInMicroSeconds() {
   QueryPerformanceCounter(&now);
   QueryPerformanceFrequency(&freq);
   return now.QuadPart * kSecInMicroSec / freq.QuadPart;
-#elif defined(__GNUC__)
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return TimevalToUsec(tv);
+#elif defined(__APPLE__) && defined(__GNUC__)
+  static const int64 kMicroSecondsInNanoSeconds = 1000;
+  int64 time = mach_absolute_time();
+  mach_timebase_info_data_t info;
+  kern_return_t err = mach_timebase_info(&info);
+  if (err == 0) {
+    return = time / kMicroSecondsInNanoSeconds * info.numer / info.denom;
+  } else {
+    return 0;
+  }
+#elif defined(__GNUC__)  // Linux
+  struct timespec current;
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &current);
+  return current.tv_sec * 1000000 + current.tv_nsec / 1000;
 #endif
 }
 

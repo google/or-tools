@@ -19,10 +19,10 @@ class ArithmeticConstraint;
 
 class ConstraintRef {
  public:
-  ConstraintRef(int constraint_index) : constraint_index_(constraint_index) {}
-  int constraint_index() const { return constraint_index_; }
+  ConstraintRef(int index) : index_(index) {}
+  int index() const { return index_; }
  private:
-  const int constraint_index_;
+  const int index_;
 };
 
 class GlobalArithmeticConstraint : public Constraint {
