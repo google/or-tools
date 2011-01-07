@@ -481,12 +481,17 @@ class TreeNode {
         tree_writer->AddAttribute("value", "0");
       } else {
         // Use the original size of the first child if available
-        const DomainMap domain = parent_ && parent_->children_.size() ?
+        const DomainMap& domain = parent_ && parent_->children_.size() ?
                                  parent_->children_[0]->domain() :
                                  domain_;
 
-        tree_writer->AddAttribute(
-            "size",  StringPrintf("%zu", FindOrDie(domain, name_).size()));
+        DomainMap::const_iterator it = domain.find(name_);
+        if (it == domain.end()) {
+          tree_writer->AddAttribute("size", "unknown");
+        } else {
+          tree_writer->AddAttribute("size",
+                                    StringPrintf("%zu", it->second.size()));
+        }
         tree_writer->AddAttribute("value", StringPrintf("%" GG_LL_FORMAT "d",
                                                         branch_values_[i]));
       }
