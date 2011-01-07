@@ -91,7 +91,8 @@ class OrderedLNS: public BaseLNS {
 
     // Start of with the first free_elements_ as a permutations, eg. 0,1,2,3,...
     for (int i = 0; i < free_elements; ++i) {
-      index_ += i * pow(vars.size(), free_elements-i-1);
+      index_ += i * pow(static_cast<double>(vars.size()),
+                        free_elements - i - 1);
     }
   }
 
