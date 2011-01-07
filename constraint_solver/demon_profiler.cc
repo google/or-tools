@@ -100,18 +100,18 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
   }
 
   void RaiseFailure() {
-    if (active_constraint_ != NULL) {
+    if (active_demon_ != NULL) {
+      DemonRuns* const demon_run = demon_map_[active_demon_];
+      demon_run->add_end_time(CurrentTime());
+      demon_run->set_failures(demon_run->failures() + 1);
+      active_demon_ = NULL;
+    } else if (active_constraint_ != NULL) {
       CHECK_NOTNULL(active_demon_);
       ConstraintRuns* const ct_run = constraint_map_[active_constraint_];
       CHECK_NOTNULL(ct_run);
       ct_run->set_initial_propagation_end_time(CurrentTime());
       ct_run->set_failures(1);
       active_constraint_ = NULL;
-    } else if (active_demon_ != NULL) {
-      DemonRuns* const demon_run = demon_map_[active_demon_];
-      demon_run->add_end_time(CurrentTime());
-      demon_run->set_failures(demon_run->failures() + 1);
-      active_demon_ = NULL;
     }
   }
 
