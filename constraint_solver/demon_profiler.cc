@@ -78,7 +78,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
       demon_run->set_demon_id(demon->DebugString());
       demon_run->set_failures(0);
       demon_map_[demon] = demon_run;
-      demons_per_constraint_[active_constraint_].push_back(demon);
+      demons_per_constraint_[active_constraint_].push_back(demon_run);
     }
   }
 
@@ -170,17 +170,17 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
                          demon_invocations,
                          total_demon_runtime);
         file << constraint_message;
-        const vector<Demon*>& demons = demons_per_constraint_[it->first];
+        const vector<DemonRuns*>& demons = demons_per_constraint_[it->first];
         const int demon_size = demons.size();
         for (int demon_index = 0; demon_index < demon_size; ++demon_index) {
-          Demon* const demon = demons[demon_index];
+          DemonRuns* const demon_runs = demons[demon_index];
           int64 invocations = 0;
           int64 fails = 0;
           int64 runtime = 0;
           double mean_runtime = 0;
           double median_runtime = 0;
           double standard_deviation = 0.0;
-          ExportInformation(demon,
+          ExportInformation(demon_runs,
                             &invocations,
                             &fails,
                             &runtime,
@@ -188,7 +188,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
                             &median_runtime,
                             &standard_deviation);
           const string runs = StringPrintf(kDemonFormat,
-                                           demon->DebugString().c_str(),
+                                           demon_runs->demon_id().c_str(),
                                            invocations,
                                            fails,
                                            runtime,
@@ -244,15 +244,13 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     }
   }
 
-  void ExportInformation(Demon* const demon,
+  void ExportInformation(DemonRuns* const demon_runs,
                          int64* const demon_invocations,
                          int64* const fails,
                          int64* const total_demon_runtime,
                          double* const mean_demon_runtime,
                          double* const median_demon_runtime,
                          double* const stddev_demon_runtime) {
-    CHECK_NOTNULL(demon);
-    DemonRuns* const demon_runs = demon_map_[demon];
     CHECK_NOTNULL(demon_runs);
     CHECK_EQ(demon_runs->start_time_size(), demon_runs->end_time_size());
 
@@ -302,7 +300,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
   const int64 start_time_;
   hash_map<Constraint*, ConstraintRuns*> constraint_map_;
   hash_map<Demon*, DemonRuns*> demon_map_;
-  hash_map<Constraint*, vector<Demon*> > demons_per_constraint_;
+  hash_map<Constraint*, vector<DemonRuns*> > demons_per_constraint_;
 };
 
 // DemonProfiler is a wrapper for demons and add profiling capabilities to
