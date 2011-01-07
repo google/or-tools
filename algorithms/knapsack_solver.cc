@@ -179,7 +179,7 @@ KnapsackPropagator::~KnapsackPropagator() {
 void KnapsackPropagator::Init(const vector<int64>& profits,
                               const vector<int64>& weights) {
   const int number_of_items = profits.size();
-  items_.assign(number_of_items, NULL);
+  items_.assign(number_of_items, static_cast<KnapsackItemPtr>(NULL));
   for (int i = 0; i < number_of_items; ++i) {
     items_[i] = new KnapsackItem(i, weights[i], profits[i]);
   }
