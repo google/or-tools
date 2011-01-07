@@ -50,8 +50,8 @@ CPBINARIES= \
           cvrptw.exe \
           golomb.exe \
           magic_square.exe \
-          queens.exe \
-          tsp.exee
+          nqueens.exe \
+          tsp.exe
 
 cpexe: $(CPBINARIES)
 
