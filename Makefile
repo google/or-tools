@@ -378,7 +378,7 @@ objs/constraint_solver_wrap.o: constraint_solver/constraint_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c constraint_solver/constraint_solver_wrap.cc -o objs/constraint_solver_wrap.o
 
 _pywrapcp.so: objs/constraint_solver_wrap.o $(CPLIBS) $(BASE_LIBS)
-	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o $(CPLIBS) $(BASE_LIBS) $(GFLAGS_LNK) $(PROTOBUF_LNK)
+	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o $(CPLIBS) $(BASE_LIBS) $(GFLAGS_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
 
 # pywraprouting
 
@@ -391,4 +391,4 @@ objs/routing_wrap.o: constraint_solver/routing_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c constraint_solver/routing_wrap.cc -o objs/routing_wrap.o
 
 _pywraprouting.so: objs/routing_wrap.o $(CPLIBS) $(BASE_LIBS)
-	$(LD) -o _pywraprouting.so objs/routing_wrap.o $(CPLIBS) $(BASE_LIBS) $(GFLAGS_LNK) $(PROTOBUF_LNK)
+	$(LD) -o _pywraprouting.so objs/routing_wrap.o $(CPLIBS) $(BASE_LIBS) $(GFLAGS_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
