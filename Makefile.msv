@@ -45,7 +45,7 @@ BASE_LIBS = \
 cplibs: $(CPLIBS) $(BASE_LIBS)
 
 CPBINARIES= \
-          costas_array \
+          costas_array.exe \
           cryptarithm.exe \
           cvrptw.exe \
           golomb.exe \
