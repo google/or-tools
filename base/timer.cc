@@ -16,6 +16,9 @@
 #else
 #include <windows.h>
 #endif
+#if defined(__APPLE__) && defined(__GNUC__)
+#include <mach/mach_time.h>
+#endif
 #include <time.h>
 #include "base/logging.h"
 #include "base/timer.h"
@@ -109,7 +112,7 @@ int64 WallTimer::GetTimeInMicroSeconds() {
   mach_timebase_info_data_t info;
   kern_return_t err = mach_timebase_info(&info);
   if (err == 0) {
-    return = time / kMicroSecondsInNanoSeconds * info.numer / info.denom;
+    return time / kMicroSecondsInNanoSeconds * info.numer / info.denom;
   } else {
     return 0;
   }
