@@ -107,7 +107,7 @@ int64 WallTimer::GetTimeInMicroSeconds() {
   QueryPerformanceFrequency(&freq);
   return now.QuadPart * kSecInMicroSec / freq.QuadPart;
 #elif defined(__APPLE__) && defined(__GNUC__)
-  static const int64 kMicroSecondsInNanoSeconds = 1000;
+  const int64 kMicroSecondsInNanoSeconds = 1000;
   int64 time = mach_absolute_time();
   mach_timebase_info_data_t info;
   kern_return_t err = mach_timebase_info(&info);
@@ -117,9 +117,12 @@ int64 WallTimer::GetTimeInMicroSeconds() {
     return 0;
   }
 #elif defined(__GNUC__)  // Linux
+  const int64 kSecondInMicroSeconds = 1000000;
+  const int64 kMicroSecondsInNanoSeconds = 1000;
   struct timespec current;
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &current);
-  return current.tv_sec * 1000000 + current.tv_nsec / 1000;
+  return current.tv_sec * kSecondInMicroSeconds +
+      current.tv_nsec / kMicroSecondsInNanoSeconds;
 #endif
 }
 
