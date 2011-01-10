@@ -50,10 +50,10 @@ namespace operations_research {
 // ----- Forward Declarations -----
 extern DemonMonitor* BuildDemonMonitor(SolverParameters::ProfileLevel level);
 extern void DeleteDemonMonitor(DemonMonitor* const monitor);
-extern void DemonMonitorStartInitialPropagation(DemonMonitor* const monitor,
-                                                Constraint* const constraint);
-extern void DemonMonitorEndInitialPropagation(DemonMonitor* const monitor,
-                                              Constraint* const constraint);
+extern void DemonMonitorStartInitialPropagation(
+    DemonMonitor* const monitor, const Constraint* const constraint);
+extern void DemonMonitorEndInitialPropagation(
+    DemonMonitor* const monitor, const Constraint* const constraint);
 extern void DemonMonitorRestartSearch(DemonMonitor* const monitor);
 
 

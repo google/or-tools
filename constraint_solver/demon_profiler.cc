@@ -45,7 +45,7 @@ start_time_(WallTimer::GetTimeInMicroSeconds()) {}
 return WallTimer::GetTimeInMicroSeconds() - start_time_;
   }
 
-  void StartInitialPropagation(Constraint* const constraint) {
+  void StartInitialPropagation(const Constraint* const constraint) {
     CHECK(active_constraint_ == NULL);
     CHECK(active_demon_ == NULL);
     CHECK_NOTNULL(constraint);
@@ -56,7 +56,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     constraint_map_[constraint] = ct_run;
   }
 
-  void EndInitialPropagation(Constraint* const constraint) {
+  void EndInitialPropagation(const Constraint* const constraint) {
     CHECK_NOTNULL(active_constraint_);
     CHECK(active_demon_ == NULL);
     CHECK_NOTNULL(constraint);
@@ -68,7 +68,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     active_constraint_ = NULL;
   }
 
-  void RegisterDemon(Demon* const demon) {
+  void RegisterDemon(const Demon* const demon) {
     if (demon_map_.find(demon) == demon_map_.end()) {
       CHECK_NOTNULL(active_constraint_);
       CHECK(active_demon_ == NULL);
@@ -82,7 +82,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     }
   }
 
-  void StartDemonRun(Demon* const demon) {
+  void StartDemonRun(const Demon* const demon) {
     CHECK(active_demon_ == NULL);
     CHECK_NOTNULL(demon);
     active_demon_ = demon;
@@ -90,7 +90,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     demon_run->add_start_time(CurrentTime());
   }
 
-  void EndDemonRun(Demon* const demon) {
+  void EndDemonRun(const Demon* const demon) {
     CHECK_EQ(active_demon_, demon);
     CHECK_NOTNULL(demon);
     DemonRuns* const demon_run = demon_map_[active_demon_];
@@ -117,7 +117,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
   }
 
   // Useful for unit tests.
-  void AddFakeRun(Demon* const demon,
+  void AddFakeRun(const Demon* const demon,
                   int64 start_time,
                   int64 end_time,
                   bool is_fail) {
@@ -147,7 +147,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
       LG << "Failed to gain write access to file: " << filename;
     } else {
 
-      for (hash_map<Constraint*, ConstraintRuns*>::const_iterator it =
+      for (hash_map<const Constraint*, ConstraintRuns*>::const_iterator it =
                constraint_map_.begin();
            it != constraint_map_.end();
            ++it) {
@@ -213,7 +213,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
   }
 
   // Export Information
-  void ExportInformation(Constraint* const constraint,
+  void ExportInformation(const Constraint* const constraint,
                          int64* const fails,
                          int64* const initial_propagation_runtime,
                          int64* const demon_invocations,
@@ -296,15 +296,15 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     }
   }
  private:
-  Constraint* active_constraint_;
-  Demon* active_demon_;
+  const Constraint* active_constraint_;
+  const Demon* active_demon_;
   const int64 start_time_;
-  hash_map<Constraint*, ConstraintRuns*> constraint_map_;
-  hash_map<Demon*, DemonRuns*> demon_map_;
-  hash_map<Constraint*, vector<DemonRuns*> > demons_per_constraint_;
+  hash_map<const Constraint*, ConstraintRuns*> constraint_map_;
+  hash_map<const Demon*, DemonRuns*> demon_map_;
+  hash_map<const Constraint*, vector<DemonRuns*> > demons_per_constraint_;
 };
 
-// DemonProfiler is a wrapper for demons and add profiling capabilities to
+// DemonProfiler is a wrapper for demons and adds profiling capabilities to
 // track the usage and perfomance of the demons.
 class DemonProfiler : public Demon {
  public:
@@ -371,25 +371,25 @@ void BuildDemonProfiler(Solver* const solver,
   solver->RevAlloc(new DemonProfiler(demon, monitor));
 }
 
-Demon* Solver::RegisterDemon(Demon* const d) {
-  CHECK_NOTNULL(d);
+Demon* Solver::RegisterDemon(Demon* const demon) {
+  CHECK_NOTNULL(demon);
   if (parameters_.profile_level != SolverParameters::NO_PROFILING &&
       state_ != IN_SEARCH) {
     CHECK_NOTNULL(demon_monitor_);
-    demon_monitor_->RegisterDemon(d);
-    return RevAlloc(new DemonProfiler(d, demon_monitor_));
+    demon_monitor_->RegisterDemon(demon);
+    return RevAlloc(new DemonProfiler(demon, demon_monitor_));
   } else {
-    return d;
+    return demon;
   }
 }
 
 void DemonMonitorStartInitialPropagation(DemonMonitor* const monitor,
-                                         Constraint* const constraint) {
+                                         const Constraint* const constraint) {
   monitor->StartInitialPropagation(constraint);
 }
 
 void DemonMonitorEndInitialPropagation(DemonMonitor* const monitor,
-                                       Constraint* const constraint) {
+                                       const Constraint* const constraint) {
   monitor->EndInitialPropagation(constraint);
 }
 
@@ -404,7 +404,7 @@ void DeleteDemonProfiler(DemonProfiler* const profiler) {
 }
 
 void DemonMonitorAddFakeRun(DemonMonitor* const monitor,
-                            Demon* const demon,
+                            const Demon* const demon,
                             int64 start_time,
                             int64 end_time,
                             bool is_fail) {
@@ -412,7 +412,7 @@ void DemonMonitorAddFakeRun(DemonMonitor* const monitor,
 }
 
 void DemonMonitorExportInformation(DemonMonitor* const monitor,
-                                   Constraint* const constraint,
+                                   const Constraint* const constraint,
                                    int64* const fails,
                                    int64* const initial_propagation_runtime,
                                    int64* const demon_invocations,
