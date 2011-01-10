@@ -1315,33 +1315,33 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
   // decision phase in cpviz format. The XML data is written to files
   // file_tree and file_visualization as the search finishes.
   SearchMonitor* MakeTreeMonitor(const IntVar* const* vars, int size,
-                                 string const& file_tree,
-                                 string const& file_visualization);
+                                 const string& file_tree,
+                                 const string& file_visualization);
 
   // Creates a tree monitor that outputs a detailed overview of the
   // decision phase in cpviz format. The XML data is written to files
   // file_tree and file_visualization as the search finishes.
   SearchMonitor* MakeTreeMonitor(const vector<IntVar*>& vars,
-                                 string const& file_tree,
-                                 string const& file_visualization);
+                                 const string& file_tree,
+                                 const string& file_visualization);
 
   // Creates a tree monitor that outputs a detailed overview of the
   // decision phase in cpviz format. The XML data is written to files
   // file_config, file_tree and file_visualization as the search
   // finishes.
   SearchMonitor* MakeTreeMonitor(const IntVar* const* vars, int size,
-                                 string const& file_config,
-                                 string const& file_tree,
-                                 string const& file_visualization);
+                                 const string& file_config,
+                                 const string& file_tree,
+                                 const string& file_visualization);
 
   // Creates a tree monitor that outputs a detailed overview of the
   // decision phase in cpviz format. The XML data is written to files
   // file_config, file_tree and file_visualization as the search
   // finishes.
   SearchMonitor* MakeTreeMonitor(const vector<IntVar*>& vars,
-                                 string const& file_config,
-                                 string const& file_tree,
-                                 string const& file_visualization);
+                                 const string& file_config,
+                                 const string& file_tree,
+                                 const string& file_visualization);
 
 #if !defined(SWIG)
   // Creates a tree monitor that outputs a detailed overview of the

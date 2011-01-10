@@ -160,14 +160,14 @@ class TreeMonitor: public SearchMonitor {
   typedef hash_map<string, IntVar const*> IntVarMap;
 
   TreeMonitor(Solver* const solver, const IntVar* const* vars, int size,
-              string const& filename_tree, string const& filename_visualizer);
+              const string& filename_tree, const string& filename_visualizer);
 
   TreeMonitor(Solver* const solver, const IntVar* const* vars, int size,
               string* const tree_xml, string* const visualization_xml);
 
   TreeMonitor(Solver* const solver, const IntVar* const* vars, int size,
-              string const& filename_config, string const& filename_tree,
-              string const& filename_visualizer);
+              const string& filename_config, const string& filename_tree,
+              const string& filename_visualizer);
 
   TreeMonitor(Solver* const solver, const IntVar* const* vars, int size,
               string* const config_xml, string* const tree_xml,
@@ -225,31 +225,31 @@ class TreeMonitor: public SearchMonitor {
 };
 
 SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars, int size,
-                                       string const& file_tree,
-                                       string const& file_visualization) {
+                                       const string& file_tree,
+                                       const string& file_visualization) {
   return RevAlloc(new TreeMonitor(this, vars, size, file_tree,
                                   file_visualization));
 }
 
 SearchMonitor* Solver::MakeTreeMonitor(const vector<IntVar*>& vars,
-                                       string const& file_tree,
-                                       string const& file_visualization) {
+                                       const string& file_tree,
+                                       const string& file_visualization) {
   return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), file_tree,
                                   file_visualization));
 }
 
 SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars, int size,
-                                       string const& file_config,
-                                       string const& file_tree,
-                                       string const& file_visualization) {
+                                       const string& file_config,
+                                       const string& file_tree,
+                                       const string& file_visualization) {
   return RevAlloc(new TreeMonitor(this, vars, size, file_config, file_tree,
                                   file_visualization));
 }
 
 SearchMonitor* Solver::MakeTreeMonitor(const vector<IntVar*>& vars,
-                                       string const& file_config,
-                                       string const& file_tree,
-                                       string const& file_visualization) {
+                                       const string& file_config,
+                                       const string& file_tree,
+                                       const string& file_visualization) {
   return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), file_config,
                                   file_tree, file_visualization));
 }
@@ -335,10 +335,10 @@ class TreeNode {
   int id() const { return id_; }
 
   // Returns the name of the variable of the current decision.
-  string const& name() const { return name_; }
+  const string& name() const { return name_; }
 
   // Sets the name of the variable for the current decision.
-  void set_name(string const& name) { name_ = name; }
+  void set_name(const string& name) { name_ = name; }
 
   // Gets the node type.
   TreeNodeType node_type() const { return node_type_; }
@@ -521,8 +521,8 @@ class TreeNode {
 };
 
 TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
-                         int size, string const& filename_tree,
-                         string const& filename_visualizer)
+                         int size, const string& filename_tree,
+                         const string& filename_visualizer)
     : SearchMonitor(solver),
       config_xml_(NULL),
       current_node_(NULL),
@@ -561,9 +561,9 @@ TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
 }
 
 TreeMonitor::TreeMonitor(Solver* const solver, const IntVar* const* vars,
-                         int size, string const& filename_config,
-                         string const& filename_tree,
-                         string const& filename_visualizer)
+                         int size, const string& filename_config,
+                         const string& filename_tree,
+                         const string& filename_visualizer)
     : SearchMonitor(solver),
       config_xml_(NULL),
       current_node_(NULL),
