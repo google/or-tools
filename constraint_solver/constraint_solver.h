@@ -812,7 +812,7 @@ class Solver {
   IntVar* MakeIsLessVar(IntExpr* const left, IntExpr* const right);
   // b == (left < right)
   Constraint* MakeIsLessCt(IntExpr* const left, IntExpr* const right,
-                              IntVar* const b);
+                           IntVar* const b);
   // left < right
   Constraint* MakeLess(IntVar* const left, IntVar* const right);
   // expr < value
@@ -1077,7 +1077,7 @@ class Solver {
   //
   // This is very useful to implement propagators that may only modify
   // the start min or end min.
-IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
+  IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
 
   // ----- scheduling constraints -----
 
@@ -1197,6 +1197,23 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
 
   // Create a objective with a given sense (true = maximization).
   OptimizeVar* MakeOptimize(bool maximize, IntVar* const v, int64 step);
+
+  // Create a minimization weighted objective. The actual objective is
+  // scalar_prod(vars, weights).
+  OptimizeVar* MakeWeightedMinimize(const vector<IntVar*>& vars,
+                                    const vector<int64>& weights,
+                                    int64 step);
+
+  // Create a maximization weigthed objective.
+  OptimizeVar* MakeWeightedMaximize(const vector<IntVar*>& vars,
+                                    const vector<int64>& weights,
+                                    int64 step);
+
+  // Create a weighted objective with a given sense (true = maximization).
+  OptimizeVar* MakeWeightedOptimize(bool maximize,
+                                    const vector<IntVar*>& vars,
+                                    const vector<int64>& weights,
+                                    int64 step);
 
   // ----- Meta-heuristics -----
   // Search monitors which try to get the search out of local optima.
@@ -1380,27 +1397,38 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
 
 #endif
 
+  // TODO(user): DEPRECATE API of MakeSearchLog(.., IntVar* var,..).
   // ----- Search Log -----
+  // The SearchMonitors below will display a periodic search log
+  // on LOG(INFO) every branch_count branches explored.
 
-  // Create a search monitor that will display a periodic search log
-  // on LOG(INFO).
-  SearchMonitor* MakeSearchLog(int period);
+  SearchMonitor* MakeSearchLog(int branch_count);
 
-  // Create a search monitor that will display a periodic search log
-  // on LOG(INFO). At each solution, this monitor will also display
-  // the objective value.
-  SearchMonitor* MakeSearchLog(int period, IntVar* const objective);
+  // At each solution, this monitor also display the objective value.
+  SearchMonitor* MakeSearchLog(int branch_count, IntVar* const objective);
 
-  // Create a search monitor that will call the display callback at each
-  // solution.
-  SearchMonitor* MakeSearchLog(int period,
+  // At each solution, this monitor will also display result of @p
+  // display_callback.
+  SearchMonitor* MakeSearchLog(int branch_count,
                                ResultCallback<string>* display_callback);
 
-  // Create a search monitor that will call the display callback and display
-  // the objective value at each solution.
-  SearchMonitor* MakeSearchLog(int period,
+  // At each solution, this monitor will display the objective value and the
+  // result of @p display_callback.
+  SearchMonitor* MakeSearchLog(int branch_count,
                                IntVar* objective,
                                ResultCallback<string>* display_callback);
+
+  // OptimizeVar Search Logs
+  // At each solution, this monitor will also display the objective->Print().
+
+  SearchMonitor* MakeSearchLog(int branch_count, OptimizeVar* const objective);
+
+  // Create a search monitor that will also print the result of the
+  // display callback.
+  SearchMonitor* MakeSearchLog(int branch_count,
+                               OptimizeVar* const objective,
+                               ResultCallback<string>* display_callback);
+
 
   // ----- Search Trace ------
 
@@ -1588,10 +1616,10 @@ IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
   // Returns a decision builder for which the left-most leaf corresponds
   // to assignment, the rest of the tree being explored using 'db'.
   DecisionBuilder* MakeDecisionBuilderFromAssignment(
-                                                   Assignment* const assignment,
-                                                   DecisionBuilder* const db,
-                                                   const IntVar* const* vars,
-                                                   int size);
+      Assignment* const assignment,
+      DecisionBuilder* const db,
+      const IntVar* const* vars,
+      int size);
 
   // SolveOnce will collapse a search tree described by a 'db' decision
   // builder, and a set of monitors and wrap it into a single point.
@@ -2587,6 +2615,9 @@ class SolutionCollector : public SearchMonitor {
   DISALLOW_COPY_AND_ASSIGN(SolutionCollector);
 };
 
+// TODO(user): Refactor this into an Objective class:
+//   - print methods for AtNode and AtSolution.
+//   - support for weighted objective and lexicographical objective.
 
 // ---------- Objective Management ----------
 
@@ -2601,15 +2632,15 @@ class OptimizeVar : public SearchMonitor {
   // Returns the best value found during search.
   int64 best() const { return best_; }
 
-  // Returns the variable passed in the ctor.
+  // Returns the variable that is optimized.
   IntVar* Var() const { return var_; }
-
   // Internal methods
   virtual void EnterSearch();
   virtual void RestartSearch();
   virtual void RefuteDecision(Decision* d);
   virtual bool AtSolution();
   virtual bool AcceptSolution();
+  virtual string Print() const;
   virtual string DebugString() const;
 
   void ApplyBound();
@@ -2680,8 +2711,8 @@ class IntervalVar : public PropagationBaseObject {
   static const int64 kMaxValidValue;
   IntervalVar(Solver* const solver, const string& name)
       : PropagationBaseObject(solver),
-    start_expr_(NULL), duration_expr_(NULL), end_expr_(NULL),
-    performed_expr_(NULL) {
+        start_expr_(NULL), duration_expr_(NULL), end_expr_(NULL),
+        performed_expr_(NULL) {
     set_name(name);
   }
   virtual ~IntervalVar() {}

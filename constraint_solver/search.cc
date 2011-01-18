@@ -32,12 +32,15 @@ namespace operations_research {
 
 // ---------- Search Log ---------
 
-SearchLog::SearchLog(Solver* const s, IntVar* const obj,
+SearchLog::SearchLog(Solver* const s,
+                     OptimizeVar* const obj,
+                     IntVar* const var,
                      ResultCallback<string>* display_callback,
                      int period)
     : SearchMonitor(s),
       period_(period),
       timer_(new WallTimer),
+      var_(var),
       obj_(obj),
       display_callback_(display_callback),
       nsol_(0),
@@ -48,6 +51,7 @@ SearchLog::SearchLog(Solver* const s, IntVar* const obj,
       max_depth_(0),
       sliding_min_depth_(0),
       sliding_max_depth_(0) {
+  CHECK(obj == NULL || var == NULL) << "Either var or obj need to be NULL.";
   if (display_callback_ != NULL) {
     display_callback_->CheckIsRepeatable();
   }
@@ -81,9 +85,18 @@ bool SearchLog::AtSolution() {
   Maintain();
   const int depth = solver()->SearchDepth();
   string obj_str = "";
+  int64 current = 0;
+  bool objective_updated = false;
   if (obj_ != NULL) {
-    const int64 current = obj_->Value();
-    obj_str = StringPrintf("objective value = %" GG_LL_FORMAT "d, ", current);
+    current = obj_->Var()->Value();
+    obj_str = obj_->Print();
+    objective_updated = true;
+  } else if (var_!= NULL) {
+    current = var_->Value();
+    StringAppendF(&obj_str,  "%" GG_LL_FORMAT "d", current);
+    objective_updated = true;
+  }
+  if (objective_updated) {
     if (current >= objective_min_) {
       StringAppendF(&obj_str,
                     "objective minimum = %" GG_LL_FORMAT "d, ",
@@ -233,21 +246,30 @@ string SearchLog::MemoryUsage() {
 }
 
 SearchMonitor* Solver::MakeSearchLog(int period) {
-  return RevAlloc(new SearchLog(this, NULL, NULL, period));
+  return RevAlloc(new SearchLog(this, NULL, NULL, NULL, period));
 }
 
-SearchMonitor* Solver::MakeSearchLog(int period, IntVar* const obj) {
-  return RevAlloc(new SearchLog(this, obj, NULL, period));
+SearchMonitor* Solver::MakeSearchLog(int period, IntVar* const var) {
+  return RevAlloc(new SearchLog(this, NULL, var, NULL, period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(int period,
                                      ResultCallback<string>* display_callback) {
-  return RevAlloc(new SearchLog(this, NULL, display_callback, period));
+  return RevAlloc(new SearchLog(this, NULL, NULL, display_callback, period));
 }
 
-SearchMonitor* Solver::MakeSearchLog(int period, IntVar* const obj,
+SearchMonitor* Solver::MakeSearchLog(int period, IntVar* const var,
                                      ResultCallback<string>* display_callback) {
-  return RevAlloc(new SearchLog(this, obj, display_callback, period));
+  return RevAlloc(new SearchLog(this, NULL, var, display_callback, period));
+}
+
+SearchMonitor* Solver::MakeSearchLog(int period, OptimizeVar* const obj) {
+  return RevAlloc(new SearchLog(this, obj, NULL, NULL, period));
+}
+
+SearchMonitor* Solver::MakeSearchLog(int period, OptimizeVar* const obj,
+                                     ResultCallback<string>* display_callback) {
+  return RevAlloc(new SearchLog(this, obj, NULL, display_callback, period));
 }
 
 // ---------- Search Trace ----------
@@ -2148,6 +2170,10 @@ bool OptimizeVar::AtSolution() {
   return true;
 }
 
+string OptimizeVar::Print() const {
+  return StringPrintf("objective value = %" GG_LL_FORMAT "d, ", var_->Value());
+}
+
 string OptimizeVar::DebugString() const {
   string out;
   if (maximize_) {
@@ -2173,6 +2199,79 @@ OptimizeVar* Solver::MakeMaximize(IntVar* const v, int64 step) {
 OptimizeVar* Solver::MakeOptimize(bool maximize, IntVar* const v, int64 step) {
   return RevAlloc(new OptimizeVar(this, maximize, v, step));
 }
+
+class WeightedOptimizeVar: public OptimizeVar {
+ public:
+  WeightedOptimizeVar(Solver* solver,
+                      bool maximize,
+                      const vector<IntVar*>& sub_objectives,
+                      const vector<int64>& weights,
+                      int64 step)
+      : OptimizeVar(solver,
+                    maximize,
+                    solver->MakeScalProd(sub_objectives, weights)->Var(),
+                    step),
+        size_(weights.size()) {
+    CHECK_EQ(sub_objectives.size(), weights.size());
+    sub_objectives_.reset(new IntVar*[size_]);
+    memcpy(sub_objectives_.get(),
+           sub_objectives.data(), size_ * sizeof(*sub_objectives.data()));
+    weights_.reset(new int64[size_]);
+    memcpy(weights_.get(),
+           weights.data(), size_ * sizeof(*weights.data()));
+  }
+
+  virtual ~WeightedOptimizeVar() {}
+  virtual string Print() const;
+
+ private:
+  const int64 size_;
+  scoped_array<IntVar*> sub_objectives_;
+  scoped_array<int64> weights_;
+
+  DISALLOW_COPY_AND_ASSIGN(WeightedOptimizeVar);
+};
+
+string WeightedOptimizeVar::Print() const {
+  string result(OptimizeVar::Print());
+  StringAppendF(&result, "\nWeighted Objective:\n");
+  for (int i = 0; i < size_; ++i) {
+    StringAppendF(&result, "Variable %s,\tvalue %lld,\tweight %lld\n",
+                  sub_objectives_[i]->name().c_str(),
+                  sub_objectives_[i]->Value(),
+                  weights_[i]);
+  }
+  return result;
+}
+
+OptimizeVar* Solver::MakeWeightedOptimize(bool maximize,
+                                          const vector<IntVar*>& sub_objectives,
+                                          const vector<int64>& weights,
+                                          int64 step) {
+  return RevAlloc(new WeightedOptimizeVar(this,
+                                          maximize,
+                                          sub_objectives, weights,
+                                          step));
+}
+
+OptimizeVar* Solver::MakeWeightedMinimize(const vector<IntVar*>& sub_objectives,
+                                          const vector<int64>& weights,
+                                          int64 step) {
+  return RevAlloc(new WeightedOptimizeVar(this,
+                                          false,
+                                          sub_objectives, weights,
+                                          step));
+}
+
+OptimizeVar* Solver::MakeWeightedMaximize(const vector<IntVar*>& sub_objectives,
+                                          const vector<int64>& weights,
+                                          int64 step) {
+  return RevAlloc(new WeightedOptimizeVar(this,
+                                          true,
+                                          sub_objectives, weights,
+                                          step));
+}
+
 
 // ---------- Metaheuristics ---------
 

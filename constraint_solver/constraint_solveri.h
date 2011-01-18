@@ -755,7 +755,9 @@ class SymmetryBreaker : public DecisionVisitor {
 
 class SearchLog : public SearchMonitor {
  public:
-  SearchLog(Solver* const s, IntVar* const obj,
+  SearchLog(Solver* const s,
+            OptimizeVar* const obj,
+            IntVar* const var,
             ResultCallback<string>* display_callback,
             int period);
   virtual ~SearchLog();
@@ -778,7 +780,8 @@ class SearchLog : public SearchMonitor {
 
   const int period_;
   scoped_ptr<WallTimer> timer_;
-  IntVar* const obj_;
+  IntVar* const var_;
+  OptimizeVar* const obj_;
   scoped_ptr<ResultCallback<string> > display_callback_;
   int nsol_;
   int64 tick_;
