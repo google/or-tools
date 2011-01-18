@@ -2,7 +2,6 @@
 PYTHON_VER=2.6
 GFLAGS_DIR=../gflags-1.4
 SWIG_BINARY=swig
-ZLIB_DIR=../zlib-1.2.5
 PROTOBUF_DIR=../protobuf-2.3.0
 
 #  ----- You should not need to modify the following, unless the -----
@@ -12,8 +11,6 @@ PROTOBUF_DIR=../protobuf-2.3.0
 PYTHON_INC=-I/usr/include/python$(PYTHON_VER) -I/usr/lib/python$(PYTHON_VER)
 # This is needed to find gflags/gflags.h
 GFLAGS_INC = -I$(GFLAGS_DIR)/include
-# This is needed to find zlib.h
-ZLIB_INC = -I$(ZLIB_DIR)/include
 # This is needed to find protocol buffers.
 PROTOBUF_INC = -I$(PROTOBUF_DIR)/include
 
@@ -30,7 +27,7 @@ LD = gcc -shared
 # This is needed to find libgflags.a
 GFLAGS_LNK = -Wl,-rpath $(GFLAGS_DIR)/lib -L$(GFLAGS_DIR)/lib -lgflags
 # This is needed to find libz.a
-ZLIB_LNK = -Wl,-rpath $(ZLIB_DIR)/lib -L$(ZLIB_DIR)/lib -lz
+ZLIB_LNK = -lz
 # This is needed to find libprotobuf.a
 PROTOBUF_LNK = -Wl,-rpath $(PROTOBUF_DIR)/lib -L$(PROTOBUF_DIR)/lib -lprotobuf -lpthread
 # Detect 32 bit or 64 bit OS and define ARCH flags correctly.
@@ -45,13 +42,13 @@ endif
 ifeq ($(OS),Darwin) # Assume Mac Os X
 LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress
 GFLAGS_LNK = -L$(GFLAGS_DIR)/lib -lgflags
-ZLIB_LNK = -L$(ZLIB_DIR)/lib -lz
+ZLIB_LNK = -lz
 PROTOBUF_LNK = -L$(PROTOBUF_DIR)/lib -lprotobuf
 ARCH=-DARCH_K8
 SYS_LNK=
 endif
 
-CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. $(GFLAGS_INC) $(ZLIB_INC) $(ARCH) \
+CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC)
 LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
 
@@ -378,7 +375,7 @@ objs/constraint_solver_wrap.o: constraint_solver/constraint_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c constraint_solver/constraint_solver_wrap.cc -o objs/constraint_solver_wrap.o
 
 _pywrapcp.so: objs/constraint_solver_wrap.o $(CPLIBS) $(BASE_LIBS)
-	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o $(CPLIBS) $(BASE_LIBS) $(GFLAGS_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
+	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o $(CPLIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # pywraprouting
 
@@ -391,4 +388,4 @@ objs/routing_wrap.o: constraint_solver/routing_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c constraint_solver/routing_wrap.cc -o objs/routing_wrap.o
 
 _pywraprouting.so: objs/routing_wrap.o $(CPLIBS) $(BASE_LIBS)
-	$(LD) -o _pywraprouting.so objs/routing_wrap.o $(CPLIBS) $(BASE_LIBS) $(GFLAGS_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
+	$(LD) -o _pywraprouting.so objs/routing_wrap.o $(CPLIBS) $(BASE_LIBS) $(LDFLAGS)
