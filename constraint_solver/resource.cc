@@ -27,6 +27,7 @@
 #include "base/stringprintf.h"
 #include "base/stl_util-inl.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/bitset.h"
 #include "util/monoid_operation_tree.h"
 
 
@@ -1359,6 +1360,35 @@ class UpdatesForADemand {
   DISALLOW_COPY_AND_ASSIGN(UpdatesForADemand);
 };
 
+namespace {
+  // Returns min(a * b, kint64max). a is positive.
+  int64 SafeProduct(int64 a, int64 b) {
+    DCHECK_GE(a, 0);
+
+    const bool is_positive = b >= 0;
+    b = max(b, -b);  // abs(b) for int64.
+    // Note max(kint64min, -kint64min) = kint64min, so when b == kint64min,
+    // the following DCHECK fails.
+    DCHECK_GE(b, 0);
+    const int kint64SurelyOverflow = 63;
+    const bool surely_overflow = MostSignificantBitPosition64(a)
+        + MostSignificantBitPosition64(b)
+        > kint64SurelyOverflow;
+
+    // When the sum of MostSignificantBitPosition64 for a and b is smaller
+    // than 61 no overflow can appear and the product result is positive (as a
+    // and b are positive). However when the sum is between 61 and 63 then it
+    // is not possible to say in advance if an overflow will occur. Nevertheless
+    // the product sign is a valid test for overflow: if an overflow occurs,
+    // then the product is surely negative, and if the product is negative
+    // then an overflow occurred.
+    const int64 product = a * b;
+    return (!surely_overflow && product >= 0)
+        ? ((is_positive) ? product : -product)
+        : ((is_positive) ? kint64max : -kint64max);
+  }
+}  // anonymous namespace
+
 // One-sided cumulative edge finder.
 class EdgeFinder : public Constraint {
  public:
@@ -1531,7 +1561,7 @@ class EdgeFinder : public Constraint {
       CumulativeIndexedTask* const indexed_task = by_end_max_[i];
       lt_tree_.Insert(indexed_task);
       // Maximum energetic end min without overload.
-      const int64 max_feasible = capacity_ * indexed_task->EndMax();
+      const int64 max_feasible = SafeProduct(capacity_, indexed_task->EndMax());
       if (lt_tree_.energetic_end_min() > max_feasible) {
         solver()->Fail();
       }
@@ -1545,8 +1575,9 @@ class EdgeFinder : public Constraint {
       lt_tree_.Grey(by_end_max_[j+1]);
       CumulativeIndexedTask* const twj = by_end_max_[j];
       // We should have checked for overload earlier.
-      DCHECK_LE(lt_tree_.energetic_end_min(), capacity_ * twj->EndMax());
-      while (lt_tree_.energetic_end_min_opt() > capacity_ * twj->EndMax()) {
+      const int64 max_feasible = SafeProduct(capacity_, twj->EndMax());
+      DCHECK_LE(lt_tree_.energetic_end_min(), max_feasible);
+      while (lt_tree_.energetic_end_min_opt() > max_feasible) {
         const int i = lt_tree_.argmax_energetic_end_min_opt();
         DCHECK_GE(i, 0);
         PropagateTaskCannotEndBefore(i, j);
