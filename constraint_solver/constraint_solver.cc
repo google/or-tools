@@ -2053,11 +2053,10 @@ bool Solver::CheckAssignment(Assignment* const solution) {
   } CP_ON_FAIL {
     Constraint* const ct = constraints_list_[constraints_];
     if (ct->name().empty()) {
-      VLOG(1) << "Failing constraint = "
-              << constraints_list_[constraints_]->DebugString();
+      LOG(INFO) << "Failing constraint = " << ct->DebugString();
     } else {
-      VLOG(1) << "Failing constraint = " << ct->name() << ":"
-              << constraints_list_[constraints_]->DebugString();
+      LOG(INFO) << "Failing constraint = " << ct->name() << ":"
+                << ct->DebugString();
     }
     queue_->AfterFailure();
     BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
