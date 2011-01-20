@@ -347,7 +347,7 @@ tsp.exe: $(CPLIBS) $(BASE_LIBS) objs/tsp.obj libgflags.dll
 
 # pywrapknapsack_solver
 
-pyknapsack_solver: algorithms/_pywrapknapsack_solver.pyd algorithms/pywrapknapsack_solver.py $(ALGORITHM_LIBS) $(BASE_LIBS)
+pyalgorithms: algorithms/_pywrapknapsack_solver.pyd algorithms/pywrapknapsack_solver.py $(ALGORITHM_LIBS) $(BASE_LIBS)
 
 algorithms/pywrapknapsack_solver.py: algorithms/knapsack_solver.swig algorithms/knapsack_solver.h base/base.swig
 	$(SWIG_BINARY) -c++ -python -o algorithms/knapsack_solver_wrap.cc -module pywrapknapsack_solver algorithms/knapsack_solver.swig
@@ -358,10 +358,10 @@ objs/knapsack_solver_wrap.obj: algorithms/knapsack_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) /I__WIN32__ -c algorithms/knapsack_solver_wrap.cc /Foobjs/knapsack_solver_wrap.obj
 
 _pywrapknapsack_solver.dll: objs/knapsack_solver_wrap.obj $(ALGORITHM_LIBS) $(BASE_LIBS)
-	link /DLL /OUT:_pywrapknapsack_solver.dll objs/knapsack_solver_wrap.obj $(ALGORITHMS_LIBS) $(BASE_LIBS) $(LDFLAGS) $(PYTHON_LNK)
+	link /DLL /OUT:_pywrapknapsack_solver.dll objs/knapsack_solver_wrap.obj $(ALGORITHM_LIBS) $(BASE_LIBS) $(LDFLAGS) $(PYTHON_LNK)
 
 algorithms/_pywrapknapsack_solver.pyd: _pywrapknapsack_solver.dll
-	copy _pywrapknapsack_solver.dll knapsack_solver\\_pywrapknapsack_solver.pyd
+	copy _pywrapknapsack_solver.dll algorithms\\_pywrapknapsack_solver.pyd
 
 # pywrapcp
 
