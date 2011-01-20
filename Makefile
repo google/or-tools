@@ -55,18 +55,22 @@ LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
 # Real targets
 
 all:
-	@echo Please define target: cplibs, cpexe, pycp, clean
+	@echo Please define target:
+	@echo "  - constraint programming: cplibs, cpexe, pycp"
+	@echo "  - algorithms: algoritmlibs, pyalgorithms"
+	@echo "  - misc: clean"
 
 CPLIBS = \
 	librouting.a       \
 	libconstraint_solver.a
 
+GRAPH_LIBS = \
+	libgraph.a \
+	libshortestpaths.a
+
 BASE_LIBS = \
 	libutil.a          \
-	libbase.a          \
-	libalgorithms.a    \
-	libgraph.a         \
-	libshortestpaths.a
+	libbase.a
 
 cplibs: $(CPLIBS) $(BASE_LIBS)
 
@@ -80,6 +84,11 @@ CPBINARIES = \
 	tsp
 
 cpexe: $(CPBINARIES)
+
+ALGORITHM_LIBS = \
+	libalgorithms.a
+
+algorithm_libs: $(ALGORITHM_LIBS)
 
 clean:
 	rm -f *.a
@@ -361,6 +370,21 @@ tsp: $(CPLIBS) $(BASE_LIBS) objs/tsp.o
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.o $(CPLIBS) $(BASE_LIBS) -o tsp
 
 # SWIG
+
+# pywrapknapsack_solver
+
+pyalgorithms: _pywrapknapsack_solver.so algorithms/pywrapknapsack_solver.py $(ALGORITHM_LIBS) $(BASE_LIBS)
+
+algorithms/pywrapknapsack_solver.py: algorithms/knapsack_solver.swig algorithms/knapsack_solver.h base/base.swig
+	$(SWIG_BINARY) -c++ -python -o algorithms/knapsack_solver_wrap.cc -module pywrapknapsack_solver algorithms/knapsack_solver.swig
+
+algorithms/knapsack_solver_wrap.cc: algorithms/pywrapknapsack_solver.py
+
+objs/knapsack_solver_wrap.o: algorithms/knapsack_solver_wrap.cc
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c algorithms/knapsack_solver_wrap.cc -o objs/knapsack_solver_wrap.o
+
+_pywrapknapsack_solver.so: objs/knapsack_solver_wrap.o $(ALGORITHM_LIBS) $(BASE_LIBS)
+	$(LD) -o _pywrapknapsack_solver.so objs/knapsack_solver_wrap.o $(ALGORITHM_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # pywrapcp
 

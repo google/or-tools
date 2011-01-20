@@ -147,6 +147,8 @@ class KnapsackSolver {
   DISALLOW_COPY_AND_ASSIGN(KnapsackSolver);
 };
 
+#if !defined(SWIG)
+
 
 // The following code defines needed classes for the KnapsackGenericSolver
 // class which is the entry point to extend knapsack with new constraints such
@@ -560,7 +562,7 @@ class KnapsackGenericSolver : public BaseKnapsackSolver {
   DISALLOW_COPY_AND_ASSIGN(KnapsackGenericSolver);
 };
 
-
+#endif  // SWIG
 }  // namespace operations_research
 
 #endif  // ALGORITHMS_KNAPSACK_SOLVER_H_
