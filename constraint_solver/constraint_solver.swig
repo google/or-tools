@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-%include base/base.swig
 %include exception.i
+%include util/data.swig
 
 // Include the file we want to wrap a first time.
 #ifdef SWIGPYTHON
@@ -225,7 +225,7 @@ class PyDecisionBuilder(object):
       return solver.FailDecision()
     return result
 }
-}
+}  // namespace operations_research
 
 // Define the renaming of methods.
 %rename (Add) AddConstraint;
@@ -319,132 +319,6 @@ class PyDecisionBuilder(object):
 %rename (TrueConstraint) MakeTrueConstraint;
 
 namespace operations_research {
-%{
-static string PyCallbackString(PyObject* pyfunc) {
-   string result;
-   PyObject* arglist = Py_BuildValue("()");
-   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-   Py_DECREF(arglist);
-   if (pyresult) {
-     result = PyString_AsString(pyresult);
-     Py_DECREF(pyresult);
-   }
-   return result;
-}
-%}
-
-%typemap(in) ResultCallback<string>* {
-  if (!PyCallable_Check($input)) {
-      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-      SWIG_fail;
-  }
-  $1 = NewPermanentCallback(&PyCallbackString, $input);
-}
-
-%{
-static int64 PyCallback1Int64Int64(PyObject* pyfunc, int64 i) {
-   int64 result = 0;
-   // Cast to int needed, no int64 support
-   // () needed to force creation of one-element tuple
-   PyObject* arglist = Py_BuildValue("(l)", static_cast<int>(i));
-   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-   Py_DECREF(arglist);
-   if (pyresult) {
-     result = PyInt_AsLong(pyresult);
-   }
-   Py_XDECREF(pyresult);
-   return result;
-}
-%}
-
-%typemap(in) ResultCallback1<int64, int64>* {
-  if (!PyCallable_Check($input)) {
-      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-      SWIG_fail;
-  }
-  $1 = NewPermanentCallback(&PyCallback1Int64Int64, $input);
-}
-
-%{
-static int64 PyCallback2Int64Int64Int64(PyObject* pyfunc, int64 i, int64 j) {
-   int64 result = 0;
-   // Cast to int needed, no int64 support
-   PyObject* arglist = Py_BuildValue("ll",
-                                     static_cast<int>(i),
-                                     static_cast<int>(j));
-   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-   Py_DECREF(arglist);
-   if (pyresult) {
-     result = PyInt_AsLong(pyresult);
-   }
-   Py_XDECREF(pyresult);
-   return result;
-}
-%}
-
-%typemap(in) ResultCallback2<int64, int64, int64>* {
-  if (!PyCallable_Check($input)) {
-      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-      SWIG_fail;
-  }
-  $1 = NewPermanentCallback(&PyCallback2Int64Int64Int64, $input);
-}
-
-%{
-  static int64 PyCallback3Int64Int64Int64Int64(PyObject* pyfunc,
-                                               int64 i, int64 j, int64 k) {
-   int64 result = 0;
-   // Cast to int needed, no int64 support
-   PyObject* arglist = Py_BuildValue("lll",
-                                     static_cast<int>(i),
-                                     static_cast<int>(j),
-                                     static_cast<int>(k));
-   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-   Py_DECREF(arglist);
-   if (pyresult) {
-     result = PyInt_AsLong(pyresult);
-   }
-   Py_XDECREF(pyresult);
-   return result;
-}
-%}
-
-%typemap(in) ResultCallback3<int64, int64, int64, int64>* {
-  if (!PyCallable_Check($input)) {
-      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-      SWIG_fail;
-  }
-  $1 = NewPermanentCallback(&PyCallback3Int64Int64Int64Int64, $input);
-}
-
-%{
-static bool PyCallbackBool(PyObject* pyfunc) {
-   bool result = false;
-   // "()" needed to force creation of empty argument list
-   PyObject* arglist = Py_BuildValue("()");
-   PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-   Py_DECREF(arglist);
-   if (pyresult) {
-     // no PyBool_AsBool so do this instead:
-     if (pyresult == Py_True) {
-       result = true;
-     } else {
-       result = false;
-     }
-   }
-   Py_XDECREF(pyresult);
-   return result;
-}
-%}
-
-%typemap(in) ResultCallback<bool>* {
-  if (!PyCallable_Check($input)) {
-      PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-      SWIG_fail;
-  }
-  $1 = NewPermanentCallback(&PyCallbackBool, $input);
-}
-
 %typemap(in) IntVar* const {
   operations_research::IntExpr* t;
   if (SWIG_ConvertPtr($input,
@@ -484,40 +358,6 @@ static bool PyCallbackBool(PyObject* pyfunc) {
                        SWIG_POINTER_EXCEPTION | 0 ) != -1;
   if ($1 == 0) {
     PyErr_Clear();
-  }
-}
-
-// Add conversion rules for vector<int64>.
-%typemap(in) const vector<int64>& (vector<int64> temp) {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
-    SWIG_fail;
-  }
-  bool is_tuple = PyTuple_Check($input);
-  temp.resize(is_tuple ? PyTuple_Size($input) : PyList_Size($input));
-  for (size_t i = 0; i < temp.size(); ++i) {
-    temp[i] = PyInt_AsLong(is_tuple ? PyTuple_GetItem($input, i) :
-                           PyList_GetItem($input, i));
-  }
-  $1 = &temp;
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) const vector<int64>& {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    $1 = 0;
-  } else {
-    const bool is_tuple = PyTuple_Check($input);
-    const int size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
-    bool failed = false;
-    for (size_t i = 0; i < size; ++i) {
-      PyObject* const obj =
-          is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
-      if (!PyInt_Check(obj) && !PyLong_Check(obj)) {
-        failed = true;
-        break;
-      }
-    }
-    $1 = failed ? 0 : 1;
   }
 }
 
@@ -876,74 +716,6 @@ static bool PyCallbackBool(PyObject* pyfunc) {
   }
 }
 
-// Add conversion list(tuple(int)) -> tuple set for AllowedAssignments.
-%typemap(in) const vector<vector<int64> >&
-    (vector<vector<int64> > temp) {
-  if (!PyList_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Expecting a list of tuples");
-    SWIG_fail;
-  }
-  int len = PyList_Size($input);
-  int arity = -1;
-  if (len > 0) {
-    temp.resize(len);
-    for (size_t i = 0; i < len; ++i) {
-      PyObject *tuple = PyList_GetItem($input, i);
-      if (!PyTuple_Check(tuple) && !PyList_Check(tuple)) {
-        PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
-        SWIG_fail;
-      }
-      bool is_tuple = PyTuple_Check(tuple);
-      int local_arity = is_tuple ? PyTuple_Size(tuple) : PyList_Size(tuple);
-      if (arity != -1 && arity != local_arity) {
-        PyErr_SetString(PyExc_TypeError, "Tuples should have the same arity");
-        SWIG_fail;
-      }
-      if (arity == -1) {
-        arity = local_arity;
-      }
-      temp[i].resize(arity);
-      for (size_t j = 0; j < local_arity; ++j) {
-        temp[i][j] = PyInt_AsLong(is_tuple ?
-                                  PyTuple_GetItem(tuple, j) :
-                                  PyList_GetItem(tuple, j));
-      }
-    }
-  }
-  $1 = &temp;
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) const vector<vector<int64> >& {
-  if (!PyList_Check($input)) {
-    $1 = 0;
-  } else {
-    const int size = PyList_Size($input);
-    bool failed = false;
-    for (size_t i = 0; i < size; ++i) {
-      PyObject* const tuple = PyList_GetItem($input, i);
-      if (!PyTuple_Check(tuple) && !PyList_Check(tuple)) {
-        $1 = 0;
-        break;
-      } else {
-        const bool is_tuple = PyTuple_Check(tuple);
-        const int arity = is_tuple ? PyTuple_Size(tuple) : PyList_Size(tuple);
-        for (size_t j = 0; j < arity; ++j) {
-          PyObject* const entry =
-              is_tuple ? PyTuple_GetItem(tuple, j) : PyList_GetItem(tuple, j);
-          if (!PyInt_Check(entry) && !PyLong_Check(entry)) {
-            failed = true;
-            break;
-          }
-        }
-      }
-      if (failed) {
-        break;
-      }
-    }
-    $1 = failed ? 0 : 1;
-  }
-}
-
 %typemap(in) DecisionBuilder* const {
   operations_research::DecisionBuilder* tmp;
   if (SWIG_ConvertPtr($input,
@@ -1014,7 +786,7 @@ static bool PyCallbackBool(PyObject* pyfunc) {
                                                    operations_research::Solver::STARTS_AT_START,
                                                    other);
   }
-};
+}
 
 %extend Sequence {
   string __repr__() {
@@ -1061,13 +833,13 @@ static bool PyCallbackBool(PyObject* pyfunc) {
 // Add display methods on Solver and remove DebugString method.
 %ignore Solver::DebugString;
 
-%extend Solver {  
+%extend Solver {
   Constraint* TreeNoCycle(const vector<IntVar*>& nexts,
                           const vector<IntVar*>& active,
                           ResultCallback1<bool, int64>* callback = NULL) {
     return self->MakeNoCycle(nexts, active, callback, false);
   }
-  
+
   SearchMonitor* SearchLogWithCallback(int period,
                                        ResultCallback<string>* callback) {
     return self->MakeSearchLog(period, callback);
@@ -1398,119 +1170,11 @@ static bool PyCallbackBool(PyObject* pyfunc) {
 }  // namespace operations_research
 #endif  // SWIGPYTHON
 
-#ifdef SWIGJAVA
-%module(directors="1") main
-%feature("director") LongResultCallback1;
-%feature("director") LongResultCallback2;
+#if defined(SWIGJAVA)
 %{
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
-
-class LongResultCallback1 {
- public:
-  virtual int64 run(int64) = 0;
-  ResultCallback1<int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback1::run);
-  }
-  virtual ~LongResultCallback1() {}
-};
-class LongResultCallback2 {
- public:
-  virtual int64 run(int64, int64) = 0;
-  ResultCallback2<int64, int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback2::run);
-  }
-  virtual ~LongResultCallback2() {}
-};
-class LongResultCallback3 {
- public:
-  virtual int64 run(int64, int64, int64) = 0;
-  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback3::run);
-  }
-  virtual ~LongResultCallback3() {}
-};
 %}
-
-class LongResultCallback1 {
- public:
-  virtual int64 run(int64) = 0;
-  ResultCallback1<int64, int64>* GetPermanentCallback();
-  virtual ~LongResultCallback1();
-};
-class LongResultCallback2 {
- public:
-  virtual int64 run(int64, int64) = 0;
-  ResultCallback2<int64, int64, int64>* GetPermanentCallback();
-  virtual ~LongResultCallback2();
-};
-class LongResultCallback3 {
- public:
-  virtual int64 run(int64, int64, int64) = 0;
-  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback();
-  virtual ~LongResultCallback3();
-};
-
-// Typemaps for callbacks in java.
-%typemap(jstype) ResultCallback1<int64, int64>* "LongResultCallback1";
-%typemap(javain) ResultCallback1<int64, int64>* "SWIGTYPE_p_ResultCallback1Tlong_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
-
-%typemap(jstype) ResultCallback2<int64, int64, int64>* "LongResultCallback2";
-%typemap(javain) ResultCallback2<int64, int64, int64>* "SWIGTYPE_p_ResultCallback2Tlong_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
-
-%typemap(jstype) ResultCallback3<int64, int64, int64, int64>*
-"LongResultCallback3";
-%typemap(javain) ResultCallback3<int64, int64, int64, int64>*
- "SWIGTYPE_p_ResultCallback3Tlong_long_long_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
-
-// Typemaps to represent const vector<int64>& arguments as arrays of long.
-%typemap(jni) const vector<int64>& "jobjectArray"
-%typemap(jtype) const vector<int64>& "long[]"
-%typemap(jstype) const vector<int64>& "long[]"
-%typemap(javain) const vector<int64>& "$javainput"
-%typemap(in) const vector<int64>& %{
-  if($input) {
-    $1 = new vector<int64>;
-    int size = jenv->GetArrayLength($input);
-    jlong *values = jenv->GetLongArrayElements((jlongArray)$input, NULL);
-    for (int i = 0; i < size; ++i) {
-      long value = values[i];
-      $1->push_back(value);
-    }
-  }
-  else {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null table");
-    return $null;
-  }
-%}
-%typemap(freearg) const vector<int64>& {
-  delete $1;
-}
-
-// Typemaps to represent const vector<int>& arguments as arrays of long.
-%typemap(jni) const vector<int>& "jobjectArray"
-%typemap(jtype) const vector<int>& "int[]"
-%typemap(jstype) const vector<int>& "int[]"
-%typemap(javain) const vector<int>& "$javainput"
-
-%typemap(in) const vector<int>& %{
-  if($input) {
-    $1 = new vector<int>;
-    int size = jenv->GetArrayLength($input);
-    jint *values = jenv->GetIntArrayElements((jintArray)$input, NULL);
-    for (int i = 0; i < size; ++i) {
-      int value = values[i];
-      $1->push_back(value);
-    }
-  }
-  else {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null table");
-    return $null;
-  }
-%}
-%typemap(freearg) const vector<int>& {
-  delete $1;
-}
 
 %ignore Solver::MakeScalProd(IntVar* const* vars,
                              const int64* const coefs,
@@ -1637,7 +1301,6 @@ class LongResultCallback3 {
 %rename (setMin) *::SetMin;
 %rename (setMax) *::SetMax;
 %rename (setRange) *::SetRange;
-
 #endif  // SWIGJAVA
 
 // Wrap cp includes
