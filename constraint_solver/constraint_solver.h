@@ -186,6 +186,7 @@ struct DefaultPhaseParameters {
   static const int kDefaultHeuristicPeriod;
   static const int kDefaultHeuristicNumFailuresLimit;
   static const int kDefaultSeed;
+  static const double kDefaultRestartLogSize;
   enum VariableSelection {
     CHOOSE_MAX_SUM_IMPACT = 0,
     CHOOSE_MAX_AVERAGE_IMPACT = 1,
@@ -204,7 +205,8 @@ struct DefaultPhaseParameters {
         run_all_heuristics(true),
         heuristic_period(kDefaultHeuristicPeriod),
         heuristic_num_failures_limit(kDefaultHeuristicNumFailuresLimit),
-        random_seed(kDefaultSeed) {}
+        random_seed(kDefaultSeed),
+        restart_log_size(kDefaultRestartLogSize) {}
 
   // This parameter describes how the next variable to instantiate
   // will be chosen.
@@ -224,6 +226,12 @@ struct DefaultPhaseParameters {
   int heuristic_num_failures_limit;
   // Seed used to initialize the random part in some heuristics.
   int random_seed;
+  // Automatic Restart Size. When diving down, the size of the search
+  // space disminishes. If the current log of the search space is
+  // greater than the the minimal value encountered +
+  // 'restart_log_size', then the search is restarted from scratch. A
+  // parameter < 0 means no restart.
+  double restart_log_size;
 };
 
 /////////////////////////////////////////////////////////////////////

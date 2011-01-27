@@ -35,6 +35,7 @@ const int DefaultPhaseParameters::kDefaultNumberOfSplits = 100;
 const int DefaultPhaseParameters::kDefaultHeuristicPeriod = 100;
 const int DefaultPhaseParameters::kDefaultHeuristicNumFailuresLimit = 30;
 const int DefaultPhaseParameters::kDefaultSeed = 0;
+const double DefaultPhaseParameters::kDefaultRestartLogSize = -1.0;
 
 namespace {
 // ----- DomainWatcher -----
@@ -315,6 +316,10 @@ class ImpactRecorder {
     current_log_space_ = domain_watcher_.LogSearchSpaceSize();
   }
 
+  double LogSearchSpaceSize() const {
+    return current_log_space_;
+  }
+
   void UpdateImpact(int var_index, int64 value, double impact) {
     const int64 value_index = value - original_min_[var_index];
     const double current_impact = impacts_[var_index][value_index];
@@ -334,9 +339,7 @@ class ImpactRecorder {
 
   void FirstRun(Solver* const solver, int64 splits) {
     current_log_space_ = domain_watcher_.LogSearchSpaceSize();
-    LOG(INFO) << "Init impacts on " << size_
-              << " variables, log2(SearchSpace) = "
-              << current_log_space_;
+    LOG(INFO) << "  - initial log2(SearchSpace) = " << current_log_space_;
     const int64 init_time = solver->wall_time();
     InitVarImpacts without_splits;
     InitVarImpactsWithSplits with_splits(splits);
@@ -391,13 +394,13 @@ class ImpactRecorder {
     }
 
     if (removed_counter) {
-      LOG(INFO) << "  - time = " << solver->wall_time() - init_time
+      LOG(INFO) << "  - init done, time = " << solver->wall_time() - init_time
                 << " ms, " << removed_counter
                 << " values removed, log2(SearchSpace) = "
                 << current_log_space_;
     } else {
-      LOG(INFO) << "  - time = " << solver->wall_time() - init_time
-                << " ms, log2(SearchSpace) = " << current_log_space_;
+      LOG(INFO) << "  - init done, time = " << solver->wall_time() - init_time
+                << " ms";
     }
   }
 
@@ -512,7 +515,8 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         random_(parameters_.random_seed),
         runner_(NewPermanentCallback(this,
                                      &ImpactDecisionBuilder::RunHeuristics)),
-        heuristic_branch_count_(0) {
+        heuristic_branch_count_(0),
+        min_log_search_space_(std::numeric_limits<double>::max()) {
     CHECK_GE(size_, 0);
     if (size_ > 0) {
       vars_.reset(new IntVar*[size_]);
@@ -657,9 +661,15 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     }
   }
 
-  virtual Decision* Next(Solver* const s) {
+  virtual Decision* Next(Solver* const solver) {
     if (!init_done_) {
-      impact_recorder_.FirstRun(s, parameters_.initialization_splits);
+      LOG(INFO) << "Init impact based search phase on  " << size_
+                << " variables, initialization splits = "
+                << parameters_.initialization_splits
+                << ", heuristic_period = " << parameters_.heuristic_period
+                << ", run_all_heuristics = " << parameters_.run_all_heuristics
+                << ", restart_log_size = " << parameters_.restart_log_size;
+      impact_recorder_.FirstRun(solver, parameters_.initialization_splits);
       init_done_ = true;
     }
 
@@ -668,7 +678,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       impact_recorder_.RecordLogSearchSpace();
     } else {
       if (fail_stamp_ != 0) {
-        if (s->fail_stamp() == fail_stamp_) {
+        if (solver->fail_stamp() == fail_stamp_) {
           impact_recorder_.UpdateAfterAssignment(current_var_index_,
                                                  current_value_);
         } else {
@@ -677,7 +687,24 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         }
       }
     }
-    fail_stamp_ = s->fail_stamp();
+    fail_stamp_ = solver->fail_stamp();
+
+    if (parameters_.restart_log_size >= 0) {
+      const double log_search_space_size =
+          impact_recorder_.LogSearchSpaceSize();
+      const int search_depth = solver->SearchDepth();
+      VLOG(2) << "search_depth = " << search_depth
+              << ", log_search_space_size = " << log_search_space_size
+              << ", min_log_search_space = " << min_log_search_space_;
+      if (min_log_search_space_ > log_search_space_size) {
+        min_log_search_space_ = log_search_space_size;
+      } else if (min_log_search_space_ + parameters_.restart_log_size
+                 < log_search_space_size) {
+        VLOG(2) << "Restarting ";
+        min_log_search_space_ = std::numeric_limits<double>::max();
+        solver->RestartSearch();
+      }
+    }
 
     ++heuristic_branch_count_;
     if (heuristic_branch_count_ % parameters_.heuristic_period == 0) {
@@ -687,8 +714,8 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     current_var_index_ = -1;
     current_value_ = 0;
     if (FindVarValue(&current_var_index_, &current_value_)) {
-      return s->MakeAssignVariableValue(vars_[current_var_index_],
-                                        current_value_);
+      return solver->MakeAssignVariableValue(vars_[current_var_index_],
+                                             current_value_);
     } else {
       return NULL;
     }
@@ -746,6 +773,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   ACMRandom random_;
   RunHeuristic runner_;
   int heuristic_branch_count_;
+  double min_log_search_space_;
 };
 }  // namespace
 

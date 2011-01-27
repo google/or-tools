@@ -1741,7 +1741,6 @@ void Solver::RestartSearch() {
   Search* const search = searches_.back();
   CHECK_NE(0, search->sentinel_pushed_);
   if (searches_.size() == 1) {  // top level.
-    CHECK(state_ == AT_SOLUTION || state_ == NO_MORE_SOLUTIONS);
     if (search->sentinel_pushed_ > 1) {
       BacktrackToSentinel(ROOT_NODE_SENTINEL);
     }
