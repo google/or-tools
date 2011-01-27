@@ -1398,6 +1398,7 @@ class Solver {
 #endif
 
   // TODO(user): DEPRECATE API of MakeSearchLog(.., IntVar* var,..).
+
   // ----- Search Log -----
   // The SearchMonitors below will display a periodic search log
   // on LOG(INFO) every branch_count branches explored.

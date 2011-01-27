@@ -283,10 +283,10 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
 // based on default phase parameters.
 class ImpactRecorder {
  public:
-  static const int kLogCacheSize = 1000;
-  static const double kPerfectImpact = 1.0;
-  static const double kFailureImpact = 1.0;
-  static const double kInitFailureImpact = 2.0;
+  static const int kLogCacheSize;
+  static const double kPerfectImpact;
+  static const double kFailureImpact;
+  static const double kInitFailureImpact;
 
   ImpactRecorder(const IntVar* const * vars, int size)
       : domain_watcher_(vars, size, kLogCacheSize),
@@ -486,50 +486,17 @@ class ImpactRecorder {
   DISALLOW_COPY_AND_ASSIGN(ImpactRecorder);
 };
 
+const int ImpactRecorder::kLogCacheSize = 1000;
+const double ImpactRecorder::kPerfectImpact = 1.0;
+const double ImpactRecorder::kFailureImpact = 1.0;
+const double ImpactRecorder::kInitFailureImpact = 2.0;
+
+
 // ---------- ImpactDecisionBuilder ----------
 
 // Default phase decision builder.
 class ImpactDecisionBuilder : public DecisionBuilder {
  public:
-  // ----- Heuristic wrapper -----
-
-  struct HeuristicWrapper {
-    HeuristicWrapper(Solver* const solver,
-                     IntVar* const* vars,
-                     int size,
-                     Solver::IntVarStrategy var_strategy,
-                     Solver::IntValueStrategy value_strategy,
-                     const string& heuristic_name,
-                     int heuristic_runs)
-        : phase(solver->MakePhase(vars, size, var_strategy, value_strategy)),
-          name(heuristic_name),
-          runs(heuristic_runs) {}
-
-    DecisionBuilder* const phase;
-    const string name;
-    const int runs;
-  };
-
-  // ----- heuristic helper ------
-
-  class RunHeuristic : public Decision {
-   public:
-    explicit RunHeuristic(
-        ResultCallback1<bool, Solver*>* update_impact_callback)
-        : update_impact_callback_(update_impact_callback) {}
-      virtual ~RunHeuristic() {}
-      virtual void Apply(Solver* const solver) {
-        if (!update_impact_callback_->Run(solver)) {
-          solver->Fail();
-        }
-      }
-      virtual void Refute(Solver* const solver) {}
-   private:
-    scoped_ptr<ResultCallback1<bool, Solver*> >  update_impact_callback_;
-  };
-
-  // ----- Main method -----
-
   ImpactDecisionBuilder(Solver* const solver,
                         const IntVar* const* vars,
                         int size,
@@ -727,6 +694,45 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     }
   }
  private:
+  // ----- Heuristic wrapper -----
+
+  struct HeuristicWrapper {
+    HeuristicWrapper(Solver* const solver,
+                     IntVar* const* vars,
+                     int size,
+                     Solver::IntVarStrategy var_strategy,
+                     Solver::IntValueStrategy value_strategy,
+                     const string& heuristic_name,
+                     int heuristic_runs)
+        : phase(solver->MakePhase(vars, size, var_strategy, value_strategy)),
+          name(heuristic_name),
+          runs(heuristic_runs) {}
+
+    DecisionBuilder* const phase;
+    const string name;
+    const int runs;
+  };
+
+  // ----- heuristic helper ------
+
+  class RunHeuristic : public Decision {
+   public:
+    explicit RunHeuristic(
+        ResultCallback1<bool, Solver*>* update_impact_callback)
+        : update_impact_callback_(update_impact_callback) {}
+      virtual ~RunHeuristic() {}
+      virtual void Apply(Solver* const solver) {
+        if (!update_impact_callback_->Run(solver)) {
+          solver->Fail();
+        }
+      }
+      virtual void Refute(Solver* const solver) {}
+   private:
+    scoped_ptr<ResultCallback1<bool, Solver*> >  update_impact_callback_;
+  };
+
+  // ----- data members -----
+
   ImpactRecorder impact_recorder_;
   scoped_array<IntVar*> vars_;
   const int size_;
