@@ -516,7 +516,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         runner_(NewPermanentCallback(this,
                                      &ImpactDecisionBuilder::RunHeuristics)),
         heuristic_branch_count_(0),
-        min_log_search_space_(std::numeric_limits<double>::max()) {
+        min_log_search_space_(std::numeric_limits<double>::infinity()) {
     CHECK_GE(size_, 0);
     if (size_ > 0) {
       vars_.reset(new IntVar*[size_]);
@@ -663,7 +663,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
   virtual Decision* Next(Solver* const solver) {
     if (!init_done_) {
-      LOG(INFO) << "Init impact based search phase on  " << size_
+      LOG(INFO) << "Init impact based search phase on " << size_
                 << " variables, initialization splits = "
                 << parameters_.initialization_splits
                 << ", heuristic_period = " << parameters_.heuristic_period
@@ -701,7 +701,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       } else if (min_log_search_space_ + parameters_.restart_log_size
                  < log_search_space_size) {
         VLOG(2) << "Restarting ";
-        min_log_search_space_ = std::numeric_limits<double>::max();
+        min_log_search_space_ = std::numeric_limits<double>::infinity();
         solver->RestartSearch();
       }
     }
@@ -735,8 +735,13 @@ class ImpactDecisionBuilder : public DecisionBuilder {
           name(heuristic_name),
           runs(heuristic_runs) {}
 
+    // The decision builder we are going to use in this dive.
     DecisionBuilder* const phase;
+    // A name for logging purposes.
     const string name;
+    // How many time we will run this particular heuristic in case the
+    // parameter run_all_heuristics is true. This is useful for random
+    // heuristics where it makes sense to run them more than once.
     const int runs;
   };
 

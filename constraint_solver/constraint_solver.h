@@ -227,10 +227,15 @@ struct DefaultPhaseParameters {
   // Seed used to initialize the random part in some heuristics.
   int random_seed;
   // Automatic Restart Size. When diving down, the size of the search
-  // space disminishes. If the current log of the search space is
-  // greater than the the minimal value encountered +
+  // space disminishes. We maintain the minimal log of the size of the search
+  // space with the following behavior:
+  //   - A failure is ignored (no null size).
+  //   - A solution has a size of 1 (and a log of 0).
+  // Then when backtracking, if the current log of the size of the
+  // search space is greater than the minimizal log size recorded +
   // 'restart_log_size', then the search is restarted from scratch. A
-  // parameter < 0 means no restart.
+  // parameter < 0 means no restart. A parameter of 0 indicates that
+  // we restart after each failure.
   double restart_log_size;
 };
 
