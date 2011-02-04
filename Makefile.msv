@@ -228,13 +228,17 @@ graph.lib: $(GRAPH_LIB_OBJS)
 
 SHORTESTPATHS_LIB_OBJS=\
 	objs/bellman_ford.obj \
-	objs/dijkstra.obj
+	objs/dijkstra.obj \
+	objs/shortestpaths.obj
 
 objs/bellman_ford.obj:graph/bellman_ford.cc
 	$(CCC) $(CFLAGS) -c graph/bellman_ford.cc /Foobjs/bellman_ford.obj
 
 objs/dijkstra.obj:graph/dijkstra.cc
 	$(CCC) $(CFLAGS) -c graph/dijkstra.cc /Foobjs/dijkstra.obj
+
+objs/shortestpaths.obj:graph/shortestpaths.cc
+	$(CCC) $(CFLAGS) -c graph/shortestpaths.cc /Foobjs/shortestpaths.obj
 
 shortestpaths.lib: $(SHORTESTPATHS_LIB_OBJS)
 	lib /OUT:shortestpaths.lib $(SHORTESTPATHS_LIB_OBJS)
