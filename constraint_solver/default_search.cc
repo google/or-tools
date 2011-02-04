@@ -739,7 +739,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     DecisionBuilder* const phase;
     // A name for logging purposes.
     const string name;
-    // How many time we will run this particular heuristic in case the
+    // How many times we will run this particular heuristic in case the
     // parameter run_all_heuristics is true. This is useful for random
     // heuristics where it makes sense to run them more than once.
     const int runs;
