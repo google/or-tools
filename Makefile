@@ -80,6 +80,7 @@ CPBINARIES = \
         cvrptw \
 	golomb \
 	magic_square \
+	network_routing \
 	nqueens \
 	tsp
 
@@ -349,6 +350,12 @@ objs/magic_square.o:examples/magic_square.cc
 
 magic_square: $(CPLIBS) $(BASE_LIBS) objs/magic_square.o
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.o $(CPLIBS) $(BASE_LIBS) -o magic_square
+
+objs/network_routing.o:examples/network_routing.cc
+	$(CCC) $(CFLAGS) -c examples/network_routing.cc -o objs/network_routing.o
+
+network_routing: $(CPLIBS) $(BASE_LIBS) $(GRAPH_LIBS) objs/network_routing.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/network_routing.o $(CPLIBS) $(GRAPH_LIBS) $(BASE_LIBS) -o network_routing
 
 objs/nqueens.o: examples/nqueens.cc
 	$(CCC) $(CFLAGS) -c examples/nqueens.cc -o objs/nqueens.o

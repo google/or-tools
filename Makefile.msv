@@ -55,6 +55,7 @@ CPBINARIES= \
           cvrptw.exe \
           golomb.exe \
           magic_square.exe \
+          network_routing.exe \
           nqueens.exe \
           tsp.exe
 
@@ -333,6 +334,12 @@ objs/magic_square.obj:examples/magic_square.cc
 
 magic_square.exe: $(CPLIBS) $(BASE_LIBS) objs/magic_square.obj libgflags.dll
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.obj $(CPLIBS) $(BASE_LIBS) /Femagic_square.exe
+
+objs/network_routing.obj:examples/network_routing.cc
+	$(CCC) $(CFLAGS) -c examples/network_routing.cc /Foobjs/network_routing.obj
+
+network_routing.exe: $(CPLIBS) $(BASE_LIBS) $(GRAPH_LIBS) objs/network_routing.obj libgflags.dll
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/network_routing.obj $(CPLIBS) $(GRAPH_LIBS) $(BASE_LIBS) /Fenetwork_routing.exe
 
 objs/nqueens.obj: examples/nqueens.cc
 	$(CCC) $(CFLAGS) -c examples/nqueens.cc /Foobjs/nqueens.obj
