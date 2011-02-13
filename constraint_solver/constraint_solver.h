@@ -1759,6 +1759,14 @@ class Solver {
   LocalSearchOperator* RandomConcatenateOperators(
       const vector<LocalSearchOperator*>& ops);
 
+  // Create a local search operator that wraps another local search
+  // operator and limits the number of neighbors explored (i.e. calls
+  // to MakeNextNeighbor). When this limit is reached,
+  // MakeNextNeighbor() returns false. The counter is cleared when
+  // Start() is called.
+  LocalSearchOperator* MakeNeighborhoodLimit(LocalSearchOperator* const op,
+                                             int64 limit);
+
   // Local Search decision builders factories.
   // Local search is used to improve a given solution. This initial solution
   // can be specified either by an Assignment or by a DecisionBulder, and the

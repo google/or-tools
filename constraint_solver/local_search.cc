@@ -1494,6 +1494,38 @@ void PathLNS::DeactivateUnactives() {
   }
 }
 
+// ----- Limit the number of neighborhoods explored -----
+
+class NeighborhoodLimit : public LocalSearchOperator {
+ public:
+  NeighborhoodLimit(LocalSearchOperator* const op, int64 limit)
+      : operator_(op), limit_(limit), run_(0) {
+    CHECK_NOTNULL(op);
+    CHECK_GT(limit, 0);
+  }
+
+  virtual void Start(const Assignment* assignment) {
+    run_ = 0;
+    operator_->Start(assignment);
+  }
+
+  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
+    if (++run_ > limit_) {
+      return false;
+    }
+    return operator_->MakeNextNeighbor(delta, deltadelta);
+  }
+ private:
+  LocalSearchOperator* const operator_;
+  const int64 limit_;
+  int64 run_;
+};
+
+LocalSearchOperator* Solver::MakeNeighborhoodLimit(
+    LocalSearchOperator* const op, int64 limit) {
+  return RevAlloc(new NeighborhoodLimit(op, limit));
+}
+
 // ----- Concatenation of operators -----
 
 class CompoundOperator : public LocalSearchOperator {
