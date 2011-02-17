@@ -1499,26 +1499,27 @@ void PathLNS::DeactivateUnactives() {
 class NeighborhoodLimit : public LocalSearchOperator {
  public:
   NeighborhoodLimit(LocalSearchOperator* const op, int64 limit)
-      : operator_(op), limit_(limit), run_(0) {
+      : operator_(op), limit_(limit), next_neighborhood_calls_(0) {
     CHECK_NOTNULL(op);
     CHECK_GT(limit, 0);
   }
 
   virtual void Start(const Assignment* assignment) {
-    run_ = 0;
+    next_neighborhood_calls_ = 0;
     operator_->Start(assignment);
   }
 
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
-    if (++run_ > limit_) {
+    if (next_neighborhood_calls_ >= limit_) {
       return false;
     }
+    ++next_neighborhood_calls_;
     return operator_->MakeNextNeighbor(delta, deltadelta);
   }
  private:
   LocalSearchOperator* const operator_;
   const int64 limit_;
-  int64 run_;
+  int64 next_neighborhood_calls_;
 };
 
 LocalSearchOperator* Solver::MakeNeighborhoodLimit(

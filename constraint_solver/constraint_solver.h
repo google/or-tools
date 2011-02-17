@@ -1026,7 +1026,7 @@ class Solver {
 
   // ----- scheduling objects -----
 
-  // Create an interval var with a fixed duration. The duration must
+  // Creates an interval var with a fixed duration. The duration must
   // be greater than 0. If optional is true, then the interval can be
   // performed or unperformed. If optional is false, then the interval
   // is always performed.
@@ -1047,12 +1047,12 @@ class Solver {
                                          vector<IntervalVar*>* array);
 
 
-  // Create an fixed and performed interval.
+  // Creates an fixed and performed interval.
   IntervalVar* MakeFixedInterval(int64 start,
                                  int64 duration,
                                  const string& name);
 
-  // Create an interval var that is the mirror image of the given one, that is,
+  // Creates an interval var that is the mirror image of the given one, that is,
   // the interval var obtained by reversing the axis.
   IntervalVar* MakeMirrorInterval(IntervalVar* const interval_var);
 
@@ -1202,27 +1202,27 @@ class Solver {
 
   // ----- Objective -----
 
-  // Create a minimization objective.
+  // Creates a minimization objective.
   OptimizeVar* MakeMinimize(IntVar* const v, int64 step);
 
-  // Create a maximization objective.
+  // Creates a maximization objective.
   OptimizeVar* MakeMaximize(IntVar* const v, int64 step);
 
-  // Create a objective with a given sense (true = maximization).
+  // Creates a objective with a given sense (true = maximization).
   OptimizeVar* MakeOptimize(bool maximize, IntVar* const v, int64 step);
 
-  // Create a minimization weighted objective. The actual objective is
+  // Creates a minimization weighted objective. The actual objective is
   // scalar_prod(vars, weights).
   OptimizeVar* MakeWeightedMinimize(const vector<IntVar*>& vars,
                                     const vector<int64>& weights,
                                     int64 step);
 
-  // Create a maximization weigthed objective.
+  // Creates a maximization weigthed objective.
   OptimizeVar* MakeWeightedMaximize(const vector<IntVar*>& vars,
                                     const vector<int64>& weights,
                                     int64 step);
 
-  // Create a weighted objective with a given sense (true = maximization).
+  // Creates a weighted objective with a given sense (true = maximization).
   OptimizeVar* MakeWeightedOptimize(bool maximize,
                                     const vector<IntVar*>& vars,
                                     const vector<int64>& weights,
@@ -1231,7 +1231,7 @@ class Solver {
   // ----- Meta-heuristics -----
   // Search monitors which try to get the search out of local optima.
 
-  // Create a Tabu Search monitor.
+  // Creates a Tabu Search monitor.
   // In the context of local search the behavior is similar to MakeOptimize(),
   // creating an objective in a given sense. The behavior differs once a local
   // optimum is reached: thereafter solutions which degrade the value of the
@@ -1263,14 +1263,14 @@ class Solver {
                                 int64 forbid_tenure,
                                 double tabu_factor);
 
-  // Create a Simulated Annealing monitor.
+  // Creates a Simulated Annealing monitor.
   // TODO(user): document behavior
   SearchMonitor* MakeSimulatedAnnealing(bool maximize,
                                         IntVar* const v,
                                         int64 step,
                                         int64 initial_temperature);
 
-  // Create a Guided Local Search monitor.
+  // Creates a Guided Local Search monitor.
   // Description here: http://en.wikipedia.org/wiki/Guided_Local_Search
   SearchMonitor* MakeGuidedLocalSearch(bool maximize,
                                        IntVar* const objective,
@@ -1437,7 +1437,7 @@ class Solver {
 
   SearchMonitor* MakeSearchLog(int branch_count, OptimizeVar* const objective);
 
-  // Create a search monitor that will also print the result of the
+  // Creates a search monitor that will also print the result of the
   // display callback.
   SearchMonitor* MakeSearchLog(int branch_count,
                                OptimizeVar* const objective,
@@ -1446,7 +1446,7 @@ class Solver {
 
   // ----- Search Trace ------
 
-  // Create a search monitor that will trace precisely the behavior of the
+  // Creates a search monitor that will trace precisely the behavior of the
   // search. Use this only for low level debugging.
   SearchMonitor* MakeSearchTrace(const string& prefix);
 
@@ -1759,11 +1759,11 @@ class Solver {
   LocalSearchOperator* RandomConcatenateOperators(
       const vector<LocalSearchOperator*>& ops);
 
-  // Create a local search operator that wraps another local search
+  // Creates a local search operator that wraps another local search
   // operator and limits the number of neighbors explored (i.e. calls
-  // to MakeNextNeighbor). When this limit is reached,
-  // MakeNextNeighbor() returns false. The counter is cleared when
-  // Start() is called.
+  // to MakeNextNeighbor from the current solution (between two calls
+  // to Start()). When this limit is reached, MakeNextNeighbor()
+  // returns false. The counter is cleared when Start() is called.
   LocalSearchOperator* MakeNeighborhoodLimit(LocalSearchOperator* const op,
                                              int64 limit);
 
