@@ -1634,6 +1634,130 @@ class SumBooleanEqualToOne : public BaseSumBooleanConstraint {
   int active_vars_;
 };
 
+// ----- Sum of Boolean Equal To Var -----
+
+class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
+ public:
+  SumBooleanEqualToVar(Solver* const s,
+                       IntVar* const* bool_vars,
+                       int size,
+                       IntVar* const sum_var)
+      : BaseSumBooleanConstraint(s, bool_vars, size),
+        num_possible_true_vars_(0),
+        num_always_true_vars_(0),
+        sum_var_(sum_var) {}
+
+  virtual ~SumBooleanEqualToVar() {}
+
+  virtual void Post() {
+    for (int i = 0; i < size_; ++i) {
+      Demon* const u = MakeConstraintDemon1(solver(),
+                                            this,
+                                            &SumBooleanEqualToVar::Update,
+                                            "Update",
+                                            i);
+      vars_[i]->WhenBound(u);
+    }
+    if (!sum_var_->Bound()) {
+      Demon* const u = MakeConstraintDemon0(solver(),
+                                            this,
+                                            &SumBooleanEqualToVar::UpdateVar,
+                                            "UpdateVar");
+      sum_var_->WhenRange(u);
+    }
+  }
+
+  virtual void InitialPropagate() {
+    int num_always_true_vars = 0;
+    int possible_true = 0;
+    for (int i = 0; i < size_; ++i) {
+      const IntVar* const var = vars_[i];
+      if (var->Min() == 1) {
+        num_always_true_vars++;
+      }
+      if (var->Max() == 1) {
+        possible_true++;
+      }
+    }
+    sum_var_->SetRange(num_always_true_vars, possible_true);
+    const int64 var_min = sum_var_->Min();
+    const int64 var_max = sum_var_->Max();
+    if (num_always_true_vars == var_max && possible_true > var_max) {
+      PushAllUnboundToZero();
+    } else if (possible_true == var_min && num_always_true_vars < var_min) {
+      PushAllUnboundToOne();
+    } else {
+      solver()->SaveAndSetValue(&num_possible_true_vars_, possible_true);
+      solver()->SaveAndSetValue(&num_always_true_vars_, num_always_true_vars);
+    }
+  }
+
+  void UpdateVar() {
+    if (num_possible_true_vars_ == sum_var_->Min()) {
+      PushAllUnboundToOne();
+    } else if (num_always_true_vars_ == sum_var_->Max()) {
+      PushAllUnboundToZero();
+    }
+  }
+
+  void Update(int index) {
+    if (!inactive_) {
+      DCHECK(vars_[index]->Bound());
+      const int64 value = vars_[index]->Min();  // Faster than Value().
+      if (value == 0) {
+        solver()->SaveAndAdd(&num_possible_true_vars_, -1);
+        if (num_possible_true_vars_ == sum_var_->Min()) {
+          PushAllUnboundToOne();
+        }
+      } else {
+        DCHECK_EQ(1, value);
+        solver()->SaveAndAdd(&num_always_true_vars_, 1);
+        if (num_always_true_vars_ == sum_var_->Max()) {
+          PushAllUnboundToZero();
+        }
+      }
+    }
+  }
+
+  void PushAllUnboundToZero() {
+    int64 counter = 0;
+    solver()->SaveAndSetValue(&inactive_, 1);
+    for (int i = 0; i < size_; ++i) {
+      if (vars_[i]->Min() == 0) {
+        vars_[i]->SetValue(0);
+      } else {
+        counter++;
+      }
+    }
+    if (counter < sum_var_->Min() || counter > sum_var_->Max()) {
+      solver()->Fail();
+    }
+  }
+
+  void PushAllUnboundToOne() {
+    int64 counter = 0;
+    solver()->SaveAndSetValue(&inactive_, 1);
+    for (int i = 0; i < size_; ++i) {
+      if (vars_[i]->Max() == 1) {
+        vars_[i]->SetValue(1);
+        counter++;
+      }
+    }
+    if (counter < sum_var_->Min() || counter > sum_var_->Max()) {
+      solver()->Fail();
+    }
+  }
+
+  virtual string DebugString() const {
+    return DebugStringInternal("SumBooleanEqualToVar");
+  }
+
+ private:
+  int num_possible_true_vars_;
+  int num_always_true_vars_;
+  IntVar* const sum_var_;
+};
+
 // ---------- ScalProd ----------
 
 // ----- Boolean Scal Prod -----
@@ -2333,12 +2457,10 @@ Constraint* Solver::MakeSumEquality(IntVar* const* vars,
     } else if (cst < 0 || cst > size) {
       return MakeFalseConstraint();
     } else {
-      // Map to PositiveBooleanScalProdEqCst
-      scoped_array<int> ones(new int[size]);
-      for (int i = 0; i < size; ++i) {
-        ones[i] = 1;
-      }
-      return MakeScalProdEquality(vars, size, ones.get(), cst);
+      return RevAlloc(new SumBooleanEqualToVar(this,
+                                               vars,
+                                               size,
+                                               MakeIntConst(cst)));
     }
   } else {
     return MakeEquality(MakeSum(vars, size), cst);
