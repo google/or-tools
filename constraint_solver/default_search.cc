@@ -128,6 +128,7 @@ class InitVarImpacts : public DecisionBuilder {
   void set_update_impact_callback(Callback2<int, int64>* const callback) {
     update_impact_callback_ = callback;
   }
+
  private:
   // ----- helper decision -----
   class AssignCallFail : public Decision {
@@ -162,7 +163,7 @@ class InitVarImpacts : public DecisionBuilder {
   int var_index_;
   vector<int64> active_values_;
   int value_index_;
-  scoped_ptr<Closure> update_impact_closure_;
+  const scoped_ptr<Closure> update_impact_closure_;
   AssignCallFail updater_;
 };
 
@@ -339,17 +340,11 @@ class ImpactRecorder {
 
   void FirstRun(Solver* const solver, int64 splits) {
     current_log_space_ = domain_watcher_.LogSearchSpaceSize();
-    LOG(INFO) << "  - initial log2(SearchSpace) = " << current_log_space_;
+    VLOG(1) << "  - initial log2(SearchSpace) = " << current_log_space_;
     const int64 init_time = solver->wall_time();
-    InitVarImpacts without_splits;
-    InitVarImpactsWithSplits with_splits(splits);
-    vector<int64> removed_values;
     int64 removed_counter = 0;
-    scoped_ptr<Callback2<int, int64> > update_impact_callback(
-        NewPermanentCallback(this, &ImpactRecorder::InitImpact));
-    without_splits.set_update_impact_callback(update_impact_callback.get());
-    with_splits.set_update_impact_callback(update_impact_callback.get());
-
+    FirstRunVariableContainers* container = solver->RevAlloc(
+        new FirstRunVariableContainers(this, splits));
     // Loop on the variables, scan domains and initialize impacts.
     for (int var_index = 0; var_index < size_; ++var_index) {
       IntVar* const var = vars_[var_index];
@@ -360,13 +355,17 @@ class ImpactRecorder {
       DecisionBuilder* init_decision_builder = NULL;
       if (var->Max() - var->Min() < splits) {
         // The domain is small enough, we scan it completely.
-        without_splits.Init(var, iterator, var_index);
-        init_decision_builder = &without_splits;
+        container->without_split()->set_update_impact_callback(
+            container->update_impact_callback());
+        container->without_split()->Init(var, iterator, var_index);
+        init_decision_builder = container->without_split();
       } else {
         // The domain is too big, we scan it in initialization_splits
         // intervals.
-        with_splits.Init(var, iterator, var_index);
-        init_decision_builder = &with_splits;
+        container->with_splits()->set_update_impact_callback(
+            container->update_impact_callback());
+        container->with_splits()->Init(var, iterator, var_index);
+        init_decision_builder = container->with_splits();
       }
       // Reset the number of impacts initialized.
       init_count_ = 0;
@@ -377,18 +376,18 @@ class ImpactRecorder {
       // As the iterator is not stable w.r.t. deletion, we need to store
       // removed values in an intermediate vector.
       if (init_count_ != var->Size()) {
-        removed_values.clear();
+        container->ClearRemovedValues();
         for (iterator->Init(); iterator->Ok(); iterator->Next()) {
           const int64 value = iterator->Value();
           const int64 value_index = value - original_min_[var_index];
           if (impacts_[var_index][value_index] == kInitFailureImpact) {
-            removed_values.push_back(value);
+            container->PushBackRemovedValue(value);
           }
         }
-        CHECK(!removed_values.empty());
-        removed_counter += removed_values.size();
+        CHECK(container->HasRemovedValues());
+        removed_counter += container->NumRemovedValues();
         const double old_log = domain_watcher_.Log2(var->Size());
-        var->RemoveValues(removed_values);
+        var->RemoveValues(container->removed_values());
         current_log_space_ += domain_watcher_.Log2(var->Size()) - old_log;
       }
     }
@@ -475,6 +474,35 @@ class ImpactRecorder {
     }
   }
  private:
+  // A container for the variables needed in FirstRun that is reversibly
+  // allocable.
+  class FirstRunVariableContainers : public BaseObject {
+   public:
+    FirstRunVariableContainers(ImpactRecorder* impact_recorder, int64 splits)
+        : update_impact_callback_(
+            NewPermanentCallback(impact_recorder,
+                                 &ImpactRecorder::InitImpact)),
+          removed_values_(),
+          without_splits_(),
+          with_splits_(splits) {}
+    Callback2<int, int64>* update_impact_callback() {
+      return update_impact_callback_.get();
+    }
+    void PushBackRemovedValue(int64 value) { removed_values_.push_back(value); }
+    bool HasRemovedValues() const { return !removed_values_.empty(); }
+    void ClearRemovedValues() { removed_values_.clear(); }
+    size_t NumRemovedValues() const { return removed_values_.size(); }
+    const vector<int64>& removed_values() const { return removed_values_; }
+    InitVarImpacts* without_split() { return &without_splits_; }
+    InitVarImpactsWithSplits* with_splits() { return &with_splits_; }
+
+   private:
+    scoped_ptr<Callback2<int, int64> > update_impact_callback_;
+    vector<int64> removed_values_;
+    InitVarImpacts without_splits_;
+    InitVarImpactsWithSplits with_splits_;
+  };
+
   DomainWatcher domain_watcher_;
   scoped_array<IntVar*> vars_;
   const int size_;
