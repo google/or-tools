@@ -1019,6 +1019,11 @@ void Search::Clear() {
 }
 
 void Search::EnterSearch() {
+  // We clean the solution counter when entering the search instead of
+  // when clearing it to have the information persist outside of the
+  // top level search.
+  solution_counter_ = 0;
+
   for (vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
@@ -1250,8 +1255,7 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       greater_equal_var_cst_cache_(NULL),
       less_equal_var_cst_cache_(NULL),
       fail_decision_(new FailDecision()),
-      constraints_(0),
-      solution_found_(false) {
+      constraints_(0) {
   Init();
 }
 
@@ -1284,8 +1288,7 @@ Solver::Solver(const string& name)
       greater_equal_var_cst_cache_(NULL),
       less_equal_var_cst_cache_(NULL),
       fail_decision_(new FailDecision()),
-      constraints_(0),
-      solution_found_(false) {
+      constraints_(0) {
   Init();
 }
 
@@ -1593,8 +1596,9 @@ bool Solver::Solve(DecisionBuilder* const db,
   NewSearch(db, monitors, size);
   searches_.back()->set_created_by_solve(true);  // Overwrites default.
   NextSolution();
+  const bool solution_found = searches_.back()->solution_counter() > 0;
   EndSearch();
-  return solution_found_;
+  return solution_found;
 }
 
 void Solver::NewSearch(DecisionBuilder* const db,
@@ -1663,7 +1667,6 @@ void Solver::NewSearch(DecisionBuilder* const db,
 
   BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
   state_ = OUTSIDE_SEARCH;
-  solution_found_ = false;
 
   // Push monitors and enter search.
   for (int i = 0; i < size; ++i) {
@@ -1961,9 +1964,8 @@ bool Solver::NextSolution() {
           break;
         }
       }
-      search->IncrementSolutionCounter();
       if (search->AcceptSolution()) {
-        solution_found_ = true;
+        search->IncrementSolutionCounter();
         if (!search->AtSolution() || !CurrentlyInSolve()) {
           result = true;
           finish = true;

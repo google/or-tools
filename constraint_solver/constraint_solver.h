@@ -2077,8 +2077,6 @@ class Solver {
   scoped_ptr<Decision> fail_decision_;
   int constraints_;
 
-  bool solution_found_;
-
   DISALLOW_COPY_AND_ASSIGN(Solver);
 };
 
