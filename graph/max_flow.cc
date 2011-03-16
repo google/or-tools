@@ -37,6 +37,7 @@ MaxFlow::MaxFlow(const StarGraph& graph,
   node_potential_.Reserve(1, max_num_nodes);
   node_potential_.Assign(0);
   residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs);
+  residual_arc_capacity_.Assign(0);
   first_admissible_arc_.Reserve(1, max_num_nodes);
   CHECK(graph_.CheckNodeValidity(source_));
   CHECK(graph_.CheckNodeValidity(sink_));

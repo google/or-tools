@@ -154,5 +154,4 @@ using std::hash_map;
 using std::hash_set;
 #endif
 #endif  // SWIG
-
 #endif  // BASE_UTIL_H_

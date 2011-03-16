@@ -42,8 +42,10 @@ MinCostFlow::MinCostFlow(const StarGraph& graph)
   node_potential_.Reserve(1, max_num_nodes);
   node_potential_.Assign(0);
   residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs);
+  residual_arc_capacity_.Assign(0);
   first_admissible_arc_.Reserve(1, max_num_nodes);
   scaled_arc_unit_cost_.Reserve(-max_num_arcs, max_num_arcs);
+  scaled_arc_unit_cost_.Assign(0);
 }
 
 bool MinCostFlow::CheckInputConsistency() const {

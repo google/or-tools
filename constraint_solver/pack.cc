@@ -205,7 +205,7 @@ void Pack::InitialPropagate() {
         data->PushUnassigned(var_index);
       }
     } else {
-      DCHECK_GT(bins_, var->Min());
+            DCHECK_GT(bins_, var->Min());
       if (var->Max() < bins_) {
         data->PushAssigned(var_index);
       }
