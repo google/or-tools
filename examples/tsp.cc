@@ -25,6 +25,11 @@
 // (forbidden arcs).
 
 #include "base/callback.h"
+#include "base/commandlineflags.h"
+#include "base/commandlineflags.h"
+#include "base/integral_types.h"
+#include "base/scoped_ptr.h"
+#include "base/join.h"
 #include "constraint_solver/routing.h"
 #include "base/random.h"
 
@@ -33,6 +38,7 @@ using operations_research::RoutingModel;
 using operations_research::ACMRandom;
 using operations_research::StrCat;
 using operations_research::scoped_array;
+
 
 DEFINE_int32(tsp_size, 10, "Size of Traveling Salesman Problem instance.");
 DEFINE_bool(tsp_use_random_matrix, true, "Use random cost matrix.");

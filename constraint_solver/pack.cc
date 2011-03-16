@@ -165,13 +165,34 @@ void Pack::PropagateDelayed() {
   }
 }
 
+// A reversibly-allocable container for the data needed in
+// Pack::InitialPropagate()
+namespace {
+class InitialPropagateData : public BaseObject {
+ public:
+  explicit InitialPropagateData(size_t num_bins)
+      : BaseObject(), undecided_(num_bins) {}
+  void PushAssigned(int64 index) { assigned_.push_back(index); }
+  void PushUnassigned(int64 index) { unassigned_.push_back(index); }
+  void PushUndecided(int64 bin, int64 index) {
+    undecided_.at(bin).push_back(index);
+  }
+  const vector<int64>& undecided(int64 bin) const { return undecided_.at(bin); }
+  const vector<int64>& assigned() const { return assigned_; }
+  const vector<int64>& unassigned() const { return unassigned_; }
+
+ private:
+  vector<vector<int64> > undecided_;
+  vector<int64> unassigned_;
+  vector<int64> assigned_;
+};
+}  // namespace
+
 void Pack::InitialPropagate() {
   Solver* const s = solver();
   in_process_ = true;
-  stamp_ = solver()->fail_stamp();
-  vector<vector<int64> > undecided(bins_);
-  vector<int64> unassigned;
-  vector<int64> assigned;
+  stamp_ = s->fail_stamp();
+  InitialPropagateData* data = s->RevAlloc(new InitialPropagateData(bins_));
   for (int var_index = 0; var_index < vsize_; ++var_index) {
     IntVar* const var = vars_[var_index];
     var->SetRange(0, bins_);  // bins_ -> item is not assigned to a bin.
@@ -179,16 +200,14 @@ void Pack::InitialPropagate() {
       const int64 value = var->Min();
       if (value < bins_) {
         forced_[value].push_back(var_index);
-        assigned.push_back(var_index);
+        data->PushAssigned(var_index);
       } else {
-        unassigned.push_back(var_index);
+        data->PushUnassigned(var_index);
       }
     } else {
+      DCHECK_GT(bins_, var->Min());
       if (var->Max() < bins_) {
-        assigned.push_back(var_index);
-      }
-      if (var->Min() == bins_) {  // if > bins_, then fail.
-        unassigned.push_back(var_index);
+        data->PushAssigned(var_index);
       }
       scoped_ptr<IntVarIterator> it(var->MakeDomainIterator(false));
       for (it->Init(); it->Ok(); it->Next()) {
@@ -196,7 +215,7 @@ void Pack::InitialPropagate() {
         if (value >= 0 && value <= bins_) {
           unprocessed_.SetToOne(s, value, var_index);
           if (value != bins_) {
-            undecided[value].push_back(var_index);
+            data->PushUndecided(value, var_index);
           }
         }
       }
@@ -206,13 +225,15 @@ void Pack::InitialPropagate() {
     for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
       dims_[dim_index]->InitialPropagate(bin_index,
                                          forced_[bin_index],
-                                         undecided[bin_index]);
+                                         data->undecided(bin_index));
     }
   }
   for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
-    dims_[dim_index]->InitialPropagateUnassigned(assigned, unassigned);
+    dims_[dim_index]->InitialPropagateUnassigned(data->assigned(),
+                                                 data->unassigned());
     dims_[dim_index]->EndInitialPropagate();
   }
+
   PropagateDelayed();
   ClearAll();
 }

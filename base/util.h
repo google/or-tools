@@ -48,9 +48,6 @@ namespace operations_research {
 #endif
 
 #include "base/basictypes.h"
-#include "base/macros.h"
-#include "base/logging.h"
-#include "base/timer.h"
 
 namespace operations_research {
 static inline void mix(uint32& a, uint32& b, uint32& c) {     // 32bit version
@@ -157,11 +154,5 @@ using std::hash_map;
 using std::hash_set;
 #endif
 #endif  // SWIG
-
-namespace operations_research {
-// Returns the memory usage of the process.
-int64 GetProcessMemoryUsage();
-}  // namespace operations_research
-
 
 #endif  // BASE_UTIL_H_

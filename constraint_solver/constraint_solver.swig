@@ -234,7 +234,7 @@ class PyDecisionBuilder(object):
 %rename (AllowedAssignments) MakeAllowedAssignments;
 %rename (AssignVariableValue) MakeAssignVariableValue;
 %rename (AssignVariableValueOrFail) MakeAssignVariableValueOrFail;
-%rename (AssignVariableValues) MakeAssignVariableValues;
+%rename (AssignVariablesValues) MakeAssignVariablesValues;
 %rename (Assignment) MakeAssignment;
 %rename (BestValueSolutionCollector) MakeBestValueSolutionCollector;
 %rename (BetweenCt) MakeBetweenCt;
@@ -287,18 +287,20 @@ class PyDecisionBuilder(object):
 %rename (MemberCt) MakeMemberCt;
 %rename (Min) MakeMin;
 %rename (Minimize) MakeMinimize;
+%rename (NeighborhoodLimit) MakeNeighborhoodLimit;
 %rename (NoCycle) MakeNoCycle;
 %rename (Operator) MakeOperator;
-%rename (RandomLNSOperator) MakeRandomLNSOperator;
 %rename (Optimize) MakeOptimize;
 %rename (Pack) MakePack;
 %rename (PathCumul) MakePathCumul;
 %rename (Phase) MakePhase;
+%rename (RandomLNSOperator) MakeRandomLNSOperator;
 %rename (RestoreAssignment) MakeRestoreAssignment;
 %rename (ScalProd) MakeScalProd;
 %rename (ScalProdEquality) MakeScalProdEquality;
 %rename (ScalProdGreaterOrEqual) MakeScalProdGreaterOrEqual;
 %rename (ScalProdLessOrEqual) MakeScalProdLessOrEqual;
+%rename (ScheduleOrPostpone) MakeScheduleOrPostpone;
 %rename (SearchLog) MakeSearchLog;
 %rename (SearchTrace) MakeSearchTrace;
 %rename (SemiContinuousExpr) MakeSemiContinuousExpr;
@@ -317,6 +319,11 @@ class PyDecisionBuilder(object):
 %rename (TransitionConstraint) MakeTransitionConstraint;
 %rename (TreeMonitor) MakeTreeMonitor;
 %rename (TrueConstraint) MakeTrueConstraint;
+%rename (TryRankFirst) MakeTryRankFirst;
+%rename (WeightedMaximize) MakeWeightedMaximize;
+%rename (WeightedMinimize) MakeWeightedMinimize;
+%rename (WeightedOptimize) MakeWeightedOptimize;
+
 
 namespace operations_research {
 %typemap(in) IntVar* const {
@@ -1171,9 +1178,25 @@ namespace operations_research {
 #endif  // SWIGPYTHON
 
 #if defined(SWIGJAVA)
+%module(directors="1") operations_research;
+%feature("director") DecisionBuilder;
+%feature("director") Decision;
+%feature("director") SearchMonitor;
+%feature("director") Action;
+%feature("director") BaseLns;
+
 %{
+#include <setjmp.h>
+
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+
+struct FailureProtect {
+  jmp_buf exception_buffer;
+  void JumpBack() {
+    longjmp(exception_buffer, 1);
+  }
+};
 %}
 
 %ignore Solver::MakeScalProd(IntVar* const* vars,
@@ -1207,100 +1230,324 @@ namespace operations_research {
                                       int size,
                                       int number_of_variables,
                                       int32 seed);
+%ignore Solver::MakeAllowedAssignments(const IntVar* const * vars,
+                                       const int64* const * tuples,
+                                       int tuple_count,
+                                       int arity);
 
-%rename (addConstraint) AddConstraint;
-%rename (makeAllDifferent) MakeAllDifferent;
-%rename (makeAllSolutionCollector) MakeAllSolutionCollector;
-%rename (makeAllowedAssignment) MakeAllowedAssignments;
-%rename (makeAssignVariableValue) MakeAssignVariableValue;
-%rename (makeAssignVariableValues) MakeAssignVariableValues;
-%rename (makeAssignment) MakeAssignment;
-%rename (makeBestValueSolutionCollector) MakeBestValueSolutionCollector;
-%rename (makeBetweenCt) MakeBetweenCt;
-%rename (makeBoolVar) MakeBoolVar;
-%rename (makeConstantRestart) MakeConstantRestart;
-%rename (makeConvexPiecewiseExpr) MakeConvexPiecewiseExpr;
-%rename (makeCount) MakeCount;
-%rename (makeCumulative) MakeCumulative;
-%rename (makeCustomLimit) MakeCustomLimit;
-%rename (makeDecisionBuilderFromAssignment) MakeDecisionBuilderFromAssignment;
-%rename (makeDistribute) MakeDistribute;
-%rename (makeElement) MakeElement;
-%rename (makeFailDecision) MakeFailDecision;
-%rename (makeFalseConstraint) MakeFalseConstraint;
-%rename (makeFirstSolutionCollector) MakeFirstSolutionCollector;
-%rename (makeFixedDurationIntervalVar) MakeFixedDurationIntervalVar;
-%rename (makeFixedInterval) MakeFixedInterval;
-%rename (makeIntConst) MakeIntConst;
-%rename (makeIntVar) MakeIntVar;
-%rename (makeIntervalVarRelation) MakeIntervalVarRelation;
-%rename (makeIsBetweenCt) MakeIsBetweenCt;
-%rename (makeIsDifferentCstCt) MakeIsDifferentCstCt;
-%rename (makeIsDifferentCstVar) MakeIsDifferentCstVar;
-%rename (makeIsDifferentCstCt) MakeIsDifferentCt;
-%rename (makeIsDifferentCstVar) MakeIsDifferentVar;
-%rename (makeIsEqualCstCt) MakeIsEqualCstCt;
-%rename (makeIsEqualCstVar) MakeIsEqualCstVar;
-%rename (makeIsEqualVar) MakeIsEqualCt;
-%rename (makeIsEqualVar) MakeIsEqualVar;
-%rename (makeIsGreaterCstCt) MakeIsGreaterCstCt;
-%rename (makeIsGreaterCstVar) MakeIsGreaterCstVar;
-%rename (makeIsGreaterOrEqualCstCt) MakeIsGreaterOrEqualCstCt;
-%rename (makeIsGreaterOrEqualCstVar) MakeIsGreaterOrEqualCstVar;
-%rename (makeIsLessCstCt) MakeIsLessCstCt;
-%rename (makeIsLessCstVar) MakeIsLessCstVar;
-%rename (makeIsLessOrEqualCstCt) MakeIsLessOrEqualCstCt;
-%rename (makeIsLessOrEqualCstVar) MakeIsLessOrEqualCstVar;
-%rename (makeIsMemberCt) MakeIsMemberCt;
-%rename (makeIsMemberVar) MakeIsMemberVar;
-%rename (makeLastSolutionCollector) MakeLastSolutionCollector;
-%rename (makeLimit) MakeLimit;
-%rename (makeLocalSearchObjectiveFilter) MakeLocalSearchObjectiveFilter;
-%rename (makeLocalSearchPhase) MakeLocalSearchPhase;
-%rename (makeLocalSearchPhaseParameters) MakeLocalSearchPhaseParameters;
-%rename (makeLubyRestart) MakeLubyRestart;
-%rename (makeMapDomain) MakeMapDomain;
-%rename (makeMax) MakeMax;
-%rename (makeMaximize) MakeMaximize;
-%rename (makeMemberCt) MakeMemberCt;
-%rename (makeMin) MakeMin;
-%rename (makeMinimize) MakeMinimize;
-%rename (makeNoCycle) MakeNoCycle;
-%rename (makeOperator) MakeOperator;
-%rename (makeRandomLNSOperator) MakeRandomLNSOperator;
-%rename (makeOptimize) MakeOptimize;
-%rename (makePack) MakePack;
-%rename (makePathCumul) MakePathCumul;
-%rename (makePhase) MakePhase;
-%rename (makeRestoreAssignment) MakeRestoreAssignment;
-%rename (makeScalProd) MakeScalProd;
-%rename (makeScalProdEquality) MakeScalProdEquality;
-%rename (makeScalProdGreaterOrEqual) MakeScalProdGreaterOrEqual;
-%rename (makeScalProdLessOrEqual) MakeScalProdLessOrEqual;
-%rename (makeSearchLog) MakeSearchLog;
-%rename (makeSearchTrace) MakeSearchTrace;
-%rename (makeSemiContinuousExpr) MakeSemiContinuousExpr;
-%rename (makeSequence) MakeSequence;
-%rename (makeSimulatedAnnealing) MakeSimulatedAnnealing;
-%rename (makeSolveOnce) MakeSolveOnce;
-%rename (makeSplitVariableDomain) MakeSplitVariableDomain;
-%rename (makeStoreAssignment) MakeStoreAssignment;
-%rename (makeSum) MakeSum;
-%rename (makeSumEquality) MakeSumEquality;
-%rename (makeSumGreaterOrEqual) MakeSumGreaterOrEqual;
-%rename (makeSumLessOrEqual) MakeSumLessOrEqual;
-%rename (makeSymmetryManager) MakeSymmetryManager;
-%rename (makeTabuSearch) MakeTabuSearch;
-%rename (makeTemporalDisjunction) MakeTemporalDisjunction;
-%rename (makeTrueConstraint) MakeTrueConstraint;
-%rename (makeTreeMonitor) MakeTreeMonitor;
-%rename (makeGuidedLocalSearch) MakeGuidedLocalSearch;
-%rename (value) *::Value;
-%rename (min) *::Min;
+%ignore operations_research::Solver::MakeIntVarArray;
+%ignore operations_research::Solver::MakeBoolVarArray;
+%ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
+
+%rename (addBacktrackAction) operations_research::Solver::AddBacktrackAction;
+%rename (addConstraint) operations_research::Solver::AddConstraint;
+%rename (addFailHook) operations_research::Solver::AddFailHook;
+%rename (checkAssignment) operations_research::Solver::CheckAssignment;
+%rename (compose) operations_research::Solver::Compose;
+%rename (concatenateOperators) operations_research::Solver::ConcatenateOperators;
+%rename (endSearch) operations_research::Solver::EndSearch;
+%rename (exportProfilingOverview) operations_research::Solver::ExportProfilingOverview;
+%rename (getTime) operations_research::Solver::GetTime;
+%rename (makeAbs) operations_research::Solver::MakeAbs;
+%rename (makeAllDifferent) operations_research::Solver::MakeAllDifferent;
+%rename (makeAllSolutionCollector) operations_research::Solver::MakeAllSolutionCollector;
+%rename (makeAllowedAssignment) operations_research::Solver::MakeAllowedAssignments;
+%rename (makeAssignVariableValue) operations_research::Solver::MakeAssignVariableValue;
+%rename (makeAssignVariableValueOrFail) operations_research::Solver::MakeAssignVariableValueOrFail;
+%rename (makeAssignVariablesValues) operations_research::Solver::MakeAssignVariablesValues;
+%rename (makeAssignment) operations_research::Solver::MakeAssignment;
+%rename (makeBestValueSolutionCollector) operations_research::Solver::MakeBestValueSolutionCollector;
+%rename (makeBetweenCt) operations_research::Solver::MakeBetweenCt;
+%rename (makeBoolVar) operations_research::Solver::MakeBoolVar;
+%rename (makeConstantRestart) operations_research::Solver::MakeConstantRestart;
+%rename (makeConvexPiecewiseExpr) operations_research::Solver::MakeConvexPiecewiseExpr;
+%rename (makeCount) operations_research::Solver::MakeCount;
+%rename (makeCumulative) operations_research::Solver::MakeCumulative;
+%rename (makeCustomLimit) operations_research::Solver::MakeCustomLimit;
+%rename (makeDecisionBuilderFromAssignment) operations_research::Solver::MakeDecisionBuilderFromAssignment;
+%rename (makeDefaultPhase) operations_research::Solver::MakeDefaultPhase;
+%rename (makeDifference) operations_research::Solver::MakeDifference;
+%rename (makeDistribute) operations_research::Solver::MakeDistribute;
+%rename (makeDiv) operations_research::Solver::MakeDiv;
+%rename (makeElement) operations_research::Solver::MakeElement;
+%rename (makeEquality) operations_research::Solver::MakeEquality;
+%rename (makeFailDecision) operations_research::Solver::MakeFailDecision;
+%rename (makeFalseConstraint) operations_research::Solver::MakeFalseConstraint;
+%rename (makeFirstSolutionCollector) operations_research::Solver::MakeFirstSolutionCollector;
+%rename (makeFixedDurationIntervalVar) operations_research::Solver::MakeFixedDurationIntervalVar;
+%rename (makeFixedInterval) operations_research::Solver::MakeFixedInterval;
+%rename (makeGreater) operations_research::Solver::MakeGreater;
+%rename (makeGreaterOrEqual) operations_research::Solver::MakeGreaterOrEqual;
+%rename (makeGuidedLocalSearch) operations_research::Solver::MakeGuidedLocalSearch;
+%rename (makeIntConst) operations_research::Solver::MakeIntConst;
+%rename (makeIntVar) operations_research::Solver::MakeIntVar;
+%rename (makeIntervalVarRelation) operations_research::Solver::MakeIntervalVarRelation;
+%rename (makeIsBetweenCt) operations_research::Solver::MakeIsBetweenCt;
+%rename (makeIsDifferentCstCt) operations_research::Solver::MakeIsDifferentCstCt;
+%rename (makeIsDifferentCstCt) operations_research::Solver::MakeIsDifferentCt;
+%rename (makeIsDifferentCstVar) operations_research::Solver::MakeIsDifferentCstVar;
+%rename (makeIsDifferentCstVar) operations_research::Solver::MakeIsDifferentVar;
+%rename (makeIsEqualCstCt) operations_research::Solver::MakeIsEqualCstCt;
+%rename (makeIsEqualCstVar) operations_research::Solver::MakeIsEqualCstVar;
+%rename (makeIsEqualVar) operations_research::Solver::MakeIsEqualCt;
+%rename (makeIsEqualVar) operations_research::Solver::MakeIsEqualVar;
+%rename (makeIsGreaterCstCt) operations_research::Solver::MakeIsGreaterCstCt;
+%rename (makeIsGreaterCstVar) operations_research::Solver::MakeIsGreaterCstVar;
+%rename (makeIsGreaterCt) operations_research::Solver::MakeIsGreaterCt;
+%rename (makeIsGreaterOrEqualCstCt) operations_research::Solver::MakeIsGreaterOrEqualCstCt;
+%rename (makeIsGreaterOrEqualCstVar) operations_research::Solver::MakeIsGreaterOrEqualCstVar;
+%rename (makeIsGreaterOrEqualCt) operations_research::Solver::MakeIsGreaterOrEqualCt;
+%rename (makeIsGreaterOrEqualVar) operations_research::Solver::MakeIsGreaterOrEqualVar;
+%rename (makeIsGreaterVar) operations_research::Solver::MakeIsGreaterVar;
+%rename (makeIsLessCstCt) operations_research::Solver::MakeIsLessCstCt;
+%rename (makeIsLessCstVar) operations_research::Solver::MakeIsLessCstVar;
+%rename (makeIsLessCt) operations_research::Solver::MakeIsLessCt;
+%rename (makeIsLessOrEqualCstCt) operations_research::Solver::MakeIsLessOrEqualCstCt;
+%rename (makeIsLessOrEqualCstVar) operations_research::Solver::MakeIsLessOrEqualCstVar;
+%rename (makeIsLessOrEqualCt) operations_research::Solver::MakeIsLessOrEqualCt;
+%rename (makeIsLessOrEqualVar) operations_research::Solver::MakeIsLessOrEqualVar;
+%rename (makeIsLessVar) operations_research::Solver::MakeIsLessVar;
+%rename (makeIsMemberCt) operations_research::Solver::MakeIsMemberCt;
+%rename (makeIsMemberVar) operations_research::Solver::MakeIsMemberVar;
+%rename (makeLastSolutionCollector) operations_research::Solver::MakeLastSolutionCollector;
+%rename (makeLess) operations_research::Solver::MakeLess;
+%rename (makeLessOrEqual) operations_research::Solver::MakeLessOrEqual;
+%rename (makeLimit) operations_research::Solver::MakeLimit;
+%rename (makeLocalSearchObjectiveFilter) operations_research::Solver::MakeLocalSearchObjectiveFilter;
+%rename (makeLocalSearchPhase) operations_research::Solver::MakeLocalSearchPhase;
+%rename (makeLocalSearchPhaseParameters) operations_research::Solver::MakeLocalSearchPhaseParameters;
+%rename (makeLubyRestart) operations_research::Solver::MakeLubyRestart;
+%rename (makeMapDomain) operations_research::Solver::MakeMapDomain;
+%rename (makeMax) operations_research::Solver::MakeMax;
+%rename (makeMaximize) operations_research::Solver::MakeMaximize;
+%rename (makeMemberCt) operations_research::Solver::MakeMemberCt;
+%rename (makeMin) operations_research::Solver::MakeMin;
+%rename (makeMinimize) operations_research::Solver::MakeMinimize;
+%rename (makeMirrorInterval) operations_research::Solver::MakeMirrorInterval;
+%rename (makeNeighborhoodLimit) operations_research::Solver::MakeNeighborhoodLimit;
+%rename (makeNoCycle) operations_research::Solver::MakeNoCycle;
+%rename (makeNonEquality) operations_research::Solver::MakeNonEquality;
+%rename (makeOperator) operations_research::Solver::MakeOperator;
+%rename (makeOpposite) operations_research::Solver::MakeOpposite;
+%rename (makeOptimize) operations_research::Solver::MakeOptimize;
+%rename (makePack) operations_research::Solver::MakePack;
+%rename (makePathCumul) operations_research::Solver::MakePathCumul;
+%rename (makePhase) operations_research::Solver::MakePhase;
+%rename (makeProd) operations_research::Solver::MakeProd;
+%rename (makeRandomLNSOperator) operations_research::Solver::MakeRandomLNSOperator;
+%rename (makeRestoreAssignment) operations_research::Solver::MakeRestoreAssignment;
+%rename (makeScalProd) operations_research::Solver::MakeScalProd;
+%rename (makeScalProdEquality) operations_research::Solver::MakeScalProdEquality;
+%rename (makeScalProdGreaterOrEqual) operations_research::Solver::MakeScalProdGreaterOrEqual;
+%rename (makeScalProdLessOrEqual) operations_research::Solver::MakeScalProdLessOrEqual;
+%rename (makeScheduleOrPostpone) operations_research::Solver::MakeScheduleOrPostpone;
+%rename (makeSearchLog) operations_research::Solver::MakeSearchLog;
+%rename (makeSearchTrace) operations_research::Solver::MakeSearchTrace;
+%rename (makeSemiContinuousExpr) operations_research::Solver::MakeSemiContinuousExpr;
+%rename (makeSequence) operations_research::Solver::MakeSequence;
+%rename (makeSimulatedAnnealing) operations_research::Solver::MakeSimulatedAnnealing;
+%rename (makeSolveOnce) operations_research::Solver::MakeSolveOnce;
+%rename (makeSplitVariableDomain) operations_research::Solver::MakeSplitVariableDomain;
+%rename (makeSquare) operations_research::Solver::MakeSquare;
+%rename (makeStoreAssignment) operations_research::Solver::MakeStoreAssignment;
+%rename (makeSum) operations_research::Solver::MakeSum;
+%rename (makeSumEquality) operations_research::Solver::MakeSumEquality;
+%rename (makeSumGreaterOrEqual) operations_research::Solver::MakeSumGreaterOrEqual;
+%rename (makeSumLessOrEqual) operations_research::Solver::MakeSumLessOrEqual;
+%rename (makeSymmetryManager) operations_research::Solver::MakeSymmetryManager;
+%rename (makeTabuSearch) operations_research::Solver::MakeTabuSearch;
+%rename (makeTemporalDisjunction) operations_research::Solver::MakeTemporalDisjunction;
+%rename (makeTransitionConstraint) operations_research::Solver::MakeTransitionConstraint;
+%rename (makeTreeMonitor) operations_research::Solver::MakeTreeMonitor;
+%rename (makeTrueConstraint) operations_research::Solver::MakeTrueConstraint;
+%rename (makeTryRankFirst) operations_research::Solver::MakeTryRankFirst;
+%rename (makeWeightedMaximize) operations_research::Solver::MakeWeightedMaximize;
+%rename (makeWeightedMinimize) operations_research::Solver::MakeWeightedMinimize;
+%rename (makeWeightedOptimize) operations_research::Solver::MakeWeightedOptimize;
 %rename (max) *::Max;
-%rename (setMin) *::SetMin;
+%rename (min) *::Min;
+%rename (nestedSolve) operations_research::Solver::NestedSolve;
+%rename (newSearch) operations_research::Solver::NewSearch;
+%rename (nextWrap) operations_research::DecisionBuilder::Next;
+%rename (nextSolution) operations_research::Solver::NextSolution;
+%rename (rand32) operations_research::Solver::Rand32;
+%rename (rand64) operations_research::Solver::Rand64;
+%rename (randomConcatenateOperators) RandomConcatenateOperators;
+%rename (reSeed) operations_research::Solver::ReSeed;
+%rename (searchDepth) operations_research::Solver::SearchDepth;
+%rename (searchLeftDepth) operations_research::Solver::SearchLeftDepth;
 %rename (setMax) *::SetMax;
+%rename (setMin) *::SetMin;
 %rename (setRange) *::SetRange;
+%rename (solve) operations_research::Solver::Solve;
+%rename (solveDepth) operations_research::Solver::SolveDepth;
+%rename (toString) *::DebugString;
+%rename (updateLimits) operations_research::Solver::UpdateLimits;
+%rename (value) *::Value;
+
+namespace operations_research {
+%define CONVERT_VECTOR(type)
+%typemap(jni) const vector<type*>& "jobjectArray"
+%typemap(jtype) const vector<type*>& "type[]"
+%typemap(jstype) const vector<type*>& "type[]"
+%typemap(javain) const vector<type*>& "$javainput"
+%typemap(in) const vector<type*>& (vector<type*> result) {
+  jclass objectclass =
+    jenv->FindClass("com/google/ortools/constraintsolver/type");
+  if (NULL == objectclass)
+    return $null;
+  jmethodID method_id = jenv->GetMethodID(objectclass, "getCPtr", "()J");
+  assert(method_id != NULL);
+  for (int i = 0; i < jenv->GetArrayLength($input); i++) {
+    jobject elem = jenv->GetObjectArrayElement($input, i);
+    jlong ptr_value = jenv->CallLongMethod(elem, method_id);
+    result.push_back(reinterpret_cast<operations_research::type*>(ptr_value));
+  }
+  $1 = &result;
+}
+%enddef
+CONVERT_VECTOR(IntVar);
+CONVERT_VECTOR(SearchMonitor);
+CONVERT_VECTOR(DecisionBuilder);
+CONVERT_VECTOR(IntervalVar);
+CONVERT_VECTOR(Sequence);
+CONVERT_VECTOR(LocalSearchOperator);
+CONVERT_VECTOR(LocalSearchFilter);
+
+%typemap(javacode) Solver %{
+  public IntVar[] makeIntVarArray(int count, long min, long max) {
+    IntVar[] array = new IntVar[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = makeIntVar(min, max);
+    }
+    return array;
+  }
+
+  public IntVar[] makeIntVarArray(int count, long min, long max, String name) {
+    IntVar[] array = new IntVar[count];
+    for (int i = 0; i < count; ++i) {
+      String var_name = name + i;
+      array[i] = makeIntVar(min, max, var_name);
+    }
+    return array;
+  }
+
+  public IntVar[] makeBoolVarArray(int count) {
+    IntVar[] array = new IntVar[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = makeBoolVar();
+    }
+    return array;
+  }
+
+  public IntVar[] makeBoolVarArray(int count, String name) {
+    IntVar[] array = new IntVar[count];
+    for (int i = 0; i < count; ++i) {
+      String var_name = name + i;
+      array[i] = makeBoolVar(var_name);
+    }
+    return array;
+  }
+
+  public IntervalVar[] makeFixedDurationIntervalVarArray(int count,
+                                                         long start_min,
+                                                         long start_max,
+                                                         long duration,
+                                                         boolean optional) {
+    IntervalVar[] array = new IntervalVar[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = makeFixedDurationIntervalVar(start_min,
+                                              start_max,
+                                              duration,
+                                              optional,
+                                              "");
+    }
+    return array;
+  }
+
+  public IntervalVar[] makeFixedDurationIntervalVarArray(int count,
+                                                         long start_min,
+                                                         long start_max,
+                                                         long duration,
+                                                         boolean optional,
+                                                         String name) {
+    IntervalVar[] array = new IntervalVar[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = makeFixedDurationIntervalVar(start_min,
+                                              start_max,
+                                              duration,
+                                              optional,
+                                              name + i);
+    }
+    return array;
+  }
+
+%}
+
+// Protect from failure
+#define PREPROTECT\
+  FailureProtect protect;\
+  Closure* const intercept = \
+      NewCallback<>(&protect, &FailureProtect::JumpBack);\
+  solver->set_fail_intercept(intercept);\
+  if (setjmp(protect.exception_buffer) == 0) {
+
+#define POSTPROTECT\
+    solver->clear_fail_intercept();\
+    delete intercept;\
+  } else {\
+    solver->clear_fail_intercept();\
+    jclass fail_class = jenv->FindClass(\
+        "com/google/ortools/constraintsolver/"\
+        "FailException");\
+    jenv->ThrowNew(fail_class, "fail");\
+    return $null;\
+  }
+
+%exception IntExpr::SetValue(int64 v) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception IntExpr::SetMin(int64 v) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception IntExpr::SetMax(int64 v) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception IntExpr::SetRange(int64 mi, int64 ma) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception IntVar::RemoveValue(int64 v) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception Solver::AddConstraint(Constraint* const ct) {
+  operations_research::Solver* const solver = arg1;
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception Solver::Fail() {
+  operations_research::Solver* const solver = arg1;
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+}  // namespace operations_research
+
 #endif  // SWIGJAVA
 
 // Wrap cp includes

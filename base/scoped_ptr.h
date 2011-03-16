@@ -25,6 +25,7 @@
 #include <cstddef>
 
 #include "base/basictypes.h"
+#include "base/macros.h"
 #include "base/util.h"
 
 namespace operations_research {

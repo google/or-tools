@@ -20,6 +20,7 @@
 
 #include <cmath>
 
+#include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"

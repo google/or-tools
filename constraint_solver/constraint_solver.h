@@ -68,6 +68,8 @@
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
+#include "base/sysinfo.h"
+#include "base/timer.h"
 #include "base/strutil.h"
 #include "base/map-util.h"
 #include "base/random.h"
@@ -1290,7 +1292,7 @@ class Solver {
                                        IndexEvaluator3* objective_function,
                                        int64 step,
                                        const vector<IntVar*>& vars,
-                                       const vector<IntVar*> secondary_vars,
+                                       const vector<IntVar*>& secondary_vars,
                                        double penalty_factor);
   SearchMonitor* MakeGuidedLocalSearch(bool maximize,
                                        IntVar* const objective,

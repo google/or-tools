@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifdef SWIGPYTHON
+
 #pragma SWIG nowarn=312,451,454,503,362
 
 // 312 suppresses warnings about nested classes that SWIG doesn't currently
@@ -365,3 +367,134 @@ COPY_TYPEMAPS(uint64, Fprint);
     return result
 %}
 %enddef
+
+#endif  // SWIGPYTHON
+
+#ifdef SWIGJAVA
+%include "enumsimple.swg"
+%{
+#include <vector>
+#ifdef __GNUC__
+#include <ext/hash_map>
+#include <ext/hash_set>
+#else
+#include <hash_map>
+#include <hash_set>
+#endif
+#include <set>
+#include <map>
+#include <string>
+#include "base/basictypes.h"
+%}
+
+%include <std_string.i>
+
+%apply const std::string & {std::string &};
+%apply const std::string & {std::string *};
+
+// string
+%typemap(jni) string "jstring"
+%typemap(jtype) string "String"
+%typemap(jstype) string "String"
+%typemap(javadirectorin) string "$jniinput"
+%typemap(javadirectorout) string "$javacall"
+
+%typemap(in) string
+%{ if(!$input) {
+     SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null std::string");
+     return $null;
+    }
+    const char *$1_pstr = (const char *)jenv->GetStringUTFChars($input, 0);
+    if (!$1_pstr) return $null;
+    $1.assign($1_pstr);
+    jenv->ReleaseStringUTFChars($input, $1_pstr); %}
+
+%typemap(directorout) string
+%{ if(!$input) {
+     SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null std::string");
+     return $null;
+   }
+   const char *$1_pstr = (const char *)jenv->GetStringUTFChars($input, 0);
+   if (!$1_pstr) return $null;
+   $result.assign($1_pstr);
+   jenv->ReleaseStringUTFChars($input, $1_pstr); %}
+
+%typemap(directorin,descriptor="Ljava/lang/String;") string
+%{ $input = jenv->NewStringUTF($1.c_str()); %}
+
+%typemap(out) string
+%{ $result = jenv->NewStringUTF($1.c_str()); %}
+
+%typemap(javain) string "$javainput"
+
+%typemap(javaout) string {
+    return $jnicall;
+  }
+
+%typemap(typecheck) string = char *;
+
+%typemap(throws) string
+%{ SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, $1.c_str());
+   return $null; %}
+
+// const string &
+%typemap(jni) const string & "jstring"
+%typemap(jtype) const string & "String"
+%typemap(jstype) const string & "String"
+%typemap(javadirectorin) const string & "$jniinput"
+%typemap(javadirectorout) const string & "$javacall"
+
+%typemap(in) const string &
+%{ if(!$input) {
+     SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null std::string");
+     return $null;
+   }
+   const char *$1_pstr = (const char *)jenv->GetStringUTFChars($input, 0);
+   if (!$1_pstr) return $null;
+   std::string $1_str($1_pstr);
+   $1 = &$1_str;
+   jenv->ReleaseStringUTFChars($input, $1_pstr); %}
+
+%typemap(directorout,warning=SWIGWARN_TYPEMAP_THREAD_UNSAFE_MSG) const string &
+%{ if(!$input) {
+     SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null std::string");
+     return $null;
+   }
+   const char *$1_pstr = (const char *)jenv->GetStringUTFChars($input, 0);
+   if (!$1_pstr) return $null;
+   /* possible thread/reentrant code problem */
+   static std::string $1_str;
+   $1_str = $1_pstr;
+   $result = &$1_str;
+   jenv->ReleaseStringUTFChars($input, $1_pstr); %}
+
+%typemap(directorin,descriptor="Ljava/lang/String;") const string &
+%{ $input = jenv->NewStringUTF($1.c_str()); %}
+
+%typemap(out) const string &
+%{ $result = jenv->NewStringUTF($1->c_str()); %}
+
+%typemap(javain) const string & "$javainput"
+
+%typemap(javaout) const string & {
+    return $jnicall;
+  }
+
+%typemap(typecheck) const string & = char *;
+
+%typemap(throws) const string &
+%{ SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, $1.c_str());
+   return $null;
+%}
+
+%define COPY_TYPEMAPS(oldtype, newtype)
+typedef oldtype newtype;
+%enddef
+
+COPY_TYPEMAPS(signed char, schar);
+COPY_TYPEMAPS(long long, int64);
+COPY_TYPEMAPS(int, int32);
+COPY_TYPEMAPS(unsigned long long, uint64);
+
+#undef COPY_TYPEMAPS
+#endif  // SWIGJAVA

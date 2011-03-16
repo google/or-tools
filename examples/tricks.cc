@@ -19,7 +19,26 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "examples/global_arith.h"
 
-DEFINE_int32(size, 20, "Size of the problem");
+class MySearchLog {
+ public:
+  MySearchLog(){}
+
+  string Display() {
+    string response;
+    response += "****** Solution *******";
+    return response;
+  }
+};
+
+int main() {
+  operations_research::Solver solver("bin_packing");
+  MySearchLog myLog;
+  ResultCallback<string>* display = NewPermanentCallback(&myLog, &MySearchLog::Display);
+  operations_research::SearchMonitor* const log = solver.MakeSearchLog(1000, display);
+  return 0;
+}
+
+/*DEFINE_int32(size, 20, "Size of the problem");
 
 namespace operations_research {
 // ---------- Examples ----------
@@ -117,3 +136,4 @@ int main(int argc, char **argv) {
   // operations_research::SlowPropagation(FLAGS_size);
   return 0;
 }
+*/

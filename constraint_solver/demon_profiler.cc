@@ -13,7 +13,9 @@
 
 #include <math.h>
 #include <limits>
+#include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/stringprintf.h"
 #include "base/stl_util-inl.h"
 #include <iostream>
 #include <fstream>

@@ -19,6 +19,8 @@
 #include <string>
 #include <vector>
 
+#include "base/basictypes.h"
+#include "base/logging.h"
 #include "base/util.h"
 
 namespace operations_research {

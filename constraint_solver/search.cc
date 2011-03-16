@@ -14,11 +14,14 @@
 #include <list>
 
 #include "base/callback.h"
+#include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
+#include "base/sysinfo.h"
+
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
 #include "base/stl_util-inl.h"
@@ -3286,7 +3289,7 @@ SearchMonitor* Solver::MakeGuidedLocalSearch(
     ResultCallback3<int64, int64, int64, int64>* objective_function,
     int64 step,
     const vector<IntVar*>& vars,
-    const vector<IntVar*> secondary_vars,
+    const vector<IntVar*>& secondary_vars,
     double penalty_factor) {
   return MakeGuidedLocalSearch(maximize,
                                objective,

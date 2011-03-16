@@ -58,6 +58,7 @@ all:
 	@echo Please define target:
 	@echo "  - constraint programming: cplibs, cpexe, pycp"
 	@echo "  - algorithms: algoritmlibs, pyalgorithms"
+	@echo "  - graph: graphlibs, pygraph"
 	@echo "  - misc: clean"
 
 CPLIBS = \
@@ -67,6 +68,8 @@ CPLIBS = \
 GRAPH_LIBS = \
 	libgraph.a \
 	libshortestpaths.a
+
+graphlibs: $(GRAPH_LIBS) $(BASE_LIBS)
 
 BASE_LIBS = \
 	libutil.a          \
@@ -78,6 +81,7 @@ CPBINARIES = \
 	costas_array \
 	cryptarithm \
         cvrptw \
+	flow_example \
 	golomb \
 	magic_square \
 	network_routing \
@@ -234,10 +238,18 @@ libutil.a: $(UTIL_LIB_OBJS)
 # Graph library.
 
 GRAPH_LIB_OBJS=\
-	objs/bron_kerbosch.o
+	objs/bron_kerbosch.o \
+	objs/max_flow.o \
+	objs/min_cost_flow.o
 
 objs/bron_kerbosch.o:graph/bron_kerbosch.cc
 	$(CCC) $(CFLAGS) -c graph/bron_kerbosch.cc -o objs/bron_kerbosch.o
+
+objs/max_flow.o:graph/max_flow.cc
+	$(CCC) $(CFLAGS) -c graph/max_flow.cc -o objs/max_flow.o
+
+objs/min_cost_flow.o:graph/min_cost_flow.cc
+	$(CCC) $(CFLAGS) -c graph/min_cost_flow.cc -o objs/min_cost_flow.o
 
 libgraph.a: $(GRAPH_LIB_OBJS)
 	ar rv libgraph.a $(GRAPH_LIB_OBJS)
@@ -292,12 +304,14 @@ libalgorithms.a: $(ALGORITHMS_LIB_OBJS)
 BASE_LIB_OBJS=\
 	objs/bitmap.o\
 	objs/callback.o\
+	objs/join.o\
 	objs/logging.o\
 	objs/random.o\
 	objs/stringpiece.o\
 	objs/stringprintf.o\
-	objs/timer.o\
-	objs/util.o
+	objs/sysinfo.o\
+	objs/timer.o
+
 
 objs/bitmap.o:base/bitmap.cc
 	$(CCC) $(CFLAGS) -c base/bitmap.cc -o objs/bitmap.o
@@ -305,16 +319,18 @@ objs/callback.o:base/callback.cc
 	$(CCC) $(CFLAGS) -c base/callback.cc -o objs/callback.o
 objs/logging.o:base/logging.cc
 	$(CCC) $(CFLAGS) -c base/logging.cc -o objs/logging.o
+objs/join.o:base/join.cc
+	$(CCC) $(CFLAGS) -c base/join.cc -o objs/join.o
 objs/random.o:base/random.cc
 	$(CCC) $(CFLAGS) -c base/random.cc -o objs/random.o
 objs/stringpiece.o:base/stringpiece.cc
 	$(CCC) $(CFLAGS) -c base/stringpiece.cc -o objs/stringpiece.o
 objs/stringprintf.o:base/stringprintf.cc
 	$(CCC) $(CFLAGS) -c base/stringprintf.cc -o objs/stringprintf.o
+objs/sysinfo.o:base/sysinfo.cc
+	$(CCC) $(CFLAGS) -c base/sysinfo.cc -o objs/sysinfo.o
 objs/timer.o:base/timer.cc
 	$(CCC) $(CFLAGS) -c base/timer.cc -o objs/timer.o
-objs/util.o:base/util.cc
-	$(CCC) $(CFLAGS) -c base/util.cc -o objs/util.o
 
 libbase.a: $(BASE_LIB_OBJS)
 	ar rv libbase.a $(BASE_LIB_OBJS)
@@ -338,6 +354,12 @@ objs/cvrptw.o: examples/cvrptw.cc
 
 cvrptw: $(CPLIBS) $(BASE_LIBS) objs/cvrptw.o
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cvrptw.o $(CPLIBS) $(BASE_LIBS) -o cvrptw
+
+objs/flow_example.o:examples/flow_example.cc
+	$(CCC) $(CFLAGS) -c examples/flow_example.cc -o objs/flow_example.o
+
+flow_example: $(GRAPH_LIBS) $(BASE_LIBS) objs/flow_example.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/flow_example.o $(GRAPH_LIBS) $(BASE_LIBS) -o flow_example
 
 objs/golomb.o:examples/golomb.cc
 	$(CCC) $(CFLAGS) -c examples/golomb.cc -o objs/golomb.o
@@ -396,6 +418,21 @@ objs/knapsack_solver_wrap.o: algorithms/knapsack_solver_wrap.cc
 
 _pywrapknapsack_solver.so: objs/knapsack_solver_wrap.o $(ALGORITHM_LIBS) $(BASE_LIBS)
 	$(LD) -o _pywrapknapsack_solver.so objs/knapsack_solver_wrap.o $(ALGORITHM_LIBS) $(BASE_LIBS) $(LDFLAGS)
+
+# pywrapflow
+
+pygraph: _pywrapflow.so graph/pywrapflow.py $(GRAPH_LIBS) $(BASE_LIBS)
+
+graph/pywrapflow.py: graph/flow.swig graph/min_cost_flow.h graph/max_flow.h graph/ebert_graph.h base/base.swig
+	$(SWIG_BINARY) -c++ -python -o graph/pywrapflow_wrap.cc -module pywrapflow graph/flow.swig
+
+graph/pywrapflow_wrap.cc: graph/pywrapflow.py
+
+objs/pywrapflow_wrap.o: graph/pywrapflow_wrap.cc
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c graph/pywrapflow_wrap.cc -o objs/pywrapflow_wrap.o
+
+_pywrapflow.so: objs/pywrapflow_wrap.o $(GRAPH_LIBS) $(BASE_LIBS)
+	$(LD) -o _pywrapflow.so objs/pywrapflow_wrap.o $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # pywrapcp
 

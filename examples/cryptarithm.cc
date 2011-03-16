@@ -20,6 +20,7 @@
 // S=9; M=1; O=0; E=5; N=6; D=7; R=8; Y=2.
 
 #include "base/commandlineflags.h"
+#include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "constraint_solver/constraint_solver.h"

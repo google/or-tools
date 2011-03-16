@@ -11,17 +11,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_STRINGPRINTF_H_
-#define BASE_STRINGPRINTF_H_
+%include util/data.swig
 
-#include <string>
+// Include the file we want to wrap a first time.
+%{
+#include "util/packed_array.h"
+#include "graph/ebert_graph.h"
+#include "graph/max_flow.h"
+#include "graph/min_cost_flow.h"
+%}
 
-#include "base/stringpiece.h"
-#include "base/util.h"
+%include "util/packed_array.h"
+%include "graph/ebert_graph.h"
+%include "graph/max_flow.h"
+%include "graph/min_cost_flow.h"
 
 namespace operations_research {
-string StringPrintf(const char* format, ...);
-void SStringPrintf(string* dst, const char* format, ...);
-void StringAppendF(string* dst, const char* format, ...);
-}  // namespace operations_research
-#endif  // BASE_STRINGPRINTF_H_
+%template(StarGraph) EbertGraph<kStarGraphNodeIndexSize, kStarGraphArcIndexSize>;
+%template(NodeIndexArray) PackedArray<kStarGraphNodeIndexSize>;
+%template(ArcIndexArray) PackedArray<kStarGraphArcIndexSize>;
+}

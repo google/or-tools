@@ -287,6 +287,7 @@ class LongResultCallback3 {
   }
   virtual ~LongResultCallback3() {}
 };
+
 %}
 
 class LongResultCallback1 {
@@ -319,6 +320,7 @@ class LongResultCallback3 {
 "LongResultCallback3";
 %typemap(javain) ResultCallback3<int64, int64, int64, int64>*
  "SWIGTYPE_p_ResultCallback3Tlong_long_long_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
+
 
 // Typemaps to represent const vector<int64>& arguments as arrays of long.
 %typemap(jni) const vector<int64>& "jobjectArray"
@@ -368,4 +370,28 @@ class LongResultCallback3 {
 %typemap(freearg) const vector<int>& {
   delete $1;
 }
+
+// Convert long[][] to vector<vector<int64> >
+%typemap(jni) const vector<vector<int64> >& "jobjectArray"
+%typemap(jtype) const vector<vector<int64> >& "long[][]"
+%typemap(jstype) const vector<vector<int64> >& "long[][]"
+%typemap(javain) const vector<vector<int64> >& "$javainput"
+%typemap(in) const vector<vector<int64> >& (vector<vector<int64> > result) {
+  const int size = jenv->GetArrayLength($input);
+  result.clear();
+  result.resize(size);
+  for (int index1 = 0; index1 < size; ++index1) {
+    jlongArray inner_array =
+        (jlongArray)jenv->GetObjectArrayElement($input, index1);
+    const int tuple_size = jenv->GetArrayLength(inner_array);
+    jlong* const values =
+        jenv->GetLongArrayElements((jlongArray)inner_array, NULL);
+    for (int index2 = 0; index2 < tuple_size; ++index2) {
+      const int64 value = values[index2];
+      result[index1].push_back(value);
+    }
+  }
+  $1 = &result;
+}
+
 #endif  // SWIGJAVA

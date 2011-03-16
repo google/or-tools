@@ -11,17 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_STRINGPRINTF_H_
-#define BASE_STRINGPRINTF_H_
+#ifndef BASE_SYSINFO_H_
+#define BASE_SYSINFO_H_
 
-#include <string>
-
-#include "base/stringpiece.h"
-#include "base/util.h"
+#include "base/basictypes.h"
 
 namespace operations_research {
-string StringPrintf(const char* format, ...);
-void SStringPrintf(string* dst, const char* format, ...);
-void StringAppendF(string* dst, const char* format, ...);
+// Returns the memory usage of the process.
+int64 GetProcessMemoryUsage();
 }  // namespace operations_research
-#endif  // BASE_STRINGPRINTF_H_
+
+#endif  // BASE_SYSINFO_H_
+

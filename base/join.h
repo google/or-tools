@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_STRINGPRINTF_H_
-#define BASE_STRINGPRINTF_H_
+#ifndef BASE_JOIN_H_
+#define BASE_JOIN_H_
 
 #include <string>
 
@@ -20,8 +20,15 @@
 #include "base/util.h"
 
 namespace operations_research {
-string StringPrintf(const char* format, ...);
-void SStringPrintf(string* dst, const char* format, ...);
-void StringAppendF(string* dst, const char* format, ...);
+string StrCat(const StringPiece& p1, const StringPiece& p2);
+string StrCat(const StringPiece& p1,
+              const StringPiece& p2,
+              const StringPiece& p3);
+string StrCat(const StringPiece& p1,
+              const StringPiece& p2,
+              const StringPiece& p3,
+              const StringPiece& p4);
+string StrCat(int64 a1, const StringPiece& p2);
+string StrCat(const StringPiece& p1, int64 a2);
 }  // namespace operations_research
-#endif  // BASE_STRINGPRINTF_H_
+#endif  // BASE_JOIN_H_
