@@ -14,7 +14,11 @@
 #ifndef UTIL_PACKED_ARRAY_H_
 #define UTIL_PACKED_ARRAY_H_
 
+#if defined(__APPLE__) && defined(__GNUC__)
+#include <machine/endian.h>
+#else
 #include <endian.h>
+#endif
 #include <limits.h>
 #include <stdio.h>
 #include <limits>
