@@ -16,6 +16,7 @@ PROTOBUF_INC = -I$(PROTOBUF_DIR)/include
 
 # Compilation flags
 DEBUG=-O3 -DNDEBUG
+JNIDEBUG=-O1 -DNDEBUG
 SYSCFLAGS=-fPIC
 CCC=g++
 
@@ -33,11 +34,17 @@ PROTOBUF_LNK = -Wl,-rpath $(PROTOBUF_DIR)/lib -L$(PROTOBUF_DIR)/lib -lprotobuf -
 # Detect 32 bit or 64 bit OS and define ARCH flags correctly.
 LBITS := $(shell getconf LONG_BIT)
 ifeq ($(LBITS),64)
+   JDK_EXT=64
    ARCH=-DARCH_K8
 else
+   JDK_EXT=32
    ARCH=
 endif
 SYS_LNK=-lrt
+JAVA_INC=-I/usr/local/buildtools/java/jdk-$(JDK_EXT)/include -I/usr/local/buildtools/java/jdk-$(JDK_EXT)/include/linux
+JAVAC_BIN=/usr/local/buildtools/java/jdk-$(JDK_EXT)/bin/javac
+JAVA_BIN=/usr/local/buildtools/java/jdk-$(JDK_EXT)/bin/java
+JNILIBEXT=so
 endif
 ifeq ($(OS),Darwin) # Assume Mac Os X
 LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress
@@ -46,17 +53,23 @@ ZLIB_LNK = -lz
 PROTOBUF_LNK = -L$(PROTOBUF_DIR)/lib -lprotobuf
 ARCH=-DARCH_K8
 SYS_LNK=
+JAVA_INC=-I/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bundle/Headers
+JAVAC_BIN=javac
+JAVA_BIN=java
+JNILIBEXT=jnilib
 endif
 
 CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC)
+JNIFLAGS= $(SYSCFLAGS) $(JNIDEBUG) -I. $(GFLAGS_INC) $(ARCH) \
+        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC)
 LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
 
 # Real targets
 
 all:
 	@echo Please define target:
-	@echo "  - constraint programming: cplibs, cpexe, pycp"
+	@echo "  - constraint programming: cplibs, cpexe, pycp, javacp"
 	@echo "  - algorithms: algoritmlibs, pyalgorithms"
 	@echo "  - graph: graphlibs, pygraph"
 	@echo "  - misc: clean"
@@ -461,3 +474,38 @@ objs/routing_wrap.o: constraint_solver/routing_wrap.cc
 
 _pywraprouting.so: objs/routing_wrap.o $(CPLIBS) $(BASE_LIBS)
 	$(LD) -o _pywraprouting.so objs/routing_wrap.o $(CPLIBS) $(BASE_LIBS) $(LDFLAGS)
+
+# ---------- Java Support ----------
+
+# javawrapcp
+
+javacp: com.google.ortools.constraintsolver.jar libjniconstraintsolver.$(JNILIBEXT)
+constraint_solver/constraint_solver_java_wrap.cc: constraint_solver/constraint_solver.swig base/base.swig util/data.swig constraint_solver/constraint_solver.h
+	$(SWIG_BINARY) -c++ -java -o constraint_solver/constraint_solver_java_wrap.cc -package com.google.ortools.constraintsolver -outdir com/google/ortools/constraintsolver constraint_solver/constraint_solver.swig
+	sed -i -e 's/Tlong/T_long/g' com/google/ortools/constraintsolver/Solver.java
+
+objs/constraint_solver_java_wrap.o: constraint_solver/constraint_solver_java_wrap.cc
+	$(CCC) $(JNIFLAGS) $(JAVA_INC) -c constraint_solver/constraint_solver_java_wrap.cc -o objs/constraint_solver_java_wrap.o
+
+com.google.ortools.constraintsolver.jar: constraint_solver/constraint_solver_java_wrap.cc
+	$(JAVAC_BIN) com/google/ortools/constraintsolver/*.java
+	jar cf com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/*.class
+
+libjniconstraintsolver.$(JNILIBEXT): objs/constraint_solver_java_wrap.o $(CPLIBS) $(BASE_LIBS)
+	$(LD) -o libjniconstraintsolver.$(JNILIBEXT) objs/constraint_solver_java_wrap.o $(CPLIBS) $(BASE_LIBS) $(LDFLAGS)
+
+# Java CP Examples
+
+compile_RabbitsPheasants: com/google/ortools/constraintsolver/samples/RabbitsPheasants.class
+
+com/google/ortools/constraintsolver/samples/RabbitsPheasants.class: javacp com/google/ortools/constraintsolver/samples/RabbitsPheasants.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/RabbitsPheasants.java
+
+run_RabbitsPheasants: compile_RabbitsPheasants
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.RabbitsPheasants
+
+
+
+
+
+
