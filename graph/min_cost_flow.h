@@ -329,7 +329,7 @@ class MinCostFlow {
 
   // A packed array representing the potential (or price function) for
   // each node in graph_.
-  Int40PackedArray node_potential_;
+  Int64PackedArray node_potential_;
 
   // A packed array representing the residual_capacity for each arc in graph_.
   // Residual capacities enable one to represent the capacity and flow for all
@@ -369,7 +369,7 @@ class MinCostFlow {
   CostValue        cost_scaling_factor_;
 
   // A packed array representing the scaled unit cost for each arc in graph_.
-  Int40PackedArray scaled_arc_unit_cost_;
+  Int64PackedArray scaled_arc_unit_cost_;
 
   DISALLOW_COPY_AND_ASSIGN(MinCostFlow);
 };
