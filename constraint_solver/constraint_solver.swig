@@ -1393,15 +1393,15 @@ namespace operations_research {
 %typemap(jstype) const vector<type*>& "type[]"
 %typemap(javain) const vector<type*>& "$javainput"
 %typemap(in) const vector<type*>& (vector<type*> result) {
-  jclass objectclass =
+  jclass object_class =
     jenv->FindClass("com/google/ortools/constraintsolver/type");
-  if (NULL == objectclass)
+  if (NULL == object_class)
     return $null;
-  jmethodID method_id = jenv->GetMethodID(objectclass, "getCPtr", "()J");
+  jmethodID method_id = jenv->GetStaticMethodID(object_class, "getCPtr", "(Lcom/google/ortools/constraintsolver/type;)J");
   assert(method_id != NULL);
   for (int i = 0; i < jenv->GetArrayLength($input); i++) {
     jobject elem = jenv->GetObjectArrayElement($input, i);
-    jlong ptr_value = jenv->CallLongMethod(elem, method_id);
+    jlong ptr_value = jenv->CallStaticLongMethod(object_class, method_id, elem);
     result.push_back(reinterpret_cast<operations_research::type*>(ptr_value));
   }
   $1 = &result;
