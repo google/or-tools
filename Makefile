@@ -45,6 +45,7 @@ JAVA_INC=-I/usr/local/buildtools/java/jdk-$(JDK_EXT)/include -I/usr/local/buildt
 JAVAC_BIN=/usr/local/buildtools/java/jdk-$(JDK_EXT)/bin/javac
 JAVA_BIN=/usr/local/buildtools/java/jdk-$(JDK_EXT)/bin/java
 JNILIBEXT=so
+FIX_SWIG=sed -i -e 's/Tlong/T_long/g' com/google/ortools/constraintsolver/Solver.java
 endif
 ifeq ($(OS),Darwin) # Assume Mac Os X
 LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress
@@ -57,6 +58,7 @@ JAVA_INC=-I/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bund
 JAVAC_BIN=javac
 JAVA_BIN=java
 JNILIBEXT=jnilib
+FIX_SWIG=
 endif
 
 CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. $(GFLAGS_INC) $(ARCH) \
@@ -482,7 +484,7 @@ _pywraprouting.so: objs/routing_wrap.o $(CPLIBS) $(BASE_LIBS)
 javacp: com.google.ortools.constraintsolver.jar libjniconstraintsolver.$(JNILIBEXT)
 constraint_solver/constraint_solver_java_wrap.cc: constraint_solver/constraint_solver.swig base/base.swig util/data.swig constraint_solver/constraint_solver.h
 	$(SWIG_BINARY) -c++ -java -o constraint_solver/constraint_solver_java_wrap.cc -package com.google.ortools.constraintsolver -outdir com/google/ortools/constraintsolver constraint_solver/constraint_solver.swig
-	sed -i -e 's/Tlong/T_long/g' com/google/ortools/constraintsolver/Solver.java
+	$(FIX_SWIG)
 
 objs/constraint_solver_java_wrap.o: constraint_solver/constraint_solver_java_wrap.cc
 	$(CCC) $(JNIFLAGS) $(JAVA_INC) -c constraint_solver/constraint_solver_java_wrap.cc -o objs/constraint_solver_java_wrap.o
