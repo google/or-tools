@@ -1247,6 +1247,7 @@ struct FailureProtect {
 %rename (concatenateOperators) operations_research::Solver::ConcatenateOperators;
 %rename (endSearch) operations_research::Solver::EndSearch;
 %rename (exportProfilingOverview) operations_research::Solver::ExportProfilingOverview;
+%rename (fail) operations_research::Solver::Fail;
 %rename (getTime) operations_research::Solver::GetTime;
 %rename (makeAbs) operations_research::Solver::MakeAbs;
 %rename (makeAllDifferent) operations_research::Solver::MakeAllDifferent;
