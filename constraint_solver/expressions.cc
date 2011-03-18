@@ -1536,10 +1536,10 @@ string BooleanVar::DebugString() const {
   }
   switch (value_) {
     case 0:
-      out += "0 ";
+      out += "0";
       break;
     case 1:
-      out += "1 ";
+      out += "1";
       break;
     case kUnboundBooleanVarValue:
       out += "0 .. 1";

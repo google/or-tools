@@ -389,7 +389,7 @@ class EqualityVarCstCache : public VarCstCache {
     IntVar* boolvar = Find(var, value);
     if (!boolvar) {
       boolvar = solver()->MakeBoolVar(
-          StringPrintf("BoolVar<%s == %" GG_LL_FORMAT "d>",
+          StringPrintf("StatusVar<%s == %" GG_LL_FORMAT "d>",
                        var->name().c_str(), value));
       Constraint* const maintain =
           solver()->RevAlloc(new IsEqualCstCt(solver(), var, value, boolvar));
@@ -483,7 +483,7 @@ class UnequalityVarCstCache : public VarCstCache {
   IntVar* VarNonEqCstStatus(IntVar* const var, int64 value) {
     IntVar* boolvar = Find(var, value);
     if (!boolvar) {
-      boolvar = solver()->MakeBoolVar(StringPrintf("BoolVar<%s == %"
+      boolvar = solver()->MakeBoolVar(StringPrintf("StatusVar<%s == %"
                                                    GG_LL_FORMAT "d>",
                                                    var->name().c_str(),
                                                    value));
@@ -579,7 +579,7 @@ class GreaterEqualCstCache : public VarCstCache {
     IntVar* boolvar = Find(var, value);
     if (!boolvar) {
       boolvar = solver()->MakeBoolVar(
-          StringPrintf("BoolVar<%s == %" GG_LL_FORMAT "d>",
+          StringPrintf("StatusVar<%s >= %" GG_LL_FORMAT "d>",
                        var->name().c_str(), value));
       Constraint* const maintain =
           solver()->RevAlloc(new IsGreaterEqualCstCt(solver(),
@@ -672,7 +672,7 @@ class LessEqualCstCache : public VarCstCache {
     IntVar* boolvar = Find(var, value);
     if (!boolvar) {
       boolvar = solver()->MakeBoolVar(
-          StringPrintf("BoolVar<%s == %" GG_LL_FORMAT "d>",
+          StringPrintf("StatusVar<%s == %" GG_LL_FORMAT "d>",
                        var->name().c_str(), value));
       Constraint* const maintain =
           solver()->RevAlloc(new IsLessEqualCstCt(solver(),
