@@ -370,6 +370,12 @@ objs/cvrptw.o: examples/cvrptw.cc
 cvrptw: $(CPLIBS) $(BASE_LIBS) objs/cvrptw.o
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cvrptw.o $(CPLIBS) $(BASE_LIBS) -o cvrptw
 
+objs/dobble_ls.o:examples/dobble_ls.cc
+	$(CCC) $(CFLAGS) -c examples/dobble_ls.cc -o objs/dobble_ls.o
+
+dobble_ls: $(CPLIBS) $(BASE_LIBS) objs/dobble_ls.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/dobble_ls.o $(CPLIBS) $(BASE_LIBS) -o dobble_ls
+
 objs/flow_example.o:examples/flow_example.cc
 	$(CCC) $(CFLAGS) -c examples/flow_example.cc -o objs/flow_example.o
 
