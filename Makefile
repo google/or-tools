@@ -506,6 +506,14 @@ com/google/ortools/constraintsolver/samples/RabbitsPheasants.class: javacp com/g
 run_RabbitsPheasants: compile_RabbitsPheasants
 	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.RabbitsPheasants
 
+compile_GolombRuler: com/google/ortools/constraintsolver/samples/GolombRuler.class
+
+com/google/ortools/constraintsolver/samples/GolombRuler.class: javacp com/google/ortools/constraintsolver/samples/GolombRuler.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/GolombRuler.java
+
+run_GolombRuler: compile_GolombRuler
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.GolombRuler
+
 
 
 
