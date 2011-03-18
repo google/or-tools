@@ -672,7 +672,7 @@ class LessEqualCstCache : public VarCstCache {
     IntVar* boolvar = Find(var, value);
     if (!boolvar) {
       boolvar = solver()->MakeBoolVar(
-          StringPrintf("StatusVar<%s == %" GG_LL_FORMAT "d>",
+          StringPrintf("StatusVar<%s <= %" GG_LL_FORMAT "d>",
                        var->name().c_str(), value));
       Constraint* const maintain =
           solver()->RevAlloc(new IsLessEqualCstCt(solver(),
