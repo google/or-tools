@@ -520,6 +520,14 @@ com/google/ortools/constraintsolver/samples/GolombRuler.class: javacp com/google
 run_GolombRuler: compile_GolombRuler
 	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.GolombRuler
 
+compile_Partition: com/google/ortools/constraintsolver/samples/Partition.class
+
+com/google/ortools/constraintsolver/samples/Partition.class: javacp com/google/ortools/constraintsolver/samples/Partition.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/Partition.java
+
+run_Partition: compile_Partition
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Partition
+
 
 
 
