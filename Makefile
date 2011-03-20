@@ -528,8 +528,52 @@ com/google/ortools/constraintsolver/samples/Partition.class: javacp com/google/o
 run_Partition: compile_Partition
 	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Partition
 
+compile_SendMoreMoney: com/google/ortools/constraintsolver/samples/SendMoreMoney.class
 
+com/google/ortools/constraintsolver/samples/SendMoreMoney.class: javacp com/google/ortools/constraintsolver/samples/SendMoreMoney.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/SendMoreMoney.java
 
+run_SendMoreMoney: compile_SendMoreMoney
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.SendMoreMoney
 
+compile_SendMoreMoney2: com/google/ortools/constraintsolver/samples/SendMoreMoney2.class
+
+com/google/ortools/constraintsolver/samples/SendMoreMoney2.class: javacp com/google/ortools/constraintsolver/samples/SendMoreMoney2.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/SendMoreMoney2.java
+
+run_SendMoreMoney2: compile_SendMoreMoney2
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.SendMoreMoney2
+
+compile_LeastDiff: com/google/ortools/constraintsolver/samples/LeastDiff.class
+
+com/google/ortools/constraintsolver/samples/LeastDiff.class: javacp com/google/ortools/constraintsolver/samples/LeastDiff.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/LeastDiff.java
+
+run_LeastDiff: compile_LeastDiff
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.LeastDiff
+
+compile_MagicSquare: com/google/ortools/constraintsolver/samples/MagicSquare.class
+
+com/google/ortools/constraintsolver/samples/MagicSquare.class: javacp com/google/ortools/constraintsolver/samples/MagicSquare.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/MagicSquare.java
+
+run_MagicSquare: compile_MagicSquare
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.MagicSquare
+
+compile_NQueens: com/google/ortools/constraintsolver/samples/NQueens.class
+
+com/google/ortools/constraintsolver/samples/NQueens.class: javacp com/google/ortools/constraintsolver/samples/NQueens.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/NQueens.java
+
+run_NQueens: compile_NQueens
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.NQueens
+
+compile_NQueens2: com/google/ortools/constraintsolver/samples/NQueens2.class
+
+com/google/ortools/constraintsolver/samples/NQueens2.class: javacp com/google/ortools/constraintsolver/samples/NQueens2.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/NQueens2.java
+
+run_NQueens2: compile_NQueens2
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.NQueens2
 
 
