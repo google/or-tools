@@ -17,9 +17,6 @@ import java.io.*;
 import java.util.*;
 import java.text.*;
 
-import com.google.ortools.constraintsolver.DecisionBuilder;
-import com.google.ortools.constraintsolver.IntVar;
-import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.constraintsolver.*;
 
 public class LeastDiff {
@@ -32,43 +29,39 @@ public class LeastDiff {
   /**
    *
    * Solves the Least Diff problem.
-   * See http://www.hakank.org/google_or_tools/least_diff.py 
+   * See http://www.hakank.org/google_or_tools/least_diff.py
    *
    */
   private static void solve() {
-    int base = 10;
+    final int base = 10;
 
     Solver solver = new Solver("LeastDiff");
 
     //
     // Variables
     //
-    IntVar a = solver.makeIntVar(0, base-1, "a");
-    IntVar b = solver.makeIntVar(0, base-1, "b");
-    IntVar c = solver.makeIntVar(0, base-1, "c");
-    IntVar d = solver.makeIntVar(0, base-1, "d");
-    IntVar e = solver.makeIntVar(0, base-1, "e");
+    IntVar a = solver.makeIntVar(0, base - 1, "a");
+    IntVar b = solver.makeIntVar(0, base - 1, "b");
+    IntVar c = solver.makeIntVar(0, base - 1, "c");
+    IntVar d = solver.makeIntVar(0, base - 1, "d");
+    IntVar e = solver.makeIntVar(0, base - 1, "e");
 
-    IntVar f = solver.makeIntVar(0, base-1, "f");
-    IntVar g = solver.makeIntVar(0, base-1, "g");
-    IntVar h = solver.makeIntVar(0, base-1, "h");
-    IntVar i = solver.makeIntVar(0, base-1, "i");
-    IntVar j = solver.makeIntVar(0, base-1, "j");
+    IntVar f = solver.makeIntVar(0, base - 1, "f");
+    IntVar g = solver.makeIntVar(0, base - 1, "g");
+    IntVar h = solver.makeIntVar(0, base - 1, "h");
+    IntVar i = solver.makeIntVar(0, base - 1, "i");
+    IntVar j = solver.makeIntVar(0, base - 1, "j");
 
     IntVar[] all = {a,b,c,d,e,f,g,h,i,j};
 
-    IntVar x = solver.makeIntVar(0, 99999, "x");
-    IntVar y = solver.makeIntVar(0, 99999, "y");
-    IntVar diff = solver.makeIntVar(0, 99999, "y");
-
     //
     // Constraints
-    // 
-    int [] coeffs = {10000, 1000, 100, 10, 1};
-    solver.addConstraint(solver.makeEquality(x, 
-        solver.makeScalProd(new IntVar[]{a,b,c,d,e}, coeffs).Var()));
-    solver.addConstraint(solver.makeEquality(y, 
-        solver.makeScalProd(new IntVar[]{f,g,h,i,j}, coeffs).Var()));
+    //
+    int[] coeffs = {10000, 1000, 100, 10, 1};
+    IntVar x = solver.makeScalProd(new IntVar[]{a,b,c,d,e}, coeffs).Var();
+    x.set_name("x");
+    IntVar y = solver.makeScalProd(new IntVar[]{f,g,h,i,j}, coeffs).Var();
+    y.set_name("y");
 
     // a > 0
     solver.addConstraint(solver.makeGreater(a, 0));
@@ -76,15 +69,14 @@ public class LeastDiff {
     solver.addConstraint(solver.makeGreater(f, 0));
 
     // diff = x - y
-    solver.addConstraint(
-        solver.makeEquality(diff.Var(), 
-                            solver.makeDifference(x, y).Var()));
+    IntVar diff = solver.makeDifference(x, y).Var();
+    diff.set_name("diff");
 
     solver.addConstraint(solver.makeAllDifferent(all, true));
 
     //
     // Objective
-    // 
+    //
     OptimizeVar obj = solver.makeMinimize(diff, 1);
 
     //
@@ -95,8 +87,8 @@ public class LeastDiff {
                                           solver.ASSIGN_MIN_VALUE);
     solver.newSearch(db, obj);
     while (solver.nextSolution()) {
-        System.out.println("" + x.value() + "-" + 
-                           y.value() + "=" + diff.value());
+      System.out.println("" + x.value() + " - " +
+                         y.value() + " = " + diff.value());
     }
     solver.endSearch();
 
