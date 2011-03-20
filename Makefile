@@ -69,12 +69,16 @@ LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
 
 # Real targets
 
-all:
+help:
 	@echo Please define target:
-	@echo "  - constraint programming: cplibs, cpexe, pycp, javacp"
-	@echo "  - algorithms: algoritmlibs, pyalgorithms"
-	@echo "  - graph: graphlibs, pygraph"
+	@echo "  - constraint programming: cplibs cpexe pycp javacp"
+	@echo "  - algorithms: algorithmlibs pyalgorithms"
+	@echo "  - graph: graphlibs pygraph"
 	@echo "  - misc: clean"
+
+all: cplibs cpexe pycp javacp algorithmlibs pyalgorithms graphlibs pygraph
+
+
 
 CPLIBS = \
 	librouting.a       \
@@ -108,7 +112,7 @@ cpexe: $(CPBINARIES)
 ALGORITHM_LIBS = \
 	libalgorithms.a
 
-algorithm_libs: $(ALGORITHM_LIBS)
+algorithmlibs: $(ALGORITHM_LIBS)
 
 clean:
 	rm -f *.a
