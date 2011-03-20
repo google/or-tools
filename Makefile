@@ -78,8 +78,6 @@ help:
 
 all: cplibs cpexe pycp javacp algorithmlibs pyalgorithms graphlibs pygraph
 
-
-
 CPLIBS = \
 	librouting.a       \
 	libconstraint_solver.a

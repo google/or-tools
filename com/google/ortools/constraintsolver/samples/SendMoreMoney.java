@@ -29,7 +29,7 @@ public class SendMoreMoney {
 
 
   /**
-   * 
+   *
    * Solves the SEND+MORE=MONEY problem.
    *
    */
@@ -37,30 +37,28 @@ public class SendMoreMoney {
     int base = 10;
 
     Solver solver = new Solver("SendMoreMoney");
-    IntVar s = solver.makeIntVar(0, base-1, "s");
-    IntVar e = solver.makeIntVar(0, base-1, "e");
-    IntVar n = solver.makeIntVar(0, base-1, "n");
-    IntVar d = solver.makeIntVar(0, base-1, "d");
-    IntVar m = solver.makeIntVar(0, base-1, "m");
-    IntVar o = solver.makeIntVar(0, base-1, "o");
-    IntVar r = solver.makeIntVar(0, base-1, "r");
-    IntVar y = solver.makeIntVar(0, base-1, "y");
+    IntVar s = solver.makeIntVar(0, base - 1, "s");
+    IntVar e = solver.makeIntVar(0, base - 1, "e");
+    IntVar n = solver.makeIntVar(0, base - 1, "n");
+    IntVar d = solver.makeIntVar(0, base - 1, "d");
+    IntVar m = solver.makeIntVar(0, base - 1, "m");
+    IntVar o = solver.makeIntVar(0, base - 1, "o");
+    IntVar r = solver.makeIntVar(0, base - 1, "r");
+    IntVar y = solver.makeIntVar(0, base - 1, "y");
 
     IntVar[] x = {s,e,n,d,m,o,r,y};
 
     IntVar[] eq = {s,e,n,d,  m,o,r,e, m,o,n,e,y};
-    int[] coeffs = {1000, 100, 10, 1,         //    S E N D +
-                    1000, 100, 10, 1,         //    M O R E
-                    -10000,-1000, -100,-10,-1 // == M O N E Y
+    int[] coeffs = {1000, 100, 10, 1,            //    S E N D +
+                    1000, 100, 10, 1,            //    M O R E
+                    -10000, -1000, -100, -10, -1 // == M O N E Y
     };
     solver.addConstraint(solver.makeScalProdEquality(eq, coeffs, 0));
 
     // alternative:
     solver.addConstraint(
         solver.makeScalProdEquality(new IntVar[] {s,e,n,d,  m,o,r,e, m,o,n,e,y},
-                                    new int[] {1000, 100, 10, 1,
-                                               1000, 100, 10, 1,
-                                               -10000,-1000, -100,-10,-1}, 0));
+                                    coeffs, 0));
 
     // s > 0
     solver.addConstraint(solver.makeGreater(s, 0));
@@ -74,10 +72,10 @@ public class SendMoreMoney {
                                           solver.INT_VALUE_DEFAULT);
     solver.newSearch(db);
     while (solver.nextSolution()) {
-        for(int i = 0; i < 8; i++) {
-            System.out.print(x[i].toString() + " ");
-        }
-        System.out.println();
+      for(int i = 0; i < 8; i++) {
+        System.out.print(x[i].toString() + " ");
+      }
+      System.out.println();
     }
     solver.endSearch();
 
