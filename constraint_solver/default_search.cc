@@ -94,6 +94,7 @@ class InitVarImpacts : public DecisionBuilder {
   virtual ~InitVarImpacts() {}
 
   void UpdateImpacts() {
+    // the Min is always the value we just set.
     update_impact_callback_->Run(var_index_, var_->Min());
   }
 
@@ -291,13 +292,16 @@ class ImpactRecorder {
   static const double kFailureImpact;
   static const double kInitFailureImpact;
 
-  ImpactRecorder(const IntVar* const * vars, int size)
+  ImpactRecorder(const IntVar* const * vars,
+                 int size,
+                 DefaultPhaseParameters::DisplayLevel display_level)
       : domain_watcher_(vars, size, kLogCacheSize),
         size_(size),
         current_log_space_(0.0),
         impacts_(size_),
         original_min_(size_, 0LL),
-        domain_iterators_(new IntVarIterator*[size_]) {
+        domain_iterators_(new IntVarIterator*[size_]),
+        display_level_(display_level) {
     CHECK_GE(size_, 0);
     if (size_ > 0) {
       vars_.reset(new IntVar*[size_]);
@@ -306,11 +310,20 @@ class ImpactRecorder {
     for (int i = 0; i < size_; ++i) {
       domain_iterators_[i] = vars_[i]->MakeDomainIterator(true);
       original_min_[i] = vars_[i]->Min();
-      // By default, we init impacts to 1.0 -> equivalent to failure.
+      // By default, we init impacts to 2.0 -> equivalent to failure.
       // This will be overwritten to real impact values on valid domain
       // values during the FirstRun() method.
       impacts_[i].resize(vars_[i]->Max() - vars_[i]->Min() + 1,
                          kInitFailureImpact);
+
+    }
+  }
+
+  void ResetImpacts() {
+    for (int i = 0; i < size_; ++i) {
+      for (int j = 0; j < impacts_[i].size(); ++j) {
+        impacts_[i][j] = kInitFailureImpact;
+      }
     }
   }
 
@@ -335,13 +348,17 @@ class ImpactRecorder {
     const double log_space = domain_watcher_.LogSearchSpaceSize();
     const double impact = kPerfectImpact - log_space / current_log_space_;
     const int64 value_index = value - original_min_[var_index];
+    DCHECK_LT(var_index, size_);
+    DCHECK_LT(value_index, impacts_[var_index].size());
     impacts_[var_index][value_index] = impact;
     init_count_++;
   }
 
   void FirstRun(Solver* const solver, int64 splits) {
     current_log_space_ = domain_watcher_.LogSearchSpaceSize();
-    VLOG(1) << "  - initial log2(SearchSpace) = " << current_log_space_;
+    if (display_level_ != DefaultPhaseParameters::NONE) {
+      LOG(INFO) << "  - initial log2(SearchSpace) = " << current_log_space_;
+    }
     const int64 init_time = solver->wall_time();
     int64 removed_counter = 0;
     FirstRunVariableContainers* container = solver->RevAlloc(
@@ -385,22 +402,23 @@ class ImpactRecorder {
             container->PushBackRemovedValue(value);
           }
         }
-        CHECK(container->HasRemovedValues());
+        CHECK(container->HasRemovedValues()) << var->DebugString();
         removed_counter += container->NumRemovedValues();
         const double old_log = domain_watcher_.Log2(var->Size());
         var->RemoveValues(container->removed_values());
         current_log_space_ += domain_watcher_.Log2(var->Size()) - old_log;
       }
     }
-
-    if (removed_counter) {
-      LOG(INFO) << "  - init done, time = " << solver->wall_time() - init_time
-                << " ms, " << removed_counter
-                << " values removed, log2(SearchSpace) = "
-                << current_log_space_;
-    } else {
-      LOG(INFO) << "  - init done, time = " << solver->wall_time() - init_time
-                << " ms";
+    if (display_level_ != DefaultPhaseParameters::NONE) {
+      if (removed_counter) {
+        LOG(INFO) << "  - init done, time = " << solver->wall_time() - init_time
+                  << " ms, " << removed_counter
+                  << " values removed, log2(SearchSpace) = "
+                  << current_log_space_;
+      } else {
+        LOG(INFO) << "  - init done, time = " << solver->wall_time() - init_time
+                  << " ms";
+      }
     }
   }
 
@@ -436,6 +454,8 @@ class ImpactRecorder {
     for (it->Init(); it->Ok(); it->Next()) {
       const int64 value = it->Value();
       const int64 value_index = value - original_min_[var_index];
+      DCHECK_LT(var_index, size_);
+      DCHECK_LT(value_index, impacts_[var_index].size());
       const double current_impact = impacts_[var_index][value_index];
       sum_var_impact += current_impact;
       if (current_impact > max_impact) {
@@ -514,6 +534,7 @@ class ImpactRecorder {
   vector<int64> original_min_;
   scoped_array<IntVarIterator*> domain_iterators_;
   int64 init_count_;
+  const DefaultPhaseParameters::DisplayLevel display_level_;
 
   DISALLOW_COPY_AND_ASSIGN(ImpactRecorder);
 };
@@ -533,7 +554,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
                         const IntVar* const* vars,
                         int size,
                         const DefaultPhaseParameters& parameters)
-      : impact_recorder_(vars, size),
+      : impact_recorder_(vars, size, parameters.display_level),
         size_(size),
         parameters_(parameters),
         init_done_(false),
@@ -668,7 +689,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
     const bool result =
         solver->NestedSolve(wrapper->phase, false, heuristic_limit_);
-    if (result) {
+    if (result && parameters_.display_level != DefaultPhaseParameters::NONE) {
       LOG(INFO) << "Solution found by heuristic " << wrapper->name;
     }
     return result;
@@ -692,14 +713,23 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
   virtual Decision* Next(Solver* const solver) {
     if (!init_done_) {
-      LOG(INFO) << "Init impact based search phase on " << size_
-                << " variables, initialization splits = "
-                << parameters_.initialization_splits
-                << ", heuristic_period = " << parameters_.heuristic_period
-                << ", run_all_heuristics = " << parameters_.run_all_heuristics
-                << ", restart_log_size = " << parameters_.restart_log_size;
+      if (parameters_.display_level != DefaultPhaseParameters::NONE) {
+        LOG(INFO) << "Init impact based search phase on " << size_
+                  << " variables, initialization splits = "
+                  << parameters_.initialization_splits
+                  << ", heuristic_period = " << parameters_.heuristic_period
+                  << ", run_all_heuristics = " << parameters_.run_all_heuristics
+                  << ", restart_log_size = " << parameters_.restart_log_size;
+      }
+      // We need to reset the impacts because FirstRun calls RemoveValues
+      // which can result in a Fail() therefore calling this method again.
+      impact_recorder_.ResetImpacts();
       impact_recorder_.FirstRun(solver, parameters_.initialization_splits);
-      init_done_ = true;
+      if (parameters_.persistent_impact) {
+        init_done_ = true;
+      } else {
+        solver->SaveAndSetValue(&init_done_, true);
+      }
     }
 
     if (current_var_index_ == -1 && fail_stamp_ != 0) {
@@ -722,14 +752,18 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       const double log_search_space_size =
           impact_recorder_.LogSearchSpaceSize();
       const int search_depth = solver->SearchDepth();
-      VLOG(2) << "search_depth = " << search_depth
-              << ", log_search_space_size = " << log_search_space_size
-              << ", min_log_search_space = " << min_log_search_space_;
+      if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+        LOG(INFO) << "search_depth = " << search_depth
+                  << ", log_search_space_size = " << log_search_space_size
+                  << ", min_log_search_space = " << min_log_search_space_;
+      }
       if (min_log_search_space_ > log_search_space_size) {
         min_log_search_space_ = log_search_space_size;
       } else if (min_log_search_space_ + parameters_.restart_log_size
                  < log_search_space_size) {
-        VLOG(2) << "Restarting ";
+        if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+          LOG(INFO) << "Restarting ";
+        }
         min_log_search_space_ = std::numeric_limits<double>::infinity();
         solver->RestartSearch();
       }

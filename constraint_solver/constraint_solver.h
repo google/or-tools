@@ -200,6 +200,12 @@ struct DefaultPhaseParameters {
     SELECT_MAX_IMPACT = 1,
   };
 
+  enum DisplayLevel {
+    NONE = 0,
+    NORMAL = 1,
+    VERBOSE = 2
+  };
+
   DefaultPhaseParameters()
       : var_selection_schema(CHOOSE_MAX_SUM_IMPACT),
         value_selection_schema(SELECT_MIN_IMPACT),
@@ -207,8 +213,10 @@ struct DefaultPhaseParameters {
         run_all_heuristics(true),
         heuristic_period(kDefaultHeuristicPeriod),
         heuristic_num_failures_limit(kDefaultHeuristicNumFailuresLimit),
+        persistent_impact(true),
         random_seed(kDefaultSeed),
-        restart_log_size(kDefaultRestartLogSize) {}
+        restart_log_size(kDefaultRestartLogSize),
+        display_level(NORMAL) {}
 
   // This parameter describes how the next variable to instantiate
   // will be chosen.
@@ -226,6 +234,9 @@ struct DefaultPhaseParameters {
   int heuristic_period;
   // The failure limit for each heuristic that we run.
   int heuristic_num_failures_limit;
+  // Whether to keep the impact from the first search for other searches
+  // or to recompute the impact for each new search.
+  bool persistent_impact;
   // Seed used to initialize the random part in some heuristics.
   int random_seed;
   // Automatic Restart Size. When diving down, the size of the search
@@ -239,6 +250,9 @@ struct DefaultPhaseParameters {
   // parameter < 0 means no restart. A parameter of 0 indicates that
   // we restart after each failure.
   double restart_log_size;
+  // This represents the amount of information displayed by the default search.
+  // None means no display, verbose means extra information.
+  DisplayLevel display_level;
 };
 
 /////////////////////////////////////////////////////////////////////

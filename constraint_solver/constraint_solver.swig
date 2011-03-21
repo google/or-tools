@@ -1458,10 +1458,15 @@ namespace operations_research {
 %typemap(javain) const vector<type*>& "$javainput"
 %typemap(in) const vector<type*>& (vector<type*> result) {
   jclass object_class =
-    jenv->FindClass("com/google/ortools/constraintsolver/type");
+    jenv->FindClass("com/google/ortools/"
+                    "constraintsolver/type");
   if (NULL == object_class)
     return $null;
-  jmethodID method_id = jenv->GetStaticMethodID(object_class, "getCPtr", "(Lcom/google/ortools/constraintsolver/type;)J");
+  jmethodID method_id =
+      jenv->GetStaticMethodID(object_class,
+                              "getCPtr",
+                              "(Lcom/google/ortools/"
+                              "constraintsolver/type;)J");
   assert(method_id != NULL);
   for (int i = 0; i < jenv->GetArrayLength($input); i++) {
     jobject elem = jenv->GetObjectArrayElement($input, i);
