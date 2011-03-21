@@ -579,3 +579,119 @@ run_NQueens2: compile_NQueens2
 	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.NQueens2
 
 
+compile_AllDifferentExcept0: com/google/ortools/constraintsolver/samples/AllDifferentExcept0.class
+
+com/google/ortools/constraintsolver/samples/AllDifferentExcept0.class: javacp com/google/ortools/constraintsolver/samples/AllDifferentExcept0.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/AllDifferentExcept0.java
+
+run_AllDifferentExcept0: compile_AllDifferentExcept0
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.AllDifferentExcept0
+
+
+compile_Diet: com/google/ortools/constraintsolver/samples/Diet.class
+
+com/google/ortools/constraintsolver/samples/Diet.class: javacp com/google/ortools/constraintsolver/samples/Diet.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/Diet.java
+
+run_Diet: compile_Diet
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Diet
+
+
+compile_Map: com/google/ortools/constraintsolver/samples/Map.class
+
+com/google/ortools/constraintsolver/samples/Map.class: javacp com/google/ortools/constraintsolver/samples/Map.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/Map.java
+
+run_Map: compile_Map
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Map
+
+
+compile_Map2: com/google/ortools/constraintsolver/samples/Map2.class
+
+com/google/ortools/constraintsolver/samples/Map2.class: javacp com/google/ortools/constraintsolver/samples/Map2.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/Map2.java
+
+run_Map2: compile_Map2
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Map2
+
+
+compile_Minesweeper: com/google/ortools/constraintsolver/samples/Minesweeper.class
+
+com/google/ortools/constraintsolver/samples/Minesweeper.class: javacp com/google/ortools/constraintsolver/samples/Minesweeper.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/Minesweeper.java
+
+run_Minesweeper: compile_Minesweeper
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Minesweeper
+
+
+compile_QuasigroupCompletion: com/google/ortools/constraintsolver/samples/QuasigroupCompletion.class
+
+com/google/ortools/constraintsolver/samples/QuasigroupCompletion.class: javacp com/google/ortools/constraintsolver/samples/QuasigroupCompletion.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/QuasigroupCompletion.java
+
+run_QuasigroupCompletion: compile_QuasigroupCompletion
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.QuasigroupCompletion
+
+
+compile_SendMostMoney: com/google/ortools/constraintsolver/samples/SendMostMoney.class
+
+com/google/ortools/constraintsolver/samples/SendMostMoney.class: javacp com/google/ortools/constraintsolver/samples/SendMostMoney.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/SendMostMoney.java
+
+run_SendMostMoney: compile_SendMostMoney
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.SendMostMoney
+
+
+compile_Seseman: com/google/ortools/constraintsolver/samples/Seseman.class
+
+com/google/ortools/constraintsolver/samples/Seseman.class: javacp com/google/ortools/constraintsolver/samples/Seseman.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/Seseman.java
+
+run_Seseman: compile_Seseman
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Seseman
+
+
+compile_Sudoku: com/google/ortools/constraintsolver/samples/Sudoku.class
+
+com/google/ortools/constraintsolver/samples/Sudoku.class: javacp com/google/ortools/constraintsolver/samples/Sudoku.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/Sudoku.java
+
+run_Sudoku: compile_Sudoku
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Sudoku
+
+
+compile_Xkcd: com/google/ortools/constraintsolver/samples/Xkcd.class
+
+com/google/ortools/constraintsolver/samples/Xkcd.class: javacp com/google/ortools/constraintsolver/samples/Xkcd.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/Xkcd.java
+
+run_Xkcd: compile_Xkcd
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Xkcd
+
+
+compile_SurvoPuzzle: com/google/ortools/constraintsolver/samples/SurvoPuzzle.class
+
+com/google/ortools/constraintsolver/samples/SurvoPuzzle.class: javacp com/google/ortools/constraintsolver/samples/SurvoPuzzle.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/SurvoPuzzle.java
+
+run_SurvoPuzzle: compile_SurvoPuzzle
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.SurvoPuzzle
+
+
+compile_Circuit: com/google/ortools/constraintsolver/samples/Circuit.class
+
+com/google/ortools/constraintsolver/samples/Circuit.class: javacp com/google/ortools/constraintsolver/samples/Circuit.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/Circuit.java
+
+run_Circuit: compile_Circuit
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Circuit
+
+
+compile_CoinsGrid: com/google/ortools/constraintsolver/samples/CoinsGrid.class
+
+com/google/ortools/constraintsolver/samples/CoinsGrid.class: javacp com/google/ortools/constraintsolver/samples/CoinsGrid.java
+	$(JAVAC_BIN) -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/CoinsGrid.java
+
+run_CoinsGrid: compile_CoinsGrid
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.CoinsGrid
+
