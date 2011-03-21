@@ -1,0 +1,43 @@
+10
+. . 1 5 2 6 7 8 . . 
+. 1 5 2 . . 6 7 8 . 
+1 5 2 . . . . 6 7 8 
+5 2 . . . . . . 6 7 
+2 . . . . . . . . 6 
+4 10 . . . . . . 3 9 
+. 4 10 . . . . 3 9 . 
+. . 4 10 . . 3 9 . . 
+. . . 4 10 3 9 . . . 
+. . . . 4 9 . . . .
+# 
+# Problem from http://www.cs.cornell.edu/gomes/QUASIdemo.html
+# (n = 10)
+# Pattern #3. 
+# Coding:
+#    dark red   = 1
+#    light blue = 2 
+#    dark blue  = 3 
+#    light red  = 4
+#    brown      = 5
+#    green      = 6
+#    pink       = 7
+#    grey       = 8
+#    black      = 9
+#    yellow     = 10    
+# There are 40944 solutions for this pattern.
+#
+#
+# Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
