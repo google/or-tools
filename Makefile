@@ -72,11 +72,11 @@ LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
 help:
 	@echo Please define target:
 	@echo "  - constraint programming: cplibs cpexe pycp javacp"
-	@echo "  - algorithms: algorithmlibs pyalgorithms"
+	@echo "  - algorithms: algorithmslibs pyalgorithms javaalgorithms"
 	@echo "  - graph: graphlibs pygraph"
 	@echo "  - misc: clean"
 
-all: cplibs cpexe pycp javacp algorithmlibs pyalgorithms graphlibs pygraph
+all: cplibs cpexe pycp javacp algorithmslibs pyalgorithms javaalgorithms graphlibs pygraph
 
 CPLIBS = \
 	librouting.a       \
@@ -107,10 +107,10 @@ CPBINARIES = \
 
 cpexe: $(CPBINARIES)
 
-ALGORITHM_LIBS = \
+ALGORITHMS_LIBS = \
 	libalgorithms.a
 
-algorithmlibs: $(ALGORITHM_LIBS)
+algorithmslibs: $(ALGORITHMS_LIBS)
 
 clean:
 	rm -f *.a
@@ -429,7 +429,7 @@ tsp: $(CPLIBS) $(BASE_LIBS) objs/tsp.o
 
 # pywrapknapsack_solver
 
-pyalgorithms: _pywrapknapsack_solver.so algorithms/pywrapknapsack_solver.py $(ALGORITHM_LIBS) $(BASE_LIBS)
+pyalgorithms: _pywrapknapsack_solver.so algorithms/pywrapknapsack_solver.py $(ALGORITHMS_LIBS) $(BASE_LIBS)
 
 algorithms/pywrapknapsack_solver.py: algorithms/knapsack_solver.swig algorithms/knapsack_solver.h base/base.swig
 	$(SWIG_BINARY) -c++ -python -o algorithms/knapsack_solver_wrap.cc -module pywrapknapsack_solver algorithms/knapsack_solver.swig
@@ -439,8 +439,8 @@ algorithms/knapsack_solver_wrap.cc: algorithms/pywrapknapsack_solver.py
 objs/knapsack_solver_wrap.o: algorithms/knapsack_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c algorithms/knapsack_solver_wrap.cc -o objs/knapsack_solver_wrap.o
 
-_pywrapknapsack_solver.so: objs/knapsack_solver_wrap.o $(ALGORITHM_LIBS) $(BASE_LIBS)
-	$(LD) -o _pywrapknapsack_solver.so objs/knapsack_solver_wrap.o $(ALGORITHM_LIBS) $(BASE_LIBS) $(LDFLAGS)
+_pywrapknapsack_solver.so: objs/knapsack_solver_wrap.o $(ALGORITHMS_LIBS) $(BASE_LIBS)
+	$(LD) -o _pywrapknapsack_solver.so objs/knapsack_solver_wrap.o $(ALGORITHMS_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # pywrapflow
 
@@ -487,7 +487,7 @@ _pywraprouting.so: objs/routing_wrap.o $(CPLIBS) $(BASE_LIBS)
 
 # ---------- Java Support ----------
 
-# javawrapcp
+# javacp
 
 javacp: com.google.ortools.constraintsolver.jar libjniconstraintsolver.$(JNILIBEXT)
 constraint_solver/constraint_solver_java_wrap.cc: constraint_solver/constraint_solver.swig base/base.swig util/data.swig constraint_solver/constraint_solver.h
@@ -695,3 +695,28 @@ com/google/ortools/constraintsolver/samples/CoinsGrid.class: javacp com/google/o
 run_CoinsGrid: compile_CoinsGrid
 	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.CoinsGrid
 
+# javaalgorithms
+
+javaalgorithms: com.google.ortools.knapsacksolver.jar libjniknapsacksolver.$(JNILIBEXT)
+algorithms/knapsack_solver_java_wrap.cc: algorithms/knapsack_solver.swig base/base.swig util/data.swig algorithms/knapsack_solver.h
+	$(SWIG_BINARY) -c++ -java -o algorithms/knapsack_solver_java_wrap.cc -package com.google.ortools.knapsacksolver -outdir com/google/ortools/knapsacksolver algorithms/knapsack_solver.swig
+
+objs/knapsack_solver_java_wrap.o: algorithms/knapsack_solver_java_wrap.cc
+	$(CCC) $(JNIFLAGS) $(JAVA_INC) -c algorithms/knapsack_solver_java_wrap.cc -o objs/knapsack_solver_java_wrap.o
+
+com.google.ortools.knapsacksolver.jar: algorithms/knapsack_solver_java_wrap.cc
+	$(JAVAC_BIN) com/google/ortools/knapsacksolver/*.java
+	jar cf com.google.ortools.knapsacksolver.jar com/google/ortools/knapsacksolver/*.class
+
+libjniknapsacksolver.$(JNILIBEXT): objs/knapsack_solver_java_wrap.o $(ALGORITHMS_LIBS) $(BASE_LIBS)
+	$(LD) -o libjniknapsacksolver.$(JNILIBEXT) objs/knapsack_solver_java_wrap.o $(ALGORITHMS_LIBS) $(BASE_LIBS) $(LDFLAGS)
+
+# Java Algorithms Examples
+
+compile_Knapsack: com/google/ortools/knapsacksolver/samples/Knapsack.class
+
+com/google/ortools/knapsacksolver/samples/Knapsack.class: javacp com/google/ortools/knapsacksolver/samples/Knapsack.java
+	$(JAVAC_BIN) -cp com.google.ortools.knapsacksolver.jar com/google/ortools/knapsacksolver/samples/Knapsack.java
+
+run_Knapsack: compile_Knapsack
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.knapsacksolver.jar com.google.ortools.knapsacksolver.samples.Knapsack
