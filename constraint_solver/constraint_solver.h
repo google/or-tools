@@ -1459,7 +1459,6 @@ class Solver {
                                OptimizeVar* const objective,
                                ResultCallback<string>* display_callback);
 
-
   // ----- Search Trace ------
 
   // Creates a search monitor that will trace precisely the behavior of the
