@@ -21,6 +21,34 @@
 #include "graph/min_cost_flow.h"
 %}
 
+#if defined(SWIGJAVA)
+// Rename rules on EbertGraph.
+%rename(reserve) operations_research::EbertGraph::Reserve;
+%rename(numNodes) operations_research::EbertGraph::num_nodes;
+%rename(numArcs) operations_research::EbertGraph::num_arcs;
+%rename(maxNumNodes) operations_research::EbertGraph::max_num_nodes;
+%rename(maxNumArcs) operations_research::EbertGraph::max_num_arcs;
+%rename(addArc) operations_research::EbertGraph::AddArc;
+
+// Rename rules on MaxFlow.
+%rename (getSourceNodeIndex) operations_research::MaxFlow::GetSourceNodeIndex;
+%rename (getSinkNodeIndex) operations_research::MaxFlow::GetSinkNodeIndex;
+%rename (setArcCapacity) operations_research::MaxFlow::SetArcCapacity;
+%rename (computeMaxFlow) operations_research::MaxFlow::ComputeMaxFlow;
+%rename (flow) operations_research::MaxFlow::Flow;
+%rename (capacity) operations_research::MaxFlow::Capacity;
+
+// Rename rules on MinCostFlow.
+%rename(setNodeSupply) operations_research::MinCostFlow::SetNodeSupply;
+%rename(setArcUnitCost) operations_research::MinCostFlow::SetArcUnitCost;
+%rename(setArcCapacity) operations_research::MinCostFlow::SetArcCapacity;
+%rename(computeMinCostFlow) operations_research::MinCostFlow::ComputeMinCostFlow;
+%rename(flow) operations_research::MinCostFlow::Flow;
+%rename(capacity) operations_research::MinCostFlow::Capacity;
+%rename(cost) operations_research::MinCostFlow::Cost;
+%rename(supply) operations_research::MinCostFlow::Supply;
+#endif  // SWIGJAVA
+
 %include "util/packed_array.h"
 %include "graph/ebert_graph.h"
 %include "graph/max_flow.h"
@@ -28,6 +56,4 @@
 
 namespace operations_research {
 %template(StarGraph) EbertGraph<kStarGraphNodeIndexSize, kStarGraphArcIndexSize>;
-%template(NodeIndexArray) PackedArray<kStarGraphNodeIndexSize>;
-%template(ArcIndexArray) PackedArray<kStarGraphArcIndexSize>;
 }

@@ -73,12 +73,11 @@ help:
 	@echo Please define target:
 	@echo "  - constraint programming: cplibs cpexe pycp javacp"
 	@echo "  - algorithms: algorithmslibs pyalgorithms javaalgorithms"
-	@echo "  - graph: graphlibs pygraph"
+	@echo "  - graph: graphlibs pygraph javagraph"
 	@echo "  - misc: clean"
 
-all: cplibs cpexe pycp javacp algorithmslibs pyalgorithms javaalgorithms graphlibs pygraph
-
-CPLIBS = \
+all: cplibs cpexe pycp javacp algorithmslibs pyalgorithms javaalgorithms graphlibs pygraph javagraph
+CP_LIBS = \
 	librouting.a       \
 	libconstraint_solver.a
 
@@ -92,7 +91,7 @@ BASE_LIBS = \
 	libutil.a          \
 	libbase.a
 
-cplibs: $(CPLIBS) $(BASE_LIBS)
+cplibs: $(CP_LIBS) $(BASE_LIBS)
 
 CPBINARIES = \
 	costas_array \
@@ -116,8 +115,8 @@ clean:
 	rm -f *.a
 	rm -f objs/*.o
 	rm -f $(CPBINARIES)
-	rm -f constraint_solver/*wrap*
-	rm -f constraint_solver/assignment.pb.*
+	rm -f */*wrap*
+	rm -f */*.pb.*
 	rm -f *.so
 
 # Constraint Solver Lib.
@@ -357,26 +356,26 @@ libbase.a: $(BASE_LIB_OBJS)
 objs/costas_array.o: examples/costas_array.cc
 	$(CCC) $(CFLAGS) -c examples/costas_array.cc -o objs/costas_array.o
 
-costas_array: $(CPLIBS) $(BASE_LIBS) objs/costas_array.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/costas_array.o $(CPLIBS) $(BASE_LIBS) -o costas_array
+costas_array: $(CP_LIBS) $(BASE_LIBS) objs/costas_array.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/costas_array.o $(CP_LIBS) $(BASE_LIBS) -o costas_array
 
 objs/cryptarithm.o:examples/cryptarithm.cc
 	$(CCC) $(CFLAGS) -c examples/cryptarithm.cc -o objs/cryptarithm.o
 
-cryptarithm: $(CPLIBS) $(BASE_LIBS) objs/cryptarithm.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.o $(CPLIBS) $(BASE_LIBS) -o cryptarithm
+cryptarithm: $(CP_LIBS) $(BASE_LIBS) objs/cryptarithm.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.o $(CP_LIBS) $(BASE_LIBS) -o cryptarithm
 
 objs/cvrptw.o: examples/cvrptw.cc
 	$(CCC) $(CFLAGS) -c examples/cvrptw.cc -o objs/cvrptw.o
 
-cvrptw: $(CPLIBS) $(BASE_LIBS) objs/cvrptw.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cvrptw.o $(CPLIBS) $(BASE_LIBS) -o cvrptw
+cvrptw: $(CP_LIBS) $(BASE_LIBS) objs/cvrptw.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cvrptw.o $(CP_LIBS) $(BASE_LIBS) -o cvrptw
 
 objs/dobble_ls.o:examples/dobble_ls.cc
 	$(CCC) $(CFLAGS) -c examples/dobble_ls.cc -o objs/dobble_ls.o
 
-dobble_ls: $(CPLIBS) $(BASE_LIBS) objs/dobble_ls.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/dobble_ls.o $(CPLIBS) $(BASE_LIBS) -o dobble_ls
+dobble_ls: $(CP_LIBS) $(BASE_LIBS) objs/dobble_ls.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/dobble_ls.o $(CP_LIBS) $(BASE_LIBS) -o dobble_ls
 
 objs/flow_example.o:examples/flow_example.cc
 	$(CCC) $(CFLAGS) -c examples/flow_example.cc -o objs/flow_example.o
@@ -387,26 +386,26 @@ flow_example: $(GRAPH_LIBS) $(BASE_LIBS) objs/flow_example.o
 objs/golomb.o:examples/golomb.cc
 	$(CCC) $(CFLAGS) -c examples/golomb.cc -o objs/golomb.o
 
-golomb: $(CPLIBS) $(BASE_LIBS) objs/golomb.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.o $(CPLIBS) $(BASE_LIBS) -o golomb
+golomb: $(CP_LIBS) $(BASE_LIBS) objs/golomb.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.o $(CP_LIBS) $(BASE_LIBS) -o golomb
 
 objs/magic_square.o:examples/magic_square.cc
 	$(CCC) $(CFLAGS) -c examples/magic_square.cc -o objs/magic_square.o
 
-magic_square: $(CPLIBS) $(BASE_LIBS) objs/magic_square.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.o $(CPLIBS) $(BASE_LIBS) -o magic_square
+magic_square: $(CP_LIBS) $(BASE_LIBS) objs/magic_square.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.o $(CP_LIBS) $(BASE_LIBS) -o magic_square
 
 objs/network_routing.o:examples/network_routing.cc
 	$(CCC) $(CFLAGS) -c examples/network_routing.cc -o objs/network_routing.o
 
-network_routing: $(CPLIBS) $(BASE_LIBS) $(GRAPH_LIBS) objs/network_routing.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/network_routing.o $(CPLIBS) $(GRAPH_LIBS) $(BASE_LIBS) -o network_routing
+network_routing: $(CP_LIBS) $(BASE_LIBS) $(GRAPH_LIBS) objs/network_routing.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/network_routing.o $(CP_LIBS) $(GRAPH_LIBS) $(BASE_LIBS) -o network_routing
 
 objs/nqueens.o: examples/nqueens.cc
 	$(CCC) $(CFLAGS) -c examples/nqueens.cc -o objs/nqueens.o
 
-nqueens: $(CPLIBS) $(BASE_LIBS) objs/nqueens.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.o $(CPLIBS) $(BASE_LIBS) -o nqueens
+nqueens: $(CP_LIBS) $(BASE_LIBS) objs/nqueens.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.o $(CP_LIBS) $(BASE_LIBS) -o nqueens
 
 objs/tricks.o: examples/tricks.cc
 	$(CCC) $(CFLAGS) -c examples/tricks.cc -o objs/tricks.o
@@ -422,8 +421,8 @@ tricks: $(CPLIBS) $(BASE_LIBS) objs/tricks.o objs/global_arith.o
 objs/tsp.o: examples/tsp.cc
 	$(CCC) $(CFLAGS) -c examples/tsp.cc -o objs/tsp.o
 
-tsp: $(CPLIBS) $(BASE_LIBS) objs/tsp.o
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.o $(CPLIBS) $(BASE_LIBS) -o tsp
+tsp: $(CP_LIBS) $(BASE_LIBS) objs/tsp.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.o $(CP_LIBS) $(BASE_LIBS) -o tsp
 
 # SWIG
 
@@ -459,7 +458,7 @@ _pywrapflow.so: objs/pywrapflow_wrap.o $(GRAPH_LIBS) $(BASE_LIBS)
 
 # pywrapcp
 
-pycp: _pywrapcp.so constraint_solver/pywrapcp.py _pywraprouting.so constraint_solver/pywraprouting.py $(CPLIBS) $(BASE_LIBS)
+pycp: _pywrapcp.so constraint_solver/pywrapcp.py _pywraprouting.so constraint_solver/pywraprouting.py $(CP_LIBS) $(BASE_LIBS)
 
 constraint_solver/pywrapcp.py: constraint_solver/constraint_solver.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h base/base.swig
 	$(SWIG_BINARY) -c++ -python -o constraint_solver/constraint_solver_wrap.cc -module pywrapcp constraint_solver/constraint_solver.swig
@@ -469,8 +468,8 @@ constraint_solver/constraint_solver_wrap.cc: constraint_solver/pywrapcp.py
 objs/constraint_solver_wrap.o: constraint_solver/constraint_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c constraint_solver/constraint_solver_wrap.cc -o objs/constraint_solver_wrap.o
 
-_pywrapcp.so: objs/constraint_solver_wrap.o $(CPLIBS) $(BASE_LIBS)
-	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o $(CPLIBS) $(BASE_LIBS) $(LDFLAGS)
+_pywrapcp.so: objs/constraint_solver_wrap.o $(CP_LIBS) $(BASE_LIBS)
+	$(LD) -o _pywrapcp.so objs/constraint_solver_wrap.o $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # pywraprouting
 
@@ -482,8 +481,8 @@ constraint_solver/routing_wrap.cc: constraint_solver/pywraprouting.py
 objs/routing_wrap.o: constraint_solver/routing_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c constraint_solver/routing_wrap.cc -o objs/routing_wrap.o
 
-_pywraprouting.so: objs/routing_wrap.o $(CPLIBS) $(BASE_LIBS)
-	$(LD) -o _pywraprouting.so objs/routing_wrap.o $(CPLIBS) $(BASE_LIBS) $(LDFLAGS)
+_pywraprouting.so: objs/routing_wrap.o $(CP_LIBS) $(BASE_LIBS)
+	$(LD) -o _pywraprouting.so objs/routing_wrap.o $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # ---------- Java Support ----------
 
@@ -501,8 +500,8 @@ com.google.ortools.constraintsolver.jar: constraint_solver/constraint_solver_jav
 	$(JAVAC_BIN) com/google/ortools/constraintsolver/*.java
 	jar cf com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/*.class
 
-libjniconstraintsolver.$(JNILIBEXT): objs/constraint_solver_java_wrap.o $(CPLIBS) $(BASE_LIBS)
-	$(LD) -o libjniconstraintsolver.$(JNILIBEXT) objs/constraint_solver_java_wrap.o $(CPLIBS) $(BASE_LIBS) $(LDFLAGS)
+libjniconstraintsolver.$(JNILIBEXT): objs/constraint_solver_java_wrap.o $(CP_LIBS) $(BASE_LIBS)
+	$(LD) -o libjniconstraintsolver.$(JNILIBEXT) objs/constraint_solver_java_wrap.o $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # Java CP Examples
 
@@ -720,3 +719,30 @@ com/google/ortools/knapsacksolver/samples/Knapsack.class: javacp com/google/orto
 
 run_Knapsack: compile_Knapsack
 	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.knapsacksolver.jar com.google.ortools.knapsacksolver.samples.Knapsack
+
+# javagraph
+
+javagraph: com.google.ortools.flow.jar libjniflow.$(JNILIBEXT)
+graph/flow_java_wrap.cc: graph/flow.swig base/base.swig util/data.swig graph/max_flow.h graph/min_cost_flow.h
+	$(SWIG_BINARY) -c++ -java -o graph/flow_java_wrap.cc -package com.google.ortools.flow -outdir com/google/ortools/flow graph/flow.swig
+
+objs/flow_java_wrap.o: graph/flow_java_wrap.cc
+	$(CCC) $(JNIFLAGS) $(JAVA_INC) -c graph/flow_java_wrap.cc -o objs/flow_java_wrap.o
+
+com.google.ortools.flow.jar: graph/flow_java_wrap.cc
+	$(JAVAC_BIN) com/google/ortools/flow/*.java
+	jar cf com.google.ortools.flow.jar com/google/ortools/flow/*.class
+
+libjniflow.$(JNILIBEXT): objs/flow_java_wrap.o $(GRAPH_LIBS) $(BASE_LIBS)
+	$(LD) -o libjniflow.$(JNILIBEXT) objs/flow_java_wrap.o $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS)
+
+# Java Algorithms Examples
+
+compile_FlowExample: com/google/ortools/flow/samples/FlowExample.class
+
+com/google/ortools/flow/samples/FlowExample.class: javacp com/google/ortools/flow/samples/FlowExample.java
+	$(JAVAC_BIN) -cp com.google.ortools.flow.jar com/google/ortools/flow/samples/FlowExample.java
+
+run_FlowExample: compile_FlowExample
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.flow.jar com.google.ortools.flow.samples.FlowExample
+
