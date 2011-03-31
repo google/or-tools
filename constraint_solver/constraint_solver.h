@@ -2386,6 +2386,10 @@ class SearchMonitor : public BaseObject {
   // Before refuting the Decision
   virtual void RefuteDecision(Decision* const d);
 
+  // Just after refuting or applying the decision, apply is true after Apply.
+  // This is called only if the Apply() or Refute() methods have not failed.
+  virtual void AfterDecision(Decision* const d, bool apply);
+
   // Just when the failure occurs.
   virtual void BeginFail();
 

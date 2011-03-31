@@ -309,6 +309,9 @@ class SearchTrace : public SearchMonitor {
   virtual void RefuteDecision(Decision* const d) {
     LG << prefix_ << " RefuteDecision(" << d << ") ";
   }
+  virtual void AfterDecision(Decision* const d, bool apply) {
+    LG << prefix_ << " AfterDecision(" << d << ", " << apply << ") ";
+  }
   virtual void BeginFail() {
     LG << prefix_ << " BeginFail(" << solver()->SearchDepth() << ")";
   }

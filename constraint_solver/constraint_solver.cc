@@ -811,6 +811,7 @@ class Search {
   void BeginNextDecision(DecisionBuilder* const b);
   void EndNextDecision(DecisionBuilder* const b, Decision* const d);
   void ApplyDecision(Decision* const d);
+  void AfterDecision(Decision* const d, bool apply);
   void RefuteDecision(Decision* const d);
   void BeginFail();
   void EndFail();
@@ -1070,6 +1071,15 @@ void Search::ApplyDecision(Decision* const d) {
        it != monitors_.end();
        ++it) {
     (*it)->ApplyDecision(d);
+  }
+  CheckFail();
+}
+
+void Search::AfterDecision(Decision* const d, bool apply) {
+  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+       it != monitors_.end();
+       ++it) {
+    (*it)->AfterDecision(d, apply);
   }
   CheckFail();
 }
@@ -1916,6 +1926,7 @@ bool Solver::NextSolution() {
         search->RefuteDecision(fd);
         branches_++;
         fd->Refute(this);
+        search->AfterDecision(fd, false);
         search->RightMove();
         fd = NULL;
       }
@@ -1943,17 +1954,20 @@ bool Solver::NextSolution() {
               search->ApplyDecision(d);
               branches_++;
               d->Apply(this);
+              search->AfterDecision(d, true);
               search->LeftMove();
               break;
             }
             case KEEP_LEFT: {
               search->ApplyDecision(d);
               d->Apply(this);
+              search->AfterDecision(d, true);
               break;
             }
             case KEEP_RIGHT: {
               search->RefuteDecision(d);
               d->Refute(this);
+              search->AfterDecision(d, false);
               break;
             }
             case KILL_BOTH: {
@@ -2220,6 +2234,7 @@ void SearchMonitor::EndNextDecision(DecisionBuilder* const b,
                                     Decision* const d) {}
 void SearchMonitor::ApplyDecision(Decision* const d) {}
 void SearchMonitor::RefuteDecision(Decision* const d) {}
+void SearchMonitor::AfterDecision(Decision* const d, bool apply) {}
 void SearchMonitor::BeginFail() {}
 void SearchMonitor::EndFail() {}
 void SearchMonitor::BeginInitialPropagation() {}
