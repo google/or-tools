@@ -144,7 +144,7 @@ class CBCInterface : public MPSolverInterface {
   }
  private:
   // Reset best objective bound to +/- infinity depending on the
-  // objective sense.
+  // optimization direction.
   void ResetBestObjectiveBound();
 
   // Set all parameters in the underlying solver.
@@ -347,8 +347,8 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
     }
   }
 
-  // Changing objective sense through OSI so that the model file
-  // (written through OSI) has the correct objective sense
+  // Changing optimization direction through OSI so that the model file
+  // (written through OSI) has the correct optimization duration.
   osi_.setObjSense(maximize_ ? -1 : 1);
 
   VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
