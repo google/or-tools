@@ -13,9 +13,9 @@
 
 package com.google.ortools.flow.samples;
 
-import com.google.ortools.flow.StarGraph;
 import com.google.ortools.flow.MaxFlow;
 import com.google.ortools.flow.MinCostFlow;
+import com.google.ortools.flow.StarGraph;
 
 /**
  * Sample showing how to model using the flow solver.

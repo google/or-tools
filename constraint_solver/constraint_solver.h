@@ -60,6 +60,7 @@
 
 #include <vector>
 #include <string>
+#include <utility>
 
 #include "base/callback.h"
 #include "base/commandlineflags.h"
@@ -1650,8 +1651,8 @@ class Solver {
       const IntVar* const* vars,
       int size);
 
-  // SolveOnce will collapse a search tree described by a 'db' decision
-  // builder, and a set of monitors and wrap it into a single point.
+  // SolveOnce will collapse a search tree described by a decision
+  // builder 'db' and a set of monitors and wrap it into a single point.
   // If there are no solutions to this nested tree, then SolveOnce will
   // fail. If there is a solution, it will find it and returns NULL.
   DecisionBuilder* MakeSolveOnce(DecisionBuilder* const db);
@@ -1671,6 +1672,49 @@ class Solver {
                                  SearchMonitor* const monitor4);
   DecisionBuilder* MakeSolveOnce(DecisionBuilder* const db,
                                  const vector<SearchMonitor*>& monitors);
+
+  // NestedOptimize will collapse a search tree described by a
+  // decision builder 'db' and a set of monitors and wrap it into a
+  // single point. If there are no solutions to this nested tree, then
+  // NestedOptimize will fail. If there are solutions, it will find
+  // the best as described by the mandatory objective in the solution,
+  // as well as the optimization direction, instantiate all variables
+  // to this solution, and returns NULL.
+  DecisionBuilder* MakeNestedOptimize(DecisionBuilder* const db,
+                                      Assignment* const solution,
+                                      bool maximize,
+                                      int64 step);
+  DecisionBuilder* MakeNestedOptimize(DecisionBuilder* const db,
+                                      Assignment* const solution,
+                                      bool maximize,
+                                      int64 step,
+                                      SearchMonitor* const monitor1);
+  DecisionBuilder* MakeNestedOptimize(DecisionBuilder* const db,
+                                      Assignment* const solution,
+                                      bool maximize,
+                                      int64 step,
+                                      SearchMonitor* const monitor1,
+                                      SearchMonitor* const monitor2);
+  DecisionBuilder* MakeNestedOptimize(DecisionBuilder* const db,
+                                      Assignment* const solution,
+                                      bool maximize,
+                                      int64 step,
+                                      SearchMonitor* const monitor1,
+                                      SearchMonitor* const monitor2,
+                                      SearchMonitor* const monitor3);
+  DecisionBuilder* MakeNestedOptimize(DecisionBuilder* const db,
+                                      Assignment* const solution,
+                                      bool maximize,
+                                      int64 step,
+                                      SearchMonitor* const monitor1,
+                                      SearchMonitor* const monitor2,
+                                      SearchMonitor* const monitor3,
+                                      SearchMonitor* const monitor4);
+  DecisionBuilder* MakeNestedOptimize(DecisionBuilder* const db,
+                                      Assignment* const solution,
+                                      bool maximize,
+                                      int64 step,
+                                      const vector<SearchMonitor*>& monitors);
 
   // Returns a DecisionBuilder which restores an Assignment
   // (calls void Assignment::Restore())

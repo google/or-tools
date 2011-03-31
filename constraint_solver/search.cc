@@ -3645,6 +3645,143 @@ DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
   return RevAlloc(new SolveOnce(db, monitors));
 }
 
+// ---------- NestedOptimize ----------
+
+class NestedOptimize : public DecisionBuilder {
+ public:
+  NestedOptimize(DecisionBuilder* const db,
+                 Assignment* const solution,
+                 bool maximize,
+                 int64 step)
+      : db_(db),
+        solution_(solution),
+        maximize_(maximize),
+        step_(step),
+        collector_(NULL) {
+    CHECK_NOTNULL(db);
+    CHECK_NOTNULL(solution);
+    CHECK(solution->HasObjective());
+    AddMonitors();
+  }
+
+  NestedOptimize(DecisionBuilder* const db,
+                 Assignment* const solution,
+                 bool maximize,
+                 int64 step,
+                 const vector<SearchMonitor*>& monitors)
+      : db_(db),
+        solution_(solution),
+        maximize_(maximize),
+        step_(step),
+        monitors_(monitors),
+        collector_(NULL) {
+    CHECK_NOTNULL(db);
+    CHECK_NOTNULL(solution);
+    CHECK(solution->HasObjective());
+    AddMonitors();
+  }
+
+  void AddMonitors() {
+    Solver* const solver = solution_->solver();
+    collector_ = solver->MakeLastSolutionCollector(solution_);
+    monitors_.push_back(collector_);
+    OptimizeVar* const optimize =
+        solver->MakeOptimize(maximize_, solution_->Objective(), step_);
+    monitors_.push_back(optimize);
+  }
+
+  virtual Decision* Next(Solver* solver) {
+    solver->NestedSolve(db_, true, monitors_);
+    if (collector_->solution_count() == 0) {
+      solver->Fail();
+    }
+    collector_->solution(0)->Restore();
+    return NULL;
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("NestedOptimize(db = %s, maximize = %d, step = %lld)",
+                        db_->DebugString().c_str(),
+                        maximize_,
+                        step_);
+  }
+ private:
+  DecisionBuilder* const db_;
+  Assignment* const solution_;
+  const bool maximize_;
+  const int64 step_;
+  vector<SearchMonitor*> monitors_;
+  SolutionCollector* collector_;
+};
+
+DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
+                                            Assignment* const solution,
+                                            bool maximize,
+                                            int64 step) {
+  return RevAlloc(new NestedOptimize(db, solution, maximize, step));
+}
+
+DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
+                                            Assignment* const solution,
+                                            bool maximize,
+                                            int64 step,
+                                            SearchMonitor* const monitor1) {
+  vector<SearchMonitor*> monitors;
+  monitors.push_back(monitor1);
+  return RevAlloc(new NestedOptimize(db, solution, maximize, step, monitors));
+}
+
+DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
+                                            Assignment* const solution,
+                                            bool maximize,
+                                            int64 step,
+                                            SearchMonitor* const monitor1,
+                                            SearchMonitor* const monitor2) {
+  vector<SearchMonitor*> monitors;
+  monitors.push_back(monitor1);
+  monitors.push_back(monitor2);
+  return RevAlloc(new NestedOptimize(db, solution, maximize, step, monitors));
+}
+
+DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
+                                            Assignment* const solution,
+                                            bool maximize,
+                                            int64 step,
+                                            SearchMonitor* const monitor1,
+                                            SearchMonitor* const monitor2,
+                                            SearchMonitor* const monitor3) {
+  vector<SearchMonitor*> monitors;
+  monitors.push_back(monitor1);
+  monitors.push_back(monitor2);
+  monitors.push_back(monitor3);
+  return RevAlloc(new NestedOptimize(db, solution, maximize, step, monitors));
+}
+
+DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
+                                            Assignment* const solution,
+                                            bool maximize,
+                                            int64 step,
+                                            SearchMonitor* const monitor1,
+                                            SearchMonitor* const monitor2,
+                                            SearchMonitor* const monitor3,
+                                            SearchMonitor* const monitor4) {
+  vector<SearchMonitor*> monitors;
+  monitors.push_back(monitor1);
+  monitors.push_back(monitor2);
+  monitors.push_back(monitor3);
+  monitors.push_back(monitor4);
+  return RevAlloc(new NestedOptimize(db, solution, maximize, step, monitors));
+}
+
+DecisionBuilder* Solver::MakeNestedOptimize(
+    DecisionBuilder* const db,
+    Assignment* const solution,
+    bool maximize,
+    int64 step,
+    const vector<SearchMonitor*>& monitors) {
+  return RevAlloc(new NestedOptimize(db, solution, maximize, step, monitors));
+}
+
 
 // ---------- Restart ----------
 

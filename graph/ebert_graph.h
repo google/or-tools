@@ -75,7 +75,7 @@
 //    in an efficient (relatively) manner. For the time being we haven't seen an
 //    application to this.
 //  * TODO(user) implement "interleaved" version of this, with direct arcs having
-//    even indices (2*i), and indirect arcs having odd indices (2*i+1). As
+//    even indices (2*i), and reverse arcs having odd indices (2*i+1). As
 //    suggested by lhm this could have better cache properties. This has to be
 //    validated on algorithms running with real data.
 
@@ -490,14 +490,14 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   string DebugString() const {
     string result = "Arcs:(node, next arc) :\n";
     for (int64 arc = -num_arcs_; arc <= num_arcs_; ++arc) {
-      result += StringPrintf(" %lld:(%lld,%lld)\n",
+      StringAppendF(&result, " %lld:(%lld,%lld)\n",
                              arc,
                              static_cast<int64>(node_[arc]),
                              static_cast<int64>(next_adjacent_arc_[arc]));
     }
     result += "Node:First arc :\n";
     for (int64 node = kFirstNode; node <= num_nodes_; ++node) {
-      result += StringPrintf(" %lld:%lld\n", node,
+      StringAppendF(&result, " %lld:%lld\n", node,
                              static_cast<int64>(first_incident_arc_[node]));
     }
     return result;

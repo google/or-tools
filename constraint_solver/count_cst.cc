@@ -861,7 +861,7 @@ string BoundedDistribute::DebugString() const {
   for (int var_index = 0; var_index < var_size_; ++var_index) {
     out += vars_[var_index]->DebugString() + " ";
   }
-  out += StringPrintf("], cards = %" GG_LL_FORMAT
+  StringAppendF(&out, "], cards = %" GG_LL_FORMAT
                       "d * [%" GG_LL_FORMAT "d -- %"
                       GG_LL_FORMAT "d])",
                       card_size_, card_min_, card_max_);

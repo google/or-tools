@@ -321,7 +321,7 @@ string Pack::DebugString() const {
   for (int i = 0; i < dims_.size(); ++i) {
     result +=  dims_[i]->DebugString() + " ";
   }
-  result += StringPrintf("], bins = %" GG_LL_FORMAT "d)", bins_);
+  StringAppendF(&result, "], bins = %" GG_LL_FORMAT "d)", bins_);
   return result;
 }
 
