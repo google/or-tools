@@ -102,7 +102,7 @@ ifdef GLPK_DIR
 GLPK_LNK = -L$(GLPK_DIR)/lib -lglpk
 endif
 ifdef CLP_DIR
-CLP_LNK = -L$(CLP_DIR)/lib/coin -lClp -lOs
+CLP_LNK = -L$(CLP_DIR)/lib/coin -lClp -lCoinUtils
 endif
 ifdef CBC_DIR
 CBC_LNK = -L$(CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
