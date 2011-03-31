@@ -1,0 +1,569 @@
+// Copyright 2010 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+#include "base/commandlineflags.h"
+#include "base/integral_types.h"
+#include "base/logging.h"
+#include "base/scoped_ptr.h"
+#include "base/stringprintf.h"
+#include "base/timer.h"
+#include "base/strutil.h"
+#include "base/concise_iterator.h"
+#include "base/stl_util-inl.h"
+
+#include "linear_solver/linear_solver.h"
+
+#if defined(USE_CLP) || defined(USE_CBC)
+
+#undef PACKAGE
+#undef VERSION
+#include "coin/ClpSimplex.hpp"
+#include "coin/CoinBuild.hpp"
+#include "coin/ClpMessage.hpp"
+#include "coin/config_clp.h"
+
+DECLARE_double(solver_timeout_in_seconds);
+DECLARE_string(solver_write_model);
+
+namespace operations_research {
+
+class CLPInterface : public MPSolverInterface {
+ public:
+  // Constructor that takes a name for the underlying CLP solver.
+  explicit CLPInterface(MPSolver* const solver);
+  ~CLPInterface();
+
+  // Sets the optimization direction (min/max).
+  virtual void SetOptimizationDirection(bool maximize);
+
+  // ----- Solve -----
+  // Solve the problem using the parameter values specified.
+  virtual MPSolver::ResultStatus Solve(const MPSolverParameters& param);
+
+  // ----- Model modifications and extraction -----
+  // Resets extracted model
+  virtual void Reset();
+
+  // Modify bounds.
+  virtual void SetVariableBounds(int var_index, double lb, double ub);
+  virtual void SetVariableInteger(int var_index, bool integer);
+  virtual void SetConstraintBounds(int row_index, double lb, double ub);
+
+  // Add constraint incrementally.
+  void AddRowConstraint(MPConstraint* const ct);
+  // Add variable incrementally.
+  void AddVariable(MPVariable* const var);
+  // Change a coefficient in a constraint.
+  virtual void SetCoefficient(MPConstraint* const constraint,
+                              MPVariable* const variable,
+                              double coefficient);
+  // Clear a constraint from all its terms.
+  virtual void ClearConstraint(MPConstraint* const constraint);
+
+  // Change a coefficient in the linear objective.
+  virtual void SetObjectiveCoefficient(MPVariable* const variable,
+                                       double coefficient);
+  // Change the constant term in the linear objective.
+  virtual void SetObjectiveOffset(double value);
+  // Clear the objective from all its terms (linear and quadratic)
+  virtual void ClearObjective();
+
+
+  // ------ Query statistics on the solution and the solve ------
+  // Number of simplex iterations
+  virtual int64 iterations() const;
+  // Number of branch-and-bound nodes. Only available for discrete problems.
+  virtual int64 nodes() const;
+  // Best objective bound. Only available for discrete problems.
+  virtual double best_objective_bound() const;
+  // Checks whether a feasible solution exists.
+  virtual void CheckSolutionExists() const;
+
+  // ----- Misc -----
+  // Write model
+  virtual void WriteModel(const string& filename);
+
+  // SuppressOutput.
+  virtual void SuppressOutput();
+
+  // Query problem type.
+  virtual bool IsContinuous() const { return true; }
+  virtual bool IsLP() const {
+    return true;
+  }
+  virtual bool IsMIP() const { return false; }
+
+  virtual void ExtractNewVariables();
+  virtual void ExtractNewConstraints();
+  virtual void ExtractObjective();
+
+  virtual string SolverVersion() const {
+    return PACKAGE_STRING;
+  }
+
+ private:
+  // Create dummy variable to be able to create empty constraints.
+  void CreateDummyVariableForEmptyConstraints();
+
+  // Set all parameters in the underlying solver.
+  virtual void SetParameters(const MPSolverParameters& param);
+  // Set each parameter in the underlying solver.
+  virtual void SetRelativeMipGap(double value);
+  virtual void SetPresolveMode(int value);
+  virtual void SetLpAlgorithm(int value);
+
+  scoped_ptr<ClpSimplex> clp_;  // TODO(user) : remove pointer.
+  scoped_ptr<ClpSolve> options_;  // For parameter setting.
+};
+
+// ----- Solver -----
+
+// Creates a LP/MIP instance with the specified name and minimization objective.
+CLPInterface::CLPInterface(MPSolver* const solver)
+    : MPSolverInterface(solver),
+      clp_(new ClpSimplex), options_(new ClpSolve) {
+    clp_->setStrParam(ClpProbName, solver_->name_);
+    clp_->setOptimizationDirection(1);
+}
+
+CLPInterface::~CLPInterface() {}
+
+void CLPInterface::Reset() {
+  clp_.reset(new ClpSimplex);
+  clp_->setOptimizationDirection(maximize_ ? -1 : 1);
+  ResetExtractionInformation();
+}
+
+void CLPInterface::WriteModel(const string& filename) {
+  // CLP does not support the LP format natively. It only supports it
+  // through OsiClpSolverInterface.
+  // TODO(user) : Implement support for .lp format.
+  if (HasSuffixString(filename, ".lp")) {
+    LOG(WARNING) << "CLP does not support the LP format, "
+                 << "writing in MPS format instead.";
+  }
+  clp_->writeMps(filename.c_str());
+}
+
+void CLPInterface::SuppressOutput() {
+  clp_->setLogLevel(-1);
+}
+
+// ------ Model modifications and extraction -----
+
+// Not cached
+void CLPInterface::SetOptimizationDirection(bool maximize) {
+  InvalidateSolutionSynchronization();
+  clp_->setOptimizationDirection(maximize ? -1 : 1);
+}
+
+void CLPInterface::SetVariableBounds(int var_index, double lb, double ub) {
+  InvalidateSolutionSynchronization();
+  if (var_index != kNoIndex) {
+    // Not cached if the variable has been extracted
+    DCHECK_LE(var_index, last_variable_index_);
+    clp_->setColumnBounds(var_index, lb, ub);
+  } else {
+    sync_status_ = MUST_RELOAD;
+  }
+}
+
+// Ignore as CLP does not solve models with integer variables
+void CLPInterface::SetVariableInteger(int var_index, bool integer) {}
+
+void CLPInterface::SetConstraintBounds(int index, double lb, double ub) {
+  InvalidateSolutionSynchronization();
+  if (index != kNoIndex) {
+    // Not cached if the row has been extracted
+    DCHECK_LE(index, last_constraint_index_);
+    clp_->setRowBounds(index, lb, ub);
+  } else {
+    sync_status_ = MUST_RELOAD;
+  }
+}
+
+void CLPInterface::SetCoefficient(MPConstraint* const constraint,
+                                  MPVariable* const variable,
+                                  double coefficient) {
+  InvalidateSolutionSynchronization();
+  const int constraint_index = constraint->index();
+  const int variable_index = variable->index();
+  if (constraint_index != kNoIndex && variable_index != kNoIndex) {
+    // The modification of the coefficient for an extracted row and
+    // variable is not cached.
+    DCHECK_LE(constraint_index, last_constraint_index_);
+    DCHECK_LE(variable_index, last_variable_index_);
+    clp_->modifyCoefficient(constraint_index, variable_index, coefficient);
+  } else {
+    // The modification of an unextracted row or variable is cached
+    // and handled in ExtractModel.
+    sync_status_ = MUST_RELOAD;
+  }
+}
+
+// Not cached
+void CLPInterface::ClearConstraint(MPConstraint* const constraint) {
+  InvalidateSolutionSynchronization();
+  const int constraint_index = constraint->index();
+  // Constraint may not have been extracted yet.
+  if (constraint_index != kNoIndex) {
+    for (ConstIter<hash_map<MPVariable*, double> >
+             it(constraint->coefficients_); !it.at_end(); ++it) {
+      const int var_index = it->first->index();
+      DCHECK_NE(kNoIndex, var_index);
+      clp_->modifyCoefficient(constraint_index, var_index, 0.0);
+    }
+  }
+}
+
+// Cached
+void CLPInterface::SetObjectiveCoefficient(MPVariable* const variable,
+                                           double coefficient) {
+  sync_status_ = MUST_RELOAD;
+}
+
+// Cached
+void CLPInterface::SetObjectiveOffset(double value) {
+  sync_status_ = MUST_RELOAD;
+}
+
+// Clear objective of all its terms (linear and quadratic)
+void CLPInterface::ClearObjective() {
+  InvalidateSolutionSynchronization();
+  // Clear linear terms
+  for (ConstIter<hash_map<MPVariable*, double> >
+           it(solver_->linear_objective_.coefficients_);
+       !it.at_end(); ++it) {
+    const int var_index = it->first->index();
+    // Variable may have not been extracted yet.
+    if (var_index == kNoIndex) {
+      DCHECK_NE(MODEL_SYNCHRONIZED, sync_status_);
+    } else {
+      clp_->setObjectiveCoefficient(var_index, 0.0);
+    }
+  }
+  // Clear constant term.
+  clp_->setObjectiveOffset(0.0);
+
+}
+
+
+void CLPInterface::AddRowConstraint(MPConstraint* const ct) {
+  sync_status_ = MUST_RELOAD;
+}
+
+void CLPInterface::AddVariable(MPVariable* const var) {
+  sync_status_ = MUST_RELOAD;
+}
+
+void CLPInterface::CreateDummyVariableForEmptyConstraints() {
+  clp_->setColumnBounds(kDummyVariableIndex, 0.0, 0.0);
+  clp_->setObjectiveCoefficient(kDummyVariableIndex, 0.0);
+  // Workaround for peculiar signature of setColumnName.
+  std::string dummy_name = "dummy";
+  int var_index = kDummyVariableIndex;
+  clp_->setColumnName(var_index, dummy_name);
+}
+
+// Define new variables and add them to existing constraints.
+void CLPInterface::ExtractNewVariables() {
+  // Define new variables
+  int total_num_vars = solver_->variables_.size();
+  if (total_num_vars > last_variable_index_) {
+    if (last_variable_index_ == 0 && last_constraint_index_ == 0) {
+      // Faster extraction when nothing has been extracted yet.
+      clp_->resize(0, total_num_vars + 1);
+      CreateDummyVariableForEmptyConstraints();
+      for (int i = 0; i < total_num_vars; ++i) {
+        MPVariable* const var = solver_->variables_[i];
+        int var_index = i + 1;  // offset by 1 because of dummy variable.
+        var->set_index(var_index);
+        if (!var->name().empty()) {
+          std::string std_name = var->name();
+          clp_->setColumnName(var_index, std_name);
+        }
+        clp_->setColumnBounds(var_index, var->lb(), var->ub());
+      }
+    } else {
+      // TODO(user): This could perhaps be made slightly faster by
+      // iterating through old constraints, constructing by hand the
+      // column-major representation of the addition to them and call
+      // clp_->addColumns. But this is good enough for now.
+      // Create new variables.
+      for (int j = last_variable_index_; j < total_num_vars; ++j) {
+        MPVariable* const var = solver_->variables_[j];
+        DCHECK_EQ(kNoIndex, var->index());
+        int var_index = j + 1;  // offset by 1 because of dummy variable.
+        var->set_index(var_index);
+        // The true objective coefficient will be set later in ExtractObjective.
+        double tmp_obj_coef = 0.0;
+        clp_->addColumn(0, NULL, NULL, var->lb(), var->ub(), tmp_obj_coef);
+        if (!var->name().empty()) {
+          std::string std_name = var->name();
+          clp_->setColumnName(var_index, std_name);
+        }
+      }
+      // Add new variables to existing constraints.
+      for (int i = 0; i < last_constraint_index_; i++) {
+        MPConstraint* const ct = solver_->constraints_[i];
+        for (ConstIter<hash_map<MPVariable*, double> > it(ct->coefficients_);
+             !it.at_end(); ++it) {
+          const int var_index = it->first->index();
+          DCHECK_NE(kNoIndex, var_index);
+          if (var_index >= last_variable_index_) {
+            clp_->modifyCoefficient(i, var_index, it->second);
+          }
+        }
+      }
+    }
+  }
+}
+
+// Define new constraints on old and new variables.
+void CLPInterface::ExtractNewConstraints() {
+  int total_num_rows = solver_->constraints_.size();
+  if (last_constraint_index_ < total_num_rows) {
+    int max_row_length = 0;
+    for (int i = last_constraint_index_; i < total_num_rows; ++i) {
+      MPConstraint* const ct = solver_->constraints_[i];
+      DCHECK_EQ(kNoIndex, ct->index());
+      ct->set_index(i);
+      if (ct->coefficients_.size() > max_row_length) {
+        max_row_length = ct->coefficients_.size();
+      }
+    }
+    // Make space for dummy variable.
+    max_row_length = max(1, max_row_length);
+    scoped_array<int> indices(new int[max_row_length]);
+    scoped_array<double> coefs(new double[max_row_length]);
+    CoinBuild build_object;
+    for (int i = last_constraint_index_;
+         i < solver_->constraints_.size(); ++i) {
+      MPConstraint* const  ct = solver_->constraints_[i];
+      DCHECK_NE(kNoIndex, ct->index());
+      int size = ct->coefficients_.size();
+      if (size == 0) {
+        // Add dummy variable to be able to build the constraint.
+        indices[0] = kDummyVariableIndex;
+        coefs[0] = 1.0;
+        size = 1;
+      }
+      int j = 0;
+      for (ConstIter<hash_map<MPVariable*, double> > it(ct->coefficients_);
+           !it.at_end(); ++it) {
+        const int index = it->first->index();
+        DCHECK_NE(kNoIndex, index);
+        indices[j] = index;
+        coefs[j] = it->second;
+        j++;
+      }
+      build_object.addRow(size,
+                          indices.get(),
+                          coefs.get(),
+                          ct->lb(),
+                          ct->ub());
+    }
+    // Add and name the rows.
+    clp_->addRows(build_object);
+    for (int i = last_constraint_index_; i < total_num_rows; ++i) {
+      MPConstraint* const ct = solver_->constraints_[i];
+      if (!ct->name().empty()) {
+        std::string std_name = ct->name();
+        clp_->setRowName(ct->index(), std_name);
+      }
+    }
+  }
+}
+
+void CLPInterface::ExtractObjective() {
+  // Linear objective: set objective coefficients for all variables
+  // (some might have been modified)
+  for (ConstIter<hash_map<MPVariable*, double> >
+           it(solver_->linear_objective_.coefficients_);
+       !it.at_end(); ++it) {
+    clp_->setObjectiveCoefficient(it->first->index(), it->second);
+  }
+
+  // Constant term. Use -offset instead of +offset because CLP does
+  // not follow conventions.
+  clp_->setObjectiveOffset(-solver_->linear_objective_.offset_);
+
+}
+
+// Extracts model and solve the LP/MIP. Returns the status of the search.
+MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
+  WallTimer timer;
+  timer.Start();
+
+  // Special case if the model is empty since CLP is not able to
+  // handle this special case by itself.
+  if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
+    sync_status_ = SOLUTION_SYNCHRONIZED;
+    result_status_ = MPSolver::OPTIMAL;
+    objective_value_ = solver_->linear_objective_.offset_;
+    return result_status_;
+  }
+
+  ExtractModel();
+  VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
+
+  WriteModelToPredefinedFiles();
+
+  // Time limit.
+  if (solver_->time_limit()) {
+    VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
+    clp_->setMaximumSeconds(solver_->time_limit() / 1000.0);
+  } else {
+    clp_->setMaximumSeconds(-1.0);
+  }
+
+  // Start from a fresh set of default parameters and set them to
+  // specified values.
+  options_.reset(new ClpSolve);
+  SetParameters(param);
+
+
+  // Solve
+  timer.Restart();
+  clp_->initialSolve(*options_);
+  VLOG(1) << StringPrintf("Solved in %.3f seconds.", timer.Get());
+
+  // Get the results
+  objective_value_ = clp_->objectiveValue();
+  VLOG(1) << "objective=" << objective_value_;
+  const double* const values = clp_->getColSolution();
+  const double* const reduced_costs = clp_->getReducedCost();
+  for (int i = 0; i < solver_->variables_.size(); ++i) {
+    MPVariable* const var = solver_->variables_[i];
+    int var_index = var->index();
+    double val = values[var_index];
+    var->set_solution_value(val);
+    VLOG(3) << var->name() << ": value = " << val;
+    double reduced_cost = reduced_costs[var_index];
+    var->set_reduced_cost(reduced_cost);
+    VLOG(4) << var->name() << ": reduced cost = " << reduced_cost;
+  }
+  const double* const dual_values = clp_->getRowPrice();
+  for (int i = 0; i < solver_->constraints_.size(); ++i) {
+    MPConstraint* const ct = solver_->constraints_[i];
+    double dual_value = 0.0;
+    dual_value = dual_values[i];
+    ct->set_dual_value(dual_value);
+    VLOG(4) << "row " << ct->index() << ": dual value = " << dual_value;
+  }
+
+  // Check the status: optimal, infeasible, etc.
+  int tmp_status = clp_->status();
+  VLOG(1) << "clp result status: " << tmp_status;
+  switch (tmp_status) {
+    case CLP_SIMPLEX_FINISHED:
+      result_status_ = MPSolver::OPTIMAL;
+      break;
+    case CLP_SIMPLEX_INFEASIBLE:
+      result_status_ = MPSolver::INFEASIBLE;
+      break;
+    case CLP_SIMPLEX_UNBOUNDED:
+      result_status_ = MPSolver::UNBOUNDED;
+      break;
+    case CLP_SIMPLEX_STOPPED:
+      result_status_ = MPSolver::FEASIBLE;
+      break;
+    default:
+      result_status_ = MPSolver::ABNORMAL;
+      break;
+  }
+
+  sync_status_ = SOLUTION_SYNCHRONIZED;
+  return result_status_;
+}
+
+MPSolverInterface* BuildCLPInterface(MPSolver* const solver) {
+  return new CLPInterface(solver);
+}
+
+// ------ Query statistics on the solution and the solve ------
+
+int64 CLPInterface::iterations() const {
+  CheckSolutionIsSynchronized();
+  return clp_->getIterationCount();
+}
+
+int64 CLPInterface::nodes() const {
+  LOG(FATAL) << "Number of nodes only available for discrete problems";
+  return kUnknownNumberOfNodes;
+}
+
+double CLPInterface::best_objective_bound() const {
+  LOG(FATAL) << "Best objective bound only available for discrete problems";
+  return 0.0;
+}
+
+void CLPInterface::CheckSolutionExists() const {
+  if (false) {
+  } else {
+    // Call default implementation
+    MPSolverInterface::CheckSolutionExists();
+  }
+}
+
+// ------ Parameters ------
+
+void CLPInterface::SetParameters(const MPSolverParameters& param) {
+  SetCommonParameters(param);
+}
+
+void CLPInterface::SetRelativeMipGap(double value) {
+  LOG(WARNING) << "The relative MIP gap is only available "
+               << "for discrete problems.";
+}
+
+void CLPInterface::SetPresolveMode(int value) {
+  switch (value) {
+    case MPSolverParameters::PRESOLVE_OFF: {
+      options_->setPresolveType(ClpSolve::presolveOff);
+      break;
+    }
+    case MPSolverParameters::PRESOLVE_ON: {
+      options_->setPresolveType(ClpSolve::presolveOn);
+      break;
+    }
+    default: {
+      SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
+    }
+  }
+}
+
+void CLPInterface::SetLpAlgorithm(int value) {
+  switch (value) {
+    case MPSolverParameters::DUAL: {
+      options_->setSolveType(ClpSolve::useDual);
+      break;
+    }
+    case MPSolverParameters::PRIMAL: {
+      options_->setSolveType(ClpSolve::usePrimal);
+      break;
+    }
+    case MPSolverParameters::BARRIER: {
+      options_->setSolveType(ClpSolve::useBarrier);
+      break;
+    }
+    default: {
+      SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM,
+                                        value);
+    }
+  }
+}
+
+}  // namespace operations_research
+#endif  // #if defined(USE_CBC) || defined(USE_CLP)

@@ -3,6 +3,16 @@ PYTHON_VER=2.6
 GFLAGS_DIR=../gflags-1.4
 SWIG_BINARY=swig
 PROTOBUF_DIR=../protobuf-2.3.0
+# This is the root directory of the CLP installation. Please undefine if CLP is
+# not installed. If you have installed CBC, CLP_DIR can have the same value as
+# CBC_DIR.
+#CLP_DIR=../cbc-2.6.2
+# This is the root directory of the CBC installation. Please undefine if CBC is
+# not installed.
+#CBC_DIR=../cbc-2.6.2
+# This is the root directory of glpk installation. Please undefine if GLPK is
+# not installed.
+#GLPK_DIR=../glpk-4.45
 
 #  ----- You should not need to modify the following, unless the -----
 #  ----- configuration is not standard ------
@@ -13,6 +23,25 @@ PYTHON_INC=-I/usr/include/python$(PYTHON_VER) -I/usr/lib/python$(PYTHON_VER)
 GFLAGS_INC = -I$(GFLAGS_DIR)/include
 # This is needed to find protocol buffers.
 PROTOBUF_INC = -I$(PROTOBUF_DIR)/include
+
+# Define CLP_DIR if unset and if CBC_DIR is set.
+ifdef CBC_DIR
+ifndef CLP_DIR
+CLP_DIR=$(CBC_DIR)
+endif
+endif
+# This is needed to find Coin LP include files.
+ifdef CLP_DIR
+CLP_INC = -I$(CLP_DIR)/include -DUSE_CLP
+endif
+# This is needed to find Coin Branch and Cut include files.
+ifdef CBC_DIR
+CBC_INC = -I$(CBC_DIR)/include -DUSE_CBC
+endif
+# This is needed to find GLPK include files.
+ifdef GLPK_DIR
+GLPK_INC = -I$(GLPK_DIR)/include -DUSE_GLPK
+endif
 
 # Compilation flags
 DEBUG=-O3 -DNDEBUG
@@ -31,6 +60,15 @@ GFLAGS_LNK = -Wl,-rpath $(GFLAGS_DIR)/lib -L$(GFLAGS_DIR)/lib -lgflags
 ZLIB_LNK = -lz
 # This is needed to find libprotobuf.a
 PROTOBUF_LNK = -Wl,-rpath $(PROTOBUF_DIR)/lib -L$(PROTOBUF_DIR)/lib -lprotobuf -lpthread
+ifdef GLPK_DIR
+GLPK_LNK = -Wl,-rpath $(GLPK_DIR)/lib -L$(GLPK_DIR)/lib -lglpk
+endif
+ifdef CLP_DIR
+CLP_LNK = -Wl,-rpath $(CLP_DIR)/lib/coin -L$(CLP_DIR)/lib/coin -lClp -lCoinUtils
+endif
+ifdef CBC_DIR
+CBC_LNK = -Wl,-rpath $(CBC_DIR)/lib/coin -L$(CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp -lOsiVol -lVol
+endif
 # Detect 32 bit or 64 bit OS and define ARCH flags correctly.
 LBITS := $(shell getconf LONG_BIT)
 ifeq ($(LBITS),64)
@@ -59,24 +97,37 @@ JAVAC_BIN=javac
 JAVA_BIN=java
 JNILIBEXT=jnilib
 FIX_SWIG=
+
+ifdef GLPK_DIR
+GLPK_LNK = -L$(GLPK_DIR)/lib -lglpk
+endif
+ifdef CLP_DIR
+CLP_LNK = -L$(CLP_DIR)/lib/coin -lClp -lOs
+endif
+ifdef CBC_DIR
+CBC_LNK = -L$(CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
+endif
 endif
 
 CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. $(GFLAGS_INC) $(ARCH) \
-        -Wno-deprecated $(PROTOBUF_INC)
+        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC)
 JNIFLAGS= $(SYSCFLAGS) $(JNIDEBUG) -I. $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC)
 LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
+LDLPDEPS= $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK)
 
 # Real targets
 
 help:
 	@echo Please define target:
 	@echo "  - constraint programming: cplibs cpexe pycp javacp"
+	@echo "  - mathematical programming: lplibs lpexe pylp javalp"
 	@echo "  - algorithms: algorithmslibs pyalgorithms javaalgorithms"
 	@echo "  - graph: graphlibs pygraph javagraph"
 	@echo "  - misc: clean"
 
-all: cplibs cpexe pycp javacp algorithmslibs pyalgorithms javaalgorithms graphlibs pygraph javagraph
+all: cplibs cpexe pycp javacp algorithmslibs pyalgorithms javaalgorithms graphlibs pygraph javagraph lplibs lpexe pylp javalp
+
 CP_LIBS = \
 	librouting.a       \
 	libconstraint_solver.a
@@ -93,6 +144,11 @@ BASE_LIBS = \
 
 cplibs: $(CP_LIBS) $(BASE_LIBS)
 
+LP_LIBS = \
+	liblinear_solver.a
+
+lplibs: $(LP_LIBS) $(BASE_LIBS)
+
 CPBINARIES = \
 	costas_array \
 	cryptarithm \
@@ -106,6 +162,12 @@ CPBINARIES = \
 
 cpexe: $(CPBINARIES)
 
+LPBINARIES = \
+	integer_solver_example \
+	linear_solver_example
+
+lpexe: $(LPBINARIES)
+
 ALGORITHMS_LIBS = \
 	libalgorithms.a
 
@@ -115,6 +177,7 @@ clean:
 	rm -f *.a
 	rm -f objs/*.o
 	rm -f $(CPBINARIES)
+	rm -f $(LPBINARIES)
 	rm -f */*wrap*
 	rm -f */*.pb.*
 	rm -f *.so
@@ -231,6 +294,38 @@ objs/utilities.o:constraint_solver/utilities.cc
 
 libconstraint_solver.a: $(CONSTRAINT_SOLVER_LIB_OBJS)
 	ar rv libconstraint_solver.a $(CONSTRAINT_SOLVER_LIB_OBJS)
+
+# Linear Solver Library
+
+LINEAR_SOLVER_LIB_OBJS = \
+	objs/cbc_interface.o \
+	objs/clp_interface.o \
+	objs/glpk_interface.o \
+	objs/linear_solver.o \
+	objs/linear_solver.pb.o
+
+objs/cbc_interface.o:linear_solver/cbc_interface.cc linear_solver/linear_solver.pb.h
+	$(CCC) $(CFLAGS) -c linear_solver/cbc_interface.cc -o objs/cbc_interface.o
+
+objs/clp_interface.o:linear_solver/clp_interface.cc linear_solver/linear_solver.pb.h
+	$(CCC) $(CFLAGS) -c linear_solver/clp_interface.cc -o objs/clp_interface.o
+
+objs/glpk_interface.o:linear_solver/glpk_interface.cc linear_solver/linear_solver.pb.h
+	$(CCC) $(CFLAGS) -c linear_solver/glpk_interface.cc -o objs/glpk_interface.o
+
+objs/linear_solver.o:linear_solver/linear_solver.cc linear_solver/linear_solver.pb.h
+	$(CCC) $(CFLAGS) -c linear_solver/linear_solver.cc -o objs/linear_solver.o
+
+objs/linear_solver.pb.o:linear_solver/linear_solver.pb.cc
+	$(CCC) $(CFLAGS) -c linear_solver/linear_solver.pb.cc -o objs/linear_solver.pb.o
+
+linear_solver/linear_solver.pb.cc:linear_solver/linear_solver.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=linear_solver --cpp_out=linear_solver linear_solver/linear_solver.proto
+
+linear_solver/linear_solver.pb.h:linear_solver/linear_solver.pb.cc
+
+liblinear_solver.a: $(LINEAR_SOLVER_LIB_OBJS)
+	ar rv liblinear_solver.a $(LINEAR_SOLVER_LIB_OBJS)
 
 # Util library.
 
@@ -424,6 +519,20 @@ objs/tsp.o: examples/tsp.cc
 tsp: $(CP_LIBS) $(BASE_LIBS) objs/tsp.o
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.o $(CP_LIBS) $(BASE_LIBS) -o tsp
 
+# Linear Programming Examples
+
+objs/linear_solver_example.o: examples/linear_solver_example.cc
+	$(CCC) $(CFLAGS) -c examples/linear_solver_example.cc -o objs/linear_solver_example.o
+
+linear_solver_example: $(LP_LIBS) $(BASE_LIBS) objs/linear_solver_example.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/linear_solver_example.o $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) -o linear_solver_example
+
+objs/integer_solver_example.o: examples/integer_solver_example.cc
+	$(CCC) $(CFLAGS) -c examples/integer_solver_example.cc -o objs/integer_solver_example.o
+
+integer_solver_example: $(LP_LIBS) $(BASE_LIBS) objs/integer_solver_example.o
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/integer_solver_example.o $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) -o integer_solver_example
+
 # SWIG
 
 # pywrapknapsack_solver
@@ -483,6 +592,21 @@ objs/routing_wrap.o: constraint_solver/routing_wrap.cc
 
 _pywraprouting.so: objs/routing_wrap.o $(CP_LIBS) $(BASE_LIBS)
 	$(LD) -o _pywraprouting.so objs/routing_wrap.o $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS)
+
+# pywraplp
+
+pylp: _pywraplp.so linear_solver/pywraplp.py $(LP_LIBS) $(BASE_LIBS)
+
+linear_solver/pywraplp.py: linear_solver/linear_solver.swig linear_solver/linear_solver.h linear_solver/linear_solver.pb.h base/base.swig
+	$(SWIG_BINARY) $(CLP_INC) $(CBC_INC) $(GLPK_INC) -c++ -python -o linear_solver/linear_solver_wrap.cc -module pywraplp linear_solver/linear_solver.swig
+
+linear_solver/linear_solver_wrap.cc: linear_solver/pywraplp.py
+
+objs/linear_solver_wrap.o: linear_solver/linear_solver_wrap.cc
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c linear_solver/linear_solver_wrap.cc -o objs/linear_solver_wrap.o
+
+_pywraplp.so: objs/linear_solver_wrap.o $(LP_LIBS) $(BASE_LIBS)
+	$(LD) -o _pywraplp.so objs/linear_solver_wrap.o $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS)
 
 # ---------- Java Support ----------
 
@@ -746,3 +870,36 @@ com/google/ortools/flow/samples/FlowExample.class: javacp com/google/ortools/flo
 run_FlowExample: compile_FlowExample
 	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.flow.jar com.google.ortools.flow.samples.FlowExample
 
+# javalp
+
+javalp: com.google.ortools.linearsolver.jar libjnilinearsolver.$(JNILIBEXT)
+linear_solver/linear_solver_java_wrap.cc: linear_solver/linear_solver.swig base/base.swig util/data.swig linear_solver/linear_solver.h
+	$(SWIG_BINARY) $(CLP_INC) $(CBC_INC) $(GLPK_INC) -c++ -java -o linear_solver/linear_solver_java_wrap.cc -package com.google.ortools.linearsolver -outdir com/google/ortools/linearsolver linear_solver/linear_solver.swig
+
+objs/linear_solver_java_wrap.o: linear_solver/linear_solver_java_wrap.cc
+	$(CCC) $(JNIFLAGS) $(JAVA_INC) -c linear_solver/linear_solver_java_wrap.cc -o objs/linear_solver_java_wrap.o
+
+com.google.ortools.linearsolver.jar: linear_solver/linear_solver_java_wrap.cc
+	$(JAVAC_BIN) com/google/ortools/linearsolver/*.java
+	jar cf com.google.ortools.linearsolver.jar com/google/ortools/linearsolver/*.class
+
+libjnilinearsolver.$(JNILIBEXT): objs/linear_solver_java_wrap.o $(LP_LIBS) $(BASE_LIBS)
+	$(LD) -o libjnilinearsolver.$(JNILIBEXT) objs/linear_solver_java_wrap.o $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS)
+
+# Java Algorithms Examples
+
+compile_LinearSolverExample: com/google/ortools/linearsolver/samples/LinearSolverExample.class
+
+com/google/ortools/linearsolver/samples/LinearSolverExample.class: javacp com/google/ortools/linearsolver/samples/LinearSolverExample.java
+	$(JAVAC_BIN) -cp com.google.ortools.linearsolver.jar com/google/ortools/linearsolver/samples/LinearSolverExample.java
+
+run_LinearSolverExample: compile_LinearSolverExample
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.linearsolver.jar com.google.ortools.linearsolver.samples.LinearSolverExample
+
+compile_IntegerSolverExample: com/google/ortools/linearsolver/samples/IntegerSolverExample.class
+
+com/google/ortools/linearsolver/samples/IntegerSolverExample.class: javacp com/google/ortools/linearsolver/samples/IntegerSolverExample.java
+	$(JAVAC_BIN) -cp com.google.ortools.linearsolver.jar com/google/ortools/linearsolver/samples/IntegerSolverExample.java
+
+run_IntegerSolverExample: compile_IntegerSolverExample
+	$(JAVA_BIN) -Djava.library.path=`pwd` -cp .:com.google.ortools.linearsolver.jar com.google.ortools.linearsolver.samples.IntegerSolverExample

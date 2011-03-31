@@ -4,6 +4,18 @@ ZLIB_DIR=..\\zlib-1.2.5
 ZLIB_NAME=zlib.lib
 SWIG_BINARY=..\\swigwin-2.0.0\\swig.exe
 PROTOBUF_DIR=..\\protobuf-2.3.0
+# This is the root directory of the CLP installation. Please undefine if CLP is
+# not installed. If you have installed CBC, CLP_DIR can have the same value as
+# CBC_DIR.
+#CLP_DIR=..\\cbc-2.6.2
+# This is the root directory of the CBC installation. Please undefine if CBC is
+# not installed.
+#CBC_DIR=..\\cbc-2.6.2
+# This is the root directory of glpk installation. Please undefine if GLPK is
+# not installed.
+#GLPK_VER=4_45
+#GLPK_DIR=..\\glpk-4.45
+
 
 # This describes the python installation.
 PYTHON_INC=/Ic:\\Python27\\include
@@ -17,20 +29,49 @@ CCC=cl /EHsc /MD
 GFLAGS_INC = /I$(GFLAGS_DIR)\\src\\windows /I$(GFLAGS_DIR)\\src
 ZLIB_INC = /I$(ZLIB_DIR)
 PROTOBUF_INC = /I$(PROTOBUF_DIR)\\include
+
+# Define CLP_DIR if unset and if CBC_DIR is set.
+!ifdef CBC_DIR
+!ifndef CLP_DIR
+CLP_DIR=$(CBC_DIR)
+!endif
+!endif
+# This is needed to find Coin LP include files and libraries.
+!ifdef CLP_DIR
+CLP_INC = /I$(CLP_DIR)\\include /DUSE_CLP
+CLP_SWIG = -DUSE_CLP
+CLP_LNK = $(CLP_DIR)\\lib\\coin\libClp.lib  $(CLP_DIR)\\lib\\coin\libCoinUtils.lib
+!endif
+# This is needed to find Coin Branch and Cut include files and libraries.
+!ifdef CBC_DIR
+CBC_INC = /I$(CBC_DIR)\\include /DUSE_CBC
+CBC_SWIG = -DUSE_CBC
+CBC_LNK = $(CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(CBC_DIR)\\lib\\coin\\libCbc.lib $(CBC_DIR)\\lib\\coin\\libCgl.lib $(CBC_DIR)\\lib\\coin\\libOsi.lib $(CBC_DIR)\\lib\\coin\\libOsiCbc.lib $(CBC_DIR)\\lib\\coin\\libOsiClp.lib
+!endif
+# This is needed to find GLPK include files and libraries.
+!ifdef GLPK_DIR
+GLPK_INC = /I$(GLPK_DIR)\\include /DUSE_GLPK
+GLPK_SWIG = -DUSE_GLPK
+GLPK_LNK = $(GLPK_DIR)\\lib\\glpk_$(GLPK_VER).lib
+!endif
+
 CFLAGS= -nologo $(SYSCFLAGS) $(DEBUG) /I.  $(GFLAGS_INC) $(ZLIB_INC)\
-	 $(PROTOBUF_INC)
+	 $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC)
 
 LD = cl /EHsc
 GFLAGS_LNK = $(GFLAGS_DIR)\\vsprojects\\libgflags\\Release\\libgflags.lib
 ZLIB_LNK = $(ZLIB_DIR)/$(ZLIB_NAME)
 PROTOBUF_LNK = $(PROTOBUF_DIR)\\lib\\libprotobuf.lib
 LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) psapi.lib ws2_32.lib
+LDLPDEPS=$(CBC_LNK) $(CLP_LNK) $(GLPK_LNK)
+
 
 # Real targets
 
 all:
 	@echo Please define target:
 	@echo "  - constraint programming: cplibs, cpexe, pycp"
+	@echo "  - mathematical programming: lplibs, lpexe, pylp"
 	@echo "  - algorithms: algoritmlibs, pyalgorithms"
 	@echo "  - graph: graphlibs, pygraph"
 	@echo "  - misc: clean"
@@ -51,6 +92,10 @@ graphlibs: $(GRAPH_LIBS) $(BASE_LIBS)
 
 cplibs: $(CPLIBS) $(BASE_LIBS)
 
+LPLIBS = \
+	linear_solver.lib
+
+lplibs: $(LPLIBS) $(BASE_LIBS)
 
 CPBINARIES= \
           costas_array.exe \
@@ -65,6 +110,12 @@ CPBINARIES= \
 
 cpexe: $(CPBINARIES)
 
+LPBINARIES = \
+	integer_solver_example.exe \
+	linear_solver_example.exe
+
+lpexe: $(LPBINARIES)
+
 ALGORITHM_LIBS= \
 	algorithms.lib
 
@@ -74,11 +125,15 @@ clean:
 	del *.lib
 	del objs\\*.obj
 	del  $(CPBINARIES)
+	del  $(LPBINARIES)
 	del *.dll
 	del *.exp
 	del constraint_solver\constraint_solver_wrap.cc
 	del constraint_solver\_pywrapcp.pyd
 	del constraint_solver\pywrapcp.py
+	del linear_solver\linear_solver_wrap.cc
+	del linear_solver\_pywraplp.pyd
+	del linear_solver\pywraplp.py
 	del algorithms\knapsack_solver_wrap.cc
 	del algorithms\_pywrapknapsack_solver.pyd
 	del algorithms\pywrapknapsack_solver.py
@@ -197,7 +252,40 @@ objs/utilities.obj:constraint_solver/utilities.cc
 constraint_solver.lib: $(CONSTRAINT_SOLVER_LIB_OBJS)
 	lib /OUT:constraint_solver.lib $(CONSTRAINT_SOLVER_LIB_OBJS)
 
+# Linear Solver Library
+
+LINEAR_SOLVER_LIB_OBJS = \
+	objs/cbc_interface.obj \
+	objs/clp_interface.obj \
+	objs/glpk_interface.obj \
+	objs/linear_solver.obj \
+	objs/linear_solver.pb.obj
+
+objs/cbc_interface.obj:linear_solver/cbc_interface.cc linear_solver/linear_solver.pb.h
+	$(CCC) $(CFLAGS) -c linear_solver\\cbc_interface.cc /Foobjs\\cbc_interface.obj
+
+objs/clp_interface.obj:linear_solver/clp_interface.cc linear_solver/linear_solver.pb.h
+	$(CCC) $(CFLAGS) -c linear_solver\\clp_interface.cc /Foobjs/clp_interface.obj
+
+objs/glpk_interface.obj:linear_solver/glpk_interface.cc linear_solver/linear_solver.pb.h
+	$(CCC) $(CFLAGS) -c linear_solver\\glpk_interface.cc /Foobjs\\glpk_interface.obj
+
+objs/linear_solver.obj:linear_solver/linear_solver.cc linear_solver/linear_solver.pb.h
+	$(CCC) $(CFLAGS) -c linear_solver\\linear_solver.cc /Foobjs\\linear_solver.obj
+
+objs/linear_solver.pb.obj:linear_solver/linear_solver.pb.cc
+	$(CCC) $(CFLAGS) -c linear_solver\\linear_solver.pb.cc /Foobjs\\linear_solver.pb.obj
+
+linear_solver/linear_solver.pb.cc:linear_solver/linear_solver.proto
+	$(PROTOBUF_DIR)\\bin\\protoc --proto_path=linear_solver --cpp_out=linear_solver linear_solver\\linear_solver.proto
+
+linear_solver/linear_solver.pb.h:linear_solver/linear_solver.pb.cc
+
+linear_solver.lib: $(LINEAR_SOLVER_LIB_OBJS)
+	lib /OUT:linear_solver.lib $(LINEAR_SOLVER_LIB_OBJS)
+
 # GFlags copy library.
+
 libgflags.dll: $(GFLAGS_DIR)\vsprojects\libgflags\Release\libgflags.dll
 	       copy $(GFLAGS_DIR)\vsprojects\libgflags\Release\libgflags.dll .
 
@@ -374,6 +462,19 @@ objs/tsp.obj: examples/tsp.cc
 tsp.exe: $(CPLIBS) $(BASE_LIBS) objs/tsp.obj libgflags.dll
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.obj $(CPLIBS) $(BASE_LIBS) /Fetsp.exe
 
+# Linear Programming Examples
+
+objs/integer_solver_example.obj: examples/integer_solver_example.cc
+	$(CCC) $(CFLAGS) -c examples/integer_solver_example.cc /Foobjs/integer_solver_example.obj
+
+integer_solver_example.exe: $(LPLIBS) $(BASE_LIBS) objs/integer_solver_example.obj libgflags.dll
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/integer_solver_example.obj $(LPLIBS) $(BASE_LIBS) $(LDLPDEPS) /Feinteger_solver_example.exe
+
+objs/linear_solver_example.obj: examples/linear_solver_example.cc
+	$(CCC) $(CFLAGS) -c examples/linear_solver_example.cc /Foobjs/linear_solver_example.obj
+
+linear_solver_example.exe: $(LPLIBS) $(BASE_LIBS) objs/linear_solver_example.obj libgflags.dll
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/linear_solver_example.obj $(LPLIBS) $(BASE_LIBS) $(LDLPDEPS) /Felinear_solver_example.exe
 
 # SWIG
 
@@ -446,4 +547,24 @@ _pywraprouting.dll: objs/routing_wrap.obj $(CPLIBS) $(BASE_LIBS) libgflags.dll
 
 constraint_solver/_pywraprouting.pyd: _pywraprouting.dll
 	copy _pywraprouting.dll constraint_solver\\_pywraprouting.pyd
+
+# pywraplp
+
+pylp: linear_solver/_pywraplp.pyd linear_solver/pywraplp.py $(LPLIBS) $(BASE_LIBS)
+
+linear_solver/pywraplp.py: linear_solver/linear_solver.swig linear_solver/linear_solver.h base/base.swig
+	$(SWIG_BINARY) $(CLP_SWIG) $(CBC_SWIG) $(GLPK_SWIG) -c++ -python -o linear_solver\\linear_solver_wrap.cc -module pywraplp linear_solver\\linear_solver.swig
+
+linear_solver/linear_solver_wrap.cc: linear_solver/pywraplp.py
+
+objs/linear_solver_wrap.obj: linear_solver/linear_solver_wrap.cc
+	$(CCC) $(CFLAGS) $(PYTHON_INC) /I__WIN32__ -c linear_solver\\linear_solver_wrap.cc /Foobjs\\linear_solver_wrap.obj
+
+_pywraplp.dll: objs/linear_solver_wrap.obj $(LPLIBS) $(BASE_LIBS) libgflags.dll
+	link /DLL /OUT:_pywraplp.dll objs\\linear_solver_wrap.obj $(LPLIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS) $(PYTHON_LNK)
+
+linear_solver/_pywraplp.pyd: _pywraplp.dll
+	copy _pywraplp.dll linear_solver\\_pywraplp.pyd
+
+
 
