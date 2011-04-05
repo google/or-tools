@@ -1,0 +1,18 @@
+// Copyright 2011 Google Inc. All Rights Reserved.
+//
+// This file contains a protocol buffer definition for search limits.
+
+syntax = "proto2";
+
+
+package operations_research;
+
+// A search limit
+// The default values for int64 fields is the maxima value, i.e., 2^63-1
+message SearchLimitProto {
+  optional int64 time = 1 [default = 9223372036854775807];
+  optional int64 branches = 2 [default = 9223372036854775807];
+  optional int64 failures = 3 [default = 9223372036854775807];
+  optional int64 solutions = 4 [default = 9223372036854775807];
+  optional bool smart_time_check = 5 [default = false];
+};

@@ -27,6 +27,7 @@
 #include "base/stl_util-inl.h"
 #include "base/random.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "constraint_solver/search_limit.pb.h"
 
 DEFINE_bool(cp_use_sparse_gls_penalties, false,
             "Use sparse implementation to store Guided Local Search penalties");
@@ -3431,8 +3432,8 @@ SearchLimit* RegularLimit::MakeClone() const {
 bool RegularLimit::Check()  {
   Solver* const s = solver();
   // Warning limits might be kint64max, do not move the offset to the rhs
-  return s->branches() - branches_offset_ > branches_ ||
-      s->failures() - failures_offset_ > failures_ ||
+  return s->branches() - branches_offset_ >= branches_ ||
+      s->failures() - failures_offset_ >= failures_ ||
       CheckTime() ||
       s->solutions() - solutions_offset_ >= solutions_;
 }
@@ -3479,7 +3480,7 @@ bool RegularLimit::CheckTime() {
       int64 approximate_calls = (wall_time_ * check_count_) / time_delta;
       next_check_ = check_count_ + std::min(kMaxSkip, approximate_calls);
     }
-    return time_delta > wall_time_;
+    return time_delta >= wall_time_;
   } else {
     return false;
   }
@@ -3504,6 +3505,15 @@ SearchLimit* Solver::MakeLimit(int64 time,
                                    failures,
                                    solutions,
                                    smart_time_check));
+}
+
+SearchLimit* Solver::MakeLimit(
+    const SearchLimitProto& proto) {
+  return MakeLimit(proto.time(),
+                   proto.branches(),
+                   proto.failures(),
+                   proto.solutions(),
+                   proto.smart_time_check());
 }
 
 void Solver::UpdateLimits(int64 time,

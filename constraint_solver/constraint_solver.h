@@ -117,6 +117,7 @@ class PropagationBaseObject;
 class Queue;
 class Search;
 class SearchLimit;
+class SearchLimitProto;
 class SearchMonitor;
 class Sequence;
 class SolutionCollector;
@@ -1345,6 +1346,9 @@ class Solver {
                          int64 failures,
                          int64 solutions,
                          bool smart_time_check);
+  // Creates a search limit from its protobuf description
+  SearchLimit* MakeLimit(const SearchLimitProto& proto);
+
   void UpdateLimits(int64 time,
                     int64 branches,
                     int64 failures,

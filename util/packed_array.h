@@ -24,6 +24,7 @@
 #include <limits>
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/scoped_ptr.h"
 
 // An array class for storing arrays of signed integers on NumBytes bytes,
@@ -39,8 +40,8 @@
 // integer.) The read time penalty is about 50% for integer sizes different
 // from 1,2,4,8 bytes.
 //
-// WARNING: The implementation of this class assumes the underlying architecture
-// is little-endian.
+// WARNING: The implementation of this class (member functions Set and Value)
+// assumes the underlying architecture is little-endian.
 // TODO(user): make the implementation big-endian compatible.
 
 #if __BYTE_ORDER != __LITTLE_ENDIAN
@@ -53,7 +54,7 @@ typedef unsigned char byte;
 
 template<class T, int NumBytes> class PackedArrayAllocator {
  public:
-  explicit PackedArrayAllocator()
+  PackedArrayAllocator()
       : base_(NULL),
         min_index_(0),
         max_index_(0),
@@ -137,6 +138,12 @@ template<int NumBytes> class PackedArray {
   int64 max_index() const { return allocator_.max_index(); }
 
   // Returns the value stored at index.
+  // This assumes that the underlying architecture is little-endian. In
+  // particular, we select the value to return from the low-address NumBytes
+  // bytes of the int64 beginning at the location determined by the given index.
+  // To extract those NumBytes from the int64 loaded from memory, we choose the
+  // bytes of low arithmetic significance. Code for a big-endian system would
+  // need to choose the bytes of high arithmetic significance.
   int64 Value(int64 index) const {
     DCHECK_LE(allocator_.min_index(), index);
     DCHECK_GE(allocator_.max_index(), index);
@@ -159,6 +166,9 @@ template<int NumBytes> class PackedArray {
 // PACKED_ARRAY_WRITE_IF_ENOUGH_BYTES_AND_ADVANCE writes the first n lowest
 // significant bytes of value at address. It then shifts value by n bytes to
 // the right, and advances address by n bytes.
+// This assumes that the underlying architecture is little-endian, since
+// we write the lowest n bytes for value. Code for a big-endian system would
+// need to write the bytes of high arithmetic significance.
 #define PACKED_ARRAY_WRITE_IF_ENOUGH_BYTES_AND_ADVANCE(type, address, value)  \
 {                                                                             \
   const int64 kSize = sizeof(type);                                           \
@@ -208,25 +218,16 @@ template<int NumBytes> class PackedArray {
 
  private:
   // The bitmask corresponding to all the bits in Numbytes bytes set.
-  static const uint64 kBitMask;
+  static const uint64 kBitMask = (GG_ULONGLONG(1) << (CHAR_BIT * NumBytes)) - 1;
 
-  // The minimun signed integer representable with NumBytes bytes.
-  static const int64 kMinInteger;
+  // The maximum signed integer representable with NumBytes bytes.
+  static const int64 kMaxInteger = kBitMask >> 1;
 
-  // The maximun signed integer representable with NumBytes bytes.
-  static const int64 kMaxInteger;
+  // The minimum signed integer representable with NumBytes bytes.
+  static const int64 kMinInteger = ~kMaxInteger;
 
   PackedArrayAllocator<byte, NumBytes> allocator_;
 };
-
-template<int NumBytes> const uint64 PackedArray<NumBytes>::kBitMask =
-    (GG_ULONGLONG(1) << (CHAR_BIT * NumBytes)) - 1;
-
-template<int NumBytes>const int64 PackedArray<NumBytes>::kMinInteger =
-    ~PackedArray<NumBytes>::kMaxInteger;
-
-template<int NumBytes> const int64 PackedArray<NumBytes>::kMaxInteger =
-    PackedArray<NumBytes>::kBitMask >> 1;
 
 // A specialization of the template for int32 (NumBytes = 4.)
 // TODO(user): also make a specialization for int16 if needed(?).
