@@ -1441,12 +1441,12 @@ struct FailureProtect {
 %rename (reSeed) operations_research::Solver::ReSeed;
 %rename (searchDepth) operations_research::Solver::SearchDepth;
 %rename (searchLeftDepth) operations_research::Solver::SearchLeftDepth;
-%rename (bound) operations_research::*::Bound;
 %rename (solve) operations_research::Solver::Solve;
 %rename (solveDepth) operations_research::Solver::SolveDepth;
 %rename (updateLimits) operations_research::Solver::UpdateLimits;
 
 // Generic rename rules.
+%rename (bound) *::Bound;
 %rename (max) *::Max;
 %rename (min) *::Min;
 %rename (setMax) *::SetMax;
