@@ -92,7 +92,8 @@ ZLIB_LNK = -lz
 PROTOBUF_LNK = -L$(PROTOBUF_DIR)/lib -lprotobuf
 ARCH=-DARCH_K8
 SYS_LNK=
-JAVA_INC=-I/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bundle/Headers
+JAVA_INC=-I/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/include
+#JAVA_INC=-I/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bundle/Headers
 JAVAC_BIN=javac
 JAVA_BIN=java
 JNILIBEXT=jnilib
@@ -549,12 +550,12 @@ integer_solver_example: $(LP_LIBS) $(BASE_LIBS) objs/integer_solver_example.o
 
 # pywrapknapsack_solver
 
-pyalgorithms: _pywrapknapsack_solver.so algorithms/pywrapknapsack_solver.py $(ALGORITHMS_LIBS) $(BASE_LIBS)
+pyalgorithms: _pywrapknapsack_solver.so gen/algorithms/pywrapknapsack_solver.py $(ALGORITHMS_LIBS) $(BASE_LIBS)
 
-algorithms/pywrapknapsack_solver.py: algorithms/knapsack_solver.swig algorithms/knapsack_solver.h base/base.swig
+gen/algorithms/pywrapknapsack_solver.py: algorithms/knapsack_solver.swig algorithms/knapsack_solver.h base/base.swig
 	$(SWIG_BINARY) -c++ -python -o gen/algorithms/knapsack_solver_wrap.cc -module pywrapknapsack_solver algorithms/knapsack_solver.swig
 
-gen/algorithms/knapsack_solver_wrap.cc: algorithms/pywrapknapsack_solver.py
+gen/algorithms/knapsack_solver_wrap.cc: gen/algorithms/pywrapknapsack_solver.py
 
 objs/knapsack_solver_wrap.o: gen/algorithms/knapsack_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/algorithms/knapsack_solver_wrap.cc -o objs/knapsack_solver_wrap.o
@@ -564,12 +565,12 @@ _pywrapknapsack_solver.so: objs/knapsack_solver_wrap.o $(ALGORITHMS_LIBS) $(BASE
 
 # pywrapflow
 
-pygraph: _pywrapflow.so graph/pywrapflow.py $(GRAPH_LIBS) $(BASE_LIBS)
+pygraph: _pywrapflow.so gen/graph/pywrapflow.py $(GRAPH_LIBS) $(BASE_LIBS)
 
-graph/pywrapflow.py: graph/flow.swig graph/min_cost_flow.h graph/max_flow.h graph/ebert_graph.h base/base.swig
+gen/graph/pywrapflow.py: graph/flow.swig graph/min_cost_flow.h graph/max_flow.h graph/ebert_graph.h base/base.swig
 	$(SWIG_BINARY) -c++ -python -o gen/graph/pywrapflow_wrap.cc -module pywrapflow graph/flow.swig
 
-gen/graph/pywrapflow_wrap.cc: graph/pywrapflow.py
+gen/graph/pywrapflow_wrap.cc: gen/graph/pywrapflow.py
 
 objs/pywrapflow_wrap.o: gen/graph/pywrapflow_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/graph/pywrapflow_wrap.cc -o objs/pywrapflow_wrap.o
@@ -579,12 +580,12 @@ _pywrapflow.so: objs/pywrapflow_wrap.o $(GRAPH_LIBS) $(BASE_LIBS)
 
 # pywrapcp
 
-pycp: _pywrapcp.so constraint_solver/pywrapcp.py _pywraprouting.so constraint_solver/pywraprouting.py $(CP_LIBS) $(BASE_LIBS)
+pycp: _pywrapcp.so gen/constraint_solver/pywrapcp.py _pywraprouting.so gen/constraint_solver/pywraprouting.py $(CP_LIBS) $(BASE_LIBS)
 
-constraint_solver/pywrapcp.py: constraint_solver/constraint_solver.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h base/base.swig
+gen/constraint_solver/pywrapcp.py: constraint_solver/constraint_solver.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h base/base.swig
 	$(SWIG_BINARY) -c++ -python -o gen/constraint_solver/constraint_solver_wrap.cc -module pywrapcp constraint_solver/constraint_solver.swig
 
-gen/constraint_solver/constraint_solver_wrap.cc: constraint_solver/pywrapcp.py
+gen/constraint_solver/constraint_solver_wrap.cc: gen/constraint_solver/pywrapcp.py
 
 objs/constraint_solver_wrap.o: gen/constraint_solver/constraint_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/constraint_solver/constraint_solver_wrap.cc -o objs/constraint_solver_wrap.o
@@ -594,10 +595,10 @@ _pywrapcp.so: objs/constraint_solver_wrap.o $(CP_LIBS) $(BASE_LIBS)
 
 # pywraprouting
 
-constraint_solver/pywraprouting.py: constraint_solver/routing.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h constraint_solver/routing.h base/base.swig
+gen/constraint_solver/pywraprouting.py: constraint_solver/routing.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h constraint_solver/routing.h base/base.swig
 	$(SWIG_BINARY) -c++ -python -o gen/constraint_solver/routing_wrap.cc -module pywraprouting constraint_solver/routing.swig
 
-gen/constraint_solver/routing_wrap.cc: constraint_solver/pywraprouting.py
+gen/constraint_solver/routing_wrap.cc: gen/constraint_solver/pywraprouting.py
 
 objs/routing_wrap.o: gen/constraint_solver/routing_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/constraint_solver/routing_wrap.cc -o objs/routing_wrap.o
@@ -607,12 +608,12 @@ _pywraprouting.so: objs/routing_wrap.o $(CP_LIBS) $(BASE_LIBS)
 
 # pywraplp
 
-pylp: _pywraplp.so linear_solver/pywraplp.py $(LP_LIBS) $(BASE_LIBS)
+pylp: _pywraplp.so gen/linear_solver/pywraplp.py $(LP_LIBS) $(BASE_LIBS)
 
-linear_solver/pywraplp.py: linear_solver/linear_solver.swig linear_solver/linear_solver.h gen/linear_solver/linear_solver.pb.h base/base.swig
+gen/linear_solver/pywraplp.py: linear_solver/linear_solver.swig linear_solver/linear_solver.h gen/linear_solver/linear_solver.pb.h base/base.swig
 	$(SWIG_BINARY) $(CLP_INC) $(CBC_INC) $(GLPK_INC) -c++ -python -o gen/linear_solver/linear_solver_wrap.cc -module pywraplp linear_solver/linear_solver.swig
 
-gen/linear_solver/linear_solver_wrap.cc: linear_solver/pywraplp.py
+gen/linear_solver/linear_solver_wrap.cc: gen/linear_solver/pywraplp.py
 
 objs/linear_solver_wrap.o: gen/linear_solver/linear_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/linear_solver/linear_solver_wrap.cc -o objs/linear_solver_wrap.o
