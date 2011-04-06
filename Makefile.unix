@@ -3,29 +3,29 @@
 #  ----- about it. -----
 
 # This is needed to find python.h
-PYTHON_INC=-I/usr/include/python$(PYTHON_VER) -I/usr/lib/python$(PYTHON_VER)
+PYTHON_INC=-I/usr/include/python$(UNIX_PYTHON_VER) -I/usr/lib/python$(UNIX_PYTHON_VER)
 # This is needed to find gflags/gflags.h
-GFLAGS_INC = -I$(GFLAGS_DIR)/include
+GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
 # This is needed to find protocol buffers.
-PROTOBUF_INC = -I$(PROTOBUF_DIR)/include
+PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
 
-# Define CLP_DIR if unset and if CBC_DIR is set.
-ifdef CBC_DIR
-ifndef CLP_DIR
-CLP_DIR=$(CBC_DIR)
+# Define UNIX_CLP_DIR if unset and if UNIX_CBC_DIR is set.
+ifdef UNIX_CBC_DIR
+ifndef UNIX_CLP_DIR
+UNIX_CLP_DIR=$(UNIX_CBC_DIR)
 endif
 endif
 # This is needed to find Coin LP include files.
-ifdef CLP_DIR
-CLP_INC = -I$(CLP_DIR)/include -DUSE_CLP
+ifdef UNIX_CLP_DIR
+CLP_INC = -I$(UNIX_CLP_DIR)/include -DUSE_CLP
 endif
 # This is needed to find Coin Branch and Cut include files.
-ifdef CBC_DIR
-CBC_INC = -I$(CBC_DIR)/include -DUSE_CBC
+ifdef UNIX_CBC_DIR
+CBC_INC = -I$(UNIX_CBC_DIR)/include -DUSE_CBC
 endif
 # This is needed to find GLPK include files.
-ifdef GLPK_DIR
-GLPK_INC = -I$(GLPK_DIR)/include -DUSE_GLPK
+ifdef UNIX_GLPK_DIR
+GLPK_INC = -I$(UNIX_GLPK_DIR)/include -DUSE_GLPK
 endif
 
 # Compilation flags
@@ -40,19 +40,19 @@ OS=$(shell uname -s)
 ifeq ($(OS),Linux)
 LD = gcc -shared
 # This is needed to find libgflags.a
-GFLAGS_LNK = -Wl,-rpath $(GFLAGS_DIR)/lib -L$(GFLAGS_DIR)/lib -lgflags
+GFLAGS_LNK = -Wl,-rpath $(UNIX_GFLAGS_DIR)/lib -L$(UNIX_GFLAGS_DIR)/lib -lgflags
 # This is needed to find libz.a
 ZLIB_LNK = -lz
 # This is needed to find libprotobuf.a
-PROTOBUF_LNK = -Wl,-rpath $(PROTOBUF_DIR)/lib -L$(PROTOBUF_DIR)/lib -lprotobuf -lpthread
-ifdef GLPK_DIR
-GLPK_LNK = -Wl,-rpath $(GLPK_DIR)/lib -L$(GLPK_DIR)/lib -lglpk
+PROTOBUF_LNK = -Wl,-rpath $(UNIX_PROTOBUF_DIR)/lib -L$(UNIX_PROTOBUF_DIR)/lib -lprotobuf -lpthread
+ifdef UNIX_GLPK_DIR
+GLPK_LNK = -Wl,-rpath $(UNIX_GLPK_DIR)/lib -L$(UNIX_GLPK_DIR)/lib -lglpk
 endif
-ifdef CLP_DIR
-CLP_LNK = -Wl,-rpath $(CLP_DIR)/lib/coin -L$(CLP_DIR)/lib/coin -lClp -lCoinUtils
+ifdef UNIX_CLP_DIR
+CLP_LNK = -Wl,-rpath $(UNIX_CLP_DIR)/lib/coin -L$(UNIX_CLP_DIR)/lib/coin -lClp -lCoinUtils
 endif
-ifdef CBC_DIR
-CBC_LNK = -Wl,-rpath $(CBC_DIR)/lib/coin -L$(CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp -lOsiVol -lVol
+ifdef UNIX_CBC_DIR
+CBC_LNK = -Wl,-rpath $(UNIX_CBC_DIR)/lib/coin -L$(UNIX_CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp -lOsiVol -lVol
 endif
 # Detect 32 bit or 64 bit OS and define ARCH flags correctly.
 LBITS := $(shell getconf LONG_BIT)
@@ -70,9 +70,9 @@ FIX_SWIG=sed -i -e 's/Tlong/T_long/g' gen/com/google/ortools/constraintsolver/So
 endif
 ifeq ($(OS),Darwin) # Assume Mac Os X
 LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress
-GFLAGS_LNK = -L$(GFLAGS_DIR)/lib -lgflags
+GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
 ZLIB_LNK = -lz
-PROTOBUF_LNK = -L$(PROTOBUF_DIR)/lib -lprotobuf
+PROTOBUF_LNK = -L$(UNIX_PROTOBUF_DIR)/lib -lprotobuf
 ARCH=-DARCH_K8
 SYS_LNK=
 JAVA_INC=-I$(MAC_JDK_HEADERS)
@@ -81,14 +81,14 @@ JAVA_BIN=java
 JNILIBEXT=jnilib
 FIX_SWIG=
 
-ifdef GLPK_DIR
-GLPK_LNK = -L$(GLPK_DIR)/lib -lglpk
+ifdef UNIX_GLPK_DIR
+GLPK_LNK = -L$(UNIX_GLPK_DIR)/lib -lglpk
 endif
-ifdef CLP_DIR
-CLP_LNK = -L$(CLP_DIR)/lib/coin -lClp -lCoinUtils
+ifdef UNIX_CLP_DIR
+CLP_LNK = -L$(UNIX_CLP_DIR)/lib/coin -lClp -lCoinUtils
 endif
-ifdef CBC_DIR
-CBC_LNK = -L$(CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
+ifdef UNIX_CBC_DIR
+CBC_LNK = -L$(UNIX_CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
 endif
 endif
 
@@ -100,6 +100,8 @@ LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
 LDLPDEPS= $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK)
 
 # Unix specific definitions
+PROTOBUF_DIR=$(UNIX_PROTOBUF_DIR)
+SWIG_BINARY=$(UNIX_SWIG_BINARY)
 LIBPREFIX=lib
 LIBSUFFIX=a
 LINKCMD=ar rv

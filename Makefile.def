@@ -1,23 +1,23 @@
 # Please copy this file to Makefile.local and edit to accomodate your needs.
 
 # Python version (to be used to find include files).
-PYTHON_VER=2.6
+UNIX_PYTHON_VER=2.6
 # Where gflags is installed.
-GFLAGS_DIR=../gflags-1.4
+UNIX_GFLAGS_DIR=../gflags-1.4
 # Swig binary.
-SWIG_BINARY=swig
+UNIX_SWIG_BINARY=swig
 # Where protocol buffers are installed
-PROTOBUF_DIR=../protobuf-2.3.0
+UNIX_PROTOBUF_DIR=../protobuf-2.3.0
 # This is the root directory of the CLP installation. Please undefine if CLP is
 # not installed. If you have installed CBC, CLP_DIR can have the same value as
 # CBC_DIR.
-CLP_DIR=../cbc-2.6.2
+UNIX_CLP_DIR=../cbc-2.6.2
 # This is the root directory of the CBC installation. Please undefine if CBC is
 # not installed.
-CBC_DIR=../cbc-2.6.2
+UNIX_CBC_DIR=../cbc-2.6.2
 # This is the root directory of glpk installation. Please undefine if GLPK is
 # not installed.
-GLPK_DIR=../glpk-4.45
+UNIX_GLPK_DIR=../glpk-4.45
 # Linux jdk root
 # first, determine 32 or 64 bits.
 LBITS := $(shell getconf LONG_BIT)
