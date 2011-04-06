@@ -15,7 +15,7 @@ com.google.ortools.constraintsolver.jar: gen/constraint_solver/constraint_solver
 	jar cf com.google.ortools.constraintsolver.jar -C objs com/google/ortools/constraintsolver
 
 libjniconstraintsolver.$(JNILIBEXT): objs/constraint_solver_java_wrap.$O $(CP_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT)libjniconstraintsolver.$(JNILIBEXT) objs/constraint_solver_java_wrap.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS)
+	$(LD) $(LDOUT) libjniconstraintsolver.$(JNILIBEXT) objs/constraint_solver_java_wrap.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # Java CP Examples
 
@@ -222,7 +222,7 @@ com.google.ortools.knapsacksolver.jar: gen/algorithms/knapsack_solver_java_wrap.
 	jar cf com.google.ortools.knapsacksolver.jar -C objs com/google/ortools/knapsacksolver
 
 libjniknapsacksolver.$(JNILIBEXT): objs/knapsack_solver_java_wrap.$O $(ALGORITHMS_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT)libjniknapsacksolver.$(JNILIBEXT) objs/knapsack_solver_java_wrap.$O $(ALGORITHMS_LIBS) $(BASE_LIBS) $(LDFLAGS)
+	$(LD) $(LDOUT) libjniknapsacksolver.$(JNILIBEXT) objs/knapsack_solver_java_wrap.$O $(ALGORITHMS_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # Java Algorithms Examples
 
@@ -248,7 +248,7 @@ com.google.ortools.flow.jar: gen/graph/flow_java_wrap.cc
 	jar cf com.google.ortools.flow.jar -C objs com/google/ortools/flow
 
 libjniflow.$(JNILIBEXT): objs/flow_java_wrap.$O $(GRAPH_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT)libjniflow.$(JNILIBEXT) objs/flow_java_wrap.$O $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS)
+	$(LD) $(LDOUT) libjniflow.$(JNILIBEXT) objs/flow_java_wrap.$O $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # Java Algorithms Examples
 
@@ -274,7 +274,7 @@ com.google.ortools.linearsolver.jar: gen/linear_solver/linear_solver_java_wrap.c
 	jar cf com.google.ortools.linearsolver.jar -C objs com/google/ortools/linearsolver
 
 libjnilinearsolver.$(JNILIBEXT): objs/linear_solver_java_wrap.$O $(LP_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT)libjnilinearsolver.$(JNILIBEXT) objs/linear_solver_java_wrap.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS)
+	$(LD) $(LDOUT) libjnilinearsolver.$(JNILIBEXT) objs/linear_solver_java_wrap.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS)
 
 # Java Algorithms Examples
 

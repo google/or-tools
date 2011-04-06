@@ -346,55 +346,55 @@ objs/costas_array.$O: examples/costas_array.cc
 	$(CCC) $(CFLAGS) -c examples/costas_array.cc $(OBJOUT)objs/costas_array.$O
 
 costas_array$E: $(CP_LIBS) $(BASE_LIBS) objs/costas_array.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/costas_array.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)costas_array$E
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/costas_array.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT) costas_array$E
 
 objs/cryptarithm.$O:examples/cryptarithm.cc
 	$(CCC) $(CFLAGS) -c examples/cryptarithm.cc $(OBJOUT)objs/cryptarithm.$O
 
 cryptarithm$E: $(CP_LIBS) $(BASE_LIBS) objs/cryptarithm.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)cryptarithm$E
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT) cryptarithm$E
 
 objs/cvrptw.$O: examples/cvrptw.cc
 	$(CCC) $(CFLAGS) -c examples/cvrptw.cc $(OBJOUT)objs/cvrptw.$O
 
 cvrptw$E: $(CP_LIBS) $(BASE_LIBS) objs/cvrptw.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cvrptw.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)cvrptw$E
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cvrptw.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT) cvrptw$E
 
 objs/dobble_ls.$O:examples/dobble_ls.cc
 	$(CCC) $(CFLAGS) -c examples/dobble_ls.cc $(OBJOUT)objs/dobble_ls.$O
 
 dobble_ls$E: $(CP_LIBS) $(BASE_LIBS) objs/dobble_ls.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/dobble_ls.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)dobble_ls$E
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/dobble_ls.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT) dobble_ls$E
 
 objs/flow_example.$O:examples/flow_example.cc
 	$(CCC) $(CFLAGS) -c examples/flow_example.cc $(OBJOUT)objs/flow_example.$O
 
 flow_example$E: $(GRAPH_LIBS) $(BASE_LIBS) objs/flow_example.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/flow_example.$O $(GRAPH_LIBS) $(BASE_LIBS) $(EXEOUT)flow_example$E
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/flow_example.$O $(GRAPH_LIBS) $(BASE_LIBS) $(EXEOUT) flow_example$E
 
 objs/golomb.$O:examples/golomb.cc
 	$(CCC) $(CFLAGS) -c examples/golomb.cc $(OBJOUT)objs/golomb.$O
 
 golomb$E: $(CP_LIBS) $(BASE_LIBS) objs/golomb.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)golomb$E
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT) golomb$E
 
 objs/magic_square.$O:examples/magic_square.cc
 	$(CCC) $(CFLAGS) -c examples/magic_square.cc $(OBJOUT)objs/magic_square.$O
 
 magic_square$E: $(CP_LIBS) $(BASE_LIBS) objs/magic_square.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)magic_square$E
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT) magic_square$E
 
 objs/network_routing.$O:examples/network_routing.cc
 	$(CCC) $(CFLAGS) -c examples/network_routing.cc $(OBJOUT)objs/network_routing.$O
 
 network_routing$E: $(CP_LIBS) $(BASE_LIBS) $(GRAPH_LIBS) objs/network_routing.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/network_routing.$O $(CP_LIBS) $(GRAPH_LIBS) $(BASE_LIBS) $(EXEOUT)network_routing$E
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/network_routing.$O $(CP_LIBS) $(GRAPH_LIBS) $(BASE_LIBS) $(EXEOUT) network_routing$E
 
 objs/nqueens.$O: examples/nqueens.cc
 	$(CCC) $(CFLAGS) -c examples/nqueens.cc $(OBJOUT)objs/nqueens.$O
 
 nqueens$E: $(CP_LIBS) $(BASE_LIBS) objs/nqueens.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)nqueens$E
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT) nqueens$E
 
 objs/tricks.$O: examples/tricks.cc
 	$(CCC) $(CFLAGS) -c examples/tricks.cc $(OBJOUT)objs/tricks.$O
@@ -403,13 +403,13 @@ objs/global_arith.$O: examples/global_arith.cc
 	$(CCC) $(CFLAGS) -c examples/global_arith.cc $(OBJOUT)objs/global_arith.$O
 
 tricks$E: $(CPLIBS) $(BASE_LIBS) objs/tricks.$O objs/global_arith.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tricks.$O objs/global_arith.$O $(CPLIBS) $(BASE_LIBS) $(EXEOUT)tricks$E
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tricks.$O objs/global_arith.$O $(CPLIBS) $(BASE_LIBS) $(EXEOUT) tricks$E
 
 objs/tsp.$O: examples/tsp.cc
 	$(CCC) $(CFLAGS) -c examples/tsp.cc $(OBJOUT)objs/tsp.$O
 
 tsp$E: $(CP_LIBS) $(BASE_LIBS) objs/tsp.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)tsp$E
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT) tsp$E
 
 # Linear Programming Examples
 
@@ -417,11 +417,11 @@ objs/linear_solver_example.$O: examples/linear_solver_example.cc
 	$(CCC) $(CFLAGS) -c examples/linear_solver_example.cc $(OBJOUT)objs/linear_solver_example.$O
 
 linear_solver_example$E: $(LP_LIBS) $(BASE_LIBS) objs/linear_solver_example.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/linear_solver_example.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(EXEOUT)linear_solver_example$E
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/linear_solver_example.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(EXEOUT) linear_solver_example$E
 
 objs/integer_solver_example.$O: examples/integer_solver_example.cc
 	$(CCC) $(CFLAGS) -c examples/integer_solver_example.cc $(OBJOUT)objs/integer_solver_example.$O
 
 integer_solver_example$E: $(LP_LIBS) $(BASE_LIBS) objs/integer_solver_example.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/integer_solver_example.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(EXEOUT)integer_solver_example$E
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/integer_solver_example.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(EXEOUT) integer_solver_example$E
 
