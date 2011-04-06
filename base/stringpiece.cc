@@ -38,6 +38,13 @@ bool operator==(const StringPiece& x, const StringPiece& y) {
   return true;
 }
 
+bool operator<(const operations_research::StringPiece& x,
+	       const operations_research::StringPiece& y) {
+  const int r = memcmp(x.data(), y.data(),
+                       std::min(x.size(), y.size()));
+  return ((r < 0) || ((r == 0) && (x.size() < y.size())));
+}
+
 void StringPiece::CopyToString(string* target) const {
   target->assign(ptr_, length_);
 }
@@ -56,6 +63,15 @@ int StringPiece::find(const StringPiece& s, size_type pos) const {
                                    s.ptr_, s.ptr_ + s.length_);
   const size_type xpos = result - ptr_;
   return xpos + s.length_ <= length_ ? xpos : npos;
+}
+
+int StringPiece::compare(const StringPiece& x) const {
+  int r = memcmp(ptr_, x.ptr_, std::min(length_, x.length_));
+  if (r == 0) {
+    if (length_ < x.length_) r = -1;
+    else if (length_ > x.length_) r = +1;
+  }
+  return r;
 }
 
 int StringPiece::find(char c, size_type pos) const {
