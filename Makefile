@@ -1,14 +1,11 @@
 # Let's discover something about where we run
 ifeq "$(SHELL)" "cmd.exe"
 SYSTEM=win
-OS=windows
 else
 ifeq "$(SHELL)" "sh.exe"
 SYSTEM=win
-OS=windows
 else
 SYSTEM=unix
-OS=$(shell uname -s)
 endif
 endif
 

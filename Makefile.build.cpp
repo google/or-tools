@@ -219,7 +219,7 @@ gen/linear_solver/linear_solver.pb.cc:linear_solver/linear_solver.proto
 gen/linear_solver/linear_solver.pb.h:gen/linear_solver/linear_solver.pb.cc
 
 $(LIBPREFIX)linear_solver.$(LIBSUFFIX): $(LINEAR_SOLVER_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)linear_solver.$(LIBSUFFIX) $(LINEAR_SOLVER_LIB_OS)
+	$(LINKCMD) $(LINKPREFIX)$(LIBPREFIX)linear_solver.$(LIBSUFFIX) $(LINEAR_SOLVER_LIB_OS)
 
 # Util library.
 
