@@ -1,3 +1,17 @@
+# Let's discover something about where we run
+ifeq "$(SHELL)" "cmd.exe"
+SYSTEM=win
+OS=windows
+else
+ifeq "$(SHELL)" "sh.exe"
+SYSTEM=win
+OS=windows
+else
+SYSTEM=unix
+OS=$(shell uname -s)
+endif
+endif
+
 # First, we include predefined variables
 include Makefile.def
 
@@ -5,7 +19,7 @@ include Makefile.def
 -include Makefile.local
 
 # Then include specific unix commands and definitions
-include Makefile.unix
+include Makefile.$(SYSTEM)
 
 # Include build files.
 include Makefile.build.cpp
