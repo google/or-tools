@@ -38,7 +38,11 @@
 #include "coin/CglClique.hpp"
 #include "coin/CglFlowCover.hpp"
 #include "coin/CglMixedIntegerRounding.hpp"
+#if defined(_MSC_VER)
+#include "coin/configall_system.h"
+#else
 #include "coin/config_cbc.h"
+#endif
 
 // Heuristics
 

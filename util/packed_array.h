@@ -16,7 +16,7 @@
 
 #if defined(__APPLE__) && defined(__GNUC__)
 #include <machine/endian.h>
-#else
+#elif !defined(_MSC_VER)
 #include <endian.h>
 #endif
 #include <limits.h>

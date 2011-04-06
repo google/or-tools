@@ -56,16 +56,16 @@ ALGORITHMS_LIBS = \
 algorithmslibs: $(ALGORITHMS_LIBS)
 
 clean:
-	rm -f *.$(LIBSUFFIX)
-	rm -f objs/*.$O
-	rm -f $(CPBINARIES)
-	rm -f $(LPBINARIES)
-	rm -f gen/*/*wrap*
-	rm -f gen/*/*.pb.*
-	rm -f objs/com/google/ortools/*/*.class
-	rm -f gen/com/google/ortools/*/*.java
-	rm -f *.so
-	rm -f *.jar
+	$(DEL) *.$(LIBSUFFIX)
+	$(DEL) objs/*.$O
+	$(DEL) $(CPBINARIES)
+	$(DEL) $(LPBINARIES)
+	$(DEL) gen/*/*wrap*
+	$(DEL) gen/*/*.pb.*
+	$(DEL) objs/com/google/ortools/*/*.class
+	$(DEL) gen/com/google/ortools/*/*.java
+	$(DEL) *.so
+	$(DEL) *.jar
 
 # Constraint Solver Lib.
 
@@ -219,7 +219,7 @@ gen/linear_solver/linear_solver.pb.cc:linear_solver/linear_solver.proto
 gen/linear_solver/linear_solver.pb.h:gen/linear_solver/linear_solver.pb.cc
 
 $(LIBPREFIX)linear_solver.$(LIBSUFFIX): $(LINEAR_SOLVER_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)liblinear_solver.$(LIBSUFFIX) $(LINEAR_SOLVER_LIB_OS)
+	$(LINKCMD) $(LINKPREFIX)linear_solver.$(LIBSUFFIX) $(LINEAR_SOLVER_LIB_OS)
 
 # Util library.
 

@@ -18,7 +18,7 @@ include Makefile.def
 # Then we overwrite the local ones if the Makefile.local file exists.
 -include Makefile.local
 
-# Then include specific unix commands and definitions
+# Then include specific system commands and definitions
 include Makefile.$(SYSTEM)
 
 # Include build files.

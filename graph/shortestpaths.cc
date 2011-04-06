@@ -19,5 +19,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
+
 DEFINE_int32(shortestpaths_disconnected_distance, 200000,
              "Distance returned when two node are disconnected");

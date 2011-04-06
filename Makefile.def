@@ -20,13 +20,42 @@ UNIX_CBC_DIR=../cbc-2.6.2
 UNIX_GLPK_DIR=../glpk-4.45
 # Linux jdk root
 # first, determine 32 or 64 bits.
+ifeq "$(SYSTEM)" "unix"
 LBITS := $(shell getconf LONG_BIT)
 ifeq ($(LBITS),64)
    JDK_EXT=64
 else
    JDK_EXT=32
 endif
+endif
+
 LINUX_JDK_ROOT=/usr/local/buildtools/java/jdk-$(JDK_EXT)
 # Include files path for java on mac os X
 MAC_JDK_HEADERS=/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/include
 #MAC_JDK_HEADERS=/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bundle/Headers
+
+# Please edit the following:
+WINDOWS_GFLAGS_DIR=..\\gflags-1.4
+WINDOWS_ZLIB_DIR=..\\zlib-1.2.5
+WINDOWS_ZLIB_NAME=zlib.lib
+WINDOWS_SWIG_BINARY=..\\swigwin-2.0.0\\swig.exe
+WINDOWS_PROTOBUF_DIR=..\\protobuf-2.3.0
+WINDOWS_PYTHON_DIR=c:\\Python27
+WINDOWS_PYTHON_LIB=c:\\Python27\\libs\\python27.lib
+# This is the root directory of the CLP installation. Please undefine if CLP is
+# not installed. If you have installed CBC, CLP_DIR can have the same value as
+# CBC_DIR.
+WINDOWS_CLP_DIR=..\\cbc-2.6.2
+# This is the root directory of the CBC installation. Please undefine if CBC is
+# not installed.
+WINDOWS_CBC_DIR=..\\cbc-2.6.2
+# This is the root directory of glpk installation. Please undefine if GLPK is
+# not installed.
+WINDOWS_GLPK_VER=4_45
+WINDOWS_GLPK_DIR=..\\glpk-4.45
+
+
+# This describes the python installation.
+WINDOWS_PYTHON_INC=/Ic:\\Python27\\include
+WINDOWS_PYTHON_LNK=c:\\Python27\\libs\\python27.lib
+

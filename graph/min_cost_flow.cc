@@ -1,4 +1,4 @@
-// Copyright 2010 Google
+ // Copyright 2010 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -88,10 +88,12 @@ bool MinCostFlow::CheckCostRange() const {
   }
   VLOG(1) << "Min cost magnitude = " << min_cost_magnitude
           << ", Max cost magnitude = " << max_cost_magnitude;
+#if !defined(_MSC_VER)
   CHECK_GE(log(std::numeric_limits<CostValue>::max()),
            log(max_cost_magnitude) + log(graph_.num_nodes() + 1))
       << "Maximum cost is too high for the number of nodes. "
       << "Try changing the data.";
+#endif
   return true;
 }
 
