@@ -26,7 +26,7 @@ PYTHON_LNK=c:\\Python27\\libs\\python27.lib
 DEBUG=/O2 -DNDEBUG
 CCC=cl /EHsc /MD
 
-GFLAGS_INC = /I$(GFLAGS_DIR)\\src\\windows /I$(GFLAGS_DIR)\\src /Igen
+GFLAGS_INC = /I$(GFLAGS_DIR)\\src\\windows /I$(GFLAGS_DIR)\\src
 ZLIB_INC = /I$(ZLIB_DIR)
 PROTOBUF_INC = /I$(PROTOBUF_DIR)\\include
 

@@ -1,0 +1,113 @@
+#  ----- You should not need to modify the following, unless the -----
+#  ----- configuration is not standard. In that case, please tell us -----
+#  ----- about it. -----
+
+# This is needed to find python.h
+PYTHON_INC=-I/usr/include/python$(PYTHON_VER) -I/usr/lib/python$(PYTHON_VER)
+# This is needed to find gflags/gflags.h
+GFLAGS_INC = -I$(GFLAGS_DIR)/include
+# This is needed to find protocol buffers.
+PROTOBUF_INC = -I$(PROTOBUF_DIR)/include
+
+# Define CLP_DIR if unset and if CBC_DIR is set.
+ifdef CBC_DIR
+ifndef CLP_DIR
+CLP_DIR=$(CBC_DIR)
+endif
+endif
+# This is needed to find Coin LP include files.
+ifdef CLP_DIR
+CLP_INC = -I$(CLP_DIR)/include -DUSE_CLP
+endif
+# This is needed to find Coin Branch and Cut include files.
+ifdef CBC_DIR
+CBC_INC = -I$(CBC_DIR)/include -DUSE_CBC
+endif
+# This is needed to find GLPK include files.
+ifdef GLPK_DIR
+GLPK_INC = -I$(GLPK_DIR)/include -DUSE_GLPK
+endif
+
+# Compilation flags
+DEBUG=-O3 -DNDEBUG
+JNIDEBUG=-O1 -DNDEBUG
+SYSCFLAGS=-fPIC
+CCC=g++
+
+# ----- OS Dependent -----
+OS=$(shell uname -s)
+
+ifeq ($(OS),Linux)
+LD = gcc -shared
+# This is needed to find libgflags.a
+GFLAGS_LNK = -Wl,-rpath $(GFLAGS_DIR)/lib -L$(GFLAGS_DIR)/lib -lgflags
+# This is needed to find libz.a
+ZLIB_LNK = -lz
+# This is needed to find libprotobuf.a
+PROTOBUF_LNK = -Wl,-rpath $(PROTOBUF_DIR)/lib -L$(PROTOBUF_DIR)/lib -lprotobuf -lpthread
+ifdef GLPK_DIR
+GLPK_LNK = -Wl,-rpath $(GLPK_DIR)/lib -L$(GLPK_DIR)/lib -lglpk
+endif
+ifdef CLP_DIR
+CLP_LNK = -Wl,-rpath $(CLP_DIR)/lib/coin -L$(CLP_DIR)/lib/coin -lClp -lCoinUtils
+endif
+ifdef CBC_DIR
+CBC_LNK = -Wl,-rpath $(CBC_DIR)/lib/coin -L$(CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp -lOsiVol -lVol
+endif
+# Detect 32 bit or 64 bit OS and define ARCH flags correctly.
+LBITS := $(shell getconf LONG_BIT)
+ifeq ($(LBITS),64)
+   ARCH=-DARCH_K8
+else
+   ARCH=
+endif
+SYS_LNK=-lrt
+JAVA_INC=-I$(LINUX_JDK_ROOT)/include -I$(LINUX_JDK_ROOT)/include/linux
+JAVAC_BIN=$(LINUX_JDK_ROOT)/bin/javac
+JAVA_BIN=$(LINUX_JDK_ROOT)/bin/java
+JNILIBEXT=so
+FIX_SWIG=sed -i -e 's/Tlong/T_long/g' gen/com/google/ortools/constraintsolver/Solver.java
+endif
+ifeq ($(OS),Darwin) # Assume Mac Os X
+LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress
+GFLAGS_LNK = -L$(GFLAGS_DIR)/lib -lgflags
+ZLIB_LNK = -lz
+PROTOBUF_LNK = -L$(PROTOBUF_DIR)/lib -lprotobuf
+ARCH=-DARCH_K8
+SYS_LNK=
+JAVA_INC=-I$(MAC_JDK_HEADERS)
+JAVAC_BIN=javac
+JAVA_BIN=java
+JNILIBEXT=jnilib
+FIX_SWIG=
+
+ifdef GLPK_DIR
+GLPK_LNK = -L$(GLPK_DIR)/lib -lglpk
+endif
+ifdef CLP_DIR
+CLP_LNK = -L$(CLP_DIR)/lib/coin -lClp -lCoinUtils
+endif
+ifdef CBC_DIR
+CBC_LNK = -L$(CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
+endif
+endif
+
+CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
+        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC)
+JNIFLAGS= $(SYSCFLAGS) $(JNIDEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
+        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC)
+LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
+LDLPDEPS= $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK)
+
+# Unix specific definitions
+LIBPREFIX=lib
+LIBSUFFIX=a
+LINKCMD=ar rv
+LINKPREFIX=
+O=o
+E=
+OBJOUT=-o
+EXEOUT=-o
+PYLIBEXT=so
+SHAREDLIBEXT=so
+LDOUT=-o

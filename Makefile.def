@@ -1,0 +1,32 @@
+# Please copy this file to Makefile.local and edit to accomodate your needs.
+
+# Python version (to be used to find include files).
+PYTHON_VER=2.6
+# Where gflags is installed.
+GFLAGS_DIR=../gflags-1.4
+# Swig binary.
+SWIG_BINARY=swig
+# Where protocol buffers are installed
+PROTOBUF_DIR=../protobuf-2.3.0
+# This is the root directory of the CLP installation. Please undefine if CLP is
+# not installed. If you have installed CBC, CLP_DIR can have the same value as
+# CBC_DIR.
+CLP_DIR=../cbc-2.6.2
+# This is the root directory of the CBC installation. Please undefine if CBC is
+# not installed.
+CBC_DIR=../cbc-2.6.2
+# This is the root directory of glpk installation. Please undefine if GLPK is
+# not installed.
+GLPK_DIR=../glpk-4.45
+# Linux jdk root
+# first, determine 32 or 64 bits.
+LBITS := $(shell getconf LONG_BIT)
+ifeq ($(LBITS),64)
+   JDK_EXT=64
+else
+   JDK_EXT=32
+endif
+LINUX_JDK_ROOT=/usr/local/buildtools/java/jdk-$(JDK_EXT)
+# Include files path for java on mac os X
+MAC_JDK_HEADERS=/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/include
+#MAC_JDK_HEADERS=/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bundle/Headers
