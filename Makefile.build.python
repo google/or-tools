@@ -13,7 +13,7 @@ objs/knapsack_solver_wrap.$O: gen/algorithms/knapsack_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/algorithms/knapsack_solver_wrap.cc $(OBJOUT)objs/knapsack_solver_wrap.$O
 
 _pywrapknapsack_solver.$(SHAREDLIBEXT): objs/knapsack_solver_wrap.$O $(ALGORITHMS_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT) _pywrapknapsack_solver.$(SHAREDLIBEXT) objs/knapsack_solver_wrap.$O $(ALGORITHMS_LIBS) $(BASE_LIBS) $(LDFLAGS)
+	$(LD) $(LDOUT)_pywrapknapsack_solver.$(SHAREDLIBEXT) objs/knapsack_solver_wrap.$O $(ALGORITHMS_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # pywrapflow
 
@@ -28,7 +28,7 @@ objs/pywrapflow_wrap.$O: gen/graph/pywrapflow_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/graph/pywrapflow_wrap.cc $(OBJOUT)objs/pywrapflow_wrap.$O
 
 _pywrapflow.$(SHAREDLIBEXT): objs/pywrapflow_wrap.$O $(GRAPH_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT) _pywrapflow.$(SHAREDLIBEXT) objs/pywrapflow_wrap.$O $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS)
+	$(LD) $(LDOUT)_pywrapflow.$(SHAREDLIBEXT) objs/pywrapflow_wrap.$O $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # pywrapcp
 
@@ -43,7 +43,7 @@ objs/constraint_solver_wrap.$O: gen/constraint_solver/constraint_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/constraint_solver/constraint_solver_wrap.cc $(OBJOUT)objs/constraint_solver_wrap.$O
 
 _pywrapcp.$(SHAREDLIBEXT): objs/constraint_solver_wrap.$O $(CP_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT) _pywrapcp.$(SHAREDLIBEXT) objs/constraint_solver_wrap.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS)
+	$(LD) $(LDOUT)_pywrapcp.$(SHAREDLIBEXT) objs/constraint_solver_wrap.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # pywraprouting
 
@@ -56,7 +56,7 @@ objs/routing_wrap.$O: gen/constraint_solver/routing_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/constraint_solver/routing_wrap.cc $(OBJOUT)objs/routing_wrap.$O
 
 _pywraprouting.$(SHAREDLIBEXT): objs/routing_wrap.$O $(CP_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT) _pywraprouting.$(SHAREDLIBEXT) objs/routing_wrap.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS)
+	$(LD) $(LDOUT)_pywraprouting.$(SHAREDLIBEXT) objs/routing_wrap.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # pywraplp
 
@@ -71,4 +71,4 @@ objs/linear_solver_wrap.$O: gen/linear_solver/linear_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/linear_solver/linear_solver_wrap.cc $(OBJOUT)objs/linear_solver_wrap.$O
 
 _pywraplp.$(SHAREDLIBEXT): objs/linear_solver_wrap.$O $(LP_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT) _pywraplp.$(SHAREDLIBEXT) objs/linear_solver_wrap.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS)
+	$(LD) $(LDOUT)_pywraplp.$(SHAREDLIBEXT) objs/linear_solver_wrap.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS)
