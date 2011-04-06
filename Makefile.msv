@@ -162,6 +162,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	objs/resource.obj\
 	objs/sched_search.obj\
 	objs/search.obj\
+	objs/search_limit.pb.obj\
 	objs/table.obj\
 	objs/timetabling.obj\
 	objs/tree_monitor.obj\
@@ -190,8 +191,16 @@ objs/constraints.obj:constraint_solver/constraints.cc
 objs/count_cst.obj:constraint_solver/count_cst.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/count_cst.cc /Foobjs/count_cst.obj
 
-objs/default_search.obj:constraint_solver/default_search.cc
+objs/default_search.obj:constraint_solver/default_search.cc constraint_solver/search_limit.pb.h
 	$(CCC) $(CFLAGS) -c constraint_solver/default_search.cc /Foobjs/default_search.obj
+
+constraint_solver/search_limit.pb.cc:constraint_solver/search_limit.proto
+	$(PROTOBUF_DIR)\\bin\\protoc --proto_path=constraint_solver --cpp_out=constraint_solver constraint_solver\\search_limit.proto
+
+constraint_solver/search_limit.pb.h:constraint_solver/search_limit.pb.cc
+
+objs/search_limit.pb.obj:constraint_solver/search_limit.pb.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/search_limit.pb.cc /Foobjs/search_limit.pb.obj
 
 objs/demon_profiler.obj:constraint_solver/demon_profiler.cc constraint_solver/demon_profiler.pb.h
 	$(CCC) $(CFLAGS) -c constraint_solver/demon_profiler.cc /Foobjs/demon_profiler.obj
