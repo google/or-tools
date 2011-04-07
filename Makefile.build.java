@@ -229,7 +229,7 @@ $(LIBPREFIX)jniknapsacksolver.$(JNILIBEXT): objs/knapsack_solver_java_wrap.$O $(
 
 compile_Knapsack: objs/com/google/ortools/knapsacksolver/samples/Knapsack.class
 
-objs/com/google/ortools/knapsacksolver/samples/Knapsack.class: javacp com/google/ortools/knapsacksolver/samples/Knapsack.java
+objs/com/google/ortools/knapsacksolver/samples/Knapsack.class: javaalgorithms com/google/ortools/knapsacksolver/samples/Knapsack.java
 	$(JAVAC_BIN) -d objs -cp com.google.ortools.knapsacksolver.jar com/google/ortools/knapsacksolver/samples/Knapsack.java
 
 run_Knapsack: compile_Knapsack
@@ -246,8 +246,8 @@ objs/flow_java_wrap.$O: gen/graph/flow_java_wrap.cc
 	$(CCC) $(JNIFLAGS) $(JAVA_INC) -c gen/graph/flow_java_wrap.cc $(OBJOUT)objs/flow_java_wrap.$O
 
 com.google.ortools.flow.jar: gen/graph/flow_java_wrap.cc
-	$(JAVAC_BIN) -d objs gen/com/google/ortools/flow/*.java
-	$(JAR_BIN) cf com.google.ortools.flow.jar -C objs com/google/ortools/flow
+	$(JAVAC_BIN) -d objs gen$Scom$Sgoogle$Sortools$Sflow$S*.java
+	$(JAR_BIN) cf com.google.ortools.flow.jar -C objs com$Sgoogle$Sortools$Sflow
 
 $(LIBPREFIX)jniflow.$(JNILIBEXT): objs/flow_java_wrap.$O $(GRAPH_LIBS) $(BASE_LIBS)
 	$(LD) $(LDOUT)$(LIBPREFIX)jniflow.$(JNILIBEXT) objs/flow_java_wrap.$O $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS)
@@ -256,7 +256,7 @@ $(LIBPREFIX)jniflow.$(JNILIBEXT): objs/flow_java_wrap.$O $(GRAPH_LIBS) $(BASE_LI
 
 compile_FlowExample: objs/com/google/ortools/flow/samples/FlowExample.class
 
-objs/com/google/ortools/flow/samples/FlowExample.class: javacp com/google/ortools/flow/samples/FlowExample.java
+objs/com/google/ortools/flow/samples/FlowExample.class: javagraph com/google/ortools/flow/samples/FlowExample.java
 	$(JAVAC_BIN) -d objs -cp com.google.ortools.flow.jar com/google/ortools/flow/samples/FlowExample.java
 
 run_FlowExample: compile_FlowExample
