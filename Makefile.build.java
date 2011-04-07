@@ -211,6 +211,7 @@ run_CoinsGrid: compile_CoinsGrid
 # javaalgorithms
 
 javaalgorithms: com.google.ortools.knapsacksolver.jar $(LIBPREFIX)jniknapsacksolver.$(JNILIBEXT)
+
 gen/algorithms/knapsack_solver_java_wrap.cc: algorithms/knapsack_solver.swig base/base.swig util/data.swig algorithms/knapsack_solver.h
 	$(SWIG_BINARY) -c++ -java -o gen/algorithms/knapsack_solver_java_wrap.cc -package com.google.ortools.knapsacksolver -outdir gen/com/google/ortools/knapsacksolver algorithms/knapsack_solver.swig
 
@@ -237,6 +238,7 @@ run_Knapsack: compile_Knapsack
 # javagraph
 
 javagraph: com.google.ortools.flow.jar $(LIBPREFIX)jniflow.$(JNILIBEXT)
+
 gen/graph/flow_java_wrap.cc: graph/flow.swig base/base.swig util/data.swig graph/max_flow.h graph/min_cost_flow.h
 	$(SWIG_BINARY) -c++ -java -o gen/graph/flow_java_wrap.cc -package com.google.ortools.flow -outdir gen/com/google/ortools/flow graph/flow.swig
 
