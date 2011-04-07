@@ -18,23 +18,31 @@ endif
 ifdef WINDOWS_CLP_DIR
 CLP_INC = /I$(WINDOWS_CLP_DIR)\\include /DUSE_CLP
 CLP_SWIG = -DUSE_CLP
-CLP_LNK = $(WINDOWS_CLP_DIR)\\lib\\coin\libClp.lib  $(WINDOWS_CLP_DIR)\\lib\\coin\libCoinUtils.lib
+CLP_LNK = $(WINDOWS_CLP_DIR)\\lib\\coin\\libClp.lib  $(WINDOWS_CLP_DIR)\\lib\\coin\\libCoinUtils.lib
+CLP_STRING=-DPACKAGE_STRING="\"$(WINDOWS_CLP_PACKAGE)\""
 endif
 # This is needed to find Coin Branch and Cut include files and libraries.
 ifdef WINDOWS_CBC_DIR
 CBC_INC = /I$(WINDOWS_CBC_DIR)\\include /DUSE_CBC
 CBC_SWIG = -DUSE_CBC
 CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
+CBC_STRING=-DPACKAGE_STRING="\"$(WINDOWS_CBC_PACKAGE)\""
 endif
 # This is needed to find GLPK include files and libraries.
 ifdef WINDOWS_GLPK_DIR
 GLPK_INC = /I$(WINDOWS_GLPK_DIR)\\include /DUSE_GLPK
 GLPK_SWIG = -DUSE_GLPK
-GLPK_LNK = $(WINDOWS_GLPK_DIR)\\lib\\glpk_$(WINDOWS_GLPK_VER).lib
+GLPK_LNK = $(WINDOWS_GLPK_DIR)\\lib\\glpk.lib
 endif
 
+JAVA_INC=/I"$(WINDOWS_JDK_DIR)\\include" /I"$(WINDOWS_JDK_DIR)\\include\\win32"
+JAVAC_BIN="$(WINDOWS_JDK_DIR)/bin/javac"
+JAVA_BIN="$(WINDOWS_JDK_DIR)/bin/java"
+JAR_BIN="$(WINDOWS_JDK_DIR)/bin/jar"
+
 CFLAGS= -nologo $(SYSCFLAGS) $(DEBUG) /I.  /Igen $(GFLAGS_INC) $(ZLIB_INC)\
-	 $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC)
+	 $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) /D__WIN32__
+JNIFLAGS=$(CFLAGS) $(JAVA_INC)
 
 GFLAGS_LNK = $(WINDOWS_GFLAGS_DIR)\\vsprojects\\libgflags\\Release\\libgflags.lib
 ZLIB_LNK = $(WINDOWS_ZLIB_DIR)/$(WINDOWS_ZLIB_NAME)
@@ -56,4 +64,8 @@ EXEOUT=/Fe
 SHAREDLIBEXT=dll
 LDOUT=/OUT:
 LD = link /DLL
+S=\\
+CPSEP=;
 DEL=del
+JNILIBEXT=dll
+

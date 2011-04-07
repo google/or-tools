@@ -57,14 +57,24 @@ algorithmslibs: $(ALGORITHMS_LIBS)
 
 clean:
 	$(DEL) *.$(LIBSUFFIX)
-	$(DEL) objs/*.$O
+	$(DEL) objs$S*.$O
 	$(DEL) $(CPBINARIES)
 	$(DEL) $(LPBINARIES)
-	$(DEL) gen/*/*wrap*
-	$(DEL) gen/*/*.pb.*
-	$(DEL) objs/com/google/ortools/*/*.class
-	$(DEL) gen/com/google/ortools/*/*.java
-	$(DEL) *.so
+	$(DEL) gen$Salgorithms$S*wrap*
+	$(DEL) gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java
+	$(DEL) gen$Scom$Sgoogle$Sortools$Sflow$S*.java
+	$(DEL) gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.java
+	$(DEL) gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
+	$(DEL) gen$Sconstraint_solver$S*.pb.*
+	$(DEL) gen$Sconstraint_solver$S*wrap*
+	$(DEL) gen$Sgraphs_solver$S*wrap*
+	$(DEL) gen$Slinear_solver$S*.pb.*
+	$(DEL) gen$Slinear_solver$S*wrap*
+	$(DEL) objs$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.class
+	$(DEL) objs$Scom$Sgoogle$Sortools$Sflow$S*.class
+	$(DEL) objs$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.class
+	$(DEL) objs$Scom$Sgoogle$Sortools$Slinearsolver$S*.class
+	$(DEL) *.$(SHAREDLIBEXT)
 	$(DEL) *.jar
 
 # Constraint Solver Lib.
@@ -199,10 +209,10 @@ LINEAR_SOLVER_LIB_OS = \
 	objs/linear_solver.pb.$O
 
 objs/cbc_interface.$O:linear_solver/cbc_interface.cc gen/linear_solver/linear_solver.pb.h
-	$(CCC) $(CFLAGS) -c linear_solver/cbc_interface.cc $(OBJOUT)objs/cbc_interface.$O
+	$(CCC) $(CFLAGS) $(CBC_STRING) -c linear_solver/cbc_interface.cc $(OBJOUT)objs/cbc_interface.$O
 
 objs/clp_interface.$O:linear_solver/clp_interface.cc gen/linear_solver/linear_solver.pb.h
-	$(CCC) $(CFLAGS) -c linear_solver/clp_interface.cc $(OBJOUT)objs/clp_interface.$O
+	$(CCC) $(CFLAGS) $(CLP_STRING) -c linear_solver/clp_interface.cc $(OBJOUT)objs/clp_interface.$O
 
 objs/glpk_interface.$O:linear_solver/glpk_interface.cc gen/linear_solver/linear_solver.pb.h
 	$(CCC) $(CFLAGS) -c linear_solver/glpk_interface.cc $(OBJOUT)objs/glpk_interface.$O

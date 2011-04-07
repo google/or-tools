@@ -68,6 +68,7 @@ SYS_LNK=-lrt
 JAVA_INC=-I$(LINUX_JDK_ROOT)/include -I$(LINUX_JDK_ROOT)/include/linux
 JAVAC_BIN=$(LINUX_JDK_ROOT)/bin/javac
 JAVA_BIN=$(LINUX_JDK_ROOT)/bin/java
+JAR_BIN=$(LINUX_JDK_ROOT)/bin/jar
 JNILIBEXT=so
 FIX_SWIG=sed -i -e 's/Tlong/T_long/g' gen/com/google/ortools/constraintsolver/Solver.java
 endif
@@ -81,6 +82,7 @@ SYS_LNK=
 JAVA_INC=-I$(MAC_JDK_HEADERS)
 JAVAC_BIN=javac
 JAVA_BIN=java
+JAR_BIN=jar
 JNILIBEXT=jnilib
 FIX_SWIG=
 
@@ -117,3 +119,5 @@ LDOUT=-o$(SPACE)
 OBJOUT=-o
 EXEOUT=-o$(SPACE)
 DEL=rm -f
+S=/
+CPSEP=:

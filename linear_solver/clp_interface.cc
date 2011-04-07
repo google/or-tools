@@ -31,7 +31,11 @@
 #include "coin/ClpSimplex.hpp"
 #include "coin/CoinBuild.hpp"
 #include "coin/ClpMessage.hpp"
+#if defined(_MSC_VER)
+#include "coin/configall_system.h"
+#else
 #include "coin/config_clp.h"
+#endif
 
 DECLARE_double(solver_timeout_in_seconds);
 DECLARE_string(solver_write_model);
