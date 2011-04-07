@@ -259,7 +259,7 @@ compile_FlowExample: objs/com/google/ortools/flow/samples/FlowExample.class
 objs/com/google/ortools/flow/samples/FlowExample.class: javagraph com/google/ortools/flow/samples/FlowExample.java
 	$(JAVAC_BIN) -d objs -cp com.google.ortools.flow.jar com/google/ortools/flow/samples/FlowExample.java
 
-run_FlowExample: compile_FlowExample
+run_FlowExample: compile_FlowExample javagraph
 	$(JAVA_BIN) -Djava.library.path=. -cp objs$(CPSEP)com.google.ortools.flow.jar com.google.ortools.flow.samples.FlowExample
 
 # javalp

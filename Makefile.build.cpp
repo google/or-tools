@@ -67,7 +67,7 @@ clean:
 	$(DEL) gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
 	$(DEL) gen$Sconstraint_solver$S*.pb.*
 	$(DEL) gen$Sconstraint_solver$S*wrap*
-	$(DEL) gen$Sgraphs_solver$S*wrap*
+	$(DEL) gen$Sgraph$S*wrap*
 	$(DEL) gen$Slinear_solver$S*.pb.*
 	$(DEL) gen$Slinear_solver$S*wrap*
 	$(DEL) objs$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.class
@@ -75,6 +75,7 @@ clean:
 	$(DEL) objs$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.class
 	$(DEL) objs$Scom$Sgoogle$Sortools$Slinearsolver$S*.class
 	$(DEL) *.$(SHAREDLIBEXT)
+	$(DEL) *.$(JNILIBEXT)
 	$(DEL) *.jar
 
 # Constraint Solver Lib.
