@@ -15,7 +15,7 @@ objs/knapsack_solver_wrap.$O: gen/algorithms/knapsack_solver_wrap.cc
 _pywrapknapsack_solver.$(SHAREDLIBEXT): objs/knapsack_solver_wrap.$O $(ALGORITHMS_LIBS) $(BASE_LIBS)
 	$(LD) $(LDOUT)_pywrapknapsack_solver.$(SHAREDLIBEXT) objs/knapsack_solver_wrap.$O $(ALGORITHMS_LIBS) $(BASE_LIBS) $(LDFLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
-	copy _pywrapknapsack_solver.dll gen\\knapsack_solver\\_pywrapknapsack_solver.pyd
+	copy _pywrapknapsack_solver.dll gen\\algorithms\\_pywrapknapsack_solver.pyd
 endif
 # pywrapflow
 
@@ -32,7 +32,7 @@ objs/pywrapflow_wrap.$O: gen/graph/pywrapflow_wrap.cc
 _pywrapflow.$(SHAREDLIBEXT): objs/pywrapflow_wrap.$O $(GRAPH_LIBS) $(BASE_LIBS)
 	$(LD) $(LDOUT)_pywrapflow.$(SHAREDLIBEXT) objs/pywrapflow_wrap.$O $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
-	copy _pywrapcp.dll gen\\graph\\_pywrapflow.pyd
+	copy _pywrapflow.dll gen\\graph\\_pywrapflow.pyd
 endif
 
 # pywrapcp
