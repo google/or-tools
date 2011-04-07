@@ -1,0 +1,59 @@
+DEBUG=/O2 -DNDEBUG
+CCC=cl /EHsc /MD
+
+GFLAGS_INC = /I$(WINDOWS_GFLAGS_DIR)\\src\\windows /I$(WINDOWS_GFLAGS_DIR)\\src
+ZLIB_INC = /I$(WINDOWS_ZLIB_DIR)
+PROTOBUF_INC = /I$(WINDOWS_PROTOBUF_DIR)\\include
+
+PYTHON_INC=/I$(WINDOWS_PYTHON_DIR)\\include
+PYTHON_LNK=$(WINDOWS_PYTHON_LIB)
+
+# Define CLP_DIR if unset and if CBC_DIR is set.
+ifdef WINDOWS_CBC_DIR
+ifndef WINDOWS_CLP_DIR
+WINDOWS_CLP_DIR=$(WINDOWS_CBC_DIR)
+endif
+endif
+# This is needed to find Coin LP include files and libraries.
+ifdef WINDOWS_CLP_DIR
+CLP_INC = /I$(WINDOWS_CLP_DIR)\\include /DUSE_CLP
+CLP_SWIG = -DUSE_CLP
+CLP_LNK = $(WINDOWS_CLP_DIR)\\lib\\coin\libClp.lib  $(WINDOWS_CLP_DIR)\\lib\\coin\libCoinUtils.lib
+endif
+# This is needed to find Coin Branch and Cut include files and libraries.
+ifdef WINDOWS_CBC_DIR
+CBC_INC = /I$(WINDOWS_CBC_DIR)\\include /DUSE_CBC
+CBC_SWIG = -DUSE_CBC
+CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
+endif
+# This is needed to find GLPK include files and libraries.
+ifdef WINDOWS_GLPK_DIR
+GLPK_INC = /I$(WINDOWS_GLPK_DIR)\\include /DUSE_GLPK
+GLPK_SWIG = -DUSE_GLPK
+GLPK_LNK = $(WINDOWS_GLPK_DIR)\\lib\\glpk_$(WINDOWS_GLPK_VER).lib
+endif
+
+CFLAGS= -nologo $(SYSCFLAGS) $(DEBUG) /I.  /Igen $(GFLAGS_INC) $(ZLIB_INC)\
+	 $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC)
+
+GFLAGS_LNK = $(WINDOWS_GFLAGS_DIR)\\vsprojects\\libgflags\\Release\\libgflags.lib
+ZLIB_LNK = $(WINDOWS_ZLIB_DIR)/$(WINDOWS_ZLIB_NAME)
+PROTOBUF_LNK = $(PROTOBUF_DIR)\\lib\\libprotobuf.lib
+LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) psapi.lib ws2_32.lib
+LDLPDEPS=$(CBC_LNK) $(CLP_LNK) $(GLPK_LNK)
+
+# Windows specific definitions
+PROTOBUF_DIR=$(WINDOWS_PROTOBUF_DIR)
+SWIG_BINARY=$(WINDOWS_SWIG_BINARY)
+LIBPREFIX=
+LIBSUFFIX=lib
+LINKCMD=lib 
+LINKPREFIX=/OUT:
+O=obj
+E=.exe
+OBJOUT=/Fo
+EXEOUT=/Fe
+SHAREDLIBEXT=dll
+LDOUT=/OUT:
+LD = link /DLL
+DEL=del
