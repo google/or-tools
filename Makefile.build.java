@@ -223,7 +223,7 @@ com.google.ortools.knapsacksolver.jar: gen/algorithms/knapsack_solver_java_wrap.
 	$(JAR_BIN) cf com.google.ortools.knapsacksolver.jar -C objs com$Sgoogle$Sortools$Sknapsacksolver
 
 $(LIBPREFIX)jniknapsacksolver.$(JNILIBEXT): objs/knapsack_solver_java_wrap.$O $(ALGORITHMS_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT)$(libprefix)jniknapsacksolver.$(JNILIBEXT) objs/knapsack_solver_java_wrap.$O $(ALGORITHMS_LIBS) $(BASE_LIBS) $(LDFLAGS)
+	$(LD) $(LDOUT)$(LIBPREFIX)jniknapsacksolver.$(JNILIBEXT) objs/knapsack_solver_java_wrap.$O $(ALGORITHMS_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # Java Algorithms Examples
 
