@@ -20,8 +20,6 @@
 
 #include "graph/graph.h"
 
-DECLARE_int32(shortestpaths_disconnected_distance);
-
 namespace operations_research {
 class BellmanFord {
  public:
@@ -29,10 +27,12 @@ class BellmanFord {
 
   BellmanFord(int node_count,
               int start_node,
-              ResultCallback2<int64, int, int>* const graph)
+              ResultCallback2<int64, int, int>* const graph,
+              int64 disconnected_distance)
       : node_count_(node_count),
         start_node_(start_node),
         graph_(graph),
+        disconnected_distance_(disconnected_distance),
         distance_(new int64[node_count_]),
         predecessor_(new int[node_count_]) {
     graph->CheckIsRepeatable();
@@ -47,6 +47,7 @@ class BellmanFord {
   const int node_count_;
   const int start_node_;
   scoped_ptr<ResultCallback2<int64, int, int> > graph_;
+  const int disconnected_distance_;
   scoped_array<int64> distance_;
   scoped_array<int> predecessor_;
 };
@@ -64,7 +65,7 @@ void BellmanFord::Update() {
     for (int u = 0; u < node_count_; u++) {
       for (int v = 0; v < node_count_; v++) {
         const int64 graph_u_v = graph_->Run(u, v);
-        if (graph_u_v != FLAGS_shortestpaths_disconnected_distance) {
+        if (graph_u_v != disconnected_distance_) {
           const int64 other_distance = distance_[u] + graph_u_v;
           if (distance_[v] > other_distance) {
             distance_[v] = other_distance;
@@ -80,7 +81,7 @@ bool BellmanFord::Check() const {
   for (int u = 0; u < node_count_; u++) {
     for (int v = 0; v < node_count_; v++) {
       const int graph_u_v = graph_->Run(u, v);
-      if (graph_u_v != FLAGS_shortestpaths_disconnected_distance) {
+      if (graph_u_v != disconnected_distance_) {
         if (distance_[v] > distance_[u] + graph_u_v) {
           return false;
         }
@@ -116,8 +117,9 @@ bool BellmanFordShortestPath(int node_count,
                              int start_node,
                              int end_node,
                              ResultCallback2<int64, int, int>* const graph,
+                             int64 disconnected_distance,
                              vector<int>* nodes) {
-  BellmanFord bf(node_count, start_node, graph);
+  BellmanFord bf(node_count, start_node, graph, disconnected_distance);
   return bf.ShortestPath(end_node, nodes);
 }
 }  // namespace operations_research

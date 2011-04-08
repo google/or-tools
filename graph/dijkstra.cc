@@ -21,8 +21,6 @@
 #include "graph/shortestpaths.h"
 #include "base/adjustable_priority_queue.h"
 
-DECLARE_int32(shortestpaths_disconnected_distance);
-
 namespace operations_research {
 namespace {
 
@@ -52,10 +50,12 @@ class DijkstraSP {
 
   DijkstraSP(int node_count,
              int start_node,
-             ResultCallback2<int64, int, int>* const graph)
+             ResultCallback2<int64, int, int>* const graph,
+             int64 disconnected_distance)
       : node_count_(node_count),
         start_node_(start_node),
         graph_(graph),
+        disconnected_distance_(disconnected_distance),
         predecessor_(new int[node_count]),
         elements_(node_count) {
     graph->CheckIsRepeatable();
@@ -70,6 +70,7 @@ class DijkstraSP {
   const int node_count_;
   const int start_node_;
   scoped_ptr<ResultCallback2<int64, int, int> > graph_;
+  const int64 disconnected_distance_;
   scoped_array<int> predecessor_;
   AdjustablePriorityQueue<Element> frontier_;
   vector<Element> elements_;
@@ -107,7 +108,7 @@ void DijkstraSP::Update(int node) {
        ++it) {
     const int other_node = *it;
     const int64 graph_node_i = graph_->Run(node, other_node);
-    if (graph_node_i != FLAGS_shortestpaths_disconnected_distance) {
+    if (graph_node_i != disconnected_distance_) {
       if (added_to_the_frontier_.find(other_node) ==
           added_to_the_frontier_.end()) {
         frontier_.Add(&elements_[other_node]);
@@ -157,8 +158,9 @@ bool DijkstraShortestPath(int node_count,
                           int start_node,
                           int end_node,
                           ResultCallback2<int64, int, int>* const graph,
+                          int64 disconnected_distance,
                           vector<int>* nodes) {
-  DijkstraSP bf(node_count, start_node, graph);
+  DijkstraSP bf(node_count, start_node, graph, disconnected_distance);
   return bf.ShortestPath(end_node, nodes);
 }
 }  // namespace operations_research

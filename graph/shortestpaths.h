@@ -26,32 +26,32 @@
 
 namespace operations_research {
 
-// Dijsktra Shortest path with callback based description of the graph.
-// The callback returns the distance between two nodes, a distance of
-// 'shortestpaths_disconnected_distance' (flag) indicates no arcs between these
-// two nodes. Ownership of the callback is taken by the function that will
-// delete it in the end.
-// This function returns true if 'start_node' and 'end_node' are connected,
-// false otherwise.
+// Dijsktra Shortest path with callback based description of the
+// graph.  The callback returns the distance between two nodes, a
+// distance of 'disconnected_distance' indicates no arcs between these
+// two nodes. Ownership of the callback is taken by the function that
+// will delete it in the end.  This function returns true if
+// 'start_node' and 'end_node' are connected, false otherwise.
 bool DijkstraShortestPath(int node_count,
                           int start_node,
                           int end_node,
                           ResultCallback2<int64, int, int>* const graph,
+                          int64 disconnected_distance,
                           vector<int>* nodes);
 
-// Bellman-Ford Shortest path with callback-based description of the graph.
-// The callback returns the distance between two nodes, a distance of
-// 'shortestpaths_disconnected_distance' (flag) indicates no arcs between
-// these two nodes.
-// Ownership of the callback is taken by the function that will delete it
-// in the end.
-// This function returns true if 'start_node' and 'end_node' are connected,
-// false otherwise. If true, it will fill the 'nodes' vector with the
-// sequence of nodes on the shortest path between 'start_node' and 'end_node'.
+// Bellman-Ford Shortest path with callback-based description of the
+// graph.  The callback returns the distance between two nodes, a
+// distance of 'disconnected_distance' indicates no arcs between these
+// two nodes.  Ownership of the callback is taken by the function that
+// will delete it in the end.  This function returns true if
+// 'start_node' and 'end_node' are connected, false otherwise. If
+// true, it will fill the 'nodes' vector with the sequence of nodes on
+// the shortest path between 'start_node' and 'end_node'.
 bool BellmanFordShortestPath(int node_count,
                              int start_node,
                              int end_node,
                              ResultCallback2<int64, int, int>* const graph,
+                             int64 disconnected_distance,
                              vector<int>* nodes);
 }  // namespace operations_research
 

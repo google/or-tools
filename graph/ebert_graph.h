@@ -80,7 +80,6 @@
 //    validated on algorithms running with real data.
 
 #include <algorithm>
-#include <limits>
 #include <string>
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -170,7 +169,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
     return arc;
   }
 
-  // Iterator class for traversing the nodes in the graph.
+  // Iterator class for traversing all the nodes in the graph.
   class NodeIterator {
    public:
     explicit NodeIterator(const EbertGraph& graph)

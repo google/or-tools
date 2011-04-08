@@ -70,9 +70,6 @@ DEFINE_int32(report, 1, "Report which links and which demands are "
              "responsible for the congestion.");
 DEFINE_int32(log_period, 100000, "Period for the search log");
 
-// ----- External constants for shortest paths computation -----
-DECLARE_int32(shortestpaths_disconnected_distance);
-
 // ----- CP Model -----
 DEFINE_int64(comfort_zone, 850,
              "Above this limit in 1/1000th, the link is said to be "
@@ -92,27 +89,9 @@ DEFINE_int32(lns_limit, 30, "Limit the number of failures of the lns loop.");
 DEFINE_bool(focus_lns, true, "Focus LNS on highest cost arcs.");
 
 namespace operations_research {
-
-namespace {
-#if defined(_MSC_VER)
-// The following class defines a hash function for arcs
-class ArcHasher : public stdext::hash_compare <pair<int, int> > {
- public:
-  size_t operator() (const pair<int, int>& a) const {
-    uint32 x = a.first;
-    uint32 y = 0x9e3779b9UL;
-    uint32 z = a.second;
-    mix(x, y, z);
-    return z;
-  }
-  bool operator() (const pair<int, int>& a1, const pair<int, int>& a2) const {
-    return a1.first < a2.first ||
-        (a1.first == a2.first && a1.second < a2.second);
-  }
-};
-#endif
-}
 // ---------- Data and Data Generation ----------
+
+static const int64 kDisconnectedDistance = -1LL;
 
 // ----- Data -----
 // Contains problem data. It assumes capacities are symmetrical:
@@ -165,13 +144,8 @@ class NetworkRoutingData {
   int num_nodes_;
   int max_capacity_;
   int fixed_charge_cost_;
-#if defined(_MSC_VER)
-  hash_map<pair<int, int>, int, ArcHasher> all_arcs_;
-  hash_map<pair<int, int>, int, ArcHasher> all_demands_;
-#else
   hash_map<pair<int, int>, int> all_arcs_;
   hash_map<pair<int, int>, int> all_demands_;
-#endif
 };
 
 // ----- Data Generation -----
@@ -558,6 +532,7 @@ class NetworkRoutingSolver {
                                  demand.source,
                                  demand.destination,
                                  graph_callback,
+                                 kDisconnectedDistance,
                                  &paths));
       all_min_path_lengths_.push_back(paths.size() - 1);
     }
@@ -826,7 +801,7 @@ class NetworkRoutingSolver {
     if (capacity_[i][j] > 0) {
       return 1;
     } else {
-      return FLAGS_shortestpaths_disconnected_distance;
+      return kDisconnectedDistance;  // disconnected distance.
     }
   }
 

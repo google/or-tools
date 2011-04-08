@@ -19,18 +19,22 @@
 // n = |V| denotes the number of nodes in the graph, and m = |E| denotes the
 // number of arcs in the graph.
 //
-// To each arc (v,w) is associated a capacity c(v,w) and a unit cost cost(v,w).
-// To each node v is associated quantity named supply(v), which represents a
-// supply of fluid (if >0) or a demand (if <0).
-// Furthermore, no fluid are created in the graph so
+// With each arc (v,w) is associated a nonnegative capacity u(v,w)
+// (where 'u' stands for "upper bound") and a unit cost c(v,w). With
+// each node v is associated a quantity named supply(v), which
+// represents a supply of fluid (if >0) or a demand (if <0).
+// Furthermore, no fluid is created in the graph so
 //    sum on v in V supply(v) = 0
 //
 // A flow is a function from E to R such that:
-// a) f(v,w) <= c(v,w) for all (v,w) in E (capacity constraint).
+// a) f(v,w) <= u(v,w) for all (v,w) in E (capacity constraint).
 // b) f(v,w) = -f(w,v) for all (v,w) in E (flow antisymmetry constraint).
-// c) sum on v f(v,w) = 0  (flow conservation.
+// c) sum on v f(v,w) + supply(w) = 0  (flow conservation).
 //
-// The cost of a flow is sum on (v,w) in E ( f(v,w) * cost(v,w) )
+// The cost of a flow is sum on (v,w) in E ( f(v,w) * c(v,w) ) [Note:
+// It can be confusing to beginners that the cost is actually double
+// the amount that it might seem at first because of flow
+// antisymmetry.]
 //
 // The problem to solve is to find a flow of minimum cost such that all the
 // fluid flows from the supply nodes to the demand nodes.
@@ -40,15 +44,16 @@
 // epsilon-optimal minimum-cost flow is obtained,
 //  2/ deal with epsilon-optimal pseudo-flows.
 //
-// 1/ A pseudo-flow is like a flow, except that the inflow can be different from
-// the outflow. If it is the case at a given node v, it is said that there is an
-// excess (or deficit) at node v. A deficit is denoted by a negative excess
-// and inflow = outflow + excess.
+// 1/ A pseudo-flow is like a flow, except that a node's outflow minus
+// its inflow can be different from its supply. If it is the case at a
+// given node v, it is said that there is an excess (or deficit) at
+// node v. A deficit is denoted by a negative excess and inflow =
+// outflow + excess.
 // (Look at graph/max_flow.h to see that the definition
 // of preflow is more restrictive than the one for pseudo-flow in that a preflow
 // only allows non-negative excesses, i.e. no deficit.)
 // More formally, a pseudo-flow is a function f such that:
-// a) f(v,w) <= c(v,w) for all (v,w) in E  (capacity constraint).
+// a) f(v,w) <= u(v,w) for all (v,w) in E  (capacity constraint).
 // b) f(v,w) = -f(w,v) for all (v,w) in E (flow antisymmetry constraint).
 //
 // For each v in E, we also define the excess at node v, the algebraic sum of
@@ -58,15 +63,19 @@
 // The goal of the algorithm is to obtain excess(v) = 0 for all v in V, while
 // consuming capacity on some arcs, at the lowest possible cost.
 //
-// 2/ Each node has an associated "price" (or potential), in addition to its
-// excess. It is formally a function from E to R (the set of real numbers.).
-// For a given price function p, the reduced cost of an arc (v,w) is:
-//    cost_p(v,w) = cost(v,w) + p(v) - p(w)
-// (cost(v,w) is the cost of arc (v,w) .)
+// 2/ Internally to the algorithm and its analysis (but invisibly to
+// the client), each node has an associated "price" (or potential), in
+// addition to its excess. It is formally a function from E to R (the
+// set of real numbers.). For a given price function p, the reduced
+// cost of an arc (v,w) is:
+//    c_p(v,w) = c(v,w) + p(v) - p(w)
+// (c(v,w) is the cost of arc (v,w).) For those familiar with linear
+// programming, the price function can be viewed as a set of dual
+// variables.
 //
 // For a constant epsilon >= 0, a pseudo-flow f is said to be epsilon-optimal
-// with respect to a pricing function p if for all residual arc (v,w) in E,
-//    cost_p(v,w) >= -epsilon.
+// with respect to a price function p if for every residual arc (v,w) in E,
+//    c_p(v,w) >= -epsilon.
 //
 // A flow f is optimal if and only if there exists a price function p such that
 // no arc is admissible with respect to f and p.
@@ -75,7 +84,7 @@
 // is optimal. The integer cost case is handled by multiplying all the arc costs
 // and the initial value of epsilon by (n+1). When epsilon reaches 1, and
 // the solution is epsilon-optimal, it means: for all residual arc (v,w) in E,
-//    (n+1) * cost_p(v,w) >= -1, thus cost_p(v,w) >= -1/(n+1) >= 1/n, and the
+//    (n+1) * c_p(v,w) >= -1, thus c_p(v,w) >= -1/(n+1) >= 1/n, and the
 // solution is optimal.
 //
 // A node v is said to be *active* if excess(v) > 0.
@@ -105,9 +114,10 @@
 // the largest arc cost in the graph.
 //
 // The starting reference for this class of algorithms is:
-// A.V. Goldberg and R.E. Tarjan, "Solving Minimum-Cost Flow Problems by
-// Successive Approximation." Proceedings of ACM STOC'87, 1987:7-18.
-// http://portal.acm.org/citation.cfm?id=28397&CFID=10541307&CFTOKEN=40586317
+// A.V. Goldberg and R.E. Tarjan, "Finding Minimum-Cost Circulations by
+// Successive Approximation." Mathematics of Operations Research, Vol. 15,
+// 1990:430-466.
+// http://portal.acm.org/citation.cfm?id=92225
 //
 // Implementation issues are tackled in:
 // A.V. Goldberg, "An Efficient Implementation of a Scaling Minimum-Cost Flow
