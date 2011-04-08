@@ -162,7 +162,7 @@ inline bool operator!=(const operations_research::StringPiece& x,
 }
 
 bool operator<(const operations_research::StringPiece& x,
-	       const operations_research::StringPiece& y);
+               const operations_research::StringPiece& y);
 
 inline bool operator>(const operations_research::StringPiece& x,
                       const operations_research::StringPiece& y) {
