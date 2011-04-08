@@ -44,23 +44,23 @@
 #include "base/random.h"
 
 // ----- Data Generator -----
-DEFINE_int32(clients, 0, "Number of network clients nodes. If equal to zero, "
+DEFINE_int32(clients, 10, "Number of network clients nodes. If equal to zero, "
              "then all backbones nodes are also client nodes.");
-DEFINE_int32(backbones, 0, "Number of backbone nodes");
-DEFINE_int32(demands, 0, "Number of network demands.");
-DEFINE_int32(traffic_min, 0, "Min traffic of a demand.");
-DEFINE_int32(traffic_max, 0, "Max traffic of a demand.");
-DEFINE_int32(min_client_degree, 0,
+DEFINE_int32(backbones, 10, "Number of backbone nodes");
+DEFINE_int32(demands, 30, "Number of network demands.");
+DEFINE_int32(traffic_min, 5, "Min traffic of a demand.");
+DEFINE_int32(traffic_max, 20, "Max traffic of a demand.");
+DEFINE_int32(min_client_degree, 2,
              "Min number of connections from a client to the backbone.");
-DEFINE_int32(max_client_degree, 0,
+DEFINE_int32(max_client_degree, 2,
              "Max number of connections from a client to the backbone.");
-DEFINE_int32(min_backbone_degree, 0,
+DEFINE_int32(min_backbone_degree, 2,
              "Min number of connections from a backbone node to the rest of "
              "the backbone nodes.");
-DEFINE_int32(max_backbone_degree, 0,
+DEFINE_int32(max_backbone_degree, 5,
              "Max number of connections from a backbone node to the rest of "
              "the backbone nodes.");
-DEFINE_int32(max_capacity, 0, "Max traffic on any arc.");
+DEFINE_int32(max_capacity, 60, "Max traffic on any arc.");
 DEFINE_int32(fixed_charge_cost, 0, "Fixed charged cost when using an arc.");
 DEFINE_int32(seed, 0, "Random seed");
 
