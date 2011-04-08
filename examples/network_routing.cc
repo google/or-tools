@@ -91,25 +91,25 @@ DEFINE_bool(focus_lns, true, "Focus LNS on highest cost arcs.");
 namespace operations_research {
 // ---------- Data and Data Generation ----------
 
-		
-namespace {		
-#if defined(_MSC_VER)		
-  // The following class defines a hash function for arcs		
-  class ArcHasher : public stdext::hash_compare <pair<int, int> > {		
-  public:		
-    size_t operator() (const pair<int, int>& a) const {		
-      uint32 x = a.first;		
-      uint32 y = 0x9e3779b9UL;		
-      uint32 z = a.second;		
-      mix(x, y, z);		
-      return z;		
-    }		
-    bool operator() (const pair<int, int>& a1, const pair<int, int>& a2) const {		
-      return a1.first < a2.first ||		
-	(a1.first == a2.first && a1.second < a2.second);		
-    }		
-  };		
-#endif		
+
+namespace {
+#if defined(_MSC_VER)
+  // The following class defines a hash function for arcs
+  class ArcHasher : public stdext::hash_compare <pair<int, int> > {
+  public:
+    size_t operator() (const pair<int, int>& a) const {
+      uint32 x = a.first;
+      uint32 y = 0x9e3779b9UL;
+      uint32 z = a.second;
+      mix(x, y, z);
+      return z;
+    }
+    bool operator() (const pair<int, int>& a1, const pair<int, int>& a2) const {
+      return a1.first < a2.first ||
+	(a1.first == a2.first && a1.second < a2.second);
+    }
+  };
+#endif
 }  // namespace
 
 static const int64 kDisconnectedDistance = -1LL;
@@ -165,9 +165,9 @@ class NetworkRoutingData {
   int num_nodes_;
   int max_capacity_;
   int fixed_charge_cost_;
-#if defined(_MSC_VER)		
-  hash_map<pair<int, int>, int, ArcHasher> all_arcs_;		
-  hash_map<pair<int, int>, int, ArcHasher> all_demands_;		
+#if defined(_MSC_VER)
+  hash_map<pair<int, int>, int, ArcHasher> all_arcs_;
+  hash_map<pair<int, int>, int, ArcHasher> all_demands_;
 #else
   hash_map<pair<int, int>, int> all_arcs_;
   hash_map<pair<int, int>, int> all_demands_;
