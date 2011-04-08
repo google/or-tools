@@ -189,9 +189,9 @@ class InitialPropagateData : public BaseObject {
 }  // namespace
 
 void Pack::InitialPropagate() {
+  ClearAll();
   Solver* const s = solver();
   in_process_ = true;
-  stamp_ = s->fail_stamp();
   InitialPropagateData* data = s->RevAlloc(new InitialPropagateData(bins_));
   for (int var_index = 0; var_index < vsize_; ++var_index) {
     IntVar* const var = vars_[var_index];
