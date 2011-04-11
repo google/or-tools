@@ -3362,12 +3362,14 @@ class RegularLimit : public SearchLimit {
                int64 branches,
                int64 failures,
                int64 solutions,
-               bool smart_time_check);
+               bool smart_time_check,
+               bool cumulative);
   virtual ~RegularLimit();
   virtual void Copy(const SearchLimit* const limit);
   virtual SearchLimit* MakeClone() const;
   virtual bool Check();
   virtual void Init();
+  virtual void ExitSearch();
   void UpdateLimits(int64 time,
                     int64 branches,
                     int64 failures,
@@ -3381,13 +3383,21 @@ class RegularLimit : public SearchLimit {
   int64 wall_time_offset_;
   int64 check_count_;
   int64 next_check_;
-  const bool smart_time_check_;
+  bool smart_time_check_;
   int64 branches_;
   int64 branches_offset_;
   int64 failures_;
   int64 failures_offset_;
   int64 solutions_;
   int64 solutions_offset_;
+  // If cumulative if false, then the limit applies to each search
+  // independently. If it's true, the limit applies globally to all search for
+  // which this monitor is used.
+  // When cumulative is true, the offset fields have two different meanings
+  // depending on context:
+  // - within a search, it's an offset to be subtracted from the current value
+  // - outside of search, it's the amount consumed in previous searches
+  bool cumulative_;
 };
 
 RegularLimit::RegularLimit(Solver* const s,
@@ -3395,7 +3405,8 @@ RegularLimit::RegularLimit(Solver* const s,
                            int64 branches,
                            int64 failures,
                            int64 solutions,
-                           bool smart_time_check)
+                           bool smart_time_check,
+                           bool cumulative)
     : SearchLimit(s),
       wall_time_(time),
       wall_time_offset_(0),
@@ -3407,7 +3418,8 @@ RegularLimit::RegularLimit(Solver* const s,
       failures_(failures),
       failures_offset_(0),
       solutions_(solutions),
-      solutions_offset_(0) {}
+      solutions_offset_(0),
+      cumulative_(cumulative) {}
 
 RegularLimit::~RegularLimit() {}
 
@@ -3418,6 +3430,8 @@ void RegularLimit::Copy(const SearchLimit* const limit) {
   branches_ = regular->branches_;
   failures_ = regular->failures_;
   solutions_ = regular->solutions_;
+  smart_time_check_ = regular->smart_time_check_;
+  cumulative_ = regular->cumulative_;
 }
 
 SearchLimit* RegularLimit::MakeClone() const {
@@ -3443,9 +3457,20 @@ void RegularLimit::Init() {
   branches_offset_ = s->branches();
   failures_offset_ = s->failures();
   wall_time_offset_ = s->wall_time();
+  solutions_offset_ = s->solutions();
   check_count_ = 0;
   next_check_ = 0;
-  solutions_offset_ = s->solutions();
+}
+
+void RegularLimit::ExitSearch() {
+  if (cumulative_) {
+    // Reduce the limits by the amount consumed during this search
+    Solver* const s = solver();
+    branches_ -= s->branches() - branches_offset_;
+    failures_ -= s->failures() - failures_offset_;
+    wall_time_ -= s->wall_time() - wall_time_offset_;
+    solutions_ -= s->solutions() - solutions_offset_;
+  }
 }
 
 void RegularLimit::UpdateLimits(int64 time,
@@ -3463,8 +3488,10 @@ string RegularLimit::DebugString() const {
                       GG_LL_FORMAT "d, "
                       "branches = %" GG_LL_FORMAT
                       "d, failures = %" GG_LL_FORMAT
-                      "d, solutions = %" GG_LL_FORMAT "d)",
-                      crossed(), wall_time_, branches_, failures_, solutions_);
+                      "d, solutions = %" GG_LL_FORMAT
+                      "d cumulative = %s",
+                      crossed(), wall_time_, branches_, failures_, solutions_,
+                      (cumulative_? "true":"false"));
 }
 
 bool RegularLimit::CheckTime() {
@@ -3499,12 +3526,23 @@ SearchLimit* Solver::MakeLimit(int64 time,
                                int64 failures,
                                int64 solutions,
                                bool smart_time_check) {
+  return MakeLimit(
+      time, branches, failures, solutions, smart_time_check, false);
+}
+
+SearchLimit* Solver::MakeLimit(int64 time,
+                               int64 branches,
+                               int64 failures,
+                               int64 solutions,
+                               bool smart_time_check,
+                               bool cumulative) {
   return RevAlloc(new RegularLimit(this,
                                    time,
                                    branches,
                                    failures,
                                    solutions,
-                                   smart_time_check));
+                                   smart_time_check,
+                                   cumulative));
 }
 
 SearchLimit* Solver::MakeLimit(
@@ -3513,7 +3551,8 @@ SearchLimit* Solver::MakeLimit(
                    proto.branches(),
                    proto.failures(),
                    proto.solutions(),
-                   proto.smart_time_check());
+                   proto.smart_time_check(),
+                   proto.cumulative());
 }
 
 void Solver::UpdateLimits(int64 time,

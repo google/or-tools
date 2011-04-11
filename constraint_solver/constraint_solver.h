@@ -1346,6 +1346,14 @@ class Solver {
                          int64 failures,
                          int64 solutions,
                          bool smart_time_check);
+  // Creates a search limit which can either apply cumulatively or
+  // search-by-search.
+  SearchLimit* MakeLimit(int64 time,
+                         int64 branches,
+                         int64 failures,
+                         int64 solutions,
+                         bool smart_time_check,
+                         bool cumulative);
   // Creates a search limit from its protobuf description
   SearchLimit* MakeLimit(const SearchLimitProto& proto);
 

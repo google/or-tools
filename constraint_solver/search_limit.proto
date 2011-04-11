@@ -15,4 +15,5 @@ message SearchLimitProto {
   optional int64 failures = 3 [default = 9223372036854775807];
   optional int64 solutions = 4 [default = 9223372036854775807];
   optional bool smart_time_check = 5 [default = false];
+  optional bool cumulative = 6 [default = false];
 };
