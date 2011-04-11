@@ -1,4 +1,4 @@
-// Copyright 2010 Google
+// Copyright 2010-2011 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,7 @@
 
 %include util/data.swig
 
-// Include the file we want to wrap a first time.
+// First phase: #include the file we want to wrap.
 %{
 #include "util/packed_array.h"
 #include "graph/ebert_graph.h"
@@ -48,6 +48,8 @@
 %rename(cost) operations_research::MinCostFlow::Cost;
 %rename(supply) operations_research::MinCostFlow::Supply;
 #endif  // SWIGJAVA
+
+// Second phase: %include the same files.
 
 %include "util/packed_array.h"
 %include "graph/ebert_graph.h"

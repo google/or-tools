@@ -1,4 +1,4 @@
-// Copyright 2010 Google
+// Copyright 2010-2011 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -44,23 +44,23 @@
 #include "base/random.h"
 
 // ----- Data Generator -----
-DEFINE_int32(clients, 10, "Number of network clients nodes. If equal to zero, "
+DEFINE_int32(clients, 0, "Number of network clients nodes. If equal to zero, "
              "then all backbones nodes are also client nodes.");
-DEFINE_int32(backbones, 10, "Number of backbone nodes");
-DEFINE_int32(demands, 30, "Number of network demands.");
-DEFINE_int32(traffic_min, 5, "Min traffic of a demand.");
-DEFINE_int32(traffic_max, 20, "Max traffic of a demand.");
-DEFINE_int32(min_client_degree, 2,
+DEFINE_int32(backbones, 0, "Number of backbone nodes");
+DEFINE_int32(demands, 0, "Number of network demands.");
+DEFINE_int32(traffic_min, 0, "Min traffic of a demand.");
+DEFINE_int32(traffic_max, 0, "Max traffic of a demand.");
+DEFINE_int32(min_client_degree, 0,
              "Min number of connections from a client to the backbone.");
-DEFINE_int32(max_client_degree, 2,
+DEFINE_int32(max_client_degree, 0,
              "Max number of connections from a client to the backbone.");
-DEFINE_int32(min_backbone_degree, 2,
+DEFINE_int32(min_backbone_degree, 0,
              "Min number of connections from a backbone node to the rest of "
              "the backbone nodes.");
-DEFINE_int32(max_backbone_degree, 5,
+DEFINE_int32(max_backbone_degree, 0,
              "Max number of connections from a backbone node to the rest of "
              "the backbone nodes.");
-DEFINE_int32(max_capacity, 60, "Max traffic on any arc.");
+DEFINE_int32(max_capacity, 0, "Max traffic on any arc.");
 DEFINE_int32(fixed_charge_cost, 0, "Fixed charged cost when using an arc.");
 DEFINE_int32(seed, 0, "Random seed");
 
@@ -90,8 +90,6 @@ DEFINE_bool(focus_lns, true, "Focus LNS on highest cost arcs.");
 
 namespace operations_research {
 // ---------- Data and Data Generation ----------
-
-
 namespace {
 #if defined(_MSC_VER)
   // The following class defines a hash function for arcs
@@ -106,7 +104,7 @@ namespace {
     }
     bool operator() (const pair<int, int>& a1, const pair<int, int>& a2) const {
       return a1.first < a2.first ||
-	(a1.first == a2.first && a1.second < a2.second);
+          (a1.first == a2.first && a1.second < a2.second);
     }
   };
 #endif
@@ -380,7 +378,6 @@ class NetworkRoutingDataBuilder {
     }
     data->set_max_capacity(max_capacity);
     data->set_fixed_charge_cost(fixed_charge_cost);
-
   }
 
   void AddEdge(int i, int j) {

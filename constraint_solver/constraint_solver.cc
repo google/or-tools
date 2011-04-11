@@ -1,4 +1,4 @@
-// Copyright 2010 Google
+// Copyright 2010-2011 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -1020,9 +1020,9 @@ void Search::Clear() {
 }
 
 void Search::EnterSearch() {
-  // We clean the solution counter when entering the search instead of
-  // when clearing it to have the information persist outside of the
-  // top level search.
+  // The solution counter is reset when entering search and not when
+  // leaving search. This enables the information to persist outside of
+  // top-level search.
   solution_counter_ = 0;
 
   for (vector<SearchMonitor*>::iterator it = monitors_.begin();
