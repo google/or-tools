@@ -87,4 +87,3 @@ _pywraplp.$(SHAREDLIBEXT): objs/linear_solver_wrap.$O $(LP_LIBS) $(BASE_LIBS)
 ifeq "$(SYSTEM)" "win"
 	copy _pywraplp.dll gen\\linear_solver\\_pywraplp.pyd
 endif
-

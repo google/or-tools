@@ -435,4 +435,3 @@ objs/integer_solver_example.$O: examples/integer_solver_example.cc
 
 integer_solver_example$E: $(LP_LIBS) $(BASE_LIBS) objs/integer_solver_example.$O
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/integer_solver_example.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(EXEOUT)integer_solver_example$E
-

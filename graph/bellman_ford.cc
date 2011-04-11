@@ -47,7 +47,7 @@ class BellmanFord {
   const int node_count_;
   const int start_node_;
   scoped_ptr<ResultCallback2<int64, int, int> > graph_;
-  const int disconnected_distance_;
+  const int64 disconnected_distance_;
   scoped_array<int64> distance_;
   scoped_array<int> predecessor_;
 };

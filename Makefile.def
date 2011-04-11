@@ -21,12 +21,12 @@ UNIX_GLPK_DIR=../glpk-4.45
 # Linux jdk root
 # first, determine 32 or 64 bits.
 ifeq "$(SYSTEM)" "unix"
-LBITS := $(shell getconf LONG_BIT)
-ifeq ($(LBITS),64)
-   JDK_EXT=64
-else
-   JDK_EXT=32
-endif
+  LBITS := $(shell getconf LONG_BIT)
+  ifeq ($(LBITS),64)
+     JDK_EXT=64
+  else
+    JDK_EXT=32
+  endif
 endif
 
 LINUX_JDK_ROOT=/usr/local/buildtools/java/jdk-$(JDK_EXT)

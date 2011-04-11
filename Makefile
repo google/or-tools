@@ -1,12 +1,12 @@
 # Let's discover something about where we run
 ifeq "$(SHELL)" "cmd.exe"
-SYSTEM=win
+  SYSTEM=win
 else
-ifeq "$(SHELL)" "sh.exe"
-SYSTEM=win
-else
-SYSTEM=unix
-endif
+  ifeq "$(SHELL)" "sh.exe"
+    SYSTEM=win
+  else
+    SYSTEM=unix
+  endif
 endif
 
 # First, we include predefined variables
