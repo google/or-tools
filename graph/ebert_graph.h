@@ -101,10 +101,18 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   friend class IncomingArcIterator;
  public:
   // The index of the 'nil' node in the graph.
-  static const NodeIndex kNilNode;
+  static const NodeIndex kNilNode = 0;
 
   // The index of the 'nil' arc in the graph.
-  static const ArcIndex kNilArc;
+  static const ArcIndex kNilArc = 0;
+
+  // An easy access to NodeIndexSize. Useful when using EbertGraph through
+  // StarGraph or other typedef'd types.
+  static const int kNodeIndexSize = NodeIndexSize;
+
+  // An easy access to ArcIndexSize. Useful when using EbertGraph through
+  // StarGraph or other typedef'd types.
+  static const int kArcIndexSize = ArcIndexSize;
 
   EbertGraph(NodeIndex max_num_nodes, ArcIndex max_num_arcs)
       : max_num_nodes_(0),
@@ -504,10 +512,10 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
 
  private:
   // The index of the first node in the graph.
-  static const NodeIndex kFirstNode;
+  static const NodeIndex kFirstNode = 1;
 
   // The index of the first arc in the graph.
-  static const ArcIndex kFirstArc;
+  static const ArcIndex kFirstArc = 1;
 
   // Returns kNilNode if the graph has no nodes or node if it has at least one
   // node. Useful for initializing iterators correctly in the case of empty
@@ -641,15 +649,6 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // incident to node i.
   PackedArray<ArcIndexSize> first_incident_arc_;
 };
-
-template<int NodeIndexSize, int ArcIndexSize>
-const NodeIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kNilNode = 0;
-template<int NodeIndexSize, int ArcIndexSize>
-const ArcIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kNilArc = 0;
-template<int NodeIndexSize, int ArcIndexSize>
-const NodeIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kFirstNode = 1;
-template<int NodeIndexSize, int ArcIndexSize>
-const ArcIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kFirstArc = 1;
 
 // Standard definition of the star representation of a graph, that makes it
 // possible to address all the physical memory on a 2010 machine, while keeping
