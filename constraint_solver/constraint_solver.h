@@ -702,14 +702,21 @@ class Solver {
   // vals[expr]
   IntExpr* MakeElement(const vector<int64>& vals, IntVar* const index);
 
-  // Function-based, constraint takes ownership of callback
-  // The callback must be able to cope with any possible value in the
-  // domain of 'index' (potentially negative ones too).
-  // TODO(user): Add typedef for callbacks below.
+  // Function-based element. The constraint takes ownership of
+  // callback The callback must be able to cope with any possible
+  // value in the domain of 'index' (potentially negative ones too).
   IntExpr* MakeElement(IndexEvaluator1* values, IntVar* const index);
+  // Function based element. The constraint takes ownership of
+  // callback.  The callback must be monotonic. It must be able to
+  // cope with any possible value in the domain of 'index'
+  // (potentially negative ones too).
+  IntExpr* MakeMonotonicElement(IndexEvaluator1* values,
+                                bool increasing,
+                                IntVar* const index);
   // 2D version of function-based element expression, values(expr1, expr2).
   IntExpr* MakeElement(IndexEvaluator2* values,
-                       IntVar* const index1, IntVar* const index2);
+                       IntVar* const index1,
+                       IntVar* const index2);
 
   // vars[expr]
   IntExpr* MakeElement(const IntVar* const * vars, int size,
