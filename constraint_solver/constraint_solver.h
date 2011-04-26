@@ -1796,6 +1796,23 @@ class Solver {
                                              int number_of_variables,
                                              int32 seed);
 
+  // Creates a local search operator that tries to move the assignment of some
+  // variables toward a target. The target is given as an Assignment. This
+  // operator generates neighbors in which the only difference compared to the
+  // current state is that one variable that belongs to the target assignment is
+  // set to its target value.
+  LocalSearchOperator* MakeMoveTowardTargetOperator(const Assignment& target);
+
+  // Creates a local search operator that tries to move the assignment of some
+  // variables toward a target. The target is given either as two vectors: a
+  // vector of variables and a vector of associated target values. The two
+  // vectors should be of the same length. This operator generates neighbors in
+  // which the only difference compared to the current state is that one
+  // variable that belongs to the given vector is set to its target value.
+  LocalSearchOperator* MakeMoveTowardTargetOperator(
+      const vector<IntVar*>& variables,
+      const vector<int64>& target_values);
+
   // Creates a local search operator which concatenates a vector of operators.
   // Each operator from the vector is called sequentially. By default, when a
   // neighbor is found the neighborhood exploration restarts from the last
@@ -3186,6 +3203,7 @@ template <class V, class E> class AssignmentContainer {
     DCHECK(found);
     return Element(index);
   }
+  const vector<E>& elements() const { return elements_; }
   E& MutableElement(int index) { return elements_[index]; }
   const E& Element(int index) const { return elements_[index]; }
   int Size() const { return elements_.size(); }
@@ -3239,7 +3257,13 @@ class Assignment : public PropagationBaseObject {
     return int_var_container_.Empty() && interval_var_container_.Empty();
   }
   int Size() const {
-    return int_var_container_.Size() + interval_var_container_.Size();
+    return NumIntVars() + NumIntervalVars();
+  }
+  int NumIntVars() const {
+    return int_var_container_.Size();
+  }
+  int NumIntervalVars() const {
+    return interval_var_container_.Size();
   }
   void Store();
   void Restore();

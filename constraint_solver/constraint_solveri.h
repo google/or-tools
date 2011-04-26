@@ -414,6 +414,7 @@ class LocalSearchOperator : public BaseObject {
 
 class IntVarLocalSearchOperator : public LocalSearchOperator {
  public:
+  IntVarLocalSearchOperator();
   IntVarLocalSearchOperator(const IntVar* const* vars, int size);
   virtual ~IntVarLocalSearchOperator();
   // This method should not be overridden. Override OnStart() instead which is

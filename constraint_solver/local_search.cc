@@ -24,6 +24,7 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "graph/hamiltonian_path.h"
 
+
 DEFINE_int32(cp_local_search_sync_frequency, 16,
              "Frequency of checks for better solutions in the solution pool.");
 
@@ -40,6 +41,17 @@ namespace operations_research {
 
 // ----- Base operator class for operators manipulating IntVars -----
 
+IntVarLocalSearchOperator::IntVarLocalSearchOperator()
+: vars_(NULL),
+  size_(0),
+  values_(NULL),
+  old_values_(NULL),
+  activated_(0, false),
+  was_activated_(0, false),
+  has_changed_(0, false),
+  has_delta_changed_(0, false),
+  cleared_(true) {}
+
 IntVarLocalSearchOperator::IntVarLocalSearchOperator(const IntVar* const* vars,
                                                      int size)
     : vars_(NULL),
@@ -51,8 +63,8 @@ IntVarLocalSearchOperator::IntVarLocalSearchOperator(const IntVar* const* vars,
       has_changed_(size, false),
       has_delta_changed_(size, false),
       cleared_(true) {
-  AddVars(vars, size);
   CHECK_GE(size_, 0);
+  AddVars(vars, size);
 }
 
 IntVarLocalSearchOperator::~IntVarLocalSearchOperator() {}
@@ -288,6 +300,94 @@ LocalSearchOperator* Solver::MakeRandomLNSOperator(const IntVar* const* vars,
                                                    int number_of_variables,
                                                    int32 seed) {
   return RevAlloc(new RandomLNS(vars, size, number_of_variables, seed));
+}
+
+// ----- Move Toward Target Local Search operator -----
+
+// A local search operator that compares the current assignment with a target
+// one, and that generates neighbors corresponding to a single variable being
+// changed from its current value to its target value.
+class MoveTowardTargetLS: public IntVarLocalSearchOperator {
+ public:
+  explicit MoveTowardTargetLS(const vector<IntVar*>& variables,
+                              const vector<int64>& target_values)
+      : IntVarLocalSearchOperator(variables.data(), variables.size()),
+        target_(target_values),
+        // Initialize variable_index_ at the number of the of variables minus
+        // one, so that the first to be tried (after one increment) is the one
+        // of index 0.
+        variable_index_(Size() - 1) {
+    CHECK_EQ(target_values.size(), variables.size()) << "Illegal arguments.";
+  }
+
+  virtual ~MoveTowardTargetLS() {}
+  virtual void OnStart() {
+    // Do not change the value of variable_index_: this way, we keep going from
+    // where we last modified something. This is because we expect that most
+    // often, the variables we have just checked are less likely to be able
+    // to be changed to their target values than the ones we have not yet
+    // checked.
+    //
+    // Consider the case where oddly indexed variables can be assigned to their
+    // target values (no matter in what order they are considered), while even
+    // indexed ones cannot. Restarting at index 0 each time an odd-indexed
+    // variable is modified will cause a total of Theta(n^2) neighbors to be
+    // generated, while not restarting will produce only Theta(n) neighbors.
+    CHECK_GE(variable_index_, 0);
+    CHECK_LT(variable_index_, Size());
+    num_var_since_last_start_ = 0;
+  }
+
+  // Make a neighbor assigning one variable to its target value.
+  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
+    CHECK_NOTNULL(delta);
+    while (num_var_since_last_start_ < Size()) {
+      ++num_var_since_last_start_;
+      variable_index_ = (variable_index_ + 1) % Size();
+      const int64 target_value = target_.at(variable_index_);
+      const int64 current_value = OldValue(variable_index_);
+      if (current_value != target_value) {
+        RevertChanges(false);
+        SetValue(variable_index_, target_value);
+        if (ApplyChanges(delta, deltadelta)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+ private:
+  // Target values
+  const vector<int64> target_;
+
+  // Index of the next variable to try to restore
+  int64 variable_index_;
+
+  // Number of variables checked since the last call to OnStart().
+  int64 num_var_since_last_start_;
+};
+
+LocalSearchOperator* Solver::MakeMoveTowardTargetOperator(
+    const Assignment& target) {
+  typedef vector<IntVarElement> Elements;
+  const Elements& elements = target.IntVarContainer().elements();
+  // Copy target values and construct the vector of variables
+  vector<IntVar*> vars;
+  vector<int64> values;
+  vars.reserve(target.NumIntVars());
+  values.reserve(target.NumIntVars());
+  for (ConstIter<Elements> it(elements); !it.at_end(); ++it) {
+    vars.push_back(it->Var());
+    values.push_back(it->Value());
+  }
+  return MakeMoveTowardTargetOperator(vars, values);
+}
+
+LocalSearchOperator* Solver::MakeMoveTowardTargetOperator(
+      const vector<IntVar*>& variables,
+      const vector<int64>& target_values) {
+  return RevAlloc(new MoveTowardTargetLS(variables, target_values));
 }
 
 // ----- ChangeValue Operators -----
