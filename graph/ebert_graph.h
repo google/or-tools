@@ -16,8 +16,8 @@
 
 // An implementation (with some improvements) of the star-representation of a
 // graph as described in J. Ebert, "A versatile data structure for
-// arc-oriented graph algorithms." Communications of the ACM 30(6):513-519
-// (June 1987).
+// edge-oriented graph algorithms." Communications of the ACM 30(6):513-519
+// (June 1987). http://portal.acm.org/citation.cfm?id=214769
 // Both forward- and backward-star representations are contained in this
 // representation.
 
@@ -29,7 +29,7 @@
 // Consequently:
 //  * node_[-i] contains the start-node of the arc reverse to arc i,
 //  * node_[i] contains the end-node of the arc reverse to arc i.
-//  Note that if arc (u,v) is defined, then the data structure also stores
+//  Note that if arc (u, v) is defined, then the data structure also stores
 //  (v, u).
 //  Arc -i thus denotes the arc reverse to arc i.
 //  This is what makes this representation useful for undirected graphs,
@@ -482,7 +482,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   }
 
   // Recreates the next_adjacent_arc_ and first_incident_arc_ variables from
-  // the array node_  in O(n + m) time.
+  // the array node_ in O(n + m) time.
   // This is useful if node_ array has been sorted according to a given
   // criterion, for example.
   void BuildRepresentation() {
@@ -533,13 +533,13 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // Returns the first outgoing arc for node.
   ArcIndex FirstOutgoingArc(const NodeIndex node) const {
     DCHECK(CheckNodeValidity(node));
-    return FindNextOutcomingArc(FirstIncidentArc(node));
+    return FindNextOutgoingArc(FirstIncidentArc(node));
   }
 
   // Returns the outgoing arc following the argument in the adjacency list.
   ArcIndex NextOutgoingArc(const ArcIndex arc) const {
     DCHECK(CheckArcValidity(arc));
-    return FindNextOutcomingArc(NextAdjacentArc(DirectArc(arc)));
+    return FindNextOutgoingArc(NextAdjacentArc(DirectArc(arc)));
   }
 
   // Returns the first incoming arc for node.
@@ -607,7 +607,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   }
 
   // Utility method that finds the next outgoing arc.
-  ArcIndex FindNextOutcomingArc(ArcIndex arc) const {
+  ArcIndex FindNextOutgoingArc(ArcIndex arc) const {
     DCHECK(CheckArcBounds(arc));
     while (arc < 0) {
       arc = NextAdjacentArc(arc);
@@ -654,11 +654,15 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
 // possible to address all the physical memory on a 2010 machine, while keeping
 // the sizes of arcs and nodes reasonable. For most purposes it is sufficient
 // to use this class.
+// kStarGraphNodeIndexSize and kStarGraphArcIndexSize are necessary
+// for SWIG but are otherwise deprecated. Use
+// StarGraph::kNodeIndexSize and StarGraph::kArcIndexSize instead
+// where possible.
 const int kStarGraphNodeIndexSize = 5;
 const int kStarGraphArcIndexSize = 5;
-typedef EbertGraph<kStarGraphNodeIndexSize, kStarGraphArcIndexSize> StarGraph;
-typedef PackedArray<kStarGraphNodeIndexSize> NodeIndexArray;
-typedef PackedArray<kStarGraphArcIndexSize> ArcIndexArray;
+typedef EbertGraph<kStarGraphNodeIndexSize , kStarGraphArcIndexSize> StarGraph;
+typedef PackedArray<StarGraph::kNodeIndexSize> NodeIndexArray;
+typedef PackedArray<StarGraph::kArcIndexSize> ArcIndexArray;
 }  // namespace operations_research
 
 #endif  // GRAPH_EBERT_GRAPH_H_
