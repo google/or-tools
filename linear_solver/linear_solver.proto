@@ -24,12 +24,6 @@ message MPVariableProto {
   required bool integer = 4;
 }
 
-message MPQuadraticTermProto {
-  required string variable1_id = 1;
-  required string variable2_id = 2;
-  required double coefficient = 3;
-}
-
 message MPVariableSampleProto {
   required string variable_id = 1;
   repeated double sample_values = 2;
@@ -51,9 +45,7 @@ message MPModelProto {
   repeated MPVariableProto variables = 1;
   required bool maximize = 2;
   repeated MPTermProto objective_terms = 3;
-  repeated MPQuadraticTermProto quadratic_objective_terms = 4;
-  repeated MPQuadraticTermProto lower_triangular_objective_terms = 5;
-  repeated MPVariableSampleProto covariance_objective_samples = 6;
   repeated MPConstraintProto constraints = 7;
   optional string name = 8;
 }
+

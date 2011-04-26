@@ -80,9 +80,8 @@ class CLPInterface : public MPSolverInterface {
                                        double coefficient);
   // Change the constant term in the linear objective.
   virtual void SetObjectiveOffset(double value);
-  // Clear the objective from all its terms (linear and quadratic)
+  // Clear the objective from all its terms.
   virtual void ClearObjective();
-
 
   // ------ Query statistics on the solution and the solve ------
   // Number of simplex iterations
@@ -91,8 +90,6 @@ class CLPInterface : public MPSolverInterface {
   virtual int64 nodes() const;
   // Best objective bound. Only available for discrete problems.
   virtual double best_objective_bound() const;
-  // Checks whether a feasible solution exists.
-  virtual void CheckSolutionExists() const;
 
   // ----- Misc -----
   // Write model
@@ -103,9 +100,7 @@ class CLPInterface : public MPSolverInterface {
 
   // Query problem type.
   virtual bool IsContinuous() const { return true; }
-  virtual bool IsLP() const {
-    return true;
-  }
+  virtual bool IsLP() const { return true; }
   virtual bool IsMIP() const { return false; }
 
   virtual void ExtractNewVariables();
@@ -242,7 +237,7 @@ void CLPInterface::SetObjectiveOffset(double value) {
   sync_status_ = MUST_RELOAD;
 }
 
-// Clear objective of all its terms (linear and quadratic)
+// Clear objective of all its terms.
 void CLPInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
   // Clear linear terms
@@ -259,9 +254,7 @@ void CLPInterface::ClearObjective() {
   }
   // Clear constant term.
   clp_->setObjectiveOffset(0.0);
-
 }
-
 
 void CLPInterface::AddRowConstraint(MPConstraint* const ct) {
   sync_status_ = MUST_RELOAD;
@@ -402,7 +395,6 @@ void CLPInterface::ExtractObjective() {
   // Constant term. Use -offset instead of +offset because CLP does
   // not follow conventions.
   clp_->setObjectiveOffset(-solver_->linear_objective_.offset_);
-
 }
 
 // Extracts model and solve the LP/MIP. Returns the status of the search.
@@ -436,7 +428,6 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
   // specified values.
   options_.reset(new ClpSolve);
   SetParameters(param);
-
 
   // Solve
   timer.Restart();
@@ -511,14 +502,6 @@ int64 CLPInterface::nodes() const {
 double CLPInterface::best_objective_bound() const {
   LOG(FATAL) << "Best objective bound only available for discrete problems";
   return 0.0;
-}
-
-void CLPInterface::CheckSolutionExists() const {
-  if (false) {
-  } else {
-    // Call default implementation
-    MPSolverInterface::CheckSolutionExists();
-  }
 }
 
 // ------ Parameters ------

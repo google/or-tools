@@ -22,11 +22,8 @@
 
 // Define the renaming of methods.
 %rename (BoolVar) MakeBoolVar;
-%rename (CovarianceMatrix) MPCovarianceMatrix;
 %rename (IntVar) MakeIntVar;
-%rename (LowerTriangularMatrix) MPLowerTriangularMatrix;
 %rename (NumVar) MakeNumVar;
-%rename (QuadraticMatrix) MPQuadraticMatrix;
 %rename (Constraint) MPConstraint;
 %rename (Constraint) MakeRowConstraint;
 %rename (Solver) MPSolver;
@@ -345,26 +342,9 @@ class LinearConstraint(object):
   }
 }
 
-%apply SWIGTYPE *DISOWN { MPBaseQuadraticMatrix * };
-
 } // namespace operations_research
 
 #endif
-
-namespace operations_research {
-
-// Hack to allow us to relinquish ownership of matrix objects after calling
-// a method that claims ownership, such as MPSolver::SetQuadraticObjective.
-// TODO(user): Find a nicer way to do this. (The SWIG docs are really bad!)
-%typemap(javacode) MPBaseQuadraticMatrix %{
-  /**
-   * Asserts that this object is owned by C++, so Java should never delete it.
-   */
-  public void disown() {
-    swigCMemOwn = false;
-  }
-%}
-} // namespace operations_research
 
 #ifdef SWIGJAVA
 %module(directors="1") operations_research;

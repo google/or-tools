@@ -350,7 +350,6 @@ class MPSolver {
   // Set constant term in the objective.
   void SetObjectiveOffset(double value);
 
-
   // Sets the optimization direction (min/max).
   void SetOptimizationDirection(bool maximize);
   // Minimizing or maximizing?
@@ -450,7 +449,6 @@ class MPSolver {
 
   // The linear objective function
   MPObjective linear_objective_;
-
 
   // Time limit in ms.
   int64 time_limit_;

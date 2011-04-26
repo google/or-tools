@@ -207,7 +207,6 @@ void MPVariable::SetInteger(bool integer) {
   }
 }
 
-
 // ----- Objective -----
 
 double MPSolver::objective_value() const {
@@ -241,7 +240,6 @@ void MPSolver::AddObjectiveOffset(double value) {
 void MPSolver::SetObjectiveOffset(double value) {
   linear_objective_.SetOffset(value);
 }
-
 
 void MPSolver::SetOptimizationDirection(bool maximize) {
   interface_->maximize_ = maximize;
@@ -575,7 +573,6 @@ void MPSolverInterface::WriteModelToPredefinedFiles() {
 
 // Extracts model stored in MPSolver
 void MPSolverInterface::ExtractModel() {
-
   switch (sync_status_) {
     case MUST_RELOAD: {
       ExtractNewVariables();
