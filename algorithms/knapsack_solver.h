@@ -63,8 +63,9 @@
 #include <vector>
 
 #include "base/basictypes.h"
-#include "base/macros.h"
+#include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/scoped_ptr.h"
 #include "base/util.h"
 
@@ -101,6 +102,7 @@ namespace operations_research {
 // bound when an item is in, then this item is surely not in the optimal
 // solution.
 class BaseKnapsackSolver;
+
 class KnapsackSolver {
  public:
   enum SolverType {
