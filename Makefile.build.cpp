@@ -237,6 +237,7 @@ $(LIBPREFIX)linear_solver.$(LIBSUFFIX): $(LINEAR_SOLVER_LIB_OS)
 UTIL_LIB_OS=\
 	objs/bitset.$O \
 	objs/cached_log.$O \
+	objs/const_int_array.$O \
 	objs/xml_helper.$O
 
 objs/bitset.$O:util/bitset.cc
@@ -244,6 +245,9 @@ objs/bitset.$O:util/bitset.cc
 
 objs/cached_log.$O:util/cached_log.cc
 	$(CCC) $(CFLAGS) -c util/cached_log.cc $(OBJOUT)objs/cached_log.$O
+
+objs/const_int_array.$O:util/const_int_array.cc
+	$(CCC) $(CFLAGS) -c util/const_int_array.cc $(OBJOUT)objs/const_int_array.$O
 
 objs/xml_helper.$O:util/xml_helper.cc
 	$(CCC) $(CFLAGS) -c util/xml_helper.cc $(OBJOUT)objs/xml_helper.$O
