@@ -86,6 +86,7 @@
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "util/packed_array.h"
+#include "util/permutation.h"
 
 namespace operations_research {
 typedef int64 NodeIndex;
@@ -94,17 +95,18 @@ typedef int64 FlowQuantity;
 typedef int64 CostValue;
 
 template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
-  friend class NodeIterator;
-  friend class ArcIterator;
-  friend class IncidentArcIterator;
-  friend class OutgoingArcIterator;
-  friend class IncomingArcIterator;
  public:
   // The index of the 'nil' node in the graph.
   static const NodeIndex kNilNode = 0;
 
   // The index of the 'nil' arc in the graph.
   static const ArcIndex kNilArc = 0;
+
+  // The index of the first node in the graph.
+  static const NodeIndex kFirstNode = 1;
+
+  // The index of the first arc in the graph.
+  static const ArcIndex kFirstArc = 1;
 
   // An easy access to NodeIndexSize. Useful when using EbertGraph through
   // StarGraph or other typedef'd types.
@@ -121,7 +123,8 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
         num_arcs_(0),
         node_(),
         next_adjacent_arc_(),
-        first_incident_arc_() {
+        first_incident_arc_(),
+        representation_clean_(true) {
     Reserve(max_num_nodes, max_num_arcs);
     next_adjacent_arc_.Set(0, 0);
     node_.Set(0, 0);
@@ -153,12 +156,32 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // (The ones with positive indices.)
   NodeIndex num_arcs() const { return num_arcs_; }
 
+  // Returns one more than the largest index of an extant node. To be
+  // used as a helper when clients need to dimension or iterate over
+  // arrays of node annotation information.
+  NodeIndex end_node_index() const { return kFirstNode + num_nodes_; }
+
+  // Returns one more than the largest index of an extant direct
+  // arc. To be used as a helper when clients need to dimension or
+  // iterate over arrays of arc annotation information.
+  ArcIndex end_arc_index() const { return kFirstArc + num_arcs_; }
+
   // Returns the maximum possible number of nodes in the graph.
   NodeIndex max_num_nodes() const { return max_num_nodes_; }
 
   // Returns the maximum possible number of original arcs in the graph.
   // (The ones with positive indices.)
   NodeIndex max_num_arcs() const { return max_num_arcs_; }
+
+  // Returns one more than the largest valid index of a node. To be
+  // used as a helper when clients need to dimension or iterate over
+  // arrays of node annotation information.
+  NodeIndex max_end_node_index() const { return kFirstNode + max_num_nodes_; }
+
+  // Returns one more than the largest valid index of a direct arc. To
+  // be used as a helper when clients need to dimension or iterate
+  // over arrays of arc annotation information.
+  ArcIndex max_end_arc_index() const { return kFirstArc + max_num_arcs_; }
 
   // Adds an arc to the graph and returns its index.
   ArcIndex AddArc(NodeIndex tail, NodeIndex head) {
@@ -176,6 +199,103 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
     Attach(arc);
     return arc;
   }
+
+  // For some reason SWIG seems unable to handle the definition of
+  // class CycleHandlerForAnnotatedArcs. I have no idea why we use
+  // such a horrible tool that doesn't say anything except "error."
+#if !SWIG
+  template <typename ArcIndexStrictWeakOrderingFunctor>
+  void GroupForwardArcsByFunctor(
+      const ArcIndexStrictWeakOrderingFunctor& compare,
+      PermutationCycleHandler<ArcIndex>* annotation_handler) {
+    // The following cannot be a PackedArray<kArcIndexSize> instance
+    // because using the STL sort() requires us to iterate over the
+    // permutation with STL iterators. Indices from 0 through
+    // kFirstArc - 1 are unused. Today that's only index 0.
+    scoped_array<ArcIndex> arc_permutation(new ArcIndex[end_arc_index()]);
+
+    // Determine the permutation that groups arcs by their tail nodes.
+    for (ArcIndex i = 0; i < end_arc_index(); ++i) {
+      // Start with the identity permutation.
+      arc_permutation[i] = i;
+    }
+    sort(&arc_permutation[kFirstArc],
+         &arc_permutation[end_arc_index()],
+         compare);
+
+    // Now we actually permute the node_ array and the
+    // scaled_arc_cost_ array according to the sorting permutation.
+    CycleHandlerForAnnotatedArcs cycle_handler(annotation_handler, this);
+    PermutationApplier<ArcIndex> permutation(&cycle_handler);
+    permutation.Apply(&arc_permutation[0], kFirstArc, end_arc_index());
+
+    // Finally, rebuild the graph from its permuted node_ array.
+    BuildRepresentation();
+  }
+
+  class CycleHandlerForAnnotatedArcs :
+      public PermutationCycleHandler<ArcIndex> {
+   public:
+    CycleHandlerForAnnotatedArcs(
+        PermutationCycleHandler<ArcIndex>* annotation_handler,
+        EbertGraph *graph)
+        : annotation_handler_(annotation_handler),
+          graph_(graph),
+          head_temp_(kNilNode),
+          tail_temp_(kNilNode) { }
+
+    virtual void SetTempFromIndex(ArcIndex source) {
+      if (annotation_handler_ != NULL) {
+        annotation_handler_->SetTempFromIndex(source);
+      }
+      head_temp_ = graph_->Head(source);
+      tail_temp_ = graph_->Tail(source);
+    }
+
+    virtual void SetIndexFromIndex(ArcIndex source,
+                                   ArcIndex destination) const {
+      if (annotation_handler_ != NULL) {
+        annotation_handler_->SetIndexFromIndex(source, destination);
+      }
+      graph_->SetHead(destination, graph_->Head(source));
+      graph_->SetTail(destination, graph_->Tail(source));
+    }
+
+    virtual void SetIndexFromTemp(ArcIndex destination) const {
+      if (annotation_handler_ != NULL) {
+        annotation_handler_->SetIndexFromTemp(destination);
+      }
+      graph_->SetHead(destination, head_temp_);
+      graph_->SetTail(destination, tail_temp_);
+    }
+
+    // Since arc grouping works only with forward arcs, we use the
+    // forward/reverse bit of information encoded in the ArcIndex to
+    // indicate whether this index has already been seen in processing
+    // the permutation. The permutation starts out with all indices
+    // referring to forward arcs. As each arc is moved according to
+    // the permutation, its index is switched to its opposite to keep
+    // track of which arcs have already been moved. In this way we
+    // don't need any extra storage to keep track of this information,
+    // and ArcIndex is guaranteed to be able to encode it since it has
+    // to be able to encode forward/reverse.
+    virtual void SetSeen(ArcIndex* permutation_element) const {
+      *permutation_element = graph_->Opposite(*permutation_element);
+    }
+
+    virtual bool Unseen(ArcIndex permutation_element) const {
+      return graph_->IsDirect(permutation_element);
+    }
+
+    virtual ~CycleHandlerForAnnotatedArcs() { }
+
+   private:
+    PermutationCycleHandler<ArcIndex>* annotation_handler_;
+    EbertGraph* graph_;
+    NodeIndex head_temp_;
+    NodeIndex tail_temp_;
+  };
+#endif  // SWIG
 
   // Iterator class for traversing all the nodes in the graph.
   class NodeIterator {
@@ -490,11 +610,13 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
     for (ArcIndex arc = kFirstArc; arc <= max_num_arcs_; ++arc) {
       Attach(arc);
     }
+    representation_clean_ = true;
   }
 
   // Returns a debug string containing all the information contained in the
   // data structure in raw form.
   string DebugString() const {
+    DCHECK(representation_clean_);
     string result = "Arcs:(node, next arc) :\n";
     for (int64 arc = -num_arcs_; arc <= num_arcs_; ++arc) {
       StringAppendF(&result, " %lld:(%lld,%lld)\n",
@@ -511,12 +633,6 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   }
 
  private:
-  // The index of the first node in the graph.
-  static const NodeIndex kFirstNode = 1;
-
-  // The index of the first arc in the graph.
-  static const ArcIndex kFirstArc = 1;
-
   // Returns kNilNode if the graph has no nodes or node if it has at least one
   // node. Useful for initializing iterators correctly in the case of empty
   // graphs.
@@ -557,12 +673,14 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
 
   // Returns the first arc in node's incidence list.
   ArcIndex FirstIncidentArc(const NodeIndex node) const {
+    DCHECK(representation_clean_);
     DCHECK(CheckNodeValidity(node));
     return first_incident_arc_[node];
   }
 
   // Returns the next arc following the passed argument in its adjacency list.
   ArcIndex NextAdjacentArc(const ArcIndex arc) const {
+    DCHECK(representation_clean_);
     DCHECK(CheckArcValidity(arc));
     return next_adjacent_arc_[arc];
   }
@@ -591,6 +709,22 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   ArcIndex NextArc(const ArcIndex arc) const {
     DCHECK(CheckArcValidity(arc));
     return arc >= num_arcs_ ? kNilArc : arc + 1;
+  }
+
+  // Using the SetTail() method implies that the BuildRepresentation()
+  // method must be called to restore consistency before the graph is
+  // used.
+  void SetTail(const ArcIndex arc, const NodeIndex tail) {
+    representation_clean_ = false;
+    node_.Set(Opposite(arc), tail);
+  }
+
+  // Using the SetHead() method implies that the BuildRepresentation()
+  // method must be called to restore consistency before the graph is
+  // used.
+  void SetHead(const ArcIndex arc, const NodeIndex head) {
+    representation_clean_ = false;
+    node_.Set(arc, head);
   }
 
   // Utility method to attach a new arc.
@@ -648,6 +782,11 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // Array of arc indices. first_incident_arc_[i] contains the first arc
   // incident to node i.
   PackedArray<ArcIndexSize> first_incident_arc_;
+
+  // Flag to indicate that BuildRepresentation() needs to be called
+  // before the adjacency lists are examined. Only for DCHECK in debug
+  // builds.
+  bool representation_clean_;
 };
 
 // Standard definition of the star representation of a graph, that makes it
@@ -660,7 +799,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
 // where possible.
 const int kStarGraphNodeIndexSize = 5;
 const int kStarGraphArcIndexSize = 5;
-typedef EbertGraph<kStarGraphNodeIndexSize , kStarGraphArcIndexSize> StarGraph;
+typedef EbertGraph<kStarGraphNodeIndexSize, kStarGraphArcIndexSize> StarGraph;
 typedef PackedArray<StarGraph::kNodeIndexSize> NodeIndexArray;
 typedef PackedArray<StarGraph::kArcIndexSize> ArcIndexArray;
 }  // namespace operations_research
