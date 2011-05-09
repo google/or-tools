@@ -321,22 +321,6 @@ class MoveTowardTargetLS: public IntVarLocalSearchOperator {
   }
 
   virtual ~MoveTowardTargetLS() {}
-  virtual void OnStart() {
-    // Do not change the value of variable_index_: this way, we keep going from
-    // where we last modified something. This is because we expect that most
-    // often, the variables we have just checked are less likely to be able
-    // to be changed to their target values than the ones we have not yet
-    // checked.
-    //
-    // Consider the case where oddly indexed variables can be assigned to their
-    // target values (no matter in what order they are considered), while even
-    // indexed ones cannot. Restarting at index 0 each time an odd-indexed
-    // variable is modified will cause a total of Theta(n^2) neighbors to be
-    // generated, while not restarting will produce only Theta(n) neighbors.
-    CHECK_GE(variable_index_, 0);
-    CHECK_LT(variable_index_, Size());
-    num_var_since_last_start_ = 0;
-  }
 
   // Make a neighbor assigning one variable to its target value.
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
@@ -358,6 +342,23 @@ class MoveTowardTargetLS: public IntVarLocalSearchOperator {
   }
 
  private:
+  virtual void OnStart() {
+    // Do not change the value of variable_index_: this way, we keep going from
+    // where we last modified something. This is because we expect that most
+    // often, the variables we have just checked are less likely to be able
+    // to be changed to their target values than the ones we have not yet
+    // checked.
+    //
+    // Consider the case where oddly indexed variables can be assigned to their
+    // target values (no matter in what order they are considered), while even
+    // indexed ones cannot. Restarting at index 0 each time an odd-indexed
+    // variable is modified will cause a total of Theta(n^2) neighbors to be
+    // generated, while not restarting will produce only Theta(n) neighbors.
+    CHECK_GE(variable_index_, 0);
+    CHECK_LT(variable_index_, Size());
+    num_var_since_last_start_ = 0;
+  }
+
   // Target values
   const vector<int64> target_;
 
@@ -699,9 +700,9 @@ class TwoOpt : public PathOperator {
   virtual ~TwoOpt() {}
   virtual bool MakeNeighbor();
   virtual bool IsIncremental() const { return true; }
- protected:
-  virtual void OnNodeInitialization() { last_ = -1; }
  private:
+  virtual void OnNodeInitialization() { last_ = -1; }
+
   int64 last_base_;
   int64 last_;
 };
@@ -879,9 +880,9 @@ class MakeActiveOperator : public PathOperator {
   virtual ~MakeActiveOperator() {}
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual bool MakeNeighbor();
- protected:
-  virtual void OnNodeInitialization();
  private:
+  virtual void OnNodeInitialization();
+
   int inactive_node_;
 };
 
@@ -957,9 +958,9 @@ class SwapActiveOperator : public PathOperator {
   virtual ~SwapActiveOperator() {}
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual bool MakeNeighbor();
- protected:
-  virtual void OnNodeInitialization();
  private:
+  virtual void OnNodeInitialization();
+
   int inactive_node_;
 };
 
@@ -1018,9 +1019,9 @@ class ExtendedSwapActiveOperator : public PathOperator {
   virtual ~ExtendedSwapActiveOperator() {}
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual bool MakeNeighbor();
- protected:
-  virtual void OnNodeInitialization();
  private:
+  virtual void OnNodeInitialization();
+
   int inactive_node_;
 };
 
@@ -1394,9 +1395,9 @@ class LinKernighan : public PathOperator {
                bool topt);
   virtual ~LinKernighan();
   virtual bool MakeNeighbor();
- protected:
-  virtual void OnNodeInitialization();
  private:
+  virtual void OnNodeInitialization();
+
   static const int kNeighbors;
 
   bool InFromOut(int64 in_i, int64 in_j, int64* out, int64* gain);
@@ -2143,7 +2144,6 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
                   LSOperation* op);
   virtual ~ObjectiveFilter();
   virtual bool Accept(const Assignment* delta, const Assignment* deltadelta);
-  virtual void OnSynchronize();
   virtual int64 SynchronizedElementValue(int64 index) = 0;
   virtual bool EvaluateElementValue(const Assignment::IntContainer& container,
                                     int index,
@@ -2151,11 +2151,6 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
                                     int64* obj_value) = 0;
   virtual bool IsIncremental() const { return true; }
  protected:
-  int64 Evaluate(const Assignment* delta,
-                 int64 current_value,
-                 const int64* const out_values,
-                 bool cache_delta_values);
-
   const int primary_vars_size_;
   int64* const cache_;
   int64* const delta_cache_;
@@ -2165,6 +2160,12 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
   int64 old_value_;
   int64 old_delta_value_;
   bool incremental_;
+ private:
+  virtual void OnSynchronize();
+  int64 Evaluate(const Assignment* delta,
+                 int64 current_value,
+                 const int64* const out_values,
+                 bool cache_delta_values);
 };
 
 ObjectiveFilter::ObjectiveFilter(const IntVar* const* vars,

@@ -26,7 +26,9 @@
 #ifndef CONSTRAINT_SOLVER_ROUTING_H_
 #define CONSTRAINT_SOLVER_ROUTING_H_
 
+#include <stddef.h>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/commandlineflags.h"

@@ -431,10 +431,6 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   IntVar* Var(int64 index) const { return vars_[index]; }
   virtual bool SkipUnchanged(int index) const { return false; }
  protected:
-  // Called by Start() after synchronizing the operator with the current
-  // assignment. Should be overridden instead of Start() to avoid calling
-  // IntVarLocalSearchOperator::Start explicitly.
-  virtual void OnStart() {}
   int64 OldValue(int64 index) const { return old_values_[index]; }
   void SetValue(int64 index, int64 value);
   bool Activated(int64 index) const;
@@ -444,6 +440,10 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   void RevertChanges(bool incremental);
   void AddVars(const IntVar* const* vars, int size);
  private:
+  // Called by Start() after synchronizing the operator with the current
+  // assignment. Should be overridden instead of Start() to avoid calling
+  // IntVarLocalSearchOperator::Start explicitly.
+  virtual void OnStart() {}
   void MarkChange(int64 index);
 
   scoped_array<IntVar*> vars_;
@@ -496,7 +496,7 @@ class BaseLNS : public IntVarLocalSearchOperator {
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual void InitFragments();
   virtual bool NextFragment(vector<int>* fragment) = 0;
- protected:
+ private:
   // This method should not be overridden. Override InitFragments() instead.
   virtual void OnStart();
 };
@@ -514,9 +514,9 @@ class ChangeValue : public IntVarLocalSearchOperator {
   virtual ~ChangeValue();
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual int64 ModifyValue(int64 index, int64 value) = 0;
- protected:
-  virtual void OnStart();
  private:
+  virtual void OnStart();
+
   int index_;
 };
 
@@ -565,11 +565,6 @@ class PathOperator : public IntVarLocalSearchOperator {
   // Number of next variables.
   int number_of_nexts() const { return number_of_nexts_; }
  protected:
-  virtual void OnStart();
-  // Called by OnStart() after initializing node information. Should be
-  // overriden instead of OnStart() to avoid calling PathOperator::OnStart
-  // explicitly.
-  virtual void OnNodeInitialization() {}
   // Returns the index of the variable corresponding to the ith base node.
   int64 BaseNode(int i) const { return base_nodes_[i]; }
   int64 StartNode(int i) const { return path_starts_[base_paths_[i]]; }
@@ -620,10 +615,16 @@ class PathOperator : public IntVarLocalSearchOperator {
   void ResetPosition() {
     just_started_ = true;
   }
- protected:
+
   const int number_of_nexts_;
   const bool ignore_path_vars_;
  private:
+  virtual void OnStart();
+  // Called by OnStart() after initializing node information. Should be
+  // overriden instead of OnStart() to avoid calling PathOperator::OnStart
+  // explicitly.
+  virtual void OnNodeInitialization() {}
+
   bool CheckEnds() const;
   bool IncrementPosition();
   void InitializePathStarts();
@@ -668,13 +669,12 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
  public:
   IntVarLocalSearchFilter(const IntVar* const* vars, int size);
   ~IntVarLocalSearchFilter();
- protected:
-  // Add variables to "track" to the filter.
-  void AddVars(const IntVar* const* vars, int size);
   // This method should not be overridden. Override OnSynchronize() instead
   // which is called before exiting this method.
   virtual void Synchronize(const Assignment* assignment);
-  virtual void OnSynchronize() {}
+ protected:
+  // Add variables to "track" to the filter.
+  void AddVars(const IntVar* const* vars, int size);
   bool FindIndex(const IntVar* const var, int64* index) const {
     DCHECK(index != NULL);
     return FindCopy(var_to_index_, var, index);
@@ -683,6 +683,8 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   IntVar* Var(int index) const { return vars_[index]; }
   int64 Value(int index) const { return values_[index]; }
  private:
+  virtual void OnSynchronize() {}
+
   scoped_array<IntVar*> vars_;
   scoped_array<int64> values_;
   int size_;

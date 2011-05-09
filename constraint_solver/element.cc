@@ -533,17 +533,13 @@ IntExprFunctionElement::~IntExprFunctionElement() {
 
 // ----- Increasing Element -----
 
-class MonotonicIntExprFunctionElement : public BaseIntExpr {
+class IncreasingIntExprFunctionElement : public BaseIntExpr {
  public:
-  MonotonicIntExprFunctionElement(Solver* const s,
+  IncreasingIntExprFunctionElement(Solver* const s,
                                   ResultCallback1<int64, int64>* values,
-                                  bool increasing,
-                                  bool to_delete,
                                   IntVar* const index)
       : BaseIntExpr(s),
         values_(values),
-        increasing_(increasing),
-        delete_(to_delete),
         index_(index) {
     DCHECK(values);
     DCHECK(index);
@@ -551,124 +547,75 @@ class MonotonicIntExprFunctionElement : public BaseIntExpr {
     values->CheckIsRepeatable();
   }
 
-  virtual ~MonotonicIntExprFunctionElement() {
-    if (delete_) {
-      delete values_;
-    }
+  virtual ~IncreasingIntExprFunctionElement() {
+    delete values_;
   }
 
   virtual int64 Min() const {
-    return increasing_?
-        values_->Run(index_->Min()):
-        values_->Run(index_->Max());
+    return values_->Run(index_->Min());
   }
 
   virtual void SetMin(int64 m) {
     const int64 expression_min = index_->Min();
     const int64 expression_max = index_->Max();
-    if (increasing_) {
-      if (m > values_->Run(expression_max)) {
-        solver()->Fail();
-      }
-      int64 nmin = expression_min;
-      while (nmin <= expression_max && values_->Run(nmin) < m) {
-        nmin++;
-      }
-      DCHECK_LE(nmin, expression_max);
-      index_->SetMin(nmin);
-    } else {
-      if (m > values_->Run(expression_min)) {
-        solver()->Fail();
-      }
-      int64 nmax = expression_max;
-      while (nmax >= expression_min && values_->Run(nmax) < m) {
-        nmax--;
-      }
-      DCHECK_GE(nmax, expression_min);
-      index_->SetMax(nmax);
+    if (m > values_->Run(expression_max)) {
+      solver()->Fail();
     }
+    int64 nmin = expression_min;
+    while (nmin <= expression_max && values_->Run(nmin) < m) {
+      nmin++;
+    }
+    DCHECK_LE(nmin, expression_max);
+    index_->SetMin(nmin);
   }
 
   virtual int64 Max() const {
-    return increasing_?
-        values_->Run(index_->Max()):
-        values_->Run(index_->Min());
+    return values_->Run(index_->Max());
   }
 
   virtual void SetMax(int64 m) {
     const int64 expression_min = index_->Min();
     const int64 expression_max = index_->Max();
-    if (increasing_) {
-      if (m < values_->Run(expression_min)) {
-        solver()->Fail();
-      }
-      int64 nmax = expression_max;
-      while (nmax >= expression_min && values_->Run(nmax) > m) {
-        nmax--;
-      }
-      DCHECK_GE(nmax, expression_min);
-      index_->SetMax(nmax);
-    } else {
-      if (m < values_->Run(expression_max)) {
-        solver()->Fail();
-      }
-      int64 nmin = expression_min;
-      while (nmin <= expression_max && values_->Run(nmin) > m) {
-        nmin++;
-      }
-      DCHECK_LE(nmin, expression_max);
-      index_->SetMin(nmin);
+    if (m < values_->Run(expression_min)) {
+      solver()->Fail();
     }
+    int64 nmax = expression_max;
+    while (nmax >= expression_min && values_->Run(nmax) > m) {
+      nmax--;
+    }
+    DCHECK_GE(nmax, expression_min);
+    index_->SetMax(nmax);
   }
 
   virtual void SetRange(int64 mi, int64 ma) {
     const int64 expression_min = index_->Min();
     const int64 expression_max = index_->Max();
-    if (increasing_) {
-      if (mi > ma ||
-          ma < values_->Run(expression_min) ||
-          mi > values_->Run(expression_max)) {
-        solver()->Fail();
-      }
-      int64 nmax = expression_max;
-      while (nmax >= expression_min && values_->Run(nmax) > ma) {
-        nmax--;
-      }
-      DCHECK_GE(nmax, expression_min);
-      int64 nmin = expression_min;
-      while (nmin <= nmax && values_->Run(nmin) < mi) {
-        nmin++;
-      }
-      DCHECK_LE(nmin, nmax);
-      index_->SetRange(nmin, nmax);
-    } else {
-      if (mi > ma ||
-          ma < values_->Run(expression_max) ||
-          mi > values_->Run(expression_min)) {
-        solver()->Fail();
-      }
-      int64 nmin = expression_min;
-      while (nmin <= expression_max && values_->Run(nmin) > ma) {
-        nmin++;
-      }
-      DCHECK_LE(nmin, expression_max);
-      int64 nmax = expression_max;
-      while (nmax >= expression_min && values_->Run(nmax) < mi) {
-        nmax--;
-      }
-      DCHECK_GE(nmax, nmin);
-      index_->SetRange(nmin, nmax);
+    if (mi > ma ||
+        ma < values_->Run(expression_min) ||
+        mi > values_->Run(expression_max)) {
+      solver()->Fail();
     }
+    int64 nmax = expression_max;
+    while (nmax >= expression_min && values_->Run(nmax) > ma) {
+      nmax--;
+    }
+    DCHECK_GE(nmax, expression_min);
+    int64 nmin = expression_min;
+    while (nmin <= nmax && values_->Run(nmin) < mi) {
+      nmin++;
+    }
+    DCHECK_LE(nmin, nmax);
+    index_->SetRange(nmin, nmax);
   }
 
   virtual string name() const {
-    return StringPrintf("MonotonicIntExprFunctionElement(values, %d, %s)",
-                        increasing_, index_->name().c_str());
+    return StringPrintf("IncreasingIntExprFunctionElement(values, %s)",
+                        index_->name().c_str());
   }
 
   virtual string DebugString() const {
-    return StringPrintf("MonotonicIntExprFunctionElement(values, %d, %s)",
-                        increasing_, index_->DebugString().c_str());
+    return StringPrintf("IncreasingIntExprFunctionElement(values, %s)",
+                        index_->DebugString().c_str());
   }
 
   virtual void WhenRange(Demon* d) {
@@ -676,8 +623,6 @@ class MonotonicIntExprFunctionElement : public BaseIntExpr {
   }
  private:
   ResultCallback1<int64, int64>* values_;
-  const bool increasing_;
-  const bool delete_;
   IntVar* const index_;
 };
 
@@ -687,15 +632,39 @@ IntExpr* Solver::MakeElement(ResultCallback1<int64, int64>* values,
   return RevAlloc(new IntExprFunctionElement(this, values, index, true));
 }
 
+namespace {
+class OppositeCallback : public BaseObject {
+ public:
+  OppositeCallback(ResultCallback1<int64, int64>* const values)
+      : values_(values) {
+    CHECK_NOTNULL(values_);
+    values_->CheckIsRepeatable();
+  }
+
+  virtual ~OppositeCallback() {}
+
+  int64 Run(int64 index) {
+    return -values_->Run(index);
+  }
+ public:
+  scoped_ptr<ResultCallback1<int64, int64> > values_;
+};
+}  // namespace
+
 IntExpr* Solver::MakeMonotonicElement(ResultCallback1<int64, int64>* values,
                                       bool increasing,
                                       IntVar* const index) {
   CHECK_EQ(this, index->solver());
-  return RevAlloc(new MonotonicIntExprFunctionElement(this,
-                                                      values,
-                                                      increasing,
-                                                      true,
-                                                      index));
+  if (increasing) {
+    return RevAlloc(new IncreasingIntExprFunctionElement(this, values, index));
+  } else {
+    OppositeCallback* const opposite_callback =
+        RevAlloc(new OppositeCallback(values));
+    ResultCallback1<int64, int64>* opposite_values =
+        NewPermanentCallback(opposite_callback, &OppositeCallback::Run);
+    return MakeOpposite(RevAlloc(
+        new IncreasingIntExprFunctionElement(this, opposite_values, index)));
+  }
 }
 
 // ----- IntIntExprFunctionElement -----

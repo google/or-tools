@@ -97,7 +97,7 @@ bool SearchLog::AtSolution() {
     objective_updated = true;
   } else if (var_!= NULL) {
     current = var_->Value();
-    StringAppendF(&obj_str,  "%" GG_LL_FORMAT "d", current);
+    StringAppendF(&obj_str,  "%" GG_LL_FORMAT "d, ", current);
     objective_updated = true;
   }
   if (objective_updated) {

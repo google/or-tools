@@ -58,9 +58,10 @@
 #ifndef CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
 #define CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
 
-#include <vector>
+#include <iosfwd>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "base/callback.h"
 #include "base/commandlineflags.h"
@@ -76,6 +77,11 @@
 #include "base/random.h"
 
 class File;
+template <typename R, typename T1, typename T2> class ResultCallback2;
+template <typename R, typename T1> class ResultCallback1;
+template <typename T1> class Callback1;
+template <typename T> class ResultCallback;
+
 using operations_research::WallTimer;
 #define ClockTimer WallTimer
 
@@ -99,13 +105,13 @@ class DomainIntVar;
 class EqualityVarCstCache;
 class ExpressionCache;
 class GreaterEqualCstCache;
-class IntervalVar;
-class IntervalVarAssignmentProto;
-class IntervalVarElement;
 class IntExpr;
 class IntVar;
 class IntVarAssignmentProto;
 class IntVarElement;
+class IntervalVar;
+class IntervalVarAssignmentProto;
+class IntervalVarElement;
 class LessEqualCstCache;
 class LocalSearchFilter;
 class LocalSearchOperator;
@@ -124,10 +130,10 @@ class SolutionCollector;
 class SolutionPool;
 class Solver;
 class SymmetryBreaker;
-struct StateInfo;
-struct Trail;
 class UnequalityVarCstCache;
 class VariableQueueCleaner;
+struct StateInfo;
+struct Trail;
 template <class T> class SimpleRevFIFO;
 
 // This enum is used internally to tag states in the search tree.
@@ -709,7 +715,9 @@ class Solver {
   // Function based element. The constraint takes ownership of
   // callback.  The callback must be monotonic. It must be able to
   // cope with any possible value in the domain of 'index'
-  // (potentially negative ones too).
+  // (potentially negative ones too). Furtermore, monotonicity is not
+  // checked. Thus giving a non monotonic function, or specifying an
+  // incorrect increasing parameter will result in undefined behavior.
   IntExpr* MakeMonotonicElement(IndexEvaluator1* values,
                                 bool increasing,
                                 IntVar* const index);
@@ -3545,7 +3553,7 @@ class Pack : public Constraint {
 class SolutionPool : public BaseObject {
  public:
   SolutionPool() {}
-  ~SolutionPool() {}
+  virtual ~SolutionPool() {}
 
   // This method is called to initialize the solution pool with the assignment
   // from the local search.
