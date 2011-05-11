@@ -12,9 +12,8 @@
 // limitations under the License.
 
 #include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
 #include "base/logging.h"
+#include "graph/ebert_graph.h"
 #include "graph/max_flow.h"
 #include "graph/min_cost_flow.h"
 
