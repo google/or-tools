@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef GRAPH_EBERT_GRAPH_H_
-#define GRAPH_EBERT_GRAPH_H_
+#ifndef OR_TOOLS_GRAPH_EBERT_GRAPH_H_
+#define OR_TOOLS_GRAPH_EBERT_GRAPH_H_
 
 // An implementation (with some improvements) of the star-representation of a
 // graph as described in J. Ebert, "A versatile data structure for
@@ -79,8 +79,10 @@
 //    suggested by lhm this could have better cache properties. This has to be
 //    validated on algorithms running with real data.
 
+#include <stddef.h>
 #include <algorithm>
 #include <string>
+
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
@@ -804,4 +806,4 @@ typedef PackedArray<StarGraph::kNodeIndexSize> NodeIndexArray;
 typedef PackedArray<StarGraph::kArcIndexSize> ArcIndexArray;
 }  // namespace operations_research
 
-#endif  // GRAPH_EBERT_GRAPH_H_
+#endif  // OR_TOOLS_GRAPH_EBERT_GRAPH_H_

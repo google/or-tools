@@ -11,13 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef GRAPH_GRAPH_H_
-#define GRAPH_GRAPH_H_
+#ifndef OR_TOOLS_GRAPH_GRAPH_H_
+#define OR_TOOLS_GRAPH_GRAPH_H_
 
 #include <vector>
 
 #include "base/callback.h"
 #include "base/scoped_ptr.h"
+
+template <class R, class A1, class A2> class ResultCallback2;
+template <class R, class A1> class ResultCallback1;
 
 namespace operations_research {
 
@@ -44,4 +47,4 @@ void CoverArcsByCliques(
 
 }  // namespace operations_research
 
-#endif  // GRAPH_GRAPH_H_
+#endif  // OR_TOOLS_GRAPH_GRAPH_H_

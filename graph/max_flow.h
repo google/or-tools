@@ -102,16 +102,19 @@
 // Problem.” In Proceedings of Algorithms ESA, LNCS 5193:466-477, Springer 2008.
 // www.springerlink.com/index/5535k2j1mt646338.pdf
 
-#ifndef GRAPH_MAX_FLOW_H_
-#define GRAPH_MAX_FLOW_H_
+#ifndef OR_TOOLS_GRAPH_MAX_FLOW_H_
+#define OR_TOOLS_GRAPH_MAX_FLOW_H_
 
 #include <algorithm>
 #include <stack>
 #include <string>
 #include <vector>
+
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "graph/ebert_graph.h"
+#include "util/packed_array.h"
 
 namespace operations_research {
 
@@ -276,4 +279,4 @@ class MaxFlow {
   DISALLOW_COPY_AND_ASSIGN(MaxFlow);
 };
 }  // namespace operations_research
-#endif  // GRAPH_MAX_FLOW_H_
+#endif  // OR_TOOLS_GRAPH_MAX_FLOW_H_

@@ -258,12 +258,20 @@ $(LIBPREFIX)util.$(LIBSUFFIX): $(UTIL_LIB_OS)
 # Graph library.
 
 GRAPH_LIB_OS=\
+	objs/linear_assignment.$O \
 	objs/bron_kerbosch.$O \
+	objs/connectivity.$O \
 	objs/max_flow.$O \
 	objs/min_cost_flow.$O
 
+objs/linear_assignment.$O:graph/assignment.cc
+	$(CCC) $(CFLAGS) -c graph/assignment.cc $(OBJOUT)objs/linear_assignment.$O
+
 objs/bron_kerbosch.$O:graph/bron_kerbosch.cc
 	$(CCC) $(CFLAGS) -c graph/bron_kerbosch.cc $(OBJOUT)objs/bron_kerbosch.$O
+
+objs/connectivity.$O:graph/connectivity.cc
+	$(CCC) $(CFLAGS) -c graph/connectivity.cc $(OBJOUT)objs/connectivity.$O
 
 objs/max_flow.$O:graph/max_flow.cc
 	$(CCC) $(CFLAGS) -c graph/max_flow.cc $(OBJOUT)objs/max_flow.$O

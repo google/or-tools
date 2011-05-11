@@ -14,8 +14,11 @@
 #include "graph/min_cost_flow.h"
 
 #include <math.h>
+#include <algorithm>
 #include <limits>
+
 #include "base/commandlineflags.h"
+#include "base/stringprintf.h"
 
 DEFINE_int64(min_cost_flow_alpha, 5,
              "Divide factor for epsilon at each refine step.");

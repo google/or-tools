@@ -14,11 +14,8 @@
 #include <vector>
 
 #include "base/callback.h"
-#include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/scoped_ptr.h"
-
-#include "graph/shortestpaths.h"
 #include "base/adjustable_priority_queue.h"
 
 namespace operations_research {

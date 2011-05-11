@@ -17,13 +17,14 @@
 // TODO(user): add depth-first-search based connectivity for directed graphs.
 // TODO(user): add depth-first-search based biconnectivity for directed graphs.
 
-#ifndef GRAPH_CONNECTIVITY_H_
-#define GRAPH_CONNECTIVITY_H_
+#ifndef OR_TOOLS_GRAPH_CONNECTIVITY_H_
+#define OR_TOOLS_GRAPH_CONNECTIVITY_H_
 
 #include <vector>
 
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "graph/ebert_graph.h"
 
 namespace operations_research {
@@ -124,4 +125,4 @@ class ConnectedComponents {
 
 }  // namespace operations_research
 
-#endif  // GRAPH_CONNECTIVITY_H_
+#endif  // OR_TOOLS_GRAPH_CONNECTIVITY_H_

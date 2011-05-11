@@ -147,16 +147,19 @@
 // flows by double scaling," Mathematical Programming, (1992) 53:243-266.
 // http://www.springerlink.com/index/gu7404218u6kt166.pdf
 
-#ifndef GRAPH_MIN_COST_FLOW_H_
-#define GRAPH_MIN_COST_FLOW_H_
+#ifndef OR_TOOLS_GRAPH_MIN_COST_FLOW_H_
+#define OR_TOOLS_GRAPH_MIN_COST_FLOW_H_
 
 #include <algorithm>
 #include <stack>
 #include <string>
 #include <vector>
+
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "graph/ebert_graph.h"
+#include "util/packed_array.h"
 
 namespace operations_research {
 
@@ -384,4 +387,4 @@ class MinCostFlow {
   DISALLOW_COPY_AND_ASSIGN(MinCostFlow);
 };
 }  // namespace operations_research
-#endif  // GRAPH_MIN_COST_FLOW_H_
+#endif  // OR_TOOLS_GRAPH_MIN_COST_FLOW_H_

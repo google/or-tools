@@ -13,8 +13,8 @@
 
 // This file contains various shortestpaths utilities.
 
-#ifndef GRAPH_SHORTESTPATHS_H_
-#define GRAPH_SHORTESTPATHS_H_
+#ifndef OR_TOOLS_GRAPH_SHORTESTPATHS_H_
+#define OR_TOOLS_GRAPH_SHORTESTPATHS_H_
 
 #include <string>
 #include <vector>
@@ -55,4 +55,4 @@ bool BellmanFordShortestPath(int node_count,
                              vector<int>* nodes);
 }  // namespace operations_research
 
-#endif  // GRAPH_SHORTESTPATHS_H_
+#endif  // OR_TOOLS_GRAPH_SHORTESTPATHS_H_

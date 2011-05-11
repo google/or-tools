@@ -69,9 +69,11 @@
 // There are a few tricks in the efficient implementation of this algorithm
 // which are explained below.
 
-#ifndef GRAPH_HAMILTONIAN_PATH_H_
-#define GRAPH_HAMILTONIAN_PATH_H_
+#ifndef OR_TOOLS_GRAPH_HAMILTONIAN_PATH_H_
+#define OR_TOOLS_GRAPH_HAMILTONIAN_PATH_H_
 
+#include <math.h>
+#include <stddef.h>
 #include <algorithm>
 #include <limits>
 #include <utility>
@@ -467,4 +469,4 @@ template <typename T> void HamiltonianPathSolver<T>::
 
 }  // namespace operations_research
 
-#endif  // GRAPH_HAMILTONIAN_PATH_H_
+#endif  // OR_TOOLS_GRAPH_HAMILTONIAN_PATH_H_
