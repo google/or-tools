@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_TIMER_H_
-#define BASE_TIMER_H_
+#ifndef OR_TOOLS_BASE_TIMER_H_
+#define OR_TOOLS_BASE_TIMER_H_
 
 #include "base/basictypes.h"
 #include "base/macros.h"
@@ -59,4 +59,4 @@ class CycleTimer {
   State state_;
 };
 }  // namespace operations_research
-#endif  // BASE_TIMER_H_
+#endif  // OR_TOOLS_BASE_TIMER_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef UTIL_CACHED_LOG_H_
-#define UTIL_CACHED_LOG_H_
+#ifndef OR_TOOLS_UTIL_CACHED_LOG_H_
+#define OR_TOOLS_UTIL_CACHED_LOG_H_
 
 #include <math.h>
 
@@ -44,4 +44,4 @@ class CachedLog {
 };
 }  // namespace operations_research
 
-#endif  // UTIL_CACHED_LOG_H_
+#endif  // OR_TOOLS_UTIL_CACHED_LOG_H_

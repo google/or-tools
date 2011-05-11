@@ -12,8 +12,8 @@
 // limitations under the License.
 
 
-#ifndef BASE_STRUTIL_H_
-#define BASE_STRUTIL_H_
+#ifndef OR_TOOLS_BASE_STRUTIL_H_
+#define OR_TOOLS_BASE_STRUTIL_H_
 
 #include "base/stringpiece.h"
 
@@ -28,4 +28,4 @@ inline bool HasSuffixString(const StringPiece& str,
   return str.ends_with(suffix);
 }
 }  // namespace operations_research
-#endif  // BASE_STRUTIL_H_
+#endif  // OR_TOOLS_BASE_STRUTIL_H_

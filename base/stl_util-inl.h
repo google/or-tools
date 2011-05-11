@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_STL_UTIL_INL_H_
-#define BASE_STL_UTIL_INL_H_
+#ifndef OR_TOOLS_BASE_STL_UTIL_INL_H_
+#define OR_TOOLS_BASE_STL_UTIL_INL_H_
 
 #include <string>
 #include "base/util.h"
@@ -114,4 +114,4 @@ void STLDeleteValues(T *v) {
 
 }  // namespace operations_research
 
-#endif  // BASE_STL_UTIL_INL_H_
+#endif  // OR_TOOLS_BASE_STL_UTIL_INL_H_

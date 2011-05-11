@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_CONCISE_ITERATOR_H_
-#define BASE_CONCISE_ITERATOR_H_
+#ifndef OR_TOOLS_BASE_CONCISE_ITERATOR_H_
+#define OR_TOOLS_BASE_CONCISE_ITERATOR_H_
 
 #include <deque>
 #include <vector>
@@ -288,4 +288,4 @@ class Eraser<deque<T> > {
 };
 }  // namespace operations_research
 
-#endif  // BASE_CONCISE_ITERATOR_H_
+#endif  // OR_TOOLS_BASE_CONCISE_ITERATOR_H_

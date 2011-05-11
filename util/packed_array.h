@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef UTIL_PACKED_ARRAY_H_
-#define UTIL_PACKED_ARRAY_H_
+#ifndef OR_TOOLS_UTIL_PACKED_ARRAY_H_
+#define OR_TOOLS_UTIL_PACKED_ARRAY_H_
 
 #if defined(__APPLE__) && defined(__GNUC__)
 #include <machine/endian.h>
@@ -358,4 +358,4 @@ typedef PackedArray<7> Int56PackedArray;
 typedef PackedArray<8> Int64PackedArray;
 }  // namespace operations_research
 
-#endif  // UTIL_PACKED_ARRAY_H_
+#endif  // OR_TOOLS_UTIL_PACKED_ARRAY_H_

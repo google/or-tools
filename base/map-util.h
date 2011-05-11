@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_MAP_UTIL_H_
-#define BASE_MAP_UTIL_H_
+#ifndef OR_TOOLS_BASE_MAP_UTIL_H_
+#define OR_TOOLS_BASE_MAP_UTIL_H_
 
 #include <utility>
 #include "base/util.h"
@@ -142,4 +142,4 @@ FindOrDie(const Collection& collection,
 }
 }  // namespace operations_research
 
-#endif  // BASE_MAP_UTIL_H_
+#endif  // OR_TOOLS_BASE_MAP_UTIL_H_

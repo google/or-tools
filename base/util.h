@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_UTIL_H_
-#define BASE_UTIL_H_
+#ifndef OR_TOOLS_BASE_UTIL_H_
+#define OR_TOOLS_BASE_UTIL_H_
 
 // C
 #include <stdio.h>
@@ -154,4 +154,4 @@ using std::hash_map;
 using std::hash_set;
 #endif
 #endif  // SWIG
-#endif  // BASE_UTIL_H_
+#endif  // OR_TOOLS_BASE_UTIL_H_

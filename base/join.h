@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_JOIN_H_
-#define BASE_JOIN_H_
+#ifndef OR_TOOLS_BASE_JOIN_H_
+#define OR_TOOLS_BASE_JOIN_H_
 
 #include <string>
 
@@ -31,4 +31,4 @@ string StrCat(const StringPiece& p1,
 string StrCat(int64 a1, const StringPiece& p2);
 string StrCat(const StringPiece& p1, int64 a2);
 }  // namespace operations_research
-#endif  // BASE_JOIN_H_
+#endif  // OR_TOOLS_BASE_JOIN_H_

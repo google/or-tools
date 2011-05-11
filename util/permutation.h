@@ -83,8 +83,8 @@
 //
 // TODO(user): Maybe put this someplace generic outside
 // operations_research?
-#ifndef UTIL_PERMUTATION_H_
-#define UTIL_PERMUTATION_H_
+#ifndef OR_TOOLS_UTIL_PERMUTATION_H_
+#define OR_TOOLS_UTIL_PERMUTATION_H_
 
 #include "base/logging.h"
 
@@ -217,4 +217,4 @@ template <typename IndexType> class PermutationApplier {
   DISALLOW_COPY_AND_ASSIGN(PermutationApplier);
 };
 }
-#endif  // UTIL_PERMUTATION_H_
+#endif  // OR_TOOLS_UTIL_PERMUTATION_H_

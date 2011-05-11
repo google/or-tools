@@ -66,8 +66,8 @@
 //
 // -----------------------------------
 
-#ifndef LINEAR_SOLVER_LINEAR_SOLVER_H_
-#define LINEAR_SOLVER_LINEAR_SOLVER_H_
+#ifndef OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
+#define OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
 
 
 #include <limits>
@@ -737,4 +737,4 @@ class MPSolverInterface {
 
 }  // namespace operations_research
 
-#endif  // LINEAR_SOLVER_LINEAR_SOLVER_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_

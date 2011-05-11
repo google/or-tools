@@ -22,8 +22,8 @@
 // Systematic usage of StringPiece is encouraged as it will reduce unnecessary
 // conversions from "const char*" to "string" and back again.
 
-#ifndef BASE_STRINGPIECE_H_
-#define BASE_STRINGPIECE_H_
+#ifndef OR_TOOLS_BASE_STRINGPIECE_H_
+#define OR_TOOLS_BASE_STRINGPIECE_H_
 
 #include <string.h>
 #include <algorithm>
@@ -183,4 +183,4 @@ inline bool operator>=(const operations_research::StringPiece& x,
 extern std::ostream& operator<<(std::ostream& o,
                                 const operations_research::StringPiece& piece);
 
-#endif  // BASE_STRINGPIECE_H_
+#endif  // OR_TOOLS_BASE_STRINGPIECE_H_

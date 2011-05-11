@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_CALLBACK_H_
-#define BASE_CALLBACK_H_
+#ifndef OR_TOOLS_BASE_CALLBACK_H_
+#define OR_TOOLS_BASE_CALLBACK_H_
 
 #include "base/util.h"
 #include "base/logging.h"
@@ -11898,4 +11898,4 @@ NewPermanentCallback(R (*function)(P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5), P1 p1, P2 
   return new _FunctionResultCallback_6_5<false,R,P1,P2,P3,P4,P5,P6,A1,A2,A3,A4,A5>(function, p1, p2, p3, p4, p5, p6);
 }
 
-#endif  // BASE_CALLBACK_H_
+#endif  // OR_TOOLS_BASE_CALLBACK_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef UTIL_XML_HELPER_H_
-#define UTIL_XML_HELPER_H_
+#ifndef OR_TOOLS_UTIL_XML_HELPER_H_
+#define OR_TOOLS_UTIL_XML_HELPER_H_
 
 #include <stack>
 #include <string>
@@ -64,4 +64,4 @@ class XmlHelper {
   DISALLOW_COPY_AND_ASSIGN(XmlHelper);
 };
 }
-#endif  // UTIL_XML_HELPER_H_
+#endif  // OR_TOOLS_UTIL_XML_HELPER_H_

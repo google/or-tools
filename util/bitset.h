@@ -13,8 +13,8 @@
 
 // Various utility functions on bitsets.
 
-#ifndef UTIL_BITSET_H_
-#define UTIL_BITSET_H_
+#ifndef OR_TOOLS_UTIL_BITSET_H_
+#define OR_TOOLS_UTIL_BITSET_H_
 
 #include <string>
 #include <vector>
@@ -384,4 +384,4 @@ int32 UnsafeMostSignificantBitPosition32(const uint32* const bitset,
 
 }  // namespace operations_research
 
-#endif  // UTIL_BITSET_H_
+#endif  // OR_TOOLS_UTIL_BITSET_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_SYSINFO_H_
-#define BASE_SYSINFO_H_
+#ifndef OR_TOOLS_BASE_SYSINFO_H_
+#define OR_TOOLS_BASE_SYSINFO_H_
 
 #include "base/basictypes.h"
 
@@ -21,5 +21,5 @@ namespace operations_research {
 int64 GetProcessMemoryUsage();
 }  // namespace operations_research
 
-#endif  // BASE_SYSINFO_H_
+#endif  // OR_TOOLS_BASE_SYSINFO_H_
 

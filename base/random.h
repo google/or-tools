@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_RANDOM_H_
-#define BASE_RANDOM_H_
+#ifndef OR_TOOLS_BASE_RANDOM_H_
+#define OR_TOOLS_BASE_RANDOM_H_
 
 #include "base/util.h"
 
@@ -39,4 +39,4 @@ class ACMRandom {
 
 }  // namespace operations_research
 
-#endif  // BASE_RANDOM_H_
+#endif  // OR_TOOLS_BASE_RANDOM_H_

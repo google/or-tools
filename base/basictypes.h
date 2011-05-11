@@ -13,10 +13,10 @@
 
 // Basic integer type definitions for various platforms
 //
-#ifndef BASE_BASICTYPES_H_
-#define BASE_BASICTYPES_H_
+#ifndef OR_TOOLS_BASE_BASICTYPES_H_
+#define OR_TOOLS_BASE_BASICTYPES_H_
 
 #include "base/integral_types.h"
 #include "base/logging.h"
 
-#endif  // BASE_BASICTYPES_H_
+#endif  // OR_TOOLS_BASE_BASICTYPES_H_

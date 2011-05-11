@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef BASE_MACROS_H_
-#define BASE_MACROS_H_
+#ifndef OR_TOOLS_BASE_MACROS_H_
+#define OR_TOOLS_BASE_MACROS_H_
 
 // DISALLOW_COPY_AND_ASSIGN disallows the copy and operator= functions.
 // It goes in the private: declarations in a class.
@@ -20,4 +20,4 @@
   TypeName(const TypeName&);               \
   void operator=(const TypeName&)
 
-#endif  // BASE_MACROS_H_
+#endif  // OR_TOOLS_BASE_MACROS_H_
