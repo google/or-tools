@@ -54,8 +54,8 @@
 //   int64 profit = solver.Solve();
 
 
-#ifndef ALGORITHMS_KNAPSACK_SOLVER_H_
-#define ALGORITHMS_KNAPSACK_SOLVER_H_
+#ifndef OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
+#define OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
 
 #include <math.h>
 #include <queue>
@@ -567,4 +567,4 @@ class KnapsackGenericSolver : public BaseKnapsackSolver {
 #endif  // SWIG
 }  // namespace operations_research
 
-#endif  // ALGORITHMS_KNAPSACK_SOLVER_H_
+#endif  // OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_

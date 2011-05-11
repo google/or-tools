@@ -27,8 +27,8 @@
 // which in turn is based on
 //   http://www.public.iastate.edu/~ddoty/HungarianAlgorithm.html.
 
-#ifndef ALGORITHMS_HUNGARIAN_H_
-#define ALGORITHMS_HUNGARIAN_H_
+#ifndef OR_TOOLS_ALGORITHMS_HUNGARIAN_H_
+#define OR_TOOLS_ALGORITHMS_HUNGARIAN_H_
 
 #include "base/util.h"
 #include <vector>
@@ -45,4 +45,4 @@ void MaximizeLinearAssignment(const vector<vector<double> >& cost,
 
 }  // namespace operations_research
 
-#endif  // ALGORITHMS_HUNGARIAN_H_
+#endif  // OR_TOOLS_ALGORITHMS_HUNGARIAN_H_
