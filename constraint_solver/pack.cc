@@ -55,6 +55,14 @@ class Dimension : public BaseObject {
     return pack_->IsUndecided(var_index, bin_index);
   }
 
+  bool IsPossible(int64 var_index, int64 bin_index) const {
+    return pack_->IsPossible(var_index, bin_index);
+  }
+
+  IntVar* AssignVar(int64 var_index, int64 bin_index) const {
+    return pack_->AssignVar(var_index, bin_index);
+  }
+
   void SetImpossible(int64 var_index, int64 bin_index) {
     pack_->SetImpossible(var_index, bin_index);
   }
@@ -343,6 +351,14 @@ void Pack::Assign(int64 var_index, int64 bin_index) {
 
 bool Pack::IsAssignedStatusKnown(int64 var_index) const {
   return !unprocessed_.IsSet(bins_, var_index);
+}
+
+bool Pack::IsPossible(int64 var_index, int64 bin_index) const {
+  return vars_[var_index]->Contains(bin_index);
+}
+
+IntVar* Pack::AssignVar(int64 var_index, int64 bin_index) const {
+  return solver()->MakeIsEqualCstVar(vars_[var_index], bin_index);
 }
 
 void Pack::SetAssigned(int64 var_index) {
@@ -1030,6 +1046,55 @@ class CountUsedBinDimension : public Dimension {
   int initial_max_;
 };
 
+// ---------- Variable Usage Dimension ----------
+
+// This is a very naive, but correct implementation of the constraint.
+class VariableUsageDimension : public Dimension {
+ public:
+  VariableUsageDimension(Solver* const solver,
+                         Pack* const pack,
+                         const vector<int64>& capacities,
+                         const vector<IntVar*>& weights)
+      : Dimension(solver, pack), capacities_(capacities), weights_(weights) {}
+
+  virtual ~VariableUsageDimension() {}
+
+  virtual void Post() {
+    Solver* const s = solver();
+    const int num_bins = capacities_.size();
+    const int num_items = weights_.size();
+
+    for (int bin_index = 0; bin_index < num_bins; ++bin_index) {
+      vector<IntVar*> terms;
+      for (int item_index = 0; item_index < num_items; ++item_index) {
+        IntVar* const assign_var = AssignVar(item_index, bin_index);
+        terms.push_back(s->MakeProd(assign_var, weights_[item_index])->Var());
+      }
+      s->AddConstraint(s->MakeSumLessOrEqual(terms, capacities_[bin_index]));
+    }
+  }
+
+  virtual void InitialPropagate(int64 bin_index,
+                                const vector<int64>& forced,
+                                const vector<int64>& undecided) {}
+  virtual void InitialPropagateUnassigned(const vector<int64>& assigned,
+                                          const vector<int64>& unassigned) {}
+  virtual void EndInitialPropagate() {}
+  virtual void Propagate(int64 bin_index,
+                         const vector<int64>& forced,
+                         const vector<int64>& removed) {}
+  virtual void PropagateUnassigned(const vector<int64>& assigned,
+                                   const vector<int64>& unassigned) {}
+  virtual void EndPropagate() {}
+
+  virtual string DebugString() const {
+    return "VariableUsageDimension";
+  }
+ private:
+  const vector<int64> capacities_;
+  const vector<IntVar*> weights_;
+};
+
 // ---------- API ----------
 
 void Pack::AddWeightedSumLessOrEqualConstantDimension(
@@ -1076,6 +1141,19 @@ void Pack::AddWeightedSumOfAssignedDimension(const vector<int64>& weights,
                                                    cost_var));
   dims_.push_back(dim);
 }
+
+void Pack::AddSumVariableWeightsLessOrEqualConstantDimension(
+    const vector<IntVar*>& usage,
+    const vector<int64>& capacity) {
+  Solver* const s = solver();
+  Dimension* const dim =
+      s->RevAlloc(new VariableUsageDimension(s,
+                                             this,
+                                             capacity,
+                                             usage));
+  dims_.push_back(dim);
+}
+
 
 void Pack::AddCountUsedBinDimension(IntVar* const count_var) {
   Solver* const s = solver();

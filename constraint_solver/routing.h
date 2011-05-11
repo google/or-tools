@@ -23,8 +23,8 @@
 // solution. The model is "closed" after the first call to Solve() and cannot
 // be modified afterwards; however Solve can be called more than once.
 
-#ifndef CONSTRAINT_SOLVER_ROUTING_H_
-#define CONSTRAINT_SOLVER_ROUTING_H_
+#ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_
+#define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_
 
 #include <stddef.h>
 #include <string>
@@ -303,4 +303,4 @@ class RoutingModel {
 
 }  // namespace operations_research
 
-#endif  // CONSTRAINT_SOLVER_ROUTING_H_
+#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_

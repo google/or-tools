@@ -55,8 +55,8 @@
 // either a const vector<IntVar>& or a IntVar* const* and a size; the two
 // signatures are equivalent, size defining the number of variables.
 
-#ifndef CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
-#define CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
+#ifndef OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
+#define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
 
 #include <iosfwd>
 #include <string>
@@ -3495,6 +3495,19 @@ class Pack : public Constraint {
   void AddWeightedSumEqualVarDimension(const vector<int64>& weights,
                                        const vector<IntVar*>& loads);
 
+  // This dimension imposes:
+  // forall b in bins,
+  //    sum (i in items: weight[i] * is_assigned(i, b)) <= capacities[b]
+  // where is_assigned(i, b) is true if and only if item i is assigned
+  // to the bin b.
+  //
+  // This can be used to model shapes of items by linking variables of
+  // the same item on parallel dimensions with an allowed assignment
+  // constraint.
+  void AddSumVariableWeightsLessOrEqualConstantDimension(
+      const vector<IntVar*>& weights,
+      const vector<int64>& capacities);
+
   // This dimension enforces that cost_var == sum of weights[i] for
   // all objects 'i' assigned to a bin.
   void AddWeightedSumOfAssignedDimension(const vector<int64>& weights,
@@ -3522,6 +3535,8 @@ class Pack : public Constraint {
   void SetImpossible(int64 var_index, int64 bin_index);
   void Assign(int64 var_index, int64 bin_index);
   bool IsAssignedStatusKnown(int64 var_index) const;
+  bool IsPossible(int64 var_index, int64 bin_index) const;
+  IntVar* AssignVar(int64 var_index, int64 bin_index) const;
   void SetAssigned(int64 var_index);
   void SetUnassigned(int64 var_index);
   void RemoveAllPossibleFromBin(int64 bin_index);
@@ -3574,4 +3589,4 @@ class SolutionPool : public BaseObject {
 
 
 }  // namespace operations_research
-#endif  // CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
+#endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
-#define CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
+#ifndef OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
+#define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
 
 #include <math.h>
 
@@ -799,4 +799,4 @@ class SearchLog : public SearchMonitor {
 };
 }  // namespace operations_research
 
-#endif  // CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
+#endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
