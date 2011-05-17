@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <stdio.h>
 #if defined(__APPLE__) && defined(__GNUC__)  // Mac OS X
 #include <mach/mach_init.h>
 #include <mach/task.h>
@@ -19,6 +18,8 @@
 #include <windows.h>
 #include <psapi.h>
 #endif
+
+#include <cstdio>
 
 #include "base/sysinfo.h"
 #include "base/stringpiece.h"

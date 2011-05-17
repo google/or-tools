@@ -163,7 +163,7 @@ class InitVarImpacts : public DecisionBuilder {
   bool new_start_;
   IntVarIterator* iterator_;
   int var_index_;
-  vector<int64> active_values_;
+  std::vector<int64> active_values_;
   int value_index_;
   const scoped_ptr<Closure> update_impact_closure_;
   AssignCallFail updater_;
@@ -513,13 +513,13 @@ class ImpactRecorder {
     bool HasRemovedValues() const { return !removed_values_.empty(); }
     void ClearRemovedValues() { removed_values_.clear(); }
     size_t NumRemovedValues() const { return removed_values_.size(); }
-    const vector<int64>& removed_values() const { return removed_values_; }
+    const std::vector<int64>& removed_values() const { return removed_values_; }
     InitVarImpacts* without_split() { return &without_splits_; }
     InitVarImpactsWithSplits* with_splits() { return &with_splits_; }
 
    private:
     scoped_ptr<Callback2<int, int64> > update_impact_callback_;
-    vector<int64> removed_values_;
+    std::vector<int64> removed_values_;
     InitVarImpacts without_splits_;
     InitVarImpactsWithSplits with_splits_;
   };
@@ -530,8 +530,8 @@ class ImpactRecorder {
   double current_log_space_;
   // impacts_[i][j] stores the average search space reduction when assigning
   // original_min_[i] + j to variable i.
-  vector<vector<double> > impacts_;
-  vector<int64> original_min_;
+  std::vector<std::vector<double> > impacts_;
+  std::vector<int64> original_min_;
   scoped_array<IntVarIterator*> domain_iterators_;
   int64 init_count_;
   const DefaultPhaseParameters::DisplayLevel display_level_;
@@ -836,7 +836,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   uint64 fail_stamp_;
   int current_var_index_;
   int64 current_value_;
-  vector<HeuristicWrapper*> heuristics_;
+  std::vector<HeuristicWrapper*> heuristics_;
   SearchMonitor* heuristic_limit_;
   ACMRandom random_;
   RunHeuristic runner_;
@@ -847,13 +847,13 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
 // ---------- API ----------
 
-DecisionBuilder* Solver::MakeDefaultPhase(const vector<IntVar*>& vars) {
+DecisionBuilder* Solver::MakeDefaultPhase(const std::vector<IntVar*>& vars) {
   DefaultPhaseParameters parameters;
   return MakeDefaultPhase(vars.data(), vars.size(), parameters);
 }
 
 DecisionBuilder* Solver::MakeDefaultPhase(
-    const vector<IntVar*>& vars,
+    const std::vector<IntVar*>& vars,
     const DefaultPhaseParameters& parameters) {
   return MakeDefaultPhase(vars.data(), vars.size(), parameters);
 }

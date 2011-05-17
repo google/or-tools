@@ -19,9 +19,10 @@
 #elif !defined(_MSC_VER)
 #include <endian.h>
 #endif
-#include <limits.h>
-#include <stdio.h>
+#include <climits>
+#include <cstdio>
 #include <limits>
+
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"

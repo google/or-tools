@@ -199,7 +199,7 @@ class string;
 }
 
 
-// STL vector<T> for common types
+// STL std::vector<T> for common types
 
 // Get const std::vector<std::string>& "in" typemap.
 %include "python/std_vector.i"
@@ -207,8 +207,8 @@ class string;
 %include "python/std_set.i"
 %include "python/std_list.i"
 
-// Helper function for turning a C++ vector<T> (or any other instance that
-// supports the vector<T>-like iterator interface) into a Python list of Ts.
+// Helper function for turning a C++ std::vector<T> (or any other instance that
+// supports the std::vector<T>-like iterator interface) into a Python list of Ts.
 // The converter function converts a C++ object of type const T or const T&
 // into the corresponding Python object.
 %{
@@ -252,10 +252,10 @@ static inline PyObject* PyString_FromCXXString(const std::string & x) {
 %}
 
 %define LIST_OUTPUT_TYPEMAP(type, py_converter)
-%typemap(in,numinputs=0) vector<type> * OUTPUT(vector<type> temp) {
+%typemap(in,numinputs=0) std::vector<type> * OUTPUT(std::vector<type> temp) {
   $1 = &temp;
 }
-%typemap(argout, fragment = "t_output_helper") vector<type> * OUTPUT {
+%typemap(argout, fragment = "t_output_helper") std::vector<type> * OUTPUT {
   $result = t_output_helper($result, list_output_helper($1, &py_converter));
 }
 %typemap(in,numinputs=0) set<type> * OUTPUT(set<type> temp) {
@@ -305,7 +305,7 @@ typedef oldtype newtype;
 %apply oldtype & INPUT { newtype & INPUT };
 %apply oldtype * INOUT { newtype * INOUT };
 %apply oldtype & INOUT { newtype & INOUT };
-%apply vector<oldtype> * OUTPUT { vector<newtype> * OUTPUT };
+%apply std::vector<oldtype> * OUTPUT { std::vector<newtype> * OUTPUT };
 %enddef
 
 COPY_TYPEMAPS(signed char, schar);

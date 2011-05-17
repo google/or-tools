@@ -17,11 +17,10 @@
 #include <string>
 
 #include "base/stringpiece.h"
-#include "base/util.h"
 
 namespace operations_research {
-string StringPrintf(const char* format, ...);
-void SStringPrintf(string* dst, const char* format, ...);
-void StringAppendF(string* dst, const char* format, ...);
+std::string StringPrintf(const char* const format, ...);
+void SStringPrintf(std::string* const dst, const char* const format, ...);
+void StringAppendF(std::string* const dst, const char* const format, ...);
 }  // namespace operations_research
 #endif  // OR_TOOLS_BASE_STRINGPRINTF_H_

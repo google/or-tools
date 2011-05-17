@@ -15,9 +15,8 @@
 
 #include "algorithms/hungarian.h"
 
-#include <stdio.h>
-
 #include <algorithm>
+#include <cstdio>
 #include <limits>
 
 namespace operations_research {
@@ -35,17 +34,17 @@ class HungarianOptimizer {
   // be square (i.e. we can have different numbers of agents and tasks), but it
   // must be regular (i.e. there must be the same number of entries in each row
   // of the matrix).
-  explicit HungarianOptimizer(const vector<vector<double> >& costs);
+  explicit HungarianOptimizer(const std::vector<std::vector<double> >& costs);
 
   // Find an assignment which maximizes the total cost.
   // Returns the assignment in the two vectors passed as argument.
   // agent[i] is assigned to task[i].
-  void Maximize(vector<int>* agent, vector<int>* task);
+  void Maximize(std::vector<int>* agent, std::vector<int>* task);
 
   // Find an assignment which minimizes the total cost.
   // Returns the assignment in the two vectors passed as argument.
   // agent[i] is assigned to task[i].
-  void Minimize(vector<int>* agent, vector<int>* task);
+  void Minimize(std::vector<int>* agent, std::vector<int>* task);
  private:
   typedef void (HungarianOptimizer::*Step)();
 
@@ -58,7 +57,7 @@ class HungarianOptimizer {
   // Convert the final cost matrix into a set of assignments of agents -> tasks.
   // Returns the assignment in the two vectors passed as argument, the same as
   // Minimize and Maximize
-  void FindAssignments(vector<int>* agent, vector<int>* task);
+  void FindAssignments(std::vector<int>* agent, std::vector<int>* task);
 
   // Is the cell (row, col) starred?
   bool IsStarred(int row, int col) const {
@@ -199,24 +198,24 @@ class HungarianOptimizer {
   int matrix_size_;
 
   // The expanded cost matrix.
-  vector<vector<double> > costs_;
+  std::vector<std::vector<double> > costs_;
 
   // The greatest cost in the initial cost matrix.
   double max_cost_;
 
   // Which rows and columns are currently covered.
-  vector<bool> rows_covered_;
-  vector<bool> cols_covered_;
+  std::vector<bool> rows_covered_;
+  std::vector<bool> cols_covered_;
 
   // The marks_ (star/prime/none) on each element of the cost matrix.
-  vector<vector<Mark> > marks_;
+  std::vector<std::vector<Mark> > marks_;
 
   // The number of stars in each column - used to speed up coverStarredZeroes.
-  vector<int> stars_in_col_;
+  std::vector<int> stars_in_col_;
 
   // Representation of a path_ through the matrix - used in step 5.
-  vector<int> preimage_;   // i.e. the agents
-  vector<int> image_;      // i.e. the tasks
+  std::vector<int> preimage_;   // i.e. the agents
+  std::vector<int> image_;      // i.e. the tasks
 
   // The locations of a zero found in step 4.
   int zero_col_, zero_row_;
@@ -229,7 +228,7 @@ class HungarianOptimizer {
   HungarianOptimizer::Step state_;
 };
 
-HungarianOptimizer::HungarianOptimizer(const vector<vector<double> >& costs)
+HungarianOptimizer::HungarianOptimizer(const std::vector<std::vector<double> >& costs)
     : matrix_size_(0),
       costs_(),
       max_cost_(0),
@@ -296,7 +295,7 @@ HungarianOptimizer::HungarianOptimizer(const vector<vector<double> >& costs)
 // Find an assignment which maximizes the total cost.
 // Return an array of pairs of integers.  Each pair (i, j) corresponds to
 // assigning agent i to task j.
-void HungarianOptimizer::Maximize(vector<int>* preimage, vector<int>* image) {
+void HungarianOptimizer::Maximize(std::vector<int>* preimage, std::vector<int>* image) {
   // Find a maximal assignment by subtracting each of the
   // original costs from max_cost_  and then minimizing.
   for (int row = 0; row < width_; ++row) {
@@ -311,7 +310,7 @@ void HungarianOptimizer::Maximize(vector<int>* preimage, vector<int>* image) {
 // Find an assignment which minimizes the total cost.
 // Return an array of pairs of integers.  Each pair (i, j) corresponds to
 // assigning agent i to task j.
-void HungarianOptimizer::Minimize(vector<int>* preimage, vector<int>* image) {
+void HungarianOptimizer::Minimize(std::vector<int>* preimage, std::vector<int>* image) {
   DoMunkres();
   FindAssignments(preimage, image);
 }
@@ -319,8 +318,8 @@ void HungarianOptimizer::Minimize(vector<int>* preimage, vector<int>* image) {
 // Convert the final cost matrix into a set of assignments of agents -> tasks.
 // Return an array of pairs of integers, the same as the return values of
 // Minimize() and Maximize()
-void HungarianOptimizer::FindAssignments(vector<int>* preimage,
-                                         vector<int>* image) {
+void HungarianOptimizer::FindAssignments(std::vector<int>* preimage,
+                                         std::vector<int>* image) {
   preimage->clear();
   image->clear();
   for (int row = 0; row < width_; ++row) {
@@ -333,7 +332,7 @@ void HungarianOptimizer::FindAssignments(vector<int>* preimage,
     }
   }
   // TODO(user)
-  // result_size = min(width_, height_);
+  // result_size = std::min(width_, height_);
   // CHECK image.size() == result_size
   // CHECK preimage.size() == result_size
 }
@@ -412,7 +411,7 @@ double HungarianOptimizer::FindSmallestUncovered() const {
         continue;
       }
 
-      minval = min(minval, costs_[row][col]);
+      minval = std::min(minval, costs_[row][col]);
     }
   }
 
@@ -476,7 +475,7 @@ void HungarianOptimizer::ReduceRows() {
   for (int row = 0; row < matrix_size_; ++row) {
     double min_cost = costs_[row][0];
     for (int col = 1; col < matrix_size_; ++col) {
-      min_cost = min(min_cost, costs_[row][col]);
+      min_cost = std::min(min_cost, costs_[row][col]);
     }
     for (int col = 0; col < matrix_size_; ++col) {
       costs_[row][col] -= min_cost;
@@ -668,11 +667,11 @@ void HungarianOptimizer::AugmentPath() {
 }
 
 
-void MinimizeLinearAssignment(const vector<vector<double> >& cost,
+void MinimizeLinearAssignment(const std::vector<std::vector<double> >& cost,
                               hash_map<int, int>* direct_assignment,
                               hash_map<int, int>* reverse_assignment) {
-  vector<int> agent;
-  vector<int> task;
+  std::vector<int> agent;
+  std::vector<int> task;
   HungarianOptimizer hungarian_optimizer(cost);
   hungarian_optimizer.Minimize(&agent, &task);
   for (int i = 0; i < agent.size(); ++i) {
@@ -681,11 +680,11 @@ void MinimizeLinearAssignment(const vector<vector<double> >& cost,
   }
 }
 
-void MaximizeLinearAssignment(const vector<vector<double> >& cost,
+void MaximizeLinearAssignment(const std::vector<std::vector<double> >& cost,
                               hash_map<int, int>* direct_assignment,
                               hash_map<int, int>* reverse_assignment) {
-  vector<int> agent;
-  vector<int> task;
+  std::vector<int> agent;
+  std::vector<int> task;
   HungarianOptimizer hungarian_optimizer(cost);
   hungarian_optimizer.Maximize(&agent, &task);
   for (int i = 0; i < agent.size(); ++i) {

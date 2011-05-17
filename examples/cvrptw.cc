@@ -97,7 +97,7 @@ class LocationContainer {
 
   ACMRandom randomizer_;
   const int64 speed_;
-  vector<Location> locations_;
+  std::vector<Location> locations_;
 };
 
 // Random demand.
@@ -258,7 +258,7 @@ int main(int argc, char **argv) {
   // Adding penalty costs to allow skipping orders.
   const int64 kPenalty = 100000;
   for (int order = 1; order < routing.nodes(); ++order) {
-    vector<int64> orders(1, order);
+    std::vector<int64> orders(1, order);
     routing.AddDisjunction(orders, kPenalty);
   }
 

@@ -174,6 +174,8 @@
 #include "graph/ebert_graph.h"
 #include "util/packed_array.h"
 
+using std::string;
+
 namespace operations_research {
 
 class LinearSumAssignment {
@@ -283,7 +285,7 @@ class LinearSumAssignment {
     NodeIndex Index() const { return node_iterator_.Index(); }
 
     bool Ok() const {
-      return node_iterator_.Ok() && (node_iterator_.Index() <= num_left_nodes_);
+      return node_iterator_.Ok() && (node_iterator_.Index() < num_left_nodes_);
     }
 
     void Next() { node_iterator_.Next(); }
@@ -359,7 +361,7 @@ class LinearSumAssignment {
     }
 
    private:
-    vector<NodeIndex> v_;
+    std::vector<NodeIndex> v_;
   };
 
   class ActiveNodeQueue : public ActiveNodeContainerInterface {
@@ -392,7 +394,7 @@ class LinearSumAssignment {
   // reduced cost of the next-best (necessarily residual) arc out of
   // the node. This information helps us efficiently relabel
   // right-side nodes during DoublePush operations.
-  typedef pair<ArcIndex, CostValue> ImplicitPriceSummary;
+  typedef std::pair<ArcIndex, CostValue> ImplicitPriceSummary;
 
   // Returns true if and only if the current pseudoflow is
   // epsilon-optimal. To be used in a DCHECK.
@@ -569,11 +571,11 @@ class LinearSumAssignment {
     const double denominator = static_cast<double>(2 * extra_divisor);
     const double quotient = numerator / denominator;
     const double limit =
-        static_cast<double>(::std::numeric_limits<CostValue>::max());
+        static_cast<double>(std::numeric_limits<CostValue>::max());
     if (quotient > limit) {
       // Our integer computations could overflow.
       if (in_range != NULL) *in_range = false;
-      return ::std::numeric_limits<CostValue>::max();
+      return std::numeric_limits<CostValue>::max();
     } else {
       if (in_range != NULL) *in_range = true;
       return static_cast<CostValue>(quotient);

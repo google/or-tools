@@ -16,6 +16,9 @@
 //  unique solutions: http://www.research.att.com/~njas/sequences/A000170
 //  distinct solutions: http://www.research.att.com/~njas/sequences/A002562
 
+#include <cstdio>
+#include <map>
+
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -50,7 +53,7 @@ namespace operations_research {
 
 class NQueenSymmetry : public SymmetryBreaker {
  public:
-  NQueenSymmetry(Solver* const s, const vector<IntVar*>& vars)
+  NQueenSymmetry(Solver* const s, const std::vector<IntVar*>& vars)
       : solver_(s), vars_(vars), size_(vars.size()) {
     for (int i = 0; i < size_; ++i) {
       indices_[vars[i]] = i;
@@ -69,15 +72,15 @@ class NQueenSymmetry : public SymmetryBreaker {
   Solver* const solver() const { return solver_; }
  private:
   Solver* const solver_;
-  const vector<IntVar*> vars_;
-  map<IntVar*, int> indices_;
+  const std::vector<IntVar*> vars_;
+  std::map<IntVar*, int> indices_;
   const int size_;
 };
 
 // Symmetry vertical axis.
 class SX : public NQueenSymmetry {
  public:
-  SX(Solver* const s, const vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
+  SX(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
   virtual ~SX() {}
 
   virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
@@ -90,7 +93,7 @@ class SX : public NQueenSymmetry {
 // Symmetry horizontal axis.
 class SY : public NQueenSymmetry {
  public:
-  SY(Solver* const s, const vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
+  SY(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
   virtual ~SY() {}
 
   virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
@@ -101,7 +104,7 @@ class SY : public NQueenSymmetry {
 // Symmetry first diagonal axis.
 class SD1 : public NQueenSymmetry {
  public:
-  SD1(Solver* const s, const vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
+  SD1(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
   virtual ~SD1() {}
 
   virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
@@ -114,7 +117,7 @@ class SD1 : public NQueenSymmetry {
 // Symmetry second diagonal axis.
 class SD2 : public NQueenSymmetry {
  public:
-  SD2(Solver* const s, const vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
+  SD2(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
   virtual ~SD2() {}
 
   virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
@@ -127,7 +130,7 @@ class SD2 : public NQueenSymmetry {
 // Rotate 1/4 turn.
 class R90 : public NQueenSymmetry {
  public:
-  R90(Solver* const s, const vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
+  R90(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
   virtual ~R90() {}
 
   virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
@@ -140,7 +143,7 @@ class R90 : public NQueenSymmetry {
 // Rotate 1/2 turn.
 class R180 : public NQueenSymmetry {
  public:
-  R180(Solver* const s, const vector<IntVar*>& vars)
+  R180(Solver* const s, const std::vector<IntVar*>& vars)
       : NQueenSymmetry(s, vars) {}
   virtual ~R180() {}
 
@@ -154,7 +157,7 @@ class R180 : public NQueenSymmetry {
 // Rotate 3/4 turn.
 class R270 : public NQueenSymmetry {
  public:
-  R270(Solver* const s, const vector<IntVar*>& vars)
+  R270(Solver* const s, const std::vector<IntVar*>& vars)
       : NQueenSymmetry(s, vars) {}
   virtual ~R270() {}
 
@@ -170,13 +173,13 @@ void NQueens(int size) {
   Solver s("nqueens");
 
   // model
-  vector<IntVar*> queens;
+  std::vector<IntVar*> queens;
   for (int i = 0; i < size; ++i) {
     queens.push_back(s.MakeIntVar(0, size - 1, StringPrintf("queen%04d", i)));
   }
   s.AddConstraint(s.MakeAllDifferent(queens, FLAGS_use_range));
 
-  vector<IntVar*> vars(size);
+  std::vector<IntVar*> vars(size);
   for (int i = 0; i < size; ++i) {
     vars[i] = s.MakeSum(queens[i], i)->Var();
   }
@@ -189,14 +192,14 @@ void NQueens(int size) {
   SolutionCollector* const solution_counter = s.MakeAllSolutionCollector(NULL);
   SolutionCollector* const collector = s.MakeFirstSolutionCollector();
   collector->Add(queens);
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(solution_counter);
   monitors.push_back(collector);
   DecisionBuilder* const db = s.MakePhase(queens,
                                           Solver::CHOOSE_FIRST_UNBOUND,
                                           Solver::ASSIGN_MIN_VALUE);
   if (FLAGS_use_symmetry) {
-    vector<SymmetryBreaker*> breakers;
+    std::vector<SymmetryBreaker*> breakers;
     NQueenSymmetry* sx = s.RevAlloc(new SX(&s, queens));
     breakers.push_back(sx);
     NQueenSymmetry* sy = s.RevAlloc(new SY(&s, queens));

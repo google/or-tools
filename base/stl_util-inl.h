@@ -15,7 +15,6 @@
 #define OR_TOOLS_BASE_STL_UTIL_INL_H_
 
 #include <string>
-#include "base/util.h"
 
 namespace operations_research {
 
@@ -55,13 +54,7 @@ void STLDeleteContainerPairSecondPointers(ForwardIterator begin,
   }
 }
 
-// Inside Google, this function implements a horrible, disgusting hack in which
-// we reach into the string's private implementation and resize it without
-// initializing the new bytes.  In some cases doing this can significantly
-// improve performance.  However, since it's totally non-portable it has no
-// place in open source code.  Feel free to fill this function in with your
-// own disgusting hack if you want the perf boost.
-inline void STLStringResizeUninitialized(string* s, size_t new_size) {
+inline void STLStringResizeUninitialized(std::string* s, size_t new_size) {
   s->resize(new_size);
 }
 
@@ -77,7 +70,7 @@ inline void STLStringResizeUninitialized(string* s, size_t new_size) {
 // (http://www.open-std.org/JTC1/SC22/WG21/docs/lwg-active.html#530)
 // proposes this as the method. According to Matt Austern, this should
 // already work on all current implementations.
-inline char* string_as_array(string* str) {
+inline char* string_as_array(std::string* str) {
   // DO NOT USE const_cast<char*>(str->data())! See the unittest for why.
   return str->empty() ? NULL : &*str->begin();
 }

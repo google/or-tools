@@ -62,12 +62,12 @@ void LinearSumAssignment::SetArcCost(ArcIndex arc,
   DCHECK(graph_.CheckArcValidity(arc));
   NodeIndex tail = Tail(arc);
   NodeIndex head = Head(arc);
-  DCHECK_GE(num_left_nodes_, tail);
-  DCHECK_LT(num_left_nodes_, head);
+  DCHECK_GT(num_left_nodes_, tail);
+  DCHECK_LE(num_left_nodes_, head);
   cost *= cost_scaling_factor_;
-  const CostValue cost_magnitude = ::std::abs(cost);
-  largest_scaled_cost_magnitude_ = ::std::max(largest_scaled_cost_magnitude_,
-                                              cost_magnitude);
+  const CostValue cost_magnitude = std::abs(cost);
+  largest_scaled_cost_magnitude_ = std::max(largest_scaled_cost_magnitude_,
+                                            cost_magnitude);
   scaled_arc_cost_.Set(arc, cost);
 }
 
@@ -170,7 +170,7 @@ bool LinearSumAssignment::UpdateEpsilon() {
   // Since neither of those issues is a problem today, we simply use
   // truncating integer arithmetic. But future changes might
   // necessitate rounding epsilon upward in the division.
-  epsilon_ = ::std::max(epsilon_ / alpha_, kMinEpsilon);
+  epsilon_ = std::max(epsilon_ / alpha_, kMinEpsilon);
   VLOG(3) << "Updated: epsilon_ == " << epsilon_;
   price_reduction_bound_ = PriceChangeBound(1, NULL);
   DCHECK_GT(price_reduction_bound_, 0);
@@ -329,7 +329,7 @@ LinearSumAssignment::BestArcAndGap(NodeIndex left_node) const {
   const CostValue gap =
       second_min_partial_reduced_cost - min_partial_reduced_cost;
   DCHECK_GE(gap, 0);
-  return make_pair(best_arc, gap);
+  return std::make_pair(best_arc, gap);
 }
 
 // Only for debugging.
@@ -426,7 +426,7 @@ bool LinearSumAssignment::FinalizeSetup() {
   StarGraph::NodeIterator node_it(graph_);
   for (; node_it.Ok(); node_it.Next()) {
     const NodeIndex node = node_it.Index();
-    if (node > num_left_nodes_) {
+    if (node >= num_left_nodes_) {
       break;
     }
     matched_.Set(node, StarGraph::kNilArc);

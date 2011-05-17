@@ -19,6 +19,7 @@
 //     does not exceed a capacity.
 
 #include <cmath>
+#include <utility>
 
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -26,6 +27,7 @@
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
+#include "base/join.h"
 #include "base/stl_util-inl.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
@@ -60,8 +62,8 @@ Sequence::Sequence(Solver* const s,
                    const IntervalVar* const * intervals,
                    int size,
                    const string& name)
-    : Constraint(s), intervals_(new IntervalVar*[size]),
-      size_(size),  ranks_(new int[size]), current_rank_(0) {
+  : Constraint(s), intervals_(new IntervalVar*[size]),
+    size_(size),  ranks_(new int[size]), current_rank_(0) {
   memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
   states_.resize(size);
   for (int i = 0; i < size_; ++i) {
@@ -344,7 +346,7 @@ void Sequence::RankNotFirst(int index) {
   }
 }
 
-Sequence* Solver::MakeSequence(const vector<IntervalVar*>& intervals,
+Sequence* Solver::MakeSequence(const std::vector<IntervalVar*>& intervals,
                                const string& name) {
   return RevAlloc(new Sequence(this,
                                intervals.data(), intervals.size(), name));
@@ -403,12 +405,12 @@ class DisjunctiveTask : public BaseObject {
 class CumulativeTask : public BaseObject {
  public:
   CumulativeTask(IntervalVar* const interval, int64 demand)
-  : interval_(interval),
-    demand_(demand) {}
+    : interval_(interval),
+      demand_(demand) {}
   // Copy constructor. Cannot be explicit, because we want to pass instances of
   // CumulativeTask by copy.
   CumulativeTask(const CumulativeTask& task)
-  : interval_(task.interval_), demand_(task.demand_) {}
+    : interval_(task.interval_), demand_(task.demand_) {}
 
   const IntervalVar* const interval() const { return interval_; }
   IntervalVar* const mutable_interval() { return interval_; }
@@ -484,7 +486,7 @@ bool EndMinLessThan(const IndexedTask<Task>* const w1,
 }
 
 template<typename T, typename Compare>
-void Sort(vector<T>* vector, Compare compare) {
+void Sort(std::vector<T>* vector, Compare compare) {
   std::sort(vector->begin(), vector->end(), compare);
 }
 
@@ -503,16 +505,16 @@ class ThetaNode {
   ThetaNode() : total_processing_(0), total_ect_(kint64min) {}
   // Single interval element
   explicit ThetaNode(const IntervalVar* const interval)
-  : total_processing_(interval->DurationMin()),
-    total_ect_(interval->EndMin()) {}
+    : total_processing_(interval->DurationMin()),
+        total_ect_(interval->EndMin()) {}
   void Set(const ThetaNode& node) {
     total_ect_ = node.total_ect_;
     total_processing_ = node.total_processing_;
   }
   void Compute(const ThetaNode& left, const ThetaNode& right) {
     total_processing_ = left.total_processing_ + right.total_processing_;
-    total_ect_ = max(left.total_ect_ + right.total_processing_,
-                     right.total_ect_);
+    total_ect_ = std::max(left.total_ect_ + right.total_processing_,
+                          right.total_ect_);
   }
   int64 total_ect() const { return total_ect_; }
   bool IsIdentity() const {
@@ -541,7 +543,7 @@ class ThetaNode {
 class ThetaTree : public MonoidOperationTree<ThetaNode> {
  public:
   explicit ThetaTree(int size)
-  : MonoidOperationTree<ThetaNode>(size) {}
+    : MonoidOperationTree<ThetaNode>(size) {}
   virtual ~ThetaTree() {}
   int64 ECT() const { return result().total_ect(); }
   void Insert(const DisjunctiveIndexedTask* const indexed_task) {
@@ -571,52 +573,52 @@ class LambdaThetaNode {
 
   // Identity constructor
   LambdaThetaNode()
-  : energy_(0LL),
-    energetic_end_min_(kint64min),
-    energy_opt_(0LL),
-    argmax_energy_opt_(kNone),
-    energetic_end_min_opt_(kint64min),
-    argmax_energetic_end_min_opt_(kNone) {}
+    : energy_(0LL),
+      energetic_end_min_(kint64min),
+      energy_opt_(0LL),
+      argmax_energy_opt_(kNone),
+      energetic_end_min_opt_(kint64min),
+      argmax_energetic_end_min_opt_(kNone) {}
 
   // Constructor for a single cumulative task in the Theta set
   LambdaThetaNode(int64 capacity, const CumulativeTask& task)
-  : energy_(task.EnergyMin()),
-    energetic_end_min_(capacity * task.interval()->StartMin() + energy_),
-    energy_opt_(energy_),
-    argmax_energy_opt_(kNone),
-    energetic_end_min_opt_(energetic_end_min_),
-    argmax_energetic_end_min_opt_(kNone) {}
+    : energy_(task.EnergyMin()),
+      energetic_end_min_(capacity * task.interval()->StartMin() + energy_),
+      energy_opt_(energy_),
+      argmax_energy_opt_(kNone),
+      energetic_end_min_opt_(energetic_end_min_),
+      argmax_energetic_end_min_opt_(kNone) {}
 
   // Constructor for a single cumulative task in the Lambda set
   LambdaThetaNode(int64 capacity, const CumulativeTask& task, int index)
-  : energy_(0LL),
-    energetic_end_min_(kint64min),
-    energy_opt_(task.EnergyMin()),
-    argmax_energy_opt_(index),
-    energetic_end_min_opt_(capacity * task.interval()->StartMin() +
-                           energy_opt_),
-    argmax_energetic_end_min_opt_(index) {
+    : energy_(0LL),
+      energetic_end_min_(kint64min),
+      energy_opt_(task.EnergyMin()),
+      argmax_energy_opt_(index),
+      energetic_end_min_opt_(capacity * task.interval()->StartMin() +
+                             energy_opt_),
+        argmax_energetic_end_min_opt_(index) {
     DCHECK_GE(index, 0);
   }
 
   // Constructor for a single disjunctive task in the Theta set
   explicit LambdaThetaNode(const IntervalVar* const interval)
-  : energy_(interval->DurationMin()),
-    energetic_end_min_(interval->EndMin()),
-    energy_opt_(interval->DurationMin()),
-    argmax_energy_opt_(kNone),
-    energetic_end_min_opt_(interval->EndMin()),
-    argmax_energetic_end_min_opt_(kNone) {}
+    : energy_(interval->DurationMin()),
+      energetic_end_min_(interval->EndMin()),
+      energy_opt_(interval->DurationMin()),
+      argmax_energy_opt_(kNone),
+      energetic_end_min_opt_(interval->EndMin()),
+      argmax_energetic_end_min_opt_(kNone) {}
 
   // Constructor for a single interval in the Lambda set
   // 'index' is the index of the given interval in the est vector
-  explicit LambdaThetaNode(const IntervalVar* const interval, int index)
-  : energy_(0LL),
-    energetic_end_min_(kint64min),
-    energy_opt_(interval->DurationMin()),
-    argmax_energy_opt_(index),
-    energetic_end_min_opt_(interval->EndMin()),
-    argmax_energetic_end_min_opt_(index) {
+  LambdaThetaNode(const IntervalVar* const interval, int index)
+    : energy_(0LL),
+      energetic_end_min_(kint64min),
+      energy_opt_(interval->DurationMin()),
+      argmax_energy_opt_(index),
+      energetic_end_min_opt_(interval->EndMin()),
+      argmax_energetic_end_min_opt_(index) {
     DCHECK_GE(index, 0);
   }
 
@@ -647,8 +649,8 @@ class LambdaThetaNode {
   // associated with such sets.
   void Compute(const LambdaThetaNode& left, const LambdaThetaNode& right) {
     energy_ = left.energy_ + right.energy_;
-    energetic_end_min_ = max(right.energetic_end_min_,
-                             left.energetic_end_min_ + right.energy_);
+    energetic_end_min_ = std::max(right.energetic_end_min_,
+                                  left.energetic_end_min_ + right.energy_);
     const int64 energy_left_opt = left.energy_opt_ + right.energy_;
     const int64 energy_right_opt = left.energy_ + right.energy_opt_;
     if (energy_left_opt > energy_right_opt) {
@@ -710,7 +712,7 @@ const int LambdaThetaNode::kNone = -1;
 class DisjunctiveLambdaThetaTree : public MonoidOperationTree<LambdaThetaNode> {
  public:
   explicit DisjunctiveLambdaThetaTree(int size)
-  : MonoidOperationTree<LambdaThetaNode>(size) {}
+    : MonoidOperationTree<LambdaThetaNode>(size) {}
   virtual ~DisjunctiveLambdaThetaTree() {}
   void Insert(const DisjunctiveIndexedTask* indexed_task) {
     LambdaThetaNode lambdaThetaNode(indexed_task->interval());
@@ -736,8 +738,8 @@ class DisjunctiveLambdaThetaTree : public MonoidOperationTree<LambdaThetaNode> {
 class CumulativeLambdaThetaTree : public MonoidOperationTree<LambdaThetaNode> {
  public:
   CumulativeLambdaThetaTree(int size, int64 capacity)
-  : MonoidOperationTree<LambdaThetaNode>(size),
-    capacity_(capacity) {}
+    : MonoidOperationTree<LambdaThetaNode>(size),
+        capacity_(capacity) {}
   virtual ~CumulativeLambdaThetaTree() {}
   void Insert(const CumulativeIndexedTask* indexed_task) {
     LambdaThetaNode lambdaThetaNode(capacity_, indexed_task->task());
@@ -787,10 +789,10 @@ class NotLast {
  private:
   const int size_;
   ThetaTree theta_tree_;
-  vector<DisjunctiveIndexedTask*> by_start_min_;
-  vector<DisjunctiveIndexedTask*> by_end_max_;
-  vector<DisjunctiveIndexedTask*> by_start_max_;
-  vector<int64> new_lct_;
+  std::vector<DisjunctiveIndexedTask*> by_start_min_;
+  std::vector<DisjunctiveIndexedTask*> by_end_max_;
+  std::vector<DisjunctiveIndexedTask*> by_start_max_;
+  std::vector<int64> new_lct_;
   DISALLOW_COPY_AND_ASSIGN(NotLast);
 };
 
@@ -798,12 +800,12 @@ NotLast::NotLast(Solver* const solver,
                  IntervalVar* const * intervals,
                  int size,
                  bool mirror)
-: size_(size),
-  theta_tree_(size),
-  by_start_min_(size),
-  by_end_max_(size),
-  by_start_max_(size),
-  new_lct_(size, -1LL) {
+  : size_(size),
+    theta_tree_(size),
+    by_start_min_(size),
+    by_end_max_(size),
+    by_start_max_(size),
+    new_lct_(size, -1LL) {
   CHECK_GE(size_, 0);
   // Populate
   for (int i = 0; i < size; ++i) {
@@ -911,14 +913,14 @@ class EdgeFinderAndDetectablePrecedences {
   // It does not matter which one.
 
   ThetaTree theta_tree_;
-  vector<DisjunctiveIndexedTask*> by_end_min_;
-  vector<DisjunctiveIndexedTask*> by_start_min_;
-  vector<DisjunctiveIndexedTask*> by_end_max_;
-  vector<DisjunctiveIndexedTask*> by_start_max_;
+  std::vector<DisjunctiveIndexedTask*> by_end_min_;
+  std::vector<DisjunctiveIndexedTask*> by_start_min_;
+  std::vector<DisjunctiveIndexedTask*> by_end_max_;
+  std::vector<DisjunctiveIndexedTask*> by_start_max_;
   // new_est_[i] is the new start min for interval est_[i]->interval().
-  vector<int64> new_est_;
+  std::vector<int64> new_est_;
   // new_lct_[i] is the new end max for interval est_[i]->interval().
-  vector<int64> new_lct_;
+  std::vector<int64> new_lct_;
   DisjunctiveLambdaThetaTree lt_tree_;
 };
 
@@ -927,8 +929,7 @@ EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
     IntervalVar* const * intervals,
     int size,
     bool mirror)
-  : solver_(solver),
-    size_(size), theta_tree_(size), lt_tree_(size) {
+  : solver_(solver), size_(size), theta_tree_(size), lt_tree_(size) {
   // Populate of the array of intervals
   for (int i = 0; i < size; ++i) {
     IntervalVar* underlying = NULL;
@@ -1091,11 +1092,9 @@ class DecomposedSequenceConstraint : public Constraint {
           // straight and the mirrored version.
           straight_.OverloadChecking();
         } while (straight_.DetectablePrecedences() ||
-            mirror_.DetectablePrecedences());
-      } while (straight_not_last_.Propagate() ||
-          mirror_not_last_.Propagate());
-    } while (straight_.EdgeFinder() ||
-        mirror_.EdgeFinder());
+                 mirror_.DetectablePrecedences());
+      } while (straight_not_last_.Propagate() || mirror_not_last_.Propagate());
+    } while (straight_.EdgeFinder() || mirror_.EdgeFinder());
   }
 
  private:
@@ -1123,7 +1122,7 @@ Constraint* MakeDecomposedSequenceConstraint(Solver* const s,
                                              IntervalVar* const * intervals,
                                              int size) {
   // Finds all intervals that may be performed
-  vector<IntervalVar*> may_be_performed;
+  std::vector<IntervalVar*> may_be_performed;
   may_be_performed.reserve(size);
   for (int i = 0; i < size; ++i) {
     if (intervals[i]->MayBePerformed()) {
@@ -1155,18 +1154,18 @@ class DualCapacityThetaNode {
 
   // Identity constructor
   DualCapacityThetaNode()
-  : energy_(0LL),
-    energetic_end_min_(kint64min),
-    residual_energetic_end_min_(kint64min) {}
+    : energy_(0LL),
+      energetic_end_min_(kint64min),
+      residual_energetic_end_min_(kint64min) {}
 
   // Constructor for a single cumulative task in the Theta set
   DualCapacityThetaNode(int64 capacity, int64 residual_capacity,
                         const CumulativeTask& task)
-  : energy_(task.EnergyMin()),
-    energetic_end_min_(
-        capacity * task.interval()->StartMin() + energy_),
-    residual_energetic_end_min_(
-        residual_capacity * task.interval()->StartMin() + energy_) {}
+    : energy_(task.EnergyMin()),
+      energetic_end_min_(
+          capacity * task.interval()->StartMin() + energy_),
+      residual_energetic_end_min_(
+          residual_capacity * task.interval()->StartMin() + energy_) {}
 
   // Getters
   int64 energy() const { return energy_; }
@@ -1192,11 +1191,11 @@ class DualCapacityThetaNode {
                const DualCapacityThetaNode& right) {
     energy_ = left.energy_ + right.energy_;
     energetic_end_min_ =
-        max(left.energetic_end_min_ + right.energy_,
-            right.energetic_end_min_);
+        std::max(left.energetic_end_min_ + right.energy_,
+                 right.energetic_end_min_);
     residual_energetic_end_min_ =
-        max(left.residual_energetic_end_min_ + right.energy_,
-            right.residual_energetic_end_min_);
+        std::max(left.residual_energetic_end_min_ + right.energy_,
+                 right.residual_energetic_end_min_);
   }
  private:
   // Amount of resource consumed by the Theta set, in units of demand X time.
@@ -1214,14 +1213,14 @@ class DualCapacityThetaNode {
 const int DualCapacityThetaNode::kNone = -1;
 
 // A tree for dual capacity theta nodes
-class DualCapacityThetaTree : public
-  MonoidOperationTree<DualCapacityThetaNode> {
+class DualCapacityThetaTree
+  : public MonoidOperationTree<DualCapacityThetaNode> {
  public:
   static const int64 kNotInitialized;
   DualCapacityThetaTree(int size, int64 capacity)
-  : MonoidOperationTree<DualCapacityThetaNode>(size),
-    capacity_(capacity),
-    residual_capacity_(-1) {}
+    : MonoidOperationTree<DualCapacityThetaNode>(size),
+      capacity_(capacity),
+      residual_capacity_(-1) {}
   virtual ~DualCapacityThetaTree() {}
   void Insert(const CumulativeIndexedTask* indexed_task) {
     DualCapacityThetaNode thetaNode(
@@ -1257,9 +1256,9 @@ class EnvJCComputeDiver {
  public:
   static const int64 kNotAvailable;
   explicit EnvJCComputeDiver(int energy_threshold)
-  : energy_threshold_(energy_threshold),
-    energy_alpha_(kNotAvailable),
-    energetic_end_min_alpha_(kNotAvailable) {}
+    : energy_threshold_(energy_threshold),
+      energy_alpha_(kNotAvailable),
+      energetic_end_min_alpha_(kNotAvailable) {}
   void OnArgumentReached(int index, const DualCapacityThetaNode& argument) {
     energy_alpha_ = argument.energy();
     energetic_end_min_alpha_ = argument.energetic_end_min();
@@ -1290,8 +1289,8 @@ class EnvJCComputeDiver {
     // The left subtree is included in the alpha set.
     // The right subtree intersects the alpha set.
     energetic_end_min_alpha_ =
-        max(energetic_end_min_alpha_,
-            left_child.energetic_end_min() + energy_alpha_);
+        std::max(energetic_end_min_alpha_,
+                 left_child.energetic_end_min() + energy_alpha_);
     energy_alpha_ += left_child.energy();
   }
   int64 GetEnvJC(const DualCapacityThetaNode& root) const {
@@ -1326,7 +1325,7 @@ const int64 EnvJCComputeDiver::kNotAvailable = -1LL;
 class StartMinUpdater {
  public:
   StartMinUpdater(IntervalVar* interval, int64 new_start_min)
-      : interval_(interval), new_start_min_(new_start_min) {}
+    : interval_(interval), new_start_min_(new_start_min) {}
   void Run() {
     interval_->SetStartMin(new_start_min_);
   }
@@ -1345,9 +1344,9 @@ class StartMinUpdater {
 class UpdatesForADemand {
  public:
   explicit UpdatesForADemand(int size)
-  : updates_(size, 0), up_to_date_(false) {
+    : updates_(size, 0), up_to_date_(false) {
   }
-  const vector<int64>& updates() { return updates_; }
+  const std::vector<int64>& updates() { return updates_; }
   bool up_to_date() const { return up_to_date_; }
   void Reset() { up_to_date_ = false; }
   void SetUpdate(int index, int64 update) {
@@ -1356,53 +1355,53 @@ class UpdatesForADemand {
   }
   void SetUpToDate() { up_to_date_ = true; }
  private:
-  vector<int64> updates_;
+  std::vector<int64> updates_;
   bool up_to_date_;
   DISALLOW_COPY_AND_ASSIGN(UpdatesForADemand);
 };
 
 namespace {
-  // Returns min(a * b, kint64max). a is positive.
-  int64 SafeProduct(int64 a, int64 b) {
-    DCHECK_GE(a, 0);
+// Returns min(a * b, kint64max). a is positive.
+int64 SafeProduct(int64 a, int64 b) {
+  DCHECK_GE(a, 0);
 
-    const bool is_positive = b >= 0;
-    b = max(b, -b);  // abs(b) for int64.
-    // Note max(kint64min, -kint64min) = kint64min, so when b == kint64min,
-    // the following DCHECK fails.
-    DCHECK_GE(b, 0);
-    const int kint64SurelyOverflow = 63;
-    const bool surely_overflow = MostSignificantBitPosition64(a)
-        + MostSignificantBitPosition64(b)
-        > kint64SurelyOverflow;
+  const bool is_positive = b >= 0;
+  b = std::max(b, -b);  // abs(b) for int64.
+  // Note max(kint64min, -kint64min) = kint64min, so when b == kint64min,
+  // the following DCHECK fails.
+  DCHECK_GE(b, 0);
+  const int kint64SurelyOverflow = 63;
+  const bool surely_overflow = MostSignificantBitPosition64(a)
+      + MostSignificantBitPosition64(b)
+      > kint64SurelyOverflow;
 
-    // When the sum of MostSignificantBitPosition64 for a and b is smaller
-    // than 61 no overflow can appear and the product result is positive (as a
-    // and b are positive). However when the sum is between 61 and 63 then it
-    // is not possible to say in advance if an overflow will occur. Nevertheless
-    // the product sign is a valid test for overflow: if an overflow occurs,
-    // then the product is surely negative, and if the product is negative
-    // then an overflow occurred.
-    const int64 product = a * b;
-    return (!surely_overflow && product >= 0)
-        ? ((is_positive) ? product : -product)
-        : ((is_positive) ? kint64max : -kint64max);
-  }
+  // When the sum of MostSignificantBitPosition64 for a and b is smaller
+  // than 61 no overflow can appear and the product result is positive (as a
+  // and b are positive). However when the sum is between 61 and 63 then it
+  // is not possible to say in advance if an overflow will occur. Nevertheless
+  // the product sign is a valid test for overflow: if an overflow occurs,
+  // then the product is surely negative, and if the product is negative
+  // then an overflow occurred.
+  const int64 product = a * b;
+  return (!surely_overflow && product >= 0)
+      ? ((is_positive) ? product : -product)
+      : ((is_positive) ? kint64max : -kint64max);
+}
 }  // anonymous namespace
 
 // One-sided cumulative edge finder.
 class EdgeFinder : public Constraint {
  public:
   EdgeFinder(Solver* const solver,
-             const vector<CumulativeTask*>& tasks,
+             const std::vector<CumulativeTask*>& tasks,
              int64 capacity)
-  : Constraint(solver),
-    capacity_(capacity),
-    size_(tasks.size()),
-    by_start_min_(size_),
-    by_end_max_(size_),
-    by_end_min_(size_),
-    lt_tree_(size_, capacity_) {
+    : Constraint(solver),
+      capacity_(capacity),
+      size_(tasks.size()),
+      by_start_min_(size_),
+      by_end_max_(size_),
+      by_end_min_(size_),
+      lt_tree_(size_, capacity_) {
     // Populate
     for (int i = 0; i < size_; ++i) {
       CumulativeIndexedTask* const indexed_task =
@@ -1610,19 +1609,19 @@ class EdgeFinder : public Constraint {
   const int size_;
 
   // Cumulative tasks, ordered by non-decreasing start min.
-  vector<CumulativeIndexedTask*> by_start_min_;
+  std::vector<CumulativeIndexedTask*> by_start_min_;
 
   // Cumulative tasks, ordered by non-decreasing end max.
-  vector<CumulativeIndexedTask*> by_end_max_;
+  std::vector<CumulativeIndexedTask*> by_end_max_;
 
   // Cumulative tasks, ordered by non-decreasing end min.
-  vector<CumulativeIndexedTask*> by_end_min_;
+  std::vector<CumulativeIndexedTask*> by_end_min_;
 
   // Cumulative theta-lamba tree.
   CumulativeLambdaThetaTree lt_tree_;
 
   // Stack of updates to the new start min to do.
-  vector<StartMinUpdater> new_start_min_;
+  std::vector<StartMinUpdater> new_start_min_;
 
   typedef hash_map<int64, UpdatesForADemand*> UpdateMap;
 
@@ -1680,11 +1679,11 @@ bool TimeLessThan(const ProfileDelta& delta1, const ProfileDelta& delta2) {
 class CumulativeTimeTable : public Constraint {
  public:
   CumulativeTimeTable(Solver* const solver,
-            const vector<CumulativeTask*>& tasks,
-            int64 capacity)
-  : Constraint(solver),
-    by_start_min_(tasks),
-    capacity_(capacity) {
+                      const std::vector<CumulativeTask*>& tasks,
+                      int64 capacity)
+    : Constraint(solver),
+      by_start_min_(tasks),
+      capacity_(capacity) {
     // There may be up to 2 delta's per interval (one on each side),
     // plus two sentinels
     const int profile_max_size = 2 * NumTasks() + 2;
@@ -1756,7 +1755,7 @@ class CumulativeTimeTable : public Constraint {
     for (int task_index = 0 ; task_index < NumTasks(); ++task_index) {
       CumulativeTask* const task = by_start_min_[task_index];
       while (task->interval()->StartMin() >
-        profile_unique_time_[profile_index].time) {
+             profile_unique_time_[profile_index].time) {
         DCHECK(profile_index < profile_unique_time_.size());
         ++profile_index;
         usage += profile_unique_time_[profile_index].delta;
@@ -1809,7 +1808,7 @@ class CumulativeTimeTable : public Constraint {
       delta_end.delta = -demand;
     }
     while (profile_unique_time_[profile_index].time <
-        duration + new_start_min) {
+           duration + new_start_min) {
       const ProfileDelta& profile_delta = profile_unique_time_[profile_index];
       DCHECK(profile_index < profile_unique_time_.size());
       // Compensate for current task
@@ -1831,11 +1830,11 @@ class CumulativeTimeTable : public Constraint {
     task->mutable_interval()->SetStartMin(new_start_min);
   }
 
-  typedef vector<ProfileDelta> Profile;
+  typedef std::vector<ProfileDelta> Profile;
 
   Profile profile_unique_time_;
   Profile profile_non_unique_time_;
-  vector<CumulativeTask*> by_start_min_;
+  std::vector<CumulativeTask*> by_start_min_;
   const int64 capacity_;
 
   DISALLOW_COPY_AND_ASSIGN(CumulativeTimeTable);
@@ -1849,10 +1848,10 @@ class CumulativeConstraint : public Constraint {
                        int size,
                        int64 capacity,
                        const string& name)
-  : Constraint(s),
-    capacity_(capacity),
-    tasks_(new CumulativeTask*[size]),
-    size_(size) {
+    : Constraint(s),
+      capacity_(capacity),
+      tasks_(new CumulativeTask*[size]),
+      size_(size) {
     for (int i = 0; i < size; ++i) {
       tasks_[i] = MakeTask(solver(), intervals[i], demands[i]);
     }
@@ -1907,7 +1906,7 @@ class CumulativeConstraint : public Constraint {
   void PostHighDemandSequenceConstraint() {
     Constraint* constraint = NULL;
     {  // Need a block to avoid memory leaks in case the AddConstraint fails
-      vector<IntervalVar*> high_demand_intervals;
+      std::vector<IntervalVar*> high_demand_intervals;
       high_demand_intervals.reserve(size_);
       for (int i = 0; i < size_; ++i) {
         const int64 demand = tasks_[i]->demand();
@@ -1947,14 +1946,14 @@ class CumulativeConstraint : public Constraint {
   // Populate the given vector with useful tasks, meaning the ones on which
   // some propagation can be done
   void PopulateVectorUsefulTasks(bool mirror,
-                                 vector<CumulativeTask*>* useful_tasks) {
+                                 std::vector<CumulativeTask*>* useful_tasks) {
     DCHECK(useful_tasks->empty());
     for (int i = 0; i < size_; ++i) {
       CumulativeTask* const original_task = tasks_[i];
       IntervalVar* interval = original_task->mutable_interval();
       // Check if exceed capacity
       if (original_task->demand() > capacity_) {
-       interval->SetPerformed(false);
+        interval->SetPerformed(false);
       }
       // Add to the useful_task vector if it may be performed and that it
       // actually consumes some of the resource.
@@ -1967,7 +1966,7 @@ class CumulativeConstraint : public Constraint {
   // Makes and return an edge-finder or a time table, or NULL if it is not
   // necessary.
   Constraint* MakeOneSidedConstraint(bool mirror, bool edge_finder) {
-    vector<CumulativeTask*> useful_tasks;
+    std::vector<CumulativeTask*> useful_tasks;
     PopulateVectorUsefulTasks(mirror, &useful_tasks);
     if (useful_tasks.empty()) {
       return NULL;
@@ -2018,8 +2017,8 @@ Constraint* Solver::MakeCumulative(IntervalVar* const* intervals,
       this, intervals, demands, size, capacity, name));
 }
 
-Constraint* Solver::MakeCumulative(const vector<IntervalVar*>& intervals,
-                                   const vector<int64>& demands,
+Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                                   const std::vector<int64>& demands,
                                    int64 capacity,
                                    const string& name) {
   CHECK_EQ(intervals.size(), demands.size());

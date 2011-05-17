@@ -12,8 +12,8 @@ gen/algorithms/knapsack_solver_wrap.cc: gen/algorithms/pywrapknapsack_solver.py
 objs/knapsack_solver_wrap.$O: gen/algorithms/knapsack_solver_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/algorithms/knapsack_solver_wrap.cc $(OBJOUT)objs/knapsack_solver_wrap.$O
 
-_pywrapknapsack_solver.$(SHAREDLIBEXT): objs/knapsack_solver_wrap.$O $(ALGORITHMS_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT)_pywrapknapsack_solver.$(SHAREDLIBEXT) objs/knapsack_solver_wrap.$O $(ALGORITHMS_LIBS) $(BASE_LIBS) $(LDFLAGS) $(PYTHON_LNK)
+_pywrapknapsack_solver.$(SHAREDLIBEXT): objs/knapsack_solver_wrap.$O $(ALGORITHMS_LIBS) $(LP_LIBS) $(BASE_LIBS)
+	$(LD) $(LDOUT)_pywrapknapsack_solver.$(SHAREDLIBEXT) objs/knapsack_solver_wrap.$O $(ALGORITHMS_LIBS) $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
 	copy _pywrapknapsack_solver.dll gen\\algorithms\\_pywrapknapsack_solver.pyd
 endif
@@ -74,7 +74,7 @@ endif
 
 pylp: _pywraplp.$(SHAREDLIBEXT) gen/linear_solver/pywraplp.py $(LP_LIBS) $(BASE_LIBS)
 
-gen/linear_solver/pywraplp.py: linear_solver/linear_solver.swig linear_solver/linear_solver.h gen/linear_solver/linear_solver.pb.h base/base.swig
+gen/linear_solver/pywraplp.py: linear_solver/linear_solver.swig linear_solver/linear_solver.h base/base.swig
 	$(SWIG_BINARY)  $(CLP_SWIG) $(CBC_SWIG) $(GLPK_SWIG) -c++ -python -o gen/linear_solver/linear_solver_wrap.cc -module pywraplp linear_solver/linear_solver.swig
 
 gen/linear_solver/linear_solver_wrap.cc: gen/linear_solver/pywraplp.py

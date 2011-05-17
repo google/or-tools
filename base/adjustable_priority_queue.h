@@ -126,7 +126,7 @@ template<typename T> class AdjustablePriorityQueue {
     t->SetHeapIndex(i);
   }
 
-  vector<T*> elems_;
+  std::vector<T*> elems_;
   DISALLOW_COPY_AND_ASSIGN(AdjustablePriorityQueue);
 };
 }  // namespace operations_research

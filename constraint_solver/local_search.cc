@@ -12,6 +12,9 @@
 // limitations under the License.
 
 #include <algorithm>
+#include "base/hash.h"
+#include <set>
+#include <utility>
 
 #include "base/callback.h"
 #include "base/commandlineflags.h"
@@ -23,7 +26,6 @@
 #include "base/map-util.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "graph/hamiltonian_path.h"
-
 
 DEFINE_int32(cp_local_search_sync_frequency, 16,
              "Frequency of checks for better solutions in the solution pool.");
@@ -132,7 +134,7 @@ void IntVarLocalSearchOperator::Deactivate(int64 index) {
 
 bool IntVarLocalSearchOperator::ApplyChanges(Assignment* delta,
                                              Assignment* deltadelta) const {
-  for (ConstIter<vector<int64> > it(changes_); !it.at_end(); ++it) {
+  for (ConstIter<std::vector<int64> > it(changes_); !it.at_end(); ++it) {
     const int64 index = *it;
     IntVar* var = Var(index);
     const int64 value = Value(index);
@@ -157,7 +159,7 @@ void IntVarLocalSearchOperator::RevertChanges(bool incremental) {
   has_delta_changed_.SetAll(false);
   if (incremental && IsIncremental()) return;
   cleared_ = true;
-  for (ConstIter<vector<int64> > it(changes_); !it.at_end(); ++it) {
+  for (ConstIter<std::vector<int64> > it(changes_); !it.at_end(); ++it) {
     const int index = *it;
     values_[index] =  old_values_[index];
     activated_.Set(index, was_activated_.Get(index));
@@ -187,7 +189,7 @@ bool BaseLNS::MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
   CHECK(NULL != delta);
   while (true) {
     RevertChanges(true);
-    vector<int> fragment;
+    std::vector<int> fragment;
     if (NextFragment(&fragment)) {
       for (int i = 0; i < fragment.size(); ++i) {
         DCHECK_LT(fragment[i], Size());
@@ -223,13 +225,13 @@ class SimpleLNS : public BaseLNS {
   }
   ~SimpleLNS() {}
   virtual void InitFragments() { index_ = 0; }
-  virtual bool NextFragment(vector<int>* fragment);
+  virtual bool NextFragment(std::vector<int>* fragment);
  private:
   int index_;
   const int number_of_variables_;
 };
 
-bool SimpleLNS::NextFragment(vector<int>* fragment) {
+bool SimpleLNS::NextFragment(std::vector<int>* fragment) {
   const int size = Size();
   if (index_ < size) {
     for (int i = index_; i < index_ + number_of_variables_; ++i) {
@@ -259,25 +261,25 @@ class RandomLNS : public BaseLNS {
     CHECK_LE(number_of_variables_, Size());
   }
   ~RandomLNS() {}
-  virtual bool NextFragment(vector<int>* fragment);
+  virtual bool NextFragment(std::vector<int>* fragment);
  private:
   ACMRandom rand_;
   const int number_of_variables_;
 };
 
-bool RandomLNS::NextFragment(vector<int>* fragment) {
+bool RandomLNS::NextFragment(std::vector<int>* fragment) {
   for (int i = 0; i < number_of_variables_; ++i) {
     fragment->push_back(rand_.Uniform(Size()));
   }
   return true;
 }
 
-LocalSearchOperator* Solver::MakeRandomLNSOperator(const vector<IntVar*>& vars,
+LocalSearchOperator* Solver::MakeRandomLNSOperator(const std::vector<IntVar*>& vars,
                                                    int number_of_variables) {
   return MakeRandomLNSOperator(vars.data(), vars.size(), number_of_variables);
 }
 
-LocalSearchOperator* Solver::MakeRandomLNSOperator(const vector<IntVar*>& vars,
+LocalSearchOperator* Solver::MakeRandomLNSOperator(const std::vector<IntVar*>& vars,
                                                    int number_of_variables,
                                                    int32 seed) {
   return MakeRandomLNSOperator(vars.data(),
@@ -309,8 +311,8 @@ LocalSearchOperator* Solver::MakeRandomLNSOperator(const IntVar* const* vars,
 // changed from its current value to its target value.
 class MoveTowardTargetLS: public IntVarLocalSearchOperator {
  public:
-  explicit MoveTowardTargetLS(const vector<IntVar*>& variables,
-                              const vector<int64>& target_values)
+  explicit MoveTowardTargetLS(const std::vector<IntVar*>& variables,
+                              const std::vector<int64>& target_values)
       : IntVarLocalSearchOperator(variables.data(), variables.size()),
         target_(target_values),
         // Initialize variable_index_ at the number of the of variables minus
@@ -360,7 +362,7 @@ class MoveTowardTargetLS: public IntVarLocalSearchOperator {
   }
 
   // Target values
-  const vector<int64> target_;
+  const std::vector<int64> target_;
 
   // Index of the next variable to try to restore
   int64 variable_index_;
@@ -371,11 +373,11 @@ class MoveTowardTargetLS: public IntVarLocalSearchOperator {
 
 LocalSearchOperator* Solver::MakeMoveTowardTargetOperator(
     const Assignment& target) {
-  typedef vector<IntVarElement> Elements;
+  typedef std::vector<IntVarElement> Elements;
   const Elements& elements = target.IntVarContainer().elements();
   // Copy target values and construct the vector of variables
-  vector<IntVar*> vars;
-  vector<int64> values;
+  std::vector<IntVar*> vars;
+  std::vector<int64> values;
   vars.reserve(target.NumIntVars());
   values.reserve(target.NumIntVars());
   for (ConstIter<Elements> it(elements); !it.at_end(); ++it) {
@@ -386,8 +388,8 @@ LocalSearchOperator* Solver::MakeMoveTowardTargetOperator(
 }
 
 LocalSearchOperator* Solver::MakeMoveTowardTargetOperator(
-      const vector<IntVar*>& variables,
-      const vector<int64>& target_values) {
+      const std::vector<IntVar*>& variables,
+      const std::vector<int64>& target_values) {
   return RevAlloc(new MoveTowardTargetLS(variables, target_values));
 }
 
@@ -1084,7 +1086,7 @@ class TSPOpt : public PathOperator {
   virtual ~TSPOpt() {}
   virtual bool MakeNeighbor();
  private:
-  vector<vector<int64> > cost_;
+  std::vector<std::vector<int64> > cost_;
   HamiltonianPathSolver<int64> hamiltonian_path_solver_;
   scoped_ptr<Solver::IndexEvaluator3> evaluator_;
   const int chain_length_;
@@ -1101,7 +1103,7 @@ TSPOpt::TSPOpt(const IntVar* const* vars,
       chain_length_(chain_length) {}
 
 bool TSPOpt::MakeNeighbor() {
-  vector<int64> nodes;
+  std::vector<int64> nodes;
   int64 chain_end = BaseNode(0);
   int64 chain_path = Path(chain_end);
   for (int i = 0; i < chain_length_ + 1; ++i) {
@@ -1124,7 +1126,7 @@ bool TSPOpt::MakeNeighbor() {
     }
   }
   hamiltonian_path_solver_.ChangeCostMatrix(cost_);
-  vector<PathNodeIndex> path;
+  std::vector<PathNodeIndex> path;
   hamiltonian_path_solver_.TravelingSalesmanPath(&path);
   CHECK_EQ(size + 1, path.size());
   for (int i = 0; i < size - 1; ++i) {
@@ -1153,7 +1155,7 @@ class TSPLns : public PathOperator {
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual bool MakeNeighbor();
  private:
-  vector<vector<int64> > cost_;
+  std::vector<std::vector<int64> > cost_;
   HamiltonianPathSolver<int64> hamiltonian_path_solver_;
   scoped_ptr<Solver::IndexEvaluator3> evaluator_;
   const int tsp_size_;
@@ -1190,7 +1192,7 @@ bool TSPLns::MakeNeighbor() {
   if (IsPathEnd(base_node)) {
     return false;
   }
-  vector<int64> nodes;
+  std::vector<int64> nodes;
   for (int64 node = StartNode(0); !IsPathEnd(node); node = Next(node)) {
     nodes.push_back(node);
   }
@@ -1213,8 +1215,8 @@ bool TSPLns::MakeNeighbor() {
   // route starting at first node of the meta-node and ending at its last node);
   // this cost has to be added to the TSP matrix cost in order to respect the
   // triangle inequality.
-  vector<int> breaks;
-  vector<int64> meta_node_costs;
+  std::vector<int> breaks;
+  std::vector<int64> meta_node_costs;
   int64 cost = 0;
   int64 node = StartNode(0);
   int64 node_path = Path(node);
@@ -1244,7 +1246,7 @@ bool TSPLns::MakeNeighbor() {
   }
   // Solve TSP and inject solution in delta (only if it leads to a new solution)
   hamiltonian_path_solver_.ChangeCostMatrix(cost_);
-  vector<PathNodeIndex> path;
+  std::vector<PathNodeIndex> path;
   hamiltonian_path_solver_.TravelingSalesmanPath(&path);
   bool nochange = true;
   for (int i = 0; i < path.size() - 1; ++i) {
@@ -1280,7 +1282,7 @@ class NearestNeighbors {
                    const PathOperator& path_operator,
                    int size);
   void Initialize();
-  const vector<int>& Neighbors(int index) const;
+  const std::vector<int>& Neighbors(int index) const;
  private:
   void ComputeNearest(int row);
   static void Pivot(int start,
@@ -1290,7 +1292,7 @@ class NearestNeighbors {
                     int* index);
   static void Swap(int i, int j, int* neighbors, int64* row);
 
-  vector<vector<int> > neighbors_;
+  std::vector<std::vector<int> > neighbors_;
   Solver::IndexEvaluator3* evaluator_;
   const PathOperator& path_operator_;
   const int size_;
@@ -1312,13 +1314,13 @@ void NearestNeighbors::Initialize() {
   if (!initialized_) {
     initialized_ = true;
     for (int i = 0; i < path_operator_.number_of_nexts(); ++i) {
-      neighbors_.push_back(vector<int>());
+      neighbors_.push_back(std::vector<int>());
       ComputeNearest(i);
     }
   }
 }
 
-const vector<int>& NearestNeighbors::Neighbors(int index) const {
+const std::vector<int>& NearestNeighbors::Neighbors(int index) const {
   return neighbors_[index];
 }
 
@@ -1353,9 +1355,9 @@ void NearestNeighbors::ComputeNearest(int row) {
   }
 
   // Setup global neighbor matrix for row row_index
-  for (int i = 0; i < min(size_, var_size); ++i) {
+  for (int i = 0; i < std::min(size_, var_size); ++i) {
     neighbors_[row].push_back(neighbors[i]);
-    sort(neighbors_[row].begin(), neighbors_[row].end());
+    std::sort(neighbors_[row].begin(), neighbors_[row].end());
   }
 }
 
@@ -1405,7 +1407,7 @@ class LinKernighan : public PathOperator {
   Solver::IndexEvaluator3* const evaluator_;
   bool owner_;
   NearestNeighbors neighbors_;
-  set<int64> marked_;
+  hash_set<int64> marked_;
   const bool topt_;
 };
 
@@ -1509,7 +1511,7 @@ bool LinKernighan::MakeNeighbor() {
 const int LinKernighan::kNeighbors = 5 + 1;
 
 bool LinKernighan::InFromOut(int64 in_i, int64 in_j, int64* out, int64* gain) {
-  const vector<int>& nexts = neighbors_.Neighbors(in_j);
+  const std::vector<int>& nexts = neighbors_.Neighbors(in_j);
   int64 best_gain = kint64min;
   int64 path = Path(in_i);
   int64 out_cost = evaluator_->Run(in_i, in_j, path);
@@ -1633,7 +1635,7 @@ LocalSearchOperator* Solver::MakeNeighborhoodLimit(
 class CompoundOperator : public LocalSearchOperator {
  public:
   CompoundOperator(
-      const vector<LocalSearchOperator*>& operators,
+      const std::vector<LocalSearchOperator*>& operators,
       ResultCallback2<int64, int, int>* const evaluator);
   virtual ~CompoundOperator() {}
   virtual void Start(const Assignment* assignment);
@@ -1668,7 +1670,7 @@ class CompoundOperator : public LocalSearchOperator {
 };
 
 CompoundOperator::CompoundOperator(
-    const vector<LocalSearchOperator*>& operators,
+    const std::vector<LocalSearchOperator*>& operators,
     ResultCallback2<int64, int, int>* const evaluator)
       : index_(0),
         size_(operators.size()),
@@ -1686,7 +1688,9 @@ void CompoundOperator::Start(const Assignment* assignment) {
     operators_[i]->Start(assignment);
   }
   OperatorComparator comparator(evaluator_.get(), operator_indices_[index_]);
-  sort(operator_indices_.get(), operator_indices_.get() + size_, comparator);
+  std::sort(operator_indices_.get(),
+            operator_indices_.get() + size_,
+            comparator);
   index_ = 0;
 }
 
@@ -1722,12 +1726,12 @@ int64 CompoundOperatorRestart(int active_index, int operator_index) {
 }
 
 LocalSearchOperator* Solver::ConcatenateOperators(
-    const vector<LocalSearchOperator*>& ops) {
+    const std::vector<LocalSearchOperator*>& ops) {
   return ConcatenateOperators(ops, false);
 }
 
 LocalSearchOperator* Solver::ConcatenateOperators(
-    const vector<LocalSearchOperator*>& ops,
+    const std::vector<LocalSearchOperator*>& ops,
     bool restart) {
   if (restart) {
     return ConcatenateOperators(
@@ -1742,7 +1746,7 @@ LocalSearchOperator* Solver::ConcatenateOperators(
 }
 
 LocalSearchOperator* Solver::ConcatenateOperators(
-    const vector<LocalSearchOperator*>& ops,
+    const std::vector<LocalSearchOperator*>& ops,
     ResultCallback2<int64, int, int>* const evaluator) {
   return RevAlloc(new CompoundOperator(ops, evaluator));
 }
@@ -1750,7 +1754,7 @@ LocalSearchOperator* Solver::ConcatenateOperators(
 class RandomCompoundOperator : public LocalSearchOperator {
  public:
   explicit RandomCompoundOperator(
-      const vector<LocalSearchOperator*>& operators);
+      const std::vector<LocalSearchOperator*>& operators);
   virtual ~RandomCompoundOperator() {}
   virtual void Start(const Assignment* assignment);
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
@@ -1766,7 +1770,7 @@ void RandomCompoundOperator::Start(const Assignment* assignment) {
 }
 
 RandomCompoundOperator::RandomCompoundOperator(
-    const vector<LocalSearchOperator*>& operators)
+    const std::vector<LocalSearchOperator*>& operators)
     : size_(operators.size()),
       operators_(new LocalSearchOperator*[size_]) {
   for (int i = 0; i < size_; ++i) {
@@ -1776,7 +1780,7 @@ RandomCompoundOperator::RandomCompoundOperator(
 
 bool RandomCompoundOperator::MakeNextNeighbor(Assignment* delta,
                                               Assignment* deltadelta) {
-  vector<int> indices(size_);
+  std::vector<int> indices(size_);
   for (int i = 0; i < size_; ++i) {
     indices[i] = i;
   }
@@ -1790,13 +1794,13 @@ bool RandomCompoundOperator::MakeNextNeighbor(Assignment* delta,
 }
 
 LocalSearchOperator* Solver::RandomConcatenateOperators(
-    const vector<LocalSearchOperator*>& ops) {
+    const std::vector<LocalSearchOperator*>& ops) {
   return RevAlloc(new RandomCompoundOperator(ops));
 }
 
 // ----- Operator factory -----
 
-LocalSearchOperator* Solver::MakeOperator(const vector<IntVar*>& vars,
+LocalSearchOperator* Solver::MakeOperator(const std::vector<IntVar*>& vars,
                                           Solver::LocalSearchOperators op) {
   return MakeOperator(vars.data(), vars.size(), op);
 }
@@ -1807,8 +1811,8 @@ LocalSearchOperator* Solver::MakeOperator(const IntVar* const* vars,
   return MakeOperator(vars, NULL, size, op);
 }
 
-LocalSearchOperator* Solver::MakeOperator(const vector<IntVar*>& vars,
-                                          const vector<IntVar*>& secondary_vars,
+LocalSearchOperator* Solver::MakeOperator(const std::vector<IntVar*>& vars,
+                                          const std::vector<IntVar*>& secondary_vars,
                                           Solver::LocalSearchOperators op) {
   return MakeOperator(vars.data(), secondary_vars.data(), vars.size(), op);
 }
@@ -1824,7 +1828,7 @@ LocalSearchOperator* Solver::MakeOperator(const IntVar* const* vars,
       break;
     }
     case Solver::OROPT: {
-      vector<LocalSearchOperator*> operators;
+      std::vector<LocalSearchOperator*> operators;
       for (int i = 1; i < 4; ++i)
         operators.push_back(RevAlloc(new Relocate(vars,
                                                   secondary_vars,
@@ -1905,7 +1909,7 @@ LocalSearchOperator* Solver::MakeOperator(const IntVar* const* vars,
 }
 
 LocalSearchOperator* Solver::MakeOperator(
-    const vector<IntVar*>& vars,
+    const std::vector<IntVar*>& vars,
     Solver::IndexEvaluator3* const evaluator,
     Solver::EvaluatorLocalSearchOperators op) {
   return MakeOperator(vars.data(), vars.size(), evaluator, op);
@@ -1920,8 +1924,8 @@ LocalSearchOperator* Solver::MakeOperator(
 }
 
 LocalSearchOperator* Solver::MakeOperator(
-    const vector<IntVar*>& vars,
-    const vector<IntVar*>& secondary_vars,
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
     Solver::IndexEvaluator3* const evaluator,
     Solver::EvaluatorLocalSearchOperators op) {
   return MakeOperator(vars.data(),
@@ -1940,7 +1944,7 @@ LocalSearchOperator* Solver::MakeOperator(
   LocalSearchOperator* result = NULL;
   switch (op) {
     case Solver::LK: {
-      vector<LocalSearchOperator*> operators;
+      std::vector<LocalSearchOperator*> operators;
       operators.push_back(
           RevAlloc(new LinKernighan(vars,
                                     secondary_vars,
@@ -2046,7 +2050,7 @@ class MaxMinOperation : public LSOperation {
   virtual void set_value(int64 new_value) {}
 
  private:
-  set<int64> values_set_;
+  std::set<int64> values_set_;
   bool max_;
 };
 
@@ -2464,7 +2468,7 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
 }
 
 LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
-    const vector<IntVar*>& vars,
+    const std::vector<IntVar*>& vars,
     Solver::IndexEvaluator2* const values,
     const IntVar* const objective,
     Solver::LocalSearchFilterBound filter_enum,
@@ -2513,7 +2517,7 @@ class NestedSolveDecision : public Decision {
 
   NestedSolveDecision(DecisionBuilder* const db,
                       bool restore,
-                      const vector<SearchMonitor*>& monitors);
+                      const std::vector<SearchMonitor*>& monitors);
   NestedSolveDecision(DecisionBuilder* const db,
                       bool restore);
   virtual ~NestedSolveDecision() {}
@@ -2526,13 +2530,13 @@ class NestedSolveDecision : public Decision {
  private:
   DecisionBuilder* const db_;
   bool restore_;
-  vector<SearchMonitor*> monitors_;
+  std::vector<SearchMonitor*> monitors_;
   int state_;
 };
 
 NestedSolveDecision::NestedSolveDecision(DecisionBuilder* const db,
                                          bool restore,
-                                         const vector<SearchMonitor*>& monitors)
+                                         const std::vector<SearchMonitor*>& monitors)
     : db_(db),
       restore_(restore),
       monitors_(monitors),
@@ -2567,7 +2571,7 @@ class FindOneNeighbor : public DecisionBuilder {
                   LocalSearchOperator* const ls_operator,
                   DecisionBuilder* const sub_decision_builder,
                   const SearchLimit* const limit,
-                  const vector<LocalSearchFilter*>& filters);
+                  const std::vector<LocalSearchFilter*>& filters);
   virtual ~FindOneNeighbor() {}
   virtual Decision* Next(Solver* const solver);
   virtual string DebugString() const {
@@ -2586,7 +2590,7 @@ class FindOneNeighbor : public DecisionBuilder {
   SearchLimit* limit_;
   const SearchLimit* const original_limit_;
   bool neighbor_found_;
-  vector<LocalSearchFilter*> filters_;
+  std::vector<LocalSearchFilter*> filters_;
 };
 
 // reference_assignment_ is used to keep track of the last assignment on which
@@ -2597,7 +2601,7 @@ FindOneNeighbor::FindOneNeighbor(Assignment* const assignment,
                                  LocalSearchOperator* const ls_operator,
                                  DecisionBuilder* const sub_decision_builder,
                                  const SearchLimit* const limit,
-                                 const vector<LocalSearchFilter*>& filters)
+                                 const std::vector<LocalSearchFilter*>& filters)
     : assignment_(assignment),
       reference_assignment_(new Assignment(assignment_)),
       pool_(pool),
@@ -2734,7 +2738,7 @@ class LocalSearchPhaseParameters : public BaseObject {
                              LocalSearchOperator* ls_operator,
                              DecisionBuilder* sub_decision_builder,
                              SearchLimit* const limit,
-                             const vector<LocalSearchFilter*>& filters)
+                             const std::vector<LocalSearchFilter*>& filters)
       : solution_pool_(pool),
         ls_operator_(ls_operator),
         sub_decision_builder_(sub_decision_builder),
@@ -2749,13 +2753,13 @@ class LocalSearchPhaseParameters : public BaseObject {
     return sub_decision_builder_;
   }
   SearchLimit* limit() const { return limit_; }
-  const vector<LocalSearchFilter*>& filters() const { return filters_; }
+  const std::vector<LocalSearchFilter*>& filters() const { return filters_; }
  private:
   SolutionPool* const solution_pool_;
   LocalSearchOperator* const ls_operator_;
   DecisionBuilder* const sub_decision_builder_;
   SearchLimit* const limit_;
-  vector<LocalSearchFilter*> filters_;
+  std::vector<LocalSearchFilter*> filters_;
 };
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
@@ -2765,7 +2769,7 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
                                         ls_operator,
                                         sub_decision_builder,
                                         NULL,
-                                        vector<LocalSearchFilter*>());
+                                        std::vector<LocalSearchFilter*>());
 }
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
@@ -2776,14 +2780,14 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
                                         ls_operator,
                                         sub_decision_builder,
                                         limit,
-                                        vector<LocalSearchFilter*>());
+                                        std::vector<LocalSearchFilter*>());
 }
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
     LocalSearchOperator* const ls_operator,
     DecisionBuilder* const sub_decision_builder,
     SearchLimit* const limit,
-    const vector<LocalSearchFilter*>& filters) {
+    const std::vector<LocalSearchFilter*>& filters) {
   return MakeLocalSearchPhaseParameters(MakeDefaultSolutionPool(),
                                         ls_operator,
                                         sub_decision_builder,
@@ -2799,7 +2803,7 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
                                         ls_operator,
                                         sub_decision_builder,
                                         NULL,
-                                        vector<LocalSearchFilter*>());
+                                        std::vector<LocalSearchFilter*>());
 }
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
@@ -2811,7 +2815,7 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
                                         ls_operator,
                                         sub_decision_builder,
                                         limit,
-                                        vector<LocalSearchFilter*>());
+                                        std::vector<LocalSearchFilter*>());
 }
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
@@ -2819,7 +2823,7 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
     LocalSearchOperator* const ls_operator,
     DecisionBuilder* const sub_decision_builder,
     SearchLimit* const limit,
-    const vector<LocalSearchFilter*>& filters) {
+    const std::vector<LocalSearchFilter*>& filters) {
   return RevAlloc(new LocalSearchPhaseParameters(pool,
                                                  ls_operator,
                                                  sub_decision_builder,
@@ -2834,7 +2838,7 @@ LocalSearch::LocalSearch(Assignment* const assignment,
                          LocalSearchOperator* const ls_operator,
                          DecisionBuilder* const sub_decision_builder,
                          SearchLimit* const limit,
-                         const vector<LocalSearchFilter*>& filters)
+                         const std::vector<LocalSearchFilter*>& filters)
     : assignment_(assignment),
       pool_(pool),
       ls_operator_(ls_operator),
@@ -2858,7 +2862,7 @@ LocalSearch::LocalSearch(IntVar* const* vars,
                          LocalSearchOperator* const ls_operator,
                          DecisionBuilder* const sub_decision_builder,
                          SearchLimit* const limit,
-                         const vector<LocalSearchFilter*>& filters)
+                         const std::vector<LocalSearchFilter*>& filters)
     : assignment_(NULL),
       pool_(pool),
       ls_operator_(ls_operator),
@@ -2934,7 +2938,7 @@ void LocalSearch::PushFirstSolutionDecision(
   DecisionBuilder* store = solver->MakeStoreAssignment(assignment_);
   DecisionBuilder* first_solution_and_store =
       solver->Compose(first_solution, store);
-  vector<SearchMonitor*> monitor;
+  std::vector<SearchMonitor*> monitor;
   monitor.push_back(limit_);
   nested_decisions_.push_back(
       solver->RevAlloc(new NestedSolveDecision(first_solution_and_store,
@@ -2996,7 +3000,7 @@ DecisionBuilder* Solver::MakeLocalSearchPhase(
 }
 
 DecisionBuilder* Solver::MakeLocalSearchPhase(
-    const vector<IntVar*>& vars,
+    const std::vector<IntVar*>& vars,
     DecisionBuilder* first_solution,
     LocalSearchPhaseParameters* parameters) {
   return MakeLocalSearchPhase(vars.data(),

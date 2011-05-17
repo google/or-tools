@@ -34,12 +34,12 @@ class BellmanFord {
         predecessor_(new int[node_count_]) {
     graph->CheckIsRepeatable();
   }
-  bool ShortestPath(int end_node, vector<int>* nodes);
+  bool ShortestPath(int end_node, std::vector<int>* nodes);
  private:
   void Initialize();
   void Update();
   bool Check() const;
-  void FindPath(int dest, vector<int>* nodes) const;
+  void FindPath(int dest, std::vector<int>* nodes) const;
 
   const int node_count_;
   const int start_node_;
@@ -88,7 +88,7 @@ bool BellmanFord::Check() const {
   return true;
 }
 
-void BellmanFord::FindPath(int dest, vector<int>* nodes) const {
+void BellmanFord::FindPath(int dest, std::vector<int>* nodes) const {
   int j = dest;
   nodes->push_back(j);
   while (predecessor_[j] != -1) {
@@ -97,7 +97,7 @@ void BellmanFord::FindPath(int dest, vector<int>* nodes) const {
   }
 }
 
-bool BellmanFord::ShortestPath(int end_node, vector<int>* nodes) {
+bool BellmanFord::ShortestPath(int end_node, std::vector<int>* nodes) {
   Initialize();
   Update();
   if (distance_[end_node] == kInfinity) {
@@ -115,7 +115,7 @@ bool BellmanFordShortestPath(int node_count,
                              int end_node,
                              ResultCallback2<int64, int, int>* const graph,
                              int64 disconnected_distance,
-                             vector<int>* nodes) {
+                             std::vector<int>* nodes) {
   BellmanFord bf(node_count, start_node, graph, disconnected_distance);
   return bf.ShortestPath(end_node, nodes);
 }

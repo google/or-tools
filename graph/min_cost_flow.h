@@ -153,13 +153,14 @@
 #include <algorithm>
 #include <stack>
 #include <string>
-#include <vector>
 
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
 #include "graph/ebert_graph.h"
 #include "util/packed_array.h"
+
+using std::string;
 
 namespace operations_research {
 
@@ -333,7 +334,7 @@ class MinCostFlow {
 
   bool IsDirect(ArcIndex arc) const { return graph_.IsDirect(arc); }
 
-  // A pointer to the graph passed as argument.
+  // A reference to the graph passed as argument.
   const StarGraph& graph_;
 
   // A packed array representing the supply (if > 0) or the demand (if < 0)
@@ -369,7 +370,7 @@ class MinCostFlow {
   // A stack used for managing active nodes in the algorithm.
   // Note that the papers cited above recommend the use of a queue, but
   // benchmarking so far has not proved it is better.
-  stack<NodeIndex> active_nodes_;
+  std::stack<NodeIndex> active_nodes_;
 
   // epsilon_ is the tolerance for optimality.
   CostValue        epsilon_;

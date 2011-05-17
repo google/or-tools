@@ -233,7 +233,7 @@ class IntElementConstraint : public Constraint {
   IntVar* const index_;
   IntVar* const elem_;
   IntVarIterator* const index_iterator_;
-  vector<int64> to_remove_;
+  std::vector<int64> to_remove_;
 };
 
 // ----- IntExprElement
@@ -266,8 +266,12 @@ class IntExprElement : public BaseIntExprElement {
     DCHECK_LT(index, size_);
     return values_[index];
   }
-  virtual int64 ExprMin() const { return max(0LL, expr_->Min()); }
-  virtual int64 ExprMax() const { return min(size_ - 1LL, expr_->Max()); }
+  virtual int64 ExprMin() const {
+    return std::max(0LL, expr_->Min());
+  }
+  virtual int64 ExprMax() const {
+    return std::min(size_ - 1LL, expr_->Max());
+  }
  private:
   int64* const values_;
   const int size_;
@@ -338,13 +342,13 @@ IncreasingIntExprElement::IncreasingIntExprElement(Solver* const s,
 }
 
 int64 IncreasingIntExprElement::Min() const {
-  const int64 expression_min = max(0LL, index_->Min());
+  const int64 expression_min = std::max(0LL, index_->Min());
   return  (expression_min < size_ ? values_[expression_min] : kint64max);
 }
 
 void IncreasingIntExprElement::SetMin(int64 m) {
-  const int64 expression_min = max(0LL, index_->Min());
-  const int64 expression_max = min(size_ - 1LL, index_->Max());
+  const int64 expression_min = std::max(0LL, index_->Min());
+  const int64 expression_max = std::min(size_ - 1LL, index_->Max());
   if (expression_min > expression_max || m > values_[expression_max]) {
     solver()->Fail();
   }
@@ -357,13 +361,13 @@ void IncreasingIntExprElement::SetMin(int64 m) {
 }
 
 int64 IncreasingIntExprElement::Max() const {
-  const int64 expression_max = min(size_ - 1LL, index_->Max());
+  const int64 expression_max = std::min(size_ - 1LL, index_->Max());
   return (expression_max >= 0 ? values_[expression_max] : kint64max);
 }
 
 void IncreasingIntExprElement::SetMax(int64 m) {
-  const int64 expression_min = max(0LL, index_->Min());
-  const int64 expression_max = min(size_ - 1LL, index_->Max());
+  const int64 expression_min = std::max(0LL, index_->Min());
+  const int64 expression_max = std::min(size_ - 1LL, index_->Max());
   if (expression_min > expression_max || m < values_[expression_min]) {
     solver()->Fail();
   }
@@ -379,8 +383,8 @@ void IncreasingIntExprElement::SetRange(int64 mi, int64 ma) {
   if (mi > ma) {
     solver()->Fail();
   }
-  const int64 expression_min = max(0LL, index_->Min());
-  const int64 expression_max = min(size_ - 1LL, index_->Max());
+  const int64 expression_min = std::max(0LL, index_->Min());
+  const int64 expression_max = std::min(size_ - 1LL, index_->Max());
   if (expression_min > expression_max ||
       mi > values_[expression_max] ||
       ma < values_[expression_min]) {
@@ -450,7 +454,7 @@ IntExpr* Solver::MakeElement(const int64* const vals,
   // Is array built with booleans only?
   // TODO(user): We could maintain the index of the first one.
   if (IsBoolean(vals, size)) {
-    vector<int64> ones;
+    std::vector<int64> ones;
     int first_zero = -1;
     for (int i = 0; i < size; ++i) {
       if (vals[i] == 1LL) {
@@ -485,7 +489,7 @@ IntExpr* Solver::MakeElement(const int64* const vals,
   return RevAlloc(new IntExprElement(this, vals, size, index));
 }
 
-IntExpr* Solver::MakeElement(const vector<int64>& vals, IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<int64>& vals, IntVar* const index) {
   return MakeElement(vals.data(), vals.size(), index);
 }
 
@@ -974,8 +978,8 @@ void IntExprArrayElementCt::InitialPropagate() {
 }
 
 void IntExprArrayElementCt::Propagate() {
-  const int64 emin = max(0LL, expr_->Min());
-  const int64 emax = min(size_ - 1LL, expr_->Max());
+  const int64 emin = std::max(0LL, expr_->Min());
+  const int64 emax = std::min(size_ - 1LL, expr_->Max());
   const int64 vmin = var_->Min();
   const int64 vmax = var_->Max();
   if (emin == emax) {
@@ -1104,8 +1108,8 @@ IntExprArrayElement::IntExprArrayElement(Solver* const s,
 }
 
 int64 IntExprArrayElement::Min() const {
-  const int64 emin = max(0LL, var_->Min());
-  const int64 emax = min(size_ - 1LL, var_->Max());
+  const int64 emin = std::max(0LL, var_->Min());
+  const int64 emax = std::min(size_ - 1LL, var_->Max());
   int64 res = kint64max;
   for (int i = emin; i <= emax; ++i) {
     const int64 vmin = vars_[i]->Min();
@@ -1117,8 +1121,8 @@ int64 IntExprArrayElement::Min() const {
 }
 
 void IntExprArrayElement::SetMin(int64 m) {
-  const int64 emin = max(0LL, var_->Min());
-  const int64 emax = min(size_ - 1LL, var_->Max());
+  const int64 emin = std::max(0LL, var_->Min());
+  const int64 emax = std::min(size_ - 1LL, var_->Max());
   if (emin == emax) {
     var_->SetValue(emin);  // in case it was reduced by the above min/max.
     vars_[emin]->SetMin(m);
@@ -1142,8 +1146,8 @@ void IntExprArrayElement::SetMin(int64 m) {
 }
 
 int64 IntExprArrayElement::Max() const {
-  const int64 emin = max(0LL, var_->Min());
-  const int64 emax = min(size_ - 1LL, var_->Max());
+  const int64 emin = std::max(0LL, var_->Min());
+  const int64 emax = std::min(size_ - 1LL, var_->Max());
   int64 res = kint64min;
   for (int i = emin; i <= emax; ++i) {
     const int64 vmax = vars_[i]->Max();
@@ -1155,8 +1159,8 @@ int64 IntExprArrayElement::Max() const {
 }
 
 void IntExprArrayElement::SetMax(int64 m) {
-  const int64 emin = max(0LL, var_->Min());
-  const int64 emax = min(size_ - 1LL, var_->Max());
+  const int64 emin = std::max(0LL, var_->Min());
+  const int64 emax = std::min(size_ - 1LL, var_->Max());
   if (emin == emax) {
     var_->SetValue(emin);  // in case it was reduced by the above min/max.
     vars_[emin]->SetMax(m);
@@ -1183,8 +1187,8 @@ void IntExprArrayElement::SetRange(int64 mi, int64 ma) {
   if (mi > ma) {
     solver()->Fail();
   }
-  const int64 emin = max(0LL, var_->Min());
-  const int64 emax = min(size_ - 1LL, var_->Max());
+  const int64 emin = std::max(0LL, var_->Min());
+  const int64 emax = std::min(size_ - 1LL, var_->Max());
   if (emin == emax) {
     var_->SetValue(emin);  // in case it was reduced by the above min/max.
     vars_[emin]->SetRange(mi, ma);
@@ -1213,8 +1217,8 @@ void IntExprArrayElement::SetRange(int64 mi, int64 ma) {
 }
 
 bool IntExprArrayElement::Bound() const {
-  const int64 emin = max(0LL, var_->Min());
-  const int64 emax = min(size_ - 1LL, var_->Max());
+  const int64 emin = std::max(0LL, var_->Min());
+  const int64 emax = std::min(size_ - 1LL, var_->Max());
   const int64 v = vars_[emin]->Min();
   for (int i = emin; i <= emax; ++i) {
     if (var_->Contains(i) && (!vars_[i]->Bound() || vars_[i]->Value() != v)) {
@@ -1231,7 +1235,7 @@ IntExpr* Solver::MakeElement(const IntVar* const * vars,
   return RevAlloc(new IntExprArrayElement(this, vars, size, index));
 }
 
-IntExpr* Solver::MakeElement(const vector<IntVar*>& vars, IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const index) {
   CHECK_EQ(this, index->solver());
   return RevAlloc(new IntExprArrayElement(this, vars.data(),
                                           vars.size(), index));

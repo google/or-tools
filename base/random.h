@@ -14,7 +14,7 @@
 #ifndef OR_TOOLS_BASE_RANDOM_H_
 #define OR_TOOLS_BASE_RANDOM_H_
 
-#include "base/util.h"
+#include "base/basictypes.h"
 
 namespace operations_research {
 

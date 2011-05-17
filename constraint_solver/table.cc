@@ -68,8 +68,8 @@ class BasePositiveTableConstraint : public Constraint {
   }
 
   BasePositiveTableConstraint(Solver* const s,
-                              const vector<IntVar*> & vars,
-                              const vector<vector<int64> >& allowed_tuples)
+                              const std::vector<IntVar*> & vars,
+                              const std::vector<std::vector<int64> >& allowed_tuples)
       : Constraint(s),
         tuple_count_(allowed_tuples.size()),
         arity_(vars.size()),
@@ -92,7 +92,7 @@ class BasePositiveTableConstraint : public Constraint {
   scoped_array<IntVar*> vars_;
   scoped_array<IntVarIterator*> holes_;
   scoped_array<IntVarIterator*> iterators_;
-  vector<int64> to_remove_;
+  std::vector<int64> to_remove_;
 };
 
 class PositiveTableConstraint : public BasePositiveTableConstraint {
@@ -114,8 +114,8 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   PositiveTableConstraint(Solver* const s,
-                          const vector<IntVar*> & vars,
-                          const vector<vector<int64> >& tuples)
+                          const std::vector<IntVar*> & vars,
+                          const std::vector<std::vector<int64> >& tuples)
       : BasePositiveTableConstraint(s, vars, tuples),
         length_(BitLength64(tuples.size())),
         active_tuples_(new uint64[length_]),
@@ -293,7 +293,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   // TODO(user): create bitset64 class and use it.
   scoped_array<uint64> active_tuples_;
   scoped_array<uint64> stamps_;
-  vector<hash_map<int64, uint64*> > masks_;
+  std::vector<hash_map<int64, uint64*> > masks_;
 };
 
 // ----- Compact Table. -----
@@ -321,8 +321,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   CompactPositiveTableConstraint(Solver* const s,
-                                 const vector<IntVar*> & vars,
-                                 const vector<vector<int64> >& tuples)
+                                 const std::vector<IntVar*> & vars,
+                                 const std::vector<std::vector<int64> >& tuples)
       : BasePositiveTableConstraint(s, vars, tuples),
         length_(BitLength64(tuples.size())),
         active_tuples_(new uint64[length_]),
@@ -527,7 +527,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         for (int offset = 0; offset < length_; ++offset) {
           temp_mask_[offset] = 0;
         }
-        for (ConstIter<vector<int64> > it(to_remove_); !it.at_end(); ++it) {
+        for (ConstIter<std::vector<int64> > it(to_remove_); !it.at_end(); ++it) {
           const int64 value_index = (*it) - original_min_[var_index];
           const uint64* const mask = masks_[var_index][value_index];
           DCHECK(mask);
@@ -637,17 +637,17 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   // All allowed tuples.
   scoped_array<int64*> tuples_;
   // The masks per value per variable.
-  vector<vector<uint64*> > masks_;
+  std::vector<std::vector<uint64*> > masks_;
   // The min on the vars at creation time.
   scoped_array<int64> original_min_;
   // The starts of active bitsets.
-  vector<vector<int> > starts_;
+  std::vector<std::vector<int> > starts_;
   // The ends of the active bitsets.x
-  vector<vector<int> > ends_;
+  std::vector<std::vector<int> > ends_;
   // A temporary mask use for computation.
   scoped_array<uint64> temp_mask_;
   // The portion of the active tuples supporting each value per variable.
-  vector<vector<int> > supports_;
+  std::vector<std::vector<int> > supports_;
   Demon* demon_;
 };
 
@@ -682,8 +682,8 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   SmallCompactPositiveTableConstraint(Solver* const s,
-                                      const vector<IntVar*> & vars,
-                                      const vector<vector<int64> >& tuples)
+                                      const std::vector<IntVar*> & vars,
+                                      const std::vector<std::vector<int64> >& tuples)
       : BasePositiveTableConstraint(s, vars, tuples),
         active_tuples_(0),
         stamp_(0),
@@ -936,7 +936,7 @@ Constraint* Solver::MakeAllowedAssignments(const IntVar* const * vars,
 }
 
 Constraint* Solver::MakeAllowedAssignments(
-    const vector<IntVar*>& vars, const vector<vector<int64> >& tuples) {
+    const std::vector<IntVar*>& vars, const std::vector<std::vector<int64> >& tuples) {
   if (FLAGS_cp_use_compact_table
       && HasCompactDomains(vars.data(), vars.size())) {
     if (tuples.size() < kBitsInUint64 && FLAGS_cp_use_small_table) {
@@ -962,10 +962,10 @@ class TransitionConstraint : public Constraint {
   static const int kNextStatePosition;
   static const int kTransitionTupleSize;
   TransitionConstraint(Solver* const s,
-                       const vector<IntVar*>& vars,
-                       const vector<vector<int64> >& transition_table,
+                       const std::vector<IntVar*>& vars,
+                       const std::vector<std::vector<int64> >& transition_table,
                        int64 initial_state,
-                       const vector<int64>& final_states)
+                       const std::vector<int64>& final_states)
       : Constraint(s),
         vars_(vars),
         transition_table_(transition_table),
@@ -987,7 +987,7 @@ class TransitionConstraint : public Constraint {
       state_min = std::min(state_min, transition_table_[i][kNextStatePosition]);
     }
 
-    vector<IntVar*> states;
+    std::vector<IntVar*> states;
     states.push_back(s->MakeIntConst(initial_state_));
     for (int var_index = 1; var_index < nb_vars; ++var_index) {
       states.push_back(s->MakeIntVar(state_min, state_max));
@@ -996,7 +996,7 @@ class TransitionConstraint : public Constraint {
     CHECK_EQ(nb_vars + 1, states.size());
 
     for (int var_index = 0; var_index < nb_vars; ++var_index) {
-      vector<IntVar*> tmp_vars;
+      std::vector<IntVar*> tmp_vars;
       tmp_vars.push_back(states[var_index]);
       tmp_vars.push_back(vars_[var_index]);
       tmp_vars.push_back(states[var_index + 1]);
@@ -1007,13 +1007,13 @@ class TransitionConstraint : public Constraint {
   virtual void InitialPropagate() {}
  private:
   // Variable representing transitions between states. See header file.
-  const vector<IntVar*> vars_;
+  const std::vector<IntVar*> vars_;
   // The transition as tuples (state, value, next_state).
-  const vector<vector<int64> > transition_table_;
+  const std::vector<std::vector<int64> > transition_table_;
   // The initial state before the first transition.
   const int64 initial_state_;
   // Vector of final state after the last transision.
-  const vector<int64> final_states_;
+  const std::vector<int64> final_states_;
 };
 
 // TODO(user): create transition struct.
@@ -1023,10 +1023,10 @@ const int TransitionConstraint::kNextStatePosition = 2;
 const int TransitionConstraint::kTransitionTupleSize = 3;
 
 Constraint* Solver::MakeTransitionConstraint(
-    const vector<IntVar*>& vars,
-    const vector<vector<int64> >& transition_table,
+    const std::vector<IntVar*>& vars,
+    const std::vector<std::vector<int64> >& transition_table,
     int64 initial_state,
-    const vector<int64>& final_states) {
+    const std::vector<int64>& final_states) {
   return RevAlloc(new TransitionConstraint(this, vars, transition_table,
                                            initial_state, final_states));
 }

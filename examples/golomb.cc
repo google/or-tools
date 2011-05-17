@@ -23,6 +23,8 @@
 //   0, 1, 4, 10, 12, 17
 //   0, 1, 4, 10, 18, 23, 25
 
+#include <cstdio>
+
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -51,13 +53,13 @@ void GolombRuler(int size) {
   Solver s("golomb");
 
   // model
-  vector<IntVar*> ticks(size);
+  std::vector<IntVar*> ticks(size);
   ticks[0] = s.MakeIntConst(0);      // X(0) = 0
   const int64 max = 1 + size * size * size;
   for (int i = 1; i < size; ++i) {
     ticks[i] = s.MakeIntVar(1, max, StringPrintf("X%02d", i));
   }
-  vector<IntVar*> diffs;
+  std::vector<IntVar*> diffs;
   for (int i = 0; i < size; ++i) {
     for (int j = i + 1; j < size; ++j) {
       IntVar* const diff = s.MakeDifference(ticks[j], ticks[i])->Var();

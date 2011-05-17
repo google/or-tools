@@ -36,17 +36,17 @@ void MinCostFlowOn4x4Matrix() {
   const CostValue kExpectedCost = 275;
   StarGraph graph(kNumSources + kNumTargets, kNumSources * kNumTargets);
   MinCostFlow min_cost_flow(graph);
-  for (NodeIndex source = 1; source <= kNumSources; ++source) {
-    for (NodeIndex target = 1; target <= kNumTargets; ++target) {
+  for (NodeIndex source = 0; source < kNumSources; ++source) {
+    for (NodeIndex target = 0; target < kNumTargets; ++target) {
       ArcIndex arc = graph.AddArc(source, kNumSources + target);
-      min_cost_flow.SetArcUnitCost(arc, kCost[source -  1][target - 1]);
+      min_cost_flow.SetArcUnitCost(arc, kCost[source][target]);
       min_cost_flow.SetArcCapacity(arc, 1);
     }
   }
-  for (NodeIndex source = 1; source <= kNumSources; ++source) {
+  for (NodeIndex source = 0; source < kNumSources; ++source) {
     min_cost_flow.SetNodeSupply(source, 1);
   }
-  for (NodeIndex target = 1; target <= kNumTargets; ++target) {
+  for (NodeIndex target = 0; target < kNumTargets; ++target) {
     min_cost_flow.SetNodeSupply(kNumSources + target, -1);
   }
   CostValue total_flow_cost = min_cost_flow.ComputeMinCostFlow();
@@ -59,13 +59,13 @@ void MaxFeasibleFlow() {
   LOG(INFO) << "Max Feasible Flow";
   const int kNumNodes = 6;
   const int kNumArcs = 9;
-  const NodeIndex kTail[kNumArcs] = { 1, 1, 1, 1, 2, 3, 4, 4, 5 };
-  const NodeIndex kHead[kNumArcs] = { 2, 3, 4, 5, 4, 5, 5, 6, 6 };
+  const NodeIndex kTail[kNumArcs] = { 0, 0, 0, 0, 1, 2, 3, 3, 4 };
+  const NodeIndex kHead[kNumArcs] = { 1, 2, 3, 4, 3, 4, 4, 5, 5 };
   const FlowQuantity kCapacity[kNumArcs] = { 5, 8, 5, 3, 4, 5, 6, 6, 4 };
   const FlowQuantity kExpectedFlow[kNumArcs] = { 4, 4, 2, 0, 4, 4, 0, 6, 4 };
   const FlowQuantity kExpectedTotalFlow = 10;
   StarGraph graph(kNumNodes, kNumArcs);
-  MaxFlow max_flow(graph, 1, kNumNodes);
+  MaxFlow max_flow(graph, 0, kNumNodes - 1);
   for (int i = 0; i < kNumArcs; ++i) {
     ArcIndex arc = graph.AddArc(kTail[i], kHead[i]);
     max_flow.SetArcCapacity(arc, kCapacity[i]);
@@ -73,7 +73,7 @@ void MaxFeasibleFlow() {
   FlowQuantity total_flow = max_flow.ComputeMaxFlow();
   CHECK_EQ(total_flow, kExpectedTotalFlow);
   for (int i = 0; i < kNumArcs; ++i) {
-    CHECK_EQ(kExpectedFlow[i], max_flow.Flow(i + 1)) << " i = " << i;
+    CHECK_EQ(kExpectedFlow[i], max_flow.Flow(i)) << " i = " << i;
   }
 }
 }  // namespace operations_research

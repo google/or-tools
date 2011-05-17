@@ -14,7 +14,6 @@
 #ifndef OR_TOOLS_BASE_CALLBACK_H_
 #define OR_TOOLS_BASE_CALLBACK_H_
 
-#include "base/util.h"
 #include "base/logging.h"
 
 namespace operations_research {

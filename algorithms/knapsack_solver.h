@@ -58,7 +58,6 @@
 #define OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
 
 #include <math.h>
-#include <queue>
 #include <string>
 #include <vector>
 
@@ -67,7 +66,8 @@
 #include "base/logging.h"
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
-#include "base/util.h"
+
+using std::string;
 
 namespace operations_research {
 
@@ -89,6 +89,12 @@ namespace operations_research {
 //  - KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER: This solver can deal
 //    with both large number of items and several dimensions. This solver is
 //    based on branch and bound.
+//  - KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER: This solver can deal with both
+//    large number of items and several dimensions. This solver is based on
+//    Integer Programming solver CBC.
+//  - KNAPSACK_MULTIDIMENSION_GLPK_MIP_SOLVER: This solver can deal with both
+//    large number of items and several dimensions. This solver is based on
+//    Integer Programming solver GLPK.
 //
 // KnapsackSolver also implements a problem reduction algorithm based on lower
 // and upper bounds (see Ingargolia and Korsh - A reduction algorithm for
@@ -109,6 +115,8 @@ class KnapsackSolver {
     KNAPSACK_BRUTE_FORCE_SOLVER,
     KNAPSACK_64ITEMS_SOLVER,
     KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER,
+    KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER,
+    KNAPSACK_MULTIDIMENSION_GLPK_MIP_SOLVER,
     KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER
   };
 
@@ -117,9 +125,9 @@ class KnapsackSolver {
   virtual ~KnapsackSolver();
 
   // Initializes the solver and enters the problem to be solved.
-  void Init(const vector<int64>& profits,
-            const vector<vector<int64> >& weights,
-            const vector<int64>& capacities);
+  void Init(const std::vector<int64>& profits,
+            const std::vector<std::vector<int64> >& weights,
+            const std::vector<int64>& capacities);
 
   // Solves the problem and returns the profit of the optimal solution.
   int64 Solve();
@@ -133,15 +141,15 @@ class KnapsackSolver {
 
  private:
   int ReduceProblem(int num_items);
-  void ComputeAdditionalProfit(const vector<int64>& profits);
-  void InitReducedProblem(const vector<int64>& profits,
-                          const vector<vector<int64> >& weights,
-                          const vector<int64>& capacities);
+  void ComputeAdditionalProfit(const std::vector<int64>& profits);
+  void InitReducedProblem(const std::vector<int64>& profits,
+                          const std::vector<std::vector<int64> >& weights,
+                          const std::vector<int64>& capacities);
 
   scoped_ptr<BaseKnapsackSolver> solver_;
-  vector<bool> known_value_;
-  vector<bool> best_solution_;
-  vector<int> mapping_reduced_item_id_;
+  std::vector<bool> known_value_;
+  std::vector<bool> best_solution_;
+  std::vector<int> mapping_reduced_item_id_;
   bool is_problem_solved_;
   int64 additional_profit_;
   bool use_reduction_;
@@ -150,8 +158,6 @@ class KnapsackSolver {
 };
 
 #if !defined(SWIG)
-
-
 // The following code defines needed classes for the KnapsackGenericSolver
 // class which is the entry point to extend knapsack with new constraints such
 // as conflicts between items.
@@ -319,8 +325,8 @@ class KnapsackState {
   // 'is_bound_(item_i)' is false when there is no decision for item_i yet.
   // When item_i is bound, 'is_in_(item_i)' represents the presence (true) or
   // the absence (false) of item_i in the current solution.
-  vector<bool> is_bound_;
-  vector<bool> is_in_;
+  std::vector<bool> is_bound_;
+  std::vector<bool> is_in_;
 
   DISALLOW_COPY_AND_ASSIGN(KnapsackState);
 };
@@ -338,8 +344,8 @@ class KnapsackPropagator {
   virtual ~KnapsackPropagator();
 
   // Initializes data structure and then calls InitPropagator.
-  void Init(const vector<int64>& profits,
-            const vector<int64>& weights);
+  void Init(const std::vector<int64>& profits,
+            const std::vector<int64>& weights);
 
   // Updates data structure and then calls UpdatePropagator.
   // Returns false when failure.
@@ -362,7 +368,7 @@ class KnapsackPropagator {
   // there is no need to check the solution with other propagators, so the
   // partial solution can be smartly completed.
   void CopyCurrentStateToSolution(bool has_one_propagator,
-                                  vector<bool>* solution) const;
+                                  std::vector<bool>* solution) const;
 
  protected:
   // Initializes data structure. This method is called after initialization
@@ -380,16 +386,16 @@ class KnapsackPropagator {
   // This method is useful when a propagator is able to find a better solution
   // than the blind instantiation to false of unbound items.
   virtual void CopyCurrentStateToSolutionPropagator(
-      vector<bool>* solution) const = 0;
+      std::vector<bool>* solution) const = 0;
 
   const KnapsackState& state() const { return state_; }
-  const vector<KnapsackItemPtr>& items() const { return items_; }
+  const std::vector<KnapsackItemPtr>& items() const { return items_; }
 
   void set_profit_lower_bound(int64 profit) { profit_lower_bound_ = profit; }
   void set_profit_upper_bound(int64 profit) { profit_upper_bound_ = profit; }
 
  private:
-  vector<KnapsackItemPtr> items_;
+  std::vector<KnapsackItemPtr> items_;
   int64 current_profit_;
   int64 profit_lower_bound_;
   int64 profit_upper_bound_;
@@ -432,7 +438,7 @@ class KnapsackCapacityPropagator : public KnapsackPropagator {
   virtual bool UpdatePropagator(bool revert,
                                 const KnapsackAssignment& assignment);
   virtual void CopyCurrentStateToSolutionPropagator(
-      vector<bool>* solution) const;
+      std::vector<bool>* solution) const;
 
  private:
   // An obvious additional profit upper bound corresponds to the linear
@@ -448,7 +454,7 @@ class KnapsackCapacityPropagator : public KnapsackPropagator {
   const int64 capacity_;
   int64 consumed_capacity_;
   int break_item_id_;
-  vector<KnapsackItemPtr> sorted_items_;
+  std::vector<KnapsackItemPtr> sorted_items_;
   int64 profit_max_;
 
   DISALLOW_COPY_AND_ASSIGN(KnapsackCapacityPropagator);
@@ -463,9 +469,9 @@ class BaseKnapsackSolver {
   virtual ~BaseKnapsackSolver() {}
 
   // Initializes the solver and enters the problem to be solved.
-  virtual void Init(const vector<int64>& profits,
-                    const vector<vector<int64> >& weights,
-                    const vector<int64>& capacities) = 0;
+  virtual void Init(const std::vector<int64>& profits,
+                    const std::vector<std::vector<int64> >& weights,
+                    const std::vector<int64>& capacities) = 0;
 
   // Gets the lower and upper bound when the item is in or out of the knapsack.
   // To ensure objects are correctly initialized, this method should not be
@@ -502,9 +508,9 @@ class KnapsackGenericSolver : public BaseKnapsackSolver {
   virtual ~KnapsackGenericSolver();
 
   // Initializes the solver and enters the problem to be solved.
-  virtual void Init(const vector<int64>& profits,
-                    const vector<vector<int64> >& weights,
-                    const vector<int64>& capacities);
+  virtual void Init(const std::vector<int64>& profits,
+                    const std::vector<std::vector<int64> >& weights,
+                    const std::vector<int64>& capacities);
   int GetNumberOfItems() const { return state_.GetNumberOfItems(); }
   void GetLowerAndUpperBoundWhenItem(int item_id,
                                      bool is_item_in,
@@ -554,16 +560,15 @@ class KnapsackGenericSolver : public BaseKnapsackSolver {
     return propagators_.at(master_propagator_id_)->GetNextItemId();
   }
 
-  vector<KnapsackPropagator*> propagators_;
+  std::vector<KnapsackPropagator*> propagators_;
   int master_propagator_id_;
-  vector<KnapsackSearchNode*> search_nodes_;
+  std::vector<KnapsackSearchNode*> search_nodes_;
   KnapsackState state_;
   int64 best_solution_profit_;
-  vector<bool> best_solution_;
+  std::vector<bool> best_solution_;
 
   DISALLOW_COPY_AND_ASSIGN(KnapsackGenericSolver);
 };
-
 #endif  // SWIG
 }  // namespace operations_research
 

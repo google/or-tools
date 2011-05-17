@@ -11,31 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_UTIL_H_
-#define OR_TOOLS_BASE_UTIL_H_
+#ifndef OR_TOOLS_BASE_HASH_H_
+#define OR_TOOLS_BASE_HASH_H_
 
-// C
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <stddef.h>         // For size_t
-#include <assert.h>
-#include <stdarg.h>
-
-// C++
-#include <list>
-#include <vector>
-#include <string>
-#include <algorithm>
-#include <iosfwd>
-#include <map>
-#include <stack>
-#include <iostream>
-#include <sstream>
-#include <utility>
-#include <set>
-
-// Hash maps and hash sets are more problematic.
+// Hash maps and hash sets are compiler dependant.
 #ifdef __GNUC__
 #include <ext/hash_map>
 #include <ext/hash_set>
@@ -43,9 +22,11 @@ namespace operations_research {
   using namespace __gnu_cxx;
 }  // namespace operations_research
 #else
-#include <hash_map>
-#include <hash_set>
+#include "base/hash.h"
+#include "base/hash.h"
 #endif
+#include <string>
+#include <utility>
 
 #include "base/basictypes.h"
 
@@ -77,7 +58,8 @@ static inline void mix(uint64& a, uint64& b, uint64& c) {     // 64bit version
   c -= a; c -= b; c ^= (b>>22);
 }
 }  // namespace operations_research
-#if !defined(SWIG) && !defined(_MSC_VER)
+#if !defined(SWIG)
+#if !defined(_MSC_VER)
 namespace __gnu_cxx {
 template<class T> struct hash<T*> {
   size_t operator()(T *x) const { return reinterpret_cast<size_t>(x); }
@@ -123,35 +105,54 @@ struct hash<std::pair<First, Second> > {
   }
 };
 }  // namespace __gnu_cxx
-#endif  // SWIG && _MSC_VER
+#else  // !defined(_MSC_VER)
+// The following class defines a hash function for pair<int64, int64>.
+class PairInt64Hasher : public stdext::hash_compare <pair<int64, int64> > {
+ public:
+  size_t operator() (const pair<int64, int64>& a) const {
+    uint64 x = a.first;
+    uint64 y = GG_ULONGLONG(0xe08c1d668b756f82);
+    uint64 z = a.second;
+    mix(x, y, z);
+    return z;
+  }
+  bool operator() (const pair<int64, int64>& a1,
+                   const pair<int64, int64>& a2) const {
+    return a1.first < a2.first ||
+        (a1.first == a2.first && a1.second < a2.second);
+  }
+};
 
-// Use std names.
-using std::vector;
+class PairIntHasher : public stdext::hash_compare <pair<int, int> > {
+ public:
+  size_t operator() (const pair<int, int>& a) const {
+    uint32 x = a.first;
+    uint32 y = 0x9e3779b9UL;
+    uint32 z = a.second;
+    mix(x, y, z);
+    return z;
+  }
+  bool operator() (const pair<int, int>& a1, const pair<int, int>& a2) const {
+    return a1.first < a2.first ||
+        (a1.first == a2.first && a1.second < a2.second);
+  }
+};
+#endif  // defined(_MSC_VER)
+#endif  // defined(SWIG)
+
 #if !defined(SWIG)
-using std::list;
-using std::make_pair;
-using std::map;
-using std::max;
-using std::min;
-using std::ostream;
-using std::ostringstream;
-using std::pair;
-using std::set;
-using std::sort;
-using std::stack;
-using std::string;
-using std::swap;
-#if defined(__GNUC__)
+# if defined(__GNUC__)
 using __gnu_cxx::hash;
 using __gnu_cxx::hash_set;
-#elif defined(_MSC_VER)
+# elif defined(_MSC_VER)
 using std::hash;
 using stdext::hash_map;
 using stdext::hash_set;
-#else
+# else
 using std::hash;
 using std::hash_map;
 using std::hash_set;
+# endif
 #endif
-#endif  // SWIG
-#endif  // OR_TOOLS_BASE_UTIL_H_
+
+#endif  // OR_TOOLS_BASE_HASH_H_

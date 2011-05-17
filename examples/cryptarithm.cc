@@ -40,7 +40,7 @@ void Cryptoarithmetics() {
   IntVar* r = solver.MakeIntVar(0, 9, "r");
   IntVar* y = solver.MakeIntVar(0, 9, "y");
 
-  vector<IntVar*> letters;
+  std::vector<IntVar*> letters;
   letters.push_back(s);
   letters.push_back(m);
   letters.push_back(o);

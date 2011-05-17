@@ -318,7 +318,7 @@ class Queue {
   uint32 freeze_level_;
   bool in_process_;
   Action* clear_action_;
-  vector<Constraint*> to_add_;
+  std::vector<Constraint*> to_add_;
   bool in_add_;
 };
 
@@ -600,15 +600,15 @@ struct Trail {
   CompressedTrail<int64> rev_int64s_;
   CompressedTrail<uint64> rev_uint64s_;
   CompressedTrail<void*> rev_ptrs_;
-  vector<BooleanVar*> rev_boolvar_list_;
-  vector<bool*> rev_bools_;
-  vector<bool> rev_bool_value_;
-  vector<int*> rev_int_memory_;
-  vector<int64*> rev_int64_memory_;
-  vector<BaseObject*> rev_object_memory_;
-  vector<BaseObject**> rev_object_array_memory_;
-  vector<void*> rev_memory_;
-  vector<void**> rev_memory_array_;
+  std::vector<BooleanVar*> rev_boolvar_list_;
+  std::vector<bool*> rev_bools_;
+  std::vector<bool> rev_bool_value_;
+  std::vector<int*> rev_int_memory_;
+  std::vector<int64*> rev_int64_memory_;
+  std::vector<BaseObject*> rev_object_memory_;
+  std::vector<BaseObject**> rev_object_array_memory_;
+  std::vector<void*> rev_memory_;
+  std::vector<void**> rev_memory_array_;
 
   Trail(int block_size, SolverParameters::TrailCompression compression_level)
       : rev_ints_(block_size, compression_level),
@@ -867,8 +867,8 @@ class Search {
   }
 
   Solver* const solver_;
-  vector<StateMarker*> marker_stack_;
-  vector<SearchMonitor*> monitors_;
+  std::vector<StateMarker*> marker_stack_;
+  std::vector<SearchMonitor*> monitors_;
   jmp_buf fail_buffer_;
   int64 solution_counter_;
   DecisionBuilder* decision_builder_;
@@ -1025,7 +1025,7 @@ void Search::EnterSearch() {
   // top-level search.
   solution_counter_ = 0;
 
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->EnterSearch();
@@ -1033,7 +1033,7 @@ void Search::EnterSearch() {
 }
 
 void Search::ExitSearch() {
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->ExitSearch();
@@ -1041,7 +1041,7 @@ void Search::ExitSearch() {
 }
 
 void Search::RestartSearch() {
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->RestartSearch();
@@ -1049,7 +1049,7 @@ void Search::RestartSearch() {
 }
 
 void Search::BeginNextDecision(DecisionBuilder* const db) {
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->BeginNextDecision(db);
@@ -1058,7 +1058,7 @@ void Search::BeginNextDecision(DecisionBuilder* const db) {
 }
 
 void Search::EndNextDecision(DecisionBuilder* const db, Decision* const d) {
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->EndNextDecision(db, d);
@@ -1067,7 +1067,7 @@ void Search::EndNextDecision(DecisionBuilder* const db, Decision* const d) {
 }
 
 void Search::ApplyDecision(Decision* const d) {
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->ApplyDecision(d);
@@ -1076,7 +1076,7 @@ void Search::ApplyDecision(Decision* const d) {
 }
 
 void Search::AfterDecision(Decision* const d, bool apply) {
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->AfterDecision(d, apply);
@@ -1085,7 +1085,7 @@ void Search::AfterDecision(Decision* const d, bool apply) {
 }
 
 void Search::RefuteDecision(Decision* const d) {
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->RefuteDecision(d);
@@ -1094,7 +1094,7 @@ void Search::RefuteDecision(Decision* const d) {
 }
 
 void Search::BeginFail() {
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->BeginFail();
@@ -1102,7 +1102,7 @@ void Search::BeginFail() {
 }
 
 void Search::EndFail() {
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->EndFail();
@@ -1110,7 +1110,7 @@ void Search::EndFail() {
 }
 
 void Search::BeginInitialPropagation() {
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->BeginInitialPropagation();
@@ -1118,7 +1118,7 @@ void Search::BeginInitialPropagation() {
 }
 
 void Search::EndInitialPropagation() {
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->EndInitialPropagation();
@@ -1127,7 +1127,7 @@ void Search::EndInitialPropagation() {
 
 bool Search::AcceptSolution() {
   bool valid = true;
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     if (!(*it)->AcceptSolution()) {
@@ -1139,7 +1139,7 @@ bool Search::AcceptSolution() {
 
 bool Search::AtSolution() {
   bool should_continue = false;
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     if ((*it)->AtSolution()) {
@@ -1150,7 +1150,7 @@ bool Search::AtSolution() {
 }
 
 void Search::NoMoreSolutions() {
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->NoMoreSolutions();
@@ -1159,7 +1159,7 @@ void Search::NoMoreSolutions() {
 
 bool Search::LocalOptimum() {
   bool res = false;
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     if ((*it)->LocalOptimum()) {
@@ -1171,7 +1171,7 @@ bool Search::LocalOptimum() {
 
 bool Search::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
   bool accept = true;
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     if (!(*it)->AcceptDelta(delta, deltadelta)) {
@@ -1182,7 +1182,7 @@ bool Search::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
 }
 
 void Search::AcceptNeighbor() {
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->AcceptNeighbor();
@@ -1190,7 +1190,7 @@ void Search::AcceptNeighbor() {
 }
 
 void Search::PeriodicCheck() {
-  for (vector<SearchMonitor*>::iterator it = monitors_.begin();
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
     (*it)->PeriodicCheck();
@@ -1553,12 +1553,12 @@ bool Solver::CurrentlyInSolve() const {
 }
 
 bool Solver::Solve(DecisionBuilder* const db,
-                   const vector<SearchMonitor*>& monitors) {
+                   const std::vector<SearchMonitor*>& monitors) {
   return Solve(db, monitors.data(), monitors.size());
 }
 
 bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   return Solve(db, monitors.data(), monitors.size());
 }
@@ -1570,7 +1570,7 @@ bool Solver::Solve(DecisionBuilder* const db) {
 bool Solver::Solve(DecisionBuilder* const db,
                    SearchMonitor* const m1,
                    SearchMonitor* const m2) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   return Solve(db, monitors.data(), monitors.size());
@@ -1580,7 +1580,7 @@ bool Solver::Solve(DecisionBuilder* const db,
                    SearchMonitor* const m1,
                    SearchMonitor* const m2,
                    SearchMonitor* const m3) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   monitors.push_back(m3);
@@ -1592,7 +1592,7 @@ bool Solver::Solve(DecisionBuilder* const db,
                    SearchMonitor* const m2,
                    SearchMonitor* const m3,
                    SearchMonitor* const m4) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   monitors.push_back(m3);
@@ -1612,12 +1612,12 @@ bool Solver::Solve(DecisionBuilder* const db,
 }
 
 void Solver::NewSearch(DecisionBuilder* const db,
-                       const vector<SearchMonitor*>& monitors) {
+                       const std::vector<SearchMonitor*>& monitors) {
   return NewSearch(db, monitors.data(), monitors.size());
 }
 
 void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   return NewSearch(db, monitors.data(), monitors.size());
 }
@@ -1629,7 +1629,7 @@ void Solver::NewSearch(DecisionBuilder* const db) {
 void Solver::NewSearch(DecisionBuilder* const db,
                        SearchMonitor* const m1,
                        SearchMonitor* const m2) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   return NewSearch(db, monitors.data(), monitors.size());
@@ -1639,7 +1639,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
                        SearchMonitor* const m1,
                        SearchMonitor* const m2,
                        SearchMonitor* const m3) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   monitors.push_back(m3);
@@ -1651,7 +1651,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
                        SearchMonitor* const m2,
                        SearchMonitor* const m3,
                        SearchMonitor* const m4) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   monitors.push_back(m3);
@@ -2082,14 +2082,14 @@ bool Solver::CheckAssignment(Assignment* const solution) {
 
 bool Solver::NestedSolve(DecisionBuilder* const db,
                          bool restore,
-                         const vector<SearchMonitor*>& monitors) {
+                         const std::vector<SearchMonitor*>& monitors) {
   return NestedSolve(db, restore,  monitors.data(), monitors.size());
 }
 
 bool Solver::NestedSolve(DecisionBuilder* const db,
                          bool restore,
                          SearchMonitor* const m1) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   return NestedSolve(db, restore, monitors.data(), monitors.size());
 }
@@ -2102,7 +2102,7 @@ bool Solver::NestedSolve(DecisionBuilder* const db,
                          bool restore,
                          SearchMonitor* const m1,
                          SearchMonitor* const m2) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   return NestedSolve(db, restore, monitors.data(), monitors.size());
@@ -2113,7 +2113,7 @@ bool Solver::NestedSolve(DecisionBuilder* const db,
                          SearchMonitor* const m1,
                          SearchMonitor* const m2,
                          SearchMonitor* const m3) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   monitors.push_back(m3);

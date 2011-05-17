@@ -16,6 +16,7 @@
 
 #include <math.h>
 
+#include "base/hash.h"
 #include <string>
 #include <vector>
 
@@ -452,7 +453,7 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   scoped_array<int64> old_values_;
   Bitmap activated_;
   Bitmap was_activated_;
-  vector<int64> changes_;
+  std::vector<int64> changes_;
   Bitmap has_changed_;
   Bitmap has_delta_changed_;
   bool cleared_;
@@ -474,7 +475,7 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
 //       : BaseLNS(vars, size), index_(0) {}
 //   virtual ~OneVarLNS() {}
 //   virtual void InitFragments() { index_ = 0; }
-//   virtual bool NextFragment(vector<int>* fragment) {
+//   virtual bool NextFragment(std::vector<int>* fragment) {
 //     const int size = Size();
 //     if (index_ < size) {
 //       fragment->push_back(index_);
@@ -495,7 +496,7 @@ class BaseLNS : public IntVarLocalSearchOperator {
   // This method should not be overridden (it calls NextFragment()).
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual void InitFragments();
-  virtual bool NextFragment(vector<int>* fragment) = 0;
+  virtual bool NextFragment(std::vector<int>* fragment) = 0;
  private:
   // This method should not be overridden. Override InitFragments() instead.
   virtual void OnStart();
@@ -635,11 +636,11 @@ class PathOperator : public IntVarLocalSearchOperator {
                           int64 exclude) const;
   void Synchronize();
 
-  vector<int> base_nodes_;
-  vector<int> end_nodes_;
-  vector<int> base_paths_;
-  vector<int64> path_starts_;
-  vector<bool> inactives_;
+  std::vector<int> base_nodes_;
+  std::vector<int> end_nodes_;
+  std::vector<int> base_paths_;
+  std::vector<int64> path_starts_;
+  std::vector<bool> inactives_;
   bool just_started_;
   bool first_start_;
 };
@@ -707,7 +708,7 @@ class LocalSearch : public DecisionBuilder {
               LocalSearchOperator* const ls_operator,
               DecisionBuilder* const sub_decision_builder,
               SearchLimit* const limit,
-              const vector<LocalSearchFilter*>& filters);
+              const std::vector<LocalSearchFilter*>& filters);
   // TODO(user): find a way to not have to pass vars here: redundant with
   // variables in operators
   LocalSearch(IntVar* const* vars,
@@ -717,7 +718,7 @@ class LocalSearch : public DecisionBuilder {
               LocalSearchOperator* const ls_operator,
               DecisionBuilder* const sub_decision_builder,
               SearchLimit* const limit,
-              const vector<LocalSearchFilter*>& filters);
+              const std::vector<LocalSearchFilter*>& filters);
   virtual ~LocalSearch();
   virtual Decision* Next(Solver* const solver);
   virtual string DebugString() const {
@@ -731,10 +732,10 @@ class LocalSearch : public DecisionBuilder {
   SolutionPool* const pool_;
   LocalSearchOperator* const ls_operator_;
   DecisionBuilder* const sub_decision_builder_;
-  vector<NestedSolveDecision*> nested_decisions_;
+  std::vector<NestedSolveDecision*> nested_decisions_;
   int nested_decision_index_;
   SearchLimit* const limit_;
-  const vector<LocalSearchFilter*> filters_;
+  const std::vector<LocalSearchFilter*> filters_;
   bool has_started_;
 };
 

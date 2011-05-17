@@ -23,26 +23,23 @@
 
 // The graph is represented with three arrays.
 // Let n be the number of nodes and m be the number of arcs.
-// Let i be an integer in [1..m], denoting the index of an arc.
+// Let i be an integer in [0..m-1], denoting the index of an arc.
 //  * node_[i] contains the end-node of arc i,
-//  * node_[-i] contains the start-node of arc i.
+//  * node_[-i-1] contains the start-node of arc i.
+// Note that in two's-complement arithmetic, -i-1 = ~i.
 // Consequently:
-//  * node_[-i] contains the start-node of the arc reverse to arc i,
+//  * node_[~i] contains the start-node of the arc reverse to arc i,
 //  * node_[i] contains the end-node of the arc reverse to arc i.
 //  Note that if arc (u, v) is defined, then the data structure also stores
 //  (v, u).
-//  Arc -i thus denotes the arc reverse to arc i.
+//  Arc ~i thus denotes the arc reverse to arc i.
 //  This is what makes this representation useful for undirected graphs,
 //  and for implementing algorithms like two-directions shortest-path.
 //
-// Now, for an integer u in [1..n] denoting the index of a node:
+// Now, for an integer u in [0..n-1] denoting the index of a node:
 //  * first_incident_arc_[u] denotes the first arc in the adjacency list of u.
 //  * going from an arc i, the adjacency list can be traversed using
 //    j = next_adjacent_arc_[i].
-//
-// Note that arc index 0 is not used (because negative indices denote reverse
-// arcs.) Therefore care must be taken about the fact that arc indices (and
-// for consistency, node indices) start at 1.
 //
 // This implementation has the following benefits:
 //  * It is able to handle both directed or undirected graphs.
@@ -57,15 +54,21 @@
 //    pointer-based representation were used.
 //  * The representation can be recomputed if edges have been loaded from
 //    external memory or if edges have been re-ordered.
-//  * The memory consumption is: (2 * m + 1) * NodeIndexSize
-//                             + (2 * m + 1) * ArcIndexSize
-//                             + (n + 1) * ArcIndexSize
-//
-// The main drawback of this implementation is that the node and arc indices
-// start at 1 instead of the usual 0 in C/C++.
+//  * The memory consumption is: 2 * m * NodeIndexSize
+//                             + 2 * m * ArcIndexSize
+//                             + n * ArcIndexSize
 //
 // This implementation differs from the implementation described in [Ebert 1987]
 // in the following respects:
+//  * arcs are represented using an (i, ~i) approach, whereas Ebert used
+//    (i, -i). Indices for direct arcs thus start at 0, in a fashion that is
+//    compatible with the index numbering in C and C++. Note that we also tested
+//    a (2*i, 2*i+1) storage pattern, which did not show any speed benefit, and
+//    made the use of the API much more difficult.
+//  * because of this, the 'nil' values for nodes and arcs are not 0, as Ebert
+//    first described. The value for the 'nil' node is set to -1, while the
+//    value for the 'nil' arc is set to the smallest integer representable with
+//    ArcIndexSize bytes.
 //  * it is possible to add arcs to the graph, with AddArc, in a much simpler
 //    way than described by Ebert.
 //  * TODO(user) it is possible to group all the outgoing (resp. incoming) arcs
@@ -74,10 +77,8 @@
 //  * TODO(user) it is possible to implement arc deletion and garbage collection
 //    in an efficient (relatively) manner. For the time being we haven't seen an
 //    application to this.
-//  * TODO(user) implement "interleaved" version of this, with direct arcs having
-//    even indices (2*i), and reverse arcs having odd indices (2*i+1). As
-//    suggested by lhm this could have better cache properties. This has to be
-//    validated on algorithms running with real data.
+
+#include <limits.h>
 
 #include <stddef.h>
 #include <algorithm>
@@ -90,6 +91,8 @@
 #include "util/packed_array.h"
 #include "util/permutation.h"
 
+using std::string;
+
 namespace operations_research {
 typedef int64 NodeIndex;
 typedef int64 ArcIndex;
@@ -99,16 +102,22 @@ typedef int64 CostValue;
 template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
  public:
   // The index of the 'nil' node in the graph.
-  static const NodeIndex kNilNode = 0;
+  static const NodeIndex kNilNode;
 
   // The index of the 'nil' arc in the graph.
-  static const ArcIndex kNilArc = 0;
+  static const ArcIndex kNilArc;
 
   // The index of the first node in the graph.
-  static const NodeIndex kFirstNode = 1;
+  static const NodeIndex kFirstNode;
 
   // The index of the first arc in the graph.
-  static const ArcIndex kFirstArc = 1;
+  static const ArcIndex kFirstArc;
+
+  // The maximum possible node index in the graph.
+  static const NodeIndex kMaxNumNodes;
+
+  // The maximun possible arc index in the graph.
+  static const ArcIndex kMaxNumArcs;
 
   // An easy access to NodeIndexSize. Useful when using EbertGraph through
   // StarGraph or other typedef'd types.
@@ -128,8 +137,9 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
         first_incident_arc_(),
         representation_clean_(true) {
     Reserve(max_num_nodes, max_num_arcs);
-    next_adjacent_arc_.Set(0, 0);
-    node_.Set(0, 0);
+    first_incident_arc_.Assign(kNilArc);
+    next_adjacent_arc_.Assign(kNilArc);
+    node_.Assign(kNilNode);
   }
   ~EbertGraph() {}
 
@@ -138,14 +148,16 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // if called with smaller values.
   void Reserve(NodeIndex new_max_num_nodes, ArcIndex new_max_num_arcs) {
     CHECK_LE(1, new_max_num_nodes);
+    CHECK_GE(kMaxNumNodes, new_max_num_nodes);
     CHECK_LE(1, new_max_num_arcs);
-    node_.Reserve(-new_max_num_arcs, new_max_num_arcs);
-    next_adjacent_arc_.Reserve(-new_max_num_arcs, new_max_num_arcs);
-    first_incident_arc_.Reserve(kFirstNode, new_max_num_nodes);
-    for (NodeIndex node = max_num_nodes_ + 1;
-         node <= new_max_num_nodes;
+    CHECK_GE(kMaxNumArcs, new_max_num_arcs);
+    node_.Reserve(-new_max_num_arcs, new_max_num_arcs - 1);
+    next_adjacent_arc_.Reserve(-new_max_num_arcs, new_max_num_arcs - 1);
+    first_incident_arc_.Reserve(kFirstNode, new_max_num_nodes - 1);
+    for (NodeIndex node = max_num_nodes_;
+         node < new_max_num_nodes;
          ++node) {
-      first_incident_arc_.Set(node, 0);
+      first_incident_arc_.Set(node, kNilArc);
     }
     max_num_nodes_ = new_max_num_nodes;
     max_num_arcs_ = new_max_num_arcs;
@@ -188,14 +200,14 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // Adds an arc to the graph and returns its index.
   ArcIndex AddArc(NodeIndex tail, NodeIndex head) {
     CHECK_LE(kFirstNode, tail);
-    CHECK_GE(max_num_nodes_, tail);
+    CHECK_GT(max_num_nodes_, tail);
     CHECK_LE(kFirstNode, head);
-    CHECK_GE(max_num_nodes_, head);
+    CHECK_GT(max_num_nodes_, head);
     CHECK_GT(max_num_arcs_, num_arcs_);
-    num_nodes_ = std::max(num_nodes_, tail);
-    num_nodes_ = std::max(num_nodes_, head);
-    ++num_arcs_;
+    num_nodes_ = std::max(num_nodes_, tail + 1);
+    num_nodes_ = std::max(num_nodes_, head + 1);
     ArcIndex arc = num_arcs_;
+    ++num_arcs_;
     node_.Set(Opposite(arc), tail);
     node_.Set(arc, head);
     Attach(arc);
@@ -221,9 +233,9 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
       // Start with the identity permutation.
       arc_permutation[i] = i;
     }
-    sort(&arc_permutation[kFirstArc],
-         &arc_permutation[end_arc_index()],
-         compare);
+    std::sort(&arc_permutation[kFirstArc],
+              &arc_permutation[end_arc_index()],
+              compare);
 
     // Now we actually permute the node_ array and the
     // scaled_arc_cost_ array according to the sorting permutation.
@@ -505,8 +517,9 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // It is exported so that users of the EbertGraph class can use it.
   // To be used in a DCHECK.
   bool CheckArcBounds(const ArcIndex arc) const {
-    DCHECK_LE(-max_num_arcs_, arc);
-    DCHECK_GE(max_num_arcs_, arc);
+    if (arc == kNilArc) return true;
+    CHECK_LE(-max_num_arcs_, arc);
+    CHECK_GT(max_num_arcs_, arc);
     return true;
   }
 
@@ -515,9 +528,9 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // It is exported so that users of the EbertGraph class can use it.
   // To be used in a DCHECK.
   bool CheckArcValidity(const ArcIndex arc) const {
-    DCHECK_NE(kNilArc, arc);
-    DCHECK_LE(-max_num_arcs_, arc);
-    DCHECK_GE(max_num_arcs_, arc);
+    CHECK_NE(kNilArc, arc);
+    CHECK_LE(-max_num_arcs_, arc);
+    CHECK_GT(max_num_arcs_, arc);
     return true;
   }
 
@@ -526,8 +539,8 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // It is exported so that users of the EbertGraph class can use it.
   // To be used in a DCHECK.
   bool CheckNodeValidity(const NodeIndex node) const {
-    DCHECK_LE(kFirstNode, node);
-    DCHECK_GE(max_num_nodes_, node);
+    CHECK_LE(kFirstNode, node);
+    CHECK_GT(max_num_nodes_, node);
     return true;
   }
 
@@ -560,32 +573,34 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // Returns the arc in normal/direct direction.
   ArcIndex DirectArc(const ArcIndex arc) const {
     DCHECK(CheckArcValidity(arc));
-    return max(arc, Opposite(arc));  // abs(arc)
+    return std::max(arc, Opposite(arc));
   }
 
   // Returns the arc in reverse direction.
   ArcIndex ReverseArc(const ArcIndex arc) const {
     DCHECK(CheckArcValidity(arc));
-    return min(arc, Opposite(arc));  // -abs(arc)
+    return std::min(arc, Opposite(arc));
   }
 
   // Returns the opposite arc, i.e the direct arc is the arc is in reverse
   // direction, and the reverse arc if the arc is direct.
   ArcIndex Opposite(const ArcIndex arc) const {
+    const ArcIndex opposite = ~arc;
     DCHECK(CheckArcValidity(arc));
-    return -arc;
+    DCHECK(CheckArcValidity(opposite));
+    return opposite;
   }
 
   // Returns true if the arc is direct.
   bool IsDirect(const ArcIndex arc) const {
-    DCHECK(CheckArcValidity(arc));
-    return arc > 0;
+    DCHECK(CheckArcBounds(arc));
+    return arc != kNilArc && arc >= 0;
   }
 
   // Returns true if the arc is in the reverse direction.
   bool IsReverse(const ArcIndex arc) const {
-    DCHECK(CheckArcValidity(arc));
-    return arc < 0;
+    DCHECK(CheckArcBounds(arc));
+    return arc != kNilArc && arc < 0;
   }
 
   // Returns true if arc is incident to node.
@@ -608,8 +623,8 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // This is useful if node_ array has been sorted according to a given
   // criterion, for example.
   void BuildRepresentation() {
-    first_incident_arc_.Assign(0);
-    for (ArcIndex arc = kFirstArc; arc <= max_num_arcs_; ++arc) {
+    first_incident_arc_.Assign(kNilArc);
+    for (ArcIndex arc = kFirstArc; arc <  max_num_arcs_; ++arc) {
       Attach(arc);
     }
     representation_clean_ = true;
@@ -620,18 +635,32 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   string DebugString() const {
     DCHECK(representation_clean_);
     string result = "Arcs:(node, next arc) :\n";
-    for (int64 arc = -num_arcs_; arc <= num_arcs_; ++arc) {
-      StringAppendF(&result, " %lld:(%lld,%lld)\n",
-                             arc,
-                             static_cast<int64>(node_[arc]),
-                             static_cast<int64>(next_adjacent_arc_[arc]));
+    for (ArcIndex arc = -num_arcs_; arc < num_arcs_; ++arc) {
+      result += " " + ArcDebugString(arc) + ":(" + NodeDebugString(node_[arc])
+              + "," + ArcDebugString(next_adjacent_arc_[arc]) + ")\n";
     }
     result += "Node:First arc :\n";
-    for (int64 node = kFirstNode; node <= num_nodes_; ++node) {
-      StringAppendF(&result, " %lld:%lld\n", node,
-                             static_cast<int64>(first_incident_arc_[node]));
+    for (NodeIndex node = kFirstNode; node < num_nodes_; ++node) {
+      result += " " + NodeDebugString(node) + ":"
+              + ArcDebugString(first_incident_arc_[node]) + "\n";
     }
     return result;
+  }
+
+  string NodeDebugString(const NodeIndex node) const {
+    if (node == kNilNode) {
+      return "NilNode";
+    } else {
+      return StringPrintf("%lld", static_cast<int64>(node));
+    }
+  }
+
+  string ArcDebugString(const ArcIndex arc) const {
+    if (arc == kNilArc) {
+      return "NilArc";
+    } else {
+      return StringPrintf("%lld", static_cast<int64>(arc));
+    }
   }
 
  private:
@@ -692,12 +721,14 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // It is called by NodeIterator::Next() and as such does not expect do be
   // passed an argument equal to kNilNode.
   // This is why the return line is simplified from
-  // return ( node == kNilNode || node >= num_nodes_) ? kNilNode : node + 1;
+  // return (node == kNilNode || next_node >= num_nodes_)
+  //        ? kNilNode : next_node;
   // to
-  // return node >= num_nodes_ ? kNilNode : node + 1;
+  // return next_node < num_nodes_ ? next_node : kNilNode;
   NodeIndex NextNode(const NodeIndex node) const {
     DCHECK(CheckNodeValidity(node));
-    return node >= num_nodes_ ? kNilNode : node + 1;
+    const NodeIndex next_node = node + 1;
+    return next_node < num_nodes_ ? next_node : kNilNode;
   }
 
   // Returns the arc following the argument in the graph.
@@ -705,12 +736,13 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // It is called by ArcIterator::Next() and as such does not expect do be
   // passed an argument equal to kNilArc.
   // This is why the return line is simplified from
-  // return ( arc == kNilArc || arc >= num_arcs_) ? kNilArc : arc + 1;
+  // return ( arc == kNilArc || next_arc >= num_arcs_) ? kNilArc : next_arc;
   // to
-  // return arc >= num_arcs_ ? kNilArc : arc + 1;
+  // return next_arc < num_arcs_ ? next_arc : kNilArc;
   ArcIndex NextArc(const ArcIndex arc) const {
     DCHECK(CheckArcValidity(arc));
-    return arc >= num_arcs_ ? kNilArc : arc + 1;
+    const ArcIndex next_arc = arc + 1;
+    return next_arc < num_arcs_ ? next_arc : kNilArc;
   }
 
   // Using the SetTail() method implies that the BuildRepresentation()
@@ -745,7 +777,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // Utility method that finds the next outgoing arc.
   ArcIndex FindNextOutgoingArc(ArcIndex arc) const {
     DCHECK(CheckArcBounds(arc));
-    while (arc < 0) {
+    while (IsReverse(arc)) {
       arc = NextAdjacentArc(arc);
       DCHECK(CheckArcBounds(arc));
     }
@@ -755,7 +787,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // Utility method that finds the next incoming arc.
   ArcIndex FindNextIncomingArc(ArcIndex arc) const {
     DCHECK(CheckArcBounds(arc));
-    while (arc > 0) {
+    while (IsDirect(arc)) {
       arc = NextAdjacentArc(arc);
       DCHECK(CheckArcBounds(arc));
     }
@@ -790,6 +822,39 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // builds.
   bool representation_clean_;
 };
+
+#define MAX_LONGLONG_ON_BYTES(n) ((GG_LONGLONG(1) << (n * CHAR_BIT - 1)) - 1)
+
+// The index of the 'nil' node in the graph.
+template<int NodeIndexSize, int ArcIndexSize>
+const NodeIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kNilNode =
+    GG_LONGLONG(-1);
+
+// The index of the 'nil' arc in the graph.
+template<int NodeIndexSize, int ArcIndexSize>
+const ArcIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kNilArc =
+    ~MAX_LONGLONG_ON_BYTES(ArcIndexSize);
+
+// The index of the first node in the graph.
+template<int NodeIndexSize, int ArcIndexSize>
+const NodeIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kFirstNode = 0;
+
+// The index of the first arc in the graph.
+template<int NodeIndexSize, int ArcIndexSize>
+const ArcIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kFirstArc = 0;
+
+// The maximum possible node index in the graph.
+template<int NodeIndexSize, int ArcIndexSize>
+const NodeIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kMaxNumNodes =
+    MAX_LONGLONG_ON_BYTES(NodeIndexSize);
+
+// The maximum possible number of arcs in the graph.
+// (The maximum index is kMaxNumArcs-1, since indices start at 0.)
+template<int NodeIndexSize, int ArcIndexSize>
+const ArcIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kMaxNumArcs =
+    MAX_LONGLONG_ON_BYTES(ArcIndexSize);
+
+#undef MAX_LONGLONG_ON_BYTES
 
 // Standard definition of the star representation of a graph, that makes it
 // possible to address all the physical memory on a 2010 machine, while keeping

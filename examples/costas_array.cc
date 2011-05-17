@@ -21,6 +21,8 @@
 // uses hard constraints, whereas CostasSoft() uses a minimizer to
 // minimize the number of duplicates.
 #include <time.h>
+#include <set>
+#include <utility>
 #include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
@@ -43,8 +45,8 @@ DEFINE_string(export_profile, "", "filename to save the profile overview");
 namespace operations_research {
 
 // Checks that all pairwise distances are unique and returns all violators
-void CheckConstraintViolators(const vector<int64>& vars,
-                              vector<int>* const violators) {
+void CheckConstraintViolators(const std::vector<int64>& vars,
+                              std::vector<int>* const violators) {
   int dim = vars.size();
 
   // Check that all indices are unique
@@ -75,8 +77,8 @@ void CheckConstraintViolators(const vector<int64>& vars,
 }
 
 // Check that all pairwise differences are unique
-bool CheckCostas(const vector<int64>& vars) {
-  vector<int> violators;
+bool CheckCostas(const std::vector<int64>& vars) {
+  std::vector<int> violators;
 
   CheckConstraintViolators(vars, &violators);
 
@@ -86,7 +88,7 @@ bool CheckCostas(const vector<int64>& vars) {
 // Cycles all possible permutations
 class OrderedLNS: public BaseLNS {
  public:
-  OrderedLNS(const vector<IntVar*>& vars, int free_elements) :
+  OrderedLNS(const std::vector<IntVar*>& vars, int free_elements) :
     BaseLNS(vars.data(), vars.size()),
     free_elements_(free_elements) {
     index_ = 0;
@@ -98,9 +100,9 @@ class OrderedLNS: public BaseLNS {
     }
   }
 
-  virtual bool NextFragment(vector<int>* const fragment) {
+  virtual bool NextFragment(std::vector<int>* const fragment) {
     int dim = Size();
-    set<int> fragment_set;
+    std::set<int> fragment_set;
 
     do {
       int work_index = index_;
@@ -112,7 +114,8 @@ class OrderedLNS: public BaseLNS {
         int current_index = work_index % dim;
         work_index = work_index / dim;
 
-        pair<set<int>::iterator, bool> ret = fragment_set.insert(current_index);
+        std::pair<std::set<int>::iterator, bool> ret =
+            fragment_set.insert(current_index);
 
         // Check if element has been used before
         if (ret.second) {
@@ -139,15 +142,15 @@ class OrderedLNS: public BaseLNS {
 // number of elements specified in 'free_elements' randomly.
 class RandomLNS: public BaseLNS {
  public:
-  RandomLNS(const vector<IntVar*>& vars, int free_elements) :
+  RandomLNS(const std::vector<IntVar*>& vars, int free_elements) :
     BaseLNS(vars.data(), vars.size()),
     free_elements_(free_elements),
     rand_(ACMRandom::HostnamePidTimeSeed()) {
   }
 
-  virtual bool NextFragment(vector<int>* const fragment) {
-    vector<int> weighted_elements;
-    vector<int64> values;
+  virtual bool NextFragment(std::vector<int>* const fragment) {
+    std::vector<int> weighted_elements;
+    std::vector<int64> values;
 
     // Create weighted vector for randomizer. Add one of each possible elements
     // to the weighted vector and then add more elements depending on the
@@ -163,16 +166,16 @@ class RandomLNS: public BaseLNS {
     int size = weighted_elements.size();
 
     // Randomly insert elements in vector until no more options remain
-    while (fragment->size() < min(free_elements_, size)) {
+    while (fragment->size() < std::min(free_elements_, size)) {
       const int index = weighted_elements[rand_.Next() % size];
       fragment->push_back(index);
 
       // Remove all elements with this index from weighted_elements
-      for (vector<int>::iterator pos = weighted_elements.begin();
+      for (std::vector<int>::iterator pos = weighted_elements.begin();
            pos != weighted_elements.end(); ) {
         if (*pos == index) {
           // Try to erase as many elements as possible at the same time
-          vector<int>::iterator end = pos;
+          std::vector<int>::iterator end = pos;
 
           while ((end + 1) != weighted_elements.end() && *(end + 1) == *pos) {
             ++end;
@@ -196,7 +199,7 @@ class RandomLNS: public BaseLNS {
 
 class Evaluator {
  public:
-  explicit Evaluator(const vector<IntVar*>& vars) : vars_(vars) {}
+  explicit Evaluator(const std::vector<IntVar*>& vars) : vars_(vars) {}
 
   // Prefer the value with the smallest domain
   int64 VarEvaluator(int64 index) {
@@ -217,7 +220,7 @@ class Evaluator {
     return appearance;
   }
  private:
-  vector<IntVar*> vars_;
+  std::vector<IntVar*> vars_;
 };
 
 // Computes a Costas Array using soft constraints.
@@ -231,17 +234,17 @@ void CostasSoft(const int dim) {
   const int num_elements = dim + (2 * dim + 1) * (dim);
 
   // create the variables
-  vector<IntVar*> vars;
+  std::vector<IntVar*> vars;
   solver.MakeIntVarArray(num_elements, -dim, dim, "var_", &vars);
 
   // the costas matrix
-  vector<IntVar*> matrix(dim);
+  std::vector<IntVar*> matrix(dim);
   // number of occurrences per stage
-  vector<IntVar*> occurences;
+  std::vector<IntVar*> occurences;
 
   // All possible values of the distance vector
   // used to count the occurrence of all these values
-  vector<int64> possible_values(2 * dim + 1);
+  std::vector<int64> possible_values(2 * dim + 1);
 
   for (int64 i = -dim; i <= dim; ++i) {
     possible_values[i + dim] = i;
@@ -257,7 +260,7 @@ void CostasSoft(const int dim) {
 
   // First constraint for the elements in the Costas Matrix. We want
   // them to be unique.
-  vector<IntVar*> matrix_count;
+  std::vector<IntVar*> matrix_count;
   solver.MakeIntVarArray(2 * dim + 1, 0, dim, "matrix_count_", &matrix_count);
   solver.AddConstraint(solver.MakeDistribute(matrix, possible_values,
                                              matrix_count));
@@ -274,7 +277,7 @@ void CostasSoft(const int dim) {
 
   // Count the number of duplicates for each stage
   for (int i = 1; i < dim; ++i) {
-    vector<IntVar*> subset(dim - i);
+    std::vector<IntVar*> subset(dim - i);
 
     // Initialize each stage
     for (int j = 0; j < dim - i; ++j) {
@@ -283,7 +286,7 @@ void CostasSoft(const int dim) {
     }
 
     // Count the number of occurrences for all possible values
-    vector<IntVar*> domain_count;
+    std::vector<IntVar*> domain_count;
     solver.MakeIntVarArray(2 * dim + 1, 0, dim, "domain_count_", &domain_count);
     solver.AddConstraint(solver.MakeDistribute(subset,
                                                possible_values,
@@ -328,7 +331,7 @@ void CostasSoft(const int dim) {
   DecisionBuilder* const subdecision_builder =
       solver.MakeSolveOnce(first_solution, fail_limit);
 
-  vector<LocalSearchOperator*> localSearchOperators;
+  std::vector<LocalSearchOperator*> localSearchOperators;
 
   // Apply RandomLNS to free FLAGS_freevar variables at each stage
   localSearchOperators.push_back(
@@ -356,7 +359,7 @@ void CostasSoft(const int dim) {
                total_duplicates,
                search_time_limit);
 
-  vector<int64> costas_matrix;
+  std::vector<int64> costas_matrix;
   string output;
 
   for (int n = 0; n < dim; ++n) {
@@ -384,10 +387,10 @@ void CostasHard(const int dim) {
   const int num_elements = dim + dim * (dim - 1) / 2;
 
   // create the variables
-  vector<IntVar*> vars;
+  std::vector<IntVar*> vars;
   solver.MakeIntVarArray(num_elements, -dim, dim, "var", &vars);
 
-  vector<IntVar*> matrix(dim);
+  std::vector<IntVar*> matrix(dim);
 
   // Initialize the matrix that contains the coordinates of all '1' per row
   for (int m = 0; m < dim; ++m) {
@@ -401,7 +404,7 @@ void CostasHard(const int dim) {
 
   // Check that the pairwise difference is unique
   for (int i = 1; i < dim; ++i) {
-    vector<IntVar*> subset(dim - i);
+    std::vector<IntVar*> subset(dim - i);
 
     for (int j = 0; j < dim - i; ++j) {
       IntVar* const diff = solver.MakeDifference(vars[j + i], vars[j])->Var();
@@ -418,7 +421,7 @@ void CostasHard(const int dim) {
   solver.NewSearch(db);
 
   if (solver.NextSolution()) {
-    vector<int64> costas_matrix;
+    std::vector<int64> costas_matrix;
     string output;
 
     for (int n = 0; n < dim; ++n) {

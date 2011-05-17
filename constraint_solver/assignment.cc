@@ -424,8 +424,8 @@ void Assignment::Add(IntVar* const* v, int s) {
   }
 }
 
-void Assignment::Add(const vector<IntVar*>& v) {
-  for (ConstIter<vector<IntVar*> > it(v); !it.at_end(); ++it) {
+void Assignment::Add(const std::vector<IntVar*>& v) {
+  for (ConstIter<std::vector<IntVar*> > it(v); !it.at_end(); ++it) {
     Add(*it);
   }
 }
@@ -479,8 +479,8 @@ void Assignment::Add(IntervalVar* const * vars, int size) {
   }
 }
 
-void Assignment::Add(const vector<IntervalVar*>& vars) {
-  for (ConstIter<vector<IntervalVar*> > it(vars); !it.at_end(); ++it) {
+void Assignment::Add(const std::vector<IntervalVar*>& vars) {
+  for (ConstIter<std::vector<IntervalVar*> > it(vars); !it.at_end(); ++it) {
     Add(*it);
   }
 }

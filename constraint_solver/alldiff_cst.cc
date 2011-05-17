@@ -123,7 +123,7 @@ bool ValueAllDifferent::AllMoves() {
   for (int i = 0; i < size_; ++i) {
     values[i] = vars_[i]->Value();
   }
-  sort(values.get(), values.get() + size_);
+  std::sort(values.get(), values.get() + size_);
   for (int i = 0; i < size_ - 1; ++i) {
     if (values[i] == values[i + 1]) {
       values.reset(NULL);   // prevent leaks (solver()->Fail() won't return)
@@ -134,7 +134,7 @@ bool ValueAllDifferent::AllMoves() {
   return true;
 }
 
-Constraint* Solver::MakeAllDifferent(const vector<IntVar*>& vars, bool range) {
+Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars, bool range) {
   return MakeAllDifferent(vars.data(), vars.size(), range);
 }
 

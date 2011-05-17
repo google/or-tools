@@ -175,8 +175,8 @@ void CountValueEqCst::CardMax() {
   }
 }
 
-Constraint* Solver::MakeCount(const vector<IntVar*>& vars, int64 v, int64 c) {
-  for (ConstIter<vector<IntVar*> > it(vars); !it.at_end(); ++it) {
+Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v, int64 c) {
+  for (ConstIter<std::vector<IntVar*> > it(vars); !it.at_end(); ++it) {
     CHECK_EQ(this, (*it)->solver());
   }
   return RevAlloc(new CountValueEqCst(this, vars.data(), vars.size(), v, c));
@@ -356,8 +356,8 @@ void CountValueEq::CardMax() {
   }
 }
 
-Constraint* Solver::MakeCount(const vector<IntVar*>& vars, int64 v, IntVar* c) {
-  for (ConstIter<vector<IntVar*> > it(vars); !it.at_end(); ++it) {
+Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v, IntVar* c) {
+  for (ConstIter<std::vector<IntVar*> > it(vars); !it.at_end(); ++it) {
     CHECK_EQ(this, (*it)->solver());
   }
   CHECK_EQ(this, c->solver());
@@ -1027,14 +1027,14 @@ class SetAllToZero : public Constraint {
 
 // ----- Factory -----
 
-Constraint* Solver::MakeDistribute(const vector<IntVar*>& vars,
-                                   const vector<int64>& values,
-                                   const vector<IntVar*>& cards) {
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   const std::vector<int64>& values,
+                                   const std::vector<IntVar*>& cards) {
   if (vars.size() == 0) {
     return RevAlloc(new SetAllToZero(this, cards.data(), cards.size()));
   }
   CHECK_EQ(values.size(), cards.size());
-  for (ConstIter<vector<IntVar*> > it(vars); !it.at_end(); ++it) {
+  for (ConstIter<std::vector<IntVar*> > it(vars); !it.at_end(); ++it) {
     CHECK_EQ(this, (*it)->solver());
   }
 
@@ -1046,7 +1046,7 @@ Constraint* Solver::MakeDistribute(const vector<IntVar*>& vars,
       break;
     }
   }
-  for (ConstIter<vector<IntVar*> > it(cards); !it.at_end(); ++it) {
+  for (ConstIter<std::vector<IntVar*> > it(cards); !it.at_end(); ++it) {
     CHECK_EQ(this, (*it)->solver());
   }
   if (fast) {
@@ -1058,27 +1058,27 @@ Constraint* Solver::MakeDistribute(const vector<IntVar*>& vars,
   }
 }
 
-Constraint* Solver::MakeDistribute(const vector<IntVar*>& vars,
-                                   const vector<IntVar*>& cards) {
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   const std::vector<IntVar*>& cards) {
   if (vars.size() == 0) {
     return RevAlloc(new SetAllToZero(this, cards.data(), cards.size()));
   }
-  for (ConstIter<vector<IntVar*> > it(vars); !it.at_end(); ++it) {
+  for (ConstIter<std::vector<IntVar*> > it(vars); !it.at_end(); ++it) {
     CHECK_EQ(this, (*it)->solver());
   }
-  for (ConstIter<vector<IntVar*> > it(cards); !it.at_end(); ++it) {
+  for (ConstIter<std::vector<IntVar*> > it(cards); !it.at_end(); ++it) {
     CHECK_EQ(this, (*it)->solver());
   }
   return RevAlloc(new FastDistribute(this, vars.data(), vars.size(),
                                      cards.data(), cards.size()));
 }
 
-Constraint* Solver::MakeDistribute(const vector<IntVar*>& vars,
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    int64 card_min,
                                    int64 card_max,
                                    int64 card_size) {
   CHECK_NE(vars.size(), 0);
-  for (ConstIter<vector<IntVar*> > it(vars); !it.at_end(); ++it) {
+  for (ConstIter<std::vector<IntVar*> > it(vars); !it.at_end(); ++it) {
     CHECK_EQ(this, (*it)->solver());
   }
   return RevAlloc(new BoundedDistribute(this, vars.data(), vars.size(),

@@ -21,9 +21,6 @@
 #include "base/strutil.h"
 
 using std::string;
-using std::pair;
-using std::stack;
-
 
 namespace operations_research {
 
@@ -56,9 +53,9 @@ class XmlHelper {
   const string& GetContent() const;
 
  private:
-  typedef pair<char, string> EscapePair;
+  typedef std::pair<char, string> EscapePair;
   string content_;
-  stack<string> tags_;
+  std::stack<string> tags_;
   bool direction_down_;
 
   DISALLOW_COPY_AND_ASSIGN(XmlHelper);

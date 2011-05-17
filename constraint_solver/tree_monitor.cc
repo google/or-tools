@@ -11,7 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "base/hash.h"
 #include <limits>
+#include <map>
+#include <set>
 #include "base/concise_iterator.h"
 #include "base/stl_util-inl.h"
 #include "constraint_solver/constraint_solver.h"
@@ -231,7 +234,7 @@ SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars, int size,
                                   file_visualization));
 }
 
-SearchMonitor* Solver::MakeTreeMonitor(const vector<IntVar*>& vars,
+SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
                                        const string& file_tree,
                                        const string& file_visualization) {
   return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), file_tree,
@@ -246,7 +249,7 @@ SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars, int size,
                                   file_visualization));
 }
 
-SearchMonitor* Solver::MakeTreeMonitor(const vector<IntVar*>& vars,
+SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
                                        const string& file_config,
                                        const string& file_tree,
                                        const string& file_visualization) {
@@ -262,7 +265,7 @@ SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars,
                                   visualization_xml));
 }
 
-SearchMonitor* Solver::MakeTreeMonitor(const vector<IntVar*>& vars,
+SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
                                        string* const tree_xml,
                                        string* const visualization_xml) {
   return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), tree_xml,
@@ -277,7 +280,7 @@ SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars,
                                   visualization_xml));
 }
 
-SearchMonitor* Solver::MakeTreeMonitor(const vector<IntVar*>& vars,
+SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
                                        string* const config_xml,
                                        string* const tree_xml,
                                        string* const visualization_xml) {
@@ -290,7 +293,7 @@ SearchMonitor* Solver::MakeTreeMonitor(const vector<IntVar*>& vars,
 // successful attempt, a failure or a solution.
 class TreeNode {
  public:
-  typedef std::map<string, vector<int64>, NaturalLess> DomainMap;
+  typedef std::map<string, std::vector<int64>, NaturalLess> DomainMap;
   enum TreeNodeType { ROOT, TRY, FAIL, SOLUTION };
 
   TreeNode(TreeNode* parent, int id)
@@ -315,7 +318,7 @@ class TreeNode {
     domain_.clear();
 
     for (ConstIter<TreeMonitor::IntVarMap> it(vars); !it.at_end(); ++it) {
-      vector<int64> domain;
+      std::vector<int64> domain;
 
       scoped_ptr<IntVarIterator> intvar_it(
           it->second->MakeDomainIterator(false));
@@ -401,7 +404,7 @@ class TreeNode {
     int name = -1;
 
     for (ConstIter<DomainMap> it(domain_); !it.at_end(); ++it) {
-      vector<int64> current = it->second;
+      std::vector<int64> current = it->second;
       visualization_writer->StartElement(current.size() == 1 ?
                                          "integer" :
                                          "dvar");
@@ -485,7 +488,7 @@ class TreeNode {
             parent_->children_[0]->domain() :
             domain_;
 
-        const vector<int64>* const domain_values = FindOrNull(domain, name_);
+        const std::vector<int64>* const domain_values = FindOrNull(domain, name_);
         if (domain_values) {
           tree_writer->AddAttribute("size",
                                     StringPrintf("%zu", domain_values->size()));
@@ -510,8 +513,8 @@ class TreeNode {
   }
 
  private:
-  vector<int64> branch_values_;
-  vector<TreeNode*> children_;
+  std::vector<int64> branch_values_;
+  std::vector<TreeNode*> children_;
   int cycles_;
   DomainMap domain_;
   const int id_;
@@ -803,7 +806,7 @@ string TreeMonitor::StripSpecialCharacters(string attribute) {
   const char* kAllowedCharacters = "0123456789abcdefghijklmnopqrstuvwxyz"
                                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ_-[]:/.?()";
 
-  set<char> character_set;
+  std::set<char> character_set;
 
   char* allowed = const_cast<char*>(kAllowedCharacters);
 

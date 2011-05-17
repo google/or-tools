@@ -173,7 +173,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
                          demon_invocations,
                          total_demon_runtime);
         file << constraint_message;
-        const vector<DemonRuns*>& demons = demons_per_constraint_[it->first];
+        const std::vector<DemonRuns*>& demons = demons_per_constraint_[it->first];
         const int demon_size = demons.size();
         for (int demon_index = 0; demon_index < demon_size; ++demon_index) {
           DemonRuns* const demon_runs = demons[demon_index];
@@ -264,7 +264,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     *mean_demon_runtime = 0.0;
     *median_demon_runtime = 0.0;
     *stddev_demon_runtime = 0.0;
-    vector<double> runtimes;
+    std::vector<double> runtimes;
     for (int run_index = 0; run_index < runs; ++run_index) {
       const int64 demon_time = demon_runs->end_time(run_index) -
           demon_runs->start_time(run_index);
@@ -303,7 +303,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
   const int64 start_time_;
   hash_map<const Constraint*, ConstraintRuns*> constraint_map_;
   hash_map<const Demon*, DemonRuns*> demon_map_;
-  hash_map<const Constraint*, vector<DemonRuns*> > demons_per_constraint_;
+  hash_map<const Constraint*, std::vector<DemonRuns*> > demons_per_constraint_;
 };
 
 // DemonProfiler is a wrapper for demons and adds profiling capabilities to

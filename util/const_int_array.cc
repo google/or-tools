@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <string.h>
 #include <algorithm>
+#include <cstring>
 #include <functional>
 #include "base/stringprintf.h"
 #include "util/const_int_array.h"
@@ -20,25 +20,25 @@
 
 namespace operations_research {
 ConstIntArray::ConstIntArray(int64 v0)
-    : data_(new vector<int64>(1)), scanned_(false), status_(0) {
+    : data_(new std::vector<int64>(1)), scanned_(false), status_(0) {
   (*data_)[0] = v0;
 }
 
 ConstIntArray::ConstIntArray(int64 v0, int64 v1)
-    : data_(new vector<int64>(2)), scanned_(false), status_(0) {
+    : data_(new std::vector<int64>(2)), scanned_(false), status_(0) {
   (*data_)[0] = v0;
   (*data_)[1] = v1;
 }
 
 ConstIntArray::ConstIntArray(int64 v0, int64 v1, int64 v2)
-    : data_(new vector<int64>(3)), scanned_(false), status_(0) {
+    : data_(new std::vector<int64>(3)), scanned_(false), status_(0) {
   (*data_)[0] = v0;
   (*data_)[1] = v1;
   (*data_)[2] = v2;
 }
 
 ConstIntArray::ConstIntArray(int64 v0, int64 v1, int64 v2, int64 v3)
-    : data_(new vector<int64>(4)), scanned_(false), status_(0) {
+    : data_(new std::vector<int64>(4)), scanned_(false), status_(0) {
   (*data_)[0] = v0;
   (*data_)[1] = v1;
   (*data_)[2] = v2;
@@ -46,7 +46,7 @@ ConstIntArray::ConstIntArray(int64 v0, int64 v1, int64 v2, int64 v3)
 }
 
 ConstIntArray::ConstIntArray(int64 v0, int64 v1, int64 v2, int64 v3, int64 v4)
-    : data_(new vector<int64>(5)), scanned_(false), status_(0) {
+    : data_(new std::vector<int64>(5)), scanned_(false), status_(0) {
   (*data_)[0] = v0;
   (*data_)[1] = v1;
   (*data_)[2] = v2;
@@ -56,7 +56,7 @@ ConstIntArray::ConstIntArray(int64 v0, int64 v1, int64 v2, int64 v3, int64 v4)
 
 ConstIntArray::ConstIntArray(int64 v0, int64 v1, int64 v2, int64 v3, int64 v4,
                              int64 v5)
-    : data_(new vector<int64>(6)), scanned_(false), status_(0) {
+    : data_(new std::vector<int64>(6)), scanned_(false), status_(0) {
   (*data_)[0] = v0;
   (*data_)[1] = v1;
   (*data_)[2] = v2;
@@ -65,13 +65,13 @@ ConstIntArray::ConstIntArray(int64 v0, int64 v1, int64 v2, int64 v3, int64 v4,
   (*data_)[5] = v5;
 }
 
-ConstIntArray::ConstIntArray(const vector<int64>& data)
-    : data_(new vector<int64>(data)),
+ConstIntArray::ConstIntArray(const std::vector<int64>& data)
+    : data_(new std::vector<int64>(data)),
       scanned_(false),
       status_(0) {}
 
-ConstIntArray::ConstIntArray(const vector<int>& data)
-    : data_(new vector<int64>(data.size())),
+ConstIntArray::ConstIntArray(const std::vector<int>& data)
+    : data_(new std::vector<int64>(data.size())),
       scanned_(false),
       status_(0) {
   for (int i = 0; i < data.size(); ++i) {
@@ -80,14 +80,14 @@ ConstIntArray::ConstIntArray(const vector<int>& data)
 }
 
 ConstIntArray::ConstIntArray(const int64 * const data, int size)
-    : data_(new vector<int64>(size)), scanned_(false), status_(0)  {
+    : data_(new std::vector<int64>(size)), scanned_(false), status_(0)  {
   CHECK_GT(size, 0);
   CHECK_NOTNULL(data);
   memcpy((data_->data()), data, size * sizeof(*data));
 }
 
 ConstIntArray::ConstIntArray(const int * const data, int size)
-    : data_(new vector<int64>(size)), scanned_(false), status_(0) {
+    : data_(new std::vector<int64>(size)), scanned_(false), status_(0) {
   CHECK_GT(size, 0);
   CHECK_NOTNULL(data);
   for (int i = 0; i < size; ++i) {
@@ -95,14 +95,14 @@ ConstIntArray::ConstIntArray(const int * const data, int size)
   }
 }
 
-ConstIntArray::ConstIntArray(vector<int64>* data)
+ConstIntArray::ConstIntArray(std::vector<int64>* data)
     : data_(data), scanned_(false), status_(0) {
   CHECK_GT(data->size(), 0);
 }
 
 ConstIntArray::~ConstIntArray() {}
 
-vector<int64>* ConstIntArray::Release() {
+std::vector<int64>* ConstIntArray::Release() {
   return data_.release();
 }
 
@@ -111,8 +111,8 @@ int ConstIntArray::size() const {
   return data_->size();
 }
 
-vector<int64>* ConstIntArray::SortedCopy(bool increasing) const {
-  vector<int64>* new_data = new vector<int64>(*data_);
+std::vector<int64>* ConstIntArray::SortedCopy(bool increasing) const {
+  std::vector<int64>* new_data = new std::vector<int64>(*data_);
   if (increasing) {
     std::sort(new_data->begin(), new_data->end());
   } else {
@@ -121,9 +121,9 @@ vector<int64>* ConstIntArray::SortedCopy(bool increasing) const {
   return new_data;
 }
 
-vector<int64>*
+std::vector<int64>*
 ConstIntArray::SortedCopyWithoutDuplicates(bool increasing) const {
-  vector<int64>* new_data = new vector<int64>(*data_);
+  std::vector<int64>* new_data = new std::vector<int64>(*data_);
   if (increasing) {
     std::sort(new_data->begin(), new_data->end());
   } else {
@@ -137,7 +137,7 @@ ConstIntArray::SortedCopyWithoutDuplicates(bool increasing) const {
     return new_data;
   } else {
     const int final_size = data_->size() - duplicates;
-    vector<int64>* final_data = new vector<int64>(final_size);
+    std::vector<int64>* final_data = new std::vector<int64>(final_size);
     (*final_data)[0] = (*new_data)[0];
     int counter = 1;
     for (int i = 1; i < data_->size(); ++i) {

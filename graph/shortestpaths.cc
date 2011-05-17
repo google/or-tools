@@ -13,9 +13,11 @@
 
 #include "graph/shortestpaths.h"
 
-#include <stddef.h>
-#include <string.h>
 #include <algorithm>
+#include <cstddef>
+#include <cstring>
+#include "base/hash.h"
+#include <utility>
 
 #include "base/callback.h"
 #include "base/casts.h"

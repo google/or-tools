@@ -98,7 +98,7 @@ class CallPyDecisionBuilder : public DecisionBuilder {
 
 class PyLNSNoValues : public BaseLNS {
  public:
-  PyLNSNoValues(const vector<IntVar*>& vars, PyObject* op)
+  PyLNSNoValues(const std::vector<IntVar*>& vars, PyObject* op)
       : BaseLNS(vars.data(), vars.size()), op_(op) {
     Py_INCREF(op_);
     init_func_ = PyObject_GetAttrString(op_, "InitFragment");
@@ -122,7 +122,7 @@ class PyLNSNoValues : public BaseLNS {
     }
   }
 
-  virtual bool NextFragment(vector<int>* fragment) {
+  virtual bool NextFragment(std::vector<int>* fragment) {
     PyObject* list = PyList_New(0);
     PyObject* args = Py_BuildValue((char*)"(O)", list);
     PyObject* pyresult = PyEval_CallObject(fragment_func_, args);
@@ -152,7 +152,7 @@ class PyLNSNoValues : public BaseLNS {
 
 class PyLNS : public BaseLNS {
  public:
-  PyLNS(const vector<IntVar*>& vars, PyObject* op)
+  PyLNS(const std::vector<IntVar*>& vars, PyObject* op)
       : BaseLNS(vars.data(), vars.size()), op_(op) {
     Py_INCREF(op_);
     init_func_ = PyObject_GetAttrString(op_, "InitFragment");
@@ -182,7 +182,7 @@ class PyLNS : public BaseLNS {
     }
   }
 
-  virtual bool NextFragment(vector<int>* fragment) {
+  virtual bool NextFragment(std::vector<int>* fragment) {
     PyObject* list = PyList_New(0);
     PyObject* args = Py_BuildValue((char*)"(OO)", list, base_lns_);
     PyObject* pyresult = PyEval_CallObject(fragment_func_, args);
@@ -368,10 +368,10 @@ namespace operations_research {
   }
 }
 
-// Add conversion rules for vector<IntExpr*> and vector<IntVar*>. Please
+// Add conversion rules for std::vector<IntExpr*> and std::vector<IntVar*>. Please
 // note that list of expressions will be converted to vectors of
 // IntVar.
-%typemap(in) const vector<IntVar*>& (vector<IntVar*> temp) {
+%typemap(in) const std::vector<IntVar*>& (std::vector<IntVar*> temp) {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
     SWIG_fail;
@@ -396,7 +396,7 @@ namespace operations_research {
   $1 = &temp;
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER) const vector<IntVar*>& {
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<IntVar*>& {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
   } else {
@@ -419,9 +419,9 @@ namespace operations_research {
   }
 }
 
-// Add conversion rules for vector<SearchMonitor*>.
-%typemap(in) const vector<SearchMonitor*>&
-    (vector<SearchMonitor*> temp) {
+// Add conversion rules for std::vector<SearchMonitor*>.
+%typemap(in) const std::vector<SearchMonitor*>&
+    (std::vector<SearchMonitor*> temp) {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
     SWIG_fail;
@@ -446,7 +446,7 @@ namespace operations_research {
   $1 = &temp;
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER) const vector<SearchMonitor*>& {
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<SearchMonitor*>& {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
   } else {
@@ -469,9 +469,9 @@ namespace operations_research {
   }
 }
 
-// Add conversion rules for vector<DecisionBuilder*>.
-%typemap(in) const vector<DecisionBuilder*>&
-    (vector<DecisionBuilder*> temp) {
+// Add conversion rules for std::vector<DecisionBuilder*>.
+%typemap(in) const std::vector<DecisionBuilder*>&
+    (std::vector<DecisionBuilder*> temp) {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
     SWIG_fail;
@@ -497,7 +497,7 @@ namespace operations_research {
   $1 = &temp;
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER) const vector<DecisionBuilder*>& {
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<DecisionBuilder*>& {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
   } else {
@@ -523,9 +523,9 @@ namespace operations_research {
   }
 }
 
-// Add conversion rules for vector<IntervalVar*>.
-%typemap(in) const vector<IntervalVar*>&
-    (vector<IntervalVar*> temp) {
+// Add conversion rules for std::vector<IntervalVar*>.
+%typemap(in) const std::vector<IntervalVar*>&
+    (std::vector<IntervalVar*> temp) {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
     SWIG_fail;
@@ -550,7 +550,7 @@ namespace operations_research {
   $1 = &temp;
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER) const vector<IntervalVar*>& {
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<IntervalVar*>& {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
   } else {
@@ -573,9 +573,9 @@ namespace operations_research {
   }
 }
 
-// Add conversion rules for vector<Sequence*>.
-%typemap(in) const vector<Sequence*>&
-    (vector<Sequence*> temp) {
+// Add conversion rules for std::vector<Sequence*>.
+%typemap(in) const std::vector<Sequence*>&
+    (std::vector<Sequence*> temp) {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
     SWIG_fail;
@@ -600,7 +600,7 @@ namespace operations_research {
   $1 = &temp;
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER) const vector<Sequence*>& {
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<Sequence*>& {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
   } else {
@@ -623,9 +623,9 @@ namespace operations_research {
   }
 }
 
-// Add conversion rules for vector<LocalSearchOperator*>.
-%typemap(in) const vector<LocalSearchOperator*>&
-    (vector<LocalSearchOperator*> temp) {
+// Add conversion rules for std::vector<LocalSearchOperator*>.
+%typemap(in) const std::vector<LocalSearchOperator*>&
+    (std::vector<LocalSearchOperator*> temp) {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
     SWIG_fail;
@@ -650,7 +650,7 @@ namespace operations_research {
   $1 = &temp;
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER) const vector<LocalSearchOperator*>& {
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<LocalSearchOperator*>& {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
   } else {
@@ -673,9 +673,9 @@ namespace operations_research {
   }
 }
 
-// Conversion for vector<LocalSearchFilter*>
-%typemap(in) const vector<LocalSearchFilter*>&
-    (vector<LocalSearchFilter*> temp) {
+// Conversion for std::vector<LocalSearchFilter*>
+%typemap(in) const std::vector<LocalSearchFilter*>&
+    (std::vector<LocalSearchFilter*> temp) {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
     SWIG_fail;
@@ -700,7 +700,7 @@ namespace operations_research {
   $1 = &temp;
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER) const vector<LocalSearchFilter*>& {
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<LocalSearchFilter*>& {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
   } else {
@@ -841,8 +841,8 @@ namespace operations_research {
 %ignore Solver::DebugString;
 
 %extend Solver {
-  Constraint* TreeNoCycle(const vector<IntVar*>& nexts,
-                          const vector<IntVar*>& active,
+  Constraint* TreeNoCycle(const std::vector<IntVar*>& nexts,
+                          const std::vector<IntVar*>& active,
                           ResultCallback1<bool, int64>* callback = NULL) {
     return self->MakeNoCycle(nexts, active, callback, false);
   }
@@ -860,39 +860,39 @@ namespace operations_research {
     return self->DebugString();
   }
 
-  LocalSearchOperator* LNSOperator(const vector<IntVar*>& vars,
+  LocalSearchOperator* LNSOperator(const std::vector<IntVar*>& vars,
                                    PyObject* lns) {
     return self->RevAlloc(new operations_research::PyLNS(vars, lns));
   }
 
-  LocalSearchOperator* LNSNoValuesOperator(const vector<IntVar*>& vars,
+  LocalSearchOperator* LNSNoValuesOperator(const std::vector<IntVar*>& vars,
                                            PyObject* lns) {
     return self->RevAlloc(new operations_research::PyLNSNoValues(vars, lns));
   }
 
   DecisionBuilder* VarEvalValStrPhase(
-      const vector<IntVar*>& vars,
+      const std::vector<IntVar*>& vars,
       ResultCallback1<int64, int64>* var_evaluator,
       operations_research::Solver::IntValueStrategy val_str) {
     return self->MakePhase(vars, var_evaluator, val_str);
   }
 
   DecisionBuilder* VarStrValEvalPhase(
-      const vector<IntVar*>& vars,
+      const std::vector<IntVar*>& vars,
       operations_research::Solver::IntVarStrategy var_str,
       ResultCallback2<int64, int64, int64>* val_eval) {
     return self->MakePhase(vars, var_str, val_eval);
   }
 
   DecisionBuilder* VarEvalValEvalPhase(
-      const vector<IntVar*>& vars,
+      const std::vector<IntVar*>& vars,
       ResultCallback1<int64, int64>* var_eval,
       ResultCallback2<int64, int64, int64>* val_eval) {
     return self->MakePhase(vars, var_eval, val_eval);
   }
 
   DecisionBuilder* VarStrValEvalTieBreakPhase(
-      const vector<IntVar*>& vars,
+      const std::vector<IntVar*>& vars,
       operations_research::Solver::IntVarStrategy var_str,
       ResultCallback2<int64, int64, int64>* val_eval,
       ResultCallback1<int64, int64>* tie_breaker) {
@@ -900,7 +900,7 @@ namespace operations_research {
   }
 
   DecisionBuilder* VarEvalValEvalTieBreakPhase(
-      const vector<IntVar*>& vars,
+      const std::vector<IntVar*>& vars,
       ResultCallback1<int64, int64>* var_eval,
       ResultCallback2<int64, int64, int64>* val_eval,
       ResultCallback1<int64, int64>* tie_breaker) {
@@ -908,14 +908,14 @@ namespace operations_research {
   }
 
   DecisionBuilder* EvalEvalStrPhase(
-      const vector<IntVar*>& vars,
+      const std::vector<IntVar*>& vars,
       ResultCallback2<int64, int64, int64>* evaluator,
       operations_research::Solver::EvaluatorStrategy str) {
     return self->MakePhase(vars, evaluator, str);
   }
 
   DecisionBuilder* EvalEvalStrTieBreakPhase(
-      const vector<IntVar*>& vars,
+      const std::vector<IntVar*>& vars,
       ResultCallback2<int64, int64, int64>* evaluator,
       ResultCallback1<int64, int64>* tie_breaker,
       operations_research::Solver::EvaluatorStrategy str) {
@@ -927,7 +927,7 @@ namespace operations_research {
       IntVar* const objective,
       ResultCallback2<int64, int64, int64>* objective_function,
       int64 step,
-      const vector<IntVar*>& vars,
+      const std::vector<IntVar*>& vars,
       double penalty_factor) {
     return self->MakeGuidedLocalSearch(maximize,
                                        objective,
@@ -938,7 +938,7 @@ namespace operations_research {
   }
 
   LocalSearchFilter* LocalSearchObjectiveFilter(
-      const vector<IntVar*>& vars,
+      const std::vector<IntVar*>& vars,
       ResultCallback2<int64, int64, int64>* values,
       const IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum,
@@ -1094,13 +1094,13 @@ namespace operations_research {
   Constraint* __lt__(IntExpr* other) {
     return self->solver()->MakeLess(self->Var(), other->Var());
   }
-  Constraint* MapTo(const vector<IntVar*>& vars) {
+  Constraint* MapTo(const std::vector<IntVar*>& vars) {
     return self->solver()->MakeMapDomain(self->Var(), vars);
   }
-  IntExpr* IndexOf(const vector<int64>& vars) {
+  IntExpr* IndexOf(const std::vector<int64>& vars) {
     return self->solver()->MakeElement(vars, self->Var());
   }
-  IntExpr* IndexOf(const vector<IntVar*>& vars) {
+  IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
     return self->solver()->MakeElement(vars, self->Var());
   }
 }
@@ -1483,11 +1483,11 @@ struct FailureProtect {
 
 namespace operations_research {
 %define CONVERT_VECTOR(type)
-%typemap(jni) const vector<type*>& "jobjectArray"
-%typemap(jtype) const vector<type*>& "type[]"
-%typemap(jstype) const vector<type*>& "type[]"
-%typemap(javain) const vector<type*>& "$javainput"
-%typemap(in) const vector<type*>& (vector<type*> result) {
+%typemap(jni) const std::vector<type*>& "jobjectArray"
+%typemap(jtype) const std::vector<type*>& "type[]"
+%typemap(jstype) const std::vector<type*>& "type[]"
+%typemap(javain) const std::vector<type*>& "$javainput"
+%typemap(in) const std::vector<type*>& (std::vector<type*> result) {
   jclass object_class =
     jenv->FindClass("com/google/ortools/"
                     "constraintsolver/type");

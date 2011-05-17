@@ -11,7 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
 #include <list>
+#include <map>
 
 #include "base/callback.h"
 #include "base/commandlineflags.h"
@@ -22,9 +24,11 @@
 #include "base/stringprintf.h"
 #include "base/sysinfo.h"
 
+#include "base/timer.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
 #include "base/stl_util-inl.h"
+#include "base/hash.h"
 #include "base/random.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/search_limit.pb.h"
@@ -350,14 +354,14 @@ SearchMonitor* Solver::MakeSearchTrace(const string& prefix) {
 class ComposeDecisionBuilder : public DecisionBuilder {
  public:
   ComposeDecisionBuilder();
-  explicit ComposeDecisionBuilder(const vector<DecisionBuilder*>& dbs)
+  explicit ComposeDecisionBuilder(const std::vector<DecisionBuilder*>& dbs)
       : builders_(dbs), start_index_(0) {}
   virtual ~ComposeDecisionBuilder() {}
   virtual Decision* Next(Solver* const s);
   virtual string DebugString() const;
   void add(DecisionBuilder* const db);
  private:
-  vector<DecisionBuilder*> builders_;
+  std::vector<DecisionBuilder*> builders_;
   int start_index_;
 };
 
@@ -379,7 +383,7 @@ Decision* ComposeDecisionBuilder::Next(Solver* const s) {
 
 string ComposeDecisionBuilder::DebugString() const {
   string out = "ComposeDecisionBuilder(";
-  for (ConstIter<vector<DecisionBuilder*> > it(builders_); !it.at_end(); ++it) {
+  for (ConstIter<std::vector<DecisionBuilder*> > it(builders_); !it.at_end(); ++it) {
     out += (*it)->DebugString() + " ";
   }
   out += ")";
@@ -420,7 +424,7 @@ DecisionBuilder* Solver::Compose(DecisionBuilder* const db1,
   return c;
 }
 
-DecisionBuilder* Solver::Compose(const vector<DecisionBuilder*>& dbs) {
+DecisionBuilder* Solver::Compose(const std::vector<DecisionBuilder*>& dbs) {
   return  RevAlloc(new ComposeDecisionBuilder(dbs));
 }
 
@@ -898,7 +902,7 @@ class CheapestValueSelector : public ValueSelector {
  private:
   scoped_ptr<ResultCallback2<int64, int64, int64> > eval_;
   scoped_ptr<ResultCallback1<int64, int64> > tie_breaker_;
-  vector<int64> cache_;
+  std::vector<int64> cache_;
 };
 
 int64 CheapestValueSelector::Select(const IntVar* const v, int64 id) {
@@ -1008,7 +1012,7 @@ class DynamicEvaluatorSelector : public BaseEvaluatorSelector {
  private:
   int first_;
   scoped_ptr<ResultCallback1<int64, int64> > tie_breaker_;
-  vector<Element> cache_;
+  std::vector<Element> cache_;
 };
 
 DynamicEvaluatorSelector::DynamicEvaluatorSelector(
@@ -1128,7 +1132,7 @@ IntVar* StaticEvaluatorSelector::SelectVariable(Solver* const s, int64* id) {
         }
       }
     }
-    sort(elements_.get(), elements_.get() + element_size_, comp_);
+    std::sort(elements_.get(), elements_.get() + element_size_, comp_);
     s->SaveAndSetValue(&first_, 0);
   }
   for (int i = first_; i < element_size_; ++i) {
@@ -1332,7 +1336,7 @@ void AssignVariablesValues::Apply(Solver* const s) {
 }
 
 void AssignVariablesValues::Refute(Solver* const s) {
-  vector<IntVar*> terms;
+  std::vector<IntVar*> terms;
   for (int i = 0; i < size_; ++i) {
     IntVar* term = s->MakeBoolVar();
     s->MakeIsDifferentCstCt(vars_[i], values_[i], term);
@@ -1346,8 +1350,8 @@ Decision* Solver::MakeAssignVariablesValues(const IntVar* const* vars, int size,
   return RevAlloc(new AssignVariablesValues(vars, size, values));
 }
 
-Decision* Solver::MakeAssignVariablesValues(const vector<IntVar*>& vars,
-                                            const vector<int64>& values) {
+Decision* Solver::MakeAssignVariablesValues(const std::vector<IntVar*>& vars,
+                                            const std::vector<int64>& values) {
   CHECK_EQ(vars.size(), values.size());
   return RevAlloc(new AssignVariablesValues(vars.data(), vars.size(),
                                             values.data()));
@@ -1503,7 +1507,7 @@ DecisionBuilder* Solver::MakePhase(IntVar* const v0,
   return MakePhase(vars.get(), 4, var_str, val_str);
 }
 
-DecisionBuilder* Solver::MakePhase(const vector<IntVar*>& vars,
+DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IntValueStrategy val_str) {
   return MakePhase(vars.data(), vars.size(), var_str, val_str);
@@ -1527,7 +1531,7 @@ DecisionBuilder* Solver::MakePhase(const IntVar* const* vars,
                                         value_selector);
 }
 
-DecisionBuilder* Solver::MakePhase(const vector<IntVar*>& vars,
+DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    ResultCallback1<int64, int64>* var_evaluator,
                                    Solver::IntValueStrategy val_str) {
   return MakePhase(vars.data(), vars.size(), var_evaluator, val_str);
@@ -1550,7 +1554,7 @@ DecisionBuilder* Solver::MakePhase(const IntVar* const* vars,
 }
 
 DecisionBuilder* Solver::MakePhase(
-    const vector<IntVar*>& vars,
+    const std::vector<IntVar*>& vars,
     Solver::IntVarStrategy var_str,
     ResultCallback2<int64, int64, int64>* value_evaluator) {
   return MakePhase(vars.data(), vars.size(), var_str, value_evaluator);
@@ -1577,7 +1581,7 @@ DecisionBuilder* Solver::MakePhase(
 }
 
 DecisionBuilder* Solver::MakePhase(
-    const vector<IntVar*>& vars,
+    const std::vector<IntVar*>& vars,
     ResultCallback1<int64, int64>* var_evaluator,
     ResultCallback2<int64, int64, int64>* value_evaluator) {
   return MakePhase(vars.data(), vars.size(), var_evaluator, value_evaluator);
@@ -1602,7 +1606,7 @@ DecisionBuilder* Solver::MakePhase(
 }
 
 DecisionBuilder* Solver::MakePhase(
-    const vector<IntVar*>& vars,
+    const std::vector<IntVar*>& vars,
     Solver::IntVarStrategy var_str,
     ResultCallback2<int64, int64, int64>* value_evaluator,
                                    ResultCallback1<int64, int64>* tie_breaker) {
@@ -1632,7 +1636,7 @@ DecisionBuilder* Solver::MakePhase(
 }
 
 DecisionBuilder* Solver::MakePhase(
-    const vector<IntVar*>& vars,
+    const std::vector<IntVar*>& vars,
     ResultCallback1<int64, int64>* var_evaluator,
     ResultCallback2<int64, int64, int64>* value_evaluator,
     ResultCallback1<int64, int64>* tie_breaker) {
@@ -1659,7 +1663,7 @@ DecisionBuilder* Solver::MakePhase(
                                         value_selector);
 }
 
-DecisionBuilder* Solver::MakePhase(const vector<IntVar*>& vars,
+DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    ResultCallback2<int64, int64, int64>* eval,
                                    Solver::EvaluatorStrategy str) {
   return MakePhase(vars.data(), vars.size(), eval, str);
@@ -1672,7 +1676,7 @@ DecisionBuilder* Solver::MakePhase(const IntVar* const* vars,
   return MakePhase(vars, size, eval, NULL, str);
 }
 
-DecisionBuilder* Solver::MakePhase(const vector<IntVar*>& vars,
+DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    ResultCallback2<int64, int64, int64>* eval,
                                    ResultCallback1<int64, int64>* tie_breaker,
                                    Solver::EvaluatorStrategy str) {
@@ -1776,7 +1780,7 @@ void SolutionCollector::Add(IntVar* const var) {
   }
 }
 
-void SolutionCollector::Add(const vector<IntVar*>& vars)  {
+void SolutionCollector::Add(const std::vector<IntVar*>& vars)  {
   if (prototype_.get() != NULL) {
     prototype_->Add(vars);
   }
@@ -1788,7 +1792,7 @@ void SolutionCollector::Add(IntervalVar* const var)  {
   }
 }
 
-void SolutionCollector::Add(const vector<IntervalVar*>& vars)  {
+void SolutionCollector::Add(const std::vector<IntervalVar*>& vars)  {
   if (prototype_.get() != NULL) {
     prototype_->Add(vars);
   }
@@ -2211,8 +2215,8 @@ class WeightedOptimizeVar: public OptimizeVar {
  public:
   WeightedOptimizeVar(Solver* solver,
                       bool maximize,
-                      const vector<IntVar*>& sub_objectives,
-                      const vector<int64>& weights,
+                      const std::vector<IntVar*>& sub_objectives,
+                      const std::vector<int64>& weights,
                       int64 step)
       : OptimizeVar(solver,
                     maximize,
@@ -2252,8 +2256,8 @@ string WeightedOptimizeVar::Print() const {
 }
 
 OptimizeVar* Solver::MakeWeightedOptimize(bool maximize,
-                                          const vector<IntVar*>& sub_objectives,
-                                          const vector<int64>& weights,
+                                          const std::vector<IntVar*>& sub_objectives,
+                                          const std::vector<int64>& weights,
                                           int64 step) {
   return RevAlloc(new WeightedOptimizeVar(this,
                                           maximize,
@@ -2261,8 +2265,8 @@ OptimizeVar* Solver::MakeWeightedOptimize(bool maximize,
                                           step));
 }
 
-OptimizeVar* Solver::MakeWeightedMinimize(const vector<IntVar*>& sub_objectives,
-                                          const vector<int64>& weights,
+OptimizeVar* Solver::MakeWeightedMinimize(const std::vector<IntVar*>& sub_objectives,
+                                          const std::vector<int64>& weights,
                                           int64 step) {
   return RevAlloc(new WeightedOptimizeVar(this,
                                           false,
@@ -2270,8 +2274,8 @@ OptimizeVar* Solver::MakeWeightedMinimize(const vector<IntVar*>& sub_objectives,
                                           step));
 }
 
-OptimizeVar* Solver::MakeWeightedMaximize(const vector<IntVar*>& sub_objectives,
-                                          const vector<int64>& weights,
+OptimizeVar* Solver::MakeWeightedMaximize(const std::vector<IntVar*>& sub_objectives,
+                                          const std::vector<int64>& weights,
                                           int64 step) {
   return RevAlloc(new WeightedOptimizeVar(this,
                                           true,
@@ -2349,17 +2353,18 @@ class TabuSearch : public Metaheuristic {
     const int64 value_;
     const int64 stamp_;
   };
+  typedef std::list<VarValue> TabuList;
 
-  void AgeList(int64 tenure, list<VarValue>* list);
+  void AgeList(int64 tenure, TabuList* list);
   void AgeLists();
 
   scoped_array<IntVar*> vars_;
   const int64 size_;
   Assignment assignment_;
   int64 last_;
-  list<VarValue> keep_tabu_list_;
+  TabuList keep_tabu_list_;
   int64 keep_tenure_;
-  list<VarValue> forbid_tabu_list_;
+  TabuList forbid_tabu_list_;
   int64 forbid_tenure_;
   double tabu_factor_;
   int64 stamp_;
@@ -2424,15 +2429,15 @@ void TabuSearch::ApplyDecision(Decision* const d) {
   // softened by the tabu factor which gives the number of violations to
   // the tabu criterion which is tolerated; a factor of 1 means no violations
   // allowed, a factor of 0 means all violations allowed.
-  vector<IntVar*> tabu_vars;
-  for (ConstIter<list<VarValue> > it(keep_tabu_list_); !it.at_end(); ++it) {
+  std::vector<IntVar*> tabu_vars;
+  for (ConstIter<TabuList > it(keep_tabu_list_); !it.at_end(); ++it) {
     IntVar* tabu_var = s->MakeBoolVar();
     Constraint* keep_cst =
         s->MakeIsEqualCstCt((*it).var_, (*it).value_, tabu_var);
     s->AddConstraint(keep_cst);
     tabu_vars.push_back(tabu_var);
   }
-  for (ConstIter<list<VarValue> > it(forbid_tabu_list_); !it.at_end(); ++it) {
+  for (ConstIter<TabuList > it(forbid_tabu_list_); !it.at_end(); ++it) {
     IntVar* tabu_var = s->MakeBoolVar();
     Constraint* forbid_cst =
         s->MakeIsDifferentCstCt((*it).var_, (*it).value_, tabu_var);
@@ -2505,7 +2510,7 @@ void TabuSearch::AcceptNeighbor() {
   }
 }
 
-void TabuSearch::AgeList(int64 tenure, list<VarValue>* list) {
+void TabuSearch::AgeList(int64 tenure, TabuList* list) {
   while (!list->empty() && list->back().stamp_ < stamp_ - tenure) {
     list->pop_back();
   }
@@ -2520,7 +2525,7 @@ void TabuSearch::AgeLists() {
 SearchMonitor* Solver::MakeTabuSearch(bool maximize,
                                       IntVar* const v,
                                       int64 step,
-                                      const vector<IntVar*>& vars,
+                                      const std::vector<IntVar*>& vars,
                                       int64 keep_tenure,
                                       int64 forbid_tenure,
                                       double tabu_factor) {
@@ -2689,7 +2694,7 @@ class GuidedLocalSearchPenaltiesTable : public GuidedLocalSearchPenalties {
   virtual void Increment(const Arc& arc);
   virtual int64 Value(const Arc& arc) const;
  private:
-  vector<vector<int64> > penalties_;
+  std::vector<std::vector<int64> > penalties_;
   bool has_values_;
 };
 
@@ -2698,7 +2703,7 @@ GuidedLocalSearchPenaltiesTable::GuidedLocalSearchPenaltiesTable(int size)
 }
 
 void GuidedLocalSearchPenaltiesTable::Increment(const Arc& arc) {
-  vector<int64>& first_penalties = penalties_[arc.first];
+  std::vector<int64>& first_penalties = penalties_[arc.first];
   const int64 second = arc.second;
   if (second >= first_penalties.size()) {
     first_penalties.resize(second + 1, 0LL);
@@ -2708,7 +2713,7 @@ void GuidedLocalSearchPenaltiesTable::Increment(const Arc& arc) {
 }
 
 int64 GuidedLocalSearchPenaltiesTable::Value(const Arc& arc) const {
-  const vector<int64>& first_penalties = penalties_[arc.first];
+  const std::vector<int64>& first_penalties = penalties_[arc.first];
   const int64 second = arc.second;
   if (second >= first_penalties.size()) {
     return 0LL;
@@ -2719,23 +2724,6 @@ int64 GuidedLocalSearchPenaltiesTable::Value(const Arc& arc) const {
 
 // Sparse GLS penalties implementation using a hash_map to store penalties.
 
-#if defined(_MSC_VER)
-// The following class defines a hash function for arcs
-class ArcHasher : public stdext::hash_compare <Arc> {
- public:
-  size_t operator() (const Arc& a) const {
-    uint64 x = a.first;
-    uint64 y = GG_ULONGLONG(0xe08c1d668b756f82);
-    uint64 z = a.second;
-    mix(x, y, z);
-    return z;
-  }
-  bool operator() (const Arc& a1, const Arc& a2) const {
-    return a1.first < a2.first ||
-        (a1.first == a2.first && a1.second < a2.second);
-  }
-};
-#endif
 class GuidedLocalSearchPenaltiesMap : public GuidedLocalSearchPenalties {
  public:
   explicit GuidedLocalSearchPenaltiesMap(int size);
@@ -2746,7 +2734,7 @@ class GuidedLocalSearchPenaltiesMap : public GuidedLocalSearchPenalties {
  private:
   Bitmap penalized_;
 #if defined(_MSC_VER)
-  hash_map<Arc, int64, ArcHasher> penalties_;
+  hash_map<Arc, int64, PairInt64Hasher> penalties_;
 #else
   hash_map<Arc, int64> penalties_;
 #endif
@@ -2877,7 +2865,7 @@ void GuidedLocalSearch::ApplyDecision(Decision* const d) {
   if (d == solver()->balancing_decision()) {
     return;
   }
-  vector<IntVar*> elements;
+  std::vector<IntVar*> elements;
   assignment_penalized_value_ = 0;
   if (penalties_->HasValues()) {
     for (int i = 0; i < size_; ++i) {
@@ -3005,7 +2993,7 @@ int64 GuidedLocalSearch::Evaluate(const Assignment* delta,
 // Penalize all the most expensive arcs (var, value) according to their utility:
 // utility(i, j) = cost(i, j) / (1 + penalty(i, j))
 bool GuidedLocalSearch::LocalOptimum() {
-  vector<pair<Arc, double> > utility(size_);
+  std::vector<pair<Arc, double> > utility(size_);
   for (int i = 0; i < size_; ++i) {
     const int64 var_value = assignment_.Value(vars_[i]);
     const int64 value =
@@ -3258,7 +3246,7 @@ SearchMonitor* Solver::MakeGuidedLocalSearch(
     IntVar* const objective,
     ResultCallback2<int64, int64, int64>* objective_function,
     int64 step,
-    const vector<IntVar*>& vars,
+    const std::vector<IntVar*>& vars,
     double penalty_factor) {
   return MakeGuidedLocalSearch(maximize,
                                objective,
@@ -3292,8 +3280,8 @@ SearchMonitor* Solver::MakeGuidedLocalSearch(
     IntVar* const objective,
     ResultCallback3<int64, int64, int64, int64>* objective_function,
     int64 step,
-    const vector<IntVar*>& vars,
-    const vector<IntVar*>& secondary_vars,
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
     double penalty_factor) {
   return MakeGuidedLocalSearch(maximize,
                                objective,
@@ -3625,7 +3613,7 @@ class SolveOnce : public DecisionBuilder {
     CHECK(db != NULL);
   }
 
-  SolveOnce(DecisionBuilder* const db,  const vector<SearchMonitor*>& monitors)
+  SolveOnce(DecisionBuilder* const db,  const std::vector<SearchMonitor*>& monitors)
       : db_(db), monitors_(monitors) {
     CHECK(db != NULL);
   }
@@ -3645,7 +3633,7 @@ class SolveOnce : public DecisionBuilder {
   }
  private:
   DecisionBuilder* const db_;
-  vector<SearchMonitor*> monitors_;
+  std::vector<SearchMonitor*> monitors_;
 };
 
 DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db) {
@@ -3654,7 +3642,7 @@ DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db) {
 
 DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
                                        SearchMonitor* const monitor1) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   return RevAlloc(new SolveOnce(db, monitors));
 }
@@ -3662,7 +3650,7 @@ DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
 DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
                                        SearchMonitor* const monitor1,
                                        SearchMonitor* const monitor2) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   monitors.push_back(monitor2);
   return RevAlloc(new SolveOnce(db, monitors));
@@ -3672,7 +3660,7 @@ DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
                                        SearchMonitor* const monitor1,
                                        SearchMonitor* const monitor2,
                                        SearchMonitor* const monitor3) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   monitors.push_back(monitor2);
   monitors.push_back(monitor3);
@@ -3684,7 +3672,7 @@ DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
                                        SearchMonitor* const monitor2,
                                        SearchMonitor* const monitor3,
                                        SearchMonitor* const monitor4) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   monitors.push_back(monitor2);
   monitors.push_back(monitor3);
@@ -3693,7 +3681,7 @@ DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
 }
 
 DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
-                                       const vector<SearchMonitor*>& monitors) {
+                                       const std::vector<SearchMonitor*>& monitors) {
   return RevAlloc(new SolveOnce(db, monitors));
 }
 
@@ -3720,7 +3708,7 @@ class NestedOptimize : public DecisionBuilder {
                  Assignment* const solution,
                  bool maximize,
                  int64 step,
-                 const vector<SearchMonitor*>& monitors)
+                 const std::vector<SearchMonitor*>& monitors)
       : db_(db),
         solution_(solution),
         maximize_(maximize),
@@ -3762,7 +3750,7 @@ class NestedOptimize : public DecisionBuilder {
   Assignment* const solution_;
   const bool maximize_;
   const int64 step_;
-  vector<SearchMonitor*> monitors_;
+  std::vector<SearchMonitor*> monitors_;
   SolutionCollector* collector_;
 };
 
@@ -3778,7 +3766,7 @@ DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
                                             bool maximize,
                                             int64 step,
                                             SearchMonitor* const monitor1) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   return RevAlloc(new NestedOptimize(db, solution, maximize, step, monitors));
 }
@@ -3789,7 +3777,7 @@ DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
                                             int64 step,
                                             SearchMonitor* const monitor1,
                                             SearchMonitor* const monitor2) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   monitors.push_back(monitor2);
   return RevAlloc(new NestedOptimize(db, solution, maximize, step, monitors));
@@ -3802,7 +3790,7 @@ DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
                                             SearchMonitor* const monitor1,
                                             SearchMonitor* const monitor2,
                                             SearchMonitor* const monitor3) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   monitors.push_back(monitor2);
   monitors.push_back(monitor3);
@@ -3817,7 +3805,7 @@ DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
                                             SearchMonitor* const monitor2,
                                             SearchMonitor* const monitor3,
                                             SearchMonitor* const monitor4) {
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   monitors.push_back(monitor1);
   monitors.push_back(monitor2);
   monitors.push_back(monitor3);
@@ -3830,7 +3818,7 @@ DecisionBuilder* Solver::MakeNestedOptimize(
     Assignment* const solution,
     bool maximize,
     int64 step,
-    const vector<SearchMonitor*>& monitors) {
+    const std::vector<SearchMonitor*>& monitors) {
   return RevAlloc(new NestedOptimize(db, solution, maximize, step, monitors));
 }
 
@@ -3991,7 +3979,7 @@ class SymmetryManager : public SearchMonitor {
     SimpleRevFIFO<bool>::Iterator tmp_dir(&directions_[index]);
     Constraint* ct = NULL;
     {
-      vector<IntVar*> guard;
+      std::vector<IntVar*> guard;
       // keep the last entry for later, if loop doesn't exit.
       ++tmp;
       ++tmp_dir;
@@ -4032,7 +4020,7 @@ class SymmetryManager : public SearchMonitor {
   scoped_array<SimpleRevFIFO<Decision*> > decisions_;
   scoped_array<SimpleRevFIFO<bool> > directions_;
   int size_;
-  map<SymmetryBreaker*, int> indices_;
+  std::map<SymmetryBreaker*, int> indices_;
 };
 
 void SymmetryBreaker::AddToClause(IntVar* const term) {
@@ -4040,7 +4028,7 @@ void SymmetryBreaker::AddToClause(IntVar* const term) {
 }
 
 SearchMonitor* Solver::MakeSymmetryManager(
-    const vector<SymmetryBreaker*>& visitors) {
+    const std::vector<SymmetryBreaker*>& visitors) {
   return MakeSymmetryManager(visitors.data(), visitors.size());
 }
 
@@ -4050,14 +4038,14 @@ SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* const * visitors,
 }
 
 SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* const v1) {
-  vector<SymmetryBreaker*> visitors;
+  std::vector<SymmetryBreaker*> visitors;
   visitors.push_back(v1);
   return MakeSymmetryManager(visitors);
 }
 
 SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* const v1,
                                            SymmetryBreaker* const v2) {
-  vector<SymmetryBreaker*> visitors;
+  std::vector<SymmetryBreaker*> visitors;
   visitors.push_back(v1);
   visitors.push_back(v2);
   return MakeSymmetryManager(visitors);
@@ -4066,7 +4054,7 @@ SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* const v1,
 SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* const v1,
                                            SymmetryBreaker* const v2,
                                            SymmetryBreaker* const v3) {
-  vector<SymmetryBreaker*> visitors;
+  std::vector<SymmetryBreaker*> visitors;
   visitors.push_back(v1);
   visitors.push_back(v2);
   visitors.push_back(v3);
@@ -4077,7 +4065,7 @@ SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* const v1,
                                            SymmetryBreaker* const v2,
                                            SymmetryBreaker* const v3,
                                            SymmetryBreaker* const v4) {
-  vector<SymmetryBreaker*> visitors;
+  std::vector<SymmetryBreaker*> visitors;
   visitors.push_back(v1);
   visitors.push_back(v2);
   visitors.push_back(v3);

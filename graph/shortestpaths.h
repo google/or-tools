@@ -37,7 +37,7 @@ bool DijkstraShortestPath(int node_count,
                           int end_node,
                           ResultCallback2<int64, int, int>* const graph,
                           int64 disconnected_distance,
-                          vector<int>* nodes);
+                          std::vector<int>* nodes);
 
 // Bellman-Ford Shortest path with callback-based description of the
 // graph.  The callback returns the distance between two nodes, a
@@ -52,7 +52,7 @@ bool BellmanFordShortestPath(int node_count,
                              int end_node,
                              ResultCallback2<int64, int, int>* const graph,
                              int64 disconnected_distance,
-                             vector<int>* nodes);
+                             std::vector<int>* nodes);
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_GRAPH_SHORTESTPATHS_H_

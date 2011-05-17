@@ -20,8 +20,6 @@
 #ifndef OR_TOOLS_GRAPH_CONNECTIVITY_H_
 #define OR_TOOLS_GRAPH_CONNECTIVITY_H_
 
-#include <vector>
-
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
@@ -57,7 +55,7 @@ namespace operations_research {
 // }
 // // Group the nodes in the same connected component together.
 // // group[class_number][i] contains the i-th node in group class_number.
-// hash_map<NodeIndex, vector<NodeIndex> > group(num_connected_components);
+// hash_map<NodeIndex, std::vector<NodeIndex> > group(num_connected_components);
 // for (NodeIndex node = 0; node < num_nodes; ++node) {
 //   group[components.GetClassRepresentative(node)].push_back(node);
 // }

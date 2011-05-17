@@ -94,7 +94,7 @@ template <typename T> class HamiltonianPathSolver {
 // i.e. the algorithm solves the Travelling Salesman Problem.
 // Example:
 
-// vector<vector<int> > cost_mat;
+// std::vector<std::vector<int> > cost_mat;
 // ... fill in cost matrix
 // HamiltonianPathSolver<int> mhp(cost_mat);     // no computation done
 // printf("%d\n", mhp.TravelingSalesmanCost());  // computation done and stored
@@ -108,23 +108,23 @@ template <typename T> class HamiltonianPathSolver {
   // This is why we define the type NodeSet to be 32-bit wide.
   typedef uint32 NodeSet;
 
-  explicit HamiltonianPathSolver(const vector<vector<T> >& cost);
+  explicit HamiltonianPathSolver(const std::vector<std::vector<T> >& cost);
   ~HamiltonianPathSolver();
 
   // Replaces the cost matrix while avoiding re-allocating memory.
-  void ChangeCostMatrix(const vector<vector<T> >& cost);
+  void ChangeCostMatrix(const std::vector<std::vector<T> >& cost);
 
   // Returns the Hamiltonian path cost.
   T HamiltonianCost();
 
   // Returns the Hamiltonian path in the vector pointed to by the argument.
-  void HamiltonianPath(vector<PathNodeIndex>* path);
+  void HamiltonianPath(std::vector<PathNodeIndex>* path);
 
   // Returns the cost of the TSP tour.
   T TravelingSalesmanCost();
 
   // Returns the TSP tour in the vector pointed to by the argument.
-  void TravelingSalesmanPath(vector<PathNodeIndex>* path);
+  void TravelingSalesmanPath(std::vector<PathNodeIndex>* path);
 
   // Returns true if there won't be precision issues.
   // This is always true for integers, but not for floating-point types.
@@ -145,17 +145,17 @@ template <typename T> class HamiltonianPathSolver {
   void ComputeShortestPath(NodeSet s, PathNodeIndex dest);
 
   // Copies the cost matrix passed as argument to the internal data structure.
-  void CopyCostMatrix(const vector<vector<T> >& cost);
+  void CopyCostMatrix(const std::vector<std::vector<T> >& cost);
 
   // Reserves memory. Used in constructor and ChangeCostMatrix.
-  void Init(const vector<vector<T> >& cost);
+  void Init(const std::vector<std::vector<T> >& cost);
 
   // Frees memory. Used in destructor and ChangeCostMatrix.
   void Free();
 
   // Computes path by looking at the information in memory_.
   void Path(PathNodeIndex end,
-            vector<PathNodeIndex>* path);
+            std::vector<PathNodeIndex>* path);
 
   // Does all the Dynamic Progamming iterations. Calls ComputeShortestPath.
   void Solve();
@@ -174,7 +174,7 @@ template <typename T> class HamiltonianPathSolver {
 static const int kHamiltonianPathSolverPadValue = 1557;
 
 template <typename T>
-HamiltonianPathSolver<T>::HamiltonianPathSolver(const vector<vector<T> >& cost)
+HamiltonianPathSolver<T>::HamiltonianPathSolver(const std::vector<std::vector<T> >& cost)
     : robust_(true),
       triangle_inequality_ok_(true),
       robustness_checked_(false),
@@ -206,7 +206,7 @@ void HamiltonianPathSolver<T>::Free() {
 
 
 template <typename T> void HamiltonianPathSolver<T>::
-                           ChangeCostMatrix(const vector<vector<T> >& cost) {
+                           ChangeCostMatrix(const std::vector<std::vector<T> >& cost) {
   robustness_checked_ = false;
   triangle_inequality_checked_ = false;
   solved_ = false;
@@ -219,7 +219,7 @@ template <typename T> void HamiltonianPathSolver<T>::
 }
 
 template <typename T>
-void HamiltonianPathSolver<T>::CopyCostMatrix(const vector<vector<T> >& cost) {
+void HamiltonianPathSolver<T>::CopyCostMatrix(const std::vector<std::vector<T> >& cost) {
   for (int i = 0; i < num_nodes_; ++i) {
     CHECK_EQ(num_nodes_, cost[i].size()) << "Cost matrix must be square";
     for (int j = 0; j < num_nodes_; ++j) {
@@ -286,7 +286,7 @@ void HamiltonianPathSolver<T>::CheckTriangleInequality() {
 }
 
 template <typename T>
-void HamiltonianPathSolver<T>::Init(const vector<vector<T> >& cost) {
+void HamiltonianPathSolver<T>::Init(const std::vector<std::vector<T> >& cost) {
   num_nodes_ = cost.size();
   if (num_nodes_ > 0) {
     cost_ = new T*[num_nodes_];
@@ -368,7 +368,7 @@ template <typename T> T HamiltonianPathSolver<T>::HamiltonianCost() {
 }
 
 template <typename T> void HamiltonianPathSolver<T>::
-    HamiltonianPath(vector<PathNodeIndex>* path) {
+    HamiltonianPath(std::vector<PathNodeIndex>* path) {
   if (num_nodes_ <= 1) {
     path->resize(1);
     (*path)[0] = 0;
@@ -409,7 +409,7 @@ template <typename T> void HamiltonianPathSolver<T>::
 
 template <typename T>
 void HamiltonianPathSolver<T>::Path(PathNodeIndex end,
-                                    vector<PathNodeIndex>* path) {
+                                    std::vector<PathNodeIndex>* path) {
   PathNodeIndex dest = end;
   NodeSet current_set = two_power_num_nodes_ - 1;
   // It may happen that node 0 be on a segment (node i, node j), in which case
@@ -450,7 +450,7 @@ template <typename T> T HamiltonianPathSolver<T>::TravelingSalesmanCost() {
 }
 
 template <typename T> void HamiltonianPathSolver<T>::
-    TravelingSalesmanPath(vector<PathNodeIndex>* path) {
+    TravelingSalesmanPath(std::vector<PathNodeIndex>* path) {
   if (num_nodes_ <= 1) {
     path->resize(1);
     (*path)[0] = 0;

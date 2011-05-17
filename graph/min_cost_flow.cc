@@ -40,14 +40,14 @@ MinCostFlow::MinCostFlow(const StarGraph& graph)
   CHECK_GE(max_num_arcs, 1);
   const NodeIndex max_num_nodes = graph_.max_num_nodes();
   CHECK_GE(max_num_nodes, 1);
-  node_excess_.Reserve(1, max_num_nodes);
+  node_excess_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
   node_excess_.Assign(0);
-  node_potential_.Reserve(1, max_num_nodes);
+  node_potential_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
   node_potential_.Assign(0);
-  residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs);
+  residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
   residual_arc_capacity_.Assign(0);
-  first_admissible_arc_.Reserve(1, max_num_nodes);
-  scaled_arc_unit_cost_.Reserve(-max_num_arcs, max_num_arcs);
+  first_admissible_arc_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
+  scaled_arc_unit_cost_.Reserve(-max_num_arcs, max_num_arcs - 1);
   scaled_arc_unit_cost_.Assign(0);
 }
 
@@ -84,9 +84,9 @@ bool MinCostFlow::CheckCostRange() const {
     const CostValue cost_magnitude = scaled_arc_unit_cost_[arc] > 0 ?
         scaled_arc_unit_cost_[arc] :
         -scaled_arc_unit_cost_[arc];
-    max_cost_magnitude = max(max_cost_magnitude, cost_magnitude);
+    max_cost_magnitude = std::max(max_cost_magnitude, cost_magnitude);
     if (cost_magnitude != 0.0) {
-      min_cost_magnitude = min(min_cost_magnitude, cost_magnitude);
+      min_cost_magnitude = std::min(min_cost_magnitude, cost_magnitude);
     }
   }
   VLOG(1) << "Min cost magnitude = " << min_cost_magnitude
@@ -138,7 +138,7 @@ CostValue MinCostFlow::ComputeMinCostFlow() {
   CostValue total_flow_cost = 0;
   for (StarGraph::ArcIterator it(graph_); it.Ok(); it.Next()) {
     const ArcIndex arc = it.Index();
-    const FlowQuantity flow_on_arc = residual_arc_capacity_[-arc];
+    const FlowQuantity flow_on_arc = residual_arc_capacity_[Opposite(arc)];
     VLOG(1) << "Flow for arc " << arc << " = " << flow_on_arc
             << ", scaled cost = " << scaled_arc_unit_cost_[arc];
     total_flow_cost += scaled_arc_unit_cost_[arc] * flow_on_arc;
@@ -172,7 +172,7 @@ void MinCostFlow::ScaleCosts() {
     const CostValue cost = scaled_arc_unit_cost_[arc] * cost_scaling_factor_;
     scaled_arc_unit_cost_.Set(arc, cost);
     scaled_arc_unit_cost_.Set(Opposite(arc), -cost);
-    epsilon_ = max(epsilon_, cost >= 0 ? cost : -cost);
+    epsilon_ = std::max(epsilon_, cost >= 0 ? cost : -cost);
   }
   VLOG(1) << "Initial epsilon = " << epsilon_;
   VLOG(1) << "Cost scaling factor = " << cost_scaling_factor_;
@@ -190,7 +190,7 @@ void MinCostFlow::UnscaleCosts() {
 
 void MinCostFlow::Optimize() {
   while (epsilon_ > 1) {
-    epsilon_ = max(epsilon_ / alpha_, 1LL);  // avoid epsilon_ == 0.
+    epsilon_ = std::max(epsilon_ / alpha_, 1LL);  // avoid epsilon_ == 0.
     VLOG(1) << "Epsilon changed to: " << epsilon_;
     Refine();
   }
@@ -269,8 +269,8 @@ void MinCostFlow::Discharge(NodeIndex node) {
           VLOG(1) << "Discharge: calling PushFlow.";
           const NodeIndex head = Head(arc);
           const bool head_active_before_push = IsActive(head);
-          const FlowQuantity delta = min(node_excess_[node],
-                                         residual_arc_capacity_[arc]);
+          const FlowQuantity delta = std::min(node_excess_[node],
+                                              residual_arc_capacity_[arc]);
           PushFlow(delta, arc);
           if (IsActive(head) && !head_active_before_push) {
             active_nodes_.push(Head(arc));

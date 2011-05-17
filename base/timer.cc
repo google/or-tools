@@ -19,7 +19,7 @@
 #if defined(__APPLE__) && defined(__GNUC__)
 #include <mach/mach_time.h>
 #endif
-#include <time.h>
+#include <ctime>
 #include "base/logging.h"
 #include "base/timer.h"
 

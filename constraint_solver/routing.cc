@@ -14,14 +14,17 @@
 #include "constraint_solver/routing.h"
 
 #include <algorithm>
+#include "base/hash.h"
 #include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
+#include "base/timer.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
 #include "base/stl_util-inl.h"
+#include "base/hash.h"
 #include "constraint_solver/constraint_solveri.h"
 
 // Neighborhood deactivation
@@ -113,7 +116,7 @@ class RoutingCache {
     return cached_value;
   }
  private:
-  vector<hash_map<int, int64> > cache_;
+  std::vector<hash_map<int, int64> > cache_;
   scoped_ptr<Solver::IndexEvaluator2> callback_;
 };
 
@@ -138,8 +141,8 @@ class PathCumulFilter : public IntVarLocalSearchFilter {
  private:
   scoped_array<IntVar*> cumuls_;
   const int cumuls_size_;
-  vector<int64> saved_nexts_;
-  vector<int64> node_path_starts_;
+  std::vector<int64> saved_nexts_;
+  std::vector<int64> node_path_starts_;
   Solver::IndexEvaluator2* const evaluator_;
   const string name_;
   static const int64 kUnassigned;
@@ -170,7 +173,7 @@ bool PathCumulFilter::Accept(const Assignment* delta,
   const Assignment::IntContainer& container = delta->IntVarContainer();
   const int delta_size = container.Size();
   // Determining touched paths.
-  vector<int64> touched_paths;
+  std::vector<int64> touched_paths;
   for (int i = 0; i < delta_size; ++i) {
     const IntVarElement& new_element = container.Element(i);
     const IntVar* const var = new_element.Var();
@@ -205,7 +208,7 @@ bool PathCumulFilter::Accept(const Assignment* delta,
       if (cumul > cumuls_[next]->Max()) {
         return false;
       }
-      cumul = max(cumuls_[next]->Min(), cumul);
+      cumul = std::max(cumuls_[next]->Min(), cumul);
       node = next;
     }
   }
@@ -215,7 +218,7 @@ bool PathCumulFilter::Accept(const Assignment* delta,
 void PathCumulFilter::OnSynchronize() {
   const int nexts_size = Size();
   // Detecting path starts, used to track which node belongs to which path.
-  vector<int64> path_starts;
+  std::vector<int64> path_starts;
   Bitmap has_prevs(nexts_size, false);
   for (int i = 0; i < nexts_size; ++i) {
     const int next = Value(i);
@@ -358,7 +361,7 @@ RoutingModel::RoutingModel(int nodes, int vehicles)
 
 RoutingModel::RoutingModel(int nodes,
                            int vehicles,
-                           const vector<pair<int, int> >& start_end)
+                           const std::vector<pair<int, int> >& start_end)
     : solver_(NULL),
       no_cycle_constraint_(NULL),
       costs_(vehicles),
@@ -399,8 +402,8 @@ RoutingModel::RoutingModel(int nodes,
 
 RoutingModel::RoutingModel(int nodes,
                            int vehicles,
-                           const vector<int>& starts,
-                           const vector<int>& ends)
+                           const std::vector<int>& starts,
+                           const std::vector<int>& ends)
     : solver_(NULL),
       no_cycle_constraint_(NULL),
       costs_(vehicles),
@@ -431,11 +434,11 @@ RoutingModel::RoutingModel(int nodes,
   CHECK_EQ(vehicles, starts.size());
   CHECK_EQ(vehicles, ends.size());
   hash_set<int> depot_set;
-  vector<pair<int, int> > start_end(starts.size());
+  std::vector<pair<int, int> > start_end(starts.size());
   for (int i = 0; i < starts.size(); ++i) {
     depot_set.insert(starts[i]);
     depot_set.insert(ends[i]);
-    start_end[i] = make_pair(starts[i], ends[i]);
+    start_end[i] = std::make_pair(starts[i], ends[i]);
   }
   start_end_count_ = depot_set.size();
   Initialize();
@@ -586,20 +589,20 @@ void RoutingModel::SetVehicleFixedCost(int vehicle, int64 cost) {
   fixed_costs_[vehicle] = cost;
 }
 
-void RoutingModel::AddDisjunction(const vector<int64>& nodes) {
+void RoutingModel::AddDisjunction(const std::vector<int64>& nodes) {
   AddDisjunctionInternal(nodes, kNoPenalty);
 }
 
-void RoutingModel::AddDisjunction(const vector<int64>& nodes, int64 penalty) {
+void RoutingModel::AddDisjunction(const std::vector<int64>& nodes, int64 penalty) {
   CHECK_GE(penalty, 0) << "Penalty must be positive";
   AddDisjunctionInternal(nodes, penalty);
 }
 
-void RoutingModel::AddDisjunctionInternal(const vector<int64>& nodes,
+void RoutingModel::AddDisjunctionInternal(const std::vector<int64>& nodes,
                                           int64 penalty) {
   const int size = disjunctions_.size();
   disjunctions_.resize(size + 1);
-  vector<int64>& disjunction_nodes = disjunctions_[size].nodes;
+  std::vector<int64>& disjunction_nodes = disjunctions_[size].nodes;
   disjunction_nodes.resize(nodes.size());
   for (int i = 0; i < nodes.size(); ++i) {
     CHECK_NE(kUnassigned, node_to_index_[nodes[i]]);
@@ -613,9 +616,9 @@ void RoutingModel::AddDisjunctionInternal(const vector<int64>& nodes,
 }
 
 IntVar* RoutingModel::CreateDisjunction(int disjunction) {
-  const vector<int64>& nodes = disjunctions_[disjunction].nodes;
+  const std::vector<int64>& nodes = disjunctions_[disjunction].nodes;
   const int nodes_size = nodes.size();
-  vector<IntVar*> disjunction_vars(nodes_size + 1);
+  std::vector<IntVar*> disjunction_vars(nodes_size + 1);
   for (int i = 0; i < nodes_size; ++i) {
     const int64 node = nodes[i];
     CHECK_LT(node, Size());
@@ -638,11 +641,11 @@ void RoutingModel::AddLocalSearchOperator(LocalSearchOperator* ls_operator) {
 }
 
 void RoutingModel::SetDepot(int depot) {
-  vector<pair<int, int> > start_end(vehicles_, std::make_pair(depot, depot));
+  std::vector<pair<int, int> > start_end(vehicles_, std::make_pair(depot, depot));
   SetStartEnd(start_end);
 }
 
-void RoutingModel::SetStartEnd(const vector<pair<int, int> >& start_end) {
+void RoutingModel::SetStartEnd(const std::vector<pair<int, int> >& start_end) {
   if (is_depot_set_) {
     LOG(WARNING) << "A depot has already been specified, ignoring new ones";
     return;
@@ -737,7 +740,7 @@ void RoutingModel::CloseModel() {
     solver_->AddConstraint(solver_->MakeEquality(
         vehicle_vars_[ends_[i]], solver_->MakeIntConst(i)));
   }
-  vector<IntVar*> zero_transit(size, solver_->MakeIntConst(Zero()));
+  std::vector<IntVar*> zero_transit(size, solver_->MakeIntConst(Zero()));
   solver_->AddConstraint(solver_->MakePathCumul(nexts_.get(),
                                                 active_.get(),
                                                 vehicle_vars_.get(),
@@ -759,7 +762,7 @@ void RoutingModel::CloseModel() {
     }
   }
 
-  vector<IntVar*> cost_elements;
+  std::vector<IntVar*> cost_elements;
   // Arc costs: the cost of an arc (i, nexts_[i], vehicle_vars_[i]) is
   // costs_(nexts_[i], vehicle_vars_[i]); the total cost is the sum of arc
   // costs.
@@ -842,7 +845,7 @@ const Assignment* RoutingModel::Solve(const Assignment* assignment) {
   }
 }
 
-int RoutingModel::FindNextActive(int index, const vector<int>& nodes) const {
+int RoutingModel::FindNextActive(int index, const std::vector<int>& nodes) const {
   ++index;
   CHECK_LE(0, index);
   const int size = nodes.size();
@@ -852,7 +855,7 @@ int RoutingModel::FindNextActive(int index, const vector<int>& nodes) const {
   return index;
 }
 
-IntVar* RoutingModel::ApplyLocks(const vector<int>& locks) {
+IntVar* RoutingModel::ApplyLocks(const std::vector<int>& locks) {
   preassignment_->Clear();
   IntVar* next_var = NULL;
   int lock_index = FindNextActive(-1, locks);
@@ -1099,7 +1102,7 @@ void RoutingModel::SetUpSearch() {
                                   kint64max,
                                   kint64max);
 
-  vector<LocalSearchOperator*> operators = extra_operators_;
+  std::vector<LocalSearchOperator*> operators = extra_operators_;
   if (vehicles_ > 1) {
     if (!FLAGS_routing_no_relocate) {
       CP_ROUTING_PUSH_BACK_OPERATOR(Solver::RELOCATE);
@@ -1208,7 +1211,7 @@ void RoutingModel::SetUpSearch() {
     first_solution = solver_->Compose(apply, first_solution);
   }
 
-  vector<LocalSearchFilter*> filters;
+  std::vector<LocalSearchFilter*> filters;
   if (FLAGS_routing_use_objective_filter) {
     if (homogeneous_costs_) {
       LocalSearchFilter* filter =
@@ -1341,7 +1344,7 @@ Solver::IndexEvaluator3* RoutingModel::BuildCostCallback() {
 IntVar** RoutingModel::GetOrMakeCumuls(int64 capacity, const string& name) {
   IntVar** named_cumuls = FindPtrOrNull(cumuls_, name);
   if (named_cumuls == NULL) {
-    vector<IntVar*> cumuls;
+    std::vector<IntVar*> cumuls;
     const int size = Size() + vehicles_;
     solver_->MakeIntVarArray(size, 0LL, capacity, name, &cumuls);
     IntVar** cumul_array = solver_->RevAlloc(new IntVar*[size]);
@@ -1365,7 +1368,7 @@ IntVar** RoutingModel::GetOrMakeTransits(Solver::IndexEvaluator2* evaluator,
   evaluator->CheckIsRepeatable();
   IntVar** named_transits = FindPtrOrNull(transits_, name);
   if (named_transits == NULL) {
-    vector<IntVar*> transits;
+    std::vector<IntVar*> transits;
     const int size = Size();
     IntVar** transit_array = solver_->RevAlloc(new IntVar*[size]);
     for (int i = 0; i < size; ++i) {

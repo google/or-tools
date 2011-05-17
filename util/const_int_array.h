@@ -20,6 +20,8 @@
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 
+using std::string;
+
 namespace operations_research {
 // This class is used to store constant copies of int64 arrays inside
 // constraints or expression. When constructed with a C array or a
@@ -36,7 +38,7 @@ namespace operations_research {
 // As const int arrays provide scanning capabilities, the code inside
 // a constraint and its factory looks like:
 //
-// IntExpr* MakeMyExpr(const vector<int64>& values) {
+// IntExpr* MakeMyExpr(const std::vector<int64>& values) {
 //   ConstIntArray copy(values);
 //   if (copy.Status(ConstIntArray::IS_INCREASING)) {
 //     return new MyOptimizedExpr(copy.Release());
@@ -48,7 +50,7 @@ namespace operations_research {
 // With:
 // class MyOptimizedExpr : IntExpr {
 //  public:
-//   MyOptimizedExpr(vector<int64>* data) : values_(data) {}
+//   MyOptimizedExpr(std::vector<int64>* data) : values_(data) {}
 //  private:
 //   ConstIntArray values_;
 // };
@@ -79,9 +81,9 @@ class ConstIntArray {
   ConstIntArray(int64 v0, int64 v1, int64 v2, int64 v3, int64 v4, int64 v5);
 
   // Build from a vector. Copy the data internally.
-  explicit ConstIntArray(const vector<int64>& data);
+  explicit ConstIntArray(const std::vector<int64>& data);
   // Build from a vector. Copy the data internally.
-  explicit ConstIntArray(const vector<int>& data);
+  explicit ConstIntArray(const std::vector<int>& data);
   // Build from a C array. Copy the data internally.
   ConstIntArray(const int64* const data, int size);
   // Build from a C array. Copy the data internally.
@@ -89,7 +91,7 @@ class ConstIntArray {
   // Build from a pointer to a vector (usually created by the
   // Release(), or SortedCopy() method).  This call will take ownership of
   // the data and not make a copy.
-  explicit ConstIntArray(vector<int64>* data);
+  explicit ConstIntArray(std::vector<int64>* data);
 
   ~ConstIntArray();
 
@@ -98,14 +100,14 @@ class ConstIntArray {
 
   // This code release the ownership of the data into the returned vector.
   // After this method is called, data_ points to a null vector.
-  vector<int64>* Release();
+  std::vector<int64>* Release();
 
   // This will create a new data holder with the sorted array.
-  vector<int64>* SortedCopy(bool increasing) const;
+  std::vector<int64>* SortedCopy(bool increasing) const;
 
   // This will create a new data holder with the sorted array where
   // the duplicate values have been removed.
-  vector<int64>* SortedCopyWithoutDuplicates(bool increasing) const;
+  std::vector<int64>* SortedCopyWithoutDuplicates(bool increasing) const;
 
   // Equality test.
   bool Equals(const ConstIntArray& other);
@@ -126,7 +128,7 @@ class ConstIntArray {
  private:
   void AndProperty(Property info, bool value);
   void Scan();
-  scoped_ptr<vector<int64> > data_;
+  scoped_ptr<std::vector<int64> > data_;
   bool scanned_;
   uint64 status_;
   DISALLOW_COPY_AND_ASSIGN(ConstIntArray);

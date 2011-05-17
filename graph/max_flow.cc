@@ -35,13 +35,13 @@ MaxFlow::MaxFlow(const StarGraph& graph,
   CHECK_GE(max_num_arcs, 1);
   const NodeIndex max_num_nodes = graph_.max_num_nodes();
   CHECK_GE(max_num_nodes, 1);
-  node_excess_.Reserve(1, max_num_nodes);
+  node_excess_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
   node_excess_.Assign(0);
-  node_potential_.Reserve(1, max_num_nodes);
+  node_potential_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
   node_potential_.Assign(0);
-  residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs);
+  residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
   residual_arc_capacity_.Assign(0);
-  first_admissible_arc_.Reserve(1, max_num_nodes);
+  first_admissible_arc_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
   CHECK(graph_.CheckNodeValidity(source_));
   CHECK(graph_.CheckNodeValidity(sink_));
 }
@@ -203,8 +203,8 @@ void MaxFlow::Discharge(NodeIndex node) {
           VLOG(1) << "Discharge: calling PushFlow.";
           const NodeIndex head = Head(arc);
           const bool head_active_before_push = IsActive(head);
-          const FlowQuantity delta = min(node_excess_[node],
-                                         residual_arc_capacity_[arc]);
+          const FlowQuantity delta = std::min(node_excess_[node],
+                                              residual_arc_capacity_[arc]);
           PushFlow(delta, arc);
           if (IsActive(head) && !head_active_before_push) {
             active_nodes_.push(Head(arc));
@@ -230,7 +230,7 @@ void MaxFlow::Relabel(NodeIndex node) {
     DCHECK_EQ(Tail(arc), node);
     if (residual_arc_capacity_[arc] > 0) {
       // Update min_height only for arcs with available capacity.
-      min_height = min(min_height, node_potential_[Head(arc)]);
+      min_height = std::min(min_height, node_potential_[Head(arc)]);
     }
   }
   VLOG(1) << "Relabel: height(" << node << ") relabeled from "

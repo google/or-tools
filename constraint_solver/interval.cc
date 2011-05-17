@@ -1029,7 +1029,7 @@ void Solver::MakeFixedDurationIntervalVarArray(int count,
                                                int64 duration,
                                                bool optional,
                                                const string& name,
-                                               vector<IntervalVar*>* array) {
+                                               std::vector<IntervalVar*>* array) {
   CHECK_GT(count, 0);
   CHECK_NOTNULL(array);
   array->clear();

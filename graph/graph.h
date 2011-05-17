@@ -32,7 +32,7 @@ namespace operations_research {
 // If the 'callback' returns true, then the search for cliques will stop.
 void FindCliques(ResultCallback2<bool, int, int>* const graph,
                  int node_count,
-                 ResultCallback1<bool, const vector<int>&>* const callback);
+                 ResultCallback1<bool, const std::vector<int>&>* const callback);
 
 // This function will cover the maximum number of arcs of the graph
 // with cliques. The graph is described by the graph
@@ -43,7 +43,7 @@ void FindCliques(ResultCallback2<bool, int, int>* const graph,
 void CoverArcsByCliques(
     ResultCallback2<bool, int, int>* const graph,
     int node_count,
-    ResultCallback1<bool, const vector<int>&>* const callback);
+    ResultCallback1<bool, const std::vector<int>&>* const callback);
 
 }  // namespace operations_research
 

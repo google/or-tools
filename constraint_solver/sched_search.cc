@@ -118,7 +118,7 @@ class SetTimesForward : public DecisionBuilder {
   scoped_array<int64> markers_;
 };
 
-DecisionBuilder* Solver::MakePhase(const vector<IntervalVar*>& intervals,
+DecisionBuilder* Solver::MakePhase(const std::vector<IntervalVar*>& intervals,
                                    IntervalStrategy str) {
   return RevAlloc(new SetTimesForward(intervals.data(), intervals.size()));
 }
@@ -219,7 +219,7 @@ class RankFirstSequences : public DecisionBuilder {
   const int size_;
 };
 
-DecisionBuilder* Solver::MakePhase(const vector<Sequence*>& sequences,
+DecisionBuilder* Solver::MakePhase(const std::vector<Sequence*>& sequences,
                                    SequenceStrategy str) {
   return RevAlloc(new RankFirstSequences(sequences.data(), sequences.size()));
 }

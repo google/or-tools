@@ -16,19 +16,19 @@
 
 #include <string>
 
+#include "base/basictypes.h"
 #include "base/stringpiece.h"
-#include "base/util.h"
 
 namespace operations_research {
-string StrCat(const StringPiece& p1, const StringPiece& p2);
-string StrCat(const StringPiece& p1,
-              const StringPiece& p2,
-              const StringPiece& p3);
-string StrCat(const StringPiece& p1,
-              const StringPiece& p2,
-              const StringPiece& p3,
-              const StringPiece& p4);
-string StrCat(int64 a1, const StringPiece& p2);
-string StrCat(const StringPiece& p1, int64 a2);
+std::string StrCat(const StringPiece& p1, const StringPiece& p2);
+std::string StrCat(const StringPiece& p1,
+                   const StringPiece& p2,
+                   const StringPiece& p3);
+std::string StrCat(const StringPiece& p1,
+                   const StringPiece& p2,
+                   const StringPiece& p3,
+                   const StringPiece& p4);
+std::string StrCat(int64 a1, const StringPiece& p2);
+std::string StrCat(const StringPiece& p1, int64 a2);
 }  // namespace operations_research
 #endif  // OR_TOOLS_BASE_JOIN_H_

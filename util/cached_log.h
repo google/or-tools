@@ -18,8 +18,8 @@
 
 #include <vector>
 
+#include "base/basictypes.h"
 #include "base/logging.h"
-#include "base/util.h"
 
 namespace operations_research {
 // This class is used when manipulating search space estimations.  It
@@ -39,7 +39,7 @@ class CachedLog {
   // Returns the log2 of 'input'.
   double Log2(int64 input) const;
  private:
-  vector<double> cache_;
+  std::vector<double> cache_;
   DISALLOW_COPY_AND_ASSIGN(CachedLog);
 };
 }  // namespace operations_research

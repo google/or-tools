@@ -12,11 +12,17 @@
 // limitations under the License.
 
 #include "base/stringpiece.h"
-#include "base/util.h"
+
+#include <cstdarg>
+#include <cstdio>
+
+#include <string>
 
 namespace operations_research {
 
-void StringAppendV(string* dst, const char* format, va_list ap) {
+void StringAppendV(std::string* const dst,
+                   const char* const format,
+                   va_list ap) {
   // First try with a small fixed size buffer
   char space[1024];
 
@@ -48,7 +54,7 @@ void StringAppendV(string* dst, const char* format, va_list ap) {
       // We need exactly "result+1" characters
       length = result+1;
     }
-    char* buf = new char[length];
+    char* const buf = new char[length];
 
     // Restore the va_list before we use it again
 #if defined(_MSC_VER)
@@ -69,16 +75,16 @@ void StringAppendV(string* dst, const char* format, va_list ap) {
   }
 }
 
-string StringPrintf(const char* format, ...) {
+std::string StringPrintf(const char* const format, ...) {
   va_list ap;
   va_start(ap, format);
-  string result;
+  std::string result;
   StringAppendV(&result, format, ap);
   va_end(ap);
   return result;
 }
 
-void SStringPrintf(string* dst, const char* format, ...) {
+void SStringPrintf(std::string* const dst, const char* const format, ...) {
   va_list ap;
   va_start(ap, format);
   dst->clear();
@@ -86,7 +92,7 @@ void SStringPrintf(string* dst, const char* format, ...) {
   va_end(ap);
 }
 
-void StringAppendF(string* dst, const char* format, ...) {
+void StringAppendF(std::string* const dst, const char* const format, ...) {
   va_list ap;
   va_start(ap, format);
   StringAppendV(dst, format, ap);

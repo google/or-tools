@@ -209,13 +209,13 @@ LINEAR_SOLVER_LIB_OS = \
 	objs/linear_solver.$O \
 	objs/linear_solver.pb.$O
 
-objs/cbc_interface.$O:linear_solver/cbc_interface.cc gen/linear_solver/linear_solver.pb.h
+objs/cbc_interface.$O:linear_solver/cbc_interface.cc
 	$(CCC) $(CFLAGS) $(CBC_STRING) -c linear_solver/cbc_interface.cc $(OBJOUT)objs/cbc_interface.$O
 
-objs/clp_interface.$O:linear_solver/clp_interface.cc gen/linear_solver/linear_solver.pb.h
+objs/clp_interface.$O:linear_solver/clp_interface.cc
 	$(CCC) $(CFLAGS) $(CLP_STRING) -c linear_solver/clp_interface.cc $(OBJOUT)objs/clp_interface.$O
 
-objs/glpk_interface.$O:linear_solver/glpk_interface.cc gen/linear_solver/linear_solver.pb.h
+objs/glpk_interface.$O:linear_solver/glpk_interface.cc
 	$(CCC) $(CFLAGS) -c linear_solver/glpk_interface.cc $(OBJOUT)objs/glpk_interface.$O
 
 objs/linear_solver.$O:linear_solver/linear_solver.cc gen/linear_solver/linear_solver.pb.h
@@ -321,7 +321,7 @@ ALGORITHMS_LIB_OS=\
 objs/hungarian.$O:algorithms/hungarian.cc
 	$(CCC) $(CFLAGS) -c algorithms/hungarian.cc $(OBJOUT)objs/hungarian.$O
 
-objs/knapsack_solver.$O:algorithms/knapsack_solver.cc
+objs/knapsack_solver.$O:algorithms/knapsack_solver.cc gen/linear_solver/linear_solver.pb.h
 	$(CCC) $(CFLAGS) -c algorithms/knapsack_solver.cc $(OBJOUT)objs/knapsack_solver.$O
 
 $(LIBPREFIX)algorithms.$(LIBSUFFIX): $(ALGORITHMS_LIB_OS)

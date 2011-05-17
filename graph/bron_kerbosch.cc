@@ -12,24 +12,26 @@
 // limitations under the License.
 
 #include <algorithm>
+#include "base/hash.h"
 #include <utility>
 #include <vector>
 
 #include "base/callback.h"
 #include "base/scoped_ptr.h"
+#include "base/hash.h"
 
 namespace operations_research {
 
 namespace {
 // TODO(user) : rewrite this algorithm without the recursivity.
 void Search(ResultCallback2<bool, int, int>* const graph,
-            ResultCallback1<bool, const vector<int>&>* const callback,
+            ResultCallback1<bool, const std::vector<int>&>* const callback,
             int* input_candidates,
             int input_size,
             int input_candidate_size,
-            vector<int>* actual,
+            std::vector<int>* actual,
             bool* stop) {
-  vector<int> actual_candidates(input_candidate_size);
+  std::vector<int> actual_candidates(input_candidate_size);
   int pre_increment = 0;
   int pivot = 0;
   int actual_candidate_size;
@@ -128,46 +130,29 @@ void Search(ResultCallback2<bool, int, int>* const graph,
   }
 }
 
-#if defined(_MSC_VER)
-// The following class defines a hash function for arcs
-class IntPairHasher : public stdext::hash_compare <pair<int, int> > {
- public:
-  size_t operator() (const pair<int, int>& a) const {
-    uint64 x = a.first;
-    uint64 y = GG_ULONGLONG(0xe08c1d668b756f82);
-    uint64 z = a.second;
-    mix(x, y, z);
-    return z;
-  }
-  bool operator() (const pair<int, int>& a1, const pair<int, int>& a2) const {
-    return a1.first < a2.first ||
-        (a1.first == a2.first && a1.second < a2.second);
-  }
-};
-#endif
-
 class FindAndEliminate {
  public:
   FindAndEliminate(ResultCallback2<bool, int, int>* const graph,
                    int node_count,
-                   ResultCallback1<bool, const vector<int>&>* const callback)
+                   ResultCallback1<bool, const std::vector<int>&>* const callback)
       : graph_(graph), node_count_(node_count), callback_(callback) {}
 
   bool GraphCallback(int node1, int node2) {
-    if (visited_.find(make_pair(std::min(node1, node2),
-                                std::max(node1, node2))) != visited_.end()) {
+    if (visited_.find(
+            std::make_pair(std::min(node1, node2),
+                           std::max(node1, node2))) != visited_.end()) {
       return false;
     }
     return graph_->Run(node1, node2);
   }
 
-  bool SolutionCallback(const vector<int>& solution) {
+  bool SolutionCallback(const std::vector<int>& solution) {
     const int size = solution.size();
     if (size > 1) {
       for (int i = 0; i < size - 1; ++i) {
         for (int j = i + 1; j < size; ++j) {
-          visited_.insert(make_pair(std::min(solution[i], solution[j]),
-                                    std::max(solution[i], solution[j])));
+          visited_.insert(std::make_pair(std::min(solution[i], solution[j]),
+                                         std::max(solution[i], solution[j])));
         }
       }
       callback_->Run(solution);
@@ -177,11 +162,11 @@ class FindAndEliminate {
  private:
   ResultCallback2<bool, int, int>* const graph_;
   int node_count_;
-  ResultCallback1<bool, const vector<int>&>* const callback_;
+  ResultCallback1<bool, const std::vector<int>&>* const callback_;
 #if defined(_MSC_VER)
-  hash_set<pair<int, int>, IntPairHasher> visited_;
+  hash_set<std::pair<int, int>, PairIntHasher> visited_;
 #else
-  hash_set<pair<int, int> > visited_;
+  hash_set<std::pair<int, int> > visited_;
 #endif
 };
 }  // namespace
@@ -190,14 +175,14 @@ class FindAndEliminate {
 // algorithm to find all maximal cliques in a undirected graph.
 void FindCliques(ResultCallback2<bool, int, int>* const graph,
                  int node_count,
-                 ResultCallback1<bool, const vector<int>&>* const callback) {
+                 ResultCallback1<bool, const std::vector<int>&>* const callback) {
   graph->CheckIsRepeatable();
   callback->CheckIsRepeatable();
   scoped_array<int> initial_candidates(new int[node_count]);
-  vector<int> actual;
+  std::vector<int> actual;
 
   scoped_ptr<ResultCallback2<bool, int, int> > graph_deleter(graph);
-  scoped_ptr<ResultCallback1<bool, const vector<int>&> > callback_deleter(
+  scoped_ptr<ResultCallback1<bool, const std::vector<int>&> > callback_deleter(
       callback);
 
   for (int c = 0; c < node_count; ++c) {
@@ -213,21 +198,21 @@ void FindCliques(ResultCallback2<bool, int, int>* const graph,
 void CoverArcsByCliques(
     ResultCallback2<bool, int, int>* const graph,
     int node_count,
-    ResultCallback1<bool, const vector<int>&>* const callback) {
+    ResultCallback1<bool, const std::vector<int>&>* const callback) {
   graph->CheckIsRepeatable();
   callback->CheckIsRepeatable();
 
   scoped_ptr<ResultCallback2<bool, int, int> > graph_deleter(graph);
-  scoped_ptr<ResultCallback1<bool, const vector<int>&> > callback_deleter(
+  scoped_ptr<ResultCallback1<bool, const std::vector<int>&> > callback_deleter(
       callback);
 
   FindAndEliminate cache(graph, node_count, callback);
   scoped_array<int> initial_candidates(new int[node_count]);
-  vector<int> actual;
+  std::vector<int> actual;
 
   scoped_ptr<ResultCallback2<bool, int, int> > cached_graph(
       NewPermanentCallback(&cache, &FindAndEliminate::GraphCallback));
-  scoped_ptr<ResultCallback1<bool, const vector<int>&> >cached_callback(
+  scoped_ptr<ResultCallback1<bool, const std::vector<int>&> >cached_callback(
       NewPermanentCallback(&cache, &FindAndEliminate::SolutionCallback));
 
   for (int c = 0; c < node_count; ++c) {

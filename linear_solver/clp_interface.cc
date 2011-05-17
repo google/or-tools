@@ -341,7 +341,7 @@ void CLPInterface::ExtractNewConstraints() {
       }
     }
     // Make space for dummy variable.
-    max_row_length = max(1, max_row_length);
+    max_row_length = std::max(1, max_row_length);
     scoped_array<int> indices(new int[max_row_length]);
     scoped_array<double> coefs(new double[max_row_length]);
     CoinBuild build_object;

@@ -190,7 +190,7 @@ Constraint* Solver::MakeMapDomain(IntVar* const var, IntVar* const * actives,
 }
 
 Constraint* Solver::MakeMapDomain(IntVar* const var,
-                                  const vector<IntVar*>& actives) {
+                                  const std::vector<IntVar*>& actives) {
   return RevAlloc(new MapDomain(this, var, actives.data(), actives.size()));
 }
 
@@ -235,7 +235,7 @@ class NoCycle : public Constraint {
   scoped_array<int64> ends_;
   scoped_array<int64> outbound_supports_;
   ResultCallback1<bool, int64>* sink_handler_;
-  vector<int64> sinks_;
+  std::vector<int64> sinks_;
   bool owner_;
   bool assume_paths_;
 };
@@ -445,8 +445,8 @@ bool GreaterThan(int64 x, int64 y) {
 
 }  // namespace
 
-Constraint* Solver::MakeNoCycle(const vector<IntVar*>& nexts,
-                                const vector<IntVar*>& active,
+Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
+                                const std::vector<IntVar*>& active,
                                 ResultCallback1<bool, int64>* sink_handler,
                                 bool assume_paths) {
   CHECK_EQ(nexts.size(), active.size());
@@ -475,8 +475,8 @@ Constraint* Solver::MakeNoCycle(const IntVar* const* nexts,
                               assume_paths));
 }
 
-Constraint* Solver::MakeNoCycle(const vector<IntVar*>& nexts,
-                                const vector<IntVar*>& active,
+Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
+                                const std::vector<IntVar*>& active,
                                 ResultCallback1<bool, int64>* sink_handler) {
   return MakeNoCycle(nexts, active, sink_handler, true);
 }
@@ -698,10 +698,10 @@ string PathCumul::DebugString() const {
   return out;
 }
 
-Constraint* Solver::MakePathCumul(const vector<IntVar*>& nexts,
-                                  const vector<IntVar*>& active,
-                                  const vector<IntVar*>& cumuls,
-                                  const vector<IntVar*>& transits) {
+Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
+                                  const std::vector<IntVar*>& active,
+                                  const std::vector<IntVar*>& cumuls,
+                                  const std::vector<IntVar*>& transits) {
   CHECK_EQ(nexts.size(), active.size());
   CHECK_EQ(transits.size(), nexts.size());
   return RevAlloc(new PathCumul(this,

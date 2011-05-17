@@ -108,13 +108,14 @@
 #include <algorithm>
 #include <stack>
 #include <string>
-#include <vector>
 
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
 #include "graph/ebert_graph.h"
 #include "util/packed_array.h"
+
+using std::string;
 
 namespace operations_research {
 
@@ -268,7 +269,7 @@ class MaxFlow {
   // A stack used for managing active nodes in the algorithm.
   // Note that the papers cited above recommend the use of a queue, but
   // benchmarking so far has not proved it is better.
-  stack<NodeIndex>    active_nodes_;
+  std::stack<NodeIndex>    active_nodes_;
 
   // The index of the source node in graph_.
   NodeIndex source_;

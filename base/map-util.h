@@ -15,7 +15,6 @@
 #define OR_TOOLS_BASE_MAP_UTIL_H_
 
 #include <utility>
-#include "base/util.h"
 
 namespace operations_research {
 
@@ -85,8 +84,8 @@ FindPtrOrNull(const Collection& collection,
 template <class Collection, class Key, class Value>
 bool InsertOrUpdate(Collection * const collection,
                    const Key& key, const Value& value) {
-  pair<typename Collection::iterator, bool> ret =
-    collection->insert(typename Collection::value_type(key, value));
+  std::pair<typename Collection::iterator, bool> ret =
+      collection->insert(typename Collection::value_type(key, value));
   if (!ret.second) {
     // update
     ret.first->second = value;
@@ -102,8 +101,8 @@ bool InsertOrUpdate(Collection * const collection,
 template <class Collection, class Key, class Value>
 bool InsertIfNotPresent(Collection * const collection,
                         const Key& key, const Value& value) {
-  pair<typename Collection::iterator, bool> ret =
-    collection->insert(typename Collection::value_type(key, value));
+  std::pair<typename Collection::iterator, bool> ret =
+      collection->insert(typename Collection::value_type(key, value));
   return ret.second;
 }
 

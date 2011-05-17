@@ -11,10 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if !defined(_MSC_VER)
-#include <sys/time.h>
+#if defined(__GNUC__) && defined(__linux__)
+# include <linux/limits.h>
 #endif
-#include <time.h>
+#if defined(_MSC_VER)
+# include <windows.h>
+# define PATH_MAX 4096
+#else
+# include <sys/time.h>
+#endif
+
+#include <cstring>
+#include <ctime>
+
+#include "base/hash.h"
 #include "base/random.h"
 
 namespace operations_research {
@@ -58,14 +68,6 @@ static inline uint32 Word32At(const char *ptr) {
           (static_cast<uint32>(ptr[3]) << 24));
 }
 }  // namespace
-
-#if defined(__GNUC__) && defined(__linux__)
-#include <linux/limits.h>
-#endif
-#if defined(_MSC_VER)
-#include <windows.h>
-#define PATH_MAX 4096
-#endif
 
 int32 ACMRandom::HostnamePidTimeSeed() {
   char name[PATH_MAX + 20];      // need 12 bytes for 3 'empty' uint32's

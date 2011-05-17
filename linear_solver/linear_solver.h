@@ -69,7 +69,8 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
 #define OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
 
-
+#include "base/hash.h"
+#include "base/hash.h"
 #include <limits>
 #include <string>
 #include <vector>
@@ -82,7 +83,9 @@
 #include "base/timer.h"
 #include "base/strutil.h"
 #include "base/sparsetable.h"
-#include "linear_solver/linear_solver.pb.h"
+#include "base/hash.h"
+
+using std::string;
 
 namespace operations_research {
 
@@ -286,7 +289,7 @@ class MPSolver {
   // ----- Variables ------
   // Returns the number of variables.
   int NumVariables() const { return variables_.size(); }
-  const vector<MPVariable*>& variables() const { return variables_; }
+  const std::vector<MPVariable*>& variables() const { return variables_; }
 
   // Create a variable with the given bounds.
   MPVariable* MakeVar(double lb, double ub, bool integer, const string& name);
@@ -299,20 +302,20 @@ class MPSolver {
                     double ub,
                     bool integer,
                     const string& name,
-                    vector<MPVariable*>* vars);
+                    std::vector<MPVariable*>* vars);
   void MakeNumVarArray(int nb,
                        double lb,
                        double ub,
                        const string& name,
-                       vector<MPVariable*>* vars);
+                       std::vector<MPVariable*>* vars);
   void MakeIntVarArray(int nb,
                        double lb,
                        double ub,
                        const string& name,
-                       vector<MPVariable*>* vars);
+                       std::vector<MPVariable*>* vars);
   void MakeBoolVarArray(int nb,
                         const string& name,
-                        vector<MPVariable*>* vars);
+                        std::vector<MPVariable*>* vars);
 
   // ----- Constraints -----
   // Returns the number of constraints.
@@ -440,11 +443,11 @@ class MPSolver {
   scoped_ptr<MPSolverInterface> interface_;
 
   // vector of problem variables.
-  vector<MPVariable*> variables_;
+  std::vector<MPVariable*> variables_;
   hash_set<string> variables_names_;
 
   // The list of constraints for the problem.
-  vector<MPConstraint*> constraints_;
+  std::vector<MPConstraint*> constraints_;
   hash_set<string> constraints_names_;
 
   // The linear objective function

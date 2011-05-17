@@ -11,12 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "base/hash.h"
 #include <vector>
 
 #include "base/callback.h"
 #include "base/integral_types.h"
 #include "base/scoped_ptr.h"
 #include "base/adjustable_priority_queue.h"
+
 
 namespace operations_research {
 namespace {
@@ -57,12 +59,12 @@ class DijkstraSP {
         elements_(node_count) {
     graph->CheckIsRepeatable();
   }
-  bool ShortestPath(int end_node, vector<int>* nodes);
+  bool ShortestPath(int end_node, std::vector<int>* nodes);
  private:
   void Initialize();
   int SelectClosestNode(int64* distance);
   void Update(int label);
-  void FindPath(int dest, vector<int>* nodes);
+  void FindPath(int dest, std::vector<int>* nodes);
 
   const int node_count_;
   const int start_node_;
@@ -70,7 +72,7 @@ class DijkstraSP {
   const int64 disconnected_distance_;
   scoped_array<int> predecessor_;
   AdjustablePriorityQueue<Element> frontier_;
-  vector<Element> elements_;
+  std::vector<Element> elements_;
   hash_set<int> not_visited_;
   hash_set<int> added_to_the_frontier_;
 };
@@ -121,7 +123,7 @@ void DijkstraSP::Update(int node) {
   }
 }
 
-void DijkstraSP::FindPath(int dest, vector<int>* nodes) {
+void DijkstraSP::FindPath(int dest, std::vector<int>* nodes) {
   int j = dest;
   nodes->push_back(j);
   while (predecessor_[j] != -1) {
@@ -130,7 +132,7 @@ void DijkstraSP::FindPath(int dest, vector<int>* nodes) {
   }
 }
 
-bool DijkstraSP::ShortestPath(int end_node, vector<int>* nodes) {
+bool DijkstraSP::ShortestPath(int end_node, std::vector<int>* nodes) {
   Initialize();
   bool found = false;
   while (!frontier_.IsEmpty()) {
@@ -156,7 +158,7 @@ bool DijkstraShortestPath(int node_count,
                           int end_node,
                           ResultCallback2<int64, int, int>* const graph,
                           int64 disconnected_distance,
-                          vector<int>* nodes) {
+                          std::vector<int>* nodes) {
   DijkstraSP bf(node_count, start_node, graph, disconnected_distance);
   return bf.ShortestPath(end_node, nodes);
 }

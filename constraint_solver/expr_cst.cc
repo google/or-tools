@@ -858,7 +858,7 @@ Constraint* Solver::MakeMemberCt(IntVar* const var,
 }
 
 Constraint* Solver::MakeMemberCt(IntVar* const var,
-                                 const vector<int64>& values) {
+                                 const std::vector<int64>& values) {
   return MakeMemberCt(var, values.data(), values.size());
 }
 
@@ -940,7 +940,7 @@ Constraint* Solver::MakeIsMemberCt(IntVar* const var,
 }
 
 Constraint* Solver::MakeIsMemberCt(IntVar* const var,
-                                   const vector<int64>& values,
+                                   const std::vector<int64>& values,
                                    IntVar* const boolvar) {
   return MakeIsMemberCt(var, values.data(), values.size(), boolvar);
 }
@@ -954,7 +954,7 @@ IntVar* Solver::MakeIsMemberVar(IntVar* const var,
 }
 
 IntVar* Solver::MakeIsMemberVar(IntVar* const var,
-                                const vector<int64>& values) {
+                                const std::vector<int64>& values) {
   return MakeIsMemberVar(var, values.data(), values.size());
 }
 

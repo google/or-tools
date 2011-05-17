@@ -17,6 +17,7 @@
 #include <vector>
 #include "base/callback.h"
 #include "base/integral_types.h"
+using std::string;
 %}
 
 #if defined(SWIGPYTHON)
@@ -148,10 +149,10 @@ static bool PyCallbackBool(PyObject* pyfunc) {
   $1 = NewPermanentCallback(&PyCallbackBool, $input);
 }
 
-// ----- vector<data> wrapping -----
+// ----- std::vector<data> wrapping -----
 
-// Add conversion rules for vector<int64>.
-%typemap(in) const vector<int64>& (vector<int64> temp) {
+// Add conversion rules for std::vector<int64>.
+%typemap(in) const std::vector<int64>& (std::vector<int64> temp) {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
     SWIG_fail;
@@ -165,7 +166,7 @@ static bool PyCallbackBool(PyObject* pyfunc) {
   $1 = &temp;
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER) const vector<int64>& {
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<int64>& {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
   } else {
@@ -184,9 +185,9 @@ static bool PyCallbackBool(PyObject* pyfunc) {
   }
 }
 
-// Add conversion list(tuple(int)) -> vector<vector>.
-%typemap(in) const vector<vector<int64> >&
-    (vector<vector<int64> > temp) {
+// Add conversion list(tuple(int)) -> std::vector<vector>.
+%typemap(in) const std::vector<std::vector<int64> >&
+    (std::vector<std::vector<int64> > temp) {
   if (!PyList_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Expecting a list of tuples");
     SWIG_fail;
@@ -221,7 +222,7 @@ static bool PyCallbackBool(PyObject* pyfunc) {
   $1 = &temp;
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER) const vector<vector<int64> >& {
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<std::vector<int64> >& {
   if (!PyList_Check($input)) {
     $1 = 0;
   } else {
@@ -322,14 +323,14 @@ class LongResultCallback3 {
  "SWIGTYPE_p_ResultCallback3Tlong_long_long_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
 
 
-// Typemaps to represent const vector<int64>& arguments as arrays of long.
-%typemap(jni) const vector<int64>& "jobjectArray"
-%typemap(jtype) const vector<int64>& "long[]"
-%typemap(jstype) const vector<int64>& "long[]"
-%typemap(javain) const vector<int64>& "$javainput"
-%typemap(in) const vector<int64>& %{
+// Typemaps to represent const std::vector<int64>& arguments as arrays of long.
+%typemap(jni) const std::vector<int64>& "jobjectArray"
+%typemap(jtype) const std::vector<int64>& "long[]"
+%typemap(jstype) const std::vector<int64>& "long[]"
+%typemap(javain) const std::vector<int64>& "$javainput"
+%typemap(in) const std::vector<int64>& %{
   if($input) {
-    $1 = new vector<int64>;
+    $1 = new std::vector<int64>;
     int size = jenv->GetArrayLength($input);
     jlong *values = jenv->GetLongArrayElements((jlongArray)$input, NULL);
     for (int i = 0; i < size; ++i) {
@@ -342,19 +343,19 @@ class LongResultCallback3 {
     return $null;
   }
 %}
-%typemap(freearg) const vector<int64>& {
+%typemap(freearg) const std::vector<int64>& {
   delete $1;
 }
 
-// Typemaps to represent const vector<int>& arguments as arrays of long.
-%typemap(jni) const vector<int>& "jobjectArray"
-%typemap(jtype) const vector<int>& "int[]"
-%typemap(jstype) const vector<int>& "int[]"
-%typemap(javain) const vector<int>& "$javainput"
+// Typemaps to represent const std::vector<int>& arguments as arrays of long.
+%typemap(jni) const std::vector<int>& "jobjectArray"
+%typemap(jtype) const std::vector<int>& "int[]"
+%typemap(jstype) const std::vector<int>& "int[]"
+%typemap(javain) const std::vector<int>& "$javainput"
 
-%typemap(in) const vector<int>& %{
+%typemap(in) const std::vector<int>& %{
   if($input) {
-    $1 = new vector<int>;
+    $1 = new std::vector<int>;
     int size = jenv->GetArrayLength($input);
     jint *values = jenv->GetIntArrayElements((jintArray)$input, NULL);
     for (int i = 0; i < size; ++i) {
@@ -367,16 +368,16 @@ class LongResultCallback3 {
     return $null;
   }
 %}
-%typemap(freearg) const vector<int>& {
+%typemap(freearg) const std::vector<int>& {
   delete $1;
 }
 
-// Convert long[][] to vector<vector<int64> >
-%typemap(jni) const vector<vector<int64> >& "jobjectArray"
-%typemap(jtype) const vector<vector<int64> >& "long[][]"
-%typemap(jstype) const vector<vector<int64> >& "long[][]"
-%typemap(javain) const vector<vector<int64> >& "$javainput"
-%typemap(in) const vector<vector<int64> >& (vector<vector<int64> > result) {
+// Convert long[][] to std::vector<std::vector<int64> >
+%typemap(jni) const std::vector<std::vector<int64> >& "jobjectArray"
+%typemap(jtype) const std::vector<std::vector<int64> >& "long[][]"
+%typemap(jstype) const std::vector<std::vector<int64> >& "long[][]"
+%typemap(javain) const std::vector<std::vector<int64> >& "$javainput"
+%typemap(in) const std::vector<std::vector<int64> >& (std::vector<std::vector<int64> > result) {
   const int size = jenv->GetArrayLength($input);
   result.clear();
   result.resize(size);

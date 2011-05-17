@@ -11,44 +11,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "base/basictypes.h"
 #include "base/stringpiece.h"
 #include "base/stringprintf.h"
-#include "base/util.h"
 
 namespace operations_research {
 // ----- StrCat -----
 
-string StrCat(const StringPiece& p1, const StringPiece& p2) {
-  string result = p1.ToString();
+std::string StrCat(const StringPiece& p1, const StringPiece& p2) {
+  std::string result = p1.ToString();
   result += p2.ToString();
   return result;
 }
 
-string StrCat(const StringPiece& p1,
-              const StringPiece& p2,
-              const StringPiece& p3) {
-  string result = p1.ToString();
+std::string StrCat(const StringPiece& p1,
+                   const StringPiece& p2,
+                   const StringPiece& p3) {
+  std::string result = p1.ToString();
   result += p2.ToString();
   result += p3.ToString();
   return result;
 }
 
-string StrCat(const StringPiece& p1,
-              const StringPiece& p2,
-              const StringPiece& p3,
-              const StringPiece& p4) {
-  string result = p1.ToString();
+std::string StrCat(const StringPiece& p1,
+                   const StringPiece& p2,
+                   const StringPiece& p3,
+                   const StringPiece& p4) {
+  std::string result = p1.ToString();
   result += p2.ToString();
   result += p3.ToString();
   result += p4.ToString();
   return result;
 }
 
-string StrCat(int64 a1, const StringPiece& p2) {
+std::string StrCat(int64 a1, const StringPiece& p2) {
   return StringPrintf("%lld%s", a1, p2.ToString().c_str());
 }
 
-string StrCat(const StringPiece& p1, int64 a2) {
+std::string StrCat(const StringPiece& p1, int64 a2) {
   return StringPrintf("%s%lld", p1.ToString().c_str(), a2);
 }
 

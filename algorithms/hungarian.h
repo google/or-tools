@@ -30,16 +30,16 @@
 #ifndef OR_TOOLS_ALGORITHMS_HUNGARIAN_H_
 #define OR_TOOLS_ALGORITHMS_HUNGARIAN_H_
 
-#include "base/util.h"
+#include "base/hash.h"
 #include <vector>
 
 namespace operations_research {
 
-void MinimizeLinearAssignment(const vector<vector<double> >& cost,
+void MinimizeLinearAssignment(const std::vector<std::vector<double> >& cost,
                               hash_map<int, int>* direct_assignment,
                               hash_map<int, int>* reverse_assignment);
 
-void MaximizeLinearAssignment(const vector<vector<double> >& cost,
+void MaximizeLinearAssignment(const std::vector<std::vector<double> >& cost,
                               hash_map<int, int>* direct_assignment,
                               hash_map<int, int>* reverse_assignment);
 

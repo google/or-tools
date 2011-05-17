@@ -40,7 +40,7 @@ void Solver::MakeIntVarArray(int var_count,
                              int64 vmin,
                              int64 vmax,
                              const string& name,
-                             vector<IntVar*>* vars) {
+                             std::vector<IntVar*>* vars) {
   for (int i = 0; i < var_count; ++i) {
     string vname = StringPrintf("%s%d", name.c_str(), i);
     vars->push_back(MakeIntVar(vmin, vmax, vname));
@@ -50,7 +50,7 @@ void Solver::MakeIntVarArray(int var_count,
 void Solver::MakeIntVarArray(int var_count,
                              int64 vmin,
                              int64 vmax,
-                             vector<IntVar*>* vars) {
+                             std::vector<IntVar*>* vars) {
   for (int i = 0; i < var_count; ++i) {
     vars->push_back(MakeIntVar(vmin, vmax));
   }
@@ -70,14 +70,14 @@ IntVar** Solver::MakeIntVarArray(int var_count,
 
 void Solver::MakeBoolVarArray(int var_count,
                               const string& name,
-                              vector<IntVar*>* vars) {
+                              std::vector<IntVar*>* vars) {
   for (int i = 0; i < var_count; ++i) {
     string vname = StringPrintf("%s%d", name.c_str(), i);
     vars->push_back(MakeBoolVar(vname));
   }
 }
 
-void Solver::MakeBoolVarArray(int var_count, vector<IntVar*>* vars) {
+void Solver::MakeBoolVarArray(int var_count, std::vector<IntVar*>* vars) {
   for (int i = 0; i < var_count; ++i) {
     vars->push_back(MakeBoolVar());
   }
@@ -513,7 +513,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 
   virtual void ApplyRemovedValues(DomainIntVar* var) {
     sort(removed_.begin(), removed_.end());
-    for (vector<int64>::iterator it = removed_.begin();
+    for (std::vector<int64>::iterator it = removed_.begin();
          it != removed_.end();
          ++it) {
       var->RemoveValue(*it);
@@ -592,8 +592,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
   uint64 size_;
   Solver* const solver_;
   const int bsize_;
-  vector<int64> removed_;
-  vector<int64> holes_;
+  std::vector<int64> removed_;
+  std::vector<int64> holes_;
   uint64 holes_stamp_;
 };
 
@@ -767,7 +767,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
 
   virtual void ApplyRemovedValues(DomainIntVar* var) {
     sort(removed_.begin(), removed_.end());
-    for (vector<int64>::iterator it = removed_.begin();
+    for (std::vector<int64>::iterator it = removed_.begin();
          it != removed_.end();
          ++it) {
       var->RemoveValue(*it);
@@ -848,8 +848,8 @@ class SmallBitSet : public DomainIntVar::BitSet {
   const int64 omax_;
   uint64 size_;
   Solver* const solver_;
-  vector<int64> removed_;
-  vector<int64> holes_;
+  std::vector<int64> removed_;
+  std::vector<int64> holes_;
   uint64 holes_stamp_;
 };
 
@@ -1658,11 +1658,11 @@ IntVar* Solver::MakeBoolVar() {
   return RevAlloc(new BooleanVar(this, ""));
 }
 
-IntVar* Solver::MakeIntVar(const vector<int64>& values, const string& name) {
+IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const string& name) {
   return RevAlloc(new DomainIntVar(this, values.data(), values.size(), name));
 }
 
-IntVar* Solver::MakeIntVar(const vector<int64>& values) {
+IntVar* Solver::MakeIntVar(const std::vector<int64>& values) {
   return RevAlloc(new DomainIntVar(this, values.data(), values.size(), ""));
 }
 
@@ -3897,7 +3897,7 @@ int64 IntAbs::Max() const {
   if (emax <= 0) {
     return -emin;
   }
-  return max(-emin, emax);
+  return std::max(-emin, emax);
 }
 
 IntExpr* Solver::MakeAbs(IntExpr* const e) {
@@ -4036,7 +4036,7 @@ class MinIntExpr : public BaseIntExpr {
   virtual int64 Min() const {
     const int64 lmin = left_->Min();
     const int64 rmin = right_->Min();
-    return min(lmin, rmin);
+    return std::min(lmin, rmin);
   }
   virtual void SetMin(int64 m) {
     left_->SetMin(m);
@@ -4045,7 +4045,7 @@ class MinIntExpr : public BaseIntExpr {
   virtual int64 Max() const {
     const int64 lmax = left_->Max();
     const int64 rmax = right_->Max();
-    return min(lmax, rmax);
+    return std::min(lmax, rmax);
   }
   virtual void SetMax(int64 m) {
     if (left_->Min() > m) {
@@ -4100,14 +4100,14 @@ class MinCstIntExpr : public BaseIntExpr {
   virtual ~MinCstIntExpr() {}
   virtual int64 Min() const {
     const int64 emin = expr_->Min();
-    return min(emin, value_);
+    return std::min(emin, value_);
   }
   virtual void SetMin(int64 m) {
     expr_->SetMin(m);
   }
   virtual int64 Max() const {
     const int64 emax = expr_->Max();
-    return min(emax, value_);
+    return std::min(emax, value_);
   }
   virtual void SetMax(int64 m) {
     if (value_ > m) {
@@ -4139,7 +4139,7 @@ IntExpr* Solver::MakeMin(IntExpr* const e, int64 v) {
     return MakeIntConst(v);
   }
   if (e->Bound()) {
-    return MakeIntConst(min(e->Min(), v));
+    return MakeIntConst(std::min(e->Min(), v));
   }
   if (e->Max() < v) {
     return e;
@@ -4161,7 +4161,7 @@ class MaxIntExpr : public BaseIntExpr {
   virtual int64 Min() const {
     const int64 lmin = left_->Min();
     const int64 rmin = right_->Min();
-    return max(lmin, rmin);
+    return std::max(lmin, rmin);
   }
   virtual void SetMin(int64 m) {
     const int64 lmax = left_->Max();
@@ -4176,7 +4176,7 @@ class MaxIntExpr : public BaseIntExpr {
   virtual int64 Max() const {
     const int64 lmax = left_->Max();
     const int64 rmax = right_->Max();
-    return max(lmax, rmax);
+    return std::max(lmax, rmax);
   }
   virtual void SetMax(int64 m) {
     left_->SetMax(m);
@@ -4227,7 +4227,7 @@ class MaxCstIntExpr : public BaseIntExpr {
   virtual ~MaxCstIntExpr() {}
   virtual int64 Min() const {
     const int64 emin = expr_->Min();
-    return max(emin, value_);
+    return std::max(emin, value_);
   }
   virtual void SetMin(int64 m) {
     if (value_ < m) {
@@ -4236,7 +4236,7 @@ class MaxCstIntExpr : public BaseIntExpr {
   }
   virtual int64 Max() const {
     const int64 emax = expr_->Max();
-    return max(emax, value_);
+    return std::max(emax, value_);
   }
   virtual void SetMax(int64 m) {
     expr_->SetMax(m);
@@ -4263,7 +4263,7 @@ class MaxCstIntExpr : public BaseIntExpr {
 IntExpr* Solver::MakeMax(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
   if (e->Bound()) {
-    return MakeIntConst(max(e->Min(), v));
+    return MakeIntConst(std::max(e->Min(), v));
   }
   if (v < e->Min()) {
     return e;
@@ -4337,7 +4337,7 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
     const int64 ml = vmin < early_date_
         ? (early_date_ - vmin) * early_cost_
         : 0;
-    return max(mr, ml);
+    return std::max(mr, ml);
   }
   virtual void SetMax(int64 m) {
     if (m < 0) {

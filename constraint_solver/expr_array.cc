@@ -1250,7 +1250,7 @@ IntExpr* BuildLogSplitArray(Solver* const s,
   } else if (size > split_size) {
     const int nb_blocks = (size - 1) / split_size + 1;
     const int block_size = (size + nb_blocks - 1) / nb_blocks;
-    vector<IntVar*> top_vector;
+    std::vector<IntVar*> top_vector;
     int start = 0;
     while (start < size) {
       int real_size = (start + block_size > size ? size - start : block_size);
@@ -1295,14 +1295,14 @@ IntExpr* BuildLogSplitArray(Solver* const s,
 }
 
 IntExpr* BuildLogSplitArray(Solver* const s,
-                            const vector<IntVar*>& vars,
+                            const std::vector<IntVar*>& vars,
                             BuildOp op) {
   return BuildLogSplitArray(s, vars.data(), vars.size(), op);
 }
 
 }  // namespace
 
-IntExpr* Solver::MakeSum(const vector<IntVar*>& vars) {
+IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
   return BuildLogSplitArray(this, vars, SUM_OP);
 }
 
@@ -1310,7 +1310,7 @@ IntExpr* Solver::MakeSum(IntVar* const* vars, int size) {
   return BuildLogSplitArray(this, vars, size, SUM_OP);
 }
 
-IntExpr* Solver::MakeMin(const vector<IntVar*>& vars) {
+IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
   return BuildLogSplitArray(this, vars, MIN_OP);
 }
 
@@ -1318,7 +1318,7 @@ IntExpr* Solver::MakeMin(IntVar* const* vars, int size) {
   return BuildLogSplitArray(this, vars, size, MIN_OP);
 }
 
-IntExpr* Solver::MakeMax(const vector<IntVar*>& vars) {
+IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
   return BuildLogSplitArray(this, vars, MAX_OP);
 }
 
@@ -1782,7 +1782,7 @@ int64 SortBothChangeConstant(IntVar** const vars,
   CHECK_NOTNULL(coefs);
   CHECK_NOTNULL(size);
   int64 cst = 0;
-  vector<Container> to_sort;
+  std::vector<Container> to_sort;
   for (int index = 0; index < *size; ++index) {
     if (vars[index]->Bound()) {
       cst += coefs[index] * vars[index]->Min();
@@ -2415,7 +2415,7 @@ class PositiveBooleanScalProdEqCst : public Constraint {
 
 // ----- API -----
 
-Constraint* Solver::MakeSumLessOrEqual(const vector<IntVar*>& vars, int64 cst) {
+Constraint* Solver::MakeSumLessOrEqual(const std::vector<IntVar*>& vars, int64 cst) {
   return MakeSumLessOrEqual(vars.data(), vars.size(), cst);
 }
 
@@ -2429,7 +2429,7 @@ Constraint* Solver::MakeSumLessOrEqual(IntVar* const* vars,
   }
 }
 
-Constraint* Solver::MakeSumGreaterOrEqual(const vector<IntVar*>& vars,
+Constraint* Solver::MakeSumGreaterOrEqual(const std::vector<IntVar*>& vars,
                                           int64 cst) {
   return MakeSumGreaterOrEqual(vars.data(), vars.size(), cst);
 }
@@ -2444,7 +2444,7 @@ Constraint* Solver::MakeSumGreaterOrEqual(IntVar* const* vars,
   }
 }
 
-Constraint* Solver::MakeSumEquality(const vector<IntVar*>& vars, int64 cst) {
+Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst) {
   return MakeSumEquality(vars.data(), vars.size(), cst);
 }
 
@@ -2467,8 +2467,8 @@ Constraint* Solver::MakeSumEquality(IntVar* const* vars,
   }
 }
 
-Constraint* Solver::MakeScalProdEquality(const vector<IntVar*>& vars,
-                                         const vector<int64>& coefficients,
+Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                         const std::vector<int64>& coefficients,
                                          int64 cst) {
   DCHECK_EQ(vars.size(), coefficients.size());
   return MakeScalProdEquality(vars.data(),
@@ -2477,8 +2477,8 @@ Constraint* Solver::MakeScalProdEquality(const vector<IntVar*>& vars,
                               cst);
 }
 
-Constraint* Solver::MakeScalProdEquality(const vector<IntVar*>& vars,
-                                         const vector<int>& coefficients,
+Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                         const std::vector<int>& coefficients,
                                          int64 cst) {
   DCHECK_EQ(vars.size(), coefficients.size());
   return MakeScalProdEquality(vars.data(),
@@ -2504,7 +2504,7 @@ template<class T> Constraint* MakeScalProdEqualityFct(Solver* const solver,
                                                              coefficients,
                                                              cst));
   }
-  vector<IntVar*> terms;
+  std::vector<IntVar*> terms;
   for (int i = 0; i < size; ++i) {
     terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
   }
@@ -2526,8 +2526,8 @@ Constraint* Solver::MakeScalProdEquality(IntVar* const * vars,
   return MakeScalProdEqualityFct<int>(this, vars, size, coefficients, cst);
 }
 
-Constraint* Solver::MakeScalProdGreaterOrEqual(const vector<IntVar*>& vars,
-                                               const vector<int64>& coeffs,
+Constraint* Solver::MakeScalProdGreaterOrEqual(const std::vector<IntVar*>& vars,
+                                               const std::vector<int64>& coeffs,
                                                int64 cst) {
   DCHECK_EQ(vars.size(), coeffs.size());
   return MakeScalProdGreaterOrEqual(vars.data(),
@@ -2536,8 +2536,8 @@ Constraint* Solver::MakeScalProdGreaterOrEqual(const vector<IntVar*>& vars,
                                     cst);
 }
 
-Constraint* Solver::MakeScalProdGreaterOrEqual(const vector<IntVar*>& vars,
-                                               const vector<int>& coeffs,
+Constraint* Solver::MakeScalProdGreaterOrEqual(const std::vector<IntVar*>& vars,
+                                               const std::vector<int>& coeffs,
                                                int64 cst) {
   DCHECK_EQ(vars.size(), coeffs.size());
   return MakeScalProdGreaterOrEqual(vars.data(),
@@ -2556,7 +2556,7 @@ Constraint* MakeScalProdGreaterOrEqualFct(Solver* solver,
     return cst <= 0 ? solver->MakeTrueConstraint()
         : solver->MakeFalseConstraint();
   }
-  vector<IntVar*> terms;
+  std::vector<IntVar*> terms;
   for (int i = 0; i < size; ++i) {
     terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
   }
@@ -2579,8 +2579,8 @@ Constraint* Solver::MakeScalProdGreaterOrEqual(IntVar* const * vars,
                                             vars, size, coefficients, cst);
 }
 
-Constraint* Solver::MakeScalProdLessOrEqual(const vector<IntVar*>& vars,
-                                            const vector<int64>& coefficients,
+Constraint* Solver::MakeScalProdLessOrEqual(const std::vector<IntVar*>& vars,
+                                            const std::vector<int64>& coefficients,
                                             int64 cst) {
   DCHECK_EQ(vars.size(), coefficients.size());
   return MakeScalProdLessOrEqual(vars.data(),
@@ -2589,8 +2589,8 @@ Constraint* Solver::MakeScalProdLessOrEqual(const vector<IntVar*>& vars,
                                  cst);
 }
 
-Constraint* Solver::MakeScalProdLessOrEqual(const vector<IntVar*>& vars,
-                                            const vector<int>& coefficients,
+Constraint* Solver::MakeScalProdLessOrEqual(const std::vector<IntVar*>& vars,
+                                            const std::vector<int>& coefficients,
                                             int64 cst) {
   DCHECK_EQ(vars.size(), coefficients.size());
   return MakeScalProdLessOrEqual(vars.data(),
@@ -2625,7 +2625,7 @@ template<class T> Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
                                                             coefficients,
                                                             upper_bound));
   }
-  vector<IntVar*> terms;
+  std::vector<IntVar*> terms;
   for (int i = 0; i < size; ++i) {
     terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
   }
@@ -2646,14 +2646,14 @@ Constraint* Solver::MakeScalProdLessOrEqual(IntVar* const * vars,
   return MakeScalProdLessOrEqualFct<int>(this, vars, size, coefficients, cst);
 }
 
-IntExpr* Solver::MakeScalProd(const vector<IntVar*>& vars,
-                              const vector<int64>& coefs) {
+IntExpr* Solver::MakeScalProd(const std::vector<IntVar*>& vars,
+                              const std::vector<int64>& coefs) {
   DCHECK_EQ(vars.size(), coefs.size());
   return MakeScalProd(vars.data(), coefs.data(), vars.size());
 }
 
-IntExpr* Solver::MakeScalProd(const vector<IntVar*>& vars,
-                              const vector<int>& coefs) {
+IntExpr* Solver::MakeScalProd(const std::vector<IntVar*>& vars,
+                              const std::vector<int>& coefs) {
   DCHECK_EQ(vars.size(), coefs.size());
   return MakeScalProd(vars.data(), coefs.data(), vars.size());
 }
@@ -2684,10 +2684,10 @@ template<class T> IntExpr* MakeScalProdFct(Solver* solver,
       // other on Opposite(N) (s2).
       // The final expression is then s1 - s2.
       // If P is empty, the expression is Opposite(s2).
-      vector<T> positive_coefs;
-      vector<T> negative_coefs;
-      vector<IntVar*> positive_coef_vars;
-      vector<IntVar*> negative_coef_vars;
+      std::vector<T> positive_coefs;
+      std::vector<T> negative_coefs;
+      std::vector<IntVar*> positive_coef_vars;
+      std::vector<IntVar*> negative_coef_vars;
       for (int i = 0; i < size; ++i) {
         const T coef = coefs[i];
         if (coef > 0) {
@@ -2720,7 +2720,7 @@ template<class T> IntExpr* MakeScalProdFct(Solver* solver,
       }
     }
   }
-  vector<IntVar*> terms;
+  std::vector<IntVar*> terms;
   for (int i = 0; i < size; ++i) {
     terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
   }

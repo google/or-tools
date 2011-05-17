@@ -49,6 +49,7 @@
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
 #include "base/stl_util-inl.h"
+#include "base/hash.h"
 #include "linear_solver/linear_solver.pb.h"
 
 DEFINE_string(solver_write_model, "", "path of the file to write the model to");
@@ -59,7 +60,7 @@ namespace {
 void CheckDuplicateName(const string& name,
                         hash_set<string>* name_set) {
   if (!name.empty()) {
-    pair<hash_set<string>::iterator, bool> result =  name_set->insert(name);
+    std::pair<hash_set<string>::iterator, bool> result = name_set->insert(name);
     if (!result.second) {
       LOG(FATAL) << "Duplicate name: " << name;
     }
@@ -449,7 +450,7 @@ void MPSolver::MakeVarArray(int nb,
                             double ub,
                             bool integer,
                             const string& name,
-                            vector<MPVariable*>* vars) {
+                            std::vector<MPVariable*>* vars) {
   CHECK_GE(nb, 0);
   for (int i = 0; i < nb; ++i) {
     if (name.empty()) {
@@ -465,7 +466,7 @@ void MPSolver::MakeNumVarArray(int nb,
                                double lb,
                                double ub,
                                const string& name,
-                               vector<MPVariable*>* vars) {
+                               std::vector<MPVariable*>* vars) {
   MakeVarArray(nb, lb, ub, false, name, vars);
 }
 
@@ -473,13 +474,13 @@ void MPSolver::MakeIntVarArray(int nb,
                                double lb,
                                double ub,
                                const string& name,
-                               vector<MPVariable*>* vars) {
+                               std::vector<MPVariable*>* vars) {
   MakeVarArray(nb, lb, ub, true, name, vars);
 }
 
 void MPSolver::MakeBoolVarArray(int nb,
                                 const string& name,
-                                vector<MPVariable*>* vars) {
+                                std::vector<MPVariable*>* vars) {
   MakeVarArray(nb, 0.0, 1.0, true, name, vars);
 }
 

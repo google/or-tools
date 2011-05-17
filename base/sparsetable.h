@@ -61,8 +61,8 @@ template <class T> class sparsetable {
   static const int kBlockSize = 32;
 
   int size_;
-  vector<vector<T> > elements_;
-  vector<uint32> masks_;
+  std::vector<std::vector<T> > elements_;
+  std::vector<uint32> masks_;
 };
 }
 

@@ -17,11 +17,6 @@
 #include <deque>
 #include <vector>
 
-#include "base/util.h"
-
-
-using std::deque;
-
 namespace operations_research {
 
 // Concise STL iterator wrapper
@@ -41,23 +36,23 @@ namespace operations_research {
 //
 // EXAMPLES:
 //
-// vector<int> my_vector;
+// std::vector<int> my_vector;
 // my_vector.push_back(1);
 // my_vector.push_back(2);
 //
-// for (ConstIter<vector<int> > it(my_vector); !it.at_end(); ++it)
+// for (ConstIter<std::vector<int> > it(my_vector); !it.at_end(); ++it)
 //   LOG(INFO) << *it;
 //
-// map<int, string> my_map;
+// std::map<int, std::string> my_map;
 // my_map[1] = "a";
 // my_map[2] = "b";
 //
-// for (ConstIter<map<int, string> > it(my_map); !it.at_end(); ++it)
+// for (ConstIter<std::map<int, std::string> > it(my_map); !it.at_end(); ++it)
 //   LOG(INFO) << it->first << " " << it->second;
 //
 // Includes a quick and safe "erase" feature:
 // (note the absence of "++it" in the for())
-// for (MutableIter<map<int, string> > it(my_map); !it.at_end();) {
+// for (MutableIter<std::map<int, std::string> > it(my_map); !it.at_end();) {
 //   if ( ... it->first) {
 //     it.erase();  // <- safely deletes that entry and moves the iterator one
 //                  // step ahead.
@@ -266,22 +261,22 @@ class Eraser {
 };
 
 // This version of the Eraser works for vectors
-template<class T>
-class Eraser<vector<T> > {
+template<class T> class Eraser<std::vector<T> > {
  public:
-  typedef typename vector<T>::iterator iterator_type;
-  static iterator_type* erase(vector<T>* container, iterator_type* iterator) {
+  typedef typename std::vector<T>::iterator iterator_type;
+  static iterator_type* erase(std::vector<T>* container,
+                              iterator_type* iterator) {
     *iterator = container->erase(*iterator);
     return iterator;
   }
 };
 
 // This version of the Eraser works for deques
-template<class T>
-class Eraser<deque<T> > {
+template<class T> class Eraser<std::deque<T> > {
  public:
-  typedef typename deque<T>::iterator iterator_type;
-  static iterator_type* erase(deque<T>* container, iterator_type* iterator) {
+  typedef typename std::deque<T>::iterator iterator_type;
+  static iterator_type* erase(std::deque<T>* container,
+                              iterator_type* iterator) {
     *iterator = container->erase(*iterator);
     return iterator;
   }

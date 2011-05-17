@@ -30,7 +30,7 @@ namespace operations_research {
 %ignore RoutingModel::AddNoCycleConstraint();
 
 %extend RoutingModel {
-  void AddVectorDimension(const vector<int64>& values,
+  void AddVectorDimension(const std::vector<int64>& values,
                           int64 capacity,
                           const string& name) {
     DCHECK_EQ(values.size(), self->nodes());
@@ -39,7 +39,7 @@ namespace operations_research {
 }
 
 %ignore RoutingModel::RoutingModel(int nodes, int vehicles,
-                                   const vector<pair<int, int> >& start_end);
+                                   const std::vector<pair<int, int> >& start_end);
 }  // namespace operations_research
 
 #ifdef SWIGJAVA

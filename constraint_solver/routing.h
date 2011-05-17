@@ -27,6 +27,8 @@
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_
 
 #include <stddef.h>
+#include "base/hash.h"
+#include "base/hash.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -34,6 +36,7 @@
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/scoped_ptr.h"
+#include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 
 namespace operations_research {
@@ -65,15 +68,15 @@ class RoutingModel {
   // vehicle route. Used to model multiple depots.
   RoutingModel(int nodes,
                int vehicles,
-               const vector<pair<int, int> >& start_end);
+               const std::vector<pair<int, int> >& start_end);
   // Constructor taking vectors of start nodes and end nodes for each
   // vehicle route. Used to model multiple depots.
   // TODO(user): added to simplify SWIG wrapping. Remove when swigging
-  // vector<pair<int, int> > is ok.
+  // std::vector<pair<int, int> > is ok.
   RoutingModel(int nodes,
                int vehicles,
-               const vector<int>& starts,
-               const vector<int>& ends);
+               const std::vector<int>& starts,
+               const std::vector<int>& ends);
   ~RoutingModel();
 
   // Model creation
@@ -97,7 +100,7 @@ class RoutingModel {
   void AddAllActive();
   // Adds a disjunction constraint on the nodes: exactly one of the nodes is
   // active.
-  void AddDisjunction(const vector<int64>& nodes);
+  void AddDisjunction(const std::vector<int64>& nodes);
   // Adds a penalized disjunction constraint on the nodes: at most one of the
   // nodes is active; if none are active a penalty cost is applied (this cost
   // is added to the global cost function).
@@ -106,7 +109,7 @@ class RoutingModel {
   // and the following cost to the cost function:
   // p * penalty.
   // "penalty" must be positive.
-  void AddDisjunction(const vector<int64>& nodes, int64 penalty);
+  void AddDisjunction(const std::vector<int64>& nodes, int64 penalty);
   void AddLocalSearchOperator(LocalSearchOperator* ls_operator);
   void SetCost(Solver::IndexEvaluator2* evaluator);
   void SetVehicleCost(int vehicle, Solver::IndexEvaluator2* evaluator);
@@ -159,7 +162,7 @@ class RoutingModel {
   // Applies lock chain to the next search. Returns next var at the end of the
   // locked chain; this variable is not locked. Assignment containing locks
   // can be obtained calling PreAssignment().
-  IntVar* ApplyLocks(const vector<int>& locks);
+  IntVar* ApplyLocks(const std::vector<int>& locks);
 
   // Inspection
   int Start(int vehicle) const { return starts_[vehicle]; }
@@ -211,7 +214,7 @@ class RoutingModel {
  private:
   typedef hash_map<string, IntVar**> VarMap;
   struct Disjunction {
-    vector<int64> nodes;
+    std::vector<int64> nodes;
     int64 penalty;
   };
 
@@ -222,14 +225,14 @@ class RoutingModel {
   };
 
   void Initialize();
-  void SetStartEnd(const vector<pair<int, int> >& start_end);
-  void AddDisjunctionInternal(const vector<int64>& nodes, int64 penalty);
+  void SetStartEnd(const std::vector<pair<int, int> >& start_end);
+  void AddDisjunctionInternal(const std::vector<int64>& nodes, int64 penalty);
   void AddNoCycleConstraintInternal();
   void SetVehicleCostInternal(int vehicle, Solver::IndexEvaluator2* evaluator);
   // Returns NULL if no penalty cost, otherwise returns penalty variable.
   IntVar* CreateDisjunction(int disjunction);
   // Returns the first active node in nodes starting from index + 1.
-  int FindNextActive(int index, const vector<int>& nodes) const;
+  int FindNextActive(int index, const std::vector<int>& nodes) const;
 
   Solver::IndexEvaluator2* NewCachedCallback(Solver::IndexEvaluator2* callback);
   Solver::IndexEvaluator3* BuildCostCallback();
@@ -255,21 +258,21 @@ class RoutingModel {
   scoped_array<IntVar*> nexts_;
   scoped_array<IntVar*> vehicle_vars_;
   scoped_array<IntVar*> active_;
-  vector<Solver::IndexEvaluator2*> costs_;
+  std::vector<Solver::IndexEvaluator2*> costs_;
   bool homogeneous_costs_;
-  vector<CostCacheElement> cost_cache_;
-  vector<RoutingCache*> routing_caches_;
-  vector<Disjunction> disjunctions_;
+  std::vector<CostCacheElement> cost_cache_;
+  std::vector<RoutingCache*> routing_caches_;
+  std::vector<Disjunction> disjunctions_;
   hash_map<int64, int> node_to_disjunction_;
   IntVar* cost_;
-  vector<int64> fixed_costs_;
+  std::vector<int64> fixed_costs_;
   int nodes_;
   int vehicles_;
-  vector<int> index_to_node_;
-  vector<int> node_to_index_;
-  vector<int> index_to_vehicle_;
-  vector<int> starts_;
-  vector<int> ends_;
+  std::vector<int> index_to_node_;
+  std::vector<int> node_to_index_;
+  std::vector<int> index_to_vehicle_;
+  std::vector<int> starts_;
+  std::vector<int> ends_;
   int start_end_count_;
   bool is_depot_set_;
   VarMap cumuls_;
@@ -281,15 +284,15 @@ class RoutingModel {
   RoutingStrategy first_solution_strategy_;
   scoped_ptr<Solver::IndexEvaluator2> first_solution_evaluator_;
   RoutingMetaheuristic metaheuristic_;
-  vector<SearchMonitor*> monitors_;
+  std::vector<SearchMonitor*> monitors_;
   SolutionCollector* collect_assignments_;
   DecisionBuilder* solve_db_;
   DecisionBuilder* improve_db_;
   DecisionBuilder* restore_assignment_;
   Assignment* assignment_;
   Assignment* preassignment_;
-  vector<IntVar*> extra_vars_;
-  vector<LocalSearchOperator*> extra_operators_;
+  std::vector<IntVar*> extra_vars_;
+  std::vector<LocalSearchOperator*> extra_operators_;
 
   int64 time_limit_ms_;
   int64 lns_time_limit_ms_;

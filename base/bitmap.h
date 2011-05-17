@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_BASE_BITMAP_H_
 #define OR_TOOLS_BASE_BITMAP_H_
 
+#include <string.h>
+#include "base/basictypes.h"
 #include "util/bitset.h"
 
 namespace operations_research {

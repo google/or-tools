@@ -48,15 +48,15 @@ void MagicSquare(int grid_size) {
   const int total_size = grid_size * grid_size;
   const int sum = grid_size * (total_size + 1) / 2;
   // create the variables
-  vector<IntVar*> vars;
+  std::vector<IntVar*> vars;
   solver.MakeIntVarArray(total_size, 1, total_size, "", &vars);
   solver.AddConstraint(solver.MakeAllDifferent(vars, true));
 
   // create the constraints
-  vector<IntVar*> diag1(grid_size);
-  vector<IntVar*> diag2(grid_size);
+  std::vector<IntVar*> diag1(grid_size);
+  std::vector<IntVar*> diag2(grid_size);
   for (int n = 0; n < grid_size; ++n) {
-    vector<IntVar *> sub_set(grid_size);
+    std::vector<IntVar *> sub_set(grid_size);
 
     for (int m = 0; m < grid_size; ++m) {    // extract row indices
       sub_set[m] = vars[m + n * grid_size];
@@ -113,7 +113,7 @@ void MagicSquare(int grid_size) {
                        Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_MIN_VALUE);
 
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   SearchMonitor* const log = solver.MakeSearchLog(100000);
   monitors.push_back(log);
   SearchMonitor* const restart = FLAGS_restart != -1?
