@@ -14,6 +14,7 @@
 #include <sstream>
 #include <string>
 #include "base/stringprintf.h"
+#include "base/strutil.h"
 #include "util/xml_helper.h"
 
 namespace operations_research {

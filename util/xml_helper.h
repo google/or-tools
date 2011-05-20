@@ -18,7 +18,6 @@
 #include <string>
 #include <utility>
 #include "base/macros.h"
-#include "base/strutil.h"
 
 using std::string;
 

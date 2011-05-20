@@ -22,6 +22,7 @@
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
+#include "util/const_int_array.h"
 
 DEFINE_bool(cp_disable_expression_optimization, false,
             "Disable special optimization when creating expressions.");
@@ -122,8 +123,34 @@ void IntVar::RemoveValues(const int64* const values, int size) {
   }
 }
 
-extern int64* NewUniqueSortedArray(const int64* const values, int* size);
 namespace {
+int64* NewUniqueSortedArray(const int64* const values, int* size) {
+  int64* new_array = new int64[*size];
+  memcpy(new_array, values, (*size) * sizeof(*values));
+  std::sort(new_array, new_array + (*size));
+  int non_unique = 0;
+  for (int i = 0; i < (*size) - 1; ++i) {
+    if (new_array[i] == new_array[i + 1]) {
+      non_unique++;
+    }
+  }
+  if (non_unique > 0) {
+    scoped_array<int64> sorted(new_array);
+    DCHECK_GT(*size, 0);
+    new_array = new int64[(*size) - non_unique];
+    new_array[0] = sorted[0];
+    int pos = 1;
+    for (int i = 1; i < (*size); ++i) {
+      if (sorted[i] != sorted[i - 1]) {
+        new_array[pos++] = sorted[i];
+      }
+    }
+    DCHECK_EQ((*size) - non_unique, pos);
+    *size = pos;
+  }
+  return new_array;
+}
+
 bool IsArrayActuallySorted(const int64* const values, int size) {
   for (int i = 0; i < size - 1; ++i) {
     if (values[i + 1] < values[i]) {
@@ -135,6 +162,8 @@ bool IsArrayActuallySorted(const int64* const values, int size) {
 }  // namespace
 
 void IntVar::SetValues(const int64* const values, int size) {
+  // TODO(user): reimplement all this!!
+  // TODO(user): This code leaks if the array is not sorted.
   const int64* new_array = values;
   if (!IsArrayActuallySorted(values, size)) {
     new_array = NewUniqueSortedArray(new_array, &size);
@@ -238,10 +267,13 @@ class DomainIntVar : public IntVar {
     DomainIntVar* const var_;
   };
   // ----- Main Class -----
-  DomainIntVar(Solver* const s, int64 vmin, int64 vmax,
-               const string& name = "");
-  DomainIntVar(Solver* const s, const int64* const values, int size,
-               const string& name = "");
+  DomainIntVar(Solver* const s,
+               int64 vmin,
+               int64 vmax,
+               const string& name);
+  DomainIntVar(Solver* const s,
+               const std::vector<int64>& sorted_values,
+               const string& name);
   virtual ~DomainIntVar();
 
   virtual int64 Min() const {
@@ -393,13 +425,14 @@ class SimpleBitSet : public DomainIntVar::BitSet {
   }
 
   SimpleBitSet(Solver* const s,
-               const int64* const values,
-               int size,
+               const std::vector<int64>& sorted_values,
                int64 vmin,
                int64 vmax)
       : bits_(NULL), stamps_(NULL), omin_(vmin), omax_(vmax),
-        size_(static_cast<uint64>(vmax - vmin + 1)),
-        solver_(s), bsize_(BitLength64(size_)), holes_stamp_(s->stamp() - 1) {
+        size_(sorted_values.size()),
+        solver_(s),
+        bsize_(BitLength64(vmax - vmin + 1)),
+        holes_stamp_(s->stamp() - 1) {
     CHECK_LT(size_, 0xFFFFFFFF) << "Bitset too large";
     bits_ = new uint64[bsize_];
     stamps_ = new uint64[bsize_];
@@ -407,17 +440,13 @@ class SimpleBitSet : public DomainIntVar::BitSet {
       bits_[i] = GG_ULONGLONG(0);
       stamps_[i] = s->stamp() - 1;
     }
-    int64 real_size = 0;
-    for (int i = 0; i < size; ++i) {
-      const int64 val = values[i];
-      if (!bit(val)) {
-        const int offset = BitOffset64(val - omin_);
-        const int pos = BitPos64(val - omin_);
-        bits_[offset] |= OneBit64(pos);
-        real_size++;
-      }
+    for (int i = 0; i < sorted_values.size(); ++i) {
+      const int64 val = sorted_values[i];
+      DCHECK(!bit(val));
+      const int offset = BitOffset64(val - omin_);
+      const int pos = BitPos64(val - omin_);
+      bits_[offset] |= OneBit64(pos);
     }
-    size_ = real_size;
   }
 
   virtual ~SimpleBitSet() {
@@ -648,18 +677,19 @@ class SmallBitSet : public DomainIntVar::BitSet {
   }
 
   SmallBitSet(Solver* const s,
-              const int64* const values,
-              int size,
+              const std::vector<int64>& sorted_values,
               int64 vmin,
               int64 vmax)
     : bits_(GG_ULONGLONG(0)), stamp_(s->stamp() - 1), omin_(vmin), omax_(vmax),
-      size_(static_cast<uint64>(vmax - vmin + 1)),
+      size_(sorted_values.size()),
       solver_(s), holes_stamp_(stamp_) {
+    // We know the array is sorted and does not contains duplicate values.
     CHECK_LE(size_, 64) << "Bitset too large";
-    for (int i = 0; i < size; ++i) {
-      bits_ |= OneBit64(values[i] - omin_);
+    for (int i = 0; i < sorted_values.size(); ++i) {
+      const int64 val = sorted_values[i];
+      DCHECK(!IsBitSet64(&bits_, val - omin_));
+      bits_ |= OneBit64(val - omin_);
     }
-    size_ = BitCount64(bits_);
   }
 
   virtual ~SmallBitSet() {}
@@ -1036,31 +1066,17 @@ DomainIntVar::DomainIntVar(Solver* const s,
       max_stamp_(0), handler_(this), in_process_(false), bits_(NULL) {}
 
 DomainIntVar::DomainIntVar(Solver* const s,
-                           const int64* const values,
-                           int size,
+                           const std::vector<int64>& sorted_values,
                            const string& name)
     : IntVar(s, name), min_(kint64max), max_(kint64min), old_min_(kint64max),
       old_max_(kint64min), new_min_(kint64max), new_max_(kint64min),
       min_stamp_(0), max_stamp_(0), handler_(this), in_process_(false),
       bits_(NULL) {
-  CHECK_GE(size, 1);
-  int64 vmin = values[0];
-  int64 vmax = values[0];
-  bool contiguous = true;
-
-  // TODO(user) : sort before? Easier for the min/max.
-  for (int i = 1; i < size; ++i) {
-    const int64 val = values[i];
-    if (val != vmin + i) {
-      contiguous = false;
-    }
-    if (val < vmin) {
-      vmin = val;
-    }
-    if (val > vmax) {
-      vmax = val;
-    }
-  }
+  CHECK_GE(sorted_values.size(), 1);
+  // We know that the vector is sorted and does not have duplicate values.
+  const int64 vmin = sorted_values.front();
+  const int64 vmax = sorted_values.back();
+  const bool contiguous = vmax - vmin + 1 == sorted_values.size();
 
   min_ = vmin;
   old_min_ = vmin;
@@ -1071,12 +1087,13 @@ DomainIntVar::DomainIntVar(Solver* const s,
 
   if (!contiguous) {
     if (vmax - vmin + 1 < 65) {
-      bits_ = solver()->RevAlloc(new SmallBitSet(solver(), values, size,
-                                                 vmin, vmax));
+      bits_ = solver()->RevAlloc(new SmallBitSet(solver(),
+                                                 sorted_values,
+                                                 vmin,
+                                                 vmax));
     } else {
       bits_ = solver()->RevAlloc(new SimpleBitSet(solver(),
-                                                  values,
-                                                  size,
+                                                  sorted_values,
                                                   vmin,
                                                   vmax));
     }
@@ -1659,18 +1676,32 @@ IntVar* Solver::MakeBoolVar() {
 }
 
 IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const string& name) {
-  return RevAlloc(new DomainIntVar(this, values.data(), values.size(), name));
+  ConstIntArray domain(values);
+  scoped_ptr<std::vector<int64> > sorted_values(
+      domain.SortedCopyWithoutDuplicates(true));
+  IntVar* const var = RevAlloc(new DomainIntVar(this,
+                                                *sorted_values.get(),
+                                                name));
+  return var;
 }
 
 IntVar* Solver::MakeIntVar(const std::vector<int64>& values) {
-  return RevAlloc(new DomainIntVar(this, values.data(), values.size(), ""));
+  return MakeIntVar(values, "");
 }
 
-IntVar* BuildDomainIntVar(Solver* const s, const int64* const values, int size,
-                          const string& name) {
-  return s->RevAlloc(new DomainIntVar(s, values, size, name));
+IntVar* Solver::MakeIntVar(const std::vector<int>& values, const string& name) {
+  ConstIntArray domain(values);
+  scoped_ptr<std::vector<int64> > sorted_values(
+      domain.SortedCopyWithoutDuplicates(true));
+  IntVar* const var = RevAlloc(new DomainIntVar(this,
+                                                *sorted_values.get(),
+                                                name));
+  return var;
 }
 
+IntVar* Solver::MakeIntVar(const std::vector<int>& values) {
+  return MakeIntVar(values, "");
+}
 
 IntVar* Solver::MakeIntConst(int64 val, const string& name) {
   // If IntConst is going to be named after its creation,

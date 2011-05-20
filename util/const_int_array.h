@@ -71,15 +71,6 @@ class ConstIntArray {
     NUM_PROPERTY = 10         // Sentinel.
   };
 
-  // These constructors remove the needs to explicitely create an
-  // intermediate data storage.
-  explicit ConstIntArray(int64 v0);
-  ConstIntArray(int64 v0, int64 v1);
-  ConstIntArray(int64 v0, int64 v1, int64 v2);
-  ConstIntArray(int64 v0, int64 v1, int64 v2, int64 v3);
-  ConstIntArray(int64 v0, int64 v1, int64 v2, int64 v3, int64 v4);
-  ConstIntArray(int64 v0, int64 v1, int64 v2, int64 v3, int64 v4, int64 v5);
-
   // Build from a vector. Copy the data internally.
   explicit ConstIntArray(const std::vector<int64>& data);
   // Build from a vector. Copy the data internally.
@@ -102,6 +93,9 @@ class ConstIntArray {
   // After this method is called, data_ points to a null vector.
   std::vector<int64>* Release();
 
+  // This will create a copy of the data.
+  std::vector<int64>* Copy() const;
+
   // This will create a new data holder with the sorted array.
   std::vector<int64>* SortedCopy(bool increasing) const;
 
@@ -120,6 +114,18 @@ class ConstIntArray {
   int64 operator[](int64 index) const {
     CHECK_NOTNULL(data_.get());
     return (*data_)[index];
+  }
+
+  // Accessor to value in the array.
+  int64 get(int64 index) const {
+    CHECK_NOTNULL(data_.get());
+    return (*data_)[index];
+  }
+
+  // Access to const raw data.
+  // TODO(user) : deprecate API.
+  const int64* RawData() const {
+    return data_->data();
   }
 
   // Check the status of a given info bit. It will scan the array on demand.

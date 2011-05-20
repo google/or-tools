@@ -19,6 +19,7 @@
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/const_int_array.h"
 
 DEFINE_int32(cache_initial_size, 1024, "Initial size of the array of the hash "
              "table of caches for objects of type StatusVar(x == 3)");
@@ -793,68 +794,43 @@ Constraint* Solver::MakeIsBetweenCt(IntVar* const v,
   return RevAlloc(new IsBetweenCt(this, v, l, u, b));
 }
 
-// ---------- NewUniqueSortedArray ----------
-
-int64* NewUniqueSortedArray(const int64* const values, int* size) {
-  int64* new_array = new int64[*size];
-  memcpy(new_array, values, (*size) * sizeof(*values));
-  std::sort(new_array, new_array + (*size));
-  bool non_unique = 0;
-  for (int i = 0; i < (*size) - 1; ++i) {
-    if (new_array[i] == new_array[i + 1]) {
-      non_unique++;
-    }
-  }
-  if (non_unique) {
-    scoped_array<int64> sorted(new_array);
-    new_array = new int64[(*size) - non_unique];
-    new_array[0] = sorted[0];
-    int pos = 1;
-    for (int i = 1; i < (*size); ++i) {
-      if (sorted[i] != sorted[i - 1]) {
-        new_array[pos++] = sorted[i];
-      }
-    }
-    DCHECK_EQ((*size) - non_unique, pos);
-    *size = pos;
-  }
-  return new_array;
-}
-
 // ---------- Member ----------
 
 // ----- Member(IntVar, IntSet) -----
 
 class MemberCt : public Constraint {
  public:
-  MemberCt(Solver* const s, IntVar* const v, const int64* const values,
-             int size)
-      : Constraint(s), var_(v), values_(NULL), size_(size) {
+  MemberCt(Solver* const s,
+           IntVar* const v,
+           std::vector<int64>* const sorted_values)
+      : Constraint(s), var_(v), values_(sorted_values) {
     DCHECK(v != NULL);
     DCHECK(s != NULL);
-    DCHECK_GT(size, 0);
-    values_.reset(NewUniqueSortedArray(values, &size_));
+    DCHECK(sorted_values != NULL);
   }
 
   virtual void Post() {}
 
   virtual void InitialPropagate() {
-    var_->SetValues(values_.get(), size_);
+    var_->SetValues(values_.RawData(), values_.size());
   }
 
   virtual string DebugString() const {
-    return StringPrintf("Member(%s, int values)", var_->DebugString().c_str());
+    return StringPrintf("Member(%s, %s)",
+                        var_->DebugString().c_str(),
+                        values_.DebugString().c_str());
   }
  private:
   IntVar* const var_;
-  scoped_array<int64> values_;
-  int size_;
+  ConstIntArray values_;
 };
 
 Constraint* Solver::MakeMemberCt(IntVar* const var,
                                  const int64* const values,
                                  int size) {
-  return RevAlloc(new MemberCt(this, var, values, size));
+  ConstIntArray local_values(values, size);
+  return RevAlloc(
+      new MemberCt(this, var, local_values.SortedCopyWithoutDuplicates(true)));
 }
 
 Constraint* Solver::MakeMemberCt(IntVar* const var,
@@ -862,19 +838,37 @@ Constraint* Solver::MakeMemberCt(IntVar* const var,
   return MakeMemberCt(var, values.data(), values.size());
 }
 
+Constraint* Solver::MakeMemberCt(IntVar* const var,
+                                 const int* const values,
+                                 int size) {
+  ConstIntArray local_values(values, size);
+  return RevAlloc(
+      new MemberCt(this, var, local_values.SortedCopyWithoutDuplicates(true)));
+}
+
+Constraint* Solver::MakeMemberCt(IntVar* const var,
+                                 const std::vector<int>& values) {
+  return MakeMemberCt(var, values.data(), values.size());
+}
+
 // ----- IsMemberCt -----
 
 class IsMemberCt : public Constraint {
  public:
-  IsMemberCt(Solver* const s, IntVar* const v, const int64* const values,
-             int size, IntVar* const b)
-      : Constraint(s), var_(v), values_(NULL), size_(size), boolvar_(b),
-        support_pos_(0), demon_(NULL) {
+  IsMemberCt(Solver* const s,
+             IntVar* const v,
+             std::vector<int64>* const sorted_values,
+             IntVar* const b)
+      : Constraint(s),
+        var_(v),
+        values_(sorted_values),
+        boolvar_(b),
+        support_pos_(0),
+        demon_(NULL) {
     DCHECK(v != NULL);
     DCHECK(s != NULL);
     DCHECK(b != NULL);
-    DCHECK_GT(size, 0);
-    values_.reset(NewUniqueSortedArray(values, &size_));
+    DCHECK(sorted_values != NULL);
   }
 
   virtual void Post() {
@@ -890,22 +884,22 @@ class IsMemberCt : public Constraint {
   virtual void InitialPropagate() {
     if (boolvar_->Min() == 1LL) {
       demon_->inhibit(solver());
-      var_->SetValues(values_.get(), size_);
+      var_->SetValues(values_.RawData(), values_.size());
     } else if (boolvar_->Max() == 1LL) {
       int support = support_pos_.Value();
       const int64 vmin = var_->Min();
       const int64 vmax = var_->Max();
-      while (support < size_ &&
+      while (support < values_.size() &&
              (values_[support] < vmin ||
               !var_->Contains(values_[support]))) {
         if (values_[support] <= vmax) {
           support++;
         } else {
-          support = size_;
+          support = values_.size();
         }
       }
       support_pos_.SetValue(solver(), support);
-      if (support >= size_) {
+      if (support >= values_.size()) {
         demon_->inhibit(solver());
         boolvar_->SetValue(0LL);
       } else if (var_->Bound()) {
@@ -914,19 +908,19 @@ class IsMemberCt : public Constraint {
       }
     } else {  // boolvar_ set to 0.
       demon_->inhibit(solver());
-      var_->RemoveValues(values_.get(), size_);
+      var_->RemoveValues(values_.RawData(), values_.size());
     }
   }
 
   virtual string DebugString() const {
-    return StringPrintf("IsMemberCt(%s, int values, %s)",
+    return StringPrintf("IsMemberCt(%s, %s, %s)",
                         var_->DebugString().c_str(),
+                        values_.DebugString().c_str(),
                         boolvar_->DebugString().c_str());
   }
  private:
   IntVar* const var_;
-  scoped_array<int64> values_;
-  int size_;
+  ConstIntArray values_;
   IntVar* const boolvar_;
   Rev<int> support_pos_;
   Demon* demon_;
@@ -936,11 +930,34 @@ Constraint* Solver::MakeIsMemberCt(IntVar* const var,
                                    const int64* const values,
                                    int size,
                                    IntVar* const boolvar) {
-  return RevAlloc(new IsMemberCt(this, var, values, size, boolvar));
+  ConstIntArray local_values(values, size);
+  return RevAlloc(
+      new IsMemberCt(this,
+                     var,
+                     local_values.SortedCopyWithoutDuplicates(true),
+                     boolvar));
 }
 
 Constraint* Solver::MakeIsMemberCt(IntVar* const var,
                                    const std::vector<int64>& values,
+                                   IntVar* const boolvar) {
+  return MakeIsMemberCt(var, values.data(), values.size(), boolvar);
+}
+
+Constraint* Solver::MakeIsMemberCt(IntVar* const var,
+                                   const int* const values,
+                                   int size,
+                                   IntVar* const boolvar) {
+  ConstIntArray local_values(values, size);
+  return RevAlloc(
+      new IsMemberCt(this,
+                     var,
+                     local_values.SortedCopyWithoutDuplicates(true),
+                     boolvar));
+}
+
+Constraint* Solver::MakeIsMemberCt(IntVar* const var,
+                                   const std::vector<int>& values,
                                    IntVar* const boolvar) {
   return MakeIsMemberCt(var, values.data(), values.size(), boolvar);
 }
@@ -955,6 +972,18 @@ IntVar* Solver::MakeIsMemberVar(IntVar* const var,
 
 IntVar* Solver::MakeIsMemberVar(IntVar* const var,
                                 const std::vector<int64>& values) {
+  return MakeIsMemberVar(var, values.data(), values.size());
+}
+
+IntVar* Solver::MakeIsMemberVar(IntVar* const var,
+                                const int* const values,
+                                int size) {
+  IntVar* const b = MakeBoolVar();
+  AddConstraint(MakeIsMemberCt(var, values, size, b));
+  return b;
+}
+
+IntVar* Solver::MakeIsMemberVar(IntVar* const var, const std::vector<int>& values) {
   return MakeIsMemberVar(var, values.data(), values.size());
 }
 

@@ -1857,6 +1857,21 @@ class CumulativeConstraint : public Constraint {
     }
   }
 
+  CumulativeConstraint(Solver* const s,
+                       IntervalVar* const * intervals,
+                       int const * demands,
+                       int size,
+                       int64 capacity,
+                       const string& name)
+    : Constraint(s),
+      capacity_(capacity),
+      tasks_(new CumulativeTask*[size]),
+      size_(size) {
+    for (int i = 0; i < size; ++i) {
+      tasks_[i] = MakeTask(solver(), intervals[i], demands[i]);
+    }
+  }
+
   virtual void Post() {
     // For the cumulative constraint, there are many propagators, and they
     // don't dominate each other. So the strongest propagation is obtained
@@ -2024,6 +2039,29 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
   CHECK_EQ(intervals.size(), demands.size());
   IntervalVar* const* intervals_array = intervals.data();
   const int64* demands_array = demands.data();
+  const int size = intervals.size();
+  return MakeCumulative(intervals_array, demands_array, size, capacity, name);
+}
+
+Constraint* Solver::MakeCumulative(IntervalVar* const* intervals,
+                                   const int* demands,
+                                   int size,
+                                   int64 capacity,
+                                   const string& name) {
+  for (int i = 0; i < size; ++i) {
+    CHECK_GE(demands[i], 0);
+  }
+  return RevAlloc(new CumulativeConstraint(
+      this, intervals, demands, size, capacity, name));
+}
+
+Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                                   const std::vector<int>& demands,
+                                   int64 capacity,
+                                   const string& name) {
+  CHECK_EQ(intervals.size(), demands.size());
+  IntervalVar* const* intervals_array = intervals.data();
+  const int* demands_array = demands.data();
   const int size = intervals.size();
   return MakeCumulative(intervals_array, demands_array, size, capacity, name);
 }

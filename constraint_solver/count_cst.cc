@@ -374,6 +374,12 @@ class Distribute : public Constraint {
              const int64* values,
              const IntVar* const * cards,
              int csize);
+  Distribute(Solver* const s,
+             const IntVar* const * vars,
+             int vsize,
+             const int* values,
+             const IntVar* const * cards,
+             int csize);
   virtual ~Distribute() {}
 
   virtual void Post();
@@ -414,6 +420,30 @@ Distribute::Distribute(Solver* const s,
   memcpy(values_.get(), values, card_size_ * sizeof(*values));
   memcpy(cards_.get(), cards, card_size_ * sizeof(*cards));
   for (int i = 0; i < card_size_; ++i) {
+    min_[i] = 0;
+    max_[i] = 0;
+  }
+}
+
+Distribute::Distribute(Solver* const s,
+                       const IntVar* const * vars,
+                       int vsize,
+                       const int* values,
+                       const IntVar* const * cards,
+                       int csize)
+    : Constraint(s),
+      vars_(new IntVar*[vsize]),
+      var_size_(vsize),
+      values_(new int64[csize]),
+      cards_(new IntVar*[csize]),
+      card_size_(csize),
+      undecided_(var_size_, card_size_),
+      min_(new int[card_size_]),
+      max_(new int[card_size_]) {
+  memcpy(vars_.get(), vars, var_size_ * sizeof(*vars));
+  memcpy(cards_.get(), cards, card_size_ * sizeof(*cards));
+  for (int i = 0; i < card_size_; ++i) {
+    values_[i] = values[i];
     min_[i] = 0;
     max_[i] = 0;
   }
@@ -1029,6 +1059,37 @@ class SetAllToZero : public Constraint {
 
 Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    const std::vector<int64>& values,
+                                   const std::vector<IntVar*>& cards) {
+  if (vars.size() == 0) {
+    return RevAlloc(new SetAllToZero(this, cards.data(), cards.size()));
+  }
+  CHECK_EQ(values.size(), cards.size());
+  for (ConstIter<std::vector<IntVar*> > it(vars); !it.at_end(); ++it) {
+    CHECK_EQ(this, (*it)->solver());
+  }
+
+  // TODO(user) : we can sort values (and cards) before doing the test.
+  bool fast = true;
+  for (int i = 0; i < values.size(); ++i) {
+    if (values[i] != i) {
+      fast = false;
+      break;
+    }
+  }
+  for (ConstIter<std::vector<IntVar*> > it(cards); !it.at_end(); ++it) {
+    CHECK_EQ(this, (*it)->solver());
+  }
+  if (fast) {
+    return RevAlloc(new FastDistribute(this, vars.data(), vars.size(),
+                                       cards.data(), cards.size()));
+  } else {
+    return RevAlloc(new Distribute(this, vars.data(), vars.size(),
+                                   values.data(), cards.data(), cards.size()));
+  }
+}
+
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   const std::vector<int>& values,
                                    const std::vector<IntVar*>& cards) {
   if (vars.size() == 0) {
     return RevAlloc(new SetAllToZero(this, cards.data(), cards.size()));

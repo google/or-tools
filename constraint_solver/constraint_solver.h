@@ -73,7 +73,6 @@
 #include "base/stringprintf.h"
 #include "base/sysinfo.h"
 #include "base/timer.h"
-#include "base/strutil.h"
 #include "base/map-util.h"
 #include "base/hash.h"
 #include "base/random.h"
@@ -607,11 +606,17 @@ class Solver {
   // MakeIntVar will create a variable with the given sparse domain.
   IntVar* MakeIntVar(const std::vector<int64>& values, const string& name);
 
+  // MakeIntVar will create a variable with the given sparse domain.
+  IntVar* MakeIntVar(const std::vector<int>& values, const string& name);
+
   // MakeIntVar will create the best range based int var for the bounds given.
   IntVar* MakeIntVar(int64 vmin, int64 vmax);
 
   // MakeIntVar will create a variable with the given sparse domain.
   IntVar* MakeIntVar(const std::vector<int64>& values);
+
+  // MakeIntVar will create a variable with the given sparse domain.
+  IntVar* MakeIntVar(const std::vector<int>& values);
 
   // MakeBoolVar will create a variable with a {0, 1} domain.
   IntVar* MakeBoolVar(const string& name);
@@ -711,6 +716,10 @@ class Solver {
   IntExpr* MakeElement(const int64* const vals, int size, IntVar* const index);
   // vals[expr]
   IntExpr* MakeElement(const std::vector<int64>& vals, IntVar* const index);
+  // vals[expr]
+  IntExpr* MakeElement(const int* const vals, int size, IntVar* const index);
+  // vals[expr]
+  IntExpr* MakeElement(const std::vector<int>& vals, IntVar* const index);
 
   // Function-based element. The constraint takes ownership of
   // callback The callback must be able to cope with any possible
@@ -941,13 +950,21 @@ class Solver {
                              int size, IntVar* const b);
   Constraint* MakeIsMemberCt(IntVar* const v, const std::vector<int64>& values,
                              IntVar* const b);
+  Constraint* MakeIsMemberCt(IntVar* const v, const int* const values,
+                             int size, IntVar* const b);
+  Constraint* MakeIsMemberCt(IntVar* const v, const std::vector<int>& values,
+                             IntVar* const b);
   IntVar* MakeIsMemberVar(IntVar* const v, const int64* const values, int size);
   IntVar* MakeIsMemberVar(IntVar* const v, const std::vector<int64>& values);
+  IntVar* MakeIsMemberVar(IntVar* const v, const int* const values, int size);
+  IntVar* MakeIsMemberVar(IntVar* const v, const std::vector<int>& values);
   // v in set. Propagation is lazy, i.e. this constraint does not
   // creates holes in the domain of the variable.
   Constraint* MakeMemberCt(IntVar* const v, const int64* const values,
                            int size);
   Constraint* MakeMemberCt(IntVar* const v, const std::vector<int64>& values);
+  Constraint* MakeMemberCt(IntVar* const v, const int* const values, int size);
+  Constraint* MakeMemberCt(IntVar* const v, const std::vector<int>& values);
 
 
   // |{i | v[i] == value}| == count
@@ -959,6 +976,10 @@ class Solver {
   // Aggregated version of count:  |{i | v[i] == values[j]}| == cards[j]
   Constraint* MakeDistribute(const std::vector<IntVar*>& vars,
                              const std::vector<int64>& values,
+                             const std::vector<IntVar*>& cards);
+  // Aggregated version of count:  |{i | v[i] == values[j]}| == cards[j]
+  Constraint* MakeDistribute(const std::vector<IntVar*>& vars,
+                             const std::vector<int>& values,
                              const std::vector<IntVar*>& cards);
   // Aggregated version of count:  |{i | v[i] == j}| == cards[j]
   Constraint* MakeDistribute(const std::vector<IntVar*>& vars,
@@ -1036,8 +1057,27 @@ class Solver {
                                      int tuple_count,
                                      int arity);
 
+  // This method creates a constraint where the graph of the relation
+  // between the variables is given in extension. There are 'arity'
+  // variables involved in the relation and the graph is given by a
+  // matrix of size 'tuple_count' x 'arity'.
+  Constraint* MakeAllowedAssignments(const IntVar* const * vars,
+                                     const int* const * tuples,
+                                     int tuple_count,
+                                     int arity);
+
+  // This method creates a constraint where the graph of the relation
+  // between the variables is given in extension. The graph is given by a
+  // matrix of size tuples.size() x vars.size().
   Constraint* MakeAllowedAssignments(const std::vector<IntVar*>& vars,
                                      const std::vector<std::vector<int64> >& tuples);
+
+  // This method creates a constraint where the graph of the relation
+  // between the variables is given in extension. The graph is given by a
+  // matrix of size tuples.size() x vars.size().
+  Constraint* MakeAllowedAssignments(const std::vector<IntVar*>& vars,
+                                     const std::vector<std::vector<int> >& tuples);
+
 
   // This constraint create a finite automaton that will check the
   // sequence of variables vars. It uses a transition table called
@@ -1051,6 +1091,20 @@ class Solver {
       const std::vector<std::vector<int64> >& transitions,
       int64 initial_state,
       const std::vector<int64>& final_states);
+
+  // This constraint create a finite automaton that will check the
+  // sequence of variables vars. It uses a transition table called
+  // 'transitions'. Each transition is a triple
+  //    (current_state, variable_value, new_state).
+  // The initial state is given, and the set of accepted states is decribed
+  // by 'final_states'. These states are hidden inside the constraint.
+  // Only the transitions (i.e. the variables) are visible.
+  Constraint* MakeTransitionConstraint(
+      const std::vector<IntVar*>& vars,
+      const std::vector<std::vector<int> >& transitions,
+      int64 initial_state,
+      const std::vector<int>& final_states);
+
 
   // ----- Packing constraint -----
 
@@ -1193,6 +1247,35 @@ class Solver {
                              int64 capacity,
                              const string& name);
 
+  // This constraint forces that, for any integer t, the sum of the demands
+  // corresponding to an interval containing t does not exceed the given
+  // capacity.
+  //
+  // Intervals and demands are arrays that should both be of the given size.
+  //
+  // Demands should only contain non-negative values. Zero values are supported,
+  // and the corresponding intervals are filtered out, as they neither impact
+  // nor are impacted by this constraint.
+  Constraint* MakeCumulative(IntervalVar* const * intervals,
+                             const int * demands,
+                             int size,
+                             int64 capacity,
+                             const string& name);
+
+  // This constraint forces that, for any integer t, the sum of the demands
+  // corresponding to an interval containing t does not exceed the given
+  // capacity.
+  //
+  // Intervals and demands should be vectors of equal size.
+  //
+  // Demands should only contain non-negative values. Zero values are supported,
+  // and the corresponding intervals are filtered out, as they neither impact
+  // nor are impacted by this constraint.
+  Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                             const std::vector<int>& demands,
+                             int64 capacity,
+                             const string& name);
+
   // ----- Assignments -----
 
   // This method creates an empty assignment.
@@ -1254,15 +1337,32 @@ class Solver {
                                     const std::vector<int64>& weights,
                                     int64 step);
 
+  // Creates a minimization weighted objective. The actual objective is
+  // scalar_prod(vars, weights).
+  OptimizeVar* MakeWeightedMinimize(const std::vector<IntVar*>& vars,
+                                    const std::vector<int>& weights,
+                                    int64 step);
+
   // Creates a maximization weigthed objective.
   OptimizeVar* MakeWeightedMaximize(const std::vector<IntVar*>& vars,
                                     const std::vector<int64>& weights,
+                                    int64 step);
+
+  // Creates a maximization weigthed objective.
+  OptimizeVar* MakeWeightedMaximize(const std::vector<IntVar*>& vars,
+                                    const std::vector<int>& weights,
                                     int64 step);
 
   // Creates a weighted objective with a given sense (true = maximization).
   OptimizeVar* MakeWeightedOptimize(bool maximize,
                                     const std::vector<IntVar*>& vars,
                                     const std::vector<int64>& weights,
+                                    int64 step);
+
+  // Creates a weighted objective with a given sense (true = maximization).
+  OptimizeVar* MakeWeightedOptimize(bool maximize,
+                                    const std::vector<IntVar*>& vars,
+                                    const std::vector<int>& weights,
                                     int64 step);
 
   // ----- Meta-heuristics -----

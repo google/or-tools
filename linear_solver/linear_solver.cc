@@ -12,28 +12,6 @@
 // limitations under the License.
 //
 //                                                   (Laurent Perron)
-//
-// A C++ wrapper around the GNU linear programming kit and Coin LP.
-
-// This is a complete TODO list: (* is higher priority)
-//   - support primal/dual/barrier for all algorithms that supports them.
-//   - support write model in different format (at least MPS and LP).
-//   * Better support for warm restart (store/restore basis?).
-//   - Compile Coin LP with extra packages
-//      * Barrier code: see http://www.cise.ufl.edu/research/sparse/amd/
-//      *             : see http://www.cise.ufl.edu/research/sparse/cholmod/
-//   - Include support for more type of constraints:
-//      * logical ones with linearization.
-//      * SOS1 and SOS2.
-//   - Support for semi-continuous variables.
-//   * Support for absolute and relative optimization steps.
-//   - Support for generalized convex cost.
-//   - Support for MIP callbacks if available.
-//   * Implement MakeXXXVarArray as on Solver CP class.
-//   * Implement optimized model modification methods (AddVariable)
-//     to avoid reloading the full model.
-//   * Make sure the simplex can warmstart on the previous solution if the model
-//     has been changed incrementally.
 
 #include "linear_solver/linear_solver.h"
 

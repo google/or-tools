@@ -2232,6 +2232,26 @@ class WeightedOptimizeVar: public OptimizeVar {
            weights.data(), size_ * sizeof(*weights.data()));
   }
 
+  WeightedOptimizeVar(Solver* solver,
+                      bool maximize,
+                      const std::vector<IntVar*>& sub_objectives,
+                      const std::vector<int>& weights,
+                      int64 step)
+      : OptimizeVar(solver,
+                    maximize,
+                    solver->MakeScalProd(sub_objectives, weights)->Var(),
+                    step),
+        size_(weights.size()) {
+    CHECK_EQ(sub_objectives.size(), weights.size());
+    sub_objectives_.reset(new IntVar*[size_]);
+    memcpy(sub_objectives_.get(),
+           sub_objectives.data(), size_ * sizeof(*sub_objectives.data()));
+    weights_.reset(new int64[size_]);
+    for (int i = 0; i < size_; ++i) {
+      weights_[i] = weights[i];
+    }
+  }
+
   virtual ~WeightedOptimizeVar() {}
   virtual string Print() const;
 
@@ -2276,6 +2296,34 @@ OptimizeVar* Solver::MakeWeightedMinimize(const std::vector<IntVar*>& sub_object
 
 OptimizeVar* Solver::MakeWeightedMaximize(const std::vector<IntVar*>& sub_objectives,
                                           const std::vector<int64>& weights,
+                                          int64 step) {
+  return RevAlloc(new WeightedOptimizeVar(this,
+                                          true,
+                                          sub_objectives, weights,
+                                          step));
+}
+
+OptimizeVar* Solver::MakeWeightedOptimize(bool maximize,
+                                          const std::vector<IntVar*>& sub_objectives,
+                                          const std::vector<int>& weights,
+                                          int64 step) {
+  return RevAlloc(new WeightedOptimizeVar(this,
+                                          maximize,
+                                          sub_objectives, weights,
+                                          step));
+}
+
+OptimizeVar* Solver::MakeWeightedMinimize(const std::vector<IntVar*>& sub_objectives,
+                                          const std::vector<int>& weights,
+                                          int64 step) {
+  return RevAlloc(new WeightedOptimizeVar(this,
+                                          false,
+                                          sub_objectives, weights,
+                                          step));
+}
+
+OptimizeVar* Solver::MakeWeightedMaximize(const std::vector<IntVar*>& sub_objectives,
+                                          const std::vector<int>& weights,
                                           int64 step) {
   return RevAlloc(new WeightedOptimizeVar(this,
                                           true,

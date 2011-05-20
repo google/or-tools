@@ -20,18 +20,14 @@
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/const_int_array.h"
 
 namespace operations_research {
 
 // ----- IntExprElement -----
-
-IntVar* BuildDomainIntVar(Solver* const s,
-                          const int64* const values,
-                          int size,
-                          const string& name);
-
 void LinkVarExpr(Solver* const s, IntExpr* const expr, IntVar* const var);
 
+namespace {
 // ----- BaseIntExprElement -----
 
 class BaseIntExprElement : public BaseIntExpr {
@@ -67,14 +63,17 @@ class BaseIntExprElement : public BaseIntExpr {
 };
 
 BaseIntExprElement::BaseIntExprElement(Solver* const s, IntVar* const e)
-    : BaseIntExpr(s),
-      expr_(e),
-      min_(0),
-      min_support_(-1),
-      max_(0),
-      max_support_(-1),
-      initial_update_(true),
-      expr_iterator_(expr_->MakeDomainIterator(true)) {}
+  : BaseIntExpr(s),
+    expr_(e),
+    min_(0),
+    min_support_(-1),
+    max_(0),
+    max_support_(-1),
+    initial_update_(true),
+    expr_iterator_(expr_->MakeDomainIterator(true)) {
+  CHECK_NOTNULL(s);
+  CHECK_NOTNULL(e);
+}
 
 int64 BaseIntExprElement::Min() const {
   UpdateSupports();
@@ -169,20 +168,17 @@ void BaseIntExprElement::UpdateSupports() const {
 class IntElementConstraint : public Constraint {
  public:
   IntElementConstraint(Solver* const s,
-                       const int64* const values,
-                       int size,
+                       std::vector<int64>* const values,
                        IntVar* const index,
                        IntVar* const elem)
-      : Constraint(s),
-        values_(new int64[size]),
-        size_(size),
-        index_(index),
-        elem_(elem),
-        index_iterator_(index_->MakeDomainIterator(true)) {
+    : Constraint(s),
+      values_(values),
+      index_(index),
+      elem_(elem),
+      index_iterator_(index_->MakeDomainIterator(true)) {
     CHECK_NOTNULL(values);
     CHECK_NOTNULL(index);
     CHECK_NOTNULL(elem);
-    memcpy(values_.get(), values, size_ * sizeof(*values));
   }
 
   virtual void Post() {
@@ -193,7 +189,7 @@ class IntElementConstraint : public Constraint {
   }
 
   virtual void InitialPropagate() {
-    index_->SetRange(0, size_ - 1);
+    index_->SetRange(0, values_.size() - 1);
     const int64 elem_min = elem_->Min();
     const int64 elem_max = elem_->Max();
     int64 new_min = elem_max;
@@ -222,14 +218,13 @@ class IntElementConstraint : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("IntElementConstraint(values, %d, %s, %s)",
-                        size_,
+    return StringPrintf("IntElementConstraint(%s, %s, %s)",
+                        values_.DebugString().c_str(),
                         index_->DebugString().c_str(),
                         elem_->DebugString().c_str());
   }
  private:
-  scoped_array<int64> values_;
-  const int size_;
+  ConstIntArray values_;
   IntVar* const index_;
   IntVar* const elem_;
   IntVarIterator* const index_iterator_;
@@ -238,64 +233,68 @@ class IntElementConstraint : public Constraint {
 
 // ----- IntExprElement
 
+IntVar* BuildDomainIntVar(Solver* const solver, std::vector<int64>* values);
+
 class IntExprElement : public BaseIntExprElement {
  public:
-  IntExprElement(Solver* const s, const int64* const vals, int size,
+  IntExprElement(Solver* const s,
+                 std::vector<int64>* const vals,
                  IntVar* const expr);
   virtual ~IntExprElement();
   virtual string name() const {
-    return StringPrintf("IntElement(values, %s)", expr_->name().c_str());
+    return StringPrintf("IntElement(%s, %s)",
+                        values_.DebugString().c_str(),
+                        expr_->name().c_str());
   }
   virtual string DebugString() const {
-    return StringPrintf("IntElement(values, %d, %s)",
-                        size_, expr_->DebugString().c_str());
+    return StringPrintf("IntElement(%s, %s)",
+                        values_.DebugString().c_str(),
+                        expr_->DebugString().c_str());
   }
   virtual IntVar* CastToVar() {
     Solver* const s = solver();
-    IntVar* const var = BuildDomainIntVar(s, values_, size_, "");
+    std::vector<int64>* copied_data = values_.Copy();
+    IntVar* const var = s->MakeIntVar(*copied_data);
     AddDelegateName("Var", var);
+    // Ownership or copied_data is transferred to the constraint.
     s->AddConstraint(s->RevAlloc(new IntElementConstraint(s,
-                                                          values_,
-                                                          size_,
+                                                          copied_data,
                                                           expr_,
                                                           var)));
     return var;
   }
  protected:
   virtual int64 ElementValue(int index) const {
-    DCHECK_LT(index, size_);
+    DCHECK_LT(index, values_.size());
     return values_[index];
   }
   virtual int64 ExprMin() const {
     return std::max(0LL, expr_->Min());
   }
   virtual int64 ExprMax() const {
-    return std::min(size_ - 1LL, expr_->Max());
+    return std::min(values_.size() - 1LL, expr_->Max());
   }
  private:
-  int64* const values_;
-  const int size_;
+  ConstIntArray values_;
 };
 
-IntExprElement::IntExprElement(Solver* const s,
-                               const int64* const vals,
-                               int size,
-                               IntVar* const e)
-    : BaseIntExprElement(s, e), values_(new int64[size]), size_(size) {
-  CHECK(vals) << "null pointer";
-  memcpy(values_, vals, size_ * sizeof(*vals));
+IntExprElement::IntExprElement(Solver* const solver,
+                               std::vector<int64>* const values,
+                               IntVar* const index)
+  : BaseIntExprElement(solver, index), values_(values) {
+  CHECK_NOTNULL(values);
 }
 
-IntExprElement::~IntExprElement() {
-  delete [] values_;
-}
+
+IntExprElement::~IntExprElement() {}
 
 // ----- Increasing Element -----
 
 class IncreasingIntExprElement : public BaseIntExpr {
  public:
-  IncreasingIntExprElement(Solver* const s, const int64* const vals, int size,
-                 IntVar* const index);
+  IncreasingIntExprElement(Solver* const s,
+                           std::vector<int64>* const values,
+                           IntVar* const index);
   virtual ~IncreasingIntExprElement() {}
 
   virtual int64 Min() const;
@@ -306,49 +305,51 @@ class IncreasingIntExprElement : public BaseIntExpr {
   virtual bool Bound() const { return (index_->Bound()); }
   // TODO(user) : improve me, the previous test is not always true
   virtual string name() const {
-    return StringPrintf("IntElement(values, %s)", index_->name().c_str());
+    return StringPrintf("IntElement(%s, %s)",
+                        values_.DebugString().c_str(),
+                        index_->name().c_str());
   }
   virtual string DebugString() const {
-    return StringPrintf("IntElement(values, %d, %s)",
-                        size_, index_->DebugString().c_str());
+    return StringPrintf("IntElement(%s, %s)",
+                        values_.DebugString().c_str(),
+                        index_->DebugString().c_str());
   }
   virtual void WhenRange(Demon* d) {
     index_->WhenRange(d);
   }
   virtual IntVar* CastToVar() {
     Solver* const s = solver();
-    IntVar* const var = BuildDomainIntVar(s, values_.get(), size_, "");
+    std::vector<int64>* copied_data = values_.Copy();
+    IntVar* const var = s->MakeIntVar(*copied_data);
+    delete copied_data;
     AddDelegateName("Var", var);
     LinkVarExpr(s, this, var);
     return var;
   }
  private:
-  scoped_array<int64> values_;
-  int size_;
+  ConstIntArray values_;
   IntVar* const index_;
 };
 
 IncreasingIntExprElement::IncreasingIntExprElement(Solver* const s,
-                                                   const int64* const vals,
-                                                   int size,
+                                                   std::vector<int64>* const values,
                                                    IntVar* const index)
-    : BaseIntExpr(s), values_(new int64[size]),
-      size_(size), index_(index) {
-  DCHECK(vals);
+  : BaseIntExpr(s), values_(values), index_(index) {
+  DCHECK(values);
   DCHECK(index);
-  DCHECK_GT(size, 0);
   DCHECK(s);
-  memcpy(values_.get(), vals, size_ * sizeof(*vals));
 }
 
 int64 IncreasingIntExprElement::Min() const {
   const int64 expression_min = std::max(0LL, index_->Min());
-  return  (expression_min < size_ ? values_[expression_min] : kint64max);
+  return  (expression_min < values_.size() ?
+           values_[expression_min] :
+           kint64max);
 }
 
 void IncreasingIntExprElement::SetMin(int64 m) {
   const int64 expression_min = std::max(0LL, index_->Min());
-  const int64 expression_max = std::min(size_ - 1LL, index_->Max());
+  const int64 expression_max = std::min(values_.size() - 1LL, index_->Max());
   if (expression_min > expression_max || m > values_[expression_max]) {
     solver()->Fail();
   }
@@ -361,13 +362,13 @@ void IncreasingIntExprElement::SetMin(int64 m) {
 }
 
 int64 IncreasingIntExprElement::Max() const {
-  const int64 expression_max = std::min(size_ - 1LL, index_->Max());
+  const int64 expression_max = std::min(values_.size() - 1LL, index_->Max());
   return (expression_max >= 0 ? values_[expression_max] : kint64max);
 }
 
 void IncreasingIntExprElement::SetMax(int64 m) {
   const int64 expression_min = std::max(0LL, index_->Min());
-  const int64 expression_max = std::min(size_ - 1LL, index_->Max());
+  const int64 expression_max = std::min(values_.size() - 1LL, index_->Max());
   if (expression_min > expression_max || m < values_[expression_min]) {
     solver()->Fail();
   }
@@ -384,7 +385,7 @@ void IncreasingIntExprElement::SetRange(int64 mi, int64 ma) {
     solver()->Fail();
   }
   const int64 expression_min = std::max(0LL, index_->Min());
-  const int64 expression_max = std::min(size_ - 1LL, index_->Max());
+  const int64 expression_max = std::min(values_.size() - 1LL, index_->Max());
   if (expression_min > expression_max ||
       mi > values_[expression_max] ||
       ma < values_[expression_min]) {
@@ -404,39 +405,76 @@ void IncreasingIntExprElement::SetRange(int64 mi, int64 ma) {
 }
 
 // ----- Solver::MakeElement(int array, int var) -----
-
-namespace {
-bool IsConstant(const int64* const vals, int size) {
-  const int64 val0 = vals[0];
-  for (int i = 1; i < size; ++i) {
-    if (vals[i] != val0) {
-      return false;
+IntExpr* BuildElement(Solver* const solver,
+                      ConstIntArray* values,
+                      IntVar* const index) {
+  // Various checks.
+  // Is array constant?
+  if (values->HasProperty(ConstIntArray::IS_CONSTANT)) {
+    solver->AddConstraint(solver->MakeBetweenCt(index, 0, values->size() - 1));
+    return solver->MakeIntConst(values->get(0));
+  }
+  // Is array built with booleans only?
+  // TODO(user): We could maintain the index of the first one.
+  if (values->HasProperty(ConstIntArray::IS_BOOLEAN)) {
+    std::vector<int64> ones;
+    int first_zero = -1;
+    for (int i = 0; i < values->size(); ++i) {
+      if (values->get(i) == 1LL) {
+        ones.push_back(i);
+      } else {
+        first_zero = i;
+      }
+    }
+    if (ones.size() == 1) {
+      DCHECK_EQ(1LL, values->get(ones.back()));
+      solver->AddConstraint(
+          solver->MakeBetweenCt(index, 0, values->size() - 1));
+      return solver->MakeIsEqualCstVar(index, ones.back());
+    } else if (ones.size() == values->size() - 1) {
+      solver->AddConstraint(
+          solver->MakeBetweenCt(index, 0, values->size() - 1));
+      return solver->MakeIsDifferentCstVar(index, first_zero);
+    } else if (ones.size() == ones.back() - ones.front() + 1) {  // contiguous.
+      solver->AddConstraint(
+          solver->MakeBetweenCt(index, 0, values->size() - 1));
+      IntVar* const b = solver->MakeBoolVar("ContiguousBooleanElementVar");
+      solver->AddConstraint(
+          solver->MakeIsBetweenCt(index, ones.front(), ones.back(), b));
+      return b;
+    } else {
+      IntVar* const b = solver->MakeBoolVar("NonContiguousBooleanElementVar");
+      solver->AddConstraint(
+          solver->MakeBetweenCt(index, 0, values->size() - 1));
+      solver->AddConstraint(solver->MakeIsMemberCt(index, ones, b));
+      return b;
     }
   }
-  return true;
-}
-
-bool IsBoolean(const int64* const vals, int size) {
-  for (int i = 0; i < size; ++i) {
-    if (vals[i] & ~GG_LONGLONG(1)) {
-      return false;
-    }
+  // Is Array increasing
+  if (values->HasProperty(ConstIntArray::IS_INCREASING)) {
+    return solver->RevAlloc(
+        new IncreasingIntExprElement(solver, values->Release(), index));
   }
-  return true;
-}
-
-bool IsIncreasing(const int64* const vals, int size) {
-  int64 last = vals[0];
-  for (int i = 1; i < size; ++i) {
-    const int64 next = vals[i];
-    if (next < last) {
-      return false;
-    }
-    last = next;
-  }
-  return true;
+  return solver->RevAlloc(new IntExprElement(solver, values->Release(), index));
 }
 }  // namespace
+
+
+
+IntExpr* Solver::MakeElement(const int* const vals,
+                             int size,
+                             IntVar* const index) {
+  DCHECK(index);
+  DCHECK_EQ(this, index->solver());
+  DCHECK_GT(size, 0);
+  DCHECK(vals);
+  ConstIntArray values(vals, size);
+  return BuildElement(this, &values, index);
+}
+
+IntExpr* Solver::MakeElement(const std::vector<int64>& vals, IntVar* const index) {
+  return MakeElement(vals.data(), vals.size(), index);
+}
 
 IntExpr* Solver::MakeElement(const int64* const vals,
                              int size,
@@ -445,51 +483,11 @@ IntExpr* Solver::MakeElement(const int64* const vals,
   DCHECK_EQ(this, index->solver());
   DCHECK_GT(size, 0);
   DCHECK(vals);
-  // Various checks.
-  // Is array constant?
-  if (IsConstant(vals, size)) {
-    AddConstraint(MakeBetweenCt(index, 0, size - 1));
-    return MakeIntConst(vals[0]);
-  }
-  // Is array built with booleans only?
-  // TODO(user): We could maintain the index of the first one.
-  if (IsBoolean(vals, size)) {
-    std::vector<int64> ones;
-    int first_zero = -1;
-    for (int i = 0; i < size; ++i) {
-      if (vals[i] == 1LL) {
-        ones.push_back(i);
-      } else {
-        first_zero = i;
-      }
-    }
-    if (ones.size() == 1) {
-      DCHECK_EQ(1LL, vals[ones.back()]);
-      AddConstraint(MakeBetweenCt(index, 0, size - 1));
-      return MakeIsEqualCstVar(index, ones.back());
-    } else if (ones.size() == size - 1) {
-      AddConstraint(MakeBetweenCt(index, 0, size - 1));
-      return MakeIsDifferentCstVar(index, first_zero);
-    } else if (ones.size() == ones.back() - ones.front() + 1) {  // contiguous.
-      AddConstraint(MakeBetweenCt(index, 0, size - 1));
-      IntVar* const b = MakeBoolVar("ContiguousBooleanElementVar");
-      AddConstraint(MakeIsBetweenCt(index, ones.front(), ones.back(), b));
-      return b;
-    } else {
-      IntVar* const b = MakeBoolVar("NonContiguousBooleanElementVar");
-      AddConstraint(MakeBetweenCt(index, 0, size - 1));
-      AddConstraint(MakeIsMemberCt(index, ones, b));
-      return b;
-    }
-  }
-  // Is Array increasing
-  if (IsIncreasing(vals, size)) {
-    return RevAlloc(new IncreasingIntExprElement(this, vals, size, index));
-  }
-  return RevAlloc(new IntExprElement(this, vals, size, index));
+  ConstIntArray values(vals, size);
+  return BuildElement(this, &values, index);
 }
 
-IntExpr* Solver::MakeElement(const std::vector<int64>& vals, IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<int>& vals, IntVar* const index) {
   return MakeElement(vals.data(), vals.size(), index);
 }
 
@@ -522,9 +520,9 @@ IntExprFunctionElement::IntExprFunctionElement(
     ResultCallback1<int64, int64>* values,
     IntVar* const e,
     bool del)
-    : BaseIntExprElement(s, e),
-      values_(values),
-      delete_(del) {
+  : BaseIntExprElement(s, e),
+    values_(values),
+    delete_(del) {
   CHECK(values) << "null pointer";
   values->CheckIsRepeatable();
 }

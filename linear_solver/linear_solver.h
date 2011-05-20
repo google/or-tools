@@ -13,9 +13,10 @@
 //
 //                                                      (Laurent Perron).
 //
-// A C++ wrapper for the GNU linear programming / mixed integer programming kit,
-// Coin LP Solver, and Coin Branch and Cut Solver.
-
+// A C++, Python and Java wrapper for linear programming and mixed
+// integer programming solvers: GLPK, CLP and CBC.
+//
+//
 // -----------------------------------
 // What is Linear Programming ?
 //

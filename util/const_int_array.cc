@@ -19,52 +19,6 @@
 #include "util/bitset.h"
 
 namespace operations_research {
-ConstIntArray::ConstIntArray(int64 v0)
-    : data_(new std::vector<int64>(1)), scanned_(false), status_(0) {
-  (*data_)[0] = v0;
-}
-
-ConstIntArray::ConstIntArray(int64 v0, int64 v1)
-    : data_(new std::vector<int64>(2)), scanned_(false), status_(0) {
-  (*data_)[0] = v0;
-  (*data_)[1] = v1;
-}
-
-ConstIntArray::ConstIntArray(int64 v0, int64 v1, int64 v2)
-    : data_(new std::vector<int64>(3)), scanned_(false), status_(0) {
-  (*data_)[0] = v0;
-  (*data_)[1] = v1;
-  (*data_)[2] = v2;
-}
-
-ConstIntArray::ConstIntArray(int64 v0, int64 v1, int64 v2, int64 v3)
-    : data_(new std::vector<int64>(4)), scanned_(false), status_(0) {
-  (*data_)[0] = v0;
-  (*data_)[1] = v1;
-  (*data_)[2] = v2;
-  (*data_)[3] = v3;
-}
-
-ConstIntArray::ConstIntArray(int64 v0, int64 v1, int64 v2, int64 v3, int64 v4)
-    : data_(new std::vector<int64>(5)), scanned_(false), status_(0) {
-  (*data_)[0] = v0;
-  (*data_)[1] = v1;
-  (*data_)[2] = v2;
-  (*data_)[3] = v3;
-  (*data_)[4] = v4;
-}
-
-ConstIntArray::ConstIntArray(int64 v0, int64 v1, int64 v2, int64 v3, int64 v4,
-                             int64 v5)
-    : data_(new std::vector<int64>(6)), scanned_(false), status_(0) {
-  (*data_)[0] = v0;
-  (*data_)[1] = v1;
-  (*data_)[2] = v2;
-  (*data_)[3] = v3;
-  (*data_)[4] = v4;
-  (*data_)[5] = v5;
-}
-
 ConstIntArray::ConstIntArray(const std::vector<int64>& data)
     : data_(new std::vector<int64>(data)),
       scanned_(false),
@@ -119,6 +73,10 @@ std::vector<int64>* ConstIntArray::SortedCopy(bool increasing) const {
     std::sort(new_data->begin(), new_data->end(), std::greater<int64>());
   }
   return new_data;
+}
+
+std::vector<int64>* ConstIntArray::Copy() const {
+  return new std::vector<int64>(*data_);
 }
 
 std::vector<int64>*
@@ -219,12 +177,12 @@ string ConstIntArray::DebugString() const {
   }
   string result = "[";
   for (int i = 0; i < data_->size(); ++i) {
-    StringAppendF(&result, StringPrintf("%lld", (*data_)[i]).c_str());
-    if (i != data_->size() - 1) {
-      StringAppendF(&result, ", ");
+    if (i != 0) {
+      result.append(", ");
     }
+    StringAppendF(&result, "%lld", (*data_)[i]);
   }
-  StringAppendF(&result, "]");
+  result.append("]");
   return result;
 }
 }  // namespace operations_research

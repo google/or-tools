@@ -30,6 +30,8 @@ DEFINE_bool(cp_use_small_table, true,
 namespace operations_research {
 namespace {
 
+// TODO(user): Implement ConstIntMatrix to share/manage tuple sets.
+
 static const int kBitsInUint64 = 64;
 
 // ----- Positive Table Constraint -----
@@ -49,7 +51,6 @@ class BasePositiveTableConstraint : public Constraint {
  public:
   BasePositiveTableConstraint(Solver* const s,
                               const IntVar* const * vars,
-                              const int64* const * allowed_tuples,
                               int tuple_count,
                               int arity)
       : Constraint(s),
@@ -69,9 +70,9 @@ class BasePositiveTableConstraint : public Constraint {
 
   BasePositiveTableConstraint(Solver* const s,
                               const std::vector<IntVar*> & vars,
-                              const std::vector<std::vector<int64> >& allowed_tuples)
+                              int tuple_count)
       : Constraint(s),
-        tuple_count_(allowed_tuples.size()),
+        tuple_count_(tuple_count),
         arity_(vars.size()),
         vars_(new IntVar*[arity_]),
         holes_(new IntVarIterator*[arity_]),
@@ -102,7 +103,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
                           const int64* const * tuples,
                           int tuple_count,
                           int arity)
-      : BasePositiveTableConstraint(s, vars, tuples, tuple_count, arity),
+      : BasePositiveTableConstraint(s, vars, tuple_count, arity),
         length_(BitLength64(tuple_count)),
         active_tuples_(new uint64[length_]),
         stamps_(new uint64[length_]) {
@@ -116,7 +117,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   PositiveTableConstraint(Solver* const s,
                           const std::vector<IntVar*> & vars,
                           const std::vector<std::vector<int64> >& tuples)
-      : BasePositiveTableConstraint(s, vars, tuples),
+      : BasePositiveTableConstraint(s, vars, tuples.size()),
         length_(BitLength64(tuples.size())),
         active_tuples_(new uint64[length_]),
         stamps_(new uint64[length_]) {
@@ -126,6 +127,36 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
       InitializeMask(i, tuples[i].data());
     }
   }
+  PositiveTableConstraint(Solver* const s,
+                          const IntVar* const * vars,
+                          const int* const * tuples,
+                          int tuple_count,
+                          int arity)
+      : BasePositiveTableConstraint(s, vars, tuple_count, arity),
+        length_(BitLength64(tuple_count)),
+        active_tuples_(new uint64[length_]),
+        stamps_(new uint64[length_]) {
+    masks_.clear();
+    masks_.resize(arity_);
+    for (int i = 0; i < tuple_count_; ++i) {
+      InitializeMask(i, tuples[i]);
+    }
+  }
+
+  PositiveTableConstraint(Solver* const s,
+                          const std::vector<IntVar*> & vars,
+                          const std::vector<std::vector<int> >& tuples)
+      : BasePositiveTableConstraint(s, vars, tuples.size()),
+        length_(BitLength64(tuples.size())),
+        active_tuples_(new uint64[length_]),
+        stamps_(new uint64[length_]) {
+    masks_.clear();
+    masks_.resize(arity_);
+    for (int i = 0; i < tuple_count_; ++i) {
+      InitializeMask(i, tuples[i].data());
+    }
+  }
+
 
   virtual ~PositiveTableConstraint() {
     for (int var_index = 0; var_index < arity_; ++var_index) {
@@ -289,6 +320,20 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
+  void InitializeMask(int tuple_index, const int* const tuple) {
+    for (int var_index = 0; var_index < arity_; ++var_index) {
+      const int64 value = tuple[var_index];
+      uint64* mask = FindPtrOrNull(masks_[var_index], value);
+      if (mask == NULL) {
+        mask = new uint64[length_];
+        memset(mask, 0, length_ * sizeof(*mask));
+        masks_[var_index][value] = mask;
+      }
+      SetBit64(mask, tuple_index);
+    }
+  }
+
+
   const int length_;
   // TODO(user): create bitset64 class and use it.
   scoped_array<uint64> active_tuples_;
@@ -305,7 +350,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
                                  const int64* const * tuples,
                                  int tuple_count,
                                  int arity)
-      : BasePositiveTableConstraint(s, vars, tuples, tuple_count, arity),
+      : BasePositiveTableConstraint(s, vars, tuple_count, arity),
         length_(BitLength64(tuple_count)),
         active_tuples_(new uint64[length_]),
         stamps_(new uint64[length_]),
@@ -323,7 +368,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   CompactPositiveTableConstraint(Solver* const s,
                                  const std::vector<IntVar*> & vars,
                                  const std::vector<std::vector<int64> >& tuples)
-      : BasePositiveTableConstraint(s, vars, tuples),
+      : BasePositiveTableConstraint(s, vars, tuples.size()),
         length_(BitLength64(tuples.size())),
         active_tuples_(new uint64[length_]),
         stamps_(new uint64[length_]),
@@ -336,6 +381,49 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
       CHECK_EQ(arity_, tuples[i].size());
       tuples_[i] = new int64[arity_];
       memcpy(tuples_[i], tuples[i].data(), arity_ * sizeof(tuples[i][0]));
+    }
+  }
+
+  CompactPositiveTableConstraint(Solver* const s,
+                                 const IntVar* const * vars,
+                                 const int* const * tuples,
+                                 int tuple_count,
+                                 int arity)
+      : BasePositiveTableConstraint(s, vars, tuple_count, arity),
+        length_(BitLength64(tuple_count)),
+        active_tuples_(new uint64[length_]),
+        stamps_(new uint64[length_]),
+        tuples_(new int64*[tuple_count_]),
+        original_min_(new int64[arity_]),
+        temp_mask_(new uint64[length_]),
+        demon_(NULL) {
+    // Copy tuples
+    for (int i = 0; i < tuple_count_; ++i) {
+      tuples_[i] = new int64[arity_];
+      for (int j = 0; j < arity_; ++j) {
+        tuples_[i][j] = tuples[i][j];
+      }
+    }
+  }
+
+  CompactPositiveTableConstraint(Solver* const s,
+                                 const std::vector<IntVar*> & vars,
+                                 const std::vector<std::vector<int> >& tuples)
+      : BasePositiveTableConstraint(s, vars, tuples.size()),
+        length_(BitLength64(tuples.size())),
+        active_tuples_(new uint64[length_]),
+        stamps_(new uint64[length_]),
+        tuples_(new int64*[tuple_count_]),
+        original_min_(new int64[arity_]),
+        temp_mask_(new uint64[length_]),
+        demon_(NULL) {
+    // Copy tuples
+    for (int i = 0; i < tuple_count_; ++i) {
+      CHECK_EQ(arity_, tuples[i].size());
+      tuples_[i] = new int64[arity_];
+      for (int j = 0; j < arity_; ++j) {
+        tuples_[i][j] = tuples[i][j];
+      }
     }
   }
 
@@ -662,7 +750,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
                                       const int64* const * tuples,
                                       int tuple_count,
                                       int arity)
-      : BasePositiveTableConstraint(s, vars, tuples, tuple_count, arity),
+      : BasePositiveTableConstraint(s, vars, tuple_count, arity),
         active_tuples_(0),
         stamp_(0),
         tuples_(new int64*[tuple_count_]),
@@ -684,7 +772,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   SmallCompactPositiveTableConstraint(Solver* const s,
                                       const std::vector<IntVar*> & vars,
                                       const std::vector<std::vector<int64> >& tuples)
-      : BasePositiveTableConstraint(s, vars, tuples),
+      : BasePositiveTableConstraint(s, vars, tuples.size()),
         active_tuples_(0),
         stamp_(0),
         tuples_(new int64*[tuple_count_]),
@@ -699,6 +787,57 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       CHECK_EQ(arity_, tuples[i].size());
       tuples_[i] = new int64[arity_];
       memcpy(tuples_[i], tuples[i].data(), arity_ * sizeof(tuples[i][0]));
+    }
+    // Zero masks
+    memset(masks_.get(), 0, arity_ * sizeof(*masks_.get()));
+  }
+
+  SmallCompactPositiveTableConstraint(Solver* const s,
+                                      const IntVar* const * vars,
+                                      const int* const * tuples,
+                                      int tuple_count,
+                                      int arity)
+      : BasePositiveTableConstraint(s, vars, tuple_count, arity),
+        active_tuples_(0),
+        stamp_(0),
+        tuples_(new int64*[tuple_count_]),
+        masks_(new uint64*[arity_]),
+        original_min_(new int64[arity_]),
+        demon_(NULL) {
+    CHECK_GE(tuple_count_, 0);
+    CHECK_LE(tuple_count_, kBitsInUint64);
+    CHECK_GE(arity_, 0);
+    // Copy tuples
+    for (int i = 0; i < tuple_count_; ++i) {
+      tuples_[i] = new int64[arity_];
+      for (int j = 0; j < arity_; ++j) {
+        tuples_[i][j] = tuples[i][j];
+      }
+    }
+    // Zero masks
+    memset(masks_.get(), 0, arity_ * sizeof(*masks_.get()));
+  }
+
+  SmallCompactPositiveTableConstraint(Solver* const s,
+                                      const std::vector<IntVar*> & vars,
+                                      const std::vector<std::vector<int> >& tuples)
+      : BasePositiveTableConstraint(s, vars, tuples.size()),
+        active_tuples_(0),
+        stamp_(0),
+        tuples_(new int64*[tuple_count_]),
+        masks_(new uint64*[arity_]),
+        original_min_(new int64[arity_]),
+        demon_(NULL) {
+    CHECK_GE(tuple_count_, 0);
+    CHECK_GE(arity_, 0);
+    CHECK_LE(tuples.size(), kBitsInUint64);
+    // Copy tuples
+    for (int i = 0; i < tuple_count_; ++i) {
+      CHECK_EQ(arity_, tuples[i].size());
+      tuples_[i] = new int64[arity_];
+      for (int j = 0; j < arity_; ++j) {
+        tuples_[i][j] = tuples[i][j];
+      }
     }
     // Zero masks
     memset(masks_.get(), 0, arity_ * sizeof(*masks_.get()));
@@ -949,6 +1088,46 @@ Constraint* Solver::MakeAllowedAssignments(
   return RevAlloc(new PositiveTableConstraint(this, vars, tuples));
 }
 
+Constraint* Solver::MakeAllowedAssignments(const IntVar* const * vars,
+                                           const int* const * tuples,
+                                           int tuple_count,
+                                           int arity) {
+  if (FLAGS_cp_use_compact_table && HasCompactDomains(vars, arity)) {
+    if (tuple_count < kBitsInUint64 && FLAGS_cp_use_small_table) {
+      return RevAlloc(new SmallCompactPositiveTableConstraint(this,
+                                                              vars,
+                                                              tuples,
+                                                              tuple_count,
+                                                              arity));
+    } else {
+      return RevAlloc(new CompactPositiveTableConstraint(this,
+                                                         vars,
+                                                         tuples,
+                                                         tuple_count,
+                                                         arity));
+    }
+  }
+  return RevAlloc(new PositiveTableConstraint(this,
+                                              vars,
+                                              tuples,
+                                              tuple_count,
+                                              arity));
+}
+
+Constraint* Solver::MakeAllowedAssignments(
+    const std::vector<IntVar*>& vars, const std::vector<std::vector<int> >& tuples) {
+  if (FLAGS_cp_use_compact_table
+      && HasCompactDomains(vars.data(), vars.size())) {
+    if (tuples.size() < kBitsInUint64 && FLAGS_cp_use_small_table) {
+      return RevAlloc(
+          new SmallCompactPositiveTableConstraint(this, vars, tuples));
+    } else {
+      return RevAlloc(new CompactPositiveTableConstraint(this, vars, tuples));
+    }
+  }
+  return RevAlloc(new PositiveTableConstraint(this, vars, tuples));
+}
+
 // ---------- Deterministic Finite Automaton ----------
 
 // This constraint implements a finite automaton when transitions are
@@ -971,6 +1150,27 @@ class TransitionConstraint : public Constraint {
         transition_table_(transition_table),
         initial_state_(initial_state),
         final_states_(final_states) {}
+
+  TransitionConstraint(Solver* const s,
+                       const std::vector<IntVar*>& vars,
+                       const std::vector<std::vector<int> >& transition_table,
+                       int64 initial_state,
+                       const std::vector<int>& final_states)
+      : Constraint(s),
+        vars_(vars),
+        transition_table_(transition_table.size()),
+        initial_state_(initial_state),
+        final_states_(final_states.size()) {
+    for (int i = 0; i < transition_table.size(); ++i) {
+      transition_table_[i].resize(transition_table[i].size());
+      for (int j = 0; j < transition_table[i].size(); ++j) {
+        transition_table_[i][j] = transition_table[i][j];
+      }
+    }
+    for (int i = 0; i < final_states.size(); ++i) {
+      final_states_[i] = final_states[i];
+    }
+  }
 
   virtual ~TransitionConstraint() {}
 
@@ -1009,11 +1209,11 @@ class TransitionConstraint : public Constraint {
   // Variable representing transitions between states. See header file.
   const std::vector<IntVar*> vars_;
   // The transition as tuples (state, value, next_state).
-  const std::vector<std::vector<int64> > transition_table_;
+  std::vector<std::vector<int64> > transition_table_;
   // The initial state before the first transition.
   const int64 initial_state_;
   // Vector of final state after the last transision.
-  const std::vector<int64> final_states_;
+  std::vector<int64> final_states_;
 };
 
 // TODO(user): create transition struct.
@@ -1027,6 +1227,15 @@ Constraint* Solver::MakeTransitionConstraint(
     const std::vector<std::vector<int64> >& transition_table,
     int64 initial_state,
     const std::vector<int64>& final_states) {
+  return RevAlloc(new TransitionConstraint(this, vars, transition_table,
+                                           initial_state, final_states));
+}
+
+Constraint* Solver::MakeTransitionConstraint(
+    const std::vector<IntVar*>& vars,
+    const std::vector<std::vector<int> >& transition_table,
+    int64 initial_state,
+    const std::vector<int>& final_states) {
   return RevAlloc(new TransitionConstraint(this, vars, transition_table,
                                            initial_state, final_states));
 }
