@@ -718,6 +718,10 @@ void RoutingModel::SetStartEnd(const std::vector<pair<int, int> >& start_end) {
     VLOG(1) << "Variable index " << index
             << " -> Node index " << index_to_node_[index];
   }
+  for (int node = 0; node < node_to_index_.size(); ++node) {
+    VLOG(2) << "Node index " << node
+            << " -> Variable index " << node_to_index_[node];
+  }
 }
 
 void RoutingModel::CloseModel() {
@@ -912,6 +916,13 @@ void RoutingModel::SetCommandLineOption(const string& name,
 int64 RoutingModel::IndexToNode(int64 index) const {
   DCHECK_LT(index, index_to_node_.size());
   return index_to_node_[index];
+}
+
+int64 RoutingModel::NodeToIndex(int64 node) const {
+  DCHECK_LT(node, node_to_index_.size());
+  DCHECK_NE(node_to_index_[node], kUnassigned)
+      << "RoutingModel::NodeToIndex should not be used for Start or End nodes";
+  return node_to_index_[node];
 }
 
 int64 RoutingModel::GetArcCost(int64 i, int64 j, int64 vehicle) {

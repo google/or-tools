@@ -199,6 +199,13 @@ class RoutingModel {
   int Size() const { return nodes_ + vehicles_ - start_end_count_; }
   // Returns the node index from an index value resulting fron a next variable.
   int64 IndexToNode(int64 index) const;
+  // Returns the variable index from a node value.
+  //
+  // Should not be used for nodes at the start / end of a route,
+  // because of node multiplicity.  These cases return -1, which is
+  // considered a failure case.  Clients who need start and end
+  // variable indices should use RoutingModel::Start and RoutingModel::End.
+  int64 NodeToIndex(int64 node) const;
 
   Solver* solver() const { return solver_.get(); }
   IntVar* CostVar() const { return cost_; }
