@@ -22,74 +22,180 @@
 
 namespace operations_research {
 
-// ----- Base array classes -----
-// Used for code factorization
+// ---------- Base array classes used for code factorization ----------
+
+// ----- Array Constraint -----
 
 class ArrayConstraint : public Constraint {
  public:
   ArrayConstraint(Solver* const s,
                   const IntVar* const * vars,
                   int size,
-                  IntVar* var);
+                  IntVar* const var)
+    : Constraint(s), vars_(new IntVar*[size]), size_(size), var_(var) {
+    CHECK_GT(size, 0);
+    CHECK_NOTNULL(vars);
+    memcpy(vars_.get(), vars, size_ * sizeof(*vars));
+  }
   virtual ~ArrayConstraint() {}
  protected:
-  string DebugStringInternal(const string& name) const;
+  string DebugStringInternal(const string& name) const {
+    string out = name + "(";
+    for (int i = 0; i < size_; ++i) {
+      if (i > 0) {
+        out += ", ";
+      }
+      out += vars_[i]->DebugString();
+    }
+    out += ", " + var_->DebugString() + ")";
+    return out;
+  }
 
   scoped_array<IntVar*> vars_;
-  int size_;
+  const int size_;
   IntVar* const var_;
 };
 
-ArrayConstraint::ArrayConstraint(Solver* const s,
-                                 const IntVar* const * vars,
-                                 int size,
-                                 IntVar* var)
-    : Constraint(s), vars_(new IntVar*[size]), size_(size), var_(var) {
-  CHECK_GT(size, 0) << DebugString();
-  CHECK(vars != NULL);
-  memcpy(vars_.get(), vars, size_ * sizeof(*vars));
-}
-
-string ArrayConstraint::DebugStringInternal(const string& name) const {
-  string out = name + "(";
-  for (int i = 0; i < size_; ++i) {
-    if (i > 0) {
-      out += ", ";
-    }
-    out += vars_[i]->DebugString();
-  }
-  out += ", " + var_->DebugString() + ")";
-  return out;
-}
+// ----- ArrayExpr -----
 
 class ArrayExpr : public BaseIntExpr {
  public:
-  ArrayExpr(Solver* const s, const IntVar* const* exprs, int size);
+  ArrayExpr(Solver* const s, const IntVar* const* vars, int size)
+    : BaseIntExpr(s), vars_(new IntVar*[size]), size_(size) {
+    CHECK_GT(size, 0);
+    CHECK_NOTNULL(vars);
+    memcpy(vars_.get(), vars, size_ * sizeof(*vars));
+  }
+
   virtual ~ArrayExpr() {}
  protected:
-  string DebugStringInternal(const string& name) const;
+  string DebugStringInternal(const string& name) const {
+    string out = name + "(";
+    for (int i = 0; i < size_; ++i) {
+      if (i > 0) {
+        out += ", ";
+      }
+      out += vars_[i]->DebugString();
+    }
+    out += ")";
+    return out;
+  }
 
   scoped_array<IntVar*> vars_;
-  int size_;
+  const int size_;
 };
 
-ArrayExpr::ArrayExpr(Solver* const s, const IntVar* const* vars, int size)
-    : BaseIntExpr(s), vars_(new IntVar*[size]), size_(size) {
-  CHECK(vars) << "null pointer";
-  memcpy(vars_.get(), vars, size_ * sizeof(*vars));
-}
+// ----- Tree Array Constraint -----
 
-string ArrayExpr::DebugStringInternal(const string& name) const {
-  string out = name + "(";
-  for (int i = 0; i < size_; ++i) {
-    if (i > 0) {
-      out += ", ";
+// Helper class
+class TreeArrayConstraint : public ArrayConstraint {
+ public:
+  TreeArrayConstraint(Solver* const solver,
+                      IntVar* const* vars,
+                      int size,
+                      IntVar* const sum_var)
+      : ArrayConstraint(solver, vars, size, sum_var),
+        block_size_(solver->parameters().array_split_size) {
+    std::vector<int> lengths;
+    lengths.push_back(size_);
+    while (lengths.back() > 1) {
+      const int current = lengths.back();
+      lengths.push_back((current + block_size_ - 1) / block_size_);
     }
-    out += vars_[i]->DebugString();
+    tree_.resize(lengths.size());
+    for (int i = 0; i < lengths.size(); ++i) {
+      tree_[i].resize(lengths[lengths.size() - i - 1]);
+    }
+    DCHECK_GE(tree_.size(), 1);
+    DCHECK_EQ(1, tree_[0].size());
+    root_node_ = &tree_[0][0];
   }
-  out += ")";
-  return out;
-}
+
+  // Increases min by delta_min, reduces max by delta_max.
+  void ReduceRange(int depth, int position, int64 delta_min, int64 delta_max) {
+    const uint64 stamp = solver()->stamp();
+    NodeInfo* const info = &tree_[depth][position];
+    if (delta_min > 0) {
+      if (stamp != info->min_stamp) {
+        solver()->SaveValue(&info->node_min);
+        info->min_stamp = stamp;
+      }
+      info->node_min += delta_min;
+    }
+    if (delta_max > 0) {
+      if (stamp != info->max_stamp) {
+        solver()->SaveValue(&info->node_max);
+        info->max_stamp = stamp;
+      }
+      info->node_max -= delta_max;
+    }
+  }
+
+  void InitLeaf(int position, int64 var_min, int64 var_max) {
+    InitNode(tree_.size() - 1, position, var_min, var_max);
+  }
+
+  void InitNode(int depth, int position, int64 node_min, int64 node_max) {
+    NodeInfo* const info = &tree_[depth][position];
+    info->node_min = node_min;
+    info->min_stamp = 0;
+    info->node_max = node_max;
+    info->max_stamp= 0;
+  }
+
+  int64 Min(int depth, int position) const {
+    return tree_[depth][position].node_min;
+  }
+
+  int64 Max(int depth, int position) const {
+    return tree_[depth][position].node_max;
+  }
+
+  int64 RootMin() const {
+    return root_node_->node_min;
+  }
+
+  int64 RootMax() const {
+    return root_node_->node_max;
+  }
+
+  int Parent(int position) const {
+    return position / block_size_;
+  }
+
+  int ChildStart(int position) const {
+    return position * block_size_;
+  }
+
+  int ChildEnd(int depth, int position) const {
+    DCHECK_LT(depth + 1, tree_.size());
+    const int max_position = tree_[depth + 1].size() - 1;
+    return std::min((position + 1) * block_size_ - 1, max_position);
+  }
+
+  bool IsLeaf(int depth) const {
+    return depth == tree_.size() - 1;
+  }
+
+  int MaxDepth() const {
+    return tree_.size();
+  }
+
+  int Width(int depth) const {
+    return tree_[depth].size();
+  }
+ private:
+  struct NodeInfo {
+    int64 node_min;
+    int64 node_max;
+    uint64 min_stamp;
+    uint64 max_stamp;
+  };
+
+  std::vector<std::vector<NodeInfo> > tree_;
+  const int block_size_;
+  NodeInfo* root_node_;
+};
 
 // ---------- Sum Array ----------
 
@@ -100,193 +206,143 @@ string ArrayExpr::DebugStringInternal(const string& name) const {
 // Martin Henz, Francois Laburthe, Eric Monfroy, Tobias Müller,
 // Laurent Perron and Christian Schulte editors, pages 39–46, 2002.
 
-// ----- Sum Array Ct -----
+// ----- SumConstraint -----
 
-// This constraint implements sum(vars) == var.  It is delayed such
-// that propagation only occurs when all variables have been touched.
-class SumArrayCt : public ArrayConstraint {
+// This constraint implements sum(vars) == sum_var.
+class SumConstraint : public TreeArrayConstraint {
  public:
-  SumArrayCt(Solver* const s, const IntVar* const * vars, int size,
-             IntVar* var);
-  virtual ~SumArrayCt() {}
+  SumConstraint(Solver* const solver,
+                IntVar* const * vars,
+                int size,
+                IntVar* const sum_var)
+    : TreeArrayConstraint(solver, vars, size, sum_var), sum_demon_(NULL) {}
 
-  virtual void Post();
-  virtual void InitialPropagate();
+  virtual ~SumConstraint() {}
 
-  virtual string DebugString() const;
+  virtual void Post() {
+    for (int i = 0; i < size_; ++i) {
+      Demon* const demon = MakeConstraintDemon1(solver(),
+                                                this,
+                                                &SumConstraint::LeafChanged,
+                                                "LeafChanged",
+                                                i);
+      vars_[i]->WhenRange(demon);
+    }
+    sum_demon_ = MakeDelayedConstraintDemon0(solver(),
+                                             this,
+                                             &SumConstraint::SumChanged,
+                                             "SumChanged");
+    var_->WhenRange(sum_demon_);
+  }
+
+  virtual void InitialPropagate() {
+    // Copy vars to leaf nodes.
+    for (int i = 0; i < size_; ++i) {
+      InitLeaf(i, vars_[i]->Min(), vars_[i]->Max());
+    }
+    // Compute up.
+    for (int i = MaxDepth() - 2; i >= 0; --i) {
+      for (int j = 0; j < Width(i); ++j) {
+        int64 sum_min = 0;
+        int64 sum_max = 0;
+        const int block_start = ChildStart(j);
+        const int block_end = ChildEnd(i, j);
+        for (int k = block_start; k <= block_end; ++k) {
+          sum_min += Min(i + 1, k);
+          sum_max += Max(i + 1, k);
+        }
+        InitNode(i, j, sum_min, sum_max);
+      }
+    }
+    // Propagate to sum_var.
+    var_->SetRange(RootMin(), RootMax());
+
+    // Push down.
+    SumChanged();
+  }
+
+  void SumChanged() {
+    if (var_->Max() == RootMin()) {
+      // We can fix all terms to min.
+      for (int i = 0; i < size_; ++i) {
+        vars_[i]->SetValue(vars_[i]->Min());
+      }
+    } else if (var_->Min() == RootMax()) {
+      // We can fix all terms to max.
+      for (int i = 0; i < size_; ++i) {
+        vars_[i]->SetValue(vars_[i]->Max());
+      }
+    } else {
+      PushDown(0, 0, var_->Min(), var_->Max());
+    }
+  }
+
+  void PushDown(int depth, int position, int64 new_min, int64 new_max) {
+    // Nothing to do?
+    if (new_min <= Min(depth, position) && new_max >= Max(depth, position)) {
+      return;
+    }
+
+    // Leaf node -> push to leaf var.
+    if (IsLeaf(depth)) {
+      vars_[position]->SetRange(new_min, new_max);
+      return;
+    }
+
+    // Standard propagation from the bounds of the sum to the
+    // individuals terms.
+
+    // These are maintained automatically in the tree structure.
+    const int64 sum_min = Min(depth, position);
+    const int64 sum_max = Max(depth, position);
+
+    // Intersect the new bounds with the computed bounds.
+    new_max = std::min(sum_max, new_max);
+    new_min = std::max(sum_min, new_min);
+
+    // Detect failure early.
+    if (new_max < sum_min || new_min > sum_max) {
+      solver()->Fail();
+    }
+
+    // Push to children nodes.
+    const int block_start = ChildStart(position);
+    const int block_end = ChildEnd(depth, position);
+    for (int i = block_start; i <= block_end; ++i) {
+      const int64 var_min = Min(depth + 1, i);
+      const int64 var_max = Max(depth + 1, i);
+      const int64 residual_min = sum_min - var_min;
+      const int64 residual_max = sum_max - var_max;
+      PushDown(depth + 1, i, new_min - residual_max, new_max - residual_min);
+    }
+    // TODO(user) : Is the diameter optimization (see reference
+    // above, rule 5) useful?
+  }
+
+  void LeafChanged(int term_index) {
+    IntVar* const var = vars_[term_index];
+    PushUp(term_index, var->Min() - var->OldMin(), var->OldMax() - var->Max());
+    Enqueue(sum_demon_);  // TODO(user): Is this needed?
+  }
+
+  void PushUp(int position, int64 delta_min, int64 delta_max) {
+    DCHECK_GE(delta_max, 0);
+    DCHECK_GE(delta_min, 0);
+    DCHECK_GT(delta_min + delta_max, 0);
+    for (int depth = MaxDepth() - 1; depth >= 0; --depth) {
+      ReduceRange(depth, position, delta_min, delta_max);
+      position = Parent(position);
+    }
+    DCHECK_EQ(0, position);
+    var_->SetRange(RootMin(), RootMax());
+  }
+
+  string DebugString() const {
+    return DebugStringInternal("Sum");
+  }
  private:
-  Rev<int> first_unbound_forward_;
-  Rev<int> first_unbound_backward_;
-  Rev<int64> sum_of_bound_variables_;
+  Demon* sum_demon_;
 };
-
-SumArrayCt::SumArrayCt(Solver* const s,
-                       const IntVar* const * vars,
-                       int size,
-                       IntVar* var)
-    : ArrayConstraint(s, vars, size, var),
-      first_unbound_forward_(0), first_unbound_backward_(size - 1),
-      sum_of_bound_variables_(0LL) {}
-
-void SumArrayCt::Post() {
-  Demon* d = MakeDelayedConstraintDemon0(solver(),
-                                         this,
-                                         &SumArrayCt::InitialPropagate,
-                                         "InitialPropagate");
-  for (int i = 0; i < size_; ++i) {
-    vars_[i]->WhenRange(d);
-  }
-  Demon* uv = MakeConstraintDemon0(solver(),
-                                   this,
-                                   &SumArrayCt::InitialPropagate,
-                                   "Initialpropagate");
-  var_->WhenRange(uv);
-}
-
-void SumArrayCt::InitialPropagate() {
-  Solver* const s = solver();
-  int start = first_unbound_forward_.Value();
-  int end = first_unbound_backward_.Value();
-  int64 sum = sum_of_bound_variables_.Value();
-
-  while (start <= end && vars_[start]->Bound()) {
-    sum += vars_[start]->Min();
-    start++;
-  }
-  while (end >= start && vars_[end]->Bound()) {
-    sum += vars_[end]->Min();
-    end--;
-  }
-  first_unbound_forward_.SetValue(s, start);
-  first_unbound_backward_.SetValue(s, end);
-  sum_of_bound_variables_.SetValue(s, sum);
-
-  int64 cmin = sum;
-  int64 cmax = sum;
-  int64 diameter = 0;
-  for (int i = start; i <= end; ++i) {
-    const int64 local_min = vars_[i]->Min();
-    const int64 local_max = vars_[i]->Max();
-    cmin += local_min;
-    cmax += local_max;
-    diameter = std::max(diameter, local_max - local_min);
-  }
-  var_->SetRange(cmin, cmax);
-
-  const int64 vmin = var_->Min();
-  const int64 vmax = var_->Max();
-  // The second condition is rule 5 in the above paper.
-  if ((vmax >= cmax && vmin <= cmin) || vmax - vmin > diameter) {
-    return;
-  }
-
-  for (int i = start; i <= end; ++i) {
-    const int64 other_min = cmin - vars_[i]->Min();
-    const int64 other_max = cmax - vars_[i]->Max();
-    vars_[i]->SetRange(vmin - other_max, vmax - other_min);
-  }
-}
-
-string SumArrayCt::DebugString() const {
-  return DebugStringInternal("SumArrayCt");
-}
-
-// ----- Sum Array Expr -----
-
-// Array Sum: the sum of all the elements. More efficient that using just
-// binary IntPlusExpr operators when the array grows
-class SumArray : public ArrayExpr {
- public:
-  // this constructor will copy the array. The caller can safely delete the
-  // exprs array himself
-  SumArray(Solver* const s, const IntVar* const* exprs, int size);
-  virtual ~SumArray();
-
-  virtual int64 Min() const;
-  virtual void SetMin(int64 m);
-  virtual int64 Max() const;
-  virtual void SetMax(int64 m);
-  virtual void SetRange(int64 l, int64 u);
-  virtual string DebugString() const;
-  virtual void WhenRange(Demon* d);
-  virtual IntVar* CastToVar() {
-    Solver* const s = solver();
-    int64 vmin = Min();
-    int64 vmax = Max();
-    IntVar* const var = solver()->MakeIntVar(vmin, vmax);
-    AddDelegateName("Var", var);
-    Constraint* const ct = s->RevAlloc(new SumArrayCt(s, vars_.get(),
-                                                      size_, var));
-    s->AddConstraint(ct);
-    return var;
-  }
-};
-
-SumArray::~SumArray() {}
-
-SumArray::SumArray(Solver* const solver, const IntVar* const* vars, int size)
-    : ArrayExpr(solver, vars, size) {}
-
-int64 SumArray::Min() const {
-  int64 computed_min = 0;
-  for (int i = 0; i < size_; ++i) {
-    computed_min += vars_[i]->Min();
-  }
-  return computed_min;
-}
-
-void SumArray::SetMin(int64 new_min) {
-  SetRange(new_min, kint64max);
-}
-
-int64 SumArray::Max() const {
-  int64 computed_max = 0;
-  for (int i = 0; i < size_; ++i) {
-    computed_max += vars_[i]->Max();
-  }
-  return computed_max;
-}
-
-void SumArray::SetMax(int64 new_max) {
-  SetRange(kint64min, new_max);
-}
-
-void SumArray::SetRange(int64 new_min, int64 new_max) {
-  int64 current_min = 0;
-  int64 current_max = 0;
-  int64 diameter = 0;
-  for (int i = 0; i < size_; ++i) {
-    const int64 vmin = vars_[i]->Min();
-    const int64 vmax = vars_[i]->Max();
-    current_min += vmin;
-    current_max += vmax;
-    diameter = std::max(diameter, vmax - vmin);
-  }
-  new_max = std::min(current_max, new_max);
-  new_min = std::max(new_min, current_min);
-  if ((new_max >= current_max && new_min <= current_min) ||
-      new_max - new_min > diameter) {
-    return;
-  }
-  if (new_max < current_min || new_min > current_max) {
-    solver()->Fail();
-  }
-  for (int i = 0; i < size_; ++i) {
-    const int64 other_min = current_min - vars_[i]->Min();
-    const int64 other_max = current_max - vars_[i]->Max();
-    vars_[i]->SetRange(new_min - other_max, new_max - other_min);
-  }
-}
-
-string SumArray::DebugString() const {
-  return DebugStringInternal("SumArray");
-}
-
-void SumArray::WhenRange(Demon* demon) {
-  for (int i = 0; i < size_; ++i) {
-    vars_[i]->WhenRange(demon);
-  }
-}
 
 // ---------- Min Array ----------
 
@@ -735,8 +791,7 @@ void MinArray::WhenRange(Demon* d) {
 
 // ----- Max Array Ct -----
 
-// This constraint implements max(vars) == var.  It is delayed such
-// that propagation only occurs when all variables have been touched.
+// This constraint implements max(vars) == var.
 class MaxArrayCt : public ArrayConstraint {
  public:
   MaxArrayCt(Solver* const s, const IntVar* const * vars, int size,
@@ -1197,10 +1252,6 @@ void ScanArray(IntVar* const* vars, int size, int* bound,
   }
 }
 
-IntExpr* BuildSumArray(Solver* const s, IntVar* const* vars, int size) {
-  return s->RevAlloc(new SumArray(s, vars, size));
-}
-
 IntExpr* BuildMinArray(Solver* const s, IntVar* const* vars, int size) {
   int64 amin = 0, amax = 0, min_max = 0, max_min = 0;
   int bound = 0;
@@ -1227,7 +1278,7 @@ IntExpr* BuildMaxArray(Solver* const s, IntVar* const* vars, int size) {
   return s->RevAlloc(new MaxArray(s, vars, size));
 }
 
-enum BuildOp { SUM_OP, MIN_OP, MAX_OP };
+enum BuildOp { MIN_OP, MAX_OP };
 
 IntExpr* BuildLogSplitArray(Solver* const s,
                             IntVar* const* vars,
@@ -1240,8 +1291,6 @@ IntExpr* BuildLogSplitArray(Solver* const s,
     return vars[0];
   } else if (size == 2) {
     switch (op) {
-      case SUM_OP:
-        return s->MakeSum(vars[0], vars[1]);
       case MIN_OP:
         return s->MakeMin(vars[0], vars[1]);
       case MAX_OP:
@@ -1256,9 +1305,6 @@ IntExpr* BuildLogSplitArray(Solver* const s,
       int real_size = (start + block_size > size ? size - start : block_size);
       IntVar* intermediate = NULL;
       switch (op) {
-        case SUM_OP:
-          intermediate = s->MakeSum(vars + start, real_size)->Var();
-          break;
         case MIN_OP:
           intermediate = s->MakeMin(vars + start, real_size)->Var();
           break;
@@ -1270,8 +1316,6 @@ IntExpr* BuildLogSplitArray(Solver* const s,
       start += real_size;
     }
     switch (op) {
-      case SUM_OP:
-        return s->MakeSum(top_vector);
       case MIN_OP:
         return s->MakeMin(top_vector);
       case MAX_OP:
@@ -1282,8 +1326,6 @@ IntExpr* BuildLogSplitArray(Solver* const s,
       CHECK_EQ(s, vars[i]->solver());
     }
     switch (op) {
-      case SUM_OP:
-        return BuildSumArray(s, vars, size);
       case MIN_OP:
         return BuildMinArray(s, vars, size);
       case MAX_OP:
@@ -1303,11 +1345,27 @@ IntExpr* BuildLogSplitArray(Solver* const s,
 }  // namespace
 
 IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
-  return BuildLogSplitArray(this, vars, SUM_OP);
+  return MakeSum(vars.data(), vars.size());
 }
 
 IntExpr* Solver::MakeSum(IntVar* const* vars, int size) {
-  return BuildLogSplitArray(this, vars, size, SUM_OP);
+  if (size == 0) {
+    return MakeIntConst(0LL);
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeSum(vars[0], vars[1]);
+  } else {
+    int64 sum_min = 0;
+    int64 sum_max = 0;
+    for (int i = 0; i < size; ++i) {
+      sum_min += vars[i]->Min();
+      sum_max += vars[i]->Max();
+    }
+    IntVar* const sum_var = MakeIntVar(sum_min, sum_max);
+    AddConstraint(RevAlloc(new SumConstraint(this, vars, size, sum_var)));
+    return sum_var;
+  }
 }
 
 IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
