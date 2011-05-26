@@ -3591,6 +3591,75 @@ SearchLimit* Solver::MakeLimit(
                    proto.cumulative());
 }
 
+// A limit whose Check function is the OR of two underlying limits.
+class ORLimit : public SearchLimit {
+ public:
+  ORLimit(SearchLimit* limit_1,
+          SearchLimit* limit_2)
+      : SearchLimit(limit_1->solver()),
+        limit_1_(limit_1),
+        limit_2_(limit_2) {
+    CHECK_NOTNULL(limit_1);
+    CHECK_NOTNULL(limit_2);
+    CHECK_EQ(limit_1->solver(), limit_2->solver())
+        << "Illegal arguments: cannot combines limits that belong to different "
+        << "solvers, because the reversible allocations could delete one and "
+        << "not the other.";
+  }
+
+  virtual bool Check() {
+    // Check being non-const, there may be side effects. So we always call both
+    // checks.
+    const bool check_1 = limit_1_->Check();
+    const bool check_2 = limit_2_->Check();
+    return check_1 || check_2;
+  }
+
+  virtual void Init() {
+    limit_1_->Init();
+    limit_2_->Init();
+  }
+
+  virtual void Copy(const SearchLimit* const limit) {
+    LOG(FATAL) << "Not implemented.";
+  }
+
+  virtual SearchLimit* MakeClone() const {
+    // Deep cloning: the underlying limits are cloned, too.
+    return solver()->MakeLimit(limit_1_->MakeClone(), limit_2_->MakeClone());
+  }
+
+  virtual void EnterSearch() {
+    limit_1_->EnterSearch();
+    limit_2_->EnterSearch();
+  }
+  virtual void BeginNextDecision(DecisionBuilder* const b) {
+    limit_1_->BeginNextDecision(b);
+    limit_2_->BeginNextDecision(b);
+  }
+  virtual void PeriodicCheck() {
+    limit_1_->PeriodicCheck();
+    limit_2_->PeriodicCheck();
+  }
+  virtual void RefuteDecision(Decision* const d) {
+    limit_1_->RefuteDecision(d);
+    limit_2_->RefuteDecision(d);
+  }
+  virtual string DebugString() const {
+    return StrCat("OR limit (", limit_1_->DebugString(),
+                  " OR ", limit_2_->DebugString(), ")");
+  }
+
+ private:
+  SearchLimit* const limit_1_;
+  SearchLimit* const limit_2_;
+};
+
+SearchLimit* Solver::MakeLimit(SearchLimit* const limit_1,
+                               SearchLimit* const limit_2) {
+  return RevAlloc(new ORLimit(limit_1, limit_2));
+}
+
 void Solver::UpdateLimits(int64 time,
                           int64 branches,
                           int64 failures,

@@ -1476,6 +1476,12 @@ class Solver {
   // Creates a search limit from its protobuf description
   SearchLimit* MakeLimit(const SearchLimitProto& proto);
 
+  // Creates a search limit that is reached when either of the underlying limit
+  // is reached. That is, the returned limit is more stringent than both
+  // argument limits.
+  SearchLimit* MakeLimit(SearchLimit* const limit_1,
+                         SearchLimit* const limit_2);
+
   void UpdateLimits(int64 time,
                     int64 branches,
                     int64 failures,
