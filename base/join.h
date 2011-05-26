@@ -28,6 +28,11 @@ std::string StrCat(const StringPiece& p1,
                    const StringPiece& p2,
                    const StringPiece& p3,
                    const StringPiece& p4);
+std::string StrCat(const StringPiece& p1,
+                   const StringPiece& p2,
+                   const StringPiece& p3,
+                   const StringPiece& p4,
+                   const StringPiece& p5);
 std::string StrCat(int64 a1, const StringPiece& p2);
 std::string StrCat(const StringPiece& p1, int64 a2);
 }  // namespace operations_research

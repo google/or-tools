@@ -44,6 +44,19 @@ std::string StrCat(const StringPiece& p1,
   return result;
 }
 
+std::string StrCat(const StringPiece& p1,
+                   const StringPiece& p2,
+                   const StringPiece& p3,
+                   const StringPiece& p4,
+                   const StringPiece& p5) {
+  std::string result = p1.ToString();
+  result += p2.ToString();
+  result += p3.ToString();
+  result += p4.ToString();
+  result += p5.ToString();
+  return result;
+}
+
 std::string StrCat(int64 a1, const StringPiece& p2) {
   return StringPrintf("%lld%s", a1, p2.ToString().c_str());
 }
