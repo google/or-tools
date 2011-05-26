@@ -1624,6 +1624,8 @@ class Solver {
 
   // ----- Decisions -----
   Decision* MakeAssignVariableValue(IntVar* const var, int64 value);
+  Decision* MakeVariableLessOrEqualValue(IntVar* const var, int64 value);
+  Decision* MakeVariableGreaterOrEqualValue(IntVar* const var, int64 value);
   Decision* MakeSplitVariableDomain(IntVar* const var,
                                     int64 value,
                                     bool start_with_lower_half);

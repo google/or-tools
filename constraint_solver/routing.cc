@@ -920,8 +920,7 @@ int64 RoutingModel::IndexToNode(int64 index) const {
 
 int64 RoutingModel::NodeToIndex(int64 node) const {
   DCHECK_LT(node, node_to_index_.size());
-  DCHECK_NE(node_to_index_[node], kUnassigned)
-      << "RoutingModel::NodeToIndex should not be used for Start or End nodes";
+  DCHECK_NE(node_to_index_[node], kUnassigned);
   return node_to_index_[node];
 }
 
