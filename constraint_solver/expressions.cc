@@ -1312,7 +1312,7 @@ void DomainIntVar::Process() {
       Enqueue(*it);
     }
   }
-  if (min_ != old_min_ || max_ != old_max_) {
+  if (min_ != OldMin() || max_ != OldMax()) {
     for (SimpleRevFIFO<Demon*>::Iterator it(&range_demons_); it.ok(); ++it) {
       Enqueue(*it);
     }
