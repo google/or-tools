@@ -380,8 +380,11 @@ class MPSolver {
     return std::numeric_limits<double>::infinity();
   }
 
-  // SuppressOutput.
+  // Suppress all output from solver.
   void SuppressOutput();
+
+  // Enable a reasonably verbose output from solver.
+  void EnableOutput();
 
   // Set the name of the file where the solver writes out the model
   void set_write_model_filename(const string &filename) {
@@ -651,9 +654,6 @@ class MPSolverInterface {
   // Write model to file.
   virtual void WriteModel(const string& filename) = 0;
 
-  // SuppressOutput.
-  virtual void SuppressOutput() = 0;
-
   // Query problem type. For simplicity, the distinction between
   // continuous and discrete is based on the declaration of the user
   // when the solver is created (example: GLPK_LINEAR_PROGRAMMING
@@ -669,6 +669,14 @@ class MPSolverInterface {
   int last_variable_index() const {
     return last_variable_index_;
   }
+
+  bool quiet() const {
+    return quiet_;
+  }
+  void set_quiet(bool quiet_value) {
+    quiet_ = quiet_value;
+  }
+
   // Returns the result status of the last solve.
   MPSolver::ResultStatus result_status() const {
     CheckSolutionIsSynchronized();
@@ -694,6 +702,9 @@ class MPSolverInterface {
 
   // The value of the objective function.
   double objective_value_;
+
+  // Boolean indicator for the verbosity of the solver output.
+  bool quiet_;
 
   // Index of dummy variable created for empty constraints or the
   // objective offset.

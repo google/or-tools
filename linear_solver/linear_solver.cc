@@ -395,8 +395,12 @@ void MPSolver::Reset() {
   interface_->Reset();
 }
 
+void MPSolver::EnableOutput() {
+  interface_->set_quiet(false);
+}
+
 void MPSolver::SuppressOutput() {
-  interface_->SuppressOutput();
+  interface_->set_quiet(true);
 }
 
 MPVariable* MPSolver::MakeVar(
@@ -530,7 +534,7 @@ MPSolverInterface::MPSolverInterface(MPSolver* const solver)
     : solver_(solver), sync_status_(MODEL_SYNCHRONIZED),
       result_status_(MPSolver::NOT_SOLVED), maximize_(false),
       last_constraint_index_(0), last_variable_index_(0),
-      objective_value_(0.0) {}
+      objective_value_(0.0), quiet_(true) {}
 
 MPSolverInterface::~MPSolverInterface() {}
 

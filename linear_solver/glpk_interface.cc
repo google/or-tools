@@ -140,9 +140,6 @@ class GLPKInterface : public MPSolverInterface {
   // Write model
   virtual void WriteModel(const string& filename);
 
-  // SuppressOutput.
-  virtual void SuppressOutput();
-
   // Query problem type.
   virtual bool IsContinuous() const { return IsLP(); }
   virtual bool IsLP() const { return !mip_; }
@@ -214,14 +211,6 @@ void GLPKInterface::WriteModel(const string& filename) {
   } else {
     glp_write_mps(lp_, GLP_MPS_DECK, NULL, filename.c_str());
   }
-}
-
-static int no_print_hook(void *info, const char *s) {
-  return 1;
-}
-
-void GLPKInterface::SuppressOutput() {
-  glp_term_hook(no_print_hook, NULL);
 }
 
 // ------ Model modifications and extraction -----
@@ -512,6 +501,13 @@ void GLPKInterface::ExtractObjective() {
 MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
   WallTimer timer;
   timer.Start();
+
+  // Set log level.
+  if (quiet_) {
+    glp_term_out(GLP_OFF);
+  } else {
+    glp_term_out(GLP_ON);
+  }
 
   ExtractModel();
   VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());

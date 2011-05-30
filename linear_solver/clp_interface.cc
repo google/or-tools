@@ -95,9 +95,6 @@ class CLPInterface : public MPSolverInterface {
   // Write model
   virtual void WriteModel(const string& filename);
 
-  // SuppressOutput.
-  virtual void SuppressOutput();
-
   // Query problem type.
   virtual bool IsContinuous() const { return true; }
   virtual bool IsLP() const { return true; }
@@ -153,10 +150,6 @@ void CLPInterface::WriteModel(const string& filename) {
                  << "writing in MPS format instead.";
   }
   clp_->writeMps(filename.c_str());
-}
-
-void CLPInterface::SuppressOutput() {
-  clp_->setLogLevel(-1);
 }
 
 // ------ Model modifications and extraction -----
@@ -401,6 +394,13 @@ void CLPInterface::ExtractObjective() {
 MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
   WallTimer timer;
   timer.Start();
+
+  // Set log level.
+  if (quiet_) {
+    clp_->setLogLevel(-1);
+  } else {
+    clp_->setLogLevel(1);
+  }
 
   // Special case if the model is empty since CLP is not able to
   // handle this special case by itself.

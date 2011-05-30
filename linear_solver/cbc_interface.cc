@@ -90,9 +90,6 @@ class CBCInterface : public MPSolverInterface {
   // Write model
   virtual void WriteModel(const string& filename);
 
-  // SuppressOutput.
-  virtual void SuppressOutput();
-
   // Query problem type.
   virtual bool IsContinuous() const { return false; }
   virtual bool IsLP() const { return false; }
@@ -159,7 +156,6 @@ class CBCInterface : public MPSolverInterface {
   virtual void SetLpAlgorithm(int value);
 
   OsiClpSolverInterface osi_;
-  bool quiet_;
   // TODO(user): remove and query number of iterations directly from CbcModel
   int64 iterations_;
   int64 nodes_;
@@ -173,7 +169,7 @@ class CBCInterface : public MPSolverInterface {
 // Creates a LP/MIP instance with the specified name and minimization objective.
 CBCInterface::CBCInterface(MPSolver* const solver)
     : MPSolverInterface(solver),
-      quiet_(false), iterations_(0), nodes_(0),
+      iterations_(0), nodes_(0),
       best_objective_bound_(-std::numeric_limits<double>::infinity()),
       relative_mip_gap_(MPSolverParameters::kDefaultRelativeMipGap) {
   osi_.setStrParam(OsiProbName, solver_->name_);
@@ -215,10 +211,6 @@ void CBCInterface::WriteModel(const string& filename) {
     // append ".gz" to the filename.
     osi_.writeMps(filename.c_str(), "");
   }
-}
-
-void CBCInterface::SuppressOutput() {
-  quiet_ = true;
 }
 
 void CBCInterface::SetVariableBounds(int var_index, double lb, double ub) {
@@ -364,12 +356,19 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   // Solve
   CbcModel model(osi_);
 
+  // Set log level.
+  CoinMessageHandler message_handler;
+  model.passInMessageHandler(&message_handler);
   if (quiet_) {
-    model.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
-    model.setLogLevel(-1);
+    message_handler.setLogLevel(0, 0);  // Coin messages
+    message_handler.setLogLevel(1, 0);  // Clp messages
+    message_handler.setLogLevel(2, 0);  // Presolve messages
+    message_handler.setLogLevel(3, 0);  // Cgl messages
   } else {
-    model.solver()->setHintParam(OsiDoReducePrint, true, OsiHintTry);
-    model.setLogLevel(1);
+    message_handler.setLogLevel(0, 1);  // Coin messages
+    message_handler.setLogLevel(1, 0);  // Clp messages
+    message_handler.setLogLevel(2, 0);  // Presolve messages
+    message_handler.setLogLevel(3, 1);  // Cgl messages
   }
 
   // Time limit.
