@@ -19,6 +19,7 @@
 
 #include "base/commandlineflags.h"
 #include "base/stringprintf.h"
+#include "base/mathutil.h"
 
 DEFINE_int64(min_cost_flow_alpha, 5,
              "Divide factor for epsilon at each refine step.");
@@ -81,9 +82,7 @@ bool MinCostFlow::CheckCostRange() const {
   // Traverse the initial arcs of the graph:
   for (StarGraph::ArcIterator arc_it(graph_); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
-    const CostValue cost_magnitude = scaled_arc_unit_cost_[arc] > 0 ?
-        scaled_arc_unit_cost_[arc] :
-        -scaled_arc_unit_cost_[arc];
+    const CostValue cost_magnitude = MathUtil::Abs(scaled_arc_unit_cost_[arc]);
     max_cost_magnitude = std::max(max_cost_magnitude, cost_magnitude);
     if (cost_magnitude != 0.0) {
       min_cost_magnitude = std::min(min_cost_magnitude, cost_magnitude);
@@ -172,7 +171,7 @@ void MinCostFlow::ScaleCosts() {
     const CostValue cost = scaled_arc_unit_cost_[arc] * cost_scaling_factor_;
     scaled_arc_unit_cost_.Set(arc, cost);
     scaled_arc_unit_cost_.Set(Opposite(arc), -cost);
-    epsilon_ = std::max(epsilon_, cost >= 0 ? cost : -cost);
+    epsilon_ = std::max(epsilon_, MathUtil::Abs(cost));
   }
   VLOG(1) << "Initial epsilon = " << epsilon_;
   VLOG(1) << "Cost scaling factor = " << cost_scaling_factor_;

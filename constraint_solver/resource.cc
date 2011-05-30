@@ -29,6 +29,7 @@
 #include "base/stringprintf.h"
 #include "base/join.h"
 #include "base/stl_util-inl.h"
+#include "base/mathutil.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
 #include "util/monoid_operation_tree.h"
@@ -360,20 +361,6 @@ Sequence* Solver::MakeSequence(const IntervalVar* const * intervals, int size,
 // ----- Additional constraint on Sequence -----
 
 namespace {
-
-// Returns the ceil of the ratio of two integers.
-// numerator may be any integer: positive, negative, or zero.
-// denominator must be non-zero, positive or negative.
-int64 CeilOfRatio(int64 numerator, int64 denominator) {
-  DCHECK_NE(denominator, 0);
-  const int64 rounded_toward_zero = numerator / denominator;
-  const bool needs_one_more = numerator > (rounded_toward_zero * denominator);
-  const int64 one_if_needed = static_cast<int64>(needs_one_more);
-  const int64 ceil_of_ratio = rounded_toward_zero + one_if_needed;
-  DCHECK_GE(denominator * ceil_of_ratio, numerator);
-  return ceil_of_ratio;
-}
-
 // A DisjunctiveTask is a non-preemptive task sharing a disjunctive resource.
 // That is, it corresponds to an interval, and this interval cannot overlap with
 // any other interval of a DisjunctiveTask sharing the same resource.
@@ -756,10 +743,10 @@ class CumulativeLambdaThetaTree : public MonoidOperationTree<LambdaThetaNode> {
     return result().energetic_end_min_opt();
   }
   int64 ECT() const {
-    return CeilOfRatio(energetic_end_min(), capacity_);
+    return MathUtil::CeilOfRatio(energetic_end_min(), capacity_);
   }
   int64 ECT_opt() const {
-    return CeilOfRatio(result().energetic_end_min_opt(), capacity_);
+    return MathUtil::CeilOfRatio(result().energetic_end_min_opt(), capacity_);
   }
   int argmax_energetic_end_min_opt() const {
     return result().argmax_energetic_end_min_opt();
@@ -1495,7 +1482,7 @@ class EdgeFinder : public Constraint {
         dual_capa_tree.DiveInTree(&diver);
         const int64 enjv = diver.GetEnvJC(dual_capa_tree.result());
         const int64 numerator = enjv - energy_threshold;
-        const int64 diff = CeilOfRatio(numerator, demand);
+        const int64 diff = MathUtil::CeilOfRatio(numerator, demand);
         update = std::max(update, diff);
       }
       updates->SetUpdate(i, update);

@@ -132,7 +132,7 @@ class TreeArrayConstraint : public ArrayConstraint {
   }
 
   void InitLeaf(int position, int64 var_min, int64 var_max) {
-    InitNode(tree_.size() - 1, position, var_min, var_max);
+    InitNode(MaxDepth(), position, var_min, var_max);
   }
 
   void InitNode(int depth, int position, int64 node_min, int64 node_max) {
@@ -169,16 +169,15 @@ class TreeArrayConstraint : public ArrayConstraint {
 
   int ChildEnd(int depth, int position) const {
     DCHECK_LT(depth + 1, tree_.size());
-    const int max_position = tree_[depth + 1].size() - 1;
-    return std::min((position + 1) * block_size_ - 1, max_position);
+    return std::min((position + 1) * block_size_ - 1, Width(depth + 1) - 1);
   }
 
   bool IsLeaf(int depth) const {
-    return depth == tree_.size() - 1;
+    return depth == MaxDepth();
   }
 
   int MaxDepth() const {
-    return tree_.size();
+    return tree_.size() - 1;
   }
 
   int Width(int depth) const {
@@ -215,7 +214,7 @@ class SumConstraint : public TreeArrayConstraint {
                 IntVar* const * vars,
                 int size,
                 IntVar* const sum_var)
-    : TreeArrayConstraint(solver, vars, size, sum_var), sum_demon_(NULL) {}
+      : TreeArrayConstraint(solver, vars, size, sum_var), sum_demon_(NULL) {}
 
   virtual ~SumConstraint() {}
 
@@ -241,7 +240,7 @@ class SumConstraint : public TreeArrayConstraint {
       InitLeaf(i, vars_[i]->Min(), vars_[i]->Max());
     }
     // Compute up.
-    for (int i = MaxDepth() - 2; i >= 0; --i) {
+    for (int i = MaxDepth() - 1; i >= 0; --i) {
       for (int j = 0; j < Width(i); ++j) {
         int64 sum_min = 0;
         int64 sum_max = 0;
@@ -329,7 +328,7 @@ class SumConstraint : public TreeArrayConstraint {
     DCHECK_GE(delta_max, 0);
     DCHECK_GE(delta_min, 0);
     DCHECK_GT(delta_min + delta_max, 0);
-    for (int depth = MaxDepth() - 1; depth >= 0; --depth) {
+    for (int depth = MaxDepth(); depth >= 0; --depth) {
       ReduceRange(depth, position, delta_min, delta_max);
       position = Parent(position);
     }
@@ -1936,7 +1935,7 @@ class BooleanScalProdLessConstant : public Constraint {
     }
     if (slack < max_coefficient_.Value()) {
       int64 last_unbound = first_unbound_backward_.Value();
-      for (;last_unbound >= 0; --last_unbound) {
+      for (; last_unbound >= 0; --last_unbound) {
         if (!vars_[last_unbound]->Bound()) {
           if (coefs_[last_unbound] <= slack) {
             max_coefficient_.SetValue(solver(), coefs_[last_unbound]);
