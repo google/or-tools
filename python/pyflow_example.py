@@ -35,15 +35,15 @@ def MinCostFlow():
   graph = pywrapflow.StarGraph(num_sources + num_targets,
                                num_sources * num_targets)
   min_cost_flow = pywrapflow.MinCostFlow(graph)
-  for source in range(1, num_sources + 1):
-    for target in range(1, num_targets + 1):
+  for source in range(0, num_sources):
+    for target in range(0, num_targets):
       arc = graph.AddArc(source, num_sources + target)
-      min_cost_flow.SetArcUnitCost(arc, costs[source -  1][target - 1])
+      min_cost_flow.SetArcUnitCost(arc, costs[source][target])
       min_cost_flow.SetArcCapacity(arc, 1)
 
-  for source in range(1, num_sources + 1):
+  for source in range(0, num_sources):
     min_cost_flow.SetNodeSupply(source, 1)
-  for target in range(1, num_targets + 1):
+  for target in range(0, num_targets):
     min_cost_flow.SetNodeSupply(num_sources + target, -1)
 
   total_flow_cost = min_cost_flow.ComputeMinCostFlow()
@@ -55,13 +55,13 @@ def MaxFeasibleFlow():
   print 'MaxFeasibleFlow'
   num_nodes = 6
   num_arcs = 9
-  tails = [1, 1, 1, 1, 2, 3, 4, 4, 5]
-  heads = [2, 3, 4, 5, 4, 5, 5, 6, 6]
+  tails = [0, 0, 0, 0, 1, 2, 3, 3, 4]
+  heads = [1, 2, 3, 4, 3, 4, 4, 5, 5]
   capacities = [5, 8, 5, 3, 4, 5, 6, 6, 4]
   expected_flows = [4, 4, 2, 0, 4, 4, 0, 6, 4]
   expected_total_flow = 10
   graph = pywrapflow.StarGraph(num_nodes, num_arcs)
-  max_flow = pywrapflow.MaxFlow(graph, 1, num_nodes)
+  max_flow = pywrapflow.MaxFlow(graph, 0, num_nodes - 1)
   for i in range(0, num_arcs):
     arc = graph.AddArc(tails[i], heads[i])
     max_flow.SetArcCapacity(arc, capacities[i])
@@ -69,7 +69,7 @@ def MaxFeasibleFlow():
   total_flow = max_flow.ComputeMaxFlow()
   print 'total flow', total_flow, '/', expected_total_flow
   for i in range(num_arcs):
-    print 'Arc', i, ':', max_flow.Flow(i + 1), '/', expected_flows[i]
+    print 'Arc', i, ':', max_flow.Flow(i), '/', expected_flows[i]
 
 
 def main(unused_argv):
