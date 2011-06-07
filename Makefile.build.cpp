@@ -96,6 +96,7 @@ CONSTRAINT_SOLVER_LIB_OS = \
 	objs/expressions.$O\
 	objs/interval.$O\
 	objs/local_search.$O\
+	objs/nogoods.$O\
 	objs/pack.$O\
 	objs/range_cst.$O\
 	objs/resource.$O\
@@ -161,6 +162,9 @@ objs/interval.$O:constraint_solver/interval.cc
 
 objs/local_search.$O:constraint_solver/local_search.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/local_search.cc $(OBJOUT)objs/local_search.$O
+
+objs/nogoods.$O:constraint_solver/nogoods.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/nogoods.cc $(OBJOUT)objs/nogoods.$O
 
 objs/pack.$O:constraint_solver/pack.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/pack.cc $(OBJOUT)objs/pack.$O

@@ -120,6 +120,8 @@ class LocalSearchFilter;
 class LocalSearchOperator;
 class LocalSearchPhaseParameters;
 class MPSolver;
+class NoGoodManager;
+class NoGoodTerm;
 class OptimizeVar;
 class Pack;
 class PropagationBaseObject;
@@ -151,8 +153,7 @@ enum MarkerType {
 struct SolverParameters {
  public:
   enum TrailCompression {
-    NO_COMPRESSION,
-    COMPRESS_WITH_ZLIB
+    NO_COMPRESSION, COMPRESS_WITH_ZLIB
   };
 
   enum ProfileLevel {
@@ -1494,6 +1495,13 @@ class Solver {
   // this happens at a leaf the corresponding solution will be rejected.
   SearchLimit* MakeCustomLimit(ResultCallback<bool>* limiter);
 
+  // ----- No Goods -----
+
+  // Creates a non-reversible nogood recorder to store and use nogoods
+  // during search. It can be used during search with restart to avoid
+  // revisiting the same portion of the search tree.
+  NoGoodManager* MakeNoGoodManager();
+
   // ----- Tree Monitor -----
   // Creates a tree monitor that outputs a detailed overview of the
   // decision phase in cpviz format. The XML data is written to files
@@ -2458,6 +2466,7 @@ class Demon : public BaseObject {
 
   // This method un-inhibit the demon that was inhibited.
   void desinhibit(Solver* const s);
+
  private:
   friend class Queue;
   void set_stamp(int64 stamp) { stamp_ = stamp; }
@@ -2893,7 +2902,7 @@ class OptimizeVar : public SearchMonitor {
 
 // ---------- Search Limits ----------
 
-// base class of all search limits
+// Base class of all search limits.
 class SearchLimit : public SearchMonitor {
  public:
   explicit SearchLimit(Solver* const s) : SearchMonitor(s), crossed_(false) { }
@@ -2929,6 +2938,75 @@ class SearchLimit : public SearchMonitor {
  private:
   bool crossed_;
   DISALLOW_COPY_AND_ASSIGN(SearchLimit);
+};
+
+// ---------- NoGood Recorder ------
+
+// Nogoods are used to store negative information collected during
+// search. They are by definition non reversible.
+
+// ----- No Good ----
+
+// A nogood is a conjunction if unary constraints that represents a
+// state that must not be visited during search.  For instance if X
+// and Y are variables, (X == 5) && (Y != 3) is a nogood that forbid
+// all part of the search tree where X is 5 and Y is not 3.
+class NoGood {
+ public:
+  ~NoGood();
+  // Creates a term var == value.
+  void AddIntegerVariableEqualValueTerm(IntVar* const var, int64 value);
+  // Creates a term var != value.
+  void AddIntegerVariableNotEqualValueTerm(IntVar* const var, int64 value);
+  // Apply the nogood. That is if there is only one undecided term
+  // and all remaining terms are always true, then the opposite of
+  // this term is added to the solver.
+  void Apply(Solver* const solver);
+  // Pretty print.
+  string DebugString() const;
+  // TODO(user) : support interval variables and more types of constraints.
+ private:
+  std::vector<NoGoodTerm*> terms_;
+};
+
+// ----- Base class of no good manager -----
+
+// A no good recorder is used to store a set of no goods in a non
+// reversible way during search. It will actively propagate nogoods,
+// that is if all its terms minus one are always true, then it will
+// apply the reverse of this term during the search.
+class NoGoodManager : public SearchMonitor {
+ public:
+  explicit NoGoodManager(Solver* const s) : SearchMonitor(s) {}
+  virtual ~NoGoodManager() {}
+
+  // ----- User API -----
+
+  // Clear all stored nogoods.
+  virtual void Clear() = 0;
+  // NoGood factory. Create an empty nogood.
+  NoGood* MakeNoGood();
+  // Add one nogood to the recorder. Ownership is transfered to the recorder.
+  virtual void AddNoGood(NoGood* const nogood) = 0;
+  // Returns the number of nogoods added to the recorder.
+  virtual int NoGoodCount() const = 0;
+  // Pretty Print.
+  virtual string DebugString() const = 0;
+
+
+  // ----- Internal methods that links search events to the recorder API -----
+  virtual void EnterSearch();
+  virtual void BeginNextDecision(DecisionBuilder* const db);
+  virtual bool AcceptSolution();
+ private:
+  // ----- Implementor API -----
+
+  // Initialize data structures.
+  virtual void Init() = 0;
+  // Apply the nogood.
+  virtual void Apply() = 0;
+
+  DISALLOW_COPY_AND_ASSIGN(NoGoodManager);
 };
 
 // ---------- Interval Var ----------
