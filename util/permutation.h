@@ -87,6 +87,7 @@
 #define OR_TOOLS_UTIL_PERMUTATION_H_
 
 #include "base/logging.h"
+#include "base/macros.h"
 
 namespace operations_research {
 
@@ -172,6 +173,8 @@ template <typename DataType, typename IndexType> class ArrayIndexCycleHandler
 
   // Temporary storage for the one extra element we need.
   DataType temp_;
+
+  DISALLOW_COPY_AND_ASSIGN(ArrayIndexCycleHandler);
 };
 
 // Note that this template is not implemented in an especially

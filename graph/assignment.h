@@ -141,8 +141,6 @@
 // When asked to solve the given assignment problem we return a
 // boolean to indicate whether the given problem was feasible.
 //
-// TODO(user): What changes are needed to open-source this code?
-//
 // References:
 // [ Goldberg and Kennedy's CSA paper ] A. V. Goldberg and R. Kennedy,
 // "An Efficient Cost Scaling Algorithm for the Assignment Problem."

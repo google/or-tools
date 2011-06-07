@@ -79,7 +79,6 @@
 //    application to this.
 
 #include <limits.h>
-
 #include <stddef.h>
 #include <algorithm>
 #include <string>
@@ -325,6 +324,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
 
     // Returns the index of the node currently pointed to by the iterator.
     NodeIndex Index() const { return node_; }
+
    private:
     // A reference to the current EbertGraph considered.
     const EbertGraph& graph_;
@@ -347,6 +347,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
 
     // Returns the index of the arc currently pointed to by the iterator.
     ArcIndex Index() const { return arc_; }
+
    private:
     // A reference to the current EbertGraph considered.
     const EbertGraph& graph_;
@@ -386,6 +387,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
 
     // Returns the index of the arc currently pointed to by the iterator.
     ArcIndex Index() const { return arc_; }
+
    private:
     // Returns true if the invariant for the iterator is verified.
     // To be used in a DCHECK.
@@ -492,6 +494,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
 
     // Returns the index of the arc currently pointed to by the iterator.
     ArcIndex Index() const { return arc_; }
+
    private:
     // Returns true if the invariant for the iterator is verified.
     // To be used in a DCHECK.
