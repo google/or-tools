@@ -4072,13 +4072,15 @@ SearchMonitor* Solver::MakeConstantRestart(int frequency) {
 // symmetry is called on each decision and should return a term
 // representing the boolean status of the symmetrical decision.
 // i.e. : the decision is x == 3, the symmetrical decision is y == 5
-// then the symmetry breaker should return IsEqualCst(y, 5).  Once
-// this is done, upon refutation, for each symmetry breaker, the
-// system adds a constraint that will forbid the symmetrical variation
-// of the current explored search tree. This constraint can be expressed
-// very simply just by keeping the list of current symmetrical decisions.
+// then the symmetry breaker should use
+// AddIntegerVariableEqualValueClause(y, 5).  Once this is done, upon
+// refutation, for each symmetry breaker, the system adds a constraint
+// that will forbid the symmetrical variation of the current explored
+// search tree. This constraint can be expressed very simply just by
+// keeping the list of current symmetrical decisions.
 //
-// This is called Symmetry Breaking During Search.
+// This is called Symmetry Breaking During Search (Ian Gent, Barbara
+// Smith, ECAI 2000).
 class SymmetryManager : public SearchMonitor {
  public:
   SymmetryManager(Solver* const s,
@@ -4093,18 +4095,11 @@ class SymmetryManager : public SearchMonitor {
     CHECK_GT(size, 0);
     memcpy(visitors_.get(), visitors, size_ * sizeof(*visitors));
     for (int i = 0; i < size_; ++i) {
-      CHECK(visitors_[i]->symmetry_manager() == NULL);
-      visitors_[i]->set_symmetry_manager(this);
+      visitors_[i]->set_symmetry_manager_index(this, i);
     }
   }
 
   virtual ~SymmetryManager() {}
-
-  virtual void EnterSearch() {
-    for (int i = 0; i < size_; ++i) {
-      indices_[visitors_[i]] = i;
-    }
-  }
 
   virtual void EndNextDecision(DecisionBuilder* const db, Decision* const d) {
     if (d) {
@@ -4168,20 +4163,44 @@ class SymmetryManager : public SearchMonitor {
   }
 
   void AddTermToClause(SymmetryBreaker* const visitor, IntVar* const term) {
-    clauses_[FindOrDie(indices_, visitor)].Push(solver(), term);
+    clauses_[visitor->breaker_index()].Push(solver(), term);
   }
+
  private:
   scoped_array<SymmetryBreaker*> visitors_;
   scoped_array<SimpleRevFIFO<IntVar*> > clauses_;
   scoped_array<SimpleRevFIFO<Decision*> > decisions_;
   scoped_array<SimpleRevFIFO<bool> > directions_;
-  int size_;
-  std::map<SymmetryBreaker*, int> indices_;
+  const int size_;
 };
 
-void SymmetryBreaker::AddToClause(IntVar* const term) {
+// ----- Symmetry Breaker -----
+
+void SymmetryBreaker::AddIntegerVariableEqualValueClause(IntVar* const var,
+                                                         int64 value) {
+  CHECK_NOTNULL(var);
+  Solver* const solver = var->solver();
+  IntVar* const term = solver->MakeIsEqualCstVar(var, value);
   symmetry_manager()->AddTermToClause(this, term);
 }
+
+void SymmetryBreaker::AddIntegerVariableGreaterOrEqualValueClause(
+    IntVar* const var, int64 value) {
+  CHECK_NOTNULL(var);
+  Solver* const solver = var->solver();
+  IntVar* const term = solver->MakeIsGreaterOrEqualCstVar(var, value);
+  symmetry_manager()->AddTermToClause(this, term);
+}
+
+void SymmetryBreaker::AddIntegerVariableLessOrEqualValueClause(
+    IntVar* const var, int64 value) {
+  CHECK_NOTNULL(var);
+  Solver* const solver = var->solver();
+  IntVar* const term = solver->MakeIsLessOrEqualCstVar(var, value);
+  symmetry_manager()->AddTermToClause(this, term);
+}
+
+// ----- API -----
 
 SearchMonitor* Solver::MakeSymmetryManager(
     const std::vector<SymmetryBreaker*>& visitors) {

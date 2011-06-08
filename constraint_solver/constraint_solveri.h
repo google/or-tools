@@ -745,16 +745,26 @@ class SymmetryManager;
 
 class SymmetryBreaker : public DecisionVisitor {
  public:
-  SymmetryBreaker() : symmetry_manager_(NULL) {}
+  SymmetryBreaker() : symmetry_manager_(NULL), breaker_index_(-1) {}
   virtual ~SymmetryBreaker() {}
 
-  void set_symmetry_manager(SymmetryManager* manager) {
+  void AddIntegerVariableEqualValueClause(IntVar* const var, int64 value);
+  void AddIntegerVariableGreaterOrEqualValueClause(IntVar* const var,
+                                                   int64 value);
+  void AddIntegerVariableLessOrEqualValueClause(IntVar* const var, int64 value);
+ private:
+  friend class SymmetryManager;
+  void set_symmetry_manager_index(SymmetryManager* manager, int index) {
+    CHECK(symmetry_manager_ == NULL);
+    CHECK_EQ(-1, breaker_index_);
     symmetry_manager_ = manager;
+    breaker_index_ = index;
   }
   SymmetryManager* symmetry_manager() const { return symmetry_manager_; }
-  void AddToClause(IntVar* term);
- private:
+  int breaker_index() const { return breaker_index_; }
+
   SymmetryManager* symmetry_manager_;
+  int breaker_index_;
 };
 
 // ---------- Search Log ---------

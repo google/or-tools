@@ -69,6 +69,7 @@ class NQueenSymmetry : public SymmetryBreaker {
     return vars_[index];
   }
   int size() const { return size_; }
+  int symmetric(int index) { return size() - 1 - index; }
   Solver* const solver() const { return solver_; }
  private:
   Solver* const solver_;
@@ -85,8 +86,8 @@ class SX : public NQueenSymmetry {
 
   virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
     const int index = Index(var);
-    IntVar* const other_var = Var(size() - 1 - index);
-    AddToClause(solver()->MakeIsEqualCstVar(other_var, value));
+    IntVar* const other_var = Var(symmetric(index));
+    AddIntegerVariableEqualValueClause(other_var, value);
   }
 };
 
@@ -97,7 +98,7 @@ class SY : public NQueenSymmetry {
   virtual ~SY() {}
 
   virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
-    AddToClause(solver()->MakeIsEqualCstVar(var, size() - 1 - value));
+    AddIntegerVariableEqualValueClause(var, symmetric(value));
   }
 };
 
@@ -110,7 +111,7 @@ class SD1 : public NQueenSymmetry {
   virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
     const int index = Index(var);
     IntVar* const other_var = Var(value);
-    AddToClause(solver()->MakeIsEqualCstVar(other_var, index));
+    AddIntegerVariableEqualValueClause(other_var, index);
   }
 };
 
@@ -122,8 +123,8 @@ class SD2 : public NQueenSymmetry {
 
   virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
     const int index = Index(var);
-    IntVar* const other_var = Var(size() - 1 - value);
-    AddToClause(solver()->MakeIsEqualCstVar(other_var, size() - 1 - index));
+    IntVar* const other_var = Var(symmetric(value));
+    AddIntegerVariableEqualValueClause(other_var, symmetric(index));
   }
 };
 
@@ -136,7 +137,7 @@ class R90 : public NQueenSymmetry {
   virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
     const int index = Index(var);
     IntVar* const other_var = Var(value);
-    AddToClause(solver()->MakeIsEqualCstVar(other_var, size() - 1 - index));
+    AddIntegerVariableEqualValueClause(other_var, symmetric(index));
   }
 };
 
@@ -149,8 +150,8 @@ class R180 : public NQueenSymmetry {
 
   virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
     const int index = Index(var);
-    IntVar* const other_var = Var(size() - 1 - index);
-    AddToClause(solver()->MakeIsEqualCstVar(other_var, size() - 1 - value));
+    IntVar* const other_var = Var(symmetric(index));
+    AddIntegerVariableEqualValueClause(other_var, symmetric(value));
   }
 };
 
@@ -163,8 +164,8 @@ class R270 : public NQueenSymmetry {
 
   virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
     const int index = Index(var);
-    IntVar* const other_var = Var(size() - 1 - value);
-    AddToClause(solver()->MakeIsEqualCstVar(other_var, index));
+    IntVar* const other_var = Var(symmetric(value));
+    AddIntegerVariableEqualValueClause(other_var, index);
   }
 };
 
@@ -200,21 +201,21 @@ void NQueens(int size) {
                                           Solver::ASSIGN_MIN_VALUE);
   if (FLAGS_use_symmetry) {
     std::vector<SymmetryBreaker*> breakers;
-    NQueenSymmetry* sx = s.RevAlloc(new SX(&s, queens));
+    NQueenSymmetry* const sx = s.RevAlloc(new SX(&s, queens));
     breakers.push_back(sx);
-    NQueenSymmetry* sy = s.RevAlloc(new SY(&s, queens));
+    NQueenSymmetry* const sy = s.RevAlloc(new SY(&s, queens));
     breakers.push_back(sy);
-    NQueenSymmetry* sd1 = s.RevAlloc(new SD1(&s, queens));
+    NQueenSymmetry* const sd1 = s.RevAlloc(new SD1(&s, queens));
     breakers.push_back(sd1);
-    NQueenSymmetry* sd2 = s.RevAlloc(new SD2(&s, queens));
+    NQueenSymmetry* const sd2 = s.RevAlloc(new SD2(&s, queens));
     breakers.push_back(sd2);
-    NQueenSymmetry* r90 = s.RevAlloc(new R90(&s, queens));
+    NQueenSymmetry* const r90 = s.RevAlloc(new R90(&s, queens));
     breakers.push_back(r90);
-    NQueenSymmetry* r180 = s.RevAlloc(new R180(&s, queens));
+    NQueenSymmetry* const r180 = s.RevAlloc(new R180(&s, queens));
     breakers.push_back(r180);
-    NQueenSymmetry* r270 = s.RevAlloc(new R270(&s, queens));
+    NQueenSymmetry* const r270 = s.RevAlloc(new R270(&s, queens));
     breakers.push_back(r270);
-    SearchMonitor* symmetry_manager = s.MakeSymmetryManager(breakers);
+    SearchMonitor* const symmetry_manager = s.MakeSymmetryManager(breakers);
     monitors.push_back(symmetry_manager);
   }
 
