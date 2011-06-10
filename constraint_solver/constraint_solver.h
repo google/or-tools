@@ -1497,9 +1497,10 @@ class Solver {
 
   // ----- No Goods -----
 
-  // Creates a non-reversible nogood recorder to store and use nogoods
-  // during search. It can be used during search with restart to avoid
-  // revisiting the same portion of the search tree.
+  // Creates a non-reversible nogood manager to store and use nogoods
+  // during search. Nogoods are defined by the NoGood class. It can be
+  // used during search with restart to avoid revisiting the same
+  // portion of the search tree.
   NoGoodManager* MakeNoGoodManager();
 
   // ----- Tree Monitor -----
@@ -2947,7 +2948,7 @@ class SearchLimit : public SearchMonitor {
 
 // ----- No Good ----
 
-// A nogood is a conjunction if unary constraints that represents a
+// A nogood is a conjunction of unary constraints that represents a
 // state that must not be visited during search.  For instance if X
 // and Y are variables, (X == 5) && (Y != 3) is a nogood that forbid
 // all part of the search tree where X is 5 and Y is not 3.
