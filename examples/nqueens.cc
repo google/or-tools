@@ -60,6 +60,7 @@ class NQueenSymmetry : public SymmetryBreaker {
     }
   }
   virtual ~NQueenSymmetry() {}
+ protected:
   int Index(IntVar* const var) const {
     return FindWithDefault(indices_, var, -1);
   }
@@ -69,8 +70,9 @@ class NQueenSymmetry : public SymmetryBreaker {
     return vars_[index];
   }
   int size() const { return size_; }
-  int symmetric(int index) { return size() - 1 - index; }
+  int symmetric(int index) const { return size() - 1 - index; }
   Solver* const solver() const { return solver_; }
+
  private:
   Solver* const solver_;
   const std::vector<IntVar*> vars_;
