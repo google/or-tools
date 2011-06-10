@@ -12,6 +12,11 @@
 // limitations under the License.
 //
 
+#include <algorithm>
+#include "base/hash.h"
+#include <string>
+#include <vector>
+
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -20,8 +25,7 @@
 #include "base/timer.h"
 #include "base/strutil.h"
 #include "base/concise_iterator.h"
-#include "base/stl_util-inl.h"
-
+#include "base/hash.h"
 #include "linear_solver/linear_solver.h"
 
 #if defined(USE_CLP) || defined(USE_CBC)
@@ -31,6 +35,7 @@
 #include "coin/ClpSimplex.hpp"
 #include "coin/CoinBuild.hpp"
 #include "coin/ClpMessage.hpp"
+
 #if defined(_MSC_VER)
 #include "coin/configall_system.h"
 #else
@@ -71,7 +76,8 @@ class CLPInterface : public MPSolverInterface {
   // Change a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
                               MPVariable* const variable,
-                              double coefficient);
+                              double new_value,
+                              double old_value);
   // Clear a constraint from all its terms.
   virtual void ClearConstraint(MPConstraint* const constraint);
 
@@ -187,7 +193,8 @@ void CLPInterface::SetConstraintBounds(int index, double lb, double ub) {
 
 void CLPInterface::SetCoefficient(MPConstraint* const constraint,
                                   MPVariable* const variable,
-                                  double coefficient) {
+                                  double new_value,
+                                  double old_value) {
   InvalidateSolutionSynchronization();
   const int constraint_index = constraint->index();
   const int variable_index = variable->index();
@@ -196,7 +203,7 @@ void CLPInterface::SetCoefficient(MPConstraint* const constraint,
     // variable is not cached.
     DCHECK_LE(constraint_index, last_constraint_index_);
     DCHECK_LE(variable_index, last_variable_index_);
-    clp_->modifyCoefficient(constraint_index, variable_index, coefficient);
+    clp_->modifyCoefficient(constraint_index, variable_index, new_value);
   } else {
     // The modification of an unextracted row or variable is cached
     // and handled in ExtractModel.
@@ -324,6 +331,7 @@ void CLPInterface::ExtractNewVariables() {
 void CLPInterface::ExtractNewConstraints() {
   int total_num_rows = solver_->constraints_.size();
   if (last_constraint_index_ < total_num_rows) {
+    // Find the length of the longest row.
     int max_row_length = 0;
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
@@ -338,8 +346,8 @@ void CLPInterface::ExtractNewConstraints() {
     scoped_array<int> indices(new int[max_row_length]);
     scoped_array<double> coefs(new double[max_row_length]);
     CoinBuild build_object;
-    for (int i = last_constraint_index_;
-         i < solver_->constraints_.size(); ++i) {
+    // Add each new constraint.
+    for (int i = last_constraint_index_; i < total_num_rows; ++i) {
       MPConstraint* const  ct = solver_->constraints_[i];
       DCHECK_NE(kNoIndex, ct->index());
       int size = ct->coefficients_.size();

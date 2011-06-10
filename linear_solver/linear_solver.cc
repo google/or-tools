@@ -15,7 +15,7 @@
 
 #include "linear_solver/linear_solver.h"
 
-#include <algorithm>
+#include <stddef.h>
 #include <utility>
 
 #include "base/commandlineflags.h"
@@ -26,7 +26,7 @@
 #include "base/timer.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
-#include "base/stl_util-inl.h"
+#include "base/stl_util.h"
 #include "base/hash.h"
 #include "linear_solver/linear_solver.pb.h"
 
@@ -56,11 +56,13 @@ void MPConstraint::AddTerm(MPVariable* const var, double coeff) {
   if (coeff != 0.0) {
     double* coefficient = FindOrNull(coefficients_, var);
     if (coefficient != NULL) {
-      (*coefficient) += coeff;
-      interface_->SetCoefficient(this, var, *coefficient);
+      const double old_value = (*coefficient);
+      const double new_value = (*coefficient) + coeff;
+      (*coefficient) = new_value;
+      interface_->SetCoefficient(this, var, new_value, old_value);
     } else {
       coefficients_[var] = coeff;
-      interface_->SetCoefficient(this, var, coeff);
+      interface_->SetCoefficient(this, var, coeff, 0.0);
     }
   }
 }
@@ -71,8 +73,16 @@ void MPConstraint::AddTerm(MPVariable* const var) {
 
 void MPConstraint::SetCoefficient(MPVariable* const var, double coeff) {
   CHECK_NOTNULL(var);
-  coefficients_[var] = coeff;
-  interface_->SetCoefficient(this, var, coeff);
+  double* coefficient = FindOrNull(coefficients_, var);
+  if (coefficient != NULL) {
+    const double old_value = (*coefficient);
+    const double new_value = coeff;
+    (*coefficient) = new_value;
+    interface_->SetCoefficient(this, var, new_value, old_value);
+  } else {
+    coefficients_[var] = coeff;
+    interface_->SetCoefficient(this, var, coeff, 0.0);
+  }
 }
 
 void MPConstraint::Clear() {
@@ -510,11 +520,33 @@ int MPSolver::ComputeMaxConstraintSize(int min_constraint_index,
   return max_constraint_size;
 }
 
+bool MPSolver::HasInfeasibleConstraints() const {
+  bool hasInfeasibleConstraints = false;
+  for (int i = 0; i < constraints_.size(); ++i) {
+    if (constraints_[i]->lb() > constraints_[i]->ub()) {
+      LOG(WARNING) << "Constraint " << constraints_[i]->name()
+                   << " (" << i << ") has contradictory bounds:"
+                   << " lower bound = " << constraints_[i]->lb()
+                   << " upper bound = " << constraints_[i]->ub();
+      hasInfeasibleConstraints = true;
+    }
+  }
+  return hasInfeasibleConstraints;
+}
+
 MPSolver::ResultStatus MPSolver::Solve() {
-  return interface_->Solve();
+  MPSolverParameters default_param;
+  return Solve(default_param);
 }
 
 MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters &param) {
+  // Special case for infeasible constraints so that all solvers have
+  // the same behavior.
+  if (HasInfeasibleConstraints()) {
+    interface_->result_status_ = MPSolver::INFEASIBLE;
+    return interface_->result_status_;
+  }
+
   return interface_->Solve(param);
 }
 
@@ -627,12 +659,6 @@ void MPSolverInterface::InvalidateSolutionSynchronization() {
   if (sync_status_ == SOLUTION_SYNCHRONIZED) {
     sync_status_ = MODEL_SYNCHRONIZED;
   }
-}
-
-// Solve with default parameters.
-MPSolver::ResultStatus MPSolverInterface::Solve() {
-  MPSolverParameters default_param;
-  return Solve(default_param);
 }
 
 void MPSolverInterface::SetCommonParameters(const MPSolverParameters& param) {

@@ -12,14 +12,19 @@
 // limitations under the License.
 //
 
+#include "base/hash.h"
+#include <limits>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/timer.h"
-#include "base/stl_util-inl.h"
-
+#include "base/hash.h"
 #include "linear_solver/linear_solver.h"
 
 #if defined(USE_CBC)
@@ -31,13 +36,6 @@
 #include "coin/CoinModel.hpp"
 #include "coin/OsiClpSolverInterface.hpp"
 
-#include "coin/CglGomory.hpp"
-#include "coin/CglProbing.hpp"
-#include "coin/CglKnapsackCover.hpp"
-#include "coin/CglOddHole.hpp"
-#include "coin/CglClique.hpp"
-#include "coin/CglFlowCover.hpp"
-#include "coin/CglMixedIntegerRounding.hpp"
 #if defined(_MSC_VER)
 #include "coin/configall_system.h"
 #else
@@ -107,7 +105,8 @@ class CBCInterface : public MPSolverInterface {
   // Change a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
                               MPVariable* const variable,
-                              double coefficient) {
+                              double new_value,
+                              double old_value) {
     sync_status_ = MUST_RELOAD;
   }
   // Clear a constraint from all its terms.
@@ -502,7 +501,15 @@ void CBCInterface::SetRelativeMipGap(double value) {
 }
 
 void CBCInterface::SetPresolveMode(int value) {
-  SetUnsupportedIntegerParam(MPSolverParameters::PRESOLVE);
+  switch (value) {
+    case MPSolverParameters::PRESOLVE_ON: {
+      // CBC presolve is always on.
+      break;
+    }
+    default: {
+      SetUnsupportedIntegerParam(MPSolverParameters::PRESOLVE);
+    }
+  }
 }
 
 void CBCInterface::SetLpAlgorithm(int value) {

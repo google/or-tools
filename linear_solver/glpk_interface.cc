@@ -12,6 +12,13 @@
 // limitations under the License.
 //
 
+#include <stddef.h>
+#include "base/hash.h"
+#include <limits>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -19,8 +26,7 @@
 #include "base/stringprintf.h"
 #include "base/timer.h"
 #include "base/concise_iterator.h"
-#include "base/stl_util-inl.h"
-
+#include "base/hash.h"
 #include "linear_solver/linear_solver.h"
 
 #if defined(USE_GLPK)
@@ -113,7 +119,8 @@ class GLPKInterface : public MPSolverInterface {
   // Change a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
                               MPVariable* const variable,
-                              double coefficient);
+                              double new_value,
+                              double old_value);
   // Clear a constraint from all its terms.
   virtual void ClearConstraint(MPConstraint* const constraint);
   // Change a coefficient in the linear objective
@@ -287,7 +294,8 @@ void GLPKInterface::SetConstraintBounds(int index, double lb, double ub) {
 
 void GLPKInterface::SetCoefficient(MPConstraint* const constraint,
                                    MPVariable* const variable,
-                                   double coefficient) {
+                                   double new_value,
+                                   double old_value) {
   InvalidateSolutionSynchronization();
   // GLPK does not allow to modify one coefficient at a time, so we
   // extract the whole constraint again, if it has been extracted

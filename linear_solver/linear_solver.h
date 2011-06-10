@@ -440,6 +440,9 @@ class MPSolver {
   int ComputeMaxConstraintSize(int min_constraint_index,
                                int max_constraint_index) const;
 
+  // Return true if the model has constraints with lb > ub.
+  bool HasInfeasibleConstraints() const;
+
   // The name of the linear programming problem.
   const string name_;
 
@@ -583,12 +586,10 @@ class MPSolverInterface {
   virtual ~MPSolverInterface();
 
   // ----- Solve -----
-  // Solves problem with default parameter values. Returns true if the
+  // Solves problem with specified parameter values. Returns true if the
   // solution is optimal. Calls WriteModelToPredefinedFiles as a
   // temporary solution to allow the user to write the model to a
   // file.
-  MPSolver::ResultStatus Solve();
-  // Same as Solve(), except it uses the specified parameter values.
   virtual MPSolver::ResultStatus Solve(const MPSolverParameters& param) = 0;
 
   // ----- Model modifications and extraction -----
@@ -616,7 +617,8 @@ class MPSolverInterface {
   // Change a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
                               MPVariable* const variable,
-                              double coefficient) = 0;
+                              double new_value,
+                              double old_value) = 0;
 
   // Clear a constraint from all its terms.
   virtual void ClearConstraint(MPConstraint* const constraint) = 0;

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "base/commandlineflags.h"
+#include "base/logging.h"
 #include "linear_solver/linear_solver.h"
 
 namespace operations_research {
