@@ -4071,7 +4071,7 @@ SearchMonitor* Solver::MakeConstantRestart(int frequency) {
 // The symmetry manager maintains a list of problem symmetries.  Each
 // symmetry is called on each decision and should return a term
 // representing the boolean status of the symmetrical decision.
-// i.e. : the decision is x == 3, the symmetrical decision is y == 5
+// e.g. : the decision is x == 3, the symmetrical decision is y == 5
 // then the symmetry breaker should use
 // AddIntegerVariableEqualValueClause(y, 5).  Once this is done, upon
 // refutation, for each symmetry breaker, the system adds a constraint
@@ -4081,6 +4081,7 @@ SearchMonitor* Solver::MakeConstantRestart(int frequency) {
 //
 // This is called Symmetry Breaking During Search (Ian Gent, Barbara
 // Smith, ECAI 2000).
+// http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.42.3788&rep=rep1&type=pdf  // NOLINT
 class SymmetryManager : public SearchMonitor {
  public:
   SymmetryManager(Solver* const s,
@@ -4095,7 +4096,7 @@ class SymmetryManager : public SearchMonitor {
     CHECK_GT(size, 0);
     memcpy(visitors_.get(), visitors, size_ * sizeof(*visitors));
     for (int i = 0; i < size_; ++i) {
-      visitors_[i]->set_symmetry_manager_index(this, i);
+      visitors_[i]->set_symmetry_manager_and_index(this, i);
     }
   }
 
@@ -4163,7 +4164,7 @@ class SymmetryManager : public SearchMonitor {
   }
 
   void AddTermToClause(SymmetryBreaker* const visitor, IntVar* const term) {
-    clauses_[visitor->breaker_index()].Push(solver(), term);
+    clauses_[visitor->index_in_symmetry_manager()].Push(solver(), term);
   }
 
  private:
