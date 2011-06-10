@@ -1191,45 +1191,6 @@ Decision* Solver::MakeAssignVariableValue(IntVar* const v, int64 val) {
   return RevAlloc(new AssignOneVariableValue(v, val));
 }
 
-// ----- VariableGreaterLessValue -----
-
-class VariableGreaterLessValue : public Decision {
- public:
-  VariableGreaterLessValue(IntVar* const var, int64 value, bool greater)
-      : var_(var), value_(value), greater_(greater) {}
-
-  virtual ~VariableGreaterLessValue() {}
-
-  virtual void Apply(Solver* const solver) {
-    if (greater_) {
-      var_->SetMin(value_);
-    } else {
-      var_->SetMax(value_);
-    }
-  }
-
-  virtual void Refute(Solver* const solver) {
-    if (greater_) {
-      var_->SetMax(value_ - 1);
-    } else {
-      var_->SetMin(value_ + 1);
-    }
-  }
- private:
-  IntVar* const var_;
-  const int64 value_;
-  const bool greater_;
-};
-
-Decision* Solver::MakeVariableLessOrEqualValue(IntVar* const var, int64 value) {
-  return RevAlloc(new VariableGreaterLessValue(var, value, false));
-}
-
-Decision* Solver::MakeVariableGreaterOrEqualValue(IntVar* const var,
-                                                  int64 value) {
-  return RevAlloc(new VariableGreaterLessValue(var, value, true));
-}
-
 // ----- AssignOneVariableValueOrFail decision -----
 
 class AssignOneVariableValueOrFail : public Decision {
@@ -1324,6 +1285,16 @@ Decision* Solver::MakeSplitVariableDomain(IntVar* const v,
                                           bool start_with_lower_half) {
   return RevAlloc(new SplitOneVariable(v, val, start_with_lower_half));
 }
+
+Decision* Solver::MakeVariableLessOrEqualValue(IntVar* const var, int64 value) {
+  return MakeSplitVariableDomain(var, value, true);
+}
+
+Decision* Solver::MakeVariableGreaterOrEqualValue(IntVar* const var,
+                                                  int64 value) {
+  return MakeSplitVariableDomain(var, value, false);
+}
+
 
 // ----- AssignVariablesValues decision -----
 
