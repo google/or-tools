@@ -325,7 +325,7 @@ class Solver {
     ASSIGN_MIN_VALUE,
     ASSIGN_MAX_VALUE,
     ASSIGN_RANDOM_VALUE,
-    ASSIGN_CENTER_VALUE
+    ASSIGN_CENTER_VALUE,
   };
 
   enum EvaluatorStrategy {
