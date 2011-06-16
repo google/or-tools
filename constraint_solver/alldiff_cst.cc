@@ -44,10 +44,8 @@ BaseAllDifferent::BaseAllDifferent(Solver* const s,
 
 string BaseAllDifferent::DebugStringInternal(const string& name) const {
   string out = name + "(";
-  for (int i = 0; i < size_; ++i) {
-    out += vars_[i]->DebugString() + " ";
-  }
-  out += ")";
+  out.append(DebugStringArray(vars_.get(), size_, ", "));
+  out.append(")");
   return out;
 }
 

@@ -1035,15 +1035,10 @@ void IntExprArrayElementCt::UpdateExpr() {
 }
 
 string IntExprArrayElementCt::DebugString() const {
-  string out = "IntExprArrayElementCt(";
-  for (int i = 0; i < size_; ++i) {
-    if (i > 0) {
-      out += ", ";
-    }
-    out += vars_[i]->DebugString();
-  }
-  out += ", " + var_->DebugString() + ")";
-  return out;
+  return StringPrintf("IntExprArrayElement([%s], %s) == %s",
+                      DebugStringArray(vars_.get(), size_, ", ").c_str(),
+                      expr_->DebugString().c_str(),
+                      var_->DebugString().c_str());
 }
 
 // ----- IntExprArrayElement -----
@@ -1063,11 +1058,14 @@ class IntExprArrayElement : public BaseIntExpr {
   virtual void SetRange(int64 mi, int64 ma);
   virtual bool Bound() const;
   virtual string name() const {
-    return StringPrintf("IntArrayElement(vars, %s)", var_->name().c_str());
+    return StringPrintf("IntArrayElement(%s, %s)",
+                        NameArray(vars_.get(), size_, ", ").c_str(),
+                        var_->name().c_str());
   }
   virtual string DebugString() const {
-    return StringPrintf("IntArrayElement(vars, %d, %s)",
-                        size_, var_->DebugString().c_str());
+    return StringPrintf("IntArrayElement(%s, %s)",
+                        DebugStringArray(vars_.get(), size_, ", ").c_str(),
+                        var_->DebugString().c_str());
   }
   virtual void WhenRange(Demon* d) {
     var_->WhenRange(d);

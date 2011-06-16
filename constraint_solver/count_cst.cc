@@ -64,14 +64,11 @@ CountValueEqCst::CountValueEqCst(Solver* const s,
 }
 
 string CountValueEqCst::DebugString() const {
-  string out = "CountValueEqCst(";
-  for (int i = 0; i < size_; ++i) {
-    out += vars_[i]->DebugString() + " ";
-  }
-  StringAppendF(&out,
-                ", value=%" GG_LL_FORMAT
-                "d, count=%" GG_LL_FORMAT "d)", value_, count_);
-  return out;
+  return StringPrintf("CountValueEqCst([%s], value=%" GG_LL_FORMAT
+                      "d, count=%" GG_LL_FORMAT "d)",
+                      DebugStringArray(vars_.get(), size_, ", ").c_str(),
+                      value_,
+                      count_);
 }
 
 void CountValueEqCst::Post() {
@@ -223,13 +220,11 @@ CountValueEq::CountValueEq(Solver* const s, const IntVar* const* vars, int size,
 }
 
 string CountValueEq::DebugString() const {
-  string out = "CountValueEq(";
-  for (int i = 0; i < size_; ++i) {
-    out += vars_[i]->DebugString() + " ";
-  }
-  StringAppendF(&out, ", value = %" GG_LL_FORMAT "d, count = %s)",
-                value_, count_->DebugString().c_str());
-  return out;
+  return StringPrintf("CountValueEq([%s], value = %" GG_LL_FORMAT
+                      "d, count = %s)",
+                      DebugStringArray(vars_.get(), size_, ", ").c_str(),
+                      value_,
+                      count_->DebugString().c_str());
 }
 
 void CountValueEq::Post() {
@@ -450,20 +445,11 @@ Distribute::Distribute(Solver* const s,
 }
 
 string Distribute::DebugString() const {
-  string out = "Distribute([";
-  for (int i = 0; i < var_size_; ++i) {
-    out += vars_[i]->DebugString() + " ";
-  }
-  out += "], values = [";
-  for (int i = 0; i < card_size_; ++i) {
-    StringAppendF(&out, "%" GG_LL_FORMAT "d ", values_[i]);
-  }
-  out += "], cards = [";
-  for (int i = 0; i < card_size_; ++i) {
-    out += cards_[i]->DebugString() + " ";
-  }
-  out += "])";
-  return out;
+  return StringPrintf(
+      "Distribute(vars = [%s], values = [%s], cards = [%s])",
+      DebugStringArray(vars_.get(), var_size_, ", ").c_str(),
+      Int64ArrayToString(values_.get(), card_size_, ", ").c_str(),
+      DebugStringArray(cards_.get(), card_size_, ", ").c_str());
 }
 
 void Distribute::Post() {
@@ -670,16 +656,9 @@ FastDistribute::FastDistribute(Solver* const s,
 
 
 string FastDistribute::DebugString() const {
-  string out = "FastDistribute([";
-  for (int var_index = 0; var_index < var_size_; ++var_index) {
-    out += vars_[var_index]->DebugString() + " ";
-  }
-  out += "], cards = [";
-  for (int card_index = 0; card_index < card_size_; ++card_index) {
-    out += cards_[card_index]->DebugString() + " ";
-  }
-  out + "])";
-  return out;
+  return StringPrintf("FastDistribute(vars = [%s], cards = [%s])",
+                      DebugStringArray(vars_.get(), var_size_, ", ").c_str(),
+                      DebugStringArray(cards_.get(), card_size_, ", ").c_str());
 }
 
 void FastDistribute::Post() {
@@ -887,15 +866,13 @@ BoundedDistribute::BoundedDistribute(Solver* const s,
 
 
 string BoundedDistribute::DebugString() const {
-  string out = "BoundedDistribute([";
-  for (int var_index = 0; var_index < var_size_; ++var_index) {
-    out += vars_[var_index]->DebugString() + " ";
-  }
-  StringAppendF(&out, "], cards = %" GG_LL_FORMAT
+  return StringPrintf("BoundedDistribute([%s], cards = %" GG_LL_FORMAT
                       "d * [%" GG_LL_FORMAT "d -- %"
                       GG_LL_FORMAT "d])",
-                      card_size_, card_min_, card_max_);
-  return out;
+                      DebugStringArray(vars_.get(), var_size_, ", ").c_str(),
+                      card_size_,
+                      card_min_,
+                      card_max_);
 }
 
 void BoundedDistribute::Post() {

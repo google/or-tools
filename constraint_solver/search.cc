@@ -382,12 +382,9 @@ Decision* ComposeDecisionBuilder::Next(Solver* const s) {
 }
 
 string ComposeDecisionBuilder::DebugString() const {
-  string out = "ComposeDecisionBuilder(";
-  for (ConstIter<std::vector<DecisionBuilder*> > it(builders_); !it.at_end(); ++it) {
-    out += (*it)->DebugString() + " ";
-  }
-  out += ")";
-  return out;
+  return StringPrintf(
+      "ComposeDecisionBuilder(%s)",
+      DebugStringArray(builders_.data(), builders_.size(), ", ").c_str());
 }
 
 void ComposeDecisionBuilder::add(DecisionBuilder* const db) {
@@ -462,10 +459,8 @@ class VariableSelector : public BaseObject {
 
 string VariableSelector::VarDebugString() const {
   string out = "(";
-  for (int i = 0; i < size_; ++i) {
-    out += vars_[i]->DebugString() + " ";
-  }
-  out += ")";
+  out.append(DebugStringArray(vars_.get(), size_, ", "));
+  out.append(")");
   return out;
 }
 
@@ -991,10 +986,8 @@ BaseEvaluatorSelector::BaseEvaluatorSelector(
 
 string BaseEvaluatorSelector::DebugStringInternal(const string& name) const {
   string out = name + "(";
-  for (int i = 0; i < size_; ++i) {
-    out += vars_[i]->DebugString() + " ";
-  }
-  out += ")";
+  out.append(DebugStringArray(vars_.get(), size_, ", "));
+  out.append(")");
   return out;
 }
 

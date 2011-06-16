@@ -40,15 +40,10 @@ class ArrayConstraint : public Constraint {
   virtual ~ArrayConstraint() {}
  protected:
   string DebugStringInternal(const string& name) const {
-    string out = name + "(";
-    for (int i = 0; i < size_; ++i) {
-      if (i > 0) {
-        out += ", ";
-      }
-      out += vars_[i]->DebugString();
-    }
-    out += ", " + var_->DebugString() + ")";
-    return out;
+    return StringPrintf("%s(%s) == %s",
+                        name.c_str(),
+                        DebugStringArray(vars_.get(), size_, ", ").c_str(),
+                        var_->DebugString().c_str());
   }
 
   scoped_array<IntVar*> vars_;
@@ -70,15 +65,9 @@ class ArrayExpr : public BaseIntExpr {
   virtual ~ArrayExpr() {}
  protected:
   string DebugStringInternal(const string& name) const {
-    string out = name + "(";
-    for (int i = 0; i < size_; ++i) {
-      if (i > 0) {
-        out += ", ";
-      }
-      out += vars_[i]->DebugString();
-    }
-    out += ")";
-    return out;
+    return StringPrintf("%s(%s)",
+                        name.c_str(),
+                        DebugStringArray(vars_.get(), size_, ", ").c_str());
   }
 
   scoped_array<IntVar*> vars_;
@@ -1975,22 +1964,10 @@ class BooleanScalProdLessConstant : public Constraint {
   }
 
   virtual string DebugString() const {
-    string out =  "BooleanScalProdLessConstant([";
-    for (int i = 0; i < size_; ++i) {
-      if (i > 0) {
-        StringAppendF(&out, ", ");
-      }
-      StringAppendF(&out, "%s", vars_[i]->DebugString().c_str());
-    }
-    StringAppendF(&out, "], [");
-    for (int i = 0; i < size_; ++i) {
-      if (i > 0) {
-        StringAppendF(&out, ", ");
-      }
-      StringAppendF(&out, "%" GG_LL_FORMAT "d", coefs_[i]);
-    }
-    StringAppendF(&out, "], %" GG_LL_FORMAT "d)", upper_bound_);
-    return out;
+    return StringPrintf("BooleanScalProd([%s], [%s]) <= %" GG_LL_FORMAT "d)",
+                        DebugStringArray(vars_.get(), size_, ", ").c_str(),
+                        Int64ArrayToString(coefs_.get(), size_, ", ").c_str(),
+                        upper_bound_);
   }
  private:
   scoped_array<IntVar*> vars_;
@@ -2112,23 +2089,20 @@ class PositiveBooleanScalProdEqVar : public Constraint {
   }
 
   virtual string DebugString() const {
-    string out =  "PositiveBooleanScalProdEqVar([";
-    for (int i = 0; i < size_; ++i) {
-      if (i > 0) {
-        StringAppendF(&out, ", ");
-      }
-      StringAppendF(&out, "%s", vars_[i]->DebugString().c_str());
+    if (constant_ != 0) {
+      return StringPrintf(
+          "PositiveBooleanScal([%s], [%s]) + %" GG_LL_FORMAT "d == %s",
+          DebugStringArray(vars_.get(), size_, ", ").c_str(),
+          Int64ArrayToString(coefs_.get(), size_, ", ").c_str(),
+          constant_,
+          var_->DebugString().c_str());
+    } else {
+      return StringPrintf(
+          "PositiveBooleanScal([%s], [%s]) == %s",
+          DebugStringArray(vars_.get(), size_, ", ").c_str(),
+          Int64ArrayToString(coefs_.get(), size_, ", ").c_str(),
+          var_->DebugString().c_str());
     }
-    StringAppendF(&out, "], [");
-    for (int i = 0; i < size_; ++i) {
-      if (i > 0) {
-        StringAppendF(&out, ", ");
-      }
-      StringAppendF(&out, "%" GG_LL_FORMAT "d", coefs_[i]);
-    }
-    StringAppendF(&out, "], constant = %" GG_LL_FORMAT "d, %s)",
-                  constant_, var_->DebugString().c_str());
-    return out;
   }
  private:
   int size_;
@@ -2263,26 +2237,18 @@ class PositiveBooleanScalProd : public BaseIntExpr {
   }
 
   virtual string DebugString() const {
-    string out =  "PositiveBooleanScalProd([";
-    for (int i = 0; i < size_; ++i) {
-      if (i > 0) {
-        StringAppendF(&out, ", ");
-      }
-      StringAppendF(&out, "%s", vars_[i]->DebugString().c_str());
-    }
-    StringAppendF(&out, "], [");
-    for (int i = 0; i < size_; ++i) {
-      if (i > 0) {
-        StringAppendF(&out, ", ");
-      }
-      StringAppendF(&out, "%" GG_LL_FORMAT "d", coefs_[i]);
-    }
-    if (constant_) {
-      StringAppendF(&out, "], constant = %" GG_LL_FORMAT "d)", constant_);
+    if (constant_ != 0) {
+      return StringPrintf(
+          "PositiveBooleanScalProd([%s], [%s]) + %" GG_LL_FORMAT "d",
+          DebugStringArray(vars_.get(), size_, ", ").c_str(),
+          Int64ArrayToString(coefs_.get(), size_, ", ").c_str(),
+          constant_);
     } else {
-      StringAppendF(&out, "])");
+      return StringPrintf(
+          "PositiveBooleanScalProd([%s], [%s])",
+          DebugStringArray(vars_.get(), size_, ", ").c_str(),
+          Int64ArrayToString(coefs_.get(), size_, ", ").c_str());
     }
-    return out;
   }
 
   virtual void WhenRange(Demon* d) {
@@ -2442,22 +2408,11 @@ class PositiveBooleanScalProdEqCst : public Constraint {
   }
 
   virtual string DebugString() const {
-    string out =  "PositiveBooleanScalProdEqCst([";
-    for (int i = 0; i < size_; ++i) {
-      if (i > 0) {
-        StringAppendF(&out, ", ");
-      }
-      StringAppendF(&out, "%s", vars_[i]->DebugString().c_str());
-    }
-    StringAppendF(&out, "], [");
-    for (int i = 0; i < size_; ++i) {
-      if (i > 0) {
-        StringAppendF(&out, ", ");
-      }
-      StringAppendF(&out, "%" GG_LL_FORMAT "d", coefs_[i]);
-    }
-    StringAppendF(&out, "], constant = %" GG_LL_FORMAT "d)", constant_);
-    return out;
+    return StringPrintf(
+        "PositiveBooleanScalProd([%s], [%s]) == %" GG_LL_FORMAT "d",
+        DebugStringArray(vars_.get(), size_, ", ").c_str(),
+        Int64ArrayToString(coefs_.get(), size_, ", ").c_str(),
+        constant_);
   }
  private:
   int size_;

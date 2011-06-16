@@ -124,6 +124,47 @@ template <class T> class SimpleRevFIFO {
   int pos_;
 };
 
+// ---------- Pretty Print Helpers ----------
+
+template <class T> string DebugStringArray(T* const* array,
+                                           int size,
+                                           const string& separator) {
+  string out;
+  for (int i = 0; i < size; ++i) {
+    if (i > 0) {
+      out.append(separator);
+    }
+    out.append(array[i]->DebugString());
+  }
+  return out;
+}
+
+template <class T> string NameArray(T* const* array,
+                                    int size,
+                                    const string& separator) {
+  string out;
+  for (int i = 0; i < size; ++i) {
+    if (i > 0) {
+      out.append(separator);
+    }
+    out.append(array[i]->name());
+  }
+  return out;
+}
+
+inline string Int64ArrayToString(const int64* const array,
+                                 int size,
+                                 const string& separator) {
+  string out;
+  for (int i = 0; i < size; ++i) {
+    if (i > 0) {
+      out.append(separator);
+    }
+    StringAppendF(&out, "%" GG_LL_FORMAT "d", array[i]);
+  }
+  return out;
+}
+
 // These methods represents generic demons that will call back a
 // method on the constraint during their Run method.
 
