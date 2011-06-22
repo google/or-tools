@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "base/stringpiece.h"
+#include "base/stringprintf.h"
 
 #include <cstdarg>
 #include <cstdio>
