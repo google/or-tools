@@ -1640,6 +1640,12 @@ class Solver {
                                      SymmetryBreaker* const v3,
                                      SymmetryBreaker* const v4);
 
+  // ----- Simplex Connection -----
+
+  SearchMonitor* MakeSimplexConnection(Callback1<MPSolver*>* const builder,
+                                       Callback1<MPSolver*>* const modifier,
+                                       Callback1<MPSolver*>* const runner,
+                                       int simplex_frequency);
 
   // ----- Search Decicions and Decision Builders -----
 

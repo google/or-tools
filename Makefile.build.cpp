@@ -102,6 +102,7 @@ CONSTRAINT_SOLVER_LIB_OS = \
 	objs/expr_array.$O\
 	objs/expr_cst.$O\
 	objs/expressions.$O\
+	objs/hybrid.$O\
 	objs/interval.$O\
 	objs/local_search.$O\
 	objs/nogoods.$O\
@@ -167,6 +168,9 @@ objs/expr_cst.$O:constraint_solver/expr_cst.cc
 
 objs/expressions.$O:constraint_solver/expressions.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/expressions.cc $(OBJOUT)objs/expressions.$O
+
+objs/hybrid.$O:constraint_solver/hybrid.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/hybrid.cc $(OBJOUT)objs/hybrid.$O
 
 objs/interval.$O:constraint_solver/interval.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/interval.cc $(OBJOUT)objs/interval.$O
