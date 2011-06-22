@@ -38,12 +38,21 @@ void BuildMixedIntegerProgrammingBoundedExample(
 
 
 void RunAllExamples() {
+  #if defined(USE_GLPK)
   LOG(INFO) << "----- Running MIP Example with GLPK -----";
   BuildMixedIntegerProgrammingBoundedExample(
       MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
+  #endif
+  #if defined(USE_CBC)
   LOG(INFO) << "----- Running MIP Example with Coin Branch and Cut -----";
   BuildMixedIntegerProgrammingBoundedExample(
       MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+  #endif
+  #if defined(USE_SCIP)
+  LOG(INFO) << "----- Running MIP Example with SCIP -----";
+  BuildMixedIntegerProgrammingBoundedExample(
+      MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
+  #endif
 }
 }  // namespace operations_research
 
