@@ -3,7 +3,7 @@
 #  ----- about it. -----
 
 # This is needed to find python.h
-PYTHON_INC=-I/usr/include/python$(UNIX_PYTHON_VER) -I/usr/lib/python$(UNIX_PYTHON_VER)
+PYTHON_INC = -I/usr/include/python$(UNIX_PYTHON_VER) -I/usr/lib/python$(UNIX_PYTHON_VER)
 # This is needed to find gflags/gflags.h
 GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
 # This is needed to find protocol buffers.
@@ -12,7 +12,7 @@ PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
 # Define UNIX_CLP_DIR if unset and if UNIX_CBC_DIR is set.
 ifdef UNIX_CBC_DIR
 ifndef UNIX_CLP_DIR
-UNIX_CLP_DIR=$(UNIX_CBC_DIR)
+UNIX_CLP_DIR = $(UNIX_CBC_DIR)
 endif
 endif
 # This is needed to find Coin LP include files.
@@ -39,13 +39,13 @@ endif
 SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG)
 
 # Compilation flags
-DEBUG=-O3 -DNDEBUG
-JNIDEBUG=-O1 -DNDEBUG
-SYSCFLAGS=-fPIC
-CCC=g++
+DEBUG = -O3 -DNDEBUG
+JNIDEBUG = -O1 -DNDEBUG
+SYSCFLAGS = -fPIC
+CCC = g++
 
 # ----- OS Dependent -----
-OS=$(shell uname -s)
+OS = $(shell uname -s)
 
 ifeq ($(OS),Linux)
 LD = gcc -shared
@@ -65,38 +65,38 @@ ifdef UNIX_CBC_DIR
 CBC_LNK = -Wl,-rpath $(UNIX_CBC_DIR)/lib/coin -L$(UNIX_CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp -lOsiVol -lVol
 endif
 ifdef UNIX_SCIP_DIR
-SCIP_LNK =  -Wl,-rpath $(UNIX_SCIP_DIR)/lib -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH) -lreadline
+SCIP_LNK = -Wl,-rpath $(UNIX_SCIP_DIR)/lib -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH) -lreadline
 endif
 # Detect 32 bit or 64 bit OS and define ARCH and SCIP_ARCH flags correctly.
-LBITS := $(shell getconf LONG_BIT)
+LBITS : = $(shell getconf LONG_BIT)
 ifeq ($(LBITS),64)
-   ARCH=-DARCH_K8
-   SCIP_ARCH=linux.x86_64.gnu.opt-pic
+   ARCH = -DARCH_K8
+   SCIP_ARCH = linux.x86_64.gnu.opt-pic
 else
-   ARCH=
-   SCIP_ARCH=linux.x86.gnu.opt-pic
+   ARCH  =
+   SCIP_ARCH = linux.x86.gnu.opt-pic
 endif
-SYS_LNK=-lrt
-JAVA_INC=-I$(LINUX_JDK_ROOT)/include -I$(LINUX_JDK_ROOT)/include/linux
-JAVAC_BIN=$(LINUX_JDK_ROOT)/bin/javac
-JAVA_BIN=$(LINUX_JDK_ROOT)/bin/java
-JAR_BIN=$(LINUX_JDK_ROOT)/bin/jar
-JNILIBEXT=so
-FIX_SWIG=sed -i -e 's/Tlong/T_long/g' gen/com/google/ortools/constraintsolver/Solver.java
+SYS_LNK = -lrt
+JAVA_INC = -I$(LINUX_JDK_ROOT)/include -I$(LINUX_JDK_ROOT)/include/linux
+JAVAC_BIN = $(LINUX_JDK_ROOT)/bin/javac
+JAVA_BIN = $(LINUX_JDK_ROOT)/bin/java
+JAR_BIN = $(LINUX_JDK_ROOT)/bin/jar
+JNILIBEXT = so
+FIX_SWIG = sed -i -e 's/Tlong/T_long/g' gen/com/google/ortools/constraintsolver/Solver.java
 endif
 ifeq ($(OS),Darwin) # Assume Mac Os X
 LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress
 GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
 ZLIB_LNK = -lz
 PROTOBUF_LNK = -L$(UNIX_PROTOBUF_DIR)/lib -lprotobuf
-ARCH=-DARCH_K8
-SYS_LNK=
-JAVA_INC=-I$(MAC_JDK_HEADERS)
-JAVAC_BIN=javac
-JAVA_BIN=java
-JAR_BIN=jar
-JNILIBEXT=jnilib
-FIX_SWIG=
+ARCH = -DARCH_K8
+SYS_LNK =
+JAVA_INC = -I$(MAC_JDK_HEADERS)
+JAVAC_BIN = javac
+JAVA_BIN = java
+JAR_BIN = jar
+JNILIBEXT = jnilib
+FIX_SWIG =
 
 ifdef UNIX_GLPK_DIR
 GLPK_LNK = -L$(UNIX_GLPK_DIR)/lib -lglpk
@@ -108,33 +108,32 @@ ifdef UNIX_CBC_DIR
 CBC_LNK = -L$(UNIX_CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
 endif
 ifdef UNIX_SCIP_DIR
-SCIP_ARCH=darwin.x86.gnu.opt
-SCIP_LNK =  -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH) -lreadline
+SCIP_ARCH = darwin.x86.gnu.opt
+SCIP_LNK = -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH) -lreadline
 endif
 endif
 
-CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
+CFLAGS = $(SYSCFLAGS) $(DEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) \
 	$(SCIP_INC)
-JNIFLAGS= $(SYSCFLAGS) $(JNIDEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
+JNIFLAGS = $(SYSCFLAGS) $(JNIDEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC)
-LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
-LDLPDEPS= $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK)
+LDFLAGS = $(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
+LDLPDEPS = $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK)
 
 # Unix specific definitions
-PROTOBUF_DIR=$(UNIX_PROTOBUF_DIR)
-SWIG_BINARY=$(UNIX_SWIG_BINARY)
-LIBPREFIX=lib
-LIBSUFFIX=a
-LINKCMD=ar rv
-LINKPREFIX=
-O=o
-E=
-SHAREDLIBEXT=so
-SPACE=$(subst ', ,'$(TEMPSPACE))  # Ugly trick to get a space in a var.
-LDOUT=-o$(SPACE)
-OBJOUT=-o$(SPACE)
-EXEOUT=-o$(SPACE)
-DEL=rm -f
-S=/
-CPSEP=:
+PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
+SWIG_BINARY = $(UNIX_SWIG_BINARY)
+LIBPREFIX = lib
+LIBSUFFIX = a
+LINKCMD = ar rv
+LINKPREFIX =
+O = o
+E =
+SHAREDLIBEXT = so
+LDOUT = -o # need the space.
+OBJOUT = -o # need the space.
+EXEOUT = -o # need the space.
+DEL = rm -f
+S = /
+CPSEP = :
