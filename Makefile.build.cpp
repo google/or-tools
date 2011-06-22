@@ -37,9 +37,11 @@ CPBINARIES = \
         cvrptw$E \
 	flow_example$E \
 	golomb$E \
+	linear_assignment_example$E \
 	magic_square$E \
 	network_routing$E \
 	nqueens$E \
+	solve_dimacs_assignment$E \
 	tsp$E
 
 cpexe: $(CPBINARIES)
@@ -54,6 +56,11 @@ ALGORITHMS_LIBS = \
 	$(LIBPREFIX)algorithms.$(LIBSUFFIX)
 
 algorithmslibs: $(ALGORITHMS_LIBS)
+
+DIMACS_LIBS = \
+	$(LIBPREFIX)dimacs.$(LIBSUFFIX)
+
+dimacslibs: $(DIMACS_LIBS)
 
 clean:
 	$(DEL) *.$(LIBSUFFIX)
@@ -90,6 +97,7 @@ CONSTRAINT_SOLVER_LIB_OS = \
 	objs/default_search.$O\
 	objs/demon_profiler.$O\
 	objs/demon_profiler.pb.$O\
+	objs/deviation.$O\
 	objs/element.$O\
 	objs/expr_array.$O\
 	objs/expr_cst.$O\
@@ -144,6 +152,9 @@ gen/constraint_solver/demon_profiler.pb.cc:constraint_solver/demon_profiler.prot
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=constraint_solver --cpp_out=gen/constraint_solver constraint_solver/demon_profiler.proto
 
 gen/constraint_solver/demon_profiler.pb.h:gen/constraint_solver/demon_profiler.pb.cc
+
+objs/deviation.$O:constraint_solver/deviation.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/deviation.cc $(OBJOUT)objs/deviation.$O
 
 objs/element.$O:constraint_solver/element.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/element.cc $(OBJOUT)objs/element.$O
@@ -211,7 +222,8 @@ LINEAR_SOLVER_LIB_OS = \
 	objs/clp_interface.$O \
 	objs/glpk_interface.$O \
 	objs/linear_solver.$O \
-	objs/linear_solver.pb.$O
+	objs/linear_solver.pb.$O \
+	objs/scip_interface.$O
 
 objs/cbc_interface.$O:linear_solver/cbc_interface.cc
 	$(CCC) $(CFLAGS) $(CBC_STRING) -c linear_solver/cbc_interface.cc $(OBJOUT)objs/cbc_interface.$O
@@ -232,6 +244,9 @@ gen/linear_solver/linear_solver.pb.cc:linear_solver/linear_solver.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=linear_solver --cpp_out=gen/linear_solver linear_solver/linear_solver.proto
 
 gen/linear_solver/linear_solver.pb.h:gen/linear_solver/linear_solver.pb.cc
+
+objs/scip_interface.$O:linear_solver/scip_interface.cc
+	$(CCC) $(CFLAGS) -c linear_solver/scip_interface.cc $(OBJOUT)objs/scip_interface.$O
 
 $(LIBPREFIX)linear_solver.$(LIBSUFFIX): $(LINEAR_SOLVER_LIB_OS)
 	$(LINKCMD) $(LINKPREFIX)$(LIBPREFIX)linear_solver.$(LIBSUFFIX) $(LINEAR_SOLVER_LIB_OS)
@@ -268,8 +283,8 @@ GRAPH_LIB_OS=\
 	objs/max_flow.$O \
 	objs/min_cost_flow.$O
 
-objs/linear_assignment.$O:graph/assignment.cc
-	$(CCC) $(CFLAGS) -c graph/assignment.cc $(OBJOUT)objs/linear_assignment.$O
+objs/linear_assignment.$O:graph/linear_assignment.cc
+	$(CCC) $(CFLAGS) -c graph/linear_assignment.cc $(OBJOUT)objs/linear_assignment.$O
 
 objs/bron_kerbosch.$O:graph/bron_kerbosch.cc
 	$(CCC) $(CFLAGS) -c graph/bron_kerbosch.cc $(OBJOUT)objs/bron_kerbosch.$O
@@ -344,7 +359,6 @@ BASE_LIB_OS=\
 	objs/sysinfo.$O\
 	objs/timer.$O
 
-
 objs/bitmap.$O:base/bitmap.cc
 	$(CCC) $(CFLAGS) -c base/bitmap.cc $(OBJOUT)objs/bitmap.$O
 objs/callback.$O:base/callback.cc
@@ -366,6 +380,40 @@ objs/timer.$O:base/timer.cc
 
 $(LIBPREFIX)base.$(LIBSUFFIX): $(BASE_LIB_OS)
 	$(LINKCMD) $(LINKPREFIX)$(LIBPREFIX)base.$(LIBSUFFIX) $(BASE_LIB_OS)
+
+# DIMACS challenge problem format library
+
+DIMACS_LIB_OS=\
+	objs/parse_dimacs_assignment.$O\
+	objs/print_dimacs_assignment.$O
+
+objs/parse_dimacs_assignment.$O:examples/parse_dimacs_assignment.cc
+	$(CCC) $(CFLAGS) -c examples/parse_dimacs_assignment.cc $(OBJOUT)objs/parse_dimacs_assignment.$O
+objs/print_dimacs_assignment.$O:examples/print_dimacs_assignment.cc
+	$(CCC) $(CFLAGS) -c examples/print_dimacs_assignment.cc $(OBJOUT)objs/print_dimacs_assignment.$O
+
+$(LIBPREFIX)dimacs.$(LIBSUFFIX): $(DIMACS_LIB_OS)
+	$(LINKCMD) $(LINKPREFIX)$(LIBPREFIX)dimacs.$(LIBSUFFIX) $(DIMACS_LIB_OS)
+
+# Flow and linear assignment examples
+
+objs/linear_assignment_example.$O:examples/linear_assignment_example.cc
+	$(CCC) $(CFLAGS) -c examples/linear_assignment_example.cc $(OBJOUT)objs/linear_assignment_example.$O
+
+linear_assignment_example$E: $(GRAPH_LIBS) $(BASE_LIBS) objs/linear_assignment_example.$O
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/linear_assignment_example.$O $(GRAPH_LIBS) $(BASE_LIBS) $(EXEOUT)linear_assignment_example$E
+
+objs/flow_example.$O:examples/flow_example.cc
+	$(CCC) $(CFLAGS) -c examples/flow_example.cc $(OBJOUT)objs/flow_example.$O
+
+flow_example$E: $(GRAPH_LIBS) $(BASE_LIBS) objs/flow_example.$O
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/flow_example.$O $(GRAPH_LIBS) $(BASE_LIBS) $(EXEOUT)flow_example$E
+
+objs/solve_dimacs_assignment.$O:examples/solve_dimacs_assignment.cc
+	$(CCC) $(CFLAGS) -c examples/solve_dimacs_assignment.cc $(OBJOUT)objs/solve_dimacs_assignment.$O
+
+solve_dimacs_assignment$E: $(ALGORITHMS_LIBS) $(BASE_LIBS) $(DIMACS_LIBS) $(GRAPH_LIBS) objs/solve_dimacs_assignment.$O
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/solve_dimacs_assignment.$O $(DIMACS_LIBS) $(ALGORITHMS_LIBS) $(GRAPH_LIBS) $(BASE_LIBS) $(EXEOUT)solve_dimacs_assignment$E
 
 # Pure CP and Routing Examples
 
@@ -392,12 +440,6 @@ objs/dobble_ls.$O:examples/dobble_ls.cc
 
 dobble_ls$E: $(CP_LIBS) $(BASE_LIBS) objs/dobble_ls.$O
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/dobble_ls.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)dobble_ls$E
-
-objs/flow_example.$O:examples/flow_example.cc
-	$(CCC) $(CFLAGS) -c examples/flow_example.cc $(OBJOUT)objs/flow_example.$O
-
-flow_example$E: $(GRAPH_LIBS) $(BASE_LIBS) objs/flow_example.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/flow_example.$O $(GRAPH_LIBS) $(BASE_LIBS) $(EXEOUT)flow_example$E
 
 objs/golomb.$O:examples/golomb.cc
 	$(CCC) $(CFLAGS) -c examples/golomb.cc $(OBJOUT)objs/golomb.$O

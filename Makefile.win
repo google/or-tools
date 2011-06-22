@@ -35,6 +35,8 @@ GLPK_SWIG = -DUSE_GLPK
 GLPK_LNK = $(WINDOWS_GLPK_DIR)\\lib\\glpk.lib
 endif
 
+SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG)
+
 JAVA_INC=/I"$(WINDOWS_JDK_DIR)\\include" /I"$(WINDOWS_JDK_DIR)\\include\\win32"
 JAVAC_BIN="$(WINDOWS_JDK_DIR)/bin/javac"
 JAVA_BIN="$(WINDOWS_JDK_DIR)/bin/java"

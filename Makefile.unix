@@ -30,6 +30,13 @@ ifdef UNIX_GLPK_DIR
 GLPK_INC = -I$(UNIX_GLPK_DIR)/include -DUSE_GLPK
 GLPK_SWIG = $(GLPK_INC)
 endif
+# This is needed to find scip include files.
+ifdef UNIX_SCIP_DIR
+SCIP_INC = -I$(UNIX_SCIP_DIR)/src -DUSE_SCIP
+SCIP_SWIG = $(SCIP_INC)
+endif
+
+SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG)
 
 # Compilation flags
 DEBUG=-O3 -DNDEBUG
@@ -57,12 +64,17 @@ endif
 ifdef UNIX_CBC_DIR
 CBC_LNK = -Wl,-rpath $(UNIX_CBC_DIR)/lib/coin -L$(UNIX_CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp -lOsiVol -lVol
 endif
-# Detect 32 bit or 64 bit OS and define ARCH flags correctly.
+ifdef UNIX_SCIP_DIR
+SCIP_LNK =  -Wl,-rpath $(UNIX_SCIP_DIR)/lib -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH) -lreadline
+endif
+# Detect 32 bit or 64 bit OS and define ARCH and SCIP_ARCH flags correctly.
 LBITS := $(shell getconf LONG_BIT)
 ifeq ($(LBITS),64)
    ARCH=-DARCH_K8
+   SCIP_ARCH=linux.x86_64.gnu.opt-pic
 else
    ARCH=
+   SCIP_ARCH=linux.x86.gnu.opt-pic
 endif
 SYS_LNK=-lrt
 JAVA_INC=-I$(LINUX_JDK_ROOT)/include -I$(LINUX_JDK_ROOT)/include/linux
@@ -98,11 +110,12 @@ endif
 endif
 
 CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
-        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC)
+        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) \
+	$(SCIP_INC)
 JNIFLAGS= $(SYSCFLAGS) $(JNIDEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
-        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC)
+        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC)
 LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
-LDLPDEPS= $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK)
+LDLPDEPS= $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK)
 
 # Unix specific definitions
 PROTOBUF_DIR=$(UNIX_PROTOBUF_DIR)

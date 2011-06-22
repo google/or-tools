@@ -267,7 +267,7 @@ run_FlowExample: compile_FlowExample javagraph
 javalp: com.google.ortools.linearsolver.jar $(LIBPREFIX)jnilinearsolver.$(JNILIBEXT)
 
 gen/linear_solver/linear_solver_java_wrap.cc: linear_solver/linear_solver.swig base/base.swig util/data.swig linear_solver/linear_solver.h
-	$(SWIG_BINARY) $(CLP_SWIG) $(CBC_SWIG) $(GLPK_SWIG) -c++ -java -o gen$Slinear_solver$Slinear_solver_java_wrap.cc -package com.google.ortools.linearsolver -outdir gen$Scom$Sgoogle$Sortools$Slinearsolver linear_solver$Slinear_solver.swig
+	$(SWIG_BINARY) $(SWIG_INC) -c++ -java -o gen$Slinear_solver$Slinear_solver_java_wrap.cc -package com.google.ortools.linearsolver -outdir gen$Scom$Sgoogle$Sortools$Slinearsolver linear_solver$Slinear_solver.swig
 
 objs/linear_solver_java_wrap.$O: gen/linear_solver/linear_solver_java_wrap.cc
 	$(CCC) $(JNIFLAGS) $(JAVA_INC) -c gen/linear_solver/linear_solver_java_wrap.cc $(OBJOUT)objs/linear_solver_java_wrap.$O
