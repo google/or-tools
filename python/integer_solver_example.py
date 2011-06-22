@@ -47,6 +47,7 @@ class PyWrapMIPExamples(object):
   def RunAllFirstMIPExample(self):
     self.RunFirstMIPExample(pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
     self.RunFirstMIPExample(pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+    self.RunFirstMIPExample(pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
 
   def RunFirstMIPExampleNewAPI(self, mode):
     """Minimal MIP Example with New API."""
@@ -65,7 +66,10 @@ class PyWrapMIPExamples(object):
   def RunAllFirstMIPExampleNewAPI(self):
     self.RunFirstMIPExampleNewAPI(
         pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
-    self.RunFirstMIPExampleNewAPI(pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+    self.RunFirstMIPExampleNewAPI(
+        pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+    self.RunFirstMIPExampleNewAPI(
+        pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
 
   def RunSuccessiveObjectives(self, mode):
     """Example with succesive objectives."""
@@ -97,6 +101,7 @@ class PyWrapMIPExamples(object):
   def RunAllSuccessiveObjectives(self):
     self.RunSuccessiveObjectives(pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
     self.RunSuccessiveObjectives(pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+    self.RunSuccessiveObjectives(pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
 
   def RunAllExamples(self):
     self.RunAllFirstMIPExample()

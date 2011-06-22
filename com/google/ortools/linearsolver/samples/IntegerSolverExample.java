@@ -48,7 +48,8 @@ public class IntegerSolverExample {
   }
 
   public static void main(String[] args) throws Exception {
-    runFirstIntegerExample(MPSolver.CLP_LINEAR_PROGRAMMING);
-    runFirstIntegerExample(MPSolver.GLPK_LINEAR_PROGRAMMING);
+    runFirstIntegerExample(MPSolver.CBC_MIXED_INTEGER_PROGRAMMING);
+    runFirstIntegerExample(MPSolver.GLPK_MIXED_INTEGER_PROGRAMMING);
+    runFirstIntegerExample(MPSolver.SCIP_MIXED_INTEGER_PROGRAMMING);
   }
 }
