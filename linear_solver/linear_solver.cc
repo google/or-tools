@@ -260,6 +260,9 @@ extern MPSolverInterface* BuildCBCInterface(MPSolver* const solver);
 #if defined(USE_GLPK)
 extern MPSolverInterface* BuildGLPKInterface(MPSolver* const solver, bool mip);
 #endif
+#if defined(USE_SCIP)
+extern MPSolverInterface* BuildSCIPInterface(MPSolver* const solver);
+#endif
 
 const int64 MPSolverInterface::kUnknownNumberOfIterations = -1;
 const int64 MPSolverInterface::kUnknownNumberOfNodes = -1;
@@ -282,6 +285,10 @@ MPSolverInterface* BuildSolverInterface(
 #if defined(USE_CBC)
     case MPSolver::CBC_MIXED_INTEGER_PROGRAMMING:
       return BuildCBCInterface(solver);
+#endif
+#if defined(USE_SCIP)
+    case MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING:
+      return BuildSCIPInterface(solver);
 #endif
     default:
       LOG(FATAL) << "Linear solver not recognized.";
@@ -346,8 +353,9 @@ bool MPSolver::CheckAllNamesValidity() {
   return true;
 }
 
-// ----- Load from protobuf -----
-MPSolver::LoadStatus MPSolver::Load(const MPModelProto& model) {
+// ----- Methods using protocol buffers -----
+// Loads model from protocol buffer.
+MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& model) {
   hash_map<string, MPVariable*> variables;
   for (int i = 0; i < model.variables_size(); ++i) {
     const MPVariableProto& var_proto = model.variables(i);
@@ -389,6 +397,82 @@ MPSolver::LoadStatus MPSolver::Load(const MPModelProto& model) {
   }
   SetOptimizationDirection(model.maximize());
   return MPSolver::NO_ERROR;
+}
+
+// Encode current solution in a solution response protocol buffer.
+void MPSolver::FillSolutionResponse(MPSolutionResponse* response) const {
+  CHECK_NOTNULL(response);
+  if (response->has_result_status() ||
+      response->has_objective_value() ||
+      response->solution_values_size() > 0) {
+    LOG(WARNING) << "The solution response is not empty, "
+                 << "it will be overwritten.";
+  }
+  response->clear_result_status();
+  response->clear_objective_value();
+  response->clear_solution_values();
+
+  switch (interface_->result_status_) {
+    case MPSolver::OPTIMAL : {
+      response->set_result_status(MPSolutionResponse::OPTIMAL);
+      break;
+    }
+    case MPSolver::FEASIBLE : {
+      response->set_result_status(MPSolutionResponse::FEASIBLE);
+      break;
+    }
+    case MPSolver::INFEASIBLE : {
+      response->set_result_status(MPSolutionResponse::INFEASIBLE);
+      break;
+    }
+    case MPSolver::UNBOUNDED : {
+      response->set_result_status(MPSolutionResponse::UNBOUNDED);
+      break;
+    }
+    case MPSolver::ABNORMAL : {
+      response->set_result_status(MPSolutionResponse::ABNORMAL);
+      break;
+    }
+    case MPSolver::NOT_SOLVED : {
+      response->set_result_status(MPSolutionResponse::NOT_SOLVED);
+      break;
+    }
+    default: {
+      response->set_result_status(MPSolutionResponse::ABNORMAL);
+    }
+  }
+  if (interface_->result_status_ == MPSolver::OPTIMAL ||
+      interface_->result_status_ == MPSolver::FEASIBLE) {
+    response->set_objective_value(objective_value());
+    for (int i = 0; i < variables_.size(); ++i) {
+      MPVariable* const var = variables_[i];
+      MPSolutionValue* value = response->add_solution_values();
+      value->set_variable_id(var->name());
+      value->set_value(var->solution_value());
+    }
+  }
+}
+
+// Solves the model encoded by a MPModelRequest protocol buffer and
+// fills the solution encoded as a MPSolutionResponse.
+// The model is solved by the interface specified in the constructor
+// of MPSolver, MPModelRequest.OptimizationProblemType is ignored.
+void MPSolver::SolveWithProtocolBuffers(const MPModelRequest& model_request,
+                                        MPSolutionResponse* response) {
+  CHECK_NOTNULL(response);
+  Clear();
+  MPSolver::LoadStatus loadStatus = LoadModel(model_request.model());
+  if (loadStatus != MPSolver::NO_ERROR) {
+    LOG(WARNING) << "Loading model from protocol buffer failed, "
+                 << "load status = " << loadStatus;
+    response->set_result_status(MPSolutionResponse::ABNORMAL);
+  }
+
+  if (model_request.has_time_limit_ms()) {
+    set_time_limit(model_request.time_limit_ms());
+  }
+  Solve();
+  FillSolutionResponse(response);
 }
 
 void MPSolver::Clear() {

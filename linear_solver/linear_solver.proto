@@ -24,11 +24,6 @@ message MPVariableProto {
   required bool integer = 4;
 }
 
-message MPVariableSampleProto {
-  required string variable_id = 1;
-  repeated double sample_values = 2;
-}
-
 message MPTermProto {
   required string variable_id = 1;
   required double coefficient = 2;
@@ -47,5 +42,37 @@ message MPModelProto {
   repeated MPTermProto objective_terms = 3;
   repeated MPConstraintProto constraints = 7;
   optional string name = 8;
+}
+
+message MPModelRequest {
+  required MPModelProto model = 1;
+  enum OptimizationProblemType {
+    GLPK_LINEAR_PROGRAMMING = 0;
+    GLPK_MIXED_INTEGER_PROGRAMMING = 1;
+    CLP_LINEAR_PROGRAMMING = 2;
+    CBC_MIXED_INTEGER_PROGRAMMING = 3;
+    SCIP_MIXED_INTEGER_PROGRAMMING = 4;
+  }
+  required OptimizationProblemType problem_type = 2;
+  optional int32 time_limit_ms = 3;
+}
+
+message MPSolutionValue {
+  required string variable_id = 1;
+  required double value = 2;
+}
+
+message MPSolutionResponse {
+  enum ResultStatus {
+    OPTIMAL = 0;
+    FEASIBLE = 1;
+    INFEASIBLE = 2;
+    UNBOUNDED = 3;
+    ABNORMAL = 4;
+    NOT_SOLVED = 5;
+  }
+  required ResultStatus result_status = 1;
+  optional double objective_value = 2;
+  repeated MPSolutionValue solution_values = 3;
 }
 

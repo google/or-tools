@@ -91,6 +91,8 @@ using std::string;
 namespace operations_research {
 
 class MPModelProto;
+class MPModelRequest;
+class MPSolutionResponse;
 class MPSolverInterface;
 class MPSolverParameters;
 
@@ -119,6 +121,7 @@ class MPVariable {
   friend class CBCInterface;
   friend class CLPInterface;
   friend class GLPKInterface;
+  friend class SCIPInterface;
 
   MPVariable(double lb, double ub, bool integer, const string& name,
              MPSolverInterface* const interface)
@@ -172,6 +175,7 @@ class MPConstraint {
   friend class CBCInterface;
   friend class CLPInterface;
   friend class GLPKInterface;
+  friend class SCIPInterface;
 
   // Creates a constraint and updates the pointer to its MPSolverInterface.
   MPConstraint(double lb,
@@ -227,6 +231,7 @@ class MPObjective {
   friend class CBCInterface;
   friend class CLPInterface;
   friend class GLPKInterface;
+  friend class SCIPInterface;
 
   // Creates an objective and updates the pointer to its parent 'MPSolver'.
   explicit MPObjective(MPSolverInterface* const interface)
@@ -256,6 +261,9 @@ class MPSolver {
 #if defined(USE_CBC)
     CBC_MIXED_INTEGER_PROGRAMMING,
 #endif
+#if defined(USE_SCIP)
+    SCIP_MIXED_INTEGER_PROGRAMMING,
+#endif
   };
 
   enum ResultStatus {
@@ -277,10 +285,22 @@ class MPSolver {
   MPSolver(const string& name, OptimizationProblemType problem_type);
   virtual ~MPSolver();
 
-  // ----- Load model from protobuf -----
+  // ----- Methods using protocol buffers -----
 #ifndef SWIG
   // TODO(user): fix swig support.
-  LoadStatus Load(const MPModelProto& model);
+
+  // Loads model from protocol buffer.
+  LoadStatus LoadModel(const MPModelProto& model);
+
+  // Encode current solution in a solution response protocol buffer.
+  void FillSolutionResponse(MPSolutionResponse* response) const;
+
+  // Solves the model encoded by a MPModelRequest protocol buffer and
+  // fills the solution encoded as a MPSolutionResponse.
+  // The model is solved by the interface specified in the constructor
+  // of MPSolver, MPModelRequest.OptimizationProblemType is ignored.
+  void SolveWithProtocolBuffers(const MPModelRequest& model_request,
+                                MPSolutionResponse* response);
 #endif
 
   // ----- Init and Clear -----
@@ -290,7 +310,6 @@ class MPSolver {
   // ----- Variables ------
   // Returns the number of variables.
   int NumVariables() const { return variables_.size(); }
-  const std::vector<MPVariable*>& variables() const { return variables_; }
 
   // Create a variable with the given bounds.
   MPVariable* MakeVar(double lb, double ub, bool integer, const string& name);
@@ -431,6 +450,7 @@ class MPSolver {
   friend class GLPKInterface;
   friend class CLPInterface;
   friend class CBCInterface;
+  friend class SCIPInterface;
   friend class MPSolverInterface;
 
  private:
