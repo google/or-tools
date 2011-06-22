@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "graph/assignment.h"
+#include "graph/linear_assignment.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -204,10 +204,10 @@ void LinearSumAssignment::InitializeActiveNodeContainer() {
 // price function therefore means simply unmatching every matched
 // node.
 //
-// TODO(user): In the future we will price out arcs, which will
-// reduce the set of nodes we unmatch here. If a matching arc is
-// priced out, we will not unmatch its endpoints since that element of
-// the matching is guaranteed not to change.
+// In the future we will price out arcs, which will reduce the set of
+// nodes we unmatch here. If a matching arc is priced out, we will not
+// unmatch its endpoints since that element of the matching is
+// guaranteed not to change.
 void LinearSumAssignment::SaturateNegativeArcs() {
   total_excess_ = 0;
   for (BipartiteLeftNodeIterator node_it(graph_, num_left_nodes_);
@@ -217,13 +217,6 @@ void LinearSumAssignment::SaturateNegativeArcs() {
     if (IsActive(node)) {
       // This can happen in the first iteration when nothing is
       // matched yet.
-      //
-      // TODO(user): Make sense of the following comment, which
-      // looks like it might be in the wrong place or confused
-      // somehow.
-      //
-      // Eventually we will increment the total excess only when the in the
-      // non-priced-out case. Currently nothing is priced out.
       total_excess_ += 1;
     } else {
       // We're about to create a unit of excess by unmatching these nodes.
@@ -284,8 +277,6 @@ bool LinearSumAssignment::Refine() {
     }
   }
   DCHECK(active_nodes_->Empty());
-  // TODO(user): Fix return value to reflect whether we have proven
-  // infeasibility.
   iteration_stats_.refinements_ += 1;
   return true;
 }

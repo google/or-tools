@@ -21,8 +21,8 @@
 //
 // Example usage:
 //
-// #include "graph/assignment.h"
 // #include "graph/ebert_graph.h"
+// #include "graph/linear_assignment.h"
 // ...
 // ::operations_research::NodeIndex num_nodes = ...;
 // ::operations_research::NodeIndex num_left_nodes = num_nodes / 2;
@@ -155,8 +155,8 @@
 // Stanford University Doctoral Dissertation, Department of Computer
 // Science, 1995.
 
-#ifndef OR_TOOLS_GRAPH_ASSIGNMENT_H_
-#define OR_TOOLS_GRAPH_ASSIGNMENT_H_
+#ifndef OR_TOOLS_GRAPH_LINEAR_ASSIGNMENT_H_
+#define OR_TOOLS_GRAPH_LINEAR_ASSIGNMENT_H_
 
 #include <deque>
 #include <limits>
@@ -266,9 +266,6 @@ class LinearSumAssignment {
     return total_stats_.StatsString();
   }
 
-  // TODO(user): This should probably be derived from a common base
-  // class of the node iterators in ebert_graph.h instead of the
-  // pseudo-duck-typing we do today.
   class BipartiteLeftNodeIterator {
    public:
     BipartiteLeftNodeIterator(const StarGraph& graph,
@@ -294,8 +291,6 @@ class LinearSumAssignment {
   };
 
  private:
-  // TODO(user): Share the following structure among all the
-  // preflow-push flow algorithms.
   struct Stats {
     Stats()
         : pushes_(0),
@@ -328,9 +323,6 @@ class LinearSumAssignment {
     int64 refinements_;
   };
 
-  // TODO(user): Make this interface and its two implementations
-  // below templates parameterized so they can handle both nodes and
-  // arcs, and share it among all the preflow-push flow algorithms.
   class ActiveNodeContainerInterface {
    public:
     virtual ~ActiveNodeContainerInterface() {}
@@ -629,4 +621,4 @@ class LinearSumAssignment {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_ASSIGNMENT_H_
+#endif  // OR_TOOLS_GRAPH_LINEAR_ASSIGNMENT_H_
