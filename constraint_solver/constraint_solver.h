@@ -77,7 +77,11 @@
 #include "base/hash.h"
 #include "base/random.h"
 
+class Closure;
 class File;
+template <class A1, class A2, class A3> class Callback3;
+template <typename R, typename T1, typename T2, typename T3>
+class ResultCallback3;
 template <typename R, typename T1, typename T2> class ResultCallback2;
 template <typename R, typename T1> class ResultCallback1;
 template <typename T1> class Callback1;
@@ -991,6 +995,14 @@ class Solver {
                              int64 card_min,
                              int64 card_max,
                              int64 card_size);
+
+  // Deviation constraint:
+  // sum_i |n * vars[i] - total_sum| <= deviation_var and
+  // sum_i vars[i] == total_sum
+  // n = #vars
+  Constraint* MakeDeviation(const std::vector<IntVar*>& vars,
+                            IntVar* const deviation_var,
+                            int64 total_sum);
 
   // All variables are pairwise different.
   Constraint* MakeAllDifferent(const std::vector<IntVar*>& vars, bool range);
