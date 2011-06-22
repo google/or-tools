@@ -107,6 +107,10 @@ endif
 ifdef UNIX_CBC_DIR
 CBC_LNK = -L$(UNIX_CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
 endif
+ifdef UNIX_SCIP_DIR
+SCIP_ARCH=darwin.x86.gnu.opt
+SCIP_LNK =  -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH) -lreadline
+endif
 endif
 
 CFLAGS= $(SYSCFLAGS) $(DEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
