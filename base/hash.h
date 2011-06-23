@@ -22,8 +22,8 @@ namespace operations_research {
   using namespace __gnu_cxx;
 }  // namespace operations_research
 #else
-#include "base/hash.h"
-#include "base/hash.h"
+#include <hash_set>
+#include <hash_map>
 #endif
 #include <string>
 #include <utility>
@@ -107,32 +107,33 @@ struct hash<std::pair<First, Second> > {
 }  // namespace __gnu_cxx
 #else  // !defined(_MSC_VER)
 // The following class defines a hash function for pair<int64, int64>.
-class PairInt64Hasher : public stdext::hash_compare <pair<int64, int64> > {
+class PairInt64Hasher : public stdext::hash_compare <std::pair<int64, int64> > {
  public:
-  size_t operator() (const pair<int64, int64>& a) const {
+  size_t operator() (const std::pair<int64, int64>& a) const {
     uint64 x = a.first;
     uint64 y = GG_ULONGLONG(0xe08c1d668b756f82);
     uint64 z = a.second;
-    mix(x, y, z);
+    operations_research::mix(x, y, z);
     return z;
   }
-  bool operator() (const pair<int64, int64>& a1,
-                   const pair<int64, int64>& a2) const {
+  bool operator() (const std::pair<int64, int64>& a1,
+                   const std::pair<int64, int64>& a2) const {
     return a1.first < a2.first ||
         (a1.first == a2.first && a1.second < a2.second);
   }
 };
 
-class PairIntHasher : public stdext::hash_compare <pair<int, int> > {
+class PairIntHasher : public stdext::hash_compare <std::pair<int, int> > {
  public:
-  size_t operator() (const pair<int, int>& a) const {
+  size_t operator() (const std::pair<int, int>& a) const {
     uint32 x = a.first;
     uint32 y = 0x9e3779b9UL;
     uint32 z = a.second;
-    mix(x, y, z);
+    operations_research::mix(x, y, z);
     return z;
   }
-  bool operator() (const pair<int, int>& a1, const pair<int, int>& a2) const {
+  bool operator() (const std::pair<int, int>& a1,
+		   const std::pair<int, int>& a2) const {
     return a1.first < a2.first ||
         (a1.first == a2.first && a1.second < a2.second);
   }
