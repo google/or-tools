@@ -2278,7 +2278,7 @@ class Solver {
   const SolverParameters parameters_;
   hash_map<const PropagationBaseObject*, string> propagation_object_names_;
   hash_map<const PropagationBaseObject*,
-           pair<string, const PropagationBaseObject*> > delegate_objects_;
+    std::pair<string, const PropagationBaseObject*> > delegate_objects_;
   const string empty_name_;
   scoped_ptr<Queue> queue_;
   scoped_ptr<Trail> trail_;
@@ -3765,8 +3765,8 @@ class Pack : public Constraint {
   scoped_array<IntVarIterator*> holes_;
   uint64 stamp_;
   Demon* demon_;
-  std::vector<pair<int64, int64> > to_set_;
-  std::vector<pair<int64, int64> > to_unset_;
+  std::vector<std::pair<int64, int64> > to_set_;
+  std::vector<std::pair<int64, int64> > to_unset_;
   bool in_process_;
 };
 

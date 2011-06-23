@@ -149,11 +149,11 @@ class NetworkRoutingData {
   int max_capacity_;
   int fixed_charge_cost_;
 #if defined(_MSC_VER)
-  hash_map<pair<int, int>, int, PairIntHasher> all_arcs_;
-  hash_map<pair<int, int>, int, PairIntHasher> all_demands_;
+  hash_map<std::pair<int, int>, int, PairIntHasher> all_arcs_;
+  hash_map<std::pair<int, int>, int, PairIntHasher> all_demands_;
 #else
-  hash_map<pair<int, int>, int> all_arcs_;
-  hash_map<pair<int, int>, int> all_demands_;
+  hash_map<std::pair<int, int>, int> all_arcs_;
+  hash_map<std::pair<int, int>, int> all_demands_;
 #endif
 };
 

@@ -2169,7 +2169,7 @@ string Solver::GetName(const PropagationBaseObject* object) const {
   if (name != NULL) {
     return *name;
   }
-  const pair<string, const PropagationBaseObject*>* delegate_object =
+  const std::pair<string, const PropagationBaseObject*>* delegate_object =
       FindOrNull(delegate_objects_, object);
   if (delegate_object != NULL) {
     const string& prefix = delegate_object->first;

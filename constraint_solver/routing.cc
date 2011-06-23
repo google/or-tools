@@ -361,7 +361,7 @@ RoutingModel::RoutingModel(int nodes, int vehicles)
 
 RoutingModel::RoutingModel(int nodes,
                            int vehicles,
-                           const std::vector<pair<int, int> >& start_end)
+                           const std::vector<std::pair<int, int> >& start_end)
     : solver_(NULL),
       no_cycle_constraint_(NULL),
       costs_(vehicles),
@@ -434,7 +434,7 @@ RoutingModel::RoutingModel(int nodes,
   CHECK_EQ(vehicles, starts.size());
   CHECK_EQ(vehicles, ends.size());
   hash_set<int> depot_set;
-  std::vector<pair<int, int> > start_end(starts.size());
+  std::vector<std::pair<int, int> > start_end(starts.size());
   for (int i = 0; i < starts.size(); ++i) {
     depot_set.insert(starts[i]);
     depot_set.insert(ends[i]);
@@ -641,11 +641,11 @@ void RoutingModel::AddLocalSearchOperator(LocalSearchOperator* ls_operator) {
 }
 
 void RoutingModel::SetDepot(int depot) {
-  std::vector<pair<int, int> > start_end(vehicles_, std::make_pair(depot, depot));
+  std::vector<std::pair<int, int> > start_end(vehicles_, std::make_pair(depot, depot));
   SetStartEnd(start_end);
 }
 
-void RoutingModel::SetStartEnd(const std::vector<pair<int, int> >& start_end) {
+  void RoutingModel::SetStartEnd(const std::vector<std::pair<int, int> >& start_end) {
   if (is_depot_set_) {
     LOG(WARNING) << "A depot has already been specified, ignoring new ones";
     return;

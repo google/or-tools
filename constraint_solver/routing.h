@@ -68,11 +68,11 @@ class RoutingModel {
   // vehicle route. Used to model multiple depots.
   RoutingModel(int nodes,
                int vehicles,
-               const std::vector<pair<int, int> >& start_end);
+               const std::vector<std::pair<int, int> >& start_end);
   // Constructor taking vectors of start nodes and end nodes for each
   // vehicle route. Used to model multiple depots.
   // TODO(user): added to simplify SWIG wrapping. Remove when swigging
-  // std::vector<pair<int, int> > is ok.
+  // std::vector<std::pair<int, int> > is ok.
   RoutingModel(int nodes,
                int vehicles,
                const std::vector<int>& starts,
@@ -232,7 +232,7 @@ class RoutingModel {
   };
 
   void Initialize();
-  void SetStartEnd(const std::vector<pair<int, int> >& start_end);
+  void SetStartEnd(const std::vector<std::pair<int, int> >& start_end);
   void AddDisjunctionInternal(const std::vector<int64>& nodes, int64 penalty);
   void AddNoCycleConstraintInternal();
   void SetVehicleCostInternal(int vehicle, Solver::IndexEvaluator2* evaluator);

@@ -2724,7 +2724,7 @@ SearchMonitor* Solver::MakeSimulatedAnnealing(bool maximize,
 
 // ---------- Guided Local Search ----------
 
-typedef pair<int64, int64> Arc;
+typedef std::pair<int64, int64> Arc;
 
 // Base GLS penalties abstract class. Maintains the penalty frequency for each
 // (variable, value) arc.
@@ -2836,8 +2836,8 @@ class GuidedLocalSearch : public Metaheuristic {
   }
  protected:
   struct Comparator {
-    bool operator() (const pair<Arc, double>& i,
-                     const pair<Arc, double>& j) {
+    bool operator() (const std::pair<Arc, double>& i,
+                     const std::pair<Arc, double>& j) {
       return i.second > j.second;
     }
   };
@@ -3044,14 +3044,14 @@ int64 GuidedLocalSearch::Evaluate(const Assignment* delta,
 // Penalize all the most expensive arcs (var, value) according to their utility:
 // utility(i, j) = cost(i, j) / (1 + penalty(i, j))
 bool GuidedLocalSearch::LocalOptimum() {
-  std::vector<pair<Arc, double> > utility(size_);
+  std::vector<std::pair<Arc, double> > utility(size_);
   for (int i = 0; i < size_; ++i) {
     const int64 var_value = assignment_.Value(vars_[i]);
     const int64 value =
         (var_value != i) ? AssignmentPenalty(assignment_, i, var_value) : 0;
     const Arc arc(i, var_value);
     const int64 penalty = penalties_->Value(arc);
-    utility[i] = pair<Arc, double>(arc, value / (penalty + 1.0));
+    utility[i] = std::pair<Arc, double>(arc, value / (penalty + 1.0));
   }
   Comparator comparator;
   std::sort(utility.begin(), utility.end(), comparator);
