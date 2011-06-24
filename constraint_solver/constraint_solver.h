@@ -1641,11 +1641,12 @@ class Solver {
                                      SymmetryBreaker* const v4);
 
   // ----- Simplex Connection -----
-
+#if !defined(SWIG)
   SearchMonitor* MakeSimplexConnection(Callback1<MPSolver*>* const builder,
                                        Callback1<MPSolver*>* const modifier,
                                        Callback1<MPSolver*>* const runner,
                                        int simplex_frequency);
+#endif
 
   // ----- Search Decicions and Decision Builders -----
 
