@@ -128,7 +128,7 @@ class ArcIndexOrderingByTailNode {
   // written that way.
 };
 
-void LinearSumAssignment::OptimizeGraphLayout(StarGraph *graph) {
+void LinearSumAssignment::OptimizeGraphLayout(StarGraph* graph) {
   // The graph argument is only to give us a non-const-qualified
   // handle on the graph we already have. Any different graph is
   // nonsense.

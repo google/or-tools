@@ -14,8 +14,8 @@ com.google.ortools.constraintsolver.jar: gen/constraint_solver/constraint_solver
 	$(JAVAC_BIN) -d objs com$Sgoogle$Sortools$Sconstraintsolver$S*.java gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java
 	$(JAR_BIN) cf com.google.ortools.constraintsolver.jar -C objs com$Sgoogle$Sortools$Sconstraintsolver
 
-    $(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT): objs/constraint_solver_java_wrap.$O $(CP_LIBS) $(LP_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT)$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT) objs/constraint_solver_java_wrap.$O $(CP_LIBS) $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS)
+$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT): objs/constraint_solver_java_wrap.$O $(CP_LIBS) $(BASE_LIBS)
+	$(LD) $(LDOUT)$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT) objs/constraint_solver_java_wrap.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS)
 
 # Java CP Examples
 

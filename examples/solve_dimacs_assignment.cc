@@ -37,7 +37,7 @@ DEFINE_bool(assignment_compare_hungarian, false,
 namespace operations_research {
 
 CostValue BuildAndSolveHungarianInstance(
-    LinearSumAssignment &assignment) {
+    const LinearSumAssignment& assignment) {
   const StarGraph& graph = assignment.Graph();
   typedef std::vector<double> HungarianRow;
   typedef std::vector<HungarianRow> HungarianProblem;

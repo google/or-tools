@@ -641,11 +641,12 @@ void RoutingModel::AddLocalSearchOperator(LocalSearchOperator* ls_operator) {
 }
 
 void RoutingModel::SetDepot(int depot) {
-  std::vector<std::pair<int, int> > start_end(vehicles_, std::make_pair(depot, depot));
+  std::vector<std::pair<int, int> > start_end(vehicles_,
+                                         std::make_pair(depot, depot));
   SetStartEnd(start_end);
 }
 
-  void RoutingModel::SetStartEnd(const std::vector<std::pair<int, int> >& start_end) {
+void RoutingModel::SetStartEnd(const std::vector<std::pair<int, int> >& start_end) {
   if (is_depot_set_) {
     LOG(WARNING) << "A depot has already been specified, ignoring new ones";
     return;

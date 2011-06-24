@@ -95,6 +95,13 @@ static void ParseArcLine(const char* line,
                          ParserState* state,
                          StarGraph* graph,
                          LinearSumAssignment** assignment) {
+  if (graph == NULL) {
+    state->bad_ = true;
+    state->reason_ =
+        "Problem specification line must precede any arc specification.";
+    state->bad_line_.reset(new string(line));
+    return;
+  }
   if (!state->nodes_described_) {
     state->nodes_described_ = true;
     DCHECK(*assignment == NULL);
@@ -175,12 +182,12 @@ static void ParseOneLine(ParserState* state,
 }
 
 void ParseFileByLines(const string& filename,
-                      Callback1<char*> *line_parser) {
-  FILE *fp = fopen(filename.c_str(), "r");
+                      Callback1<char*>* line_parser) {
+  FILE* fp = fopen(filename.c_str(), "r");
   const int kMaximumLineSize = 1024;
   char line[kMaximumLineSize];
   if (fp != NULL) {
-    char *result;
+    char* result;
     do {
       result = fgets(line, kMaximumLineSize, fp);
       if (result != NULL) {
@@ -188,13 +195,14 @@ void ParseFileByLines(const string& filename,
       }
     } while (result != NULL);
   }
+  delete line_parser;
 }
 
 
 // Reads an assignment problem description from the given file in
-// DIMACS format and returns an LinearSumAssignment object
-// representing the problem description. For a description of the
-// format, see http://lpsolve.sourceforge.net/5.5/DIMACS_asn.htm
+// DIMACS format and returns a LinearSumAssignment object representing
+// the problem description. For a description of the format, see
+// http://lpsolve.sourceforge.net/5.5/DIMACS_asn.htm
 LinearSumAssignment* ParseDimacsAssignment(const string& filename,
                                            string* error_message) {
   StarGraph* graph = NULL;

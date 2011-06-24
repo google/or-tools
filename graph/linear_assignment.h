@@ -193,7 +193,7 @@ class LinearSumAssignment {
 
   // Optimizes the layout of the graph for the access pattern our
   // implementation will use.
-  void OptimizeGraphLayout(StarGraph *graph);
+  void OptimizeGraphLayout(StarGraph* graph);
 
   // Allows tests, iterators, etc., to inspect our underlying graph.
   inline const StarGraph& Graph() const {
@@ -543,7 +543,7 @@ class LinearSumAssignment {
   //
   // Avoids overflow in computing the bound.
   inline CostValue PriceChangeBound(CostValue extra_divisor,
-                                    bool *in_range) const {
+                                    bool* in_range) const {
     const CostValue n = graph_.num_nodes();
     // We work in double-precision floating point to determine whether
     // we'll overflow the integral CostValue type's range of

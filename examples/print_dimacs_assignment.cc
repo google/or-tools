@@ -37,7 +37,7 @@ static void WriteOrDie(const char* buffer,
 
 void PrintDimacsAssignmentProblem(const LinearSumAssignment& assignment,
                                   const string& output_filename) {
-  FILE *output = fopen(output_filename.c_str(), "w");
+  FILE* output = fopen(output_filename.c_str(), "w");
   const StarGraph& graph(assignment.Graph());
   string output_line = StringPrintf("p asn %lld %lld\n",
                                     graph.num_nodes(),

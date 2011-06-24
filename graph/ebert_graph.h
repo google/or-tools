@@ -251,7 +251,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
    public:
     CycleHandlerForAnnotatedArcs(
         PermutationCycleHandler<ArcIndex>* annotation_handler,
-        EbertGraph *graph)
+        EbertGraph* graph)
         : annotation_handler_(annotation_handler),
           graph_(graph),
           head_temp_(kNilNode),
