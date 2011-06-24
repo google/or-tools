@@ -22,8 +22,8 @@ namespace operations_research {
   using namespace __gnu_cxx;
 }  // namespace operations_research
 #else
-#include <hash_set>
 #include <hash_map>
+#include <hash_set>
 #endif
 #include <string>
 #include <utility>
