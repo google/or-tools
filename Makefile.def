@@ -20,7 +20,7 @@ UNIX_CBC_DIR=../cbc-2.6.2
 UNIX_GLPK_DIR=../glpk-4.45
 # This is the root directory of scip installation. Please undefine if scip is
 # not installed.
-#UNIX_SCIP_DIR=../scip-2.0.1
+#UNIX_SCIP_DIR=../ziboptsuite-2.0.1/scip-2.0.1
 
 # Linux jdk root
 # first, determine 32 or 64 bits.

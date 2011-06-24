@@ -71,10 +71,10 @@ endif
 LBITS : = $(shell getconf LONG_BIT)
 ifeq ($(LBITS),64)
    ARCH = -DARCH_K8
-   SCIP_ARCH = linux.x86_64.gnu.opt-pic
+   SCIP_ARCH = linux.x86_64.gnu.opt
 else
    ARCH  =
-   SCIP_ARCH = linux.x86.gnu.opt-pic
+   SCIP_ARCH = linux.x86.gnu.opt
 endif
 SYS_LNK = -lrt
 JAVA_INC = -I$(LINUX_JDK_ROOT)/include -I$(LINUX_JDK_ROOT)/include/linux
