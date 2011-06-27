@@ -23,6 +23,7 @@
 
 #include "base/callback.h"
 #include "base/commandlineflags.h"
+#include "base/concise_iterator.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
@@ -1682,6 +1683,11 @@ void Solver::NewSearch(DecisionBuilder* const db,
   for (int i = 0; i < size; ++i) {
     search->push_monitor(monitors[i]);
   }
+  vector<SearchMonitor*> extras;
+  db->ExtraMonitors(&extras);
+  for (ConstIter<vector<SearchMonitor*> > it(extras); !it.at_end(); ++it) {
+    search->push_monitor(*it);
+  }
   search->EnterSearch();
 
   // Push sentinel and set decision builder.
@@ -2127,6 +2133,11 @@ bool Solver::NestedSolve(DecisionBuilder* const db,
   Search new_search(this);
   for (int i = 0; i < size; ++i) {
     new_search.push_monitor(monitors[i]);
+  }
+  vector<SearchMonitor*> extras;
+  db->ExtraMonitors(&extras);
+  for (ConstIter<vector<SearchMonitor*> > it(extras); !it.at_end(); ++it) {
+    new_search.push_monitor(*it);
   }
   searches_.push_back(&new_search);
   searches_.back()->set_created_by_solve(true);  // Overwrites default.

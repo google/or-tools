@@ -360,6 +360,13 @@ class ComposeDecisionBuilder : public DecisionBuilder {
   virtual Decision* Next(Solver* const s);
   virtual string DebugString() const;
   void add(DecisionBuilder* const db);
+  virtual void ExtraMonitors(std::vector<SearchMonitor*>* const monitors) {
+    for (ConstIter<vector<DecisionBuilder*> > it(builders_);
+         !it.at_end();
+         ++it) {
+      (*it)->ExtraMonitors(monitors);
+    }
+  }
  private:
   std::vector<DecisionBuilder*> builders_;
   int start_index_;

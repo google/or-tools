@@ -2450,6 +2450,7 @@ class DecisionBuilder : public BaseObject {
   // its work.
   virtual Decision* Next(Solver* const s) = 0;
   virtual string DebugString() const { return "DecisionBuilder"; }
+  virtual void ExtraMonitors(std::vector<SearchMonitor*>* const monitors) {}
  private:
   DISALLOW_COPY_AND_ASSIGN(DecisionBuilder);
 };
