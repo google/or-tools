@@ -639,7 +639,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   // Hook on the search to check restart before the refutation of a decision.
   class Monitor : public SearchMonitor {
    public:
-    Monitor(Solver* const solver,ImpactDecisionBuilder* const db)
+    Monitor(Solver* const solver, ImpactDecisionBuilder* const db)
         : SearchMonitor(solver), db_(db) {}
     virtual ~Monitor() {}
     virtual void RefuteDecision(Decision* const d) {
