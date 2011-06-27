@@ -1684,7 +1684,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
     search->push_monitor(monitors[i]);
   }
   vector<SearchMonitor*> extras;
-  db->ExtraMonitors(&extras);
+  db->ExtraMonitors(this, &extras);
   for (ConstIter<vector<SearchMonitor*> > it(extras); !it.at_end(); ++it) {
     search->push_monitor(*it);
   }
@@ -2135,7 +2135,7 @@ bool Solver::NestedSolve(DecisionBuilder* const db,
     new_search.push_monitor(monitors[i]);
   }
   vector<SearchMonitor*> extras;
-  db->ExtraMonitors(&extras);
+  db->ExtraMonitors(this, &extras);
   for (ConstIter<vector<SearchMonitor*> > it(extras); !it.at_end(); ++it) {
     new_search.push_monitor(*it);
   }

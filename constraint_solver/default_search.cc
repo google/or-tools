@@ -578,6 +578,122 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   virtual ~ImpactDecisionBuilder() {
     STLDeleteElements(&heuristics_);
   }
+  virtual Decision* Next(Solver* const solver) {
+    if (!init_done_) {
+      if (parameters_.display_level != DefaultPhaseParameters::NONE) {
+        LOG(INFO) << "Init impact based search phase on " << size_
+                  << " variables, initialization splits = "
+                  << parameters_.initialization_splits
+                  << ", heuristic_period = " << parameters_.heuristic_period
+                  << ", run_all_heuristics = " << parameters_.run_all_heuristics
+                  << ", restart_log_size = " << parameters_.restart_log_size;
+      }
+      // We need to reset the impacts because FirstRun calls RemoveValues
+      // which can result in a Fail() therefore calling this method again.
+      impact_recorder_.ResetImpacts();
+      impact_recorder_.FirstRun(solver, parameters_.initialization_splits);
+      if (parameters_.persistent_impact) {
+        init_done_ = true;
+      } else {
+        solver->SaveAndSetValue(&init_done_, true);
+      }
+    }
+
+    if (current_var_index_ == -1 && fail_stamp_ != 0) {
+      // After solution or after heuristics.
+      impact_recorder_.RecordLogSearchSpace();
+    } else {
+      if (fail_stamp_ != 0) {
+        if (solver->fail_stamp() == fail_stamp_) {
+          impact_recorder_.UpdateAfterAssignment(current_var_index_,
+                                                 current_value_);
+        } else {
+          impact_recorder_.UpdateAfterFailure(current_var_index_,
+                                              current_value_);
+        }
+      }
+    }
+    fail_stamp_ = solver->fail_stamp();
+
+    ++heuristic_branch_count_;
+    if (heuristic_branch_count_ % parameters_.heuristic_period == 0) {
+      current_var_index_ = -1;
+      return &runner_;
+    }
+    current_var_index_ = -1;
+    current_value_ = 0;
+    if (FindVarValue(&current_var_index_, &current_value_)) {
+      return solver->MakeAssignVariableValue(vars_[current_var_index_],
+                                             current_value_);
+    } else {
+      return NULL;
+    }
+  }
+
+  virtual void ExtraMonitors(Solver* const solver,
+                             std::vector<SearchMonitor*>* const extras) {
+    extras->push_back(solver->RevAlloc(new Monitor(solver, this)));
+  }
+
+ private:
+  // Hook on the search to check restart before the refutation of a decision.
+  class Monitor : public SearchMonitor {
+   public:
+    Monitor(Solver* const solver,ImpactDecisionBuilder* const db)
+        : SearchMonitor(solver), db_(db) {}
+    virtual ~Monitor() {}
+    virtual void RefuteDecision(Decision* const d) {
+      Solver* const s = solver();
+      if (db_->CheckRestart(s)) {
+        RestartCurrentSearch();
+        s->Fail();
+      }
+    }
+   private:
+    ImpactDecisionBuilder* const db_;
+  };
+
+  // This class wrap one heuristics with extra information: name and
+  // number of repetitions when it is run.
+  struct HeuristicWrapper {
+    HeuristicWrapper(Solver* const solver,
+                     IntVar* const* vars,
+                     int size,
+                     Solver::IntVarStrategy var_strategy,
+                     Solver::IntValueStrategy value_strategy,
+                     const string& heuristic_name,
+                     int heuristic_runs)
+        : phase(solver->MakePhase(vars, size, var_strategy, value_strategy)),
+          name(heuristic_name),
+          runs(heuristic_runs) {}
+
+    // The decision builder we are going to use in this dive.
+    DecisionBuilder* const phase;
+    // A name for logging purposes.
+    const string name;
+    // How many times we will run this particular heuristic in case the
+    // parameter run_all_heuristics is true. This is useful for random
+    // heuristics where it makes sense to run them more than once.
+    const int runs;
+  };
+
+  // ----- heuristic helper ------
+
+  class RunHeuristic : public Decision {
+   public:
+    explicit RunHeuristic(
+        ResultCallback1<bool, Solver*>* call_heuristics)
+        : call_heuristics_(call_heuristics) {}
+      virtual ~RunHeuristic() {}
+      virtual void Apply(Solver* const solver) {
+        if (!call_heuristics_->Run(solver)) {
+          solver->Fail();
+        }
+      }
+      virtual void Refute(Solver* const solver) {}
+   private:
+    scoped_ptr<ResultCallback1<bool, Solver*> >  call_heuristics_;
+  };
 
   void InitHeuristics(Solver* const solver) {
     const int kRunOnce = 1;
@@ -654,6 +770,30 @@ class ImpactDecisionBuilder : public DecisionBuilder {
                           kint64max);  // solutions.
   }
 
+  // Called  before applying the refutation of the decision.
+  bool CheckRestart(Solver* const solver) {
+    if (parameters_.restart_log_size >= 0) {
+      const double log_search_space_size =
+          impact_recorder_.LogSearchSpaceSize();
+      const int search_depth = solver->SearchDepth();
+      if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+        LOG(INFO) << "search_depth = " << search_depth
+                  << ", log_search_space_size = " << log_search_space_size
+                  << ", min_log_search_space = " << min_log_search_space_;
+      }
+      if (min_log_search_space_ > log_search_space_size) {
+        min_log_search_space_ = log_search_space_size;
+      } else if (min_log_search_space_ + parameters_.restart_log_size
+                 < log_search_space_size) {
+        if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+          LOG(INFO) << "Restarting ";
+        }
+        min_log_search_space_ = std::numeric_limits<double>::infinity();
+        return true;
+      }
+    }
+    return false;
+  }
 
   // This method will do an exhaustive scan of all domains of all
   // variables to select the variable with the maximal sum of impacts
@@ -710,121 +850,6 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       return RunOneHeuristic(solver, index);
     }
   }
-
-  virtual Decision* Next(Solver* const solver) {
-    if (!init_done_) {
-      if (parameters_.display_level != DefaultPhaseParameters::NONE) {
-        LOG(INFO) << "Init impact based search phase on " << size_
-                  << " variables, initialization splits = "
-                  << parameters_.initialization_splits
-                  << ", heuristic_period = " << parameters_.heuristic_period
-                  << ", run_all_heuristics = " << parameters_.run_all_heuristics
-                  << ", restart_log_size = " << parameters_.restart_log_size;
-      }
-      // We need to reset the impacts because FirstRun calls RemoveValues
-      // which can result in a Fail() therefore calling this method again.
-      impact_recorder_.ResetImpacts();
-      impact_recorder_.FirstRun(solver, parameters_.initialization_splits);
-      if (parameters_.persistent_impact) {
-        init_done_ = true;
-      } else {
-        solver->SaveAndSetValue(&init_done_, true);
-      }
-    }
-
-    if (current_var_index_ == -1 && fail_stamp_ != 0) {
-      // After solution or after heuristics.
-      impact_recorder_.RecordLogSearchSpace();
-    } else {
-      if (fail_stamp_ != 0) {
-        if (solver->fail_stamp() == fail_stamp_) {
-          impact_recorder_.UpdateAfterAssignment(current_var_index_,
-                                                 current_value_);
-        } else {
-          impact_recorder_.UpdateAfterFailure(current_var_index_,
-                                              current_value_);
-        }
-      }
-    }
-    fail_stamp_ = solver->fail_stamp();
-
-    if (parameters_.restart_log_size >= 0) {
-      const double log_search_space_size =
-          impact_recorder_.LogSearchSpaceSize();
-      const int search_depth = solver->SearchDepth();
-      if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-        LOG(INFO) << "search_depth = " << search_depth
-                  << ", log_search_space_size = " << log_search_space_size
-                  << ", min_log_search_space = " << min_log_search_space_;
-      }
-      if (min_log_search_space_ > log_search_space_size) {
-        min_log_search_space_ = log_search_space_size;
-      } else if (min_log_search_space_ + parameters_.restart_log_size
-                 < log_search_space_size) {
-        if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-          LOG(INFO) << "Restarting ";
-        }
-        min_log_search_space_ = std::numeric_limits<double>::infinity();
-        solver->RestartSearch();
-      }
-    }
-
-    ++heuristic_branch_count_;
-    if (heuristic_branch_count_ % parameters_.heuristic_period == 0) {
-      current_var_index_ = -1;
-      return &runner_;
-    }
-    current_var_index_ = -1;
-    current_value_ = 0;
-    if (FindVarValue(&current_var_index_, &current_value_)) {
-      return solver->MakeAssignVariableValue(vars_[current_var_index_],
-                                             current_value_);
-    } else {
-      return NULL;
-    }
-  }
- private:
-  // ----- Heuristic wrapper -----
-
-  struct HeuristicWrapper {
-    HeuristicWrapper(Solver* const solver,
-                     IntVar* const* vars,
-                     int size,
-                     Solver::IntVarStrategy var_strategy,
-                     Solver::IntValueStrategy value_strategy,
-                     const string& heuristic_name,
-                     int heuristic_runs)
-        : phase(solver->MakePhase(vars, size, var_strategy, value_strategy)),
-          name(heuristic_name),
-          runs(heuristic_runs) {}
-
-    // The decision builder we are going to use in this dive.
-    DecisionBuilder* const phase;
-    // A name for logging purposes.
-    const string name;
-    // How many times we will run this particular heuristic in case the
-    // parameter run_all_heuristics is true. This is useful for random
-    // heuristics where it makes sense to run them more than once.
-    const int runs;
-  };
-
-  // ----- heuristic helper ------
-
-  class RunHeuristic : public Decision {
-   public:
-    explicit RunHeuristic(
-        ResultCallback1<bool, Solver*>* update_impact_callback)
-        : update_impact_callback_(update_impact_callback) {}
-      virtual ~RunHeuristic() {}
-      virtual void Apply(Solver* const solver) {
-        if (!update_impact_callback_->Run(solver)) {
-          solver->Fail();
-        }
-      }
-      virtual void Refute(Solver* const solver) {}
-   private:
-    scoped_ptr<ResultCallback1<bool, Solver*> >  update_impact_callback_;
-  };
 
   // ----- data members -----
 
