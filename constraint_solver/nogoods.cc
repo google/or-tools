@@ -54,7 +54,7 @@ class NoGoodTerm {
   virtual ~NoGoodTerm() {}
 
   virtual TermStatus Evaluate() const = 0;
-  virtual void ApplyReverse() = 0;
+  virtual void Refute() = 0;
   virtual string DebugString() const = 0;
  private:
   DISALLOW_COPY_AND_ASSIGN(NoGoodTerm);
@@ -80,7 +80,7 @@ class IntegerVariableNoGoodTerm : public NoGoodTerm {
     }
   }
 
-  virtual void ApplyReverse() {
+  virtual void Refute() {
     if (assign_) {
       integer_variable_->RemoveValue(value_);
     } else {
@@ -146,7 +146,7 @@ void NoGood::Apply(Solver* const solver) {
     solver->Fail();
   }
   if (first_undecided != NULL) {
-    first_undecided->ApplyReverse();
+    first_undecided->Refute();
   }
 }
 
