@@ -133,7 +133,7 @@ class PairIntHasher : public stdext::hash_compare <std::pair<int, int> > {
     return z;
   }
   bool operator() (const std::pair<int, int>& a1,
-		   const std::pair<int, int>& a2) const {
+                   const std::pair<int, int>& a2) const {
     return a1.first < a2.first ||
         (a1.first == a2.first && a1.second < a2.second);
   }
