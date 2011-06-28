@@ -2340,6 +2340,7 @@ class BaseObject {
   BaseObject() {}
   virtual ~BaseObject() {}
   virtual string DebugString() const { return "BaseObject"; }
+
  private:
   DISALLOW_COPY_AND_ASSIGN(BaseObject);
 };
@@ -2417,6 +2418,7 @@ class Decision : public BaseObject {
   }
   // Visits the decision.
   virtual void Accept(DecisionVisitor* const visitor) const;
+
  private:
   DISALLOW_COPY_AND_ASSIGN(Decision);
 };
@@ -2434,6 +2436,7 @@ class DecisionVisitor : public BaseObject {
   virtual void VisitScheduleOrPostpone(IntervalVar* const var, int64 est);
   virtual void VisitTryRankFirst(Sequence* const sequence, int index);
   virtual void VisitUnknownDecision();
+
  private:
   DISALLOW_COPY_AND_ASSIGN(DecisionVisitor);
 };
@@ -2452,6 +2455,7 @@ class DecisionBuilder : public BaseObject {
   virtual string DebugString() const { return "DecisionBuilder"; }
   virtual void ExtraMonitors(Solver* const solver,
                              std::vector<SearchMonitor*>* const extras) {}
+
  private:
   DISALLOW_COPY_AND_ASSIGN(DecisionBuilder);
 };
@@ -2507,6 +2511,7 @@ class Action : public BaseObject {
   // The main callback of the class.
   virtual void Run(Solver* const s) = 0;
   virtual string DebugString() const;
+
  private:
   DISALLOW_COPY_AND_ASSIGN(Action);
 };
@@ -2518,6 +2523,7 @@ class VariableQueueCleaner : public Action {
   virtual ~VariableQueueCleaner() {}
   virtual void Run(Solver* const solver);
   void set_var(DomainIntVar* const var) { var_ = var; }
+
  private:
   DomainIntVar* var_;
 };
@@ -2543,6 +2549,7 @@ class Constraint : public PropagationBaseObject {
   virtual string DebugString() const;
 
   void PostAndPropagate();
+
  private:
   DISALLOW_COPY_AND_ASSIGN(Constraint);
 };
@@ -2622,6 +2629,7 @@ class SearchMonitor : public BaseObject {
 
   // Periodic call to check limits in long running methods.
   virtual void PeriodicCheck();
+
  private:
   Solver* const solver_;
   DISALLOW_COPY_AND_ASSIGN(SearchMonitor);
@@ -2647,6 +2655,7 @@ template <class T> class Rev {
       value_ = val;
     }
   }
+
  private:
   uint64 stamp_;
   T value_;
@@ -2914,6 +2923,7 @@ class OptimizeVar : public SearchMonitor {
   virtual string DebugString() const;
 
   void ApplyBound();
+
  private:
   IntVar* const var_;
   int64 step_;
@@ -2957,6 +2967,7 @@ class SearchLimit : public SearchMonitor {
   virtual string DebugString() const {
     return StringPrintf("SearchLimit(crossed = %i)", crossed_);
   }
+
  private:
   bool crossed_;
   DISALLOW_COPY_AND_ASSIGN(SearchLimit);
@@ -2987,6 +2998,7 @@ class NoGood {
   // Pretty print.
   string DebugString() const;
   // TODO(user) : support interval variables and more types of constraints.
+
  private:
   std::vector<NoGoodTerm*> terms_;
 };
@@ -3020,6 +3032,7 @@ class NoGoodManager : public SearchMonitor {
   virtual void EnterSearch();
   virtual void BeginNextDecision(DecisionBuilder* const db);
   virtual bool AcceptSolution();
+
  private:
   // ----- Implementor API -----
 
@@ -3124,7 +3137,6 @@ class IntervalVar : public PropagationBaseObject {
 // search decision.
 class Sequence : public Constraint {
  public:
-
   enum State { ONE_BEFORE_TWO, TWO_BEFORE_ONE, UNDECIDED };
 
   Sequence(Solver* const s,
@@ -3214,6 +3226,7 @@ class AssignmentElement {
   void Activate() { activated_ = true; }
   void Deactivate() { activated_ = false; }
   bool Activated() const { return activated_; }
+
  private:
   bool activated_;
 };
@@ -3255,7 +3268,8 @@ class IntVarElement : public AssignmentElement {
     max_ = v;
   }
   string DebugString() const;
- public:
+
+ private:
   IntVar* var_;
   int64 min_;
   int64 max_;
@@ -3343,6 +3357,7 @@ class IntervalVarElement : public AssignmentElement {
     performed_max_ = v;
   }
   string DebugString() const;
+
  private:
   int64 start_min_;
   int64 start_max_;
@@ -3440,6 +3455,7 @@ template <class V, class E> class AssignmentContainer {
       }
     }
   }
+
  private:
   void CopyToMap() {
     for (int i = elements_map_.size(); i < elements_.size(); ++i) {
@@ -3583,6 +3599,7 @@ class Assignment : public PropagationBaseObject {
   IntervalContainer& MutableIntervalVarContainer() {
     return interval_var_container_;
   }
+
  private:
   IntContainer int_var_container_;
   IntervalContainer interval_var_container_;
@@ -3620,6 +3637,7 @@ class SmallRevBitSet {
     return (bits_ != 0) && !(bits_ & (bits_ - 1));
   }
   int64 GetFirstOne() const;
+
  private:
   uint64 bits_;
   uint64 stamp_;
@@ -3669,6 +3687,7 @@ class RevBitSet {
 
   // Works in matrix and array mode.
   void RevClearAll(Solver* const solver);
+
  private:
   const int64 rows_;
   const int64 columns_;
@@ -3756,6 +3775,7 @@ class Pack : public Constraint {
   void AssignFirstPossibleToBin(int64 bin_index);
   void AssignAllRemainingItems();
   void UnassignAllRemainingItems();
+
  private:
   bool IsInProcess() const;
   scoped_array<IntVar*> vars_;

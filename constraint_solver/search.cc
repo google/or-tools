@@ -340,6 +340,7 @@ class SearchTrace : public SearchMonitor {
   virtual void NoMoreSolutions() {
     LG << prefix_ << " NoMoreSolutions()";
   }
+
  private:
   const string prefix_;
 };
@@ -362,19 +363,19 @@ class ComposeDecisionBuilder : public DecisionBuilder {
   void add(DecisionBuilder* const db);
   virtual void ExtraMonitors(Solver* const solver,
                              std::vector<SearchMonitor*>* const monitors) {
-    for (ConstIter<vector<DecisionBuilder*> > it(builders_);
+    for (ConstIter<std::vector<DecisionBuilder*> > it(builders_);
          !it.at_end();
          ++it) {
       (*it)->ExtraMonitors(solver, monitors);
     }
   }
+
  private:
   std::vector<DecisionBuilder*> builders_;
   int start_index_;
 };
 
-ComposeDecisionBuilder::ComposeDecisionBuilder()
-    : start_index_(0) {}
+ComposeDecisionBuilder::ComposeDecisionBuilder() : start_index_(0) {}
 
 Decision* ComposeDecisionBuilder::Next(Solver* const s) {
   const int size = builders_.size();
@@ -460,6 +461,7 @@ class VariableSelector : public BaseObject {
   virtual ~VariableSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id) = 0;
   string VarDebugString() const;
+
  protected:
   scoped_array<IntVar*> vars_;
   int size_;
@@ -481,6 +483,7 @@ class FirstUnboundSelector : public VariableSelector {
   virtual ~FirstUnboundSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
   virtual string DebugString() const { return "ChooseFirstUnbound"; }
+
  private:
   int first_;
 };
@@ -683,6 +686,7 @@ class CheapestVarSelector : public VariableSelector {
   virtual ~CheapestVarSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
   virtual string DebugString() const { return "CheapestVarSelector"; }
+
  private:
   scoped_ptr<ResultCallback1<int64, int64> > var_evaluator_;
 };
@@ -721,6 +725,7 @@ class PathSelector : public VariableSelector {
   virtual ~PathSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id);
   virtual string DebugString() const { return "ChooseNextOnPath"; }
+
  private:
   bool UpdateIndex(int64* index) const;
   bool FindPathStart(int64* index) const;
@@ -902,6 +907,7 @@ class CheapestValueSelector : public ValueSelector {
   virtual ~CheapestValueSelector() {}
   virtual int64 Select(const IntVar* const v, int64 id);
   string DebugString() const { return "CheapestValue"; }
+
  private:
   scoped_ptr<ResultCallback2<int64, int64, int64> > eval_;
   scoped_ptr<ResultCallback1<int64, int64> > tie_breaker_;
@@ -946,6 +952,7 @@ class VariableAssignmentSelector : public BaseVariableAssignmentSelector {
     return var_selector_->Select(s, id);
   }
   string DebugString() const;
+
  private:
   VariableSelector* const var_selector_;
   ValueSelector* const value_selector_;
@@ -964,6 +971,7 @@ class BaseEvaluatorSelector : public BaseVariableAssignmentSelector {
   BaseEvaluatorSelector(const IntVar* const* vars, int size,
                         ResultCallback2<int64, int64, int64>* evaluator);
   ~BaseEvaluatorSelector() {}
+
  protected:
   struct Element {
     Element() : var(0), value(0) {}
@@ -1010,6 +1018,7 @@ class DynamicEvaluatorSelector : public BaseEvaluatorSelector {
   virtual int64 SelectValue(const IntVar* const var, int64 id);
   virtual IntVar* SelectVariable(Solver* const s, int64* id);
   virtual string DebugString() const;
+
  private:
   int first_;
   scoped_ptr<ResultCallback1<int64, int64> > tie_breaker_;
@@ -1076,6 +1085,7 @@ class StaticEvaluatorSelector : public BaseEvaluatorSelector {
   virtual int64 SelectValue(const IntVar* const var, int64 id);
   virtual IntVar* SelectVariable(Solver* const s, int64* id);
   virtual string DebugString() const;
+
  private:
   class Compare {
    public:
@@ -1090,6 +1100,7 @@ class StaticEvaluatorSelector : public BaseEvaluatorSelector {
     int64 Value(const Element& element) const {
       return evaluator_->Run(element.var, element.value);
     }
+
    private:
     ResultCallback2<int64, int64, int64>* evaluator_;
   };
@@ -1166,6 +1177,7 @@ class AssignOneVariableValue : public Decision {
   virtual void Accept(DecisionVisitor* const visitor) const {
     visitor->VisitSetVariableValue(var_, value_);
   }
+
  private:
   IntVar* const var_;
   int64 value_;
@@ -1204,6 +1216,7 @@ class AssignOneVariableValueOrFail : public Decision {
   virtual void Accept(DecisionVisitor* const visitor) const {
     visitor->VisitSetVariableValue(var_, value_);
   }
+
  private:
   IntVar* const var_;
   const int64 value_;
@@ -1243,6 +1256,7 @@ class SplitOneVariable : public Decision {
   virtual void Accept(DecisionVisitor* const visitor) const {
     visitor->VisitSplitVariableDomain(var_, value_, start_with_lower_half_);
   }
+
  private:
   IntVar* const var_;
   const int64 value_;
@@ -1312,6 +1326,7 @@ class AssignVariablesValues : public Decision {
       visitor->VisitSetVariableValue(vars_[i], values_[i]);
     }
   }
+
  private:
   scoped_array<IntVar*> vars_;
   scoped_array<int64> values_;
@@ -1934,6 +1949,7 @@ class FirstSolutionCollector : public SolutionCollector {
   virtual void EnterSearch();
   virtual bool AtSolution();
   virtual string DebugString() const;
+
  private:
   bool done_;
 };
@@ -2353,6 +2369,7 @@ class Metaheuristic : public SearchMonitor {
                 int64 step);
   virtual ~Metaheuristic() {}
   virtual void RefuteDecision(Decision* const d);
+
  protected:
   IntVar* const objective_;
   int64 step_;
@@ -2404,6 +2421,7 @@ class TabuSearch : public Metaheuristic {
   virtual string DebugString() const {
     return "Tabu Search";
   }
+
  private:
   struct VarValue {
     VarValue(IntVar* const var, int64 value, int64 stamp)
@@ -2636,6 +2654,7 @@ class SimulatedAnnealing : public Metaheuristic {
   virtual string DebugString() const {
     return "Simulated Annealing";
   }
+
  private:
   float Temperature() const;
 
@@ -2752,6 +2771,7 @@ class GuidedLocalSearchPenaltiesTable : public GuidedLocalSearchPenalties {
   virtual bool HasValues() const { return has_values_; }
   virtual void Increment(const Arc& arc);
   virtual int64 Value(const Arc& arc) const;
+
  private:
   std::vector<std::vector<int64> > penalties_;
   bool has_values_;
@@ -2790,6 +2810,7 @@ class GuidedLocalSearchPenaltiesMap : public GuidedLocalSearchPenalties {
   virtual bool HasValues() const { return (penalties_.size() != 0); }
   virtual void Increment(const Arc& arc);
   virtual int64 Value(const Arc& arc) const;
+
  private:
   Bitmap penalized_;
 #if defined(_MSC_VER)
@@ -2842,6 +2863,7 @@ class GuidedLocalSearch : public Metaheuristic {
   virtual string DebugString() const {
     return "Guided Local Search";
   }
+
  protected:
   struct Comparator {
     bool operator() (const std::pair<Arc, double>& i,
@@ -3099,6 +3121,7 @@ class BinaryGuidedLocalSearch : public GuidedLocalSearch {
                                     int64 index,
                                     int* container_index,
                                     int64* penalty);
+
  private:
   int64 PenalizedValue(int64 i, int64 j);
   scoped_ptr<Solver::IndexEvaluator2> objective_function_;
@@ -3192,6 +3215,7 @@ class TernaryGuidedLocalSearch : public GuidedLocalSearch {
                                     int64 index,
                                     int* container_index,
                                     int64* penalty);
+
  private:
   int64 PenalizedValue(int64 i, int64 j, int64 k);
   int64 GetAssignmentSecondaryValue(const Assignment::IntContainer& container,
@@ -3423,6 +3447,7 @@ class RegularLimit : public SearchLimit {
                     int64 solutions);
   int64 wall_time() { return wall_time_; }
   virtual string DebugString() const;
+
  private:
   bool CheckTime();
 
@@ -3694,6 +3719,7 @@ class CustomLimit : public SearchLimit {
   virtual void Init();
   virtual void Copy(const SearchLimit* const limit);
   virtual SearchLimit* MakeClone() const;
+
  private:
   ResultCallback<bool>* limiter_;
   bool delete_;
@@ -3759,6 +3785,7 @@ class SolveOnce : public DecisionBuilder {
   virtual string DebugString() const {
     return StringPrintf("SolveOnce(%s)", db_->DebugString().c_str());
   }
+
  private:
   DecisionBuilder* const db_;
   std::vector<SearchMonitor*> monitors_;
@@ -3873,6 +3900,7 @@ class NestedOptimize : public DecisionBuilder {
                         maximize_,
                         step_);
   }
+
  private:
   DecisionBuilder* const db_;
   Assignment* const solution_;
@@ -3996,6 +4024,7 @@ class LubyRestart : public SearchMonitor {
   virtual string DebugString() const {
     return StringPrintf("LubyRestart(%i)", scale_factor_);
   }
+
  private:
   const int scale_factor_;
   int iteration_;

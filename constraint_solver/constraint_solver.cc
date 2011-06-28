@@ -23,7 +23,6 @@
 
 #include "base/callback.h"
 #include "base/commandlineflags.h"
-#include "base/concise_iterator.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
@@ -31,6 +30,7 @@
 #include "base/stringprintf.h"
 #include "zlib.h"
 #include "base/stringpiece.h"
+#include "base/concise_iterator.h"
 #include "base/map-util.h"
 #include "constraint_solver/constraint_solveri.h"
 
@@ -169,6 +169,7 @@ class FifoPriorityQueue : public SinglePriorityQueue {
   }
 
   virtual void Init() {}
+
  private:
   Cell* first_;
   Cell* last_;
@@ -304,6 +305,7 @@ class Queue {
       to_add_.clear();
     }
   }
+
  private:
   void ProcessIfUnfrozen() {
     if (freeze_level_ == 0) {
@@ -463,6 +465,7 @@ template <class T> class ZlibTrailPacker : public TrailPacker<T> {
                    packed_block.size());
     CHECK_EQ(Z_OK, result);
   }
+
  private:
   const uint64 tmp_size_;
   scoped_array<char> tmp_block_;
@@ -545,6 +548,7 @@ template <class T> class CompressedTrail {
     ++size_;
   }
   int size() const { return size_; }
+
  private:
   struct Block {
     string compressed;
@@ -1683,9 +1687,9 @@ void Solver::NewSearch(DecisionBuilder* const db,
   for (int i = 0; i < size; ++i) {
     search->push_monitor(monitors[i]);
   }
-  vector<SearchMonitor*> extras;
+  std::vector<SearchMonitor*> extras;
   db->ExtraMonitors(this, &extras);
-  for (ConstIter<vector<SearchMonitor*> > it(extras); !it.at_end(); ++it) {
+  for (ConstIter<std::vector<SearchMonitor*> > it(extras); !it.at_end(); ++it) {
     search->push_monitor(*it);
   }
   search->EnterSearch();
@@ -1866,6 +1870,7 @@ class ReverseDecision : public Decision {
     str += ")";
     return str;
   }
+
  private:
   Decision* const decision_;
 };
@@ -2134,9 +2139,9 @@ bool Solver::NestedSolve(DecisionBuilder* const db,
   for (int i = 0; i < size; ++i) {
     new_search.push_monitor(monitors[i]);
   }
-  vector<SearchMonitor*> extras;
+  std::vector<SearchMonitor*> extras;
   db->ExtraMonitors(this, &extras);
-  for (ConstIter<vector<SearchMonitor*> > it(extras); !it.at_end(); ++it) {
+  for (ConstIter<std::vector<SearchMonitor*> > it(extras); !it.at_end(); ++it) {
     new_search.push_monitor(*it);
   }
   searches_.push_back(&new_search);

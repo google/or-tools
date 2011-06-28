@@ -65,6 +65,7 @@ class DomainWatcher {
   double Log2(int64 size) const {
     return cached_log_.Log2(size);
   }
+
  private:
   scoped_array<IntVar*> vars_;
   const int size_;
@@ -153,6 +154,7 @@ class InitVarImpacts : public DecisionBuilder {
     // Public data for easy access.
     IntVar* var_;
     int64 value_;
+
    private:
     Closure* const update_impact_closure_;
     DISALLOW_COPY_AND_ASSIGN(AssignCallFail);
@@ -198,6 +200,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
     IntVar* var_;
     int64 value_min_;
     int64 value_max_;
+
    private:
     Closure* const update_impact_closure_;
     DISALLOW_COPY_AND_ASSIGN(AssignIntervalCallFail);
@@ -266,6 +269,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
   void set_update_impact_callback(Callback2<int, int64>* const callback) {
     update_impact_callback_ = callback;
   }
+
  private:
   IntVar* var_;
   Callback2<int, int64>* update_impact_callback_;
@@ -315,7 +319,6 @@ class ImpactRecorder {
       // values during the FirstRun() method.
       impacts_[i].resize(vars_[i]->Max() - vars_[i]->Min() + 1,
                          kInitFailureImpact);
-
     }
   }
 
@@ -494,6 +497,7 @@ class ImpactRecorder {
       }
     }
   }
+
  private:
   // A container for the variables needed in FirstRun that is reversibly
   // allocable.
@@ -578,6 +582,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   virtual ~ImpactDecisionBuilder() {
     STLDeleteElements(&heuristics_);
   }
+
   virtual Decision* Next(Solver* const solver) {
     if (!init_done_) {
       if (parameters_.display_level != DefaultPhaseParameters::NONE) {
@@ -641,7 +646,9 @@ class ImpactDecisionBuilder : public DecisionBuilder {
    public:
     Monitor(Solver* const solver, ImpactDecisionBuilder* const db)
         : SearchMonitor(solver), db_(db) {}
+
     virtual ~Monitor() {}
+
     virtual void RefuteDecision(Decision* const d) {
       Solver* const s = solver();
       if (db_->CheckRestart(s)) {
@@ -649,6 +656,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         s->Fail();
       }
     }
+
    private:
     ImpactDecisionBuilder* const db_;
   };
@@ -685,12 +693,15 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         ResultCallback1<bool, Solver*>* call_heuristics)
         : call_heuristics_(call_heuristics) {}
       virtual ~RunHeuristic() {}
+
       virtual void Apply(Solver* const solver) {
         if (!call_heuristics_->Run(solver)) {
           solver->Fail();
         }
       }
+
       virtual void Refute(Solver* const solver) {}
+
    private:
     scoped_ptr<ResultCallback1<bool, Solver*> >  call_heuristics_;
   };
