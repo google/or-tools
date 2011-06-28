@@ -32,6 +32,7 @@
 
 DEFINE_string(solver_write_model, "", "path of the file to write the model to");
 
+namespace operations_research {
 namespace {
 
 // Insert name in name_set and check for duplicates.
@@ -45,9 +46,33 @@ void CheckDuplicateName(const string& name,
   }
 }
 
-}  // namespace
+// Create a valid name (unique) for a variable i in case it does
+// not already have one.
+string CreateValidVariableName(
+    const operations_research::MPVariable& variable, int i) {
+  if (variable.name().empty()) {
+    // The index cannot be used because the model may not have been
+    // extracted yet, so use i instead.
+    return StringPrintf("auto_variable_%d", i);
+  } else {
+    return variable.name();
+  }
+}
 
-namespace operations_research {
+// Create a valid name (unique) for constraint i in case it does
+// not already have one.
+string CreateValidConstraintName(
+    const operations_research::MPConstraint& constraint, int i) {
+  if (constraint.name().empty()) {
+    // The index cannot be used because the model may not have been
+    // extracted yet, so use i instead.
+    return StringPrintf("auto_constraint_%d", i);
+  } else {
+    return constraint.name();
+  }
+}
+
+}  // namespace
 
 // ----- MPConstraint -----
 
@@ -235,11 +260,11 @@ void MPSolver::SetOptimizationDirection(bool maximize) {
   interface_->SetOptimizationDirection(maximize);
 }
   // Minimizing or maximizing?
-bool MPSolver::Maximization() {
+bool MPSolver::Maximization() const {
   return interface_->maximize_;
 }
 
-bool MPSolver::Minimization() {
+bool MPSolver::Minimization() const {
   return !interface_->maximize_;
 }
 
@@ -396,7 +421,78 @@ MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& model) {
     }
   }
   SetOptimizationDirection(model.maximize());
+  if (model.has_objective_offset()) {
+    linear_objective_.SetOffset(model.objective_offset());
+  }
   return MPSolver::NO_ERROR;
+}
+
+// Exports model to protocol buffer.
+void MPSolver::ExportModel(MPModelProto* model) const {
+  CHECK_NOTNULL(model);
+  if (model->variables_size() > 0 ||
+      model->has_maximize() ||
+      model->objective_terms_size() > 0 ||
+      model->constraints_size() > 0 ||
+      model->has_name() ||
+      model->has_objective_offset()) {
+    LOG(WARNING) << "The model protocol buffer is not empty, "
+                 << "it will be overwritten.";
+    model->clear_variables();
+    model->clear_maximize();
+    model->clear_objective_terms();
+    model->clear_constraints();
+    model->clear_name();
+  }
+
+  // Variables need non-empty names for the model protocol buffer, so
+  // we may need to create names.
+  hash_map<MPVariable*, string> valid_variable_names;
+
+  // Variables
+  for (int j = 0; j < variables_.size(); ++j) {
+    MPVariable* const var = variables_[j];
+    MPVariableProto* const variable_proto = model->add_variables();
+    valid_variable_names[var] = CreateValidVariableName(*var, j);
+    variable_proto->set_id(valid_variable_names[var]);
+    variable_proto->set_lb(var->lb());
+    variable_proto->set_ub(var->ub());
+    variable_proto->set_integer(var->integer());
+  }
+
+  // Constraints
+  for (int i = 0; i < constraints_.size(); ++i) {
+    MPConstraint* const constraint = constraints_[i];
+    MPConstraintProto* const constraint_proto = model->add_constraints();
+    // Constraint names need to be non-empty.
+    string valid_constraint_name = CreateValidConstraintName(*constraint, i);
+    constraint_proto->set_id(valid_constraint_name);
+    constraint_proto->set_lb(constraint->lb());
+    constraint_proto->set_ub(constraint->ub());
+    for (ConstIter<hash_map<MPVariable*, double> >
+             it(constraint->coefficients_);
+         !it.at_end(); ++it) {
+      MPVariable* const var = it->first;
+      const double coef = it->second;
+      MPTermProto* const term = constraint_proto->add_terms();
+      term->set_variable_id(valid_variable_names[var]);
+      term->set_coefficient(coef);
+    }
+  }
+
+  // Objective
+  for (hash_map<MPVariable*, double>::const_iterator it =
+           linear_objective_.coefficients_.begin();
+       it != linear_objective_.coefficients_.end();
+       ++it) {
+    MPVariable* const var = it->first;
+    const double coef = it->second;
+    MPTermProto* const term = model->add_objective_terms();
+    term->set_variable_id(valid_variable_names[var]);
+    term->set_coefficient(coef);
+  }
+  model->set_maximize(Maximization());
+  model->set_objective_offset(linear_objective_.offset_);
 }
 
 // Encode current solution in a solution response protocol buffer.
@@ -407,10 +503,10 @@ void MPSolver::FillSolutionResponse(MPSolutionResponse* response) const {
       response->solution_values_size() > 0) {
     LOG(WARNING) << "The solution response is not empty, "
                  << "it will be overwritten.";
+    response->clear_result_status();
+    response->clear_objective_value();
+    response->clear_solution_values();
   }
-  response->clear_result_status();
-  response->clear_objective_value();
-  response->clear_solution_values();
 
   switch (interface_->result_status_) {
     case MPSolver::OPTIMAL : {
@@ -461,7 +557,7 @@ void MPSolver::SolveWithProtocolBuffers(const MPModelRequest& model_request,
                                         MPSolutionResponse* response) {
   CHECK_NOTNULL(response);
   Clear();
-  MPSolver::LoadStatus loadStatus = LoadModel(model_request.model());
+  const MPSolver::LoadStatus loadStatus = LoadModel(model_request.model());
   if (loadStatus != MPSolver::NO_ERROR) {
     LOG(WARNING) << "Loading model from protocol buffer failed, "
                  << "load status = " << loadStatus;

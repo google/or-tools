@@ -42,6 +42,7 @@ message MPModelProto {
   repeated MPTermProto objective_terms = 3;
   repeated MPConstraintProto constraints = 7;
   optional string name = 8;
+  optional double objective_offset = 9;
 }
 
 message MPModelRequest {

@@ -292,6 +292,9 @@ class MPSolver {
   // Loads model from protocol buffer.
   LoadStatus LoadModel(const MPModelProto& model);
 
+  // Exports model to protocol buffer.
+  void ExportModel(MPModelProto* model) const;
+
   // Encode current solution in a solution response protocol buffer.
   void FillSolutionResponse(MPSolutionResponse* response) const;
 
@@ -376,9 +379,9 @@ class MPSolver {
   // Sets the optimization direction (min/max).
   void SetOptimizationDirection(bool maximize);
   // Minimizing or maximizing?
-  bool Maximization();
+  bool Maximization() const;
   // Minimizing or maximizing?
-  bool Minimization();
+  bool Minimization() const;
 
   // Set minimization mode.
   void SetMinimization() { SetOptimizationDirection(false); }
