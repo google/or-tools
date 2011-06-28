@@ -78,11 +78,7 @@
 // For the common case in which elements can be accessed using
 // operator[](), we provide the class template
 // ArrayIndexCycleHandler.
-//
-// See permutation_test.h for an example of straightforward usage.
-//
-// TODO(user): Maybe put this someplace generic outside
-// operations_research?
+
 #ifndef OR_TOOLS_UTIL_PERMUTATION_H_
 #define OR_TOOLS_UTIL_PERMUTATION_H_
 
