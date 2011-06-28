@@ -34,17 +34,17 @@ namespace operations_research {
 
 struct ParserState {
   ParserState()
-  : bad_(false),
-    expect_last_line_(false),
-    nodes_described_(false),
-    reason_(NULL),
-    num_left_nodes_(0) { }
-  bool bad_;
-  bool expect_last_line_;
-  bool nodes_described_;
-  const char* reason_;
-  NodeIndex num_left_nodes_;
-  scoped_ptr<string> bad_line_;
+  : bad(false),
+    expect_last_line(false),
+    nodes_described(false),
+    reason(NULL),
+    num_left_nodes(0) { }
+  bool bad;
+  bool expect_last_line;
+  bool nodes_described;
+  const char* reason;
+  NodeIndex num_left_nodes;
+  scoped_ptr<string> bad_line;
 };
 
 static void ParseProblemLine(const char* line,
@@ -64,9 +64,9 @@ static void ParseProblemLine(const char* line,
       (strncmp(kAssignmentProblemType,
                problem_type,
                strlen(kAssignmentProblemType)) != 0)) {
-    state->bad_ = true;
-    state->reason_ = kIncorrectProblemLine;
-    state->bad_line_.reset(new string(line));
+    state->bad = true;
+    state->reason = kIncorrectProblemLine;
+    state->bad_line.reset(new string(line));
     return;
   }
 
@@ -77,18 +77,18 @@ static void ParseNodeLine(const char* line,
                           ParserState* state) {
   NodeIndex node_id;
   if (sscanf(line, "%*c%lld", &node_id) != 1) {
-    state->bad_ = true;
-    state->reason_ = "Syntax error in node desciption.";
-    state->bad_line_.reset(new string(line));
+    state->bad = true;
+    state->reason = "Syntax error in node desciption.";
+    state->bad_line.reset(new string(line));
     return;
   }
-  if (state->nodes_described_) {
-    state->bad_ = true;
-    state->reason_ = "All node description must precede first arc description.";
-    state->bad_line_.reset(new string(line));
+  if (state->nodes_described) {
+    state->bad = true;
+    state->reason = "All node description must precede first arc description.";
+    state->bad_line.reset(new string(line));
     return;
   }
-  state->num_left_nodes_ = ::std::max(state->num_left_nodes_, node_id);
+  state->num_left_nodes = ::std::max(state->num_left_nodes, node_id);
 }
 
 static void ParseArcLine(const char* line,
@@ -96,24 +96,24 @@ static void ParseArcLine(const char* line,
                          StarGraph* graph,
                          LinearSumAssignment** assignment) {
   if (graph == NULL) {
-    state->bad_ = true;
-    state->reason_ =
+    state->bad = true;
+    state->reason =
         "Problem specification line must precede any arc specification.";
-    state->bad_line_.reset(new string(line));
+    state->bad_line.reset(new string(line));
     return;
   }
-  if (!state->nodes_described_) {
-    state->nodes_described_ = true;
+  if (!state->nodes_described) {
+    state->nodes_described = true;
     DCHECK(*assignment == NULL);
-    *assignment = new LinearSumAssignment(*graph, state->num_left_nodes_);
+    *assignment = new LinearSumAssignment(*graph, state->num_left_nodes);
   }
   NodeIndex tail;
   NodeIndex head;
   CostValue cost;
   if (sscanf(line, "%*c%lld%lld%lld", &tail, &head, &cost) != 3) {
-    state->bad_ = true;
-    state->reason_ = "Syntax error in arc descriptor.";
-    state->bad_line_.reset(new string(line));
+    state->bad = true;
+    state->reason = "Syntax error in arc descriptor.";
+    state->bad_line.reset(new string(line));
   }
   ArcIndex arc = graph->AddArc(tail - 1, head - 1);
   (*assignment)->SetArcCost(arc, FLAGS_assignment_maximize_cost ? -cost : cost);
@@ -125,14 +125,14 @@ static void ParseOneLine(ParserState* state,
                          StarGraph** graph,
                          LinearSumAssignment** assignment,
                          char* line) {
-  if (state->bad_) {
+  if (state->bad) {
     return;
   }
 
-  if (state->expect_last_line_) {
-    state->bad_ = true;
-    state->reason_ = "Input line is too long.";
-    // state->bad_line_ was already set when we noticed the line
+  if (state->expect_last_line) {
+    state->bad = true;
+    state->reason = "Input line is too long.";
+    // state->bad_line was already set when we noticed the line
     // didn't end with '\n'.
     return;
   }
@@ -142,11 +142,11 @@ static void ParseOneLine(ParserState* state,
   // that seems not to is actually a line that was too long
   // for our input buffer.
   if (line[length - 1] != '\n') {
-    state->expect_last_line_ = true;
+    state->expect_last_line = true;
     // Prepare for the worst; we might need to inform the user of
     // an error on this line even though we can't detect the error
     // yet.
-    state->bad_line_.reset(new string(line));
+    state->bad_line.reset(new string(line));
   }
 
 
@@ -173,9 +173,9 @@ static void ParseOneLine(ParserState* state,
     case '\n':
         break;
     default: {
-      state->bad_ = true;
-      state->reason_ = "Unknown line type in the input.";
-      state->bad_line_.reset(new string(line));
+      state->bad = true;
+      state->reason = "Unknown line type in the input.";
+      state->bad_line.reset(new string(line));
       break;
     }
   }
@@ -213,9 +213,9 @@ LinearSumAssignment* ParseDimacsAssignment(const string& filename,
   // ParseFileByLines takes ownership of cb and deletes it.
   ParseFileByLines(filename, cb);
 
-  if (state.bad_) {
-    *error_message = state.reason_;
-    *error_message = *error_message + ": \"" + *state.bad_line_ + "\"";
+  if (state.bad) {
+    *error_message = state.reason;
+    *error_message = *error_message + ": \"" + *state.bad_line + "\"";
     return NULL;
   }
   if (graph == NULL) {
