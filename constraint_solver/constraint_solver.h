@@ -2452,9 +2452,15 @@ class DecisionBuilder : public BaseObject {
   // returns NULL, this means that the decision builder has finished
   // its work.
   virtual Decision* Next(Solver* const s) = 0;
-  virtual string DebugString() const { return "DecisionBuilder"; }
-  virtual void ExtraMonitors(Solver* const solver,
-                             std::vector<SearchMonitor*>* const extras) {}
+  virtual string DebugString() const;
+#if !defined(SWIG)
+  // This method will be called at the start of the search.  It asks
+  // the decision builder if it wants to append search monitors to the
+  // list of active monitors for this search. Please note there are no
+  // checks at this point for duplication.
+  virtual void AppendMonitors(Solver* const solver,
+                              std::vector<SearchMonitor*>* const extras);
+#endif
 
  private:
   DISALLOW_COPY_AND_ASSIGN(DecisionBuilder);

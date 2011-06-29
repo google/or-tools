@@ -361,12 +361,12 @@ class ComposeDecisionBuilder : public DecisionBuilder {
   virtual Decision* Next(Solver* const s);
   virtual string DebugString() const;
   void add(DecisionBuilder* const db);
-  virtual void ExtraMonitors(Solver* const solver,
-                             std::vector<SearchMonitor*>* const monitors) {
+  virtual void AppendMonitors(Solver* const solver,
+                              std::vector<SearchMonitor*>* const monitors) {
     for (ConstIter<std::vector<DecisionBuilder*> > it(builders_);
          !it.at_end();
          ++it) {
-      (*it)->ExtraMonitors(solver, monitors);
+      (*it)->AppendMonitors(solver, monitors);
     }
   }
 

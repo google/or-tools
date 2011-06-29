@@ -1688,7 +1688,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
     search->push_monitor(monitors[i]);
   }
   std::vector<SearchMonitor*> extras;
-  db->ExtraMonitors(this, &extras);
+  db->AppendMonitors(this, &extras);
   for (ConstIter<std::vector<SearchMonitor*> > it(extras); !it.at_end(); ++it) {
     search->push_monitor(*it);
   }
@@ -2140,7 +2140,7 @@ bool Solver::NestedSolve(DecisionBuilder* const db,
     new_search.push_monitor(monitors[i]);
   }
   std::vector<SearchMonitor*> extras;
-  db->ExtraMonitors(this, &extras);
+  db->AppendMonitors(this, &extras);
   for (ConstIter<std::vector<SearchMonitor*> > it(extras); !it.at_end(); ++it) {
     new_search.push_monitor(*it);
   }
@@ -2224,6 +2224,15 @@ string PropagationBaseObject::name() const {
 void PropagationBaseObject::set_name(const string& name) {
   solver_->SetName(this, name);
 }
+
+// ---------- Decision Builder ----------
+
+string DecisionBuilder::DebugString() const {
+  return "DecisionBuilder";
+}
+
+void DecisionBuilder::AppendMonitors(Solver* const solver,
+                                    std::vector<SearchMonitor*>* const extras) {}
 
 // ---------- Decision and DecisionVisitor ----------
 

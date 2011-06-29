@@ -554,6 +554,9 @@ const double ImpactRecorder::kInitFailureImpact = 2.0;
 // Default phase decision builder.
 class ImpactDecisionBuilder : public DecisionBuilder {
  public:
+  static const int kUninitializedVarIndex = -1;
+  static const uint64 kUninitializedFailStamp = 0;
+
   ImpactDecisionBuilder(Solver* const solver,
                         const IntVar* const* vars,
                         int size,
@@ -562,8 +565,8 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         size_(size),
         parameters_(parameters),
         init_done_(false),
-        fail_stamp_(0),
-        current_var_index_(-1),
+        fail_stamp_(kUninitializedFailStamp),
+        current_var_index_(kUninitializedVarIndex),
         current_value_(0),
         heuristic_limit_(NULL),
         random_(parameters_.random_seed),
@@ -604,11 +607,12 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       }
     }
 
-    if (current_var_index_ == -1 && fail_stamp_ != 0) {
+    if (current_var_index_ == kUninitializedVarIndex &&
+        fail_stamp_ != kUninitializedFailStamp) {
       // After solution or after heuristics.
       impact_recorder_.RecordLogSearchSpace();
     } else {
-      if (fail_stamp_ != 0) {
+      if (fail_stamp_ != kUninitializedFailStamp) {
         if (solver->fail_stamp() == fail_stamp_) {
           impact_recorder_.UpdateAfterAssignment(current_var_index_,
                                                  current_value_);
@@ -622,10 +626,10 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
     ++heuristic_branch_count_;
     if (heuristic_branch_count_ % parameters_.heuristic_period == 0) {
-      current_var_index_ = -1;
+      current_var_index_ = kUninitializedVarIndex;
       return &runner_;
     }
-    current_var_index_ = -1;
+    current_var_index_ = kUninitializedVarIndex;
     current_value_ = 0;
     if (FindVarValue(&current_var_index_, &current_value_)) {
       return solver->MakeAssignVariableValue(vars_[current_var_index_],
@@ -635,8 +639,10 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     }
   }
 
-  virtual void ExtraMonitors(Solver* const solver,
-                             std::vector<SearchMonitor*>* const extras) {
+  virtual void AppendMonitors(Solver* const solver,
+                              std::vector<SearchMonitor*>* const extras) {
+    CHECK_NOTNULL(solver);
+    CHECK_NOTNULL(extras);
     extras->push_back(solver->RevAlloc(new Monitor(solver, this)));
   }
 
@@ -650,6 +656,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     virtual ~Monitor() {}
 
     virtual void RefuteDecision(Decision* const d) {
+      CHECK_NOTNULL(d);
       Solver* const s = solver();
       if (db_->CheckRestart(s)) {
         RestartCurrentSearch();
@@ -689,18 +696,19 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
   class RunHeuristic : public Decision {
    public:
-    explicit RunHeuristic(
-        ResultCallback1<bool, Solver*>* call_heuristics)
-        : call_heuristics_(call_heuristics) {}
-      virtual ~RunHeuristic() {}
+    explicit RunHeuristic(ResultCallback1<bool, Solver*>* call_heuristics)
+        : call_heuristics_(call_heuristics) {
+      CHECK_NOTNULL(call_heuristics);
+    }
+    virtual ~RunHeuristic() {}
 
-      virtual void Apply(Solver* const solver) {
-        if (!call_heuristics_->Run(solver)) {
-          solver->Fail();
-        }
+    virtual void Apply(Solver* const solver) {
+      if (!call_heuristics_->Run(solver)) {
+        solver->Fail();
       }
+    }
 
-      virtual void Refute(Solver* const solver) {}
+    virtual void Refute(Solver* const solver) {}
 
    private:
     scoped_ptr<ResultCallback1<bool, Solver*> >  call_heuristics_;
