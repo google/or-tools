@@ -35,7 +35,7 @@ void MinCostFlowOn4x4Matrix() {
   };
   const CostValue kExpectedCost = 275;
   StarGraph graph(kNumSources + kNumTargets, kNumSources * kNumTargets);
-  MinCostFlow min_cost_flow(graph);
+  MinCostFlow min_cost_flow(&graph);
   for (NodeIndex source = 0; source < kNumSources; ++source) {
     for (NodeIndex target = 0; target < kNumTargets; ++target) {
       ArcIndex arc = graph.AddArc(source, kNumSources + target);
@@ -49,7 +49,9 @@ void MinCostFlowOn4x4Matrix() {
   for (NodeIndex target = 0; target < kNumTargets; ++target) {
     min_cost_flow.SetNodeSupply(kNumSources + target, -1);
   }
-  CostValue total_flow_cost = min_cost_flow.ComputeMinCostFlow();
+  CHECK(min_cost_flow.Solve());
+  CHECK_EQ(MinCostFlow::OPTIMAL, min_cost_flow.status());
+  CostValue total_flow_cost = min_cost_flow.GetOptimalCost();
   CHECK_EQ(kExpectedCost, total_flow_cost);
 }
 
@@ -65,12 +67,14 @@ void MaxFeasibleFlow() {
   const FlowQuantity kExpectedFlow[kNumArcs] = { 4, 4, 2, 0, 4, 4, 0, 6, 4 };
   const FlowQuantity kExpectedTotalFlow = 10;
   StarGraph graph(kNumNodes, kNumArcs);
-  MaxFlow max_flow(graph, 0, kNumNodes - 1);
+  MaxFlow max_flow(&graph, 0, kNumNodes - 1);
   for (int i = 0; i < kNumArcs; ++i) {
     ArcIndex arc = graph.AddArc(kTail[i], kHead[i]);
     max_flow.SetArcCapacity(arc, kCapacity[i]);
   }
-  FlowQuantity total_flow = max_flow.ComputeMaxFlow();
+  CHECK(max_flow.Solve());
+  CHECK_EQ(MaxFlow::OPTIMAL, max_flow.status());
+  FlowQuantity total_flow = max_flow.GetOptimalFlow();
   CHECK_EQ(total_flow, kExpectedTotalFlow);
   for (int i = 0; i < kNumArcs; ++i) {
     CHECK_EQ(kExpectedFlow[i], max_flow.Flow(i)) << " i = " << i;

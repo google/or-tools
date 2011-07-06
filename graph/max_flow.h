@@ -121,7 +121,25 @@ namespace operations_research {
 
 class MaxFlow {
  public:
-  MaxFlow(const StarGraph& graph, NodeIndex source, NodeIndex target);
+  // Different statuses for a given problem.
+  typedef enum {
+    NOT_SOLVED,  // The problem was not solved, or its data were edited.
+    OPTIMAL,     // Solve() was called and found an optimal solution.
+    FEASIBLE,    // There is a feasible flow.
+    INFEASIBLE,  // There is no feasible flow.
+    BAD_INPUT,   // The input is inconsistent.
+    BAD_RESULT   // There was an error.
+  } Status;
+
+  MaxFlow(const StarGraph* graph, NodeIndex source, NodeIndex target);
+
+  // Returns the graph associated to the current object.
+  const StarGraph* graph() const { return graph_; }
+
+  // Returns the status of last call to Solve(). NOT_SOLVED is returned Solve()
+  // has never been called or if the problem has been modified in such a way
+  // that the previous solution becomes invalid.
+  Status status() const { return status_; }
 
   // Returns the index of the node corresponding to the source of the network.
   NodeIndex GetSourceNodeIndex() const { return source_; }
@@ -129,18 +147,29 @@ class MaxFlow {
   // Returns the index of the node corresponding to the sink of the network.
   NodeIndex GetSinkNodeIndex() const { return sink_; }
 
-  // Sets the capacity for arc.
-  void SetArcCapacity(ArcIndex arc, FlowQuantity quantity) {
-    residual_arc_capacity_.Set(arc, quantity);
+  // Sets the capacity for arc to new_capacity.
+  void SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity);
+
+  // Sets the flow for arc.
+  void SetArcFlow(ArcIndex arc, FlowQuantity new_flow) {
+    DCHECK(graph_->CheckArcValidity(arc));
+    const FlowQuantity capacity = Capacity(arc);
+    DCHECK_GE(capacity, new_flow);
+    residual_arc_capacity_.Set(Opposite(arc), -new_flow);
+    residual_arc_capacity_.Set(arc, capacity - new_flow);
+    status_ = NOT_SOLVED;
   }
 
-  // Returns the maximum flow computed by the algorithm.
-  FlowQuantity ComputeMaxFlow();
+  // Returns true if a maximum flow was solved.
+  bool Solve();
+
+  // Returns the total flow found by the algorithm.
+  FlowQuantity GetOptimalFlow() const { return total_flow_; }
 
   // Returns the flow on arc using the equations given in the comment on
   // residual_arc_capacity_.
   FlowQuantity Flow(ArcIndex arc) const {
-    DCHECK(graph_.CheckArcValidity(arc));
+    DCHECK(graph_->CheckArcValidity(arc));
     if (IsDirect(arc)) {
       return residual_arc_capacity_[Opposite(arc)];
     } else {
@@ -151,7 +180,7 @@ class MaxFlow {
   // Returns the capacity of arc using the equations given in the comment on
   // residual_arc_capacity_.
   FlowQuantity Capacity(ArcIndex arc) const {
-    DCHECK(graph_.CheckArcValidity(arc));
+    DCHECK(graph_->CheckArcValidity(arc));
     if (IsDirect(arc)) {
       return residual_arc_capacity_[arc]
            + residual_arc_capacity_[Opposite(arc)];
@@ -175,7 +204,7 @@ class MaxFlow {
 
   // Returns the first incident arc of node.
   ArcIndex GetFirstIncidentArc(NodeIndex node) const {
-    StarGraph::IncidentArcIterator arc_it(graph_, node);
+    StarGraph::IncidentArcIterator arc_it(*graph_, node);
     return arc_it.Index();
   }
 
@@ -196,9 +225,6 @@ class MaxFlow {
   // Returns context concatenated with information about arc
   // in a human-friendly way.
   string DebugString(const string& context, ArcIndex arc) const;
-
-  // Completes the graph by setting the capacity of opposite arcs to zero.
-  void CompleteGraph();
 
   // Initializes the stack active_nodes_.
   void InitializeActiveNodeStack();
@@ -226,22 +252,22 @@ class MaxFlow {
   void Relabel(NodeIndex node);
 
   // Handy member functions to make the code more compact.
-  NodeIndex Head(ArcIndex arc) const { return graph_.Head(arc); }
+  NodeIndex Head(ArcIndex arc) const { return graph_->Head(arc); }
 
-  NodeIndex Tail(ArcIndex arc) const { return graph_.Tail(arc); }
+  NodeIndex Tail(ArcIndex arc) const { return graph_->Tail(arc); }
 
-  ArcIndex Opposite(ArcIndex arc) const { return graph_.Opposite(arc); }
+  ArcIndex Opposite(ArcIndex arc) const { return graph_->Opposite(arc); }
 
-  bool IsDirect(ArcIndex arc) const { return graph_.IsDirect(arc); }
+  bool IsDirect(ArcIndex arc) const { return graph_->IsDirect(arc); }
 
   // A pointer to the graph passed as argument.
-  const StarGraph& graph_;
+  const StarGraph* graph_;
 
   // A packed array representing the excess for each node in graph_.
-  Int40PackedArray    node_excess_;
+  Int64PackedArray    node_excess_;
 
   // A packed array representing the height function for each node in graph_.
-  Int40PackedArray    node_potential_;
+  Int64PackedArray    node_potential_;
 
   // A packed array representing the residual_capacity for each arc in graph_.
   // Residual capacities enable one to represent the capacity and flow for all
@@ -260,7 +286,7 @@ class MaxFlow {
   // instead of both capacity and flow, for each direct and indirect arc. This
   // reduces the amount of memory for this information by a factor 2.s reduces
   // the amount of memory for this information by a factor 2.
-  Int40PackedArray    residual_arc_capacity_;
+  Int64PackedArray    residual_arc_capacity_;
 
   // A packed array representing the first admissible arc for each node
   // in graph_.
@@ -276,6 +302,12 @@ class MaxFlow {
 
   // The index of the sink node in graph_.
   NodeIndex sink_;
+
+  // The total flow.
+  FlowQuantity     total_flow_;
+
+  // The status of the problem.
+  Status           status_;
 
   DISALLOW_COPY_AND_ASSIGN(MaxFlow);
 };

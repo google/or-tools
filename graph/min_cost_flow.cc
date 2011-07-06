@@ -23,10 +23,21 @@
 
 DEFINE_int64(min_cost_flow_alpha, 5,
              "Divide factor for epsilon at each refine step.");
+DEFINE_bool(min_cost_flow_check_balance, false,
+            "Check that the supplies and demands are balanced.");
+DEFINE_bool(min_cost_flow_check_costs, false,
+            "Check that the magnitude of the costs will not exceed the "
+            "precision of the machine when scaled (multiplied) by the number "
+            "of nodes");
+DEFINE_bool(min_cost_flow_fast_potential_update, true,
+            "Fast node potential update. Faster when set to true, but does not"
+            "detect as many infeasibilities as when set to false.");
+DEFINE_bool(min_cost_flow_check_result, false,
+            "Check that the result is valid.");
 
 namespace operations_research {
 
-MinCostFlow::MinCostFlow(const StarGraph& graph)
+MinCostFlow::MinCostFlow(const StarGraph* graph)
     : graph_(graph),
       node_excess_(),
       node_potential_(),
@@ -36,41 +47,119 @@ MinCostFlow::MinCostFlow(const StarGraph& graph)
       epsilon_(0),
       alpha_(FLAGS_min_cost_flow_alpha),
       cost_scaling_factor_(1),
-      scaled_arc_unit_cost_() {
-  const ArcIndex max_num_arcs = graph_.max_num_arcs();
-  CHECK_GE(max_num_arcs, 1);
-  const NodeIndex max_num_nodes = graph_.max_num_nodes();
-  CHECK_GE(max_num_nodes, 1);
-  node_excess_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
-  node_excess_.Assign(0);
-  node_potential_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
-  node_potential_.Assign(0);
-  residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
-  residual_arc_capacity_.Assign(0);
-  first_admissible_arc_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
-  scaled_arc_unit_cost_.Reserve(-max_num_arcs, max_num_arcs - 1);
-  scaled_arc_unit_cost_.Assign(0);
+      scaled_arc_unit_cost_(),
+      total_flow_cost_(0),
+      status_(NOT_SOLVED) {
+  const NodeIndex max_num_nodes = graph_->max_num_nodes();
+  if (max_num_nodes > 0) {
+    node_excess_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
+    node_excess_.Assign(0);
+    node_potential_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
+    node_potential_.Assign(0);
+    first_admissible_arc_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
+    first_admissible_arc_.Assign(StarGraph::kNilArc);
+  }
+  const ArcIndex max_num_arcs = graph_->max_num_arcs();
+  if (max_num_arcs > 0) {
+    residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
+    residual_arc_capacity_.Assign(0);
+    scaled_arc_unit_cost_.Reserve(-max_num_arcs, max_num_arcs - 1);
+    scaled_arc_unit_cost_.Assign(0);
+  }
+}
+
+void MinCostFlow::SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity) {
+  DCHECK_LE(0, new_capacity);
+  DCHECK(graph_->CheckArcValidity(arc));
+  const FlowQuantity free_capacity = residual_arc_capacity_[arc];
+  const FlowQuantity capacity_delta = new_capacity - Capacity(arc);
+  VLOG(1) << "Changing capacity on arc " << arc
+          << " from " << Capacity(arc) << " to " << new_capacity
+          << ". Current free capacity = " << free_capacity;
+  if (capacity_delta == 0) {
+    return;  // Nothing to do.
+  }
+  status_ = NOT_SOLVED;
+  if (free_capacity + capacity_delta >= 0) {
+    // The above condition is true when one of two following holds:
+    // 1/ (capacity_delta > 0), meaning we are increasing the capacity
+    // 2/ (capacity_delta < 0 && free_capacity + capacity_delta >= 0)
+    //    meaning we are reducing the capacity, but that the capacity
+    //    reduction is not larger than the free capacity.
+    residual_arc_capacity_.Set(arc, free_capacity + capacity_delta);
+    DCHECK_LE(0, residual_arc_capacity_[arc]);
+    VLOG(1) << "Now: capacity = " << Capacity(arc) << " flow = " << Flow(arc);
+  } else {
+    // We have to reduce the flow on the arc, and update the excesses
+    // accordingly.
+    const FlowQuantity flow = residual_arc_capacity_[Opposite(arc)];
+    const FlowQuantity flow_excess = flow - new_capacity;
+    VLOG(1) << "Flow value " << flow << " exceeds new capacity "
+            << new_capacity << " by " << flow_excess;
+    residual_arc_capacity_.Set(arc, 0);
+    residual_arc_capacity_.Set(Opposite(arc), new_capacity);
+    const NodeIndex tail = Tail(arc);
+    node_excess_.Set(tail, node_excess_[tail] + flow_excess);
+    const NodeIndex head = Head(arc);
+    node_excess_.Set(head, node_excess_[head] - flow_excess);
+    DCHECK_LE(0, residual_arc_capacity_[arc]);
+    DCHECK_LE(0, residual_arc_capacity_[Opposite(arc)]);
+    VLOG(1) << DebugString("After SetArcCapacity:", arc);
+  }
 }
 
 bool MinCostFlow::CheckInputConsistency() const {
   FlowQuantity total_supply = 0;
-  for (StarGraph::NodeIterator node_it(graph_); node_it.Ok(); node_it.Next()) {
-    total_supply += node_excess_[node_it.Index()];
+  uint64 max_capacity = 0;  // uint64 because it is positive and will be used
+                            // to check against FlowQuantity overflows.
+  for (StarGraph::ArcIterator arc_it(*graph_); arc_it.Ok(); arc_it.Next()) {
+    const ArcIndex arc = arc_it.Index();
+    const uint64 capacity = static_cast<uint64>(residual_arc_capacity_[arc]);
+    max_capacity = std::max(capacity, max_capacity);
   }
-  CHECK_EQ(0, total_supply);
+  uint64 total_flow = 0;   // uint64 for the same reason as max_capacity.
+  for (StarGraph::NodeIterator node_it(*graph_); node_it.Ok(); node_it.Next()) {
+    const NodeIndex node = node_it.Index();
+    const FlowQuantity excess = node_excess_[node];
+    total_supply += excess;
+    if (excess > 0) {
+      total_flow += excess;
+      if (std::numeric_limits<FlowQuantity>::max() < max_capacity + total_flow) {
+        LOG(DFATAL) << "Input consistency error: max capacity + flow exceed "
+                    << "precision";
+      }
+    }
+  }
+  if (total_supply != 0) {
+    LOG(DFATAL) << "Input consistency error: unbalanced problem";
+  }
   return true;
 }
 
 bool MinCostFlow::CheckResult() const {
-  for (StarGraph::NodeIterator it(graph_); it.Ok(); it.Next()) {
+  for (StarGraph::NodeIterator it(*graph_); it.Ok(); it.Next()) {
     const NodeIndex node = it.Index();
-    CHECK_EQ(0, node_excess_[node]);
+    if (node_excess_[node] != 0) {
+      LOG(DFATAL) << "node_excess_[" << node << "] != 0";
+      return false;
+    }
     for (StarGraph::IncidentArcIterator
-        arc_it(graph_, node); arc_it.Ok(); arc_it.Next()) {
+        arc_it(*graph_, node); arc_it.Ok(); arc_it.Next()) {
       const ArcIndex arc = arc_it.Index();
-      CHECK_LE(0, residual_arc_capacity_[arc]);
-      CHECK(residual_arc_capacity_[arc] == 0 || ReducedCost(arc) >= -epsilon_)
-          << residual_arc_capacity_[arc] << " " << ReducedCost(arc);
+      bool ok = true;
+      if (residual_arc_capacity_[arc] < 0) {
+        LOG(DFATAL) << "residual_arc_capacity_[" << arc << "] < 0";
+        ok = false;
+      }
+      if (residual_arc_capacity_[arc] > 0 && ReducedCost(arc) < -epsilon_) {
+        LOG(DFATAL) << "residual_arc_capacity_[" << arc
+                   << "] > 0 && ReducedCost(" << arc << ") < " << -epsilon_
+                   << ". (epsilon_ = " << epsilon_;
+        ok = false;
+      }
+      if (!ok) {
+        LOG(DFATAL) << DebugString("CheckResult ", arc);
+      }
     }
   }
   return true;
@@ -80,7 +169,7 @@ bool MinCostFlow::CheckCostRange() const {
   CostValue min_cost_magnitude = std::numeric_limits<CostValue>::max();
   CostValue max_cost_magnitude = 0;
   // Traverse the initial arcs of the graph:
-  for (StarGraph::ArcIterator arc_it(graph_); arc_it.Ok(); arc_it.Next()) {
+  for (StarGraph::ArcIterator arc_it(*graph_); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
     const CostValue cost_magnitude = MathUtil::Abs(scaled_arc_unit_cost_[arc]);
     max_cost_magnitude = std::max(max_cost_magnitude, cost_magnitude);
@@ -91,21 +180,23 @@ bool MinCostFlow::CheckCostRange() const {
   VLOG(1) << "Min cost magnitude = " << min_cost_magnitude
           << ", Max cost magnitude = " << max_cost_magnitude;
 #if !defined(_MSC_VER)
-  CHECK_GE(log(std::numeric_limits<CostValue>::max()),
-           log(max_cost_magnitude) + log(graph_.num_nodes() + 1))
-      << "Maximum cost is too high for the number of nodes. "
-      << "Try changing the data.";
+  if (log(std::numeric_limits<CostValue>::max())
+          < log(max_cost_magnitude) + log(graph_->num_nodes() + 1)) {
+    LOG(DFATAL) << "Maximum cost magnitude " << max_cost_magnitude << " is too "
+                << "high for the number of nodes. Try changing the data.";
+    return false;
+  }
 #endif
   return true;
 }
 
 bool MinCostFlow::CheckRelabelPrecondition(NodeIndex node) const {
-  CHECK(IsActive(node));
-  for (StarGraph::IncidentArcIterator arc_it(graph_, node);
+  DCHECK(IsActive(node));
+  for (StarGraph::IncidentArcIterator arc_it(*graph_, node);
        arc_it.Ok();
        arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
-    CHECK(!IsAdmissible(arc)) << DebugString("CheckRelabelPrecondition:", arc);
+    DCHECK(!IsAdmissible(arc));
   }
   return true;
 }
@@ -113,6 +204,12 @@ bool MinCostFlow::CheckRelabelPrecondition(NodeIndex node) const {
 string MinCostFlow::DebugString(const string& context, ArcIndex arc) const {
   const NodeIndex tail = Tail(arc);
   const NodeIndex head = Head(arc);
+  // Reduced cost is computed directly without calling ReducedCost to avoid
+  // recursive calls between ReducedCost and DebugString in case a DCHECK in
+  // ReducedCost fails.
+  const CostValue reduced_cost = scaled_arc_unit_cost_[arc]
+                               + node_potential_[tail]
+                               - node_potential_[head];
   return StringPrintf("%s Arc %lld, from %lld to %lld, "
                       "Capacity = %lld, Residual capacity = %lld, "
                       "Flow = residual capacity for reverse arc = %lld, "
@@ -120,53 +217,59 @@ string MinCostFlow::DebugString(const string& context, ArcIndex arc) const {
                       "Excess(tail) = %lld, Excess(head) = %lld, "
                       "Cost = %lld, Reduced cost = %lld, ",
                       context.c_str(), arc, tail, head, Capacity(arc),
-                      residual_arc_capacity_[arc], residual_arc_capacity_[-arc],
+                      residual_arc_capacity_[arc], Flow(arc),
                       node_potential_[tail], node_potential_[head],
                       node_excess_[tail], node_excess_[head],
-                      scaled_arc_unit_cost_[arc], ReducedCost(arc));
+                      scaled_arc_unit_cost_[arc], reduced_cost);
 }
 
-CostValue MinCostFlow::ComputeMinCostFlow() {
-  DCHECK(CheckInputConsistency());
-  DCHECK(CheckCostRange());
-  CompleteGraph();
+bool MinCostFlow::Solve() {
+  status_ = NOT_SOLVED;
+  if (FLAGS_min_cost_flow_check_balance && !CheckInputConsistency()) {
+    status_ = UNBALANCED;
+    return false;
+  }
+  if (FLAGS_min_cost_flow_check_costs && !CheckCostRange()) {
+    status_ = BAD_COST_RANGE;
+    return false;
+  }
+  node_potential_.Assign(0);
   ResetFirstAdmissibleArcs();
   ScaleCosts();
   Optimize();
   UnscaleCosts();
-  CostValue total_flow_cost = 0;
-  for (StarGraph::ArcIterator it(graph_); it.Ok(); it.Next()) {
+  if (status_ != OPTIMAL) {
+    total_flow_cost_ = 0;
+    return false;
+  }
+  if (FLAGS_min_cost_flow_check_result && !CheckResult()) {
+    status_ = BAD_RESULT;
+    return false;
+  }
+  total_flow_cost_ = 0;
+  for (StarGraph::ArcIterator it(*graph_); it.Ok(); it.Next()) {
     const ArcIndex arc = it.Index();
     const FlowQuantity flow_on_arc = residual_arc_capacity_[Opposite(arc)];
     VLOG(1) << "Flow for arc " << arc << " = " << flow_on_arc
             << ", scaled cost = " << scaled_arc_unit_cost_[arc];
-    total_flow_cost += scaled_arc_unit_cost_[arc] * flow_on_arc;
+    total_flow_cost_ += scaled_arc_unit_cost_[arc] * flow_on_arc;
   }
-  return total_flow_cost;
-}
-
-void MinCostFlow::CompleteGraph() {
-  // Set the capacities of reverse arcs to zero, and the unit costs of reverse
-  // arcs equal to the opposite of the cost for the corresponding direct arc.
-  for (StarGraph::ArcIterator arc_it(graph_); arc_it.Ok(); arc_it.Next()) {
-    const ArcIndex arc = arc_it.Index();
-    residual_arc_capacity_.Set(Opposite(arc), 0);
-    scaled_arc_unit_cost_.Set(Opposite(arc), -scaled_arc_unit_cost_[arc]);
-  }
+  status_ = OPTIMAL;
+  return true;
 }
 
 void MinCostFlow::ResetFirstAdmissibleArcs() {
-  for (StarGraph::NodeIterator node_it(graph_); node_it.Ok(); node_it.Next()) {
+  for (StarGraph::NodeIterator node_it(*graph_); node_it.Ok(); node_it.Next()) {
     const NodeIndex node = node_it.Index();
     first_admissible_arc_.Set(node, GetFirstIncidentArc(node));
   }
 }
 
 void MinCostFlow::ScaleCosts() {
-  cost_scaling_factor_ = graph_.num_nodes() + 1;
+  cost_scaling_factor_ = graph_->num_nodes() + 1;
   epsilon_ = 1LL;
-  VLOG(1) << "Number of arcs in the graph = " << graph_.num_arcs();
-  for (StarGraph::ArcIterator arc_it(graph_); arc_it.Ok(); arc_it.Next()) {
+  VLOG(1) << "Number of arcs in the graph = " << graph_->num_arcs();
+  for (StarGraph::ArcIterator arc_it(*graph_); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
     const CostValue cost = scaled_arc_unit_cost_[arc] * cost_scaling_factor_;
     scaled_arc_unit_cost_.Set(arc, cost);
@@ -178,7 +281,7 @@ void MinCostFlow::ScaleCosts() {
 }
 
 void MinCostFlow::UnscaleCosts() {
-  for (StarGraph::ArcIterator arc_it(graph_); arc_it.Ok(); arc_it.Next()) {
+  for (StarGraph::ArcIterator arc_it(*graph_); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
     const CostValue cost = scaled_arc_unit_cost_[arc] / cost_scaling_factor_;
     scaled_arc_unit_cost_.Set(arc, cost);
@@ -188,19 +291,23 @@ void MinCostFlow::UnscaleCosts() {
 }
 
 void MinCostFlow::Optimize() {
-  while (epsilon_ > 1) {
-    epsilon_ = std::max(epsilon_ / alpha_, 1LL);  // avoid epsilon_ == 0.
+  const CostValue kEpsilonMin = 1LL;
+  do {
+    // Avoid epsilon_ == 0.
+    epsilon_ = std::max(epsilon_ / alpha_, kEpsilonMin);
     VLOG(1) << "Epsilon changed to: " << epsilon_;
     Refine();
+  } while (epsilon_ != 1LL && status_ != INFEASIBLE);
+  if (status_ == NOT_SOLVED) {
+    status_ = OPTIMAL;
   }
-  DCHECK(CheckResult());
 }
 
 void MinCostFlow::SaturateAdmissibleArcs() {
-  for (StarGraph::NodeIterator node_it(graph_); node_it.Ok(); node_it.Next()) {
+  for (StarGraph::NodeIterator node_it(*graph_); node_it.Ok(); node_it.Next()) {
     const NodeIndex node = node_it.Index();
     for (StarGraph::IncidentArcIterator
-             arc_it(graph_, node, first_admissible_arc_[node]);
+             arc_it(*graph_, node, first_admissible_arc_[node]);
          arc_it.Ok();
          arc_it.Next()) {
       const ArcIndex arc = arc_it.Index();
@@ -230,8 +337,8 @@ void MinCostFlow::PushFlow(FlowQuantity flow, ArcIndex arc) {
 }
 
 void MinCostFlow::InitializeActiveNodeStack() {
-  CHECK(active_nodes_.empty());
-  for (StarGraph::NodeIterator node_it(graph_); node_it.Ok(); node_it.Next()) {
+  DCHECK(active_nodes_.empty());
+  for (StarGraph::NodeIterator node_it(*graph_); node_it.Ok(); node_it.Next()) {
     const NodeIndex node = node_it.Index();
     if (IsActive(node)) {
       active_nodes_.push(node);
@@ -249,6 +356,9 @@ void MinCostFlow::Refine() {
     if (IsActive(node)) {
       VLOG(1) << "Refine: calling Discharge for node " << node;
       Discharge(node);
+      if (status_ == INFEASIBLE) {
+        return;
+      }
     }
   }
 }
@@ -257,7 +367,7 @@ void MinCostFlow::Discharge(NodeIndex node) {
   DCHECK(IsActive(node));
   VLOG(1) << "Discharging node " << node << ", excess = " << node_excess_[node];
   while (IsActive(node)) {
-    for (StarGraph::IncidentArcIterator arc_it(graph_, node,
+    for (StarGraph::IncidentArcIterator arc_it(*graph_, node,
                                                first_admissible_arc_[node]);
          arc_it.Ok();
          arc_it.Next()) {
@@ -282,12 +392,39 @@ void MinCostFlow::Discharge(NodeIndex node) {
       }
     }
     Relabel(node);
+    if (status_ == INFEASIBLE) {
+      return;
+    }
   }
 }
 
 void MinCostFlow::Relabel(NodeIndex node) {
   DCHECK(CheckRelabelPrecondition(node));
-  CostValue new_potential = node_potential_[node] - epsilon_;
+  CostValue new_potential;
+  if (FLAGS_min_cost_flow_fast_potential_update) {
+    new_potential = node_potential_[node] - epsilon_;
+  } else {
+    new_potential = kint64min;
+    for (StarGraph::IncidentArcIterator arc_it(*graph_, node);
+         arc_it.Ok();
+         arc_it.Next()) {
+      ArcIndex arc = arc_it.Index();
+      DCHECK_EQ(Tail(arc), node);
+      if (residual_arc_capacity_[arc] > 0) {
+        const NodeIndex head = Head(arc);
+        new_potential = std::max(new_potential, node_potential_[head]
+                                              - scaled_arc_unit_cost_[arc]
+                                              - epsilon_);
+        DCHECK_GE(0, new_potential);
+      }
+    }
+    if (new_potential == kint64min) {
+      // Note that this infeasibility detection is incomplete.
+      // Only max flow can detect that a min-cost flow problem is infeasible.
+      status_ = INFEASIBLE;
+      return;
+    }
+  }
   VLOG(1) << "Relabel: node " << node << " from " << node_potential_[node]
           << " to " << new_potential;
   node_potential_.Set(node, new_potential);

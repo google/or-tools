@@ -15,12 +15,17 @@
 
 #include <algorithm>
 
+#include "base/commandlineflags.h"
 #include "base/stringprintf.h"
+
+DEFINE_bool(max_flow_check_input, false,
+            "Check that the input is consistent.");
+DEFINE_bool(max_flow_check_result, false,
+            "Check that the result is valid.");
 
 namespace operations_research {
 
-
-MaxFlow::MaxFlow(const StarGraph& graph,
+MaxFlow::MaxFlow(const StarGraph* graph,
                  NodeIndex source,
                  NodeIndex sink)
     : graph_(graph),
@@ -31,54 +36,118 @@ MaxFlow::MaxFlow(const StarGraph& graph,
       active_nodes_(),
       source_(source),
       sink_(sink) {
-  const ArcIndex max_num_arcs = graph_.max_num_arcs();
-  CHECK_GE(max_num_arcs, 1);
-  const NodeIndex max_num_nodes = graph_.max_num_nodes();
-  CHECK_GE(max_num_nodes, 1);
-  node_excess_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
-  node_excess_.Assign(0);
-  node_potential_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
-  node_potential_.Assign(0);
-  residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
-  residual_arc_capacity_.Assign(0);
-  first_admissible_arc_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
-  CHECK(graph_.CheckNodeValidity(source_));
-  CHECK(graph_.CheckNodeValidity(sink_));
+  const NodeIndex max_num_nodes = graph_->max_num_nodes();
+  if (max_num_nodes > 0) {
+    node_excess_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
+    node_excess_.Assign(0);
+    node_potential_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
+    node_potential_.Assign(0);
+    first_admissible_arc_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
+    first_admissible_arc_.Assign(StarGraph::kNilArc);
+  }
+  const ArcIndex max_num_arcs = graph_->max_num_arcs();
+  if (max_num_arcs > 0) {
+    residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
+    residual_arc_capacity_.Assign(0);
+  }
+  DCHECK(graph_->CheckNodeValidity(source_));
+  DCHECK(graph_->CheckNodeValidity(sink_));
 }
 
 bool MaxFlow::CheckInputConsistency() const {
-  for (StarGraph::ArcIterator arc_it(graph_); arc_it.Ok(); arc_it.Next()) {
+  bool ok = true;
+  for (StarGraph::ArcIterator arc_it(*graph_); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
-    CHECK_LE(0, residual_arc_capacity_[arc]);
+    if (residual_arc_capacity_[arc] < 0) {
+      ok = false;
+    }
   }
-  return true;
+  return ok;
+}
+
+// Sets the capacity for arc.
+void MaxFlow::SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity) {
+  DCHECK_LE(0, new_capacity);
+  DCHECK(graph_->CheckArcValidity(arc));
+  const FlowQuantity free_capacity = residual_arc_capacity_[arc];
+  const FlowQuantity capacity_delta = new_capacity - Capacity(arc);
+  VLOG(1) << "Changing capacity on arc " << arc
+          << " from " << Capacity(arc) << " to " << new_capacity
+          << ". Current free capacity = " << free_capacity;
+  if (capacity_delta == 0) {
+    return;  // Nothing to do.
+  }
+  status_ = NOT_SOLVED;
+  if (free_capacity + capacity_delta >= 0) {
+    // The above condition is true if one of the two conditions is true:
+    // 1/ (capacity_delta > 0), meaning we are increasing the capacity
+    // 2/ (capacity_delta < 0 && free_capacity + capacity_delta >= 0)
+    //    meaning we are reducing the capacity, but that the capacity
+    //    reduction is not larger than the free capacity.
+    residual_arc_capacity_.Set(arc, free_capacity + capacity_delta);
+    DCHECK_LE(0, residual_arc_capacity_[arc]);
+    VLOG(1) << "Now: capacity = " << Capacity(arc) << " flow = " << Flow(arc);
+  } else {
+    // We have to reduce the flow on the arc, and update the excesses
+    // accordingly.
+    const FlowQuantity flow = residual_arc_capacity_[Opposite(arc)];
+    const FlowQuantity flow_excess = flow - new_capacity;
+    VLOG(1) << "Flow value " << flow << " exceeds new capacity "
+            << new_capacity << " by " << flow_excess;
+    residual_arc_capacity_.Set(arc, 0);
+    residual_arc_capacity_.Set(Opposite(arc), new_capacity);
+    const NodeIndex head = Head(arc);
+    node_excess_.Set(head, node_excess_[head] + flow_excess);
+    DCHECK_LE(0, residual_arc_capacity_[arc]);
+    DCHECK_LE(0, residual_arc_capacity_[Opposite(arc)]);
+    VLOG(1) << DebugString("After SetArcCapacity:", arc);
+  }
 }
 
 bool MaxFlow::CheckResult() const {
-  for (StarGraph::NodeIterator node_it(graph_); node_it.Ok(); node_it.Next()) {
+  bool ok = true;
+  for (StarGraph::NodeIterator node_it(*graph_); node_it.Ok(); node_it.Next()) {
     const NodeIndex node = node_it.Index();
     if (node != source_ && node != sink_) {
-      CHECK_EQ(0, node_excess_[node]) << " node = " << node;
+      if (node_excess_[node] != 0) {
+        LOG(DFATAL) << "node_excess_[" << node << "] = " << node_excess_[node]
+                    << " != 0";
+        ok = false;
+      }
     }
   }
-  for (StarGraph::ArcIterator arc_it(graph_); arc_it.Ok(); arc_it.Next()) {
+  for (StarGraph::ArcIterator arc_it(*graph_); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
     const ArcIndex opposite = Opposite(arc);
-    CHECK_GE(residual_arc_capacity_[arc], 0);
-    CHECK_GE(residual_arc_capacity_[opposite], 0);
+    const FlowQuantity direct_capacity = residual_arc_capacity_[arc];
+    const FlowQuantity opposite_capacity = residual_arc_capacity_[opposite];
+    if (direct_capacity < 0) {
+      LOG(DFATAL) << "residual_arc_capacity_[" << arc << "] = "
+                  << direct_capacity << " != 0";
+      ok = false;
+    }
+    if (opposite_capacity < 0) {
+      LOG(DFATAL) << "residual_arc_capacity_[" << opposite << "] = "
+                  << opposite_capacity << " != 0";
+      ok = false;
+    }
     // The initial capacity of the direct arcs is non-negative.
-    CHECK_GE(residual_arc_capacity_[arc] + residual_arc_capacity_[opposite], 0);
+    if (direct_capacity + opposite_capacity < 0) {
+      LOG(DFATAL) << "initial capacity [" << arc << "] = "
+                  << direct_capacity + opposite_capacity << " < 0";
+      ok = false;
+    }
   }
-  return true;
+  return ok;
 }
 
 bool MaxFlow::CheckRelabelPrecondition(NodeIndex node) const {
-  CHECK(IsActive(node));
-  for (StarGraph::IncidentArcIterator arc_it(graph_, node);
+  DCHECK(IsActive(node));
+  for (StarGraph::IncidentArcIterator arc_it(*graph_, node);
        arc_it.Ok();
        arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
-    CHECK(!IsAdmissible(arc)) << DebugString("CheckRelabelPrecondition:", arc);
+    DCHECK(!IsAdmissible(arc));
   }
   return true;
 }
@@ -97,46 +166,58 @@ string MaxFlow::DebugString(const string& context, ArcIndex arc) const {
                       node_excess_[tail], node_excess_[head]);
 }
 
-FlowQuantity MaxFlow::ComputeMaxFlow() {
-  DCHECK(CheckInputConsistency());
-  CompleteGraph();
-  ResetFirstAdmissibleArcs();
+bool MaxFlow::Solve() {
+  status_ = NOT_SOLVED;
+  if (FLAGS_max_flow_check_input && !CheckInputConsistency()) {
+    status_ = BAD_INPUT;
+    return false;
+  }
   InitializePreflow();
+  ResetFirstAdmissibleArcs();
   Refine();
-  DCHECK(CheckResult());
-  FlowQuantity total_flow = 0;
-  for (StarGraph::OutgoingArcIterator arc_it(graph_, source_);
+  if (FLAGS_max_flow_check_result && !CheckResult()) {
+    status_ = BAD_RESULT;
+    return false;
+  }
+  total_flow_ = 0;
+  for (StarGraph::OutgoingArcIterator arc_it(*graph_, source_);
        arc_it.Ok();
        arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
-    total_flow += Flow(arc);
+    total_flow_ += Flow(arc);
   }
-  return total_flow;
-}
-
-void MaxFlow::CompleteGraph() {
-  for (StarGraph::ArcIterator arc_it(graph_); arc_it.Ok(); arc_it.Next()) {
-    const ArcIndex arc = arc_it.Index();
-    // The initial capacity on reverse arcs is set to 0.
-    residual_arc_capacity_.Set(Opposite(arc), 0);
-  }
+  status_ = OPTIMAL;
+  return true;
 }
 
 void MaxFlow::ResetFirstAdmissibleArcs() {
-  for (StarGraph::NodeIterator node_it(graph_); node_it.Ok(); node_it.Next()) {
+  for (StarGraph::NodeIterator node_it(*graph_); node_it.Ok(); node_it.Next()) {
     const NodeIndex node = node_it.Index();
     first_admissible_arc_.Set(node, GetFirstIncidentArc(node));
   }
 }
 
 void MaxFlow::InitializePreflow() {
+  // InitializePreflow() clears the whole flow that could have been computed
+  // by a previous Solve(). This is not optimal in terms of complexity.
+  // TODO(user): find a way to make the re-solving incremental (not an obvious
+  // task, and there has not been a lot of literature on the subject.)
+  node_potential_.Assign(0);
+  node_excess_.Assign(0);
+  for (StarGraph::ArcIterator arc_it(*graph_); arc_it.Ok(); arc_it.Next()) {
+    const ArcIndex arc = arc_it.Index();
+    // Reset the residual capacities of direct arc to their initial values.
+    residual_arc_capacity_.Set(arc, Capacity(arc));
+    // The initial residual capacities on reverse arcs are set to 0.
+    residual_arc_capacity_.Set(Opposite(arc), 0);
+  }
   // The initial height of the source is equal to the number of nodes.
-  node_potential_.Set(source_, graph_.num_nodes());
-  for (StarGraph::OutgoingArcIterator arc_it(graph_, source_);
+  node_potential_.Set(source_, graph_->num_nodes());
+  for (StarGraph::OutgoingArcIterator arc_it(*graph_, source_);
        arc_it.Ok();
        arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
-    const FlowQuantity arc_capacity = residual_arc_capacity_[arc];
+    const FlowQuantity arc_capacity = Capacity(arc);
     // Saturate arcs outgoing from the source. This is not really a PushFlow,
     // since the preconditions for PushFlow are not (yet) met, and we do not
     // need to update the excess at the source.
@@ -166,8 +247,8 @@ void MaxFlow::PushFlow(FlowQuantity flow, ArcIndex arc) {
 }
 
 void MaxFlow::InitializeActiveNodeStack() {
-  CHECK(active_nodes_.empty());
-  for (StarGraph::NodeIterator node_it(graph_); node_it.Ok(); node_it.Next()) {
+  DCHECK(active_nodes_.empty());
+  for (StarGraph::NodeIterator node_it(*graph_); node_it.Ok(); node_it.Next()) {
     const NodeIndex node = node_it.Index();
     if (IsActive(node)) {
       active_nodes_.push(node);
@@ -192,7 +273,7 @@ void MaxFlow::Discharge(NodeIndex node) {
   DCHECK(IsActive(node));
   VLOG(1) << "Discharging node " << node << ", excess = " << node_excess_[node];
   while (IsActive(node)) {
-    for (StarGraph::IncidentArcIterator arc_it(graph_, node,
+    for (StarGraph::IncidentArcIterator arc_it(*graph_, node,
                                                first_admissible_arc_[node]);
          arc_it.Ok();
          arc_it.Next()) {
@@ -223,7 +304,7 @@ void MaxFlow::Discharge(NodeIndex node) {
 void MaxFlow::Relabel(NodeIndex node) {
   DCHECK(CheckRelabelPrecondition(node));
   CostValue min_height = node_potential_[node];
-  for (StarGraph::IncidentArcIterator arc_it(graph_, node);
+  for (StarGraph::IncidentArcIterator arc_it(*graph_, node);
        arc_it.Ok();
        arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();

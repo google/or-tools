@@ -126,6 +126,16 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // StarGraph or other typedef'd types.
   static const int kArcIndexSize = ArcIndexSize;
 
+  EbertGraph()
+      : max_num_nodes_(0),
+        max_num_arcs_(0),
+        num_nodes_(0),
+        num_arcs_(0),
+        node_(),
+        next_adjacent_arc_(),
+        first_incident_arc_(),
+        representation_clean_(true) {}
+
   EbertGraph(NodeIndex max_num_nodes, ArcIndex max_num_arcs)
       : max_num_nodes_(0),
         max_num_arcs_(0),
@@ -140,9 +150,10 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
     next_adjacent_arc_.Assign(kNilArc);
     node_.Assign(kNilNode);
   }
+
   ~EbertGraph() {}
 
-  // Reserve memory neeeded for max_num_nodes nodes and max_num_arcs arcs.
+  // Reserves memory needed for max_num_nodes nodes and max_num_arcs arcs.
   // It can be used to enlarge the graph, but does not shrink memory
   // if called with smaller values.
   void Reserve(NodeIndex new_max_num_nodes, ArcIndex new_max_num_arcs) {
@@ -152,10 +163,16 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
     CHECK_GE(kMaxNumArcs, new_max_num_arcs);
     node_.Reserve(-new_max_num_arcs, new_max_num_arcs - 1);
     next_adjacent_arc_.Reserve(-new_max_num_arcs, new_max_num_arcs - 1);
+    for (ArcIndex arc = -new_max_num_arcs; arc < -max_num_arcs_; ++arc) {
+      node_.Set(arc, kNilNode);
+      next_adjacent_arc_.Set(arc, kNilArc);
+    }
+    for (ArcIndex arc = max_num_arcs_; arc < new_max_num_arcs; ++arc) {
+      node_.Set(arc, kNilNode);
+      next_adjacent_arc_.Set(arc, kNilArc);
+    }
     first_incident_arc_.Reserve(kFirstNode, new_max_num_nodes - 1);
-    for (NodeIndex node = max_num_nodes_;
-         node < new_max_num_nodes;
-         ++node) {
+    for (NodeIndex node = max_num_nodes_; node < new_max_num_nodes; ++node) {
       first_incident_arc_.Set(node, kNilArc);
     }
     max_num_nodes_ = new_max_num_nodes;
@@ -557,6 +574,19 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   NodeIndex Head(const ArcIndex arc) const {
     DCHECK(CheckArcValidity(arc));
     return node_[arc];
+  }
+
+  // Returns the first arc going from tail to head, if it exists, or kNilArc
+  // if such an arc does not exist.
+  ArcIndex LookUpArc(const NodeIndex tail, const NodeIndex head) const {
+    for (ArcIndex arc = FirstOutgoingArc(tail);
+         arc != kNilArc;
+         arc = NextOutgoingArc(arc)) {
+      if (Head(arc) == head) {
+        return arc;
+      }
+    }
+    return kNilArc;
   }
 
   // Returns the tail or start-node of arc if it is positive

@@ -166,36 +166,67 @@ namespace operations_research {
 
 class MinCostFlow {
  public:
-  explicit MinCostFlow(const StarGraph& graph);
+  // Different statuses for a given problem.
+  typedef enum {
+    NOT_SOLVED,
+    OPTIMAL,
+    FEASIBLE,
+    INFEASIBLE,
+    UNBALANCED,
+    BAD_RESULT,
+    BAD_COST_RANGE
+  } Status;
+
+  explicit MinCostFlow(const StarGraph* graph);
+
+  // Returns the graph associated to the current object.
+  const StarGraph* graph() const { return graph_; }
+
+  // Returns the status of last call to Solve(). NOT_SOLVED is returned Solve()
+  // has never been called or if the problem has been modified in such a way
+  // that the previous solution becomes invalid.
+  Status status() const { return status_; }
 
   // Sets the supply corresponding to node. A demand is modeled as a negative
   // supply.
   void SetNodeSupply(NodeIndex node, FlowQuantity supply) {
-    DCHECK(graph_.CheckNodeValidity(node));
+    DCHECK(graph_->CheckNodeValidity(node));
     node_excess_.Set(node, supply);
+    status_ = NOT_SOLVED;
   }
 
   // Sets the unit cost for arc.
   void SetArcUnitCost(ArcIndex arc, CostValue unit_cost) {
-    DCHECK(graph_.CheckArcValidity(arc));
+    DCHECK(graph_->CheckArcValidity(arc));
     scaled_arc_unit_cost_.Set(arc, unit_cost);
+    scaled_arc_unit_cost_.Set(Opposite(arc), -scaled_arc_unit_cost_[arc]);
+    status_ = NOT_SOLVED;
   }
 
   // Sets the capacity for arc.
-  void SetArcCapacity(ArcIndex arc, FlowQuantity quantity) {
-    DCHECK(graph_.CheckArcValidity(arc));
-    residual_arc_capacity_.Set(arc, quantity);
+  void SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity);
+
+  // Sets the flow for arc. Note that new_flow must be smaller than the
+  // capacity of arc.
+  void SetArcFlow(ArcIndex arc, FlowQuantity new_flow) {
+    DCHECK(graph_->CheckArcValidity(arc));
+    const FlowQuantity capacity = Capacity(arc);
+    DCHECK_GE(capacity, new_flow);
+    residual_arc_capacity_.Set(Opposite(arc), new_flow);
+    residual_arc_capacity_.Set(arc, capacity - new_flow);
+    status_ = NOT_SOLVED;
   }
 
-  // Runs the algorithm and computes the min-cost flow.
-  // The values of the flows for each arc can be accessed through the
-  // member function Flow.
-  CostValue ComputeMinCostFlow();
+  // Runs true is a min-cost flow could be found.
+  bool Solve();
+
+  // Returns the cost of the minimum-cost flow found by the algorithm.
+  CostValue GetOptimalCost() const { return total_flow_cost_; }
 
   // Returns the flow on arc using the equations given in the comment on
   // residual_arc_capacity_.
   FlowQuantity Flow(ArcIndex arc) const {
-    DCHECK(graph_.CheckArcValidity(arc));
+    DCHECK(graph_->CheckArcValidity(arc));
     if (IsDirect(arc)) {
       return residual_arc_capacity_[Opposite(arc)];
     } else {
@@ -206,7 +237,7 @@ class MinCostFlow {
   // Returns the capacity of arc using the equations given in the comment on
   // residual_arc_capacity_.
   FlowQuantity Capacity(ArcIndex arc) const {
-    DCHECK(graph_.CheckArcValidity(arc));
+    DCHECK(graph_->CheckArcValidity(arc));
     if (IsDirect(arc)) {
       return residual_arc_capacity_[arc]
            + residual_arc_capacity_[Opposite(arc)];
@@ -217,14 +248,14 @@ class MinCostFlow {
 
   // Returns the unscaled cost for arc.
   FlowQuantity Cost(ArcIndex arc) const {
-    DCHECK(graph_.CheckArcValidity(arc));
+    DCHECK(graph_->CheckArcValidity(arc));
     DCHECK_EQ(1ULL, cost_scaling_factor_);
     return scaled_arc_unit_cost_[arc];
   }
 
   // Returns the supply at node. Demands are modelled as negative supplies.
   FlowQuantity Supply(NodeIndex node) const {
-    DCHECK(graph_.CheckNodeValidity(node));
+    DCHECK(graph_->CheckNodeValidity(node));
     return node_excess_[node];
   }
 
@@ -243,8 +274,8 @@ class MinCostFlow {
 
   // Returns the reduced cost for an arc.
   CostValue ReducedCost(ArcIndex arc) const {
-    DCHECK(graph_.CheckNodeValidity(Tail(arc)));
-    DCHECK(graph_.CheckNodeValidity(Head(arc)));
+    DCHECK(graph_->CheckNodeValidity(Tail(arc)));
+    DCHECK(graph_->CheckNodeValidity(Head(arc)));
     DCHECK_LE(node_potential_[Tail(arc)], 0);
     DCHECK_LE(node_potential_[Head(arc)], 0);
     return scaled_arc_unit_cost_[arc]
@@ -254,7 +285,7 @@ class MinCostFlow {
 
   // Returns the first incident arc of node.
   ArcIndex GetFirstIncidentArc(NodeIndex node) const {
-    StarGraph::IncidentArcIterator arc_it(graph_, node);
+    StarGraph::IncidentArcIterator arc_it(*graph_, node);
     return arc_it.Index();
   }
 
@@ -280,19 +311,14 @@ class MinCostFlow {
   // in a human-friendly way.
   string DebugString(const string& context, ArcIndex arc) const;
 
-  // Completes the graph by setting the capacity of reverse arcs to zero,
-  // and their unit costs to the opposite of the costs of the correponding
-  // direct arcs.
-  void CompleteGraph();
-
   // Resets the first_admissible_arc_ array to the first incident arc of each
   // node.
   void ResetFirstAdmissibleArcs();
 
-  // Scales the costs, by multiplying them by (graph_.num_nodes() + 1).
+  // Scales the costs, by multiplying them by (graph_->num_nodes() + 1).
   void ScaleCosts();
 
-  // Unscales the costs, by dividing them by (graph_.num_nodes() + 1).
+  // Unscales the costs, by dividing them by (graph_->num_nodes() + 1).
   void UnscaleCosts();
 
   // Optimizes the cost by dividing epsilon_ by alpha_ and calling Refine().
@@ -326,20 +352,20 @@ class MinCostFlow {
   void GlobalRelabel();
 
   // Handy member functions to make the code more compact.
-  NodeIndex Head(ArcIndex arc) const { return graph_.Head(arc); }
+  NodeIndex Head(ArcIndex arc) const { return graph_->Head(arc); }
 
-  NodeIndex Tail(ArcIndex arc) const { return graph_.Tail(arc); }
+  NodeIndex Tail(ArcIndex arc) const { return graph_->Tail(arc); }
 
-  ArcIndex Opposite(ArcIndex arc) const { return graph_.Opposite(arc); }
+  ArcIndex Opposite(ArcIndex arc) const { return graph_->Opposite(arc); }
 
-  bool IsDirect(ArcIndex arc) const { return graph_.IsDirect(arc); }
+  bool IsDirect(ArcIndex arc) const { return graph_->IsDirect(arc); }
 
-  // A reference to the graph passed as argument.
-  const StarGraph& graph_;
+  // Pointer to the graph passed as argument.
+  const StarGraph* graph_;
 
   // A packed array representing the supply (if > 0) or the demand (if < 0)
   // for each node in graph_.
-  Int40PackedArray node_excess_;
+  Int64PackedArray node_excess_;
 
   // A packed array representing the potential (or price function) for
   // each node in graph_.
@@ -361,7 +387,11 @@ class MinCostFlow {
   // Using these facts enables one to only maintain residual_arc_capacity_,
   // instead of both capacity and flow, for each direct and indirect arc. This
   // reduces the amount of memory for this information by a factor 2.
-  Int40PackedArray residual_arc_capacity_;
+  // Note that the sum of the largest capacity of an arc in the graph and of
+  // the total flow in the graph not exceed the largest integer representable
+  // in 64 bits or there would be errors. CheckInputConsistency() verifies
+  // this.
+  Int64PackedArray residual_arc_capacity_;
 
   // A packed array representing the first admissible arc for each node
   // in graph_.
@@ -384,6 +414,12 @@ class MinCostFlow {
 
   // A packed array representing the scaled unit cost for each arc in graph_.
   Int64PackedArray scaled_arc_unit_cost_;
+
+  // The total cost of the flow.
+  CostValue        total_flow_cost_;
+
+  // The status of the problem.
+  Status           status_;
 
   DISALLOW_COPY_AND_ASSIGN(MinCostFlow);
 };

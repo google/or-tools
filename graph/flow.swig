@@ -34,7 +34,9 @@
 %rename (getSourceNodeIndex) operations_research::MaxFlow::GetSourceNodeIndex;
 %rename (getSinkNodeIndex) operations_research::MaxFlow::GetSinkNodeIndex;
 %rename (setArcCapacity) operations_research::MaxFlow::SetArcCapacity;
-%rename (computeMaxFlow) operations_research::MaxFlow::ComputeMaxFlow;
+%rename (setArcFlow) operations_research::MaxFlow::SetArcFlow;
+%rename (solve) operations_research::MaxFlow::Solve;
+%rename (getOptimalFlow) operations_research::MaxFlow::GetOptimalFlow;
 %rename (flow) operations_research::MaxFlow::Flow;
 %rename (capacity) operations_research::MaxFlow::Capacity;
 
@@ -42,7 +44,9 @@
 %rename(setNodeSupply) operations_research::MinCostFlow::SetNodeSupply;
 %rename(setArcUnitCost) operations_research::MinCostFlow::SetArcUnitCost;
 %rename(setArcCapacity) operations_research::MinCostFlow::SetArcCapacity;
-%rename(computeMinCostFlow) operations_research::MinCostFlow::ComputeMinCostFlow;
+%rename(setArcFlow) operations_research::MinCostFlow::SetArcFlow;
+%rename(solve) operations_research::MinCostFlow::Solve;
+%rename(getOptimalCost) operations_research::MinCostFlow::GetOptimalCost;
 %rename(flow) operations_research::MinCostFlow::Flow;
 %rename(capacity) operations_research::MinCostFlow::Capacity;
 %rename(cost) operations_research::MinCostFlow::Cost;
