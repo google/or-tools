@@ -32,7 +32,12 @@
 
 DEFINE_string(solver_write_model, "", "path of the file to write the model to");
 
+// To compile the open-source code, the anonymous namespace should be inside
+// the operations_research namespace (This is due to the open-sourced version of
+// StringPrintf which is defined inside the operations_research namespace in
+// open_source/base).
 namespace operations_research {
+
 namespace {
 
 // Insert name in name_set and check for duplicates.

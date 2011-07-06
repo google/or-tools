@@ -197,7 +197,6 @@ void SCIPInterface::WriteModel(const string& filename) {
 // Not cached
 void SCIPInterface::SetOptimizationDirection(bool maximize) {
   InvalidateSolutionSynchronization();
-  ORTOOLS_SCIP_CALL(SCIPfreeSolve(scip_, true));
   ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
   ORTOOLS_SCIP_CALL(SCIPsetObjsense(
       scip_, maximize ? SCIP_OBJSENSE_MAXIMIZE : SCIP_OBJSENSE_MINIMIZE));
@@ -208,7 +207,6 @@ void SCIPInterface::SetVariableBounds(int var_index, double lb, double ub) {
   if (var_index != kNoIndex) {
     // Not cached if the variable has been extracted
     DCHECK_LE(var_index, last_variable_index_);
-    ORTOOLS_SCIP_CALL(SCIPfreeSolve(scip_, true));
     ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
     ORTOOLS_SCIP_CALL(SCIPchgVarLb(scip_, scip_variables_[var_index], lb));
     ORTOOLS_SCIP_CALL(SCIPchgVarUb(scip_, scip_variables_[var_index], ub));
@@ -221,7 +219,6 @@ void SCIPInterface::SetVariableInteger(int var_index, bool integer) {
   InvalidateSolutionSynchronization();
   if (var_index != kNoIndex) {
     // Not cached if the variable has been extracted.
-    ORTOOLS_SCIP_CALL(SCIPfreeSolve(scip_, true));
     ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
     ORTOOLS_SCIP_CALL(SCIPchgVarType(
         scip_, scip_variables_[var_index],
@@ -236,7 +233,6 @@ void SCIPInterface::SetConstraintBounds(int index, double lb, double ub) {
   if (index != kNoIndex) {
     // Not cached if the row has been extracted
     DCHECK_LE(index, last_constraint_index_);
-    ORTOOLS_SCIP_CALL(SCIPfreeSolve(scip_, true));
     ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
     ORTOOLS_SCIP_CALL(SCIPchgLhsLinear(scip_, scip_constraints_[index], lb));
     ORTOOLS_SCIP_CALL(SCIPchgRhsLinear(scip_, scip_constraints_[index], ub));
@@ -259,7 +255,6 @@ void SCIPInterface::SetCoefficient(MPConstraint* const constraint,
     DCHECK_LE(variable_index, last_variable_index_);
     // SCIP does not allow to set a coefficient directly, so we add the
     // difference between the new and the old value instead.
-    ORTOOLS_SCIP_CALL(SCIPfreeSolve(scip_, true));
     ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
     ORTOOLS_SCIP_CALL(SCIPaddCoefLinear(
         scip_, scip_constraints_[constraint_index],
@@ -282,7 +277,6 @@ void SCIPInterface::ClearConstraint(MPConstraint* const constraint) {
       const int var_index = it->first->index();
       const double old_coef_value = it->second;
       DCHECK_NE(kNoIndex, var_index);
-      ORTOOLS_SCIP_CALL(SCIPfreeSolve(scip_, true));
       ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
       // Set coefficient to zero by substracting the old coefficient value.
       ORTOOLS_SCIP_CALL(SCIPaddCoefLinear(
@@ -306,7 +300,6 @@ void SCIPInterface::SetObjectiveOffset(double value) {
 // Clear objective of all its terms.
 void SCIPInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
-  ORTOOLS_SCIP_CALL(SCIPfreeSolve(scip_, true));
   ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
   // Clear linear terms
   for (ConstIter<hash_map<MPVariable*, double> >
@@ -336,7 +329,6 @@ void SCIPInterface::AddVariable(MPVariable* const var) {
 void SCIPInterface::ExtractNewVariables() {
   int total_num_vars = solver_->variables_.size();
   if (total_num_vars > last_variable_index_) {
-    ORTOOLS_SCIP_CALL(SCIPfreeSolve(scip_, true));
     ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
     // Define new variables
     for (int j = last_variable_index_; j < total_num_vars; ++j) {
@@ -378,7 +370,6 @@ void SCIPInterface::ExtractNewVariables() {
 void SCIPInterface::ExtractNewConstraints() {
   int total_num_rows = solver_->constraints_.size();
   if (last_constraint_index_ < total_num_rows) {
-    ORTOOLS_SCIP_CALL(SCIPfreeSolve(scip_, true));
     ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
     // Find the length of the longest row.
     int max_row_length = 0;
@@ -421,7 +412,6 @@ void SCIPInterface::ExtractNewConstraints() {
 }
 
 void SCIPInterface::ExtractObjective() {
-  ORTOOLS_SCIP_CALL(SCIPfreeSolve(scip_, true));
   ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
   // Linear objective: set objective coefficients for all variables
   // (some might have been modified)
