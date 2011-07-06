@@ -278,6 +278,7 @@ class MatrixEvaluator : public BaseObject {
   int64 Value(int64 i, int64 j) const {
     return values_[model_->IndexToNode(i)][model_->IndexToNode(j)];
   }
+
  private:
   int64** const values_;
   const int nodes_;
@@ -340,6 +341,7 @@ RoutingModel::RoutingModel(int nodes, int vehicles)
       start_end_count_(1),
       is_depot_set_(false),
       closed_(false),
+      status_(ROUTING_NOT_SOLVED),
       first_solution_strategy_(ROUTING_DEFAULT_STRATEGY),
       first_solution_evaluator_(NULL),
       metaheuristic_(ROUTING_GREEDY_DESCENT),
@@ -373,6 +375,7 @@ RoutingModel::RoutingModel(int nodes,
       ends_(vehicles),
       is_depot_set_(false),
       closed_(false),
+      status_(ROUTING_NOT_SOLVED),
       first_solution_strategy_(ROUTING_DEFAULT_STRATEGY),
       first_solution_evaluator_(NULL),
       metaheuristic_(ROUTING_GREEDY_DESCENT),
@@ -415,6 +418,7 @@ RoutingModel::RoutingModel(int nodes,
       ends_(vehicles),
       is_depot_set_(false),
       closed_(false),
+      status_(ROUTING_NOT_SOLVED),
       first_solution_strategy_(ROUTING_DEFAULT_STRATEGY),
       first_solution_evaluator_(NULL),
       metaheuristic_(ROUTING_GREEDY_DESCENT),
@@ -836,16 +840,23 @@ const Assignment* RoutingModel::Solve(const Assignment* assignment) {
   if (!closed_) {
     CloseModel();
   }
+  const int64 start_time_ms = solver_->wall_time();
   if (NULL == assignment) {
     solver_->Solve(solve_db_, monitors_);
   } else {
     assignment_->Copy(assignment);
     solver_->Solve(improve_db_, monitors_);
   }
-
+  const int64 elapsed_time_ms = solver_->wall_time() - start_time_ms;
   if (collect_assignments_->solution_count() == 1) {
+    status_ = ROUTING_SUCCESS;
     return collect_assignments_->solution(0);
   } else {
+    if (elapsed_time_ms >= time_limit_ms_) {
+      status_ = ROUTING_FAIL_TIMEOUT;
+    } else {
+      status_ = ROUTING_FAIL;
+    }
     return NULL;
   }
 }
@@ -941,6 +952,8 @@ int64 RoutingModel::GetArcCost(int64 i, int64 j, int64 vehicle) {
     cost = costs_[vehicle]->Run(node_i, node_j)
       + fixed_costs_[index_to_vehicle_[i]];
   } else {
+    // If there's only the first and last nodes on the route, it is considered
+    // as an empty route thus the cost of 0.
     cost = 0;
   }
   cache.node = j;

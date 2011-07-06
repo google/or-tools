@@ -61,6 +61,13 @@ class RoutingModel {
     ROUTING_TABU_SEARCH
   };
 
+  enum Status {
+    ROUTING_NOT_SOLVED,
+    ROUTING_SUCCESS,
+    ROUTING_FAIL,
+    ROUTING_FAIL_TIMEOUT
+  };
+
   // Supposes a single depot. A depot is the start and end node of the route of
   // a vehicle.
   RoutingModel(int nodes, int vehicles);
@@ -158,7 +165,10 @@ class RoutingModel {
   // metaheuristic, otherwise returns the metaheuristic which was set.
   RoutingMetaheuristic GetSelectedMetaheuristic() const;
   void AddSearchMonitor(SearchMonitor* const monitor);
+  // Solves the current routing model; closes the current model.
   const Assignment* Solve(const Assignment* assignment = NULL);
+  // Returns current status of the routing model.
+  Status status() const { return status_; }
   // Applies lock chain to the next search. Returns next var at the end of the
   // locked chain; this variable is not locked. Assignment containing locks
   // can be obtained calling PreAssignment().
@@ -218,6 +228,7 @@ class RoutingModel {
 
   // Utilities for swig
   void SetCommandLineOption(const string& name, const string& value);
+
  private:
   typedef hash_map<string, IntVar**> VarMap;
   struct Disjunction {
@@ -286,6 +297,7 @@ class RoutingModel {
   VarMap transits_;
   hash_map<string, Solver::IndexEvaluator2*> transit_evaluators_;
   bool closed_;
+  Status status_;
 
   // Search data
   RoutingStrategy first_solution_strategy_;
