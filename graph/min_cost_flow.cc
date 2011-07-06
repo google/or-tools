@@ -124,7 +124,8 @@ bool MinCostFlow::CheckInputConsistency() const {
     total_supply += excess;
     if (excess > 0) {
       total_flow += excess;
-      if (std::numeric_limits<FlowQuantity>::max() < max_capacity + total_flow) {
+      if (std::numeric_limits<FlowQuantity>::max() <
+          max_capacity + total_flow) {
         LOG(DFATAL) << "Input consistency error: max capacity + flow exceed "
                     << "precision";
       }

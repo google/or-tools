@@ -55,9 +55,12 @@ public class FlowExample {
     for (int target = 0; target < numTargets; ++target) {
       minCostFlow.setNodeSupply(numSources + target, -1);
     }
-
-    final long totalFlowCost = minCostFlow.computeMinCostFlow();
-    System.out.println("total flow = " + totalFlowCost + "/" + expectedCost);
+    if (minCostFlow.solve()) {
+      final long totalFlowCost = minCostFlow.getOptimalCost();
+      System.out.println("total flow = " + totalFlowCost + "/" + expectedCost);
+    } else {
+      System.out.println("No solution found");
+    }
   }
 
   private static void solveMaxFlow() {
@@ -75,11 +78,15 @@ public class FlowExample {
       final long arc = graph.addArc(tails[i], heads[i]);
       maxFlow.setArcCapacity(arc, capacities[i]);
     }
-    final long totalFlow = maxFlow.computeMaxFlow();
-    System.out.println("total flow " + totalFlow + "/" + expectedTotalFlow);
-    for (int i = 0; i < numArcs; ++i) {
-      System.out.println("Arc " + i + ": " + maxFlow.flow(i) + "/" +
-                         expectedFlows[i]);
+    if (maxFlow.solve()) {
+      final long totalFlow = maxFlow.getOptimalFlow();
+      System.out.println("total flow " + totalFlow + "/" + expectedTotalFlow);
+      for (int i = 0; i < numArcs; ++i) {
+        System.out.println("Arc " + i + ": " + maxFlow.flow(i) + "/" +
+                           expectedFlows[i]);
+      }
+    } else {
+      System.out.println("No solution found");
     }
   }
 
