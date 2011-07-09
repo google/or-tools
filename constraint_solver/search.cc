@@ -2158,13 +2158,14 @@ OptimizeVar::OptimizeVar(Solver* const s,
                          IntVar* const a,
                          int64 step)
     : SearchMonitor(s), var_(a), step_(step), best_(kint64max),
-      maximize_(maximize) {
+      maximize_(maximize), found_initial_solution_(false) {
   CHECK_GT(step, 0);
 }
 
 OptimizeVar::~OptimizeVar() {}
 
 void OptimizeVar::EnterSearch() {
+  found_initial_solution_ = false;
   if (maximize_) {
     best_ = kint64min;
   } else {
@@ -2177,10 +2178,12 @@ void OptimizeVar::RestartSearch() {
 }
 
 void OptimizeVar::ApplyBound() {
-  if (maximize_) {
-    var_->SetMin(best_ + step_);
-  } else {
-    var_->SetMax(best_ - step_);
+  if (found_initial_solution_) {
+    if (maximize_) {
+      var_->SetMin(best_ + step_);
+    } else {
+      var_->SetMax(best_ - step_);
+    }
   }
 }
 
@@ -2190,21 +2193,26 @@ void OptimizeVar::RefuteDecision(Decision* const d) {
 
 bool OptimizeVar::AcceptSolution() {
   const int64 val = var_->Value();
-  // This code should never returns false in sequential mode because
-  // ApplyBound should have been called before. In parallel, this is
-  // no longer true. That is why we keep it there, just in case.
-  return (maximize_ && val > best_) || (!maximize_ && val < best_);
+  if (!found_initial_solution_) {
+    return true;
+  } else {
+    // This code should never return false in sequential mode because
+    // ApplyBound should have been called before. In parallel, this is
+    // no longer true. That is why we keep it there, just in case.
+    return (maximize_ && val > best_) || (!maximize_ && val < best_);
+  }
 }
 
 bool OptimizeVar::AtSolution() {
   int64 val = var_->Value();
   if (maximize_) {
-    CHECK_GT(val, best_);
+    CHECK(!found_initial_solution_ || val > best_);
     best_ = val;
   } else {
-    CHECK_LT(val, best_);
+    CHECK(!found_initial_solution_ || val < best_);
     best_ = val;
   }
+  found_initial_solution_ = true;
   return true;
 }
 
@@ -2368,6 +2376,9 @@ class Metaheuristic : public SearchMonitor {
                 IntVar* objective,
                 int64 step);
   virtual ~Metaheuristic() {}
+
+  virtual bool AtSolution();
+  virtual void EnterSearch();
   virtual void RefuteDecision(Decision* const d);
 
  protected:
@@ -2388,6 +2399,26 @@ Metaheuristic::Metaheuristic(Solver* const solver,
       current_(kint64max),
       best_(kint64max),
       maximize_(maximize) {}
+
+bool Metaheuristic::AtSolution() {
+  current_ = objective_->Value();
+  if (maximize_) {
+    best_ = std::max(current_, best_);
+  } else {
+    best_ = std::min(current_, best_);
+  }
+  return true;
+}
+
+void Metaheuristic::EnterSearch() {
+  if (maximize_) {
+    best_ = objective_->Min();
+    current_ = kint64min;
+  } else {
+    best_ = objective_->Max();
+    current_ = kint64max;
+  }
+}
 
 void Metaheuristic::RefuteDecision(Decision* d) {
   if (maximize_) {
@@ -2445,6 +2476,7 @@ class TabuSearch : public Metaheuristic {
   int64 forbid_tenure_;
   double tabu_factor_;
   int64 stamp_;
+  bool found_initial_solution_;
   DISALLOW_COPY_AND_ASSIGN(TabuSearch);
 };
 
@@ -2464,7 +2496,8 @@ TabuSearch::TabuSearch(Solver* const s,
       keep_tenure_(keep_tenure),
       forbid_tenure_(forbid_tenure),
       tabu_factor_(tabu_factor),
-      stamp_(0) {
+      stamp_(0),
+      found_initial_solution_(false) {
   CHECK_GE(size_, 0);
   if (size_ > 0) {
     vars_.reset(new IntVar*[size_]);
@@ -2474,12 +2507,8 @@ TabuSearch::TabuSearch(Solver* const s,
 }
 
 void TabuSearch::EnterSearch() {
-  if (maximize_) {
-    best_ = objective_->Min();
-  } else {
-    best_ = objective_->Max();
-  }
-  current_ = best_;
+  Metaheuristic::EnterSearch();
+  found_initial_solution_ = false;
 }
 
 void TabuSearch::ApplyDecision(Decision* const d) {
@@ -2532,24 +2561,25 @@ void TabuSearch::ApplyDecision(Decision* const d) {
 
   // Go downhill to the next local optimum
   if (maximize_) {
-    s->AddConstraint(s->MakeGreaterOrEqual(objective_, current_ + step_));
+    const int64 bound = (current_ > kint64min) ? current_ + step_ : current_;
+    s->AddConstraint(s->MakeGreaterOrEqual(objective_, bound));
   } else {
-    s->AddConstraint(s->MakeLessOrEqual(objective_, current_ - step_));
+    const int64 bound = (current_ < kint64max) ? current_ - step_ : current_;
+    s->AddConstraint(s->MakeLessOrEqual(objective_, bound));
   }
 
   // Avoid cost plateau's which lead to tabu cycles
-  s->AddConstraint(s->MakeNonEquality(objective_, last_));
+  if (found_initial_solution_) {
+    s->AddConstraint(s->MakeNonEquality(objective_, last_));
+  }
 }
 
 bool TabuSearch::AtSolution() {
-  int64 val = objective_->Value();
-  if (maximize_) {
-    best_ = std::max(val, best_);
-  } else {
-    best_ = std::min(val, best_);
+  if (!Metaheuristic::AtSolution()) {
+    return false;
   }
-  current_ = val;
-  last_ = val;
+  found_initial_solution_ = true;
+  last_ = current_;
 
   // New solution found: add new assignments to tabu lists; this is only
   // done after the first local optimum (stamp_ != 0)
@@ -2646,9 +2676,7 @@ class SimulatedAnnealing : public Metaheuristic {
                      int64 step,
                      int64 initial_temperature);
   virtual ~SimulatedAnnealing() {}
-  virtual void EnterSearch();
   virtual void ApplyDecision(Decision* d);
-  virtual bool AtSolution();
   virtual bool LocalOptimum();
   virtual void AcceptNeighbor();
   virtual string DebugString() const {
@@ -2673,15 +2701,6 @@ SimulatedAnnealing::SimulatedAnnealing(Solver* const s,
       iteration_(0),
       rand_(654) {}
 
-void SimulatedAnnealing::EnterSearch() {
-  if (maximize_) {
-    best_ = objective_->Min();
-  } else {
-    best_ = objective_->Max();
-  }
-  current_ = best_;
-}
-
 void SimulatedAnnealing::ApplyDecision(Decision* const d) {
   Solver* const s = solver();
   if (d == s->balancing_decision()) {
@@ -2701,17 +2720,6 @@ void SimulatedAnnealing::ApplyDecision(Decision* const d) {
         (current_ < kint64max) ? current_ - step_ - energy_bound : current_;
     s->AddConstraint(s->MakeLessOrEqual(objective_, bound));
   }
-}
-
-bool SimulatedAnnealing::AtSolution() {
-  const int64 val = objective_->Value();
-  if (maximize_) {
-    best_ = std::max(val, best_);
-  } else {
-    best_ = std::min(val, best_);
-  }
-  current_ = val;
-  return true;
 }
 
 bool SimulatedAnnealing::LocalOptimum() {
@@ -2845,7 +2853,6 @@ class GuidedLocalSearch : public Metaheuristic {
                     int size,
                     double penalty_factor);
   virtual ~GuidedLocalSearch() {}
-  virtual void EnterSearch();
   virtual bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
   virtual void ApplyDecision(Decision* d);
   virtual bool AtSolution();
@@ -2926,15 +2933,6 @@ GuidedLocalSearch::GuidedLocalSearch(Solver* const s,
   }
 }
 
-void GuidedLocalSearch::EnterSearch() {
-  if (maximize_) {
-    current_ = objective_->Min();
-  } else {
-    current_ = objective_->Max();
-  }
-  best_ = current_;
-}
-
 // Add the following constraint (includes aspiration criterion):
 // if minimizing,
 //      objective =< Max(current penalized cost - penalized_objective - step,
@@ -2975,19 +2973,18 @@ void GuidedLocalSearch::ApplyDecision(Decision* const d) {
   } else {
     penalized_objective_ = NULL;
     if (maximize_) {
-      objective_->SetMin(current_ + step_);
+      const int64 bound = (current_ > kint64min) ? current_ + step_ : current_;
+      objective_->SetMin(bound);
     } else {
-      objective_->SetMax(current_ - step_);
+      const int64 bound = (current_ < kint64max) ? current_ - step_ : current_;
+      objective_->SetMax(bound);
     }
   }
 }
 
 bool GuidedLocalSearch::AtSolution() {
-  current_ = objective_->Value();
-  if (maximize_) {
-    best_ = std::max(current_, best_);
-  } else {
-    best_ = std::min(current_, best_);
+  if (!Metaheuristic::AtSolution()) {
+    return false;
   }
   if (penalized_objective_ != NULL) {  // In case no move has been found
     current_ += penalized_objective_->Value();

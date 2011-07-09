@@ -2935,6 +2935,8 @@ class OptimizeVar : public SearchMonitor {
   int64 step_;
   int64 best_;
   bool maximize_;
+  bool found_initial_solution_;
+
   DISALLOW_COPY_AND_ASSIGN(OptimizeVar);
 };
 
