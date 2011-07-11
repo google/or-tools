@@ -75,6 +75,10 @@ class MirrorIntervalVar : public IntervalVar {
   virtual void SetPerformed(bool val) { t_->SetPerformed(val); }
   virtual void WhenPerformedBound(Demon* const d) { t_->WhenPerformedBound(d); }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->VisitIntervalVariable(this, "mirror", t_);
+  }
+
  private:
   IntervalVar* const t_;
   DISALLOW_COPY_AND_ASSIGN(MirrorIntervalVar);
@@ -153,11 +157,13 @@ class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
     }
   }
   virtual void WhenPerformedBound(Demon* const d) { t_->WhenPerformedBound(d); }
+
  protected:
   const IntervalVar* const underlying() const { return t_; }
   bool MayUnderlyingBePerformed() const {
     return underlying()->MayBePerformed();
   }
+
  private:
   IntervalVar* const t_;
   DISALLOW_COPY_AND_ASSIGN(AlwaysPerformedIntervalVarWrapper);
@@ -200,7 +206,12 @@ class IntervalVarRelaxedMax : public AlwaysPerformedIntervalVarWrapper {
         << "Calling SetEndMax on a IntervalVarRelaxedMax is not supported, "
         << "as it seems there is no legitimate use case.";
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->VisitIntervalVariable(this, "relaxed_max", underlying());
+  }
 };
+
 
 IntervalVar* Solver::MakeIntervalRelaxedMax(IntervalVar* const interval_var) {
   return RevAlloc(new IntervalVarRelaxedMax(interval_var));
@@ -242,6 +253,10 @@ class IntervalVarRelaxedMin : public AlwaysPerformedIntervalVarWrapper {
     LOG(FATAL)
       << "Calling SetEndMin on a IntervalVarRelaxedMin is not supported, "
       << "as it seems there is no legitimate use case.";
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->VisitIntervalVariable(this, "relaxed_min", underlying());
   }
 };
 
@@ -290,6 +305,15 @@ class IntervalVarStartExpr : public BaseIntExpr {
   virtual string DebugString() const {
     return StringPrintf("start(%s)", interval_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kStartExpr, this);
+    visitor->VisitIntervalArgument(this,
+                                   ModelVisitor::kIntervalArgument,
+                                   interval_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kStartExpr, this);
+  }
+
  private:
   IntervalVar* interval_;
   DISALLOW_COPY_AND_ASSIGN(IntervalVarStartExpr);
@@ -336,6 +360,15 @@ class IntervalVarEndExpr : public BaseIntExpr {
   virtual string DebugString() const {
     return StringPrintf("end(%s)", interval_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kEndExpr, this);
+    visitor->VisitIntervalArgument(this,
+                                   ModelVisitor::kIntervalArgument,
+                                   interval_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kEndExpr, this);
+  }
+
  private:
   IntervalVar* interval_;
   DISALLOW_COPY_AND_ASSIGN(IntervalVarEndExpr);
@@ -382,6 +415,15 @@ class IntervalVarDurationExpr : public BaseIntExpr {
   virtual string DebugString() const {
     return StringPrintf("duration(%s)", interval_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kDurationExpr, this);
+    visitor->VisitIntervalArgument(this,
+                                   ModelVisitor::kIntervalArgument,
+                                   interval_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kDurationExpr, this);
+  }
+
  private:
   IntervalVar* interval_;
   DISALLOW_COPY_AND_ASSIGN(IntervalVarDurationExpr);
@@ -439,6 +481,15 @@ class IntervalVarPerformedExpr : public BaseIntExpr {
   virtual string DebugString() const {
     return StringPrintf("performed(%s)", interval_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kPerformedExpr, this);
+    visitor->VisitIntervalArgument(this,
+                                   ModelVisitor::kIntervalArgument,
+                                   interval_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kPerformedExpr, this);
+  }
+
  private:
   IntervalVar* interval_;
   DISALLOW_COPY_AND_ASSIGN(IntervalVarPerformedExpr);
@@ -487,7 +538,6 @@ IntExpr* IntervalVar::PerformedExpr() {
 
 class FixedDurationIntervalVar : public IntervalVar {
  public:
-
   class FixedDurationIntervalVarHandler : public Demon {
    public:
     explicit FixedDurationIntervalVarHandler(
@@ -569,6 +619,11 @@ class FixedDurationIntervalVar : public IntervalVar {
   void Process();
   void ClearInProcess();
   virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->VisitIntervalVariable(this, "", NULL);
+  }
+
  private:
   void CheckOldStartBounds() {
     if (old_start_min_ > start_min_) {
@@ -917,6 +972,11 @@ class FixedInterval : public IntervalVar {
   virtual void SetPerformed(bool val);
   virtual void WhenPerformedBound(Demon* const d) {}
   virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->VisitIntervalVariable(this, "", NULL);
+  }
+
  private:
   const int64 start_;
   const int64 duration_;

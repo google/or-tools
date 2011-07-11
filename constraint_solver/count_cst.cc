@@ -42,6 +42,18 @@ class CountValueEqCst : public Constraint {
   void CardMin();
   void CardMax();
   virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kCountEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kCountArgument, count_);
+    visitor->EndVisitConstraint(ModelVisitor::kCountEqual, this);
+  }
+
  private:
   scoped_array<IntVar*> vars_;
   int size_;
@@ -200,6 +212,19 @@ class CountValueEq : public Constraint {
   void CardMin();
   void CardMax();
   virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kCountEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kCountArgument,
+                                            count_);
+    visitor->EndVisitConstraint(ModelVisitor::kCountEqual, this);
+  }
 
  private:
   scoped_array<IntVar*> vars_;
@@ -385,6 +410,24 @@ class Distribute : public Constraint {
   void CardMin(int cindex);
   void CardMax(int cindex);
   virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               var_size_);
+    visitor->VisitIntegerArrayArgument(this,
+                                       ModelVisitor::kValuesArgument,
+                                       values_.get(),
+                                       card_size_);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kCardsArgument,
+                                               cards_.get(),
+                                               card_size_);
+    visitor->EndVisitConstraint(ModelVisitor::kDistribute, this);
+  }
+
  private:
   scoped_array<IntVar*> vars_;
   int var_size_;
@@ -618,6 +661,20 @@ class FastDistribute : public Constraint {
       CardMin(card_index);
     }
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               var_size_);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kCardsArgument,
+                                               cards_.get(),
+                                               card_size_);
+    visitor->EndVisitConstraint(ModelVisitor::kDistribute, this);
+  }
+
  private:
   scoped_array<IntVar*> vars_;
   const int var_size_;
@@ -826,6 +883,21 @@ class BoundedDistribute : public Constraint {
       CardMin(card_index);
     }
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               var_size_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kMinArgument, card_min_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kMaxArgument, card_max_);
+    visitor->VisitIntegerArgument(this,
+                                  ModelVisitor::kSizeArgument,
+                                  card_size_);
+    visitor->EndVisitConstraint(ModelVisitor::kDistribute, this);
+  }
+
  private:
   scoped_array<IntVar*> vars_;
   const int var_size_;
@@ -1025,6 +1097,15 @@ class SetAllToZero : public Constraint {
 
   virtual string DebugString() const {
     return "SetAllToZero()";
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kCardsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->EndVisitConstraint(ModelVisitor::kDistribute, this);
   }
 
  private:

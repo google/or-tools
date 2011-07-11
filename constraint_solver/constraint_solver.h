@@ -100,6 +100,7 @@ class AssignmentProto;
 class BaseObject;
 class BooleanVar;
 class ClockTimer;
+class ConstIntArray;
 class Constraint;
 class Decision;
 class DecisionBuilder;
@@ -123,6 +124,7 @@ class LessEqualCstCache;
 class LocalSearchFilter;
 class LocalSearchOperator;
 class LocalSearchPhaseParameters;
+class ModelVisitor;
 class MPSolver;
 class NoGoodManager;
 class NoGoodTerm;
@@ -1624,6 +1626,9 @@ class Solver {
   // search. Use this only for low level debugging.
   SearchMonitor* MakeSearchTrace(const string& prefix);
 
+  // ----- ModelVisitor -----
+  ModelVisitor* MakePrintModelVisitor();
+
   // ----- Symmetry Breaking -----
 
   SearchMonitor* MakeSymmetryManager(const std::vector<SymmetryBreaker*>& visitors);
@@ -2189,6 +2194,9 @@ class Solver {
   // to the solver before the search,
   int constraints() const { return constraints_; }
 
+  // Accept visitors.
+  void Accept(ModelVisitor* const visitor) const;
+
   Decision* balancing_decision() const { return balancing_decision_.get(); }
 
   // Internal
@@ -2204,6 +2212,7 @@ class Solver {
   friend class DomainIntVar;
   friend class FindOneNeighbor;
   friend class FixedDurationIntervalVar;
+  friend class IntVar;
   friend class PropagationBaseObject;
   friend class Queue;
   friend class SearchMonitor;
@@ -2534,6 +2543,195 @@ class VariableQueueCleaner : public Action {
   DomainIntVar* var_;
 };
 
+// Model visitor.
+class ModelVisitor : public BaseObject {
+ public:
+  // Constraint and Expression types.
+  static const char kAbs[];
+  static const char kAllDifferent[];
+  static const char kAllowedAssignments[];
+  static const char kBetween[];
+  static const char kConvexPiecewise[];
+  static const char kCountEqual[];
+  static const char kCumulative[];
+  static const char kDeviation[];
+  static const char kDifference[];
+  static const char kDistribute[];
+  static const char kDivide[];
+  static const char kDurationExpr[];
+  static const char kElement[];
+  static const char kElementConstraint[];
+  static const char kEndExpr[];
+  static const char kEquality[];
+  static const char kFalseConstraint[];
+  static const char kGreater[];
+  static const char kGreaterOrEqual[];
+  static const char kIntervalBinaryRelation[];
+  static const char kIntervalDisjunction[];
+  static const char kIntervalUnaryRelation[];
+  static const char kIsBetween[];
+  static const char kIsDifferent[];
+  static const char kIsEqual[];
+  static const char kIsGreaterOrEqual[];
+  static const char kIsLessOrEqual[];
+  static const char kIsMember[];
+  static const char kLess[];
+  static const char kLessOrEqual[];
+  static const char kLinkExprVar[];
+  static const char kMapDomain[];
+  static const char kMax[];
+  static const char kMaxEqual[];
+  static const char kMember[];
+  static const char kMin[];
+  static const char kMinEqual[];
+  static const char kNoCycle[];
+  static const char kNonEqual[];
+  static const char kOpposite[];
+  static const char kPack[];
+  static const char kPathCumul[];
+  static const char kPerformedExpr[];
+  static const char kProd[];
+  static const char kProduct[];
+  static const char kScalProd[];
+  static const char kScalProdEqual[];
+  static const char kScalProdGreaterOrEqual[];
+  static const char kScalProdLessOrEqual[];
+  static const char kSemiContinuous[];
+  static const char kSequence[];
+  static const char kSquare[];
+  static const char kStartExpr[];
+  static const char kSum[];
+  static const char kSumEqual[];
+  static const char kSumGreater[];
+  static const char kSumGreaterOrEqual[];
+  static const char kSumLess[];
+  static const char kSumLessOrEqual[];
+  static const char kTransition[];
+  static const char kTrueConstraint[];
+
+  // argument names;
+  static const char kActiveArgument[];
+  static const char kCardsArgument[];
+  static const char kCoefficientsArgument[];
+  static const char kCountArgument[];
+  static const char kCumulsArgument[];
+  static const char kEarlyCostArgument[];
+  static const char kEarlyDateArgument[];
+  static const char kExpressionArgument[];
+  static const char kFinalStates[];
+  static const char kFixedChargeArgument[];
+  static const char kIndex2Argument[];
+  static const char kIndexArgument[];
+  static const char kInitialState[];
+  static const char kIntervalArgument[];
+  static const char kIntervalsArgument[];
+  static const char kLateCostArgument[];
+  static const char kLateDateArgument[];
+  static const char kLeftArgument[];
+  static const char kMaxArgument[];
+  static const char kMinArgument[];
+  static const char kNextsArgument[];
+  static const char kRangeArgument[];
+  static const char kRelationArgument[];
+  static const char kRightArgument[];
+  static const char kSizeArgument[];
+  static const char kStepArgument[];
+  static const char kTargetArgument[];
+  static const char kTransitsArgument[];
+  static const char kTuplesArgument[];
+  static const char kValueArgument[];
+  static const char kValuesArgument[];
+  static const char kVarsArgument[];
+
+  virtual ~ModelVisitor();
+
+  // ----- Virtual methods for visitors -----
+
+  // Begin/End visit element.
+  virtual void BeginVisitModel(const string& solver_name);
+  virtual void EndVisitModel(const string& solver_name);
+  virtual void BeginVisitConstraint(const string& type_name,
+                                    const Constraint* const constraint);
+  virtual void EndVisitConstraint(const string& type_name,
+                                  const Constraint* const constraint);
+  virtual void BeginVisitExtension(const string& type, const string& name);
+  virtual void EndVisitExtension(const string& type, const string& name);
+  virtual void BeginVisitIntegerExpression(const string& type_name,
+                                           const IntExpr* const expr);
+  virtual void EndVisitIntegerExpression(const string& type_name,
+                                         const IntExpr* const expr);
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const IntExpr* const delegate);
+  virtual void VisitIntervalVariable(const IntervalVar* const variable,
+                                     const string operation,
+                                     const IntervalVar* const delegate);
+
+  // Visit integer arguments.
+  virtual void VisitIntegerArgument(const Constraint* const master,
+                                    const string& arg_name,
+                                    int64 value);
+  virtual void VisitIntegerArgument(const IntExpr* const master,
+                                    const string& arg_name,
+                                    int64 value);
+
+  virtual void VisitIntegerArrayArgument(const Constraint* const master,
+                                         const string& arg_name,
+                                         const int64* const values,
+                                         int size);
+  virtual void VisitIntegerArrayArgument(const IntExpr* const master,
+                                         const string& arg_name,
+                                         const int64* const values,
+                                         int size);
+
+  // Visit integer expression argument.
+  virtual void VisitIntegerExpressionArgument(
+      const Constraint* const master,
+      const string& arg_name,
+      const IntExpr* const argument);
+  virtual void VisitIntegerExpressionArgument(
+      const IntExpr* const master,
+      const string& arg_name,
+      const IntExpr* const argument);
+
+  virtual void VisitIntegerVariableArrayArgument(
+      const IntExpr* const master,
+      const string& arg_name,
+      const IntVar* const * arguments,
+      int size);
+  virtual void VisitIntegerVariableArrayArgument(
+      const Constraint* const master,
+      const string& arg_name,
+      const IntVar* const * arguments,
+      int size);
+
+  // Visit interval argument.
+  virtual void VisitIntervalArgument(const IntExpr* const master,
+                                     const string& arg_name,
+                                     const IntervalVar* const argument);
+  virtual void VisitIntervalArgument(const Constraint* const master,
+                                     const string& arg_name,
+                                     const IntervalVar* const argument);
+
+  virtual void VisitIntervalArrayArgument(const IntExpr* const master,
+                                          const string& arg_name,
+                                          const IntervalVar* const * argument,
+                                          int size);
+  virtual void VisitIntervalArrayArgument(const Constraint* const master,
+                                          const string& arg_name,
+                                          const IntervalVar* const * argument,
+                                          int size);
+
+  // Helpers.
+  void VisitConstIntArrayArgument(const IntExpr* const master,
+                                  const string& arg_name,
+                                  const ConstIntArray& argument);
+
+  void VisitConstIntArrayArgument(const Constraint* const master,
+                                  const string& arg_name,
+                                  const ConstIntArray& argument);
+  // TODO(user): SearchMonitors, phases
+};
+
 // A constraint is the main modeling object. It proposes two methods:
 //   - Post() is responsible for creating the demons and attaching them to
 //     immediate demons()
@@ -2554,7 +2752,11 @@ class Constraint : public PropagationBaseObject {
   virtual void InitialPropagate() = 0;
   virtual string DebugString() const;
 
+  // Fixed method called during the root node propagation.
   void PostAndPropagate();
+
+  // Accept visitors.
+  virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(Constraint);
@@ -2711,6 +2913,9 @@ class IntExpr : public PropagationBaseObject {
   // Attach a demon that will watch the min or the max of the expression.
   virtual void WhenRange(Demon* d) = 0;
 
+  // Accept visitors.
+  virtual void Accept(ModelVisitor* const visitor) const;
+
  private:
   DISALLOW_COPY_AND_ASSIGN(IntExpr);
 };
@@ -2823,6 +3028,9 @@ class IntVar : public IntExpr {
   virtual int64 OldMax() const = 0;
 
   virtual int VarType() const;
+
+  // Accept visitor.
+  virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(IntVar);
@@ -3127,6 +3335,9 @@ class IntervalVar : public PropagationBaseObject {
   IntExpr* EndExpr();
   IntExpr* PerformedExpr();
 
+  // Accept visitor.
+  virtual void Accept(ModelVisitor* const visitor) const = 0;
+
  private:
   IntExpr* start_expr_;
   IntExpr* duration_expr_;
@@ -3208,6 +3419,9 @@ class Sequence : public Constraint {
 
   // Internal method called by demons
   void RangeChanged(int index);
+
+  // Visitor support.
+  virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
   void TryToDecide(int i, int j);
@@ -3783,6 +3997,7 @@ class Pack : public Constraint {
   void AssignFirstPossibleToBin(int64 bin_index);
   void AssignAllRemainingItems();
   void UnassignAllRemainingItems();
+  virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
   bool IsInProcess() const;

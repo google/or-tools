@@ -45,12 +45,14 @@ class BaseIntExprElement : public BaseIntExpr {
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
+
  protected:
   virtual int64 ElementValue(int index) const = 0;
   virtual int64 ExprMin() const = 0;
   virtual int64 ExprMax() const = 0;
 
   IntVar* const expr_;
+
  private:
   void UpdateSupports() const;
 
@@ -223,6 +225,21 @@ class IntElementConstraint : public Constraint {
                         index_->DebugString().c_str(),
                         elem_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kElementConstraint, this);
+    visitor->VisitConstIntArrayArgument(this,
+                                        ModelVisitor::kValuesArgument,
+                                        values_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kIndexArgument,
+                                            index_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            elem_);
+    visitor->EndVisitConstraint(ModelVisitor::kElementConstraint, this);
+  }
+
  private:
   ConstIntArray values_;
   IntVar* const index_;
@@ -240,17 +257,21 @@ class IntExprElement : public BaseIntExprElement {
   IntExprElement(Solver* const s,
                  std::vector<int64>* const vals,
                  IntVar* const expr);
+
   virtual ~IntExprElement();
+
   virtual string name() const {
     return StringPrintf("IntElement(%s, %s)",
                         values_.DebugString().c_str(),
                         expr_->name().c_str());
   }
+
   virtual string DebugString() const {
     return StringPrintf("IntElement(%s, %s)",
                         values_.DebugString().c_str(),
                         expr_->DebugString().c_str());
   }
+
   virtual IntVar* CastToVar() {
     Solver* const s = solver();
     std::vector<int64>* copied_data = values_.Copy();
@@ -263,6 +284,18 @@ class IntExprElement : public BaseIntExprElement {
                                                           var)));
     return var;
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
+    visitor->VisitConstIntArrayArgument(this,
+                                        ModelVisitor::kValuesArgument,
+                                        values_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kIndexArgument,
+                                            expr_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
+  }
+
  protected:
   virtual int64 ElementValue(int index) const {
     DCHECK_LT(index, values_.size());
@@ -274,6 +307,7 @@ class IntExprElement : public BaseIntExprElement {
   virtual int64 ExprMax() const {
     return std::min(values_.size() - 1LL, expr_->Max());
   }
+
  private:
   ConstIntArray values_;
 };
@@ -314,9 +348,22 @@ class IncreasingIntExprElement : public BaseIntExpr {
                         values_.DebugString().c_str(),
                         index_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
+    visitor->VisitConstIntArrayArgument(this,
+                                        ModelVisitor::kValuesArgument,
+                                        values_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kIndexArgument,
+                                            index_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
+  }
+
   virtual void WhenRange(Demon* d) {
     index_->WhenRange(d);
   }
+
   virtual IntVar* CastToVar() {
     Solver* const s = solver();
     std::vector<int64>* copied_data = values_.Copy();
@@ -326,6 +373,7 @@ class IncreasingIntExprElement : public BaseIntExpr {
     LinkVarExpr(s, this, var);
     return var;
   }
+
  private:
   ConstIntArray values_;
   IntVar* const index_;
@@ -500,16 +548,43 @@ class IntExprFunctionElement : public BaseIntExprElement {
                          IntVar* const expr,
                          bool del);
   virtual ~IntExprFunctionElement();
+
   virtual string name() const {
     return StringPrintf("IntFunctionElement(%s)", expr_->name().c_str());
   }
+
   virtual string DebugString() const {
     return StringPrintf("IntFunctionElement(%s)", expr_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    // Warning: This will expand all values into a vector.
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
+    std::vector<int64> expanded_values;
+    const int64 index_min = expr_->Min();
+    const int64 index_max = expr_->Max();
+    // Pad with 0 at first.
+    for (int i = 0; i < index_min; ++i) {
+      expanded_values.push_back(0);
+    }
+    for (int i = std::max(0LL, index_min); i <= index_max; ++i) {
+      expanded_values.push_back(ElementValue(i));
+    }
+    visitor->VisitIntegerArrayArgument(this,
+                                       ModelVisitor::kValuesArgument,
+                                       expanded_values.data(),
+                                       expanded_values.size());
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kIndexArgument,
+                                            expr_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
+  }
+
  protected:
   virtual int64 ElementValue(int index) const { return values_->Run(index); }
   virtual int64 ExprMin() const { return expr_->Min(); }
   virtual int64 ExprMax() const { return expr_->Max(); }
+
  private:
   ResultCallback1<int64, int64>* values_;
   const bool delete_;
@@ -623,6 +698,30 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
   virtual void WhenRange(Demon* d) {
     index_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    // Warning: This will expand all values into a vector.
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
+    std::vector<int64> expanded_values;
+    const int64 index_min = index_->Min();
+    const int64 index_max = index_->Max();
+    // Pad with 0 at first.
+    for (int i = 0; i < index_min; ++i) {
+      expanded_values.push_back(0);
+    }
+    for (int i = std::max(0LL, index_min); i <= index_max; ++i) {
+      expanded_values.push_back(values_->Run(i));
+    }
+    visitor->VisitIntegerArrayArgument(this,
+                                       ModelVisitor::kValuesArgument,
+                                       expanded_values.data(),
+                                       expanded_values.size());
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kIndexArgument,
+                                            index_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
+  }
+
  private:
   ResultCallback1<int64, int64>* values_;
   IntVar* const index_;
@@ -695,6 +794,19 @@ class IntIntExprFunctionElement : public BaseIntExpr {
     expr1_->WhenRange(d);
     expr2_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
+    // TODO(user): Implement me.
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kIndexArgument,
+                                            expr1_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kIndex2Argument,
+                                            expr2_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
+  }
+
  private:
   int64 ElementValue(int index1, int index2) const {
     return values_->Run(index1, index2);
@@ -919,6 +1031,22 @@ class IntExprArrayElementCt : public Constraint {
   void UpdateExpr();
 
   virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kElementConstraint, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kIndexArgument,
+                                            expr_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            var_);
+    visitor->EndVisitConstraint(ModelVisitor::kElementConstraint, this);
+  }
+
  private:
   scoped_array<IntVar*> vars_;
   int size_;
@@ -1087,6 +1215,19 @@ class IntExprArrayElement : public BaseIntExpr {
                                                            var)));
     return var;
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kIndexArgument,
+                                            var_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
+  }
+
  private:
   scoped_array<IntVar*> vars_;
   int size_;

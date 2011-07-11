@@ -55,12 +55,24 @@ class IntervalUnaryRelation : public Constraint {
   virtual ~IntervalUnaryRelation() {}
 
   virtual void Post();
+
   virtual void InitialPropagate();
 
   virtual string DebugString() const {
     return StringPrintf("(%s %s %" GG_LL_FORMAT "d)",
                         t_->DebugString().c_str(), kUnaryNames[rel_], d_);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kIntervalUnaryRelation, this);
+    visitor->VisitIntervalArgument(this,
+                                   ModelVisitor::kIntervalArgument,
+                                   t_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kRelationArgument, rel_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, d_);
+    visitor->EndVisitConstraint(ModelVisitor::kIntervalUnaryRelation, this);
+  }
+
  private:
   IntervalVar* const t_;
   const int64 d_;
@@ -129,6 +141,7 @@ class IntervalBinaryRelation : public Constraint {
   virtual ~IntervalBinaryRelation() {}
 
   virtual void Post();
+
   virtual void InitialPropagate();
 
   virtual string DebugString() const {
@@ -137,6 +150,15 @@ class IntervalBinaryRelation : public Constraint {
                         kBinaryNames[rel_],
                         t2_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kIntervalBinaryRelation, this);
+    visitor->VisitIntervalArgument(this, ModelVisitor::kLeftArgument, t1_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kRelationArgument, rel_);
+    visitor->VisitIntervalArgument(this, ModelVisitor::kRightArgument, t2_);
+    visitor->EndVisitConstraint(ModelVisitor::kIntervalBinaryRelation, this);
+  }
+
  private:
   IntervalVar* const t1_;
   IntervalVar* const t2_;
@@ -249,6 +271,17 @@ class TemporalDisjunction : public Constraint {
   void RangeAlt();
   void Decide(State s);
   void TryToDecide();
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kIntervalDisjunction, this);
+    visitor->VisitIntervalArgument(this, ModelVisitor::kLeftArgument, t1_);
+    visitor->VisitIntervalArgument(this, ModelVisitor::kRightArgument, t2_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            alt_);
+    visitor->EndVisitConstraint(ModelVisitor::kIntervalDisjunction, this);
+  }
+
  private:
   IntervalVar* const t1_;
   IntervalVar* const t2_;

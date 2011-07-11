@@ -80,6 +80,21 @@ class Deviation : public Constraint {
                         total_sum_);
   }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kDeviation, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            deviation_var_);
+    visitor->VisitIntegerArgument(this,
+                                  ModelVisitor::kValueArgument,
+                                  total_sum_);
+    visitor->EndVisitConstraint(ModelVisitor::kDeviation, this);
+  }
+
  private:
   // Builds an assignment with minimal deviation and assign it to
   // scaled_vars_assigned_value_. It returns the minimal deviation:

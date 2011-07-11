@@ -38,12 +38,25 @@ class ArrayConstraint : public Constraint {
     memcpy(vars_.get(), vars, size_ * sizeof(*vars));
   }
   virtual ~ArrayConstraint() {}
+
  protected:
   string DebugStringInternal(const string& name) const {
     return StringPrintf("%s(%s) == %s",
                         name.c_str(),
                         DebugStringArray(vars_.get(), size_, ", ").c_str(),
                         var_->DebugString().c_str());
+  }
+
+  void AcceptInternal(const string& name, ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(name, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            var_);
+    visitor->EndVisitConstraint(name, this);
   }
 
   scoped_array<IntVar*> vars_;
@@ -63,11 +76,21 @@ class ArrayExpr : public BaseIntExpr {
   }
 
   virtual ~ArrayExpr() {}
+
  protected:
   string DebugStringInternal(const string& name) const {
     return StringPrintf("%s(%s)",
                         name.c_str(),
                         DebugStringArray(vars_.get(), size_, ", ").c_str());
+  }
+
+  void AcceptInternal(const string& name, ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(name, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->EndVisitIntegerExpression(name, this);
   }
 
   scoped_array<IntVar*> vars_;
@@ -172,6 +195,7 @@ class TreeArrayConstraint : public ArrayConstraint {
   int Width(int depth) const {
     return tree_[depth].size();
   }
+
  private:
   struct NodeInfo {
     int64 node_min;
@@ -328,6 +352,11 @@ class SumConstraint : public TreeArrayConstraint {
   string DebugString() const {
     return DebugStringInternal("Sum");
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    AcceptInternal(ModelVisitor::kSumEqual, visitor);
+  }
+
  private:
   Demon* sum_demon_;
 };
@@ -351,6 +380,10 @@ class MinBoolArrayCt : public ArrayConstraint {
   void UpdateVar();
 
   virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    AcceptInternal(ModelVisitor::kMinEqual, visitor);
+  }
 
  private:
   SmallRevBitSet bits_;
@@ -473,6 +506,10 @@ class MinBoolArray : public ArrayExpr {
     s->AddConstraint(ct);
     return var;
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    AcceptInternal(ModelVisitor::kMin, visitor);
+  }
 };
 
 MinBoolArray::~MinBoolArray() {}
@@ -562,6 +599,10 @@ class MinArrayCt : public ArrayConstraint {
   void UpdateVar();
 
   virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    AcceptInternal(ModelVisitor::kMinEqual, visitor);
+  }
 
  private:
   Rev<int> min_support_;
@@ -711,6 +752,10 @@ class MinArray : public ArrayExpr {
     s->AddConstraint(ct);
     return var;
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    AcceptInternal(ModelVisitor::kMin, visitor);
+  }
 };
 
 MinArray::~MinArray() {}
@@ -793,6 +838,10 @@ class MaxArrayCt : public ArrayConstraint {
   void UpdateVar();
 
   virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    AcceptInternal(ModelVisitor::kMaxEqual, visitor);
+  }
 
  private:
   Rev<int> max_support_;
@@ -942,6 +991,10 @@ class MaxArray : public ArrayExpr {
     s->AddConstraint(ct);
     return var;
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    AcceptInternal(ModelVisitor::kMax, visitor);
+  }
 };
 
 MaxArray::~MaxArray() {}
@@ -1021,6 +1074,10 @@ class MaxBoolArrayCt : public ArrayConstraint {
   void UpdateVar();
 
   virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    AcceptInternal(ModelVisitor::kMaxEqual, visitor);
+  }
 
  private:
   SmallRevBitSet bits_;
@@ -1141,6 +1198,10 @@ class MaxBoolArray : public ArrayExpr {
         s->RevAlloc(new MaxBoolArrayCt(s, vars_.get(), size_, var));
     s->AddConstraint(ct);
     return var;
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    AcceptInternal(ModelVisitor::kMax, visitor);
   }
 };
 
@@ -1501,6 +1562,16 @@ class SumBooleanLessOrEqualToOne : public  BaseSumBooleanConstraint {
   virtual string DebugString() const {
     return DebugStringInternal("SumBooleanLessOrEqualToOne");
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kSumLessOrEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, 1);
+    visitor->EndVisitConstraint(ModelVisitor::kSumLessOrEqual, this);
+  }
 };
 
 // ----- Sum of Boolean >= 1 -----
@@ -1520,6 +1591,16 @@ class SumBooleanGreaterOrEqualToOne : public BaseSumBooleanConstraint {
   void UpdateVar();
 
   virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kSumGreaterOrEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, 1);
+    visitor->EndVisitConstraint(ModelVisitor::kSumGreaterOrEqual, this);
+  }
 
  private:
   RevBitSet bits_;
@@ -1676,6 +1757,16 @@ class SumBooleanEqualToOne : public BaseSumBooleanConstraint {
     return DebugStringInternal("SumBooleanEqualToOne");
   }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, 1);
+    visitor->EndVisitConstraint(ModelVisitor::kSumEqual, this);
+  }
+
  private:
   int active_vars_;
 };
@@ -1796,6 +1887,18 @@ class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
 
   virtual string DebugString() const {
     return DebugStringInternal("SumBooleanEqualToVar");
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            sum_var_);
+    visitor->EndVisitConstraint(ModelVisitor::kSumEqual, this);
   }
 
  private:
@@ -1969,6 +2072,23 @@ class BooleanScalProdLessConstant : public Constraint {
                         Int64ArrayToString(coefs_.get(), size_, ", ").c_str(),
                         upper_bound_);
   }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kScalProdLessOrEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerArrayArgument(this,
+                                       ModelVisitor::kCoefficientsArgument,
+                                       coefs_.get(),
+                                       size_);
+    visitor->VisitIntegerArgument(this,
+                                  ModelVisitor::kValueArgument,
+                                  upper_bound_);
+    visitor->EndVisitConstraint(ModelVisitor::kScalProdLessOrEqual, this);
+  }
+
  private:
   scoped_array<IntVar*> vars_;
   int size_;
@@ -2104,6 +2224,23 @@ class PositiveBooleanScalProdEqVar : public Constraint {
           var_->DebugString().c_str());
     }
   }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kScalProdEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerArrayArgument(this,
+                                       ModelVisitor::kCoefficientsArgument,
+                                       coefs_.get(),
+                                       size_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            var_);
+    visitor->EndVisitConstraint(ModelVisitor::kScalProdEqual, this);
+  }
+
  private:
   int size_;
   scoped_array<IntVar*> vars_;
@@ -2275,6 +2412,23 @@ class PositiveBooleanScalProd : public BaseIntExpr {
     }
     return var;
   }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kScalProd, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerArrayArgument(this,
+                                       ModelVisitor::kCoefficientsArgument,
+                                       coefs_.get(),
+                                       size_);
+    visitor->VisitIntegerArgument(this,
+                                  ModelVisitor::kValueArgument,
+                                  constant_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kScalProd, this);
+  }
+
  private:
   int size_;
   scoped_array<IntVar*> vars_;
@@ -2414,6 +2568,23 @@ class PositiveBooleanScalProdEqCst : public Constraint {
         Int64ArrayToString(coefs_.get(), size_, ", ").c_str(),
         constant_);
   }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kScalProdEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerArrayArgument(this,
+                                       ModelVisitor::kCoefficientsArgument,
+                                       coefs_.get(),
+                                       size_);
+    visitor->VisitIntegerArgument(this,
+                                  ModelVisitor::kValueArgument,
+                                  constant_);
+    visitor->EndVisitConstraint(ModelVisitor::kScalProdEqual, this);
+  }
+
  private:
   int size_;
   scoped_array<IntVar*> vars_;

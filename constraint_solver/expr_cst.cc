@@ -36,6 +36,16 @@ class EqualityExprCst : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kEquality, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->EndVisitConstraint(ModelVisitor::kEquality, this);
+  }
+
  private:
   IntExpr* const expr_;
   int64 value_;
@@ -80,6 +90,16 @@ class GreaterEqExprCst : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kGreaterOrEqual, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->EndVisitConstraint(ModelVisitor::kGreaterOrEqual, this);
+  }
+
  private:
   IntExpr* const expr_;
   int64 value_;
@@ -134,6 +154,14 @@ class LessEqExprCst : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kLessOrEqual, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->EndVisitConstraint(ModelVisitor::kLessOrEqual, this);
+  }
  private:
   IntExpr* const expr_;
   int64 value_;
@@ -189,6 +217,14 @@ class DiffCst : public Constraint {
   virtual void InitialPropagate();
   void BoundPropagate();
   virtual string DebugString() const;
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kNonEqual, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            var_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->EndVisitConstraint(ModelVisitor::kNonEqual, this);
+  }
  private:
   IntVar* const var_;
   int64 value_;
@@ -273,6 +309,19 @@ class IsEqualCstCt : public Constraint {
                         cst_,
                         boolvar_->DebugString().c_str());
   }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kIsEqual, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            var_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, cst_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            boolvar_);
+    visitor->EndVisitConstraint(ModelVisitor::kIsEqual, this);
+  }
+
  private:
   IntVar* const var_;
   int64 cst_;
@@ -334,6 +383,7 @@ class VarCstCache : public BaseObject {
       Double();
     }
   }
+
  private:
   struct Cell {
    public:
@@ -439,11 +489,13 @@ class IsDiffCstCt : public Constraint {
  public:
   IsDiffCstCt(Solver* const s, IntVar* const v, int64 c, IntVar* const b)
       : Constraint(s), var_(v), cst_(c), boolvar_(b), demon_(NULL) {}
+
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     var_->WhenDomain(demon_);
     boolvar_->WhenBound(demon_);
   }
+
   virtual void InitialPropagate() {
     bool inhibit = var_->Bound();
     int64 l = 1 - var_->Contains(cst_);
@@ -461,12 +513,26 @@ class IsDiffCstCt : public Constraint {
       demon_->inhibit(solver());
     }
   }
+
   virtual string DebugString() const {
     return StringPrintf("IsDiffCstCt(%s, %" GG_LL_FORMAT "d, %s)",
                         var_->DebugString().c_str(),
                         cst_,
                         boolvar_->DebugString().c_str());
   }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kIsDifferent, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            var_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, cst_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            boolvar_);
+    visitor->EndVisitConstraint(ModelVisitor::kIsDifferent, this);
+  }
+
  private:
   IntVar* const var_;
   int64 cst_;
@@ -562,6 +628,19 @@ class IsGreaterEqualCstCt : public Constraint {
                         cst_,
                         boolvar_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kIsGreaterOrEqual, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            var_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, cst_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            boolvar_);
+    visitor->EndVisitConstraint(ModelVisitor::kIsGreaterOrEqual, this);
+  }
+
  private:
   IntVar* const var_;
   int64 cst_;
@@ -627,11 +706,13 @@ class IsLessEqualCstCt : public Constraint {
  public:
   IsLessEqualCstCt(Solver* const s, IntVar* const v, int64 c, IntVar* const b)
       : Constraint(s), var_(v), cst_(c), boolvar_(b), demon_(NULL) {}
+
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     var_->WhenRange(demon_);
     boolvar_->WhenBound(demon_);
   }
+
   virtual void InitialPropagate() {
     bool inhibit = false;
     int64 u = var_->Min() <= cst_;
@@ -649,12 +730,26 @@ class IsLessEqualCstCt : public Constraint {
       demon_->inhibit(solver());
     }
   }
+
   virtual string DebugString() const {
     return StringPrintf("IsLessEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
                         var_->DebugString().c_str(),
                         cst_,
                         boolvar_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            var_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, cst_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            boolvar_);
+    visitor->EndVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
+  }
+
  private:
   IntVar* const var_;
   int64 cst_;
@@ -731,6 +826,17 @@ class BetweenCt : public Constraint {
     return StringPrintf("BetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d)",
                         var_->DebugString().c_str(), min_, max_);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kBetween, this);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kMinArgument, min_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            var_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kMaxArgument, max_);
+    visitor->EndVisitConstraint(ModelVisitor::kBetween, this);
+  }
+
  private:
   IntVar* const var_;
   int64 min_;
@@ -749,11 +855,13 @@ class IsBetweenCt : public Constraint {
   IsBetweenCt(Solver* const s, IntVar* const v, int64 l, int64 u,
               IntVar* const b)
       : Constraint(s), var_(v), min_(l), max_(u), boolvar_(b), demon_(NULL) {}
+
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     var_->WhenRange(demon_);
     boolvar_->WhenBound(demon_);
   }
+
   virtual void InitialPropagate() {
     bool inhibit = false;
     int64 u = 1 - (var_->Min() > max_ || var_->Max() < min_);
@@ -771,12 +879,27 @@ class IsBetweenCt : public Constraint {
       demon_->inhibit(solver());
     }
   }
+
   virtual string DebugString() const {
     return StringPrintf(
         "IsBetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d, %s)",
         var_->DebugString().c_str(), min_, max_,
         boolvar_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kIsBetween, this);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kMinArgument, min_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            var_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kMaxArgument, max_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            boolvar_);
+    visitor->EndVisitConstraint(ModelVisitor::kIsBetween, this);
+  }
+
  private:
   IntVar* const var_;
   int64 min_;
@@ -820,6 +943,18 @@ class MemberCt : public Constraint {
                         var_->DebugString().c_str(),
                         values_.DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kMember, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            var_);
+    visitor->VisitConstIntArrayArgument(this,
+                                        ModelVisitor::kValuesArgument,
+                                        values_);
+    visitor->EndVisitConstraint(ModelVisitor::kMember, this);
+  }
+
  private:
   IntVar* const var_;
   ConstIntArray values_;
@@ -918,6 +1053,21 @@ class IsMemberCt : public Constraint {
                         values_.DebugString().c_str(),
                         boolvar_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kIsMember, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            var_);
+    visitor->VisitConstIntArrayArgument(this,
+                                        ModelVisitor::kValuesArgument,
+                                        values_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            boolvar_);
+    visitor->EndVisitConstraint(ModelVisitor::kIsMember, this);
+  }
+
  private:
   IntVar* const var_;
   ConstIntArray values_;

@@ -33,10 +33,13 @@
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/const_int_array.h"
 
-DEFINE_bool(cp_trace_demons, false, "trace all demon executions");
+DEFINE_bool(cp_trace_demons, false, "trace all demon executions.");
 DEFINE_bool(cp_show_constraints, false,
-            "show all constraints added to the solver");
+            "show all constraints added to the solver.");
+DEFINE_bool(cp_visit_model, false,
+            "use PrintModelVisitor on model before solving.");
 
 void ConstraintSolverFailHere() {
   VLOG(3) << "Fail";
@@ -1536,7 +1539,21 @@ void Solver::AddConstraint(Constraint* const c) {
   }
 }
 
+void Solver::Accept(ModelVisitor* const visitor) const {
+  visitor->BeginVisitModel(name_);
+  for (int index = 0; index < constraints_list_.size(); ++index) {
+    Constraint* const constraint = constraints_list_[index];
+    constraint->Accept(visitor);
+  }
+  visitor->EndVisitModel(name_);
+}
+
 void Solver::ProcessConstraints() {
+  if (FLAGS_cp_visit_model) {
+    ModelVisitor* const visitor = MakePrintModelVisitor();
+    Accept(visitor);
+  }
+
   for (constraints_ = 0;
        constraints_ < constraints_list_.size();
        ++constraints_) {
@@ -2249,6 +2266,243 @@ void DecisionVisitor::VisitScheduleOrPostpone(IntervalVar* const var,
                                               int64 est) {}
 void DecisionVisitor::VisitTryRankFirst(Sequence* const sequence, int index) {}
 
+// ---------- ModelVisitor ----------
+
+// Enums.
+
+const char ModelVisitor::kAbs[] = "Abs";
+const char ModelVisitor::kAllDifferent[] = "AllDifferent";
+const char ModelVisitor::kAllowedAssignments[] = "AllowedAssignments";
+const char ModelVisitor::kBetween[] = "Between";
+const char ModelVisitor::kConvexPiecewise[] = "ConvexPiecewise";
+const char ModelVisitor::kCountEqual[] = "CountEqual";
+const char ModelVisitor::kCumulative[] = "Cumulative";
+const char ModelVisitor::kDeviation[] = "Deviation";
+const char ModelVisitor::kDifference[] = "Difference";
+const char ModelVisitor::kDistribute[] = "Distribute";
+const char ModelVisitor::kDivide[] = "Divide";
+const char ModelVisitor::kDurationExpr[] = "DurationExpr";
+const char ModelVisitor::kElement[] = "Element";
+const char ModelVisitor::kElementConstraint[] = "ElementConstraint";
+const char ModelVisitor::kEndExpr[] = "EndExpr";
+const char ModelVisitor::kEquality[] = "Equality";
+const char ModelVisitor::kFalseConstraint[] = "FalseConstraint";
+const char ModelVisitor::kGreater[] = "Greater";
+const char ModelVisitor::kGreaterOrEqual[] = "GreaterOrEqual";
+const char ModelVisitor::kIntervalBinaryRelation[] = "IntervalBinaryRelation";
+const char ModelVisitor::kIntervalDisjunction[] = "IntervalDisjunction";
+const char ModelVisitor::kIntervalUnaryRelation[] = "IntervalUnaryRelation";
+const char ModelVisitor::kIsBetween[] = "IsBetween;";
+const char ModelVisitor::kIsDifferent[] = "IsDifferent";
+const char ModelVisitor::kIsEqual[] = "IsEqual";
+const char ModelVisitor::kIsGreaterOrEqual[] = "IsGreaterOrEqual";
+const char ModelVisitor::kIsLessOrEqual[] = "IsLessOrEqual";
+const char ModelVisitor::kIsMember[] = "IsMember;";
+const char ModelVisitor::kLess[] = "Less";
+const char ModelVisitor::kLessOrEqual[] = "LessOrEqual";
+const char ModelVisitor::kLinkExprVar[] = "LinkExprVar";
+const char ModelVisitor::kMapDomain[] = "MapDomain";
+const char ModelVisitor::kMax[] = "Max";
+const char ModelVisitor::kMaxEqual[] = "MaxEqual";
+const char ModelVisitor::kMember[] = "Member";
+const char ModelVisitor::kMin[] = "Min";
+const char ModelVisitor::kMinEqual[] = "MinEqual";
+const char ModelVisitor::kNoCycle[] = "NoCycle";
+const char ModelVisitor::kNonEqual[] = "NonEqual";
+const char ModelVisitor::kOpposite[] = "Opposite";
+const char ModelVisitor::kPack[] = "Pack";
+const char ModelVisitor::kPathCumul[] = "PathCumul";
+const char ModelVisitor::kPerformedExpr[] = "PerformedExpr";
+const char ModelVisitor::kProd[] = "Product";
+const char ModelVisitor::kProduct[] = "Product";
+const char ModelVisitor::kScalProd[] = "ScalarProduct";
+const char ModelVisitor::kScalProdEqual[] = "ScalarProductEqual";
+const char ModelVisitor::kScalProdGreaterOrEqual[] =
+    "ScalarProductGreaterOrEqual";
+const char ModelVisitor::kScalProdLessOrEqual[] = "ScalarProductLessOrEqual";
+const char ModelVisitor::kSemiContinuous[] = "SemiContinuous";
+const char ModelVisitor::kSequence[] = "Sequence";
+const char ModelVisitor::kSquare[] = "Square";
+const char ModelVisitor::kStartExpr[]= "StartExpr";
+const char ModelVisitor::kSum[] = "Sum";
+const char ModelVisitor::kSumEqual[] = "SumEqual";
+const char ModelVisitor::kSumGreater[] = "SumGreater";
+const char ModelVisitor::kSumGreaterOrEqual[] = "SumGreaterOrEqual";
+const char ModelVisitor::kSumLess[] = "SumLess";
+const char ModelVisitor::kSumLessOrEqual[] = "SumLessOrEqual";
+const char ModelVisitor::kTransition[]= "Transition";
+const char ModelVisitor::kTrueConstraint[] = "TrueConstraint";
+
+const char ModelVisitor::kActiveArgument[] = "active";
+const char ModelVisitor::kCardsArgument[] = "cardinalities";
+const char ModelVisitor::kCoefficientsArgument[] = "coefficients";
+const char ModelVisitor::kCountArgument[] = "count";
+const char ModelVisitor::kCumulsArgument[] = "cumuls";
+const char ModelVisitor::kEarlyCostArgument[] = "early_cost";
+const char ModelVisitor::kEarlyDateArgument[] = "early_date";
+const char ModelVisitor::kExpressionArgument[] = "expression";
+const char ModelVisitor::kFinalStates[] = "final_states";
+const char ModelVisitor::kFixedChargeArgument[] = "fixed_charge";
+const char ModelVisitor::kIndex2Argument[] = "index2";
+const char ModelVisitor::kIndexArgument[] = "index";
+const char ModelVisitor::kInitialState[] = "initial_state";
+const char ModelVisitor::kIntervalArgument[] = "interval";
+const char ModelVisitor::kIntervalsArgument[] = "intervals";
+const char ModelVisitor::kLateCostArgument[] = "late_cost";
+const char ModelVisitor::kLateDateArgument[] = "late_date";
+const char ModelVisitor::kLeftArgument[] = "left";
+const char ModelVisitor::kMaxArgument[] = "max_value";
+const char ModelVisitor::kMinArgument[] = "min_value";
+const char ModelVisitor::kNextsArgument[] = "nexts";
+const char ModelVisitor::kRangeArgument[] = "range";
+const char ModelVisitor::kRelationArgument[] = "relation";
+const char ModelVisitor::kRightArgument[] = "right";
+const char ModelVisitor::kSizeArgument[] = "size";
+const char ModelVisitor::kStepArgument[] = "step";
+const char ModelVisitor::kTargetArgument[] = "target_variable";
+const char ModelVisitor::kTransitsArgument[] = "transits";
+const char ModelVisitor::kTuplesArgument[] = "tuples";
+const char ModelVisitor::kValueArgument[] = "value";
+const char ModelVisitor::kValuesArgument[] = "values";
+const char ModelVisitor::kVarsArgument[] = "variables";
+
+// Methods
+
+ModelVisitor::~ModelVisitor() {}
+
+void ModelVisitor::BeginVisitModel(const string& type_name) {}
+void ModelVisitor::EndVisitModel(const string& type_name) {}
+
+void ModelVisitor::BeginVisitConstraint(const string& type_name,
+                                        const Constraint* const constraint) {}
+void ModelVisitor::EndVisitConstraint(const string& type_name,
+                                      const Constraint* const constraint) {}
+
+void ModelVisitor::BeginVisitExtension(const string& type, const string& name) {
+}
+void ModelVisitor::EndVisitExtension(const string& type, const string& name) {}
+
+void ModelVisitor::BeginVisitIntegerExpression(const string& type_name,
+                                               const IntExpr* const expr) {}
+void ModelVisitor::EndVisitIntegerExpression(const string& type_name,
+                                             const IntExpr* const expr) {}
+
+void ModelVisitor::VisitIntegerVariable(const IntVar* const variable,
+                                        const IntExpr* const delegate) {
+  if (delegate != NULL) {
+    delegate->Accept(this);
+  }
+}
+
+void ModelVisitor::VisitIntervalVariable(const IntervalVar* const variable,
+                                         const string operation,
+                                         const IntervalVar* const delegate) {
+  if (delegate != NULL) {
+    delegate->Accept(this);
+  }
+}
+
+
+void ModelVisitor::VisitIntegerArgument(const Constraint* const master,
+                                        const string& arg_name,
+                                        int64 value) {}
+void ModelVisitor::VisitIntegerArgument(const IntExpr* const master,
+                                        const string& arg_name,
+                                        int64 value) {}
+
+void ModelVisitor::VisitIntegerArrayArgument(const Constraint* const master,
+                                             const string& arg_name,
+                                             const int64 * const values,
+                                             int size) {
+}
+void ModelVisitor::VisitIntegerArrayArgument(const IntExpr* const master,
+                                             const string& arg_name,
+                                             const int64 * const values,
+                                             int size) {
+}
+
+void ModelVisitor::VisitIntegerExpressionArgument(
+    const Constraint* const master,
+    const string& arg_name,
+    const IntExpr* const argument) {
+  argument->Accept(this);
+}
+
+void ModelVisitor::VisitIntegerExpressionArgument(
+    const IntExpr* const master,
+    const string& arg_name,
+    const IntExpr* const argument) {
+  argument->Accept(this);
+}
+
+void ModelVisitor::VisitIntegerVariableArrayArgument(
+    const Constraint* const master,
+    const string& arg_name,
+    const IntVar* const * arguments,
+    int size) {
+  for (int i = 0; i < size; ++i) {
+    arguments[i]->Accept(this);
+  }
+}
+
+void ModelVisitor::VisitIntegerVariableArrayArgument(
+    const IntExpr* const master,
+    const string& arg_name,
+    const IntVar* const * arguments,
+    int size) {
+  for (int i = 0; i < size; ++i) {
+    arguments[i]->Accept(this);
+  }
+}
+
+void ModelVisitor::VisitIntervalArgument(
+    const IntExpr* const master,
+    const string& arg_name,
+    const IntervalVar* const argument) {
+  argument->Accept(this);
+}
+
+void ModelVisitor::VisitIntervalArgument(
+    const Constraint* const master,
+    const string& arg_name,
+    const IntervalVar* const argument) {
+  argument->Accept(this);
+}
+
+void ModelVisitor::VisitIntervalArrayArgument(
+    const IntExpr* const master,
+    const string& arg_name,
+    const IntervalVar* const * arguments,
+    int size) {
+  for (int i = 0; i < size; ++i) {
+    arguments[i]->Accept(this);
+  }
+}
+
+void ModelVisitor::VisitIntervalArrayArgument(
+    const Constraint* const master,
+    const string& arg_name,
+    const IntervalVar* const * arguments,
+    int size) {
+  for (int i = 0; i < size; ++i) {
+    arguments[i]->Accept(this);
+  }
+}
+
+// ----- Helpers -----
+
+void ModelVisitor::VisitConstIntArrayArgument(const Constraint* const master,
+                                              const string& arg_name,
+                                              const ConstIntArray&  values) {
+  VisitIntegerArrayArgument(master, arg_name, values.RawData(), values.size());
+}
+
+void ModelVisitor::VisitConstIntArrayArgument(const IntExpr* const master,
+                                              const string& arg_name,
+                                              const ConstIntArray& values) {
+  VisitIntegerArrayArgument(master, arg_name, values.RawData(), values.size());
+}
+
 // ---------- Search Monitor ----------
 
 void SearchMonitor::EnterSearch() {}
@@ -2290,6 +2544,18 @@ void Constraint::PostAndPropagate() {
   Post();
   InitialPropagate();
   UnfreezeQueue();
+}
+
+void Constraint::Accept(ModelVisitor* const visitor) const {
+  visitor->BeginVisitConstraint("unknown", this);
+  visitor->EndVisitConstraint("unknown", this);
+}
+
+// ----- Class IntExpr -----
+
+void IntExpr::Accept(ModelVisitor* const visitor) const {
+  visitor->BeginVisitIntegerExpression("unknown", this);
+  visitor->EndVisitIntegerExpression("unknown", this);
 }
 
 #undef CP_TRY  // We no longer need those.

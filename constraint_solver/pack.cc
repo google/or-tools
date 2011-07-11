@@ -104,6 +104,7 @@ class Dimension : public BaseObject {
   void UnassignAllRemainingItems() {
     pack_->UnassignAllRemainingItems();
   }
+
  private:
   Solver* const solver_;
   Pack* const pack_;
@@ -335,6 +336,17 @@ string Pack::DebugString() const {
   return result;
 }
 
+void Pack::Accept(ModelVisitor* const visitor) const {
+  visitor->BeginVisitConstraint(ModelVisitor::kPack, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               vsize_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kSizeArgument, bins_);
+    // TODO(user): VISITOR add dimensions.
+    visitor->EndVisitConstraint(ModelVisitor::kPack, this);
+}
+
 void Pack::SetImpossible(int64 var_index, int64 bin_index) {
   if (IsInProcess()) {
     to_unset_.push_back(std::make_pair(var_index, bin_index));
@@ -555,6 +567,7 @@ class DimensionLessThanConstant : public Dimension {
                                    const std::vector<int64>& unassigned) {}
 
   virtual void EndPropagate() {}
+
  private:
   const int vars_count_;
   int64* weights_;
@@ -577,6 +590,7 @@ class DimensionWeightedSumEqVar : public Dimension {
     virtual void Run(Solver* const s) {
       dim_->PushFromTop(index_);
     }
+
    private:
     DimensionWeightedSumEqVar* const dim_;
     const int index_;
@@ -694,6 +708,7 @@ class DimensionWeightedSumEqVar : public Dimension {
                                    const std::vector<int64>& unassigned) {}
 
   virtual void EndPropagate() {}
+
  private:
   const int vars_count_;
   int64* weights_;
@@ -716,6 +731,7 @@ class AssignedWeightedSumDimension : public Dimension {
     virtual void Run(Solver* const s) {
       dim_->PropagateAll();
     }
+
    private:
     AssignedWeightedSumDimension* const dim_;
   };
@@ -822,6 +838,7 @@ class AssignedWeightedSumDimension : public Dimension {
   }
 
   virtual void EndPropagate() {}
+
  private:
   const int vars_count_;
   int64* weights_;
@@ -847,6 +864,7 @@ class CountAssignedItemsDimension : public Dimension {
     virtual void Run(Solver* const s) {
       dim_->PropagateAll();
     }
+
    private:
     CountAssignedItemsDimension* const dim_;
   };
@@ -910,6 +928,7 @@ class CountAssignedItemsDimension : public Dimension {
   }
 
   virtual void EndPropagate() {}
+
  private:
   const int vars_count_;
   const int bins_count_;
@@ -931,6 +950,7 @@ class CountUsedBinDimension : public Dimension {
     virtual void Run(Solver* const s) {
       dim_->PropagateAll();
     }
+
    private:
     CountUsedBinDimension* const dim_;
   };
@@ -1036,6 +1056,7 @@ class CountUsedBinDimension : public Dimension {
   virtual void EndPropagate() {
     PropagateAll();
   }
+
  private:
   const int vars_count_;
   const int bins_count_;
@@ -1092,6 +1113,7 @@ class VariableUsageDimension : public Dimension {
   virtual string DebugString() const {
     return "VariableUsageDimension";
   }
+
  private:
   const std::vector<int64> capacities_;
   const std::vector<IntVar*> weights_;

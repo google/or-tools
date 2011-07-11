@@ -123,6 +123,16 @@ void IntVar::RemoveValues(const int64* const values, int size) {
   }
 }
 
+void IntVar::Accept(ModelVisitor* const visitor) const {
+  const IntExpr* delegate = NULL;
+  const std::pair<string, const PropagationBaseObject*>* delegate_pair =
+      FindOrNull(solver()->delegate_objects_, this);
+  if (delegate_pair != NULL) {
+    delegate = reinterpret_cast<const IntExpr*>(delegate_pair->second);
+  }
+  visitor->VisitIntegerVariable(this, delegate);
+}
+
 namespace {
 int64* NewUniqueSortedArray(const int64* const values, int* size) {
   int64* new_array = new int64[*size];
@@ -403,7 +413,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
                                                        max_ - omin_) + omin_;
       }
     }
-   public:
+
+   private:
     uint64* const bitset_;
     const int64 omin_;
     int64 max_;
@@ -613,6 +624,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
   virtual Iterator* MakeIterator() {
     return new SimpleIterator(bits_, omin_);
   }
+
  private:
   uint64* bits_;
   uint64* stamps_;
@@ -661,7 +673,8 @@ class SmallBitSet : public DomainIntVar::BitSet {
         }
       }
     }
-   public:
+
+   private:
     uint64* const bits_;
     const int64 omin_;
     int64 max_;
@@ -871,6 +884,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
   virtual Iterator* MakeIterator() {
     return new SmallIterator(&bits_, omin_);
   }
+
  private:
   uint64 bits_;
   uint64 stamp_;
@@ -950,6 +964,7 @@ class DomainIntVarHoleIterator : public IntVarIterator {
   virtual void Next() {
     index_++;
   }
+
  private:
   const DomainIntVar* const var_;
   DomainIntVar::BitSet* bits_;
@@ -1015,6 +1030,7 @@ class DomainIntVarDomainIterator : public IntVarIterator {
       current_++;
     }
   }
+
  private:
   const DomainIntVar* const var_;
   DomainIntVar::BitSet::Iterator* bitset_iterator_;
@@ -1049,6 +1065,7 @@ class UnaryIterator : public IntVarIterator {
   virtual void Next() {
     iterator_->Next();
   }
+
  protected:
   IntVarIterator* const iterator_;
   const bool reversible_;
@@ -1459,6 +1476,7 @@ class BooleanVar : public IntVar {
   friend class TimesBooleanIntExpr;
   friend class TimesPosCstBoolVar;
   friend void RestoreBoolValue(BooleanVar* const var);
+
  private:
   void RestoreValue() { value_ = kUnboundBooleanVarValue; }
   int value_;
@@ -1637,6 +1655,7 @@ class IntConst : public IntVar {
   }
   virtual string DebugString() const;
   virtual int VarType() const { return CONST_VAR; }
+
  private:
   int64 value_;
 };
@@ -1740,6 +1759,7 @@ class PlusCstIntVar : public IntVar {
     virtual int64 Value() const {
       return iterator_->Value() + cst_;
     }
+
    private:
     const int64 cst_;
   };
@@ -1780,6 +1800,7 @@ class PlusCstIntVar : public IntVar {
 
   virtual string DebugString() const;
   virtual int VarType() const { return VAR_ADD_CST; }
+
  private:
   IntVar* const var_;
   const int64 cst_;
@@ -1868,6 +1889,7 @@ class PlusCstDomainIntVar : public IntVar {
     virtual int64 Value() const {
       return iterator_->Value() + cst_;
     }
+
    private:
     const int64 cst_;
   };
@@ -1908,6 +1930,7 @@ class PlusCstDomainIntVar : public IntVar {
 
   virtual string DebugString() const;
   virtual int VarType() const { return DOMAIN_INT_VAR_ADD_CST; }
+
  private:
   DomainIntVar* const var_;
   const int64 cst_;
@@ -1998,6 +2021,7 @@ class SubCstIntVar : public IntVar {
     virtual int64 Value() const {
       return cst_ - iterator_->Value();
     }
+
    private:
     const int64 cst_;
   };
@@ -2038,6 +2062,7 @@ class SubCstIntVar : public IntVar {
   }
   virtual string DebugString() const;
   virtual int VarType() const { return CST_SUB_VAR; }
+
  private:
   IntVar* const var_;
   const int64 cst_;
@@ -2161,6 +2186,7 @@ class OppIntVar : public IntVar {
   }
   virtual string DebugString() const;
   virtual int VarType() const { return OPP_VAR; }
+
  private:
   IntVar* const var_;
 };
@@ -2265,6 +2291,7 @@ class TimesPosCstIntVar : public IntVar {
     virtual int64 Value() const {
       return iterator_->Value() * cst_;
     }
+
    private:
     const int64 cst_;
   };
@@ -2305,6 +2332,7 @@ class TimesPosCstIntVar : public IntVar {
   }
   virtual string DebugString() const;
   virtual int VarType() const { return VAR_TIMES_POS_CST; }
+
  private:
   IntVar* const var_;
   const int64 cst_;
@@ -2407,6 +2435,7 @@ class TimesPosCstBoolVar : public IntVar {
     virtual int64 Value() const {
       return iterator_->Value() * cst_;
     }
+
    private:
     const int64 cst_;
   };
@@ -2445,6 +2474,7 @@ class TimesPosCstBoolVar : public IntVar {
   }
   virtual string DebugString() const;
   virtual int VarType() const { return BOOLEAN_VAR_TIMES_POS_CST; }
+
  private:
   BooleanVar* const var_;
   const int64 cst_;
@@ -2588,6 +2618,18 @@ class LinkExprAndVar : public Constraint {
                         expr_->DebugString().c_str(),
                         var_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kLinkExprVar, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            var_);
+    visitor->EndVisitConstraint(ModelVisitor::kLinkExprVar, this);
+  }
+
  private:
   IntExpr* const expr_;
   IntVar* const var_;
@@ -2636,6 +2678,18 @@ class LinkExprAndDomainIntVar : public Constraint {
                         expr_->DebugString().c_str(),
                         var_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kLinkExprVar, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            var_);
+    visitor->EndVisitConstraint(ModelVisitor::kLinkExprVar, this);
+  }
+
  private:
   IntExpr* const expr_;
   DomainIntVar* const var_;
@@ -2719,6 +2773,18 @@ class PlusIntExpr : public BaseIntExpr {
     left_->WhenRange(d);
     right_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kSum, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kLeftArgument,
+                                            left_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kRightArgument,
+                                            right_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kSum, this);
+  }
+
  private:
   IntExpr* const left_;
   IntExpr* const right_;
@@ -2786,6 +2852,14 @@ class PlusIntCstExpr : public BaseIntExpr {
     expr_->WhenRange(d);
   }
   virtual IntVar* CastToVar();
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kSum, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kSum, this);
+  }
 
  private:
   IntExpr* const expr_;
@@ -2857,6 +2931,18 @@ class SubIntExpr : public BaseIntExpr {
     left_->WhenRange(d);
     right_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kDifference, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kLeftArgument,
+                                            left_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kRightArgument,
+                                            right_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kDifference, this);
+  }
+
  private:
   IntExpr* const left_;
   IntExpr* const right_;
@@ -3040,6 +3126,16 @@ class SubIntCstExpr : public BaseIntExpr {
     expr_->WhenRange(d);
   }
   virtual IntVar* CastToVar();
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kDifference, this);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kDifference, this);
+  }
+
  private:
   IntExpr* const expr_;
   const int64 value_;
@@ -3093,6 +3189,15 @@ class OppIntExpr : public BaseIntExpr {
     expr_->WhenRange(d);
   }
   virtual IntVar* CastToVar();
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kOpposite, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kOpposite, this);
+  }
+
  private:
   IntExpr* const expr_;
 };
@@ -3143,6 +3248,16 @@ class TimesIntPosCstExpr : public BaseIntExpr {
     expr_->WhenRange(d);
   }
   virtual IntVar* CastToVar();
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kProduct, this);
+  }
+
  private:
   IntExpr* const expr_;
   const int64 value_;
@@ -3207,6 +3322,16 @@ class TimesIntNegCstExpr : public BaseIntExpr {
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kProduct, this);
+  }
+
  private:
   IntExpr* const expr_;
   const int64 value_;
@@ -3419,6 +3544,18 @@ class TimesIntExpr : public BaseIntExpr {
     left_->WhenRange(d);
     right_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kLeftArgument,
+                                            left_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kRightArgument,
+                                            right_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kProduct, this);
+  }
+
  private:
   IntExpr* const left_;
   IntExpr* const right_;
@@ -3472,6 +3609,18 @@ class TimesIntPosExpr : public BaseIntExpr {
     left_->WhenRange(d);
     right_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kLeftArgument,
+                                            left_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kRightArgument,
+                                            right_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kProduct, this);
+  }
+
  private:
   IntExpr* const left_;
   IntExpr* const right_;
@@ -3523,6 +3672,18 @@ class TimesBooleanPosIntExpr : public BaseIntExpr {
     boolvar_->WhenRange(d);
     expr_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kLeftArgument,
+                                            boolvar_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kRightArgument,
+                                            expr_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kProduct, this);
+  }
+
  private:
   BooleanVar* const boolvar_;
   IntExpr* const expr_;
@@ -3636,6 +3797,18 @@ class TimesBooleanIntExpr : public BaseIntExpr {
     boolvar_->WhenRange(d);
     expr_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kLeftArgument,
+                                            boolvar_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kRightArgument,
+                                            expr_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kProduct, this);
+  }
+
  private:
   BooleanVar* const boolvar_;
   IntExpr* const expr_;
@@ -3841,6 +4014,16 @@ class DivIntPosCstExpr : public BaseIntExpr {
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kDivide, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kDivide, this);
+  }
+
  private:
   IntExpr* const expr_;
   const int64 value_;
@@ -3891,6 +4074,15 @@ class IntAbs : public BaseIntExpr {
   virtual string DebugString() const {
     return StringPrintf("IntAbs(%s)", expr_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kAbs, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kAbs, this);
+  }
+
  private:
   IntExpr* const expr_;
 };
@@ -3998,6 +4190,15 @@ class IntSquare : public BaseIntExpr {
   virtual string DebugString() const {
     return StringPrintf("IntSquare(%s)", expr_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kSquare, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kSquare, this);
+  }
+
  private:
   IntExpr* const expr_;
 };
@@ -4041,6 +4242,15 @@ class PosIntSquare : public BaseIntExpr {
   virtual string DebugString() const {
     return StringPrintf("PosIntSquare(%s)", expr_->DebugString().c_str());
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kSquare, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kSquare, this);
+  }
+
  private:
   IntExpr* const expr_;
 };
@@ -4099,6 +4309,18 @@ class MinIntExpr : public BaseIntExpr {
     left_->WhenRange(d);
     right_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kMin, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kLeftArgument,
+                                            left_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kRightArgument,
+                                            right_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kMin, this);
+  }
+
  private:
   IntExpr* const left_;
   IntExpr* const right_;
@@ -4159,6 +4381,16 @@ class MinCstIntExpr : public BaseIntExpr {
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kMin, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kMin, this);
+  }
+
  private:
   IntExpr* const expr_;
   const int64 value_;
@@ -4226,6 +4458,18 @@ class MaxIntExpr : public BaseIntExpr {
     left_->WhenRange(d);
     right_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kMax, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kLeftArgument,
+                                            left_);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kRightArgument,
+                                            right_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kMax, this);
+  }
+
  private:
   IntExpr* const left_;
   IntExpr* const right_;
@@ -4286,6 +4530,16 @@ class MaxCstIntExpr : public BaseIntExpr {
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kMax, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kMax, this);
+  }
+
  private:
   IntExpr* const expr_;
   const int64 value_;
@@ -4406,6 +4660,24 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
   virtual void WhenRange(Demon* d) {
     var_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kConvexPiecewise, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            var_);
+    visitor->VisitIntegerArgument(this,
+                                  ModelVisitor::kEarlyCostArgument,
+                                  early_cost_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kEarlyDateArgument,
+                                  early_date_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kLateCostArgument,
+                                  late_cost_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kLateDateArgument,
+                                  late_date_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kConvexPiecewise, this);
+  }
+
  private:
   IntVar* const var_;
   const int64 early_cost_;
@@ -4478,6 +4750,19 @@ class SemiContinuousExpr : public BaseIntExpr {
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kSemiContinuous, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerArgument(this,
+                                  ModelVisitor::kFixedChargeArgument,
+                                  fixed_charge_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kStepArgument, step_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kSemiContinuous, this);
+  }
+
  private:
   IntExpr* const expr_;
   const int64 fixed_charge_;
@@ -4535,6 +4820,19 @@ class SemiContinuousStepOneExpr : public BaseIntExpr {
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kSemiContinuous, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerArgument(this,
+                                  ModelVisitor::kFixedChargeArgument,
+                                  fixed_charge_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kStepArgument, 1);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kSemiContinuous, this);
+  }
+
  private:
   IntExpr* const expr_;
   const int64 fixed_charge_;
@@ -4589,6 +4887,19 @@ class SemiContinuousStepZeroExpr : public BaseIntExpr {
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kSemiContinuous, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerArgument(this,
+                                  ModelVisitor::kFixedChargeArgument,
+                                  fixed_charge_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kStepArgument, 0);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kSemiContinuous, this);
+  }
+
  private:
   IntExpr* const expr_;
   const int64 fixed_charge_;

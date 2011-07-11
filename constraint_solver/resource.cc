@@ -176,6 +176,15 @@ string Sequence::DebugString() const {
                       Fixed(), Ranked());
 }
 
+void Sequence::Accept(ModelVisitor* const visitor) const {
+  visitor->BeginVisitConstraint(ModelVisitor::kSequence, this);
+  visitor->VisitIntervalArrayArgument(this,
+                                      ModelVisitor::kIntervalsArgument,
+                                      intervals_.get(),
+                                      size_);
+  visitor->EndVisitConstraint(ModelVisitor::kSequence, this);
+}
+
 void Sequence::DurationRange(int64* dmin, int64* dmax) const {
   int64 dur_min = 0;
   int64 dur_max = 0;
@@ -436,6 +445,7 @@ class IndexedTask {
     return StringPrintf("Wrapper(%s, start_min_index = %d)",
                         task_->DebugString().c_str(), start_min_index_);
   }
+
  private:
   Task task_;
   int start_min_index_;
@@ -512,6 +522,7 @@ class ThetaNode {
         "ThetaNode{ p = %" GG_LL_FORMAT "d, e = %" GG_LL_FORMAT "d }",
         total_processing_, total_ect_ < 0LL ? -1LL : total_ect_);
   }
+
  private:
   int64 total_processing_;
   int64 total_ect_;
@@ -1084,6 +1095,10 @@ class DecomposedSequenceConstraint : public Constraint {
     } while (straight_.EdgeFinder() || mirror_.EdgeFinder());
   }
 
+  void Accept(ModelVisitor* const visitor) const {
+    LOG(FATAL) << "Should not be visited";
+  }
+
  private:
   EdgeFinderAndDetectablePrecedences straight_;
   EdgeFinderAndDetectablePrecedences mirror_;
@@ -1184,6 +1199,7 @@ class DualCapacityThetaNode {
         std::max(left.residual_energetic_end_min_ + right.energy_,
                  right.residual_energetic_end_min_);
   }
+
  private:
   // Amount of resource consumed by the Theta set, in units of demand X time.
   // This is energy(Theta).
@@ -1430,6 +1446,10 @@ class EdgeFinder : public Constraint {
     FillInTree();
     PropagateBasedOnEnergy();
     ApplyNewBounds();
+  }
+
+  void Accept(ModelVisitor* const visitor) const {
+    LOG(FATAL) << "Should Not Be Visited";
   }
 
  private:
@@ -1693,8 +1713,11 @@ class CumulativeTimeTable : public Constraint {
   }
   int NumTasks() const { return by_start_min_.size(); }
 
- private:
+  void Accept(ModelVisitor* const visitor) const {
+    LOG(FATAL) << "Should not be visited";
+  }
 
+ private:
   // Build the usage profile. Runs in O(n log n).
   void BuildProfile() {
     // Build profile with non unique time
@@ -1838,9 +1861,11 @@ class CumulativeConstraint : public Constraint {
     : Constraint(s),
       capacity_(capacity),
       tasks_(new CumulativeTask*[size]),
-      size_(size) {
+      size_(size),
+      intervals_(new IntervalVar*[size]) {
     for (int i = 0; i < size; ++i) {
       tasks_[i] = MakeTask(solver(), intervals[i], demands[i]);
+      intervals_[i] = intervals[i];
     }
   }
 
@@ -1853,9 +1878,11 @@ class CumulativeConstraint : public Constraint {
     : Constraint(s),
       capacity_(capacity),
       tasks_(new CumulativeTask*[size]),
-      size_(size) {
+      size_(size),
+      intervals_(new IntervalVar*[size]) {
     for (int i = 0; i < size; ++i) {
       tasks_[i] = MakeTask(solver(), intervals[i], demands[i]);
+      intervals_[i] = intervals[i];
     }
   }
 
@@ -1883,14 +1910,23 @@ class CumulativeConstraint : public Constraint {
     // Nothing to do: this constraint delegates all the work to other classes
   }
 
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kCumulative, this);
+    visitor->VisitIntervalArrayArgument(this,
+                                        ModelVisitor::kIntervalsArgument,
+                                        intervals_.get(),
+                                        size_);
+    visitor->EndVisitConstraint(ModelVisitor::kCumulative, this);
+  }
+
  private:
   // Post temporal disjunctions for tasks that cannot overlap.
   void PostAllDisjunctions() {
     for (int i = 0; i < size_; ++i) {
-      IntervalVar* interval_i = tasks_[i]->mutable_interval();
+      IntervalVar* interval_i = intervals_[i];
       if (interval_i->MayBePerformed()) {
         for (int j = i + 1; j < size_; ++j) {
-          IntervalVar* interval_j = tasks_[j]->mutable_interval();
+          IntervalVar* interval_j = intervals_[j];
           if (interval_j->MayBePerformed()) {
             if (tasks_[i]->demand() + tasks_[j]->demand() > capacity_) {
               Constraint* const constraint =
@@ -1999,6 +2035,9 @@ class CumulativeConstraint : public Constraint {
 
   // Number of tasks
   const int size_;
+
+  // Array of intervals for the visitor.
+  scoped_array<IntervalVar*> intervals_;
 
   DISALLOW_COPY_AND_ASSIGN(CumulativeConstraint);
 };

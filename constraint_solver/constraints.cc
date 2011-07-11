@@ -44,6 +44,11 @@ class TrueConstraint : public Constraint {
   virtual void Post() {}
   virtual void InitialPropagate() {}
   virtual string DebugString() const { return "TrueConstraint()"; }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kTrueConstraint, this);
+    visitor->EndVisitConstraint(ModelVisitor::kTrueConstraint, this);
+  }
 };
 
 Constraint* Solver::MakeTrueConstraint() {
@@ -59,6 +64,11 @@ class FalseConstraint : public Constraint {
   virtual void Post() {}
   virtual void InitialPropagate() { solver()->Fail(); }
   virtual string DebugString() const { return "FalseConstraint()"; }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kFalseConstraint, this);
+    visitor->EndVisitConstraint(ModelVisitor::kFalseConstraint, this);
+  }
 };
 
 Constraint* Solver::MakeFalseConstraint() {
@@ -177,6 +187,19 @@ class MapDomain : public Constraint {
     out += "])";
     return out;
   }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kMapDomain, this);
+    visitor->VisitIntegerExpressionArgument(this,
+                                            ModelVisitor::kTargetArgument,
+                                            var_);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               actives_.get(),
+                                               size_);
+    visitor->EndVisitConstraint(ModelVisitor::kMapDomain, this);
+  }
+
  private:
   IntVar* const var_;
   scoped_array<IntVar*> actives_;
@@ -227,6 +250,23 @@ class NoCycle : public Constraint {
   void NextBound(int index);
   void ComputeSupports();
   virtual string DebugString() const;
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kNoCycle, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kNextsArgument,
+                                               nexts_.get(),
+                                               size_);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kActiveArgument,
+                                               active_.get(),
+                                               size_);
+    visitor->VisitIntegerArgument(this, "assume_paths", assume_paths_);
+    CHECK(sink_handler_ == NULL);
+    // TODO(user) : VISITOR -> sink_handler
+    visitor->EndVisitConstraint(ModelVisitor::kNoCycle, this);
+  }
+
  private:
   scoped_array<IntVar*> nexts_;
   int size_;
@@ -509,6 +549,28 @@ class PathCumul : public Constraint {
   void CumulRange(int index);
   void TransitRange(int index);
   virtual string DebugString() const;
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kNextsArgument,
+                                               nexts_.get(),
+                                               size_);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kActiveArgument,
+                                               active_.get(),
+                                               size_);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kCumulsArgument,
+                                               cumuls_.get(),
+                                               cumul_size_);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kTransitsArgument,
+                                               transits_.get(),
+                                               size_);
+    visitor->EndVisitConstraint(ModelVisitor::kPathCumul, this);
+  }
+
  private:
   scoped_array<IntVar*> nexts_;
   int size_;

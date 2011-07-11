@@ -64,6 +64,15 @@ class ValueAllDifferent : public BaseAllDifferent {
   bool AllMoves();
 
   virtual string DebugString() const;
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kAllDifferent, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kRangeArgument, 0);
+    visitor->EndVisitConstraint(ModelVisitor::kAllDifferent, this);
+  }
  private:
   int checked_;
 };
@@ -266,6 +275,16 @@ class BoundsAllDifferent : public BaseAllDifferent {
 
   virtual string DebugString() const {
     return DebugStringInternal("BoundsAllDifferent");
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kAllDifferent, this);
+    visitor->VisitIntegerVariableArrayArgument(this,
+                                               ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->VisitIntegerArgument(this, ModelVisitor::kRangeArgument, 1);
+    visitor->EndVisitConstraint(ModelVisitor::kAllDifferent, this);
   }
 
  private:

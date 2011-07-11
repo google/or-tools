@@ -212,4 +212,186 @@ void RevBitSet::RevClearAll(Solver* const solver) {
   }
 }
 
+// ----- PrintModelVisitor -----
+
+class PrintModelVisitor : public ModelVisitor {
+ public:
+  PrintModelVisitor() : indent_(0) {}
+  virtual ~PrintModelVisitor() {}
+
+  // Header/footers.
+  virtual void BeginVisitModel(const string& solver_name) {
+    LOG(INFO) << "Model " << solver_name << " {";
+    Increase();
+  }
+
+  virtual void EndVisitModel(const string& solver_name) {
+    LOG(INFO) << "}";
+    Decrease();
+    CHECK_EQ(0, indent_);
+  }
+
+  virtual void BeginVisitConstraint(const string& type_name,
+                                    const Constraint* const constraint) {
+    LOG(INFO) << Spaces() << "Constraint " << type_name << " {";
+    Increase();
+  }
+
+  virtual void EndVisitConstraint(const string& type_name,
+                                  const Constraint* const constraint) {
+    Decrease();
+    LOG(INFO) << Spaces() << "}";
+  }
+
+  virtual void BeginVisitIntegerExpression(const string& type_name,
+                                           const IntExpr* const expr) {
+    LOG(INFO) << Spaces() << "IntExpr " << type_name << " {";
+    Increase();
+  }
+
+  virtual void EndVisitIntegerExpression(const string& type_name,
+                                         const IntExpr* const expr) {
+    Decrease();
+    LOG(INFO) << Spaces() << "}";
+  }
+
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const IntExpr* const delegate) {
+    if (delegate != NULL) {
+      LOG(INFO) << Spaces() << "CastToVar<";
+      Increase();
+      delegate->Accept(this);
+      Decrease();
+      LOG(INFO) << Spaces() << ">";
+    } else {
+      LOG(INFO) << Spaces() << variable->DebugString();
+    }
+  }
+
+  // Variables.
+  virtual void VisitIntegerArgument(const Constraint* const master,
+                                    const string& arg_name,
+                                    int64 value) {
+    LOG(INFO) << Spaces() << arg_name << ": " << value;
+  }
+
+  virtual void VisitIntegerArgument(const IntExpr* const master,
+                                    const string& arg_name,
+                                    int64 value) {
+    LOG(INFO) << Spaces() << arg_name << ": " << value;
+  }
+
+  virtual void VisitIntegerArrayArgument(const Constraint* const master,
+                                         const string& arg_name,
+                                         const int64* const values,
+                                         int size) {
+    LOG(INFO) << Spaces() << arg_name << ": array";
+  }
+
+  virtual void VisitIntegerArrayArgument(const IntExpr* const master,
+                                         const string& arg_name,
+                                         const int64* const values,
+                                         int size) {
+    LOG(INFO) << Spaces() << arg_name << ": array";
+  }
+
+  virtual void VisitIntegerExpressionArgument(
+      const Constraint* const master,
+      const string& arg_name,
+      const IntExpr* const argument) {
+    LOG(INFO) << Spaces() << arg_name << ": [";
+    Increase();
+    argument->Accept(this);
+    Decrease();
+    LOG(INFO) << Spaces() << "]";
+  }
+
+  virtual void VisitIntegerExpressionArgument(
+      const IntExpr* const master,
+      const string& arg_name,
+      const IntExpr* const argument) {
+    LOG(INFO) << Spaces() << arg_name << ": [";
+    Increase();
+    argument->Accept(this);
+    Decrease();
+    LOG(INFO) << Spaces() << "]";
+  }
+
+  virtual void VisitIntegerVariableArrayArgument(
+      const IntExpr* const master,
+      const string& arg_name,
+      const IntVar* const * arguments,
+      int size) {
+    LOG(INFO) << Spaces() << arg_name << ": [";
+    Increase();
+    for (int i = 0; i < size; ++i) {
+      arguments[i]->Accept(this);
+    }
+    Decrease();
+    LOG(INFO) << Spaces() << "]";
+  }
+
+  virtual void VisitIntegerVariableArrayArgument(
+      const Constraint* const master,
+      const string& arg_name,
+      const IntVar* const * arguments,
+      int size) {
+    LOG(INFO) << Spaces() << arg_name << ": [";
+    Increase();
+    for (int i = 0; i < size; ++i) {
+      arguments[i]->Accept(this);
+    }
+    Decrease();
+    LOG(INFO) << Spaces() << "]";
+  }
+
+  // Visit interval argument.
+  virtual void VisitIntervalArgument(const IntExpr* const master,
+                                     const string& arg_name,
+                                     const IntervalVar* const argument) {
+    LOG(INFO) << "Not Implemented";
+  }
+  virtual void VisitIntervalArgument(const Constraint* const master,
+                                     const string& arg_name,
+                                     const IntervalVar* const argument) {
+    LOG(INFO) << "Not Implemented";
+  }
+
+  virtual void VisitIntervalArgumentArray(const IntExpr* const master,
+                                          const string& arg_name,
+                                          const IntervalVar* const * argument,
+                                          int size) {
+    LOG(INFO) << "Not Implemented";
+  }
+  virtual void VisitIntervalArgumentArray(const Constraint* const master,
+                                          const string& arg_name,
+                                          const IntervalVar* const * argument,
+                                          int size) {
+    LOG(INFO) << "Not Implemented";
+  }
+
+
+ private:
+  void Increase() {
+    indent_ += 2;
+  }
+
+  void Decrease() {
+    indent_ -= 2;
+  }
+
+  string Spaces() {
+    string result;
+    for (int i = 0; i < indent_; ++i) {
+      result.append(" ");
+    }
+    return result;
+  }
+
+  int indent_;
+};
+
+ModelVisitor* Solver::MakePrintModelVisitor() {
+  return RevAlloc(new PrintModelVisitor);
+}
 }  // namespace operations_research
