@@ -14,6 +14,8 @@
 // Linear solver Stubby services
 
 syntax = "proto2";
+option java_package = "com.google.ortools.linearsolver";
+option java_multiple_files = true;
 
 package operations_research;
 

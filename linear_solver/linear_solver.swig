@@ -11,11 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-%include "base/base.swig"
+%include base/base.swig
+%include util/data.swig
 
 // Include the file we want to wrap a first time.
 %{
 #include "linear_solver/linear_solver.h"
+#include "linear_solver/linear_solver.pb.h"
 %}
 
 #ifdef SWIGPYTHON
@@ -32,6 +34,12 @@
 %ignore MakeNumVarArray;
 %ignore MakeIntVarArray;
 %ignore MakeBoolVarArray;
+// The following 3 methods that use protocol buffers as output
+// arguments are ignored as they are too difficult to wrap and there
+// is no immediate use case.
+%ignore ExportModel;
+%ignore SolveWithProtocolBuffers;
+%ignore FillSolutionResponse;
 
 namespace operations_research {
 %pythoncode {
@@ -347,6 +355,7 @@ class LinearConstraint(object):
 #endif
 
 #ifdef SWIGJAVA
+
 %module(directors="1") operations_research;
 
 namespace operations_research {
@@ -392,6 +401,7 @@ namespace operations_research {
 %rename (clearObjective) MPSolver::ClearObjective;
 %rename (init) MPSolver::Init;
 %rename (isLpFormat) MPSolver::IsLPFormat;
+%rename (loadModel) MPSolver::LoadModel;
 %rename (makeBoolVar) MPSolver::MakeBoolVar;
 %rename (makeIntVar) MPSolver::MakeIntVar;
 %rename (makeNumVar) MPSolver::MakeNumVar;
@@ -415,11 +425,19 @@ namespace operations_research {
 %rename (timeLimit) MPSolver::time_limit;
 %rename (wallTime) MPSolver::wall_time;
 %rename (writeModelFilename) MPSolver::write_model_filename;
-// Ignore code on MPSolver.
+// Ignore code on MPSolver, see replacement java code below.
 %ignore MPSolver::MakeVarArray;
 %ignore MPSolver::MakeNumVarArray;
 %ignore MPSolver::MakeIntVarArray;
 %ignore MPSolver::MakeBoolVarArray;
+// The following 3 methods that use protocol buffers as output
+// arguments are replaced by methods that return a protocol buffer,
+// see code below.
+%ignore MPSolver::ExportModel;
+%ignore MPSolver::FillSolutionResponse;
+%ignore MPSolver::SolveWithProtocolBuffers;
+
+
 // Add java code on MPSolver.
 %typemap(javacode) MPSolver %{
   public MPVariable[] makeVarArray(int count,
@@ -475,6 +493,7 @@ namespace operations_research {
     return makeVarArray(count, 0.0, 1.0, true, var_name);
   }
 %}
+
 }  // namespace operations_research
 
 #endif  // SWIGJAVA

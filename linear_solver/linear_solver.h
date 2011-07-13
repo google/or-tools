@@ -286,8 +286,6 @@ class MPSolver {
   virtual ~MPSolver();
 
   // ----- Methods using protocol buffers -----
-#ifndef SWIG
-  // TODO(user): fix swig support.
 
   // Loads model from protocol buffer.
   LoadStatus LoadModel(const MPModelProto& model);
@@ -304,7 +302,6 @@ class MPSolver {
   // of MPSolver, MPModelRequest.OptimizationProblemType is ignored.
   void SolveWithProtocolBuffers(const MPModelRequest& model_request,
                                 MPSolutionResponse* response);
-#endif
 
   // ----- Init and Clear -----
   void Init() {}  // To remove.

@@ -48,7 +48,8 @@ cpexe: $(CPBINARIES)
 
 LPBINARIES = \
 	integer_solver_example$E \
-	linear_solver_example$E
+	linear_solver_example$E \
+	linear_solver_example_with_protocol_buffers$E
 
 lpexe: $(LPBINARIES)
 
@@ -491,6 +492,12 @@ objs/linear_solver_example.$O: examples/linear_solver_example.cc
 
 linear_solver_example$E: $(LP_LIBS) $(BASE_LIBS) objs/linear_solver_example.$O
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/linear_solver_example.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(EXEOUT)linear_solver_example$E
+
+objs/linear_solver_example_with_protocol_buffers.$O: examples/linear_solver_example_with_protocol_buffers.cc
+	$(CCC) $(CFLAGS) -c examples/linear_solver_example_with_protocol_buffers.cc $(OBJOUT)objs/linear_solver_example_with_protocol_buffers.$O
+
+linear_solver_example_with_protocol_buffers$E: $(LP_LIBS) $(BASE_LIBS) objs/linear_solver_example_with_protocol_buffers.$O
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/linear_solver_example_with_protocol_buffers.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(EXEOUT)linear_solver_example_with_protocol_buffers$E
 
 objs/integer_solver_example.$O: examples/integer_solver_example.cc
 	$(CCC) $(CFLAGS) -c examples/integer_solver_example.cc $(OBJOUT)objs/integer_solver_example.$O

@@ -28,6 +28,7 @@
 #include "base/map-util.h"
 #include "base/stl_util.h"
 #include "base/hash.h"
+
 #include "linear_solver/linear_solver.pb.h"
 
 DEFINE_string(solver_write_model, "", "path of the file to write the model to");
@@ -503,7 +504,8 @@ void MPSolver::ExportModel(MPModelProto* model) const {
 // Encode current solution in a solution response protocol buffer.
 void MPSolver::FillSolutionResponse(MPSolutionResponse* response) const {
   CHECK_NOTNULL(response);
-  if (response->has_result_status() ||
+  if ((response->has_result_status() &&
+       response->result_status() != MPSolutionResponse::NOT_SOLVED) ||
       response->has_objective_value() ||
       response->solution_values_size() > 0) {
     LOG(WARNING) << "The solution response is not empty, "

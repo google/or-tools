@@ -256,6 +256,12 @@ static bool PyCallbackBool(PyObject* pyfunc) {
 #endif  // SWIGPYTHON
 
 #if defined(SWIGJAVA)
+
+%{
+#include "base/jniutil.h"
+#include "base/scoped_ptr.h"
+%}
+
 %module(directors="1") main
 %feature("director") LongResultCallback1;
 %feature("director") LongResultCallback2;
@@ -394,5 +400,81 @@ class LongResultCallback3 {
   }
   $1 = &result;
 }
+
+// SWIG macros to be used in generating Java wrappers for C++ protocol
+// message parameters.  Each protocol message is serialized into
+// byte[] before passing into (or returning from) C++ code.
+
+// If the C++ function expects an input protocol message:
+//   foo(const MyProto* message,...)
+// Use PROTO_INPUT macro:
+//   PROTO_INPUT(MyProto, com.google.proto.protos.test.MyProto, message)
+//
+// if the C++ function returns a protocol message:
+//   MyProto* foo();
+// Use PROTO2_RETURN_AND_DELETE macro:
+//   PROTO2_RETURN_AND_DELETE(MyProto, com.google.proto.protos.test.MyProto)
+
+// Passing each protocol message from Java to C++ by value. Each ProtocolMessage
+// is serialized into byte[] when it is passed from Java to C++, the C++ code
+// deserializes into C++ native protocol message.
+//
+// @param CppProtoType the fully qualified C++ protocol message type
+// @param JavaProtoType the corresponding fully qualified Java protocol message
+//        type
+// @param param_name the parameter name
+%define PROTO_INPUT(CppProtoType, JavaProtoType, param_name)
+%typemap(jni) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "jbyteArray"
+%typemap(jtype) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "byte[]"
+%typemap(jstype) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "JavaProtoType"
+%typemap(javain) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "$javainput.toByteArray()"
+%typemap(in) PROTO_TYPE* INPUT (CppProtoType temp),
+             PROTO_TYPE& INPUT (CppProtoType temp) {
+  int proto_size = 0;
+  scoped_array<char> proto_buffer(
+    JNIUtil::MakeCharArray(jenv, $input, &proto_size));
+  bool parsed_ok = temp.ParseFromArray(proto_buffer.get(), proto_size);
+  if (!parsed_ok) {
+    SWIG_JavaThrowException(jenv,
+                            SWIG_JavaRuntimeException,
+                            "Unable to parse CppProtoType protocol message.");
+  }
+  $1 = &temp;
+}
+
+%apply PROTO_TYPE& INPUT { const CppProtoType& param_name }
+%apply PROTO_TYPE& INPUT { CppProtoType& param_name }
+%apply PROTO_TYPE* INPUT { const CppProtoType* param_name }
+%apply PROTO_TYPE* INPUT { CppProtoType* param_name }
+
+%enddef // end PROTO_INPUT
+
+%define PROTO2_RETURN(CppProtoType, JavaProtoType, deleteCppReturn)
+%typemap(jni) CppProtoType* "jbyteArray"
+%typemap(jtype) CppProtoType* "byte[]"
+%typemap(jstype) CppProtoType* "JavaProtoType"
+%typemap(javaout) CppProtoType* {
+  byte[] buf = $jnicall;
+  if (buf == null || buf.length == 0) {
+    return null;
+  }
+  try {
+    return JavaProtoType.parseFrom(buf);
+  } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+    throw new RuntimeException(
+        "Unable to parse JavaProtoType protocol message.");
+  }
+}
+%typemap(out) CppProtoType* {
+  scoped_array<char> buf(new char[$1->ByteSize()]);
+  $1->SerializeWithCachedSizesToArray(reinterpret_cast<uint8*>(buf.get()));
+  $result = JNIUtil::MakeJByteArray(jenv, buf.get(), $1->ByteSize());
+  if (deleteCppReturn) {
+    // To prevent a memory leak.
+    delete $1;
+    $1 = NULL;
+  }
+}
+%enddef // end PROTO2_RETURN_AND_DELETE
 
 #endif  // SWIGJAVA
