@@ -38,8 +38,10 @@
 DEFINE_bool(cp_trace_demons, false, "trace all demon executions.");
 DEFINE_bool(cp_show_constraints, false,
             "show all constraints added to the solver.");
-DEFINE_bool(cp_visit_model, false,
+DEFINE_bool(cp_print_model, false,
             "use PrintModelVisitor on model before solving.");
+DEFINE_bool(cp_model_stats, false,
+            "use StatisticsModelVisitor on model before solving.");
 
 void ConstraintSolverFailHere() {
   VLOG(3) << "Fail";
@@ -1549,8 +1551,12 @@ void Solver::Accept(ModelVisitor* const visitor) const {
 }
 
 void Solver::ProcessConstraints() {
-  if (FLAGS_cp_visit_model) {
+  if (FLAGS_cp_print_model) {
     ModelVisitor* const visitor = MakePrintModelVisitor();
+    Accept(visitor);
+  }
+  if (FLAGS_cp_model_stats) {
+    ModelVisitor* const visitor = MakeStatisticsModelVisitor();
     Accept(visitor);
   }
 

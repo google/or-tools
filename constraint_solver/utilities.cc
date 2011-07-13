@@ -13,6 +13,8 @@
 
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/concise_iterator.h"
+#include "base/map-util.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
 
@@ -393,5 +395,179 @@ class PrintModelVisitor : public ModelVisitor {
 
 ModelVisitor* Solver::MakePrintModelVisitor() {
   return RevAlloc(new PrintModelVisitor);
+}
+
+// ---------- ModelStatisticsVisitor -----------
+
+class ModelStatisticsVisitor : public ModelVisitor {
+ public:
+  ModelStatisticsVisitor()
+  : num_constraints_(0),
+    num_variables_(0),
+    num_expressions_(0),
+    num_casts_(0),
+    num_intervals_(0) {}
+
+  virtual ~ModelStatisticsVisitor() {}
+
+  // Begin/End visit element.
+  virtual void BeginVisitModel(const string& solver_name) {
+    // Reset statistics.
+    num_constraints_ = 0;
+    num_variables_ = 0;
+    num_expressions_ = 0;
+    num_casts_ = 0;
+    num_intervals_ = 0;
+    already_visited_.clear();
+  }
+
+  virtual void EndVisitModel(const string& solver_name) {
+    // Display statistics.
+    LOG(INFO) << "Model has:";
+    LOG(INFO) << "  - " << num_constraints_ << " constraints.";
+    for (ConstIter<hash_map<string, int> > it(constraint_types_);
+         !it.at_end();
+         ++it) {
+      LOG(INFO) << "    * " << it->second << " " << it->first;
+    }
+    LOG(INFO) << "  - " << num_variables_ << " integer variables.";
+    LOG(INFO) << "  - " << num_expressions_ << " integer expressions.";
+    for (ConstIter<hash_map<string, int> > it(expression_types_);
+         !it.at_end();
+         ++it) {
+      LOG(INFO) << "    * " << it->second << " " << it->first;
+    }
+    LOG(INFO) << "  - " << num_casts_ << " expressions casted into variables.";
+    LOG(INFO) << "  - " << num_intervals_ << " interval variables.";
+  }
+
+  virtual void BeginVisitConstraint(const string& type_name,
+                                    const Constraint* const constraint) {
+    num_constraints_++;
+    AddConstraintType(type_name);
+  }
+
+  virtual void BeginVisitIntegerExpression(const string& type_name,
+                                           const IntExpr* const expr) {
+    AddExpressionType(type_name);
+    num_expressions_++;
+  }
+
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const IntExpr* const delegate) {
+    num_variables_++;
+    Register(variable);
+    if (delegate) {
+      num_casts_++;
+      VisitSubArgument(delegate);
+    }
+  }
+  virtual void VisitIntervalVariable(const IntervalVar* const variable,
+                                     const string operation,
+                                     const IntervalVar* const delegate) {
+    num_intervals_++;
+    // TODO(user): delegate.
+  }
+
+  // Visit integer expression argument.
+  virtual void VisitIntegerExpressionArgument(
+      const Constraint* const master,
+      const string& arg_name,
+      const IntExpr* const argument) {
+    VisitSubArgument(argument);
+  }
+  virtual void VisitIntegerExpressionArgument(
+      const IntExpr* const master,
+      const string& arg_name,
+      const IntExpr* const argument) {
+    VisitSubArgument(argument);
+  }
+
+  virtual void VisitIntegerVariableArrayArgument(
+      const IntExpr* const master,
+      const string& arg_name,
+      const IntVar* const * arguments,
+      int size) {
+    for (int i = 0; i < size; ++i) {
+      VisitSubArgument(arguments[i]);
+    }
+  }
+  virtual void VisitIntegerVariableArrayArgument(
+      const Constraint* const master,
+      const string& arg_name,
+      const IntVar* const * arguments,
+      int size) {
+    for (int i = 0; i < size; ++i) {
+      VisitSubArgument(arguments[i]);
+    }
+  }
+
+  // Visit interval argument.
+  virtual void VisitIntervalArgument(const IntExpr* const master,
+                                     const string& arg_name,
+                                     const IntervalVar* const argument) {
+    VisitSubArgument(argument);
+  }
+  virtual void VisitIntervalArgument(const Constraint* const master,
+                                     const string& arg_name,
+                                     const IntervalVar* const argument) {
+    VisitSubArgument(argument);
+  }
+
+  virtual void VisitIntervalArrayArgument(const IntExpr* const master,
+                                          const string& arg_name,
+                                          const IntervalVar* const * arguments,
+                                          int size) {
+    for (int i = 0; i < size; ++i) {
+      VisitSubArgument(arguments[i]);
+    }
+  }
+  virtual void VisitIntervalArrayArgument(const Constraint* const master,
+                                          const string& arg_name,
+                                          const IntervalVar* const * arguments,
+                                          int size) {
+    for (int i = 0; i < size; ++i) {
+      VisitSubArgument(arguments[i]);
+    }
+  }
+
+ private:
+  void Register(const BaseObject* const object) {
+    already_visited_.insert(object);
+  }
+
+  bool AlreadyVisited(const BaseObject* const object) {
+    return ContainsKey(already_visited_, object);
+  }
+
+  // T should derive from BaseObject
+  template<typename T> void VisitSubArgument(T* object) {
+    if (!AlreadyVisited(object)) {
+      Register(object);
+      object->Accept(this);
+    }
+  }
+
+
+  void AddConstraintType(const string& constraint_type) {
+    constraint_types_[constraint_type]++;
+  }
+
+  void AddExpressionType(const string& expression_type) {
+    expression_types_[expression_type]++;
+  }
+
+  hash_map<string, int> constraint_types_;
+  hash_map<string, int> expression_types_;
+  int num_constraints_;
+  int num_variables_;
+  int num_expressions_;
+  int num_casts_;
+  int num_intervals_;
+  hash_set<const BaseObject*> already_visited_;
+};
+
+ModelVisitor* Solver::MakeStatisticsModelVisitor() {
+  return RevAlloc(new ModelStatisticsVisitor);
 }
 }  // namespace operations_research

@@ -1627,7 +1627,11 @@ class Solver {
   SearchMonitor* MakeSearchTrace(const string& prefix);
 
   // ----- ModelVisitor -----
+
+  // Prints the model.
   ModelVisitor* MakePrintModelVisitor();
+  // Displays some nice statistics on the model.
+  ModelVisitor* MakeStatisticsModelVisitor();
 
   // ----- Symmetry Breaking -----
 
@@ -2190,11 +2194,11 @@ class Solver {
   // returns false if the solver is not is search at all.
   bool CurrentlyInSolve() const;
 
-  // This method counts the number of constraints that have been added
+  // Counts the number of constraints that have been added
   // to the solver before the search,
   int constraints() const { return constraints_; }
 
-  // Accept visitors.
+  // Accepts the given model visitor.
   void Accept(ModelVisitor* const visitor) const;
 
   Decision* balancing_decision() const { return balancing_decision_.get(); }
@@ -2425,7 +2429,7 @@ class Decision : public BaseObject {
   virtual string DebugString() const {
     return "Decision";
   }
-  // Visits the decision.
+  // Accepts the given visitor.
   virtual void Accept(DecisionVisitor* const visitor) const;
 
  private:
@@ -2752,10 +2756,11 @@ class Constraint : public PropagationBaseObject {
   virtual void InitialPropagate() = 0;
   virtual string DebugString() const;
 
-  // Fixed method called during the root node propagation.
+  // Calls Post and then Propagate to initialize the constraints. This
+  // is usually done in the root node.
   void PostAndPropagate();
 
-  // Accept visitors.
+  // Accepts the given visitor.
   virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
@@ -2913,7 +2918,7 @@ class IntExpr : public PropagationBaseObject {
   // Attach a demon that will watch the min or the max of the expression.
   virtual void WhenRange(Demon* d) = 0;
 
-  // Accept visitors.
+  // Accepts the given visitor.
   virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
@@ -3029,7 +3034,7 @@ class IntVar : public IntExpr {
 
   virtual int VarType() const;
 
-  // Accept visitor.
+  // Accepts the given visitor.
   virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
@@ -3335,7 +3340,7 @@ class IntervalVar : public PropagationBaseObject {
   IntExpr* EndExpr();
   IntExpr* PerformedExpr();
 
-  // Accept visitor.
+  // Accepts the given visitor.
   virtual void Accept(ModelVisitor* const visitor) const = 0;
 
  private:
@@ -3420,7 +3425,7 @@ class Sequence : public Constraint {
   // Internal method called by demons
   void RangeChanged(int index);
 
-  // Visitor support.
+  // Accepts the given visitor.
   virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
@@ -3997,6 +4002,7 @@ class Pack : public Constraint {
   void AssignFirstPossibleToBin(int64 bin_index);
   void AssignAllRemainingItems();
   void UnassignAllRemainingItems();
+  // Accepts the given visitor.
   virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
