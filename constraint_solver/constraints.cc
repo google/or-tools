@@ -262,7 +262,6 @@ class NoCycle : public Constraint {
                                                active_.get(),
                                                size_);
     visitor->VisitIntegerArgument(this, "assume_paths", assume_paths_);
-    CHECK(sink_handler_ == NULL);
     // TODO(user) : VISITOR -> sink_handler
     visitor->EndVisitConstraint(ModelVisitor::kNoCycle, this);
   }
