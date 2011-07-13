@@ -321,6 +321,8 @@ class RoutingModel {
 
   // Callbacks to be deleted
   hash_set<Solver::IndexEvaluator2*> owned_callbacks_;
+
+  DISALLOW_COPY_AND_ASSIGN(RoutingModel);
 };
 
 }  // namespace operations_research

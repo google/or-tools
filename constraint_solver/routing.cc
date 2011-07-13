@@ -90,6 +90,8 @@ DEFINE_bool(routing_cache_callbacks, false, "Cache callback calls.");
 DEFINE_int64(routing_max_cache_size, 1000,
              "Maximum cache size when callback caching is on.");
 DEFINE_bool(routing_trace, false, "Routing: trace search.");
+DEFINE_bool(routing_search_trace, false,
+            "Routing: use SearchTrace for monitoring search.");
 DEFINE_bool(routing_use_homogeneous_costs, true,
             "Routing: use homogeneous cost model when possible.");
 
@@ -457,9 +459,10 @@ void RoutingModel::Initialize() {
                                         size + vehicles_ - 1,
                                         "Nexts"));
   solver_->AddConstraint(solver_->MakeAllDifferent(nexts_.get(), size, false));
-  // Vehicle variables
+  // Vehicle variables. In case that node i is not active, vehicle_vars_[i] is
+  // bound to -1.
   vehicle_vars_.reset(solver_->MakeIntVarArray(size + vehicles_,
-                                               0,
+                                               -1,
                                                vehicles_ - 1,
                                                "Vehicles"));
   // Active variables
@@ -757,6 +760,19 @@ void RoutingModel::CloseModel() {
                                                 size,
                                                 size + vehicles_));
 
+  // Add constraints to bind vehicle_vars_[i] to -1 in case that node i is not
+  // active.
+  for (int i = 0; i < size; ++i) {
+    solver_->AddConstraint(solver_->MakeIsDifferentCstCt(vehicle_vars_[i], -1,
+                                                         active_[i]));
+
+    IntVar* const vehicle_var_lower_bound =
+        solver_->MakeSum(active_[i], -1)->Var();
+    solver_->AddConstraint(
+        solver_->MakeGreaterOrEqual(vehicle_vars_[i],
+                                    vehicle_var_lower_bound));
+  }
+
   // Set all active unless there are disjunctions
   if (disjunctions_.size() == 0) {
     AddAllActive();
@@ -937,6 +953,16 @@ int64 RoutingModel::NodeToIndex(int64 node) const {
 }
 
 int64 RoutingModel::GetArcCost(int64 i, int64 j, int64 vehicle) {
+  if (vehicle < 0) {
+    // If a node is inactive, vehicle will be set to -1; handle this situation
+    // correctly.
+    // Even though the constraint model does not allow vehice == -1 when i != j,
+    // this method gets called with such parameters when the model is created,
+    // because the constraing solver needs to find the minimal and maximal arc
+    // costs and calls the method with all possible combinations of parameters.
+    // Zero should be a safe value here.
+    return 0;
+  }
   CostCacheElement& cache = cost_cache_[i];
   if (cache.node == j && cache.vehicle == vehicle) {
     return cache.cost;
@@ -1317,6 +1343,10 @@ void RoutingModel::SetUpSearch() {
   if (FLAGS_routing_trace) {
     const int kLogPeriod = 10000;
     SearchMonitor* trace = solver_->MakeSearchLog(kLogPeriod, cost_);
+    monitors_.push_back(trace);
+  }
+  if (FLAGS_routing_search_trace) {
+    SearchMonitor* trace = solver_->MakeSearchTrace("Routing ");
     monitors_.push_back(trace);
   }
 }

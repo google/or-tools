@@ -551,7 +551,7 @@ bool PathOperator::MakeActive(int64 node, int64 destination) {
 }
 
 bool PathOperator::MakeChainInactive(int64 before_chain, int64 chain_end) {
-  const int64 kNoPath = 0;
+  const int64 kNoPath = -1;
   if (CheckChainValidity(before_chain, chain_end, -1)
       && !IsPathEnd(chain_end)) {
     const int64 after_chain = Next(chain_end);
@@ -1105,7 +1105,6 @@ TSPOpt::TSPOpt(const IntVar* const* vars,
 bool TSPOpt::MakeNeighbor() {
   std::vector<int64> nodes;
   int64 chain_end = BaseNode(0);
-  int64 chain_path = Path(chain_end);
   for (int i = 0; i < chain_length_ + 1; ++i) {
     nodes.push_back(chain_end);
     if (IsPathEnd(chain_end)) {
@@ -1116,6 +1115,7 @@ bool TSPOpt::MakeNeighbor() {
   if (nodes.size() <= 3) {
     return false;
   }
+  int64 chain_path = Path(BaseNode(0));
   const int size = nodes.size() - 1;
   cost_.resize(size);
   for (int i = 0; i < size; ++i) {
@@ -1640,6 +1640,7 @@ class CompoundOperator : public LocalSearchOperator {
   virtual ~CompoundOperator() {}
   virtual void Start(const Assignment* assignment);
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
+
  private:
   class OperatorComparator {
    public:
@@ -2154,6 +2155,7 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
                                     int* container_index,
                                     int64* obj_value) = 0;
   virtual bool IsIncremental() const { return true; }
+
  protected:
   const int primary_vars_size_;
   int64* const cache_;
@@ -2164,6 +2166,7 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
   int64 old_value_;
   int64 old_delta_value_;
   bool incremental_;
+
  private:
   virtual void OnSynchronize();
   int64 Evaluate(const Assignment* delta,
@@ -2527,6 +2530,7 @@ class NestedSolveDecision : public Decision {
     return "NestedSolveDecision";
   }
   int state() const { return state_; }
+
  private:
   DecisionBuilder* const db_;
   bool restore_;
@@ -2577,6 +2581,7 @@ class FindOneNeighbor : public DecisionBuilder {
   virtual string DebugString() const {
     return "FindOneNeighbor";
   }
+
  private:
   bool FilterAccept(const Assignment* delta, const Assignment* deltadelta);
   void SynchronizeAll();
@@ -2754,6 +2759,7 @@ class LocalSearchPhaseParameters : public BaseObject {
   }
   SearchLimit* limit() const { return limit_; }
   const std::vector<LocalSearchFilter*>& filters() const { return filters_; }
+
  private:
   SolutionPool* const solution_pool_;
   LocalSearchOperator* const ls_operator_;
