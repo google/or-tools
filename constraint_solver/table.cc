@@ -170,13 +170,11 @@ class BasePositiveTableConstraint : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kAllowedAssignments, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                arity_);
     for (int i = 0; i < tuple_count_; ++i) {
-      visitor->VisitIntegerArrayArgument(this,
-                                         ModelVisitor::kTuplesArgument,
+      visitor->VisitIntegerArrayArgument(ModelVisitor::kTuplesArgument,
                                          tuples_[i],
                                          arity_);
     }
@@ -1228,20 +1226,16 @@ class TransitionConstraint : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kTransition, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.data(),
                                                vars_.size());
-    visitor->VisitIntegerArgument(this,
-                                  ModelVisitor::kInitialState,
+    visitor->VisitIntegerArgument(ModelVisitor::kInitialState,
                                   initial_state_);
-    visitor->VisitIntegerArrayArgument(this,
-                                       ModelVisitor::kFinalStates,
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kFinalStates,
                                        final_states_.data(),
                                        final_states_.size());
     for (int i = 0; i < transition_table_.size(); ++i) {
-      visitor->VisitIntegerArrayArgument(this,
-                                         ModelVisitor::kTuplesArgument,
+      visitor->VisitIntegerArrayArgument(ModelVisitor::kTuplesArgument,
                                          transition_table_[i].data(),
                                          transition_table_[i].size());
     }

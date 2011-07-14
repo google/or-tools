@@ -49,12 +49,10 @@ class ArrayConstraint : public Constraint {
 
   void AcceptInternal(const string& name, ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(name, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             var_);
     visitor->EndVisitConstraint(name, this);
   }
@@ -86,8 +84,7 @@ class ArrayExpr : public BaseIntExpr {
 
   void AcceptInternal(const string& name, ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(name, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
     visitor->EndVisitIntegerExpression(name, this);
@@ -1565,11 +1562,10 @@ class SumBooleanLessOrEqualToOne : public  BaseSumBooleanConstraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kSumLessOrEqual, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, 1);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, 1);
     visitor->EndVisitConstraint(ModelVisitor::kSumLessOrEqual, this);
   }
 };
@@ -1594,11 +1590,10 @@ class SumBooleanGreaterOrEqualToOne : public BaseSumBooleanConstraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kSumGreaterOrEqual, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, 1);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, 1);
     visitor->EndVisitConstraint(ModelVisitor::kSumGreaterOrEqual, this);
   }
 
@@ -1759,11 +1754,10 @@ class SumBooleanEqualToOne : public BaseSumBooleanConstraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, 1);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, 1);
     visitor->EndVisitConstraint(ModelVisitor::kSumEqual, this);
   }
 
@@ -1891,12 +1885,10 @@ class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             sum_var_);
     visitor->EndVisitConstraint(ModelVisitor::kSumEqual, this);
   }
@@ -2075,16 +2067,13 @@ class BooleanScalProdLessConstant : public Constraint {
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kScalProdLessOrEqual, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
-    visitor->VisitIntegerArrayArgument(this,
-                                       ModelVisitor::kCoefficientsArgument,
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
                                        coefs_.get(),
                                        size_);
-    visitor->VisitIntegerArgument(this,
-                                  ModelVisitor::kValueArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument,
                                   upper_bound_);
     visitor->EndVisitConstraint(ModelVisitor::kScalProdLessOrEqual, this);
   }
@@ -2227,16 +2216,13 @@ class PositiveBooleanScalProdEqVar : public Constraint {
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kScalProdEqual, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
-    visitor->VisitIntegerArrayArgument(this,
-                                       ModelVisitor::kCoefficientsArgument,
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
                                        coefs_.get(),
                                        size_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             var_);
     visitor->EndVisitConstraint(ModelVisitor::kScalProdEqual, this);
   }
@@ -2415,16 +2401,13 @@ class PositiveBooleanScalProd : public BaseIntExpr {
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kScalProd, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
-    visitor->VisitIntegerArrayArgument(this,
-                                       ModelVisitor::kCoefficientsArgument,
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
                                        coefs_.get(),
                                        size_);
-    visitor->VisitIntegerArgument(this,
-                                  ModelVisitor::kValueArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument,
                                   constant_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kScalProd, this);
   }
@@ -2571,16 +2554,13 @@ class PositiveBooleanScalProdEqCst : public Constraint {
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kScalProdEqual, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
-    visitor->VisitIntegerArrayArgument(this,
-                                       ModelVisitor::kCoefficientsArgument,
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
                                        coefs_.get(),
                                        size_);
-    visitor->VisitIntegerArgument(this,
-                                  ModelVisitor::kValueArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument,
                                   constant_);
     visitor->EndVisitConstraint(ModelVisitor::kScalProdEqual, this);
   }

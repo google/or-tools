@@ -190,11 +190,9 @@ class MapDomain : public Constraint {
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kMapDomain, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             var_);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                actives_.get(),
                                                size_);
     visitor->EndVisitConstraint(ModelVisitor::kMapDomain, this);
@@ -253,15 +251,13 @@ class NoCycle : public Constraint {
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kNoCycle, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kNextsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_.get(),
                                                size_);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kActiveArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kActiveArgument,
                                                active_.get(),
                                                size_);
-    visitor->VisitIntegerArgument(this, "assume_paths", assume_paths_);
+    visitor->VisitIntegerArgument("assume_paths", assume_paths_);
     // TODO(user) : VISITOR -> sink_handler
     visitor->EndVisitConstraint(ModelVisitor::kNoCycle, this);
   }
@@ -551,20 +547,16 @@ class PathCumul : public Constraint {
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kNextsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_.get(),
                                                size_);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kActiveArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kActiveArgument,
                                                active_.get(),
                                                size_);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kCumulsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kCumulsArgument,
                                                cumuls_.get(),
                                                cumul_size_);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kTransitsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kTransitsArgument,
                                                transits_.get(),
                                                size_);
     visitor->EndVisitConstraint(ModelVisitor::kPathCumul, this);

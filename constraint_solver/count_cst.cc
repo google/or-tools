@@ -45,12 +45,11 @@ class CountValueEqCst : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kCountEqual, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kCountArgument, count_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerArgument(ModelVisitor::kCountArgument, count_);
     visitor->EndVisitConstraint(ModelVisitor::kCountEqual, this);
   }
 
@@ -215,13 +214,11 @@ class CountValueEq : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kCountEqual, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kCountArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kCountArgument,
                                             count_);
     visitor->EndVisitConstraint(ModelVisitor::kCountEqual, this);
   }
@@ -413,16 +410,13 @@ class Distribute : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                var_size_);
-    visitor->VisitIntegerArrayArgument(this,
-                                       ModelVisitor::kValuesArgument,
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
                                        values_.get(),
                                        card_size_);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kCardsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kCardsArgument,
                                                cards_.get(),
                                                card_size_);
     visitor->EndVisitConstraint(ModelVisitor::kDistribute, this);
@@ -664,12 +658,10 @@ class FastDistribute : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                var_size_);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kCardsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kCardsArgument,
                                                cards_.get(),
                                                card_size_);
     visitor->EndVisitConstraint(ModelVisitor::kDistribute, this);
@@ -886,14 +878,12 @@ class BoundedDistribute : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                var_size_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kMinArgument, card_min_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kMaxArgument, card_max_);
-    visitor->VisitIntegerArgument(this,
-                                  ModelVisitor::kSizeArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, card_min_);
+    visitor->VisitIntegerArgument(ModelVisitor::kMaxArgument, card_max_);
+    visitor->VisitIntegerArgument(ModelVisitor::kSizeArgument,
                                   card_size_);
     visitor->EndVisitConstraint(ModelVisitor::kDistribute, this);
   }
@@ -1101,8 +1091,7 @@ class SetAllToZero : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kCardsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kCardsArgument,
                                                vars_.get(),
                                                size_);
     visitor->EndVisitConstraint(ModelVisitor::kDistribute, this);

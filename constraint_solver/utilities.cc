@@ -271,45 +271,17 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   // Variables.
-  virtual void VisitIntegerArgument(const Constraint* const master,
-                                    const string& arg_name,
-                                    int64 value) {
+  virtual void VisitIntegerArgument(const string& arg_name, int64 value) {
     LOG(INFO) << Spaces() << arg_name << ": " << value;
   }
 
-  virtual void VisitIntegerArgument(const IntExpr* const master,
-                                    const string& arg_name,
-                                    int64 value) {
-    LOG(INFO) << Spaces() << arg_name << ": " << value;
-  }
-
-  virtual void VisitIntegerArrayArgument(const Constraint* const master,
-                                         const string& arg_name,
-                                         const int64* const values,
-                                         int size) {
-    LOG(INFO) << Spaces() << arg_name << ": array";
-  }
-
-  virtual void VisitIntegerArrayArgument(const IntExpr* const master,
-                                         const string& arg_name,
+  virtual void VisitIntegerArrayArgument(const string& arg_name,
                                          const int64* const values,
                                          int size) {
     LOG(INFO) << Spaces() << arg_name << ": array";
   }
 
   virtual void VisitIntegerExpressionArgument(
-      const Constraint* const master,
-      const string& arg_name,
-      const IntExpr* const argument) {
-    LOG(INFO) << Spaces() << arg_name << ": [";
-    Increase();
-    argument->Accept(this);
-    Decrease();
-    LOG(INFO) << Spaces() << "]";
-  }
-
-  virtual void VisitIntegerExpressionArgument(
-      const IntExpr* const master,
       const string& arg_name,
       const IntExpr* const argument) {
     LOG(INFO) << Spaces() << arg_name << ": [";
@@ -320,21 +292,6 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerVariableArrayArgument(
-      const IntExpr* const master,
-      const string& arg_name,
-      const IntVar* const * arguments,
-      int size) {
-    LOG(INFO) << Spaces() << arg_name << ": [";
-    Increase();
-    for (int i = 0; i < size; ++i) {
-      arguments[i]->Accept(this);
-    }
-    Decrease();
-    LOG(INFO) << Spaces() << "]";
-  }
-
-  virtual void VisitIntegerVariableArrayArgument(
-      const Constraint* const master,
       const string& arg_name,
       const IntVar* const * arguments,
       int size) {
@@ -348,30 +305,16 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const IntExpr* const master,
-                                     const string& arg_name,
-                                     const IntervalVar* const argument) {
-    LOG(INFO) << "Not Implemented";
-  }
-  virtual void VisitIntervalArgument(const Constraint* const master,
-                                     const string& arg_name,
+  virtual void VisitIntervalArgument(const string& arg_name,
                                      const IntervalVar* const argument) {
     LOG(INFO) << "Not Implemented";
   }
 
-  virtual void VisitIntervalArgumentArray(const IntExpr* const master,
-                                          const string& arg_name,
+  virtual void VisitIntervalArgumentArray(const string& arg_name,
                                           const IntervalVar* const * argument,
                                           int size) {
     LOG(INFO) << "Not Implemented";
   }
-  virtual void VisitIntervalArgumentArray(const Constraint* const master,
-                                          const string& arg_name,
-                                          const IntervalVar* const * argument,
-                                          int size) {
-    LOG(INFO) << "Not Implemented";
-  }
-
 
  private:
   void Increase() {
@@ -471,29 +414,12 @@ class ModelStatisticsVisitor : public ModelVisitor {
 
   // Visit integer expression argument.
   virtual void VisitIntegerExpressionArgument(
-      const Constraint* const master,
-      const string& arg_name,
-      const IntExpr* const argument) {
-    VisitSubArgument(argument);
-  }
-  virtual void VisitIntegerExpressionArgument(
-      const IntExpr* const master,
       const string& arg_name,
       const IntExpr* const argument) {
     VisitSubArgument(argument);
   }
 
   virtual void VisitIntegerVariableArrayArgument(
-      const IntExpr* const master,
-      const string& arg_name,
-      const IntVar* const * arguments,
-      int size) {
-    for (int i = 0; i < size; ++i) {
-      VisitSubArgument(arguments[i]);
-    }
-  }
-  virtual void VisitIntegerVariableArrayArgument(
-      const Constraint* const master,
       const string& arg_name,
       const IntVar* const * arguments,
       int size) {
@@ -503,27 +429,12 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const IntExpr* const master,
-                                     const string& arg_name,
-                                     const IntervalVar* const argument) {
-    VisitSubArgument(argument);
-  }
-  virtual void VisitIntervalArgument(const Constraint* const master,
-                                     const string& arg_name,
+  virtual void VisitIntervalArgument(const string& arg_name,
                                      const IntervalVar* const argument) {
     VisitSubArgument(argument);
   }
 
-  virtual void VisitIntervalArrayArgument(const IntExpr* const master,
-                                          const string& arg_name,
-                                          const IntervalVar* const * arguments,
-                                          int size) {
-    for (int i = 0; i < size; ++i) {
-      VisitSubArgument(arguments[i]);
-    }
-  }
-  virtual void VisitIntervalArrayArgument(const Constraint* const master,
-                                          const string& arg_name,
+  virtual void VisitIntervalArrayArgument(const string& arg_name,
                                           const IntervalVar* const * arguments,
                                           int size) {
     for (int i = 0; i < size; ++i) {

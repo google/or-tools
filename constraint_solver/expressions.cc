@@ -2621,11 +2621,9 @@ class LinkExprAndVar : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kLinkExprVar, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             var_);
     visitor->EndVisitConstraint(ModelVisitor::kLinkExprVar, this);
   }
@@ -2681,11 +2679,9 @@ class LinkExprAndDomainIntVar : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kLinkExprVar, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             var_);
     visitor->EndVisitConstraint(ModelVisitor::kLinkExprVar, this);
   }
@@ -2776,11 +2772,9 @@ class PlusIntExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kSum, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kLeftArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument,
                                             left_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kRightArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
                                             right_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kSum, this);
   }
@@ -2854,10 +2848,9 @@ class PlusIntCstExpr : public BaseIntExpr {
   virtual IntVar* CastToVar();
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kSum, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kSum, this);
   }
 
@@ -2934,11 +2927,8 @@ class SubIntExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kDifference, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kLeftArgument,
-                                            left_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kRightArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
                                             right_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kDifference, this);
   }
@@ -3129,9 +3119,8 @@ class SubIntCstExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kDifference, this);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kDifference, this);
   }
@@ -3192,8 +3181,7 @@ class OppIntExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kOpposite, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kOpposite, this);
   }
@@ -3251,10 +3239,9 @@ class TimesIntPosCstExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kProduct, this);
   }
 
@@ -3325,10 +3312,9 @@ class TimesIntNegCstExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kProduct, this);
   }
 
@@ -3547,11 +3533,8 @@ class TimesIntExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kLeftArgument,
-                                            left_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kRightArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
                                             right_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kProduct, this);
   }
@@ -3612,11 +3595,8 @@ class TimesIntPosExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kLeftArgument,
-                                            left_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kRightArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
                                             right_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kProduct, this);
   }
@@ -3675,11 +3655,9 @@ class TimesBooleanPosIntExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kLeftArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument,
                                             boolvar_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kRightArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
                                             expr_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kProduct, this);
   }
@@ -3800,11 +3778,9 @@ class TimesBooleanIntExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kLeftArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument,
                                             boolvar_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kRightArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
                                             expr_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kProduct, this);
   }
@@ -4017,10 +3993,9 @@ class DivIntPosCstExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kDivide, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kDivide, this);
   }
 
@@ -4077,8 +4052,7 @@ class IntAbs : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kAbs, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kAbs, this);
   }
@@ -4193,8 +4167,7 @@ class IntSquare : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kSquare, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kSquare, this);
   }
@@ -4245,8 +4218,7 @@ class PosIntSquare : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kSquare, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kSquare, this);
   }
@@ -4312,11 +4284,9 @@ class MinIntExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kMin, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kLeftArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument,
                                             left_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kRightArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
                                             right_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kMin, this);
   }
@@ -4384,10 +4354,9 @@ class MinCstIntExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kMin, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kMin, this);
   }
 
@@ -4461,11 +4430,8 @@ class MaxIntExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kMax, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kLeftArgument,
-                                            left_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kRightArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
                                             right_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kMax, this);
   }
@@ -4533,10 +4499,9 @@ class MaxCstIntExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kMax, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kMax, this);
   }
 
@@ -4663,17 +4628,15 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kConvexPiecewise, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
-    visitor->VisitIntegerArgument(this,
-                                  ModelVisitor::kEarlyCostArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kEarlyCostArgument,
                                   early_cost_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kEarlyDateArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kEarlyDateArgument,
                                   early_date_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kLateCostArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kLateCostArgument,
                                   late_cost_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kLateDateArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kLateDateArgument,
                                   late_date_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kConvexPiecewise, this);
   }
@@ -4753,13 +4716,11 @@ class SemiContinuousExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kSemiContinuous, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->VisitIntegerArgument(this,
-                                  ModelVisitor::kFixedChargeArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kFixedChargeArgument,
                                   fixed_charge_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kStepArgument, step_);
+    visitor->VisitIntegerArgument(ModelVisitor::kStepArgument, step_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kSemiContinuous, this);
   }
 
@@ -4823,13 +4784,11 @@ class SemiContinuousStepOneExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kSemiContinuous, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->VisitIntegerArgument(this,
-                                  ModelVisitor::kFixedChargeArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kFixedChargeArgument,
                                   fixed_charge_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kStepArgument, 1);
+    visitor->VisitIntegerArgument(ModelVisitor::kStepArgument, 1);
     visitor->EndVisitIntegerExpression(ModelVisitor::kSemiContinuous, this);
   }
 
@@ -4890,13 +4849,11 @@ class SemiContinuousStepZeroExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kSemiContinuous, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->VisitIntegerArgument(this,
-                                  ModelVisitor::kFixedChargeArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kFixedChargeArgument,
                                   fixed_charge_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kStepArgument, 0);
+    visitor->VisitIntegerArgument(ModelVisitor::kStepArgument, 0);
     visitor->EndVisitIntegerExpression(ModelVisitor::kSemiContinuous, this);
   }
 

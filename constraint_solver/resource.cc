@@ -178,8 +178,7 @@ string Sequence::DebugString() const {
 
 void Sequence::Accept(ModelVisitor* const visitor) const {
   visitor->BeginVisitConstraint(ModelVisitor::kSequence, this);
-  visitor->VisitIntervalArrayArgument(this,
-                                      ModelVisitor::kIntervalsArgument,
+  visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                       intervals_.get(),
                                       size_);
   visitor->EndVisitConstraint(ModelVisitor::kSequence, this);
@@ -1912,8 +1911,7 @@ class CumulativeConstraint : public Constraint {
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kCumulative, this);
-    visitor->VisitIntervalArrayArgument(this,
-                                        ModelVisitor::kIntervalsArgument,
+    visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         intervals_.get(),
                                         size_);
     visitor->EndVisitConstraint(ModelVisitor::kCumulative, this);

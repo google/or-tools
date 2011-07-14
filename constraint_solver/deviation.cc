@@ -82,15 +82,12 @@ class Deviation : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kDeviation, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             deviation_var_);
-    visitor->VisitIntegerArgument(this,
-                                  ModelVisitor::kValueArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument,
                                   total_sum_);
     visitor->EndVisitConstraint(ModelVisitor::kDeviation, this);
   }

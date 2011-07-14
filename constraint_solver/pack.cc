@@ -50,6 +50,7 @@ class Dimension : public BaseObject {
   virtual string DebugString() const {
     return "Dimension";
   }
+  virtual void Accept(ModelVisitor* const visitor) const = 0;
 
   Solver* solver() const { return solver_; }
 
@@ -338,11 +339,10 @@ string Pack::DebugString() const {
 
 void Pack::Accept(ModelVisitor* const visitor) const {
   visitor->BeginVisitConstraint(ModelVisitor::kPack, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                vsize_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kSizeArgument, bins_);
+    visitor->VisitIntegerArgument(ModelVisitor::kSizeArgument, bins_);
     // TODO(user): VISITOR add dimensions.
     visitor->EndVisitConstraint(ModelVisitor::kPack, this);
 }
@@ -472,8 +472,6 @@ int SortIndexByWeight(int64* const indices,
   }
   return to_sort.size();
 }
-}  // namespace
-
 
 class DimensionLessThanConstant : public Dimension {
  public:
@@ -568,14 +566,25 @@ class DimensionLessThanConstant : public Dimension {
 
   virtual void EndPropagate() {}
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension("UsageLessConstant", "");
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
+                                       weights_,
+                                       vars_count_);
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kValueArgument,
+                                       upper_bounds_,
+                                       bins_count_);
+    visitor->EndVisitExtension("UsageLessConstant", "");
+  }
+
  private:
   const int vars_count_;
-  int64* weights_;
+  int64* const weights_;
   const int bins_count_;
-  int64* upper_bounds_;
+  int64* const upper_bounds_;
   std::vector<Rev<int> > first_unbound_backward_vector_;
   std::vector<Rev<int64> > sum_of_bound_variables_vector_;
-  int64* ranked_;
+  int64* const ranked_;
   int ranked_size_;
 };
 
@@ -709,15 +718,26 @@ class DimensionWeightedSumEqVar : public Dimension {
 
   virtual void EndPropagate() {}
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension("UsageEqualVariable", "");
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
+                                       weights_,
+                                       vars_count_);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               loads_,
+                                               bins_count_);
+    visitor->EndVisitExtension("UsageEqualVariable", "");
+  }
+
  private:
   const int vars_count_;
-  int64* weights_;
+  int64* const weights_;
   const int bins_count_;
-  IntVar** loads_;
+  IntVar** const loads_;
   std::vector<Rev<int> > first_unbound_backward_vector_;
   std::vector<Rev<int64> > sum_of_bound_variables_vector_;
   std::vector<Rev<int64> > sum_of_all_variables_vector_;
-  int64* ranked_;
+  int64* const ranked_;
   int ranked_size_;
 };
 
@@ -839,15 +859,25 @@ class AssignedWeightedSumDimension : public Dimension {
 
   virtual void EndPropagate() {}
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension("WeightedSumOfAssignedEqualVariable", "");
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
+                                       weights_,
+                                       vars_count_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            cost_var_);
+    visitor->EndVisitExtension("WeightedSumOfAssignedEqualVariable", "");
+  }
+
  private:
   const int vars_count_;
-  int64* weights_;
+  int64* const weights_;
   const int bins_count_;
   IntVar* const cost_var_;
   Rev<int> first_unbound_backward_;
   Rev<int64> sum_of_assigned_items_;
   Rev<int64> sum_of_unassigned_items_;
-  int64* ranked_;
+  int64* const ranked_;
   int ranked_size_;
   int64 sum_all_weights_;
 };
@@ -928,6 +958,13 @@ class CountAssignedItemsDimension : public Dimension {
   }
 
   virtual void EndPropagate() {}
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension("CountAssignedItems", "");
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            cost_var_);
+    visitor->EndVisitExtension("CountAssignedItems", "");
+  }
 
  private:
   const int vars_count_;
@@ -1057,12 +1094,19 @@ class CountUsedBinDimension : public Dimension {
     PropagateAll();
   }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension("CountUsedBins", "");
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            count_var_);
+    visitor->EndVisitExtension("CountUsedBins", "");
+  }
+
  private:
   const int vars_count_;
   const int bins_count_;
   IntVar* const count_var_;
-  bool* used_;
-  int* candidates_;
+  bool* const used_;
+  int* const candidates_;
   Rev<int> card_min_;
   Rev<int> card_max_;
   int initial_min_;
@@ -1114,10 +1158,24 @@ class VariableUsageDimension : public Dimension {
     return "VariableUsageDimension";
   }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension("VariableUsageLessConstant", "");
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
+                                       capacities_.data(),
+                                       capacities_.size());
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               weights_.data(),
+                                               weights_.size());
+    visitor->EndVisitExtension("VariableUsageLessConstant", "");
+  }
+
+
+
  private:
   const std::vector<int64> capacities_;
   const std::vector<IntVar*> weights_;
 };
+}  // namespace
 
 // ---------- API ----------
 

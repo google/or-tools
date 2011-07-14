@@ -39,10 +39,9 @@ class EqualityExprCst : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kEquality, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
     visitor->EndVisitConstraint(ModelVisitor::kEquality, this);
   }
 
@@ -93,10 +92,9 @@ class GreaterEqExprCst : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kGreaterOrEqual, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
     visitor->EndVisitConstraint(ModelVisitor::kGreaterOrEqual, this);
   }
 
@@ -156,10 +154,9 @@ class LessEqExprCst : public Constraint {
   virtual string DebugString() const;
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kLessOrEqual, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
     visitor->EndVisitConstraint(ModelVisitor::kLessOrEqual, this);
   }
  private:
@@ -219,10 +216,9 @@ class DiffCst : public Constraint {
   virtual string DebugString() const;
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kNonEqual, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
     visitor->EndVisitConstraint(ModelVisitor::kNonEqual, this);
   }
  private:
@@ -312,12 +308,10 @@ class IsEqualCstCt : public Constraint {
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kIsEqual, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, cst_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, cst_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             boolvar_);
     visitor->EndVisitConstraint(ModelVisitor::kIsEqual, this);
   }
@@ -523,12 +517,10 @@ class IsDiffCstCt : public Constraint {
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kIsDifferent, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, cst_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, cst_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             boolvar_);
     visitor->EndVisitConstraint(ModelVisitor::kIsDifferent, this);
   }
@@ -631,12 +623,10 @@ class IsGreaterEqualCstCt : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kIsGreaterOrEqual, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, cst_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, cst_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             boolvar_);
     visitor->EndVisitConstraint(ModelVisitor::kIsGreaterOrEqual, this);
   }
@@ -740,12 +730,10 @@ class IsLessEqualCstCt : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, cst_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, cst_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             boolvar_);
     visitor->EndVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
   }
@@ -829,11 +817,10 @@ class BetweenCt : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kBetween, this);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kMinArgument, min_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, min_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kMaxArgument, max_);
+    visitor->VisitIntegerArgument(ModelVisitor::kMaxArgument, max_);
     visitor->EndVisitConstraint(ModelVisitor::kBetween, this);
   }
 
@@ -889,13 +876,11 @@ class IsBetweenCt : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kIsBetween, this);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kMinArgument, min_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, min_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kMaxArgument, max_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerArgument(ModelVisitor::kMaxArgument, max_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             boolvar_);
     visitor->EndVisitConstraint(ModelVisitor::kIsBetween, this);
   }
@@ -946,11 +931,9 @@ class MemberCt : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kMember, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
-    visitor->VisitConstIntArrayArgument(this,
-                                        ModelVisitor::kValuesArgument,
+    visitor->VisitConstIntArrayArgument(ModelVisitor::kValuesArgument,
                                         values_);
     visitor->EndVisitConstraint(ModelVisitor::kMember, this);
   }
@@ -1056,14 +1039,11 @@ class IsMemberCt : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kIsMember, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kExpressionArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
-    visitor->VisitConstIntArrayArgument(this,
-                                        ModelVisitor::kValuesArgument,
+    visitor->VisitConstIntArrayArgument(ModelVisitor::kValuesArgument,
                                         values_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             boolvar_);
     visitor->EndVisitConstraint(ModelVisitor::kIsMember, this);
   }

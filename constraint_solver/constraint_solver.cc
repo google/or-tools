@@ -2409,50 +2409,21 @@ void ModelVisitor::VisitIntervalVariable(const IntervalVar* const variable,
 }
 
 
-void ModelVisitor::VisitIntegerArgument(const Constraint* const master,
-                                        const string& arg_name,
-                                        int64 value) {}
-void ModelVisitor::VisitIntegerArgument(const IntExpr* const master,
-                                        const string& arg_name,
+void ModelVisitor::VisitIntegerArgument(const string& arg_name,
                                         int64 value) {}
 
-void ModelVisitor::VisitIntegerArrayArgument(const Constraint* const master,
-                                             const string& arg_name,
-                                             const int64 * const values,
-                                             int size) {
-}
-void ModelVisitor::VisitIntegerArrayArgument(const IntExpr* const master,
-                                             const string& arg_name,
+void ModelVisitor::VisitIntegerArrayArgument(const string& arg_name,
                                              const int64 * const values,
                                              int size) {
 }
 
 void ModelVisitor::VisitIntegerExpressionArgument(
-    const Constraint* const master,
-    const string& arg_name,
-    const IntExpr* const argument) {
-  argument->Accept(this);
-}
-
-void ModelVisitor::VisitIntegerExpressionArgument(
-    const IntExpr* const master,
     const string& arg_name,
     const IntExpr* const argument) {
   argument->Accept(this);
 }
 
 void ModelVisitor::VisitIntegerVariableArrayArgument(
-    const Constraint* const master,
-    const string& arg_name,
-    const IntVar* const * arguments,
-    int size) {
-  for (int i = 0; i < size; ++i) {
-    arguments[i]->Accept(this);
-  }
-}
-
-void ModelVisitor::VisitIntegerVariableArrayArgument(
-    const IntExpr* const master,
     const string& arg_name,
     const IntVar* const * arguments,
     int size) {
@@ -2462,31 +2433,12 @@ void ModelVisitor::VisitIntegerVariableArrayArgument(
 }
 
 void ModelVisitor::VisitIntervalArgument(
-    const IntExpr* const master,
-    const string& arg_name,
-    const IntervalVar* const argument) {
-  argument->Accept(this);
-}
-
-void ModelVisitor::VisitIntervalArgument(
-    const Constraint* const master,
     const string& arg_name,
     const IntervalVar* const argument) {
   argument->Accept(this);
 }
 
 void ModelVisitor::VisitIntervalArrayArgument(
-    const IntExpr* const master,
-    const string& arg_name,
-    const IntervalVar* const * arguments,
-    int size) {
-  for (int i = 0; i < size; ++i) {
-    arguments[i]->Accept(this);
-  }
-}
-
-void ModelVisitor::VisitIntervalArrayArgument(
-    const Constraint* const master,
     const string& arg_name,
     const IntervalVar* const * arguments,
     int size) {
@@ -2497,16 +2449,9 @@ void ModelVisitor::VisitIntervalArrayArgument(
 
 // ----- Helpers -----
 
-void ModelVisitor::VisitConstIntArrayArgument(const Constraint* const master,
-                                              const string& arg_name,
+void ModelVisitor::VisitConstIntArrayArgument(const string& arg_name,
                                               const ConstIntArray&  values) {
-  VisitIntegerArrayArgument(master, arg_name, values.RawData(), values.size());
-}
-
-void ModelVisitor::VisitConstIntArrayArgument(const IntExpr* const master,
-                                              const string& arg_name,
-                                              const ConstIntArray& values) {
-  VisitIntegerArrayArgument(master, arg_name, values.RawData(), values.size());
+  VisitIntegerArrayArgument(arg_name, values.RawData(), values.size());
 }
 
 // ---------- Search Monitor ----------

@@ -65,11 +65,9 @@ class IntervalUnaryRelation : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kIntervalUnaryRelation, this);
-    visitor->VisitIntervalArgument(this,
-                                   ModelVisitor::kIntervalArgument,
-                                   t_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kRelationArgument, rel_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kValueArgument, d_);
+    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, t_);
+    visitor->VisitIntegerArgument(ModelVisitor::kRelationArgument, rel_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, d_);
     visitor->EndVisitConstraint(ModelVisitor::kIntervalUnaryRelation, this);
   }
 
@@ -153,9 +151,9 @@ class IntervalBinaryRelation : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kIntervalBinaryRelation, this);
-    visitor->VisitIntervalArgument(this, ModelVisitor::kLeftArgument, t1_);
-    visitor->VisitIntegerArgument(this, ModelVisitor::kRelationArgument, rel_);
-    visitor->VisitIntervalArgument(this, ModelVisitor::kRightArgument, t2_);
+    visitor->VisitIntervalArgument(ModelVisitor::kLeftArgument, t1_);
+    visitor->VisitIntegerArgument(ModelVisitor::kRelationArgument, rel_);
+    visitor->VisitIntervalArgument(ModelVisitor::kRightArgument, t2_);
     visitor->EndVisitConstraint(ModelVisitor::kIntervalBinaryRelation, this);
   }
 
@@ -274,10 +272,9 @@ class TemporalDisjunction : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kIntervalDisjunction, this);
-    visitor->VisitIntervalArgument(this, ModelVisitor::kLeftArgument, t1_);
-    visitor->VisitIntervalArgument(this, ModelVisitor::kRightArgument, t2_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntervalArgument(ModelVisitor::kLeftArgument, t1_);
+    visitor->VisitIntervalArgument(ModelVisitor::kRightArgument, t2_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             alt_);
     visitor->EndVisitConstraint(ModelVisitor::kIntervalDisjunction, this);
   }

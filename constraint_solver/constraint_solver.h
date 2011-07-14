@@ -2671,68 +2671,34 @@ class ModelVisitor : public BaseObject {
                                      const IntervalVar* const delegate);
 
   // Visit integer arguments.
-  virtual void VisitIntegerArgument(const Constraint* const master,
-                                    const string& arg_name,
-                                    int64 value);
-  virtual void VisitIntegerArgument(const IntExpr* const master,
-                                    const string& arg_name,
-                                    int64 value);
+  virtual void VisitIntegerArgument(const string& arg_name, int64 value);
 
-  virtual void VisitIntegerArrayArgument(const Constraint* const master,
-                                         const string& arg_name,
-                                         const int64* const values,
-                                         int size);
-  virtual void VisitIntegerArrayArgument(const IntExpr* const master,
-                                         const string& arg_name,
+  virtual void VisitIntegerArrayArgument(const string& arg_name,
                                          const int64* const values,
                                          int size);
 
   // Visit integer expression argument.
   virtual void VisitIntegerExpressionArgument(
-      const Constraint* const master,
-      const string& arg_name,
-      const IntExpr* const argument);
-  virtual void VisitIntegerExpressionArgument(
-      const IntExpr* const master,
       const string& arg_name,
       const IntExpr* const argument);
 
   virtual void VisitIntegerVariableArrayArgument(
-      const IntExpr* const master,
-      const string& arg_name,
-      const IntVar* const * arguments,
-      int size);
-  virtual void VisitIntegerVariableArrayArgument(
-      const Constraint* const master,
       const string& arg_name,
       const IntVar* const * arguments,
       int size);
 
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const IntExpr* const master,
-                                     const string& arg_name,
-                                     const IntervalVar* const argument);
-  virtual void VisitIntervalArgument(const Constraint* const master,
-                                     const string& arg_name,
+  virtual void VisitIntervalArgument(const string& arg_name,
                                      const IntervalVar* const argument);
 
-  virtual void VisitIntervalArrayArgument(const IntExpr* const master,
-                                          const string& arg_name,
-                                          const IntervalVar* const * argument,
-                                          int size);
-  virtual void VisitIntervalArrayArgument(const Constraint* const master,
-                                          const string& arg_name,
+  virtual void VisitIntervalArrayArgument(const string& arg_name,
                                           const IntervalVar* const * argument,
                                           int size);
 
   // Helpers.
-  void VisitConstIntArrayArgument(const IntExpr* const master,
-                                  const string& arg_name,
+  void VisitConstIntArrayArgument(const string& arg_name,
                                   const ConstIntArray& argument);
 
-  void VisitConstIntArrayArgument(const Constraint* const master,
-                                  const string& arg_name,
-                                  const ConstIntArray& argument);
   // TODO(user): SearchMonitors, phases
 };
 

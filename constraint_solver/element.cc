@@ -228,14 +228,11 @@ class IntElementConstraint : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kElementConstraint, this);
-    visitor->VisitConstIntArrayArgument(this,
-                                        ModelVisitor::kValuesArgument,
+    visitor->VisitConstIntArrayArgument(ModelVisitor::kValuesArgument,
                                         values_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kIndexArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             index_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             elem_);
     visitor->EndVisitConstraint(ModelVisitor::kElementConstraint, this);
   }
@@ -287,11 +284,9 @@ class IntExprElement : public BaseIntExprElement {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
-    visitor->VisitConstIntArrayArgument(this,
-                                        ModelVisitor::kValuesArgument,
+    visitor->VisitConstIntArrayArgument(ModelVisitor::kValuesArgument,
                                         values_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kIndexArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             expr_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
   }
@@ -351,11 +346,9 @@ class IncreasingIntExprElement : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
-    visitor->VisitConstIntArrayArgument(this,
-                                        ModelVisitor::kValuesArgument,
+    visitor->VisitConstIntArrayArgument(ModelVisitor::kValuesArgument,
                                         values_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kIndexArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             index_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
   }
@@ -570,12 +563,10 @@ class IntExprFunctionElement : public BaseIntExprElement {
     for (int i = std::max(0LL, index_min); i <= index_max; ++i) {
       expanded_values.push_back(ElementValue(i));
     }
-    visitor->VisitIntegerArrayArgument(this,
-                                       ModelVisitor::kValuesArgument,
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
                                        expanded_values.data(),
                                        expanded_values.size());
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kIndexArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             expr_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
   }
@@ -712,12 +703,10 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
     for (int i = std::max(0LL, index_min); i <= index_max; ++i) {
       expanded_values.push_back(values_->Run(i));
     }
-    visitor->VisitIntegerArrayArgument(this,
-                                       ModelVisitor::kValuesArgument,
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
                                        expanded_values.data(),
                                        expanded_values.size());
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kIndexArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             index_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
   }
@@ -798,11 +787,9 @@ class IntIntExprFunctionElement : public BaseIntExpr {
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
     // TODO(user): Implement me.
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kIndexArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             expr1_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kIndex2Argument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndex2Argument,
                                             expr2_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
   }
@@ -1034,15 +1021,12 @@ class IntExprArrayElementCt : public Constraint {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kElementConstraint, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kIndexArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             expr_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kTargetArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             var_);
     visitor->EndVisitConstraint(ModelVisitor::kElementConstraint, this);
   }
@@ -1218,12 +1202,10 @@ class IntExprArrayElement : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
-    visitor->VisitIntegerVariableArrayArgument(this,
-                                               ModelVisitor::kVarsArgument,
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kIndexArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             var_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
   }

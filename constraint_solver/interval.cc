@@ -308,8 +308,7 @@ class IntervalVarStartExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kStartExpr, this);
-    visitor->VisitIntervalArgument(this,
-                                   ModelVisitor::kIntervalArgument,
+    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
                                    interval_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kStartExpr, this);
   }
@@ -363,8 +362,7 @@ class IntervalVarEndExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kEndExpr, this);
-    visitor->VisitIntervalArgument(this,
-                                   ModelVisitor::kIntervalArgument,
+    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
                                    interval_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kEndExpr, this);
   }
@@ -418,8 +416,7 @@ class IntervalVarDurationExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kDurationExpr, this);
-    visitor->VisitIntervalArgument(this,
-                                   ModelVisitor::kIntervalArgument,
+    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
                                    interval_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kDurationExpr, this);
   }
@@ -484,8 +481,7 @@ class IntervalVarPerformedExpr : public BaseIntExpr {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kPerformedExpr, this);
-    visitor->VisitIntervalArgument(this,
-                                   ModelVisitor::kIntervalArgument,
+    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
                                    interval_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kPerformedExpr, this);
   }

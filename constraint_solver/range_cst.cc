@@ -30,8 +30,8 @@ class RangeEquality : public Constraint {
   virtual string DebugString() const;
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint("Equality", this);
-    visitor->VisitIntegerExpressionArgument(this, "left", left_);
-    visitor->VisitIntegerExpressionArgument(this, "right", right_);
+    visitor->VisitIntegerExpressionArgument("left", left_);
+    visitor->VisitIntegerExpressionArgument("right", right_);
     visitor->EndVisitConstraint("Equality", this);
   }
 
@@ -78,11 +78,8 @@ class RangeLessOrEqual : public Constraint {
   virtual string DebugString() const;
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kLessOrEqual, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kLeftArgument,
-                                            left_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kRightArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
                                             right_);
     visitor->EndVisitConstraint(ModelVisitor::kLessOrEqual, this);
   }
@@ -131,11 +128,8 @@ class RangeGreaterOrEqual : public Constraint {
   virtual string DebugString() const;
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kGreaterOrEqual, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kLeftArgument,
-                                            left_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kRightArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
                                             right_);
     visitor->EndVisitConstraint(ModelVisitor::kGreaterOrEqual, this);
   }
@@ -184,11 +178,8 @@ class RangeLess : public Constraint {
   virtual string DebugString() const;
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kLess, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kLeftArgument,
-                                            left_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kRightArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
                                             right_);
     visitor->EndVisitConstraint(ModelVisitor::kLess, this);
   }
@@ -236,11 +227,8 @@ class RangeGreater : public Constraint {
   virtual string DebugString() const;
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kGreater, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kLeftArgument,
-                                            left_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kRightArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
                                             right_);
     visitor->EndVisitConstraint(ModelVisitor::kGreater, this);
   }
@@ -288,11 +276,8 @@ class DiffVar : public Constraint {
   virtual string DebugString() const;
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kNonEqual, this);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kLeftArgument,
-                                            left_);
-    visitor->VisitIntegerExpressionArgument(this,
-                                            ModelVisitor::kRightArgument,
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
                                             right_);
     visitor->EndVisitConstraint(ModelVisitor::kNonEqual, this);
   }
