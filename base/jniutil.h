@@ -11,15 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_JNI_UTIL_H_
-#define OR_TOOLS_BASE_JNI_UTIL_H_
+#ifndef OR_TOOLS_BASE_JNIUTIL_H_
+#define OR_TOOLS_BASE_JNIUTIL_H_
 
 #include <jni.h>
 #include <string>
 #include "base/logging.h"
 
 class JNIUtil {
-public:
+ public:
   // Creates a java jstring from a null-terminated UTF-8 encoded C String
   // The caller must delete the jstring reference
   static jstring MakeJString(JNIEnv* env, const char* cstr) {
@@ -63,4 +63,4 @@ public:
   }
 };
 
-#endif  // OR_TOOLS_BASE_JNI_UTIL_H_
+#endif  // OR_TOOLS_BASE_JNIUTIL_H_
