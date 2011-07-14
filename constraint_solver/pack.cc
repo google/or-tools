@@ -339,12 +339,14 @@ string Pack::DebugString() const {
 
 void Pack::Accept(ModelVisitor* const visitor) const {
   visitor->BeginVisitConstraint(ModelVisitor::kPack, this);
-    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.get(),
-                                               vsize_);
-    visitor->VisitIntegerArgument(ModelVisitor::kSizeArgument, bins_);
-    // TODO(user): VISITOR add dimensions.
-    visitor->EndVisitConstraint(ModelVisitor::kPack, this);
+  visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                             vars_.get(),
+ 	                                            vsize_);
+  visitor->VisitIntegerArgument(ModelVisitor::kSizeArgument, bins_);
+  for (int i = 0; i < dims_.size(); ++i) {
+    dims_[i]->Accept(this);
+  }
+  visitor->EndVisitConstraint(ModelVisitor::kPack, this);
 }
 
 void Pack::SetImpossible(int64 var_index, int64 bin_index) {
