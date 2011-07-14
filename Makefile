@@ -18,10 +18,10 @@ include Makefile.def
 # Then include specific system commands and definitions
 include Makefile.$(SYSTEM)
 
-# Include build files.
-include Makefile.build.cpp
-include Makefile.build.python
-include Makefile.build.java
+# Include .mk files.
+include Makefile.cpp.mk
+include Makefile.python.mk
+include Makefile.java.mk
 
 # Finally include user makefile if it exists
 -include Makefile.user
