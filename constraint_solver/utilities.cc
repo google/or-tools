@@ -283,7 +283,7 @@ class PrintModelVisitor : public ModelVisitor {
       }
       StringAppendF(&array, "%lld", values[i]);
     }
-    LOG(INFO) << Spaces() << arg_name << ": " << array;;
+    LOG(INFO) << Spaces() << arg_name << ": " << array;
   }
 
   virtual void VisitIntegerExpressionArgument(
