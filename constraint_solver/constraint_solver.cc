@@ -1275,7 +1275,8 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       greater_equal_var_cst_cache_(NULL),
       less_equal_var_cst_cache_(NULL),
       fail_decision_(new FailDecision()),
-      constraints_(0) {
+      constraint_index_(0),
+      additional_constraint_index_(0) {
   Init();
 }
 
@@ -1308,7 +1309,8 @@ Solver::Solver(const string& name)
       greater_equal_var_cst_cache_(NULL),
       less_equal_var_cst_cache_(NULL),
       fail_decision_(new FailDecision()),
-      constraints_(0) {
+      constraint_index_(0),
+      additional_constraint_index_(0) {
   Init();
 }
 
@@ -1357,6 +1359,9 @@ string Solver::DebugString() const {
   switch (state_) {
     case OUTSIDE_SEARCH:
       out += "OUTSIDE_SEARCH";
+      break;
+    case IN_ROOT_NODE:
+      out += "IN_ROOT_NODE";
       break;
     case IN_SEARCH:
       out += "IN_SEARCH";
@@ -1468,12 +1473,15 @@ MarkerType Solver::PopState(StateInfo* info) {
 void Solver::check_alloc_state() {
   switch (state_) {
     case OUTSIDE_SEARCH:
+    case IN_ROOT_NODE:
     case IN_SEARCH:
     case NO_MORE_SOLUTIONS:
     case PROBLEM_INFEASIBLE:
       break;
     case AT_SOLUTION:
       LOG(FATAL) << "allocating at a leaf node";
+    default:
+      LOG(FATAL) << "This switch was supposed to be exhaustive, but it is not!";
   }
 }
 
@@ -1533,6 +1541,15 @@ void Solver::clear_queue_action_on_fail() {
 void Solver::AddConstraint(Constraint* const c) {
   if (state_ == IN_SEARCH) {
     queue_->AddConstraint(c);
+  } else if (state_ == IN_ROOT_NODE) {
+    DCHECK_GE(constraint_index_, 0);
+    DCHECK_LE(constraint_index_, constraints_list_.size());
+    const int constraint_parent =
+        constraint_index_ == constraints_list_.size() ?
+        additional_constraints_parent_list_[additional_constraint_index_] :
+        constraint_index_;
+    additional_constraints_list_.push_back(c);
+    additional_constraints_parent_list_.push_back(constraint_parent);
   } else {
     if (FLAGS_cp_show_constraints) {
       LOG(INFO) << c->DebugString();
@@ -1551,6 +1568,8 @@ void Solver::Accept(ModelVisitor* const visitor) const {
 }
 
 void Solver::ProcessConstraints() {
+  // Both constraints_list_ and additional_constraints_list_ are used in
+  // a FIFO way.
   if (FLAGS_cp_print_model) {
     ModelVisitor* const visitor = MakePrintModelVisitor();
     Accept(visitor);
@@ -1560,10 +1579,32 @@ void Solver::ProcessConstraints() {
     Accept(visitor);
   }
 
-  for (constraints_ = 0;
-       constraints_ < constraints_list_.size();
-       ++constraints_) {
-    Constraint* const constraint = constraints_list_[constraints_];
+  // Clear state before processing constraints.
+  const int constraints_size = constraints_list_.size();
+  additional_constraints_list_.clear();
+  additional_constraints_parent_list_.clear();
+
+  // Process constraints from the model.
+  for (constraint_index_ = 0;
+       constraint_index_ < constraints_size;
+       ++constraint_index_) {
+    Constraint* const constraint = constraints_list_[constraint_index_];
+    if (parameters_.profile_level != SolverParameters::NO_PROFILING) {
+      DemonMonitorStartInitialPropagation(demon_monitor_, constraint);
+    }
+    constraint->PostAndPropagate();
+    if (parameters_.profile_level != SolverParameters::NO_PROFILING) {
+      DemonMonitorEndInitialPropagation(demon_monitor_, constraint);
+    }
+  }
+  CHECK_EQ(constraints_list_.size(), constraints_size);
+
+  // Process nested constraints added during the previous step.
+  for (int additional_constraint_index_ = 0;
+       additional_constraint_index_ < additional_constraints_list_.size();
+       ++additional_constraint_index_) {
+    Constraint* const constraint =
+        additional_constraints_list_[additional_constraint_index_];
     if (parameters_.profile_level != SolverParameters::NO_PROFILING) {
       DemonMonitorStartInitialPropagation(demon_monitor_, constraint);
     }
@@ -1696,7 +1737,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
   CHECK_NOTNULL(db);
   DCHECK_GE(size, 0);
 
-  if (state_ == IN_SEARCH) {
+  if (state_ == IN_SEARCH || state_ == IN_ROOT_NODE) {
     LOG(FATAL) << "Use NestedSolve() inside search";
   }
   // Check state and go to OUTSIDE_SEARCH.
@@ -1927,6 +1968,7 @@ bool Solver::NextSolution() {
       case OUTSIDE_SEARCH: {
         search->BeginInitialPropagation();
         CP_TRY(search) {
+          state_ = IN_ROOT_NODE;
           ProcessConstraints();
           search->EndInitialPropagation();
           PushSentinel(ROOT_NODE_SENTINEL);
@@ -1941,6 +1983,9 @@ bool Solver::NextSolution() {
         break;
       }
       case IN_SEARCH:  // Usually after a RestartSearch
+        break;
+      case IN_ROOT_NODE:
+        LOG(FATAL) << "Should not happen";
         break;
     }
   }
@@ -2072,7 +2117,7 @@ void Solver::EndSearch() {
 
 bool Solver::CheckAssignment(Assignment* const solution) {
   CHECK(solution);
-  if (state_ == IN_SEARCH) {
+  if (state_ == IN_SEARCH || state_ == IN_ROOT_NODE) {
     LOG(FATAL) << "Use NestedSolve() inside search";
   }
   // Check state and go to OUTSIDE_SEARCH.
@@ -2090,17 +2135,20 @@ bool Solver::CheckAssignment(Assignment* const solution) {
   PushSentinel(INITIAL_SEARCH_SENTINEL);
   search->BeginInitialPropagation();
   CP_TRY(search) {
+    state_ = IN_ROOT_NODE;
     DecisionBuilder * const restore = MakeRestoreAssignment(solution);
     restore->Next(this);
     ProcessConstraints();
     search->EndInitialPropagation();
     BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
     search->ClearBuffer();
-    // TODO(user): Why INFEASIBLE?
-    state_ = PROBLEM_INFEASIBLE;
+    state_ = OUTSIDE_SEARCH;
     return true;
   } CP_ON_FAIL {
-    Constraint* const ct = constraints_list_[constraints_];
+    const int index = constraint_index_ < constraints_list_.size() ?
+        constraint_index_ :
+        additional_constraints_parent_list_[additional_constraint_index_];
+    Constraint* const ct = constraints_list_[index];
     if (ct->name().empty()) {
       LOG(INFO) << "Failing constraint = " << ct->DebugString();
     } else {
@@ -2306,7 +2354,7 @@ const char ModelVisitor::kIsLessOrEqual[] = "IsLessOrEqual";
 const char ModelVisitor::kIsMember[] = "IsMember;";
 const char ModelVisitor::kLess[] = "Less";
 const char ModelVisitor::kLessOrEqual[] = "LessOrEqual";
-const char ModelVisitor::kLinkExprVar[] = "CastConstraint";
+const char ModelVisitor::kLinkExprVar[] = "CastExpressionIntoVar";
 const char ModelVisitor::kMapDomain[] = "MapDomain";
 const char ModelVisitor::kMax[] = "Max";
 const char ModelVisitor::kMaxEqual[] = "MaxEqual";

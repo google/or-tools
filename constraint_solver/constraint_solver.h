@@ -307,6 +307,7 @@ class Solver {
   // This enum represents the state of the solver w.r.t. the search.
   enum SolverState {
     OUTSIDE_SEARCH,     // Before search, after search.
+    IN_ROOT_NODE,       // Executing the root node.
     IN_SEARCH,          // Executing the search code.
     AT_SOLUTION,        // After successful NextSolution and before EndSearch.
     NO_MORE_SOLUTIONS,  // After failed NextSolution and before EndSearch.
@@ -2181,22 +2182,22 @@ class Solver {
     random_.Reset(seed);
   }
 
-  // Add a fail hook, that is an action that will be called after each failure.
+  // Adds a fail hook, that is an action that will be called after each failure.
   void AddFailHook(Action* a);
 
-  // This method exports the profiling information in a human readable overview.
+  // Exports the profiling information in a human readable overview.
   // The parameter profile_level used to create the solver must be
   // different from NO_PROFILING.
   void ExportProfilingOverview(const string& filename);
 
-  // This functions returns true wether the current search has been
+  // Returns true wether the current search has been
   // created using a Solve() call instead of a NewSearch 0ne. It
   // returns false if the solver is not is search at all.
   bool CurrentlyInSolve() const;
 
   // Counts the number of constraints that have been added
   // to the solver before the search,
-  int constraints() const { return constraints_; }
+  int constraints() const { return constraints_list_.size(); }
 
   // Accepts the given model visitor.
   void Accept(ModelVisitor* const visitor) const;
@@ -2297,6 +2298,8 @@ class Solver {
   scoped_ptr<Queue> queue_;
   scoped_ptr<Trail> trail_;
   std::vector<Constraint*> constraints_list_;
+  std::vector<Constraint*> additional_constraints_list_;
+  std::vector<int> additional_constraints_parent_list_;
   SolverState state_;
   int64 branches_;
   int64 fails_;
@@ -2331,7 +2334,8 @@ class Solver {
   GreaterEqualCstCache* greater_equal_var_cst_cache_;
   LessEqualCstCache* less_equal_var_cst_cache_;
   scoped_ptr<Decision> fail_decision_;
-  int constraints_;
+  int constraint_index_;
+  int additional_constraint_index_;
 
   DISALLOW_COPY_AND_ASSIGN(Solver);
 };
