@@ -341,7 +341,7 @@ void Pack::Accept(ModelVisitor* const visitor) const {
   visitor->BeginVisitConstraint(ModelVisitor::kPack, this);
   visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                              vars_.get(),
- 	                                            vsize_);
+                                             vsize_);
   visitor->VisitIntegerArgument(ModelVisitor::kSizeArgument, bins_);
   for (int i = 0; i < dims_.size(); ++i) {
     dims_[i]->Accept(visitor);
