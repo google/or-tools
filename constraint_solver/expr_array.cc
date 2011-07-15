@@ -2626,7 +2626,7 @@ Constraint* Solver::MakeSumEquality(IntVar* const* vars,
                                                MakeIntConst(cst)));
     }
   } else {
-    return MakeEquality(MakeSum(vars, size), cst);
+    return RevAlloc(new SumConstraint(this, vars, size, MakeIntConst(cst)));
   }
 }
 
