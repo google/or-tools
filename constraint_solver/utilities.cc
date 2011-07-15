@@ -235,36 +235,30 @@ class PrintModelVisitor : public ModelVisitor {
 
   virtual void BeginVisitConstraint(const string& type_name,
                                     const Constraint* const constraint) {
-    LOG(INFO) << Spaces() << "Constraint " << type_name << " {";
+    LOG(INFO) << Spaces() << type_name;
     Increase();
   }
 
   virtual void EndVisitConstraint(const string& type_name,
                                   const Constraint* const constraint) {
     Decrease();
-    LOG(INFO) << Spaces() << "}";
   }
 
   virtual void BeginVisitIntegerExpression(const string& type_name,
                                            const IntExpr* const expr) {
-    LOG(INFO) << Spaces() << "IntExpr " << type_name << " {";
+    LOG(INFO) << Spaces() << type_name;
     Increase();
   }
 
   virtual void EndVisitIntegerExpression(const string& type_name,
                                          const IntExpr* const expr) {
     Decrease();
-    LOG(INFO) << Spaces() << "}";
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
                                     const IntExpr* const delegate) {
     if (delegate != NULL) {
-      LOG(INFO) << Spaces() << "CastToVar<";
-      Increase();
       delegate->Accept(this);
-      Decrease();
-      LOG(INFO) << Spaces() << ">";
     } else {
       LOG(INFO) << Spaces() << variable->DebugString();
     }
@@ -278,17 +272,23 @@ class PrintModelVisitor : public ModelVisitor {
   virtual void VisitIntegerArrayArgument(const string& arg_name,
                                          const int64* const values,
                                          int size) {
-    LOG(INFO) << Spaces() << arg_name << ": array";
+    string array = "[";
+    for (int i = 0; i < size; ++i) {
+      if (i != 0) {
+        array.append(", ");
+      }
+      StringAppendF(&array, "%lld", values[i]);
+    }
+    LOG(INFO) << Spaces() << arg_name << ": " << array;;
   }
 
   virtual void VisitIntegerExpressionArgument(
       const string& arg_name,
       const IntExpr* const argument) {
-    LOG(INFO) << Spaces() << arg_name << ": [";
+    set_prefix(StringPrintf("%s: ", arg_name.c_str()));
     Increase();
     argument->Accept(this);
     Decrease();
-    LOG(INFO) << Spaces() << "]";
   }
 
   virtual void VisitIntegerVariableArrayArgument(
@@ -307,13 +307,22 @@ class PrintModelVisitor : public ModelVisitor {
   // Visit interval argument.
   virtual void VisitIntervalArgument(const string& arg_name,
                                      const IntervalVar* const argument) {
-    LOG(INFO) << "Not Implemented";
+    set_prefix(StringPrintf("%s: ", arg_name.c_str()));
+    Increase();
+    argument->Accept(this);
+    Decrease();
   }
 
   virtual void VisitIntervalArgumentArray(const string& arg_name,
-                                          const IntervalVar* const * argument,
+                                          const IntervalVar* const * arguments,
                                           int size) {
-    LOG(INFO) << "Not Implemented";
+    LOG(INFO) << Spaces() << arg_name << ": [";
+    Increase();
+    for (int i = 0; i < size; ++i) {
+      arguments[i]->Accept(this);
+    }
+    Decrease();
+    LOG(INFO) << Spaces() << "]";
   }
 
  private:
@@ -327,13 +336,22 @@ class PrintModelVisitor : public ModelVisitor {
 
   string Spaces() {
     string result;
-    for (int i = 0; i < indent_; ++i) {
+    for (int i = 0; i < indent_ - 2 * (!prefix_.empty()); ++i) {
       result.append(" ");
+    }
+    if (!prefix_.empty()) {
+      result.append(prefix_);
+      prefix_ = "";
     }
     return result;
   }
 
+  void set_prefix(const string& prefix) {
+    prefix_ = prefix;
+  }
+
   int indent_;
+  string prefix_;
 };
 
 ModelVisitor* Solver::MakePrintModelVisitor() {
