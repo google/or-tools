@@ -260,7 +260,11 @@ class PrintModelVisitor : public ModelVisitor {
     if (delegate != NULL) {
       delegate->Accept(this);
     } else {
-      LOG(INFO) << Spaces() << variable->DebugString();
+      if (variable->Bound() && variable->name().empty()) {
+        LOG(INFO) << Spaces() << variable->Min();
+      } else {
+        LOG(INFO) << Spaces() << variable->DebugString();
+      }
     }
   }
 
