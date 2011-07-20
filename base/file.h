@@ -26,7 +26,7 @@ class File {
   // Opens file "name" with flags specified by "flag"
   static File* Open(const char* const name, const char* const flag);
 
-# ifndef SWIG  // no overloading
+#ifndef SWIG  // no overloading
   inline static File* Open(const std::string& name, const char* const mode) {
     return Open(name.c_str(), mode);
   }
