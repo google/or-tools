@@ -30,7 +30,10 @@ class File {
   inline static File* Open(const std::string& name, const char* const mode) {
     return Open(name.c_str(), mode);
   }
-# endif
+#endif
+  inline static File* Create(const string& name, const char* const mode) {
+    return Open(name.c_str(), mode);
+  }
 
   // Opens file "name" with flags specified by "flag"
   // If open failed, program will exit.

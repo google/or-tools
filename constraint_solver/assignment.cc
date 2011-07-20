@@ -295,7 +295,7 @@ static const int kMagicNumber = 0x3ed7230a;
 
 bool Assignment::Load(const string& filename) {
   File::Init();
-  File* file = File::Open(filename, "r");
+  File* file = File::Create(filename, "r");
   if (file == NULL || !file->Open()) {
     LOG(INFO) << "Cannot open " << filename;
     return false;
@@ -394,7 +394,7 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
 
 bool Assignment::Save(const string& filename) {
   File::Init();
-  File* file = File::Open(filename, "w");
+  File* file = File::Create(filename, "w");
   if (file == NULL || !file->Open()) {
     LOG(INFO) << "Cannot open " << filename;
     return false;
