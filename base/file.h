@@ -31,8 +31,8 @@ class File {
     return Open(name.c_str(), mode);
   }
 #endif
-  inline static File* Create(const string& name, const char* const mode) {
-    return Open(name.c_str(), mode);
+  inline static File* Create(const std::string& name, const char* const mode) {
+    return File::Open(name.c_str(), mode);
   }
 
   // Opens file "name" with flags specified by "flag"
