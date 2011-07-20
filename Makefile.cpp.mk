@@ -356,6 +356,7 @@ $(LIBPREFIX)algorithms.$(LIBSUFFIX): $(ALGORITHMS_LIB_OS)
 BASE_LIB_OS=\
 	objs/bitmap.$O\
 	objs/callback.$O\
+	objs/file.$O\
 	objs/join.$O\
 	objs/logging.$O\
 	objs/random.$O\
@@ -368,6 +369,8 @@ objs/bitmap.$O:base/bitmap.cc
 	$(CCC) $(CFLAGS) -c base/bitmap.cc $(OBJOUT)objs/bitmap.$O
 objs/callback.$O:base/callback.cc
 	$(CCC) $(CFLAGS) -c base/callback.cc $(OBJOUT)objs/callback.$O
+objs/file.$O:base/file.cc
+	$(CCC) $(CFLAGS) -c base/file.cc $(OBJOUT)objs/file.$O
 objs/logging.$O:base/logging.cc
 	$(CCC) $(CFLAGS) -c base/logging.cc $(OBJOUT)objs/logging.$O
 objs/join.$O:base/join.cc

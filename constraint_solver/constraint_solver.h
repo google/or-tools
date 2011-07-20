@@ -3701,7 +3701,14 @@ class Assignment : public PropagationBaseObject {
   void Store();
   void Restore();
 
+  // Loads an assignment from a file; does not add variables to the
+  // assignment (only the variables contained in the assignment are modified).
+  bool Load(const string& filename);
+  bool Load(File* file);
   void Load(const AssignmentProto& proto);
+  // Saves the assignment to a file.
+  bool Save(const string& filename);
+  bool Save(File* file);
   void Save(AssignmentProto* const proto);
 
   void AddObjective(IntVar* const v);

@@ -16,16 +16,14 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
+#include "base/file.h"
 #include "base/stl_util-inl.h"
-#include <iostream>
-#include <fstream>
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/demon_profiler.pb.h"
 
 namespace operations_research {
 // ------------ Demon Info -----------
 class DemonProfiler;
-
 
 class DemonProfilerTest;
 
@@ -144,11 +142,8 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
         "    - Demon: %s\n             invocations=%" GG_LL_FORMAT
         "d, failures=%" GG_LL_FORMAT "d, total runtime=%" GG_LL_FORMAT
         "d us, [average=%.2lf, median=%.2lf, stddev=%.2lf]\n";
-    std::ofstream file(filename.c_str());
-    if (!file.is_open()) {
-      LG << "Failed to gain write access to file: " << filename;
-    } else {
-
+    File* const file = File::Open(filename, "w");
+    if (file) {
       for (hash_map<const Constraint*, ConstraintRuns*>::const_iterator it =
                constraint_map_.begin();
            it != constraint_map_.end();
@@ -172,7 +167,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
                          demon_count,
                          demon_invocations,
                          total_demon_runtime);
-        file << constraint_message;
+        file->Write(constraint_message.c_str(), constraint_message.length());
         const std::vector<DemonRuns*>& demons = demons_per_constraint_[it->first];
         const int demon_size = demons.size();
         for (int demon_index = 0; demon_index < demon_size; ++demon_index) {
@@ -198,11 +193,11 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
                                            mean_runtime,
                                            median_runtime,
                                            standard_deviation);
-          file << runs;
+          file->Write(runs.c_str(), runs.length());
         }
       }
     }
-    file.close();
+    file->Close();
   }
 
   // Restarts a search and clears all previously collected information.
@@ -297,6 +292,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
       *stddev_demon_runtime = sqrt(total_deviation / runtimes.size());
     }
   }
+
  private:
   const Constraint* active_constraint_;
   const Demon* active_demon_;
@@ -332,6 +328,7 @@ class DemonProfiler : public Demon {
   string DebugString() const {
     return StringPrintf("demon_profiler<%s>", demon_->DebugString().c_str());
   }
+
  private:
   Demon* const demon_;
   DemonMonitor* const monitor_;
