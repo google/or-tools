@@ -18,12 +18,13 @@
 #include <cstdio>
 #include <string>
 
-// This file define some IO interfaces to compatible with Google
+// This file defines some IO interfaces to compatible with Google
 // IO specifications.
 namespace operations_research {
 class File {
  public:
-  // Opens file "name" with flags specified by "flag"
+  // Opens file "name" with flags specified by "flag".
+  // Flags are defined by fopen(), that is "r", "r+", "w", "w+". "a", and "a+".
   static File* Open(const char* const name, const char* const flag);
 
 #ifndef SWIG  // no overloading

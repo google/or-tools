@@ -18,16 +18,16 @@
 #include "base/file.h"
 #include "base/scoped_ptr.h"
 
-// This file define some IO interfaces to compatible with Google
+// This file defines some IO interfaces to compatible with Google
 // IO specifications.
 namespace operations_research {
-// This class appeds a protocol buffer to a file in a binary format.
+// This class appends a protocol buffer to a file in a binary format.
 class RecordWriter {
  public:
   // Magic number when writing and reading protocol buffers.
   static const int kMagicNumber;
 
-  RecordWriter(File* const file);
+  explicit RecordWriter(File* const file);
   template <class P> bool WriteProtocolMessage(const P& proto) {
     std::string compressed_buffer;
     proto.SerializeToString(&compressed_buffer);
@@ -44,6 +44,7 @@ class RecordWriter {
     }
     return true;
   }
+  // Closes the underlying file.
   bool Close();
 
  private:
@@ -53,7 +54,7 @@ class RecordWriter {
 // This class reads a protocol buffer from a file.
 class RecordReader {
  public:
-  RecordReader(File* const file);
+  explicit RecordReader(File* const file);
   template <class P> bool ReadProtocolMessage(P* const proto) {
     int size = 0;
     int magic_number = 0;
@@ -74,6 +75,7 @@ class RecordReader {
     proto->ParseFromString(buffer.get());
     return true;
   }
+  // Closes the underlying file.
   bool Close();
 
  private:
