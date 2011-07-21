@@ -17,6 +17,7 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/file.h"
+#include "base/recordio.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
 #include "constraint_solver/assignment.pb.h"
@@ -290,7 +291,6 @@ void LoadElement(const hash_map<string, E*>& id_to_element_map,
   }
 }
 
-static const int kMagicNumber = 0x3ed7230a;
 }  // namespace
 
 bool Assignment::Load(const string& filename) {
@@ -306,25 +306,13 @@ bool Assignment::Load(const string& filename) {
 bool Assignment::Load(File* file) {
   CHECK(file != NULL);
   AssignmentProto assignment_proto;
-  int size = 0;
-  int magic_number = 0;
-  if (file->Read(&magic_number, sizeof(magic_number)) !=
-      sizeof(magic_number)) {
+  RecordReader reader(file);
+  if (!reader.ReadProtocolMessage(&assignment_proto)) {
+    LOG(INFO) << "No assignment found in " << file->CreateFileName();
     return false;
   }
-  if (magic_number != kMagicNumber) {
-    return false;
-  }
-  if (file->Read(&size, sizeof(size)) != sizeof(size)) {
-    return false;
-  }
-  scoped_ptr<char> buffer(new char[size]);
-  if (file->Read(buffer.get(), size) != size) {
-    return false;
-  }
-  assignment_proto.ParseFromString(buffer.get());
   Load(assignment_proto);
-  return file->Close();
+  return reader.Close();
 }
 
 void Assignment::Load(const AssignmentProto& assignment_proto) {
@@ -406,20 +394,8 @@ bool Assignment::Save(File* file) {
   CHECK(file != NULL);
   AssignmentProto assignment_proto;
   Save(&assignment_proto);
-  string compressed_buffer;
-  assignment_proto.SerializeToString(&compressed_buffer);
-  const int size = compressed_buffer.length();
-  if (file->Write(&kMagicNumber, sizeof(kMagicNumber)) !=
-      sizeof(kMagicNumber)) {
-    return false;
-  }
-  if (file->Write(&size, sizeof(size)) != sizeof(size)) {
-    return false;
-  }
-  if (file->Write(compressed_buffer.c_str(), size) != size) {
-    return false;
-  }
-  return file->Close();
+  RecordWriter writer(file);
+  return writer.WriteProtocolMessage(assignment_proto) && writer.Close();
 }
 
 void Assignment::Save(AssignmentProto* const assignment_proto) {
