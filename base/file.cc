@@ -14,7 +14,13 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#if defined(_MSC_VER)
+#include <io.h>
+#define access _access
+#define F_OK 0
+#else
 #include <unistd.h>
+#endif
 
 #include <string>
 
