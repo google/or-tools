@@ -283,6 +283,7 @@ class PrintModelVisitor : public ModelVisitor {
       }
       StringAppendF(&array, "%lld", values[i]);
     }
+    array.append("]");
     LOG(INFO) << Spaces() << arg_name << ": " << array;
   }
 
