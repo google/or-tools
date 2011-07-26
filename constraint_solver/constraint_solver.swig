@@ -22,6 +22,10 @@
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 
+DECLARE_bool(cp_trace_demons);
+DECLARE_bool(cp_print_model);
+DECLARE_bool(cp_model_stats);
+
 struct FailureProtect {
   jmp_buf exception_buffer;
   void JumpBack() {
@@ -216,6 +220,17 @@ class PyLNS : public BaseLNS {
 
 namespace operations_research {
 %pythoncode {
+import gflags
+FLAGS=gflags.FLAGS
+gflags.DEFINE_boolean('cp_trace_demons', False,
+                      'trace all demon executions.')
+gflags.DEFINE_boolean('cp_print_model', False,
+                      'prints the model before solving it.')
+gflags.DEFINE_boolean('cp_model_stats', False,
+                      'displays model statistics before solving it.')
+}
+%pythoncode {
+
 class PyDecisionBuilder(object):
   def NextWrapper(self, solver):
     result = None
@@ -840,7 +855,22 @@ namespace operations_research {
 // Add display methods on Solver and remove DebugString method.
 %ignore Solver::DebugString;
 
+%feature("pythonappend") Solver::Solver %{
+        Solver.SetPythonFlags(FLAGS.cp_trace_demons,
+                              FLAGS.cp_print_model,
+                              FLAGS.cp_model_stats)
+%}
+
+
 %extend Solver {
+static void SetPythonFlags(bool trace_demon,
+                             bool print_model,
+                             bool model_stats) {
+    FLAGS_cp_trace_demons = trace_demon;
+    FLAGS_cp_print_model = print_model;
+    FLAGS_cp_model_stats = model_stats;
+  }
+
   Constraint* TreeNoCycle(const std::vector<IntVar*>& nexts,
                           const std::vector<IntVar*>& active,
                           ResultCallback1<bool, int64>* callback = NULL) {
