@@ -52,8 +52,8 @@
 // the algorithm (see below). For those who want to know the details, the height
 // of a node, corresponds to a reduced cost, and this enables one to prove that
 // the algorithm actually computes the max flow. Note that the height of a node
-// can be initialized to the to the target node in terms of number of nodes.
-// This has not been tried in this implementation.
+// can be initialized to the distance to the target node in terms of number of
+// nodes. This has not been tried in this implementation.
 //
 // A node v is said to be *active* if excess(v) > 0.
 // In this case the following operations can be applied to it:
