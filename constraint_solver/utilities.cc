@@ -158,6 +158,8 @@ bool RevBitSet::IsCardinalityOne() const {
           return false;
         }
         found_one = true;
+      } else {
+        return false;
       }
     }
   }
