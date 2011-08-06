@@ -62,13 +62,14 @@ template<class T, int NumBytes> class PackedArrayAllocator {
         size_in_bytes_(0),
         storage_() {}
   // Reserves memory for new minimum and new maximum indices.
+  // Returns true if the memory could be reserved.
   // Never shrinks the memory allocated.
-  void Reserve(int64 new_min_index, int64 new_max_index) {
+  bool Reserve(int64 new_min_index, int64 new_max_index) {
     DCHECK_LE(new_min_index, new_max_index);
     if (base_ != NULL
         && new_min_index >= min_index_
         && new_max_index <= max_index_) {
-      return;
+      return true;
     }
     DCHECK(base_ == NULL || new_min_index <= min_index_);
     DCHECK(base_ == NULL || new_max_index >= max_index_);
@@ -79,6 +80,9 @@ template<class T, int NumBytes> class PackedArrayAllocator {
     const uint64 new_size_in_bytes = new_size * NumBytes
                                    + sizeof(int64) - NumBytes; // NOLINT
     byte* new_storage = new byte[new_size_in_bytes];
+    if (new_storage == NULL) {
+      return false;
+    }
 
     byte* const new_base = new_storage - new_min_index * NumBytes;
     if (base_ != NULL) {
@@ -91,6 +95,7 @@ template<class T, int NumBytes> class PackedArrayAllocator {
     max_index_ = new_max_index;
     size_in_bytes_ = new_size_in_bytes;
     storage_.reset(reinterpret_cast<T*>(new_storage));
+    return true;
   }
 
   int64 min_index() const { return min_index_; }
@@ -127,7 +132,10 @@ template<int NumBytes> class PackedArray {
   // These can be positive or negative, and the value for minimum_index
   // and for maximun_index can be set and read (i.e. the bounds are inclusive.)
   PackedArray(int64 min_index, int64 max_index) : allocator_() {
-    Reserve(min_index, max_index);
+    if (!Reserve(min_index, max_index)) {
+      LOG(DFATAL) << "Could not reserve memory for indices ranging from "
+                  << min_index << " to " << max_index;
+    }
   }
 
   ~PackedArray() {}
@@ -197,8 +205,8 @@ template<int NumBytes> class PackedArray {
 
   // Reserves memory for new minimum and new maximum indices.
   // Never shrinks the memory allocated.
-  void Reserve(int64 new_min_index, int64 new_max_index) {
-    allocator_.Reserve(new_min_index, new_max_index);
+  bool Reserve(int64 new_min_index, int64 new_max_index) {
+    return allocator_.Reserve(new_min_index, new_max_index);
   }
 
   // Sets all the elements in the array to value. Set is bypassed to maximize
@@ -238,7 +246,10 @@ template<> class PackedArray<4> {
   PackedArray() : allocator_() {}
 
   PackedArray(int64 min_index, int64 max_index) : allocator_() {
-    Reserve(min_index, max_index);
+    if (!Reserve(min_index, max_index)) {
+      LOG(DFATAL) << "Could not reserve memory for indices ranging from "
+                  << min_index << " to " << max_index;
+    }
   }
 
   int64 min_index() const { return allocator_.min_index(); }
@@ -269,9 +280,10 @@ template<> class PackedArray<4> {
   }
 
   // Reserves memory for new minimum and new maximum indices.
+  // Returns true if the memory could be reserved.
   // Never shrinks the memory allocated.
-  void Reserve(int64 new_min_index, int64 new_max_index) {
-    allocator_.Reserve(new_min_index, new_max_index);
+  bool Reserve(int64 new_min_index, int64 new_max_index) {
+    return allocator_.Reserve(new_min_index, new_max_index);
   }
 
   // Sets all the elements in the array to value.
@@ -300,7 +312,10 @@ template<> class PackedArray<8> {
   PackedArray() : allocator_() {}
 
   PackedArray(int64 min_index, int64 max_index) : allocator_() {
-    Reserve(min_index, max_index);
+    if (!Reserve(min_index, max_index)) {
+      LOG(DFATAL) << "Could not reserve memory for indices ranging from "
+                  << min_index << " to " << max_index;
+    }
   }
 
   int64 min_index() const { return allocator_.min_index(); }
@@ -329,9 +344,10 @@ template<> class PackedArray<8> {
   }
 
   // Reserves memory for new minimum and new maximum indices.
+  // Returns true if the memory could be reserved.
   // Never shrinks the memory allocated.
-  void Reserve(int64 new_min_index, int64 new_max_index) {
-    allocator_.Reserve(new_min_index, new_max_index);
+  bool Reserve(int64 new_min_index, int64 new_max_index) {
+    return allocator_.Reserve(new_min_index, new_max_index);
   }
 
   // Sets all the elements in the array to value.

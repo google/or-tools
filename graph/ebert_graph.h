@@ -145,7 +145,10 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
         next_adjacent_arc_(),
         first_incident_arc_(),
         representation_clean_(true) {
-    Reserve(max_num_nodes, max_num_arcs);
+    if (!Reserve(max_num_nodes, max_num_arcs)) {
+      LOG(DFATAL) << "Could not reserve memory for " << max_num_nodes
+                  << " nodes and " << max_num_arcs << " arcs.";
+    }
     first_incident_arc_.Assign(kNilArc);
     next_adjacent_arc_.Assign(kNilArc);
     node_.Assign(kNilNode);
@@ -154,13 +157,16 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   ~EbertGraph() {}
 
   // Reserves memory needed for max_num_nodes nodes and max_num_arcs arcs.
+  // Returns false if the parameters passed are not OK.
   // It can be used to enlarge the graph, but does not shrink memory
   // if called with smaller values.
-  void Reserve(NodeIndex new_max_num_nodes, ArcIndex new_max_num_arcs) {
-    CHECK_LE(1, new_max_num_nodes);
-    CHECK_GE(kMaxNumNodes, new_max_num_nodes);
-    CHECK_LE(1, new_max_num_arcs);
-    CHECK_GE(kMaxNumArcs, new_max_num_arcs);
+  bool Reserve(NodeIndex new_max_num_nodes, ArcIndex new_max_num_arcs) {
+    if (new_max_num_nodes < 1 || new_max_num_nodes > kMaxNumNodes) {
+      return false;
+    }
+    if (new_max_num_arcs < 1 || new_max_num_arcs > kMaxNumArcs) {
+      return false;
+    }
     node_.Reserve(-new_max_num_arcs, new_max_num_arcs - 1);
     next_adjacent_arc_.Reserve(-new_max_num_arcs, new_max_num_arcs - 1);
     for (ArcIndex arc = -new_max_num_arcs; arc < -max_num_arcs_; ++arc) {
@@ -177,6 +183,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
     }
     max_num_nodes_ = new_max_num_nodes;
     max_num_arcs_ = new_max_num_arcs;
+    return true;
   }
 
   // Returns the number of nodes in the graph.
@@ -213,13 +220,18 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // over arrays of arc annotation information.
   ArcIndex max_end_arc_index() const { return kFirstArc + max_num_arcs_; }
 
+  // Returns true if node is in the range [kFirstNode .. max_num_nodes_).
+  bool IsNodeValid(NodeIndex node) const {
+    return node >= kFirstNode && node < max_num_nodes_;
+  }
+
   // Adds an arc to the graph and returns its index.
+  // Returns kNilArc if the arc could not be added.
   ArcIndex AddArc(NodeIndex tail, NodeIndex head) {
-    CHECK_LE(kFirstNode, tail);
-    CHECK_GT(max_num_nodes_, tail);
-    CHECK_LE(kFirstNode, head);
-    CHECK_GT(max_num_nodes_, head);
-    CHECK_GT(max_num_arcs_, num_arcs_);
+    if (num_arcs_ >= max_num_arcs_
+        || !IsNodeValid(tail) || !IsNodeValid(head)) {
+      return kNilArc;
+    }
     num_nodes_ = std::max(num_nodes_, tail + 1);
     num_nodes_ = std::max(num_nodes_, head + 1);
     ArcIndex arc = num_arcs_;
@@ -412,7 +424,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
       if (arc_ == kNilArc) {
         return true;  // This occurs when the iterator has reached the end.
       }
-      CHECK(graph_.IsIncident(arc_, node_));
+      DCHECK(graph_.IsIncident(arc_, node_));
       return true;
     }
     // A reference to the current EbertGraph considered.
@@ -468,7 +480,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
       if (arc_ == kNilArc) {
         return true;  // This occurs when the iterator has reached the end.
       }
-      CHECK(graph_.IsIncoming(arc_, node_));
+      DCHECK(graph_.IsIncoming(arc_, node_));
       return true;
     }
     // A reference to the current EbertGraph considered.
@@ -519,7 +531,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
       if (arc_ == kNilArc) {
         return true;  // This occurs when the iterator has reached the end.
       }
-      CHECK(graph_.IsOutgoing(arc_, node_));
+      DCHECK(graph_.IsOutgoing(arc_, node_));
       return true;
     }
 
@@ -537,10 +549,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // It is exported so that users of the EbertGraph class can use it.
   // To be used in a DCHECK.
   bool CheckArcBounds(const ArcIndex arc) const {
-    if (arc == kNilArc) return true;
-    CHECK_LE(-max_num_arcs_, arc);
-    CHECK_GT(max_num_arcs_, arc);
-    return true;
+    return (arc == kNilArc) || (arc >= -max_num_arcs_ && arc < max_num_arcs_);
   }
 
   // Utility function to check that an arc index is within the bounds AND
@@ -548,10 +557,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // It is exported so that users of the EbertGraph class can use it.
   // To be used in a DCHECK.
   bool CheckArcValidity(const ArcIndex arc) const {
-    CHECK_NE(kNilArc, arc);
-    CHECK_LE(-max_num_arcs_, arc);
-    CHECK_GT(max_num_arcs_, arc);
-    return true;
+    return (arc != kNilArc) && (arc >= -max_num_arcs_ && arc < max_num_arcs_);
   }
 
   // Utility function to check that a node index is within the bounds AND
@@ -559,9 +565,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   // It is exported so that users of the EbertGraph class can use it.
   // To be used in a DCHECK.
   bool CheckNodeValidity(const NodeIndex node) const {
-    CHECK_LE(kFirstNode, node);
-    CHECK_GT(max_num_nodes_, node);
-    return true;
+    return node >= kFirstNode && node < max_num_nodes_;
   }
 
   // Returns the tail or start-node of arc.

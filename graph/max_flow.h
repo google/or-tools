@@ -133,6 +133,8 @@ class MaxFlow {
 
   MaxFlow(const StarGraph* graph, NodeIndex source, NodeIndex target);
 
+  virtual ~MaxFlow() {}
+
   // Returns the graph associated to the current object.
   const StarGraph* graph() const { return graph_; }
 
@@ -189,7 +191,7 @@ class MaxFlow {
     }
   }
 
- private:
+ protected:
   // Returns true if arc is admissible.
   bool IsAdmissible(ArcIndex arc) const {
     return residual_arc_capacity_[arc] > 0
@@ -234,7 +236,7 @@ class MaxFlow {
 
   // Discharges an active node node by saturating its admissible adjacent arcs,
   // if any, and by relabelling it when it becomes inactive.
-  void Discharge(NodeIndex node);
+  virtual void Discharge(NodeIndex node);
 
   // Resets the first_admissible_arc_ array to the first incident arc of each
   // node.

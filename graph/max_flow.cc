@@ -13,8 +13,6 @@
 
 #include "graph/max_flow.h"
 
-#include <algorithm>
-
 #include "base/commandlineflags.h"
 #include "base/stringprintf.h"
 
@@ -71,7 +69,7 @@ void MaxFlow::SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity) {
   DCHECK(graph_->CheckArcValidity(arc));
   const FlowQuantity free_capacity = residual_arc_capacity_[arc];
   const FlowQuantity capacity_delta = new_capacity - Capacity(arc);
-  VLOG(1) << "Changing capacity on arc " << arc
+  VLOG(2) << "Changing capacity on arc " << arc
           << " from " << Capacity(arc) << " to " << new_capacity
           << ". Current free capacity = " << free_capacity;
   if (capacity_delta == 0) {
@@ -86,13 +84,13 @@ void MaxFlow::SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity) {
     //    reduction is not larger than the free capacity.
     residual_arc_capacity_.Set(arc, free_capacity + capacity_delta);
     DCHECK_LE(0, residual_arc_capacity_[arc]);
-    VLOG(1) << "Now: capacity = " << Capacity(arc) << " flow = " << Flow(arc);
+    VLOG(2) << "Now: capacity = " << Capacity(arc) << " flow = " << Flow(arc);
   } else {
     // We have to reduce the flow on the arc, and update the excesses
     // accordingly.
     const FlowQuantity flow = residual_arc_capacity_[Opposite(arc)];
     const FlowQuantity flow_excess = flow - new_capacity;
-    VLOG(1) << "Flow value " << flow << " exceeds new capacity "
+    VLOG(2) << "Flow value " << flow << " exceeds new capacity "
             << new_capacity << " by " << flow_excess;
     residual_arc_capacity_.Set(arc, 0);
     residual_arc_capacity_.Set(Opposite(arc), new_capacity);
@@ -100,7 +98,7 @@ void MaxFlow::SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity) {
     node_excess_.Set(head, node_excess_[head] + flow_excess);
     DCHECK_LE(0, residual_arc_capacity_[arc]);
     DCHECK_LE(0, residual_arc_capacity_[Opposite(arc)]);
-    VLOG(1) << DebugString("After SetArcCapacity:", arc);
+    VLOG(2) << DebugString("After SetArcCapacity:", arc);
   }
 }
 
@@ -224,14 +222,14 @@ void MaxFlow::InitializePreflow() {
     residual_arc_capacity_.Set(arc, 0);
     residual_arc_capacity_.Set(Opposite(arc), arc_capacity);
     node_excess_.Set(Head(arc), arc_capacity);
-    VLOG(1) << DebugString("InitializePreflow:", arc);
+    VLOG(2) << DebugString("InitializePreflow:", arc);
   }
 }
 
 void MaxFlow::PushFlow(FlowQuantity flow, ArcIndex arc) {
   DCHECK_GT(residual_arc_capacity_[arc], 0);
   DCHECK_GT(node_excess_[Tail(arc)], 0);
-  VLOG(1) << "PushFlow: pushing " << flow << " on arc " << arc
+  VLOG(2) << "PushFlow: pushing " << flow << " on arc " << arc
           << " from node " << Tail(arc) << " to node " << Head(arc);
   // Reduce the residual capacity on arc by flow.
   residual_arc_capacity_.Set(arc, residual_arc_capacity_[arc] - flow);
@@ -243,7 +241,7 @@ void MaxFlow::PushFlow(FlowQuantity flow, ArcIndex arc) {
   node_excess_.Set(tail, node_excess_[tail] - flow);
   const NodeIndex head = Head(arc);
   node_excess_.Set(head, node_excess_[head] + flow);
-  VLOG(2) << DebugString("PushFlow: ", arc);
+  VLOG(3) << DebugString("PushFlow: ", arc);
 }
 
 void MaxFlow::InitializeActiveNodeStack() {
@@ -252,7 +250,7 @@ void MaxFlow::InitializeActiveNodeStack() {
     const NodeIndex node = node_it.Index();
     if (IsActive(node)) {
       active_nodes_.push(node);
-      VLOG(1) << "InitializeActiveNodeStack: node " << node << " added.";
+      VLOG(2) << "InitializeActiveNodeStack: node " << node << " added.";
     }
   }
 }
@@ -263,7 +261,7 @@ void MaxFlow::Refine() {
     const NodeIndex node = active_nodes_.top();
     active_nodes_.pop();
     if (IsActive(node)) {
-      VLOG(1) << "Refine: calling Discharge for node " << node;
+      VLOG(2) << "Refine: calling Discharge for node " << node;
       Discharge(node);
     }
   }
@@ -271,17 +269,17 @@ void MaxFlow::Refine() {
 
 void MaxFlow::Discharge(NodeIndex node) {
   DCHECK(IsActive(node));
-  VLOG(1) << "Discharging node " << node << ", excess = " << node_excess_[node];
+  VLOG(2) << "Discharging node " << node << ", excess = " << node_excess_[node];
   while (IsActive(node)) {
     for (StarGraph::IncidentArcIterator arc_it(*graph_, node,
                                                first_admissible_arc_[node]);
          arc_it.Ok();
          arc_it.Next()) {
       const ArcIndex arc = arc_it.Index();
-      VLOG(2) << DebugString("Discharge: considering", arc);
+      VLOG(3) << DebugString("Discharge: considering", arc);
       if (IsAdmissible(arc)) {
         if (node_excess_[node] != 0) {
-          VLOG(1) << "Discharge: calling PushFlow.";
+          VLOG(2) << "Discharge: calling PushFlow.";
           const NodeIndex head = Head(arc);
           const bool head_active_before_push = IsActive(head);
           const FlowQuantity delta = std::min(node_excess_[node],
@@ -314,7 +312,7 @@ void MaxFlow::Relabel(NodeIndex node) {
       min_height = std::min(min_height, node_potential_[Head(arc)]);
     }
   }
-  VLOG(1) << "Relabel: height(" << node << ") relabeled from "
+  VLOG(2) << "Relabel: height(" << node << ") relabeled from "
           << node_potential_[node] << " to " << min_height + 1;
   node_potential_.Set(node, min_height + 1);
   first_admissible_arc_.Set(node, GetFirstIncidentArc(node));
