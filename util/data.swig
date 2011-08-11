@@ -405,6 +405,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
       long value = values[i];
       $1->push_back(value);
     }
+    jenv->ReleaseLongArrayElements((jlongArray)$input, values, JNI_ABORT);
   }
   else {
     SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null table");
@@ -430,6 +431,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
       int value = values[i];
       $1->push_back(value);
     }
+    jenv->ReleaseIntArrayElements((jintArray)$input, values, JNI_ABORT);
   }
   else {
     SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null table");
@@ -459,6 +461,8 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
       const int64 value = values[index2];
       result[index1].push_back(value);
     }
+    jenv->ReleaseLongArrayElements((jlongArray)inner_array, values, JNI_ABORT);
+    jenv->DeleteLocalRef(inner_array);
   }
   $1 = &result;
 }
