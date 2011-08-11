@@ -860,7 +860,7 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   bool representation_clean_;
 };
 
-#define MAX_LONGLONG_ON_BYTES(n) ((GG_LONGLONG(1) << (n * CHAR_BIT - 1)) - 1)
+#define MAX_LONGLONG_ON_BYTES(n) ((GG_ULONGLONG(1) << (n * CHAR_BIT - 1)) - 1)
 
 // The index of the 'nil' node in the graph.
 template<int NodeIndexSize, int ArcIndexSize>
