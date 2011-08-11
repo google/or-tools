@@ -390,7 +390,6 @@ namespace {
 
 // This template class is used internally to implement reversibility.
 // It stores an address and the value that was at the address.
-
 template <class T> struct addrval {
  public:
   addrval() : address_(NULL) {}

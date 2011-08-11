@@ -140,7 +140,6 @@ class SolutionPool;
 class Solver;
 class SymmetryBreaker;
 class UnequalityVarCstCache;
-class VariableQueueCleaner;
 struct StateInfo;
 struct Trail;
 template <class T> class SimpleRevFIFO;

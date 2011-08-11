@@ -3010,6 +3010,7 @@ void LocalSearch::PushLocalSearchDecision() {
       solver->RevAlloc(new NestedSolveDecision(find_neighbors, false)));
 }
 
+namespace {
 class DefaultSolutionPool : public SolutionPool {
  public:
   DefaultSolutionPool() : reference_assignment_(NULL) {}
@@ -3034,6 +3035,7 @@ class DefaultSolutionPool : public SolutionPool {
  private:
   scoped_ptr<Assignment> reference_assignment_;
 };
+}  // namespace
 
 SolutionPool* Solver::MakeDefaultSolutionPool() {
   return RevAlloc(new DefaultSolutionPool());

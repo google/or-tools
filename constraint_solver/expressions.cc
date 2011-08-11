@@ -4337,7 +4337,7 @@ void BaseIntExpr::AddDelegateName(const string& prefix,
 }
 
 // ----- Utilities -----
-
+namespace {
 // Variable-based queue cleaner. It is used to put a domain int var in
 // a clean state after a failure occuring during its process() method.
 class VariableQueueCleaner : public Action {
@@ -4356,6 +4356,7 @@ class VariableQueueCleaner : public Action {
  private:
   DomainIntVar* var_;
 };
+}  //  namespace
 
 Action* NewDomainIntVarCleaner() {
   return new VariableQueueCleaner;
