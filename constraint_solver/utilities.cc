@@ -294,6 +294,19 @@ class PrintModelVisitor : public ModelVisitor {
     }
   }
 
+  virtual void VisitIntervalVariable(const IntervalVar* const variable,
+                                     const string operation,
+                                     const IntervalVar* const * delegates,
+                                     int size) {
+    LOG(INFO) << Spaces() << operation << " <";
+    Increase();
+    for (int i = 0; i < size; ++i) {
+      delegates[i]->Accept(this);
+    }
+    Decrease();
+    LOG(INFO) << Spaces() << ">";
+  }
+
 
   // Variables.
   virtual void VisitIntegerArgument(const string& arg_name, int64 value) {
@@ -423,7 +436,8 @@ class ModelStatisticsVisitor : public ModelVisitor {
     num_variables_(0),
     num_expressions_(0),
     num_casts_(0),
-    num_intervals_(0) {}
+    num_intervals_(0),
+    num_extensions_(0) {}
 
   virtual ~ModelStatisticsVisitor() {}
 
@@ -435,7 +449,11 @@ class ModelStatisticsVisitor : public ModelVisitor {
     num_expressions_ = 0;
     num_casts_ = 0;
     num_intervals_ = 0;
+    num_extensions_ = 0;
     already_visited_.clear();
+    constraint_types_.clear();
+    expression_types_.clear();
+    extension_types_.clear();
   }
 
   virtual void EndVisitModel(const string& solver_name) {
@@ -456,6 +474,12 @@ class ModelStatisticsVisitor : public ModelVisitor {
     }
     LOG(INFO) << "  - " << num_casts_ << " expressions casted into variables.";
     LOG(INFO) << "  - " << num_intervals_ << " interval variables.";
+    LOG(INFO) << "  - " << num_extensions_ << " model extensions.";
+    for (ConstIter<hash_map<string, int> > it(extension_types_);
+         !it.at_end();
+         ++it) {
+      LOG(INFO) << "    * " << it->second << " " << it->first;
+    }
   }
 
   virtual void BeginVisitConstraint(const string& type_name,
@@ -468,6 +492,11 @@ class ModelStatisticsVisitor : public ModelVisitor {
                                            const IntExpr* const expr) {
     AddExpressionType(type_name);
     num_expressions_++;
+  }
+
+  virtual void BeginVisitExtension(const string& type_name) {
+    AddExtensionType(type_name);
+    num_extensions_++;
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
@@ -483,7 +512,19 @@ class ModelStatisticsVisitor : public ModelVisitor {
                                      const string operation,
                                      const IntervalVar* const delegate) {
     num_intervals_++;
-    // TODO(user): delegate.
+    if (delegate) {
+      VisitSubArgument(delegate);
+    }
+  }
+
+  virtual void VisitIntervalVariable(const IntervalVar* const variable,
+                                     const string operation,
+                                     const IntervalVar* const * delegates,
+                                     int size) {
+    num_intervals_++;
+    for (int i = 0; i < size; ++i) {
+      VisitSubArgument(delegates[i]);
+    }
   }
 
   // Visit integer expression argument.
@@ -542,13 +583,19 @@ class ModelStatisticsVisitor : public ModelVisitor {
     expression_types_[expression_type]++;
   }
 
+  void AddExtensionType(const string& extension_type) {
+    extension_types_[extension_type]++;
+  }
+
   hash_map<string, int> constraint_types_;
   hash_map<string, int> expression_types_;
+  hash_map<string, int> extension_types_;
   int num_constraints_;
   int num_variables_;
   int num_expressions_;
   int num_casts_;
   int num_intervals_;
+  int num_extensions_;
   hash_set<const BaseObject*> already_visited_;
 };
 }  // namespace

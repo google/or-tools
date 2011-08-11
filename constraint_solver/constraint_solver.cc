@@ -92,6 +92,7 @@ string Action::DebugString() const {
 
 // ------------------ Queue class ------------------
 
+namespace {
 class SinglePriorityQueue {
  public:
   virtual ~SinglePriorityQueue() {}
@@ -179,6 +180,7 @@ class FifoPriorityQueue : public SinglePriorityQueue {
   Cell* last_;
   Cell* free_cells_;
 };
+} // namespace
 
 class Queue {
  public:
@@ -383,6 +385,7 @@ StateMarker::StateMarker(MarkerType t, const StateInfo& info)
 
 // ---------- Trail and Reversibility ----------
 
+namespace {
 // ----- addrval struct -----
 
 // This template class is used internally to implement reversibility.
@@ -595,6 +598,7 @@ template <class T> class CompressedTrail {
   int current_;
   int size_;
 };
+}  // namespace
 
 // ----- Trail -----
 
@@ -934,13 +938,18 @@ void Search::SetBranchSelector(
   }
 }
 
+Search* LastSearch(Solver* const solver) {
+  return solver->searches_.back();
+}
+
+namespace {
 class UndoBranchSelector : public Action {
  public:
   explicit UndoBranchSelector(int depth) : depth_(depth) {}
   virtual ~UndoBranchSelector() {}
   virtual void Run(Solver* const s) {
-    if (s->searches_.size() == depth_) {
-      s->searches_.back()->SetBranchSelector(NULL);
+    if (s->SolveDepth() == depth_) {
+      LastSearch(s)->SetBranchSelector(NULL);
     }
   }
   virtual string DebugString() const {
@@ -949,19 +958,6 @@ class UndoBranchSelector : public Action {
  private:
   const int depth_;
 };
-
-void Solver::SetBranchSelector(
-    ResultCallback1<Solver::DecisionModification, Solver*>* const bs) {
-  bs->CheckIsRepeatable();
-  if (searches_.size() > 0 && searches_.back() != NULL) {
-    // We cannot use the trail as the search can be nested and thus
-    // deleted upon backtrack. Thus we guard the undo action by a
-    // check on the number of nesting of solve().
-    AddBacktrackAction(RevAlloc(new UndoBranchSelector(searches_.size())),
-                       false);
-    searches_.back()->SetBranchSelector(bs);
-  }
-}
 
 class ApplyBranchSelector : public DecisionBuilder {
  public:
@@ -981,6 +977,20 @@ class ApplyBranchSelector : public DecisionBuilder {
  private:
   ResultCallback1<Solver::DecisionModification, Solver*>* const selector_;
 };
+}  // namespace
+
+void Solver::SetBranchSelector(
+    ResultCallback1<Solver::DecisionModification, Solver*>* const bs) {
+  bs->CheckIsRepeatable();
+  if (searches_.size() > 0 && searches_.back() != NULL) {
+    // We cannot use the trail as the search can be nested and thus
+    // deleted upon backtrack. Thus we guard the undo action by a
+    // check on the number of nesting of solve().
+    AddBacktrackAction(RevAlloc(new UndoBranchSelector(searches_.size())),
+                       false);
+    searches_.back()->SetBranchSelector(bs);
+  }
+}
 
 DecisionBuilder* Solver::MakeApplyBranchSelector(
     ResultCallback1<Solver::DecisionModification, Solver*>* const bs) {
@@ -1219,6 +1229,7 @@ void Search::Accept(ModelVisitor* const visitor) const {
   }
 }
 
+namespace {
 // ---------- Fail Decision ----------
 
 class FailDecision : public Decision {
@@ -1231,19 +1242,18 @@ class FailDecision : public Decision {
   }
 };
 
-Decision* Solver::MakeFailDecision() {
-  return fail_decision_.get();
-}
-
 // Balancing decision
 
-namespace {
 class BalancingDecision : public Decision {
  public:
   virtual ~BalancingDecision() {}
   virtual void Apply(Solver* const s) {}
   virtual void Refute(Solver* const s) {}
 };
+}
+
+Decision* Solver::MakeFailDecision() {
+  return fail_decision_.get();
 }
 
 
@@ -1579,6 +1589,12 @@ void Solver::AddDelegateConstraint(Constraint* const c) {
 }
 
 void Solver::Accept(ModelVisitor* const visitor) const {
+  std::vector<SearchMonitor*> monitors;
+  Accept(visitor, monitors);
+}
+
+void Solver::Accept(ModelVisitor* const visitor,
+                    const std::vector<SearchMonitor*>& monitors) const {
   visitor->BeginVisitModel(name_);
   for (int index = 0; index < constraints_list_.size(); ++index) {
     Constraint* const constraint = constraints_list_[index];
@@ -1586,6 +1602,10 @@ void Solver::Accept(ModelVisitor* const visitor) const {
   }
   if (state_ == IN_ROOT_NODE) {
     searches_.front()->Accept(visitor);
+  } else {
+    for (int i = 0; i < monitors.size(); ++i) {
+      monitors[i]->Accept(visitor);
+    }
   }
   visitor->EndVisitModel(name_);
 }
@@ -1932,6 +1952,7 @@ void Solver::JumpToSentinelWhenNested() {
   CHECK_EQ(found, true) << "Sentinel not found";
 }
 
+namespace {
 class ReverseDecision : public Decision {
  public:
   explicit ReverseDecision(Decision* const d) : decision_(d) {
@@ -1961,7 +1982,7 @@ class ReverseDecision : public Decision {
  private:
   Decision* const decision_;
 };
-
+}  // namespace
 
 // Search for the next solution in the search tree.
 bool Solver::NextSolution() {
@@ -2523,6 +2544,16 @@ void ModelVisitor::VisitIntervalVariable(const IntervalVar* const variable,
   }
 }
 
+void ModelVisitor::VisitIntervalVariable(const IntervalVar* const variable,
+                                         const string operation,
+                                         const IntervalVar* const * delegates,
+                                         int size) {
+  for (int i = 0; i < size; ++i) {
+    delegates[i]->Accept(this);
+  }
+}
+
+
 
 void ModelVisitor::VisitIntegerArgument(const string& arg_name, int64 value) {}
 
@@ -2611,6 +2642,22 @@ void ModelVisitor::VisitInt64ToInt64Extension(
                             cached_results.data(),
                             cached_results.size());
   EndVisitExtension(kInt64ToInt64Extension);
+}
+
+void ModelVisitor::VisitInt64ToInt64AsArray(
+    Solver::IndexEvaluator1* const callback,
+    const string& arg_name,
+    int64 index_max) {
+  if (callback == NULL) {
+    return;
+  }
+  std::vector<int64> cached_results;
+  for (int i = 0; i <= index_max; ++i) {
+    cached_results.push_back(callback->Run(i));
+  }
+  VisitIntegerArrayArgument(arg_name,
+                            cached_results.data(),
+                            cached_results.size());
 }
 
 // ---------- Search Monitor ----------

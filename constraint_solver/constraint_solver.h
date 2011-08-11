@@ -901,6 +901,8 @@ class Solver {
 
   Constraint* MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst);
   Constraint* MakeSumEquality(IntVar* const* vars, int size, int64 cst);
+  Constraint* MakeSumEquality(const std::vector<IntVar*>& vars, IntVar* const var);
+  Constraint* MakeSumEquality(IntVar* const* vars, int size, IntVar* const var);
 
   Constraint* MakeScalProdEquality(const std::vector<IntVar*>& vars,
                                    const std::vector<int64>& coefficients,
@@ -2206,6 +2208,10 @@ class Solver {
 
   // Accepts the given model visitor.
   void Accept(ModelVisitor* const visitor) const;
+  // Accepts the given model visitor.
+  void Accept(ModelVisitor* const visitor,
+              const std::vector<SearchMonitor*>& monitors) const;
+
 
   Decision* balancing_decision() const { return balancing_decision_.get(); }
 
@@ -2229,12 +2235,12 @@ class Solver {
   friend class PropagationBaseObject;
   friend class Queue;
   friend class SearchMonitor;
-  friend class UndoBranchSelector;
   friend class VarCstCache;
 
 #ifndef SWIG
   friend void InternalSaveBooleanVarValue(Solver* const, IntVar* const);
   friend void SetQueueCleanerOnFail(Solver* const, IntVar* const);
+  friend Search* LastSearch(Solver* const solver);
   template<class> friend class SimpleRevFIFO;
 #endif
 
@@ -2707,6 +2713,10 @@ class ModelVisitor : public BaseObject {
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
                                      const string operation,
                                      const IntervalVar* const delegate);
+  virtual void VisitIntervalVariable(const IntervalVar* const variable,
+                                     const string operation,
+                                     const IntervalVar* const * delegate,
+                                     int size);
 
   // Visit integer arguments.
   virtual void VisitIntegerArgument(const string& arg_name, int64 value);
@@ -2749,6 +2759,10 @@ class ModelVisitor : public BaseObject {
   void VisitInt64ToInt64Extension(ResultCallback1<int64, int64>* const callback,
                                   int64 index_min,
                                   int64 index_max);
+  // Expands function as array when index min is 0.
+  void VisitInt64ToInt64AsArray(ResultCallback1<int64, int64>* const callback,
+                                const string& arg_name,
+                                int64 index_max);
 #endif  // #if !defined(SWIG)
 };
 

@@ -2622,6 +2622,21 @@ Constraint* Solver::MakeSumEquality(IntVar* const* vars,
   }
 }
 
+Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
+                                    IntVar* const var) {
+  return MakeSumEquality(vars.data(), vars.size(), var);
+}
+
+Constraint* Solver::MakeSumEquality(IntVar* const* vars,
+                                    int size,
+                                    IntVar* const var) {
+  if (AreAllBooleans(vars, size) && size > 2) {
+    return RevAlloc(new SumBooleanEqualToVar(this, vars, size, var));
+  } else {
+    return RevAlloc(new SumConstraint(this, vars, size, var));
+  }
+}
+
 Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
                                          const std::vector<int64>& coefficients,
                                          int64 cst) {

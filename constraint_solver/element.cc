@@ -554,7 +554,13 @@ class IntExprFunctionElement : public BaseIntExprElement {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             expr_);
-    visitor->VisitInt64ToInt64Extension(values_, expr_->Min(), expr_->Max());
+    if (expr_->Min() == 0) {
+      visitor->VisitInt64ToInt64AsArray(values_,
+                                        ModelVisitor::kValuesArgument,
+                                        expr_->Max());
+    } else {
+      visitor->VisitInt64ToInt64Extension(values_, expr_->Min(), expr_->Max());
+    }
     visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
   }
 
@@ -682,7 +688,15 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             index_);
-    visitor->VisitInt64ToInt64Extension(values_, index_->Min(), index_->Max());
+    if (index_->Min() == 0) {
+      visitor->VisitInt64ToInt64AsArray(values_,
+                                        ModelVisitor::kValuesArgument,
+                                        index_->Max());
+    } else {
+      visitor->VisitInt64ToInt64Extension(values_,
+                                          index_->Min(),
+                                          index_->Max());
+    }
     visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
   }
 
