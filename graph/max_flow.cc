@@ -63,7 +63,6 @@ bool MaxFlow::CheckInputConsistency() const {
   return ok;
 }
 
-// Sets the capacity for arc.
 void MaxFlow::SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity) {
   DCHECK_LE(0, new_capacity);
   DCHECK(graph_->CheckArcValidity(arc));
@@ -82,6 +81,8 @@ void MaxFlow::SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity) {
     // 2/ (capacity_delta < 0 && free_capacity + capacity_delta >= 0)
     //    meaning we are reducing the capacity, but that the capacity
     //    reduction is not larger than the free capacity.
+    DCHECK((capacity_delta > 0) ||
+           (capacity_delta < 0 && free_capacity + capacity_delta >= 0));
     residual_arc_capacity_.Set(arc, free_capacity + capacity_delta);
     DCHECK_LE(0, residual_arc_capacity_[arc]);
     VLOG(2) << "Now: capacity = " << Capacity(arc) << " flow = " << Flow(arc);
@@ -92,8 +93,7 @@ void MaxFlow::SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity) {
     const FlowQuantity flow_excess = flow - new_capacity;
     VLOG(2) << "Flow value " << flow << " exceeds new capacity "
             << new_capacity << " by " << flow_excess;
-    residual_arc_capacity_.Set(arc, 0);
-    residual_arc_capacity_.Set(Opposite(arc), new_capacity);
+    SetCapacitySaturate(arc, new_capacity);
     const NodeIndex head = Head(arc);
     node_excess_.Set(head, node_excess_[head] + flow_excess);
     DCHECK_LE(0, residual_arc_capacity_[arc]);
@@ -121,12 +121,12 @@ bool MaxFlow::CheckResult() const {
     const FlowQuantity opposite_capacity = residual_arc_capacity_[opposite];
     if (direct_capacity < 0) {
       LOG(DFATAL) << "residual_arc_capacity_[" << arc << "] = "
-                  << direct_capacity << " != 0";
+                  << direct_capacity << " < 0";
       ok = false;
     }
     if (opposite_capacity < 0) {
       LOG(DFATAL) << "residual_arc_capacity_[" << opposite << "] = "
-                  << opposite_capacity << " != 0";
+                  << opposite_capacity << " < 0";
       ok = false;
     }
     // The initial capacity of the direct arcs is non-negative.
@@ -204,10 +204,7 @@ void MaxFlow::InitializePreflow() {
   node_excess_.Assign(0);
   for (StarGraph::ArcIterator arc_it(*graph_); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
-    // Reset the residual capacities of direct arc to their initial values.
-    residual_arc_capacity_.Set(arc, Capacity(arc));
-    // The initial residual capacities on reverse arcs are set to 0.
-    residual_arc_capacity_.Set(Opposite(arc), 0);
+    SetCapacityResetFlow(arc, Capacity(arc));
   }
   // The initial height of the source is equal to the number of nodes.
   node_potential_.Set(source_, graph_->num_nodes());
@@ -216,11 +213,10 @@ void MaxFlow::InitializePreflow() {
        arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
     const FlowQuantity arc_capacity = Capacity(arc);
-    // Saturate arcs outgoing from the source. This is not really a PushFlow,
+    // Saturate arcs outgoing from the source. This is different from PushFlow,
     // since the preconditions for PushFlow are not (yet) met, and we do not
     // need to update the excess at the source.
-    residual_arc_capacity_.Set(arc, 0);
-    residual_arc_capacity_.Set(Opposite(arc), arc_capacity);
+    SetCapacitySaturate(arc, arc_capacity);
     node_excess_.Set(Head(arc), arc_capacity);
     VLOG(2) << DebugString("InitializePreflow:", arc);
   }
@@ -231,11 +227,7 @@ void MaxFlow::PushFlow(FlowQuantity flow, ArcIndex arc) {
   DCHECK_GT(node_excess_[Tail(arc)], 0);
   VLOG(2) << "PushFlow: pushing " << flow << " on arc " << arc
           << " from node " << Tail(arc) << " to node " << Head(arc);
-  // Reduce the residual capacity on arc by flow.
-  residual_arc_capacity_.Set(arc, residual_arc_capacity_[arc] - flow);
-  // Increase the residual capacity on opposite arc by flow.
-  const ArcIndex opposite = Opposite(arc);
-  residual_arc_capacity_.Set(opposite, residual_arc_capacity_[opposite] + flow);
+  PushFlowUnsafe(arc, flow);
   // Update the excesses at the tail and head of the arc.
   const NodeIndex tail = Tail(arc);
   node_excess_.Set(tail, node_excess_[tail] - flow);

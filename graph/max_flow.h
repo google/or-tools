@@ -210,6 +210,29 @@ class MaxFlow {
     return arc_it.Index();
   }
 
+  // Reduces the residual capacity on arc by flow.
+  // Increase the residual capacity on opposite arc by flow.
+  // Does not update the excesses at the tail and head of arc.
+  // No check is performed either.
+  void PushFlowUnsafe(ArcIndex arc, FlowQuantity flow) {
+    residual_arc_capacity_.Set(arc, residual_arc_capacity_[arc] - flow);
+    const ArcIndex opposite = Opposite(arc);
+    residual_arc_capacity_.Set(opposite,
+                               residual_arc_capacity_[opposite] + flow);
+  }
+
+  // Sets the capacity of arc to 'capacity' and clears the flow on arc.
+  void SetCapacityResetFlow(ArcIndex arc, FlowQuantity capacity) {
+    residual_arc_capacity_.Set(arc, capacity);
+    residual_arc_capacity_.Set(Opposite(arc), 0);
+  }
+
+  // Sets the capacity of arc to 'capacity' and saturates the flow on arc.
+  void SetCapacitySaturate(ArcIndex arc, FlowQuantity capacity) {
+    residual_arc_capacity_.Set(arc, 0);
+    residual_arc_capacity_.Set(Opposite(arc), capacity);
+  }
+
   // Checks the consistency of the input, i.e. that capacities on the arcs are
   // non-negative (>=0.)
   bool CheckInputConsistency() const;
