@@ -59,9 +59,9 @@ int32 GetSeed() {
 // Cost/distance functions.
 
 // Sample function.
-int64 MyDistance(int64 from, int64 to) {
+int64 MyDistance(RoutingModel::NodeIndex from, RoutingModel::NodeIndex to) {
   // Put your distance code here.
-  return from + to;  // for instance
+  return (from + to).value();  // for instance
 }
 
 // Random matrix.
@@ -72,8 +72,10 @@ class RandomMatrix {
     matrix_.reset(new int64[size_ * size_]);
     const int64 kDistanceMax = 100;
     ACMRandom randomizer(GetSeed());
-    for (int from = 0; from < size_; ++from) {
-      for (int to = 0; to < size_; ++to) {
+    for (RoutingModel::NodeIndex from = RoutingModel::kFirstNode; from < size_;
+         ++from) {
+      for (RoutingModel::NodeIndex to = RoutingModel::kFirstNode; to < size_;
+           ++to) {
         if (to != from) {
           matrix_[MatrixIndex(from, to)] = randomizer.Uniform(kDistanceMax);
         } else {
@@ -82,12 +84,14 @@ class RandomMatrix {
       }
     }
   }
-  int64 Distance(int64 from, int64 to) const {
+  int64 Distance(RoutingModel::NodeIndex from,
+                 RoutingModel::NodeIndex to) const {
     return matrix_[MatrixIndex(from, to)];
   }
  private:
-  int64 MatrixIndex(int64 from, int64 to) const {
-    return from * size_ + to;
+  int64 MatrixIndex(RoutingModel::NodeIndex from,
+                    RoutingModel::NodeIndex to) const {
+    return (from * size_ + to).value();
   }
   scoped_array<int64> matrix_;
   const int size_;

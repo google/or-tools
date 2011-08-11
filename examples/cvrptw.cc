@@ -74,10 +74,12 @@ class LocationContainer {
   void AddRandomLocation(int64 x_max, int64 y_max) {
     AddLocation(randomizer_.Uniform(x_max + 1), randomizer_.Uniform(y_max + 1));
   }
-  int64 ManhattanDistance(int64 from, int64 to) const {
+  int64 ManhattanDistance(RoutingModel::NodeIndex from,
+                          RoutingModel::NodeIndex to) const {
     return locations_[from].DistanceTo(locations_[to]);
   }
-  int64 ManhattanTime(int64 from, int64 to) const {
+  int64 ManhattanTime(RoutingModel::NodeIndex from,
+                      RoutingModel::NodeIndex to) const {
     return ManhattanDistance(from, to) / speed_;
   }
  private:
@@ -97,13 +99,14 @@ class LocationContainer {
 
   ACMRandom randomizer_;
   const int64 speed_;
-  std::vector<Location> locations_;
+  ITIVector<RoutingModel::NodeIndex, Location> locations_;
 };
 
 // Random demand.
 class RandomDemand {
  public:
-  RandomDemand(int size, int64 depot) : size_(size), depot_(depot) {
+  RandomDemand(int size, RoutingModel::NodeIndex depot)
+      : size_(size), depot_(depot) {
     CHECK_LT(0, size_);
   }
   void Initialize() {
@@ -120,32 +123,34 @@ class RandomDemand {
       }
     }
   }
-  int64 Demand(int64 from, int64 to) const {
-    return demand_[from];
+  int64 Demand(RoutingModel::NodeIndex from,
+               RoutingModel::NodeIndex to) const {
+    return demand_[from.value()];
   }
  private:
   scoped_array<int64> demand_;
   const int size_;
-  const int64 depot_;
+  const RoutingModel::NodeIndex depot_;
 };
 
 // Service time (proportional to demand) + transition time callback.
 class ServiceTimePlusTransition {
  public:
   ServiceTimePlusTransition(int64 time_per_demand_unit,
-                            Solver::IndexEvaluator2* demand,
-                            Solver::IndexEvaluator2* transition_time)
+                            RoutingModel::NodeEvaluator2* demand,
+                            RoutingModel::NodeEvaluator2* transition_time)
       : time_per_demand_unit_(time_per_demand_unit),
         demand_(demand),
         transition_time_(transition_time) {}
-  int64 Compute(int64 from, int64 to) const {
+  int64 Compute(RoutingModel::NodeIndex from,
+                RoutingModel::NodeIndex to) const {
     return time_per_demand_unit_ * demand_->Run(from, to)
         + transition_time_->Run(from, to);
   }
  private:
   const int64 time_per_demand_unit_;
-  scoped_ptr<Solver::IndexEvaluator2> demand_;
-  scoped_ptr<Solver::IndexEvaluator2> transition_time_;
+  scoped_ptr<RoutingModel::NodeEvaluator2> demand_;
+  scoped_ptr<RoutingModel::NodeEvaluator2> transition_time_;
 };
 
 // Route plan displayer.
@@ -207,7 +212,7 @@ int main(int argc, char **argv) {
   // VRP of size FLAGS_vrp_size.
   // Nodes are indexed from 0 to FLAGS_vrp_orders, the starts and ends of
   // the routes are at node 0.
-  const int64 kDepot = 0;
+  const RoutingModel::NodeIndex kDepot(0);
   RoutingModel routing(FLAGS_vrp_orders + 1, FLAGS_vrp_vehicles);
   routing.SetDepot(kDepot);
   // Setting first solution heuristic (cheapest addition).
@@ -257,8 +262,10 @@ int main(int argc, char **argv) {
 
   // Adding penalty costs to allow skipping orders.
   const int64 kPenalty = 100000;
-  for (int order = 1; order < routing.nodes(); ++order) {
-    std::vector<int64> orders(1, order);
+  const RoutingModel::NodeIndex kFirstNodeAfterDepot(1);
+  for (RoutingModel::NodeIndex order = kFirstNodeAfterDepot;
+       order < routing.nodes(); ++order) {
+    std::vector<RoutingModel::NodeIndex> orders(1, order);
     routing.AddDisjunction(orders, kPenalty);
   }
 

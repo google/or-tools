@@ -101,11 +101,11 @@ namespace operations_research {
 
 class RoutingCache {
  public:
-  RoutingCache(Solver::IndexEvaluator2* callback, int size) :
+  RoutingCache(RoutingModel::NodeEvaluator2* callback, int size) :
       cache_(size), callback_(callback) {
     callback->CheckIsRepeatable();
   }
-  int64 Run(int64 i, int64 j) {
+  int64 Run(RoutingModel::NodeIndex i, RoutingModel::NodeIndex j) {
     // This method does lazy caching of results of callbacks: first
     // checks if it has been run with these parameters before, and
     // returns previous result if so, or runs underlaying callback and
@@ -118,8 +118,9 @@ class RoutingCache {
     return cached_value;
   }
  private:
-  std::vector<hash_map<int, int64> > cache_;
-  scoped_ptr<Solver::IndexEvaluator2> callback_;
+  ITIVector<RoutingModel::NodeIndex,
+            hash_map<RoutingModel::NodeIndex, int64> > cache_;
+  scoped_ptr<RoutingModel::NodeEvaluator2> callback_;
 };
 
 namespace {
@@ -277,8 +278,8 @@ class MatrixEvaluator : public BaseObject {
     }
     delete [] values_;
   }
-  int64 Value(int64 i, int64 j) const {
-    return values_[model_->IndexToNode(i)][model_->IndexToNode(j)];
+  int64 Value(RoutingModel::NodeIndex i, RoutingModel::NodeIndex j) const {
+    return values_[i.value()][j.value()];
   }
 
  private:
@@ -295,23 +296,25 @@ class VectorEvaluator : public BaseObject {
     memcpy(values_.get(), values, nodes * sizeof(*values));
   }
   virtual ~VectorEvaluator() {}
-  int64 Value(int64 i, int64 j) const;
+  int64 Value(RoutingModel::NodeIndex i, RoutingModel::NodeIndex j) const;
  private:
   scoped_array<int64> values_;
   const int64 nodes_;
   RoutingModel* const model_;
 };
 
-int64 VectorEvaluator::Value(int64 i, int64 j) const {
-  const int64 index = model_->IndexToNode(i);
-  return values_[index];
+int64 VectorEvaluator::Value(RoutingModel::NodeIndex i,
+                             RoutingModel::NodeIndex j) const {
+  return values_[i.value()];
 }
 
 class ConstantEvaluator : public BaseObject {
  public:
   explicit ConstantEvaluator(int64 value) : value_(value) {}
   virtual ~ConstantEvaluator() {}
-  int64 Value(int64 i, int64 j) const { return value_; }
+  int64 Value(RoutingModel::NodeIndex i, RoutingModel::NodeIndex j) const {
+    return value_;
+  }
  private:
   const int64 value_;
 };
@@ -328,6 +331,9 @@ Solver::DecisionModification LeftDive(Solver* const s) {
 
 static const int kUnassigned = -1;
 static const int64 kNoPenalty = -1;
+
+const RoutingModel::NodeIndex RoutingModel::kFirstNode(0);
+const RoutingModel::NodeIndex RoutingModel::kInvalidNodeIndex(-1);
 
 RoutingModel::RoutingModel(int nodes, int vehicles)
     : solver_(NULL),
@@ -363,9 +369,10 @@ RoutingModel::RoutingModel(int nodes, int vehicles)
   Initialize();
 }
 
-RoutingModel::RoutingModel(int nodes,
-                           int vehicles,
-                           const std::vector<std::pair<int, int> >& start_end)
+RoutingModel::RoutingModel(
+    int nodes,
+    int vehicles,
+    const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end)
     : solver_(NULL),
       no_cycle_constraint_(NULL),
       costs_(vehicles),
@@ -395,7 +402,7 @@ RoutingModel::RoutingModel(int nodes,
   SolverParameters parameters;
   solver_.reset(new Solver("Routing", parameters));
   CHECK_EQ(vehicles, start_end.size());
-  hash_set<int> depot_set;
+  hash_set<NodeIndex> depot_set;
   for (int i = 0; i < start_end.size(); ++i) {
     depot_set.insert(start_end[i].first);
     depot_set.insert(start_end[i].second);
@@ -407,8 +414,8 @@ RoutingModel::RoutingModel(int nodes,
 
 RoutingModel::RoutingModel(int nodes,
                            int vehicles,
-                           const std::vector<int>& starts,
-                           const std::vector<int>& ends)
+                           const std::vector<NodeIndex>& starts,
+                           const std::vector<NodeIndex>& ends)
     : solver_(NULL),
       no_cycle_constraint_(NULL),
       costs_(vehicles),
@@ -439,8 +446,8 @@ RoutingModel::RoutingModel(int nodes,
   solver_.reset(new Solver("Routing", parameters));
   CHECK_EQ(vehicles, starts.size());
   CHECK_EQ(vehicles, ends.size());
-  hash_set<int> depot_set;
-  std::vector<std::pair<int, int> > start_end(starts.size());
+  hash_set<NodeIndex> depot_set;
+  std::vector<std::pair<NodeIndex, NodeIndex> > start_end(starts.size());
   for (int i = 0; i < starts.size(); ++i) {
     depot_set.insert(starts[i]);
     depot_set.insert(ends[i]);
@@ -481,7 +488,8 @@ void RoutingModel::Initialize() {
 
 RoutingModel::~RoutingModel() {
   STLDeleteElements(&routing_caches_);
-  STLDeleteElements(&owned_callbacks_);
+  STLDeleteElements(&owned_node_callbacks_);
+  STLDeleteElements(&owned_index_callbacks_);
 }
 
 void RoutingModel::AddNoCycleConstraint() {
@@ -498,7 +506,7 @@ void RoutingModel::AddNoCycleConstraintInternal() {
   }
 }
 
-void RoutingModel::AddDimension(Solver::IndexEvaluator2* evaluator,
+void RoutingModel::AddDimension(NodeEvaluator2* evaluator,
                                 int64 slack_max,
                                 int64 capacity,
                                 const string& name) {
@@ -554,9 +562,9 @@ void RoutingModel::AddAllActive() {
   }
 }
 
-void RoutingModel::SetCost(Solver::IndexEvaluator2* evaluator) {
+void RoutingModel::SetCost(NodeEvaluator2* evaluator) {
   evaluator->CheckIsRepeatable();
-  Solver::IndexEvaluator2* cached_evaluator = NewCachedCallback(evaluator);
+  NodeEvaluator2* cached_evaluator = NewCachedCallback(evaluator);
   homogeneous_costs_ = FLAGS_routing_use_homogeneous_costs;
   for (int i = 0; i < vehicles_; ++i) {
     SetVehicleCostInternal(i, cached_evaluator);
@@ -567,15 +575,14 @@ int64 RoutingModel::GetRouteFixedCost() const {
   return GetVehicleFixedCost(0);
 }
 
-void RoutingModel::SetVehicleCost(int vehicle,
-                                  Solver::IndexEvaluator2* evaluator) {
+void RoutingModel::SetVehicleCost(int vehicle, NodeEvaluator2* evaluator) {
   evaluator->CheckIsRepeatable();
   homogeneous_costs_ = false;
   SetVehicleCostInternal(vehicle, NewCachedCallback(evaluator));
 }
 
 void RoutingModel::SetVehicleCostInternal(int vehicle,
-                                          Solver::IndexEvaluator2* evaluator) {
+                                          NodeEvaluator2* evaluator) {
   CHECK_LT(vehicle, vehicles_);
   costs_[vehicle] = evaluator;
 }
@@ -596,20 +603,21 @@ void RoutingModel::SetVehicleFixedCost(int vehicle, int64 cost) {
   fixed_costs_[vehicle] = cost;
 }
 
-void RoutingModel::AddDisjunction(const std::vector<int64>& nodes) {
+void RoutingModel::AddDisjunction(const std::vector<NodeIndex>& nodes) {
   AddDisjunctionInternal(nodes, kNoPenalty);
 }
 
-void RoutingModel::AddDisjunction(const std::vector<int64>& nodes, int64 penalty) {
+void RoutingModel::AddDisjunction(const std::vector<NodeIndex>& nodes,
+                                  int64 penalty) {
   CHECK_GE(penalty, 0) << "Penalty must be positive";
   AddDisjunctionInternal(nodes, penalty);
 }
 
-void RoutingModel::AddDisjunctionInternal(const std::vector<int64>& nodes,
+void RoutingModel::AddDisjunctionInternal(const std::vector<NodeIndex>& nodes,
                                           int64 penalty) {
   const int size = disjunctions_.size();
   disjunctions_.resize(size + 1);
-  std::vector<int64>& disjunction_nodes = disjunctions_[size].nodes;
+  std::vector<int>& disjunction_nodes = disjunctions_[size].nodes;
   disjunction_nodes.resize(nodes.size());
   for (int i = 0; i < nodes.size(); ++i) {
     CHECK_NE(kUnassigned, node_to_index_[nodes[i]]);
@@ -623,11 +631,11 @@ void RoutingModel::AddDisjunctionInternal(const std::vector<int64>& nodes,
 }
 
 IntVar* RoutingModel::CreateDisjunction(int disjunction) {
-  const std::vector<int64>& nodes = disjunctions_[disjunction].nodes;
+  const std::vector<int>& nodes = disjunctions_[disjunction].nodes;
   const int nodes_size = nodes.size();
   std::vector<IntVar*> disjunction_vars(nodes_size + 1);
   for (int i = 0; i < nodes_size; ++i) {
-    const int64 node = nodes[i];
+    const int node = nodes[i];
     CHECK_LT(node, Size());
     disjunction_vars[i] = ActiveVar(node);
   }
@@ -647,24 +655,25 @@ void RoutingModel::AddLocalSearchOperator(LocalSearchOperator* ls_operator) {
   extra_operators_.push_back(ls_operator);
 }
 
-void RoutingModel::SetDepot(int depot) {
-  std::vector<std::pair<int, int> > start_end(vehicles_,
-                                         std::make_pair(depot, depot));
+void RoutingModel::SetDepot(NodeIndex depot) {
+  std::vector<std::pair<NodeIndex, NodeIndex> > start_end(
+      vehicles_, std::make_pair(depot, depot));
   SetStartEnd(start_end);
 }
 
-void RoutingModel::SetStartEnd(const std::vector<std::pair<int, int> >& start_end) {
+void RoutingModel::SetStartEnd(
+    const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end) {
   if (is_depot_set_) {
     LOG(WARNING) << "A depot has already been specified, ignoring new ones";
     return;
   }
   CHECK_EQ(start_end.size(), vehicles_);
   const int size = Size();
-  hash_set<int> starts;
-  hash_set<int> ends;
+  hash_set<NodeIndex> starts;
+  hash_set<NodeIndex> ends;
   for (int i = 0; i < vehicles_; ++i) {
-    int start = start_end[i].first;
-    int end = start_end[i].second;
+    const NodeIndex start = start_end[i].first;
+    const NodeIndex end = start_end[i].second;
     CHECK_GE(start, 0);
     CHECK_GE(end, 0);
     CHECK_LE(start, nodes_);
@@ -675,17 +684,17 @@ void RoutingModel::SetStartEnd(const std::vector<std::pair<int, int> >& start_en
   index_to_node_.resize(size + vehicles_);
   node_to_index_.resize(nodes_, kUnassigned);
   int index = 0;
-  for (int i = 0; i < nodes_; ++i) {
+  for (NodeIndex i = kFirstNode; i < nodes_; ++i) {
     if (starts.count(i) != 0 || ends.count(i) == 0) {
       index_to_node_[index] = i;
       node_to_index_[i] = index;
       ++index;
     }
   }
-  hash_set<int> node_set;
+  hash_set<NodeIndex> node_set;
   index_to_vehicle_.resize(size + vehicles_, kUnassigned);
   for (int i = 0; i < vehicles_; ++i) {
-    int start = start_end[i].first;
+    const NodeIndex start = start_end[i].first;
     if (node_set.count(start) == 0) {
       node_set.insert(start);
       const int start_index = node_to_index_[start];
@@ -700,7 +709,7 @@ void RoutingModel::SetStartEnd(const std::vector<std::pair<int, int> >& start_en
     }
   }
   for (int i = 0; i < vehicles_; ++i) {
-    int end = start_end[i].second;
+    NodeIndex end = start_end[i].second;
     index_to_node_[index] = end;
     ends_[i] = index;
     CHECK_LE(size, index);
@@ -726,7 +735,7 @@ void RoutingModel::SetStartEnd(const std::vector<std::pair<int, int> >& start_en
     VLOG(1) << "Variable index " << index
             << " -> Node index " << index_to_node_[index];
   }
-  for (int node = 0; node < node_to_index_.size(); ++node) {
+  for (NodeIndex node = kFirstNode; node < node_to_index_.size(); ++node) {
     VLOG(2) << "Node index " << node
             << " -> Variable index " << node_to_index_[node];
   }
@@ -935,12 +944,12 @@ void RoutingModel::SetCommandLineOption(const string& name,
 }
 
 
-int64 RoutingModel::IndexToNode(int64 index) const {
+RoutingModel::NodeIndex RoutingModel::IndexToNode(int64 index) const {
   DCHECK_LT(index, index_to_node_.size());
   return index_to_node_[index];
 }
 
-int64 RoutingModel::NodeToIndex(int64 node) const {
+int64 RoutingModel::NodeToIndex(NodeIndex node) const {
   DCHECK_LT(node, node_to_index_.size());
     DCHECK_NE(node_to_index_[node], kUnassigned);
   return node_to_index_[node];
@@ -961,8 +970,8 @@ int64 RoutingModel::GetArcCost(int64 i, int64 j, int64 vehicle) {
   if (cache.node == j && cache.vehicle == vehicle) {
     return cache.cost;
   }
-  const int64 node_i = IndexToNode(i);
-  const int64 node_j = IndexToNode(j);
+  const NodeIndex node_i = IndexToNode(i);
+  const NodeIndex node_j = IndexToNode(j);
   int64 cost = 0;
   if (!IsStart(i)) {
     cost = costs_[vehicle]->Run(node_i, node_j);
@@ -1030,7 +1039,7 @@ int64 RoutingModel::GetFirstSolutionCost(int64 i, int64 j) {
 void RoutingModel::CheckDepot() {
   if (!is_depot_set_) {
     LOG(WARNING) << "A depot must be specified, setting one at node 0";
-    SetDepot(0);
+    SetDepot(NodeIndex(0));
   }
 }
 
@@ -1370,17 +1379,17 @@ void RoutingModel::AddToAssignment(IntVar* var) {
   extra_vars_.push_back(var);
 }
 
-Solver::IndexEvaluator2* RoutingModel::NewCachedCallback(
-    Solver::IndexEvaluator2* callback) {
+RoutingModel::NodeEvaluator2* RoutingModel::NewCachedCallback(
+    NodeEvaluator2* callback) {
   const int size = Size() + vehicles_;
   if (FLAGS_routing_cache_callbacks && size <= FLAGS_routing_max_cache_size) {
     routing_caches_.push_back(new RoutingCache(callback, size));
-    Solver::IndexEvaluator2* cached_evaluator =
+    NodeEvaluator2* const cached_evaluator =
         NewPermanentCallback(routing_caches_.back(), &RoutingCache::Run);
-    owned_callbacks_.insert(cached_evaluator);
+    owned_node_callbacks_.insert(cached_evaluator);
     return cached_evaluator;
   } else {
-    owned_callbacks_.insert(callback);
+    owned_node_callbacks_.insert(callback);
     return callback;
   }
 }
@@ -1403,13 +1412,13 @@ IntVar** RoutingModel::GetOrMakeCumuls(int64 capacity, const string& name) {
   return named_cumuls;
 }
 
-int64 RoutingModel::WrappedEvaluator(Solver::IndexEvaluator2* evaluator,
+int64 RoutingModel::WrappedEvaluator(NodeEvaluator2* evaluator,
                                      int64 from,
                                      int64 to) {
   return evaluator->Run(IndexToNode(from), IndexToNode(to));
 }
 
-IntVar** RoutingModel::GetOrMakeTransits(Solver::IndexEvaluator2* evaluator,
+IntVar** RoutingModel::GetOrMakeTransits(NodeEvaluator2* evaluator,
                                          int64 slack_max,
                                          int64 capacity,
                                          const string& name) {
@@ -1441,11 +1450,10 @@ IntVar** RoutingModel::GetOrMakeTransits(Solver::IndexEvaluator2* evaluator,
         NewPermanentCallback(this,
                              &RoutingModel::WrappedEvaluator,
                              evaluator);
-    owned_callbacks_.insert(transit_evaluators_[name]);
-    owned_callbacks_.insert(evaluator);
+    owned_index_callbacks_.insert(transit_evaluators_[name]);
+    owned_node_callbacks_.insert(evaluator);
     return transit_array;
   }
   return named_transits;
 }
-
 }  // namespace operations_research

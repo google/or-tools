@@ -36,6 +36,8 @@
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/scoped_ptr.h"
+#include "base/int-type.h"
+#include "base/int-type-indexed-vector.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 
@@ -43,6 +45,10 @@ namespace operations_research {
 
 class LocalSearchOperator;
 class RoutingCache;
+
+// The type must be defined outside the class RoutingModel, SWIG does not parse
+// it correctly if it's inside.
+DEFINE_INT_TYPE(_RoutingModel_NodeIndex, int);
 
 class RoutingModel {
  public:
@@ -68,6 +74,14 @@ class RoutingModel {
     ROUTING_FAIL_TIMEOUT
   };
 
+  typedef _RoutingModel_NodeIndex NodeIndex;
+  typedef ResultCallback2<int64, NodeIndex, NodeIndex> NodeEvaluator2;
+
+  // Constants with an index of the first node (to be used in for loops for
+  // iteration), and a special index to signalize an invalid/unused value.
+  static const NodeIndex kFirstNode;
+  static const NodeIndex kInvalidNodeIndex;
+
   // Supposes a single depot. A depot is the start and end node of the route of
   // a vehicle.
   RoutingModel(int nodes, int vehicles);
@@ -75,15 +89,15 @@ class RoutingModel {
   // vehicle route. Used to model multiple depots.
   RoutingModel(int nodes,
                int vehicles,
-               const std::vector<std::pair<int, int> >& start_end);
+               const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
   // Constructor taking vectors of start nodes and end nodes for each
   // vehicle route. Used to model multiple depots.
   // TODO(user): added to simplify SWIG wrapping. Remove when swigging
   // std::vector<std::pair<int, int> > is ok.
   RoutingModel(int nodes,
                int vehicles,
-               const std::vector<int>& starts,
-               const std::vector<int>& ends);
+               const std::vector<NodeIndex>& starts,
+               const std::vector<NodeIndex>& ends);
   ~RoutingModel();
 
   // Model creation
@@ -93,7 +107,7 @@ class RoutingModel {
   // TODO(user): make private
   void AddNoCycleConstraint();
 
-  void AddDimension(Solver::IndexEvaluator2* evaluator,
+  void AddDimension(NodeEvaluator2* evaluator,
                     int64 slack_max,
                     int64 capacity,
                     const string& name);
@@ -106,8 +120,8 @@ class RoutingModel {
                           const string& name);
   void AddAllActive();
   // Adds a disjunction constraint on the nodes: exactly one of the nodes is
-  // active.
-  void AddDisjunction(const std::vector<int64>& nodes);
+  // active. Start and end nodes of any vehicle cannot be part of a disjunction.
+  void AddDisjunction(const std::vector<NodeIndex>& nodes);
   // Adds a penalized disjunction constraint on the nodes: at most one of the
   // nodes is active; if none are active a penalty cost is applied (this cost
   // is added to the global cost function).
@@ -116,11 +130,17 @@ class RoutingModel {
   // and the following cost to the cost function:
   // p * penalty.
   // "penalty" must be positive.
-  void AddDisjunction(const std::vector<int64>& nodes, int64 penalty);
+  void AddDisjunction(const std::vector<NodeIndex>& nodes, int64 penalty);
+#if defined(SWIGPYTHON)
+  void AddDisjunctionWithPenalty(const std::vector<NodeIndex>& nodes,
+                                 int64 penalty) {
+    AddDisjunction(nodes, penalty);
+  }
+#endif  // SWIGPYTHON
   void AddLocalSearchOperator(LocalSearchOperator* ls_operator);
-  void SetCost(Solver::IndexEvaluator2* evaluator);
-  void SetVehicleCost(int vehicle, Solver::IndexEvaluator2* evaluator);
-  void SetDepot(int depot);
+  void SetCost(NodeEvaluator2* evaluator);
+  void SetVehicleCost(int vehicle, NodeEvaluator2* evaluator);
+  void SetDepot(NodeIndex depot);
   // Route fixed cost taken into account if the route is not empty, aka there's
   // at least one node on the route other than the first and last nodes.
   // Cost is applied to all vehicle routes; SetRouteFixedCost is equivalent to
@@ -182,11 +202,11 @@ class RoutingModel {
 
   int64 GetCost(int64 i, int64 j, int64 vehicle);
   int64 GetHomogeneousCost(int64 i, int64 j) {
-    return GetCost(i, j , 0);
+    return GetCost(i, j, 0);
   }
   int64 GetFilterCost(int64 i, int64 j, int64 vehicle);
   int64 GetHomogeneousFilterCost(int64 i, int64 j) {
-    return GetFilterCost(i, j , 0);
+    return GetFilterCost(i, j, 0);
   }
   int64 GetFirstSolutionCost(int64 i, int64 j);
   bool homogeneous_costs() const { return homogeneous_costs_; }
@@ -208,14 +228,14 @@ class RoutingModel {
   int vehicles() const { return vehicles_; }
   int Size() const { return nodes_ + vehicles_ - start_end_count_; }
   // Returns the node index from an index value resulting fron a next variable.
-  int64 IndexToNode(int64 index) const;
+  NodeIndex IndexToNode(int64 index) const;
   // Returns the variable index from a node value.
   //
   // Should not be used for nodes at the start / end of a route,
   // because of node multiplicity.  These cases return -1, which is
   // considered a failure case.  Clients who need start and end
   // variable indices should use RoutingModel::Start and RoutingModel::End.
-  int64 NodeToIndex(int64 node) const;
+  int64 NodeToIndex(NodeIndex node) const;
 
   Solver* solver() const { return solver_.get(); }
   IntVar* CostVar() const { return cost_; }
@@ -232,41 +252,41 @@ class RoutingModel {
  private:
   typedef hash_map<string, IntVar**> VarMap;
   struct Disjunction {
-    std::vector<int64> nodes;
+    std::vector<int> nodes;
     int64 penalty;
   };
 
   struct CostCacheElement {
-    int64 node;
-    int64 vehicle;
+    NodeIndex node;
+    int vehicle;
     int64 cost;
   };
 
   void Initialize();
-  void SetStartEnd(const std::vector<std::pair<int, int> >& start_end);
-  void AddDisjunctionInternal(const std::vector<int64>& nodes, int64 penalty);
+  void SetStartEnd(const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
+  void AddDisjunctionInternal(const std::vector<NodeIndex>& nodes, int64 penalty);
   void AddNoCycleConstraintInternal();
-  void SetVehicleCostInternal(int vehicle, Solver::IndexEvaluator2* evaluator);
+  void SetVehicleCostInternal(int vehicle, NodeEvaluator2* evaluator);
   // Returns NULL if no penalty cost, otherwise returns penalty variable.
   IntVar* CreateDisjunction(int disjunction);
   // Returns the first active node in nodes starting from index + 1.
   int FindNextActive(int index, const std::vector<int>& nodes) const;
 
-  Solver::IndexEvaluator2* NewCachedCallback(Solver::IndexEvaluator2* callback);
+  NodeEvaluator2* NewCachedCallback(NodeEvaluator2* callback);
   Solver::IndexEvaluator3* BuildCostCallback();
   void CheckDepot();
   void CloseModel();
   void SetUpSearch();
 
   IntVar** GetOrMakeCumuls(int64 capacity, const string& name);
-  IntVar** GetOrMakeTransits(Solver::IndexEvaluator2* evaluator,
+  IntVar** GetOrMakeTransits(NodeEvaluator2* evaluator,
                              int64 slack_max,
                              int64 capacity,
                              const string& name);
 
   int64 GetArcCost(int64 i, int64 j, int64 vehicle);
   int64 GetPenaltyCost(int64 i) const;
-  int64 WrappedEvaluator(Solver::IndexEvaluator2* evaluator,
+  int64 WrappedEvaluator(NodeEvaluator2* evaluator,
                          int64 from,
                          int64 to);
 
@@ -276,7 +296,7 @@ class RoutingModel {
   scoped_array<IntVar*> nexts_;
   scoped_array<IntVar*> vehicle_vars_;
   scoped_array<IntVar*> active_;
-  std::vector<Solver::IndexEvaluator2*> costs_;
+  std::vector<NodeEvaluator2*> costs_;
   bool homogeneous_costs_;
   std::vector<CostCacheElement> cost_cache_;
   std::vector<RoutingCache*> routing_caches_;
@@ -286,8 +306,8 @@ class RoutingModel {
   std::vector<int64> fixed_costs_;
   int nodes_;
   int vehicles_;
-  std::vector<int> index_to_node_;
-  std::vector<int> node_to_index_;
+  std::vector<NodeIndex> index_to_node_;
+  ITIVector<NodeIndex, int> node_to_index_;
   std::vector<int> index_to_vehicle_;
   std::vector<int> starts_;
   std::vector<int> ends_;
@@ -320,7 +340,8 @@ class RoutingModel {
   SearchLimit* lns_limit_;
 
   // Callbacks to be deleted
-  hash_set<Solver::IndexEvaluator2*> owned_callbacks_;
+  hash_set<NodeEvaluator2*> owned_node_callbacks_;
+  hash_set<Solver::IndexEvaluator2*> owned_index_callbacks_;
 
   DISALLOW_COPY_AND_ASSIGN(RoutingModel);
 };
