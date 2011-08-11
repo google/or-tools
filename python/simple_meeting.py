@@ -146,12 +146,10 @@ def main(unused_argv):
 
   # All copies are in sync with the original meeting.
   for p in all_people:
-    solver.Add(meeting.StartsAtStart(people_meeting_copies[p]))
-    solver.Add(meeting.EndsAtEnd(people_meeting_copies[p]))
+    solver.Add(meeting.StaysInSync(people_meeting_copies[p]))
 
   for r in all_rooms:
-    solver.Add(meeting.StartsAtStart(room_meeting_copies[r]))
-    solver.Add(meeting.EndsAtEnd(room_meeting_copies[r]))
+    solver.Add(meeting.StaysInSync(room_meeting_copies[r]))
 
   # Synchronize persons_presence and meetings.
   for p in all_people:

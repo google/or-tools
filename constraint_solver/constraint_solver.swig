@@ -808,6 +808,12 @@ namespace operations_research {
                                                    operations_research::Solver::STARTS_AT_START,
                                                    other);
   }
+  Constraint* StaysInSync(IntervalVar* other) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::STAYS_IN_SYNC,
+                                                   other);
+  }
+
 }
 
 %extend Sequence {

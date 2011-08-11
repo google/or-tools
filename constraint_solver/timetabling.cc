@@ -41,7 +41,8 @@ const char* kBinaryNames[] = {
   "STARTS_AFTER_END",
   "STARTS_AFTER_START",
   "STARTS_AT_END",
-  "STARTS_AT_START"
+  "STARTS_AT_START",
+  "STAYS_IN_SYNC"
 };
 }  // namespace
 
@@ -236,6 +237,16 @@ void IntervalBinaryRelation::InitialPropagate() {
       }
       if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
         t2_->SetStartRange(t1_->StartMin(), t1_->StartMax());
+      }
+      break;
+    case Solver::STAYS_IN_SYNC:
+      if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
+        t1_->SetStartRange(t2_->StartMin(), t2_->StartMax());
+        t1_->SetEndRange(t2_->EndMin(), t2_->EndMax());
+      }
+      if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
+        t2_->SetStartRange(t1_->StartMin(), t1_->StartMax());
+        t2_->SetEndRange(t1_->EndMin(), t1_->EndMax());
       }
       break;
   }
