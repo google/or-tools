@@ -265,55 +265,117 @@ static bool PyCallbackBool(PyObject* pyfunc) {
 %module(directors="1") main
 %feature("director") LongResultCallback1;
 %feature("director") LongResultCallback2;
+%feature("director") LongResultCallback3;
 %{
 #include <vector>
 #include "base/callback.h"
 #include "base/integral_types.h"
 
-class LongResultCallback1 {
+// When a director is created for a class with SWIG, the C++ part of the
+// director keeps a JNI global reference to the Java part. This global reference
+// only gets deleted in the destructor of the C++ part, but by default, this
+// only happens when the Java part is processed by the GC (however, this never
+// happens, because there is the JNI global reference...).
+//
+// To break the cycle, it is necessary to delete the C++ part manually. For the
+// callback classes, this is done by deriving them from the respective C++
+// ResultCallback classes. When the java callback class is asked for a C++
+// callback class, it hands over its C++ part. It is expected, that whoever
+// receives the C++ callback class, owns it and destroys it after they no longer
+// need it. But by destroying it, they also break the reference cycle and the
+// Java part may be processed by the GC.
+//
+// However, this behavior also means that the callback class can only be used
+// in one context and that if its C++ callback class is not received by someone
+// who destroys it in the end, it will stay in memory forever.
+class LongResultCallback1 : private ResultCallback1<int64, int64> {
  public:
+  LongResultCallback1() : used_as_permanent_handler_(false) {}
   virtual int64 run(int64) = 0;
   ResultCallback1<int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback1::run);
+    CHECK(!used_as_permanent_handler_);
+    used_as_permanent_handler_ = true;
+    return this;
   }
   virtual ~LongResultCallback1() {}
+ private:
+  virtual bool IsRepeatable() const { return true; }
+
+  virtual int64 Run(int64 i) {
+    return run(i);
+  }
+  bool used_as_permanent_handler_;
 };
-class LongResultCallback2 {
+
+class LongResultCallback2 : private ResultCallback2<int64, int64, int64> {
  public:
+  LongResultCallback2() : used_as_permanent_handler_(false) {}
+  virtual ~LongResultCallback2() {}
   virtual int64 run(int64, int64) = 0;
   ResultCallback2<int64, int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback2::run);
+    CHECK(!used_as_permanent_handler_);
+    used_as_permanent_handler_ = true;
+    return this;
   }
-  virtual ~LongResultCallback2() {}
+ private:
+  virtual bool IsRepeatable() const { return true; }
+
+  virtual int64 Run(int64 i, int64 j) {
+    return run(i, j);
+  }
+  bool used_as_permanent_handler_;
 };
-class LongResultCallback3 {
+
+class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> {
  public:
+  LongResultCallback3() : used_as_permanent_handler_(false) {}
+  virtual ~LongResultCallback3() {}
   virtual int64 run(int64, int64, int64) = 0;
   ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback3::run);
+    CHECK(!used_as_permanent_handler_);
+    used_as_permanent_handler_ = true;
+    return this;
   }
-  virtual ~LongResultCallback3() {}
+ private:
+  virtual bool IsRepeatable() const { return true; }
+
+  virtual int64 Run(int64 i, int64 j, int64 k) {
+    return run(i, j, k);
+  }
+  bool used_as_permanent_handler_;
 };
 
 %}
 
-class LongResultCallback1 {
+class LongResultCallback1 : private ResultCallback1<int64, int64> {
  public:
   virtual int64 run(int64) = 0;
   ResultCallback1<int64, int64>* GetPermanentCallback();
   virtual ~LongResultCallback1();
+ private:
+  virtual bool IsRepeatable() const;
+  virtual int64 Run(int64 i);
+  bool used_as_permanent_handler_;
 };
-class LongResultCallback2 {
+class LongResultCallback2 : private ResultCallback2<int64, int64, int64> {
  public:
   virtual int64 run(int64, int64) = 0;
   ResultCallback2<int64, int64, int64>* GetPermanentCallback();
   virtual ~LongResultCallback2();
+ private:
+  virtual bool IsRepeatable() const;
+  virtual int64 Run(int64 i, int64 j);
+  bool used_as_permanent_handler_;
 };
-class LongResultCallback3 {
+class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> {
  public:
   virtual int64 run(int64, int64, int64) = 0;
   ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback();
   virtual ~LongResultCallback3();
+ private:
+  virtual bool IsRepeatable() const;
+  virtual int64 Run(int64 i, int64 j, int64 k);
+  bool used_as_permanent_handler_;
 };
 
 // Typemaps for callbacks in java.
