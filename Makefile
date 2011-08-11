@@ -1,3 +1,14 @@
+# Top level declarations
+help:
+	@echo Please define target:
+	@echo "  - constraint programming: cplibs cpexe pycp javacp"
+	@echo "  - mathematical programming: lplibs lpexe pylp javalp"
+	@echo "  - algorithms: algorithmslibs pyalgorithms javaalgorithms"
+	@echo "  - graph: graphlibs pygraph javagraph"
+	@echo "  - misc: clean"
+
+all: cplibs cpexe pycp javacp algorithmslibs pyalgorithms javaalgorithms graphlibs pygraph javagraph lplibs lpexe pylp javalp
+
 # Let's discover something about where we run
 ifeq "$(SHELL)" "cmd.exe"
   SYSTEM=win
