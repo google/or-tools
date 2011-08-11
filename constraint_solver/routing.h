@@ -194,12 +194,12 @@ class RoutingModel {
   // Variables
   IntVar** Nexts() const { return nexts_.get(); }
   IntVar** VehicleVars() const { return vehicle_vars_.get(); }
-  IntVar* NextVar(int64 node) const { return nexts_[node]; }
-  IntVar* ActiveVar(int64 node) const { return active_[node]; }
-  IntVar* VehicleVar(int64 node) const { return vehicle_vars_[node]; }
+  IntVar* NextVar(int64 index) const { return nexts_[index]; }
+  IntVar* ActiveVar(int64 index) const { return active_[index]; }
+  IntVar* VehicleVar(int64 index) const { return vehicle_vars_[index]; }
   // Returns the variable created by the AddDimension with the same name
-  IntVar* CumulVar(int64 node, const string& name) const;
-  IntVar* TransitVar(int64 node, const string& name) const;
+  IntVar* CumulVar(int64 index, const string& name) const;
+  IntVar* TransitVar(int64 index, const string& name) const;
   // Add extra variables to assignments
   void AddToAssignment(IntVar* var);
 

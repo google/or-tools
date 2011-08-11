@@ -646,6 +646,14 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     extras->push_back(solver->RevAlloc(new Monitor(solver, this)));
   }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
+  }
+
  private:
   // Hook on the search to check restart before the refutation of a decision.
   class Monitor : public SearchMonitor {

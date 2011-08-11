@@ -273,7 +273,7 @@ class MatrixEvaluator : public BaseObject {
   }
   virtual ~MatrixEvaluator() {
     for (int i = 0; i < nodes_; ++i) {
-      delete values_[i];
+      delete [] values_[i];
     }
     delete [] values_;
   }
@@ -765,12 +765,6 @@ void RoutingModel::CloseModel() {
   for (int i = 0; i < size; ++i) {
     solver_->AddConstraint(solver_->MakeIsDifferentCstCt(vehicle_vars_[i], -1,
                                                          active_[i]));
-
-    IntVar* const vehicle_var_lower_bound =
-        solver_->MakeSum(active_[i], -1)->Var();
-    solver_->AddConstraint(
-        solver_->MakeGreaterOrEqual(vehicle_vars_[i],
-                                    vehicle_var_lower_bound));
   }
 
   // Set all active unless there are disjunctions
@@ -1354,19 +1348,19 @@ void RoutingModel::SetUpSearch() {
 #undef CP_ROUTING_PUSH_BACK_CALLBACK_OPERATOR
 #undef CP_ROUTING_PUSH_BACK_OPERATOR
 
-IntVar* RoutingModel::CumulVar(int64 node, const string& name) const {
+IntVar* RoutingModel::CumulVar(int64 index, const string& name) const {
   IntVar** named_cumuls = FindPtrOrNull(cumuls_, name);
   if (named_cumuls != NULL) {
-    return named_cumuls[node];
+    return named_cumuls[index];
   } else {
     return NULL;
   }
 }
 
-IntVar* RoutingModel::TransitVar(int64 node, const string& name) const {
+IntVar* RoutingModel::TransitVar(int64 index, const string& name) const {
   IntVar** named_transits = FindPtrOrNull(transits_, name);
   if (named_transits != NULL) {
-    return named_transits[node];
+    return named_transits[index];
   } else {
     return NULL;
   }

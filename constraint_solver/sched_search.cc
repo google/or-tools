@@ -24,6 +24,7 @@ namespace operations_research {
 
 // TODO(user) : treat optional intervals
 // TODO(user) : Call DecisionVisitor and pass name of variable
+namespace {
 class ScheduleOrPostpone : public Decision {
  public:
   ScheduleOrPostpone(IntervalVar* const var, int64 est, int64* const marker)
@@ -48,11 +49,13 @@ class ScheduleOrPostpone : public Decision {
     return StringPrintf("ScheduleOrPostpone(%s at %" GG_LL_FORMAT "d)",
                         var_->DebugString().c_str(), est_);
   }
+
  private:
   IntervalVar* const var_;
   const int64 est_;
   int64* const marker_;
 };
+}  // namespace
 
 Decision* Solver::MakeScheduleOrPostpone(IntervalVar* const var,
                                          int64 est,
@@ -62,6 +65,7 @@ Decision* Solver::MakeScheduleOrPostpone(IntervalVar* const var,
   return RevAlloc(new ScheduleOrPostpone(var, est, marker));
 }
 
+namespace {
 class SetTimesForward : public DecisionBuilder {
  public:
   SetTimesForward(const IntervalVar* const * vars, int size)
@@ -112,11 +116,21 @@ class SetTimesForward : public DecisionBuilder {
   virtual string DebugString() const {
     return "SetTimesForward()";
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
+    visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
+                                        vars_.get(),
+                                        size_);
+    visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
+  }
+
  private:
   scoped_array<IntervalVar*> vars_;
   const int size_;
   scoped_array<int64> markers_;
 };
+}  // namespace
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntervalVar*>& intervals,
                                    IntervalStrategy str) {
@@ -125,6 +139,7 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntervalVar*>& intervals,
 
 // ----- Decisions and DecisionBuilders on sequences -----
 
+namespace {
 class TryRankFirst : public Decision {
  public:
   TryRankFirst(Sequence* const seq, int index)
@@ -148,16 +163,19 @@ class TryRankFirst : public Decision {
     return StringPrintf("TryRankFirst(%s, %d)",
                         sequence_->DebugString().c_str(), index_);
   }
+
  private:
   Sequence* const sequence_;
   const int index_;
 };
+}  // namespace
 
 Decision* Solver::MakeTryRankFirst(Sequence* const sequence, int index) {
   CHECK_NOTNULL(sequence);
   return RevAlloc(new TryRankFirst(sequence, index));
 }
 
+namespace {
 class RankFirstSequences : public DecisionBuilder {
  public:
   RankFirstSequences(const Sequence* const * sequences, int size)
@@ -171,7 +189,7 @@ class RankFirstSequences : public DecisionBuilder {
     int64 slack = kint64max;
     int64 best_hmin = kint64max;
     for (int i = 0; i < size_; ++i) {
-      Sequence* se = sequences_[i];
+      Sequence* const se = sequences_[i];
       if (se->NotRanked() > 0) {
         int64 hmin, hmax, dmin, dmax;
         se->HorizonRange(&hmin, &hmax);
@@ -199,7 +217,7 @@ class RankFirstSequences : public DecisionBuilder {
       int64 smin = kint64max;
       for (int i = 0; i < seq->size(); ++i) {
         if (seq->PossibleFirst(i)) {
-          IntervalVar* t = seq->Interval(i);
+          IntervalVar* const t = seq->Interval(i);
           if (t->MayBePerformed() && t->StartMin() < smin) {
             index = i;
             smin = t->StartMin();
@@ -214,10 +232,26 @@ class RankFirstSequences : public DecisionBuilder {
     }
     return NULL;
   }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
+    std::vector<IntervalVar*> vars;
+    for (int i = 0; i < size_; ++i) {
+      for (int j = 0; j < sequences_[i]->size(); ++j) {
+        vars.push_back(sequences_[i]->Interval(j));
+      }
+    }
+    visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
+                                        vars.data(),
+                                        vars.size());
+    visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
+  }
+
  private:
   scoped_array<Sequence*> sequences_;
   const int size_;
 };
+}  // namespace
 
 DecisionBuilder* Solver::MakePhase(const std::vector<Sequence*>& sequences,
                                    SequenceStrategy str) {

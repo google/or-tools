@@ -35,63 +35,6 @@ DEFINE_bool(cp_share_int_consts, true,
 
 namespace operations_research {
 
-// ----- Int Var and associated methods -----
-
-void Solver::MakeIntVarArray(int var_count,
-                             int64 vmin,
-                             int64 vmax,
-                             const string& name,
-                             std::vector<IntVar*>* vars) {
-  for (int i = 0; i < var_count; ++i) {
-    string vname = StringPrintf("%s%d", name.c_str(), i);
-    vars->push_back(MakeIntVar(vmin, vmax, vname));
-  }
-}
-
-void Solver::MakeIntVarArray(int var_count,
-                             int64 vmin,
-                             int64 vmax,
-                             std::vector<IntVar*>* vars) {
-  for (int i = 0; i < var_count; ++i) {
-    vars->push_back(MakeIntVar(vmin, vmax));
-  }
-}
-
-IntVar** Solver::MakeIntVarArray(int var_count,
-                                 int64 vmin,
-                                 int64 vmax,
-                                 const string& name) {
-  IntVar** vars = new IntVar*[var_count];
-  for (int i = 0; i < var_count; ++i) {
-    string vname = StringPrintf("%s%d", name.c_str(), i);
-    vars[i] = MakeIntVar(vmin, vmax, vname);
-  }
-  return vars;
-}
-
-void Solver::MakeBoolVarArray(int var_count,
-                              const string& name,
-                              std::vector<IntVar*>* vars) {
-  for (int i = 0; i < var_count; ++i) {
-    string vname = StringPrintf("%s%d", name.c_str(), i);
-    vars->push_back(MakeBoolVar(vname));
-  }
-}
-
-void Solver::MakeBoolVarArray(int var_count, std::vector<IntVar*>* vars) {
-  for (int i = 0; i < var_count; ++i) {
-    vars->push_back(MakeBoolVar());
-  }
-}
-
-IntVar** Solver::MakeBoolVarArray(int var_count, const string& name) {
-  IntVar** vars = new IntVar*[var_count];
-  for (int i = 0; i < var_count; ++i) {
-    string vname = StringPrintf("%s%d", name.c_str(), i);
-    vars[i] = MakeBoolVar(vname);
-  }
-  return vars;
-}
 
 // ---------- IntVar ----------
 
@@ -217,7 +160,7 @@ void IntVar::SetValues(const int64* const values, int size) {
 
 // ----- Domain Int Var: base class for variables -----
 // It Contains bounds and a bitset representation of possible values.
-
+namespace {
 class DomainIntVar : public IntVar {
  public:
   // Utility classes
@@ -375,14 +318,7 @@ class DomainIntVar : public IntVar {
   BitSet* bits_;
 };
 
-void VariableQueueCleaner::Run(Solver* const solver) {
-  DCHECK(var_ != NULL);
-  var_->ClearInProcess();
-}
-
 // ----- BitSet -----
-
-namespace {
 
 class SimpleBitSet : public DomainIntVar::BitSet {
  public:
@@ -1071,9 +1007,6 @@ class UnaryIterator : public IntVarIterator {
   const bool reversible_;
 };
 
-}  // anonymous namespace
-
-
 DomainIntVar::DomainIntVar(Solver* const s,
                            int64 vmin,
                            int64 vmax,
@@ -1321,7 +1254,7 @@ void DomainIntVar::Process() {
   if (bits_ != NULL) {
     bits_->ClearRemovedValues();
   }
-  solver()->set_queue_cleaner_on_fail(this);
+  SetQueueCleanerOnFail(solver(), this);
   new_min_ = min_;
   new_max_ = max_;
   if (min_ == max_) {
@@ -1386,9 +1319,7 @@ string DomainIntVar::DebugString() const {
 
 // ----- Boolean variable -----
 
-namespace {
 static const int kUnboundBooleanVarValue = 2;
-}  // namespace
 
 class BooleanVar : public IntVar {
  public:
@@ -1472,21 +1403,17 @@ class BooleanVar : public IntVar {
   virtual string DebugString() const;
   virtual int VarType() const { return BOOLEAN_VAR; }
 
+  void RestoreValue() { value_ = kUnboundBooleanVarValue; }
+
   friend class TimesBooleanPosIntExpr;
   friend class TimesBooleanIntExpr;
   friend class TimesPosCstBoolVar;
-  friend void RestoreBoolValue(BooleanVar* const var);
 
  private:
-  void RestoreValue() { value_ = kUnboundBooleanVarValue; }
   int value_;
   SimpleRevFIFO<Demon*> bound_demons_;
   Handler handler_;
 };
-
-void RestoreBoolValue(BooleanVar* const var) {
-  var->RestoreValue();
-}
 
 void BooleanVar::SetMin(int64 m)  {
   if (m <= 0) {
@@ -1521,7 +1448,7 @@ void BooleanVar::SetRange(int64 mi, int64 ma) {
 void BooleanVar::SetValue(int64 v) {
   if (value_ == kUnboundBooleanVarValue) {
     if (v == 0 || v == 1) {
-      solver()->InternalSaveBooleanVarValue(this);
+      InternalSaveBooleanVarValue(solver(), this);
       value_ = static_cast<int>(v);
       Push();
       return;
@@ -1669,80 +1596,6 @@ string IntConst::DebugString() const {
     SStringPrintf(&out, "IntConst(%" GG_LL_FORMAT "d)", value_);
   }
   return out;
-}
-
-IntVar* Solver::MakeIntVar(int64 min, int64 max, const string& name) {
-  if (min == max) {
-    return RevAlloc(new IntConst(this, min, name));
-  }
-  if (min == 0 && max == 1) {
-    return RevAlloc(new BooleanVar(this, name));
-  } else {
-    return RevAlloc(new DomainIntVar(this, min, max, name));
-  }
-}
-
-IntVar* Solver::MakeIntVar(int64 min, int64 max) {
-  return MakeIntVar(min, max, "");
-}
-
-IntVar* Solver::MakeBoolVar(const string& name) {
-  return RevAlloc(new BooleanVar(this, name));
-}
-
-IntVar* Solver::MakeBoolVar() {
-  return RevAlloc(new BooleanVar(this, ""));
-}
-
-IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const string& name) {
-  ConstIntArray domain(values);
-  scoped_ptr<std::vector<int64> > sorted_values(
-      domain.SortedCopyWithoutDuplicates(true));
-  IntVar* const var = RevAlloc(new DomainIntVar(this,
-                                                *sorted_values.get(),
-                                                name));
-  return var;
-}
-
-IntVar* Solver::MakeIntVar(const std::vector<int64>& values) {
-  return MakeIntVar(values, "");
-}
-
-IntVar* Solver::MakeIntVar(const std::vector<int>& values, const string& name) {
-  ConstIntArray domain(values);
-  scoped_ptr<std::vector<int64> > sorted_values(
-      domain.SortedCopyWithoutDuplicates(true));
-  IntVar* const var = RevAlloc(new DomainIntVar(this,
-                                                *sorted_values.get(),
-                                                name));
-  return var;
-}
-
-IntVar* Solver::MakeIntVar(const std::vector<int>& values) {
-  return MakeIntVar(values, "");
-}
-
-IntVar* Solver::MakeIntConst(int64 val, const string& name) {
-  // If IntConst is going to be named after its creation,
-  // cp_share_int_consts should be set to false otherwise names can potentially
-  // be overwritten.
-  if (FLAGS_cp_share_int_consts &&
-      name.empty() &&
-      val >= MIN_CACHED_INT_CONST && val <= MAX_CACHED_INT_CONST) {
-    return cached_constants_[val - MIN_CACHED_INT_CONST];
-  }
-  return RevAlloc(new IntConst(this, val, name));
-}
-
-IntVar* Solver::MakeIntConst(int64 val) {
-  return MakeIntConst(val, "");
-}
-
-void Solver::InitCachedIntConstants() {
-  for (int i = MIN_CACHED_INT_CONST; i <= MAX_CACHED_INT_CONST; ++i) {
-    cached_constants_[i - MIN_CACHED_INT_CONST] =
-      RevAlloc(new IntConst(this, i, ""));  // note the empty name
-  }
 }
 
 // ----- x + c variable, optimized case -----
@@ -2588,148 +2441,6 @@ string TimesPosCstBoolVar::DebugString() const {
                       var_->DebugString().c_str(), cst_);
 }
 
-// ---------- BaseIntExpr ---------
-
-// This constraints links an expression and the variable it is casted into
-class LinkExprAndVar : public Constraint {
- public:
-  LinkExprAndVar(Solver* const s,
-                 IntExpr* const expr,
-                 IntVar* const var)
-      : Constraint(s), expr_(expr), var_(var) {}
-  virtual ~LinkExprAndVar() {}
-
-  virtual void Post() {
-    Solver* const s = solver();
-    Demon* d = s->MakeConstraintInitialPropagateCallback(this);
-    expr_->WhenRange(d);
-    var_->WhenRange(d);
-  }
-
-  virtual void InitialPropagate() {
-    expr_->SetRange(var_->Min(), var_->Max());
-    int64 l, u;
-    expr_->Range(&l, &u);
-    var_->SetRange(l, u);
-  }
-
-  virtual string DebugString() const {
-    return StringPrintf("cast(%s, %s)",
-                        expr_->DebugString().c_str(),
-                        var_->DebugString().c_str());
-  }
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitConstraint(ModelVisitor::kLinkExprVar, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
-                                            expr_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            var_);
-    visitor->EndVisitConstraint(ModelVisitor::kLinkExprVar, this);
-  }
-
- private:
-  IntExpr* const expr_;
-  IntVar* const var_;
-};
-
-// ----- This is a specialized case when the variable exact type is known -----
-class LinkExprAndDomainIntVar : public Constraint {
- public:
-  LinkExprAndDomainIntVar(Solver* const s,
-                          IntExpr* const expr,
-                          DomainIntVar* const var)
-    : Constraint(s), expr_(expr), var_(var), cached_min_(kint64min),
-      cached_max_(kint64max), fail_stamp_(GG_ULONGLONG(0)) {}
-
-  virtual ~LinkExprAndDomainIntVar() {}
-
-  virtual void Post() {
-    Solver* const s = solver();
-    Demon* const d = s->MakeConstraintInitialPropagateCallback(this);
-    expr_->WhenRange(d);
-    Demon* const var_demon =
-        MakeConstraintDemon0(solver(),
-                             this,
-                             &LinkExprAndDomainIntVar::Propagate,
-                             "Propagate");
-    var_->WhenRange(var_demon);
-  }
-
-  virtual void InitialPropagate() {
-    expr_->SetRange(var_->min_, var_->max_);
-    expr_->Range(&cached_min_, &cached_max_);
-    var_->DomainIntVar::SetRange(cached_min_, cached_max_);
-  }
-
-  void Propagate() {
-    if (var_->min_ > cached_min_ ||
-        var_->max_ < cached_max_ ||
-        solver()->fail_stamp() != fail_stamp_) {
-      InitialPropagate();
-      fail_stamp_ = solver()->fail_stamp();
-    }
-  }
-
-  virtual string DebugString() const {
-    return StringPrintf("cast(%s, %s)",
-                        expr_->DebugString().c_str(),
-                        var_->DebugString().c_str());
-  }
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitConstraint(ModelVisitor::kLinkExprVar, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
-                                            expr_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            var_);
-    visitor->EndVisitConstraint(ModelVisitor::kLinkExprVar, this);
-  }
-
- private:
-  IntExpr* const expr_;
-  DomainIntVar* const var_;
-  int64 cached_min_;
-  int64 cached_max_;
-  uint64 fail_stamp_;
-};
-
-void LinkVarExpr(Solver* const s, IntExpr* const expr, IntVar* const var) {
-  if (!var->Bound()) {
-    if (var->VarType() == DOMAIN_INT_VAR) {
-      DomainIntVar* dvar = reinterpret_cast<DomainIntVar*>(var);
-      s->AddConstraint(s->RevAlloc(new LinkExprAndDomainIntVar(s, expr, dvar)));
-    } else {
-      s->AddConstraint(s->RevAlloc(new LinkExprAndVar(s, expr, var)));
-    }
-  }
-}
-
-IntVar* BaseIntExpr::Var() {
-  if (var_ == NULL) {
-    solver()->SaveValue(reinterpret_cast<void**>(&var_));
-    var_ = CastToVar();
-  }
-  return var_;
-}
-
-IntVar* BaseIntExpr::CastToVar() {
-  int64 vmin, vmax;
-  Range(&vmin, &vmax);
-  IntVar* const var = solver()->MakeIntVar(vmin, vmax);
-  AddDelegateName("Var", var);
-  LinkVarExpr(solver(), this, var);
-  return var;
-}
-
-void BaseIntExpr::AddDelegateName(const string& prefix,
-                                  const PropagationBaseObject* d) const {
-  // TODO(user) : Find a reversible solution when in search.
-  if (solver()->state_ != Solver::IN_SEARCH) {
-    solver()->delegate_objects_[d] = make_pair(prefix, this);
-  }
-}
-
 // ---------- arithmetic expressions ----------
 
 // ----- PlusIntExpr -----
@@ -2799,21 +2510,6 @@ void PlusIntExpr::SetRange(int64 l, int64 u) {
   }
 }
 
-IntExpr* Solver::MakeSum(IntExpr* const l, IntExpr* const r) {
-  CHECK_EQ(this, l->solver());
-  CHECK_EQ(this, r->solver());
-  if (r->Bound()) {
-    return MakeSum(l, r->Min());
-  }
-  if (l->Bound()) {
-    return MakeSum(r, l->Min());
-  }
-  if (l == r) {
-    return MakeProd(l, 2);
-  }
-  return RevAlloc(new PlusIntExpr(this, l, r));
-}
-
 // ----- PlusIntCstExpr -----
 
 class PlusIntCstExpr : public BaseIntExpr {
@@ -2874,17 +2570,6 @@ IntVar* PlusIntCstExpr::CastToVar() {
   }
   AddDelegateName("Var", cast);
   return cast;
-}
-
-IntExpr* Solver::MakeSum(IntExpr* const e, int64 v) {
-  CHECK_EQ(this, e->solver());
-  if (e->Bound()) {
-    return MakeIntConst(e->Min() + v);
-  }
-  if (v == 0) {
-    return e;
-  }
-  return RevAlloc(new PlusIntCstExpr(this, e, v));
 }
 
 // ----- SubIntExpr -----
@@ -2954,135 +2639,6 @@ void SubIntExpr::SetRange(int64 l, int64 u) {
 }
 
 // l - r
-IntExpr* Solver::MakeDifference(IntExpr* const l, IntExpr* const r) {
-  CHECK_EQ(this, l->solver());
-  CHECK_EQ(this, r->solver());
-  if (l->Bound()) {
-    return MakeDifference(l->Min(), r);
-  }
-  if (r->Bound()) {
-    return MakeSum(l, -r->Min());
-  }
-  return RevAlloc(new SubIntExpr(this, l, r));
-}
-
-IntVar* Solver::MakeIsEqualVar(IntExpr* const v1, IntExpr* const v2) {
-  CHECK_EQ(this, v1->solver());
-  CHECK_EQ(this, v2->solver());
-  if (v1->Bound()) {
-    return MakeIsEqualCstVar(v2->Var(), v1->Min());
-  } else if (v2->Bound()) {
-    return MakeIsEqualCstVar(v1->Var(), v2->Min());
-  }
-  return MakeIsEqualCstVar(MakeDifference(v1, v2)->Var(), 0);
-}
-
-Constraint* Solver::MakeIsEqualCt(IntExpr* const v1,
-                                  IntExpr* const v2,
-                                  IntVar* b) {
-  CHECK_EQ(this, v1->solver());
-  CHECK_EQ(this, v2->solver());
-  if (v1->Bound()) {
-    return MakeIsEqualCstCt(v2->Var(), v1->Min(), b);
-  } else if (v2->Bound()) {
-    return MakeIsEqualCstCt(v1->Var(), v2->Min(), b);
-  }
-  return MakeIsEqualCstCt(MakeDifference(v1, v2)->Var(), 0, b);
-}
-
-IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
-  CHECK_EQ(this, v1->solver());
-  CHECK_EQ(this, v2->solver());
-  if (v1->Bound()) {
-    return MakeIsDifferentCstVar(v2->Var(), v1->Min());
-  } else if (v2->Bound()) {
-    return MakeIsDifferentCstVar(v1->Var(), v2->Min());
-  }
-  return MakeIsDifferentCstVar(MakeDifference(v1, v2)->Var(), 0);
-}
-
-Constraint* Solver::MakeIsDifferentCt(IntExpr* const v1,
-                                      IntExpr* const v2,
-                                      IntVar* b) {
-  CHECK_EQ(this, v1->solver());
-  CHECK_EQ(this, v2->solver());
-  if (v1->Bound()) {
-    return MakeIsDifferentCstCt(v2->Var(), v1->Min(), b);
-  } else if (v2->Bound()) {
-    return MakeIsDifferentCstCt(v1->Var(), v2->Min(), b);
-  }
-  return MakeIsDifferentCstCt(MakeDifference(v1, v2)->Var(), 0, b);
-}
-
-IntVar* Solver::MakeIsLessOrEqualVar(
-    IntExpr* const left, IntExpr* const right) {
-  CHECK_EQ(this, left->solver());
-  CHECK_EQ(this, right->solver());
-  if (left->Bound()) {
-    return MakeIsGreaterOrEqualCstVar(right->Var(), left->Min());
-  } else if (right->Bound()) {
-    return MakeIsLessOrEqualCstVar(left->Var(), right->Min());
-  }
-  return MakeIsLessOrEqualCstVar(MakeDifference(left, right)->Var(), 0);
-}
-
-Constraint* Solver::MakeIsLessOrEqualCt(
-    IntExpr* const left, IntExpr* const right, IntVar* const b) {
-  CHECK_EQ(this, left->solver());
-  CHECK_EQ(this, right->solver());
-  if (left->Bound()) {
-    return MakeIsGreaterOrEqualCstCt(right->Var(), left->Min(), b);
-  } else if (right->Bound()) {
-    return MakeIsLessOrEqualCstCt(left->Var(), right->Min(), b);
-  }
-  return MakeIsLessOrEqualCstCt(MakeDifference(left, right)->Var(), 0, b);
-}
-
-IntVar* Solver::MakeIsLessVar(
-    IntExpr* const left, IntExpr* const right) {
-  CHECK_EQ(this, left->solver());
-  CHECK_EQ(this, right->solver());
-  if (left->Bound()) {
-    return MakeIsGreaterCstVar(right->Var(), left->Min());
-  } else if (right->Bound()) {
-    return MakeIsLessCstVar(left->Var(), right->Min());
-  }
-  return MakeIsLessCstVar(MakeDifference(left, right)->Var(), 0);
-}
-
-Constraint* Solver::MakeIsLessCt(
-    IntExpr* const left, IntExpr* const right, IntVar* const b) {
-  CHECK_EQ(this, left->solver());
-  CHECK_EQ(this, right->solver());
-  if (left->Bound()) {
-    return MakeIsGreaterCstCt(right->Var(), left->Min(), b);
-  } else if (right->Bound()) {
-    return MakeIsLessCstCt(left->Var(), right->Min(), b);
-  }
-  return MakeIsLessCstCt(MakeDifference(left, right)->Var(), 0, b);
-}
-
-IntVar* Solver::MakeIsGreaterOrEqualVar(
-    IntExpr* const left, IntExpr* const right) {
-  return MakeIsLessOrEqualVar(right, left);
-}
-
-Constraint* Solver::MakeIsGreaterOrEqualCt(
-    IntExpr* const left, IntExpr* const right, IntVar* const b) {
-
-  return MakeIsLessOrEqualCt(right, left, b);
-}
-
-IntVar* Solver::MakeIsGreaterVar(
-    IntExpr* const left, IntExpr* const right) {
-  return MakeIsLessVar(right, left);
-}
-
-Constraint* Solver::MakeIsGreaterCt(
-    IntExpr* const left, IntExpr* const right, IntVar* const b) {
-  return MakeIsLessCt(right, left, b);
-}
-
 
 // ----- SubIntCstExpr -----
 
@@ -3137,18 +2693,6 @@ IntVar* SubIntCstExpr::CastToVar() {
   return var;
 }
 
-// warning: this is 'v - e'.
-IntExpr* Solver::MakeDifference(int64 v, IntExpr* const e) {
-  CHECK_EQ(this, e->solver());
-  if (e->Bound()) {
-    return MakeIntConst(v - e->Min());
-  }
-  if (v == 0) {
-    return MakeOpposite(e);
-  }
-  return RevAlloc(new SubIntCstExpr(this, e, v));
-}
-
 // ----- OppIntExpr -----
 
 class OppIntExpr : public BaseIntExpr {
@@ -3195,18 +2739,6 @@ IntVar* OppIntExpr::CastToVar() {
   IntVar* const var = s->RevAlloc(new OppIntVar(s, expr_->Var()));
   AddDelegateName("Var", var);
   return var;
-}
-
-IntExpr* Solver::MakeOpposite(IntExpr* const e) {
-  CHECK_EQ(this, e->solver());
-  if (e->Bound()) {
-    return MakeIntConst(-e->Min());
-  }
-  IntExpr* result = RevAlloc(new OppIntExpr(this, e));
-  if (e->IsVar() && !FLAGS_cp_disable_expression_optimization) {
-    result = result->Var();
-  }
-  return result;
 }
 
 // ----- TimesIntPosCstExpr -----
@@ -3340,31 +2872,9 @@ void TimesIntNegCstExpr::SetMax(int64 m) {
   expr_->SetMin(PosIntDivUp(-m, -value_));
 }
 
-IntExpr* Solver::MakeProd(IntExpr* const e, int64 v) {
-  CHECK_EQ(this, e->solver());
-  IntExpr* result;
-  if (e->Bound()) {
-    return MakeIntConst(v * e->Min());
-  } else if (v == 1) {
-    return e;
-  } else if (v == -1) {
-    return MakeOpposite(e);
-  } else if (v > 0) {
-    result = RevAlloc(new TimesIntPosCstExpr(this, e, v));
-  } else if (v == 0) {
-    result = MakeIntConst(0);
-  } else {
-    result = RevAlloc(new TimesIntNegCstExpr(this, e, v));
-  }
-  if (e->IsVar() && !FLAGS_cp_disable_expression_optimization) {
-    result = result->Var();
-  }
-  return result;
-}
 
 // ----- Utilities for product expression -----
 
-namespace {
 // Propagates set_min on left * right, left and right >= 0.
 void SetPosPosMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
   DCHECK_GE(left->Min(), 0);
@@ -3484,7 +2994,6 @@ void TimesSetMin(IntExpr* const left,
     SetGenGenMinExpr(left, right, m);
   }
 }
-}  // namespace
 
 class TimesIntExpr : public BaseIntExpr {
  public:
@@ -3900,64 +3409,6 @@ bool TimesBooleanIntExpr::Bound() const {
               expr_->Max() == 0)));
 }
 
-IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
-  if (l->Bound()) {
-    return MakeProd(r, l->Min());
-  }
-  if (r->Bound()) {
-    return MakeProd(l, r->Min());
-  }
-  if (l == r) {
-    return MakeSquare(l);
-  }
-  CHECK_EQ(this, l->solver());
-  CHECK_EQ(this, r->solver());
-  if (l->IsVar() &&
-      reinterpret_cast<IntVar*>(l)->VarType() == BOOLEAN_VAR) {
-    if (r->Min() >= 0) {
-      return RevAlloc(
-          new TimesBooleanPosIntExpr(this,
-                                     reinterpret_cast<BooleanVar*>(l), r));
-    } else {
-      return RevAlloc(
-          new TimesBooleanIntExpr(this, reinterpret_cast<BooleanVar*>(l), r));
-    }
-  }
-  if (r->IsVar() &&
-      reinterpret_cast<IntVar*>(r)->VarType() == BOOLEAN_VAR) {
-    if (l->Min() >= 0) {
-      return RevAlloc(
-          new TimesBooleanPosIntExpr(this,
-                                     reinterpret_cast<BooleanVar*>(r), l));
-    } else {
-      return RevAlloc(
-          new TimesBooleanIntExpr(this, reinterpret_cast<BooleanVar*>(r), l));
-    }
-  }
-  if (l->Min() >= 0 && r->Min() >= 0) {
-    return RevAlloc(new TimesIntPosExpr(this, l, r));
-  } else {
-    return RevAlloc(new TimesIntExpr(this, l, r));
-  }
-}
-
-IntExpr* Solver::MakeDiv(IntExpr* const numerator, IntExpr* const denominator) {
-  // Both numerator and denominator are positive.
-  // Denominator needs to be != 0.
-  AddConstraint(MakeGreater(denominator, 0));
-  IntVar* const result = MakeIntVar(0, numerator->Max());
-  IntExpr* const product = MakeProd(denominator, result);
-  // The integer division result = numerator / denominator means
-  // numerator = result * denominator + quotient, with quotient < denominator.
-  // This translates into:
-  //     numerator >= denominator * result
-  AddConstraint(MakeGreaterOrEqual(numerator->Var(), product->Var()));
-  //     numerator < denominator * result + denominator
-  IntExpr* const product_up = MakeSum(product, denominator);
-  AddConstraint(MakeLess(numerator->Var(), product_up->Var()));
-  return result;
-}
-
 // ----- DivIntPosCstExpr -----
 
 class DivIntPosCstExpr : public BaseIntExpr {
@@ -4003,26 +3454,6 @@ class DivIntPosCstExpr : public BaseIntExpr {
   IntExpr* const expr_;
   const int64 value_;
 };
-
-IntExpr* Solver::MakeDiv(IntExpr* const e, int64 v) {
-  CHECK(e != NULL);
-  CHECK_EQ(this, e->solver());
-  if (e->Bound()) {
-    return MakeIntConst(PosIntDivDown(e->Min(), v));
-  } else if (v == 1) {
-    return e;
-  } else if (v == -1) {
-    return MakeOpposite(e);
-  } else if (v > 0) {
-    return RevAlloc(new DivIntPosCstExpr(this, e, v));
-  } else if (v == 0) {
-    LOG(FATAL) << "Cannot divide by 0";
-    return NULL;
-  } else {
-    return MakeOpposite(RevAlloc(new DivIntPosCstExpr(this, e, -v)));
-    // TODO(user) : implement special case.
-  }
-}
 
 // ----- IntAbs ------
 
@@ -4095,16 +3526,6 @@ int64 IntAbs::Max() const {
     return -emin;
   }
   return std::max(-emin, emax);
-}
-
-IntExpr* Solver::MakeAbs(IntExpr* const e) {
-  CHECK_EQ(this, e->solver());
-  if (e->Min() >= 0) {
-    return e;
-  } else if (e->Max() <= 0) {
-    return MakeOpposite(e);
-  }
-  return RevAlloc(new IntAbs(this, e));
 }
 
 // ----- Square -----
@@ -4227,18 +3648,6 @@ class PosIntSquare : public BaseIntExpr {
   IntExpr* const expr_;
 };
 
-IntExpr* Solver::MakeSquare(IntExpr* const e) {
-  CHECK_EQ(this, e->solver());
-  if (e->Bound()) {
-    const int64 v = e->Min();
-    return MakeIntConst(v * v);
-  }
-  if (e->Min() >= 0) {
-    return RevAlloc(new PosIntSquare(this, e));
-  }
-  return RevAlloc(new IntSquare(this, e));
-}
-
 // ----- Min(expr, expr) -----
 
 class MinIntExpr : public BaseIntExpr {
@@ -4296,24 +3705,6 @@ class MinIntExpr : public BaseIntExpr {
   IntExpr* const right_;
 };
 
-IntExpr* Solver::MakeMin(IntExpr* const l, IntExpr* const r) {
-  CHECK_EQ(this, l->solver());
-  CHECK_EQ(this, r->solver());
-  if (l->Bound()) {
-    return MakeMin(r, l->Min());
-  }
-  if (r->Bound()) {
-    return MakeMin(l, r->Min());
-  }
-  if (l->Min() > r->Max()) {
-    return r;
-  }
-  if (r->Min() > l->Max()) {
-    return l;
-  }
-  return RevAlloc(new MinIntExpr(this, l, r));
-}
-
 // ----- Min(expr, constant) -----
 
 class MinCstIntExpr : public BaseIntExpr {
@@ -4364,24 +3755,6 @@ class MinCstIntExpr : public BaseIntExpr {
   IntExpr* const expr_;
   const int64 value_;
 };
-
-IntExpr* Solver::MakeMin(IntExpr* const e, int64 v) {
-  CHECK_EQ(this, e->solver());
-  if (v < e->Min()) {
-    return MakeIntConst(v);
-  }
-  if (e->Bound()) {
-    return MakeIntConst(std::min(e->Min(), v));
-  }
-  if (e->Max() < v) {
-    return e;
-  }
-  return RevAlloc(new MinCstIntExpr(this, e, v));
-}
-
-IntExpr* Solver::MakeMin(IntExpr* const e, int v) {
-  return MakeMin(e, static_cast<int64>(v));
-}
 
 // ----- Max(expr, expr) -----
 
@@ -4441,24 +3814,6 @@ class MaxIntExpr : public BaseIntExpr {
   IntExpr* const right_;
 };
 
-IntExpr* Solver::MakeMax(IntExpr* const l, IntExpr* const r) {
-  CHECK_EQ(this, l->solver());
-  CHECK_EQ(this, r->solver());
-  if (l->Bound()) {
-    return MakeMax(r, l->Min());
-  }
-  if (r->Bound()) {
-    return MakeMax(l, r->Min());
-  }
-  if (l->Min() > r->Max()) {
-    return l;
-  }
-  if (r->Min() > l->Max()) {
-    return r;
-  }
-  return RevAlloc(new MaxIntExpr(this, l, r));
-}
-
 // ----- Max(expr, constant) -----
 
 class MaxCstIntExpr : public BaseIntExpr {
@@ -4509,24 +3864,6 @@ class MaxCstIntExpr : public BaseIntExpr {
   IntExpr* const expr_;
   const int64 value_;
 };
-
-IntExpr* Solver::MakeMax(IntExpr* const e, int64 v) {
-  CHECK_EQ(this, e->solver());
-  if (e->Bound()) {
-    return MakeIntConst(std::max(e->Min(), v));
-  }
-  if (v < e->Min()) {
-    return e;
-  }
-  if (e->Max() < v) {
-    return MakeIntConst(v);
-  }
-  return RevAlloc(new MaxCstIntExpr(this, e, v));
-}
-
-IntExpr* Solver::MakeMax(IntExpr* const e, int v) {
-  return MakeMax(e, static_cast<int64>(v));
-}
 
 // ----- Convex Piecewise -----
 
@@ -4648,14 +3985,6 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
   const int64 late_date_;
   const int64 late_cost_;
 };
-
-IntExpr* Solver::MakeConvexPiecewiseExpr(IntVar* e,
-                                         int64 early_cost, int64 early_date,
-                                         int64 late_date, int64 late_cost) {
-  return RevAlloc(new SimpleConvexPiecewiseExpr(this, e,
-                                                early_cost, early_date,
-                                                late_date, late_cost));
-}
 
 // ----- Semi Continuous -----
 
@@ -4862,7 +4191,706 @@ class SemiContinuousStepZeroExpr : public BaseIntExpr {
   const int64 fixed_charge_;
 };
 
-IntExpr* Solver::MakeSemiContinuousExpr(IntExpr* e,
+// This constraints links an expression and the variable it is casted into
+class LinkExprAndVar : public Constraint {
+ public:
+  LinkExprAndVar(Solver* const s,
+                 IntExpr* const expr,
+                 IntVar* const var)
+      : Constraint(s), expr_(expr), var_(var) {}
+  virtual ~LinkExprAndVar() {}
+
+  virtual void Post() {
+    Solver* const s = solver();
+    Demon* d = s->MakeConstraintInitialPropagateCallback(this);
+    expr_->WhenRange(d);
+    var_->WhenRange(d);
+  }
+
+  virtual void InitialPropagate() {
+    expr_->SetRange(var_->Min(), var_->Max());
+    int64 l, u;
+    expr_->Range(&l, &u);
+    var_->SetRange(l, u);
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("cast(%s, %s)",
+                        expr_->DebugString().c_str(),
+                        var_->DebugString().c_str());
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kLinkExprVar, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            var_);
+    visitor->EndVisitConstraint(ModelVisitor::kLinkExprVar, this);
+  }
+
+ private:
+  IntExpr* const expr_;
+  IntVar* const var_;
+};
+
+// ----- This is a specialized case when the variable exact type is known -----
+class LinkExprAndDomainIntVar : public Constraint {
+ public:
+  LinkExprAndDomainIntVar(Solver* const s,
+                          IntExpr* const expr,
+                          DomainIntVar* const var)
+    : Constraint(s), expr_(expr), var_(var), cached_min_(kint64min),
+      cached_max_(kint64max), fail_stamp_(GG_ULONGLONG(0)) {}
+
+  virtual ~LinkExprAndDomainIntVar() {}
+
+  virtual void Post() {
+    Solver* const s = solver();
+    Demon* const d = s->MakeConstraintInitialPropagateCallback(this);
+    expr_->WhenRange(d);
+    Demon* const var_demon =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &LinkExprAndDomainIntVar::Propagate,
+                             "Propagate");
+    var_->WhenRange(var_demon);
+  }
+
+  virtual void InitialPropagate() {
+    expr_->SetRange(var_->min_, var_->max_);
+    expr_->Range(&cached_min_, &cached_max_);
+    var_->DomainIntVar::SetRange(cached_min_, cached_max_);
+  }
+
+  void Propagate() {
+    if (var_->min_ > cached_min_ ||
+        var_->max_ < cached_max_ ||
+        solver()->fail_stamp() != fail_stamp_) {
+      InitialPropagate();
+      fail_stamp_ = solver()->fail_stamp();
+    }
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("cast(%s, %s)",
+                        expr_->DebugString().c_str(),
+                        var_->DebugString().c_str());
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kLinkExprVar, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            var_);
+    visitor->EndVisitConstraint(ModelVisitor::kLinkExprVar, this);
+  }
+
+ private:
+  IntExpr* const expr_;
+  DomainIntVar* const var_;
+  int64 cached_min_;
+  int64 cached_max_;
+  uint64 fail_stamp_;
+};
+}  // namespace
+
+// ---------- BaseIntExpr ---------
+
+
+void LinkVarExpr(Solver* const s, IntExpr* const expr, IntVar* const var) {
+  if (!var->Bound()) {
+    if (var->VarType() == DOMAIN_INT_VAR) {
+      DomainIntVar* dvar = reinterpret_cast<DomainIntVar*>(var);
+      s->AddDelegateConstraint(
+          s->RevAlloc(new LinkExprAndDomainIntVar(s, expr, dvar)));
+    } else {
+      s->AddDelegateConstraint(s->RevAlloc(new LinkExprAndVar(s, expr, var)));
+    }
+  }
+}
+
+IntVar* BaseIntExpr::Var() {
+  if (var_ == NULL) {
+    solver()->SaveValue(reinterpret_cast<void**>(&var_));
+    var_ = CastToVar();
+  }
+  return var_;
+}
+
+IntVar* BaseIntExpr::CastToVar() {
+  int64 vmin, vmax;
+  Range(&vmin, &vmax);
+  IntVar* const var = solver()->MakeIntVar(vmin, vmax);
+  AddDelegateName("Var", var);
+  LinkVarExpr(solver(), this, var);
+  return var;
+}
+
+void BaseIntExpr::AddDelegateName(const string& prefix,
+                                  const PropagationBaseObject* d) const {
+  // TODO(user) : Find a reversible solution when in search.
+  if (solver()->state_ != Solver::IN_SEARCH) {
+    solver()->delegate_objects_[d] = make_pair(prefix, this);
+  }
+}
+
+// ----- Utilities -----
+
+// Variable-based queue cleaner. It is used to put a domain int var in
+// a clean state after a failure occuring during its process() method.
+class VariableQueueCleaner : public Action {
+ public:
+  VariableQueueCleaner() : var_(NULL) {}
+
+  virtual ~VariableQueueCleaner() {}
+
+  virtual void Run(Solver* const solver) {
+    DCHECK(var_ != NULL);
+    var_->ClearInProcess();
+  }
+
+  void set_var(DomainIntVar* const var) { var_ = var; }
+
+ private:
+  DomainIntVar* var_;
+};
+
+Action* NewDomainIntVarCleaner() {
+  return new VariableQueueCleaner;
+}
+
+void Solver::set_queue_cleaner_on_fail(IntVar* const var) {
+  DCHECK_EQ(DOMAIN_INT_VAR, var->VarType());
+  DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
+  VariableQueueCleaner* const cleaner =
+      reinterpret_cast<VariableQueueCleaner*>(variable_cleaner_.get());
+  cleaner->set_var(dvar);
+  set_queue_action_on_fail(cleaner);
+}
+
+void RestoreBoolValue(IntVar* const var) {
+  DCHECK_EQ(BOOLEAN_VAR, var->VarType());
+  BooleanVar* const boolean_var = reinterpret_cast<BooleanVar*>(var);
+  boolean_var->RestoreValue();
+}
+
+// ----- API -----
+
+IntVar* Solver::MakeIntVar(int64 min, int64 max, const string& name) {
+  if (min == max) {
+    return RevAlloc(new IntConst(this, min, name));
+  }
+  if (min == 0 && max == 1) {
+    return RevAlloc(new BooleanVar(this, name));
+  } else {
+    return RevAlloc(new DomainIntVar(this, min, max, name));
+  }
+}
+
+IntVar* Solver::MakeIntVar(int64 min, int64 max) {
+  return MakeIntVar(min, max, "");
+}
+
+IntVar* Solver::MakeBoolVar(const string& name) {
+  return RevAlloc(new BooleanVar(this, name));
+}
+
+IntVar* Solver::MakeBoolVar() {
+  return RevAlloc(new BooleanVar(this, ""));
+}
+
+IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const string& name) {
+  ConstIntArray domain(values);
+  scoped_ptr<std::vector<int64> > sorted_values(
+      domain.SortedCopyWithoutDuplicates(true));
+  IntVar* const var = RevAlloc(new DomainIntVar(this,
+                                                *sorted_values.get(),
+                                                name));
+  return var;
+}
+
+IntVar* Solver::MakeIntVar(const std::vector<int64>& values) {
+  return MakeIntVar(values, "");
+}
+
+IntVar* Solver::MakeIntVar(const std::vector<int>& values, const string& name) {
+  ConstIntArray domain(values);
+  scoped_ptr<std::vector<int64> > sorted_values(
+      domain.SortedCopyWithoutDuplicates(true));
+  IntVar* const var = RevAlloc(new DomainIntVar(this,
+                                                *sorted_values.get(),
+                                                name));
+  return var;
+}
+
+IntVar* Solver::MakeIntVar(const std::vector<int>& values) {
+  return MakeIntVar(values, "");
+}
+
+IntVar* Solver::MakeIntConst(int64 val, const string& name) {
+  // If IntConst is going to be named after its creation,
+  // cp_share_int_consts should be set to false otherwise names can potentially
+  // be overwritten.
+  if (FLAGS_cp_share_int_consts &&
+      name.empty() &&
+      val >= MIN_CACHED_INT_CONST && val <= MAX_CACHED_INT_CONST) {
+    return cached_constants_[val - MIN_CACHED_INT_CONST];
+  }
+  return RevAlloc(new IntConst(this, val, name));
+}
+
+IntVar* Solver::MakeIntConst(int64 val) {
+  return MakeIntConst(val, "");
+}
+
+// ----- Int Var and associated methods -----
+
+void Solver::MakeIntVarArray(int var_count,
+                             int64 vmin,
+                             int64 vmax,
+                             const string& name,
+                             std::vector<IntVar*>* vars) {
+  for (int i = 0; i < var_count; ++i) {
+    string vname = StringPrintf("%s%d", name.c_str(), i);
+    vars->push_back(MakeIntVar(vmin, vmax, vname));
+  }
+}
+
+void Solver::MakeIntVarArray(int var_count,
+                             int64 vmin,
+                             int64 vmax,
+                             std::vector<IntVar*>* vars) {
+  for (int i = 0; i < var_count; ++i) {
+    vars->push_back(MakeIntVar(vmin, vmax));
+  }
+}
+
+IntVar** Solver::MakeIntVarArray(int var_count,
+                                 int64 vmin,
+                                 int64 vmax,
+                                 const string& name) {
+  IntVar** vars = new IntVar*[var_count];
+  for (int i = 0; i < var_count; ++i) {
+    string vname = StringPrintf("%s%d", name.c_str(), i);
+    vars[i] = MakeIntVar(vmin, vmax, vname);
+  }
+  return vars;
+}
+
+void Solver::MakeBoolVarArray(int var_count,
+                              const string& name,
+                              std::vector<IntVar*>* vars) {
+  for (int i = 0; i < var_count; ++i) {
+    string vname = StringPrintf("%s%d", name.c_str(), i);
+    vars->push_back(MakeBoolVar(vname));
+  }
+}
+
+void Solver::MakeBoolVarArray(int var_count, std::vector<IntVar*>* vars) {
+  for (int i = 0; i < var_count; ++i) {
+    vars->push_back(MakeBoolVar());
+  }
+}
+
+IntVar** Solver::MakeBoolVarArray(int var_count, const string& name) {
+  IntVar** vars = new IntVar*[var_count];
+  for (int i = 0; i < var_count; ++i) {
+    string vname = StringPrintf("%s%d", name.c_str(), i);
+    vars[i] = MakeBoolVar(vname);
+  }
+  return vars;
+}
+
+void Solver::InitCachedIntConstants() {
+  for (int i = MIN_CACHED_INT_CONST; i <= MAX_CACHED_INT_CONST; ++i) {
+    cached_constants_[i - MIN_CACHED_INT_CONST] =
+      RevAlloc(new IntConst(this, i, ""));  // note the empty name
+  }
+}
+
+IntExpr* Solver::MakeSum(IntExpr* const l, IntExpr* const r) {
+  CHECK_EQ(this, l->solver());
+  CHECK_EQ(this, r->solver());
+  if (r->Bound()) {
+    return MakeSum(l, r->Min());
+  }
+  if (l->Bound()) {
+    return MakeSum(r, l->Min());
+  }
+  if (l == r) {
+    return MakeProd(l, 2);
+  }
+  return RevAlloc(new PlusIntExpr(this, l, r));
+}
+
+IntExpr* Solver::MakeSum(IntExpr* const e, int64 v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Bound()) {
+    return MakeIntConst(e->Min() + v);
+  }
+  if (v == 0) {
+    return e;
+  }
+  return RevAlloc(new PlusIntCstExpr(this, e, v));
+}
+IntExpr* Solver::MakeDifference(IntExpr* const l, IntExpr* const r) {
+  CHECK_EQ(this, l->solver());
+  CHECK_EQ(this, r->solver());
+  if (l->Bound()) {
+    return MakeDifference(l->Min(), r);
+  }
+  if (r->Bound()) {
+    return MakeSum(l, -r->Min());
+  }
+  return RevAlloc(new SubIntExpr(this, l, r));
+}
+
+IntVar* Solver::MakeIsEqualVar(IntExpr* const v1, IntExpr* const v2) {
+  CHECK_EQ(this, v1->solver());
+  CHECK_EQ(this, v2->solver());
+  if (v1->Bound()) {
+    return MakeIsEqualCstVar(v2->Var(), v1->Min());
+  } else if (v2->Bound()) {
+    return MakeIsEqualCstVar(v1->Var(), v2->Min());
+  }
+  return MakeIsEqualCstVar(MakeDifference(v1, v2)->Var(), 0);
+}
+
+Constraint* Solver::MakeIsEqualCt(IntExpr* const v1,
+                                  IntExpr* const v2,
+                                  IntVar* b) {
+  CHECK_EQ(this, v1->solver());
+  CHECK_EQ(this, v2->solver());
+  if (v1->Bound()) {
+    return MakeIsEqualCstCt(v2->Var(), v1->Min(), b);
+  } else if (v2->Bound()) {
+    return MakeIsEqualCstCt(v1->Var(), v2->Min(), b);
+  }
+  return MakeIsEqualCstCt(MakeDifference(v1, v2)->Var(), 0, b);
+}
+
+IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
+  CHECK_EQ(this, v1->solver());
+  CHECK_EQ(this, v2->solver());
+  if (v1->Bound()) {
+    return MakeIsDifferentCstVar(v2->Var(), v1->Min());
+  } else if (v2->Bound()) {
+    return MakeIsDifferentCstVar(v1->Var(), v2->Min());
+  }
+  return MakeIsDifferentCstVar(MakeDifference(v1, v2)->Var(), 0);
+}
+
+Constraint* Solver::MakeIsDifferentCt(IntExpr* const v1,
+                                      IntExpr* const v2,
+                                      IntVar* b) {
+  CHECK_EQ(this, v1->solver());
+  CHECK_EQ(this, v2->solver());
+  if (v1->Bound()) {
+    return MakeIsDifferentCstCt(v2->Var(), v1->Min(), b);
+  } else if (v2->Bound()) {
+    return MakeIsDifferentCstCt(v1->Var(), v2->Min(), b);
+  }
+  return MakeIsDifferentCstCt(MakeDifference(v1, v2)->Var(), 0, b);
+}
+
+IntVar* Solver::MakeIsLessOrEqualVar(
+    IntExpr* const left, IntExpr* const right) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (left->Bound()) {
+    return MakeIsGreaterOrEqualCstVar(right->Var(), left->Min());
+  } else if (right->Bound()) {
+    return MakeIsLessOrEqualCstVar(left->Var(), right->Min());
+  }
+  return MakeIsLessOrEqualCstVar(MakeDifference(left, right)->Var(), 0);
+}
+
+Constraint* Solver::MakeIsLessOrEqualCt(
+    IntExpr* const left, IntExpr* const right, IntVar* const b) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (left->Bound()) {
+    return MakeIsGreaterOrEqualCstCt(right->Var(), left->Min(), b);
+  } else if (right->Bound()) {
+    return MakeIsLessOrEqualCstCt(left->Var(), right->Min(), b);
+  }
+  return MakeIsLessOrEqualCstCt(MakeDifference(left, right)->Var(), 0, b);
+}
+
+IntVar* Solver::MakeIsLessVar(
+    IntExpr* const left, IntExpr* const right) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (left->Bound()) {
+    return MakeIsGreaterCstVar(right->Var(), left->Min());
+  } else if (right->Bound()) {
+    return MakeIsLessCstVar(left->Var(), right->Min());
+  }
+  return MakeIsLessCstVar(MakeDifference(left, right)->Var(), 0);
+}
+
+Constraint* Solver::MakeIsLessCt(
+    IntExpr* const left, IntExpr* const right, IntVar* const b) {
+  CHECK_EQ(this, left->solver());
+  CHECK_EQ(this, right->solver());
+  if (left->Bound()) {
+    return MakeIsGreaterCstCt(right->Var(), left->Min(), b);
+  } else if (right->Bound()) {
+    return MakeIsLessCstCt(left->Var(), right->Min(), b);
+  }
+  return MakeIsLessCstCt(MakeDifference(left, right)->Var(), 0, b);
+}
+
+IntVar* Solver::MakeIsGreaterOrEqualVar(
+    IntExpr* const left, IntExpr* const right) {
+  return MakeIsLessOrEqualVar(right, left);
+}
+
+Constraint* Solver::MakeIsGreaterOrEqualCt(
+    IntExpr* const left, IntExpr* const right, IntVar* const b) {
+
+  return MakeIsLessOrEqualCt(right, left, b);
+}
+
+IntVar* Solver::MakeIsGreaterVar(
+    IntExpr* const left, IntExpr* const right) {
+  return MakeIsLessVar(right, left);
+}
+
+Constraint* Solver::MakeIsGreaterCt(
+    IntExpr* const left, IntExpr* const right, IntVar* const b) {
+  return MakeIsLessCt(right, left, b);
+}
+
+// warning: this is 'v - e'.
+IntExpr* Solver::MakeDifference(int64 v, IntExpr* const e) {
+  CHECK_EQ(this, e->solver());
+  if (e->Bound()) {
+    return MakeIntConst(v - e->Min());
+  }
+  if (v == 0) {
+    return MakeOpposite(e);
+  }
+  return RevAlloc(new SubIntCstExpr(this, e, v));
+}
+
+IntExpr* Solver::MakeOpposite(IntExpr* const e) {
+  CHECK_EQ(this, e->solver());
+  if (e->Bound()) {
+    return MakeIntConst(-e->Min());
+  }
+  IntExpr* result = RevAlloc(new OppIntExpr(this, e));
+  if (e->IsVar() && !FLAGS_cp_disable_expression_optimization) {
+    result = result->Var();
+  }
+  return result;
+}
+
+IntExpr* Solver::MakeProd(IntExpr* const e, int64 v) {
+  CHECK_EQ(this, e->solver());
+  IntExpr* result;
+  if (e->Bound()) {
+    return MakeIntConst(v * e->Min());
+  } else if (v == 1) {
+    return e;
+  } else if (v == -1) {
+    return MakeOpposite(e);
+  } else if (v > 0) {
+    result = RevAlloc(new TimesIntPosCstExpr(this, e, v));
+  } else if (v == 0) {
+    result = MakeIntConst(0);
+  } else {
+    result = RevAlloc(new TimesIntNegCstExpr(this, e, v));
+  }
+  if (e->IsVar() && !FLAGS_cp_disable_expression_optimization) {
+    result = result->Var();
+  }
+  return result;
+}
+
+IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
+  if (l->Bound()) {
+    return MakeProd(r, l->Min());
+  }
+  if (r->Bound()) {
+    return MakeProd(l, r->Min());
+  }
+  if (l == r) {
+    return MakeSquare(l);
+  }
+  CHECK_EQ(this, l->solver());
+  CHECK_EQ(this, r->solver());
+  if (l->IsVar() &&
+      reinterpret_cast<IntVar*>(l)->VarType() == BOOLEAN_VAR) {
+    if (r->Min() >= 0) {
+      return RevAlloc(
+          new TimesBooleanPosIntExpr(this,
+                                     reinterpret_cast<BooleanVar*>(l), r));
+    } else {
+      return RevAlloc(
+          new TimesBooleanIntExpr(this, reinterpret_cast<BooleanVar*>(l), r));
+    }
+  }
+  if (r->IsVar() &&
+      reinterpret_cast<IntVar*>(r)->VarType() == BOOLEAN_VAR) {
+    if (l->Min() >= 0) {
+      return RevAlloc(
+          new TimesBooleanPosIntExpr(this,
+                                     reinterpret_cast<BooleanVar*>(r), l));
+    } else {
+      return RevAlloc(
+          new TimesBooleanIntExpr(this, reinterpret_cast<BooleanVar*>(r), l));
+    }
+  }
+  if (l->Min() >= 0 && r->Min() >= 0) {
+    return RevAlloc(new TimesIntPosExpr(this, l, r));
+  } else {
+    return RevAlloc(new TimesIntExpr(this, l, r));
+  }
+}
+
+IntExpr* Solver::MakeDiv(IntExpr* const numerator, IntExpr* const denominator) {
+  // Both numerator and denominator are positive.
+  // Denominator needs to be != 0.
+  AddConstraint(MakeGreater(denominator, 0));
+  IntVar* const result = MakeIntVar(0, numerator->Max());
+  IntExpr* const product = MakeProd(denominator, result);
+  // The integer division result = numerator / denominator means
+  // numerator = result * denominator + quotient, with quotient < denominator.
+  // This translates into:
+  //     numerator >= denominator * result
+  AddConstraint(MakeGreaterOrEqual(numerator->Var(), product->Var()));
+  //     numerator < denominator * result + denominator
+  IntExpr* const product_up = MakeSum(product, denominator);
+  AddConstraint(MakeLess(numerator->Var(), product_up->Var()));
+  return result;
+}
+
+IntExpr* Solver::MakeDiv(IntExpr* const e, int64 v) {
+  CHECK(e != NULL);
+  CHECK_EQ(this, e->solver());
+  if (e->Bound()) {
+    return MakeIntConst(PosIntDivDown(e->Min(), v));
+  } else if (v == 1) {
+    return e;
+  } else if (v == -1) {
+    return MakeOpposite(e);
+  } else if (v > 0) {
+    return RevAlloc(new DivIntPosCstExpr(this, e, v));
+  } else if (v == 0) {
+    LOG(FATAL) << "Cannot divide by 0";
+    return NULL;
+  } else {
+    return MakeOpposite(RevAlloc(new DivIntPosCstExpr(this, e, -v)));
+    // TODO(user) : implement special case.
+  }
+}
+
+IntExpr* Solver::MakeAbs(IntExpr* const e) {
+  CHECK_EQ(this, e->solver());
+  if (e->Min() >= 0) {
+    return e;
+  } else if (e->Max() <= 0) {
+    return MakeOpposite(e);
+  }
+  return RevAlloc(new IntAbs(this, e));
+}
+
+IntExpr* Solver::MakeSquare(IntExpr* const e) {
+  CHECK_EQ(this, e->solver());
+  if (e->Bound()) {
+    const int64 v = e->Min();
+    return MakeIntConst(v * v);
+  }
+  if (e->Min() >= 0) {
+    return RevAlloc(new PosIntSquare(this, e));
+  }
+  return RevAlloc(new IntSquare(this, e));
+}
+
+IntExpr* Solver::MakeMin(IntExpr* const l, IntExpr* const r) {
+  CHECK_EQ(this, l->solver());
+  CHECK_EQ(this, r->solver());
+  if (l->Bound()) {
+    return MakeMin(r, l->Min());
+  }
+  if (r->Bound()) {
+    return MakeMin(l, r->Min());
+  }
+  if (l->Min() > r->Max()) {
+    return r;
+  }
+  if (r->Min() > l->Max()) {
+    return l;
+  }
+  return RevAlloc(new MinIntExpr(this, l, r));
+}
+
+IntExpr* Solver::MakeMin(IntExpr* const e, int64 v) {
+  CHECK_EQ(this, e->solver());
+  if (v < e->Min()) {
+    return MakeIntConst(v);
+  }
+  if (e->Bound()) {
+    return MakeIntConst(std::min(e->Min(), v));
+  }
+  if (e->Max() < v) {
+    return e;
+  }
+  return RevAlloc(new MinCstIntExpr(this, e, v));
+}
+
+IntExpr* Solver::MakeMin(IntExpr* const e, int v) {
+  return MakeMin(e, static_cast<int64>(v));
+}
+
+IntExpr* Solver::MakeMax(IntExpr* const l, IntExpr* const r) {
+  CHECK_EQ(this, l->solver());
+  CHECK_EQ(this, r->solver());
+  if (l->Bound()) {
+    return MakeMax(r, l->Min());
+  }
+  if (r->Bound()) {
+    return MakeMax(l, r->Min());
+  }
+  if (l->Min() > r->Max()) {
+    return l;
+  }
+  if (r->Min() > l->Max()) {
+    return r;
+  }
+  return RevAlloc(new MaxIntExpr(this, l, r));
+}
+
+IntExpr* Solver::MakeMax(IntExpr* const e, int64 v) {
+  CHECK_EQ(this, e->solver());
+  if (e->Bound()) {
+    return MakeIntConst(std::max(e->Min(), v));
+  }
+  if (v < e->Min()) {
+    return e;
+  }
+  if (e->Max() < v) {
+    return MakeIntConst(v);
+  }
+  return RevAlloc(new MaxCstIntExpr(this, e, v));
+}
+
+IntExpr* Solver::MakeMax(IntExpr* const e, int v) {
+  return MakeMax(e, static_cast<int64>(v));
+}
+
+IntExpr* Solver::MakeConvexPiecewiseExpr(IntVar* e,
+                                         int64 early_cost, int64 early_date,
+                                         int64 late_date, int64 late_cost) {
+  return RevAlloc(new SimpleConvexPiecewiseExpr(this, e,
+                                                early_cost, early_date,
+                                                late_date, late_cost));
+}
+
+IntExpr* Solver::MakeSemiContinuousExpr(IntExpr* const e,
                                         int64 fixed_charge,
                                         int64 step) {
   if (step == 0) {
@@ -4879,5 +4907,4 @@ IntExpr* Solver::MakeSemiContinuousExpr(IntExpr* e,
   // TODO(user) : benchmark with virtualization of
   // PosIntDivDown and PosIntDivUp - or function pointers.
 }
-
 }   // namespace operations_research

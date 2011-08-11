@@ -26,6 +26,7 @@ DEFINE_bool(verbose_simplex_call, false,
 DEFINE_bool(use_clp, true, "use Clp instead of glpk");
 
 namespace operations_research {
+namespace {
 class SimplexConstraint : public SearchMonitor {
  public:
   SimplexConstraint(Solver* const solver,
@@ -88,6 +89,7 @@ class SimplexConstraint : public SearchMonitor {
       runner_->Run(&mp_solver_);
     }
   }
+
  private:
   scoped_ptr<Callback1<MPSolver*> > builder_;
   scoped_ptr<Callback1<MPSolver*> > modifier_;
@@ -97,14 +99,18 @@ class SimplexConstraint : public SearchMonitor {
   const int simplex_frequency_;
   DISALLOW_COPY_AND_ASSIGN(SimplexConstraint);
 };
+}  // namespace
 
 SearchMonitor* Solver::MakeSimplexConnection(
     Callback1<MPSolver*>* const builder,
     Callback1<MPSolver*>* const modifier,
     Callback1<MPSolver*>* const runner,
     int frequency) {
-  return RevAlloc(new SimplexConstraint(this, builder, modifier,
-                                        runner, frequency));
+  return RevAlloc(new SimplexConstraint(this,
+                                        builder,
+                                        modifier,
+                                        runner,
+                                        frequency));
 }
 
 }  // namespace operations_research

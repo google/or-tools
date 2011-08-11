@@ -20,6 +20,7 @@
 #include "constraint_solver/constraint_solveri.h"
 
 namespace operations_research {
+namespace {
 
 class BaseAllDifferent : public Constraint {
  public:
@@ -140,14 +141,9 @@ bool ValueAllDifferent::AllMoves() {
   return true;
 }
 
-Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars, bool range) {
-  return MakeAllDifferent(vars.data(), vars.size(), range);
-}
-
 // ---------- Bounds All Different ----------
 // See http://www.cs.uwaterloo.ca/~cquimper/Papers/ijcai03_TR.pdf for details.
 
-namespace {
 struct Interval {
   int64 min;
   int64 max;
@@ -172,7 +168,7 @@ struct CompareIntervalMax {
   }
 };
 
-  void PathSet(int start, int end, int to, int* const tree) {
+void PathSet(int start, int end, int to, int* const tree) {
   int k = start;
   int l = start;
   while (l != end) {
@@ -196,7 +192,6 @@ int PathMax(const int* const tree, int index) {
     i = tree[i];
   }
   return i;
-}
 }
 
 class BoundsAllDifferent : public BaseAllDifferent {
@@ -419,6 +414,11 @@ bool BoundsAllDifferent::PropagateMax() {
   }
   return modified;
 }
+}  // namespace
+
+Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars, bool range) {
+  return MakeAllDifferent(vars.data(), vars.size(), range);
+}
 
 Constraint* Solver::MakeAllDifferent(const IntVar* const* vars,
                                      int size,
@@ -439,5 +439,4 @@ Constraint* Solver::MakeAllDifferent(const IntVar* const* vars,
     }
   }
 }
-
-}     // namespace operations_research
+}  // namespace operations_research

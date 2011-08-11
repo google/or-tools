@@ -60,6 +60,7 @@ class NoGoodTerm {
   DISALLOW_COPY_AND_ASSIGN(NoGoodTerm);
 };
 
+namespace {
 // ----- IntegerVariableNoGoodTerm -----
 
 // IntVar == int64 specialization.
@@ -105,6 +106,7 @@ class IntegerVariableNoGoodTerm : public NoGoodTerm {
   const bool assign_;
   DISALLOW_COPY_AND_ASSIGN(IntegerVariableNoGoodTerm);
 };
+}  // namespace
 
 // ----- NoGood -----
 
@@ -162,6 +164,7 @@ string NoGood::DebugString() const {
   return result;
 }
 
+namespace {
 // ----- NoGoodManager -----
 
 // This implementation is very naive. It will be kept in the future as
@@ -202,6 +205,7 @@ class NaiveNoGoodManager : public NoGoodManager {
  private:
   std::vector<NoGood*> nogoods_;
 };
+}  // namespace
 
 // ----- API -----
 

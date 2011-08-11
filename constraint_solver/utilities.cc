@@ -218,6 +218,7 @@ void RevBitSet::RevClearAll(Solver* const solver) {
 
 // ----- PrintModelVisitor -----
 
+namespace {
 class PrintModelVisitor : public ModelVisitor {
  public:
   PrintModelVisitor() : indent_(0) {}
@@ -257,6 +258,15 @@ class PrintModelVisitor : public ModelVisitor {
     Decrease();
   }
 
+  virtual void BeginVisitExtension(const string& type_name) {
+    LOG(INFO) << Spaces() << type_name;
+    Increase();
+  }
+
+  virtual void EndVisitExtension(const string& type_name) {
+    Decrease();
+  }
+
   virtual void VisitIntegerVariable(const IntVar* const variable,
                                     const IntExpr* const delegate) {
     if (delegate != NULL) {
@@ -269,6 +279,21 @@ class PrintModelVisitor : public ModelVisitor {
       }
     }
   }
+
+  virtual void VisitIntervalVariable(const IntervalVar* const variable,
+                                     const string operation,
+                                     const IntervalVar* const delegate) {
+    if (delegate != NULL) {
+      LOG(INFO) << Spaces() << operation << " <";
+      Increase();
+      delegate->Accept(this);
+      Decrease();
+      LOG(INFO) << Spaces() << ">";
+    } else {
+      LOG(INFO) << Spaces() << variable->DebugString();
+    }
+  }
+
 
   // Variables.
   virtual void VisitIntegerArgument(const string& arg_name, int64 value) {
@@ -284,6 +309,28 @@ class PrintModelVisitor : public ModelVisitor {
         array.append(", ");
       }
       StringAppendF(&array, "%lld", values[i]);
+    }
+    array.append("]");
+    LOG(INFO) << Spaces() << arg_name << ": " << array;
+  }
+
+  virtual void VisitIntegerMatrixArgument(const string& arg_name,
+                                          const int64* const * const values,
+                                          int rows,
+                                          int columns) {
+    string array = "[";
+    for (int i = 0; i < rows; ++i) {
+      if (i != 0) {
+        array.append(", ");
+      }
+      array.append("[");
+      for (int j = 0; j < columns; ++j) {
+        if (j != 0) {
+          array.append(", ");
+        }
+        StringAppendF(&array, "%lld", values[i][j]);
+      }
+      array.append("]");
     }
     array.append("]");
     LOG(INFO) << Spaces() << arg_name << ": " << array;
@@ -360,6 +407,7 @@ class PrintModelVisitor : public ModelVisitor {
   int indent_;
   string prefix_;
 };
+}  // namespace
 
 ModelVisitor* Solver::MakePrintModelVisitor() {
   return RevAlloc(new PrintModelVisitor);
@@ -367,6 +415,7 @@ ModelVisitor* Solver::MakePrintModelVisitor() {
 
 // ---------- ModelStatisticsVisitor -----------
 
+namespace {
 class ModelStatisticsVisitor : public ModelVisitor {
  public:
   ModelStatisticsVisitor()
@@ -502,6 +551,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   int num_intervals_;
   hash_set<const BaseObject*> already_visited_;
 };
+}  // namespace
 
 ModelVisitor* Solver::MakeStatisticsModelVisitor() {
   return RevAlloc(new ModelStatisticsVisitor);

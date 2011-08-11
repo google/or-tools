@@ -44,7 +44,6 @@ const char* kBinaryNames[] = {
   "STARTS_AT_START",
   "STAYS_IN_SYNC"
 };
-}  // namespace
 
 class IntervalUnaryRelation : public Constraint {
  public:
@@ -121,6 +120,7 @@ void IntervalUnaryRelation::InitialPropagate() {
     }
   }
 }
+}  // namespace
 
 Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t,
                                             Solver::UnaryIntervalRelation r,
@@ -130,6 +130,7 @@ Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t,
 
 // ----- interval <binary relation> interval -----
 
+namespace {
 class IntervalBinaryRelation : public Constraint {
  public:
   IntervalBinaryRelation(Solver* const s,
@@ -251,6 +252,7 @@ void IntervalBinaryRelation::InitialPropagate() {
       break;
   }
 }
+}  // namespace
 
 Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t1,
                                             Solver::BinaryIntervalRelation r,
@@ -260,6 +262,7 @@ Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t1,
 
 // ----- activity a before activity b or activity b before activity a -----
 
+namespace {
 class TemporalDisjunction : public Constraint {
  public:
   enum State { ONE_BEFORE_TWO, TWO_BEFORE_ONE, UNDECIDED };
@@ -422,6 +425,7 @@ void TemporalDisjunction::Decide(State s) {
   RangeDemon1();
   RangeDemon2();
 }
+}  // namespace
 
 Constraint* Solver::MakeTemporalDisjunction(IntervalVar* const t1,
                                             IntervalVar* const t2,

@@ -569,14 +569,16 @@ class DimensionLessThanConstant : public Dimension {
   virtual void EndPropagate() {}
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitExtension("UsageLessConstant", "");
+    visitor->BeginVisitExtension(
+        ModelVisitor::ModelVisitor::kUsageLessConstantExtension);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
                                        weights_,
                                        vars_count_);
-    visitor->VisitIntegerArrayArgument(ModelVisitor::kValueArgument,
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
                                        upper_bounds_,
                                        bins_count_);
-    visitor->EndVisitExtension("UsageLessConstant", "");
+    visitor->EndVisitExtension(
+        ModelVisitor::ModelVisitor::kUsageLessConstantExtension);
   }
 
  private:
@@ -721,14 +723,14 @@ class DimensionWeightedSumEqVar : public Dimension {
   virtual void EndPropagate() {}
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitExtension("UsageEqualVariable", "");
+    visitor->BeginVisitExtension(ModelVisitor::kUsageEqualVariableExtension);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
                                        weights_,
                                        vars_count_);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                loads_,
                                                bins_count_);
-    visitor->EndVisitExtension("UsageEqualVariable", "");
+    visitor->EndVisitExtension(ModelVisitor::kUsageEqualVariableExtension);
   }
 
  private:
@@ -862,13 +864,15 @@ class AssignedWeightedSumDimension : public Dimension {
   virtual void EndPropagate() {}
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitExtension("WeightedSumOfAssignedEqualVariable", "");
+    visitor->BeginVisitExtension(
+        ModelVisitor::kWeightedSumOfAssignedEqualVariableExtension);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
                                        weights_,
                                        vars_count_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             cost_var_);
-    visitor->EndVisitExtension("WeightedSumOfAssignedEqualVariable", "");
+    visitor->EndVisitExtension(
+        ModelVisitor::kWeightedSumOfAssignedEqualVariableExtension);
   }
 
  private:
@@ -962,10 +966,10 @@ class CountAssignedItemsDimension : public Dimension {
   virtual void EndPropagate() {}
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitExtension("CountAssignedItems", "");
+    visitor->BeginVisitExtension(ModelVisitor::kCountAssignedItemsExtension);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             cost_var_);
-    visitor->EndVisitExtension("CountAssignedItems", "");
+    visitor->EndVisitExtension(ModelVisitor::kCountAssignedItemsExtension);
   }
 
  private:
@@ -1097,10 +1101,10 @@ class CountUsedBinDimension : public Dimension {
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitExtension("CountUsedBins", "");
+    visitor->BeginVisitExtension(ModelVisitor::kCountUsedBinsExtension);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             count_var_);
-    visitor->EndVisitExtension("CountUsedBins", "");
+    visitor->EndVisitExtension(ModelVisitor::kCountUsedBinsExtension);
   }
 
  private:
@@ -1161,14 +1165,16 @@ class VariableUsageDimension : public Dimension {
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitExtension("VariableUsageLessConstant", "");
+    visitor->BeginVisitExtension(
+        ModelVisitor::kVariableUsageLessConstantExtension);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
                                        capacities_.data(),
                                        capacities_.size());
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                weights_.data(),
                                                weights_.size());
-    visitor->EndVisitExtension("VariableUsageLessConstant", "");
+    visitor->EndVisitExtension(
+        ModelVisitor::kVariableUsageLessConstantExtension);
   }
 
 

@@ -30,6 +30,7 @@ namespace operations_research {
 const int64 IntervalVar::kMaxValidValue = kint64max >> 2;
 const int64 IntervalVar::kMinValidValue = -kMaxValidValue;
 
+namespace {
 // ----- MirrorIntervalVar -----
 
 class MirrorIntervalVar : public IntervalVar {
@@ -76,13 +77,14 @@ class MirrorIntervalVar : public IntervalVar {
   virtual void WhenPerformedBound(Demon* const d) { t_->WhenPerformedBound(d); }
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->VisitIntervalVariable(this, "mirror", t_);
+    visitor->VisitIntervalVariable(this, ModelVisitor::kMirrorOperation, t_);
   }
 
  private:
   IntervalVar* const t_;
   DISALLOW_COPY_AND_ASSIGN(MirrorIntervalVar);
 };
+}  // namespace
 
 IntervalVar* Solver::MakeMirrorInterval(IntervalVar* const t) {
   return RevAlloc(new MirrorIntervalVar(this, t));
@@ -101,6 +103,7 @@ IntervalVar* Solver::MakeMirrorInterval(IntervalVar* const t) {
 // propagation, three successive calls to StartMin could return,
 // in this order, 1, 2, and kMinValidValue.
 //
+namespace {
 // This class exists so that we can easily implement the
 // IntervalVarRelaxedMax and IntervalVarRelaxedMin classes below.
 class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
@@ -208,15 +211,18 @@ class IntervalVarRelaxedMax : public AlwaysPerformedIntervalVarWrapper {
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->VisitIntervalVariable(this, "relaxed_max", underlying());
+    visitor->VisitIntervalVariable(this,
+                                   ModelVisitor::kRelaxedMaxOperation,
+                                   underlying());
   }
 };
-
+}  // namespace
 
 IntervalVar* Solver::MakeIntervalRelaxedMax(IntervalVar* const interval_var) {
   return RevAlloc(new IntervalVarRelaxedMax(interval_var));
 }
 
+namespace {
 // An interval variable that wraps around an underlying one, relaxing the min
 // start and end. Relaxing means making unbounded when optional.
 //
@@ -228,6 +234,7 @@ IntervalVar* Solver::MakeIntervalRelaxedMax(IntervalVar* const interval_var) {
 // * When the underlying cannot be performed, this interval variable is of
 //      duration 0 and must be performed in an interval unbounded on both sides.
 //
+
 // This class is very useful to implement propagators that may only modify
 // the start max or end max.
 class IntervalVarRelaxedMin : public AlwaysPerformedIntervalVarWrapper {
@@ -256,14 +263,18 @@ class IntervalVarRelaxedMin : public AlwaysPerformedIntervalVarWrapper {
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->VisitIntervalVariable(this, "relaxed_min", underlying());
+    visitor->VisitIntervalVariable(this,
+                                   ModelVisitor::kRelaxedMinOperation,
+                                   underlying());
   }
 };
+}  // namespace
 
 IntervalVar* Solver::MakeIntervalRelaxedMin(IntervalVar* const interval_var) {
   return RevAlloc(new IntervalVarRelaxedMin(interval_var));
 }
 
+namespace {
 class IntervalVarStartExpr : public BaseIntExpr {
  public:
   explicit IntervalVarStartExpr(IntervalVar* const i)
@@ -490,45 +501,6 @@ class IntervalVarPerformedExpr : public BaseIntExpr {
   IntervalVar* interval_;
   DISALLOW_COPY_AND_ASSIGN(IntervalVarPerformedExpr);
 };
-
-void IntervalVar::WhenAnything(Demon* const d) {
-  WhenDurationRange(d);
-  WhenStartRange(d);
-  WhenEndRange(d);
-  WhenPerformedBound(d);
-}
-
-IntExpr* IntervalVar::StartExpr() {
-  if (start_expr_ == NULL) {
-    solver()->SaveValue(reinterpret_cast<void**>(&start_expr_));
-    start_expr_ = solver()->RevAlloc(new IntervalVarStartExpr(this));
-  }
-  return start_expr_;
-}
-
-IntExpr* IntervalVar::DurationExpr() {
-  if (duration_expr_ == NULL) {
-    solver()->SaveValue(reinterpret_cast<void**>(&duration_expr_));
-    duration_expr_ = solver()->RevAlloc(new IntervalVarDurationExpr(this));
-  }
-  return duration_expr_;
-}
-
-IntExpr* IntervalVar::EndExpr() {
-  if (end_expr_ == NULL) {
-    solver()->SaveValue(reinterpret_cast<void**>(&end_expr_));
-    end_expr_ = solver()->RevAlloc(new IntervalVarEndExpr(this));
-  }
-  return end_expr_;
-}
-
-IntExpr* IntervalVar::PerformedExpr() {
-  if (performed_expr_ == NULL) {
-    solver()->SaveValue(reinterpret_cast<void**>(&performed_expr_));
-    performed_expr_ = solver()->RevAlloc(new IntervalVarPerformedExpr(this));
-  }
-  return performed_expr_;
-}
 
 // ----- FixedDurationIntervalVar -----
 
@@ -1059,6 +1031,48 @@ string FixedInterval::DebugString() const {
                 "d, status = performed)",
                 start_, duration_);
   return out;
+}
+}  // namespace
+
+// ----- API -----
+
+void IntervalVar::WhenAnything(Demon* const d) {
+  WhenDurationRange(d);
+  WhenStartRange(d);
+  WhenEndRange(d);
+  WhenPerformedBound(d);
+}
+
+IntExpr* IntervalVar::StartExpr() {
+  if (start_expr_ == NULL) {
+    solver()->SaveValue(reinterpret_cast<void**>(&start_expr_));
+    start_expr_ = solver()->RevAlloc(new IntervalVarStartExpr(this));
+  }
+  return start_expr_;
+}
+
+IntExpr* IntervalVar::DurationExpr() {
+  if (duration_expr_ == NULL) {
+    solver()->SaveValue(reinterpret_cast<void**>(&duration_expr_));
+    duration_expr_ = solver()->RevAlloc(new IntervalVarDurationExpr(this));
+  }
+  return duration_expr_;
+}
+
+IntExpr* IntervalVar::EndExpr() {
+  if (end_expr_ == NULL) {
+    solver()->SaveValue(reinterpret_cast<void**>(&end_expr_));
+    end_expr_ = solver()->RevAlloc(new IntervalVarEndExpr(this));
+  }
+  return end_expr_;
+}
+
+IntExpr* IntervalVar::PerformedExpr() {
+  if (performed_expr_ == NULL) {
+    solver()->SaveValue(reinterpret_cast<void**>(&performed_expr_));
+    performed_expr_ = solver()->RevAlloc(new IntervalVarPerformedExpr(this));
+  }
+  return performed_expr_;
 }
 
 IntervalVar* Solver::MakeFixedInterval(int64 start,

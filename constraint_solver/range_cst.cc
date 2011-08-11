@@ -21,6 +21,7 @@ namespace operations_research {
 //-----------------------------------------------------------------------------
 // RangeEquality
 
+namespace {
 class RangeEquality : public Constraint {
  public:
   RangeEquality(Solver* const s, IntVar* const l, IntVar* const r);
@@ -29,10 +30,11 @@ class RangeEquality : public Constraint {
   virtual void InitialPropagate();
   virtual string DebugString() const;
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitConstraint("Equality", this);
-    visitor->VisitIntegerExpressionArgument("left", left_);
-    visitor->VisitIntegerExpressionArgument("right", right_);
-    visitor->EndVisitConstraint("Equality", this);
+    visitor->BeginVisitConstraint(ModelVisitor::kEquality, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
+                                            right_);
+    visitor->EndVisitConstraint(ModelVisitor::kEquality, this);
   }
 
  private:
@@ -57,6 +59,7 @@ void RangeEquality::InitialPropagate() {
 string RangeEquality::DebugString() const {
   return left_->DebugString() + " == " + right_->DebugString();
 }
+}  // namespace
 
 Constraint* Solver::MakeEquality(IntVar* const l, IntVar* const r) {
   CHECK(l != NULL) << "left expression NULL, maybe a bad cast";
@@ -69,6 +72,7 @@ Constraint* Solver::MakeEquality(IntVar* const l, IntVar* const r) {
 //-----------------------------------------------------------------------------
 // RangeLessOrEqual
 
+namespace {
 class RangeLessOrEqual : public Constraint {
  public:
   RangeLessOrEqual(Solver* const s, IntVar* const l, IntVar* const r);
@@ -107,6 +111,7 @@ void RangeLessOrEqual::InitialPropagate() {
 string RangeLessOrEqual::DebugString() const {
   return left_->DebugString() + " <= " + right_->DebugString();
 }
+}  // namespace
 
 Constraint* Solver::MakeLessOrEqual(IntVar* const l, IntVar* const r) {
   CHECK(l != NULL) << "left expression NULL, maybe a bad cast";
@@ -119,6 +124,7 @@ Constraint* Solver::MakeLessOrEqual(IntVar* const l, IntVar* const r) {
 //-----------------------------------------------------------------------------
 // RangeGreaterOrEqual
 
+namespace {
 class RangeGreaterOrEqual : public Constraint {
  public:
   RangeGreaterOrEqual(Solver* const s, IntVar* const l, IntVar* const r);
@@ -157,6 +163,7 @@ void RangeGreaterOrEqual::InitialPropagate() {
 string RangeGreaterOrEqual::DebugString() const {
   return left_->DebugString() + " >= " + right_->DebugString();
 }
+}  // namespace
 
 Constraint* Solver::MakeGreaterOrEqual(IntVar* const l, IntVar* const r) {
   CHECK(l != NULL) << "left expression NULL, maybe a bad cast";
@@ -169,6 +176,7 @@ Constraint* Solver::MakeGreaterOrEqual(IntVar* const l, IntVar* const r) {
 //-----------------------------------------------------------------------------
 // RangeLess
 
+namespace {
 class RangeLess : public Constraint {
  public:
   RangeLess(Solver* const s, IntVar* const l, IntVar* const r);
@@ -206,6 +214,7 @@ void RangeLess::InitialPropagate() {
 string RangeLess::DebugString() const {
   return left_->DebugString() + " < " + right_->DebugString();
 }
+}  // namespace
 
 Constraint* Solver::MakeLess(IntVar* const l, IntVar* const r) {
   CHECK(l != NULL) << "left expression NULL, maybe a bad cast";
@@ -218,6 +227,7 @@ Constraint* Solver::MakeLess(IntVar* const l, IntVar* const r) {
 //-----------------------------------------------------------------------------
 // RangeGreater
 
+namespace {
 class RangeGreater : public Constraint {
  public:
   RangeGreater(Solver* const s, IntVar* const l, IntVar* const r);
@@ -255,6 +265,7 @@ void RangeGreater::InitialPropagate() {
 string RangeGreater::DebugString() const {
   return left_->DebugString() + " > " + right_->DebugString();
 }
+}  // namespace
 
 Constraint* Solver::MakeGreater(IntVar* const l, IntVar* const r) {
   CHECK(l != NULL) << "left expression NULL, maybe a bad cast";
@@ -267,6 +278,7 @@ Constraint* Solver::MakeGreater(IntVar* const l, IntVar* const r) {
 //-----------------------------------------------------------------------------
 // DiffVar
 
+namespace {
 class DiffVar : public Constraint {
  public:
   DiffVar(Solver* const s, IntVar* const l, IntVar* const r);
@@ -311,6 +323,7 @@ void DiffVar::InitialPropagate() {
 string DiffVar::DebugString() const {
   return left_->DebugString() + " != " + right_->DebugString();
 }
+}  // namespace
 
 Constraint* Solver::MakeNonEquality(IntVar* const l, IntVar* const r) {
   CHECK(l != NULL) << "left expression NULL, maybe a bad cast";

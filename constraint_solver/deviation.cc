@@ -26,6 +26,7 @@ namespace operations_research {
 // Deviation Constraint, a constraint for the average absolute
 // deviation to the mean.  See paper: Bound Consistent Deviation
 // Constraint, Pierre Schaus et. al., CP07
+namespace {
 class Deviation : public Constraint {
  public:
   Deviation(Solver* const solver,
@@ -418,6 +419,7 @@ class Deviation : public Constraint {
   int64 active_sum_rounded_up_;
   int64 active_sum_nearest_;
 };
+}  // namespace
 
 Constraint* Solver::MakeDeviation(const std::vector<IntVar*>& vars,
                                   IntVar* const deviation_var,

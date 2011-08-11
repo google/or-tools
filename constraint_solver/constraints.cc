@@ -36,6 +36,7 @@ Demon* Solver::MakeDelayedConstraintInitialPropagateCallback(
 
 // ----- True and False Constraint -----
 
+namespace {
 class TrueConstraint : public Constraint {
  public:
   explicit TrueConstraint(Solver* const s) : Constraint(s) {}
@@ -50,12 +51,14 @@ class TrueConstraint : public Constraint {
     visitor->EndVisitConstraint(ModelVisitor::kTrueConstraint, this);
   }
 };
+}  // namespace
 
 Constraint* Solver::MakeTrueConstraint() {
   DCHECK(true_constraint_ != NULL);
   return true_constraint_;
 }
 
+namespace {
 class FalseConstraint : public Constraint {
  public:
   explicit FalseConstraint(Solver* const s) : Constraint(s) {}
@@ -70,6 +73,7 @@ class FalseConstraint : public Constraint {
     visitor->EndVisitConstraint(ModelVisitor::kFalseConstraint, this);
   }
 };
+}  // namespace
 
 Constraint* Solver::MakeFalseConstraint() {
   DCHECK(false_constraint_ != NULL);
@@ -88,6 +92,7 @@ void Solver::InitCachedConstraint() {
 // There is no need to rescan the var to find the hole if the size at the end of
 // UpdateActive() is the same as the size at the beginning of VarDomain().
 
+namespace {
 class MapDomain : public Constraint {
  public:
   MapDomain(Solver* const s,
@@ -204,6 +209,7 @@ class MapDomain : public Constraint {
   int size_;
   IntVarIterator* holes_;
 };
+}  // namespace
 
 Constraint* Solver::MakeMapDomain(IntVar* const var, IntVar* const * actives,
                                   int size) {
@@ -229,6 +235,7 @@ Constraint* Solver::MakeMapDomain(IntVar* const var,
 // TODO(user): improve code when assume_paths is false (currently does an
 // expensive n^2 loop).
 
+namespace {
 class NoCycle : public Constraint {
  public:
   NoCycle(Solver* const s, const IntVar* const* nexts, int size,
@@ -258,7 +265,7 @@ class NoCycle : public Constraint {
                                                active_.get(),
                                                size_);
     visitor->VisitIntegerArgument("assume_paths", assume_paths_);
-    // TODO(user) : VISITOR -> sink_handler
+    visitor->VisitInt64ToBoolExtension(sink_handler_, -size_, size_);
     visitor->EndVisitConstraint(ModelVisitor::kNoCycle, this);
   }
 
@@ -472,12 +479,9 @@ string NoCycle::DebugString() const {
   return out;
 }
 
-namespace {
-
 bool GreaterThan(int64 x, int64 y) {
   return y >= x;
 }
-
 }  // namespace
 
 Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
@@ -527,6 +531,7 @@ Constraint* Solver::MakeNoCycle(const IntVar* const* nexts,
 
 // cumuls[next[i]] = cumuls[i] + transits[i]
 
+namespace {
 class PathCumul : public Constraint {
  public:
   PathCumul(Solver* const s,
@@ -750,6 +755,7 @@ string PathCumul::DebugString() const {
   out += ")";
   return out;
 }
+}  // namespace
 
 Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
                                   const std::vector<IntVar*>& active,

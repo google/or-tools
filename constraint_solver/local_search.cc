@@ -215,6 +215,7 @@ void BaseLNS::InitFragments() {}
 
 // Frees number_of_variables (contiguous in vars) variables.
 
+namespace {
 class SimpleLNS : public BaseLNS {
  public:
   SimpleLNS(const IntVar* const* vars, int size, int number_of_variables)
@@ -273,6 +274,7 @@ bool RandomLNS::NextFragment(std::vector<int>* fragment) {
   }
   return true;
 }
+}  // namespace
 
 LocalSearchOperator* Solver::MakeRandomLNSOperator(const std::vector<IntVar*>& vars,
                                                    int number_of_variables) {
@@ -309,6 +311,7 @@ LocalSearchOperator* Solver::MakeRandomLNSOperator(const IntVar* const* vars,
 // A local search operator that compares the current assignment with a target
 // one, and that generates neighbors corresponding to a single variable being
 // changed from its current value to its target value.
+namespace {
 class MoveTowardTargetLS: public IntVarLocalSearchOperator {
  public:
   explicit MoveTowardTargetLS(const std::vector<IntVar*>& variables,
@@ -370,6 +373,7 @@ class MoveTowardTargetLS: public IntVarLocalSearchOperator {
   // Number of variables checked since the last call to OnStart().
   int64 num_var_since_last_start_;
 };
+}  // namespace
 
 LocalSearchOperator* Solver::MakeMoveTowardTargetOperator(
     const Assignment& target) {
@@ -421,6 +425,7 @@ void ChangeValue::OnStart() {
 
 // Increments the current value of variables.
 
+namespace {
 class IncrementValue : public ChangeValue {
  public:
   IncrementValue(const IntVar* const* vars, int size)
@@ -438,6 +443,7 @@ class DecrementValue : public ChangeValue {
   virtual ~DecrementValue() {}
   virtual int64 ModifyValue(int64 index, int64 value) { return value - 1; }
 };
+}  // namespace
 
 // ----- Path-based Operators -----
 
@@ -681,6 +687,7 @@ bool PathOperator::CheckChainValidity(int64 before_chain,
   return true;
 }
 
+namespace {
 // ----- 2Opt -----
 
 // Reverves a sub-chain of a path. It is called 2Opt because it breaks
@@ -691,7 +698,6 @@ bool PathOperator::CheckChainValidity(int64 before_chain,
 // 1 -> 3 -> 2 -> 4 -> 5
 // 1 -> 4 -> 3 -> 2 -> 5
 // 1 -> 2 -> 4 -> 3 -> 5
-
 class TwoOpt : public PathOperator {
  public:
   TwoOpt(const IntVar* const* vars,
@@ -1624,6 +1630,7 @@ class NeighborhoodLimit : public LocalSearchOperator {
   const int64 limit_;
   int64 next_neighborhood_calls_;
 };
+}  // namespace
 
 LocalSearchOperator* Solver::MakeNeighborhoodLimit(
     LocalSearchOperator* const op, int64 limit) {
@@ -1632,6 +1639,7 @@ LocalSearchOperator* Solver::MakeNeighborhoodLimit(
 
 // ----- Concatenation of operators -----
 
+namespace {
 class CompoundOperator : public LocalSearchOperator {
  public:
   CompoundOperator(
@@ -1725,6 +1733,7 @@ int64 CompoundOperatorNoRestart(int size,
 int64 CompoundOperatorRestart(int active_index, int operator_index) {
   return 0;
 }
+}  // namespace
 
 LocalSearchOperator* Solver::ConcatenateOperators(
     const std::vector<LocalSearchOperator*>& ops) {
@@ -1752,6 +1761,7 @@ LocalSearchOperator* Solver::ConcatenateOperators(
   return RevAlloc(new CompoundOperator(ops, evaluator));
 }
 
+namespace {
 class RandomCompoundOperator : public LocalSearchOperator {
  public:
   explicit RandomCompoundOperator(
@@ -1793,6 +1803,7 @@ bool RandomCompoundOperator::MakeNextNeighbor(Assignment* delta,
   }
   return false;
 }
+}  // namespace
 
 LocalSearchOperator* Solver::RandomConcatenateOperators(
     const std::vector<LocalSearchOperator*>& ops) {
@@ -1977,6 +1988,7 @@ LocalSearchOperator* Solver::MakeOperator(
   return result;
 }
 
+namespace {
 // Abstract class for Local Search Operation. It is passed to Local Search
 // Filter.
 
@@ -2078,6 +2090,7 @@ bool VariableDomainFilter::Accept(const Assignment* delta,
   }
   return true;
 }
+}  // namespace
 
 LocalSearchFilter* Solver::MakeVariableDomainFilter() {
   return RevAlloc(new VariableDomainFilter());
@@ -2105,7 +2118,7 @@ void IntVarLocalSearchFilter::AddVars(const IntVar* const* vars, int size) {
     memcpy(new_vars + size_, vars, size * sizeof(*vars));
     vars_.reset(new_vars);
     values_.reset(new int64[new_size]);
-    memset(values_.get(), 0, sizeof(values_.get()));
+    memset(values_.get(), 0, sizeof(int64) * new_size);  // NOLINT
     size_ = new_size;
   }
 }
@@ -2140,6 +2153,7 @@ void IntVarLocalSearchFilter::Synchronize(const Assignment* assignment) {
 // acceptance are presented in LocalSearchFilterBound enum. Objective function
 // can be represented by any variable.
 
+namespace {
 class ObjectiveFilter : public IntVarLocalSearchFilter {
  public:
   ObjectiveFilter(const IntVar* const* vars,
@@ -2426,8 +2440,6 @@ bool TernaryObjectiveFilter::EvaluateElementValue(
 
 // ---- Local search filter factory ----
 
-namespace {
-
 LSOperation* OperationFromEnum(Solver::LocalSearchOperation op_enum) {
   LSOperation* operation = NULL;
   switch (op_enum) {
@@ -2452,7 +2464,6 @@ LSOperation* OperationFromEnum(Solver::LocalSearchOperation op_enum) {
   }
   return operation;
 }
-
 }  // namespace
 
 LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
@@ -2735,6 +2746,7 @@ void FindOneNeighbor::SynchronizeFilters(const Assignment* assignment) {
     filters_[i]->Synchronize(assignment);
   }
 }
+
 // ---------- Local Search Phase Parameters ----------
 
 class LocalSearchPhaseParameters : public BaseObject {
@@ -2889,6 +2901,39 @@ LocalSearch::LocalSearch(IntVar* const* vars,
 
 LocalSearch::~LocalSearch() {}
 
+// Model Visitor support.
+void LocalSearch::Accept(ModelVisitor* const visitor) const {
+  DCHECK(assignment_ != NULL);
+  visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
+  // We collect decision variables from the assignment.
+  const std::vector<IntVarElement>& elements =
+      assignment_->IntVarContainer().elements();
+  if (!elements.empty()) {
+    std::vector<IntVar*> vars;
+    for (ConstIter<std::vector<IntVarElement> > it(elements); !it.at_end(); ++it) {
+      vars.push_back((*it).Var());
+    }
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars.data(),
+                                               vars.size());
+  }
+  const std::vector<IntervalVarElement>& interval_elements =
+      assignment_->IntervalVarContainer().elements();
+  if (!interval_elements.empty()) {
+    std::vector<IntervalVar*> interval_vars;
+    for (ConstIter<std::vector<IntervalVarElement> > it(interval_elements);
+         !it.at_end();
+         ++it) {
+      interval_vars.push_back((*it).Var());
+    }
+    visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
+                                        interval_vars.data(),
+                                        interval_vars.size());
+  }
+  visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
+}
+
+
 // This is equivalent to a multi-restart decision builder
 // TODO(user): abstract this from the local search part
 // TODO(user): handle the case where the tree depth is not enough to hold
@@ -3027,6 +3072,5 @@ DecisionBuilder* Solver::MakeLocalSearchPhase(
                                   parameters->limit(),
                                   parameters->filters()));
 }
-
 
 }  // namespace operations_research

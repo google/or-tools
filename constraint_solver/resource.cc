@@ -1116,7 +1116,6 @@ DecomposedSequenceConstraint::DecomposedSequenceConstraint(
     straight_not_last_(s, intervals, size, false),
     mirror_not_last_(s, intervals, size, true) {
 }
-
 }  // namespace
 
 Constraint* MakeDecomposedSequenceConstraint(Solver* const s,
@@ -1362,7 +1361,6 @@ class UpdatesForADemand {
   DISALLOW_COPY_AND_ASSIGN(UpdatesForADemand);
 };
 
-namespace {
 // Returns min(a * b, kint64max). a is positive.
 int64 SafeProduct(int64 a, int64 b) {
   DCHECK_GE(a, 0);
@@ -1389,7 +1387,6 @@ int64 SafeProduct(int64 a, int64 b) {
       ? ((is_positive) ? product : -product)
       : ((is_positive) ? kint64max : -kint64max);
 }
-}  // anonymous namespace
 
 // One-sided cumulative edge finder.
 class EdgeFinder : public Constraint {
@@ -1861,10 +1858,12 @@ class CumulativeConstraint : public Constraint {
       capacity_(capacity),
       tasks_(new CumulativeTask*[size]),
       size_(size),
-      intervals_(new IntervalVar*[size]) {
+      intervals_(new IntervalVar*[size]),
+      demands_(new int64[size]) {
     for (int i = 0; i < size; ++i) {
       tasks_[i] = MakeTask(solver(), intervals[i], demands[i]);
       intervals_[i] = intervals[i];
+      demands_[i] = demands[i];
     }
   }
 
@@ -1878,10 +1877,12 @@ class CumulativeConstraint : public Constraint {
       capacity_(capacity),
       tasks_(new CumulativeTask*[size]),
       size_(size),
-      intervals_(new IntervalVar*[size]) {
+      intervals_(new IntervalVar*[size]),
+      demands_(new int64[size]) {
     for (int i = 0; i < size; ++i) {
       tasks_[i] = MakeTask(solver(), intervals[i], demands[i]);
       intervals_[i] = intervals[i];
+      demands_[i] = demands[i];
     }
   }
 
@@ -1910,10 +1911,15 @@ class CumulativeConstraint : public Constraint {
   }
 
   void Accept(ModelVisitor* const visitor) const {
+    // TODO(user): Build arrays on demaand?
     visitor->BeginVisitConstraint(ModelVisitor::kCumulative, this);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         intervals_.get(),
                                         size_);
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kDemandsArgument,
+                                       demands_.get(),
+                                       size_);
+    visitor->VisitIntegerArgument(ModelVisitor::kCapacityArgument, capacity_);
     visitor->EndVisitConstraint(ModelVisitor::kCumulative, this);
   }
 
@@ -2036,10 +2042,11 @@ class CumulativeConstraint : public Constraint {
 
   // Array of intervals for the visitor.
   scoped_array<IntervalVar*> intervals_;
+  // Array of demands for the visitor.
+  scoped_array<int64> demands_;
 
   DISALLOW_COPY_AND_ASSIGN(CumulativeConstraint);
 };
-
 }  // namespace
 
 // ----------------- Factory methods -------------------------------

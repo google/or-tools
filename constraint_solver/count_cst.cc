@@ -26,6 +26,7 @@ namespace operations_research {
 // CountValueEqCst
 
 // |{i | var[i] == value}| == constant
+namespace {
 class CountValueEqCst : public Constraint {
  public:
   CountValueEqCst(Solver* const s,
@@ -183,6 +184,7 @@ void CountValueEqCst::CardMax() {
   }
 }
 
+}  // namespace
 Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v, int64 c) {
   for (ConstIter<std::vector<IntVar*> > it(vars); !it.at_end(); ++it) {
     CHECK_EQ(this, (*it)->solver());
@@ -194,6 +196,7 @@ Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v, int64 c
 // CountValueEq
 
 // |{i | var[i] == value}| == count
+namespace {
 class CountValueEq : public Constraint {
  public:
   CountValueEq(Solver* const s,
@@ -373,6 +376,7 @@ void CountValueEq::CardMax() {
   }
 }
 
+}  // namespace
 Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v, IntVar* c) {
   for (ConstIter<std::vector<IntVar*> > it(vars); !it.at_end(); ++it) {
     CHECK_EQ(this, (*it)->solver());
@@ -383,6 +387,7 @@ Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v, IntVar*
 
 // ---------- Distribute ----------
 
+namespace {
 class Distribute : public Constraint {
  public:
   Distribute(Solver* const s,
@@ -1101,6 +1106,8 @@ class SetAllToZero : public Constraint {
   scoped_array<IntVar*> vars_;
   const int size_;
 };
+
+}  // namespace
 
 // ----- Factory -----
 

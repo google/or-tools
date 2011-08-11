@@ -23,19 +23,6 @@
 #include "util/xml_helper.h"
 
 namespace operations_research {
-
-const char* kConfigXml =
-    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-    "<configuration version=\"1.0\">\n"
-    "    <tool show=\"tree\" fileroot=\"tree\" display=\"expanded\""
-    " repeat=\"all\"/>\n"
-    "    <tool show=\"viz\" fileroot=\"viz\" repeat=\"all\"/>\n"
-    "</configuration>";
-
-class XmlHelper;
-
-class TreeNode;
-
 // String comparator that compares strings naturally, even those
 // including integer numbers.
 struct NaturalLess {
@@ -87,6 +74,19 @@ struct NaturalLess {
   }
 };
 
+class XmlHelper;
+
+namespace {
+const char* kConfigXml =
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+    "<configuration version=\"1.0\">\n"
+    "    <tool show=\"tree\" fileroot=\"tree\" display=\"expanded\""
+    " repeat=\"all\"/>\n"
+    "    <tool show=\"viz\" fileroot=\"viz\" repeat=\"all\"/>\n"
+    "</configuration>";
+
+
+class TreeNode;
 
 // TreeDecisionVisitor is used to gain access to the variables and values
 // involved in a decision.
@@ -226,68 +226,6 @@ class TreeMonitor: public SearchMonitor {
   IntVarMap vars_;
   string* const visualization_xml_;
 };
-
-SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars, int size,
-                                       const string& file_tree,
-                                       const string& file_visualization) {
-  return RevAlloc(new TreeMonitor(this, vars, size, file_tree,
-                                  file_visualization));
-}
-
-SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
-                                       const string& file_tree,
-                                       const string& file_visualization) {
-  return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), file_tree,
-                                  file_visualization));
-}
-
-SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars, int size,
-                                       const string& file_config,
-                                       const string& file_tree,
-                                       const string& file_visualization) {
-  return RevAlloc(new TreeMonitor(this, vars, size, file_config, file_tree,
-                                  file_visualization));
-}
-
-SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
-                                       const string& file_config,
-                                       const string& file_tree,
-                                       const string& file_visualization) {
-  return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), file_config,
-                                  file_tree, file_visualization));
-}
-
-#if !defined(SWIG)
-SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars,
-                                       int size, string* const tree_xml,
-                                       string* const visualization_xml) {
-  return RevAlloc(new TreeMonitor(this, vars, size, tree_xml,
-                                  visualization_xml));
-}
-
-SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
-                                       string* const tree_xml,
-                                       string* const visualization_xml) {
-  return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), tree_xml,
-                                  visualization_xml));
-}
-
-SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars,
-                                       int size, string* const config_xml,
-                                       string* const tree_xml,
-                                       string* const visualization_xml) {
-  return RevAlloc(new TreeMonitor(this, vars, size, config_xml, tree_xml,
-                                  visualization_xml));
-}
-
-SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
-                                       string* const config_xml,
-                                       string* const tree_xml,
-                                       string* const visualization_xml) {
-  return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), config_xml,
-                                  tree_xml, visualization_xml));
-}
-#endif
 
 // Represents a node in the decision phase. Can either be the root node, a
 // successful attempt, a failure or a solution.
@@ -823,3 +761,73 @@ string TreeMonitor::StripSpecialCharacters(string attribute) {
   return attribute;
 }
 }  // namespace
+
+// For tests
+
+// Strips characters that cause problems with CPViz from attributes
+string TreeMonitorStripSpecialCharacters(string attribute) {
+  return TreeMonitor::StripSpecialCharacters(attribute);
+}
+
+// ----- API ----
+
+SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars, int size,
+                                       const string& file_tree,
+                                       const string& file_visualization) {
+  return RevAlloc(new TreeMonitor(this, vars, size, file_tree,
+                                  file_visualization));
+}
+
+SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
+                                       const string& file_tree,
+                                       const string& file_visualization) {
+  return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), file_tree,
+                                  file_visualization));
+}
+
+SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars, int size,
+                                       const string& file_config,
+                                       const string& file_tree,
+                                       const string& file_visualization) {
+  return RevAlloc(new TreeMonitor(this, vars, size, file_config, file_tree,
+                                  file_visualization));
+}
+
+SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
+                                       const string& file_config,
+                                       const string& file_tree,
+                                       const string& file_visualization) {
+  return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), file_config,
+                                  file_tree, file_visualization));
+}
+
+SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars,
+                                       int size, string* const tree_xml,
+                                       string* const visualization_xml) {
+  return RevAlloc(new TreeMonitor(this, vars, size, tree_xml,
+                                  visualization_xml));
+}
+
+SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
+                                       string* const tree_xml,
+                                       string* const visualization_xml) {
+  return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), tree_xml,
+                                  visualization_xml));
+}
+
+SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars,
+                                       int size, string* const config_xml,
+                                       string* const tree_xml,
+                                       string* const visualization_xml) {
+  return RevAlloc(new TreeMonitor(this, vars, size, config_xml, tree_xml,
+                                  visualization_xml));
+}
+
+SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
+                                       string* const config_xml,
+                                       string* const tree_xml,
+                                       string* const visualization_xml) {
+  return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), config_xml,
+                                  tree_xml, visualization_xml));
+}
+}  // namespace operations_research

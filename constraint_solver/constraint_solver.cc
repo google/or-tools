@@ -62,7 +62,6 @@ extern void DemonMonitorEndInitialPropagation(
     DemonMonitor* const monitor, const Constraint* const constraint);
 extern void DemonMonitorRestartSearch(DemonMonitor* const monitor);
 
-
 // ------------------ Demon class ----------------
 
 Solver::DemonPriority Demon::priority() const {
@@ -603,14 +602,14 @@ template <class T> class CompressedTrail {
 // passing and storing a pointer. As objects are small, copying is
 // much faster than allocating (around 35% on a complete solve).
 
-extern void RestoreBoolValue(BooleanVar* const var);
+extern void RestoreBoolValue(IntVar* const var);
 
 struct Trail {
   CompressedTrail<int> rev_ints_;
   CompressedTrail<int64> rev_int64s_;
   CompressedTrail<uint64> rev_uint64s_;
   CompressedTrail<void*> rev_ptrs_;
-  std::vector<BooleanVar*> rev_boolvar_list_;
+  std::vector<IntVar*> rev_boolvar_list_;
   std::vector<bool*> rev_bools_;
   std::vector<bool> rev_bool_value_;
   std::vector<int*> rev_int_memory_;
@@ -661,7 +660,7 @@ struct Trail {
     // Incorrect trail size after backtrack.
     target = m->rev_boolvar_list_index_;
     for (int curr = rev_boolvar_list_.size() - 1; curr >= target; --curr) {
-      BooleanVar* const var = rev_boolvar_list_[curr];
+      IntVar* const var = rev_boolvar_list_[curr];
       RestoreBoolValue(var);
     }
     rev_boolvar_list_.resize(target);
@@ -800,8 +799,8 @@ void** Solver::UnsafeRevAllocArrayAux(void** ptr) {
   return ptr;
 }
 
-void Solver::InternalSaveBooleanVarValue(BooleanVar* const var) {
-  trail_->rev_boolvar_list_.push_back(var);
+void InternalSaveBooleanVarValue(Solver* const solver, IntVar* const var) {
+  solver->trail_->rev_boolvar_list_.push_back(var);
 }
 
 // ------------------ Search class -----------------
@@ -834,6 +833,7 @@ class Search {
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
   void AcceptNeighbor();
   void PeriodicCheck();
+  void Accept(ModelVisitor* const visitor) const;
   void push_monitor(SearchMonitor* const m);
   void Clear();
   void IncrementSolutionCounter() { ++solution_counter_; }
@@ -1207,6 +1207,18 @@ void Search::PeriodicCheck() {
   }
 }
 
+void Search::Accept(ModelVisitor* const visitor) const {
+  for (std::vector<SearchMonitor*>::const_iterator it = monitors_.begin();
+       it != monitors_.end();
+       ++it) {
+    DCHECK((*it) != NULL);
+    (*it)->Accept(visitor);
+  }
+  if (decision_builder_ != NULL) {
+    decision_builder_->Accept(visitor);
+  }
+}
+
 // ---------- Fail Decision ----------
 
 class FailDecision : public Decision {
@@ -1245,7 +1257,9 @@ enum SentinelMarker {
   ROOT_NODE_SENTINEL      = 20000000,
   SOLVER_CTOR_SENTINEL    = 40000000
 };
-}
+}  // namespace
+
+extern Action* NewDomainIntVarCleaner();
 
 Solver::Solver(const string& name, const SolverParameters& parameters)
     : name_(name),
@@ -1259,7 +1273,7 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       neighbors_(0),
       filtered_neighbors_(0),
       accepted_neighbors_(0),
-      variable_cleaner_(new VariableQueueCleaner()),
+      variable_cleaner_(NewDomainIntVarCleaner()),
       timer_(new ClockTimer),
       searches_(),
       random_(ACMRandom::DeterministicSeed()),
@@ -1293,7 +1307,7 @@ Solver::Solver(const string& name)
       neighbors_(0),
       filtered_neighbors_(0),
       accepted_neighbors_(0),
-      variable_cleaner_(new VariableQueueCleaner()),
+      variable_cleaner_(NewDomainIntVarCleaner()),
       timer_(new ClockTimer),
       searches_(),
       random_(ACMRandom::DeterministicSeed()),
@@ -1529,9 +1543,8 @@ void Solver::set_queue_action_on_fail(Action* a) {
   queue_->set_action_on_fail(a);
 }
 
-void Solver::set_queue_cleaner_on_fail(DomainIntVar* const var) {
-  variable_cleaner_->set_var(var);
-  set_queue_action_on_fail(variable_cleaner_.get());
+void SetQueueCleanerOnFail(Solver* const solver, IntVar* const var) {
+  solver->set_queue_cleaner_on_fail(var);
 }
 
 void Solver::clear_queue_action_on_fail() {
@@ -1558,11 +1571,21 @@ void Solver::AddConstraint(Constraint* const c) {
   }
 }
 
+void Solver::AddDelegateConstraint(Constraint* const c) {
+  if (state_ != IN_SEARCH) {
+    delegate_constraints_.insert(c);
+  }
+  AddConstraint(c);
+}
+
 void Solver::Accept(ModelVisitor* const visitor) const {
   visitor->BeginVisitModel(name_);
   for (int index = 0; index < constraints_list_.size(); ++index) {
     Constraint* const constraint = constraints_list_[index];
     constraint->Accept(visitor);
+  }
+  if (state_ == IN_ROOT_NODE) {
+    searches_.front()->Accept(visitor);
   }
   visitor->EndVisitModel(name_);
 }
@@ -1966,9 +1989,9 @@ bool Solver::NextSolution() {
         break;
       }
       case OUTSIDE_SEARCH: {
+        state_ = IN_ROOT_NODE;
         search->BeginInitialPropagation();
         CP_TRY(search) {
-          state_ = IN_ROOT_NODE;
           ProcessConstraints();
           search->EndInitialPropagation();
           PushSentinel(ROOT_NODE_SENTINEL);
@@ -2273,6 +2296,10 @@ void Solver::SetName(const PropagationBaseObject* object, const string& name) {
   }
 }
 
+bool Solver::HasName(const PropagationBaseObject* const object) const {
+  return ContainsKey(propagation_object_names_, object);
+}
+
 // ------------------ Useful Operators ------------------
 
 std::ostream& operator << (std::ostream& out, const Solver* const s) {  // NOLINT
@@ -2296,6 +2323,10 @@ void PropagationBaseObject::set_name(const string& name) {
   solver_->SetName(this, name);
 }
 
+bool PropagationBaseObject::HasName() const {
+  return solver_->HasName(this);
+}
+
 // ---------- Decision Builder ----------
 
 string DecisionBuilder::DebugString() const {
@@ -2303,7 +2334,9 @@ string DecisionBuilder::DebugString() const {
 }
 
 void DecisionBuilder::AppendMonitors(Solver* const solver,
-                                    std::vector<SearchMonitor*>* const extras) {}
+                                     std::vector<SearchMonitor*>* const extras) {}
+
+void DecisionBuilder::Accept(ModelVisitor* const visitor) const {}
 
 // ---------- Decision and DecisionVisitor ----------
 
@@ -2335,17 +2368,19 @@ const char ModelVisitor::kDeviation[] = "Deviation";
 const char ModelVisitor::kDifference[] = "Difference";
 const char ModelVisitor::kDistribute[] = "Distribute";
 const char ModelVisitor::kDivide[] = "Divide";
-const char ModelVisitor::kDurationExpr[] = "DurationExpr";
+const char ModelVisitor::kDurationExpr[] = "DurationExpression";
 const char ModelVisitor::kElement[] = "Element";
-const char ModelVisitor::kElementConstraint[] = "ElementConstraint";
-const char ModelVisitor::kEndExpr[] = "EndExpr";
-const char ModelVisitor::kEquality[] = "Equality";
+const char ModelVisitor::kElementEqual[] = "ElementEqual";
+const char ModelVisitor::kEndExpr[] = "EndExpression";
+const char ModelVisitor::kEquality[] = "Equal";
 const char ModelVisitor::kFalseConstraint[] = "FalseConstraint";
 const char ModelVisitor::kGreater[] = "Greater";
 const char ModelVisitor::kGreaterOrEqual[] = "GreaterOrEqual";
+const char ModelVisitor::kIntegerVariable[] = "IntegerVariable";
 const char ModelVisitor::kIntervalBinaryRelation[] = "IntervalBinaryRelation";
 const char ModelVisitor::kIntervalDisjunction[] = "IntervalDisjunction";
 const char ModelVisitor::kIntervalUnaryRelation[] = "IntervalUnaryRelation";
+const char ModelVisitor::kIntervalVariable[] = "IntervalVariable";
 const char ModelVisitor::kIsBetween[] = "IsBetween;";
 const char ModelVisitor::kIsDifferent[] = "IsDifferent";
 const char ModelVisitor::kIsEqual[] = "IsEqual";
@@ -2354,7 +2389,7 @@ const char ModelVisitor::kIsLessOrEqual[] = "IsLessOrEqual";
 const char ModelVisitor::kIsMember[] = "IsMember;";
 const char ModelVisitor::kLess[] = "Less";
 const char ModelVisitor::kLessOrEqual[] = "LessOrEqual";
-const char ModelVisitor::kLinkExprVar[] = "CastExpressionIntoVar";
+const char ModelVisitor::kLinkExprVar[] = "CastExpressionIntoVariable";
 const char ModelVisitor::kMapDomain[] = "MapDomain";
 const char ModelVisitor::kMax[] = "Max";
 const char ModelVisitor::kMaxEqual[] = "MaxEqual";
@@ -2366,8 +2401,7 @@ const char ModelVisitor::kNonEqual[] = "NonEqual";
 const char ModelVisitor::kOpposite[] = "Opposite";
 const char ModelVisitor::kPack[] = "Pack";
 const char ModelVisitor::kPathCumul[] = "PathCumul";
-const char ModelVisitor::kPerformedExpr[] = "PerformedExpr";
-const char ModelVisitor::kProd[] = "Product";
+const char ModelVisitor::kPerformedExpr[] = "PerformedExpression";
 const char ModelVisitor::kProduct[] = "Product";
 const char ModelVisitor::kScalProd[] = "ScalarProduct";
 const char ModelVisitor::kScalProdEqual[] = "ScalarProductEqual";
@@ -2377,25 +2411,47 @@ const char ModelVisitor::kScalProdLessOrEqual[] = "ScalarProductLessOrEqual";
 const char ModelVisitor::kSemiContinuous[] = "SemiContinuous";
 const char ModelVisitor::kSequence[] = "Sequence";
 const char ModelVisitor::kSquare[] = "Square";
-const char ModelVisitor::kStartExpr[]= "StartExpr";
+const char ModelVisitor::kStartExpr[]= "StartExpression";
 const char ModelVisitor::kSum[] = "Sum";
 const char ModelVisitor::kSumEqual[] = "SumEqual";
-const char ModelVisitor::kSumGreater[] = "SumGreater";
 const char ModelVisitor::kSumGreaterOrEqual[] = "SumGreaterOrEqual";
-const char ModelVisitor::kSumLess[] = "SumLess";
 const char ModelVisitor::kSumLessOrEqual[] = "SumLessOrEqual";
 const char ModelVisitor::kTransition[]= "Transition";
 const char ModelVisitor::kTrueConstraint[] = "TrueConstraint";
 
+const char ModelVisitor::kCountAssignedItemsExtension[] = "CountAssignedItems";
+const char ModelVisitor::kCountUsedBinsExtension[] = "CountUsedBins";
+const char ModelVisitor::kInt64ToBoolExtension[] = "Int64ToBoolFunction";
+const char ModelVisitor::kInt64ToInt64Extension[] = "Int64ToInt64Function";
+const char ModelVisitor::kObjectiveExtension[] = "Objective";
+const char ModelVisitor::kSearchLimitExtension[] = "SearchLimit";
+const char ModelVisitor::kUsageEqualVariableExtension[] = "UsageEqualVariable";
+const char ModelVisitor::kUsageLessConstantExtension[] = "UsageLessConstant";
+const char ModelVisitor::kVariableGroupExtension[] = "VariableGroup";
+const char ModelVisitor::kVariableUsageLessConstantExtension[] =
+    "VariableUsageLessConstant";
+const char ModelVisitor::kWeightedSumOfAssignedEqualVariableExtension[] =
+    "WeightedSumOfAssignedEqualVariable";
+
 const char ModelVisitor::kActiveArgument[] = "active";
+const char ModelVisitor::kAssumePathsArgument[] = "assume_paths";
+const char ModelVisitor::kBranchesLimitArgument[] = "branches_limit";
+const char ModelVisitor::kCapacityArgument[] = "capacity";
 const char ModelVisitor::kCardsArgument[] = "cardinalities";
 const char ModelVisitor::kCoefficientsArgument[] = "coefficients";
 const char ModelVisitor::kCountArgument[] = "count";
+const char ModelVisitor::kCumulativeArgument[] = "cumulative";
 const char ModelVisitor::kCumulsArgument[] = "cumuls";
+const char ModelVisitor::kDemandsArgument[] = "demands";
+const char ModelVisitor::kDurationMinArgument[] = "duration_min";
+const char ModelVisitor::kDurationMaxArgument[] = "duration_max";
 const char ModelVisitor::kEarlyCostArgument[] = "early_cost";
 const char ModelVisitor::kEarlyDateArgument[] = "early_date";
+const char ModelVisitor::kEndMinArgument[] = "end_min";
+const char ModelVisitor::kEndMaxArgument[] = "end_max";
 const char ModelVisitor::kExpressionArgument[] = "expression";
-const char ModelVisitor::kFinalStates[] = "final_states";
+const char ModelVisitor::kFailuresLimitArgument[] = "failures_limit";
+const char ModelVisitor::kFinalStatesArgument[] = "final_states";
 const char ModelVisitor::kFixedChargeArgument[] = "fixed_charge";
 const char ModelVisitor::kIndex2Argument[] = "index2";
 const char ModelVisitor::kIndexArgument[] = "index";
@@ -2406,19 +2462,30 @@ const char ModelVisitor::kLateCostArgument[] = "late_cost";
 const char ModelVisitor::kLateDateArgument[] = "late_date";
 const char ModelVisitor::kLeftArgument[] = "left";
 const char ModelVisitor::kMaxArgument[] = "max_value";
+const char ModelVisitor::kMaximizeArgument[] = "maximize";
 const char ModelVisitor::kMinArgument[] = "min_value";
 const char ModelVisitor::kNextsArgument[] = "nexts";
+const char ModelVisitor::kOptionalArgument[] = "optional";
 const char ModelVisitor::kRangeArgument[] = "range";
 const char ModelVisitor::kRelationArgument[] = "relation";
 const char ModelVisitor::kRightArgument[] = "right";
+const char ModelVisitor::kSmartTimeCheckArgument[] = "smart_time_check";
 const char ModelVisitor::kSizeArgument[] = "size";
+const char ModelVisitor::kSolutionLimitArgument[] = "solutions_limit";
+const char ModelVisitor::kStartMinArgument[] = "start_min";
+const char ModelVisitor::kStartMaxArgument[] = "start_max";
 const char ModelVisitor::kStepArgument[] = "step";
 const char ModelVisitor::kTargetArgument[] = "target_variable";
+const char ModelVisitor::kTimeLimitArgument[] = "time_limit";
 const char ModelVisitor::kTransitsArgument[] = "transits";
 const char ModelVisitor::kTuplesArgument[] = "tuples";
 const char ModelVisitor::kValueArgument[] = "value";
 const char ModelVisitor::kValuesArgument[] = "values";
 const char ModelVisitor::kVarsArgument[] = "variables";
+
+const char ModelVisitor::kMirrorOperation[] = "mirror";
+const char ModelVisitor::kRelaxedMaxOperation[] = "relaxed_max";
+const char ModelVisitor::kRelaxedMinOperation[] = "relaxed_min";
 
 // Methods
 
@@ -2432,9 +2499,9 @@ void ModelVisitor::BeginVisitConstraint(const string& type_name,
 void ModelVisitor::EndVisitConstraint(const string& type_name,
                                       const Constraint* const constraint) {}
 
-void ModelVisitor::BeginVisitExtension(const string& type, const string& name) {
+void ModelVisitor::BeginVisitExtension(const string& type) {
 }
-void ModelVisitor::EndVisitExtension(const string& type, const string& name) {}
+void ModelVisitor::EndVisitExtension(const string& type) {}
 
 void ModelVisitor::BeginVisitIntegerExpression(const string& type_name,
                                                const IntExpr* const expr) {}
@@ -2457,13 +2524,16 @@ void ModelVisitor::VisitIntervalVariable(const IntervalVar* const variable,
 }
 
 
-void ModelVisitor::VisitIntegerArgument(const string& arg_name,
-                                        int64 value) {}
+void ModelVisitor::VisitIntegerArgument(const string& arg_name, int64 value) {}
 
 void ModelVisitor::VisitIntegerArrayArgument(const string& arg_name,
-                                             const int64 * const values,
-                                             int size) {
-}
+                                             const int64* const values,
+                                             int size) {}
+
+void ModelVisitor::VisitIntegerMatrixArgument(const string& arg_name,
+                                              const int64* const * const values,
+                                              int rows,
+                                              int columns) {}
 
 void ModelVisitor::VisitIntegerExpressionArgument(
     const string& arg_name,
@@ -2502,6 +2572,47 @@ void ModelVisitor::VisitConstIntArrayArgument(const string& arg_name,
   VisitIntegerArrayArgument(arg_name, values.RawData(), values.size());
 }
 
+void ModelVisitor::VisitInt64ToBoolExtension(
+    ResultCallback1<bool, int64>* const callback,
+    int64 index_min,
+    int64 index_max) {
+  if (callback == NULL) {
+    return;
+  }
+  std::vector<int64> cached_results;
+  for (int i = index_min; i <= index_max; ++i) {
+    cached_results.push_back(callback->Run(i));
+  }
+  // TODO(user): VisitBoolArrayArgument?
+  BeginVisitExtension(kInt64ToBoolExtension);
+  VisitIntegerArgument(kMinArgument, index_min);
+  VisitIntegerArgument(kMaxArgument, index_max);
+  VisitIntegerArrayArgument(kValuesArgument,
+                            cached_results.data(),
+                            cached_results.size());
+  EndVisitExtension(kInt64ToBoolExtension);
+}
+
+void ModelVisitor::VisitInt64ToInt64Extension(
+    Solver::IndexEvaluator1* const callback,
+    int64 index_min,
+    int64 index_max) {
+  if (callback == NULL) {
+    return;
+  }
+  std::vector<int64> cached_results;
+  for (int i = index_min; i <= index_max; ++i) {
+    cached_results.push_back(callback->Run(i));
+  }
+  BeginVisitExtension(kInt64ToInt64Extension);
+  VisitIntegerArgument(kMinArgument, index_min);
+  VisitIntegerArgument(kMaxArgument, index_max);
+  VisitIntegerArrayArgument(kValuesArgument,
+                            cached_results.data(),
+                            cached_results.size());
+  EndVisitExtension(kInt64ToInt64Extension);
+}
+
 // ---------- Search Monitor ----------
 
 void SearchMonitor::EnterSearch() {}
@@ -2531,6 +2642,7 @@ void SearchMonitor::RestartCurrentSearch() {
   solver()->searches_.back()->set_should_restart(true);
 }
 void SearchMonitor::PeriodicCheck() {}
+void SearchMonitor::Accept(ModelVisitor* const visitor) const {}
 
 // ----------------- Constraint class -------------------
 
@@ -2548,6 +2660,10 @@ void Constraint::PostAndPropagate() {
 void Constraint::Accept(ModelVisitor* const visitor) const {
   visitor->BeginVisitConstraint("unknown", this);
   visitor->EndVisitConstraint("unknown", this);
+}
+
+bool Constraint::IsDelegate() const {
+  return ContainsKey(solver()->delegate_constraints_, this);
 }
 
 // ----- Class IntExpr -----

@@ -1,4 +1,4 @@
-// Copyright 2010-2011 Google
+#// Copyright 2010-2011 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -47,6 +47,7 @@ class BaseIntExpr : public IntExpr {
   virtual IntVar* CastToVar();
   void AddDelegateName(const string& prefix,
                        const PropagationBaseObject* delegate) const;
+
  private:
   IntVar* var_;
 };
@@ -220,6 +221,7 @@ template <class T, class P> class CallMethod1 : public Demon {
                   StrCat("(", constraint_->DebugString(), ", "),
                   StrCat(param1_, ")"));
   }
+
  private:
   T* const constraint_;
   void (T::* const method_)(P);
@@ -262,6 +264,7 @@ template <class T, class P, class Q> class CallMethod2 : public Demon {
                   StrCat(", ", param1_),
                   StrCat(", ", param2_, ")"));
   }
+
  private:
   T* const constraint_;
   void (T::* const method_)(P, Q);
@@ -349,6 +352,7 @@ template <class T, class P> class DelayedCallMethod1 : public Demon {
                   StrCat("(", constraint_->DebugString(), ", "),
                   StrCat(param1_, ")"));
   }
+
  private:
   T* const constraint_;
   void (T::* const method_)(P);
@@ -395,6 +399,7 @@ template <class T, class P, class Q> class DelayedCallMethod2 : public Demon {
                   StrCat(", ", param1_),
                   StrCat(", ", param2_, ")"));
   }
+
  private:
   T* const constraint_;
   void (T::* const method_)(P, Q);
@@ -472,6 +477,7 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   // Returns the variable of given index.
   IntVar* Var(int64 index) const { return vars_[index]; }
   virtual bool SkipUnchanged(int index) const { return false; }
+
  protected:
   int64 OldValue(int64 index) const { return old_values_[index]; }
   void SetValue(int64 index, int64 value);
@@ -481,6 +487,7 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   bool ApplyChanges(Assignment* delta, Assignment* deltadelta) const;
   void RevertChanges(bool incremental);
   void AddVars(const IntVar* const* vars, int size);
+
  private:
   // Called by Start() after synchronizing the operator with the current
   // assignment. Should be overridden instead of Start() to avoid calling
@@ -526,6 +533,7 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
 //       return false;
 //     }
 //   }
+//
 //  private:
 //   int index_;
 // };
@@ -538,6 +546,7 @@ class BaseLNS : public IntVarLocalSearchOperator {
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual void InitFragments();
   virtual bool NextFragment(std::vector<int>* fragment) = 0;
+
  private:
   // This method should not be overridden. Override InitFragments() instead.
   virtual void OnStart();
@@ -556,6 +565,7 @@ class ChangeValue : public IntVarLocalSearchOperator {
   virtual ~ChangeValue();
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual int64 ModifyValue(int64 index, int64 value) = 0;
+
  private:
   virtual void OnStart();
 
@@ -606,6 +616,7 @@ class PathOperator : public IntVarLocalSearchOperator {
 
   // Number of next variables.
   int number_of_nexts() const { return number_of_nexts_; }
+
  protected:
   // Returns the index of the variable corresponding to the ith base node.
   int64 BaseNode(int i) const { return base_nodes_[i]; }
@@ -660,6 +671,7 @@ class PathOperator : public IntVarLocalSearchOperator {
 
   const int number_of_nexts_;
   const bool ignore_path_vars_;
+
  private:
   virtual void OnStart();
   // Called by OnStart() after initializing node information. Should be
@@ -714,6 +726,7 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   // This method should not be overridden. Override OnSynchronize() instead
   // which is called before exiting this method.
   virtual void Synchronize(const Assignment* assignment);
+
  protected:
   // Add variables to "track" to the filter.
   void AddVars(const IntVar* const* vars, int size);
@@ -724,6 +737,7 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   int Size() const { return size_; }
   IntVar* Var(int index) const { return vars_[index]; }
   int64 Value(int index) const { return values_[index]; }
+
  private:
   virtual void OnSynchronize() {}
 
@@ -765,9 +779,12 @@ class LocalSearch : public DecisionBuilder {
   virtual string DebugString() const {
     return "LocalSearch";
   }
+  virtual void Accept(ModelVisitor* const visitor) const;
+
  protected:
   void PushFirstSolutionDecision(DecisionBuilder* first_solution);
   void PushLocalSearchDecision();
+
  private:
   Assignment* assignment_;
   SolutionPool* const pool_;
@@ -793,6 +810,7 @@ class SymmetryBreaker : public DecisionVisitor {
   void AddIntegerVariableGreaterOrEqualValueClause(IntVar* const var,
                                                    int64 value);
   void AddIntegerVariableLessOrEqualValueClause(IntVar* const var, int64 value);
+
  private:
   friend class SymmetryManager;
   void set_symmetry_manager_and_index(SymmetryManager* manager, int index) {
@@ -830,9 +848,11 @@ class SearchLog : public SearchMonitor {
   void Maintain();
   virtual void BeginInitialPropagation();
   virtual void EndInitialPropagation();
+
  protected:
   /* Bottleneck function used for all UI related output. */
   virtual void OutputLine(const string& line);
+
  private:
   static string MemoryUsage();
 

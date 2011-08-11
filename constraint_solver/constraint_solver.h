@@ -98,7 +98,6 @@ class Action;
 class Assignment;
 class AssignmentProto;
 class BaseObject;
-class BooleanVar;
 class ClockTimer;
 class ConstIntArray;
 class Constraint;
@@ -109,7 +108,6 @@ class Demon;
 class DemonMonitor;
 class DemonProfiler;
 class Dimension;
-class DomainIntVar;
 class EqualityVarCstCache;
 class ExpressionCache;
 class GreaterEqualCstCache;
@@ -458,8 +456,12 @@ class Solver {
 
   // propagation
 
-  // This method adds the constraint "c" to the solver.
+  // Adds the constraint "c" to the solver.
   void AddConstraint(Constraint* const c);
+  // Adds the constraint 'c' to the solver and marks it as a delegate
+  // constraint, that is a constraint created calling Var() on an
+  // expression.
+  void AddDelegateConstraint(Constraint* const c);
 
   // search
 
@@ -783,7 +785,9 @@ class Solver {
 
   // Semi continuous Expression (x <= 0 -> f(x) = 0; x > 0 -> f(x) = ax + b)
   // a >= 0 and b >= 0
-  IntExpr* MakeSemiContinuousExpr(IntExpr* e, int64 fixed_charge, int64 step);
+  IntExpr* MakeSemiContinuousExpr(IntExpr* const e,
+                                  int64 fixed_charge,
+                                  int64 step);
 
   // ----- Constraints -----
   // This constraint always succeeds.
@@ -1587,7 +1591,7 @@ class Solver {
                                  string* const tree_xml,
                                  string* const visualization_xml);
 
-#endif
+#endif  // #if !defined(SWIG)
 
   // TODO(user): DEPRECATE API of MakeSearchLog(.., IntVar* var,..).
 
@@ -1657,7 +1661,7 @@ class Solver {
                                        Callback1<MPSolver*>* const modifier,
                                        Callback1<MPSolver*>* const runner,
                                        int simplex_frequency);
-#endif
+#endif  // #if !defined(SWIG)
 
   // ----- Search Decicions and Decision Builders -----
 
@@ -2211,11 +2215,14 @@ class Solver {
   void clear_fail_intercept() { fail_intercept_ = NULL; }
   // Access to demon monitor.
   DemonMonitor* demon_monitor() const { return demon_monitor_; }
+  // Returns wether the object has been named or not.
+  bool HasName(const PropagationBaseObject* object) const;
+  // Adds a new demon and wraps it inside a DemonProfiler if necessary.
+  Demon* RegisterDemon(Demon* const d);
 
   friend class BaseIntExpr;
-  friend class BooleanVar;
+  friend class Constraint;
   friend class DemonProfiler;
-  friend class DomainIntVar;
   friend class FindOneNeighbor;
   friend class FixedDurationIntervalVar;
   friend class IntVar;
@@ -2224,7 +2231,10 @@ class Solver {
   friend class SearchMonitor;
   friend class UndoBranchSelector;
   friend class VarCstCache;
+
 #ifndef SWIG
+  friend void InternalSaveBooleanVarValue(Solver* const, IntVar* const);
+  friend void SetQueueCleanerOnFail(Solver* const, IntVar* const);
   template<class> friend class SimpleRevFIFO;
 #endif
 
@@ -2245,7 +2255,7 @@ class Solver {
   void ProcessDemonsOnQueue();
   void UnfreezeQueue();
   void set_queue_action_on_fail(Action* a);
-  void set_queue_cleaner_on_fail(DomainIntVar* const var);
+  void set_queue_cleaner_on_fail(IntVar* const var);
   void clear_queue_action_on_fail();
 
   void InternalSaveValue(int* valptr);
@@ -2256,10 +2266,6 @@ class Solver {
   void InternalSaveValue(int64** valptr) {
     InternalSaveValue(reinterpret_cast<void**>(valptr));
   }
-  void InternalSaveBooleanVarValue(BooleanVar* const var);
-
-  // Adds a new demon and wraps it inside a DemonProfiler if necessary.
-  Demon* RegisterDemon(Demon* const d);
 
   int* SafeRevAlloc(int* ptr);
   int64* SafeRevAlloc(int64* ptr);
@@ -2295,6 +2301,7 @@ class Solver {
   hash_map<const PropagationBaseObject*, string> propagation_object_names_;
   hash_map<const PropagationBaseObject*,
            std::pair<string, const PropagationBaseObject*> > delegate_objects_;
+  hash_set<const Constraint*> delegate_constraints_;
   const string empty_name_;
   scoped_ptr<Queue> queue_;
   scoped_ptr<Trail> trail_;
@@ -2309,7 +2316,7 @@ class Solver {
   int64 neighbors_;
   int64 filtered_neighbors_;
   int64 accepted_neighbors_;
-  scoped_ptr<VariableQueueCleaner> variable_cleaner_;
+  scoped_ptr<Action> variable_cleaner_;
   scoped_ptr<ClockTimer> timer_;
   std::vector<Search*> searches_;
   ACMRandom random_;
@@ -2412,6 +2419,9 @@ class PropagationBaseObject : public BaseObject {
   // Naming
   virtual string name() const;
   void set_name(const string& name);
+  // Returns wether the object has been named or not.
+  bool HasName() const;
+
 
  private:
   Solver* const solver_;
@@ -2478,6 +2488,7 @@ class DecisionBuilder : public BaseObject {
   // checks at this point for duplication.
   virtual void AppendMonitors(Solver* const solver,
                               std::vector<SearchMonitor*>* const extras);
+  virtual void Accept(ModelVisitor* const visitor) const;
 #endif
 
  private:
@@ -2540,18 +2551,6 @@ class Action : public BaseObject {
   DISALLOW_COPY_AND_ASSIGN(Action);
 };
 
-// Variable-based queue cleaner
-class VariableQueueCleaner : public Action {
- public:
-  VariableQueueCleaner() : var_(NULL) {}
-  virtual ~VariableQueueCleaner() {}
-  virtual void Run(Solver* const solver);
-  void set_var(DomainIntVar* const var) { var_ = var; }
-
- private:
-  DomainIntVar* var_;
-};
-
 // Model visitor.
 class ModelVisitor : public BaseObject {
  public:
@@ -2569,15 +2568,17 @@ class ModelVisitor : public BaseObject {
   static const char kDivide[];
   static const char kDurationExpr[];
   static const char kElement[];
-  static const char kElementConstraint[];
+  static const char kElementEqual[];
   static const char kEndExpr[];
   static const char kEquality[];
   static const char kFalseConstraint[];
   static const char kGreater[];
   static const char kGreaterOrEqual[];
+  static const char kIntegerVariable[];
   static const char kIntervalBinaryRelation[];
   static const char kIntervalDisjunction[];
   static const char kIntervalUnaryRelation[];
+  static const char kIntervalVariable[];
   static const char kIsBetween[];
   static const char kIsDifferent[];
   static const char kIsEqual[];
@@ -2599,7 +2600,6 @@ class ModelVisitor : public BaseObject {
   static const char kPack[];
   static const char kPathCumul[];
   static const char kPerformedExpr[];
-  static const char kProd[];
   static const char kProduct[];
   static const char kScalProd[];
   static const char kScalProdEqual[];
@@ -2611,23 +2611,44 @@ class ModelVisitor : public BaseObject {
   static const char kStartExpr[];
   static const char kSum[];
   static const char kSumEqual[];
-  static const char kSumGreater[];
   static const char kSumGreaterOrEqual[];
-  static const char kSumLess[];
   static const char kSumLessOrEqual[];
   static const char kTransition[];
   static const char kTrueConstraint[];
 
-  // argument names;
+  // Extension names:
+  static const char kCountAssignedItemsExtension[];
+  static const char kCountUsedBinsExtension[];
+  static const char kInt64ToBoolExtension[];
+  static const char kInt64ToInt64Extension[];
+  static const char kObjectiveExtension[];
+  static const char kSearchLimitExtension[];
+  static const char kUsageEqualVariableExtension[];
+  static const char kUsageLessConstantExtension[];
+  static const char kVariableGroupExtension[];
+  static const char kVariableUsageLessConstantExtension[];
+  static const char kWeightedSumOfAssignedEqualVariableExtension[];
+
+  // argument names:
   static const char kActiveArgument[];
+  static const char kAssumePathsArgument[];
+  static const char kBranchesLimitArgument[];
+  static const char kCapacityArgument[];
   static const char kCardsArgument[];
   static const char kCoefficientsArgument[];
   static const char kCountArgument[];
+  static const char kCumulativeArgument[];
   static const char kCumulsArgument[];
+  static const char kDemandsArgument[];
+  static const char kDurationMaxArgument[];
+  static const char kDurationMinArgument[];
   static const char kEarlyCostArgument[];
   static const char kEarlyDateArgument[];
+  static const char kEndMaxArgument[];
+  static const char kEndMinArgument[];
   static const char kExpressionArgument[];
-  static const char kFinalStates[];
+  static const char kFailuresLimitArgument[];
+  static const char kFinalStatesArgument[];
   static const char kFixedChargeArgument[];
   static const char kIndex2Argument[];
   static const char kIndexArgument[];
@@ -2638,19 +2659,31 @@ class ModelVisitor : public BaseObject {
   static const char kLateDateArgument[];
   static const char kLeftArgument[];
   static const char kMaxArgument[];
+  static const char kMaximizeArgument[];
   static const char kMinArgument[];
   static const char kNextsArgument[];
+  static const char kOptionalArgument[];
   static const char kRangeArgument[];
   static const char kRelationArgument[];
   static const char kRightArgument[];
   static const char kSizeArgument[];
+  static const char kSmartTimeCheckArgument[];
+  static const char kSolutionLimitArgument[];
+  static const char kStartMaxArgument[];
+  static const char kStartMinArgument[];
   static const char kStepArgument[];
   static const char kTargetArgument[];
+  static const char kTimeLimitArgument[];
   static const char kTransitsArgument[];
   static const char kTuplesArgument[];
   static const char kValueArgument[];
   static const char kValuesArgument[];
   static const char kVarsArgument[];
+
+  // Operations
+  static const char kMirrorOperation[];
+  static const char kRelaxedMaxOperation[];
+  static const char kRelaxedMinOperation[];
 
   virtual ~ModelVisitor();
 
@@ -2663,8 +2696,8 @@ class ModelVisitor : public BaseObject {
                                     const Constraint* const constraint);
   virtual void EndVisitConstraint(const string& type_name,
                                   const Constraint* const constraint);
-  virtual void BeginVisitExtension(const string& type, const string& name);
-  virtual void EndVisitExtension(const string& type, const string& name);
+  virtual void BeginVisitExtension(const string& type);
+  virtual void EndVisitExtension(const string& type);
   virtual void BeginVisitIntegerExpression(const string& type_name,
                                            const IntExpr* const expr);
   virtual void EndVisitIntegerExpression(const string& type_name,
@@ -2681,6 +2714,10 @@ class ModelVisitor : public BaseObject {
   virtual void VisitIntegerArrayArgument(const string& arg_name,
                                          const int64* const values,
                                          int size);
+  virtual void VisitIntegerMatrixArgument(const string& arg_name,
+                                          const int64* const * const values,
+                                          int rows,
+                                          int columns);
 
   // Visit integer expression argument.
   virtual void VisitIntegerExpressionArgument(
@@ -2699,12 +2736,20 @@ class ModelVisitor : public BaseObject {
   virtual void VisitIntervalArrayArgument(const string& arg_name,
                                           const IntervalVar* const * argument,
                                           int size);
-
   // Helpers.
+
+#if !defined(SWIG)
+  // Using SWIG on calbacks is troublesome, let's hide these methods during
+  // the wrapping.
   void VisitConstIntArrayArgument(const string& arg_name,
                                   const ConstIntArray& argument);
-
-  // TODO(user): SearchMonitors, phases
+  void VisitInt64ToBoolExtension(ResultCallback1<bool, int64>* const callback,
+                                 int64 index_min,
+                                 int64 index_max);
+  void VisitInt64ToInt64Extension(ResultCallback1<int64, int64>* const callback,
+                                  int64 index_min,
+                                  int64 index_max);
+#endif  // #if !defined(SWIG)
 };
 
 // A constraint is the main modeling object. It proposes two methods:
@@ -2733,6 +2778,9 @@ class Constraint : public PropagationBaseObject {
 
   // Accepts the given visitor.
   virtual void Accept(ModelVisitor* const visitor) const;
+
+  // Is the constraint created by a cast from expression to integer variable?
+  bool IsDelegate() const;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(Constraint);
@@ -2813,6 +2861,9 @@ class SearchMonitor : public BaseObject {
 
   // Periodic call to check limits in long running methods.
   virtual void PeriodicCheck();
+
+  // Accepts the given model visitor.
+  virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
   Solver* const solver_;
@@ -3111,6 +3162,7 @@ class OptimizeVar : public SearchMonitor {
   virtual bool AcceptSolution();
   virtual string Print() const;
   virtual string DebugString() const;
+  virtual void Accept(ModelVisitor* const visitor) const;
 
   void ApplyBound();
 
@@ -3707,13 +3759,13 @@ class Assignment : public PropagationBaseObject {
   bool Load(const string& filename);
 #if !defined(SWIG)
   bool Load(File* file);
-#endif
+#endif  // #if !defined(SWIG)
   void Load(const AssignmentProto& proto);
   // Saves the assignment to a file.
   bool Save(const string& filename);
 #if !defined(SWIG)
   bool Save(File* file);
-#endif
+#endif  // #if !defined(SWIG)
   void Save(AssignmentProto* const proto);
 
   void AddObjective(IntVar* const v);

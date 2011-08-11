@@ -227,14 +227,14 @@ class IntElementConstraint : public Constraint {
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitConstraint(ModelVisitor::kElementConstraint, this);
+    visitor->BeginVisitConstraint(ModelVisitor::kElementEqual, this);
     visitor->VisitConstIntArrayArgument(ModelVisitor::kValuesArgument,
                                         values_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             index_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             elem_);
-    visitor->EndVisitConstraint(ModelVisitor::kElementConstraint, this);
+    visitor->EndVisitConstraint(ModelVisitor::kElementEqual, this);
   }
 
  private:
@@ -275,10 +275,10 @@ class IntExprElement : public BaseIntExprElement {
     IntVar* const var = s->MakeIntVar(*copied_data);
     AddDelegateName("Var", var);
     // Ownership or copied_data is transferred to the constraint.
-    s->AddConstraint(s->RevAlloc(new IntElementConstraint(s,
-                                                          copied_data,
-                                                          expr_,
-                                                          var)));
+    s->AddDelegateConstraint(s->RevAlloc(new IntElementConstraint(s,
+                                                                  copied_data,
+                                                                  expr_,
+                                                                  var)));
     return var;
   }
 
@@ -500,8 +500,6 @@ IntExpr* BuildElement(Solver* const solver,
 }
 }  // namespace
 
-
-
 IntExpr* Solver::MakeElement(const int* const vals,
                              int size,
                              IntVar* const index) {
@@ -534,6 +532,7 @@ IntExpr* Solver::MakeElement(const std::vector<int>& vals, IntVar* const index) 
 
 // ----- IntExprFunctionElement -----
 
+namespace {
 class IntExprFunctionElement : public BaseIntExprElement {
  public:
   IntExprFunctionElement(Solver* const s,
@@ -553,21 +552,9 @@ class IntExprFunctionElement : public BaseIntExprElement {
   virtual void Accept(ModelVisitor* const visitor) const {
     // Warning: This will expand all values into a vector.
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
-    std::vector<int64> expanded_values;
-    const int64 index_min = expr_->Min();
-    const int64 index_max = expr_->Max();
-    // Pad with 0 at first.
-    for (int i = 0; i < index_min; ++i) {
-      expanded_values.push_back(0);
-    }
-    for (int i = std::max(0LL, index_min); i <= index_max; ++i) {
-      expanded_values.push_back(ElementValue(i));
-    }
-    visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
-                                       expanded_values.data(),
-                                       expanded_values.size());
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             expr_);
+    visitor->VisitInt64ToInt64Extension(values_, expr_->Min(), expr_->Max());
     visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
   }
 
@@ -693,21 +680,9 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
   virtual void Accept(ModelVisitor* const visitor) const {
     // Warning: This will expand all values into a vector.
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
-    std::vector<int64> expanded_values;
-    const int64 index_min = index_->Min();
-    const int64 index_max = index_->Max();
-    // Pad with 0 at first.
-    for (int i = 0; i < index_min; ++i) {
-      expanded_values.push_back(0);
-    }
-    for (int i = std::max(0LL, index_min); i <= index_max; ++i) {
-      expanded_values.push_back(values_->Run(i));
-    }
-    visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
-                                       expanded_values.data(),
-                                       expanded_values.size());
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             index_);
+    visitor->VisitInt64ToInt64Extension(values_, index_->Min(), index_->Max());
     visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
   }
 
@@ -715,6 +690,7 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
   ResultCallback1<int64, int64>* values_;
   IntVar* const index_;
 };
+}  // namespace
 
 IntExpr* Solver::MakeElement(ResultCallback1<int64, int64>* values,
                              IntVar* const index) {
@@ -759,6 +735,7 @@ IntExpr* Solver::MakeMonotonicElement(ResultCallback1<int64, int64>* values,
 
 // ----- IntIntExprFunctionElement -----
 
+namespace {
 class IntIntExprFunctionElement : public BaseIntExpr {
  public:
   IntIntExprFunctionElement(Solver* const s,
@@ -985,6 +962,7 @@ void IntIntExprFunctionElement::UpdateSupports() const {
     s->SaveAndSetValue(&initial_update_, false);
   }
 }
+}  // namespace
 
 IntExpr* Solver::MakeElement(ResultCallback2<int64, int64, int64>* values,
                              IntVar* const index1, IntVar* const index2) {
@@ -1001,6 +979,7 @@ IntExpr* Solver::MakeElement(ResultCallback2<int64, int64, int64>* values,
 // This constraint implements vars[index] == var. It is delayed such
 // that propagation only occurs when all variables have been touched.
 
+namespace {
 class IntExprArrayElementCt : public Constraint {
  public:
   IntExprArrayElementCt(Solver* const s,
@@ -1020,7 +999,7 @@ class IntExprArrayElementCt : public Constraint {
   virtual string DebugString() const;
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitConstraint(ModelVisitor::kElementConstraint, this);
+    visitor->BeginVisitConstraint(ModelVisitor::kElementEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                size_);
@@ -1028,7 +1007,7 @@ class IntExprArrayElementCt : public Constraint {
                                             expr_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             var_);
-    visitor->EndVisitConstraint(ModelVisitor::kElementConstraint, this);
+    visitor->EndVisitConstraint(ModelVisitor::kElementEqual, this);
   }
 
  private:
@@ -1192,11 +1171,11 @@ class IntExprArrayElement : public BaseIntExpr {
     Range(&vmin, &vmax);
     IntVar* var = solver()->MakeIntVar(vmin, vmax);
     AddDelegateName("Var", var);
-    s->AddConstraint(s->RevAlloc(new IntExprArrayElementCt(s,
-                                                           vars_.get(),
-                                                           size_,
-                                                           var_,
-                                                           var)));
+    s->AddDelegateConstraint(s->RevAlloc(new IntExprArrayElementCt(s,
+                                                                   vars_.get(),
+                                                                   size_,
+                                                                   var_,
+                                                                   var)));
     return var;
   }
 
@@ -1346,6 +1325,7 @@ bool IntExprArrayElement::Bound() const {
   }
   return true;
 }
+}  // namespace
 
 IntExpr* Solver::MakeElement(const IntVar* const * vars,
                              int size,

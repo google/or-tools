@@ -29,6 +29,7 @@ namespace operations_research {
 //-----------------------------------------------------------------------------
 // Equality
 
+namespace {
 class EqualityExprCst : public Constraint {
  public:
   EqualityExprCst(Solver* const s, IntExpr* const e, int64 v);
@@ -68,6 +69,7 @@ string EqualityExprCst::DebugString() const {
   return StringPrintf("(%s == %" GG_LL_FORMAT "d)",
                       expr_->DebugString().c_str(), value_);
 }
+}  // namespace
 
 Constraint* Solver::MakeEquality(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
@@ -82,6 +84,7 @@ Constraint* Solver::MakeEquality(IntExpr* const e, int v) {
 //-----------------------------------------------------------------------------
 // Greater or equal constraint
 
+namespace {
 class GreaterEqExprCst : public Constraint {
  public:
   GreaterEqExprCst(Solver* const s, IntExpr* const e, int64 v);
@@ -121,6 +124,7 @@ string GreaterEqExprCst::DebugString() const {
   return StringPrintf("(%s >= %" GG_LL_FORMAT "d)",
                       expr_->DebugString().c_str(), value_);
 }
+}  // namespace
 
 Constraint* Solver::MakeGreaterOrEqual(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
@@ -145,6 +149,7 @@ Constraint* Solver::MakeGreater(IntExpr* const e, int v) {
 //-----------------------------------------------------------------------------
 // Less or equal constraint
 
+namespace {
 class LessEqExprCst : public Constraint {
  public:
   LessEqExprCst(Solver* const s, IntExpr* const e, int64 v);
@@ -182,6 +187,7 @@ string LessEqExprCst::DebugString() const {
   return StringPrintf("(%s <= %" GG_LL_FORMAT "d)",
                       expr_->DebugString().c_str(), value_);
 }
+}  // namespace
 
 Constraint* Solver::MakeLessOrEqual(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
@@ -206,6 +212,7 @@ Constraint* Solver::MakeLess(IntExpr* const e, int v) {
 //-----------------------------------------------------------------------------
 // Different constraints
 
+namespace {
 class DiffCst : public Constraint {
  public:
   DiffCst(Solver* const s, IntVar* const var, int64 value);
@@ -261,6 +268,7 @@ string DiffCst::DebugString() const {
   return StringPrintf("(%s != %" GG_LL_FORMAT "d)",
                       var_->DebugString().c_str(), value_);
 }
+}  // namespace
 
 Constraint* Solver::MakeNonEquality(IntVar* const e, int64 v) {
   CHECK_EQ(this, e->solver());
@@ -273,6 +281,7 @@ Constraint* Solver::MakeNonEquality(IntVar* const e, int v) {
 }
 // ----- is_equal_cst Constraint -----
 
+namespace {
 class IsEqualCstCt : public Constraint {
  public:
   IsEqualCstCt(Solver* const s, IntVar* const v, int64 c, IntVar* const b)
@@ -322,6 +331,7 @@ class IsEqualCstCt : public Constraint {
   IntVar* const boolvar_;
   Demon* demon_;
 };
+}  // namespace
 
 // ---------- VarCstCache ----------
 
@@ -479,6 +489,7 @@ Constraint* Solver::MakeIsEqualCstCt(IntVar* const v, int64 c,
 
 // ----- is_diff_cst Constraint -----
 
+namespace {
 class IsDiffCstCt : public Constraint {
  public:
   IsDiffCstCt(Solver* const s, IntVar* const v, int64 c, IntVar* const b)
@@ -531,6 +542,7 @@ class IsDiffCstCt : public Constraint {
   IntVar* const boolvar_;
   Demon* demon_;
 };
+}  // namespace
 
 // ---------- UnequalityVarCstCache ----------
 
@@ -587,6 +599,7 @@ Constraint* Solver::MakeIsDifferentCstCt(IntVar* const v, int64 c,
 
 // ----- is_greater_equal_cst Constraint -----
 
+namespace {
 class IsGreaterEqualCstCt : public Constraint {
  public:
   IsGreaterEqualCstCt(Solver* const s, IntVar* const v, int64 c,
@@ -637,6 +650,7 @@ class IsGreaterEqualCstCt : public Constraint {
   IntVar* const boolvar_;
   Demon* demon_;
 };
+}  // namespace
 
 // ---------- GreaterEqualCstCache ----------
 
@@ -692,6 +706,7 @@ Constraint* Solver::MakeIsGreaterCstCt(IntVar* const v, int64 c,
 
 // ----- is_lesser_equal_cst Constraint -----
 
+namespace {
 class IsLessEqualCstCt : public Constraint {
  public:
   IsLessEqualCstCt(Solver* const s, IntVar* const v, int64 c, IntVar* const b)
@@ -744,6 +759,7 @@ class IsLessEqualCstCt : public Constraint {
   IntVar* const boolvar_;
   Demon* demon_;
 };
+}  // namespace
 
 // ---------- LessEqualCstCache ----------
 
@@ -799,6 +815,7 @@ Constraint* Solver::MakeIsLessCstCt(IntVar* const v, int64 c,
 
 // ----- BetweenCt -----
 
+namespace {
 class BetweenCt : public Constraint {
  public:
   BetweenCt(Solver* const s, IntVar* const v, int64 l, int64 u)
@@ -829,6 +846,7 @@ class BetweenCt : public Constraint {
   int64 min_;
   int64 max_;
 };
+}  // namespace
 
 Constraint* Solver::MakeBetweenCt(IntVar* const v, int64 l, int64 u) {
   CHECK_EQ(this, v->solver());
@@ -837,6 +855,7 @@ Constraint* Solver::MakeBetweenCt(IntVar* const v, int64 l, int64 u) {
 
 // ----- is_between_cst Constraint -----
 
+namespace {
 class IsBetweenCt : public Constraint {
  public:
   IsBetweenCt(Solver* const s, IntVar* const v, int64 l, int64 u,
@@ -892,6 +911,7 @@ class IsBetweenCt : public Constraint {
   IntVar* const boolvar_;
   Demon* demon_;
 };
+}  // namespace
 
 Constraint* Solver::MakeIsBetweenCt(IntVar* const v,
                                     int64 l,
@@ -906,6 +926,7 @@ Constraint* Solver::MakeIsBetweenCt(IntVar* const v,
 
 // ----- Member(IntVar, IntSet) -----
 
+namespace {
 class MemberCt : public Constraint {
  public:
   MemberCt(Solver* const s,
@@ -942,6 +963,7 @@ class MemberCt : public Constraint {
   IntVar* const var_;
   ConstIntArray values_;
 };
+}  // namespace
 
 Constraint* Solver::MakeMemberCt(IntVar* const var,
                                  const int64* const values,
@@ -971,6 +993,7 @@ Constraint* Solver::MakeMemberCt(IntVar* const var,
 
 // ----- IsMemberCt -----
 
+namespace {
 class IsMemberCt : public Constraint {
  public:
   IsMemberCt(Solver* const s,
@@ -1055,6 +1078,7 @@ class IsMemberCt : public Constraint {
   Rev<int> support_pos_;
   Demon* demon_;
 };
+}  // namespace
 
 Constraint* Solver::MakeIsMemberCt(IntVar* const var,
                                    const int64* const values,

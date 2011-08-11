@@ -173,11 +173,10 @@ class BasePositiveTableConstraint : public Constraint {
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                arity_);
-    for (int i = 0; i < tuple_count_; ++i) {
-      visitor->VisitIntegerArrayArgument(ModelVisitor::kTuplesArgument,
-                                         tuples_[i],
-                                         arity_);
-    }
+    visitor->VisitIntegerMatrixArgument(ModelVisitor::kTuplesArgument,
+                                        tuples_.get(),
+                                        tuple_count_,
+                                        arity_);
     visitor->EndVisitConstraint(ModelVisitor::kAllowedAssignments, this);
   }
 
@@ -1146,6 +1145,7 @@ Constraint* Solver::MakeAllowedAssignments(
   return RevAlloc(new PositiveTableConstraint(this, vars, tuples));
 }
 
+namespace {
 // ---------- Deterministic Finite Automaton ----------
 
 // This constraint implements a finite automaton when transitions are
@@ -1165,9 +1165,19 @@ class TransitionConstraint : public Constraint {
                        const std::vector<int64>& final_states)
       : Constraint(s),
         vars_(vars),
-        transition_table_(transition_table),
+        transition_count_(transition_table.size()),
+        transition_table_(new int64*[transition_count_]),
         initial_state_(initial_state),
-        final_states_(final_states) {}
+        final_states_(final_states) {
+    // Copy tuples
+    for (int i = 0; i < transition_table.size(); ++i) {
+      CHECK_EQ(kTransitionTupleSize, transition_table[i].size());
+      transition_table_[i] = new int64[kTransitionTupleSize];
+      memcpy(transition_table_[i],
+             transition_table[i].data(),
+             kTransitionTupleSize * sizeof(transition_table[i][0]));
+    }
+  }
 
   TransitionConstraint(Solver* const s,
                        const std::vector<IntVar*>& vars,
@@ -1176,29 +1186,36 @@ class TransitionConstraint : public Constraint {
                        const std::vector<int>& final_states)
       : Constraint(s),
         vars_(vars),
-        transition_table_(transition_table.size()),
+        transition_count_(transition_table.size()),
+        transition_table_(new int64*[transition_count_]),
         initial_state_(initial_state),
         final_states_(final_states.size()) {
-    for (int i = 0; i < transition_table.size(); ++i) {
-      transition_table_[i].resize(transition_table[i].size());
-      for (int j = 0; j < transition_table[i].size(); ++j) {
+    // Copy tuples
+    for (int i = 0; i < transition_count_; ++i) {
+      transition_table_[i] = new int64[kTransitionTupleSize];
+      for (int j = 0; j < kTransitionTupleSize; ++j) {
         transition_table_[i][j] = transition_table[i][j];
       }
     }
+    // Copy states.
     for (int i = 0; i < final_states.size(); ++i) {
       final_states_[i] = final_states[i];
     }
   }
 
-  virtual ~TransitionConstraint() {}
+  virtual ~TransitionConstraint() {
+    for (int i = 0; i < transition_count_; ++i) {
+      delete[] transition_table_[i];
+      transition_table_[i] = NULL;
+    }
+  }
 
   virtual void Post() {
     Solver* const s = solver();
     int64 state_min = kint64max;
     int64 state_max = kint64min;
     const int nb_vars = vars_.size();
-    for (int i = 0; i < transition_table_.size(); ++i) {
-      CHECK_EQ(kTransitionTupleSize, transition_table_[i].size());
+    for (int i = 0; i < transition_count_; ++i) {
       state_max = std::max(state_max, transition_table_[i][kStatePosition]);
       state_max = std::max(state_max, transition_table_[i][kNextStatePosition]);
       state_min = std::min(state_min, transition_table_[i][kStatePosition]);
@@ -1218,7 +1235,10 @@ class TransitionConstraint : public Constraint {
       tmp_vars.push_back(states[var_index]);
       tmp_vars.push_back(vars_[var_index]);
       tmp_vars.push_back(states[var_index + 1]);
-      s->AddConstraint(s->MakeAllowedAssignments(tmp_vars, transition_table_));
+      s->AddConstraint(s->MakeAllowedAssignments(tmp_vars.data(),
+                                                 transition_table_.get(),
+                                                 transition_count_,
+                                                 kTransitionTupleSize));
     }
   }
 
@@ -1231,14 +1251,13 @@ class TransitionConstraint : public Constraint {
                                                vars_.size());
     visitor->VisitIntegerArgument(ModelVisitor::kInitialState,
                                   initial_state_);
-    visitor->VisitIntegerArrayArgument(ModelVisitor::kFinalStates,
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kFinalStatesArgument,
                                        final_states_.data(),
                                        final_states_.size());
-    for (int i = 0; i < transition_table_.size(); ++i) {
-      visitor->VisitIntegerArrayArgument(ModelVisitor::kTuplesArgument,
-                                         transition_table_[i].data(),
-                                         transition_table_[i].size());
-    }
+    visitor->VisitIntegerMatrixArgument(ModelVisitor::kTuplesArgument,
+                                        transition_table_.get(),
+                                        transition_count_,
+                                        kTransitionTupleSize);
     visitor->EndVisitConstraint(ModelVisitor::kTransition, this);
   }
 
@@ -1246,8 +1265,9 @@ class TransitionConstraint : public Constraint {
  private:
   // Variable representing transitions between states. See header file.
   const std::vector<IntVar*> vars_;
+  const int64 transition_count_;
   // The transition as tuples (state, value, next_state).
-  std::vector<std::vector<int64> > transition_table_;
+  scoped_array<int64*> transition_table_;
   // The initial state before the first transition.
   const int64 initial_state_;
   // Vector of final state after the last transision.
@@ -1259,6 +1279,7 @@ class TransitionConstraint : public Constraint {
 const int TransitionConstraint::kStatePosition = 0;
 const int TransitionConstraint::kNextStatePosition = 2;
 const int TransitionConstraint::kTransitionTupleSize = 3;
+}  // namespace
 
 Constraint* Solver::MakeTransitionConstraint(
     const std::vector<IntVar*>& vars,

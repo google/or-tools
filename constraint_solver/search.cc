@@ -283,6 +283,7 @@ SearchMonitor* Solver::MakeSearchLog(int period, OptimizeVar* const obj,
 // ---------- Search Trace ----------
 
 
+namespace {
 class SearchTrace : public SearchMonitor {
  public:
   SearchTrace(Solver* const s, const string& prefix)
@@ -344,6 +345,7 @@ class SearchTrace : public SearchMonitor {
  private:
   const string prefix_;
 };
+}  // namespace
 
 SearchMonitor* Solver::MakeSearchTrace(const string& prefix) {
   return RevAlloc(new SearchTrace(this, prefix));
@@ -352,6 +354,7 @@ SearchMonitor* Solver::MakeSearchTrace(const string& prefix) {
 
 // ---------- Compose Decision Builder ----------
 
+namespace {
 class ComposeDecisionBuilder : public DecisionBuilder {
  public:
   ComposeDecisionBuilder();
@@ -367,6 +370,14 @@ class ComposeDecisionBuilder : public DecisionBuilder {
          !it.at_end();
          ++it) {
       (*it)->AppendMonitors(solver, monitors);
+    }
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    for (ConstIter<std::vector<DecisionBuilder*> > it(builders_);
+         !it.at_end();
+         ++it) {
+      (*it)->Accept(visitor);
     }
   }
 
@@ -399,6 +410,7 @@ string ComposeDecisionBuilder::DebugString() const {
 void ComposeDecisionBuilder::add(DecisionBuilder* const db) {
   builders_.push_back(db);
 }
+}  // namespace
 
 DecisionBuilder* Solver::Compose(DecisionBuilder* const db1,
                                  DecisionBuilder* const db2) {
@@ -438,12 +450,14 @@ DecisionBuilder* Solver::Compose(const std::vector<DecisionBuilder*>& dbs) {
 
 // ----- BaseAssignmentSelector -----
 
+namespace {
 class BaseVariableAssignmentSelector : public BaseObject {
  public:
   BaseVariableAssignmentSelector() {}
   virtual ~BaseVariableAssignmentSelector() {}
   virtual int64 SelectValue(const IntVar* const v, int64 id) = 0;
   virtual IntVar* SelectVariable(Solver* const s, int64* id) = 0;
+  virtual void Accept(ModelVisitor* const visitor) const = 0;
 };
 
 // ----- Variable selector -----
@@ -461,6 +475,13 @@ class VariableSelector : public BaseObject {
   virtual ~VariableSelector() {}
   virtual IntVar* Select(Solver* const s, int64* id) = 0;
   string VarDebugString() const;
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
+  }
 
  protected:
   scoped_array<IntVar*> vars_;
@@ -953,6 +974,10 @@ class VariableAssignmentSelector : public BaseVariableAssignmentSelector {
   }
   string DebugString() const;
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    var_selector_->Accept(visitor);
+  }
+
  private:
   VariableSelector* const var_selector_;
   ValueSelector* const value_selector_;
@@ -971,6 +996,14 @@ class BaseEvaluatorSelector : public BaseVariableAssignmentSelector {
   BaseEvaluatorSelector(const IntVar* const* vars, int size,
                         ResultCallback2<int64, int64, int64>* evaluator);
   ~BaseEvaluatorSelector() {}
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
+  }
 
  protected:
   struct Element {
@@ -1199,6 +1232,7 @@ void AssignOneVariableValue::Apply(Solver* const s) {
 void AssignOneVariableValue::Refute(Solver* const s) {
   var_->RemoveValue(value_);
 }
+}  // namespace
 
 Decision* Solver::MakeAssignVariableValue(IntVar* const v, int64 val) {
   return RevAlloc(new AssignOneVariableValue(v, val));
@@ -1206,6 +1240,7 @@ Decision* Solver::MakeAssignVariableValue(IntVar* const v, int64 val) {
 
 // ----- AssignOneVariableValueOrFail decision -----
 
+namespace {
 class AssignOneVariableValueOrFail : public Decision {
  public:
   AssignOneVariableValueOrFail(IntVar* const v, int64 value);
@@ -1239,6 +1274,7 @@ void AssignOneVariableValueOrFail::Apply(Solver* const s) {
 void AssignOneVariableValueOrFail::Refute(Solver* const s) {
   s->Fail();
 }
+}  // namespace
 
 Decision* Solver::MakeAssignVariableValueOrFail(IntVar* const v, int64 value) {
   return RevAlloc(new AssignOneVariableValueOrFail(v, value));
@@ -1246,6 +1282,7 @@ Decision* Solver::MakeAssignVariableValueOrFail(IntVar* const v, int64 value) {
 
 // ----- AssignOneVariableValue decision -----
 
+namespace {
 class SplitOneVariable : public Decision {
  public:
   SplitOneVariable(IntVar* const v, int64 val, bool start_with_lower_half);
@@ -1294,6 +1331,7 @@ void SplitOneVariable::Refute(Solver* const s) {
     var_->SetMax(value_ - 1);
   }
 }
+}  // namespace
 
 Decision* Solver::MakeSplitVariableDomain(IntVar* const v,
                                           int64 val,
@@ -1313,6 +1351,7 @@ Decision* Solver::MakeVariableGreaterOrEqualValue(IntVar* const var,
 
 // ----- AssignVariablesValues decision -----
 
+namespace {
 class AssignVariablesValues : public Decision {
  public:
   AssignVariablesValues(const IntVar* const* vars, int size,
@@ -1325,6 +1364,14 @@ class AssignVariablesValues : public Decision {
     for (int i = 0; i < size_; ++i) {
       visitor->VisitSetVariableValue(vars_[i], values_[i]);
     }
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
   }
 
  private:
@@ -1370,6 +1417,7 @@ void AssignVariablesValues::Refute(Solver* const s) {
   }
   s->AddConstraint(s->MakeSumGreaterOrEqual(terms, 1));
 }
+}  // namespace
 
 Decision* Solver::MakeAssignVariablesValues(const IntVar* const* vars, int size,
                                             const int64* const values) {
@@ -1385,6 +1433,7 @@ Decision* Solver::MakeAssignVariablesValues(const std::vector<IntVar*>& vars,
 
 // ----- AssignAllVariables -----
 
+namespace {
 class BaseAssignVariables : public DecisionBuilder {
  public:
   explicit BaseAssignVariables(BaseVariableAssignmentSelector* const selector)
@@ -1458,6 +1507,10 @@ class BaseAssignVariables : public DecisionBuilder {
     return value_selector;
   }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    selector_->Accept(visitor);
+  }
+
  protected:
   BaseVariableAssignmentSelector* const selector_;
 };
@@ -1488,6 +1541,7 @@ BaseAssignVariables::MakePhase(Solver* const s,
       s->RevAlloc(new VariableAssignmentSelector(var_selector, value_selector));
   return s->RevAlloc(new BaseAssignVariables(selector));
 }
+}  // namespace
 
 DecisionBuilder* Solver::MakePhase(IntVar* const v0,
                                    Solver::IntVarStrategy var_str,
@@ -1736,6 +1790,7 @@ DecisionBuilder* Solver::MakePhase(const IntVar* const* vars,
 
 // ----- AssignAllVariablesFromAssignment decision builder -----
 
+namespace {
 class AssignVariablesFromAssignment : public DecisionBuilder {
  public:
   AssignVariablesFromAssignment(const Assignment* const assignment,
@@ -1765,6 +1820,14 @@ class AssignVariablesFromAssignment : public DecisionBuilder {
     }
   }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               size_);
+    visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
+  }
+
  private:
   const Assignment* const assignment_;
   DecisionBuilder* const db_;
@@ -1772,7 +1835,7 @@ class AssignVariablesFromAssignment : public DecisionBuilder {
   int size_;
   int iter_;
 };
-
+}  // namespace
 
 DecisionBuilder* Solver::MakeDecisionBuilderFromAssignment(
                                                   Assignment* const assignment,
@@ -1938,6 +2001,7 @@ int64 SolutionCollector::PerformedValue(int n, IntervalVar* const var) const {
   return solutions_[n]->PerformedValue(var);
 }
 
+namespace {
 // ----- First Solution Collector -----
 
 // Collect first solution, useful when looking satisfaction problems
@@ -1983,6 +2047,7 @@ string FirstSolutionCollector::DebugString() const {
     return "FirstSolutionCollector(" + prototype_->DebugString() + ")";
   }
 }
+}  // namespace
 
 SolutionCollector* Solver::MakeFirstSolutionCollector(
     const Assignment* const a) {
@@ -1996,6 +2061,7 @@ SolutionCollector* Solver::MakeFirstSolutionCollector() {
 // ----- Last Solution Collector -----
 
 // Collect last solution, useful when optimizing
+namespace {
 class LastSolutionCollector : public SolutionCollector {
  public:
   LastSolutionCollector(Solver* const s, const Assignment* const a);
@@ -2028,6 +2094,7 @@ string LastSolutionCollector::DebugString() const {
     return "LastSolutionCollector(" + prototype_->DebugString() + ")";
   }
 }
+}  // namespace
 
 SolutionCollector* Solver::MakeLastSolutionCollector(
     const Assignment* const a) {
@@ -2040,6 +2107,7 @@ SolutionCollector* Solver::MakeLastSolutionCollector() {
 
 // ----- Best Solution Collector -----
 
+namespace {
 class BestValueSolutionCollector : public SolutionCollector {
  public:
   BestValueSolutionCollector(Solver* const s,
@@ -2099,6 +2167,7 @@ string BestValueSolutionCollector::DebugString() const {
     return "BestValueSolutionCollector(" + prototype_->DebugString() + ")";
   }
 }
+}  // namespace
 
 SolutionCollector* Solver::MakeBestValueSolutionCollector(
     const Assignment* const a, bool maximize) {
@@ -2112,6 +2181,7 @@ SolutionCollector* Solver::MakeBestValueSolutionCollector(bool maximize) {
 // ----- All Solution Collector -----
 
 // collect all solutions
+namespace {
 class AllSolutionCollector : public SolutionCollector {
  public:
   AllSolutionCollector(Solver* const s, const Assignment* const a);
@@ -2142,6 +2212,7 @@ string AllSolutionCollector::DebugString() const {
     return "AllSolutionCollector(" + prototype_->DebugString() + ")";
   }
 }
+}  // namespace
 
 SolutionCollector* Solver::MakeAllSolutionCollector(const Assignment* const a) {
   return RevAlloc(new AllSolutionCollector(this, a));
@@ -2233,6 +2304,14 @@ string OptimizeVar::DebugString() const {
   return out;
 }
 
+void OptimizeVar::Accept(ModelVisitor* const visitor) const {
+  visitor->BeginVisitExtension(ModelVisitor::kObjectiveExtension);
+  visitor->VisitIntegerArgument(ModelVisitor::kMaximizeArgument, maximize_);
+  visitor->VisitIntegerArgument(ModelVisitor::kStepArgument, step_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                          var_);
+  visitor->EndVisitExtension(ModelVisitor::kObjectiveExtension);
+}
 
 OptimizeVar* Solver::MakeMinimize(IntVar* const v, int64 step) {
   return RevAlloc(new OptimizeVar(this, false, v, step));
@@ -2246,6 +2325,7 @@ OptimizeVar* Solver::MakeOptimize(bool maximize, IntVar* const v, int64 step) {
   return RevAlloc(new OptimizeVar(this, maximize, v, step));
 }
 
+namespace {
 class WeightedOptimizeVar: public OptimizeVar {
  public:
   WeightedOptimizeVar(Solver* solver,
@@ -2309,6 +2389,7 @@ string WeightedOptimizeVar::Print() const {
   }
   return result;
 }
+}  // namespace
 
 OptimizeVar* Solver::MakeWeightedOptimize(bool maximize,
                                           const std::vector<IntVar*>& sub_objectives,
@@ -2369,6 +2450,7 @@ OptimizeVar* Solver::MakeWeightedMaximize(const std::vector<IntVar*>& sub_object
 
 // ---------- Metaheuristics ---------
 
+namespace {
 class Metaheuristic : public SearchMonitor {
  public:
   Metaheuristic(Solver* const solver,
@@ -2628,6 +2710,7 @@ void TabuSearch::AgeLists() {
   AgeList(forbid_tenure_, &forbid_tabu_list_);
   ++stamp_;
 }
+}  // namespace
 
 SearchMonitor* Solver::MakeTabuSearch(bool maximize,
                                       IntVar* const v,
@@ -2668,6 +2751,7 @@ SearchMonitor* Solver::MakeTabuSearch(bool maximize,
 
 // ---------- Simulated Annealing ----------
 
+namespace {
 class SimulatedAnnealing : public Metaheuristic {
  public:
   SimulatedAnnealing(Solver* const s,
@@ -2745,6 +2829,7 @@ float SimulatedAnnealing::Temperature() const {
     return 0.;
   }
 }
+}  // namespace
 
 SearchMonitor* Solver::MakeSimulatedAnnealing(bool maximize,
                                               IntVar* const v,
@@ -2761,6 +2846,7 @@ SearchMonitor* Solver::MakeSimulatedAnnealing(bool maximize,
 
 typedef std::pair<int64, int64> Arc;
 
+namespace {
 // Base GLS penalties abstract class. Maintains the penalty frequency for each
 // (variable, value) arc.
 class GuidedLocalSearchPenalties {
@@ -3320,6 +3406,7 @@ int64 TernaryGuidedLocalSearch::GetAssignmentSecondaryValue(
     return container.Element(secondary_var).Value();
   }
 }
+}  // namespace
 
 SearchMonitor* Solver::MakeGuidedLocalSearch(
     bool maximize,
@@ -3419,6 +3506,7 @@ void SearchLimit::PeriodicCheck() {
   }
 }
 
+namespace {
 // ----- Regular Limit -----
 
 // Usual limit based on wall_time, number of explored branches and
@@ -3444,6 +3532,22 @@ class RegularLimit : public SearchLimit {
                     int64 solutions);
   int64 wall_time() { return wall_time_; }
   virtual string DebugString() const;
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension(ModelVisitor::kSearchLimitExtension);
+    visitor->VisitIntegerArgument(ModelVisitor::kTimeLimitArgument, wall_time_);
+    visitor->VisitIntegerArgument(ModelVisitor::kBranchesLimitArgument,
+                                  branches_);
+    visitor->VisitIntegerArgument(ModelVisitor::kFailuresLimitArgument,
+                                  failures_);
+    visitor->VisitIntegerArgument(ModelVisitor::kSolutionLimitArgument,
+                                  solutions_);
+    visitor->VisitIntegerArgument(ModelVisitor::kSmartTimeCheckArgument,
+                                  smart_time_check_);
+    visitor->VisitIntegerArgument(ModelVisitor::kCumulativeArgument,
+                                  cumulative_);
+    visitor->EndVisitExtension(ModelVisitor::kObjectiveExtension);
+  }
 
  private:
   bool CheckTime();
@@ -3581,7 +3685,7 @@ bool RegularLimit::CheckTime() {
     return false;
   }
 }
-
+}  // namespace
 
 SearchLimit* Solver::MakeLimit(int64 time,
                                int64 branches,
@@ -3625,6 +3729,7 @@ SearchLimit* Solver::MakeLimit(
 }
 
 // A limit whose Check function is the OR of two underlying limits.
+namespace {
 class ORLimit : public SearchLimit {
  public:
   ORLimit(SearchLimit* limit_1,
@@ -3687,6 +3792,7 @@ class ORLimit : public SearchLimit {
   SearchLimit* const limit_1_;
   SearchLimit* const limit_2_;
 };
+}  // namespace
 
 SearchLimit* Solver::MakeLimit(SearchLimit* const limit_1,
                                SearchLimit* const limit_2) {
@@ -3708,6 +3814,7 @@ int64 Solver::GetTime(SearchLimit* limit) {
   return reinterpret_cast<RegularLimit*>(limit)->wall_time();
 }
 
+namespace {
 class CustomLimit : public SearchLimit {
  public:
   CustomLimit(Solver* const s, ResultCallback<bool>* limiter, bool del);
@@ -3751,6 +3858,7 @@ SearchLimit* CustomLimit::MakeClone() const {
   Solver* const s = solver();
   return s->RevAlloc(new CustomLimit(s, limiter_, false));
 }
+}  // namespace
 
 SearchLimit* Solver::MakeCustomLimit(ResultCallback<bool>* limiter) {
   return RevAlloc(new CustomLimit(this, limiter, true));
@@ -3758,6 +3866,7 @@ SearchLimit* Solver::MakeCustomLimit(ResultCallback<bool>* limiter) {
 
 // ---------- SolveOnce ----------
 
+namespace {
 class SolveOnce : public DecisionBuilder {
  public:
   explicit SolveOnce(DecisionBuilder* const db) : db_(db) {
@@ -3783,10 +3892,15 @@ class SolveOnce : public DecisionBuilder {
     return StringPrintf("SolveOnce(%s)", db_->DebugString().c_str());
   }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    db_->Accept(visitor);
+  }
+
  private:
   DecisionBuilder* const db_;
   std::vector<SearchMonitor*> monitors_;
 };
+}  // namespace
 
 DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db) {
   return RevAlloc(new SolveOnce(db));
@@ -3839,6 +3953,7 @@ DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
 
 // ---------- NestedOptimize ----------
 
+namespace {
 class NestedOptimize : public DecisionBuilder {
  public:
   NestedOptimize(DecisionBuilder* const db,
@@ -3898,6 +4013,10 @@ class NestedOptimize : public DecisionBuilder {
                         step_);
   }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    db_->Accept(visitor);
+  }
+
  private:
   DecisionBuilder* const db_;
   Assignment* const solution_;
@@ -3906,6 +4025,7 @@ class NestedOptimize : public DecisionBuilder {
   std::vector<SearchMonitor*> monitors_;
   SolutionCollector* collector_;
 };
+}  // namespace
 
 DecisionBuilder* Solver::MakeNestedOptimize(DecisionBuilder* const db,
                                             Assignment* const solution,
@@ -3996,7 +4116,6 @@ int64 NextLuby(int i) {
   }
   return NextLuby(i - (power / 2) + 1);
 }
-}
 
 class LubyRestart : public SearchMonitor {
  public:
@@ -4028,6 +4147,7 @@ class LubyRestart : public SearchMonitor {
   int64 current_fails_;
   int64 next_step_;
 };
+}  // namespace
 
 SearchMonitor* Solver::MakeLubyRestart(int scale_factor) {
   return RevAlloc(new LubyRestart(this, scale_factor));
@@ -4035,6 +4155,7 @@ SearchMonitor* Solver::MakeLubyRestart(int scale_factor) {
 
 // ----- Constant Restart -----
 
+namespace {
 class ConstantRestart : public SearchMonitor {
  public:
   ConstantRestart(Solver* const s, int frequency)
@@ -4059,6 +4180,7 @@ class ConstantRestart : public SearchMonitor {
   const int frequency_;
   int64 current_fails_;
 };
+}  // namespace
 
 SearchMonitor* Solver::MakeConstantRestart(int frequency) {
   return RevAlloc(new ConstantRestart(this, frequency));

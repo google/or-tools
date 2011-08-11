@@ -775,8 +775,16 @@ void Assignment::Copy(const Assignment* assignment) {
   }
 }
 
-// ----- Restoring assignments -----
+Assignment* Solver::MakeAssignment() {
+  return RevAlloc(new Assignment(this));
+}
 
+Assignment* Solver::MakeAssignment(const Assignment* const a) {
+  return RevAlloc(new Assignment(a));
+}
+
+// ----- Restoring assignments -----
+namespace {
 class RestoreAssignment : public DecisionBuilder {
  public:
   explicit RestoreAssignment(Assignment* assignment);
@@ -796,21 +804,14 @@ Decision* RestoreAssignment::Next(Solver* /*solver*/) {
   assignment_->Restore();
   return NULL;
 }
+}  // namespace
 
 DecisionBuilder* Solver::MakeRestoreAssignment(Assignment* assignment) {
   return RevAlloc(new RestoreAssignment(assignment));
 }
 
-Assignment* Solver::MakeAssignment() {
-  return RevAlloc(new Assignment(this));
-}
-
-Assignment* Solver::MakeAssignment(const Assignment* const a) {
-  return RevAlloc(new Assignment(a));
-}
-
 // ----- Storing assignments -----
-
+namespace {
 class StoreAssignment : public DecisionBuilder {
  public:
   explicit StoreAssignment(Assignment* assignment);
@@ -830,6 +831,7 @@ Decision* StoreAssignment::Next(Solver* /*solver*/) {
   assignment_->Store();
   return NULL;
 }
+}  // namespace
 
 DecisionBuilder* Solver::MakeStoreAssignment(Assignment* assignment) {
   return RevAlloc(new StoreAssignment(assignment));
