@@ -33,7 +33,7 @@ class PyWrapLPExamples(object):
     x1 = solver.NumVar(0.0, infinity, 'x1')
     x2 = solver.NumVar(0.0, infinity, 'x2')
     x3 = solver.NumVar(0.0, infinity, 'x3')
-    print solver.NumVariables()
+    print 'number of variables = ', solver.NumVariables()
 
     solver.AddObjectiveTerm(x1, 10)
     solver.AddObjectiveTerm(x2, 6)
@@ -52,18 +52,21 @@ class PyWrapLPExamples(object):
     c2.AddTerm(x1, 2)
     c2.AddTerm(x2, 2)
     c2.AddTerm(x3, 6)
-    print solver.NumConstraints()
+    print 'number of constraints = ', solver.NumConstraints()
 
     # The problem has an optimal solution.
     solver.Solve()
 
-    print solver.objective_value()
+    print 'optimal objective value = ', solver.objective_value()
     print 'x1 = ', x1.solution_value(), ', reduced_cost = ', x1.reduced_cost()
     print 'x2 = ', x2.solution_value(), ', reduced_cost = ', x2.reduced_cost()
     print 'x3 = ', x3.solution_value(), ', reduced_cost = ', x3.reduced_cost()
     print 'c0 dual value = ', c0.dual_value()
+    print 'c0 activity = ', c0.activity()
     print 'c1 dual value = ', c1.dual_value()
+    print 'c1 activity = ', c1.activity()
     print 'c2 dual value = ', c2.dual_value()
+    print 'c2 activity = ', c2.activity()
 
   def RunAllFirstLinearExample(self):
     self.RunFirstLinearExample(pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
@@ -76,7 +79,7 @@ class PyWrapLPExamples(object):
     x1 = solver.NumVar(0.0, infinity, 'x1')
     x2 = solver.NumVar(0.0, infinity, 'x2')
     x3 = solver.NumVar(0.0, infinity, 'x3')
-    print solver.NumVariables()
+    print 'number of variables = ', solver.NumVariables()
 
     solver.Maximize(10 * x1 + 6 * x2 + 4 * x3)
 
@@ -84,18 +87,21 @@ class PyWrapLPExamples(object):
     c1 = solver.Add(10 * x1 + 4 * x2 + 5 * x3 <= 600)
     c2 = solver.Add(2 * x1 + 2 * x2 + 6 * x3 <= 300)
 
-    print solver.NumConstraints()
+    print 'number of constraints = ', solver.NumConstraints()
 
     # The problem has an optimal solution.
     solver.Solve()
 
-    print solver.objective_value()
+    print 'optimal objective value = ', solver.objective_value()
     print 'x1 = ', x1.solution_value(), ', reduced_cost = ', x1.reduced_cost()
     print 'x2 = ', x2.solution_value(), ', reduced_cost = ', x2.reduced_cost()
     print 'x3 = ', x3.solution_value(), ', reduced_cost = ', x3.reduced_cost()
     print 'c0 dual value = ', c0.dual_value()
+    print 'c0 activity = ', c0.activity()
     print 'c1 dual value = ', c1.dual_value()
+    print 'c1 activity = ', c1.activity()
     print 'c2 dual value = ', c2.dual_value()
+    print 'c2 activity = ', c2.activity()
 
   def RunAllFirstLinearExampleNewAPI(self):
     self.RunFirstLinearExampleNewAPI(pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
@@ -111,22 +117,22 @@ class PyWrapLPExamples(object):
 
     # Check the solution
     solver.Solve()
-    print x1.solution_value()
-    print x2.solution_value()
+    print 'x1 = ', x1.solution_value()
+    print 'x2 = ', x2.solution_value()
 
     solver.Maximize(x2)
 
     # Check the solution
     solver.Solve()
-    print x1.solution_value()
-    print x2.solution_value()
+    print 'x1 = ', x1.solution_value()
+    print 'x2 = ', x2.solution_value()
 
     solver.Minimize(-x1)
 
     # Check the solution
     solver.Solve()
-    print x1.solution_value()
-    print x2.solution_value()
+    print 'x1 = ', x1.solution_value()
+    print 'x2 = ', x2.solution_value()
 
   def RunAllSuccessiveObjectives(self):
     self.RunSuccessiveObjectives(pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)

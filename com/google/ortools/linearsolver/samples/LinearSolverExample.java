@@ -61,14 +61,17 @@ public class LinearSolverExample {
 
     System.out.println("Optimal value = " + solver.objectiveValue());
     System.out.println("x1 = " + x1.solutionValue() +
-                       " + reduced cost = " + x1.reducedCost());
+                       " reduced cost = " + x1.reducedCost());
     System.out.println("x2 = " + x2.solutionValue() +
-                       " + reduced cost = " + x2.reducedCost());
+                       " reduced cost = " + x2.reducedCost());
     System.out.println("x3 = " + x3.solutionValue() +
-                       " + reduced cost = " + x3.reducedCost());
-    System.out.println("c0 dual value = " + c0.dualValue());
-    System.out.println("c1 dual value = " + c1.dualValue());
-    System.out.println("c2 dual value = " + c2.dualValue());
+                       " reduced cost = " + x3.reducedCost());
+    System.out.println("c0 dual value = " + c0.dualValue() +
+                       " activity = " + c0.activity());
+    System.out.println("c1 dual value = " + c1.dualValue() +
+                       " activity = " + c1.activity());
+    System.out.println("c2 dual value = " + c2.dualValue() +
+                       " activity = " + c2.activity());
   }
 
   public static void main(String[] args) throws Exception {

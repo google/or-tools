@@ -142,6 +142,14 @@ class CBCInterface : public MPSolverInterface {
   virtual string SolverVersion() const {
     return PACKAGE_STRING;
   }
+
+  // TODO(user): Maybe we should expose the CbcModel build from osi_
+  // instead, but a new CbcModel is built every time Solve is called,
+  // so it is not possible right now.
+  virtual void* underlying_solver() {
+    return reinterpret_cast<void*>(&osi_);
+  }
+
  private:
   // Reset best objective bound to +/- infinity depending on the
   // optimization direction.
@@ -400,7 +408,6 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   objective_value_ = model.getObjValue();
   VLOG(1) << "objective=" << objective_value_;
   const double* const values = model.bestSolution();
-
   if (values != NULL) {
     // if optimal or feasible solution is found.
     for (int i = 0; i < solver_->variables_.size(); ++i) {
@@ -412,6 +419,18 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
     }
   } else {
     VLOG(1) << "No feasible solution found.";
+  }
+
+  const double* const row_activities = model.getRowActivity();
+  if (row_activities != NULL) {
+    for (int i = 0; i < solver_->constraints_.size(); ++i) {
+      MPConstraint* const ct = solver_->constraints_[i];
+      const int constraint_index = ct->index();
+      const double row_activity = row_activities[constraint_index];
+      ct->set_activity(row_activity);
+      VLOG(4) << "row " << ct->index()
+              << ": activity = " << row_activity;
+    }
   }
 
   // Check the status: optimal, infeasible, etc.

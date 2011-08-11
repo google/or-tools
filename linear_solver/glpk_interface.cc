@@ -160,6 +160,10 @@ class GLPKInterface : public MPSolverInterface {
     return StringPrintf("GLPK %s", glp_version());
   }
 
+  virtual void* underlying_solver() {
+    return reinterpret_cast<void*>(lp_);
+  }
+
  private:
   // Configure the solver's parameters.
   void ConfigureGLPKParameters(const MPSolverParameters& param);
@@ -573,12 +577,21 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
       VLOG(4) << var->name() << ": reduced cost = " << reduced_cost;
     }
   }
-  if (!mip_) {
-    for (int i = 0; i < solver_->constraints_.size(); ++i) {
-      MPConstraint* const ct = solver_->constraints_[i];
-      double dual_value = glp_get_row_dual(lp_, ct->index());
+  for (int i = 0; i < solver_->constraints_.size(); ++i) {
+    MPConstraint* const ct = solver_->constraints_[i];
+    if (mip_) {
+      const double row_activity = glp_mip_row_val(lp_, ct->index());
+      ct->set_activity(row_activity);
+      VLOG(4) << "row " << ct->index()
+              << ": activity = " << row_activity;
+    } else {
+      const double row_activity = glp_get_row_prim(lp_, ct->index());
+      ct->set_activity(row_activity);
+      const double dual_value = glp_get_row_dual(lp_, ct->index());
       ct->set_dual_value(dual_value);
-      VLOG(4) << "row " << ct->index() << ": dual value = " << dual_value;
+      VLOG(4) << "row " << ct->index()
+              << ": activity = " << row_activity
+              << ": dual value = " << dual_value;
     }
   }
 

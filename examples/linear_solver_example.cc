@@ -51,9 +51,12 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
             << ", reduced cost = " << x2->reduced_cost();
   LOG(INFO) << "x3 = " << x3->solution_value()
             << ", reduced cost = " << x3->reduced_cost();
-  LOG(INFO) << "c0 dual value = " << c0->dual_value();
-  LOG(INFO) << "c1 dual value = " << c1->dual_value();
-  LOG(INFO) << "c2 dual value = " << c2->dual_value();
+  LOG(INFO) << "c0 dual value = " << c0->dual_value()
+            << " activity = " << c0->activity();
+  LOG(INFO) << "c1 dual value = " << c1->dual_value()
+            << " activity = " << c1->activity();
+  LOG(INFO) << "c2 dual value = " << c2->dual_value()
+            << " activity = " << c2->activity();
 }
 
 void RunAllExamples() {

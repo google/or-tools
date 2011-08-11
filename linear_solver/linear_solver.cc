@@ -138,6 +138,12 @@ double MPConstraint::dual_value() const {
   return dual_value_;
 }
 
+double MPConstraint::activity() const {
+  interface_->CheckSolutionIsSynchronized();
+  interface_->CheckSolutionExists();
+  return activity_;
+}
+
 bool MPConstraint::ContainsNewVariables() {
   const int last_variable_index = interface_->last_variable_index();
   for (ConstIter<hash_map<MPVariable*, double> > it(coefficients_);
@@ -278,6 +284,12 @@ bool MPSolver::Minimization() const {
 
 string MPSolver::SolverVersion() const {
   return interface_->SolverVersion();
+}
+
+// ---- Underlying solver ----
+
+void* MPSolver::underlying_solver() {
+  return interface_->underlying_solver();
 }
 
 // ----- Solver -----

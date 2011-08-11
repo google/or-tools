@@ -114,6 +114,10 @@ class CLPInterface : public MPSolverInterface {
     return PACKAGE_STRING;
   }
 
+  virtual void* underlying_solver() {
+    return reinterpret_cast<void*>(clp_.get());
+  }
+
  private:
   // Create dummy variable to be able to create empty constraints.
   void CreateDummyVariableForEmptyConstraints();
@@ -453,7 +457,7 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
   const double* const reduced_costs = clp_->getReducedCost();
   for (int i = 0; i < solver_->variables_.size(); ++i) {
     MPVariable* const var = solver_->variables_[i];
-    int var_index = var->index();
+    const int var_index = var->index();
     double val = values[var_index];
     var->set_solution_value(val);
     VLOG(3) << var->name() << ": value = " << val;
@@ -462,12 +466,17 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
     VLOG(4) << var->name() << ": reduced cost = " << reduced_cost;
   }
   const double* const dual_values = clp_->getRowPrice();
+  const double* const row_activities = clp_->getRowActivity();
   for (int i = 0; i < solver_->constraints_.size(); ++i) {
     MPConstraint* const ct = solver_->constraints_[i];
-    double dual_value = 0.0;
-    dual_value = dual_values[i];
+    const int constraint_index = ct->index();
+    const double row_activity = row_activities[constraint_index];
+    ct->set_activity(row_activity);
+    const double dual_value = dual_values[constraint_index];
     ct->set_dual_value(dual_value);
-    VLOG(4) << "row " << ct->index() << ": dual value = " << dual_value;
+    VLOG(4) << "row " << ct->index()
+            << ": activity = " << row_activity
+            << " dual value = " << dual_value;
   }
 
   // Check the status: optimal, infeasible, etc.

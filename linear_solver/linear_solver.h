@@ -165,6 +165,9 @@ class MPConstraint {
   void SetUB(double ub) { SetBounds(lb_, ub); }
   void SetBounds(double lb, double ub);
 
+  // Returns the constraint's activity in the current solution:
+  // sum over all terms of (coefficient * variable value)
+  double activity() const;
   // Only available for continuous problems.
   double dual_value() const;
 
@@ -183,10 +186,11 @@ class MPConstraint {
                const string& name,
                MPSolverInterface* const interface)
       : lb_(lb), ub_(ub), name_(name), index_(-1), dual_value_(0.0),
-        interface_(interface) {}
+        activity_(0.0), interface_(interface) {}
 
   void set_index(int index) { index_ = index; }
   void set_dual_value(double dual_value) { dual_value_ = dual_value; }
+  void set_activity(double activity) { activity_ = activity; }
  private:
   // Returns true if the constraint contains variables that have not
   // been extracted yet.
@@ -203,6 +207,7 @@ class MPConstraint {
   const string name_;
   int index_;
   double dual_value_;
+  double activity_;
   MPSolverInterface* const interface_;
   DISALLOW_COPY_AND_ASSIGN(MPConstraint);
 };
@@ -446,6 +451,19 @@ class MPSolver {
 
   // return a string describing the engine used.
   string SolverVersion() const;
+
+  // Returns the underlying solver so that the user can use
+  // solver-specific features or features that are not exposed in the
+  // simple API of MPSolver. This method is for advanced users, use at
+  // your own risk! In particular, if you modify the model or the
+  // solution by accessing the underlying solver directly, then the
+  // underlying solver will be out of sync with the information kept
+  // in the wrapper (MPSolver, MPVariable, MPConstraint,
+  // MPObjective). You need to cast the void* returned back to its
+  // original type that depends on the interface (CBC:
+  // OsiClpSolverInterface*, CLP: ClpSimplex*, GLPK: glp_prob*, SCIP:
+  // SCIP*).
+  void* underlying_solver();
 
   friend class GLPKInterface;
   friend class CLPInterface;
@@ -706,6 +724,9 @@ class MPSolverInterface {
   }
   // Returns a string describing the solver.
   virtual string SolverVersion() const = 0;
+
+  // Returns the underlying solver.
+  virtual void* underlying_solver() = 0;
 
   friend class MPSolver;
  protected:

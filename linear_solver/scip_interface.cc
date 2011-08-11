@@ -114,6 +114,10 @@ class SCIPInterface : public MPSolverInterface {
                         SCIPtechVersion(), SCIPlpiGetSolverName());
   }
 
+  virtual void* underlying_solver() {
+    return reinterpret_cast<void*>(scip_);
+  }
+
  private:
   // Set all parameters in the underlying solver.
   virtual void SetParameters(const MPSolverParameters& param);
@@ -483,6 +487,17 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
                                        scip_variables_[var_index]);
       var->set_solution_value(val);
       VLOG(3) << var->name() << "=" << val;
+    }
+    for (int i = 0; i < solver_->constraints_.size(); ++i) {
+      MPConstraint* const ct = solver_->constraints_[i];
+      const int constraint_index = ct->index();
+      const double row_activity =
+          SCIPgetActivityLinear(scip_,
+                                scip_constraints_[constraint_index],
+                                solution);
+      ct->set_activity(row_activity);
+      VLOG(4) << "row " << ct->index()
+              << ": activity = " << row_activity;
     }
   } else {
     VLOG(1) << "No feasible solution found.";
