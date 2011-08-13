@@ -20,7 +20,7 @@
 
 namespace operations_research {
 
-// Convert operations_research::RoutingModel::NodeIndex to (32-bit signed) integers.
+// Convert RoutingModel::NodeIndex to (32-bit signed) integers.
 #ifdef SWIGPYTHON
 %typemap(in) operations_research::RoutingModel::NodeIndex {
   $1 = operations_research::RoutingModel::NodeIndex(PyInt_AsLong($input));
@@ -45,9 +45,9 @@ namespace operations_research {
 }
 #endif
 
-// On input, create std::vector<operations_research::RoutingModel::NodeIndex> from int arrays.
+// On input, create std::vector<RoutingModel::NodeIndex> from int arrays.
 #ifdef SWIGPYTHON
-%typemap(in) const std::vector<operations_research::RoutingModel::NodeIndex>&
+%typemap(in) const std::vector<RoutingModel::NodeIndex>&
     (std::vector<operations_research::RoutingModel::NodeIndex> temp) {
   const int size = PyList_Size($input);
   temp.clear();
@@ -66,12 +66,12 @@ namespace operations_research {
 }
 #endif
 #ifdef SWIGJAVA
-%typemap(jni) const std::vector<operations_research::RoutingModel::NodeIndex>& "jobjectArray"
-%typemap(jtype) const std::vector<operations_research::RoutingModel::NodeIndex>& "int[]"
-%typemap(jstype) const std::vector<operations_research::RoutingModel::NodeIndex>& "int[]"
-%typemap(javain) const std::vector<operations_research::RoutingModel::NodeIndex>& "$javainput"
+%typemap(jni) const std::vector<RoutingModel::NodeIndex>& "jobjectArray"
+%typemap(jtype) const std::vector<RoutingModel::NodeIndex>& "int[]"
+%typemap(jstype) const std::vector<RoutingModel::NodeIndex>& "int[]"
+%typemap(javain) const std::vector<RoutingModel::NodeIndex>& "$javainput"
 
-%typemap(in) const std::vector<operations_research::RoutingModel::NodeIndex>&
+%typemap(in) const std::vector<RoutingModel::NodeIndex>&
     (std::vector<operations_research::RoutingModel::NodeIndex> temp) {
   if ($input) {
     const int size = jenv->GetArrayLength($input);
@@ -112,7 +112,7 @@ static int64 PyCallback2NodeIndexNodeIndex(
   return result;
 }
 %}
-%typemap(in) operations_research::RoutingModel::NodeEvaluator2* {
+%typemap(in) RoutingModel::NodeEvaluator2* {
   if (!PyCallable_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Need a callable object!");
     SWIG_fail;
@@ -141,9 +141,9 @@ class NodeIndexResultCallback2
 };
 %}
 
-%typemap(jstype) operations_research::RoutingModel::NodeEvaluator2* "LongResultCallback2";
-%typemap(javain) operations_research::RoutingModel::NodeEvaluator2* "SWIGTYPE_p_ResultCallback2Tlong_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
-%typemap(in) operations_research::RoutingModel::NodeEvaluator2* {
+%typemap(jstype) RoutingModel::NodeEvaluator2* "LongResultCallback2";
+%typemap(javain) RoutingModel::NodeEvaluator2* "SWIGTYPE_p_ResultCallback2Tlong_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
+%typemap(in) RoutingModel::NodeEvaluator2* {
   if ($input) {
     ResultCallback2<int64, int64, int64>* const callback =
         (ResultCallback2<int64, int64, int64>*)$input;
@@ -175,7 +175,8 @@ class NodeIndexResultCallback2
 }
 
 #ifdef SWIGPYTHON
-%ignore RoutingModel::AddDisjunction(const vector<NodeIndex>& nodes,
+// Disambiguate AddDisjunction.
+%ignore RoutingModel::AddDisjunction(const std::vector<NodeIndex>& nodes,
                                      int64 penalty);
 #endif
 
