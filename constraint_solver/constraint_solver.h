@@ -2224,6 +2224,8 @@ class Solver {
   bool HasName(const PropagationBaseObject* object) const;
   // Adds a new demon and wraps it inside a DemonProfiler if necessary.
   Demon* RegisterDemon(Demon* const d);
+  // Returns the active search, NULL outside search.
+  Search* ActiveSearch() const;
 
   friend class BaseIntExpr;
   friend class Constraint;
@@ -2239,7 +2241,6 @@ class Solver {
 #ifndef SWIG
   friend void InternalSaveBooleanVarValue(Solver* const, IntVar* const);
   friend void SetQueueCleanerOnFail(Solver* const, IntVar* const);
-  friend Search* LastSearch(Solver* const solver);
   template<class> friend class SimpleRevFIFO;
 #endif
 

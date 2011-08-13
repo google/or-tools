@@ -180,7 +180,7 @@ class FifoPriorityQueue : public SinglePriorityQueue {
   Cell* last_;
   Cell* free_cells_;
 };
-} // namespace
+}  // namespace
 
 class Queue {
  public:
@@ -929,16 +929,13 @@ void Search::JumpBack() {
   CP_DO_FAIL(this);
 }
 
-void Search::SetBranchSelector(
-    ResultCallback1<Solver::DecisionModification, Solver*>* const bs) {
-  CHECK(bs == selector_ || selector_ == NULL || bs == NULL);
-  if (selector_ != bs) {
-    selector_.reset(bs);
+Search* Solver::ActiveSearch() const {
+  switch (state_) {
+    case IN_SEARCH:
+      return searches_.back();
+    default:
+      return NULL;
   }
-}
-
-Search* LastSearch(Solver* const solver) {
-  return solver->searches_.back();
 }
 
 namespace {
@@ -948,7 +945,7 @@ class UndoBranchSelector : public Action {
   virtual ~UndoBranchSelector() {}
   virtual void Run(Solver* const s) {
     if (s->SolveDepth() == depth_) {
-      LastSearch(s)->SetBranchSelector(NULL);
+      s->ActiveSearch()->SetBranchSelector(NULL);
     }
   }
   virtual string DebugString() const {
@@ -977,6 +974,14 @@ class ApplyBranchSelector : public DecisionBuilder {
   ResultCallback1<Solver::DecisionModification, Solver*>* const selector_;
 };
 }  // namespace
+
+void Search::SetBranchSelector(
+    ResultCallback1<Solver::DecisionModification, Solver*>* const bs) {
+  CHECK(bs == selector_ || selector_ == NULL || bs == NULL);
+  if (selector_ != bs) {
+    selector_.reset(bs);
+  }
+}
 
 void Solver::SetBranchSelector(
     ResultCallback1<Solver::DecisionModification, Solver*>* const bs) {
@@ -1036,6 +1041,7 @@ void Search::Clear() {
   monitors_.clear();
   search_depth_ = 0;
   left_search_depth_ = 0;
+  selector_.reset(NULL);
 }
 
 void Search::EnterSearch() {
@@ -1249,7 +1255,7 @@ class BalancingDecision : public Decision {
   virtual void Apply(Solver* const s) {}
   virtual void Refute(Solver* const s) {}
 };
-}
+}  // namespace
 
 Decision* Solver::MakeFailDecision() {
   return fail_decision_.get();
