@@ -32,6 +32,7 @@
 #include "base/random.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/search_limit.pb.h"
+#include "util/string_array.h"
 
 DEFINE_bool(cp_use_sparse_gls_penalties, false,
             "Use sparse implementation to store Guided Local Search penalties");

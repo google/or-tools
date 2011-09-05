@@ -28,11 +28,14 @@
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
+#include "base/file.h"
+#include "base/recordio.h"
 #include "zlib.h"
 #include "base/stringpiece.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "constraint_solver/model.pb.h"
 #include "util/const_int_array.h"
 
 DEFINE_bool(cp_trace_demons, false, "trace all demon executions.");
@@ -42,6 +45,8 @@ DEFINE_bool(cp_print_model, false,
             "use PrintModelVisitor on model before solving.");
 DEFINE_bool(cp_model_stats, false,
             "use StatisticsModelVisitor on model before solving.");
+DEFINE_string(cp_export_file, "", "Export model to file using CPModelProto.");
+DEFINE_bool(cp_no_solve, false, "Force failure at the beginning of a search");
 
 void ConstraintSolverFailHere() {
   VLOG(3) << "Fail";
@@ -1352,6 +1357,7 @@ void Solver::Init() {
   InitCachedIntConstants();  // to be called after the SENTINEL is set.
   InitCachedConstraint();  // Cache the true constraint.
   InitBoolVarCaches();
+  InitBuilders();
   timer_->Restart();
 }
 
@@ -1373,6 +1379,7 @@ Solver::~Solver() {
       << "non empty list of searches when ending the solver";
   delete search;
   DeleteDemonMonitor(demon_monitor_);
+  DeleteBuilders();
 }
 
 const SolverParameters::TrailCompression
@@ -1625,6 +1632,25 @@ void Solver::ProcessConstraints() {
   if (FLAGS_cp_model_stats) {
     ModelVisitor* const visitor = MakeStatisticsModelVisitor();
     Accept(visitor);
+  }
+  if (!FLAGS_cp_export_file.empty()) {
+    File::Init();
+    File* file = File::Open(FLAGS_cp_export_file, "w");
+    if (file == NULL) {
+      LOG(WARNING) << "Cannot open " << FLAGS_cp_export_file;
+    } else {
+      CPModelProto export_proto;
+      ExportModel(&export_proto);
+      VLOG(1) << export_proto.DebugString();
+      RecordWriter writer(file);
+      writer.WriteProtocolMessage(export_proto);
+      writer.Close();
+    }
+  }
+
+  if (FLAGS_cp_no_solve) {
+    LOG(INFO) << "Forcing early failure";
+    Fail();
   }
 
   // Clear state before processing constraints.
@@ -2381,7 +2407,7 @@ void DecisionVisitor::VisitTryRankFirst(Sequence* const sequence, int index) {}
 
 // ---------- ModelVisitor ----------
 
-// Enums.
+// Tags for constraints, arguments, extensions.
 
 const char ModelVisitor::kAbs[] = "Abs";
 const char ModelVisitor::kAllDifferent[] = "AllDifferent";

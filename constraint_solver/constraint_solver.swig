@@ -25,6 +25,8 @@
 DECLARE_bool(cp_trace_demons);
 DECLARE_bool(cp_print_model);
 DECLARE_bool(cp_model_stats);
+DECLARE_string(cp_export_file);
+DECLARE_bool(cp_no_solve);
 
 struct FailureProtect {
   jmp_buf exception_buffer;
@@ -228,6 +230,10 @@ gflags.DEFINE_boolean('cp_print_model', False,
                       'prints the model before solving it.')
 gflags.DEFINE_boolean('cp_model_stats', False,
                       'displays model statistics before solving it.')
+gflags.DEFINE_string('cp_export_file', '',
+                      'exports model to file using CPModelProto.')
+gflags.DEFINE_boolean('cp_no_solve', False,
+                      'force failures at the beginning of a search.')
 }
 %pythoncode {
 
@@ -861,20 +867,28 @@ namespace operations_research {
 // Add display methods on Solver and remove DebugString method.
 %ignore Solver::DebugString;
 
+// Indentation is critical here as the code is copied verbatim in the
+// python code.
 %feature("pythonappend") Solver::Solver %{
         Solver.SetPythonFlags(FLAGS.cp_trace_demons,
                               FLAGS.cp_print_model,
-                              FLAGS.cp_model_stats)
+                              FLAGS.cp_model_stats,
+                              FLAGS.cp_export_file,
+                              FLAGS.cp_no_solve)
 %}
 
 
 %extend Solver {
 static void SetPythonFlags(bool trace_demon,
                              bool print_model,
-                             bool model_stats) {
+                             bool model_stats,
+                             string export_file,
+                             bool no_solve) {
     FLAGS_cp_trace_demons = trace_demon;
     FLAGS_cp_print_model = print_model;
     FLAGS_cp_model_stats = model_stats;
+    FLAGS_cp_export_file = export_file;
+    FLAGS_cp_no_solve = no_solve;
   }
 
   Constraint* TreeNoCycle(const std::vector<IntVar*>& nexts,

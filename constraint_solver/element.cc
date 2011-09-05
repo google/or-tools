@@ -21,6 +21,7 @@
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/const_int_array.h"
+#include "util/string_array.h"
 
 namespace operations_research {
 

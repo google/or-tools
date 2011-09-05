@@ -21,6 +21,7 @@
 #include "base/mathutil.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/string_array.h"
 
 namespace operations_research {
 // Deviation Constraint, a constraint for the average absolute

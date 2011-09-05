@@ -295,8 +295,8 @@ void LoadElement(const hash_map<string, E*>& id_to_element_map,
 
 bool Assignment::Load(const string& filename) {
   File::Init();
-  File* file = File::Create(filename, "r");
-  if (file == NULL || !file->Open()) {
+  File* file = File::Open(filename, "r");
+  if (file == NULL) {
     LOG(INFO) << "Cannot open " << filename;
     return false;
   }
@@ -382,8 +382,8 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
 
 bool Assignment::Save(const string& filename) {
   File::Init();
-  File* file = File::Create(filename, "w");
-  if (file == NULL || !file->Open()) {
+  File* file = File::Open(filename, "w");
+  if (file == NULL) {
     LOG(INFO) << "Cannot open " << filename;
     return false;
   }

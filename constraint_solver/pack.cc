@@ -1235,6 +1235,8 @@ void Pack::AddWeightedSumOfAssignedDimension(const std::vector<int64>& weights,
 void Pack::AddSumVariableWeightsLessOrEqualConstantDimension(
     const std::vector<IntVar*>& usage,
     const std::vector<int64>& capacity) {
+  CHECK_EQ(usage.size(), vsize_);
+  CHECK_EQ(capacity.size(), bins_);
   Solver* const s = solver();
   Dimension* const dim =
       s->RevAlloc(new VariableUsageDimension(s,

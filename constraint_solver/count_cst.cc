@@ -19,6 +19,7 @@
 #include "base/stringprintf.h"
 #include "base/concise_iterator.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/string_array.h"
 
 namespace operations_research {
 

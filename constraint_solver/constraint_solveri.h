@@ -31,6 +31,7 @@
 #include "base/bitmap.h"
 #include "base/map-util.h"
 #include "constraint_solver/constraint_solver.h"
+#include "util/vector_map.h"
 
 class WallTimer;
 
@@ -124,47 +125,6 @@ template <class T> class SimpleRevFIFO {
   Chunk *chunks_;
   int pos_;
 };
-
-// ---------- Pretty Print Helpers ----------
-
-template <class T> string DebugStringArray(T* const* array,
-                                           int size,
-                                           const string& separator) {
-  string out;
-  for (int i = 0; i < size; ++i) {
-    if (i > 0) {
-      out.append(separator);
-    }
-    out.append(array[i]->DebugString());
-  }
-  return out;
-}
-
-template <class T> string NameArray(T* const* array,
-                                    int size,
-                                    const string& separator) {
-  string out;
-  for (int i = 0; i < size; ++i) {
-    if (i > 0) {
-      out.append(separator);
-    }
-    out.append(array[i]->name());
-  }
-  return out;
-}
-
-inline string Int64ArrayToString(const int64* const array,
-                                 int size,
-                                 const string& separator) {
-  string out;
-  for (int i = 0; i < size; ++i) {
-    if (i > 0) {
-      out.append(separator);
-    }
-    StringAppendF(&out, "%" GG_LL_FORMAT "d", array[i]);
-  }
-  return out;
-}
 
 // These methods represents generic demons that will call back a
 // method on the constraint during their Run method.
@@ -869,6 +829,286 @@ class SearchLog : public SearchMonitor {
   int max_depth_;
   int sliding_min_depth_;
   int sliding_max_depth_;
+};
+
+// ---------- CPModelBuilder -----------
+
+class CPModelBuilder {
+ public:
+  explicit CPModelBuilder(Solver* const solver) : solver_(solver) {}
+  ~CPModelBuilder() {}
+
+  Solver* solver() const { return solver_; }
+
+  // Builds integer expression from proto and stores it. It returns
+  // true upon success.
+  bool BuildFromProto(const CPIntegerExpressionProto& proto);
+  // Builds constraint from proto and returns it.
+  Constraint* BuildFromProto(const CPConstraintProto& proto);
+  // Builds interval variable from proto and stores it. It returns
+  // true upon success.
+  bool BuildFromProto(const CPIntervalVariableProto& proto);
+  // Returns stored integer expression.
+  IntExpr* IntegerExpression(int index) const;
+  // Returns stored interval variable.
+  IntervalVar* IntervalVariable(int index) const;
+
+  bool ScanOneArgument(int type_index,
+                       const CPArgumentProto& arg_proto,
+                       int64* to_fill);
+
+  bool ScanOneArgument(int type_index,
+                       const CPArgumentProto& arg_proto ,
+                       IntExpr** to_fill);
+
+  bool ScanOneArgument(int type_index,
+                       const CPArgumentProto& arg_proto,
+                       std::vector<int64>* to_fill);
+
+  bool ScanOneArgument(int type_index,
+                       const CPArgumentProto& arg_proto,
+                       std::vector<std::vector<int64> >* to_fill);
+
+  bool ScanOneArgument(int type_index,
+                       const CPArgumentProto& arg_proto,
+                       std::vector<IntVar*>* to_fill);
+
+  bool ScanOneArgument(int type_index,
+                       const CPArgumentProto& arg_proto,
+                       IntervalVar** to_fill);
+
+  bool ScanOneArgument(int type_index,
+                       const CPArgumentProto& arg_proto,
+                       std::vector<IntervalVar*>* to_fill);
+
+  template <class P, class A> bool ScanArguments(const string& type,
+                                                 const P& proto,
+                                                 A* to_fill) {
+    const int index = tags_.Index(type);
+    for (int i = 0; i < proto.arguments_size(); ++i) {
+      if (ScanOneArgument(index, proto.arguments(i), to_fill)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  int TagIndex(const string& tag) const { return tags_.Index(tag); }
+
+  void AddTag(const string& tag) { tags_.Add(tag); }
+
+ private:
+  Solver* const solver_;
+  std::vector<IntExpr*> expressions_;
+  std::vector<IntervalVar*> intervals_;
+  VectorMap<string> tags_;
+};
+
+// Implements a complete cache for model elements: expressions and constraints.
+// Caching is based on the signature of the elements, as well as their type.
+class ModelCache {
+ public:
+  enum VoidConstraintType {
+    VOID_FALSE_CONSTRAINT = 0,
+    VOID_TRUE_CONSTRAINT,
+    VOID_CONSTRAINT_MAX,
+  };
+
+  enum VarConstantConstraintType {
+    VAR_CONSTANT_EQUALITY = 0,
+    VAR_CONSTANT_GREATER_OR_EQUAL,
+    VAR_CONSTANT_LESS_OR_EQUAL,
+    VAR_CONSTANT_NON_EQUALITY,
+    VAR_CONSTANT_CONSTRAINT_MAX,
+  };
+
+  enum VarConstantConstantConstraintType {
+    VAR_CONSTANT_CONSTANT_BETWEEN = 0,
+    VAR_CONSTANT_CONSTANT_CONSTRAINT_MAX,
+  };
+
+  enum VarVarConstraintType {
+    VAR_VAR_EQUALITY = 0,
+    VAR_VAR_GREATER,
+    VAR_VAR_GREATER_OR_EQUAL,
+    VAR_VAR_LESS,
+    VAR_VAR_LESS_OR_EQUAL,
+    VAR_VAR_NON_EQUALITY,
+    VAR_VAR_CONSTRAINT_MAX,
+  };
+
+  enum VarExpressionType {
+    VAR_OPPOSITE = 0,
+    VAR_ABS,
+    VAR_SQUARE,
+    VAR_EXPRESSION_MAX,
+  };
+
+  enum VarConstantExpressionType {
+    VAR_CONSTANT_DIFFERENCE = 0,
+    VAR_CONSTANT_DIVIDE,
+    VAR_CONSTANT_PROD,
+    VAR_CONSTANT_MAX,
+    VAR_CONSTANT_MIN,
+    VAR_CONSTANT_SUM,
+    VAR_CONSTANT_EXPRESSION_MAX,
+  };
+
+  enum VarVarExpressionType {
+    VAR_VAR_DIFFERENCE = 0,
+    VAR_VAR_PROD,
+    VAR_VAR_MAX,
+    VAR_VAR_MIN,
+    VAR_VAR_SUM,
+    VAR_VAR_EXPRESSION_MAX,
+  };
+
+  enum VarConstantConstantExpressionType {
+    VAR_CONSTANT_CONSTANT_SEMI_CONTINUOUS = 0,
+    VAR_CONSTANT_CONSTANT_EXPRESSION_MAX,
+  };
+
+  enum VarConstantArrayExpressionType {
+    VAR_CONSTANT_ARRAY_ELEMENT = 0,
+    VAR_CONSTANT_ARRAY_EXPRESSION_MAX,
+  };
+
+  enum VarArrayExpressionType {
+    VAR_ARRAY_MAX = 0,
+    VAR_ARRAY_MIN,
+    VAR_ARRAY_SUM,
+    VAR_ARRAY_EXPRESSION_MAX,
+  };
+
+  explicit ModelCache(Solver* const solver);
+  virtual ~ModelCache();
+
+  // Void constraints.
+
+  virtual Constraint* FindVoidConstraint(VoidConstraintType type) const = 0;
+
+  virtual void InsertVoidConstraint(Constraint* const ct,
+                                    VoidConstraintType type) = 0;
+
+  // Var Constant Constraints.
+
+  virtual Constraint* FindVarConstantConstraint(
+      IntVar* const var,
+      int64 value,
+      VarConstantConstraintType type) const = 0;
+
+  virtual void InsertVarConstantConstraint(
+      Constraint* const ct,
+      IntVar* const var,
+      int64 value,
+      VarConstantConstraintType type) = 0;
+
+  // Var Constant Constant Constraints.
+
+  virtual Constraint* FindVarConstantConstantConstraint(
+      IntVar* const var,
+      int64 value1,
+      int64 value2,
+      VarConstantConstantConstraintType type) const = 0;
+
+  virtual void InsertVarConstantConstantConstraint(
+      Constraint* const ct,
+      IntVar* const var,
+      int64 value1,
+      int64 value2,
+      VarConstantConstantConstraintType type) = 0;
+
+  // Var Var Constraints.
+
+  virtual Constraint* FindVarVarConstraint(
+      IntVar* const var1,
+      IntVar* const var2,
+      VarVarConstraintType type) const = 0;
+
+  virtual void InsertVarVarConstraint(Constraint* const ct,
+                                      IntVar* const var1,
+                                      IntVar* const var2,
+                                      VarVarConstraintType type) = 0;
+
+  // Var Expressions.
+
+  virtual IntExpr* FindVarExpression(
+      IntVar* const var,
+      VarExpressionType type) const = 0;
+
+  virtual void InsertVarExpression(IntExpr* const expression,
+                                   IntVar* const var,
+                                   VarExpressionType type) = 0;
+
+  // Var Constant Expressions .
+
+  virtual IntExpr* FindVarConstantExpression(
+      IntVar* const var,
+      int64 value,
+      VarConstantExpressionType type) const = 0;
+
+  virtual void InsertVarConstantExpression(
+      IntExpr* const expression,
+      IntVar* const var,
+      int64 value,
+      VarConstantExpressionType type) = 0;
+
+  // Var Var Expressions.
+
+  virtual IntExpr* FindVarVarExpression(
+      IntVar* const var1,
+      IntVar* const var2,
+      VarVarExpressionType type) const = 0;
+
+  virtual void InsertVarVarExpression(
+      IntExpr* const expression,
+      IntVar* const var1,
+      IntVar* const var2,
+      VarVarExpressionType type) = 0;
+
+  // Var Constant Constant Expressions.
+
+  virtual IntExpr* FindVarConstantConstantExpression(
+      IntVar* const var,
+      int64 value1,
+      int64 value2,
+      VarConstantConstantExpressionType type) const = 0;
+
+  virtual void InsertVarConstantConstantExpression(
+      IntExpr* const expression,
+      IntVar* const var,
+      int64 value1,
+      int64 value2,
+      VarConstantConstantExpressionType type) = 0;
+
+  // Var Constant Array Expressions.
+
+  virtual IntExpr* FindVarConstantArrayExpression(
+      IntVar* const var,
+      ConstIntArray* const values,
+      VarConstantArrayExpressionType type) const = 0;
+
+  virtual void InsertVarConstantArrayExpression(
+      IntExpr* const expression,
+      IntVar* const var,
+      ConstIntArray* const values,
+      VarConstantArrayExpressionType type) = 0;
+
+  // Var Array Expressions.
+
+  virtual IntExpr* FindVarArrayExpression(
+      ConstPtrArray<IntVar>* const vars,
+      VarArrayExpressionType type) const = 0;
+
+  virtual void InsertVarArrayExpression(
+      IntExpr* const expression,
+      ConstPtrArray<IntVar>* const vars,
+      VarArrayExpressionType type) = 0;
+
+  Solver* solver() const;
+
+ private:
+  Solver* const solver_;
 };
 }  // namespace operations_research
 

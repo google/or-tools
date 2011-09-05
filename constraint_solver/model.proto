@@ -1,0 +1,89 @@
+// Copyright 2010-2011 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+import "constraint_solver/search_limit.proto";
+
+package operations_research;
+
+message CPIntegerMatrixProto {
+  required int32 rows = 1;
+  required int32 columns = 2;
+  repeated int64 values = 3;
+}
+
+// This message holds one argument of a constraint or expression.  It
+// is referenced by the argument_name. Only one field apart the name
+// must be set.
+message CPArgumentProto {
+  required int32 argument_index = 1;
+  optional int64 integer_value = 2;
+  repeated int64 integer_array = 3;
+  optional int32 integer_expression_index = 4;
+  repeated int32 integer_expression_array = 5;
+  optional int32 interval_index = 6;
+  repeated int32 interval_array = 7;
+  optional CPIntegerMatrixProto integer_matrix = 8;
+}
+
+message CPExtensionProto {
+  required int32 type_index = 1;
+  repeated CPArgumentProto arguments = 2;
+}
+
+message CPIntegerExpressionProto {
+  required int32 index = 1;
+  required int32 type_index = 2;
+  optional string name = 3;
+  repeated CPArgumentProto arguments = 4;
+  repeated CPExtensionProto extensions = 5;
+}
+
+message CPIntervalVariableProto {
+  required int32 index = 1;
+  required int32 type_index = 2;
+  optional string name = 3;
+  repeated CPArgumentProto arguments = 4;
+}
+
+message CPConstraintProto {
+  required int32 index = 1;
+  required int32 type_index = 2;
+  optional string name = 3;
+  repeated CPArgumentProto arguments = 4;
+  repeated CPExtensionProto extensions = 5;
+}
+
+message CPObjectiveProto {
+  required bool maximize = 1;
+  required int64 step = 2;
+  required int32 objective_index = 3;
+}
+
+message CPVariableGroup {
+  repeated CPArgumentProto arguments = 1;
+  optional string type = 2;
+}
+
+message CPModelProto {
+  required string model = 1;
+  required int32 version = 2;
+  repeated string tags = 3;
+  repeated CPIntegerExpressionProto expressions = 4;
+  repeated CPIntervalVariableProto intervals = 5;
+  repeated CPConstraintProto constraints = 6;
+  optional CPObjectiveProto objective = 7;
+  optional SearchLimitProto search_limit = 8;
+  repeated CPVariableGroup variable_groups = 9;
+  optional string licence_text = 10;
+}

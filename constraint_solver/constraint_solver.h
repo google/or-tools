@@ -101,6 +101,12 @@ class BaseObject;
 class ClockTimer;
 class ConstIntArray;
 class Constraint;
+class CPArgumentProto;
+class CPConstraintProto;
+class CPIntegerExpressionProto;
+class CPIntervalVariableProto;
+class CPModelBuilder;
+class CPModelProto;
 class Decision;
 class DecisionBuilder;
 class DecisionVisitor;
@@ -142,6 +148,7 @@ class SymmetryBreaker;
 class UnequalityVarCstCache;
 struct StateInfo;
 struct Trail;
+template <class T> class ConstPtrArray;
 template <class T> class SimpleRevFIFO;
 
 // This enum is used internally to tag states in the search tree.
@@ -297,6 +304,17 @@ class Solver {
   typedef ResultCallback1<int64, int64> IndexEvaluator1;
   typedef ResultCallback2<int64, int64, int64> IndexEvaluator2;
   typedef ResultCallback3<int64, int64, int64, int64> IndexEvaluator3;
+  typedef ResultCallback2<IntExpr*,
+                          CPModelBuilder*,
+                          const CPIntegerExpressionProto&>
+      IntegerExpressionBuilder;
+  typedef ResultCallback2<Constraint*,
+                          CPModelBuilder*,
+                          const CPConstraintProto&> ConstraintBuilder;
+  typedef ResultCallback2<IntervalVar*,
+                          CPModelBuilder*,
+                          const CPIntervalVariableProto&>
+      IntervalVariableBuilder;
 
   // Number of priorities for demons.
   static const int kNumPriorities = 3;
@@ -555,6 +573,37 @@ class Solver {
 
   // Abandon the current branch in the search tree. A backtrack will follow.
   void Fail();
+
+  // Exports the model to protobuf. This code will be called
+  // from inside the solver during the start of the search.
+  void ExportModel(CPModelProto* const proto) const;
+  // Exports the model to protobuf. Search monitors are useful to pass
+  // the objective and limits to the protobuf.
+  void ExportModel(const std::vector<SearchMonitor*>& monitors,
+                   CPModelProto* const proto) const;
+  // Loads the model into the solver, and returns true upon success.
+  bool LoadModel(const CPModelProto& proto);
+  // Loads the model into the solver, appends search monitors to monitors,
+  // and returns true upon success.
+  bool LoadModel(const CPModelProto& proto, std::vector<SearchMonitor*>* monitors);
+  // Upgrades the model to the latest version.
+  static bool UpgradeModel(CPModelProto* const proto);
+
+  // Registers a constraint builder. Ownership is passed to the solver.
+  void RegisterBuilder(const string& tag,
+                       ConstraintBuilder* const builder);
+  // Registers a integer expression builder. Ownership is passed to the solver.
+  void RegisterBuilder(const string& tag,
+                       IntegerExpressionBuilder* const builder);
+  // Registers a interval variable builder. Ownership is passed to the solver.
+  void RegisterBuilder(const string& tag,
+                       IntervalVariableBuilder* const builder);
+
+  ConstraintBuilder* GetConstraintBuilder(const string& tag) const;
+  IntegerExpressionBuilder*
+      GetIntegerExpressionBuilder(const string& tag) const;
+  IntervalVariableBuilder* GetIntervalVariableBuilder(const string& tag) const;
+
 
   // When SaveValue() is not the best way to go, one can create a reversible
   // action that will be called upon backtrack. The "fast" parameter
@@ -2297,6 +2346,8 @@ class Solver {
   void InitCachedIntConstants();
   void InitCachedConstraint();
   void InitBoolVarCaches();
+  void InitBuilders();
+  void DeleteBuilders();
 
   // Naming
   string GetName(const PropagationBaseObject* object) const;
@@ -2350,6 +2401,11 @@ class Solver {
   scoped_ptr<Decision> fail_decision_;
   int constraint_index_;
   int additional_constraint_index_;
+
+  // Support for model loading.
+  hash_map<string, IntegerExpressionBuilder*> expression_builders_;
+  hash_map<string, ConstraintBuilder*> constraint_builders_;
+  hash_map<string, IntervalVariableBuilder*> interval_builders_;
 
   DISALLOW_COPY_AND_ASSIGN(Solver);
 };
