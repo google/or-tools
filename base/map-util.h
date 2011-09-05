@@ -106,6 +106,26 @@ bool InsertIfNotPresent(Collection * const collection,
   return ret.second;
 }
 
+// Inserts a new pair<key,value> into a map or hash_map.
+// Insert a new key into a set or hash_set.
+// Dies if the key is already present.
+template<class Collection>
+void InsertOrDie(Collection* const collection,
+                 const typename Collection::value_type& value) {
+  CHECK(collection->insert(value).second) << "duplicate value: " << value;
+}
+
+// Inserts a new key/value into a map or hash_map.
+// Dies if the key is already present.
+template<class Collection>
+void InsertOrDie(Collection* const collection,
+                 const typename Collection::value_type::first_type& key,
+                 const typename Collection::value_type::second_type& data) {
+  typedef typename Collection::value_type value_type;
+  CHECK(collection->insert(value_type(key, data)).second)
+    << "duplicate key: " << key;
+}
+
 // Perform a lookup in map or hash_map.
 // If the key is present and value is non-NULL then a copy of the value
 // associated with the key is made into *value. Returns whether key was present.
