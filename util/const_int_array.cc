@@ -109,7 +109,7 @@ ConstIntArray::SortedCopyWithoutDuplicates(bool increasing) const {
   }
 }
 
-bool ConstIntArray::Equals(const ConstIntArray& other)  {
+bool ConstIntArray::Equals(const ConstIntArray& other) const {
   if (data_->size() != other.data_->size()) {
     return false;
   }

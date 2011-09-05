@@ -104,7 +104,7 @@ class ConstIntArray {
   std::vector<int64>* SortedCopyWithoutDuplicates(bool increasing) const;
 
   // Equality test.
-  bool Equals(const ConstIntArray& other);
+  bool Equals(const ConstIntArray& other) const;
 
   // Size of the array. This is not valid after Release() has been called.
   int size() const;
