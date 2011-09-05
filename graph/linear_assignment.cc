@@ -48,8 +48,10 @@ LinearSumAssignment::LinearSumAssignment(const StarGraph& graph,
       total_excess_(0),
       price_(num_left_nodes + StarGraph::kFirstNode,
              graph.max_end_node_index() - 1),
-      matched_(StarGraph::kFirstNode,
-               graph.max_end_node_index() - 1),
+      matched_arc_(StarGraph::kFirstNode,
+                   num_left_nodes - 1),
+      matched_node_(num_left_nodes,
+                    graph.max_end_node_index() - 1),
       scaled_arc_cost_(StarGraph::kFirstArc,
                        graph.max_end_arc_index() - 1),
       active_nodes_(
@@ -179,11 +181,22 @@ bool LinearSumAssignment::UpdateEpsilon() {
   return true;
 }
 
-inline bool LinearSumAssignment::IsActive(NodeIndex node) const {
-  // In a non-debug compilation we could assert that this is a
-  // left-side node, but in debug compilations we use this routine to
-  // check invariants for right-side nodes. So no assertion.
-  return matched_[node] == StarGraph::kNilArc;
+// For production code that checks whether a left-side node is active.
+inline bool LinearSumAssignment::IsActive(NodeIndex left_node) const {
+  DCHECK_LT(left_node, num_left_nodes_);
+  return matched_arc_[left_node] == StarGraph::kNilArc;
+}
+
+// Only for debugging. Separate from the production IsActive() method
+// so that method can assert that its argument is a left-side node,
+// while for debugging we need to be able to test any node.
+inline bool LinearSumAssignment::IsActiveForDebugging(
+    NodeIndex node) const {
+  if (node < num_left_nodes_) {
+    return IsActive(node);
+  } else {
+    return matched_node_[node] == StarGraph::kNilNode;
+  }
 }
 
 void LinearSumAssignment::InitializeActiveNodeContainer() {
@@ -222,15 +235,16 @@ void LinearSumAssignment::SaturateNegativeArcs() {
       // We're about to create a unit of excess by unmatching these nodes.
       total_excess_ += 1;
       const NodeIndex mate = GetMate(node);
-      matched_.Set(mate, StarGraph::kNilArc);
-      matched_.Set(node, StarGraph::kNilArc);
+      matched_arc_.Set(node, StarGraph::kNilArc);
+      matched_node_.Set(mate, StarGraph::kNilNode);
     }
   }
 }
 
 // Returns true for success, false for infeasible.
 bool LinearSumAssignment::DoublePush(NodeIndex source) {
-    DCHECK(IsActive(source));
+  DCHECK_GT(num_left_nodes_, source);
+  DCHECK(IsActive(source));
   ImplicitPriceSummary summary = BestArcAndGap(source);
   const ArcIndex best_arc = summary.first;
   const CostValue gap = summary.second;
@@ -241,13 +255,12 @@ bool LinearSumAssignment::DoublePush(NodeIndex source) {
     return false;
   }
   const NodeIndex new_mate = Head(best_arc);
-  const ArcIndex to_unmatch = matched_[new_mate];
-  if (to_unmatch != StarGraph::kNilArc) {
+  const NodeIndex to_unmatch = matched_node_[new_mate];
+  if (to_unmatch != StarGraph::kNilNode) {
     // Unmatch new_mate from its current mate, pushing the unit of
     // flow back to a node on the left side as a unit of excess.
-    const NodeIndex destination = Tail(to_unmatch);
-    matched_.Set(destination, StarGraph::kNilArc);
-    active_nodes_->Add(destination);
+    matched_arc_.Set(to_unmatch, StarGraph::kNilArc);
+    active_nodes_->Add(to_unmatch);
     // This counts as a double push.
     iteration_stats_.double_pushes_ += 1;
   } else {
@@ -256,8 +269,8 @@ bool LinearSumAssignment::DoublePush(NodeIndex source) {
     // This counts as a single push.
     iteration_stats_.pushes_ += 1;
   }
-  matched_.Set(source, best_arc);
-  matched_.Set(new_mate, best_arc);
+  matched_arc_.Set(source, best_arc);
+  matched_node_.Set(new_mate, source);
   // Finally, relabel new_mate.
   iteration_stats_.relabelings_ += 1;
   price_.Set(new_mate, price_[new_mate] - gap - epsilon_);
@@ -326,6 +339,7 @@ LinearSumAssignment::BestArcAndGap(NodeIndex left_node) const {
 // Only for debugging.
 inline CostValue
 LinearSumAssignment::ImplicitPrice(NodeIndex left_node) const {
+  DCHECK_GT(num_left_nodes_, left_node);
   DCHECK_GT(epsilon_, 0);
   StarGraph::OutgoingArcIterator arc_it(graph_, left_node);
   // If the input problem is feasible, it is always the case that
@@ -333,7 +347,7 @@ LinearSumAssignment::ImplicitPrice(NodeIndex left_node) const {
   // left_node.
   DCHECK(arc_it.Ok());
   ArcIndex best_arc = arc_it.Index();
-  if (best_arc == matched_[left_node]) {
+  if (best_arc == matched_arc_[left_node]) {
     arc_it.Next();
     if (arc_it.Ok()) {
       best_arc = arc_it.Index();
@@ -349,7 +363,7 @@ LinearSumAssignment::ImplicitPrice(NodeIndex left_node) const {
   }
   for (arc_it.Next(); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
-    if (arc != matched_[left_node]) {
+    if (arc != matched_arc_[left_node]) {
       const CostValue partial_reduced_cost = PartialReducedCost(arc);
       if (partial_reduced_cost < min_partial_reduced_cost) {
         min_partial_reduced_cost = partial_reduced_cost;
@@ -364,7 +378,7 @@ bool LinearSumAssignment::AllMatched() const {
   for (StarGraph::NodeIterator node_it(graph_);
        node_it.Ok();
        node_it.Next()) {
-    if (IsActive(node_it.Index())) {
+    if (IsActiveForDebugging(node_it.Index())) {
       return false;
     }
   }
@@ -390,7 +404,7 @@ bool LinearSumAssignment::EpsilonOptimal() const {
       // use because it means we can saturate all admissible arcs in
       // the beginning of Refine() just by unmatching all matched
       // nodes.
-      if (matched_[left_node] == arc) {
+      if (matched_arc_[left_node] == arc) {
         // The reverse arc is residual. Epsilon-optimality requires
         // that the reduced cost of the forward arc be at most
         // epsilon_.
@@ -420,14 +434,14 @@ bool LinearSumAssignment::FinalizeSetup() {
     if (node >= num_left_nodes_) {
       break;
     }
-    matched_.Set(node, StarGraph::kNilArc);
+    matched_arc_.Set(node, StarGraph::kNilArc);
   }
   // Initialize right-side node-indexed arrays. Example: prices are
   // stored only for right-side nodes.
   for (; node_it.Ok(); node_it.Next()) {
     const NodeIndex node = node_it.Index();
     price_.Set(node, 0);
-    matched_.Set(node, StarGraph::kNilArc);
+    matched_node_.Set(node, StarGraph::kNilNode);
   }
   bool in_range;
   price_lower_bound_ = -PriceChangeBound(alpha_ - 1, &in_range);
@@ -462,6 +476,7 @@ bool LinearSumAssignment::ComputeAssignment() {
     DCHECK(!ok || AllMatched());
   }
   success_ = ok;
+  VLOG(1) << "Overall stats: " << total_stats_.StatsString();
   return ok;
 }
 

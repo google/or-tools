@@ -17,7 +17,7 @@
 //
 // This implementation finds the minimum-cost perfect assignment in
 // the given graph with integral edge weights set through the
-// SetArcCost function.
+// SetArcCost method.
 //
 // Example usage:
 //
@@ -244,8 +244,9 @@ class LinearSumAssignment {
   }
 
   // Returns the arc through which the given node is matched.
-  inline ArcIndex GetAssignmentArc(NodeIndex node) const {
-    return matched_[node];
+  inline ArcIndex GetAssignmentArc(NodeIndex left_node) const {
+    DCHECK_LT(left_node, num_left_nodes_);
+    return matched_arc_[left_node];
   }
 
   // Returns the cost of the assignment arc incident to the given
@@ -256,7 +257,7 @@ class LinearSumAssignment {
 
   // Returns the node to which the given node is matched.
   inline NodeIndex GetMate(NodeIndex left_node) const {
-    DCHECK_LE(left_node, num_left_nodes_);
+    DCHECK_LT(left_node, num_left_nodes_);
     ArcIndex matching_arc = GetAssignmentArc(left_node);
     DCHECK_NE(StarGraph::kNilArc, matching_arc);
     return Head(matching_arc);
@@ -312,10 +313,10 @@ class LinearSumAssignment {
     string StatsString() const {
       return StringPrintf("%lld refinements; %lld relabelings; "
                           "%lld double pushes; %lld pushes",
-                        refinements_,
-                        relabelings_,
-                        double_pushes_,
-                        pushes_);
+                          refinements_,
+                          relabelings_,
+                          double_pushes_,
+                          pushes_);
     }
     int64 pushes_;
     int64 double_pushes_;
@@ -418,9 +419,16 @@ class LinearSumAssignment {
   // otherwise.
   bool UpdateEpsilon();
 
-  // Indicates whether the given node has positive excess. Called only
-  // for nodes on the left side.
-  inline bool IsActive(NodeIndex node) const;
+  // Indicates whether the given left_node has positive excess. Called
+  // only for nodes on the left side.
+  inline bool IsActive(NodeIndex left_node) const;
+
+  // Indicates whether the given node has nonzero excess. The idea
+  // here is the same as the IsActive method above, but that method
+  // contains a safety DCHECK() that its argument is a left-side node,
+  // while this method is usable for any node.
+  // To be used in a DCHECK.
+  inline bool IsActiveForDebugging(NodeIndex node) const;
 
   // Performs the push/relabel work for one scaling iteration.
   bool Refine();
@@ -591,10 +599,16 @@ class LinearSumAssignment {
   // and such scaling up increases the risk of overflow.
   Int64PackedArray price_;
 
-  // Indexed by node index, the matched_ array gives the arc index of
-  // the arc matching any given node, or StarGraph::kNilArc if the
-  // node is unmatched.
-  ArcIndexArray matched_;
+  // Indexed by left-side node index, the matched_arc_ array gives the
+  // arc index of the arc matching any given left-side node, or
+  // StarGraph::kNilArc if the node is unmatched.
+  ArcIndexArray matched_arc_;
+
+  // Indexed by right-side node index, the matched_node_ array gives
+  // the node index of the left-side node matching any given
+  // right-side node, or StarGraph::kNilNode if the right-side node is
+  // unmatched.
+  NodeIndexArray matched_node_;
 
   // The array of arc costs as given in the problem definition, except
   // that they are scaled up by the number of nodes in the graph so we
