@@ -90,170 +90,17 @@ using std::string;
 
 namespace operations_research {
 
+class MPConstraint;
 class MPModelProto;
 class MPModelRequest;
+class MPObjective;
 class MPSolutionResponse;
 class MPSolverInterface;
 class MPSolverParameters;
-
-// A class to express a variable that will appear in a constraint.
-class MPVariable {
- public:
-  const string& name() const { return name_; }
-
-  void SetInteger(bool integer);
-  bool integer() const { return integer_; }
-
-  double solution_value() const;
-  // Only available for continuous problems.
-  double reduced_cost() const;
-
-  int index() const { return index_; }
-
-  double lb() const { return lb_; }
-  double ub() const { return ub_; }
-  void SetLB(double lb) { SetBounds(lb, ub_); }
-  void SetUB(double ub) { SetBounds(lb_, ub); }
-  void SetBounds(double lb, double ub);
- protected:
-  friend class MPSolver;
-  friend class MPSolverInterface;
-  friend class CBCInterface;
-  friend class CLPInterface;
-  friend class GLPKInterface;
-  friend class SCIPInterface;
-
-  MPVariable(double lb, double ub, bool integer, const string& name,
-             MPSolverInterface* const interface)
-      : lb_(lb), ub_(ub), integer_(integer), name_(name), index_(-1),
-        solution_value_(0.0), reduced_cost_(0.0), interface_(interface) {}
-
-  void set_index(int index) { index_ = index; }
-  void set_solution_value(double value) { solution_value_ = value; }
-  void set_reduced_cost(double reduced_cost) { reduced_cost_ = reduced_cost; }
- private:
-  double lb_;
-  double ub_;
-  bool integer_;
-  const string name_;
-  int index_;
-  double solution_value_;
-  double reduced_cost_;
-  MPSolverInterface* const interface_;
-  DISALLOW_COPY_AND_ASSIGN(MPVariable);
-};
-
-// A class to express constraints for a linear programming problem. A
-// constraint is represented as a linear equation/inequality.
-class MPConstraint {
- public:
-  const string& name() const { return name_; }
-
-  // Clears all variables and coefficients.
-  void Clear();
-
-  // Add (var * coeff) to the current constraint.
-  void AddTerm(MPVariable* const var, double coeff);
-  // Add var to the current constraint.
-  void AddTerm(MPVariable* const var);
-  // Set the coefficient of the variable on the constraint.
-  void SetCoefficient(MPVariable* const var, double coeff);
-
-  double lb() const { return lb_; }
-  double ub() const { return ub_; }
-  void SetLB(double lb) { SetBounds(lb, ub_); }
-  void SetUB(double ub) { SetBounds(lb_, ub); }
-  void SetBounds(double lb, double ub);
-
-  // Returns the constraint's activity in the current solution:
-  // sum over all terms of (coefficient * variable value)
-  double activity() const;
-  // Only available for continuous problems.
-  double dual_value() const;
-
-  int index() const { return index_; }
- protected:
-  friend class MPSolver;
-  friend class MPSolverInterface;
-  friend class CBCInterface;
-  friend class CLPInterface;
-  friend class GLPKInterface;
-  friend class SCIPInterface;
-
-  // Creates a constraint and updates the pointer to its MPSolverInterface.
-  MPConstraint(double lb,
-               double ub,
-               const string& name,
-               MPSolverInterface* const interface)
-      : lb_(lb), ub_(ub), name_(name), index_(-1), dual_value_(0.0),
-        activity_(0.0), interface_(interface) {}
-
-  void set_index(int index) { index_ = index; }
-  void set_dual_value(double dual_value) { dual_value_ = dual_value; }
-  void set_activity(double activity) { activity_ = activity; }
- private:
-  // Returns true if the constraint contains variables that have not
-  // been extracted yet.
-  bool ContainsNewVariables();
-
-  // Mapping var -> coefficient.
-  hash_map<MPVariable*, double> coefficients_;
-
-  // The lower bound for the linear constraint.
-  double lb_;
-  // The upper bound for the linear constraint.
-  double ub_;
-  // Name.
-  const string name_;
-  int index_;
-  double dual_value_;
-  double activity_;
-  MPSolverInterface* const interface_;
-  DISALLOW_COPY_AND_ASSIGN(MPConstraint);
-};
-
-// A class to express a linear objective function
-class MPObjective {
- public:
-  // Clears all variables and coefficients.
-  void Clear();
-
-  // Add (var * coeff) to the objective
-  void AddTerm(MPVariable* const var, double coeff);
-  // Add var to the objective
-  void AddTerm(MPVariable* const var);
-  // Set the coefficient of the variable in the objective
-  void SetCoefficient(MPVariable* const var, double coeff);
-
-  // Add constant term to the objective.
-  void AddOffset(double value);
-  // Set constant term in the objective.
-  void SetOffset(double value);
-
- private:
-  friend class MPSolver;
-  friend class MPSolverInterface;
-  friend class CBCInterface;
-  friend class CLPInterface;
-  friend class GLPKInterface;
-  friend class SCIPInterface;
-
-  // Creates an objective and updates the pointer to its parent 'MPSolver'.
-  explicit MPObjective(MPSolverInterface* const interface)
-      : offset_(0.0), interface_(interface) {}
-
-  // Mapping var -> coefficient.
-  hash_map<MPVariable*, double> coefficients_;
-  // Constant term.
-  double offset_;
-
-  MPSolverInterface* const interface_;
-  DISALLOW_COPY_AND_ASSIGN(MPObjective);
-};
+class MPVariable;
 
 class MPSolver {
  public:
-
   // The LP/MIP problem type.
   enum OptimizationProblemType {
 #if defined(USE_GLPK)
@@ -286,6 +133,16 @@ class MPSolver {
     UNKNOWN_VARIABLE_ID
   };
 
+  // Advanced usage: possible basis status values for a variable and the
+  // slack variable of a linear constraint.
+  enum BasisStatus {
+    FREE = 0,
+    AT_LOWER_BOUND,
+    AT_UPPER_BOUND,
+    FIXED_VALUE,
+    BASIC
+  };
+
   // Constructor that takes a name for the underlying solver.
   MPSolver(const string& name, OptimizationProblemType problem_type);
   virtual ~MPSolver();
@@ -299,6 +156,8 @@ class MPSolver {
   void ExportModel(MPModelProto* model) const;
 
   // Encode current solution in a solution response protocol buffer.
+  // Only nonzero variable values are stored in order to reduce the
+  // size of the MPSolutionResponse protocol buffer.
   void FillSolutionResponse(MPSolutionResponse* response) const;
 
   // Solves the model encoded by a MPModelRequest protocol buffer and
@@ -496,7 +355,7 @@ class MPSolver {
   hash_set<string> constraints_names_;
 
   // The linear objective function
-  MPObjective linear_objective_;
+  scoped_ptr<MPObjective> linear_objective_;
 
   // Time limit in ms.
   int64 time_limit_;
@@ -509,6 +368,173 @@ class MPSolver {
 
   DISALLOW_COPY_AND_ASSIGN(MPSolver);
 };
+
+// A class to express a variable that will appear in a constraint.
+class MPVariable {
+ public:
+  const string& name() const { return name_; }
+
+  void SetInteger(bool integer);
+  bool integer() const { return integer_; }
+
+  double solution_value() const;
+
+  // The following methods are available only for continuous problems.
+  double reduced_cost() const;
+  // Advanced usage: returns the basis status of the variable.
+  MPSolver::BasisStatus basis_status() const;
+
+  int index() const { return index_; }
+
+  double lb() const { return lb_; }
+  double ub() const { return ub_; }
+  void SetLB(double lb) { SetBounds(lb, ub_); }
+  void SetUB(double ub) { SetBounds(lb_, ub); }
+  void SetBounds(double lb, double ub);
+ protected:
+  friend class MPSolver;
+  friend class MPSolverInterface;
+  friend class CBCInterface;
+  friend class CLPInterface;
+  friend class GLPKInterface;
+  friend class SCIPInterface;
+
+  MPVariable(double lb, double ub, bool integer, const string& name,
+             MPSolverInterface* const interface)
+      : lb_(lb), ub_(ub), integer_(integer), name_(name), index_(-1),
+        solution_value_(0.0), reduced_cost_(0.0), interface_(interface) {}
+
+  void set_index(int index) { index_ = index; }
+  void set_solution_value(double value) { solution_value_ = value; }
+  void set_reduced_cost(double reduced_cost) { reduced_cost_ = reduced_cost; }
+
+ private:
+  double lb_;
+  double ub_;
+  bool integer_;
+  const string name_;
+  int index_;
+  double solution_value_;
+  double reduced_cost_;
+  MPSolverInterface* const interface_;
+  DISALLOW_COPY_AND_ASSIGN(MPVariable);
+};
+
+// A class to express constraints for a linear programming problem. A
+// constraint is represented as a linear equation/inequality.
+class MPConstraint {
+ public:
+  const string& name() const { return name_; }
+
+  // Clears all variables and coefficients.
+  void Clear();
+
+  // Add (var * coeff) to the current constraint.
+  void AddTerm(MPVariable* const var, double coeff);
+  // Add var to the current constraint.
+  void AddTerm(MPVariable* const var);
+  // Set the coefficient of the variable on the constraint.
+  void SetCoefficient(MPVariable* const var, double coeff);
+
+  double lb() const { return lb_; }
+  double ub() const { return ub_; }
+  void SetLB(double lb) { SetBounds(lb, ub_); }
+  void SetUB(double ub) { SetBounds(lb_, ub); }
+  void SetBounds(double lb, double ub);
+
+  // Returns the constraint's activity in the current solution:
+  // sum over all terms of (coefficient * variable value)
+  double activity() const;
+
+  // The following methods are available only for continuous problems.
+  double dual_value() const;
+  // Advanced usage: returns the basis status of the slack variable
+  // associated with the constraint.
+  MPSolver::BasisStatus basis_status() const;
+
+  int index() const { return index_; }
+ protected:
+  friend class MPSolver;
+  friend class MPSolverInterface;
+  friend class CBCInterface;
+  friend class CLPInterface;
+  friend class GLPKInterface;
+  friend class SCIPInterface;
+
+  // Creates a constraint and updates the pointer to its MPSolverInterface.
+  MPConstraint(double lb,
+               double ub,
+               const string& name,
+               MPSolverInterface* const interface)
+      : lb_(lb), ub_(ub), name_(name), index_(-1), dual_value_(0.0),
+        activity_(0.0), interface_(interface) {}
+
+  void set_index(int index) { index_ = index; }
+  void set_activity(double activity) { activity_ = activity; }
+  void set_dual_value(double dual_value) { dual_value_ = dual_value; }
+
+ private:
+  // Returns true if the constraint contains variables that have not
+  // been extracted yet.
+  bool ContainsNewVariables();
+
+  // Mapping var -> coefficient.
+  hash_map<MPVariable*, double> coefficients_;
+
+  // The lower bound for the linear constraint.
+  double lb_;
+  // The upper bound for the linear constraint.
+  double ub_;
+  // Name.
+  const string name_;
+  int index_;
+  double dual_value_;
+  double activity_;
+  MPSolverInterface* const interface_;
+  DISALLOW_COPY_AND_ASSIGN(MPConstraint);
+};
+
+
+// A class to express a linear objective function
+class MPObjective {
+ public:
+  // Clears all variables and coefficients.
+  void Clear();
+
+  // Add (var * coeff) to the objective
+  void AddTerm(MPVariable* const var, double coeff);
+  // Add var to the objective
+  void AddTerm(MPVariable* const var);
+  // Set the coefficient of the variable in the objective
+  void SetCoefficient(MPVariable* const var, double coeff);
+
+  // Add constant term to the objective.
+  void AddOffset(double value);
+  // Set constant term in the objective.
+  void SetOffset(double value);
+
+ private:
+  friend class MPSolver;
+  friend class MPSolverInterface;
+  friend class CBCInterface;
+  friend class CLPInterface;
+  friend class GLPKInterface;
+  friend class SCIPInterface;
+
+  // Creates an objective and updates the pointer to its parent 'MPSolver'.
+  explicit MPObjective(MPSolverInterface* const interface)
+      : offset_(0.0), interface_(interface) {}
+
+  // Mapping var -> coefficient.
+  hash_map<MPVariable*, double> coefficients_;
+  // Constant term.
+  double offset_;
+
+  MPSolverInterface* const interface_;
+  DISALLOW_COPY_AND_ASSIGN(MPObjective);
+};
+
+
 
 // This class stores parameter settings for LP and MIP solvers.
 // How to add a new parameter:
@@ -594,7 +620,8 @@ class MPSolverParameters {
   DISALLOW_COPY_AND_ASSIGN(MPSolverParameters);
 };
 
-// This class serves as a proxy to open sources linear solver.
+
+// This class serves as a proxy to mathematical programming linear solvers.
 class MPSolverInterface {
  public:
   enum SynchronizationStatus {
@@ -681,6 +708,11 @@ class MPSolverInterface {
   // Objective value of the best solution found so far.
   double objective_value() const;
 
+  // Returns the basis status of a row.
+  virtual MPSolver::BasisStatus row_status(int constraint_index) const = 0;
+  // Returns the basis status of a constraint.
+  virtual MPSolver::BasisStatus column_status(int variable_index) const = 0;
+
   // Checks whether the solution is synchronized with the model,
   // i.e. whether the model has changed since the solution was
   // computed last.
@@ -722,6 +754,7 @@ class MPSolverInterface {
     CheckSolutionIsSynchronized();
     return result_status_;
   }
+
   // Returns a string describing the solver.
   virtual string SolverVersion() const = 0;
 
@@ -738,9 +771,9 @@ class MPSolverInterface {
   MPSolver::ResultStatus result_status_;
   bool maximize_;
 
-  // Index of last constraint extracted
+  // Index in MPSolver::variables_ of last constraint extracted.
   int last_constraint_index_;
-  // Index of last variable extracted
+  // Index in MPSolver::constraints_ of last variable extracted.
   int last_variable_index_;
 
   // The value of the objective function.

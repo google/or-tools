@@ -138,6 +138,15 @@ double MPConstraint::dual_value() const {
   return dual_value_;
 }
 
+MPSolver::BasisStatus MPConstraint::basis_status() const {
+  CHECK(interface_->IsContinuous()) <<
+        "Basis status only available for continuous problems";
+  interface_->CheckSolutionIsSynchronized();
+  interface_->CheckSolutionExists();
+  // This is done lazily as this method is expected to be rarely used.
+  return interface_->row_status(index_);
+}
+
 double MPConstraint::activity() const {
   interface_->CheckSolutionIsSynchronized();
   interface_->CheckSolutionExists();
@@ -215,6 +224,15 @@ double MPVariable::reduced_cost() const {
   return reduced_cost_;
 }
 
+MPSolver::BasisStatus MPVariable::basis_status() const {
+  CHECK(interface_->IsContinuous()) <<
+        "Basis status only available for continuous problems";
+  interface_->CheckSolutionIsSynchronized();
+  interface_->CheckSolutionExists();
+  // This is done lazily as this method is expected to be rarely used.
+  return interface_->column_status(index_);
+}
+
 void MPVariable::SetBounds(double lb, double ub) {
   const bool change = lb != lb_ || ub != ub_;
   lb_ = lb;
@@ -244,27 +262,27 @@ double MPSolver::best_objective_bound() const {
 }
 
 void MPSolver::ClearObjective() {
-  linear_objective_.Clear();
+  linear_objective_->Clear();
 }
 
 void MPSolver::AddObjectiveTerm(MPVariable* const var, double coeff) {
-  linear_objective_.AddTerm(var, coeff);
+  linear_objective_->AddTerm(var, coeff);
 }
 
 void MPSolver::AddObjectiveTerm(MPVariable* const var) {
-  linear_objective_.AddTerm(var);
+  linear_objective_->AddTerm(var);
 }
 
 void MPSolver::SetObjectiveCoefficient(MPVariable* const var, double coeff) {
-  linear_objective_.SetCoefficient(var, coeff);
+  linear_objective_->SetCoefficient(var, coeff);
 }
 
 void MPSolver::AddObjectiveOffset(double value) {
-  linear_objective_.AddOffset(value);
+  linear_objective_->AddOffset(value);
 }
 
 void MPSolver::SetObjectiveOffset(double value) {
-  linear_objective_.SetOffset(value);
+  linear_objective_->SetOffset(value);
 }
 
 void MPSolver::SetOptimizationDirection(bool maximize) {
@@ -344,7 +362,7 @@ MPSolverInterface* BuildSolverInterface(
 MPSolver::MPSolver(const string& name, OptimizationProblemType problem_type)
     : name_(name),
       interface_(BuildSolverInterface(this, problem_type)),
-      linear_objective_(interface_.get()),
+      linear_objective_(new MPObjective(interface_.get())),
       time_limit_(0.0),
       write_model_filename_("") {
   timer_.Restart();
@@ -440,7 +458,7 @@ MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& model) {
   }
   SetOptimizationDirection(model.maximize());
   if (model.has_objective_offset()) {
-    linear_objective_.SetOffset(model.objective_offset());
+    linear_objective_->SetOffset(model.objective_offset());
   }
   return MPSolver::NO_ERROR;
 }
@@ -500,8 +518,8 @@ void MPSolver::ExportModel(MPModelProto* model) const {
 
   // Objective
   for (hash_map<MPVariable*, double>::const_iterator it =
-           linear_objective_.coefficients_.begin();
-       it != linear_objective_.coefficients_.end();
+           linear_objective_->coefficients_.begin();
+       it != linear_objective_->coefficients_.end();
        ++it) {
     MPVariable* const var = it->first;
     const double coef = it->second;
@@ -510,10 +528,12 @@ void MPSolver::ExportModel(MPModelProto* model) const {
     term->set_coefficient(coef);
   }
   model->set_maximize(Maximization());
-  model->set_objective_offset(linear_objective_.offset_);
+  model->set_objective_offset(linear_objective_->offset_);
 }
 
 // Encode current solution in a solution response protocol buffer.
+// Only nonzero variable values are stored in order to reduce the size
+// of the MPSolutionResponse protocol buffer.
 void MPSolver::FillSolutionResponse(MPSolutionResponse* response) const {
   CHECK_NOTNULL(response);
   if ((response->has_result_status() &&
@@ -561,9 +581,13 @@ void MPSolver::FillSolutionResponse(MPSolutionResponse* response) const {
     response->set_objective_value(objective_value());
     for (int i = 0; i < variables_.size(); ++i) {
       MPVariable* const var = variables_[i];
-      MPSolutionValue* value = response->add_solution_values();
-      value->set_variable_id(var->name());
-      value->set_value(var->solution_value());
+      double solution_value = var->solution_value();
+      // Users will deal with almost-zero values based on their own tolerance.
+      if (solution_value != 0.0) {
+        MPSolutionValue* value = response->add_solution_values();
+        value->set_variable_id(var->name());
+        value->set_value(solution_value);
+      }
     }
   }
 }

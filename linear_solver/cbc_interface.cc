@@ -135,6 +135,15 @@ class CBCInterface : public MPSolverInterface {
   // Best objective bound. Only available for discrete problems.
   virtual double best_objective_bound() const;
 
+  // Returns the basis status of a row.
+  virtual MPSolver::BasisStatus row_status(int constraint_index) const {
+    LOG(FATAL) << "Basis status only available for continuous problems";
+  }
+  // Returns the basis status of a column.
+  virtual MPSolver::BasisStatus column_status(int variable_index) const {
+    LOG(FATAL) << "Basis status only available for continuous problems";
+  }
+
   virtual void ExtractNewVariables() {}
   virtual void ExtractNewConstraints() {}
   virtual void ExtractObjective() {}
@@ -271,8 +280,8 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
     sync_status_ = SOLUTION_SYNCHRONIZED;
     result_status_ = MPSolver::OPTIMAL;
-    objective_value_ = solver_->linear_objective_.offset_;
-    best_objective_bound_ = solver_->linear_objective_.offset_;
+    objective_value_ = solver_->linear_objective_->offset_;
+    best_objective_bound_ = solver_->linear_objective_->offset_;
     return result_status_;
   }
 
@@ -285,15 +294,15 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       CoinModel build;
       // Create dummy variable for objective offset.
       build.addColumn(0, NULL, NULL, 1.0, 1.0,
-                      solver_->linear_objective_.offset_, "dummy", false);
+                      solver_->linear_objective_->offset_, "dummy", false);
       const int nb_vars = solver_->variables_.size();
       for (int i = 0; i < nb_vars; ++i) {
         MPVariable* const var = solver_->variables_[i];
         var->set_index(i + 1);  // offset by 1 because of dummy variable.
         hash_map<MPVariable*, double>::const_iterator it =
-            solver_->linear_objective_.coefficients_.find(var);
+            solver_->linear_objective_->coefficients_.find(var);
         const double obj_coeff =
-            it == solver_->linear_objective_.coefficients_.end() ?
+            it == solver_->linear_objective_->coefficients_.end() ?
             0.0 :
             it->second;
         if (var->name().empty()) {

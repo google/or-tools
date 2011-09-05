@@ -97,6 +97,11 @@ class CLPInterface : public MPSolverInterface {
   // Best objective bound. Only available for discrete problems.
   virtual double best_objective_bound() const;
 
+  // Returns the basis status of a row.
+  virtual MPSolver::BasisStatus row_status(int constraint_index) const;
+  // Returns the basis status of a column.
+  virtual MPSolver::BasisStatus column_status(int variable_index) const;
+
   // ----- Misc -----
   // Write model
   virtual void WriteModel(const string& filename);
@@ -128,6 +133,10 @@ class CLPInterface : public MPSolverInterface {
   virtual void SetRelativeMipGap(double value);
   virtual void SetPresolveMode(int value);
   virtual void SetLpAlgorithm(int value);
+
+  // Transforms basis status from CLP enum to MPSolver::BasisStatus.
+  MPSolver::BasisStatus
+  TransformCLPBasisStatus(ClpSimplex::Status clp_basis_status) const;
 
   scoped_ptr<ClpSimplex> clp_;  // TODO(user) : remove pointer.
   scoped_ptr<ClpSolve> options_;  // For parameter setting.
@@ -246,7 +255,7 @@ void CLPInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
   // Clear linear terms
   for (ConstIter<hash_map<MPVariable*, double> >
-           it(solver_->linear_objective_.coefficients_);
+           it(solver_->linear_objective_->coefficients_);
        !it.at_end(); ++it) {
     const int var_index = it->first->index();
     // Variable may have not been extracted yet.
@@ -392,14 +401,14 @@ void CLPInterface::ExtractObjective() {
   // Linear objective: set objective coefficients for all variables
   // (some might have been modified)
   for (ConstIter<hash_map<MPVariable*, double> >
-           it(solver_->linear_objective_.coefficients_);
+           it(solver_->linear_objective_->coefficients_);
        !it.at_end(); ++it) {
     clp_->setObjectiveCoefficient(it->first->index(), it->second);
   }
 
   // Constant term. Use -offset instead of +offset because CLP does
   // not follow conventions.
-  clp_->setObjectiveOffset(-solver_->linear_objective_.offset_);
+  clp_->setObjectiveOffset(-solver_->linear_objective_->offset_);
 }
 
 // Extracts model and solve the LP/MIP. Returns the status of the search.
@@ -423,7 +432,7 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
   if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
     sync_status_ = SOLUTION_SYNCHRONIZED;
     result_status_ = MPSolver::OPTIMAL;
-    objective_value_ = solver_->linear_objective_.offset_;
+    objective_value_ = solver_->linear_objective_->offset_;
     return result_status_;
   }
 
@@ -504,6 +513,26 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
   return result_status_;
 }
 
+MPSolver::BasisStatus CLPInterface::TransformCLPBasisStatus(
+    ClpSimplex::Status clp_basis_status) const {
+  switch (clp_basis_status) {
+    case ClpSimplex::isFree:
+      return MPSolver::FREE;
+    case ClpSimplex::basic:
+      return MPSolver::BASIC;
+    case ClpSimplex::atUpperBound:
+      return MPSolver::AT_UPPER_BOUND;
+    case ClpSimplex::atLowerBound:
+      return MPSolver::AT_LOWER_BOUND;
+    case ClpSimplex::superBasic:
+      return MPSolver::FREE;
+    case ClpSimplex::isFixed:
+      return MPSolver::FIXED_VALUE;
+    default:
+      LOG(FATAL) << "Unknown CLP basis status";
+  }
+}
+
 MPSolverInterface* BuildCLPInterface(MPSolver* const solver) {
   return new CLPInterface(solver);
 }
@@ -523,6 +552,23 @@ int64 CLPInterface::nodes() const {
 double CLPInterface::best_objective_bound() const {
   LOG(FATAL) << "Best objective bound only available for discrete problems";
   return 0.0;
+}
+
+MPSolver::BasisStatus CLPInterface::row_status(int constraint_index) const {
+  DCHECK_LE(0, constraint_index);
+  DCHECK_GT(last_constraint_index_, constraint_index);
+  const ClpSimplex::Status clp_basis_status =
+      clp_->getRowStatus(constraint_index);
+  return TransformCLPBasisStatus(clp_basis_status);
+}
+
+MPSolver::BasisStatus CLPInterface::column_status(int variable_index) const {
+  DCHECK_LE(0, variable_index);
+  // + 1 because of dummy variable.
+  DCHECK_GT(last_variable_index_ + 1, variable_index);
+  const ClpSimplex::Status clp_basis_status =
+      clp_->getColumnStatus(variable_index);
+  return TransformCLPBasisStatus(clp_basis_status);
 }
 
 // ------ Parameters ------

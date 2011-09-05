@@ -138,6 +138,12 @@ class GLPKInterface : public MPSolverInterface {
   virtual int64 nodes() const;
   // Best objective bound. Only available for discrete problems.
   virtual double best_objective_bound() const;
+
+  // Returns the basis status of a row.
+  virtual MPSolver::BasisStatus row_status(int constraint_index) const;
+  // Returns the basis status of a column.
+  virtual MPSolver::BasisStatus column_status(int variable_index) const;
+
   // Checks whether a feasible solution exists.
   virtual void CheckSolutionExists() const;
   // Checks whether information on the best objective bound exists.
@@ -179,6 +185,8 @@ class GLPKInterface : public MPSolverInterface {
   void ExtractOneConstraint(MPConstraint* const constraint,
                             int* const indices,
                             double* const coefs);
+  // Transforms basis status from GLPK integer code to MPSolver::BasisStatus.
+  MPSolver::BasisStatus TransformGLPKBasisStatus(int glpk_basis_status) const;
 
   glp_prob* lp_;
   bool mip_;
@@ -340,7 +348,7 @@ void GLPKInterface::SetObjectiveOffset(double value) {
 void GLPKInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
   for (ConstIter<hash_map<MPVariable*, double> >
-           it(solver_->linear_objective_.coefficients_);
+           it(solver_->linear_objective_->coefficients_);
        !it.at_end(); ++it) {
     const int var_index = it->first->index();
     // Variable may have not been extracted yet.
@@ -500,13 +508,13 @@ void GLPKInterface::ExtractObjective() {
   // Linear objective: set objective coefficients for all variables
   // (some might have been modified).
   for (hash_map<MPVariable*, double>::const_iterator it =
-           solver_->linear_objective_.coefficients_.begin();
-       it != solver_->linear_objective_.coefficients_.end();
+           solver_->linear_objective_->coefficients_.begin();
+       it != solver_->linear_objective_->coefficients_.end();
        ++it) {
     glp_set_obj_coef(lp_, it->first->index(), it->second);
   }
   // Constant term.
-  glp_set_obj_coef(lp_, 0, solver_->linear_objective_.offset_);
+  glp_set_obj_coef(lp_, 0, solver_->linear_objective_->offset_);
 }
 
 // Solve the problem using the parameter values specified.
@@ -641,6 +649,24 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
   return result_status_;
 }
 
+MPSolver::BasisStatus
+GLPKInterface::TransformGLPKBasisStatus(int glpk_basis_status) const {
+  switch (glpk_basis_status) {
+    case GLP_BS:
+      return MPSolver::BASIC;
+    case GLP_NL:
+      return MPSolver::AT_LOWER_BOUND;
+    case GLP_NU:
+      return MPSolver::AT_UPPER_BOUND;
+    case GLP_NF:
+      return MPSolver::FREE;
+    case GLP_NS:
+      return MPSolver::FIXED_VALUE;
+    default:
+      LOG(FATAL) << "Unknown GLPK basis status";
+  }
+}
+
 MPSolverInterface* BuildGLPKInterface(MPSolver* const solver, bool mip) {
   return new GLPKInterface(solver, mip);
 }
@@ -673,7 +699,7 @@ double GLPKInterface::best_objective_bound() const {
     CheckBestObjectiveBoundExists();
     if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
       // Special case for empty model.
-      return solver_->linear_objective_.offset_;
+      return solver_->linear_objective_->offset_;
     } else {
       return mip_callback_info_->best_objective_bound_;
     }
@@ -682,6 +708,23 @@ double GLPKInterface::best_objective_bound() const {
     return 0.0;
   }
 }
+
+MPSolver::BasisStatus GLPKInterface::row_status(int constraint_index) const {
+  // + 1 because of GLPK indexing convention.
+  DCHECK_LE(1, constraint_index);
+  DCHECK_GT(last_constraint_index_ + 1, constraint_index);
+  const int glpk_basis_status = glp_get_row_stat(lp_, constraint_index);
+  return TransformGLPKBasisStatus(glpk_basis_status);
+}
+
+MPSolver::BasisStatus GLPKInterface::column_status(int variable_index) const {
+  // + 1 because of GLPK indexing convention.
+  DCHECK_LE(1, variable_index);
+  DCHECK_GT(last_variable_index_ + 1, variable_index);
+  const int glpk_basis_status = glp_get_col_stat(lp_, variable_index);
+  return TransformGLPKBasisStatus(glpk_basis_status);
+}
+
 
 void GLPKInterface::CheckSolutionExists() const {
   if (result_status_ == MPSolver::ABNORMAL) {

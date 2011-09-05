@@ -95,6 +95,15 @@ class SCIPInterface : public MPSolverInterface {
   // Best objective bound. Only available for discrete problems.
   virtual double best_objective_bound() const;
 
+  // Returns the basis status of a row.
+  virtual MPSolver::BasisStatus row_status(int constraint_index) const {
+    LOG(FATAL) << "Basis status only available for continuous problems";
+  }
+  // Returns the basis status of a column.
+  virtual MPSolver::BasisStatus column_status(int variable_index) const {
+    LOG(FATAL) << "Basis status only available for continuous problems";
+  }
+
   // ----- Misc -----
   // Write model
   virtual void WriteModel(const string& filename);
@@ -162,9 +171,11 @@ void SCIPInterface::CreateSCIP() {
   // SCIPaddObjoffset cannot be used at the problem building stage. So
   // we handle the objective offset by creating a dummy variable.
   SCIP_VAR* scip_var = NULL;
+  // The true objective coefficient will be set in ExtractObjective.
+  double dummy_obj_coef = 0.0;
   ORTOOLS_SCIP_CALL(SCIPcreateVar(
       scip_, &scip_var, "dummy",
-      1.0, 1.0, solver_->linear_objective_.offset_,
+      1.0, 1.0, dummy_obj_coef,
       SCIP_VARTYPE_CONTINUOUS,
       true, false, NULL, NULL, NULL, NULL, NULL));
   ORTOOLS_SCIP_CALL(SCIPaddVar(scip_, scip_var));
@@ -307,7 +318,7 @@ void SCIPInterface::ClearObjective() {
   ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
   // Clear linear terms
   for (ConstIter<hash_map<MPVariable*, double> >
-           it(solver_->linear_objective_.coefficients_);
+           it(solver_->linear_objective_->coefficients_);
        !it.at_end(); ++it) {
     const int var_index = it->first->index();
     // Variable may have not been extracted yet.
@@ -420,7 +431,7 @@ void SCIPInterface::ExtractObjective() {
   // Linear objective: set objective coefficients for all variables
   // (some might have been modified)
   for (ConstIter<hash_map<MPVariable*, double> >
-           it(solver_->linear_objective_.coefficients_);
+           it(solver_->linear_objective_->coefficients_);
        !it.at_end(); ++it) {
     int var_index = it->first->index();
     double obj_coef = it->second;
@@ -430,7 +441,7 @@ void SCIPInterface::ExtractObjective() {
 
   // Constant term: change objective coefficient of dummy variable.
   ORTOOLS_SCIP_CALL(SCIPchgVarObj(
-      scip_, scip_variables_[0], solver_->linear_objective_.offset_));
+      scip_, scip_variables_[0], solver_->linear_objective_->offset_));
 }
 
 // Extracts model and solve the LP/MIP. Returns the status of the search.
@@ -449,7 +460,7 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
     sync_status_ = SOLUTION_SYNCHRONIZED;
     result_status_ = MPSolver::OPTIMAL;
-    objective_value_ = solver_->linear_objective_.offset_;
+    objective_value_ = solver_->linear_objective_->offset_;
     return result_status_;
   }
 
@@ -563,7 +574,7 @@ double SCIPInterface::best_objective_bound() const {
   CheckBestObjectiveBoundExists();
   if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
     // Special case for empty model.
-    return solver_->linear_objective_.offset_;
+    return solver_->linear_objective_->offset_;
   } else {
     return SCIPgetDualbound(scip_);
   }

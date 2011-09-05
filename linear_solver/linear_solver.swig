@@ -40,6 +40,8 @@
 %ignore ExportModel;
 %ignore SolveWithProtocolBuffers;
 %ignore FillSolutionResponse;
+// Access to the underlying solver is available only in C++.
+%ignore underlying_solver;
 
 namespace operations_research {
 %pythoncode {
@@ -360,6 +362,7 @@ class LinearConstraint(object):
 
 namespace operations_research {
 // Rename rules on MPVariable.
+%rename (basisStatus) MPVariable::basis_status;
 %rename (reducedCost) MPVariable::reduced_cost;
 %rename (setBounds) MPVariable::SetBounds;
 %rename (setInteger) MPVariable::SetInteger;
@@ -369,6 +372,7 @@ namespace operations_research {
 
 // Rename rules on MPConstraint.
 %rename (addTerm) MPConstraint::AddTerm;
+%rename (basisStatus) MPConstraint::basis_status;
 %rename (dualValue) MPConstraint::dual_value;
 %rename (setBounds) MPConstraint::SetBounds;
 %rename (setCoefficient) MPConstraint::SetCoefficient;
@@ -436,6 +440,8 @@ namespace operations_research {
 %ignore MPSolver::ExportModel;
 %ignore MPSolver::FillSolutionResponse;
 %ignore MPSolver::SolveWithProtocolBuffers;
+// Access to the underlying solver is available only in C++.
+%ignore MPSolver::underlying_solver;
 
 
 // Add java code on MPSolver.
