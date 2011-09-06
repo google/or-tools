@@ -68,11 +68,13 @@ class RecordReader {
     if (file_->Read(&size, sizeof(size)) != sizeof(size)) {
       return false;
     }
-    scoped_ptr<char> buffer(new char[size + 1]);
+    scoped_array<char> buffer(new char[size + 1]);
     if (file_->Read(buffer.get(), size) != size) {
       return false;
     }
-    proto->ParseFromString(buffer.get());
+    buffer[size] = 0;
+    std::string buf(buffer.get(), size);
+    proto->ParseFromString(buf);
     return true;
   }
   // Closes the underlying file.
