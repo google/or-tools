@@ -73,8 +73,7 @@ class RecordReader {
       return false;
     }
     buffer[size] = 0;
-    std::string buf(buffer.get(), size);
-    proto->ParseFromString(buf);
+    proto->ParseFromArray(buffer.get(), size);
     return true;
   }
   // Closes the underlying file.
