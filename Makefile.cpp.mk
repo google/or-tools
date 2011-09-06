@@ -97,6 +97,7 @@ CONSTRAINT_SOLVER_LIB_OS = \
 	objs/io.$O\
 	objs/local_search.$O\
 	objs/model.pb.$O\
+	objs/model_cache.$O\
 	objs/nogoods.$O\
 	objs/pack.$O\
 	objs/range_cst.$O\
@@ -175,6 +176,9 @@ objs/local_search.$O:constraint_solver/local_search.cc
 
 objs/model.pb.$O:gen/constraint_solver/model.pb.cc
 	$(CCC) $(CFLAGS) -c gen/constraint_solver/model.pb.cc $(OBJOUT)objs/model.pb.$O
+
+objs/model_cache.$O:constraint_solver/model_cache.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/model_cache.cc $(OBJOUT)objs/model_cache.$O
 
 gen/constraint_solver/model.pb.cc:constraint_solver/model.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=. --cpp_out=gen constraint_solver/model.proto
