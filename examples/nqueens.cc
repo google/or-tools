@@ -172,6 +172,22 @@ class R270 : public NQueenSymmetry {
   }
 };
 
+void CheckNumberOfSolutions(int size, int num_solutions) {
+  if (FLAGS_use_symmetry) {
+    if (size - 1 < kKnownUniqueSolutions) {
+      CHECK_EQ(num_solutions, kNumUniqueSolutions[size - 1]);
+    } else {
+      CHECK_GT(num_solutions, 0);
+    }
+  } else {
+    if (size - 1 < kKnownSolutions) {
+      CHECK_EQ(num_solutions, kNumSolutions[size - 1]);
+    } else {
+      CHECK_GT(num_solutions, 0);
+    }
+  }
+}
+
 void NQueens(int size) {
   CHECK_GE(size, 1);
   Solver s("nqueens");
@@ -224,6 +240,7 @@ void NQueens(int size) {
 
   for (int loop = 0; loop < FLAGS_nb_loops; ++loop) {
     s.Solve(db, monitors);  // go!
+    CheckNumberOfSolutions(size, solution_counter->solution_count());
   }
 
   const int num_solutions = solution_counter->solution_count();
@@ -242,19 +259,6 @@ void NQueens(int size) {
   }
   printf("========= number of solutions:%d\n", num_solutions);
   printf("          number of failures: %lld\n", s.failures());
-  if (FLAGS_use_symmetry) {
-    if (size - 1 < kKnownUniqueSolutions) {
-      CHECK_EQ(num_solutions, kNumUniqueSolutions[size - 1] * FLAGS_nb_loops);
-    } else {
-      CHECK_GT(num_solutions, 0);
-    }
-  } else {
-    if (size - 1 < kKnownSolutions) {
-      CHECK_EQ(num_solutions, kNumSolutions[size - 1] * FLAGS_nb_loops);
-    } else {
-      CHECK_GT(num_solutions, 0);
-    }
-  }
 }
 }   // namespace operations_research
 
