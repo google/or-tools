@@ -203,8 +203,20 @@ void ParseFileByLines(const string& filename,
 // DIMACS format and returns a LinearSumAssignment object representing
 // the problem description. For a description of the format, see
 // http://lpsolve.sourceforge.net/5.5/DIMACS_asn.htm
+//
+// Also returns an error message (empty if no error) and a handle on
+// the underlying graph representation. The error_message pointer must
+// not be NULL because we insist on returning an explanatory message
+// in the case of error. The graph_handle pointer must not be NULL
+// because unless we pass a non-const pointer to the graph
+// representation back to the caller, the caller lacks a good way to
+// free the underlying graph (which isn't owned by the
+// LinearAssignment instance).
 LinearSumAssignment* ParseDimacsAssignment(const string& filename,
-                                           string* error_message) {
+                                           string* error_message,
+                                           StarGraph** graph_handle) {
+  CHECK_NOTNULL(error_message);
+  CHECK_NOTNULL(graph_handle);
   StarGraph* graph = NULL;
   LinearSumAssignment* assignment = NULL;
   ParserState state;
@@ -226,6 +238,10 @@ LinearSumAssignment* ParseDimacsAssignment(const string& filename,
     assignment->OptimizeGraphLayout(graph);
   }
   *error_message = "";
+  // Return a handle on the graph to the caller so the caller can free
+  // the graph's memory, because the LinearSumAssignment object does
+  // not take ownership of the graph and hence will not free it.
+  *graph_handle = graph;
   return assignment;
 }
 

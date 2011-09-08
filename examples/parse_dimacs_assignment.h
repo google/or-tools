@@ -12,7 +12,8 @@ namespace operations_research {
 class LinearSumAssignment;
 
 LinearSumAssignment* ParseDimacsAssignment(const string& filename,
-                                           string* error_message);
+                                           string* error_message,
+                                           StarGraph** graph);
 
 }  // namespace operations_research
 

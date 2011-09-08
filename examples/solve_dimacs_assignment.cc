@@ -28,11 +28,11 @@
 #include "examples/parse_dimacs_assignment.h"
 #include "examples/print_dimacs_assignment.h"
 
+DEFINE_bool(assignment_compare_hungarian, false,
+            "Compare result and speed against Hungarian method.");
 DEFINE_string(assignment_problem_output_file, "",
               "Print the problem to this file in DIMACS format (after layout "
               "is optimized, if applicable).");
-DEFINE_bool(assignment_compare_hungarian, false,
-            "Compare result and speed against Hungarian method.");
 
 namespace operations_research {
 
@@ -114,8 +114,11 @@ int solve_dimacs_assignment(int argc, char* argv[]) {
     LOG(FATAL) << usage;
   }
   string error_message;
+  // Handle on the graph we will need to delete because the
+  // LinearSumAssignment object does not take ownership of it.
+  StarGraph* graph = NULL;
   LinearSumAssignment* assignment =
-      ParseDimacsAssignment(argv[1], &error_message);
+      ParseDimacsAssignment(argv[1], &error_message, &graph);
   if (assignment == NULL) {
     LOG(FATAL) << error_message;
   }
@@ -147,6 +150,7 @@ int solve_dimacs_assignment(int argc, char* argv[]) {
     LOG(WARNING) << "Given problem is infeasible.";
   }
   delete assignment;
+  delete graph;
   return 0;
 }
 }  // namespace operations_research
