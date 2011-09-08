@@ -333,128 +333,6 @@ class IsEqualCstCt : public Constraint {
 };
 }  // namespace
 
-// ---------- VarCstCache ----------
-
-class VarCstCache : public BaseObject {
- public:
-  explicit VarCstCache(Solver* const s)
-      : solver_(s), size_(FLAGS_cache_initial_size), counter_(0) {
-    array_ = s->UnsafeRevAllocArray(new Cell*[size_]);
-    for (int i = 0; i < size_; ++i) {
-      array_[i] = NULL;
-    }
-  }
-  virtual ~VarCstCache() {}
-
-  void Insert(IntVar* const var,
-              int64 value,
-              IntVar* const boolvar) {
-    int code = HashCode(var, value) % size_;
-    Cell* tmp = array_[code];
-    while (tmp != NULL) {
-      if (tmp->value == value && tmp->var == var) {
-        return;
-      }
-      tmp = tmp->next;
-    }
-    UnsafeInsert(var, value, boolvar);
-  }
-
-  Solver* const solver() const { return solver_; }
-
- protected:
-  IntVar* Find(IntVar* const var, int64 value) const {
-    int code = HashCode(var, value) % size_;
-    Cell* tmp = array_[code];
-    while (tmp) {
-      if (tmp->value == value && tmp->var == var) {
-        return tmp->boolvar;
-      }
-      tmp = tmp->next;
-    }
-    return NULL;
-    // TODO(user): bench optim that moves the found cell first in the list.
-  }
-
-  void UnsafeInsert(IntVar* const var, int64 value, IntVar* const boolvar) {
-    int code = HashCode(var, value) % size_;
-    Cell* tmp = array_[code];
-    Cell* cell = solver_->UnsafeRevAlloc(new Cell(var, value, boolvar, tmp));
-    solver_->SaveValue(reinterpret_cast<void**>(&array_[code]));
-    array_[code] = cell;
-    solver_->SaveAndAdd(&counter_, 1);
-    if (counter_ > 2 * size_) {
-      Double();
-    }
-  }
-
- private:
-  struct Cell {
-   public:
-    Cell(IntVar* const v, int64 c, IntVar* b, Cell* n)
-        : var(v), value(c), boolvar(b), next(n) {}
-    IntVar* const var;
-    const int64 value;
-    IntVar* const boolvar;
-    Cell* next;
-  };
-
-  static uint64 HashCode(IntVar* const var, int64 value) {
-    return ((reinterpret_cast<uint64>(var) >> 4) * 3 + value * 5);
-  }
-
-  void Double() {
-    Cell** old_cell_array = array_;
-    const int old_size = size_;
-    solver_->SaveValue(&size_);
-    size_ *= 2;
-    solver_->SaveValue(reinterpret_cast<void**>(&array_));
-    array_ = solver_->UnsafeRevAllocArray(new Cell*[size_]);
-    for (int i = 0; i < size_; ++i) {
-      array_[i] = NULL;
-    }
-    for (int i = 0; i < old_size; ++i) {
-      Cell* tmp = old_cell_array[i];
-      while (tmp != NULL) {
-        Cell* to_reinsert = tmp;
-        tmp = tmp->next;
-        int code = HashCode(to_reinsert->var, to_reinsert->value) % size_;
-        Cell* new_next = array_[code];
-        solver_->SaveValue(reinterpret_cast<void**>(&to_reinsert->next));
-        to_reinsert->next = new_next;
-        array_[code] = to_reinsert;
-      }
-    }
-  }
-
-  Solver* const solver_;
-  Cell** array_;
-  int size_;
-  int counter_;
-};
-
-// ---------- EqualityVarCstCache ----------
-
-class EqualityVarCstCache : public VarCstCache {
- public:
-  explicit EqualityVarCstCache(Solver* const s) : VarCstCache(s) {}
-  virtual ~EqualityVarCstCache() {}
-
-  IntVar* VarEqCstStatus(IntVar* const var, int64 value) {
-    IntVar* boolvar = Find(var, value);
-    if (!boolvar) {
-      boolvar = solver()->MakeBoolVar(
-          StringPrintf("StatusVar<%s == %" GG_LL_FORMAT "d>",
-                       var->name().c_str(), value));
-      Constraint* const maintain =
-          solver()->RevAlloc(new IsEqualCstCt(solver(), var, value, boolvar));
-      solver()->AddConstraint(maintain);
-      UnsafeInsert(var, value, boolvar);
-    }
-    return boolvar;
-  }
-};
-
 IntVar* Solver::MakeIsEqualCstVar(IntVar* const var, int64 value) {
   if (value == var->Min()) {
     return MakeIsLessOrEqualCstVar(var, value);
@@ -468,23 +346,47 @@ IntVar* Solver::MakeIsEqualCstVar(IntVar* const var, int64 value) {
   if (var->Bound() && var->Value() == value) {
     return MakeIntConst(1LL);
   }
-  return equality_var_cst_cache_->VarEqCstStatus(var, value);
+  IntExpr* const cache = model_cache_->FindVarConstantExpression(
+      var,
+      value,
+      ModelCache::VAR_CONSTANT_IS_EQUAL);
+  if (cache != NULL) {
+    return cache->Var();
+  } else {
+    IntVar* const boolvar = MakeBoolVar(
+        StringPrintf("StatusVar<%s == %" GG_LL_FORMAT "d>",
+                     var->name().c_str(), value));
+    Constraint* const maintain =
+        RevAlloc(new IsEqualCstCt(this, var, value, boolvar));
+    AddConstraint(maintain);
+    model_cache_->InsertVarConstantExpression(
+        boolvar,
+        var,
+        value,
+        ModelCache::VAR_CONSTANT_IS_EQUAL);
+    return boolvar;
+  }
 }
 
-Constraint* Solver::MakeIsEqualCstCt(IntVar* const v, int64 c,
-                                     IntVar* const b) {
-  CHECK_EQ(this, v->solver());
-  CHECK_EQ(this, b->solver());
-  if (c == v->Min()) {
-    return MakeIsLessOrEqualCstCt(v, c, b);
+Constraint* Solver::MakeIsEqualCstCt(IntVar* const var,
+                                     int64 value,
+                                     IntVar* const boolvar) {
+  CHECK_EQ(this, var->solver());
+  CHECK_EQ(this, boolvar->solver());
+  if (value == var->Min()) {
+    return MakeIsLessOrEqualCstCt(var, value, boolvar);
   }
-  if (c == v->Max()) {
-    return MakeIsGreaterOrEqualCstCt(v, c, b);
+  if (value == var->Max()) {
+    return MakeIsGreaterOrEqualCstCt(var, value, boolvar);
   }
   // TODO(user) : what happens if the constraint is not posted?
   // The cache becomes tainted.
-  equality_var_cst_cache_->Insert(v, c, b);
-  return RevAlloc(new IsEqualCstCt(this, v, c, b));
+  model_cache_->InsertVarConstantExpression(
+      boolvar,
+      var,
+      value,
+      ModelCache::VAR_CONSTANT_IS_EQUAL);
+  return RevAlloc(new IsEqualCstCt(this, var, value, boolvar));
 }
 
 // ----- is_diff_cst Constraint -----
@@ -544,29 +446,6 @@ class IsDiffCstCt : public Constraint {
 };
 }  // namespace
 
-// ---------- UnequalityVarCstCache ----------
-
-class UnequalityVarCstCache : public VarCstCache {
- public:
-  explicit UnequalityVarCstCache(Solver* const s) : VarCstCache(s) {}
-  virtual ~UnequalityVarCstCache() {}
-
-  IntVar* VarNonEqCstStatus(IntVar* const var, int64 value) {
-    IntVar* boolvar = Find(var, value);
-    if (!boolvar) {
-      boolvar = solver()->MakeBoolVar(StringPrintf("StatusVar<%s == %"
-                                                   GG_LL_FORMAT "d>",
-                                                   var->name().c_str(),
-                                                   value));
-      Constraint* const maintain =
-          solver()->RevAlloc(new IsDiffCstCt(solver(), var, value, boolvar));
-      solver()->AddConstraint(maintain);
-      UnsafeInsert(var, value, boolvar);
-    }
-    return boolvar;
-  }
-};
-
 IntVar* Solver::MakeIsDifferentCstVar(IntVar* const var, int64 value) {
   if (value == var->Min()) {
     return MakeIsGreaterOrEqualCstVar(var, value + 1);
@@ -580,21 +459,45 @@ IntVar* Solver::MakeIsDifferentCstVar(IntVar* const var, int64 value) {
   if (var->Bound() && var->Value() == value) {
     return MakeIntConst(0LL);
   }
-  return unequality_var_cst_cache_->VarNonEqCstStatus(var, value);
+  IntExpr* const cache = model_cache_->FindVarConstantExpression(
+      var,
+      value,
+      ModelCache::VAR_CONSTANT_IS_NOT_EQUAL);
+  if (cache != NULL) {
+    return cache->Var();
+  } else {
+    IntVar* const boolvar = MakeBoolVar(
+        StringPrintf("StatusVar<%s != %" GG_LL_FORMAT "d>",
+                     var->name().c_str(), value));
+    Constraint* const maintain =
+        RevAlloc(new IsDiffCstCt(this, var, value, boolvar));
+    AddConstraint(maintain);
+    model_cache_->InsertVarConstantExpression(
+        boolvar,
+        var,
+        value,
+        ModelCache::VAR_CONSTANT_IS_NOT_EQUAL);
+    return boolvar;
+  }
 }
 
-Constraint* Solver::MakeIsDifferentCstCt(IntVar* const v, int64 c,
-                                         IntVar* const b) {
-  CHECK_EQ(this, v->solver());
-  CHECK_EQ(this, b->solver());
-  if (c == v->Min()) {
-    return MakeIsGreaterOrEqualCstCt(v, c + 1, b);
+Constraint* Solver::MakeIsDifferentCstCt(IntVar* const var,
+                                         int64 value,
+                                         IntVar* const boolvar) {
+  CHECK_EQ(this, var->solver());
+  CHECK_EQ(this, boolvar->solver());
+  if (value == var->Min()) {
+    return MakeIsGreaterOrEqualCstCt(var, value + 1, boolvar);
   }
-  if (c == v->Max()) {
-    return MakeIsLessOrEqualCstCt(v, c - 1, b);
+  if (value == var->Max()) {
+    return MakeIsLessOrEqualCstCt(var, value - 1, boolvar);
   }
-  unequality_var_cst_cache_->Insert(v, c, b);
-  return RevAlloc(new IsDiffCstCt(this, v, c, b));
+  model_cache_->InsertVarConstantExpression(
+      boolvar,
+      var,
+      value,
+      ModelCache::VAR_CONSTANT_IS_NOT_EQUAL);
+  return RevAlloc(new IsDiffCstCt(this, var, value, boolvar));
 }
 
 // ----- is_greater_equal_cst Constraint -----
@@ -652,31 +555,6 @@ class IsGreaterEqualCstCt : public Constraint {
 };
 }  // namespace
 
-// ---------- GreaterEqualCstCache ----------
-
-class GreaterEqualCstCache : public VarCstCache {
- public:
-  explicit GreaterEqualCstCache(Solver* const s) : VarCstCache(s) {}
-  virtual ~GreaterEqualCstCache() {}
-
-  IntVar* VarGreaterEqCstStatus(IntVar* const var, int64 value) {
-    IntVar* boolvar = Find(var, value);
-    if (!boolvar) {
-      boolvar = solver()->MakeBoolVar(
-          StringPrintf("StatusVar<%s >= %" GG_LL_FORMAT "d>",
-                       var->name().c_str(), value));
-      Constraint* const maintain =
-          solver()->RevAlloc(new IsGreaterEqualCstCt(solver(),
-                                                     var,
-                                                     value,
-                                                     boolvar));
-      solver()->AddConstraint(maintain);
-      UnsafeInsert(var, value, boolvar);
-    }
-    return boolvar;
-  }
-};
-
 IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntVar* const var, int64 value) {
   if (var->Min() >= value) {
     return MakeIntConst(1LL);
@@ -684,19 +562,43 @@ IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntVar* const var, int64 value) {
   if (var->Max() < value) {
     return MakeIntConst(0LL);
   }
-  return greater_equal_var_cst_cache_->VarGreaterEqCstStatus(var, value);
+  IntExpr* const cache = model_cache_->FindVarConstantExpression(
+      var,
+      value,
+      ModelCache::VAR_CONSTANT_IS_GREATER_OR_EQUAL);
+  if (cache != NULL) {
+    return cache->Var();
+  } else {
+    IntVar* const boolvar = MakeBoolVar(
+        StringPrintf("StatusVar<%s >= %" GG_LL_FORMAT "d>",
+                     var->name().c_str(), value));
+    Constraint* const maintain =
+        RevAlloc(new IsGreaterEqualCstCt(this, var, value, boolvar));
+    AddConstraint(maintain);
+    model_cache_->InsertVarConstantExpression(
+        boolvar,
+        var,
+        value,
+        ModelCache::VAR_CONSTANT_IS_GREATER_OR_EQUAL);
+    return boolvar;
+  }
 }
 
 IntVar* Solver::MakeIsGreaterCstVar(IntVar* const var, int64 value) {
-  return greater_equal_var_cst_cache_->VarGreaterEqCstStatus(var, value + 1);
+  return MakeIsGreaterOrEqualCstVar(var, value + 1);
 }
 
-Constraint* Solver::MakeIsGreaterOrEqualCstCt(IntVar* const v, int64 c,
-                                              IntVar* const b) {
-  CHECK_EQ(this, v->solver());
-  CHECK_EQ(this, b->solver());
-  greater_equal_var_cst_cache_->Insert(v, c, b);
-  return RevAlloc(new IsGreaterEqualCstCt(this, v, c, b));
+Constraint* Solver::MakeIsGreaterOrEqualCstCt(IntVar* const var,
+                                              int64 value,
+                                              IntVar* const boolvar) {
+  CHECK_EQ(this, var->solver());
+  CHECK_EQ(this, boolvar->solver());
+  model_cache_->InsertVarConstantExpression(
+      boolvar,
+      var,
+      value,
+      ModelCache::VAR_CONSTANT_IS_GREATER_OR_EQUAL);
+  return RevAlloc(new IsGreaterEqualCstCt(this, var, value, boolvar));
 }
 
 Constraint* Solver::MakeIsGreaterCstCt(IntVar* const v, int64 c,
@@ -761,30 +663,6 @@ class IsLessEqualCstCt : public Constraint {
 };
 }  // namespace
 
-// ---------- LessEqualCstCache ----------
-
-class LessEqualCstCache : public VarCstCache {
- public:
-  explicit LessEqualCstCache(Solver* const s) : VarCstCache(s) {}
-  virtual ~LessEqualCstCache() {}
-
-  IntVar* VarLessEqCstStatus(IntVar* const var, int64 value) {
-    IntVar* boolvar = Find(var, value);
-    if (!boolvar) {
-      boolvar = solver()->MakeBoolVar(
-          StringPrintf("StatusVar<%s <= %" GG_LL_FORMAT "d>",
-                       var->name().c_str(), value));
-      Constraint* const maintain =
-          solver()->RevAlloc(new IsLessEqualCstCt(solver(),
-                                                  var,
-                                                  value,
-                                                  boolvar));
-      solver()->AddConstraint(maintain);
-      UnsafeInsert(var, value, boolvar);
-    }
-    return boolvar;
-  }
-};
 
 IntVar* Solver::MakeIsLessOrEqualCstVar(IntVar* const var, int64 value) {
   if (var->Max() <= value) {
@@ -793,19 +671,43 @@ IntVar* Solver::MakeIsLessOrEqualCstVar(IntVar* const var, int64 value) {
   if (var->Min() > value) {
     return MakeIntConst(0LL);
   }
-  return less_equal_var_cst_cache_->VarLessEqCstStatus(var, value);
+  IntExpr* const cache = model_cache_->FindVarConstantExpression(
+      var,
+      value,
+      ModelCache::VAR_CONSTANT_IS_LESS_OR_EQUAL);
+  if (cache != NULL) {
+    return cache->Var();
+  } else {
+    IntVar* const boolvar = MakeBoolVar(
+        StringPrintf("StatusVar<%s <= %" GG_LL_FORMAT "d>",
+                     var->name().c_str(), value));
+    Constraint* const maintain =
+        RevAlloc(new IsLessEqualCstCt(this, var, value, boolvar));
+    AddConstraint(maintain);
+    model_cache_->InsertVarConstantExpression(
+        boolvar,
+        var,
+        value,
+        ModelCache::VAR_CONSTANT_IS_LESS_OR_EQUAL);
+    return boolvar;
+  }
 }
 
 IntVar* Solver::MakeIsLessCstVar(IntVar* const var, int64 value) {
   return MakeIsLessOrEqualCstVar(var, value - 1);
 }
 
-Constraint* Solver::MakeIsLessOrEqualCstCt(IntVar* const v, int64 c,
-                                           IntVar* const b) {
-  CHECK_EQ(this, v->solver());
-  CHECK_EQ(this, b->solver());
-  less_equal_var_cst_cache_->Insert(v, c, b);
-  return RevAlloc(new IsLessEqualCstCt(this, v, c, b));
+Constraint* Solver::MakeIsLessOrEqualCstCt(IntVar* const var,
+                                           int64 value,
+                                           IntVar* const boolvar) {
+  CHECK_EQ(this, var->solver());
+  CHECK_EQ(this, boolvar->solver());
+  model_cache_->InsertVarConstantExpression(
+      boolvar,
+      var,
+      value,
+      ModelCache::VAR_CONSTANT_IS_LESS_OR_EQUAL);
+  return RevAlloc(new IsLessEqualCstCt(this, var, value, boolvar));
 }
 
 Constraint* Solver::MakeIsLessCstCt(IntVar* const v, int64 c,
@@ -1140,14 +1042,4 @@ IntVar* Solver::MakeIsMemberVar(IntVar* const var,
 IntVar* Solver::MakeIsMemberVar(IntVar* const var, const std::vector<int>& values) {
   return MakeIsMemberVar(var, values.data(), values.size());
 }
-
-// ---------- Init Caches ----------
-
-void Solver::InitBoolVarCaches() {
-  equality_var_cst_cache_ = RevAlloc(new EqualityVarCstCache(this));
-  unequality_var_cst_cache_ = RevAlloc(new UnequalityVarCstCache(this));
-  greater_equal_var_cst_cache_ = RevAlloc(new GreaterEqualCstCache(this));
-  less_equal_var_cst_cache_ = RevAlloc(new LessEqualCstCache(this));
-}
-
 }  // namespace operations_research

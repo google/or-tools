@@ -157,11 +157,12 @@ template <class C> void Double(C*** array_ptr, int* size_ptr) {
     while (tmp != NULL) {
       C* const to_reinsert = tmp;
       tmp = tmp->next();
-      const uint64 code = to_reinsert->Hash();
-      to_reinsert->set_next((*array_ptr)[code]);
-      (*array_ptr)[code] = to_reinsert;
+      const uint64 position = to_reinsert->Hash() % (*size_ptr);
+      to_reinsert->set_next((*array_ptr)[position]);
+      (*array_ptr)[position] = to_reinsert;
     }
   }
+  delete [] (old_cell_array);
 }
 
 // ----- Cache objects built with 1 object -----
@@ -177,7 +178,12 @@ template <class C, class A1> class Cache1 {
 
   ~Cache1() {
     for (int i = 0; i < size_; ++i) {
-      delete array_[i];
+      Cell* tmp = array_[i];
+      while (tmp != NULL) {
+        Cell* const to_delete = tmp;
+        tmp = tmp->next();
+        delete to_delete;
+      }
     }
     delete [] array_;
   }
@@ -249,7 +255,12 @@ template <class C, class A1, class A2> class Cache2 {
 
   ~Cache2() {
     for (int i = 0; i < size_; ++i) {
-      delete array_[i];
+      Cell* tmp = array_[i];
+      while (tmp != NULL) {
+        Cell* const to_delete = tmp;
+        tmp = tmp->next();
+        delete to_delete;
+      }
     }
     delete [] array_;
   }
@@ -322,7 +333,12 @@ template <class C, class A1, class A2, class A3> class Cache3 {
 
   ~Cache3() {
     for (int i = 0; i < size_; ++i) {
-      delete array_[i];
+      Cell* tmp = array_[i];
+      while (tmp != NULL) {
+        Cell* const to_delete = tmp;
+        tmp = tmp->next();
+        delete to_delete;
+      }
     }
     delete [] array_;
   }
@@ -491,7 +507,8 @@ class NonReversibleCache : public ModelCache {
     DCHECK(var != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_CONSTRAINT_MAX);
-    if (solver()->state() != Solver::IN_SEARCH) {
+    if (solver()->state() != Solver::IN_SEARCH &&
+        var_constant_constraints_[type]->Find(var, value) == NULL) {
       var_constant_constraints_[type]->UnsafeInsert(var, value, ct);
     }
   }
@@ -519,7 +536,10 @@ class NonReversibleCache : public ModelCache {
     DCHECK(var != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_CONSTANT_CONSTRAINT_MAX);
-    if (solver()->state() != Solver::IN_SEARCH) {
+    if (solver()->state() != Solver::IN_SEARCH &&
+        var_constant_constant_constraints_[type]->Find(var,
+                                                       value1,
+                                                       value2) == NULL) {
       var_constant_constant_constraints_[type]->UnsafeInsert(var,
                                                              value1,
                                                              value2,
@@ -549,7 +569,8 @@ class NonReversibleCache : public ModelCache {
     DCHECK(var2 != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_VAR_CONSTRAINT_MAX);
-    if (solver()->state() != Solver::IN_SEARCH) {
+    if (solver()->state() != Solver::IN_SEARCH &&
+        var_var_constraints_[type]->Find(var1, var2) == NULL) {
       var_var_constraints_[type]->UnsafeInsert(var1, var2, ct);
     }
   }
@@ -571,7 +592,8 @@ class NonReversibleCache : public ModelCache {
     DCHECK(var != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_EXPRESSION_MAX);
-    if (solver()->state() != Solver::IN_SEARCH) {
+    if (solver()->state() != Solver::IN_SEARCH &&
+        var_expressions_[type]->Find(var) == NULL) {
       var_expressions_[type]->UnsafeInsert(var, expression);
     }
   }
@@ -597,7 +619,8 @@ class NonReversibleCache : public ModelCache {
     DCHECK(var != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_EXPRESSION_MAX);
-    if (solver()->state() != Solver::IN_SEARCH) {
+    if (solver()->state() != Solver::IN_SEARCH &&
+        var_constant_expressions_[type]->Find(var, value) == NULL) {
       var_constant_expressions_[type]->UnsafeInsert(var, value, expression);
     }
   }
@@ -625,7 +648,8 @@ class NonReversibleCache : public ModelCache {
     DCHECK(var2 != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_VAR_EXPRESSION_MAX);
-    if (solver()->state() != Solver::IN_SEARCH) {
+    if (solver()->state() != Solver::IN_SEARCH &&
+        var_var_expressions_[type]->Find(var1, var2) == NULL) {
       var_var_expressions_[type]->UnsafeInsert(var1, var2, expression);
     }
   }
@@ -653,7 +677,10 @@ class NonReversibleCache : public ModelCache {
     DCHECK(var != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_CONSTANT_EXPRESSION_MAX);
-    if (solver()->state() != Solver::IN_SEARCH) {
+    if (solver()->state() != Solver::IN_SEARCH &&
+        var_constant_constant_expressions_[type]->Find(var,
+                                                       value1,
+                                                       value2) == NULL) {
       var_constant_constant_expressions_[type]->UnsafeInsert(var,
                                                              value1,
                                                              value2,
@@ -682,7 +709,8 @@ class NonReversibleCache : public ModelCache {
     DCHECK(var != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_ARRAY_EXPRESSION_MAX);
-    if (solver()->state() != Solver::IN_SEARCH) {
+    if (solver()->state() != Solver::IN_SEARCH &&
+        var_constant_array_expressions_[type]->Find(var, values) == NULL) {
       var_constant_array_expressions_[type]->UnsafeInsert(var,
                                                           values,
                                                           expression);
@@ -706,7 +734,8 @@ class NonReversibleCache : public ModelCache {
     DCHECK(expression != NULL);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_EXPRESSION_MAX);
-    if (solver()->state() != Solver::IN_SEARCH) {
+    if (solver()->state() != Solver::IN_SEARCH &&
+        var_array_expressions_[type]->Find(vars) == NULL) {
       var_array_expressions_[type]->UnsafeInsert(vars, expression);
     }
   }
@@ -728,5 +757,9 @@ class NonReversibleCache : public ModelCache {
 
 ModelCache* BuildModelCache(Solver* const solver) {
   return new NonReversibleCache(solver);
+}
+
+ModelCache* Solver::Cache() const {
+  return model_cache_.get();
 }
 }  // namespace operations_research

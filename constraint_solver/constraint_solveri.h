@@ -384,8 +384,6 @@ Demon* MakeDelayedConstraintDemon2(Solver* const s,
 
 #endif   // !defined(SWIG)
 
-class NestedSolveDecision;
-
 // ---------- Local search operators ----------
 
 // A local search operator is an object which defines the neighborhood of a
@@ -707,56 +705,6 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   hash_map<const IntVar*, int64> var_to_index_;
 };
 
-// ----- Local search decision builder -----
-
-// Given a first solution (resulting from either an initial assignment or the
-// result of a decision builder), it searches for neighbors using a local
-// search operator. The first solution corresponds to the first leaf of the
-// search.
-// The local search applies to the variables contained either in the assignment
-// or the vector of variables passed.
-
-class LocalSearch : public DecisionBuilder {
- public:
-  LocalSearch(Assignment* const assignment,
-              SolutionPool* const pool,
-              LocalSearchOperator* const ls_operator,
-              DecisionBuilder* const sub_decision_builder,
-              SearchLimit* const limit,
-              const std::vector<LocalSearchFilter*>& filters);
-  // TODO(user): find a way to not have to pass vars here: redundant with
-  // variables in operators
-  LocalSearch(IntVar* const* vars,
-              int size,
-              SolutionPool* const pool,
-              DecisionBuilder* const first_solution,
-              LocalSearchOperator* const ls_operator,
-              DecisionBuilder* const sub_decision_builder,
-              SearchLimit* const limit,
-              const std::vector<LocalSearchFilter*>& filters);
-  virtual ~LocalSearch();
-  virtual Decision* Next(Solver* const solver);
-  virtual string DebugString() const {
-    return "LocalSearch";
-  }
-  virtual void Accept(ModelVisitor* const visitor) const;
-
- protected:
-  void PushFirstSolutionDecision(DecisionBuilder* first_solution);
-  void PushLocalSearchDecision();
-
- private:
-  Assignment* assignment_;
-  SolutionPool* const pool_;
-  LocalSearchOperator* const ls_operator_;
-  DecisionBuilder* const sub_decision_builder_;
-  std::vector<NestedSolveDecision*> nested_decisions_;
-  int nested_decision_index_;
-  SearchLimit* const limit_;
-  const std::vector<LocalSearchFilter*> filters_;
-  bool has_started_;
-};
-
 // ---------- SymmetryBreaker ----------
 
 class SymmetryManager;
@@ -951,6 +899,10 @@ class ModelCache {
     VAR_CONSTANT_MAX,
     VAR_CONSTANT_MIN,
     VAR_CONSTANT_SUM,
+    VAR_CONSTANT_IS_EQUAL,
+    VAR_CONSTANT_IS_NOT_EQUAL,
+    VAR_CONSTANT_IS_GREATER_OR_EQUAL,
+    VAR_CONSTANT_IS_LESS_OR_EQUAL,
     VAR_CONSTANT_EXPRESSION_MAX,
   };
 

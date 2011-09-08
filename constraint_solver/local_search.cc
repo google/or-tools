@@ -2512,71 +2512,6 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
                                              OperationFromEnum(op_enum)));
 }
 
-// ----- NestedSolve decision wrapper -----
-// This decision calls a nested Solve on the given DecisionBuilder in its
-// left branch; does nothing in the left branch.
-// The state of the decision corresponds to the result of the nested Solve:
-// DECISION_PENDING - Nested Solve not called yet
-// DECISION_FAILED  - Nested Solve failed
-// DECISION_FOUND   - Nested Solve succeeded
-
-class NestedSolveDecision : public Decision {
- public:
-  // This enum is used internally to tag states in the local search tree.
-  enum StateType {
-    DECISION_PENDING,
-    DECISION_FAILED,
-    DECISION_FOUND
-  };
-
-  NestedSolveDecision(DecisionBuilder* const db,
-                      bool restore,
-                      const std::vector<SearchMonitor*>& monitors);
-  NestedSolveDecision(DecisionBuilder* const db,
-                      bool restore);
-  virtual ~NestedSolveDecision() {}
-  virtual void Apply(Solver* const solver);
-  virtual void Refute(Solver* const solver);
-  virtual string DebugString() const {
-    return "NestedSolveDecision";
-  }
-  int state() const { return state_; }
-
- private:
-  DecisionBuilder* const db_;
-  bool restore_;
-  std::vector<SearchMonitor*> monitors_;
-  int state_;
-};
-
-NestedSolveDecision::NestedSolveDecision(DecisionBuilder* const db,
-                                         bool restore,
-                                         const std::vector<SearchMonitor*>& monitors)
-    : db_(db),
-      restore_(restore),
-      monitors_(monitors),
-      state_(DECISION_PENDING) {
-  CHECK(NULL != db);
-}
-
-NestedSolveDecision::NestedSolveDecision(DecisionBuilder* const db,
-                                         bool restore)
-    : db_(db), restore_(restore), state_(DECISION_PENDING) {
-  CHECK(NULL != db);
-}
-
-void NestedSolveDecision::Apply(Solver* const solver) {
-  CHECK(NULL != solver);
-  if (solver->NestedSolve(db_, restore_,
-                          monitors_.data(), monitors_.size())) {
-    solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FOUND));
-  } else {
-    solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FAILED));
-  }
-}
-
-void NestedSolveDecision::Refute(Solver* const solver) {}
-
 // ----- Finds a neighbor of the assignment passed -----
 
 class FindOneNeighbor : public DecisionBuilder {
@@ -2849,7 +2784,122 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
                                                  filters));
 }
 
+namespace {
+// ----- NestedSolve decision wrapper -----
+
+// This decision calls a nested Solve on the given DecisionBuilder in its
+// left branch; does nothing in the left branch.
+// The state of the decision corresponds to the result of the nested Solve:
+// DECISION_PENDING - Nested Solve not called yet
+// DECISION_FAILED  - Nested Solve failed
+// DECISION_FOUND   - Nested Solve succeeded
+
+class NestedSolveDecision : public Decision {
+ public:
+  // This enum is used internally to tag states in the local search tree.
+  enum StateType {
+    DECISION_PENDING,
+    DECISION_FAILED,
+    DECISION_FOUND
+  };
+
+  NestedSolveDecision(DecisionBuilder* const db,
+                      bool restore,
+                      const std::vector<SearchMonitor*>& monitors);
+  NestedSolveDecision(DecisionBuilder* const db,
+                      bool restore);
+  virtual ~NestedSolveDecision() {}
+  virtual void Apply(Solver* const solver);
+  virtual void Refute(Solver* const solver);
+  virtual string DebugString() const {
+    return "NestedSolveDecision";
+  }
+  int state() const { return state_; }
+
+ private:
+  DecisionBuilder* const db_;
+  bool restore_;
+  std::vector<SearchMonitor*> monitors_;
+  int state_;
+};
+
+NestedSolveDecision::NestedSolveDecision(DecisionBuilder* const db,
+                                         bool restore,
+                                         const std::vector<SearchMonitor*>& monitors)
+    : db_(db),
+      restore_(restore),
+      monitors_(monitors),
+      state_(DECISION_PENDING) {
+  CHECK(NULL != db);
+}
+
+NestedSolveDecision::NestedSolveDecision(DecisionBuilder* const db,
+                                         bool restore)
+    : db_(db), restore_(restore), state_(DECISION_PENDING) {
+  CHECK(NULL != db);
+}
+
+void NestedSolveDecision::Apply(Solver* const solver) {
+  CHECK(NULL != solver);
+  if (solver->NestedSolve(db_, restore_,
+                          monitors_.data(), monitors_.size())) {
+    solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FOUND));
+  } else {
+    solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FAILED));
+  }
+}
+
+void NestedSolveDecision::Refute(Solver* const solver) {}
+
 // ----- Local search decision builder -----
+
+// Given a first solution (resulting from either an initial assignment or the
+// result of a decision builder), it searches for neighbors using a local
+// search operator. The first solution corresponds to the first leaf of the
+// search.
+// The local search applies to the variables contained either in the assignment
+// or the vector of variables passed.
+
+class LocalSearch : public DecisionBuilder {
+ public:
+  LocalSearch(Assignment* const assignment,
+              SolutionPool* const pool,
+              LocalSearchOperator* const ls_operator,
+              DecisionBuilder* const sub_decision_builder,
+              SearchLimit* const limit,
+              const std::vector<LocalSearchFilter*>& filters);
+  // TODO(user): find a way to not have to pass vars here: redundant with
+  // variables in operators
+  LocalSearch(IntVar* const* vars,
+              int size,
+              SolutionPool* const pool,
+              DecisionBuilder* const first_solution,
+              LocalSearchOperator* const ls_operator,
+              DecisionBuilder* const sub_decision_builder,
+              SearchLimit* const limit,
+              const std::vector<LocalSearchFilter*>& filters);
+  virtual ~LocalSearch();
+  virtual Decision* Next(Solver* const solver);
+  virtual string DebugString() const {
+    return "LocalSearch";
+  }
+  virtual void Accept(ModelVisitor* const visitor) const;
+
+ protected:
+  void PushFirstSolutionDecision(DecisionBuilder* first_solution);
+  void PushLocalSearchDecision();
+
+ private:
+  Assignment* assignment_;
+  SolutionPool* const pool_;
+  LocalSearchOperator* const ls_operator_;
+  DecisionBuilder* const sub_decision_builder_;
+  std::vector<NestedSolveDecision*> nested_decisions_;
+  int nested_decision_index_;
+  SearchLimit* const limit_;
+  const std::vector<LocalSearchFilter*> filters_;
+  bool has_started_;
+};
 
 LocalSearch::LocalSearch(Assignment* const assignment,
                          SolutionPool* const pool,
@@ -3010,7 +3060,6 @@ void LocalSearch::PushLocalSearchDecision() {
       solver->RevAlloc(new NestedSolveDecision(find_neighbors, false)));
 }
 
-namespace {
 class DefaultSolutionPool : public SolutionPool {
  public:
   DefaultSolutionPool() : reference_assignment_(NULL) {}

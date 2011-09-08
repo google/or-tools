@@ -1304,13 +1304,10 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       demon_monitor_(BuildDemonMonitor(parameters.profile_level)),
       true_constraint_(NULL),
       false_constraint_(NULL),
-      equality_var_cst_cache_(NULL),
-      unequality_var_cst_cache_(NULL),
-      greater_equal_var_cst_cache_(NULL),
-      less_equal_var_cst_cache_(NULL),
       fail_decision_(new FailDecision()),
       constraint_index_(0),
-      additional_constraint_index_(0) {
+      additional_constraint_index_(0),
+      model_cache_(NULL) {
   Init();
 }
 
@@ -1338,15 +1335,14 @@ Solver::Solver(const string& name)
       demon_monitor_(BuildDemonMonitor(parameters_.profile_level)),
       true_constraint_(NULL),
       false_constraint_(NULL),
-      equality_var_cst_cache_(NULL),
-      unequality_var_cst_cache_(NULL),
-      greater_equal_var_cst_cache_(NULL),
-      less_equal_var_cst_cache_(NULL),
       fail_decision_(new FailDecision()),
       constraint_index_(0),
-      additional_constraint_index_(0) {
+      additional_constraint_index_(0),
+      model_cache_(NULL) {
   Init();
 }
+
+extern ModelCache* BuildModelCache(Solver* const solver);
 
 void Solver::Init() {
   for (int i = 0; i < kNumPriorities; ++i) {
@@ -1356,9 +1352,9 @@ void Solver::Init() {
   PushSentinel(SOLVER_CTOR_SENTINEL);
   InitCachedIntConstants();  // to be called after the SENTINEL is set.
   InitCachedConstraint();  // Cache the true constraint.
-  InitBoolVarCaches();
   InitBuilders();
   timer_->Restart();
+  model_cache_.reset(BuildModelCache(this));
 }
 
 Solver::~Solver() {

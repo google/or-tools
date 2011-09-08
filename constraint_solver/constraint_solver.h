@@ -114,9 +114,7 @@ class Demon;
 class DemonMonitor;
 class DemonProfiler;
 class Dimension;
-class EqualityVarCstCache;
 class ExpressionCache;
-class GreaterEqualCstCache;
 class IntExpr;
 class IntVar;
 class IntVarAssignmentProto;
@@ -124,10 +122,10 @@ class IntVarElement;
 class IntervalVar;
 class IntervalVarAssignmentProto;
 class IntervalVarElement;
-class LessEqualCstCache;
 class LocalSearchFilter;
 class LocalSearchOperator;
 class LocalSearchPhaseParameters;
+class ModelCache;
 class ModelVisitor;
 class MPSolver;
 class NoGoodManager;
@@ -145,7 +143,6 @@ class SolutionCollector;
 class SolutionPool;
 class Solver;
 class SymmetryBreaker;
-class UnequalityVarCstCache;
 struct StateInfo;
 struct Trail;
 template <class T> class ConstPtrArray;
@@ -2275,6 +2272,8 @@ class Solver {
   Demon* RegisterDemon(Demon* const d);
   // Returns the active search, NULL outside search.
   Search* ActiveSearch() const;
+  // Returns the cache of the model.
+  ModelCache* Cache() const;
 
   friend class BaseIntExpr;
   friend class Constraint;
@@ -2285,7 +2284,6 @@ class Solver {
   friend class PropagationBaseObject;
   friend class Queue;
   friend class SearchMonitor;
-  friend class VarCstCache;
 
 #ifndef SWIG
   friend void InternalSaveBooleanVarValue(Solver* const, IntVar* const);
@@ -2345,7 +2343,6 @@ class Solver {
 
   void InitCachedIntConstants();
   void InitCachedConstraint();
-  void InitBoolVarCaches();
   void InitBuilders();
   void DeleteBuilders();
 
@@ -2393,11 +2390,6 @@ class Solver {
   Constraint* true_constraint_;
   Constraint* false_constraint_;
 
-  // status var caches:
-  EqualityVarCstCache* equality_var_cst_cache_;
-  UnequalityVarCstCache* unequality_var_cst_cache_;
-  GreaterEqualCstCache* greater_equal_var_cst_cache_;
-  LessEqualCstCache* less_equal_var_cst_cache_;
   scoped_ptr<Decision> fail_decision_;
   int constraint_index_;
   int additional_constraint_index_;
@@ -2406,6 +2398,8 @@ class Solver {
   hash_map<string, IntegerExpressionBuilder*> expression_builders_;
   hash_map<string, ConstraintBuilder*> constraint_builders_;
   hash_map<string, IntervalVariableBuilder*> interval_builders_;
+
+  scoped_ptr<ModelCache> model_cache_;
 
   DISALLOW_COPY_AND_ASSIGN(Solver);
 };
