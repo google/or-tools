@@ -885,6 +885,9 @@ void MPSolverInterface::InvalidateSolutionSynchronization() {
 }
 
 void MPSolverInterface::SetCommonParameters(const MPSolverParameters& param) {
+  SetPrimalTolerance(param.GetDoubleParam(
+      MPSolverParameters::PRIMAL_TOLERANCE));
+  SetPrimalTolerance(param.GetDoubleParam(MPSolverParameters::DUAL_TOLERANCE));
   SetPresolveMode(param.GetIntegerParam(MPSolverParameters::PRESOLVE));
   // TODO(user): In the future, we could distinguish between the
   // algorithm to solve the root LP and the algorithm to solve node
@@ -921,8 +924,14 @@ void MPSolverInterface::SetIntegerParamToUnsupportedValue(
 // ---------- MPSolverParameters ----------
 
 const double MPSolverParameters::kDefaultRelativeMipGap = 1e-4;
+// For the primal and dual tolerances, choose the same default as CLP and GLPK.
+const double MPSolverParameters::kDefaultPrimalTolerance = 1e-7;
+const double MPSolverParameters::kDefaultDualTolerance = 1e-7;
 const MPSolverParameters::PresolveValues MPSolverParameters::kDefaultPresolve =
   MPSolverParameters::PRESOLVE_ON;
+const MPSolverParameters::IncrementalityValues
+MPSolverParameters::kDefaultIncrementality =
+MPSolverParameters::INCREMENTALITY_ON;
 
 const double MPSolverParameters::kDefaultDoubleParamValue = -1.0;
 const int MPSolverParameters::kDefaultIntegerParamValue = -1;
@@ -932,8 +941,11 @@ const int MPSolverParameters::kUnknownIntegerParamValue = -2;
 // The constructor sets all parameters to their default value.
 MPSolverParameters::MPSolverParameters()
     : relative_mip_gap_value_(kDefaultRelativeMipGap),
+      primal_tolerance_value_(kDefaultPrimalTolerance),
+      dual_tolerance_value_(kDefaultDualTolerance),
       presolve_value_(kDefaultPresolve),
       lp_algorithm_value_(kDefaultIntegerParamValue),
+      incrementality_value_(kDefaultIncrementality),
       lp_algorithm_is_default_(true) {}
 
 void MPSolverParameters::SetDoubleParam(MPSolverParameters::DoubleParam param,
@@ -941,6 +953,14 @@ void MPSolverParameters::SetDoubleParam(MPSolverParameters::DoubleParam param,
   switch (param) {
     case RELATIVE_MIP_GAP: {
       relative_mip_gap_value_ = value;
+      break;
+    }
+    case PRIMAL_TOLERANCE: {
+      primal_tolerance_value_ = value;
+      break;
+    }
+    case DUAL_TOLERANCE: {
+      dual_tolerance_value_ = value;
       break;
     }
     default: {
@@ -969,6 +989,14 @@ void MPSolverParameters::SetIntegerParam(MPSolverParameters::IntegerParam param,
       lp_algorithm_is_default_ = false;
       break;
     }
+    case INCREMENTALITY: {
+      if (value != INCREMENTALITY_OFF && value != INCREMENTALITY_ON) {
+        LOG(ERROR) << "Trying to set a supported parameter: " << param
+                   << " to an unknown value: " << value;
+      }
+      incrementality_value_ = value;
+      break;
+    }
     default: {
       LOG(ERROR) << "Trying to set an unknown parameter: " << param << ".";
     }
@@ -980,6 +1008,14 @@ void MPSolverParameters::ResetDoubleParam(
   switch (param) {
     case RELATIVE_MIP_GAP: {
       relative_mip_gap_value_ = kDefaultRelativeMipGap;
+      break;
+    }
+    case PRIMAL_TOLERANCE: {
+      primal_tolerance_value_ = kDefaultPrimalTolerance;
+      break;
+    }
+    case DUAL_TOLERANCE: {
+      dual_tolerance_value_ = kDefaultDualTolerance;
       break;
     }
     default: {
@@ -999,6 +1035,10 @@ void MPSolverParameters::ResetIntegerParam(
       lp_algorithm_is_default_ = true;
       break;
     }
+    case INCREMENTALITY: {
+      incrementality_value_ = kDefaultIncrementality;
+      break;
+    }
     default: {
       LOG(ERROR) << "Trying to reset an unknown parameter: " << param << ".";
     }
@@ -1007,8 +1047,11 @@ void MPSolverParameters::ResetIntegerParam(
 
 void MPSolverParameters::Reset() {
   ResetDoubleParam(RELATIVE_MIP_GAP);
+  ResetDoubleParam(PRIMAL_TOLERANCE);
+  ResetDoubleParam(DUAL_TOLERANCE);
   ResetIntegerParam(PRESOLVE);
   ResetIntegerParam(LP_ALGORITHM);
+  ResetIntegerParam(INCREMENTALITY);
 }
 
 double MPSolverParameters::GetDoubleParam(
@@ -1016,6 +1059,12 @@ double MPSolverParameters::GetDoubleParam(
   switch (param) {
     case RELATIVE_MIP_GAP: {
       return relative_mip_gap_value_;
+    }
+    case PRIMAL_TOLERANCE: {
+      return primal_tolerance_value_;
+    }
+    case DUAL_TOLERANCE: {
+      return dual_tolerance_value_;
     }
     default: {
       LOG(ERROR) << "Trying to get an unknown parameter: " << param << ".";
@@ -1033,6 +1082,9 @@ int MPSolverParameters::GetIntegerParam(
     case LP_ALGORITHM: {
       if (lp_algorithm_is_default_) return kDefaultIntegerParamValue;
       return lp_algorithm_value_;
+    }
+    case INCREMENTALITY: {
+      return incrementality_value_;
     }
     default: {
       LOG(ERROR) << "Trying to get an unknown parameter: " << param << ".";

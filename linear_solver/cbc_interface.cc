@@ -168,6 +168,8 @@ class CBCInterface : public MPSolverInterface {
   virtual void SetParameters(const MPSolverParameters& param);
   // Set each parameter in the underlying solver.
   virtual void SetRelativeMipGap(double value);
+  virtual void SetPrimalTolerance(double value);
+  virtual void SetDualTolerance(double value);
   virtual void SetPresolveMode(int value);
   virtual void SetLpAlgorithm(int value);
 
@@ -196,10 +198,10 @@ CBCInterface::~CBCInterface() {}
 
 // Reset the solver.
 void CBCInterface::Reset() {
-  sync_status_ = MODEL_SYNCHRONIZED;
   osi_.reset();
   osi_.setObjSense(maximize_ ? -1 : 1);
   osi_.setStrParam(OsiProbName, solver_->name_);
+  ResetExtractionInformation();
 }
 
 void CBCInterface::ResetBestObjectiveBound() {
@@ -275,6 +277,12 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   WallTimer timer;
   timer.Start();
 
+  // Note that CBC does not provide any incrementality.
+  if (param.GetIntegerParam(MPSolverParameters::INCREMENTALITY) ==
+      MPSolverParameters::INCREMENTALITY_OFF) {
+    Reset();
+  }
+
   // Special case if the model is empty since CBC is not able to
   // handle this special case by itself.
   if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
@@ -290,7 +298,6 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   switch (sync_status_) {
     case MUST_RELOAD: {
       Reset();
-      CHECK_EQ(MODEL_SYNCHRONIZED, sync_status_);
       CoinModel build;
       // Create dummy variable for objective offset.
       build.addColumn(0, NULL, NULL, 1.0, 1.0,
@@ -363,6 +370,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   // (written through OSI) has the correct optimization duration.
   osi_.setObjSense(maximize_ ? -1 : 1);
 
+  sync_status_ = MODEL_SYNCHRONIZED;
   VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
 
   WriteModelToPredefinedFiles();
@@ -526,6 +534,22 @@ void CBCInterface::SetParameters(const MPSolverParameters& param) {
 
 void CBCInterface::SetRelativeMipGap(double value) {
   relative_mip_gap_ = value;
+}
+
+void CBCInterface::SetPrimalTolerance(double value) {
+  // Skip the warning for the default value as it coincides with
+  // the default value in CBC.
+  if (value != MPSolverParameters::kDefaultPrimalTolerance) {
+    SetUnsupportedDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE);
+  }
+}
+
+void CBCInterface::SetDualTolerance(double value) {
+  // Skip the warning for the default value as it coincides with
+  // the default value in CBC.
+  if (value != MPSolverParameters::kDefaultDualTolerance) {
+    SetUnsupportedDoubleParam(MPSolverParameters::DUAL_TOLERANCE);
+  }
 }
 
 void CBCInterface::SetPresolveMode(int value) {

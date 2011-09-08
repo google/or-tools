@@ -537,6 +537,8 @@ class MPObjective {
 
 
 // This class stores parameter settings for LP and MIP solvers.
+// Some parameters are marked as advanced: do not change their values
+// unless you know what you are doing!
 // How to add a new parameter:
 // - Add the new Foo parameter in the DoubleParam or IntegerParam enum.
 // - If it is a categorical param, add a FooValues enum.
@@ -548,20 +550,34 @@ class MPObjective {
 //   foo_is_default_ member.
 // - Add code to handle Foo in Set...Param, Reset...Param,
 //   Get...Param, Reset and the constructor.
-// - In class MPSolverInterface, add a virtual method SetFoo and
-//   implement it for each solver.
+// - In class MPSolverInterface, add a virtual method SetFoo, add it
+//   to SetCommonParameters or SetMIPParameters, and implement it for
+//   each solver. Sometimes, parameters need to be implemented
+//   differently, see for example the INCREMENTALITY implementation.
 // - Add a test in linear_solver_test.cc.
 class MPSolverParameters {
  public:
   // Enumeration of parameters that take continuous values.
   enum DoubleParam {
-    RELATIVE_MIP_GAP = 0,        // Limit for relative MIP gap.
+    // Limit for relative MIP gap.
+    RELATIVE_MIP_GAP = 0,
+    // Tolerance for primal feasibility of basic solutions
+    // (advanced). This does not control the integer feasibility
+    // tolerance of integer solutions for MIP or the tolerance used
+    // during presolve.
+    PRIMAL_TOLERANCE = 1,
+    // Tolerance for dual feasibility of basic solutions (advanced).
+    DUAL_TOLERANCE = 2
   };
 
   // Enumeration of parameters that take integer or categorical values.
   enum IntegerParam {
-    PRESOLVE = 1000,        // Presolve mode.
-    LP_ALGORITHM = 1001     // Algorithm to solve linear programs.
+    // Presolve mode (advanced).
+    PRESOLVE = 1000,
+    // Algorithm to solve linear programs.
+    LP_ALGORITHM = 1001,
+    // Incrementality from one solve to the next (advanced).
+    INCREMENTALITY = 1002
   };
 
   // For each categorical parameter, enumeration of possible values.
@@ -574,6 +590,14 @@ class MPSolverParameters {
     DUAL = 10,      // Dual simplex.
     PRIMAL = 11,    // Primal simplex.
     BARRIER = 12    // Barrier algorithm.
+  };
+
+  enum IncrementalityValues {
+    // Start solve from scratch.
+    INCREMENTALITY_OFF = 0,
+    // Reuse results from previous solve as much as the underlying
+    // solver allows.
+    INCREMENTALITY_ON = 1
   };
 
   // Values to indicate that a parameter is set to the solver's
@@ -590,7 +614,10 @@ class MPSolverParameters {
   // value for performance parameters when you are confident it is a
   // good choice (example: always turn presolve on).
   static const double kDefaultRelativeMipGap;
+  static const double kDefaultPrimalTolerance;
+  static const double kDefaultDualTolerance;
   static const PresolveValues kDefaultPresolve;
+  static const IncrementalityValues kDefaultIncrementality;
 
   // The constructor sets all parameters to their default value.
   MPSolverParameters();
@@ -610,8 +637,11 @@ class MPSolverParameters {
  private:
   // Parameter value for each parameter.
   double relative_mip_gap_value_;
+  double primal_tolerance_value_;
+  double dual_tolerance_value_;
   int presolve_value_;
   int lp_algorithm_value_;
+  int incrementality_value_;
   // Boolean value indicating whether each parameter is set to the
   // solver's default value. Only parameters for which the wrapper
   // does not define a default value need such an indicator.
@@ -822,6 +852,8 @@ class MPSolverInterface {
                                         double value) const;
   // Set each parameter in the underlying solver.
   virtual void SetRelativeMipGap(double value) = 0;
+  virtual void SetPrimalTolerance(double value) = 0;
+  virtual void SetDualTolerance(double value) = 0;
   virtual void SetPresolveMode(int value) = 0;
   virtual void SetLpAlgorithm(int value) = 0;
 };

@@ -129,8 +129,14 @@ class CLPInterface : public MPSolverInterface {
 
   // Set all parameters in the underlying solver.
   virtual void SetParameters(const MPSolverParameters& param);
+  // Reset to their default value the parameters for which CLP has a
+  // stateful API. To be called after the solve so that the next solve
+  // starts from a clean parameter state.
+  void ResetParameters();
   // Set each parameter in the underlying solver.
   virtual void SetRelativeMipGap(double value);
+  virtual void SetPrimalTolerance(double value);
+  virtual void SetDualTolerance(double value);
   virtual void SetPresolveMode(int value);
   virtual void SetLpAlgorithm(int value);
 
@@ -416,6 +422,11 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
   WallTimer timer;
   timer.Start();
 
+  if (param.GetIntegerParam(MPSolverParameters::INCREMENTALITY) ==
+      MPSolverParameters::INCREMENTALITY_OFF) {
+    Reset();
+  }
+
   // Set log level.
   CoinMessageHandler message_handler;
   clp_->passInMessageHandler(&message_handler);
@@ -509,6 +520,7 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
       break;
   }
 
+  ResetParameters();
   sync_status_ = SOLUTION_SYNCHRONIZED;
   return result_status_;
 }
@@ -577,9 +589,22 @@ void CLPInterface::SetParameters(const MPSolverParameters& param) {
   SetCommonParameters(param);
 }
 
+void CLPInterface::ResetParameters() {
+  clp_->setPrimalTolerance(MPSolverParameters::kDefaultPrimalTolerance);
+  clp_->setDualTolerance(MPSolverParameters::kDefaultDualTolerance);
+}
+
 void CLPInterface::SetRelativeMipGap(double value) {
   LOG(WARNING) << "The relative MIP gap is only available "
                << "for discrete problems.";
+}
+
+void CLPInterface::SetPrimalTolerance(double value) {
+  clp_->setPrimalTolerance(value);
+}
+
+void CLPInterface::SetDualTolerance(double value) {
+  clp_->setDualTolerance(value);
 }
 
 void CLPInterface::SetPresolveMode(int value) {

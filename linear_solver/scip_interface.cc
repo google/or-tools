@@ -132,6 +132,8 @@ class SCIPInterface : public MPSolverInterface {
   virtual void SetParameters(const MPSolverParameters& param);
   // Set each parameter in the underlying solver.
   virtual void SetRelativeMipGap(double value);
+  virtual void SetPrimalTolerance(double value);
+  virtual void SetDualTolerance(double value);
   virtual void SetPresolveMode(int value);
   virtual void SetLpAlgorithm(int value);
 
@@ -449,6 +451,12 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   WallTimer timer;
   timer.Start();
 
+  // Note that SCIP does not provide any incrementality.
+  if (param.GetIntegerParam(MPSolverParameters::INCREMENTALITY) ==
+      MPSolverParameters::INCREMENTALITY_OFF) {
+    Reset();
+  }
+
   // Set log level.
   if (quiet_) {
     ORTOOLS_SCIP_CALL(SCIPsetMessagehdlr(NULL));
@@ -589,6 +597,14 @@ void SCIPInterface::SetParameters(const MPSolverParameters& param) {
 
 void SCIPInterface::SetRelativeMipGap(double value) {
   ORTOOLS_SCIP_CALL(SCIPsetRealParam(scip_, "limits/gap", value));
+}
+
+void SCIPInterface::SetPrimalTolerance(double value) {
+  ORTOOLS_SCIP_CALL(SCIPsetRealParam(scip_, "numerics/feastol", value));
+}
+
+void SCIPInterface::SetDualTolerance(double value) {
+  ORTOOLS_SCIP_CALL(SCIPsetRealParam(scip_, "numerics/dualfeastol", value));
 }
 
 void SCIPInterface::SetPresolveMode(int value) {

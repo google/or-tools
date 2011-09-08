@@ -178,6 +178,8 @@ class GLPKInterface : public MPSolverInterface {
   virtual void SetParameters(const MPSolverParameters& param);
   // Set each parameter in the underlying solver.
   virtual void SetRelativeMipGap(double value);
+  virtual void SetPrimalTolerance(double value);
+  virtual void SetDualTolerance(double value);
   virtual void SetPresolveMode(int value);
   virtual void SetLpAlgorithm(int value);
 
@@ -522,6 +524,12 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
   WallTimer timer;
   timer.Start();
 
+  // Note that GLPK provides incrementality for LP but not for MIP.
+  if (param.GetIntegerParam(MPSolverParameters::INCREMENTALITY) ==
+      MPSolverParameters::INCREMENTALITY_OFF) {
+    Reset();
+  }
+
   // Set log level.
   if (quiet_) {
     glp_term_out(GLP_OFF);
@@ -797,6 +805,14 @@ void GLPKInterface::SetRelativeMipGap(double value) {
     LOG(WARNING) << "The relative MIP gap is only available "
                  << "for discrete problems.";
   }
+}
+
+void GLPKInterface::SetPrimalTolerance(double value) {
+  lp_param_.tol_bnd = value;
+}
+
+void GLPKInterface::SetDualTolerance(double value) {
+  lp_param_.tol_dj = value;
 }
 
 void GLPKInterface::SetPresolveMode(int value) {
