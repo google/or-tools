@@ -73,7 +73,7 @@ void MinCostFlow::SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity) {
   DCHECK(graph_->CheckArcValidity(arc));
   const FlowQuantity free_capacity = residual_arc_capacity_[arc];
   const FlowQuantity capacity_delta = new_capacity - Capacity(arc);
-  VLOG(1) << "Changing capacity on arc " << arc
+  VLOG(3) << "Changing capacity on arc " << arc
           << " from " << Capacity(arc) << " to " << new_capacity
           << ". Current free capacity = " << free_capacity;
   if (capacity_delta == 0) {
@@ -88,13 +88,13 @@ void MinCostFlow::SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity) {
     //    reduction is not larger than the free capacity.
     residual_arc_capacity_.Set(arc, free_capacity + capacity_delta);
     DCHECK_LE(0, residual_arc_capacity_[arc]);
-    VLOG(1) << "Now: capacity = " << Capacity(arc) << " flow = " << Flow(arc);
+    VLOG(3) << "Now: capacity = " << Capacity(arc) << " flow = " << Flow(arc);
   } else {
     // We have to reduce the flow on the arc, and update the excesses
     // accordingly.
     const FlowQuantity flow = residual_arc_capacity_[Opposite(arc)];
     const FlowQuantity flow_excess = flow - new_capacity;
-    VLOG(1) << "Flow value " << flow << " exceeds new capacity "
+    VLOG(3) << "Flow value " << flow << " exceeds new capacity "
             << new_capacity << " by " << flow_excess;
     residual_arc_capacity_.Set(arc, 0);
     residual_arc_capacity_.Set(Opposite(arc), new_capacity);
@@ -104,7 +104,7 @@ void MinCostFlow::SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity) {
     node_excess_.Set(head, node_excess_[head] - flow_excess);
     DCHECK_LE(0, residual_arc_capacity_[arc]);
     DCHECK_LE(0, residual_arc_capacity_[Opposite(arc)]);
-    VLOG(1) << DebugString("After SetArcCapacity:", arc);
+    VLOG(3) << DebugString("After SetArcCapacity:", arc);
   }
 }
 
@@ -178,7 +178,7 @@ bool MinCostFlow::CheckCostRange() const {
       min_cost_magnitude = std::min(min_cost_magnitude, cost_magnitude);
     }
   }
-  VLOG(1) << "Min cost magnitude = " << min_cost_magnitude
+  VLOG(3) << "Min cost magnitude = " << min_cost_magnitude
           << ", Max cost magnitude = " << max_cost_magnitude;
 #if !defined(_MSC_VER)
   if (log(std::numeric_limits<CostValue>::max())
@@ -251,7 +251,7 @@ bool MinCostFlow::Solve() {
   for (StarGraph::ArcIterator it(*graph_); it.Ok(); it.Next()) {
     const ArcIndex arc = it.Index();
     const FlowQuantity flow_on_arc = residual_arc_capacity_[Opposite(arc)];
-    VLOG(1) << "Flow for arc " << arc << " = " << flow_on_arc
+    VLOG(3) << "Flow for arc " << arc << " = " << flow_on_arc
             << ", scaled cost = " << scaled_arc_unit_cost_[arc];
     total_flow_cost_ += scaled_arc_unit_cost_[arc] * flow_on_arc;
   }
@@ -269,7 +269,7 @@ void MinCostFlow::ResetFirstAdmissibleArcs() {
 void MinCostFlow::ScaleCosts() {
   cost_scaling_factor_ = graph_->num_nodes() + 1;
   epsilon_ = 1LL;
-  VLOG(1) << "Number of arcs in the graph = " << graph_->num_arcs();
+  VLOG(3) << "Number of arcs in the graph = " << graph_->num_arcs();
   for (StarGraph::ArcIterator arc_it(*graph_); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
     const CostValue cost = scaled_arc_unit_cost_[arc] * cost_scaling_factor_;
@@ -277,8 +277,8 @@ void MinCostFlow::ScaleCosts() {
     scaled_arc_unit_cost_.Set(Opposite(arc), -cost);
     epsilon_ = std::max(epsilon_, MathUtil::Abs(cost));
   }
-  VLOG(1) << "Initial epsilon = " << epsilon_;
-  VLOG(1) << "Cost scaling factor = " << cost_scaling_factor_;
+  VLOG(3) << "Initial epsilon = " << epsilon_;
+  VLOG(3) << "Cost scaling factor = " << cost_scaling_factor_;
 }
 
 void MinCostFlow::UnscaleCosts() {
@@ -296,7 +296,7 @@ void MinCostFlow::Optimize() {
   do {
     // Avoid epsilon_ == 0.
     epsilon_ = std::max(epsilon_ / alpha_, kEpsilonMin);
-    VLOG(1) << "Epsilon changed to: " << epsilon_;
+    VLOG(3) << "Epsilon changed to: " << epsilon_;
     Refine();
   } while (epsilon_ != 1LL && status_ != INFEASIBLE);
   if (status_ == NOT_SOLVED) {
@@ -313,7 +313,7 @@ void MinCostFlow::SaturateAdmissibleArcs() {
          arc_it.Next()) {
       const ArcIndex arc = arc_it.Index();
       if (IsAdmissible(arc)) {
-        VLOG(1) << DebugString("SaturateAdmissibleArcs: calling PushFlow", arc);
+        VLOG(3) << DebugString("SaturateAdmissibleArcs: calling PushFlow", arc);
         PushFlow(residual_arc_capacity_[arc], arc);
       }
     }
@@ -322,7 +322,7 @@ void MinCostFlow::SaturateAdmissibleArcs() {
 
 void MinCostFlow::PushFlow(FlowQuantity flow, ArcIndex arc) {
   DCHECK_GT(residual_arc_capacity_[arc], 0);
-  VLOG(1) << "PushFlow: pushing " << flow << " on arc " << arc
+  VLOG(3) << "PushFlow: pushing " << flow << " on arc " << arc
           << " from node " << Tail(arc) << " to node " << Head(arc);
   // Reduce the residual capacity on arc by flow.
   residual_arc_capacity_.Set(arc, residual_arc_capacity_[arc] - flow);
@@ -334,7 +334,7 @@ void MinCostFlow::PushFlow(FlowQuantity flow, ArcIndex arc) {
   node_excess_.Set(tail, node_excess_[tail] - flow);
   const NodeIndex head = Head(arc);
   node_excess_.Set(head, node_excess_[head] + flow);
-  VLOG(2) << DebugString("PushFlow: ", arc);
+  VLOG(4) << DebugString("PushFlow: ", arc);
 }
 
 void MinCostFlow::InitializeActiveNodeStack() {
@@ -343,7 +343,7 @@ void MinCostFlow::InitializeActiveNodeStack() {
     const NodeIndex node = node_it.Index();
     if (IsActive(node)) {
       active_nodes_.push(node);
-      VLOG(1) << "InitializeActiveNodeStack: node " << node << " added.";
+      VLOG(3) << "InitializeActiveNodeStack: node " << node << " added.";
     }
   }
 }
@@ -355,7 +355,7 @@ void MinCostFlow::Refine() {
     const NodeIndex node = active_nodes_.top();
     active_nodes_.pop();
     if (IsActive(node)) {
-      VLOG(1) << "Refine: calling Discharge for node " << node;
+      VLOG(3) << "Refine: calling Discharge for node " << node;
       Discharge(node);
       if (status_ == INFEASIBLE) {
         return;
@@ -366,17 +366,17 @@ void MinCostFlow::Refine() {
 
 void MinCostFlow::Discharge(NodeIndex node) {
   DCHECK(IsActive(node));
-  VLOG(1) << "Discharging node " << node << ", excess = " << node_excess_[node];
+  VLOG(3) << "Discharging node " << node << ", excess = " << node_excess_[node];
   while (IsActive(node)) {
     for (StarGraph::IncidentArcIterator arc_it(*graph_, node,
                                                first_admissible_arc_[node]);
          arc_it.Ok();
          arc_it.Next()) {
       const ArcIndex arc = arc_it.Index();
-      VLOG(2) << DebugString("Discharge: considering", arc);
+      VLOG(4) << DebugString("Discharge: considering", arc);
       if (IsAdmissible(arc)) {
         if (node_excess_[node] != 0) {
-          VLOG(1) << "Discharge: calling PushFlow.";
+          VLOG(3) << "Discharge: calling PushFlow.";
           const NodeIndex head = Head(arc);
           const bool head_active_before_push = IsActive(head);
           const FlowQuantity delta = std::min(node_excess_[node],
@@ -426,7 +426,7 @@ void MinCostFlow::Relabel(NodeIndex node) {
       return;
     }
   }
-  VLOG(1) << "Relabel: node " << node << " from " << node_potential_[node]
+  VLOG(3) << "Relabel: node " << node << " from " << node_potential_[node]
           << " to " << new_potential;
   node_potential_.Set(node, new_potential);
   first_admissible_arc_.Set(node, GetFirstIncidentArc(node));
