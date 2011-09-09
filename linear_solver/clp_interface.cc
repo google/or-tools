@@ -116,7 +116,7 @@ class CLPInterface : public MPSolverInterface {
   virtual void ExtractObjective();
 
   virtual string SolverVersion() const {
-    return PACKAGE_STRING;
+    return "Clp " CLP_VERSION;
   }
 
   virtual void* underlying_solver() {

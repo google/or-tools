@@ -149,7 +149,7 @@ class CBCInterface : public MPSolverInterface {
   virtual void ExtractObjective() {}
 
   virtual string SolverVersion() const {
-    return PACKAGE_STRING;
+    return "Cbc " CBC_VERSION;
   }
 
   // TODO(user): Maybe we should expose the CbcModel build from osi_
