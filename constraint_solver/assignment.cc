@@ -380,7 +380,7 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
   }
 }
 
-bool Assignment::Save(const string& filename) {
+bool Assignment::Save(const string& filename) const {
   File::Init();
   File* file = File::Open(filename, "w");
   if (file == NULL) {
@@ -390,7 +390,7 @@ bool Assignment::Save(const string& filename) {
   return Save(file);
 }
 
-bool Assignment::Save(File* file) {
+bool Assignment::Save(File* file) const {
   CHECK(file != NULL);
   AssignmentProto assignment_proto;
   Save(&assignment_proto);
@@ -398,7 +398,7 @@ bool Assignment::Save(File* file) {
   return writer.WriteProtocolMessage(assignment_proto) && writer.Close();
 }
 
-void Assignment::Save(AssignmentProto* const assignment_proto) {
+void Assignment::Save(AssignmentProto* const assignment_proto) const {
   assignment_proto->Clear();
   for (int i = 0; i < int_var_container_.Size(); ++i) {
     const IntVarElement& element = int_var_container_.Element(i);

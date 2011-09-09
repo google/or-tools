@@ -3826,11 +3826,11 @@ class Assignment : public PropagationBaseObject {
 #endif  // #if !defined(SWIG)
   void Load(const AssignmentProto& proto);
   // Saves the assignment to a file.
-  bool Save(const string& filename);
+  bool Save(const string& filename) const;
 #if !defined(SWIG)
-  bool Save(File* file);
+  bool Save(File* file) const;
 #endif  // #if !defined(SWIG)
-  void Save(AssignmentProto* const proto);
+  void Save(AssignmentProto* const proto) const;
 
   void AddObjective(IntVar* const v);
   IntVar* Objective() const;
