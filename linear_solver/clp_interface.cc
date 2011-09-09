@@ -39,7 +39,7 @@
 #if defined(_MSC_VER)
 #include "coin/configall_system.h"
 #else
-#include "coin/config_clp.h"
+#include "coin/ClpConfig.h"
 #endif
 
 DECLARE_double(solver_timeout_in_seconds);

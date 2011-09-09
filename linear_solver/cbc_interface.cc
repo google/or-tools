@@ -39,7 +39,7 @@
 #if defined(_MSC_VER)
 #include "coin/configall_system.h"
 #else
-#include "coin/config_cbc.h"
+#include "coin/CbcConfig.h"
 #endif
 
 // Heuristics
