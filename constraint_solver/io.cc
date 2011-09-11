@@ -32,6 +32,7 @@ namespace {
 // previously created expressions.
 class FirstPassVisitor : public ModelVisitor {
  public:
+  FirstPassVisitor() {}
   virtual ~FirstPassVisitor() {}
 
   // Begin/End visit element.
@@ -199,7 +200,7 @@ class ArgumentHolder {
       }
     }
 
-    for (ConstIter<hash_map<string, pair<int, std::vector<int64> > > > it(
+    for (ConstIter<hash_map<string, std::pair<int, std::vector<int64> > > > it(
              integer_matrix_argument_); !it.at_end(); ++it) {
       CPArgumentProto* const arg_proto = proto->add_arguments();
       arg_proto->set_argument_index(tags->Add(it->first));
@@ -273,7 +274,7 @@ class ArgumentHolder {
                                    const int64* const * const values,
                                    int rows,
                                    int columns) {
-    pair<int, std::vector<int64> > matrix = make_pair(columns, std::vector<int64>());
+    std::pair<int, std::vector<int64> > matrix = make_pair(columns, std::vector<int64>());
     integer_matrix_argument_[arg_name] = matrix;
     std::vector<int64>* const vals = &integer_matrix_argument_[arg_name].second;
     for (int i = 0; i < rows; ++i) {
@@ -325,7 +326,7 @@ class ArgumentHolder {
   hash_map<string, int64> integer_argument_;
   hash_map<string, int> interval_argument_;
   hash_map<string, std::vector<int64> > integer_array_argument_;
-  hash_map<string, pair<int, std::vector<int64> > > integer_matrix_argument_;
+  hash_map<string, std::pair<int, std::vector<int64> > > integer_matrix_argument_;
   hash_map<string, std::vector<int> > integer_variable_array_argument_;
   hash_map<string, std::vector<int> > interval_array_argument_;
 };

@@ -570,7 +570,7 @@ class DimensionLessThanConstant : public Dimension {
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitExtension(
-        ModelVisitor::ModelVisitor::kUsageLessConstantExtension);
+        ModelVisitor::kUsageLessConstantExtension);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
                                        weights_,
                                        vars_count_);
@@ -578,7 +578,7 @@ class DimensionLessThanConstant : public Dimension {
                                        upper_bounds_,
                                        bins_count_);
     visitor->EndVisitExtension(
-        ModelVisitor::ModelVisitor::kUsageLessConstantExtension);
+        ModelVisitor::kUsageLessConstantExtension);
   }
 
  private:

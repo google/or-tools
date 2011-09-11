@@ -2279,7 +2279,6 @@ class Solver {
   friend class Constraint;
   friend class DemonProfiler;
   friend class FindOneNeighbor;
-  friend class FixedDurationIntervalVar;
   friend class IntVar;
   friend class PropagationBaseObject;
   friend class Queue;
