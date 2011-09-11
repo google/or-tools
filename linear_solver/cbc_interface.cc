@@ -138,10 +138,12 @@ class CBCInterface : public MPSolverInterface {
   // Returns the basis status of a row.
   virtual MPSolver::BasisStatus row_status(int constraint_index) const {
     LOG(FATAL) << "Basis status only available for continuous problems";
+    return MPSolver::FREE;
   }
   // Returns the basis status of a column.
   virtual MPSolver::BasisStatus column_status(int variable_index) const {
     LOG(FATAL) << "Basis status only available for continuous problems";
+    return MPSolver::FREE;
   }
 
   virtual void ExtractNewVariables() {}
