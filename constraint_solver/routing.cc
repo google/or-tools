@@ -95,8 +95,16 @@ DEFINE_bool(routing_search_trace, false,
 DEFINE_bool(routing_use_homogeneous_costs, true,
             "Routing: use homogeneous cost model when possible.");
 
-namespace operations_research {
+#if defined(_MSC_VER)
+namespace stdext {
+template<> size_t hash_value<operations_research::RoutingModel::NodeIndex>(
+    const operations_research::RoutingModel::NodeIndex& a) {
+  return a.value();
+}
+}  //  namespace stdext
+#endif  // _MSC_VER
 
+namespace operations_research {
 // Cached callbacks
 
 class RoutingCache {
