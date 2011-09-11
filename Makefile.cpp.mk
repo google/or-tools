@@ -27,7 +27,7 @@ CPBINARIES = \
 	golomb$E \
 	linear_assignment_example$E \
 	magic_square$E \
-	model_util \
+	model_util$E \
 	network_routing$E \
 	nqueens$E \
 	solve_dimacs_assignment$E \
