@@ -295,4 +295,4 @@ objs/com/google/ortools/linearsolver/samples/IntegerSolverExample.class: javalp 
 	$(JAVAC_BIN) -d objs -cp com.google.ortools.linearsolver.jar com/google/ortools/linearsolver/samples/IntegerSolverExample.java
 
 run_IntegerSolverExample: compile_IntegerSolverExample
-	$(JAVA_BIN) -Djava.library.path=. -cp objs$(CPSEP)com.google.ortools.linearsolver.jar com.google.ortools.linearsolver.samples.IntegerSolverExample
+	$(JAVA_BIN) -Xss2048k -Djava.library.path=. -cp objs$(CPSEP)com.google.ortools.linearsolver.jar com.google.ortools.linearsolver.samples.IntegerSolverExample
