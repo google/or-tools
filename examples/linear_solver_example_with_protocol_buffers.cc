@@ -78,7 +78,8 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
   CHECK_EQ(MPSolver::OPTIMAL, solution_response.result_status());
 
   LOG(INFO) << "objective = " <<  solution_response.objective_value();
-  for (int j = 0; j < numVars; ++j) {
+  const int num_non_zeros = solution_response.solution_values_size();
+  for (int j = 0; j < num_non_zeros; ++j) {
     MPSolutionValue solution_value = solution_response.solution_values(j);
     LOG(INFO) << solution_value.variable_id() << " = "
               << solution_value.value();
