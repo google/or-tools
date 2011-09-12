@@ -59,20 +59,10 @@ ifdef UNIX_GLPK_DIR
 GLPK_LNK = -Wl,-rpath $(UNIX_GLPK_DIR)/lib -L$(UNIX_GLPK_DIR)/lib -lglpk
 endif
 ifdef UNIX_CLP_DIR
-ifeq ($(wildcard $($(UNIX_CLP_DIR)/lib/coin)),)
-CLP_COIN =
-else
-CLP_COIN = /coin
-endif
-CLP_LNK = -Wl,-rpath $(UNIX_CLP_DIR)/lib$(CLP_COIN) -L$(UNIX_CLP_DIR)/lib$(CLP_COIN) -lClp -lCoinUtils
+CLP_LNK = -Wl,-rpath $(UNIX_CLP_DIR)/lib/coin -L$(UNIX_CLP_DIR)/lib/coin -lClp -lCoinUtils
 endif
 ifdef UNIX_CBC_DIR
-ifeq ($(wildcard $($(UNIX_CBC_DIR)/lib/coin)),)
-CBC_COIN =
-else
-CBC_COIN = /coin
-endif
-CBC_LNK = -Wl,-rpath $(UNIX_CBC_DIR)/lib$(CBC_COIN) -L$(UNIX_CBC_DIR)/lib$(CBC_COIN) -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp -lOsiVol -lVol
+CBC_LNK = -Wl,-rpath $(UNIX_CBC_DIR)/lib/coin -L$(UNIX_CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp -lOsiVol -lVol
 endif
 ifdef UNIX_SCIP_DIR
 SCIP_LNK = -Wl,-rpath $(UNIX_SCIP_DIR)/lib -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH) -lreadline
@@ -92,6 +82,7 @@ JAVAC_BIN = $(LINUX_JDK_ROOT)/bin/javac
 JAVA_BIN = $(LINUX_JDK_ROOT)/bin/java
 JAR_BIN = $(LINUX_JDK_ROOT)/bin/jar
 JNILIBEXT = so
+FIX_SWIG = sed -i -e 's/Tlong/T_long/g' gen/com/google/ortools/constraintsolver/Solver.java
 endif
 ifeq ($(OS),Darwin) # Assume Mac Os X
 LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress
@@ -105,37 +96,21 @@ JAVAC_BIN = javac
 JAVA_BIN = java
 JAR_BIN = jar
 JNILIBEXT = jnilib
+FIX_SWIG = sed -i -e 's/Tlong/T_long/g' gen/com/google/ortools/constraintsolver/Solver.java
 
 ifdef UNIX_GLPK_DIR
 GLPK_LNK = -L$(UNIX_GLPK_DIR)/lib -lglpk
 endif
 ifdef UNIX_CLP_DIR
-ifeq ($(wildcard $($(UNIX_CLP_DIR)/lib/coin)),)
-CLP_COIN =
-else
-CLP_COIN = /coin
-endif
-CLP_LNK = -L$(UNIX_CLP_DIR)/lib$(CLP_COIN) -lClp -lCoinUtils
+CLP_LNK = -L$(UNIX_CLP_DIR)/lib/coin -lClp -lCoinUtils
 endif
 ifdef UNIX_CBC_DIR
-ifeq ($(wildcard $($(UNIX_CBC_DIR)/lib/coin)),)
-CBC_COIN =
-else
-CBC_COIN = /coin
-endif
-CBC_LNK = -L$(UNIX_CBC_DIR)/lib$(CBC_COIN) -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
+CBC_LNK = -L$(UNIX_CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
 endif
 ifdef UNIX_SCIP_DIR
 SCIP_ARCH = darwin.x86.gnu.opt
 SCIP_LNK = -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH) -lreadline
 endif
-endif
-
-SWIG_IS_1_3_31 = $(SWIG_BINARY) -version | grep 1.3.31
-ifeq ("", $(SWIG_IS_1_3_31))
-FIX_SWIG = sed -i -e 's/Tlong/T_long/g' gen/com/google/ortools/constraintsolver/Solver.java
-else
-FIX_SWIG =
 endif
 
 CFLAGS = $(SYSCFLAGS) $(DEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
