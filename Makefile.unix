@@ -47,6 +47,18 @@ CCC = g++
 # ----- OS Dependent -----
 OS = $(shell uname -s)
 
+# Check wether CBC/CLP need a coin subdir in library.
+ifdef UNIX_CBC_DIR
+ifneq ($(wildcard $(UNIX_CBC_DIR)/lib/coin),)
+UNIX_CBC_COIN = /coin
+endif
+endif
+ifdef UNIX_CLP_DIR
+ifneq ($(wildcard $(UNIX_CLP_DIR)/lib/coin),)
+UNIX_CLP_COIN = /coin
+endif
+endif
+
 ifeq ($(OS),Linux)
 LD = gcc -shared
 # This is needed to find libgflags.a
@@ -59,10 +71,10 @@ ifdef UNIX_GLPK_DIR
 GLPK_LNK = -Wl,-rpath $(UNIX_GLPK_DIR)/lib -L$(UNIX_GLPK_DIR)/lib -lglpk
 endif
 ifdef UNIX_CLP_DIR
-CLP_LNK = -Wl,-rpath $(UNIX_CLP_DIR)/lib/coin -L$(UNIX_CLP_DIR)/lib/coin -lClp -lCoinUtils
+CLP_LNK = -Wl,-rpath $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -L$(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -lClp -lCoinUtils
 endif
 ifdef UNIX_CBC_DIR
-CBC_LNK = -Wl,-rpath $(UNIX_CBC_DIR)/lib/coin -L$(UNIX_CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp -lOsiVol -lVol
+CBC_LNK = -Wl,-rpath $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -L$(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp -lOsiVol -lVol
 endif
 ifdef UNIX_SCIP_DIR
 SCIP_LNK = -Wl,-rpath $(UNIX_SCIP_DIR)/lib -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH) -lreadline
@@ -82,7 +94,6 @@ JAVAC_BIN = $(LINUX_JDK_ROOT)/bin/javac
 JAVA_BIN = $(LINUX_JDK_ROOT)/bin/java
 JAR_BIN = $(LINUX_JDK_ROOT)/bin/jar
 JNILIBEXT = so
-FIX_SWIG = sed -i -e 's/Tlong/T_long/g' gen/com/google/ortools/constraintsolver/Solver.java
 endif
 ifeq ($(OS),Darwin) # Assume Mac Os X
 LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress
@@ -96,16 +107,15 @@ JAVAC_BIN = javac
 JAVA_BIN = java
 JAR_BIN = jar
 JNILIBEXT = jnilib
-FIX_SWIG = sed -i -e 's/Tlong/T_long/g' gen/com/google/ortools/constraintsolver/Solver.java
 
 ifdef UNIX_GLPK_DIR
 GLPK_LNK = -L$(UNIX_GLPK_DIR)/lib -lglpk
 endif
 ifdef UNIX_CLP_DIR
-CLP_LNK = -L$(UNIX_CLP_DIR)/lib/coin -lClp -lCoinUtils
+CLP_LNK = -L$(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -lClp -lCoinUtils
 endif
 ifdef UNIX_CBC_DIR
-CBC_LNK = -L$(UNIX_CBC_DIR)/lib/coin -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
+CBC_LNK = -L$(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
 endif
 ifdef UNIX_SCIP_DIR
 SCIP_ARCH = darwin.x86.gnu.opt
