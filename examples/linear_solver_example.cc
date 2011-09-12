@@ -45,6 +45,7 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
   CHECK_EQ(MPSolver::OPTIMAL, solver.Solve());
 
   LOG(INFO) << "objective = " <<  solver.objective_value();
+  LOG(INFO) << "solved in " << solver.iterations() << " iterations";
   LOG(INFO) << "x1 = " << x1->solution_value()
             << ", reduced cost = " << x1->reduced_cost();
   LOG(INFO) << "x2 = " << x2->solution_value()
