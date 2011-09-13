@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -33,11 +33,11 @@
  4 | 6 | # | 7 |   |   |             KEEL    TIE
    +---+---+---+---+---+             KNOT
  5 | 8 |   |   |   |   |
-   +---+---+---+---+---+       
+   +---+---+---+---+---+
  6 |   | # | # |   | # |       The numbers 1,2,3,4,5,6,7,8 in the crossword
-   +---+---+---+---+---+       puzzle correspond to the words 
+   +---+---+---+---+---+       puzzle correspond to the words
                                that will start at those locations.
-  ''' 
+  '''
 
   The model was inspired by Sebastian Brand's Array Constraint cross word example
   http://www.cs.mu.oz.au/~sbrand/project/ac/
@@ -56,10 +56,11 @@
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
 
+from google.apputils import app
 from constraint_solver import pywrapcp
 
 
-def main():
+def main(_):
     # Create the solver.
     solver = pywrapcp.Solver('Problem')
 
@@ -95,16 +96,16 @@ def main():
     num_overlapping = 12
     overlapping = [
         [0, 2, 1, 0],   #  s
-        [0, 4, 2, 0],   #  s 
-    
+        [0, 4, 2, 0],   #  s
+
         [3, 1, 1, 2],   #  i
         [3, 2, 4, 0],   #  k
         [3, 3, 2, 2],   #  e
-        
+
         [6, 0, 1, 3],   #  l
         [6, 1, 4, 1],   #  e
         [6, 2, 2, 3],   #  e
-        
+
         [7, 0, 5, 1],   #  l
         [7, 2, 1, 4],   #  s
         [7, 3, 4, 2],   #  e
@@ -153,15 +154,15 @@ def main():
     db = solver.Phase(E + A_flat,
                  solver.INT_VAR_SIMPLE,
                  solver.ASSIGN_MIN_VALUE)
-    
+
     solver.NewSearch(db)
     num_solutions = 0
-    while solver.NextSolution():  
+    while solver.NextSolution():
         print E
-        print_solution(A,E,alpha, n, word_len)        
-        num_solutions += 1        
+        print_solution(A,E,alpha, n, word_len)
+        num_solutions += 1
     solver.EndSearch()
-    
+
     print
     print "num_solutions:", num_solutions
     print "failures:", solver.failures()
@@ -173,8 +174,8 @@ def print_solution(A, E, alpha, n, word_len):
     for ee in range(n):
         print "%i: (%2i)" % (ee,E[ee].Value()),
         print "".join(["%s" % (alpha[A[ee,ii].Value()]) for ii in range(word_len)])
-        
+
 
 
 if __name__ == '__main__':
-    main()
+  app.run()
