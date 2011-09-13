@@ -1672,15 +1672,16 @@ void Solver::ProcessConstraints() {
   additional_constraints_parent_list_.clear();
 
   // Process constraints from the model.
+  const bool profile = Profile();
   for (constraint_index_ = 0;
        constraint_index_ < constraints_size;
        ++constraint_index_) {
     Constraint* const constraint = constraints_list_[constraint_index_];
-    if (Profile()) {
+    if (profile) {
       DemonMonitorStartInitialPropagation(demon_monitor_, constraint);
     }
     constraint->PostAndPropagate();
-    if (Profile()) {
+    if (profile) {
       DemonMonitorEndInitialPropagation(demon_monitor_, constraint);
     }
   }
@@ -1692,11 +1693,11 @@ void Solver::ProcessConstraints() {
        ++additional_constraint_index_) {
     Constraint* const constraint =
         additional_constraints_list_[additional_constraint_index_];
-    if (Profile()) {
+    if (profile) {
       DemonMonitorStartInitialPropagation(demon_monitor_, constraint);
     }
     constraint->PostAndPropagate();
-    if (Profile()) {
+    if (profile) {
       DemonMonitorEndInitialPropagation(demon_monitor_, constraint);
     }
   }

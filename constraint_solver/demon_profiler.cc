@@ -355,11 +355,7 @@ void Solver::ExportProfilingOverview(const string& filename) {
 // ----- Exported Functions -----
 
 DemonMonitor* BuildDemonMonitor(Solver* const solver) {
-  if (solver->Profile()) {
-    return new DemonMonitor;
-  } else {
-    return NULL;
-  }
+  return new DemonMonitor;
 }
 
 void DeleteDemonMonitor(DemonMonitor* const monitor) {
