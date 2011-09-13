@@ -174,12 +174,7 @@ struct SolverParameters {
   static const bool kDefaultNameStoring;
   static const ProfileLevel kDefaultProfileLevel;
 
-  SolverParameters()
-      : compress_trail(kDefaultTrailCompression),
-        trail_block_size(kDefaultTrailBlockSize),
-        array_split_size(kDefaultArraySplitSize),
-        store_names(kDefaultNameStoring),
-        profile_level(kDefaultProfileLevel) {}
+  SolverParameters();
 
   // This parameter indicates if the solver should compress the trail
   // during the search. No compression means the solver will be faster,

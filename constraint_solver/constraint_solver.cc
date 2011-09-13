@@ -47,6 +47,7 @@ DEFINE_bool(cp_model_stats, false,
             "use StatisticsModelVisitor on model before solving.");
 DEFINE_string(cp_export_file, "", "Export model to file using CPModelProto.");
 DEFINE_bool(cp_no_solve, false, "Force failure at the beginning of a search");
+DEFINE_string(cp_profile_file, "", "Export profiling overview to file");
 
 void ConstraintSolverFailHere() {
   VLOG(3) << "Fail";
@@ -57,6 +58,18 @@ void ConstraintSolverFailHere() {
 #endif
 
 namespace operations_research {
+
+// ----- SolverParameters -----
+
+SolverParameters::SolverParameters()
+    : compress_trail(kDefaultTrailCompression),
+      trail_block_size(kDefaultTrailBlockSize),
+      array_split_size(kDefaultArraySplitSize),
+      store_names(kDefaultNameStoring),
+      profile_level(FLAGS_cp_profile_file.empty()?
+                    kDefaultProfileLevel:
+                    NORMAL_PROFILING) {}
+
 
 // ----- Forward Declarations -----
 extern DemonMonitor* BuildDemonMonitor(SolverParameters::ProfileLevel level);
@@ -2184,6 +2197,10 @@ void Solver::EndSearch() {
   search->ExitSearch();
   search->Clear();
   state_ = OUTSIDE_SEARCH;
+  if (!FLAGS_cp_profile_file.empty()) {
+    LOG(INFO) << "Exporting profile to " << FLAGS_cp_profile_file;
+    ExportProfilingOverview(FLAGS_cp_profile_file);
+  }
 }
 
 bool Solver::CheckAssignment(Assignment* const solution) {
