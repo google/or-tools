@@ -143,7 +143,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
         "d, failures=%" GG_LL_FORMAT "d, total runtime=%" GG_LL_FORMAT
         "d us, [average=%.2lf, median=%.2lf, stddev=%.2lf]\n";
     File* const file = File::Open(filename, "w");
-    const string model = StringPrintf("Model %s:",
+    const string model = StringPrintf("Model %s:\n",
                                       solver->model_name().c_str());
     file->Write(model.c_str(), model.length());
     if (file) {
