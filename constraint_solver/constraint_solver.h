@@ -2269,6 +2269,10 @@ class Solver {
   Search* ActiveSearch() const;
   // Returns the cache of the model.
   ModelCache* Cache() const;
+  // Returns wether we are profiling constraints.
+  bool Profile() const;
+  // Returns the name of the model.
+  string model_name() const;
 
   friend class BaseIntExpr;
   friend class Constraint;

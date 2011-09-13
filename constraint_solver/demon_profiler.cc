@@ -132,7 +132,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
   }
 
   // Exports collected data as human-readable text.
-  void PrintOverview(const string& filename) {
+  void PrintOverview(Solver* const solver, const string& filename) {
     const char* const kConstraintFormat =
         "  - Constraint: %s\n                failures=%"
         GG_LL_FORMAT "d, initial propagation runtime=%" GG_LL_FORMAT
@@ -143,6 +143,9 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
         "d, failures=%" GG_LL_FORMAT "d, total runtime=%" GG_LL_FORMAT
         "d us, [average=%.2lf, median=%.2lf, stddev=%.2lf]\n";
     File* const file = File::Open(filename, "w");
+    const string model = StringPrintf("Model %s:",
+                                      solver->model_name().c_str());
+    file->Write(model.c_str(), model.length());
     if (file) {
       for (hash_map<const Constraint*, ConstraintRuns*>::const_iterator it =
                constraint_map_.begin();
@@ -336,26 +339,26 @@ class DemonProfiler : public Demon {
 
 
 void Solver::NotifyFailureToDemonMonitor() {
-  if (parameters_.profile_level != SolverParameters::NO_PROFILING) {
+  if (Profile()) {
     CHECK_NOTNULL(demon_monitor_);
     demon_monitor_->RaiseFailure();
   }
 }
 
 void Solver::ExportProfilingOverview(const string& filename) {
-  CHECK_NE(SolverParameters::NO_PROFILING, parameters_.profile_level);
-  CHECK_NOTNULL(demon_monitor_);
-  demon_monitor_->PrintOverview(filename);
+  if (Profile()) {
+    CHECK_NOTNULL(demon_monitor_);
+    demon_monitor_->PrintOverview(this, filename);
+  }
 }
 
 // ----- Exported Functions -----
 
-DemonMonitor* BuildDemonMonitor(SolverParameters::ProfileLevel level) {
-  switch (level) {
-    case SolverParameters::NO_PROFILING:
-      return NULL;
-    default:
-      return new DemonMonitor;
+DemonMonitor* BuildDemonMonitor(Solver* const solver) {
+  if (solver->Profile()) {
+    return new DemonMonitor;
+  } else {
+    return NULL;
   }
 }
 
@@ -372,8 +375,7 @@ void BuildDemonProfiler(Solver* const solver,
 
 Demon* Solver::RegisterDemon(Demon* const demon) {
   CHECK_NOTNULL(demon);
-  if (parameters_.profile_level != SolverParameters::NO_PROFILING &&
-      state_ != IN_SEARCH) {
+  if (Profile() && state_ != IN_SEARCH) {
     CHECK_NOTNULL(demon_monitor_);
     demon_monitor_->RegisterDemon(demon);
     return RevAlloc(new DemonProfiler(demon, demon_monitor_));

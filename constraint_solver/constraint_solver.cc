@@ -66,19 +66,21 @@ SolverParameters::SolverParameters()
       trail_block_size(kDefaultTrailBlockSize),
       array_split_size(kDefaultArraySplitSize),
       store_names(kDefaultNameStoring),
-      profile_level(FLAGS_cp_profile_file.empty()?
-                    kDefaultProfileLevel:
-                    NORMAL_PROFILING) {}
+      profile_level(kDefaultProfileLevel) {}
 
-
-// ----- Forward Declarations -----
-extern DemonMonitor* BuildDemonMonitor(SolverParameters::ProfileLevel level);
+// ----- Forward Declarations and Profiling Support -----
+extern DemonMonitor* BuildDemonMonitor(Solver* const solver);
 extern void DeleteDemonMonitor(DemonMonitor* const monitor);
 extern void DemonMonitorStartInitialPropagation(
     DemonMonitor* const monitor, const Constraint* const constraint);
 extern void DemonMonitorEndInitialPropagation(
     DemonMonitor* const monitor, const Constraint* const constraint);
 extern void DemonMonitorRestartSearch(DemonMonitor* const monitor);
+
+bool Solver::Profile() const {
+  return parameters_.profile_level != SolverParameters::NO_PROFILING ||
+      !FLAGS_cp_profile_file.empty();
+}
 
 // ------------------ Demon class ----------------
 
@@ -1294,6 +1296,8 @@ enum SentinelMarker {
 
 extern Action* NewDomainIntVarCleaner();
 
+string Solver::model_name() const { return name_; }
+
 Solver::Solver(const string& name, const SolverParameters& parameters)
     : name_(name),
       parameters_(parameters),
@@ -1314,7 +1318,7 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       fail_stamp_(GG_ULONGLONG(1)),
       balancing_decision_(new BalancingDecision),
       fail_intercept_(NULL),
-      demon_monitor_(BuildDemonMonitor(parameters.profile_level)),
+      demon_monitor_(BuildDemonMonitor(this)),
       true_constraint_(NULL),
       false_constraint_(NULL),
       fail_decision_(new FailDecision()),
@@ -1345,7 +1349,7 @@ Solver::Solver(const string& name)
       fail_stamp_(GG_ULONGLONG(1)),
       balancing_decision_(new BalancingDecision),
       fail_intercept_(NULL),
-      demon_monitor_(BuildDemonMonitor(parameters_.profile_level)),
+      demon_monitor_(BuildDemonMonitor(this)),
       true_constraint_(NULL),
       false_constraint_(NULL),
       fail_decision_(new FailDecision()),
@@ -1672,11 +1676,11 @@ void Solver::ProcessConstraints() {
        constraint_index_ < constraints_size;
        ++constraint_index_) {
     Constraint* const constraint = constraints_list_[constraint_index_];
-    if (parameters_.profile_level != SolverParameters::NO_PROFILING) {
+    if (Profile()) {
       DemonMonitorStartInitialPropagation(demon_monitor_, constraint);
     }
     constraint->PostAndPropagate();
-    if (parameters_.profile_level != SolverParameters::NO_PROFILING) {
+    if (Profile()) {
       DemonMonitorEndInitialPropagation(demon_monitor_, constraint);
     }
   }
@@ -1688,11 +1692,11 @@ void Solver::ProcessConstraints() {
        ++additional_constraint_index_) {
     Constraint* const constraint =
         additional_constraints_list_[additional_constraint_index_];
-    if (parameters_.profile_level != SolverParameters::NO_PROFILING) {
+    if (Profile()) {
       DemonMonitorStartInitialPropagation(demon_monitor_, constraint);
     }
     constraint->PostAndPropagate();
-    if (parameters_.profile_level != SolverParameters::NO_PROFILING) {
+    if (Profile()) {
       DemonMonitorEndInitialPropagation(demon_monitor_, constraint);
     }
   }
@@ -1926,7 +1930,7 @@ void Solver::RestartSearch() {
     PushSentinel(INITIAL_SEARCH_SENTINEL);
   }
 
-  if (parameters_.profile_level != SolverParameters::NO_PROFILING) {
+  if (Profile()) {
     CHECK_NOTNULL(demon_monitor_);
     DemonMonitorRestartSearch(demon_monitor_);
   }
