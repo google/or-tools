@@ -25,6 +25,7 @@ CPBINARIES = \
         cvrptw$E \
 	flow_example$E \
 	golomb$E \
+	jobshop$E \
 	linear_assignment_example$E \
 	magic_square$E \
 	model_util$E \
@@ -463,6 +464,12 @@ objs/golomb.$O:examples/golomb.cc constraint_solver/constraint_solver.h
 
 golomb$E: $(CP_LIBS) $(BASE_LIBS) objs/golomb.$O
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)golomb$E
+
+objs/jobshop.$O:examples/jobshop.cc constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c examples/jobshop.cc $(OBJOUT)objs/jobshop.$O
+
+jobshop$E: $(CP_LIBS) $(BASE_LIBS) objs/jobshop.$O
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/jobshop.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)jobshop$E
 
 objs/magic_square.$O:examples/magic_square.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/magic_square.cc $(OBJOUT)objs/magic_square.$O
