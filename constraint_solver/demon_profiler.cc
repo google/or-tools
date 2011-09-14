@@ -51,7 +51,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     CHECK_NOTNULL(constraint);
     ConstraintRuns* const ct_run = new ConstraintRuns;
     ct_run->set_constraint_id(constraint->DebugString());
-    ct_run->set_initial_propagation_start_time(CurrentTime());
+    ct_run->add_initial_propagation_start_time(CurrentTime());
     active_constraint_ = constraint;
     constraint_map_[constraint] = ct_run;
   }
@@ -63,7 +63,32 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     CHECK_EQ(constraint, active_constraint_);
     ConstraintRuns* const ct_run = constraint_map_[constraint];
     CHECK_NOTNULL(ct_run);
-    ct_run->set_initial_propagation_end_time(CurrentTime());
+    ct_run->add_initial_propagation_end_time(CurrentTime());
+    ct_run->set_failures(0);
+    active_constraint_ = NULL;
+  }
+
+  void StartInitialDelayedPropagation(const Constraint* const constraint,
+                                      const Constraint* const delayed) {
+    CHECK(active_constraint_ == NULL);
+    CHECK(active_demon_ == NULL);
+    CHECK_NOTNULL(constraint);
+    CHECK_NOTNULL(delayed);
+    ConstraintRuns* const ct_run = constraint_map_[constraint];
+    ct_run->add_initial_propagation_start_time(CurrentTime());
+    active_constraint_ = constraint;
+  }
+
+  void EndInitialDelayedPropagation(const Constraint* const constraint,
+                                    const Constraint* const delayed) {
+    CHECK_NOTNULL(active_constraint_);
+    CHECK(active_demon_ == NULL);
+    CHECK_NOTNULL(constraint);
+    CHECK_NOTNULL(delayed);
+    CHECK_EQ(constraint, active_constraint_);
+    ConstraintRuns* const ct_run = constraint_map_[constraint];
+    CHECK_NOTNULL(ct_run);
+    ct_run->add_initial_propagation_end_time(CurrentTime());
     ct_run->set_failures(0);
     active_constraint_ = NULL;
   }
@@ -110,7 +135,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     } else if (active_constraint_ != NULL) {
       ConstraintRuns* const ct_run = constraint_map_[active_constraint_];
       CHECK_NOTNULL(ct_run);
-      ct_run->set_initial_propagation_end_time(CurrentTime());
+      ct_run->add_initial_propagation_end_time(CurrentTime());
       ct_run->set_failures(1);
       active_constraint_ = NULL;
     }
@@ -139,7 +164,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
         "d us, demons=%d, demon invocations=%" GG_LL_FORMAT
         "d, total demon runtime=%" GG_LL_FORMAT "d us\n";
     const char* const kDemonFormat =
-        "    - Demon: %s\n             invocations=%" GG_LL_FORMAT
+        "  --- Demon: %s\n             invocations=%" GG_LL_FORMAT
         "d, failures=%" GG_LL_FORMAT "d, total runtime=%" GG_LL_FORMAT
         "d us, [average=%.2lf, median=%.2lf, stddev=%.2lf]\n";
     File* const file = File::Open(filename, "w");
@@ -151,12 +176,13 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
                constraint_map_.begin();
            it != constraint_map_.end();
            ++it) {
+        const Constraint* const ct = it->first;
         int64 fails = 0;
         int64 demon_invocations = 0;
         int64 initial_propagation_runtime = 0;
         int64 total_demon_runtime = 0;
         int demon_count = 0;
-        ExportInformation(it->first,
+        ExportInformation(ct,
                           &fails,
                           &initial_propagation_runtime,
                           &demon_invocations,
@@ -164,14 +190,14 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
                           &demon_count);
         const string constraint_message =
             StringPrintf(kConstraintFormat,
-                         it->first->DebugString().c_str(),
+                         ct->DebugString().c_str(),
                          fails,
                          initial_propagation_runtime,
                          demon_count,
                          demon_invocations,
                          total_demon_runtime);
         file->Write(constraint_message.c_str(), constraint_message.length());
-        const std::vector<DemonRuns*>& demons = demons_per_constraint_[it->first];
+        const std::vector<DemonRuns*>& demons = demons_per_constraint_[ct];
         const int demon_size = demons.size();
         for (int demon_index = 0; demon_index < demon_size; ++demon_index) {
           DemonRuns* const demon_runs = demons[demon_index];
@@ -224,8 +250,12 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     CHECK_NOTNULL(ct_run);
     *demon_invocations = 0;
     *fails = ct_run->failures();
-    *initial_propagation_runtime = ct_run->initial_propagation_end_time() -
-        ct_run->initial_propagation_start_time();
+    *initial_propagation_runtime = 0;
+    for (int i = 0; i < ct_run->initial_propagation_start_time_size(); ++i) {
+      *initial_propagation_runtime +=
+          ct_run->initial_propagation_end_time(i) -
+          ct_run->initial_propagation_start_time(i);
+    }
     *total_demon_runtime = 0;
 
     // Gather information.
@@ -388,6 +418,20 @@ void DemonMonitorStartInitialPropagation(DemonMonitor* const monitor,
 void DemonMonitorEndInitialPropagation(DemonMonitor* const monitor,
                                        const Constraint* const constraint) {
   monitor->EndInitialPropagation(constraint);
+}
+
+void DemonMonitorStartInitialDelayedPropagation(
+    DemonMonitor* const monitor,
+    const Constraint* const constraint,
+    const Constraint* const delayed) {
+  monitor->StartInitialDelayedPropagation(constraint, delayed);
+}
+
+void DemonMonitorEndInitialDelayedPropagation(
+    DemonMonitor* const monitor,
+    const Constraint* const constraint,
+    const Constraint* const delayed) {
+  monitor->EndInitialDelayedPropagation(constraint, delayed);
 }
 
 void DemonMonitorRestartSearch(DemonMonitor* const monitor) {

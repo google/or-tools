@@ -24,8 +24,8 @@ message DemonRuns {
 
 message ConstraintRuns {
   required string constraint_id = 1;
-  required int64 initial_propagation_start_time = 2;
-  required int64 initial_propagation_end_time = 3;
+  repeated int64 initial_propagation_start_time = 2;
+  repeated int64 initial_propagation_end_time = 3;
   required int64 failures = 4;
   repeated DemonRuns demons = 5;
 }

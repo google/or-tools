@@ -75,6 +75,15 @@ extern void DemonMonitorStartInitialPropagation(
     DemonMonitor* const monitor, const Constraint* const constraint);
 extern void DemonMonitorEndInitialPropagation(
     DemonMonitor* const monitor, const Constraint* const constraint);
+void DemonMonitorStartInitialDelayedPropagation(
+    DemonMonitor* const monitor,
+    const Constraint* const constraint,
+    const Constraint* const delayed);
+void DemonMonitorEndInitialDelayedPropagation(
+    DemonMonitor* const monitor,
+    const Constraint* const constraint,
+    const Constraint* const delayed);
+
 extern void DemonMonitorRestartSearch(DemonMonitor* const monitor);
 
 bool Solver::Profile() const {
@@ -1693,12 +1702,19 @@ void Solver::ProcessConstraints() {
        ++additional_constraint_index_) {
     Constraint* const constraint =
         additional_constraints_list_[additional_constraint_index_];
+    const int parent_index =
+        additional_constraints_parent_list_[additional_constraint_index_];
+    Constraint* const parent = constraints_list_[parent_index];
     if (profile) {
-      DemonMonitorStartInitialPropagation(demon_monitor_, constraint);
+      DemonMonitorStartInitialDelayedPropagation(demon_monitor_,
+                                                 parent,
+                                                 constraint);
     }
     constraint->PostAndPropagate();
     if (profile) {
-      DemonMonitorEndInitialPropagation(demon_monitor_, constraint);
+      DemonMonitorEndInitialDelayedPropagation(demon_monitor_,
+                                               parent,
+                                               constraint);
     }
   }
 }
