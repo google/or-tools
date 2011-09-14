@@ -71,6 +71,9 @@ Sequence::Sequence(Solver* const s,
     ranks_[i] = 0;
     states_[i].resize(size, UNDECIDED);
   }
+  if (!name.empty()) {
+    set_name(name);
+  }
 }
 
 Sequence::~Sequence() {}
