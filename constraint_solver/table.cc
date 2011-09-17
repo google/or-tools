@@ -193,6 +193,8 @@ class BasePositiveTableConstraint : public Constraint {
 
 class PositiveTableConstraint : public BasePositiveTableConstraint {
  public:
+  typedef hash_map<int, uint64*> ValueBitset;
+
   PositiveTableConstraint(Solver* const s,
                           const IntVar* const * vars,
                           const int64* const * tuples,
@@ -255,9 +257,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
 
   virtual ~PositiveTableConstraint() {
     for (int var_index = 0; var_index < arity_; ++var_index) {
-      for (ConstIter<hash_map<int64, uint64*> > it(masks_[var_index]);
-           !it.at_end();
-           ++it) {
+      for (ConstIter<ValueBitset> it(masks_[var_index]); !it.at_end(); ++it) {
         delete [] it->second;
       }
     }
@@ -288,16 +288,10 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   virtual void InitialPropagate() {
     // Build active_ structure.
     for (int var_index = 0; var_index < arity_; ++var_index) {
-      for (ConstIter<hash_map<int64, uint64*> > it(masks_[var_index]);
-           !it.at_end(); ++it) {
+      for (ConstIter<ValueBitset> it(masks_[var_index]); !it.at_end(); ++it) {
         if (!vars_[var_index]->Contains(it->first)) {
           for (int i = 0; i < length_; ++i) {
-            uint64 active = active_tuples_[i] & it->second[i];
-            while (active != 0) {
-              int position = LeastSignificantBitPosition64(active);
-              active_tuples_[i] &= ~OneBit64(position);
-              active &= IntervalUp64(position + 1);
-            }
+            active_tuples_[i] &= ~(active_tuples_[i] & it->second[i]);
           }
         }
       }
@@ -314,7 +308,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     }
     // Remove unreached values.
     for (int var_index = 0; var_index < arity_; ++var_index) {
-      const hash_map<int64, uint64*>& mask = masks_[var_index];
+      const ValueBitset& mask = masks_[var_index];
       IntVar* const var = vars_[var_index];
       to_remove_.clear();
       IntVarIterator* const it = iterators_[var_index];
@@ -348,7 +342,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   void Update(int index) {
-    const hash_map<int64, uint64*>& mask = masks_[index];
+    const ValueBitset& mask = masks_[index];
     IntVar* const var = vars_[index];
     const int64 oldmax = var->OldMax();
     const int64 vmin = var->Min();
@@ -433,7 +427,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   // TODO(user): create bitset64 class and use it.
   scoped_array<uint64> active_tuples_;
   scoped_array<uint64> stamps_;
-  std::vector<hash_map<int64, uint64*> > masks_;
+  std::vector<ValueBitset> masks_;
 };
 
 // ----- Compact Table. -----
