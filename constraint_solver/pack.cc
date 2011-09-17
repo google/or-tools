@@ -569,16 +569,14 @@ class DimensionLessThanConstant : public Dimension {
   virtual void EndPropagate() {}
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitExtension(
-        ModelVisitor::kUsageLessConstantExtension);
+    visitor->BeginVisitExtension(ModelVisitor::kUsageLessConstantExtension);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
                                        weights_,
                                        vars_count_);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
                                        upper_bounds_,
                                        bins_count_);
-    visitor->EndVisitExtension(
-        ModelVisitor::kUsageLessConstantExtension);
+    visitor->EndVisitExtension(ModelVisitor::kUsageLessConstantExtension);
   }
 
  private:

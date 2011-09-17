@@ -105,6 +105,7 @@ template<> size_t hash_value<operations_research::RoutingModel::NodeIndex>(
 #endif  // _MSC_VER
 
 namespace operations_research {
+
 // Cached callbacks
 
 class RoutingCache {

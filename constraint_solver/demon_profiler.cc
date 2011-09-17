@@ -68,8 +68,8 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     active_constraint_ = NULL;
   }
 
-  void StartInitialDelayedPropagation(const Constraint* const constraint,
-                                      const Constraint* const delayed) {
+  void StartInitialNestedPropagation(const Constraint* const constraint,
+                                     const Constraint* const delayed) {
     CHECK(active_constraint_ == NULL);
     CHECK(active_demon_ == NULL);
     CHECK_NOTNULL(constraint);
@@ -79,8 +79,8 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     active_constraint_ = constraint;
   }
 
-  void EndInitialDelayedPropagation(const Constraint* const constraint,
-                                    const Constraint* const delayed) {
+  void EndInitialNestedPropagation(const Constraint* const constraint,
+                                   const Constraint* const delayed) {
     CHECK_NOTNULL(active_constraint_);
     CHECK(active_demon_ == NULL);
     CHECK_NOTNULL(constraint);
@@ -420,18 +420,18 @@ void DemonMonitorEndInitialPropagation(DemonMonitor* const monitor,
   monitor->EndInitialPropagation(constraint);
 }
 
-void DemonMonitorStartInitialDelayedPropagation(
+void DemonMonitorStartInitialNestedPropagation(
     DemonMonitor* const monitor,
     const Constraint* const constraint,
     const Constraint* const delayed) {
-  monitor->StartInitialDelayedPropagation(constraint, delayed);
+  monitor->StartInitialNestedPropagation(constraint, delayed);
 }
 
-void DemonMonitorEndInitialDelayedPropagation(
+void DemonMonitorEndInitialNestedPropagation(
     DemonMonitor* const monitor,
     const Constraint* const constraint,
     const Constraint* const delayed) {
-  monitor->EndInitialDelayedPropagation(constraint, delayed);
+  monitor->EndInitialNestedPropagation(constraint, delayed);
 }
 
 void DemonMonitorRestartSearch(DemonMonitor* const monitor) {

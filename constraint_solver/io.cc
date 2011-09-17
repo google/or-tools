@@ -32,7 +32,7 @@ namespace {
 // previously created expressions.
 class FirstPassVisitor : public ModelVisitor {
  public:
-  FirstPassVisitor() {}
+  FirstPassVisitor() {}  // Needed for Visual Studio.
   virtual ~FirstPassVisitor() {}
 
   // Begin/End visit element.

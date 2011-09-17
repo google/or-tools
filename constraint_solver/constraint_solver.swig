@@ -884,11 +884,11 @@ namespace operations_research {
 
 %extend Solver {
 static void SetPythonFlags(bool trace_demon,
-                           bool print_model,
-                           bool model_stats,
-                           string export_file,
-                           bool no_solve,
-                           string profile_file) {
+                             bool print_model,
+                             bool model_stats,
+                             string export_file,
+                             bool no_solve,
+                             string profile_file) {
     FLAGS_cp_trace_demons = trace_demon;
     FLAGS_cp_print_model = print_model;
     FLAGS_cp_model_stats = model_stats;

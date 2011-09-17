@@ -75,16 +75,15 @@ extern void DemonMonitorStartInitialPropagation(
     DemonMonitor* const monitor, const Constraint* const constraint);
 extern void DemonMonitorEndInitialPropagation(
     DemonMonitor* const monitor, const Constraint* const constraint);
-void DemonMonitorStartInitialDelayedPropagation(
-    DemonMonitor* const monitor,
-    const Constraint* const constraint,
-    const Constraint* const delayed);
-void DemonMonitorEndInitialDelayedPropagation(
-    DemonMonitor* const monitor,
-    const Constraint* const constraint,
-    const Constraint* const delayed);
-
 extern void DemonMonitorRestartSearch(DemonMonitor* const monitor);
+extern void DemonMonitorStartInitialNestedPropagation(
+    DemonMonitor* const monitor,
+    const Constraint* const parent,
+    const Constraint* const nested);
+void DemonMonitorEndInitialNestedPropagation(DemonMonitor* const monitor,
+                                             const Constraint* const parent,
+                                             const Constraint* const nested);
+
 
 bool Solver::Profile() const {
   return parameters_.profile_level != SolverParameters::NO_PROFILING ||
@@ -1700,21 +1699,21 @@ void Solver::ProcessConstraints() {
   for (int additional_constraint_index_ = 0;
        additional_constraint_index_ < additional_constraints_list_.size();
        ++additional_constraint_index_) {
-    Constraint* const constraint =
+    Constraint* const nested =
         additional_constraints_list_[additional_constraint_index_];
     const int parent_index =
         additional_constraints_parent_list_[additional_constraint_index_];
     Constraint* const parent = constraints_list_[parent_index];
     if (profile) {
-      DemonMonitorStartInitialDelayedPropagation(demon_monitor_,
-                                                 parent,
-                                                 constraint);
+      DemonMonitorStartInitialNestedPropagation(demon_monitor_,
+                                                parent,
+                                                nested);
     }
-    constraint->PostAndPropagate();
+    nested->PostAndPropagate();
     if (profile) {
-      DemonMonitorEndInitialDelayedPropagation(demon_monitor_,
-                                               parent,
-                                               constraint);
+      DemonMonitorEndInitialNestedPropagation(demon_monitor_,
+                                              parent,
+                                              nested);
     }
   }
 }
