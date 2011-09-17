@@ -45,8 +45,8 @@ def MinCostFlow():
     min_cost_flow.SetNodeSupply(source, 1)
   for target in range(0, num_targets):
     min_cost_flow.SetNodeSupply(num_sources + target, -1)
-
-  total_flow_cost = min_cost_flow.ComputeMinCostFlow()
+  min_cost_flow.Solve()
+  total_flow_cost = min_cost_flow.GetOptimalCost()
   print 'total flow', total_flow_cost, '/', expected_cost
 
 
@@ -65,8 +65,8 @@ def MaxFeasibleFlow():
   for i in range(0, num_arcs):
     arc = graph.AddArc(tails[i], heads[i])
     max_flow.SetArcCapacity(arc, capacities[i])
-
-  total_flow = max_flow.ComputeMaxFlow()
+  max_flow.Solve()
+  total_flow = max_flow.GetOptimalFlow()
   print 'total flow', total_flow, '/', expected_total_flow
   for i in range(num_arcs):
     print 'Arc', i, ':', max_flow.Flow(i), '/', expected_flows[i]
