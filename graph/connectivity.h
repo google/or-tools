@@ -65,7 +65,7 @@ namespace operations_research {
 class ConnectedComponents {
  public:
   ConnectedComponents() : min_index_(0),
-                          max_index_(kint64max),
+                          max_index_(StarGraph::kMaxNumNodes),
                           max_seen_index_(0),
                           class_(),
                           class_size_() {}
@@ -97,6 +97,7 @@ class ConnectedComponents {
 
   // Merges the equivalence classes of node1 and node2.
   void MergeClasses(NodeIndex node1, NodeIndex node2);
+
  private:
   // Initializes the object and allocates memory.
   void Init(NodeIndex min_index, NodeIndex max_index);

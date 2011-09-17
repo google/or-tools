@@ -93,8 +93,8 @@
 using std::string;
 
 namespace operations_research {
-typedef int64 NodeIndex;
-typedef int64 ArcIndex;
+typedef int32 NodeIndex;
+typedef int32 ArcIndex;
 typedef int64 FlowQuantity;
 typedef int64 CostValue;
 
@@ -405,6 +405,13 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
       DCHECK(CheckInvariant());
     }
 
+    // Can only assign from an iterator on the same graph.
+    void operator=(const IncidentArcIterator& iterator) {
+      DCHECK(&iterator.graph_ ==  &graph_);
+      node_ = iterator.node_;
+      arc_ = iterator.arc_;
+    }
+
     // Returns true unless all the adjancent arcs have been traversed.
     bool Ok() const { return arc_ != kNilArc; }
 
@@ -461,6 +468,13 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
       DCHECK(CheckInvariant());
     }
 
+    // Can only assign from an iterator on the same graph.
+    void operator=(const IncomingArcIterator& iterator) {
+      DCHECK(&iterator.graph_ ==  &graph_);
+      node_ = iterator.node_;
+      arc_ = iterator.arc_;
+    }
+
     // Returns true unless all the incoming arcs have been traversed.
     bool Ok() const { return arc_ != kNilArc; }
 
@@ -510,6 +524,13 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
           node_(graph_.StartNode(node)),
           arc_(graph_.StartArc(arc)) {
       DCHECK(CheckInvariant());
+    }
+
+    // Can only assign from an iterator on the same graph.
+    void operator=(const OutgoingArcIterator& iterator) {
+      DCHECK(&iterator.graph_ ==  &graph_);
+      node_ = iterator.node_;
+      arc_ = iterator.arc_;
     }
 
     // Returns true unless all the outgoing arcs have been traversed.
@@ -860,17 +881,17 @@ template<int NodeIndexSize, int ArcIndexSize> class EbertGraph {
   bool representation_clean_;
 };
 
+#define N_BYTES_MAX_INT(n) ((1U << (n * CHAR_BIT - 1)) - 1)
 #define MAX_LONGLONG_ON_BYTES(n) ((GG_ULONGLONG(1) << (n * CHAR_BIT - 1)) - 1)
 
 // The index of the 'nil' node in the graph.
 template<int NodeIndexSize, int ArcIndexSize>
-const NodeIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kNilNode =
-    GG_LONGLONG(-1);
+const NodeIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kNilNode = -1;
 
 // The index of the 'nil' arc in the graph.
 template<int NodeIndexSize, int ArcIndexSize>
 const ArcIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kNilArc =
-    ~MAX_LONGLONG_ON_BYTES(ArcIndexSize);
+    ~N_BYTES_MAX_INT(ArcIndexSize);
 
 // The index of the first node in the graph.
 template<int NodeIndexSize, int ArcIndexSize>
@@ -883,14 +904,15 @@ const ArcIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kFirstArc = 0;
 // The maximum possible node index in the graph.
 template<int NodeIndexSize, int ArcIndexSize>
 const NodeIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kMaxNumNodes =
-    MAX_LONGLONG_ON_BYTES(NodeIndexSize);
+    N_BYTES_MAX_INT(NodeIndexSize);
 
 // The maximum possible number of arcs in the graph.
 // (The maximum index is kMaxNumArcs-1, since indices start at 0.)
 template<int NodeIndexSize, int ArcIndexSize>
 const ArcIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kMaxNumArcs =
-    MAX_LONGLONG_ON_BYTES(ArcIndexSize);
+    N_BYTES_MAX_INT(ArcIndexSize);
 
+#undef N_BYTES_MAX_INT
 #undef MAX_LONGLONG_ON_BYTES
 
 // Standard definition of the star representation of a graph, that makes it
@@ -901,8 +923,8 @@ const ArcIndex EbertGraph<NodeIndexSize, ArcIndexSize>::kMaxNumArcs =
 // for SWIG but are otherwise deprecated. Use
 // StarGraph::kNodeIndexSize and StarGraph::kArcIndexSize instead
 // where possible.
-const int kStarGraphNodeIndexSize = 5;
-const int kStarGraphArcIndexSize = 5;
+const int kStarGraphNodeIndexSize = 4;
+const int kStarGraphArcIndexSize = 4;
 typedef EbertGraph<kStarGraphNodeIndexSize, kStarGraphArcIndexSize> StarGraph;
 typedef PackedArray<StarGraph::kNodeIndexSize> NodeIndexArray;
 typedef PackedArray<StarGraph::kArcIndexSize> ArcIndexArray;

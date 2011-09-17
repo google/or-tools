@@ -211,7 +211,7 @@ string MinCostFlow::DebugString(const string& context, ArcIndex arc) const {
   const CostValue reduced_cost = scaled_arc_unit_cost_[arc]
                                + node_potential_[tail]
                                - node_potential_[head];
-  return StringPrintf("%s Arc %lld, from %lld to %lld, "
+  return StringPrintf("%s Arc %d, from %d to %d, "
                       "Capacity = %lld, Residual capacity = %lld, "
                       "Flow = residual capacity for reverse arc = %lld, "
                       "Height(tail) = %lld, Height(head) = %lld, "

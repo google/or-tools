@@ -153,7 +153,7 @@ bool MaxFlow::CheckRelabelPrecondition(NodeIndex node) const {
 string MaxFlow::DebugString(const string& context, ArcIndex arc) const {
   const NodeIndex tail = Tail(arc);
   const NodeIndex head = Head(arc);
-  return StringPrintf("%s Arc %lld, from %lld to %lld, "
+  return StringPrintf("%s Arc %d, from %d to %d, "
                       "Capacity = %lld, Residual capacity = %lld, "
                       "Flow = residual capacity for reverse arc = %lld, "
                       "Height(tail) = %lld, Height(head) = %lld, "
@@ -311,4 +311,3 @@ void MaxFlow::Relabel(NodeIndex node) {
 }
 
 }  // namespace operations_research
-
