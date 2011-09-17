@@ -84,6 +84,9 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
     LOG(INFO) << solution_value.variable_id() << " = "
               << solution_value.value();
   }
+  if (num_non_zeros != numVars) {
+    LOG(INFO) << "All other variables have zero value";
+  }
 }
 
 void RunAllExamples() {

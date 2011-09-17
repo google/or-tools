@@ -57,7 +57,7 @@ static void ParseProblemLine(const char* line,
   NodeIndex num_nodes;
   ArcIndex num_arcs;
 
-  if ((sscanf(line, "%*c%3s%lld%lld",
+  if ((sscanf(line, "%*c%3s%d%d",  // NOLINT
               problem_type,
               &num_nodes,
               &num_arcs) != 3) ||
@@ -76,7 +76,7 @@ static void ParseProblemLine(const char* line,
 static void ParseNodeLine(const char* line,
                           ParserState* state) {
   NodeIndex node_id;
-  if (sscanf(line, "%*c%lld", &node_id) != 1) {
+  if (sscanf(line, "%*c%d", &node_id) != 1) {  // NOLINT
     state->bad = true;
     state->reason = "Syntax error in node desciption.";
     state->bad_line.reset(new string(line));
@@ -110,7 +110,7 @@ static void ParseArcLine(const char* line,
   NodeIndex tail;
   NodeIndex head;
   CostValue cost;
-  if (sscanf(line, "%*c%lld%lld%lld", &tail, &head, &cost) != 3) {
+  if (sscanf(line, "%*c%d%d%lld", &tail, &head, &cost) != 3) {  // NOLINT
     state->bad = true;
     state->reason = "Syntax error in arc descriptor.";
     state->bad_line.reset(new string(line));

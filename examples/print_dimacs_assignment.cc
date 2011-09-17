@@ -39,7 +39,7 @@ void PrintDimacsAssignmentProblem(const LinearSumAssignment& assignment,
                                   const string& output_filename) {
   FILE* output = fopen(output_filename.c_str(), "w");
   const StarGraph& graph(assignment.Graph());
-  string output_line = StringPrintf("p asn %lld %lld\n",
+  string output_line = StringPrintf("p asn %d %d\n",
                                     graph.num_nodes(),
                                     graph.num_arcs());
   WriteOrDie(output_line.c_str(), 1, output_line.length(),
@@ -48,7 +48,7 @@ void PrintDimacsAssignmentProblem(const LinearSumAssignment& assignment,
   for (LinearSumAssignment::BipartiteLeftNodeIterator node_it(assignment);
        node_it.Ok();
        node_it.Next()) {
-    output_line = StringPrintf("n %lld\n", node_it.Index() + 1);
+    output_line = StringPrintf("n %d\n", node_it.Index() + 1);
     WriteOrDie(output_line.c_str(), 1, output_line.length(),
                output);
   }
@@ -57,7 +57,7 @@ void PrintDimacsAssignmentProblem(const LinearSumAssignment& assignment,
        arc_it.Ok();
        arc_it.Next()) {
     ArcIndex arc = arc_it.Index();
-    output_line = StringPrintf("a %lld %lld %lld\n",
+    output_line = StringPrintf("a %d %d %lld\n",
                                graph.Tail(arc) + 1,
                                graph.Head(arc) + 1,
                                assignment.ArcCost(arc));
