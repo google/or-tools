@@ -33,10 +33,10 @@ public class FlowExample {
     System.out.println("Min Cost Flow Problem");
     final int numSources = 4;
     final int numTargets = 4;
-    final long[][] costs = {{90, 75, 75, 80},
-                            {35, 85, 55, 65},
-                            {125, 95, 90, 105},
-                            {45, 110, 95, 115}};
+    final int[][] costs = {{90, 75, 75, 80},
+                           {35, 85, 55, 65},
+                           {125, 95, 90, 105},
+                           {45, 110, 95, 115}};
     final int expectedCost = 275;
     StarGraph graph = new StarGraph(numSources + numTargets,
                                     numSources * numTargets);
