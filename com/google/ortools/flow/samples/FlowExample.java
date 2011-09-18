@@ -33,17 +33,17 @@ public class FlowExample {
     System.out.println("Min Cost Flow Problem");
     final int numSources = 4;
     final int numTargets = 4;
-    final int[][] costs = {{90, 75, 75, 80},
-                           {35, 85, 55, 65},
-                           {125, 95, 90, 105},
-                           {45, 110, 95, 115}};
+    final long[][] costs = {{90, 75, 75, 80},
+                            {35, 85, 55, 65},
+                            {125, 95, 90, 105},
+                            {45, 110, 95, 115}};
     final int expectedCost = 275;
     StarGraph graph = new StarGraph(numSources + numTargets,
                                     numSources * numTargets);
     MinCostFlow  minCostFlow = new MinCostFlow(graph);
     for (int source = 0; source < numSources; ++source) {
       for (int target = 0; target < numTargets; ++target) {
-        final long arc = graph.addArc(source, numSources + target);
+        final int arc = graph.addArc(source, numSources + target);
         minCostFlow.setArcUnitCost(arc, costs[source][target]);
         minCostFlow.setArcCapacity(arc, 1);
       }
@@ -75,7 +75,7 @@ public class FlowExample {
     StarGraph graph = new StarGraph(numNodes, numArcs);
     MaxFlow maxFlow = new MaxFlow(graph, 0, numNodes - 1);
     for (int i = 0; i < numArcs; ++i) {
-      final long arc = graph.addArc(tails[i], heads[i]);
+      final int arc = graph.addArc(tails[i], heads[i]);
       maxFlow.setArcCapacity(arc, capacities[i]);
     }
     if (maxFlow.solve()) {
