@@ -46,8 +46,8 @@ DEFINE_bool(cp_print_model, false,
 DEFINE_bool(cp_model_stats, false,
             "use StatisticsModelVisitor on model before solving.");
 DEFINE_string(cp_export_file, "", "Export model to file using CPModelProto.");
-DEFINE_bool(cp_no_solve, false, "Force failure at the beginning of a search");
-DEFINE_string(cp_profile_file, "", "Export profiling overview to file");
+DEFINE_bool(cp_no_solve, false, "Force failure at the beginning of a search.");
+DEFINE_string(cp_profile_file, "", "Export profiling overview to file.");
 
 void ConstraintSolverFailHere() {
   VLOG(3) << "Fail";
@@ -80,10 +80,10 @@ extern void DemonMonitorStartInitialNestedPropagation(
     DemonMonitor* const monitor,
     const Constraint* const parent,
     const Constraint* const nested);
-void DemonMonitorEndInitialNestedPropagation(DemonMonitor* const monitor,
-                                             const Constraint* const parent,
-                                             const Constraint* const nested);
-
+extern void DemonMonitorEndInitialNestedPropagation(
+    DemonMonitor* const monitor,
+    const Constraint* const parent,
+    const Constraint* const nested);
 
 bool Solver::Profile() const {
   return parameters_.profile_level != SolverParameters::NO_PROFILING ||
@@ -1703,7 +1703,7 @@ void Solver::ProcessConstraints() {
         additional_constraints_list_[additional_constraint_index_];
     const int parent_index =
         additional_constraints_parent_list_[additional_constraint_index_];
-    Constraint* const parent = constraints_list_[parent_index];
+    const Constraint* const parent = constraints_list_[parent_index];
     if (profile) {
       DemonMonitorStartInitialNestedPropagation(demon_monitor_,
                                                 parent,
