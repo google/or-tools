@@ -185,14 +185,59 @@ class RoutingModel {
   // metaheuristic, otherwise returns the metaheuristic which was set.
   RoutingMetaheuristic GetSelectedMetaheuristic() const;
   void AddSearchMonitor(SearchMonitor* const monitor);
+  // Closes the current routing model; after this method is called, no
+  // modification to the model can be done, but RoutesToAssignment becomes
+  // available. Note that CloseModel() is automatically called by Solve() and
+  // other methods that produce solution.
+  void CloseModel();
   // Solves the current routing model; closes the current model.
   const Assignment* Solve(const Assignment* assignment = NULL);
   // Returns current status of the routing model.
   Status status() const { return status_; }
   // Applies lock chain to the next search. Returns next var at the end of the
   // locked chain; this variable is not locked. Assignment containing locks
-  // can be obtained calling PreAssignment().
+  // can be obtained by calling PreAssignment().
   IntVar* ApplyLocks(const std::vector<int>& locks);
+  // Applies lock chains to all vehicles to the next search. Returns false if
+  // the locks do not contain valid routes; expects that the routes do not
+  // contain the depots, i.e. there are empty vectors in place of empty routes.
+  // If close_routes is set to true, adds the end nodes to the route of each
+  // vehicle and deactivates other nodes.
+  // Assignment containing the locks can be obtained by calling PreAssignment().
+  bool ApplyLocksToAllVehicles(const std::vector<std::vector<NodeIndex> >& locks,
+                               bool close_routes);
+  // Restores the routes as the current solution. Returns NULL if the solution
+  // cannot be restored (routes do not contain a valid solution).
+  // Note that calling this method will run the solver to assign values to the
+  // dimension variables; this may take considerable amount of time, especially
+  // when using dimensions with slack.
+  Assignment* ReadAssignmentFromRoutes(const std::vector<std::vector<NodeIndex> >& routes,
+                                       bool ignore_inactive_nodes);
+  // Fills an assignment from a specification of the routes of the vehicles. The
+  // routes are specified as lists of nodes that appear on the routes of the
+  // vehicles. The indices of the outer vector in 'routes' correspond to
+  // vehicles IDs, the inner vector contain the nodes on the routes for the
+  // given vehicle. The inner vectors must not contain the start and end nodes,
+  // as these are determined by the routing model.
+  // Sets the value of NextVars in the assignment, adding the variables to the
+  // assignment if necessary. The method does not touch other variables in the
+  // assignment. The method can only be called after the model is closed.
+  // With ignore_inactive_nodes set to false, this method will fail (return
+  // NULL) in case some of the route contain nodes that are deactivated in the
+  // model; when set to true, these nodes will be skipped.
+  // Returns true if the route was successfully loaded. However, such assignment
+  // still might not be a valid solution to the routing problem due to more
+  // complex constraints; it is advisible to call solver()->CheckSolution()
+  // afterwards.
+  bool RoutesToAssignment(const std::vector<std::vector<NodeIndex> >& routes,
+                          bool ignore_inactive_nodes,
+                          bool close_routes,
+                          Assignment* const assignment) const;
+  // Converts the solution in the given assignment to routes for all vehicles.
+  // Expects that assignment contains a valid solution (i.e. routes for all
+  // vehicles end with an end node for that vehicle).
+  void AssignmentToRoutes(const Assignment& assignment,
+                          std::vector<std::vector<NodeIndex> >* const routes) const;
 
   // Inspection
   int Start(int vehicle) const { return starts_[vehicle]; }
@@ -275,7 +320,11 @@ class RoutingModel {
   NodeEvaluator2* NewCachedCallback(NodeEvaluator2* callback);
   Solver::IndexEvaluator3* BuildCostCallback();
   void CheckDepot();
-  void CloseModel();
+  void QuietCloseModel() {
+    if (!closed_) {
+      CloseModel();
+    }
+  }
   void SetUpSearch();
 
   IntVar** GetOrMakeCumuls(int64 capacity, const string& name);

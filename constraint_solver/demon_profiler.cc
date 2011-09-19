@@ -170,8 +170,8 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     File* const file = File::Open(filename, "w");
     const string model = StringPrintf("Model %s:\n",
                                       solver->model_name().c_str());
-    file->Write(model.c_str(), model.length());
     if (file) {
+      file->Write(model.c_str(), model.length());
       for (hash_map<const Constraint*, ConstraintRuns*>::const_iterator it =
                constraint_map_.begin();
            it != constraint_map_.end();

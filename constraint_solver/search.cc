@@ -785,9 +785,23 @@ bool PathSelector::UpdateIndex(int64* index) const {
   return true;
 }
 
-// Pick an unbound variable to which no other variable can point: it will be
-// a good start for a path. If none is found pick the first unbound one.
+// Select variables on a path:
+//  1. Try to extend an existing route: look for an unbound variable, to which
+//     some other variable points.
+//  2. If no such road is found, try to find a start node of a route: look for
+//     an unbound variable, to which no other variable can point.
+//  3. If everything else fails, pick the first unbound variable.
 bool PathSelector::FindPathStart(int64* index) const {
+  // Try to extend an existing path
+  for (int i = size_ - 1; i >= 0; --i) {
+    if (vars_[i]->Bound()) {
+      const int next = vars_[i]->Value();
+      if (next < size_ && !vars_[next]->Bound()) {
+        *index = next;
+        return true;
+      }
+    }
+  }
   // Pick path start
   for (int i = size_ - 1; i >= 0; --i) {
     if (!vars_[i]->Bound()) {

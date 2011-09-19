@@ -865,9 +865,7 @@ void RoutingModel::AddSearchMonitor(SearchMonitor* const monitor) {
 }
 
 const Assignment* RoutingModel::Solve(const Assignment* assignment) {
-  if (!closed_) {
-    CloseModel();
-  }
+  QuietCloseModel();
   const int64 start_time_ms = solver_->wall_time();
   if (NULL == assignment) {
     solver_->Solve(solve_db_, monitors_);
@@ -900,6 +898,9 @@ int RoutingModel::FindNextActive(int index, const std::vector<int>& nodes) const
 }
 
 IntVar* RoutingModel::ApplyLocks(const std::vector<int>& locks) {
+  // TODO(user): Replace calls to this method with calls to
+  // ApplyLocksToAllVehicles and remove this method?
+  CHECK_EQ(vehicles_, 1);
   preassignment_->Clear();
   IntVar* next_var = NULL;
   int lock_index = FindNextActive(-1, locks);
@@ -916,6 +917,12 @@ IntVar* RoutingModel::ApplyLocks(const std::vector<int>& locks) {
     }
   }
   return next_var;
+}
+
+bool RoutingModel::ApplyLocksToAllVehicles(
+    const std::vector<std::vector<NodeIndex> >& locks, bool close_routes) {
+  preassignment_->Clear();
+  return RoutesToAssignment(locks, true, close_routes, preassignment_);
 }
 
 void RoutingModel::UpdateTimeLimit(int64 limit_ms) {
@@ -952,6 +959,181 @@ void RoutingModel::SetCommandLineOption(const string& name,
   google::SetCommandLineOption(name.c_str(), value.c_str());
 }
 
+
+bool RoutingModel::RoutesToAssignment(const std::vector<std::vector<NodeIndex> >& routes,
+                                      bool ignore_inactive_nodes,
+                                      bool close_routes,
+                                      Assignment* const assignment) const {
+  CHECK_NOTNULL(assignment);
+  if (!closed_) {
+    LOG(ERROR) << "The model is not closed yet";
+    return false;
+  }
+  const int num_routes = routes.size();
+  if (num_routes > vehicles_) {
+    LOG(ERROR) << "The number of vehicles in the assignment (" << routes.size()
+               << ") is greater than the number of vehicles in the model ("
+               << vehicles_ << ")";
+    return false;
+  }
+
+  hash_set<int> visited_indices;
+  // Set value to NextVars based on the routes.
+  for (int vehicle = 0; vehicle < num_routes; ++vehicle) {
+    const std::vector<NodeIndex>& route = routes[vehicle];
+    int from_index = Start(vehicle);
+    std::pair<hash_set<int>::iterator, bool> insert_result =
+        visited_indices.insert(from_index);
+    if (!insert_result.second) {
+      LOG(ERROR) << "Index " << from_index << " (start node for vehicle "
+                 << vehicle << ") was already used";
+      return false;
+    }
+
+    for (int i = 0; i < route.size(); ++i) {
+      const NodeIndex to_node = route[i];
+      if (to_node < 0 || to_node >= nodes()) {
+        LOG(ERROR) << "Invalid node index: " << to_node;
+        return false;
+      }
+      const int to_index = NodeToIndex(to_node);
+      if (to_index < 0 || to_index >= Size()) {
+        LOG(ERROR) << "Invalid index: " << to_index << " from node "
+                   << to_node;
+        return false;
+      }
+
+      IntVar* const active_var = ActiveVar(to_index);
+      if (active_var->Max() == 0) {
+        if (ignore_inactive_nodes) {
+          continue;
+        } else {
+          LOG(ERROR) << "Index " << to_index << " (node " << to_node
+                     << ") is not active";
+          return false;
+        }
+      }
+
+      insert_result = visited_indices.insert(to_index);
+      if (!insert_result.second) {
+        LOG(ERROR) << "Index " << to_index << " (node " << to_node
+                   << ") is used multiple times";
+        return false;
+      }
+
+      const IntVar* const vehicle_var = VehicleVar(to_index);
+      if (!vehicle_var->Contains(vehicle)) {
+        LOG(ERROR) << "Vehicle " << vehicle << " is not allowed at index "
+                   << to_index << " (node " << to_node << ")";
+        return false;
+      }
+
+      IntVar* const from_var = NextVar(from_index);
+      if (!assignment->Contains(from_var)) {
+        assignment->Add(from_var);
+      }
+      assignment->SetValue(from_var, to_index);
+
+      from_index = to_index;
+    }
+
+    if (close_routes) {
+      IntVar* const last_var = NextVar(from_index);
+      if (!assignment->Contains(last_var)) {
+        assignment->Add(last_var);
+      }
+      assignment->SetValue(last_var, End(vehicle));
+    }
+  }
+
+  // Do not use the remaining vehicles.
+  for (int vehicle = num_routes; vehicle < vehicles_; ++vehicle) {
+    const int start_index = Start(vehicle);
+    // Even if close_routes is false, we still need to add the start index to
+    // visited_indices so that deactivating other nodes works correctly.
+    std::pair<hash_set<int>::iterator, bool> insert_result =
+        visited_indices.insert(start_index);
+    if (!insert_result.second) {
+      LOG(ERROR) << "Index " << start_index << " is used multiple times";
+      return false;
+    }
+    if (close_routes) {
+      IntVar* const start_var = NextVar(start_index);
+      if (!assignment->Contains(start_var)) {
+        assignment->Add(start_var);
+      }
+      assignment->SetValue(start_var, End(vehicle));
+    }
+  }
+
+  // Deactivate other nodes (by pointing them to themselves).
+  if (close_routes) {
+    for (int index = 0; index < Size(); ++index) {
+      if (!ContainsKey(visited_indices, index)) {
+        IntVar* const next_var = NextVar(index);
+        if (!assignment->Contains(next_var)) {
+          assignment->Add(next_var);
+        }
+        assignment->SetValue(next_var, index);
+      }
+    }
+  }
+
+  return true;
+}
+
+Assignment* RoutingModel::ReadAssignmentFromRoutes(
+    const std::vector<std::vector<NodeIndex> >& routes,
+    bool ignore_inactive_nodes) {
+  QuietCloseModel();
+  if (!RoutesToAssignment(routes, ignore_inactive_nodes, true, assignment_)) {
+    return NULL;
+  }
+
+  solver_->Solve(restore_assignment_, monitors_);
+  // Solve() might still fail when checking constraints (most constraints are
+  // not verified by RoutesToAssignment) or when filling in dimension variables.
+  if (collect_assignments_->solution_count() >= 1) {
+    status_ = ROUTING_SUCCESS;
+    return collect_assignments_->solution(0);
+  } else {
+    status_ = ROUTING_FAIL;
+    return NULL;
+  }
+}
+
+void RoutingModel::AssignmentToRoutes(
+    const Assignment& assignment,
+    std::vector<std::vector<NodeIndex> >*  const routes) const {
+  CHECK(closed_);
+  CHECK_NOTNULL(routes);
+
+  const int model_size = Size();
+  routes->resize(vehicles_);
+  for (int vehicle = 0; vehicle < vehicles_; ++vehicle) {
+    std::vector<NodeIndex>* const vehicle_route = &routes->at(vehicle);
+    vehicle_route->clear();
+
+    int num_visited_nodes = 0;
+    const int first_index = Start(vehicle);
+    const IntVar* const first_var = NextVar(first_index);
+    CHECK(assignment.Contains(first_var));
+    CHECK(assignment.Bound(first_var));
+    int current_index = assignment.Value(first_var);
+    while (!IsEnd(current_index)) {
+      vehicle_route->push_back(IndexToNode(current_index));
+
+      const IntVar* const next_var = NextVar(current_index);
+      CHECK(assignment.Contains(next_var));
+      CHECK(assignment.Bound(next_var));
+      current_index = assignment.Value(next_var);
+
+      ++num_visited_nodes;
+      CHECK_LE(num_visited_nodes, model_size)
+          << "The assignment contains a cycle";
+    }
+  }
+}
 
 RoutingModel::NodeIndex RoutingModel::IndexToNode(int64 index) const {
   DCHECK_LT(index, index_to_node_.size());
