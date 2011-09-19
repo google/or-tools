@@ -55,7 +55,7 @@
 
 // Second phase: %include the same files.
 
-%include "util/packed_array.h"
+%include "util/zvector.h"
 %include "graph/ebert_graph.h"
 %include "graph/max_flow.h"
 %include "graph/min_cost_flow.h"
