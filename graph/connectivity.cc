@@ -17,7 +17,6 @@
 #include <vector>
 
 #include "base/logging.h"
-#include "util/packed_array.h"
 
 namespace operations_research {
 
@@ -31,7 +30,7 @@ void ConnectedComponents::Init(NodeIndex min_index, NodeIndex max_index) {
   for (NodeIndex node = min_index; node <= max_index; ++node) {
     class_.Set(node, node);
   }
-  class_size_.Assign(1);
+  class_size_.SetAll(1);
 }
 
 void ConnectedComponents::AddArc(NodeIndex tail, NodeIndex head) {

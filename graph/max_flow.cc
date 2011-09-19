@@ -37,16 +37,16 @@ MaxFlow::MaxFlow(const StarGraph* graph,
   const NodeIndex max_num_nodes = graph_->max_num_nodes();
   if (max_num_nodes > 0) {
     node_excess_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
-    node_excess_.Assign(0);
+    node_excess_.SetAll(0);
     node_potential_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
-    node_potential_.Assign(0);
+    node_potential_.SetAll(0);
     first_admissible_arc_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
-    first_admissible_arc_.Assign(StarGraph::kNilArc);
+    first_admissible_arc_.SetAll(StarGraph::kNilArc);
   }
   const ArcIndex max_num_arcs = graph_->max_num_arcs();
   if (max_num_arcs > 0) {
     residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
-    residual_arc_capacity_.Assign(0);
+    residual_arc_capacity_.SetAll(0);
   }
   DCHECK(graph_->CheckNodeValidity(source_));
   DCHECK(graph_->CheckNodeValidity(sink_));
@@ -200,8 +200,8 @@ void MaxFlow::InitializePreflow() {
   // by a previous Solve(). This is not optimal in terms of complexity.
   // TODO(user): find a way to make the re-solving incremental (not an obvious
   // task, and there has not been a lot of literature on the subject.)
-  node_potential_.Assign(0);
-  node_excess_.Assign(0);
+  node_potential_.SetAll(0);
+  node_excess_.SetAll(0);
   for (StarGraph::ArcIterator arc_it(*graph_); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
     SetCapacityResetFlow(arc, Capacity(arc));

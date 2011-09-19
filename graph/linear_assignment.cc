@@ -76,7 +76,7 @@ void LinearSumAssignment::SetArcCost(ArcIndex arc,
 class CostValueCycleHandler
     : public PermutationCycleHandler<ArcIndex> {
  public:
-  explicit CostValueCycleHandler(Int64PackedArray* cost)
+  explicit CostValueCycleHandler(CostArray* cost)
       : temp_(0),
         cost_(cost) { }
 
@@ -98,7 +98,7 @@ class CostValueCycleHandler
  private:
   CostValue temp_;
 
-  Int64PackedArray* cost_;
+  CostArray* cost_;
 
   DISALLOW_COPY_AND_ASSIGN(CostValueCycleHandler);
 };

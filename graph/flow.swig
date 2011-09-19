@@ -15,7 +15,7 @@
 
 // First phase: #include the file we want to wrap.
 %{
-#include "util/packed_array.h"
+#include "util/zvector.h"
 #include "graph/ebert_graph.h"
 #include "graph/max_flow.h"
 #include "graph/min_cost_flow.h"
@@ -61,5 +61,5 @@
 %include "graph/min_cost_flow.h"
 
 namespace operations_research {
-%template(StarGraph) EbertGraph<kStarGraphNodeIndexSize, kStarGraphArcIndexSize>;
+%template(StarGraph) EbertGraph<NodeIndex, ArcIndex>;
 }

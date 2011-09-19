@@ -158,7 +158,6 @@
 #include "base/logging.h"
 #include "base/macros.h"
 #include "graph/ebert_graph.h"
-#include "util/packed_array.h"
 
 using std::string;
 
@@ -365,11 +364,11 @@ class MinCostFlow {
 
   // A packed array representing the supply (if > 0) or the demand (if < 0)
   // for each node in graph_.
-  Int64PackedArray node_excess_;
+  QuantityArray node_excess_;
 
   // A packed array representing the potential (or price function) for
   // each node in graph_.
-  Int64PackedArray node_potential_;
+  CostArray node_potential_;
 
   // A packed array representing the residual_capacity for each arc in graph_.
   // Residual capacities enable one to represent the capacity and flow for all
@@ -391,7 +390,7 @@ class MinCostFlow {
   // the total flow in the graph not exceed the largest integer representable
   // in 64 bits or there would be errors. CheckInputConsistency() verifies
   // this.
-  Int64PackedArray residual_arc_capacity_;
+  QuantityArray residual_arc_capacity_;
 
   // A packed array representing the first admissible arc for each node
   // in graph_.
@@ -413,7 +412,7 @@ class MinCostFlow {
   CostValue        cost_scaling_factor_;
 
   // A packed array representing the scaled unit cost for each arc in graph_.
-  Int64PackedArray scaled_arc_unit_cost_;
+  QuantityArray scaled_arc_unit_cost_;
 
   // The total cost of the flow.
   CostValue        total_flow_cost_;

@@ -170,7 +170,6 @@
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "graph/ebert_graph.h"
-#include "util/packed_array.h"
 
 using std::string;
 
@@ -597,7 +596,7 @@ class LinearSumAssignment {
   // CostValues because we scale the initial arc costs up by the
   // number of nodes in order to use integer arithmetic everywhere,
   // and such scaling up increases the risk of overflow.
-  Int64PackedArray price_;
+  CostArray price_;
 
   // Indexed by left-side node index, the matched_arc_ array gives the
   // arc index of the arc matching any given left-side node, or
@@ -615,7 +614,7 @@ class LinearSumAssignment {
   // can use integer arithmetic throughout. Consequently we make this
   // a packed array of int64 values just to stave off overflow that
   // little extra bit.
-  Int64PackedArray scaled_arc_cost_;
+  CostArray scaled_arc_cost_;
 
   // The container of active nodes (i.e., unmatched nodes). This can
   // be switched easily between ActiveNodeStack and ActiveNodeQueue

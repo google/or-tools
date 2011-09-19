@@ -113,7 +113,6 @@
 #include "base/logging.h"
 #include "base/macros.h"
 #include "graph/ebert_graph.h"
-#include "util/packed_array.h"
 
 using std::string;
 
@@ -289,10 +288,10 @@ class MaxFlow {
   const StarGraph* graph_;
 
   // A packed array representing the excess for each node in graph_.
-  Int64PackedArray    node_excess_;
+  QuantityArray node_excess_;
 
   // A packed array representing the height function for each node in graph_.
-  Int64PackedArray    node_potential_;
+  CostArray node_potential_;
 
   // A packed array representing the residual_capacity for each arc in graph_.
   // Residual capacities enable one to represent the capacity and flow for all
@@ -311,16 +310,16 @@ class MaxFlow {
   // instead of both capacity and flow, for each direct and indirect arc. This
   // reduces the amount of memory for this information by a factor 2.s reduces
   // the amount of memory for this information by a factor 2.
-  Int64PackedArray    residual_arc_capacity_;
+  QuantityArray residual_arc_capacity_;
 
   // A packed array representing the first admissible arc for each node
   // in graph_.
-  ArcIndexArray       first_admissible_arc_;
+  ArcIndexArray first_admissible_arc_;
 
   // A stack used for managing active nodes in the algorithm.
   // Note that the papers cited above recommend the use of a queue, but
   // benchmarking so far has not proved it is better.
-  std::stack<NodeIndex>    active_nodes_;
+  std::stack<NodeIndex> active_nodes_;
 
   // The index of the source node in graph_.
   NodeIndex source_;
@@ -329,10 +328,10 @@ class MaxFlow {
   NodeIndex sink_;
 
   // The total flow.
-  FlowQuantity     total_flow_;
+  FlowQuantity total_flow_;
 
   // The status of the problem.
-  Status           status_;
+  Status status_;
 
   DISALLOW_COPY_AND_ASSIGN(MaxFlow);
 };

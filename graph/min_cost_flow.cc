@@ -53,18 +53,18 @@ MinCostFlow::MinCostFlow(const StarGraph* graph)
   const NodeIndex max_num_nodes = graph_->max_num_nodes();
   if (max_num_nodes > 0) {
     node_excess_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
-    node_excess_.Assign(0);
+    node_excess_.SetAll(0);
     node_potential_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
-    node_potential_.Assign(0);
+    node_potential_.SetAll(0);
     first_admissible_arc_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
-    first_admissible_arc_.Assign(StarGraph::kNilArc);
+    first_admissible_arc_.SetAll(StarGraph::kNilArc);
   }
   const ArcIndex max_num_arcs = graph_->max_num_arcs();
   if (max_num_arcs > 0) {
     residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
-    residual_arc_capacity_.Assign(0);
+    residual_arc_capacity_.SetAll(0);
     scaled_arc_unit_cost_.Reserve(-max_num_arcs, max_num_arcs - 1);
-    scaled_arc_unit_cost_.Assign(0);
+    scaled_arc_unit_cost_.SetAll(0);
   }
 }
 
@@ -234,7 +234,7 @@ bool MinCostFlow::Solve() {
     status_ = BAD_COST_RANGE;
     return false;
   }
-  node_potential_.Assign(0);
+  node_potential_.SetAll(0);
   ResetFirstAdmissibleArcs();
   ScaleCosts();
   Optimize();
