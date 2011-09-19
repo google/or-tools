@@ -324,6 +324,28 @@ class MPSolver {
   // SCIP*).
   void* underlying_solver();
 
+  // Computes the exact condition number of the current scaled basis:
+  // L1norm(B) * L1norm(inverse(B)), where B is the scaled basis.
+  // This method requires that a basis exists: it should be called
+  // after Solve. It is only available for continuous problems. It is
+  // implemented for GLPK but not CLP because CLP does not provide the
+  // API for doing it.
+  // The condition number measures how well the constraint matrix is
+  // conditioned and can be used to predict whether numerical issues
+  // will arise during the solve: the model is declared infeasible
+  // whereas it is feasible (or vice-versa), the solution obtained is
+  // not optimal or violates some constraints, the resolution is slow
+  // because of repeated singularities.
+  // The rule of thumb to interpret the condition number kappa is:
+  // o kappa <= 1e7: virtually no chance of numerical issues
+  // o 1e7 < kappa <= 1e10: small chance of numerical issues
+  // o 1e10 < kappa <= 1e13: medium chance of numerical issues
+  // o kappa > 1e13: high chance of numerical issues
+  // The computation of the condition number depends on the quality of
+  // the LU decomposition, so it is not very accurate when the matrix
+  // is ill conditioned.
+  double ComputeExactConditionNumber() const;
+
   friend class GLPKInterface;
   friend class CLPInterface;
   friend class CBCInterface;
@@ -790,6 +812,10 @@ class MPSolverInterface {
 
   // Returns the underlying solver.
   virtual void* underlying_solver() = 0;
+
+  // Computes exact condition number. Only available for continuous
+  // problems and only implemented in GLPK.
+  virtual double ComputeExactConditionNumber() const = 0;
 
   friend class MPSolver;
  protected:

@@ -403,6 +403,7 @@ namespace operations_research {
 %rename (checkNameValidity) MPSolver::CheckNameValidity;
 %rename (clear) MPSolver::Clear;
 %rename (clearObjective) MPSolver::ClearObjective;
+%rename (computeExactConditionNumber) MPSolver::ComputeExactConditionNumber;
 %rename (init) MPSolver::Init;
 %rename (isLpFormat) MPSolver::IsLPFormat;
 %rename (loadModel) MPSolver::LoadModel;

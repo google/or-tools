@@ -161,6 +161,10 @@ class CBCInterface : public MPSolverInterface {
     return reinterpret_cast<void*>(&osi_);
   }
 
+  virtual double ComputeExactConditionNumber() const {
+    LOG(FATAL) << "Condition number only available for continuous problems";
+  }
+
  private:
   // Reset best objective bound to +/- infinity depending on the
   // optimization direction.

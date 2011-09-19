@@ -12,6 +12,7 @@
 // limitations under the License.
 //
 
+#include <math.h>
 #include <stddef.h>
 #include "base/hash.h"
 #include <limits>
@@ -170,6 +171,8 @@ class GLPKInterface : public MPSolverInterface {
     return reinterpret_cast<void*>(lp_);
   }
 
+  virtual double ComputeExactConditionNumber() const;
+
  private:
   // Configure the solver's parameters.
   void ConfigureGLPKParameters(const MPSolverParameters& param);
@@ -189,6 +192,20 @@ class GLPKInterface : public MPSolverInterface {
                             double* const coefs);
   // Transforms basis status from GLPK integer code to MPSolver::BasisStatus.
   MPSolver::BasisStatus TransformGLPKBasisStatus(int glpk_basis_status) const;
+
+  // Computes the L1-norm of the current scaled basis.
+  // The L1-norm |A| is defined as max_j sum_i |a_ij|
+  // This method is available only for continuous problems.
+  double ComputeScaledBasisL1Norm(
+    int num_rows, int num_cols,
+    double* row_scaling_factor, double* column_scaling_factor) const;
+
+  // Computes the L1-norm of the inverse of the current scaled
+  // basis.
+  // This method is available only for continuous problems.
+  double ComputeInverseScaledBasisL1Norm(
+    int num_rows, int num_cols,
+    double* row_scaling_factor, double* column_scaling_factor) const;
 
   glp_prob* lp_;
   bool mip_;
@@ -753,6 +770,144 @@ void GLPKInterface::CheckBestObjectiveBoundExists() const {
     // Call default implementation
     MPSolverInterface::CheckBestObjectiveBoundExists();
   }
+}
+
+double GLPKInterface::ComputeExactConditionNumber() const {
+  CHECK(IsContinuous()) <<
+      "Condition number only available for continuous problems";
+  CheckSolutionIsSynchronized();
+  // Simplex is the only LP algorithm supported in the wrapper for
+  // GLPK, so when a solution exists, a basis exists.
+  CheckSolutionExists();
+  const int num_rows = glp_get_num_rows(lp_);
+  const int num_cols = glp_get_num_cols(lp_);
+  // GLPK indexes everything starting from 1 instead of 0.
+  scoped_array<double> row_scaling_factor(new double[num_rows + 1]);
+  scoped_array<double> column_scaling_factor(new double[num_cols + 1]);
+  for (int row = 1; row <= num_rows; ++row) {
+    row_scaling_factor[row] = glp_get_rii(lp_, row);
+  }
+  for (int col = 1; col <= num_cols; ++col) {
+    column_scaling_factor[col] = glp_get_sjj(lp_, col);
+  }
+  return
+      ComputeInverseScaledBasisL1Norm(
+          num_rows, num_cols,
+          row_scaling_factor.get(), column_scaling_factor.get()) *
+      ComputeScaledBasisL1Norm(
+          num_rows, num_cols,
+          row_scaling_factor.get(), column_scaling_factor.get());
+}
+
+double GLPKInterface::ComputeScaledBasisL1Norm(
+    int num_rows, int num_cols,
+    double* row_scaling_factor, double* column_scaling_factor) const {
+  double norm = 0.0;
+  scoped_array<double> values(new double[num_rows + 1]);
+  scoped_array<int> indices(new int[num_rows + 1]);
+  for (int col = 1; col <= num_cols; ++col) {
+    const int glpk_basis_status = glp_get_col_stat(lp_, col);
+    // Take into account only basic columns.
+    if (glpk_basis_status == GLP_BS) {
+      // Compute L1-norm of column 'col': sum_row |a_row,col|.
+      const int num_nz = glp_get_mat_col(lp_, col, indices.get(), values.get());
+      double column_norm = 0.0;
+      for (int k = 1; k <= num_nz; k++) {
+        column_norm += fabs(values[k] * row_scaling_factor[indices[k]]);
+      }
+      column_norm *= fabs(column_scaling_factor[col]);
+      // Compute max_col column_norm
+      norm = std::max(norm, column_norm);
+    }
+  }
+  // Slack variables.
+  for (int row = 1; row <= num_rows; ++row) {
+    const int glpk_basis_status = glp_get_row_stat(lp_, row);
+    // Take into account only basic slack variables.
+    if (glpk_basis_status == GLP_BS) {
+      // Only one non-zero coefficient: +/- 1.0 in the corresponding
+      // row. The row has a scaling coefficient but the slack variable
+      // is never scaled on top of that.
+      const double column_norm = fabs(row_scaling_factor[row]);
+      // Compute max_col column_norm
+      norm = std::max(norm, column_norm);
+    }
+  }
+  return norm;
+}
+
+double GLPKInterface::ComputeInverseScaledBasisL1Norm(
+    int num_rows, int num_cols,
+    double* row_scaling_factor, double* column_scaling_factor) const {
+  // Compute the LU factorization if it doesn't exist yet.
+  if (!glp_bf_exists(lp_)) {
+    const int factorize_status = glp_factorize(lp_);
+    switch (factorize_status) {
+      case GLP_EBADB: {
+        LOG(FATAL) << "Not able to factorize: error GLP_EBADB.";
+        break;
+      }
+      case GLP_ESING: {
+        LOG(WARNING)
+            << "Not able to factorize: "
+            << "the basis matrix is singular within the working precision.";
+        return MPSolver::infinity();
+      }
+      case GLP_ECOND: {
+        LOG(WARNING)
+            << "Not able to factorize: the basis matrix is ill-conditioned.";
+        return MPSolver::infinity();
+      }
+      default:
+        break;
+    }
+  }
+  scoped_array<double> right_hand_side(new double[num_rows + 1]);
+  double norm = 0.0;
+  // Iteratively solve B x = e_k, where e_k is the kth unit vector.
+  // The result of this computation is the kth column of B^-1.
+  // glp_ftran works on original matrix. Scale input and result to
+  // obtain the norm of the kth column in the inverse scaled
+  // matrix. See glp_ftran documentation in glpapi12.c for how the
+  // scaling is done: inv(B'') = inv(SB) * inv(B) * inv(R) where:
+  // o B'' is the scaled basis
+  // o B is the original basis
+  // o R is the diagonal row scaling matrix
+  // o SB consists of the basic columns of the augmented column
+  // scaling matrix (auxiliary variables then structural variables):
+  // S~ = diag(inv(R) | S).
+  for (int k = 1; k <= num_rows; ++k) {
+    for (int row = 1; row <= num_rows; ++row) {
+      right_hand_side[row] = 0.0;
+    }
+    right_hand_side[k] = 1.0;
+    // Multiply input by inv(R).
+    for (int row = 1; row <= num_rows; ++row) {
+      right_hand_side[row] /= row_scaling_factor[row];
+    }
+    glp_ftran(lp_, right_hand_side.get());
+    // glp_ftran stores the result in the same vector where the right
+    // hand side was provided.
+    // Multiply result by inv(SB).
+    for (int row = 1; row <= num_rows; ++row) {
+      const int k = glp_get_bhead(lp_, row);
+      if (k <= num_rows) {
+        // Auxiliary variable.
+        right_hand_side[row] *= row_scaling_factor[k];
+      } else {
+        // Structural variable.
+        right_hand_side[row] /= column_scaling_factor[k - num_rows];
+      }
+    }
+    // Compute sum_row |vector_row|.
+    double column_norm = 0.0;
+    for (int row = 1; row <= num_rows; ++row) {
+      column_norm += fabs(right_hand_side[row]);
+    }
+    // Compute max_col column_norm
+    norm = std::max(norm, column_norm);
+  }
+  return norm;
 }
 
 // ------ Parameters ------

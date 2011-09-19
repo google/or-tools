@@ -781,6 +781,10 @@ int64 MPSolver::nodes() const {
   return interface_->nodes();
 }
 
+double MPSolver::ComputeExactConditionNumber() const {
+  return interface_->ComputeExactConditionNumber();
+}
+
 // ---------- MPSolverInterface ----------
 
 const int MPSolverInterface::kDummyVariableIndex = 0;
@@ -887,7 +891,7 @@ void MPSolverInterface::InvalidateSolutionSynchronization() {
 void MPSolverInterface::SetCommonParameters(const MPSolverParameters& param) {
   SetPrimalTolerance(param.GetDoubleParam(
       MPSolverParameters::PRIMAL_TOLERANCE));
-  SetPrimalTolerance(param.GetDoubleParam(MPSolverParameters::DUAL_TOLERANCE));
+  SetDualTolerance(param.GetDoubleParam(MPSolverParameters::DUAL_TOLERANCE));
   SetPresolveMode(param.GetIntegerParam(MPSolverParameters::PRESOLVE));
   // TODO(user): In the future, we could distinguish between the
   // algorithm to solve the root LP and the algorithm to solve node

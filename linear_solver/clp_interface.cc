@@ -123,6 +123,11 @@ class CLPInterface : public MPSolverInterface {
     return reinterpret_cast<void*>(clp_.get());
   }
 
+  virtual double ComputeExactConditionNumber() const {
+    // CLP does not provide the necessary API to access the inverse basis.
+    LOG(FATAL) << "ComputeExactConditionNumber is not implemented in CLP.";
+  }
+
  private:
   // Create dummy variable to be able to create empty constraints.
   void CreateDummyVariableForEmptyConstraints();

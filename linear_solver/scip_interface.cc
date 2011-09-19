@@ -127,6 +127,10 @@ class SCIPInterface : public MPSolverInterface {
     return reinterpret_cast<void*>(scip_);
   }
 
+  virtual double ComputeExactConditionNumber() const {
+    LOG(FATAL) << "Condition number only available for continuous problems";
+  }
+
  private:
   // Set all parameters in the underlying solver.
   virtual void SetParameters(const MPSolverParameters& param);
