@@ -11,28 +11,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <string.h>
 #include <algorithm>
+#include "base/hash.h"
 #include <list>
-#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "base/callback.h"
+#include "base/casts.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
-#include "base/sysinfo.h"
-
 #include "base/timer.h"
+#include "base/join.h"
+#include "base/bitmap.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
-#include "base/stl_util-inl.h"
+#include "base/stl_util.h"
 #include "base/hash.h"
-#include "base/random.h"
+#include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/search_limit.pb.h"
 #include "util/string_array.h"
+#include "base/random.h"
 
 DEFINE_bool(cp_use_sparse_gls_penalties, false,
             "Use sparse implementation to store Guided Local Search penalties");

@@ -13,20 +13,24 @@
 
 //  Packing constraints
 
+#include <stddef.h>
+#include <string.h>
+#include <algorithm>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/concise_iterator.h"
+#include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 
 namespace operations_research {
 
 // ---------- Dimension ----------
-
-class Pack;
 
 class Dimension : public BaseObject {
  public:

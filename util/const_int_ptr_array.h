@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_UTIL_CONST_INT_PTR_ARRAY_H_
 #define OR_TOOLS_UTIL_CONST_INT_PTR_ARRAY_H_
 
+#include <stddef.h>
 #include <algorithm>
 #include <functional>
 #include "base/hash.h"
@@ -21,6 +22,7 @@
 #include <vector>
 
 #include "base/basictypes.h"
+#include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"

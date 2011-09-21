@@ -11,11 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <string.h>
+#include "base/hash.h"
+#include "base/hash.h"
+#include <string>
+
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/stringprintf.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
-#include "constraint_solver/constraint_solveri.h"
+#include "base/hash.h"
+#include "constraint_solver/constraint_solver.h"
 #include "util/bitset.h"
 
 namespace operations_research {

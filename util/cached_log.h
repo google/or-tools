@@ -15,11 +15,12 @@
 #define OR_TOOLS_UTIL_CACHED_LOG_H_
 
 #include <math.h>
-
 #include <vector>
 
 #include "base/basictypes.h"
+#include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/macros.h"
 
 namespace operations_research {
 // This class is used when manipulating search space estimations.  It

@@ -11,7 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <map>
+#include <stddef.h>
+#include "base/hash.h"
+#include <string>
+#include <vector>
 
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -20,6 +23,7 @@
 #include "base/recordio.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
+#include "base/hash.h"
 #include "constraint_solver/assignment.pb.h"
 #include "constraint_solver/constraint_solver.h"
 

@@ -11,14 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "base/callback.h"
+#include <string>
+#include <vector>
+
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
+#include "base/macros.h"
 #include "base/stringprintf.h"
-#include "base/concise_iterator.h"
-#include "base/stl_util-inl.h"
-#include "constraint_solver/constraint_solveri.h"
+#include "base/stl_util.h"
+#include "constraint_solver/constraint_solver.h"
 
 namespace operations_research {
 

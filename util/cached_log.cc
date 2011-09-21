@@ -13,6 +13,8 @@
 
 #include "util/cached_log.h"
 
+#include "base/logging.h"
+
 namespace operations_research {
 
 CachedLog::CachedLog() {}

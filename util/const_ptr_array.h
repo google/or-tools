@@ -17,11 +17,16 @@
 
 using std::string;
 
+#include <stddef.h>
+#include <string>
 #include <vector>
+
+#include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
-#include "util/string_array.h"
+#include "base/stringprintf.h"
 #include "base/concise_iterator.h"
+#include "util/string_array.h"
 
 namespace operations_research {
 // This class is used to store an const array of T*.

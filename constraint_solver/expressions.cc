@@ -11,15 +11,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <math.h>
+#include <string.h>
 #include <algorithm>
+#include "base/hash.h"
 #include <string>
+#include <utility>
+#include <vector>
 
-#include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
+#include "base/map-util.h"
+#include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
 #include "util/const_int_array.h"
@@ -35,10 +41,7 @@ DEFINE_bool(cp_share_int_consts, true,
 
 namespace operations_research {
 
-
 // ---------- IntVar ----------
-
-// ----- IntVar API -----
 
 namespace {
 enum VarTypes {
@@ -53,30 +56,7 @@ enum VarTypes {
   CST_SUB_VAR,
   OPP_VAR
 };
-}  // namespace
 
-int IntVar::VarType() const {
-  return UNSPECIFIED;
-}
-
-void IntVar::RemoveValues(const int64* const values, int size) {
-  DCHECK_GE(size, 0);
-  for (int i = 0; i < size; ++i) {
-    RemoveValue(values[i]);
-  }
-}
-
-void IntVar::Accept(ModelVisitor* const visitor) const {
-  const IntExpr* delegate = NULL;
-  const std::pair<string, const PropagationBaseObject*>* delegate_pair =
-      FindOrNull(solver()->delegate_objects_, this);
-  if (delegate_pair != NULL) {
-    delegate = reinterpret_cast<const IntExpr*>(delegate_pair->second);
-  }
-  visitor->VisitIntegerVariable(this, delegate);
-}
-
-namespace {
 int64* NewUniqueSortedArray(const int64* const values, int* size) {
   int64* new_array = new int64[*size];
   memcpy(new_array, values, (*size) * sizeof(*values));
@@ -112,55 +92,11 @@ bool IsArrayActuallySorted(const int64* const values, int size) {
   }
   return true;
 }
-}  // namespace
-
-void IntVar::SetValues(const int64* const values, int size) {
-  // TODO(user): reimplement all this!!
-  // TODO(user): This code leaks if the array is not sorted.
-  const int64* new_array = values;
-  if (!IsArrayActuallySorted(values, size)) {
-    new_array = NewUniqueSortedArray(new_array, &size);
-  }
-  const int64 vmin = Min();
-  const int64 vmax = Max();
-  const int64* first_pos = new_array;
-  const int64* last_pos = first_pos + size - 1;
-  if (*first_pos > vmax || *last_pos < vmin) {
-    solver()->Fail();
-  }
-  // TODO(user) : We could find the first position >= vmin by dichotomy.
-  while (first_pos <= last_pos &&
-         (*first_pos < vmin || !Contains(*first_pos))) {
-    if (*first_pos > vmax) {
-      solver()->Fail();
-    }
-    first_pos++;
-  }
-  if (first_pos > last_pos) {
-    solver()->Fail();
-  }
-  while (last_pos >= first_pos &&
-         (*last_pos > vmax ||
-          !Contains(*last_pos))) {
-    last_pos--;
-  }
-  DCHECK_GE(last_pos, first_pos);
-  SetRange(*first_pos, *last_pos);
-  while (first_pos < last_pos) {
-    const int64 start = (*first_pos) + 1;
-    const int64 end = *(first_pos + 1) - 1;
-    if (start <= end) {
-      RemoveInterval(start, end);
-    }
-    first_pos++;
-  }
-}
 
 // ---------- Subclasses of IntVar ----------
 
 // ----- Domain Int Var: base class for variables -----
 // It Contains bounds and a bitset representation of possible values.
-namespace {
 class DomainIntVar : public IntVar {
  public:
   // Utility classes
@@ -4294,50 +4230,9 @@ class LinkExprAndDomainIntVar : public Constraint {
   int64 cached_max_;
   uint64 fail_stamp_;
 };
-}  // namespace
-
-// ---------- BaseIntExpr ---------
-
-
-void LinkVarExpr(Solver* const s, IntExpr* const expr, IntVar* const var) {
-  if (!var->Bound()) {
-    if (var->VarType() == DOMAIN_INT_VAR) {
-      DomainIntVar* dvar = reinterpret_cast<DomainIntVar*>(var);
-      s->AddDelegateConstraint(
-          s->RevAlloc(new LinkExprAndDomainIntVar(s, expr, dvar)));
-    } else {
-      s->AddDelegateConstraint(s->RevAlloc(new LinkExprAndVar(s, expr, var)));
-    }
-  }
-}
-
-IntVar* BaseIntExpr::Var() {
-  if (var_ == NULL) {
-    solver()->SaveValue(reinterpret_cast<void**>(&var_));
-    var_ = CastToVar();
-  }
-  return var_;
-}
-
-IntVar* BaseIntExpr::CastToVar() {
-  int64 vmin, vmax;
-  Range(&vmin, &vmax);
-  IntVar* const var = solver()->MakeIntVar(vmin, vmax);
-  AddDelegateName("Var", var);
-  LinkVarExpr(solver(), this, var);
-  return var;
-}
-
-void BaseIntExpr::AddDelegateName(const string& prefix,
-                                  const PropagationBaseObject* d) const {
-  // TODO(user) : Find a reversible solution when in search.
-  if (solver()->state_ != Solver::IN_SEARCH) {
-    solver()->delegate_objects_[d] = make_pair(prefix, this);
-  }
-}
 
 // ----- Utilities -----
-namespace {
+
 // Variable-based queue cleaner. It is used to put a domain int var in
 // a clean state after a failure occuring during its process() method.
 class VariableQueueCleaner : public Action {
@@ -4908,4 +4803,109 @@ IntExpr* Solver::MakeSemiContinuousExpr(IntExpr* const e,
   // TODO(user) : benchmark with virtualization of
   // PosIntDivDown and PosIntDivUp - or function pointers.
 }
+
+// --------- IntVar ---------
+
+int IntVar::VarType() const {
+  return UNSPECIFIED;
+}
+
+void IntVar::RemoveValues(const int64* const values, int size) {
+  DCHECK_GE(size, 0);
+  for (int i = 0; i < size; ++i) {
+    RemoveValue(values[i]);
+  }
+}
+
+void IntVar::Accept(ModelVisitor* const visitor) const {
+  const IntExpr* delegate = NULL;
+  const std::pair<string, const PropagationBaseObject*>* delegate_pair =
+      FindOrNull(solver()->delegate_objects_, this);
+  if (delegate_pair != NULL) {
+    delegate = reinterpret_cast<const IntExpr*>(delegate_pair->second);
+  }
+  visitor->VisitIntegerVariable(this, delegate);
+}
+
+void IntVar::SetValues(const int64* const values, int size) {
+  // TODO(user): reimplement all this!!
+  // TODO(user): This code leaks if the array is not sorted.
+  const int64* new_array = values;
+  if (!IsArrayActuallySorted(values, size)) {
+    new_array = NewUniqueSortedArray(new_array, &size);
+  }
+  const int64 vmin = Min();
+  const int64 vmax = Max();
+  const int64* first_pos = new_array;
+  const int64* last_pos = first_pos + size - 1;
+  if (*first_pos > vmax || *last_pos < vmin) {
+    solver()->Fail();
+  }
+  // TODO(user) : We could find the first position >= vmin by dichotomy.
+  while (first_pos <= last_pos &&
+         (*first_pos < vmin || !Contains(*first_pos))) {
+    if (*first_pos > vmax) {
+      solver()->Fail();
+    }
+    first_pos++;
+  }
+  if (first_pos > last_pos) {
+    solver()->Fail();
+  }
+  while (last_pos >= first_pos &&
+         (*last_pos > vmax ||
+          !Contains(*last_pos))) {
+    last_pos--;
+  }
+  DCHECK_GE(last_pos, first_pos);
+  SetRange(*first_pos, *last_pos);
+  while (first_pos < last_pos) {
+    const int64 start = (*first_pos) + 1;
+    const int64 end = *(first_pos + 1) - 1;
+    if (start <= end) {
+      RemoveInterval(start, end);
+    }
+    first_pos++;
+  }
+}
+
+// ---------- BaseIntExpr ---------
+
+void LinkVarExpr(Solver* const s, IntExpr* const expr, IntVar* const var) {
+  if (!var->Bound()) {
+    if (var->VarType() == DOMAIN_INT_VAR) {
+      DomainIntVar* dvar = reinterpret_cast<DomainIntVar*>(var);
+      s->AddDelegateConstraint(
+          s->RevAlloc(new LinkExprAndDomainIntVar(s, expr, dvar)));
+    } else {
+      s->AddDelegateConstraint(s->RevAlloc(new LinkExprAndVar(s, expr, var)));
+    }
+  }
+}
+
+IntVar* BaseIntExpr::Var() {
+  if (var_ == NULL) {
+    solver()->SaveValue(reinterpret_cast<void**>(&var_));
+    var_ = CastToVar();
+  }
+  return var_;
+}
+
+IntVar* BaseIntExpr::CastToVar() {
+  int64 vmin, vmax;
+  Range(&vmin, &vmax);
+  IntVar* const var = solver()->MakeIntVar(vmin, vmax);
+  AddDelegateName("Var", var);
+  LinkVarExpr(solver(), this, var);
+  return var;
+}
+
+void BaseIntExpr::AddDelegateName(const string& prefix,
+                                  const PropagationBaseObject* d) const {
+  // TODO(user) : Find a reversible solution when in search.
+  if (solver()->state_ != Solver::IN_SEARCH) {
+    solver()->delegate_objects_[d] = make_pair(prefix, this);
+  }
+}
+
 }   // namespace operations_research

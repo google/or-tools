@@ -192,6 +192,7 @@ class RandomLNS: public BaseLNS {
 
     return true;
   }
+
  private:
   const int free_elements_;
   ACMRandom rand_;

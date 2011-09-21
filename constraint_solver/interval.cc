@@ -11,10 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <string>
+#include <vector>
+
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
 #include "base/stringprintf.h"
+#include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 
 #if defined(_MSC_VER)

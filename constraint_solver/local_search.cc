@@ -11,10 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <string.h>
 #include <algorithm>
 #include "base/hash.h"
+#include "base/hash.h"
+#include <iterator>
 #include <set>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "base/callback.h"
 #include "base/commandlineflags.h"
@@ -22,10 +27,14 @@
 #include "base/logging.h"
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
+#include "base/bitmap.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
+#include "base/hash.h"
+#include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "graph/hamiltonian_path.h"
+#include "base/random.h"
 
 DEFINE_int32(cp_local_search_sync_frequency, 16,
              "Frequency of checks for better solutions in the solution pool.");

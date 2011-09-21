@@ -15,7 +15,7 @@
 #define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
 
 #include <math.h>
-
+#include <stddef.h>
 #include "base/hash.h"
 #include <string>
 #include <vector>
@@ -30,14 +30,24 @@
 #include "base/join.h"
 #include "base/bitmap.h"
 #include "base/map-util.h"
+#include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 #include "util/vector_map.h"
+
+template <typename T> class ResultCallback;
 
 class WallTimer;
 
 namespace operations_research {
 // This is the base class for all non-variable expressions.
 // It proposes a basic 'cast-to-var' implementation.
+
+class CPArgumentProto;
+class CPConstraintProto;
+class CPIntegerExpressionProto;
+class CPIntervalVariableProto;
+class ConstIntArray;
+template <class T> class ConstPtrArray;
 
 class BaseIntExpr : public IntExpr {
  public:

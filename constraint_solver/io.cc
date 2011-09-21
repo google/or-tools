@@ -11,14 +11,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <stddef.h>
+#include <algorithm>
+#include "base/hash.h"
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "base/callback.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/scoped_ptr.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
 #include "base/stl_util.h"
+#include "base/hash.h"
+#include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/model.pb.h"
-#include "util/bitset.h"
+#include "constraint_solver/search_limit.pb.h"
 #include "util/vector_map.h"
 
 namespace operations_research {

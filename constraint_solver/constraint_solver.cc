@@ -17,9 +17,8 @@
 #include "constraint_solver/constraint_solver.h"
 
 #include <setjmp.h>
-
-#include <deque>
-#include <sstream>
+#include <string.h>
+#include <iosfwd>
 
 #include "base/callback.h"
 #include "base/commandlineflags.h"
@@ -30,8 +29,8 @@
 #include "base/stringprintf.h"
 #include "base/file.h"
 #include "base/recordio.h"
-#include "zlib.h"
 #include "base/stringpiece.h"
+#include "zlib.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
 #include "constraint_solver/constraint_solveri.h"

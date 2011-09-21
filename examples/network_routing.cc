@@ -143,6 +143,7 @@ class NetworkRoutingData {
   void set_name(const string& name) { name_ = name; }
   void set_max_capacity(int max_capacity) { max_capacity_ = max_capacity; }
   void set_fixed_charge_cost(int cost) { fixed_charge_cost_ = cost; }
+
  private:
   string name_;
   int num_nodes_;
@@ -232,6 +233,7 @@ class NetworkRoutingDataBuilder {
              seed,
              data);
   }
+
  private:
   void InitData(int size, int seed) {
     network_.clear();
@@ -719,6 +721,7 @@ class NetworkRoutingSolver {
       }
       return true;
     }
+
    private:
     struct ArcWrapper {
      public:

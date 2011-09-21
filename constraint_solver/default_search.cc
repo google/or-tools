@@ -11,7 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <stddef.h>
+#include <string.h>
 #include <limits>
+#include <string>
+#include <vector>
 
 #include "base/callback.h"
 #include "base/commandlineflags.h"
@@ -19,13 +23,10 @@
 #include "base/logging.h"
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
-#include "base/stringprintf.h"
-#include "base/concise_iterator.h"
-#include "base/map-util.h"
-#include "base/stl_util-inl.h"
-#include "base/random.h"
-#include "constraint_solver/constraint_solveri.h"
+#include "base/stl_util.h"
+#include "constraint_solver/constraint_solver.h"
 #include "util/cached_log.h"
+#include "base/random.h"
 
 DEFINE_int32(cp_impact_divider, 10, "Divider for continuous update.");
 

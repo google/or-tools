@@ -88,6 +88,7 @@ class RandomMatrix {
                  RoutingModel::NodeIndex to) const {
     return matrix_[MatrixIndex(from, to)];
   }
+
  private:
   int64 MatrixIndex(RoutingModel::NodeIndex from,
                     RoutingModel::NodeIndex to) const {

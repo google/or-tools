@@ -11,14 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <string.h>
 #include <algorithm>
 #include <string>
+#include <vector>
 
 #include "base/callback.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
+#include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/const_int_array.h"
 #include "util/string_array.h"

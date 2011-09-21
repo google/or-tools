@@ -19,6 +19,7 @@
 #elif !defined(_MSC_VER)
 #include <endian.h>
 #endif
+#include <string.h>
 #include <climits>
 #include <cstdio>
 #include <limits>

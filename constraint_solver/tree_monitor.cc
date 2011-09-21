@@ -11,12 +11,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <string.h>
+#include <algorithm>
 #include "base/hash.h"
 #include <limits>
 #include <map>
 #include <set>
+#include <string>
+#include <vector>
+
+#include "base/integral_types.h"
+#include "base/logging.h"
+#include "base/scoped_ptr.h"
+#include "base/stringprintf.h"
+#include "base/file.h"
 #include "base/concise_iterator.h"
-#include "base/stl_util-inl.h"
+#include "base/map-util.h"
+#include "base/stl_util.h"
+#include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 #include <iostream>
 #include <fstream>

@@ -18,8 +18,11 @@
 //     that the sum of demands of the intervals containing any given integer
 //     does not exceed a capacity.
 
-#include <cmath>
-#include <utility>
+#include <string.h>
+#include <algorithm>
+#include "base/hash.h"
+#include <string>
+#include <vector>
 
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -28,12 +31,12 @@
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "base/join.h"
-#include "base/stl_util-inl.h"
+#include "base/stl_util.h"
 #include "base/mathutil.h"
+#include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
 #include "util/monoid_operation_tree.h"
-
 
 // TODO(user) Should these remains flags, or should they move to
 // SolverParameters?

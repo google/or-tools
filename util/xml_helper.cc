@@ -11,11 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "util/xml_helper.h"
+
 #include <sstream>
 #include <string>
+
 #include "base/stringprintf.h"
 #include "base/strutil.h"
-#include "util/xml_helper.h"
 
 namespace operations_research {
 

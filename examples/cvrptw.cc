@@ -82,6 +82,7 @@ class LocationContainer {
                       RoutingModel::NodeIndex to) const {
     return ManhattanDistance(from, to) / speed_;
   }
+
  private:
   class Location {
    public:
@@ -127,6 +128,7 @@ class RandomDemand {
                RoutingModel::NodeIndex to) const {
     return demand_[from.value()];
   }
+
  private:
   scoped_array<int64> demand_;
   const int size_;

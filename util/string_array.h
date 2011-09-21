@@ -15,6 +15,8 @@
 #define OR_TOOLS_UTIL_STRING_ARRAY_H_
 
 #include <string>
+
+#include "base/integral_types.h"
 #include "base/stringprintf.h"
 
 using std::string;

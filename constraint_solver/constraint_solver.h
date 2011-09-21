@@ -59,6 +59,7 @@
 #define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
 
 #include "base/hash.h"
+#include "base/hash.h"
 #include <iosfwd>
 #include <string>
 #include <utility>
@@ -98,15 +99,15 @@ class Action;
 class Assignment;
 class AssignmentProto;
 class BaseObject;
-class ClockTimer;
-class ConstIntArray;
-class Constraint;
 class CPArgumentProto;
 class CPConstraintProto;
 class CPIntegerExpressionProto;
 class CPIntervalVariableProto;
 class CPModelBuilder;
 class CPModelProto;
+class ClockTimer;
+class ConstIntArray;
+class Constraint;
 class Decision;
 class DecisionBuilder;
 class DecisionVisitor;
@@ -125,9 +126,9 @@ class IntervalVarElement;
 class LocalSearchFilter;
 class LocalSearchOperator;
 class LocalSearchPhaseParameters;
+class MPSolver;
 class ModelCache;
 class ModelVisitor;
-class MPSolver;
 class NoGoodManager;
 class NoGoodTerm;
 class OptimizeVar;

@@ -1,7 +1,7 @@
 // Copyright 2011 Google Inc. All Rights Reserved.
 
-#ifndef OR_TOOLS_GRAPH_PRINT_DIMACS_ASSIGNMENT_H_
-#define OR_TOOLS_GRAPH_PRINT_DIMACS_ASSIGNMENT_H_
+#ifndef OR_TOOLS_EXAMPLES_PRINT_DIMACS_ASSIGNMENT_H_
+#define OR_TOOLS_EXAMPLES_PRINT_DIMACS_ASSIGNMENT_H_
 
 #include <string>
 
@@ -16,4 +16,4 @@ void PrintDimacsAssignmentProblem(const LinearSumAssignment& assignment,
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_PRINT_DIMACS_ASSIGNMENT_H_
+#endif  // OR_TOOLS_EXAMPLES_PRINT_DIMACS_ASSIGNMENT_H_

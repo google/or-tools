@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <string.h>
 #include <vector>
 
 #include "base/commandlineflags.h"
@@ -18,6 +19,7 @@
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stl_util.h"
+#include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/const_int_array.h"
 #include "util/const_ptr_array.h"

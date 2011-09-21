@@ -12,20 +12,24 @@
 // limitations under the License.
 
 #include <math.h>
-#include <limits>
+#include <stddef.h>
+#include <algorithm>
+#include "base/hash.h"
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/file.h"
-#include "base/stl_util-inl.h"
-#include "constraint_solver/constraint_solveri.h"
+#include "base/stl_util.h"
+#include "base/hash.h"
+#include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/demon_profiler.pb.h"
 
 namespace operations_research {
-// ------------ Demon Info -----------
-class DemonProfiler;
 
-class DemonProfilerTest;
 
 // DemonMonitor manages the profiling of demons and allows access to gathered
 // data. Add this class as a parameter to Solver and access its information

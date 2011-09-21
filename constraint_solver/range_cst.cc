@@ -13,8 +13,11 @@
 //
 //  Range constraints
 
+#include <stddef.h>
+#include <string>
+
 #include "base/logging.h"
-#include "constraint_solver/constraint_solveri.h"
+#include "constraint_solver/constraint_solver.h"
 
 namespace operations_research {
 
