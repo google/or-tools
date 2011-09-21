@@ -214,6 +214,9 @@ class NodeIndexResultCallback2
 %rename (cumulVar) CumulVar;
 %rename (transitVar) TransitVar;
 %rename (addToAssignment) AddToAssignment;
+%rename (isVehicleUsed) IsVehicleUsed;
+%rename (next) Next;
+%rename (compactAssignment) CompactAssignment;
 %rename (size) Size;
 %rename (costVar) CostVar;
 %rename (updateTimeLimit) UpdateTimeLimit;

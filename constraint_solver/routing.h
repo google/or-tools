@@ -33,11 +33,13 @@
 #include <utility>
 #include <vector>
 
+#include "base/callback-types.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
+#include "base/macros.h"
 #include "base/scoped_ptr.h"
-#include "base/int-type.h"
 #include "base/int-type-indexed-vector.h"
+#include "base/int-type.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 
@@ -239,6 +241,26 @@ class RoutingModel {
   void AssignmentToRoutes(const Assignment& assignment,
                           std::vector<std::vector<NodeIndex> >* const routes) const;
 
+  // Returns a compacted version of the given assignment, in which all vehicles
+  // with id lower or equal to some N have non-empty routes, and all vehicles
+  // with id greater than N have empty routes. Does not take ownership of the
+  // returned object.
+  // If found, the cost of the compact assignment is the same as in the
+  // original assignment and it preserves the values of 'active' variables.
+  // Returns NULL if a compact assignment was not found.
+  // This method only works in homogenous mode, and it only swaps equivalent
+  // vehicles (vehicles with the same start and end nodes). When creating the
+  // compact assignment, the empty plan is replaced by the route assigned to the
+  // compatible vehicle with the highest id. Note that with more complex
+  // constraints on vehicle variables, this method might fail even if a compact
+  // solution exists.
+  // This method changes the vehicle and dimension variables as necessary.
+  // While compacting the solution, only basic checks on vehicle variables are
+  // performed; the complete solution is checked at the end and if it is not
+  // valid, no attempts to repair it are made (instead, the method returns
+  // NULL).
+  Assignment* CompactAssignment(const Assignment& assignment) const;
+
   // Inspection
   int Start(int vehicle) const { return starts_[vehicle]; }
   int End(int vehicle) const { return ends_[vehicle]; }
@@ -255,6 +277,10 @@ class RoutingModel {
   }
   int64 GetFirstSolutionCost(int64 i, int64 j);
   bool homogeneous_costs() const { return homogeneous_costs_; }
+
+  // Assignment inspection
+  int Next(const Assignment& assignment, int index) const;
+  bool IsVehicleUsed(const Assignment& assignment, int vehicle) const;
 
   // Variables
   IntVar** Nexts() const { return nexts_.get(); }
@@ -316,6 +342,22 @@ class RoutingModel {
   IntVar* CreateDisjunction(int disjunction);
   // Returns the first active node in nodes starting from index + 1.
   int FindNextActive(int index, const std::vector<int>& nodes) const;
+
+  // Checks that all nodes on the route starting at start_index (using the
+  // solution stored in assignment) can be visited by the given vehicle.
+  bool RouteCanBeUsedByVehicle(const Assignment& assignment,
+                               int start_index,
+                               int vehicle) const;
+  // Replaces the route of unused_vehicle with the route of active_vehicle in
+  // compact_assignment. Expects that unused_vehicle is a vehicle with an empty
+  // route and that the route of active_vehicle is non-empty. Also expects that
+  // 'assignment' contains the original assignment, from which
+  // compact_assignment was created.
+  // Returns true if the vehicles were successfully swapped; otherwise, returns
+  // false.
+  bool ReplaceUnusedVehicle(int unused_vehicle,
+                            int active_vehicle,
+                            Assignment* compact_assignment) const;
 
   NodeEvaluator2* NewCachedCallback(NodeEvaluator2* callback);
   Solver::IndexEvaluator3* BuildCostCallback();

@@ -13,19 +13,26 @@
 
 #include "constraint_solver/routing.h"
 
+#include <stddef.h>
+#include <string.h>
 #include <algorithm>
 #include "base/hash.h"
+
 #include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
-#include "base/timer.h"
+#include "base/bitmap.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
-#include "base/stl_util-inl.h"
+#include "base/stl_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solveri.h"
+
+namespace operations_research {
+class LocalSearchPhaseParameters;
+}  // namespace operations_research
 
 // Neighborhood deactivation
 DEFINE_bool(routing_no_lns, false,
@@ -94,6 +101,9 @@ DEFINE_bool(routing_search_trace, false,
             "Routing: use SearchTrace for monitoring search.");
 DEFINE_bool(routing_use_homogeneous_costs, true,
             "Routing: use homogeneous cost model when possible.");
+DEFINE_bool(routing_check_compact_assignment, true,
+            "Routing::CompactAssignment calls Solver::CheckAssignment on the "
+            "compact assignment.");
 
 #if defined(_MSC_VER)
 namespace stdext {
@@ -887,6 +897,171 @@ const Assignment* RoutingModel::Solve(const Assignment* assignment) {
   }
 }
 
+bool RoutingModel::RouteCanBeUsedByVehicle(const Assignment& assignment,
+                                           int start_index,
+                                           int vehicle) const {
+  int current_index = IsStart(start_index) ?
+                      Next(assignment, start_index) : start_index;
+  while (!IsEnd(current_index)) {
+    const IntVar* const vehicle_var = VehicleVar(current_index);
+    if (!vehicle_var->Contains(vehicle)) {
+      return false;
+    }
+    const int next_index = Next(assignment, current_index);
+    CHECK_NE(next_index, current_index) << "Inactive node inside a route";
+    current_index = next_index;
+  }
+  return true;
+}
+
+bool RoutingModel::ReplaceUnusedVehicle(
+    int unused_vehicle,
+    int active_vehicle,
+    Assignment* const compact_assignment) const {
+  CHECK_NOTNULL(compact_assignment);
+  CHECK(!IsVehicleUsed(*compact_assignment, unused_vehicle));
+  CHECK(IsVehicleUsed(*compact_assignment, active_vehicle));
+  // Swap NextVars at start nodes.
+  const int unused_vehicle_start = Start(unused_vehicle);
+  IntVar* const unused_vehicle_start_var = NextVar(unused_vehicle_start);
+  const int unused_vehicle_end = End(unused_vehicle);
+  const int active_vehicle_start = Start(active_vehicle);
+  const int active_vehicle_end = End(active_vehicle);
+  IntVar* const active_vehicle_start_var = NextVar(active_vehicle_start);
+  const int active_vehicle_next =
+      compact_assignment->Value(active_vehicle_start_var);
+  compact_assignment->SetValue(unused_vehicle_start_var, active_vehicle_next);
+  compact_assignment->SetValue(active_vehicle_start_var, End(active_vehicle));
+
+  // Update VehicleVars along the route, update the last NextVar.
+  int current_index = active_vehicle_next;
+  while (!IsEnd(current_index)) {
+    IntVar* const vehicle_var = VehicleVar(current_index);
+    compact_assignment->SetValue(vehicle_var, unused_vehicle);
+    const int next_index = Next(*compact_assignment, current_index);
+    if (IsEnd(next_index)) {
+      IntVar* const last_next_var = NextVar(current_index);
+      compact_assignment->SetValue(last_next_var, End(unused_vehicle));
+    }
+    current_index = next_index;
+  }
+
+  // Update dimensions: update transits at the start.
+  for (VarMap::const_iterator dimension = transits_.begin();
+       dimension != transits_.end(); ++dimension) {
+    IntVar** const transit_variables = dimension->second;
+    IntVar* const unused_vehicle_transit_var =
+        transit_variables[unused_vehicle_start];
+    IntVar* const active_vehicle_transit_var =
+        transit_variables[active_vehicle_start];
+    const bool contains_unused_vehicle_transit_var =
+        compact_assignment->Contains(unused_vehicle_transit_var);
+    const bool contains_active_vehicle_transit_var =
+        compact_assignment->Contains(active_vehicle_transit_var);
+    if (contains_unused_vehicle_transit_var !=
+        contains_active_vehicle_transit_var) {
+      LG << "The assignment contains transit variable for dimension '"
+         << dimension->first << "' for some vehicles, but not for all";
+      return false;
+    }
+    if (contains_unused_vehicle_transit_var) {
+      const int64 old_unused_vehicle_transit =
+          compact_assignment->Value(unused_vehicle_transit_var);
+      const int64 old_active_vehicle_transit =
+          compact_assignment->Value(active_vehicle_transit_var);
+      compact_assignment->SetValue(unused_vehicle_transit_var,
+                                   old_active_vehicle_transit);
+      compact_assignment->SetValue(active_vehicle_transit_var,
+                                   old_unused_vehicle_transit);
+    }
+
+    // Update dimensions: update cumuls at the end.
+    IntVar** const cumul_variables =
+        FindWithDefault(cumuls_, dimension->first, NULL);
+    CHECK_NOTNULL(cumul_variables);
+    IntVar* const unused_vehicle_cumul_var =
+        cumul_variables[unused_vehicle_end];
+    IntVar* const active_vehicle_cumul_var =
+        cumul_variables[active_vehicle_end];
+    const int64 old_unused_vehicle_cumul =
+        compact_assignment->Value(unused_vehicle_cumul_var);
+    const int64 old_active_vehicle_cumul =
+        compact_assignment->Value(active_vehicle_cumul_var);
+    compact_assignment->SetValue(unused_vehicle_cumul_var,
+                                 old_active_vehicle_cumul);
+    compact_assignment->SetValue(active_vehicle_cumul_var,
+                                 old_unused_vehicle_cumul);
+  }
+  return true;
+}
+
+Assignment* RoutingModel::CompactAssignment(
+    const Assignment& assignment) const {
+  CHECK_EQ(assignment.solver(), solver_.get());
+  if (!homogeneous_costs_) {
+    LG << "The costs are not homogeneous, routes cannot be rearranged";
+    return NULL;
+  }
+
+  Assignment* compact_assignment = new Assignment(&assignment);
+  for (int vehicle = 0; vehicle < vehicles_ - 1; ++vehicle) {
+    if (IsVehicleUsed(*compact_assignment, vehicle)) {
+      continue;
+    }
+    const int vehicle_start = Start(vehicle);
+    const int vehicle_end = End(vehicle);
+    // Find the last vehicle, that can swap routes with this one.
+    int swap_vehicle = vehicles_ - 1;
+    bool has_more_vehicles_with_route = false;
+    for (; swap_vehicle > vehicle; --swap_vehicle) {
+      // If a vehicle was already swapped, it will appear in compact_assignment
+      // as unused.
+      if (!IsVehicleUsed(*compact_assignment, swap_vehicle)
+          || !IsVehicleUsed(*compact_assignment, swap_vehicle)) {
+        continue;
+      }
+      has_more_vehicles_with_route = true;
+      const int swap_vehicle_start = Start(swap_vehicle);
+      const int swap_vehicle_end = End(swap_vehicle);
+      if (IndexToNode(vehicle_start) != IndexToNode(swap_vehicle_start)
+          || IndexToNode(vehicle_end) != IndexToNode(swap_vehicle_end)) {
+        continue;
+      }
+
+      // Check that updating VehicleVars is OK.
+      if (RouteCanBeUsedByVehicle(*compact_assignment, swap_vehicle_start,
+                                  vehicle)) {
+        break;
+      }
+    }
+
+    if (swap_vehicle == vehicle) {
+      if (has_more_vehicles_with_route) {
+        // No route can be assigned to this vehicle, but there are more vehicles
+        // with a route left. This would leave a gap in the indices.
+        LG << "No vehicle that can be swapped with " << vehicle << " was found";
+        delete compact_assignment;
+        return NULL;
+      } else {
+        break;
+      }
+    } else {
+      if (!ReplaceUnusedVehicle(vehicle, swap_vehicle, compact_assignment)) {
+        delete compact_assignment;
+        return NULL;
+      }
+    }
+  }
+  if (FLAGS_routing_check_compact_assignment) {
+    if (!solver_->CheckAssignment(compact_assignment)) {
+      LG << "The compacted assignment is not a valid solution";
+      delete compact_assignment;
+      return NULL;
+    }
+  }
+  return compact_assignment;
+}
+
 int RoutingModel::FindNextActive(int index, const std::vector<int>& nodes) const {
   ++index;
   CHECK_LE(0, index);
@@ -1199,6 +1374,25 @@ int64 RoutingModel::GetPenaltyCost(int64 i) const {
 
 bool RoutingModel::IsStart(int64 index) const {
   return !IsEnd(index) && index_to_vehicle_[index] != kUnassigned;
+}
+
+bool RoutingModel::IsVehicleUsed(const Assignment& assignment,
+                                 int vehicle) const {
+  CHECK_GE(vehicle, 0);
+  CHECK_LT(vehicle, vehicles_);
+  CHECK_EQ(solver_.get(), assignment.solver());
+  IntVar* const start_var = NextVar(Start(vehicle));
+  CHECK(assignment.Contains(start_var));
+  return !IsEnd(assignment.Value(start_var));
+}
+
+int RoutingModel::Next(const Assignment& assignment,
+                       int index) const {
+  CHECK_EQ(solver_.get(), assignment.solver());
+  IntVar* const next_var = NextVar(index);
+  CHECK(assignment.Contains(next_var));
+  CHECK(assignment.Bound(next_var));
+  return assignment.Value(next_var);
 }
 
 int64 RoutingModel::GetCost(int64 i, int64 j, int64 vehicle) {
