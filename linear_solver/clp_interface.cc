@@ -126,6 +126,7 @@ class CLPInterface : public MPSolverInterface {
   virtual double ComputeExactConditionNumber() const {
     // CLP does not provide the necessary API to access the inverse basis.
     LOG(FATAL) << "ComputeExactConditionNumber is not implemented in CLP.";
+    return 0.0;
   }
 
  private:
@@ -547,6 +548,7 @@ MPSolver::BasisStatus CLPInterface::TransformCLPBasisStatus(
       return MPSolver::FIXED_VALUE;
     default:
       LOG(FATAL) << "Unknown CLP basis status";
+      return MPSolver::FREE;
   }
 }
 

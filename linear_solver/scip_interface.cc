@@ -98,10 +98,12 @@ class SCIPInterface : public MPSolverInterface {
   // Returns the basis status of a row.
   virtual MPSolver::BasisStatus row_status(int constraint_index) const {
     LOG(FATAL) << "Basis status only available for continuous problems";
+    return MPSolver::FREE;
   }
   // Returns the basis status of a column.
   virtual MPSolver::BasisStatus column_status(int variable_index) const {
     LOG(FATAL) << "Basis status only available for continuous problems";
+    return MPSolver::FREE;
   }
 
   // ----- Misc -----
@@ -129,6 +131,7 @@ class SCIPInterface : public MPSolverInterface {
 
   virtual double ComputeExactConditionNumber() const {
     LOG(FATAL) << "Condition number only available for continuous problems";
+    return 0.0;
   }
 
  private:

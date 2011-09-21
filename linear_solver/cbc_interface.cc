@@ -163,6 +163,7 @@ class CBCInterface : public MPSolverInterface {
 
   virtual double ComputeExactConditionNumber() const {
     LOG(FATAL) << "Condition number only available for continuous problems";
+    return 0.0;
   }
 
  private:

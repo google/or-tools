@@ -689,6 +689,7 @@ GLPKInterface::TransformGLPKBasisStatus(int glpk_basis_status) const {
       return MPSolver::FIXED_VALUE;
     default:
       LOG(FATAL) << "Unknown GLPK basis status";
+      return MPSolver::FREE;
   }
 }
 
