@@ -37,6 +37,7 @@ CPBINARIES = \
 cpexe: $(CPBINARIES)
 
 LPBINARIES = \
+	column_generation$E \
 	integer_solver_example$E \
 	linear_solver_example$E \
 	linear_solver_example_with_protocol_buffers$E
@@ -511,6 +512,12 @@ tsp$E: $(CP_LIBS) $(BASE_LIBS) objs/tsp.$O
 	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)tsp$E
 
 # Linear Programming Examples
+
+objs/column_generation.$O: examples/column_generation.cc linear_solver/linear_solver.h
+	$(CCC) $(CFLAGS) -c examples/column_generation.cc $(OBJOUT)objs/column_generation.$O
+
+column_generation$E: $(LP_LIBS) $(BASE_LIBS) objs/column_generation.$O
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/column_generation.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(EXEOUT)column_generation$E
 
 objs/linear_solver_example.$O: examples/linear_solver_example.cc linear_solver/linear_solver.h
 	$(CCC) $(CFLAGS) -c examples/linear_solver_example.cc $(OBJOUT)objs/linear_solver_example.$O
