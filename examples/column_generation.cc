@@ -320,7 +320,7 @@ class CoveringProblem {
         height_(instance.height),
         grid_(instance.grid) {}
 
-  // Construct initial variables and constraints.  Initial column
+  // Constructs initial variables and constraints.  Initial column
   // (box) covers entire grid, ensuring feasibility.
   bool Init() {
     // Check consistency.
@@ -328,7 +328,7 @@ class CoveringProblem {
     if (size != area()) {
       return false;
     }
-    for (int i = 0; i < size; i++) {
+    for (int i = 0; i < size; ++i) {
       char c = grid_[i];
       if ((c != '@') && (c != '.')) return false;
     }
@@ -340,10 +340,10 @@ class CoveringProblem {
     } else {
       // Naive alternative to column generation - generate all boxes;
       // works fine for smaller problems, too slow for big.
-      for (int y_min = 0; y_min < height(); y_min++) {
-        for (int y_max = y_min; y_max < height(); y_max++) {
-          for (int x_min = 0; x_min < width(); x_min++) {
-            for (int x_max = x_min; x_max < width(); x_max++) {
+      for (int y_min = 0; y_min < height(); ++y_min) {
+        for (int y_max = y_min; y_max < height(); ++y_max) {
+          for (int x_min = 0; x_min < width(); ++x_min) {
+            for (int x_max = x_min; x_max < width(); ++x_max) {
               AddBox(Box(x_min, x_max, y_min, y_max));
             }
           }
@@ -360,7 +360,7 @@ class CoveringProblem {
 
   bool IsCellOccupied(int x, int y) const { return grid_[index(x, y)] == '@'; }
 
-  // Calculate reduced costs for each possible Box and if any is
+  // Calculates reduced costs for each possible Box and if any is
   // negative (improves cost), returns reduced cost and set target to
   // the most-negative (steepest descent) one - otherwise returns 0..
   //
@@ -380,12 +380,11 @@ class CoveringProblem {
   // each, so pre-calculate sums of cell duals for all rectangles with
   // upper-left at 0, 0, and use these to calculate the sum in
   // constant time using the standard inclusion-exclusion trick.
-  //
   double GetOptimalBox(Box* const target) {
     // Cost change threshold for new Box
     const double kCostChangeThreshold = -.01;
 
-    // Precompute the sum of reduced costs for every upper-left
+    // Precomputes the sum of reduced costs for every upper-left
     // rectangle.
     std::vector<double> upper_left_sums(area());
     ComputeUpperLeftSums(&upper_left_sums);
@@ -393,10 +392,10 @@ class CoveringProblem {
     const double max_boxes_dual = max_boxes_constraint_->dual_value();
     double best_reduced_cost = kCostChangeThreshold;
     Box best_box;
-    for (int y_min = 0; y_min < height(); y_min++) {
-      for (int y_max = y_min; y_max < height(); y_max++) {
-        for (int x_min = 0; x_min < width(); x_min++) {
-          for (int x_max = x_min; x_max < width(); x_max++) {
+    for (int y_min = 0; y_min < height(); ++y_min) {
+      for (int y_max = y_min; y_max < height(); ++y_max) {
+        for (int x_min = 0; x_min < width(); ++x_min) {
+          for (int x_max = x_min; x_max < width(); ++x_max) {
             Box box(x_min, x_max, y_min, y_max);
             const double cell_coverage_dual =  // inclusion-exclusion
                 + zero_access(upper_left_sums, x_max, y_max)
@@ -446,8 +445,8 @@ class CoveringProblem {
     MPVariable* const var = solver_->MakeNumVar(0., 1., box.DebugString());
     solver_->AddObjectiveTerm(var, box.Cost());
     max_boxes_constraint_->AddTerm(var);
-    for (int y = box.y_min(); y <= box.y_max(); y++) {
-      for (int x = box.x_min(); x <= box.x_max(); x++) {
+    for (int y = box.y_min(); y <= box.y_max(); ++y) {
+      for (int x = box.x_min(); x <= box.x_max(); ++x) {
         cell(x, y)->AddTerm(var);
       }
     }
@@ -460,7 +459,7 @@ class CoveringProblem {
                                  width_,
                                  height_,
                                  max_boxes_);
-    for (int y = 0; y < height_; y++) {
+    for (int y = 0; y < height_; ++y) {
       StringAppendF(&output,
                     "%s\n",
                     string(grid_ + width_ * y, width_).c_str());
@@ -468,7 +467,7 @@ class CoveringProblem {
     return output;
   }
 
-  // Print covering - total cost, those variables with non-zero value,
+  // Prints covering - total cost, those variables with non-zero value,
   // and graphical depiction of covering using upper case letters for
   // integral coverage and lower case for coverage using combination
   // of fractional boxes.
@@ -476,7 +475,7 @@ class CoveringProblem {
     static const double kTolerance = 1e-5;
     string output = StringPrintf("cost = %lf\n", solver_->objective_value());
     scoped_array<char> display(new char[(width_ + 1) * height_ + 1]);
-    for (int y = 0; y < height_; y++) {
+    for (int y = 0; y < height_; ++y) {
       memcpy(display.get() + y * (width_ + 1),
              grid_ + width_ * y,
              width_);  // Copy the original line.
@@ -511,33 +510,36 @@ class CoveringProblem {
   MPConstraint* cell(int x, int y) { return cells_[index(x, y)]; }
   const MPConstraint* cell(int x, int y) const { return cells_[index(x, y)]; }
 
-  // Add constraints that every cell is covered at most once, exactly
+  // Adds constraints that every cell is covered at most once, exactly
   // once if occupied.
   void AddCellConstraints() {
     cells_.resize(area());
-    for (int y = 0; y < height(); y++)
-      for (int x = 0; x < width(); x++) {
+    for (int y = 0; y < height(); ++y) {
+      for (int x = 0; x < width(); ++x) {
         cells_[index(x, y)] = solver_->MakeRowConstraint
             (IsCellOccupied(x, y) ? 1. : 0., 1.);
       }
+    }
   }
 
-  // Add constraint on maximum number of boxes used to cover.
+  // Adds constraint on maximum number of boxes used to cover.
   void AddMaxBoxesConstraint() {
     max_boxes_constraint_ = solver_->MakeRowConstraint(0., max_boxes());
   }
 
-  // get 2d array element, returning 0 if out-of-bounds
+  // Gets 2d array element, returning 0 if out-of-bounds.
   double zero_access(const std::vector<double>& array, int x, int y) const {
-    if (x < 0 || y < 0) return 0;
+    if (x < 0 || y < 0) {
+      return 0;
+    }
     return array[index(x, y)];
   }
 
-  // Precompute the sum of reduced costs for every upper-left
+  // Precomputes the sum of reduced costs for every upper-left
   // rectangle.
   void ComputeUpperLeftSums(std::vector<double>* upper_left_sums) const {
-    for (int y = 0; y < height(); y++) {
-      for (int x = 0; x < width(); x++) {
+    for (int y = 0; y < height(); ++y) {
+      for (int x = 0; x < width(); ++x) {
         upper_left_sums->operator[](index(x, y)) =
             cell(x, y)->dual_value()
             + zero_access(*upper_left_sums, x - 1, y)
@@ -560,11 +562,11 @@ class CoveringProblem {
 
 // ---------- Main Solve Method ----------
 
-// Solve iteratively using delayed column generation, up to maximum
+// Solves iteratively using delayed column generation, up to maximum
 // number of steps.
 void SolveInstance(const Instance& instance,
                    MPSolver::OptimizationProblemType solver_type) {
-  // Prepare solver.
+  // Prepares the solver.
   MPSolver solver("ColumnGeneration", solver_type);
   solver.SuppressOutput();
   solver.SetMinimization();
@@ -600,7 +602,7 @@ void SolveInstance(const Instance& instance,
     }
     problem.AddBox(box);
 
-    step_number++;
+    ++step_number;
   }
 
   if (step_number >= FLAGS_colgen_max_iterations) {
