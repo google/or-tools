@@ -263,6 +263,7 @@ class PyDecisionBuilder(object):
 %rename (BestValueSolutionCollector) MakeBestValueSolutionCollector;
 %rename (BetweenCt) MakeBetweenCt;
 %rename (BoolVar) MakeBoolVar;
+%rename (BranchesLimit) MakeBranchesLimit;
 %rename (ConstantRestart) MakeConstantRestart;
 %rename (ConvexPiecewiseExpr) MakeConvexPiecewiseExpr;
 %rename (Count) MakeCount;
@@ -273,6 +274,7 @@ class PyDecisionBuilder(object):
 %rename (Distribute) MakeDistribute;
 %rename (Element) MakeElement;
 %rename (FailDecision) MakeFailDecision;
+%rename (FailuresLimit) MakeFailuresLimit;
 %rename (FalseConstraint) MakeFalseConstraint;
 %rename (FirstSolutionCollector) MakeFirstSolutionCollector;
 %rename (FixedDurationIntervalVar) MakeFixedDurationIntervalVar;
@@ -330,6 +332,7 @@ class PyDecisionBuilder(object):
 %rename (SemiContinuousExpr) MakeSemiContinuousExpr;
 %rename (Sequence) MakeSequence;
 %rename (SimulatedAnnealing) MakeSimulatedAnnealing;
+%rename (SolutionsLimit) MakeSolutionsLimit;
 %rename (SolveOnce) MakeSolveOnce;
 %rename (SplitVariableDomain) MakeSplitVariableDomain;
 %rename (StoreAssignment) MakeStoreAssignment;
@@ -340,6 +343,7 @@ class PyDecisionBuilder(object):
 %rename (SymmetryManager) MakeSymmetryManager;
 %rename (TabuSearch) MakeTabuSearch;
 %rename (TemporalDisjunction) MakeTemporalDisjunction;
+%rename (TimeLimit) MakeTimeLimit;
 %rename (TransitionConstraint) MakeTransitionConstraint;
 %rename (TreeMonitor) MakeTreeMonitor;
 %rename (TrueConstraint) MakeTrueConstraint;
@@ -1382,6 +1386,7 @@ struct FailureProtect {
 %rename (makeBestValueSolutionCollector) operations_research::Solver::MakeBestValueSolutionCollector;
 %rename (makeBetweenCt) operations_research::Solver::MakeBetweenCt;
 %rename (makeBoolVar) operations_research::Solver::MakeBoolVar;
+%rename (makeBranchesLimit) operations_research::Solver::MakeBranchesLimit;
 %rename (makeConstantRestart) operations_research::Solver::MakeConstantRestart;
 %rename (makeConvexPiecewiseExpr) operations_research::Solver::MakeConvexPiecewiseExpr;
 %rename (makeCount) operations_research::Solver::MakeCount;
@@ -1395,6 +1400,7 @@ struct FailureProtect {
 %rename (makeElement) operations_research::Solver::MakeElement;
 %rename (makeEquality) operations_research::Solver::MakeEquality;
 %rename (makeFailDecision) operations_research::Solver::MakeFailDecision;
+%rename (makeFailuresLimit) operations_research::Solver::MakeFailuresLimit;
 %rename (makeFalseConstraint) operations_research::Solver::MakeFalseConstraint;
 %rename (makeFirstSolutionCollector) operations_research::Solver::MakeFirstSolutionCollector;
 %rename (makeFixedDurationIntervalVar) operations_research::Solver::MakeFixedDurationIntervalVar;
@@ -1469,6 +1475,7 @@ struct FailureProtect {
 %rename (makeSemiContinuousExpr) operations_research::Solver::MakeSemiContinuousExpr;
 %rename (makeSequence) operations_research::Solver::MakeSequence;
 %rename (makeSimulatedAnnealing) operations_research::Solver::MakeSimulatedAnnealing;
+%rename (makeSolutionsLimit) operations_research::Solver::MakeSolutionsLimit;
 %rename (makeSolveOnce) operations_research::Solver::MakeSolveOnce;
 %rename (makeSplitVariableDomain) operations_research::Solver::MakeSplitVariableDomain;
 %rename (makeSquare) operations_research::Solver::MakeSquare;
@@ -1480,6 +1487,7 @@ struct FailureProtect {
 %rename (makeSymmetryManager) operations_research::Solver::MakeSymmetryManager;
 %rename (makeTabuSearch) operations_research::Solver::MakeTabuSearch;
 %rename (makeTemporalDisjunction) operations_research::Solver::MakeTemporalDisjunction;
+%rename (makeTimeLimit) operations_research::Solver::MakeTimeLimit;
 %rename (makeTransitionConstraint) operations_research::Solver::MakeTransitionConstraint;
 %rename (makeTreeMonitor) operations_research::Solver::MakeTreeMonitor;
 %rename (makeTrueConstraint) operations_research::Solver::MakeTrueConstraint;

@@ -2876,6 +2876,7 @@ class GuidedLocalSearchPenalties {
   virtual bool HasValues() const = 0;
   virtual void Increment(const Arc& arc) = 0;
   virtual int64 Value(const Arc& arc) const = 0;
+  virtual void Reset() = 0;
 };
 
 // Dense GLS penalties implementation using a matrix to store penalties.
@@ -2886,6 +2887,7 @@ class GuidedLocalSearchPenaltiesTable : public GuidedLocalSearchPenalties {
   virtual bool HasValues() const { return has_values_; }
   virtual void Increment(const Arc& arc);
   virtual int64 Value(const Arc& arc) const;
+  virtual void Reset();
 
  private:
   std::vector<std::vector<int64> > penalties_;
@@ -2904,6 +2906,13 @@ void GuidedLocalSearchPenaltiesTable::Increment(const Arc& arc) {
   }
   ++first_penalties[second];
   has_values_ = true;
+}
+
+void GuidedLocalSearchPenaltiesTable::Reset() {
+  has_values_ = false;
+  for (int i = 0; i < penalties_.size(); ++i) {
+    penalties_[i].clear();
+  }
 }
 
 int64 GuidedLocalSearchPenaltiesTable::Value(const Arc& arc) const {
@@ -2925,6 +2934,7 @@ class GuidedLocalSearchPenaltiesMap : public GuidedLocalSearchPenalties {
   virtual bool HasValues() const { return (penalties_.size() != 0); }
   virtual void Increment(const Arc& arc);
   virtual int64 Value(const Arc& arc) const;
+  virtual void Reset();
 
  private:
   Bitmap penalized_;
@@ -2941,6 +2951,11 @@ GuidedLocalSearchPenaltiesMap::GuidedLocalSearchPenaltiesMap(int size)
 void GuidedLocalSearchPenaltiesMap::Increment(const Arc& arc) {
   ++penalties_[arc];
   penalized_.Set(arc.first, true);
+}
+
+void GuidedLocalSearchPenaltiesMap::Reset() {
+  penalties_.clear();
+  penalized_.Clear();
 }
 
 int64 GuidedLocalSearchPenaltiesMap::Value(const Arc& arc) const {
@@ -2963,6 +2978,7 @@ class GuidedLocalSearch : public Metaheuristic {
   virtual bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
   virtual void ApplyDecision(Decision* d);
   virtual bool AtSolution();
+  virtual void EnterSearch();
   virtual bool LocalOptimum();
   virtual int64 AssignmentElementPenalty(const Assignment& assignment,
                                          int index) = 0;
@@ -3098,6 +3114,16 @@ bool GuidedLocalSearch::AtSolution() {
   }
   assignment_.Store();
   return true;
+}
+
+void GuidedLocalSearch::EnterSearch() {
+  Metaheuristic::EnterSearch();
+  penalized_objective_ = NULL;
+  assignment_penalized_value_ = 0;
+  old_penalized_value_ = 0;
+  memset(current_penalized_values_.get(), 0,
+         size_ * sizeof(*current_penalized_values_.get()));
+  penalties_->Reset();
 }
 
 // GLS filtering; compute the penalized value corresponding to the delta and
@@ -3707,6 +3733,22 @@ bool RegularLimit::CheckTime() {
   }
 }
 }  // namespace
+
+SearchLimit* Solver::MakeTimeLimit(int64 time) {
+  return MakeLimit(time, kint64max, kint64max, kint64max);
+}
+
+SearchLimit* Solver::MakeBranchesLimit(int64 branches) {
+  return MakeLimit(kint64max, branches, kint64max, kint64max);
+}
+
+SearchLimit* Solver::MakeFailuresLimit(int64 failures) {
+  return MakeLimit(kint64max, kint64max, failures, kint64max);
+}
+
+SearchLimit* Solver::MakeSolutionsLimit(int64 solutions) {
+  return MakeLimit(kint64max, kint64max, kint64max, solutions);
+}
 
 SearchLimit* Solver::MakeLimit(int64 time,
                                int64 branches,

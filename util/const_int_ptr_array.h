@@ -28,6 +28,7 @@
 #include "base/stringprintf.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
+#include "base/hash.h"
 
 using std::string;
 
@@ -189,4 +190,3 @@ template <class T> class ConstIntPtrArray {
 };
 }  // namespace operations_research
 #endif  // OR_TOOLS_UTIL_CONST_INT_PTR_ARRAY_H_
-

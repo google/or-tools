@@ -1516,7 +1516,23 @@ class Solver {
 
   // ----- Search Limit -----
 
-  // Limit the search with the 'time', 'branches', 'failures' and
+  // Creates a search limit that constrains the running time given in
+  // milliseconds.
+  SearchLimit* MakeTimeLimit(int64 time_in_ms);
+
+  // Creates a search limit that constrains the number of branches
+  // explored in the search tree.
+  SearchLimit* MakeBranchesLimit(int64 branches);
+
+  // Creates a search limit that constrains the number of failures
+  // that can happen when exploring the search tree.
+  SearchLimit* MakeFailuresLimit(int64 failures);
+
+  // Creates a search limit that constrains the number of solutions found
+  // during the search.
+  SearchLimit* MakeSolutionsLimit(int64 solutions);
+
+  // Limits the search with the 'time', 'branches', 'failures' and
   // 'solutions' limits.
   SearchLimit* MakeLimit(int64 time,
                          int64 branches,
