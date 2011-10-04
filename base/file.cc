@@ -26,6 +26,7 @@
 
 #include "base/file.h"
 #include "base/logging.h"
+#include "base/scoped_ptr.h"
 
 namespace operations_research {
 

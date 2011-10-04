@@ -19,7 +19,6 @@
 #include <string>
 
 #include "base/integral_types.h"
-#include "base/scoped_ptr.h"
 
 // This file defines some IO interfaces to compatible with Google
 // IO specifications.
