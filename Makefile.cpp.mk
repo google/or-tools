@@ -369,6 +369,7 @@ BASE_LIB_OS=\
 	objs/logging.$O\
 	objs/random.$O\
 	objs/recordio.$O\
+	objs/split.$O\
 	objs/stringpiece.$O\
 	objs/stringprintf.$O\
 	objs/sysinfo.$O\
@@ -388,6 +389,8 @@ objs/random.$O:base/random.cc
 	$(CCC) $(CFLAGS) -c base/random.cc $(OBJOUT)objs/random.$O
 objs/recordio.$O:base/recordio.cc
 	$(CCC) $(CFLAGS) -c base/recordio.cc $(OBJOUT)objs/recordio.$O
+objs/split.$O:base/split.cc
+	$(CCC) $(CFLAGS) -c base/split.cc $(OBJOUT)objs/split.$O
 objs/stringpiece.$O:base/stringpiece.cc
 	$(CCC) $(CFLAGS) -c base/stringpiece.cc $(OBJOUT)objs/stringpiece.$O
 objs/stringprintf.$O:base/stringprintf.cc
