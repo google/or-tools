@@ -1135,6 +1135,25 @@ void RoutingModel::SetCommandLineOption(const string& name,
 }
 
 
+Assignment* RoutingModel::RestoreAssignment(const Assignment& solution) {
+  QuietCloseModel();
+  CHECK(assignment_ != NULL);
+  assignment_->Copy(&solution);
+  return DoRestoreAssignment();
+}
+
+Assignment* RoutingModel::DoRestoreAssignment() {
+  solver_->Solve(restore_assignment_, monitors_);
+  if (collect_assignments_->solution_count() == 1) {
+    status_ = ROUTING_SUCCESS;
+    return collect_assignments_->solution(0);
+  } else {
+    status_ = ROUTING_FAIL;
+    return NULL;
+  }
+  return NULL;
+}
+
 bool RoutingModel::RoutesToAssignment(const std::vector<std::vector<NodeIndex> >& routes,
                                       bool ignore_inactive_nodes,
                                       bool close_routes,
@@ -1264,17 +1283,10 @@ Assignment* RoutingModel::ReadAssignmentFromRoutes(
   if (!RoutesToAssignment(routes, ignore_inactive_nodes, true, assignment_)) {
     return NULL;
   }
-
-  solver_->Solve(restore_assignment_, monitors_);
-  // Solve() might still fail when checking constraints (most constraints are
-  // not verified by RoutesToAssignment) or when filling in dimension variables.
-  if (collect_assignments_->solution_count() >= 1) {
-    status_ = ROUTING_SUCCESS;
-    return collect_assignments_->solution(0);
-  } else {
-    status_ = ROUTING_FAIL;
-    return NULL;
-  }
+  // DoRestoreAssignment() might still fail when checking constraints (most
+  // constraints are not verified by RoutesToAssignment) or when filling in
+  // dimension variables.
+  return DoRestoreAssignment();
 }
 
 void RoutingModel::AssignmentToRoutes(

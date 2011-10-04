@@ -338,6 +338,7 @@ class RoutingModel {
   void AddDisjunctionInternal(const std::vector<NodeIndex>& nodes, int64 penalty);
   void AddNoCycleConstraintInternal();
   void SetVehicleCostInternal(int vehicle, NodeEvaluator2* evaluator);
+  Assignment* DoRestoreAssignment();
   // Returns NULL if no penalty cost, otherwise returns penalty variable.
   IntVar* CreateDisjunction(int disjunction);
   // Returns the first active node in nodes starting from index + 1.
