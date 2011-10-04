@@ -1134,6 +1134,23 @@ void RoutingModel::SetCommandLineOption(const string& name,
   google::SetCommandLineOption(name.c_str(), value.c_str());
 }
 
+bool RoutingModel::WriteAssignment(const string& file_name) const {
+  if (collect_assignments_->solution_count() == 1 && assignment_ != NULL) {
+    assignment_->Copy(collect_assignments_->solution(0));
+    return assignment_->Save(file_name);
+  } else {
+    return false;
+  }
+}
+
+Assignment* RoutingModel::ReadAssignment(const string& file_name) {
+  QuietCloseModel();
+  CHECK(assignment_ != NULL);
+  if (assignment_->Load(file_name)) {
+    return DoRestoreAssignment();
+  }
+  return NULL;
+}
 
 Assignment* RoutingModel::RestoreAssignment(const Assignment& solution) {
   QuietCloseModel();

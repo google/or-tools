@@ -208,6 +208,17 @@ class RoutingModel {
   // Assignment containing the locks can be obtained by calling PreAssignment().
   bool ApplyLocksToAllVehicles(const std::vector<std::vector<NodeIndex> >& locks,
                                bool close_routes);
+  // Writes the current solution to a file containing an AssignmentProto.
+  // Returns false if the file cannot be opened or if there is no current
+  // solution.
+  bool WriteAssignment(const string& file_name) const;
+  // Reads an assignment from a file and returns the current solution.
+  // Returns NULL if the file cannot be opened or if the assignment is not
+  // valid.
+  Assignment* ReadAssignment(const string& file_name);
+  // Restores an assignment as a solution in the routing model and returns the
+  // new solution. Returns NULL if the assignment is not valid.
+  Assignment* RestoreAssignment(const Assignment& solution);
   // Restores the routes as the current solution. Returns NULL if the solution
   // cannot be restored (routes do not contain a valid solution).
   // Note that calling this method will run the solver to assign values to the
