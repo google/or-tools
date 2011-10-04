@@ -56,7 +56,7 @@ class JobShopData {
   };
 
   JobShopData()
-      : name_(""), machines_(0), jobs_(0), horizon_(0), job_index_(0) {}
+      : name_(""), machine_count_(0), job_count_(0), horizon_(0), job_index_(0) {}
 
   ~JobShopData() {}
 
@@ -72,10 +72,10 @@ class JobShopData {
   }
 
   // The number of machines in the jobshop.
-  int machines() const { return machines_; }
+  int machines() const { return machine_count_; }
 
   // The number of jobs in the jobshop.
-  int jobs() const { return jobs_; }
+  int jobs() const { return job_count_; }
 
   // The name of the jobshop instance.
   const string& name() const { return name_; }
@@ -98,24 +98,22 @@ class JobShopData {
         LOG(INFO) << "Name = " << words[1];
         name_ = words[1];
       } else {
-        int j = atoi32(words[0]);
-        int m = atoi32(words[1]);
-        CHECK_GT(m, 0);
-        CHECK_GT(j, 0);
-        machines_ = m;
-        jobs_ = j;
-        LOG(INFO) << m << " machines and " << j << " jobs";
-        all_tasks_.resize(jobs_);
+        job_count_ = atoi32(words[0]);
+        machine_count_ = atoi32(words[1]);
+        CHECK_GT(machine_count_, 0);
+        CHECK_GT(job_count_, 0);
+        LOG(INFO) << machine_count_ << " machines and " << job_count_ << " jobs";
+        all_tasks_.resize(job_count_);
       }
     }
-    if (words.size() > 2 && machines_ != 0) {
-      CHECK_EQ(words.size(), machines_ * 2);
-      for (int i = 0; i < machines_; ++i) {
+    if (words.size() > 2 && machine_count_ != 0) {
+      CHECK_EQ(words.size(), machine_count_ * 2);
+      for (int i = 0; i < machine_count_; ++i) {
         const int machine_id = atoi32(words[2 * i]);
         const int duration = atoi32(words[2 * i + 1]);
         AddTask(job_index_, machine_id, duration);
-        job_index_++;
       }
+      job_index_++;
     }
   }
 
@@ -125,8 +123,8 @@ class JobShopData {
   }
 
   string name_;
-  int machines_;
-  int jobs_;
+  int machine_count_;
+  int job_count_;
   int horizon_;
   std::vector<std::vector<Task> > all_tasks_;
   int job_index_;
@@ -203,7 +201,7 @@ void Jobshop(const JobShopData& data) {
       solver.Compose(sequence_phase, obj_phase);
 
   SearchMonitor* const search_log =
-      solver.MakeSearchLog(100, objective_monitor);
+      solver.MakeSearchLog(1000000, objective_monitor);
   solver.Solve(main_phase, search_log, objective_monitor);
 }
 }  // namespace operations_research
