@@ -91,13 +91,13 @@ File* File::Open(const char* const name, const char* const flag) {
   return f;
 }
 
-bool File::ReadLine(std::string* const line) {
-  char buff[1000000];
-  char* const result = fgets(buff, 1000000, f_);
+bool File::ReadToString(std::string* const line, uint64 max_length) {
+  scoped_array<char> buff(new char[max_length]);
+  char* const result = fgets(buff.get(), max_length, f_);
   if (result == NULL) {
     return false;
   } else {
-    *line = std::string(buff);
+    *line = std::string(buff.get());
     return true;
   }
 }

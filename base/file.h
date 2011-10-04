@@ -18,6 +18,9 @@
 #include <cstdio>
 #include <string>
 
+#include "base/integral_types.h"
+#include "base/scoped_ptr.h"
+
 // This file defines some IO interfaces to compatible with Google
 // IO specifications.
 namespace operations_research {
@@ -32,9 +35,6 @@ class File {
     return Open(name.c_str(), mode);
   }
 #endif
-  inline static File* Create(const std::string& name, const char* const mode) {
-    return File::Open(name.c_str(), mode);
-  }
 
   // Opens file "name" with flags specified by "flag"
   // If open failed, program will exit.
@@ -47,9 +47,9 @@ class File {
   // If read failed, program will exit.
   void ReadOrDie(void* const buff, size_t size);
 
-  // Reads a line from file.
-  // Each line must be no more than 1000000 bytes
-  bool ReadLine(std::string* const line);
+  // Reads a line from file to a string.
+  // Each line must be no more than max_length bytes
+  bool ReadToString(std::string* const line, uint64 max_length);
 
   // Writes "size" bytes of buff to file, buff should be pre-allocated.
   size_t Write(const void* const buff, size_t size);
@@ -96,4 +96,3 @@ class File {
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_BASE_FILE_H_
-
