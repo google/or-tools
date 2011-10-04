@@ -247,8 +247,9 @@ int Run() {
     const int size = licence->Size();
     char* const text = new char[size + 1];
     licence->Read(text, size);
-    model_proto.set_licence_text(text);
     licence->Close();
+    text[size] = '\0';
+    model_proto.set_licence_text(text);
   }
 
   // ----- Reporting -----
