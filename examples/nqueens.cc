@@ -36,6 +36,7 @@ DEFINE_int32(nb_loops, 1,
 DEFINE_int32(size, 0,
   "Size of the problem. If equal to 0, will test several increasing sizes.");
 DEFINE_bool(use_symmetry, false, "Use Symmetry Breaking methods");
+DECLARE_bool(cp_no_solve);
 
 static const int kNumSolutions[] = {
   1, 0, 0, 2, 10, 4, 40, 92, 352, 724,
@@ -176,13 +177,13 @@ void CheckNumberOfSolutions(int size, int num_solutions) {
   if (FLAGS_use_symmetry) {
     if (size - 1 < kKnownUniqueSolutions) {
       CHECK_EQ(num_solutions, kNumUniqueSolutions[size - 1]);
-    } else {
+    } else if (!FLAGS_cp_no_solve) {
       CHECK_GT(num_solutions, 0);
     }
   } else {
     if (size - 1 < kKnownSolutions) {
       CHECK_EQ(num_solutions, kNumSolutions[size - 1]);
-    } else {
+    } else if (!FLAGS_cp_no_solve) {
       CHECK_GT(num_solutions, 0);
     }
   }

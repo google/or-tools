@@ -362,18 +362,19 @@ void CostasSoft(const int dim) {
 
   std::vector<int64> costas_matrix;
   string output;
+  if (collector->solution_count() > 0) {
+    for (int n = 0; n < dim; ++n) {
+      const int64 v = collector->Value(0, vars[n]);
+      costas_matrix.push_back(v);
+      StringAppendF(&output, "%3lld", v);
+    }
 
-  for (int n = 0; n < dim; ++n) {
-    const int64 v = collector->Value(0, vars[n]);
-    costas_matrix.push_back(v);
-    StringAppendF(&output, "%3lld", v);
+    if (!CheckCostas(costas_matrix)) {
+      LG << "No Costas Matrix found, closest solution displayed.";
+    }
+
+    LG << output;
   }
-
-  if (!CheckCostas(costas_matrix)) {
-    LG << "No Costas Matrix found, closest solution displayed.";
-  }
-
-  LG << output;
 }
 
 // Computes a Costas Array.
