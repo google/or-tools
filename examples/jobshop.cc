@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-//
-//This model implements a simple jobshop named ft06.
+//This model implements a simple jobshop problem.
 //
 // A jobshop is a standard scheduling problem when you must sequence a
 // series of tasks on a set of machines. Each job contains one task per
@@ -24,97 +23,198 @@
 
 
 #include <cstdio>
-#include <map>
+#include <cstdlib>
 
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
+#include "base/strtoint.h"
+#include "base/file.h"
+#include "base/split.h"
 #include "constraint_solver/constraint_solver.h"
 
+DEFINE_string(data_file,
+              "",
+              "Filename of the data instance in the jssp formap.");
+
 namespace operations_research {
-void Jobshop() {
-  Solver solver("jobshop");
-  const int kMachineCount = 6;
-  const int kJobCount = 6;
-  const int durations[kJobCount][kMachineCount] = {{1, 3, 6, 7, 3, 6},
-                                                   {8, 5, 10, 10, 10, 4},
-                                                   {5, 4, 8, 9, 1, 7},
-                                                   {5, 5, 5, 3, 8, 9},
-                                                   {9, 3, 5, 4, 3, 1},
-                                                   {3, 3, 9, 10, 4, 1}};
 
-  const int machines[kJobCount][kMachineCount] = {{2, 0, 1, 3, 5, 4},
-                                                  {1, 2, 4, 5, 0, 3},
-                                                  {2, 3, 5, 0, 1, 4},
-                                                  {1, 0, 2, 3, 4, 5},
-                                                  {2, 1, 4, 5, 0, 3},
-                                                  {1, 3, 5, 0, 4, 2}};
+// ----- JobShopData -----
 
-  const int kHorizon = 200;
-  std::vector<std::vector<IntervalVar*> > all_tasks(kJobCount);
-  for (int i = 0; i < kJobCount; ++i) {
-    for (int j = 0; j < kMachineCount; ++j) {
-      all_tasks[i].push_back(
-          solver.MakeFixedDurationIntervalVar(0,
-                                              kHorizon,
-                                              durations[i][j],
-                                              false,
-                                              StringPrintf("Job_%i_%i", i, j)));
+// A Jobshop data parses data files and stores all data internally for
+// easy retrieval.
+class JobShopData {
+ public:
+  // A task is the basic block of a jobshop.
+  struct Task {
+    Task(int j, int m, int d) : job_id(j), machine_id(m), duration(d) {}
+    int job_id;
+    int machine_id;
+    int duration;
+  };
+
+  JobShopData()
+      : name_(""), machines_(0), jobs_(0), horizon_(0), job_index_(0) {}
+
+  ~JobShopData() {}
+
+  // Parses a file a loads data.
+  void Load(const string& filename) {
+    const uint64 kMaxLineLength = 1024;
+    File* const data_file = File::Open(filename, "r");
+    string line;
+    while (data_file->ReadToString(&line, kMaxLineLength)) {
+      ProcessNewLine(line);
     }
+    data_file->Close();
   }
-  std::vector<Sequence*> all_sequences;
-  for (int i = 0; i < kMachineCount; ++i) {
-    std::vector<IntervalVar*> machine_jobs;
-    for (int j = 0; j < kJobCount; ++j) {
-      for(int k = 0; k < kMachineCount; ++k) {
-        if (machines[j][k] == i) {
-          machine_jobs.push_back(all_tasks[j][k]);
-        }
+
+  // The number of machines in the jobshop.
+  int machines() const { return machines_; }
+
+  // The number of jobs in the jobshop.
+  int jobs() const { return jobs_; }
+
+  // The name of the jobshop instance.
+  const string& name() const { return name_; }
+
+  // The horizon of the workshop (the sum of all durations).
+  int horizon() const { return horizon_; }
+
+  // Query an individual task in a job (i.e. a sequence of tasks).
+  const Task& TaskByJob(int job_id, int index) const {
+    return all_tasks_[job_id][index];
+  }
+
+ private:
+  void ProcessNewLine(const string& line) {
+    const char* const kWordDelimiters(" ");
+    std::vector<string> words;
+    SplitStringUsing(line, kWordDelimiters, &words);
+    if (words.size() == 2) {
+      if (words[0].compare("instance") == 0) {
+        LOG(INFO) << "Name = " << words[1];
+        name_ = words[1];
+      } else {
+        int j = atoi32(words[0]);
+        int m = atoi32(words[1]);
+        CHECK_GT(m, 0);
+        CHECK_GT(j, 0);
+        machines_ = m;
+        jobs_ = j;
+        LOG(INFO) << m << " machines and " << j << " jobs";
+        all_tasks_.resize(jobs_);
       }
     }
-    all_sequences.push_back(
-        solver.MakeSequence(machine_jobs, StringPrintf("machine %i", i)));
-  }
-  std::vector<IntVar*> all_ends;
-  for (int i = 0; i < kJobCount; ++i) {
-    all_ends.push_back(all_tasks[i][kMachineCount - 1]->EndExpr()->Var());
-  }
-  IntVar* const obj_var = solver.MakeMax(all_ends)->Var();
-  OptimizeVar* const objective = solver.MakeMinimize(obj_var, 1);
-
-  for (int i = 0; i < kJobCount; ++i) {
-    for (int j = 0; j < kMachineCount - 1; ++j) {
-      solver.AddConstraint(
-          solver.MakeIntervalVarRelation(all_tasks[i][j + 1],
-                                         Solver::STARTS_AFTER_END,
-                                         all_tasks[i][j]));
+    if (words.size() > 2 && machines_ != 0) {
+      CHECK_EQ(words.size(), machines_ * 2);
+      for (int i = 0; i < machines_; ++i) {
+        const int machine_id = atoi32(words[2 * i]);
+        const int duration = atoi32(words[2 * i + 1]);
+        AddTask(job_index_, machine_id, duration);
+        job_index_++;
+      }
     }
   }
 
-  for (int i = 0; i < kMachineCount; ++i) {
-    solver.AddConstraint(all_sequences[i]);
-    LOG(INFO) << all_sequences[i]->name();
+  void AddTask(int job_id, int machine_id, int duration) {
+    all_tasks_[job_id].push_back(Task(job_id, machine_id, duration));
+    horizon_ += duration;
   }
 
-  DecisionBuilder* const vars_phase =
-      solver.MakePhase(obj_var,
+  string name_;
+  int machines_;
+  int jobs_;
+  int horizon_;
+  std::vector<std::vector<Task> > all_tasks_;
+  int job_index_;
+};
+
+void Jobshop(const JobShopData& data) {
+  Solver solver("jobshop");
+  const int machine_count = data.machines();
+  const int job_count = data.jobs();
+  const int horizon = data.horizon();
+
+  // Creates all Intervals and vars
+  std::vector<std::vector<IntervalVar*> > tasks_per_jobs(job_count);
+  std::vector<std::vector<IntervalVar*> > tasks_per_machine(machine_count);
+
+  for (int job_id = 0; job_id < job_count; ++job_id) {
+    for (int task_index = 0; task_index < machine_count; ++task_index) {
+      const JobShopData::Task& task = data.TaskByJob(job_id, task_index);
+      CHECK_EQ(job_id, task.job_id);
+      const string name = StringPrintf("J%dM%dI%dD%d",
+                                       task.job_id,
+                                       task.machine_id,
+                                       task_index,
+                                       task.duration);
+      IntervalVar* const one_task =
+          solver.MakeFixedDurationIntervalVar(0,
+                                              horizon,
+                                              task.duration,
+                                              false,
+                                              name);
+      tasks_per_jobs[task.job_id].push_back(one_task);
+      tasks_per_machine[task.machine_id].push_back(one_task);
+    }
+  }
+
+  // Creates precedences inside jobs.
+  for (int job_id = 0; job_id < job_count; ++job_id) {
+    for (int task_index = 0; task_index < machine_count - 1; ++task_index) {
+      IntervalVar* const t1 = tasks_per_jobs[job_id][task_index];
+      IntervalVar* const t2 = tasks_per_jobs[job_id][task_index + 1];
+      Constraint* const prec =
+          solver.MakeIntervalVarRelation(t2, Solver::STARTS_AFTER_END, t1);
+      solver.AddConstraint(prec);
+    }
+  }
+
+  // Creates MakeSpan.
+  std::vector<IntVar*> all_ends;
+  for (int job_id = 0; job_id < job_count; ++job_id) {
+    IntervalVar* const task = tasks_per_jobs[job_id][machine_count - 1];
+    all_ends.push_back(task->EndExpr()->Var());
+  }
+
+  // Creates sequences constraints on machines.
+  std::vector<Sequence*> all_sequences;
+  for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
+    const string name = StringPrintf("Machine_%d", machine_id);
+    Sequence* const sequence =
+        solver.MakeSequence(tasks_per_machine[machine_id], name);
+    all_sequences.push_back(sequence);
+    solver.AddConstraint(sequence);
+  }
+
+  IntVar* const objective_var = solver.MakeMax(all_ends)->Var();
+  OptimizeVar* const objective_monitor = solver.MakeMinimize(objective_var, 1);
+
+  DecisionBuilder* const obj_phase =
+      solver.MakePhase(objective_var,
                        Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_MIN_VALUE);
   DecisionBuilder* const sequence_phase =
       solver.MakePhase(all_sequences, Solver::SEQUENCE_DEFAULT);
   DecisionBuilder* const main_phase =
-      solver.Compose(sequence_phase, vars_phase);
+      solver.Compose(sequence_phase, obj_phase);
 
-  SearchMonitor* const search_log = solver.MakeSearchLog(100, objective);
-  solver.Solve(main_phase, search_log, objective);
+  SearchMonitor* const search_log =
+      solver.MakeSearchLog(100, objective_monitor);
+  solver.Solve(main_phase, search_log, objective_monitor);
 }
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
-  operations_research::Jobshop();
+  if (FLAGS_data_file.empty()) {
+    LOG(FATAL) << "Please supply a data file with --data_file=";
+  }
+  operations_research::JobShopData data;
+  data.Load(FLAGS_data_file);
+  operations_research::Jobshop(data);
   return 0;
 }
