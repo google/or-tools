@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "base/stl_util-inl.h"
+#include "base/stl_util.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "examples/global_arith.h"
 

@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "base/concise_iterator.h"
-#include "base/stl_util-inl.h"
+#include "base/stl_util.h"
 #include "linear_solver/linear_solver.h"
 #include "util/bitset.h"
 
