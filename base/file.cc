@@ -92,15 +92,34 @@ File* File::Open(const char* const name, const char* const flag) {
   return f;
 }
 
-bool File::ReadToString(std::string* const line, uint64 max_length) {
-  scoped_array<char> buff(new char[max_length]);
-  char* const result = fgets(buff.get(), max_length, f_);
-  if (result == NULL) {
-    return false;
-  } else {
-    *line = std::string(buff.get());
-    return true;
+char* File::ReadLine(char* output, uint64 max_length) {
+  char* const result = fgets(output, max_length, f_);
+  return result;
+}
+
+int64 File::ReadToString(std::string* const output, uint64 max_length) {
+  CHECK_NOTNULL(output);
+  output->clear();
+
+  if (max_length == 0) return 0;
+  if (max_length < 0) return -1;
+
+  int64 needed = max_length;
+  int bufsize = (needed < (2 << 20) ? needed : (2 << 20));
+
+  scoped_array<char> buf(new char[bufsize]);
+
+  int64 nread = 0;
+  while (needed > 0) {
+    nread = Read(buf.get(), (bufsize < needed ? bufsize : needed));
+    if (nread > 0) {
+      output->append(buf.get(), nread);
+      needed -= nread;
+    } else {
+      break;
+    }
   }
+  return (nread >= 0 ? static_cast<int64>(output->size()) : -1);
 }
 
 size_t File::WriteString(const std::string& line) {
