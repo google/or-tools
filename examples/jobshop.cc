@@ -56,7 +56,11 @@ class JobShopData {
   };
 
   JobShopData()
-      : name_(""), machine_count_(0), job_count_(0), horizon_(0), job_index_(0) {}
+      : name_(""),
+        machine_count_(0),
+        job_count_(0),
+        horizon_(0),
+        job_index_(0) {}
 
   ~JobShopData() {}
 
@@ -64,18 +68,18 @@ class JobShopData {
   void Load(const string& filename) {
     const uint64 kMaxLineLength = 1024;
     File* const data_file = File::Open(filename, "r");
-    string line;
-    while (data_file->ReadToString(&line, kMaxLineLength)) {
-      ProcessNewLine(line);
+    scoped_array<char> line(new char[kMaxLineLength]);
+    while (data_file->ReadLine(line.get(), kMaxLineLength)) {
+      ProcessNewLine(line.get());
     }
     data_file->Close();
   }
 
   // The number of machines in the jobshop.
-  int machines() const { return machine_count_; }
+  int machine_count() const { return machine_count_; }
 
   // The number of jobs in the jobshop.
-  int jobs() const { return job_count_; }
+  int job_count() const { return job_count_; }
 
   // The name of the jobshop instance.
   const string& name() const { return name_; }
@@ -132,8 +136,8 @@ class JobShopData {
 
 void Jobshop(const JobShopData& data) {
   Solver solver("jobshop");
-  const int machine_count = data.machines();
-  const int job_count = data.jobs();
+  const int machine_count = data.machine_count();
+  const int job_count = data.job_count();
   const int horizon = data.horizon();
 
   // Creates all Intervals and vars
