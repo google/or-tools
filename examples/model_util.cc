@@ -34,8 +34,8 @@ DEFINE_string(rename_model, "", "Renames to the model.");
 DEFINE_bool(strip_limit, false, "Strips limits from the model.");
 DEFINE_bool(strip_groups, false, "Strips variable groups from the model.");
 DEFINE_bool(upgrade_proto, false, "Upgrade the model to the latest version.");
-DEFINE_string(insert_licence, "",
-              "Insert content of the given file into the licence file.");
+DEFINE_string(insert_license, "",
+              "Insert content of the given file into the license file.");
 
 namespace operations_research {
 static const int kProblem = -1;
@@ -213,8 +213,8 @@ int Run() {
   // ----- Display loaded protobuf -----
 
   LOG(INFO) << "Read model " << model_proto.model();
-  if (model_proto.has_licence_text()) {
-    LOG(INFO) << "Licence = " << model_proto.licence_text();
+  if (model_proto.has_license_text()) {
+    LOG(INFO) << "License = " << model_proto.license_text();
   }
 
   // ----- Modifications -----
@@ -238,18 +238,18 @@ int Run() {
     }
   }
 
-  if (!FLAGS_insert_licence.empty()) {
-    File* const licence = File::Open(FLAGS_insert_licence, "r");
-    if (licence == NULL) {
-      LOG(WARNING) << "Cannot open " << FLAGS_insert_licence;
+  if (!FLAGS_insert_license.empty()) {
+    File* const license = File::Open(FLAGS_insert_license, "r");
+    if (license == NULL) {
+      LOG(WARNING) << "Cannot open " << FLAGS_insert_license;
       return kProblem;
     }
-    const int size = licence->Size();
+    const int size = license->Size();
     char* const text = new char[size + 1];
-    licence->Read(text, size);
-    licence->Close();
+    license->Read(text, size);
     text[size] = '\0';
-    model_proto.set_licence_text(text);
+    model_proto.set_license_text(text);
+    license->Close();
   }
 
   // ----- Reporting -----

@@ -85,5 +85,5 @@ message CPModelProto {
   optional CPObjectiveProto objective = 7;
   optional SearchLimitProto search_limit = 8;
   repeated CPVariableGroup variable_groups = 9;
-  optional string licence_text = 10;
+  optional string license_text = 10;
 }

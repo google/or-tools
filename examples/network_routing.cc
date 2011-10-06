@@ -206,23 +206,19 @@ class NetworkRoutingDataBuilder {
     CHECK_GE(max_capacity, 1);
 
     const int size = num_backbones + num_clients;
-    LOG(INFO) << "Build model -- Init data";
     InitData(size, seed);
-    LOG(INFO) << "            -- Build graph";
     BuildGraph(num_clients,
                num_backbones,
                min_client_degree,
                max_client_degree,
                min_backbone_degree,
                max_backbone_degree);
-    LOG(INFO) << "            -- Create demands";
     CreateDemands(num_clients,
                   num_backbones,
                   num_demands,
                   traffic_min,
                   traffic_max,
                   data);
-    LOG(INFO) << "            -- Fill data";
     FillData(num_clients,
              num_backbones,
              num_demands,
@@ -258,7 +254,6 @@ class NetworkRoutingDataBuilder {
                   int max_backbone_degree) {
     const int size = num_backbones + num_clients;
 
-    LOG(INFO) << "Initial backbone";
     // First we create the backbone nodes.
     for (int i = 1; i < num_backbones; ++i) {
       int j = random_.Uniform(i);
@@ -266,7 +261,6 @@ class NetworkRoutingDataBuilder {
       AddEdge(i, j);
     }
 
-    LOG(INFO) << "Complete backbone";
     hash_set<int> to_complete;
     hash_set<int> not_full;
     for (int i = 0; i < num_backbones; ++i) {
@@ -298,7 +292,6 @@ class NetworkRoutingDataBuilder {
       }
     }
 
-    LOG(INFO) << "Add clients";
     // Then create the client nodes connected to the backbone nodes.
     // If num_client is 0, then backbone nodes are also client nodes.
     for (int i = num_backbones; i < size; ++i) {

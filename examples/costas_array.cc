@@ -360,9 +360,10 @@ void CostasSoft(const int dim) {
                total_duplicates,
                search_time_limit);
 
-  std::vector<int64> costas_matrix;
-  string output;
   if (collector->solution_count() > 0) {
+    std::vector<int64> costas_matrix;
+    string output;
+
     for (int n = 0; n < dim; ++n) {
       const int64 v = collector->Value(0, vars[n]);
       costas_matrix.push_back(v);
@@ -370,10 +371,12 @@ void CostasSoft(const int dim) {
     }
 
     if (!CheckCostas(costas_matrix)) {
-      LG << "No Costas Matrix found, closest solution displayed.";
+      LOG(INFO) << "No Costas Matrix found, closest solution displayed.";
     }
 
-    LG << output;
+    LOG(INFO) << output;
+  } else {
+    LOG(INFO) << "No solution found";
   }
 }
 
@@ -432,12 +435,12 @@ void CostasHard(const int dim) {
       StringAppendF(&output, "%3lld", v);
     }
 
-    LG << output << " (" << solver.wall_time() << "ms)";
+    LOG(INFO) << output << " (" << solver.wall_time() << "ms)";
 
     CHECK(CheckCostas(costas_matrix)) <<
         ": Solution is not a valid Costas Matrix.";
   } else {
-    LG << "No solution found.";
+    LOG(INFO) << "No solution found.";
   }
   if (!FLAGS_export_profile.empty()) {
     solver.ExportProfilingOverview(FLAGS_export_profile);
@@ -461,7 +464,7 @@ int main(int argc, char **argv) {
   }
 
   for (int i = min; i <= max; ++i) {
-    LG << "Computing Costas Array for dim = " << i;
+    LOG(INFO) << "Computing Costas Array for dim = " << i;
     if (FLAGS_soft_constraints) {
       operations_research::CostasSoft(i);
     } else {

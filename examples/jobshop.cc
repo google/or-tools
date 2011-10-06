@@ -263,7 +263,12 @@ void Jobshop(const JobShopData& data) {
 }
 }  // namespace operations_research
 
+static const char kUsage[] =
+    "Usage: see flags.\nThis program runs a simple job shop optimization "
+    "output besides the debug LOGs of the solver.";
+
 int main(int argc, char **argv) {
+  google::SetUsageMessage(kUsage);
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_data_file.empty()) {
     LOG(FATAL) << "Please supply a data file with --data_file=";
