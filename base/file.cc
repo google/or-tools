@@ -92,9 +92,8 @@ File* File::Open(const char* const name, const char* const flag) {
   return f;
 }
 
-char* File::ReadLine(char* output, uint64 max_length) {
-  char* const result = fgets(output, max_length, f_);
-  return result;
+char* File::ReadLine(char* const output, uint64 max_length) {
+  return fgets(output, max_length, f_);
 }
 
 int64 File::ReadToString(std::string* const output, uint64 max_length) {

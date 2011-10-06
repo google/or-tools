@@ -48,7 +48,7 @@ class File {
 
   // Reads a line from file to a string.
   // Each line must be no more than max_length bytes
-  char* ReadLine(char* OUTPUT, uint64 max_length);
+  char* ReadLine(char* const output, uint64 max_length);
 
   // Reads the whole file to a string, with a maximum length of 'max_length'.
   // Returns the number of bytes read.
