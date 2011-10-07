@@ -463,7 +463,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     if (max != min) {
       int cumul = true;
       int64 start_cumul = min;
-      for (int64 v = min+1; v < max; ++v) {
+      for (int64 v = min + 1; v < max; ++v) {
         if (bit(v)) {
           if (!cumul) {
             cumul = true;
@@ -471,19 +471,27 @@ class SimpleBitSet : public DomainIntVar::BitSet {
           }
         } else {
           if (cumul) {
-            if (v != start_cumul + 1) {
-              StringAppendF(&out, "%" GG_LL_FORMAT
-                            "d..%" GG_LL_FORMAT "d ", start_cumul, v - 1);
-            } else {
+            if (v == start_cumul + 1) {
               StringAppendF(&out, "%" GG_LL_FORMAT "d ", start_cumul);
+            } else if (v == start_cumul + 2) {
+              StringAppendF(&out, "%" GG_LL_FORMAT
+                            "d %" GG_LL_FORMAT "d ", start_cumul, v - 1);
+            } else {
+              StringAppendF(&out, "%" GG_LL_FORMAT "d..%"
+                            GG_LL_FORMAT "d ", start_cumul, v - 1);
             }
             cumul = false;
           }
         }
       }
       if (cumul) {
-        StringAppendF(&out, "%" GG_LL_FORMAT "d..%"
-                      GG_LL_FORMAT "d", start_cumul, max);
+        if (max == start_cumul + 1) {
+          StringAppendF(&out, "%" GG_LL_FORMAT "d %"
+                        GG_LL_FORMAT "d", start_cumul, max);
+        } else {
+          StringAppendF(&out, "%" GG_LL_FORMAT "d..%"
+                        GG_LL_FORMAT "d", start_cumul, max);
+        }
       } else {
         StringAppendF(&out, "%" GG_LL_FORMAT "d", max);
       }
@@ -723,7 +731,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
     if (max != min) {
       int cumul = true;
       int64 start_cumul = min;
-      for (int64 v = min+1; v < max; ++v) {
+      for (int64 v = min + 1; v < max; ++v) {
         if (bit(v)) {
           if (!cumul) {
             cumul = true;
@@ -731,19 +739,27 @@ class SmallBitSet : public DomainIntVar::BitSet {
           }
         } else {
           if (cumul) {
-            if (v != start_cumul + 1) {
+            if (v == start_cumul + 1) {
+              StringAppendF(&out, "%" GG_LL_FORMAT "d ", start_cumul);
+            } else if (v == start_cumul + 2) {
+              StringAppendF(&out, "%" GG_LL_FORMAT
+                            "d %" GG_LL_FORMAT "d ", start_cumul, v - 1);
+            } else {
               StringAppendF(&out, "%" GG_LL_FORMAT "d..%"
                             GG_LL_FORMAT "d ", start_cumul, v - 1);
-            } else {
-              StringAppendF(&out, "%" GG_LL_FORMAT "d ", start_cumul);
             }
             cumul = false;
           }
         }
       }
       if (cumul) {
-        StringAppendF(&out, "%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
-                      "d", start_cumul, max);
+        if (max == start_cumul + 1) {
+          StringAppendF(&out, "%" GG_LL_FORMAT "d %" GG_LL_FORMAT
+                        "d", start_cumul, max);
+        } else {
+          StringAppendF(&out, "%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
+                        "d", start_cumul, max);
+        }
       } else {
         StringAppendF(&out, "%" GG_LL_FORMAT "d", max);
       }
