@@ -25,11 +25,28 @@
 //   inequality constraints. Informally, linear programming determines the way
 //   to achieve the best outcome (such as maximum profit or lowest cost) in a
 //   given mathematical model and given some list of requirements represented
-//   as linear equations. The linear programming problem was first shown to be
-//   solvable in polynomial time by Leonid Khachiyan in 1979, but a larger
-//   theoretical and practical breakthrough in the field came in 1984 when
-//   Narendra Karmarkar introduced a new interior point method for solving
-//   linear programming problems.
+//   as linear equations.
+//
+//   The most widely used technique for solving a linear program is the Simplex
+//   algorithm, devised by George Dantzig in 1947. It performs very well on
+//   most instances, for which its running time is polynomial. A lot of effort
+//   has been put into improving the algorithm and its implementation. As a
+//   byproduct, it has however been shown that one can always construct
+//   problems that take exponential time for the Simplex algorithm to solve.
+//   Research has thus focused on trying to find a polynomial algorithm for
+//   linear programming, or to prove that linear programming is indeed
+//   polynomial.
+//
+//   Leonid Khachiyan first exhibited in 1979 a weakly polynomial algorithm for
+//   linear programming. "Weakly polynomial" means that the running time of the
+//   algorithm is in O(P(n) * 2^p) where P(n) is a polynomial of the size of the
+//   problem, and p is the precision of computations expressed in number of
+//   bits. With a fixed-precision, floating-point-based implementation, a weakly
+//   polynomial algorithm will  thus run in polynomial time. No implementation
+//   of Khachiyan's algorithm has proved efficient, but a larger breakthrough in
+//   the field came in 1984 when Narendra Karmarkar introduced a new interior
+//   point method for solving linear programming problems. Interior point
+//   algorithms have proved efficient on very large linear programs.
 //
 // -----------------------------------
 // What is Mixed Integer Programming ?
@@ -44,18 +61,23 @@
 //   http://en.wikipedia.org/wiki/Linear_programming
 //
 // -----------------------------------
-// Example of a Linear Programming:
+// Example of a Linear Program:
 //
 //   mimimize:
-//     f1*x1+f2*x2+...fn*xn
+//     f1 * x1 + f2 * x2 + ... + fn * xn
 //   subject to:
-//     a1*x1+a2*x2+...an*xn >= k1
-//     b1*x1+b2*x2+...bn*xn <= k2
-//     c1*x1+c2*x2+...cn*xn =  k3
+//     a11 * x1 + a12 * x2 + ... + a1n * xn >= ka1
+//     a21 * x1 + a22 * x2 + ... + a2n * xn >= ka2
+//     ......
+//     b11 * x1 + b12 * x2 + ... + b1n * xn <= kb1
+//     b21 * x1 + b22 * x2 + ... + b2n * xn <= kb2
+//     ......
+//     c11 * x1 + c12 * x2 + ... + c1n * xn =  kc1
+//     c21 * x1 + c22 * x2 + ... + c2n * xn =  kc2
 //     ......
 //     u1 <= x1 <= v1
 //     u2 <= x2 <= v2
-//     .....
+//     ..... ( the bounds u and v can be -oo and +oo, respectively.)
 //
 //  As can be seen, Linear Programming has:
 //    1) linear objective function
@@ -413,6 +435,7 @@ class MPVariable {
   void SetLB(double lb) { SetBounds(lb, ub_); }
   void SetUB(double ub) { SetBounds(lb_, ub); }
   void SetBounds(double lb, double ub);
+
  protected:
   friend class MPSolver;
   friend class MPSolverInterface;
@@ -475,6 +498,7 @@ class MPConstraint {
   MPSolver::BasisStatus basis_status() const;
 
   int index() const { return index_; }
+
  protected:
   friend class MPSolver;
   friend class MPSolverInterface;

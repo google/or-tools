@@ -29,8 +29,8 @@
 //   Constraint* const ct_heads = s.MakeEquality(heads, 20);
 //   s.AddConstraint(ct_legs);
 //   s.AddConstraint(ct_heads);
-//   DecisionBuilder* const db = s.Phase(p, r, Solver::CHOOSE_FIRST_UNBOUND,
-//                                       Solver::ASSIGN_MIN_VALUE);
+//   DecisionBuilder* const db = s.MakePhase(p, r, Solver::CHOOSE_FIRST_UNBOUND,
+//                                           Solver::ASSIGN_MIN_VALUE);
 //   s.NewSearch(db);
 //   CHECK(s.NextSolution());
 //   LG << "rabbits -> " << r->Value() << ", pheasants -> " << p->Value();
