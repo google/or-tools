@@ -1277,26 +1277,6 @@ class Solver {
   Sequence* MakeSequence(const std::vector<IntervalVar*>& intervals,
                          const string& name);
 
-  // This constraint forces all interval vars into an non overlapping
-  // sequence.
-  Sequence* MakeSequence(const IntervalVar* const * intervals, int size,
-                         const string& name);
-
-  // This constraint forces that, for any integer t, the sum of the demands
-  // corresponding to an interval containing t does not exceed the given
-  // capacity.
-  //
-  // Intervals and demands are arrays that should both be of the given size.
-  //
-  // Demands should only contain non-negative values. Zero values are supported,
-  // and the corresponding intervals are filtered out, as they neither impact
-  // nor are impacted by this constraint.
-  Constraint* MakeCumulative(IntervalVar* const * intervals,
-                             const int64 * demands,
-                             int size,
-                             int64 capacity,
-                             const string& name);
-
   // This constraint forces that, for any integer t, the sum of the demands
   // corresponding to an interval containing t does not exceed the given
   // capacity.
@@ -1308,21 +1288,6 @@ class Solver {
   // nor are impacted by this constraint.
   Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
                              const std::vector<int64>& demands,
-                             int64 capacity,
-                             const string& name);
-
-  // This constraint forces that, for any integer t, the sum of the demands
-  // corresponding to an interval containing t does not exceed the given
-  // capacity.
-  //
-  // Intervals and demands are arrays that should both be of the given size.
-  //
-  // Demands should only contain non-negative values. Zero values are supported,
-  // and the corresponding intervals are filtered out, as they neither impact
-  // nor are impacted by this constraint.
-  Constraint* MakeCumulative(IntervalVar* const * intervals,
-                             const int * demands,
-                             int size,
                              int64 capacity,
                              const string& name);
 
@@ -3463,7 +3428,7 @@ class IntervalVar : public PropagationBaseObject {
 // search decision.
 class Sequence : public Constraint {
  public:
-  enum State { ONE_BEFORE_TWO, TWO_BEFORE_ONE, UNDECIDED };
+  enum State { ONE_BEFORE_TWO = 0, TWO_BEFORE_ONE, UNDECIDED };
 
   Sequence(Solver* const s,
            const IntervalVar* const * intervals,
@@ -3481,15 +3446,15 @@ class Sequence : public Constraint {
 
   // Returns the minimum and maximum duration of combined interval
   // vars in the sequence.
-  void DurationRange(int64* dmin, int64* dmax) const;
+  void DurationRange(int64* const dmin, int64* const dmax) const;
 
   // Returns the minimum start min and the maximum end max of all
   // interval vars in the sequence.
-  void HorizonRange(int64* hmin, int64* hmax) const;
+  void HorizonRange(int64* const hmin, int64* const hmax) const;
 
   // Returns the minimum start min and the maximum end max of all
   // unranked interval vars in the sequence.
-  void ActiveHorizonRange(int64* hmin, int64* hmax) const;
+  void ActiveHorizonRange(int64* const hmin, int64* const hmax) const;
 
   // Returns the number of interval vars already ranked.
   int Ranked() const;

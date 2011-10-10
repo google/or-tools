@@ -54,325 +54,10 @@ DEFINE_bool(cp_use_all_possible_disjunctions, true,
             "cumulative resource and that cannot overlap because the sum of "
             "their demand exceeds the capacity.");
 
-
 namespace operations_research {
-
-// ----- Sequence -----
-
-Constraint* MakeDecomposedSequenceConstraint(
-    Solver* const s, IntervalVar* const * intervals, int size);
-
-Sequence::Sequence(Solver* const s,
-                   const IntervalVar* const * intervals,
-                   int size,
-                   const string& name)
-  : Constraint(s), intervals_(new IntervalVar*[size]),
-    size_(size),  ranks_(new int[size]), current_rank_(0) {
-  memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
-  states_.resize(size);
-  for (int i = 0; i < size_; ++i) {
-    ranks_[i] = 0;
-    states_[i].resize(size, UNDECIDED);
-  }
-  set_name(name);
-}
-
-Sequence::~Sequence() {}
-
-IntervalVar* Sequence::Interval(int index) const {
-  CHECK_GE(index, 0);
-  CHECK_LT(index, size_);
-  return intervals_[index];
-}
-
-void Sequence::Post() {
-  for (int i = 0; i < size_; ++i) {
-    IntervalVar* t = intervals_[i];
-    Demon* d = MakeConstraintDemon1(solver(),
-                                    this,
-                                    &Sequence::RangeChanged,
-                                    "RangeChanged",
-                                    i);
-    t->WhenAnything(d);
-  }
-  Constraint* ct =
-      MakeDecomposedSequenceConstraint(solver(), intervals_.get(), size_);
-  solver()->AddConstraint(ct);
-}
-
-void Sequence::InitialPropagate() {
-  for (int i = 0; i < size_; ++i) {
-    RangeChanged(i);
-  }
-}
-
-void Sequence::RangeChanged(int index) {
-  for (int i = 0; i < index; ++i) {
-    Apply(i, index);
-  }
-  for (int i = index + 1; i < size_; ++i) {
-    Apply(index, i);
-  }
-}
-
-void Sequence::Apply(int i, int j) {
-  DCHECK_LT(i, j);
-  IntervalVar* t1 = intervals_[i];
-  IntervalVar* t2 = intervals_[j];
-  State s = states_[i][j];
-  if (s == UNDECIDED) {
-    TryToDecide(i, j);
-  }
-  if (s == ONE_BEFORE_TWO) {
-    if (t1->MustBePerformed() && t2->MayBePerformed()) {
-      t2->SetStartMin(t1->EndMin());
-    }
-    if (t2->MustBePerformed() && t1->MayBePerformed()) {
-      t1->SetEndMax(t2->StartMax());
-    }
-  } else if (s == TWO_BEFORE_ONE) {
-    if (t1->MustBePerformed() && t2->MayBePerformed()) {
-      t2->SetEndMax(t1->StartMax());
-    }
-    if (t2->MustBePerformed() && t1->MayBePerformed()) {
-      t1->SetStartMin(t2->EndMin());
-    }
-  }
-}
-
-void Sequence::TryToDecide(int i, int j) {
-  DCHECK_LT(i, j);
-  DCHECK_EQ(UNDECIDED, states_[i][j]);
-  IntervalVar* t1 = intervals_[i];
-  IntervalVar* t2 = intervals_[j];
-  if (t1->MayBePerformed() && t2->MayBePerformed() &&
-      (t1->MustBePerformed() || t2->MustBePerformed())) {
-    if (t1->EndMin() > t2->StartMax()) {
-      Decide(TWO_BEFORE_ONE, i, j);
-    } else if (t2->EndMin() > t1->StartMax()) {
-      Decide(ONE_BEFORE_TWO, i, j);
-    }
-  }
-}
-
-void Sequence::Decide(State s, int i, int j) {
-  DCHECK_LT(i, j);
-  // Should Decide on a fixed state?
-  DCHECK_NE(s, UNDECIDED);
-  if (states_[i][j] != UNDECIDED && states_[i][j] != s) {
-    solver()->Fail();
-  }
-  solver()->SaveValue(reinterpret_cast<int*>(&states_[i][j]));
-  states_[i][j] = s;
-  Apply(i, j);
-}
-
-string Sequence::DebugString() const {
-  int64 hmin, hmax, dmin, dmax;
-  HorizonRange(&hmin, &hmax);
-  DurationRange(&dmin, &dmax);
-  return StringPrintf("%s(horizon = %" GG_LL_FORMAT
-                      "d..%" GG_LL_FORMAT
-                      "d, duration = %" GG_LL_FORMAT
-                      "d..%" GG_LL_FORMAT
-                      "d, not ranked = %d, fixed = %d, ranked = %d)",
-                      name().c_str(), hmin, hmax, dmin, dmax, NotRanked(),
-                      Fixed(), Ranked());
-}
-
-void Sequence::Accept(ModelVisitor* const visitor) const {
-  visitor->BeginVisitConstraint(ModelVisitor::kSequence, this);
-  visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
-                                      intervals_.get(),
-                                      size_);
-  visitor->EndVisitConstraint(ModelVisitor::kSequence, this);
-}
-
-void Sequence::DurationRange(int64* dmin, int64* dmax) const {
-  int64 dur_min = 0;
-  int64 dur_max = 0;
-  for (int i = 0; i < size_; ++i) {
-    IntervalVar* t = intervals_[i];
-    if (t->MayBePerformed()) {
-      if (t->MustBePerformed()) {
-        dur_min += t->DurationMin();
-      }
-      dur_max += t->DurationMax();
-    }
-  }
-  *dmin = dur_min;
-  *dmax = dur_max;
-}
-
-void Sequence::HorizonRange(int64* hmin, int64* hmax) const {
-  int64 hor_min = kint64max;
-  int64 hor_max = kint64min;
-  for (int i = 0; i < size_; ++i) {
-    IntervalVar* t = intervals_[i];
-    if (t->MayBePerformed()) {
-      const int64 tmin = t->StartMin();
-      const int64 tmax = t->EndMax();
-      if (tmin < hor_min) {
-        hor_min = tmin;
-      }
-      if (tmax > hor_max) {
-        hor_max = tmax;
-      }
-    }
-  }
-  *hmin = hor_min;
-  *hmax = hor_max;
-}
-
-void Sequence::ActiveHorizonRange(int64* hmin, int64* hmax) const {
-  int64 hor_min = kint64max;
-  int64 hor_max = kint64min;
-  for (int i = 0; i < size_; ++i) {
-    IntervalVar* t = intervals_[i];
-    if (t->MayBePerformed() && ranks_[i] >= current_rank_) {
-      const int64 tmin = t->StartMin();
-      const int64 tmax = t->EndMax();
-      if (tmin < hor_min) {
-        hor_min = tmin;
-      }
-      if (tmax > hor_max) {
-        hor_max = tmax;
-      }
-    }
-  }
-  *hmin = hor_min;
-  *hmax = hor_max;
-}
-
-int Sequence::Ranked() const {
-  int count = 0;
-  for (int i = 0; i < size_; ++i) {
-    if (ranks_[i] < current_rank_ && intervals_[i]->MayBePerformed()) {
-      count++;
-    }
-  }
-  return count;
-}
-
-int Sequence::NotRanked() const {
-  int count = 0;
-  for (int i = 0; i < size_; ++i) {
-    if (ranks_[i] >= current_rank_ && intervals_[i]->MayBePerformed()) {
-      count++;
-    }
-  }
-  return count;
-}
-
-int Sequence::Active() const {
-  int count = 0;
-  for (int i = 0; i < size_; ++i) {
-    if (intervals_[i]->MayBePerformed()) {
-      count++;
-    }
-  }
-  return count;
-}
-
-int Sequence::Fixed() const {
-  int count = 0;
-  for (int i = 0; i < size_; ++i) {
-    if (intervals_[i]->MustBePerformed() &&
-        intervals_[i]->StartMin() == intervals_[i]->StartMax()) {
-      count++;
-    }
-  }
-  return count;
-}
-
-void Sequence::ComputePossibleRanks() {
-  for (int i = 0; i < size_; ++i) {
-    if (ranks_[i] == current_rank_) {
-      int before = 0;
-      int after = 0;
-      for (int j = 0; j < i; ++j) {
-        if (intervals_[j]->MustBePerformed()) {
-          State s = states_[j][i];
-          if (s == ONE_BEFORE_TWO) {
-            before++;
-          } else if (s == TWO_BEFORE_ONE) {
-            after++;
-          }
-        }
-      }
-      for (int j = i + 1; j < size_; ++j) {
-        if (intervals_[j]->MustBePerformed()) {
-          State s = states_[i][j];
-          if (s == ONE_BEFORE_TWO) {
-            after++;
-          } else if (s == TWO_BEFORE_ONE) {
-            before++;
-          }
-        }
-      }
-      if (before > current_rank_) {
-        solver()->SaveAndSetValue(&ranks_[i], before);
-      }
-    }
-  }
-}
-
-bool Sequence::PossibleFirst(int index) {
-  return (ranks_[index] == current_rank_);
-}
-
-void Sequence::RankFirst(int index) {
-  IntervalVar* t = intervals_[index];
-  t->SetPerformed(true);
-  Solver* const s = solver();
-  for (int i = 0; i < size_; ++i) {
-    if (i != index &&
-        ranks_[i] >= current_rank_ &&
-        intervals_[i]->MayBePerformed()) {
-      s->SaveAndSetValue(&ranks_[i], current_rank_ + 1);
-      if (i < index) {
-        Decide(TWO_BEFORE_ONE, i, index);
-      } else {
-        Decide(ONE_BEFORE_TWO, index, i);
-      }
-    }
-  }
-  s->SaveAndSetValue(&ranks_[index], current_rank_);
-  s->SaveAndAdd(&current_rank_, 1);
-}
-
-void Sequence::RankNotFirst(int index) {
-  solver()->SaveAndSetValue(&ranks_[index], current_rank_ + 1);
-  int count = 0;
-  int support = -1;
-  for (int i = 0; i < size_; ++i) {
-    if (ranks_[i] == current_rank_ && intervals_[i]->MayBePerformed()) {
-      count++;
-      support = i;
-    }
-  }
-  if (count == 0) {
-    solver()->Fail();
-  }
-  if (count == 1 && intervals_[support]->MustBePerformed()) {
-    RankFirst(support);
-  }
-}
-
-Sequence* Solver::MakeSequence(const std::vector<IntervalVar*>& intervals,
-                               const string& name) {
-  return RevAlloc(new Sequence(this,
-                               intervals.data(), intervals.size(), name));
-}
-
-Sequence* Solver::MakeSequence(const IntervalVar* const * intervals, int size,
-                               const string& name) {
-  return RevAlloc(new Sequence(this, intervals, size, name));
-}
-
+namespace {
 // ----- Additional constraint on Sequence -----
 
-namespace {
 // A DisjunctiveTask is a non-preemptive task sharing a disjunctive resource.
 // That is, it corresponds to an interval, and this interval cannot overlap with
 // any other interval of a DisjunctiveTask sharing the same resource.
@@ -1120,7 +805,6 @@ DecomposedSequenceConstraint::DecomposedSequenceConstraint(
     straight_not_last_(s, intervals, size, false),
     mirror_not_last_(s, intervals, size, true) {
 }
-}  // namespace
 
 Constraint* MakeDecomposedSequenceConstraint(Solver* const s,
                                              IntervalVar* const * intervals,
@@ -1142,8 +826,6 @@ Constraint* MakeDecomposedSequenceConstraint(Solver* const s,
 // =====================================================================
 //  Cumulative
 // =====================================================================
-
-namespace {
 
 CumulativeTask* MakeTask(Solver* solver, IntervalVar* interval, int64 demand) {
   return solver->RevAlloc(new CumulativeTask(interval, demand));
@@ -2053,18 +1735,313 @@ class CumulativeConstraint : public Constraint {
 };
 }  // namespace
 
+// ----- Sequence -----
+
+Sequence::Sequence(Solver* const s,
+                   const IntervalVar* const * intervals,
+                   int size,
+                   const string& name)
+  : Constraint(s),
+    intervals_(new IntervalVar*[size]),
+    size_(size),
+    ranks_(new int[size]),
+    current_rank_(0) {
+  memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
+  states_.resize(size);
+  for (int i = 0; i < size_; ++i) {
+    ranks_[i] = 0;
+    states_[i].resize(size, UNDECIDED);
+  }
+  set_name(name);
+}
+
+Sequence::~Sequence() {}
+
+IntervalVar* Sequence::Interval(int index) const {
+  CHECK_GE(index, 0);
+  CHECK_LT(index, size_);
+  return intervals_[index];
+}
+
+void Sequence::Post() {
+  for (int i = 0; i < size_; ++i) {
+    IntervalVar* const t = intervals_[i];
+    Demon* const d = MakeConstraintDemon1(solver(),
+                                          this,
+                                          &Sequence::RangeChanged,
+                                          "RangeChanged",
+                                          i);
+    t->WhenAnything(d);
+  }
+  Constraint* const ct =
+      MakeDecomposedSequenceConstraint(solver(), intervals_.get(), size_);
+  solver()->AddConstraint(ct);
+}
+
+void Sequence::InitialPropagate() {
+  for (int i = 0; i < size_; ++i) {
+    RangeChanged(i);
+  }
+}
+
+void Sequence::RangeChanged(int index) {
+  for (int i = 0; i < index; ++i) {
+    Apply(i, index);
+  }
+  for (int i = index + 1; i < size_; ++i) {
+    Apply(index, i);
+  }
+}
+
+void Sequence::Apply(int i, int j) {
+  DCHECK_LT(i, j);
+  IntervalVar* const t1 = intervals_[i];
+  IntervalVar* const t2 = intervals_[j];
+  State s = states_[i][j];
+  if (s == UNDECIDED) {
+    TryToDecide(i, j);
+  }
+  if (s == ONE_BEFORE_TWO) {
+    if (t1->MustBePerformed() && t2->MayBePerformed()) {
+      t2->SetStartMin(t1->EndMin());
+    }
+    if (t2->MustBePerformed() && t1->MayBePerformed()) {
+      t1->SetEndMax(t2->StartMax());
+    }
+  } else if (s == TWO_BEFORE_ONE) {
+    if (t1->MustBePerformed() && t2->MayBePerformed()) {
+      t2->SetEndMax(t1->StartMax());
+    }
+    if (t2->MustBePerformed() && t1->MayBePerformed()) {
+      t1->SetStartMin(t2->EndMin());
+    }
+  }
+}
+
+void Sequence::TryToDecide(int i, int j) {
+  DCHECK_LT(i, j);
+  DCHECK_EQ(UNDECIDED, states_[i][j]);
+  IntervalVar* const t1 = intervals_[i];
+  IntervalVar* const t2 = intervals_[j];
+  if (t1->MayBePerformed() && t2->MayBePerformed() &&
+      (t1->MustBePerformed() || t2->MustBePerformed())) {
+    if (t1->EndMin() > t2->StartMax()) {
+      Decide(TWO_BEFORE_ONE, i, j);
+    } else if (t2->EndMin() > t1->StartMax()) {
+      Decide(ONE_BEFORE_TWO, i, j);
+    }
+  }
+}
+
+void Sequence::Decide(State s, int i, int j) {
+  DCHECK_LT(i, j);
+  // Should Decide on a fixed state?
+  DCHECK_NE(s, UNDECIDED);
+  if (states_[i][j] != UNDECIDED && states_[i][j] != s) {
+    solver()->Fail();
+  }
+  solver()->SaveValue(reinterpret_cast<int*>(&states_[i][j]));
+  states_[i][j] = s;
+  Apply(i, j);
+}
+
+string Sequence::DebugString() const {
+  int64 hmin, hmax, dmin, dmax;
+  HorizonRange(&hmin, &hmax);
+  DurationRange(&dmin, &dmax);
+  return StringPrintf("%s(horizon = %" GG_LL_FORMAT
+                      "d..%" GG_LL_FORMAT
+                      "d, duration = %" GG_LL_FORMAT
+                      "d..%" GG_LL_FORMAT
+                      "d, not ranked = %d, fixed = %d, ranked = %d)",
+                      name().c_str(), hmin, hmax, dmin, dmax, NotRanked(),
+                      Fixed(), Ranked());
+}
+
+void Sequence::Accept(ModelVisitor* const visitor) const {
+  visitor->BeginVisitConstraint(ModelVisitor::kSequence, this);
+  visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
+                                      intervals_.get(),
+                                      size_);
+  visitor->EndVisitConstraint(ModelVisitor::kSequence, this);
+}
+
+void Sequence::DurationRange(int64* const dmin, int64* const dmax) const {
+  int64 dur_min = 0;
+  int64 dur_max = 0;
+  for (int i = 0; i < size_; ++i) {
+    IntervalVar* const t = intervals_[i];
+    if (t->MayBePerformed()) {
+      if (t->MustBePerformed()) {
+        dur_min += t->DurationMin();
+      }
+      dur_max += t->DurationMax();
+    }
+  }
+  *dmin = dur_min;
+  *dmax = dur_max;
+}
+
+void Sequence::HorizonRange(int64* const hmin, int64* const hmax) const {
+  int64 hor_min = kint64max;
+  int64 hor_max = kint64min;
+  for (int i = 0; i < size_; ++i) {
+    IntervalVar* const t = intervals_[i];
+    if (t->MayBePerformed()) {
+      const int64 tmin = t->StartMin();
+      const int64 tmax = t->EndMax();
+      if (tmin < hor_min) {
+        hor_min = tmin;
+      }
+      if (tmax > hor_max) {
+        hor_max = tmax;
+      }
+    }
+  }
+  *hmin = hor_min;
+  *hmax = hor_max;
+}
+
+void Sequence::ActiveHorizonRange(int64* const hmin, int64* const hmax) const {
+  int64 hor_min = kint64max;
+  int64 hor_max = kint64min;
+  for (int i = 0; i < size_; ++i) {
+    IntervalVar* const t = intervals_[i];
+    if (t->MayBePerformed() && ranks_[i] >= current_rank_) {
+      const int64 tmin = t->StartMin();
+      const int64 tmax = t->EndMax();
+      if (tmin < hor_min) {
+        hor_min = tmin;
+      }
+      if (tmax > hor_max) {
+        hor_max = tmax;
+      }
+    }
+  }
+  *hmin = hor_min;
+  *hmax = hor_max;
+}
+
+int Sequence::Ranked() const {
+  int count = 0;
+  for (int i = 0; i < size_; ++i) {
+    if (ranks_[i] < current_rank_ && intervals_[i]->MayBePerformed()) {
+      count++;
+    }
+  }
+  return count;
+}
+
+int Sequence::NotRanked() const {
+  int count = 0;
+  for (int i = 0; i < size_; ++i) {
+    if (ranks_[i] >= current_rank_ && intervals_[i]->MayBePerformed()) {
+      count++;
+    }
+  }
+  return count;
+}
+
+int Sequence::Active() const {
+  int count = 0;
+  for (int i = 0; i < size_; ++i) {
+    if (intervals_[i]->MayBePerformed()) {
+      count++;
+    }
+  }
+  return count;
+}
+
+int Sequence::Fixed() const {
+  int count = 0;
+  for (int i = 0; i < size_; ++i) {
+    if (intervals_[i]->MustBePerformed() &&
+        intervals_[i]->StartMin() == intervals_[i]->StartMax()) {
+      count++;
+    }
+  }
+  return count;
+}
+
+void Sequence::ComputePossibleRanks() {
+  for (int i = 0; i < size_; ++i) {
+    if (ranks_[i] == current_rank_) {
+      int before = 0;
+      int after = 0;
+      for (int j = 0; j < i; ++j) {
+        if (intervals_[j]->MustBePerformed()) {
+          State s = states_[j][i];
+          if (s == ONE_BEFORE_TWO) {
+            before++;
+          } else if (s == TWO_BEFORE_ONE) {
+            after++;
+          }
+        }
+      }
+      for (int j = i + 1; j < size_; ++j) {
+        if (intervals_[j]->MustBePerformed()) {
+          State s = states_[i][j];
+          if (s == ONE_BEFORE_TWO) {
+            after++;
+          } else if (s == TWO_BEFORE_ONE) {
+            before++;
+          }
+        }
+      }
+      if (before > current_rank_) {
+        solver()->SaveAndSetValue(&ranks_[i], before);
+      }
+    }
+  }
+}
+
+bool Sequence::PossibleFirst(int index) {
+  return (ranks_[index] == current_rank_);
+}
+
+void Sequence::RankFirst(int index) {
+  IntervalVar* const t = intervals_[index];
+  t->SetPerformed(true);
+  Solver* const s = solver();
+  for (int i = 0; i < size_; ++i) {
+    if (i != index &&
+        ranks_[i] >= current_rank_ &&
+        intervals_[i]->MayBePerformed()) {
+      s->SaveAndSetValue(&ranks_[i], current_rank_ + 1);
+      if (i < index) {
+        Decide(TWO_BEFORE_ONE, i, index);
+      } else {
+        Decide(ONE_BEFORE_TWO, index, i);
+      }
+    }
+  }
+  s->SaveAndSetValue(&ranks_[index], current_rank_);
+  s->SaveAndAdd(&current_rank_, 1);
+}
+
+void Sequence::RankNotFirst(int index) {
+  solver()->SaveAndSetValue(&ranks_[index], current_rank_ + 1);
+  int count = 0;
+  int support = -1;
+  for (int i = 0; i < size_; ++i) {
+    if (ranks_[i] == current_rank_ && intervals_[i]->MayBePerformed()) {
+      count++;
+      support = i;
+    }
+  }
+  if (count == 0) {
+    solver()->Fail();
+  }
+  if (count == 1 && intervals_[support]->MustBePerformed()) {
+    RankFirst(support);
+  }
+}
+
 // ----------------- Factory methods -------------------------------
 
-Constraint* Solver::MakeCumulative(IntervalVar* const* intervals,
-                                   const int64* demands,
-                                   int size,
-                                   int64 capacity,
-                                   const string& name) {
-  for (int i = 0; i < size; ++i) {
-    CHECK_GE(demands[i], 0);
-  }
-  return RevAlloc(new CumulativeConstraint(
-      this, intervals, demands, size, capacity, name));
+Sequence* Solver::MakeSequence(const std::vector<IntervalVar*>& intervals,
+                               const string& name) {
+  return RevAlloc(new Sequence(this, intervals.data(), intervals.size(), name));
 }
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
@@ -2072,22 +2049,15 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
                                    int64 capacity,
                                    const string& name) {
   CHECK_EQ(intervals.size(), demands.size());
-  IntervalVar* const* intervals_array = intervals.data();
-  const int64* demands_array = demands.data();
-  const int size = intervals.size();
-  return MakeCumulative(intervals_array, demands_array, size, capacity, name);
-}
-
-Constraint* Solver::MakeCumulative(IntervalVar* const* intervals,
-                                   const int* demands,
-                                   int size,
-                                   int64 capacity,
-                                   const string& name) {
-  for (int i = 0; i < size; ++i) {
+  for (int i = 0; i < intervals.size(); ++i) {
     CHECK_GE(demands[i], 0);
   }
-  return RevAlloc(new CumulativeConstraint(
-      this, intervals, demands, size, capacity, name));
+  return RevAlloc(new CumulativeConstraint(this,
+                                           intervals.data(),
+                                           demands.data(),
+                                           intervals.size(),
+                                           capacity,
+                                           name));
 }
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
@@ -2095,10 +2065,14 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
                                    int64 capacity,
                                    const string& name) {
   CHECK_EQ(intervals.size(), demands.size());
-  IntervalVar* const* intervals_array = intervals.data();
-  const int* demands_array = demands.data();
-  const int size = intervals.size();
-  return MakeCumulative(intervals_array, demands_array, size, capacity, name);
+  for (int i = 0; i < intervals.size(); ++i) {
+    CHECK_GE(demands[i], 0);
+  }
+  return RevAlloc(new CumulativeConstraint(this,
+                                           intervals.data(),
+                                           demands.data(),
+                                           intervals.size(),
+                                           capacity,
+                                           name));
 }
-
 }  // namespace operations_research
