@@ -2269,6 +2269,38 @@ bool Solver::CheckAssignment(Assignment* const solution) {
   }
 }
 
+namespace {
+class AddConstraintDecisionBuilder : public DecisionBuilder {
+ public:
+  explicit AddConstraintDecisionBuilder(Constraint* const ct)
+      : constraint_(ct) {
+    CHECK_NOTNULL(ct);
+  }
+
+  virtual ~AddConstraintDecisionBuilder() {}
+
+  virtual Decision* Next(Solver* const solver) {
+    solver->AddConstraint(constraint_);
+    return NULL;
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("AddConstraintDecisionBuilder(%s)",
+                        constraint_->DebugString().c_str());
+  }
+ private:
+  Constraint* const constraint_;
+};
+}  // namespace
+
+DecisionBuilder* Solver::MakeConstraintAdder(Constraint* const ct) {
+  return RevAlloc(new AddConstraintDecisionBuilder(ct));
+}
+
+bool Solver::CheckConstraint(Constraint* const ct) {
+  return Solve(MakeConstraintAdder(ct));
+}
+
 bool Solver::NestedSolve(DecisionBuilder* const db,
                          bool restore,
                          const std::vector<SearchMonitor*>& monitors) {

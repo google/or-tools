@@ -561,6 +561,11 @@ class Solver {
   // current model.
   bool CheckAssignment(Assignment* const assignment);
 
+  // Checks if adding this constraint will lead to an immediate
+  // failure.  It will return true if the model is already
+  // inconsistent, or if adding the constraint makes it inconsistent.
+  bool CheckConstraint(Constraint* const constraint);
+
   // state of the solver.
   SolverState state() const { return state_; }
 
@@ -1856,6 +1861,10 @@ class Solver {
       DecisionBuilder* const db,
       const IntVar* const* vars,
       int size);
+
+  // Returns a decision builder that will add the given constraint to
+  // the model.
+  DecisionBuilder* MakeConstraintAdder(Constraint* const ct);
 
   // SolveOnce will collapse a search tree described by a decision
   // builder 'db' and a set of monitors and wrap it into a single point.
