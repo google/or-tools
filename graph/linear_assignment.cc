@@ -317,8 +317,16 @@ LinearSumAssignment::BestArcAndGap(NodeIndex left_node) const {
   StarGraph::OutgoingArcIterator arc_it(graph_, left_node);
   ArcIndex best_arc = arc_it.Index();
   CostValue min_partial_reduced_cost = PartialReducedCost(best_arc);
+  // We choose second_min_partial_reduced_cost so that in the case of
+  // the largest possible gap (which results from a left-side node
+  // with only a single incident residual arc), the corresponding
+  // right-side node will be relabeled by an amount that exactly
+  // matches price_reduction_bound_. The overall price_lower_bound_ is
+  // computed tightly enough that if we relabel by an amount even
+  // epsilon_ greater than that, we can incorrectly conclude
+  // infeasibility in DoublePush().
   CostValue second_min_partial_reduced_cost =
-      min_partial_reduced_cost + price_reduction_bound_;
+      min_partial_reduced_cost + price_reduction_bound_ - epsilon_;
   for (arc_it.Next(); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
     const CostValue partial_reduced_cost = PartialReducedCost(arc);

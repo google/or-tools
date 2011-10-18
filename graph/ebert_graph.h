@@ -33,8 +33,11 @@
 //  Note that if arc (u, v) is defined, then the data structure also stores
 //  (v, u).
 //  Arc ~i thus denotes the arc reverse to arc i.
-//  This is what makes this representation useful for undirected graphs,
-//  and for implementing algorithms like two-directions shortest-path.
+//  This is what makes this representation useful for undirected graphs and for
+//  implementing algorithms like bi-directional shortest-path.
+//  Also note that the representation handles multi-graphs. If several arcs
+//  going from node u to node v are added to the graph, they will be handled as
+//  separate arcs.
 //
 // Now, for an integer u in [0..n-1] denoting the index of a node:
 //  * first_incident_arc_[u] denotes the first arc in the adjacency list of u.
@@ -218,6 +221,9 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph {
 
   // Adds an arc to the graph and returns its index.
   // Returns kNilArc if the arc could not be added.
+  // Note that for a given pair (tail, head) AddArc does not overwrite an
+  // already-existing arc between tail and head: Another arc is created
+  // instead. This makes it possible to handle multi-graphs.
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head) {
     if (num_arcs_ >= max_num_arcs_
         || !IsNodeValid(tail) || !IsNodeValid(head)) {
@@ -924,5 +930,54 @@ typedef ZVector<NodeIndex> NodeIndexArray;
 typedef ZVector<ArcIndex> ArcIndexArray;
 typedef ZVector<FlowQuantity> QuantityArray;
 typedef ZVector<CostValue> CostArray;
+
+// Builds a directed line graph for 'graph' (see "directed line graph" in
+// http://en.wikipedia.org/wiki/Line_graph). Arcs of the original graph
+// become nodes and the new graph contains only nodes created from arcs in the
+// original graph (we use the notation (a->b) for these new nodes); the index
+// of the node (a->b) in the new graph is exactly the same as the index of the
+// arc a->b in the original graph.
+// An arc from node (a->b) to node (c->d) in the new graph is added if and only
+// if b == c in the original graph.
+// This method expects that 'line_graph' is an empty graph (it has no nodes
+// and no arcs).
+template<typename NodeIndexType, typename ArcIndexType>
+void BuildLineGraph(const EbertGraph<NodeIndexType, ArcIndexType>& graph,
+                    EbertGraph<NodeIndexType, ArcIndexType>* const line_graph) {
+  if (line_graph == NULL) {
+    LOG(DFATAL) << "line_graph must not be NULL";
+    return;
+  }
+  typedef EbertGraph<NodeIndexType, ArcIndexType> Graph;
+  typedef typename Graph::ArcIterator ArcIterator;
+  typedef typename Graph::OutgoingArcIterator OutgoingArcIterator;
+  // Sizing then filling.
+  const NodeIndexType num_nodes = graph.num_arcs();
+  ArcIndexType num_arcs = 0;
+  for (ArcIterator arc_iterator(graph);
+       arc_iterator.Ok();
+       arc_iterator.Next()) {
+    const ArcIndexType arc = arc_iterator.Index();
+    const NodeIndexType head = graph.Head(arc);
+    for (OutgoingArcIterator iterator(graph, head);
+         iterator.Ok();
+         iterator.Next()) {
+      ++num_arcs;
+    }
+  }
+  line_graph->Reserve(num_nodes, num_arcs);
+  for (ArcIterator arc_iterator(graph);
+       arc_iterator.Ok();
+       arc_iterator.Next()) {
+    const ArcIndexType arc = arc_iterator.Index();
+    const NodeIndexType head = graph.Head(arc);
+    for (OutgoingArcIterator iterator(graph, head);
+         iterator.Ok();
+         iterator.Next()) {
+      line_graph->AddArc(arc, iterator.Index());
+    }
+  }
+}
+
 }  // namespace operations_research
 #endif  // OR_TOOLS_GRAPH_EBERT_GRAPH_H_

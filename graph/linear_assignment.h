@@ -45,7 +45,7 @@
 //  // Retrieve the node-node correspondence of the optimum assignment and the
 //  // cost of each node pairing.
 //  for (::operations_research::LinearSumAssignment::BipartiteLeftNodeIterator
-//         node_it;
+//         node_it(a);
 //       node_it.Ok();
 //       node_it.Next()) {
 //    ::operations_research::NodeIndex left_node = node_it.Index();
