@@ -2,3 +2,5 @@
 
 This directory contains various utilities needed by the operations
 research libraries.
+
+  - <code>const_int_array.h</code> : A read-only container of integer values.
