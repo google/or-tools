@@ -26,12 +26,15 @@
 using std::string;
 
 namespace operations_research {
-// This class is used to store constant copies of int64 arrays inside
-// constraints or expression. When constructed with a C array or a
-// vector, The const int array will make a internal copy and own that
-// copy. It will not take ownership of the vector/array which can be
-// deleted afterwards. This follows the semantics of constraints and
-// expressions which store a read-only copy of the data.
+// This class is used to store constant copies of int64 arrays.
+// @addtogroup Utilities
+//
+// These copies are used inside constraints or expression. When
+// constructed with a C array or a vector, The const int array will
+// make a internal copy and own that copy. It will not take ownership
+// of the vector/array which can be deleted afterwards. This follows
+// the semantics of constraints and expressions which store a
+// read-only copy of the data.
 //
 // Its goals are:
 // - to unify the construction code across the optimization libraries.
@@ -57,7 +60,6 @@ namespace operations_research {
 //  private:
 //   ConstIntArray values_;
 // };
-// @addtogroup Utilities
 class ConstIntArray {
  public:
   // These describe static properties of the int64 array.

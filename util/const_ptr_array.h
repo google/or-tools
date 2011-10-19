@@ -30,6 +30,8 @@ using std::string;
 
 namespace operations_research {
 // This class is used to store an const array of T*.
+// @addtogroup Utilities
+//
 // This is useful inside constraints and expressions. The constructors,
 // except the one with the pointer to a vector of cells will copy the
 // data internally and will not take ownership of the data passed in
@@ -39,7 +41,6 @@ namespace operations_research {
 // - to provide one code to modify these mappings and apply
 //    transformations like sorting.
 // It requires T to implement a method string T::DebugString() const;
-// @addtogroup Utilities
 // This is linked to @ref ConstIntArray.
 template <class T> class ConstPtrArray {
  public:
