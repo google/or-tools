@@ -39,7 +39,7 @@ namespace operations_research {
 // - to provide one code to modify these mappings and apply
 //    transformations like sorting.
 // It requires T to implement a method string T::DebugString() const;
-// @addtogroup Utilities.
+// @addtogroup Utilities
 // This is linked to @ref ConstIntArray.
 template <class T> class ConstPtrArray {
  public:
