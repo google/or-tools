@@ -45,6 +45,7 @@ namespace operations_research {
 template <class T> class ConstPtrArray {
  public:
   // Build from one vector. Copy the data internally.
+  // @addtogroup Utilities
   explicit ConstPtrArray(const std::vector<T*>& ptrs)
       : data_(new std::vector<T*>(ptrs)) {}
 
