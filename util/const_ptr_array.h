@@ -30,7 +30,6 @@ using std::string;
 
 namespace operations_research {
 // This class is used to store an const array of T*.
-// @addtogroup Utilities
 //
 // This is useful inside constraints and expressions. The constructors,
 // except the one with the pointer to a vector of cells will copy the
@@ -45,7 +44,6 @@ namespace operations_research {
 template <class T> class ConstPtrArray {
  public:
   // Build from one vector. Copy the data internally.
-  // @addtogroup Utilities
   explicit ConstPtrArray(const std::vector<T*>& ptrs)
       : data_(new std::vector<T*>(ptrs)) {}
 
@@ -81,7 +79,7 @@ template <class T> class ConstPtrArray {
   }
 
   // Returns the instance of T* at position index. This is not valid
-  // after Release() has been called.
+  // after Release() has been called.  @see operator[]().
   T* operator[](int64 index) const {
     CHECK_NOTNULL(data_.get());
     return (*data_)[index];
@@ -95,7 +93,6 @@ template <class T> class ConstPtrArray {
   }
 
   // Returns a copy of the data. Usually used to create a new ConstPtrArray.
-  // @see operator[]().
   std::vector<T*>* Copy() const {
     CHECK_NOTNULL(data_.get());
     return new std::vector<T*>(*data_);

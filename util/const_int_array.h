@@ -27,7 +27,6 @@ using std::string;
 
 namespace operations_research {
 // This class is used to store constant copies of int64 arrays.
-// @addtogroup Utilities
 //
 // These copies are used inside constraints or expression. When
 // constructed with a C array or a vector, The const int array will
