@@ -1,6 +1,6 @@
 <summary> C++ examples to demonstrate usage of the different Operations Research libraries. </summary>
 
-  - Constraint Solver Examples:
+  - %Constraint Solver Examples:
     - costas_array.cc
     - cryptarithm.cc Demonstrates basic modeling objects (integer variables,
       arithmetic constraints and expressions, simple search).
@@ -27,8 +27,11 @@
       Assignment solver.
 
   - Linear Solver Examples
-    - column_generation.cc
-    - integer_solver_example.cc
-    - linear_solver_example.cc
+    - column_generation.cc Complex example that demonstrates how to use dynamic
+      column generation to solve a 2D covering problem.
+    - integer_solver_example.cc Demonstrates how to use the linear solver API
+      to solve Mixed Integer Programming problems.
+    - linear_solver_example.cc Demonstrates how to use the linear solver API
+      to solve Linear Programming problems.
 
 
