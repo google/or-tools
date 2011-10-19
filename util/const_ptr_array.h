@@ -39,9 +39,11 @@ namespace operations_research {
 // - to provide one code to modify these mappings and apply
 //    transformations like sorting.
 // It requires T to implement a method string T::DebugString() const;
+// @addtogroup Utilities.
+// This is linked to @ref ConstIntArray.
 template <class T> class ConstPtrArray {
  public:
-  // Build from 1 vector. Copy the data internally.
+  // Build from one vector. Copy the data internally.
   explicit ConstPtrArray(const std::vector<T*>& ptrs)
       : data_(new std::vector<T*>(ptrs)) {}
 
@@ -84,7 +86,7 @@ template <class T> class ConstPtrArray {
   }
 
   // Returns the instance of T* at position index. This is not valid
-  // after Release() has been called.
+  // after Release() has been called. @see operator[].
   T* get(int64 index) const {
     CHECK_NOTNULL(data_.get());
     return (*data_)[index];

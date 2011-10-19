@@ -57,6 +57,7 @@ namespace operations_research {
 //  private:
 //   ConstIntArray values_;
 // };
+// @addtogroup Utilities
 class ConstIntArray {
  public:
   // These describe static properties of the int64 array.
