@@ -1,7 +1,11 @@
-<summary> C++ examples to demonstrate usage of the different Operations Research libraries. </summary>
+<summary> C++ examples to demonstrate usage of the different
+Operations Research libraries. </summary>
 
   - %Constraint Solver Examples:
-    - costas_array.cc
+    - costas_array.cc Solves the problem of Costas Array (an constrained
+      assignment problem used for radars) with both version,
+      a feasibility version with hard constraints, and an optimization version
+      with soft constraints and violation costs.
     - cryptarithm.cc Demonstrates basic modeling objects (integer variables,
       arithmetic constraints and expressions, simple search).
     - golomb.cc Demonstrates how to handle objective functions and collect
@@ -11,27 +15,28 @@
       problem.
     - model_util.cc A utility to manipulate model files (.cp) dumped by the
       solver.
-    - network_routing.cc
+    - network_routing.cc Solves a multicommodity mono-routing
+      problem with capacity constraints and a max usage cost structure.
     - nqueens.cc Solves the n-queen problem. It also demonstrates how to break
       symmetries during search.
 
-  - Routing Examples
+  - Routing Examples:
     - cvrptw.cc Capacitated Vehicle Routing Problem with Time Windows.
     - tsp.cc Travelling Salesman Problem.
 
-  - Graph Examples
+  - Graph Examples:
     - flow_example.cc Min-Cost Flow and Max-Flow sample problems.
     - solve_dimacs_assignment.cc Solves DIMACS challenge on assignment
       problems.
     - linear_assignment_example.cc Demonstrates how to use the Linear Sum
       Assignment solver.
 
-  - Linear Solver Examples
+  - Linear Solver Examples:
     - column_generation.cc Complex example that demonstrates how to use dynamic
       column generation to solve a 2D covering problem.
-    - integer_solver_example.cc Demonstrates how to use the linear solver API
-      to solve Mixed Integer Programming problems.
-    - linear_solver_example.cc Demonstrates how to use the linear solver API
-      to solve Linear Programming problems.
-
-
+    - integer_solver_example.cc Demonstrates how to use the linear solver
+      wrapper API to solve Mixed Integer Programming problems.
+    - linear_solver_example.cc Demonstrates how to use the linear solver
+      wrapper API to solve Linear Programming problems.
+    - linear_solver_example_with_protocol_buffers.cc Demonstrates how protocol
+      buffers can be used as input and output to the linear solver.
