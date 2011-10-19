@@ -86,13 +86,14 @@ template <class T> class ConstPtrArray {
   }
 
   // Returns the instance of T* at position index. This is not valid
-  // after Release() has been called. @see operator[].
+  // after Release() has been called. @see operator[]().
   T* get(int64 index) const {
     CHECK_NOTNULL(data_.get());
     return (*data_)[index];
   }
 
   // Returns a copy of the data. Usually used to create a new ConstPtrArray.
+  // @see operator[]().
   std::vector<T*>* Copy() const {
     CHECK_NOTNULL(data_.get());
     return new std::vector<T*>(*data_);
