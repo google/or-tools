@@ -1,17 +1,21 @@
 <summary> C++ examples to demonstrate usage of the different Operations Research libraries. </summary>
 
-  - Constraint Solver Examples:
+  - {Constraint} Solver Examples:
     - costas_array.cc
-    - cryptarithm.cc
-    - golomb.cc
-    - jobshop.cc
-    - magic_square.cc
-    - model_util.cc
+    - cryptarithm.cc Demonstrates basic modeling objects (integer variables,
+      arithmetic constraints and expressions, simple search).
+    - golomb.cc Demonstrates how to handle objective functions and collect
+      solutions found during the search.
+    - jobshop.cc Demonstrates scheduling of jobs on different machines.
+    - magic_square.cc Shows how to use the automatic search to solve your
+      problem.
+    - model_util.cc A utility to manipulate model files (.cp) dumped by the
+      solver.
     - network_routing.cc
-    - nqueens.cc
+    - nqueens.cc Solves the n-queen problem. It also demonstrates how to break
+      symmetries during search.
 
   - Routing Examples
-    - carptw.cc
     - cvrptw.cc
     - tsp.cc
 
@@ -24,8 +28,5 @@
     - column_generation.cc
     - integer_solver_example.cc
     - linear_solver_example.cc
-
-  - Hybrid Examples:
-    - warehouse_run.cc
 
 
