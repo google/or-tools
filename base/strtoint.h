@@ -32,11 +32,19 @@ inline uint32 strtou32(const char *nptr, char **endptr, int base) {
 // For now, long long is 64-bit on all the platforms we care about, so these
 // functions can simply pass the call to strto[u]ll.
 inline int64 strto64(const char *nptr, char **endptr, int base) {
+#if defined(_MSC_VER)
+  return _strtoi64(nptr, endptr, base);  // NOLINT
+#else
   return strtoll(nptr, endptr, base);  // NOLINT
+#endif
 }
 
 inline uint64 strtou64(const char *nptr, char **endptr, int base) {
+#if defined(_MSC_VER)
+  return _strtoui64(nptr, endptr, base);  // NOLINT
+#else
   return strtoull(nptr, endptr, base);  // NOLINT
+#endif
 }
 
 // Although it returns an int, atoi() is implemented in terms of strtol, and

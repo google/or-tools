@@ -12,6 +12,9 @@
 // limitations under the License.
 
 #include "base/split.h"
+#if defined(_MSC_VER)
+#include <iterator>
+#endif
 
 namespace operations_research {
 // ----------------------------------------------------------------------
