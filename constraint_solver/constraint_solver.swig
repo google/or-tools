@@ -271,6 +271,7 @@ class PyDecisionBuilder(object):
 %rename (CustomLimit) MakeCustomLimit;
 %rename (DecisionBuilderFromAssignment) MakeDecisionBuilderFromAssignment;
 %rename (DefaultPhase) MakeDefaultPhase;
+%rename (Deviation) MakeDeviation;
 %rename (Distribute) MakeDistribute;
 %rename (Element) MakeElement;
 %rename (FailDecision) MakeFailDecision;
@@ -1394,6 +1395,7 @@ struct FailureProtect {
 %rename (makeCustomLimit) operations_research::Solver::MakeCustomLimit;
 %rename (makeDecisionBuilderFromAssignment) operations_research::Solver::MakeDecisionBuilderFromAssignment;
 %rename (makeDefaultPhase) operations_research::Solver::MakeDefaultPhase;
+%rename (makeDeviation) operations_research::Solver::MakeDeviation;
 %rename (makeDifference) operations_research::Solver::MakeDifference;
 %rename (makeDistribute) operations_research::Solver::MakeDistribute;
 %rename (makeDiv) operations_research::Solver::MakeDiv;
