@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <iosfwd>
 #include <string>
+#include <cstddef>
 
 namespace operations_research {
 
