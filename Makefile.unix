@@ -74,7 +74,7 @@ ifdef UNIX_CLP_DIR
 CLP_LNK = -Wl,-rpath $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -L$(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -lClp -lCoinUtils
 endif
 ifdef UNIX_CBC_DIR
-CBC_LNK = -Wl,-rpath $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -L$(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp -lOsiVol -lVol
+CBC_LNK = -Wl,-rpath $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -L$(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
 endif
 ifdef UNIX_SCIP_DIR
 SCIP_LNK = -Wl,-rpath $(UNIX_SCIP_DIR)/lib -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH) -lreadline

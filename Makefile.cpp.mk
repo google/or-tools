@@ -423,19 +423,19 @@ objs/linear_assignment_example.$O:examples/linear_assignment_example.cc
 	$(CCC) $(CFLAGS) -c examples/linear_assignment_example.cc $(OBJOUT)objs/linear_assignment_example.$O
 
 linear_assignment_example$E: $(GRAPH_LIBS) $(BASE_LIBS) objs/linear_assignment_example.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/linear_assignment_example.$O $(GRAPH_LIBS) $(BASE_LIBS) $(EXEOUT)linear_assignment_example$E
+	$(CCC) $(CFLAGS) objs/linear_assignment_example.$O $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)linear_assignment_example$E
 
 objs/flow_example.$O:examples/flow_example.cc
 	$(CCC) $(CFLAGS) -c examples/flow_example.cc $(OBJOUT)objs/flow_example.$O
 
 flow_example$E: $(GRAPH_LIBS) $(BASE_LIBS) objs/flow_example.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/flow_example.$O $(GRAPH_LIBS) $(BASE_LIBS) $(EXEOUT)flow_example$E
+	$(CCC) $(CFLAGS) objs/flow_example.$O $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)flow_example$E
 
 objs/solve_dimacs_assignment.$O:examples/solve_dimacs_assignment.cc
 	$(CCC) $(CFLAGS) -c examples/solve_dimacs_assignment.cc $(OBJOUT)objs/solve_dimacs_assignment.$O
 
 solve_dimacs_assignment$E: $(ALGORITHMS_LIBS) $(BASE_LIBS) $(DIMACS_LIBS) $(GRAPH_LIBS) objs/solve_dimacs_assignment.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/solve_dimacs_assignment.$O $(DIMACS_LIBS) $(ALGORITHMS_LIBS) $(GRAPH_LIBS) $(BASE_LIBS) $(EXEOUT)solve_dimacs_assignment$E
+	$(CCC) $(CFLAGS) objs/solve_dimacs_assignment.$O $(DIMACS_LIBS) $(ALGORITHMS_LIBS) $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)solve_dimacs_assignment$E
 
 # Pure CP and Routing Examples
 
@@ -443,61 +443,61 @@ objs/costas_array.$O: examples/costas_array.cc constraint_solver/constraint_solv
 	$(CCC) $(CFLAGS) -c examples/costas_array.cc $(OBJOUT)objs/costas_array.$O
 
 costas_array$E: $(CP_LIBS) $(BASE_LIBS) objs/costas_array.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/costas_array.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)costas_array$E
+	$(CCC) $(CFLAGS) objs/costas_array.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)costas_array$E
 
 objs/cryptarithm.$O:examples/cryptarithm.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/cryptarithm.cc $(OBJOUT)objs/cryptarithm.$O
 
 cryptarithm$E: $(CP_LIBS) $(BASE_LIBS) objs/cryptarithm.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cryptarithm.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)cryptarithm$E
+	$(CCC) $(CFLAGS) objs/cryptarithm.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)cryptarithm$E
 
 objs/cvrptw.$O: examples/cvrptw.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/cvrptw.cc $(OBJOUT)objs/cvrptw.$O
 
 cvrptw$E: $(CP_LIBS) $(BASE_LIBS) objs/cvrptw.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/cvrptw.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)cvrptw$E
+	$(CCC) $(CFLAGS) objs/cvrptw.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)cvrptw$E
 
 objs/dobble_ls.$O:examples/dobble_ls.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/dobble_ls.cc $(OBJOUT)objs/dobble_ls.$O
 
 dobble_ls$E: $(CP_LIBS) $(BASE_LIBS) objs/dobble_ls.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/dobble_ls.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)dobble_ls$E
+	$(CCC) $(CFLAGS) objs/dobble_ls.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)dobble_ls$E
 
 objs/golomb.$O:examples/golomb.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/golomb.cc $(OBJOUT)objs/golomb.$O
 
 golomb$E: $(CP_LIBS) $(BASE_LIBS) objs/golomb.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/golomb.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)golomb$E
+	$(CCC) $(CFLAGS) objs/golomb.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)golomb$E
 
 objs/jobshop.$O:examples/jobshop.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/jobshop.cc $(OBJOUT)objs/jobshop.$O
 
 jobshop$E: $(CP_LIBS) $(BASE_LIBS) objs/jobshop.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/jobshop.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)jobshop$E
+	$(CCC) $(CFLAGS) objs/jobshop.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)jobshop$E
 
 objs/magic_square.$O:examples/magic_square.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/magic_square.cc $(OBJOUT)objs/magic_square.$O
 
 magic_square$E: $(CP_LIBS) $(BASE_LIBS) objs/magic_square.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/magic_square.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)magic_square$E
+	$(CCC) $(CFLAGS) objs/magic_square.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)magic_square$E
 
 objs/model_util.$O:examples/model_util.cc gen/constraint_solver/model.pb.h constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/model_util.cc $(OBJOUT)objs/model_util.$O
 
 model_util$E: $(CP_LIBS) $(BASE_LIBS) objs/model_util.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/model_util.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)model_util$E
+	$(CCC) $(CFLAGS) objs/model_util.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)model_util$E
 
 objs/network_routing.$O:examples/network_routing.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/network_routing.cc $(OBJOUT)objs/network_routing.$O
 
 network_routing$E: $(CP_LIBS) $(BASE_LIBS) $(GRAPH_LIBS) objs/network_routing.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/network_routing.$O $(CP_LIBS) $(GRAPH_LIBS) $(BASE_LIBS) $(EXEOUT)network_routing$E
+	$(CCC) $(CFLAGS) objs/network_routing.$O $(CP_LIBS) $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)network_routing$E
 
 objs/nqueens.$O: examples/nqueens.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/nqueens.cc $(OBJOUT)objs/nqueens.$O
 
 nqueens$E: $(CP_LIBS) $(BASE_LIBS) objs/nqueens.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/nqueens.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)nqueens$E
+	$(CCC) $(CFLAGS) objs/nqueens.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)nqueens$E
 
 objs/tricks.$O: examples/tricks.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/tricks.cc $(OBJOUT)objs/tricks.$O
@@ -506,13 +506,13 @@ objs/global_arith.$O: examples/global_arith.cc constraint_solver/constraint_solv
 	$(CCC) $(CFLAGS) -c examples/global_arith.cc $(OBJOUT)objs/global_arith.$O
 
 tricks$E: $(CPLIBS) $(BASE_LIBS) objs/tricks.$O objs/global_arith.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tricks.$O objs/global_arith.$O $(CPLIBS) $(BASE_LIBS) $(EXEOUT)tricks$E
+	$(CCC) $(CFLAGS) objs/tricks.$O objs/global_arith.$O $(CPLIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)tricks$E
 
 objs/tsp.$O: examples/tsp.cc constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c examples/tsp.cc $(OBJOUT)objs/tsp.$O
 
 tsp$E: $(CP_LIBS) $(BASE_LIBS) objs/tsp.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/tsp.$O $(CP_LIBS) $(BASE_LIBS) $(EXEOUT)tsp$E
+	$(CCC) $(CFLAGS) objs/tsp.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)tsp$E
 
 # Linear Programming Examples
 
@@ -520,22 +520,22 @@ objs/column_generation.$O: examples/column_generation.cc linear_solver/linear_so
 	$(CCC) $(CFLAGS) -c examples/column_generation.cc $(OBJOUT)objs/column_generation.$O
 
 column_generation$E: $(LP_LIBS) $(BASE_LIBS) objs/column_generation.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/column_generation.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(EXEOUT)column_generation$E
+	$(CCC) $(CFLAGS) objs/column_generation.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS) $(EXEOUT)column_generation$E
 
 objs/linear_solver_example.$O: examples/linear_solver_example.cc linear_solver/linear_solver.h
 	$(CCC) $(CFLAGS) -c examples/linear_solver_example.cc $(OBJOUT)objs/linear_solver_example.$O
 
 linear_solver_example$E: $(LP_LIBS) $(BASE_LIBS) objs/linear_solver_example.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/linear_solver_example.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(EXEOUT)linear_solver_example$E
+	$(CCC) $(CFLAGS) objs/linear_solver_example.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS) $(EXEOUT)linear_solver_example$E
 
 objs/linear_solver_example_with_protocol_buffers.$O: examples/linear_solver_example_with_protocol_buffers.cc linear_solver/linear_solver.h
 	$(CCC) $(CFLAGS) -c examples/linear_solver_example_with_protocol_buffers.cc $(OBJOUT)objs/linear_solver_example_with_protocol_buffers.$O
 
 linear_solver_example_with_protocol_buffers$E: $(LP_LIBS) $(BASE_LIBS) objs/linear_solver_example_with_protocol_buffers.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/linear_solver_example_with_protocol_buffers.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(EXEOUT)linear_solver_example_with_protocol_buffers$E
+	$(CCC) $(CFLAGS) objs/linear_solver_example_with_protocol_buffers.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS) $(EXEOUT)linear_solver_example_with_protocol_buffers$E
 
 objs/integer_solver_example.$O: examples/integer_solver_example.cc linear_solver/linear_solver.h
 	$(CCC) $(CFLAGS) -c examples/integer_solver_example.cc $(OBJOUT)objs/integer_solver_example.$O
 
 integer_solver_example$E: $(LP_LIBS) $(BASE_LIBS) objs/integer_solver_example.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/integer_solver_example.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(EXEOUT)integer_solver_example$E
+	$(CCC) $(CFLAGS) objs/integer_solver_example.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS) $(EXEOUT)integer_solver_example$E
