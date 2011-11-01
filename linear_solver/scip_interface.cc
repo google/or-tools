@@ -244,9 +244,17 @@ void SCIPInterface::SetVariableInteger(int var_index, bool integer) {
   if (var_index != kNoIndex) {
     // Not cached if the variable has been extracted.
     ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
+#if (SCIP_VERSION >= 210)
+    SCIP_Bool infeasible = false;
+    ORTOOLS_SCIP_CALL(SCIPchgVarType(
+        scip_, scip_variables_[var_index],
+        integer ? SCIP_VARTYPE_INTEGER : SCIP_VARTYPE_CONTINUOUS,
+        &infeasible));
+#else
     ORTOOLS_SCIP_CALL(SCIPchgVarType(
         scip_, scip_variables_[var_index],
         integer ? SCIP_VARTYPE_INTEGER : SCIP_VARTYPE_CONTINUOUS));
+#endif
   } else {
     sync_status_ = MUST_RELOAD;
   }
