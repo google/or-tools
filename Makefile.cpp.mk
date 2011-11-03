@@ -42,8 +42,8 @@ CPBINARIES = \
 cpexe: $(CPBINARIES)
 
 LPBINARIES = \
-	integer_programming \
-	linear_programming \
+	integer_programming$E \
+	linear_programming$E \
 	linear_solver_protocol_buffers$E \
 	strawberry_fields_with_column_generation$E
 
