@@ -65,11 +65,16 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
 
   MPModelRequest model_request;
   model_request.mutable_model()->CopyFrom(model_proto);
+#if defined(USE_GLPK)
   if (type == MPSolver::GLPK_LINEAR_PROGRAMMING) {
     model_request.set_problem_type(MPModelRequest::GLPK_LINEAR_PROGRAMMING);
-  } else {
+  }
+#endif  // USE_GLPK
+#if defined(USE_CLP)
+  if (type == MPSolver::CLP_LINEAR_PROGRAMMING) {
     model_request.set_problem_type(MPModelRequest::CLP_LINEAR_PROGRAMMING);
   }
+#endif  // USE_CLP
 
   MPSolutionResponse solution_response;
   solver.SolveWithProtocolBuffers(model_request, &solution_response);
@@ -90,10 +95,14 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
 }
 
 void RunAllExamples() {
+#if defined(USE_GLPK)
   LOG(INFO) << "----- Running Max Example with GLPK -----";
   BuildLinearProgrammingMaxExample(MPSolver::GLPK_LINEAR_PROGRAMMING);
+#endif  // USE_GLPK
+#if defined(USE_CLP)
   LOG(INFO) << "----- Running Max Example with Coin LP -----";
   BuildLinearProgrammingMaxExample(MPSolver::CLP_LINEAR_PROGRAMMING);
+#endif  // USE_CLP
 }
 }  // namespace operations_research
 

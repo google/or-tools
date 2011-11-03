@@ -1076,8 +1076,6 @@ KnapsackMIPSolver::KnapsackMIPSolver(
       weights_(),
       capacities_(),
       best_solution_() {
-  CHECK(problem_type == MPSolver::CBC_MIXED_INTEGER_PROGRAMMING
-        || problem_type == MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
 }
 
 void KnapsackMIPSolver::Init(const std::vector<int64>& profits,
@@ -1159,16 +1157,20 @@ KnapsackSolver::KnapsackSolver(SolverType solver_type,
     case KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER:
       solver_.reset(new KnapsackGenericSolver(solver_name));
       break;
+#if defined(USE_CBC)
     case KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER:
       solver_.reset(new KnapsackMIPSolver(
           MPSolver::CBC_MIXED_INTEGER_PROGRAMMING,
           solver_name));
       break;
+#endif  // USE_CBC
+#if defined(USE_GLPK)
     case KNAPSACK_MULTIDIMENSION_GLPK_MIP_SOLVER:
       solver_.reset(new KnapsackMIPSolver(
           MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING,
           solver_name));
       break;
+#endif  // USE_GLPK
     default:
       LOG(FATAL) << "Unknown knapsack solver type.";
   }

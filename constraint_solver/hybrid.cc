@@ -27,6 +27,22 @@ DEFINE_bool(use_clp, true, "use Clp instead of glpk");
 
 namespace operations_research {
 namespace {
+MPSolver::OptimizationProblemType GetType(bool use_clp) {
+  if (use_clp) {
+#if defined(USE_CLP)
+    return MPSolver::CLP_LINEAR_PROGRAMMING;
+#else
+    LOG(FATAL) << "CLP not defined";
+#endif  // USE_CLP
+  } else {
+#if defined(USE_GLPK)
+    return MPSolver::GLPK_LINEAR_PROGRAMMING;
+#else
+    LOG(FATAL) << "GLPK not defined";
+#endif  // USE_GLPK
+  }
+}
+
 class SimplexConstraint : public SearchMonitor {
  public:
   SimplexConstraint(Solver* const solver,
@@ -38,10 +54,7 @@ class SimplexConstraint : public SearchMonitor {
         builder_(builder),
         modifier_(modifier),
         runner_(runner),
-        mp_solver_("InSearchSimplex",
-                   (FLAGS_use_clp ?
-                    MPSolver::CLP_LINEAR_PROGRAMMING :
-                    MPSolver::GLPK_LINEAR_PROGRAMMING)),
+        mp_solver_("InSearchSimplex", GetType(FLAGS_use_clp)),
         counter_(0LL),
         simplex_frequency_(simplex_frequency) {
     if (builder != NULL) {

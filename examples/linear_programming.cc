@@ -87,10 +87,14 @@ void RunLinearProgrammingExample(
 }
 
 void RunAllExamples() {
+#if defined(USE_GLPK)
   LOG(INFO) << "---- Linear programming example with GLPK ----";
   RunLinearProgrammingExample(MPSolver::GLPK_LINEAR_PROGRAMMING);
+#endif  // USE_GLPK
+#if defined(USE_CLP)
   LOG(INFO) << "---- Linear programming example with CLP ----";
   RunLinearProgrammingExample(MPSolver::CLP_LINEAR_PROGRAMMING);
+#endif  // USE_CLP
 }
 }  // namespace operations_research
 

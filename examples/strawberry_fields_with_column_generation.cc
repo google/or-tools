@@ -623,11 +623,20 @@ int main(int argc, char** argv) {
 
 
   operations_research::MPSolver::OptimizationProblemType solver_type;
+  bool found = false;
+#if defined(USE_CLP)
   if (FLAGS_colgen_solver == "clp") {
     solver_type = operations_research::MPSolver::CLP_LINEAR_PROGRAMMING;
-  } else if (FLAGS_colgen_solver == "glpk") {
+    found = true;
+  }
+#endif  // USE_CLP
+#if defined(USE_GLPK)
+  if (FLAGS_colgen_solver == "glpk") {
     solver_type = operations_research::MPSolver::GLPK_LINEAR_PROGRAMMING;
-  } else {
+    found = true;
+  }
+#endif  // USE_GLPK
+  if (!found) {
     LOG(ERROR) << "Unknown solver " << FLAGS_colgen_solver;
     return 1;
   }
