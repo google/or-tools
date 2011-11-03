@@ -254,7 +254,7 @@ void SCIPInterface::SetVariableInteger(int var_index, bool integer) {
     ORTOOLS_SCIP_CALL(SCIPchgVarType(
         scip_, scip_variables_[var_index],
         integer ? SCIP_VARTYPE_INTEGER : SCIP_VARTYPE_CONTINUOUS));
-#endif
+#endif  // SCIP_VERSION >= 210
   } else {
     sync_status_ = MUST_RELOAD;
   }
