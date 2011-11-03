@@ -32,7 +32,7 @@ FLAGS = gflags.FLAGS
 
 
 def main(unused_argv):
-  # Create the solver.
+  # Creates the solver.
   solver = pywrapcp.Solver('jobshop ft06')
 
   machines_count = 6
@@ -54,10 +54,10 @@ def main(unused_argv):
               [2, 1, 4, 5, 0, 3],
               [1, 3, 5, 0, 4, 2]]
 
-  # Compute horizon dynamically.
+  # Computes horizon dynamically.
   horizon = sum([sum(durations[i]) for i in all_jobs])
 
-  # Create jobs.
+  # Creates jobs.
   all_tasks = {}
   for i in all_jobs:
     for j in all_machines:
@@ -67,7 +67,7 @@ def main(unused_argv):
                                                           False,
                                                           'Job_%i_%i' % (i, j))
 
-  # Create sequence constraints.
+  # Creates sequence variables and add disjuctive constraints.
   all_sequences = {}
   for i in all_machines:
 
@@ -77,7 +77,8 @@ def main(unused_argv):
         if machines[j][k] == i:
           machines_jobs.append(all_tasks[(j, k)])
 
-    all_sequences[i] = solver.Sequence(machines_jobs, 'machine %i' % i)
+    all_sequences[i] = solver.SequenceVar(machines_jobs, 'machine %i' % i)
+    solver.Add(solver.DisjunctiveConstraint(machines_jobs))
 
   # Makespan objective.
   obj_var = solver.Max([all_tasks[(i, machines_count - 1)].EndExpr()
@@ -89,11 +90,7 @@ def main(unused_argv):
     for j in range(0, machines_count - 1):
       solver.Add(all_tasks[(i, j + 1)].StartsAfterEnd(all_tasks[(i, j)]))
 
-  # Add sequence constraints.
-  for i in all_machines:
-    solver.Add(all_sequences[i])
-
-  # Create search phases.
+  # Creates search phases.
   vars_phase = solver.Phase([obj_var],
                             solver.CHOOSE_FIRST_UNBOUND,
                             solver.ASSIGN_MIN_VALUE)
@@ -101,10 +98,10 @@ def main(unused_argv):
                                 solver.SEQUENCE_DEFAULT)
   main_phase = solver.Compose([sequence_phase, vars_phase])
 
-  # Create the search log.
+  # Creates the search log.
   search_log = solver.SearchLog(100, obj_var)
 
-  # And solve.
+  # Solves the problem.
   solver.Solve(main_phase, [search_log, objective])
 
 

@@ -154,6 +154,16 @@
 // Weighted Bipartite Matching Problems in Theory and Practice."
 // Stanford University Doctoral Dissertation, Department of Computer
 // Science, 1995.
+//
+// [ Burkard et al. ] R. Burkard, M. Dell'Amico, S. Martello, "Assignment
+// Problems", SIAM, 2009, ISBN: 978-0898716634,
+// http://www.amazon.com/dp/0898716632/
+//
+// [ Ahuja et al. ] R. K. Ahuja, T. L. Magnanti, J. B. Orlin, "Network Flows:
+// Theory, Algorithms, and Applications," Prentice Hall, 1993,
+// ISBN: 978-0136175490, http://www.amazon.com/dp/013617549X
+//
+// Keywords: linear sum assignment problem, Hungarian method, Goldberg, Kennedy.
 
 #ifndef OR_TOOLS_GRAPH_LINEAR_ASSIGNMENT_H_
 #define OR_TOOLS_GRAPH_LINEAR_ASSIGNMENT_H_

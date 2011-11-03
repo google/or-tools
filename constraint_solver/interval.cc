@@ -220,13 +220,7 @@ class IntervalVarRelaxedMax : public AlwaysPerformedIntervalVarWrapper {
                                    underlying());
   }
 };
-}  // namespace
 
-IntervalVar* Solver::MakeIntervalRelaxedMax(IntervalVar* const interval_var) {
-  return RevAlloc(new IntervalVarRelaxedMax(interval_var));
-}
-
-namespace {
 // An interval variable that wraps around an underlying one, relaxing the min
 // start and end. Relaxing means making unbounded when optional.
 //
@@ -274,8 +268,20 @@ class IntervalVarRelaxedMin : public AlwaysPerformedIntervalVarWrapper {
 };
 }  // namespace
 
+IntervalVar* Solver::MakeIntervalRelaxedMax(IntervalVar* const interval_var) {
+  if (interval_var->MustBePerformed()) {
+    return interval_var;
+  } else {
+    return RevAlloc(new IntervalVarRelaxedMax(interval_var));
+  }
+}
+
 IntervalVar* Solver::MakeIntervalRelaxedMin(IntervalVar* const interval_var) {
-  return RevAlloc(new IntervalVarRelaxedMin(interval_var));
+  if (interval_var->MustBePerformed()) {
+    return interval_var;
+  } else {
+    return RevAlloc(new IntervalVarRelaxedMin(interval_var));
+  }
 }
 
 namespace {
@@ -510,11 +516,12 @@ class IntervalVarPerformedExpr : public BaseIntExpr {
 
 class FixedDurationIntervalVar : public IntervalVar {
  public:
-  class FixedDurationIntervalVarHandler : public Demon {
+  enum PerformedStatus { UNPERFORMED, PERFORMED, UNDECIDED };
+
+  class Handler : public Demon {
    public:
-    explicit FixedDurationIntervalVarHandler(
-        FixedDurationIntervalVar* const var) : Demon(), var_(var) {}
-    virtual ~FixedDurationIntervalVarHandler() {}
+    explicit Handler(FixedDurationIntervalVar* const var) : var_(var) {}
+    virtual ~Handler() {}
     virtual void Run(Solver* const s) {
       var_->Process();
     }
@@ -528,11 +535,10 @@ class FixedDurationIntervalVar : public IntervalVar {
     FixedDurationIntervalVar* const var_;
   };
 
-  class FixedDurationIntervalVarCleaner : public Action {
+  class Cleaner : public Action {
    public:
-    explicit FixedDurationIntervalVarCleaner(
-        FixedDurationIntervalVar* const var) : Action(), var_(var) {}
-    virtual ~FixedDurationIntervalVarCleaner() {}
+    explicit Cleaner(FixedDurationIntervalVar* const var) : var_(var) {}
+    virtual ~Cleaner() {}
     virtual void Run(Solver* const s) {
       var_->ClearInProcess();
     }
@@ -556,10 +562,14 @@ class FixedDurationIntervalVar : public IntervalVar {
   virtual void SetStartMax(int64 m);
   virtual void SetStartRange(int64 mi, int64 ma);
   virtual void WhenStartRange(Demon* const d) {
-    start_range_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    if (performed_ != UNPERFORMED && start_min_ != start_max_) {
+      start_range_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    }
   }
   virtual void WhenStartBound(Demon* const d) {
-    start_bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    if (performed_ != UNPERFORMED && start_min_ != start_max_) {
+      start_bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    }
   }
 
   virtual int64 DurationMin() const;
@@ -576,17 +586,24 @@ class FixedDurationIntervalVar : public IntervalVar {
   virtual void SetEndMax(int64 m);
   virtual void SetEndRange(int64 mi, int64 ma);
   virtual void WhenEndRange(Demon* const d)  {
-    start_range_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    if (performed_ != UNPERFORMED && start_min_ != start_max_) {
+      start_range_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    }
   }
   virtual void WhenEndBound(Demon* const d) {
-    start_bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    if (performed_ != UNPERFORMED && start_min_ != start_max_) {
+      start_bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    }
   }
 
   virtual bool MustBePerformed() const;
   virtual bool MayBePerformed() const;
   virtual void SetPerformed(bool val);
   virtual void WhenPerformedBound(Demon* const d) {
-    performed_bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    if (performed_ == UNDECIDED) {
+      performed_bound_demons_.PushIfNotTop(solver(),
+                                           solver()->RegisterDemon(d));
+    }
   }
   void Process();
   void ClearInProcess();
@@ -606,12 +623,12 @@ class FixedDurationIntervalVar : public IntervalVar {
     }
   }
   void CheckOldPerformed() {
-    if (performed_ == 2) {
-      old_performed_ = 2;
+    if (performed_ == UNDECIDED) {
+      old_performed_ = UNDECIDED;
     }
   }
   void CheckNotUnperformed() const {
-    CHECK_NE(0, performed_);
+    CHECK_NE(UNPERFORMED, performed_);
   }
   void Push();
 
@@ -622,14 +639,14 @@ class FixedDurationIntervalVar : public IntervalVar {
   int64 old_start_min_;
   int64 old_start_max_;
   int64 duration_;
-  int performed_;
-  int new_performed_;
-  int old_performed_;
+  PerformedStatus performed_;
+  PerformedStatus new_performed_;
+  PerformedStatus old_performed_;
   SimpleRevFIFO<Demon*> start_bound_demons_;
   SimpleRevFIFO<Demon*> start_range_demons_;
   SimpleRevFIFO<Demon*> performed_bound_demons_;
-  FixedDurationIntervalVarHandler handler_;
-  FixedDurationIntervalVarCleaner cleaner_;
+  Handler handler_;
+  Cleaner cleaner_;
   bool in_process_;
 };
 
@@ -647,7 +664,7 @@ FixedDurationIntervalVar::FixedDurationIntervalVar(Solver* const s,
       old_start_min_(start_min),
       old_start_max_(start_max),
       duration_(duration),
-      performed_(optional ? 2 : 1),
+      performed_(optional ? UNDECIDED : PERFORMED),
       new_performed_(performed_),
       old_performed_(performed_),
       handler_(this),
@@ -665,9 +682,9 @@ FixedDurationIntervalVar::FixedDurationIntervalVar(Solver* const s,
       old_start_min_(0),
       old_start_max_(0),
       duration_(0),
-      performed_(0),
-      new_performed_(0),
-      old_performed_(0),
+      performed_(UNPERFORMED),
+      new_performed_(UNPERFORMED),
+      old_performed_(UNPERFORMED),
       handler_(this),
       cleaner_(this),
       in_process_(false) {
@@ -680,7 +697,7 @@ void FixedDurationIntervalVar::Process() {
   new_start_max_ = start_max_;
   new_performed_ = performed_;
   set_queue_action_on_fail(&cleaner_);
-  if (performed_ != 0) {
+  if (performed_ != UNPERFORMED) {
     if (start_min_ == start_max_) {
       for (SimpleRevFIFO<Demon*>::Iterator it(&start_bound_demons_);
            it.ok();
@@ -716,7 +733,7 @@ void FixedDurationIntervalVar::Process() {
     SetStartMax(new_start_max_);
   }
   if (new_performed_ != performed_) {
-    CHECK_NE(2, new_performed_);
+    CHECK_NE(UNDECIDED, new_performed_);
     SetPerformed(new_performed_);
   }
 }
@@ -736,7 +753,7 @@ int64 FixedDurationIntervalVar::StartMax() const {
 }
 
 void FixedDurationIntervalVar::SetStartMin(int64 m) {
-  if (performed_ != 0) {
+  if (performed_ != UNPERFORMED) {
     if (m > start_max_) {
       SetPerformed(false);
       return;
@@ -759,7 +776,7 @@ void FixedDurationIntervalVar::SetStartMin(int64 m) {
 }
 
 void FixedDurationIntervalVar::SetStartMax(int64 m) {
-  if (performed_ != 0) {
+  if (performed_ != UNPERFORMED) {
     if (m < start_min_) {
       SetPerformed(false);
       return;
@@ -847,26 +864,27 @@ void FixedDurationIntervalVar::SetDurationRange(int64 mi, int64 ma) {
 }
 
 bool FixedDurationIntervalVar::MustBePerformed() const {
-  return (performed_ == 1);
+  return (performed_ == PERFORMED);
 }
 
 bool FixedDurationIntervalVar::MayBePerformed() const {
-  return (performed_ != 0);
+  return (performed_ != UNPERFORMED);
 }
 
 void FixedDurationIntervalVar::SetPerformed(bool val) {
   CHECK_GE(val, 0);
   CHECK_LE(val, 1);
-  if (performed_ == 2) {
+  if (performed_ == UNDECIDED) {
     if (in_process_) {
-      if (new_performed_ == 2) {
-        new_performed_ = val;
+      if (new_performed_ == UNDECIDED) {
+        new_performed_ = static_cast<PerformedStatus>(val);
       } else if (new_performed_ != val) {
         solver()->Fail();
       }
     } else {
       CheckOldPerformed();
-      solver()->SaveAndSetValue(&performed_, static_cast<int>(val));
+      solver()->SaveAndSetValue(reinterpret_cast<int*>(&performed_),
+                                static_cast<int>(val));
       Push();
     }
   } else if (performed_ != val) {
@@ -894,16 +912,358 @@ string FixedDurationIntervalVar::DebugString() const {
   }
   StringAppendF(&out, ", duration = %" GG_LL_FORMAT "d, status = ", duration_);
   switch (performed_) {
-    case 0:
+    case UNPERFORMED:
       out += "unperformed)";
       break;
-    case 1:
+    case PERFORMED:
       out += "performed)";
       break;
-    case 2:
+    case UNDECIDED:
       out += "optional)";
       break;
   }
+  return out;
+}
+
+// ----- FixedDurationPerformedIntervalVar -----
+
+class FixedDurationPerformedIntervalVar : public IntervalVar {
+ public:
+  class Handler : public Demon {
+   public:
+    explicit Handler(FixedDurationPerformedIntervalVar* const var)
+        : var_(var) {}
+    virtual ~Handler() {}
+    virtual void Run(Solver* const s) {
+      var_->Process();
+    }
+    virtual Solver::DemonPriority priority() const {
+      return Solver::VAR_PRIORITY;
+    }
+    virtual string DebugString() const {
+      return StringPrintf("Handler(%s)", var_->DebugString().c_str());
+    }
+   private:
+    FixedDurationPerformedIntervalVar* const var_;
+  };
+
+  class Cleaner : public Action {
+   public:
+    explicit Cleaner(FixedDurationPerformedIntervalVar* const var)
+        : var_(var) {}
+    virtual ~Cleaner() {}
+    virtual void Run(Solver* const s) {
+      var_->ClearInProcess();
+    }
+   private:
+    FixedDurationPerformedIntervalVar* const var_;
+  };
+
+  FixedDurationPerformedIntervalVar(Solver* const s,
+                                    int64 start_min,
+                                    int64 start_max,
+                                    int64 duration,
+                                    const string& name);
+  // Unperformed interval.
+  FixedDurationPerformedIntervalVar(Solver* const s, const string& name);
+  virtual ~FixedDurationPerformedIntervalVar() {}
+
+  virtual int64 StartMin() const;
+  virtual int64 StartMax() const;
+  virtual void SetStartMin(int64 m);
+  virtual void SetStartMax(int64 m);
+  virtual void SetStartRange(int64 mi, int64 ma);
+  virtual void WhenStartRange(Demon* const d) {
+    if (start_min_ != start_max_) {
+      start_range_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    }
+  }
+  virtual void WhenStartBound(Demon* const d) {
+    if (start_min_ != start_max_) {
+      start_bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    }
+  }
+
+  virtual int64 DurationMin() const;
+  virtual int64 DurationMax() const;
+  virtual void SetDurationMin(int64 m);
+  virtual void SetDurationMax(int64 m);
+  virtual void SetDurationRange(int64 mi, int64 ma);
+  virtual void WhenDurationRange(Demon* const d) { }
+  virtual void WhenDurationBound(Demon* const d) { }
+
+  virtual int64 EndMin() const;
+  virtual int64 EndMax() const;
+  virtual void SetEndMin(int64 m);
+  virtual void SetEndMax(int64 m);
+  virtual void SetEndRange(int64 mi, int64 ma);
+  virtual void WhenEndRange(Demon* const d)  {
+    if (start_min_ != start_max_) {
+      start_range_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    }
+  }
+  virtual void WhenEndBound(Demon* const d) {
+    if (start_min_ != start_max_) {
+      start_bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+    }
+  }
+
+  virtual bool MustBePerformed() const;
+  virtual bool MayBePerformed() const;
+  virtual void SetPerformed(bool val);
+  virtual void WhenPerformedBound(Demon* const d) {
+  }
+  void Process();
+  void ClearInProcess();
+  virtual string DebugString() const;
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->VisitIntervalVariable(this, "", NULL);
+  }
+
+ private:
+  void CheckOldStartBounds() {
+    if (old_start_min_ > start_min_) {
+      old_start_min_ = start_min_;
+    }
+    if (old_start_max_ < start_max_) {
+      old_start_max_ = start_max_;
+    }
+  }
+  void CheckOldPerformed() {}
+  void Push();
+
+  int64 start_min_;
+  int64 start_max_;
+  int64 new_start_min_;
+  int64 new_start_max_;
+  int64 old_start_min_;
+  int64 old_start_max_;
+  int64 duration_;
+  SimpleRevFIFO<Demon*> start_bound_demons_;
+  SimpleRevFIFO<Demon*> start_range_demons_;
+  Handler handler_;
+  Cleaner cleaner_;
+  bool in_process_;
+};
+
+FixedDurationPerformedIntervalVar::FixedDurationPerformedIntervalVar(
+    Solver* const s,
+    int64 start_min,
+    int64 start_max,
+    int64 duration,
+    const string& name)
+    : IntervalVar(s, name),
+      start_min_(start_min),
+      start_max_(start_max),
+      new_start_min_(start_min),
+      new_start_max_(start_max),
+      old_start_min_(start_min),
+      old_start_max_(start_max),
+      duration_(duration),
+      handler_(this),
+      cleaner_(this),
+      in_process_(false) {
+}
+
+FixedDurationPerformedIntervalVar::FixedDurationPerformedIntervalVar(
+    Solver* const s,
+    const string& name)
+    : IntervalVar(s, name),
+      start_min_(0),
+      start_max_(0),
+      new_start_min_(0),
+      new_start_max_(0),
+      old_start_min_(0),
+      old_start_max_(0),
+      duration_(0),
+      handler_(this),
+      cleaner_(this),
+      in_process_(false) {
+}
+
+void FixedDurationPerformedIntervalVar::Process() {
+  CHECK(!in_process_);
+  in_process_ = true;
+  new_start_min_ = start_min_;
+  new_start_max_ = start_max_;
+  set_queue_action_on_fail(&cleaner_);
+  if (start_min_ == start_max_) {
+    for (SimpleRevFIFO<Demon*>::Iterator it(&start_bound_demons_);
+         it.ok();
+         ++it) {
+      Enqueue(*it);
+    }
+  }
+  if (start_min_ != old_start_min_ || start_max_ != old_start_max_) {
+    for (SimpleRevFIFO<Demon*>::Iterator it(&start_range_demons_);
+         it.ok();
+         ++it) {
+      Enqueue(*it);
+    }
+  }
+  ProcessDemonsOnQueue();
+  clear_queue_action_on_fail();
+  ClearInProcess();
+  old_start_min_ = start_min_;
+  old_start_max_ = start_max_;
+  if (start_min_ < new_start_min_) {
+    SetStartMin(new_start_min_);
+  }
+  if (start_max_ > new_start_max_) {
+    SetStartMax(new_start_max_);
+  }
+}
+
+void FixedDurationPerformedIntervalVar::ClearInProcess() {
+  in_process_ = false;
+}
+
+int64 FixedDurationPerformedIntervalVar::StartMin() const {
+  return start_min_;
+}
+
+int64 FixedDurationPerformedIntervalVar::StartMax() const {
+  return start_max_;
+}
+
+void FixedDurationPerformedIntervalVar::SetStartMin(int64 m) {
+  if (m > start_max_) {
+    SetPerformed(false);
+    return;
+  }
+  if (m > start_min_) {
+    if (in_process_) {
+      if (m > new_start_max_) {
+        solver()->Fail();
+      }
+      if (m > new_start_min_) {
+        new_start_min_ = m;
+      }
+    } else {
+      CheckOldStartBounds();
+      solver()->SaveAndSetValue(&start_min_, m);
+      Push();
+    }
+  }
+}
+
+void FixedDurationPerformedIntervalVar::SetStartMax(int64 m) {
+  if (m < start_min_) {
+    SetPerformed(false);
+    return;
+  }
+  if (m < start_max_) {
+    if (in_process_) {
+      if (m < new_start_min_) {
+        solver()->Fail();
+      }
+      if (m < new_start_max_) {
+        new_start_max_ = m;
+      }
+    } else {
+      CheckOldStartBounds();
+      solver()->SaveAndSetValue(&start_max_, m);
+      Push();
+    }
+  }
+}
+
+void FixedDurationPerformedIntervalVar::SetStartRange(int64 mi, int64 ma) {
+  SetStartMin(mi);
+  SetStartMax(ma);
+}
+
+int64 FixedDurationPerformedIntervalVar::DurationMin() const {
+  return duration_;
+}
+
+int64 FixedDurationPerformedIntervalVar::DurationMax() const {
+  return duration_;
+}
+
+void FixedDurationPerformedIntervalVar::SetDurationMin(int64 m) {
+  if (m > duration_) {
+    SetPerformed(false);
+  }
+}
+
+void FixedDurationPerformedIntervalVar::SetDurationMax(int64 m) {
+  if (m < duration_) {
+    SetPerformed(false);
+  }
+}
+int64 FixedDurationPerformedIntervalVar::EndMin() const {
+  return start_min_ + duration_;
+}
+
+int64 FixedDurationPerformedIntervalVar::EndMax() const {
+  return start_max_ + duration_;
+}
+
+void FixedDurationPerformedIntervalVar::SetEndMin(int64 m) {
+  if (m > start_min_ + duration_) {
+    SetStartMin(m - duration_);
+  }
+}
+
+void FixedDurationPerformedIntervalVar::SetEndMax(int64 m) {
+  if (m < start_max_ + duration_) {
+    SetStartMax(m - duration_);
+  }
+}
+
+void FixedDurationPerformedIntervalVar::SetEndRange(int64 mi, int64 ma) {
+  if (mi < start_min_ + duration_) {
+    mi = start_min_ + duration_;
+  }
+  if (ma > start_max_ + duration_) {
+    ma = start_max_ + duration_;
+  }
+  SetStartRange(mi - duration_, ma - duration_);
+}
+
+
+void FixedDurationPerformedIntervalVar::SetDurationRange(int64 mi, int64 ma) {
+  if (mi > duration_ || ma < duration_ || mi > ma) {
+    SetPerformed(false);
+  }
+}
+
+bool FixedDurationPerformedIntervalVar::MustBePerformed() const {
+  return true;
+}
+
+bool FixedDurationPerformedIntervalVar::MayBePerformed() const {
+  return true;
+}
+
+void FixedDurationPerformedIntervalVar::SetPerformed(bool val) {
+  if (!val) {
+    solver()->Fail();
+  }
+}
+
+void FixedDurationPerformedIntervalVar::Push() {
+  const bool in_process = in_process_;
+  Enqueue(&handler_);
+  CHECK_EQ(in_process, in_process_);
+}
+
+string FixedDurationPerformedIntervalVar::DebugString() const {
+  string out;
+  const string& var_name = name();
+  if (!var_name.empty()) {
+    out = var_name + "(start = ";
+  } else {
+    out = "IntervalVar(start = ";
+  }
+  StringAppendF(&out, "%" GG_LL_FORMAT "d", start_min_);
+  if (start_max_ != start_min_) {
+    StringAppendF(&out, " .. %" GG_LL_FORMAT "d", start_max_);
+  }
+  StringAppendF(&out, ", duration = %" GG_LL_FORMAT "d, status = ", duration_);
+  out += "performed)";
   return out;
 }
 
@@ -1041,8 +1401,8 @@ string FixedInterval::DebugString() const {
 // ----- API -----
 
 void IntervalVar::WhenAnything(Demon* const d) {
-  WhenDurationRange(d);
   WhenStartRange(d);
+  WhenDurationRange(d);
   WhenEndRange(d);
   WhenPerformedBound(d);
 }
@@ -1092,6 +1452,12 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(int64 start_min,
                                                   const string& name) {
   if (start_min == start_max && !optional) {
     return MakeFixedInterval(start_min, duration, name);
+  } else if (!optional) {
+    return RevAlloc(new FixedDurationPerformedIntervalVar(this,
+                                                          start_min,
+                                                          start_max,
+                                                          duration,
+                                                          name));
   }
   return RevAlloc(new FixedDurationIntervalVar(this, start_min, start_max,
                                                duration, optional, name));

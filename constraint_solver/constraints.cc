@@ -40,6 +40,49 @@ Demon* Solver::MakeDelayedConstraintInitialPropagateCallback(
                                      "InitialPropagate");
 }
 
+namespace {
+class Callback1Demon : public Demon {
+ public:
+  // Ownership of the callback is transfered to the demon.
+  explicit Callback1Demon(Callback1<Solver*>* const callback)
+      : callback_(callback) {
+    CHECK_NOTNULL(callback);
+    callback_->CheckIsRepeatable();
+  }
+  virtual ~Callback1Demon() {}
+
+  virtual void Run(Solver* const solver) {
+    callback_->Run(solver);
+  }
+ private:
+  scoped_ptr<Callback1<Solver*> > callback_;
+};
+
+class ClosureDemon : public Demon {
+ public:
+  // Ownership of the callback is transfered to the demon.
+  explicit ClosureDemon(Closure* const callback) : callback_(callback) {
+    CHECK_NOTNULL(callback);
+    callback_->CheckIsRepeatable();
+  }
+  virtual ~ClosureDemon() {}
+
+  virtual void Run(Solver* const solver) {
+    callback_->Run();
+  }
+ private:
+  scoped_ptr<Closure> callback_;
+};
+}  // namespace
+
+Demon* Solver::MakeCallbackDemon(Callback1<Solver*>* const callback) {
+  return RevAlloc(new Callback1Demon(callback));
+}
+
+Demon* Solver::MakeCallbackDemon(Closure* const callback) {
+  return RevAlloc(new ClosureDemon(callback));
+}
+
 // ----- True and False Constraint -----
 
 namespace {

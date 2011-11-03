@@ -41,9 +41,9 @@ namespace operations_research {
 
 namespace {
 
-// Insert name in name_set and check for duplicates.
-void CheckDuplicateName(const string& name,
-                        hash_set<string>* name_set) {
+// Inserts name in name_set and checks that it is unique.
+void InsertOrDieIfNotUnique(hash_set<string>* name_set,
+                            const string& name) {
   if (!name.empty()) {
     std::pair<hash_set<string>::iterator, bool> result = name_set->insert(name);
     if (!result.second) {
@@ -52,7 +52,7 @@ void CheckDuplicateName(const string& name,
   }
 }
 
-// Create a valid name (unique) for a variable i in case it does
+// Creates a valid name (unique) for a variable i in case it does
 // not already have one.
 string CreateValidVariableName(
     const operations_research::MPVariable& variable, int i) {
@@ -65,7 +65,7 @@ string CreateValidVariableName(
   }
 }
 
-// Create a valid name (unique) for constraint i in case it does
+// Creates a valid name (unique) for constraint i in case it does
 // not already have one.
 string CreateValidConstraintName(
     const operations_research::MPConstraint& constraint, int i) {
@@ -289,7 +289,7 @@ void MPSolver::SetOptimizationDirection(bool maximize) {
   interface_->maximize_ = maximize;
   interface_->SetOptimizationDirection(maximize);
 }
-  // Minimizing or maximizing?
+
 bool MPSolver::Maximization() const {
   return interface_->maximize_;
 }
@@ -325,10 +325,6 @@ extern MPSolverInterface* BuildGLPKInterface(MPSolver* const solver, bool mip);
 extern MPSolverInterface* BuildSCIPInterface(MPSolver* const solver);
 #endif
 
-const int64 MPSolverInterface::kUnknownNumberOfIterations = -1;
-const int64 MPSolverInterface::kUnknownNumberOfNodes = -1;
-const int MPSolverInterface::kNoIndex = -1;
-
 namespace {
 MPSolverInterface* BuildSolverInterface(
     MPSolver* const solver, MPSolver::OptimizationProblemType problem_type) {
@@ -358,7 +354,6 @@ MPSolverInterface* BuildSolverInterface(
 }
 }  // namespace
 
-// Creates a LP/MIP instance with the specified name and minimization objective.
 MPSolver::MPSolver(const string& name, OptimizationProblemType problem_type)
     : name_(name),
       interface_(BuildSolverInterface(this, problem_type)),
@@ -368,7 +363,6 @@ MPSolver::MPSolver(const string& name, OptimizationProblemType problem_type)
   timer_.Restart();
 }
 
-// Frees the LP memory allocations.
 MPSolver::~MPSolver() {
   Clear();
 }
@@ -415,7 +409,7 @@ bool MPSolver::CheckAllNamesValidity() {
 }
 
 // ----- Methods using protocol buffers -----
-// Loads model from protocol buffer.
+
 MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& model) {
   hash_map<string, MPVariable*> variables;
   for (int i = 0; i < model.variables_size(); ++i) {
@@ -463,7 +457,6 @@ MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& model) {
   return MPSolver::NO_ERROR;
 }
 
-// Exports model to protocol buffer.
 void MPSolver::ExportModel(MPModelProto* model) const {
   CHECK_NOTNULL(model);
   if (model->variables_size() > 0 ||
@@ -531,9 +524,6 @@ void MPSolver::ExportModel(MPModelProto* model) const {
   model->set_objective_offset(linear_objective_->offset_);
 }
 
-// Encode current solution in a solution response protocol buffer.
-// Only nonzero variable values are stored in order to reduce the size
-// of the MPSolutionResponse protocol buffer.
 void MPSolver::FillSolutionResponse(MPSolutionResponse* response) const {
   CHECK_NOTNULL(response);
   if ((response->has_result_status() &&
@@ -592,10 +582,6 @@ void MPSolver::FillSolutionResponse(MPSolutionResponse* response) const {
   }
 }
 
-// Solves the model encoded by a MPModelRequest protocol buffer and
-// fills the solution encoded as a MPSolutionResponse.
-// The model is solved by the interface specified in the constructor
-// of MPSolver, MPModelRequest.OptimizationProblemType is ignored.
 void MPSolver::SolveWithProtocolBuffers(const MPModelRequest& model_request,
                                         MPSolutionResponse* response) {
   CHECK_NOTNULL(response);
@@ -639,7 +625,7 @@ void MPSolver::SuppressOutput() {
 MPVariable* MPSolver::MakeVar(
     double lb, double ub, bool integer, const string& name) {
   CheckNameValidity(name);
-  CheckDuplicateName(name, &variables_names_);
+  InsertOrDieIfNotUnique(&variables_names_, name);
   MPVariable* v = new MPVariable(lb, ub, integer, name, interface_.get());
   variables_.push_back(v);
   interface_->AddVariable(v);
@@ -671,6 +657,8 @@ void MPSolver::MakeVarArray(int nb,
     if (name.empty()) {
       vars->push_back(MakeVar(lb, ub, integer, name));
     } else {
+      // TODO(user): prepend zeros in the variable indices so that
+      // all names have the same number of digits.
       string vname = StringPrintf("%s%d", name.c_str(), i);
       vars->push_back(MakeVar(lb, ub, integer, vname));
     }
@@ -699,8 +687,6 @@ void MPSolver::MakeBoolVarArray(int nb,
   MakeVarArray(nb, 0.0, 1.0, true, name, vars);
 }
 
-// Creates a new row constraint, adds it to the LP/MIP and returns it.
-// MPSolver owns the Constraint. Do not free the memory yourself.
 MPConstraint* MPSolver::MakeRowConstraint(double lb, double ub) {
   return MakeRowConstraint(lb, ub, "");
 }
@@ -709,12 +695,10 @@ MPConstraint* MPSolver::MakeRowConstraint() {
   return MakeRowConstraint(-infinity(), infinity(), "");
 }
 
-// Creates a new row constraint, adds it to the LP/MIP and returns it.
-// MPSolver owns the Constraint. Do not free the memory yourself.
 MPConstraint* MPSolver::MakeRowConstraint(double lb, double ub,
                                           const string& name) {
   CheckNameValidity(name);
-  CheckDuplicateName(name, &constraints_names_);
+  InsertOrDieIfNotUnique(&constraints_names_, name);
   MPConstraint* const constraint =
       new MPConstraint(lb, ub, name, interface_.get());
   constraints_.push_back(constraint);
@@ -726,9 +710,6 @@ MPConstraint* MPSolver::MakeRowConstraint(const string& name) {
   return MakeRowConstraint(-infinity(), infinity(), name);
 }
 
-// Compute the size of the constraint with the largest number of
-// coefficients with index in [min_constraint_index,
-// max_constraint_index)
 int MPSolver::ComputeMaxConstraintSize(int min_constraint_index,
                                        int max_constraint_index) const {
   int max_constraint_size = 0;
@@ -813,7 +794,6 @@ void MPSolverInterface::WriteModelToPredefinedFiles() {
   }
 }
 
-// Extracts model stored in MPSolver
 void MPSolverInterface::ExtractModel() {
   switch (sync_status_) {
     case MUST_RELOAD: {

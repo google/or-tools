@@ -11,7 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This file contains various shortestpaths utilities.
+// This file contains various shortest paths utilities.
+//
+// Keywords: directed graph, cheapest path, shortest path, Dijkstra, spp.
 
 #ifndef OR_TOOLS_GRAPH_SHORTESTPATHS_H_
 #define OR_TOOLS_GRAPH_SHORTESTPATHS_H_

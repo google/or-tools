@@ -101,6 +101,14 @@
 // A.V. Goldberg, "The Partial Augment-Relabel Algorithm for the Maximum Flow
 // Problem.” In Proceedings of Algorithms ESA, LNCS 5193:466-477, Springer 2008.
 // www.springerlink.com/index/5535k2j1mt646338.pdf
+//
+// An interesting general reference on network flows is:
+// R. K. Ahuja, T. L. Magnanti, J. B. Orlin, "Network Flows: Theory, Algorithms,
+// and Applications," Prentice Hall, 1993, ISBN: 978-0136175490,
+// http://www.amazon.com/dp/013617549X
+//
+// Keywords: Push-relabel, max-flow, network, graph, Goldberg, Tarjan, Dinic,
+//           Dinitz.
 
 #ifndef OR_TOOLS_GRAPH_MAX_FLOW_H_
 #define OR_TOOLS_GRAPH_MAX_FLOW_H_
@@ -250,8 +258,25 @@ class MaxFlow {
   // in a human-friendly way.
   string DebugString(const string& context, ArcIndex arc) const;
 
-  // Initializes the stack active_nodes_.
-  void InitializeActiveNodeStack();
+  // Initializes the container active_nodes_.
+  virtual void InitializeActiveNodeContainer();
+
+  // Get the first element from the active node container
+  virtual NodeIndex GetAndRemoveFirstActiveNode() {
+    const NodeIndex node = active_nodes_.top();
+      active_nodes_.pop();
+      return node;
+  }
+
+  // Push element to the active node container
+  virtual void PushActiveNode(const NodeIndex& node) {
+    active_nodes_.push(node);
+  }
+
+  // Check the emptiness of the container
+  virtual bool IsEmptyActiveNodeContainer() {
+    return active_nodes_.empty();
+  }
 
   // Performs optimization step.
   void Refine();

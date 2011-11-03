@@ -272,6 +272,7 @@ class PyDecisionBuilder(object):
 %rename (DecisionBuilderFromAssignment) MakeDecisionBuilderFromAssignment;
 %rename (DefaultPhase) MakeDefaultPhase;
 %rename (Deviation) MakeDeviation;
+%rename (DisjunctiveConstraint) MakeDisjunctiveConstraint;
 %rename (Distribute) MakeDistribute;
 %rename (Element) MakeElement;
 %rename (FailDecision) MakeFailDecision;
@@ -331,7 +332,7 @@ class PyDecisionBuilder(object):
 %rename (SearchLog) MakeSearchLog;
 %rename (SearchTrace) MakeSearchTrace;
 %rename (SemiContinuousExpr) MakeSemiContinuousExpr;
-%rename (Sequence) MakeSequence;
+%rename (SequenceVar) MakeSequenceVar;
 %rename (SimulatedAnnealing) MakeSimulatedAnnealing;
 %rename (SolutionsLimit) MakeSolutionsLimit;
 %rename (SolveOnce) MakeSolveOnce;
@@ -602,9 +603,9 @@ namespace operations_research {
   }
 }
 
-// Add conversion rules for std::vector<Sequence*>.
-%typemap(in) const std::vector<Sequence*>&
-    (std::vector<Sequence*> temp) {
+// Add conversion rules for std::vector<SequenceVar*>.
+%typemap(in) const std::vector<SequenceVar*>&
+    (std::vector<SequenceVar*> temp) {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
     SWIG_fail;
@@ -614,9 +615,9 @@ namespace operations_research {
   for (size_t i = 0; i < temp.size(); ++i) {
     PyObject *obj = (is_tuple ? PyTuple_GetItem($input, i) :
                      PyList_GetItem($input, i));
-    operations_research::Sequence* t;
+    operations_research::SequenceVar* t;
     if ((SWIG_ConvertPtr(obj, (void**)&t,
-                         SWIGTYPE_p_operations_research__Sequence,
+                         SWIGTYPE_p_operations_research__SequenceVar,
                          SWIG_POINTER_EXCEPTION | 0 )) == -1) {
       SWIG_fail;
     }
@@ -629,7 +630,7 @@ namespace operations_research {
   $1 = &temp;
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<Sequence*>& {
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<SequenceVar*>& {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
   } else {
@@ -639,9 +640,9 @@ namespace operations_research {
     for (size_t i = 0; i < size; ++i) {
       PyObject* const obj =
           is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
-      operations_research::Sequence* t;
+      operations_research::SequenceVar* t;
       if ((SWIG_ConvertPtr(obj, (void**)&t,
-                           SWIGTYPE_p_operations_research__Sequence,
+                           SWIGTYPE_p_operations_research__SequenceVar,
                            SWIG_POINTER_EXCEPTION | 0 )) == -1) {
         PyErr_Clear();
         failed = true;
@@ -830,7 +831,7 @@ namespace operations_research {
 
 }
 
-%extend Sequence {
+%extend SequenceVar {
   string __repr__() {
     return self->DebugString();
   }
@@ -1395,8 +1396,9 @@ struct FailureProtect {
 %rename (makeCustomLimit) operations_research::Solver::MakeCustomLimit;
 %rename (makeDecisionBuilderFromAssignment) operations_research::Solver::MakeDecisionBuilderFromAssignment;
 %rename (makeDefaultPhase) operations_research::Solver::MakeDefaultPhase;
-%rename (makeDeviation) operations_research::Solver::MakeDeviation;
 %rename (makeDifference) operations_research::Solver::MakeDifference;
+%rename (makeDeviation) operations_research::Solver::MakeDeviation;
+%rename (makeDisjunctiveConstraint) operations_research::Solver::MakeDisjunctiveConstraint;
 %rename (makeDistribute) operations_research::Solver::MakeDistribute;
 %rename (makeDiv) operations_research::Solver::MakeDiv;
 %rename (makeElement) operations_research::Solver::MakeElement;
@@ -1475,7 +1477,7 @@ struct FailureProtect {
 %rename (makeSearchLog) operations_research::Solver::MakeSearchLog;
 %rename (makeSearchTrace) operations_research::Solver::MakeSearchTrace;
 %rename (makeSemiContinuousExpr) operations_research::Solver::MakeSemiContinuousExpr;
-%rename (makeSequence) operations_research::Solver::MakeSequence;
+%rename (makeSequenceVar) operations_research::Solver::MakeSequenceVar;
 %rename (makeSimulatedAnnealing) operations_research::Solver::MakeSimulatedAnnealing;
 %rename (makeSolutionsLimit) operations_research::Solver::MakeSolutionsLimit;
 %rename (makeSolveOnce) operations_research::Solver::MakeSolveOnce;
@@ -1577,7 +1579,7 @@ CONVERT_VECTOR(IntVar);
 CONVERT_VECTOR(SearchMonitor);
 CONVERT_VECTOR(DecisionBuilder);
 CONVERT_VECTOR(IntervalVar);
-CONVERT_VECTOR(Sequence);
+CONVERT_VECTOR(SequenceVar);
 CONVERT_VECTOR(LocalSearchOperator);
 CONVERT_VECTOR(LocalSearchFilter);
 

@@ -159,6 +159,7 @@ class FindAndEliminate {
     }
     return false;
   }
+
  private:
   ResultCallback2<bool, int, int>* const graph_;
   int node_count_;

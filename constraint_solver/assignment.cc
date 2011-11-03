@@ -26,6 +26,7 @@
 #include "base/hash.h"
 #include "constraint_solver/assignment.pb.h"
 #include "constraint_solver/constraint_solver.h"
+#include "util/string_array.h"
 
 namespace operations_research {
 
@@ -73,6 +74,22 @@ void IntVarElement::StoreFromProto(
     Deactivate();
   }
 }
+
+bool IntVarElement::operator==(const IntVarElement& element) const {
+  if (var_ != element.var_) {
+    return false;
+  }
+  if (Activated() != element.Activated()) {
+    return false;
+  }
+  if (!Activated() && !element.Activated()) {
+    // If both elements are deactivated, then they are equal, regardless of
+    // their min and max.
+    return true;
+  }
+  return min_ == element.min_ && max_ == element.max_;
+}
+
 
 void IntVarElement::RestoreToProto(
     IntVarAssignmentProto* int_var_assignment_proto) const {
@@ -212,42 +229,158 @@ string IntervalVarElement::DebugString() const {
   }
 }
 
+bool IntervalVarElement::operator==(const IntervalVarElement& element) const {
+  if (var_ != element.var_) {
+    return false;
+  }
+  if (Activated() != element.Activated()) {
+    return false;
+  }
+  if (!Activated() && !element.Activated()) {
+    // If both elements are deactivated, then they are equal, regardless of
+    // their other fields.
+    return true;
+  }
+  return start_min_ == element.start_min_
+      && start_max_ == element.start_max_
+      && duration_min_ == element.duration_min_
+      && duration_max_ == element.duration_max_
+      && end_min_ == element.end_min_
+      && end_max_ == element.end_max_
+      && performed_min_ == element.performed_min_
+      && performed_max_ == element.performed_max_
+      && var_ == element.var_;
+}
+
+// ----- SequenceVarElement -----
+
+SequenceVarElement::SequenceVarElement() {
+  Reset(NULL);
+}
+
+SequenceVarElement::SequenceVarElement(SequenceVar* const var) {
+  Reset(var);
+}
+
+void SequenceVarElement::Reset(SequenceVar* const var) {
+  var_ = var;
+  sequence_.clear();
+}
+
+SequenceVarElement* SequenceVarElement::Clone() {
+  SequenceVarElement* const element = new SequenceVarElement;
+  element->Copy(*this);
+  return element;
+}
+
+void SequenceVarElement::Copy(const SequenceVarElement& element) {
+  sequence_ = element.sequence_;
+  var_ = element.var_;
+  if (element.Activated()) {
+    Activate();
+  } else {
+    Deactivate();
+  }
+}
+
+void SequenceVarElement::Store() {
+  var_->FillSequence(&sequence_);
+}
+
+void SequenceVarElement::Restore() {
+  for (int i = 0; i < sequence_.size(); ++i) {
+    var_->RankFirst(sequence_[i]);
+  }
+}
+
+void SequenceVarElement::StoreFromProto(
+    const SequenceVarAssignmentProto& sequence_var_assignment_proto) {
+  for (int i = 0; i < sequence_var_assignment_proto.sequence_size(); ++i) {
+    sequence_.push_back(sequence_var_assignment_proto.sequence(i));
+  }
+  if (sequence_var_assignment_proto.active()) {
+    Activate();
+  } else {
+    Deactivate();
+  }
+}
+
+void SequenceVarElement::RestoreToProto(
+    SequenceVarAssignmentProto* sequence_var_assignment_proto) const {
+  sequence_var_assignment_proto->set_var_id(var_->name());
+  sequence_var_assignment_proto->set_active(Activated());
+  for (int i = 0; i < sequence_.size(); ++i) {
+    sequence_var_assignment_proto->add_sequence(sequence_[i]);
+  }
+}
+
+string SequenceVarElement::DebugString() const {
+  if (Activated()) {
+    return StringPrintf("[%s]", IntVectorToString(sequence_, ",").c_str());
+  } else {
+    return "(...)";
+  }
+}
+
+bool SequenceVarElement::operator==(const SequenceVarElement& element) const {
+  if (var_ != element.var_) {
+    return false;
+  }
+  if (Activated() != element.Activated()) {
+    return false;
+  }
+  if (!Activated() && !element.Activated()) {
+    // If both elements are deactivated, then they are equal, regardless of
+    // their other fields.
+    return true;
+  }
+  if (sequence_.size() != element.sequence_.size()) {
+    return false;
+  }
+  for (int i = 0; i < sequence_.size(); ++i) {
+    if (sequence_[i] != element.sequence_[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+const std::vector<int>& SequenceVarElement::Sequence() const {
+  return sequence_;
+}
+
+void SequenceVarElement::SetSequence(const std::vector<int>& new_sequence) {
+  sequence_ = new_sequence;
+}
+
 // ----- Assignment -----
 
 Assignment::Assignment(const Assignment* const copy)
     : PropagationBaseObject(copy->solver()),
       int_var_container_(copy->int_var_container_),
       interval_var_container_(copy->interval_var_container_),
-      obj_element_(NULL),
-      objective_(NULL) {
-  if (copy->obj_element_ != NULL) {
-    obj_element_ = copy->obj_element_->Clone();
-    objective_ = copy->objective_;
-  }
-}
+      sequence_var_container_(copy->sequence_var_container_),
+      objective_element_(copy->objective_element_) {}
 
 Assignment::Assignment(Solver* const s)
   : PropagationBaseObject(s),
-    obj_element_(NULL),
-    objective_(NULL) {}
+    objective_element_(NULL) {}
 
-Assignment::~Assignment() {
-  delete obj_element_;
-}
+Assignment::~Assignment() {}
 
 void Assignment::Clear() {
-  delete obj_element_;
-  obj_element_ = NULL;
-  objective_ = NULL;
+  objective_element_.Reset(NULL);
   int_var_container_.Clear();
   interval_var_container_.Clear();
+  sequence_var_container_.Clear();
 }
 
 void Assignment::Store() {
   int_var_container_.Store();
   interval_var_container_.Store();
-  if (obj_element_ != NULL) {
-    obj_element_->Store();
+  sequence_var_container_.Store();
+  if (HasObjective()) {
+    objective_element_.Store();
   }
 }
 
@@ -255,6 +388,7 @@ void Assignment::Restore() {
   FreezeQueue();
   int_var_container_.Restore();
   interval_var_container_.Restore();
+  sequence_var_container_.Restore();
   UnfreezeQueue();
 }
 
@@ -319,56 +453,53 @@ bool Assignment::Load(File* file) {
   return reader.Close();
 }
 
+template <class Var, class Element, class Proto, class Container>
+void RealLoad(const AssignmentProto& assignment_proto,
+              Container* const container,
+              int (AssignmentProto::*GetSize)() const,
+              const Proto& (AssignmentProto::*GetElem)(int) const) {  // NOLINT
+  bool fast_load = (container->Size() == (assignment_proto.*GetSize)());
+  for (int i = 0; fast_load && i < (assignment_proto.*GetSize)(); ++i) {
+    Element& element = container->MutableElement(i);
+    const Proto& proto = (assignment_proto.*GetElem)(i);
+    if (element.Var()->name() == proto.var_id()) {
+      element.StoreFromProto(proto);
+    } else {
+      fast_load = false;
+    }
+  }
+  if (!fast_load) {
+    hash_map<string, Element*> id_to_element_map;
+    IdToElementMap<Var, Element>(container, &id_to_element_map);
+    for (int i = 0; i < (assignment_proto.*GetSize)(); ++i) {
+      LoadElement<Element, Proto>(id_to_element_map,
+                                  (assignment_proto.*GetElem)(i));
+    }
+  }
+}
+
 void Assignment::Load(const AssignmentProto& assignment_proto) {
-  bool fast_load =
-      (int_var_container_.Size() == assignment_proto.int_var_assignment_size());
-  for (int i = 0;
-       fast_load && i < assignment_proto.int_var_assignment_size();
-       ++i) {
-    IntVarElement& element = int_var_container_.MutableElement(i);
-    const IntVarAssignmentProto& proto = assignment_proto.int_var_assignment(i);
-    if (element.Var()->name() == proto.var_id()) {
-      element.StoreFromProto(proto);
-    } else {
-      fast_load = false;
-    }
-  }
-  if (!fast_load) {
-    hash_map<string, IntVarElement*> id_to_int_var_element_map;
-    IdToElementMap<IntVar, IntVarElement>(&int_var_container_,
-                                          &id_to_int_var_element_map);
-    for (int i = 0; i < assignment_proto.int_var_assignment_size(); ++i) {
-      LoadElement<IntVarElement, IntVarAssignmentProto>(
-          id_to_int_var_element_map,
-          assignment_proto.int_var_assignment(i));
-    }
-  }
-  fast_load =
-      (interval_var_container_.Size()
-       == assignment_proto.interval_var_assignment_size());
-  for (int i = 0;
-       fast_load && i < assignment_proto.interval_var_assignment_size();
-       ++i) {
-    IntervalVarElement& element = interval_var_container_.MutableElement(i);
-    const IntervalVarAssignmentProto& proto =
-        assignment_proto.interval_var_assignment(i);
-    if (element.Var()->name() == proto.var_id()) {
-      element.StoreFromProto(proto);
-    } else {
-      fast_load = false;
-    }
-  }
-  if (!fast_load) {
-    hash_map<string, IntervalVarElement*> id_to_interval_var_element_map;
-    IdToElementMap<IntervalVar, IntervalVarElement>(
-        &interval_var_container_,
-        &id_to_interval_var_element_map);
-    for (int i = 0; i < assignment_proto.interval_var_assignment_size(); ++i) {
-      LoadElement<IntervalVarElement, IntervalVarAssignmentProto>(
-          id_to_interval_var_element_map,
-          assignment_proto.interval_var_assignment(i));
-    }
-  }
+  RealLoad<IntVar, IntVarElement, IntVarAssignmentProto, IntContainer> (
+      assignment_proto,
+      &int_var_container_,
+      &AssignmentProto::int_var_assignment_size,
+      &AssignmentProto::int_var_assignment);
+  RealLoad<IntervalVar,
+      IntervalVarElement,
+      IntervalVarAssignmentProto,
+      IntervalContainer> (
+          assignment_proto,
+          &interval_var_container_,
+          &AssignmentProto::interval_var_assignment_size,
+          &AssignmentProto::interval_var_assignment);
+  RealLoad<SequenceVar,
+      SequenceVarElement,
+      SequenceVarAssignmentProto,
+      SequenceContainer> (
+          assignment_proto,
+          &sequence_var_container_,
+          &AssignmentProto::sequence_var_assignment_size,
+          &AssignmentProto::sequence_var_assignment);
   if (assignment_proto.has_objective()) {
     const IntVarAssignmentProto& objective = assignment_proto.objective();
     const string objective_id = objective.var_id();
@@ -402,28 +533,41 @@ bool Assignment::Save(File* file) const {
   return writer.WriteProtocolMessage(assignment_proto) && writer.Close();
 }
 
+template <class Var, class Element, class Proto, class Container>
+void RealSave(AssignmentProto* const assignment_proto,
+              const Container& container,
+              Proto* (AssignmentProto::*Add)()) {
+  for (int i = 0; i < container.Size(); ++i) {
+    const Element& element = container.Element(i);
+    const Var* const var = element.Var();
+    const string& name = var->name();
+    if (!name.empty()) {
+      Proto* const var_assignment_proto = (assignment_proto->*Add)();
+      element.RestoreToProto(var_assignment_proto);
+    }
+  }
+}
+
 void Assignment::Save(AssignmentProto* const assignment_proto) const {
   assignment_proto->Clear();
-  for (int i = 0; i < int_var_container_.Size(); ++i) {
-    const IntVarElement& element = int_var_container_.Element(i);
-    const IntVar* const var = element.Var();
-    const string& name = var->name();
-    if (!name.empty()) {
-      IntVarAssignmentProto* int_var_assignment_proto =
-          assignment_proto->add_int_var_assignment();
-      element.RestoreToProto(int_var_assignment_proto);
-    }
-  }
-  for (int i = 0; i < interval_var_container_.Size(); ++i) {
-    const IntervalVarElement& element = interval_var_container_.Element(i);
-    const IntervalVar* var = element.Var();
-    const string& name = var->name();
-    if (!name.empty()) {
-      IntervalVarAssignmentProto* interval_var_assignment_proto =
-          assignment_proto->add_interval_var_assignment();
-      element.RestoreToProto(interval_var_assignment_proto);
-    }
-  }
+  RealSave<IntVar, IntVarElement, IntVarAssignmentProto, IntContainer>(
+      assignment_proto,
+      int_var_container_,
+      &AssignmentProto::add_int_var_assignment);
+  RealSave<IntervalVar,
+      IntervalVarElement,
+      IntervalVarAssignmentProto,
+      IntervalContainer>(
+          assignment_proto,
+          interval_var_container_,
+          &AssignmentProto::add_interval_var_assignment);
+  RealSave<SequenceVar,
+      SequenceVarElement,
+      SequenceVarAssignmentProto,
+      SequenceContainer>(
+          assignment_proto,
+          sequence_var_container_,
+          &AssignmentProto::add_sequence_var_assignment);
   if (HasObjective()) {
     const IntVar* objective = Objective();
     const string& name = objective->name();
@@ -437,22 +581,25 @@ void Assignment::Save(AssignmentProto* const assignment_proto) const {
   }
 }
 
+template <class Container, class Element>
+void RealDebugString(const Container& container, string* const out) {
+  for (int i = 0; i < container.Size(); ++i) {
+    const Element& element = container.Element(i);
+    StringAppendF(out, "%s %s | ",
+                  element.Var()->name().c_str(),
+                  element.DebugString().c_str());
+  }
+}
+
 string Assignment::DebugString() const {
   string out = "Assignment(";
-  for (int i = 0; i < int_var_container_.Size(); ++i) {
-    const IntVarElement& element = int_var_container_.Element(i);
-    StringAppendF(&out, "%s %s | ",
-                  element.Var()->name().c_str(),
-                  element.DebugString().c_str());
-  }
-  for (int i = 0; i < interval_var_container_.Size(); ++i) {
-    const IntervalVarElement& element = interval_var_container_.Element(i);
-    StringAppendF(&out, "%s %s | ",
-                  element.Var()->name().c_str(),
-                  element.DebugString().c_str());
-  }
-  if (obj_element_ != NULL && obj_element_->Activated()) {
-    out += obj_element_->DebugString();
+  RealDebugString<IntContainer, IntVarElement>(int_var_container_, &out);
+  RealDebugString<IntervalContainer, IntervalVarElement>(
+      interval_var_container_, &out);
+  RealDebugString<SequenceContainer, SequenceVarElement>(
+      sequence_var_container_, &out);
+  if (HasObjective() && objective_element_.Activated()) {
+    out += objective_element_.DebugString();
   }
   out += ")";
   return out;
@@ -648,70 +795,100 @@ void Assignment::SetPerformedValue(const IntervalVar* const v, int64 value) {
   interval_var_container_.MutableElement(v).SetPerformedValue(value);
 }
 
+// ----- Sequence Var -----
+
+SequenceVarElement& Assignment::Add(SequenceVar* const v) {
+  return sequence_var_container_.Add(v);
+}
+
+void Assignment::Add(SequenceVar* const * vars, int size) {
+  DCHECK_GE(size, 0);
+  for (int i = 0; i < size; ++i) {
+    Add(vars[i]);
+  }
+}
+
+void Assignment::Add(const std::vector<SequenceVar*>& vars) {
+  for (ConstIter<std::vector<SequenceVar*> > it(vars); !it.at_end(); ++it) {
+    Add(*it);
+  }
+}
+
+SequenceVarElement& Assignment::FastAdd(SequenceVar* const v) {
+  return sequence_var_container_.FastAdd(v);
+}
+
+const std::vector<int>& Assignment::Sequence(const SequenceVar* const v) const {
+  return sequence_var_container_.Element(v).Sequence();
+}
+
+
+void Assignment::SetSequence(const SequenceVar* const v,
+                             const std::vector<int>& new_sequence) {
+  sequence_var_container_.MutableElement(v).SetSequence(new_sequence);
+}
+
+// ----- Objective -----
+
 void Assignment::AddObjective(IntVar* const v) {
   // Check if adding twice an objective to the solution.
-  CHECK(obj_element_ == NULL);
-  obj_element_ = new IntVarElement(v);
-  objective_ = v;
+  CHECK(!HasObjective());
+  objective_element_.Reset(v);
 }
 
 IntVar* Assignment::Objective() const {
-  return objective_;
-}
-
-bool Assignment::HasObjective() const {
-  return (obj_element_ != NULL);
+  return objective_element_.Var();
 }
 
 int64 Assignment::ObjectiveMin() const {
-  if (obj_element_ != NULL) {
-    return obj_element_->Min();
+  if (HasObjective()) {
+    return objective_element_.Min();
   }
   return 0;
 }
 
 int64 Assignment::ObjectiveMax() const {
-  if (obj_element_ != NULL) {
-    return obj_element_->Max();
+  if (HasObjective()) {
+    return objective_element_.Max();
   }
   return 0;
 }
 
 int64 Assignment::ObjectiveValue() const {
-  if (obj_element_ != NULL) {
-    return obj_element_->Value();
+  if (HasObjective()) {
+    return objective_element_.Value();
   }
   return 0;
 }
 
 bool Assignment::ObjectiveBound() const {
-  if (obj_element_ != NULL) {
-    return obj_element_->Bound();
+  if (HasObjective()) {
+    return objective_element_.Bound();
   }
   return true;
 }
 
 void Assignment::SetObjectiveMin(int64 m) {
-  if (obj_element_ != NULL) {
-    obj_element_->SetMin(m);
+  if (HasObjective()) {
+    objective_element_.SetMin(m);
   }
 }
 
 void Assignment::SetObjectiveMax(int64 m) {
-  if (obj_element_ != NULL) {
-    obj_element_->SetMax(m);
+  if (HasObjective()) {
+    objective_element_.SetMax(m);
   }
 }
 
 void Assignment::SetObjectiveRange(int64 l, int64 u) {
-  if (obj_element_ != NULL) {
-    obj_element_->SetRange(l, u);
+  if (HasObjective()) {
+    objective_element_.SetRange(l, u);
   }
 }
 
 void Assignment::SetObjectiveValue(int64 value) {
-  if (obj_element_ != NULL) {
-    obj_element_->SetValue(value);
+  if (HasObjective()) {
+    objective_element_.SetValue(value);
   }
 }
 
@@ -739,21 +916,33 @@ bool Assignment::Activated(const IntervalVar* const b) const {
   return interval_var_container_.Element(b).Activated();
 }
 
+void Assignment::Activate(const SequenceVar* const b) {
+  sequence_var_container_.MutableElement(b).Activate();
+}
+
+void Assignment::Deactivate(const SequenceVar* const b) {
+  sequence_var_container_.MutableElement(b).Deactivate();
+}
+
+bool Assignment::Activated(const SequenceVar* const b) const {
+  return sequence_var_container_.Element(b).Activated();
+}
+
 void Assignment::ActivateObjective() {
-  if (obj_element_ != NULL) {
-    obj_element_->Activate();
+  if (HasObjective()) {
+    objective_element_.Activate();
   }
 }
 
 void Assignment::DeactivateObjective() {
-  if (obj_element_ != NULL) {
-    obj_element_->Deactivate();
+  if (HasObjective()) {
+    objective_element_.Deactivate();
   }
 }
 
 bool Assignment::ActivatedObjective() const {
-  if (obj_element_ != NULL) {
-    return obj_element_->Activated();
+  if (HasObjective()) {
+    return objective_element_.Activated();
   }
   return true;
 }
@@ -766,17 +955,15 @@ bool Assignment::Contains(const IntervalVar* const var) const {
   return interval_var_container_.Contains(var);
 }
 
+bool Assignment::Contains(const SequenceVar* const var) const {
+  return sequence_var_container_.Contains(var);
+}
+
 void Assignment::Copy(const Assignment* assignment) {
   int_var_container_.Copy(assignment->int_var_container_);
   interval_var_container_.Copy(assignment->interval_var_container_);
-  if (assignment->HasObjective() && HasObjective()) {
-    IntVarElement* obj_element = assignment->obj_element_;
-    obj_element_->SetRange(obj_element->Min(), obj_element->Max());
-    if (obj_element->Activated())
-      obj_element_->Activate();
-    else
-      obj_element_->Deactivate();
-  }
+  sequence_var_container_.Copy(assignment->sequence_var_container_);
+  objective_element_ = assignment->objective_element_;
 }
 
 Assignment* Solver::MakeAssignment() {
@@ -787,58 +974,58 @@ Assignment* Solver::MakeAssignment(const Assignment* const a) {
   return RevAlloc(new Assignment(a));
 }
 
-// ----- Restoring assignments -----
+// ----- Storing and Restoring assignments -----
 namespace {
 class RestoreAssignment : public DecisionBuilder {
  public:
-  explicit RestoreAssignment(Assignment* assignment);
+  explicit RestoreAssignment(Assignment* assignment)
+      : assignment_(assignment) {}
+
   virtual ~RestoreAssignment() {}
-  virtual Decision* Next(Solver* const solver);
+
+  virtual Decision* Next(Solver* const solver) {
+    assignment_->Restore();
+    return NULL;
+  }
+
   virtual string DebugString() const {
     return "RestoreAssignment";
   }
+
  private:
   Assignment* const assignment_;
 };
 
-RestoreAssignment::RestoreAssignment(Assignment* assignment)
-    : assignment_(assignment) {}
+class StoreAssignment : public DecisionBuilder {
+ public:
+  explicit StoreAssignment(Assignment* assignment) : assignment_(assignment) {}
 
-Decision* RestoreAssignment::Next(Solver* /*solver*/) {
-  assignment_->Restore();
-  return NULL;
-}
+  virtual ~StoreAssignment() {}
+
+  virtual Decision* Next(Solver* const solver)  {
+    assignment_->Store();
+    return NULL;
+  }
+
+  virtual string DebugString() const {
+    return "StoreAssignment";
+  }
+
+ private:
+  Assignment* const assignment_;
+};
 }  // namespace
 
 DecisionBuilder* Solver::MakeRestoreAssignment(Assignment* assignment) {
   return RevAlloc(new RestoreAssignment(assignment));
 }
 
-// ----- Storing assignments -----
-namespace {
-class StoreAssignment : public DecisionBuilder {
- public:
-  explicit StoreAssignment(Assignment* assignment);
-  virtual ~StoreAssignment() {}
-  virtual Decision* Next(Solver* const solver);
-  virtual string DebugString() const {
-    return "StoreAssignment";
-  }
- private:
-  Assignment* const assignment_;
-};
-
-StoreAssignment::StoreAssignment(Assignment* assignment)
-    : assignment_(assignment) {}
-
-Decision* StoreAssignment::Next(Solver* /*solver*/) {
-  assignment_->Store();
-  return NULL;
-}
-}  // namespace
-
 DecisionBuilder* Solver::MakeStoreAssignment(Assignment* assignment) {
   return RevAlloc(new StoreAssignment(assignment));
+}
+
+std::ostream& operator<<(std::ostream& out, const Assignment& assignment) {
+  return out << assignment.DebugString();
 }
 
 }  // namespace operations_research

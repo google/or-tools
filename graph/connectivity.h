@@ -59,9 +59,12 @@ namespace operations_research {
 // for (NodeIndex node = 0; node < num_nodes; ++node) {
 //   group[components.GetClassRepresentative(node)].push_back(node);
 // }
-
+//
 // NodeIndex is used to denote both a node index and a number of nodes,
 // as passed as parameter to Init.
+//
+// Keywords: graph, connected components.
+
 class ConnectedComponents {
  public:
   ConnectedComponents() : min_index_(0),

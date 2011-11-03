@@ -14,7 +14,7 @@
 #include "base/split.h"
 #if defined(_MSC_VER)
 #include <iterator>
-#endif
+#endif  // _MSC_VER
 
 namespace operations_research {
 // ----------------------------------------------------------------------

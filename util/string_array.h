@@ -67,5 +67,32 @@ inline string Int64ArrayToString(const int64* const array,
   }
   return out;
 }
+
+// Creates a string from an array of int, and a separator.
+inline string IntArrayToString(const int* const array,
+                               int size,
+                               const string& separator) {
+  string out;
+  for (int i = 0; i < size; ++i) {
+    if (i > 0) {
+      out.append(separator);
+    }
+    StringAppendF(&out, "%d", array[i]);
+  }
+  return out;
+}
+
+// Creates a string from an vector of int64, and a separator.
+inline string Int64VectorToString(const std::vector<int64>& array,
+                                  const string& separator) {
+  return Int64ArrayToString(array.data(), array.size(), separator);
+}
+
+// Creates a string from an vector of int, and a separator.
+inline string IntVectorToString(const std::vector<int>& array,
+                                const string& separator) {
+  return IntArrayToString(array.data(), array.size(), separator);
+}
+
 }  // namespace
 #endif  // OR_TOOLS_UTIL_STRING_ARRAY_H_

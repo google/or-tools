@@ -1149,7 +1149,9 @@ class StaticEvaluatorSelector : public BaseEvaluatorSelector {
       const int64 value_lhs = Value(lhs);
       const int64 value_rhs = Value(rhs);
       return value_lhs < value_rhs
-          || (value_lhs == value_rhs && lhs.var < rhs.var);
+          || (value_lhs == value_rhs
+              && (lhs.var < rhs.var
+                  || (lhs.var == rhs.var && lhs.value < rhs.value)));
     }
     int64 Value(const Element& element) const {
       return evaluator_->Run(element.var, element.value);
@@ -1198,6 +1200,7 @@ IntVar* StaticEvaluatorSelector::SelectVariable(Solver* const s, int64* id) {
         }
       }
     }
+    // Sort is stable here given the tie-breaking rules in comp_.
     std::sort(elements_.get(), elements_.get() + element_size_, comp_);
     s->SaveAndSetValue(&first_, 0);
   }
@@ -3214,7 +3217,7 @@ bool GuidedLocalSearch::LocalOptimum() {
     utility[i] = std::pair<Arc, double>(arc, value / (penalty + 1.0));
   }
   Comparator comparator;
-  std::sort(utility.begin(), utility.end(), comparator);
+  std::stable_sort(utility.begin(), utility.end(), comparator);
   int64 utility_value = utility[0].second;
   penalties_->Increment(utility[0].first);
   for (int i = 1;

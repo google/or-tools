@@ -13,10 +13,12 @@
 
 // This file contains implementations of several resource constraints.
 // The implemented constraints are:
-// * Sequence: forces a set of intervals to be non-overlapping
+// * Disjunctive: forces a set of intervals to be non-overlapping
 // * Cumulative: forces a set of intervals with associated demands to be such
 //     that the sum of demands of the intervals containing any given integer
 //     does not exceed a capacity.
+// In addition, it implements the SequenceVar that allows ranking decisions
+// on a set of interval variables.
 
 #include <string.h>
 #include <algorithm>
@@ -404,7 +406,7 @@ class DisjunctiveLambdaThetaTree : public MonoidOperationTree<LambdaThetaNode> {
     LambdaThetaNode lambdaThetaNode(indexed_task->interval());
     Set(indexed_task->start_min_index(), lambdaThetaNode);
   }
-  void Grey(const DisjunctiveIndexedTask* indexed_task) {
+  void Grey(const DisjunctiveIndexedTask* const indexed_task) {
     const IntervalVar* const interval = indexed_task->interval();
     const int start_min_index = indexed_task->start_min_index();
     LambdaThetaNode greyNode(interval, start_min_index);
@@ -495,12 +497,9 @@ NotLast::NotLast(Solver* const solver,
   CHECK_GE(size_, 0);
   // Populate
   for (int i = 0; i < size; ++i) {
-    IntervalVar* underlying = NULL;
-    if (mirror) {
-      underlying = solver->MakeMirrorInterval(intervals[i]);
-    } else {
-      underlying = intervals[i];
-    }
+    IntervalVar* const underlying = mirror ?
+        solver->MakeMirrorInterval(intervals[i]) :
+        intervals[i];
     IntervalVar* const relaxed = solver->MakeIntervalRelaxedMin(underlying);
     by_start_min_[i] = new DisjunctiveIndexedTask(DisjunctiveTask(relaxed));
     by_end_max_[i] = by_start_min_[i];
@@ -618,13 +617,10 @@ EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
   : solver_(solver), size_(size), theta_tree_(size), lt_tree_(size) {
   // Populate of the array of intervals
   for (int i = 0; i < size; ++i) {
-    IntervalVar* underlying = NULL;
-    if (mirror) {
-      underlying = solver->MakeMirrorInterval(intervals[i]);
-    } else {
-      underlying = intervals[i];
-    }
-    IntervalVar* relaxed = solver->MakeIntervalRelaxedMax(underlying);
+    IntervalVar* const underlying = mirror ?
+        solver->MakeMirrorInterval(intervals[i]) :
+        intervals[i];
+    IntervalVar* const relaxed = solver->MakeIntervalRelaxedMax(underlying);
     DisjunctiveIndexedTask* const w =
         new DisjunctiveIndexedTask(DisjunctiveTask(relaxed));
     by_end_min_.push_back(w);
@@ -748,22 +744,22 @@ bool EdgeFinderAndDetectablePrecedences::EdgeFinder() {
   return modified;
 }
 
-// ----------------- Sequence Constraint Decomposed  ------------
+// ----------------- Disjunctive Constraint ------------
 
 // A class that stores several propagators for the sequence constraint, and
 // calls them until a fixpoint is reached.
-class DecomposedSequenceConstraint : public Constraint {
+class DisjunctiveConstraint : public Constraint {
  public:
-  DecomposedSequenceConstraint(Solver* const s,
-                               IntervalVar* const * intervals,
-                               int size);
-  virtual ~DecomposedSequenceConstraint() { }
+  DisjunctiveConstraint(Solver* const s,
+                        IntervalVar* const * intervals,
+                        int size);
+  virtual ~DisjunctiveConstraint() { }
 
   virtual void Post() {
     Demon* d = MakeDelayedConstraintDemon0(
         solver(),
         this,
-        &DecomposedSequenceConstraint::InitialPropagate,
+        &DisjunctiveConstraint::InitialPropagate,
         "InitialPropagate");
     for (int32 i = 0; i < straight_.size(); ++i) {
       straight_.mutable_interval(i)->WhenAnything(d);
@@ -784,43 +780,34 @@ class DecomposedSequenceConstraint : public Constraint {
   }
 
   void Accept(ModelVisitor* const visitor) const {
-    LOG(FATAL) << "Should not be visited";
+    visitor->BeginVisitConstraint(ModelVisitor::kDisjunctive, this);
+    visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
+                                        intervals_.get(),
+                                        size_);
+    visitor->EndVisitConstraint(ModelVisitor::kDisjunctive, this);
   }
 
  private:
+  scoped_array<IntervalVar*> intervals_;
+  const int size_;
   EdgeFinderAndDetectablePrecedences straight_;
   EdgeFinderAndDetectablePrecedences mirror_;
   NotLast straight_not_last_;
   NotLast mirror_not_last_;
-  DISALLOW_COPY_AND_ASSIGN(DecomposedSequenceConstraint);
+  DISALLOW_COPY_AND_ASSIGN(DisjunctiveConstraint);
 };
 
-DecomposedSequenceConstraint::DecomposedSequenceConstraint(
-    Solver* const s,
-    IntervalVar* const * intervals,
-    int size)
-  : Constraint(s),
-    straight_(s, intervals, size, false),
-    mirror_(s, intervals, size, true),
-    straight_not_last_(s, intervals, size, false),
-    mirror_not_last_(s, intervals, size, true) {
-}
-
-Constraint* MakeDecomposedSequenceConstraint(Solver* const s,
+DisjunctiveConstraint::DisjunctiveConstraint(Solver* const s,
                                              IntervalVar* const * intervals,
-                                             int size) {
-  // Finds all intervals that may be performed
-  std::vector<IntervalVar*> may_be_performed;
-  may_be_performed.reserve(size);
-  for (int i = 0; i < size; ++i) {
-    if (intervals[i]->MayBePerformed()) {
-      may_be_performed.push_back(intervals[i]);
-    }
-  }
-  return s->RevAlloc(
-      new DecomposedSequenceConstraint(s,
-                                       may_be_performed.data(),
-                                       may_be_performed.size()));
+                                             int size)
+    : Constraint(s),
+      intervals_(new IntervalVar*[size]),
+      size_(size),
+      straight_(s, intervals, size, false),
+      mirror_(s, intervals, size, true),
+      straight_not_last_(s, intervals, size, false),
+      mirror_not_last_(s, intervals, size, true) {
+  memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
 }
 
 // =====================================================================
@@ -1613,10 +1600,10 @@ class CumulativeConstraint : public Constraint {
   // Post temporal disjunctions for tasks that cannot overlap.
   void PostAllDisjunctions() {
     for (int i = 0; i < size_; ++i) {
-      IntervalVar* interval_i = intervals_[i];
+      IntervalVar* const interval_i = intervals_[i];
       if (interval_i->MayBePerformed()) {
         for (int j = i + 1; j < size_; ++j) {
-          IntervalVar* interval_j = intervals_[j];
+          IntervalVar* const interval_j = intervals_[j];
           if (interval_j->MayBePerformed()) {
             if (tasks_[i]->demand() + tasks_[j]->demand() > capacity_) {
               Constraint* const constraint =
@@ -1651,8 +1638,8 @@ class CumulativeConstraint : public Constraint {
       if (high_demand_intervals.size() >= 2) {
         // If there are less than 2 such intervals, the constraint would do
         // nothing
-        string seq_name = StrCat(name(), "-HighDemandSequence");
-        constraint = solver()->MakeSequence(high_demand_intervals, seq_name);
+        //        string seq_name = StrCat(name(), "-HighDemandSequence");
+        constraint = solver()->MakeDisjunctiveConstraint(high_demand_intervals);
       }
     }
     if (constraint != NULL) {
@@ -1666,19 +1653,19 @@ class CumulativeConstraint : public Constraint {
     IntervalVar* const interval = mirror ?
         solver()->MakeMirrorInterval(original_interval) : original_interval;
     IntervalVar* const relaxed_max = solver()->MakeIntervalRelaxedMax(interval);
-    CumulativeTask* task = new CumulativeTask(relaxed_max,
-                                              original_task->demand());
+    CumulativeTask* const task = new CumulativeTask(relaxed_max,
+                                                    original_task->demand());
     return solver()->RevAlloc(task);
   }
 
   // Populate the given vector with useful tasks, meaning the ones on which
   // some propagation can be done
   void PopulateVectorUsefulTasks(bool mirror,
-                                 std::vector<CumulativeTask*>* useful_tasks) {
+                                 std::vector<CumulativeTask*>* const useful_tasks) {
     DCHECK(useful_tasks->empty());
     for (int i = 0; i < size_; ++i) {
       CumulativeTask* const original_task = tasks_[i];
-      IntervalVar* interval = original_task->mutable_interval();
+      IntervalVar* const interval = original_task->mutable_interval();
       // Check if exceed capacity
       if (original_task->demand() > capacity_) {
         interval->SetPerformed(false);
@@ -1711,7 +1698,7 @@ class CumulativeConstraint : public Constraint {
 
   // Post a straight or mirrored edge-finder, if needed
   void PostOneSidedConstraint(bool mirror, bool edge_finder) {
-    Constraint* constraint = MakeOneSidedConstraint(mirror, edge_finder);
+    Constraint* const constraint = MakeOneSidedConstraint(mirror, edge_finder);
     if (constraint != NULL) {
       solver()->AddConstraint(constraint);
     }
@@ -1735,117 +1722,49 @@ class CumulativeConstraint : public Constraint {
 };
 }  // namespace
 
-// ----- Sequence -----
+// Sequence Constraint
 
-Sequence::Sequence(Solver* const s,
-                   const IntervalVar* const * intervals,
-                   int size,
-                   const string& name)
-  : Constraint(s),
+Constraint* Solver::MakeDisjunctiveConstraint(
+    const std::vector<IntervalVar*>& intervals) {
+  // Finds all intervals that may be performed
+  std::vector<IntervalVar*> may_be_performed;
+  for (int i = 0; i < intervals.size(); ++i) {
+    if (intervals[i]->MayBePerformed()) {
+      may_be_performed.push_back(intervals[i]);
+    }
+  }
+  return RevAlloc(new DisjunctiveConstraint(this,
+                                            may_be_performed.data(),
+                                            may_be_performed.size()));
+}
+
+// ----- SequenceVar -----
+
+SequenceVar::SequenceVar(Solver* const s,
+                         const IntervalVar* const * intervals,
+                         int size,
+                         const string& name)
+  : PropagationBaseObject(s),
     intervals_(new IntervalVar*[size]),
     size_(size),
-    ranks_(new int[size]),
+    min_ranks_(new int[size]),
     current_rank_(0) {
   memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
   states_.resize(size);
   for (int i = 0; i < size_; ++i) {
-    ranks_[i] = 0;
+    min_ranks_[i] = 0;
     states_[i].resize(size, UNDECIDED);
   }
   set_name(name);
 }
 
-Sequence::~Sequence() {}
+SequenceVar::~SequenceVar() {}
 
-IntervalVar* Sequence::Interval(int index) const {
-  CHECK_GE(index, 0);
-  CHECK_LT(index, size_);
+IntervalVar* SequenceVar::Interval(int index) const {
   return intervals_[index];
 }
 
-void Sequence::Post() {
-  for (int i = 0; i < size_; ++i) {
-    IntervalVar* const t = intervals_[i];
-    Demon* const d = MakeConstraintDemon1(solver(),
-                                          this,
-                                          &Sequence::RangeChanged,
-                                          "RangeChanged",
-                                          i);
-    t->WhenAnything(d);
-  }
-  Constraint* const ct =
-      MakeDecomposedSequenceConstraint(solver(), intervals_.get(), size_);
-  solver()->AddConstraint(ct);
-}
-
-void Sequence::InitialPropagate() {
-  for (int i = 0; i < size_; ++i) {
-    RangeChanged(i);
-  }
-}
-
-void Sequence::RangeChanged(int index) {
-  for (int i = 0; i < index; ++i) {
-    Apply(i, index);
-  }
-  for (int i = index + 1; i < size_; ++i) {
-    Apply(index, i);
-  }
-}
-
-void Sequence::Apply(int i, int j) {
-  DCHECK_LT(i, j);
-  IntervalVar* const t1 = intervals_[i];
-  IntervalVar* const t2 = intervals_[j];
-  State s = states_[i][j];
-  if (s == UNDECIDED) {
-    TryToDecide(i, j);
-  }
-  if (s == ONE_BEFORE_TWO) {
-    if (t1->MustBePerformed() && t2->MayBePerformed()) {
-      t2->SetStartMin(t1->EndMin());
-    }
-    if (t2->MustBePerformed() && t1->MayBePerformed()) {
-      t1->SetEndMax(t2->StartMax());
-    }
-  } else if (s == TWO_BEFORE_ONE) {
-    if (t1->MustBePerformed() && t2->MayBePerformed()) {
-      t2->SetEndMax(t1->StartMax());
-    }
-    if (t2->MustBePerformed() && t1->MayBePerformed()) {
-      t1->SetStartMin(t2->EndMin());
-    }
-  }
-}
-
-void Sequence::TryToDecide(int i, int j) {
-  DCHECK_LT(i, j);
-  DCHECK_EQ(UNDECIDED, states_[i][j]);
-  IntervalVar* const t1 = intervals_[i];
-  IntervalVar* const t2 = intervals_[j];
-  if (t1->MayBePerformed() && t2->MayBePerformed() &&
-      (t1->MustBePerformed() || t2->MustBePerformed())) {
-    if (t1->EndMin() > t2->StartMax()) {
-      Decide(TWO_BEFORE_ONE, i, j);
-    } else if (t2->EndMin() > t1->StartMax()) {
-      Decide(ONE_BEFORE_TWO, i, j);
-    }
-  }
-}
-
-void Sequence::Decide(State s, int i, int j) {
-  DCHECK_LT(i, j);
-  // Should Decide on a fixed state?
-  DCHECK_NE(s, UNDECIDED);
-  if (states_[i][j] != UNDECIDED && states_[i][j] != s) {
-    solver()->Fail();
-  }
-  solver()->SaveValue(reinterpret_cast<int*>(&states_[i][j]));
-  states_[i][j] = s;
-  Apply(i, j);
-}
-
-string Sequence::DebugString() const {
+string SequenceVar::DebugString() const {
   int64 hmin, hmax, dmin, dmax;
   HorizonRange(&hmin, &hmax);
   DurationRange(&dmin, &dmax);
@@ -1854,19 +1773,21 @@ string Sequence::DebugString() const {
                       "d, duration = %" GG_LL_FORMAT
                       "d..%" GG_LL_FORMAT
                       "d, not ranked = %d, fixed = %d, ranked = %d)",
-                      name().c_str(), hmin, hmax, dmin, dmax, NotRanked(),
-                      Fixed(), Ranked());
+                      name().c_str(),
+                      hmin,
+                      hmax,
+                      dmin,
+                      dmax,
+                      NotRanked(),
+                      Fixed(),
+                      Ranked());
 }
 
-void Sequence::Accept(ModelVisitor* const visitor) const {
-  visitor->BeginVisitConstraint(ModelVisitor::kSequence, this);
-  visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
-                                      intervals_.get(),
-                                      size_);
-  visitor->EndVisitConstraint(ModelVisitor::kSequence, this);
+void SequenceVar::Accept(ModelVisitor* const visitor) const {
+  visitor->VisitSequenceVariable(this);
 }
 
-void Sequence::DurationRange(int64* const dmin, int64* const dmax) const {
+void SequenceVar::DurationRange(int64* const dmin, int64* const dmax) const {
   int64 dur_min = 0;
   int64 dur_max = 0;
   for (int i = 0; i < size_; ++i) {
@@ -1882,7 +1803,7 @@ void Sequence::DurationRange(int64* const dmin, int64* const dmax) const {
   *dmax = dur_max;
 }
 
-void Sequence::HorizonRange(int64* const hmin, int64* const hmax) const {
+void SequenceVar::HorizonRange(int64* const hmin, int64* const hmax) const {
   int64 hor_min = kint64max;
   int64 hor_max = kint64min;
   for (int i = 0; i < size_; ++i) {
@@ -1902,12 +1823,13 @@ void Sequence::HorizonRange(int64* const hmin, int64* const hmax) const {
   *hmax = hor_max;
 }
 
-void Sequence::ActiveHorizonRange(int64* const hmin, int64* const hmax) const {
+void SequenceVar::ActiveHorizonRange(int64* const hmin,
+                                     int64* const hmax) const {
   int64 hor_min = kint64max;
   int64 hor_max = kint64min;
   for (int i = 0; i < size_; ++i) {
     IntervalVar* const t = intervals_[i];
-    if (t->MayBePerformed() && ranks_[i] >= current_rank_) {
+    if (t->MayBePerformed() && min_ranks_[i] >= current_rank_) {
       const int64 tmin = t->StartMin();
       const int64 tmax = t->EndMax();
       if (tmin < hor_min) {
@@ -1922,27 +1844,27 @@ void Sequence::ActiveHorizonRange(int64* const hmin, int64* const hmax) const {
   *hmax = hor_max;
 }
 
-int Sequence::Ranked() const {
+int SequenceVar::Ranked() const {
   int count = 0;
   for (int i = 0; i < size_; ++i) {
-    if (ranks_[i] < current_rank_ && intervals_[i]->MayBePerformed()) {
+    if (min_ranks_[i] < current_rank_ && intervals_[i]->MayBePerformed()) {
       count++;
     }
   }
   return count;
 }
 
-int Sequence::NotRanked() const {
+int SequenceVar::NotRanked() const {
   int count = 0;
   for (int i = 0; i < size_; ++i) {
-    if (ranks_[i] >= current_rank_ && intervals_[i]->MayBePerformed()) {
+    if (min_ranks_[i] >= current_rank_ && intervals_[i]->MayBePerformed()) {
       count++;
     }
   }
   return count;
 }
 
-int Sequence::Active() const {
+int SequenceVar::Active() const {
   int count = 0;
   for (int i = 0; i < size_; ++i) {
     if (intervals_[i]->MayBePerformed()) {
@@ -1952,7 +1874,7 @@ int Sequence::Active() const {
   return count;
 }
 
-int Sequence::Fixed() const {
+int SequenceVar::Fixed() const {
   int count = 0;
   for (int i = 0; i < size_; ++i) {
     if (intervals_[i]->MustBePerformed() &&
@@ -1963,85 +1885,122 @@ int Sequence::Fixed() const {
   return count;
 }
 
-void Sequence::ComputePossibleRanks() {
-  for (int i = 0; i < size_; ++i) {
-    if (ranks_[i] == current_rank_) {
+bool SequenceVar::IsBefore(int i, int j) {
+  if (i < j) {
+    return (states_[i][j] == ONE_BEFORE_TWO ||
+            intervals_[i]->StartMax() < intervals_[j]->EndMin());
+  } else {
+    return (states_[j][i] == TWO_BEFORE_ONE ||
+            intervals_[i]->StartMax() < intervals_[j]->EndMin());
+  }
+}
+
+void SequenceVar::ComputePossibleFirsts(std::vector<int>* const possible_firsts) {
+  for (int candidate = 0; candidate < size_; ++candidate) {
+    if (!intervals_[candidate]->MayBePerformed()) {
+      continue;
+    }
+    if (min_ranks_[candidate] == current_rank_) {
       int before = 0;
-      int after = 0;
-      for (int j = 0; j < i; ++j) {
-        if (intervals_[j]->MustBePerformed()) {
-          State s = states_[j][i];
-          if (s == ONE_BEFORE_TWO) {
-            before++;
-          } else if (s == TWO_BEFORE_ONE) {
-            after++;
-          }
-        }
-      }
-      for (int j = i + 1; j < size_; ++j) {
-        if (intervals_[j]->MustBePerformed()) {
-          State s = states_[i][j];
-          if (s == ONE_BEFORE_TWO) {
-            after++;
-          } else if (s == TWO_BEFORE_ONE) {
-            before++;
-          }
+      for (int other = 0; other < size_; ++other) {
+        if (other != candidate &&
+            intervals_[other]->MustBePerformed() &&
+            IsBefore(other, candidate)) {
+          before++;
         }
       }
       if (before > current_rank_) {
-        solver()->SaveAndSetValue(&ranks_[i], before);
+        solver()->SaveAndSetValue(&min_ranks_[candidate], before);
+      } else {
+        possible_firsts->push_back(candidate);
       }
     }
   }
 }
 
-bool Sequence::PossibleFirst(int index) {
-  return (ranks_[index] == current_rank_);
+void SequenceVar::AddPrecedence(int before, int after) {
+  DCHECK_EQ(states_[std::min(before, after)][std::max(before, after)],
+            UNDECIDED);
+  if (IsBefore(before, after)) {  // nothing to do.
+    return;
+  }
+  IntervalVar* const before_interval = intervals_[before];
+  IntervalVar* const after_interval = intervals_[after];
+  solver()->AddConstraint(
+      solver()->MakeIntervalVarRelation(after_interval,
+                                        Solver::STARTS_AFTER_END,
+                                        before_interval));
+  if (before < after) {
+    solver()->SaveValue(reinterpret_cast<int*>(&states_[before][after]));
+    states_[before][after] = ONE_BEFORE_TWO;
+  } else {
+    solver()->SaveValue(reinterpret_cast<int*>(&states_[after][before]));
+    states_[after][before] = TWO_BEFORE_ONE;
+  }
 }
 
-void Sequence::RankFirst(int index) {
+void SequenceVar::RankFirst(int index) {
   IntervalVar* const t = intervals_[index];
   t->SetPerformed(true);
   Solver* const s = solver();
   for (int i = 0; i < size_; ++i) {
     if (i != index &&
-        ranks_[i] >= current_rank_ &&
+        min_ranks_[i] >= current_rank_ &&
         intervals_[i]->MayBePerformed()) {
-      s->SaveAndSetValue(&ranks_[i], current_rank_ + 1);
-      if (i < index) {
-        Decide(TWO_BEFORE_ONE, i, index);
-      } else {
-        Decide(ONE_BEFORE_TWO, index, i);
+      if (min_ranks_[i] == current_rank_) {
+        s->SaveAndSetValue(&min_ranks_[i], current_rank_ + 1);
       }
+      AddPrecedence(index, i);
     }
   }
-  s->SaveAndSetValue(&ranks_[index], current_rank_);
+  s->SaveAndSetValue(&min_ranks_[index], current_rank_);
   s->SaveAndAdd(&current_rank_, 1);
 }
 
-void Sequence::RankNotFirst(int index) {
-  solver()->SaveAndSetValue(&ranks_[index], current_rank_ + 1);
-  int count = 0;
-  int support = -1;
+void SequenceVar::RankNotFirst(int index) {
+  solver()->SaveAndSetValue(&min_ranks_[index], current_rank_ + 1);
+  int possible_first_count = 0;
+  int possible_first = -1;
   for (int i = 0; i < size_; ++i) {
-    if (ranks_[i] == current_rank_ && intervals_[i]->MayBePerformed()) {
-      count++;
-      support = i;
+    if (min_ranks_[i] == current_rank_ && intervals_[i]->MayBePerformed()) {
+      if (++possible_first_count >= 2) {
+        return;
+      }
+      possible_first = i;
     }
   }
-  if (count == 0) {
+  if (possible_first_count == 0) {
     solver()->Fail();
   }
-  if (count == 1 && intervals_[support]->MustBePerformed()) {
-    RankFirst(support);
+  if (possible_first_count == 1 &&
+      intervals_[possible_first]->MustBePerformed()) {
+    RankFirst(possible_first);
   }
+}
+
+void SequenceVar::FillSequence(std::vector<int>* const to_fill) const {
+  to_fill->clear();
+  to_fill->resize(current_rank_, -1);
+  int filled = 0;
+  for (int var_index = 0; var_index < size_; ++var_index) {
+    const int rank = min_ranks_[var_index];
+    if (rank < current_rank_) {
+      DCHECK_EQ(-1, (*to_fill)[rank]);
+      (*to_fill)[rank] = var_index;
+      filled++;
+    }
+  }
+  DCHECK_EQ(current_rank_, filled);
 }
 
 // ----------------- Factory methods -------------------------------
 
-Sequence* Solver::MakeSequence(const std::vector<IntervalVar*>& intervals,
-                               const string& name) {
-  return RevAlloc(new Sequence(this, intervals.data(), intervals.size(), name));
+SequenceVar* Solver::MakeSequenceVar(const std::vector<IntervalVar*>& intervals,
+                                     const string& name) {
+  return RevAlloc(new SequenceVar(this,
+                                  intervals.data(),
+                                  intervals.size(),
+                                  name));
 }
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,

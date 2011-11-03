@@ -36,7 +36,7 @@ inline int64 strto64(const char *nptr, char **endptr, int base) {
   return _strtoi64(nptr, endptr, base);  // NOLINT
 #else
   return strtoll(nptr, endptr, base);  // NOLINT
-#endif
+#endif  // _MSC_VER
 }
 
 inline uint64 strtou64(const char *nptr, char **endptr, int base) {
@@ -44,7 +44,7 @@ inline uint64 strtou64(const char *nptr, char **endptr, int base) {
   return _strtoui64(nptr, endptr, base);  // NOLINT
 #else
   return strtoull(nptr, endptr, base);  // NOLINT
-#endif
+#endif  // _MSC_VER
 }
 
 // Although it returns an int, atoi() is implemented in terms of strtol, and

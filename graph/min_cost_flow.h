@@ -146,6 +146,15 @@
 // R.K. Ahuja, A.V. Goldberg, J.B. Orlin, and R.E. Tarjan, "Finding minimum-cost
 // flows by double scaling," Mathematical Programming, (1992) 53:243-266.
 // http://www.springerlink.com/index/gu7404218u6kt166.pdf
+//
+// An interesting general reference on network flows is:
+// R. K. Ahuja, T. L. Magnanti, J. B. Orlin, "Network Flows: Theory, Algorithms,
+// and Applications," Prentice Hall, 1993, ISBN: 978-0136175490,
+// http://www.amazon.com/dp/013617549X
+//
+// Keywords: Push-relabel, min-cost flow, network, graph, Goldberg, Tarjan,
+//           Dinic, Dinitz.
+
 
 #ifndef OR_TOOLS_GRAPH_MIN_COST_FLOW_H_
 #define OR_TOOLS_GRAPH_MIN_COST_FLOW_H_

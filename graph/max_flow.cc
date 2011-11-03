@@ -236,22 +236,21 @@ void MaxFlow::PushFlow(FlowQuantity flow, ArcIndex arc) {
   VLOG(3) << DebugString("PushFlow: ", arc);
 }
 
-void MaxFlow::InitializeActiveNodeStack() {
-  DCHECK(active_nodes_.empty());
+void MaxFlow::InitializeActiveNodeContainer() {
+  DCHECK(IsEmptyActiveNodeContainer());
   for (StarGraph::NodeIterator node_it(*graph_); node_it.Ok(); node_it.Next()) {
     const NodeIndex node = node_it.Index();
     if (IsActive(node)) {
-      active_nodes_.push(node);
+      PushActiveNode(node);
       VLOG(2) << "InitializeActiveNodeStack: node " << node << " added.";
     }
   }
 }
 
 void MaxFlow::Refine() {
-  InitializeActiveNodeStack();
-  while (!active_nodes_.empty()) {
-    const NodeIndex node = active_nodes_.top();
-    active_nodes_.pop();
+  InitializeActiveNodeContainer();
+  while (!IsEmptyActiveNodeContainer()) {
+    const NodeIndex node = GetAndRemoveFirstActiveNode();
     if (IsActive(node)) {
       VLOG(2) << "Refine: calling Discharge for node " << node;
       Discharge(node);
@@ -278,7 +277,7 @@ void MaxFlow::Discharge(NodeIndex node) {
                                               residual_arc_capacity_[arc]);
           PushFlow(delta, arc);
           if (IsActive(head) && !head_active_before_push) {
-            active_nodes_.push(Head(arc));
+            PushActiveNode(Head(arc));
           }
         }
         if (node_excess_[node] == 0) {

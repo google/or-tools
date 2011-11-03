@@ -11,6 +11,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Collection of objects used to extend the Constraint Solver library.
+//
+// This file contains a set of objects that simplifies writing extensions
+// of the library.
+//
+// The main objects that define extensions are:
+//   - BaseIntExpr the base class of all expressions that are not variables.
+//   - SimpleRevFIFO a reversible FIFO list with templatized values.
+//     A reversible data structure is a data structure that reverts its
+//     modifications when the search is going up in the search tree, usually
+//     after a failure occurs.
+//   - MakeConstraintDemon<n> and MakeDelayedConstraintDemon<n> to wrap methods
+//     of a constraint as a demon.
+//   - LocalSearchOperator, IntVarLocalSearchOperator, ChangeValue and
+//     PathOperator to create new local search operators.
+//   - LocalSearchFilter and IntVarLocalSearchFilter to create new local
+//     search filters.
+//   - BaseLNS to write Large Neighbood Search operators.
+//   - SymmetryBreaker to describe model symmetries that will be broken during
+//     search using the 'Symmetry Breaking During Search' framework
+//     see Gent, I. P., Harvey, W., & Kelsey, T. (2002).
+//     Groups and Constraints: Symmetry Breaking During Search.
+//     Principles and Practice of Constraint Programming CP2002
+//     (Vol. 2470, pp. 415-430). Springer. Retrieved from
+//     http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.11.1442
+//
+// Then, there are some internal classes that are used throughout the solver
+// and exposed in this file:
+//   - SearchLog the root class of all periodic outputs during search.
+//   - ModelCache A caching layer to avoid creating twice the same object.
+//   - DependencyGraph a dedicated data structure to represent dependency graphs
+//     in the scheduling world.
+
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
 
@@ -39,9 +72,6 @@ template <typename T> class ResultCallback;
 class WallTimer;
 
 namespace operations_research {
-// This is the base class for all non-variable expressions.
-// It proposes a basic 'cast-to-var' implementation.
-
 class CPArgumentProto;
 class CPConstraintProto;
 class CPIntegerExpressionProto;
@@ -49,6 +79,28 @@ class CPIntervalVariableProto;
 class ConstIntArray;
 template <class T> class ConstPtrArray;
 
+// This is the base class for all expressions that are not variables.
+// It proposes a basic 'CastToVar()' implementation.
+// The class of expressions represent two types of objects: variables
+// and subclasses of BaseIntExpr. Variables are stateful objects that
+// provide a rich API (remove values, WhenBound...). On the other hand,
+// subclasses of BaseIntExpr represent range-only stateless objects.
+// That is the min(A + B) is recomputed each time as min(A) + min(B).
+// Furthermore, sometimes, the propagation on an expression is not complete,
+// and Min(), Max() are not monononic with respect to SetMin() and SetMax().
+// For instance, A is a var with domain [0 .. 5], and B another variable
+// with domain [0 .. 5]. Then Plus(A, B) has domain [0, 10].
+// If we apply SetMax(Plus(A, B), 4)). Then we will deduce that both A
+// and B will have domain [0 .. 4]. In that case, Max(Plus(A, B)) is 8
+// and not 4.  To get back monotonicity, we will 'cast' the expression
+// into a variable using the Var() method (that will call CastToVar()
+// internally). The resulting variable will be stateful and monotonic.
+//
+// Finally, one should never store a pointer to a IntExpr, or
+// BaseIntExpr in the code. The safe code should always call Var() on an
+// expression built by the solver, and store the object as an IntVar*.
+// This is a consequence of the stateless nature of the expressions that
+// makes the code error-prone.
 class BaseIntExpr : public IntExpr {
  public:
   explicit BaseIntExpr(Solver* const s) : IntExpr(s), var_(NULL) {}
@@ -70,7 +122,9 @@ class BaseIntExpr : public IntExpr {
 // given as parameter to the modifiers such that the solver can store the
 // backtrack information
 // Iterator's traversing order should not be changed, as some algorithm
-// depend on it to be .
+// depend on it to be consistent.
+// It's main use is to store a list of demons in the various classes of
+// variables.
 #ifndef SWIG
 template <class T> class SimpleRevFIFO {
  private:
@@ -82,24 +136,24 @@ template <class T> class SimpleRevFIFO {
   };
 
  public:
-  // This iterator is non stable w.r.t. deletion.
+  // This iterator is not stable with respect to deletion.
   class Iterator {
    public:
     explicit Iterator(const SimpleRevFIFO<T>* l)
-        : chunk_(l->chunks_), data_(l->Last()) {}
-    bool ok() const { return (data_ != NULL); }
-    T operator*() const { return *data_; }
+        : chunk_(l->chunks_), value_(l->Last()) {}
+    bool ok() const { return (value_ != NULL); }
+    T operator*() const { return *value_; }
     void operator++() {
-      ++data_;
-      if (data_ == chunk_->data_ + CHUNK_SIZE) {
+      ++value_;
+      if (value_ == chunk_->data_ + CHUNK_SIZE) {
         chunk_ = chunk_->next_;
-        data_ = chunk_ ? chunk_->data_ : NULL;
+        value_ = chunk_ ? chunk_->data_ : NULL;
       }
     }
 
    private:
     const Chunk* chunk_;
-    const T* data_;
+    const T* value_;
   };
 
   SimpleRevFIFO() : chunks_(NULL), pos_(0) {}
@@ -116,16 +170,23 @@ template <class T> class SimpleRevFIFO {
     chunks_->data_[pos_] = val;
   }
 
+  // Pushes the var on top if is not a duplicate of the current top object.
   void PushIfNotTop(Solver* const s, T val) {
     if (chunks_ == NULL || LastValue() != val) {
       Push(s, val);
     }
   }
+
+  // Returns the last item of the FIFO.
   const T* Last() const { return chunks_ ? &chunks_->data_[pos_] : NULL; }
+
+  // Returns the last value in the FIFO.
   const T& LastValue() const {
     DCHECK(chunks_);
     return chunks_->data_[pos_];
   }
+
+  // Sets the last value in the FIFO.
   void SetLastValue(const T& v) {
     DCHECK(Last());
     chunks_->data_[pos_] = v;
@@ -135,11 +196,13 @@ template <class T> class SimpleRevFIFO {
   Chunk *chunks_;
   int pos_;
 };
-
-// These methods represents generic demons that will call back a
+// @{
+// These methods represent generic demons that will call back a
 // method on the constraint during their Run method.
+// This way, all propagation methods are members of the constraint class,
+// and demons are just proxies with a priority of NORMAL_PRIORITY.
 
-// ----- Call one method with no param -----
+// Demon proxy to a method on the constraint with no arguments.
 template <class T> class CallMethod0 : public Demon {
  public:
   CallMethod0(T* const ct, void (T::*method)(), const string& name)
@@ -168,7 +231,7 @@ template <class T> Demon* MakeConstraintDemon0(Solver* const s,
   return s->RevAlloc(new CallMethod0<T>(ct, method, name));
 }
 
-// ----- Call one method with one param -----
+// Demon proxy to a method on the constraint with one argument.
 template <class T, class P> class CallMethod1 : public Demon {
  public:
   CallMethod1(T* const ct,
@@ -208,7 +271,7 @@ Demon* MakeConstraintDemon1(Solver* const s,
   return s->RevAlloc(new CallMethod1<T, P>(ct, method, name, param1));
 }
 
-// ----- Call one method with two params -----
+// Demon proxy to a method on the constraint with two arguments.
 template <class T, class P, class Q> class CallMethod2 : public Demon {
  public:
   CallMethod2(T* const ct,
@@ -256,12 +319,14 @@ Demon* MakeConstraintDemon2(Solver* const s,
                                               param1,
                                               param2));
 }
+// @}
 
+// @{
 // These methods represents generic demons that will call back a
 // method on the constraint during their Run method. This demon will
 // have a priority DELAYED_PRIORITY.
 
-// ----- DelayedCall one method with no param -----
+// Low-priority demon proxy to a method on the constraint with no arguments.
 template <class T> class DelayedCallMethod0 : public Demon {
  public:
   DelayedCallMethod0(T* const ct, void (T::*method)(), const string& name)
@@ -295,7 +360,7 @@ template <class T> Demon* MakeDelayedConstraintDemon0(Solver* const s,
   return s->RevAlloc(new DelayedCallMethod0<T>(ct, method, name));
 }
 
-// ----- DelayedCall one method with one param -----
+// Low-priority demon proxy to a method on the constraint with one argument.
 template <class T, class P> class DelayedCallMethod1 : public Demon {
  public:
   DelayedCallMethod1(T* const ct,
@@ -339,7 +404,7 @@ Demon* MakeDelayedConstraintDemon1(Solver* const s,
   return s->RevAlloc(new DelayedCallMethod1<T, P>(ct, method, name, param1));
 }
 
-// ----- DelayedCall one method with two params -----
+// Low-priority demon proxy to a method on the constraint with two arguments.
 template <class T, class P, class Q> class DelayedCallMethod2 : public Demon {
  public:
   DelayedCallMethod2(T* const ct,
@@ -391,11 +456,13 @@ Demon* MakeDelayedConstraintDemon2(Solver* const s,
                                                      param1,
                                                      param2));
 }
+// @}
 
 #endif   // !defined(SWIG)
 
 // ---------- Local search operators ----------
 
+// The base class for all local search operators.
 // A local search operator is an object which defines the neighborhood of a
 // solution; in other words, a neighborhood is the set of solutions which can
 // be reached from a given solution using an operator.
@@ -409,9 +476,7 @@ Demon* MakeDelayedConstraintDemon2(Solver* const s,
 // assignment is empty is the neighborhood operator cannot track this
 // information.
 // TODO(user): rename Start to Synchronize ?
-// TODO(user): decouple the iterating from the defining of a neighbor
-
-// Mother of all local search operators
+// TODO(user): decouple the iterating from the defining of a neighbor.
 class LocalSearchOperator : public BaseObject {
  public:
   LocalSearchOperator() {}
@@ -422,11 +487,11 @@ class LocalSearchOperator : public BaseObject {
 
 // ----- Base operator class for operators manipulating IntVars -----
 
-// Built from an array of IntVars which specifies the scope of the operator
+// Specialization of LocalSearchOperator built from an array of IntVars
+// which specifies the scope of the operator.
 // This class also takes care of storing current variable values in Start(),
 // keeps track of changes done by the operator and builds the delta.
 // The Deactivate() method can be used to perform Large Neighborhood Search.
-
 class IntVarLocalSearchOperator : public LocalSearchOperator {
  public:
   IntVarLocalSearchOperator();
@@ -478,12 +543,12 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
 // ----- Base Large Neighborhood Search operator class ----
 
 // This is the base class for building an LNS operator. An LNS fragment is a
-// collection of variables which will be relaxed. Fragments are build with
+// collection of variables which will be relaxed. Fragments are built with
 // NextFragment(), which returns false if there are no more fragments to build.
 // Optionally one can override InitFragments, which is called from
 // LocalSearchOperator::Start to initialize fragment data.
 //
-// Here's a sample relaxing each variable:
+// Here's a sample relaxing one variable at a time:
 //
 // class OneVarLNS : public BaseLNS {
 //  public:
@@ -505,7 +570,6 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
 //  private:
 //   int index_;
 // };
-
 class BaseLNS : public IntVarLocalSearchOperator {
  public:
   BaseLNS(const IntVar* const* vars, int size);
@@ -526,7 +590,6 @@ class BaseLNS : public IntVarLocalSearchOperator {
 // each neighbor corresponds to *one* modified variable.
 // Sub-classes have to define ModifyValue which determines what the new
 // variable value is going to be (given the current value and the variable).
-
 class ChangeValue : public IntVarLocalSearchOperator {
  public:
   ChangeValue(const IntVar* const* vars, int size);
@@ -555,7 +618,6 @@ class ChangeValue : public IntVarLocalSearchOperator {
 //   nodes which can be used to define a neighbor (through the BaseNode method)
 // Subclasses only need to override MakeNeighbor to create neighbors using
 // the services above (no direct manipulation of assignments).
-
 class PathOperator : public IntVarLocalSearchOperator {
  public:
   PathOperator(const IntVar* const* next_vars,
@@ -667,8 +729,8 @@ class PathOperator : public IntVarLocalSearchOperator {
 };
 
 // ----- Local Search Filters ------
-// For fast neighbor pruning
 
+// For fast neighbor pruning
 class LocalSearchFilter : public BaseObject {
  public:
   // Accepts a "delta" given the assignment with which the filter has been
@@ -719,6 +781,9 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
 
 class SymmetryManager;
 
+// A symmetry breaker is an object that will visit a decision and
+// create the 'symmetrical' decision in return.
+// Each symmetry breaker represents one class of symmetry.
 class SymmetryBreaker : public DecisionVisitor {
  public:
   SymmetryBreaker() : symmetry_manager_(NULL), index_in_symmetry_manager_(-1) {}
@@ -747,6 +812,8 @@ class SymmetryBreaker : public DecisionVisitor {
 
 // ---------- Search Log ---------
 
+// The base class of all search logs that periodically outputs information when
+// the search is runnning.
 class SearchLog : public SearchMonitor {
  public:
   SearchLog(Solver* const s,
@@ -789,81 +856,10 @@ class SearchLog : public SearchMonitor {
   int sliding_max_depth_;
 };
 
-// ---------- CPModelBuilder -----------
-
-class CPModelBuilder {
- public:
-  explicit CPModelBuilder(Solver* const solver) : solver_(solver) {}
-  ~CPModelBuilder() {}
-
-  Solver* solver() const { return solver_; }
-
-  // Builds integer expression from proto and stores it. It returns
-  // true upon success.
-  bool BuildFromProto(const CPIntegerExpressionProto& proto);
-  // Builds constraint from proto and returns it.
-  Constraint* BuildFromProto(const CPConstraintProto& proto);
-  // Builds interval variable from proto and stores it. It returns
-  // true upon success.
-  bool BuildFromProto(const CPIntervalVariableProto& proto);
-  // Returns stored integer expression.
-  IntExpr* IntegerExpression(int index) const;
-  // Returns stored interval variable.
-  IntervalVar* IntervalVariable(int index) const;
-
-  bool ScanOneArgument(int type_index,
-                       const CPArgumentProto& arg_proto,
-                       int64* to_fill);
-
-  bool ScanOneArgument(int type_index,
-                       const CPArgumentProto& arg_proto ,
-                       IntExpr** to_fill);
-
-  bool ScanOneArgument(int type_index,
-                       const CPArgumentProto& arg_proto,
-                       std::vector<int64>* to_fill);
-
-  bool ScanOneArgument(int type_index,
-                       const CPArgumentProto& arg_proto,
-                       std::vector<std::vector<int64> >* to_fill);
-
-  bool ScanOneArgument(int type_index,
-                       const CPArgumentProto& arg_proto,
-                       std::vector<IntVar*>* to_fill);
-
-  bool ScanOneArgument(int type_index,
-                       const CPArgumentProto& arg_proto,
-                       IntervalVar** to_fill);
-
-  bool ScanOneArgument(int type_index,
-                       const CPArgumentProto& arg_proto,
-                       std::vector<IntervalVar*>* to_fill);
-
-  template <class P, class A> bool ScanArguments(const string& type,
-                                                 const P& proto,
-                                                 A* to_fill) {
-    const int index = tags_.Index(type);
-    for (int i = 0; i < proto.arguments_size(); ++i) {
-      if (ScanOneArgument(index, proto.arguments(i), to_fill)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  int TagIndex(const string& tag) const { return tags_.Index(tag); }
-
-  void AddTag(const string& tag) { tags_.Add(tag); }
-
- private:
-  Solver* const solver_;
-  std::vector<IntExpr*> expressions_;
-  std::vector<IntervalVar*> intervals_;
-  VectorMap<string> tags_;
-};
-
-// Implements a complete cache for model elements: expressions and constraints.
-// Caching is based on the signature of the elements, as well as their type.
+// Implements a complete cache for model elements: expressions and
+// constraints.  Caching is based on the signatures of the elements, as
+// well as their types.  This class is used internally to avoid creating
+// duplicate objects.
 class ModelCache {
  public:
   enum VoidConstraintType {
@@ -953,7 +949,6 @@ class ModelCache {
                                     VoidConstraintType type) = 0;
 
   // Var Constant Constraints.
-
   virtual Constraint* FindVarConstantConstraint(
       IntVar* const var,
       int64 value,
@@ -1072,6 +1067,62 @@ class ModelCache {
  private:
   Solver* const solver_;
 };
+
+#if !defined(SWIG)
+// Implements a data structure useful for scheduling.
+// It is meant to store simple temporal constraints and to propagate
+// efficiently on the nodes of this temporal graph.
+class DependencyGraphNode;
+class DependencyGraph : public BaseObject {
+ public:
+  virtual ~DependencyGraph();
+
+  // start(left) >= end(right) + delay.
+  void AddStartsAfterEndWithDelay(IntervalVar* const left,
+                                  IntervalVar* const right,
+                                  int64 delay);
+
+  // start(left) == end(right) + delay.
+  void AddStartsAtEndWithDelay(IntervalVar* const left,
+                               IntervalVar* const right,
+                               int64 delay);
+
+  // start(left) >= start(right) + delay.
+  void AddStartsAfterStartWithDelay(IntervalVar* const left,
+                                    IntervalVar* const right,
+                                    int64 delay);
+
+  // start(left) == start(right) + delay.
+  void AddStartsAtStartWithDelay(IntervalVar* const left,
+                                 IntervalVar* const right,
+                                 int64 delay);
+
+  // Internal API.
+
+  // Factory to create a node from an interval var. This node is
+  // attached to the start of the interval var.
+  DependencyGraphNode* BuildStartNode(IntervalVar* const var);
+
+  // Adds left == right + offset.
+  virtual void AddEquality(DependencyGraphNode* const left,
+                           DependencyGraphNode* const right,
+                           int64 offset) = 0;
+  // Adds left >= right + offset.
+  virtual void AddInequality(DependencyGraphNode* const left,
+                             DependencyGraphNode* const right,
+                             int64 offset) = 0;
+
+  // Tell the graph that this node has changed.
+  // If applied_to_min_or_max is true, the min has changed.
+  // If applied_to_min_or_max is false, the max has changed.
+  virtual void Enqueue(DependencyGraphNode* const node,
+                       bool applied_to_min_or_max) = 0;
+
+ private:
+  hash_map<IntervalVar*, DependencyGraphNode*> start_node_map_;
+  std::vector<DependencyGraphNode*> managed_nodes_;
+};
+#endif
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_

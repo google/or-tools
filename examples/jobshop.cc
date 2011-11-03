@@ -55,6 +55,7 @@ DEFINE_string(
     "  - then one line per job, with a single space-separated "
     "list of \"<machine index> <duration>\"\n"
     "note: jobs with one task are not supported");
+DEFINE_int32(time_limit_in_ms, 0, "Time limit in ms, 0 means no limit.");
 
 namespace operations_research {
 
@@ -207,15 +208,20 @@ void Jobshop(const JobShopData& data) {
     }
   }
 
-  // Creates sequences constraints on machines. A sequence is a unary
-  // resource where interval vars cannot overlap.
-  std::vector<Sequence*> all_sequences;
+  // Adds disjunctive constraints on unary resources.
+  for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
+    solver.AddConstraint(
+        solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id]));
+  }
+
+  // Creates sequences variables on machines. A sequence variable is a
+  // dedicated variable whose job is to sequence interval variables.
+  std::vector<SequenceVar*> all_sequences;
   for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
     const string name = StringPrintf("Machine_%d", machine_id);
-    Sequence* const sequence =
-        solver.MakeSequence(machines_to_tasks[machine_id], name);
+    SequenceVar* const sequence =
+        solver.MakeSequenceVar(machines_to_tasks[machine_id], name);
     all_sequences.push_back(sequence);
-    solver.AddConstraint(sequence);
   }
 
   // Creates array of end_times of jobs.
@@ -258,8 +264,13 @@ void Jobshop(const JobShopData& data) {
   SearchMonitor* const search_log =
       solver.MakeSearchLog(kLogFrequency, objective_monitor);
 
+  SearchLimit* limit = NULL;
+  if (FLAGS_time_limit_in_ms > 0) {
+    limit = solver.MakeTimeLimit(FLAGS_time_limit_in_ms);
+  }
+
   // Search.
-  solver.Solve(main_phase, search_log, objective_monitor);
+  solver.Solve(main_phase, search_log, objective_monitor, limit);
 }
 }  // namespace operations_research
 

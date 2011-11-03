@@ -29,6 +29,7 @@
 #include "base/stl_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "graph/linear_assignment.h"
 
 namespace operations_research {
 class LocalSearchPhaseParameters;
@@ -511,10 +512,6 @@ RoutingModel::~RoutingModel() {
   STLDeleteElements(&owned_index_callbacks_);
 }
 
-void RoutingModel::AddNoCycleConstraint() {
-  AddNoCycleConstraintInternal();
-}
-
 void RoutingModel::AddNoCycleConstraintInternal() {
   CheckDepot();
   if (no_cycle_constraint_ == NULL) {
@@ -895,6 +892,67 @@ const Assignment* RoutingModel::Solve(const Assignment* assignment) {
     }
     return NULL;
   }
+}
+
+// Computing a lower bound to the cost of a vehicle routing problem solving a
+// a linear assignment problem (minimum-cost perfect bipartite matching).
+// A bipartite graph is created with left nodes representing the nodes of the
+// routing problem and right nodes representing possible node successors; an
+// arc between a left node l and a right node r is created if r can be the
+// node folowing l in a route (Next(l) = r); the cost of the arc is the transit
+// cost between l and r in the routing problem.
+// This is a lower bound given the solution to assignment problem does not
+// necessarily produce a (set of) closed route(s) from a starting node to an
+// ending node.
+int64 RoutingModel::ComputeLowerBound() {
+  if (!closed_) {
+    LOG(WARNING) << "Non-closed model not supported.";
+    return 0;
+  }
+  if (!homogeneous_costs_) {
+    LOG(WARNING) << "Non-homogeneous vehicle costs not supported";
+    return 0;
+  }
+  if (disjunctions_.size() > 0) {
+    LOG(WARNING)
+        << "Node disjunction constraints or optional nodes not supported.";
+    return 0;
+  }
+  const int num_nodes = Size() + vehicles_;
+  StarGraph graph(2 * num_nodes, num_nodes * num_nodes);
+  LinearSumAssignment linear_sum_assignment(graph, num_nodes);
+  // Adding arcs for non-end nodes, based on possible values of next variables.
+  // Left nodes in the bipartite are indexed from 0 to num_nodes - 1; right
+  // nodes are indexed from num_nodes to 2 * num_nodes - 1.
+  for (int tail = 0; tail < Size(); ++tail) {
+    scoped_ptr<IntVarIterator> iterator(
+        nexts_[tail]->MakeDomainIterator(false));
+    for (iterator->Init(); iterator->Ok(); iterator->Next()) {
+      const int head = iterator->Value();
+      // Given there are no disjunction constraints, a node cannot point to
+      // itself. Doing this explicitely given that outside the search,
+      // propagation hasn't removed this value from next variables yet.
+      if (head == tail) {
+        continue;
+      }
+      // The index of a right node in the bipartite graph is the index
+      // of the successor offset by the number of nodes.
+      const ArcIndex arc = graph.AddArc(tail, num_nodes + head);
+      const CostValue cost = GetHomogeneousCost(tail, head);
+      linear_sum_assignment.SetArcCost(arc, cost);
+    }
+  }
+  // The linear assignment library requires having as many left and right nodes.
+  // Therefore we are creating fake assignments for end nodes, forced to point
+  // to the equivalent start node with a cost of 0.
+  for (int tail = Size(); tail < num_nodes; ++tail) {
+    const ArcIndex arc = graph.AddArc(tail, num_nodes + starts_[tail - Size()]);
+    linear_sum_assignment.SetArcCost(arc, 0);
+  }
+  if (linear_sum_assignment.ComputeAssignment()) {
+    return linear_sum_assignment.GetCost();
+  }
+  return 0;
 }
 
 bool RoutingModel::RouteCanBeUsedByVehicle(const Assignment& assignment,
@@ -1789,7 +1847,7 @@ IntVar* RoutingModel::TransitVar(int64 index, const string& name) const {
   }
 }
 
-void RoutingModel::AddToAssignment(IntVar* var) {
+void RoutingModel::AddToAssignment(IntVar* const var) {
   extra_vars_.push_back(var);
 }
 

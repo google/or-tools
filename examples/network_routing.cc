@@ -678,7 +678,7 @@ class NetworkRoutingSolver {
         }
       }
       if (arc_wrappers_.size() > fragment_size_) {
-        sort(arc_wrappers_.begin(), arc_wrappers_.end());
+        std::stable_sort(arc_wrappers_.begin(), arc_wrappers_.end());
       }
     }
 
@@ -729,7 +729,9 @@ class NetworkRoutingSolver {
       int arc_id;
       int64 cost;
       bool operator<(const ArcWrapper& other_arc_wrapper) const {
-        return cost > other_arc_wrapper.cost;
+        return cost > other_arc_wrapper.cost
+            || (cost == other_arc_wrapper.cost
+                && arc_id < other_arc_wrapper.arc_id);
       }
     };
 

@@ -314,6 +314,9 @@ class PrintModelVisitor : public ModelVisitor {
     LOG(INFO) << Spaces() << ">";
   }
 
+  virtual void VisitSequenceVariable(const SequenceVar* const sequence) {
+    LOG(INFO) << Spaces() << sequence->DebugString();
+  }
 
   // Variables.
   virtual void VisitIntegerArgument(const string& arg_name, int64 value) {
@@ -399,6 +402,27 @@ class PrintModelVisitor : public ModelVisitor {
     LOG(INFO) << Spaces() << "]";
   }
 
+  // Visit sequence argument.
+  virtual void VisitSequenceArgument(const string& arg_name,
+                                     const SequenceVar* const argument) {
+    set_prefix(StringPrintf("%s: ", arg_name.c_str()));
+    Increase();
+    argument->Accept(this);
+    Decrease();
+  }
+
+  virtual void VisitSequenceArgumentArray(const string& arg_name,
+                                          const SequenceVar* const * arguments,
+                                          int size) {
+    LOG(INFO) << Spaces() << arg_name << ": [";
+    Increase();
+    for (int i = 0; i < size; ++i) {
+      arguments[i]->Accept(this);
+    }
+    Decrease();
+    LOG(INFO) << Spaces() << "]";
+  }
+
  private:
   void Increase() {
     indent_ += 2;
@@ -444,6 +468,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
     num_expressions_(0),
     num_casts_(0),
     num_intervals_(0),
+    num_sequences_(0),
     num_extensions_(0) {}
 
   virtual ~ModelStatisticsVisitor() {}
@@ -456,6 +481,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
     num_expressions_ = 0;
     num_casts_ = 0;
     num_intervals_ = 0;
+    num_sequences_ = 0;
     num_extensions_ = 0;
     already_visited_.clear();
     constraint_types_.clear();
@@ -481,6 +507,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
     }
     LOG(INFO) << "  - " << num_casts_ << " expressions casted into variables.";
     LOG(INFO) << "  - " << num_intervals_ << " interval variables.";
+    LOG(INFO) << "  - " << num_sequences_ << " sequence variables.";
     LOG(INFO) << "  - " << num_extensions_ << " model extensions.";
     for (ConstIter<hash_map<string, int> > it(extension_types_);
          !it.at_end();
@@ -515,6 +542,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
       VisitSubArgument(delegate);
     }
   }
+
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
                                      const string operation,
                                      const IntervalVar* const delegate) {
@@ -531,6 +559,13 @@ class ModelStatisticsVisitor : public ModelVisitor {
     num_intervals_++;
     for (int i = 0; i < size; ++i) {
       VisitSubArgument(delegates[i]);
+    }
+  }
+
+  virtual void VisitSequenceVariable(const SequenceVar* const sequence) {
+    num_sequences_++;
+    for (int i = 0; i < sequence->size(); ++i) {
+      VisitSubArgument(sequence->Interval(i));
     }
   }
 
@@ -558,6 +593,20 @@ class ModelStatisticsVisitor : public ModelVisitor {
 
   virtual void VisitIntervalArrayArgument(const string& arg_name,
                                           const IntervalVar* const * arguments,
+                                          int size) {
+    for (int i = 0; i < size; ++i) {
+      VisitSubArgument(arguments[i]);
+    }
+  }
+
+  // Visit sequence argument.
+  virtual void VisitSequenceArgument(const string& arg_name,
+                                     const SequenceVar* const argument) {
+    VisitSubArgument(argument);
+  }
+
+  virtual void VisitSequenceArrayArgument(const string& arg_name,
+                                          const SequenceVar* const * arguments,
                                           int size) {
     for (int i = 0; i < size; ++i) {
       VisitSubArgument(arguments[i]);
@@ -602,6 +651,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   int num_expressions_;
   int num_casts_;
   int num_intervals_;
+  int num_sequences_;
   int num_extensions_;
   hash_set<const BaseObject*> already_visited_;
 };

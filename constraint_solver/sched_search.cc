@@ -20,6 +20,7 @@
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
+#include "util/string_array.h"
 
 namespace operations_research {
 
@@ -145,7 +146,7 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntervalVar*>& intervals,
 namespace {
 class TryRankFirst : public Decision {
  public:
-  TryRankFirst(Sequence* const seq, int index)
+  TryRankFirst(SequenceVar* const seq, int index)
       : sequence_(seq), index_(index) {}
   virtual ~TryRankFirst() {}
 
@@ -168,97 +169,102 @@ class TryRankFirst : public Decision {
   }
 
  private:
-  Sequence* const sequence_;
+  SequenceVar* const sequence_;
   const int index_;
 };
 }  // namespace
 
-Decision* Solver::MakeTryRankFirst(Sequence* const sequence, int index) {
+Decision* Solver::MakeTryRankFirst(SequenceVar* const sequence, int index) {
   CHECK_NOTNULL(sequence);
   return RevAlloc(new TryRankFirst(sequence, index));
 }
 
 namespace {
-class RankFirstSequences : public DecisionBuilder {
+class RankFirstSequenceVars : public DecisionBuilder {
  public:
-  RankFirstSequences(const Sequence* const * sequences, int size)
-      : sequences_(new Sequence*[size]), size_(size) {
-  memcpy(sequences_.get(), sequences, size_ * sizeof(*sequences));
-      }
-  virtual ~RankFirstSequences() {}
+  RankFirstSequenceVars(const SequenceVar* const * sequences, int size)
+      : sequences_(new SequenceVar*[size]), size_(size) {
+    memcpy(sequences_.get(), sequences, size_ * sizeof(*sequences));
+  }
+
+  virtual ~RankFirstSequenceVars() {}
 
   virtual Decision* Next(Solver* const s) {
-    Sequence* seq = NULL;
-    int64 slack = kint64max;
-    int64 best_hmin = kint64max;
+    SequenceVar* best_sequence = NULL;
+    int64 best_slack = kint64max;
+    int64 best_ahmin = kint64max;
+    std::vector<int> best_possible_firsts;
     for (int i = 0; i < size_; ++i) {
-      Sequence* const se = sequences_[i];
-      if (se->NotRanked() > 0) {
+      SequenceVar* const candidate_sequence = sequences_[i];
+      if (candidate_sequence->NotRanked() > 0) {
+        std::vector<int> candidate_possible_firsts;
+        candidate_sequence->ComputePossibleFirsts(&candidate_possible_firsts);
+        // No possible first, failing.
+        if (candidate_possible_firsts.size() == 0) {
+          s->Fail();
+        }
+        // Only 1 candidate, and non optional: ranking without branching.
+        if (candidate_possible_firsts.size() == 1 &&
+            candidate_sequence->Interval(
+                candidate_possible_firsts.back())->MustBePerformed()) {
+          candidate_sequence->RankFirst(candidate_possible_firsts[0]);
+          continue;
+        }
+
+        // Evaluating the sequence.
         int64 hmin, hmax, dmin, dmax;
-        se->HorizonRange(&hmin, &hmax);
-        se->DurationRange(&dmin, &dmax);
+        candidate_sequence->HorizonRange(&hmin, &hmax);
+        candidate_sequence->DurationRange(&dmin, &dmax);
+        int64 ahmin, ahmax;
+        candidate_sequence->ActiveHorizonRange(&ahmin, &ahmax);
         const int64 current_slack = (hmax - hmin - dmax);
-        if (current_slack < slack) {
-          slack = current_slack;
-          seq = se;
-          int64 hmin, hmax;
-          se->ActiveHorizonRange(&hmin, &hmax);
-          best_hmin = hmin;
-        } else if (current_slack == slack) {
-          int64 hmin, hmax;
-          se->ActiveHorizonRange(&hmin, &hmax);
-          if (hmin < best_hmin) {
-            seq = se;
-            best_hmin = hmin;
-          }
+        if (current_slack < best_slack ||
+            (current_slack == best_slack && ahmin < best_ahmin)) {
+          best_slack = current_slack;
+          best_sequence = candidate_sequence;
+          best_possible_firsts = candidate_possible_firsts;
+          best_ahmin = ahmin;
         }
       }
     }
-    if (seq != NULL) {
-      seq->ComputePossibleRanks();
-      int index = -1;
-      int64 smin = kint64max;
-      for (int i = 0; i < seq->size(); ++i) {
-        if (seq->PossibleFirst(i)) {
-          IntervalVar* const t = seq->Interval(i);
-          if (t->MayBePerformed() && t->StartMin() < smin) {
-            index = i;
-            smin = t->StartMin();
-          }
+    if (best_sequence != NULL) {
+      int best_interval = -1;
+      int64 best_start_min = kint64max;
+      for (int index = 0; index < best_possible_firsts.size(); ++index) {
+        const int candidate = best_possible_firsts[index];
+        IntervalVar* const interval = best_sequence->Interval(candidate);
+        if (interval->StartMin() < best_start_min) {
+          best_interval = candidate;
+          best_start_min = interval->StartMin();
         }
       }
-      if (index == -1) {
+      if (best_interval == -1) {
         s->Fail();
       }
-      CHECK_NE(-1, index);
-      return s->RevAlloc(new TryRankFirst(seq, index));
+      CHECK_NE(-1, best_interval);
+      return s->RevAlloc(new TryRankFirst(best_sequence, best_interval));
     }
     return NULL;
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
-    std::vector<IntervalVar*> vars;
-    for (int i = 0; i < size_; ++i) {
-      for (int j = 0; j < sequences_[i]->size(); ++j) {
-        vars.push_back(sequences_[i]->Interval(j));
-      }
-    }
-    visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
-                                        vars.data(),
-                                        vars.size());
+    visitor->VisitSequenceArrayArgument(ModelVisitor::kSequencesArgument,
+                                        sequences_.get(),
+                                        size_);
     visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
   }
 
  private:
-  scoped_array<Sequence*> sequences_;
+  scoped_array<SequenceVar*> sequences_;
   const int size_;
 };
 }  // namespace
 
-DecisionBuilder* Solver::MakePhase(const std::vector<Sequence*>& sequences,
+DecisionBuilder* Solver::MakePhase(const std::vector<SequenceVar*>& sequences,
                                    SequenceStrategy str) {
-  return RevAlloc(new RankFirstSequences(sequences.data(), sequences.size()));
+  return RevAlloc(new RankFirstSequenceVars(sequences.data(),
+                                            sequences.size()));
 }
 
 }  // namespace operations_research

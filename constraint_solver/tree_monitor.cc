@@ -86,6 +86,10 @@ struct NaturalLess {
   }
 };
 
+bool CompareStringsUsingNaturalLess(const string& s1, const string& s2) {
+  return NaturalLess()(s1, s2);
+}
+
 class XmlHelper;
 
 namespace {
@@ -127,7 +131,7 @@ class TreeDecisionVisitor : public DecisionVisitor {
     valid_ = true;
   }
 
-  virtual void VisitTryRankFirst(Sequence* const sequence, int index) {
+  virtual void VisitTryRankFirst(SequenceVar* const sequence, int index) {
     name_ = sequence->name();
     value_ = index;
     valid_ = true;

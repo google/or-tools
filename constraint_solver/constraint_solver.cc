@@ -47,8 +47,9 @@ DEFINE_bool(cp_model_stats, false,
 DEFINE_string(cp_export_file, "", "Export model to file using CPModelProto.");
 DEFINE_bool(cp_no_solve, false, "Force failure at the beginning of a search.");
 DEFINE_string(cp_profile_file, "", "Export profiling overview to file.");
+DEFINE_bool(cp_verbose_fail, false, "Verbose output when failing");
 
-void ConstraintSolverFailHere() {
+void ConstraintSolverFailsHere() {
   VLOG(3) << "Fail";
 }
 
@@ -1331,7 +1332,8 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       fail_decision_(new FailDecision()),
       constraint_index_(0),
       additional_constraint_index_(0),
-      model_cache_(NULL) {
+      model_cache_(NULL),
+      dependency_graph_(NULL) {
   Init();
 }
 
@@ -1362,11 +1364,13 @@ Solver::Solver(const string& name)
       fail_decision_(new FailDecision()),
       constraint_index_(0),
       additional_constraint_index_(0),
-      model_cache_(NULL) {
+      model_cache_(NULL),
+      dependency_graph_(NULL) {
   Init();
 }
 
 extern ModelCache* BuildModelCache(Solver* const solver);
+extern DependencyGraph* BuildDependencyGraph(Solver* const solver);
 
 void Solver::Init() {
   for (int i = 0; i < kNumPriorities; ++i) {
@@ -1379,6 +1383,7 @@ void Solver::Init() {
   InitBuilders();
   timer_->Restart();
   model_cache_.reset(BuildModelCache(this));
+  dependency_graph_.reset(BuildDependencyGraph(this));
 }
 
 Solver::~Solver() {
@@ -2378,11 +2383,11 @@ void Solver::Fail() {
     fail_intercept_->Run();
     return;
   }
-  ConstraintSolverFailHere();
+  ConstraintSolverFailsHere();
   fails_++;
   NotifyFailureToDemonMonitor();
   searches_.back()->BeginFail();
-  if (FLAGS_cp_trace_demons) {
+  if (FLAGS_cp_trace_demons || FLAGS_cp_verbose_fail) {
     LOG(INFO) << "### Failure ###";
   }
   searches_.back()->JumpBack();
@@ -2467,7 +2472,8 @@ void DecisionVisitor::VisitSplitVariableDomain(IntVar* const var,
 void DecisionVisitor::VisitUnknownDecision() {}
 void DecisionVisitor::VisitScheduleOrPostpone(IntervalVar* const var,
                                               int64 est) {}
-void DecisionVisitor::VisitTryRankFirst(Sequence* const sequence, int index) {}
+void DecisionVisitor::VisitTryRankFirst(SequenceVar* const sequence,
+                                        int index) {}
 
 // ---------- ModelVisitor ----------
 
@@ -2482,6 +2488,7 @@ const char ModelVisitor::kCountEqual[] = "CountEqual";
 const char ModelVisitor::kCumulative[] = "Cumulative";
 const char ModelVisitor::kDeviation[] = "Deviation";
 const char ModelVisitor::kDifference[] = "Difference";
+const char ModelVisitor::kDisjunctive[] = "Disjunctive";
 const char ModelVisitor::kDistribute[] = "Distribute";
 const char ModelVisitor::kDivide[] = "Divide";
 const char ModelVisitor::kDurationExpr[] = "DurationExpression";
@@ -2525,7 +2532,7 @@ const char ModelVisitor::kScalProdGreaterOrEqual[] =
     "ScalarProductGreaterOrEqual";
 const char ModelVisitor::kScalProdLessOrEqual[] = "ScalarProductLessOrEqual";
 const char ModelVisitor::kSemiContinuous[] = "SemiContinuous";
-const char ModelVisitor::kSequence[] = "Sequence";
+const char ModelVisitor::kSequenceVariable[] = "SequenceVariable";
 const char ModelVisitor::kSquare[] = "Square";
 const char ModelVisitor::kStartExpr[]= "StartExpression";
 const char ModelVisitor::kSum[] = "Sum";
@@ -2585,6 +2592,8 @@ const char ModelVisitor::kOptionalArgument[] = "optional";
 const char ModelVisitor::kRangeArgument[] = "range";
 const char ModelVisitor::kRelationArgument[] = "relation";
 const char ModelVisitor::kRightArgument[] = "right";
+const char ModelVisitor::kSequenceArgument[] = "sequence";
+const char ModelVisitor::kSequencesArgument[] = "sequences";
 const char ModelVisitor::kSmartTimeCheckArgument[] = "smart_time_check";
 const char ModelVisitor::kSizeArgument[] = "size";
 const char ModelVisitor::kSolutionLimitArgument[] = "solutions_limit";
@@ -2648,7 +2657,11 @@ void ModelVisitor::VisitIntervalVariable(const IntervalVar* const variable,
   }
 }
 
-
+void ModelVisitor::VisitSequenceVariable(const SequenceVar* const variable) {
+  for (int i = 0; i < variable->size(); ++i) {
+    variable->Interval(i)->Accept(this);
+  }
+}
 
 void ModelVisitor::VisitIntegerArgument(const string& arg_name, int64 value) {}
 
@@ -2685,6 +2698,21 @@ void ModelVisitor::VisitIntervalArgument(
 void ModelVisitor::VisitIntervalArrayArgument(
     const string& arg_name,
     const IntervalVar* const * arguments,
+    int size) {
+  for (int i = 0; i < size; ++i) {
+    arguments[i]->Accept(this);
+  }
+}
+
+void ModelVisitor::VisitSequenceArgument(
+    const string& arg_name,
+    const SequenceVar* const argument) {
+  argument->Accept(this);
+}
+
+void ModelVisitor::VisitSequenceArrayArgument(
+    const string& arg_name,
+    const SequenceVar* const * arguments,
     int size) {
   for (int i = 0; i < size; ++i) {
     arguments[i]->Accept(this);

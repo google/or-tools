@@ -1,6 +1,10 @@
 CP_LIBS = \
-	$(LIBPREFIX)routing.$(LIBSUFFIX)       \
 	$(LIBPREFIX)constraint_solver.$(LIBSUFFIX)
+
+ROUTING_LIBS = \
+        $(LIBPREFIX)routing.$(LIBSUFFIX) \
+        $(LIBPREFIX)graph.$(LIBSUFFIX) \
+        $(LIBPREFIX)constraint_solver.$(LIBSUFFIX)
 
 GRAPH_LIBS = \
 	$(LIBPREFIX)graph.$(LIBSUFFIX) \
@@ -23,24 +27,26 @@ CPBINARIES = \
 	costas_array$E \
 	cryptarithm$E \
         cvrptw$E \
-	flow_example$E \
+	flow_api$E \
 	golomb$E \
 	jobshop$E \
-	linear_assignment_example$E \
+	linear_assignment_api$E \
 	magic_square$E \
 	model_util$E \
 	network_routing$E \
 	nqueens$E \
-	solve_dimacs_assignment$E \
+	dimacs_assignment$E \
+	sports_scheduling$E \
 	tsp$E
 
 cpexe: $(CPBINARIES)
 
 LPBINARIES = \
-	column_generation$E \
-	integer_solver_example$E \
-	linear_solver_example$E \
-	linear_solver_example_with_protocol_buffers$E
+	integer_programming \
+	linear_programming \
+	linear_solver_protocol_buffers$E \
+	strawberry_fields_with_column_generation$E
+
 
 lpexe: $(LPBINARIES)
 
@@ -89,6 +95,7 @@ CONSTRAINT_SOLVER_LIB_OS = \
 	objs/default_search.$O\
 	objs/demon_profiler.$O\
 	objs/demon_profiler.pb.$O\
+	objs/dependency_graph.$O\
 	objs/deviation.$O\
 	objs/element.$O\
 	objs/expr_array.$O\
@@ -148,6 +155,9 @@ gen/constraint_solver/demon_profiler.pb.cc:constraint_solver/demon_profiler.prot
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=. --cpp_out=gen constraint_solver/demon_profiler.proto
 
 gen/constraint_solver/demon_profiler.pb.h:gen/constraint_solver/demon_profiler.pb.cc
+
+objs/dependency_graph.$O:constraint_solver/dependency_graph.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/dependency_graph.cc $(OBJOUT)objs/dependency_graph.$O
 
 objs/deviation.$O:constraint_solver/deviation.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/deviation.cc $(OBJOUT)objs/deviation.$O
@@ -291,7 +301,7 @@ $(LIBPREFIX)util.$(LIBSUFFIX): $(UTIL_LIB_OS)
 
 GRAPH_LIB_OS=\
 	objs/linear_assignment.$O \
-	objs/bron_kerbosch.$O \
+	objs/cliques.$O \
 	objs/connectivity.$O \
 	objs/max_flow.$O \
 	objs/min_cost_flow.$O
@@ -299,8 +309,8 @@ GRAPH_LIB_OS=\
 objs/linear_assignment.$O:graph/linear_assignment.cc
 	$(CCC) $(CFLAGS) -c graph/linear_assignment.cc $(OBJOUT)objs/linear_assignment.$O
 
-objs/bron_kerbosch.$O:graph/bron_kerbosch.cc
-	$(CCC) $(CFLAGS) -c graph/bron_kerbosch.cc $(OBJOUT)objs/bron_kerbosch.$O
+objs/cliques.$O:graph/cliques.cc
+	$(CCC) $(CFLAGS) -c graph/cliques.cc $(OBJOUT)objs/cliques.$O
 
 objs/connectivity.$O:graph/connectivity.cc
 	$(CCC) $(CFLAGS) -c graph/connectivity.cc $(OBJOUT)objs/connectivity.$O
@@ -419,23 +429,23 @@ $(LIBPREFIX)dimacs.$(LIBSUFFIX): $(DIMACS_LIB_OS)
 
 # Flow and linear assignment examples
 
-objs/linear_assignment_example.$O:examples/linear_assignment_example.cc
-	$(CCC) $(CFLAGS) -c examples/linear_assignment_example.cc $(OBJOUT)objs/linear_assignment_example.$O
+objs/linear_assignment_api.$O:examples/linear_assignment_api.cc
+	$(CCC) $(CFLAGS) -c examples/linear_assignment_api.cc $(OBJOUT)objs/linear_assignment_api.$O
 
-linear_assignment_example$E: $(GRAPH_LIBS) $(BASE_LIBS) objs/linear_assignment_example.$O
-	$(CCC) $(CFLAGS) objs/linear_assignment_example.$O $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)linear_assignment_example$E
+linear_assignment_api$E: $(GRAPH_LIBS) $(BASE_LIBS) objs/linear_assignment_api.$O
+	$(CCC) $(CFLAGS) objs/linear_assignment_api.$O $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)linear_assignment_api$E
 
-objs/flow_example.$O:examples/flow_example.cc
-	$(CCC) $(CFLAGS) -c examples/flow_example.cc $(OBJOUT)objs/flow_example.$O
+objs/flow_api.$O:examples/flow_api.cc
+	$(CCC) $(CFLAGS) -c examples/flow_api.cc $(OBJOUT)objs/flow_api.$O
 
-flow_example$E: $(GRAPH_LIBS) $(BASE_LIBS) objs/flow_example.$O
-	$(CCC) $(CFLAGS) objs/flow_example.$O $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)flow_example$E
+flow_api$E: $(GRAPH_LIBS) $(BASE_LIBS) objs/flow_api.$O
+	$(CCC) $(CFLAGS) objs/flow_api.$O $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)flow_api$E
 
-objs/solve_dimacs_assignment.$O:examples/solve_dimacs_assignment.cc
-	$(CCC) $(CFLAGS) -c examples/solve_dimacs_assignment.cc $(OBJOUT)objs/solve_dimacs_assignment.$O
+objs/dimacs_assignment.$O:examples/dimacs_assignment.cc
+	$(CCC) $(CFLAGS) -c examples/dimacs_assignment.cc $(OBJOUT)objs/dimacs_assignment.$O
 
-solve_dimacs_assignment$E: $(ALGORITHMS_LIBS) $(BASE_LIBS) $(DIMACS_LIBS) $(GRAPH_LIBS) objs/solve_dimacs_assignment.$O
-	$(CCC) $(CFLAGS) objs/solve_dimacs_assignment.$O $(DIMACS_LIBS) $(ALGORITHMS_LIBS) $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)solve_dimacs_assignment$E
+dimacs_assignment$E: $(ALGORITHMS_LIBS) $(BASE_LIBS) $(DIMACS_LIBS) $(GRAPH_LIBS) objs/dimacs_assignment.$O
+	$(CCC) $(CFLAGS) objs/dimacs_assignment.$O $(DIMACS_LIBS) $(ALGORITHMS_LIBS) $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)dimacs_assignment$E
 
 # Pure CP and Routing Examples
 
@@ -454,8 +464,8 @@ cryptarithm$E: $(CP_LIBS) $(BASE_LIBS) objs/cryptarithm.$O
 objs/cvrptw.$O: examples/cvrptw.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/cvrptw.cc $(OBJOUT)objs/cvrptw.$O
 
-cvrptw$E: $(CP_LIBS) $(BASE_LIBS) objs/cvrptw.$O
-	$(CCC) $(CFLAGS) objs/cvrptw.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)cvrptw$E
+cvrptw$E: $(ROUTING_LIBS) $(BASE_LIBS) objs/cvrptw.$O
+	$(CCC) $(CFLAGS) objs/cvrptw.$O $(ROUTING_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)cvrptw$E
 
 objs/dobble_ls.$O:examples/dobble_ls.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/dobble_ls.cc $(OBJOUT)objs/dobble_ls.$O
@@ -499,6 +509,12 @@ objs/nqueens.$O: examples/nqueens.cc constraint_solver/constraint_solver.h
 nqueens$E: $(CP_LIBS) $(BASE_LIBS) objs/nqueens.$O
 	$(CCC) $(CFLAGS) objs/nqueens.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)nqueens$E
 
+objs/sports_scheduling.$O:examples/sports_scheduling.cc constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c examples/sports_scheduling.cc $(OBJOUT)objs/sports_scheduling.$O
+
+sports_scheduling$E: $(CP_LIBS) $(BASE_LIBS) objs/sports_scheduling.$O
+	$(CCC) $(CFLAGS) objs/sports_scheduling.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)sports_scheduling$E
+
 objs/tricks.$O: examples/tricks.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/tricks.cc $(OBJOUT)objs/tricks.$O
 
@@ -511,31 +527,31 @@ tricks$E: $(CPLIBS) $(BASE_LIBS) objs/tricks.$O objs/global_arith.$O
 objs/tsp.$O: examples/tsp.cc constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c examples/tsp.cc $(OBJOUT)objs/tsp.$O
 
-tsp$E: $(CP_LIBS) $(BASE_LIBS) objs/tsp.$O
-	$(CCC) $(CFLAGS) objs/tsp.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)tsp$E
+tsp$E: $(ROUTING_LIBS) $(BASE_LIBS) objs/tsp.$O
+	$(CCC) $(CFLAGS) objs/tsp.$O $(ROUTING_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)tsp$E
 
 # Linear Programming Examples
 
-objs/column_generation.$O: examples/column_generation.cc linear_solver/linear_solver.h
-	$(CCC) $(CFLAGS) -c examples/column_generation.cc $(OBJOUT)objs/column_generation.$O
+objs/strawberry_fields_with_column_generation.$O: examples/strawberry_fields_with_column_generation.cc linear_solver/linear_solver.h
+	$(CCC) $(CFLAGS) -c examples/strawberry_fields_with_column_generation.cc $(OBJOUT)objs/strawberry_fields_with_column_generation.$O
 
-column_generation$E: $(LP_LIBS) $(BASE_LIBS) objs/column_generation.$O
-	$(CCC) $(CFLAGS) objs/column_generation.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS) $(EXEOUT)column_generation$E
+strawberry_fields_with_column_generation$E: $(LP_LIBS) $(BASE_LIBS) objs/strawberry_fields_with_column_generation.$O
+	$(CCC) $(CFLAGS) objs/strawberry_fields_with_column_generation.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS) $(EXEOUT)strawberry_fields_with_column_generation$E
 
-objs/linear_solver_example.$O: examples/linear_solver_example.cc linear_solver/linear_solver.h
-	$(CCC) $(CFLAGS) -c examples/linear_solver_example.cc $(OBJOUT)objs/linear_solver_example.$O
+objs/linear_programming.$O: examples/linear_programming.cc linear_solver/linear_solver.h
+	$(CCC) $(CFLAGS) -c examples/linear_programming.cc $(OBJOUT)objs/linear_programming.$O
 
-linear_solver_example$E: $(LP_LIBS) $(BASE_LIBS) objs/linear_solver_example.$O
-	$(CCC) $(CFLAGS) objs/linear_solver_example.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS) $(EXEOUT)linear_solver_example$E
+linear_programming$E: $(LP_LIBS) $(BASE_LIBS) objs/linear_programming.$O
+	$(CCC) $(CFLAGS) $(LDFLAGS) objs/linear_programming.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(EXEOUT)linear_programming$E
 
-objs/linear_solver_example_with_protocol_buffers.$O: examples/linear_solver_example_with_protocol_buffers.cc linear_solver/linear_solver.h
-	$(CCC) $(CFLAGS) -c examples/linear_solver_example_with_protocol_buffers.cc $(OBJOUT)objs/linear_solver_example_with_protocol_buffers.$O
+objs/linear_solver_protocol_buffers.$O: examples/linear_solver_protocol_buffers.cc linear_solver/linear_solver.h
+	$(CCC) $(CFLAGS) -c examples/linear_solver_protocol_buffers.cc $(OBJOUT)objs/linear_solver_protocol_buffers.$O
 
-linear_solver_example_with_protocol_buffers$E: $(LP_LIBS) $(BASE_LIBS) objs/linear_solver_example_with_protocol_buffers.$O
-	$(CCC) $(CFLAGS) objs/linear_solver_example_with_protocol_buffers.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS) $(EXEOUT)linear_solver_example_with_protocol_buffers$E
+linear_solver_protocol_buffers$E: $(LP_LIBS) $(BASE_LIBS) objs/linear_solver_protocol_buffers.$O
+	$(CCC) $(CFLAGS) objs/linear_solver_protocol_buffers.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS)  $(EXEOUT)linear_solver_protocol_buffers$E
 
-objs/integer_solver_example.$O: examples/integer_solver_example.cc linear_solver/linear_solver.h
-	$(CCC) $(CFLAGS) -c examples/integer_solver_example.cc $(OBJOUT)objs/integer_solver_example.$O
+objs/integer_programming.$O: examples/integer_programming.cc linear_solver/linear_solver.h
+	$(CCC) $(CFLAGS) -c examples/integer_programming.cc $(OBJOUT)objs/integer_programming.$O
 
-integer_solver_example$E: $(LP_LIBS) $(BASE_LIBS) objs/integer_solver_example.$O
-	$(CCC) $(CFLAGS) objs/integer_solver_example.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS) $(EXEOUT)integer_solver_example$E
+integer_programming$E: $(LP_LIBS) $(BASE_LIBS) objs/integer_programming.$O
+	$(CCC) $(CFLAGS) objs/integer_programming.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS) $(EXEOUT)integer_programming$E

@@ -163,7 +163,6 @@ class NodeIndexResultCallback2
 %ignore RoutingModel::AddMatrixDimension(const int64* const* values,
                                          int64 capacity,
                                          const string& name);
-%ignore RoutingModel::AddNoCycleConstraint();
 
 %extend RoutingModel {
   void AddVectorDimension(const std::vector<int64>& values,

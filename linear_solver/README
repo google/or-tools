@@ -1,0 +1,21 @@
+<summary>Linear programming and integer programming</summary>
+
+See the comments at the top of linear_solver.h for an introduction to
+linear programming and integer programming.
+
+- linear_solver.h: the point of entry for the wrapper that provides a
+  simple and unified interface to several linear programming and mixed
+  integer programming solvers.
+
+- linear_solver.cc: the C++ code of the linear solver wrapper that is
+  common to all solvers accessible through the wrapper.
+
+- *_interface.cc: each file corresponds to one of the solver accessible
+   through the wrapper.
+
+- *.swig: the SWIG code that makes the wrapper available in Java and
+  Python.
+
+- linear_solver.proto: the protocol buffer for mathematical
+  programming problems.
+

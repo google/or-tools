@@ -74,6 +74,7 @@
 #include "base/stringprintf.h"
 #include "base/sysinfo.h"
 #include "base/timer.h"
+#include "base/concise_iterator.h"
 #include "base/map-util.h"
 #include "base/hash.h"
 #include "base/random.h"
@@ -103,8 +104,9 @@ class CPArgumentProto;
 class CPConstraintProto;
 class CPIntegerExpressionProto;
 class CPIntervalVariableProto;
-class CPModelBuilder;
+class CPModelLoader;
 class CPModelProto;
+class CPSequenceVariableProto;
 class ClockTimer;
 class ConstIntArray;
 class Constraint;
@@ -114,6 +116,7 @@ class DecisionVisitor;
 class Demon;
 class DemonMonitor;
 class DemonProfiler;
+class DependencyGraph;
 class Dimension;
 class ExpressionCache;
 class IntExpr;
@@ -139,7 +142,8 @@ class Search;
 class SearchLimit;
 class SearchLimitProto;
 class SearchMonitor;
-class Sequence;
+class SequenceVar;
+class SequenceVarAssignmentProto;
 class SolutionCollector;
 class SolutionPool;
 class Solver;
@@ -298,16 +302,20 @@ class Solver {
   typedef ResultCallback2<int64, int64, int64> IndexEvaluator2;
   typedef ResultCallback3<int64, int64, int64, int64> IndexEvaluator3;
   typedef ResultCallback2<IntExpr*,
-                          CPModelBuilder*,
+                          CPModelLoader*,
                           const CPIntegerExpressionProto&>
       IntegerExpressionBuilder;
   typedef ResultCallback2<Constraint*,
-                          CPModelBuilder*,
+                          CPModelLoader*,
                           const CPConstraintProto&> ConstraintBuilder;
   typedef ResultCallback2<IntervalVar*,
-                          CPModelBuilder*,
+                          CPModelLoader*,
                           const CPIntervalVariableProto&>
       IntervalVariableBuilder;
+  typedef ResultCallback2<SequenceVar*,
+                          CPModelLoader*,
+                          const CPSequenceVariableProto&>
+      SequenceVariableBuilder;
 
   // Number of priorities for demons.
   static const int kNumPriorities = 3;
@@ -351,7 +359,7 @@ class Solver {
   enum SequenceStrategy {
     SEQUENCE_DEFAULT,
     SEQUENCE_SIMPLE,
-    CHOOSE_MIN_SLACK_RANK_FORWARD
+    CHOOSE_MIN_SLACK_RANK_FORWARD,
   };
 
   enum IntervalStrategy {
@@ -596,11 +604,15 @@ class Solver {
   // Registers a interval variable builder. Ownership is passed to the solver.
   void RegisterBuilder(const string& tag,
                        IntervalVariableBuilder* const builder);
+  // Registers a sequence variable builder. Ownership is passed to the solver.
+  void RegisterBuilder(const string& tag,
+                       SequenceVariableBuilder* const builder);
 
   ConstraintBuilder* GetConstraintBuilder(const string& tag) const;
   IntegerExpressionBuilder*
       GetIntegerExpressionBuilder(const string& tag) const;
   IntervalVariableBuilder* GetIntervalVariableBuilder(const string& tag) const;
+  SequenceVariableBuilder* GetSequenceVariableBuilder(const string& tag) const;
 
 
   // When SaveValue() is not the best way to go, one can create a reversible
@@ -996,8 +1008,15 @@ class Solver {
   // This method is a specialized case of the MakeConstraintDemon
   // method to call the InitiatePropagate of the constraint 'ct'.
   Demon* MakeConstraintInitialPropagateCallback(Constraint* const ct);
-
+  // This method is a specialized case of the MakeConstraintDemon
+  // method to call the InitiatePropagate of the constraint 'ct' with
+  // low priority.
   Demon* MakeDelayedConstraintInitialPropagateCallback(Constraint* const ct);
+  // Creates a demon from a callback.
+  Demon* MakeCallbackDemon(Callback1<Solver*>* const callback);
+  // Creates a demon from a closure.
+  Demon* MakeCallbackDemon(Closure* const closure);
+
 
   // (l <= b <= u)
   Constraint* MakeBetweenCt(IntVar* const v, int64 l, int64 u);
@@ -1218,7 +1237,8 @@ class Solver {
 
   // Creates and returns an interval variable that wraps around the given one,
   // relaxing the min start and end. Relaxing means making unbounded when
-  // optional.
+  // optional. If the variable is non optional, this methods returns
+  // interval_var.
   //
   // More precisely, such an interval variable behaves as follows:
   // * When the underlying must be performed, the returned interval variable
@@ -1236,7 +1256,8 @@ class Solver {
 
   // Creates and returns an interval variable that wraps around the given one,
   // relaxing the max start and end. Relaxing means making unbounded when
-  // optional.
+  // optional. If the variable is non optional, this methods returns
+  // interval_var.
   //
   // More precisely, such an interval variable behaves as follows:
   // * When the underlying must be performed, the returned interval variable
@@ -1279,8 +1300,12 @@ class Solver {
 
   // This constraint forces all interval vars into an non overlapping
   // sequence.
-  Sequence* MakeSequence(const std::vector<IntervalVar*>& intervals,
-                         const string& name);
+  Constraint* MakeDisjunctiveConstraint(const std::vector<IntervalVar*>& intervals);
+
+  // The sequence variable is used to rank disjoint intervals.
+  // It will post a SequenceConstraint upon creation.
+  SequenceVar* MakeSequenceVar(const std::vector<IntervalVar*>& intervals,
+                               const string& name);
 
   // This constraint forces that, for any integer t, the sum of the demands
   // corresponding to an interval containing t does not exceed the given
@@ -1814,7 +1839,7 @@ class Solver {
 
   // Returns a decision that tries to rank first the ith interval var
   // in the sequence variable.
-  Decision* MakeTryRankFirst(Sequence* const sequence, int index);
+  Decision* MakeTryRankFirst(SequenceVar* const sequence, int index);
 
   // Returns a decision builder which assigns values to variables which
   // minimize the values returned by the evaluator. The arguments passed to the
@@ -1851,7 +1876,7 @@ class Solver {
   DecisionBuilder* MakePhase(const std::vector<IntervalVar*>& intervals,
                              IntervalStrategy str);
 
-  DecisionBuilder* MakePhase(const std::vector<Sequence*>& sequences,
+  DecisionBuilder* MakePhase(const std::vector<SequenceVar*>& sequences,
                              SequenceStrategy str);
 
   // Returns a decision builder for which the left-most leaf corresponds
@@ -2264,6 +2289,8 @@ class Solver {
   bool Profile() const;
   // Returns the name of the model.
   string model_name() const;
+  // Returns the dependency graph of the solver.
+  DependencyGraph* Graph() const;
 
   friend class BaseIntExpr;
   friend class Constraint;
@@ -2387,8 +2414,10 @@ class Solver {
   hash_map<string, IntegerExpressionBuilder*> expression_builders_;
   hash_map<string, ConstraintBuilder*> constraint_builders_;
   hash_map<string, IntervalVariableBuilder*> interval_builders_;
+  hash_map<string, SequenceVariableBuilder*> sequence_builders_;
 
   scoped_ptr<ModelCache> model_cache_;
+  scoped_ptr<DependencyGraph> dependency_graph_;
 
   DISALLOW_COPY_AND_ASSIGN(Solver);
 };
@@ -2507,7 +2536,7 @@ class DecisionVisitor : public BaseObject {
                                         int64 value,
                                         bool start_with_lower_half);
   virtual void VisitScheduleOrPostpone(IntervalVar* const var, int64 est);
-  virtual void VisitTryRankFirst(Sequence* const sequence, int index);
+  virtual void VisitTryRankFirst(SequenceVar* const sequence, int index);
   virtual void VisitUnknownDecision();
 
  private:
@@ -2609,6 +2638,7 @@ class ModelVisitor : public BaseObject {
   static const char kCumulative[];
   static const char kDeviation[];
   static const char kDifference[];
+  static const char kDisjunctive[];
   static const char kDistribute[];
   static const char kDivide[];
   static const char kDurationExpr[];
@@ -2651,7 +2681,7 @@ class ModelVisitor : public BaseObject {
   static const char kScalProdGreaterOrEqual[];
   static const char kScalProdLessOrEqual[];
   static const char kSemiContinuous[];
-  static const char kSequence[];
+  static const char kSequenceVariable[];
   static const char kSquare[];
   static const char kStartExpr[];
   static const char kSum[];
@@ -2711,6 +2741,8 @@ class ModelVisitor : public BaseObject {
   static const char kRangeArgument[];
   static const char kRelationArgument[];
   static const char kRightArgument[];
+  static const char kSequenceArgument[];
+  static const char kSequencesArgument[];
   static const char kSizeArgument[];
   static const char kSmartTimeCheckArgument[];
   static const char kSolutionLimitArgument[];
@@ -2756,6 +2788,8 @@ class ModelVisitor : public BaseObject {
                                      const string operation,
                                      const IntervalVar* const * delegate,
                                      int size);
+  virtual void VisitSequenceVariable(const SequenceVar* const sequence);
+
 
   // Visit integer arguments.
   virtual void VisitIntegerArgument(const string& arg_name, int64 value);
@@ -2785,8 +2819,14 @@ class ModelVisitor : public BaseObject {
   virtual void VisitIntervalArrayArgument(const string& arg_name,
                                           const IntervalVar* const * argument,
                                           int size);
-  // Helpers.
+  // Visit sequence argument.
+  virtual void VisitSequenceArgument(const string& arg_name,
+                                     const SequenceVar* const argument);
 
+  virtual void VisitSequenceArrayArgument(const string& arg_name,
+                                          const SequenceVar* const * argument,
+                                          int size);
+  // Helpers.
 #if !defined(SWIG)
   // Using SWIG on calbacks is troublesome, let's hide these methods during
   // the wrapping.
@@ -3427,31 +3467,28 @@ class IntervalVar : public PropagationBaseObject {
   DISALLOW_COPY_AND_ASSIGN(IntervalVar);
 };
 
-// ----- Sequence -----
+// ----- SequenceVar -----
 
-// A sequence is groups an array of interval vars and force them into
-// a sequence. It exports statistics about its interval states such
-// that it can be used in a decision builder. The most important ones
-// are PossibleFirst() which tells if an interval var can be ranked
-// first and RankFirst/RankNotFirst which can be used to create the
-// search decision.
-class Sequence : public Constraint {
+// A sequence variable is a variable which domain is a set of possible
+// orderings of the interval variables. It enforces that all intervals
+// are non overlapping and will automatically add a disjunctive
+// constraint.  It has three methods: ComputePossibleFirst() which
+// returns the list of interval variables thant can be ranked first,
+// and RankFirst/RankNotFirst which can be used to create the search
+// decision.
+class SequenceVar : public PropagationBaseObject {
  public:
-  enum State { ONE_BEFORE_TWO = 0, TWO_BEFORE_ONE, UNDECIDED };
+  enum State { ONE_BEFORE_TWO,
+               TWO_BEFORE_ONE,
+               UNDECIDED };
 
-  Sequence(Solver* const s,
-           const IntervalVar* const * intervals,
-           int size,
-           const string& name);
-  virtual ~Sequence();
+  SequenceVar(Solver* const s,
+              const IntervalVar* const * intervals,
+              int size,
+              const string& name);
+  virtual ~SequenceVar();
 
   virtual string DebugString() const;
-
-  // Constraint protocol: post demons.
-  virtual void Post();
-
-  // Constraint protocol: Initial propagation
-  virtual void InitialPropagate();
 
   // Returns the minimum and maximum duration of combined interval
   // vars in the sequence.
@@ -3477,12 +3514,9 @@ class Sequence : public Constraint {
   // Returns the number of interval vars fixed and performed.
   int Fixed() const;
 
-  // TODO(user) : hide ComputePossibleRanks() method.
-  void ComputePossibleRanks();
-
-  // Returns whether or not the index_th interval var in the sequence
-  // can be ranked first of all unranked interval vars.
-  bool PossibleFirst(int index);
+  // Computes the set of indices of interval variables that can be ranked
+  // first in the set of unranked activities.
+  void ComputePossibleFirsts(std::vector<int>* const indices);
 
   // Rank the index_th interval var first of all unranked interval
   // vars. After that, it will no longer be considered ranked.
@@ -3492,26 +3526,31 @@ class Sequence : public Constraint {
   // of all currently unranked interval vars.
   void RankNotFirst(int index);
 
+  // TODO(user): Add RankLast, RankNotLast and assignment support.
+
+  // Adds a precedence relation (STARTS_AFTER_END) between two activities
+  // of the sequence var.
+  void AddPrecedence(int before, int after);
+
+  // Clears 'to_fill' and fills it with the intervals in the order of
+  // the ranks.
+  void FillSequence(std::vector<int>* const to_fill) const;
+
   // Returns the index_th interval of the sequence.
   IntervalVar* Interval(int index) const;
 
   // Returns the number of interval vars in the sequence.
   int size() const { return size_; }
 
-  // Internal method called by demons
-  void RangeChanged(int index);
-
   // Accepts the given visitor.
   virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
-  void TryToDecide(int i, int j);
-  void Decide(State s, int i, int j);
-  void Apply(int i, int j);
+  bool IsBefore(int i, int j);
 
   scoped_array<IntervalVar*> intervals_;
   const int size_;
-  scoped_array<int> ranks_;
+  scoped_array<int> min_ranks_;
   int current_rank_;
   std::vector<std::vector<State> > states_;
 };
@@ -3571,6 +3610,11 @@ class IntVarElement : public AssignmentElement {
     max_ = v;
   }
   string DebugString() const;
+
+  bool operator==(const IntVarElement& element) const;
+  bool operator!=(const IntVarElement& element) const {
+    return !(*this == element);
+  }
 
  private:
   IntVar* var_;
@@ -3660,6 +3704,10 @@ class IntervalVarElement : public AssignmentElement {
     performed_max_ = v;
   }
   string DebugString() const;
+  bool operator==(const IntervalVarElement& element) const;
+  bool operator!=(const IntervalVarElement& element) const {
+    return !(*this == element);
+  }
 
  private:
   int64 start_min_;
@@ -3671,6 +3719,40 @@ class IntervalVarElement : public AssignmentElement {
   int64 performed_min_;
   int64 performed_max_;
   IntervalVar* var_;
+};
+
+// ----- SequenceVarElement -----
+
+class SequenceVarElement : public AssignmentElement {
+ public:
+  SequenceVarElement();
+  explicit SequenceVarElement(SequenceVar* const var);
+  void Reset(SequenceVar* const var);
+  SequenceVarElement* Clone();
+  void Copy(const SequenceVarElement& element);
+  SequenceVar* Var() const { return var_; }
+  void Store();
+  void Restore();
+  void StoreFromProto(
+      const SequenceVarAssignmentProto& sequence_var_assignment_proto);
+  void RestoreToProto(
+      SequenceVarAssignmentProto* sequence_var_assignment_proto) const;
+
+#if !defined(SWIG)
+  const std::vector<int>& Sequence() const;
+  void SetSequence(const std::vector<int>& new_sequence);
+#endif
+
+  string DebugString() const;
+
+  bool operator==(const SequenceVarElement& element) const;
+  bool operator!=(const SequenceVarElement& element) const {
+    return !(*this == element);
+  }
+
+ private:
+  SequenceVar* var_;
+  std::vector<int> sequence_;
 };
 
 // ----- Assignment element container -----
@@ -3692,9 +3774,6 @@ template <class V, class E> class AssignmentContainer {
     DCHECK(var != NULL);
     E e(var);
     elements_.push_back(e);
-    if (elements_map_.size() != 0) {
-      CopyToMap();
-    }
     return elements_.back();
   }
   void Clear() {
@@ -3759,16 +3838,42 @@ template <class V, class E> class AssignmentContainer {
     }
   }
 
+  // Returns true if this and 'container' both represent the same V* -> E map.
+  // Runs in linear time; requires that the == operator on the type E is well
+  // defined.
+  bool operator==(const AssignmentContainer<V, E>& container) const {
+    // We may not have any work to do
+    if (Size() != container.Size()) {
+      return false;
+    }
+    // The == should be order-independent
+    EnsureMapIsUpToDate();
+    // Do not use the hash_map::== operator! It does not just compare content,
+    // but also how the map is hashed (e.g., number of buckets). This is not
+    // what we want.
+    typedef ConstIter<std::vector<E> > Iterator;
+    for (Iterator it(container.elements_); !it.at_end(); ++it) {
+      const int position = FindWithDefault(elements_map_, it->Var(), -1);
+      if (position < 0 || elements_[position] != *it) {
+        return false;
+      }
+    }
+    return true;
+  }
+  bool operator!=(const AssignmentContainer<V, E>& container) const {
+    return !(*this == container);
+  }
+
  private:
-  void CopyToMap() {
-    for (int i = elements_map_.size(); i < elements_.size(); ++i) {
-      elements_map_[elements_[i].Var()] = i;
+  void EnsureMapIsUpToDate() const {
+    hash_map<const V*, int>* map =
+        const_cast<hash_map<const V*, int>* >(&elements_map_);
+    for (int i = map->size(); i < elements_.size(); ++i) {
+      (*map)[elements_[i].Var()] = i;
     }
   }
   bool Find(const V* const var, int* index) const {
-    if (elements_map_.size() == 0) {
-      const_cast<AssignmentContainer<V, E>*>(this)->CopyToMap();
-    }
+    EnsureMapIsUpToDate();
     DCHECK_EQ(elements_map_.size(), elements_.size());
     return FindCopy(elements_map_, var, index);
   }
@@ -3786,6 +3891,8 @@ class Assignment : public PropagationBaseObject {
   typedef AssignmentContainer<IntVar, IntVarElement> IntContainer;
   typedef AssignmentContainer<IntervalVar, IntervalVarElement>
   IntervalContainer;
+  typedef AssignmentContainer<SequenceVar, SequenceVarElement>
+  SequenceContainer;
 
   explicit Assignment(Solver* const s);
   explicit Assignment(const Assignment* const copy);
@@ -3793,16 +3900,21 @@ class Assignment : public PropagationBaseObject {
 
   void Clear();
   bool Empty() const {
-    return int_var_container_.Empty() && interval_var_container_.Empty();
+    return int_var_container_.Empty() &&
+        interval_var_container_.Empty() &&
+        sequence_var_container_.Empty();
   }
   int Size() const {
-    return NumIntVars() + NumIntervalVars();
+    return NumIntVars() + NumIntervalVars() + NumSequenceVars();
   }
   int NumIntVars() const {
     return int_var_container_.Size();
   }
   int NumIntervalVars() const {
     return interval_var_container_.Size();
+  }
+  int NumSequenceVars() const {
+    return sequence_var_container_.Size();
   }
   void Store();
   void Restore();
@@ -3823,7 +3935,7 @@ class Assignment : public PropagationBaseObject {
 
   void AddObjective(IntVar* const v);
   IntVar* Objective() const;
-  bool HasObjective() const;
+  bool HasObjective() const { return (objective_element_.Var() != NULL); }
   int64 ObjectiveMin() const;
   int64 ObjectiveMax() const;
   int64 ObjectiveValue() const;
@@ -3881,6 +3993,16 @@ class Assignment : public PropagationBaseObject {
   void SetPerformedRange(const IntervalVar* const v, int64 mi, int64 ma);
   void SetPerformedValue(const IntervalVar* const v, int64 value);
 
+  SequenceVarElement& Add(SequenceVar* const v);
+  void Add(SequenceVar* const * vars, int size);
+  void Add(const std::vector<SequenceVar*>& vars);
+  // Adds without checking if variable has been previously added.
+  SequenceVarElement& FastAdd(SequenceVar* const v);
+#if !defined(SWIG)
+  const std::vector<int>& Sequence(const SequenceVar* const v) const;
+  void SetSequence(const SequenceVar* const v, const std::vector<int>& new_sequence);
+#endif
+
   void Activate(const IntVar* const v);
   void Deactivate(const IntVar* const v);
   bool Activated(const IntVar* const v) const;
@@ -3888,6 +4010,10 @@ class Assignment : public PropagationBaseObject {
   void Activate(const IntervalVar* const v);
   void Deactivate(const IntervalVar* const v);
   bool Activated(const IntervalVar* const v) const;
+
+  void Activate(const SequenceVar* const v);
+  void Deactivate(const SequenceVar* const v);
+  bool Activated(const SequenceVar* const v) const;
 
   void ActivateObjective();
   void DeactivateObjective();
@@ -3897,6 +4023,7 @@ class Assignment : public PropagationBaseObject {
 
   bool Contains(const IntVar* const var) const;
   bool Contains(const IntervalVar* const var) const;
+  bool Contains(const SequenceVar* const var) const;
   // Copies the intersection of the 2 assignments to the current assignment.
   void Copy(const Assignment* assignment);
 
@@ -3913,14 +4040,31 @@ class Assignment : public PropagationBaseObject {
   IntervalContainer& MutableIntervalVarContainer() {
     return interval_var_container_;
   }
+  const SequenceContainer& SequenceVarContainer() const {
+    return sequence_var_container_;
+  }
+  SequenceContainer& MutableSequenceVarContainer() {
+    return sequence_var_container_;
+  }
+  bool operator==(const Assignment& assignment) const {
+    return int_var_container_ == assignment.int_var_container_
+        && interval_var_container_ == assignment.interval_var_container_
+        && sequence_var_container_ == assignment.sequence_var_container_
+        && objective_element_ == assignment.objective_element_;
+  }
+  bool operator!=(const Assignment& assignment) const {
+    return !(*this == assignment);
+  }
 
  private:
   IntContainer int_var_container_;
   IntervalContainer interval_var_container_;
-  IntVarElement* obj_element_;
-  IntVar* objective_;
+  SequenceContainer sequence_var_container_;
+  IntVarElement objective_element_;
   DISALLOW_COPY_AND_ASSIGN(Assignment);
 };
+
+std::ostream& operator<<(std::ostream& out, const Assignment& assignment);  // NOLINT
 
 // ---------- Misc ----------
 

@@ -64,8 +64,8 @@ gen/constraint_solver/routing_wrap.cc: gen/constraint_solver/pywraprouting.py
 objs/routing_wrap.$O: gen/constraint_solver/routing_wrap.cc
 	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/constraint_solver/routing_wrap.cc $(OBJOUT)objs/routing_wrap.$O
 
-_pywraprouting.$(SHAREDLIBEXT): objs/routing_wrap.$O $(CP_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT)_pywraprouting.$(SHAREDLIBEXT) objs/routing_wrap.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(PYTHON_LNK)
+_pywraprouting.$(SHAREDLIBEXT): objs/routing_wrap.$O $(ROUTING_LIBS) $(BASE_LIBS)
+	$(LD) $(LDOUT)_pywraprouting.$(SHAREDLIBEXT) objs/routing_wrap.$O $(ROUTING_LIBS) $(BASE_LIBS) $(LDFLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
 	copy _pywraprouting.dll gen\\constraint_solver\\_pywraprouting.pyd
 endif

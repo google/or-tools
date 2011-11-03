@@ -753,7 +753,8 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph {
   // Returns the outgoing arc following the argument in the adjacency list.
   ArcIndexType NextOutgoingArc(const ArcIndexType arc) const {
     DCHECK(CheckArcValidity(arc));
-    return FindNextOutgoingArc(NextAdjacentArc(DirectArc(arc)));
+    DCHECK(IsDirect(arc));
+    return FindNextOutgoingArc(NextAdjacentArc(arc));
   }
 
   // Returns the first incoming arc for node.
@@ -766,7 +767,8 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph {
   // Returns the incoming arc following the argument in the adjacency list.
   ArcIndexType NextIncomingArc(const ArcIndexType arc) const {
     DCHECK(CheckArcValidity(arc));
-    return FindNextIncomingArc(NextAdjacentArc(ReverseArc(arc)));
+    DCHECK(IsReverse(arc));
+    return FindNextIncomingArc(NextAdjacentArc(arc));
   }
 
   // Returns the first arc in node's incidence list.
@@ -941,12 +943,17 @@ typedef ZVector<CostValue> CostArray;
 // if b == c in the original graph.
 // This method expects that 'line_graph' is an empty graph (it has no nodes
 // and no arcs).
+// Returns false on an error.
 template<typename NodeIndexType, typename ArcIndexType>
-void BuildLineGraph(const EbertGraph<NodeIndexType, ArcIndexType>& graph,
+bool BuildLineGraph(const EbertGraph<NodeIndexType, ArcIndexType>& graph,
                     EbertGraph<NodeIndexType, ArcIndexType>* const line_graph) {
   if (line_graph == NULL) {
     LOG(DFATAL) << "line_graph must not be NULL";
-    return;
+    return false;
+  }
+  if (line_graph->num_nodes() != 0) {
+    LOG(DFATAL) << "line_graph must be empty";
+    return false;
   }
   typedef EbertGraph<NodeIndexType, ArcIndexType> Graph;
   typedef typename Graph::ArcIterator ArcIterator;
@@ -977,6 +984,7 @@ void BuildLineGraph(const EbertGraph<NodeIndexType, ArcIndexType>& graph,
       line_graph->AddArc(arc, iterator.Index());
     }
   }
+  return true;
 }
 
 }  // namespace operations_research

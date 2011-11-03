@@ -1,0 +1,42 @@
+<summary>Constraint Programming (CP) and Routing/Arc Routing
+extensions.</summary>
+
+Constraint Programming
+(http://en.wikipedia.org/wiki/Constraint_programming) is a technology
+issued from IA and used in Operations Research.
+
+Vehicle Routing (http://en.wikipedia.org/wiki/Vehicle_routing) and
+Vehicle Arc Routing
+(http://www.lums.lancs.ac.uk/departments/mansci/Research/ResGroups/OArc/)
+are useful extensions that are implemented on top of the CP library.
+
+- constraint_solver.h: The point of entry for all constraint programming users.
+
+- constraint_solveri.h: An additional file that helps extending the constraint
+  programming library.
+
+- routing.h: The point of entry for routing problems.
+
+- constraint_solver.swig: SWIG instructions to wrap the C++ library in python
+  and java.
+
+- model.proto:  Holds the description of a constraint programming problem,
+  i.e. the input of the solver.
+
+- assignment.proto: Holds the solution of a CP problem.
+
+- search_limit.proto:  Holds parameters to limit the search space within
+  the CP solver, which is important for performance.
+
+- demon_profiler.proto: Holds the timeline and execution profile of
+  constraints and demons (daemons).
+
+C++ examples are available in the examples directory alongside the
+constraint_solver directory.
+
+Python examples are available in the python directory alongside the
+constraint_solver library.
+
+Java examples are available in the
+/java/com/google/wrappers/util/operationsresearch directory.
+

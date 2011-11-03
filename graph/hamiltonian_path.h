@@ -68,6 +68,9 @@
 //
 // There are a few tricks in the efficient implementation of this algorithm
 // which are explained below.
+//
+// Keywords: Traveling Salesman, Hamiltonian Path, Dynamic Programming,
+//           Held, Karp.
 
 #ifndef OR_TOOLS_GRAPH_HAMILTONIAN_PATH_H_
 #define OR_TOOLS_GRAPH_HAMILTONIAN_PATH_H_
@@ -134,7 +137,6 @@ template <typename T> class HamiltonianPathSolver {
   bool VerifiesTriangleInequality();
 
  private:
-
   // Initializes robust_.
   void CheckRobustness();
 

@@ -37,6 +37,13 @@ message IntervalVarAssignmentProto {
   required bool active = 10;
 }
 
+// Storage for SequenceVars
+message SequenceVarAssignmentProto {
+  required string var_id = 1;
+  repeated int32 sequence = 2;
+  required bool active = 3;
+}
+
 // This optional message indicates how the assignment was produced.
 message WorkerInfo {
   optional int32 worker_id = 1;
@@ -51,6 +58,7 @@ message NeighborsInfo {
 message AssignmentProto {
   repeated IntVarAssignmentProto int_var_assignment = 1;
   repeated IntervalVarAssignmentProto interval_var_assignment = 2;
+  repeated SequenceVarAssignmentProto sequence_var_assignment = 6;
   optional IntVarAssignmentProto objective = 3;
   optional WorkerInfo worker_info = 4;
   optional bool is_valid = 5 [default = true];
