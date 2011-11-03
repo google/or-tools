@@ -21,9 +21,9 @@ from google.apputils import app
 from linear_solver import pywraplp
 
 
-def RunIntegerExampleNaturalLanguageAPI(optimization_problem_type):
+def RunIntegerExampleAlgebraicAPI(optimization_problem_type):
   """Example of simple integer program with natural language API."""
-  solver = pywraplp.Solver('RunIntegerExampleNaturalLanguageAPI',
+  solver = pywraplp.Solver('RunIntegerExampleAlgebraicAPI',
                            optimization_problem_type)
   infinity = solver.infinity()
   # x1 and x2 are integer non-negative variables.
@@ -80,29 +80,35 @@ def SolveAndPrint(solver, variable_list):
   print 'Problem solved in %d branch-and-bound nodes' % solver.nodes()
 
 
-def RunAllIntegerExampleNaturalLanguageAPI():
-  print '---- Integer programming example with GLPK (natural language API) ----'
-  RunIntegerExampleNaturalLanguageAPI(
-      pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
-  print '---- Integer programming example with CBC (natural language API) ----'
-  RunIntegerExampleNaturalLanguageAPI(
-      pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
-  print '---- Integer programming example with SCIP (natural language API) ----'
-  RunIntegerExampleNaturalLanguageAPI(
-      pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
+def RunAllIntegerExampleAlgebraicAPI():
+  if hasattr(pywraplp.Solver, 'GLPK_MIXED_INTEGER_PROGRAMMING'):
+    print ('---- Integer programming example with GLPK (algebraic API) -----')
+    RunIntegerExampleAlgebraicAPI(
+        pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
+  if hasattr(pywraplp.Solver, 'CBC_MIXED_INTEGER_PROGRAMMING'):
+    print '---- Integer programming example with CBC (algebraic API) -----'
+    RunIntegerExampleAlgebraicAPI(pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+  if hasattr(pywraplp.Solver, 'SCIP_MIXED_INTEGER_PROGRAMMING'):
+    print '---- Integer programming example with SCIP (algebraic API) -----'
+    RunIntegerExampleAlgebraicAPI(
+        pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
 
 
 def RunAllIntegerExampleCppStyleAPI():
-  print '---- Integer programming example with GLPK (C++ style API) ----'
-  RunIntegerExampleCppStyleAPI(pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
-  print '---- Integer programming example with CBC (C++ style API) ----'
-  RunIntegerExampleCppStyleAPI(pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
-  print '---- Integer programming example with SCIP (C++ style API) ----'
-  RunIntegerExampleCppStyleAPI(pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
+  if hasattr(pywraplp.Solver, 'GLPK_MIXED_INTEGER_PROGRAMMING'):
+    print '---- Integer programming example with GLPK (C++ style API) ----'
+    RunIntegerExampleCppStyleAPI(pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
+  if hasattr(pywraplp.Solver, 'CBC_MIXED_INTEGER_PROGRAMMING'):
+    print '---- Integer programming example with CBC (C++ style API) ----'
+    RunIntegerExampleCppStyleAPI(pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+  if hasattr(pywraplp.Solver, 'SCIP_MIXED_INTEGER_PROGRAMMING'):
+    print '---- Integer programming example with SCIP (C++ style API) ----'
+    RunIntegerExampleCppStyleAPI(
+        pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
 
 
 def main(unused_argv):
-  RunAllIntegerExampleNaturalLanguageAPI()
+  RunAllIntegerExampleAlgebraicAPI()
   RunAllIntegerExampleCppStyleAPI()
 
 
