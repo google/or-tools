@@ -1,26 +1,26 @@
 # Please copy this file to Makefile.local and edit to accomodate your needs.
 
 # Python version (to be used to find include files).
-UNIX_PYTHON_VER=2.6
+UNIX_PYTHON_VER=2.7
 # Where gflags is installed.
-UNIX_GFLAGS_DIR=../gflags-1.4
+UNIX_GFLAGS_DIR=../gflags-1.6
 # Swig binary.
 UNIX_SWIG_BINARY=swig
 # Where protocol buffers are installed
-UNIX_PROTOBUF_DIR=../protobuf-2.3.0
-# This is the root directory of the CLP installation. Please undefine if CLP is
-# not installed. If you have installed CBC, CLP_DIR can have the same value as
+UNIX_PROTOBUF_DIR=../protobuf-2.4.1
+# This is the root directory of the CLP installation. Please define if CLP is
+# installed. If you have installed CBC, CLP_DIR can have the same value as
 # CBC_DIR.
-UNIX_CLP_DIR=../cbc-2.6.2
-# This is the root directory of the CBC installation. Please undefine if CBC is
-# not installed.
-UNIX_CBC_DIR=../cbc-2.6.2
-# This is the root directory of glpk installation. Please undefine if GLPK is
-# not installed.
-UNIX_GLPK_DIR=../glpk-4.45
-# This is the root directory of scip installation. Please undefine if scip is
-# not installed.
-#UNIX_SCIP_DIR=../ziboptsuite-2.0.1/scip-2.0.1
+#UNIX_CLP_DIR=../cbc-2.7.4
+# This is the root directory of the CBC installation. Please define if CBC is
+# installed.
+#UNIX_CBC_DIR=../cbc-2.7.4
+# This is the root directory of glpk installation. Please define if GLPK is
+# installed.
+#UNIX_GLPK_DIR=../glpk-4.47
+# This is the root directory of scip installation. Please define if scip is
+# installed.
+#UNIX_SCIP_DIR=../ziboptsuite-2.1.0/scip-2.1.0
 
 # Linux jdk root
 # first, determine 32 or 64 bits.
@@ -39,25 +39,25 @@ MAC_JDK_HEADERS=/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home
 #MAC_JDK_HEADERS=/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bundle/Headers
 
 # Please edit the following:
-WINDOWS_GFLAGS_DIR=..\\gflags-1.4
+WINDOWS_GFLAGS_DIR=..\\gflags-1.6
 WINDOWS_ZLIB_DIR=..\\zlib-1.2.5
 WINDOWS_ZLIB_NAME=zlib.lib
-WINDOWS_SWIG_BINARY=..\\swigwin-2.0.0\\swig.exe
-WINDOWS_PROTOBUF_DIR=..\\protobuf-2.3.0
+WINDOWS_SWIG_BINARY=..\\swigwin-2.0.4\\swig.exe
+WINDOWS_PROTOBUF_DIR=..\\protobuf-2.4.1
 WINDOWS_PYTHON_DIR=c:\\Python27
 WINDOWS_PYTHON_LIB=c:\\Python27\\libs\\python27.lib
-# This is the root directory of the CLP installation. Please undefine if CLP is
-# not installed. If you have installed CBC, CLP_DIR can have the same value as
+# This is the root directory of the CLP installation. Please define if CLP is
+# installed. If you have installed CBC, CLP_DIR can have the same value as
 # CBC_DIR.
-WINDOWS_CLP_DIR=..\\cbc-2.6.2
-WINDOWS_CLP_PACKAGE=Clp 1.13.2
-# This is the root directory of the CBC installation. Please undefine if CBC is
-# not installed.
-WINDOWS_CBC_DIR=..\\cbc-2.6.2
-WINDOWS_CBC_PACKAGE=Cbc 2.6.2
-# This is the root directory of glpk installation. Please undefine if GLPK is
-# not installed.
-WINDOWS_GLPK_DIR=..\\glpk-4.45
+#WINDOWS_CLP_DIR=..\\cbc-2.7.4
+WINDOWS_CLP_PACKAGE=Clp 1.14.4
+# This is the root directory of the CBC installation. Please define if CBC is
+# installed.
+#WINDOWS_CBC_DIR=..\\cbc-2.7.4
+WINDOWS_CBC_PACKAGE=Cbc 2.7.4
+# This is the root directory of the GLPK installation. Please define if GLPK is
+# installed.
+#WINDOWS_GLPK_DIR=..\\glpk-4.47
 
 
 # This describes the python installation windows.
