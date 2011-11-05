@@ -542,7 +542,7 @@ objs/linear_programming.$O: examples/linear_programming.cc linear_solver/linear_
 	$(CCC) $(CFLAGS) -c examples/linear_programming.cc $(OBJOUT)objs/linear_programming.$O
 
 linear_programming$E: $(LP_LIBS) $(BASE_LIBS) objs/linear_programming.$O
-	$(CCC) $(CFLAGS) $(LDFLAGS) objs/linear_programming.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(EXEOUT)linear_programming$E
+	$(CCC) $(CFLAGS) objs/linear_programming.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS) $(EXEOUT)linear_programming$E
 
 objs/linear_solver_protocol_buffers.$O: examples/linear_solver_protocol_buffers.cc linear_solver/linear_solver.h
 	$(CCC) $(CFLAGS) -c examples/linear_solver_protocol_buffers.cc $(OBJOUT)objs/linear_solver_protocol_buffers.$O
