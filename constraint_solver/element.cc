@@ -171,42 +171,40 @@ void BaseIntExprElement::UpdateSupports() const {
 // This constraint implements 'elem' == 'values'['index'].
 // It scans the bounds of 'elem' to propagate on the domain of 'index'.
 // It scans the domain of 'index' to compute the new bounds of 'elem'.
-class IntElementConstraint : public Constraint {
+class IntElementConstraint : public CastConstraint {
  public:
   IntElementConstraint(Solver* const s,
                        std::vector<int64>* const values,
                        IntVar* const index,
                        IntVar* const elem)
-    : Constraint(s),
+      : CastConstraint(s, elem),
       values_(values),
       index_(index),
-      elem_(elem),
       index_iterator_(index_->MakeDomainIterator(true)) {
     CHECK_NOTNULL(values);
     CHECK_NOTNULL(index);
-    CHECK_NOTNULL(elem);
   }
 
   virtual void Post() {
     Demon* const d =
         solver()->MakeDelayedConstraintInitialPropagateCallback(this);
     index_->WhenDomain(d);
-    elem_->WhenRange(d);
+    target_var_->WhenRange(d);
   }
 
   virtual void InitialPropagate() {
     index_->SetRange(0, values_.size() - 1);
-    const int64 elem_min = elem_->Min();
-    const int64 elem_max = elem_->Max();
-    int64 new_min = elem_max;
-    int64 new_max = elem_min;
+    const int64 target_var_min = target_var_->Min();
+    const int64 target_var_max = target_var_->Max();
+    int64 new_min = target_var_max;
+    int64 new_max = target_var_min;
     to_remove_.clear();
     for (index_iterator_->Init();
          index_iterator_->Ok();
          index_iterator_->Next()) {
       const int64 index = index_iterator_->Value();
       const int64 value = values_[index];
-      if (value < elem_min || value > elem_max) {
+      if (value < target_var_min || value > target_var_max) {
         to_remove_.push_back(index);
       } else {
         if (value < new_min) {
@@ -217,7 +215,7 @@ class IntElementConstraint : public Constraint {
         }
       }
     }
-    elem_->SetRange(new_min, new_max);
+    target_var_->SetRange(new_min, new_max);
     if (!to_remove_.empty()) {
       index_->RemoveValues(to_remove_);
     }
@@ -227,7 +225,7 @@ class IntElementConstraint : public Constraint {
     return StringPrintf("IntElementConstraint(%s, %s, %s)",
                         values_.DebugString().c_str(),
                         index_->DebugString().c_str(),
-                        elem_->DebugString().c_str());
+                        target_var_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -237,14 +235,13 @@ class IntElementConstraint : public Constraint {
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             index_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            elem_);
+                                            target_var_);
     visitor->EndVisitConstraint(ModelVisitor::kElementEqual, this);
   }
 
  private:
   ConstIntArray values_;
   IntVar* const index_;
-  IntVar* const elem_;
   IntVarIterator* const index_iterator_;
   std::vector<int64> to_remove_;
 };
@@ -277,12 +274,14 @@ class IntExprElement : public BaseIntExprElement {
     Solver* const s = solver();
     std::vector<int64>* copied_data = values_.Copy();
     IntVar* const var = s->MakeIntVar(*copied_data);
-    AddDelegateName("Var", var);
     // Ownership or copied_data is transferred to the constraint.
-    s->AddDelegateConstraint(s->RevAlloc(new IntElementConstraint(s,
-                                                                  copied_data,
-                                                                  expr_,
-                                                                  var)));
+    s->AddCastConstraint(
+        s->RevAlloc(new IntElementConstraint(s,
+                                             copied_data,
+                                             expr_,
+                                             var)),
+        var,
+        this);
     return var;
   }
 
@@ -366,7 +365,6 @@ class IncreasingIntExprElement : public BaseIntExpr {
     std::vector<int64>* copied_data = values_.Copy();
     IntVar* const var = s->MakeIntVar(*copied_data);
     delete copied_data;
-    AddDelegateName("Var", var);
     LinkVarExpr(s, this, var);
     return var;
   }
@@ -998,13 +996,13 @@ IntExpr* Solver::MakeElement(ResultCallback2<int64, int64, int64>* values,
 // that propagation only occurs when all variables have been touched.
 
 namespace {
-class IntExprArrayElementCt : public Constraint {
+class IntExprArrayElementCt : public CastConstraint {
  public:
   IntExprArrayElementCt(Solver* const s,
                         const IntVar* const * vars,
                         int size,
-                        IntVar* const expr,
-                        IntVar* const var);
+                        IntVar* const index,
+                        IntVar* const target_var);
   virtual ~IntExprArrayElementCt() {}
 
     virtual void Post();
@@ -1022,17 +1020,16 @@ class IntExprArrayElementCt : public Constraint {
                                                vars_.get(),
                                                size_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
-                                            expr_);
+                                            index_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            var_);
+                                            target_var_);
     visitor->EndVisitConstraint(ModelVisitor::kElementEqual, this);
   }
 
  private:
   scoped_array<IntVar*> vars_;
   int size_;
-  IntVar* const expr_;
-  IntVar* const var_;
+  IntVar* const index_;
   int min_support_;
   int max_support_;
 };
@@ -1040,44 +1037,47 @@ class IntExprArrayElementCt : public Constraint {
 IntExprArrayElementCt::IntExprArrayElementCt(Solver* const s,
                                              const IntVar* const * vars,
                                              int size,
-                                             IntVar* const expr,
-                                             IntVar* const var)
-    : Constraint(s),
+                                             IntVar* const index,
+                                             IntVar* const target_var)
+    : CastConstraint(s, target_var),
       vars_(new IntVar*[size]),
       size_(size),
-      expr_(expr),
-      var_(var),
+      index_(index),
       min_support_(-1),
       max_support_(-1) {
   memcpy(vars_.get(), vars, size_ * sizeof(*vars));
 }
 
 void IntExprArrayElementCt::Post() {
-  Demon* d = MakeDelayedConstraintDemon0(solver(),
-                                         this,
-                                         &IntExprArrayElementCt::Propagate,
-                                         "Propagate");
+  Demon* const delayed_propagate_demon =
+      MakeDelayedConstraintDemon0(solver(),
+                                  this,
+                                  &IntExprArrayElementCt::Propagate,
+                                  "Propagate");
   for (int i = 0; i < size_; ++i) {
-    vars_[i]->WhenRange(d);
-    Demon* u = MakeConstraintDemon1(solver(),
-                                    this,
-                                    &IntExprArrayElementCt::Update,
-                                    "Update",
-                                    i);
-    vars_[i]->WhenRange(u);
+    vars_[i]->WhenRange(delayed_propagate_demon);
+    Demon* const update_demon =
+        MakeConstraintDemon1(solver(),
+                             this,
+                             &IntExprArrayElementCt::Update,
+                             "Update",
+                             i);
+    vars_[i]->WhenRange(update_demon);
   }
-  expr_->WhenRange(d);
-  Demon* ue = MakeConstraintDemon0(solver(),
-                                   this,
-                                   &IntExprArrayElementCt::UpdateExpr,
-                                   "UpdateExpr");
-  expr_->WhenRange(ue);
-  Demon* uv = MakeConstraintDemon0(solver(),
-                                   this,
-                                   &IntExprArrayElementCt::Propagate,
-                                   "UpdateVar");
+  index_->WhenRange(delayed_propagate_demon);
+  Demon* const update_expr_demon =
+      MakeConstraintDemon0(solver(),
+                           this,
+                           &IntExprArrayElementCt::UpdateExpr,
+                           "UpdateExpr");
+  index_->WhenRange(update_expr_demon);
+  Demon* const update_var_demon =
+      MakeConstraintDemon0(solver(),
+                           this,
+                           &IntExprArrayElementCt::Propagate,
+                           "UpdateVar");
 
-  var_->WhenRange(uv);
+  target_var_->WhenRange(update_var_demon);
 }
 
 void IntExprArrayElementCt::InitialPropagate() {
@@ -1085,12 +1085,12 @@ void IntExprArrayElementCt::InitialPropagate() {
 }
 
 void IntExprArrayElementCt::Propagate() {
-  const int64 emin = std::max(0LL, expr_->Min());
-  const int64 emax = std::min(size_ - 1LL, expr_->Max());
-  const int64 vmin = var_->Min();
-  const int64 vmax = var_->Max();
+  const int64 emin = std::max(0LL, index_->Min());
+  const int64 emax = std::min(size_ - 1LL, index_->Max());
+  const int64 vmin = target_var_->Min();
+  const int64 vmax = target_var_->Max();
   if (emin == emax) {
-    expr_->SetValue(emin);  // in case it was reduced by the above min/max.
+    index_->SetValue(emin);  // in case it was reduced by the above min/max.
     vars_[emin]->SetRange(vmin, vmax);
   } else {
     int64 nmin = emin;
@@ -1103,7 +1103,7 @@ void IntExprArrayElementCt::Propagate() {
                             vars_[nmax]->Min() > vmax)) {
       nmax--;
     }
-    expr_->SetRange(nmin, nmax);
+    index_->SetRange(nmin, nmax);
     if (nmin == nmax) {
       vars_[nmin]->SetRange(vmin, vmax);
     }
@@ -1113,7 +1113,7 @@ void IntExprArrayElementCt::Propagate() {
     int max_support = -1;
     int64 gmin = kint64max;
     int64 gmax = kint64min;
-    for (int i = expr_->Min(); i <= expr_->Max(); ++i) {
+    for (int i = index_->Min(); i <= index_->Max(); ++i) {
       const int64 vmin = vars_[i]->Min();
       if (vmin < gmin) {
         gmin = vmin;
@@ -1125,7 +1125,7 @@ void IntExprArrayElementCt::Propagate() {
     }
     solver()->SaveAndSetValue(&min_support_, min_support);
     solver()->SaveAndSetValue(&max_support_, max_support);
-    var_->SetRange(gmin, gmax);
+    target_var_->SetRange(gmin, gmax);
   }
 }
 
@@ -1137,7 +1137,7 @@ void IntExprArrayElementCt::Update(int index) {
 }
 
 void IntExprArrayElementCt::UpdateExpr() {
-  if (!expr_->Contains(min_support_) || !expr_->Contains(max_support_)) {
+  if (!index_->Contains(min_support_) || !index_->Contains(max_support_)) {
     solver()->SaveAndSetValue(&min_support_, -1);
     solver()->SaveAndSetValue(&max_support_, -1);
   }
@@ -1146,8 +1146,8 @@ void IntExprArrayElementCt::UpdateExpr() {
 string IntExprArrayElementCt::DebugString() const {
   return StringPrintf("IntExprArrayElement([%s], %s) == %s",
                       DebugStringArray(vars_.get(), size_, ", ").c_str(),
-                      expr_->DebugString().c_str(),
-                      var_->DebugString().c_str());
+                      index_->DebugString().c_str(),
+                      target_var_->DebugString().c_str());
 }
 
 // ----- IntExprArrayElement -----
@@ -1188,12 +1188,13 @@ class IntExprArrayElement : public BaseIntExpr {
     int64 vmax = 0LL;
     Range(&vmin, &vmax);
     IntVar* var = solver()->MakeIntVar(vmin, vmax);
-    AddDelegateName("Var", var);
-    s->AddDelegateConstraint(s->RevAlloc(new IntExprArrayElementCt(s,
-                                                                   vars_.get(),
-                                                                   size_,
-                                                                   var_,
-                                                                   var)));
+    s->AddCastConstraint(s->RevAlloc(new IntExprArrayElementCt(s,
+                                                               vars_.get(),
+                                                               size_,
+                                                               var_,
+                                                               var)),
+                         var,
+                         this);
     return var;
   }
 

@@ -11,46 +11,52 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-//  Declaration of the core objects for the constraint solver.
+// Declaration of the core objects for the constraint solver.
+// The literature around constraint programming is extremelly dense but one
+// can find some basic introductions in the following links:
+//   http://en.wikipedia.org/wiki/Constraint_programming
+//   http://kti.mff.cuni.cz/~bartak/constraints/index.html
 //
 //
 // Here is a very simple Constraint Programming problem:
-//  Knowing that we see 56 legs and 20 heads, how many pheasants and rabbits
-//  are we looking at?
+//   Knowing that we see 56 legs and 20 heads, how many pheasants and rabbits
+//   are we looking at?
 //
-// Here is a simple cp code to find out:
-// void pheasant() {
-//   Solver s("pheasant");
-//   IntVar* const p = s.MakeIntVar(0, 20, "pheasant"));
-//   IntVar* const r = s.MakeIntVar(0, 20, "rabbit"));
-//   IntExpr* const legs = s.MakeSum(s.MakeProd(p, 2), s.MakeProd(r, 4));
-//   IntExpr* const heads = s.MakeSum(p, r);
-//   Constraint* const ct_legs = s.MakeEquality(legs, 56);
-//   Constraint* const ct_heads = s.MakeEquality(heads, 20);
-//   s.AddConstraint(ct_legs);
-//   s.AddConstraint(ct_heads);
-//   DecisionBuilder* const db = s.MakePhase(p, r, Solver::CHOOSE_FIRST_UNBOUND,
-//                                           Solver::ASSIGN_MIN_VALUE);
-//   s.NewSearch(db);
-//   CHECK(s.NextSolution());
-//   LG << "rabbits -> " << r->Value() << ", pheasants -> " << p->Value();
-//   LG << s.DebugString();
-//   s.EndSearch();
-// }
+// Here is a simple Constraint Programming code to find out:
+//   void pheasant() {
+//     Solver s("pheasant");
+//     IntVar* const p = s.MakeIntVar(0, 20, "pheasant"));
+//     IntVar* const r = s.MakeIntVar(0, 20, "rabbit"));
+//     IntExpr* const legs = s.MakeSum(s.MakeProd(p, 2), s.MakeProd(r, 4));
+//     IntExpr* const heads = s.MakeSum(p, r);
+//     Constraint* const ct_legs = s.MakeEquality(legs, 56);
+//     Constraint* const ct_heads = s.MakeEquality(heads, 20);
+//     s.AddConstraint(ct_legs);
+//     s.AddConstraint(ct_heads);
+//     DecisionBuilder* const db = s.MakePhase(p, r,
+//                                             Solver::CHOOSE_FIRST_UNBOUND,
+//                                             Solver::ASSIGN_MIN_VALUE);
+//     s.NewSearch(db);
+//     CHECK(s.NextSolution());
+//     LG << "rabbits -> " << r->Value() << ", pheasants -> " << p->Value();
+//     LG << s.DebugString();
+//     s.EndSearch();
+//   }
 //
 // which outputs:
-// rabbits -> 8, pheasants -> 12
-// Solver(name = "pheasant",
-//        state = OUTSIDE_SEARCH,
-//        branches = 0,
-//        fails = 0,
-//        decisions = 0
-//        propagation loops = 11,
-//        demons Run = 25,
-//        Run time = 0 ms)
+//   rabbits -> 8, pheasants -> 12
+//   Solver(name = "pheasant",
+//          state = OUTSIDE_SEARCH,
+//          branches = 0,
+//          fails = 0,
+//          decisions = 0
+//          propagation loops = 11,
+//          demons Run = 25,
+//          Run time = 0 ms)
 //
 // More infos: go/operations_research
 //
+// TODO(user): Remove C-style API and update following comment.
 // Global remark: many functions and methods in this file can take as argument
 // either a const std::vector<IntVar>& or a IntVar* const* and a size; the two
 // signatures are equivalent, size defining the number of variables.
@@ -107,6 +113,7 @@ class CPIntervalVariableProto;
 class CPModelLoader;
 class CPModelProto;
 class CPSequenceVariableProto;
+class CastConstraint;
 class ClockTimer;
 class ConstIntArray;
 class Constraint;
@@ -153,15 +160,10 @@ struct Trail;
 template <class T> class ConstPtrArray;
 template <class T> class SimpleRevFIFO;
 
-// This enum is used internally to tag states in the search tree.
-enum MarkerType {
-  SENTINEL,
-  SIMPLE_MARKER,
-  CHOICE_POINT,
-  REVERSIBLE_ACTION
-};
-
 // This struct holds all parameters for the Solver object.
+// SolverParameters is only used by the Solver constructor to define solving
+// parameters such as the trail compression or the profile level.
+// Note this is for advanced users only.
 struct SolverParameters {
  public:
   enum TrailCompression {
@@ -182,18 +184,22 @@ struct SolverParameters {
   SolverParameters();
 
   // This parameter indicates if the solver should compress the trail
-  // during the search. No compression means the solver will be faster,
+  // during the search. No compression means that the solver will be faster,
   // but will use more memory.
   TrailCompression compress_trail;
+
   // This parameter indicates the default size of a block of the trail.
   // Compression applies at the block level.
   int trail_block_size;
-  // When a sum/min/max operations is applied on a large array, this
+
+  // When a sum/min/max operation is applied on a large array, this
   // array is recursively split into blocks of size 'array_split_size'.
   int array_split_size;
+
   // This parameters indicates if the solver should store the names of
   // the objets it manages.
   bool store_names;
+
   // Support for profiling propagation. LIGHT supports only a reduced
   // version of the summary. COMPLETE supports the full version of the
   // summary, as well as the csv export.
@@ -201,6 +207,8 @@ struct SolverParameters {
 };
 
 // This struct holds all parameters for the default search.
+// DefaultPhaseParameters is only used by Solver::MakeDefaultPhase methods.
+// Note this is for advanced users only.
 struct DefaultPhaseParameters {
  public:
   static const int kDefaultNumberOfSplits;
@@ -240,39 +248,48 @@ struct DefaultPhaseParameters {
   // This parameter describes how the next variable to instantiate
   // will be chosen.
   VariableSelection var_selection_schema;
+
   // This parameter describes which value to select for a given var.
   ValueSelection value_selection_schema;
+
   // Maximum number of intervals the initialization of impacts will scan
   // per variable.
   int initialization_splits;
+
   // The default phase will run heuristic periodically. This parameter
   // indicates if we should run all heuristics, or a randomly selected
   // one.
   bool run_all_heuristics;
+
   // The distance in nodes between each run of the heuristics.
   int heuristic_period;
+
   // The failure limit for each heuristic that we run.
   int heuristic_num_failures_limit;
+
   // Whether to keep the impact from the first search for other searches
   // or to recompute the impact for each new search.
   bool persistent_impact;
+
   // Seed used to initialize the random part in some heuristics.
   int random_seed;
+
   // Automatic Restart Size. When diving down, the size of the search
   // space disminishes. We maintain the minimal log of the size of the search
   // space with the following behavior:
   //   - A failure is ignored (no null size).
   //   - A solution has a size of 1 (and a log of 0).
-  // Then when backtracking, if the current log of the size of the
-  // search space is greater than the minimizal log size recorded +
-  // 'restart_log_size', then the search is restarted from scratch. A
-  // parameter < 0 means no restart. A parameter of 0 indicates that
-  // we restart after each failure.
+  // Then when backtracking, if the current log of the size of the search space
+  // is greater than the minimizal log size recorded + 'restart_log_size', then
+  // the search is restarted from scratch. A parameter < 0 means no restart.
+  // A parameter of 0 indicates that we restart after each failure.
   double restart_log_size;
+
   // This represents the amount of information displayed by the default search.
-  // None means no display, verbose means extra information.
+  // NONE means no display, VERBOSE means extra information.
   DisplayLevel display_level;
 };
+
 
 /////////////////////////////////////////////////////////////////////
 //
@@ -284,15 +301,15 @@ struct DefaultPhaseParameters {
 //   - Propagation
 //   - Search
 //
-// Usually, a Constraint Programming model consists of
-//   The creation of the Solver
-//   The creation of the decision variables of the model
-//   The creation of the constraints of the model and their addition to the
-//     solver() through the AddConstraint() method
-//   The creation of the main DecisionBuilder class
-//   The launch of the solve method with the above-created decision builder
+// Usually, a Constraint Programming code consists of
+//   - the creation of the Solver,
+//   - the creation of the decision variables of the model,
+//   - the creation of the constraints of the model and their addition to the
+//     solver() through the AddConstraint() method,
+//   - the creation of the main DecisionBuilder class,
+//   - the launch of the solve method with the above-created decision builder.
 //
-// At the time being, Solver is not MT_SAFE, nor MT_HOT.
+// For the time being, Solver is not MT_SAFE, nor MT_HOT.
 /////////////////////////////////////////////////////////////////////
 
 class Solver {
@@ -317,8 +334,441 @@ class Solver {
                           const CPSequenceVariableProto&>
       SequenceVariableBuilder;
 
+  // Holds semantic information stating that the 'expression' has been
+  // cast into 'variable' using the Var() method, and that
+  // 'maintainer' is responsible for maintaining the equality between
+  // 'variable' and 'expression'.
+  struct IntegerCastInfo {
+    IntegerCastInfo() : variable(NULL), expression(NULL), maintainer(NULL) {}
+    IntegerCastInfo(IntVar* const v, IntExpr* const e, Constraint* const c)
+        : variable(v), expression(e), maintainer(c) {}
+    IntVar* variable;
+    IntExpr* expression;
+    Constraint* maintainer;
+  };
+
   // Number of priorities for demons.
   static const int kNumPriorities = 3;
+
+  // This enum describes the strategy used to select the next branching
+  // variable at each node during the search.
+  enum IntVarStrategy {
+    // The default behavior is CHOOSE_FIRST_UNBOUND.
+    INT_VAR_DEFAULT,
+
+    // The simple selection is CHOOSE_FIRST_UNBOUND.
+    INT_VAR_SIMPLE,
+
+    // Select the first unbound variable.
+    // Variables are considered in the order of the vector of IntVars used
+    // to create the selector.
+    CHOOSE_FIRST_UNBOUND,
+
+    // Randomly select one of the remaining unbound variables.
+    CHOOSE_RANDOM,
+
+    // Among unbound variables, select the variable with the smallest size,
+    // i.e. the smallest number of possible values.
+    // In case of tie, the selected variables is the one with the lowest min
+    // value.
+    // In case of tie, the first one is selected, first being defined by the
+    // order in the vector of IntVars used to create the selector.
+    CHOOSE_MIN_SIZE_LOWEST_MIN,
+
+    // Among unbound variables, select the variable with the smallest size,
+    // i.e. the smallest number of possible values.
+    // In case of tie, the selected variables is the one with the highest min
+    // value.
+    // In case of tie, the first one is selected, first being defined by the
+    // order in the vector of IntVars used to create the selector.
+    CHOOSE_MIN_SIZE_HIGHEST_MIN,
+
+    // Among unbound variables, select the variable with the smallest size,
+    // i.e. the smallest number of possible values.
+    // In case of tie, the selected variables is the one with the lowest max
+    // value.
+    // In case of tie, the first one is selected, first being defined by the
+    // order in the vector of IntVars used to create the selector.
+    CHOOSE_MIN_SIZE_LOWEST_MAX,
+
+    // Among unbound variables, select the variable with the smallest size,
+    // i.e. the smallest number of possible values.
+    // In case of tie, the selected variables is the one with the highest max
+    // value.
+    // In case of tie, the first one is selected, first being defined by the
+    // order in the vector of IntVars used to create the selector.
+    CHOOSE_MIN_SIZE_HIGHEST_MAX,
+
+    // Selects the next unbound variable on a path, the path being defined by
+    // the variables: var[i] corresponds to the index of the next of i.
+    CHOOSE_PATH,
+  };
+
+  // This enum describes the strategy used to select the next variable value to
+  // set.
+  enum IntValueStrategy {
+    // The default behavior is ASSIGN_MIN_VALUE.
+    INT_VALUE_DEFAULT,
+
+    // The simple selection is ASSIGN_MIN_VALUE.
+    INT_VALUE_SIMPLE,
+
+    // Selects the min value of the selected variable.
+    ASSIGN_MIN_VALUE,
+
+    // Selects the max value of the selected variable.
+    ASSIGN_MAX_VALUE,
+
+    // Selects randomly one of the possible values of the selected variable.
+    ASSIGN_RANDOM_VALUE,
+
+    // Selects the first possible value which is the closest to the center
+    // of the domain of the selected variable.
+    // The center is defined as (min + max) / 2.
+    ASSIGN_CENTER_VALUE,
+  };
+
+  // This enum is used by Solver::MakePhase to specify how to select variables
+  // and values during the search.
+  // In Solver::MakePhase(const std::vector<IntVar*>&, IntVarStrategy,
+  // IntValueStrategy), variables are selected first, and then the associated
+  // value.
+  // In Solver::MakePhase(const std::vector<IntVar*>& vars, IndexEvaluator2*,
+  // EvaluatorStrategy), the selection is done scanning every pair
+  // <variable, possible value>. The next selected pair is then the best among
+  // all possibilities, i.e. the pair with the smallest evaluation.
+  // As this is costly, two options are offered: static or dynamic evaluation.
+  enum EvaluatorStrategy {
+    // Pairs are compared at the first call of the selector, and results are
+    // cached. Next calls to the selector use the previous computation, and so
+    // are not up-to-date, e.g. some <variable, value> pairs may not be possible
+    // anymore due to propagation since the first to call.
+    CHOOSE_STATIC_GLOBAL_BEST,
+
+    // Pairs are compared each time a variable is selected. That way all pairs
+    // are relevant and evaluation is accurate.
+    // This strategy runs in O(number-of-pairs) at each variable selection,
+    // versus O(1) in the static version.
+    CHOOSE_DYNAMIC_GLOBAL_BEST,
+  };
+
+  // Used for scheduling. Not yet implemented.
+  enum SequenceStrategy {
+    SEQUENCE_DEFAULT,
+    SEQUENCE_SIMPLE,
+    CHOOSE_MIN_SLACK_RANK_FORWARD,
+  };
+
+
+  // Used for scheduling. Not yet implemented.
+  enum IntervalStrategy {
+    INTERVAL_DEFAULT,
+    INTERVAL_SIMPLE,
+    INTERVAL_SET_TIMES_FORWARD
+  };
+
+  // This enum is used in Solver::MakeOperator to specify the neighborhood to
+  // create.
+  enum LocalSearchOperators {
+    // Operator which reverves a sub-chain of a path. It is called TwoOpt
+    // because it breaks two arcs on the path; resulting paths are called
+    // two-optimal.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
+    // (where (1, 5) are first and last nodes of the path and can therefore not
+    // be moved):
+    //   1 -> [3 -> 2] -> 4  -> 5
+    //   1 -> [4 -> 3  -> 2] -> 5
+    //   1 ->  2 -> [4 -> 3] -> 5
+    TWOOPT,
+
+    // Relocate: OROPT and RELOCATE.
+    // Operator which moves a sub-chain of a path to another position; the
+    // specified chain length is the fixed length of the chains being moved.
+    // When this length is 1, the operator simply moves a node to another
+    // position.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5, for a chain length
+    // of 2 (where (1, 5) are first and last nodes of the path and can
+    // therefore not be moved):
+    //   1 ->  4 -> [2 -> 3] -> 5
+    //   1 -> [3 -> 4] -> 2  -> 5
+    //
+    // Using Relocate with chain lengths of 1, 2 and 3 together is equivalent to
+    // the OrOpt operator on a path. The OrOpt operator is a limited version of
+    // 3Opt (breaks 3 arcs on a path).
+    OROPT,
+
+    // Relocate neighborhood with length of 1 (see OROPT comment).
+    RELOCATE,
+
+    // Operator which exchanges the positions of two nodes.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
+    // (where (1, 5) are first and last nodes of the path and can therefore not
+    // be moved):
+    //   1 -> [3] -> [2] ->  4  -> 5
+    //   1 -> [4] ->  3  -> [2] -> 5
+    //   1 ->  2  -> [4] -> [3] -> 5
+    EXCHANGE,
+
+    // Operator which cross exchanges the starting chains of 2 paths, including
+    // exchanging the whole paths.
+    // First and last nodes are not moved.
+    // Possible neighbors for the paths 1 -> 2 -> 3 -> 4 -> 5 and 6 -> 7 -> 8
+    // (where (1, 5) and (6, 8) are first and last nodes of the paths and can
+    // therefore not be moved):
+    //   1 -> [7] -> 3 -> 4 -> 5  6 -> [2] -> 8
+    //   1 -> [7] -> 4 -> 5       6 -> [2 -> 3] -> 8
+    //   1 -> [7] -> 5            6 -> [2 -> 3 -> 4] -> 8
+    CROSS,
+
+    // Operator which inserts an inactive node into a path.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
+    // (where 1 and 4 are first and last nodes of the path) are:
+    //   1 -> [5] ->  2  ->  3  -> 4
+    //   1 ->  2  -> [5] ->  3  -> 4
+    //   1 ->  2  ->  3  -> [5] -> 4
+    MAKEACTIVE,
+
+    // Operator which makes path nodes inactive.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 (where 1 and 4 are first
+    // and last nodes of the path) are:
+    //   1 -> 3 -> 4 with 2 inactive
+    //   1 -> 2 -> 4 with 3 inactive
+    MAKEINACTIVE,
+
+    // Operator which replaces an active node by an inactive one.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
+    // (where 1 and 4 are first and last nodes of the path) are:
+    //   1 -> [5] ->  3  -> 4 with 2 inactive
+    //   1 ->  2  -> [5] -> 4 with 3 inactive
+    SWAPACTIVE,
+
+    // Operator which makes an inactive node active and an active one inactive.
+    // It is similar to SwapActiveOperator excepts that it tries to insert the
+    // inactive node in all possible positions instead of just the position of
+    // the node made inactive.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
+    // (where 1 and 4 are first and last nodes of the path) are:
+    //   1 -> [5] ->  3  -> 4 with 2 inactive
+    //   1 ->  3  -> [5] -> 4 with 2 inactive
+    //   1 -> [5] ->  2  -> 4 with 3 inactive
+    //   1 ->  2  -> [5] -> 4 with 3 inactive
+    EXTENDEDSWAPACTIVE,
+
+    // Operator which relaxes two sub-chains of three consecutive arcs each.
+    // Each sub-chain is defined by a start node and the next three arcs. Those
+    // six arcs are relaxed to build a new neighbor.
+    // PATHLNS explores all possible pairs of starting nodes and so defines
+    // n^2 neighbors, n being the number of nodes.
+    // Note that the two sub-chains can be part of the same path; they even may
+    // overlap.
+    PATHLNS,
+
+    // Operator which relaxes all inactive nodes and one sub-chain of six
+    // consecutive arcs. That way the path can be improve by inserting inactive
+    // nodes or swaping arcs.
+    UNACTIVELNS,
+
+    // Operator which defines one neighbor per variable. Each neighbor tries to
+    // increment by one the value of the corresponding variable. When a new
+    // solution is found the neighborhood is rebuilt from scratch, i.e. tries
+    // to increment values in the variable order.
+    // Consider for instance variables x and y. x is incremented 1 by 1 to its
+    // max, and when it is not possible to increment x anymore, y is incremented
+    // once. If this is a solution, then next neighbor tries to increment x.
+    INCREMENT,
+
+    // Operator which defines a neighborhood to decrement values.
+    // The behavior is the same as INCREMENT, except values are decremented
+    // instead of incremented.
+    DECREMENT,
+
+    // Operator which defines one neighbor per variable. Each neighbor relaxes
+    // one variable.
+    // When a new solution is found the neighborhood is rebuilt from scratch.
+    // Consider for instance variables x and y. First x is relaxed and the
+    // solver is looking for the best possible solution (with only x relaxed).
+    // Then y is relaxed, and the solver is looking for a new solution.
+    // If a new solution is found, then the next variable to be relaxed is x.
+    SIMPLELNS
+  };
+
+  // This enum is used in Solver::MakeOperator associated with an evaluator
+  // to specify the neighborhood to create.
+  enum EvaluatorLocalSearchOperators {
+    // Lin–Kernighan local search.
+    // While the accumulated local gain is positive, perform a 2opt or a 3opt
+    // move followed by a series of 2opt moves. Return a neighbor for which the
+    // global gain is positive.
+    LK,
+
+    // Sliding TSP operator.
+    // Uses an exact dynamic programming algorithm to solve the TSP
+    // corresponding to path sub-chains.
+    // For a subchain 1 -> 2 -> 3 -> 4 -> 5 -> 6, solves the TSP on
+    // nodes A, 2, 3, 4, 5, where A is a merger of nodes 1 and 6 such that
+    // cost(A,i) = cost(1,i) and cost(i,A) = cost(i,6).
+    TSPOPT,
+
+    // TSP-base LNS.
+    // Randomly merge consecutive nodes until n "meta"-nodes remain and solve
+    // the corresponding TSP.
+    // This is an "unlimited" neighborhood which must be stopped by search
+    // limits. To force diversification, the operator iteratively forces each
+    // node to serve as base of a meta-node.
+    TSPLNS
+  };
+
+  // This enum is used in Solver::MakeLocalSearchObjectiveFilter. It specifies
+  // the behavior of the objective filter to create. The goal is to define
+  // under which condition a move is accepted based on the current objective
+  // value.
+  enum LocalSearchFilterBound {
+    // Move is accepted when the current objective value >= objective.Min.
+    GE,
+    // Move is accepted when the current objective value <= objective.Max.
+    LE,
+    // Move is accepted when the current objective value is in the interval
+    // objective.Min .. objective.Max.
+    EQ
+  };
+
+  // This enum is used in Solver::MakeLocalSearchObjectiveFilter. It specifies
+  // the operation used in the objective to build the corresponding filter.
+  enum LocalSearchOperation {
+    // The objective is the sum of the variables defined in
+    // Solver::MakeLocalSearchObjectiveFilter.
+    SUM,
+
+    // The objective is the product of the variables defined in
+    // Solver::MakeLocalSearchObjectiveFilter.
+    PROD,
+
+    // The objective is the max of the variables defined in
+    // Solver::MakeLocalSearchObjectiveFilter.
+    MAX,
+
+    // The objective is the min of the variables defined in
+    // Solver::MakeLocalSearchObjectiveFilter.
+    MIN
+  };
+
+  // This enum represents the three possible priorities for a demon in the
+  // Solver queue.
+  // Note this is for advanced users only.
+  enum DemonPriority {
+    // DELAYED_PRIORITY is the lowest priority: Demons will be processed after
+    // VAR_PRIORITY and NORMAL_PRIORITY demons.
+    DELAYED_PRIORITY = 0,
+
+    // VAR_PRIORITY is between DELAYED_PRIORITY and NORMAL_PRIORITY.
+    VAR_PRIORITY = 1,
+
+    // NORMAL_PRIORITY is the highest priority: Demons will be processed first.
+    NORMAL_PRIORITY = 2,
+  };
+
+  // This enum is used in Solver::MakeIntervalVarRelation to specify the
+  // temporal relation between the two intervals t1 and t2.
+  enum BinaryIntervalRelation {
+    // t1 ends after t2 end, i.e. End(t1) >= End(t2).
+    ENDS_AFTER_END,
+
+    // t1 ends after t2 start, i.e. End(t1) >= Start(t2).
+    ENDS_AFTER_START,
+
+    // t1 ends at t2 end, i.e. End(t1) == End(t2).
+    ENDS_AT_END,
+
+    // t1 ends at t2 start, i.e. End(t1) == Start(t2).
+    ENDS_AT_START,
+
+    // t1 starts after t2 end, i.e. Start(t1) >= End(t2).
+    STARTS_AFTER_END,
+
+    // t1 starts after t2 start, i.e. Start(t1) >= Start(t2).
+    STARTS_AFTER_START,
+
+    // t1 starts at t2 end, i.e. Start(t1) == End(t2).
+    STARTS_AT_END,
+
+    // t1 starts at t2 start, i.e. Start(t1) == Start(t2).
+    STARTS_AT_START,
+
+    // STARTS_AT_START and ENDS_AT_END at the same time.
+    // t1 starts at t2 start, i.e. Start(t1) == Start(t2).
+    // t1 ends at t2 end, i.e. End(t1) == End(t2).
+    STAYS_IN_SYNC
+  };
+
+  // This enum is used in Solver::MakeIntervalVarRelation to specify the
+  // temporal relation between an interval t and an integer d.
+  enum UnaryIntervalRelation {
+    // t ends after d, i.e. End(t) >= d.
+    ENDS_AFTER,
+
+    // t ends at d, i.e. End(t) == d.
+    ENDS_AT,
+
+    // t ends before d, i.e. End(t) <= d.
+    ENDS_BEFORE,
+
+    // t starts after d, i.e. Start(t) >= d.
+    STARTS_AFTER,
+
+    // t starts at d, i.e. Start(t) == d.
+    STARTS_AT,
+
+    // t starts before d, i.e. Start(t) <= d.
+    STARTS_BEFORE,
+
+    // STARTS_BEFORE and ENDS_AFTER at the same time, i.e. d is in t.
+    // t starts before d, i.e. Start(t) <= d.
+    // t ends after d, i.e. End(t) >= d.
+    CROSS_DATE,
+
+    // STARTS_AFTER or ENDS_BEFORE, i.e. d is not in t.
+    // t starts after d, i.e. Start(t) >= d.
+    // t ends before d, i.e. End(t) <= d.
+    AVOID_DATE
+  };
+
+  // The Solver is responsible for creating the search tree. Thanks to the
+  // DecisionBuilder, it creates a new decision with two branches at each node:
+  // left and right.
+  // The DecisionModification enum is used to specify how the branch selector
+  // should behave.
+  enum DecisionModification {
+    // Keep the default behavior, i.e. apply left branch first, and then right
+    // branch in case of backtracking.
+    NO_CHANGE,
+
+    // Right branches are ignored. This is used to make the code faster when
+    // backtrack makes no sense or is not useful.
+    // This is faster as there is no need to create one new node per decision.
+    KEEP_LEFT,
+
+    // Left branches are ignored. This is used to make the code faster when
+    // backtrack makes no sense or is not useful.
+    // This is faster as there is no need to create one new node per decision.
+    KEEP_RIGHT,
+
+    // Backtrack to the previous decisions, i.e. left and right branches are
+    // not applied.
+    KILL_BOTH,
+
+    // Apply right branch first. Left branch will be applied in case of
+    // backtracking.
+    SWITCH_BRANCHES
+  };
+
+  // This enum is used internally in private methods Solver::PushState and
+  // Solver::PopState to tag states in the search tree.
+  enum MarkerType {
+    SENTINEL,
+    SIMPLE_MARKER,
+    CHOICE_POINT,
+    REVERSIBLE_ACTION
+  };
 
   // This enum represents the state of the solver w.r.t. the search.
   enum SolverState {
@@ -330,123 +780,9 @@ class Solver {
     PROBLEM_INFEASIBLE  // After search, the model is infeasible.
   };
 
-  enum IntVarStrategy {
-    INT_VAR_DEFAULT,
-    INT_VAR_SIMPLE,
-    CHOOSE_FIRST_UNBOUND,
-    CHOOSE_RANDOM,
-    CHOOSE_MIN_SIZE_LOWEST_MIN,
-    CHOOSE_MIN_SIZE_HIGHEST_MIN,
-    CHOOSE_MIN_SIZE_LOWEST_MAX,
-    CHOOSE_MIN_SIZE_HIGHEST_MAX,
-    CHOOSE_PATH,
-  };
-
-  enum IntValueStrategy {
-    INT_VALUE_DEFAULT,
-    INT_VALUE_SIMPLE,
-    ASSIGN_MIN_VALUE,
-    ASSIGN_MAX_VALUE,
-    ASSIGN_RANDOM_VALUE,
-    ASSIGN_CENTER_VALUE,
-  };
-
-  enum EvaluatorStrategy {
-    CHOOSE_STATIC_GLOBAL_BEST,
-    CHOOSE_DYNAMIC_GLOBAL_BEST,
-  };
-
-  enum SequenceStrategy {
-    SEQUENCE_DEFAULT,
-    SEQUENCE_SIMPLE,
-    CHOOSE_MIN_SLACK_RANK_FORWARD,
-  };
-
-  enum IntervalStrategy {
-    INTERVAL_DEFAULT,
-    INTERVAL_SIMPLE,
-    INTERVAL_SET_TIMES_FORWARD
-  };
-
-  enum LocalSearchOperators {
-    TWOOPT,
-    OROPT,
-    RELOCATE,
-    EXCHANGE,
-    CROSS,
-    MAKEACTIVE,
-    MAKEINACTIVE,
-    SWAPACTIVE,
-    EXTENDEDSWAPACTIVE,
-    PATHLNS,
-    UNACTIVELNS,
-    INCREMENT,
-    DECREMENT,
-    SIMPLELNS
-  };
-
-  enum EvaluatorLocalSearchOperators {
-    LK,
-    TSPOPT,
-    TSPLNS
-  };
-
-  enum LocalSearchFilterBound {
-    GE,
-    LE,
-    EQ
-  };
-
-  enum LocalSearchOperation {
-    SUM,
-    PROD,
-    MAX,
-    MIN
-  };
-
-  enum DemonPriority {
-    DELAYED_PRIORITY = 0,
-    VAR_PRIORITY = 1,
-    NORMAL_PRIORITY = 2,
-  };
-
-  enum BinaryIntervalRelation {
-    ENDS_AFTER_END,
-    ENDS_AFTER_START,
-    ENDS_AT_END,
-    ENDS_AT_START,
-    STARTS_AFTER_END,
-    STARTS_AFTER_START,
-    STARTS_AT_END,
-    STARTS_AT_START,
-    STAYS_IN_SYNC
-  };
-
-  enum UnaryIntervalRelation {
-    ENDS_AFTER,
-    ENDS_AT,
-    ENDS_BEFORE,
-    STARTS_AFTER,
-    STARTS_AT,
-    STARTS_BEFORE,
-    CROSS_DATE,
-    AVOID_DATE
-  };
-
-  enum DecisionModification {
-    NO_CHANGE,
-    KEEP_LEFT,
-    KEEP_RIGHT,
-    KILL_BOTH,
-    SWITCH_BRANCHES
-  };
-
   explicit Solver(const string& modelname);
   Solver(const string& modelname, const SolverParameters& parameters);
   ~Solver();
-
-  // Init.
-  void Init();
 
   // Read-only Parameters.
   const SolverParameters& parameters() const { return parameters_; }
@@ -460,38 +796,118 @@ class Solver {
     InternalSaveValue(o);
   }
 
-  // The RevAlloc method stores the corresponding object in a stack.
-  // When the solver will backtrack, it will loop through all stored
-  // objects and call delete on them.
-  // Supported object types are arrays of integers (32 and 64 bits),
-  // BaseObjects and arrays of BaseObjects.
-  // After a call to RevAlloc, solver takes ownership of the object memory and
-  // will delete the object itself. The user must not delete the object
-  // after it has be passed to the RevAlloc method.
-  template <class T> T* RevAlloc(T* o) {
-    return reinterpret_cast<T*>(SafeRevAlloc(o));
+  // Registers the given object as being reversible. By calling this method, the
+  // caller gives ownership of the object to the solver, which will delete it
+  // when there is a backtrack out of the current state.
+  //
+  // Returns the argument for convenience: this way, the caller may directly
+  // invoke a constructor in the argument, without having to store the pointer
+  // first.
+  //
+  // This function is only for users that define their own subclasses of
+  // BaseObject: for all subclasses predefined in the library, the corresponding
+  // factory methods (e.g., MakeIntVar(...), MakeAllDifferent(...) already take
+  // care of the registration.
+  template <typename T> T* RevAlloc(T* object) {
+    // Note that if class MyObject inherits from BaseObject and has a default
+    // constructor, then:
+    // solver.RevAlloc(new MyObject());      compiles and does what you expect,
+    // solver.RevAlloc(new MyObject[26]);    compiles but should not be used:
+    //                                       it will NOT delete the array.
+    // solver.RevAlloc(new MyObject*[53]);   does not compile, because MyObject*
+    //                                       does not match BaseObject*.
+    //
+    // TODO(user): either make that solver.RevAlloc(new MyObject[26]) does
+    // not compile, or make it not leak.
+    // TODO(user): Split between a function that takes an array as argument and
+    // a version that takes a pointer on a BaseObject, and rename to something
+    // more explicit like RegisterReversibleObject / RegisterReversibleArray or
+    // similar. Check whether this split fixes the leak mentioned above.
+    return reinterpret_cast<T*>(SafeRevAlloc(object));
   }
 
   // propagation
 
-  // Adds the constraint "c" to the solver.
+  // Adds the constraint 'c' to the model.
+  //
+  // After calling this method, and until there is a backtrack that undoes the
+  // addition, any assignment of variables to values must satisfy the given
+  // constraint in order to be considered feasible. There are two fairly
+  // different use cases:
+  //
+  // - the most common use case is modeling: the given constraint is really part
+  // of the problem that the user is trying to solve. In this use case,
+  // AddConstraint is called outside of search (i.e., with <tt>state() ==
+  // OUTSIDE_SEARCH</tt>). Most users should only use AddConstraint in this way.
+  // In this case, the constraint will belong to the model forever: it cannot
+  // not be removed by backtracking.
+  //
+  // - a rarer use case is that 'c' is not a real constraint of the model. It
+  // may be a constraint generated by a branching decision (a constraint whose
+  // goal is to restrict the search space), a symmetry breaking constraint (a
+  // constraint that does restrict the search space, but in a way that cannot
+  // have an impact on the quality of the solutions in the subtree), or an
+  // inferred constraint that, while having no semantic value to the model (it
+  // does not restrict the set of solutions), is worth having because we believe
+  // it may strengthen the propagation. In these cases, it happens that the
+  // constraint is added during the search (i.e., with <tt>state() ==
+  // IN_SEARCH</tt> or <tt>state() == IN_ROOT_NODE</tt>). When a constraint is
+  // added during a search, it applies only to the subtree of the search tree
+  // rooted at the current node, and will be automatically removed by
+  // bracktracking.
+  //
+  // This method does not take ownership of the constraint. If the constraint
+  // has been created by any factory method (Solver::MakeXXX), it will
+  // automatically be deleted. However, power users who implement their own
+  // constraints should do: <tt>solver.AddConstraint(solver.RevAlloc(new
+  // MyConstraint(...));</tt>
   void AddConstraint(Constraint* const c);
-  // Adds the constraint 'c' to the solver and marks it as a delegate
-  // constraint, that is a constraint created calling Var() on an
-  // expression.
-  void AddDelegateConstraint(Constraint* const c);
+  // Adds the constraint 'c' to the solver and marks it as a cast
+  // constraint, that is, a constraint created calling Var() on an
+  // expression. This is used internally.
+  void AddCastConstraint(CastConstraint* const c,
+                         IntVar* const target_var,
+                         IntExpr* const casted_expression);
 
-  // search
-
-  // Top level solve using a decision builder and up to four search
-  // monitors, usually one for the objective, one for the limits and
-  // one to collect solutions. Please note that the search is
-  // backtracked when the Solve() exits. Thus, solutions and values
-  // should be exported either using a decision builder, or a solution
-  // collector. You can also decompose with a NewSearch(db),
-  // NextSolution(), EndSearch() and access each feasible solution
-  // after each successful call to NextSolution().  Solve() returns
-  // true if the search has found solutions, false otherwise.
+  // @{
+  // Solves the problem using the given DecisionBuilder and returns true if a
+  // solution was found and accepted.
+  //
+  // These methods are the ones most users should use to search for a solution.
+  // Note that the definition of 'solution' is subtle. A solution here is
+  // defined as a leaf of the search tree with respect to the given decision
+  // builder for which there is no failure. What this means is that, contrary to
+  // intuition, a solution may not have all variables of the model bound. It is
+  // the responsibility of the decision builder to keep returning decisions
+  // until all variables are indeed bound. The most extreme counterexample is
+  // calling Solve with a trivial decision builder whose Next() method always
+  // returns NULL. In this case, Solve immediately returns 'true', since not
+  // assigning any variable to any value is a solution, unless the root node
+  // propagation discovers that the model is infeasible.
+  //
+  // These function must be called from outside of search, meaning that
+  // <tt>state() == OUTSIDE_SEARCH</tt>.
+  //
+  // Solve will terminate whenever any of the following event arise:
+  // * A search monitor asks the solver to terminate the search by calling
+  // SearchMonitor::FinishCurrentSearch().
+  // * A solution is found that is accepted by all search monitors, and none of
+  // the search monitors decides to search for another one.
+  //
+  // Upon search termination, there will be a series of backtracks all the way
+  // to the top level. This means that a user cannot expect to inspect the
+  // solution by querying variables after a call to Solve(): all the information
+  // will be lost. In order to do something with the solution, the user must
+  // either:
+  // * Use a search monitor that can process such a leaf. See, in particular,
+  //     the SolutionCollector class.
+  // * Do not use Solve. Instead, use the more fine-grained approach using
+  //     methods NewSearch(...), NextSolution(), and EndSearch().
+  //
+  // @param db The decision builder that will generate the search tree.
+  // @param monitors A vector of search monitors that will be notified of
+  // various events during the search. In their reaction to these events, such
+  // monitors may influence the search.
   bool Solve(DecisionBuilder* const db, const std::vector<SearchMonitor*>& monitors);
   bool Solve(DecisionBuilder* const db,
              SearchMonitor* const * monitors, int size);
@@ -509,12 +925,14 @@ class Solver {
              SearchMonitor* const m2,
              SearchMonitor* const m3,
              SearchMonitor* const m4);
+  // @}
 
+  // @{
   // Decomposed top level search.
   // The code should look like
   // solver->NewSearch(db);
   // while (solver->NextSolution()) {
-  //   .. use the current solution
+  //   //.. use the current solution
   // }
   // solver()->EndSearch();
   void NewSearch(DecisionBuilder* const db,
@@ -539,6 +957,8 @@ class Solver {
   bool NextSolution();
   void RestartSearch();
   void EndSearch();
+  // @}
+
 
   // Nested solve using a decision builder and up to three
   //   search monitors, usually one for the objective, one for the limits
@@ -565,16 +985,15 @@ class Solver {
                    SearchMonitor* const m2,
                    SearchMonitor* const m3);
 
-  // This method returns the validity of the given assignment against the
-  // current model.
+  // Checks whether the given assignment satisfies all the relevant constraints.
   bool CheckAssignment(Assignment* const assignment);
 
-  // Checks if adding this constraint will lead to an immediate
+  // Checks whether adding this constraint will lead to an immediate
   // failure.  It will return true if the model is already
   // inconsistent, or if adding the constraint makes it inconsistent.
   bool CheckConstraint(Constraint* const constraint);
 
-  // state of the solver.
+  // State of the solver.
   SolverState state() const { return state_; }
 
   // Abandon the current branch in the search tree. A backtrack will follow.
@@ -2308,6 +2727,7 @@ class Solver {
 #endif
 
  private:
+  void Init();  // Initialization. To be called by the constructors only.
   void NotifyFailureToDemonMonitor();
   void PushState(MarkerType t, const StateInfo& info);
   MarkerType PopState(StateInfo* info);
@@ -2369,9 +2789,8 @@ class Solver {
   const string name_;
   const SolverParameters parameters_;
   hash_map<const PropagationBaseObject*, string> propagation_object_names_;
-  hash_map<const PropagationBaseObject*,
-           std::pair<string, const PropagationBaseObject*> > delegate_objects_;
-  hash_set<const Constraint*> delegate_constraints_;
+  hash_map<const PropagationBaseObject*, IntegerCastInfo> cast_information_;
+  hash_set<const Constraint*> cast_constraints_;
   const string empty_name_;
   scoped_ptr<Queue> queue_;
   scoped_ptr<Trail> trail_;
@@ -2873,10 +3292,27 @@ class Constraint : public PropagationBaseObject {
   virtual void Accept(ModelVisitor* const visitor) const;
 
   // Is the constraint created by a cast from expression to integer variable?
-  bool IsDelegate() const;
+  bool IsCastConstraint() const;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(Constraint);
+};
+
+// Cast constraints are special channeling constraints the goal of
+// which is to keep a variable in sync with an expression.  They are
+// created internally when Var() is called on a subclass of IntExpr.
+class CastConstraint : public Constraint {
+ public:
+  CastConstraint(Solver* const solver, IntVar* const target_var)
+      : Constraint(solver), target_var_(target_var) {
+    CHECK_NOTNULL(target_var);
+  }
+  virtual ~CastConstraint() {}
+
+  IntVar* target_var() const { return target_var_; }
+
+ protected:
+  IntVar* const target_var_;
 };
 
 // A search monitor is a simple set of callbacks to monitor all search events
@@ -2928,7 +3364,7 @@ class SearchMonitor : public BaseObject {
 
   // This method is called when a valid solution is found. If the
   // return value is true, then search will resume after. If the result
-  // is false, then search will stop there..
+  // is false, then search will stop there.
   virtual bool AtSolution();
 
   // When the search tree is finished.

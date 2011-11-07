@@ -108,8 +108,6 @@ class BaseIntExpr : public IntExpr {
 
   virtual IntVar* Var();
   virtual IntVar* CastToVar();
-  void AddDelegateName(const string& prefix,
-                       const PropagationBaseObject* delegate) const;
 
  private:
   IntVar* var_;

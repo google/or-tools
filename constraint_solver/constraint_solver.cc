@@ -377,11 +377,11 @@ struct StateInfo {  // This is an internal structure to store
 
 struct StateMarker {
  public:
-  StateMarker(MarkerType t, const StateInfo& info);
+  StateMarker(Solver::MarkerType t, const StateInfo& info);
   friend class Solver;
   friend struct Trail;
  private:
-  MarkerType type_;
+  Solver::MarkerType type_;
   int rev_int_index_;
   int rev_int64_index_;
   int rev_uint64_index_;
@@ -397,7 +397,7 @@ struct StateMarker {
   StateInfo info_;
 };
 
-StateMarker::StateMarker(MarkerType t, const StateInfo& info)
+StateMarker::StateMarker(Solver::MarkerType t, const StateInfo& info)
     : type_(t),
       rev_int_index_(0),
       rev_int64_index_(0),
@@ -1184,6 +1184,9 @@ bool Search::AcceptSolution() {
        it != monitors_.end();
        ++it) {
     if (!(*it)->AcceptSolution()) {
+      // Even though we know the return value, we cannot return yet: this would
+      // break the contract we have with solution monitors. They all deserve
+      // a chance to look at the solution.
       valid = false;
     }
   }
@@ -1196,6 +1199,9 @@ bool Search::AtSolution() {
        it != monitors_.end();
        ++it) {
     if ((*it)->AtSolution()) {
+      // Even though we know the return value, we cannot return yet: this would
+      // break the contract we have with solution monitors. They all deserve
+      // a chance to look at the solution.
       should_continue = true;
     }
   }
@@ -1392,7 +1398,7 @@ Solver::~Solver() {
   BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
 
   StateInfo info;
-  MarkerType finalType = PopState(&info);
+  Solver::MarkerType finalType = PopState(&info);
   // Not popping a SENTINEL in Solver destructor.
   DCHECK_EQ(finalType, SENTINEL);
   // Not popping initial SENTINEL in Solver destructor.
@@ -1486,11 +1492,11 @@ void Solver::PushState() {
 
 void Solver::PopState() {
   StateInfo info;
-  MarkerType t = PopState(&info);
+  Solver::MarkerType t = PopState(&info);
   CHECK_EQ(SIMPLE_MARKER, t);
 }
 
-void Solver::PushState(MarkerType t, const StateInfo& info) {
+void Solver::PushState(Solver::MarkerType t, const StateInfo& info) {
   StateMarker* m = new StateMarker(t, info);
   if (t != REVERSIBLE_ACTION || info.int_info == 0) {
     m->rev_int_index_ = trail_->rev_ints_.size();
@@ -1515,7 +1521,7 @@ void Solver::AddBacktrackAction(Action* a, bool fast) {
   PushState(REVERSIBLE_ACTION, info);
 }
 
-MarkerType Solver::PopState(StateInfo* info) {
+Solver::MarkerType Solver::PopState(StateInfo* info) {
   CHECK(!searches_.back()->marker_stack_.empty())
       << "PopState() on an empty stack";
   CHECK(info != NULL);
@@ -1523,7 +1529,7 @@ MarkerType Solver::PopState(StateInfo* info) {
   if (m->type_ != REVERSIBLE_ACTION || m->info_.int_info == 0) {
     trail_->BacktrackTo(m);
   }
-  MarkerType t = m->type_;
+  Solver::MarkerType t = m->type_;
   (*info) = m->info_;
   searches_.back()->marker_stack_.pop_back();
   delete m;
@@ -1618,11 +1624,17 @@ void Solver::AddConstraint(Constraint* const c) {
   }
 }
 
-void Solver::AddDelegateConstraint(Constraint* const c) {
-  if (state_ != IN_SEARCH) {
-    delegate_constraints_.insert(c);
+void Solver::AddCastConstraint(CastConstraint* const constraint,
+                               IntVar* const target_var,
+                               IntExpr* const expr) {
+  if (constraint != NULL) {
+    if (state_ != IN_SEARCH) {
+      cast_constraints_.insert(constraint);
+      cast_information_[target_var] =
+          Solver::IntegerCastInfo(target_var, expr, constraint);
+    }
+    AddConstraint(constraint);
   }
-  AddConstraint(c);
 }
 
 void Solver::Accept(ModelVisitor* const visitor) const {
@@ -1878,7 +1890,7 @@ bool Solver::BacktrackOneLevel(Decision** fail_decision) {
   bool end_loop = false;
   while (!end_loop) {
     StateInfo info;
-    MarkerType t = PopState(&info);
+    Solver::MarkerType t = PopState(&info);
     switch (t) {
       case SENTINEL:
         CHECK_EQ(info.ptr_info, this) << "Wrong sentinel found";
@@ -1965,7 +1977,7 @@ void Solver::BacktrackToSentinel(int magic_code) {
   bool end_loop = search->sentinel_pushed_ == 0;
   while (!end_loop) {
     StateInfo info;
-    MarkerType t = PopState(&info);
+    Solver::MarkerType t = PopState(&info);
     switch (t) {
       case SENTINEL: {
         CHECK_EQ(info.ptr_info, this) << "Wrong sentinel found";
@@ -2400,12 +2412,10 @@ string Solver::GetName(const PropagationBaseObject* object) const {
   if (name != NULL) {
     return *name;
   }
-  const std::pair<string, const PropagationBaseObject*>* delegate_object =
-      FindOrNull(delegate_objects_, object);
-  if (delegate_object != NULL) {
-    const string& prefix = delegate_object->first;
-    const PropagationBaseObject* delegate = delegate_object->second;
-    return prefix + "<" + delegate->name() + ">";
+  const IntegerCastInfo* const cast_info =
+      FindOrNull(cast_information_, object);
+  if (cast_info != NULL && cast_info->expression != NULL) {
+    return StringPrintf("Var<%s>", cast_info->expression->name().c_str());
   }
   return empty_name_;
 }
@@ -2423,12 +2433,12 @@ bool Solver::HasName(const PropagationBaseObject* const object) const {
 
 // ------------------ Useful Operators ------------------
 
-std::ostream& operator << (std::ostream& out, const Solver* const s) {  // NOLINT
+std::ostream& operator <<(std::ostream& out, const Solver* const s) {  // NOLINT
   out << s->DebugString();
   return out;
 }
 
-std::ostream& operator <<(std::ostream& out, const BaseObject* o) {  // NOLINT
+std::ostream& operator <<(std::ostream& out, const BaseObject* const o) {  // NOLINT
   out << o->DebugString();
   return out;
 }
@@ -2832,8 +2842,8 @@ void Constraint::Accept(ModelVisitor* const visitor) const {
   visitor->EndVisitConstraint("unknown", this);
 }
 
-bool Constraint::IsDelegate() const {
-  return ContainsKey(solver()->delegate_constraints_, this);
+bool Constraint::IsCastConstraint() const {
+  return ContainsKey(solver()->cast_constraints_, this);
 }
 
 // ----- Class IntExpr -----

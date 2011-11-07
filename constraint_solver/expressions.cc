@@ -2520,7 +2520,6 @@ IntVar* PlusIntCstExpr::CastToVar() {
     default:
       cast = s->RevAlloc(new PlusCstIntVar(s, var, value_));
   }
-  AddDelegateName("Var", cast);
   return cast;
 }
 
@@ -2641,7 +2640,6 @@ class SubIntCstExpr : public BaseIntExpr {
 IntVar* SubIntCstExpr::CastToVar() {
   Solver* const s = solver();
   IntVar* const var = s->RevAlloc(new SubCstIntVar(s, expr_->Var(), value_));
-  AddDelegateName("Var", var);
   return var;
 }
 
@@ -2689,7 +2687,6 @@ class OppIntExpr : public BaseIntExpr {
 IntVar* OppIntExpr::CastToVar() {
   Solver* const s = solver();
   IntVar* const var = s->RevAlloc(new OppIntVar(s, expr_->Var()));
-  AddDelegateName("Var", var);
   return var;
 }
 
@@ -2763,7 +2760,6 @@ IntVar* TimesIntPosCstExpr::CastToVar() {
   } else {
     var = s->RevAlloc(new TimesPosCstIntVar(s, expr_->Var(), value_));
   }
-  AddDelegateName("Var", var);
   return var;
 }
 
@@ -3842,8 +3838,10 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
 
         // If the penalty is 0, we can push the "confort zone or zone
         // of no cost towards infinity.
-}
+  }
+
   virtual ~SimpleConvexPiecewiseExpr() {}
+
   virtual int64 Min() const {
     const int64 vmin = var_->Min();
     const int64 vmax = var_->Max();
@@ -3855,6 +3853,7 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
       return 0LL;
     }
   }
+
   virtual void SetMin(int64 m) {
     if (m <= 0) {
       return;
@@ -3869,6 +3868,7 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
                       early_date_ - PosIntDivUp(m , early_cost_) + 1);
     var_->RemoveInterval(lb, rb);
   }
+
   virtual int64 Max() const {
     const int64 vmin = var_->Min();
     const int64 vmax = var_->Max();
@@ -3878,6 +3878,7 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
         : 0;
     return std::max(mr, ml);
   }
+
   virtual void SetMax(int64 m) {
     if (m < 0) {
       solver()->Fail();
@@ -3897,6 +3898,7 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
       }
     }
   }
+
   virtual string name() const {
     return StringPrintf(
         "ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT "d, ed = %"
@@ -3904,6 +3906,7 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
         var_->name().c_str(),
         early_cost_, early_date_, late_date_, late_cost_);
   }
+
   virtual string DebugString() const {
     return StringPrintf(
         "ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT "d, ed = %"
@@ -3911,6 +3914,7 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
         var_->DebugString().c_str(),
         early_cost_, early_date_, late_date_, late_cost_);
   }
+
   virtual void WhenRange(Demon* d) {
     var_->WhenRange(d);
   }
@@ -3948,7 +3952,9 @@ class SemiContinuousExpr : public BaseIntExpr {
         DCHECK_GE(fixed_charge, 0LL);
         DCHECK_GT(step, 0LL);
   }
+
   virtual ~SemiContinuousExpr() {}
+
   int64 Value(int64 x) const {
     if (x <= 0) {
       return 0;
@@ -3956,9 +3962,11 @@ class SemiContinuousExpr : public BaseIntExpr {
       return fixed_charge_ + x * step_;
     }
   }
+
   virtual int64 Min() const {
     return Value(expr_->Min());
   }
+
   virtual void SetMin(int64 m) {
     if (m >= fixed_charge_ + step_) {
       const int64 y = PosIntDivUp(m - fixed_charge_, step_);
@@ -3967,9 +3975,11 @@ class SemiContinuousExpr : public BaseIntExpr {
       expr_->SetMin(1);
     }
   }
+
   virtual int64 Max() const {
     return Value(expr_->Max());
   }
+
   virtual void SetMax(int64 m) {
     if (m < 0) {
       solver()->Fail();
@@ -3981,16 +3991,19 @@ class SemiContinuousExpr : public BaseIntExpr {
       expr_->SetMax(y);
     }
   }
+
   virtual string name() const {
     return StringPrintf("SemiContinuous(%s, fixed_charge = %" GG_LL_FORMAT
                         "d, step = %" GG_LL_FORMAT "d)",
                         expr_->name().c_str(), fixed_charge_, step_);
   }
+
   virtual string DebugString() const {
     return StringPrintf("SemiContinuous(%s, fixed_charge = %" GG_LL_FORMAT
                         "d, step = %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), fixed_charge_, step_);
   }
+
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
@@ -4018,7 +4031,9 @@ class SemiContinuousStepOneExpr : public BaseIntExpr {
       : BaseIntExpr(s), expr_(e), fixed_charge_(fixed_charge) {
         DCHECK_GE(fixed_charge, 0LL);
   }
+
   virtual ~SemiContinuousStepOneExpr() {}
+
   int64 Value(int64 x) const {
     if (x <= 0) {
       return 0;
@@ -4026,9 +4041,11 @@ class SemiContinuousStepOneExpr : public BaseIntExpr {
       return fixed_charge_ + x;
     }
   }
+
   virtual int64 Min() const {
     return Value(expr_->Min());
   }
+
   virtual void SetMin(int64 m) {
     if (m >= fixed_charge_ + 1) {
       expr_->SetMin(m - fixed_charge_);
@@ -4036,9 +4053,11 @@ class SemiContinuousStepOneExpr : public BaseIntExpr {
       expr_->SetMin(1);
     }
   }
+
   virtual int64 Max() const {
     return Value(expr_->Max());
   }
+
   virtual void SetMax(int64 m) {
     if (m < 0) {
       solver()->Fail();
@@ -4049,16 +4068,19 @@ class SemiContinuousStepOneExpr : public BaseIntExpr {
       expr_->SetMax(m - fixed_charge_);
     }
   }
+
   virtual string name() const {
     return StringPrintf("SemiContinuousStepOne(%s, fixed_charge = %"
                         GG_LL_FORMAT "d)",
                         expr_->name().c_str(), fixed_charge_);
   }
+
   virtual string DebugString() const {
     return StringPrintf("SemiContinuousStepOne(%s, fixed_charge = %"
                         GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), fixed_charge_);
   }
+
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
@@ -4085,7 +4107,9 @@ class SemiContinuousStepZeroExpr : public BaseIntExpr {
       : BaseIntExpr(s), expr_(e), fixed_charge_(fixed_charge) {
         DCHECK_GT(fixed_charge, 0LL);
   }
+
   virtual ~SemiContinuousStepZeroExpr() {}
+
   int64 Value(int64 x) const {
     if (x <= 0) {
       return 0;
@@ -4093,9 +4117,11 @@ class SemiContinuousStepZeroExpr : public BaseIntExpr {
       return fixed_charge_;
     }
   }
+
   virtual int64 Min() const {
     return Value(expr_->Min());
   }
+
   virtual void SetMin(int64 m) {
     if (m >= fixed_charge_) {
       solver()->Fail();
@@ -4103,9 +4129,11 @@ class SemiContinuousStepZeroExpr : public BaseIntExpr {
       expr_->SetMin(1);
     }
   }
+
   virtual int64 Max() const {
     return Value(expr_->Max());
   }
+
   virtual void SetMax(int64 m) {
     if (m < 0) {
       solver()->Fail();
@@ -4114,16 +4142,19 @@ class SemiContinuousStepZeroExpr : public BaseIntExpr {
       expr_->SetMax(0);
     }
   }
+
   virtual string name() const {
     return StringPrintf("SemiContinuousStepZero(%s, fixed_charge = %"
         GG_LL_FORMAT "d)",
         expr_->name().c_str(), fixed_charge_);
   }
+
   virtual string DebugString() const {
     return StringPrintf("SemiContinuousStepZero(%s, fixed_charge = %"
                         GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), fixed_charge_);
   }
+
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
@@ -4144,32 +4175,32 @@ class SemiContinuousStepZeroExpr : public BaseIntExpr {
 };
 
 // This constraints links an expression and the variable it is casted into
-class LinkExprAndVar : public Constraint {
+class LinkExprAndVar : public CastConstraint {
  public:
   LinkExprAndVar(Solver* const s,
                  IntExpr* const expr,
-                 IntVar* const var)
-      : Constraint(s), expr_(expr), var_(var) {}
+                 IntVar* const var) : CastConstraint(s, var), expr_(expr) {}
+
   virtual ~LinkExprAndVar() {}
 
   virtual void Post() {
     Solver* const s = solver();
     Demon* d = s->MakeConstraintInitialPropagateCallback(this);
     expr_->WhenRange(d);
-    var_->WhenRange(d);
+    target_var_->WhenRange(d);
   }
 
   virtual void InitialPropagate() {
-    expr_->SetRange(var_->Min(), var_->Max());
+    expr_->SetRange(target_var_->Min(), target_var_->Max());
     int64 l, u;
     expr_->Range(&l, &u);
-    var_->SetRange(l, u);
+    target_var_->SetRange(l, u);
   }
 
   virtual string DebugString() const {
     return StringPrintf("cast(%s, %s)",
                         expr_->DebugString().c_str(),
-                        var_->DebugString().c_str());
+                        target_var_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -4177,47 +4208,50 @@ class LinkExprAndVar : public Constraint {
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            var_);
+                                            target_var_);
     visitor->EndVisitConstraint(ModelVisitor::kLinkExprVar, this);
   }
 
  private:
   IntExpr* const expr_;
-  IntVar* const var_;
 };
 
 // ----- This is a specialized case when the variable exact type is known -----
-class LinkExprAndDomainIntVar : public Constraint {
+class LinkExprAndDomainIntVar : public CastConstraint {
  public:
   LinkExprAndDomainIntVar(Solver* const s,
                           IntExpr* const expr,
                           DomainIntVar* const var)
-    : Constraint(s), expr_(expr), var_(var), cached_min_(kint64min),
-      cached_max_(kint64max), fail_stamp_(GG_ULONGLONG(0)) {}
+      : CastConstraint(s, var), expr_(expr), cached_min_(kint64min),
+        cached_max_(kint64max), fail_stamp_(GG_ULONGLONG(0)) {}
 
   virtual ~LinkExprAndDomainIntVar() {}
+
+  DomainIntVar* var() const {
+    return reinterpret_cast<DomainIntVar*>(target_var_);
+  }
 
   virtual void Post() {
     Solver* const s = solver();
     Demon* const d = s->MakeConstraintInitialPropagateCallback(this);
     expr_->WhenRange(d);
-    Demon* const var_demon =
+    Demon* const target_var_demon =
         MakeConstraintDemon0(solver(),
                              this,
                              &LinkExprAndDomainIntVar::Propagate,
                              "Propagate");
-    var_->WhenRange(var_demon);
+    target_var_->WhenRange(target_var_demon);
   }
 
   virtual void InitialPropagate() {
-    expr_->SetRange(var_->min_, var_->max_);
+    expr_->SetRange(var()->min_, var()->max_);
     expr_->Range(&cached_min_, &cached_max_);
-    var_->DomainIntVar::SetRange(cached_min_, cached_max_);
+    var()->DomainIntVar::SetRange(cached_min_, cached_max_);
   }
 
   void Propagate() {
-    if (var_->min_ > cached_min_ ||
-        var_->max_ < cached_max_ ||
+    if (var()->min_ > cached_min_ ||
+        var()->max_ < cached_max_ ||
         solver()->fail_stamp() != fail_stamp_) {
       InitialPropagate();
       fail_stamp_ = solver()->fail_stamp();
@@ -4227,7 +4261,7 @@ class LinkExprAndDomainIntVar : public Constraint {
   virtual string DebugString() const {
     return StringPrintf("cast(%s, %s)",
                         expr_->DebugString().c_str(),
-                        var_->DebugString().c_str());
+                        target_var_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -4235,13 +4269,12 @@ class LinkExprAndDomainIntVar : public Constraint {
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            var_);
+                                            target_var_);
     visitor->EndVisitConstraint(ModelVisitor::kLinkExprVar, this);
   }
 
  private:
   IntExpr* const expr_;
-  DomainIntVar* const var_;
   int64 cached_min_;
   int64 cached_max_;
   uint64 fail_stamp_;
@@ -4834,22 +4867,21 @@ void IntVar::RemoveValues(const int64* const values, int size) {
 }
 
 void IntVar::Accept(ModelVisitor* const visitor) const {
-  const IntExpr* delegate = NULL;
-  const std::pair<string, const PropagationBaseObject*>* delegate_pair =
-      FindOrNull(solver()->delegate_objects_, this);
-  if (delegate_pair != NULL) {
-    delegate = reinterpret_cast<const IntExpr*>(delegate_pair->second);
+  const IntExpr* casted = NULL;
+  const Solver::IntegerCastInfo* const cast_info =
+      FindOrNull(solver()->cast_information_, this);
+  if (cast_info != NULL) {
+    casted = cast_info->expression;
   }
-  visitor->VisitIntegerVariable(this, delegate);
+  visitor->VisitIntegerVariable(this, casted);
 }
 
 void IntVar::SetValues(const int64* const values, int size) {
   // TODO(user): reimplement all this!!
   // TODO(user): This code leaks if the array is not sorted.
-  const int64* new_array = values;
-  if (!IsArrayActuallySorted(values, size)) {
-    new_array = NewUniqueSortedArray(new_array, &size);
-  }
+  const int64* const new_array = IsArrayActuallySorted(values, size) ?
+      values :
+      NewUniqueSortedArray(values, &size);
   const int64 vmin = Min();
   const int64 vmax = Max();
   const int64* first_pos = new_array;
@@ -4891,10 +4923,11 @@ void LinkVarExpr(Solver* const s, IntExpr* const expr, IntVar* const var) {
   if (!var->Bound()) {
     if (var->VarType() == DOMAIN_INT_VAR) {
       DomainIntVar* dvar = reinterpret_cast<DomainIntVar*>(var);
-      s->AddDelegateConstraint(
-          s->RevAlloc(new LinkExprAndDomainIntVar(s, expr, dvar)));
+      s->AddCastConstraint(
+          s->RevAlloc(new LinkExprAndDomainIntVar(s, expr, dvar)), dvar, expr);
     } else {
-      s->AddDelegateConstraint(s->RevAlloc(new LinkExprAndVar(s, expr, var)));
+      s->AddCastConstraint(
+          s->RevAlloc(new LinkExprAndVar(s, expr, var)), var, expr);
     }
   }
 }
@@ -4911,17 +4944,7 @@ IntVar* BaseIntExpr::CastToVar() {
   int64 vmin, vmax;
   Range(&vmin, &vmax);
   IntVar* const var = solver()->MakeIntVar(vmin, vmax);
-  AddDelegateName("Var", var);
   LinkVarExpr(solver(), this, var);
   return var;
 }
-
-void BaseIntExpr::AddDelegateName(const string& prefix,
-                                  const PropagationBaseObject* d) const {
-  // TODO(user) : Find a reversible solution when in search.
-  if (solver()->state_ != Solver::IN_SEARCH) {
-    solver()->delegate_objects_[d] = make_pair(prefix, this);
-  }
-}
-
 }   // namespace operations_research

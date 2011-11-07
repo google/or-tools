@@ -32,13 +32,13 @@ namespace {
 
 // ----- Array Constraint -----
 
-class ArrayConstraint : public Constraint {
+class ArrayConstraint : public CastConstraint {
  public:
   ArrayConstraint(Solver* const s,
                   const IntVar* const * vars,
                   int size,
                   IntVar* const var)
-    : Constraint(s), vars_(new IntVar*[size]), size_(size), var_(var) {
+      : CastConstraint(s, var), vars_(new IntVar*[size]), size_(size) {
     CHECK_GT(size, 0);
     CHECK_NOTNULL(vars);
     memcpy(vars_.get(), vars, size_ * sizeof(*vars));
@@ -50,7 +50,7 @@ class ArrayConstraint : public Constraint {
     return StringPrintf("%s(%s) == %s",
                         name.c_str(),
                         DebugStringArray(vars_.get(), size_, ", ").c_str(),
-                        var_->DebugString().c_str());
+                        target_var_->DebugString().c_str());
   }
 
   void AcceptInternal(const string& name, ModelVisitor* const visitor) const {
@@ -59,13 +59,12 @@ class ArrayConstraint : public Constraint {
                                                vars_.get(),
                                                size_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            var_);
+                                            target_var_);
     visitor->EndVisitConstraint(name, this);
   }
 
   scoped_array<IntVar*> vars_;
   const int size_;
-  IntVar* const var_;
 };
 
 // ----- ArrayExpr -----
@@ -247,7 +246,7 @@ class SumConstraint : public TreeArrayConstraint {
                                              this,
                                              &SumConstraint::SumChanged,
                                              "SumChanged");
-    var_->WhenRange(sum_demon_);
+    target_var_->WhenRange(sum_demon_);
   }
 
   virtual void InitialPropagate() {
@@ -270,25 +269,25 @@ class SumConstraint : public TreeArrayConstraint {
       }
     }
     // Propagate to sum_var.
-    var_->SetRange(RootMin(), RootMax());
+    target_var_->SetRange(RootMin(), RootMax());
 
     // Push down.
     SumChanged();
   }
 
   void SumChanged() {
-    if (var_->Max() == RootMin()) {
+    if (target_var_->Max() == RootMin()) {
       // We can fix all terms to min.
       for (int i = 0; i < size_; ++i) {
         vars_[i]->SetValue(vars_[i]->Min());
       }
-    } else if (var_->Min() == RootMax()) {
+    } else if (target_var_->Min() == RootMax()) {
       // We can fix all terms to max.
       for (int i = 0; i < size_; ++i) {
         vars_[i]->SetValue(vars_[i]->Max());
       }
     } else {
-      PushDown(0, 0, var_->Min(), var_->Max());
+      PushDown(0, 0, target_var_->Min(), target_var_->Max());
     }
   }
 
@@ -324,10 +323,10 @@ class SumConstraint : public TreeArrayConstraint {
     const int block_start = ChildStart(position);
     const int block_end = ChildEnd(depth, position);
     for (int i = block_start; i <= block_end; ++i) {
-      const int64 var_min = Min(depth + 1, i);
-      const int64 var_max = Max(depth + 1, i);
-      const int64 residual_min = sum_min - var_min;
-      const int64 residual_max = sum_max - var_max;
+      const int64 target_var_min = Min(depth + 1, i);
+      const int64 target_var_max = Max(depth + 1, i);
+      const int64 residual_min = sum_min - target_var_min;
+      const int64 residual_max = sum_max - target_var_max;
       PushDown(depth + 1, i, new_min - residual_max, new_max - residual_min);
     }
     // TODO(user) : Is the diameter optimization (see reference
@@ -349,7 +348,7 @@ class SumConstraint : public TreeArrayConstraint {
       position = Parent(position);
     }
     DCHECK_EQ(0, position);
-    var_->SetRange(RootMin(), RootMax());
+    target_var_->SetRange(RootMin(), RootMax());
   }
 
   string DebugString() const {
@@ -413,11 +412,11 @@ void MinBoolArrayCt::Post() {
                                    this,
                                    &MinBoolArrayCt::UpdateVar,
                                    "UpdateVar");
-  var_->WhenRange(uv);
+  target_var_->WhenRange(uv);
 }
 
 void MinBoolArrayCt::InitialPropagate() {
-  if (var_->Min() == 1LL) {
+  if (target_var_->Min() == 1LL) {
     for (int i = 0; i < size_; ++i) {
       vars_[i]->SetMin(1LL);
     }
@@ -426,7 +425,7 @@ void MinBoolArrayCt::InitialPropagate() {
     for (int i = 0; i < size_; ++i) {
       IntVar* const var = vars_[i];
       if (var->Max() == 0LL) {
-        var_->SetMax(0LL);
+        target_var_->SetMax(0LL);
         solver()->SaveAndSetValue(&inhibited_, true);
         return;
       }
@@ -435,9 +434,9 @@ void MinBoolArrayCt::InitialPropagate() {
       }
     }
     if (bits_.IsCardinalityZero()) {
-      var_->SetValue(1LL);
+      target_var_->SetValue(1LL);
       solver()->SaveAndSetValue(&inhibited_, true);
-    } else if (var_->Max() == 0LL && bits_.IsCardinalityOne()) {
+    } else if (target_var_->Max() == 0LL && bits_.IsCardinalityOne()) {
       vars_[bits_.GetFirstOne()]->SetValue(0LL);
       solver()->SaveAndSetValue(&inhibited_, true);
     }
@@ -447,14 +446,14 @@ void MinBoolArrayCt::InitialPropagate() {
 void MinBoolArrayCt::Update(int index) {
   if (!inhibited_) {
     if (vars_[index]->Max() == 0LL) {  // Bound to 0.
-      var_->SetValue(0LL);
+      target_var_->SetValue(0LL);
       solver()->SaveAndSetValue(&inhibited_, true);
     } else {
       bits_.SetToZero(solver(), index);
       if (bits_.IsCardinalityZero()) {
-        var_->SetValue(1LL);
+        target_var_->SetValue(1LL);
         solver()->SaveAndSetValue(&inhibited_, true);
-      } else if (var_->Max() == 0LL && bits_.IsCardinalityOne()) {
+      } else if (target_var_->Max() == 0LL && bits_.IsCardinalityOne()) {
         vars_[bits_.GetFirstOne()]->SetValue(0LL);
         solver()->SaveAndSetValue(&inhibited_, true);
       }
@@ -464,7 +463,7 @@ void MinBoolArrayCt::Update(int index) {
 
 void MinBoolArrayCt::UpdateVar() {
   if (!inhibited_) {
-    if (var_->Min() == 1LL) {
+    if (target_var_->Min() == 1LL) {
       for (int i = 0; i < size_; ++i) {
         vars_[i]->SetMin(1LL);
       }
@@ -503,10 +502,9 @@ class MinBoolArray : public ArrayExpr {
     int64 vmax = 0LL;
     Range(&vmin, &vmax);
     IntVar* var = solver()->MakeIntVar(vmin, vmax);
-    AddDelegateName("Var", var);
-    Constraint* const ct =
+    CastConstraint* const ct =
         s->RevAlloc(new MinBoolArrayCt(s, vars_.get(), size_, var));
-    s->AddDelegateConstraint(ct);
+    s->AddCastConstraint(ct, var, this);
     return var;
   }
 
@@ -630,12 +628,12 @@ void MinArrayCt::Post() {
                                    this,
                                    &MinArrayCt::UpdateVar,
                                    "UpdateVar");
-  var_->WhenRange(uv);
+  target_var_->WhenRange(uv);
 }
 
 void MinArrayCt::InitialPropagate() {
-  int64 vmin = var_->Min();
-  int64 vmax = var_->Max();
+  int64 vmin = target_var_->Min();
+  int64 vmax = target_var_->Max();
   int64 cmin = kint64max;
   int64 cmax = kint64max;
   int min_support = -1;
@@ -653,9 +651,9 @@ void MinArrayCt::InitialPropagate() {
     }
   }
   min_support_.SetValue(solver(), min_support);
-  var_->SetRange(cmin, cmax);
-  vmin = var_->Min();
-  vmax = var_->Max();
+  target_var_->SetRange(cmin, cmax);
+  vmin = target_var_->Min();
+  vmax = target_var_->Max();
   int active = 0;
   int curr = -1;
   for (int i = 0; i < size_; ++i) {
@@ -677,7 +675,7 @@ void MinArrayCt::InitialPropagate() {
 void MinArrayCt::Update(int index) {
   IntVar* const modified = vars_[index];
   if (modified->OldMax() != modified->Max()) {
-    var_->SetMax(modified->Max());
+    target_var_->SetMax(modified->Max());
   }
   if (index == min_support_.Value() && modified->OldMin() != modified->Min()) {
     // TODO(user) : can we merge this code with above into
@@ -692,19 +690,19 @@ void MinArrayCt::Update(int index) {
       }
     }
     min_support_.SetValue(solver(), min_support);
-    var_->SetMin(cmin);
+    target_var_->SetMin(cmin);
   }
 }
 
 void MinArrayCt::UpdateVar() {
-  const int64 vmin = var_->Min();
-  if (vmin != var_->OldMin()) {
+  const int64 vmin = target_var_->Min();
+  if (vmin != target_var_->OldMin()) {
     for (int i = 0; i < size_; ++i) {
       vars_[i]->SetMin(vmin);
     }
   }
-  const int64 vmax = var_->Max();
-  if (vmax != var_->OldMax()) {
+  const int64 vmax = target_var_->Max();
+  if (vmax != target_var_->OldMax()) {
     int active = 0;
     int curr = -1;
     for (int i = 0; i < size_; ++i) {
@@ -749,10 +747,9 @@ class MinArray : public ArrayExpr {
     int64 vmax = 0LL;
     Range(&vmin, &vmax);
     IntVar* var = solver()->MakeIntVar(vmin, vmax);
-    AddDelegateName("Var", var);
-    Constraint* const ct =
+    CastConstraint* const ct =
         s->RevAlloc(new MinArrayCt(s, vars_.get(), size_, var));
-    s->AddDelegateConstraint(ct);
+    s->AddCastConstraint(ct, var, this);
     return var;
   }
 
@@ -869,12 +866,12 @@ void MaxArrayCt::Post() {
                                    this,
                                    &MaxArrayCt::UpdateVar,
                                    "UpdateVar");
-  var_->WhenRange(uv);
+  target_var_->WhenRange(uv);
 }
 
 void MaxArrayCt::InitialPropagate() {
-  int64 vmin = var_->Min();
-  int64 vmax = var_->Max();
+  int64 vmin = target_var_->Min();
+  int64 vmax = target_var_->Max();
   int64 cmin = kint64min;
   int64 cmax = kint64min;
   int max_support = -1;
@@ -892,9 +889,9 @@ void MaxArrayCt::InitialPropagate() {
     }
   }
   max_support_.SetValue(solver(), max_support);
-  var_->SetRange(cmin, cmax);
-  vmin = var_->Min();
-  vmax = var_->Max();
+  target_var_->SetRange(cmin, cmax);
+  vmin = target_var_->Min();
+  vmax = target_var_->Max();
   int active = 0;
   int curr = -1;
   for (int i = 0; i < size_; ++i) {
@@ -916,7 +913,7 @@ void MaxArrayCt::InitialPropagate() {
 void MaxArrayCt::Update(int index) {
   IntVar* const modified = vars_[index];
   if (modified->OldMin() != modified->Min()) {
-    var_->SetMin(modified->Min());
+    target_var_->SetMin(modified->Min());
   }
   const int64 oldmax = modified->OldMax();
   if (index == max_support_.Value() && oldmax != modified->Max()) {
@@ -932,19 +929,19 @@ void MaxArrayCt::Update(int index) {
       }
     }
     max_support_.SetValue(solver(), max_support);
-    var_->SetMax(cmax);
+    target_var_->SetMax(cmax);
   }
 }
 
 void MaxArrayCt::UpdateVar() {
-  const int64 vmax = var_->Max();
-  if (vmax != var_->OldMax()) {
+  const int64 vmax = target_var_->Max();
+  if (vmax != target_var_->OldMax()) {
     for (int i = 0; i < size_; ++i) {
       vars_[i]->SetMax(vmax);
     }
   }
-  const int64 vmin = var_->Min();
-  if (vmin != var_->OldMin()) {
+  const int64 vmin = target_var_->Min();
+  if (vmin != target_var_->OldMin()) {
     int active = 0;
     int curr = -1;
     for (int i = 0; i < size_; ++i) {
@@ -988,10 +985,9 @@ class MaxArray : public ArrayExpr {
     int64 vmin = Min();
     int64 vmax = Max();
     IntVar* var = solver()->MakeIntVar(vmin, vmax);
-    AddDelegateName("Var", var);
-    Constraint* const ct =
+    CastConstraint* const ct =
         s->RevAlloc(new MaxArrayCt(s, vars_.get(), size_, var));
-    s->AddDelegateConstraint(ct);
+    s->AddCastConstraint(ct, var, this);
     return var;
   }
 
@@ -1107,11 +1103,11 @@ void MaxBoolArrayCt::Post() {
                                    this,
                                    &MaxBoolArrayCt::UpdateVar,
                                    "UpdateVar");
-  var_->WhenRange(uv);
+  target_var_->WhenRange(uv);
 }
 
 void MaxBoolArrayCt::InitialPropagate() {
-  if (var_->Max() == 0) {
+  if (target_var_->Max() == 0) {
     for (int i = 0; i < size_; ++i) {
       vars_[i]->SetMax(0LL);
     }
@@ -1120,7 +1116,7 @@ void MaxBoolArrayCt::InitialPropagate() {
     for (int i = 0; i < size_; ++i) {
       IntVar* const var = vars_[i];
       if (var->Min() == 1LL) {
-        var_->SetMin(1LL);
+        target_var_->SetMin(1LL);
         solver()->SaveAndSetValue(&inhibited_, true);
         return;
       }
@@ -1129,9 +1125,9 @@ void MaxBoolArrayCt::InitialPropagate() {
       }
     }
     if (bits_.IsCardinalityZero()) {
-      var_->SetValue(0LL);
+      target_var_->SetValue(0LL);
       solver()->SaveAndSetValue(&inhibited_, true);
-    } else if (var_->Min() == 1LL && bits_.IsCardinalityOne()) {
+    } else if (target_var_->Min() == 1LL && bits_.IsCardinalityOne()) {
       vars_[bits_.GetFirstOne()]->SetValue(1LL);
       solver()->SaveAndSetValue(&inhibited_, true);
     }
@@ -1141,14 +1137,14 @@ void MaxBoolArrayCt::InitialPropagate() {
 void MaxBoolArrayCt::Update(int index) {
   if (!inhibited_) {
     if (vars_[index]->Min() == 1LL) {  // Bound to 1.
-      var_->SetValue(1LL);
+      target_var_->SetValue(1LL);
       solver()->SaveAndSetValue(&inhibited_, true);
     } else {
       bits_.SetToZero(solver(), index);
       if (bits_.IsCardinalityZero()) {
-        var_->SetValue(0LL);
+        target_var_->SetValue(0LL);
         solver()->SaveAndSetValue(&inhibited_, true);
-      } else if (var_->Min() == 1LL && bits_.IsCardinalityOne()) {
+      } else if (target_var_->Min() == 1LL && bits_.IsCardinalityOne()) {
         vars_[bits_.GetFirstOne()]->SetValue(1LL);
         solver()->SaveAndSetValue(&inhibited_, true);
       }
@@ -1158,7 +1154,7 @@ void MaxBoolArrayCt::Update(int index) {
 
 void MaxBoolArrayCt::UpdateVar() {
   if (!inhibited_) {
-    if (var_->Max() == 0) {
+    if (target_var_->Max() == 0) {
       for (int i = 0; i < size_; ++i) {
         vars_[i]->SetMax(0LL);
       }
@@ -1196,10 +1192,9 @@ class MaxBoolArray : public ArrayExpr {
     int64 vmin = Min();
     int64 vmax = Max();
     IntVar* var = solver()->MakeIntVar(vmin, vmax);
-    AddDelegateName("Var", var);
-    Constraint* const ct =
+    CastConstraint* const ct =
         s->RevAlloc(new MaxBoolArrayCt(s, vars_.get(), size_, var));
-    s->AddDelegateConstraint(ct);
+    s->AddCastConstraint(ct, var, this);
     return var;
   }
 
@@ -1412,7 +1407,9 @@ IntExpr* Solver::MakeSum(IntVar* const* vars, int size) {
       sum_max += vars[i]->Max();
     }
     IntVar* const sum_var = MakeIntVar(sum_min, sum_max);
-    AddConstraint(RevAlloc(new SumConstraint(this, vars, size, sum_var)));
+    AddCastConstraint(RevAlloc(new SumConstraint(this, vars, size, sum_var)),
+                      sum_var,
+                      NULL);
     return sum_var;
   }
 }
@@ -2107,18 +2104,17 @@ class BooleanScalProdLessConstant : public Constraint {
 
 // ----- PositiveBooleanScalProdEqVar -----
 
-class PositiveBooleanScalProdEqVar : public Constraint {
+class PositiveBooleanScalProdEqVar : public CastConstraint {
  public:
   PositiveBooleanScalProdEqVar(Solver* const s,
                                const IntVar* const * vars,
                                int size,
                                const int64* const coefs,
                                IntVar* const var)
-      : Constraint(s),
+      : CastConstraint(s, var),
         size_(size),
         vars_(new IntVar*[size_]),
         coefs_(new int64[size_]),
-        var_(var),
         first_unbound_backward_(size_ - 1),
         sum_of_bound_variables_(0LL),
         sum_of_all_variables_(0LL),
@@ -2147,21 +2143,21 @@ class PositiveBooleanScalProdEqVar : public Constraint {
                                var_index);
       vars_[var_index]->WhenRange(d);
     }
-    if (!var_->Bound()) {
+    if (!target_var_->Bound()) {
       Demon* const uv =
           MakeConstraintDemon0(solver(),
                                this,
                                &PositiveBooleanScalProdEqVar::Propagate,
                                "Propagate");
-      var_->WhenRange(uv);
+      target_var_->WhenRange(uv);
     }
   }
 
   void Propagate() {
-    var_->SetRange(sum_of_bound_variables_.Value(),
-                   sum_of_all_variables_.Value());
-    const int64 slack_up = var_->Max() - sum_of_bound_variables_.Value();
-    const int64 slack_down = sum_of_all_variables_.Value() - var_->Min();
+    target_var_->SetRange(sum_of_bound_variables_.Value(),
+                          sum_of_all_variables_.Value());
+    const int64 slack_up = target_var_->Max() - sum_of_bound_variables_.Value();
+    const int64 slack_down = sum_of_all_variables_.Value() - target_var_->Min();
     const int64 max_coeff = max_coefficient_.Value();
     if (slack_down < max_coeff || slack_up < max_coeff) {
       int64 last_unbound = first_unbound_backward_.Value();
@@ -2217,7 +2213,7 @@ class PositiveBooleanScalProdEqVar : public Constraint {
         "PositiveBooleanScal([%s], [%s]) == %s",
         DebugStringArray(vars_.get(), size_, ", ").c_str(),
         Int64ArrayToString(coefs_.get(), size_, ", ").c_str(),
-        var_->DebugString().c_str());
+        target_var_->DebugString().c_str());
   }
 
   void Accept(ModelVisitor* const visitor) const {
@@ -2229,7 +2225,7 @@ class PositiveBooleanScalProdEqVar : public Constraint {
                                        coefs_.get(),
                                        size_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            var_);
+                                            target_var_);
     visitor->EndVisitConstraint(ModelVisitor::kScalProdEqual, this);
   }
 
@@ -2237,7 +2233,6 @@ class PositiveBooleanScalProdEqVar : public Constraint {
   int size_;
   scoped_array<IntVar*> vars_;
   scoped_array<int64> coefs_;
-  IntVar* const var_;
   Rev<int> first_unbound_backward_;
   Rev<int64> sum_of_bound_variables_;
   Rev<int64> sum_of_all_variables_;
@@ -2380,15 +2375,14 @@ class PositiveBooleanScalProd : public BaseIntExpr {
     int64 vmax = 0LL;
     Range(&vmin, &vmax);
     IntVar* const var = solver()->MakeIntVar(vmin, vmax);
-    AddDelegateName("Var", var);
     if (size_ > 0) {
-      Constraint* const ct = s->RevAlloc(
+      CastConstraint* const ct = s->RevAlloc(
           new PositiveBooleanScalProdEqVar(s,
                                            vars_.get(),
                                            size_,
                                            coefs_.get(),
                                            var));
-      s->AddDelegateConstraint(ct);
+      s->AddCastConstraint(ct, var, this);
     }
     return var;
   }
