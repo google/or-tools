@@ -82,7 +82,7 @@ def SolveAndPrint(solver, variable_list):
 
 def RunAllIntegerExampleAlgebraicAPI():
   if hasattr(pywraplp.Solver, 'GLPK_MIXED_INTEGER_PROGRAMMING'):
-    print ('---- Integer programming example with GLPK (algebraic API) -----')
+    print '---- Integer programming example with GLPK (algebraic API) -----'
     RunIntegerExampleAlgebraicAPI(
         pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
   if hasattr(pywraplp.Solver, 'CBC_MIXED_INTEGER_PROGRAMMING'):
