@@ -3132,5 +3132,4 @@ DecisionBuilder* Solver::MakeLocalSearchPhase(
                                   parameters->limit(),
                                   parameters->filters()));
 }
-
 }  // namespace operations_research

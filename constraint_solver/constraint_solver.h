@@ -2541,7 +2541,6 @@ class Solver {
       DecisionBuilder* const first_solution,
       LocalSearchPhaseParameters* const parameters);
 
-
   // Solution Pool.
   SolutionPool* MakeDefaultSolutionPool();
 

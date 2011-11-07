@@ -229,7 +229,7 @@ void CBCInterface::SetOptimizationDirection(bool maximize) {
 }
 
 void CBCInterface::WriteModel(const string& filename) {
-  if (solver_->IsLPFormat(filename)) {
+  if (HasSuffixString(filename, ".lp")) {
     osi_.writeLp(filename.c_str(), "");
   } else {
     // If filename does not end in ".gz", CBC will

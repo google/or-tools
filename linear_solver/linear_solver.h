@@ -366,11 +366,6 @@ class MPSolver {
     return write_model_filename_;
   }
 
-  // Returns true if filename ends in ".lp".
-  bool IsLPFormat(const string &filename) {
-    return HasSuffixString (filename, ".lp");
-  }
-
   void set_time_limit(int64 time_limit) {
     DCHECK_GE(time_limit, 0);
     time_limit_ = time_limit;
