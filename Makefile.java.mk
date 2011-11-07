@@ -281,18 +281,18 @@ $(LIBPREFIX)jnilinearsolver.$(JNILIBEXT): objs/linear_solver_java_wrap.$O $(LP_L
 
 # Java Algorithms Examples
 
-compile_LinearSolverExample: objs/com/google/ortools/linearsolver/samples/LinearSolverExample.class
+compile_LinearProgramming: objs/com/google/ortools/linearsolver/samples/LinearProgramming.class
 
-objs/com/google/ortools/linearsolver/samples/LinearSolverExample.class: javalp com/google/ortools/linearsolver/samples/LinearSolverExample.java
-	$(JAVAC_BIN) -d objs -cp com.google.ortools.linearsolver.jar com/google/ortools/linearsolver/samples/LinearSolverExample.java
+objs/com/google/ortools/linearsolver/samples/LinearProgramming.class: javalp com/google/ortools/linearsolver/samples/LinearProgramming.java
+	$(JAVAC_BIN) -d objs -cp com.google.ortools.linearsolver.jar com/google/ortools/linearsolver/samples/LinearProgramming.java
 
-run_LinearSolverExample: compile_LinearSolverExample
-	$(JAVA_BIN) -Djava.library.path=. -cp objs$(CPSEP)com.google.ortools.linearsolver.jar com.google.ortools.linearsolver.samples.LinearSolverExample
+run_LinearProgramming: compile_LinearProgramming
+	$(JAVA_BIN) -Djava.library.path=. -cp objs$(CPSEP)com.google.ortools.linearsolver.jar com.google.ortools.linearsolver.samples.LinearProgramming
 
-compile_IntegerSolverExample: objs/com/google/ortools/linearsolver/samples/IntegerSolverExample.class
+compile_IntegerProgramming: objs/com/google/ortools/linearsolver/samples/IntegerProgramming.class
 
-objs/com/google/ortools/linearsolver/samples/IntegerSolverExample.class: javalp com/google/ortools/linearsolver/samples/IntegerSolverExample.java
-	$(JAVAC_BIN) -d objs -cp com.google.ortools.linearsolver.jar com/google/ortools/linearsolver/samples/IntegerSolverExample.java
+objs/com/google/ortools/linearsolver/samples/IntegerProgramming.class: javalp com/google/ortools/linearsolver/samples/IntegerProgramming.java
+	$(JAVAC_BIN) -d objs -cp com.google.ortools.linearsolver.jar com/google/ortools/linearsolver/samples/IntegerProgramming.java
 
-run_IntegerSolverExample: compile_IntegerSolverExample
-	$(JAVA_BIN) -Xss2048k -Djava.library.path=. -cp objs$(CPSEP)com.google.ortools.linearsolver.jar com.google.ortools.linearsolver.samples.IntegerSolverExample
+run_IntegerProgramming: compile_IntegerProgramming
+	$(JAVA_BIN) -Xss2048k -Djava.library.path=. -cp objs$(CPSEP)com.google.ortools.linearsolver.jar com.google.ortools.linearsolver.samples.IntegerProgramming
