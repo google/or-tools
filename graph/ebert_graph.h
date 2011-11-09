@@ -183,7 +183,7 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph {
 
   // Returns the number of original arcs in the graph
   // (The ones with positive indices.)
-  NodeIndexType num_arcs() const { return num_arcs_; }
+  ArcIndexType num_arcs() const { return num_arcs_; }
 
   // Returns one more than the largest index of an extant node. To be
   // used as a helper when clients need to dimension or iterate over
@@ -200,7 +200,7 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph {
 
   // Returns the maximum possible number of original arcs in the graph.
   // (The ones with positive indices.)
-  NodeIndexType max_num_arcs() const { return max_num_arcs_; }
+  ArcIndexType max_num_arcs() const { return max_num_arcs_; }
 
   // Returns one more than the largest valid index of a node. To be
   // used as a helper when clients need to dimension or iterate over
