@@ -47,7 +47,8 @@ DEFINE_bool(cp_model_stats, false,
 DEFINE_string(cp_export_file, "", "Export model to file using CPModelProto.");
 DEFINE_bool(cp_no_solve, false, "Force failure at the beginning of a search.");
 DEFINE_string(cp_profile_file, "", "Export profiling overview to file.");
-DEFINE_bool(cp_verbose_fail, false, "Verbose output when failing");
+DEFINE_bool(cp_verbose_fail, false, "Verbose output when failing.");
+DEFINE_bool(cp_trace_variables, false, "Trace propagation on all variables.");
 
 void ConstraintSolverFailsHere() {
   VLOG(3) << "Fail";
@@ -66,7 +67,8 @@ SolverParameters::SolverParameters()
       trail_block_size(kDefaultTrailBlockSize),
       array_split_size(kDefaultArraySplitSize),
       store_names(kDefaultNameStoring),
-      profile_level(kDefaultProfileLevel) {}
+      profile_level(kDefaultProfileLevel),
+      trace_level(kDefaultTraceLevel) {}
 
 // ----- Forward Declarations and Profiling Support -----
 extern DemonMonitor* BuildDemonMonitor(Solver* const solver);
@@ -85,9 +87,18 @@ extern void DemonMonitorEndInitialNestedPropagation(
     const Constraint* const parent,
     const Constraint* const nested);
 
-bool Solver::Profile() const {
+
+// TODO(user): remove this complex logic.
+// We need the double test because parameters are set too late when using
+// python in the open source. This is the cheapest work-around.
+bool Solver::IsProfileEnabled() const {
   return parameters_.profile_level != SolverParameters::NO_PROFILING ||
       !FLAGS_cp_profile_file.empty();
+}
+
+bool Solver::IsTraceEnabled() const {
+  return parameters_.trace_level != SolverParameters::NO_TRACE ||
+      FLAGS_cp_trace_variables;
 }
 
 // ------------------ Demon class ----------------
@@ -1420,6 +1431,8 @@ const int SolverParameters::kDefaultArraySplitSize = 16;
 const bool SolverParameters::kDefaultNameStoring = true;
 const SolverParameters::ProfileLevel SolverParameters::kDefaultProfileLevel =
          SolverParameters::NO_PROFILING;
+const SolverParameters::TraceLevel SolverParameters::kDefaultTraceLevel =
+         SolverParameters::NO_TRACE;
 
 string Solver::DebugString() const {
   string out = "Solver(name = \"" + name_ + "\", state = ";
@@ -1696,7 +1709,7 @@ void Solver::ProcessConstraints() {
   additional_constraints_parent_list_.clear();
 
   // Process constraints from the model.
-  const bool profile = Profile();
+  const bool profile = IsProfileEnabled();
   for (constraint_index_ = 0;
        constraint_index_ < constraints_size;
        ++constraint_index_) {
@@ -1962,7 +1975,7 @@ void Solver::RestartSearch() {
     PushSentinel(INITIAL_SEARCH_SENTINEL);
   }
 
-  if (Profile()) {
+  if (IsProfileEnabled()) {
     CHECK_NOTNULL(demon_monitor_);
     DemonMonitorRestartSearch(demon_monitor_);
   }

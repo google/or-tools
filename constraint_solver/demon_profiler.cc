@@ -373,14 +373,14 @@ class DemonProfiler : public Demon {
 
 
 void Solver::NotifyFailureToDemonMonitor() {
-  if (Profile()) {
+  if (IsProfileEnabled()) {
     CHECK_NOTNULL(demon_monitor_);
     demon_monitor_->RaiseFailure();
   }
 }
 
 void Solver::ExportProfilingOverview(const string& filename) {
-  if (Profile()) {
+  if (IsProfileEnabled()) {
     CHECK_NOTNULL(demon_monitor_);
     demon_monitor_->PrintOverview(this, filename);
   }
@@ -405,7 +405,7 @@ void BuildDemonProfiler(Solver* const solver,
 
 Demon* Solver::RegisterDemon(Demon* const demon) {
   CHECK_NOTNULL(demon);
-  if (Profile() && state_ != IN_SEARCH) {
+  if (IsProfileEnabled() && state_ != IN_SEARCH) {
     CHECK_NOTNULL(demon_monitor_);
     demon_monitor_->RegisterDemon(demon);
     return RevAlloc(new DemonProfiler(demon, demon_monitor_));

@@ -28,6 +28,7 @@ DECLARE_bool(cp_model_stats);
 DECLARE_string(cp_export_file);
 DECLARE_bool(cp_no_solve);
 DECLARE_string(cp_profile_file);
+DECLARE_bool(cp_trace_variables);
 
 struct FailureProtect {
   jmp_buf exception_buffer;
@@ -237,6 +238,8 @@ gflags.DEFINE_boolean('cp_no_solve', False,
                       'force failures at the beginning of a search.')
 gflags.DEFINE_string('cp_profile_file', '',
                      'exports profiling overview to file.')
+gflags.DEFINE_boolean('cp_trace_variables', False,
+                      'trace all variables modifications.')
 }
 %pythoncode {
 
@@ -884,7 +887,8 @@ namespace operations_research {
                               FLAGS.cp_model_stats,
                               FLAGS.cp_export_file,
                               FLAGS.cp_no_solve,
-                              FLAGS.cp_profile_file)
+                              FLAGS.cp_profile_file,
+                              FLAGS.cp_trace_variables)
 %}
 
 
@@ -894,13 +898,15 @@ static void SetPythonFlags(bool trace_demon,
                              bool model_stats,
                              const string& export_file,
                              bool no_solve,
-                             const string& profile_file) {
+                             const string& profile_file,
+                             bool trace_variables) {
     FLAGS_cp_trace_demons = trace_demon;
     FLAGS_cp_print_model = print_model;
     FLAGS_cp_model_stats = model_stats;
     FLAGS_cp_export_file = export_file;
     FLAGS_cp_no_solve = no_solve;
     FLAGS_cp_profile_file = profile_file;
+    FLAGS_cp_trace_variables = trace_variables;
   }
 
   Constraint* TreeNoCycle(const std::vector<IntVar*>& nexts,

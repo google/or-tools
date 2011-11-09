@@ -175,11 +175,17 @@ struct SolverParameters {
     NORMAL_PROFILING
   };
 
+  enum TraceLevel {
+    NO_TRACE,
+    NORMAL_TRACE
+  };
+
   static const TrailCompression kDefaultTrailCompression;
   static const int kDefaultTrailBlockSize;
   static const int kDefaultArraySplitSize;
   static const bool kDefaultNameStoring;
   static const ProfileLevel kDefaultProfileLevel;
+  static const TraceLevel kDefaultTraceLevel;
 
   SolverParameters();
 
@@ -204,6 +210,9 @@ struct SolverParameters {
   // version of the summary. COMPLETE supports the full version of the
   // summary, as well as the csv export.
   ProfileLevel profile_level;
+
+  // Support for full trace of propagation.
+  TraceLevel trace_level;
 };
 
 // This struct holds all parameters for the default search.
@@ -2699,12 +2708,22 @@ class Solver {
   bool HasName(const PropagationBaseObject* object) const;
   // Adds a new demon and wraps it inside a DemonProfiler if necessary.
   Demon* RegisterDemon(Demon* const d);
+  // Registers a new IntExpr and wraps it inside a TraceIntExpr if necessary.
+  IntExpr* RegisterIntExpr(IntExpr* const expr);
+  // Registers a new IntVar and wraps it inside a TraceIntVar if necessary.
+  IntVar* RegisterIntVar(IntVar* const var);
+  // Registers a new IntervalVar and wraps it inside a TraceIntervalVar
+  // if necessary.
+  IntervalVar* RegisterIntervalVar(IntervalVar* const var);
+
   // Returns the active search, NULL outside search.
   Search* ActiveSearch() const;
   // Returns the cache of the model.
   ModelCache* Cache() const;
   // Returns wether we are profiling constraints.
-  bool Profile() const;
+  bool IsProfileEnabled() const;
+  // Returns wether we are tracing variables.
+  bool IsTraceEnabled() const;
   // Returns the name of the model.
   string model_name() const;
   // Returns the dependency graph of the solver.

@@ -495,10 +495,11 @@ IntExpr* BuildElement(Solver* const solver,
   }
   // Is Array increasing
   if (values->HasProperty(ConstIntArray::IS_INCREASING)) {
-    return solver->RevAlloc(
-        new IncreasingIntExprElement(solver, values->Release(), index));
+    return solver->RegisterIntExpr(solver->RevAlloc(
+        new IncreasingIntExprElement(solver, values->Release(), index)));
   }
-  return solver->RevAlloc(new IntExprElement(solver, values->Release(), index));
+  return solver->RegisterIntExpr(solver->RevAlloc(
+      new IntExprElement(solver, values->Release(), index)));
 }
 }  // namespace
 
@@ -711,7 +712,8 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
 IntExpr* Solver::MakeElement(ResultCallback1<int64, int64>* values,
                              IntVar* const index) {
   CHECK_EQ(this, index->solver());
-  return RevAlloc(new IntExprFunctionElement(this, values, index, true));
+  return RegisterIntExpr(RevAlloc(
+      new IntExprFunctionElement(this, values, index, true)));
 }
 
 namespace {
@@ -738,14 +740,15 @@ IntExpr* Solver::MakeMonotonicElement(ResultCallback1<int64, int64>* values,
                                       IntVar* const index) {
   CHECK_EQ(this, index->solver());
   if (increasing) {
-    return RevAlloc(new IncreasingIntExprFunctionElement(this, values, index));
+    return RegisterIntExpr(RevAlloc(
+        new IncreasingIntExprFunctionElement(this, values, index)));
   } else {
     OppositeCallback* const opposite_callback =
         RevAlloc(new OppositeCallback(values));
     ResultCallback1<int64, int64>* opposite_values =
         NewPermanentCallback(opposite_callback, &OppositeCallback::Run);
-    return MakeOpposite(RevAlloc(
-        new IncreasingIntExprFunctionElement(this, opposite_values, index)));
+    return RegisterIntExpr(MakeOpposite(RevAlloc(
+        new IncreasingIntExprFunctionElement(this, opposite_values, index))));
   }
 }
 
@@ -984,8 +987,8 @@ IntExpr* Solver::MakeElement(ResultCallback2<int64, int64, int64>* values,
                              IntVar* const index1, IntVar* const index2) {
   CHECK_EQ(this, index1->solver());
   CHECK_EQ(this, index2->solver());
-  return RevAlloc(
-      new IntIntExprFunctionElement(this, values, index1, index2));
+  return RegisterIntExpr(RevAlloc(
+      new IntIntExprFunctionElement(this, values, index1, index2)));
 }
 
 // ---------- Generalized element ----------
@@ -1350,13 +1353,14 @@ IntExpr* Solver::MakeElement(const IntVar* const * vars,
                              int size,
                              IntVar* const index) {
   CHECK_EQ(this, index->solver());
-  return RevAlloc(new IntExprArrayElement(this, vars, size, index));
+  return RegisterIntExpr(RevAlloc(
+      new IntExprArrayElement(this, vars, size, index)));
 }
 
 IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const index) {
   CHECK_EQ(this, index->solver());
-  return RevAlloc(new IntExprArrayElement(this, vars.data(),
-                                          vars.size(), index));
+  return RegisterIntExpr(RevAlloc(
+      new IntExprArrayElement(this, vars.data(), vars.size(), index)));
 }
 
 }  // namespace operations_research

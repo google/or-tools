@@ -116,6 +116,7 @@ CONSTRAINT_SOLVER_LIB_OS = \
 	objs/search_limit.pb.$O\
 	objs/table.$O\
 	objs/timetabling.$O\
+	objs/trace.$O\
 	objs/tree_monitor.$O\
 	objs/utilities.$O
 
@@ -228,6 +229,9 @@ objs/table.$O:constraint_solver/table.cc
 
 objs/timetabling.$O:constraint_solver/timetabling.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/timetabling.cc $(OBJOUT)objs/timetabling.$O
+
+objs/trace.$O:constraint_solver/trace.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/trace.cc $(OBJOUT)objs/trace.$O
 
 objs/tree_monitor.$O:constraint_solver/tree_monitor.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/tree_monitor.cc $(OBJOUT)objs/tree_monitor.$O

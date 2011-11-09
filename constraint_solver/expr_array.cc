@@ -1305,9 +1305,9 @@ IntExpr* BuildMinArray(Solver* const s, IntVar* const* vars, int size) {
     return s->MakeIntConst(amin);
   }
   if (amin == 0 && amax == 1) {
-    return s->RevAlloc(new MinBoolArray(s, vars, size));
+    return s->RegisterIntExpr(s->RevAlloc(new MinBoolArray(s, vars, size)));
   }
-  return s->RevAlloc(new MinArray(s, vars, size));
+  return s->RegisterIntExpr(s->RevAlloc(new MinArray(s, vars, size)));
 }
 
 IntExpr* BuildMaxArray(Solver* const s, IntVar* const* vars, int size) {
@@ -1318,9 +1318,9 @@ IntExpr* BuildMaxArray(Solver* const s, IntVar* const* vars, int size) {
     return s->MakeIntConst(amax);
   }
   if (amin == 0 && amax == 1) {
-    return s->RevAlloc(new MaxBoolArray(s, vars, size));
+    return s->RegisterIntExpr(s->RevAlloc(new MaxBoolArray(s, vars, size)));
   }
-  return s->RevAlloc(new MaxArray(s, vars, size));
+  return s->RegisterIntExpr(s->RevAlloc(new MaxArray(s, vars, size)));
 }
 
 enum BuildOp { MIN_OP, MAX_OP };
@@ -2850,8 +2850,8 @@ template<class T> IntExpr* MakeScalProdFct(Solver* solver,
   }
   if (AreAllBooleans(vars, size)) {
     if (AreAllPositive<T>(coefs, size)) {
-      return solver->RevAlloc(
-          new PositiveBooleanScalProd(solver, vars, size, coefs));
+      return solver->RegisterIntExpr(solver->RevAlloc(
+          new PositiveBooleanScalProd(solver, vars, size, coefs)));
     } else {
       // If some coefficients are non-positive, partition coefficients in two
       // sets, one for the positive coefficients P and one for the negative
@@ -2875,19 +2875,19 @@ template<class T> IntExpr* MakeScalProdFct(Solver* solver,
         }
       }
       CHECK_GT(negative_coef_vars.size(), 0);
-      IntExpr* negatives =
-          solver->RevAlloc(
+      IntExpr* const negatives =
+          solver->RegisterIntExpr(solver->RevAlloc(
               new PositiveBooleanScalProd(solver,
                                           negative_coef_vars.data(),
                                           negative_coef_vars.size(),
-                                          negative_coefs.data()));
+                                          negative_coefs.data())));
       if (!positive_coefs.empty()) {
-        IntExpr* positives =
-            solver->RevAlloc(
+        IntExpr* const positives =
+            solver->RegisterIntExpr(solver->RevAlloc(
                 new PositiveBooleanScalProd(solver,
                                             positive_coef_vars.data(),
                                             positive_coef_vars.size(),
-                                            positive_coefs.data()));
+                                            positive_coefs.data())));
         // Cast to var to avoid slow propagation; all operations on the expr are
         // O(n)!
         return solver->MakeDifference(positives->Var(), negatives->Var());

@@ -91,7 +91,7 @@ class MirrorIntervalVar : public IntervalVar {
 }  // namespace
 
 IntervalVar* Solver::MakeMirrorInterval(IntervalVar* const t) {
-  return RevAlloc(new MirrorIntervalVar(this, t));
+  return RegisterIntervalVar(RevAlloc(new MirrorIntervalVar(this, t)));
 }
 
 // An IntervalVar that passes all function calls to an underlying interval
@@ -272,7 +272,8 @@ IntervalVar* Solver::MakeIntervalRelaxedMax(IntervalVar* const interval_var) {
   if (interval_var->MustBePerformed()) {
     return interval_var;
   } else {
-    return RevAlloc(new IntervalVarRelaxedMax(interval_var));
+    return RegisterIntervalVar(
+        RevAlloc(new IntervalVarRelaxedMax(interval_var)));
   }
 }
 
@@ -280,7 +281,8 @@ IntervalVar* Solver::MakeIntervalRelaxedMin(IntervalVar* const interval_var) {
   if (interval_var->MustBePerformed()) {
     return interval_var;
   } else {
-    return RevAlloc(new IntervalVarRelaxedMin(interval_var));
+    return RegisterIntervalVar(
+        RevAlloc(new IntervalVarRelaxedMin(interval_var)));
   }
 }
 
@@ -1410,7 +1412,8 @@ void IntervalVar::WhenAnything(Demon* const d) {
 IntExpr* IntervalVar::StartExpr() {
   if (start_expr_ == NULL) {
     solver()->SaveValue(reinterpret_cast<void**>(&start_expr_));
-    start_expr_ = solver()->RevAlloc(new IntervalVarStartExpr(this));
+    start_expr_ = solver()->RegisterIntExpr(
+        solver()->RevAlloc(new IntervalVarStartExpr(this)));
   }
   return start_expr_;
 }
@@ -1418,7 +1421,8 @@ IntExpr* IntervalVar::StartExpr() {
 IntExpr* IntervalVar::DurationExpr() {
   if (duration_expr_ == NULL) {
     solver()->SaveValue(reinterpret_cast<void**>(&duration_expr_));
-    duration_expr_ = solver()->RevAlloc(new IntervalVarDurationExpr(this));
+    duration_expr_ = solver()->RegisterIntExpr(
+        solver()->RevAlloc(new IntervalVarDurationExpr(this)));
   }
   return duration_expr_;
 }
@@ -1426,7 +1430,8 @@ IntExpr* IntervalVar::DurationExpr() {
 IntExpr* IntervalVar::EndExpr() {
   if (end_expr_ == NULL) {
     solver()->SaveValue(reinterpret_cast<void**>(&end_expr_));
-    end_expr_ = solver()->RevAlloc(new IntervalVarEndExpr(this));
+    end_expr_ = solver()->RegisterIntExpr(
+        solver()->RevAlloc(new IntervalVarEndExpr(this)));
   }
   return end_expr_;
 }
@@ -1434,7 +1439,8 @@ IntExpr* IntervalVar::EndExpr() {
 IntExpr* IntervalVar::PerformedExpr() {
   if (performed_expr_ == NULL) {
     solver()->SaveValue(reinterpret_cast<void**>(&performed_expr_));
-    performed_expr_ = solver()->RevAlloc(new IntervalVarPerformedExpr(this));
+    performed_expr_ = solver()->RegisterIntExpr(
+        solver()->RevAlloc(new IntervalVarPerformedExpr(this)));
   }
   return performed_expr_;
 }
@@ -1453,14 +1459,16 @@ IntervalVar* Solver::MakeFixedDurationIntervalVar(int64 start_min,
   if (start_min == start_max && !optional) {
     return MakeFixedInterval(start_min, duration, name);
   } else if (!optional) {
-    return RevAlloc(new FixedDurationPerformedIntervalVar(this,
-                                                          start_min,
-                                                          start_max,
-                                                          duration,
-                                                          name));
+    return RegisterIntervalVar(
+        RevAlloc(new FixedDurationPerformedIntervalVar(this,
+                                                       start_min,
+                                                       start_max,
+                                                       duration,
+                                                       name)));
   }
-  return RevAlloc(new FixedDurationIntervalVar(this, start_min, start_max,
-                                               duration, optional, name));
+  return RegisterIntervalVar(
+      RevAlloc(new FixedDurationIntervalVar(this, start_min, start_max,
+                                            duration, optional, name)));
 }
 
 void Solver::MakeFixedDurationIntervalVarArray(int count,

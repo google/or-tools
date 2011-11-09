@@ -113,6 +113,22 @@ class BaseIntExpr : public IntExpr {
   IntVar* var_;
 };
 
+// This enum is used internally to do dynamic typing on subclasses of integer
+// variables.
+enum VarTypes {
+  UNSPECIFIED,
+  DOMAIN_INT_VAR,
+  BOOLEAN_VAR,
+  CONST_VAR,
+  VAR_ADD_CST,
+  DOMAIN_INT_VAR_ADD_CST,
+  VAR_TIMES_POS_CST,
+  BOOLEAN_VAR_TIMES_POS_CST,
+  CST_SUB_VAR,
+  OPP_VAR,
+  TRACE_VAR
+};
+
 // ----- utility classes -----
 
 // This class represent a reversible FIFO structure.
