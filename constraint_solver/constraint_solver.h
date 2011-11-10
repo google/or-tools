@@ -144,6 +144,7 @@ class NoGoodTerm;
 class OptimizeVar;
 class Pack;
 class PropagationBaseObject;
+class PropagationMonitor;
 class Queue;
 class Search;
 class SearchLimit;
@@ -2720,14 +2721,19 @@ class Solver {
   Search* ActiveSearch() const;
   // Returns the cache of the model.
   ModelCache* Cache() const;
-  // Returns wether we are profiling constraints.
-  bool IsProfileEnabled() const;
+  // Returns wether we are instrumenting demons.
+  bool InstrumentsDemons() const;
   // Returns wether we are tracing variables.
-  bool IsTraceEnabled() const;
+  bool InstrumentsVariables() const;
   // Returns the name of the model.
   string model_name() const;
   // Returns the dependency graph of the solver.
   DependencyGraph* Graph() const;
+  // Returns the main trace object.
+  PropagationMonitor* Trace() const;
+  // Adds the propagation monitor to the solver. This should be done
+  // before the search.
+  void AddPropagationMonitor(PropagationMonitor* const monitor);
 
   friend class BaseIntExpr;
   friend class Constraint;
@@ -2746,7 +2752,6 @@ class Solver {
 
  private:
   void Init();  // Initialization. To be called by the constructors only.
-  void NotifyFailureToDemonMonitor();
   void PushState(MarkerType t, const StateInfo& info);
   MarkerType PopState(StateInfo* info);
   void PushSentinel(int magic_code);
@@ -2855,6 +2860,7 @@ class Solver {
 
   scoped_ptr<ModelCache> model_cache_;
   scoped_ptr<DependencyGraph> dependency_graph_;
+  scoped_ptr<PropagationMonitor> trace_;
 
   DISALLOW_COPY_AND_ASSIGN(Solver);
 };

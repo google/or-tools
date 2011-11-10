@@ -73,30 +73,16 @@ SolverParameters::SolverParameters()
 // ----- Forward Declarations and Profiling Support -----
 extern DemonMonitor* BuildDemonMonitor(Solver* const solver);
 extern void DeleteDemonMonitor(DemonMonitor* const monitor);
-extern void DemonMonitorStartInitialPropagation(
-    DemonMonitor* const monitor, const Constraint* const constraint);
-extern void DemonMonitorEndInitialPropagation(
-    DemonMonitor* const monitor, const Constraint* const constraint);
-extern void DemonMonitorRestartSearch(DemonMonitor* const monitor);
-extern void DemonMonitorStartInitialNestedPropagation(
-    DemonMonitor* const monitor,
-    const Constraint* const parent,
-    const Constraint* const nested);
-extern void DemonMonitorEndInitialNestedPropagation(
-    DemonMonitor* const monitor,
-    const Constraint* const parent,
-    const Constraint* const nested);
-
 
 // TODO(user): remove this complex logic.
 // We need the double test because parameters are set too late when using
 // python in the open source. This is the cheapest work-around.
-bool Solver::IsProfileEnabled() const {
+bool Solver::InstrumentsDemons() const {
   return parameters_.profile_level != SolverParameters::NO_PROFILING ||
       !FLAGS_cp_profile_file.empty();
 }
 
-bool Solver::IsTraceEnabled() const {
+bool Solver::InstrumentsVariables() const {
   return parameters_.trace_level != SolverParameters::NO_TRACE ||
       FLAGS_cp_trace_variables;
 }
@@ -1350,7 +1336,8 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       constraint_index_(0),
       additional_constraint_index_(0),
       model_cache_(NULL),
-      dependency_graph_(NULL) {
+      dependency_graph_(NULL),
+      trace_(NULL) {
   Init();
 }
 
@@ -1382,12 +1369,14 @@ Solver::Solver(const string& name)
       constraint_index_(0),
       additional_constraint_index_(0),
       model_cache_(NULL),
-      dependency_graph_(NULL) {
+      dependency_graph_(NULL),
+      trace_(NULL) {
   Init();
 }
 
 extern ModelCache* BuildModelCache(Solver* const solver);
 extern DependencyGraph* BuildDependencyGraph(Solver* const solver);
+extern PropagationMonitor* BuildTrace();
 
 void Solver::Init() {
   for (int i = 0; i < kNumPriorities; ++i) {
@@ -1401,6 +1390,8 @@ void Solver::Init() {
   timer_->Restart();
   model_cache_.reset(BuildModelCache(this));
   dependency_graph_.reset(BuildDependencyGraph(this));
+  trace_.reset(BuildTrace());
+  AddPropagationMonitor(reinterpret_cast<PropagationMonitor*>(demon_monitor_));
 }
 
 Solver::~Solver() {
@@ -1708,19 +1699,13 @@ void Solver::ProcessConstraints() {
   additional_constraints_list_.clear();
   additional_constraints_parent_list_.clear();
 
-  // Process constraints from the model.
-  const bool profile = IsProfileEnabled();
   for (constraint_index_ = 0;
        constraint_index_ < constraints_size;
        ++constraint_index_) {
     Constraint* const constraint = constraints_list_[constraint_index_];
-    if (profile) {
-      DemonMonitorStartInitialPropagation(demon_monitor_, constraint);
-    }
+    trace_->StartConstraintInitialPropagation(constraint);
     constraint->PostAndPropagate();
-    if (profile) {
-      DemonMonitorEndInitialPropagation(demon_monitor_, constraint);
-    }
+    trace_->EndConstraintInitialPropagation(constraint);
   }
   CHECK_EQ(constraints_list_.size(), constraints_size);
 
@@ -1733,17 +1718,9 @@ void Solver::ProcessConstraints() {
     const int parent_index =
         additional_constraints_parent_list_[additional_constraint_index_];
     const Constraint* const parent = constraints_list_[parent_index];
-    if (profile) {
-      DemonMonitorStartInitialNestedPropagation(demon_monitor_,
-                                                parent,
-                                                nested);
-    }
+    trace_->StartNestedConstraintInitialPropagation(parent, nested);
     nested->PostAndPropagate();
-    if (profile) {
-      DemonMonitorEndInitialNestedPropagation(demon_monitor_,
-                                              parent,
-                                              nested);
-    }
+    trace_->EndNestedConstraintInitialPropagation(parent, nested);
   }
 }
 
@@ -1975,11 +1952,7 @@ void Solver::RestartSearch() {
     PushSentinel(INITIAL_SEARCH_SENTINEL);
   }
 
-  if (IsProfileEnabled()) {
-    CHECK_NOTNULL(demon_monitor_);
-    DemonMonitorRestartSearch(demon_monitor_);
-  }
-
+  trace_->RestartSearch();
   search->RestartSearch();
 }
 
@@ -2244,7 +2217,9 @@ void Solver::EndSearch() {
   Search* const search = searches_.back();
   BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
   search->ExitSearch();
+  trace_->ExitSearch();
   search->Clear();
+  DeleteDemonMonitor(demon_monitor_);
   state_ = OUTSIDE_SEARCH;
   if (!FLAGS_cp_profile_file.empty()) {
     LOG(INFO) << "Exporting profile to " << FLAGS_cp_profile_file;
@@ -2266,6 +2241,7 @@ bool Solver::CheckAssignment(Assignment* const solution) {
 
   // Push monitors and enter search.
   search->EnterSearch();
+  trace_->EnterSearch();
 
   // Push sentinel and set decision builder.
   DCHECK_EQ(1, searches_.size());
@@ -2410,7 +2386,7 @@ void Solver::Fail() {
   }
   ConstraintSolverFailsHere();
   fails_++;
-  NotifyFailureToDemonMonitor();
+  trace_->RaiseFailure();
   searches_.back()->BeginFail();
   if (FLAGS_cp_trace_demons || FLAGS_cp_verbose_fail) {
     LOG(INFO) << "### Failure ###";

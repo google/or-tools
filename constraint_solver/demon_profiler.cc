@@ -26,6 +26,7 @@
 #include "base/stl_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/demon_profiler.pb.h"
 
 namespace operations_research {
@@ -34,13 +35,13 @@ namespace operations_research {
 // DemonMonitor manages the profiling of demons and allows access to gathered
 // data. Add this class as a parameter to Solver and access its information
 // after the end of a search.
-class DemonMonitor {
+class DemonMonitor : public PropagationMonitor {
  public:
   DemonMonitor()
     : active_constraint_(NULL),
       active_demon_(NULL),
 start_time_(WallTimer::GetTimeInMicroSeconds()) {}
-  ~DemonMonitor() {
+  virtual ~DemonMonitor() {
     STLDeleteContainerPairSecondPointers(constraint_map_.begin(),
                                          constraint_map_.end());
   }
@@ -49,7 +50,8 @@ start_time_(WallTimer::GetTimeInMicroSeconds()) {}
 return WallTimer::GetTimeInMicroSeconds() - start_time_;
   }
 
-  void StartInitialPropagation(const Constraint* const constraint) {
+  virtual void StartConstraintInitialPropagation(
+      const Constraint* const constraint) {
     CHECK(active_constraint_ == NULL);
     CHECK(active_demon_ == NULL);
     CHECK_NOTNULL(constraint);
@@ -60,7 +62,8 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     constraint_map_[constraint] = ct_run;
   }
 
-  void EndInitialPropagation(const Constraint* const constraint) {
+  virtual void EndConstraintInitialPropagation(
+      const Constraint* const constraint) {
     CHECK_NOTNULL(active_constraint_);
     CHECK(active_demon_ == NULL);
     CHECK_NOTNULL(constraint);
@@ -72,8 +75,9 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     active_constraint_ = NULL;
   }
 
-  void StartInitialNestedPropagation(const Constraint* const constraint,
-                                     const Constraint* const delayed) {
+  virtual void StartNestedConstraintInitialPropagation(
+      const Constraint* const constraint,
+      const Constraint* const delayed) {
     CHECK(active_constraint_ == NULL);
     CHECK(active_demon_ == NULL);
     CHECK_NOTNULL(constraint);
@@ -83,8 +87,9 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     active_constraint_ = constraint;
   }
 
-  void EndInitialNestedPropagation(const Constraint* const constraint,
-                                   const Constraint* const delayed) {
+  virtual void EndNestedConstraintInitialPropagation(
+      const Constraint* const constraint,
+      const Constraint* const delayed) {
     CHECK_NOTNULL(active_constraint_);
     CHECK(active_demon_ == NULL);
     CHECK_NOTNULL(constraint);
@@ -97,7 +102,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     active_constraint_ = NULL;
   }
 
-  void RegisterDemon(const Demon* const demon) {
+  virtual void RegisterDemon(const Demon* const demon) {
     if (demon_map_.find(demon) == demon_map_.end()) {
       CHECK_NOTNULL(active_constraint_);
       CHECK(active_demon_ == NULL);
@@ -111,7 +116,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     }
   }
 
-  void StartDemonRun(const Demon* const demon) {
+  virtual void StartDemonRun(const Demon* const demon) {
     CHECK(active_demon_ == NULL);
     CHECK_NOTNULL(demon);
     active_demon_ = demon;
@@ -119,7 +124,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     demon_run->add_start_time(CurrentTime());
   }
 
-  void EndDemonRun(const Demon* const demon) {
+  virtual void EndDemonRun(const Demon* const demon) {
     CHECK_EQ(active_demon_, demon);
     CHECK_NOTNULL(demon);
     DemonRuns* const demon_run = demon_map_[active_demon_];
@@ -128,7 +133,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     active_demon_ = NULL;
   }
 
-  void RaiseFailure() {
+  virtual void RaiseFailure() {
     if (active_demon_ != NULL) {
       DemonRuns* const demon_run = demon_map_[active_demon_];
       demon_run->add_end_time(CurrentTime());
@@ -144,6 +149,11 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
       active_constraint_ = NULL;
     }
   }
+
+  virtual void StartInitialPropagation() {}
+  virtual void EndInitialPropagation() {}
+  virtual void EnterSearch() {}
+  virtual void ExitSearch() {}
 
   // Useful for unit tests.
   void AddFakeRun(const Demon* const demon,
@@ -372,16 +382,8 @@ class DemonProfiler : public Demon {
 };
 
 
-void Solver::NotifyFailureToDemonMonitor() {
-  if (IsProfileEnabled()) {
-    CHECK_NOTNULL(demon_monitor_);
-    demon_monitor_->RaiseFailure();
-  }
-}
-
 void Solver::ExportProfilingOverview(const string& filename) {
-  if (IsProfileEnabled()) {
-    CHECK_NOTNULL(demon_monitor_);
+  if (demon_monitor_ != NULL) {
     demon_monitor_->PrintOverview(this, filename);
   }
 }
@@ -389,23 +391,20 @@ void Solver::ExportProfilingOverview(const string& filename) {
 // ----- Exported Functions -----
 
 DemonMonitor* BuildDemonMonitor(Solver* const solver) {
-  return new DemonMonitor;
+  if (solver->InstrumentsDemons()) {
+    return new DemonMonitor;
+  } else {
+    return NULL;
+  }
 }
 
 void DeleteDemonMonitor(DemonMonitor* const monitor) {
   delete monitor;
 }
 
-void BuildDemonProfiler(Solver* const solver,
-                        Demon* const demon,
-                        DemonMonitor* const monitor) {
-  monitor->RegisterDemon(demon);
-  solver->RevAlloc(new DemonProfiler(demon, monitor));
-}
-
 Demon* Solver::RegisterDemon(Demon* const demon) {
   CHECK_NOTNULL(demon);
-  if (IsProfileEnabled() && state_ != IN_SEARCH) {
+  if (InstrumentsDemons() && state_ != IN_SEARCH) {
     CHECK_NOTNULL(demon_monitor_);
     demon_monitor_->RegisterDemon(demon);
     return RevAlloc(new DemonProfiler(demon, demon_monitor_));
@@ -414,35 +413,14 @@ Demon* Solver::RegisterDemon(Demon* const demon) {
   }
 }
 
-void DemonMonitorStartInitialPropagation(DemonMonitor* const monitor,
-                                         const Constraint* const constraint) {
-  monitor->StartInitialPropagation(constraint);
-}
-
-void DemonMonitorEndInitialPropagation(DemonMonitor* const monitor,
-                                       const Constraint* const constraint) {
-  monitor->EndInitialPropagation(constraint);
-}
-
-void DemonMonitorStartInitialNestedPropagation(
-    DemonMonitor* const monitor,
-    const Constraint* const constraint,
-    const Constraint* const delayed) {
-  monitor->StartInitialNestedPropagation(constraint, delayed);
-}
-
-void DemonMonitorEndInitialNestedPropagation(
-    DemonMonitor* const monitor,
-    const Constraint* const constraint,
-    const Constraint* const delayed) {
-  monitor->EndInitialNestedPropagation(constraint, delayed);
-}
-
-void DemonMonitorRestartSearch(DemonMonitor* const monitor) {
-  monitor->RestartSearch();
-}
-
 // ----- Exported Methods for Unit Tests -----
+
+void BuildDemonProfiler(Solver* const solver,
+                        Demon* const demon,
+                        DemonMonitor* const monitor) {
+  monitor->RegisterDemon(demon);
+  solver->RevAlloc(new DemonProfiler(demon, monitor));
+}
 
 void DeleteDemonProfiler(DemonProfiler* const profiler) {
   delete profiler;
@@ -470,4 +448,15 @@ void DemonMonitorExportInformation(DemonMonitor* const monitor,
                              total_demon_runtime,
                              demon_count);
 }
+
+void DemonMonitorStartInitialPropagation(DemonMonitor* const monitor,
+                                         const Constraint* const constraint) {
+  monitor->StartConstraintInitialPropagation(constraint);
+}
+
+void DemonMonitorEndInitialPropagation(DemonMonitor* const monitor,
+                                       const Constraint* const constraint) {
+  monitor->EndConstraintInitialPropagation(constraint);
+}
+
 }  // namespace

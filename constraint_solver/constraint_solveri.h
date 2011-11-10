@@ -791,6 +791,31 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   hash_map<const IntVar*, int64> var_to_index_;
 };
 
+// ---------- PropagationMonitor ----------
+
+class PropagationMonitor : public BaseObject {
+ public:
+  virtual void StartInitialPropagation() = 0;
+  virtual void EndInitialPropagation() = 0;
+  virtual void StartConstraintInitialPropagation(
+      const Constraint* const constraint) = 0;
+  virtual void EndConstraintInitialPropagation(
+      const Constraint* const constraint) = 0;
+  virtual void StartNestedConstraintInitialPropagation(
+      const Constraint* const parent,
+      const Constraint* const nested) = 0;
+  virtual void EndNestedConstraintInitialPropagation(
+      const Constraint* const parent,
+      const Constraint* const nested) = 0;
+  virtual void RegisterDemon(const Demon* const demon) = 0;
+  virtual void StartDemonRun(const Demon* const demon) = 0;
+  virtual void EndDemonRun(const Demon* const demon) = 0;
+  virtual void RaiseFailure() = 0;
+  virtual void EnterSearch() = 0;
+  virtual void ExitSearch() = 0;
+  virtual void RestartSearch() = 0;
+};
+
 // ---------- SymmetryBreaker ----------
 
 class SymmetryManager;

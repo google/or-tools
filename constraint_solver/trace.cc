@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <math.h>
 #include <string.h>
 #include <algorithm>
@@ -32,10 +31,11 @@
 
 namespace operations_research {
 namespace {
+// ---------- Code Instrumentation ----------
 class TraceIntVar : public IntVar {
  public:
-  explicit TraceIntVar(Solver* const s, IntVar* const inner)
-      : IntVar(s), inner_(inner) {
+  TraceIntVar(Solver* const solver, IntVar* const inner)
+      : IntVar(solver), inner_(inner) {
     if (inner->HasName()) {
       set_name(inner->name());
     }
@@ -171,8 +171,8 @@ class TraceIntVar : public IntVar {
 
 class TraceIntExpr : public IntExpr {
  public:
-  explicit TraceIntExpr(Solver* const s, IntExpr* const inner)
-      : IntExpr(s), inner_(inner) {
+  TraceIntExpr(Solver* const solver, IntExpr* const inner)
+      : IntExpr(solver), inner_(inner) {
     CHECK(!inner->IsVar());
     if (inner->HasName()) {
       set_name(inner->name());
@@ -392,10 +392,108 @@ class TraceIntervalVar : public IntervalVar {
  private:
   IntervalVar* const interval_;
 };
+
+// ---------- Trace ----------
+
+class Trace : public PropagationMonitor {
+ public:
+  virtual void StartInitialPropagation() {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->StartInitialPropagation();
+    }
+  }
+
+  virtual void EndInitialPropagation() {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->EndInitialPropagation();
+    }
+  }
+
+  virtual void StartConstraintInitialPropagation(
+      const Constraint* const constraint) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->StartConstraintInitialPropagation(constraint);
+    }
+  }
+
+  virtual void EndConstraintInitialPropagation(
+      const Constraint* const constraint) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->EndConstraintInitialPropagation(constraint);
+    }
+  }
+
+  virtual void StartNestedConstraintInitialPropagation(
+      const Constraint* const parent,
+      const Constraint* const nested) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->StartNestedConstraintInitialPropagation(parent, nested);
+    }
+  }
+
+  virtual void EndNestedConstraintInitialPropagation(
+      const Constraint* const parent,
+      const Constraint* const nested) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->EndNestedConstraintInitialPropagation(parent, nested);
+    }
+  }
+
+  virtual void RegisterDemon(const Demon* const demon) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RegisterDemon(demon);
+    }
+  }
+
+  virtual void StartDemonRun(const Demon* const demon) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->StartDemonRun(demon);
+    }
+  }
+
+  virtual void EndDemonRun(const Demon* const demon) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->EndDemonRun(demon);
+    }
+  }
+
+  virtual void RaiseFailure() {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RaiseFailure();
+    }
+  }
+
+  virtual void EnterSearch() {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->EnterSearch();
+    }
+  }
+
+  virtual void ExitSearch() {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->ExitSearch();
+    }
+  }
+
+  virtual void RestartSearch() {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RestartSearch();
+    }
+  }
+
+  void Add(PropagationMonitor* const monitor) {
+    if (monitor != NULL) {
+      monitors_.push_back(monitor);
+    }
+  }
+
+ private:
+  std::vector<PropagationMonitor*> monitors_;
+};
 }  // namespace
 
 IntExpr* Solver::RegisterIntExpr(IntExpr* const expr) {
-  if (IsTraceEnabled()) {
+  if (InstrumentsVariables()) {
     if (expr->IsVar()) {
       return RegisterIntVar(expr->Var());
     } else {
@@ -407,7 +505,7 @@ IntExpr* Solver::RegisterIntExpr(IntExpr* const expr) {
 }
 
 IntVar* Solver::RegisterIntVar(IntVar* const var) {
-  if (IsTraceEnabled() &&
+  if (InstrumentsVariables() &&
       var->VarType() != TRACE_VAR) {  // Not already a trace var.
     return RevAlloc(new TraceIntVar(this, var));
   } else {
@@ -416,10 +514,23 @@ IntVar* Solver::RegisterIntVar(IntVar* const var) {
 }
 
 IntervalVar* Solver::RegisterIntervalVar(IntervalVar* const var) {
-  if (IsTraceEnabled()) {
+  if (InstrumentsVariables()) {
     return RevAlloc(new TraceIntervalVar(this, var));
   } else {
     return var;
   }
+}
+
+PropagationMonitor* BuildTrace() {
+  return new Trace();
+}
+
+PropagationMonitor* Solver::Trace() const {
+  return trace_.get();
+}
+
+void Solver::AddPropagationMonitor(PropagationMonitor* const monitor) {
+  // TODO(user): Check solver state?
+  reinterpret_cast<class Trace*>(trace_.get())->Add(monitor);
 }
 }  // namespace operations_research
