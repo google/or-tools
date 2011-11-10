@@ -443,11 +443,11 @@ class CoveringProblem {
   MPVariable* AddBox(const Box& box) {
     CHECK(boxes_.find(box) == boxes_.end());
     MPVariable* const var = solver_->MakeNumVar(0., 1., box.DebugString());
-    solver_->AddObjectiveTerm(var, box.Cost());
-    max_boxes_constraint_->AddTerm(var);
+    solver_->SetObjectiveCoefficient(var, box.Cost());
+    max_boxes_constraint_->SetCoefficient(var, 1.0);
     for (int y = box.y_min(); y <= box.y_max(); ++y) {
       for (int x = box.x_min(); x <= box.x_max(); ++x) {
-        cell(x, y)->AddTerm(var);
+        cell(x, y)->SetCoefficient(var, 1.0);
       }
     }
     boxes_[box] = var;

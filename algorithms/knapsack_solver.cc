@@ -1099,7 +1099,7 @@ int64 KnapsackMIPSolver::Solve() {
     MPConstraint* const ct =
         solver.MakeRowConstraint(0LL, capacities_.at(i));
     for (int j = 0; j < num_items; ++j) {
-      ct->AddTerm(variables.at(j), weights_.at(i).at(j));
+      ct->SetCoefficient(variables.at(j), weights_.at(i).at(j));
     }
   }
 
@@ -1107,7 +1107,7 @@ int64 KnapsackMIPSolver::Solve() {
   // because of an issue with CBC solver which does not always find the optimal
   // solution on maximization problems.
   for (int j = 0; j < num_items; ++j) {
-    solver.AddObjectiveTerm(variables.at(j), -profits_.at(j));
+    solver.SetObjectiveCoefficient(variables.at(j), -profits_.at(j));
   }
 
   solver.SuppressOutput();
