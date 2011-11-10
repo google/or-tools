@@ -423,7 +423,10 @@ MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& model) {
       return MPSolver::DUPLICATE_VARIABLE_ID;
     }
   }
+  // To detect duplicate variables in each constraint, and in the objective.
+  hash_set<MPVariable*> tmp_variable_set;
   for (int i = 0; i < model.constraints_size(); ++i) {
+    tmp_variable_set.clear();
     const MPConstraintProto& ct_proto = model.constraints(i);
     const string& ct_id = ct_proto.has_id() ? ct_proto.id() : "";
     MPConstraint* const ct = MakeRowConstraint(ct_proto.lb(),
@@ -433,22 +436,36 @@ MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& model) {
       const MPTermProto& term_proto = ct_proto.terms(j);
       const string& id = term_proto.variable_id();
       MPVariable* variable = FindPtrOrNull(variables, id);
-      if (variable != NULL) {
-        ct->AddTerm(variable, term_proto.coefficient());
-      } else {
+      if (variable == NULL) {
         return MPSolver::UNKNOWN_VARIABLE_ID;
       }
+      if (!tmp_variable_set.insert(variable).second) {
+        LOG(WARNING)
+            << "Multiple terms on the same variable within the same"
+            << " constraint; keeping only the last term into account.\n"
+            << "Variable: " << variable->name()
+            << ", in Constraint: " << ct_id
+            << ", in Model '" << model.name() << "'.";
+      }
+      ct->SetCoefficient(variable, term_proto.coefficient());
     }
   }
+  tmp_variable_set.clear();
   for (int i = 0; i < model.objective_terms_size(); ++i) {
     const MPTermProto& term_proto = model.objective_terms(i);
     const string& id = term_proto.variable_id();
     MPVariable* variable = FindPtrOrNull(variables, id);
-    if (variable != NULL) {
-      AddObjectiveTerm(variable, term_proto.coefficient());
-    } else {
+    if (variable == NULL) {
       return MPSolver::UNKNOWN_VARIABLE_ID;
     }
+    if (!tmp_variable_set.insert(variable).second) {
+      LOG(WARNING)
+          << "Multiple terms on the same variable within the"
+          << " objective; keeping only the last term into account.\n"
+          << "Variable: " << variable->name()
+          << ", in Model '" << model.name() << "'.";
+    }
+    SetObjectiveCoefficient(variable, term_proto.coefficient());
   }
   SetOptimizationDirection(model.maximize());
   if (model.has_objective_offset()) {

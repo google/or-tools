@@ -291,10 +291,6 @@ class MPSolver {
   // Clears the objective: the objective coefficient of each variable
   // is 0 and the objective offset is 0.
   void ClearObjective();
-  // Adds var * coeff to the objective.
-  void AddObjectiveTerm(MPVariable* const var, double coeff);
-  // Adds var (with coefficient 1) to the objective.
-  void AddObjectiveTerm(MPVariable* const var);
   // Sets the objective coefficient of a variable in the objective.
   void SetObjectiveCoefficient(MPVariable* const var, double coeff);
   // Adds a constant term to the objective.
@@ -437,6 +433,13 @@ class MPSolver {
   friend class SCIPInterface;
   friend class MPSolverInterface;
 
+  // DEPRECATED -- please use SetObjectiveCoefficient() instead.
+  // Adds var * coeff to the objective.
+  void AddObjectiveTerm(MPVariable* const var, double coeff);
+  // DEPRECATED -- please use SetObjectiveCoefficient() instead.
+  // Adds var (with coefficient 1) to the objective.
+  void AddObjectiveTerm(MPVariable* const var);
+
  private:
   // Computes the size of the constraint with the largest number of
   // coefficients with index in [min_constraint_index,
@@ -554,10 +557,6 @@ class MPConstraint {
   // Clears all variables and coefficients. Does not clear the bounds.
   void Clear();
 
-  // Adds var * coeff to the constraint.
-  void AddTerm(MPVariable* const var, double coeff);
-  // Adds var (with coefficient 1) to the constraint.
-  void AddTerm(MPVariable* const var);
   // Sets the coefficient of the variable on the constraint.
   void SetCoefficient(MPVariable* const var, double coeff);
 
@@ -588,6 +587,13 @@ class MPConstraint {
   // problems).
   // @see MPSolver::BasisStatus.
   MPSolver::BasisStatus basis_status() const;
+
+  // DEPRECATED -- please use SetCoefficient() instead.
+  // Adds var * coeff to the constraint.
+  void AddTerm(MPVariable* const var, double coeff);
+  // DEPRECATED -- please use SetCoefficient() instead.
+  // Adds var (with coefficient 1) to the constraint.
+  void AddTerm(MPVariable* const var);
 
  protected:
   friend class MPSolver;
@@ -639,10 +645,6 @@ class MPObjective {
   // Clears all variables and coefficients.
   void Clear();
 
-  // Adds var * coeff to the objective.
-  void AddTerm(MPVariable* const var, double coeff);
-  // Adds variable (with coefficient 1) to the objective.
-  void AddTerm(MPVariable* const var);
   // Sets the coefficient of the variable in the objective.
   void SetCoefficient(MPVariable* const var, double coeff);
 
@@ -650,6 +652,13 @@ class MPObjective {
   void AddOffset(double value);
   // Sets the constant term in the objective.
   void SetOffset(double value);
+
+  // DEPRECATED -- please use SetCoefficient() instead.
+  // Adds var * coeff to the objective.
+  void AddTerm(MPVariable* const var, double coeff);
+  // DEPRECATED -- please use SetCoefficient() instead.
+  // Adds variable (with coefficient 1) to the objective.
+  void AddTerm(MPVariable* const var);
 
  private:
   friend class MPSolver;

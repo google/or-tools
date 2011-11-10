@@ -34,6 +34,7 @@ message MPTermProto {
 message MPConstraintProto {
   required double lb = 1;
   required double ub = 2;
+  // The same variable_id should not appear twice in the list of terms.
   repeated MPTermProto terms = 3;
   optional string id = 4;
 }
@@ -41,7 +42,11 @@ message MPConstraintProto {
 message MPModelProto {
   repeated MPVariableProto variables = 1;
   required bool maximize = 2;
+
+  // The same variable_id should not appear twice in the list of
+  // objective terms.
   repeated MPTermProto objective_terms = 3;
+
   repeated MPConstraintProto constraints = 7;
   optional string name = 8;
   optional double objective_offset = 9;
