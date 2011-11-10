@@ -2219,7 +2219,6 @@ void Solver::EndSearch() {
   search->ExitSearch();
   trace_->ExitSearch();
   search->Clear();
-  DeleteDemonMonitor(demon_monitor_);
   state_ = OUTSIDE_SEARCH;
   if (!FLAGS_cp_profile_file.empty()) {
     LOG(INFO) << "Exporting profile to " << FLAGS_cp_profile_file;
