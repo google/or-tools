@@ -27,13 +27,13 @@ void RunIntegerProgrammingExample(
   MPVariable* const x2 = solver.MakeIntVar(0.0, infinity, "x2");
 
   // Minimize x1 + 2 * x2.
-  solver.AddObjectiveTerm(x1, 1);
-  solver.AddObjectiveTerm(x2, 2);
+  solver.SetObjectiveCoefficient(x1, 1);
+  solver.SetObjectiveCoefficient(x2, 2);
 
   // 2 * x2 + 3 * x1 >= 17.
   MPConstraint* const c0 = solver.MakeRowConstraint(17, infinity);
-  c0->AddTerm(x1, 3);
-  c0->AddTerm(x2, 2);
+  c0->SetCoefficient(x1, 3);
+  c0->SetCoefficient(x2, 2);
 
   const MPSolver::ResultStatus result_status = solver.Solve();
 

@@ -52,28 +52,28 @@ def RunLinearExampleCppStyleAPI(optimization_problem_type):
   x3 = solver.NumVar(0.0, infinity, 'x3')
 
   # Maximize 10 * x1 + 6 * x2 + 4 * x3.
-  solver.AddObjectiveTerm(x1, 10)
-  solver.AddObjectiveTerm(x2, 6)
-  solver.AddObjectiveTerm(x3, 4)
+  solver.SetObjectiveCoefficient(x1, 10)
+  solver.SetObjectiveCoefficient(x2, 6)
+  solver.SetObjectiveCoefficient(x3, 4)
   solver.SetMaximization()
 
   # x1 + x2 + x3 <= 100.
   c0 = solver.Constraint(-infinity, 100.0, 'c0')
-  c0.AddTerm(x1, 1)
-  c0.AddTerm(x2, 1)
-  c0.AddTerm(x3, 1)
+  c0.SetCoefficient(x1, 1)
+  c0.SetCoefficient(x2, 1)
+  c0.SetCoefficient(x3, 1)
 
   # 10 * x1 + 4 * x2 + 5 * x3 <= 600.
   c1 = solver.Constraint(-infinity, 600.0, 'c1')
-  c1.AddTerm(x1, 10)
-  c1.AddTerm(x2, 4)
-  c1.AddTerm(x3, 5)
+  c1.SetCoefficient(x1, 10)
+  c1.SetCoefficient(x2, 4)
+  c1.SetCoefficient(x3, 5)
 
   # 2 * x1 + 2 * x2 + 6 * x3 <= 300.
   c2 = solver.Constraint(-infinity, 300.0, 'c2')
-  c2.AddTerm(x1, 2)
-  c2.AddTerm(x2, 2)
-  c2.AddTerm(x3, 6)
+  c2.SetCoefficient(x1, 2)
+  c2.SetCoefficient(x2, 2)
+  c2.SetCoefficient(x3, 6)
 
   SolveAndPrint(solver, [x1, x2, x3], [c0, c1, c2])
 

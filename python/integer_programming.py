@@ -46,13 +46,13 @@ def RunIntegerExampleCppStyleAPI(optimization_problem_type):
   x2 = solver.IntVar(0.0, infinity, 'x2')
 
   # Minimize x1 + 2 * x2.
-  solver.AddObjectiveTerm(x1, 1)
-  solver.AddObjectiveTerm(x2, 2)
+  solver.SetObjectiveCoefficient(x1, 1)
+  solver.SetObjectiveCoefficient(x2, 2)
 
   # 2 * x2 + 3 * x1 >= 17.
   ct = solver.Constraint(17, infinity)
-  ct.AddTerm(x1, 3)
-  ct.AddTerm(x2, 2)
+  ct.SetCoefficient(x1, 3)
+  ct.SetCoefficient(x2, 2)
 
   SolveAndPrint(solver, [x1, x2])
 

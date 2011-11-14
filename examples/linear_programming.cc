@@ -28,28 +28,28 @@ void RunLinearProgrammingExample(
   MPVariable* const x3 = solver.MakeNumVar(0.0, infinity, "x3");
 
   // Maximize 10 * x1 + 6 * x2 + 4 * x3.
-  solver.AddObjectiveTerm(x1, 10);
-  solver.AddObjectiveTerm(x2, 6);
-  solver.AddObjectiveTerm(x3, 4);
+  solver.SetObjectiveCoefficient(x1, 10);
+  solver.SetObjectiveCoefficient(x2, 6);
+  solver.SetObjectiveCoefficient(x3, 4);
   solver.SetMaximization();
 
   // x1 + x2 + x3 <= 100.
   MPConstraint* const c0 = solver.MakeRowConstraint(-infinity, 100.0);
-  c0->AddTerm(x1, 1);
-  c0->AddTerm(x2, 1);
-  c0->AddTerm(x3, 1);
+  c0->SetCoefficient(x1, 1);
+  c0->SetCoefficient(x2, 1);
+  c0->SetCoefficient(x3, 1);
 
   // 10 * x1 + 4 * x2 + 5 * x3 <= 600.
   MPConstraint* const c1 = solver.MakeRowConstraint(-infinity, 600.0);
-  c1->AddTerm(x1, 10);
-  c1->AddTerm(x2, 4);
-  c1->AddTerm(x3, 5);
+  c1->SetCoefficient(x1, 10);
+  c1->SetCoefficient(x2, 4);
+  c1->SetCoefficient(x3, 5);
 
   // 2 * x1 + 2 * x2 + 6 * x3 <= 300.
   MPConstraint* const c2 = solver.MakeRowConstraint(-infinity, 300.0);
-  c2->AddTerm(x1, 2);
-  c2->AddTerm(x2, 2);
-  c2->AddTerm(x3, 6);
+  c2->SetCoefficient(x1, 2);
+  c2->SetCoefficient(x2, 2);
+  c2->SetCoefficient(x3, 6);
 
   // TODO(user): Change example to show = and >= constraints.
 
