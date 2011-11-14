@@ -37,7 +37,10 @@
 #include "constraint_solver/model.pb.h"
 #include "util/const_int_array.h"
 
-DEFINE_bool(cp_trace_demons, false, "trace all demon executions.");
+DEFINE_bool(cp_trace_propagation,
+            false,
+            "Trace propagation events(constraint and demon executions,"
+            "variable modifications).");
 DEFINE_bool(cp_show_constraints, false,
             "show all constraints added to the solver.");
 DEFINE_bool(cp_print_model, false,
@@ -48,7 +51,6 @@ DEFINE_string(cp_export_file, "", "Export model to file using CPModelProto.");
 DEFINE_bool(cp_no_solve, false, "Force failure at the beginning of a search.");
 DEFINE_string(cp_profile_file, "", "Export profiling overview to file.");
 DEFINE_bool(cp_verbose_fail, false, "Verbose output when failing.");
-DEFINE_bool(cp_trace_variables, false, "Trace propagation on all variables.");
 
 void ConstraintSolverFailsHere() {
   VLOG(3) << "Fail";
@@ -79,12 +81,18 @@ extern void DeleteDemonMonitor(DemonMonitor* const monitor);
 // python in the open source. This is the cheapest work-around.
 bool Solver::InstrumentsDemons() const {
   return parameters_.profile_level != SolverParameters::NO_PROFILING ||
+      FLAGS_cp_trace_propagation ||
+      !FLAGS_cp_profile_file.empty();
+}
+
+bool Solver::IsProfilingEnabled() const {
+  return parameters_.profile_level != SolverParameters::NO_PROFILING ||
       !FLAGS_cp_profile_file.empty();
 }
 
 bool Solver::InstrumentsVariables() const {
   return parameters_.trace_level != SolverParameters::NO_TRACE ||
-      FLAGS_cp_trace_variables;
+      FLAGS_cp_trace_propagation;
 }
 
 // ------------------ Demon class ----------------
@@ -243,10 +251,6 @@ class Queue {
     Demon* const demon = containers_[prio]->NextDemon();
     // A NULL demon will just be ignored
     if (demon != NULL) {
-      if (FLAGS_cp_trace_demons) {
-        LG << "### Running demon (" << prio << "):"
-           << demon->DebugString() << " ###";
-      }
       demon->set_stamp(stamp_ - 1);
       DCHECK_EQ(prio, demon->priority());
       solver_->demon_runs_[prio]++;
@@ -770,48 +774,48 @@ void Solver::InternalSaveValue(bool* valptr) {
   trail_->rev_bool_value_.push_back(*valptr);
 }
 
-int* Solver::SafeRevAlloc(int* ptr) {
-  check_alloc_state();
-  trail_->rev_int_memory_.push_back(ptr);
-  return ptr;
-}
-
-int64* Solver::SafeRevAlloc(int64* ptr) {
-  check_alloc_state();
-  trail_->rev_int64_memory_.push_back(ptr);
-  return ptr;
-}
-
-uint64* Solver::SafeRevAlloc(uint64* ptr) {
-  check_alloc_state();
-  trail_->rev_int64_memory_.push_back(reinterpret_cast<int64*>(ptr));
-  return ptr;
-}
-
 BaseObject* Solver::SafeRevAlloc(BaseObject* ptr) {
   check_alloc_state();
   trail_->rev_object_memory_.push_back(ptr);
   return ptr;
 }
 
-BaseObject** Solver::SafeRevAlloc(BaseObject** ptr) {
+int* Solver::SafeRevAllocArray(int* ptr) {
+  check_alloc_state();
+  trail_->rev_int_memory_.push_back(ptr);
+  return ptr;
+}
+
+int64* Solver::SafeRevAllocArray(int64* ptr) {
+  check_alloc_state();
+  trail_->rev_int64_memory_.push_back(ptr);
+  return ptr;
+}
+
+uint64* Solver::SafeRevAllocArray(uint64* ptr) {
+  check_alloc_state();
+  trail_->rev_int64_memory_.push_back(reinterpret_cast<int64*>(ptr));
+  return ptr;
+}
+
+BaseObject** Solver::SafeRevAllocArray(BaseObject** ptr) {
   check_alloc_state();
   trail_->rev_object_array_memory_.push_back(ptr);
   return ptr;
 }
 
-IntVar** Solver::SafeRevAlloc(IntVar** ptr) {
-  BaseObject** in = SafeRevAlloc(reinterpret_cast<BaseObject**>(ptr));
+IntVar** Solver::SafeRevAllocArray(IntVar** ptr) {
+  BaseObject** in = SafeRevAllocArray(reinterpret_cast<BaseObject**>(ptr));
   return reinterpret_cast<IntVar**>(in);
 }
 
-IntExpr** Solver::SafeRevAlloc(IntExpr** ptr) {
-  BaseObject** in = SafeRevAlloc(reinterpret_cast<BaseObject**>(ptr));
+IntExpr** Solver::SafeRevAllocArray(IntExpr** ptr) {
+  BaseObject** in = SafeRevAllocArray(reinterpret_cast<BaseObject**>(ptr));
   return reinterpret_cast<IntExpr**>(in);
 }
 
-Constraint** Solver::SafeRevAlloc(Constraint** ptr) {
-  BaseObject** in = SafeRevAlloc(reinterpret_cast<BaseObject**>(ptr));
+Constraint** Solver::SafeRevAllocArray(Constraint** ptr) {
+  BaseObject** in = SafeRevAllocArray(reinterpret_cast<BaseObject**>(ptr));
   return reinterpret_cast<Constraint**>(in);
 }
 
@@ -1337,7 +1341,7 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       additional_constraint_index_(0),
       model_cache_(NULL),
       dependency_graph_(NULL),
-      trace_(NULL) {
+      propagation_monitor_(NULL) {
   Init();
 }
 
@@ -1370,13 +1374,14 @@ Solver::Solver(const string& name)
       additional_constraint_index_(0),
       model_cache_(NULL),
       dependency_graph_(NULL),
-      trace_(NULL) {
+      propagation_monitor_(NULL) {
   Init();
 }
 
 extern ModelCache* BuildModelCache(Solver* const solver);
 extern DependencyGraph* BuildDependencyGraph(Solver* const solver);
 extern PropagationMonitor* BuildTrace();
+extern PropagationMonitor* BuildPrintTrace();
 
 void Solver::Init() {
   for (int i = 0; i < kNumPriorities; ++i) {
@@ -1390,8 +1395,11 @@ void Solver::Init() {
   timer_->Restart();
   model_cache_.reset(BuildModelCache(this));
   dependency_graph_.reset(BuildDependencyGraph(this));
-  trace_.reset(BuildTrace());
+  propagation_monitor_.reset(BuildTrace());
   AddPropagationMonitor(reinterpret_cast<PropagationMonitor*>(demon_monitor_));
+  if (FLAGS_cp_trace_propagation) {
+    AddPropagationMonitor(RevAlloc(BuildPrintTrace()));
+  }
 }
 
 Solver::~Solver() {
@@ -1703,9 +1711,9 @@ void Solver::ProcessConstraints() {
        constraint_index_ < constraints_size;
        ++constraint_index_) {
     Constraint* const constraint = constraints_list_[constraint_index_];
-    trace_->StartConstraintInitialPropagation(constraint);
+    propagation_monitor_->BeginConstraintInitialPropagation(constraint);
     constraint->PostAndPropagate();
-    trace_->EndConstraintInitialPropagation(constraint);
+    propagation_monitor_->EndConstraintInitialPropagation(constraint);
   }
   CHECK_EQ(constraints_list_.size(), constraints_size);
 
@@ -1718,9 +1726,10 @@ void Solver::ProcessConstraints() {
     const int parent_index =
         additional_constraints_parent_list_[additional_constraint_index_];
     const Constraint* const parent = constraints_list_[parent_index];
-    trace_->StartNestedConstraintInitialPropagation(parent, nested);
+    propagation_monitor_->BeginNestedConstraintInitialPropagation(parent,
+                                                                  nested);
     nested->PostAndPropagate();
-    trace_->EndNestedConstraintInitialPropagation(parent, nested);
+    propagation_monitor_->EndNestedConstraintInitialPropagation(parent, nested);
   }
 }
 
@@ -1952,7 +1961,7 @@ void Solver::RestartSearch() {
     PushSentinel(INITIAL_SEARCH_SENTINEL);
   }
 
-  trace_->RestartSearch();
+  propagation_monitor_->RestartSearch();
   search->RestartSearch();
 }
 
@@ -2074,9 +2083,11 @@ bool Solver::NextSolution() {
       case OUTSIDE_SEARCH: {
         state_ = IN_ROOT_NODE;
         search->BeginInitialPropagation();
+        propagation_monitor_->BeginInitialPropagation();
         CP_TRY(search) {
           ProcessConstraints();
           search->EndInitialPropagation();
+          propagation_monitor_->EndInitialPropagation();
           PushSentinel(ROOT_NODE_SENTINEL);
           state_ = IN_SEARCH;
           search->ClearBuffer();
@@ -2109,9 +2120,11 @@ bool Solver::NextSolution() {
                      search->left_search_depth());  // 1 for right branch
         PushState(CHOICE_POINT, i1);
         search->RefuteDecision(fd);
+        propagation_monitor_->RefuteDecision(fd);
         branches_++;
         fd->Refute(this);
         search->AfterDecision(fd, false);
+        propagation_monitor_->AfterDecision(fd);
         search->RightMove();
         fd = NULL;
       }
@@ -2137,20 +2150,24 @@ bool Solver::NextSolution() {
                            search->left_search_depth());  // 0 for left branch
               PushState(CHOICE_POINT, i2);
               search->ApplyDecision(d);
+              propagation_monitor_->ApplyDecision(d);
               branches_++;
               d->Apply(this);
               search->AfterDecision(d, true);
+              propagation_monitor_->AfterDecision(d);
               search->LeftMove();
               break;
             }
             case KEEP_LEFT: {
               search->ApplyDecision(d);
+              propagation_monitor_->ApplyDecision(d);
               d->Apply(this);
               search->AfterDecision(d, true);
               break;
             }
             case KEEP_RIGHT: {
               search->RefuteDecision(d);
+              propagation_monitor_->RefuteDecision(d);
               d->Refute(this);
               search->AfterDecision(d, false);
               break;
@@ -2165,6 +2182,7 @@ bool Solver::NextSolution() {
       }
       if (search->AcceptSolution()) {
         search->IncrementSolutionCounter();
+        propagation_monitor_->FindSolution();
         if (!search->AtSolution() || !CurrentlyInSolve()) {
           result = true;
           finish = true;
@@ -2217,7 +2235,7 @@ void Solver::EndSearch() {
   Search* const search = searches_.back();
   BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
   search->ExitSearch();
-  trace_->ExitSearch();
+  propagation_monitor_->ExitSearch();
   search->Clear();
   state_ = OUTSIDE_SEARCH;
   if (!FLAGS_cp_profile_file.empty()) {
@@ -2240,18 +2258,20 @@ bool Solver::CheckAssignment(Assignment* const solution) {
 
   // Push monitors and enter search.
   search->EnterSearch();
-  trace_->EnterSearch();
+  propagation_monitor_->EnterSearch();
 
   // Push sentinel and set decision builder.
   DCHECK_EQ(1, searches_.size());
   PushSentinel(INITIAL_SEARCH_SENTINEL);
   search->BeginInitialPropagation();
+  propagation_monitor_->BeginInitialPropagation();
   CP_TRY(search) {
     state_ = IN_ROOT_NODE;
     DecisionBuilder * const restore = MakeRestoreAssignment(solution);
     restore->Next(this);
     ProcessConstraints();
     search->EndInitialPropagation();
+    propagation_monitor_->EndInitialPropagation();
     BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
     search->ClearBuffer();
     state_ = OUTSIDE_SEARCH;
@@ -2385,11 +2405,8 @@ void Solver::Fail() {
   }
   ConstraintSolverFailsHere();
   fails_++;
-  trace_->RaiseFailure();
+  propagation_monitor_->RaiseFailure();
   searches_.back()->BeginFail();
-  if (FLAGS_cp_trace_demons || FLAGS_cp_verbose_fail) {
-    LOG(INFO) << "### Failure ###";
-  }
   searches_.back()->JumpBack();
 }
 
@@ -2403,7 +2420,13 @@ string Solver::GetName(const PropagationBaseObject* object) const {
   const IntegerCastInfo* const cast_info =
       FindOrNull(cast_information_, object);
   if (cast_info != NULL && cast_info->expression != NULL) {
-    return StringPrintf("Var<%s>", cast_info->expression->name().c_str());
+    if (cast_info->expression->HasName()) {
+      return StringPrintf("Var<%s>",
+                          cast_info->expression->name().c_str());
+    } else {
+      return StringPrintf("Var<%s>",
+                          cast_info->expression->DebugString().c_str());
+    }
   }
   return empty_name_;
 }

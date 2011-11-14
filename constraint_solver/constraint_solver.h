@@ -54,7 +54,6 @@
 //          demons Run = 25,
 //          Run time = 0 ms)
 //
-// More infos: go/operations_research
 //
 // TODO(user): Remove C-style API and update following comment.
 // Global remark: many functions and methods in this file can take as argument
@@ -819,21 +818,17 @@ class Solver {
   // factory methods (e.g., MakeIntVar(...), MakeAllDifferent(...) already take
   // care of the registration.
   template <typename T> T* RevAlloc(T* object) {
-    // Note that if class MyObject inherits from BaseObject and has a default
-    // constructor, then:
-    // solver.RevAlloc(new MyObject());      compiles and does what you expect,
-    // solver.RevAlloc(new MyObject[26]);    compiles but should not be used:
-    //                                       it will NOT delete the array.
-    // solver.RevAlloc(new MyObject*[53]);   does not compile, because MyObject*
-    //                                       does not match BaseObject*.
-    //
-    // TODO(user): either make that solver.RevAlloc(new MyObject[26]) does
-    // not compile, or make it not leak.
-    // TODO(user): Split between a function that takes an array as argument and
-    // a version that takes a pointer on a BaseObject, and rename to something
-    // more explicit like RegisterReversibleObject / RegisterReversibleArray or
-    // similar. Check whether this split fixes the leak mentioned above.
     return reinterpret_cast<T*>(SafeRevAlloc(object));
+  }
+
+  // Like RevAlloc() above, but for an array of objects: the array
+  // must have been allocated with the new[] operator. The entire array
+  // will be deleted when backtracking out of the current state.
+  //
+  // This method is valid for arrays of int, int64, uint64, bool,
+  // BaseObject*, IntVar*, IntExpr*, and Constraint*.
+  template <typename T> T* RevAllocArray(T* object) {
+    return reinterpret_cast<T*>(SafeRevAllocArray(object));
   }
 
   // propagation
@@ -2723,14 +2718,16 @@ class Solver {
   ModelCache* Cache() const;
   // Returns wether we are instrumenting demons.
   bool InstrumentsDemons() const;
+  // Returns wether we are profiling the solver.
+  bool IsProfilingEnabled() const;
   // Returns wether we are tracing variables.
   bool InstrumentsVariables() const;
   // Returns the name of the model.
   string model_name() const;
   // Returns the dependency graph of the solver.
   DependencyGraph* Graph() const;
-  // Returns the main trace object.
-  PropagationMonitor* Trace() const;
+  // Returns the propagation monitor.
+  PropagationMonitor* GetPropagationMonitor() const;
   // Adds the propagation monitor to the solver. This should be done
   // before the search.
   void AddPropagationMonitor(PropagationMonitor* const monitor);
@@ -2748,6 +2745,7 @@ class Solver {
   friend void InternalSaveBooleanVarValue(Solver* const, IntVar* const);
   friend void SetQueueCleanerOnFail(Solver* const, IntVar* const);
   template<class> friend class SimpleRevFIFO;
+  template<class K, class V> friend class RevImmutableMultiMap;
 #endif
 
  private:
@@ -2779,14 +2777,15 @@ class Solver {
     InternalSaveValue(reinterpret_cast<void**>(valptr));
   }
 
-  int* SafeRevAlloc(int* ptr);
-  int64* SafeRevAlloc(int64* ptr);
-  uint64* SafeRevAlloc(uint64* ptr);
   BaseObject* SafeRevAlloc(BaseObject* ptr);
-  BaseObject** SafeRevAlloc(BaseObject** ptr);
-  IntVar** SafeRevAlloc(IntVar** ptr);
-  IntExpr** SafeRevAlloc(IntExpr** ptr);
-  Constraint** SafeRevAlloc(Constraint** ptr);
+
+  int* SafeRevAllocArray(int* ptr);
+  int64* SafeRevAllocArray(int64* ptr);
+  uint64* SafeRevAllocArray(uint64* ptr);
+  BaseObject** SafeRevAllocArray(BaseObject** ptr);
+  IntVar** SafeRevAllocArray(IntVar** ptr);
+  IntExpr** SafeRevAllocArray(IntExpr** ptr);
+  Constraint** SafeRevAllocArray(Constraint** ptr);
   // UnsafeRevAlloc is used internally for cells in SimpleRevFIFO
   // and other structures like this.
   void* UnsafeRevAllocAux(void* ptr);
@@ -2860,7 +2859,7 @@ class Solver {
 
   scoped_ptr<ModelCache> model_cache_;
   scoped_ptr<DependencyGraph> dependency_graph_;
-  scoped_ptr<PropagationMonitor> trace_;
+  scoped_ptr<PropagationMonitor> propagation_monitor_;
 
   DISALLOW_COPY_AND_ASSIGN(Solver);
 };

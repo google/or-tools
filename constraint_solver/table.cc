@@ -567,7 +567,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
           DCHECK_LT(value_index, masks_[var_index].size());
           uint64* mask = masks_[var_index][value_index];
           if (!mask) {
-            mask = solver()->RevAlloc(new uint64[length_]);
+            mask = solver()->RevAllocArray(new uint64[length_]);
             memset(mask, 0, length_ * sizeof(*mask));
             masks_[var_index][value_index] = mask;
           }

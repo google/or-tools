@@ -179,31 +179,61 @@ class RoutingModel {
  public:
   // First solution strategies, used as starting point of local search.
   enum RoutingStrategy {
-    ROUTING_DEFAULT_STRATEGY,  // choose first unbound, assign min value
+    // Select the first node with an unbound successor and connect it to the
+    // first available node.
+    // This is equivalent to the CHOOSE_FIRST_UNBOUND strategy combined with
+    // ASSIGN_MIN_VALUE (cf. constraint_soler.h).
+    ROUTING_DEFAULT_STRATEGY,
+    // Iteratively connect two nodes which produce the cheapest route segment.
     ROUTING_GLOBAL_CHEAPEST_ARC,
+    // Select the first node with an unbound successor and connect it to the
+    // node which produces the cheapest route segment.
     ROUTING_LOCAL_CHEAPEST_ARC,
+    // Starting from a route "start" node, connect it to the node which produces
+    // the cheapest route segment, then extend the route by iterating on the
+    // last node added to the route.
     ROUTING_PATH_CHEAPEST_ARC,
-    ROUTING_EVALUATOR_STRATEGY
+    // Same as ROUTING_PATH_CHEAPEST_ARC, except that arc costs are evaluated
+    // using the function passed to RoutingModel::SetFirstSolutionEvaluator().
+    ROUTING_EVALUATOR_STRATEGY,
+    // Make all node inactive. Only finds a solution if nodes are optional (are
+    // element of a disjunction constraint with a finite penalty cost).
+    ROUTING_ALL_UNPERFORMED
   };
 
-  // Metaheuristics, to escape local minima.
+  // Metaheuristics used to guide the search. Apart greedy descent, they will
+  // try to escape local minima.
   enum RoutingMetaheuristic {
-    ROUTING_GREEDY_DESCENT,  // default
+    // Accepts improving (cost-reducing) local search neighbors until a local
+    // minimum is reached. This is the default heuristic.
+    ROUTING_GREEDY_DESCENT,
+    // Uses guided local search to escape local minima
+    // (cf. http://en.wikipedia.org/wiki/Guided_Local_Search); this is
+    // generally the most efficient metaheuristic for vehicle routing.
     ROUTING_GUIDED_LOCAL_SEARCH,
+    // Uses simulated annealing to escape local minima
+    // (cf. http://en.wikipedia.org/wiki/Simulated_annealing).
     ROUTING_SIMULATED_ANNEALING,
+    // Uses tabu search to escape local minima
+    // (cf. http://en.wikipedia.org/wiki/Tabu_search).
     ROUTING_TABU_SEARCH
   };
 
   // Status of the search.
   enum Status {
+    // Problem not solved yet (before calling RoutingModel::Solve()).
     ROUTING_NOT_SOLVED,
+    // Problem solved successfully after calling RoutingModel::Solve().
     ROUTING_SUCCESS,
+    // No solution found to the problem after calling RoutingModel::Solve().
     ROUTING_FAIL,
+    // Time limit reached before finding a solution with RoutingModel::Solve().
     ROUTING_FAIL_TIMEOUT
   };
 
   typedef _RoutingModel_NodeIndex NodeIndex;
   typedef ResultCallback2<int64, NodeIndex, NodeIndex> NodeEvaluator2;
+  typedef std::vector<pair<int, int> > NodePairs;
 
   // Constants with an index of the first node (to be used in for loops for
   // iteration), and a special index to signalize an invalid/unused value.
@@ -292,6 +322,23 @@ class RoutingModel {
     AddDisjunction(nodes, penalty);
   }
 #endif  // SWIGPYTHON
+  // Notifies that node1 and node2 form a pair of nodes which should belong
+  // to the same route. This methods helps the search find better solutions,
+  // especially in the local search phase.
+  // It should be called each time you have an equality constraint linking
+  // the vehicle variables of two node (including for instance pickup and
+  // delivery problems):
+  //     Solver* const solver = routing.solver();
+  //     solver->AddConstraint(solver->MakeEquality(
+  //         routing.VehicleVar(routing.NodeToIndex(node1)),
+  //         routing.VehicleVar(routing.NodeToIndex(node2))));
+  //     solver->AddPickupAndDelivery(node1, node2);
+  //
+  // TODO(user): Remove this when model introspection detects linked nodes.
+  void AddPickupAndDelivery(NodeIndex node1, NodeIndex node2) {
+    pickup_delivery_pairs_.push_back(std::make_pair(NodeToIndex(node1),
+                                                    NodeToIndex(node2)));
+  }
   // Makes 'depot' the starting node of all routes.
   void SetDepot(NodeIndex depot);
   // Sets the cost function of the model such that the cost of a segment of a
@@ -619,6 +666,7 @@ class RoutingModel {
   std::vector<RoutingCache*> routing_caches_;
   std::vector<Disjunction> disjunctions_;
   hash_map<int64, int> node_to_disjunction_;
+  NodePairs pickup_delivery_pairs_;
   IntVar* cost_;
   std::vector<int64> fixed_costs_;
   int nodes_;

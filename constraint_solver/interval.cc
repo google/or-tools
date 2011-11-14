@@ -1414,6 +1414,9 @@ IntExpr* IntervalVar::StartExpr() {
     solver()->SaveValue(reinterpret_cast<void**>(&start_expr_));
     start_expr_ = solver()->RegisterIntExpr(
         solver()->RevAlloc(new IntervalVarStartExpr(this)));
+    if (HasName()) {
+      start_expr_->set_name(StringPrintf("start(%s)", name().c_str()));
+    }
   }
   return start_expr_;
 }
@@ -1423,6 +1426,9 @@ IntExpr* IntervalVar::DurationExpr() {
     solver()->SaveValue(reinterpret_cast<void**>(&duration_expr_));
     duration_expr_ = solver()->RegisterIntExpr(
         solver()->RevAlloc(new IntervalVarDurationExpr(this)));
+    if (HasName()) {
+      duration_expr_->set_name(StringPrintf("duration(%s)", name().c_str()));
+    }
   }
   return duration_expr_;
 }
@@ -1432,6 +1438,9 @@ IntExpr* IntervalVar::EndExpr() {
     solver()->SaveValue(reinterpret_cast<void**>(&end_expr_));
     end_expr_ = solver()->RegisterIntExpr(
         solver()->RevAlloc(new IntervalVarEndExpr(this)));
+    if (HasName()) {
+      end_expr_->set_name(StringPrintf("end(%s)", name().c_str()));
+    }
   }
   return end_expr_;
 }
@@ -1441,6 +1450,9 @@ IntExpr* IntervalVar::PerformedExpr() {
     solver()->SaveValue(reinterpret_cast<void**>(&performed_expr_));
     performed_expr_ = solver()->RegisterIntExpr(
         solver()->RevAlloc(new IntervalVarPerformedExpr(this)));
+    if (HasName()) {
+      performed_expr_->set_name(StringPrintf("performed(%s)", name().c_str()));
+    }
   }
   return performed_expr_;
 }

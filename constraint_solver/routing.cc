@@ -117,6 +117,177 @@ template<> size_t hash_value<operations_research::RoutingModel::NodeIndex>(
 
 namespace operations_research {
 
+// Pair-based neighborhood operators, designed to move nodes by pairs (pairs
+// are static and given). These neighborhoods are very useful for Pickup and
+// Delivery problems where pickup and delivery nodes must remain on the same
+// route.
+// TODO(user): Add option to prune neighbords where the order of node pairs
+//                is violated (ie precedence between pickup and delivery nodes).
+// TODO(user): Move this to local_search.cc if it's generic enough.
+// TODO(user): Detect pairs automatically by parsing the constraint model;
+//                we could then get rid of the pair API in the RoutingModel
+//                class.
+
+// Operator which inserts pairs of inactive nodes into a path.
+// Possible neighbors for the path 1 -> 2 -> 3 with pair (A, B) inactive
+// (where 1 and 3 are first and last nodes of the path) are:
+//   1 -> [A] -> [B] ->  2  ->  3
+//   1 -> [B] ->  2 ->  [A] ->  3
+//   1 -> [A] ->  2  -> [B] ->  3
+//   1 ->  2  -> [A] -> [B] ->  3
+// Note that this operator does not expicitely insert the nodes of a pair one
+// after the other which forbids the following solutions:
+//   1 -> [B] -> [A] ->  2  ->  3
+//   1 ->  2  -> [B] -> [A] ->  3
+// which can only be obtained by inserting A after B.
+class MakePairActiveOperator : public PathOperator {
+ public:
+  MakePairActiveOperator(const IntVar* const* vars,
+                         const IntVar* const* secondary_vars,
+                         const RoutingModel::NodePairs& pairs,
+                         int size)
+      : PathOperator(vars, secondary_vars, size, 2),
+        inactive_pair_(0),
+        pairs_(pairs) {}
+  virtual ~MakePairActiveOperator() {}
+  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
+  virtual bool MakeNeighbor();
+
+ private:
+  virtual void OnNodeInitialization();
+
+  int inactive_pair_;
+  RoutingModel::NodePairs pairs_;
+};
+
+void MakePairActiveOperator::OnNodeInitialization() {
+  for (int i = 0; i < pairs_.size(); ++i) {
+    if (IsInactive(pairs_[i].first) && IsInactive(pairs_[i].second)) {
+      inactive_pair_ = i;
+      return;
+    }
+  }
+  inactive_pair_ = pairs_.size();
+}
+
+bool MakePairActiveOperator::MakeNextNeighbor(Assignment* delta,
+                                              Assignment* deltadelta) {
+  while (inactive_pair_ < pairs_.size()) {
+    if (!IsInactive(pairs_[inactive_pair_].first)
+        || !IsInactive(pairs_[inactive_pair_].second)
+        || !PathOperator::MakeNextNeighbor(delta, deltadelta)) {
+      ResetPosition();
+      ++inactive_pair_;
+    } else {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool MakePairActiveOperator::MakeNeighbor() {
+  if (StartNode(0) != StartNode(1)) {
+    return false;
+  }
+  // Inserting the second node of the pair before the first one which ensures
+  // that the only solutions where both nodes are next to each other have the
+  // first node before the second (the move is not symmetric and doing it this
+  // way ensures that a potential precedence constraint between the nodes of the
+  // pair is not violated).
+  return MakeActive(pairs_[inactive_pair_].second, BaseNode(1))
+      && MakeActive(pairs_[inactive_pair_].first, BaseNode(0));
+}
+
+LocalSearchOperator* MakePairActive(Solver* const solver,
+                                    const IntVar* const* vars,
+                                    const IntVar* const* secondary_vars,
+                                    const RoutingModel::NodePairs& pairs,
+                                    int size) {
+  return solver->RevAlloc(new MakePairActiveOperator(vars,
+                                                     secondary_vars,
+                                                     pairs,
+                                                     size));
+}
+
+// Operator which moves a pair of nodes to another position.
+// Possible neighbors for the path 1 -> A -> B -> 2 -> 3 (where (1, 3) are
+// first and last nodes of the path and can therefore not be moved, and (A, B)
+// is a pair of nodes):
+//   1 -> [A] ->  2  -> [B] -> 3
+//   1 ->  2  -> [A] -> [B] -> 3
+//   1 -> [B] -> [A] ->  2  -> 3
+//   1 -> [B] ->  2  -> [A] -> 3
+//   1 ->  2  -> [B] -> [A] -> 3
+class MakePairRelocateOperator : public PathOperator {
+ public:
+  MakePairRelocateOperator(const IntVar* const* vars,
+                           const IntVar* const* secondary_vars,
+                           const RoutingModel::NodePairs& pairs,
+                           int size)
+      : PathOperator(vars, secondary_vars, size, 3) {
+    int64 index_max = 0;
+    for (int i = 0; i < size; ++i) {
+      index_max = std::max(index_max, vars[i]->Max());
+    }
+    prevs_.resize(index_max + 1, -1);
+    int max_pair_index = -1;
+    for (int i = 0; i < pairs.size(); ++i) {
+      max_pair_index = std::max(max_pair_index, pairs[i].first);
+      max_pair_index = std::max(max_pair_index, pairs[i].second);
+    }
+    pairs_.resize(max_pair_index + 1, -1);
+    for (int i = 0; i < pairs.size(); ++i) {
+      pairs_[pairs[i].first] = pairs[i].second;
+      pairs_[pairs[i].second] = pairs[i].first;
+    }
+  }
+  virtual ~MakePairRelocateOperator() {}
+  virtual bool MakeNeighbor();
+
+ private:
+  virtual void OnNodeInitialization();
+
+  std::vector<int> pairs_;
+  std::vector<int> prevs_;
+};
+
+bool MakePairRelocateOperator::MakeNeighbor() {
+  if (StartNode(1) != StartNode(2)) {
+    return false;
+  }
+  const int64 prev = prevs_[BaseNode(0)];
+  if (prev < 0) {
+    return false;
+  }
+  const int sibling = BaseNode(0) < pairs_.size() ? pairs_[BaseNode(0)] : -1;
+  if (sibling < 0) {
+    return false;
+  }
+  const int64 prev_sibling = prevs_[sibling];
+  if (prev_sibling < 0) {
+    return false;
+  }
+  return MoveChain(prev_sibling, sibling, BaseNode(1))
+      && MoveChain(prev, BaseNode(0), BaseNode(2));
+}
+
+void MakePairRelocateOperator::OnNodeInitialization() {
+  for (int i = 0; i < Size(); ++i) {
+    prevs_[Next(i)] = i;
+  }
+}
+
+LocalSearchOperator* MakePairRelocate(Solver* const solver,
+                                      const IntVar* const* vars,
+                                      const IntVar* const* secondary_vars,
+                                      const RoutingModel::NodePairs& pairs,
+                                      int size) {
+  return solver->RevAlloc(new MakePairRelocateOperator(vars,
+                                                       secondary_vars,
+                                                       pairs,
+                                                       size));
+}
+
 // Cached callbacks
 
 class RoutingCache {
@@ -842,6 +1013,27 @@ void RoutingModel::CloseModel() {
   SetUpSearch();
 }
 
+// Decision builder to build a solution with all nodes inactive. It does no
+// branching and may fail if some nodes cannot be made inactive.
+
+class AllUnperformed : public DecisionBuilder {
+ public:
+  // Does not take ownership of model.
+  explicit AllUnperformed(RoutingModel* const model) : model_(model) {}
+  virtual ~AllUnperformed() {}
+  virtual Decision* Next(Solver* const solver) {
+    for (int i = 0; i < model_->Size(); ++i) {
+      if (!model_->IsStart(i)) {
+        model_->ActiveVar(i)->SetValue(0);
+      }
+    }
+    return NULL;
+  }
+
+ private:
+  RoutingModel* const model_;
+};
+
 // Flags override strategy selection
 RoutingModel::RoutingStrategy
 RoutingModel::GetSelectedFirstSolutionStrategy() const {
@@ -851,6 +1043,8 @@ RoutingModel::GetSelectedFirstSolutionStrategy() const {
     return ROUTING_LOCAL_CHEAPEST_ARC;
   } else if (FLAGS_routing_first_solution.compare("PathCheapestArc") == 0) {
     return ROUTING_PATH_CHEAPEST_ARC;
+  } else if (FLAGS_routing_first_solution.compare("AllUnperformed") == 0) {
+    return ROUTING_ALL_UNPERFORMED;
   }
   return first_solution_strategy_;
 }
@@ -1628,6 +1822,20 @@ void RoutingModel::SetUpSearch() {
                                   kint64max);
 
   std::vector<LocalSearchOperator*> operators = extra_operators_;
+  if (pickup_delivery_pairs_.size() > 0) {
+    const IntVar* const* vehicle_vars =
+        homogeneous_costs_ ? NULL : vehicle_vars_.get();
+    operators.push_back(MakePairActive(solver_.get(),
+                                       nexts_.get(),
+                                       vehicle_vars,
+                                       pickup_delivery_pairs_,
+                                       size));
+    operators.push_back(MakePairRelocate(solver_.get(),
+                                         nexts_.get(),
+                                         vehicle_vars,
+                                         pickup_delivery_pairs_,
+                                         size));
+  }
   if (vehicles_ > 1) {
     if (!FLAGS_routing_no_relocate) {
       CP_ROUTING_PUSH_BACK_OPERATOR(Solver::RELOCATE);
@@ -1676,6 +1884,7 @@ void RoutingModel::SetUpSearch() {
       CP_ROUTING_PUSH_BACK_OPERATOR(Solver::UNACTIVELNS);
     }
   }
+
   LocalSearchOperator* local_search_operator =
       solver_->ConcatenateOperators(operators);
 
@@ -1725,6 +1934,10 @@ void RoutingModel::SetUpSearch() {
       break;
     case ROUTING_DEFAULT_STRATEGY:
       LG << "Using DEFAULT";
+      break;
+    case ROUTING_ALL_UNPERFORMED:
+      first_solution =
+          solver_->RevAlloc(new AllUnperformed(this));
       break;
     default:
       LOG(WARNING) << "Unknown argument for routing_first_solution, "
@@ -1876,7 +2089,7 @@ IntVar** RoutingModel::GetOrMakeCumuls(int64 capacity, const string& name) {
     std::vector<IntVar*> cumuls;
     const int size = Size() + vehicles_;
     solver_->MakeIntVarArray(size, 0LL, capacity, name, &cumuls);
-    IntVar** cumul_array = solver_->RevAlloc(new IntVar*[size]);
+    IntVar** cumul_array = solver_->RevAllocArray(new IntVar*[size]);
     memcpy(cumul_array, cumuls.data(), cumuls.size() * sizeof(*cumuls.data()));
     cumuls_[name] = cumul_array;
     return cumul_array;
@@ -1899,7 +2112,7 @@ IntVar** RoutingModel::GetOrMakeTransits(NodeEvaluator2* evaluator,
   if (named_transits == NULL) {
     std::vector<IntVar*> transits;
     const int size = Size();
-    IntVar** transit_array = solver_->RevAlloc(new IntVar*[size]);
+    IntVar** transit_array = solver_->RevAllocArray(new IntVar*[size]);
     for (int i = 0; i < size; ++i) {
       IntVar* fixed_transit =
           solver_->MakeElement(NewPermanentCallback(
@@ -1914,7 +2127,7 @@ IntVar** RoutingModel::GetOrMakeTransits(NodeEvaluator2* evaluator,
         IntVar* slack_var = solver_->MakeIntVar(0, slack_max, "slack");
         transit_array[i] = solver_->MakeSum(slack_var, fixed_transit)->Var();
       }
-      transit_array[i]->SetMin(0);
+      transit_array[i]->SetMin(-capacity);
       transit_array[i]->SetMax(capacity);
     }
     transits_[name] = transit_array;

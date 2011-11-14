@@ -48,7 +48,7 @@ class TraceIntVar : public IntVar {
 
   virtual void SetMin(int64 m) {
     if (m > inner_->Min()) {
-      LOG(INFO) << "SetMin(" << inner_->DebugString() << ", " << m << ")";
+      solver()->GetPropagationMonitor()->SetMin(inner_, m);
       inner_->SetMin(m);
     }
   }
@@ -57,7 +57,7 @@ class TraceIntVar : public IntVar {
 
   virtual void SetMax(int64 m) {
     if (m < inner_->Max()) {
-      LOG(INFO) << "SetMax(" << inner_->DebugString() << ", " << m << ")";
+      solver()->GetPropagationMonitor()->SetMax(inner_, m);
       inner_->SetMax(m);
     }
   }
@@ -68,8 +68,7 @@ class TraceIntVar : public IntVar {
 
   virtual void SetRange(int64 l, int64 u) {
     if (l > inner_->Min() || u < inner_->Max()) {
-      LOG(INFO) << "SetRange(" << inner_->DebugString() << ", ["
-                << l << ".." << u << "])";
+      solver()->GetPropagationMonitor()->SetRange(inner_, l, u);
       inner_->SetRange(l, u);
     }
   }
@@ -88,31 +87,28 @@ class TraceIntVar : public IntVar {
 
   virtual void RemoveValue(int64 v) {
     if (inner_->Contains(v)) {
-      LOG(INFO) << "RemoveValue(" << inner_->DebugString() << ", " << v << ")";
+      solver()->GetPropagationMonitor()->RemoveValue(inner_, v);
       inner_->RemoveValue(v);
     }
   }
 
   virtual void SetValue(int64 v) {
-    LOG(INFO) << "SetValue(" << inner_->DebugString() << ", " << v << ")";
+    solver()->GetPropagationMonitor()->SetValue(inner_, v);
     inner_->SetValue(v);
   }
 
   virtual void RemoveInterval(int64 l, int64 u) {
-    LOG(INFO) << "RemoveInterval(" << inner_->DebugString() << ", ["
-              << l << ".." << u << "])";
+    solver()->GetPropagationMonitor()->RemoveInterval(inner_, l, u);
     inner_->RemoveInterval(l, u);
   }
 
   virtual void RemoveValues(const int64* const values, int size) {
-    LOG(INFO) << "RemoveValues(" << inner_->DebugString() << ", ["
-              << Int64ArrayToString(values, size, ", ") << "])";
+    solver()->GetPropagationMonitor()->RemoveValues(inner_, values, size);
     inner_->RemoveValues(values, size);
   }
 
   virtual void SetValues(const int64* const values, int size) {
-    LOG(INFO) << "SetValues(" << inner_->DebugString() << ", ["
-              << Int64ArrayToString(values, size, ", ") << "])";
+    solver()->GetPropagationMonitor()->SetValues(inner_, values, size);
     inner_->SetValues(values, size);
   }
 
@@ -184,14 +180,14 @@ class TraceIntExpr : public IntExpr {
   virtual int64 Min() const { return inner_->Min(); }
 
   virtual void SetMin(int64 m) {
-    LOG(INFO) << "SetMin(" << inner_->DebugString() << ", " << m << ")";
+    solver()->GetPropagationMonitor()->SetMin(inner_, m);
     inner_->SetMin(m);
   }
 
   virtual int64 Max() const { return inner_->Max(); }
 
   virtual void SetMax(int64 m) {
-    LOG(INFO) << "SetMax(" << inner_->DebugString() << ", " << m << ")";
+    solver()->GetPropagationMonitor()->SetMax(inner_, m);
     inner_->SetMax(m);
   }
 
@@ -201,8 +197,7 @@ class TraceIntExpr : public IntExpr {
 
   virtual void SetRange(int64 l, int64 u) {
     if (l > inner_->Min() || u < inner_->Max()) {
-      LOG(INFO) << "SetRange(" << inner_->DebugString() << ", ["
-                << l << ".." << u << "])";
+      solver()->GetPropagationMonitor()->SetRange(inner_, l, u);
       inner_->SetRange(l, u);
     }
   }
@@ -238,168 +233,160 @@ class TraceIntExpr : public IntExpr {
 
 class TraceIntervalVar : public IntervalVar {
  public:
-  TraceIntervalVar(Solver* const solver, IntervalVar* const interval)
-      : IntervalVar(solver, ""), interval_(interval) {
-    if (interval->HasName()) {
-      set_name(interval->name());
+  TraceIntervalVar(Solver* const solver, IntervalVar* const inner)
+      : IntervalVar(solver, ""), inner_(inner) {
+    if (inner->HasName()) {
+      set_name(inner->name());
     }
   }
   virtual ~TraceIntervalVar() {}
 
   virtual int64 StartMin() const {
-    return interval_->StartMin();
+    return inner_->StartMin();
   }
 
   virtual int64 StartMax() const  {
-    return interval_->StartMax();
+    return inner_->StartMax();
   }
 
   virtual void SetStartMin(int64 m) {
-    if (m > interval_->StartMin()) {
-      LOG(INFO) << "SetStartMin(" << interval_->DebugString() << ", "
-                << m << ")";
-      interval_->SetStartMin(m);
+    if (m > inner_->StartMin()) {
+      solver()->GetPropagationMonitor()->SetStartMin(inner_, m);
+      inner_->SetStartMin(m);
     }
   }
 
   virtual void SetStartMax(int64 m) {
-    if (m < interval_->StartMax()) {
-      LOG(INFO) << "SetStartMax(" << interval_->DebugString() << ", "
-                << m << ")";
-      interval_->SetStartMax(m);
+    if (m < inner_->StartMax()) {
+      solver()->GetPropagationMonitor()->SetStartMax(inner_, m);
+      inner_->SetStartMax(m);
     }
   }
 
   virtual void SetStartRange(int64 mi, int64 ma) {
-    if (mi > interval_->StartMin() || ma < interval_->StartMax()) {
-      LOG(INFO) << "SetStartRange(" << interval_->DebugString() << ", ["
-                << mi << ".." << ma << "])";
-      interval_->SetStartRange(mi, ma);
+    if (mi > inner_->StartMin() || ma < inner_->StartMax()) {
+      solver()->GetPropagationMonitor()->SetStartRange(inner_, mi, ma);
+      inner_->SetStartRange(mi, ma);
     }
   }
 
   virtual void WhenStartRange(Demon* const d) {
-    interval_->WhenStartRange(d);
+    inner_->WhenStartRange(d);
   }
 
   virtual void WhenStartBound(Demon* const d) {
-    interval_->WhenStartBound(d);
+    inner_->WhenStartBound(d);
   }
 
   virtual int64 EndMin() const {
-    return interval_->EndMin();
+    return inner_->EndMin();
   }
 
   virtual int64 EndMax() const  {
-    return interval_->EndMax();
+    return inner_->EndMax();
   }
 
   virtual void SetEndMin(int64 m) {
-    if (m > interval_->EndMin()) {
-      LOG(INFO) << "SetEndMin(" << interval_->DebugString() << ", " << m << ")";
-      interval_->SetEndMin(m);
+    if (m > inner_->EndMin()) {
+      solver()->GetPropagationMonitor()->SetEndMin(inner_, m);
+      inner_->SetEndMin(m);
     }
   }
 
   virtual void SetEndMax(int64 m) {
-    if (m < interval_->EndMax()) {
-      LOG(INFO) << "SetEndMax(" << interval_->DebugString() << ", " << m << ")";
-      interval_->SetEndMax(m);
+    if (m < inner_->EndMax()) {
+      solver()->GetPropagationMonitor()->SetEndMax(inner_, m);
+      inner_->SetEndMax(m);
     }
   }
 
   virtual void SetEndRange(int64 mi, int64 ma) {
-    if (mi > interval_->EndMin() || ma < interval_->EndMax()) {
-      LOG(INFO) << "SetEndRange(" << interval_->DebugString() << ", ["
-                << mi << ".." << ma << "])";
-      interval_->SetEndRange(mi, ma);
+    if (mi > inner_->EndMin() || ma < inner_->EndMax()) {
+      solver()->GetPropagationMonitor()->SetEndRange(inner_, mi, ma);
+      inner_->SetEndRange(mi, ma);
     }
   }
 
   virtual void WhenEndRange(Demon* const d) {
-    interval_->WhenEndRange(d);
+    inner_->WhenEndRange(d);
   }
 
   virtual void WhenEndBound(Demon* const d) {
-    interval_->WhenStartBound(d);
+    inner_->WhenStartBound(d);
   }
 
   virtual int64 DurationMin() const {
-    return interval_->DurationMin();
+    return inner_->DurationMin();
   }
 
   virtual int64 DurationMax() const  {
-    return interval_->DurationMax();
+    return inner_->DurationMax();
   }
 
   virtual void SetDurationMin(int64 m) {
-    if (m > interval_->DurationMin()) {
-      LOG(INFO) << "SetDurationMin(" << interval_->DebugString() << ", "
-                << m << ")";
-      interval_->SetDurationMin(m);
+    if (m > inner_->DurationMin()) {
+      solver()->GetPropagationMonitor()->SetDurationMin(inner_, m);
+      inner_->SetDurationMin(m);
     }
   }
 
   virtual void SetDurationMax(int64 m) {
-    if (m < interval_->DurationMax()) {
-      LOG(INFO) << "SetDurationMax(" << interval_->DebugString() << ", "
-                << m << ")";
-      interval_->SetDurationMax(m);
+    if (m < inner_->DurationMax()) {
+      solver()->GetPropagationMonitor()->SetDurationMax(inner_, m);
+      inner_->SetDurationMax(m);
     }
   }
 
   virtual void SetDurationRange(int64 mi, int64 ma) {
-    if (mi > interval_->DurationMin() || ma < interval_->DurationMax()) {
-      LOG(INFO) << "SetDurationRange(" << interval_->DebugString() << ", ["
-                << mi << ".." << ma << "])";
-      interval_->SetDurationRange(mi, ma);
+    if (mi > inner_->DurationMin() || ma < inner_->DurationMax()) {
+      solver()->GetPropagationMonitor()->SetDurationRange(inner_, mi, ma);
+      inner_->SetDurationRange(mi, ma);
     }
   }
 
   virtual void WhenDurationRange(Demon* const d) {
-    interval_->WhenDurationRange(d);
+    inner_->WhenDurationRange(d);
   }
 
   virtual void WhenDurationBound(Demon* const d) {
-    interval_->WhenDurationBound(d);
+    inner_->WhenDurationBound(d);
   }
 
   virtual bool MustBePerformed() const {
-    return interval_->MustBePerformed();
+    return inner_->MustBePerformed();
   }
 
   virtual bool MayBePerformed() const {
-    return interval_->MayBePerformed();
+    return inner_->MayBePerformed();
   }
 
-  virtual void SetPerformed(bool val) {
-    if ((val && !interval_->MustBePerformed()) ||
-        (!val && interval_->MayBePerformed())) {
-      LOG(INFO) << "SetPerformed(" << interval_->DebugString() << ", "
-                << val << ")";
-      interval_->SetPerformed(val);
+  virtual void SetPerformed(bool value) {
+    if ((value && !inner_->MustBePerformed()) ||
+        (!value && inner_->MayBePerformed())) {
+      solver()->GetPropagationMonitor()->SetPerformed(inner_, value);
+      inner_->SetPerformed(value);
     }
   }
 
   virtual void WhenPerformedBound(Demon* const d) {
-    interval_->WhenPerformedBound(d);
+    inner_->WhenPerformedBound(d);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    interval_->Accept(visitor);
+    inner_->Accept(visitor);
   }
 
  private:
-  IntervalVar* const interval_;
+  IntervalVar* const inner_;
 };
 
 // ---------- Trace ----------
 
 class Trace : public PropagationMonitor {
  public:
-  virtual void StartInitialPropagation() {
+  virtual void BeginInitialPropagation() {
     for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->StartInitialPropagation();
+      monitors_[i]->BeginInitialPropagation();
     }
   }
 
@@ -409,10 +396,10 @@ class Trace : public PropagationMonitor {
     }
   }
 
-  virtual void StartConstraintInitialPropagation(
+  virtual void BeginConstraintInitialPropagation(
       const Constraint* const constraint) {
     for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->StartConstraintInitialPropagation(constraint);
+      monitors_[i]->BeginConstraintInitialPropagation(constraint);
     }
   }
 
@@ -423,11 +410,11 @@ class Trace : public PropagationMonitor {
     }
   }
 
-  virtual void StartNestedConstraintInitialPropagation(
+  virtual void BeginNestedConstraintInitialPropagation(
       const Constraint* const parent,
       const Constraint* const nested) {
     for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->StartNestedConstraintInitialPropagation(parent, nested);
+      monitors_[i]->BeginNestedConstraintInitialPropagation(parent, nested);
     }
   }
 
@@ -445,9 +432,9 @@ class Trace : public PropagationMonitor {
     }
   }
 
-  virtual void StartDemonRun(const Demon* const demon) {
+  virtual void BeginDemonRun(const Demon* const demon) {
     for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->StartDemonRun(demon);
+      monitors_[i]->BeginDemonRun(demon);
     }
   }
 
@@ -460,6 +447,30 @@ class Trace : public PropagationMonitor {
   virtual void RaiseFailure() {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->RaiseFailure();
+    }
+  }
+
+  virtual void FindSolution() {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->FindSolution();
+    }
+  }
+
+  virtual void ApplyDecision(Decision* const decision) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->ApplyDecision(decision);
+    }
+  }
+
+  virtual void RefuteDecision(Decision* const decision) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RefuteDecision(decision);
+    }
+  }
+
+  virtual void AfterDecision(Decision* const decision) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->AfterDecision(decision);
     }
   }
 
@@ -481,6 +492,145 @@ class Trace : public PropagationMonitor {
     }
   }
 
+  // IntExpr modifiers.
+  virtual void SetMin(IntExpr* const expr, int64 new_min) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetMin(expr, new_min);
+    }
+  }
+
+  virtual void SetMax(IntExpr* const expr, int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetMax(expr, new_max);
+    }
+  }
+
+  virtual void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetRange(expr, new_min, new_max);
+    }
+  }
+
+  // IntVar modifiers.
+  virtual void SetMin(IntVar* const var, int64 new_min) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetMin(var, new_min);
+    }
+  }
+
+  virtual void SetMax(IntVar* const var, int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetMax(var, new_max);
+    }
+  }
+
+  virtual void SetRange(IntVar* const var, int64 new_min, int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetRange(var, new_min, new_max);
+    }
+  }
+
+  virtual void RemoveValue(IntVar* const var, int64 value) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RemoveValue(var, value);
+    }
+  }
+
+  virtual void SetValue(IntVar* const var, int64 value) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetValue(var, value);
+    }
+  }
+
+  virtual void RemoveInterval(IntVar* const var, int64 imin, int64 imax) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RemoveInterval(var, imin, imax);
+    }
+  }
+
+  virtual void SetValues(IntVar* const var,
+                         const int64* const values,
+                         int size) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetValues(var, values, size);
+    }
+  }
+
+  virtual void RemoveValues(IntVar* const var,
+                            const int64* const values,
+                            int size) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RemoveValues(var, values, size);
+    }
+  }
+
+  // IntervalVar modifiers.
+  virtual void SetStartMin(IntervalVar* const var, int64 new_min) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetStartMin(var, new_min);
+    }
+  }
+
+  virtual void SetStartMax(IntervalVar* const var, int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetStartMax(var, new_max);
+    }
+  }
+
+  virtual void SetStartRange(IntervalVar* const var,
+                             int64 new_min,
+                             int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetStartRange(var, new_min, new_max);
+    }
+  }
+
+  virtual void SetEndMin(IntervalVar* const var, int64 new_min) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetEndMin(var, new_min);
+    }
+  }
+
+  virtual void SetEndMax(IntervalVar* const var, int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetEndMax(var, new_max);
+    }
+  }
+
+  virtual void SetEndRange(IntervalVar* const var,
+                           int64 new_min,
+                           int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetEndRange(var, new_min, new_max);
+    }
+  }
+
+  virtual void SetDurationMin(IntervalVar* const var, int64 new_min) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetDurationMin(var, new_min);
+    }
+  }
+
+  virtual void SetDurationMax(IntervalVar* const var, int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetDurationMax(var, new_max);
+    }
+  }
+
+  virtual void SetDurationRange(IntervalVar* const var,
+                                int64 new_min,
+                                int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetDurationRange(var, new_min, new_max);
+    }
+  }
+
+  virtual void SetPerformed(IntervalVar* const var, bool value) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetPerformed(var, value);
+    }
+  }
+
   void Add(PropagationMonitor* const monitor) {
     if (monitor != NULL) {
       monitors_.push_back(monitor);
@@ -489,6 +639,303 @@ class Trace : public PropagationMonitor {
 
  private:
   std::vector<PropagationMonitor*> monitors_;
+};
+
+// ---------- PrintTrace ----------
+
+class PrintTrace : public PropagationMonitor {
+ public:
+  PrintTrace() : indent_(0) {}
+  virtual ~PrintTrace() {}
+
+  // Propagation events.
+  virtual void BeginInitialPropagation() {
+    CheckNoDelayed();
+    Display("Initial Propagation {");
+    IncreaseIndent();
+  }
+  virtual void EndInitialPropagation() {
+    DecreaseIndent();
+    Display("}  Starting Search");
+  }
+
+  virtual void BeginConstraintInitialPropagation(
+      const Constraint* const constraint) {
+    DelayPrintAndIndent(StringPrintf("InitialPropagate(%s)",
+                                     constraint->DebugString().c_str()));
+  }
+
+  virtual void EndConstraintInitialPropagation(
+      const Constraint* const constraint) {
+    DelayCloseAndUnindent();
+  }
+
+  virtual void BeginNestedConstraintInitialPropagation(
+      const Constraint* const parent,
+      const Constraint* const nested) {
+    DelayPrintAndIndent(StringPrintf("InitialPropagate(%s)",
+                                     nested->DebugString().c_str()));
+  }
+  virtual void EndNestedConstraintInitialPropagation(
+      const Constraint* const parent,
+      const Constraint* const nested) {
+    DelayCloseAndUnindent();
+  }
+
+  virtual void RegisterDemon(const Demon* const demon) {}
+
+  virtual void BeginDemonRun(const Demon* const demon) {
+    in_demon_ = true;
+    DelayPrintAndIndent(StringPrintf("Run(%s)", demon->DebugString().c_str()));
+  }
+
+  virtual void EndDemonRun(const Demon* const demon) {
+    in_demon_ = false;
+    DelayCloseAndUnindent();
+  }
+
+  virtual void RaiseFailure() {
+    in_demon_ = false;
+    const bool top_level = indent_ == 0;
+    DelayCloseAndUnindent();
+    ClearIndent();
+    if (top_level) {
+      Display("  -------------------- Failure --------------------");
+    } else {
+      Display("} -------------------- Failure --------------------");
+    }
+  }
+
+  virtual void FindSolution() {
+    Display("++++++++++++++++++++ Solution ++++++++++++++++++++");
+  }
+
+  virtual void ApplyDecision(Decision* const decision) {
+    Display(StringPrintf("----- Apply(%s) {", decision->DebugString().c_str()));
+    IncreaseIndent();
+  }
+
+  virtual void RefuteDecision(Decision* const decision) {
+    Display(StringPrintf("----- Refute(%s) {",
+                         decision->DebugString().c_str()));
+    IncreaseIndent();
+  }
+
+  virtual void AfterDecision(Decision* const decision) {
+    DecreaseIndent();
+    Display("}");
+  }
+
+  virtual void EnterSearch() {
+    ClearIndent();
+  }
+
+  virtual void ExitSearch() {
+    DCHECK_EQ(0, indent_);
+  }
+
+  virtual void RestartSearch() {
+    DCHECK_EQ(0, indent_);
+  }
+
+  // IntExpr modifiers.
+  virtual void SetMin(IntExpr* const expr, int64 new_min) {
+    DisplayModification(StringPrintf("SetMin(%s, %lld)",
+                                     expr->DebugString().c_str(),
+                                     new_min));
+  }
+
+  virtual void SetMax(IntExpr* const expr, int64 new_max) {
+    DisplayModification(StringPrintf("SetMax(%s, %lld)",
+                                     expr->DebugString().c_str(),
+                                     new_max));
+  }
+
+  virtual void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) {
+    DisplayModification(StringPrintf("SetRange(%s, [%lld .. %lld])",
+                                     expr->DebugString().c_str(),
+                                     new_min,
+                                     new_max));
+  }
+
+  // IntVar modifiers.
+  virtual void SetMin(IntVar* const var, int64 new_min) {
+    DisplayModification(StringPrintf("SetMin(%s, %lld)",
+                                     var->DebugString().c_str(),
+                                     new_min));
+  }
+
+  virtual void SetMax(IntVar* const var, int64 new_max) {
+    DisplayModification(StringPrintf("SetMax(%s, %lld)",
+                                     var->DebugString().c_str(),
+                                     new_max));
+  }
+
+  virtual void SetRange(IntVar* const var, int64 new_min, int64 new_max) {
+    DisplayModification(StringPrintf("SetRange(%s, [%lld .. %lld])",
+                                     var->DebugString().c_str(),
+                                     new_min,
+                                     new_max));
+  }
+
+  virtual void RemoveValue(IntVar* const var, int64 value) {
+    DisplayModification(StringPrintf("RemoveValue(%s, %lld)",
+                                     var->DebugString().c_str(),
+                                     value));
+  }
+
+  virtual void SetValue(IntVar* const var, int64 value) {
+    DisplayModification(StringPrintf("SetValue(%s, %lld)",
+                                     var->DebugString().c_str(),
+                                     value));
+  }
+
+  virtual void RemoveInterval(IntVar* const var, int64 imin, int64 imax) {
+    DisplayModification(StringPrintf("RemoveInterval(%s, [%lld .. %lld])",
+                                     var->DebugString().c_str(),
+                                     imin,
+                                     imax));
+  }
+
+  virtual void SetValues(IntVar* const var,
+                         const int64* const values,
+                         int size) {}
+
+  virtual void RemoveValues(IntVar* const var,
+                            const int64* const values,
+                            int size) {}
+  // IntervalVar modifiers.
+  virtual void SetStartMin(IntervalVar* const var, int64 new_min) {
+    DisplayModification(StringPrintf("SetStartMin(%s, %lld)",
+                                     var->DebugString().c_str(),
+                                     new_min));
+  }
+
+  virtual void SetStartMax(IntervalVar* const var, int64 new_max) {
+    DisplayModification(StringPrintf("SetStartMax(%s, %lld)",
+                                     var->DebugString().c_str(),
+                                     new_max));
+  }
+
+  virtual void SetStartRange(IntervalVar* const var,
+                             int64 new_min,
+                             int64 new_max) {
+    DisplayModification(StringPrintf("SetStartRange(%s, [%lld .. %lld])",
+                                     var->DebugString().c_str(),
+                                     new_min,
+                                     new_max));
+  }
+
+  virtual void SetEndMin(IntervalVar* const var, int64 new_min) {
+    DisplayModification(StringPrintf("SetEndMin(%s, %lld)",
+                                     var->DebugString().c_str(),
+                                     new_min));
+  }
+
+  virtual void SetEndMax(IntervalVar* const var, int64 new_max) {
+    DisplayModification(StringPrintf("SetEndMax(%s, %lld)",
+                                     var->DebugString().c_str(),
+                                     new_max));
+  }
+
+  virtual void SetEndRange(IntervalVar* const var,
+                           int64 new_min,
+                           int64 new_max) {
+    DisplayModification(StringPrintf("SetEndRange(%s, [%lld .. %lld])",
+                                     var->DebugString().c_str(),
+                                     new_min,
+                                     new_max));
+  }
+
+  virtual void SetDurationMin(IntervalVar* const var, int64 new_min) {
+    DisplayModification(StringPrintf("SetDurationMin(%s, %lld)",
+                                     var->DebugString().c_str(),
+                                     new_min));
+  }
+
+  virtual void SetDurationMax(IntervalVar* const var, int64 new_max) {
+    DisplayModification(StringPrintf("SetDurationMax(%s, %lld)",
+                                     var->DebugString().c_str(),
+                                     new_max));
+  }
+
+  virtual void SetDurationRange(IntervalVar* const var,
+                                int64 new_min,
+                                int64 new_max) {
+    DisplayModification(StringPrintf("SetDurationRange(%s, [%lld .. %lld])",
+                                     var->DebugString().c_str(),
+                                     new_min,
+                                     new_max));
+  }
+
+  virtual void SetPerformed(IntervalVar* const var, bool value) {
+    DisplayModification(StringPrintf("SetPerformed(%s, %d)",
+                                     var->DebugString().c_str(),
+                                     value));
+  }
+
+ private:
+  void DelayPrintAndIndent(const string& delayed) {
+    CHECK(delayed_string_.empty());
+    delayed_string_ = delayed;
+  }
+
+  void DelayCloseAndUnindent() {
+    if (delayed_string_.empty() && indent_ > 0) {
+      DecreaseIndent();
+      Display("}");
+    } else {
+      delayed_string_ = "";
+    }
+  }
+
+  void CheckNoDelayed() {
+    CHECK(delayed_string_.empty());
+  }
+
+  void DisplayModification(const string& to_print) {
+    if (!delayed_string_.empty()) {
+      LOG(INFO) << Indent() << delayed_string_ << " {";
+      IncreaseIndent();
+      delayed_string_ = "";
+    }
+    if (in_demon_) {  // Inside a demon, normal print.
+      LOG(INFO) << Indent() << to_print;
+    } else if (indent_ == 0) {  // Top level, modification pushed by the
+      // objective.
+      LOG(INFO) << Indent() << "Objective: " << to_print;
+    } else { // Not top level, but not in a demon -> Decision.
+      LOG(INFO) << Indent() << "Decision: " << to_print;
+    }
+  }
+
+  void Display(const string& to_print) {
+    LOG(INFO) << Indent() << to_print;
+  }
+
+  string Indent() {
+    string output = " @ ";
+    for (int i = 0; i < indent_; ++i) {
+      output.append("    ");
+    }
+    return output;
+  }
+
+  void IncreaseIndent() {
+    indent_++;
+  }
+
+  void DecreaseIndent() {
+    indent_--;
+  }
+
+  void ClearIndent() {
+    indent_ = 0;
+  }
+
+  int indent_;
+  string delayed_string_;
+  bool in_demon_;
 };
 }  // namespace
 
@@ -525,12 +972,16 @@ PropagationMonitor* BuildTrace() {
   return new Trace();
 }
 
-PropagationMonitor* Solver::Trace() const {
-  return trace_.get();
-}
-
 void Solver::AddPropagationMonitor(PropagationMonitor* const monitor) {
   // TODO(user): Check solver state?
-  reinterpret_cast<class Trace*>(trace_.get())->Add(monitor);
+  reinterpret_cast<class Trace*>(propagation_monitor_.get())->Add(monitor);
+}
+
+PropagationMonitor* Solver::GetPropagationMonitor() const {
+  return propagation_monitor_.get();
+}
+
+PropagationMonitor* BuildPrintTrace() {
+  return new PrintTrace();
 }
 }  // namespace operations_research

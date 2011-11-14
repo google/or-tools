@@ -54,69 +54,6 @@ template<class T> bool IsEqual(ConstPtrArray<T>* const a1,
   return a1->Equals(*a2);
 }
 
-uint64 Hash1(uint64 value) {
-  value = (~value) + (value << 21);  // value = (value << 21) - value - 1;
-  value = value ^ (value >> 24);
-  value = (value + (value << 3)) + (value << 8);  // value * 265
-  value = value ^ (value >> 14);
-  value = (value + (value << 2)) + (value << 4);  // value * 21
-  value = value ^ (value >> 28);
-  value = value + (value << 31);
-  return value;
-}
-
-uint64 Hash1(uint32 value) {
-  uint64 a = value;
-  a = (a + 0x7ed55d16) + (a << 12);
-  a = (a ^ 0xc761c23c) ^ (a >> 19);
-  a = (a + 0x165667b1) + (a << 5);
-  a = (a + 0xd3a2646c) ^ (a << 9);
-  a = (a + 0xfd7046c5) + (a << 3);
-  a = (a ^ 0xb55a4f09) ^ (a >> 16);
-  return a;
-}
-
-uint64 Hash1(int64 value) {
-  return Hash1(static_cast<uint64>(value));
-}
-
-uint64 Hash1(void* const ptr) {
-#if defined(ARCH_K8)
-    return Hash1(reinterpret_cast<uint64>(ptr));
-#else
-    return Hash1(reinterpret_cast<uint32>(ptr));
-#endif
-}
-
-uint64 Hash1(ConstIntArray* const values) {
-  if (values->size() == 0) {
-    return 0;
-  } else if (values->size() == 1) {
-    return Hash1(values->get(0));
-  } else {
-    uint64 hash = Hash1(values->get(0));
-    for (int i = 1; i < values->size(); ++i) {
-      hash = hash * i + Hash1(values->get(i));
-    }
-    return hash;
-  }
-}
-
-template <class T>
-uint64 Hash1(ConstPtrArray<T>* const ptrs) {
-  if (ptrs->size() == 0) {
-    return 0;
-  } else if (ptrs->size() == 1) {
-    return Hash1(ptrs->get(0));
-  } else {
-    uint64 hash = Hash1(ptrs->get(0));
-    for (int i = 1; i < ptrs->size(); ++i) {
-      hash = hash * i + Hash1(ptrs->get(i));
-    }
-    return hash;
-  }
-}
-
 template <class A1, class A2> uint64 Hash2(const A1& a1, const A2& a2) {
   uint64 a = Hash1(a1);
   uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);   // more of the golden ratio

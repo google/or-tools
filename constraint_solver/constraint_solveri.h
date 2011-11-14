@@ -22,6 +22,7 @@
 //     A reversible data structure is a data structure that reverts its
 //     modifications when the search is going up in the search tree, usually
 //     after a failure occurs.
+//   - RevImmutableMultiMap a reversible immutable multimap.
 //   - MakeConstraintDemon<n> and MakeDelayedConstraintDemon<n> to wrap methods
 //     of a constraint as a demon.
 //   - LocalSearchOperator, IntVarLocalSearchOperator, ChangeValue and
@@ -65,6 +66,8 @@
 #include "base/map-util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
+#include "util/const_int_array.h"
+#include "util/const_ptr_array.h"
 #include "util/vector_map.h"
 
 template <typename T> class ResultCallback;
@@ -210,6 +213,189 @@ template <class T> class SimpleRevFIFO {
   Chunk *chunks_;
   int pos_;
 };
+
+// ---------- Reversible Hash Table ----------
+
+// ----- Hash functions -----
+// TODO(user): use murmurhash.
+inline uint64 Hash1(uint64 value) {
+  value = (~value) + (value << 21);  // value = (value << 21) - value - 1;
+  value ^= value >> 24;
+  value += (value << 3) + (value << 8);  // value * 265
+  value ^= value >> 14;
+  value += (value << 2) + (value << 4);  // value * 21
+  value ^= value >> 28;
+  value += (value << 31);
+  return value;
+}
+
+inline uint64 Hash1(uint32 value) {
+  uint64 a = value;
+  a = (a + 0x7ed55d16) + (a << 12);
+  a = (a ^ 0xc761c23c) ^ (a >> 19);
+  a = (a + 0x165667b1) + (a << 5);
+  a = (a + 0xd3a2646c) ^ (a << 9);
+  a = (a + 0xfd7046c5) + (a << 3);
+  a = (a ^ 0xb55a4f09) ^ (a >> 16);
+  return a;
+}
+
+inline uint64 Hash1(int64 value) {
+  return Hash1(static_cast<uint64>(value));
+}
+
+inline uint64 Hash1(int value) {
+  return Hash1(static_cast<uint32>(value));
+}
+
+inline uint64 Hash1(void* const ptr) {
+#if defined(ARCH_K8)
+    return Hash1(reinterpret_cast<uint64>(ptr));
+#else
+    return Hash1(reinterpret_cast<uint32>(ptr));
+#endif
+}
+
+inline uint64 Hash1(ConstIntArray* const values) {
+  if (values->size() == 0) {
+    return 0;
+  } else if (values->size() == 1) {
+    return Hash1(values->get(0));
+  } else {
+    uint64 hash = Hash1(values->get(0));
+    for (int i = 1; i < values->size(); ++i) {
+      hash = hash * i + Hash1(values->get(i));
+    }
+    return hash;
+  }
+}
+
+template <class T> uint64 Hash1(ConstPtrArray<T>* const ptrs) {
+  if (ptrs->size() == 0) {
+    return 0;
+  } else if (ptrs->size() == 1) {
+    return Hash1(ptrs->get(0));
+  } else {
+    uint64 hash = Hash1(ptrs->get(0));
+    for (int i = 1; i < ptrs->size(); ++i) {
+      hash = hash * i + Hash1(ptrs->get(i));
+    }
+    return hash;
+  }
+}
+
+// ----- Immutable Multi Map -----
+
+// Reversible Immutable MultiMap class.
+// Represents an immutable multi-map that backstracks with the solver.
+template <class K, class V> class RevImmutableMultiMap {
+ public:
+  RevImmutableMultiMap(Solver* const solver, int initial_size)
+      : solver_(solver),
+        array_(solver->UnsafeRevAllocArray(new Cell*[initial_size])),
+        size_(initial_size),
+        num_items_(0) {
+    memset(array_, 0, sizeof(*array_) * size_);
+  }
+
+  ~RevImmutableMultiMap() {}
+
+  int num_items() const { return num_items_; }
+
+  // Returns true if the multi-map contains at least one instance of 'key'.
+  bool ContainsKey(const K& key) const {
+    uint64 code = Hash1(key) % size_;
+    Cell* tmp = array_[code];
+    while (tmp) {
+      if (tmp->key() == key) {
+        return true;
+      }
+      tmp = tmp->next();
+    }
+    return false;
+  }
+
+  // Returns one value attached to 'key', or 'defaut_value' if 'key'
+  // is not in the multi-map. The actual value returned if more than one
+  // values is attached to the same key is not specified.
+  const V& FindWithDefault(const K& key, const V& default_value) const {
+    uint64 code = Hash1(key) % size_;
+    Cell* tmp = array_[code];
+    while (tmp) {
+      if (tmp->key() == key) {
+        return tmp->value();
+      }
+      tmp = tmp->next();
+    }
+    return default_value;
+  }
+
+  // Inserts (key, value) in the multi-map.
+  void Insert(const K& key, const V& value) {
+    const int position = Hash1(key) % size_;
+    Cell* const cell =
+        solver_->UnsafeRevAlloc(new Cell(key, value, array_[position]));
+    solver_->SaveAndSetValue(reinterpret_cast<void**>(&array_[position]),
+                             reinterpret_cast<void*>(cell));
+    solver_->SaveAndAdd(&num_items_, 1);
+    if (num_items_ > 2 * size_) {
+      Double();
+    }
+  }
+
+ private:
+  class Cell {
+   public:
+    Cell(const K& key, const V& value, Cell* const next)
+        : key_(key), value_(value), next_(next) {}
+
+    void SetRevNext(Solver* const solver, Cell* const next) {
+      solver->SaveAndSetValue(reinterpret_cast<void**>(&next_),
+                              reinterpret_cast<void*>(next));
+    }
+
+    Cell* next() const { return next_; }
+
+    const K& key() const { return key_; }
+
+    const V& value() const { return value_; }
+
+   private:
+    const K key_;
+    const V value_;
+    Cell* next_;
+  };
+
+  void Double() {
+    Cell** const old_cell_array = array_;
+    const int old_size = size_;
+    solver_->SaveAndAdd(&size_, size_);
+    solver_->SaveAndSetValue(
+        reinterpret_cast<void**>(&array_),
+        reinterpret_cast<void*>(
+            solver_->UnsafeRevAllocArray(new Cell*[size_])));
+    memset(array_, 0, size_ * sizeof(*array_));
+    for (int i = 0; i < old_size; ++i) {
+      Cell* tmp = old_cell_array[i];
+      while (tmp != NULL) {
+        Cell* const to_reinsert = tmp;
+        tmp = tmp->next();
+        const uint64 new_position = Hash1(to_reinsert->key()) % size_;
+        to_reinsert->SetRevNext(solver_, array_[new_position]);
+        solver_->SaveAndSetValue(
+            reinterpret_cast<void**>(&array_[new_position]),
+            reinterpret_cast<void*>(to_reinsert));
+      }
+    }
+  }
+
+  Solver* const solver_;
+  Cell** array_;
+  int size_;
+  int num_items_;
+  // TODO(user): Experiment with stamping 'array_'.
+};
+
 // @{
 // These methods represent generic demons that will call back a
 // method on the constraint during their Run method.
@@ -795,25 +981,64 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
 
 class PropagationMonitor : public BaseObject {
  public:
-  virtual void StartInitialPropagation() = 0;
+  // Propagation events.
+  virtual void BeginInitialPropagation() = 0;
   virtual void EndInitialPropagation() = 0;
-  virtual void StartConstraintInitialPropagation(
+  virtual void BeginConstraintInitialPropagation(
       const Constraint* const constraint) = 0;
   virtual void EndConstraintInitialPropagation(
       const Constraint* const constraint) = 0;
-  virtual void StartNestedConstraintInitialPropagation(
+  virtual void BeginNestedConstraintInitialPropagation(
       const Constraint* const parent,
       const Constraint* const nested) = 0;
   virtual void EndNestedConstraintInitialPropagation(
       const Constraint* const parent,
       const Constraint* const nested) = 0;
   virtual void RegisterDemon(const Demon* const demon) = 0;
-  virtual void StartDemonRun(const Demon* const demon) = 0;
+  virtual void BeginDemonRun(const Demon* const demon) = 0;
   virtual void EndDemonRun(const Demon* const demon) = 0;
   virtual void RaiseFailure() = 0;
+  virtual void FindSolution() = 0;
   virtual void EnterSearch() = 0;
   virtual void ExitSearch() = 0;
   virtual void RestartSearch() = 0;
+  virtual void ApplyDecision(Decision* const decision) = 0;
+  virtual void RefuteDecision(Decision* const decision) = 0;
+  virtual void AfterDecision(Decision* const decision) = 0;
+  // IntExpr modifiers.
+  virtual void SetMin(IntExpr* const expr, int64 new_min) = 0;
+  virtual void SetMax(IntExpr* const expr, int64 new_max) = 0;
+  virtual void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) = 0;
+  // IntVar modifiers.
+  virtual void SetMin(IntVar* const var, int64 new_min) = 0;
+  virtual void SetMax(IntVar* const var, int64 new_max) = 0;
+  virtual void SetRange(IntVar* const var, int64 new_min, int64 new_max) = 0;
+  virtual void RemoveValue(IntVar* const var, int64 value) = 0;
+  virtual void SetValue(IntVar* const var, int64 value) = 0;
+  virtual void RemoveInterval(IntVar* const var, int64 imin, int64 imax) = 0;
+  virtual void SetValues(IntVar* const var,
+                         const int64* const values,
+                         int size) = 0;
+  virtual void RemoveValues(IntVar* const var,
+                            const int64* const values,
+                            int size) = 0;
+  // IntervalVar modifiers.
+  virtual void SetStartMin(IntervalVar* const var, int64 new_min) = 0;
+  virtual void SetStartMax(IntervalVar* const var, int64 new_max) = 0;
+  virtual void SetStartRange(IntervalVar* const var,
+                             int64 new_min,
+                             int64 new_max) = 0;
+  virtual void SetEndMin(IntervalVar* const var, int64 new_min) = 0;
+  virtual void SetEndMax(IntervalVar* const var, int64 new_max) = 0;
+  virtual void SetEndRange(IntervalVar* const var,
+                           int64 new_min,
+                           int64 new_max) = 0;
+  virtual void SetDurationMin(IntervalVar* const var, int64 new_min) = 0;
+  virtual void SetDurationMax(IntervalVar* const var, int64 new_max) = 0;
+  virtual void SetDurationRange(IntervalVar* const var,
+                                int64 new_min,
+                                int64 new_max) = 0;
+  virtual void SetPerformed(IntervalVar* const var, bool value) = 0;
 };
 
 // ---------- SymmetryBreaker ----------
