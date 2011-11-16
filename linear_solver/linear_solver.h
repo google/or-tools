@@ -214,10 +214,14 @@ class MPSolver {
   MPSolver(const string& name, OptimizationProblemType problem_type);
   virtual ~MPSolver();
 
-  // ----- Init and Clear -----
-  // TODO(user): Find out what this does and possibly remove.
-  void Init() {}
+  // Clears the optimization direction, the objective and all variables and
+  // constraints. All the other properties of the MPSolver (like the time
+  // limit) are kept untouched.
   void Clear();
+
+  string Name() const {
+    return name_;  // Set at construction.
+  }
 
   // ----- Variables ------
   // Returns the number of variables.

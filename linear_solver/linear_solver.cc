@@ -622,7 +622,9 @@ void MPSolver::Clear() {
   STLDeleteElements(&variables_);
   STLDeleteElements(&constraints_);
   variables_.clear();
+  variables_names_.clear();
   constraints_.clear();
+  constraints_names_.clear();
   interface_->Reset();
   SetMinimization();
 }

@@ -401,7 +401,6 @@ namespace operations_research {
 %rename (clear) MPSolver::Clear;
 %rename (clearObjective) MPSolver::ClearObjective;
 %rename (computeExactConditionNumber) MPSolver::ComputeExactConditionNumber;
-%rename (init) MPSolver::Init;
 %rename (loadModel) MPSolver::LoadModel;
 %rename (makeBoolVar) MPSolver::MakeBoolVar;
 %rename (makeIntVar) MPSolver::MakeIntVar;

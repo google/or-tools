@@ -73,7 +73,6 @@ class SimplexConstraint : public SearchMonitor {
 
   virtual void EndInitialPropagation() {
     mp_solver_.Clear();
-    mp_solver_.Init();
     if (builder_.get() != NULL) {
       builder_->Run(&mp_solver_);
     }
@@ -85,7 +84,6 @@ class SimplexConstraint : public SearchMonitor {
       const int cleanup = FLAGS_simplex_cleanup_frequency * simplex_frequency_;
       if (FLAGS_simplex_cleanup_frequency != 0 && counter_ %  cleanup == 0) {
         mp_solver_.Clear();
-        mp_solver_.Init();
         if (builder_.get() != NULL) {
           builder_->Run(&mp_solver_);
         }
