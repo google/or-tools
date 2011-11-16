@@ -39,28 +39,28 @@ public class LinearProgramming {
     MPVariable x3 = solver.makeNumVar(0.0, infinity, "x3");
 
     // Maximize 10 * x1 + 6 * x2 + 4 * x3.
-    solver.addObjectiveTerm(x1, 10);
-    solver.addObjectiveTerm(x2, 6);
-    solver.addObjectiveTerm(x3, 4);
+    solver.setObjectiveCoefficient(x1, 10);
+    solver.setObjectiveCoefficient(x2, 6);
+    solver.setObjectiveCoefficient(x3, 4);
     solver.setMaximization();
 
     // x1 + x2 + x3 <= 100.
     MPConstraint c0 = solver.makeConstraint(-infinity, 100.0);
-    c0.addTerm(x1, 1);
-    c0.addTerm(x2, 1);
-    c0.addTerm(x3, 1);
+    c0.setCoefficient(x1, 1);
+    c0.setCoefficient(x2, 1);
+    c0.setCoefficient(x3, 1);
 
     // 10 * x1 + 4 * x2 + 5 * x3 <= 600.
     MPConstraint c1 = solver.makeConstraint(-infinity, 600.0);
-    c1.addTerm(x1, 10);
-    c1.addTerm(x2, 4);
-    c1.addTerm(x3, 5);
+    c1.setCoefficient(x1, 10);
+    c1.setCoefficient(x2, 4);
+    c1.setCoefficient(x3, 5);
 
     // 2 * x1 + 2 * x2 + 6 * x3 <= 300.
     MPConstraint c2 = solver.makeConstraint(-infinity, 300.0);
-    c2.addTerm(x1, 2);
-    c2.addTerm(x2, 2);
-    c2.addTerm(x3, 6);
+    c2.setCoefficient(x1, 2);
+    c2.setCoefficient(x2, 2);
+    c2.setCoefficient(x3, 6);
 
     System.out.println("Number of variables = " + solver.numVariables());
     System.out.println("Number of constraints = " + solver.numConstraints());

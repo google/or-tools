@@ -220,7 +220,7 @@ class LinearConstraint(object):
 
     constraint = solver.RowConstraint(lb, ub)
     for v, c, in coeffs.iteritems():
-      constraint.AddTerm(v, float(c))
+      constraint.SetCoefficient(v, float(c))
     return constraint
 }
 
@@ -339,7 +339,7 @@ class LinearConstraint(object):
       offset = expr.Visit(coeffs)
       self.AddObjectiveOffset(offset)
       for v, c, in coeffs.iteritems():
-        self.AddObjectiveTerm(v, float(c))
+        self.SetObjectiveCoefficient(v, float(c))
 
     def Maximize(self, expr):
       self.ClearObjective()
@@ -348,7 +348,7 @@ class LinearConstraint(object):
       offset = expr.Visit(coeffs)
       self.AddObjectiveOffset(offset)
       for v, c, in coeffs.iteritems():
-        self.AddObjectiveTerm(v, float(c))
+        self.SetObjectiveCoefficient(v, float(c))
   }
 }
 
@@ -371,7 +371,6 @@ namespace operations_research {
 %rename (solutionValue) MPVariable::solution_value;
 
 // Rename rules on MPConstraint.
-%rename (addTerm) MPConstraint::AddTerm;
 %rename (basisStatus) MPConstraint::basis_status;
 %rename (dualValue) MPConstraint::dual_value;
 %rename (setBounds) MPConstraint::SetBounds;
@@ -381,7 +380,6 @@ namespace operations_research {
 
 // Rename rules on MPObjective.
 %rename (addOffset) MPObjective::AddOffset;
-%rename (addTerm) MPObjective::AddObjective;
 %rename (clear) MPObjective::Clear;
 %rename (setCoefficient) MPObjective::SetCoefficient;
 %rename (setOffset) MPObjective::SetOffset;
@@ -397,7 +395,6 @@ namespace operations_research {
 
 // Rename rules on MPSolver.
 %rename (addObjectiveOffset) MPSolver::AddObjectiveOffset;
-%rename (addObjectiveTerm) MPSolver::AddObjectiveTerm;
 %rename (bestObjectiveBound) MPSolver::best_objective_bound;
 %rename (checkAllNamesValidity) MPSolver::CheckAllNamesValidity;
 %rename (checkNameValidity) MPSolver::CheckNameValidity;
@@ -429,6 +426,10 @@ namespace operations_research {
 %rename (timeLimit) MPSolver::time_limit;
 %rename (wallTime) MPSolver::wall_time;
 %rename (writeModelFilename) MPSolver::write_model_filename;
+// Ignore the deprecated and soon-to-be retired API
+%ignore MPConstraint::AddTerm;
+%ignore MPObjective::AddTerm;
+%ignore MPSolver::AddObjectiveTerm;
 // Ignore code on MPSolver, see replacement java code below.
 %ignore MPSolver::MakeVarArray;
 %ignore MPSolver::MakeNumVarArray;

@@ -38,13 +38,13 @@ public class IntegerProgramming {
     MPVariable x2 = solver.makeIntVar(0.0, infinity, "x2");
 
     // Minimize x1 + 2 * x2.
-    solver.addObjectiveTerm(x1, 1);
-    solver.addObjectiveTerm(x2, 2);
+    solver.setObjectiveCoefficient(x1, 1);
+    solver.setObjectiveCoefficient(x2, 2);
 
     // 2 * x2 + 3 * x1 >= 17.
     MPConstraint ct = solver.makeConstraint(17, infinity);
-    ct.addTerm(x1, 3);
-    ct.addTerm(x2, 2);
+    ct.setCoefficient(x1, 3);
+    ct.setCoefficient(x2, 2);
 
     int resultStatus = solver.solve();
 
