@@ -23,12 +23,12 @@
 
 #if defined(SWIGJAVA)
 // Rename rules on EbertGraph.
-%rename(reserve) operations_research::EbertGraph::Reserve;
-%rename(numNodes) operations_research::EbertGraph::num_nodes;
-%rename(numArcs) operations_research::EbertGraph::num_arcs;
-%rename(maxNumNodes) operations_research::EbertGraph::max_num_nodes;
-%rename(maxNumArcs) operations_research::EbertGraph::max_num_arcs;
-%rename(addArc) operations_research::EbertGraph::AddArc;
+%rename(reserve) operations_research::EbertGraphCore::Reserve;
+%rename(numNodes) operations_research::EbertGraphCore::num_nodes;
+%rename(numArcs) operations_research::EbertGraphCore::num_arcs;
+%rename(maxNumNodes) operations_research::EbertGraphCore::max_num_nodes;
+%rename(maxNumArcs) operations_research::EbertGraphCore::max_num_arcs;
+%rename(addArc) operations_research::EbertGraphCore::AddArc;
 
 // Rename rules on MaxFlow.
 %rename (getSourceNodeIndex) operations_research::MaxFlow::GetSourceNodeIndex;
@@ -61,5 +61,8 @@
 %include "graph/min_cost_flow.h"
 
 namespace operations_research {
+%template(StarGraphCore) EbertGraphCore<NodeIndex, ArcIndex, EbertGraph<NodeIndex, ArcIndex> >;
 %template(StarGraph) EbertGraph<NodeIndex, ArcIndex>;
+%template(ForwardStarGraphCore) EbertGraphCore<NodeIndex, ArcIndex, ForwardEbertGraph<NodeIndex, ArcIndex> >;
+%template(ForwardStarGraph) ForwardEbertGraph<NodeIndex, ArcIndex>;
 }

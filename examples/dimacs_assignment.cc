@@ -37,8 +37,8 @@ DEFINE_string(assignment_problem_output_file, "",
 namespace operations_research {
 
 CostValue BuildAndSolveHungarianInstance(
-    const LinearSumAssignment& assignment) {
-  const StarGraph& graph = assignment.Graph();
+    const LinearSumAssignment<ForwardStarGraph>& assignment) {
+  const ForwardStarGraph& graph = assignment.Graph();
   typedef std::vector<double> HungarianRow;
   typedef std::vector<HungarianRow> HungarianProblem;
   HungarianProblem hungarian_cost;
@@ -46,7 +46,9 @@ CostValue BuildAndSolveHungarianInstance(
   // First we have to find the biggest cost magnitude so we can
   // initialize the arc costs that aren't really there.
   CostValue largest_cost_magnitude = 0;
-  for (StarGraph::ArcIterator arc_it(graph); arc_it.Ok(); arc_it.Next()) {
+  for (ForwardStarGraph::ArcIterator arc_it(graph);
+       arc_it.Ok();
+       arc_it.Next()) {
     ArcIndex arc = arc_it.Index();
     CostValue cost_magnitude = ::std::abs(assignment.ArcCost(arc));
     largest_cost_magnitude = ::std::max(largest_cost_magnitude, cost_magnitude);
@@ -60,15 +62,27 @@ CostValue BuildAndSolveHungarianInstance(
     row->resize(assignment.NumNodes() - assignment.NumLeftNodes(),
                 missing_arc_cost);
   }
-  for (StarGraph::ArcIterator arc_it(graph);
-       arc_it.Ok();
-       arc_it.Next()) {
-    ArcIndex arc = arc_it.Index();
-    NodeIndex tail = graph.Tail(arc) - StarGraph::kFirstNode;
-    NodeIndex head = (graph.Head(arc) - assignment.NumLeftNodes() -
-                      StarGraph::kFirstNode);
-    double cost = static_cast<double>(assignment.ArcCost(arc));
-    hungarian_cost[tail][head] = cost;
+  // We're using a graph representation without forward arcs, so in
+  // order to use the generic ForwardStarGraph::ArcIterator we would
+  // need to increase our memory footprint by building the array of
+  // arc tails (since we need tails to build the input to the
+  // hungarian algorithm). We opt for the alternative of iterating
+  // over hte arcs via adjacency lists, which gives us the arc tails
+  // implicitly.
+  for (ForwardStarGraph::NodeIterator node_it(graph);
+       node_it.Ok();
+       node_it.Next()) {
+    NodeIndex node = node_it.Index();
+    NodeIndex tail = (node - ForwardStarGraph::kFirstNode);
+    for (ForwardStarGraph::OutgoingArcIterator arc_it(graph, node);
+         arc_it.Ok();
+         arc_it.Next()) {
+      ArcIndex arc = arc_it.Index();
+      NodeIndex head = (graph.Head(arc) - assignment.NumLeftNodes() -
+                        ForwardStarGraph::kFirstNode);
+      double cost = static_cast<double>(assignment.ArcCost(arc));
+      hungarian_cost[tail][head] = cost;
+    }
   }
   hash_map<int, int> result;
   hash_map<int, int> wish_this_could_be_null;
@@ -86,8 +100,10 @@ CostValue BuildAndSolveHungarianInstance(
   return static_cast<CostValue>(result_cost);
 }
 
-void DisplayAssignment(const LinearSumAssignment& assignment) {
-  for (LinearSumAssignment::BipartiteLeftNodeIterator node_it(assignment);
+void DisplayAssignment(
+    const LinearSumAssignment<ForwardStarGraph>& assignment) {
+  for (LinearSumAssignment<ForwardStarGraph>::BipartiteLeftNodeIterator
+           node_it(assignment);
        node_it.Ok();
        node_it.Next()) {
     const NodeIndex left_node = node_it.Index();
@@ -116,8 +132,8 @@ int solve_dimacs_assignment(int argc, char* argv[]) {
   string error_message;
   // Handle on the graph we will need to delete because the
   // LinearSumAssignment object does not take ownership of it.
-  StarGraph* graph = NULL;
-  LinearSumAssignment* assignment =
+  ForwardStarGraph* graph = NULL;
+  LinearSumAssignment<ForwardStarGraph>* assignment =
       ParseDimacsAssignment(argv[1], &error_message, &graph);
   if (assignment == NULL) {
     LOG(FATAL) << error_message;

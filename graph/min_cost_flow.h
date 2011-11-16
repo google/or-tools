@@ -198,7 +198,7 @@ class MinCostFlow {
   // Sets the supply corresponding to node. A demand is modeled as a negative
   // supply.
   void SetNodeSupply(NodeIndex node, FlowQuantity supply) {
-    DCHECK(graph_->CheckNodeValidity(node));
+    DCHECK(graph_->IsNodeValid(node));
     node_excess_.Set(node, supply);
     status_ = NOT_SOLVED;
   }
@@ -263,7 +263,7 @@ class MinCostFlow {
 
   // Returns the supply at node. Demands are modelled as negative supplies.
   FlowQuantity Supply(NodeIndex node) const {
-    DCHECK(graph_->CheckNodeValidity(node));
+    DCHECK(graph_->IsNodeValid(node));
     return node_excess_[node];
   }
 
@@ -282,8 +282,8 @@ class MinCostFlow {
 
   // Returns the reduced cost for an arc.
   CostValue ReducedCost(ArcIndex arc) const {
-    DCHECK(graph_->CheckNodeValidity(Tail(arc)));
-    DCHECK(graph_->CheckNodeValidity(Head(arc)));
+    DCHECK(graph_->IsNodeValid(Tail(arc)));
+    DCHECK(graph_->IsNodeValid(Head(arc)));
     DCHECK_LE(node_potential_[Tail(arc)], 0);
     DCHECK_LE(node_potential_[Head(arc)], 0);
     return scaled_arc_unit_cost_[arc]

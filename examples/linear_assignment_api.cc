@@ -33,8 +33,9 @@ void AssignmentOn4x4Matrix() {
   };
   const CostValue kExpectedCost =
       kCost[0][3] + kCost[1][2] + kCost[2][1] + kCost[3][0];
-  StarGraph graph(kNumSources + kNumTargets, kNumSources * kNumTargets);
-  LinearSumAssignment assignment(graph, kNumSources);
+  ForwardStarGraph graph(
+      kNumSources + kNumTargets, kNumSources * kNumTargets);
+  LinearSumAssignment<ForwardStarGraph> assignment(graph, kNumSources);
   for (NodeIndex source = 0; source < kNumSources; ++source) {
     for (NodeIndex target = 0; target < kNumTargets; ++target) {
       ArcIndex arc = graph.AddArc(source, kNumSources + target);

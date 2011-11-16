@@ -49,7 +49,7 @@ struct ParserState {
 
 static void ParseProblemLine(const char* line,
                              ParserState* state,
-                             StarGraph** graph) {
+                             ForwardStarGraph** graph) {
   static const char* kIncorrectProblemLine =
       "Incorrect assignment problem line.";
   static const char* kAssignmentProblemType = "asn";
@@ -70,7 +70,7 @@ static void ParseProblemLine(const char* line,
     return;
   }
 
-  *graph = new StarGraph(num_nodes, num_arcs);
+  *graph = new ForwardStarGraph(num_nodes, num_arcs);
 }
 
 static void ParseNodeLine(const char* line,
@@ -91,10 +91,11 @@ static void ParseNodeLine(const char* line,
   state->num_left_nodes = ::std::max(state->num_left_nodes, node_id);
 }
 
-static void ParseArcLine(const char* line,
-                         ParserState* state,
-                         StarGraph* graph,
-                         LinearSumAssignment** assignment) {
+static void ParseArcLine(
+    const char* line,
+    ParserState* state,
+    ForwardStarGraph* graph,
+    LinearSumAssignment<ForwardStarGraph>** assignment) {
   if (graph == NULL) {
     state->bad = true;
     state->reason =
@@ -105,7 +106,8 @@ static void ParseArcLine(const char* line,
   if (!state->nodes_described) {
     state->nodes_described = true;
     DCHECK(*assignment == NULL);
-    *assignment = new LinearSumAssignment(*graph, state->num_left_nodes);
+    *assignment = new LinearSumAssignment<ForwardStarGraph>(
+        *graph, state->num_left_nodes);
   }
   NodeIndex tail;
   NodeIndex head;
@@ -121,10 +123,11 @@ static void ParseArcLine(const char* line,
 
 // Parameters out of style-guide order because this function is used
 // as a callback that varies the input line.
-static void ParseOneLine(ParserState* state,
-                         StarGraph** graph,
-                         LinearSumAssignment** assignment,
-                         char* line) {
+static void ParseOneLine(
+    ParserState* state,
+    ForwardStarGraph** graph,
+    LinearSumAssignment<ForwardStarGraph>** assignment,
+    char* line) {
   if (state->bad) {
     return;
   }
@@ -212,13 +215,14 @@ void ParseFileByLines(const string& filename,
 // representation back to the caller, the caller lacks a good way to
 // free the underlying graph (which isn't owned by the
 // LinearAssignment instance).
-LinearSumAssignment* ParseDimacsAssignment(const string& filename,
-                                           string* error_message,
-                                           StarGraph** graph_handle) {
+LinearSumAssignment<ForwardStarGraph>* ParseDimacsAssignment(
+    const string& filename,
+    string* error_message,
+    ForwardStarGraph** graph_handle) {
   CHECK_NOTNULL(error_message);
   CHECK_NOTNULL(graph_handle);
-  StarGraph* graph = NULL;
-  LinearSumAssignment* assignment = NULL;
+  ForwardStarGraph* graph = NULL;
+  LinearSumAssignment<ForwardStarGraph>* assignment = NULL;
   ParserState state;
   Callback1<char*>* cb =
       NewPermanentCallback(ParseOneLine, &state, &graph, &assignment);

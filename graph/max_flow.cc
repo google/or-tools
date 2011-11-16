@@ -48,8 +48,8 @@ MaxFlow::MaxFlow(const StarGraph* graph,
     residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
     residual_arc_capacity_.SetAll(0);
   }
-  DCHECK(graph_->CheckNodeValidity(source_));
-  DCHECK(graph_->CheckNodeValidity(sink_));
+  DCHECK(graph_->IsNodeValid(source_));
+  DCHECK(graph_->IsNodeValid(sink_));
 }
 
 bool MaxFlow::CheckInputConsistency() const {

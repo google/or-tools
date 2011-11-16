@@ -35,17 +35,19 @@ static void WriteOrDie(const char* buffer,
 }
 
 
-void PrintDimacsAssignmentProblem(const LinearSumAssignment& assignment,
-                                  const string& output_filename) {
+void PrintDimacsAssignmentProblem(
+    const LinearSumAssignment<ForwardStarGraph>& assignment,
+    const string& output_filename) {
   FILE* output = fopen(output_filename.c_str(), "w");
-  const StarGraph& graph(assignment.Graph());
+  const ForwardStarGraph& graph(assignment.Graph());
   string output_line = StringPrintf("p asn %d %d\n",
                                     graph.num_nodes(),
                                     graph.num_arcs());
   WriteOrDie(output_line.c_str(), 1, output_line.length(),
              output);
 
-  for (LinearSumAssignment::BipartiteLeftNodeIterator node_it(assignment);
+  for (LinearSumAssignment<ForwardStarGraph>::BipartiteLeftNodeIterator
+           node_it(assignment);
        node_it.Ok();
        node_it.Next()) {
     output_line = StringPrintf("n %d\n", node_it.Index() + 1);
@@ -53,7 +55,7 @@ void PrintDimacsAssignmentProblem(const LinearSumAssignment& assignment,
                output);
   }
 
-  for (StarGraph::ArcIterator arc_it(assignment.Graph());
+  for (ForwardStarGraph::ArcIterator arc_it(assignment.Graph());
        arc_it.Ok();
        arc_it.Next()) {
     ArcIndex arc = arc_it.Index();

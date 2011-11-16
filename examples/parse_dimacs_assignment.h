@@ -9,11 +9,11 @@
 
 #include <string>
 
-#include "graph/linear_assignment.h"
+#include "graph/ebert_graph.h"
 
 namespace operations_research {
 
-class LinearSumAssignment;
+template <typename GraphType> class LinearSumAssignment;
 
 // Reads an assignment problem description from the given file in
 // DIMACS format and returns a LinearSumAssignment object representing
@@ -28,9 +28,10 @@ class LinearSumAssignment;
 // representation back to the caller, the caller lacks a good way to
 // free the underlying graph (which isn't owned by the
 // LinearAssignment instance).
-LinearSumAssignment* ParseDimacsAssignment(const string& filename,
-                                           string* error_message,
-                                           StarGraph** graph);
+LinearSumAssignment<ForwardStarGraph>* ParseDimacsAssignment(
+    const string& filename,
+    string* error_message,
+    ForwardStarGraph** graph);
 
 }  // namespace operations_research
 
