@@ -35,6 +35,7 @@ CPBINARIES = \
 	model_util$E \
 	network_routing$E \
 	nqueens$E \
+	pdptw$E \
 	dimacs_assignment$E \
 	sports_scheduling$E \
 	tsp$E
@@ -512,6 +513,12 @@ objs/nqueens.$O: examples/nqueens.cc constraint_solver/constraint_solver.h
 
 nqueens$E: $(CP_LIBS) $(BASE_LIBS) objs/nqueens.$O
 	$(CCC) $(CFLAGS) objs/nqueens.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)nqueens$E
+
+objs/pdptw.$O: examples/pdptw.cc constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c examples/pdptw.cc $(OBJOUT)objs/pdptw.$O
+
+pdptw$E: $(ROUTING_LIBS) $(BASE_LIBS) objs/pdptw.$O
+	$(CCC) $(CFLAGS) objs/pdptw.$O $(ROUTING_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)pdptw$E
 
 objs/sports_scheduling.$O:examples/sports_scheduling.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/sports_scheduling.cc $(OBJOUT)objs/sports_scheduling.$O
