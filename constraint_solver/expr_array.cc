@@ -242,10 +242,11 @@ class SumConstraint : public TreeArrayConstraint {
                                                 i);
       vars_[i]->WhenRange(demon);
     }
-    sum_demon_ = MakeDelayedConstraintDemon0(solver(),
-                                             this,
-                                             &SumConstraint::SumChanged,
-                                             "SumChanged");
+    sum_demon_ = solver()->RegisterDemon(
+        MakeDelayedConstraintDemon0(solver(),
+                                    this,
+                                    &SumConstraint::SumChanged,
+                                    "SumChanged"));
     target_var_->WhenRange(sum_demon_);
   }
 

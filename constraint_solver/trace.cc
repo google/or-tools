@@ -68,8 +68,13 @@ class TraceIntVar : public IntVar {
 
   virtual void SetRange(int64 l, int64 u) {
     if (l > inner_->Min() || u < inner_->Max()) {
-      solver()->GetPropagationMonitor()->SetRange(inner_, l, u);
-      inner_->SetRange(l, u);
+      if (l == u) {
+        solver()->GetPropagationMonitor()->SetValue(inner_, l);
+        inner_->SetValue(l);
+      } else {
+        solver()->GetPropagationMonitor()->SetRange(inner_, l, u);
+        inner_->SetRange(l, u);
+      }
     }
   }
 
@@ -380,365 +385,194 @@ class TraceIntervalVar : public IntervalVar {
   IntervalVar* const inner_;
 };
 
-// ---------- Trace ----------
-
-class Trace : public PropagationMonitor {
- public:
-  virtual void BeginInitialPropagation() {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->BeginInitialPropagation();
-    }
-  }
-
-  virtual void EndInitialPropagation() {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->EndInitialPropagation();
-    }
-  }
-
-  virtual void BeginConstraintInitialPropagation(
-      const Constraint* const constraint) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->BeginConstraintInitialPropagation(constraint);
-    }
-  }
-
-  virtual void EndConstraintInitialPropagation(
-      const Constraint* const constraint) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->EndConstraintInitialPropagation(constraint);
-    }
-  }
-
-  virtual void BeginNestedConstraintInitialPropagation(
-      const Constraint* const parent,
-      const Constraint* const nested) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->BeginNestedConstraintInitialPropagation(parent, nested);
-    }
-  }
-
-  virtual void EndNestedConstraintInitialPropagation(
-      const Constraint* const parent,
-      const Constraint* const nested) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->EndNestedConstraintInitialPropagation(parent, nested);
-    }
-  }
-
-  virtual void RegisterDemon(const Demon* const demon) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RegisterDemon(demon);
-    }
-  }
-
-  virtual void BeginDemonRun(const Demon* const demon) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->BeginDemonRun(demon);
-    }
-  }
-
-  virtual void EndDemonRun(const Demon* const demon) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->EndDemonRun(demon);
-    }
-  }
-
-  virtual void RaiseFailure() {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RaiseFailure();
-    }
-  }
-
-  virtual void FindSolution() {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->FindSolution();
-    }
-  }
-
-  virtual void ApplyDecision(Decision* const decision) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->ApplyDecision(decision);
-    }
-  }
-
-  virtual void RefuteDecision(Decision* const decision) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RefuteDecision(decision);
-    }
-  }
-
-  virtual void AfterDecision(Decision* const decision) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->AfterDecision(decision);
-    }
-  }
-
-  virtual void EnterSearch() {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->EnterSearch();
-    }
-  }
-
-  virtual void ExitSearch() {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->ExitSearch();
-    }
-  }
-
-  virtual void RestartSearch() {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RestartSearch();
-    }
-  }
-
-  // IntExpr modifiers.
-  virtual void SetMin(IntExpr* const expr, int64 new_min) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetMin(expr, new_min);
-    }
-  }
-
-  virtual void SetMax(IntExpr* const expr, int64 new_max) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetMax(expr, new_max);
-    }
-  }
-
-  virtual void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetRange(expr, new_min, new_max);
-    }
-  }
-
-  // IntVar modifiers.
-  virtual void SetMin(IntVar* const var, int64 new_min) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetMin(var, new_min);
-    }
-  }
-
-  virtual void SetMax(IntVar* const var, int64 new_max) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetMax(var, new_max);
-    }
-  }
-
-  virtual void SetRange(IntVar* const var, int64 new_min, int64 new_max) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetRange(var, new_min, new_max);
-    }
-  }
-
-  virtual void RemoveValue(IntVar* const var, int64 value) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RemoveValue(var, value);
-    }
-  }
-
-  virtual void SetValue(IntVar* const var, int64 value) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetValue(var, value);
-    }
-  }
-
-  virtual void RemoveInterval(IntVar* const var, int64 imin, int64 imax) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RemoveInterval(var, imin, imax);
-    }
-  }
-
-  virtual void SetValues(IntVar* const var,
-                         const int64* const values,
-                         int size) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetValues(var, values, size);
-    }
-  }
-
-  virtual void RemoveValues(IntVar* const var,
-                            const int64* const values,
-                            int size) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RemoveValues(var, values, size);
-    }
-  }
-
-  // IntervalVar modifiers.
-  virtual void SetStartMin(IntervalVar* const var, int64 new_min) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetStartMin(var, new_min);
-    }
-  }
-
-  virtual void SetStartMax(IntervalVar* const var, int64 new_max) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetStartMax(var, new_max);
-    }
-  }
-
-  virtual void SetStartRange(IntervalVar* const var,
-                             int64 new_min,
-                             int64 new_max) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetStartRange(var, new_min, new_max);
-    }
-  }
-
-  virtual void SetEndMin(IntervalVar* const var, int64 new_min) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetEndMin(var, new_min);
-    }
-  }
-
-  virtual void SetEndMax(IntervalVar* const var, int64 new_max) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetEndMax(var, new_max);
-    }
-  }
-
-  virtual void SetEndRange(IntervalVar* const var,
-                           int64 new_min,
-                           int64 new_max) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetEndRange(var, new_min, new_max);
-    }
-  }
-
-  virtual void SetDurationMin(IntervalVar* const var, int64 new_min) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetDurationMin(var, new_min);
-    }
-  }
-
-  virtual void SetDurationMax(IntervalVar* const var, int64 new_max) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetDurationMax(var, new_max);
-    }
-  }
-
-  virtual void SetDurationRange(IntervalVar* const var,
-                                int64 new_min,
-                                int64 new_max) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetDurationRange(var, new_min, new_max);
-    }
-  }
-
-  virtual void SetPerformed(IntervalVar* const var, bool value) {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetPerformed(var, value);
-    }
-  }
-
-  void Add(PropagationMonitor* const monitor) {
-    if (monitor != NULL) {
-      monitors_.push_back(monitor);
-    }
-  }
-
- private:
-  std::vector<PropagationMonitor*> monitors_;
-};
-
 // ---------- PrintTrace ----------
 
 class PrintTrace : public PropagationMonitor {
  public:
-  PrintTrace() : indent_(0) {}
+
+  struct Context {
+    Context()
+        : initial_indent(0),
+          indent(0),
+          in_demon(false),
+          in_constraint(false),
+          in_decision_builder(false),
+          in_decision(false),
+          in_objective(false) {}
+
+    Context(int ii)
+        : initial_indent(ii),
+          indent(ii),
+          in_demon(false),
+          in_constraint(false),
+          in_decision_builder(false),
+          in_decision(false),
+          in_objective(false) {}
+
+    bool TopLevel() const {
+      return initial_indent == indent;
+    }
+
+    void Clear() {
+      indent = initial_indent;
+      in_demon = false;
+      in_constraint = false;
+      in_decision_builder = false;
+      in_decision = false;
+      in_objective = false;
+      delayed_string = "";
+    }
+
+    int initial_indent;
+    int indent;
+    bool in_demon;
+    bool in_constraint;
+    bool in_decision_builder;
+    bool in_decision;
+    bool in_objective;
+    string delayed_string;
+  };
+
+  PrintTrace(Solver* const s)
+      : PropagationMonitor(s),
+        contexes_(1) {}
+
   virtual ~PrintTrace() {}
 
-  // Propagation events.
+  // ----- Search events -----
+
   virtual void BeginInitialPropagation() {
     CheckNoDelayed();
-    Display("Initial Propagation {");
+    DisplaySearch("Root Node Propagation");
     IncreaseIndent();
   }
   virtual void EndInitialPropagation() {
     DecreaseIndent();
-    Display("}  Starting Search");
+    DisplaySearch("Starting Tree Search");
   }
+
+  virtual void BeginNextDecision(DecisionBuilder* const b) {
+    DisplaySearch(StringPrintf("DecisionBuilder(%s)",
+                               b->DebugString().c_str()));
+    IncreaseIndent();
+    contexes_.back().in_decision_builder = true;
+  }
+
+  // After calling DecisionBuilder::Next, along with the returned decision.
+  virtual void EndNextDecision(DecisionBuilder* const b, Decision* const d) {
+    contexes_.back().in_decision_builder = false;
+    DecreaseIndent();
+  }
+
+  virtual void BeginFail() {
+    contexes_.back().Clear();
+    while (!contexes_.back().TopLevel()) {
+      DecreaseIndent();
+      LOG(INFO) << Indent() << "}";
+    }
+    DisplaySearch(StringPrintf("Failure at depth %d", solver()->SearchDepth()));
+  }
+
+  virtual bool AtSolution() {
+    DisplaySearch(StringPrintf("Solution found at depth %d",
+                               solver()->SearchDepth()));
+    return false;
+  }
+
+  virtual void ApplyDecision(Decision* const decision) {
+    DisplaySearch(StringPrintf("ApplyDecision(%s)",
+                               decision->DebugString().c_str()));
+    IncreaseIndent();
+    contexes_.back().in_decision = true;
+  }
+
+  virtual void RefuteDecision(Decision* const decision) {
+    if (contexes_.back().in_objective) {
+      DecreaseIndent();
+      contexes_.back().in_objective = false;
+    }
+    DisplaySearch(StringPrintf("RefuteDecision(%s)",
+                               decision->DebugString().c_str()));
+    IncreaseIndent();
+    contexes_.back().in_decision = true;
+  }
+
+  virtual void AfterDecision(Decision* const decision, bool direction) {
+    DecreaseIndent();
+    contexes_.back().in_decision = false;
+  }
+
+  virtual void EnterSearch() {
+    if (solver()->SolveDepth() == 0) {
+      CHECK_EQ(1, contexes_.size());
+      contexes_.back().Clear();
+    } else {
+      PrintDelayedString();
+      PushNestedContext();
+    }
+    DisplaySearch("Enter Search");
+  }
+
+  virtual void ExitSearch() {
+    DisplaySearch("Exit Search");
+    CHECK(contexes_.back().TopLevel());
+    if (solver()->SolveDepth() > 1) {
+      contexes_.pop_back();
+    }
+  }
+
+  virtual void RestartSearch() {
+    CHECK(contexes_.back().TopLevel());
+  }
+
+  // ----- Propagation events -----
 
   virtual void BeginConstraintInitialPropagation(
       const Constraint* const constraint) {
-    DelayPrintAndIndent(StringPrintf("InitialPropagate(%s)",
+    DelayPrintAndIndent(StringPrintf("Constraint(%s)",
                                      constraint->DebugString().c_str()));
+    contexes_.back().in_constraint= true;
   }
 
   virtual void EndConstraintInitialPropagation(
       const Constraint* const constraint) {
     DelayCloseAndUnindent();
+    contexes_.back().in_constraint = false;
   }
 
   virtual void BeginNestedConstraintInitialPropagation(
       const Constraint* const parent,
       const Constraint* const nested) {
-    DelayPrintAndIndent(StringPrintf("InitialPropagate(%s)",
+    DelayPrintAndIndent(StringPrintf("Constraint(%s)",
                                      nested->DebugString().c_str()));
+    contexes_.back().in_constraint = true;
   }
   virtual void EndNestedConstraintInitialPropagation(
       const Constraint* const parent,
       const Constraint* const nested) {
     DelayCloseAndUnindent();
+    contexes_.back().in_constraint = false;
   }
 
   virtual void RegisterDemon(const Demon* const demon) {}
 
   virtual void BeginDemonRun(const Demon* const demon) {
-    in_demon_ = true;
-    DelayPrintAndIndent(StringPrintf("Run(%s)", demon->DebugString().c_str()));
-  }
-
-  virtual void EndDemonRun(const Demon* const demon) {
-    in_demon_ = false;
-    DelayCloseAndUnindent();
-  }
-
-  virtual void RaiseFailure() {
-    in_demon_ = false;
-    const bool top_level = indent_ == 0;
-    DelayCloseAndUnindent();
-    ClearIndent();
-    if (top_level) {
-      Display("  -------------------- Failure --------------------");
-    } else {
-      Display("} -------------------- Failure --------------------");
+    if (demon->priority() != Solver::VAR_PRIORITY) {
+      contexes_.back().in_demon = true;
+      DelayPrintAndIndent(StringPrintf("Demon(%s)",
+                                       demon->DebugString().c_str()));
     }
   }
 
-  virtual void FindSolution() {
-    Display("++++++++++++++++++++ Solution ++++++++++++++++++++");
+  virtual void EndDemonRun(const Demon* const demon) {
+    if (demon->priority() != Solver::VAR_PRIORITY) {
+      contexes_.back().in_demon = false;
+      DelayCloseAndUnindent();
+    }
   }
 
-  virtual void ApplyDecision(Decision* const decision) {
-    Display(StringPrintf("----- Apply(%s) {", decision->DebugString().c_str()));
-    IncreaseIndent();
-  }
+  // ----- IntExpr modifiers -----
 
-  virtual void RefuteDecision(Decision* const decision) {
-    Display(StringPrintf("----- Refute(%s) {",
-                         decision->DebugString().c_str()));
-    IncreaseIndent();
-  }
-
-  virtual void AfterDecision(Decision* const decision) {
-    DecreaseIndent();
-    Display("}");
-  }
-
-  virtual void EnterSearch() {
-    ClearIndent();
-  }
-
-  virtual void ExitSearch() {
-    DCHECK_EQ(0, indent_);
-  }
-
-  virtual void RestartSearch() {
-    DCHECK_EQ(0, indent_);
-  }
-
-  // IntExpr modifiers.
   virtual void SetMin(IntExpr* const expr, int64 new_min) {
     DisplayModification(StringPrintf("SetMin(%s, %lld)",
                                      expr->DebugString().c_str(),
@@ -758,7 +592,8 @@ class PrintTrace : public PropagationMonitor {
                                      new_max));
   }
 
-  // IntVar modifiers.
+  // ----- IntVar modifiers -----
+
   virtual void SetMin(IntVar* const var, int64 new_min) {
     DisplayModification(StringPrintf("SetMin(%s, %lld)",
                                      var->DebugString().c_str(),
@@ -799,12 +634,24 @@ class PrintTrace : public PropagationMonitor {
 
   virtual void SetValues(IntVar* const var,
                          const int64* const values,
-                         int size) {}
+                         int size) {
+    DisplayModification(
+        StringPrintf("SetValues(%s, %s)",
+                     var->DebugString().c_str(),
+                     Int64ArrayToString(values, size, ", ").c_str()));
+  }
 
   virtual void RemoveValues(IntVar* const var,
                             const int64* const values,
-                            int size) {}
-  // IntervalVar modifiers.
+                            int size) {
+    DisplayModification(
+        StringPrintf("RemoveValues(%s, %s)",
+                     var->DebugString().c_str(),
+                     Int64ArrayToString(values, size, ", ").c_str()));
+  }
+
+  // ----- IntervalVar modifiers -----
+
   virtual void SetStartMin(IntervalVar* const var, int64 new_min) {
     DisplayModification(StringPrintf("SetStartMin(%s, %lld)",
                                      var->DebugString().c_str(),
@@ -874,68 +721,92 @@ class PrintTrace : public PropagationMonitor {
                                      value));
   }
 
+  virtual void Install() {
+    SearchMonitor::Install();
+    if (solver()->SolveDepth() <= 1) {
+      solver()->AddPropagationMonitor(this);
+    }
+  }
+
  private:
   void DelayPrintAndIndent(const string& delayed) {
-    CHECK(delayed_string_.empty());
-    delayed_string_ = delayed;
+    CHECK(contexes_.back().delayed_string.empty());
+    contexes_.back().delayed_string = delayed;
   }
 
   void DelayCloseAndUnindent() {
-    if (delayed_string_.empty() && indent_ > 0) {
+    if (contexes_.back().delayed_string.empty() &&
+        !contexes_.back().TopLevel()) {
       DecreaseIndent();
-      Display("}");
+      LOG(INFO) << Indent() << "}";
     } else {
-      delayed_string_ = "";
+      contexes_.back().delayed_string = "";
     }
   }
 
   void CheckNoDelayed() {
-    CHECK(delayed_string_.empty());
+    CHECK(contexes_.back().delayed_string.empty());
+  }
+
+  void PrintDelayedString() {
+    // Check Previous delayed strings.
+    if (!contexes_.back().delayed_string.empty()) {
+      LOG(INFO) << Indent() << contexes_.back().delayed_string << " {";
+      IncreaseIndent();
+      contexes_.back().delayed_string = "";
+    }
   }
 
   void DisplayModification(const string& to_print) {
-    if (!delayed_string_.empty()) {
-      LOG(INFO) << Indent() << delayed_string_ << " {";
-      IncreaseIndent();
-      delayed_string_ = "";
-    }
-    if (in_demon_) {  // Inside a demon, normal print.
+    PrintDelayedString();
+    if (contexes_.back().in_demon ||
+        contexes_.back().in_constraint ||
+        contexes_.back().in_decision_builder ||
+        contexes_.back().in_decision ||
+        contexes_.back().in_objective) {
+      // Inside a demon, constraint, decision builder -> normal print.
       LOG(INFO) << Indent() << to_print;
-    } else if (indent_ == 0) {  // Top level, modification pushed by the
-      // objective.
-      LOG(INFO) << Indent() << "Objective: " << to_print;
-    } else { // Not top level, but not in a demon -> Decision.
-      LOG(INFO) << Indent() << "Decision: " << to_print;
+    } else {
+      // Top level, modification pushed by the objective.
+      CHECK(contexes_.back().TopLevel());
+      DisplaySearch(StringPrintf("Objective -> %s", to_print.c_str()));
+      IncreaseIndent();
+      contexes_.back().in_objective = true;
     }
   }
 
-  void Display(const string& to_print) {
-    LOG(INFO) << Indent() << to_print;
+  void DisplaySearch(const string& to_print) {
+    const int solve_depth = solver()->SolveDepth();
+    if (solve_depth <= 1) {
+      LOG(INFO) << Indent() << "######## Top Level Search: " << to_print;
+    } else {
+      LOG(INFO) << Indent() << "######## Nested Search(" << solve_depth - 1
+                << "): " << to_print;
+    }
   }
 
   string Indent() {
     string output = " @ ";
-    for (int i = 0; i < indent_; ++i) {
+    for (int i = 0; i < contexes_.back().indent; ++i) {
       output.append("    ");
     }
     return output;
   }
 
   void IncreaseIndent() {
-    indent_++;
+    contexes_.back().indent++;
   }
 
   void DecreaseIndent() {
-    indent_--;
+    contexes_.back().indent--;
   }
 
-  void ClearIndent() {
-    indent_ = 0;
+  void PushNestedContext() {
+    const int initial_indent = contexes_.back().indent;
+    contexes_.push_back(Context(initial_indent));
   }
 
-  int indent_;
-  string delayed_string_;
-  bool in_demon_;
+  std::vector<Context> contexes_;
 };
 }  // namespace
 
@@ -968,20 +839,7 @@ IntervalVar* Solver::RegisterIntervalVar(IntervalVar* const var) {
   }
 }
 
-PropagationMonitor* BuildTrace() {
-  return new Trace();
-}
-
-void Solver::AddPropagationMonitor(PropagationMonitor* const monitor) {
-  // TODO(user): Check solver state?
-  reinterpret_cast<class Trace*>(propagation_monitor_.get())->Add(monitor);
-}
-
-PropagationMonitor* Solver::GetPropagationMonitor() const {
-  return propagation_monitor_.get();
-}
-
-PropagationMonitor* BuildPrintTrace() {
-  return new PrintTrace();
+PropagationMonitor* BuildPrintTrace(Solver* const s) {
+  return s->RevAlloc(new PrintTrace(s));
 }
 }  // namespace operations_research

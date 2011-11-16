@@ -497,11 +497,11 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   virtual ~CompactPositiveTableConstraint() {}
 
   virtual void Post() {
-    demon_ = MakeDelayedConstraintDemon0(
+    demon_ = solver()->RegisterDemon(MakeDelayedConstraintDemon0(
         solver(),
         this,
         &CompactPositiveTableConstraint::Propagate,
-        "Propagate");
+        "Propagate"));
     uint64 stamp = solver()->stamp();
     DCHECK_GE(stamp, 1);
     for (int i = 0; i < arity_; ++i) {
@@ -879,11 +879,11 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   virtual void Post() {
-    demon_ = MakeDelayedConstraintDemon0(
+    demon_ = solver()->RegisterDemon(MakeDelayedConstraintDemon0(
         solver(),
         this,
         &SmallCompactPositiveTableConstraint::Propagate,
-        "Propagate");
+        "Propagate"));
     for (int i = 0; i < arity_; ++i) {
       if (!vars_[i]->Bound()) {
         Demon* const update_demon = MakeConstraintDemon1(

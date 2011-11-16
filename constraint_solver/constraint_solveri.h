@@ -979,11 +979,12 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
 
 // ---------- PropagationMonitor ----------
 
-class PropagationMonitor : public BaseObject {
+class PropagationMonitor : public SearchMonitor {
  public:
+  PropagationMonitor(Solver* const solver);
+  virtual ~PropagationMonitor();
+
   // Propagation events.
-  virtual void BeginInitialPropagation() = 0;
-  virtual void EndInitialPropagation() = 0;
   virtual void BeginConstraintInitialPropagation(
       const Constraint* const constraint) = 0;
   virtual void EndConstraintInitialPropagation(
@@ -997,14 +998,6 @@ class PropagationMonitor : public BaseObject {
   virtual void RegisterDemon(const Demon* const demon) = 0;
   virtual void BeginDemonRun(const Demon* const demon) = 0;
   virtual void EndDemonRun(const Demon* const demon) = 0;
-  virtual void RaiseFailure() = 0;
-  virtual void FindSolution() = 0;
-  virtual void EnterSearch() = 0;
-  virtual void ExitSearch() = 0;
-  virtual void RestartSearch() = 0;
-  virtual void ApplyDecision(Decision* const decision) = 0;
-  virtual void RefuteDecision(Decision* const decision) = 0;
-  virtual void AfterDecision(Decision* const decision) = 0;
   // IntExpr modifiers.
   virtual void SetMin(IntExpr* const expr, int64 new_min) = 0;
   virtual void SetMax(IntExpr* const expr, int64 new_max) = 0;
@@ -1039,6 +1032,8 @@ class PropagationMonitor : public BaseObject {
                                 int64 new_min,
                                 int64 new_max) = 0;
   virtual void SetPerformed(IntervalVar* const var, bool value) = 0;
+  // Install itself on the solver.
+  virtual void Install();
 };
 
 // ---------- SymmetryBreaker ----------

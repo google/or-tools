@@ -39,8 +39,8 @@
 
 DEFINE_bool(cp_trace_propagation,
             false,
-            "Trace propagation events(constraint and demon executions,"
-            "variable modifications).");
+            "Trace propagation events (constraint and demon executions,"
+            " variable modifications).");
 DEFINE_bool(cp_show_constraints, false,
             "show all constraints added to the solver.");
 DEFINE_bool(cp_print_model, false,
@@ -75,6 +75,8 @@ SolverParameters::SolverParameters()
 // ----- Forward Declarations and Profiling Support -----
 extern DemonMonitor* BuildDemonMonitor(Solver* const solver);
 extern void DeleteDemonMonitor(DemonMonitor* const monitor);
+extern void InstallDemonMonitor(DemonMonitor* const monitor);
+
 
 // TODO(user): remove this complex logic.
 // We need the double test because parameters are set too late when using
@@ -223,7 +225,8 @@ class Queue {
         freeze_level_(0),
         in_process_(false),
         clear_action_(NULL),
-        in_add_(false) {
+        in_add_(false),
+        instruments_demons_(s->InstrumentsDemons()) {
     for (int i = 0; i < Solver::kNumPriorities; ++i) {
       containers_[i] = new FifoPriorityQueue();
       containers_[i]->Init();
@@ -253,12 +256,18 @@ class Queue {
     if (demon != NULL) {
       demon->set_stamp(stamp_ - 1);
       DCHECK_EQ(prio, demon->priority());
+      if (instruments_demons_) {
+        solver_->GetPropagationMonitor()->BeginDemonRun(demon);
+      }
       solver_->demon_runs_[prio]++;
       demon->Run(solver_);
+      if (instruments_demons_) {
+        solver_->GetPropagationMonitor()->EndDemonRun(demon);
+      }
     }
   }
 
-  void ProcessDemons() {
+  void ProcessNormalDemons() {
     while (!containers_[Solver::NORMAL_PRIORITY]->Empty()) {
       ProcessOneDemon(Solver::NORMAL_PRIORITY);
     }
@@ -358,6 +367,7 @@ class Queue {
   Action* clear_action_;
   std::vector<Constraint*> to_add_;
   bool in_add_;
+  const bool instruments_demons_;
 };
 
 // ------------------ StateMarker / StateInfo struct -----------
@@ -1310,6 +1320,9 @@ enum SentinelMarker {
 }  // namespace
 
 extern Action* NewDomainIntVarCleaner();
+extern PropagationMonitor* BuildTrace(Solver* const s);
+extern ModelCache* BuildModelCache(Solver* const solver);
+extern DependencyGraph* BuildDependencyGraph(Solver* const solver);
 
 string Solver::model_name() const { return name_; }
 
@@ -1341,7 +1354,8 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       additional_constraint_index_(0),
       model_cache_(NULL),
       dependency_graph_(NULL),
-      propagation_monitor_(NULL) {
+      propagation_monitor_(BuildTrace(this)),
+      print_trace_(NULL) {
   Init();
 }
 
@@ -1374,14 +1388,10 @@ Solver::Solver(const string& name)
       additional_constraint_index_(0),
       model_cache_(NULL),
       dependency_graph_(NULL),
-      propagation_monitor_(NULL) {
+      propagation_monitor_(BuildTrace(this)),
+      print_trace_(NULL) {
   Init();
 }
-
-extern ModelCache* BuildModelCache(Solver* const solver);
-extern DependencyGraph* BuildDependencyGraph(Solver* const solver);
-extern PropagationMonitor* BuildTrace();
-extern PropagationMonitor* BuildPrintTrace();
 
 void Solver::Init() {
   for (int i = 0; i < kNumPriorities; ++i) {
@@ -1395,11 +1405,7 @@ void Solver::Init() {
   timer_->Restart();
   model_cache_.reset(BuildModelCache(this));
   dependency_graph_.reset(BuildDependencyGraph(this));
-  propagation_monitor_.reset(BuildTrace());
   AddPropagationMonitor(reinterpret_cast<PropagationMonitor*>(demon_monitor_));
-  if (FLAGS_cp_trace_propagation) {
-    AddPropagationMonitor(RevAlloc(BuildPrintTrace()));
-  }
 }
 
 Solver::~Solver() {
@@ -1593,7 +1599,7 @@ void Solver::Enqueue(Demon* d) {
 }
 
 void Solver::ProcessDemonsOnQueue() {
-  queue_->ProcessDemons();
+  queue_->ProcessNormalDemons();
 }
 
 uint64 Solver::stamp() const {
@@ -1846,6 +1852,8 @@ void Solver::NewSearch(DecisionBuilder* const db,
   return NewSearch(db, monitors.data(), monitors.size());
 }
 
+extern PropagationMonitor* BuildPrintTrace(Solver* const s);
+
 // Opens a new top level search.
 void Solver::NewSearch(DecisionBuilder* const db,
                        SearchMonitor* const * monitors,
@@ -1865,15 +1873,35 @@ void Solver::NewSearch(DecisionBuilder* const db,
   BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
   state_ = OUTSIDE_SEARCH;
 
+  // Always install the main propagation monitor.
+  propagation_monitor_->Install();
+  if (demon_monitor_ != NULL) {
+    InstallDemonMonitor(demon_monitor_);
+  }
+
   // Push monitors and enter search.
   for (int i = 0; i < size; ++i) {
-    search->push_monitor(monitors[i]);
+    if (monitors[i] != NULL) {
+      monitors[i]->Install();
+    }
   }
   std::vector<SearchMonitor*> extras;
   db->AppendMonitors(this, &extras);
   for (ConstIter<std::vector<SearchMonitor*> > it(extras); !it.at_end(); ++it) {
-    search->push_monitor(*it);
+    SearchMonitor* const monitor = *it;
+    if (monitor != NULL) {
+      monitor->Install();
+    }
   }
+  // Install the print trace if needed.
+  // The print_trace needs to be last to detect propagation from the objective.
+  if (FLAGS_cp_trace_propagation) {
+    print_trace_ = BuildPrintTrace(this);
+    print_trace_->Install();
+  } else {
+    print_trace_ = NULL;
+  }
+
   search->EnterSearch();
 
   // Push sentinel and set decision builder.
@@ -1961,7 +1989,6 @@ void Solver::RestartSearch() {
     PushSentinel(INITIAL_SEARCH_SENTINEL);
   }
 
-  propagation_monitor_->RestartSearch();
   search->RestartSearch();
 }
 
@@ -2083,11 +2110,9 @@ bool Solver::NextSolution() {
       case OUTSIDE_SEARCH: {
         state_ = IN_ROOT_NODE;
         search->BeginInitialPropagation();
-        propagation_monitor_->BeginInitialPropagation();
         CP_TRY(search) {
           ProcessConstraints();
           search->EndInitialPropagation();
-          propagation_monitor_->EndInitialPropagation();
           PushSentinel(ROOT_NODE_SENTINEL);
           state_ = IN_SEARCH;
           search->ClearBuffer();
@@ -2120,11 +2145,9 @@ bool Solver::NextSolution() {
                      search->left_search_depth());  // 1 for right branch
         PushState(CHOICE_POINT, i1);
         search->RefuteDecision(fd);
-        propagation_monitor_->RefuteDecision(fd);
         branches_++;
         fd->Refute(this);
         search->AfterDecision(fd, false);
-        propagation_monitor_->AfterDecision(fd);
         search->RightMove();
         fd = NULL;
       }
@@ -2150,24 +2173,20 @@ bool Solver::NextSolution() {
                            search->left_search_depth());  // 0 for left branch
               PushState(CHOICE_POINT, i2);
               search->ApplyDecision(d);
-              propagation_monitor_->ApplyDecision(d);
               branches_++;
               d->Apply(this);
               search->AfterDecision(d, true);
-              propagation_monitor_->AfterDecision(d);
               search->LeftMove();
               break;
             }
             case KEEP_LEFT: {
               search->ApplyDecision(d);
-              propagation_monitor_->ApplyDecision(d);
               d->Apply(this);
               search->AfterDecision(d, true);
               break;
             }
             case KEEP_RIGHT: {
               search->RefuteDecision(d);
-              propagation_monitor_->RefuteDecision(d);
               d->Refute(this);
               search->AfterDecision(d, false);
               break;
@@ -2182,7 +2201,6 @@ bool Solver::NextSolution() {
       }
       if (search->AcceptSolution()) {
         search->IncrementSolutionCounter();
-        propagation_monitor_->FindSolution();
         if (!search->AtSolution() || !CurrentlyInSolve()) {
           result = true;
           finish = true;
@@ -2235,7 +2253,6 @@ void Solver::EndSearch() {
   Search* const search = searches_.back();
   BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
   search->ExitSearch();
-  propagation_monitor_->ExitSearch();
   search->Clear();
   state_ = OUTSIDE_SEARCH;
   if (!FLAGS_cp_profile_file.empty()) {
@@ -2258,20 +2275,17 @@ bool Solver::CheckAssignment(Assignment* const solution) {
 
   // Push monitors and enter search.
   search->EnterSearch();
-  propagation_monitor_->EnterSearch();
 
   // Push sentinel and set decision builder.
   DCHECK_EQ(1, searches_.size());
   PushSentinel(INITIAL_SEARCH_SENTINEL);
   search->BeginInitialPropagation();
-  propagation_monitor_->BeginInitialPropagation();
   CP_TRY(search) {
     state_ = IN_ROOT_NODE;
     DecisionBuilder * const restore = MakeRestoreAssignment(solution);
     restore->Next(this);
     ProcessConstraints();
     search->EndInitialPropagation();
-    propagation_monitor_->EndInitialPropagation();
     BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
     search->ClearBuffer();
     state_ = OUTSIDE_SEARCH;
@@ -2371,15 +2385,32 @@ bool Solver::NestedSolve(DecisionBuilder* const db,
                          SearchMonitor* const * monitors,
                          int size) {
   Search new_search(this);
+  searches_.push_back(&new_search);
+  // Always install the main propagation monitor.
+  propagation_monitor_->Install();
+  // Install the demon monitor if needed.
+  if (demon_monitor_ != NULL) {
+    InstallDemonMonitor(demon_monitor_);
+  }
+
   for (int i = 0; i < size; ++i) {
-    new_search.push_monitor(monitors[i]);
+    if (monitors[i] != NULL) {
+      monitors[i]->Install();
+    }
   }
   std::vector<SearchMonitor*> extras;
   db->AppendMonitors(this, &extras);
   for (ConstIter<std::vector<SearchMonitor*> > it(extras); !it.at_end(); ++it) {
-    new_search.push_monitor(*it);
+    SearchMonitor* const monitor = *it;
+    if (monitor != NULL) {
+      monitor->Install();
+    }
   }
-  searches_.push_back(&new_search);
+  // Install the print trace if needed.
+  if (print_trace_ != NULL) {
+    print_trace_->Install();
+  }
+
   searches_.back()->set_created_by_solve(true);  // Overwrites default.
   new_search.EnterSearch();
   PushSentinel(INITIAL_SEARCH_SENTINEL);
@@ -2405,7 +2436,6 @@ void Solver::Fail() {
   }
   ConstraintSolverFailsHere();
   fails_++;
-  propagation_monitor_->RaiseFailure();
   searches_.back()->BeginFail();
   searches_.back()->JumpBack();
 }
@@ -2834,6 +2864,245 @@ void SearchMonitor::RestartCurrentSearch() {
 }
 void SearchMonitor::PeriodicCheck() {}
 void SearchMonitor::Accept(ModelVisitor* const visitor) const {}
+// A search monitors adds itseld on the active search.
+void SearchMonitor::Install() {
+  solver()->searches_.back()->push_monitor(this);
+}
+
+// ---------- Propagation Monitor -----------
+PropagationMonitor::PropagationMonitor(Solver* const s) : SearchMonitor(s) {}
+
+PropagationMonitor::~PropagationMonitor() {}
+
+// A propagation monitor listen to search events as well as
+// propagation events.
+void PropagationMonitor::Install() {
+  SearchMonitor::Install();
+  solver()->AddPropagationMonitor(this);
+}
+
+// ---------- Trace ----------
+
+class Trace : public PropagationMonitor {
+ public:
+  Trace(Solver* const s) : PropagationMonitor(s) {}
+  virtual ~Trace() {}
+
+  virtual void BeginConstraintInitialPropagation(
+      const Constraint* const constraint) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->BeginConstraintInitialPropagation(constraint);
+    }
+  }
+
+  virtual void EndConstraintInitialPropagation(
+      const Constraint* const constraint) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->EndConstraintInitialPropagation(constraint);
+    }
+  }
+
+  virtual void BeginNestedConstraintInitialPropagation(
+      const Constraint* const parent,
+      const Constraint* const nested) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->BeginNestedConstraintInitialPropagation(parent, nested);
+    }
+  }
+
+  virtual void EndNestedConstraintInitialPropagation(
+      const Constraint* const parent,
+      const Constraint* const nested) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->EndNestedConstraintInitialPropagation(parent, nested);
+    }
+  }
+
+  virtual void RegisterDemon(const Demon* const demon) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RegisterDemon(demon);
+    }
+  }
+
+  virtual void BeginDemonRun(const Demon* const demon) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->BeginDemonRun(demon);
+    }
+  }
+
+  virtual void EndDemonRun(const Demon* const demon) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->EndDemonRun(demon);
+    }
+  }
+
+  // IntExpr modifiers.
+  virtual void SetMin(IntExpr* const expr, int64 new_min) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetMin(expr, new_min);
+    }
+  }
+
+  virtual void SetMax(IntExpr* const expr, int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetMax(expr, new_max);
+    }
+  }
+
+  virtual void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetRange(expr, new_min, new_max);
+    }
+  }
+
+  // IntVar modifiers.
+  virtual void SetMin(IntVar* const var, int64 new_min) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetMin(var, new_min);
+    }
+  }
+
+  virtual void SetMax(IntVar* const var, int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetMax(var, new_max);
+    }
+  }
+
+  virtual void SetRange(IntVar* const var, int64 new_min, int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetRange(var, new_min, new_max);
+    }
+  }
+
+  virtual void RemoveValue(IntVar* const var, int64 value) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RemoveValue(var, value);
+    }
+  }
+
+  virtual void SetValue(IntVar* const var, int64 value) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetValue(var, value);
+    }
+  }
+
+  virtual void RemoveInterval(IntVar* const var, int64 imin, int64 imax) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RemoveInterval(var, imin, imax);
+    }
+  }
+
+  virtual void SetValues(IntVar* const var,
+                         const int64* const values,
+                         int size) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetValues(var, values, size);
+    }
+  }
+
+  virtual void RemoveValues(IntVar* const var,
+                            const int64* const values,
+                            int size) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RemoveValues(var, values, size);
+    }
+  }
+
+  // IntervalVar modifiers.
+  virtual void SetStartMin(IntervalVar* const var, int64 new_min) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetStartMin(var, new_min);
+    }
+  }
+
+  virtual void SetStartMax(IntervalVar* const var, int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetStartMax(var, new_max);
+    }
+  }
+
+  virtual void SetStartRange(IntervalVar* const var,
+                             int64 new_min,
+                             int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetStartRange(var, new_min, new_max);
+    }
+  }
+
+  virtual void SetEndMin(IntervalVar* const var, int64 new_min) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetEndMin(var, new_min);
+    }
+  }
+
+  virtual void SetEndMax(IntervalVar* const var, int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetEndMax(var, new_max);
+    }
+  }
+
+  virtual void SetEndRange(IntervalVar* const var,
+                           int64 new_min,
+                           int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetEndRange(var, new_min, new_max);
+    }
+  }
+
+  virtual void SetDurationMin(IntervalVar* const var, int64 new_min) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetDurationMin(var, new_min);
+    }
+  }
+
+  virtual void SetDurationMax(IntervalVar* const var, int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetDurationMax(var, new_max);
+    }
+  }
+
+  virtual void SetDurationRange(IntervalVar* const var,
+                                int64 new_min,
+                                int64 new_max) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetDurationRange(var, new_min, new_max);
+    }
+  }
+
+  virtual void SetPerformed(IntervalVar* const var, bool value) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->SetPerformed(var, value);
+    }
+  }
+
+  void Add(PropagationMonitor* const monitor) {
+    if (monitor != NULL) {
+      monitors_.push_back(monitor);
+    }
+  }
+
+  // The trace will dispatch propagation events. It needs to listen to search
+  // events.
+  virtual void Install() {
+    SearchMonitor::Install();
+  }
+
+ private:
+  std::vector<PropagationMonitor*> monitors_;
+};
+
+PropagationMonitor* BuildTrace(Solver* const s) {
+  return new Trace(s);
+}
+
+void Solver::AddPropagationMonitor(PropagationMonitor* const monitor) {
+  // TODO(user): Check solver state?
+  reinterpret_cast<class Trace*>(propagation_monitor_.get())->Add(monitor);
+}
+
+PropagationMonitor* Solver::GetPropagationMonitor() const {
+  return propagation_monitor_.get();
+}
 
 // ----------------- Constraint class -------------------
 

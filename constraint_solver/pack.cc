@@ -155,10 +155,11 @@ void Pack::Post() {
   for (int i = 0; i < dims_.size(); ++i) {
     dims_[i]->Post();
   }
-  demon_ = MakeDelayedConstraintDemon0(solver(),
-                                       this,
-                                       &Pack::Propagate,
-                                       "Propagate");
+  demon_ = solver()->RegisterDemon(MakeDelayedConstraintDemon0(
+      solver(),
+      this,
+      &Pack::Propagate,
+      "Propagate"));
 }
 
 void Pack::ClearAll() {

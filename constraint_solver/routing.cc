@@ -1113,8 +1113,8 @@ int64 RoutingModel::ComputeLowerBound() {
     return 0;
   }
   const int num_nodes = Size() + vehicles_;
-  StarGraph graph(2 * num_nodes, num_nodes * num_nodes);
-  LinearSumAssignment linear_sum_assignment(graph, num_nodes);
+  ForwardStarGraph graph(2 * num_nodes, num_nodes * num_nodes);
+  LinearSumAssignment<ForwardStarGraph> linear_sum_assignment(graph, num_nodes);
   // Adding arcs for non-end nodes, based on possible values of next variables.
   // Left nodes in the bipartite are indexed from 0 to num_nodes - 1; right
   // nodes are indexed from num_nodes to 2 * num_nodes - 1.

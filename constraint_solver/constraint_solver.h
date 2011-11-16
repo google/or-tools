@@ -2676,7 +2676,7 @@ class Solver {
   // different from NO_PROFILING.
   void ExportProfilingOverview(const string& filename);
 
-  // Returns true wether the current search has been
+  // Returns true whether the current search has been
   // created using a Solve() call instead of a NewSearch 0ne. It
   // returns false if the solver is not is search at all.
   bool CurrentlyInSolve() const;
@@ -2700,7 +2700,7 @@ class Solver {
   void clear_fail_intercept() { fail_intercept_ = NULL; }
   // Access to demon monitor.
   DemonMonitor* demon_monitor() const { return demon_monitor_; }
-  // Returns wether the object has been named or not.
+  // Returns whether the object has been named or not.
   bool HasName(const PropagationBaseObject* object) const;
   // Adds a new demon and wraps it inside a DemonProfiler if necessary.
   Demon* RegisterDemon(Demon* const d);
@@ -2716,11 +2716,11 @@ class Solver {
   Search* ActiveSearch() const;
   // Returns the cache of the model.
   ModelCache* Cache() const;
-  // Returns wether we are instrumenting demons.
+  // Returns whether we are instrumenting demons.
   bool InstrumentsDemons() const;
-  // Returns wether we are profiling the solver.
+  // Returns whether we are profiling the solver.
   bool IsProfilingEnabled() const;
-  // Returns wether we are tracing variables.
+  // Returns whether we are tracing variables.
   bool InstrumentsVariables() const;
   // Returns the name of the model.
   string model_name() const;
@@ -2728,8 +2728,8 @@ class Solver {
   DependencyGraph* Graph() const;
   // Returns the propagation monitor.
   PropagationMonitor* GetPropagationMonitor() const;
-  // Adds the propagation monitor to the solver. This should be done
-  // before the search.
+  // Adds the propagation monitor to the solver. This is called internally when
+  // a propagation monitor is passed to the Solve() or NewSearch() method.
   void AddPropagationMonitor(PropagationMonitor* const monitor);
 
   friend class BaseIntExpr;
@@ -2860,6 +2860,7 @@ class Solver {
   scoped_ptr<ModelCache> model_cache_;
   scoped_ptr<DependencyGraph> dependency_graph_;
   scoped_ptr<PropagationMonitor> propagation_monitor_;
+  PropagationMonitor* print_trace_;
 
   DISALLOW_COPY_AND_ASSIGN(Solver);
 };
@@ -2935,7 +2936,7 @@ class PropagationBaseObject : public BaseObject {
   // Naming
   virtual string name() const;
   void set_name(const string& name);
-  // Returns wether the object has been named or not.
+  // Returns whether the object has been named or not.
   bool HasName() const;
 
 
@@ -3417,6 +3418,10 @@ class SearchMonitor : public BaseObject {
   // Accepts the given model visitor.
   virtual void Accept(ModelVisitor* const visitor) const;
 
+  // Registers itself on the solver such that it gets notified of the search
+  // and propagation events.
+  virtual void Install();
+
  private:
   Solver* const solver_;
   DISALLOW_COPY_AND_ASSIGN(SearchMonitor);
@@ -3589,7 +3594,7 @@ class IntVar : public IntExpr {
   // This method returns the number of values in the domain of the variable.
   virtual uint64 Size() const = 0;
 
-  // This method returns wether the value 'v' is in the domain of the variable.
+  // This method returns whether the value 'v' is in the domain of the variable.
   virtual bool Contains(int64 v) const = 0;
 
   // Creates a hole iterator. The object is created on the normal C++
