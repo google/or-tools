@@ -161,6 +161,8 @@ class MPVariable;
 
 // This mathematical programming (MP) solver class is the main class
 // though which users build and solve problems.
+// TODO(user): either get rid of this enum and use the proto's enum instead,
+// or add a unit test that verifies that they are in perfect sync.
 class MPSolver {
  public:
   // The type of problems (LP or MIP) that will be solved and the
@@ -196,9 +198,10 @@ class MPSolver {
 
   // The status of loading the problem from a protocol buffer.
   enum LoadStatus {
-    NO_ERROR,               // no error has been encountered.
-    DUPLICATE_VARIABLE_ID,  // error: two variables have the same id.
-    UNKNOWN_VARIABLE_ID     // error: a variable has an unknown id.
+    NO_ERROR = 0,               // no error has been encountered.
+    // Skip value '1' to stay consistent with the .proto.
+    DUPLICATE_VARIABLE_ID = 2,  // error: two variables have the same id.
+    UNKNOWN_VARIABLE_ID = 3,    // error: a variable has an unknown id.
   };
 
   // Advanced usage: possible basis status values for a variable and the
@@ -337,10 +340,12 @@ class MPSolver {
 
   // Solves the model encoded by a MPModelRequest protocol buffer and
   // fills the solution encoded as a MPSolutionResponse.
-  // The model is solved by the interface specified in the constructor
-  // of MPSolver, MPModelRequest.OptimizationProblemType is ignored.
-  void SolveWithProtocolBuffers(const MPModelRequest& model_request,
-                                MPSolutionResponse* response);
+  // Note(user): This creates a temporary MPSolver and destroys it at the
+  // end. If you want to keep the MPSolver alive (for debugging, or for
+  // incremental solving), you should write another version of this function
+  // that creates the MPSolver object on the heap and returns it.
+  static void SolveWithProtocolBuffers(const MPModelRequest& model_request,
+                                       MPSolutionResponse* response);
 
   // ----- Misc -----
 

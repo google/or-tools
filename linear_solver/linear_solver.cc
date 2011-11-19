@@ -599,11 +599,15 @@ void MPSolver::FillSolutionResponse(MPSolutionResponse* response) const {
   }
 }
 
+// static
 void MPSolver::SolveWithProtocolBuffers(const MPModelRequest& model_request,
                                         MPSolutionResponse* response) {
   CHECK_NOTNULL(response);
-  Clear();
-  const MPSolver::LoadStatus loadStatus = LoadModel(model_request.model());
+  const MPModelProto& model = model_request.model();
+  MPSolver solver(model.name(),
+                  static_cast<MPSolver::OptimizationProblemType>(
+                      model_request.problem_type()));
+  const MPSolver::LoadStatus loadStatus = solver.LoadModel(model);
   if (loadStatus != MPSolver::NO_ERROR) {
     LOG(WARNING) << "Loading model from protocol buffer failed, "
                  << "load status = " << loadStatus;
@@ -611,10 +615,10 @@ void MPSolver::SolveWithProtocolBuffers(const MPModelRequest& model_request,
   }
 
   if (model_request.has_time_limit_ms()) {
-    set_time_limit(model_request.time_limit_ms());
+    solver.set_time_limit(model_request.time_limit_ms());
   }
-  Solve();
-  FillSolutionResponse(response);
+  solver.Solve();
+  solver.FillSolutionResponse(response);
 }
 
 void MPSolver::Clear() {

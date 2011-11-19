@@ -33,9 +33,9 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
                                      kConstraintCoef3};
   const double kConstraintUb[] = {100.0, 600.0, 300.0};
 
-  MPSolver solver("Max_Example", type);
-  const double infinity = solver.infinity();
+  const double infinity = MPSolver::infinity();
   MPModelProto model_proto;
+  model_proto.set_name("Max_Example");
 
   // Create variables and objective function
   for (int j = 0; j < numVars; ++j) {
@@ -77,7 +77,7 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
 #endif  // USE_CLP
 
   MPSolutionResponse solution_response;
-  solver.SolveWithProtocolBuffers(model_request, &solution_response);
+  MPSolver::SolveWithProtocolBuffers(model_request, &solution_response);
 
   // The problem has an optimal solution.
   CHECK_EQ(MPSolver::OPTIMAL, solution_response.result_status());
