@@ -31,19 +31,18 @@
 
 namespace operations_research {
 
-
-// DemonMonitor manages the profiling of demons and allows access to gathered
+// DemonProfiler manages the profiling of demons and allows access to gathered
 // data. Add this class as a parameter to Solver and access its information
 // after the end of a search.
-class DemonMonitor : public PropagationMonitor {
+class DemonProfiler : public PropagationMonitor {
  public:
-  DemonMonitor(Solver* const solver)
+  explicit DemonProfiler(Solver* const solver)
       : PropagationMonitor(solver),
         active_constraint_(NULL),
         active_demon_(NULL),
 start_time_(WallTimer::GetTimeInMicroSeconds()) {}
 
-  virtual ~DemonMonitor() {
+  virtual ~DemonProfiler() {
     STLDeleteContainerPairSecondPointers(constraint_map_.begin(),
                                          constraint_map_.end());
   }
@@ -157,6 +156,9 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     }
     active_demon_ = NULL;
   }
+
+  virtual void PushContext(const string& context) {}
+  virtual void PopContext() {}
 
   virtual void BeginFail() {
     if (active_demon_ != NULL) {
@@ -422,19 +424,19 @@ void Solver::ExportProfilingOverview(const string& filename) {
 
 // ----- Exported Functions -----
 
-void InstallDemonMonitor(DemonMonitor* const monitor) {
+void InstallDemonProfiler(DemonProfiler* const monitor) {
   monitor->Install();
 }
 
-DemonMonitor* BuildDemonMonitor(Solver* const solver) {
+DemonProfiler* BuildDemonProfiler(Solver* const solver) {
   if (solver->IsProfilingEnabled()) {
-    return new DemonMonitor(solver);
+    return new DemonProfiler(solver);
   } else {
     return NULL;
   }
 }
 
-void DeleteDemonMonitor(DemonMonitor* const monitor) {
+void DeleteDemonProfiler(DemonProfiler* const monitor) {
   delete monitor;
 }
 
@@ -450,11 +452,11 @@ Demon* Solver::RegisterDemon(Demon* const demon) {
 
 void RegisterDemon(Solver* const solver,
                    Demon* const demon,
-                   DemonMonitor* const monitor) {
+                   DemonProfiler* const monitor) {
   monitor->RegisterDemon(demon);
 }
 
-void DemonMonitorAddFakeRun(DemonMonitor* const monitor,
+void DemonProfilerAddFakeRun(DemonProfiler* const monitor,
                             const Demon* const demon,
                             int64 start_time,
                             int64 end_time,
@@ -462,7 +464,7 @@ void DemonMonitorAddFakeRun(DemonMonitor* const monitor,
   monitor->AddFakeRun(demon, start_time, end_time, is_fail);
 }
 
-void DemonMonitorExportInformation(DemonMonitor* const monitor,
+void DemonProfilerExportInformation(DemonProfiler* const monitor,
                                    const Constraint* const constraint,
                                    int64* const fails,
                                    int64* const initial_propagation_runtime,
@@ -477,12 +479,12 @@ void DemonMonitorExportInformation(DemonMonitor* const monitor,
                              demon_count);
 }
 
-void DemonMonitorBeginInitialPropagation(DemonMonitor* const monitor,
+void DemonProfilerBeginInitialPropagation(DemonProfiler* const monitor,
                                          const Constraint* const constraint) {
   monitor->BeginConstraintInitialPropagation(constraint);
 }
 
-void DemonMonitorEndInitialPropagation(DemonMonitor* const monitor,
+void DemonProfilerEndInitialPropagation(DemonProfiler* const monitor,
                                        const Constraint* const constraint) {
   monitor->EndConstraintInitialPropagation(constraint);
 }

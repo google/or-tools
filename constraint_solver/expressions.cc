@@ -43,6 +43,13 @@ namespace operations_research {
 
 // ---------- IntVar ----------
 
+IntVar::IntVar(Solver* const s) : IntExpr(s) {}
+
+IntVar::IntVar(Solver* const s, const string& name) : IntExpr(s) {
+  set_name(name);
+}
+
+
 namespace {
 int64* NewUniqueSortedArray(const int64* const values, int* size) {
   int64* new_array = new int64[*size];
@@ -209,6 +216,7 @@ class DomainIntVar : public IntVar {
   virtual string DebugString() const;
   BitSet* bitset() const { return bits_; }
   virtual int VarType() const { return DOMAIN_INT_VAR; }
+  virtual string BaseName() const { return "IntegerVar"; }
 
   friend class PlusCstDomainIntVar;
   friend class LinkExprAndDomainIntVar;
@@ -1343,6 +1351,8 @@ class BooleanVar : public IntVar {
   virtual int VarType() const { return BOOLEAN_VAR; }
 
   void RestoreValue() { value_ = kUnboundBooleanVarValue; }
+
+  virtual string BaseName() const { return "BooleanVar"; }
 
   friend class TimesBooleanPosIntExpr;
   friend class TimesBooleanIntExpr;

@@ -981,7 +981,7 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
 
 class PropagationMonitor : public SearchMonitor {
  public:
-  PropagationMonitor(Solver* const solver);
+  explicit PropagationMonitor(Solver* const solver);
   virtual ~PropagationMonitor();
 
   // Propagation events.
@@ -998,6 +998,8 @@ class PropagationMonitor : public SearchMonitor {
   virtual void RegisterDemon(const Demon* const demon) = 0;
   virtual void BeginDemonRun(const Demon* const demon) = 0;
   virtual void EndDemonRun(const Demon* const demon) = 0;
+  virtual void PushContext(const string& context) = 0;
+  virtual void PopContext() = 0;
   // IntExpr modifiers.
   virtual void SetMin(IntExpr* const expr, int64 new_min) = 0;
   virtual void SetMax(IntExpr* const expr, int64 new_max) = 0;

@@ -57,7 +57,7 @@
 //
 // TODO(user): Remove C-style API and update following comment.
 // Global remark: many functions and methods in this file can take as argument
-// either a const std::vector<IntVar>& or a IntVar* const* and a size; the two
+// either a const std::vector<IntVar>& or an IntVar* const* and a size; the two
 // signatures are equivalent, size defining the number of variables.
 
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
@@ -120,7 +120,7 @@ class Decision;
 class DecisionBuilder;
 class DecisionVisitor;
 class Demon;
-class DemonMonitor;
+class DemonProfiler;
 class DemonProfiler;
 class DependencyGraph;
 class Dimension;
@@ -186,6 +186,7 @@ struct SolverParameters {
   static const bool kDefaultNameStoring;
   static const ProfileLevel kDefaultProfileLevel;
   static const TraceLevel kDefaultTraceLevel;
+  static const bool kDefaultNameAllVariables;
 
   SolverParameters();
 
@@ -213,6 +214,9 @@ struct SolverParameters {
 
   // Support for full trace of propagation.
   TraceLevel trace_level;
+
+  // Should anonymous variables be given a name.
+  bool name_all_variables;
 };
 
 // This struct holds all parameters for the default search.
@@ -225,6 +229,7 @@ struct DefaultPhaseParameters {
   static const int kDefaultHeuristicNumFailuresLimit;
   static const int kDefaultSeed;
   static const double kDefaultRestartLogSize;
+
   enum VariableSelection {
     CHOOSE_MAX_SUM_IMPACT = 0,
     CHOOSE_MAX_AVERAGE_IMPACT = 1,
@@ -1022,10 +1027,10 @@ class Solver {
   // Registers a constraint builder. Ownership is passed to the solver.
   void RegisterBuilder(const string& tag,
                        ConstraintBuilder* const builder);
-  // Registers a integer expression builder. Ownership is passed to the solver.
+  // Registers an integer expression builder. Ownership is passed to the solver.
   void RegisterBuilder(const string& tag,
                        IntegerExpressionBuilder* const builder);
-  // Registers a interval variable builder. Ownership is passed to the solver.
+  // Registers an interval variable builder. Ownership is passed to the solver.
   void RegisterBuilder(const string& tag,
                        IntervalVariableBuilder* const builder);
   // Registers a sequence variable builder. Ownership is passed to the solver.
@@ -2402,7 +2407,7 @@ class Solver {
                                     const IntVar* const* secondary_vars,
                                     int size,
                                     LocalSearchOperators op);
-  // TODO(user): Make the callback a IndexEvaluator2 when there are no
+  // TODO(user): Make the callback an IndexEvaluator2 when there are no
   // secondary variables.
   LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
                                     IndexEvaluator3* const evaluator,
@@ -2699,7 +2704,7 @@ class Solver {
   void set_fail_intercept(Closure* const c) { fail_intercept_ = c; }
   void clear_fail_intercept() { fail_intercept_ = NULL; }
   // Access to demon monitor.
-  DemonMonitor* demon_monitor() const { return demon_monitor_; }
+  DemonProfiler* demon_monitor() const { return demon_monitor_; }
   // Returns whether the object has been named or not.
   bool HasName(const PropagationBaseObject* object) const;
   // Adds a new demon and wraps it inside a DemonProfiler if necessary.
@@ -2722,6 +2727,8 @@ class Solver {
   bool IsProfilingEnabled() const;
   // Returns whether we are tracing variables.
   bool InstrumentsVariables() const;
+  // Returns whether all variables should be named.
+  bool NameAllVariables() const;
   // Returns the name of the model.
   string model_name() const;
   // Returns the dependency graph of the solver.
@@ -2805,7 +2812,7 @@ class Solver {
   void DeleteBuilders();
 
   // Naming
-  string GetName(const PropagationBaseObject* object) const;
+  string GetName(const PropagationBaseObject* object);
   void SetName(const PropagationBaseObject* object, const string& name);
 
   const string name_;
@@ -2837,7 +2844,7 @@ class Solver {
   // intercept failures
   Closure* fail_intercept_;
   // Demon monitor
-  DemonMonitor* const demon_monitor_;
+  DemonProfiler* const demon_monitor_;
 
   // interval of constants cached, inclusive:
   enum { MIN_CACHED_INT_CONST = -8, MAX_CACHED_INT_CONST = 8 };
@@ -2861,6 +2868,7 @@ class Solver {
   scoped_ptr<DependencyGraph> dependency_graph_;
   scoped_ptr<PropagationMonitor> propagation_monitor_;
   PropagationMonitor* print_trace_;
+  int anonymous_variable_index_;
 
   DISALLOW_COPY_AND_ASSIGN(Solver);
 };
@@ -2938,6 +2946,8 @@ class PropagationBaseObject : public BaseObject {
   void set_name(const string& name);
   // Returns whether the object has been named or not.
   bool HasName() const;
+  // Returns a base name for automatic naming.
+  virtual string BaseName() const;
 
 
  private:
@@ -3549,8 +3559,8 @@ class IntVarIterator : public BaseObject {
 // removing values from the domains and a finer model for events
 class IntVar : public IntExpr {
  public:
-  explicit IntVar(Solver* const s) : IntExpr(s) {}
-  IntVar(Solver* const s, const string& name) : IntExpr(s) { set_name(name); }
+  explicit IntVar(Solver* const s);
+  IntVar(Solver* const s, const string& name);
   virtual ~IntVar() {}
 
   virtual bool IsVar() const { return true; }
@@ -4533,7 +4543,7 @@ std::ostream& operator<<(std::ostream& out, const Assignment& assignment);  // N
 // ---------- Misc ----------
 
 // This method returns 0. It is useful when 0 can be cast either as
-// a pointer or as a integer value and thus lead to an ambiguous
+// a pointer or as an integer value and thus lead to an ambiguous
 // function call.
 inline int64 Zero() {
   return 0LL;

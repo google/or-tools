@@ -27,6 +27,7 @@
 #include "base/concise_iterator.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/string_array.h"
 
 namespace operations_research {
 
@@ -206,6 +207,7 @@ class InitialPropagateData : public BaseObject {
 }  // namespace
 
 void Pack::InitialPropagate() {
+  const bool need_context = solver()->InstrumentsVariables();
   ClearAll();
   Solver* const s = solver();
   in_process_ = true;
@@ -239,16 +241,54 @@ void Pack::InitialPropagate() {
     }
   }
   for (int bin_index = 0; bin_index < bins_; ++bin_index) {
+    if (need_context) {
+      solver()->GetPropagationMonitor()->PushContext(
+          StringPrintf(
+              "Pack(bin %d, forced = [%s], undecided = [%s])",
+              bin_index,
+              Int64VectorToString(forced_[bin_index], ", ").c_str(),
+              Int64VectorToString(data->undecided(bin_index), ", ").c_str()));
+    }
+
     for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
+      if (need_context) {
+        solver()->GetPropagationMonitor()->PushContext(
+            StringPrintf("InitialProgateDimension(%s)",
+                         dims_[dim_index]->DebugString().c_str()));
+      }
       dims_[dim_index]->InitialPropagate(bin_index,
                                          forced_[bin_index],
                                          data->undecided(bin_index));
+      if (need_context) {
+        solver()->GetPropagationMonitor()->PopContext();
+      }
+    }
+    if (need_context) {
+      solver()->GetPropagationMonitor()->PopContext();
     }
   }
+  if (need_context) {
+    solver()->GetPropagationMonitor()->PushContext(
+        StringPrintf(
+            "Pack(assigned = [%s], unassigned = [%s])",
+            Int64VectorToString(data->assigned(), ", ").c_str(),
+            Int64VectorToString(data->unassigned(), ", ").c_str()));
+  }
   for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
+    if (need_context) {
+      solver()->GetPropagationMonitor()->PushContext(
+          StringPrintf("InitialProgateDimension(%s)",
+                       dims_[dim_index]->DebugString().c_str()));
+    }
     dims_[dim_index]->InitialPropagateUnassigned(data->assigned(),
                                                  data->unassigned());
     dims_[dim_index]->EndInitialPropagate();
+    if (need_context) {
+      solver()->GetPropagationMonitor()->PopContext();
+    }
+  }
+  if (need_context) {
+    solver()->GetPropagationMonitor()->PopContext();
   }
 
   PropagateDelayed();
@@ -256,20 +296,60 @@ void Pack::InitialPropagate() {
 }
 
 void Pack::Propagate() {
+  const bool need_context = solver()->InstrumentsVariables();
   in_process_ = true;
   DCHECK_EQ(stamp_, solver()->fail_stamp());
   for (int bin_index = 0; bin_index < bins_; ++bin_index) {
     if (!removed_[bin_index].empty() || !forced_[bin_index].empty()) {
+      if (need_context) {
+        solver()->GetPropagationMonitor()->PushContext(
+            StringPrintf(
+                "Pack(bin %d, forced = [%s], removed = [%s])",
+                bin_index,
+                Int64VectorToString(forced_[bin_index], ", ").c_str(),
+                Int64VectorToString(removed_[bin_index], ", ").c_str()));
+      }
+
       for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
+        if (need_context) {
+          solver()->GetPropagationMonitor()->PushContext(
+              StringPrintf("ProgateDimension(%s)",
+                           dims_[dim_index]->DebugString().c_str()));
+        }
         dims_[dim_index]->Propagate(bin_index,
                                     forced_[bin_index],
                                     removed_[bin_index]);
+        if (need_context) {
+          solver()->GetPropagationMonitor()->PopContext();
+        }
+      }
+      if (need_context) {
+        solver()->GetPropagationMonitor()->PopContext();
       }
     }
   }
   if (!removed_[bins_].empty() || !forced_[bins_].empty()) {
+    if (need_context) {
+      solver()->GetPropagationMonitor()->PushContext(
+          StringPrintf(
+              "Pack(removed = [%s], forced = [%s])",
+              Int64VectorToString(removed_[bins_], ", ").c_str(),
+              Int64VectorToString(forced_[bins_], ", ").c_str()));
+    }
+
     for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
+      if (need_context) {
+        solver()->GetPropagationMonitor()->PushContext(
+            StringPrintf("ProgateDimension(%s)",
+                         dims_[dim_index]->DebugString().c_str()));
+      }
       dims_[dim_index]->PropagateUnassigned(removed_[bins_], forced_[bins_]);
+      if (need_context) {
+        solver()->GetPropagationMonitor()->PopContext();
+      }
+    }
+    if (need_context) {
+      solver()->GetPropagationMonitor()->PopContext();
     }
   }
   for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {

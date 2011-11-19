@@ -51,6 +51,7 @@ DEFINE_string(cp_export_file, "", "Export model to file using CPModelProto.");
 DEFINE_bool(cp_no_solve, false, "Force failure at the beginning of a search.");
 DEFINE_string(cp_profile_file, "", "Export profiling overview to file.");
 DEFINE_bool(cp_verbose_fail, false, "Verbose output when failing.");
+DEFINE_bool(cp_name_variables, false, "Force all variables to have names.");
 
 void ConstraintSolverFailsHere() {
   VLOG(3) << "Fail";
@@ -70,21 +71,20 @@ SolverParameters::SolverParameters()
       array_split_size(kDefaultArraySplitSize),
       store_names(kDefaultNameStoring),
       profile_level(kDefaultProfileLevel),
-      trace_level(kDefaultTraceLevel) {}
+      trace_level(kDefaultTraceLevel),
+      name_all_variables(kDefaultNameAllVariables) {}
 
 // ----- Forward Declarations and Profiling Support -----
-extern DemonMonitor* BuildDemonMonitor(Solver* const solver);
-extern void DeleteDemonMonitor(DemonMonitor* const monitor);
-extern void InstallDemonMonitor(DemonMonitor* const monitor);
+extern DemonProfiler* BuildDemonProfiler(Solver* const solver);
+extern void DeleteDemonProfiler(DemonProfiler* const monitor);
+extern void InstallDemonProfiler(DemonProfiler* const monitor);
 
 
 // TODO(user): remove this complex logic.
 // We need the double test because parameters are set too late when using
 // python in the open source. This is the cheapest work-around.
 bool Solver::InstrumentsDemons() const {
-  return parameters_.profile_level != SolverParameters::NO_PROFILING ||
-      FLAGS_cp_trace_propagation ||
-      !FLAGS_cp_profile_file.empty();
+  return IsProfilingEnabled() || InstrumentsVariables();
 }
 
 bool Solver::IsProfilingEnabled() const {
@@ -95,6 +95,10 @@ bool Solver::IsProfilingEnabled() const {
 bool Solver::InstrumentsVariables() const {
   return parameters_.trace_level != SolverParameters::NO_TRACE ||
       FLAGS_cp_trace_propagation;
+}
+
+bool Solver::NameAllVariables() const {
+  return parameters_.name_all_variables || FLAGS_cp_name_variables;
 }
 
 // ------------------ Demon class ----------------
@@ -1346,7 +1350,7 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       fail_stamp_(GG_ULONGLONG(1)),
       balancing_decision_(new BalancingDecision),
       fail_intercept_(NULL),
-      demon_monitor_(BuildDemonMonitor(this)),
+      demon_monitor_(BuildDemonProfiler(this)),
       true_constraint_(NULL),
       false_constraint_(NULL),
       fail_decision_(new FailDecision()),
@@ -1355,7 +1359,8 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       model_cache_(NULL),
       dependency_graph_(NULL),
       propagation_monitor_(BuildTrace(this)),
-      print_trace_(NULL) {
+      print_trace_(NULL),
+      anonymous_variable_index_(0) {
   Init();
 }
 
@@ -1380,7 +1385,7 @@ Solver::Solver(const string& name)
       fail_stamp_(GG_ULONGLONG(1)),
       balancing_decision_(new BalancingDecision),
       fail_intercept_(NULL),
-      demon_monitor_(BuildDemonMonitor(this)),
+      demon_monitor_(BuildDemonProfiler(this)),
       true_constraint_(NULL),
       false_constraint_(NULL),
       fail_decision_(new FailDecision()),
@@ -1389,7 +1394,8 @@ Solver::Solver(const string& name)
       model_cache_(NULL),
       dependency_graph_(NULL),
       propagation_monitor_(BuildTrace(this)),
-      print_trace_(NULL) {
+      print_trace_(NULL),
+      anonymous_variable_index_(0) {
   Init();
 }
 
@@ -1425,7 +1431,7 @@ Solver::~Solver() {
   CHECK(searches_.empty())
       << "non empty list of searches when ending the solver";
   delete search;
-  DeleteDemonMonitor(demon_monitor_);
+  DeleteDemonProfiler(demon_monitor_);
   DeleteBuilders();
 }
 
@@ -1438,6 +1444,7 @@ const SolverParameters::ProfileLevel SolverParameters::kDefaultProfileLevel =
          SolverParameters::NO_PROFILING;
 const SolverParameters::TraceLevel SolverParameters::kDefaultTraceLevel =
          SolverParameters::NO_TRACE;
+const bool SolverParameters::kDefaultNameAllVariables = false;
 
 string Solver::DebugString() const {
   string out = "Solver(name = \"" + name_ + "\", state = ";
@@ -1876,7 +1883,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
   // Always install the main propagation monitor.
   propagation_monitor_->Install();
   if (demon_monitor_ != NULL) {
-    InstallDemonMonitor(demon_monitor_);
+    InstallDemonProfiler(demon_monitor_);
   }
 
   // Push monitors and enter search.
@@ -1912,7 +1919,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
 
 // Backtrack to the last open right branch in the search tree.
 // It returns true in case the search tree has been completely explored.
-bool Solver::BacktrackOneLevel(Decision** fail_decision) {
+bool Solver::BacktrackOneLevel(Decision** const fail_decision) {
   bool no_more_solutions = false;
   bool end_loop = false;
   while (!end_loop) {
@@ -2390,7 +2397,7 @@ bool Solver::NestedSolve(DecisionBuilder* const db,
   propagation_monitor_->Install();
   // Install the demon monitor if needed.
   if (demon_monitor_ != NULL) {
-    InstallDemonMonitor(demon_monitor_);
+    InstallDemonProfiler(demon_monitor_);
   }
 
   for (int i = 0; i < size; ++i) {
@@ -2442,7 +2449,7 @@ void Solver::Fail() {
 
 // --- Propagation object names ---
 
-string Solver::GetName(const PropagationBaseObject* object) const {
+string Solver::GetName(const PropagationBaseObject* object) {
   const string* name = FindOrNull(propagation_object_names_, object);
   if (name != NULL) {
     return *name;
@@ -2458,6 +2465,13 @@ string Solver::GetName(const PropagationBaseObject* object) const {
                           cast_info->expression->DebugString().c_str());
     }
   }
+  const string base_name = object->BaseName();
+  if (FLAGS_cp_name_variables && !base_name.empty()) {
+    const string new_name =
+        StringPrintf("%s_%d", base_name.c_str(), anonymous_variable_index_++);
+    propagation_object_names_[object] = new_name;
+    return new_name;
+  }
   return empty_name_;
 }
 
@@ -2469,7 +2483,8 @@ void Solver::SetName(const PropagationBaseObject* object, const string& name) {
 }
 
 bool Solver::HasName(const PropagationBaseObject* const object) const {
-  return ContainsKey(propagation_object_names_, object);
+  return ContainsKey(propagation_object_names_, object) ||
+      (!object->BaseName().empty() && FLAGS_cp_name_variables);
 }
 
 // ------------------ Useful Operators ------------------
@@ -2497,6 +2512,10 @@ void PropagationBaseObject::set_name(const string& name) {
 
 bool PropagationBaseObject::HasName() const {
   return solver_->HasName(this);
+}
+
+string PropagationBaseObject::BaseName() const {
+  return "";
 }
 
 // ---------- Decision Builder ----------
@@ -2864,7 +2883,7 @@ void SearchMonitor::RestartCurrentSearch() {
 }
 void SearchMonitor::PeriodicCheck() {}
 void SearchMonitor::Accept(ModelVisitor* const visitor) const {}
-// A search monitors adds itseld on the active search.
+// A search monitors adds itself on the active search.
 void SearchMonitor::Install() {
   solver()->searches_.back()->push_monitor(this);
 }
@@ -2874,7 +2893,7 @@ PropagationMonitor::PropagationMonitor(Solver* const s) : SearchMonitor(s) {}
 
 PropagationMonitor::~PropagationMonitor() {}
 
-// A propagation monitor listen to search events as well as
+// A propagation monitor listens to search events as well as
 // propagation events.
 void PropagationMonitor::Install() {
   SearchMonitor::Install();
@@ -2885,7 +2904,8 @@ void PropagationMonitor::Install() {
 
 class Trace : public PropagationMonitor {
  public:
-  Trace(Solver* const s) : PropagationMonitor(s) {}
+  explicit Trace(Solver* const s) : PropagationMonitor(s) {}
+
   virtual ~Trace() {}
 
   virtual void BeginConstraintInitialPropagation(
@@ -2933,6 +2953,18 @@ class Trace : public PropagationMonitor {
   virtual void EndDemonRun(const Demon* const demon) {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->EndDemonRun(demon);
+    }
+  }
+
+  virtual void PushContext(const string& context) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->PushContext(context);
+    }
+  }
+
+  virtual void PopContext() {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->PopContext();
     }
   }
 
@@ -3075,6 +3107,7 @@ class Trace : public PropagationMonitor {
     }
   }
 
+  // Does not take ownership of monitor.
   void Add(PropagationMonitor* const monitor) {
     if (monitor != NULL) {
       monitors_.push_back(monitor);

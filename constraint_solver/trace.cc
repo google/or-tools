@@ -15,9 +15,9 @@
 #include <string.h>
 #include <algorithm>
 #include "base/hash.h"
+#include <stack>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -389,6 +389,11 @@ class TraceIntervalVar : public IntervalVar {
 
 class PrintTrace : public PropagationMonitor {
  public:
+  struct Info {
+    explicit Info(const string& m) : message(m), displayed(false) {}
+    string message;
+    bool displayed;
+  };
 
   struct Context {
     Context()
@@ -400,9 +405,9 @@ class PrintTrace : public PropagationMonitor {
           in_decision(false),
           in_objective(false) {}
 
-    Context(int ii)
-        : initial_indent(ii),
-          indent(ii),
+    explicit Context(int start_indent)
+        : initial_indent(start_indent),
+          indent(start_indent),
           in_demon(false),
           in_constraint(false),
           in_decision_builder(false),
@@ -420,7 +425,7 @@ class PrintTrace : public PropagationMonitor {
       in_decision_builder = false;
       in_decision = false;
       in_objective = false;
-      delayed_string = "";
+      delayed_info.clear();
     }
 
     int initial_indent;
@@ -430,12 +435,12 @@ class PrintTrace : public PropagationMonitor {
     bool in_decision_builder;
     bool in_decision;
     bool in_objective;
-    string delayed_string;
+    std::vector<Info> delayed_info;
   };
 
-  PrintTrace(Solver* const s)
-      : PropagationMonitor(s),
-        contexes_(1) {}
+  explicit PrintTrace(Solver* const s) : PropagationMonitor(s) {
+    contexes_.push(Context());
+  }
 
   virtual ~PrintTrace() {}
 
@@ -455,18 +460,18 @@ class PrintTrace : public PropagationMonitor {
     DisplaySearch(StringPrintf("DecisionBuilder(%s)",
                                b->DebugString().c_str()));
     IncreaseIndent();
-    contexes_.back().in_decision_builder = true;
+    contexes_.top().in_decision_builder = true;
   }
 
   // After calling DecisionBuilder::Next, along with the returned decision.
   virtual void EndNextDecision(DecisionBuilder* const b, Decision* const d) {
-    contexes_.back().in_decision_builder = false;
+    contexes_.top().in_decision_builder = false;
     DecreaseIndent();
   }
 
   virtual void BeginFail() {
-    contexes_.back().Clear();
-    while (!contexes_.back().TopLevel()) {
+    contexes_.top().Clear();
+    while (!contexes_.top().TopLevel()) {
       DecreaseIndent();
       LOG(INFO) << Indent() << "}";
     }
@@ -483,29 +488,29 @@ class PrintTrace : public PropagationMonitor {
     DisplaySearch(StringPrintf("ApplyDecision(%s)",
                                decision->DebugString().c_str()));
     IncreaseIndent();
-    contexes_.back().in_decision = true;
+    contexes_.top().in_decision = true;
   }
 
   virtual void RefuteDecision(Decision* const decision) {
-    if (contexes_.back().in_objective) {
+    if (contexes_.top().in_objective) {
       DecreaseIndent();
-      contexes_.back().in_objective = false;
+      contexes_.top().in_objective = false;
     }
     DisplaySearch(StringPrintf("RefuteDecision(%s)",
                                decision->DebugString().c_str()));
     IncreaseIndent();
-    contexes_.back().in_decision = true;
+    contexes_.top().in_decision = true;
   }
 
   virtual void AfterDecision(Decision* const decision, bool direction) {
     DecreaseIndent();
-    contexes_.back().in_decision = false;
+    contexes_.top().in_decision = false;
   }
 
   virtual void EnterSearch() {
     if (solver()->SolveDepth() == 0) {
       CHECK_EQ(1, contexes_.size());
-      contexes_.back().Clear();
+      contexes_.top().Clear();
     } else {
       PrintDelayedString();
       PushNestedContext();
@@ -515,60 +520,66 @@ class PrintTrace : public PropagationMonitor {
 
   virtual void ExitSearch() {
     DisplaySearch("Exit Search");
-    CHECK(contexes_.back().TopLevel());
+    CHECK(contexes_.top().TopLevel());
     if (solver()->SolveDepth() > 1) {
-      contexes_.pop_back();
+      contexes_.pop();
     }
   }
 
   virtual void RestartSearch() {
-    CHECK(contexes_.back().TopLevel());
+    CHECK(contexes_.top().TopLevel());
   }
 
   // ----- Propagation events -----
 
   virtual void BeginConstraintInitialPropagation(
       const Constraint* const constraint) {
-    DelayPrintAndIndent(StringPrintf("Constraint(%s)",
+    PushDelayedInfo(StringPrintf("Constraint(%s)",
                                      constraint->DebugString().c_str()));
-    contexes_.back().in_constraint= true;
+    contexes_.top().in_constraint= true;
   }
 
-  virtual void EndConstraintInitialPropagation(
-      const Constraint* const constraint) {
-    DelayCloseAndUnindent();
-    contexes_.back().in_constraint = false;
+  virtual void EndConstraintInitialPropagation(const Constraint* const) {
+    PopDelayedInfo();
+    contexes_.top().in_constraint = false;
   }
 
   virtual void BeginNestedConstraintInitialPropagation(
       const Constraint* const parent,
       const Constraint* const nested) {
-    DelayPrintAndIndent(StringPrintf("Constraint(%s)",
+    PushDelayedInfo(StringPrintf("Constraint(%s)",
                                      nested->DebugString().c_str()));
-    contexes_.back().in_constraint = true;
+    contexes_.top().in_constraint = true;
   }
-  virtual void EndNestedConstraintInitialPropagation(
-      const Constraint* const parent,
-      const Constraint* const nested) {
-    DelayCloseAndUnindent();
-    contexes_.back().in_constraint = false;
+  virtual void EndNestedConstraintInitialPropagation(const Constraint* const,
+                                                     const Constraint* const) {
+    PopDelayedInfo();
+    contexes_.top().in_constraint = false;
   }
 
   virtual void RegisterDemon(const Demon* const demon) {}
 
   virtual void BeginDemonRun(const Demon* const demon) {
     if (demon->priority() != Solver::VAR_PRIORITY) {
-      contexes_.back().in_demon = true;
-      DelayPrintAndIndent(StringPrintf("Demon(%s)",
+      contexes_.top().in_demon = true;
+      PushDelayedInfo(StringPrintf("Demon(%s)",
                                        demon->DebugString().c_str()));
     }
   }
 
   virtual void EndDemonRun(const Demon* const demon) {
     if (demon->priority() != Solver::VAR_PRIORITY) {
-      contexes_.back().in_demon = false;
-      DelayCloseAndUnindent();
+      contexes_.top().in_demon = false;
+      PopDelayedInfo();
     }
+  }
+
+  virtual void PushContext(const string& context) {
+    PushDelayedInfo(context);
+  }
+
+  virtual void PopContext() {
+    PopDelayedInfo();
   }
 
   // ----- IntExpr modifiers -----
@@ -729,49 +740,61 @@ class PrintTrace : public PropagationMonitor {
   }
 
  private:
-  void DelayPrintAndIndent(const string& delayed) {
-    CHECK(contexes_.back().delayed_string.empty());
-    contexes_.back().delayed_string = delayed;
+  void PushDelayedInfo(const string& delayed) {
+    contexes_.top().delayed_info.push_back(Info(delayed));
   }
 
-  void DelayCloseAndUnindent() {
-    if (contexes_.back().delayed_string.empty() &&
-        !contexes_.back().TopLevel()) {
+  void PopDelayedInfo() {
+    CHECK(!contexes_.top().delayed_info.empty());
+    if (contexes_.top().delayed_info.back().displayed &&
+        !contexes_.top().TopLevel()) {
       DecreaseIndent();
       LOG(INFO) << Indent() << "}";
     } else {
-      contexes_.back().delayed_string = "";
+      contexes_.top().delayed_info.pop_back();
     }
   }
 
   void CheckNoDelayed() {
-    CHECK(contexes_.back().delayed_string.empty());
+    CHECK(contexes_.top().delayed_info.empty());
   }
 
   void PrintDelayedString() {
-    // Check Previous delayed strings.
-    if (!contexes_.back().delayed_string.empty()) {
-      LOG(INFO) << Indent() << contexes_.back().delayed_string << " {";
-      IncreaseIndent();
-      contexes_.back().delayed_string = "";
+    const std::vector<Info>& infos = contexes_.top().delayed_info;
+    for (int i = 0; i < infos.size(); ++i) {
+      const Info& info = infos[i];
+      if (!info.displayed) {
+        LOG(INFO) << Indent() << info.message << " {";
+        IncreaseIndent();
+        // Marks it as displayed.
+        contexes_.top().delayed_info[i].displayed = true;
+      }
     }
   }
 
   void DisplayModification(const string& to_print) {
     PrintDelayedString();
-    if (contexes_.back().in_demon ||
-        contexes_.back().in_constraint ||
-        contexes_.back().in_decision_builder ||
-        contexes_.back().in_decision ||
-        contexes_.back().in_objective) {
+    if (contexes_.top().in_demon ||
+        contexes_.top().in_constraint ||
+        contexes_.top().in_decision_builder ||
+        contexes_.top().in_decision ||
+        contexes_.top().in_objective) {
       // Inside a demon, constraint, decision builder -> normal print.
       LOG(INFO) << Indent() << to_print;
     } else {
-      // Top level, modification pushed by the objective.
-      CHECK(contexes_.back().TopLevel());
+      // Top level, modification pushed by the objective.  This is a
+      // hack. The SetMax or SetMin done by the objective happens in
+      // the RefuteDecision callback of search monitors.  We cannot
+      // easily differentiate that from the actual modifications done
+      // by the Refute() call itself.  To distinguish that, we force
+      // the print trace to be last in the list of monitors. Thus
+      // modifications that happens at the top level before the
+      // RefuteDecision() callbacks must be from the objective.
+      // In that case, we push the in_objective context.
+      CHECK(contexes_.top().TopLevel());
       DisplaySearch(StringPrintf("Objective -> %s", to_print.c_str()));
       IncreaseIndent();
-      contexes_.back().in_objective = true;
+      contexes_.top().in_objective = true;
     }
   }
 
@@ -787,26 +810,26 @@ class PrintTrace : public PropagationMonitor {
 
   string Indent() {
     string output = " @ ";
-    for (int i = 0; i < contexes_.back().indent; ++i) {
+    for (int i = 0; i < contexes_.top().indent; ++i) {
       output.append("    ");
     }
     return output;
   }
 
   void IncreaseIndent() {
-    contexes_.back().indent++;
+    contexes_.top().indent++;
   }
 
   void DecreaseIndent() {
-    contexes_.back().indent--;
+    contexes_.top().indent--;
   }
 
   void PushNestedContext() {
-    const int initial_indent = contexes_.back().indent;
-    contexes_.push_back(Context(initial_indent));
+    const int initial_indent = contexes_.top().indent;
+    contexes_.push(Context(initial_indent));
   }
 
-  std::vector<Context> contexes_;
+  std::stack<Context> contexes_;
 };
 }  // namespace
 

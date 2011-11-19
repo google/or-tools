@@ -615,6 +615,8 @@ class FixedDurationIntervalVar : public IntervalVar {
     visitor->VisitIntervalVariable(this, "", NULL);
   }
 
+  virtual string BaseName() const { return "IntervalVar"; }
+
  private:
   void CheckOldStartBounds() {
     if (old_start_min_ > start_min_) {
