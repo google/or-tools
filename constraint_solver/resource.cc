@@ -1940,6 +1940,7 @@ void SequenceVar::AddPrecedence(int before, int after) {
 }
 
 void SequenceVar::RankFirst(int index) {
+  solver()->GetPropagationMonitor()->RankFirst(this, index);
   IntervalVar* const t = intervals_[index];
   t->SetPerformed(true);
   Solver* const s = solver();
@@ -1958,6 +1959,7 @@ void SequenceVar::RankFirst(int index) {
 }
 
 void SequenceVar::RankNotFirst(int index) {
+  solver()->GetPropagationMonitor()->RankNotFirst(this, index);
   solver()->SaveAndSetValue(&min_ranks_[index], current_rank_ + 1);
   int possible_first_count = 0;
   int possible_first = -1;

@@ -1350,7 +1350,7 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       fail_stamp_(GG_ULONGLONG(1)),
       balancing_decision_(new BalancingDecision),
       fail_intercept_(NULL),
-      demon_monitor_(BuildDemonProfiler(this)),
+      demon_profiler_(BuildDemonProfiler(this)),
       true_constraint_(NULL),
       false_constraint_(NULL),
       fail_decision_(new FailDecision()),
@@ -1385,7 +1385,7 @@ Solver::Solver(const string& name)
       fail_stamp_(GG_ULONGLONG(1)),
       balancing_decision_(new BalancingDecision),
       fail_intercept_(NULL),
-      demon_monitor_(BuildDemonProfiler(this)),
+      demon_profiler_(BuildDemonProfiler(this)),
       true_constraint_(NULL),
       false_constraint_(NULL),
       fail_decision_(new FailDecision()),
@@ -1411,7 +1411,7 @@ void Solver::Init() {
   timer_->Restart();
   model_cache_.reset(BuildModelCache(this));
   dependency_graph_.reset(BuildDependencyGraph(this));
-  AddPropagationMonitor(reinterpret_cast<PropagationMonitor*>(demon_monitor_));
+  AddPropagationMonitor(reinterpret_cast<PropagationMonitor*>(demon_profiler_));
 }
 
 Solver::~Solver() {
@@ -1431,7 +1431,7 @@ Solver::~Solver() {
   CHECK(searches_.empty())
       << "non empty list of searches when ending the solver";
   delete search;
-  DeleteDemonProfiler(demon_monitor_);
+  DeleteDemonProfiler(demon_profiler_);
   DeleteBuilders();
 }
 
@@ -1882,8 +1882,8 @@ void Solver::NewSearch(DecisionBuilder* const db,
 
   // Always install the main propagation monitor.
   propagation_monitor_->Install();
-  if (demon_monitor_ != NULL) {
-    InstallDemonProfiler(demon_monitor_);
+  if (demon_profiler_ != NULL) {
+    InstallDemonProfiler(demon_profiler_);
   }
 
   // Push monitors and enter search.
@@ -2396,8 +2396,8 @@ bool Solver::NestedSolve(DecisionBuilder* const db,
   // Always install the main propagation monitor.
   propagation_monitor_->Install();
   // Install the demon monitor if needed.
-  if (demon_monitor_ != NULL) {
-    InstallDemonProfiler(demon_monitor_);
+  if (demon_profiler_ != NULL) {
+    InstallDemonProfiler(demon_profiler_);
   }
 
   for (int i = 0; i < size; ++i) {
@@ -3104,6 +3104,18 @@ class Trace : public PropagationMonitor {
   virtual void SetPerformed(IntervalVar* const var, bool value) {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetPerformed(var, value);
+    }
+  }
+
+  virtual void RankFirst(SequenceVar* const var, int index) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RankFirst(var, index);
+    }
+  }
+
+  virtual void RankNotFirst(SequenceVar* const var, int index) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RankNotFirst(var, index);
     }
   }
 

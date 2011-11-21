@@ -2703,8 +2703,8 @@ class Solver {
   // set_fail_intercept does not take ownership of the closure.
   void set_fail_intercept(Closure* const c) { fail_intercept_ = c; }
   void clear_fail_intercept() { fail_intercept_ = NULL; }
-  // Access to demon monitor.
-  DemonProfiler* demon_monitor() const { return demon_monitor_; }
+  // Access to demon profiler.
+  DemonProfiler* demon_profiler() const { return demon_profiler_; }
   // Returns whether the object has been named or not.
   bool HasName(const PropagationBaseObject* object) const;
   // Adds a new demon and wraps it inside a DemonProfiler if necessary.
@@ -2844,7 +2844,7 @@ class Solver {
   // intercept failures
   Closure* fail_intercept_;
   // Demon monitor
-  DemonProfiler* const demon_monitor_;
+  DemonProfiler* const demon_profiler_;
 
   // interval of constants cached, inclusive:
   enum { MIN_CACHED_INT_CONST = -8, MAX_CACHED_INT_CONST = 8 };

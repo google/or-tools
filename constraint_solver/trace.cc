@@ -732,6 +732,18 @@ class PrintTrace : public PropagationMonitor {
                                      value));
   }
 
+  virtual void RankFirst(SequenceVar* const var, int index) {
+    DisplayModification(StringPrintf("RankFirst(%s, %d)",
+                                     var->DebugString().c_str(),
+                                     index));
+  }
+
+  virtual void RankNotFirst(SequenceVar* const var, int index) {
+    DisplayModification(StringPrintf("RankNotFirst(%s, %d)",
+                                     var->DebugString().c_str(),
+                                     index));
+  }
+
   virtual void Install() {
     SearchMonitor::Install();
     if (solver()->SolveDepth() <= 1) {

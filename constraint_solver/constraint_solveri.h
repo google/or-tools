@@ -1034,6 +1034,9 @@ class PropagationMonitor : public SearchMonitor {
                                 int64 new_min,
                                 int64 new_max) = 0;
   virtual void SetPerformed(IntervalVar* const var, bool value) = 0;
+  // SequenceVar modifiers
+  virtual void RankFirst(SequenceVar* const var, int index) = 0;
+  virtual void RankNotFirst(SequenceVar* const var, int index) = 0;
   // Install itself on the solver.
   virtual void Install();
 };

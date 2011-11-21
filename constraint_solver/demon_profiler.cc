@@ -223,6 +223,8 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
                                 int64 new_min,
                                 int64 new_max) {}
   virtual void SetPerformed(IntervalVar* const var, bool value) {}
+  virtual void RankFirst(SequenceVar* const var, int index) {}
+  virtual void RankNotFirst(SequenceVar* const var, int index) {}
 
   // Useful for unit tests.
   void AddFakeRun(const Demon* const demon,
@@ -400,7 +402,7 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     }
   }
 
-  // The demon_monitor is added by default on the main propagation
+  // The demon_profiler is added by default on the main propagation
   // monitor.  It just needs to be added to the search monitors at the
   // start of the search.
   virtual void Install() {
@@ -417,8 +419,8 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
 };
 
 void Solver::ExportProfilingOverview(const string& filename) {
-  if (demon_monitor_ != NULL) {
-    demon_monitor_->PrintOverview(this, filename);
+  if (demon_profiler_ != NULL) {
+    demon_profiler_->PrintOverview(this, filename);
   }
 }
 
