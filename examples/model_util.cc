@@ -20,10 +20,12 @@
 #include "base/recordio.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/model.pb.h"
+#include "util/graph_export.h"
 
 DEFINE_string(input, "", "Input file of the problem.");
 DEFINE_string(output, "", "Output file when doing modifications.");
 DEFINE_string(dot_file, "", "Exports model to dot file.");
+DEFINE_string(gml_file, "", "Exports model to gml file.");
 
 DEFINE_bool(print_proto, false, "Prints the raw model protobuf.");
 DEFINE_bool(test_proto, false, "Performs various tests on the model protobuf.");
@@ -38,157 +40,227 @@ DEFINE_string(insert_license, "",
               "Insert content of the given file into the license file.");
 
 namespace operations_research {
+
+// ----- Utilities -----
+
 static const int kProblem = -1;
 static const int kOk = 0;
 
-// ----- Export to .dot file -----
-
-// Appends a string to te file.
-void Write(File* const file, const string& string) {
-  file->Write(string.c_str(), string.size());
+// Creates node labels.
+string ExprLabel(int index) {
+  return StringPrintf("expr_%i", index);
 }
 
-// Adds one link in the generated graph.
-void WriteExprLink(const string& origin,
-                   int index,
-                   const string& label,
-                   File* const file) {
-  const string other = StringPrintf("expr_%i", index);
-  Write(file, StringPrintf("%s -- %s [label=%s]\n",
-                           origin.c_str(),
-                           other.c_str(),
-                           label.c_str()));
+string IntervalLabel(int index) {
+  return StringPrintf("interval_%i", index);
 }
 
-// Adds one link in the generated graph.
-void WriteIntervalLink(const string& origin,
-                       int index,
-                       const string& label,
-                       File* const file) {
-  const string other = StringPrintf("interval_%i", index);
-  Write(file, StringPrintf("%s -- %s [label=%s]\n",
-                           origin.c_str(),
-                           other.c_str(),
-                           label.c_str()));
+string SequenceLabel(int index) {
+  return StringPrintf("sequence_%i", index);
+}
+
+string ConstraintLabel(int index) {
+  return StringPrintf("ct_%i", index);
 }
 
 // Scans argument to add links in the graph.
 template <class T> void ExportLinks(const CPModelProto& model,
-                                    const string& origin,
+                                    const string& source,
                                     const T& proto,
-                                    File* const file) {
+                                    GraphExporter* const exporter) {
   const string& arg_name = model.tags(proto.argument_index());
   if (proto.has_integer_expression_index()) {
-    WriteExprLink(origin, proto.integer_expression_index(), arg_name, file);
+    exporter->WriteLink(source,
+                        ExprLabel(proto.integer_expression_index()),
+                        arg_name);
   }
   for (int i = 0; i < proto.integer_expression_array_size(); ++i) {
-    WriteExprLink(origin, proto.integer_expression_array(i), arg_name, file);
+    exporter->WriteLink(source,
+                        ExprLabel(proto.integer_expression_array(i)),
+                        arg_name);
   }
   if (proto.has_interval_index()) {
-    WriteIntervalLink(origin, proto.interval_index(), arg_name, file);
+    exporter->WriteLink(source,
+                        IntervalLabel(proto.interval_index()),
+                        arg_name);
   }
   for (int i = 0; i < proto.interval_array_size(); ++i) {
-    WriteIntervalLink(origin, proto.interval_array(i), arg_name, file);
+    exporter->WriteLink(source,
+                        IntervalLabel(proto.interval_array(i)),
+                        arg_name);
+  }
+  if (proto.has_sequence_index()) {
+    exporter->WriteLink(source,
+                        SequenceLabel(proto.sequence_index()),
+                        arg_name);
+  }
+  for (int i = 0; i < proto.sequence_array_size(); ++i) {
+    exporter->WriteLink(source,
+                        SequenceLabel(proto.sequence_array(i)),
+                        arg_name);
   }
 }
 
-// Declares a labelled expression in the .dot file.
-void DeclareExpression(int index, const CPModelProto& proto, File* const file) {
+// Scans the expression protobuf to see if it corresponds to an
+// integer variable with min_value == max_value.
+bool GetValueIfConstant(const CPModelProto& model,
+                        const CPIntegerExpressionProto& proto,
+                        int64* const value) {
+  CHECK_NOTNULL(value);
+  const int expr_type = proto.type_index();
+  if (model.tags(expr_type) != ModelVisitor::kIntegerVariable) {
+    return false;
+  }
+  if (proto.arguments_size() != 2) {
+    return false;
+  }
+  const CPArgumentProto& arg1_proto = proto.arguments(0);
+  if (model.tags(arg1_proto.argument_index()) != ModelVisitor::kMinArgument) {
+    return false;
+  }
+  const int64 value1 = arg1_proto.integer_value();
+  const CPArgumentProto& arg2_proto = proto.arguments(1);
+  if (model.tags(arg2_proto.argument_index()) != ModelVisitor::kMaxArgument) {
+    return false;
+  }
+  const int64 value2 = arg2_proto.integer_value();
+  if (value1 == value2) {
+    *value = value1;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+// Declares a labelled expression in the graph file.
+void DeclareExpression(int index,
+                       const CPModelProto& proto,
+                       GraphExporter* const exporter) {
   const CPIntegerExpressionProto& expr = proto.expressions(index);
-  const string short_name = StringPrintf("expr_%i", index);
+  const string label = ExprLabel(index);
+  int64 value = 0;
   if (expr.has_name()) {
-    Write(file, StringPrintf("%s [shape=oval label=\"%s\" color=green]\n",
-                             short_name.c_str(),
-                             expr.name().c_str()));
+    exporter->WriteNode(label, expr.name(), "oval", GraphExporter::kGreen);
+  } else if (GetValueIfConstant(proto, expr, &value)) {
+    exporter->WriteNode(label,
+                        StringPrintf("%lld", value),
+                        "oval",
+                        GraphExporter::kYellow);
   } else {
     const string& type = proto.tags(expr.type_index());
-    Write(file, StringPrintf("%s [shape=oval label=\"%s\"]\n",
-                             short_name.c_str(),
-                             type.c_str()));
+    exporter->WriteNode(label, type, "oval", GraphExporter::kWhite);
   }
 }
 
-void DeclareInterval(int index, const CPModelProto& proto, File* const file) {
+void DeclareInterval(int index,
+                     const CPModelProto& proto,
+                     GraphExporter* const exporter) {
   const CPIntervalVariableProto& interval = proto.intervals(index);
-  const string short_name = StringPrintf("interval_%i", index);
+  const string label = IntervalLabel(index);
   if (interval.has_name()) {
-    Write(file, StringPrintf("%s [shape=circle label=\"%s\" color=green]\n",
-                             short_name.c_str(),
-                             interval.name().c_str()));
+    exporter->WriteNode(label,
+                        interval.name(),
+                        "circle",
+                        GraphExporter::kGreen);
   } else {
     const string& type = proto.tags(interval.type_index());
-    Write(file, StringPrintf("%s [shape=oval label=\"%s\"]\n",
-                             short_name.c_str(),
-                             type.c_str()));
+    exporter->WriteNode(label, type, "circle", GraphExporter::kWhite);
   }
 }
 
-void DeclareConstraint(int index, const CPModelProto& proto, File* const file) {
-    const CPConstraintProto& ct = proto.constraints(index);
-    const string& type = proto.tags(ct.type_index());
-    const string short_name = StringPrintf("ct_%i", index);
-    Write(file, StringPrintf("%s [shape=box label=\"%s\"]\n",
-                             short_name.c_str(),
-                             type.c_str()));
+void DeclareSequence(int index,
+                     const CPModelProto& proto,
+                     GraphExporter* const exporter) {
+  const CPSequenceVariableProto& sequence = proto.sequences(index);
+  const string label = SequenceLabel(index);
+  if (sequence.has_name()) {
+    exporter->WriteNode(label,
+                        sequence.name(),
+                        "circle",
+                        GraphExporter::kGreen);
+  } else {
+    const string& type = proto.tags(sequence.type_index());
+    exporter->WriteNode(label, type, "circle", GraphExporter::kWhite);
+  }
 }
 
-// Parses the proto and exports it to a .dot file.
-void ExportToDot(const CPModelProto& proto, File* const file) {
-  Write(file, StringPrintf("graph %s {\n", proto.model().c_str()));
+void DeclareConstraint(int index,
+                       const CPModelProto& proto,
+                       GraphExporter* const exporter) {
+  const CPConstraintProto& ct = proto.constraints(index);
+  const string& type = proto.tags(ct.type_index());
+  const string label = ConstraintLabel(index);
+  exporter->WriteNode(label, type, "rectangle", GraphExporter::kBlue);
+}
 
+// Parses the proto and exports it to a graph file.
+void ExportToGraphFile(const CPModelProto& proto,
+                       File* const file,
+                       GraphExporter::GraphFormat format) {
+  scoped_ptr<GraphExporter> exporter(
+      GraphExporter::MakeFileExporter(file, format));
+  exporter->WriteHeader(proto.model());
   for (int i = 0; i < proto.expressions_size(); ++i) {
-    DeclareExpression(i, proto, file);
+    DeclareExpression(i, proto, exporter.get());
   }
 
   for (int i = 0; i < proto.intervals_size(); ++i) {
-    DeclareInterval(i, proto, file);
+    DeclareInterval(i, proto, exporter.get());
+  }
+
+  for (int i = 0; i < proto.sequences_size(); ++i) {
+    DeclareSequence(i, proto, exporter.get());
   }
 
   for (int i = 0; i < proto.constraints_size(); ++i) {
-    DeclareConstraint(i, proto, file);
+    DeclareConstraint(i, proto, exporter.get());
   }
 
+  const char kObjLabel[] = "obj";
   if (proto.has_objective()) {
-    if (proto.objective().maximize()) {
-      Write(file, "obj [shape=diamond label=\"Maximize\" color=red]\n");
-    } else {
-      Write(file, "obj [shape=diamond label=\"Minimize\" color=red]\n");
-    }
+    const string name = proto.objective().maximize() ? "Maximize" : "Minimize";
+    exporter->WriteNode(kObjLabel, name, "diamond", GraphExporter::kRed);
   }
 
   for (int i = 0; i < proto.expressions_size(); ++i) {
     const CPIntegerExpressionProto& expr = proto.expressions(i);
-    const string short_name = StringPrintf("expr_%i", i);
+    const string label = ExprLabel(i);
     for (int j = 0; j < expr.arguments_size(); ++j) {
-      ExportLinks(proto, short_name, expr.arguments(j), file);
+      ExportLinks(proto, label, expr.arguments(j), exporter.get());
     }
   }
 
   for (int i = 0; i < proto.intervals_size(); ++i) {
     const CPIntervalVariableProto& interval = proto.intervals(i);
-    const string short_name = StringPrintf("interval_%i", i);
+    const string label = IntervalLabel(i);
     for (int j = 0; j < interval.arguments_size(); ++j) {
-      ExportLinks(proto, short_name, interval.arguments(j), file);
+      ExportLinks(proto, label, interval.arguments(j), exporter.get());
+    }
+  }
+
+  for (int i = 0; i < proto.sequences_size(); ++i) {
+    const CPSequenceVariableProto& sequence = proto.sequences(i);
+    const string label = SequenceLabel(i);
+    for (int j = 0; j < sequence.arguments_size(); ++j) {
+      ExportLinks(proto, label, sequence.arguments(j), exporter.get());
     }
   }
 
   for (int i = 0; i < proto.constraints_size(); ++i) {
     const CPConstraintProto& ct = proto.constraints(i);
-    const string short_name = StringPrintf("ct_%i", i);
+    const string label = ConstraintLabel(i);
     for (int j = 0; j < ct.arguments_size(); ++j) {
-      ExportLinks(proto, short_name, ct.arguments(j), file);
+      ExportLinks(proto, label, ct.arguments(j), exporter.get());
     }
   }
 
   if (proto.has_objective()) {
     const CPObjectiveProto& obj = proto.objective();
-    WriteExprLink("obj",
-                  obj.objective_index(),
-                  ModelVisitor::kExpressionArgument,
-                  file);
+    exporter->WriteLink(kObjLabel,
+                        ExprLabel(obj.objective_index()),
+                        ModelVisitor::kExpressionArgument);
   }
-
-  Write(file, "}\n");
+  exporter->WriteFooter();
 }
 
 // ----- Main Method -----
@@ -299,8 +371,18 @@ int Run() {
       LOG(INFO) << "Cannot open " << FLAGS_dot_file;
       return kProblem;
     }
-    ExportToDot(model_proto, dot_file);
+    ExportToGraphFile(model_proto, dot_file, GraphExporter::DOT_FORMAT);
     dot_file->Close();
+  }
+
+  if (!FLAGS_gml_file.empty()) {
+    File* const gml_file = File::Open(FLAGS_gml_file, "w");
+    if (gml_file == NULL) {
+      LOG(INFO) << "Cannot open " << FLAGS_gml_file;
+      return kProblem;
+    }
+    ExportToGraphFile(model_proto, gml_file, GraphExporter::GML_FORMAT);
+    gml_file->Close();
   }
   return kOk;
 }

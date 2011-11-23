@@ -285,6 +285,7 @@ UTIL_LIB_OS=\
 	objs/bitset.$O \
 	objs/cached_log.$O \
 	objs/const_int_array.$O \
+	objs/graph_export.$O \
 	objs/xml_helper.$O
 
 objs/bitset.$O:util/bitset.cc
@@ -295,6 +296,9 @@ objs/cached_log.$O:util/cached_log.cc
 
 objs/const_int_array.$O:util/const_int_array.cc
 	$(CCC) $(CFLAGS) -c util/const_int_array.cc $(OBJOUT)objs/const_int_array.$O
+
+objs/graph_export.$O:util/graph_export.cc
+	$(CCC) $(CFLAGS) -c util/graph_export.cc $(OBJOUT)objs/graph_export.$O
 
 objs/xml_helper.$O:util/xml_helper.cc
 	$(CCC) $(CFLAGS) -c util/xml_helper.cc $(OBJOUT)objs/xml_helper.$O
