@@ -13,14 +13,10 @@
 
 #include "util/graph_export.h"
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
-#include "base/file.h"
 
 namespace operations_research {
 
@@ -133,6 +129,7 @@ class GmlSyntax : public GraphSyntax {
 };
 
 // Graph exporter that will write to a file with a given format.
+// Takes ownership of the GraphSyntax parameter.
 class FileGraphExporter : public GraphExporter {
  public:
   FileGraphExporter(File* const file, GraphSyntax* const syntax)
