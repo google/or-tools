@@ -46,6 +46,15 @@ namespace operations_research {
 static const int kProblem = -1;
 static const int kOk = 0;
 
+// Colors
+static const char kGreen1[] = "#A2CD5A";
+static const char kGreen2[] = "#76EEC6";
+static const char kGreen3[] = "#00CD00";
+static const char kWhite[] = "#FAFAFA";
+static const char kBlue[] = "#87CEFA";
+static const char kYellow[] = "#FFF68F";
+static const char kRed[] = "#A52A2A";
+
 // Creates node labels.
 string ExprLabel(int index) {
   return StringPrintf("expr_%i", index);
@@ -140,15 +149,15 @@ void DeclareExpression(int index,
   const string label = ExprLabel(index);
   int64 value = 0;
   if (expr.has_name()) {
-    exporter->WriteNode(label, expr.name(), "oval", GraphExporter::kGreen);
+    exporter->WriteNode(label, expr.name(), "oval", kGreen1);
   } else if (GetValueIfConstant(proto, expr, &value)) {
     exporter->WriteNode(label,
                         StringPrintf("%lld", value),
                         "oval",
-                        GraphExporter::kYellow);
+                        kYellow);
   } else {
     const string& type = proto.tags(expr.type_index());
-    exporter->WriteNode(label, type, "oval", GraphExporter::kWhite);
+    exporter->WriteNode(label, type, "oval", kWhite);
   }
 }
 
@@ -158,13 +167,10 @@ void DeclareInterval(int index,
   const CPIntervalVariableProto& interval = proto.intervals(index);
   const string label = IntervalLabel(index);
   if (interval.has_name()) {
-    exporter->WriteNode(label,
-                        interval.name(),
-                        "circle",
-                        GraphExporter::kGreen);
+    exporter->WriteNode(label, interval.name(), "circle", kGreen2);
   } else {
     const string& type = proto.tags(interval.type_index());
-    exporter->WriteNode(label, type, "circle", GraphExporter::kWhite);
+    exporter->WriteNode(label, type, "circle", kWhite);
   }
 }
 
@@ -174,13 +180,10 @@ void DeclareSequence(int index,
   const CPSequenceVariableProto& sequence = proto.sequences(index);
   const string label = SequenceLabel(index);
   if (sequence.has_name()) {
-    exporter->WriteNode(label,
-                        sequence.name(),
-                        "circle",
-                        GraphExporter::kGreen);
+    exporter->WriteNode(label, sequence.name(), "circle", kGreen3);
   } else {
     const string& type = proto.tags(sequence.type_index());
-    exporter->WriteNode(label, type, "circle", GraphExporter::kWhite);
+    exporter->WriteNode(label, type, "circle", kWhite);
   }
 }
 
@@ -190,7 +193,7 @@ void DeclareConstraint(int index,
   const CPConstraintProto& ct = proto.constraints(index);
   const string& type = proto.tags(ct.type_index());
   const string label = ConstraintLabel(index);
-  exporter->WriteNode(label, type, "rectangle", GraphExporter::kBlue);
+  exporter->WriteNode(label, type, "rectangle", kBlue);
 }
 
 // Parses the proto and exports it to a graph file.
@@ -219,7 +222,7 @@ void ExportToGraphFile(const CPModelProto& proto,
   const char kObjLabel[] = "obj";
   if (proto.has_objective()) {
     const string name = proto.objective().maximize() ? "Maximize" : "Minimize";
-    exporter->WriteNode(kObjLabel, name, "diamond", GraphExporter::kRed);
+    exporter->WriteNode(kObjLabel, name, "diamond", kRed);
   }
 
   for (int i = 0; i < proto.expressions_size(); ++i) {

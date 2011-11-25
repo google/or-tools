@@ -28,6 +28,8 @@ using std::string;
 namespace operations_research {
 // ----- Export to graph file -----
 
+// This class will allow the creation of a graph representation.
+// It supports different formats (see GraphFormat).
 class GraphExporter {
  public:
   // Supported graph formats.
@@ -35,13 +37,6 @@ class GraphExporter {
     DOT_FORMAT,
     GML_FORMAT,
   };
-
-  // Colors
-  static const char kGreen[];
-  static const char kWhite[];
-  static const char kBlue[];
-  static const char kYellow[];
-  static const char kRed[];
 
   virtual ~GraphExporter();
 
@@ -62,7 +57,7 @@ class GraphExporter {
                          const string& destination,
                          const string& label) = 0;
 
-// Creates a graph exporter that will write to file with a given format.
+  // Creates a graph exporter that will write to file with a given format.
   static GraphExporter* MakeFileExporter(File* const file,
                                          GraphExporter::GraphFormat format);
 };

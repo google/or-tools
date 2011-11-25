@@ -783,6 +783,9 @@ class SecondPassVisitor : public ModelVisitor {
     CPIntervalVariableProto* const var_proto = model_proto_->add_intervals();
     var_proto->set_index(index);
     var_proto->set_type_index(TagIndex(ModelVisitor::kIntervalVariable));
+    if (variable->HasName()) {
+      var_proto->set_name(variable->name());
+    }
     CPArgumentProto* const sub_proto = var_proto->add_arguments();
     sub_proto->set_argument_index(TagIndex(operation));
     for (int i = 0; i < size; ++i) {
@@ -795,6 +798,9 @@ class SecondPassVisitor : public ModelVisitor {
     CPSequenceVariableProto* const var_proto = model_proto_->add_sequences();
     var_proto->set_index(index);
     var_proto->set_type_index(TagIndex(ModelVisitor::kSequenceVariable));
+    if (sequence->HasName()) {
+      var_proto->set_name(sequence->name());
+    }
     CPArgumentProto* const sub_proto = var_proto->add_arguments();
     sub_proto->set_argument_index(TagIndex(ModelVisitor::kIntervalsArgument));
     for (int i = 0; i < sequence->size(); ++i) {

@@ -25,118 +25,170 @@ namespace operations_research {
 
 GraphExporter::~GraphExporter() {}
 
-const char GraphExporter::kGreen[] = "#A2CD5A";
-const char GraphExporter::kWhite[] = "#FAFAFA";
-const char GraphExporter::kBlue[] = "#87CEFA";
-const char GraphExporter::kYellow[] = "#FFF68F";
-const char GraphExporter::kRed[] = "#A52A2A";
-
 namespace {
+class GraphSyntax {
+ public:
+  virtual ~GraphSyntax() {}
+
+  // Node in the right syntax.
+  virtual string Node(const string& name,
+                      const string& label,
+                      const string& shape,
+                      const string& color) = 0;
+  // Adds one link in the generated graph.
+  virtual string Link(const string& source,
+                      const string& destination,
+                      const string& label) = 0;
+  // File header.
+  virtual string Header(const string& name) = 0;
+
+  // File footer.
+  virtual string Footer() = 0;
+};
+
+class DotSyntax : public GraphSyntax {
+ public:
+  virtual ~DotSyntax() {}
+
+  virtual string Node(const string& name,
+                      const string& label,
+                      const string& shape,
+                      const string& color) {
+    return StringPrintf("%s [shape=%s label=\"%s\" color=%s]\n",
+                        name.c_str(),
+                        shape.c_str(),
+                        label.c_str(),
+                        color.c_str());
+  }
+
+  // Adds one link in the generated graph.
+  virtual string Link(const string& source,
+                      const string& destination,
+                      const string& label) {
+    return StringPrintf("%s -> %s [label=%s]\n",
+                        source.c_str(),
+                        destination.c_str(),
+                        label.c_str());
+  }
+
+  // File header.
+  virtual string Header(const string& name) {
+    return StringPrintf("graph %s {\n", name.c_str());
+  }
+
+  // File footer.
+  virtual string Footer() {
+    return "}\n";
+  }
+};
+
+class GmlSyntax : public GraphSyntax {
+ public:
+  virtual ~GmlSyntax() {}
+
+  virtual string Node(const string& name,
+                      const string& label,
+                      const string& shape,
+                      const string& color) {
+    return StringPrintf("  node [\n"
+                        "    name \"%s\"\n"
+                        "    label \"%s\"\n"
+                        "    graphics [\n"
+                        "      type \"%s\"\n"
+                        "      fill \"%s\"\n"
+                        "    ]\n"
+                        "  ]\n",
+                        name.c_str(),
+                        label.c_str(),
+                        shape.c_str(),
+                        color.c_str());
+  }
+
+  // Adds one link in the generated graph.
+  virtual string Link(const string& source,
+                      const string& destination,
+                      const string& label) {
+    return StringPrintf("  edge [\n"
+                        "    label \"%s\"\n"
+                        "    source \"%s\"\n"
+                        "    target \"%s\"\n"
+                        "  ]\n",
+                        label.c_str(),
+                        source.c_str(),
+                        destination.c_str());
+  }
+
+  // File header.
+  virtual string Header(const string& name) {
+    return StringPrintf("graph [\n"
+                        "  name \"%s\"\n"
+                        , name.c_str());
+  }
+
+  // File footer.
+  virtual string Footer() {
+    return "]\n";
+  }
+};
+
 // Graph exporter that will write to a file with a given format.
 class FileGraphExporter : public GraphExporter {
  public:
-  FileGraphExporter(File* const file, GraphExporter::GraphFormat format)
-      : file_(file), format_(format) {}
+  FileGraphExporter(File* const file, GraphSyntax* const syntax)
+      : file_(file), syntax_(syntax) {}
+
   virtual ~FileGraphExporter() {}
 
-  void Write(const string& string) {
-    file_->Write(string.c_str(), string.size());
-  }
-
-// Write node in GML or DOT format.
+  // Write node in GML or DOT format.
   virtual void WriteNode(const string& name,
                          const string& label,
                          const string& shape,
                          const string& color) {
-    if (format_ == GML_FORMAT) {
-      Write(StringPrintf("  node [\n"
-                         "    name \"%s\"\n"
-                         "    label \"%s\"\n"
-                         "    graphics [\n"
-                         "      type \"%s\"\n"
-                         "      fill \"%s\"\n"
-                         "    ]\n"
-                         "  ]\n",
-                         name.c_str(),
-                         label.c_str(),
-                         shape.c_str(),
-                         color.c_str()));
-    } else if (format_ == DOT_FORMAT) {
-      Write(StringPrintf("%s [shape=%s label=\"%s\" color=%s]\n",
-                         name.c_str(),
-                         shape.c_str(),
-                         label.c_str(),
-                         color.c_str()));
-    }
+    Append(syntax_->Node(name, label, shape, color));
   }
 
   // Adds one link in the generated graph.
   virtual void WriteLink(const string& source,
                          const string& destination,
                          const string& label) {
-    switch (format_) {
-      case DOT_FORMAT: {
-        Write(StringPrintf("%s -- %s [label=%s]\n",
-                           source.c_str(),
-                           destination.c_str(),
-                           label.c_str()));
-        break;
-      }
-      case GML_FORMAT: {
-        Write(StringPrintf("  edge [\n"
-                           "    label \"%s\"\n"
-                           "    source \"%s\"\n"
-                           "    target \"%s\"\n"
-                           "  ]\n",
-                           label.c_str(),
-                           source.c_str(),
-                           destination.c_str()));
-        break;
-      }
-      default:
-        break;
-    }
+    Append(syntax_->Link(source, destination, label));
   }
 
   virtual void WriteHeader(const string& name) {
-    switch (format_) {
-      case DOT_FORMAT: {
-        Write(StringPrintf("graph %s {\n", name.c_str()));
-        break;
-      }
-      case GML_FORMAT: {
-        Write(StringPrintf("graph [\n  name \"%s\"\n", name.c_str()));
-        break;
-      }
-      default:
-        break;
-    }
+    Append(syntax_->Header(name));
   }
 
   virtual void WriteFooter() {
-    switch (format_) {
-      case DOT_FORMAT: {
-        Write("}\n");
-        break;
-      }
-      case GML_FORMAT: {
-        Write("]\n");
-        break;
-      }
-      default:
-        break;
-    }
+    Append(syntax_->Footer());
   }
 
  private:
+  void Append(const string& string) {
+    file_->Write(string.c_str(), string.size());
+  }
+
   File* const file_;
-  const GraphFormat format_;
+  scoped_ptr<GraphSyntax> syntax_;
 };
 }  // namespace
 
 GraphExporter* GraphExporter::MakeFileExporter(
     File* const file,
     GraphExporter::GraphFormat format) {
-  return new FileGraphExporter(file, format);
+  GraphSyntax* syntax = NULL;
+  switch (format) {
+    case GraphExporter::DOT_FORMAT: {
+      syntax = new DotSyntax();
+      break;
+    }
+    case GraphExporter::GML_FORMAT: {
+      syntax = new GmlSyntax();
+      break;
+    }
+    default:
+      LOG(FATAL) << "Unknown graph format";
+  }
+  CHECK(syntax != NULL);
+  return new FileGraphExporter(file, syntax);
 }
 }  // namespace operations_research
