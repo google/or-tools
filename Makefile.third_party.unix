@@ -82,7 +82,7 @@ dependencies/install/bin/pcretest: dependencies/sources/pcre/Makefile
 	cd dependencies/sources/pcre && make install
 
 dependencies/sources/pcre/Makefile: dependencies/sources/pcre/configure
-	cd dependencies/sources/pcre && ./configure --prefix=$(TOP)/dependencies/install
+	cd dependencies/sources/pcre && ./configure --disable-shared --prefix=$(TOP)/dependencies/install
 
 dependencies/sources/pcre/configure: dependencies/sources/pcre/autogen.sh
 	cd dependencies/sources/pcre && ./autogen.sh
