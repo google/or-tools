@@ -1,0 +1,2 @@
+third_party:
+	echo make third_party is not yet supported on windows platforms.
