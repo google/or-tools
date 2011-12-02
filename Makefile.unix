@@ -152,5 +152,6 @@ LDOUT = -o # need the space.
 OBJOUT = -o # need the space.
 EXEOUT = -o # need the space.
 DEL = rm -f
+DELREC = rm -rf
 S = /
 CPSEP = :

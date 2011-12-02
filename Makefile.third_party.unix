@@ -1,0 +1,129 @@
+GFLAGS_TAG=57 # version 1.6
+PROTOBUF_TAG=391 # version 2.4.1
+GOOGLE_APPUTILS_TAG=11 # trunk
+CBC_TAG=2.7.5
+GLPK_TAG=4.47
+SWIG_TAG=rel-2.0.4
+SCIP_TAG=2.1.0
+TOP ?= $(shell pwd)
+OS = $(shell uname -s)
+
+ifeq ($(wildcard dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz),)
+    CHECK_SCIP=
+else
+    CHECK_SCIP=dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
+    ifeq ($(OS),Linux)
+	BUILD_SCIP=make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC
+    endif
+    ifeq ($(OS),Darwin) # Assume Mac Os X
+	BUILD_SCIP=make ZIMPL=false READLINE=false ARCH=x86_64
+    endif
+endif
+
+ifeq ($(wildcard dependencies/archives/glpk-$(GLPK_TAG).tar.gz),)
+    CHECK_GLPSOL=
+else
+    CHECK_GLPSOL=dependencies/install/bin/glpsol
+endif
+
+# Main target.
+third_party: install_gflags install_protobuf install_google_apputils install_coin_cbc install_swig install_glpk install_scip
+
+# Install google-gflags.
+install_gflags: dependencies/install/bin/gflags_completions.sh
+
+dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags/Makefile
+	cd dependencies/sources/gflags && make install
+
+dependencies/sources/gflags/Makefile: dependencies/sources/gflags/configure
+	cd dependencies/sources/gflags && ./configure --prefix=$(TOP)/dependencies/install
+
+dependencies/sources/gflags/configure: dependencies/sources/gflags/autogen.sh
+	cd dependencies/sources/gflags && ./autogen.sh
+
+dependencies/sources/gflags/autogen.sh:
+	svn co http://google-gflags.googlecode.com/svn/trunk/ -r $(GFLAGS_TAG) dependencies/sources/gflags
+
+# Install protocol buffers.
+install_protobuf: dependencies/install/bin/protoc
+
+dependencies/install/bin/protoc: dependencies/sources/protobuf/Makefile
+	cd dependencies/sources/protobuf && make install
+
+dependencies/sources/protobuf/Makefile: dependencies/sources/protobuf/configure
+	cd dependencies/sources/protobuf && ./configure --prefix=$(TOP)/dependencies/install
+
+dependencies/sources/protobuf/configure: dependencies/sources/protobuf/autogen.sh
+	cd dependencies/sources/protobuf && ./autogen.sh
+
+dependencies/sources/protobuf/autogen.sh:
+	svn co http://protobuf.googlecode.com/svn/trunk/ -r $(PROTOBUF_TAG) dependencies/sources/protobuf
+
+# Intall Google Apputils Python.
+install_google_apputils: dependencies/sources/google-apputils/README
+
+dependencies/sources/google-apputils/README:
+	svn co http://google-apputils-python.googlecode.com/svn/trunk/ -r $(GOOGLE_APPUTILS_TAG) dependencies/sources/google-apputils
+
+# Install Coin CBC.
+install_coin_cbc: dependencies/install/bin/cbc
+
+dependencies/install/bin/cbc: dependencies/sources/coin-cbc/Makefile
+	cd dependencies/sources/coin-cbc && make install
+
+dependencies/sources/coin-cbc/Makefile:
+	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/coin-cbc
+	cd dependencies/sources/coin-cbc && ./configure --prefix=$(TOP)/dependencies/install
+
+# Install pcre.
+install_pcre: dependencies/install/bin/pcretest
+
+dependencies/install/bin/pcretest: dependencies/sources/pcre/Makefile
+	cd dependencies/sources/pcre && make install
+
+dependencies/sources/pcre/Makefile: dependencies/sources/pcre/configure
+	cd dependencies/sources/pcre && ./configure --prefix=$(TOP)/dependencies/install
+
+dependencies/sources/pcre/configure: dependencies/sources/pcre/autogen.sh
+	cd dependencies/sources/pcre && ./autogen.sh
+
+dependencies/sources/pcre/autogen.sh:
+	svn co svn://vcs.exim.org/pcre/code/trunk dependencies/sources/pcre
+
+# Install swig.
+install_swig: dependencies/install/bin/swig
+
+dependencies/install/bin/swig: dependencies/sources/swig/Makefile
+	cd dependencies/sources/swig && make && make install
+
+dependencies/sources/swig/Makefile: dependencies/sources/swig/configure dependencies/install/bin/pcretest
+	cd dependencies/sources/swig && ./configure --prefix=$(TOP)/dependencies/install --with-pcre-prefix=$(TOP)/dependencies/install --disable-ccache
+
+dependencies/sources/swig/configure: dependencies/sources/swig/autogen.sh
+	cd dependencies/sources/swig && ./autogen.sh
+
+dependencies/sources/swig/autogen.sh:
+	svn co https://swig.svn.sourceforge.net/svnroot/swig/tags/$(SWIG_TAG) dependencies/sources/swig
+
+# Install glpk if present.
+install_glpk: $(CHECK_GLPSOL)
+
+dependencies/install/bin/glpsol: dependencies/sources/glpk-$(GLPK_TAG)/Makefile
+	cd dependencies/sources/glpk-$(GLPK_TAG) && make install
+
+dependencies/sources/glpk-$(GLPK_TAG)/Makefile: dependencies/sources/glpk-$(GLPK_TAG)/configure
+	cd dependencies/sources/glpk-$(GLPK_TAG) && ./configure --prefix=$(TOP)/dependencies/install
+
+dependencies/sources/glpk-$(GLPK_TAG)/configure: dependencies/archives/glpk-$(GLPK_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/glpk-$(GLPK_TAG).tar.gz
+
+# Install scip if present.
+install_scip: $(CHECK_SCIP)
+
+dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz
+	cd dependencies/install && tar xvzmf ../archives/ziboptsuite-$(SCIP_TAG).tgz && cd ziboptsuite-$(SCIP_TAG) && $(BUILD_SCIP)
+
+# Clean everything.
+clean_third_party:
+	$(DELREC) dependencies/install
+	$(DELREC) dependencies/sources/*

@@ -72,4 +72,5 @@ LD = link /DLL
 S=\\
 CPSEP=;
 DEL=del
+DELREC=del /s
 JNILIBEXT=dll

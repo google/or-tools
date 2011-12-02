@@ -29,6 +29,9 @@ include Makefile.def
 # Then include specific system commands and definitions
 include Makefile.$(SYSTEM)
 
+# Rules to fetch and build third party dependencies.
+include Makefile.third_party.$(SYSTEM)
+
 # Include .mk files.
 include Makefile.cpp.mk
 include Makefile.python.mk
