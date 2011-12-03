@@ -1,17 +1,20 @@
+# SVN tags of dependencies to checkout.
 GFLAGS_TAG=57 # version 1.6
 PROTOBUF_TAG=391 # version 2.4.1
 GOOGLE_APPUTILS_TAG=11 # trunk
 CBC_TAG=2.7.5
-GLPK_TAG=4.47
 SWIG_TAG=rel-2.0.4
-SCIP_TAG=2.1.0
-TOP ?= $(shell pwd)
-OS = $(shell uname -s)
 
+# Useful variable.
+TOP ?= $(shell pwd)
+
+# Build extra dependencies (glpk, scip) from archive only if the archive is present.
+GLPK_TAG=4.47
+SCIP_TAG=2.1.0
 ifeq ($(wildcard dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz),)
-    CHECK_SCIP=
+    SCIP_TARGET=
 else
-    CHECK_SCIP=dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
+    SCIP_TARGET=dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
     ifeq ($(OS),Linux)
 	BUILD_SCIP=make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC
     endif
@@ -21,13 +24,20 @@ else
 endif
 
 ifeq ($(wildcard dependencies/archives/glpk-$(GLPK_TAG).tar.gz),)
-    CHECK_GLPSOL=
+    GLPK_TARGET=
 else
-    CHECK_GLPSOL=dependencies/install/bin/glpsol
+    GLPK_TARGET=dependencies/install/bin/glpsol
 endif
 
 # Main target.
-third_party: install_gflags install_protobuf install_google_apputils install_coin_cbc install_swig install_glpk install_scip
+third_party: \
+	install_gflags \
+	install_protobuf \
+	install_google_apputils \
+	install_swig \
+	install_coin_cbc \
+	install_glpk \
+	install_scip
 
 # Install google-gflags.
 install_gflags: dependencies/install/bin/gflags_completions.sh
@@ -106,7 +116,7 @@ dependencies/sources/swig/autogen.sh:
 	svn co https://swig.svn.sourceforge.net/svnroot/swig/tags/$(SWIG_TAG) dependencies/sources/swig
 
 # Install glpk if present.
-install_glpk: $(CHECK_GLPSOL)
+install_glpk: $(GLPK_TARGET)
 
 dependencies/install/bin/glpsol: dependencies/sources/glpk-$(GLPK_TAG)/Makefile
 	cd dependencies/sources/glpk-$(GLPK_TAG) && make install
@@ -118,7 +128,7 @@ dependencies/sources/glpk-$(GLPK_TAG)/configure: dependencies/archives/glpk-$(GL
 	cd dependencies/sources && tar xvzmf ../archives/glpk-$(GLPK_TAG).tar.gz
 
 # Install scip if present.
-install_scip: $(CHECK_SCIP)
+install_scip: $(SCIP_TARGET)
 
 dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz
 	cd dependencies/install && tar xvzmf ../archives/ziboptsuite-$(SCIP_TAG).tgz && cd ziboptsuite-$(SCIP_TAG) && $(BUILD_SCIP)
