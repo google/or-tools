@@ -10,24 +10,24 @@ help:
 all: cplibs cpexe pycp javacp algorithmslibs pyalgorithms javaalgorithms graphlibs pygraph javagraph lplibs lpexe pylp javalp
 
 # First, we try to detect the platform.
-include Makefile.port
+include Makefiles/Makefile.port
 
 # We include predefined variables
-include Makefile.def
+include Makefiles/Makefile.def
 
 # Then we overwrite the local ones if the Makefile.local file exists.
 -include Makefile.local
 
 # Then include specific system commands and definitions
-include Makefile.$(SYSTEM)
+include Makefiles/Makefile.$(SYSTEM)
 
 # Rules to fetch and build third party dependencies.
-include Makefile.third_party.$(SYSTEM)
+include Makefiles/Makefile.third_party.$(SYSTEM)
 
 # Include .mk files.
-include Makefile.cpp.mk
-include Makefile.python.mk
-include Makefile.java.mk
+include Makefiles/Makefile.cpp.mk
+include Makefiles/Makefile.python.mk
+include Makefiles/Makefile.java.mk
 
 # Finally include user makefile if it exists
 -include Makefile.user
