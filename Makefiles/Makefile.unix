@@ -44,9 +44,6 @@ JNIDEBUG = -O1 -DNDEBUG
 SYSCFLAGS = -fPIC
 CCC = g++
 
-# ----- OS Dependent -----
-OS = $(shell uname -s)
-
 # Check wether CBC/CLP need a coin subdir in library.
 ifdef UNIX_CBC_DIR
 ifneq ($(wildcard $(UNIX_CBC_DIR)/lib/coin),)

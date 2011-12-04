@@ -44,7 +44,6 @@ JAR_BIN="$(WINDOWS_JDK_DIR)/bin/jar"
 
 FIX_SWIG=tools\\sed.exe -i -e 's/Tlong/T_long/g' gen/com/google/ortools/constraintsolver/Solver.java
 
-
 CFLAGS= -nologo $(SYSCFLAGS) $(DEBUG) /I.  /Igen $(GFLAGS_INC) $(ZLIB_INC)\
 	 $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) /D__WIN32__
 JNIFLAGS=$(CFLAGS) $(JAVA_INC)
