@@ -23,17 +23,7 @@ UNIX_PROTOBUF_DIR=../protobuf-2.4.1
 #UNIX_SCIP_DIR=../ziboptsuite-2.1.0/scip-2.1.0
 
 # Linux jdk root
-# first, determine 32 or 64 bits.
-ifeq "$(SYSTEM)" "unix"
-  LBITS := $(shell getconf LONG_BIT)
-  ifeq ($(LBITS),64)
-     JDK_EXT=64
-  else
-    JDK_EXT=32
-  endif
-endif
-
-LINUX_JDK_ROOT=/usr/local/buildtools/java/jdk-$(JDK_EXT)
+LINUX_JDK_ROOT=/usr/local/buildtools/java/jdk-$(PTRLENGTH)
 # Include files path for java on mac os X
 MAC_JDK_HEADERS=/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/include
 #MAC_JDK_HEADERS=/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bundle/Headers

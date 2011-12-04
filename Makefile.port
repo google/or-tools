@@ -1,0 +1,34 @@
+# Useful variable.
+TOP ?= $(shell pwd)
+OS = $(shell uname -s)
+
+# Let's discover something about where we run
+ifeq "$(SHELL)" "cmd.exe"
+  SYSTEM=win
+else
+  ifeq "$(SHELL)" "sh.exe"
+    SYSTEM=win
+    PLATFORM=WINDOWS
+  else
+    SYSTEM=unix
+    ifeq ($(OS),Linux)
+      PLATFORM=LINUX
+      LBITS : = $(shell getconf LONG_BIT)
+      ifeq ($(LBITS),64)
+        PTRLENGTH=64
+      else
+        PTRLENGTH=32
+      endif
+    endif
+    ifeq ($(OS),Darwin) # Assume Mac Os X
+      PLATFORM=MACOSX
+      PTRLENGTH=64
+    endif
+  endif
+endif
+
+printport:
+	@echo SHELL=$(SHELL)
+	@echo SYSTEM=$(SYSTEM)
+	@echo PLATFORM=$(PLATFORM)
+	@echo PTRLENGTH=$(PTRLENGTH)

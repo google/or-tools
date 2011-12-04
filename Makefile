@@ -9,18 +9,10 @@ help:
 
 all: cplibs cpexe pycp javacp algorithmslibs pyalgorithms javaalgorithms graphlibs pygraph javagraph lplibs lpexe pylp javalp
 
-# Let's discover something about where we run
-ifeq "$(SHELL)" "cmd.exe"
-  SYSTEM=win
-else
-  ifeq "$(SHELL)" "sh.exe"
-    SYSTEM=win
-  else
-    SYSTEM=unix
-  endif
-endif
+# First, we try to detect the platform.
+include Makefile.port
 
-# First, we include predefined variables
+# We include predefined variables
 include Makefile.def
 
 # Then we overwrite the local ones if the Makefile.local file exists.

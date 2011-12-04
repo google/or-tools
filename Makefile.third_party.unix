@@ -5,22 +5,21 @@ GOOGLE_APPUTILS_TAG=11 # trunk
 CBC_TAG=2.7.5
 SWIG_TAG=rel-2.0.4
 
-# Useful variable.
-TOP ?= $(shell pwd)
-
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
-GLPK_TAG=4.47 # The archive should be glpk-4.47.tar.gz
-SCIP_TAG=2.1.0 # The archive should be ziboptsuite-2.1.0.tgz
+# The archive should be glpk-4.47.tar.gz
+GLPK_TAG=4.47
+# The archive should be ziboptsuite-2.1.0.tgz
+SCIP_TAG=2.1.0
 
 # Detect if scip archive is there.
 ifeq ($(wildcard dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz),)
     SCIP_TARGET=
 else
     SCIP_TARGET=dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
-    ifeq ($(OS),Linux)
+    ifeq ($(PLATFORM), LINUX)
 	BUILD_SCIP=make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC
     endif
-    ifeq ($(OS),Darwin) # Assume Mac Os X
+    ifeq ($(PLATFORM), MACOSX)
 	BUILD_SCIP=make ZIMPL=false READLINE=false ARCH=x86_64
     endif
 endif
