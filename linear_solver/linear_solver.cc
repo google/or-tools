@@ -80,28 +80,6 @@ string CreateValidConstraintName(
 
 }  // namespace
 
-// ----- MPConstraint -----
-
-void MPConstraint::AddTerm(MPVariable* const var, double coeff) {
-  CHECK_NOTNULL(var);
-  if (coeff != 0.0) {
-    double* coefficient = FindOrNull(coefficients_, var);
-    if (coefficient != NULL) {
-      const double old_value = (*coefficient);
-      const double new_value = (*coefficient) + coeff;
-      (*coefficient) = new_value;
-      interface_->SetCoefficient(this, var, new_value, old_value);
-    } else {
-      coefficients_[var] = coeff;
-      interface_->SetCoefficient(this, var, coeff, 0.0);
-    }
-  }
-}
-
-void MPConstraint::AddTerm(MPVariable* const var) {
-  AddTerm(var, 1.0);
-}
-
 void MPConstraint::SetCoefficient(MPVariable* const var, double coeff) {
   CHECK_NOTNULL(var);
   double* coefficient = FindOrNull(coefficients_, var);
@@ -168,37 +146,19 @@ bool MPConstraint::ContainsNewVariables() {
 
 // ----- MPObjective -----
 
-void MPObjective::AddTerm(MPVariable* const var, double coeff) {
-  CHECK_NOTNULL(var);
-  if (coeff != 0.0) {
-    double* coefficient = FindOrNull(coefficients_, var);
-    if (coefficient != NULL) {
-      (*coefficient) += coeff;
-      interface_->SetObjectiveCoefficient(var, *coefficient);
-    } else {
-      coefficients_[var] = coeff;
-      interface_->SetObjectiveCoefficient(var, coeff);
-    }
-  }
-}
-
-void MPObjective::AddTerm(MPVariable* const var) {
-  AddTerm(var, 1.0);
-}
-
 void MPObjective::SetCoefficient(MPVariable* const var, double coeff) {
   CHECK_NOTNULL(var);
   coefficients_[var] = coeff;
   interface_->SetObjectiveCoefficient(var, coeff);
 }
 
-void MPObjective::AddOffset(double value) {
-  offset_ += value;
+void MPObjective::SetOffset(double value) {
+  offset_ = value;
   interface_->SetObjectiveOffset(offset_);
 }
 
-void MPObjective::SetOffset(double value) {
-  offset_ = value;
+void MPObjective::AddOffset(double value) {
+  offset_ += value;
   interface_->SetObjectiveOffset(offset_);
 }
 
@@ -265,24 +225,16 @@ void MPSolver::ClearObjective() {
   linear_objective_->Clear();
 }
 
-void MPSolver::AddObjectiveTerm(MPVariable* const var, double coeff) {
-  linear_objective_->AddTerm(var, coeff);
-}
-
-void MPSolver::AddObjectiveTerm(MPVariable* const var) {
-  linear_objective_->AddTerm(var);
-}
-
 void MPSolver::SetObjectiveCoefficient(MPVariable* const var, double coeff) {
   linear_objective_->SetCoefficient(var, coeff);
 }
 
-void MPSolver::AddObjectiveOffset(double value) {
-  linear_objective_->AddOffset(value);
-}
-
 void MPSolver::SetObjectiveOffset(double value) {
   linear_objective_->SetOffset(value);
+}
+
+void MPSolver::AddObjectiveOffset(double value) {
+  linear_objective_->AddOffset(value);
 }
 
 void MPSolver::SetOptimizationDirection(bool maximize) {
@@ -410,10 +362,10 @@ bool MPSolver::CheckAllNamesValidity() {
 
 // ----- Methods using protocol buffers -----
 
-MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& model) {
+MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& input_model) {
   hash_map<string, MPVariable*> variables;
-  for (int i = 0; i < model.variables_size(); ++i) {
-    const MPVariableProto& var_proto = model.variables(i);
+  for (int i = 0; i < input_model.variables_size(); ++i) {
+    const MPVariableProto& var_proto = input_model.variables(i);
     const string& id = var_proto.id();
     if (!ContainsKey(variables, id)) {
       MPVariable* variable = MakeNumVar(var_proto.lb(), var_proto.ub(), id);
@@ -425,9 +377,9 @@ MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& model) {
   }
   // To detect duplicate variables in each constraint, and in the objective.
   hash_set<MPVariable*> tmp_variable_set;
-  for (int i = 0; i < model.constraints_size(); ++i) {
+  for (int i = 0; i < input_model.constraints_size(); ++i) {
     tmp_variable_set.clear();
-    const MPConstraintProto& ct_proto = model.constraints(i);
+    const MPConstraintProto& ct_proto = input_model.constraints(i);
     const string& ct_id = ct_proto.has_id() ? ct_proto.id() : "";
     MPConstraint* const ct = MakeRowConstraint(ct_proto.lb(),
                                                ct_proto.ub(),
@@ -445,14 +397,14 @@ MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& model) {
             << " constraint; keeping only the last term into account.\n"
             << "Variable: " << variable->name()
             << ", in Constraint: " << ct_id
-            << ", in Model '" << model.name() << "'.";
+            << ", in Model '" << input_model.name() << "'.";
       }
       ct->SetCoefficient(variable, term_proto.coefficient());
     }
   }
   tmp_variable_set.clear();
-  for (int i = 0; i < model.objective_terms_size(); ++i) {
-    const MPTermProto& term_proto = model.objective_terms(i);
+  for (int i = 0; i < input_model.objective_terms_size(); ++i) {
+    const MPTermProto& term_proto = input_model.objective_terms(i);
     const string& id = term_proto.variable_id();
     MPVariable* variable = FindPtrOrNull(variables, id);
     if (variable == NULL) {
@@ -463,32 +415,32 @@ MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& model) {
           << "Multiple terms on the same variable within the"
           << " objective; keeping only the last term into account.\n"
           << "Variable: " << variable->name()
-          << ", in Model '" << model.name() << "'.";
+          << ", in Model '" << input_model.name() << "'.";
     }
     SetObjectiveCoefficient(variable, term_proto.coefficient());
   }
-  SetOptimizationDirection(model.maximize());
-  if (model.has_objective_offset()) {
-    linear_objective_->SetOffset(model.objective_offset());
+  SetOptimizationDirection(input_model.maximize());
+  if (input_model.has_objective_offset()) {
+    linear_objective_->SetOffset(input_model.objective_offset());
   }
   return MPSolver::NO_ERROR;
 }
 
-void MPSolver::ExportModel(MPModelProto* model) const {
-  CHECK_NOTNULL(model);
-  if (model->variables_size() > 0 ||
-      model->has_maximize() ||
-      model->objective_terms_size() > 0 ||
-      model->constraints_size() > 0 ||
-      model->has_name() ||
-      model->has_objective_offset()) {
+void MPSolver::ExportModel(MPModelProto* output_model) const {
+  CHECK_NOTNULL(output_model);
+  if (output_model->variables_size() > 0 ||
+      output_model->has_maximize() ||
+      output_model->objective_terms_size() > 0 ||
+      output_model->constraints_size() > 0 ||
+      output_model->has_name() ||
+      output_model->has_objective_offset()) {
     LOG(WARNING) << "The model protocol buffer is not empty, "
                  << "it will be overwritten.";
-    model->clear_variables();
-    model->clear_maximize();
-    model->clear_objective_terms();
-    model->clear_constraints();
-    model->clear_name();
+    output_model->clear_variables();
+    output_model->clear_maximize();
+    output_model->clear_objective_terms();
+    output_model->clear_constraints();
+    output_model->clear_name();
   }
 
   // Variables need non-empty names for the model protocol buffer, so
@@ -498,7 +450,7 @@ void MPSolver::ExportModel(MPModelProto* model) const {
   // Variables
   for (int j = 0; j < variables_.size(); ++j) {
     MPVariable* const var = variables_[j];
-    MPVariableProto* const variable_proto = model->add_variables();
+    MPVariableProto* const variable_proto = output_model->add_variables();
     valid_variable_names[var] = CreateValidVariableName(*var, j);
     variable_proto->set_id(valid_variable_names[var]);
     variable_proto->set_lb(var->lb());
@@ -509,7 +461,7 @@ void MPSolver::ExportModel(MPModelProto* model) const {
   // Constraints
   for (int i = 0; i < constraints_.size(); ++i) {
     MPConstraint* const constraint = constraints_[i];
-    MPConstraintProto* const constraint_proto = model->add_constraints();
+    MPConstraintProto* const constraint_proto = output_model->add_constraints();
     // Constraint names need to be non-empty.
     string valid_constraint_name = CreateValidConstraintName(*constraint, i);
     constraint_proto->set_id(valid_constraint_name);
@@ -533,12 +485,12 @@ void MPSolver::ExportModel(MPModelProto* model) const {
        ++it) {
     MPVariable* const var = it->first;
     const double coef = it->second;
-    MPTermProto* const term = model->add_objective_terms();
+    MPTermProto* const term = output_model->add_objective_terms();
     term->set_variable_id(valid_variable_names[var]);
     term->set_coefficient(coef);
   }
-  model->set_maximize(Maximization());
-  model->set_objective_offset(linear_objective_->offset_);
+  output_model->set_maximize(Maximization());
+  output_model->set_objective_offset(linear_objective_->offset_);
 }
 
 void MPSolver::FillSolutionResponse(MPSolutionResponse* response) const {

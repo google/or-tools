@@ -34,18 +34,16 @@
 %ignore MakeNumVarArray;
 %ignore MakeIntVarArray;
 %ignore MakeBoolVarArray;
-// The following 3 methods that use protocol buffers as output
-// arguments are ignored as they are too difficult to wrap and there
-// is no immediate use case.
-%ignore ExportModel;
-%ignore SolveWithProtocolBuffers;
-%ignore FillSolutionResponse;
 // Access to the underlying solver is available only in C++.
 %ignore underlying_solver;
 
 namespace operations_research {
 %pythoncode {
 
+# The classes below allow linear expressions to be expressed naturally with the
+# usual arithmetic operators +-*/ and with constant numbers, which makes the
+# python API very intuitive. See RunLinearExampleNaturalLanguageAPI() in
+# ../python/linear_programming.py for an example.
 class LinearExpr(object):
   def DoVisit(self, coeffs, multiplier):
     raise NotImplementedError
@@ -146,6 +144,7 @@ class ProductCst(LinearExpr):
       return self.__expr.DoVisit(coeffs, current_multiplier)
     return 0.0
 
+
 class Sum(LinearExpr):
   def __init__(self, left, right):
     self.__left = left
@@ -158,6 +157,7 @@ class Sum(LinearExpr):
     constant = self.__left.DoVisit(coeffs, multiplier)
     constant += self.__right.DoVisit(coeffs, multiplier)
     return constant
+
 
 class SumArray(LinearExpr):
   def __init__(self, array):
@@ -187,6 +187,7 @@ class SumCst(LinearExpr):
   def DoVisit(self, coeffs, multiplier):
     constant = self.__expr.DoVisit(coeffs, multiplier)
     return constant + self.__cst * multiplier
+
 
 class LinearConstraint(object):
   def __init__(self, expr, lb, ub):
@@ -224,6 +225,7 @@ class LinearConstraint(object):
     return constraint
 }
 
+# We also apply the same idea to MPVariable.
 %extend MPVariable {
   string __str__() {
     return self->name();
@@ -319,6 +321,8 @@ class LinearConstraint(object):
   }
 }
 
+# See ../python/linear_programming.py for example on how to use the nice
+# extended python API provided below.
 %extend MPSolver {
   %pythoncode {
     def Add(self, constraint):
@@ -354,7 +358,8 @@ class LinearConstraint(object):
 
 } // namespace operations_research
 
-#endif
+
+#endif  // SWIGPYTHON
 
 #ifdef SWIGJAVA
 
@@ -425,10 +430,6 @@ namespace operations_research {
 %rename (timeLimit) MPSolver::time_limit;
 %rename (wallTime) MPSolver::wall_time;
 %rename (writeModelFilename) MPSolver::write_model_filename;
-// Ignore the deprecated and soon-to-be retired API
-%ignore MPConstraint::AddTerm;
-%ignore MPObjective::AddTerm;
-%ignore MPSolver::AddObjectiveTerm;
 // Ignore code on MPSolver, see replacement java code below.
 %ignore MPSolver::MakeVarArray;
 %ignore MPSolver::MakeNumVarArray;

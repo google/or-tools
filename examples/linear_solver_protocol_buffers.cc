@@ -80,7 +80,7 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
   MPSolver::SolveWithProtocolBuffers(model_request, &solution_response);
 
   // The problem has an optimal solution.
-  CHECK_EQ(MPSolver::OPTIMAL, solution_response.result_status());
+  CHECK_EQ(MPSolutionResponse::OPTIMAL, solution_response.result_status());
 
   LOG(INFO) << "objective = " <<  solution_response.objective_value();
   const int num_non_zeros = solution_response.solution_values_size();

@@ -21,9 +21,9 @@ package operations_research;
 
 message MPVariableProto {
   required string id = 1;  // key
-  required double lb = 2;
-  required double ub = 3;
-  required bool integer = 4;
+  required double lb = 2;  // lower bound
+  required double ub = 3;  // upper bound
+  required bool integer = 4;  // must be integer?
 }
 
 message MPTermProto {
@@ -32,6 +32,7 @@ message MPTermProto {
 }
 
 message MPConstraintProto {
+  // See MPVariableProto for the common idioms.
   required double lb = 1;
   required double ub = 2;
   // The same variable_id should not appear twice in the list of terms.
