@@ -145,9 +145,12 @@ dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: dependen
 clean_third_party:
 	$(DELREC) dependencies/install
 	$(DELREC) dependencies/sources/*
+	$(DEL) Makefile.local
 
 # Create Makefile.local
-makefile_third_party:
+makefile_third_party: Makefile.local
+
+Makefile.local:
 	@$(DEL) Makefile.local
 	@echo UNIX_PYTHON_VER=python$(PYTHONVERSION) > Makefile.local
 	@echo UNIX_GFLAGS_DIR=$(TOP)/dependencies/install >> Makefile.local
