@@ -14,24 +14,24 @@ python: pycp pyalgorithms pygraph pylp
 all: cc java python
 
 # First, we try to detect the platform.
-include Makefiles/Makefile.port
+include makefiles/Makefile.port
 
 # We include predefined variables
-include Makefiles/Makefile.def
+include makefiles/Makefile.def
 
 # Then we overwrite the local ones if the Makefile.local file exists.
 -include Makefile.local
 
 # Then include specific system commands and definitions
-include Makefiles/Makefile.$(SYSTEM)
+include makefiles/Makefile.$(SYSTEM)
 
 # Rules to fetch and build third party dependencies.
-include Makefiles/Makefile.third_party.$(SYSTEM)
+include makefiles/Makefile.third_party.$(SYSTEM)
 
 # Include .mk files.
-include Makefiles/Makefile.cpp.mk
-include Makefiles/Makefile.python.mk
-include Makefiles/Makefile.java.mk
+include makefiles/Makefile.cpp.mk
+include makefiles/Makefile.python.mk
+include makefiles/Makefile.java.mk
 
 # Finally include user makefile if it exists
 -include Makefile.user
