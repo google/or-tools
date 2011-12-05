@@ -7,7 +7,11 @@ help:
 	@echo "  - graph: graphlibs pygraph javagraph"
 	@echo "  - misc: clean"
 
-all: cplibs cpexe pycp javacp algorithmslibs pyalgorithms javaalgorithms graphlibs pygraph javagraph lplibs lpexe pylp javalp
+.PHONY : python cc java
+cc: cplibs cpexe algorithmslibs graphlibs lplibs lpexe
+java: javacp javaalgorithms javagraph javalp
+python: pycp pyalgorithms pygraph pylp
+all: cc java python
 
 # First, we try to detect the platform.
 include Makefiles/Makefile.port
