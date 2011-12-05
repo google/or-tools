@@ -23,21 +23,24 @@ else
       LBITS = $(shell getconf LONG_BIT)
       ifeq ($(LBITS),64)
         PTRLENGTH = 64
-        CANDIDATE_JDK = /usr/local/buildtools/java/jdk-64 \
-                        /usr/lib/jvm/java-1.7.0-openjdk.x86_64
+        CANDIDATE_JDK_HEADERS = \
+          /usr/local/buildtools/java/jdk-64 \
+          /usr/lib/jvm/java-1.7.0-openjdk.x86_64
       else
         PTRLENGTH = 32
-        CANDIDATE_JDK = /usr/local/buildtools/java/jdk-32 \
-                        /usr/lib/jvm/java-1.7.0-openjdk-i386
+        CANDIDATE_JDK_HEADERS = \
+          /usr/local/buildtools/java/jdk-32 \
+          /usr/lib/jvm/java-1.7.0-openjdk-i386
       endif
     endif
     ifeq ($(OS),Darwin) # Assume Mac Os X
       PLATFORM = MACOSX
       PTRLENGTH = 64
-      CANDIDATE_JDK = /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/include \
-                      /Developer/SDKs/MacOSX10.7.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers
+      CANDIDATE_JDK_HEADERS = \
+        /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/include \
+        /Developer/SDKs/MacOSX10.7.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers
     endif
-    SELECTED_JDK = $(wildcard $(CANDIDATE_JDK))
+    SELECTED_JDK_HEADERS = $(wildcard $(CANDIDATE_JDK_HEADERS))
   endif
 endif
 
@@ -48,6 +51,6 @@ printport:
 	@echo PLATFORM = $(PLATFORM)
 	@echo PTRLENGTH = $(PTRLENGTH)
 	@echo PYTHONVERSION = $(PYTHONVERSION)
-	@echo CANDIDATE_JDK = $(CANDIDATE_JDK)
-	@echo SELECTED_JDK = $(SELECTED_JDK)
+	@echo CANDIDATE_JDK_HEADERS = $(CANDIDATE_JDK_HEADERS)
+	@echo SELECTED_JDK_HEADERS = $(SELECTED_JDK_HEADERS)
 
