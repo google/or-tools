@@ -32,7 +32,7 @@ ifeq ($(wildcard dependencies/archives/glpk-$(GLPK_TAG).tar.gz),)
     GLPK_MAKEFILE = # GLPK support not included
 else
     GLPK_TARGET=dependencies/install/bin/glpsol
-    CLPK_MAKEFILE = UNIX_GLPK_DIR=$(TOP)/dependencies/install
+    GLPK_MAKEFILE = UNIX_GLPK_DIR=$(TOP)/dependencies/install
 endif
 
 # Main target.
