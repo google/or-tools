@@ -1,37 +1,37 @@
 # SVN tags of dependencies to checkout.
-GFLAGS_TAG=57 # version 1.6
-PROTOBUF_TAG=391 # version 2.4.1
-GOOGLE_APPUTILS_TAG=11 # trunk
-CBC_TAG=2.7.5
-SWIG_TAG=rel-2.0.4
+GFLAGS_TAG = 57 # version 1.6
+PROTOBUF_TAG = 391 # version 2.4.1
+GOOGLE_APPUTILS_TAG = 11 # trunk
+CBC_TAG = 2.7.5
+SWIG_TAG = rel-2.0.4
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.47.tar.gz
-GLPK_TAG=4.47
+GLPK_TAG = 4.47
 # The archive should be ziboptsuite-2.1.0.tgz
-SCIP_TAG=2.1.0
+SCIP_TAG = 2.1.0
 
 # Detect if scip archive is there.
 ifeq ($(wildcard dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz),)
-    SCIP_TARGET=
-    SCIP_MAKEFILE=# UNIX_SCIP_DIR support not compiled.
+    SCIP_TARGET =
+    SCIP_MAKEFILE = # UNIX_SCIP_DIR support not included.
 else
-    SCIP_TARGET=dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
-    SCIP_MAKEFILE=UNIX_SCIP_DIR=$(TOP)/dependencies/install/ziboptsuite-2.1.0/scip-2.1.0
+    SCIP_TARGET = dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
+    SCIP_MAKEFILE = UNIX_SCIP_DIR=$(TOP)/dependencies/install/ziboptsuite-2.1.0/scip-2.1.0
     ifeq ($(PLATFORM), LINUX)
-	BUILD_SCIP=make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC
+	BUILD_SCIP = make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC
     endif
     ifeq ($(PLATFORM), MACOSX)
-	BUILD_SCIP=make ZIMPL=false READLINE=false ARCH=x86_64
+	BUILD_SCIP = make ZIMPL=false READLINE=false ARCH=x86_64
     endif
 endif
 
 # Detect if GLPK archive is there.
 ifeq ($(wildcard dependencies/archives/glpk-$(GLPK_TAG).tar.gz),)
     GLPK_TARGET =
-    GLPK_MAKEFILE = # GLPK support not included
+    GLPK_MAKEFILE = # GLPK support not included.
 else
-    GLPK_TARGET=dependencies/install/bin/glpsol
+    GLPK_TARGET = dependencies/install/bin/glpsol
     GLPK_MAKEFILE = UNIX_GLPK_DIR=$(TOP)/dependencies/install
 endif
 
@@ -152,12 +152,12 @@ makefile_third_party: Makefile.local
 
 Makefile.local:
 	@$(DEL) Makefile.local
-	@echo UNIX_PYTHON_VER=$(PYTHONVERSION) > Makefile.local
-	@echo UNIX_GFLAGS_DIR=$(TOP)/dependencies/install >> Makefile.local
-	@echo UNIX_SWIG_BINARY=$(TOP)/dependencies/install/bin/swig >> Makefile.local
-	@echo UNIX_PROTOBUF_DIR=$(TOP)/dependencies/install >> Makefile.local
-	@echo UNIX_CLP_DIR=$(TOP)/dependencies/install >> Makefile.local
-	@echo UNIX_CBC_DIR=$(TOP)/dependencies/install >> Makefile.local
+	@echo UNIX_PYTHON_VER = $(PYTHONVERSION) > Makefile.local
+	@echo UNIX_GFLAGS_DIR = $(TOP)/dependencies/install >> Makefile.local
+	@echo UNIX_SWIG_BINARY = $(TOP)/dependencies/install/bin/swig >> Makefile.local
+	@echo UNIX_PROTOBUF_DIR = $(TOP)/dependencies/install >> Makefile.local
+	@echo UNIX_CLP_DIR = $(TOP)/dependencies/install >> Makefile.local
+	@echo UNIX_CBC_DIR = $(TOP)/dependencies/install >> Makefile.local
 	@echo $(GLPK_MAKEFILE) >> Makefile.local
 	@echo $(SCIP_MAKEFILE) >> Makefile.local
-	@echo MAC_JDK_HEADERS=$(SELECTED_JDK_HEADERS) >> Makefile.local
+	@echo MAC_JDK_HEADERS = $(SELECTED_JDK_HEADERS) >> Makefile.local
