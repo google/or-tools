@@ -21,9 +21,9 @@ from google.apputils import app
 from linear_solver import pywraplp
 
 
-def RunLinearExampleAlgebraicAPI(optimization_problem_type):
+def RunLinearExampleNaturalLanguageAPI(optimization_problem_type):
   """Example of simple linear program with natural language API."""
-  solver = pywraplp.Solver('RunLinearExampleAlgebraicAPI',
+  solver = pywraplp.Solver('RunLinearExampleNaturalLanguageAPI',
                            optimization_problem_type)
   infinity = solver.infinity()
   # x1, x2 and x3 are continuous non-negative variables.
@@ -107,26 +107,31 @@ def SolveAndPrint(solver, variable_list, constraint_list):
            (i, constraint.dual_value(), constraint.activity()))
 
 
-def RunAllLinearExampleAlgebraicAPI():
+def Announce(solver, api_type):
+  print ('---- Linear programming example with ' + solver + ' (' +
+         api_type + ') -----')
+
+
+def RunAllLinearExampleNaturalLanguageAPI():
   if hasattr(pywraplp.Solver, 'GLPK_LINEAR_PROGRAMMING'):
-    print '---- Linear programming example with GLPK (algebraic API) ----'
-    RunLinearExampleAlgebraicAPI(pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
+    Announce('GLPK', 'natural language API')
+    RunLinearExampleNaturalLanguageAPI(pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
   if hasattr(pywraplp.Solver, 'CLP_LINEAR_PROGRAMMING'):
-    print '---- Linear programming example with CLP (algebraic API) ----'
-    RunLinearExampleAlgebraicAPI(pywraplp.Solver.CLP_LINEAR_PROGRAMMING)
+    Announce('CLP', 'natural language API')
+    RunLinearExampleNaturalLanguageAPI(pywraplp.Solver.CLP_LINEAR_PROGRAMMING)
 
 
 def RunAllLinearExampleCppStyleAPI():
   if hasattr(pywraplp.Solver, 'GLPK_LINEAR_PROGRAMMING'):
-    print '---- Linear programming example with GLPK (C++ style API) ----'
+    Announce('GLPK', 'C++ style API')
     RunLinearExampleCppStyleAPI(pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
   if hasattr(pywraplp.Solver, 'CLP_LINEAR_PROGRAMMING'):
-    print '---- Linear programming example with CLP (C++ style API) ----'
+    Announce('CLP', 'C++ style API')
     RunLinearExampleCppStyleAPI(pywraplp.Solver.CLP_LINEAR_PROGRAMMING)
 
 
 def main(unused_argv):
-  RunAllLinearExampleAlgebraicAPI()
+  RunAllLinearExampleNaturalLanguageAPI()
   RunAllLinearExampleCppStyleAPI()
 
 
