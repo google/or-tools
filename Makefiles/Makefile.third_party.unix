@@ -152,7 +152,7 @@ makefile_third_party: Makefile.local
 
 Makefile.local:
 	@$(DEL) Makefile.local
-	@echo UNIX_PYTHON_VER=python$(PYTHONVERSION) > Makefile.local
+	@echo UNIX_PYTHON_VER=$(PYTHONVERSION) > Makefile.local
 	@echo UNIX_GFLAGS_DIR=$(TOP)/dependencies/install >> Makefile.local
 	@echo UNIX_SWIG_BINARY=$(TOP)/dependencies/install/bin/swig >> Makefile.local
 	@echo UNIX_PROTOBUF_DIR=$(TOP)/dependencies/install >> Makefile.local
