@@ -282,8 +282,7 @@ int main(int argc, char **argv) {
   google::SetUsageMessage(kUsage);
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_data_file.empty()) {
-    LOG(INFO) << "Please supply a data file with --data_file=";
-    return 0;  
+    LOG(FATAL) << "Please supply a data file with --data_file=";
   }
   operations_research::JobShopData data;
   data.Load(FLAGS_data_file);
