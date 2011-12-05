@@ -478,8 +478,10 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 //
 // if the C++ function returns a protocol message:
 //   MyProto* foo();
-// Use PROTO2_RETURN_AND_DELETE macro:
-//   PROTO2_RETURN_AND_DELETE(MyProto, com.google.proto.protos.test.MyProto)
+// Use PROTO2_RETURN macro:
+//   PROTO2_RETURN(MyProto, com.google.proto.protos.test.MyProto, giveOwnership)
+//   -> the 'giveOwnership' parameter should be true iff the C++ function
+//      returns a new proto which should be deleted by the client.
 
 // Passing each protocol message from Java to C++ by value. Each ProtocolMessage
 // is serialized into byte[] when it is passed from Java to C++, the C++ code
@@ -515,7 +517,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 
 %enddef // end PROTO_INPUT
 
-%define PROTO2_RETURN(CppProtoType, JavaProtoType, deleteCppReturn)
+%define PROTO2_RETURN(CppProtoType, JavaProtoType, giveOwnership)
 %typemap(jni) CppProtoType* "jbyteArray"
 %typemap(jtype) CppProtoType* "byte[]"
 %typemap(jstype) CppProtoType* "JavaProtoType"
@@ -535,12 +537,12 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
   scoped_array<char> buf(new char[$1->ByteSize()]);
   $1->SerializeWithCachedSizesToArray(reinterpret_cast<uint8*>(buf.get()));
   $result = JNIUtil::MakeJByteArray(jenv, buf.get(), $1->ByteSize());
-  if (deleteCppReturn) {
+  if (giveOwnership) {
     // To prevent a memory leak.
     delete $1;
     $1 = NULL;
   }
 }
-%enddef // end PROTO2_RETURN_AND_DELETE
+%enddef // end PROTO2_RETURN
 
 #endif  // SWIGJAVA
