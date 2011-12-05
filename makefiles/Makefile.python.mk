@@ -74,7 +74,7 @@ endif
 
 pylp: _pywraplp.$(SHAREDLIBEXT) gen/linear_solver/pywraplp.py $(LP_LIBS) $(BASE_LIBS)
 
-gen/linear_solver/pywraplp.py: linear_solver/linear_solver.swig linear_solver/linear_solver.h base/base.swig
+gen/linear_solver/pywraplp.py: linear_solver/linear_solver.swig linear_solver/linear_solver.h base/base.swig gen/linear_solver/linear_solver.pb.h
 	$(SWIG_BINARY)  $(SWIG_INC) -c++ -python -o gen/linear_solver/linear_solver_wrap.cc -module pywraplp linear_solver/linear_solver.swig
 
 gen/linear_solver/linear_solver_wrap.cc: gen/linear_solver/pywraplp.py

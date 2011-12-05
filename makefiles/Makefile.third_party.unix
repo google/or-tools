@@ -36,6 +36,7 @@ else
 endif
 
 # Main target.
+.PHONY: third_party build_third_party makefile_third_party
 third_party: build_third_party makefile_third_party
 
 build_third_party: \
@@ -151,7 +152,7 @@ clean_third_party:
 makefile_third_party: Makefile.local
 
 Makefile.local:
-	@$(DEL) Makefile.local
+	@echo Generating Makefile.local
 	@echo UNIX_PYTHON_VER = $(PYTHONVERSION) > Makefile.local
 	@echo UNIX_GFLAGS_DIR = $(TOP)/dependencies/install >> Makefile.local
 	@echo UNIX_SWIG_BINARY = $(TOP)/dependencies/install/bin/swig >> Makefile.local
@@ -160,4 +161,4 @@ Makefile.local:
 	@echo UNIX_CBC_DIR = $(TOP)/dependencies/install >> Makefile.local
 	@echo $(GLPK_MAKEFILE) >> Makefile.local
 	@echo $(SCIP_MAKEFILE) >> Makefile.local
-	@echo MAC_JDK_HEADERS = $(SELECTED_JDK_HEADERS) >> Makefile.local
+	@echo $(SELECTED_JDK_DEF) >> Makefile.local
