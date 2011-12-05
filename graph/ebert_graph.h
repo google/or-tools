@@ -116,6 +116,7 @@
 
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "util/permutation.h"
 #include "util/zvector.h"

@@ -13,6 +13,8 @@
 
 #include "graph/max_flow.h"
 
+#include <algorithm>
+
 #include "base/commandlineflags.h"
 #include "base/stringprintf.h"
 
