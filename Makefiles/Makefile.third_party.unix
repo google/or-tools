@@ -14,8 +14,10 @@ SCIP_TAG=2.1.0
 # Detect if scip archive is there.
 ifeq ($(wildcard dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz),)
     SCIP_TARGET=
+    SCIP_MAKEFILE=# UNIX_SCIP_DIR support not compiled.
 else
     SCIP_TARGET=dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
+    SCIP_MAKEFILE=UNIX_SCIP_DIR=$(TOP)/dependencies/install/ziboptsuite-2.1.0/scip-2.1.0
     ifeq ($(PLATFORM), LINUX)
 	BUILD_SCIP=make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC
     endif
@@ -26,13 +28,17 @@ endif
 
 # Detect if GLPK archive is there.
 ifeq ($(wildcard dependencies/archives/glpk-$(GLPK_TAG).tar.gz),)
-    GLPK_TARGET=
+    GLPK_TARGET =
+    GLPK_MAKEFILE = # GLPK support not included
 else
     GLPK_TARGET=dependencies/install/bin/glpsol
+    CLPK_MAKEFILE = UNIX_GLPK_DIR=$(TOP)/dependencies/install
 endif
 
 # Main target.
-third_party: \
+third_party: build_third_party makefile_third_party
+
+build_third_party: \
 	install_gflags \
 	install_protobuf \
 	install_google_apputils \
@@ -85,7 +91,7 @@ dependencies/install/bin/cbc: dependencies/sources/coin-cbc/Makefile
 
 dependencies/sources/coin-cbc/Makefile:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/coin-cbc
-	cd dependencies/sources/coin-cbc && ./configure --prefix=$(TOP)/dependencies/install
+	cd dependencies/sources/coin-cbc && ./configure --prefix=$(TOP)/dependencies/install --disable-bzlib
 
 # Install pcre (dependency of SWIG).
 install_pcre: dependencies/install/bin/pcretest
@@ -139,3 +145,16 @@ dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: dependen
 clean_third_party:
 	$(DELREC) dependencies/install
 	$(DELREC) dependencies/sources/*
+
+# Create Makefile.local
+makefile_third_party:
+	@$(DEL) Makefile.local
+	@echo UNIX_PYTHON_VER=python$(PYTHONVERSION) > Makefile.local
+	@echo UNIX_GFLAGS_DIR=$(TOP)/dependencies/install >> Makefile.local
+	@echo UNIX_SWIG_BINARY=$(TOP)/dependencies/install/bin/swig >> Makefile.local
+	@echo UNIX_PROTOBUF_DIR=$(TOP)/dependencies/install >> Makefile.local
+	@echo UNIX_CLP_DIR=$(TOP)/dependencies/install >> Makefile.local
+	@echo UNIX_CBC_DIR=$(TOP)/dependencies/install >> Makefile.local
+	@echo $(GLPK_MAKEFILE) >> Makefile.local
+	@echo $(SCIP_MAKEFILE) >> Makefile.local
+	@echo MAC_JDK_HEADERS=$(SELECTED_JDK_HEADERS) >> Makefile.local
