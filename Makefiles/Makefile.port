@@ -11,19 +11,33 @@ else
     PLATFORM = WINDOWS
   else
     SYSTEM = unix
+    ifneq ($(shell which python2.7),)
+      PYTHONVERSION = 2.7
+    else
+      ifneq ($(shell which python2.6),)
+        PYTHONVERSION = 2.6
+      endif
+    endif
     ifeq ($(OS),Linux)
       PLATFORM = LINUX
       LBITS = $(shell getconf LONG_BIT)
       ifeq ($(LBITS),64)
         PTRLENGTH = 64
+        CANDIDATE_JDK = /usr/local/buildtools/java/jdk-64 \
+                        /usr/lib/jvm/java-1.7.0-openjdk.x86_64
       else
         PTRLENGTH = 32
+        CANDIDATE_JDK = /usr/local/buildtools/java/jdk-32 \
+                        /usr/lib/jvm/java-1.7.0-openjdk-i386
       endif
     endif
     ifeq ($(OS),Darwin) # Assume Mac Os X
       PLATFORM = MACOSX
       PTRLENGTH = 64
+      CANDIDATE_JDK = /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/include \
+                      /Developer/SDKs/MacOSX10.7.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers
     endif
+    SELECTED_JDK = $(wildcard $(CANDIDATE_JDK))
   endif
 endif
 
@@ -33,4 +47,7 @@ printport:
 	@echo SYSTEM = $(SYSTEM)
 	@echo PLATFORM = $(PLATFORM)
 	@echo PTRLENGTH = $(PTRLENGTH)
+	@echo PYTHONVERSION = $(PYTHONVERSION)
+	@echo CANDIDATE_JDK = $(CANDIDATE_JDK)
+	@echo SELECTED_JDK = $(SELECTED_JDK)
 
