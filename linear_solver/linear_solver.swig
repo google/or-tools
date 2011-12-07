@@ -365,6 +365,10 @@ class LinearConstraint(object):
 
 %module(directors="1") operations_research;
 
+%typemap(javaimports) SWIGTYPE %{
+import java.lang.reflect.*;
+%}
+
 namespace operations_research {
 // Rename rules on MPVariable.
 %rename (basisStatus) MPVariable::basis_status;
@@ -498,6 +502,12 @@ namespace operations_research {
 
   public MPVariable[] makeBoolVarArray(int count, String var_name) {
     return makeVarArray(count, 0.0, 1.0, true, var_name);
+  }
+
+  public static final int getSolverEnum(String solver_name) throws java.lang.Exception {
+Class c = Class.forName("com.google.ortools.linearsolver.MPSolver");
+    Field field = c.getField(solver_name);
+    return field.getInt(null);
   }
 %}
 
