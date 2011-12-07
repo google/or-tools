@@ -3665,6 +3665,9 @@ class MinCstIntExpr : public BaseIntExpr {
     return std::min(emin, value_);
   }
   virtual void SetMin(int64 m) {
+    if (m > value_) {
+      solver()->Fail();
+    }
     expr_->SetMin(m);
   }
   virtual int64 Max() const {
@@ -3783,6 +3786,9 @@ class MaxCstIntExpr : public BaseIntExpr {
     return std::max(emax, value_);
   }
   virtual void SetMax(int64 m) {
+    if (m < value_) {
+      solver()->Fail();
+    }
     expr_->SetMax(m);
   }
   virtual bool Bound() const {
