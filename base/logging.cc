@@ -16,6 +16,8 @@
 
 #include "base/logging.h"
 
+DEFINE_int32(log_level, 0, "Log level (0 is the default).");
+
 namespace operations_research {
 DateLogger::DateLogger() {
 #if defined(_MSC_VER)

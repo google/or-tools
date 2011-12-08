@@ -17,7 +17,10 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <iostream>  // NOLINT
+#include "base/commandlineflags.h"
 #include "base/macros.h"
+
+DECLARE_int32(log_level);
 
 // Debug-only checking.
 #define DCHECK(condition) assert(condition)
@@ -45,7 +48,7 @@
 #define LOG_FATAL LogMessageFatal(__FILE__, __LINE__)
 #define LOG_QFATAL LOG_FATAL
 
-#define VLOG(x) if ((x) <= 0) LOG_INFO.stream()
+#define VLOG(x) if ((x) <= FLAGS_log_level) LOG_INFO.stream()
 
 #ifdef NDEBUG
 #define DEBUG_MODE 0
