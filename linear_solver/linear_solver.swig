@@ -504,7 +504,10 @@ namespace operations_research {
     return makeVarArray(count, 0.0, 1.0, true, var_name);
   }
 
-  public static final int getSolverEnum(String solver_name) throws java.lang.Exception {
+  public static final int getSolverEnum(String solver_name)
+      throws java.lang.ClassNotFoundException,
+      java.lang.NoSuchFieldException,
+      java.lang.IllegalAccessException {
 Class c = Class.forName("com.google.ortools.linearsolver.MPSolver");
     Field field = c.getField(solver_name);
     return field.getInt(null);

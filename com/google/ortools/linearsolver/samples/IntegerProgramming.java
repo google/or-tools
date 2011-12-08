@@ -29,48 +29,61 @@ public class IntegerProgramming {
   }
 
 
-  private static void runIntegerProgrammingExample(String solverType) {
+  private static MPSolver createSolver (String solverType) {
     try {
-      MPSolver solver = new MPSolver("IntegerProgrammingExample",
-                                     MPSolver.getSolverEnum(solverType));
-      double infinity = solver.infinity();
-      // x1 and x2 are integer non-negative variables.
-      MPVariable x1 = solver.makeIntVar(0.0, infinity, "x1");
-      MPVariable x2 = solver.makeIntVar(0.0, infinity, "x2");
-
-      // Minimize x1 + 2 * x2.
-      solver.setObjectiveCoefficient(x1, 1);
-      solver.setObjectiveCoefficient(x2, 2);
-
-      // 2 * x2 + 3 * x1 >= 17.
-      MPConstraint ct = solver.makeConstraint(17, infinity);
-      ct.setCoefficient(x1, 3);
-      ct.setCoefficient(x2, 2);
-
-      int resultStatus = solver.solve();
-
-      // Check that the problem has an optimal solution.
-      if (resultStatus != MPSolver.OPTIMAL) {
-        System.err.println("The problem does not have an optimal solution!");
-        return;
-      }
-
-      System.out.println("Problem solved in " + solver.wallTime() +
-                         " milliseconds");
-
-      // The objective value of the solution.
-      System.out.println("Optimal objective value = " + solver.objectiveValue());
-
-      // The value of each variable in the solution.
-      System.out.println("x1 = " + x1.solutionValue());
-      System.out.println("x2 = " + x2.solutionValue());
-
-      System.out.println("Advanced usage:");
-      System.out.println("Problem solved in " + solver.nodes() +
-                         " branch-and-bound nodes");
-    } catch (java.lang.Exception exc) {
-      System.out.println("- Solver not supported.");
+      return new MPSolver("IntegerProgrammingExample",
+                          MPSolver.getSolverEnum(solverType));
+    } catch (java.lang.ClassNotFoundException e) {
+      throw new Error(e);
+    } catch (java.lang.NoSuchFieldException e) {
+      return null;
+    } catch (java.lang.IllegalAccessException e) {
+      throw new Error(e);
     }
+  }
+
+  private static void runIntegerProgrammingExample(String solverType) {
+    MPSolver solver = createSolver(solverType);
+    if (solver == null) {
+      System.out.println("Could not create solver " + solverType);
+      return;
+    }
+    double infinity = solver.infinity();
+    // x1 and x2 are integer non-negative variables.
+    MPVariable x1 = solver.makeIntVar(0.0, infinity, "x1");
+    MPVariable x2 = solver.makeIntVar(0.0, infinity, "x2");
+
+    // Minimize x1 + 2 * x2.
+    solver.setObjectiveCoefficient(x1, 1);
+    solver.setObjectiveCoefficient(x2, 2);
+
+    // 2 * x2 + 3 * x1 >= 17.
+    MPConstraint ct = solver.makeConstraint(17, infinity);
+    ct.setCoefficient(x1, 3);
+    ct.setCoefficient(x2, 2);
+
+    int resultStatus = solver.solve();
+
+    // Check that the problem has an optimal solution.
+    if (resultStatus != MPSolver.OPTIMAL) {
+      System.err.println("The problem does not have an optimal solution!");
+      return;
+    }
+
+    System.out.println("Problem solved in " + solver.wallTime() +
+                       " milliseconds");
+
+    // The objective value of the solution.
+    System.out.println("Optimal objective value = " +
+                       solver.objectiveValue());
+
+    // The value of each variable in the solution.
+    System.out.println("x1 = " + x1.solutionValue());
+    System.out.println("x2 = " + x2.solutionValue());
+
+    System.out.println("Advanced usage:");
+    System.out.println("Problem solved in " + solver.nodes() +
+                       " branch-and-bound nodes");
   }
 
 
