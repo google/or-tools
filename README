@@ -1,23 +1,28 @@
 This file describes how to install the constraint-solver library and
 run the c++ and python examples. This has been tested under ubuntu
-10.04 and 10.10, Mac OS X Snow Leopard with xcode 3.2.3, and 3.2.4,
+10.04 and onward, Mac OS X Snow Leopard with xcode 3.2 and up, Mac OS X Lion,
 and Microsoft Windows with Visual Studio 2010 express C++.
 
 Upon untarring the given operation_research tar file, you will get the
 following structure:
 
-operations_research-1.0/
+or-tools/
   LICENSE-2.0.txt    <- Apache License
-  Makefile           <- Makefile for unix platform (ubuntu linux, mac os X)
-  Makefile.msv       <- Makefile for Microsoft Visual Studio
+  Makefile           <- Main makefile.
   README             <- This file
   algorithms/        <- Directory containing basic algorithms.
   base/              <- Directory containing basic utilities.
-  constraint_solver/ <- The main directory for the constraint solver library
+  com/               <- Directory that contains all java code.
+  constraint_solver/ <- The main directory for the constraint solver library.
+  dependencies/      <- Directory that will contain built dependencies.
   examples/          <- C++ examples
-  graph/             <- Graph algorithms used in the constraint solver
+  gen/               <- Directory that will contain generated files.
+  graph/             <- Graph algorithms.
+  linear_solver/     <- Linear solver wrapper.
+  makefiles/         <- Directory that contains sub-makefiles.
   objs/              <- Where C++ objs files will be stored
   python/            <- Python examples
+  tools/             <- Contains windows binaries.
   util/              <- More utilities needed by the constraint solver
 
 For installation, please refer to the following web page:
