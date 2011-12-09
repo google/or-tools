@@ -1,10 +1,11 @@
-This file describes how to install the constraint-solver library and
-run the c++ and python examples. This has been tested under ubuntu
-10.04 and onward, Mac OS X Snow Leopard with xcode 3.2 and up, Mac OS X Lion,
-and Microsoft Windows with Visual Studio 2010 express C++.
+This file describes how to install the or-tools libraries.
+This has been tested under:
+  - ubuntu 10.04 and upi (32 and 64 bit).
+  - Mac OS X Snow Leopard with xcode 3.2.x and 4.x (64 bit)
+  - Mac OS X Lion with xcode 4.x (64 bit).
+  - Microsoft Windows with Visual Studio 2010 express C++ and Visual studio 2010 (32 and 64 bit).
 
-Upon untarring the given operation_research tar file, you will get the
-following structure:
+Upon checking out the svn repository, you will get the following structure:
 
 or-tools/
   LICENSE-2.0.txt    <- Apache License
