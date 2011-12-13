@@ -29,6 +29,7 @@
 %rename(maxNumNodes) operations_research::EbertGraphCore::max_num_nodes;
 %rename(maxNumArcs) operations_research::EbertGraphCore::max_num_arcs;
 %rename(addArc) operations_research::EbertGraphCore::AddArc;
+%rename(addArc) operations_research::StarGraph::AddArc;
 
 // Rename rules on MaxFlow.
 %rename (getSourceNodeIndex) operations_research::MaxFlow::GetSourceNodeIndex;
@@ -60,9 +61,7 @@
 %include "graph/max_flow.h"
 %include "graph/min_cost_flow.h"
 
-namespace operations_research {
-%template(StarGraphCore) EbertGraphCore<NodeIndex, ArcIndex, EbertGraph<NodeIndex, ArcIndex> >;
-%template(StarGraph) EbertGraph<NodeIndex, ArcIndex>;
-%template(ForwardStarGraphCore) EbertGraphCore<NodeIndex, ArcIndex, ForwardEbertGraph<NodeIndex, ArcIndex> >;
-%template(ForwardStarGraph) ForwardEbertGraph<NodeIndex, ArcIndex>;
-}
+%template(StarGraphCore) operations_research::EbertGraphCore<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
+%template(StarGraph) operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex>;
+%template(ForwardStarGraphCore) operations_research::EbertGraphCore<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
+%template(ForwardStarGraph) operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex>;
