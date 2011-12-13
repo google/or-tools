@@ -151,6 +151,10 @@ clean_third_party:
 # Create Makefile.local
 makefile_third_party: Makefile.local
 
+# Install python modules
+install_python_modules:
+	cd dependencies/sources/google-apputils && python$(PYTHONVERSION) setup.py install --user
+
 Makefile.local:
 	@echo Generating Makefile.local
 	@echo UNIX_PYTHON_VER = $(PYTHONVERSION) > Makefile.local
