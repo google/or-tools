@@ -33,5 +33,8 @@ include makefiles/Makefile.cpp.mk
 include makefiles/Makefile.python.mk
 include makefiles/Makefile.java.mk
 
+# Include test
+include makefiles/Makefile.test.$(SYSTEM)
+
 # Finally include user makefile if it exists
 -include Makefile.user

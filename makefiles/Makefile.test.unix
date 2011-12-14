@@ -1,0 +1,10 @@
+test: all run_RabbitsPheasants run_FlowExample run_LinearProgramming run_IntegerProgramming run_Knapsack
+	./golomb --size=5
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/hidato_table.py
+	./flow_api
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/pyflow_example.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/knapsack.py
+	./linear_programming
+	./integer_programming
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/linear_programming.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/integer_programming.py
