@@ -1,10 +1,18 @@
-test: all run_RabbitsPheasants run_FlowExample run_LinearProgramming run_IntegerProgramming run_Knapsack
+test: all test_cpp test_python test_java
+
+test_java: run_RabbitsPheasants run_FlowExample run_LinearProgramming run_IntegerProgramming run_Knapsack
+
+test_cpp:
 	./golomb --size=5
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/hidato_table.py
+	./cvrptw
 	./flow_api
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/pyflow_example.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/knapsack.py
 	./linear_programming
 	./integer_programming
+
+test_python:
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/hidato_table.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/tsp.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/pyflow_example.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/knapsack.py
 	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/linear_programming.py
 	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/integer_programming.py
