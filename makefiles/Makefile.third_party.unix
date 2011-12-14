@@ -92,7 +92,7 @@ dependencies/install/bin/cbc: dependencies/sources/coin-cbc/Makefile
 
 dependencies/sources/coin-cbc/Makefile:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/coin-cbc
-	cd dependencies/sources/coin-cbc && ./configure --prefix=$(TOP)/dependencies/install --disable-bzlib
+	cd dependencies/sources/coin-cbc && ./configure --prefix=$(TOP)/dependencies/install --disable-bzlib --without-lapack
 
 # Install pcre (dependency of SWIG).
 install_pcre: dependencies/install/bin/pcretest
