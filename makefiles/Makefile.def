@@ -8,6 +8,8 @@ UNIX_GFLAGS_DIR=../gflags-1.6
 UNIX_SWIG_BINARY=swig
 # Where protocol buffers are installed
 UNIX_PROTOBUF_DIR=../protobuf-2.4.1
+# Where sparsehash are installed.
+UNIX_SPARSEHASH_DIR=../sparsehash-1.11
 # This is the root directory of the CLP installation. Please define if CLP is
 # installed. If you have installed CBC, CLP_DIR can have the same value as
 # CBC_DIR.
@@ -34,6 +36,7 @@ WINDOWS_ZLIB_DIR=..\\zlib-1.2.5
 WINDOWS_ZLIB_NAME=zlib.lib
 WINDOWS_SWIG_BINARY=..\\swigwin-2.0.4\\swig.exe
 WINDOWS_PROTOBUF_DIR=..\\protobuf-2.4.1
+WINDOWS_SPARSEHASH_DIR=..\\sparsehash-1.11
 WINDOWS_PYTHON_DIR=c:\\Python27
 WINDOWS_PYTHON_LIB=c:\\Python27\\libs\\python27.lib
 # This is the root directory of the CLP installation. Please define if CLP is

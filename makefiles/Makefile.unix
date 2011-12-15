@@ -8,6 +8,8 @@ PYTHON_INC = -I/usr/include/python$(UNIX_PYTHON_VER) -I/usr/lib/python$(UNIX_PYT
 GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
 # This is needed to find protocol buffers.
 PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
+# This is needed to find sparse hash containers.
+SPARSEHASH_INC = -I$(UNIX_SPARSEHASH_DIR)/include
 
 # Define UNIX_CLP_DIR if unset and if UNIX_CBC_DIR is set.
 ifdef UNIX_CBC_DIR
@@ -120,7 +122,7 @@ endif
 
 CFLAGS = $(SYSCFLAGS) $(DEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) \
-	$(SCIP_INC)
+	$(SCIP_INC) $(SPARSEHASH_INC)
 JNIFLAGS = $(SYSCFLAGS) $(JNIDEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC)
 LDFLAGS = $(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
