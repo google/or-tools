@@ -1,16 +1,19 @@
 # Useful variable.
 TOP ?= $(shell pwd)
-OS = $(shell uname -s)
 
 # Let's discover something about where we run
 ifeq "$(SHELL)" "cmd.exe"
   SYSTEM = win
+  PLATFORM = WINDOWS
+  OS = Windows
 else
   ifeq "$(SHELL)" "sh.exe"
     SYSTEM = win
     PLATFORM = WINDOWS
+    OS = Windows
   else
     SYSTEM = unix
+    OS = $(shell uname -s)
     ifneq ($(shell which python2.7),)
       PYTHONVERSION = 2.7
     else

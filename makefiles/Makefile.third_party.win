@@ -2,4 +2,4 @@ third_party:
 	echo make third_party is not yet supported on windows platforms.
 
 clean_third_party:
-        echo make clean_third_party is not yet supported on windows platforms.
+	echo make clean_third_party is not yet supported on windows platforms.
