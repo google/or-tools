@@ -20,6 +20,7 @@
 #include "base/stringprintf.h"
 #include "base/stl_util.h"
 #include "constraint_solver/constraint_solver.h"
+#include "util/string_array.h"
 
 namespace operations_research {
 
@@ -154,15 +155,7 @@ void NoGood::Apply(Solver* const solver) {
 }
 
 string NoGood::DebugString() const {
-  string result = "(";
-  for (int i = 0; i < terms_.size(); ++i) {
-    if (i != 0) {
-      result.append(" && ");
-    }
-    result.append(terms_[i]->DebugString());
-  }
-  result.append(")");
-  return result;
+  return StringPrintf("(%s)", DebugStringVector(terms_, " && ").c_str());
 }
 
 namespace {

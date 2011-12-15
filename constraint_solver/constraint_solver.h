@@ -2811,6 +2811,13 @@ class Solver {
   void InitBuilders();
   void DeleteBuilders();
 
+  // Returns the Search object that is at the bottom of the search stack. This
+  // is to be contrasted with ActiveSearch(), which returns the search at the
+  // top of the stack.
+  Search* TopLevelSearch() const {
+    return searches_.at(1);
+  }
+
   // Naming
   string GetName(const PropagationBaseObject* object);
   void SetName(const PropagationBaseObject* object, const string& name);

@@ -39,6 +39,13 @@ template <class T> string DebugStringArray(T* const* array,
   return out;
 }
 
+// Creates a string from an vector of objects supporting the
+// DebugString() method, and a separator.
+template <class T> string DebugStringVector(const std::vector<T*>& array,
+                                            const string& separator) {
+  return DebugStringArray(array.data(), array.size(), separator);
+}
+
 // Creates a string from an array of objects supporting the
 // name() method, and a separator.
 template <class T> string NameArray(T* const* array,

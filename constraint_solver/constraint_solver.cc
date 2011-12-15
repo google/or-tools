@@ -33,6 +33,7 @@
 #include "zlib.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
+#include "base/stl_util.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/model.pb.h"
 #include "util/const_int_array.h"
@@ -860,6 +861,20 @@ class Search {
         should_restart_(false), should_finish_(false),
         sentinel_pushed_(0), jmpbuf_filled_(false) {}
 
+  // Constructor for a dummy search. The only difference between a dummy search
+  // and a regular one is that the search depth and left search depth is
+  // initialized to -1 instead of zero.
+  Search(Solver* const s, int /* dummy_argument */)
+      : solver_(s), marker_stack_(), fail_buffer_(), solution_counter_(0),
+        decision_builder_(NULL), created_by_solve_(false),
+        selector_(NULL), search_depth_(-1), left_search_depth_(-1),
+        should_restart_(false), should_finish_(false),
+        sentinel_pushed_(0), jmpbuf_filled_(false) {}
+
+  ~Search() {
+    STLDeleteElements(&marker_stack_);
+  }
+
   void EnterSearch();
   void RestartSearch();
   void ExitSearch();
@@ -973,12 +988,7 @@ void Search::JumpBack() {
 }
 
 Search* Solver::ActiveSearch() const {
-  switch (state_) {
-    case IN_SEARCH:
-      return searches_.back();
-    default:
-      return NULL;
-  }
+  return searches_.back();
 }
 
 namespace {
@@ -1029,14 +1039,12 @@ void Search::SetBranchSelector(
 void Solver::SetBranchSelector(
     ResultCallback1<Solver::DecisionModification, Solver*>* const bs) {
   bs->CheckIsRepeatable();
-  if (searches_.size() > 0 && searches_.back() != NULL) {
-    // We cannot use the trail as the search can be nested and thus
-    // deleted upon backtrack. Thus we guard the undo action by a
-    // check on the number of nesting of solve().
-    AddBacktrackAction(RevAlloc(new UndoBranchSelector(searches_.size())),
-                       false);
-    searches_.back()->SetBranchSelector(bs);
-  }
+  // We cannot use the trail as the search can be nested and thus
+  // deleted upon backtrack. Thus we guard the undo action by a
+  // check on the number of nesting of solve().
+  AddBacktrackAction(RevAlloc(new UndoBranchSelector(SolveDepth())),
+                     false);
+  searches_.back()->SetBranchSelector(bs);
 }
 
 DecisionBuilder* Solver::MakeApplyBranchSelector(
@@ -1045,26 +1053,15 @@ DecisionBuilder* Solver::MakeApplyBranchSelector(
 }
 
 int Solver::SolveDepth() const {
-  switch (state_) {
-    case IN_SEARCH:
-      return searches_.size();
-    default:
-      return 0;
-  }
+  return searches_.size() - 1;
 }
 
 int Solver::SearchDepth() const {
-  if (searches_.size() > 0 && searches_.back() != NULL) {
-    return searches_.back()->search_depth();
-  }
-  return -1;
+  return searches_.back()->search_depth();
 }
 
 int Solver::SearchLeftDepth() const {
-  if (searches_.size() > 0 && searches_.back() != NULL) {
-    return searches_.back()->left_search_depth();
-  }
-  return -1;
+  return searches_.back()->left_search_depth();
 }
 
 Solver::DecisionModification Search::ModifyDecision() {
@@ -1344,7 +1341,7 @@ Solver::Solver(const string& name, const SolverParameters& parameters)
       accepted_neighbors_(0),
       variable_cleaner_(NewDomainIntVarCleaner()),
       timer_(new ClockTimer),
-      searches_(),
+      searches_(1, new Search(this, 0)),
       random_(ACMRandom::DeterministicSeed()),
       fail_hooks_(NULL),
       fail_stamp_(GG_ULONGLONG(1)),
@@ -1379,7 +1376,7 @@ Solver::Solver(const string& name)
       accepted_neighbors_(0),
       variable_cleaner_(NewDomainIntVarCleaner()),
       timer_(new ClockTimer),
-      searches_(),
+      searches_(1, new Search(this, 0)),
       random_(ACMRandom::DeterministicSeed()),
       fail_hooks_(NULL),
       fail_stamp_(GG_ULONGLONG(1)),
@@ -1416,7 +1413,7 @@ void Solver::Init() {
 
 Solver::~Solver() {
   // solver destructor called with searches open.
-  CHECK_EQ(searches_.size(), 1);
+  CHECK_EQ(1, SolveDepth());
   BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
 
   StateInfo info;
@@ -1428,9 +1425,11 @@ Solver::~Solver() {
 
   Search* search = searches_.back();
   searches_.pop_back();
-  CHECK(searches_.empty())
+  CHECK_EQ(0, SolveDepth())
       << "non empty list of searches when ending the solver";
   delete search;
+  CHECK_EQ(1, searches_.size());
+  delete searches_.back();
   DeleteDemonProfiler(demon_profiler_);
   DeleteBuilders();
 }
@@ -1491,23 +1490,23 @@ int64 Solver::wall_time() const {
 }
 
 int64 Solver::solutions() const {
-  return searches_.front()->solution_counter();
+  return TopLevelSearch()->solution_counter();
 }
 
 bool Solver::LocalOptimum() {
-  return searches_.front()->LocalOptimum();
+  return TopLevelSearch()->LocalOptimum();
 }
 
 bool Solver::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
-  return searches_.front()->AcceptDelta(delta, deltadelta);
+  return TopLevelSearch()->AcceptDelta(delta, deltadelta);
 }
 
 void Solver::AcceptNeighbor() {
-  return searches_.front()->AcceptNeighbor();
+  return TopLevelSearch()->AcceptNeighbor();
 }
 
 void Solver::TopPeriodicCheck() {
-  searches_.front()->PeriodicCheck();
+  TopLevelSearch()->PeriodicCheck();
 }
 
 void Solver::PushState() {
@@ -1675,7 +1674,7 @@ void Solver::Accept(ModelVisitor* const visitor,
     constraint->Accept(visitor);
   }
   if (state_ == IN_ROOT_NODE) {
-    searches_.front()->Accept(visitor);
+    TopLevelSearch()->Accept(visitor);
   } else {
     for (int i = 0; i < monitors.size(); ++i) {
       monitors[i]->Accept(visitor);
@@ -1747,7 +1746,7 @@ void Solver::ProcessConstraints() {
 }
 
 bool Solver::CurrentlyInSolve() const {
-  DCHECK_GT(searches_.size(), 0);
+  DCHECK_GT(SolveDepth(), 0);
   DCHECK(searches_.back() != NULL);
   return searches_.back()->created_by_solve();
 }
@@ -1912,7 +1911,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
   search->EnterSearch();
 
   // Push sentinel and set decision builder.
-  DCHECK_EQ(1, searches_.size());
+  DCHECK_EQ(1, SolveDepth());
   PushSentinel(INITIAL_SEARCH_SENTINEL);
   search->set_decision_builder(db);
 }
@@ -1928,9 +1927,9 @@ bool Solver::BacktrackOneLevel(Decision** const fail_decision) {
     switch (t) {
       case SENTINEL:
         CHECK_EQ(info.ptr_info, this) << "Wrong sentinel found";
-        CHECK((info.int_info == ROOT_NODE_SENTINEL && searches_.size() == 1) ||
+        CHECK((info.int_info == ROOT_NODE_SENTINEL && SolveDepth() == 1) ||
               (info.int_info == INITIAL_SEARCH_SENTINEL &&
-               searches_.size() > 1));
+               SolveDepth() > 1));
         searches_.back()->sentinel_pushed_--;
         no_more_solutions = true;
         end_loop = true;
@@ -1980,7 +1979,7 @@ void Solver::PushSentinel(int magic_code) {
 void Solver::RestartSearch() {
   Search* const search = searches_.back();
   CHECK_NE(0, search->sentinel_pushed_);
-  if (searches_.size() == 1) {  // top level.
+  if (SolveDepth() == 1) {  // top level.
     if (search->sentinel_pushed_ > 1) {
       BacktrackToSentinel(ROOT_NODE_SENTINEL);
     }
@@ -2035,9 +2034,9 @@ void Solver::BacktrackToSentinel(int magic_code) {
 
 // Closes the current search without backtrack.
 void Solver::JumpToSentinelWhenNested() {
-  CHECK_GT(searches_.size(), 1) << "calling JumpToSentinel from top level";
+  CHECK_GT(SolveDepth(), 1) << "calling JumpToSentinel from top level";
   Search* c = searches_.back();
-  Search* p = searches_[searches_.size() - 2];
+  Search* p = searches_[SolveDepth() - 2];
   bool found = false;
   while (!c->marker_stack_.empty()) {
     StateMarker* m = c->marker_stack_.back();
@@ -2093,7 +2092,7 @@ class ReverseDecision : public Decision {
 bool Solver::NextSolution() {
   Search* const search = searches_.back();
   Decision* fd = NULL;
-  const bool top_level = (searches_.size() == 1);
+  const bool top_level = (SolveDepth() == 1);
 
   if (top_level && state_ == OUTSIDE_SEARCH && !search->decision_builder()) {
     LOG(WARNING) << "NextSolution() called without a NewSearch before";
@@ -2256,7 +2255,7 @@ bool Solver::NextSolution() {
 }
 
 void Solver::EndSearch() {
-  CHECK_EQ(1, searches_.size());
+  CHECK_EQ(1, SolveDepth());
   Search* const search = searches_.back();
   BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
   search->ExitSearch();
@@ -2284,7 +2283,7 @@ bool Solver::CheckAssignment(Assignment* const solution) {
   search->EnterSearch();
 
   // Push sentinel and set decision builder.
-  DCHECK_EQ(1, searches_.size());
+  DCHECK_EQ(1, SolveDepth());
   PushSentinel(INITIAL_SEARCH_SENTINEL);
   search->BeginInitialPropagation();
   CP_TRY(search) {
