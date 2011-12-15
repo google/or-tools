@@ -210,6 +210,7 @@ template<typename NodeIndexType, typename ArcIndexType,
     }
     max_num_nodes_ = new_max_num_nodes;
     max_num_arcs_ = new_max_num_arcs;
+    ThisAsDerived()->ReserveInternal(new_max_num_nodes, new_max_num_arcs);
     return true;
   }
 
@@ -468,16 +469,10 @@ template<typename NodeIndexType, typename ArcIndexType,
         first_incident_arc_(),
         representation_clean_(true) {}
 
-  EbertGraphCore(NodeIndexType max_num_nodes,
-                 ArcIndexType max_num_arcs)
-      : max_num_nodes_(0),
-        max_num_arcs_(0),
-        num_nodes_(0),
-        num_arcs_(0),
-        head_(),
-        next_adjacent_arc_(),
-        first_incident_arc_(),
-        representation_clean_(true) {
+  ~EbertGraphCore() {}
+
+  void Initialize(NodeIndexType max_num_nodes,
+                  ArcIndexType max_num_arcs) {
     if (!Reserve(max_num_nodes, max_num_arcs)) {
       LOG(DFATAL) << "Could not reserve memory for "
                   << static_cast<int64>(max_num_nodes) << " nodes and "
@@ -487,8 +482,6 @@ template<typename NodeIndexType, typename ArcIndexType,
     next_adjacent_arc_.SetAll(kNilArc);
     head_.SetAll(kNilNode);
   }
-
-  ~EbertGraphCore() {}
 
   // Returns kNilNode if the graph has no nodes or node if it has at least one
   // node. Useful for initializing iterators correctly in the case of empty
@@ -658,8 +651,9 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
 
   EbertGraph() {}
 
-  EbertGraph(NodeIndexType max_num_nodes, ArcIndexType max_num_arcs)
-      : Base(max_num_nodes, max_num_arcs) {}
+  EbertGraph(NodeIndexType max_num_nodes, ArcIndexType max_num_arcs) {
+    this->Initialize(max_num_nodes, max_num_arcs);
+  }
 
   ~EbertGraph() {}
 
@@ -994,6 +988,10 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
     }
   }
 
+  void ReserveInternal(NodeIndexType new_max_num_nodes,
+                       ArcIndexType new_max_num_arcs) {
+  }
+
   // Returns the outgoing arc following the argument in the adjacency list.
   ArcIndexType NextOutgoingArc(const ArcIndexType arc) const {
     DCHECK(CheckArcValidity(arc));
@@ -1066,60 +1064,6 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
   }
 };
 
-// Builds a directed line graph for 'graph' (see "directed line graph" in
-// http://en.wikipedia.org/wiki/Line_graph). Arcs of the original graph
-// become nodes and the new graph contains only nodes created from arcs in the
-// original graph (we use the notation (a->b) for these new nodes); the index
-// of the node (a->b) in the new graph is exactly the same as the index of the
-// arc a->b in the original graph.
-// An arc from node (a->b) to node (c->d) in the new graph is added if and only
-// if b == c in the original graph.
-// This method expects that 'line_graph' is an empty graph (it has no nodes
-// and no arcs).
-// Returns false on an error.
-template<typename NodeIndexType, typename ArcIndexType>
-bool BuildLineGraph(const EbertGraph<NodeIndexType, ArcIndexType>& graph,
-                    EbertGraph<NodeIndexType, ArcIndexType>* const line_graph) {
-  if (line_graph == NULL) {
-    LOG(DFATAL) << "line_graph must not be NULL";
-    return false;
-  }
-  if (line_graph->num_nodes() != 0) {
-    LOG(DFATAL) << "line_graph must be empty";
-    return false;
-  }
-  typedef EbertGraph<NodeIndexType, ArcIndexType> Graph;
-  typedef typename Graph::ArcIterator ArcIterator;
-  typedef typename Graph::OutgoingArcIterator OutgoingArcIterator;
-  // Sizing then filling.
-  const NodeIndexType num_nodes = graph.num_arcs();
-  ArcIndexType num_arcs = 0;
-  for (ArcIterator arc_iterator(graph);
-       arc_iterator.Ok();
-       arc_iterator.Next()) {
-    const ArcIndexType arc = arc_iterator.Index();
-    const NodeIndexType head = graph.Head(arc);
-    for (OutgoingArcIterator iterator(graph, head);
-         iterator.Ok();
-         iterator.Next()) {
-      ++num_arcs;
-    }
-  }
-  line_graph->Reserve(num_nodes, num_arcs);
-  for (ArcIterator arc_iterator(graph);
-       arc_iterator.Ok();
-       arc_iterator.Next()) {
-    const ArcIndexType arc = arc_iterator.Index();
-    const NodeIndexType head = graph.Head(arc);
-    for (OutgoingArcIterator iterator(graph, head);
-         iterator.Ok();
-         iterator.Next()) {
-      line_graph->AddArc(arc, iterator.Index());
-    }
-  }
-  return true;
-}
-
 // A forward-star-only graph representation for greater efficiency in
 // those algorithms that don't need reverse arcs.
 template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
@@ -1136,8 +1080,9 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
 
   ForwardEbertGraph() {}
 
-  ForwardEbertGraph(NodeIndexType max_num_nodes, ArcIndexType max_num_arcs)
-      : Base(max_num_nodes, max_num_arcs) {}
+  ForwardEbertGraph(NodeIndexType max_num_nodes, ArcIndexType max_num_arcs) {
+    this->Initialize(max_num_nodes, max_num_arcs);
+  }
 
   ~ForwardEbertGraph() {}
 
@@ -1370,8 +1315,8 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
     }
   }
 
-  void Reserve(NodeIndexType new_max_num_nodes, ArcIndexType new_max_num_arcs) {
-    Base::Reserve(new_max_num_nodes, new_max_num_arcs);
+  void ReserveInternal(NodeIndexType new_max_num_nodes,
+                       ArcIndexType new_max_num_arcs) {
     ReserveTailArray(new_max_num_arcs);
   }
 
@@ -1515,6 +1460,57 @@ template <typename GraphType> class TailArrayManager {
  private:
   GraphType* graph_;
 };
+
+// Builds a directed line graph for 'graph' (see "directed line graph" in
+// http://en.wikipedia.org/wiki/Line_graph). Arcs of the original graph
+// become nodes and the new graph contains only nodes created from arcs in the
+// original graph (we use the notation (a->b) for these new nodes); the index
+// of the node (a->b) in the new graph is exactly the same as the index of the
+// arc a->b in the original graph.
+// An arc from node (a->b) to node (c->d) in the new graph is added if and only
+// if b == c in the original graph.
+// This method expects that 'line_graph' is an empty graph (it has no nodes
+// and no arcs).
+// Returns false on an error.
+template<typename GraphType> bool BuildLineGraph(const GraphType& graph,
+                                                 GraphType* const line_graph) {
+  if (line_graph == NULL) {
+    LOG(DFATAL) << "line_graph must not be NULL";
+    return false;
+  }
+  if (line_graph->num_nodes() != 0) {
+    LOG(DFATAL) << "line_graph must be empty";
+    return false;
+  }
+  typedef typename GraphType::ArcIterator ArcIterator;
+  typedef typename GraphType::OutgoingArcIterator OutgoingArcIterator;
+  // Sizing then filling.
+  typename GraphType::ArcIndex num_arcs = 0;
+  for (ArcIterator arc_iterator(graph);
+       arc_iterator.Ok();
+       arc_iterator.Next()) {
+    const typename GraphType::ArcIndex arc = arc_iterator.Index();
+    const typename GraphType::NodeIndex head = graph.Head(arc);
+    for (OutgoingArcIterator iterator(graph, head);
+         iterator.Ok();
+         iterator.Next()) {
+      ++num_arcs;
+    }
+  }
+  line_graph->Reserve(graph.num_arcs(), num_arcs);
+  for (ArcIterator arc_iterator(graph);
+       arc_iterator.Ok();
+       arc_iterator.Next()) {
+    const typename GraphType::ArcIndex arc = arc_iterator.Index();
+    const typename GraphType::NodeIndex head = graph.Head(arc);
+    for (OutgoingArcIterator iterator(graph, head);
+         iterator.Ok();
+         iterator.Next()) {
+      line_graph->AddArc(arc, iterator.Index());
+    }
+  }
+  return true;
+}
 
 }  // namespace operations_research
 #endif  // OR_TOOLS_GRAPH_EBERT_GRAPH_H_

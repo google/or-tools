@@ -29,7 +29,6 @@
 %rename(maxNumNodes) operations_research::EbertGraphCore::max_num_nodes;
 %rename(maxNumArcs) operations_research::EbertGraphCore::max_num_arcs;
 %rename(addArc) operations_research::EbertGraphCore::AddArc;
-%rename(addArc) operations_research::StarGraph::AddArc;
 
 // Rename rules on MaxFlow.
 %rename (getSourceNodeIndex) operations_research::MaxFlow::GetSourceNodeIndex;

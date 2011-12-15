@@ -601,10 +601,7 @@ template <typename GraphType> class LinearSumAssignment {
   NodeIndex total_excess_;
 
   // Indexed by node index, the price_ values are maintained only for
-  // right-side nodes. These are kept as int64 values instead of
-  // CostValues because we scale the initial arc costs up by the
-  // number of nodes in order to use integer arithmetic everywhere,
-  // and such scaling up increases the risk of overflow.
+  // right-side nodes.
   CostArray price_;
 
   // Indexed by left-side node index, the matched_arc_ array gives the
@@ -620,9 +617,7 @@ template <typename GraphType> class LinearSumAssignment {
 
   // The array of arc costs as given in the problem definition, except
   // that they are scaled up by the number of nodes in the graph so we
-  // can use integer arithmetic throughout. Consequently we make this
-  // a packed array of int64 values just to stave off overflow that
-  // little extra bit.
+  // can use integer arithmetic throughout.
   CostArray scaled_arc_cost_;
 
   // The container of active nodes (i.e., unmatched nodes). This can

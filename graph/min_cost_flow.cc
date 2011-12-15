@@ -20,19 +20,24 @@
 #include "base/commandlineflags.h"
 #include "base/stringprintf.h"
 #include "base/mathutil.h"
+#include "graph/max_flow.h"
 
 DEFINE_int64(min_cost_flow_alpha, 5,
              "Divide factor for epsilon at each refine step.");
-DEFINE_bool(min_cost_flow_check_balance, false,
-            "Check that the supplies and demands are balanced.");
-DEFINE_bool(min_cost_flow_check_costs, false,
+DEFINE_bool(min_cost_flow_check_feasibility, true,
+            "Check that the graph has enough capacity to send all supplies "
+             "and serve all demands. Also check that the sum of supplies "
+             "is equal to the sum of demands.");
+DEFINE_bool(min_cost_flow_check_balance, true,
+            "Check that the sum of supplies is equal to the sum of demands.");
+DEFINE_bool(min_cost_flow_check_costs, true,
             "Check that the magnitude of the costs will not exceed the "
             "precision of the machine when scaled (multiplied) by the number "
             "of nodes");
 DEFINE_bool(min_cost_flow_fast_potential_update, true,
             "Fast node potential update. Faster when set to true, but does not"
             "detect as many infeasibilities as when set to false.");
-DEFINE_bool(min_cost_flow_check_result, false,
+DEFINE_bool(min_cost_flow_check_result, true,
             "Check that the result is valid.");
 
 namespace operations_research {
@@ -49,7 +54,10 @@ MinCostFlow::MinCostFlow(const StarGraph* graph)
       cost_scaling_factor_(1),
       scaled_arc_unit_cost_(),
       total_flow_cost_(0),
-      status_(NOT_SOLVED) {
+      status_(NOT_SOLVED),
+      initial_node_excess_(),
+      feasible_node_excess_(),
+      feasibility_checked_(false) {
   const NodeIndex max_num_nodes = graph_->max_num_nodes();
   if (max_num_nodes > 0) {
     node_excess_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
@@ -58,6 +66,10 @@ MinCostFlow::MinCostFlow(const StarGraph* graph)
     node_potential_.SetAll(0);
     first_admissible_arc_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
     first_admissible_arc_.SetAll(StarGraph::kNilArc);
+    initial_node_excess_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
+    initial_node_excess_.SetAll(0);
+    feasible_node_excess_.Reserve(StarGraph::kFirstNode, max_num_nodes - 1);
+    feasible_node_excess_.SetAll(0);
   }
   const ArcIndex max_num_arcs = graph_->max_num_arcs();
   if (max_num_arcs > 0) {
@@ -80,13 +92,17 @@ void MinCostFlow::SetArcCapacity(ArcIndex arc, FlowQuantity new_capacity) {
     return;  // Nothing to do.
   }
   status_ = NOT_SOLVED;
-  if (free_capacity + capacity_delta >= 0) {
+  feasibility_checked_ = false;
+  const FlowQuantity new_availability = free_capacity + capacity_delta;
+  if (new_availability >= 0) {
     // The above condition is true when one of two following holds:
     // 1/ (capacity_delta > 0), meaning we are increasing the capacity
     // 2/ (capacity_delta < 0 && free_capacity + capacity_delta >= 0)
     //    meaning we are reducing the capacity, but that the capacity
     //    reduction is not larger than the free capacity.
-    residual_arc_capacity_.Set(arc, free_capacity + capacity_delta);
+    DCHECK((capacity_delta > 0) ||
+           (capacity_delta < 0 && new_availability >= 0));
+    residual_arc_capacity_.Set(arc, new_availability);
     DCHECK_LE(0, residual_arc_capacity_[arc]);
     VLOG(3) << "Now: capacity = " << Capacity(arc) << " flow = " << Flow(arc);
   } else {
@@ -155,7 +171,7 @@ bool MinCostFlow::CheckResult() const {
       if (residual_arc_capacity_[arc] > 0 && ReducedCost(arc) < -epsilon_) {
         LOG(DFATAL) << "residual_arc_capacity_[" << arc
                    << "] > 0 && ReducedCost(" << arc << ") < " << -epsilon_
-                   << ". (epsilon_ = " << epsilon_;
+                   << ". (epsilon_ = " << epsilon_ << ").";
         ok = false;
       }
       if (!ok) {
@@ -224,6 +240,106 @@ string MinCostFlow::DebugString(const string& context, ArcIndex arc) const {
                       scaled_arc_unit_cost_[arc], reduced_cost);
 }
 
+bool MinCostFlow::CheckFeasibility(
+  std::vector<NodeIndex>* const infeasible_supply_node,
+  std::vector<NodeIndex>* const infeasible_demand_node) {
+  // Create a new graph, which is a copy of graph_, with the following
+  // modifications:
+  // Two nodes are added: a source and a sink.
+  // The source is linked to each supply node (whose supply > 0) by an arc whose
+  // capacity is equal to the supply at the supply node.
+  // The sink is linked to each demand node (whose supply < 0) by an arc whose
+  // capacity is the demand (-supply) at the demand node.
+  // There are no supplies or demands or costs in the graph, as we will run
+  // max-flow.
+  // TODO(user): make it possible to share a graph by MaxFlow and MinCostFlow.
+  // For this it is necessary to make StarGraph resizable.
+  feasibility_checked_ = false;
+  ArcIndex num_extra_arcs = 0;
+  for (StarGraph::NodeIterator it(*graph_); it.Ok(); it.Next()) {
+    const NodeIndex node = it.Index();
+    if (initial_node_excess_[node] != 0) {
+      ++num_extra_arcs;
+    }
+  }
+  const NodeIndex num_nodes_in_max_flow = graph_->num_nodes() + 2;
+  const ArcIndex num_arcs_in_max_flow = graph_->num_arcs() + num_extra_arcs;
+  const NodeIndex source = num_nodes_in_max_flow - 2;
+  const NodeIndex sink = num_nodes_in_max_flow - 1;
+  StarGraph checker_graph(num_nodes_in_max_flow, num_arcs_in_max_flow);
+  MaxFlow checker(&checker_graph, source, sink);
+  // Copy graph_ to checker_graph.
+  for (StarGraph::ArcIterator it(*graph_); it.Ok(); it.Next()) {
+    const ArcIndex arc = it.Index();
+    const ArcIndex new_arc = checker_graph.AddArc(graph_->Tail(arc),
+                                                  graph_->Head(arc));
+    DCHECK_EQ(arc, new_arc);
+    checker.SetArcCapacity(new_arc, Capacity(arc));
+  }
+  FlowQuantity total_demand = 0;
+  FlowQuantity total_supply = 0;
+  // Create the source-to-supply node arcs and the demand-node-to-sink arcs.
+  for (StarGraph::NodeIterator it(*graph_); it.Ok(); it.Next()) {
+    const NodeIndex node = it.Index();
+    const FlowQuantity supply = initial_node_excess_[node];
+    if (supply > 0) {
+      const ArcIndex new_arc = checker_graph.AddArc(source, node);
+      checker.SetArcCapacity(new_arc, supply);
+      total_supply += supply;
+    } else if (supply < 0) {
+      const ArcIndex new_arc = checker_graph.AddArc(node, sink);
+      checker.SetArcCapacity(new_arc, -supply);
+      total_demand -= supply;
+    }
+  }
+  if (total_supply != total_demand) {
+    LOG(DFATAL) << "total_supply(" << total_supply << ") != total_demand("
+                << total_demand << ").";
+    return false;
+  }
+  if (!checker.Solve()) {
+    LOG(DFATAL) << "Max flow could not be computed.";
+    return false;
+  }
+  const FlowQuantity optimal_max_flow = checker.GetOptimalFlow();
+  feasible_node_excess_.SetAll(0);
+  for (StarGraph::OutgoingArcIterator it(checker_graph, source);
+       it.Ok(); it.Next()) {
+    const ArcIndex arc = it.Index();
+    const NodeIndex node = checker_graph.Head(arc);
+    const FlowQuantity flow = checker.Flow(arc);
+    feasible_node_excess_.Set(node, flow);
+    if (infeasible_supply_node != NULL) {
+      infeasible_supply_node->push_back(node);
+    }
+  }
+  for (StarGraph::IncomingArcIterator it(checker_graph, sink);
+       it.Ok(); it.Next()) {
+    const ArcIndex arc = checker_graph.DirectArc(it.Index());
+    const NodeIndex node = checker_graph.Tail(arc);
+    const FlowQuantity flow = checker.Flow(arc);
+    feasible_node_excess_.Set(node, -flow);
+    if (infeasible_demand_node != NULL) {
+      infeasible_demand_node->push_back(node);
+    }
+  }
+  feasibility_checked_ = true;
+  return optimal_max_flow == total_supply;
+}
+
+bool MinCostFlow::MakeFeasible() {
+  if (!feasibility_checked_) {
+    return false;
+  }
+  for (StarGraph::NodeIterator it(*graph_); it.Ok(); it.Next()) {
+    const NodeIndex node = it.Index();
+    const FlowQuantity excess = feasible_node_excess_[node];
+    node_excess_.Set(node, excess);
+    initial_node_excess_.Set(node, excess);
+  }
+  return true;
+}
+
 bool MinCostFlow::Solve() {
   status_ = NOT_SOLVED;
   if (FLAGS_min_cost_flow_check_balance && !CheckInputConsistency()) {
@@ -234,17 +350,23 @@ bool MinCostFlow::Solve() {
     status_ = BAD_COST_RANGE;
     return false;
   }
+  if (FLAGS_min_cost_flow_check_feasibility && !CheckFeasibility(NULL, NULL)) {
+    status_ = INFEASIBLE;
+    return false;
+  }
   node_potential_.SetAll(0);
   ResetFirstAdmissibleArcs();
   ScaleCosts();
   Optimize();
-  UnscaleCosts();
-  if (status_ != OPTIMAL) {
-    total_flow_cost_ = 0;
-    return false;
-  }
   if (FLAGS_min_cost_flow_check_result && !CheckResult()) {
     status_ = BAD_RESULT;
+    UnscaleCosts();
+    return false;
+  }
+  UnscaleCosts();
+  if (status_ != OPTIMAL) {
+    LOG(DFATAL) << "Status != OPTIMAL";
+    total_flow_cost_ = 0;
     return false;
   }
   total_flow_cost_ = 0;

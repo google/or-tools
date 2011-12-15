@@ -113,6 +113,16 @@
 // The complexity of the algorithm is O(n^2*m*log(n*C)) where C is the value of
 // the largest arc cost in the graph.
 //
+// IMPORTANT:
+// The algorithm is not able to detect the infeasibility of a problem (when
+// there is a bottleneck in the network that forbids to send all the supplies.)
+// Worse, it could in some cases loop forever. This is why feasibility checking
+// is enabled by default (FLAGS_min_cost_flow_check_feasibility=true.)
+// Feasibility checking is implemented using a max-flow, which has a much lower
+// complexity. The impact on performance is negligible, while the risk of being
+// caught in an endless loop is removed. Note that using the feasibility checker
+// roughly doubles the memory consumption.
+//
 // The starting reference for this class of algorithms is:
 // A.V. Goldberg and R.E. Tarjan, "Finding Minimum-Cost Circulations by
 // Successive Approximation." Mathematics of Operations Research, Vol. 15,
@@ -200,7 +210,9 @@ class MinCostFlow {
   void SetNodeSupply(NodeIndex node, FlowQuantity supply) {
     DCHECK(graph_->IsNodeValid(node));
     node_excess_.Set(node, supply);
+    initial_node_excess_.Set(node, supply);
     status_ = NOT_SOLVED;
+    feasibility_checked_ = false;
   }
 
   // Sets the unit cost for arc.
@@ -209,6 +221,7 @@ class MinCostFlow {
     scaled_arc_unit_cost_.Set(arc, unit_cost);
     scaled_arc_unit_cost_.Set(Opposite(arc), -scaled_arc_unit_cost_[arc]);
     status_ = NOT_SOLVED;
+    feasibility_checked_ = false;
   }
 
   // Sets the capacity for arc.
@@ -223,10 +236,29 @@ class MinCostFlow {
     residual_arc_capacity_.Set(Opposite(arc), new_flow);
     residual_arc_capacity_.Set(arc, capacity - new_flow);
     status_ = NOT_SOLVED;
+    feasibility_checked_ = false;
   }
 
   // Runs true is a min-cost flow could be found.
   bool Solve();
+
+  // Checks for feasibility,  i.e. that all the supplies and demands can be
+  // matched without exceeding bottlenecks in the network.
+  // If infeasible_supply_node (resp. infeasible_demand_node) are not NULL,
+  // they are populated with the indices of the nodes where the initial supplies
+  // (resp. demands) are too large. Feasible values for the supplies and
+  // demands are accessible through FeasibleSupply.
+  // Note that CheckFeasibility is called by Solve() when the flag
+  // min_cost_flow_check_feasibility is set to true (which is the default.)
+  bool CheckFeasibility(std::vector<NodeIndex>* const infeasible_supply_node,
+                        std::vector<NodeIndex>* const infeasible_demand_node);
+
+  // Makes the min-cost flow problem solvable by truncating supplies and
+  // demands to a level acceptable by the network. There may be several ways to
+  // do it. In our case, the levels are computed from the result of the max-flow
+  // algorithm run in CheckFeasibility().
+  // MakeFeasible returns false if CheckFeasibility() was not called before.
+  bool MakeFeasible();
 
   // Returns the cost of the minimum-cost flow found by the algorithm.
   CostValue GetOptimalCost() const { return total_flow_cost_; }
@@ -265,6 +297,19 @@ class MinCostFlow {
   FlowQuantity Supply(NodeIndex node) const {
     DCHECK(graph_->IsNodeValid(node));
     return node_excess_[node];
+  }
+
+  // Returns the initial supply at node, given as data.
+  FlowQuantity InitialSupply(NodeIndex node) const {
+    return initial_node_excess_[node];
+  }
+
+  // Returns the largest supply (if > 0) or largest demand in absolute value
+  // (if < 0) admissible at node. If the problem is not feasible, some of these
+  // values will be smaller (in absolute value) than than the initial supplies
+  // and demand given as input.
+  FlowQuantity FeasibleSupply(NodeIndex node) const {
+    return feasible_node_excess_[node];
   }
 
  private:
@@ -428,6 +473,19 @@ class MinCostFlow {
 
   // The status of the problem.
   Status           status_;
+
+  // A packed array containing the initial excesses (i.e. the supplies) for each
+  // node. This is used to create the max-flow-based feasibility checker.
+  QuantityArray initial_node_excess_;
+
+  // A packed array containing the best acceptable excesses for each of the
+  // nodes. These excesses are imposed by the result of the max-flow-based
+  // feasibility checker for the nodes with an initial supply != 0. For the
+  // other nodes, the excess is simply 0.
+  QuantityArray feasible_node_excess_;
+
+  // A Boolean which is true when feasibility has been checked.
+  bool feasibility_checked_;
 
   DISALLOW_COPY_AND_ASSIGN(MinCostFlow);
 };
