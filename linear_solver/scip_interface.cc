@@ -74,13 +74,13 @@ class SCIPInterface : public MPSolverInterface {
   void AddVariable(MPVariable* const var);
   // Change a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
-                              MPVariable* const variable,
+                              const MPVariable* const variable,
                               double new_value,
                               double old_value);
   // Clear a constraint from all its terms.
   virtual void ClearConstraint(MPConstraint* const constraint);
   // Change a coefficient in the linear objective
-  virtual void SetObjectiveCoefficient(MPVariable* const variable,
+  virtual void SetObjectiveCoefficient(const MPVariable* const variable,
                                        double coefficient);
   // Change the constant term in the linear objective.
   virtual void SetObjectiveOffset(double value);
@@ -274,7 +274,7 @@ void SCIPInterface::SetConstraintBounds(int index, double lb, double ub) {
 }
 
 void SCIPInterface::SetCoefficient(MPConstraint* const constraint,
-                                   MPVariable* const variable,
+                                   const MPVariable* const variable,
                                    double new_value,
                                    double old_value) {
   InvalidateSolutionSynchronization();
@@ -304,7 +304,7 @@ void SCIPInterface::ClearConstraint(MPConstraint* const constraint) {
   const int constraint_index = constraint->index();
   // Constraint may not have been extracted yet.
   if (constraint_index != kNoIndex) {
-    for (ConstIter<hash_map<MPVariable*, double> >
+    for (ConstIter<hash_map<const MPVariable*, double> >
              it(constraint->coefficients_); !it.at_end(); ++it) {
       const int var_index = it->first->index();
       const double old_coef_value = it->second;
@@ -319,7 +319,7 @@ void SCIPInterface::ClearConstraint(MPConstraint* const constraint) {
 }
 
 // Cached
-void SCIPInterface::SetObjectiveCoefficient(MPVariable* const variable,
+void SCIPInterface::SetObjectiveCoefficient(const MPVariable* const variable,
                                            double coefficient) {
   sync_status_ = MUST_RELOAD;
 }
@@ -334,8 +334,8 @@ void SCIPInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
   ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
   // Clear linear terms
-  for (ConstIter<hash_map<MPVariable*, double> >
-           it(solver_->linear_objective_->coefficients_);
+  for (ConstIter<hash_map<const MPVariable*, double> >
+           it(solver_->objective_->coefficients_);
        !it.at_end(); ++it) {
     const int var_index = it->first->index();
     // Variable may have not been extracted yet.
@@ -381,7 +381,8 @@ void SCIPInterface::ExtractNewVariables() {
     // Add new variables to existing constraints.
     for (int i = 0; i < last_constraint_index_; i++) {
       MPConstraint* const ct = solver_->constraints_[i];
-      for (ConstIter<hash_map<MPVariable*, double> > it(ct->coefficients_);
+      for (ConstIter<hash_map<const MPVariable*, double> > it(
+               ct->coefficients_);
            !it.at_end(); ++it) {
         const int var_index = it->first->index();
         DCHECK_NE(kNoIndex, var_index);
@@ -421,7 +422,8 @@ void SCIPInterface::ExtractNewConstraints() {
       DCHECK_NE(kNoIndex, ct->index());
       int size = ct->coefficients_.size();
       int j = 0;
-      for (ConstIter<hash_map<MPVariable*, double> > it(ct->coefficients_);
+      for (ConstIter<hash_map<const MPVariable*, double> > it(
+               ct->coefficients_);
            !it.at_end(); ++it) {
         const int index = it->first->index();
         DCHECK_NE(kNoIndex, index);
@@ -447,8 +449,8 @@ void SCIPInterface::ExtractObjective() {
   ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
   // Linear objective: set objective coefficients for all variables
   // (some might have been modified)
-  for (ConstIter<hash_map<MPVariable*, double> >
-           it(solver_->linear_objective_->coefficients_);
+  for (ConstIter<hash_map<const MPVariable*, double> >
+           it(solver_->objective_->coefficients_);
        !it.at_end(); ++it) {
     int var_index = it->first->index();
     double obj_coef = it->second;
@@ -458,7 +460,7 @@ void SCIPInterface::ExtractObjective() {
 
   // Constant term: change objective coefficient of dummy variable.
   ORTOOLS_SCIP_CALL(SCIPchgVarObj(
-      scip_, scip_variables_[0], solver_->linear_objective_->offset_));
+      scip_, scip_variables_[0], solver_->Objective().offset()));
 }
 
 // Extracts model and solve the LP/MIP. Returns the status of the search.
@@ -483,7 +485,7 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
     sync_status_ = SOLUTION_SYNCHRONIZED;
     result_status_ = MPSolver::OPTIMAL;
-    objective_value_ = solver_->linear_objective_->offset_;
+    objective_value_ = solver_->Objective().offset();
     return result_status_;
   }
 
@@ -597,7 +599,7 @@ double SCIPInterface::best_objective_bound() const {
   CheckBestObjectiveBoundExists();
   if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
     // Special case for empty model.
-    return solver_->linear_objective_->offset_;
+    return solver_->Objective().offset();
   } else {
     return SCIPgetDualbound(scip_);
   }

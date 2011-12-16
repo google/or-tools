@@ -15,7 +15,8 @@
 
 #include "linear_solver/linear_solver.h"
 
-#include <stddef.h>
+#include <cmath>
+#include <cstddef>
 #include <utility>
 
 #include "base/commandlineflags.h"
@@ -39,48 +40,11 @@ DEFINE_string(solver_write_model, "", "path of the file to write the model to");
 // open_source/base).
 namespace operations_research {
 
-namespace {
-
-// Inserts name in name_set and checks that it is unique.
-void InsertOrDieIfNotUnique(hash_set<string>* name_set,
-                            const string& name) {
-  if (!name.empty()) {
-    std::pair<hash_set<string>::iterator, bool> result = name_set->insert(name);
-    if (!result.second) {
-      LOG(FATAL) << "Duplicate name: " << name;
-    }
-  }
+double MPConstraint::GetCoefficient(const MPVariable* const var) const {
+  return FindWithDefault(coefficients_, var, 0);
 }
 
-// Creates a valid name (unique) for a variable i in case it does
-// not already have one.
-string CreateValidVariableName(
-    const operations_research::MPVariable& variable, int i) {
-  if (variable.name().empty()) {
-    // The index cannot be used because the model may not have been
-    // extracted yet, so use i instead.
-    return StringPrintf("auto_variable_%d", i);
-  } else {
-    return variable.name();
-  }
-}
-
-// Creates a valid name (unique) for constraint i in case it does
-// not already have one.
-string CreateValidConstraintName(
-    const operations_research::MPConstraint& constraint, int i) {
-  if (constraint.name().empty()) {
-    // The index cannot be used because the model may not have been
-    // extracted yet, so use i instead.
-    return StringPrintf("auto_constraint_%d", i);
-  } else {
-    return constraint.name();
-  }
-}
-
-}  // namespace
-
-void MPConstraint::SetCoefficient(MPVariable* const var, double coeff) {
+void MPConstraint::SetCoefficient(const MPVariable* const var, double coeff) {
   CHECK_NOTNULL(var);
   double* coefficient = FindOrNull(coefficients_, var);
   if (coefficient != NULL) {
@@ -111,29 +75,26 @@ void MPConstraint::SetBounds(double lb, double ub) {
 double MPConstraint::dual_value() const {
   CHECK(interface_->IsContinuous()) <<
         "Dual value only available for continuous problems";
-  interface_->CheckSolutionIsSynchronized();
-  interface_->CheckSolutionExists();
+  interface_->CheckSolutionIsSynchronizedAndExists();
   return dual_value_;
 }
 
 MPSolver::BasisStatus MPConstraint::basis_status() const {
   CHECK(interface_->IsContinuous()) <<
         "Basis status only available for continuous problems";
-  interface_->CheckSolutionIsSynchronized();
-  interface_->CheckSolutionExists();
+  interface_->CheckSolutionIsSynchronizedAndExists();
   // This is done lazily as this method is expected to be rarely used.
   return interface_->row_status(index_);
 }
 
 double MPConstraint::activity() const {
-  interface_->CheckSolutionIsSynchronized();
-  interface_->CheckSolutionExists();
+  interface_->CheckSolutionIsSynchronizedAndExists();
   return activity_;
 }
 
 bool MPConstraint::ContainsNewVariables() {
   const int last_variable_index = interface_->last_variable_index();
-  for (ConstIter<hash_map<MPVariable*, double> > it(coefficients_);
+  for (ConstIter<hash_map<const MPVariable*, double> > it(coefficients_);
        !it.at_end(); ++it) {
     const int variable_index = it->first->index();
     if (variable_index >= last_variable_index ||
@@ -146,7 +107,11 @@ bool MPConstraint::ContainsNewVariables() {
 
 // ----- MPObjective -----
 
-void MPObjective::SetCoefficient(MPVariable* const var, double coeff) {
+double MPObjective::GetCoefficient(const MPVariable* const var) const {
+  return FindWithDefault(coefficients_, var, 0);
+}
+
+void MPObjective::SetCoefficient(const MPVariable* const var, double coeff) {
   CHECK_NOTNULL(var);
   coefficients_[var] = coeff;
   interface_->SetObjectiveCoefficient(var, coeff);
@@ -157,38 +122,63 @@ void MPObjective::SetOffset(double value) {
   interface_->SetObjectiveOffset(offset_);
 }
 
-void MPObjective::AddOffset(double value) {
-  offset_ += value;
-  interface_->SetObjectiveOffset(offset_);
-}
-
 void MPObjective::Clear() {
   interface_->ClearObjective();
   coefficients_.clear();
   offset_ = 0.0;
+  SetMinimization();
+}
+
+void MPObjective::SetOptimizationDirection(bool maximize) {
+  // Note(user): The maximize_ bool would more naturally belong to the
+  // MPObjective, but it actually has to be a member of MPSolverInterface,
+  // because some implementations (such as GLPK) need that bool for the
+  // MPSolverInterface constructor, i.e at a time when the MPObjective is not
+  // constructed yet (MPSolverInterface is always built before MPObjective
+  // when a new MPSolver is constructed).
+  interface_->maximize_ = maximize;
+  interface_->SetOptimizationDirection(maximize);
+}
+
+bool MPObjective::maximization() const {
+  return interface_->maximize_;
+}
+
+bool MPObjective::minimization() const {
+  return !interface_->maximize_;
+}
+
+double MPObjective::Value() const {
+  // Note(user): implementation-wise, the objective value belongs more
+  // naturally to the MPSolverInterface, since all of its implementations write
+  // to it directly.
+  return interface_->objective_value();
+}
+
+double MPObjective::BestBound() const {
+  // Note(user): the best objective bound belongs to the interface for the
+  // same reasons as the objective value does.
+  return interface_->best_objective_bound();
 }
 
 // ----- MPVariable -----
 
 double MPVariable::solution_value() const {
-  interface_->CheckSolutionIsSynchronized();
-  interface_->CheckSolutionExists();
+  interface_->CheckSolutionIsSynchronizedAndExists();
   return solution_value_;
 }
 
 double MPVariable::reduced_cost() const {
   CHECK(interface_->IsContinuous()) <<
         "Reduced cost only available for continuous problems";
-  interface_->CheckSolutionIsSynchronized();
-  interface_->CheckSolutionExists();
+  interface_->CheckSolutionIsSynchronizedAndExists();
   return reduced_cost_;
 }
 
 MPSolver::BasisStatus MPVariable::basis_status() const {
   CHECK(interface_->IsContinuous()) <<
         "Basis status only available for continuous problems";
-  interface_->CheckSolutionIsSynchronized();
-  interface_->CheckSolutionExists();
+  interface_->CheckSolutionIsSynchronizedAndExists();
   // This is done lazily as this method is expected to be rarely used.
   return interface_->column_status(index_);
 }
@@ -211,43 +201,43 @@ void MPVariable::SetInteger(bool integer) {
   }
 }
 
-// ----- Objective -----
+// ----- Objective (DEPRECATED methods) -----
 
 double MPSolver::objective_value() const {
-  return interface_->objective_value();
+  return Objective().Value();
 }
 
 double MPSolver::best_objective_bound() const {
-  return interface_->best_objective_bound();
+  return Objective().BestBound();
 }
 
 void MPSolver::ClearObjective() {
-  linear_objective_->Clear();
+  MutableObjective()->Clear();
 }
 
-void MPSolver::SetObjectiveCoefficient(MPVariable* const var, double coeff) {
-  linear_objective_->SetCoefficient(var, coeff);
+void MPSolver::SetObjectiveCoefficient(const MPVariable* const var,
+                                       double coeff) {
+  MutableObjective()->SetCoefficient(var, coeff);
 }
 
 void MPSolver::SetObjectiveOffset(double value) {
-  linear_objective_->SetOffset(value);
+  MutableObjective()->SetOffset(value);
 }
 
 void MPSolver::AddObjectiveOffset(double value) {
-  linear_objective_->AddOffset(value);
+  MutableObjective()->AddOffset(value);
 }
 
 void MPSolver::SetOptimizationDirection(bool maximize) {
-  interface_->maximize_ = maximize;
-  interface_->SetOptimizationDirection(maximize);
+  MutableObjective()->SetOptimizationDirection(maximize);
 }
 
 bool MPSolver::Maximization() const {
-  return interface_->maximize_;
+  return Objective().maximization();
 }
 
 bool MPSolver::Minimization() const {
-  return !interface_->maximize_;
+  return Objective().minimization();
 }
 
 // ----- Version -----
@@ -309,7 +299,7 @@ MPSolverInterface* BuildSolverInterface(
 MPSolver::MPSolver(const string& name, OptimizationProblemType problem_type)
     : name_(name),
       interface_(BuildSolverInterface(this, problem_type)),
-      linear_objective_(new MPObjective(interface_.get())),
+      objective_(new MPObjective(interface_.get())),
       time_limit_(0.0),
       write_model_filename_("") {
   timer_.Restart();
@@ -319,9 +309,28 @@ MPSolver::~MPSolver() {
   Clear();
 }
 
+MPVariable* MPSolver::LookupVariableOrNull(const string& var_name) const {
+  hash_map<string, int>::const_iterator it =
+      variable_name_to_index_.find(var_name);
+  if (it == variable_name_to_index_.end()) return NULL;
+  return variables_[it->second];
+}
+
+MPConstraint* MPSolver::LookupConstraintOrNull(
+    const string& constraint_name) const {
+  hash_map<string, int>::const_iterator it =
+      constraint_name_to_index_.find(constraint_name);
+  if (it == constraint_name_to_index_.end()) return NULL;
+  return constraints_[it->second];
+}
+
 // ----- Names management -----
 
 bool MPSolver::CheckNameValidity(const string& name) {
+  if (name.empty()) {
+    LOG(DFATAL)
+        << "Bug! CheckNameValidity() should never encounter an empty name.";
+  }
   // Allow names that conform to the LP and MPS format.
   const int kMaxNameLength = 255;
   if (name.size() > kMaxNameLength) {
@@ -421,7 +430,7 @@ MPSolver::LoadStatus MPSolver::LoadModel(const MPModelProto& input_model) {
   }
   SetOptimizationDirection(input_model.maximize());
   if (input_model.has_objective_offset()) {
-    linear_objective_->SetOffset(input_model.objective_offset());
+    MutableObjective()->SetOffset(input_model.objective_offset());
   }
   return MPSolver::NO_ERROR;
 }
@@ -443,16 +452,12 @@ void MPSolver::ExportModel(MPModelProto* output_model) const {
     output_model->clear_name();
   }
 
-  // Variables need non-empty names for the model protocol buffer, so
-  // we may need to create names.
-  hash_map<MPVariable*, string> valid_variable_names;
-
   // Variables
   for (int j = 0; j < variables_.size(); ++j) {
-    MPVariable* const var = variables_[j];
+    const MPVariable* const var = variables_[j];
     MPVariableProto* const variable_proto = output_model->add_variables();
-    valid_variable_names[var] = CreateValidVariableName(*var, j);
-    variable_proto->set_id(valid_variable_names[var]);
+    DCHECK(!var->name().empty());
+    variable_proto->set_id(var->name());
     variable_proto->set_lb(var->lb());
     variable_proto->set_ub(var->ub());
     variable_proto->set_integer(var->integer());
@@ -463,34 +468,34 @@ void MPSolver::ExportModel(MPModelProto* output_model) const {
     MPConstraint* const constraint = constraints_[i];
     MPConstraintProto* const constraint_proto = output_model->add_constraints();
     // Constraint names need to be non-empty.
-    string valid_constraint_name = CreateValidConstraintName(*constraint, i);
-    constraint_proto->set_id(valid_constraint_name);
+    DCHECK(!constraint->name().empty());
+    constraint_proto->set_id(constraint->name());
     constraint_proto->set_lb(constraint->lb());
     constraint_proto->set_ub(constraint->ub());
-    for (ConstIter<hash_map<MPVariable*, double> >
+    for (ConstIter<hash_map<const MPVariable*, double> >
              it(constraint->coefficients_);
          !it.at_end(); ++it) {
-      MPVariable* const var = it->first;
+      const MPVariable* const var = it->first;
       const double coef = it->second;
       MPTermProto* const term = constraint_proto->add_terms();
-      term->set_variable_id(valid_variable_names[var]);
+      term->set_variable_id(var->name());
       term->set_coefficient(coef);
     }
   }
 
   // Objective
-  for (hash_map<MPVariable*, double>::const_iterator it =
-           linear_objective_->coefficients_.begin();
-       it != linear_objective_->coefficients_.end();
+  for (hash_map<const MPVariable*, double>::const_iterator it =
+           objective_->coefficients_.begin();
+       it != objective_->coefficients_.end();
        ++it) {
-    MPVariable* const var = it->first;
+    const MPVariable* const var = it->first;
     const double coef = it->second;
     MPTermProto* const term = output_model->add_objective_terms();
-    term->set_variable_id(valid_variable_names[var]);
+    term->set_variable_id(var->name());
     term->set_coefficient(coef);
   }
-  output_model->set_maximize(Maximization());
-  output_model->set_objective_offset(linear_objective_->offset_);
+  output_model->set_maximize(Objective().maximization());
+  output_model->set_objective_offset(Objective().offset());
 }
 
 void MPSolver::FillSolutionResponse(MPSolutionResponse* response) const {
@@ -539,7 +544,7 @@ void MPSolver::FillSolutionResponse(MPSolutionResponse* response) const {
       interface_->result_status_ == MPSolver::FEASIBLE) {
     response->set_objective_value(objective_value());
     for (int i = 0; i < variables_.size(); ++i) {
-      MPVariable* const var = variables_[i];
+      const MPVariable* const var = variables_[i];
       double solution_value = var->solution_value();
       // Users will deal with almost-zero values based on their own tolerance.
       if (solution_value != 0.0) {
@@ -578,11 +583,10 @@ void MPSolver::Clear() {
   STLDeleteElements(&variables_);
   STLDeleteElements(&constraints_);
   variables_.clear();
-  variables_names_.clear();
+  variable_name_to_index_.clear();
   constraints_.clear();
-  constraints_names_.clear();
+  constraint_name_to_index_.clear();
   interface_->Reset();
-  SetMinimization();
 }
 
 void MPSolver::Reset() {
@@ -599,9 +603,12 @@ void MPSolver::SuppressOutput() {
 
 MPVariable* MPSolver::MakeVar(
     double lb, double ub, bool integer, const string& name) {
-  CheckNameValidity(name);
-  InsertOrDieIfNotUnique(&variables_names_, name);
-  MPVariable* v = new MPVariable(lb, ub, integer, name, interface_.get());
+  const int var_index = NumVariables();
+  const string fixed_name = name.empty()
+      ? StringPrintf("auto_variable_%06d", var_index) : name;
+  CheckNameValidity(fixed_name);
+  InsertOrDie(&variable_name_to_index_, fixed_name, var_index);
+  MPVariable* v = new MPVariable(lb, ub, integer, fixed_name, interface_.get());
   variables_.push_back(v);
   interface_->AddVariable(v);
   return v;
@@ -628,13 +635,13 @@ void MPSolver::MakeVarArray(int nb,
                             const string& name,
                             std::vector<MPVariable*>* vars) {
   CHECK_GE(nb, 0);
+  if (nb == 0) return;
+  const int num_digits = static_cast<int>(log10(nb));
   for (int i = 0; i < nb; ++i) {
     if (name.empty()) {
       vars->push_back(MakeVar(lb, ub, integer, name));
     } else {
-      // TODO(user): prepend zeros in the variable indices so that
-      // all names have the same number of digits.
-      string vname = StringPrintf("%s%d", name.c_str(), i);
+      string vname = StringPrintf("%s%0*d", name.c_str(), num_digits, i);
       vars->push_back(MakeVar(lb, ub, integer, vname));
     }
   }
@@ -672,10 +679,13 @@ MPConstraint* MPSolver::MakeRowConstraint() {
 
 MPConstraint* MPSolver::MakeRowConstraint(double lb, double ub,
                                           const string& name) {
-  CheckNameValidity(name);
-  InsertOrDieIfNotUnique(&constraints_names_, name);
+  const int constraint_index = NumConstraints();
+  const string fixed_name = name.empty()
+      ? StringPrintf("auto_constraint_%06d", constraint_index) : name;
+  CheckNameValidity(fixed_name);
+  InsertOrDie(&constraint_name_to_index_, fixed_name, constraint_index);
   MPConstraint* const constraint =
-      new MPConstraint(lb, ub, name, interface_.get());
+      new MPConstraint(lb, ub, fixed_name, interface_.get());
   constraints_.push_back(constraint);
   interface_->AddRowConstraint(constraint);
   return constraint;
@@ -832,8 +842,7 @@ void MPSolverInterface::CheckBestObjectiveBoundExists() const {
 }
 
 double MPSolverInterface::objective_value() const {
-  CheckSolutionIsSynchronized();
-  CheckSolutionExists();
+  CheckSolutionIsSynchronizedAndExists();
   return objective_value_;
 }
 

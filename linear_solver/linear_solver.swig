@@ -34,6 +34,11 @@
 %ignore MakeNumVarArray;
 %ignore MakeIntVarArray;
 %ignore MakeBoolVarArray;
+%rename (LookupConstraint) LookupConstraintOrNull;
+%rename (LookupVariable) LookupVariableOrNull;
+// Ignore non-mutable version of the Objective accessor, rename the mutable one.
+%ignore Objective;
+%rename (Objective) MutableObjective;
 // Access to the underlying solver is available only in C++.
 %ignore underlying_solver;
 
@@ -209,7 +214,7 @@ class LinearConstraint(object):
     else:
       return 'true inequality'
 
-  def Extract(self, solver):
+  def Extract(self, solver, name=''):
     coeffs = {}
     constant = self.__expr.Visit(coeffs)
     lb = -solver.infinity()
@@ -219,7 +224,7 @@ class LinearConstraint(object):
     if self.__ub < 1e308:
       ub = self.__ub - constant
 
-    constraint = solver.RowConstraint(lb, ub)
+    constraint = solver.RowConstraint(lb, ub, name)
     for v, c, in coeffs.iteritems():
       constraint.SetCoefficient(v, float(c))
     return constraint
@@ -325,8 +330,8 @@ class LinearConstraint(object):
 # extended python API provided below.
 %extend MPSolver {
   %pythoncode {
-    def Add(self, constraint):
-      return constraint.Extract(self)
+    def Add(self, constraint, name=''):
+      return constraint.Extract(self, name)
 
     def Sum(self, expr_array):
       result = SumArray(expr_array)
@@ -382,6 +387,7 @@ namespace operations_research {
 // Rename rules on MPConstraint.
 %rename (basisStatus) MPConstraint::basis_status;
 %rename (dualValue) MPConstraint::dual_value;
+%rename (getCoefficient) MPConstraint::GetCoefficient;
 %rename (setBounds) MPConstraint::SetBounds;
 %rename (setCoefficient) MPConstraint::SetCoefficient;
 %rename (setLb) MPConstraint::SetLB;
@@ -389,9 +395,15 @@ namespace operations_research {
 
 // Rename rules on MPObjective.
 %rename (addOffset) MPObjective::AddOffset;
+%rename (bestBound) MPObjective::BestBound;
 %rename (clear) MPObjective::Clear;
+%rename (getCoefficient) MPObjective::GetCoefficient;
 %rename (setCoefficient) MPObjective::SetCoefficient;
+%rename (setMaximization) MPObjective::SetMaximization;
+%rename (setMinimization) MPObjective::SetMinimization;
 %rename (setOffset) MPObjective::SetOffset;
+%rename (setOptimizationDirection) MPObjective::SetOptimizationDirection;
+%rename (value) MPObjective::Value;
 
 // Rename rules on MPSolverParameters.
 %rename (getDoubleParam) MPSolverParameters::GetDoubleParam;
@@ -411,6 +423,8 @@ namespace operations_research {
 %rename (clearObjective) MPSolver::ClearObjective;
 %rename (computeExactConditionNumber) MPSolver::ComputeExactConditionNumber;
 %rename (loadModel) MPSolver::LoadModel;
+%rename (lookupVariableOrNull) MPSolver::LookupVariableOrNull;
+%rename (lookupConstraintOrNull) MPSolver::LookupConstraintOrNull;
 %rename (makeBoolVar) MPSolver::MakeBoolVar;
 %rename (makeIntVar) MPSolver::MakeIntVar;
 %rename (makeNumVar) MPSolver::MakeNumVar;
@@ -419,6 +433,7 @@ namespace operations_research {
 %rename (minimization) MPSolver::Minimization;
 %rename (numConstraints) MPSolver::NumConstraints;
 %rename (numVariables) MPSolver::NumVariables;
+%rename (objective) MPSolver::MutableObjective;
 %rename (objectiveValue) MPSolver::objective_value;
 %rename (reset) MPSolver::Reset;
 %rename (setMaximization) MPSolver::SetMaximization;
@@ -434,7 +449,9 @@ namespace operations_research {
 %rename (timeLimit) MPSolver::time_limit;
 %rename (wallTime) MPSolver::wall_time;
 %rename (writeModelFilename) MPSolver::write_model_filename;
-// Ignore code on MPSolver, see replacement java code below.
+// Ignore non-mutable version of the objective accessor.
+%ignore MPSolver::Objective;
+// Ignore Make*VarArray: see replacement java code below.
 %ignore MPSolver::MakeVarArray;
 %ignore MPSolver::MakeNumVarArray;
 %ignore MPSolver::MakeIntVarArray;

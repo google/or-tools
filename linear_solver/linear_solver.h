@@ -161,8 +161,6 @@ class MPVariable;
 
 // This mathematical programming (MP) solver class is the main class
 // though which users build and solve problems.
-// TODO(user): either get rid of this enum and use the proto's enum instead,
-// or add a unit test that verifies that they are in perfect sync.
 class MPSolver {
  public:
   // The type of problems (LP or MIP) that will be solved and the
@@ -183,55 +181,29 @@ class MPSolver {
 #endif
   };
 
-  // The status of solving the problem.
-  // TODO(user): Figure out once and for all what the status of
-  // underlying solvers exactly mean, especially for feasible and
-  // infeasible.
-  enum ResultStatus {
-    OPTIMAL,     // optimal.
-    FEASIBLE,    // feasible, or stopped by limit.
-    INFEASIBLE,  // proven infeasible.
-    UNBOUNDED,   // proven unbounded.
-    ABNORMAL,    // abnormal, i.e., error of some kind.
-    NOT_SOLVED   // not been solved yet.
-  };
-
-  // The status of loading the problem from a protocol buffer.
-  enum LoadStatus {
-    NO_ERROR = 0,               // no error has been encountered.
-    // Skip value '1' to stay consistent with the .proto.
-    DUPLICATE_VARIABLE_ID = 2,  // error: two variables have the same id.
-    UNKNOWN_VARIABLE_ID = 3,    // error: a variable has an unknown id.
-  };
-
-  // Advanced usage: possible basis status values for a variable and the
-  // slack variable of a linear constraint.
-  enum BasisStatus {
-    FREE = 0,
-    AT_LOWER_BOUND,
-    AT_UPPER_BOUND,
-    FIXED_VALUE,
-    BASIC
-  };
-
   MPSolver(const string& name, OptimizationProblemType problem_type);
   virtual ~MPSolver();
-
-  // Clears the optimization direction, the objective and all variables and
-  // constraints. All the other properties of the MPSolver (like the time
-  // limit) are kept untouched.
-  void Clear();
 
   string Name() const {
     return name_;  // Set at construction.
   }
 
+  // Clears the objective (including the optimization direction), all
+  // variables and constraints. All the other properties of the MPSolver
+  // (like the time limit) are kept untouched.
+  void Clear();
+
   // ----- Variables ------
   // Returns the number of variables.
   int NumVariables() const { return variables_.size(); }
+  // Look up a variable by name, and return NULL if it does not exist.
+  MPVariable* LookupVariableOrNull(const string& var_name) const;
 
   // Creates a variable with the given bounds, integrality requirement
   // and name. Bounds can be finite or +/- MPSolver::infinity().
+  // The MPSolver owns the variable (i.e. the returned pointer is borrowed).
+  // Variable names must be unique (it may crash otherwise). Empty variable
+  // names are allowed, an automated variable name will then be assigned.
   MPVariable* MakeVar(double lb, double ub, bool integer, const string& name);
   // Creates a continuous variable.
   MPVariable* MakeNumVar(double lb, double ub, const string& name);
@@ -248,7 +220,7 @@ class MPSolver {
                     double lb,
                     double ub,
                     bool integer,
-                    const string& name,
+                    const string& name_prefix,
                     std::vector<MPVariable*>* vars);
   // Creates an array of continuous variables.
   void MakeNumVarArray(int nb,
@@ -270,6 +242,8 @@ class MPSolver {
   // ----- Constraints -----
   // Returns the number of constraints.
   int NumConstraints() const { return constraints_.size(); }
+  // Look up a constraint by name, and return NULL if it does not exist.
+  MPConstraint* LookupConstraintOrNull(const string& constraint_name) const;
 
   // Creates a linear constraint with given bounds. Bounds can be
   // finite or +/- MPSolver::infinity(). The MPSolver class assumes
@@ -284,41 +258,26 @@ class MPSolver {
   MPConstraint* MakeRowConstraint(const string& name);
 
   // ----- Objective -----
-
-  // Returns the objective value of the best solution found so far. It
-  // is the optimal objective value if the problem has been solved to
-  // optimality.
-  double objective_value() const;
-
-  // Returns the best objective bound. In case of minimization, it is
-  // a lower bound on the objective value of the optimal integer
-  // solution. Only available for discrete problems.
-  double best_objective_bound() const;
-
-  // Clears the objective: the objective coefficient of each variable
-  // is 0 and the objective offset is 0.
-  void ClearObjective();
-  // Sets the objective coefficient of a variable in the objective.
-  void SetObjectiveCoefficient(MPVariable* const var, double coeff);
-  // Sets the constant term in the objective.
-  void SetObjectiveOffset(double value);
-  // Adds a constant term to the objective.
-  // Note: please use the less ambiguous SetObjectiveOffest() if possible!
-  // TODO(user): remove this, and add GetObjectiveOffset().
-  void AddObjectiveOffset(double value);
-
-  // Sets the optimization direction (maximize: true or minimize: false).
-  void SetOptimizationDirection(bool maximize);
-  // Sets the optimization direction to minimize.
-  void SetMinimization() { SetOptimizationDirection(false); }
-  // Sets the optimization direction to maximize.
-  void SetMaximization() { SetOptimizationDirection(true); }
-  // Is the optimization direction set to maximize?
-  bool Maximization() const;
-  // Is the optimization direction set to minimize?
-  bool Minimization() const;
+  // Note that the objective is owned by the solver, and is initialized to
+  // its default value (see the MPObjective class below) at construction.
+  const MPObjective& Objective() const { return *objective_.get(); }
+  MPObjective* MutableObjective() { return objective_.get(); }
 
   // ----- Solve -----
+
+  // The status of solving the problem.
+  // TODO(user): Figure out once and for all what the status of
+  // underlying solvers exactly mean, especially for feasible and
+  // infeasible.
+  enum ResultStatus {
+    OPTIMAL,     // optimal.
+    FEASIBLE,    // feasible, or stopped by limit.
+    INFEASIBLE,  // proven infeasible.
+    UNBOUNDED,   // proven unbounded.
+    ABNORMAL,    // abnormal, i.e., error of some kind.
+    NOT_SOLVED   // not been solved yet.
+  };
+
   // Solves the problem using default parameter values.
   ResultStatus Solve();
   // Solves the problem using the specified parameter values.
@@ -328,6 +287,14 @@ class MPSolver {
   void Reset();
 
   // ----- Methods using protocol buffers -----
+
+  // The status of loading the problem from a protocol buffer.
+  enum LoadStatus {
+    NO_ERROR = 0,               // no error has been encountered.
+    // Skip value '1' to stay consistent with the .proto.
+    DUPLICATE_VARIABLE_ID = 2,  // error: two variables have the same id.
+    UNKNOWN_VARIABLE_ID = 3,    // error: a variable has an unknown id.
+  };
 
   // Loads model from protocol buffer.
   LoadStatus LoadModel(const MPModelProto& input_model);
@@ -350,6 +317,16 @@ class MPSolver {
                                        MPSolutionResponse* response);
 
   // ----- Misc -----
+
+  // Advanced usage: possible basis status values for a variable and the
+  // slack variable of a linear constraint.
+  enum BasisStatus {
+    FREE = 0,
+    AT_LOWER_BOUND,
+    AT_UPPER_BOUND,
+    FIXED_VALUE,
+    BASIC
+  };
 
   // Infinity. You can use -MPSolver::infinity() for negative infinity.
   static double infinity() {
@@ -444,6 +421,22 @@ class MPSolver {
   friend class SCIPInterface;
   friend class MPSolverInterface;
 
+  // *** DEPRECATED ***
+  // Setters and getters for the objective. Please call
+  // Objective().Getter() and MutableObjective()->Setter() instead.
+  // TODO(user): remove when they are no longer used.
+  double objective_value() const;
+  double best_objective_bound() const;
+  void ClearObjective();
+  void SetObjectiveCoefficient(const MPVariable* const var, double coeff);
+  void SetObjectiveOffset(double value);
+  void AddObjectiveOffset(double value);
+  void SetOptimizationDirection(bool maximize);
+  void SetMinimization() { SetOptimizationDirection(false); }
+  void SetMaximization() { SetOptimizationDirection(true); }
+  bool Maximization() const;
+  bool Minimization() const;
+
  private:
   // Computes the size of the constraint with the largest number of
   // coefficients with index in [min_constraint_index,
@@ -462,14 +455,16 @@ class MPSolver {
 
   // The vector of variables in the problem.
   std::vector<MPVariable*> variables_;
-  hash_set<string> variables_names_;
+  // A map from a variable's name to its index in variables_.
+  hash_map<string, int> variable_name_to_index_;
 
   // The vector of constraints in the problem.
   std::vector<MPConstraint*> constraints_;
-  hash_set<string> constraints_names_;
+  // A map from a constraint's name to its index in constraints_.
+  hash_map<string, int> constraint_name_to_index_;
 
   // The linear objective function.
-  scoped_ptr<MPObjective> linear_objective_;
+  scoped_ptr<MPObjective> objective_;
 
   // Time limit in milliseconds (0 = no limit).
   int64 time_limit_;
@@ -481,6 +476,78 @@ class MPSolver {
   WallTimer timer_;
 
   DISALLOW_COPY_AND_ASSIGN(MPSolver);
+};
+
+// A class to express a linear objective.
+class MPObjective {
+ public:
+  // Clears the offset, all variables and coefficients, and the optimization
+  // direction.
+  void Clear();
+
+  // Sets the coefficient of the variable in the objective.
+  void SetCoefficient(const MPVariable* const var, double coeff);
+  // Gets the coefficient of a given variable in the objective (which
+  // is 0 if the variable does not appear in the objective).
+  double GetCoefficient(const MPVariable* const var) const;
+
+  // Sets the constant term in the objective.
+  void SetOffset(double value);
+  // Gets the constant term in the objective.
+  double offset() const { return offset_; }
+
+  // Adds a constant term to the objective.
+  // Note: please use the less ambiguous SetOffest() if possible!
+  // TODO(user): remove this.
+  void AddOffset(double value) { SetOffset(offset() + value); }
+
+  // Sets the optimization direction (maximize: true or minimize: false).
+  void SetOptimizationDirection(bool maximize);
+  // Sets the optimization direction to minimize.
+  void SetMinimization() { SetOptimizationDirection(false); }
+  // Sets the optimization direction to maximize.
+  void SetMaximization() { SetOptimizationDirection(true); }
+  // Is the optimization direction set to maximize?
+  bool maximization() const;
+  // Is the optimization direction set to minimize?
+  bool minimization() const;
+
+  // Returns the objective value of the best solution found so far. It
+  // is the optimal objective value if the problem has been solved to
+  // optimality.
+  double Value() const;
+
+  // Returns the best objective bound. In case of minimization, it is
+  // a lower bound on the objective value of the optimal integer
+  // solution. Only available for discrete problems.
+  double BestBound() const;
+
+ private:
+  friend class MPSolver;
+  friend class MPSolverInterface;
+  friend class CBCInterface;
+  friend class CLPInterface;
+  friend class GLPKInterface;
+  friend class SCIPInterface;
+
+  // Constructor. An objective points to a single MPSolverInterface
+  // that is specified in the constructor. An objective cannot belong
+  // to several models.
+  // At construction, an MPObjective has no terms (which is equivalent
+  // on having a coefficient of 0 for all variables), and an offset of 0.
+  explicit MPObjective(MPSolverInterface* const interface)
+      : interface_(interface), offset_(0.0), value_(0.0) {}
+
+  MPSolverInterface* const interface_;
+
+  // Mapping var -> coefficient.
+  hash_map<const MPVariable*, double> coefficients_;
+  // Constant term.
+  double offset_;
+  // The value of the objective function.
+  double value_;
+
+  DISALLOW_COPY_AND_ASSIGN(MPObjective);
 };
 
 // The class for variables of a Mathematical Programming (MP) model.
@@ -562,7 +629,10 @@ class MPConstraint {
   void Clear();
 
   // Sets the coefficient of the variable on the constraint.
-  void SetCoefficient(MPVariable* const var, double coeff);
+  void SetCoefficient(const MPVariable* const var, double coeff);
+  // Gets the coefficient of a given variable on the constraint (which
+  // is 0 if the variable does not appear in the constraint).
+  double GetCoefficient(const MPVariable* const var) const;
 
   // Returns the lower bound.
   double lb() const { return lb_; }
@@ -620,7 +690,7 @@ class MPConstraint {
   bool ContainsNewVariables();
 
   // Mapping var -> coefficient.
-  hash_map<MPVariable*, double> coefficients_;
+  hash_map<const MPVariable*, double> coefficients_;
 
   // The lower bound for the linear constraint.
   double lb_;
@@ -634,47 +704,6 @@ class MPConstraint {
   MPSolverInterface* const interface_;
   DISALLOW_COPY_AND_ASSIGN(MPConstraint);
 };
-
-
-// A class to express a linear objective.
-class MPObjective {
- public:
-  // Clears all variables and coefficients.
-  void Clear();
-
-  // Sets the coefficient of the variable in the objective.
-  void SetCoefficient(MPVariable* const var, double coeff);
-
-  // Sets the constant term in the objective.
-  void SetOffset(double value);
-  // Adds a constant term to the objective.
-  // Note: please use the less ambiguous SetOffest() if possible!
-  // TODO(user): remove this, and add GetOffset().
-  void AddOffset(double value);
-
- private:
-  friend class MPSolver;
-  friend class MPSolverInterface;
-  friend class CBCInterface;
-  friend class CLPInterface;
-  friend class GLPKInterface;
-  friend class SCIPInterface;
-
-  // Constructor. An objective points to a single MPSolverInterface
-  // that is specified in the constructor. An objective cannot belong
-  // to several models.
-  explicit MPObjective(MPSolverInterface* const interface)
-      : offset_(0.0), interface_(interface) {}
-
-  // Mapping var -> coefficient.
-  hash_map<MPVariable*, double> coefficients_;
-  // Constant term.
-  double offset_;
-
-  MPSolverInterface* const interface_;
-  DISALLOW_COPY_AND_ASSIGN(MPObjective);
-};
-
 
 
 // This class stores parameter settings for LP and MIP solvers.
@@ -886,7 +915,7 @@ class MPSolverInterface {
 
   // Changes a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
-                              MPVariable* const variable,
+                              const MPVariable* const variable,
                               double new_value,
                               double old_value) = 0;
 
@@ -894,7 +923,7 @@ class MPSolverInterface {
   virtual void ClearConstraint(MPConstraint* const constraint) = 0;
 
   // Changes a coefficient in the linear objective.
-  virtual void SetObjectiveCoefficient(MPVariable* const variable,
+  virtual void SetObjectiveCoefficient(const MPVariable* const variable,
                                        double coefficient) = 0;
 
   // Changes the constant term in the linear objective.
@@ -924,6 +953,11 @@ class MPSolverInterface {
   void CheckSolutionIsSynchronized() const;
   // Checks whether a feasible solution exists.
   virtual void CheckSolutionExists() const;
+  // Handy shortcut to do both checks above (it is often used).
+  void CheckSolutionIsSynchronizedAndExists() const {
+    CheckSolutionIsSynchronized();
+    CheckSolutionExists();
+  }
   // Checks whether information on the best objective bound exists.
   virtual void CheckBestObjectiveBoundExists() const;
 
@@ -974,6 +1008,11 @@ class MPSolverInterface {
   virtual double ComputeExactConditionNumber() const = 0;
 
   friend class MPSolver;
+
+  // To access the maximize_ bool. See MPObjective::SetOptimizationDirection()
+  // in the .cc.
+  friend class MPObjective;
+
  protected:
   MPSolver* const solver_;
   // Indicates whether the model and the solution are synchronized.

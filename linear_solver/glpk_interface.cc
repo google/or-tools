@@ -119,13 +119,13 @@ class GLPKInterface : public MPSolverInterface {
   void AddVariable(MPVariable* const var);
   // Change a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
-                              MPVariable* const variable,
+                              const MPVariable* const variable,
                               double new_value,
                               double old_value);
   // Clear a constraint from all its terms.
   virtual void ClearConstraint(MPConstraint* const constraint);
   // Change a coefficient in the linear objective
-  virtual void SetObjectiveCoefficient(MPVariable* const variable,
+  virtual void SetObjectiveCoefficient(const MPVariable* const variable,
                                        double coefficient);
   // Change the constant term in the linear objective.
   virtual void SetObjectiveOffset(double value);
@@ -324,7 +324,7 @@ void GLPKInterface::SetConstraintBounds(int index, double lb, double ub) {
 }
 
 void GLPKInterface::SetCoefficient(MPConstraint* const constraint,
-                                   MPVariable* const variable,
+                                   const MPVariable* const variable,
                                    double new_value,
                                    double old_value) {
   InvalidateSolutionSynchronization();
@@ -353,7 +353,7 @@ void GLPKInterface::ClearConstraint(MPConstraint* const constraint) {
 }
 
 // Cached
-void GLPKInterface::SetObjectiveCoefficient(MPVariable* const variable,
+void GLPKInterface::SetObjectiveCoefficient(const MPVariable* const variable,
                                             double coefficient) {
   sync_status_ = MUST_RELOAD;
 }
@@ -366,8 +366,8 @@ void GLPKInterface::SetObjectiveOffset(double value) {
 // Clear objective of all its terms (linear)
 void GLPKInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
-  for (ConstIter<hash_map<MPVariable*, double> >
-           it(solver_->linear_objective_->coefficients_);
+  for (ConstIter<hash_map<const MPVariable*, double> > it(
+           solver_->objective_->coefficients_);
        !it.at_end(); ++it) {
     const int var_index = it->first->index();
     // Variable may have not been extracted yet.
@@ -445,7 +445,8 @@ void GLPKInterface::ExtractOneConstraint(MPConstraint* const constraint,
                                          double* const coefs) {
   // GLPK convention is to start indexing at 1.
   int k = 1;
-  for (ConstIter<hash_map<MPVariable*, double> > it(constraint->coefficients_);
+  for (ConstIter<hash_map<const MPVariable*, double> > it(
+           constraint->coefficients_);
        !it.at_end(); ++it) {
     const int var_index = it->first->index();
     DCHECK_NE(kNoIndex, var_index);
@@ -493,7 +494,7 @@ void GLPKInterface::ExtractNewConstraints() {
       int k = 1;
       for (int i = 0; i < solver_->constraints_.size(); ++i) {
         MPConstraint* ct = solver_->constraints_[i];
-        for (hash_map<MPVariable*, double>::const_iterator it =
+        for (hash_map<const MPVariable*, double>::const_iterator it =
                  ct->coefficients_.begin();
              it != ct->coefficients_.end();
              ++it) {
@@ -526,14 +527,14 @@ void GLPKInterface::ExtractNewConstraints() {
 void GLPKInterface::ExtractObjective() {
   // Linear objective: set objective coefficients for all variables
   // (some might have been modified).
-  for (hash_map<MPVariable*, double>::const_iterator it =
-           solver_->linear_objective_->coefficients_.begin();
-       it != solver_->linear_objective_->coefficients_.end();
+  for (hash_map<const MPVariable*, double>::const_iterator it =
+           solver_->objective_->coefficients_.begin();
+       it != solver_->objective_->coefficients_.end();
        ++it) {
     glp_set_obj_coef(lp_, it->first->index(), it->second);
   }
   // Constant term.
-  glp_set_obj_coef(lp_, 0, solver_->linear_objective_->offset_);
+  glp_set_obj_coef(lp_, 0, solver_->Objective().offset());
 }
 
 // Solve the problem using the parameter values specified.
@@ -725,7 +726,7 @@ double GLPKInterface::best_objective_bound() const {
     CheckBestObjectiveBoundExists();
     if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
       // Special case for empty model.
-      return solver_->linear_objective_->offset_;
+      return solver_->Objective().offset();
     } else {
       return mip_callback_info_->best_objective_bound_;
     }

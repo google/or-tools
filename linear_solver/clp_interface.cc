@@ -75,14 +75,14 @@ class CLPInterface : public MPSolverInterface {
   void AddVariable(MPVariable* const var);
   // Change a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
-                              MPVariable* const variable,
+                              const MPVariable* const variable,
                               double new_value,
                               double old_value);
   // Clear a constraint from all its terms.
   virtual void ClearConstraint(MPConstraint* const constraint);
 
   // Change a coefficient in the linear objective.
-  virtual void SetObjectiveCoefficient(MPVariable* const variable,
+  virtual void SetObjectiveCoefficient(const MPVariable* const variable,
                                        double coefficient);
   // Change the constant term in the linear objective.
   virtual void SetObjectiveOffset(double value);
@@ -217,7 +217,7 @@ void CLPInterface::SetConstraintBounds(int index, double lb, double ub) {
 }
 
 void CLPInterface::SetCoefficient(MPConstraint* const constraint,
-                                  MPVariable* const variable,
+                                  const MPVariable* const variable,
                                   double new_value,
                                   double old_value) {
   InvalidateSolutionSynchronization();
@@ -242,7 +242,7 @@ void CLPInterface::ClearConstraint(MPConstraint* const constraint) {
   const int constraint_index = constraint->index();
   // Constraint may not have been extracted yet.
   if (constraint_index != kNoIndex) {
-    for (ConstIter<hash_map<MPVariable*, double> >
+    for (ConstIter<hash_map<const MPVariable*, double> >
              it(constraint->coefficients_); !it.at_end(); ++it) {
       const int var_index = it->first->index();
       DCHECK_NE(kNoIndex, var_index);
@@ -252,7 +252,7 @@ void CLPInterface::ClearConstraint(MPConstraint* const constraint) {
 }
 
 // Cached
-void CLPInterface::SetObjectiveCoefficient(MPVariable* const variable,
+void CLPInterface::SetObjectiveCoefficient(const MPVariable* const variable,
                                            double coefficient) {
   sync_status_ = MUST_RELOAD;
 }
@@ -266,8 +266,8 @@ void CLPInterface::SetObjectiveOffset(double value) {
 void CLPInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
   // Clear linear terms
-  for (ConstIter<hash_map<MPVariable*, double> >
-           it(solver_->linear_objective_->coefficients_);
+  for (ConstIter<hash_map<const MPVariable*, double> >
+           it(solver_->objective_->coefficients_);
        !it.at_end(); ++it) {
     const int var_index = it->first->index();
     // Variable may have not been extracted yet.
@@ -339,7 +339,8 @@ void CLPInterface::ExtractNewVariables() {
       // Add new variables to existing constraints.
       for (int i = 0; i < last_constraint_index_; i++) {
         MPConstraint* const ct = solver_->constraints_[i];
-        for (ConstIter<hash_map<MPVariable*, double> > it(ct->coefficients_);
+        for (ConstIter<hash_map<const MPVariable*, double> > it(
+                 ct->coefficients_);
              !it.at_end(); ++it) {
           const int var_index = it->first->index();
           DCHECK_NE(kNoIndex, var_index);
@@ -383,7 +384,8 @@ void CLPInterface::ExtractNewConstraints() {
         size = 1;
       }
       int j = 0;
-      for (ConstIter<hash_map<MPVariable*, double> > it(ct->coefficients_);
+      for (ConstIter<hash_map<const MPVariable*, double> >
+               it(ct->coefficients_);
            !it.at_end(); ++it) {
         const int index = it->first->index();
         DCHECK_NE(kNoIndex, index);
@@ -412,15 +414,15 @@ void CLPInterface::ExtractNewConstraints() {
 void CLPInterface::ExtractObjective() {
   // Linear objective: set objective coefficients for all variables
   // (some might have been modified)
-  for (ConstIter<hash_map<MPVariable*, double> >
-           it(solver_->linear_objective_->coefficients_);
+  for (ConstIter<hash_map<const MPVariable*, double> >
+           it(solver_->objective_->coefficients_);
        !it.at_end(); ++it) {
     clp_->setObjectiveCoefficient(it->first->index(), it->second);
   }
 
   // Constant term. Use -offset instead of +offset because CLP does
   // not follow conventions.
-  clp_->setObjectiveOffset(-solver_->linear_objective_->offset_);
+  clp_->setObjectiveOffset(-solver_->Objective().offset());
 }
 
 // Extracts model and solve the LP/MIP. Returns the status of the search.
@@ -449,7 +451,7 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
   if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
     sync_status_ = SOLUTION_SYNCHRONIZED;
     result_status_ = MPSolver::OPTIMAL;
-    objective_value_ = solver_->linear_objective_->offset_;
+    objective_value_ = solver_->Objective().offset();
     return result_status_;
   }
 

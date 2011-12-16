@@ -104,7 +104,7 @@ class CBCInterface : public MPSolverInterface {
   void AddVariable(MPVariable* const var);
   // Change a coefficient in a constraint.
   virtual void SetCoefficient(MPConstraint* const constraint,
-                              MPVariable* const variable,
+                              const MPVariable* const variable,
                               double new_value,
                               double old_value) {
     sync_status_ = MUST_RELOAD;
@@ -115,7 +115,7 @@ class CBCInterface : public MPSolverInterface {
   }
 
   // Change a coefficient in the linear objective.
-  virtual void SetObjectiveCoefficient(MPVariable* const variable,
+  virtual void SetObjectiveCoefficient(const MPVariable* const variable,
                                        double coefficient) {
     sync_status_ = MUST_RELOAD;
   }
@@ -295,8 +295,8 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
     sync_status_ = SOLUTION_SYNCHRONIZED;
     result_status_ = MPSolver::OPTIMAL;
-    objective_value_ = solver_->linear_objective_->offset_;
-    best_objective_bound_ = solver_->linear_objective_->offset_;
+    objective_value_ = solver_->Objective().offset();
+    best_objective_bound_ = solver_->Objective().offset();
     return result_status_;
   }
 
@@ -308,17 +308,12 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       CoinModel build;
       // Create dummy variable for objective offset.
       build.addColumn(0, NULL, NULL, 1.0, 1.0,
-                      solver_->linear_objective_->offset_, "dummy", false);
+                      solver_->Objective().offset(), "dummy", false);
       const int nb_vars = solver_->variables_.size();
       for (int i = 0; i < nb_vars; ++i) {
         MPVariable* const var = solver_->variables_[i];
         var->set_index(i + 1);  // offset by 1 because of dummy variable.
-        hash_map<MPVariable*, double>::const_iterator it =
-            solver_->linear_objective_->coefficients_.find(var);
-        const double obj_coeff =
-            it == solver_->linear_objective_->coefficients_.end() ?
-            0.0 :
-            it->second;
+        const double obj_coeff = solver_->Objective().GetCoefficient(var);
         if (var->name().empty()) {
           build.addColumn(0, NULL, NULL, var->lb(), var->ub(), obj_coeff,
                           NULL, var->integer());
@@ -345,7 +340,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
         MPConstraint* const  ct = solver_->constraints_[i];
         const int size = ct->coefficients_.size();
         int j = 0;
-        for (hash_map<MPVariable*, double>::const_iterator it =
+        for (hash_map<const MPVariable*, double>::const_iterator it =
                  ct->coefficients_.begin();
              it != ct->coefficients_.end();
              ++it) {
@@ -462,7 +457,8 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
 
   VLOG(1) << "cbc result status: " << tmp_status;
   /* Final status of problem
-     (info from cbc/v2_6_2/Cbc/src/CbcSolver.cpp)
+     (info from cbc/.../CbcSolver.cpp,
+      See http://cs?q="cbc+status"+file:CbcSolver.cpp)
      Some of these can be found out by is...... functions
      -1 before branchAndBound
      0 finished - check isProvenOptimal or isProvenInfeasible to see
@@ -483,7 +479,9 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       } else if (model.isProvenInfeasible()) {
         result_status_ = MPSolver::INFEASIBLE;
       } else {
-        LOG(FATAL) << "Unknown solver status.";
+        LOG(FATAL)
+            << "Unknown solver status! Secondary status: "
+            << model.secondaryStatus();
       }
       break;
     case 1:
