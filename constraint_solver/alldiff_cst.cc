@@ -79,14 +79,15 @@ class ValueAllDifferent : public BaseAllDifferent {
     visitor->VisitIntegerArgument(ModelVisitor::kRangeArgument, 0);
     visitor->EndVisitConstraint(ModelVisitor::kAllDifferent, this);
   }
+
  private:
-  int checked_;
+  RevSwitch all_instantiated_;
 };
 
 ValueAllDifferent::ValueAllDifferent(Solver* const s,
                                      const IntVar* const* vars,
                                      int size)
-    : BaseAllDifferent(s, vars, size), checked_(0) {}
+    : BaseAllDifferent(s, vars, size) {}
 
 string ValueAllDifferent::DebugString() const {
   return DebugStringInternal("ValueAllDifferent");
@@ -124,7 +125,7 @@ void ValueAllDifferent::OneMove(int index) {
 }
 
 bool ValueAllDifferent::AllMoves() {
-  if (checked_ || size_ == 0) {
+  if (all_instantiated_.Switched() || size_ == 0) {
     return true;
   }
   for (int i = 0; i < size_; ++i) {
@@ -143,7 +144,7 @@ bool ValueAllDifferent::AllMoves() {
       solver()->Fail();
     }
   }
-  solver()->SaveAndSetValue(&checked_, 1);
+  all_instantiated_.Switch(solver());
   return true;
 }
 

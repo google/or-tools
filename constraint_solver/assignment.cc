@@ -64,10 +64,12 @@ void IntVarElement::Copy(const IntVarElement& element) {
   }
 }
 
-void IntVarElement::StoreFromProto(
+void IntVarElement::LoadFromProto(
     const IntVarAssignmentProto& int_var_assignment_proto) {
   min_ = int_var_assignment_proto.min();
-  max_ = int_var_assignment_proto.max();
+  max_ = int_var_assignment_proto.has_max() ?
+      int_var_assignment_proto.max() :
+      min_;
   if (int_var_assignment_proto.active()) {
     Activate();
   } else {
@@ -91,11 +93,13 @@ bool IntVarElement::operator==(const IntVarElement& element) const {
 }
 
 
-void IntVarElement::RestoreToProto(
+void IntVarElement::WriteToProto(
     IntVarAssignmentProto* int_var_assignment_proto) const {
   int_var_assignment_proto->set_var_id(var_->name());
   int_var_assignment_proto->set_min(min_);
-  int_var_assignment_proto->set_max(max_);
+  if (max_ != min_) {
+    int_var_assignment_proto->set_max(max_);
+  }
   int_var_assignment_proto->set_active(Activated());
 }
 
@@ -177,16 +181,24 @@ void IntervalVarElement::Restore() {
   }
 }
 
-void IntervalVarElement::StoreFromProto(
+void IntervalVarElement::LoadFromProto(
     const IntervalVarAssignmentProto& interval_var_assignment_proto) {
   start_min_ = interval_var_assignment_proto.start_min();
-  start_max_ = interval_var_assignment_proto.start_max();
+  start_max_ = interval_var_assignment_proto.has_start_max() ?
+      interval_var_assignment_proto.start_max() :
+      start_min_;
   duration_min_ = interval_var_assignment_proto.duration_min();
-  duration_max_ = interval_var_assignment_proto.duration_max();
+  duration_max_ = interval_var_assignment_proto.has_duration_max() ?
+      interval_var_assignment_proto.duration_max() :
+      duration_min_;
   end_min_ = interval_var_assignment_proto.end_min();
-  end_max_ = interval_var_assignment_proto.end_max();
+  end_max_ = interval_var_assignment_proto.has_end_max() ?
+      interval_var_assignment_proto.end_max() :
+      end_min_;
   performed_min_ = interval_var_assignment_proto.performed_min();
-  performed_max_ = interval_var_assignment_proto.performed_max();
+  performed_max_ = interval_var_assignment_proto.has_performed_max() ?
+      interval_var_assignment_proto.performed_max() :
+      performed_min_;
   if (interval_var_assignment_proto.active()) {
     Activate();
   } else {
@@ -194,17 +206,25 @@ void IntervalVarElement::StoreFromProto(
   }
 }
 
-void IntervalVarElement::RestoreToProto(
+void IntervalVarElement::WriteToProto(
     IntervalVarAssignmentProto* interval_var_assignment_proto) const {
   interval_var_assignment_proto->set_var_id(var_->name());
   interval_var_assignment_proto->set_start_min(start_min_);
-  interval_var_assignment_proto->set_start_max(start_max_);
+  if (start_max_ != start_min_) {
+    interval_var_assignment_proto->set_start_max(start_max_);
+  }
   interval_var_assignment_proto->set_duration_min(duration_min_);
-  interval_var_assignment_proto->set_duration_max(duration_max_);
+  if (duration_max_ != duration_min_) {
+    interval_var_assignment_proto->set_duration_max(duration_max_);
+  }
   interval_var_assignment_proto->set_end_min(end_min_);
-  interval_var_assignment_proto->set_end_max(end_max_);
+  if (end_max_ != end_min_) {
+    interval_var_assignment_proto->set_end_max(end_max_);
+  }
   interval_var_assignment_proto->set_performed_min(performed_min_);
-  interval_var_assignment_proto->set_performed_max(performed_max_);
+  if (performed_max_ != performed_min_) {
+    interval_var_assignment_proto->set_performed_max(performed_max_);
+  }
   interval_var_assignment_proto->set_active(Activated());
 }
 
@@ -264,7 +284,9 @@ SequenceVarElement::SequenceVarElement(SequenceVar* const var) {
 
 void SequenceVarElement::Reset(SequenceVar* const var) {
   var_ = var;
-  sequence_.clear();
+  forward_sequence_.clear();
+  backward_sequence_.clear();
+  unperformed_.clear();
 }
 
 SequenceVarElement* SequenceVarElement::Clone() {
@@ -274,7 +296,9 @@ SequenceVarElement* SequenceVarElement::Clone() {
 }
 
 void SequenceVarElement::Copy(const SequenceVarElement& element) {
-  sequence_ = element.sequence_;
+  forward_sequence_ = element.forward_sequence_;
+  backward_sequence_ = element.backward_sequence_;
+  unperformed_ = element.unperformed_;
   var_ = element.var_;
   if (element.Activated()) {
     Activate();
@@ -284,39 +308,62 @@ void SequenceVarElement::Copy(const SequenceVarElement& element) {
 }
 
 void SequenceVarElement::Store() {
-  var_->FillSequence(&sequence_);
+  var_->FillSequence(&forward_sequence_, &backward_sequence_, &unperformed_);
 }
 
 void SequenceVarElement::Restore() {
-  for (int i = 0; i < sequence_.size(); ++i) {
-    var_->RankFirst(sequence_[i]);
-  }
+  var_->RankSequence(forward_sequence_, backward_sequence_, unperformed_);
 }
 
-void SequenceVarElement::StoreFromProto(
+void SequenceVarElement::LoadFromProto(
     const SequenceVarAssignmentProto& sequence_var_assignment_proto) {
-  for (int i = 0; i < sequence_var_assignment_proto.sequence_size(); ++i) {
-    sequence_.push_back(sequence_var_assignment_proto.sequence(i));
+  for (int i = 0;
+       i < sequence_var_assignment_proto.forward_sequence_size();
+       ++i) {
+    forward_sequence_.push_back(
+        sequence_var_assignment_proto.forward_sequence(i));
+  }
+  for (int i = 0;
+       i < sequence_var_assignment_proto.backward_sequence_size();
+       ++i) {
+    backward_sequence_.push_back(
+        sequence_var_assignment_proto.backward_sequence(i));
+  }
+  for (int i = 0;
+       i < sequence_var_assignment_proto.unperformed_size();
+       ++i) {
+    unperformed_.push_back(
+        sequence_var_assignment_proto.unperformed(i));
   }
   if (sequence_var_assignment_proto.active()) {
     Activate();
   } else {
     Deactivate();
   }
+  DCHECK(CheckClassInvariants());
 }
 
-void SequenceVarElement::RestoreToProto(
+void SequenceVarElement::WriteToProto(
     SequenceVarAssignmentProto* sequence_var_assignment_proto) const {
   sequence_var_assignment_proto->set_var_id(var_->name());
   sequence_var_assignment_proto->set_active(Activated());
-  for (int i = 0; i < sequence_.size(); ++i) {
-    sequence_var_assignment_proto->add_sequence(sequence_[i]);
+  for (int i = 0; i < forward_sequence_.size(); ++i) {
+    sequence_var_assignment_proto->add_forward_sequence(forward_sequence_[i]);
+  }
+  for (int i = 0; i < backward_sequence_.size(); ++i) {
+    sequence_var_assignment_proto->add_backward_sequence(backward_sequence_[i]);
+  }
+  for (int i = 0; i < unperformed_.size(); ++i) {
+    sequence_var_assignment_proto->add_unperformed(unperformed_[i]);
   }
 }
 
 string SequenceVarElement::DebugString() const {
   if (Activated()) {
-    return StringPrintf("[%s]", IntVectorToString(sequence_, ",").c_str());
+    return StringPrintf("[forward %s, backward %s, unperformed [%s]]",
+                        IntVectorToString(forward_sequence_, " -> ").c_str(),
+                        IntVectorToString(backward_sequence_, " -> ").c_str(),
+                        IntVectorToString(unperformed_, ", ").c_str());
   } else {
     return "(...)";
   }
@@ -334,23 +381,67 @@ bool SequenceVarElement::operator==(const SequenceVarElement& element) const {
     // their other fields.
     return true;
   }
-  if (sequence_.size() != element.sequence_.size()) {
-    return false;
-  }
-  for (int i = 0; i < sequence_.size(); ++i) {
-    if (sequence_[i] != element.sequence_[i]) {
+  return forward_sequence_ == element.forward_sequence_ &&
+      backward_sequence_ == element.backward_sequence_ &&
+      unperformed_ == element.unperformed_;
+}
+
+const std::vector<int>& SequenceVarElement::ForwardSequence() const {
+  return forward_sequence_;
+}
+
+const std::vector<int>& SequenceVarElement::BackwardSequence() const {
+  return backward_sequence_;
+}
+
+const std::vector<int>& SequenceVarElement::Unperformed() const {
+  return unperformed_;
+}
+
+void SequenceVarElement::SetSequence(const std::vector<int>& forward_sequence,
+                                     const std::vector<int>& backward_sequence,
+                                     const std::vector<int>& unperformed) {
+  forward_sequence_ = forward_sequence;
+  backward_sequence_ = backward_sequence;
+  unperformed_ = unperformed;
+  DCHECK(CheckClassInvariants());
+}
+
+void SequenceVarElement::SetForwardSequence(
+    const std::vector<int>& forward_sequence) {
+  forward_sequence_ = forward_sequence;
+}
+
+void SequenceVarElement::SetBackwardSequence(
+    const std::vector<int>& backward_sequence) {
+  backward_sequence_ = backward_sequence;
+}
+
+void SequenceVarElement::SetUnperformed(const std::vector<int>& unperformed) {
+  unperformed_ = unperformed;
+}
+
+bool SequenceVarElement::CheckClassInvariants() {
+  hash_set<int> visited;
+  for (ConstIter<std::vector<int> > it(forward_sequence_); !it.at_end(); ++it) {
+    if (ContainsKey(visited, *it)) {
       return false;
     }
+    visited.insert(*it);
+  }
+  for (ConstIter<std::vector<int> > it(backward_sequence_); !it.at_end(); ++it) {
+    if (ContainsKey(visited, *it)) {
+      return false;
+    }
+    visited.insert(*it);
+  }
+  for (ConstIter<std::vector<int> > it(unperformed_); !it.at_end(); ++it) {
+    if (ContainsKey(visited, *it)) {
+      return false;
+    }
+    visited.insert(*it);
   }
   return true;
-}
-
-const std::vector<int>& SequenceVarElement::Sequence() const {
-  return sequence_;
-}
-
-void SequenceVarElement::SetSequence(const std::vector<int>& new_sequence) {
-  sequence_ = new_sequence;
 }
 
 // ----- Assignment -----
@@ -422,7 +513,7 @@ void LoadElement(const hash_map<string, E*>& id_to_element_map,
   CHECK(!var_id.empty());
   E* element = NULL;
   if (FindCopy(id_to_element_map, var_id, &element)) {
-    element->StoreFromProto(proto);
+    element->LoadFromProto(proto);
   } else {
     LOG(INFO) << "Variable " << var_id
               << " not in assignment; skipping variable";
@@ -463,7 +554,7 @@ void RealLoad(const AssignmentProto& assignment_proto,
     Element& element = container->MutableElement(i);
     const Proto& proto = (assignment_proto.*GetElem)(i);
     if (element.Var()->name() == proto.var_id()) {
-      element.StoreFromProto(proto);
+      element.LoadFromProto(proto);
     } else {
       fast_load = false;
     }
@@ -505,7 +596,9 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
     const string objective_id = objective.var_id();
     CHECK(!objective_id.empty());
     if (HasObjective() && objective_id.compare(Objective()->name()) == 0) {
-      SetObjectiveRange(objective.min(), objective.max());
+      const int64 obj_min = objective.min();
+      const int64 obj_max = objective.has_max() ? objective.max() : obj_min;
+      SetObjectiveRange(obj_min, obj_max);
       if (objective.active()) {
         ActivateObjective();
       } else {
@@ -543,7 +636,7 @@ void RealSave(AssignmentProto* const assignment_proto,
     const string& name = var->name();
     if (!name.empty()) {
       Proto* const var_assignment_proto = (assignment_proto->*Add)();
-      element.RestoreToProto(var_assignment_proto);
+      element.WriteToProto(var_assignment_proto);
     }
   }
 }
@@ -574,8 +667,12 @@ void Assignment::Save(AssignmentProto* const assignment_proto) const {
     if (!name.empty()) {
       IntVarAssignmentProto* objective = assignment_proto->mutable_objective();
       objective->set_var_id(name);
-      objective->set_min(ObjectiveMin());
-      objective->set_max(ObjectiveMax());
+      const int64 obj_min = ObjectiveMin();
+      const int64 obj_max = ObjectiveMax();
+      objective->set_min(obj_min);
+      if (obj_min != obj_max) {
+        objective->set_max(obj_max);
+      }
       objective->set_active(ActivatedObjective());
     }
   }
@@ -818,14 +915,45 @@ SequenceVarElement& Assignment::FastAdd(SequenceVar* const v) {
   return sequence_var_container_.FastAdd(v);
 }
 
-const std::vector<int>& Assignment::Sequence(const SequenceVar* const v) const {
-  return sequence_var_container_.Element(v).Sequence();
+const std::vector<int>& Assignment::ForwardSequence(
+    const SequenceVar* const v) const {
+  return sequence_var_container_.Element(v).ForwardSequence();
 }
 
+const std::vector<int>& Assignment::BackwardSequence(
+    const SequenceVar* const v) const {
+  return sequence_var_container_.Element(v).BackwardSequence();
+}
+
+const std::vector<int>& Assignment::Unperformed(
+    const SequenceVar* const v) const {
+  return sequence_var_container_.Element(v).Unperformed();
+}
 
 void Assignment::SetSequence(const SequenceVar* const v,
-                             const std::vector<int>& new_sequence) {
-  sequence_var_container_.MutableElement(v).SetSequence(new_sequence);
+                             const std::vector<int>& forward_sequence,
+                             const std::vector<int>& backward_sequence,
+                             const std::vector<int>& unperformed) {
+  sequence_var_container_.MutableElement(v).SetSequence(forward_sequence,
+                                                        backward_sequence,
+                                                        unperformed);
+}
+
+void Assignment::SetForwardSequence(const SequenceVar* const v,
+                                    const std::vector<int>& forward_sequence) {
+  sequence_var_container_.MutableElement(v).SetForwardSequence(
+      forward_sequence);
+}
+
+void Assignment::SetBackwardSequence(const SequenceVar* const v,
+                                     const std::vector<int>& backward_sequence) {
+  sequence_var_container_.MutableElement(v).SetBackwardSequence(
+      backward_sequence);
+}
+
+void Assignment::SetUnperformed(const SequenceVar* const v,
+                                const std::vector<int>& unperformed) {
+  sequence_var_container_.MutableElement(v).SetUnperformed(unperformed);
 }
 
 // ----- Objective -----

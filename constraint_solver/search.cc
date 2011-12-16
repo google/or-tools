@@ -366,11 +366,15 @@ class ComposeDecisionBuilder : public DecisionBuilder {
  public:
   ComposeDecisionBuilder();
   explicit ComposeDecisionBuilder(const std::vector<DecisionBuilder*>& dbs)
-      : builders_(dbs), start_index_(0) {}
+      : start_index_(0) {
+    for (int i = 0; i < dbs.size(); ++i) {
+      Add(dbs[i]);
+    }
+  }
   virtual ~ComposeDecisionBuilder() {}
   virtual Decision* Next(Solver* const s);
   virtual string DebugString() const;
-  void add(DecisionBuilder* const db);
+  void Add(DecisionBuilder* const db);
   virtual void AppendMonitors(Solver* const solver,
                               std::vector<SearchMonitor*>* const monitors) {
     for (ConstIter<std::vector<DecisionBuilder*> > it(builders_);
@@ -414,16 +418,18 @@ string ComposeDecisionBuilder::DebugString() const {
       DebugStringArray(builders_.data(), builders_.size(), ", ").c_str());
 }
 
-void ComposeDecisionBuilder::add(DecisionBuilder* const db) {
-  builders_.push_back(db);
+void ComposeDecisionBuilder::Add(DecisionBuilder* const db) {
+  if (db != NULL) {
+    builders_.push_back(db);
+  }
 }
 }  // namespace
 
 DecisionBuilder* Solver::Compose(DecisionBuilder* const db1,
                                  DecisionBuilder* const db2) {
   ComposeDecisionBuilder* c = RevAlloc(new ComposeDecisionBuilder());
-  c->add(db1);
-  c->add(db2);
+  c->Add(db1);
+  c->Add(db2);
   return c;
 }
 
@@ -431,9 +437,9 @@ DecisionBuilder* Solver::Compose(DecisionBuilder* const db1,
                                  DecisionBuilder* const db2,
                                  DecisionBuilder* const db3) {
   ComposeDecisionBuilder* c = RevAlloc(new ComposeDecisionBuilder());
-  c->add(db1);
-  c->add(db2);
-  c->add(db3);
+  c->Add(db1);
+  c->Add(db2);
+  c->Add(db3);
   return c;
 }
 
@@ -442,10 +448,10 @@ DecisionBuilder* Solver::Compose(DecisionBuilder* const db1,
                                  DecisionBuilder* const db3,
                                  DecisionBuilder* const db4) {
   ComposeDecisionBuilder* c = RevAlloc(new ComposeDecisionBuilder());
-  c->add(db1);
-  c->add(db2);
-  c->add(db3);
-  c->add(db4);
+  c->Add(db1);
+  c->Add(db2);
+  c->Add(db3);
+  c->Add(db4);
   return c;
 }
 

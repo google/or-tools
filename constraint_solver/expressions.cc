@@ -160,37 +160,37 @@ class DomainIntVar : public IntVar {
   virtual ~DomainIntVar();
 
   virtual int64 Min() const {
-    return min_;
+    return min_.Value();
   }
   virtual void SetMin(int64 m);
   virtual int64 Max() const {
-    return max_;
+    return max_.Value();
   }
   virtual void SetMax(int64 m);
   virtual void SetRange(int64 l, int64 u);
   virtual void SetValue(int64 v);
-  virtual bool Bound() const { return (min_ == max_); }
+  virtual bool Bound() const { return (min_.Value() == max_.Value()); }
   virtual int64 Value() const {
-    CHECK_EQ(min_, max_) << "variable "
-                         << DebugString().c_str()
-                         << "is not bound.";
-    return min_;
+    CHECK_EQ(min_.Value(), max_.Value()) << "variable "
+                                         << DebugString().c_str()
+                                         << "is not bound.";
+    return min_.Value();
   }
   virtual void RemoveValue(int64 v);
   virtual void RemoveInterval(int64 l, int64 u);
   void CreateBits();
   virtual void WhenBound(Demon* d) {
-    if (min_ != max_) {
+    if (min_.Value() != max_.Value()) {
       bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
     }
   }
   virtual void WhenRange(Demon* d) {
-    if (min_ != max_) {
+    if (min_.Value() != max_.Value()) {
       range_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
     }
   }
   virtual void WhenDomain(Demon* d) {
-    if (min_ != max_) {
+    if (min_.Value() != max_.Value()) {
       domain_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
     }
   }
@@ -201,17 +201,17 @@ class DomainIntVar : public IntVar {
   virtual uint64 Size() const {
     if (bits_ != NULL)
       return bits_->Size();
-    return (max_ - min_ + 1);
+    return (max_.Value() - min_.Value() + 1);
   }
   virtual bool Contains(int64 v) const {
-    if (v < min_ || v > max_)
+    if (v < min_.Value() || v > max_.Value())
       return false;
     return (bits_ == NULL ? true : bits_->Contains(v));
   }
   virtual IntVarIterator* MakeHoleIterator(bool reversible) const;
   virtual IntVarIterator* MakeDomainIterator(bool reversible) const;
-  virtual int64 OldMin() const { return std::min(old_min_, min_); }
-  virtual int64 OldMax() const { return std::max(old_max_, max_); }
+  virtual int64 OldMin() const { return std::min(old_min_, min_.Value()); }
+  virtual int64 OldMax() const { return std::max(old_max_, max_.Value()); }
 
   virtual string DebugString() const;
   BitSet* bitset() const { return bits_; }
@@ -222,25 +222,21 @@ class DomainIntVar : public IntVar {
   friend class LinkExprAndDomainIntVar;
  private:
   void CheckOldMin() {
-    if (old_min_ > min_) {
-      old_min_ = min_;
+    if (old_min_ > min_.Value()) {
+      old_min_ = min_.Value();
     }
   }
   void CheckOldMax() {
-    if (old_max_ < max_) {
-      old_max_ = max_;
+    if (old_max_ < max_.Value()) {
+      old_max_ = max_.Value();
     }
   }
-  int64 min_;
-  int64 max_;
+  Rev<int64> min_;
+  Rev<int64> max_;
   int64 old_min_;
   int64 old_max_;
   int64 new_min_;
   int64 new_max_;
-  // stamp for the min_ of the var.
-  uint64 min_stamp_;
-  // stamp for the max_ of the var.
-  uint64 max_stamp_;
   SimpleRevFIFO<Demon*> bound_demons_;
   SimpleRevFIFO<Demon*> range_demons_;
   SimpleRevFIFO<Demon*> domain_demons_;
@@ -289,14 +285,21 @@ class SimpleBitSet : public DomainIntVar::BitSet {
   };
 
   SimpleBitSet(Solver* const s, int64 vmin, int64 vmax)
-      : bits_(NULL), stamps_(NULL), omin_(vmin), omax_(vmax),
-        size_(static_cast<uint64>(vmax - vmin + 1)),
-        solver_(s), bsize_(BitLength64(size_)), holes_stamp_(s->stamp() - 1) {
-    CHECK_LT(size_, 0xFFFFFFFF) << "Bitset too large";
+      : bits_(NULL),
+        stamps_(NULL),
+        omin_(vmin),
+        omax_(vmax),
+        size_(vmax - vmin + 1),
+        solver_(s),
+        bsize_(BitLength64(size_.Value())),
+        holes_stamp_(s->stamp() - 1) {
+    CHECK_LT(size_.Value(), 0xFFFFFFFF) << "Bitset too large";
     bits_ = new uint64[bsize_];
     stamps_ = new uint64[bsize_];
     for (int i = 0; i < bsize_; ++i) {
-      const int bs = (i == size_ - 1) ? 63 - BitPos64(size_) : 0;
+      const int bs = (i == size_.Value() - 1) ?
+          63 - BitPos64(size_.Value()) :
+          0;
       bits_[i] = kAllBits64 >> bs;
       stamps_[i] = s->stamp() - 1;
     }
@@ -311,7 +314,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
         solver_(s),
         bsize_(BitLength64(vmax - vmin + 1)),
         holes_stamp_(s->stamp() - 1) {
-    CHECK_LT(size_, 0xFFFFFFFF) << "Bitset too large";
+    CHECK_LT(size_.Value(), 0xFFFFFFFF) << "Bitset too large";
     bits_ = new uint64[bsize_];
     stamps_ = new uint64[bsize_];
     for (int i = 0; i < bsize_; ++i) {
@@ -345,7 +348,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
         + omin_;
     const uint64 removed_bits =
         BitCountRange64(bits_, cmin - omin_, new_min - omin_ - 1);
-    solver_->SaveAndAdd(&size_, -removed_bits);
+    size_.Add(solver_, -removed_bits);
     return new_min;
   }
 
@@ -357,7 +360,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
         + omin_;
     const uint64 removed_bits =
         BitCountRange64(bits_, new_max - omin_ + 1, cmax - omin_);
-    solver_->SaveAndAdd(&size_, -removed_bits);
+    size_.Add(solver_, -removed_bits);
     return new_max;
   }
 
@@ -365,7 +368,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     DCHECK_GE(val, omin_);
     DCHECK_LE(val, omax_);
     if (bit(val)) {
-      solver_->SaveAndSetValue(&size_, GG_ULONGLONG(1));
+      size_.SetValue(solver_, 1);
       return true;
     }
     return false;
@@ -392,15 +395,14 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     const int pos = BitPos64(val_offset);
     bits_[offset] &= ~OneBit64(pos);
     // Size.
-    solver_->SaveValue(&size_);
-    size_--;
+    size_.Decr(solver_);
     // Holes.
     InitHoles();
     holes_.push_back(val);
     return true;
   }
   virtual uint64 Size() const {
-    return size_;
+    return size_.Value();
   }
 
   virtual string DebugString() const {
@@ -505,7 +507,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
   uint64* stamps_;
   const int64 omin_;
   const int64 omax_;
-  uint64 size_;
+  NumericalRev<int64> size_;
   Solver* const solver_;
   const int bsize_;
   std::vector<int64> removed_;
@@ -557,11 +559,14 @@ class SmallBitSet : public DomainIntVar::BitSet {
   };
 
   SmallBitSet(Solver* const s, int64 vmin, int64 vmax)
-    : bits_(GG_ULONGLONG(0)), stamp_(s->stamp() - 1), omin_(vmin), omax_(vmax),
-      size_(static_cast<uint64>(vmax - vmin + 1)),
-      solver_(s), holes_stamp_(stamp_) {
-    CHECK_LE(size_, 64) << "Bitset too large";
-    bits_ = OneRange64(0, size_ - 1);
+    : bits_(GG_ULONGLONG(0)),
+      stamp_(s->stamp() - 1),
+      omin_(vmin), omax_(vmax),
+      size_(vmax - vmin + 1),
+      solver_(s),
+      holes_stamp_(stamp_) {
+    CHECK_LE(size_.Value(), 64) << "Bitset too large";
+    bits_ = OneRange64(0, size_.Value() - 1);
   }
 
   SmallBitSet(Solver* const s,
@@ -572,7 +577,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
       size_(sorted_values.size()),
       solver_(s), holes_stamp_(stamp_) {
     // We know the array is sorted and does not contains duplicate values.
-    CHECK_LE(size_, 64) << "Bitset too large";
+    CHECK_LE(size_.Value(), 64) << "Bitset too large";
     for (int i = 0; i < sorted_values.size(); ++i) {
       const int64 val = sorted_values[i];
       DCHECK(!IsBitSet64(&bits_, val - omin_));
@@ -596,7 +601,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
     const uint64 new_bits = bits_ & OneRange64(nmin - omin_, cmax - omin_);
     if (new_bits != GG_ULONGLONG(0)) {
       // Compute new size and new min
-      solver_->SaveAndSetValue(&size_, BitCount64(new_bits));
+      size_.SetValue(solver_, BitCount64(new_bits));
       if (bit(nmin)) {  // Common case, the new min is inside the bitset
         return nmin;
       }
@@ -615,7 +620,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
     const uint64 new_bits = bits_ & OneRange64(cmin - omin_, nmax - omin_);
     if (new_bits != GG_ULONGLONG(0)) {
       // Compute new size and new min
-      solver_->SaveAndSetValue(&size_, BitCount64(new_bits));
+      size_.SetValue(solver_, BitCount64(new_bits));
       if (bit(nmax)) {  // Common case, the new max is inside the bitset
         return nmax;
       }
@@ -632,7 +637,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
     // We do not clean the bits. We will use masks to ignore the bits
     // that should have been cleaned.
     if (bit(val)) {
-      solver_->SaveAndSetValue(&size_, GG_ULONGLONG(1));
+      size_.SetValue(solver_, 1);
       return true;
     }
     return false;
@@ -657,8 +662,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
       bits_ &= ~OneBit64(val - omin_);
       DCHECK(!bit(val));
       // Size.
-      solver_->SaveValue(&size_);
-      size_--;
+      size_.Decr(solver_);
       // Holes.
       InitHoles();
       holes_.push_back(val);
@@ -669,7 +673,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
   }
 
   virtual uint64 Size() const {
-    return size_;
+    return size_.Value();
   }
 
   virtual string DebugString() const {
@@ -773,7 +777,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
   uint64 stamp_;
   const int64 omin_;
   const int64 omax_;
-  uint64 size_;
+  NumericalRev<int64> size_;
   Solver* const solver_;
   std::vector<int64> removed_;
   std::vector<int64> holes_;
@@ -959,26 +963,25 @@ DomainIntVar::DomainIntVar(Solver* const s,
                            int64 vmax,
                            const string& name)
     : IntVar(s, name), min_(vmin), max_(vmax), old_min_(vmin),
-      old_max_(vmax), new_min_(vmin), new_max_(vmax), min_stamp_(0),
-      max_stamp_(0), handler_(this), in_process_(false), bits_(NULL) {}
+      old_max_(vmax), new_min_(vmin), new_max_(vmax),
+      handler_(this), in_process_(false), bits_(NULL) {}
 
 DomainIntVar::DomainIntVar(Solver* const s,
                            const std::vector<int64>& sorted_values,
                            const string& name)
     : IntVar(s, name), min_(kint64max), max_(kint64min), old_min_(kint64max),
       old_max_(kint64min), new_min_(kint64max), new_max_(kint64min),
-      min_stamp_(0), max_stamp_(0), handler_(this), in_process_(false),
-      bits_(NULL) {
+      handler_(this), in_process_(false), bits_(NULL) {
   CHECK_GE(sorted_values.size(), 1);
   // We know that the vector is sorted and does not have duplicate values.
   const int64 vmin = sorted_values.front();
   const int64 vmax = sorted_values.back();
   const bool contiguous = vmax - vmin + 1 == sorted_values.size();
 
-  min_ = vmin;
+  min_.SetValue(solver(), vmin);
   old_min_ = vmin;
   new_min_ = vmin;
-  max_ = vmax;
+  max_.SetValue(solver(), vmax);
   old_max_ = vmax;
   new_max_ = vmax;
 
@@ -1000,9 +1003,9 @@ DomainIntVar::DomainIntVar(Solver* const s,
 DomainIntVar::~DomainIntVar() {}
 
 void DomainIntVar::SetMin(int64 m)  {
-  if (m <= min_)
+  if (m <= min_.Value())
     return;
-  if (m > max_)
+  if (m > max_.Value())
     solver()->Fail();
   if (in_process_) {
     if (m > new_min_) {
@@ -1013,17 +1016,11 @@ void DomainIntVar::SetMin(int64 m)  {
     }
   } else {
     CheckOldMin();
-    const uint64 stamp = solver()->stamp();
     const int64 new_min = (bits_ == NULL ?
                            m :
-                           bits_->ComputeNewMin(m, min_, max_));
-    if (min_stamp_ == stamp) {
-      min_ = new_min;
-    } else {
-      min_stamp_ = stamp;
-      solver()->SaveAndSetValue(&min_, new_min);
-    }
-    if (min_ > max_) {
+                           bits_->ComputeNewMin(m, min_.Value(), max_.Value()));
+    min_.SetValue(solver(), new_min);
+    if (min_.Value() > max_.Value()) {
       solver()->Fail();
     }
     Push();
@@ -1031,9 +1028,9 @@ void DomainIntVar::SetMin(int64 m)  {
 }
 
 void DomainIntVar::SetMax(int64 m) {
-  if (m >= max_)
+  if (m >= max_.Value())
     return;
-  if (m < min_)
+  if (m < min_.Value())
     solver()->Fail();
   if (in_process_) {
     if (m < new_max_) {
@@ -1044,17 +1041,11 @@ void DomainIntVar::SetMax(int64 m) {
     }
   } else {
     CheckOldMax();
-    const uint64 stamp = solver()->stamp();
     const int64 new_max = (bits_ == NULL ?
                            m :
-                           bits_->ComputeNewMax(m, min_, max_));
-    if (max_stamp_ == stamp) {
-      max_ = new_max;
-    } else {
-      max_stamp_ = stamp;
-      solver()->SaveAndSetValue(&max_, new_max);
-    }
-    if (min_ > max_) {
+                           bits_->ComputeNewMax(m, min_.Value(), max_.Value()));
+    max_.SetValue(solver(), new_max);
+    if (min_.Value() > max_.Value()) {
       solver()->Fail();
     }
     Push();
@@ -1065,9 +1056,9 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
   if (mi == ma) {
     SetValue(mi);
   } else {
-    if (mi > ma || mi > max_ || ma < min_)
+    if (mi > ma || mi > max_.Value() || ma < min_.Value())
       solver()->Fail();
-    if (mi <= min_ && ma >= max_)
+    if (mi <= min_.Value() && ma >= max_.Value())
       return;
     if (in_process_) {
       if (ma < new_max_) {
@@ -1080,35 +1071,28 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
         solver()->Fail();
       }
     } else {
-      const uint64 stamp = solver()->stamp();
-      if (mi > min_) {
+      if (mi > min_.Value()) {
         CheckOldMin();
         const int64 new_min = (bits_ == NULL ?
                                mi :
-                               bits_->ComputeNewMin(mi, min_, max_));
-        if (min_stamp_ == stamp) {
-          min_ = new_min;
-        } else {
-          min_stamp_ = stamp;
-          solver()->SaveAndSetValue(&min_, new_min);
-        }
+                               bits_->ComputeNewMin(mi,
+                                                    min_.Value(),
+                                                    max_.Value()));
+        min_.SetValue(solver(), new_min);
       }
-      if (min_ > ma) {
+      if (min_.Value() > ma) {
         solver()->Fail();
       }
-      if (ma < max_) {
+      if (ma < max_.Value()) {
         CheckOldMax();
         const int64 new_max = (bits_ == NULL ?
                                ma :
-                               bits_->ComputeNewMax(ma, min_, max_));
-        if (max_stamp_ == stamp) {
-          max_ = new_max;
-        } else {
-          max_stamp_ = stamp;
-          solver()->SaveAndSetValue(&max_, new_max);
-        }
+                               bits_->ComputeNewMax(ma,
+                                                    min_.Value(),
+                                                    max_.Value()));
+        max_.SetValue(solver(), new_max);
       }
-      if (min_ > max_) {
+      if (min_.Value() > max_.Value()) {
         solver()->Fail();
       }
       Push();
@@ -1117,8 +1101,8 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
 }
 
 void DomainIntVar::SetValue(int64 v) {
-  if (v != min_ || v != max_) {
-    if (v < min_ || v > max_) {
+  if (v != min_.Value() || v != max_.Value()) {
+    if (v < min_.Value() || v > max_.Value()) {
       solver()->Fail();
     }
     if (in_process_) {
@@ -1133,26 +1117,28 @@ void DomainIntVar::SetValue(int64 v) {
       }
       CheckOldMin();
       CheckOldMax();
-      solver()->SaveAndSetValue(&min_, v);
-      solver()->SaveAndSetValue(&max_, v);
+      min_.SetValue(solver(), v);
+      max_.SetValue(solver(), v);
       Push();
     }
   }
 }
 
 void DomainIntVar::RemoveValue(int64 v)  {
-  if (v < min_ || v > max_)
+  if (v < min_.Value() || v > max_.Value())
     return;
-  if (v == min_) {
+  if (v == min_.Value()) {
     SetMin(v + 1);
-  } else if (v == max_) {
+  } else if (v == max_.Value()) {
     SetMax(v - 1);
   } else {
     if (bits_ == NULL) {
       CreateBits();
     }
-    if (in_process_ && v >= new_min_ && v <= new_max_ && bits_->Contains(v)) {
-      bits_->DelayRemoveValue(v);
+    if (in_process_) {
+      if (v >= new_min_ && v <= new_max_ && bits_->Contains(v)) {
+        bits_->DelayRemoveValue(v);
+      }
     } else {
       if (bits_->RemoveValue(v)) {
         Push();
@@ -1162,9 +1148,9 @@ void DomainIntVar::RemoveValue(int64 v)  {
 }
 
 void DomainIntVar::RemoveInterval(int64 l, int64 u) {
-  if (l <= min_) {
+  if (l <= min_.Value()) {
     SetMin(u + 1);
-  } else if (u >= max_) {
+  } else if (u >= max_.Value()) {
     SetMax(l - 1);
   } else {
     for (int64 v = l; v <= u; ++v) {
@@ -1175,10 +1161,12 @@ void DomainIntVar::RemoveInterval(int64 l, int64 u) {
 
 void DomainIntVar::CreateBits() {
   solver()->SaveValue(reinterpret_cast<void**>(&bits_));
-  if (max_ - min_ < 64) {
-    bits_ = solver()->RevAlloc(new SmallBitSet(solver(), min_, max_));
+  if (max_.Value() - min_.Value() < 64) {
+    bits_ = solver()->RevAlloc(
+        new SmallBitSet(solver(), min_.Value(), max_.Value()));
   } else {
-    bits_ = solver()->RevAlloc(new SimpleBitSet(solver(), min_, max_));
+    bits_ = solver()->RevAlloc(
+        new SimpleBitSet(solver(), min_.Value(), max_.Value()));
   }
 }
 
@@ -1202,14 +1190,14 @@ void DomainIntVar::Process() {
     bits_->ClearRemovedValues();
   }
   SetQueueCleanerOnFail(solver(), this);
-  new_min_ = min_;
-  new_max_ = max_;
-  if (min_ == max_) {
+  new_min_ = min_.Value();
+  new_max_ = max_.Value();
+  if (min_.Value() == max_.Value()) {
     for (SimpleRevFIFO<Demon*>::Iterator it(&bound_demons_); it.ok(); ++it) {
       Enqueue(*it);
     }
   }
-  if (min_ != OldMin() || max_ != OldMax()) {
+  if (min_.Value() != OldMin() || max_.Value() != OldMax()) {
     for (SimpleRevFIFO<Demon*>::Iterator it(&range_demons_); it.ok(); ++it) {
       Enqueue(*it);
     }
@@ -1220,12 +1208,12 @@ void DomainIntVar::Process() {
   ProcessDemonsOnQueue();
   clear_queue_action_on_fail();
   ClearInProcess();
-  old_min_ = min_;
-  old_max_ = max_;
-  if (min_ < new_min_) {
+  old_min_ = min_.Value();
+  old_max_ = max_.Value();
+  if (min_.Value() < new_min_) {
     SetMin(new_min_);
   }
-  if (max_ > new_max_) {
+  if (max_.Value() > new_max_) {
     SetMax(new_max_);
   }
   if (bits_ != NULL) {
@@ -1253,12 +1241,18 @@ string DomainIntVar::DebugString() const {
   } else {
     out = "DomainIntVar(";
   }
-  if (min_ == max_) {
-    StringAppendF(&out, "%" GG_LL_FORMAT "d", min_);
+  if (min_.Value() == max_.Value()) {
+    StringAppendF(&out, "%" GG_LL_FORMAT "d", min_.Value());
   } else if (bits_ != NULL) {
-    StringAppendF(&out, "%s", bits_->pretty_DebugString(min_, max_).c_str());
+    StringAppendF(&out,
+                  "%s",
+                  bits_->pretty_DebugString(min_.Value(),
+                                            max_.Value()).c_str());
   } else {
-    StringAppendF(&out, "%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d", min_, max_);
+    StringAppendF(&out,
+                  "%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d",
+                  min_.Value(),
+                  max_.Value());
   }
   out += ")";
   return out;
@@ -1745,7 +1739,7 @@ PlusCstDomainIntVar::PlusCstDomainIntVar(Solver* const s,
 PlusCstDomainIntVar::~PlusCstDomainIntVar() {}
 
 int64 PlusCstDomainIntVar::Min() const {
-  return var_->min_ + cst_;
+  return var_->min_.Value() + cst_;
 }
 
 void PlusCstDomainIntVar::SetMin(int64 m) {
@@ -1753,7 +1747,7 @@ void PlusCstDomainIntVar::SetMin(int64 m) {
 }
 
 int64 PlusCstDomainIntVar::Max() const {
-  return var_->max_ + cst_;
+  return var_->max_.Value() + cst_;
 }
 
 void PlusCstDomainIntVar::SetMax(int64 m) {
@@ -1769,7 +1763,7 @@ void PlusCstDomainIntVar::SetValue(int64 v) {
 }
 
 bool PlusCstDomainIntVar::Bound() const {
-  return var_->min_ == var_->max_;
+  return var_->min_.Value() == var_->max_.Value();
 }
 
 void PlusCstDomainIntVar::WhenRange(Demon* d) {
@@ -1777,8 +1771,8 @@ void PlusCstDomainIntVar::WhenRange(Demon* d) {
 }
 
 int64 PlusCstDomainIntVar::Value() const {
-  CHECK_EQ(var_->min_, var_->max_) << "variable is not bound";
-  return var_->min_ + cst_;
+  CHECK_EQ(var_->min_.Value(), var_->max_.Value()) << "variable is not bound";
+  return var_->min_.Value() + cst_;
 }
 
 void PlusCstDomainIntVar::RemoveValue(int64 v) {
@@ -4250,14 +4244,14 @@ class LinkExprAndDomainIntVar : public CastConstraint {
   }
 
   virtual void InitialPropagate() {
-    expr_->SetRange(var()->min_, var()->max_);
+    expr_->SetRange(var()->min_.Value(), var()->max_.Value());
     expr_->Range(&cached_min_, &cached_max_);
     var()->DomainIntVar::SetRange(cached_min_, cached_max_);
   }
 
   void Propagate() {
-    if (var()->min_ > cached_min_ ||
-        var()->max_ < cached_max_ ||
+    if (var()->min_.Value() > cached_min_ ||
+        var()->max_.Value() < cached_max_ ||
         solver()->fail_stamp() != fail_stamp_) {
       InitialPropagate();
       fail_stamp_ = solver()->fail_stamp();

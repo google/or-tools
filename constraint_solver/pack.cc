@@ -126,7 +126,7 @@ Pack::Pack(Solver* const s,
       vars_(new IntVar*[vsize]),
       vsize_(vsize),
       bins_(number_of_bins),
-      unprocessed_(bins_ + 1, vsize_),
+      unprocessed_(new RevBitMatrix(bins_ + 1, vsize_)),
       forced_(bins_ + 1),
       removed_(bins_ + 1),
       holes_(new IntVarIterator*[vsize_]),
@@ -232,7 +232,7 @@ void Pack::InitialPropagate() {
       for (it->Init(); it->Ok(); it->Next()) {
         const int64 value = it->Value();
         if (value >= 0 && value <= bins_) {
-          unprocessed_.SetToOne(s, value, var_index);
+          unprocessed_->SetToOne(s, value, var_index);
           if (value != bins_) {
             data->PushUndecided(value, var_index);
           }
@@ -378,8 +378,8 @@ void Pack::OneDomain(int var_index) {
   for (int64 value = std::max(oldmin, 0LL);
        value < std::min(vmin, bins_ + 1);
        ++value) {
-    if (unprocessed_.IsSet(value, var_index)) {
-      unprocessed_.SetToZero(s, value, var_index);
+    if (unprocessed_->IsSet(value, var_index)) {
+      unprocessed_->SetToZero(s, value, var_index);
       removed_[value].push_back(var_index);
     }
   }
@@ -388,8 +388,8 @@ void Pack::OneDomain(int var_index) {
     for (holes->Init(); holes->Ok(); holes->Next()) {
       const int64 value = holes->Value();
       if (value >= std::max(0LL, vmin) &&  value <= std::min(bins_, vmax)) {
-        DCHECK(unprocessed_.IsSet(value, var_index));
-        unprocessed_.SetToZero(s, value, var_index);
+        DCHECK(unprocessed_->IsSet(value, var_index));
+        unprocessed_->SetToZero(s, value, var_index);
         removed_[value].push_back(var_index);
       }
     }
@@ -397,13 +397,13 @@ void Pack::OneDomain(int var_index) {
   for (int64 value = std::max(vmax + 1, 0LL);
        value <= std::min(oldmax, bins_);
        ++value) {
-    if (unprocessed_.IsSet(value, var_index)) {
-      unprocessed_.SetToZero(s, value, var_index);
+    if (unprocessed_->IsSet(value, var_index)) {
+      unprocessed_->SetToZero(s, value, var_index);
       removed_[value].push_back(var_index);
     }
   }
   if (bound) {
-    unprocessed_.SetToZero(s, var->Min(), var_index);
+    unprocessed_->SetToZero(s, var->Min(), var_index);
     forced_[var->Min()].push_back(var_index);
   }
   Enqueue(demon_);
@@ -434,6 +434,10 @@ void Pack::Accept(ModelVisitor* const visitor) const {
   visitor->EndVisitConstraint(ModelVisitor::kPack, this);
 }
 
+bool Pack::IsUndecided(int64 var_index, int64 bin_index) const {
+  return unprocessed_->IsSet(bin_index, var_index);
+}
+
 void Pack::SetImpossible(int64 var_index, int64 bin_index) {
   if (IsInProcess()) {
     to_unset_.push_back(std::make_pair(var_index, bin_index));
@@ -451,7 +455,7 @@ void Pack::Assign(int64 var_index, int64 bin_index) {
 }
 
 bool Pack::IsAssignedStatusKnown(int64 var_index) const {
-  return !unprocessed_.IsSet(bins_, var_index);
+  return !unprocessed_->IsSet(bins_, var_index);
 }
 
 bool Pack::IsPossible(int64 var_index, int64 bin_index) const {
@@ -483,49 +487,49 @@ bool Pack::IsInProcess() const {
 }
 
 void Pack::RemoveAllPossibleFromBin(int64 bin_index) {
-  int var_index = unprocessed_.GetFirstBit(bin_index, 0);
+  int var_index = unprocessed_->GetFirstBit(bin_index, 0);
   while (var_index != -1 && var_index < vsize_) {
     SetImpossible(var_index, bin_index);
     var_index = var_index == vsize_ - 1 ?
         -1 :
-        unprocessed_.GetFirstBit(bin_index, var_index + 1);
+        unprocessed_->GetFirstBit(bin_index, var_index + 1);
   }
 }
 
 void Pack::AssignAllPossibleToBin(int64 bin_index) {
-  int var_index = unprocessed_.GetFirstBit(bin_index, 0);
+  int var_index = unprocessed_->GetFirstBit(bin_index, 0);
   while (var_index != -1 && var_index < vsize_) {
     Assign(var_index, bin_index);
     var_index = var_index == vsize_ - 1 ?
         -1 :
-        unprocessed_.GetFirstBit(bin_index, var_index + 1);
+        unprocessed_->GetFirstBit(bin_index, var_index + 1);
   }
 }
 
 void Pack::AssignFirstPossibleToBin(int64 bin_index) {
-  int var_index = unprocessed_.GetFirstBit(bin_index, 0);
+  int var_index = unprocessed_->GetFirstBit(bin_index, 0);
   if (var_index != -1 && var_index < vsize_) {
     Assign(var_index, bin_index);
   }
 }
 
 void Pack::AssignAllRemainingItems() {
-  int var_index = unprocessed_.GetFirstBit(bins_, 0);
+  int var_index = unprocessed_->GetFirstBit(bins_, 0);
   while (var_index != -1 && var_index < vsize_) {
     SetAssigned(var_index);
     var_index = var_index == vsize_ - 1 ?
         -1 :
-        unprocessed_.GetFirstBit(bins_, var_index + 1);
+        unprocessed_->GetFirstBit(bins_, var_index + 1);
   }
 }
 
 void Pack::UnassignAllRemainingItems() {
-  int var_index = unprocessed_.GetFirstBit(bins_, 0);
+  int var_index = unprocessed_->GetFirstBit(bins_, 0);
   while (var_index != -1 && var_index < vsize_) {
     SetUnassigned(var_index);
     var_index = var_index == vsize_ - 1 ?
         -1 :
-        unprocessed_.GetFirstBit(bins_, var_index + 1);
+        unprocessed_->GetFirstBit(bins_, var_index + 1);
   }
 }
 
@@ -573,8 +577,8 @@ class DimensionLessThanConstant : public Dimension {
         weights_(new int64[vars_count_]),
         bins_count_(bins_count),
         upper_bounds_(new int64[bins_count_]),
-        first_unbound_backward_vector_(bins_count, Rev<int>(0)),
-        sum_of_bound_variables_vector_(bins_count, Rev<int64>(0LL)),
+        first_unbound_backward_vector_(bins_count, 0),
+        sum_of_bound_variables_vector_(bins_count, 0LL),
         ranked_(new int64[vars_count_]),
         ranked_size_(vars_count_) {
     DCHECK(weights);
@@ -600,11 +604,11 @@ class DimensionLessThanConstant : public Dimension {
   void PushFromTop(int64 bin_index) {
     const int64 slack =
         upper_bounds_[bin_index] -
-        sum_of_bound_variables_vector_[bin_index].Value();
+        sum_of_bound_variables_vector_[bin_index];
     if (slack < 0) {
       solver()->Fail();
     }
-    int64 last_unbound = first_unbound_backward_vector_[bin_index].Value();
+    int64 last_unbound = first_unbound_backward_vector_[bin_index];
     for (; last_unbound >= 0; --last_unbound) {
       const int64 var_index = ranked_[last_unbound];
       if (IsUndecided(var_index, bin_index)) {
@@ -615,7 +619,7 @@ class DimensionLessThanConstant : public Dimension {
         }
       }
     }
-    first_unbound_backward_vector_[bin_index].SetValue(solver(), last_unbound);
+    first_unbound_backward_vector_.SetValue(solver(), bin_index, last_unbound);
   }
 
   virtual void InitialPropagate(int64 bin_index,
@@ -626,8 +630,8 @@ class DimensionLessThanConstant : public Dimension {
     for (ConstIter<std::vector<int64> > it(forced); !it.at_end(); ++it) {
       sum += weights_[*it];
     }
-    sum_of_bound_variables_vector_[bin_index].SetValue(s, sum);
-    first_unbound_backward_vector_[bin_index].SetValue(s, ranked_size_ - 1);
+    sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
+    first_unbound_backward_vector_.SetValue(s, bin_index, ranked_size_ - 1);
     PushFromTop(bin_index);
   }
 
@@ -638,11 +642,11 @@ class DimensionLessThanConstant : public Dimension {
                          const std::vector<int64>& removed) {
     if (forced.size() > 0) {
       Solver* const s = solver();
-      int64 sum = sum_of_bound_variables_vector_[bin_index].Value();
+      int64 sum = sum_of_bound_variables_vector_[bin_index];
       for (ConstIter<std::vector<int64> > it(forced); !it.at_end(); ++it) {
         sum += weights_[*it];
       }
-      sum_of_bound_variables_vector_[bin_index].SetValue(s, sum);
+      sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
       PushFromTop(bin_index);
     }
   }
@@ -669,8 +673,8 @@ class DimensionLessThanConstant : public Dimension {
   int64* const weights_;
   const int bins_count_;
   int64* const upper_bounds_;
-  std::vector<Rev<int> > first_unbound_backward_vector_;
-  std::vector<Rev<int64> > sum_of_bound_variables_vector_;
+  RevArray<int> first_unbound_backward_vector_;
+  RevArray<int64> sum_of_bound_variables_vector_;
   int64* const ranked_;
   int ranked_size_;
 };
@@ -703,9 +707,9 @@ class DimensionWeightedSumEqVar : public Dimension {
         weights_(new int64[vars_count_]),
         bins_count_(bins_count),
         loads_(new IntVar*[bins_count_]),
-        first_unbound_backward_vector_(bins_count, Rev<int>(0)),
-        sum_of_bound_variables_vector_(bins_count, Rev<int64>(0LL)),
-        sum_of_all_variables_vector_(bins_count, Rev<int64>(0LL)),
+        first_unbound_backward_vector_(bins_count, 0),
+        sum_of_bound_variables_vector_(bins_count, 0LL),
+        sum_of_all_variables_vector_(bins_count, 0LL),
         ranked_(new int64[vars_count_]),
         ranked_size_(vars_count_) {
     DCHECK(weights);
@@ -739,14 +743,14 @@ class DimensionWeightedSumEqVar : public Dimension {
 
   void PushFromTop(int64 bin_index) {
     IntVar* const load = loads_[bin_index];
-    const int64 sum_min = sum_of_bound_variables_vector_[bin_index].Value();
-    const int64 sum_max = sum_of_all_variables_vector_[bin_index].Value();
+    const int64 sum_min = sum_of_bound_variables_vector_[bin_index];
+    const int64 sum_max = sum_of_all_variables_vector_[bin_index];
     load->SetRange(sum_min, sum_max);
     const int64 slack_up = load->Max() - sum_min;
     const int64 slack_down = sum_max - load->Min();
     DCHECK_GE(slack_down, 0);
     DCHECK_GE(slack_up, 0);
-    int64 last_unbound = first_unbound_backward_vector_[bin_index].Value();
+    int64 last_unbound = first_unbound_backward_vector_[bin_index];
     for (; last_unbound >= 0; --last_unbound) {
       const int64 var_index = ranked_[last_unbound];
       const int64 weight = weights_[var_index];
@@ -760,7 +764,7 @@ class DimensionWeightedSumEqVar : public Dimension {
         }
       }
     }
-    first_unbound_backward_vector_[bin_index].SetValue(solver(), last_unbound);
+    first_unbound_backward_vector_.SetValue(solver(), bin_index, last_unbound);
   }
 
   virtual void InitialPropagate(int64 bin_index,
@@ -771,12 +775,12 @@ class DimensionWeightedSumEqVar : public Dimension {
     for (ConstIter<std::vector<int64> > it(forced); !it.at_end(); ++it) {
       sum += weights_[*it];
     }
-    sum_of_bound_variables_vector_[bin_index].SetValue(s, sum);
+    sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
     for (ConstIter<std::vector<int64> > it(undecided); !it.at_end(); ++it) {
       sum += weights_[*it];
     }
-    sum_of_all_variables_vector_[bin_index].SetValue(s, sum);
-    first_unbound_backward_vector_[bin_index].SetValue(s, ranked_size_ - 1);
+    sum_of_all_variables_vector_.SetValue(s, bin_index, sum);
+    first_unbound_backward_vector_.SetValue(s, bin_index, ranked_size_ - 1);
     PushFromTop(bin_index);
   }
 
@@ -786,16 +790,16 @@ class DimensionWeightedSumEqVar : public Dimension {
                          const std::vector<int64>& forced,
                          const std::vector<int64>& removed) {
     Solver* const s = solver();
-    int64 down = sum_of_bound_variables_vector_[bin_index].Value();
+    int64 down = sum_of_bound_variables_vector_[bin_index];
     for (ConstIter<std::vector<int64> > it(forced); !it.at_end(); ++it) {
       down += weights_[*it];
     }
-    sum_of_bound_variables_vector_[bin_index].SetValue(s, down);
-    int64 up = sum_of_all_variables_vector_[bin_index].Value();
+    sum_of_bound_variables_vector_.SetValue(s, bin_index, down);
+    int64 up = sum_of_all_variables_vector_[bin_index];
     for (ConstIter<std::vector<int64> > it(removed); !it.at_end(); ++it) {
       up -= weights_[*it];
     }
-    sum_of_all_variables_vector_[bin_index].SetValue(s, up);
+    sum_of_all_variables_vector_.SetValue(s, bin_index, up);
     PushFromTop(bin_index);
   }
   virtual void InitialPropagateUnassigned(const std::vector<int64>& assigned,
@@ -821,9 +825,9 @@ class DimensionWeightedSumEqVar : public Dimension {
   int64* const weights_;
   const int bins_count_;
   IntVar** const loads_;
-  std::vector<Rev<int> > first_unbound_backward_vector_;
-  std::vector<Rev<int64> > sum_of_bound_variables_vector_;
-  std::vector<Rev<int64> > sum_of_all_variables_vector_;
+  RevArray<int> first_unbound_backward_vector_;
+  RevArray<int64> sum_of_bound_variables_vector_;
+  RevArray<int64> sum_of_all_variables_vector_;
   int64* const ranked_;
   int ranked_size_;
 };
@@ -1090,8 +1094,8 @@ class CountUsedBinDimension : public Dimension {
         vars_count_(vars_count),
         bins_count_(bins_count),
         count_var_(count_var),
-        used_(new bool[bins_count_]),
-        candidates_(new int[bins_count_]),
+        used_(bins_count_),
+        candidates_(bins_count_, 0),
         card_min_(0),
         card_max_(bins_count_),
         initial_min_(0),
@@ -1099,16 +1103,10 @@ class CountUsedBinDimension : public Dimension {
     DCHECK(count_var);
     DCHECK_GT(vars_count, 0);
     DCHECK_GT(bins_count, 0);
-    for (int i = 0; i < bins_count; ++i) {
-      used_[i] = false;
-      candidates_[i] = 0;
-    }
   }
 
-  virtual ~CountUsedBinDimension() {
-    delete [] used_;
-    delete [] candidates_;
-  }
+  virtual ~CountUsedBinDimension() {}
+
 
   virtual void Post() {
     Demon* const uv = solver()->RevAlloc(new VarDemon(this));
@@ -1121,7 +1119,7 @@ class CountUsedBinDimension : public Dimension {
     count_var_->SetRange(card_min_.Value(), card_max_.Value());
     if (card_min_.Value() == count_var_->Max()) {
       for (int bin_index = 0; bin_index < bins_count_; ++bin_index) {
-        if (!used_[bin_index] && candidates_[bin_index] > 0) {
+        if (!used_.IsSet(bin_index) && candidates_[bin_index] > 0) {
           RemoveAllPossibleFromBin(bin_index);
         }
       }
@@ -1138,11 +1136,10 @@ class CountUsedBinDimension : public Dimension {
                                 const std::vector<int64>& forced,
                                 const std::vector<int64>& undecided) {
     if (forced.size() > 0) {
-      solver()->SaveAndSetValue(&used_[bin_index], true);
+      used_.SetToOne(solver(), bin_index);
       initial_min_++;
     } else if (undecided.size() > 0) {
-      solver()->SaveValue(&candidates_[bin_index]);
-      candidates_[bin_index] = undecided.size();
+      candidates_.SetValue(solver(), bin_index, undecided.size());
     } else {
       initial_max_--;
     }
@@ -1160,14 +1157,14 @@ class CountUsedBinDimension : public Dimension {
   virtual void Propagate(int64 bin_index,
                          const std::vector<int64>& forced,
                          const std::vector<int64>& removed) {
-    if (!used_[bin_index]) {
+    if (!used_.IsSet(bin_index)) {
       if (forced.size() > 0) {
-        solver()->SaveValue(&used_[bin_index]);
-        used_[bin_index] = true;
+        used_.SetToOne(solver(), bin_index);
         card_min_.SetValue(solver(), card_min_.Value() + 1);
       } else if (removed.size() > 0) {
-        solver()->SaveValue(&candidates_[bin_index]);
-        candidates_[bin_index] -= removed.size();
+        candidates_.SetValue(solver(),
+                             bin_index,
+                             candidates_.Value(bin_index) - removed.size());
         if (candidates_[bin_index] == 0) {
           card_max_.SetValue(solver(), card_max_.Value() - 1);
         }
@@ -1194,8 +1191,8 @@ class CountUsedBinDimension : public Dimension {
   const int vars_count_;
   const int bins_count_;
   IntVar* const count_var_;
-  bool* const used_;
-  int* const candidates_;
+  RevBitSet used_;
+  RevArray<int> candidates_;
   Rev<int> card_min_;
   Rev<int> card_max_;
   int initial_min_;
@@ -1348,4 +1345,4 @@ void Pack::AddCountAssignedItemsDimension(IntVar* const count_var) {
 Pack* Solver::MakePack(const std::vector<IntVar*>& vars, int number_of_bins) {
   return RevAlloc(new Pack(this, vars.data(), vars.size(), number_of_bins));
 }
-}  // Namespace operations_research
+}  // namespace operations_research

@@ -3047,7 +3047,7 @@ void LocalSearch::PushFirstSolutionDecision(
   Solver* const solver = assignment_->solver();
   DecisionBuilder* store = solver->MakeStoreAssignment(assignment_);
   DecisionBuilder* first_solution_and_store =
-      solver->Compose(first_solution, store);
+      solver->Compose(first_solution, sub_decision_builder_, store);
   std::vector<SearchMonitor*> monitor;
   monitor.push_back(limit_);
   nested_decisions_.push_back(

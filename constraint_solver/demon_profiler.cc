@@ -225,6 +225,12 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
   virtual void SetPerformed(IntervalVar* const var, bool value) {}
   virtual void RankFirst(SequenceVar* const var, int index) {}
   virtual void RankNotFirst(SequenceVar* const var, int index) {}
+  virtual void RankLast(SequenceVar* const var, int index) {}
+  virtual void RankNotLast(SequenceVar* const var, int index) {}
+  virtual void RankSequence(SequenceVar* const var,
+                            const std::vector<int>& rank_first,
+                            const std::vector<int>& rank_last,
+                            const std::vector<int>& unperformed) {}
 
   // Useful for unit tests.
   void AddFakeRun(const Demon* const demon,
@@ -491,4 +497,4 @@ void DemonProfilerEndInitialPropagation(DemonProfiler* const monitor,
   monitor->EndConstraintInitialPropagation(constraint);
 }
 
-}  // namespace
+}  // namespace operations_research

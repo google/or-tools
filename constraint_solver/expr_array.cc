@@ -127,50 +127,45 @@ class TreeArrayConstraint : public ArrayConstraint {
 
   // Increases min by delta_min, reduces max by delta_max.
   void ReduceRange(int depth, int position, int64 delta_min, int64 delta_max) {
-    const uint64 stamp = solver()->stamp();
     NodeInfo* const info = &tree_[depth][position];
     if (delta_min > 0) {
-      if (stamp != info->min_stamp) {
-        solver()->SaveValue(&info->node_min);
-        info->min_stamp = stamp;
-      }
-      info->node_min += delta_min;
+      info->node_min.SetValue(solver(), info->node_min.Value() + delta_min);
     }
     if (delta_max > 0) {
-      if (stamp != info->max_stamp) {
-        solver()->SaveValue(&info->node_max);
-        info->max_stamp = stamp;
-      }
-      info->node_max -= delta_max;
+      info->node_max.SetValue(solver(), info->node_max.Value() - delta_max);
     }
   }
 
-  void InitLeaf(int position, int64 var_min, int64 var_max) {
-    InitNode(MaxDepth(), position, var_min, var_max);
+  void InitLeaf(Solver* const solver,
+                int position,
+                int64 var_min,
+                int64 var_max) {
+    InitNode(solver, MaxDepth(), position, var_min, var_max);
   }
 
-  void InitNode(int depth, int position, int64 node_min, int64 node_max) {
-    NodeInfo* const info = &tree_[depth][position];
-    info->node_min = node_min;
-    info->min_stamp = 0;
-    info->node_max = node_max;
-    info->max_stamp= 0;
+  void InitNode(Solver* const solver,
+                int depth,
+                int position,
+                int64 node_min,
+                int64 node_max) {
+    tree_[depth][position].node_min.SetValue(solver, node_min);
+    tree_[depth][position].node_max.SetValue(solver, node_max);
   }
 
   int64 Min(int depth, int position) const {
-    return tree_[depth][position].node_min;
+    return tree_[depth][position].node_min.Value();
   }
 
   int64 Max(int depth, int position) const {
-    return tree_[depth][position].node_max;
+    return tree_[depth][position].node_max.Value();
   }
 
   int64 RootMin() const {
-    return root_node_->node_min;
+    return root_node_->node_min.Value();
   }
 
   int64 RootMax() const {
-    return root_node_->node_max;
+    return root_node_->node_max.Value();
   }
 
   int Parent(int position) const {
@@ -200,10 +195,9 @@ class TreeArrayConstraint : public ArrayConstraint {
 
  private:
   struct NodeInfo {
-    int64 node_min;
-    int64 node_max;
-    uint64 min_stamp;
-    uint64 max_stamp;
+    NodeInfo() : node_min(0), node_max(0) {}
+    Rev<int64> node_min;
+    Rev<int64> node_max;
   };
 
   std::vector<std::vector<NodeInfo> > tree_;
@@ -253,7 +247,7 @@ class SumConstraint : public TreeArrayConstraint {
   virtual void InitialPropagate() {
     // Copy vars to leaf nodes.
     for (int i = 0; i < size_; ++i) {
-      InitLeaf(i, vars_[i]->Min(), vars_[i]->Max());
+      InitLeaf(solver(), i, vars_[i]->Min(), vars_[i]->Max());
     }
     // Compute up.
     for (int i = MaxDepth() - 1; i >= 0; --i) {
@@ -266,7 +260,7 @@ class SumConstraint : public TreeArrayConstraint {
           sum_min += Min(i + 1, k);
           sum_max += Max(i + 1, k);
         }
-        InitNode(i, j, sum_min, sum_max);
+        InitNode(solver(), i, j, sum_min, sum_max);
       }
     }
     // Propagate to sum_var.
@@ -390,14 +384,14 @@ class MinBoolArrayCt : public ArrayConstraint {
 
  private:
   SmallRevBitSet bits_;
-  bool inhibited_;
+  RevSwitch inhibited_;
 };
 
 MinBoolArrayCt::MinBoolArrayCt(Solver* const s,
                                const IntVar* const * vars,
                                int size,
                                IntVar* var)
-    : ArrayConstraint(s, vars, size, var), bits_(size), inhibited_(false) {}
+    : ArrayConstraint(s, vars, size, var), bits_(size) {}
 
 void MinBoolArrayCt::Post() {
   for (int i = 0; i < size_; ++i) {
@@ -421,13 +415,13 @@ void MinBoolArrayCt::InitialPropagate() {
     for (int i = 0; i < size_; ++i) {
       vars_[i]->SetMin(1LL);
     }
-    solver()->SaveAndSetValue(&inhibited_, true);
+    inhibited_.Switch(solver());
   } else {
     for (int i = 0; i < size_; ++i) {
       IntVar* const var = vars_[i];
       if (var->Max() == 0LL) {
         target_var_->SetMax(0LL);
-        solver()->SaveAndSetValue(&inhibited_, true);
+        inhibited_.Switch(solver());
         return;
       }
       if (var->Min() == 0LL) {
@@ -436,43 +430,43 @@ void MinBoolArrayCt::InitialPropagate() {
     }
     if (bits_.IsCardinalityZero()) {
       target_var_->SetValue(1LL);
-      solver()->SaveAndSetValue(&inhibited_, true);
+      inhibited_.Switch(solver());
     } else if (target_var_->Max() == 0LL && bits_.IsCardinalityOne()) {
       vars_[bits_.GetFirstOne()]->SetValue(0LL);
-      solver()->SaveAndSetValue(&inhibited_, true);
+      inhibited_.Switch(solver());
     }
   }
 }
 
 void MinBoolArrayCt::Update(int index) {
-  if (!inhibited_) {
+  if (!inhibited_.Switched()) {
     if (vars_[index]->Max() == 0LL) {  // Bound to 0.
       target_var_->SetValue(0LL);
-      solver()->SaveAndSetValue(&inhibited_, true);
+      inhibited_.Switch(solver());
     } else {
       bits_.SetToZero(solver(), index);
       if (bits_.IsCardinalityZero()) {
         target_var_->SetValue(1LL);
-        solver()->SaveAndSetValue(&inhibited_, true);
+        inhibited_.Switch(solver());
       } else if (target_var_->Max() == 0LL && bits_.IsCardinalityOne()) {
         vars_[bits_.GetFirstOne()]->SetValue(0LL);
-        solver()->SaveAndSetValue(&inhibited_, true);
+        inhibited_.Switch(solver());
       }
     }
   }
 }
 
 void MinBoolArrayCt::UpdateVar() {
-  if (!inhibited_) {
+  if (!inhibited_.Switched()) {
     if (target_var_->Min() == 1LL) {
       for (int i = 0; i < size_; ++i) {
         vars_[i]->SetMin(1LL);
       }
-      solver()->SaveAndSetValue(&inhibited_, true);
+      inhibited_.Switch(solver());
     } else {
       if (bits_.IsCardinalityOne()) {
         vars_[bits_.GetFirstOne()]->SetValue(0LL);
-        solver()->SaveAndSetValue(&inhibited_, true);
+        inhibited_.Switch(solver());
       }
     }
   }
@@ -1081,14 +1075,14 @@ class MaxBoolArrayCt : public ArrayConstraint {
 
  private:
   SmallRevBitSet bits_;
-  bool inhibited_;
+  RevSwitch inhibited_;
 };
 
 MaxBoolArrayCt::MaxBoolArrayCt(Solver* const s,
                                const IntVar* const * vars,
                                int size,
                                IntVar* var)
-    : ArrayConstraint(s, vars, size, var), bits_(size), inhibited_(false) {}
+    : ArrayConstraint(s, vars, size, var), bits_(size) {}
 
 void MaxBoolArrayCt::Post() {
   for (int i = 0; i < size_; ++i) {
@@ -1112,13 +1106,13 @@ void MaxBoolArrayCt::InitialPropagate() {
     for (int i = 0; i < size_; ++i) {
       vars_[i]->SetMax(0LL);
     }
-    solver()->SaveAndSetValue(&inhibited_, true);
+    inhibited_.Switch(solver());
   } else {
     for (int i = 0; i < size_; ++i) {
       IntVar* const var = vars_[i];
       if (var->Min() == 1LL) {
         target_var_->SetMin(1LL);
-        solver()->SaveAndSetValue(&inhibited_, true);
+        inhibited_.Switch(solver());
         return;
       }
       if (var->Max() == 1LL) {
@@ -1127,43 +1121,43 @@ void MaxBoolArrayCt::InitialPropagate() {
     }
     if (bits_.IsCardinalityZero()) {
       target_var_->SetValue(0LL);
-      solver()->SaveAndSetValue(&inhibited_, true);
+      inhibited_.Switch(solver());
     } else if (target_var_->Min() == 1LL && bits_.IsCardinalityOne()) {
       vars_[bits_.GetFirstOne()]->SetValue(1LL);
-      solver()->SaveAndSetValue(&inhibited_, true);
+      inhibited_.Switch(solver());
     }
   }
 }
 
 void MaxBoolArrayCt::Update(int index) {
-  if (!inhibited_) {
+  if (!inhibited_.Switched()) {
     if (vars_[index]->Min() == 1LL) {  // Bound to 1.
       target_var_->SetValue(1LL);
-      solver()->SaveAndSetValue(&inhibited_, true);
+      inhibited_.Switch(solver());
     } else {
       bits_.SetToZero(solver(), index);
       if (bits_.IsCardinalityZero()) {
         target_var_->SetValue(0LL);
-        solver()->SaveAndSetValue(&inhibited_, true);
+        inhibited_.Switch(solver());
       } else if (target_var_->Min() == 1LL && bits_.IsCardinalityOne()) {
         vars_[bits_.GetFirstOne()]->SetValue(1LL);
-        solver()->SaveAndSetValue(&inhibited_, true);
+        inhibited_.Switch(solver());
       }
     }
   }
 }
 
 void MaxBoolArrayCt::UpdateVar() {
-  if (!inhibited_) {
+  if (!inhibited_.Switched()) {
     if (target_var_->Max() == 0) {
       for (int i = 0; i < size_; ++i) {
         vars_[i]->SetMax(0LL);
       }
-      solver()->SaveAndSetValue(&inhibited_, true);
+      inhibited_.Switch(solver());
     } else {
       if (bits_.IsCardinalityOne()) {
         vars_[bits_.GetFirstOne()]->SetValue(1LL);
-        solver()->SaveAndSetValue(&inhibited_, true);
+        inhibited_.Switch(solver());
       }
     }
   }
@@ -1478,18 +1472,19 @@ class BaseSumBooleanConstraint : public Constraint {
   BaseSumBooleanConstraint(Solver* const s,
                            const IntVar* const* vars,
                            int size)
-      : Constraint(s), vars_(new IntVar*[size]), size_(size), inactive_(false) {
+      : Constraint(s), vars_(new IntVar*[size]), size_(size) {
     CHECK_GT(size_, 0);
     CHECK(vars != NULL);
     memcpy(vars_.get(), vars, size_ * sizeof(*vars));
   }
   virtual ~BaseSumBooleanConstraint() {}
+
  protected:
   string DebugStringInternal(const string& name) const;
 
-  scoped_array<IntVar*> vars_;
-  int size_;
-  int inactive_;
+  const scoped_array<IntVar*> vars_;
+  const int size_;
+  RevSwitch inactive_;
 };
 
 string BaseSumBooleanConstraint::DebugStringInternal(const string& name) const {
@@ -1538,7 +1533,7 @@ class SumBooleanLessOrEqualToOne : public  BaseSumBooleanConstraint {
   }
 
   void Update(int index) {
-    if (!inactive_) {
+    if (!inactive_.Switched()) {
       DCHECK(vars_[index]->Bound());
       if (vars_[index]->Min() == 1) {
         PushAllToZeroExcept(index);
@@ -1547,7 +1542,7 @@ class SumBooleanLessOrEqualToOne : public  BaseSumBooleanConstraint {
   }
 
   void PushAllToZeroExcept(int index) {
-    solver()->SaveAndSetValue(&inactive_, 1);
+    inactive_.Switch(solver());
     for (int i = 0; i < size_; ++i) {
       if (i != index && vars_[i]->Max() != 0) {
         vars_[i]->SetMax(0);
@@ -1621,7 +1616,7 @@ void SumBooleanGreaterOrEqualToOne::InitialPropagate() {
   for (int i = 0; i < size_; ++i) {
     IntVar* const var = vars_[i];
     if (var->Min() == 1LL) {
-      solver()->SaveAndSetValue(&inactive_, 1);
+      inactive_.Switch(solver());
       return;
     }
     if (var->Max() == 1LL) {
@@ -1632,21 +1627,21 @@ void SumBooleanGreaterOrEqualToOne::InitialPropagate() {
     solver()->Fail();
   } else if (bits_.IsCardinalityOne()) {
     vars_[bits_.GetFirstBit(0)]->SetValue(1LL);
-    solver()->SaveAndSetValue(&inactive_, 1);
+    inactive_.Switch(solver());
   }
 }
 
 void SumBooleanGreaterOrEqualToOne::Update(int index) {
-  if (!inactive_) {
+  if (!inactive_.Switched()) {
     if (vars_[index]->Min() == 1LL) {  // Bound to 1.
-      solver()->SaveAndSetValue(&inactive_, 1);
+      inactive_.Switch(solver());
     } else {
       bits_.SetToZero(solver(), index);
       if (bits_.IsCardinalityZero()) {
         solver()->Fail();
       } else if (bits_.IsCardinalityOne()) {
         vars_[bits_.GetFirstBit(0)]->SetValue(1LL);
-        solver()->SaveAndSetValue(&inactive_, 1);
+        inactive_.Switch(solver());
       }
     }
   }
@@ -1702,22 +1697,22 @@ class SumBooleanEqualToOne : public BaseSumBooleanConstraint {
     } else if (max1 == 1) {
       DCHECK_NE(-1, index_max);
       vars_[index_max]->SetValue(1);
-      solver()->SaveAndSetValue(&inactive_, 1);
+      inactive_.Switch(solver());
     } else {
-      solver()->SaveAndSetValue(&active_vars_, max1);
+      active_vars_.SetValue(solver(), max1);
     }
   }
 
   void Update(int index) {
-    if (!inactive_) {
+    if (!inactive_.Switched()) {
       DCHECK(vars_[index]->Bound());
       const int64 value = vars_[index]->Min();  // Faster than Value().
       if (value == 0) {
-        solver()->SaveAndAdd(&active_vars_, -1);
-        DCHECK_GE(active_vars_, 0);
-        if (active_vars_ == 0) {
+        active_vars_.Decr(solver());
+        DCHECK_GE(active_vars_.Value(), 0);
+        if (active_vars_.Value() == 0) {
           solver()->Fail();
-        } else if (active_vars_ == 1) {
+        } else if (active_vars_.Value() == 1) {
           bool found = false;
           for (int i = 0; i < size_; ++i) {
             IntVar* const var = vars_[i];
@@ -1739,7 +1734,7 @@ class SumBooleanEqualToOne : public BaseSumBooleanConstraint {
   }
 
   void PushAllToZeroExcept(int index) {
-    solver()->SaveAndSetValue(&inactive_, 1);
+    inactive_.Switch(solver());
     for (int i = 0; i < size_; ++i) {
       if (i != index && vars_[i]->Max() != 0) {
         vars_[i]->SetMax(0);
@@ -1761,7 +1756,7 @@ class SumBooleanEqualToOne : public BaseSumBooleanConstraint {
   }
 
  private:
-  int active_vars_;
+  NumericalRev<int> active_vars_;
 };
 
 // ----- Sum of Boolean Equal To Var -----
@@ -1817,32 +1812,32 @@ class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
     } else if (possible_true == var_min && num_always_true_vars < var_min) {
       PushAllUnboundToOne();
     } else {
-      solver()->SaveAndSetValue(&num_possible_true_vars_, possible_true);
-      solver()->SaveAndSetValue(&num_always_true_vars_, num_always_true_vars);
+      num_possible_true_vars_.SetValue(solver(), possible_true);
+      num_always_true_vars_.SetValue(solver(), num_always_true_vars);
     }
   }
 
   void UpdateVar() {
-    if (num_possible_true_vars_ == sum_var_->Min()) {
+    if (num_possible_true_vars_.Value() == sum_var_->Min()) {
       PushAllUnboundToOne();
-    } else if (num_always_true_vars_ == sum_var_->Max()) {
+    } else if (num_always_true_vars_.Value() == sum_var_->Max()) {
       PushAllUnboundToZero();
     }
   }
 
   void Update(int index) {
-    if (!inactive_) {
+    if (!inactive_.Switched()) {
       DCHECK(vars_[index]->Bound());
       const int64 value = vars_[index]->Min();  // Faster than Value().
       if (value == 0) {
-        solver()->SaveAndAdd(&num_possible_true_vars_, -1);
-        if (num_possible_true_vars_ == sum_var_->Min()) {
+        num_possible_true_vars_.Decr(solver());
+        if (num_possible_true_vars_.Value() == sum_var_->Min()) {
           PushAllUnboundToOne();
         }
       } else {
         DCHECK_EQ(1, value);
-        solver()->SaveAndAdd(&num_always_true_vars_, 1);
-        if (num_always_true_vars_ == sum_var_->Max()) {
+        num_always_true_vars_.Incr(solver());
+        if (num_always_true_vars_.Value() == sum_var_->Max()) {
           PushAllUnboundToZero();
         }
       }
@@ -1851,7 +1846,7 @@ class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
 
   void PushAllUnboundToZero() {
     int64 counter = 0;
-    solver()->SaveAndSetValue(&inactive_, 1);
+    inactive_.Switch(solver());
     for (int i = 0; i < size_; ++i) {
       if (vars_[i]->Min() == 0) {
         vars_[i]->SetValue(0);
@@ -1866,7 +1861,7 @@ class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
 
   void PushAllUnboundToOne() {
     int64 counter = 0;
-    solver()->SaveAndSetValue(&inactive_, 1);
+    inactive_.Switch(solver());
     for (int i = 0; i < size_; ++i) {
       if (vars_[i]->Max() == 1) {
         vars_[i]->SetValue(1);
@@ -1893,8 +1888,8 @@ class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
   }
 
  private:
-  int num_possible_true_vars_;
-  int num_always_true_vars_;
+  NumericalRev<int> num_possible_true_vars_;
+  NumericalRev<int> num_always_true_vars_;
   IntVar* const sum_var_;
 };
 

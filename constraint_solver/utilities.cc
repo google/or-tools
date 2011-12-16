@@ -23,60 +23,47 @@
 #include "base/map-util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
 
 namespace operations_research {
 
 // ---------- SmallRevBitSet ----------
 
-SmallRevBitSet::SmallRevBitSet(int64 size) : bits_(0LL), stamp_(0) {
+SmallRevBitSet::SmallRevBitSet(int64 size) : bits_(0LL) {
   DCHECK_GT(size, 0);
   DCHECK_LE(size, 64);
 }
 
-void SmallRevBitSet::SetToOne(Solver* const s, int64 pos) {
+void SmallRevBitSet::SetToOne(Solver* const solver, int64 pos) {
   DCHECK_GE(pos, 0);
-  const uint64 current_stamp = s->stamp();
-  if (stamp_ < current_stamp) {
-    stamp_ = current_stamp;
-    s->SaveValue(&bits_);
-  }
-  bits_ |= OneBit64(pos);
+  bits_.SetValue(solver, bits_.Value() | OneBit64(pos));
 }
 
-void SmallRevBitSet::SetToZero(Solver* const s, int64 pos) {
+void SmallRevBitSet::SetToZero(Solver* const solver, int64 pos) {
   DCHECK_GE(pos, 0);
-  const uint64 current_stamp = s->stamp();
-  if (stamp_ < current_stamp) {
-    stamp_ = current_stamp;
-    s->SaveValue(&bits_);
-  }
-  bits_ &= ~OneBit64(pos);
+  bits_.SetValue(solver, bits_.Value() & ~OneBit64(pos));
 }
 
 int64 SmallRevBitSet::Cardinality() const {
-  return BitCount64(bits_);
+  return BitCount64(bits_.Value());
 }
 
 int64 SmallRevBitSet::GetFirstOne() const {
-  return LeastSignificantBitPosition64(bits_);
+  if (bits_.Value() == 0) {
+    return -1;
+  }
+  return LeastSignificantBitPosition64(bits_.Value());
 }
 
 // ---------- RevBitSet ----------
 
 RevBitSet::RevBitSet(int64 size)
-    : rows_(1), columns_(size), length_(BitLength64(size)),
-      bits_(new uint64[length_]), stamps_(new uint64[length_]) {
+    : size_(size),
+      length_(BitLength64(size)),
+      bits_(new uint64[length_]),
+      stamps_(new uint64[length_]) {
   DCHECK_GE(size, 1);
-  memset(bits_, 0, sizeof(*bits_) * length_);
-  memset(stamps_, 0, sizeof(*stamps_) * length_);
-}
-
-RevBitSet::RevBitSet(int64 rows, int64 columns)
-    : rows_(rows), columns_(columns), length_(BitLength64(rows * columns)),
-      bits_(new uint64[length_]), stamps_(new uint64[length_]) {
-  DCHECK_GE(rows, 1);
-  DCHECK_GE(columns, 1);
   memset(bits_, 0, sizeof(*bits_) * length_);
   memset(stamps_, 0, sizeof(*stamps_) * length_);
 }
@@ -86,55 +73,39 @@ RevBitSet::~RevBitSet() {
   delete [] stamps_;
 }
 
+void RevBitSet::Save(Solver* const solver, int offset) {
+  const uint64 current_stamp = solver->stamp();
+  if (current_stamp > stamps_[offset]) {
+    stamps_[offset] = current_stamp;
+    solver->SaveValue(&bits_[offset]);
+  }
+}
+
 void RevBitSet::SetToOne(Solver* const solver, int64 index) {
   DCHECK_GE(index, 0);
-  DCHECK_LT(index, columns_ * rows_);
+  DCHECK_LT(index, size_);
   const int64 offset = BitOffset64(index);
   const int64 pos = BitPos64(index);
   if (!(bits_[offset] & OneBit64(pos))) {
-    const uint64 current_stamp = solver->stamp();
-    if (current_stamp > stamps_[offset]) {
-      stamps_[offset] = current_stamp;
-      solver->SaveValue(&bits_[offset]);
-    }
+    Save(solver, offset);
     bits_[offset] |= OneBit64(pos);
   }
 }
 
-void RevBitSet::SetToOne(Solver* const solver, int64 row, int64 column) {
-  DCHECK_GE(row, 0);
-  DCHECK_LT(row, rows_);
-  DCHECK_GE(column, 0);
-  DCHECK_LT(column, columns_);
-  SetToOne(solver, row * columns_ + column);
-}
-
 void RevBitSet::SetToZero(Solver* const solver, int64 index) {
   DCHECK_GE(index, 0);
-  DCHECK_LT(index, columns_ * rows_);
+  DCHECK_LT(index, size_);
   const int64 offset = BitOffset64(index);
   const int64 pos = BitPos64(index);
   if (bits_[offset] & OneBit64(pos)) {
-    const uint64 current_stamp = solver->stamp();
-    if (current_stamp > stamps_[offset]) {
-      stamps_[offset] = current_stamp;
-      solver->SaveValue(&bits_[offset]);
-    }
+    Save(solver, offset);
     bits_[offset] &= ~OneBit64(pos);
   }
 }
 
-void RevBitSet::SetToZero(Solver* const solver, int64 row, int64 column) {
-  DCHECK_GE(row, 0);
-  DCHECK_LT(row, rows_);
-  DCHECK_GE(column, 0);
-  DCHECK_LT(column, columns_);
-  SetToZero(solver, row * columns_ + column);
-}
-
 bool RevBitSet::IsSet(int64 index) const {
   DCHECK_GE(index, 0);
-  DCHECK_LT(index, columns_ * rows_);
+  DCHECK_LT(index, size_);
   return IsBitSet64(bits_, index);
 }
 
@@ -174,28 +145,62 @@ bool RevBitSet::IsCardinalityOne() const {
 }
 
 int64 RevBitSet::GetFirstBit(int start) const {
-  const int end = rows_ * columns_ + columns_ - 1;
-  return LeastSignificantBitPosition64(bits_, start, end);
+  return LeastSignificantBitPosition64(bits_, start, size_ - 1);
 }
 
-int64 RevBitSet::Cardinality(int row) const {
+void RevBitSet::ClearAll(Solver* const solver) {
+  for (int offset = 0; offset < length_; ++offset) {
+    if (bits_[offset]) {
+      Save(solver, offset);
+      bits_[offset] = GG_ULONGLONG(0);
+    }
+  }
+}
+
+// ----- RevBitMatrix -----
+
+RevBitMatrix::RevBitMatrix(int64 rows, int64 columns)
+    : RevBitSet(rows * columns), rows_(rows), columns_(columns) {
+  DCHECK_GE(rows, 1);
+  DCHECK_GE(columns, 1);
+}
+
+RevBitMatrix::~RevBitMatrix() {}
+
+void RevBitMatrix::SetToOne(Solver* const solver, int64 row, int64 column) {
+  DCHECK_GE(row, 0);
+  DCHECK_LT(row, rows_);
+  DCHECK_GE(column, 0);
+  DCHECK_LT(column, columns_);
+  RevBitSet::SetToOne(solver, row * columns_ + column);
+}
+
+void RevBitMatrix::SetToZero(Solver* const solver, int64 row, int64 column) {
+  DCHECK_GE(row, 0);
+  DCHECK_LT(row, rows_);
+  DCHECK_GE(column, 0);
+  DCHECK_LT(column, columns_);
+  RevBitSet::SetToZero(solver, row * columns_ + column);
+}
+
+int64 RevBitMatrix::Cardinality(int row) const {
   DCHECK_GE(row, 0);
   DCHECK_LT(row, rows_);
   const int start = row * columns_;
   return BitCountRange64(bits_, start, start + columns_ - 1);
 }
 
-bool RevBitSet::IsCardinalityOne(int row) const {
+bool RevBitMatrix::IsCardinalityOne(int row) const {
   // TODO(user) : Optimize this one.
   return Cardinality(row) == 1;
 }
 
-bool RevBitSet::IsCardinalityZero(int row) const {
+bool RevBitMatrix::IsCardinalityZero(int row) const {
   const int start = row * columns_;
   return IsEmptyRange64(bits_, start, start + columns_ - 1);
 }
 
-int64 RevBitSet::GetFirstBit(int row, int start) const {
+int64 RevBitMatrix::GetFirstBit(int row, int start) const {
   DCHECK_GE(start, 0);
   DCHECK_GE(row, 0);
   DCHECK_LT(row, rows_);
@@ -210,17 +215,8 @@ int64 RevBitSet::GetFirstBit(int row, int start) const {
   }
 }
 
-void RevBitSet::RevClearAll(Solver* const solver) {
-  const uint64 current_stamp = solver->stamp();
-  for (int offset = 0; offset < length_; ++offset) {
-    if (bits_[offset]) {
-      if (current_stamp > stamps_[offset]) {
-        stamps_[offset] = current_stamp;
-        solver->SaveValue(&bits_[offset]);
-      }
-      bits_[offset] = GG_ULONGLONG(0);
-    }
-  }
+void RevBitMatrix::ClearAll(Solver* const solver) {
+  RevBitMatrix::ClearAll(solver);
 }
 
 // ----- PrintModelVisitor -----

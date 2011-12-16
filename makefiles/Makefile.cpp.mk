@@ -90,6 +90,7 @@ CONSTRAINT_SOLVER_LIB_OS = \
 	objs/alldiff_cst.$O\
 	objs/assignment.$O\
 	objs/assignment.pb.$O\
+	objs/collect_variables.$O\
 	objs/constraint_solver.$O\
 	objs/constraints.$O\
 	objs/count_cst.$O\
@@ -134,6 +135,9 @@ gen/constraint_solver/assignment.pb.cc:constraint_solver/assignment.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=. --cpp_out=gen constraint_solver/assignment.proto
 
 gen/constraint_solver/assignment.pb.h:gen/constraint_solver/assignment.pb.cc
+
+objs/collect_variables.$O:constraint_solver/collect_variables.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/collect_variables.cc $(OBJOUT)objs/collect_variables.$O
 
 objs/constraint_solver.$O:constraint_solver/constraint_solver.cc gen/constraint_solver/model.pb.h
 	$(CCC) $(CFLAGS) -c constraint_solver/constraint_solver.cc $(OBJOUT)objs/constraint_solver.$O

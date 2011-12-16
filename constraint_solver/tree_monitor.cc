@@ -137,6 +137,11 @@ class TreeDecisionVisitor : public DecisionVisitor {
     valid_ = true;
   }
 
+  virtual void VisitTryRankLast(SequenceVar* const sequence, int index) {
+    name_ = sequence->name();
+    value_ = index;
+    valid_ = true;
+  }
 
   virtual void VisitUnknownDecision() {
     valid_ = false;

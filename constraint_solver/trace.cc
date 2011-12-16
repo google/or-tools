@@ -744,6 +744,31 @@ class PrintTrace : public PropagationMonitor {
                                      index));
   }
 
+  virtual void RankLast(SequenceVar* const var, int index) {
+    DisplayModification(StringPrintf("RankLast(%s, %d)",
+                                     var->DebugString().c_str(),
+                                     index));
+  }
+
+  virtual void RankNotLast(SequenceVar* const var, int index) {
+    DisplayModification(StringPrintf("RankNotLast(%s, %d)",
+                                     var->DebugString().c_str(),
+                                     index));
+  }
+
+  virtual void RankSequence(SequenceVar* const var,
+                            const std::vector<int>& rank_first,
+                            const std::vector<int>& rank_last,
+                            const std::vector<int>& unperformed) {
+    DisplayModification(
+        StringPrintf(
+            "RankSequence(%s, forward [%s], backward[%s], unperformed[%s])",
+            var->DebugString().c_str(),
+            IntVectorToString(rank_first, ", ").c_str(),
+            IntVectorToString(rank_last, ", ").c_str(),
+            IntVectorToString(unperformed, ", ").c_str()));
+  }
+
   virtual void Install() {
     SearchMonitor::Install();
     if (solver()->SolveDepth() <= 1) {

@@ -67,8 +67,8 @@ class CountValueEqCst : public Constraint {
   int64 value_;
   RevBitSet undecided_;
   int64 count_;
-  int min_;
-  int max_;
+  NumericalRev<int> min_;
+  NumericalRev<int> max_;
 };
 
 CountValueEqCst::CountValueEqCst(Solver* const s,
@@ -139,8 +139,8 @@ void CountValueEqCst::InitialPropagate() {
   } else if (count_ == max) {
     CardMax();
   }
-  s->SaveAndSetValue(&min_, min);
-  s->SaveAndSetValue(&max_, max);
+  min_.SetValue(s, min);
+  max_.SetValue(s, max);
 }
 
 void CountValueEqCst::OneBound(int index) {
@@ -149,13 +149,13 @@ void CountValueEqCst::OneBound(int index) {
   if (undecided_.IsSet(index)) {
     undecided_.SetToZero(s, index);
     if (var->Min() == value_) {
-      s->SaveAndAdd(&min_, 1);
-      if (min_ == count_) {
+      min_.Incr(s);
+      if (min_.Value() == count_) {
         CardMin();
       }
     } else {
-      s->SaveAndAdd(&max_, -1);
-      if (max_ == count_) {
+      max_.Decr(s);
+      if (max_.Value() == count_) {
         CardMax();
       }
     }
@@ -165,9 +165,9 @@ void CountValueEqCst::OneBound(int index) {
 void CountValueEqCst::OneDomain(int index) {
   Solver* const s = solver();
   if (undecided_.IsSet(index) && !vars_[index]->Contains(value_)) {
-    s->SaveAndAdd(&max_, -1);
+    max_.Decr(s);
     undecided_.SetToZero(s, index);
-    if (max_ == count_) {
+    if (max_.Value() == count_) {
       CardMax();
     }
   }
@@ -239,8 +239,8 @@ class CountValueEq : public Constraint {
   int64 value_;
   RevBitSet undecided_;
   IntVar* const count_;
-  int min_;
-  int max_;
+  NumericalRev<int> min_;
+  NumericalRev<int> max_;
 };
 
 CountValueEq::CountValueEq(Solver* const s, const IntVar* const* vars, int size,
@@ -313,8 +313,8 @@ void CountValueEq::InitialPropagate() {
   } else if (count_->Min() == max) {
     CardMax();
   }
-  s->SaveAndSetValue(&min_, min);
-  s->SaveAndSetValue(&max_, max);
+  min_.SetValue(s, min);
+  max_.SetValue(s, max);
 }
 
 void CountValueEq::OneBound(int index) {
@@ -323,15 +323,15 @@ void CountValueEq::OneBound(int index) {
   if (undecided_.IsSet(index)) {
     undecided_.SetToZero(s, index);
     if (var->Min() == value_) {
-      s->SaveAndAdd(&min_, 1);
-      count_->SetMin(min_);
-      if (min_ == count_->Max()) {
+      min_.Incr(s);
+      count_->SetMin(min_.Value());
+      if (min_.Value() == count_->Max()) {
         CardMin();
       }
     } else {
-      s->SaveAndAdd(&max_, -1);
-      count_->SetMax(max_);
-      if (max_ == count_->Min()) {
+      max_.Decr(s);
+      count_->SetMax(max_.Value());
+      if (max_.Value() == count_->Min()) {
         CardMax();
       }
     }
@@ -341,26 +341,26 @@ void CountValueEq::OneBound(int index) {
 void CountValueEq::OneDomain(int index) {
   Solver* const s = solver();
   if (undecided_.IsSet(index) && !vars_[index]->Contains(value_)) {
-    s->SaveAndAdd(&max_, -1);
+    max_.Decr(s);
     undecided_.SetToZero(s, index);
-    count_->SetMax(max_);
-    if (max_ == count_->Min()) {
+    count_->SetMax(max_.Value());
+    if (max_.Value() == count_->Min()) {
       CardMax();
     }
   }
 }
 
 void CountValueEq::Var() {
-  if (count_->Min() > max_) {
+  if (count_->Min() > max_.Value()) {
     solver()->Fail();
   }
-  if (count_->Min() == max_) {
+  if (count_->Min() == max_.Value()) {
     CardMax();
   }
-  if (count_->Max() < min_) {
+  if (count_->Max() < min_.Value()) {
     solver()->Fail();
   }
-  if (count_->Max() == min_) {
+  if (count_->Max() == min_.Value()) {
     CardMin();
   }
 }
@@ -435,14 +435,14 @@ class Distribute : public Constraint {
   }
 
  private:
-  scoped_array<IntVar*> vars_;
-  int var_size_;
-  scoped_array<int64> values_;
-  scoped_array<IntVar*> cards_;
-  int card_size_;
-  RevBitSet undecided_;
-  scoped_array<int> min_;
-  scoped_array<int> max_;
+  const scoped_array<IntVar*> vars_;
+  const int var_size_;
+  const scoped_array<int64> values_;
+  const scoped_array<IntVar*> cards_;
+  const int card_size_;
+  RevBitMatrix undecided_;
+  NumericalRevArray<int> min_;
+  NumericalRevArray<int> max_;
 };
 
 Distribute::Distribute(Solver* const s,
@@ -458,15 +458,11 @@ Distribute::Distribute(Solver* const s,
       cards_(new IntVar*[csize]),
       card_size_(csize),
       undecided_(var_size_, card_size_),
-      min_(new int[card_size_]),
-      max_(new int[card_size_]) {
+      min_(card_size_, 0),
+      max_(card_size_, 0) {
   memcpy(vars_.get(), vars, var_size_ * sizeof(*vars));
   memcpy(values_.get(), values, card_size_ * sizeof(*values));
   memcpy(cards_.get(), cards, card_size_ * sizeof(*cards));
-  for (int i = 0; i < card_size_; ++i) {
-    min_[i] = 0;
-    max_[i] = 0;
-  }
 }
 
 Distribute::Distribute(Solver* const s,
@@ -482,14 +478,12 @@ Distribute::Distribute(Solver* const s,
       cards_(new IntVar*[csize]),
       card_size_(csize),
       undecided_(var_size_, card_size_),
-      min_(new int[card_size_]),
-      max_(new int[card_size_]) {
+      min_(card_size_, 0),
+      max_(card_size_, 0) {
   memcpy(vars_.get(), vars, var_size_ * sizeof(*vars));
   memcpy(cards_.get(), cards, card_size_ * sizeof(*cards));
   for (int i = 0; i < card_size_; ++i) {
     values_[i] = values[i];
-    min_[i] = 0;
-    max_[i] = 0;
   }
 }
 
@@ -556,8 +550,8 @@ void Distribute::InitialPropagate() {
     } else if (cards_[j]->Min() == max) {
       CardMax(j);
     }
-    s->SaveAndSetValue(&min_[j], min);
-    s->SaveAndSetValue(&max_[j], max);
+    min_.SetValue(s, j, min);
+    max_.SetValue(s, j, max);
   }
 }
 
@@ -568,13 +562,13 @@ void Distribute::OneBound(int index) {
     if (undecided_.IsSet(index, j)) {
       undecided_.SetToZero(s, index, j);
       if (var->Min() == values_[j]) {
-        s->SaveAndAdd(&min_[j], 1);
+        min_.Incr(s, j);
         cards_[j]->SetMin(min_[j]);
         if (min_[j] == cards_[j]->Max()) {
           CardMin(j);
         }
       } else {
-        s->SaveAndAdd(&max_[j], -1);
+        max_.Decr(s, j);
         cards_[j]->SetMax(max_[j]);
         if (max_[j] == cards_[j]->Min()) {
           CardMax(j);
@@ -591,7 +585,7 @@ void Distribute::OneDomain(int index) {
     if (undecided_.IsSet(index, j)) {
       if (!var->Contains(values_[j])) {
         undecided_.SetToZero(s, index, j);
-        s->SaveAndAdd(&max_[j], -1);
+        max_.Decr(s, j);
         cards_[j]->SetMax(max_[j]);
         if (max_[j] == cards_[j]->Min()) {
           CardMax(j);
@@ -652,7 +646,7 @@ class FastDistribute : public Constraint {
   void SetRevCannotContribute(int64 var_index, int64 card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
-    s->SaveAndAdd(&max_[card_index], -1);
+    max_.Decr(s, card_index);
     cards_[card_index]->SetMax(max_[card_index]);
     if (max_[card_index] == cards_[card_index]->Min()) {
       CardMax(card_index);
@@ -661,7 +655,7 @@ class FastDistribute : public Constraint {
   void SetRevDoContribute(int64 var_index, int64 card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
-    s->SaveAndAdd(&min_[card_index], 1);
+    min_.Incr(s, card_index);
     cards_[card_index]->SetMin(min_[card_index]);
     if (min_[card_index] == cards_[card_index]->Max()) {
       CardMin(card_index);
@@ -680,13 +674,13 @@ class FastDistribute : public Constraint {
   }
 
  private:
-  scoped_array<IntVar*> vars_;
+  const scoped_array<IntVar*> vars_;
   const int var_size_;
-  scoped_array<IntVar*> cards_;
+  const scoped_array<IntVar*> cards_;
   const int64 card_size_;
-  RevBitSet undecided_;
-  scoped_array<int> min_;
-  scoped_array<int> max_;
+  RevBitMatrix undecided_;
+  NumericalRevArray<int> min_;
+  NumericalRevArray<int> max_;
   scoped_array<IntVarIterator*> holes_;
 };
 
@@ -701,15 +695,11 @@ FastDistribute::FastDistribute(Solver* const s,
       cards_(new IntVar*[csize]),
       card_size_(csize),
       undecided_(vsize, csize),
-      min_(new int[card_size_]),
-      max_(new int[card_size_]),
+      min_(card_size_, 0),
+      max_(card_size_, 0),
       holes_(new IntVarIterator*[var_size_]) {
   memcpy(vars_.get(), vars, var_size_ * sizeof(*vars));
   memcpy(cards_.get(), cards, card_size_ * sizeof(*cards));
-  for (int card_index = 0; card_index < card_size_; ++card_index) {
-    min_[card_index] = 0;
-    max_[card_index] = 0;
-  }
   for (int var_index = 0; var_index < var_size_; ++var_index) {
     holes_[var_index] = vars_[var_index]->MakeHoleIterator(true);
   }
@@ -767,8 +757,8 @@ void FastDistribute::InitialPropagate() {
         undecided_.SetToOne(s, var_index, card_index);
       }
     }
-    s->SaveAndSetValue(&min_[card_index], min);
-    s->SaveAndSetValue(&max_[card_index], max);
+    min_.SetValue(s, card_index, min);
+    max_.SetValue(s, card_index, max);
     Var(card_index);
   }
 }
@@ -868,7 +858,7 @@ class BoundedDistribute : public Constraint {
   void SetRevCannotContribute(int64 var_index, int64 card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
-    s->SaveAndAdd(&max_[card_index], -1);
+    max_.Decr(s, card_index);
     if (max_[card_index] < card_min_) {
       solver()->Fail();
     }
@@ -879,7 +869,7 @@ class BoundedDistribute : public Constraint {
   void SetRevDoContribute(int64 var_index, int64 card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
-    s->SaveAndAdd(&min_[card_index], 1);
+    min_.Incr(s, card_index);
     if (min_[card_index] > card_max_) {
       solver()->Fail();
     }
@@ -901,14 +891,14 @@ class BoundedDistribute : public Constraint {
   }
 
  private:
-  scoped_array<IntVar*> vars_;
+  const scoped_array<IntVar*> vars_;
   const int var_size_;
   const int64 card_min_;
   const int64 card_max_;
   const int64 card_size_;
-  RevBitSet undecided_;
-  scoped_array<int> min_;
-  scoped_array<int> max_;
+  RevBitMatrix undecided_;
+  NumericalRevArray<int> min_;
+  NumericalRevArray<int> max_;
   scoped_array<IntVarIterator*> holes_;
 };
 
@@ -925,14 +915,10 @@ BoundedDistribute::BoundedDistribute(Solver* const s,
       card_max_(card_max),
       card_size_(csize),
       undecided_(var_size_, card_size_),
-      min_(new int[card_size_]),
-      max_(new int[card_size_]),
+      min_(card_size_, 0),
+      max_(card_size_, 0),
       holes_(new IntVarIterator*[var_size_]) {
   memcpy(vars_.get(), vars, var_size_ * sizeof(*vars));
-  for (int card_index = 0; card_index < card_size_; ++card_index) {
-    min_[card_index] = 0;
-    max_[card_index] = 0;
-  }
   for (int var_index = 0; var_index < var_size_; ++var_index) {
     holes_[var_index] = vars_[var_index]->MakeHoleIterator(true);
   }
@@ -997,8 +983,8 @@ void BoundedDistribute::InitialPropagate() {
         undecided_.SetToOne(s, i, card_index);
       }
     }
-    s->SaveAndSetValue(&min_[card_index], min);
-    s->SaveAndSetValue(&max_[card_index], max);
+    min_.SetValue(s, card_index, min);
+    max_.SetValue(s, card_index, max);
     Var(card_index);
   }
 }

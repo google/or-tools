@@ -25,6 +25,9 @@
 //   - RevImmutableMultiMap a reversible immutable multimap.
 //   - MakeConstraintDemon<n> and MakeDelayedConstraintDemon<n> to wrap methods
 //     of a constraint as a demon.
+//   - RevSwitch, one reversible flip once switch.
+//   - SmallRevBitSet, RevBitSet, and RevBitMatrix: reversible 1D or 2D
+//     bitsets.
 //   - LocalSearchOperator, IntVarLocalSearchOperator, ChangeValue and
 //     PathOperator to create new local search operators.
 //   - LocalSearchFilter and IntVarLocalSearchFilter to create new local
@@ -176,15 +179,15 @@ template <class T> class SimpleRevFIFO {
   SimpleRevFIFO() : chunks_(NULL), pos_(0) {}
 
   void Push(Solver* const s, T val) {
-    if (pos_ == 0) {
+    if (pos_.Value() == 0) {
       Chunk* const chunk = s->UnsafeRevAlloc(new Chunk(chunks_));
       s->SaveAndSetValue(reinterpret_cast<void**>(&chunks_),
                          reinterpret_cast<void*>(chunk));
-      s->SaveAndSetValue(&pos_, CHUNK_SIZE - 1);
+      pos_.SetValue(s, CHUNK_SIZE - 1);
     } else {
-      s->SaveAndAdd(&pos_, -1);
+      pos_.Decr(s);
     }
-    chunks_->data_[pos_] = val;
+    chunks_->data_[pos_.Value()] = val;
   }
 
   // Pushes the var on top if is not a duplicate of the current top object.
@@ -195,23 +198,25 @@ template <class T> class SimpleRevFIFO {
   }
 
   // Returns the last item of the FIFO.
-  const T* Last() const { return chunks_ ? &chunks_->data_[pos_] : NULL; }
+  const T* Last() const {
+    return chunks_ ? &chunks_->data_[pos_.Value()] : NULL;
+  }
 
   // Returns the last value in the FIFO.
   const T& LastValue() const {
     DCHECK(chunks_);
-    return chunks_->data_[pos_];
+    return chunks_->data_[pos_.Value()];
   }
 
   // Sets the last value in the FIFO.
   void SetLastValue(const T& v) {
     DCHECK(Last());
-    chunks_->data_[pos_] = v;
+    chunks_->data_[pos_.Value()] = v;
   }
 
  private:
   Chunk *chunks_;
-  int pos_;
+  NumericalRev<int> pos_;
 };
 
 // ---------- Reversible Hash Table ----------
@@ -295,16 +300,16 @@ template <class K, class V> class RevImmutableMultiMap {
         array_(solver->UnsafeRevAllocArray(new Cell*[initial_size])),
         size_(initial_size),
         num_items_(0) {
-    memset(array_, 0, sizeof(*array_) * size_);
+    memset(array_, 0, sizeof(*array_) * size_.Value());
   }
 
   ~RevImmutableMultiMap() {}
 
-  int num_items() const { return num_items_; }
+  int num_items() const { return num_items_.Value(); }
 
   // Returns true if the multi-map contains at least one instance of 'key'.
   bool ContainsKey(const K& key) const {
-    uint64 code = Hash1(key) % size_;
+    uint64 code = Hash1(key) % size_.Value();
     Cell* tmp = array_[code];
     while (tmp) {
       if (tmp->key() == key) {
@@ -319,7 +324,7 @@ template <class K, class V> class RevImmutableMultiMap {
   // is not in the multi-map. The actual value returned if more than one
   // values is attached to the same key is not specified.
   const V& FindWithDefault(const K& key, const V& default_value) const {
-    uint64 code = Hash1(key) % size_;
+    uint64 code = Hash1(key) % size_.Value();
     Cell* tmp = array_[code];
     while (tmp) {
       if (tmp->key() == key) {
@@ -332,13 +337,13 @@ template <class K, class V> class RevImmutableMultiMap {
 
   // Inserts (key, value) in the multi-map.
   void Insert(const K& key, const V& value) {
-    const int position = Hash1(key) % size_;
+    const int position = Hash1(key) % size_.Value();
     Cell* const cell =
         solver_->UnsafeRevAlloc(new Cell(key, value, array_[position]));
     solver_->SaveAndSetValue(reinterpret_cast<void**>(&array_[position]),
                              reinterpret_cast<void*>(cell));
-    solver_->SaveAndAdd(&num_items_, 1);
-    if (num_items_ > 2 * size_) {
+    num_items_.Incr(solver_);
+    if (num_items_.Value() > 2 * size_.Value()) {
       Double();
     }
   }
@@ -368,19 +373,19 @@ template <class K, class V> class RevImmutableMultiMap {
 
   void Double() {
     Cell** const old_cell_array = array_;
-    const int old_size = size_;
-    solver_->SaveAndAdd(&size_, size_);
+    const int old_size = size_.Value();
+    size_.SetValue(solver_, size_.Value() * 2);
     solver_->SaveAndSetValue(
         reinterpret_cast<void**>(&array_),
         reinterpret_cast<void*>(
-            solver_->UnsafeRevAllocArray(new Cell*[size_])));
-    memset(array_, 0, size_ * sizeof(*array_));
+            solver_->UnsafeRevAllocArray(new Cell*[size_.Value()])));
+    memset(array_, 0, size_.Value() * sizeof(*array_));
     for (int i = 0; i < old_size; ++i) {
       Cell* tmp = old_cell_array[i];
       while (tmp != NULL) {
         Cell* const to_reinsert = tmp;
         tmp = tmp->next();
-        const uint64 new_position = Hash1(to_reinsert->key()) % size_;
+        const uint64 new_position = Hash1(to_reinsert->key()) % size_.Value();
         to_reinsert->SetRevNext(solver_, array_[new_position]);
         solver_->SaveAndSetValue(
             reinterpret_cast<void**>(&array_[new_position]),
@@ -391,9 +396,119 @@ template <class K, class V> class RevImmutableMultiMap {
 
   Solver* const solver_;
   Cell** array_;
-  int size_;
-  int num_items_;
-  // TODO(user): Experiment with stamping 'array_'.
+  NumericalRev<int> size_;
+  NumericalRev<int> num_items_;
+};
+
+// A reversible switch that can switch once from false to true.
+class RevSwitch {
+ public:
+  RevSwitch() : value_(false) {}
+
+  bool Switched() const { return value_; }
+
+  void Switch(Solver* const solver) {
+    solver->SaveAndSetValue(&value_, true);
+  }
+
+ private:
+  bool value_;
+};
+
+// This class represents a small reversible bitset (size <= 64).
+// This class is useful to maintain supports.
+class SmallRevBitSet {
+ public:
+  explicit SmallRevBitSet(int64 size);
+  // Sets the 'pos' bit.
+  void SetToOne(Solver* const solver, int64 pos);
+  // Erases the 'pos' bit.
+  void SetToZero(Solver* const solver, int64 pos);
+  // Returns the number of bits set to one.
+  int64 Cardinality() const;
+  // Is bitset null?
+  bool IsCardinalityZero() const { return bits_.Value() == GG_ULONGLONG(0); }
+  // Does it contains only one bit set?
+  bool IsCardinalityOne() const {
+    return (bits_.Value() != 0) && !(bits_.Value() & (bits_.Value() - 1));
+  }
+  // Gets the index of the first bit set starting from 0.
+  // It returns -1 if the bitset is empty.
+  int64 GetFirstOne() const;
+
+ private:
+  Rev<uint64> bits_;
+};
+
+// This class represents a reversible bitset.
+// This class is useful to maintain supports.
+class RevBitSet {
+ public:
+  explicit RevBitSet(int64 size);
+  ~RevBitSet();
+
+  // Sets the 'pos' bit.
+  void SetToOne(Solver* const solver, int64 pos);
+  // Erases the 'pos' bit.
+  void SetToZero(Solver* const solver, int64 pos);
+  // Returns whether the 'pos' bit is set.
+  bool IsSet(int64 pos) const;
+  // Returns the number of bits set to one.
+  int64 Cardinality() const;
+  // Is bitset null?
+  bool IsCardinalityZero() const;
+  // Does it contains only one bit set?
+  bool IsCardinalityOne() const;
+  // Gets the index of the first bit set starting from start.
+  // It returns -1 if the bitset is empty after start.
+  int64 GetFirstBit(int start) const;
+  // Cleans all bits.
+  void ClearAll(Solver* const solver);
+
+  friend class RevBitMatrix;
+
+ private:
+  // Save the offset's part of the bitset.
+  void Save(Solver* const solver, int offset);
+  const int64 size_;
+  const int64 length_;
+  uint64* bits_;
+  uint64* stamps_;
+};
+
+// Matrix version of the RevBitSet class.
+class RevBitMatrix : private RevBitSet {
+ public:
+  RevBitMatrix(int64 rows, int64 columns);
+  ~RevBitMatrix();
+
+  // Sets the 'column' bit in the 'row' row..
+  void SetToOne(Solver* const solver, int64 row, int64 column);
+  // Erases the 'column' bit in the 'row' row..
+  void SetToZero(Solver* const solver, int64 row, int64 column);
+  // Returns whether the 'column' bit in the 'row' row is set.
+  bool IsSet(int64 row, int64 column) const {
+    DCHECK_GE(row, 0);
+    DCHECK_LT(row, rows_);
+    DCHECK_GE(column, 0);
+    DCHECK_LT(column, columns_);
+    return RevBitSet::IsSet(row * columns_ + column);
+  }
+  // Returns the number of bits set to one in the 'row' row.
+  int64 Cardinality(int row) const;
+  // Is bitset of row 'row' null?
+  bool IsCardinalityZero(int row) const;
+  // Does the 'row' bitset contains only one bit set?
+  bool IsCardinalityOne(int row) const;
+  // Returns the first bit in the row 'row' which position is >= 'start'.
+  // It returns -1 if there are none.
+  int64 GetFirstBit(int row, int start) const;
+  // Cleans all bits.
+  void ClearAll(Solver* const solver);
+
+ private:
+  const int64 rows_;
+  const int64 columns_;
 };
 
 // @{
@@ -1037,6 +1152,12 @@ class PropagationMonitor : public SearchMonitor {
   // SequenceVar modifiers
   virtual void RankFirst(SequenceVar* const var, int index) = 0;
   virtual void RankNotFirst(SequenceVar* const var, int index) = 0;
+  virtual void RankLast(SequenceVar* const var, int index) = 0;
+  virtual void RankNotLast(SequenceVar* const var, int index) = 0;
+  virtual void RankSequence(SequenceVar* const var,
+                            const std::vector<int>& rank_first,
+                            const std::vector<int>& rank_last,
+                            const std::vector<int>& unperformed) = 0;
   // Install itself on the solver.
   virtual void Install();
 };

@@ -319,9 +319,9 @@ class NoCycle : public Constraint {
   }
 
  private:
-  scoped_array<IntVar*> nexts_;
-  int size_;
-  scoped_array<IntVar*> active_;
+  const scoped_array<IntVar*> nexts_;
+  const int size_;
+  const scoped_array<IntVar*> active_;
   scoped_array<int64> starts_;
   scoped_array<int64> ends_;
   scoped_array<int64> outbound_supports_;
@@ -336,9 +336,9 @@ NoCycle::NoCycle(Solver* const s, const IntVar* const* nexts, int size,
                  ResultCallback1<bool, int64>* sink_handler, bool owner,
                  bool assume_paths)
     : Constraint(s),
-      nexts_(NULL),
+      nexts_(new IntVar*[size]),
       size_(size),
-      active_(NULL),
+      active_(new IntVar*[size]),
       starts_(new int64[size]),
       ends_(new int64[size]),
       outbound_supports_(new int64[size]),
@@ -347,9 +347,7 @@ NoCycle::NoCycle(Solver* const s, const IntVar* const* nexts, int size,
       assume_paths_(assume_paths) {
   CHECK_GE(size_, 0);
   if (size_ > 0) {
-    nexts_.reset(new IntVar*[size_]);
     memcpy(nexts_.get(), nexts, size_ * sizeof(*nexts));
-    active_.reset(new IntVar*[size_]);
     memcpy(active_.get(), active, size_ * sizeof(*active));
   }
   for (int i = 0; i < size; ++i) {
@@ -623,7 +621,7 @@ class PathCumul : public Constraint {
   scoped_array<IntVar*> cumuls_;
   int cumul_size_;
   scoped_array<IntVar*> transits_;
-  scoped_array<int> prevs_;
+  RevArray<int> prevs_;
   scoped_array<int> supports_;
 };
 
@@ -638,7 +636,7 @@ PathCumul::PathCumul(Solver* const s,
       active_(NULL),
       cumuls_(NULL),
       cumul_size_(cumul_size),
-      prevs_(new int[cumul_size]),
+      prevs_(cumul_size, -1),
       supports_(new int[size]) {
   CHECK_GE(size_, 0);
   if (size_ > 0) {
@@ -654,9 +652,6 @@ PathCumul::PathCumul(Solver* const s,
   if (cumul_size_ > 0) {
     cumuls_.reset(new IntVar*[cumul_size_]);
     memcpy(cumuls_.get(), cumuls, cumul_size_ * sizeof(*cumuls));
-  }
-  for (int i = 0; i < cumul_size_; ++i) {
-    prevs_[i] = -1;
   }
   for (int i = 0; i < size_; ++i) {
     supports_[i] = -1;
@@ -734,7 +729,7 @@ void PathCumul::NextBound(int index) {
   transit->SetMin(cumul_next->Min() - cumul->Max());
   transit->SetMax(cumul_next->Max() - cumul->Min());
   if (prevs_[next] < 0) {
-    solver()->SaveAndSetValue(&prevs_[next], index);
+    prevs_.SetValue(solver(), next, index);
   }
 }
 

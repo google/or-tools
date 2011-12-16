@@ -323,6 +323,8 @@ class PyDecisionBuilder(object):
 %rename (PathCumul) MakePathCumul;
 %rename (Phase) MakePhase;
 %rename (RandomLNSOperator) MakeRandomLNSOperator;
+%rename (RankFirstInterval) MakeRankFirstInterval;
+%rename (RankLastInterval) MakeRankLastInterval;
 %rename (RestoreAssignment) MakeRestoreAssignment;
 %rename (ScalProd) MakeScalProd;
 %rename (ScalProdEquality) MakeScalProdEquality;
@@ -349,7 +351,6 @@ class PyDecisionBuilder(object):
 %rename (TransitionConstraint) MakeTransitionConstraint;
 %rename (TreeMonitor) MakeTreeMonitor;
 %rename (TrueConstraint) MakeTrueConstraint;
-%rename (TryRankFirst) MakeTryRankFirst;
 %rename (WeightedMaximize) MakeWeightedMaximize;
 %rename (WeightedMinimize) MakeWeightedMinimize;
 %rename (WeightedOptimize) MakeWeightedOptimize;
@@ -1468,6 +1469,8 @@ struct FailureProtect {
 %rename (makePhase) operations_research::Solver::MakePhase;
 %rename (makeProd) operations_research::Solver::MakeProd;
 %rename (makeRandomLNSOperator) operations_research::Solver::MakeRandomLNSOperator;
+%rename (makeRankFirstInterval) operations_research::Solver::MakeRankFirstInterval;
+%rename (makeRankLastInterval) operations_research::Solver::MakeRankLastInterval;
 %rename (makeRestoreAssignment) operations_research::Solver::MakeRestoreAssignment;
 %rename (makeScalProd) operations_research::Solver::MakeScalProd;
 %rename (makeScalProdEquality) operations_research::Solver::MakeScalProdEquality;
@@ -1495,7 +1498,6 @@ struct FailureProtect {
 %rename (makeTransitionConstraint) operations_research::Solver::MakeTransitionConstraint;
 %rename (makeTreeMonitor) operations_research::Solver::MakeTreeMonitor;
 %rename (makeTrueConstraint) operations_research::Solver::MakeTrueConstraint;
-%rename (makeTryRankFirst) operations_research::Solver::MakeTryRankFirst;
 %rename (makeWeightedMaximize) operations_research::Solver::MakeWeightedMaximize;
 %rename (makeWeightedMinimize) operations_research::Solver::MakeWeightedMinimize;
 %rename (makeWeightedOptimize) operations_research::Solver::MakeWeightedOptimize;
@@ -1506,6 +1508,11 @@ struct FailureProtect {
 %rename (rand32) operations_research::Solver::Rand32;
 %rename (rand64) operations_research::Solver::Rand64;
 %rename (randomConcatenateOperators) operations_research::Solver::RandomConcatenateOperators;
+%rename (rankFirst) operations_research::SequenceVar::RankFirst;
+%rename (rankNotFirst) operations_research::SequenceVar::RankNotFirst;
+%rename (rankLast) operations_research::SequenceVar::RankLast;
+%rename (rankNotLast) operations_research::SequenceVar::RankNotLast;
+%rename (rankSequence) operations_research::SequenceVar::RankSequence;
 %rename (reSeed) operations_research::Solver::ReSeed;
 %rename (searchDepth) operations_research::Solver::SearchDepth;
 %rename (searchLeftDepth) operations_research::Solver::SearchLeftDepth;

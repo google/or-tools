@@ -2541,8 +2541,11 @@ void DecisionVisitor::VisitSplitVariableDomain(IntVar* const var,
 void DecisionVisitor::VisitUnknownDecision() {}
 void DecisionVisitor::VisitScheduleOrPostpone(IntervalVar* const var,
                                               int64 est) {}
-void DecisionVisitor::VisitTryRankFirst(SequenceVar* const sequence,
-                                        int index) {}
+void DecisionVisitor::VisitRankFirstInterval(SequenceVar* const sequence,
+                                             int index) {}
+
+void DecisionVisitor::VisitRankLastInterval(SequenceVar* const sequence,
+                                            int index) {}
 
 // ---------- ModelVisitor ----------
 
@@ -3115,6 +3118,27 @@ class Trace : public PropagationMonitor {
   virtual void RankNotFirst(SequenceVar* const var, int index) {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->RankNotFirst(var, index);
+    }
+  }
+
+  virtual void RankLast(SequenceVar* const var, int index) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RankLast(var, index);
+    }
+  }
+
+  virtual void RankNotLast(SequenceVar* const var, int index) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RankNotLast(var, index);
+    }
+  }
+
+  virtual void RankSequence(SequenceVar* const var,
+                            const std::vector<int>& rank_first,
+                            const std::vector<int>& rank_last,
+                            const std::vector<int>& unperformed) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->RankSequence(var, rank_first, rank_last, unperformed);
     }
   }
 

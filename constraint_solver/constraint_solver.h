@@ -145,6 +145,8 @@ class Pack;
 class PropagationBaseObject;
 class PropagationMonitor;
 class Queue;
+class RevBitMatrix;
+class RevBitSet;
 class Search;
 class SearchLimit;
 class SearchLimitProto;
@@ -471,8 +473,8 @@ class Solver {
     SEQUENCE_DEFAULT,
     SEQUENCE_SIMPLE,
     CHOOSE_MIN_SLACK_RANK_FORWARD,
+    CHOOSE_RANDOM_RANK_FORWARD,
   };
-
 
   // Used for scheduling. Not yet implemented.
   enum IntervalStrategy {
@@ -1023,6 +1025,16 @@ class Solver {
   bool LoadModel(const CPModelProto& proto, std::vector<SearchMonitor*>* monitors);
   // Upgrades the model to the latest version.
   static bool UpgradeModel(CPModelProto* const proto);
+  // Collects decision variables.
+  // All decision variables will be collected in 4 groups:
+  //   - Main integer decision variables.
+  //   - Secondary integer variables.
+  //   - Sequence variables.
+  //   - Interval variables.
+  bool CollectDecisionVariables(std::vector<IntVar*>* const primary_integer_variables,
+                                std::vector<IntVar*>* const secondary_integer_variables,
+                                std::vector<SequenceVar*>* const sequence_variables,
+                                std::vector<IntervalVar*>* const interval_variables);
 
   // Registers a constraint builder. Ownership is passed to the solver.
   void RegisterBuilder(const string& tag,
@@ -2268,7 +2280,11 @@ class Solver {
 
   // Returns a decision that tries to rank first the ith interval var
   // in the sequence variable.
-  Decision* MakeTryRankFirst(SequenceVar* const sequence, int index);
+  Decision* MakeRankFirstInterval(SequenceVar* const sequence, int index);
+
+  // Returns a decision that tries to rank last the ith interval var
+  // in the sequence variable.
+  Decision* MakeRankLastInterval(SequenceVar* const sequence, int index);
 
   // Returns a decision builder which assigns values to variables which
   // minimize the values returned by the evaluator. The arguments passed to the
@@ -2654,8 +2670,10 @@ class Solver {
 
   // All-in-one SaveAndAdd_value.
   template <class T> void SaveAndAdd(T* adr, T val) {
-    InternalSaveValue(adr);
-    (*adr) += val;
+    if (val != 0) {
+      InternalSaveValue(adr);
+      (*adr) += val;
+    }
   }
 
   // Returns a random value between 0 and 'size' - 1;
@@ -2882,6 +2900,15 @@ class Solver {
 
 std::ostream& operator << (std::ostream& out, const Solver* const s);  // NOLINT
 
+// ---------- Misc ----------
+
+// This method returns 0. It is useful when 0 can be cast either as
+// a pointer or as an integer value and thus lead to an ambiguous
+// function call.
+inline int64 Zero() {
+  return 0LL;
+}
+
 /////////////////////////////////////////////////////////////////////
 //
 // Useful Search and Modeling Objects
@@ -2996,7 +3023,8 @@ class DecisionVisitor : public BaseObject {
                                         int64 value,
                                         bool start_with_lower_half);
   virtual void VisitScheduleOrPostpone(IntervalVar* const var, int64 est);
-  virtual void VisitTryRankFirst(SequenceVar* const sequence, int index);
+  virtual void VisitRankFirstInterval(SequenceVar* const sequence, int index);
+  virtual void VisitRankLastInterval(SequenceVar* const sequence, int index);
   virtual void VisitUnknownDecision();
 
  private:
@@ -3444,14 +3472,14 @@ class SearchMonitor : public BaseObject {
   DISALLOW_COPY_AND_ASSIGN(SearchMonitor);
 };
 
-// These class represent reversible POD types.
-// It Contains the stamp optimization. i.e. the SaveValue call is done only
-// once per node of the search tree.
-// Please note that actual stamps always starts at 1, thus an initial value of
-// 0 will always trigger the first SaveValue.
+// This class adds reversibility to a POD type.
+// It contains the stamp optimization. i.e. the SaveValue call is done
+// only once per node of the search tree.  Please note that actual
+// stamps always starts at 1, thus an initial value of 0 will always
+// trigger the first SaveValue.
 template <class T> class Rev {
  public:
-  explicit Rev(const T& val) : stamp_(GG_ULONGLONG(0)), value_(val) {}
+  explicit Rev(const T& val) : stamp_(0), value_(val) {}
 
   const T& Value() const { return value_; }
 
@@ -3469,6 +3497,81 @@ template <class T> class Rev {
   uint64 stamp_;
   T value_;
 };
+
+// Subclass of Rev<T> which adds numerical operations.
+template <class T> class NumericalRev : public Rev<T> {
+ public:
+  explicit NumericalRev(const T& val) : Rev<T>(val) {}
+
+  void Add(Solver* const s, const T& to_add) {
+    this->SetValue(s, this->Value() + to_add);
+  }
+
+  void Incr(Solver* const s) {
+    Add(s, 1);
+  }
+
+  void Decr(Solver* const s) {
+    Add(s, -1);
+  }
+};
+
+// Reversible array of POD types.
+// It Contains the stamp optimization. i.e. the SaveValue call is done only
+// once per node of the search tree.
+// Please note that actual stamps always starts at 1, thus an initial value of
+// 0 will always trigger the first SaveValue.
+template <class T> class RevArray {
+ public:
+  RevArray(int size, const T& val)
+  : stamps_(new uint64[size]), values_(new T[size]) {
+    for (int i = 0; i < size; ++i) {
+      stamps_[i] = 0;
+      values_[i] = val;
+    }
+  }
+
+  ~RevArray() {}
+
+  const T& Value(int index) const { return values_[index]; }
+
+#if !defined(SWIG)
+  const T& operator[](int index) const { return values_[index]; }
+#endif
+
+  void SetValue(Solver* const s, int index, const T& val) {
+    if (val != values_[index]) {
+      if (stamps_[index] < s->stamp()) {
+        s->SaveValue(&values_[index]);
+        stamps_[index] = s->stamp();
+      }
+      values_[index] = val;
+    }
+  }
+
+ private:
+  scoped_array<uint64> stamps_;
+  scoped_array<T> values_;
+};
+
+// Subclass of RevArray<T> which adds numerical operations.
+template <class T> class NumericalRevArray : public RevArray<T> {
+ public:
+  NumericalRevArray(int size, const T& val) : RevArray<T>(size, val) {}
+
+  void Add(Solver* const s, int index, const T& to_add) {
+    this->SetValue(s, index, this->Value(index) + to_add);
+  }
+
+  void Incr(Solver* const s, int index) {
+    Add(s, index, 1);
+  }
+
+  void Decr(Solver* const s, int index) {
+    Add(s, index, -1);
+  }
+};
+
 
 // The class IntExpr is the base of all integer expressions in
 // constraint programming.
@@ -3951,18 +4054,13 @@ class IntervalVar : public PropagationBaseObject {
 // ----- SequenceVar -----
 
 // A sequence variable is a variable which domain is a set of possible
-// orderings of the interval variables. It enforces that all intervals
-// are non overlapping and will automatically add a disjunctive
-// constraint.  It has three methods: ComputePossibleFirst() which
-// returns the list of interval variables thant can be ranked first,
-// and RankFirst/RankNotFirst which can be used to create the search
-// decision.
+// orderings of the interval variables. It allows ordering tasks.  It
+// has two sets of methods: ComputePossibleFirstsAndLasts() which
+// returns the list of interval variables thant can be ranked first or
+// lasts, and RankFirst/RankNotFirst/RankLast/RankNotLast which can be
+// used to create the search decision.
 class SequenceVar : public PropagationBaseObject {
  public:
-  enum State { ONE_BEFORE_TWO,
-               TWO_BEFORE_ONE,
-               UNDECIDED };
-
   SequenceVar(Solver* const s,
               const IntervalVar* const * intervals,
               int size,
@@ -3986,20 +4084,11 @@ class SequenceVar : public PropagationBaseObject {
   // Returns the number of interval vars already ranked.
   int Ranked() const;
 
-  // Returns the number of interval vars not yet ranked.
+  // Returns the number of not-unperformed interval vars that may be
+  // performed and that are not yet ranked.
   int NotRanked() const;
 
-  // Returns the number of interval vars not unperformed.
-  int Active() const;
-
-  // Returns the number of interval vars fixed and performed.
-  int Fixed() const;
-
-  // Computes the set of indices of interval variables that can be ranked
-  // first in the set of unranked activities.
-  void ComputePossibleFirsts(std::vector<int>* const indices);
-
-  // Rank the index_th interval var first of all unranked interval
+  // Ranks the index_th interval var first of all unranked interval
   // vars. After that, it will no longer be considered ranked.
   void RankFirst(int index);
 
@@ -4007,15 +4096,43 @@ class SequenceVar : public PropagationBaseObject {
   // of all currently unranked interval vars.
   void RankNotFirst(int index);
 
-  // TODO(user): Add RankLast, RankNotLast and assignment support.
+  // Ranks the index_th interval var first of all unranked interval
+  // vars. After that, it will no longer be considered ranked.
+  void RankLast(int index);
 
-  // Adds a precedence relation (STARTS_AFTER_END) between two activities
-  // of the sequence var.
+  // Indicates that the index_th interval var will not be ranked first
+  // of all currently unranked interval vars.
+  void RankNotLast(int index);
+
+  // Adds a precedence relation (STARTS_AFTER_END) between two
+  // activities of the sequence var.
   void AddPrecedence(int before, int after);
 
-  // Clears 'to_fill' and fills it with the intervals in the order of
-  // the ranks.
-  void FillSequence(std::vector<int>* const to_fill) const;
+  // Computes the set of indices of interval variables that can be
+  // ranked first in the set of unranked activities.
+  void ComputePossibleFirstsAndLasts(std::vector<int>* const possible_firsts,
+                                     std::vector<int>* const possible_lasts);
+
+  // Applies the following sequence of ranks, ranks first, then rank
+  // last.  rank_first and rank_last represents different directions.
+  // rank_first[0] corresponds to the first interval of the sequence.
+  // rank_last[0] corresponds to the last interval of the sequence.
+  // All intervals in the unperformed vector will be marked as such.
+  void RankSequence(const std::vector<int>& rank_firsts,
+                    const std::vector<int>& rank_lasts,
+                    const std::vector<int>& unperformed);
+
+  // Clears 'rank_first' and 'rank_last', and fills them with the
+  // intervals in the order of the ranks. If all variables are ranked,
+  // 'rank_first' will contain all variables, and 'rank_last' will
+  // contain none.
+  // 'unperformed' will contains all such interval variables.
+  // rank_first and rank_last represents different directions.
+  // rank_first[0] corresponds to the first interval of the sequence.
+  // rank_last[0] corresponds to the last interval of the sequence.
+  void FillSequence(std::vector<int>* const rank_first,
+                    std::vector<int>* const rank_lasts,
+                    std::vector<int>* const unperformed) const;
 
   // Returns the index_th interval of the sequence.
   IntervalVar* Interval(int index) const;
@@ -4027,13 +4144,34 @@ class SequenceVar : public PropagationBaseObject {
   virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
-  bool IsBefore(int i, int j);
+  bool IsBefore(int before, int after) const;
+  bool IsActive(int index) const;
+  void ComputeRanks(const std::vector<int>& rank_first,
+                    const hash_set<int>& first_set,
+                    const std::vector<int>& rank_last,
+                    const hash_set<int>& last_set);
+  void AddPrecedences(const std::vector<int>& rank_first,
+                      const hash_set<int>& first_set,
+                      const std::vector<int>& rank_last,
+                      const hash_set<int>& last_set);
+  void ComputeTransitiveClosure(const std::vector<int>& rank_first,
+                                const std::vector<int>& rank_last);
+  void MarkUnperformed(const std::vector<int>& unperformed);
 
   scoped_array<IntervalVar*> intervals_;
   const int size_;
-  scoped_array<int> min_ranks_;
-  int current_rank_;
-  std::vector<std::vector<State> > states_;
+  // For each interval, it counts the number of intervals we know are
+  // before this one.
+  RevArray<int> ranked_before_;
+  // Number of intervals ranked first.
+  NumericalRev<int> count_ranked_first_;
+  // For each interval, it counts the number of intervals we know are
+  // after this one.
+  NumericalRevArray<int> ranked_after_;
+  // Number of intervals ranked last.
+  NumericalRev<int> count_ranked_last_;
+  // Bi-dimensional bitset. bitset(i, j) if you know that i is before j.
+  scoped_ptr<RevBitMatrix> precedence_matrix_;
 };
 
 // --------- Assignments ----------------------------
@@ -4069,8 +4207,8 @@ class IntVarElement : public AssignmentElement {
     max_ = var_->Max();
   }
   void Restore() { var_->SetRange(min_, max_); }
-  void StoreFromProto(const IntVarAssignmentProto& int_var_assignment_proto);
-  void RestoreToProto(IntVarAssignmentProto* int_var_assignment_proto) const;
+  void LoadFromProto(const IntVarAssignmentProto& int_var_assignment_proto);
+  void WriteToProto(IntVarAssignmentProto* int_var_assignment_proto) const;
 
   int64 Min() const { return min_; }
   void SetMin(int64 m) { min_ = m; }
@@ -4115,9 +4253,9 @@ class IntervalVarElement : public AssignmentElement {
   IntervalVar* Var() const { return var_; }
   void Store();
   void Restore();
-  void StoreFromProto(
+  void LoadFromProto(
       const IntervalVarAssignmentProto& interval_var_assignment_proto);
-  void RestoreToProto(
+  void WriteToProto(
       IntervalVarAssignmentProto* interval_var_assignment_proto) const;
 
   int64 StartMin() const { return start_min_; }
@@ -4204,6 +4342,19 @@ class IntervalVarElement : public AssignmentElement {
 
 // ----- SequenceVarElement -----
 
+// The sequence var element stores a partial representation of ranked
+// interval variables in the underlying sequence variable.
+// This representation consists of three vectors:
+//   - the forward sequence. That is the list of interval variables
+//     ranked first in the sequence.  The first element of the backward
+//     sequence is the first interval in the sequence variable.
+//   - the backward sequence. That is the list of interval variables
+//     ranked last in the sequence. The first element of the backward
+//     sequence is the last interval in the sequence variable.
+//   - The list of unperformed interval variables.
+//  Furthermore, if all performed variables are ranked, then by
+//  convention, the forward_sequence will contains all such variables
+//  and the backward_sequence will be empty.
 class SequenceVarElement : public AssignmentElement {
  public:
   SequenceVarElement();
@@ -4214,15 +4365,22 @@ class SequenceVarElement : public AssignmentElement {
   SequenceVar* Var() const { return var_; }
   void Store();
   void Restore();
-  void StoreFromProto(
+  void LoadFromProto(
       const SequenceVarAssignmentProto& sequence_var_assignment_proto);
-  void RestoreToProto(
+  void WriteToProto(
       SequenceVarAssignmentProto* sequence_var_assignment_proto) const;
 
 #if !defined(SWIG)
-  const std::vector<int>& Sequence() const;
-  void SetSequence(const std::vector<int>& new_sequence);
+  const std::vector<int>& ForwardSequence() const;
+  const std::vector<int>& BackwardSequence() const;
+  const std::vector<int>& Unperformed() const;
 #endif
+  void SetSequence(const std::vector<int>& forward_sequence,
+                   const std::vector<int>& backward_sequence,
+                   const std::vector<int>& unperformed);
+  void SetForwardSequence(const std::vector<int>& forward_sequence);
+  void SetBackwardSequence(const std::vector<int>& backward_sequence);
+  void SetUnperformed(const std::vector<int>& unperformed);
 
   string DebugString() const;
 
@@ -4232,8 +4390,12 @@ class SequenceVarElement : public AssignmentElement {
   }
 
  private:
+  bool CheckClassInvariants();
+
   SequenceVar* var_;
-  std::vector<int> sequence_;
+  std::vector<int> forward_sequence_;
+  std::vector<int> backward_sequence_;
+  std::vector<int> unperformed_;
 };
 
 // ----- Assignment element container -----
@@ -4480,9 +4642,20 @@ class Assignment : public PropagationBaseObject {
   // Adds without checking if variable has been previously added.
   SequenceVarElement& FastAdd(SequenceVar* const v);
 #if !defined(SWIG)
-  const std::vector<int>& Sequence(const SequenceVar* const v) const;
-  void SetSequence(const SequenceVar* const v, const std::vector<int>& new_sequence);
+  const std::vector<int>& ForwardSequence(const SequenceVar* const v) const;
+  const std::vector<int>& BackwardSequence(const SequenceVar* const v) const;
+  const std::vector<int>& Unperformed(const SequenceVar* const v) const;
 #endif
+  void SetSequence(const SequenceVar* const v,
+                   const std::vector<int>& forward_sequence,
+                   const std::vector<int>& backward_sequence,
+                   const std::vector<int>& unperformed);
+  void SetForwardSequence(const SequenceVar* const v,
+                          const std::vector<int>& forward_sequence);
+  void SetBackwardSequence(const SequenceVar* const v,
+                           const std::vector<int>& backward_sequence);
+  void SetUnperformed(const SequenceVar* const v,
+                      const std::vector<int>& unperformed);
 
   void Activate(const IntVar* const v);
   void Deactivate(const IntVar* const v);
@@ -4546,94 +4719,6 @@ class Assignment : public PropagationBaseObject {
 };
 
 std::ostream& operator<<(std::ostream& out, const Assignment& assignment);  // NOLINT
-
-// ---------- Misc ----------
-
-// This method returns 0. It is useful when 0 can be cast either as
-// a pointer or as an integer value and thus lead to an ambiguous
-// function call.
-inline int64 Zero() {
-  return 0LL;
-}
-
-// This class represents a small reversible bitset (size <= 64).
-// It supports the following operations:
-// SetToOne(pos) (reversible)
-// SetToZero(solver, pos) (reversible, with stamp)
-// Cardinality()
-// IsCardZero() // fast test
-// IsCardOne() // fast test
-// GetFirstOne()
-// This class is useful to maintain supports.
-class SmallRevBitSet {
- public:
-  explicit SmallRevBitSet(int64 size);
-  void SetToOne(Solver* const solver, int64 pos);
-  void SetToZero(Solver* const solver, int64 pos);
-  int64 Cardinality() const;
-  bool IsCardinalityZero() const { return bits_ == GG_ULONGLONG(0); }
-  bool IsCardinalityOne() const {
-    return (bits_ != 0) && !(bits_ & (bits_ - 1));
-  }
-  int64 GetFirstOne() const;
-
- private:
-  uint64 bits_;
-  uint64 stamp_;
-};
-
-// This class represents a reversible bitset.
-// It supports the following operations:
-// SetToOne(pos) (reversible)
-// SetToZero(solver, pos) (reversible, with stamp)
-// Cardinality()
-// IsCardZero() // fast test
-// IsCardOne() // fast test
-// GetFirstBit(int start)
-// IsSet(pos)
-// This class is useful to maintain supports.
-// It also provides a matrix like API that is directly flattened into an array
-// one.
-class RevBitSet {
- public:
-  explicit RevBitSet(int64 size);
-  RevBitSet(int64 rows, int64 columns);
-  ~RevBitSet();
-
-  // Array API
-  void SetToOne(Solver* const solver, int64 pos);
-  void SetToZero(Solver* const solver, int64 pos);
-  bool IsSet(int64 pos) const;
-  int64 Cardinality() const;
-  bool IsCardinalityZero() const;
-  bool IsCardinalityOne() const;
-  int64 GetFirstBit(int start) const;
-
-  // Matrix API
-  void SetToOne(Solver* const solver, int64 row, int64 column);
-  void SetToZero(Solver* const solver, int64 row, int64 column);
-  bool IsSet(int64 row, int64 column) const {
-    DCHECK_GE(row, 0);
-    DCHECK_LT(row, rows_);
-    DCHECK_GE(column, 0);
-    DCHECK_LT(column, columns_);
-    return IsSet(row * columns_ + column);
-  }
-  int64 Cardinality(int row) const;
-  bool IsCardinalityZero(int row) const;
-  bool IsCardinalityOne(int row) const;
-  int64 GetFirstBit(int row, int start) const;
-
-  // Works in matrix and array mode.
-  void RevClearAll(Solver* const solver);
-
- private:
-  const int64 rows_;
-  const int64 columns_;
-  const int64 length_;
-  uint64* bits_;
-  uint64* stamps_;
-};
 
 // ---------- Pack Constraint ----------
 
@@ -4699,9 +4784,7 @@ class Pack : public Constraint {
   void Propagate();
   void OneDomain(int var_index);
   virtual string DebugString() const;
-  bool IsUndecided(int64 var_index, int64 bin_index) const {
-    return unprocessed_.IsSet(bin_index, var_index);
-  }
+  bool IsUndecided(int64 var_index, int64 bin_index) const;
   void SetImpossible(int64 var_index, int64 bin_index);
   void Assign(int64 var_index, int64 bin_index);
   bool IsAssignedStatusKnown(int64 var_index) const;
@@ -4723,7 +4806,7 @@ class Pack : public Constraint {
   const int vsize_;
   const int64 bins_;
   std::vector<Dimension*> dims_;
-  RevBitSet unprocessed_;
+  scoped_ptr<RevBitMatrix> unprocessed_;
   std::vector<std::vector<int64> > forced_;
   std::vector<std::vector<int64> > removed_;
   scoped_array<IntVarIterator*> holes_;

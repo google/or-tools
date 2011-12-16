@@ -191,9 +191,9 @@ class BasePositiveTableConstraint : public Constraint {
  protected:
   const int tuple_count_;
   const int arity_;
-  scoped_array<IntVar*> vars_;
+  const scoped_array<IntVar*> vars_;
   // All allowed tuples.
-  scoped_array<int64*> tuples_;
+  const scoped_array<int64*> tuples_;
   scoped_array<IntVarIterator*> holes_;
   scoped_array<IntVarIterator*> iterators_;
   std::vector<int64> to_remove_;
@@ -276,8 +276,6 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
                                            this,
                                            &PositiveTableConstraint::Propagate,
                                            "Propagate");
-    uint64 stamp = solver()->stamp();
-    DCHECK_GE(stamp, 1);
     for (int i = 0; i < arity_; ++i) {
       vars_[i]->WhenDomain(d);
       Demon* u = MakeConstraintDemon1(solver(),
@@ -288,7 +286,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
       vars_[i]->WhenDomain(u);
     }
     for (int i = 0; i < length_; ++i) {
-      stamps_[i] = stamp - 1;
+      stamps_[i] = 0;
       active_tuples_[i] = ~GG_ULONGLONG(0);
     }
   }
@@ -299,7 +297,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
       for (ConstIter<ValueBitset> it(masks_[var_index]); !it.at_end(); ++it) {
         if (!vars_[var_index]->Contains(it->first)) {
           for (int i = 0; i < length_; ++i) {
-            active_tuples_[i] &= ~(active_tuples_[i] & it->second[i]);
+            active_tuples_[i] &= ~it->second[i];
           }
         }
       }
@@ -371,12 +369,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
       bool empty = true;
       for (int offset = 0; offset < length_; ++offset) {
         if ((mask[offset] & active_tuples_[offset]) != 0) {
-          const uint64 current_stamp = solver()->stamp();
-          if (stamps_[offset] < current_stamp) {
-            stamps_[offset] = current_stamp;
-            solver()->SaveValue(&active_tuples_[offset]);
-          }
-          active_tuples_[offset] &= ~mask[offset];
+          AndActiveTuples(offset, ~mask[offset]);
         }
         if (active_tuples_[offset] != 0) {
           empty = false;
@@ -430,6 +423,14 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
+  void AndActiveTuples(int offset, uint64 mask) {
+    const uint64 current_stamp = solver()->stamp();
+    if (stamps_[offset] < current_stamp) {
+      stamps_[offset] = current_stamp;
+      solver()->SaveValue(&active_tuples_[offset]);
+    }
+    active_tuples_[offset] &= mask;
+  }
 
   const int length_;
   // TODO(user): create bitset64 class and use it.
@@ -502,8 +503,6 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         this,
         &CompactPositiveTableConstraint::Propagate,
         "Propagate"));
-    uint64 stamp = solver()->stamp();
-    DCHECK_GE(stamp, 1);
     for (int i = 0; i < arity_; ++i) {
       //      vars_[i]->WhenDomain(d);
       Demon* u = MakeConstraintDemon1(solver(),
@@ -514,7 +513,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
       vars_[i]->WhenDomain(u);
     }
     for (int i = 0; i < length_; ++i) {
-      stamps_[i] = stamp - 1;
+      stamps_[i] = 0;
       active_tuples_[i] = 0;
     }
   }
@@ -660,7 +659,6 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     // are still supported.
     // This method is not attached to any particular variable, but is pushed
     // at a delayed priority when Update(var_index) deems it necessary.
-    const uint64 current_stamp = solver()->stamp();
     memset(temp_mask_.get(), 0, length_ * sizeof(*temp_mask_.get()));
     for (int var_index = 0; var_index < arity_; ++var_index) {
       to_remove_.clear();
@@ -687,11 +685,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         }
         for (int offset = 0; offset < length_; ++offset) {
           if ((temp_mask_[offset] & active_tuples_[offset]) != 0) {
-            if (stamps_[offset] < current_stamp) {
-              stamps_[offset] = current_stamp;
-              solver()->SaveValue(&active_tuples_[offset]);
-            }
-            active_tuples_[offset] &= ~temp_mask_[offset];
+            AndActiveTuples(offset, ~temp_mask_[offset]);
           }
         }
       }
@@ -753,12 +747,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     // Then we apply this mask to active_tuples_.
     for (int offset = 0; offset < length_; ++offset) {
       if ((temp_mask_[offset] & active_tuples_[offset]) != 0) {
-        const uint64 current_stamp = solver()->stamp();
-        if (stamps_[offset] < current_stamp) {
-          stamps_[offset] = current_stamp;
-          solver()->SaveValue(&active_tuples_[offset]);
-        }
-        active_tuples_[offset] &= ~temp_mask_[offset];
+        AndActiveTuples(offset, ~temp_mask_[offset]);
         changed = true;
       }
     }
@@ -776,6 +765,15 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
  private:
+  void AndActiveTuples(int offset, uint64 mask) {
+    const uint64 current_stamp = solver()->stamp();
+    if (stamps_[offset] < current_stamp) {
+      stamps_[offset] = current_stamp;
+      solver()->SaveValue(&active_tuples_[offset]);
+    }
+    active_tuples_[offset] &= mask;
+  }
+
   // Length of bitsets in double words.
   const int length_;
   // Bitset of active tuples.
@@ -895,7 +893,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         vars_[i]->WhenDomain(update_demon);
       }
     }
-    stamp_ = solver()->stamp() - 1;
+    stamp_ = 0;
   }
 
   void InitMasks() {
@@ -962,14 +960,6 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     RemoveUnsupportedValues();
   }
 
-  void SaveActives() {
-    const uint64 current_stamp = solver()->stamp();
-    if (stamp_ < current_stamp) {
-      stamp_ = current_stamp;
-      solver()->SaveValue(&active_tuples_);
-    }
-  }
-
   void Propagate() {
     // This methods scans all the values of all the variables to see if they
     // are still supported.
@@ -1031,8 +1021,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
     // Then we apply this mask to active_tuples_.
     if (temp_mask & active_tuples_) {
-      SaveActives();
-      active_tuples_ &= ~temp_mask;
+      AndActiveTuples(~temp_mask);
       if (active_tuples_) {
         Enqueue(demon_);
       } else {
@@ -1042,6 +1031,15 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
  private:
+  void AndActiveTuples(uint64 mask) {
+    const uint64 current_stamp = solver()->stamp();
+    if (stamp_ < current_stamp) {
+      stamp_ = current_stamp;
+      solver()->SaveValue(&active_tuples_);
+    }
+    active_tuples_ &= mask;
+  }
+
   // Bitset of active tuples.
   uint64 active_tuples_;
   // Stamp of the active_tuple bitset.

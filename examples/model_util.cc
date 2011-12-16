@@ -21,6 +21,7 @@
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/model.pb.h"
 #include "util/graph_export.h"
+#include "util/string_array.h"
 
 DEFINE_string(input, "", "Input file of the problem.");
 DEFINE_string(output, "", "Output file when doing modifications.");
@@ -38,6 +39,8 @@ DEFINE_bool(strip_groups, false, "Strips variable groups from the model.");
 DEFINE_bool(upgrade_proto, false, "Upgrade the model to the latest version.");
 DEFINE_string(insert_license, "",
               "Insert content of the given file into the license file.");
+DEFINE_bool(collect_variables, false,
+            "Shows effect of the variable collector.");
 
 namespace operations_research {
 
@@ -332,7 +335,10 @@ int Run() {
   if (FLAGS_print_proto) {
     LOG(INFO) << model_proto.DebugString();
   }
-  if (FLAGS_test_proto || FLAGS_model_stats || FLAGS_print_model) {
+  if (FLAGS_test_proto ||
+      FLAGS_model_stats ||
+      FLAGS_print_model ||
+      FLAGS_collect_variables) {
     Solver solver(model_proto.model());
     std::vector<SearchMonitor*> monitors;
     if (!solver.LoadModel(model_proto, &monitors)) {
@@ -349,6 +355,24 @@ int Run() {
     if (FLAGS_print_model) {
       ModelVisitor* const visitor = solver.MakePrintModelVisitor();
       solver.Accept(visitor, monitors);
+    }
+    if (FLAGS_collect_variables) {
+      std::vector<IntVar*> primary_integer_variables;
+      std::vector<IntVar*> secondary_integer_variables;
+      std::vector<SequenceVar*> sequence_variables;
+      std::vector<IntervalVar*> interval_variables;
+      solver.CollectDecisionVariables(&primary_integer_variables,
+                                      &secondary_integer_variables,
+                                      &sequence_variables,
+                                      &interval_variables);
+      LOG(INFO) << "Primary integer variables = "
+                << DebugStringVector(primary_integer_variables, ", ");
+      LOG(INFO) << "Secondary integer variables = "
+                << DebugStringVector(secondary_integer_variables, ", ");
+      LOG(INFO) << "Sequence variables = "
+                << DebugStringVector(sequence_variables, ", ");
+      LOG(INFO) << "interval_variables = "
+                << DebugStringVector(interval_variables, ", ");
     }
   }
 
