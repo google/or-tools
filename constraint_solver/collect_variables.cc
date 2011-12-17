@@ -176,7 +176,7 @@ class CollectVariablesVisitor : public ModelVisitor {
       }
       for (int j = 0; j < matrix.columns; ++j) {
         if (counters[j].size() == matrix.rows) {
-          vector<const IntVar*> vars =
+          const std::vector<const IntVar*>& vars =
               top()->FindIntegerVariableArrayArgumentOrDie(
                   ModelVisitor::kVarsArgument);
           LOG(INFO) << "Found index variable in allowed assignment constraint: "
@@ -188,6 +188,20 @@ class CollectVariablesVisitor : public ModelVisitor {
           }
           break;
         }
+      }
+    } else if (type_name.compare(ModelVisitor::kNoCycle) == 0) {
+      const std::vector<const IntVar*>& vars =
+          top()->FindIntegerVariableArrayArgumentOrDie(
+              ModelVisitor::kActiveArgument);
+      for (int i = 0; i < vars.size(); ++i) {
+        IgnoreIntegerVariable(const_cast<IntVar*>(vars[i]));
+      }
+    } else if (type_name.compare(ModelVisitor::kPathCumul) == 0) {
+      const std::vector<const IntVar*>& vars =
+          top()->FindIntegerVariableArrayArgumentOrDie(
+              ModelVisitor::kActiveArgument);
+      for (int i = 0; i < vars.size(); ++i) {
+        IgnoreIntegerVariable(const_cast<IntVar*>(vars[i]));
       }
     }
     PopArgumentHolder();

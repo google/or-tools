@@ -1402,7 +1402,7 @@ IntExpr* Solver::MakeSum(IntVar* const* vars, int size) {
       sum_max += vars[i]->Max();
     }
     IntVar* const sum_var = MakeIntVar(sum_min, sum_max);
-    AddConstraint(RevAlloc(new SumConstraint(this, vars, size, sum_var)));,
+    AddConstraint(RevAlloc(new SumConstraint(this, vars, size, sum_var)));
     return sum_var;
   }
 }
