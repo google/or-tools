@@ -179,8 +179,6 @@ class CollectVariablesVisitor : public ModelVisitor {
           const std::vector<const IntVar*>& vars =
               top()->FindIntegerVariableArrayArgumentOrDie(
                   ModelVisitor::kVarsArgument);
-          LOG(INFO) << "Found index variable in allowed assignment constraint: "
-                    << vars[j]->DebugString();
           for (int k = 0; k < matrix.columns; ++k) {
             if (j != k) {
               IgnoreIntegerVariable(const_cast<IntVar*>(vars[k]));
@@ -229,6 +227,7 @@ class CollectVariablesVisitor : public ModelVisitor {
     IntVar* const var = const_cast<IntVar*>(variable);
     if (delegate != NULL) {
       delegate->Accept(this);
+      IgnoreIntegerVariable(const_cast<IntVar*>(variable));
     } else {
       if (!ContainsKey(primary_set_, var) &&
           !ContainsKey(secondary_set_, var) &&
@@ -243,38 +242,37 @@ class CollectVariablesVisitor : public ModelVisitor {
                                     const string& operation,
                                     int64 value,
                                     const IntVar* const delegate) {
-
+    IgnoreIntegerVariable(const_cast<IntVar*>(variable));
+    delegate->Accept(this);
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string operation,
+                                     const string& operation,
                                      const IntervalVar* const delegate) {
     if (delegate != NULL) {
       delegate->Accept(this);
     } else {
-      IntervalVar* const var = const_cast<IntervalVar*>(variable);
-      if (!ContainsKey(interval_set_, var)) {
-        interval_set_.insert(var);
-      }
+      DeclareInterval(const_cast<IntervalVar*>(variable));
     }
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string operation,
+                                     const string& operation,
                                      const IntervalVar* const * delegates,
                                      int size) {
     for (int i = 0; i < size; ++i) {
+      IntervalVar* const var = const_cast<IntervalVar*>(delegates[i]);
+      DeclareInterval(var);
       delegates[i]->Accept(this);
     }
   }
 
   virtual void VisitSequenceVariable(const SequenceVar* const variable) {
     SequenceVar* const var = const_cast<SequenceVar*>(variable);
-    if (!ContainsKey(sequence_set_, var)) {
-      sequence_set_.insert(var);
-    }
+    sequence_set_.insert(var);
     for (int i = 0; i < var->size(); ++i) {
       var->Interval(i)->Accept(this);
+      DeclareInterval(var->Interval(i));
     }
   }
 
@@ -311,7 +309,7 @@ class CollectVariablesVisitor : public ModelVisitor {
     argument->Accept(this);
   }
 
-  virtual void VisitIntervalArgumentArray(const string& arg_name,
+  virtual void VisitIntervalArrayArgument(const string& arg_name,
                                           const IntervalVar* const * arguments,
                                           int size) {
     top()->set_interval_array_argument(arg_name, arguments, size);
@@ -327,7 +325,7 @@ class CollectVariablesVisitor : public ModelVisitor {
     argument->Accept(this);
   }
 
-  virtual void VisitSequenceArgumentArray(const string& arg_name,
+  virtual void VisitSequenceArrayArgument(const string& arg_name,
                                           const SequenceVar* const * arguments,
                                           int size) {
     top()->set_sequence_array_argument(arg_name, arguments, size);
@@ -356,6 +354,10 @@ class CollectVariablesVisitor : public ModelVisitor {
     primary_set_.erase(var);
     secondary_set_.erase(var);
     ignored_set_.insert(var);
+  }
+
+  void DeclareInterval(IntervalVar* const var) {
+    interval_set_.insert(var);
   }
 
   std::vector<IntVar*>* const primaries_;
