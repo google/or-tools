@@ -846,6 +846,7 @@ class NetworkRoutingSolver {
                            arc_index,
                            path_vars,
                            &vtraffic[arc_index]);
+      vtraffic[arc_index]->set_name(StringPrintf("traffic_%i", arc_index));
     }
 
     // Objective Function.
