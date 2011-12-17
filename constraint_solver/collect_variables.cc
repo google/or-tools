@@ -85,6 +85,13 @@ class CollectVariablesVisitor : public ModelVisitor {
     }
   }
 
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const string& operation,
+                                    int64 value,
+                                    const IntVar* const delegate) {
+
+  }
+
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
                                      const string operation,
                                      const IntervalVar* const delegate) {

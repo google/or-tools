@@ -165,8 +165,17 @@ class FirstPassVisitor : public ModelVisitor {
     Register(variable);
   }
 
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const string& operation,
+                                    int64 value,
+                                    const IntVar* const delegate) {
+    delegate->Accept(this);
+    delegate_map_[variable] = delegate;
+    Register(variable);
+  }
+
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string operation,
+                                     const string& operation,
                                      const IntervalVar* const delegate) {
     if (delegate != NULL) {
       delegate->Accept(this);
@@ -175,7 +184,7 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string operation,
+                                     const string& operation,
                                      const IntervalVar* const * delegates,
                                      int size) {
     for (int i = 0; i < size; ++i) {
@@ -723,8 +732,26 @@ class SecondPassVisitor : public ModelVisitor {
     }
   }
 
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const string& operation,
+                                    int64 value,
+                                    const IntVar* const delegate) {
+    const int index = model_proto_->expressions_size();
+    CPIntegerExpressionProto* const var_proto =
+        model_proto_->add_expressions();
+    var_proto->set_index(index);
+    var_proto->set_type_index(TagIndex(ModelVisitor::kIntegerVariable));
+    CPArgumentProto* const sub_proto = var_proto->add_arguments();
+    sub_proto->set_argument_index(
+        TagIndex(ModelVisitor::kVariableArgument));
+    sub_proto->set_integer_expression_index(FindExpressionIndex(delegate));
+    CPArgumentProto* const value_proto = var_proto->add_arguments();
+    value_proto->set_argument_index(TagIndex(operation));
+    value_proto->set_integer_value(value);
+  }
+
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string operation,
+                                     const string& operation,
                                      const IntervalVar* const delegate) {
     if (delegate != NULL) {
       const int index = model_proto_->intervals_size();
@@ -774,7 +801,7 @@ class SecondPassVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string operation,
+                                     const string& operation,
                                      const IntervalVar* const * delegates,
                                      int size) {
     CHECK_NOTNULL(delegates);
@@ -1367,6 +1394,30 @@ IntExpr* BuildIntegerVariable(CPModelLoader* const builder,
                              proto,
                              &sub_expression)) {
     IntVar* const result = sub_expression->Var();
+    if (proto.has_name()) {
+      result->set_name(proto.name());
+    }
+    return result;
+  }
+  IntExpr* sub_var = NULL;
+  if (builder->ScanArguments(ModelVisitor::kVariableArgument,
+                             proto,
+                             &sub_var)) {
+    int64 value;
+    IntVar* result = NULL;
+    if (builder->ScanArguments(ModelVisitor::kSumOperation,
+                               proto,
+                               &value)) {
+      result = builder->solver()->MakeSum(sub_var->Var(), value)->Var();
+    } else if (builder->ScanArguments(ModelVisitor::kDifferenceOperation,
+                                      proto,
+                                      &value)) {
+      result = builder->solver()->MakeDifference(value, sub_var->Var())->Var();
+    } else if (builder->ScanArguments(ModelVisitor::kProductOperation,
+                                      proto,
+                                      &value)) {
+      result = builder->solver()->MakeProd(sub_var->Var(), value)->Var();
+    }
     if (proto.has_name()) {
       result->set_name(proto.name());
     }

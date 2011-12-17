@@ -283,8 +283,20 @@ class PrintModelVisitor : public ModelVisitor {
     }
   }
 
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const string& operation,
+                                    int64 value,
+                                    const IntVar* const delegate) {
+    LOG(INFO) << Spaces() << "IntVar";
+    Increase();
+    LOG(INFO) << Spaces() << value;
+    LOG(INFO) << Spaces() << operation;
+    delegate->Accept(this);
+    Decrease();
+  }
+
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string operation,
+                                     const string& operation,
                                      const IntervalVar* const delegate) {
     if (delegate != NULL) {
       LOG(INFO) << Spaces() << operation << " <";
@@ -298,7 +310,7 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string operation,
+                                     const string& operation,
                                      const IntervalVar* const * delegates,
                                      int size) {
     LOG(INFO) << Spaces() << operation << " <";
@@ -539,8 +551,18 @@ class ModelStatisticsVisitor : public ModelVisitor {
     }
   }
 
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const string& operation,
+                                    int64 value,
+                                    const IntVar* const delegate) {
+    num_variables_++;
+    Register(variable);
+    num_casts_++;
+    VisitSubArgument(delegate);
+  }
+
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string operation,
+                                     const string& operation,
                                      const IntervalVar* const delegate) {
     num_intervals_++;
     if (delegate) {
@@ -549,7 +571,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string operation,
+                                     const string& operation,
                                      const IntervalVar* const * delegates,
                                      int size) {
     num_intervals_++;

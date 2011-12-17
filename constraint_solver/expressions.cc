@@ -1597,6 +1597,13 @@ class PlusCstIntVar : public IntVar {
   virtual string DebugString() const;
   virtual int VarType() const { return VAR_ADD_CST; }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->VisitIntegerVariable(this,
+                                  ModelVisitor::kSumOperation,
+                                  cst_,
+                                  var_);
+  }
+
  private:
   IntVar* const var_;
   const int64 cst_;
@@ -1726,6 +1733,13 @@ class PlusCstDomainIntVar : public IntVar {
 
   virtual string DebugString() const;
   virtual int VarType() const { return DOMAIN_INT_VAR_ADD_CST; }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->VisitIntegerVariable(this,
+                                  ModelVisitor::kSumOperation,
+                                  cst_,
+                                  var_);
+  }
 
  private:
   DomainIntVar* const var_;
@@ -1859,6 +1873,13 @@ class SubCstIntVar : public IntVar {
   virtual string DebugString() const;
   virtual int VarType() const { return CST_SUB_VAR; }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->VisitIntegerVariable(this,
+                                  ModelVisitor::kDifferenceOperation,
+                                  cst_,
+                                  var_);
+  }
+
  private:
   IntVar* const var_;
   const int64 cst_;
@@ -1982,6 +2003,13 @@ class OppIntVar : public IntVar {
   }
   virtual string DebugString() const;
   virtual int VarType() const { return OPP_VAR; }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->VisitIntegerVariable(this,
+                                  ModelVisitor::kDifferenceOperation,
+                                  0,
+                                  var_);
+  }
 
  private:
   IntVar* const var_;
@@ -2129,6 +2157,13 @@ class TimesPosCstIntVar : public IntVar {
   virtual string DebugString() const;
   virtual int VarType() const { return VAR_TIMES_POS_CST; }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->VisitIntegerVariable(this,
+                                  ModelVisitor::kProductOperation,
+                                  cst_,
+                                  var_);
+  }
+
  private:
   IntVar* const var_;
   const int64 cst_;
@@ -2270,6 +2305,13 @@ class TimesPosCstBoolVar : public IntVar {
   }
   virtual string DebugString() const;
   virtual int VarType() const { return BOOLEAN_VAR_TIMES_POS_CST; }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->VisitIntegerVariable(this,
+                                  ModelVisitor::kProductOperation,
+                                  cst_,
+                                  var_);
+  }
 
  private:
   BooleanVar* const var_;

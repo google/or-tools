@@ -3243,12 +3243,16 @@ class ModelVisitor : public BaseObject {
   static const char kTuplesArgument[];
   static const char kValueArgument[];
   static const char kValuesArgument[];
+  static const char kVariableArgument[];
   static const char kVarsArgument[];
 
-  // Operations
+  // Operations.
   static const char kMirrorOperation[];
   static const char kRelaxedMaxOperation[];
   static const char kRelaxedMinOperation[];
+  static const char kSumOperation[];
+  static const char kDifferenceOperation[];
+  static const char kProductOperation[];
 
   virtual ~ModelVisitor();
 
@@ -3269,11 +3273,15 @@ class ModelVisitor : public BaseObject {
                                          const IntExpr* const expr);
   virtual void VisitIntegerVariable(const IntVar* const variable,
                                     const IntExpr* const delegate);
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const string& operation,
+                                    int64 value,
+                                    const IntVar* const delegate);
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string operation,
+                                     const string& operation,
                                      const IntervalVar* const delegate);
   virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const string operation,
+                                     const string& operation,
                                      const IntervalVar* const * delegate,
                                      int size);
   virtual void VisitSequenceVariable(const SequenceVar* const sequence);

@@ -2679,10 +2679,15 @@ const char ModelVisitor::kTuplesArgument[] = "tuples";
 const char ModelVisitor::kValueArgument[] = "value";
 const char ModelVisitor::kValuesArgument[] = "values";
 const char ModelVisitor::kVarsArgument[] = "variables";
+const char ModelVisitor::kVariableArgument[] = "variable";
 
 const char ModelVisitor::kMirrorOperation[] = "mirror";
 const char ModelVisitor::kRelaxedMaxOperation[] = "relaxed_max";
 const char ModelVisitor::kRelaxedMinOperation[] = "relaxed_min";
+const char ModelVisitor::kSumOperation[] = "sum";
+const char ModelVisitor::kDifferenceOperation[] = "difference";
+const char ModelVisitor::kProductOperation[] = "product";
+
 
 // Methods
 
@@ -2712,8 +2717,17 @@ void ModelVisitor::VisitIntegerVariable(const IntVar* const variable,
   }
 }
 
+void ModelVisitor::VisitIntegerVariable(const IntVar* const variable,
+                                        const string& operation,
+                                        int64 value,
+                                        const IntVar* const delegate) {
+  if (delegate != NULL) {
+    delegate->Accept(this);
+  }
+}
+
 void ModelVisitor::VisitIntervalVariable(const IntervalVar* const variable,
-                                         const string operation,
+                                         const string& operation,
                                          const IntervalVar* const delegate) {
   if (delegate != NULL) {
     delegate->Accept(this);
@@ -2721,7 +2735,7 @@ void ModelVisitor::VisitIntervalVariable(const IntervalVar* const variable,
 }
 
 void ModelVisitor::VisitIntervalVariable(const IntervalVar* const variable,
-                                         const string operation,
+                                         const string& operation,
                                          const IntervalVar* const * delegates,
                                          int size) {
   for (int i = 0; i < size; ++i) {
