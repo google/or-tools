@@ -287,23 +287,23 @@ Constraint* Solver::MakeNonEquality(IntVar* const e, int v) {
 // ----- is_equal_cst Constraint -----
 
 namespace {
-class IsEqualCstCt : public Constraint {
+class IsEqualCstCt : public CastConstraint {
  public:
   IsEqualCstCt(Solver* const s, IntVar* const v, int64 c, IntVar* const b)
-      : Constraint(s), var_(v), cst_(c), boolvar_(b), demon_(NULL) {}
+      : CastConstraint(s, b), var_(v), cst_(c), demon_(NULL) {}
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     var_->WhenDomain(demon_);
-    boolvar_->WhenBound(demon_);
+    target_var_->WhenBound(demon_);
   }
   virtual void InitialPropagate() {
     bool inhibit = var_->Bound();
     int64 u = var_->Contains(cst_);
     int64 l = inhibit ? u : 0;
-    boolvar_->SetRange(l, u);
-    if (boolvar_->Bound()) {
+    target_var_->SetRange(l, u);
+    if (target_var_->Bound()) {
       inhibit = true;
-      if (boolvar_->Min() == 0) {
+      if (target_var_->Min() == 0) {
         var_->RemoveValue(cst_);
       } else {
         var_->SetValue(cst_);
@@ -317,7 +317,7 @@ class IsEqualCstCt : public Constraint {
     return StringPrintf("IsEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
                         var_->DebugString().c_str(),
                         cst_,
-                        boolvar_->DebugString().c_str());
+                        target_var_->DebugString().c_str());
   }
 
   void Accept(ModelVisitor* const visitor) const {
@@ -326,14 +326,13 @@ class IsEqualCstCt : public Constraint {
                                             var_);
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, cst_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            boolvar_);
+                                            target_var_);
     visitor->EndVisitConstraint(ModelVisitor::kIsEqual, this);
   }
 
  private:
   IntVar* const var_;
   int64 cst_;
-  IntVar* const boolvar_;
   Demon* demon_;
 };
 }  // namespace
@@ -358,10 +357,14 @@ IntVar* Solver::MakeIsEqualCstVar(IntVar* const var, int64 value) {
   if (cache != NULL) {
     return cache->Var();
   } else {
+    string name = var->name();
+    if (name.empty()) {
+      name = var->DebugString();
+    }
     IntVar* const boolvar = MakeBoolVar(
         StringPrintf("StatusVar<%s == %" GG_LL_FORMAT "d>",
-                     var->name().c_str(), value));
-    Constraint* const maintain =
+                     name.c_str(), value));
+    CastConstraint* const maintain =
         RevAlloc(new IsEqualCstCt(this, var, value, boolvar));
     AddConstraint(maintain);
     model_cache_->InsertVarConstantExpression(
@@ -397,25 +400,25 @@ Constraint* Solver::MakeIsEqualCstCt(IntVar* const var,
 // ----- is_diff_cst Constraint -----
 
 namespace {
-class IsDiffCstCt : public Constraint {
+class IsDiffCstCt : public CastConstraint {
  public:
   IsDiffCstCt(Solver* const s, IntVar* const v, int64 c, IntVar* const b)
-      : Constraint(s), var_(v), cst_(c), boolvar_(b), demon_(NULL) {}
+      : CastConstraint(s, b), var_(v), cst_(c), demon_(NULL) {}
 
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     var_->WhenDomain(demon_);
-    boolvar_->WhenBound(demon_);
+    target_var_->WhenBound(demon_);
   }
 
   virtual void InitialPropagate() {
     bool inhibit = var_->Bound();
     int64 l = 1 - var_->Contains(cst_);
     int64 u = inhibit ? l : 1;
-    boolvar_->SetRange(l, u);
-    if (boolvar_->Bound()) {
+    target_var_->SetRange(l, u);
+    if (target_var_->Bound()) {
       inhibit = true;
-      if (boolvar_->Min() == 1) {
+      if (target_var_->Min() == 1) {
         var_->RemoveValue(cst_);
       } else {
         var_->SetValue(cst_);
@@ -430,7 +433,7 @@ class IsDiffCstCt : public Constraint {
     return StringPrintf("IsDiffCstCt(%s, %" GG_LL_FORMAT "d, %s)",
                         var_->DebugString().c_str(),
                         cst_,
-                        boolvar_->DebugString().c_str());
+                        target_var_->DebugString().c_str());
   }
 
   void Accept(ModelVisitor* const visitor) const {
@@ -439,14 +442,13 @@ class IsDiffCstCt : public Constraint {
                                             var_);
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, cst_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            boolvar_);
+                                            target_var_);
     visitor->EndVisitConstraint(ModelVisitor::kIsDifferent, this);
   }
 
  private:
   IntVar* const var_;
   int64 cst_;
-  IntVar* const boolvar_;
   Demon* demon_;
 };
 }  // namespace
@@ -471,10 +473,14 @@ IntVar* Solver::MakeIsDifferentCstVar(IntVar* const var, int64 value) {
   if (cache != NULL) {
     return cache->Var();
   } else {
+    string name = var->name();
+    if (name.empty()) {
+      name = var->DebugString();
+    }
     IntVar* const boolvar = MakeBoolVar(
         StringPrintf("StatusVar<%s != %" GG_LL_FORMAT "d>",
-                     var->name().c_str(), value));
-    Constraint* const maintain =
+                     name.c_str(), value));
+    CastConstraint* const maintain =
         RevAlloc(new IsDiffCstCt(this, var, value, boolvar));
     AddConstraint(maintain);
     model_cache_->InsertVarConstantExpression(
@@ -508,24 +514,24 @@ Constraint* Solver::MakeIsDifferentCstCt(IntVar* const var,
 // ----- is_greater_equal_cst Constraint -----
 
 namespace {
-class IsGreaterEqualCstCt : public Constraint {
+class IsGreaterEqualCstCt : public CastConstraint {
  public:
   IsGreaterEqualCstCt(Solver* const s, IntVar* const v, int64 c,
                       IntVar* const b)
-      : Constraint(s), var_(v), cst_(c), boolvar_(b), demon_(NULL) {}
+      : CastConstraint(s, b), var_(v), cst_(c), demon_(NULL) {}
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     var_->WhenRange(demon_);
-    boolvar_->WhenBound(demon_);
+    target_var_->WhenBound(demon_);
   }
   virtual void InitialPropagate() {
     bool inhibit = false;
     int64 u = var_->Max() >= cst_;
     int64 l = var_->Min() >= cst_;
-    boolvar_->SetRange(l, u);
-    if (boolvar_->Bound()) {
+    target_var_->SetRange(l, u);
+    if (target_var_->Bound()) {
       inhibit = true;
-      if (boolvar_->Min() == 0) {
+      if (target_var_->Min() == 0) {
         var_->SetMax(cst_ - 1);
       } else {
         var_->SetMin(cst_);
@@ -539,7 +545,7 @@ class IsGreaterEqualCstCt : public Constraint {
     return StringPrintf("IsGreaterEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
                         var_->DebugString().c_str(),
                         cst_,
-                        boolvar_->DebugString().c_str());
+                        target_var_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -548,14 +554,13 @@ class IsGreaterEqualCstCt : public Constraint {
                                             var_);
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, cst_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            boolvar_);
+                                            target_var_);
     visitor->EndVisitConstraint(ModelVisitor::kIsGreaterOrEqual, this);
   }
 
  private:
   IntVar* const var_;
   int64 cst_;
-  IntVar* const boolvar_;
   Demon* demon_;
 };
 }  // namespace
@@ -574,10 +579,14 @@ IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntVar* const var, int64 value) {
   if (cache != NULL) {
     return cache->Var();
   } else {
+    string name = var->name();
+    if (name.empty()) {
+      name = var->DebugString();
+    }
     IntVar* const boolvar = MakeBoolVar(
         StringPrintf("StatusVar<%s >= %" GG_LL_FORMAT "d>",
-                     var->name().c_str(), value));
-    Constraint* const maintain =
+                     name.c_str(), value));
+    CastConstraint* const maintain =
         RevAlloc(new IsGreaterEqualCstCt(this, var, value, boolvar));
     AddConstraint(maintain);
     model_cache_->InsertVarConstantExpression(
@@ -614,25 +623,25 @@ Constraint* Solver::MakeIsGreaterCstCt(IntVar* const v, int64 c,
 // ----- is_lesser_equal_cst Constraint -----
 
 namespace {
-class IsLessEqualCstCt : public Constraint {
+class IsLessEqualCstCt : public CastConstraint {
  public:
   IsLessEqualCstCt(Solver* const s, IntVar* const v, int64 c, IntVar* const b)
-      : Constraint(s), var_(v), cst_(c), boolvar_(b), demon_(NULL) {}
+      : CastConstraint(s, b), var_(v), cst_(c), demon_(NULL) {}
 
   virtual void Post() {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     var_->WhenRange(demon_);
-    boolvar_->WhenBound(demon_);
+    target_var_->WhenBound(demon_);
   }
 
   virtual void InitialPropagate() {
     bool inhibit = false;
     int64 u = var_->Min() <= cst_;
     int64 l = var_->Max() <= cst_;
-    boolvar_->SetRange(l, u);
-    if (boolvar_->Bound()) {
+    target_var_->SetRange(l, u);
+    if (target_var_->Bound()) {
       inhibit = true;
-      if (boolvar_->Min() == 0) {
+      if (target_var_->Min() == 0) {
         var_->SetMin(cst_ + 1);
       } else {
         var_->SetMax(cst_);
@@ -647,7 +656,7 @@ class IsLessEqualCstCt : public Constraint {
     return StringPrintf("IsLessEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
                         var_->DebugString().c_str(),
                         cst_,
-                        boolvar_->DebugString().c_str());
+                        target_var_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -656,14 +665,13 @@ class IsLessEqualCstCt : public Constraint {
                                             var_);
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, cst_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            boolvar_);
+                                            target_var_);
     visitor->EndVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
   }
 
  private:
   IntVar* const var_;
   int64 cst_;
-  IntVar* const boolvar_;
   Demon* demon_;
 };
 }  // namespace
@@ -683,10 +691,14 @@ IntVar* Solver::MakeIsLessOrEqualCstVar(IntVar* const var, int64 value) {
   if (cache != NULL) {
     return cache->Var();
   } else {
+    string name = var->name();
+    if (name.empty()) {
+      name = var->DebugString();
+    }
     IntVar* const boolvar = MakeBoolVar(
         StringPrintf("StatusVar<%s <= %" GG_LL_FORMAT "d>",
-                     var->name().c_str(), value));
-    Constraint* const maintain =
+                     name.c_str(), value));
+    CastConstraint* const maintain =
         RevAlloc(new IsLessEqualCstCt(this, var, value, boolvar));
     AddConstraint(maintain);
     model_cache_->InsertVarConstantExpression(

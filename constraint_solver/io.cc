@@ -582,7 +582,7 @@ class SecondPassVisitor : public ModelVisitor {
 
   virtual void EndVisitConstraint(const string& type_name,
                                   const Constraint* const constraint) {
-    // We ignore delegate constraints, they will be regenerated automatically.
+    // We ignore cast constraints, they will be regenerated automatically.
     if (constraint->IsCastConstraint()) {
       return;
     }
