@@ -203,6 +203,13 @@ class CollectVariablesVisitor : public ModelVisitor {
       for (int i = 0; i < vars.size(); ++i) {
         IgnoreIntegerVariable(const_cast<IntVar*>(vars[i]));
       }
+    } else if (type_name.compare(ModelVisitor::kDistribute) == 0) {
+      const std::vector<const IntVar*>& vars =
+          top()->FindIntegerVariableArrayArgumentOrDie(
+              ModelVisitor::kCardsArgument);
+      for (int i = 0; i < vars.size(); ++i) {
+        IgnoreIntegerVariable(const_cast<IntVar*>(vars[i]));
+      }
     }
     PopArgumentHolder();
   }
