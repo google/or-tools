@@ -94,12 +94,15 @@ File* File::Open(const char* const name, const char* const flag) {
 
 char* File::ReadLine(char* const output, uint64 max_length) {
   char* const result = fgets(output, max_length, f_);
+  if (result == NULL) {
+    return NULL;
+  }
   // Chop the last linefeed if there.
   int len = strlen(result);
-  if (result[len - 1] = 10) {  // Linefeed char.
-    result[--len] = '\0';
-  }
-  if (result[len - 1] = 13) {  // Carriage return.
+  if (len > 0 && result[len - 1] == 10) {  // Linefeed char.
+      result[--len] = '\0';
+    }
+  if (len > 0 && result[len - 1] == 13) {  // Carriage return.
     result[--len] = '\0';
   }
 }
