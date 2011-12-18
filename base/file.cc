@@ -105,6 +105,7 @@ char* File::ReadLine(char* const output, uint64 max_length) {
   if (len > 0 && result[len - 1] == 13) {  // Carriage return.
     result[--len] = '\0';
   }
+  return result;
 }
 
 int64 File::ReadToString(std::string* const output, uint64 max_length) {
