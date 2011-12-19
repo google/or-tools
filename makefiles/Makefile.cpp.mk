@@ -510,6 +510,12 @@ objs/model_util.$O:examples/model_util.cc gen/constraint_solver/model.pb.h const
 model_util$E: $(CP_LIBS) $(BASE_LIBS) objs/model_util.$O
 	$(CCC) $(CFLAGS) objs/model_util.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)model_util$E
 
+objs/multidim_knapsack.$O:examples/multidim_knapsack.cc constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c examples/multidim_knapsack.cc $(OBJOUT)objs/multidim_knapsack.$O
+
+multidim_knapsack$E: $(CP_LIBS) $(LP_LIBS) $(BASE_LIBS) objs/multidim_knapsack.$O
+	$(CCC) $(CFLAGS) objs/multidim_knapsack.$O $(CP_LIBS) $(LP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(LDLPDEPS) $(EXEOUT)multidim_knapsack$E
+
 objs/network_routing.$O:examples/network_routing.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/network_routing.cc $(OBJOUT)objs/network_routing.$O
 

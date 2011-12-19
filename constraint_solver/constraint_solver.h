@@ -2158,6 +2158,10 @@ class Solver {
                                        int simplex_frequency);
 #endif  // #if !defined(SWIG)
 
+  // ----- Simplex Constraint -----
+
+  SearchMonitor* MakeSimplexConstraint(int simplex_frequency);
+
   // ----- Search Decicions and Decision Builders -----
 
   // ----- Decisions -----
