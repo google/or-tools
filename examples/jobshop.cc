@@ -73,12 +73,30 @@ class JobShopData {
     int duration;
   };
 
+  enum ProblemType {
+    UNDEFINED,
+    JSSP,
+    TAILLARD
+  };
+
+  enum TaillardState {
+    START,
+    JOBS_READ,
+    MACHINES_READ,
+    SEED_READ,
+    JOB_ID_READ,
+    JOB_LENGTH_READ,
+    JOB_READ
+  };
+
   JobShopData()
       : name_(""),
         machine_count_(0),
         job_count_(0),
         horizon_(0),
-        current_job_index_(0) {}
+        current_job_index_(0),
+        problem_type_(UNDEFINED),
+        taillard_state_(START) {}
 
   ~JobShopData() {}
 
@@ -120,28 +138,89 @@ class JobShopData {
     static const char kWordDelimiters[] = " ";
     std::vector<string> words;
     SplitStringUsing(line, kWordDelimiters, &words);
-    if (words.size() == 2) {
-      if (words[0] == "instance") {
-        LOG(INFO) << "Name = " << words[1];
-        name_ = words[1];
-      } else {
-        job_count_ = atoi32(words[0]);
-        machine_count_ = atoi32(words[1]);
-        CHECK_GT(machine_count_, 0);
-        CHECK_GT(job_count_, 0);
-        LOG(INFO) << machine_count_ << " machines and "
-                  << job_count_ << " jobs";
-        all_tasks_.resize(job_count_);
+    switch (problem_type_) {
+      case UNDEFINED: {
+        if (words.size() == 2 && words[0] == "instance") {
+          problem_type_ = JSSP;
+          LOG(INFO) << "Reading jssp instance " << words[1];
+          name_ = words[1];
+        } else if (words.size() == 1 && atoi32(words[0]) > 0) {
+          problem_type_ = TAILLARD;
+          taillard_state_ = JOBS_READ;
+          job_count_ = atoi32(words[0]);
+          CHECK_GT(job_count_, 0);
+          all_tasks_.resize(job_count_);
+        }
+        break;
       }
-    }
-    if (words.size() > 2 && machine_count_ != 0) {
-      CHECK_EQ(words.size(), machine_count_ * 2);
-      for (int i = 0; i < machine_count_; ++i) {
-        const int machine_id = atoi32(words[2 * i]);
-        const int duration = atoi32(words[2 * i + 1]);
-        AddTask(current_job_index_, machine_id, duration);
+      case JSSP: {
+        if (words.size() == 2) {
+          job_count_ = atoi32(words[0]);
+          machine_count_ = atoi32(words[1]);
+          CHECK_GT(machine_count_, 0);
+          CHECK_GT(job_count_, 0);
+          LOG(INFO) << machine_count_ << " machines and "
+                    << job_count_ << " jobs";
+          all_tasks_.resize(job_count_);
+        }
+
+        if (words.size() > 2 && machine_count_ != 0) {
+          CHECK_EQ(words.size(), machine_count_ * 2);
+          for (int i = 0; i < machine_count_; ++i) {
+            const int machine_id = atoi32(words[2 * i]);
+            const int duration = atoi32(words[2 * i + 1]);
+            AddTask(current_job_index_, machine_id, duration);
+          }
+          current_job_index_++;
+        }
+        break;
       }
-      current_job_index_++;
+      case TAILLARD: {
+        switch (taillard_state_) {
+          case START: {
+            LOG(FATAL) << "Should not be here";
+            break;
+          }
+          case JOBS_READ: {
+            CHECK_EQ(1, words.size());
+            machine_count_ = atoi32(words[0]);
+            CHECK_GT(machine_count_, 0);
+            taillard_state_ = MACHINES_READ;
+            break;
+          }
+          case MACHINES_READ: {
+            CHECK_EQ(1, words.size());
+            const int seed = atoi32(words[0]);
+            LOG(INFO) << "Taillard instance with " << job_count_
+                      << " jobs, and " << machine_count_
+                      << " machines, generated with a seed of " << seed;
+            taillard_state_ = SEED_READ;
+            break;
+          }
+          case SEED_READ:
+          case JOB_READ: {
+            CHECK_EQ(1, words.size());
+            current_job_index_ = atoi32(words[0]);
+            taillard_state_ = JOB_ID_READ;
+            break;
+          }
+          case JOB_ID_READ: {
+            CHECK_EQ(1, words.size());
+            taillard_state_ = JOB_LENGTH_READ;
+            break;
+          }
+          case JOB_LENGTH_READ: {
+            CHECK_EQ(machine_count_, words.size());
+            for (int i = 0; i < machine_count_; ++i) {
+              const int duration = atoi32(words[i]);
+              AddTask(current_job_index_, i, duration);
+            }
+            taillard_state_ = JOB_READ;
+            break;
+          }
+        }
+        break;
+      }
     }
   }
 
@@ -156,6 +235,8 @@ class JobShopData {
   int horizon_;
   std::vector<std::vector<Task> > all_tasks_;
   int current_job_index_;
+  ProblemType problem_type_;
+  TaillardState taillard_state_;
 };
 
 void Jobshop(const JobShopData& data) {
