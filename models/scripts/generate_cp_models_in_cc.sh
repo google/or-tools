@@ -50,6 +50,15 @@ do
   ./model_util --input=/tmp/$name --rename_model=$name --insert_license=models/headers/google_license.txt --output=models/$name.cp
 done
 
+for data_file in data/multidim_knapsack/*
+do
+  data=${data_file##*/}
+  name=multidim_knapsack_$data
+  echo $name
+  ./multidim_knapsack --data_file=$data_file --cp_export_file=/tmp/$name --cp_no_solve
+  ./model_util --input=/tmp/$name --rename_model=$name --insert_license=models/headers/google_license.txt --output=models/$name.cp
+done
+
 for i in 4 5 6 7 8 9 10 15 20 25 30 40 50 100 150 200 250 300 500 750 1000
 do
   name=nqueen_$i

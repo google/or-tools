@@ -33,6 +33,7 @@ CPBINARIES = \
 	linear_assignment_api$E \
 	magic_square$E \
 	model_util$E \
+	multidim_knapsack$E \
 	network_routing$E \
 	nqueens$E \
 	pdptw$E \
