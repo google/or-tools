@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <string>
+#include <zlib.h>
+#include "base/logging.h"
 #include "base/recordio.h"
 
 namespace operations_research {
@@ -22,9 +25,40 @@ bool RecordWriter::Close() {
   return file_->Close();
 }
 
+std::string RecordWriter::Compress(std::string const& s) const {
+  const unsigned long source_size = s.size();
+  const char * source = s.c_str();
+
+  unsigned long dsize = source_size + (source_size * 0.1f) + 16;
+  char * const destination = new char[dsize];
+
+  const int result = compress((unsigned char *)destination,
+                              &dsize,
+                              (const unsigned char *)source,
+                              source_size);
+
+  if (result != Z_OK) {
+    LOG(FATAL) << "Compress error occured! Error code: " << result;
+  }
+  return std::string(destination, dsize);
+}
+
 RecordReader::RecordReader(File* const file) : file_(file) {}
 
 bool RecordReader::Close() {
   return file_->Close();
+}
+
+void RecordReader::Uncompress(const char* const source,
+                             unsigned long source_size,
+                             char* const output_buffer,
+                             unsigned long output_size) const {
+  const int result = uncompress((unsigned char *)output_buffer,
+                                &output_size,
+                                (const unsigned char *)source,
+                                source_size);
+  if(result != Z_OK) {
+    LOG(FATAL) << "Uncompress error occured! Error code: " << result;
+  }
 }
 }  // namespace operations_research
