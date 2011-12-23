@@ -11,10 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <string>
 #include <zlib.h>
+#include <string>
 #include "base/logging.h"
 #include "base/recordio.h"
+#include "base/scoped_ptr.h"
 
 namespace operations_research {
 const int RecordWriter::kMagicNumber = 0x3ed7230a;
@@ -30,9 +31,9 @@ std::string RecordWriter::Compress(std::string const& s) const {
   const char * source = s.c_str();
 
   unsigned long dsize = source_size + (source_size * 0.1f) + 16;
-  char * const destination = new char[dsize];
+  scoped_ptr<char> destination(new char[dsize]);
 
-  const int result = compress((unsigned char *)destination,
+  const int result = compress((unsigned char *)destination.get(),
                               &dsize,
                               (const unsigned char *)source,
                               source_size);
@@ -40,7 +41,7 @@ std::string RecordWriter::Compress(std::string const& s) const {
   if (result != Z_OK) {
     LOG(FATAL) << "Compress error occured! Error code: " << result;
   }
-  return std::string(destination, dsize);
+  return std::string(destination.get(), dsize);
 }
 
 RecordReader::RecordReader(File* const file) : file_(file) {}
@@ -53,12 +54,14 @@ void RecordReader::Uncompress(const char* const source,
                              unsigned long source_size,
                              char* const output_buffer,
                              unsigned long output_size) const {
+  unsigned long result_size = output_size;
   const int result = uncompress((unsigned char *)output_buffer,
-                                &output_size,
+                                &result_size,
                                 (const unsigned char *)source,
                                 source_size);
-  if(result != Z_OK) {
+  if (result != Z_OK) {
     LOG(FATAL) << "Uncompress error occured! Error code: " << result;
   }
+  CHECK_LE(result_size, output_size);
 }
 }  // namespace operations_research
