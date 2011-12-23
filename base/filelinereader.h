@@ -1,0 +1,49 @@
+// Copyright 2011 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef OR_TOOLS_BASE_FILELINEREADER_H_
+#define OR_TOOLS_BASE_FILELINEREADER_H_
+
+#include <cstdlib>
+#include <cstdio>
+#include <string>
+
+#include "base/callback.h"
+#include "base/integral_types.h"
+#include "base/file.h"
+#include "base/scoped_ptr.h"
+
+namespace operations_research {
+// The FileLineReader class will read a text file specified by
+// 'filename' line by line.  Each line will be cleaned with respect to
+// termination ('\n' and '\r').  The line callback will be called in
+// sequence on each line.
+class FileLineReader {
+ public:
+  FileLineReader(const char* const filename);
+
+  ~FileLineReader();
+
+  void set_line_callback(Callback1<char*>* callback);
+
+  void Reload();
+
+  bool loaded_successfully() const;
+
+ private:
+  const char* filename_;
+  scoped_ptr<Callback1<char*> > line_callback_;
+  bool loaded_successfully_;
+};
+}  // namespace
+#endif  // OR_TOOLS_BASE_FILELINEREADER_H_

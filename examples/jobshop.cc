@@ -42,6 +42,7 @@
 #include "base/stringprintf.h"
 #include "base/strtoint.h"
 #include "base/file.h"
+#include "base/filelinereader.h"
 #include "base/split.h"
 #include "constraint_solver/constraint_solver.h"
 
@@ -105,13 +106,14 @@ class JobShopData {
   // is only partially checked: bad inputs might cause undefined
   // behavior.
   void Load(const string& filename) {
-    const int kMaxLineLength = 1024;
-    File* const data_file = File::Open(filename, "r");
-    scoped_array<char> line(new char[kMaxLineLength]);
-    while (data_file->ReadLine(line.get(), kMaxLineLength)) {
-      ProcessNewLine(line.get());
+    FileLineReader reader(filename.c_str());
+    reader.set_line_callback(NewPermanentCallback(
+        this,
+        &JobShopData::ProcessNewLine));
+    reader.Reload();
+    if (!reader.loaded_successfully()) {
+      LOG(ERROR) << "Could not open jobshop file";
     }
-    data_file->Close();
   }
 
   // The number of machines in the jobshop.
