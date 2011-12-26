@@ -1,58 +1,65 @@
 # Let's discover something about where we run
 ifeq "$(SHELL)" "cmd.exe"
   SYSTEM = win
-  PLATFORM = WINDOWS
-  OS = Windows
-  TOP ?= $(shell cd)
 else
   ifeq "$(SHELL)" "sh.exe"
     SYSTEM = win
-    PLATFORM = WINDOWS
-    OS = Windows
-    TOP ?= $(shell cd)
   else
-    TOP ?= $(shell pwd)
     SYSTEM = unix
-    OS = $(shell uname -s)
-    ifneq ($(shell which python2.7),)
-      PYTHONVERSION = 2.7
-    else
-      ifneq ($(shell which python2.6),)
-        PYTHONVERSION = 2.6
-      endif
-    endif
-    ifeq ($(OS),Linux)
-      PLATFORM = LINUX
-      LBITS = $(shell getconf LONG_BIT)
-      ifeq ($(LBITS),64)
-        PTRLENGTH = 64
-        CANDIDATE_JDK_ROOTS = \
-          /usr/local/buildtools/java/jdk-64 \
-          /usr/lib/jvm/java-1.7.0-openjdk.x86_64 \
-          /usr/lib64/jvm/java-1.6.0-openjdk-1.6.0
-      else
-        PTRLENGTH = 32
-        CANDIDATE_JDK_ROOTS = \
-          /usr/local/buildtools/java/jdk-32 \
-          /usr/lib/jvm/java-1.7.0-openjdk-i386 \
-          /usr/lib/jvm/java-1.6.0-openjdk-1.6.0
-      endif
-      SELECTED_JDK_DEF = LINUX_JDK_ROOT = $(wildcard $(CANDIDATE_JDK_ROOTS))
-    endif
-    ifeq ($(OS),Darwin) # Assume Mac Os X
-      PLATFORM = MACOSX
-      PTRLENGTH = 64
-      CANDIDATE_JDK_HEADERS = \
-        /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/include \
-        /Developer/SDKs/MacOSX10.7.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers
-      SELECTED_JDK_DEF = MAC_JDK_HEADERS = $(wildcard $(CANDIDATE_JDK_HEADERS))
-    endif
   endif
 endif
 
+# Unix specific part.
+ifeq ("$(SYSTEM)","unix")
+  TOP ?= $(shell pwd)
+  OS = $(shell uname -s)
+  ifneq ($(shell which python2.7),)
+    PYTHONVERSION = 2.7
+  else
+    ifneq ($(shell which python2.6),)
+      PYTHONVERSION = 2.6
+    endif
+  endif
+  ifeq ($(OS),Linux)
+    PLATFORM = LINUX
+    LBITS = $(shell getconf LONG_BIT)
+    ifeq ($(LBITS),64)
+      PTRLENGTH = 64
+      CANDIDATE_JDK_ROOTS = \
+        /usr/local/buildtools/java/jdk-64 \
+        /usr/lib/jvm/java-1.7.0-openjdk.x86_64 \
+        /usr/lib64/jvm/java-1.6.0-openjdk-1.6.0
+    else
+      PTRLENGTH = 32
+      CANDIDATE_JDK_ROOTS = \
+        /usr/local/buildtools/java/jdk-32 \
+        /usr/lib/jvm/java-1.7.0-openjdk-i386 \
+        /usr/lib/jvm/java-1.6.0-openjdk-1.6.0
+    endif
+    SELECTED_JDK_DEF = LINUX_JDK_ROOT = $(wildcard $(CANDIDATE_JDK_ROOTS))
+  endif
+  ifeq ($(OS),Darwin) # Assume Mac Os X
+    PLATFORM = MACOSX
+    PTRLENGTH = 64
+    CANDIDATE_JDK_HEADERS = \
+      /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/include \
+      /Developer/SDKs/MacOSX10.7.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers
+    SELECTED_JDK_DEF = MAC_JDK_HEADERS = $(wildcard $(CANDIDATE_JDK_HEADERS))
+  endif
+endif
+
+# Windows specific part.
 ifeq ("$(SYSTEM)","win")
   SCIP_MAKEFILE = "\# SCIP not compiled"
   SELECTED_JDK_DEF = "\# Define JDK"
+  PLATFORM = WINDOWS
+  ifeq ("$(Platform)", "X64")
+    PTRLENGTH = 64
+  else
+    PTRLENGTH = 32
+  endif
+  OS = Windows
+  TOP ?= $(shell cd)
 endif
 
 
