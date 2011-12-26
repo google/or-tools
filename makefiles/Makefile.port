@@ -61,6 +61,10 @@ ifeq ("$(SYSTEM)","win")
   OS = Windows
   TOP_AUX = $(shell cd)
   TOP = $(shell echo $(TOP_AUX) | tools\\sed.exe -e "s/\\/\\\\/g")
+  ifneq ($(wildcard c:/python27/python.exe),)
+    WINDOWS_PYTHON_PATH = c:\\python27
+    PYTHONVERSION = 27
+  endif
 endif
 
 

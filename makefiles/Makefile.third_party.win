@@ -177,6 +177,8 @@ install_python_modules:
 Makefile.local:
 	@echo Generating Makefile.local
 	@echo WINDOWS_PYTHON_VER = $(PYTHONVERSION) > Makefile.local
+	@echo WINDOWS_PYTHON_INC=/I$(WINDOWS_PYTHON_PATH)\\include >> Makefile.local
+	@echo WINDOWS_PYTHON_LNK=$(WINDOWS_PYTHON_PATH)\\lib\\python$(PYTHONVERSION).lib >> Makefile.local
 	@echo WINDOWS_GFLAGS_DIR = $(TOP)\\dependencies\\install >> Makefile.local
 	@echo WINDOWS_PROTOBUF_DIR = $(TOP)\\dependencies\\install >> Makefile.local
 	@echo WINDOWS_SPARSEHASH_DIR = $(TOP)\\dependencies\\install >> Makefile.local
@@ -186,6 +188,6 @@ Makefile.local:
 	@echo WINDOWS_GLPK_DIR = $(TOP)\\dependencies\\install >> Makefile.local
 	@echo $(SCIP_MAKEFILE) >> Makefile.local
 	@echo $(SELECTED_JDK_DEF) >> Makefile.local
-	@echo $(SCIP_MAKEFILE)
+	@echo $(SCIP_MAKEFILE) >> Makefile.local
 
 
