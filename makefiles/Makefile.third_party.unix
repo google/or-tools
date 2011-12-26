@@ -1,5 +1,5 @@
 # SVN tags of dependencies to checkout.
-GFLAGS_TAG = 57 # version 1.6
+GFLAGS_TAG = 72 # version 1.7
 PROTOBUF_TAG = 391 # version 2.4.1
 GOOGLE_APPUTILS_TAG = 11 # trunk
 GOOGLE_SPARSEHASH_TAG = 103 # trunk
