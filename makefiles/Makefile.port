@@ -1,17 +1,17 @@
-# Useful variable.
-TOP ?= $(shell pwd)
-
 # Let's discover something about where we run
 ifeq "$(SHELL)" "cmd.exe"
   SYSTEM = win
   PLATFORM = WINDOWS
   OS = Windows
+  TOP ?= $(shell cd)
 else
   ifeq "$(SHELL)" "sh.exe"
     SYSTEM = win
     PLATFORM = WINDOWS
     OS = Windows
+    TOP ?= $(shell cd)
   else
+    TOP ?= $(shell pwd)
     SYSTEM = unix
     OS = $(shell uname -s)
     ifneq ($(shell which python2.7),)
@@ -49,6 +49,12 @@ else
     endif
   endif
 endif
+
+ifeq ("$(SYSTEM)","win")
+  SCIP_MAKEFILE = "\# SCIP not compiled"
+  SELECTED_JDK_DEF = "\# Define JDK"
+endif
+
 
 printport:
 	@echo SHELL = $(SHELL)

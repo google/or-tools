@@ -1,5 +1,190 @@
-third_party:
-	echo make third_party is not yet supported on windows platforms.
+# SVN tags of dependencies to checkout.
+GFLAGS_TAG = 57 # version 1.6
+PROTOBUF_TAG = 391 # version 2.4.1
+GOOGLE_APPUTILS_TAG = 11 # trunk
+GOOGLE_SPARSEHASH_TAG = 103 # trunk
+CBC_TAG = 2.7.5
 
+# Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
+# The archive should be glpk-4.47.tar.gz
+GLPK_TAG = 4.47
+# The archive should be ziboptsuite-2.1.0.tgz
+SCIP_TAG = 2.1.0
+
+# Detect if scip archive is there.
+ifeq ($(wildcard dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz),)
+    SCIP_TARGET =
+    SCIP_MAKEFILE = # UNIX_SCIP_DIR support not included.
+else
+    SCIP_TARGET = dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
+    SCIP_MAKEFILE = UNIX_SCIP_DIR = $(TOP)/dependencies/install/ziboptsuite-2.1.0/scip-2.1.0
+    ifeq ($(PLATFORM), LINUX)
+	BUILD_SCIP = make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC
+    endif
+    ifeq ($(PLATFORM), MACOSX)
+	BUILD_SCIP = make ZIMPL=false READLINE=false ARCH=x86_64
+    endif
+endif
+
+# Main target.
+.PHONY: third_party build_third_party makefile_third_party
+third_party: build_third_party makefile_third_party
+
+build_third_party: \
+	install_zlib \
+	install_gflags \
+	install_protobuf \
+	install_google_apputils \
+	install_google_sparsehash \
+	install_swig \
+	install_coin_cbc \
+	install_glpk \
+	install_scip
+
+download_third_party: \
+        dependencies/archives/zlib125-dll.zip \
+	dependencies/sources/gflags/autogen.sh \
+	dependencies/sources/protobuf/autogen.sh \
+	dependencies/sources/sparsehash/autogen.sh \
+	dependencies/archives/swigwin-2.0.4.zip \
+	dependencies/sources/google-apputils/README \
+	dependencies/sources/coin-cbc/configure \
+	dependencies/archives/glpk-$(GLPK_TAG).tar.gz 
+
+# Directories:
+dependencies\install\bin: dependencies\install
+	md dependencies\install\bin
+
+dependencies\install:
+	md dependencies\install
+
+# Install zlib
+install_zlib: dependencies\install\include\zlib.h
+
+dependencies\install\include\zlib.h: dependencies\archives\zlib125-dll.zip
+	tools\unzip -d dependencies\install dependencies\archives\zlib125-dll.zip
+
+dependencies\archives\zlib125-dll.zip:
+	tools\wget -P dependencies\archives http://zlib.net/zlib125-dll.zip
+
+# Install google-gflags.
+install_gflags: dependencies/install/bin/gflags_completions.sh
+
+dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags/Makefile
+	cd dependencies/sources/gflags && make install
+
+dependencies/sources/gflags/Makefile: dependencies/sources/gflags/configure
+	cd dependencies/sources/gflags && ./configure --prefix=$(TOP)/dependencies/install
+
+dependencies/sources/gflags/configure: dependencies/sources/gflags/autogen.sh
+	cd dependencies/sources/gflags && ./autogen.sh
+
+dependencies/sources/gflags/autogen.sh:
+	svn co http://google-gflags.googlecode.com/svn/trunk/ -r $(GFLAGS_TAG) dependencies/sources/gflags
+
+# Install protocol buffers.
+install_protobuf: dependencies/install/bin/protoc.exe
+
+dependencies/install/bin/protoc.exe: dependencies/sources/protobuf/Makefile
+	cd dependencies/sources/protobuf && make install
+
+dependencies/sources/protobuf/Makefile: dependencies/sources/protobuf/configure
+	cd dependencies/sources/protobuf && ./configure --prefix=$(TOP)/dependencies/install
+
+dependencies/sources/protobuf/configure: dependencies/sources/protobuf/autogen.sh
+	cd dependencies/sources/protobuf && ./autogen.sh
+
+dependencies/sources/protobuf/autogen.sh:
+	svn co http://protobuf.googlecode.com/svn/trunk/ -r $(PROTOBUF_TAG) dependencies/sources/protobuf
+
+# Intall Google Apputils Python.
+install_google_apputils: dependencies/sources/google-apputils/README
+
+dependencies/sources/google-apputils/README:
+	svn co http://google-apputils-python.googlecode.com/svn/trunk/ -r $(GOOGLE_APPUTILS_TAG) dependencies/sources/google-apputils
+
+# Install google-sparsehash.
+install_google_sparsehash: dependencies/install/include/google/dense_hash_map
+
+dependencies/install/include/google/dense_hash_map: dependencies/sources/sparsehash/Makefile
+	cd dependencies/sources/sparsehash && make install
+
+dependencies/sources/sparsehash/Makefile: dependencies/sources/sparsehash/configure
+	cd dependencies/sources/sparsehash && ./configure --prefix=$(TOP)/dependencies/install
+
+dependencies/sources/sparsehash/configure: dependencies/sources/sparsehash/autogen.sh
+	cd dependencies/sources/sparsehash && ./autogen.sh
+
+dependencies/sources/sparsehash/autogen.sh:
+	svn co http://google-sparsehash.googlecode.com/svn/trunk/ -r $(GOOGLE_SPARSEHASH_TAG) dependencies/sources/sparsehash
+
+
+# Install Coin CBC.
+install_coin_cbc: dependencies/install/bin/cbc
+
+dependencies/install/bin/cbc: dependencies/sources/coin-cbc/Makefile
+	cd dependencies/sources/coin-cbc && make install
+
+dependencies/sources/coin-cbc/Makefile: dependencies/sources/coin-cbc/configure
+	cd dependencies/sources/coin-cbc && ./configure --prefix=$(TOP)/dependencies/install --disable-bzlib --without-lapack
+
+dependencies/sources/coin-cbc/configure:
+	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/coin-cbc
+
+# Install SWIG.
+install_swig: dependencies/install/swigwin-2.0.4/swig.exe
+
+dependencies/install/swigwin-2.0.4/swig.exe: dependencies/archives/swigwin-2.0.4.zip
+	tools/unzip -d dependencies/install dependencies/archives/swigwin-2.0.4.zip
+
+dependencies/archives/swigwin-2.0.4.zip:
+	tools\wget -P dependencies\archives http://prdownloads.sourceforge.net/swig/swigwin-2.0.4.zip
+
+# Install glpk if needed.
+install_glpk: dependencies\install\bin\glpsol.exe
+
+dependencies/install/bin/glpsol.exe: dependencies/sources/glpk-$(GLPK_TAG)/Makefile
+	cd dependencies/sources/glpk-$(GLPK_TAG) && make install
+
+dependencies/sources/glpk-$(GLPK_TAG)/Makefile: dependencies/sources/glpk-$(GLPK_TAG)/configure
+	cd dependencies/sources/glpk-$(GLPK_TAG) && ./configure --prefix=$(TOP)/dependencies/install
+
+dependencies/sources/glpk-$(GLPK_TAG)/configure: dependencies/archives/glpk-$(GLPK_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/glpk-$(GLPK_TAG).tar.gz
+
+dependencies/archives/glpk-$(GLPK_TAG).tar.gz:
+	wget -P dependencies/archives http://ftp.gnu.org/gnu/glpk/glpk-4.47.tar.gz
+
+# Install scip if needed.
+install_scip: $(SCIP_TARGET)
+
+dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz
+	cd dependencies/install && tar xvzmf ../archives/ziboptsuite-$(SCIP_TAG).tgz && cd ziboptsuite-$(SCIP_TAG) && $(BUILD_SCIP)
+
+# Clean everything.
 clean_third_party:
-	echo make clean_third_party is not yet supported on windows platforms.
+	$(DELREC) dependencies/install
+	$(DELREC) dependencies/sources/*
+	$(DEL) Makefile.local
+
+# Create Makefile.local
+makefile_third_party: Makefile.local
+
+# Install python modules
+install_python_modules:
+	cd dependencies/sources/google-apputils && python$(PYTHONVERSION) setup.py install --user
+
+Makefile.local:
+	@echo Generating Makefile.local
+	@echo WINDOWS_PYTHON_VER = $(PYTHONVERSION) > Makefile.local
+	@echo WINDOWS_GFLAGS_DIR = $(TOP)\\dependencies\\install >> Makefile.local
+	@echo WINDOWS_PROTOBUF_DIR = $(TOP)\\dependencies\\install >> Makefile.local
+	@echo WINDOWS_SPARSEHASH_DIR = $(TOP)\\dependencies\\install >> Makefile.local
+	@echo WINDOWS_SWIG_BINARY = $(TOP)\\dependencies\\install\\swigwin-2.0.4\\swig.exe >> Makefile.local
+	@echo WINDOWS_CLP_DIR = $(TOP)\\dependencies\\install >> Makefile.local
+	@echo WINDOWS_CBC_DIR = $(TOP)\\dependencies\\install >> Makefile.local
+	@echo WINDOWS_GLPK_DIR = $(TOP)\\dependencies\\install >> Makefile.local
+	@echo $(SCIP_MAKEFILE) >> Makefile.local
+	@echo $(SELECTED_JDK_DEF) >> Makefile.local
+
+
