@@ -59,7 +59,8 @@ ifeq ("$(SYSTEM)","win")
     PTRLENGTH = 32
   endif
   OS = Windows
-  TOP ?= $(shell cd)
+  TOP_AUX = $(shell cd)
+  TOP = $(shell echo $(TOP_AUX) | tools\\sed.exe -e "s/\\/\\\\/g")
 endif
 
 
