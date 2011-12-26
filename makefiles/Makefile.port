@@ -50,8 +50,8 @@ endif
 
 # Windows specific part.
 ifeq ("$(SYSTEM)","win")
-  SCIP_MAKEFILE = "\# SCIP not compiled"
-  SELECTED_JDK_DEF = "\# Define JDK"
+  SCIP_MAKEFILE = \# SCIP not compiled
+  SELECTED_JDK_DEF = \# Define JDK
   PLATFORM = WINDOWS
   ifeq ("$(Platform)", "X64")
     PTRLENGTH = 64

@@ -14,10 +14,10 @@ SCIP_TAG = 2.1.0
 # Detect if scip archive is there.
 ifeq ($(wildcard dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz),)
     SCIP_TARGET =
-    SCIP_MAKEFILE = # UNIX_SCIP_DIR support not included.
+    SCIP_MAKEFILE = \# WINDOWS_SCIP_DIR support not included.
 else
     SCIP_TARGET = dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
-    SCIP_MAKEFILE = UNIX_SCIP_DIR = $(TOP)/dependencies/install/ziboptsuite-2.1.0/scip-2.1.0
+    SCIP_MAKEFILE = WINDOWS_SCIP_DIR = $(TOP)/dependencies/install/ziboptsuite-2.1.0/scip-2.1.0
     ifeq ($(PLATFORM), LINUX)
 	BUILD_SCIP = make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC
     endif
@@ -49,7 +49,7 @@ download_third_party: \
 	dependencies/archives/swigwin-2.0.4.zip \
 	dependencies/sources/google-apputils/README \
 	dependencies/sources/coin-cbc/configure \
-	dependencies/archives/glpk-$(GLPK_TAG).tar.gz 
+	dependencies/archives/glpk-$(GLPK_TAG).tar.gz
 
 # Directories:
 dependencies\install\bin: dependencies\install
@@ -186,5 +186,6 @@ Makefile.local:
 	@echo WINDOWS_GLPK_DIR = $(TOP)\\dependencies\\install >> Makefile.local
 	@echo $(SCIP_MAKEFILE) >> Makefile.local
 	@echo $(SELECTED_JDK_DEF) >> Makefile.local
+	@echo $(SCIP_MAKEFILE)
 
 
