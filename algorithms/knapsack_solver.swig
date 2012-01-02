@@ -27,4 +27,13 @@
 %rename (setUseReduction) operations_research::KnapsackSolver::set_use_reduction;
 #endif  // SWIGJAVA
 
+#if defined(SWIGCSHARP)
+%rename (bestSolutionContains) operations_research::KnapsackSolver::BestSolutionContains;
+%rename (GetName) operations_research::KnapsackSolver::GetName;
+%rename (Init) operations_research::KnapsackSolver::Init;
+%rename (Solve) operations_research::KnapsackSolver::Solve;
+%rename (UseReduction) operations_research::KnapsackSolver::use_reduction;
+%rename (SetUseReduction) operations_research::KnapsackSolver::set_use_reduction;
+#endif  // SWIGCSHARP
+
 %include "algorithms/knapsack_solver.h"
