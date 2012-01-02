@@ -87,7 +87,7 @@ class MultiDimKnapsackData {
   // Used internally.
   void ProcessNewLine(char* const line) {
     const char* const kWordDelimiters(" ");
-    vector<string> words;
+    std::vector<string> words;
     SplitStringUsing(line, kWordDelimiters, &words);
     line_read_++;
     if (problem_type_ == -1) {
@@ -234,9 +234,9 @@ class MultiDimKnapsackData {
 
  private:
   string name_;
-  vector<int> dims_;
-  vector<int> profit_;
-  vector<vector<int> > weight_;
+  std::vector<int> dims_;
+  std::vector<int> profit_;
+  std::vector<std::vector<int> > weight_;
   int line_read_;
   int mode_;
   int num_dims_;
@@ -264,11 +264,11 @@ int64 EvaluateItem(MultiDimKnapsackData* const data, int64 var, int64 val) {
 
 int64 SolveKnapsack(MultiDimKnapsackData* const data) {
   Solver solver("MultiDim Knapsack");
-  vector<IntVar*> assign;
+  std::vector<IntVar*> assign;
   solver.MakeBoolVarArray(data->items(), "assign", &assign);
   for (int i = 0; i < data->dims(); ++i) {
     const int capacity = data->capacity(i);
-    vector<int64> coefs;
+    std::vector<int64> coefs;
     for (int j = 0; j < data->items(); ++j) {
       coefs.push_back(data->weight(i, j));
     }
@@ -277,14 +277,14 @@ int64 SolveKnapsack(MultiDimKnapsackData* const data) {
   }
 
   // Build objective.
-  vector<int64> profits;
+  std::vector<int64> profits;
   for (int i = 0; i < data->items(); ++i) {
     profits.push_back(data->profit(i));
   }
 
   IntVar* objective = solver.MakeScalProd(assign, profits)->Var();
 
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
   OptimizeVar* obj = solver.MakeMaximize(objective, 1);
   monitors.push_back(obj);
   SearchMonitor* log = solver.MakeSearchLog(1000000, objective);

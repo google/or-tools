@@ -233,7 +233,7 @@ class RoutingModel {
 
   typedef _RoutingModel_NodeIndex NodeIndex;
   typedef ResultCallback2<int64, NodeIndex, NodeIndex> NodeEvaluator2;
-  typedef std::vector<pair<int, int> > NodePairs;
+  typedef std::vector<std::pair<int, int> > NodePairs;
 
   // Constants with an index of the first node (to be used in for loops for
   // iteration), and a special index to signalize an invalid/unused value.

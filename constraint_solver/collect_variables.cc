@@ -168,7 +168,7 @@ class CollectVariablesVisitor : public ModelVisitor {
     } else if (type_name.compare(ModelVisitor::kAllowedAssignments) == 0) {
       const ArgumentHolder::Matrix& matrix =
           top()->FindIntegerMatrixArgumentOrDie(ModelVisitor::kTuplesArgument);
-      vector<hash_set<int> > counters(matrix.columns);
+      std::vector<hash_set<int> > counters(matrix.columns);
       for (int i = 0; i < matrix.rows; ++i) {
         for (int j = 0; j < matrix.columns; ++j) {
           counters[j].insert(matrix.values[i][j]);

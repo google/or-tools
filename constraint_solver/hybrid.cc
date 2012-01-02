@@ -242,7 +242,7 @@ class ArgumentHolder {
   hash_map<string, std::vector<const IntervalVar*> > interval_array_argument_;
   hash_map<string, std::vector<const SequenceVar*> > sequence_array_argument_;
   hash_map<string, int64> integer_argument_;
-  hash_map<string, vector<int64> > integer_array_argument_;
+  hash_map<string, std::vector<int64> > integer_array_argument_;
   hash_map<string, Matrix> matrix_argument_;
 };
 

@@ -43,6 +43,7 @@
 #include "base/file.h"
 #include "base/split.h"
 #include "base/mathutil.h"
+#include "base/strtoint.h"
 #include "constraint_solver/routing.h"
 
 DEFINE_string(pdp_file, "",
@@ -60,7 +61,7 @@ const int64 kScalingFactor = 1000;
 
 // Vector of (x,y) node coordinates, *unscaled*, in some imaginary planar,
 // metric grid.
-typedef std::vector<pair<int, int> > Coordinates;
+typedef std::vector<std::pair<int, int> > Coordinates;
 
 // Returns the scaled Euclidean distance between two nodes, coords holding the
 // coordinates of the nodes.
@@ -72,7 +73,7 @@ int64 Travel(const Coordinates* const coords,
       coords->at(from.value()).first - coords->at(to.value()).first;
   const int yd =
       coords->at(from.value()).second - coords->at(to.value()).second;
-  return static_cast<int64>(kScalingFactor * sqrt(xd * xd + yd * yd));
+  return static_cast<int64>(kScalingFactor * sqrt(1.0L * xd * xd + yd * yd));
 }
 
 // Returns the scaled service time at a given node, service_times holding the
@@ -161,7 +162,7 @@ bool SafeParseInt64Array(const string& str, std::vector<int64>* parsed_int) {
   for (int i = 0; i < items.size(); ++i) {
     const char* item = items[i].c_str();
     char *endptr = NULL;
-    (*parsed_int)[i] = strtoll(item, &endptr, 10);  // NOLINT
+    (*parsed_int)[i] = strto64(item, &endptr, 10);  // NOLINT
     // The whole item should have been consumed.
     if (*endptr != '\0') return false;
   }
@@ -210,7 +211,7 @@ bool LoadAndSolve(const string& pdp_file) {
 
   // Parse order data.
   std::vector<int> customer_ids;
-  std::vector<pair<int, int> > coords;
+  std::vector<std::pair<int, int> > coords;
   std::vector<int64> demands;
   std::vector<int64> open_times;
   std::vector<int64> close_times;

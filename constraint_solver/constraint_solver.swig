@@ -1726,6 +1726,369 @@ CONVERT_VECTOR(LocalSearchFilter);
 
 #endif  // SWIGJAVA
 
+#if defined(SWIGCSHARP)
+
+%module(directors="1") operations_research;
+%feature("director") DecisionBuilder;
+%feature("director") Decision;
+%feature("director") SearchMonitor;
+%feature("director") Action;
+%feature("director") BaseLns;
+
+%include "std_vector.i"
+
+namespace std {
+%template(IntVector) vector<int>;
+}
+
+%{
+#include <setjmp.h>
+
+#include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/constraint_solveri.h"
+
+struct FailureProtect {
+  jmp_buf exception_buffer;
+  void JumpBack() {
+    longjmp(exception_buffer, 1);
+  }
+};
+%}
+
+%ignore Solver::MakeScalProd(IntVar* const* vars,
+                             const int64* const coefs,
+                             int size);
+%ignore Solver::MakeScalProd(IntVar* const* vars,
+                             const int* const coefs,
+                             int size);
+%ignore Solver::MakeScalProdEquality(IntVar* const* vars,
+                                     const int64* const coefs,
+                                     int size);
+%ignore Solver::MakeScalProdEquality(IntVar* const* vars,
+                                     const int* const coefs,
+                                     int size);
+%ignore Solver::MakeScalProdLessOrEqual(IntVar* const* vars,
+                                        const int64* const coefs,
+                                        int size);
+%ignore Solver::MakeScalProdLessOrEqual(IntVar* const* vars,
+                                        const int* const coefs,
+                                        int size);
+%ignore Solver::MakeScalProdGreaterOrEqual(IntVar* const* vars,
+                                           const int64* const coefs,
+                                           int size);
+%ignore Solver::MakeScalProdGreaterOrEqual(IntVar* const* vars,
+                                           const int* const coefs,
+                                           int size);
+%ignore Solver::MakeRandomLNSOperator(const IntVar* const* vars,
+                                      int size,
+                                      int number_of_variables);
+%ignore Solver::MakeRandomLNSOperator(const IntVar* const* vars,
+                                      int size,
+                                      int number_of_variables,
+                                      int32 seed);
+%ignore Solver::MakeAllowedAssignments(const IntVar* const * vars,
+                                       const int64* const * tuples,
+                                       int tuple_count,
+                                       int arity);
+
+%ignore operations_research::Solver::MakeIntVarArray;
+%ignore operations_research::Solver::MakeBoolVarArray;
+%ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
+
+// Rename rule on DecisionBuilder;
+%rename (NextWrap) operations_research::DecisionBuilder::Next;
+
+// Rename rules on SolutionCollector.
+%rename (Branches) operations_research::SolutionCollector::branches;
+%rename (Failures) operations_research::SolutionCollector::failures;
+%rename (ObjectiveValue) operations_research::SolutionCollector::objective_value;
+%rename (Solution) operations_research::SolutionCollector::solution;
+%rename (SolutionCount) operations_research::SolutionCollector::solution_count;
+%rename (WallTime) operations_research::SolutionCollector::wall_time;
+
+// Rename rule on OptimizeVar
+%rename (Best) operations_research::OptimizeVar::best;
+
+// Rename rule on SearchLimit
+%rename (IsCrossed) operations_research::SearchLimit::crossed;
+
+// Rename rules on Solver.
+%rename (AcceptedNeighbors) operations_research::Solver::accepted_neighbors;
+%rename (Add) operations_research::Solver::AddConstraint;
+%rename (Branches) operations_research::Solver::branches;
+%rename (FailStamp) operations_research::Solver::fail_stamp;
+%rename (Failures) operations_research::Solver::failures;
+%rename (FilteredNeighbors) operations_research::Solver::filtered_neighbors;
+%rename (Neighbors) operations_research::Solver::neighbors;
+%rename (Solutions) operations_research::Solver::solutions;
+%rename (Stamp) operations_research::Solver::stamp;
+%rename (WallTime) operations_research::Solver::wall_time;
+
+// Generic rename rules.
+%rename (ToString) *::DebugString;
+
+// Rename rules on Action.
+%rename (Run) operations_research::Action::Run;
+
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::IntVar, IntVar)
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SearchMonitor, SearchMonitor)
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::DecisionBuilder, DecisionBuilder)
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::IntervalVar, IntervalVar)
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::Sequence, Sequence)
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchOperator, LocalSearchOperator)
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchFilter)
+
+namespace operations_research {
+
+// Add arithmetic operators to integer expressions.
+%typemap(cscode) IntExpr %{
+	public static IntExpr operator+(IntExpr a, IntExpr b) {
+		return a.solver().MakeSum(a, b);
+	}
+	public static IntExpr operator+(IntExpr a, long v) {
+		return a.solver().MakeSum(a, v);
+	}
+	public static IntExpr operator+(long v, IntExpr a) {
+		return a.solver().MakeSum(a, v);
+	}
+	public static IntExpr operator-(IntExpr a, IntExpr b) {
+		return a.solver().MakeDifference(a, b);
+	}
+	public static IntExpr operator-(IntExpr a, long v) {
+		return a.solver().MakeSum(a, -v);
+	}
+	public static IntExpr operator-(long v, IntExpr a) {
+		return a.solver().MakeDifference(v, a);
+	}
+	public static IntExpr operator*(IntExpr a, IntExpr b) {
+		return a.solver().MakeProd(a, b);
+	}
+	public static IntExpr operator*(IntExpr a, long v) {
+		return a.solver().MakeProd(a, v);
+	}
+	public static IntExpr operator*(long v, IntExpr a) {
+		return a.solver().MakeProd(a, v);
+	}
+	public static IntExpr operator/(IntExpr a, long v) {
+		return a.solver().MakeDiv(a, v);
+	}
+	public static IntExpr operator-(IntExpr a) {
+		return a.solver().MakeOpposite(a);
+	}
+	public IntExpr Abs() {
+		return this.solver().MakeAbs(this);
+	}
+	public IntExpr Square() {
+		return this.solver().MakeSquare(this);
+	}
+	public static ValCstPair operator ==(IntExpr a, long v) {
+		return new ValCstPair(a.solver().MakeEquality(a, v));
+	}
+	public static ValCstPair operator !=(IntExpr a, long v) {
+		return new ValCstPair(a.solver().MakeNonEquality(a.Var(), v));
+	}
+	public static ValCstPair operator >=(IntExpr a, long v) {
+		return new ValCstPair(a.solver().MakeGreaterOrEqual(a, v));
+	}
+	public static ValCstPair operator >(IntExpr a, long v) {
+		return new ValCstPair(a.solver().MakeGreater(a, v));
+	}
+	public static ValCstPair operator <=(IntExpr a, long v) {
+		return new ValCstPair(a.solver().MakeLessOrEqual(a, v));
+	}
+	public static ValCstPair operator <(IntExpr a, long v) {
+		return new ValCstPair(a.solver().MakeLess(a, v));
+	}
+	public static ValCstPair operator >=(IntExpr a, IntExpr b) {
+		return new ValCstPair(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
+	}
+	public static ValCstPair operator >(IntExpr a, IntExpr b) {
+		return new ValCstPair(a.solver().MakeGreater(a.Var(), b.Var()));
+	}
+	public static ValCstPair operator <=(IntExpr a, IntExpr b) {
+		return new ValCstPair(a.solver().MakeLessOrEqual(a.Var(), b.Var()));
+	}
+	public static ValCstPair operator <(IntExpr a, IntExpr b) {
+		return new ValCstPair(a.solver().MakeLess(a.Var(), b.Var()));
+	}
+%}
+
+%extend IntervalVar {
+  Constraint* EndsAfterEnd(IntervalVar* other) {
+    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::ENDS_AFTER_END, other);
+  }
+  Constraint* EndsAfterStart(IntervalVar* other) {
+    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::ENDS_AFTER_START, other);
+  }
+  Constraint* EndsAtEnd(IntervalVar* other) {
+    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::ENDS_AT_END, other);
+  }
+  Constraint* EndsAtStart(IntervalVar* other) {
+    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::ENDS_AT_START, other);
+  }
+  Constraint* StartsAfterEnd(IntervalVar* other) {
+    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::STARTS_AFTER_END, other);
+  }
+  Constraint* StartsAfterStart(IntervalVar* other) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::STARTS_AFTER_START,
+                                                   other);
+  }
+  Constraint* StartsAtEnd(IntervalVar* other) {
+    return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::STARTS_AT_END, other);
+  }
+  Constraint* StartsAtStart(IntervalVar* other) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::STARTS_AT_START,
+                                                   other);
+  }
+}
+
+%extend IntExpr {
+  Constraint* MapTo(const std::vector<IntVar*>& vars) {
+    return self->solver()->MakeMapDomain(self->Var(), vars);
+  }
+  IntExpr* IndexOf(const std::vector<int64>& vars) {
+    return self->solver()->MakeElement(vars, self->Var());
+  }
+  IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
+    return self->solver()->MakeElement(vars, self->Var());
+  }
+}
+
+%typemap(cscode) Solver %{
+  public IntVar[] MakeIntVarArray(int count, long min, long max) {
+    IntVar[] array = new IntVar[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = MakeIntVar(min, max);
+    }
+    return array;
+  }
+
+  public IntVar[] MakeIntVarArray(int count, long min, long max, string name) {
+    IntVar[] array = new IntVar[count];
+    for (int i = 0; i < count; ++i) {
+      string var_name = name + i;
+      array[i] = MakeIntVar(min, max, var_name);
+    }
+    return array;
+  }
+
+  public IntVar[] MakeBoolVarArray(int count) {
+    IntVar[] array = new IntVar[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = MakeBoolVar();
+    }
+    return array;
+  }
+
+  public IntVar[] MakeBoolVarArray(int count, string name) {
+    IntVar[] array = new IntVar[count];
+    for (int i = 0; i < count; ++i) {
+      string var_name = name + i;
+      array[i] = MakeBoolVar(var_name);
+    }
+    return array;
+  }
+
+  public IntervalVar[] MakeFixedDurationIntervalVarArray(int count,
+                                                         long start_min,
+                                                         long start_max,
+                                                         long duration,
+                                                         bool optional) {
+    IntervalVar[] array = new IntervalVar[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = MakeFixedDurationIntervalVar(start_min,
+                                              start_max,
+                                              duration,
+                                              optional,
+                                              "");
+    }
+    return array;
+  }
+
+  public IntervalVar[] MakeFixedDurationIntervalVarArray(int count,
+                                                         long start_min,
+                                                         long start_max,
+                                                         long duration,
+                                                         bool optional,
+                                                         string name) {
+    IntervalVar[] array = new IntervalVar[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = MakeFixedDurationIntervalVar(start_min,
+                                              start_max,
+                                              duration,
+                                              optional,
+                                              name + i);
+    }
+    return array;
+  }
+
+%}
+
+// Protect from failure
+#define PREPROTECT\
+  FailureProtect protect;\
+  Closure* const intercept = \
+      NewCallback<>(&protect, &FailureProtect::JumpBack);\
+  solver->set_fail_intercept(intercept);\
+  if (setjmp(protect.exception_buffer) == 0) {
+
+#define POSTPROTECT\
+    solver->clear_fail_intercept();\
+    delete intercept;\
+  } else {\
+    solver->clear_fail_intercept();\
+	SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, "fail");\
+    return $null;\
+  }
+
+%exception IntExpr::SetValue(int64 v) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception IntExpr::SetMin(int64 v) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception IntExpr::SetMax(int64 v) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception IntExpr::SetRange(int64 mi, int64 ma) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception IntVar::RemoveValue(int64 v) {
+  operations_research::Solver* const solver = arg1->solver();
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception Solver::AddConstraint(Constraint* const ct) {
+  operations_research::Solver* const solver = arg1;
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+%exception Solver::Fail() {
+  operations_research::Solver* const solver = arg1;
+  PREPROTECT
+    $action
+  POSTPROTECT
+}
+}  // namespace operations_research
+
+#endif	// SWIGCSHARP
+
 // Wrap cp includes
 %include constraint_solver/constraint_solver.h
 %include constraint_solver/constraint_solveri.h
