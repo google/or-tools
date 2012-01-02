@@ -535,5 +535,172 @@ Class c = Class.forName("com.google.ortools.linearsolver.MPSolver");
 
 #endif  // SWIGJAVA
 
+#if defined(SWIGCSHARP)
+
+%module(directors="1") operations_research;
+
+namespace operations_research {
+// Rename rules on MPVariable.
+%rename (ReducedCost) MPVariable::reduced_cost;
+%rename (SetBounds) MPVariable::SetBounds;
+%rename (SetInteger) MPVariable::SetInteger;
+%rename (SetLb) MPVariable::SetLB;
+%rename (SetUb) MPVariable::SetUB;
+%rename (SolutionValue) MPVariable::solution_value;
+
+// Rename rules on MPConstraint.
+%rename (Activity) MPConstraint::activity;
+%rename (AddTerm) MPConstraint::AddTerm;
+%rename (DualValue) MPConstraint::dual_value;
+%rename (SetBounds) MPConstraint::SetBounds;
+%rename (SetCoefficient) MPConstraint::SetCoefficient;
+%rename (SetLb) MPConstraint::SetLB;
+%rename (SetUb) MPConstraint::SetUB;
+
+// Rename rules on MPObjective.
+%rename (AddOffset) MPObjective::AddOffset;
+%rename (AddTerm) MPObjective::AddObjective;
+%rename (Clear) MPObjective::Clear;
+%rename (SetCoefficient) MPObjective::SetCoefficient;
+%rename (SetOffset) MPObjective::SetOffset;
+
+// Rename rules on MPSolverParameters.
+%rename (GetDoubleParam) MPSolverParameters::GetDoubleParam;
+%rename (GetIntegerParam) MPSolverParameters::GetIntegerParam;
+%rename (Reset) MPSolverParameters::Reset;
+%rename (ResetDoubleParam) MPSolverParameters::ResetDoubleParam;
+%rename (ResetIntegerParam) MPSolverParameters::ResetIntegerParam;
+%rename (SetDoubleParam) MPSolverParameters::SetDoubleParam;
+%rename (SetIntegerParam) MPSolverParameters::SetIntegerParam;
+
+// Rename rules on MPSolver.
+%rename (AddObjectiveOffset) MPSolver::AddObjectiveOffset;
+%rename (AddObjectiveTerm) MPSolver::AddObjectiveTerm;
+%rename (BestObjectiveBound) MPSolver::best_objective_bound;
+%rename (CheckAllNamesValidity) MPSolver::CheckAllNamesValidity;
+%rename (CheckNameValidity) MPSolver::CheckNameValidity;
+%rename (Clear) MPSolver::Clear;
+%rename (ClearObjective) MPSolver::ClearObjective;
+%rename (Infinity) MPSolver::infinity;
+%rename (Init) MPSolver::Init;
+%rename (Iterations) MPSolver::iterations;
+%rename (IsLpFormat) MPSolver::IsLPFormat;
+%rename (LoadModel) MPSolver::LoadModel;
+%rename (MakeBoolVar) MPSolver::MakeBoolVar;
+%rename (MakeIntVar) MPSolver::MakeIntVar;
+%rename (MakeNumVar) MPSolver::MakeNumVar;
+%rename (MakeConstraint) MPSolver::MakeRowConstraint;
+%rename (MakeVar) MPSolver::MakeVar;
+%rename (Minimization) MPSolver::Minimization;
+%rename (Nodes) MPSolver::nodes;
+%rename (NumConstraints) MPSolver::NumConstraints;
+%rename (NumVariables) MPSolver::NumVariables;
+%rename (ObjectiveValue) MPSolver::objective_value;
+%rename (Reset) MPSolver::Reset;
+%rename (SetMaximization) MPSolver::SetMaximization;
+%rename (SetMinimization) MPSolver::SetMinimization;
+%rename (SetObjectiveCoefficient) MPSolver::SetObjectiveCoefficient;
+%rename (SetObjectiveOffset) MPSolver::SetObjectiveOffset;
+%rename (SetOptimizationDirection) MPSolver::SetOptimizationDirection;
+%rename (SetTimeLimit) MPSolver::set_time_limit;
+%rename (SetWriteModelFilename) MPSolver::set_write_model_filename;
+%rename (Solve) MPSolver::Solve;
+%rename (SolverVersion) MPSolver::SolverVersion;
+%rename (SuppressOutput) MPSolver::SuppressOutput;
+%rename (TimeLimit) MPSolver::time_limit;
+%rename (WallTime) MPSolver::wall_time;
+%rename (WriteModelFilename) MPSolver::write_model_filename;
+// Ignore code on MPSolver, see replacement java code below.
+%ignore MPSolver::MakeVarArray;
+%ignore MPSolver::MakeNumVarArray;
+%ignore MPSolver::MakeIntVarArray;
+%ignore MPSolver::MakeBoolVarArray;
+// The following 3 methods that use protocol buffers as output
+// arguments are replaced by methods that return a protocol buffer,
+// see code below.
+%ignore MPSolver::ExportModel;
+%ignore MPSolver::FillSolutionResponse;
+%ignore MPSolver::SolveWithProtocolBuffers;
+
+// Add csharp code on MPSolver.
+%typemap(cscode) MPSolver %{
+  public MPVariable[] MakeVarArray(int count,
+                                   double lb,
+                                   double ub,
+                                   bool integer) {
+    MPVariable[] array = new MPVariable[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = MakeVar(lb, ub, integer, "");
+    }
+    return array;
+  }
+
+  public MPVariable[] MakeVarArray(int count,
+                                   double lb,
+                                   double ub,
+                                   bool integer,
+                                   string var_name) {
+    MPVariable[] array = new MPVariable[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = MakeVar(lb, ub, integer, var_name + i);
+    }
+    return array;
+  }
+
+  public MPVariable[] MakeNumVarArray(int count, double lb, double ub) {
+    return MakeVarArray(count, lb, ub, false);
+  }
+
+  public MPVariable[] MakeNumVarArray(int count,
+                                      double lb,
+                                      double ub,
+                                      string var_name) {
+    return MakeVarArray(count, lb, ub, false, var_name);
+  }
+
+  public MPVariable[] MakeIntVarArray(int count, double lb, double ub) {
+    return MakeVarArray(count, lb, ub, true);
+  }
+
+  public MPVariable[] MakeIntVarArray(int count,
+                                      double lb,
+                                      double ub,
+                                      string var_name) {
+    return MakeVarArray(count, lb, ub, true, var_name);
+  }
+
+  public MPVariable[] MakeBoolVarArray(int count) {
+    return MakeVarArray(count, 0.0, 1.0, true);
+  }
+
+  public MPVariable[] MakeBoolVarArray(int count, string var_name) {
+    return MakeVarArray(count, 0.0, 1.0, true, var_name);
+  }
+
+  public static int GetSolverEnum(String solverType) {
+    System.Reflection.FieldInfo fieldInfo =
+      typeof(MPSolver).GetField(solverType);
+    if (fieldInfo != null) {
+      return (int)fieldInfo.GetValue(null);
+    } else {
+      throw new System.ApplicationException("Solver not supported");
+    }
+  }
+
+  public static MPSolver CreateSolver(String name, String type) {
+    System.Reflection.FieldInfo fieldInfo =
+        typeof(MPSolver).GetField(type);
+    if (fieldInfo != null) {
+      return new MPSolver(name, (int)fieldInfo.GetValue(null));
+    } else {
+      return null;
+    }
+  }
+%}
+
+}  // namespace operations_research
+
+#endif	// SWIGCSHARP
+
 // Wrap linear_solver includes
 %include "linear_solver/linear_solver.h"

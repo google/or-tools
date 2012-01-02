@@ -35,12 +35,7 @@
 #include "coin/CbcModel.hpp"
 #include "coin/CoinModel.hpp"
 #include "coin/OsiClpSolverInterface.hpp"
-
-#if defined(_MSC_VER)
-#include "coin/configall_system.h"
-#else
 #include "coin/CbcConfig.h"
-#endif
 
 // Heuristics
 
