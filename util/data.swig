@@ -266,6 +266,7 @@ static bool PyCallbackBool(PyObject* pyfunc) {
 %feature("director") LongResultCallback1;
 %feature("director") LongResultCallback2;
 %feature("director") LongResultCallback3;
+%include <std_vector.i>
 %{
 #include <vector>
 #include "base/callback.h"
@@ -546,3 +547,297 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 %enddef // end PROTO2_RETURN
 
 #endif  // SWIGJAVA
+
+#if defined(SWIGCSHARP)
+%include base/base.swig
+
+////////////////////////////////////////////////
+//
+//		CS_TYPEMAP_STDVECTOR
+//
+////////////////////////////////////////////////
+
+%define CS_TYPEMAP_STDVECTOR(TYPE, CTYPE, CSHARPTYPE)
+
+%typemap(ctype)		const std::vector<TYPE>&	%{ int length$argnum, CTYPE* %}
+%typemap(imtype)	const std::vector<TYPE>&	%{ int length$argnum, CSHARPTYPE[] %}
+%typemap(cstype)	const std::vector<TYPE>&	%{ CSHARPTYPE[] %}
+%typemap(csin)		const std::vector<TYPE>&	"$csinput.Length, $csinput"
+%typemap(freearg)	const std::vector<TYPE>&	{ delete $1; }
+%typemap(in)		const std::vector<TYPE>&	%{
+  $1 = new std::vector<TYPE>;
+  for(int i = 0; i < length$argnum; ++i)
+    $1->push_back($input[i]);
+  %}
+%enddef // CS_TYPEMAP_STDVECTOR
+
+////////////////////////////////////////////////
+//
+//		CS_TYPEMAP_STDVECTOR_IN1
+//
+////////////////////////////////////////////////
+
+%define CS_TYPEMAP_STDVECTOR_IN1(TYPE, CTYPE, CSHARPTYPE)
+
+%typemap(cscode) NestedArrayHelper %{
+  public static T[] GetFlatArray<T>(T[,] arr) {
+    int flatLength = arr.GetLength(0) * arr.GetLength(1);
+    int idx = 0;
+    T[] flat = new T[flatLength];
+
+    for (int i = 0; i < arr.GetLength(0); i++)
+      for (int j = 0; j < arr.GetLength(1); j++)
+        flat[idx++] = arr[i,j];
+
+    return flat;
+  }
+%}
+
+%inline %{
+  class NestedArrayHelper {};
+%}
+
+%typemap(ctype)		const std::vector<std::vector<TYPE> >&	%{ int len$argnum_1, int len$argnum_2, CTYPE* %}
+%typemap(imtype)	const std::vector<std::vector<TYPE> >&	%{ int len$argnum_1, int len$argnum_2, CSHARPTYPE[] %}
+%typemap(cstype)	const std::vector<std::vector<TYPE> >&	%{ CSHARPTYPE[,] %}
+%typemap(csin)		const std::vector<std::vector<TYPE> >&	"$csinput.GetLength(0), $csinput.GetLength(1), NestedArrayHelper.GetFlatArray($csinput)"
+%typemap(in)		const std::vector<std::vector<TYPE> >&	(std::vector<std::vector<TYPE> > result) %{
+
+  const int size_x = len$argnum_1;
+  const int size_y = len$argnum_2;
+
+  result.clear();
+  result.resize(size_x);
+
+  TYPE* inner_array = $input;
+
+  for (int index1 = 0; index1 < size_x; ++index1) {
+
+    for (int index2 = 0; index2 < size_y; ++index2) {
+      const TYPE value = inner_array[index1 * size_y + index2];
+      result[index1].push_back(value);
+    }
+  }
+
+  $1 = &result;
+%}
+%enddef // CS_TYPEMAP_STDVECTOR_IN1
+
+////////////////////////////////////////////////
+//
+//		CS_TYPEMAP_PTRARRAY
+//
+////////////////////////////////////////////////
+
+%define CS_TYPEMAP_PTRARRAY(CTYPE, TYPE)
+
+%typemap(cscode) CTYPE %{
+  public static IntPtr[] getCPtr(TYPE[] arr) {
+    IntPtr[] pointers = new IntPtr[arr.Length];
+    for (int i = 0; i < arr.Length; i++)
+      pointers[i] = (IntPtr)TYPE.getCPtr(arr[i]);
+    return pointers;
+  }
+%}
+
+%typemap(ctype)		CTYPE** "CTYPE**"
+
+%typemap(imtype,
+         inattributes="[In, Out, MarshalAs(UnmanagedType.LPArray)]",
+         outattributes="[return: MarshalAs(UnmanagedType.LPArray)]")
+CTYPE** "IntPtr[]"
+
+%typemap(cstype)	CTYPE** "TYPE[]"
+%typemap(csin)		CTYPE** "TYPE.getCPtr($csinput)"
+%typemap(in)		CTYPE** "$1 = $input;"
+%typemap(freearg)	CTYPE** ""
+%typemap(argout)	CTYPE** ""
+
+%enddef	// CS_TYPEMAP_PTRARRAY
+
+////////////////////////////////////////////////
+//
+//		CS_TYPEMAP_STDVECTOR_OBJECT
+//
+////////////////////////////////////////////////
+
+%define CS_TYPEMAP_STDVECTOR_OBJECT(CTYPE, TYPE)
+
+%typemap(cscode) CTYPE %{
+  public static IntPtr[] getCPtr(TYPE[] arr) {
+    IntPtr[] pointers = new IntPtr[arr.Length];
+    for (int i = 0; i < arr.Length; i++)
+      pointers[i] = (IntPtr)TYPE.getCPtr(arr[i]);
+    return pointers;
+  }
+%}
+
+%typemap(ctype) const std::vector<CTYPE*>& "int length$argnum, CTYPE**"
+%typemap(imtype) const std::vector<CTYPE*>& "int length$argnum, IntPtr[]"
+%typemap(cstype) const std::vector<CTYPE*>& "TYPE[]"
+%typemap(csin) const std::vector<CTYPE*>& "$csinput.Length, TYPE.getCPtr($csinput)"
+%typemap(in) const std::vector<CTYPE*>& (std::vector<CTYPE*> result) {
+  for (int i = 0; i < length$argnum; i++)
+    result.push_back($input[i]);
+  $1 = &result;
+}
+%enddef	// CS_TYPEMAP_STDVECTOR_OBJECT
+
+%{
+#include <vector>
+#include "base/callback.h"
+#include "base/integral_types.h"
+using std::string;
+%}
+
+%{
+#include "base/scoped_ptr.h"
+%}
+
+%module(directors="1") main
+%feature("director") LongResultCallback1;
+%feature("director") LongResultCallback2;
+%feature("director") LongResultCallback3;
+%{
+#include <vector>
+#include "base/callback.h"
+#include "base/integral_types.h"
+
+class LongResultCallback1 {
+ public:
+  virtual int64 run(int64) = 0;
+  ResultCallback1<int64, int64>* GetPermanentCallback() {
+    return NewPermanentCallback(this, &LongResultCallback1::run);
+  }
+  virtual ~LongResultCallback1() {}
+};
+class LongResultCallback2 {
+ public:
+  virtual int64 run(int64, int64) = 0;
+  ResultCallback2<int64, int64, int64>* GetPermanentCallback() {
+    return NewPermanentCallback(this, &LongResultCallback2::run);
+  }
+  virtual ~LongResultCallback2() {}
+};
+class LongResultCallback3 {
+ public:
+  virtual int64 run(int64, int64, int64) = 0;
+  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback() {
+    return NewPermanentCallback(this, &LongResultCallback3::run);
+  }
+  virtual ~LongResultCallback3() {}
+};
+
+%}
+
+class LongResultCallback1 {
+ public:
+  virtual int64 run(int64) = 0;
+  ResultCallback1<int64, int64>* GetPermanentCallback();
+  virtual ~LongResultCallback1();
+};
+class LongResultCallback2 {
+ public:
+  virtual int64 run(int64, int64) = 0;
+  ResultCallback2<int64, int64, int64>* GetPermanentCallback();
+  virtual ~LongResultCallback2();
+};
+class LongResultCallback3 {
+ public:
+  virtual int64 run(int64, int64, int64) = 0;
+  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback();
+  virtual ~LongResultCallback3();
+};
+
+// Typemaps for callbacks in csharp.
+%typemap(cstype) ResultCallback1<int64, int64>* "LongResultCallback1";
+%typemap(csin) ResultCallback1<int64, int64>* "SWIGTYPE_p_ResultCallback1Tlong_long_long_long_t.getCPtr($csinput.GetPermanentCallback())";
+
+%typemap(cstype) ResultCallback2<int64, int64, int64>* "LongResultCallback2";
+%typemap(csin) ResultCallback2<int64, int64, int64>* "SWIGTYPE_p_ResultCallback2Tlong_long_long_long_long_long_t.getCPtr($csinput.GetPermanentCallback())";
+
+%typemap(cstype) ResultCallback3<int64, int64, int64, int64>*
+"LongResultCallback3";
+%typemap(csin) ResultCallback3<int64, int64, int64, int64>*
+ "SWIGTYPE_p_ResultCallback3Tlong_long_long_long_long_long_long_long_t.getCPtr($csinput.GetPermanentCallback())";
+
+CS_TYPEMAP_STDVECTOR(int64, int64, long)
+CS_TYPEMAP_STDVECTOR(int, int, int)
+CS_TYPEMAP_STDVECTOR_IN1(int64, int64, long)
+
+// SWIG macros to be used in generating C# wrappers for C++ protocol
+// message parameters.  Each protocol message is serialized into
+// byte[] before passing into (or returning from) C++ code.
+
+// If the C++ function expects an input protocol message:
+//   foo(const MyProto* message,...)
+// Use PROTO_INPUT macro:
+//   PROTO_INPUT(MyProto, Google.Proto.Protos.Test.MyProto, message)
+//
+// if the C++ function returns a protocol message:
+//   MyProto* foo();
+// Use PROTO2_RETURN_AND_DELETE macro:
+//   PROTO2_RETURN_AND_DELETE(MyProto, Google.Proto.Protos.Test.MyProto)
+
+// Passing each protocol message from C# to C++ by value. Each ProtocolMessage
+// is serialized into byte[] when it is passed from C# to C++, the C++ code
+// deserializes into C++ native protocol message.
+//
+// @param CppProtoType the fully qualified C++ protocol message type
+// @param CSharpProtoType the corresponding fully qualified C# protocol message
+//        type
+// @param param_name the parameter name
+%define PROTO_INPUT(CppProtoType, CSharpProtoType, param_name)
+%typemap(ctype)		PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int proto_size, char*"
+%typemap(imtype)	PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int proto_size, byte[]"
+%typemap(cstype)	PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "CSharpProtoType"
+%typemap(csin)		PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "$csinput.GetByteArrayLength(), $csinput.ToByteArray()"
+%typemap(in)		PROTO_TYPE* INPUT (CppProtoType temp),
+					PROTO_TYPE& INPUT (CppProtoType temp) {
+  int proto_size = 0;
+  scoped_array<char> proto_buffer($input);
+  bool parsed_ok = temp.ParseFromArray(proto_buffer.get(), proto_size);
+  if (!parsed_ok) {
+    SWIG_CSharpSetPendingException(
+        SWIG_CSharpSystemException,
+        "Unable to parse CppProtoType protocol message.");
+  }
+  $1 = &temp;
+}
+
+%apply PROTO_TYPE& INPUT { const CppProtoType& param_name }
+%apply PROTO_TYPE& INPUT { CppProtoType& param_name }
+%apply PROTO_TYPE* INPUT { const CppProtoType* param_name }
+%apply PROTO_TYPE* INPUT { CppProtoType* param_name }
+
+%enddef // end PROTO_INPUT
+
+%define PROTO2_RETURN(CppProtoType, CSharpProtoType, deleteCppReturn)
+%typemap(ctype) CppProtoType* "char*"
+%typemap(imtype) CppProtoType* "byte[]"
+%typemap(cstype) CppProtoType* "CSharpProtoType"
+%typemap(csout) CppProtoType* {
+  byte[] buf = $imcall;
+  if (buf == null || buf.Length == 0) {
+    return null;
+  }
+  try {
+    return CSharpProtoType.ParseFrom(buf);
+  }
+  catch (Google.Protobuf.InvalidProtocolBufferException e) {
+    throw new SystemException(
+        "Unable to parse CSharpProtoType protocol message.");
+  }
+}
+%typemap(out) CppProtoType* {
+  scoped_array<char> buf(new char[$1->ByteSize()]);
+  $1->SerializeWithCachedSizesToArray(reinterpret_cast<uint8*>(buf.get()));
+  $result = buf.get();
+  if (deleteCppReturn) {
+    // To prevent a memory leak.
+    delete $1;
+    $1 = NULL;
+  }
+}
+%enddef // end PROTO2_RETURN_AND_DELETE
+#endif  // SWIGCSHARP
