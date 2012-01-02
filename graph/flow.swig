@@ -53,6 +53,28 @@
 %rename(supply) operations_research::MinCostFlow::Supply;
 #endif  // SWIGJAVA
 
+#if defined(SWIGCSHARP)
+// Rename rules on EbertGraph.
+%rename(EndArcIndex) operations_research::EbertGraphCore::end_arc_index;
+%rename(EndNodeIndex) operations_research::EbertGraphCore::end_node_index;
+%rename(MaxEndArcIndex) operations_research::EbertGraphCore::max_end_arc_index;
+%rename(MaxEndNodeIndex) operations_research::EbertGraphCore::max_end_node_index;
+%rename(MaxNumArcs) operations_research::EbertGraphCore::max_num_arcs;
+%rename(MaxNumArcs) operations_research::EbertGraphCore::max_num_arcs;
+%rename(MaxNumNodes) operations_research::EbertGraphCore::max_num_nodes;
+%rename(MaxNumNodes) operations_research::EbertGraphCore::max_num_nodes;
+%rename(NumArcs) operations_research::EbertGraphCore::num_arcs;
+%rename(NumNodes) operations_research::EbertGraphCore::num_nodes;
+
+// Rename rules on MaxFlow.
+%rename (Graph) operations_research::MaxFlow::graph;
+%rename (GetStatus) operations_research::MaxFlow::status;
+
+// Rename rules on MinCostFlow.
+%rename (Graph) operations_research::MinCostFlow::graph;
+%rename (GetStatus) operations_research::MinCostFlow::status;
+#endif  // SWIGCSHARP
+
 // Second phase: %include the same files.
 
 %include "util/zvector.h"
