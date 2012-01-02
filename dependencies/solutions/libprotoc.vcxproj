@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B84FF31A-5F9A-46F8-AB22-DBFC9BECE3BE}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\install\lib\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\install\lib\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Release\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/wd4244 /wd4267 /wd4018 /wd4355 /wd4800 /wd4251 /wd4996 /wd4146 /wd4305 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>../sources/protobuf/vsprojects;../sources/protobuf/src;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBPROTOC_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalOptions>/wd4244 /wd4267 /wd4018 /wd4355 /wd4800 /wd4251 /wd4996 /wd4146 /wd4305 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>../sources/protobuf/vsprojects;../sources/protobuf/src;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBPROTOC_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\code_generator.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\command_line_interface.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\subprocess.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\zip_writer.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\plugin.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\plugin.pb.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_enum.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_enum_field.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_extension.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_field.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_file.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_generator.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_helpers.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_message.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_message_field.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_primitive_field.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_service.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_string_field.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_enum.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_enum_field.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_extension.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_field.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_file.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_generator.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_helpers.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_message.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_message_field.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_primitive_field.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_service.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_string_field.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\python\python_generator.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\code_generator.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\command_line_interface.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\subprocess.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\zip_writer.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\plugin.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\plugin.pb.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_enum.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_enum_field.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_extension.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_field.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_file.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_generator.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_helpers.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_message.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_message_field.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_primitive_field.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_service.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\cpp\cpp_string_field.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_enum.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_enum_field.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_extension.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_field.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_file.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_generator.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_helpers.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_message.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_message_field.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_primitive_field.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_service.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\java\java_string_field.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\python\python_generator.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="libprotobuf.vcxproj">
+      <Project>{3e283f37-a4ed-41b7-a3e6-a2d89d131a30}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

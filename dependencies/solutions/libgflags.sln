@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libgflags", "libgflags.vcxproj", "{FB27FBDB-E6C0-4D00-A7F8-1EEEF1B48ABC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FB27FBDB-E6C0-4D00-A7F8-1EEEF1B48ABC}.Release|Win32.ActiveCfg = Release|Win32
+		{FB27FBDB-E6C0-4D00-A7F8-1EEEF1B48ABC}.Release|Win32.Build.0 = Release|Win32
+		{FB27FBDB-E6C0-4D00-A7F8-1EEEF1B48ABC}.Release|x64.ActiveCfg = Release|x64
+		{FB27FBDB-E6C0-4D00-A7F8-1EEEF1B48ABC}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{3E283F37-A4ED-41B7-A3E6-A2D89D131A30}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\install\lib\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\install\lib\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Release\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/wd4244 /wd4267 /wd4018 /wd4355 /wd4800 /wd4251 /wd4996 /wd4146 /wd4305 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>../sources/protobuf/vsprojects;../sources/protobuf/src;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBPROTOBUF_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalOptions>/wd4244 /wd4267 /wd4018 /wd4355 /wd4800 /wd4251 /wd4996 /wd4146 /wd4305 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>../sources/protobuf/vsprojects;../sources/protobuf/src;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBPROTOBUF_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\io\coded_stream.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\io\coded_stream_inl.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\common.h" />
+    <ClInclude Include="..\sources\protobug\vsprojects\config.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\descriptor.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\descriptor.pb.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\descriptor_database.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\dynamic_message.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\extension_set.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\generated_message_reflection.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\generated_message_util.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\io\gzip_stream.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\hash.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\importer.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\map-util.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\message.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\message_lite.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\once.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\compiler\parser.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\io\printer.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\reflection_ops.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\repeated_field.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\service.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\stl_util-inl.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\strutil.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\stubs\substitute.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\text_format.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\io\tokenizer.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\unknown_field_set.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\wire_format.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\wire_format_lite.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\wire_format_lite_inl.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\io\zero_copy_stream.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\io\zero_copy_stream_impl.h" />
+    <ClInclude Include="..\sources\protobuf\src\google\protobuf\io\zero_copy_stream_impl_lite.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\io\coded_stream.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\stubs\common.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\descriptor.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\descriptor.pb.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\descriptor_database.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\dynamic_message.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\extension_set.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\extension_set_heavy.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\generated_message_reflection.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\generated_message_util.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\io\gzip_stream.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\importer.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\message.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\message_lite.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\stubs\once.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\compiler\parser.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\io\printer.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\reflection_ops.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\repeated_field.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\service.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\stubs\structurally_valid.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\stubs\strutil.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\stubs\substitute.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\text_format.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\io\tokenizer.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\unknown_field_set.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\wire_format.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\wire_format_lite.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\io\zero_copy_stream.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\io\zero_copy_stream_impl.cc" />
+    <ClCompile Include="..\sources\protobuf\src\google\protobuf\io\zero_copy_stream_impl_lite.cc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
