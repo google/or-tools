@@ -1,0 +1,100 @@
+// Copyright 2010-2011 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System;
+using Google.OrTools.LinearSolver;
+
+public class CsLinearProgramming
+{
+  private static void RunLinearProgrammingExample(String solverType)
+  {
+    MPSolver solver = MPSolver.CreateSolver("IntegerProgramming", solverType);
+    if (solver == null)
+    {
+      Console.WriteLine("Could not create solver " + solverType);
+      return;
+    }
+    double infinity = MPSolver.Infinity();
+    // x1, x2 and x3 are continuous non-negative variables.
+    MPVariable x1 = solver.MakeNumVar(0.0, infinity, "x1");
+    MPVariable x2 = solver.MakeNumVar(0.0, infinity, "x2");
+    MPVariable x3 = solver.MakeNumVar(0.0, infinity, "x3");
+
+    // Maximize 10 * x1 + 6 * x2 + 4 * x3.
+    solver.SetObjectiveCoefficient(x1, 10);
+    solver.SetObjectiveCoefficient(x2, 6);
+    solver.SetObjectiveCoefficient(x3, 4);
+    solver.SetMaximization();
+
+    // x1 + x2 + x3 <= 100.
+    MPConstraint c0 = solver.MakeConstraint(-infinity, 100.0);
+    c0.SetCoefficient(x1, 1);
+    c0.SetCoefficient(x2, 1);
+    c0.SetCoefficient(x3, 1);
+
+    // 10 * x1 + 4 * x2 + 5 * x3 <= 600.
+    MPConstraint c1 = solver.MakeConstraint(-infinity, 600.0);
+    c1.SetCoefficient(x1, 10);
+    c1.SetCoefficient(x2, 4);
+    c1.SetCoefficient(x3, 5);
+
+    // 2 * x1 + 2 * x2 + 6 * x3 <= 300.
+    MPConstraint c2 = solver.MakeConstraint(-infinity, 300.0);
+    c2.SetCoefficient(x1, 2);
+    c2.SetCoefficient(x2, 2);
+    c2.SetCoefficient(x3, 6);
+
+    Console.WriteLine("Number of variables = " + solver.NumVariables());
+    Console.WriteLine("Number of constraints = " + solver.NumConstraints());
+
+    int resultStatus = solver.Solve();
+
+    // Check that the problem has an optimal solution.
+    if (resultStatus != MPSolver.OPTIMAL) {
+      Console.WriteLine("The problem does not have an optimal solution!");
+      return;
+    }
+
+    Console.WriteLine("Problem solved in " + solver.WallTime() +
+                       " milliseconds");
+
+    // The objective value of the solution.
+    Console.WriteLine("Optimal objective value = " + solver.ObjectiveValue());
+
+    // The value of each variable in the solution.
+    Console.WriteLine("x1 = " + x1.SolutionValue());
+    Console.WriteLine("x2 = " + x2.SolutionValue());
+    Console.WriteLine("x3 = " + x3.SolutionValue());
+
+    Console.WriteLine("Advanced usage:");
+    Console.WriteLine("Problem solved in " + solver.Iterations() +
+                       " iterations");
+    Console.WriteLine("x1: reduced cost = " + x1.ReducedCost());
+    Console.WriteLine("x2: reduced cost = " + x2.ReducedCost());
+    Console.WriteLine("x3: reduced cost = " + x3.ReducedCost());
+    Console.WriteLine("c0: dual value = " + c0.DualValue());
+    Console.WriteLine("    activity = " + c0.Activity());
+    Console.WriteLine("c1: dual value = " + c1.DualValue());
+    Console.WriteLine("    activity = " + c1.Activity());
+    Console.WriteLine("c2: dual value = " + c2.DualValue());
+    Console.WriteLine("    activity = " + c2.Activity());
+  }
+
+  static void Main()
+  {
+    Console.WriteLine("---- Linear programming example with GLPK ----");
+    RunLinearProgrammingExample("GLPK_LINEAR_PROGRAMMING");
+    Console.WriteLine("---- Linear programming example with CLP ----");
+    RunLinearProgrammingExample("CLP_LINEAR_PROGRAMMING");
+  }
+}
