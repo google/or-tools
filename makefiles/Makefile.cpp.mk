@@ -84,6 +84,11 @@ clean:
 	$(DEL) *.$(SHAREDLIBEXT)
 	$(DEL) *.$(JNILIBEXT)
 	$(DEL) *.jar
+	$(DEL) *.pdb
+	$(DEL) *.exp
+	$(DEL) cs*.exe
+	$(DEL) Google.*.netmodule
+	$(DEL) Google.*.lib
 
 # Constraint Solver Lib.
 
@@ -259,10 +264,10 @@ LINEAR_SOLVER_LIB_OS = \
 	objs/scip_interface.$O
 
 objs/cbc_interface.$O:linear_solver/cbc_interface.cc
-	$(CCC) $(CFLAGS) $(CBC_STRING) -c linear_solver/cbc_interface.cc $(OBJOUT)objs/cbc_interface.$O
+	$(CCC) $(CFLAGS) -c linear_solver/cbc_interface.cc $(OBJOUT)objs/cbc_interface.$O
 
 objs/clp_interface.$O:linear_solver/clp_interface.cc
-	$(CCC) $(CFLAGS) $(CLP_STRING) -c linear_solver/clp_interface.cc $(OBJOUT)objs/clp_interface.$O
+	$(CCC) $(CFLAGS) -c linear_solver/clp_interface.cc $(OBJOUT)objs/clp_interface.$O
 
 objs/glpk_interface.$O:linear_solver/glpk_interface.cc
 	$(CCC) $(CFLAGS) -c linear_solver/glpk_interface.cc $(OBJOUT)objs/glpk_interface.$O

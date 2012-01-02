@@ -51,20 +51,19 @@ endif
 # Windows specific part.
 ifeq ("$(SYSTEM)","win")
   SCIP_MAKEFILE = \# SCIP not compiled
-  SELECTED_JDK_DEF = \# Define JDK
-  PLATFORM = WINDOWS
+  SELECTED_JDK_DEF = WINDOWS_JDK_DIR = \# Please define JDK root.
   ifeq ("$(Platform)", "X64")
+    PLATFORM = x64
     PTRLENGTH = 64
+    NETPLATFORM = x64
   else
     PTRLENGTH = 32
+    PLATFORM = Win32
+    NETPLATFORM = x86
   endif
   OS = Windows
   TOP_AUX = $(shell cd)
-  TOP = $(shell echo $(TOP_AUX) | tools\\sed.exe -e "s/\\/\\\\/g")
-  ifneq ($(wildcard c:/python27/python.exe),)
-    WINDOWS_PYTHON_PATH = c:\\python27
-    PYTHONVERSION = 27
-  endif
+  TOP = $(shell echo $(TOP_AUX) | tools\\sed.exe -e "s/\\/\\\\/g" | tools\\sed.exe -e "s/ //g")
 endif
 
 
