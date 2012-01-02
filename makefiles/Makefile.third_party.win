@@ -236,9 +236,8 @@ Makefile.local:
 	@echo WINDOWS_CLP_DIR = $(TOP)\\dependencies\\install>> Makefile.local
 	@echo WINDOWS_CBC_DIR = $(TOP)\\dependencies\\install>> Makefile.local
 	@echo $(GLPK_MAKEFILE)>> Makefile.local
-#	@echo $(SCIP_MAKEFILE)>> Makefile.local
 	@echo $(SELECTED_JDK_DEF)>> Makefile.local
 	@echo WINDOWS_PYTHON_VERSION = \# Please define the python version (27 by default)>> Makefile.local
-        @echo WINDOWS_PYTHON_PATH = \# Please define WINDOWS_PYTHON_PATH (c:\\python27 by default) >> Makefile.local
+	@echo WINDOWS_PYTHON_PATH = \# Please define WINDOWS_PYTHON_PATH (c:\\python27 by default)>> Makefile.local
 
 
