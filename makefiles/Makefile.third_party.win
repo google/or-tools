@@ -58,8 +58,7 @@ download_third_party: \
 	dependencies/sources/sparsehash/autogen.sh \
 	dependencies/archives/swigwin-2.0.4.zip \
 	dependencies/sources/google-apputils/README \
-	dependencies/sources/coin-cbc/configure \
-	dependencies/archives/glpk-$(GLPK_TAG).tar.gz
+	dependencies/sources/coin-cbc/configure
 
 # Directories:
 .PHONY: install_directories
