@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_RECORDIO_H_
-#define OR_TOOLS_BASE_RECORDIO_H_
+#ifndef UTIL_OPERATIONS_RESEARCH_OPEN_SOURCE_BASE_RECORDIO_H_
+#define UTIL_OPERATIONS_RESEARCH_OPEN_SOURCE_BASE_RECORDIO_H_
 
 #include <string>
 #include "base/file.h"
@@ -22,6 +22,13 @@
 // IO specifications.
 namespace operations_research {
 // This class appends a protocol buffer to a file in a binary format.
+// The data written in the file follows the following format (sequentially):
+// - MagicNumber (32 bits) to recognize this format.
+// - Uncompressed data payload size (64 bits)
+// - Compressed data payload size (64 bits), or 0 if the
+//   data is not compressed.
+// - Payload, possibly compressed. See RecordWriter::Compress()
+//   and RecordReader::Uncompress
 class RecordWriter {
  public:
   // Magic number when writing and reading protocol buffers.
@@ -32,9 +39,10 @@ class RecordWriter {
   template <class P> bool WriteProtocolMessage(const P& proto) {
     std::string uncompressed_buffer;
     proto.SerializeToString(&uncompressed_buffer);
-    const unsigned long uncompressed_size = uncompressed_buffer.size();
-    const std::string compressed_buffer = Compress(uncompressed_buffer);
-    const unsigned long compressed_size = compressed_buffer.size();
+    const uint64 uncompressed_size = uncompressed_buffer.size();
+    const std::string compressed_buffer =
+        use_compression_ ? Compress(uncompressed_buffer) : "";
+    const uint64 compressed_size = compressed_buffer.size();
     if (file_->Write(&kMagicNumber, sizeof(kMagicNumber)) !=
         sizeof(kMagicNumber)) {
       return false;
@@ -47,28 +55,39 @@ class RecordWriter {
         sizeof(compressed_size)) {
       return false;
     }
-    if (file_->Write(compressed_buffer.c_str(), compressed_size) !=
-        compressed_size) {
-      return false;
+    if (use_compression_) {
+      if (file_->Write(compressed_buffer.c_str(), compressed_size) !=
+          compressed_size) {
+        return false;
+      }
+    } else {
+      if (file_->Write(uncompressed_buffer.c_str(), uncompressed_size) !=
+          uncompressed_size) {
+        return false;
+      }
     }
     return true;
   }
   // Closes the underlying file.
   bool Close();
 
+  void set_use_compression(bool use_compression);
+
  private:
   std::string Compress(const std::string& input) const;
   File* const file_;
+  bool use_compression_;
 };
 
 // This class reads a protocol buffer from a file.
+// The format must be the one described in RecordWriter, above.
 class RecordReader {
  public:
   explicit RecordReader(File* const file);
 
   template <class P> bool ReadProtocolMessage(P* const proto) {
-    unsigned long usize = 0;
-    unsigned long csize = 0;
+    uint64 usize = 0;
+    uint64 csize = 0;
     int magic_number = 0;
     if (file_->Read(&magic_number, sizeof(magic_number)) !=
         sizeof(magic_number)) {
@@ -83,13 +102,19 @@ class RecordReader {
     if (file_->Read(&csize, sizeof(csize)) != sizeof(csize)) {
       return false;
     }
-    scoped_array<char> compressed_buffer(new char[csize + 1]);
-    if (file_->Read(compressed_buffer.get(), csize) != csize) {
-      return false;
-    }
-    compressed_buffer[csize] = '\0';
     scoped_array<char> buffer(new char[usize + 1]);
-    Uncompress(compressed_buffer.get(), usize, buffer.get(), usize);
+    if (csize != 0) {  // The data is compressed.
+      scoped_array<char> compressed_buffer(new char[csize + 1]);
+      if (file_->Read(compressed_buffer.get(), csize) != csize) {
+        return false;
+      }
+      compressed_buffer[csize] = '\0';
+      Uncompress(compressed_buffer.get(), usize, buffer.get(), usize);
+    } else {
+      if (file_->Read(buffer.get(), usize) != usize) {
+        return false;
+      }
+    }
     proto->ParseFromArray(buffer.get(), usize);
     return true;
   }
@@ -99,12 +124,12 @@ class RecordReader {
 
  private:
   void Uncompress(const char* const source,
-                  unsigned long source_size,
+                  uint64 source_size,
                   char* const output_buffer,
-                  unsigned long output_size) const;
+                  uint64 output_size) const;
 
   File* const file_;
 };
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_BASE_RECORDIO_H_
+#endif  // UTIL_OPERATIONS_RESEARCH_OPEN_SOURCE_BASE_RECORDIO_H_

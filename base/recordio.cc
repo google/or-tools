@@ -20,10 +20,15 @@
 namespace operations_research {
 const int RecordWriter::kMagicNumber = 0x3ed7230a;
 
-RecordWriter::RecordWriter(File* const file) : file_(file) {}
+RecordWriter::RecordWriter(File* const file)
+    : file_(file), use_compression_(true) {}
 
 bool RecordWriter::Close() {
   return file_->Close();
+}
+
+void RecordWriter::set_use_compression(bool use_compression) {
+  use_compression_ = use_compression;
 }
 
 std::string RecordWriter::Compress(std::string const& s) const {
@@ -32,11 +37,10 @@ std::string RecordWriter::Compress(std::string const& s) const {
 
   unsigned long dsize = source_size + (source_size * 0.1f) + 16;
   scoped_ptr<char> destination(new char[dsize]);
-
-  const int result = compress((unsigned char *)destination.get(),
-                              &dsize,
-                              (const unsigned char *)source,
-                              source_size);
+  // Use compress() from zlib.h.
+  const int result =
+      compress(reinterpret_cast<unsigned char *>(destination.get()), &dsize,
+               reinterpret_cast<const unsigned char *>(source), source_size);
 
   if (result != Z_OK) {
     LOG(FATAL) << "Compress error occured! Error code: " << result;
@@ -51,17 +55,17 @@ bool RecordReader::Close() {
 }
 
 void RecordReader::Uncompress(const char* const source,
-                             unsigned long source_size,
+                             uint64 source_size,
                              char* const output_buffer,
-                             unsigned long output_size) const {
+                             uint64 output_size) const {
   unsigned long result_size = output_size;
-  const int result = uncompress((unsigned char *)output_buffer,
-                                &result_size,
-                                (const unsigned char *)source,
-                                source_size);
+  // Use uncompress() from zlib.h
+  const int result =
+      uncompress(reinterpret_cast<unsigned char *>(output_buffer), &result_size,
+                 reinterpret_cast<const unsigned char *>(source), source_size);
   if (result != Z_OK) {
     LOG(FATAL) << "Uncompress error occured! Error code: " << result;
   }
-  CHECK_LE(result_size, output_size);
+  CHECK_LE(result_size, static_cast<unsigned long>(output_size));
 }
 }  // namespace operations_research
