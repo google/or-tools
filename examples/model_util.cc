@@ -275,7 +275,7 @@ int Run() {
   // ----- Load input file into protobuf -----
 
   File::Init();
-  File* const file = File::Open(FLAGS_input, "r");
+  File* const file = File::Open(FLAGS_input, "rb");
   if (file == NULL) {
     LOG(WARNING) << "Cannot open " << FLAGS_input;
     return kProblem;
