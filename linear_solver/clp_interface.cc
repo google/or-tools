@@ -32,10 +32,10 @@
 
 #undef PACKAGE
 #undef VERSION
+#include "coin/ClpConfig.h"
+#include "coin/ClpMessage.hpp"
 #include "coin/ClpSimplex.hpp"
 #include "coin/CoinBuild.hpp"
-#include "coin/ClpMessage.hpp"
-#include "coin/ClpConfig.h"
 
 DECLARE_double(solver_timeout_in_seconds);
 DECLARE_string(solver_write_model);

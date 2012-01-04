@@ -1025,16 +1025,28 @@ class Solver {
   bool LoadModel(const CPModelProto& proto, std::vector<SearchMonitor*>* monitors);
   // Upgrades the model to the latest version.
   static bool UpgradeModel(CPModelProto* const proto);
+
+#if !defined(SWIG)
   // Collects decision variables.
   // All decision variables will be collected in 4 groups:
   //   - Main integer decision variables.
-  //   - Secondary integer variables.
+  //   - Secondary integer variables (that are derived integer variables that
+  //     should be fixed like times of tasks after the order has been fixed).
   //   - Sequence variables.
   //   - Interval variables.
-  bool CollectDecisionVariables(std::vector<IntVar*>* const primary_integer_variables,
-                                std::vector<IntVar*>* const secondary_integer_variables,
-                                std::vector<SequenceVar*>* const sequence_variables,
-                                std::vector<IntervalVar*>* const interval_variables);
+  //
+  // From these 4 groups, one could write a decision builder:
+  // solver.Compose(
+  //     solver.MakeDefaultPhase(primary_integer_variables),
+  //     solver.MakePhase(sequence_variables, Solver::SEQUENCE_DEFAULT),
+  //     solver.MakePhase(interval_variables, Solver::INTERVAL_DEFAULT),
+  //     solver.MakePhase(secondary_integer_variables, Solver::INT_VAR_DEFAULT);
+  bool CollectDecisionVariables(
+      std::vector<IntVar*>* const primary_integer_variables,
+      std::vector<IntVar*>* const secondary_integer_variables,
+      std::vector<SequenceVar*>* const sequence_variables,
+      std::vector<IntervalVar*>* const interval_variables);
+#endif  // SWIG
 
   // Registers a constraint builder. Ownership is passed to the solver.
   void RegisterBuilder(const string& tag,
@@ -1293,6 +1305,7 @@ class Solver {
   Constraint* MakeTrueConstraint();
   // This constraint always fails.
   Constraint* MakeFalseConstraint();
+  Constraint* MakeFalseConstraint(const string& explanation);
 
   // b == (v == c)
   Constraint* MakeIsEqualCstCt(IntVar* const v, int64 c, IntVar* const b);
@@ -2158,8 +2171,13 @@ class Solver {
                                        int simplex_frequency);
 #endif  // #if !defined(SWIG)
 
-  // ----- Simplex Constraint -----
+  // ----- Linear Relaxation Constraint -----
 
+  // Creates a search monitor that will maintain a linear relaxation
+  // of the problem. Every 'simplex_frequency' nodes explored in the
+  // search tree, this linear relaxation will be called and the
+  // resulting optimal solution found by the simplex will be used to
+  // prune the objective of the constraint programming model.
   SearchMonitor* MakeSimplexConstraint(int simplex_frequency);
 
   // ----- Search Decicions and Decision Builders -----
@@ -3821,6 +3839,8 @@ class SolutionCollector : public SearchMonitor {
   std::vector<int64> branches_;
   std::vector<int64> failures_;
   std::vector<int64> objective_values_;
+
+ private:
   DISALLOW_COPY_AND_ASSIGN(SolutionCollector);
 };
 

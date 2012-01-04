@@ -1738,7 +1738,7 @@ CONVERT_VECTOR(LocalSearchFilter);
 %include "std_vector.i"
 
 namespace std {
-%template(IntVector) vector<int>;
+%template(IntVector) std::vector<int>;
 }
 
 %{

@@ -111,22 +111,32 @@ namespace {
 class FalseConstraint : public Constraint {
  public:
   explicit FalseConstraint(Solver* const s) : Constraint(s) {}
+  FalseConstraint(Solver* const s, const string& explanation)
+      : Constraint(s), explanation_(explanation) {}
   virtual ~FalseConstraint() {}
 
   virtual void Post() {}
   virtual void InitialPropagate() { solver()->Fail(); }
-  virtual string DebugString() const { return "FalseConstraint()"; }
+  virtual string DebugString() const {
+    return StrCat("FalseConstraint(", explanation_, ")");
+  }
 
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kFalseConstraint, this);
     visitor->EndVisitConstraint(ModelVisitor::kFalseConstraint, this);
   }
+
+ private:
+  const string explanation_;
 };
 }  // namespace
 
 Constraint* Solver::MakeFalseConstraint() {
   DCHECK(false_constraint_ != NULL);
   return false_constraint_;
+}
+Constraint* Solver::MakeFalseConstraint(const string& explanation) {
+  return RevAlloc(new FalseConstraint(this, explanation));
 }
 
 void Solver::InitCachedConstraint() {

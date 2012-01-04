@@ -46,16 +46,27 @@ double MPConstraint::GetCoefficient(const MPVariable* const var) const {
 
 void MPConstraint::SetCoefficient(const MPVariable* const var, double coeff) {
   CHECK_NOTNULL(var);
-  double* coefficient = FindOrNull(coefficients_, var);
-  if (coefficient != NULL) {
-    const double old_value = (*coefficient);
-    const double new_value = coeff;
-    (*coefficient) = new_value;
-    interface_->SetCoefficient(this, var, new_value, old_value);
-  } else {
-    coefficients_[var] = coeff;
-    interface_->SetCoefficient(this, var, coeff, 0.0);
+  if (coeff == 0.0) {
+    hash_map<const MPVariable*, double>::iterator it = coefficients_.find(var);
+    // If setting a coefficient to 0 when this coefficient did not exist or was
+    // already 0, do nothing: skip interface_->SetCoefficient() and do not
+    // store a coefficient in the map.
+    // Note that if the coefficient being set to 0 did exist and was not 0, we
+    // do have to keep a 0 in the coefficients_ map, because the extraction of
+    // the constraint might rely on it, depending on the underlying solver.
+    if (it != coefficients_.end() && it->second != 0.0) {
+      const double old_value = it->second;
+      it->second = 0.0;
+      interface_->SetCoefficient(this, var, 0.0, old_value);
+    }
+    return;
   }
+  pair<hash_map<const MPVariable*, double>::iterator, bool> insertion_result =
+      coefficients_.insert(std::make_pair(var, coeff));
+  const double old_value =
+      insertion_result.second ? 0.0 : insertion_result.first->second;
+  insertion_result.first->second = coeff;
+  interface_->SetCoefficient(this, var, coeff, old_value);
 }
 
 void MPConstraint::Clear() {
@@ -113,7 +124,15 @@ double MPObjective::GetCoefficient(const MPVariable* const var) const {
 
 void MPObjective::SetCoefficient(const MPVariable* const var, double coeff) {
   CHECK_NOTNULL(var);
-  coefficients_[var] = coeff;
+  if (coeff == 0.0) {
+    hash_map<const MPVariable*, double>::iterator it = coefficients_.find(var);
+    // See the discussion on MPConstraint::SetCoefficient() for 0 coefficients,
+    // the same reasoning applies here.
+    if (it == coefficients_.end() || it->second == 0.0) return;
+    it->second = 0.0;
+  } else {
+    coefficients_[var] = coeff;
+  }
   interface_->SetObjectiveCoefficient(var, coeff);
 }
 

@@ -11,12 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <math.h>
-
+#include "base/hash.h"
 #include "base/callback.h"
 #include "base/commandlineflags.h"
-#include "base/hash.h"
 #include "base/integral_types.h"
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
@@ -474,82 +472,60 @@ class Linearizer : public ModelVisitor {
   }
 
   void AddMpEquality(IntExpr* const left, IntExpr* const right) {
-    MPConstraint* const ct = mp_solver_->MakeRowConstraint(0, 0);
-    ct->SetCoefficient(Translated(left), 1);
-    ct->SetCoefficient(Translated(right), -1);
+    MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
+    ct->SetCoefficient(Translated(left), 1.0);
+    ct->SetCoefficient(Translated(right), -1.0);
   }
 
   MPVariable* Translated(const IntExpr* const cp_var) {
     return FindOrDie((*translation_), cp_var);
   }
 
+  void VisitBinaryRowConstraint(double lhs, double rhs) {
+    MPConstraint* const ct = mp_solver_->MakeRowConstraint(lhs, rhs);
+    const IntExpr* const left =
+        top()->FindIntegerExpressionArgumentOrDie(ModelVisitor::kLeftArgument);
+    const IntExpr* const right =
+        top()->FindIntegerExpressionArgumentOrDie(ModelVisitor::kRightArgument);
+    ct->SetCoefficient(Translated(left), 1.0);
+    ct->SetCoefficient(Translated(right), -1.0);
+  }
+
+  void VisitUnaryRowConstraint(double lhs, double rhs) {
+    const IntExpr* const expr =
+        top()->FindIntegerExpressionArgumentOrDie(
+            ModelVisitor::kExpressionArgument);
+    MPConstraint* const ct = mp_solver_->MakeRowConstraint(lhs, rhs);
+    ct->SetCoefficient(Translated(expr), 1.0);
+  }
+
   void VisitEquality() {
     if (top()->HasIntegerExpression(ModelVisitor::kLeftArgument)) {
-      MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
-      const IntExpr* const left =
-          top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kLeftArgument);
-      const IntExpr* const right =
-          top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kRightArgument);
-      ct->SetCoefficient(Translated(left), 1.0);
-      ct->SetCoefficient(Translated(right), -1.0);
+      VisitBinaryRowConstraint(0.0, 0.0);
     } else {
-      const IntExpr* const expr =
-          top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kExpressionArgument);
       const int64 value =
           top()->FindIntegerArgumentOrDie(ModelVisitor::kValueArgument);
-      MPConstraint* const ct = mp_solver_->MakeRowConstraint(value, value);
-      ct->SetCoefficient(Translated(expr), 1.0);
+      VisitUnaryRowConstraint(value, value);
     }
   }
 
   void VisitLessOrEqual() {
     if (top()->HasIntegerExpression(ModelVisitor::kLeftArgument)) {
-      MPConstraint* const ct =
-          mp_solver_->MakeRowConstraint(-mp_solver_->infinity(), 0.0);
-      const IntExpr* const left =
-          top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kLeftArgument);
-      const IntExpr* const right =
-          top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kRightArgument);
-      ct->SetCoefficient(Translated(left), 1.0);
-      ct->SetCoefficient(Translated(right), -1.0);
+      VisitBinaryRowConstraint(-mp_solver_->infinity(), 0.0);
     } else {
-      const IntExpr* const expr =
-          top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kExpressionArgument);
       const int64 value =
           top()->FindIntegerArgumentOrDie(ModelVisitor::kValueArgument);
-      MPConstraint* const ct =
-          mp_solver_->MakeRowConstraint(-mp_solver_->infinity(), value);
-      ct->SetCoefficient(Translated(expr), 1.0);
+      VisitUnaryRowConstraint(-mp_solver_->infinity(), value);
     }
   }
 
   void VisitGreaterOrEqual() {
     if (top()->HasIntegerExpression(ModelVisitor::kLeftArgument)) {
-      MPConstraint* const ct =
-          mp_solver_->MakeRowConstraint(0.0, mp_solver_->infinity());
-      const IntExpr* const left =
-          top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kLeftArgument);
-      const IntExpr* const right =
-          top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kRightArgument);
-      ct->SetCoefficient(Translated(left), 1.0);
-      ct->SetCoefficient(Translated(right), -1.0);
+      VisitBinaryRowConstraint(0.0, mp_solver_->infinity());
     } else {
-      const IntExpr* const expr =
-          top()->FindIntegerExpressionArgumentOrDie(
-              ModelVisitor::kExpressionArgument);
       const int64 value =
           top()->FindIntegerArgumentOrDie(ModelVisitor::kValueArgument);
-      MPConstraint* const ct =
-          mp_solver_->MakeRowConstraint(value, mp_solver_->infinity());
-      ct->SetCoefficient(Translated(expr), 1.0);
+      VisitUnaryRowConstraint(value, mp_solver_->infinity());
     }
   }
 
@@ -575,7 +551,7 @@ class Linearizer : public ModelVisitor {
 
   void VisitSum(const IntExpr* const cp_expr) {
     if (top()->HasIntegerVariableArray(ModelVisitor::kVarsArgument)) {
-      MPConstraint* const ct = mp_solver_->MakeRowConstraint(0, 0);
+      MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
       const std::vector<const IntVar*>& cp_vars =
           top()->FindIntegerVariableArrayArgumentOrDie(
               ModelVisitor::kVarsArgument);
@@ -584,9 +560,9 @@ class Linearizer : public ModelVisitor {
         ct->SetCoefficient(mp_var, 1.0 + ct->GetCoefficient(mp_var));
       }
       RegisterExpression(cp_expr);
-      ct->SetCoefficient(Translated(cp_expr), -1);
+      ct->SetCoefficient(Translated(cp_expr), -1.0);
     } else if (top()->HasIntegerExpression(ModelVisitor::kLeftArgument)) {
-      MPConstraint* const ct = mp_solver_->MakeRowConstraint(0, 0);
+      MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
       const IntExpr* const left =
           top()->FindIntegerExpressionArgumentOrDie(
               ModelVisitor::kLeftArgument);
@@ -600,7 +576,7 @@ class Linearizer : public ModelVisitor {
         ct->SetCoefficient(Translated(left), 2.0);
       }
       RegisterExpression(cp_expr);
-      ct->SetCoefficient(Translated(cp_expr), -1);
+      ct->SetCoefficient(Translated(cp_expr), -1.0);
     } else {
       const IntExpr* const expr =
           top()->FindIntegerExpressionArgumentOrDie(
@@ -610,7 +586,7 @@ class Linearizer : public ModelVisitor {
       MPConstraint* const ct = mp_solver_->MakeRowConstraint(-value, -value);
       ct->SetCoefficient(Translated(expr), 1.0);
       RegisterExpression(cp_expr);
-      ct->SetCoefficient(Translated(cp_expr), -1);
+      ct->SetCoefficient(Translated(cp_expr), -1.0);
     }
   }
 
@@ -622,19 +598,19 @@ class Linearizer : public ModelVisitor {
         top()->FindIntegerArrayArgumentOrDie(
             ModelVisitor::kCoefficientsArgument);
     CHECK_EQ(cp_vars.size(), cp_coefficients.size());
-    MPConstraint* const ct = mp_solver_->MakeRowConstraint(0, 0);
+    MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
     for (int i = 0; i < cp_vars.size(); ++i) {
       MPVariable* const mp_var = Translated(cp_vars[i]);
       const int64 coefficient = cp_coefficients[i];
       ct->SetCoefficient(mp_var, coefficient + ct->GetCoefficient(mp_var));
     }
     RegisterExpression(cp_expr);
-    ct->SetCoefficient(Translated(cp_expr), -1);
+    ct->SetCoefficient(Translated(cp_expr), -1.0);
   }
 
   void VisitDifference(const IntExpr* const cp_expr) {
     if (top()->HasIntegerExpression(ModelVisitor::kLeftArgument)) {
-      MPConstraint* const ct = mp_solver_->MakeRowConstraint(0, 0);
+      MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
       const IntExpr* const left =
           top()->FindIntegerExpressionArgumentOrDie(
               ModelVisitor::kLeftArgument);
@@ -644,7 +620,7 @@ class Linearizer : public ModelVisitor {
       ct->SetCoefficient(Translated(left), 1.0);
       ct->SetCoefficient(Translated(right), -1.0);
       RegisterExpression(cp_expr);
-      ct->SetCoefficient(Translated(cp_expr), -1);
+      ct->SetCoefficient(Translated(cp_expr), -1.0);
     } else {
       const IntExpr* const expr =
           top()->FindIntegerExpressionArgumentOrDie(
@@ -654,7 +630,7 @@ class Linearizer : public ModelVisitor {
       MPConstraint* const ct = mp_solver_->MakeRowConstraint(value, value);
       ct->SetCoefficient(Translated(expr), 1.0);
       RegisterExpression(cp_expr);
-      ct->SetCoefficient(Translated(cp_expr), 1);
+      ct->SetCoefficient(Translated(cp_expr), 1.0);
     }
   }
 
@@ -665,7 +641,7 @@ class Linearizer : public ModelVisitor {
     MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
     ct->SetCoefficient(Translated(expr), 1.0);
     RegisterExpression(cp_expr);
-    ct->SetCoefficient(Translated(cp_expr), -1);
+    ct->SetCoefficient(Translated(cp_expr), -1.0);
   }
 
   void VisitProduct(const IntExpr* const cp_expr) {
@@ -675,10 +651,10 @@ class Linearizer : public ModelVisitor {
               ModelVisitor::kExpressionArgument);
       const int64 value =
           top()->FindIntegerArgumentOrDie(ModelVisitor::kValueArgument);
-      MPConstraint* const ct = mp_solver_->MakeRowConstraint(0, 0);
+      MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
       ct->SetCoefficient(Translated(expr), value);
       RegisterExpression(cp_expr);
-      ct->SetCoefficient(Translated(cp_expr), -1);
+      ct->SetCoefficient(Translated(cp_expr), -1.0);
     } else {
       RegisterExpression(cp_expr);
     }
@@ -811,7 +787,7 @@ SearchMonitor* Solver::MakeSimplexConnection(
                                         frequency));
 }
 
-SearchMonitor* Solver::MakeSimplexConstraint(int frequency) {
-  return RevAlloc(new AutomaticLinearization(this, frequency));
+SearchMonitor* Solver::MakeSimplexConstraint(int simplex_frequency) {
+  return RevAlloc(new AutomaticLinearization(this, simplex_frequency));
 }
 }  // namespace operations_research

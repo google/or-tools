@@ -983,8 +983,13 @@ class FailException {};
 #endif  // CP_FAST_BACKTRACK
 
 void Search::JumpBack() {
-  ClearBuffer();
-  CP_DO_FAIL(this);
+  if (jmpbuf_filled_) {
+    jmpbuf_filled_ = false;
+    CP_DO_FAIL(this);
+  } else {
+    string explanation = "Failure outside of search";
+    solver_->AddConstraint(solver_->MakeFalseConstraint(explanation));
+  }
 }
 
 Search* Solver::ActiveSearch() const {

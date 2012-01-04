@@ -371,7 +371,7 @@ int Run() {
                 << DebugStringVector(secondary_integer_variables, ", ");
       LOG(INFO) << "Sequence variables = "
                 << DebugStringVector(sequence_variables, ", ");
-      LOG(INFO) << "interval_variables = "
+      LOG(INFO) << "Interval variables = "
                 << DebugStringVector(interval_variables, ", ");
     }
   }
