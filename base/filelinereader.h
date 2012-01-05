@@ -30,14 +30,17 @@ namespace operations_research {
 // sequence on each line.
 class FileLineReader {
  public:
-  FileLineReader(const char* const filename);
+  // Creates a file line reader object that will read the file 'filename'
+  // line by line.
+  explicit FileLineReader(const char* const filename);
 
   ~FileLineReader();
 
-  void set_line_callback(Callback1<char*>* callback);
-
+  // Sets the line callback and takes ownership.
+  void set_line_callback(Callback1<char*>* const callback);
+  // Reloads the file line by line.
   void Reload();
-
+  // Indicates if the file was loaded successfully.
   bool loaded_successfully() const;
 
  private:
@@ -45,5 +48,5 @@ class FileLineReader {
   scoped_ptr<Callback1<char*> > line_callback_;
   bool loaded_successfully_;
 };
-}  // namespace
+}  // namespace operations_research
 #endif  // OR_TOOLS_BASE_FILELINEREADER_H_

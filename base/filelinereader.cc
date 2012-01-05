@@ -27,7 +27,7 @@ FileLineReader::FileLineReader(const char* const filename)
 
 FileLineReader::~FileLineReader() {}
 
-void FileLineReader::set_line_callback(Callback1<char*>* callback) {
+void FileLineReader::set_line_callback(Callback1<char*>* const callback) {
   line_callback_.reset(callback);
 }
 
@@ -47,7 +47,7 @@ void FileLineReader::Reload() {
       loaded_successfully_ = true;
       return;
     }
-    // Chop the last linefeed if presend.
+    // Chop the last linefeed if present.
     int len = strlen(result);
     if (len > 0 && result[len - 1] == '\n') {  // Linefeed.
       result[--len] = '\0';
