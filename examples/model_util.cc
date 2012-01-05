@@ -275,7 +275,7 @@ int Run() {
   // ----- Load input file into protobuf -----
 
   File::Init();
-  File* const file = File::Open(FLAGS_input, "rb");
+  File* const file = File::Open(FLAGS_input, "r");
   if (file == NULL) {
     LOG(WARNING) << "Cannot open " << FLAGS_input;
     return kProblem;
@@ -317,7 +317,7 @@ int Run() {
   }
 
   if (!FLAGS_insert_license.empty()) {
-    File* const license = File::Open(FLAGS_insert_license, "r");
+    File* const license = File::Open(FLAGS_insert_license, "rb");
     if (license == NULL) {
       LOG(WARNING) << "Cannot open " << FLAGS_insert_license;
       return kProblem;
@@ -379,7 +379,7 @@ int Run() {
   // ----- Output -----
 
   if (!FLAGS_output.empty()) {
-    File* const output = File::Open(FLAGS_output, "w");
+    File* const output = File::Open(FLAGS_output, "wb");
     if (output == NULL) {
       LOG(INFO) << "Cannot open " << FLAGS_output;
       return kProblem;
