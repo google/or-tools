@@ -1930,9 +1930,7 @@ void SequenceVar::MarkUnperformed(const std::vector<int>& unperformed) {
 }
 
 void SequenceVar::ComputeRanks(const std::vector<int>& rank_first,
-                               const hash_set<int>& first_set,
-                               const std::vector<int>& rank_last,
-                               const hash_set<int>& last_set) {
+                               const std::vector<int>& rank_last) {
   // rank_before_ on elements of rank_first.
   for (int i = 0; i < rank_first.size(); ++i) {
     const int index = rank_first[i];
@@ -1948,10 +1946,10 @@ void SequenceVar::ComputeRanks(const std::vector<int>& rank_first,
   // rank_before_ and rank_after_ on the rest.
   for (int i = 0; i < size_; ++i) {
     if (intervals_[i]->MayBePerformed()) {
-      if (!ContainsKey(first_set, i)) {
+      if (!ContainsKey(first_set_, i)) {
         ranked_before_.SetValue(solver(), i, rank_first.size());
       }
-      if (!ContainsKey(last_set, i)) {
+      if (!ContainsKey(last_set_, i)) {
         ranked_after_.SetValue(solver(), i, rank_last.size());
       }
     }
@@ -1959,9 +1957,7 @@ void SequenceVar::ComputeRanks(const std::vector<int>& rank_first,
 }
 
 void SequenceVar::AddPrecedences(const std::vector<int>& rank_first,
-                                 const hash_set<int>& first_set,
-                                 const std::vector<int>& rank_last,
-                                 const hash_set<int>& last_set) {
+                                 const std::vector<int>& rank_last) {
   // Adds precedences on the forward chain.
   for (int i = 1; i < rank_first.size(); ++i) {
     // Only one constraint on the chain.
@@ -1974,10 +1970,10 @@ void SequenceVar::AddPrecedences(const std::vector<int>& rank_first,
   }
   // All unranked activities are bounded by the end of the chains.
   for (int i = 0; i < size_; ++i) {
-    if (!ContainsKey(first_set, i) && !rank_first.empty()) {
+    if (!ContainsKey(first_set_, i) && !rank_first.empty()) {
       AddPrecedence(rank_first.back(), i);
     }
-    if (!ContainsKey(last_set, i) && !rank_last.empty()) {
+    if (!ContainsKey(last_set_, i) && !rank_last.empty()) {
       AddPrecedence(i, rank_last.back());
     }
   }
@@ -2020,11 +2016,13 @@ void SequenceVar::RankSequence(const std::vector<int>& rank_first,
   MarkUnperformed(unperformed);
 
   // Collects intervals in the two vectors.
-  hash_set<int> first_set(rank_first.begin(), rank_first.end());
-  hash_set<int> last_set(rank_last.begin(), rank_last.end());
+  first_set_.clear();
+  first_set_.insert(rank_first.begin(), rank_first.end());
+  last_set_.clear();
+  last_set_.insert(rank_last.begin(), rank_last.end());
   // Apply changes.
-  ComputeRanks(rank_first, first_set, rank_last, last_set);
-  AddPrecedences(rank_first, first_set, rank_last, last_set);
+  ComputeRanks(rank_first, rank_last);
+  AddPrecedences(rank_first, rank_last);
   ComputeTransitiveClosure(rank_first, rank_last);
   // Stores count_ranked_first_ and count_ranked_last_.
   count_ranked_first_.SetValue(solver(), rank_first.size());

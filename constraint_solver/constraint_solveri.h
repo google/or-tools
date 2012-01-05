@@ -855,6 +855,63 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   bool cleared_;
 };
 
+// ----- SequenceVarLocalSearchOperator -----
+
+// TODO(user): Merge with IntVarLocalSearchOperator.
+class SequenceVarLocalSearchOperator : public LocalSearchOperator {
+ public:
+  SequenceVarLocalSearchOperator();
+  SequenceVarLocalSearchOperator(const SequenceVar* const* vars, int size);
+  virtual ~SequenceVarLocalSearchOperator();
+  // This method should not be overridden. Override OnStart() instead which is
+  // called before exiting this method.
+  virtual void Start(const Assignment* assignment);
+  virtual bool IsIncremental() const { return false; }
+  int Size() const { return size_; }
+  // Returns the value in the current assignment of the variable of given index.
+#if !defined(SWIG)
+  const std::vector<int>& Sequence(int64 index) const {
+    DCHECK_LT(index, size_);
+    return values_[index];
+  }
+#endif
+  // Returns the variable of given index.
+  SequenceVar* Var(int64 index) const { return vars_[index]; }
+  virtual bool SkipUnchanged(int index) const { return false; }
+
+ protected:
+  const std::vector<int>& OldSequence(int64 index) const {
+    return old_values_[index];
+  }
+  void SetForwardSequence(int64 index, const std::vector<int>& value);
+  void SetBackwardSequence(int64 index, const std::vector<int>& value);
+  bool Activated(int64 index) const;
+  void Activate(int64 index);
+  void Deactivate(int64 index);
+  bool ApplyChanges(Assignment* delta, Assignment* deltadelta) const;
+  void RevertChanges(bool incremental);
+  void AddVars(const SequenceVar* const* vars, int size);
+
+ private:
+  // Called by Start() after synchronizing the operator with the current
+  // assignment. Should be overridden instead of Start() to avoid calling
+  // SequenceVarLocalSearchOperator::Start explicitly.
+  virtual void OnStart() {}
+  void MarkChange(int64 index);
+
+  scoped_array<SequenceVar*> vars_;
+  int size_;
+  scoped_array<std::vector<int> > values_;
+  scoped_array<std::vector<int> > backward_values_;
+  scoped_array<std::vector<int> > old_values_;
+  Bitmap activated_;
+  Bitmap was_activated_;
+  std::vector<int64> changes_;
+  Bitmap has_changed_;
+  Bitmap has_delta_changed_;
+  bool cleared_;
+};
+
 // ----- Base Large Neighborhood Search operator class ----
 
 // This is the base class for building an LNS operator. An LNS fragment is a

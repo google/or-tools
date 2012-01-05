@@ -1,0 +1,460 @@
+// Copyright 2010-2011 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// This model implements a simple jobshop problem.
+//
+// A jobshop is a standard scheduling problem where you must schedule a
+// set of jobs on a set of machines.  Each job is a sequence of tasks
+// (a task can only start when the preceding task finished), each of
+// which occupies a single specific machine during a specific
+// duration. Therefore, a job is simply given by a sequence of pairs
+// (machine id, duration).
+
+// The objective is to minimize the 'makespan', which is the duration
+// between the start of the first task (across all machines) and the
+// completion of the last task (across all machines).
+//
+// This will be modelled by sets of intervals variables (see class
+// IntervalVar in constraint_solver/constraint_solver.h), one per
+// task, representing the [start_time, end_time] of the task.  Tasks
+// in the same job will be linked by precedence constraints.  Tasks on
+// the same machine will be covered by Sequence constraints.
+//
+// Search will be implemented as local search on the sequence variables.
+
+#include <cstdio>
+#include <cstdlib>
+
+#include "base/commandlineflags.h"
+#include "base/commandlineflags.h"
+#include "base/integral_types.h"
+#include "base/logging.h"
+#include "base/stringprintf.h"
+#include "base/bitmap.h"
+#include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/constraint_solveri.h"
+#include "examples/jobshop.h"
+
+DEFINE_string(
+    data_file,
+    "",
+    "Required: input file description the scheduling problem to solve, "
+    "in our jssp format:\n"
+    "  - the first line is \"instance <instance name>\"\n"
+    "  - the second line is \"<number of jobs> <number of machines>\"\n"
+    "  - then one line per job, with a single space-separated "
+    "list of \"<machine index> <duration>\"\n"
+    "note: jobs with one task are not supported");
+DEFINE_int32(time_limit_in_ms, 60000, "Time limit in ms, 0 means no limit.");
+DEFINE_int32(shuffle_length, 4, "Length of sub-sequences to shuffle LS.");
+DEFINE_int32(sub_sequence_length, 4,
+             "Length of sub-sequences to relax in LNS.");
+DEFINE_int32(lns_seed, 1, "Seed of the LNS random search");
+DEFINE_int32(lns_limit, 30,
+             "Limit the size of the search tree in a LNS fragment");
+
+
+namespace operations_research {
+// ----- Exchange 2 intervals on a sequence variable -----
+
+class SwapIntervals : public SequenceVarLocalSearchOperator {
+ public:
+  SwapIntervals(const SequenceVar* const* vars, int size)
+      : SequenceVarLocalSearchOperator(vars, size),
+        current_var_(-1),
+        current_first_(-1),
+        current_second_(-1) {}
+
+  virtual ~SwapIntervals() {}
+
+  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
+    CHECK_NOTNULL(delta);
+    while (true) {
+      RevertChanges(true);
+      if (!Increment()) {
+        VLOG(1) << "finished neighborhood";
+        return false;
+      }
+
+      std::vector<int> sequence = Sequence(current_var_);
+      const int tmp = sequence[current_first_];
+      sequence[current_first_] = sequence[current_second_];
+      sequence[current_second_] = tmp;
+      SetForwardSequence(current_var_, sequence);
+      if (ApplyChanges(delta, deltadelta)) {
+        VLOG(1) << "Delta = " << delta->DebugString();
+        return true;
+      }
+    }
+    return false;
+  }
+
+ protected:
+  virtual void OnStart() {
+    VLOG(1) << "start neighborhood";
+    current_var_ = 0;
+    current_first_ = 0;
+    current_second_ = 0;
+  }
+
+ private:
+  bool Increment() {
+    const SequenceVar* const var = Var(current_var_);
+    if (++current_second_ >= var->size()) {
+      if (++current_first_ >= var->size() - 1) {
+        current_var_++;
+        current_first_ = 0;
+      }
+      current_second_ = current_first_ + 1;
+    }
+    return current_var_ < Size();
+  }
+
+  int current_var_;
+  int current_first_;
+  int current_second_;
+};
+
+// ----- Shuffle a fixed-length sub-sequence on one sequence variable -----
+
+class ShuffleIntervals : public SequenceVarLocalSearchOperator {
+ public:
+  ShuffleIntervals(const SequenceVar* const* vars, int size, int max_length)
+      : SequenceVarLocalSearchOperator(vars, size),
+        max_length_(max_length),
+        current_var_(-1),
+        current_first_(-1),
+        current_index_(-1),
+        current_length_(-1) {}
+
+  virtual ~ShuffleIntervals() {}
+
+  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
+    CHECK_NOTNULL(delta);
+    while (true) {
+      RevertChanges(true);
+      if (!Increment()) {
+        VLOG(1) << "finished neighborhood";
+        return false;
+      }
+
+      std::vector<int> sequence = Sequence(current_var_);
+      std::vector<int> sequence_backup(current_length_);
+      for (int i = 0; i < current_length_; ++i) {
+        sequence_backup[i] = sequence[i + current_first_];
+      }
+      for (int i = 0; i < current_length_; ++i) {
+        sequence[i + current_first_] =
+            sequence_backup[current_permutation_[i]];
+      }
+      SetForwardSequence(current_var_, sequence);
+      if (ApplyChanges(delta, deltadelta)) {
+        VLOG(1) << "Delta = " << delta->DebugString();
+        return true;
+      }
+    }
+    return false;
+  }
+
+ protected:
+  virtual void OnStart() {
+    VLOG(1) << "start neighborhood";
+    current_var_ = 0;
+    current_first_ = 0;
+    current_index_ = -1;
+    current_length_ = std::min(Var(current_var_)->size(), max_length_);
+    current_permutation_.resize(current_length_);
+    for (int i = 0; i < current_length_; ++i) {
+      current_permutation_[i] = i;
+    }
+  }
+
+ private:
+  bool Increment() {
+    if (!std::next_permutation(current_permutation_.begin(),
+                               current_permutation_.end())) {
+      if (++current_first_ >= Var(current_var_)->size() - current_length_) {
+        if (++current_var_ >= Size()) {
+          return false;
+        }
+        current_first_ = 0;
+        current_length_ = std::min(Var(current_var_)->size(), max_length_);
+        current_permutation_.resize(current_length_);
+      }
+      current_index_ = 0;
+    }
+    return true;
+  }
+
+  const int max_length_;
+  int current_var_;
+  int current_first_;
+  int current_index_;
+  int current_length_;
+  std::vector<int> current_permutation_;
+};
+
+// ----- LNS Operator -----
+
+class SequenceLns : public SequenceVarLocalSearchOperator {
+ public:
+  SequenceLns(const SequenceVar* const* vars,
+              int size,
+              int seed,
+              int max_length)
+      : SequenceVarLocalSearchOperator(vars, size),
+        random_(seed),
+        max_length_(max_length) {}
+
+  virtual ~SequenceLns() {}
+
+  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
+    CHECK_NOTNULL(delta);
+    while (true) {
+      RevertChanges(true);
+      if (random_.Uniform(2) == 0) {
+        FreeTimeWindow();
+      } else {
+        FreeTwoResources();
+      }
+      if (ApplyChanges(delta, deltadelta)) {
+        VLOG(1) << "Delta = " << delta->DebugString();
+        return true;
+      }
+    }
+    return false;
+  }
+
+ private:
+  void FreeTimeWindow() {
+    for (int i = 0; i < Size(); ++i) {
+      std::vector<int> sequence = Sequence(i);
+      const int current_length =
+          std::min(static_cast<int>(sequence.size()), max_length_);
+      const int start_position =
+          random_.Uniform(sequence.size() - current_length);
+      std::vector<int> forward;
+      for (int j = 0; j < start_position; ++j) {
+        forward.push_back(sequence[j]);
+      }
+      std::vector<int> backward;
+      for (int j = sequence.size() - 1;
+           j >= start_position + current_length;
+           --j) {
+        backward.push_back(sequence[j]);
+      }
+      SetForwardSequence(i, forward);
+      SetBackwardSequence(i, backward);
+    }
+  }
+
+  void FreeTwoResources() {
+    std::vector<int> free_sequence;
+    SetForwardSequence(random_.Uniform(Size()), free_sequence);
+    SetForwardSequence(random_.Uniform(Size()), free_sequence);
+  }
+
+  ACMRandom random_;
+  const int max_length_;
+};
+
+
+// ----- Model and Solve -----
+
+void JobshopLs(const JobShopData& data) {
+  Solver solver("jobshop");
+  const int machine_count = data.machine_count();
+  const int job_count = data.job_count();
+  const int horizon = data.horizon();
+
+  // ----- Creates all Intervals and vars -----
+
+  // Stores all tasks attached interval variables per job.
+  std::vector<std::vector<IntervalVar*> > jobs_to_tasks(job_count);
+  // machines_to_tasks stores the same interval variables as above, but
+  // grouped my machines instead of grouped by jobs.
+  std::vector<std::vector<IntervalVar*> > machines_to_tasks(machine_count);
+
+  // Creates all individual interval variables.
+  for (int job_id = 0; job_id < job_count; ++job_id) {
+    const std::vector<JobShopData::Task>& tasks = data.TasksOfJob(job_id);
+    for (int task_index = 0; task_index < tasks.size(); ++task_index) {
+      const JobShopData::Task& task = tasks[task_index];
+      CHECK_EQ(job_id, task.job_id);
+      const string name = StringPrintf("J%dM%dI%dD%d",
+                                       task.job_id,
+                                       task.machine_id,
+                                       task_index,
+                                       task.duration);
+      IntervalVar* const one_task =
+          solver.MakeFixedDurationIntervalVar(0,
+                                              horizon,
+                                              task.duration,
+                                              false,
+                                              name);
+      jobs_to_tasks[task.job_id].push_back(one_task);
+      machines_to_tasks[task.machine_id].push_back(one_task);
+    }
+  }
+
+  // ----- Creates model -----
+
+  // Creates precedences inside jobs.
+  for (int job_id = 0; job_id < job_count; ++job_id) {
+    const int task_count = jobs_to_tasks[job_id].size();
+    for (int task_index = 0; task_index < task_count - 1; ++task_index) {
+      IntervalVar* const t1 = jobs_to_tasks[job_id][task_index];
+      IntervalVar* const t2 = jobs_to_tasks[job_id][task_index + 1];
+      Constraint* const prec =
+          solver.MakeIntervalVarRelation(t2, Solver::STARTS_AFTER_END, t1);
+      solver.AddConstraint(prec);
+    }
+  }
+
+  // Adds disjunctive constraints on unary resources.
+  for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
+    solver.AddConstraint(
+        solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id]));
+  }
+
+  // Creates sequences variables on machines. A sequence variable is a
+  // dedicated variable whose job is to sequence interval variables.
+  std::vector<SequenceVar*> all_sequences;
+  for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
+    const string name = StringPrintf("Machine_%d", machine_id);
+    SequenceVar* const sequence =
+        solver.MakeSequenceVar(machines_to_tasks[machine_id], name);
+    all_sequences.push_back(sequence);
+  }
+
+  // Creates array of end_times of jobs.
+  std::vector<IntVar*> all_ends;
+  for (int job_id = 0; job_id < job_count; ++job_id) {
+    const int task_count = jobs_to_tasks[job_id].size();
+    IntervalVar* const task = jobs_to_tasks[job_id][task_count - 1];
+    all_ends.push_back(task->EndExpr()->Var());
+  }
+
+  // Objective: minimize the makespan (maximum end times of all tasks)
+  // of the problem.
+  IntVar* const objective_var = solver.MakeMax(all_ends)->Var();
+
+  // ----- Search monitors and decision builder -----
+
+  // This decision builder will rank all tasks on all machines.
+  DecisionBuilder* const sequence_phase =
+      solver.MakePhase(all_sequences, Solver::SEQUENCE_DEFAULT);
+
+  // After the ranking of tasks, the schedule is still loose and any
+  // task can be postponed at will. But, because the problem is now a PERT
+  // (http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique),
+  // we can schedule each task at its earliest start time. This is
+  // conveniently done by fixing the objective variable to its
+  // minimum value.
+  DecisionBuilder* const obj_phase =
+      solver.MakePhase(objective_var,
+                       Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE);
+
+  Assignment* const first_solution = solver.MakeAssignment();
+  first_solution->Add(all_sequences);
+  first_solution->AddObjective(objective_var);
+  // Store the first solution in the 'solution' object.
+  DecisionBuilder* const store_db = solver.MakeStoreAssignment(first_solution);
+
+  // The main decision builder (ranks all tasks, then fixes the
+  // objective_variable).
+  DecisionBuilder* const first_solution_phase =
+      solver.Compose(sequence_phase, obj_phase, store_db);
+
+  LOG(INFO) << "Looking for the first solution";
+  const bool first_solution_found = solver.Solve(first_solution_phase);
+  if (first_solution_found) {
+    LOG(INFO) << "Solution found with makespan = "
+              << first_solution->ObjectiveValue();
+  } else {
+    LOG(INFO) << "No initial solution found!";
+    return;
+  }
+
+  LOG(INFO) << "Switching to local search";
+  std::vector<LocalSearchOperator*> operators;
+  LOG(INFO) << "  - use swap operator";
+  LocalSearchOperator* const swap_operator =
+      solver.RevAlloc(new SwapIntervals(all_sequences.data(),
+                                        all_sequences.size()));
+  operators.push_back(swap_operator);
+  LOG(INFO) << "  - use shuffle operator with a max length of "
+            << FLAGS_shuffle_length;
+  LocalSearchOperator* const shuffle_operator =
+      solver.RevAlloc(new ShuffleIntervals(all_sequences.data(),
+                                           all_sequences.size(),
+                                           FLAGS_shuffle_length));
+  operators.push_back(shuffle_operator);
+  LOG(INFO) << "  - use free sub sequences of length "
+            << FLAGS_sub_sequence_length << " lns operator";
+  LocalSearchOperator* const lns_operator =
+      solver.RevAlloc(new SequenceLns(all_sequences.data(),
+                                      all_sequences.size(),
+                                      FLAGS_lns_seed,
+                                      FLAGS_sub_sequence_length));
+  operators.push_back(lns_operator);
+
+  // Creates the local search decision builder.
+  LocalSearchOperator* const concat =
+      solver.ConcatenateOperators(operators, true);
+
+  SearchLimit* const ls_limit =
+      solver.MakeLimit(kint64max, FLAGS_lns_limit, kint64max, kint64max);
+  DecisionBuilder* const random_sequence_phase =
+      solver.MakePhase(all_sequences, Solver::CHOOSE_RANDOM_RANK_FORWARD);
+  DecisionBuilder* const ls_db =
+      solver.MakeSolveOnce(solver.Compose(random_sequence_phase, obj_phase),
+                           ls_limit);
+
+  LocalSearchPhaseParameters* const parameters =
+      solver.MakeLocalSearchPhaseParameters(concat, ls_db);
+  DecisionBuilder* const final_db =
+      solver.MakeLocalSearchPhase(first_solution, parameters);
+
+  OptimizeVar* const objective_monitor = solver.MakeMinimize(objective_var, 1);
+
+  // Search log.
+  const int kLogFrequency = 1000000;
+  SearchMonitor* const search_log =
+      solver.MakeSearchLog(kLogFrequency, objective_monitor);
+
+  SearchLimit* const limit = FLAGS_time_limit_in_ms > 0 ?
+      solver.MakeTimeLimit(FLAGS_time_limit_in_ms) :
+      NULL;
+
+  // Search.
+  solver.Solve(final_db, search_log, objective_monitor, limit);
+}
+}  // namespace operations_research
+
+static const char kUsage[] =
+    "Usage: see flags.\nThis program runs a simple job shop optimization "
+    "output besides the debug LOGs of the solver.";
+
+int main(int argc, char **argv) {
+  google::SetUsageMessage(kUsage);
+  google::ParseCommandLineFlags(&argc, &argv, true);
+  if (FLAGS_data_file.empty()) {
+    LOG(FATAL) << "Please supply a data file with --data_file=";
+  }
+  operations_research::JobShopData data;
+  data.Load(FLAGS_data_file);
+  operations_research::JobshopLs(data);
+  return 0;
+}

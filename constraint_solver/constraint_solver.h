@@ -4179,13 +4179,9 @@ class SequenceVar : public PropagationBaseObject {
   bool IsBefore(int before, int after) const;
   bool IsActive(int index) const;
   void ComputeRanks(const std::vector<int>& rank_first,
-                    const hash_set<int>& first_set,
-                    const std::vector<int>& rank_last,
-                    const hash_set<int>& last_set);
+                    const std::vector<int>& rank_last);
   void AddPrecedences(const std::vector<int>& rank_first,
-                      const hash_set<int>& first_set,
-                      const std::vector<int>& rank_last,
-                      const hash_set<int>& last_set);
+                      const std::vector<int>& rank_last);
   void ComputeTransitiveClosure(const std::vector<int>& rank_first,
                                 const std::vector<int>& rank_last);
   void MarkUnperformed(const std::vector<int>& unperformed);
@@ -4204,6 +4200,9 @@ class SequenceVar : public PropagationBaseObject {
   NumericalRev<int> count_ranked_last_;
   // Bi-dimensional bitset. bitset(i, j) if you know that i is before j.
   scoped_ptr<RevBitMatrix> precedence_matrix_;
+  // Temporary sets during propagation.
+  hash_set<int> first_set_;
+  hash_set<int> last_set_;
 };
 
 // --------- Assignments ----------------------------

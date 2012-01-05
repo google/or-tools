@@ -187,6 +187,163 @@ void IntVarLocalSearchOperator::MarkChange(int64 index) {
   }
 }
 
+// ----- Sequence Var Local Search Operator -----
+
+SequenceVarLocalSearchOperator::SequenceVarLocalSearchOperator()
+  : vars_(NULL),
+    size_(0),
+    values_(NULL),
+    backward_values_(NULL),
+    old_values_(NULL),
+    activated_(0, false),
+    was_activated_(0, false),
+    has_changed_(0, false),
+    has_delta_changed_(0, false),
+    cleared_(true) {}
+
+SequenceVarLocalSearchOperator::SequenceVarLocalSearchOperator(
+    const SequenceVar* const* vars, int size)
+    : vars_(NULL),
+      size_(0),
+      values_(NULL),
+      backward_values_(NULL),
+      old_values_(NULL),
+      activated_(size, false),
+      was_activated_(size, false),
+      has_changed_(size, false),
+      has_delta_changed_(size, false),
+      cleared_(true) {
+  CHECK_GE(size_, 0);
+  AddVars(vars, size);
+}
+
+SequenceVarLocalSearchOperator::~SequenceVarLocalSearchOperator() {}
+
+void SequenceVarLocalSearchOperator::AddVars(const SequenceVar* const* vars,
+                                             int size) {
+  if (size > 0) {
+    const int new_size = size_ + size;
+    SequenceVar** const new_vars = new SequenceVar*[new_size];
+    if (size_ > 0) {
+      memcpy(new_vars, vars_.get(), size_ * sizeof(*new_vars));
+    }
+    memcpy(new_vars + size_, vars, size * sizeof(*vars));
+    vars_.reset(new_vars);
+    values_.reset(new std::vector<int>[new_size]);
+    backward_values_.reset(new std::vector<int>[new_size]);
+    old_values_.reset(new std::vector<int>[new_size]);
+    activated_.Resize(new_size, false);
+    was_activated_.Resize(new_size, false);
+    has_changed_.Resize(new_size, false);
+    has_delta_changed_.Resize(new_size, false);
+    size_ = new_size;
+  }
+}
+
+void SequenceVarLocalSearchOperator::Start(const Assignment* assignment) {
+  const Assignment::SequenceContainer& container =
+      assignment->SequenceVarContainer();
+  const int size = Size();
+  CHECK_LE(size, container.Size())
+      << "Assignment contains fewer variables than operator";
+  for (int i = 0; i < size; ++i) {
+    const SequenceVarElement* element = &(container.Element(i));
+    SequenceVar* const var = vars_[i];
+    if (element->Var() != var) {
+      CHECK(container.Contains(var))
+          << "Assignment does not contain operator variable " << var;
+      element = &(container.Element(vars_[i]));
+    }
+    const std::vector<int>& value = element->ForwardSequence();
+    CHECK_EQ(vars_[i]->size(), value.size());
+    values_[i] = value;
+    backward_values_[i].clear();
+    old_values_[i] = value;
+    const bool activated = element->Activated();
+    activated_.Set(i, activated);
+    was_activated_.Set(i, activated);
+  }
+  OnStart();
+}
+
+void SequenceVarLocalSearchOperator::SetForwardSequence(
+    int64 index, const std::vector<int>& value) {
+  values_[index] = value;
+  MarkChange(index);
+}
+
+void SequenceVarLocalSearchOperator::SetBackwardSequence(
+    int64 index, const std::vector<int>& value) {
+  backward_values_[index] = value;
+  MarkChange(index);
+}
+
+bool SequenceVarLocalSearchOperator::Activated(int64 index) const {
+  return activated_.Get(index);
+}
+
+void SequenceVarLocalSearchOperator::Activate(int64 index) {
+  activated_.Set(index, true);
+  MarkChange(index);
+}
+
+void SequenceVarLocalSearchOperator::Deactivate(int64 index) {
+  activated_.Set(index, false);
+  MarkChange(index);
+}
+
+bool SequenceVarLocalSearchOperator::ApplyChanges(
+    Assignment* delta,
+    Assignment* deltadelta) const {
+  for (ConstIter<std::vector<int64> > it(changes_); !it.at_end(); ++it) {
+    const int64 index = *it;
+    SequenceVar* const var = Var(index);
+    const std::vector<int>& value = Sequence(index);
+    const bool activated = activated_.Get(index);
+    if (!activated) {
+      if (!cleared_ && has_delta_changed_.Get(index) && IsIncremental()) {
+        deltadelta->FastAdd(var).Deactivate();
+      }
+      delta->FastAdd(var).Deactivate();
+    } else if (value != OldSequence(index) || !SkipUnchanged(index)) {
+      if (!cleared_ && has_delta_changed_.Get(index) && IsIncremental()) {
+        SequenceVarElement* const fast_element = &deltadelta->FastAdd(var);
+        fast_element->SetForwardSequence(value);
+        fast_element->SetBackwardSequence(backward_values_[index]);
+      }
+      SequenceVarElement* const element = &delta->FastAdd(var);
+      element->SetForwardSequence(value);
+      element->SetBackwardSequence(backward_values_[index]);
+    }
+  }
+  return true;
+}
+
+void SequenceVarLocalSearchOperator::RevertChanges(bool incremental) {
+  cleared_ = false;
+  has_delta_changed_.SetAll(false);
+  if (incremental && IsIncremental()) return;
+  cleared_ = true;
+  for (ConstIter<std::vector<int64> > it(changes_); !it.at_end(); ++it) {
+    const int index = *it;
+    values_[index] =  old_values_[index];
+    backward_values_[index].clear();
+    activated_.Set(index, was_activated_.Get(index));
+    has_changed_.Set(index, false);
+  }
+  changes_.clear();
+}
+
+void SequenceVarLocalSearchOperator::MarkChange(int64 index) {
+  if (!has_delta_changed_.Get(index)) {
+    has_delta_changed_.Set(index, true);
+  }
+  if (!has_changed_.Get(index)) {
+    changes_.push_back(index);
+    has_changed_.Set(index, true);
+  }
+}
+
 // ----- Base Large Neighborhood Search operator -----
 
 BaseLNS::BaseLNS(const IntVar* const* vars, int size)

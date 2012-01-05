@@ -30,6 +30,7 @@ CPBINARIES = \
 	flow_api$E \
 	golomb$E \
 	jobshop$E \
+	jobshop_ls$E \
 	linear_assignment_api$E \
 	magic_square$E \
 	model_util$E \
@@ -506,6 +507,12 @@ objs/jobshop.$O:examples/jobshop.cc constraint_solver/constraint_solver.h
 
 jobshop$E: $(CP_LIBS) $(BASE_LIBS) objs/jobshop.$O
 	$(CCC) $(CFLAGS) objs/jobshop.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)jobshop$E
+
+objs/jobshop_ls.$O:examples/jobshop_ls.cc constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c examples/jobshop_ls.cc $(OBJOUT)objs/jobshop_ls.$O
+
+jobshop_ls$E: $(CP_LIBS) $(BASE_LIBS) objs/jobshop_ls.$O
+	$(CCC) $(CFLAGS) objs/jobshop_ls.$O $(CP_LIBS) $(BASE_LIBS) $(LDFLAGS) $(EXEOUT)jobshop_ls$E
 
 objs/magic_square.$O:examples/magic_square.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/magic_square.cc $(OBJOUT)objs/magic_square.$O
