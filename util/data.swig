@@ -625,7 +625,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
   TYPE* inner_array = $input;
 
   for (int index1 = 0; index1 < size_x; ++index1) {
-    result[index1].resize(size_y);
+    result[index1].reserve(size_y);
     for (int index2 = 0; index2 < size_y; ++index2) {
       const TYPE value = inner_array[index1 * size_y + index2];
       result[index1].push_back(value);
