@@ -815,9 +815,9 @@ void PathOperator::InitializeBaseNodes() {
     first_start_ = false;
   }
   for (int i = 0; i < base_nodes_.size(); ++i) {
-    // If base node has been made inactive, restart from path start
+    // If base node has been made inactive, restart from path start.
     int64 base_node = base_nodes_[i];
-    if (IsInactive(base_node)) {
+    if (RestartAtPathStartOnSynchronize() || IsInactive(base_node)) {
       base_node = path_starts_[base_paths_[i]];
       base_nodes_[i] = base_node;
     }
@@ -2310,17 +2310,16 @@ IntVarLocalSearchFilter::~IntVarLocalSearchFilter() {}
 void IntVarLocalSearchFilter::Synchronize(const Assignment* assignment) {
   const Assignment::IntContainer& container = assignment->IntVarContainer();
   const int size = container.Size();
-  typedef hash_map<const IntVar*, int64>::const_iterator IndexMapIterator;
-  IndexMapIterator indices_end = var_to_index_.end();
   for (int i = 0; i < size; ++i) {
     const IntVarElement& element = container.Element(i);
     const IntVar* var = element.Var();
     if (i < size_ && vars_[i] == var) {
         values_[i] = element.Value();
     } else {
-      IndexMapIterator iterator = var_to_index_.find(var);
-      if (iterator != indices_end) {
-        values_[iterator->second] = element.Value();
+      const int64 kUnallocated = -1;
+      int64 index = kUnallocated;
+      if (FindIndex(var, &index)) {
+        values_[index] = element.Value();
       }
     }
   }

@@ -1022,7 +1022,20 @@ class PathOperator : public IntVarLocalSearchOperator {
  protected:
   // Returns the index of the variable corresponding to the ith base node.
   int64 BaseNode(int i) const { return base_nodes_[i]; }
+  // Returns the index of the variable corresponding to the current path
+  // of the ith base node.
   int64 StartNode(int i) const { return path_starts_[base_paths_[i]]; }
+
+  // When the operator is being synchronized with a new solution (when Start()
+  // is called), returns true to restart the exploration of the neighborhood
+  // from the start of the last paths explored; returns false to restart the
+  // exploration at the last nodes visited.
+  // This is used to avoid restarting on base nodes which have changed paths,
+  // leading to potentially skipping neighbors.
+  // TODO(user): remove this when automatic detection of such cases in done.
+  virtual bool RestartAtPathStartOnSynchronize() {
+    return false;
+  }
 
   int64 OldNext(int64 node_index) const {
     DCHECK(!IsPathEnd(node_index));

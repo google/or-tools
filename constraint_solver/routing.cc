@@ -246,6 +246,9 @@ class MakePairRelocateOperator : public PathOperator {
 
  private:
   virtual void OnNodeInitialization();
+  virtual bool RestartAtPathStartOnSynchronize() {
+    return true;
+  }
 
   std::vector<int> pairs_;
   std::vector<int> prevs_;
