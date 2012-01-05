@@ -5,7 +5,8 @@ help:
 	@echo "  - mathematical programming: lplibs lpexe pylp javalp"
 	@echo "  - algorithms: algorithmslibs pyalgorithms javaalgorithms"
 	@echo "  - graph: graphlibs pygraph javagraph"
-	@echo "  - misc: clean"
+	@echo "  - .NET on windows: csharp csharpcp csharplp csharpalgorithms csharpgraph csharpexe"
+	@echo "  - misc: clean cleancsharp"
 
 .PHONY : python cc java
 cc: cplibs cpexe algorithmslibs graphlibs lplibs lpexe
