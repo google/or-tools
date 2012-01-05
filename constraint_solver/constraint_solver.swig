@@ -1,4 +1,4 @@
-// Copyright 2010-2011 Google
+// Copyright 2010-2012 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -1842,75 +1842,75 @@ namespace operations_research {
 
 // Add arithmetic operators to integer expressions.
 %typemap(cscode) IntExpr %{
-	public static IntExpr operator+(IntExpr a, IntExpr b) {
-		return a.solver().MakeSum(a, b);
-	}
-	public static IntExpr operator+(IntExpr a, long v) {
-		return a.solver().MakeSum(a, v);
-	}
-	public static IntExpr operator+(long v, IntExpr a) {
-		return a.solver().MakeSum(a, v);
-	}
-	public static IntExpr operator-(IntExpr a, IntExpr b) {
-		return a.solver().MakeDifference(a, b);
-	}
-	public static IntExpr operator-(IntExpr a, long v) {
-		return a.solver().MakeSum(a, -v);
-	}
-	public static IntExpr operator-(long v, IntExpr a) {
-		return a.solver().MakeDifference(v, a);
-	}
-	public static IntExpr operator*(IntExpr a, IntExpr b) {
-		return a.solver().MakeProd(a, b);
-	}
-	public static IntExpr operator*(IntExpr a, long v) {
-		return a.solver().MakeProd(a, v);
-	}
-	public static IntExpr operator*(long v, IntExpr a) {
-		return a.solver().MakeProd(a, v);
-	}
-	public static IntExpr operator/(IntExpr a, long v) {
-		return a.solver().MakeDiv(a, v);
-	}
-	public static IntExpr operator-(IntExpr a) {
-		return a.solver().MakeOpposite(a);
-	}
-	public IntExpr Abs() {
-		return this.solver().MakeAbs(this);
-	}
-	public IntExpr Square() {
-		return this.solver().MakeSquare(this);
-	}
-	public static ValCstPair operator ==(IntExpr a, long v) {
-		return new ValCstPair(a.solver().MakeEquality(a, v));
-	}
-	public static ValCstPair operator !=(IntExpr a, long v) {
-		return new ValCstPair(a.solver().MakeNonEquality(a.Var(), v));
-	}
-	public static ValCstPair operator >=(IntExpr a, long v) {
-		return new ValCstPair(a.solver().MakeGreaterOrEqual(a, v));
-	}
-	public static ValCstPair operator >(IntExpr a, long v) {
-		return new ValCstPair(a.solver().MakeGreater(a, v));
-	}
-	public static ValCstPair operator <=(IntExpr a, long v) {
-		return new ValCstPair(a.solver().MakeLessOrEqual(a, v));
-	}
-	public static ValCstPair operator <(IntExpr a, long v) {
-		return new ValCstPair(a.solver().MakeLess(a, v));
-	}
-	public static ValCstPair operator >=(IntExpr a, IntExpr b) {
-		return new ValCstPair(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
-	}
-	public static ValCstPair operator >(IntExpr a, IntExpr b) {
-		return new ValCstPair(a.solver().MakeGreater(a.Var(), b.Var()));
-	}
-	public static ValCstPair operator <=(IntExpr a, IntExpr b) {
-		return new ValCstPair(a.solver().MakeLessOrEqual(a.Var(), b.Var()));
-	}
-	public static ValCstPair operator <(IntExpr a, IntExpr b) {
-		return new ValCstPair(a.solver().MakeLess(a.Var(), b.Var()));
-	}
+  public static IntExpr operator+(IntExpr a, IntExpr b) {
+    return a.solver().MakeSum(a, b);
+  }
+  public static IntExpr operator+(IntExpr a, long v) {
+    return a.solver().MakeSum(a, v);
+  }
+  public static IntExpr operator+(long v, IntExpr a) {
+    return a.solver().MakeSum(a, v);
+  }
+  public static IntExpr operator-(IntExpr a, IntExpr b) {
+    return a.solver().MakeDifference(a, b);
+  }
+  public static IntExpr operator-(IntExpr a, long v) {
+    return a.solver().MakeSum(a, -v);
+  }
+  public static IntExpr operator-(long v, IntExpr a) {
+    return a.solver().MakeDifference(v, a);
+  }
+  public static IntExpr operator*(IntExpr a, IntExpr b) {
+    return a.solver().MakeProd(a, b);
+  }
+  public static IntExpr operator*(IntExpr a, long v) {
+    return a.solver().MakeProd(a, v);
+  }
+  public static IntExpr operator*(long v, IntExpr a) {
+    return a.solver().MakeProd(a, v);
+  }
+  public static IntExpr operator/(IntExpr a, long v) {
+    return a.solver().MakeDiv(a, v);
+  }
+  public static IntExpr operator-(IntExpr a) {
+    return a.solver().MakeOpposite(a);
+  }
+  public IntExpr Abs() {
+    return this.solver().MakeAbs(this);
+  }
+  public IntExpr Square() {
+    return this.solver().MakeSquare(this);
+  }
+  public static ValCstPair operator ==(IntExpr a, long v) {
+    return new ValCstPair(a.solver().MakeEquality(a, v));
+  }
+  public static ValCstPair operator !=(IntExpr a, long v) {
+    return new ValCstPair(a.solver().MakeNonEquality(a.Var(), v));
+  }
+  public static ValCstPair operator >=(IntExpr a, long v) {
+    return new ValCstPair(a.solver().MakeGreaterOrEqual(a, v));
+  }
+  public static ValCstPair operator >(IntExpr a, long v) {
+    return new ValCstPair(a.solver().MakeGreater(a, v));
+  }
+  public static ValCstPair operator <=(IntExpr a, long v) {
+    return new ValCstPair(a.solver().MakeLessOrEqual(a, v));
+  }
+  public static ValCstPair operator <(IntExpr a, long v) {
+    return new ValCstPair(a.solver().MakeLess(a, v));
+  }
+  public static ValCstPair operator >=(IntExpr a, IntExpr b) {
+    return new ValCstPair(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
+  }
+  public static ValCstPair operator >(IntExpr a, IntExpr b) {
+    return new ValCstPair(a.solver().MakeGreater(a.Var(), b.Var()));
+  }
+  public static ValCstPair operator <=(IntExpr a, IntExpr b) {
+    return new ValCstPair(a.solver().MakeLessOrEqual(a.Var(), b.Var()));
+  }
+  public static ValCstPair operator <(IntExpr a, IntExpr b) {
+    return new ValCstPair(a.solver().MakeLess(a.Var(), b.Var()));
+  }
 %}
 
 %extend IntervalVar {
@@ -2039,7 +2039,7 @@ namespace operations_research {
     delete intercept;\
   } else {\
     solver->clear_fail_intercept();\
-	SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, "fail");\
+  SWIG_CSharpSetPendingException(SWIG_CSharpApplicationException, "fail");\
     return $null;\
   }
 
@@ -2087,7 +2087,7 @@ namespace operations_research {
 }
 }  // namespace operations_research
 
-#endif	// SWIGCSHARP
+#endif  // SWIGCSHARP
 
 // Wrap cp includes
 %include constraint_solver/constraint_solver.h

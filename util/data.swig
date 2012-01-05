@@ -1,4 +1,4 @@
-// Copyright 2010-2011 Google
+// Copyright 2010-2012 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -553,18 +553,18 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 
 ////////////////////////////////////////////////
 //
-//		CS_TYPEMAP_STDVECTOR
+//    CS_TYPEMAP_STDVECTOR
 //
 ////////////////////////////////////////////////
 
 %define CS_TYPEMAP_STDVECTOR(TYPE, CTYPE, CSHARPTYPE)
 
-%typemap(ctype)		const std::vector<TYPE>&	%{ int length$argnum, CTYPE* %}
-%typemap(imtype)	const std::vector<TYPE>&	%{ int length$argnum, CSHARPTYPE[] %}
-%typemap(cstype)	const std::vector<TYPE>&	%{ CSHARPTYPE[] %}
-%typemap(csin)		const std::vector<TYPE>&	"$csinput.Length, $csinput"
-%typemap(freearg)	const std::vector<TYPE>&	{ delete $1; }
-%typemap(in)		const std::vector<TYPE>&	%{
+%typemap(ctype)    const std::vector<TYPE>&  %{ int length$argnum, CTYPE* %}
+%typemap(imtype)  const std::vector<TYPE>&  %{ int length$argnum, CSHARPTYPE[] %}
+%typemap(cstype)  const std::vector<TYPE>&  %{ CSHARPTYPE[] %}
+%typemap(csin)    const std::vector<TYPE>&  "$csinput.Length, $csinput"
+%typemap(freearg)  const std::vector<TYPE>&  { delete $1; }
+%typemap(in)    const std::vector<TYPE>&  %{
   $1 = new std::vector<TYPE>;
   for(int i = 0; i < length$argnum; ++i)
     $1->push_back($input[i]);
@@ -573,7 +573,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 
 ////////////////////////////////////////////////
 //
-//		CS_TYPEMAP_STDVECTOR_IN1
+//    CS_TYPEMAP_STDVECTOR_IN1
 //
 ////////////////////////////////////////////////
 
@@ -597,11 +597,11 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
   class NestedArrayHelper {};
 %}
 
-%typemap(ctype)		const std::vector<std::vector<TYPE> >&	%{ int len$argnum_1, int len$argnum_2, CTYPE* %}
-%typemap(imtype)	const std::vector<std::vector<TYPE> >&	%{ int len$argnum_1, int len$argnum_2, CSHARPTYPE[] %}
-%typemap(cstype)	const std::vector<std::vector<TYPE> >&	%{ CSHARPTYPE[,] %}
-%typemap(csin)		const std::vector<std::vector<TYPE> >&	"$csinput.GetLength(0), $csinput.GetLength(1), NestedArrayHelper.GetFlatArray($csinput)"
-%typemap(in)		const std::vector<std::vector<TYPE> >&	(std::vector<std::vector<TYPE> > result) %{
+%typemap(ctype)    const std::vector<std::vector<TYPE> >&  %{ int len$argnum_1, int len$argnum_2, CTYPE* %}
+%typemap(imtype)  const std::vector<std::vector<TYPE> >&  %{ int len$argnum_1, int len$argnum_2, CSHARPTYPE[] %}
+%typemap(cstype)  const std::vector<std::vector<TYPE> >&  %{ CSHARPTYPE[,] %}
+%typemap(csin)    const std::vector<std::vector<TYPE> >&  "$csinput.GetLength(0), $csinput.GetLength(1), NestedArrayHelper.GetFlatArray($csinput)"
+%typemap(in)    const std::vector<std::vector<TYPE> >&  (std::vector<std::vector<TYPE> > result) %{
 
   const int size_x = len$argnum_1;
   const int size_y = len$argnum_2;
@@ -625,7 +625,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 
 ////////////////////////////////////////////////
 //
-//		CS_TYPEMAP_PTRARRAY
+//    CS_TYPEMAP_PTRARRAY
 //
 ////////////////////////////////////////////////
 
@@ -640,24 +640,24 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
   }
 %}
 
-%typemap(ctype)		CTYPE** "CTYPE**"
+%typemap(ctype)    CTYPE** "CTYPE**"
 
 %typemap(imtype,
          inattributes="[In, Out, MarshalAs(UnmanagedType.LPArray)]",
          outattributes="[return: MarshalAs(UnmanagedType.LPArray)]")
 CTYPE** "IntPtr[]"
 
-%typemap(cstype)	CTYPE** "TYPE[]"
-%typemap(csin)		CTYPE** "TYPE.getCPtr($csinput)"
-%typemap(in)		CTYPE** "$1 = $input;"
-%typemap(freearg)	CTYPE** ""
-%typemap(argout)	CTYPE** ""
+%typemap(cstype)  CTYPE** "TYPE[]"
+%typemap(csin)    CTYPE** "TYPE.getCPtr($csinput)"
+%typemap(in)    CTYPE** "$1 = $input;"
+%typemap(freearg)  CTYPE** ""
+%typemap(argout)  CTYPE** ""
 
-%enddef	// CS_TYPEMAP_PTRARRAY
+%enddef  // CS_TYPEMAP_PTRARRAY
 
 ////////////////////////////////////////////////
 //
-//		CS_TYPEMAP_STDVECTOR_OBJECT
+//    CS_TYPEMAP_STDVECTOR_OBJECT
 //
 ////////////////////////////////////////////////
 
@@ -681,7 +681,7 @@ CTYPE** "IntPtr[]"
     result.push_back($input[i]);
   $1 = &result;
 }
-%enddef	// CS_TYPEMAP_STDVECTOR_OBJECT
+%enddef  // CS_TYPEMAP_STDVECTOR_OBJECT
 
 %{
 #include <vector>
@@ -788,12 +788,11 @@ CS_TYPEMAP_STDVECTOR_IN1(int64, int64, long)
 //        type
 // @param param_name the parameter name
 %define PROTO_INPUT(CppProtoType, CSharpProtoType, param_name)
-%typemap(ctype)		PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int proto_size, char*"
-%typemap(imtype)	PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int proto_size, byte[]"
-%typemap(cstype)	PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "CSharpProtoType"
-%typemap(csin)		PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "$csinput.GetByteArrayLength(), $csinput.ToByteArray()"
-%typemap(in)		PROTO_TYPE* INPUT (CppProtoType temp),
-					PROTO_TYPE& INPUT (CppProtoType temp) {
+%typemap(ctype)    PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int proto_size, char*"
+%typemap(imtype)  PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int proto_size, byte[]"
+%typemap(cstype)  PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "CSharpProtoType"
+%typemap(csin)    PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "$csinput.GetByteArrayLength(), $csinput.ToByteArray()"
+%typemap(in) PROTO_TYPE* INPUT (CppProtoType temp), PROTO_TYPE& INPUT (CppProtoType temp) {
   int proto_size = 0;
   scoped_array<char> proto_buffer($input);
   bool parsed_ok = temp.ParseFromArray(proto_buffer.get(), proto_size);
