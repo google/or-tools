@@ -61,7 +61,7 @@ void MPConstraint::SetCoefficient(const MPVariable* const var, double coeff) {
     }
     return;
   }
-  pair<hash_map<const MPVariable*, double>::iterator, bool> insertion_result =
+  std::pair<hash_map<const MPVariable*, double>::iterator, bool> insertion_result =
       coefficients_.insert(std::make_pair(var, coeff));
   const double old_value =
       insertion_result.second ? 0.0 : insertion_result.first->second;
