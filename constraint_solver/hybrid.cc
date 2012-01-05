@@ -330,6 +330,27 @@ class Linearizer : public ModelVisitor {
   }
 
   virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const string& operation,
+                                    int64 value,
+                                    const IntVar* const delegate) {
+    RegisterExpression(const_cast<IntVar*>(variable));
+    RegisterExpression(const_cast<IntVar*>(delegate));
+    if (operation == ModelVisitor::kSumOperation) {
+      MPConstraint* const ct = mp_solver_->MakeRowConstraint(value, value);
+      ct->SetCoefficient(Translated(variable), 1.0);
+      ct->SetCoefficient(Translated(delegate), -1.0);
+    } else if (operation == ModelVisitor::kDifferenceOperation) {
+      MPConstraint* const ct = mp_solver_->MakeRowConstraint(value, value);
+      ct->SetCoefficient(Translated(variable), 1.0);
+      ct->SetCoefficient(Translated(delegate), 1.0);
+    } else if (operation == ModelVisitor::kProductOperation) {
+      MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
+      ct->SetCoefficient(Translated(variable), 1.0);
+      ct->SetCoefficient(Translated(delegate), -value);
+    }
+  }
+
+  virtual void VisitIntegerVariable(const IntVar* const variable,
                                     const IntExpr* const delegate) {
     RegisterExpression(const_cast<IntVar*>(variable));
     if (delegate != NULL) {

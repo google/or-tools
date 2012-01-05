@@ -32,12 +32,14 @@
 
 #include "linear_solver/linear_solver.pb.h"
 
-DEFINE_string(solver_write_model, "", "path of the file to write the model to");
+DEFINE_string(solver_write_model,
+              "",
+              "Path of the file to write the model to.");
 
-// To compile the open-source code, the anonymous namespace should be inside
-// the operations_research namespace (This is due to the open-sourced version of
-// StringPrintf which is defined inside the operations_research namespace in
-// open_source/base).
+// To compile the open-source code, the anonymous namespace should be
+// inside the operations_research namespace (This is due to the
+// open-sourced version of StringPrintf which is defined inside the
+// operations_research namespace in open_source/base).
 namespace operations_research {
 
 double MPConstraint::GetCoefficient(const MPVariable* const var) const {
@@ -48,12 +50,13 @@ void MPConstraint::SetCoefficient(const MPVariable* const var, double coeff) {
   CHECK_NOTNULL(var);
   if (coeff == 0.0) {
     hash_map<const MPVariable*, double>::iterator it = coefficients_.find(var);
-    // If setting a coefficient to 0 when this coefficient did not exist or was
-    // already 0, do nothing: skip interface_->SetCoefficient() and do not
-    // store a coefficient in the map.
-    // Note that if the coefficient being set to 0 did exist and was not 0, we
-    // do have to keep a 0 in the coefficients_ map, because the extraction of
-    // the constraint might rely on it, depending on the underlying solver.
+    // If setting a coefficient to 0 when this coefficient did not
+    // exist or was already 0, do nothing: skip
+    // interface_->SetCoefficient() and do not store a coefficient in
+    // the map.  Note that if the coefficient being set to 0 did exist
+    // and was not 0, we do have to keep a 0 in the coefficients_ map,
+    // because the extraction of the constraint might rely on it,
+    // depending on the underlying solver.
     if (it != coefficients_.end() && it->second != 0.0) {
       const double old_value = it->second;
       it->second = 0.0;
@@ -61,7 +64,8 @@ void MPConstraint::SetCoefficient(const MPVariable* const var, double coeff) {
     }
     return;
   }
-  std::pair<hash_map<const MPVariable*, double>::iterator, bool> insertion_result =
+  std::pair<hash_map<const MPVariable*, double>::iterator, bool>
+      insertion_result =
       coefficients_.insert(std::make_pair(var, coeff));
   const double old_value =
       insertion_result.second ? 0.0 : insertion_result.first->second;

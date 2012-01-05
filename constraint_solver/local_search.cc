@@ -1671,6 +1671,7 @@ class CompoundOperator : public LocalSearchOperator {
       const int64 rhs_value = Evaluate(rhs);
       return lhs_value < rhs_value || (lhs_value == rhs_value && lhs < rhs);
     }
+
    private:
     int64 Evaluate(int operator_index) const {
       return evaluator_->Run(active_operator_, operator_index);
@@ -1681,7 +1682,7 @@ class CompoundOperator : public LocalSearchOperator {
   };
 
   int64 index_;
-  const int64 size_;
+  int64 size_;
   scoped_array<LocalSearchOperator*> operators_;
   scoped_array<int> operator_indices_;
   scoped_ptr<ResultCallback2<int64, int, int> > evaluator_;
@@ -1691,41 +1692,56 @@ CompoundOperator::CompoundOperator(
     const std::vector<LocalSearchOperator*>& operators,
     ResultCallback2<int64, int, int>* const evaluator)
       : index_(0),
-        size_(operators.size()),
-        operators_(new LocalSearchOperator*[size_]),
-        operator_indices_(new int[size_]),
+        size_(0),
+        operators_(NULL),
+        operator_indices_(NULL),
         evaluator_(evaluator) {
-  for (int i = 0; i < size_; ++i) {
-    operators_[i] = operators[i];
-    operator_indices_[i] = i;
+  for (int i = 0; i < operators.size(); ++i) {
+    if (operators[i] != NULL) {
+      ++size_;
+    }
+  }
+  operators_.reset(new LocalSearchOperator*[size_]);
+  operator_indices_.reset(new int[size_]);
+  int index = 0;
+  for (int i = 0; i < operators.size(); ++i) {
+    if (operators[i] != NULL) {
+      operators_[index] = operators[i];
+      operator_indices_[index] = index;
+      ++index;
+    }
   }
 }
 
 void CompoundOperator::Start(const Assignment* assignment) {
-  for (int i = 0; i < size_; ++i) {
-    operators_[i]->Start(assignment);
+  if (size_ > 0) {
+    for (int i = 0; i < size_; ++i) {
+      operators_[i]->Start(assignment);
+    }
+    OperatorComparator comparator(evaluator_.get(), operator_indices_[index_]);
+    std::sort(operator_indices_.get(),
+              operator_indices_.get() + size_,
+              comparator);
+    index_ = 0;
   }
-  OperatorComparator comparator(evaluator_.get(), operator_indices_[index_]);
-  std::sort(operator_indices_.get(),
-            operator_indices_.get() + size_,
-            comparator);
-  index_ = 0;
 }
 
 bool CompoundOperator::MakeNextNeighbor(Assignment* delta,
                                         Assignment* deltadelta) {
-  do {
-    // TODO(user): keep copy of delta in case MakeNextNeighbor
-    // pollutes delta on a fail.
-    if (operators_[operator_indices_[index_]]->MakeNextNeighbor(delta,
-                                                                deltadelta)) {
-      return true;
-    }
-    ++index_;
-    if (index_ == size_) {
-      index_ = 0;
-    }
-  } while (index_ != 0);
+  if (size_ > 0) {
+    do {
+      // TODO(user): keep copy of delta in case MakeNextNeighbor
+      // pollutes delta on a fail.
+      if (operators_[operator_indices_[index_]]->MakeNextNeighbor(delta,
+                                                                  deltadelta)) {
+        return true;
+      }
+      ++index_;
+      if (index_ == size_) {
+        index_ = 0;
+      }
+    } while (index_ != 0);
+  }
   return false;
 }
 

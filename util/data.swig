@@ -400,7 +400,8 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 %typemap(in) const std::vector<int64>& %{
   if($input) {
     $1 = new std::vector<int64>;
-    int size = jenv->GetArrayLength($input);
+    const int size = jenv->GetArrayLength($input);
+    $1->reserve(size);
     jlong *values = jenv->GetLongArrayElements((jlongArray)$input, NULL);
     for (int i = 0; i < size; ++i) {
       long value = values[i];
@@ -426,7 +427,8 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 %typemap(in) const std::vector<int>& %{
   if($input) {
     $1 = new std::vector<int>;
-    int size = jenv->GetArrayLength($input);
+    const int size = jenv->GetArrayLength($input);
+    $1->reserve(size);
     jint *values = jenv->GetIntArrayElements((jintArray)$input, NULL);
     for (int i = 0; i < size; ++i) {
       int value = values[i];
@@ -456,6 +458,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
     jlongArray inner_array =
         (jlongArray)jenv->GetObjectArrayElement($input, index1);
     const int tuple_size = jenv->GetArrayLength(inner_array);
+    result[index].reserve(tuple_size);
     jlong* const values =
         jenv->GetLongArrayElements((jlongArray)inner_array, NULL);
     for (int index2 = 0; index2 < tuple_size; ++index2) {
@@ -566,6 +569,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 %typemap(freearg)  const std::vector<TYPE>&  { delete $1; }
 %typemap(in)    const std::vector<TYPE>&  %{
   $1 = new std::vector<TYPE>;
+  $1->reserve(length$argnum);
   for(int i = 0; i < length$argnum; ++i)
     $1->push_back($input[i]);
   %}
@@ -612,7 +616,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
   TYPE* inner_array = $input;
 
   for (int index1 = 0; index1 < size_x; ++index1) {
-
+    result[index1].resize(size_y);
     for (int index2 = 0; index2 < size_y; ++index2) {
       const TYPE value = inner_array[index1 * size_y + index2];
       result[index1].push_back(value);
@@ -677,6 +681,7 @@ CTYPE** "IntPtr[]"
 %typemap(cstype) const std::vector<CTYPE*>& "TYPE[]"
 %typemap(csin) const std::vector<CTYPE*>& "$csinput.Length, TYPE.getCPtr($csinput)"
 %typemap(in) const std::vector<CTYPE*>& (std::vector<CTYPE*> result) {
+  result.reserve(length$argnum);
   for (int i = 0; i < length$argnum; i++)
     result.push_back($input[i]);
   $1 = &result;
