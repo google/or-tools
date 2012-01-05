@@ -458,7 +458,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
     jlongArray inner_array =
         (jlongArray)jenv->GetObjectArrayElement($input, index1);
     const int tuple_size = jenv->GetArrayLength(inner_array);
-    result[index].reserve(tuple_size);
+    result[index1].reserve(tuple_size);
     jlong* const values =
         jenv->GetLongArrayElements((jlongArray)inner_array, NULL);
     for (int index2 = 0; index2 < tuple_size; ++index2) {
