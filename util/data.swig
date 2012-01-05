@@ -556,10 +556,14 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 
 ////////////////////////////////////////////////
 //
-//    CS_TYPEMAP_STDVECTOR
+// CS_TYPEMAP_STDVECTOR
+//
+// Map c# arrays to c++ vectors for POD types.
 //
 ////////////////////////////////////////////////
 
+// This typemap will transform a .net array into a pair length, c array.
+// This pair is then used to rebuild a vector from it.
 %define CS_TYPEMAP_STDVECTOR(TYPE, CTYPE, CSHARPTYPE)
 
 %typemap(ctype)    const std::vector<TYPE>&  %{ int length$argnum, CTYPE* %}
@@ -579,8 +583,13 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 //
 //    CS_TYPEMAP_STDVECTOR_IN1
 //
+// Map c# bi-dimensional arrays to c++ vectors of vectors for POD types.
+//
 ////////////////////////////////////////////////
 
+// This typemap will transform a multidimensional array into a triplet
+// size_z, size_y, flattened array.  This is then recomposed in the
+// final part to rebuild the std::vector<std::vector<T>> part.
 %define CS_TYPEMAP_STDVECTOR_IN1(TYPE, CTYPE, CSHARPTYPE)
 
 %typemap(cscode) NestedArrayHelper %{
@@ -633,13 +642,16 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 //
 ////////////////////////////////////////////////
 
+// This typemap will perform the same transformation for an array of object.
+// The result is an vector of the C objects.
 %define CS_TYPEMAP_PTRARRAY(CTYPE, TYPE)
 
 %typemap(cscode) CTYPE %{
   public static IntPtr[] getCPtr(TYPE[] arr) {
     IntPtr[] pointers = new IntPtr[arr.Length];
-    for (int i = 0; i < arr.Length; i++)
+    for (int i = 0; i < arr.Length; i++) {
       pointers[i] = (IntPtr)TYPE.getCPtr(arr[i]);
+    }
     return pointers;
   }
 %}
@@ -661,7 +673,9 @@ CTYPE** "IntPtr[]"
 
 ////////////////////////////////////////////////
 //
-//    CS_TYPEMAP_STDVECTOR_OBJECT
+// CS_TYPEMAP_STDVECTOR_OBJECT
+//
+// Map c# arrays to c++ vectors for swiged C++ objects.
 //
 ////////////////////////////////////////////////
 
@@ -682,8 +696,9 @@ CTYPE** "IntPtr[]"
 %typemap(csin) const std::vector<CTYPE*>& "$csinput.Length, TYPE.getCPtr($csinput)"
 %typemap(in) const std::vector<CTYPE*>& (std::vector<CTYPE*> result) {
   result.reserve(length$argnum);
-  for (int i = 0; i < length$argnum; i++)
+  for (int i = 0; i < length$argnum; i++) {
     result.push_back($input[i]);
+  }
   $1 = &result;
 }
 %enddef  // CS_TYPEMAP_STDVECTOR_OBJECT
@@ -774,16 +789,21 @@ CS_TYPEMAP_STDVECTOR_IN1(int64, int64, long)
 // message parameters.  Each protocol message is serialized into
 // byte[] before passing into (or returning from) C++ code.
 
-// If the C++ function expects an input protocol message:
+// If the C++ function expects an input protocol message, transferring
+// ownership to the caller (in C++):
 //   foo(const MyProto* message,...)
 // Use PROTO_INPUT macro:
 //   PROTO_INPUT(MyProto, Google.Proto.Protos.Test.MyProto, message)
 //
 // if the C++ function returns a protocol message:
 //   MyProto* foo();
-// Use PROTO2_RETURN_AND_DELETE macro:
-//   PROTO2_RETURN_AND_DELETE(MyProto, Google.Proto.Protos.Test.MyProto)
-
+// Use PROTO2_RETURN macro:
+//   PROTO2_RETURN(MyProto, Google.Proto.Protos.Test.MyProto, true)
+//
+// Replace true by false if the C++ function returns a pointer to a
+// protocol message object whose ownership is not transferred to the
+// (C++) caller.
+//
 // Passing each protocol message from C# to C++ by value. Each ProtocolMessage
 // is serialized into byte[] when it is passed from C# to C++, the C++ code
 // deserializes into C++ native protocol message.
@@ -792,6 +812,9 @@ CS_TYPEMAP_STDVECTOR_IN1(int64, int64, long)
 // @param CSharpProtoType the corresponding fully qualified C# protocol message
 //        type
 // @param param_name the parameter name
+// @param deleteCppReturn indicates that the resulting object is a native
+// (java, c#, python) object, and thus the C++ proto can be safely deleted
+// after the conversion.
 %define PROTO_INPUT(CppProtoType, CSharpProtoType, param_name)
 %typemap(ctype)    PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int proto_size, char*"
 %typemap(imtype)  PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int proto_size, byte[]"
