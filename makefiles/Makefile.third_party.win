@@ -65,22 +65,22 @@ download_third_party: \
 install_directories: dependencies\install\bin dependencies\install\lib\coin dependencies\install\include\coin
 
 dependencies\install\bin: dependencies\install
-	md dependencies\install\bin
+	tools\mkdir.exe dependencies\install\bin
 
 dependencies\install\lib: dependencies\install
-	md dependencies\install\lib
+	tools\mkdir.exe dependencies\install\lib
 
 dependencies\install\lib\coin: dependencies\install\lib
-	md dependencies\install\lib\coin
+	tools\mkdir.exe dependencies\install\lib\coin
 
 dependencies\install\include: dependencies\install
-	md dependencies\install\include
+	tools\mkdir.exe dependencies\install\include
 
 dependencies\install\include\coin: dependencies\install\include
-	md dependencies\install\include\coin
+	tools\mkdir.exe dependencies\install\include\coin
 
 dependencies\install:
-	md dependencies\install
+	tools\mkdir.exe dependencies\install
 
 # Install zlib
 install_zlib: dependencies\install\include\zlib.h dependencies\install\include\zconf.h dependencies\install\lib\zlib.lib
@@ -88,8 +88,9 @@ install_zlib: dependencies\install\include\zlib.h dependencies\install\include\z
 dependencies\install\include\zlib.h: dependencies\sources\zlib-1.2.5\zlib.h
 	copy dependencies\sources\zlib-1.2.5\zlib.h dependencies\install\include
 
-dependencies\install\include\zconf.h: dependencies\sources\zlib-1.2.5\zconf.h
+dependencies\install\include\zconf.h: dependencies\sources\zlib-1.2.5\zlib.h
 	copy dependencies\sources\zlib-1.2.5\zconf.h dependencies\install\include
+	tools\touch.exe dependencies\install\include\zconf.h
 
 dependencies\install\lib\zlib.lib: dependencies\sources\zlib-1.2.5\zlib.h
 	copy dependencies\solutions\Makefile.msc dependencies\sources\zlib-1.2.5
@@ -97,7 +98,8 @@ dependencies\install\lib\zlib.lib: dependencies\sources\zlib-1.2.5\zlib.h
 	copy dependencies\sources\zlib-1.2.5\zlib.lib dependencies\install\lib
 
 dependencies\sources\zlib-1.2.5\zlib.h: dependencies\archives\zlib125.zip
-	cd dependencies\sources && ..\..\tools\unzip ..\archives\zlib125.zip
+	tools\unzip -d dependencies\sources dependencies\archives\zlib125.zip
+	tools\touch.exe dependencies\sources\zlib-1.2.5\zlib.h
 
 dependencies\archives\zlib125.zip:
 	tools\wget -P dependencies\archives http://zlib.net/zlib125.zip
@@ -110,9 +112,12 @@ dependencies\install\lib\libgflags.lib: dependencies\sources\gflags\autogen.sh
 
 dependencies\install\include\gflags\gflags.h: dependencies\install\include\gflags dependencies\sources\gflags\src\windows\gflags\gflags.h
 	copy dependencies\sources\gflags\src\windows\gflags\*.h dependencies\install\include\gflags
+	tools\touch.exe dependencies\install\include\gflags\gflags.h
 
 dependencies\install\include\gflags: dependencies\install\include
-	md dependencies\install\include\gflags
+ifeq ($(wildcard dependencies\install\include\gflags),)
+	tools\mkdir.exe dependencies\install\include\gflags
+endif
 
 dependencies\sources\gflags\src\windows\gflags\gflags.h: dependencies\sources\gflags\autogen.sh
 
@@ -126,7 +131,7 @@ dependencies\install\bin\protoc.exe: dependencies\sources\protobuf\autogen.sh
 	cd dependencies\solutions && msbuild protobuf.sln /t:build
 
 dependencies\install\include\google\protobuf\message.h: dependencies\sources\protobuf\vsprojects\include.tar
-	cd dependencies\install && ..\..\tools\tar.exe xvf ..\sources\protobuf\vsprojects\include.tar
+	cd dependencies\install && ..\..\tools\tar.exe xvmf ..\sources\protobuf\vsprojects\include.tar
 
 dependencies\sources\protobuf\vsprojects\include.tar: dependencies\sources\protobuf\autogen.sh
 	cd dependencies\sources\protobuf\vsprojects && extract_includes.bat
@@ -159,8 +164,8 @@ dependencies\sources\sparsehash\autogen.sh:
 # Install Coin CBC.
 install_coin_cbc: dependencies\install\bin\cbc.exe
 
-dependencies\install\bin\cbc.exe: dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(PLATFORM)\Release\cbc.exe
-	copy dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(PLATFORM)\Release\*.lib dependencies\install\lib\coin
+dependencies\install\bin\cbc.exe: dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\Release\cbc.exe
+	copy dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\Release\*.lib dependencies\install\lib\coin
 	copy dependencies\sources\coin-cbc\Cbc\src\*.hpp dependencies\install\include\coin
 	copy dependencies\sources\coin-cbc\Clp\src\*.hpp dependencies\install\include\coin
 	copy dependencies\sources\coin-cbc\Clp\src\OsiClp\*.hpp dependencies\install\include\coin
@@ -172,9 +177,9 @@ dependencies\install\bin\cbc.exe: dependencies\sources\coin-cbc\Cbc\MSVisualStud
 	copy dependencies\sources\coin-cbc\CoinUtils\src\*.h dependencies\install\include\coin
 	copy dependencies\sources\coin-cbc\Cgl\src\*.h dependencies\install\include\coin
 	copy dependencies\sources\coin-cbc\Osi\src\Osi\*.h dependencies\install\include\coin
-	copy dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(PLATFORM)\Release\cbc.exe dependencies\install\bin
+	copy dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\Release\cbc.exe dependencies\install\bin
 
-dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(PLATFORM)\Release\cbc.exe: dependencies\sources\coin-cbc\configure
+dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\Release\cbc.exe: dependencies\sources\coin-cbc\configure
 	cd dependencies\sources\coin-cbc\Cbc\MSVisualStudio\v10 && msbuild Cbc.sln /t:Build /p:Configuration=Release
 
 dependencies\sources\coin-cbc\configure:
@@ -185,6 +190,7 @@ install_swig: dependencies\install\swigwin-2.0.4\swig.exe
 
 dependencies\install\swigwin-2.0.4\swig.exe: dependencies\archives\swigwin-2.0.4.zip
 	tools\unzip -d dependencies/install dependencies\archives\swigwin-2.0.4.zip
+	tools\touch.exe dependencies\install\swigwin-2.0.4\swig.exe
 
 dependencies\archives\swigwin-2.0.4.zip:
 	tools\wget -P dependencies\archives http://prdownloads.sourceforge.net/swig/swigwin-2.0.4.zip
@@ -203,7 +209,7 @@ dependencies\install\bin\glpsol.exe: dependencies\sources\glpk-$(GLPK_TAG)\glpso
 	cd dependencies\sources\glpk-$(GLPK_TAG) && nmake -f glpk.mk
 
 dependencies\sources\glpk-$(GLPK_TAG)\configure: dependencies\archives\glpk-$(GLPK_TAG).tar.gz
-	cd dependencies\sources && ..\..\tools\gzip -dc ..\archives\glpk-$(GLPK_TAG).tar.gz | ..\..\tools\tar xvmf -
+	cd dependencies\sources && ..\..\tools\gzip -dc ..\archives\glpk-$(GLPK_TAG).tar.gz | ..\..\tools\tar.exe xvmf -
 
 # Install scip if needed.
 install_scip: $(SCIP_TARGET)

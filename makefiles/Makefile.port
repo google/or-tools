@@ -58,11 +58,13 @@ ifeq ("$(SYSTEM)","win")
   SELECTED_JDK_DEF = WINDOWS_JDK_DIR = \# Please define JDK root.
   ifeq ("$(Platform)", "X64")
     PLATFORM = x64
+    CBC_PLATFORM = x64
     PTRLENGTH = 64
     NETPLATFORM = x64
   else
     PTRLENGTH = 32
     PLATFORM = Win32
+    CBC_PLATFORM = Win32
     NETPLATFORM = x86
   endif
   OS = Windows

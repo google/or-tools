@@ -72,5 +72,5 @@ LD = link /DLL
 S=\\
 CPSEP=;
 DEL=del
-DELREC=del /s
+DELREC=tools\rm.exe -rf
 JNILIBEXT=dll
