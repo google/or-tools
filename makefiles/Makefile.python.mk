@@ -109,16 +109,16 @@ python_archive: python
 	$(TOUCH) temp$Sor-tools.$(PLATFORM)$Sgraph$S__init__.py
 	$(TOUCH) temp$Sor-tools.$(PLATFORM)$Salgorithms$S__init__.py
 ifeq ("$(SYSTEM)","win")
-	cd temp$Sor-tools.$(PLATFORM) && ..\..\tools\tar.exe -C ..$S.. -c -v data | ..\..\tools\tar.exe xvm
+	cd temp$Sor-tools.$(PLATFORM) && ..\..\tools\tar.exe -C ..$S.. -c -v --exclude *svn* data | ..\..\tools\tar.exe xvm
 	$(COPY) gen$Sconstraint_solver$S_pywrapcp.pyd temp$Sor-tools.$(PLATFORM)$Sconstraint_solver
 	$(COPY) gen$Slinear_solver$S_pywraplp.pyd temp$Sor-tools.$(PLATFORM)$Slinear_solver
 	$(COPY) gen$Sgraph$S_pywrapflow.pyd temp$Sor-tools.$(PLATFORM)$Sgraph
 	$(COPY) gen$Salgorithms$S_pywrapknapsack_solver.pyd temp$Sor-tools.$(PLATFORM)$Salgorithms
 	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.python.$(PLATFORM).$(SVNVERSION).zip or-tools.$(PLATFORM)
 else
-	cd temp$Sor-tools.$(PLATFORM) && tar -C ..$S.. -c -v data | tar xvm
+	cd temp$Sor-tools.$(PLATFORM) && tar -C ..$S.. -c -v --exclude \*svn\* data | tar xvm -
 	$(COPY) _pywrap*.$(SHAREDLIBEXT) temp$Sor-tools.$(PLATFORM)
-	cd temp && tar cvzf -r ..$SGoogle.OrTools.python.$(PLATFORM).$(SVNVERSION).tar.gz or-tools.$(PLATFORM)
+	cd temp && tar cvzf ..$SGoogle.OrTools.python.$(PLATFORM).$(SVNVERSION).tar.gz or-tools.$(PLATFORM)
 endif
 	-$(DELREC) temp
 
