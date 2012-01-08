@@ -115,3 +115,6 @@ Google.OrTools.Graph.dll: objs\flow_csharp_wrap.$O $(GRAPH_LIBS) $(LP_LIBS) $(BA
 csflow.exe: csharpgraph csharp\csflow.cs
 	$(CSC) /target:exe /out:csflow.exe /platform:$(NETPLATFORM) /r:Google.OrTools.Graph.dll csharp\csflow.cs
 
+
+dotnet_archive: csharp
+	tools\zip.exe -r Google.OrTools.NET.$(PLATFORM).$(SVNVERSION).zip Google.OrTools.*.dll csharp/*.cs csharp/solution/*sln csharp/solution/*csproj

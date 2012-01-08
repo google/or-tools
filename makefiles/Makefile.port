@@ -72,6 +72,8 @@ ifeq ("$(SYSTEM)","win")
   TOP = $(shell echo $(TOP_AUX) | tools\\sed.exe -e "s/\\/\\\\/g" | tools\\sed.exe -e "s/ //g")
 endif
 
+SVNVERSION = $(shell svnversion .)
+
 
 printport:
 	@echo SHELL = $(SHELL)
@@ -81,4 +83,5 @@ printport:
 	@echo PTRLENGTH = $(PTRLENGTH)
 	@echo PYTHONVERSION = $(PYTHONVERSION)
 	@echo SELECTED_JDK_DEF = $(SELECTED_JDK_DEF)
+	@echo SVNVERSION = $(SVNVERSION)
 
