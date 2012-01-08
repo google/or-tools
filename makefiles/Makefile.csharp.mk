@@ -117,4 +117,16 @@ csflow.exe: csharpgraph csharp\csflow.cs
 
 
 dotnet_archive: csharp
-	tools\zip.exe -r Google.OrTools.NET.$(PLATFORM).$(SVNVERSION).zip Google.OrTools.*.dll csharp/*.cs csharp/solution/*sln csharp/solution/*csproj
+	-$(DELREC) temp
+	tools\mkdir temp
+	tools\mkdir temp\or-tools.$(PLATFORM)
+	tools\mkdir temp\or-tools.$(PLATFORM)\csharp
+	tools\mkdir temp\or-tools.$(PLATFORM)\csharp\solution
+	tools\mkdir temp\or-tools.$(PLATFORM)\csharp\solution\Properties
+	copy Google.OrTools.*.dll temp\or-tools.$(PLATFORM)
+	copy csharp\*.cs temp\or-tools.$(PLATFORM)\csharp
+	copy csharp\*.sln temp\or-tools.$(PLATFORM)\csharp
+	copy csharp\solution\*.csproj temp\or-tools.$(PLATFORM)\csharp\solution
+	copy csharp\solution\Properties\*.cs temp\or-tools.$(PLATFORM)\csharp\solution\Properties
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.NET.$(PLATFORM).$(SVNVERSION).zip or-tools.$(PLATFORM)
+	-$(DELREC) temp
