@@ -296,3 +296,20 @@ objs/com/google/ortools/linearsolver/samples/IntegerProgramming.class: javalp co
 
 run_IntegerProgramming: compile_IntegerProgramming
 	$(JAVA_BIN) -Xss2048k -Djava.library.path=. -cp objs$(CPSEP)com.google.ortools.linearsolver.jar com.google.ortools.linearsolver.samples.IntegerProgramming
+
+# Build archive.
+
+java_archive: java
+	-$(DELREC) temp
+	$(MKDIR) temp
+	$(MKDIR) temp$Sor-tools.$(PLATFORM)
+	$(COPY) *.jar temp$Sor-tools.$(PLATFORM)
+	$(COPY) $(LIBPREFIX)jni*.$(JNILIBEXT) temp$Sor-tools.$(PLATFORM)
+	cd temp$Sor-tools.$(PLATFORM) && tar -C ..$S.. -c -v com | tar -x -v -m --exclude=*.cs
+ifeq ("$(SYSTEM)","win")
+	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.java.$(PLATFORM).$(SVNVERSION).zip or-tools.$(PLATFORM)
+else
+	cd temp && tar cvzf -r ..$SGoogle.OrTools.java.$(PLATFORM).$(SVNVERSION).tar.gz or-tools.$(PLATFORM)
+endif
+	-$(DELREC) temp
+

@@ -87,3 +87,38 @@ _pywraplp.$(SHAREDLIBEXT): objs/linear_solver_python_wrap.$O $(LP_LIBS) $(BASE_L
 ifeq "$(SYSTEM)" "win"
 	copy _pywraplp.dll gen\\linear_solver\\_pywraplp.pyd
 endif
+
+# Build archive.
+
+python_archive: python
+	-$(DELREC) temp
+	$(MKDIR) temp
+	$(MKDIR) temp$Sor-tools.$(PLATFORM)
+	$(MKDIR) temp$Sor-tools.$(PLATFORM)$Spython
+	$(MKDIR) temp$Sor-tools.$(PLATFORM)$Sconstraint_solver
+	$(MKDIR) temp$Sor-tools.$(PLATFORM)$Slinear_solver
+	$(MKDIR) temp$Sor-tools.$(PLATFORM)$Sgraph
+	$(MKDIR) temp$Sor-tools.$(PLATFORM)$Salgorithms
+	$(COPY) python$S*.py temp$Sor-tools.$(PLATFORM)$Spython
+	$(COPY) gen$Sconstraint_solver$S*.py temp$Sor-tools.$(PLATFORM)$Sconstraint_solver
+	$(COPY) gen$Slinear_solver$S*.py temp$Sor-tools.$(PLATFORM)$Slinear_solver
+	$(COPY) gen$Sgraph$S*.py temp$Sor-tools.$(PLATFORM)$Sgraph
+	$(COPY) gen$Salgorithms$S*.py temp$Sor-tools.$(PLATFORM)$Salgorithms
+	$(TOUCH) temp$Sor-tools.$(PLATFORM)$Sconstraint_solver$S__init__.py
+	$(TOUCH) temp$Sor-tools.$(PLATFORM)$Slinear_solver$S__init__.py
+	$(TOUCH) temp$Sor-tools.$(PLATFORM)$Sgraph$S__init__.py
+	$(TOUCH) temp$Sor-tools.$(PLATFORM)$Salgorithms$S__init__.py
+ifeq ("$(SYSTEM)","win")
+	cd temp$Sor-tools.$(PLATFORM) && ..\..\tools\tar.exe -C ..$S.. -c -v data | ..\..\tools\tar.exe xvm
+	$(COPY) gen$Sconstraint_solver$S_pywrapcp.pyd temp$Sor-tools.$(PLATFORM)$Sconstraint_solver
+	$(COPY) gen$Slinear_solver$S_pywraplp.pyd temp$Sor-tools.$(PLATFORM)$Slinear_solver
+	$(COPY) gen$Sgraph$S_pywrapflow.pyd temp$Sor-tools.$(PLATFORM)$Sgraph
+	$(COPY) gen$Salgorithms$S_pywrapknapsack_solver.pyd temp$Sor-tools.$(PLATFORM)$Salgorithms
+	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.python.$(PLATFORM).$(SVNVERSION).zip or-tools.$(PLATFORM)
+else
+	cd temp$Sor-tools.$(PLATFORM) && tar -C ..$S.. -c -v data | tar xvm
+	$(COPY) _pywrap*.$(SHAREDLIBEXT) temp$Sor-tools.$(PLATFORM)
+	cd temp && tar cvzf -r ..$SGoogle.OrTools.python.$(PLATFORM).$(SVNVERSION).tar.gz or-tools.$(PLATFORM)
+endif
+	-$(DELREC) temp
+

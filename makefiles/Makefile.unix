@@ -147,6 +147,9 @@ endif
 # Unix specific definitions
 PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
 SWIG_BINARY = $(UNIX_SWIG_BINARY)
+MKDIR=mkdir
+COPY=cp
+TOUCH=touch
 LIBPREFIX = lib
 LIBSUFFIX = a
 LINKCMD = ar rv

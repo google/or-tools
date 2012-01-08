@@ -74,3 +74,6 @@ CPSEP=;
 DEL=del
 DELREC=tools\rm.exe -rf
 JNILIBEXT=dll
+MKDIR=md
+COPY=copy
+TOUCH=tools\touch.exe

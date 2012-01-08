@@ -115,6 +115,7 @@ Google.OrTools.Graph.dll: objs\flow_csharp_wrap.$O $(GRAPH_LIBS) $(LP_LIBS) $(BA
 csflow.exe: csharpgraph csharp\csflow.cs
 	$(CSC) /target:exe /out:csflow.exe /platform:$(NETPLATFORM) /r:Google.OrTools.Graph.dll csharp\csflow.cs
 
+# Build archive.
 
 dotnet_archive: csharp
 	-$(DELREC) temp
