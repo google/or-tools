@@ -1,5 +1,4 @@
 # List libraries by module.
-
 BASE_LIBS = \
 	$(LIBPREFIX)util.$(LIBSUFFIX)          \
 	$(LIBPREFIX)base.$(LIBSUFFIX)
@@ -8,7 +7,7 @@ LP_LIBS = \
 	$(LIBPREFIX)linear_solver.$(LIBSUFFIX)
 
 ALGORITHMS_LIBS = \
-	$(LIBPREFIX)algorithms.$(LIBSUFFIX) \
+	$(LIBPREFIX)algorithms.$(LIBSUFFIX)
 
 CP_LIBS = \
 	$(LIBPREFIX)constraint_solver.$(LIBSUFFIX)
@@ -18,9 +17,7 @@ GRAPH_LIBS = \
 	$(LIBPREFIX)shortestpaths.$(LIBSUFFIX)
 
 ROUTING_LIBS = \
-        $(LIBPREFIX)routing.$(LIBSUFFIX) \
-        $(LIBPREFIX)graph.$(LIBSUFFIX) \
-        $(LIBPREFIX)constraint_solver.$(LIBSUFFIX) \
+        $(LIBPREFIX)routing.$(LIBSUFFIX)
 
 # Lib dependencies.
 BASE_DEPS = $(BASE_LIBS)
@@ -33,7 +30,7 @@ CP_DEPS = $(CP_LIBS) $(LP_LIBS) $(BASE_LIBS)
 
 GRAPH_DEPS = $(GRAPH_LIBS) $(BASE_LIBS)
 
-ROUTING_DEPS = $(ROUTING_LIBS) $(CP_LIBS) $(GRAPH_LIBS) $(BASE_LIBS)
+ROUTING_DEPS = $(ROUTING_LIBS) $(CP_LIBS) $(LP_LIBS) $(GRAPH_LIBS) $(BASE_LIBS)
 
 # Create link commands.
 BASE_LNK = \

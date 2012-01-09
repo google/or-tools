@@ -116,12 +116,8 @@ JAR_BIN = jar
 PRE_LIB = -L$(TOP) -l
 POST_LIB =
 LIBSUFFIX = dylib
-LINKCMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress
+LINKCMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min 10.6
 LINKPREFIX = -o # Need the space.
-
-#LIBSUFFIX = a
-#LINKCMD = ar rv
-#LINKPREFIX =
 
 ifdef UNIX_GLPK_DIR
 GLPK_LNK = -L$(UNIX_GLPK_DIR)/lib -lglpk
