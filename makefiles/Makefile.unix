@@ -91,6 +91,11 @@ JAVAC_BIN = $(LINUX_JDK_ROOT)/bin/javac
 JAVA_BIN = $(LINUX_JDK_ROOT)/bin/java
 JAR_BIN = $(LINUX_JDK_ROOT)/bin/jar
 JNILIBEXT = so
+LIBSUFFIX = so
+LINKCMD = g++ -shared
+LINKPREFIX = -o # Need the space.
+PRE_LIB = -Wl,-rpath $(TOP) -L$(TOP) -l
+POST_LIB =
 endif
 ifeq ($(PLATFORM),MACOSX)
 LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress
@@ -104,6 +109,8 @@ JAVAC_BIN = javac
 JAVA_BIN = java
 JAR_BIN = jar
 JNILIBEXT = jnilib
+PRE_LIB = -l
+POST_LIB =
 
 ifdef UNIX_GLPK_DIR
 GLPK_LNK = -L$(UNIX_GLPK_DIR)/lib -lglpk
@@ -151,9 +158,6 @@ MKDIR=mkdir
 COPY=cp
 TOUCH=touch
 LIBPREFIX = lib
-LIBSUFFIX = a
-LINKCMD = ar rv
-LINKPREFIX =
 O = o
 E =
 SHAREDLIBEXT = so

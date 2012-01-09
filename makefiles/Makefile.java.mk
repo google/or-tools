@@ -14,8 +14,8 @@ com.google.ortools.constraintsolver.jar: gen/constraint_solver/constraint_solver
 	$(JAVAC_BIN) -d objs com$Sgoogle$Sortools$Sconstraintsolver$S*.java gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java
 	$(JAR_BIN) cf com.google.ortools.constraintsolver.jar -C objs com$Sgoogle$Sortools$Sconstraintsolver
 
-$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT): objs/constraint_solver_java_wrap.$O $(CP_LIBS) $(LP_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT)$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT) objs/constraint_solver_java_wrap.$O $(CP_LIBS) $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS)
+$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT): objs/constraint_solver_java_wrap.$O $(CP_DEPS)
+	$(LD) $(LDOUT)$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT) objs/constraint_solver_java_wrap.$O $(CP_LNK) $(LDFLAGS)
 
 # Java CP Examples
 
@@ -222,8 +222,8 @@ com.google.ortools.knapsacksolver.jar: gen/algorithms/knapsack_solver_java_wrap.
 	$(JAVAC_BIN) -d objs gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.java
 	$(JAR_BIN) cf com.google.ortools.knapsacksolver.jar -C objs com$Sgoogle$Sortools$Sknapsacksolver
 
-$(LIBPREFIX)jniknapsacksolver.$(JNILIBEXT): objs/knapsack_solver_java_wrap.$O $(ALGORITHMS_LIBS) $(LP_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT)$(LIBPREFIX)jniknapsacksolver.$(JNILIBEXT) objs/knapsack_solver_java_wrap.$O $(ALGORITHMS_LIBS) $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS)
+$(LIBPREFIX)jniknapsacksolver.$(JNILIBEXT): objs/knapsack_solver_java_wrap.$O $(ALGORITHMS_DEPS)
+	$(LD) $(LDOUT)$(LIBPREFIX)jniknapsacksolver.$(JNILIBEXT) objs/knapsack_solver_java_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS)
 
 # Java Algorithms Examples
 
@@ -249,8 +249,8 @@ com.google.ortools.flow.jar: gen/graph/flow_java_wrap.cc
 	$(JAVAC_BIN) -d objs gen$Scom$Sgoogle$Sortools$Sflow$S*.java
 	$(JAR_BIN) cf com.google.ortools.flow.jar -C objs com$Sgoogle$Sortools$Sflow
 
-$(LIBPREFIX)jniflow.$(JNILIBEXT): objs/flow_java_wrap.$O $(GRAPH_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT)$(LIBPREFIX)jniflow.$(JNILIBEXT) objs/flow_java_wrap.$O $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS)
+$(LIBPREFIX)jniflow.$(JNILIBEXT): objs/flow_java_wrap.$O $(GRAPH_DEPS)
+	$(LD) $(LDOUT)$(LIBPREFIX)jniflow.$(JNILIBEXT) objs/flow_java_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
 
 # Java Algorithms Examples
 
@@ -276,10 +276,10 @@ com.google.ortools.linearsolver.jar: gen/linear_solver/linear_solver_java_wrap.c
 	$(JAVAC_BIN) -d objs gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
 	$(JAR_BIN) cf com.google.ortools.linearsolver.jar -C objs com$Sgoogle$Sortools$Slinearsolver
 
-$(LIBPREFIX)jnilinearsolver.$(JNILIBEXT): objs/linear_solver_java_wrap.$O $(LP_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT)$(LIBPREFIX)jnilinearsolver.$(JNILIBEXT) objs/linear_solver_java_wrap.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS)
+$(LIBPREFIX)jnilinearsolver.$(JNILIBEXT): objs/linear_solver_java_wrap.$O $(LP_DEPS)
+	$(LD) $(LDOUT)$(LIBPREFIX)jnilinearsolver.$(JNILIBEXT) objs/linear_solver_java_wrap.$O $(LP_LNK) $(LDFLAGS)
 
-# Java Algorithms Examples
+# Java Linear Programming Examples
 
 compile_LinearProgramming: objs/com/google/ortools/linearsolver/samples/LinearProgramming.class
 

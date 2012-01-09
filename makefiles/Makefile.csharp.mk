@@ -42,9 +42,9 @@ gen/linear_solver/linear_solver_csharp_wrap.cc: linear_solver/linear_solver.swig
 objs/linear_solver_csharp_wrap.$O: gen/linear_solver/linear_solver_csharp_wrap.cc
 	cl /clr /EHa /MD $(CFLAGS) -c gen/linear_solver/linear_solver_csharp_wrap.cc $(OBJOUT)objs/linear_solver_csharp_wrap.$O
 
-Google.OrTools.LinearSolver.dll: objs/linear_solver_csharp_wrap.$O $(LP_LIBS) $(BASE_LIBS)
+Google.OrTools.LinearSolver.dll: objs/linear_solver_csharp_wrap.$O $(LP_DEPS)
 	$(CSC) /target:module /out:Google.OrTools.LinearSolver.netmodule /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
-	$(LD) /LTCG $(LDOUT)Google.OrTools.LinearSolver.dll Google.OrTools.LinearSolver.netmodule objs/linear_solver_csharp_wrap.$O $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS)
+	$(LD) /LTCG $(LDOUT)Google.OrTools.LinearSolver.dll Google.OrTools.LinearSolver.netmodule objs/linear_solver_csharp_wrap.$O $(LP_LNK) $(LDFLAGS)
 
 # csharp linearsolver examples
 
@@ -67,9 +67,9 @@ gen/constraint_solver/constraint_solver_csharp_wrap.cc: constraint_solver/routin
 objs/constraint_solver_csharp_wrap.$O: gen/constraint_solver/constraint_solver_csharp_wrap.cc
 	cl /clr /EHa /MD $(CFLAGS) -c gen/constraint_solver/constraint_solver_csharp_wrap.cc $(OBJOUT)objs/constraint_solver_csharp_wrap.$O
 
-Google.OrTools.ConstraintSolver.dll: objs/constraint_solver_csharp_wrap.$O $(ROUTING_LIBS) $(BASE_LIBS) $(LP_LIBS)
+Google.OrTools.ConstraintSolver.dll: objs/constraint_solver_csharp_wrap.$O $(ROUTING_DEPS)
 	$(CSC) /target:module /out:Google.OrTools.ConstraintSolver.netmodule /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs com$Sgoogle$Sortools$Sconstraintsolver$S*.cs
-	$(LD) /LTCG $(LDOUT)Google.OrTools.ConstraintSolver.dll Google.OrTools.ConstraintSolver.netmodule objs/constraint_solver_csharp_wrap.$O $(ROUTING_LIBS) $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS)
+	$(LD) /LTCG $(LDOUT)Google.OrTools.ConstraintSolver.dll Google.OrTools.ConstraintSolver.netmodule objs/constraint_solver_csharp_wrap.$O $(ROUTING_LNK) $(LDFLAGS)
 
 # csharp cp examples
 
@@ -87,9 +87,9 @@ gen/algorithms/knapsack_solver_csharp_wrap.cc: algorithms/knapsack_solver.swig a
 objs/knapsack_solver_csharp_wrap.$O: gen/algorithms/knapsack_solver_csharp_wrap.cc
 	cl /clr /EHa /MD $(CFLAGS) -c gen/algorithms/knapsack_solver_csharp_wrap.cc $(OBJOUT)objs/knapsack_solver_csharp_wrap.$O
 
-Google.OrTools.Algorithms.dll: objs/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_LIBS) $(LP_LIBS) $(BASE_LIBS)
+Google.OrTools.Algorithms.dll: objs/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_DEPS)
 	$(CSC) /target:module /out:Google.OrTools.Algorithms.netmodule /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
-	$(LD) /LTCG $(LDOUT)Google.OrTools.Algorithms.dll Google.OrTools.Algorithms.netmodule objs/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_LIBS) $(LP_LIBS) $(BASE_LIBS) $(LDLPDEPS) $(LDFLAGS)
+	$(LD) /LTCG $(LDOUT)Google.OrTools.Algorithms.dll Google.OrTools.Algorithms.netmodule objs/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS)
 
 # csharp algorithm examples
 
@@ -106,9 +106,9 @@ gen\graph\flow_csharp_wrap.cc: graph\flow.swig base\base.swig util\data.swig gra
 objs\flow_csharp_wrap.$O: gen\graph\flow_csharp_wrap.cc
 	cl /clr /nologo /EHa /MD /DWIN32 /D_USRDLL /D_WINDLL $(CFLAGS) /c gen$Sgraph$Sflow_csharp_wrap.cc /Foobjs$S
 
-Google.OrTools.Graph.dll: objs\flow_csharp_wrap.$O $(GRAPH_LIBS) $(LP_LIBS) $(BASE_LIBS)
+Google.OrTools.Graph.dll: objs\flow_csharp_wrap.$O $(GRAPH_DEPS)
 	$(CSC) /target:module /unsafe /out:Google.OrTools.Graph.netmodule /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sflow$S*.cs
-	link /DLL /LTCG /OUT:Google.OrTools.Graph.dll Google.OrTools.Graph.netmodule objs$Sflow_csharp_wrap.$O $(GRAPH_LIBS) $(BASE_LIBS) $(LDFLAGS)
+	link /DLL /LTCG /OUT:Google.OrTools.Graph.dll Google.OrTools.Graph.netmodule objs$Sflow_csharp_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
 
 # csharp graph examples
 
