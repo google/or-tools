@@ -17,6 +17,7 @@
 #include "base/logging.h"
 
 DEFINE_int32(log_level, 0, "Log level (0 is the default).");
+DEFINE_bool(short_log, false, "No date, file, line prefix on logs if true.");
 
 namespace operations_research {
 DateLogger::DateLogger() {

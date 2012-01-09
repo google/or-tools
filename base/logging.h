@@ -21,6 +21,7 @@
 #include "base/macros.h"
 
 DECLARE_int32(log_level);
+DECLARE_bool(short_log);
 
 // Debug-only checking.
 #define DCHECK(condition) assert(condition)
@@ -74,8 +75,10 @@ class DateLogger {
 class LogMessage {
  public:
   LogMessage(const char* file, int line) {
-    std::cerr << "[" << pretty_date_.HumanDate() << "] "
-              << file << ":" << line << ": ";
+    if (!FLAGS_short_log) {
+      std::cerr << "[" << pretty_date_.HumanDate() << "] "
+                << file << ":" << line << ": ";
+    }
   }
   ~LogMessage() { std::cerr << "\n"; }
   std::ostream& stream() { return std::cerr; }
