@@ -334,7 +334,7 @@ objs/scip_interface.$O:linear_solver/scip_interface.cc
 	$(CCC) $(CFLAGS) -c linear_solver/scip_interface.cc $(OBJOUT)objs/scip_interface.$O
 
 $(LIBPREFIX)linear_solver.$(LIBSUFFIX): $(LINEAR_SOLVER_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIBPREFIX)linear_solver.$(LIBSUFFIX) $(LINEAR_SOLVER_LIB_OS)
+	$(LINKCMD) $(LINKPREFIX)$(LIBPREFIX)linear_solver.$(LIBSUFFIX) $(LINEAR_SOLVER_LIB_OS) $(SCIP_FIX)
 
 # Util library.
 
