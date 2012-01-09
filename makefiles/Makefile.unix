@@ -109,8 +109,11 @@ JAVAC_BIN = javac
 JAVA_BIN = java
 JAR_BIN = jar
 JNILIBEXT = jnilib
-PRE_LIB = -l
+PRE_LIB = -L$(TOP) -l
 POST_LIB =
+LIBSUFFIX = a
+LINKCMD = ar rv
+LINKPREFIX =
 
 ifdef UNIX_GLPK_DIR
 GLPK_LNK = -L$(UNIX_GLPK_DIR)/lib -lglpk
