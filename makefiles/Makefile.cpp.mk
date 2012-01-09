@@ -102,7 +102,7 @@ algorithmslibs: $(ALGORITHMS_DEPS)
 DIMACS_LIBS = \
 	$(LIBPREFIX)dimacs.$(LIBSUFFIX)
 
-DIMACS_LNK = $(PRE_LIB)dimacs
+DIMACS_LNK = $(PRE_LIB)dimacs$(POST_LIB)
 
 dimacslibs: $(DIMACS_LIBS)
 
