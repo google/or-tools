@@ -17,6 +17,7 @@
 %{
 #include "util/zvector.h"
 #include "graph/ebert_graph.h"
+#include "graph/linear_assignment.h"
 #include "graph/max_flow.h"
 #include "graph/min_cost_flow.h"
 %}
@@ -51,6 +52,23 @@
 %rename(capacity) operations_research::MinCostFlow::Capacity;
 %rename(cost) operations_research::MinCostFlow::Cost;
 %rename(supply) operations_research::MinCostFlow::Supply;
+
+// Rename rules on LinearSumAssignment.
+%rename(setCostScalingDivisor) operations_research::LinearSumAssignment::SetCostScalingDivisor;
+%rename(optimizeGraphLayout) operations_research::LinearSumAssignment::OptimizeGraphLayout;
+%rename(graph) operations_research::LinearSumAssignment::Graph;
+%rename(head) operations_research::LinearSumAssignment::Head;
+%rename(setArcCost) operations_research::LinearSumAssignment::SetArcCost;
+%rename(finalizeSetup) operations_research::LinearSumAssignment::FinalizeSetup;
+%rename(computeAssignment) operations_research::LinearSumAssignment::ComputeAssignment;
+%rename(getCost) operations_research::LinearSumAssignment::GetCost;
+%rename(numNodes) operations_research::LinearSumAssignment::NumNodes;
+%rename(numLeftNodes) operations_research::LinearSumAssignment::NumLeftNodes;
+%rename(getAssignmentArc) operations_research::LinearSumAssignment::GetAssignmentArc;
+%rename(getAssignmentCost) operations_research::LinearSumAssignment::GetAssignmentCost;
+%rename(getMate) operations_research::LinearSumAssignment::GetMate;
+%rename(statsString) operations_research::LinearSumAssignment::StatsString;
+
 #endif  // SWIGJAVA
 
 #if defined(SWIGCSHARP)
@@ -79,6 +97,7 @@
 
 %include "util/zvector.h"
 %include "graph/ebert_graph.h"
+%include "graph/linear_assignment.h"
 %include "graph/max_flow.h"
 %include "graph/min_cost_flow.h"
 
@@ -86,3 +105,5 @@
 %template(StarGraph) operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex>;
 %template(ForwardStarGraphCore) operations_research::EbertGraphCore<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
 %template(ForwardStarGraph) operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex>;
+%template(ForwardEbertLinearSumAssignment) operations_research::LinearSumAssignment<operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
+%template(EbertLinearSumAssignment) operations_research::LinearSumAssignment<operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;

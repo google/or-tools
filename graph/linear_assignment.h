@@ -188,14 +188,19 @@
 
 using std::string;
 
+#ifndef SWIG
 DECLARE_int64(assignment_alpha);
 DECLARE_int32(assignment_progress_logging_period);
 DECLARE_bool(assignment_stack_order);
+#endif
 
 namespace operations_research {
 
 template <typename GraphType> class LinearSumAssignment {
  public:
+#ifndef SWIG
+#endif
+
   // This class modifies the given graph by adding arcs to it as costs
   // are specified via SetArcCost, but does not take ownership.
   LinearSumAssignment(const GraphType& graph, NodeIndex num_left_nodes);
@@ -232,6 +237,20 @@ template <typename GraphType> class LinearSumAssignment {
   // Sets the cost of an arc already present in the given graph.
   virtual void SetArcCost(ArcIndex arc,
                           CostValue cost);
+
+  // Completes initialization after the problem is fully specified.
+  // Returns true if we successfully prove that arithmetic
+  // calculations are guaranteed not to overflow. ComputeAssignment()
+  // calls this method itself, so only clients that care about
+  // obtaining a warning about the possibility of arithmetic precision
+  // problems need to call this method explicitly.
+  //
+  // Separate from ComputeAssignment() for white-box testing and for
+  // clients that need to react to the possibility that arithmetic
+  // overflow is not ruled out.
+  //
+  // FinalizeSetup() is idempotent.
+  virtual bool FinalizeSetup();
 
   // Computes the optimum assignment. Returns true on success. Return
   // value of false implies the given problem is infeasible.
@@ -333,6 +352,7 @@ template <typename GraphType> class LinearSumAssignment {
     int64 refinements_;
   };
 
+#ifndef SWIG
   class ActiveNodeContainerInterface {
    public:
     virtual ~ActiveNodeContainerInterface() {}
@@ -386,6 +406,7 @@ template <typename GraphType> class LinearSumAssignment {
    private:
     std::deque<NodeIndex> q_;
   };
+#endif
 
   // Type definition for a pair
   //   (arc index, reduced cost gap)
@@ -408,20 +429,18 @@ template <typename GraphType> class LinearSumAssignment {
   // Only for debugging, for use in EpsilonOptimal().
   inline CostValue ImplicitPrice(NodeIndex left_node) const;
 
-  // Separate from ComputeAssignment() for white-box testing only.
-  // Completes initialization after the problem is fully
-  // specified. Returns true if we successfully prove that arithmetic
-  // calculations are guaranteed not to overflow.
-  //
-  // FinalizeSetup is idempotent.
-  virtual bool FinalizeSetup();
-
   // For use by DoublePush()
   inline ImplicitPriceSummary BestArcAndGap(NodeIndex left_node) const;
 
   // Accumulates stats between iterations and reports them if the
   // verbosity level is high enough.
   void ReportAndAccumulateStats();
+
+  // Utility function to compute the next error parameter value. This
+  // is used to ensure that the same sequence of error parameter
+  // values is used for computation of price bounds as is used for
+  // computing the optimum assignment.
+  CostValue NewEpsilon(CostValue current_epsilon) const;
 
   // Advances internal state to prepare for the next scaling
   // iteration. Returns false if infeasibility is detected, true
@@ -492,99 +511,343 @@ template <typename GraphType> class LinearSumAssignment {
   // Current value of epsilon, the cost scaling parameter.
   CostValue epsilon_;
 
-  // A lower bound on the price of any node at any time throughout the
-  // computation. A price below this level proves infeasibility.
+  // The following two data members, price_lower_bound_ and
+  // slack_relabeling_price_, have to do with bounds on the amount by
+  // which node prices can change during execution of the algorithm.
+  // We need some detailed discussion of this topic because we violate
+  // several simplifying assumptions typically made in the theoretical
+  // literature. In particular, we use integer arithmetic, we use a
+  // reduction to the transportation problem rather than min-cost
+  // circulation, we provide detection of infeasible problems rather
+  // than assume feasibility, we detect when our computations might
+  // exceed the range of representable cost values, and we use the
+  // double-push heuristic which relabels nodes that do not have
+  // excess.
   //
-  // The value of this lower bound is determined according to the
-  // following sketch: Suppose the price decrease of every node in the
-  // iteration with epsilon_ == x is bounded by B(x) which is
-  // proportional to x. Then the total price decrease of every node
-  // across all iterations is bounded above by
-  //   B(C/alpha) + B(C/alpha^2) + ... + B(kMinEpsilon)
-  //   == B(C/alpha) * alpha / (alpha - 1)
-  //   == B(C) / (alpha - 1).
-  // Therefore we set price_lower_bound_ = -ceil(B(C) / (alpha - 1))
-  // where B() is the expression that determines
-  // price_reduction_bound_, discussed below.
+  // In the following discussion, we prove the following propositions:
+  // Proposition 1. [Fidelity of arithmetic precision guarantee] If
+  //                FinalizeSetup() returns true, no arithmetic
+  //                overflow occurs during ComputeAssignment().
+  // Proposition 2. [Fidelity of feasibility detection] If no
+  //                arithmetic overflow occurs during
+  //                ComputeAssignment(), the return value of
+  //                ComputeAssignment() faithfully indicates whether
+  //                the given problem is feasible.
+  //
+  // We begin with some general discussion.
+  //
+  // The ideas used to prove our two propositions are essentially
+  // those that appear in [Goldberg and Tarjan], but several details
+  // are different: [Goldberg and Tarjan] assumes a feasible problem,
+  // uses a symmetric notion of epsilon-optimality, considers only
+  // nodes with excess eligible for relabeling, and does not treat the
+  // question of arithmetic overflow. This implementation, on the
+  // other hand, detects and reports infeasible problems, uses
+  // asymmetric epsilon-optimality, relabels nodes with no excess in
+  // the course of the double-push operation, and gives a reasonably
+  // tight guarantee of arithmetic precision. No fundamentally new
+  // ideas are involved, but the details are a bit tricky so they are
+  // explained here.
+  //
+  // We have two intertwined needs that lead us to compute bounds on
+  // the prices nodes can have during the assignment computation, on
+  // the assumption that the given problem is feasible:
+  // 1. Infeasibility detection: Infeasibility is detected by
+  //    observing that some node's price has been reduced too much by
+  //    relabeling operations (see [Goldberg and Tarjan] for the
+  //    argument -- duplicated in modified form below -- bounding the
+  //    running time of the push/relabel min-cost flow algorithm for
+  //    feasible problems); and
+  // 2. Aggressively relabeling nodes and arcs whose matching is
+  //    forced: When a left-side node is incident to only one arc a,
+  //    any feasible solution must include a, and reducing the price
+  //    of Head(a) by any nonnegative amount preserves epsilon-
+  //    optimality. Because of this freedom, we'll call this sort of
+  //    relabeling (i.e., a relabeling of a right-side node that is
+  //    the only neighbor of the left-side node to which it has been
+  //    matched in the present double-push operation) a "slack"
+  //    relabeling. Relabelings that are not slack relabelings are
+  //    called "confined" relabelings. By relabeling Head(a) to have
+  //    p(Head(a))=-infinity, we could guarantee that a never becomes
+  //    unmatched during the current iteration, and this would prevent
+  //    our wasting time repeatedly unmatching and rematching a. But
+  //    there are some details we need to handle:
+  //    a. The CostValue type cannot represent -infinity;
+  //    b. Low node prices are precisely the signal we use to detect
+  //       infeasibility (see (1)), so we must be careful not to
+  //       falsely conclude that the problem is infeasible as a result
+  //       of the low price we gave Head(a); and
+  //    c. We need to indicate accurately to the client when our best
+  //       understanding indicates that we can't rule out arithmetic
+  //       overflow in our calculations. Most importantly, if we don't
+  //       warn the client, we must be certain to avoid overflow. This
+  //       means our slack relabelings must not be so aggressive as to
+  //       create the possibility of unforeseen overflow. Although we
+  //       will not achieve this in practice, slack relabelings would
+  //       ideally not introduce overflow unless overflow was
+  //       inevitable were even the smallest reasonable price change
+  //       (== epsilon) used for slack relabelings.
+  //    Using the analysis below, we choose a finite amount of price
+  //    change for slack relabelings aggressive enough that we don't
+  //    waste time doing repeated slack relabelings in a single
+  //    iteration, yet modest enough that we keep a good handle on
+  //    arithmetic precision and our ability to detect infeasible
+  //    problems.
+  //
+  // To provide faithful detection of infeasibility, a dependable
+  // guarantee of arithmetic precision whenever possible, and good
+  // performance by aggressively relabeling nodes whose matching is
+  // forced, we exploit these facts:
+  // 1. Beyond the first iteration, infeasibility detection isn't needed
+  //    because a problem is feasible in some iteration if and only if
+  //    it's feasible in all others. Therefore we are free to use an
+  //    infeasibility detection mechanism that might work in just one
+  //    iteration and switch it off in all other iterations.
+  // 2. When we do a slack relabeling, we must choose the amount of
+  //    price reduction to use. We choose an amount large enough to
+  //    guarantee putting the node's matching to rest, yet (although
+  //    we don't bother to prove this explicitly) small enough that
+  //    the node's price obeys the overall lower bound that holds if
+  //    the slack relabeling amount is small.
+  //
+  // We will establish Propositions (1) and (2) above according to the
+  // following steps:
+  // First, we prove Lemma 1, which is a modified form of lemma 5.8 of
+  // [Goldberg and Tarjan] giving a bound on the difference in price
+  // between the end nodes of certain paths in the residual graph.
+  // Second, we prove Lemma 2, which is technical lemma to establish
+  // reachability of certain "anchor" nodes in the residual graph from
+  // any node where a relabeling takes place.
+  // Third, we apply the first two lemmas to prove Lemma 3 and Lemma
+  // 4, which give two similar bounds that hold whenever the given
+  // problem is feasible: (for feasibility detection) a bound on the
+  // price of any node we relabel during any iteration (and the first
+  // iteration in particular), and (for arithmetic precision) a bound
+  // on the price of any node we relabel during the entire algorithm.
+  //
+  // Finally, we note that if the whole-algorithm price bound can be
+  // represented precisely by the CostValue type, arithmetic overflow
+  // cannot occur (establishing Proposition 1), and assuming no
+  // overflow occurs during the first iteration, any violation of the
+  // first-iteration price bound establishes infeasibility
+  // (Proposition 2).
+  //
+  // The statement of Lemma 1 is perhaps easier to understand when the
+  // reader knows how it will be used. To wit: In this lemma, f' and
+  // e_0 are the flow and error parameter (epsilon) at the beginning
+  // of the current iteration, while f and e_1 are the current
+  // pseudoflow and error parameter when a relabeling of interest
+  // occurs. Without loss of generality, c is the reduced cost
+  // function at the beginning of the current iteration and p is the
+  // change in prices that has taken place in the current iteration.
+  //
+  // Lemma 1 (a variant of lemma 5.8 from [Goldberg and Tarjan]): Let
+  // f be a pseudoflow and let f' be a flow. Suppose P is a simple
+  // path from right-side node v to right-side node w such that P is
+  // residual with respect to f and reverse(P) is residual with
+  // respect to f'. Further, suppose c is an arc cost function with
+  // respect to which f' is e_0-optimal with the zero price function
+  // and p is a price function with respect to which f is e_1-optimal
+  // with respect to p. Then
+  //   p(v) - p(w) >= -(e_0 + e_1) * (n-2)/2.     (***)
+  //
+  // Proof: We have c_p(P) = p(v) + c(P) - p(w) and hence
+  //   p(v) - p(w) = c_p(P) - c(P).
+  // So we seek a bound on c_p(P) - c(P).
+  //   p(v) = c_p(P) - c(P).
+  // Let arc a lie on P, which implies that a is residual with respect
+  // to f and reverse(a) is residual with respect to f'.
+  // Case 1: a is a forward arc. Then by e_1-optimality of f with
+  //         respect to p, c_p(a) >= 0 and reverse(a) is residual with
+  //         respect to f'. By e_0-optimality of f', c(a) <= e_0. So
+  //           c_p(a) - c(a) >= -e_0.
+  // Case 2: a is a reverse arc. Then by e_1-optimality of f with
+  //         respect to p, c_p(a) >= -e_1 and reverse(a) is residual
+  //         with respect to f'. By e_0-optimality of f', c(a) <= 0.
+  //         So
+  //           c_p(a) - c(a) >= -e_1.
+  // We assumed v and w are both right-side nodes, so there are at
+  // most n - 2 arcs on the path P, of which at most (n-2)/2 are
+  // forward arcs and at most (n-2)/2 are reverse arcs, so
+  //   p(v) - p(w) = c_p(P) - c(P)
+  //               >= -(e_0 + e_1) * (n-2)/2.     (***)
+  //
+  // Some of the rest of our argument is given as a sketch, omitting
+  // several details. Also elided here are some minor technical issues
+  // related to the first iteration, inasmuch as our arguments assume
+  // on the surface a "previous iteration" that doesn't exist in that
+  // case. The issues are not substantial, just a bit messy.
+  //
+  // Lemma 2 is analogous to lemma 5.7 of [Goldberg and Tarjan], where
+  // they have only relabelings that take place at nodes with excess
+  // while we have only relabelings that take place as part of the
+  // double-push operation at nodes without excess.
+  //
+  // Lemma 2: When a right-side node v is relabeled by our
+  // implementation, either the problem is infeasible or there exists
+  // a node w such that
+  // A. w is reachable from v along some simple residual path P where
+  //    reverse(P) was residual at the beginning of the current
+  //    iteration; and
+  // B. at least one of the following holds:
+  //    1. when w was last relabeled, there existed a path P' from w
+  //       to a node with deficit in the residual graph where
+  //       reverse(P') was residual at the beginning of the current
+  //       iteration; or
+  //    2. when w was last relabeled, it was a slack relabeling;
+  //    and
+  // C. at least one of the following holds:
+  //    1. w will not be relabeled again in this iteration; or
+  //    2. v == w.
+  //
+  // The proof of Lemma 2 is somewhat messy and is omitted for
+  // expedience.
+  //
+  // Lemma 1 bounds the price change during an iteration for any node
+  // relabeled when a deficit is residually reachable from that node,
+  // since a node w with deficit is not relabeled, hence p(w) = 0 in
+  // the Lemma 1 bound. Let the bound from Lemma 1 with p(w) = 0 be
+  // called B(e_0, e_1), and let us say that when a slack relabeling
+  // of a node v occurs, we will set the price of v to B(e_0, e_1)
+  // such that v tightly satisfies the bound of Lemma 1. Explicitly,
+  // we define
+  //   B(e_0, e_1) = -(e_0 + e_1) * (n-2)/2.
+  //
+  // From Lemma 1 and Lemma 2, and taking into account our knowledge
+  // of the slack relabeling amount, we have Lemma 3.
+  //
+  // Lemma 3: During any iteration, if the given problem is feasible
+  // the price of any node is reduced by less than
+  //   2 * B(e_0, e_1) = -(e_0 + e_1) * (n-2).
+  //
+  // Proof: Straightforward, omitted for expedience.
+  //
+  // In the case where e_0 = e_1 * alpha, we can express the bound
+  // just in terms of e_1, the current iteration's value of epsilon_:
+  //   B(e_1) = B(e_1 * alpha, e_1) = -(1 + alpha) * e_1 * (n-2)/2,
+  // so we have that p(v) is reduced by less than 2 * B(e_1).
+  //
+  // Because we use truncating division to compute each iteration's error
+  // parameter from that of the previous iteration, it isn't exactly
+  // the case that e_0 = e_1 * alpha as we just assumed. To patch this
+  // up, we can use the observation that
+  //   e_1 = floor(e_0 / alpha),
+  // which implies
+  //   -e_0 > -(e_1 + 1) * alpha
+  // to rewrite from (***):
+  //   p(v) > 2 * B(e_0, e_1) > 2 * B((e_1 + 1) * alpha, e_1)
+  //        = 2 * -((e_1 + 1) * alpha + e_1) * (n-2)/2
+  //        = 2 * -(1 + alpha) * e_1 * (n-2)/2 - alpha * (n-2)
+  //        = 2 * B(e_1) - alpha * (n-2)
+  //        = -((1 + alpha) * e_1 + alpha) * (n-2).
+  //
+  // We sum up the bounds for all the iterations to get Lemma 4:
+  //
+  // Lemma 4: If the given problem is feasible, after k iterations the
+  // price of any node is always greater than
+  //   -((1 + alpha) * C + (k * alpha)) * (n-2)
+  //
+  // Proof: Suppose the price decrease of every node in the iteration
+  // with epsilon_ == x is bounded by B(x) which is proportional to x
+  // (not surpisingly, this will be the same function B() as
+  // above). Assume for simplicity that C, the largest cost magnitude,
+  // is a power of alpha. Then the price of each node, tallied across
+  // all iterations is bounded
+  //   p(v) > 2 * B(C/alpha) + 2 * B(C/alpha^2) + ... + 2 * B(kMinEpsilon)
+  //        == 2 * B(C/alpha) * alpha / (alpha - 1)
+  //        == 2 * B(C) / (alpha - 1).
+  // As above, this needs some patching up to handle the fact that we
+  // use truncating arithmetic. We saw that each iteration effectively
+  // reduces the price bound by alpha * (n-2), hence if there are k
+  // iterations, the bound is
+  //   p(v) > 2 * B(C) / (alpha - 1) - k * alpha * (n-2)
+  //        = -(1 + alpha) * C * (n-2) / (alpha - 1) - k * alpha * (n-2)
+  //        = (n-2) * (C * (1 + alpha) / (1 - alpha) - k * alpha).
+  //
+  // The bound of lemma 4 can be used to warn for possible overflow of
+  // arithmetic precision. But because it involves the number of
+  // iterations, k, we might as well count through the iterations
+  // simply adding up the bounds given by Lemma 3 to get a tighter
+  // result. This is what the implementation does.
+
+  // A lower bound on the price of any node at any time throughout the
+  // computation. A price below this level proves infeasibility; this
+  // value is used for feasibility detection. We use this value also
+  // to rule out the possibility of arithmetic overflow or warn the
+  // client that we have not been able to rule out that possibility.
+  //
+  // We can use the value implied by Lemma 4 here, but note that that
+  // value includes k, the number of iterations. It's plenty fast if
+  // we count through the iterations to compute that value, but if
+  // we're going to count through the iterations, we might as well use
+  // the two-parameter bound from Lemma 3, summing up as we go. This
+  // gives us a tighter bound and more comprehensible code.
+  //
+  // While computing this bound, if we find the value justified by the
+  // theory lies outside the representable range of CostValue, we
+  // conclude that the given arc costs have magnitudes so large that
+  // we cannot guarantee our calculations don't overflow. If the value
+  // justified by the theory lies inside the representable range of
+  // CostValue, we commit that our calculation will not overflow. This
+  // commitment means we need to be careful with the amount by which
+  // we relabel right-side nodes that are incident to any node with
+  // only one neighbor.
   CostValue price_lower_bound_;
 
-  // An upper bound on the amount that a single node's price can
-  // decrease in a single scaling iteration. In each iteration, this
-  // value corresponds to B(epsilon_) in the comments describing
-  // price_lower_bound_ above. Exceeding this amount of price decrease
-  // in one iteration proves that there is some excess that cannot
-  // reach a deficit, i.e., that the problem is infeasible.
+  // A bound on the amount by which a node's price can be reduced
+  // during the current iteration, used only for slack
+  // relabelings. Where epsilon is the first iteration's error
+  // parameter and C is the largest magnitude of an arc cost, we set
+  //   slack_relabeling_price_ = -B(C, epsilon)
+  //                           = (C + epsilon) * (n-2)/2.
   //
-  // Let v be a node with excess and suppose P is a simple residual
-  // path P from v to some node w with deficit such that reverse(P) is
-  // residual at the beginning of this iteration (such a path is
-  // guaranteed to exist by feasibility -- see lemma 5.7 in Goldberg
-  // and Tarjan). We have c_p(P) = p(v) + c(P) - p(w) and of those
-  // three terms, only p(v) may have changed during this iteration
-  // because w has a deficit and nodes with deficits are not
-  // relabeled. Assuming without loss of generality that p == 0 and
-  // c_p == c at the beginning of this iteration, we seek a bound on
-  // simply
-  //   p(v) = c_p(P) - c(P).
-  // Let arc a lie on P.
-  // Case 1: a is a forward arc. Then c_p(a) >= 0 and the reverse of a
-  //         was residual when this iteration began. By
-  //         approximate optimality at the end of the prior iteration,
-  //         c(a) < alpha * epsilon. So
-  //           c_p(a) - c(a) > -alpha * epsilon_.
-  // Case 2: a is a reverse arc. Then c_p(a) >= -epsilon_ and the
-  //         reverse of a was residual when this iteration began. By
-  //         approximate optimality at the end of the prior iteration,
-  //         c(a) < 0. So
-  //           c_p(a) - c(a) > -epsilon_.
-  // Nodes with excess are only on the left and nodes with deficit are
-  // only on the right; there are at most n - 1 arcs on the path P,
-  // making up at most (n-1)/2 left-right-left arc pairs. Each
-  // pair's contribution to c_p(P) - c(P) is bounded below by
-  // most (n-1)/2 of those are forward arcs and (n-2)/2 of them are reverse
-  // arcs, so
-  //   p(v) = c_p(P) - c(P)
-  //        > (n-1)/2 * (-alpha * epsilon_ - epsilon_)
-  //        = -(n-1)/2 * epsilon_ * (1 + alpha).
-  // So we set
-  //   price_reduction_bound_ = ceil((n-1)/2 * epsilon * (1 + alpha)).
-  CostValue price_reduction_bound_;
+  // We could use slack_relabeling_price_ for feasibility detection
+  // but the feasibility threshold is double the slack relabeling
+  // amount and we judge it not to be worth having to multiply by two
+  // gratuitously to check feasibility in each double push
+  // operation. Instead we settle for feasibility detection using
+  // price_lower_bound_ instead, which is somewhat slower in the
+  // infeasible case because more relabelings will be required for
+  // some node price to attain the looser bound.
+  CostValue slack_relabeling_price_;
 
-  // Computes the value of price_reduction_bound_ for an iteration,
-  // given the new value of epsilon_, on the assumption that the value
-  // of epsilon_ for the previous iteration was no more than a factor
-  // of alpha_ times the new value. Because the expression computed
-  // here is used in at least one place where we want an additional
-  // factor in the denominator, we take that factor as an argument.
+  // Computes the value of the bound on price reduction for an
+  // iteration, given the old and new values of epsilon_.  Because the
+  // expression computed here is used in at least one place where we
+  // want an additional factor in the denominator, we take that factor
+  // as an argument. If extra_divisor == 1, this function computes of
+  // the function B() discussed above.
   //
-  // Avoids overflow in computing the bound.
-  inline CostValue PriceChangeBound(CostValue extra_divisor,
+  // Avoids overflow in computing the bound, and sets *in_range =
+  // false if the value of the bound doesn't fit in CostValue.
+  inline CostValue PriceChangeBound(CostValue old_epsilon,
+                                    CostValue new_epsilon,
                                     bool* in_range) const {
     const CostValue n = graph_.num_nodes();
     // We work in double-precision floating point to determine whether
     // we'll overflow the integral CostValue type's range of
     // representation. Switching between integer and double is a
-    // rather expensive operation, but we do this only once per
+    // rather expensive operation, but we do this only twice per
     // scaling iteration, so we can afford it rather than resort to
     // complex and subtle tricks within the bounds of integer
     // arithmetic.
     //
-    // To understand the values of numerator and denominator here, you
-    // will want to read the comments above about price_lower_bound_
-    // and price_reduction_bound_, and have a pencil handy. :-)
-    const double numerator = (static_cast<double>(n - 1) *
-                              static_cast<double>(epsilon_ * (1 + alpha_)));
-    const double denominator = static_cast<double>(2 * extra_divisor);
-    const double quotient = numerator / denominator;
+    // You will want to read the comments above about
+    // price_lower_bound_ and slack_relabeling_price_, and have a
+    // pencil handy. :-)
+    const double result =
+        static_cast<double>(std::max<CostValue>(0, n / 2 - 1)) *
+        static_cast<double>(old_epsilon + new_epsilon);
     const double limit =
         static_cast<double>(std::numeric_limits<CostValue>::max());
-    if (quotient > limit) {
+    if (result > limit) {
       // Our integer computations could overflow.
       if (in_range != NULL) *in_range = false;
       return std::numeric_limits<CostValue>::max();
     } else {
-      if (in_range != NULL) *in_range = true;
-      return static_cast<CostValue>(quotient);
+      // Don't touch *in_range; other computations could already have
+      // set it to false and we don't want to overwrite that result.
+      return static_cast<CostValue>(result);
     }
   }
 
@@ -593,6 +856,13 @@ template <typename GraphType> class LinearSumAssignment {
   // of epsilon_, which in turn is used not only as the error
   // parameter but also to determine whether we risk arithmetic
   // overflow during the algorithm.
+  //
+  // Note: Our treatment of arithmetic overflow assumes the following
+  // property of CostValue:
+  //   -std::numeric_limits<CostValue>::max() is a representable
+  //   CostValue.
+  // That property is satisfied if CostValue uses a two's-complement
+  // representation.
   CostValue largest_scaled_cost_magnitude_;
 
   // The total excess in the graph. Given our asymmetric definition of
@@ -652,7 +922,7 @@ LinearSumAssignment<GraphType>::LinearSumAssignment(
       alpha_(FLAGS_assignment_alpha),
       epsilon_(0),
       price_lower_bound_(0),
-      price_reduction_bound_(0),
+      slack_relabeling_price_(0),
       largest_scaled_cost_magnitude_(0),
       total_excess_(0),
       price_(num_left_nodes + GraphType::kFirstNode,
@@ -751,44 +1021,22 @@ void LinearSumAssignment<GraphType>::OptimizeGraphLayout(GraphType* graph) {
 }
 
 template <typename GraphType>
+CostValue LinearSumAssignment<GraphType>::NewEpsilon(
+    const CostValue current_epsilon) const {
+  return std::max(current_epsilon / alpha_, kMinEpsilon);
+}
+
+template <typename GraphType>
 bool LinearSumAssignment<GraphType>::UpdateEpsilon() {
-  // There are some somewhat subtle issues around using integer
-  // arithmetic to compute successive values of epsilon_, the error
-  // parameter.
-  //
-  // First, the value of price_reduction_bound_ is chosen under the
-  // assumption that it is truly an upper bound on the amount by which
-  // a node's price can change during the current iteration. The value
-  // of this bound in turn depends on the assumption that the flow
-  // computed by the previous iteration was
-  // (epsilon_ * alpha_)-optimal. If epsilon_ decreases by more than a
-  // factor of alpha_ due to truncating arithmetic, that bound might
-  // not hold, and the consequence is that BestArcAndGap could return
-  // an overly cautious admissibility gap in the case where a
-  // left-side node has only one incident arc. This is not a big deal
-  // at all. At worst it could lead to a few extra relabelings.
-  //
-  // Second, it is not a problem currently, but in the future if we
-  // use an arc-fixing heuristic, we cannot permit truncating integer
-  // division to decrease epsilon_ by a factor greater than alpha_
-  // because our bounds on price changes (and hence on the reduced
-  // cost of an arc that might ever become admissible in the future)
-  // depend on the ratio between the values of the error parameter at
-  // successive iterations. One consequence will be that we might
-  // occasionally do an extra iteration today in the interest of being
-  // able to "price arcs out" (which we don't do today). Today we
-  // simply use truncating integer division, but note that this will
-  // have to change if we ever price arcs out.
-  //
-  // Since neither of those issues is a problem today, we simply use
-  // truncating integer arithmetic. But future changes might
-  // necessitate rounding epsilon upward in the division.
-  epsilon_ = std::max(epsilon_ / alpha_, kMinEpsilon);
+  CostValue new_epsilon = NewEpsilon(epsilon_);
+  slack_relabeling_price_ = PriceChangeBound(epsilon_, new_epsilon, NULL);
+  epsilon_ = new_epsilon;
   VLOG(3) << "Updated: epsilon_ == " << epsilon_;
-  price_reduction_bound_ = PriceChangeBound(1, NULL);
-  DCHECK_GT(price_reduction_bound_, 0);
+  VLOG(4) << "slack_relabeling_price_ == " << slack_relabeling_price_;
+  DCHECK_GT(slack_relabeling_price_, 0);
   // For today we always return true; in the future updating epsilon
-  // in sophisticated ways could conceivably detect infeasibility.
+  // in sophisticated ways could conceivably detect infeasibility
+  // before the first iteration of Refine().
   return true;
 }
 
@@ -890,8 +1138,9 @@ bool LinearSumAssignment<GraphType>::DoublePush(NodeIndex source) {
   matched_node_.Set(new_mate, source);
   // Finally, relabel new_mate.
   iteration_stats_.relabelings_ += 1;
-  price_.Set(new_mate, price_[new_mate] - gap - epsilon_);
-  return price_[new_mate] >= price_lower_bound_;
+  CostValue new_price = price_[new_mate] - gap - epsilon_;
+  price_.Set(new_mate, new_price);
+  return new_price >= price_lower_bound_;
 }
 
 template <typename GraphType>
@@ -929,10 +1178,6 @@ inline typename LinearSumAssignment<GraphType>::ImplicitPriceSummary
 LinearSumAssignment<GraphType>::BestArcAndGap(NodeIndex left_node) const {
     DCHECK(IsActive(left_node));
   DCHECK_GT(epsilon_, 0);
-  // During any scaling iteration, the price of an active node
-  // decreases by at most price_reduction_bound_ and all left-side
-  // nodes are made active at the beginning of Refine(), so the bound
-  // applies to all left-side nodes.
   typename GraphType::OutgoingArcIterator arc_it(graph_, left_node);
   ArcIndex best_arc = arc_it.Index();
   CostValue min_partial_reduced_cost = PartialReducedCost(best_arc);
@@ -940,12 +1185,9 @@ LinearSumAssignment<GraphType>::BestArcAndGap(NodeIndex left_node) const {
   // the largest possible gap (which results from a left-side node
   // with only a single incident residual arc), the corresponding
   // right-side node will be relabeled by an amount that exactly
-  // matches price_reduction_bound_. The overall price_lower_bound_ is
-  // computed tightly enough that if we relabel by an amount even
-  // epsilon_ greater than that, we can incorrectly conclude
-  // infeasibility in DoublePush().
+  // matches slack_relabeling_price_.
   CostValue second_min_partial_reduced_cost =
-      min_partial_reduced_cost + price_reduction_bound_ - epsilon_;
+      min_partial_reduced_cost + slack_relabeling_price_ - epsilon_;
   for (arc_it.Next(); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
     const CostValue partial_reduced_cost = PartialReducedCost(arc);
@@ -988,7 +1230,7 @@ LinearSumAssignment<GraphType>::ImplicitPrice(NodeIndex left_node) const {
     // currently matched along that arc, which must be the case in any
     // feasible solution. Therefore we implicitly price this node so
     // low that we will never consider unmatching it.
-    return -(min_partial_reduced_cost + price_reduction_bound_);
+    return -(min_partial_reduced_cost + slack_relabeling_price_);
   }
   for (arc_it.Next(); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
@@ -1075,12 +1317,31 @@ bool LinearSumAssignment<GraphType>::FinalizeSetup() {
     price_.Set(node, 0);
     matched_node_.Set(node, GraphType::kNilNode);
   }
-  bool in_range;
-  price_lower_bound_ = -PriceChangeBound(alpha_ - 1, &in_range);
+  bool in_range = true;
+  double double_price_lower_bound = 0.0;
+  CostValue new_error_parameter;
+  CostValue old_error_parameter = epsilon_;
+  do {
+    new_error_parameter = NewEpsilon(old_error_parameter);
+    double_price_lower_bound -= 2.0 * PriceChangeBound(old_error_parameter,
+                                                       new_error_parameter,
+                                                       &in_range);
+    old_error_parameter = new_error_parameter;
+  } while (new_error_parameter != kMinEpsilon);
+  const double limit =
+      -static_cast<double>(std::numeric_limits<CostValue>::max());
+  if (double_price_lower_bound < limit) {
+    in_range = false;
+    price_lower_bound_ = -std::numeric_limits<CostValue>::max();
+  } else {
+    price_lower_bound_ = static_cast<CostValue>(double_price_lower_bound);
+  }
+  VLOG(4) << "price_lower_bound_ == " << price_lower_bound_;
   DCHECK_LE(price_lower_bound_, 0);
   if (!in_range) {
     LOG(WARNING) << "Price change bound exceeds range of representable "
-                 << "costs; arithmetic overflow is not ruled out.";
+                 << "costs; arithmetic overflow is not ruled out and "
+                 << "infeasibility might go undetected.";
   }
   return in_range;
 }

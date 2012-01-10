@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.google.ortools.flow.samples;
+package com.google.ortools.graph.samples;
 
-import com.google.ortools.flow.MaxFlow;
-import com.google.ortools.flow.MinCostFlow;
-import com.google.ortools.flow.StarGraph;
+import com.google.ortools.graph.MaxFlow;
+import com.google.ortools.graph.MinCostFlow;
+import com.google.ortools.graph.StarGraph;
 
 /**
  * Sample showing how to model using the flow solver.
@@ -25,7 +25,7 @@ import com.google.ortools.flow.StarGraph;
 public class FlowExample {
 
   static {
-    System.loadLibrary("jniflow");
+    System.loadLibrary("jnigraph");
   }
 
 

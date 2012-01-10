@@ -237,30 +237,38 @@ run_Knapsack: compile_Knapsack
 
 # javagraph
 
-javagraph: com.google.ortools.flow.jar $(LIBPREFIX)jniflow.$(JNILIBEXT)
+javagraph: com.google.ortools.graph.jar $(LIBPREFIX)jnigraph.$(JNILIBEXT)
 
-gen/graph/flow_java_wrap.cc: graph/flow.swig base/base.swig util/data.swig graph/max_flow.h graph/min_cost_flow.h
-	$(SWIG_BINARY) -c++ -java -o gen/graph/flow_java_wrap.cc -package com.google.ortools.flow -outdir gen/com/google/ortools/flow graph/flow.swig
+gen/graph/graph_java_wrap.cc: graph/graph.swig base/base.swig util/data.swig graph/max_flow.h graph/min_cost_flow.h graph/linear_assignment.h
+	$(SWIG_BINARY) -c++ -java -o gen/graph/graph_java_wrap.cc -package com.google.ortools.graph -outdir gen/com/google/ortools/graph graph/graph.swig
 
-objs/flow_java_wrap.$O: gen/graph/flow_java_wrap.cc
-	$(CCC) $(JNIFLAGS) $(JAVA_INC) -c gen/graph/flow_java_wrap.cc $(OBJOUT)objs/flow_java_wrap.$O
+objs/graph_java_wrap.$O: gen/graph/graph_java_wrap.cc
+	$(CCC) $(JNIFLAGS) $(JAVA_INC) -c gen/graph/graph_java_wrap.cc $(OBJOUT)objs/graph_java_wrap.$O
 
-com.google.ortools.flow.jar: gen/graph/flow_java_wrap.cc
-	$(JAVAC_BIN) -d objs gen$Scom$Sgoogle$Sortools$Sflow$S*.java
-	$(JAR_BIN) cf com.google.ortools.flow.jar -C objs com$Sgoogle$Sortools$Sflow
+com.google.ortools.graph.jar: gen/graph/graph_java_wrap.cc
+	$(JAVAC_BIN) -d objs gen$Scom$Sgoogle$Sortools$Sgraph$S*.java
+	$(JAR_BIN) cf com.google.ortools.graph.jar -C objs com$Sgoogle$Sortools$Sgraph
 
-$(LIBPREFIX)jniflow.$(JNILIBEXT): objs/flow_java_wrap.$O $(GRAPH_DEPS)
-	$(LD) $(LDOUT)$(LIBPREFIX)jniflow.$(JNILIBEXT) objs/flow_java_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
+$(LIBPREFIX)jnigraph.$(JNILIBEXT): objs/graph_java_wrap.$O $(GRAPH_DEPS)
+	$(LD) $(LDOUT)$(LIBPREFIX)jnigraph.$(JNILIBEXT) objs/graph_java_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
 
 # Java Algorithms Examples
 
-compile_FlowExample: objs/com/google/ortools/flow/samples/FlowExample.class
+compile_FlowExample: objs/com/google/ortools/graph/samples/FlowExample.class
 
-objs/com/google/ortools/flow/samples/FlowExample.class: javagraph com/google/ortools/flow/samples/FlowExample.java
-	$(JAVAC_BIN) -d objs -cp com.google.ortools.flow.jar com/google/ortools/flow/samples/FlowExample.java
+objs/com/google/ortools/graph/samples/FlowExample.class: javagraph com/google/ortools/graph/samples/FlowExample.java
+	$(JAVAC_BIN) -d objs -cp com.google.ortools.graph.jar com/google/ortools/graph/samples/FlowExample.java
 
 run_FlowExample: compile_FlowExample javagraph
-	$(JAVA_BIN) -Djava.library.path=. -cp objs$(CPSEP)com.google.ortools.flow.jar com.google.ortools.flow.samples.FlowExample
+	$(JAVA_BIN) -Djava.library.path=. -cp objs$(CPSEP)com.google.ortools.graph.jar com.google.ortools.graph.samples.FlowExample
+
+compile_LinearAssignmentAPI: objs/com/google/ortools/graph/samples/LinearAssignmentAPI.class
+
+objs/com/google/ortools/graph/samples/LinearAssignmentAPI.class: javagraph com/google/ortools/graph/samples/LinearAssignmentAPI.java
+	$(JAVAC_BIN) -d objs -cp com.google.ortools.graph.jar com/google/ortools/graph/samples/LinearAssignmentAPI.java
+
+run_LinearAssignmentAPI: compile_LinearAssignmentAPI javagraph
+	$(JAVA_BIN) -Djava.library.path=. -cp objs$(CPSEP)com.google.ortools.graph.jar com.google.ortools.graph.samples.LinearAssignmentAPI
 
 # javalp
 
@@ -297,7 +305,7 @@ objs/com/google/ortools/linearsolver/samples/IntegerProgramming.class: javalp co
 run_IntegerProgramming: compile_IntegerProgramming
 	$(JAVA_BIN) -Xss2048k -Djava.library.path=. -cp objs$(CPSEP)com.google.ortools.linearsolver.jar com.google.ortools.linearsolver.samples.IntegerProgramming
 
-# Build archive.
+# Build stand-alone archive file for redistribution.
 
 java_archive: java
 	-$(DELREC) temp

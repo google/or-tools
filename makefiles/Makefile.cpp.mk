@@ -40,7 +40,7 @@ BASE_LNK = \
 LP_LNK = \
 	$(PRE_LIB)linear_solver$(POST_LIB) \
 	$(BASE_LNK) \
-	$(LDLPDEPS)
+	$(LDLPDEPS)  # Third party linear solvers.
 
 ALGORITHMS_LNK = \
 	$(PRE_LIB)algorithms$(POST_LIB) \
@@ -61,11 +61,7 @@ GRAPH_LNK = \
 	$(PRE_LIB)shortestpaths$(POST_LIB) \
 	$(BASE_LNK)
 
-graphlibs: $(GRAPH_DEPS)
-
-cplibs: $(CP_DEPS)
-
-lplibs: $(LP_DEPS)
+# Binaries
 
 CPBINARIES = \
 	costas_array$E \
@@ -86,25 +82,36 @@ CPBINARIES = \
 	sports_scheduling$E \
 	tsp$E
 
-cpexe: $(CPBINARIES)
-
 LPBINARIES = \
 	integer_programming$E \
 	linear_programming$E \
 	linear_solver_protocol_buffers$E \
 	strawberry_fields_with_column_generation$E
 
-
-lpexe: $(LPBINARIES)
-
-algorithmslibs: $(ALGORITHMS_DEPS)
+# Special dimacs example.
 
 DIMACS_LIBS = \
 	$(LIBPREFIX)dimacs.$(LIBSUFFIX)
 
 DIMACS_LNK = $(PRE_LIB)dimacs$(POST_LIB)
 
+# Makefile targets.
+
+algorithmslibs: $(ALGORITHMS_DEPS)
+
+cpexe: $(CPBINARIES)
+
+cplibs: $(CP_DEPS)
+
+lpexe: $(LPBINARIES)
+
+lplibs: $(LP_DEPS)
+
+graphlibs: $(GRAPH_DEPS)
+
 dimacslibs: $(DIMACS_LIBS)
+
+# Clean target.
 
 clean:
 	$(DEL) *.$(LIBSUFFIX)
@@ -113,7 +120,7 @@ clean:
 	$(DEL) $(LPBINARIES)
 	$(DEL) gen$Salgorithms$S*wrap*
 	$(DEL) gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java
-	$(DEL) gen$Scom$Sgoogle$Sortools$Sflow$S*.java
+	$(DEL) gen$Scom$Sgoogle$Sortools$Sgraoh$S*.java
 	$(DEL) gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.java
 	$(DEL) gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
 	$(DEL) gen$Sconstraint_solver$S*.pb.*
@@ -122,7 +129,7 @@ clean:
 	$(DEL) gen$Slinear_solver$S*.pb.*
 	$(DEL) gen$Slinear_solver$S*wrap*
 	$(DEL) objs$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.class
-	$(DEL) objs$Scom$Sgoogle$Sortools$Sflow$S*.class
+	$(DEL) objs$Scom$Sgoogle$Sortools$Sgraph$S*.class
 	$(DEL) objs$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.class
 	$(DEL) objs$Scom$Sgoogle$Sortools$Slinearsolver$S*.class
 	$(DEL) *.$(SHAREDLIBEXT)

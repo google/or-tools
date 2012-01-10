@@ -7,7 +7,8 @@ help:
 	@echo "  - graph: graphlibs pygraph javagraph"
 	@echo "  - .NET on windows: csharp csharpcp csharplp csharpalgorithms"
 	@echo "    csharpgraph csharpexe"
-	@echo "  - misc: clean cleancsharp"
+	@echo "  - tests: test test_cc test_python test_java test_csharp"
+	@echo "  - cleaning: clean cleancsharp"
 
 .PHONY : python cc java
 cc: cplibs cpexe algorithmslibs graphlibs lplibs lpexe
