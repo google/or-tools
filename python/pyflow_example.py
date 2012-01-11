@@ -17,7 +17,7 @@
 
 from google.apputils import app
 import gflags
-from graph import pywrapflow
+from graph import pywrapgraph
 
 FLAGS = gflags.FLAGS
 
@@ -32,9 +32,9 @@ def MinCostFlow():
            [125, 95, 90, 105],
            [45, 110, 95, 115]]
   expected_cost = 275
-  graph = pywrapflow.StarGraph(num_sources + num_targets,
-                               num_sources * num_targets)
-  min_cost_flow = pywrapflow.MinCostFlow(graph)
+  graph = pywrapgraph.StarGraph(num_sources + num_targets,
+                                num_sources * num_targets)
+  min_cost_flow = pywrapgraph.MinCostFlow(graph)
   for source in range(0, num_sources):
     for target in range(0, num_targets):
       arc = graph.AddArc(source, num_sources + target)
@@ -60,8 +60,8 @@ def MaxFeasibleFlow():
   capacities = [5, 8, 5, 3, 4, 5, 6, 6, 4]
   expected_flows = [4, 4, 2, 0, 4, 4, 0, 6, 4]
   expected_total_flow = 10
-  graph = pywrapflow.StarGraph(num_nodes, num_arcs)
-  max_flow = pywrapflow.MaxFlow(graph, 0, num_nodes - 1)
+  graph = pywrapgraph.StarGraph(num_nodes, num_arcs)
+  max_flow = pywrapgraph.MaxFlow(graph, 0, num_nodes - 1)
   for i in range(0, num_arcs):
     arc = graph.AddArc(tails[i], heads[i])
     max_flow.SetArcCapacity(arc, capacities[i])
