@@ -120,7 +120,7 @@ clean:
 	$(DEL) $(LPBINARIES)
 	$(DEL) gen$Salgorithms$S*wrap*
 	$(DEL) gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java
-	$(DEL) gen$Scom$Sgoogle$Sortools$Sgraoh$S*.java
+	$(DEL) gen$Scom$Sgoogle$Sortools$Sgraph$S*.java
 	$(DEL) gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.java
 	$(DEL) gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
 	$(DEL) gen$Sconstraint_solver$S*.pb.*

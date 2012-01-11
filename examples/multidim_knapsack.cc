@@ -16,7 +16,6 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -34,10 +33,10 @@ DEFINE_string(
     "Required: input file description the muldi-dimensional knapsack problem\n "
     "to solve. It supports two file format as described in:\n"
     "  - http://elib.zib.de/pub/Packages/mp-testdata/ip/sac94-suite/readme\n"
-    "  -  http://hces.bus.olemiss.edu/tools.html\n");
+    "  - http://hces.bus.olemiss.edu/tools.html\n");
 DEFINE_int32(time_limit_in_ms, 0, "Time limit in ms, <= 0 means no limit.");
-DEFINE_int32(simplex_frequency, 0, "number of nodes explored between each"
-             " call to the simplex optimizer");
+DEFINE_int32(simplex_frequency, 0, "Number of nodes explored between each"
+             " call to the simplex optimizer.");
 
 namespace operations_research {
 
@@ -262,7 +261,7 @@ int64 EvaluateItem(MultiDimKnapsackData* const data, int64 var, int64 val) {
   return -(profit * 100 / max_weight);
 }
 
-int64 SolveKnapsack(MultiDimKnapsackData* const data) {
+void SolveKnapsack(MultiDimKnapsackData* const data) {
   Solver solver("MultiDim Knapsack");
   std::vector<IntVar*> assign;
   solver.MakeBoolVarArray(data->items(), "assign", &assign);
@@ -282,13 +281,13 @@ int64 SolveKnapsack(MultiDimKnapsackData* const data) {
     profits.push_back(data->profit(i));
   }
 
-  IntVar* objective = solver.MakeScalProd(assign, profits)->Var();
+  IntVar* const objective = solver.MakeScalProd(assign, profits)->Var();
 
   std::vector<SearchMonitor*> monitors;
-  OptimizeVar* obj = solver.MakeMaximize(objective, 1);
-  monitors.push_back(obj);
-  SearchMonitor* log = solver.MakeSearchLog(1000000, objective);
-  monitors.push_back(log);
+  OptimizeVar* const objective_monitor = solver.MakeMaximize(objective, 1);
+  monitors.push_back(objective_monitor);
+  SearchMonitor* const search_log = solver.MakeSearchLog(1000000, objective);
+  monitors.push_back(search_log);
   DecisionBuilder* const db =
       solver.MakePhase(assign,
                        NewPermanentCallback(&EvaluateItem, data),
@@ -308,7 +307,9 @@ int64 SolveKnapsack(MultiDimKnapsackData* const data) {
     monitors.push_back(simplex);
   }
 
-  solver.Solve(db, monitors);
+  if (solver.Solve(db, monitors)) {
+    LOG(INFO) << "Best solution found = " << objective_monitor->best();
+  }
 }
 }  // namespace operations_research
 
