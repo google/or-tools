@@ -60,6 +60,12 @@ endif
 
 ifeq ($(PLATFORM),LINUX)
 LD = gcc -shared
+ifeq ($(PTRLENGTH),64)
+   ARCH = -DARCH_K8
+else
+   ARCH  =
+endif
+
 # This is needed to find libgflags.a
 GFLAGS_LNK = -Wl,-rpath $(UNIX_GFLAGS_DIR)/lib -L$(UNIX_GFLAGS_DIR)/lib -lgflags
 # This is needed to find libz.a
@@ -77,10 +83,8 @@ CBC_LNK = -Wl,-rpath $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -L$(UNIX_CBC_DIR)/lib$(
 endif
 ifdef UNIX_SCIP_DIR
 ifeq ($(PTRLENGTH),64)
-   ARCH = -DARCH_K8
    SCIP_ARCH = linux.x86_64.gnu.opt
 else
-   ARCH  =
    SCIP_ARCH = linux.x86.gnu.opt
 endif
 SCIP_LNK =
