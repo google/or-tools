@@ -2,7 +2,7 @@
 GFLAGS_TAG = 72 # version 1.7
 PROTOBUF_TAG = 391 # version 2.4.1
 GOOGLE_APPUTILS_TAG = 11 # trunk
-GOOGLE_SPARSEHASH_TAG = 103 # trunk
+GOOGLE_SPARSEHASH_TAG = 105 # trunk
 CBC_TAG = 2.7.5
 SWIG_TAG = rel-2.0.4
 
