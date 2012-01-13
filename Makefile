@@ -10,6 +10,8 @@ help:
 	@echo "  - tests: test test_cc test_python test_java test_csharp"
 	@echo "  - cleaning: clean cleancsharp"
 
+OR_TOOLS_VERSION = 1.0.0
+
 .PHONY : python cc java
 cc: cplibs cpexe algorithmslibs graphlibs lplibs lpexe
 java: javacp javaalgorithms javagraph javalp

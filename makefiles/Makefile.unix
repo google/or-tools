@@ -103,7 +103,7 @@ PRE_LIB = -Wl,-rpath $(TOP) -L$(TOP) -l
 POST_LIB =
 endif  # LINUX
 ifeq ($(PLATFORM),MACOSX)
-LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min 10.6
+LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
 JNILIBEXT = jnilib
 
 GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
@@ -120,7 +120,7 @@ JAR_BIN = jar
 PRE_LIB = -L$(TOP) -l
 POST_LIB =
 LIBSUFFIX = dylib
-LINKCMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min 10.6
+LINKCMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
 LINKPREFIX = -o # Need the space.
 
 ifdef UNIX_GLPK_DIR
