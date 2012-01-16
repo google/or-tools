@@ -20,6 +20,7 @@ template <typename GraphType> class LinearSumAssignment;
 // http://lpsolve.sourceforge.net/5.5/DIMACS_asn.htm
 void PrintDimacsAssignmentProblem(
     const LinearSumAssignment<ForwardStarGraph>& assignment,
+    const TailArrayManager<ForwardStarGraph>& tail_array_manager,
     const string& output_filename);
 
 }  // namespace operations_research

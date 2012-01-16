@@ -139,8 +139,16 @@ int solve_dimacs_assignment(int argc, char* argv[]) {
     LOG(FATAL) << error_message;
   }
   if (!FLAGS_assignment_problem_output_file.empty()) {
-    PrintDimacsAssignmentProblem(*assignment,
+    // The following tail array management stuff is done in a generic
+    // way so we can plug in different types of graphs for which the
+    // TailArrayManager template can be instantiated, even though we
+    // know the type of the graph explicitly. In this way, the type of
+    // the graph can be switched just by changing the graph type in
+    // this file and making no other changes to the code.
+    TailArrayManager<ForwardStarGraph> tail_array_manager(graph);
+    PrintDimacsAssignmentProblem(*assignment, tail_array_manager,
                                  FLAGS_assignment_problem_output_file);
+    tail_array_manager.ReleaseTailArrayIfForwardGraph();
   }
   CostValue hungarian_cost = 0.0;
   bool hungarian_solved = false;

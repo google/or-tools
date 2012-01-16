@@ -37,6 +37,7 @@ static void WriteOrDie(const char* buffer,
 
 void PrintDimacsAssignmentProblem(
     const LinearSumAssignment<ForwardStarGraph>& assignment,
+    const TailArrayManager<ForwardStarGraph>& tail_array_manager,
     const string& output_filename) {
   FILE* output = fopen(output_filename.c_str(), "w");
   const ForwardStarGraph& graph(assignment.Graph());
@@ -54,6 +55,8 @@ void PrintDimacsAssignmentProblem(
     WriteOrDie(output_line.c_str(), 1, output_line.length(),
                output);
   }
+
+  tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
 
   for (ForwardStarGraph::ArcIterator arc_it(assignment.Graph());
        arc_it.Ok();
