@@ -48,11 +48,11 @@ def main(unused_argv):
 
   # AllDifferent on rows.
   for i in line:
-    solver.Add(solver.AllDifferent([grid[(i, j)] for j in line], False))
+    solver.Add(solver.AllDifferent([grid[(i, j)] for j in line]))
 
   # AllDifferent on columns.
   for j in line:
-    solver.Add(solver.AllDifferent([grid[(i, j)] for i in line], False))
+    solver.Add(solver.AllDifferent([grid[(i, j)] for i in line]))
 
   # AllDifferent on cells.
   for i in cell:
@@ -62,7 +62,7 @@ def main(unused_argv):
         for dj in cell:
           one_cell.append(grid[(i * cell_size + di, j * cell_size + dj)])
 
-      solver.Add(solver.AllDifferent(one_cell, False))
+      solver.Add(solver.AllDifferent(one_cell))
 
   # Initial values.
   for i in line:

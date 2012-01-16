@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -29,7 +29,7 @@
   not possible. We define the disparity between a skier and his or her
   skis to be the absolute value of the difference between the height of
   the skier and the pair of skis. Our objective is to find an assignment
-  of skis to skiers that minimizes the sum of the disparities. 
+  of skis to skiers that minimizes the sum of the disparities.
   ...
   Illustrate your algorithm by explicitly filling out the A[i, j] table
   for the following sample data:
@@ -54,10 +54,10 @@ from constraint_solver import pywrapcp
 
 
 def main():
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Ski assignment')
-    
+
     #
     # data
     #
@@ -79,7 +79,7 @@ def main():
     #
     # constraints
     #
-    solver.Add(solver.AllDifferent(x, True))
+    solver.Add(solver.AllDifferent(x))
 
     z_tmp = [abs(solver.Element(ski_heights, x[i]) - skier_heights[i])
              for i in range(num_skiers)]
@@ -90,14 +90,14 @@ def main():
 
     #
     # search and result
-    # 
+    #
     db = solver.Phase(x,
                  solver.INT_VAR_DEFAULT,
                  solver.INT_VALUE_DEFAULT)
 
     solver.NewSearch(db, [objective])
 
-        
+
     num_solutions = 0
     while solver.NextSolution():
         num_solutions += 1
@@ -109,9 +109,9 @@ def main():
             print 'Skier %i: Ski %i with length %2i (diff: %2i)' %\
                   (i, x_val, ski_height, diff )
         print
-        
+
     solver.EndSearch()
-    
+
     print
     print "num_solutions:", num_solutions
     print "failures:", solver.failures()

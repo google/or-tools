@@ -140,7 +140,7 @@ def Solve(model):
   #
   # constraints
   #
-  solver.Add(solver.AllDifferent(positions, True))
+  solver.Add(solver.AllDifferent(positions))
 
   #
   # Fill in the clues

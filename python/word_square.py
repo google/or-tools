@@ -1,17 +1,17 @@
 # -*- coding: latin-1 -*-
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -19,9 +19,9 @@
 
   From http://en.wikipedia.org/wiki/Word_square
   '''
-  A word square is a special case of acrostic. It consists of a set of words, 
-  all having the same number of letters as the total number of words (the 
-  'order' of the square); when the words are written out in a square grid 
+  A word square is a special case of acrostic. It consists of a set of words,
+  all having the same number of letters as the total number of words (the
+  'order' of the square); when the words are written out in a square grid
   horizontally, the same set of words can be read vertically.
   '''
 
@@ -42,7 +42,7 @@ from constraint_solver import pywrapcp
 
 
 def main(words, word_len, num_answers=20):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Problem')
 
@@ -61,22 +61,22 @@ def main(words, word_len, num_answers=20):
     for i in range(num_words):
         for j in range(word_len):
             A[(i,j)] = solver.IntVar(0,29, 'A(%i,%i)' % (i, j))
-    
+
     A_flat = [A[(i,j)] for i in range(num_words) for j in range(word_len)]
-    
+
     E = [solver.IntVar(0, num_words, "E%i"%i) for i in range(n)]
 
     #
     # constraints
     #
-    solver.Add(solver.AllDifferent(E, True))
-    
+    solver.Add(solver.AllDifferent(E))
+
     # copy the words to a Matrix
     for I in range(num_words):
         for J in range(word_len):
             solver.Add(A[(I,J)] == d[words[I][J]])
 
-        
+
     for i in range(word_len):
         for j in range(word_len):
             # This is what I would like to do:
@@ -97,16 +97,16 @@ def main(words, word_len, num_answers=20):
     db = solver.Phase(E + A_flat,
                  solver.CHOOSE_FIRST_UNBOUND,
                  solver.ASSIGN_MIN_VALUE)
-    
+
     solver.NewSearch(db)
     num_solutions = 0
-    while solver.NextSolution():  
+    while solver.NextSolution():
         #print E
-        print_solution(E,words)        
+        print_solution(E,words)
         num_solutions += 1
-        
+
     solver.EndSearch()
-    
+
     print
     print "num_solutions:", num_solutions
     print "failures:", solver.failures()
@@ -144,7 +144,7 @@ def read_words(word_list, word_len, limit):
         w = string.strip(w).lower()
         # if len(w) == word_len and not dict.has_key(w) and not re.search("[^a-zåäö]",w) and count < limit:
         # Later note: The limit is not needed anymore with Mistral
-        if len(w) == word_len and not dict.has_key(w) and not re.search("[^a-zåäö]",w):            
+        if len(w) == word_len and not dict.has_key(w) and not re.search("[^a-zåäö]",w):
             dict[w] = 1
             all_words.append(w)
             count += 1

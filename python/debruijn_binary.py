@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -18,10 +18,10 @@
 
   Implementation of de Bruijn sequences in Minizinc, both 'classical' and 'arbitrary'.
   The 'arbitrary' version is when the length of the sequence (m here) is < base**n.
-  
+
 
   Compare with the the web based programs:
-    http://www.hakank.org/comb/debruijn.cgi   
+    http://www.hakank.org/comb/debruijn.cgi
     http://www.hakank.org/comb/debruijn_arb.cgi
 
   Compare with the following models:
@@ -70,7 +70,7 @@ def main(base=2, n=3, m=8):
 
 
     # for n = 4 with different value of base
-    # base = 2  0.030 seconds  16 failures 
+    # base = 2  0.030 seconds  16 failures
     # base = 3  0.041         108
     # base = 4  0.070         384
     # base = 5  0.231        1000
@@ -86,12 +86,12 @@ def main(base=2, n=3, m=8):
     # if True then ensure that the number of occurrences of 0..base-1 is
     # the same (and if m mod base = 0)
     check_same_gcc = True
-    
+
     print "base: %i n: %i m: %i" % (base, n, m)
     if check_same_gcc:
         print "Checks gcc"
 
-    
+
     # declare variables
     x = [solver.IntVar(0,(base**n)-1, 'x%i' % i) for i in range(m)]
     binary = {}
@@ -104,8 +104,8 @@ def main(base=2, n=3, m=8):
     #
     # constraints
     #
-    #solver.Add(solver.AllDifferent([x[i] for i in range(m)], False))
-    solver.Add(solver.AllDifferent(x, True))
+    #solver.Add(solver.AllDifferent([x[i] for i in range(m)]))
+    solver.Add(solver.AllDifferent(x))
 
     # converts x <-> binary
     for i in range(m):
@@ -113,7 +113,7 @@ def main(base=2, n=3, m=8):
         toNum(solver, t, x[i], base)
         for j in range(n):
             solver.Add(binary[(i,j)] == t[j])
-        
+
 
     # the de Bruijn condition
     # the first elements in binary[i] is the same as the last
@@ -144,7 +144,7 @@ def main(base=2, n=3, m=8):
     #
     solution = solver.Assignment()
     solution.Add([x[i] for i in range(m)])
-    solution.Add([bin_code[i] for i in range(m)])               
+    solution.Add([bin_code[i] for i in range(m)])
     # solution.Add([binary[(i,j)] for i in range(m) for j in range(n)])
     solution.Add([gcc[i] for i in range(base)])
 
@@ -164,9 +164,9 @@ def main(base=2, n=3, m=8):
         print "de Bruijn sequence:", [bin_code[i].Value() for i in range(m)]
         #for i in range(m):
         #    for j in range(n):
-        #        print binary[(i,j)].Value(), 
+        #        print binary[(i,j)].Value(),
         #    print
-        #print        
+        #print
     solver.EndSearch()
 
     if num_solutions == 0:
@@ -178,7 +178,7 @@ def main(base=2, n=3, m=8):
     print "branches:", solver.branches()
     print "wall_time:", solver.wall_time()
 
-    
+
 
 base = 2
 n    = 3

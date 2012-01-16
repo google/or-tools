@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -21,10 +21,10 @@
   Usage:
      python alphametic.py
                          ->  solves SEND+MORE=MONEY in base 10
-         
+
      python alphametic.py  'SEND+MOST=MONEY' 11
                          -> solver SEND+MOST=MONEY in base 11
-     
+
      python alphametic.py TEST <base>
                          -> solve some test problems in base <base>
                             (defined in test_problems())
@@ -48,7 +48,7 @@ import sys, string, re
 from constraint_solver import pywrapcp
 
 def main(problem_str="SEND+MORE=MONEY", base=10):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Send most money')
 
@@ -57,7 +57,7 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
 
     # convert to array.
     problem = re.split("[\s+=]", problem_str)
-    
+
     p_len = len(problem)
     print "base:", base
 
@@ -81,12 +81,12 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
     #
     # constraints
     #
-    solver.Add(solver.AllDifferent(x, False))
+    solver.Add(solver.AllDifferent(x))
 
     ix = 0
     for prob in problem:
         this_len = len(prob)
-        
+
         # sum all the digits with proper exponents to a number
         solver.Add(sums[ix] == solver.Sum([(base**i)*x[lookup[prob[this_len-i-1]]]
                                            for i in range(this_len)[::-1]]))
@@ -97,13 +97,13 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
     # the last number is the sum of the previous numbers
     solver.Add(solver.Sum([sums[i] for i in range(p_len-1)]) == sums[-1])
 
- 
+
     #
     # solution and search
     #
     solution = solver.Assignment()
     solution.Add(x)
-    solution.Add(sums)    
+    solution.Add(sums)
 
     db = solver.Phase(x,
                       solver.CHOOSE_FIRST_UNBOUND,
@@ -117,7 +117,7 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
         print "\nsolution #%i" % num_solutions
         for i in range(n):
             print a[i], "=", x[i].Value()
-        print 
+        print
         for prob in problem:
             for p in prob:
                 print p,
@@ -128,9 +128,9 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
                 print x[lookup[p]].Value(),
             print
 
-        print "sums:", [sums[i].Value() for i in range(p_len)]            
+        print "sums:", [sums[i].Value() for i in range(p_len)]
         print
-        
+
     print "\nnum_solutions:", num_solutions
     print "failures:", solver.failures()
     print "branches:", solver.branches()
@@ -147,11 +147,11 @@ def test_problems(base=10):
         "SATURN+URANUS+NEPTUNE+PLUTO+PLANETS",
         "WRONG+WRONG=RIGHT"
         ]
-    
+
     for p in problems:
         main(p, base)
-    
-    
+
+
 problem = "SEND+MORE=MONEY"
 base = 10
 if __name__ == '__main__':
@@ -162,5 +162,5 @@ if __name__ == '__main__':
 
     if problem == "TEST" or problem == "test":
         test_problems(base)
-    else: 
+    else:
         main(problem, base)

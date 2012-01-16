@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -40,7 +40,7 @@
   * ECLiPSe: http://hakank.org/eclipse/futoshiki.ecl
   * Gecode: http://hakank.org/gecode/futoshiki.cpp
   * SICStus: http://hakank.org/sicstus/futoshiki.pl
-  
+
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
@@ -49,10 +49,10 @@ from constraint_solver import pywrapcp
 
 
 def main(values, lt):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Futoshiki problem')
-    
+
     #
     # data
     #
@@ -82,12 +82,12 @@ def main(values, lt):
 
     # all rows have to be different
     for row in RANGE:
-        solver.Add(solver.AllDifferent([field[row,col] for col in RANGE], True))
+        solver.Add(solver.AllDifferent([field[row,col] for col in RANGE]))
 
 
     # all columns have to be different
     for col in RANGE:
-        solver.Add(solver.AllDifferent([field[row,col] for row in RANGE], True))
+        solver.Add(solver.AllDifferent([field[row,col] for row in RANGE]))
 
 
     # all < constraints are satisfied
@@ -99,7 +99,7 @@ def main(values, lt):
 
     #
     # search and result
-    # 
+    #
     db = solver.Phase(field_flat,
                  solver.CHOOSE_FIRST_UNBOUND,
                  solver.ASSIGN_MIN_VALUE)
@@ -114,9 +114,9 @@ def main(values, lt):
                 print field[i,j].Value(),
             print
         print
-        
+
     solver.EndSearch()
-    
+
     print "num_solutions:", num_solutions
     print "failures:", solver.failures()
     print "branches:", solver.branches()
@@ -131,7 +131,7 @@ def main(values, lt):
 # 2 3 1 4 5
 # 3 5 4 1 2
 # 4 2 5 3 1
-# 
+#
 # Futoshiki instance, by Andras Salamon
 # specify the numbers in the grid
 #
@@ -189,5 +189,5 @@ lt2 = [
 if __name__ == '__main__':
     print "Problem 1"
     main(values1, lt1)
-    print "\nProblem 2"    
-    main(values2, lt2)    
+    print "\nProblem 2"
+    main(values2, lt2)

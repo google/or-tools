@@ -103,7 +103,7 @@ def main(r=0, c=0, rowsums=[], colsums=[], game=[]):
 
 
     xflat = [x[(i,j)] for i in range(r) for j in range(c)]
-    solver.Add(solver.AllDifferent(xflat, True))
+    solver.Add(solver.AllDifferent(xflat))
     #
     # calculate rowsums and colsums
     #

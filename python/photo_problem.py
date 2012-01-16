@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -22,21 +22,21 @@
   Betty, Chris, Donald, Fred, Gary, Mary, and Paul want to align in one
   row for taking a photo. Some of them have preferences next to whom
   they want to stand:
- 
+
      1. Betty wants to stand next to Gary and Mary.
      2. Chris wants to stand next to Betty and Gary.
      3. Fred wants to stand next to Mary and Donald.
      4. Paul wants to stand next to Fred and Donald.
- 
+
   Obviously, it is impossible to satisfy all preferences. Can you find
   an alignment that maximizes the number of satisfied preferences?
   '''
 
-  Oz solution: 
+  Oz solution:
     6 # alignment(betty:5  chris:6  donald:1  fred:3  gary:7   mary:4   paul:2)
   [5, 6, 1, 3, 7, 4, 2]
-  
-  
+
+
   Compare with the following models:
   * MiniZinc: http://www.hakank.org/minizinc/photo_hkj.mzn
   * Comet: http://hakank.org/comet/photo_problem.co
@@ -53,10 +53,10 @@ from constraint_solver import pywrapcp
 
 
 def main(show_all_max=0):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Photo problem')
-    
+
     #
     # data
     #
@@ -92,27 +92,27 @@ def main(show_all_max=0):
     #
     # constraints
     #
-    solver.Add(solver.AllDifferent(positions, True))
+    solver.Add(solver.AllDifferent(positions))
 
     # calculate all the successful preferences
     b = [solver.IsEqualCstVar(abs(positions[i]-positions[j]),1)
          for i in range(n) for j in range(n) if preferences[i][j] == 1]
     solver.Add(z == solver.Sum(b))
 
-    # 
+    #
     # Symmetry breaking (from the Oz page):
     #   Fred is somewhere left of Betty
     solver.Add(positions[3] < positions[0])
- 
+
     # objective
     objective = solver.Maximize(z, 1)
     if show_all_max != 0:
-        print "Showing all maximum solutions (z == 6).\n"        
+        print "Showing all maximum solutions (z == 6).\n"
         solver.Add(z == 6)
 
     #
     # search and result
-    # 
+    #
     db = solver.Phase(positions,
                  solver.CHOOSE_FIRST_UNBOUND,
                  solver.ASSIGN_MAX_VALUE)
@@ -122,7 +122,7 @@ def main(show_all_max=0):
     else:
         solver.NewSearch(db)
 
-        
+
     num_solutions = 0
     while solver.NextSolution():
         print "z:", z.Value()
@@ -137,9 +137,9 @@ def main(show_all_max=0):
                     print "\t", persons[i], persons[j]
         print
         num_solutions += 1
-        
+
     solver.EndSearch()
-    
+
     print
     print "num_solutions:", num_solutions
     print "failures:", solver.failures()

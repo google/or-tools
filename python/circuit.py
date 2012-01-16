@@ -56,8 +56,8 @@ def circuit(solver, x):
     n = len(x)
     z = [solver.IntVar(0, n-1, 'z%i' % i) for i in range(n)]
 
-    solver.Add(solver.AllDifferent(x, True))
-    solver.Add(solver.AllDifferent(z, True))
+    solver.Add(solver.AllDifferent(x))
+    solver.Add(solver.AllDifferent(z))
 
     # put the orbit of x[0] in in z[0..n-1]
     solver.Add(z[0] == x[0])

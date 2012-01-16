@@ -50,7 +50,7 @@ def main(unused_argv):
   solver.Add(s != 0)
   solver.Add(m != 0)
 
-  solver.Add(solver.AllDifferent(letters, True))
+  solver.Add(solver.AllDifferent(letters))
 
   solver.NewSearch(solver.Phase(letters,
                                 solver.INT_VAR_DEFAULT,

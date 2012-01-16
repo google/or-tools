@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -26,7 +26,7 @@
   diagonally.
   '''
 
-  Compare with the following models: 
+  Compare with the following models:
   * MiniZinc: http://www.hakank.org/minizinc/hidato.mzn
   * Gecode  : http://www.hakank.org/gecode/hidato.cpp
   * Comet   : http://www.hakank.org/comet/hidato.co
@@ -45,7 +45,7 @@ from constraint_solver import pywrapcp
 
 
 def main():
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('n-queens')
 
@@ -57,7 +57,7 @@ def main():
     #
     # r = 3
     # c = r
-    # puzzle = [ 
+    # puzzle = [
     #     [6,0,9],
     #     [0,2,8],
     #     [1,0,0]
@@ -66,20 +66,20 @@ def main():
 
 #     r = 7
 #     c = 7
-#     puzzle =  [ 
+#     puzzle =  [
 #         [0,44,41, 0, 0, 0, 0],
 #         [0,43, 0,28,29, 0, 0],
 #         [0, 1, 0, 0, 0,33, 0],
 #         [0, 2,25, 4,34, 0,36],
 #         [49,16, 0,23, 0, 0, 0],
 #         [0,19, 0, 0,12, 7, 0],
-#         [0, 0, 0,14, 0, 0, 0] 
+#         [0, 0, 0,14, 0, 0, 0]
 #         ]
-    
+
 
     # Problems from the book:
     # Gyora Bededek: "Hidato: 2000 Pure Logic Puzzles"
-    
+
     # Problem 1 (Practice)
     # r = 5
     # c = r
@@ -148,13 +148,13 @@ def main():
     #
     # constraints
     #
-    solver.Add(solver.AllDifferent(x_flat, False))
+    solver.Add(solver.AllDifferent(x_flat))
 
     #
     # Fill in the clues
     #
     for i in range(r):
-        for j in range(c):           
+        for j in range(c):
             if puzzle[i][j] > 0:
                 solver.Add(x[(i,j)] == puzzle[i][j])
 
@@ -171,15 +171,15 @@ def main():
         # 1) First: fix "this" k
         # 2) and then find the position of the next value (k+1)
         # solver.Add(k == x[(i,j)])
-        solver.Add(k == solver.Element(x_flat, i*c+j))        
+        solver.Add(k == solver.Element(x_flat, i*c+j))
         # solver.Add(k + 1 == x[(i+a,j+b)])
-        solver.Add(k + 1 == solver.Element(x_flat, (i+a)*c+(j+b)))        
+        solver.Add(k + 1 == solver.Element(x_flat, (i+a)*c+(j+b)))
 
         solver.Add(i+a >= 0)
         solver.Add(j+b >= 0)
         solver.Add(i+a < r)
         solver.Add(j+b < c)
-        
+
         # solver.Add(((a != 0) | (b != 0)))
         a_nz = solver.BoolVar()
         b_nz = solver.BoolVar()
@@ -215,17 +215,17 @@ def main():
                       #solver.ASSIGN_RANDOM_VALUE
                       #solver.ASSIGN_CENTER_VALUE
                       )
-    
+
     solver.NewSearch(db)
     num_solutions = 0
     while solver.NextSolution():
-        num_solutions += 1                
+        num_solutions += 1
         print "\nSolution:", num_solutions
         print_board(x, r, c)
         print
 
     solver.EndSearch()
-    
+
     print
     print "num_solutions:", num_solutions
     print "failures:", solver.failures()

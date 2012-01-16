@@ -1,26 +1,26 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the 'License'); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the 'License');
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an 'AS IS' BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an 'AS IS' BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Strimko problem in Google CP Solver.
 
-  From 
+  From
   360: A New Twist on Latin Squares
   http://threesixty360.wordpress.com/2009/08/04/a-new-twist-on-latin-squares/
   '''
-  The idea is simple: each row and column of an nxn grid must contain 
-  the number 1, 2, ... n exactly once (that is, the grid must form a 
-  Latin square), and each "stream" (connected path in the grid) must 
+  The idea is simple: each row and column of an nxn grid must contain
+  the number 1, 2, ... n exactly once (that is, the grid must form a
+  Latin square), and each "stream" (connected path in the grid) must
   also contain the numbers 1, 2, ..., n exactly once.
   '''
 
@@ -33,7 +33,7 @@
   I have blogged about this (using MiniZinc model) in
   'Strimko - Latin squares puzzle with "streams"'
   http://www.hakank.org/constraint_programming_blog/2009/08/strimko_latin_squares_puzzle_w_1.html
-  
+
   Compare with the following models:
   * MiniZinc: http://hakank.org/minizinc/strimko2.mzn
   * ECLiPSe: http://hakank.org/eclipse/strimko2.ecl
@@ -49,10 +49,10 @@ import sys
 from constraint_solver import pywrapcp
 
 def main(streams="", placed=""):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Strimko')
-    
+
     #
     # default problem
     #
@@ -98,22 +98,22 @@ def main(streams="", placed=""):
     #
     # constraints
     #
-    
+
     # all rows and columns must be unique, i.e. a Latin Square
     for i in range(n):
         row = [x[i,j] for j in range(n)]
-        solver.Add(solver.AllDifferent(row, True))
-        
+        solver.Add(solver.AllDifferent(row))
+
         col = [x[j,i] for j in range(n)]
-        solver.Add(solver.AllDifferent(col, True))
+        solver.Add(solver.AllDifferent(col))
 
     #
     # streams
     #
     for s in range(1, n+1):
         tmp = [x[i,j] for i in range(n) for j in range(n) if streams[i][j] == s]
-        solver.Add(solver.AllDifferent(tmp, True))
-        
+        solver.Add(solver.AllDifferent(tmp))
+
     #
     # placed
     #
@@ -124,12 +124,12 @@ def main(streams="", placed=""):
 
     #
     # search and solution
-    # 
+    #
     db = solver.Phase(x_flat,
                  solver.INT_VAR_DEFAULT,
                  solver.INT_VALUE_DEFAULT)
 
-    solver.NewSearch(db)        
+    solver.NewSearch(db)
 
     num_solutions = 0
     while solver.NextSolution():
@@ -140,9 +140,9 @@ def main(streams="", placed=""):
 
         print
         num_solutions += 1
-        
+
     solver.EndSearch()
-    
+
     print
     print 'num_solutions:', num_solutions
     print 'failures:', solver.failures()
@@ -156,5 +156,3 @@ if __name__ == '__main__':
         main(streams, placed)
     else:
         main()
-        
-

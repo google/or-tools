@@ -70,7 +70,7 @@ def main(MONEY=0):
     if MONEY > 0:
         solver.Add(money == MONEY)
 
-    solver.Add(solver.AllDifferent(x, True))
+    solver.Add(solver.AllDifferent(x))
     solver.Add(money == m*10000 + o*1000 + n*100 + e*10 + y)
     solver.Add(money > 0)
     solver.Add(1000*s + 100*e + 10*n + d +

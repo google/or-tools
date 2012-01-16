@@ -1,15 +1,15 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
 # limitations under the License.
 
 """
@@ -19,19 +19,19 @@
   From http://msdn.microsoft.com/en-us/vcsharp/ee957404.aspx
   ' Solving Combinatory Problems with LINQ'
   '''
-  Find a number consisting of 9 digits in which each of the digits 
-  from 1 to 9 appears only once. This number must also satisfy these 
+  Find a number consisting of 9 digits in which each of the digits
+  from 1 to 9 appears only once. This number must also satisfy these
   divisibility requirements:
-  
+
    1. The number should be divisible by 9.
-   2. If the rightmost digit is removed, the remaining number should 
+   2. If the rightmost digit is removed, the remaining number should
       be divisible by 8.
-   3. If the rightmost digit of the new number is removed, the remaining 
+   3. If the rightmost digit of the new number is removed, the remaining
       number should be divisible by 7.
-   4. And so on, until there's only one digit (which will necessarily 
+   4. And so on, until there's only one digit (which will necessarily
       be divisible by 1).
   '''
-  
+
   Also, see
   'Intel Parallel Studio: Great for Serial Code Too (Episode 1)'
   http://software.intel.com/en-us/blogs/2009/12/07/intel-parallel-studio-great-for-serial-code-too-episode-1/
@@ -45,7 +45,7 @@
   * Comet   : http://www.hakank.org/comet/divisible_by_9_through_1.co
   * ECLiPSe : http://www.hakank.org/eclipse/divisible_by_9_through_1.ecl
   * Gecode  : http://www.hakank.org/gecode/divisible_by_9_through_1.cpp
- 
+
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
@@ -86,7 +86,7 @@ def my_mod(solver, x, y, r):
     if not isinstance(r, int) and not isinstance(r, int):
         solver.Add(-abs(y) < r)
         solver.Add(r < abs(y))
-        
+
     solver.Add(min_x <= d)
     solver.Add(d <= max_x)
     solver.Add(x == y*d+r)
@@ -101,7 +101,7 @@ def toNum(solver, t, s, base):
 
 
 def main(base=10):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Divisible by 9 through 1')
 
@@ -112,20 +112,20 @@ def main(base=10):
     digits_str = "_0123456789ABCDEFGH"
 
     print "base:", base
-    
+
     # declare variables
 
     # the digits
     x = [solver.IntVar(1, base-1, 'x[%i]' % i) for i in range(n)]
-    
+
     # the numbers, t[0] contains the answer
     t = [solver.IntVar(0, m, 't[%i]' % i) for i in range(n)]
 
     #
     # constraints
     #
-    solver.Add(solver.AllDifferent(x, True))
-    
+    solver.Add(solver.AllDifferent(x))
+
     for i in range(n):
         mm = base-i-1
         toNum(solver, [x[j] for j in range(mm)], t[i], base)
@@ -137,8 +137,8 @@ def main(base=10):
     #
     solution = solver.Assignment()
     solution.Add(x)
-    solution.Add(t)               
-    
+    solution.Add(t)
+
     db = solver.Phase(x,
                       solver.CHOOSE_FIRST_UNBOUND,
                       solver.ASSIGN_MIN_VALUE)
@@ -146,7 +146,7 @@ def main(base=10):
 
     solver.NewSearch(db)
     num_solutions = 0
-    while solver.NextSolution():  
+    while solver.NextSolution():
         print "x: ", [x[i].Value() for i in range(n)]
         print "t: ", [t[i].Value() for i in range(n)]
         print "number base 10: %i base %i: %s" % (t[0].Value(),\

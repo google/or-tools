@@ -76,14 +76,14 @@ def main(unused_argv):
   lucky_strike = solver.IntVar(1, 5, 'lucky strike')
   parliaments = solver.IntVar(1, 5, 'parliaments')
 
-  solver.Add(solver.AllDifferent([red, green, yellow, blue, ivory], False))
+  solver.Add(solver.AllDifferent([red, green, yellow, blue, ivory]))
   solver.Add(solver.AllDifferent([englishman, spaniard, japanese,
-                                  ukrainian, norwegian], False))
-  solver.Add(solver.AllDifferent([dog, snails, fox, zebra, horse], False))
+                                  ukrainian, norwegian]))
+  solver.Add(solver.AllDifferent([dog, snails, fox, zebra, horse]))
   solver.Add(solver.AllDifferent([tea, coffee, water, milk,
-                                  fruit_juice], False))
+                                  fruit_juice]))
   solver.Add(solver.AllDifferent([parliaments, kools, chesterfields,
-                                  lucky_strike, old_gold], False))
+                                  lucky_strike, old_gold]))
 
   solver.Add(englishman == red)
   solver.Add(spaniard == dog)

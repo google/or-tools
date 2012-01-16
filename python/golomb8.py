@@ -49,8 +49,7 @@ def main(unused_argv):
   solver.Add(marks[0] == 0)
   solver.Add(solver.AllDifferent([marks[j] - marks[i]
                                   for i in range(0, size - 1)
-                                  for j in range(i +1, size)],
-                                 False))
+                                  for j in range(i +1, size)]))
 
   solver.Add(marks[size - 1] - marks[size - 2] > marks[1] - marks[0])
   for i in range(0, size - 2):

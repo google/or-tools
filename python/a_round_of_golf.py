@@ -91,9 +91,9 @@ def main():
     #
     # constraints
     #
-    solver.Add(solver.AllDifferent(last_name, True))
-    solver.Add(solver.AllDifferent(job, True))
-    solver.Add(solver.AllDifferent(score, True))
+    solver.Add(solver.AllDifferent(last_name))
+    solver.Add(solver.AllDifferent(job))
+    solver.Add(solver.AllDifferent(score))
 
     # 1. Bill, who is not the maintenance man, plays golf often and had
     #    the lowest score of the foursome.

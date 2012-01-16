@@ -31,11 +31,11 @@
   e) Ignace has arrived neither in second nor third position.
   f) Pascal has beaten Naren by three positions.
   g) Neither Ignace nor Dominique are on the fourth position.
-  
+
      (c) 2002 Dash Associates
     author: S. Heipcke, Mar. 2002
   '''
-  
+
   Compare with the following models:
   * MiniZinc: http://www.hakank.org/minizinc/marathon2.mzn
   * SICStus Prolog: http://www.hakank.org/sicstus/marathon2.pl
@@ -58,7 +58,7 @@ def main():
 
     #
     # data
-    #    
+    #
     n = 6
 
     runners_str = ['Dominique', 'Ignace', 'Naren',
@@ -76,7 +76,7 @@ def main():
     #
     # constraints
     #
-    solver.Add(solver.AllDifferent(runners, True))
+    solver.Add(solver.AllDifferent(runners))
 
     # a: Olivier not last
     solver.Add(Olivier != n)
@@ -105,7 +105,7 @@ def main():
     # g: Neither Ignace nor Dominique on fourth position
     solver.Add(Ignace     != 4)
     solver.Add(Dominique  != 4)
-   
+
 
     #
     # solution and search
@@ -113,9 +113,9 @@ def main():
     db = solver.Phase(runners,
                       solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
                       solver.ASSIGN_CENTER_VALUE)
-    
+
     solver.NewSearch(db)
-    
+
     num_solutions = 0
     while solver.NextSolution():
         num_solutions += 1

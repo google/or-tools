@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -21,7 +21,7 @@
   Faster than the previous versions:
   - http://www.hakank.org/gogle_cp_solver/nqueens.py
   - http://www.hakank.org/gogle_cp_solver/nqueens2.py
-  
+
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
@@ -47,14 +47,14 @@ def main(n=8, num_sol=0, print_sol=1):
     #
     # constraints
     #
-    solver.Add(solver.AllDifferent(q,True))
-    solver.Add(solver.AllDifferent([q[i]+i for i in range(n)],True))
-    solver.Add(solver.AllDifferent([q[i]-i for i in range(n)],True))
+    solver.Add(solver.AllDifferent(q))
+    solver.Add(solver.AllDifferent([q[i]+i for i in range(n)]))
+    solver.Add(solver.AllDifferent([q[i]-i for i in range(n)]))
 
 
     # symmetry breaking
     # solver.Add(q[0] == 0)
-    
+
 
     #
     # search
@@ -81,9 +81,9 @@ def main(n=8, num_sol=0, print_sol=1):
         num_solutions += 1
         if num_sol > 0 and num_solutions >= num_sol:
             break
-    
+
     solver.EndSearch()
-    
+
     print
     print "num_solutions:", num_solutions
     print "failures:", solver.failures()
@@ -98,11 +98,11 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         n = int(sys.argv[1])
     if len(sys.argv) > 2:
-        num_sol = int(sys.argv[2])       
+        num_sol = int(sys.argv[2])
     if len(sys.argv) > 3:
-        print_sol = int(sys.argv[3])       
+        print_sol = int(sys.argv[3])
 
-        
+
     main(n, num_sol, print_sol)
 
     # print_sol = False

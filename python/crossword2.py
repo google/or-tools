@@ -127,7 +127,7 @@ def main(_):
     #
     # constraints
     #
-    solver.Add(solver.AllDifferent(E,True))
+    solver.Add(solver.AllDifferent(E))
 
     for I in range(num_words):
         for J in range(word_len):

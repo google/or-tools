@@ -40,7 +40,7 @@ def main(n=8):
     #
     # constraints
     #
-    solver.Add(solver.AllDifferent(q,True))
+    solver.Add(solver.AllDifferent(q))
     for i in range(n):
         for j in range(i):
             solver.Add(q[i] != q[j])

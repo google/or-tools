@@ -72,7 +72,7 @@ def main(unused_argv):
   solver.Add(y == 10000*f +1000*g +100*h +10*i + j)
   solver.Add(diff == x - y)
   solver.Add(diff > 0)
-  solver.Add(solver.AllDifferent(letters, True))
+  solver.Add(solver.AllDifferent(letters))
 
   # objective
   objective = solver.Minimize(diff, 1)

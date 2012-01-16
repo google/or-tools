@@ -108,8 +108,8 @@ def main(puzzle="", n=0):
     # rows and columns must be different
     #
     for i in range(n):
-        solver.Add(solver.AllDifferent([x[i,j] for j in range(n)], True))
-        solver.Add(solver.AllDifferent([x[j,i] for j in range(n)], True))
+        solver.Add(solver.AllDifferent([x[i,j] for j in range(n)]))
+        solver.Add(solver.AllDifferent([x[j,i] for j in range(n)]))
 
     #
     # solution and search

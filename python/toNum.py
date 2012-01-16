@@ -51,8 +51,8 @@ def main(unused_argv):
     #
     # constraints
     #
-    # solver.Add(solver.AllDifferent([x[i] for i in range(n)], True))
-    solver.Add(solver.AllDifferent(x, True))
+    # solver.Add(solver.AllDifferent([x[i] for i in range(n)]))
+    solver.Add(solver.AllDifferent(x))
     # solver.Add(x[0] > 0) # just for fun
 
     toNum(solver, x, y, base)

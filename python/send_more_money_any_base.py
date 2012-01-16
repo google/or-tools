@@ -71,7 +71,7 @@ def main(base=10):
     #
     # constraints
     #
-    solver.Add(solver.AllDifferent(x, True))
+    solver.Add(solver.AllDifferent(x))
     solver.Add(      s*base**3 + e*base**2 + n*base + d +
                      m*base**3 + o*base**2 + r*base + e ==
          m*base**4 + o*base**3 + n*base**2 + e*base + y,

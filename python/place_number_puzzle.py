@@ -96,7 +96,7 @@ def main():
     #
     # constraints
     #
-    solver.Add(solver.AllDifferent(x, True))
+    solver.Add(solver.AllDifferent(x))
     for i in range(m):
         # Note: make 0-based
         solver.Add( abs(
