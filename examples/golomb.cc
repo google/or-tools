@@ -33,7 +33,6 @@
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
 
-DEFINE_bool(use_range, false, "If true, use AllDifferenceRange.");
 DEFINE_bool(print, false, "If true, print the minimal solution.");
 DEFINE_int32(size, 0,
   "Size of the problem. If equal to 0, will test several increasing sizes.");
@@ -67,7 +66,7 @@ void GolombRuler(int size) {
       diff->SetMin(1);
     }
   }
-  s.AddConstraint(s.MakeAllDifferent(diffs, FLAGS_use_range));
+  s.AddConstraint(s.MakeAllDifferent(diffs));
 
   OptimizeVar* const length = s.MakeMinimize(ticks[size-1], 1);
   SolutionCollector* const collector = s.MakeLastSolutionCollector();

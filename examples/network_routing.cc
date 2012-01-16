@@ -432,8 +432,8 @@ class NetworkRoutingSolver {
     solver.AddConstraint(solver.MakeEquality(node_vars[0], demand.source));
     solver.AddConstraint(solver.MakeEquality(node_vars[max_length - 1],
                                              demand.destination));
-    solver.AddConstraint(solver.MakeAllDifferent(arc_vars, true));
-    solver.AddConstraint(solver.MakeAllDifferent(node_vars, true));
+    solver.AddConstraint(solver.MakeAllDifferent(arc_vars));
+    solver.AddConstraint(solver.MakeAllDifferent(node_vars));
     DecisionBuilder* const db = solver.MakePhase(node_vars,
                                                  Solver::CHOOSE_FIRST_UNBOUND,
                                                  Solver::ASSIGN_MIN_VALUE);

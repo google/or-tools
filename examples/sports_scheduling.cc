@@ -137,7 +137,7 @@ void ComputeOneDayTuples(int num_teams, std::vector<std::vector<int> >* day_tupl
                          &signed_opponents);
 
   // All Diff constraint.
-  solver.AddConstraint(solver.MakeAllDifferent(opponents, true));
+  solver.AddConstraint(solver.MakeAllDifferent(opponents));
 
   // Cannot play against itself
   for (int i = 0; i < num_teams; ++i) {
@@ -215,13 +215,13 @@ void AddOneTeamConstraints(Solver* const solver,
       for (int day = 0; day < half_season; ++day) {
         tmp_vars.push_back(opponents[half * half_season + day]);
       }
-      solver->AddConstraint(solver->MakeAllDifferent(tmp_vars, true));
+      solver->AddConstraint(solver->MakeAllDifferent(tmp_vars));
     }
   }
 
   // We meet each opponent once at home and once away per full season.
   for (int team_index = 0; team_index < num_teams; ++team_index) {
-    solver->AddConstraint(solver->MakeAllDifferent(signed_opponents, true));
+    solver->AddConstraint(solver->MakeAllDifferent(signed_opponents));
   }
 
   // Constraint per team on home_aways;

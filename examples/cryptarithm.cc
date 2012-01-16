@@ -50,7 +50,7 @@ void Cryptoarithmetics() {
   letters.push_back(r);
   letters.push_back(y);
 
-  solver.AddConstraint(solver.MakeAllDifferent(letters, false));
+  solver.AddConstraint(solver.MakeAllDifferent(letters));
 
   // carry variables
   IntVar* c1 = solver.MakeIntVar(0, 1, "c1");

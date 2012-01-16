@@ -403,7 +403,7 @@ void CostasHard(const int dim) {
     vars[m]->SetMin(1);
   }
 
-  solver.AddConstraint(solver.MakeAllDifferent(matrix, false));
+  solver.AddConstraint(solver.MakeAllDifferent(matrix));
 
   int index = dim;
 
@@ -417,7 +417,7 @@ void CostasHard(const int dim) {
       subset[j] = diff;
     }
 
-    solver.AddConstraint(solver.MakeAllDifferent(subset, false));
+    solver.AddConstraint(solver.MakeAllDifferent(subset));
   }
 
   DecisionBuilder* const db = solver.MakePhase(vars,

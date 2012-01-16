@@ -28,7 +28,6 @@
 #include "base/map-util.h"
 #include "constraint_solver/constraint_solveri.h"
 
-DEFINE_bool(use_range, false, "If true, use AllDifferenceRange.");
 DEFINE_bool(print, false, "If true, print one of the solution.");
 DEFINE_bool(print_all, false, "If true, print all the solutions.");
 DEFINE_int32(nb_loops, 1,
@@ -198,17 +197,17 @@ void NQueens(int size) {
   for (int i = 0; i < size; ++i) {
     queens.push_back(s.MakeIntVar(0, size - 1, StringPrintf("queen%04d", i)));
   }
-  s.AddConstraint(s.MakeAllDifferent(queens, FLAGS_use_range));
+  s.AddConstraint(s.MakeAllDifferent(queens));
 
   std::vector<IntVar*> vars(size);
   for (int i = 0; i < size; ++i) {
     vars[i] = s.MakeSum(queens[i], i)->Var();
   }
-  s.AddConstraint(s.MakeAllDifferent(vars, FLAGS_use_range));
+  s.AddConstraint(s.MakeAllDifferent(vars));
   for (int i = 0; i < size; ++i) {
     vars[i] = s.MakeSum(queens[i], -i)->Var();
   }
-  s.AddConstraint(s.MakeAllDifferent(vars, FLAGS_use_range));
+  s.AddConstraint(s.MakeAllDifferent(vars));
 
   SolutionCollector* const solution_counter = s.MakeAllSolutionCollector(NULL);
   SolutionCollector* const collector = s.MakeFirstSolutionCollector();

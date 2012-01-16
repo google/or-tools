@@ -50,7 +50,7 @@ void MagicSquare(int grid_size) {
   // create the variables
   std::vector<IntVar*> vars;
   solver.MakeIntVarArray(total_size, 1, total_size, "", &vars);
-  solver.AddConstraint(solver.MakeAllDifferent(vars, true));
+  solver.AddConstraint(solver.MakeAllDifferent(vars));
 
   // create the constraints
   std::vector<IntVar*> diag1(grid_size);
