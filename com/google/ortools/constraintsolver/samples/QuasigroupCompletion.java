@@ -42,7 +42,7 @@ public class QuasigroupCompletion {
    *   4 1 3 2 5
    *   5 4 1 3 2
    *   3 2 5 4 1
-   */ 
+   */
   static int default_n = 5;
   static int[][] default_problem = {{1, X, X, X, 4},
                                     {X, 5, X, X, X},
@@ -92,7 +92,7 @@ public class QuasigroupCompletion {
 
     //
     // Constraints
-    // 
+    //
     for(int i = 0; i < n; i++) {
       for(int j = 0; j < n; j++) {
         if (problem[i][j] > X) {
@@ -112,7 +112,7 @@ public class QuasigroupCompletion {
         row[j] = x[i][j];
       }
       solver.addConstraint(
-          solver.makeAllDifferent(row, true));
+          solver.makeAllDifferent(row));
 
     }
 
@@ -122,7 +122,7 @@ public class QuasigroupCompletion {
       for(int i = 0; i < n; i++) {
         col[i] = x[i][j];
       }
-      solver.addConstraint(solver.makeAllDifferent(col, true));
+      solver.addConstraint(solver.makeAllDifferent(col));
     }
 
 
@@ -136,7 +136,7 @@ public class QuasigroupCompletion {
 
     int sol = 0;
     while (solver.nextSolution()) {
-      sol++; 
+      sol++;
       System.out.println("Solution #" + sol + ":");
       for(int i = 0; i < n; i++) {
         for(int j = 0; j < n; j++) {
@@ -168,9 +168,9 @@ public class QuasigroupCompletion {
    *  <
    *    row number of space separated entries
    *  >
-   * 
+   *
    * "." or "0" means unknown, integer 1..n means known value
-   * 
+   *
    * Example
    *   5
    *    1 . . . 4
@@ -184,7 +184,7 @@ public class QuasigroupCompletion {
 
     System.out.println("readFile(" + file + ")");
     int lineCount = 0;
-        
+
     try {
 
       BufferedReader inr = new BufferedReader(new FileReader(file));
@@ -226,7 +226,7 @@ public class QuasigroupCompletion {
     }
 
   } // end readFile
-    
+
 
   public static void main(String[] args) throws Exception {
 

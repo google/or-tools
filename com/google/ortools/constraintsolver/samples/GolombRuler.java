@@ -75,7 +75,7 @@ public class GolombRuler {
       }
     }
 
-    solver.addConstraint(solver.makeAllDifferent(diff, true));
+    solver.addConstraint(solver.makeAllDifferent(diff));
 
     // break symetries
     if (m > 2) {

@@ -48,7 +48,7 @@ public class ToNum {
 
 
   /**
-   * 
+   *
    * Implements toNum: channeling between a number and an array.
    * See http://www.hakank.org/google_or_tools/toNum.py
    *
@@ -61,26 +61,26 @@ public class ToNum {
     int base = 10;
 
 
-    // 
+    //
     // variables
     //
     IntVar[] x =  solver.makeIntVarArray(n, 0, base - 1, "x");
     IntVar num = solver.makeIntVar(0, (int)Math.pow(base, n) - 1 , "num");
-    
+
 
 
     //
     // constraints
     //
-    solver.addConstraint(solver.makeAllDifferent(x, true));
+    solver.addConstraint(solver.makeAllDifferent(x));
 
-      
+
     toNum(solver, x, num, base);
 
     // extra constraint (just for fun):
     // second digit should be 7
     // solver.addConstraint(solver.makeEquality(x[1], 7));
-    
+
 
     //
     // search

@@ -41,14 +41,14 @@ public class Circuit {
     int n = x.length;
     IntVar[] z = solver.makeIntVarArray(n, 0, n - 1, "z");
 
-    solver.addConstraint(solver.makeAllDifferent(x, true));
-    solver.addConstraint(solver.makeAllDifferent(z, true));
+    solver.addConstraint(solver.makeAllDifferent(x));
+    solver.addConstraint(solver.makeAllDifferent(z));
 
     // put the orbit of x[0] in z[0..n-1]
     solver.addConstraint(solver.makeEquality(z[0], x[0]));
     for(int i = 1; i < n-1; i++) {
       solver.addConstraint(
-          solver.makeEquality(z[i], 
+          solver.makeEquality(z[i],
               solver.makeElement(x, z[i-1]).Var()));
     }
 
@@ -56,7 +56,7 @@ public class Circuit {
     for(int i = 1; i < n - 1; i++) {
       solver.addConstraint(solver.makeNonEquality(z[i], 0));
     }
-        
+
     // when i = n-1 it must be 0
     solver.addConstraint(solver.makeEquality(z[n - 1], 0));
 
@@ -64,7 +64,7 @@ public class Circuit {
 
 
   /**
-   * 
+   *
    * Implements a (decomposition) of the global constraint circuit.
    * See http://www.hakank.org/google_or_tools/circuit.py
    *
@@ -73,7 +73,7 @@ public class Circuit {
 
     Solver solver = new Solver("Circuit");
 
-    // 
+    //
     // variables
     //
     IntVar[] x = solver.makeIntVarArray(n, 0, n - 1, "x");

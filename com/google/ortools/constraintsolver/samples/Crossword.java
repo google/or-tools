@@ -28,7 +28,7 @@ public class Crossword {
   }
 
   /**
-   * 
+   *
    * Solving a simple crossword.
    * See http://www.hakank.org/google_or_tools/crossword2.py
    *
@@ -45,10 +45,10 @@ public class Crossword {
                       "n","o","p","q","r","s","t",
                       "u","v","w","x","y","z"};
 
-    int a=1;  int b=2;  int c=3; int d=4;  int e=5;  int f=6;  
-    int g=7;  int h=8;  int i=9; int j=10; int k=11; int l=12; 
-    int m=13; int n=14; int o=15; int p=16; int q=17; int r=18; 
-    int s=19; int t=20; int u=21; int v=22; int w=23; int x=24; 
+    int a=1;  int b=2;  int c=3; int d=4;  int e=5;  int f=6;
+    int g=7;  int h=8;  int i=9; int j=10; int k=11; int l=12;
+    int m=13; int n=14; int o=15; int p=16; int q=17; int r=18;
+    int s=19; int t=20; int u=21; int v=22; int w=23; int x=24;
     int y=25; int z=26;
 
     int num_words = 15;
@@ -72,16 +72,16 @@ public class Crossword {
 
     int num_overlapping = 12;
     int[][] overlapping = {{0, 2, 1, 0},  //  s
-                           {0, 4, 2, 0},  //  s 
-                           
+                           {0, 4, 2, 0},  //  s
+
                            {3, 1, 1, 2},  //  i
                            {3, 2, 4, 0},  //  k
                            {3, 3, 2, 2},  //  e
-                           
+
                            {6, 0, 1, 3},  //  l
                            {6, 1, 4, 1},  //  e
                            {6, 2, 2, 3},  //  e
-                           
+
                            {7, 0, 5, 1},  //  l
                            {7, 2, 1, 4},  //  s
                            {7, 3, 4, 2},  //  e
@@ -89,8 +89,8 @@ public class Crossword {
 
     int N = 8;
 
-                           
-    // 
+
+    //
     // variables
     //
     IntVar[][] A = new IntVar[num_words][word_len];
@@ -110,12 +110,12 @@ public class Crossword {
     for(int I = 0; I < N; I++) {
       all[num_words * word_len + I] = E[I];
     }
-    
+
 
     //
     // constraints
     //
-    solver.addConstraint(solver.makeAllDifferent(E, true));
+    solver.addConstraint(solver.makeAllDifferent(E));
 
     for(int I = 0; I < num_words; I++) {
       for(int J = 0; J < word_len; J++) {
@@ -126,12 +126,12 @@ public class Crossword {
     for(int I = 0; I < num_overlapping; I++) {
       solver.addConstraint(
           solver.makeEquality(
-              solver.makeElement(A_flat, 
+              solver.makeElement(A_flat,
                   solver.makeSum(
                       solver.makeProd(
                           E[overlapping[I][0]], word_len).Var(),
                       overlapping[I][1]).Var()).Var(),
-              solver.makeElement(A_flat, 
+              solver.makeElement(A_flat,
                   solver.makeSum(
                       solver.makeProd(
                           E[overlapping[I][2]], word_len).Var(),

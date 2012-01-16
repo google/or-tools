@@ -79,7 +79,7 @@ public class SendMostMoney {
     // m > 0
     solver.addConstraint(solver.makeGreater(m, 0));
 
-    solver.addConstraint(solver.makeAllDifferent(x, true));
+    solver.addConstraint(solver.makeAllDifferent(x));
 
     if (MONEY > 0) {
       // Search for all solutions.
@@ -88,7 +88,7 @@ public class SendMostMoney {
 
     //
     // search
-    // 
+    //
     DecisionBuilder db = solver.makePhase(x,
                                           solver.CHOOSE_FIRST_UNBOUND,
                                           solver.ASSIGN_MAX_VALUE);

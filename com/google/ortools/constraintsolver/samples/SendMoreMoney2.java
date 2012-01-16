@@ -180,7 +180,7 @@ public class SendMoreMoney2 {
     // m > 0
     sol.addConstraint(sol.makeGreater(m, 0));
 
-    sol.addConstraint(sol.makeAllDifferent(x, true));
+    sol.addConstraint(sol.makeAllDifferent(x));
 
     //
     // Search

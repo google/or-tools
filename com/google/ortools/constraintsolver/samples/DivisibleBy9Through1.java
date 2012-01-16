@@ -40,7 +40,7 @@ public class DivisibleBy9Through1 {
    *
    */
   public static void my_mod(Solver solver, IntVar x, IntVar y, IntVar r) {
-        
+
     long lbx = x.min();
     long ubx = x.max();
     long ubx_neg = -ubx;
@@ -49,7 +49,7 @@ public class DivisibleBy9Through1 {
     int max_x = (int)Math.max(ubx, lbx_neg);
 
     IntVar d = solver.makeIntVar(min_x, max_x, "d");
-    
+
     // r >= 0
     solver.addConstraint(solver.makeGreaterOrEqual(r,0));
 
@@ -102,7 +102,7 @@ public class DivisibleBy9Through1 {
   }
 
   /**
-   * 
+   *
    * Solves the divisible by 9 through 1 problem.
    * See http://www.hakank.org/google_or_tools/divisible_by_9_through_1.py
    *
@@ -113,7 +113,7 @@ public class DivisibleBy9Through1 {
 
     //
     // data
-    // 
+    //
     int m = (int)Math.pow(base,(base-1)) - 1;
     int n = base - 1;
 
@@ -121,7 +121,7 @@ public class DivisibleBy9Through1 {
 
     System.out.println("base: " + base);
 
-    // 
+    //
     // variables
     //
 
@@ -130,12 +130,12 @@ public class DivisibleBy9Through1 {
 
     // the numbers. t[0] contains the answe
     IntVar[] t = solver.makeIntVarArray(n, 0, m, "t");
-          
+
 
     //
     // constraints
     //
-    solver.addConstraint(solver.makeAllDifferent(x, true));
+    solver.addConstraint(solver.makeAllDifferent(x));
 
     // Ensure the divisibility of base .. 1
     IntVar zero = solver.makeIntConst(0);
@@ -146,11 +146,11 @@ public class DivisibleBy9Through1 {
         tt[j] = x[j];
       }
       toNum(solver, tt, t[i], base);
-      IntVar mm_const = solver.makeIntConst(mm);      
+      IntVar mm_const = solver.makeIntConst(mm);
       my_mod(solver, t[i], mm_const, zero);
     }
 
-    
+
 
     //
     // search
@@ -202,7 +202,7 @@ public class DivisibleBy9Through1 {
     if (args.length > 0) {
       int new_base = Integer.parseInt(args[0]);
       if (new_base > 10) {
-        // Note: The next valid base after 10 is 14 and 
+        // Note: The next valid base after 10 is 14 and
         // the number 559922224824157, which is too large in this model.
         System.out.println("Sorry, max allowed base is 10. Setting base to 10.");
       } else if (new_base < 2) {

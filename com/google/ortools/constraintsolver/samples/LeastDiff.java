@@ -72,7 +72,7 @@ public class LeastDiff {
     IntVar diff = solver.makeDifference(x, y).Var();
     diff.set_name("diff");
 
-    solver.addConstraint(solver.makeAllDifferent(all, true));
+    solver.addConstraint(solver.makeAllDifferent(all));
 
     //
     // Objective

@@ -65,7 +65,7 @@ public class SendMoreMoney {
     // m > 0
     solver.addConstraint(solver.makeGreater(m, 0));
 
-    solver.addConstraint(solver.makeAllDifferent(x, true));
+    solver.addConstraint(solver.makeAllDifferent(x));
 
     DecisionBuilder db = solver.makePhase(x,
                                           solver.INT_VAR_DEFAULT,

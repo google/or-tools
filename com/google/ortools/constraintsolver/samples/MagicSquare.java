@@ -84,7 +84,7 @@ public class MagicSquare {
     }
 
     // all are different
-    solver.addConstraint(solver.makeAllDifferent(x_flat, true));
+    solver.addConstraint(solver.makeAllDifferent(x_flat));
 
     // symmetry breaking: upper left is 1
     // solver.addConstraint(solver.makeEquality(x[0][0], 1));

@@ -29,7 +29,7 @@ public class AllInterval {
 
 
   /**
-   * 
+   *
    * Implements the all interval problem.
    * See http://www.hakank.org/google_or_tools/all_interval.py
    *
@@ -38,8 +38,8 @@ public class AllInterval {
 
     Solver solver = new Solver("AllInterval");
 
-        
-    // 
+
+    //
     // variables
     //
     IntVar[] x = solver.makeIntVarArray(n, 0, n - 1, "x");
@@ -48,12 +48,12 @@ public class AllInterval {
     //
     // constraints
     //
-    solver.addConstraint(solver.makeAllDifferent(x, true));
-    solver.addConstraint(solver.makeAllDifferent(diffs, true));
+    solver.addConstraint(solver.makeAllDifferent(x));
+    solver.addConstraint(solver.makeAllDifferent(diffs));
 
     for(int k = 0; k < n - 1; k++) {
       solver.addConstraint(
-          solver.makeEquality(diffs[k], 
+          solver.makeEquality(diffs[k],
               solver.makeAbs(solver.makeDifference(x[k + 1], x[k])).Var()));
     }
 

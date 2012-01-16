@@ -68,7 +68,7 @@ public class Partition {
       xy[m + i] = y[i];
     }
 
-    solver.addConstraint(solver.makeAllDifferent(xy, true));
+    solver.addConstraint(solver.makeAllDifferent(xy));
 
     int[] coeffs = new int[2 * m];
     for (int i = m - 1; i >= 0; i--) {

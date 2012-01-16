@@ -45,25 +45,25 @@ public class NQueens {
         //
         IntVar[] q = solver.makeIntVarArray(n, 0, n-1, "q");
 
-        // 
+        //
         // constraints
-        // 
-        solver.addConstraint(solver.makeAllDifferent(q, true));
+        //
+        solver.addConstraint(solver.makeAllDifferent(q));
 
         IntVar b = solver.makeIntVar(1, 1, "b");
         IntVar[] q1 = new IntVar[n];
         IntVar[] q2 = new IntVar[n];
         for(int i = 0; i < n; i++) {
             for(int j = 0; j < i; j++) {
-                // // q[i]+i != q[j]+j 
+                // // q[i]+i != q[j]+j
                 solver.addConstraint(
                     solver.makeNonEquality(
-                         solver.makeSum(q[i],i).Var(), 
+                         solver.makeSum(q[i],i).Var(),
                          solver.makeSum(q[j],j).Var()));
 
-                // q[i]-i != q[j]-j 
+                // q[i]-i != q[j]-j
                 solver.addConstraint(
-                     solver.makeNonEquality(solver.makeSum(q[i],-i).Var(), 
+                     solver.makeNonEquality(solver.makeSum(q[i],-i).Var(),
                                             solver.makeSum(q[j],-j).Var()));
             }
         }
