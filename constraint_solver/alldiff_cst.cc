@@ -423,6 +423,10 @@ bool BoundsAllDifferent::PropagateMax() {
 }
 }  // namespace
 
+Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars) {
+  return MakeAllDifferent(vars.data(), vars.size(), true);
+}
+
 Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars, bool range) {
   return MakeAllDifferent(vars.data(), vars.size(), range);
 }

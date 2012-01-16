@@ -1534,8 +1534,12 @@ class Solver {
                             int64 total_sum);
 
   // All variables are pairwise different.
+  Constraint* MakeAllDifferent(const std::vector<IntVar*>& vars);
+  // All variables are pairwise different. If 'range' is true,
+  // stronger , and potentially slower propagation will occur.
   Constraint* MakeAllDifferent(const std::vector<IntVar*>& vars, bool range);
-  // All variables are pairwise different.
+  // All variables are pairwise different. If 'range' is true,
+  // stronger , and potentially slower propagation will occur.
   Constraint* MakeAllDifferent(const IntVar* const* vars,
                                int size, bool range);
 
