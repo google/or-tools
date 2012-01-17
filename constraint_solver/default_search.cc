@@ -13,6 +13,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include "base/hash.h"
 #include <limits>
 #include <string>
 #include <vector>
@@ -25,6 +26,7 @@
 #include "base/scoped_ptr.h"
 #include "base/stl_util.h"
 #include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/constraint_solveri.h"
 #include "util/cached_log.h"
 #include "base/random.h"
 
@@ -38,6 +40,7 @@ const int DefaultPhaseParameters::kDefaultHeuristicPeriod = 100;
 const int DefaultPhaseParameters::kDefaultHeuristicNumFailuresLimit = 30;
 const int DefaultPhaseParameters::kDefaultSeed = 0;
 const double DefaultPhaseParameters::kDefaultRestartLogSize = -1.0;
+const bool DefaultPhaseParameters::kDefaultUseNoGoods = true;
 
 namespace {
 // ----- DomainWatcher -----
@@ -415,13 +418,14 @@ class ImpactRecorder {
     }
     if (display_level_ != DefaultPhaseParameters::NONE) {
       if (removed_counter) {
-        LOG(INFO) << "  - init done, time = " << solver->wall_time() - init_time
+        LOG(INFO) << "  - init done, time = "
+                  << solver->wall_time() - init_time
                   << " ms, " << removed_counter
                   << " values removed, log2(SearchSpace) = "
                   << current_log_space_;
       } else {
-        LOG(INFO) << "  - init done, time = " << solver->wall_time() - init_time
-                  << " ms";
+        LOG(INFO) << "  - init done, time = "
+                  << solver->wall_time() - init_time << " ms";
       }
     }
   }
@@ -552,11 +556,45 @@ const double ImpactRecorder::kInitFailureImpact = 2.0;
 
 // ---------- ImpactDecisionBuilder ----------
 
+int64 ComputeBranchRestart(int64 log) {
+  if (log <= 0 || log > 63) {
+    return kint64max;
+  }
+  return GG_ULONGLONG(1) << log;
+}
+
 // Default phase decision builder.
 class ImpactDecisionBuilder : public DecisionBuilder {
  public:
-  static const int kUninitializedVarIndex = -1;
-  static const uint64 kUninitializedFailStamp = 0;
+  static const int kUninitializedVarIndex;
+  static const uint64 kUninitializedFailStamp;
+
+  // This structure stores 'var[index] (left?==:!=) value'.
+  class ChoiceInfo {
+   public:
+    ChoiceInfo() : value_(0), index_(kUninitializedVarIndex), left_(false) {}
+
+    ChoiceInfo(int index, int64 value, bool left)
+        : value_(value), index_(index), left_(left) {}
+
+    string DebugString() const {
+      return StringPrintf("var(%d) %s %lld",
+                          index_,
+                          (left_ ? "==" : "!="),
+                          value_);
+    }
+
+    int index() const { return index_; }
+
+    bool left() const { return left_; }
+
+    int64 value() const { return value_; }
+
+   private:
+    int64 value_;
+    int index_;
+    bool left_;
+  };
 
   ImpactDecisionBuilder(Solver* const solver,
                         const IntVar* const* vars,
@@ -574,7 +612,11 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         runner_(NewPermanentCallback(this,
                                      &ImpactDecisionBuilder::RunHeuristics)),
         heuristic_branch_count_(0),
-        min_log_search_space_(std::numeric_limits<double>::infinity()) {
+        min_log_search_space_(std::numeric_limits<double>::infinity()),
+        no_good_manager_(NULL),
+        branches_between_restarts_(0),
+        min_restart_period_(ComputeBranchRestart(parameters_.restart_log_size)),
+        maximum_restart_depth_(kint64max) {
     CHECK_GE(size_, 0);
     if (size_ > 0) {
       vars_.reset(new IntVar*[size_]);
@@ -588,54 +630,96 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   }
 
   virtual Decision* Next(Solver* const solver) {
-    if (!init_done_) {
-      if (parameters_.display_level != DefaultPhaseParameters::NONE) {
-        LOG(INFO) << "Init impact based search phase on " << size_
-                  << " variables, initialization splits = "
-                  << parameters_.initialization_splits
-                  << ", heuristic_period = " << parameters_.heuristic_period
-                  << ", run_all_heuristics = " << parameters_.run_all_heuristics
-                  << ", restart_log_size = " << parameters_.restart_log_size;
-      }
-      // We need to reset the impacts because FirstRun calls RemoveValues
-      // which can result in a Fail() therefore calling this method again.
-      impact_recorder_.ResetImpacts();
-      impact_recorder_.FirstRun(solver, parameters_.initialization_splits);
-      if (parameters_.persistent_impact) {
-        init_done_ = true;
-      } else {
-        solver->SaveAndSetValue(&init_done_, true);
-      }
-    }
-
-    if (current_var_index_ == kUninitializedVarIndex &&
-        fail_stamp_ != kUninitializedFailStamp) {
-      // After solution or after heuristics.
-      impact_recorder_.RecordLogSearchSpace();
-    } else {
-      if (fail_stamp_ != kUninitializedFailStamp) {
-        if (solver->fail_stamp() == fail_stamp_) {
-          impact_recorder_.UpdateAfterAssignment(current_var_index_,
-                                                 current_value_);
+    if (parameters_.use_impacts) {
+      if (!init_done_) {
+        if (parameters_.display_level != DefaultPhaseParameters::NONE) {
+          LOG(INFO) << "Init impact based search phase on " << size_
+                    << " variables, initialization splits = "
+                    << parameters_.initialization_splits
+                    << ", heuristic_period = " << parameters_.heuristic_period
+                    << ", run_all_heuristics = "
+                    << parameters_.run_all_heuristics
+                    << ", restart_log_size = " << parameters_.restart_log_size;
+        }
+        // We need to reset the impacts because FirstRun calls RemoveValues
+        // which can result in a Fail() therefore calling this method again.
+        impact_recorder_.ResetImpacts();
+        impact_recorder_.FirstRun(solver, parameters_.initialization_splits);
+        if (parameters_.persistent_impact) {
+          init_done_ = true;
         } else {
-          impact_recorder_.UpdateAfterFailure(current_var_index_,
-                                              current_value_);
+          solver->SaveAndSetValue(&init_done_, true);
         }
       }
-    }
-    fail_stamp_ = solver->fail_stamp();
 
-    ++heuristic_branch_count_;
-    if (heuristic_branch_count_ % parameters_.heuristic_period == 0) {
-      current_var_index_ = kUninitializedVarIndex;
-      return &runner_;
-    }
-    current_var_index_ = kUninitializedVarIndex;
-    current_value_ = 0;
-    if (FindVarValue(&current_var_index_, &current_value_)) {
-      return solver->MakeAssignVariableValue(vars_[current_var_index_],
-                                             current_value_);
-    } else {
+      if (current_var_index_.Value() == kUninitializedVarIndex &&
+          fail_stamp_ != kUninitializedFailStamp) {
+        // After solution or after heuristics.
+        impact_recorder_.RecordLogSearchSpace();
+      } else {
+        if (fail_stamp_ != kUninitializedFailStamp) {
+          if (solver->fail_stamp() == fail_stamp_) {
+            impact_recorder_.UpdateAfterAssignment(current_var_index_.Value(),
+                                                   current_value_.Value());
+          } else {
+            const ChoiceInfo* const info = choices_.Last();
+            if (info != NULL) {
+              DCHECK_EQ(info->index(), current_var_index_.Value());
+              DCHECK_EQ(info->value(), current_value_.Value());
+              choices_.SetLastValue(
+                  ChoiceInfo(info->index(), info->value(), false));
+            }
+            impact_recorder_.UpdateAfterFailure(current_var_index_.Value(),
+                                                current_value_.Value());
+          }
+        }
+      }
+      fail_stamp_ = solver->fail_stamp();
+
+      ++heuristic_branch_count_;
+      if (heuristic_branch_count_ % parameters_.heuristic_period == 0) {
+        current_var_index_.SetValue(solver, kUninitializedVarIndex);
+        return &runner_;
+      }
+      int var_index = kUninitializedVarIndex;
+      int64 value = 0;
+      if (FindVarValue(&var_index, &value)) {
+        current_var_index_.SetValue(solver, var_index);
+        current_value_.SetValue(solver, value);
+        choices_.Push(solver, ChoiceInfo(var_index, value, true));
+        return solver->MakeAssignVariableValue(
+            vars_[current_var_index_.Value()], current_value_.Value());
+      } else {
+        if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+          LOG(INFO) << "Found a solution after the following decisions:";
+          for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_);
+               it.ok();
+               ++it) {
+            LOG(INFO) << "  " << (*it).DebugString();
+          }
+        }
+        return NULL;
+      }
+    } else {  // Not using impacts
+      if (solver->fail_stamp() != fail_stamp_) {
+        const ChoiceInfo* const info = choices_.Last();
+        if (info != NULL) {
+          DCHECK_EQ(info->index(), current_var_index_.Value());
+          DCHECK_EQ(info->value(), current_value_.Value());
+          choices_.SetLastValue(
+              ChoiceInfo(info->index(), info->value(), false));
+        }
+      }
+      fail_stamp_ = solver->fail_stamp();
+      int var_index = kUninitializedVarIndex;
+      int64 value = 0;
+      if (FindVarValueNoImpact(&var_index, &value)) {
+        current_var_index_.SetValue(solver, var_index);
+        current_value_.SetValue(solver, value);
+        choices_.Push(solver, ChoiceInfo(var_index, value, true));
+        return solver->MakeAssignVariableValue(
+            vars_[current_var_index_.Value()], current_value_.Value());
+      }
       return NULL;
     }
   }
@@ -644,7 +728,24 @@ class ImpactDecisionBuilder : public DecisionBuilder {
                               std::vector<SearchMonitor*>* const extras) {
     CHECK_NOTNULL(solver);
     CHECK_NOTNULL(extras);
-    extras->push_back(solver->RevAlloc(new Monitor(solver, this)));
+    extras->push_back(solver->RevAlloc(new RestartMonitor(solver, this)));
+    // Do we use the no good manager.
+    if (parameters_.restart_log_size >= 0 && parameters_.use_no_goods) {
+      no_good_manager_ = solver->MakeNoGoodManager();
+      extras->push_back(no_good_manager_);
+    }
+  }
+
+  void VisitBranch() {
+    branches_between_restarts_++;
+  }
+
+  void ExitSearch() {
+    if (parameters_.display_level != DefaultPhaseParameters::NONE &&
+        no_good_manager_ != NULL) {
+      LOG(INFO) << "Default search has generated "
+                << no_good_manager_->NoGoodCount() << " no goods";
+    }
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -657,20 +758,30 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
  private:
   // Hook on the search to check restart before the refutation of a decision.
-  class Monitor : public SearchMonitor {
+  class RestartMonitor : public SearchMonitor {
    public:
-    Monitor(Solver* const solver, ImpactDecisionBuilder* const db)
+    RestartMonitor(Solver* const solver, ImpactDecisionBuilder* const db)
         : SearchMonitor(solver), db_(db) {}
 
-    virtual ~Monitor() {}
+    virtual ~RestartMonitor() {}
+
+    virtual void ApplyDecision(Decision* const d) {
+      db_->VisitBranch();
+    }
 
     virtual void RefuteDecision(Decision* const d) {
       CHECK_NOTNULL(d);
       Solver* const s = solver();
-      if (db_->CheckRestart(s)) {
+      db_->VisitBranch();
+      if (db_->CheckRestartOnRefute(s)) {
+        db_->DoRestartAndAddNoGood(s);
         RestartCurrentSearch();
         s->Fail();
       }
+    }
+
+    virtual void ExitSearch() {
+      db_->ExitSearch();
     }
 
    private:
@@ -798,29 +909,116 @@ class ImpactDecisionBuilder : public DecisionBuilder {
                           kint64max);  // solutions.
   }
 
-  // Called  before applying the refutation of the decision.
-  bool CheckRestart(Solver* const solver) {
+  // Called before applying the refutation of the decision.  This
+  // method must decide if we need to restart or not.  The main
+  // decision is based on the restart_log_size and the current search
+  // space size. If, the current search space size is greater than the
+  // min search space size encountered since the last restart +
+  // restart_log_size, this means that we have just finished a search
+  // tree of size at least restart_log_size.  If the search tree is
+  // very sparse, then we may have visited close to restart_log_size
+  // nodes since the last restart (instead of the maximum of
+  // 2^restart_log_size). To fight this degenerate case, we also count
+  // the number of branches explored since the last restart and decide
+  // to postpone restart until we finish a sub-search tree and have
+  // visited enough branches (2^restart_log_size). To enforce this,
+  // when we postpone a restart, we store the current search depth -1
+  // in maximum_restart_depth_ and will restart as soon as we reach a
+  // node above the current one, with enough visited branches.
+  bool CheckRestartOnRefute(Solver* const solver) {
+    // We do nothing if restart_log_size is < 0.
     if (parameters_.restart_log_size >= 0) {
+      const int search_depth = solver->SearchDepth();
+      impact_recorder_.RecordLogSearchSpace();
       const double log_search_space_size =
           impact_recorder_.LogSearchSpaceSize();
-      const int search_depth = solver->SearchDepth();
+      if (min_log_search_space_ > log_search_space_size) {
+        min_log_search_space_ = log_search_space_size;
+      }
+
+      // Some verbose display.
       if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
         LOG(INFO) << "search_depth = " << search_depth
+                  << ", branches between restarts = "
+                  << branches_between_restarts_
                   << ", log_search_space_size = " << log_search_space_size
                   << ", min_log_search_space = " << min_log_search_space_;
       }
-      if (min_log_search_space_ > log_search_space_size) {
-        min_log_search_space_ = log_search_space_size;
-      } else if (min_log_search_space_ + parameters_.restart_log_size
-                 < log_search_space_size) {
-        if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-          LOG(INFO) << "Restarting ";
+      if (search_depth > maximum_restart_depth_) {
+        // We are deeper than maximum_restart_depth_, we should not restart
+        // because we have not finished a sub-tree of sufficient size.
+        return false;
+      }
+      // We may restart either because of the search space criteria,
+      // or the search depth is less than maximum_restart_depth_.
+      if (min_log_search_space_ + parameters_.restart_log_size <
+          log_search_space_size ||
+          (search_depth <= maximum_restart_depth_ &&
+           maximum_restart_depth_ != kint64max)) {
+        // If we have not visited enough branches, we postpone the
+        // restart and force to check at least at the parent of the
+        // current search node.
+        if (branches_between_restarts_ < min_restart_period_) {
+          maximum_restart_depth_ = search_depth - 1;
+          if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+            LOG(INFO) << "Postpone restarting until depth <= "
+                      << maximum_restart_depth_ << ", visited nodes = "
+                      << branches_between_restarts_
+                      << " / " << min_restart_period_;
+          }
+          return false;
         }
-        min_log_search_space_ = std::numeric_limits<double>::infinity();
         return true;
       }
     }
     return false;
+  }
+
+  // Performs the restart. It resets various counters and adds a
+  // non-reversible nogood if need be.
+  void DoRestartAndAddNoGood(Solver* const solver) {
+    const int search_depth = solver->SearchDepth();
+    if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+      LOG(INFO) << "Restarting at depth " << search_depth;
+    }
+    min_log_search_space_ = std::numeric_limits<double>::infinity();
+    branches_between_restarts_ = 0;
+    maximum_restart_depth_ = kint64max;
+    // Creates nogood.
+    if (parameters_.use_no_goods) {
+      DCHECK(no_good_manager_ != NULL);
+      NoGood* const nogood = no_good_manager_->MakeNoGood();
+      // if the nogood contains both x == 3 and x != 4, we can simplify
+      // to keep only x == 3.
+      hash_set<int> positive_variable_indices;
+      for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_);
+           it.ok();
+           ++it) {
+        const ChoiceInfo& choice = *it;
+        if (choice.left()) {
+          positive_variable_indices.insert(choice.index());
+        }
+      }
+      // We fill the nogood structure.
+      for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_);
+           it.ok();
+           ++it) {
+        const ChoiceInfo& choice = *it;
+        IntVar* const var = vars_[choice.index()];
+        const int64 value = choice.value();
+        if (choice.left()) {
+          nogood->AddIntegerVariableEqualValueTerm(var, value);
+        } else if (!ContainsKey(positive_variable_indices, choice.index())) {
+          nogood->AddIntegerVariableNotEqualValueTerm(var, value);
+        }
+      }
+      if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+        LOG(INFO) << "Adding no good no " << no_good_manager_->NoGoodCount()
+                  << ": " << nogood->DebugString();
+      }
+      // Adds the nogood to the nogood manager.
+      no_good_manager_->AddNoGood(nogood);
+    }
   }
 
   // This method will do an exhaustive scan of all domains of all
@@ -850,6 +1048,21 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       }
     }
     return (*var_index != -1);
+  }
+
+  bool FindVarValueNoImpact(int* const var_index, int64* const value) {
+    CHECK_NOTNULL(var_index);
+    CHECK_NOTNULL(value);
+    *var_index = -1;
+    *value = 0;
+    for (int i = 0; i < size_; ++i) {
+      if (!vars_[i]->Bound()) {
+        *var_index = i;
+        *value = vars_[i]->Min();
+        return true;
+      }
+    }
+    return false;
   }
 
   bool RunOneHeuristic(Solver* const solver, int index) {
@@ -887,15 +1100,24 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   DefaultPhaseParameters parameters_;
   bool init_done_;
   uint64 fail_stamp_;
-  int current_var_index_;
-  int64 current_value_;
+  Rev<int> current_var_index_;
+  Rev<int64> current_value_;
   std::vector<HeuristicWrapper*> heuristics_;
   SearchMonitor* heuristic_limit_;
   ACMRandom random_;
   RunHeuristic runner_;
   int heuristic_branch_count_;
   double min_log_search_space_;
+  SimpleRevFIFO<ChoiceInfo> choices_;
+  NoGoodManager* no_good_manager_;
+  int64 branches_between_restarts_;
+  const int64 min_restart_period_;
+  int64 maximum_restart_depth_;
 };
+
+const int ImpactDecisionBuilder::kUninitializedVarIndex = -1;
+const uint64 ImpactDecisionBuilder::kUninitializedFailStamp = 0;
+
 }  // namespace
 
 // ---------- API ----------

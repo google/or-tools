@@ -92,7 +92,7 @@ class IntegerVariableNoGoodTerm : public NoGoodTerm {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("(%s %s %lld)",
+    return StringPrintf("(var_%s %s %lld)",
                         integer_variable_->name().c_str(),
                         assign_ ? "==" : "!=",
                         value_);
@@ -125,7 +125,7 @@ void NoGood::AddIntegerVariableNotEqualValueTerm(IntVar* const var,
   terms_.push_back(new IntegerVariableNoGoodTerm(var, value, false));
 }
 
-void NoGood::Apply(Solver* const solver) {
+bool NoGood::Apply(Solver* const solver) {
   NoGoodTerm* first_undecided = NULL;
   for (int i = 0; i < terms_.size(); ++i) {
     switch (terms_[i]->Evaluate()) {
@@ -133,14 +133,14 @@ void NoGood::Apply(Solver* const solver) {
         break;
       }
       case NoGoodTerm::ALWAYS_FALSE: {
-        return;
+        return false;
       }
       case NoGoodTerm::UNDECIDED: {
         if (first_undecided == NULL) {
           first_undecided = terms_[i];
         } else {
           // more than one undecided, we cannot deduce anything.
-          return;
+          return true;
         }
         break;
       }
@@ -151,7 +151,9 @@ void NoGood::Apply(Solver* const solver) {
   }
   if (first_undecided != NULL) {
     first_undecided->Refute();
+    return false;
   }
+  return false;
 }
 
 string NoGood::DebugString() const {

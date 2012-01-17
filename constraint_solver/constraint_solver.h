@@ -231,6 +231,7 @@ struct DefaultPhaseParameters {
   static const int kDefaultHeuristicNumFailuresLimit;
   static const int kDefaultSeed;
   static const double kDefaultRestartLogSize;
+  static const bool kDefaultUseNoGoods;
 
   enum VariableSelection {
     CHOOSE_MAX_SUM_IMPACT = 0,
@@ -259,7 +260,9 @@ struct DefaultPhaseParameters {
         persistent_impact(true),
         random_seed(kDefaultSeed),
         restart_log_size(kDefaultRestartLogSize),
-        display_level(NORMAL) {}
+        display_level(NORMAL),
+        use_no_goods(kDefaultUseNoGoods),
+        use_impacts(true) {}
 
   // This parameter describes how the next variable to instantiate
   // will be chosen.
@@ -304,6 +307,12 @@ struct DefaultPhaseParameters {
   // This represents the amount of information displayed by the default search.
   // NONE means no display, VERBOSE means extra information.
   DisplayLevel display_level;
+
+  // Should we use Nogoods when restarting. The default is false.
+  bool use_no_goods;
+
+  // Used in tests. Disable impacts and run choose first unbound, assign min.
+  bool use_impacts;
 };
 
 
@@ -754,7 +763,7 @@ class Solver {
   // The DecisionModification enum is used to specify how the branch selector
   // should behave.
   enum DecisionModification {
-    // Keep the default behavior, i.e. apply left branch first, and then right
+    // Keeps the default behavior, i.e. apply left branch first, and then right
     // branch in case of backtracking.
     NO_CHANGE,
 
@@ -768,11 +777,11 @@ class Solver {
     // This is faster as there is no need to create one new node per decision.
     KEEP_RIGHT,
 
-    // Backtrack to the previous decisions, i.e. left and right branches are
+    // Backtracks to the previous decisions, i.e. left and right branches are
     // not applied.
     KILL_BOTH,
 
-    // Apply right branch first. Left branch will be applied in case of
+    // Applies right branch first. Left branch will be applied in case of
     // backtracking.
     SWITCH_BRANCHES
   };
@@ -3948,10 +3957,11 @@ class NoGood {
   void AddIntegerVariableEqualValueTerm(IntVar* const var, int64 value);
   // Creates a term var != value.
   void AddIntegerVariableNotEqualValueTerm(IntVar* const var, int64 value);
-  // Apply the nogood. That is if there is only one undecided term
-  // and all remaining terms are always true, then the opposite of
-  // this term is added to the solver.
-  void Apply(Solver* const solver);
+  // Applies the nogood. That is if there is only one undecided term and
+  // all remaining terms are always true, then the opposite of this
+  // term is added to the solver. It returns true if the nogood is
+  // still active and needs to be reevaluated.
+  bool Apply(Solver* const solver);
   // Pretty print.
   string DebugString() const;
   // TODO(user) : support interval variables and more types of constraints.
@@ -3995,7 +4005,7 @@ class NoGoodManager : public SearchMonitor {
 
   // Initialize data structures.
   virtual void Init() = 0;
-  // Apply the nogood.
+  // Applies the nogood.
   virtual void Apply() = 0;
 
   DISALLOW_COPY_AND_ASSIGN(NoGoodManager);
@@ -4456,7 +4466,7 @@ template <class V, class E> class AssignmentContainer {
   }
   void Clear() {
     elements_.clear();
-    if (!elements_map_.empty()) {
+    if (!elements_map_.empty()) {  // 2x speedup on or-tools.
       elements_map_.clear();
     }
   }

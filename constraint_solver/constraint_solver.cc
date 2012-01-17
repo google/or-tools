@@ -42,6 +42,7 @@ DEFINE_bool(cp_trace_propagation,
             false,
             "Trace propagation events (constraint and demon executions,"
             " variable modifications).");
+DEFINE_bool(cp_trace_search, false, "Trace search events");
 DEFINE_bool(cp_show_constraints, false,
             "show all constraints added to the solver.");
 DEFINE_bool(cp_print_model, false,
@@ -1910,6 +1911,12 @@ void Solver::NewSearch(DecisionBuilder* const db,
     print_trace_ = BuildPrintTrace(this);
     print_trace_->Install();
   } else {
+    // This is useful to trace the exact behavior of the search.
+    // The '######## ' prefix is the same as the progagation trace.
+    if (FLAGS_cp_trace_search) {
+      SearchMonitor* const trace = MakeSearchTrace("######## ");
+      trace->Install();
+    }
     print_trace_ = NULL;
   }
 
