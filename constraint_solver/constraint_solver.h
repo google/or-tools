@@ -4456,7 +4456,9 @@ template <class V, class E> class AssignmentContainer {
   }
   void Clear() {
     elements_.clear();
-    elements_map_.clear();
+    if (!elements_map_.empty()) {
+      elements_map_.clear();
+    }
   }
   bool Empty() const {
     return elements_.empty();
