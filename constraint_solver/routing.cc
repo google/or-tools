@@ -92,6 +92,8 @@ DEFINE_bool(routing_use_objective_filter, true,
             "Use objective filter to speed up local search.");
 DEFINE_bool(routing_use_path_cumul_filter, true,
             "Use PathCumul constraint filter to speed up local search.");
+DEFINE_bool(routing_use_pickup_and_delivery_filter, true,
+            "Use filter which filters precedence and same route constraints.");
 
 // Misc
 DEFINE_bool(routing_cache_callbacks, false, "Cache callback calls.");
@@ -153,6 +155,22 @@ class MakePairActiveOperator : public PathOperator {
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual bool MakeNeighbor();
 
+ protected:
+  virtual bool OnSamePathAsPreviousBase(int64 base_index) {
+    // Both base nodes have to be on the same path since they represent the
+    // nodes after which unactive node pairs will be moved.
+    return true;
+  }
+  virtual int64 GetBaseNodeRestartPosition(int base_index) {
+    // Base node 1 must be after base node 0 if they are both on the same path.
+    if (base_index == 0
+        || StartNode(base_index) != StartNode(base_index - 1)) {
+      return StartNode(base_index);
+    } else {
+      return BaseNode(base_index - 1);
+    }
+  }
+
  private:
   virtual void OnNodeInitialization();
 
@@ -186,9 +204,7 @@ bool MakePairActiveOperator::MakeNextNeighbor(Assignment* delta,
 }
 
 bool MakePairActiveOperator::MakeNeighbor() {
-  if (StartNode(0) != StartNode(1)) {
-    return false;
-  }
+  DCHECK_EQ(StartNode(0), StartNode(1));
   // Inserting the second node of the pair before the first one which ensures
   // that the only solutions where both nodes are next to each other have the
   // first node before the second (the move is not symmetric and doing it this
@@ -218,13 +234,13 @@ LocalSearchOperator* MakePairActive(Solver* const solver,
 //   1 -> [B] -> [A] ->  2  -> 3
 //   1 -> [B] ->  2  -> [A] -> 3
 //   1 ->  2  -> [B] -> [A] -> 3
-class MakePairRelocateOperator : public PathOperator {
+class PairRelocateOperator : public PathOperator {
  public:
-  MakePairRelocateOperator(const IntVar* const* vars,
-                           const IntVar* const* secondary_vars,
-                           const RoutingModel::NodePairs& pairs,
-                           int size)
-      : PathOperator(vars, secondary_vars, size, 3) {
+  PairRelocateOperator(const IntVar* const* vars,
+                       const IntVar* const* secondary_vars,
+                       const RoutingModel::NodePairs& pairs,
+                       int size)
+      : PathOperator(vars, secondary_vars, size, 3), is_first_(size, false) {
     int64 index_max = 0;
     for (int i = 0; i < size; ++i) {
       index_max = std::max(index_max, vars[i]->Max());
@@ -239,10 +255,32 @@ class MakePairRelocateOperator : public PathOperator {
     for (int i = 0; i < pairs.size(); ++i) {
       pairs_[pairs[i].first] = pairs[i].second;
       pairs_[pairs[i].second] = pairs[i].first;
+      is_first_[pairs[i].first] = true;
     }
   }
-  virtual ~MakePairRelocateOperator() {}
+  virtual ~PairRelocateOperator() {}
   virtual bool MakeNeighbor();
+
+ protected:
+  virtual bool OnSamePathAsPreviousBase(int64 base_index) {
+    // Base node of index 0 and its sibling are the pair of nodes to move.
+    // They are being moved after base nodes index 1 and 2 which must be on the
+    // same path.
+    return base_index == 2;
+  }
+  virtual int64 GetBaseNodeRestartPosition(int base_index) {
+    // Base node 2 must be after base node 1 if they are both on the same path
+    // and if the operator is about to move a "second" node (second node in a
+    // node pair, ie. a delivery in a pickup and delivery pair).
+    const bool moving_first = is_first_[BaseNode(0)];
+    if (!moving_first
+        && base_index == 2
+        && StartNode(base_index) == StartNode(base_index - 1)) {
+      return BaseNode(base_index - 1);
+    } else {
+      return StartNode(base_index);
+    }
+  }
 
  private:
   virtual void OnNodeInitialization();
@@ -252,12 +290,11 @@ class MakePairRelocateOperator : public PathOperator {
 
   std::vector<int> pairs_;
   std::vector<int> prevs_;
+  std::vector<bool> is_first_;
 };
 
-bool MakePairRelocateOperator::MakeNeighbor() {
-  if (StartNode(1) != StartNode(2)) {
-    return false;
-  }
+bool PairRelocateOperator::MakeNeighbor() {
+  DCHECK_EQ(StartNode(1), StartNode(2));
   const int64 prev = prevs_[BaseNode(0)];
   if (prev < 0) {
     return false;
@@ -274,7 +311,7 @@ bool MakePairRelocateOperator::MakeNeighbor() {
       && MoveChain(prev, BaseNode(0), BaseNode(2));
 }
 
-void MakePairRelocateOperator::OnNodeInitialization() {
+void PairRelocateOperator::OnNodeInitialization() {
   for (int i = 0; i < Size(); ++i) {
     prevs_[Next(i)] = i;
   }
@@ -285,10 +322,10 @@ LocalSearchOperator* MakePairRelocate(Solver* const solver,
                                       const IntVar* const* secondary_vars,
                                       const RoutingModel::NodePairs& pairs,
                                       int size) {
-  return solver->RevAlloc(new MakePairRelocateOperator(vars,
-                                                       secondary_vars,
-                                                       pairs,
-                                                       size));
+  return solver->RevAlloc(new PairRelocateOperator(vars,
+                                                   secondary_vars,
+                                                   pairs,
+                                                   size));
 }
 
 // Cached callbacks
@@ -447,6 +484,122 @@ void PathCumulFilter::OnSynchronize() {
     node_path_starts_[next] = start;
   }
 }
+
+// Node precedence filter, resulting from pickup and delivery pairs.
+// TODO(user): Move this to local_search.cc.
+
+class NodePrecedenceFilter : public IntVarLocalSearchFilter {
+ public:
+  NodePrecedenceFilter(const IntVar* const* nexts,
+                       int nexts_size,
+                       int max_size,
+                       const RoutingModel::NodePairs& pairs)
+      : IntVarLocalSearchFilter(nexts, nexts_size),
+        pair_firsts_(max_size, kUnassigned),
+        pair_seconds_(max_size, kUnassigned),
+        node_path_starts_(max_size, kUnassigned) {
+    for (int i = 0; i < pairs.size(); ++i) {
+      pair_firsts_[pairs[i].first] = pairs[i].second;
+      pair_seconds_[pairs[i].second] = pairs[i].first;
+    }
+  }
+  virtual ~NodePrecedenceFilter() {}
+  virtual bool Accept(const Assignment* delta,
+                      const Assignment* deltadelta) {
+    const Assignment::IntContainer& container = delta->IntVarContainer();
+    const int delta_size = container.Size();
+    // Determining touched paths. Number of touched paths should be very small
+    // given the set of available operators (1 or 2 paths), so performing
+    // a linear search to find an element is faster than using a set.
+    std::vector<int64> touched_paths;
+    for (int i = 0; i < delta_size; ++i) {
+      const IntVarElement& new_element = container.Element(i);
+      const IntVar* const var = new_element.Var();
+      int64 index = kUnassigned;
+      if (FindIndex(var, &index)) {
+        const int64 start = node_path_starts_[index];
+        if (start != kUnassigned
+            && find(touched_paths.begin(), touched_paths.end(), start)
+            == touched_paths.end()) {
+          touched_paths.push_back(start);
+        }
+      }
+    }
+    // Checking feasibility of touched paths.
+    const int touched_paths_size = touched_paths.size();
+    for (int i = 0; i < touched_paths_size; ++i) {
+      std::vector<bool> visited(Size(), false);
+      int64 node = touched_paths[i];
+      int64 path_length = 1;
+      while (node < Size()) {
+        if (path_length > Size()) {
+          return false;
+        }
+        if (pair_firsts_[node] != kUnassigned
+            && visited[pair_firsts_[node]]) {
+          return false;
+        }
+        if (pair_seconds_[node] != kUnassigned
+            && !visited[pair_seconds_[node]]) {
+          return false;
+        }
+        visited[node] = true;
+        const IntVar* const next_var = Var(node);
+        int64 next = Value(node);
+        if (container.Contains(next_var)) {
+          const IntVarElement& element = container.Element(next_var);
+          if (element.Bound()) {
+            next = element.Value();
+          } else {
+            return true;
+          }
+        }
+        node = next;
+        ++path_length;
+      }
+    }
+    return true;
+  }
+  virtual void OnSynchronize() {
+    const int nexts_size = Size();
+    // Detecting path starts, used to track which node belongs to which path.
+    std::vector<int64> path_starts;
+    // TODO(user): Replace Bitmap by std::vector<bool> if it's as fast.
+    Bitmap has_prevs(nexts_size, false);
+    for (int i = 0; i < nexts_size; ++i) {
+      const int next = Value(i);
+      if (next < nexts_size) {
+        has_prevs.Set(next, true);
+      }
+    }
+    for (int i = 0; i < nexts_size; ++i) {
+      if (!has_prevs.Get(i)) {
+        path_starts.push_back(i);
+      }
+    }
+    // Marking unactive nodes (which are not on a path).
+    node_path_starts_.assign(node_path_starts_.size(), kUnassigned);
+    // Marking nodes on a path and storing next values.
+    for (int i = 0; i < path_starts.size(); ++i) {
+      const int64 start = path_starts[i];
+      int node = start;
+      node_path_starts_[node] = start;
+      int next = Value(node);
+      while (next < nexts_size) {
+        node = next;
+        node_path_starts_[node] = start;
+        next = Value(node);
+      }
+      node_path_starts_[next] = start;
+    }
+  }
+
+ private:
+  static const int kUnassigned = -1;
+  std::vector<int> pair_firsts_;
+  std::vector<int> pair_seconds_;
+  std::vector<int64> node_path_starts_;
+};
 
 // Evaluators
 
@@ -1977,6 +2130,14 @@ void RoutingModel::SetUpSearch() {
               Solver::SUM);
       filters.push_back(filter);
     }
+  }
+  if (FLAGS_routing_use_pickup_and_delivery_filter
+      && pickup_delivery_pairs_.size() > 0) {
+    filters.push_back(solver_->RevAlloc(new NodePrecedenceFilter(
+        nexts_.get(),
+        Size(),
+        Size() + vehicles_,
+        pickup_delivery_pairs_)));
   }
   if (FLAGS_routing_use_path_cumul_filter) {
     for (ConstIter<VarMap> iter(cumuls_); !iter.at_end(); ++iter) {

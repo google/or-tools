@@ -753,24 +753,36 @@ bool PathOperator::IncrementPosition() {
   const int base_node_size = base_nodes_.size();
   if (!just_started_) {
     const int number_of_paths = path_starts_.size();
-    // Next nodes
+    // Finding next nodes.
+    int last_restarted = base_node_size;
     for (int i = base_node_size - 1; i >= 0; --i) {
       if (base_nodes_[i] < number_of_nexts_) {
         base_nodes_[i] = OldNext(base_nodes_[i]);
-        return CheckEnds();
+        break;
       }
-      base_nodes_[i] = path_starts_[base_paths_[i]];
+      base_nodes_[i] = StartNode(i);
+      last_restarted = i;
     }
-    // Next paths
+    // Correcting restart positions.
+    for (int i = last_restarted; i < base_node_size; ++i) {
+      base_nodes_[i] = GetBaseNodeRestartPosition(i);
+    }
+    if (last_restarted > 0) {
+      return CheckEnds();
+    }
+    // Finding next paths.
     for (int i = base_node_size - 1; i >= 0; --i) {
-      int next_path_index = base_paths_[i] + 1;
+      const int next_path_index = base_paths_[i] + 1;
       if (next_path_index < number_of_paths) {
         base_paths_[i] = next_path_index;
         base_nodes_[i] = path_starts_[next_path_index];
-        return CheckEnds();
+        if (i == 0 || !OnSamePathAsPreviousBase(i)) {
+          return CheckEnds();
+        }
+      } else {
+        base_paths_[i] = 0;
+        base_nodes_[i] = path_starts_[0];
       }
-      base_paths_[i] = 0;
-      base_nodes_[i] = path_starts_[0];
     }
   } else {
     just_started_ = false;
@@ -823,7 +835,34 @@ void PathOperator::InitializeBaseNodes() {
     }
     end_nodes_[i] = base_node;
   }
+  // Repair end_nodes_ in case some must be on the same path and are not anymore
+  // (due to other operators moving these nodes).
+  for (int i = 1; i < base_nodes_.size(); ++i) {
+    if (OnSamePathAsPreviousBase(i)
+        && !OnSamePath(base_nodes_[i - 1], base_nodes_[i])) {
+      const int64 base_node = base_nodes_[i -1];
+      base_nodes_[i] = base_node;
+      end_nodes_[i] = base_node;
+    }
+  }
   just_started_ = true;
+}
+
+bool PathOperator::OnSamePath(int64 node1, int64 node2) const {
+  if (IsInactive(node1) != IsInactive(node2)) {
+    return false;
+  }
+  for (int node = node1; !IsPathEnd(node); node = OldNext(node)) {
+    if (node == node2) {
+      return true;
+    }
+  }
+  for (int node = node2; !IsPathEnd(node); node = OldNext(node)) {
+    if (node == node1) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // Rejects chain if chain_end is not after before_chain on the path or if
@@ -874,6 +913,13 @@ class TwoOpt : public PathOperator {
   virtual ~TwoOpt() {}
   virtual bool MakeNeighbor();
   virtual bool IsIncremental() const { return true; }
+
+ protected:
+  virtual bool OnSamePathAsPreviousBase(int64 base_index) {
+    // Both base nodes have to be on the same path.
+    return true;
+  }
+
  private:
   virtual void OnNodeInitialization() { last_ = -1; }
 
@@ -882,9 +928,7 @@ class TwoOpt : public PathOperator {
 };
 
 bool TwoOpt::MakeNeighbor() {
-  if (StartNode(0) != StartNode(1)) {
-    return false;
-  }
+  DCHECK_EQ(StartNode(0), StartNode(1));
   if (last_base_ != BaseNode(0) || last_ == -1) {
     RevertChanges(false);
     if (IsPathEnd(BaseNode(0))) {
@@ -936,15 +980,21 @@ class Relocate : public PathOperator {
   }
   virtual ~Relocate() {}
   virtual bool MakeNeighbor();
+
+ protected:
+  virtual bool OnSamePathAsPreviousBase(int64 base_index) {
+    // Both base nodes have to be on the same path when it's the single path
+    // version.
+    return single_path_;
+  }
+
  private:
   const int64 chain_length_;
   const bool single_path_;
 };
 
 bool Relocate::MakeNeighbor() {
-  if (single_path_ && StartNode(0) != StartNode(1)) {
-    return false;
-  }
+  DCHECK(!single_path_ || StartNode(0) == StartNode(1));
   const int64 before_chain = BaseNode(0);
   int64 chain_end = before_chain;
   for (int i = 0; i < chain_length_; ++i) {

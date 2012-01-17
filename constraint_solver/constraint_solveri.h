@@ -1036,6 +1036,20 @@ class PathOperator : public IntVarLocalSearchOperator {
   virtual bool RestartAtPathStartOnSynchronize() {
     return false;
   }
+  // Returns true if a base node has to be on the same path as the "previous"
+  // base node (base node of index base_index - 1).
+  // Useful to limit neighborhood exploration to nodes on the same path.
+  // TODO(user): ideally this should be OnSamePath(int64 node1, int64 node2);
+  // it's currently way more complicated to implement.
+  virtual bool OnSamePathAsPreviousBase(int64 base_index) {
+    return false;
+  }
+  // Returns the index of the node to which the base node of index base_index
+  // must be set to when it reaches the end of a path.
+  // By default, it is set to the start of the current path.
+  virtual int64 GetBaseNodeRestartPosition(int base_index) {
+    return path_starts_[base_paths_[base_index]];
+  }
 
   int64 OldNext(int64 node_index) const {
     DCHECK(!IsPathEnd(node_index));
@@ -1093,6 +1107,8 @@ class PathOperator : public IntVarLocalSearchOperator {
   // overriden instead of OnStart() to avoid calling PathOperator::OnStart
   // explicitly.
   virtual void OnNodeInitialization() {}
+  // Returns true if two nodes are on the same path in the current assignment.
+  bool OnSamePath(int64 node1, int64 node2) const;
 
   bool CheckEnds() const;
   bool IncrementPosition();
