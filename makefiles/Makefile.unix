@@ -65,6 +65,7 @@ ifeq ($(PTRLENGTH),64)
 else
    ARCH  =
 endif
+CSC = mono-csc
 
 # This is needed to find libgflags.a
 GFLAGS_LNK = -Wl,-rpath $(UNIX_GFLAGS_DIR)/lib -L$(UNIX_GFLAGS_DIR)/lib -lgflags
@@ -105,6 +106,7 @@ endif  # LINUX
 ifeq ($(PLATFORM),MACOSX)
 LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
 JNILIBEXT = jnilib
+CSC = gmcs
 
 GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
 ZLIB_LNK = -lz
@@ -180,7 +182,6 @@ DEL = rm -f
 DELREC = rm -rf
 S = /
 CPSEP = :
-CSC = gmcs
 SED = sed
 
 print_fix_swig:
