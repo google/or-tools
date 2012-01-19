@@ -20,8 +20,8 @@ test_java: java run_RabbitsPheasants run_FlowExample run_LinearProgramming run_I
 
 # csharp test
 test_csharp: $(CSHARPEXE)
-	mono cslinearprogramming
-	mono csintegerprogramming
-	mono csrabbitspheasants
-	mono csflow
-	mono csknapsack
+	mono cslinearprogramming.exe
+	mono csintegerprogramming.exe
+	mono csrabbitspheasants.exe
+	mono csflow.exe
+	mono csknapsack.exe

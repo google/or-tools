@@ -17,7 +17,7 @@ csharpexe: $(CSHARPEXE)
 
 cleancsharp:
 	$(DEL) $(LIBPREFIX)Google.OrTools.*.$(SHAREDLIBEXT)
-	$(DEL) $(LIBPREFIX)Google.OrTools.*.dll
+	$(DEL) Google.OrTools.*.dll
 	$(DEL) $(LIBPREFIX)Google.OrTools.*.lib
 	$(DEL) $(LIBPREFIX)Google.OrTools.*.pdb
 	$(DEL) $(LIBPREFIX)Google.OrTools.*.exp
@@ -49,16 +49,16 @@ ifeq ($(SYSTEM),win)
 	$(LD) $(LDOUT)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) Google.OrTools.LinearSolver.netmodule objs/linear_solver_csharp_wrap.$O $(LP_LNK) $(LDFLAGS)
 else
 	$(CSC) /target:library /out:Google.OrTools.LinearSolver.dll /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
-	$(LD) $(LDOUT)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) objs/linear_solver_csharp_wrap.$O $(LP_LNK) $(LDFLAGS)
+	$(LD) $(LDOUT)$(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) objs/linear_solver_csharp_wrap.$O $(LP_LNK) $(LDFLAGS)
 endif
 
 # csharp linearsolver examples
 
 cslinearprogramming.exe: csharplp csharp/cslinearprogramming.cs
-	$(CSC) /target:exe /out:cslinearprogramming.exe /platform:$(NETPLATFORM) /r:$(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) csharp$Scslinearprogramming.cs
+	$(CSC) /target:exe /out:cslinearprogramming.exe /platform:$(NETPLATFORM) /r:Google.OrTools.LinearSolver.dll csharp$Scslinearprogramming.cs
 
 csintegerprogramming.exe: csharplp csharp/csintegerprogramming.cs
-	$(CSC) /target:exe /out:csintegerprogramming.exe /platform:$(NETPLATFORM) /r:$(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) csharp$Scsintegerprogramming.cs
+	$(CSC) /target:exe /out:csintegerprogramming.exe /platform:$(NETPLATFORM) /r:Google.OrTools.LinearSolver.dll csharp$Scsintegerprogramming.cs
 
 
 # csharpcp
@@ -79,13 +79,13 @@ ifeq ($(SYSTEM),win)
 	$(LD) $(LDOUT)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) Google.OrTools.ConstraintSolver.netmodule objs/constraint_solver_csharp_wrap.$O $(ROUTING_LNK) $(LDFLAGS)
 else
 	$(CSC) /target:library /out:Google.OrTools.ConstraintSolver.dll /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs com$Sgoogle$Sortools$Sconstraintsolver$S*.cs
-	$(LD)  $(LDOUT)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) objs/constraint_solver_csharp_wrap.$O $(ROUTING_LNK) $(LDFLAGS)
+	$(LD)  $(LDOUT)$(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) objs/constraint_solver_csharp_wrap.$O $(ROUTING_LNK) $(LDFLAGS)
 endif
 
 # csharp cp examples
 
 csrabbitspheasants.exe: csharpcp csharp/csrabbitspheasants.cs
-	$(CSC) /target:exe /out:csrabbitspheasants.exe /platform:$(NETPLATFORM) /r:$(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp$Scsrabbitspheasants.cs
+	$(CSC) /target:exe /out:csrabbitspheasants.exe /platform:$(NETPLATFORM) /r:Google.OrTools.ConstraintSolver.dll csharp$Scsrabbitspheasants.cs
 
 
 # csharpalgorithms
@@ -104,13 +104,13 @@ ifeq ($(SYSTEM),win)
 	$(LD) $(LDOUT)Google.OrTools.Algorithms.$(SHAREDLIBEXT) Google.OrTools.Algorithms.netmodule objs/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS)
 else
 	$(CSC) /target:library /out:Google.OrTools.Algorithms.dll /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
-	$(LD) $(LDOUT)Google.OrTools.Algorithms.$(SHAREDLIBEXT) objs/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS)
+	$(LD) $(LDOUT)$(LIBPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT) objs/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS)
 endif
 
 # csharp algorithm examples
 
 csknapsack.exe: csharpalgorithms csharp/csknapsack.cs
-	$(CSC) /target:exe /out:csknapsack.exe /platform:$(NETPLATFORM) /r:$(LIBPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT) csharp$Scsknapsack.cs
+	$(CSC) /target:exe /out:csknapsack.exe /platform:$(NETPLATFORM) /r:Google.OrTools.Algorithms.dll csharp$Scsknapsack.cs
 
 # csharpgraph
 
@@ -127,14 +127,14 @@ ifeq ($(SYSTEM),win)
 	$(CSC) /target:module /unsafe /out:$(LIBPREFIX)Google.OrTools.Graph.netmodule /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sgraph$S*.cs
 	$(LD) $(LDOUT)$(LIBPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT) $(LIBPREFIX)Google.OrTools.Graph.netmodule objs$Sgraph_csharp_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
 else
-	$(CSC) /target:library /unsafe /out:$(LIBPREFIX)Google.OrTools.Graph.dll /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sgraph$S*.cs
+	$(CSC) /target:library /unsafe /out:Google.OrTools.Graph.dll /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sgraph$S*.cs
 	$(LD) $(LDOUT)$(LIBPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT) objs$Sgraph_csharp_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
 endif
 
 # csharp graph examples
 
 csflow.exe: csharpgraph csharp/csflow.cs
-	$(CSC) /target:exe /out:csflow.exe /platform:$(NETPLATFORM) /r:$(LIBPREFIX)Google.OrTools.Graph.dll csharp$Scsflow.cs
+	$(CSC) /target:exe /out:csflow.exe /platform:$(NETPLATFORM) /r:Google.OrTools.Graph.dll csharp$Scsflow.cs
 
 # Build archive.
 
@@ -147,7 +147,7 @@ dotnet_archive: csharp
 	tools\mkdir temp\or-tools.$(PLATFORM)\csharp\solution\Properties
 	copy $(LIBPREFIX)Google.OrTools.*.$(SHAREDLIBEXT) temp\or-tools.$(PLATFORM)
 ifneq ($(SYSTEM),win)
-	copy $(LIBPREFIX)Google.OrTools.*.dll temp\or-tools.$(PLATFORM)
+	copy Google.OrTools.*.dll temp\or-tools.$(PLATFORM)
 endif
 	copy csharp\*.cs temp\or-tools.$(PLATFORM)\csharp
 	copy csharp\*.sln temp\or-tools.$(PLATFORM)\csharp
