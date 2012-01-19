@@ -24,7 +24,7 @@ ifeq ("$(SYSTEM)","unix")
     PLATFORM = LINUX
     LBITS = $(shell getconf LONG_BIT)
     ifeq ($(LBITS),64)
-      NETPLATFORM = x64
+      NETPLATFORM = anycpu
       PTRLENGTH = 64
       CANDIDATE_JDK_ROOTS = \
         /usr/local/buildtools/java/jdk-64 \
