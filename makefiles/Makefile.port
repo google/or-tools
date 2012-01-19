@@ -46,7 +46,7 @@ ifeq ("$(SYSTEM)","unix")
   endif
   ifeq ($(OS),Darwin) # Assume Mac Os X
     PLATFORM = MACOSX
-    NETPLATFORM = x64
+    NETPLATFORM = anycpu
     PTRLENGTH = 64
     CANDIDATE_JDK_HEADERS = \
       /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/include \
