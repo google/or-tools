@@ -16,22 +16,22 @@ csharpexe: $(CSHARPEXE)
 # clearcsharp
 
 cleancsharp:
-	$(DEL) $(LIBPREFIX)Google.OrTools.*.$(SHAREDLIBEXT)
-	$(DEL) Google.OrTools.*.dll
-	$(DEL) $(LIBPREFIX)Google.OrTools.*.lib
-	$(DEL) $(LIBPREFIX)Google.OrTools.*.pdb
-	$(DEL) $(LIBPREFIX)Google.OrTools.*.exp
-	$(DEL) $(LIBPREFIX)Google.OrTools.*.netmodule
-	$(DEL) gen$Slinear_solver$S*csharp_wrap*
-	$(DEL) gen$Sconstraint_solver$S*csharp_wrap*
-	$(DEL) gen$Salgorithms$S*csharp_wrap*
-	$(DEL) gen$Sgraph$S*csharp_wrap*
-	$(DEL) gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
-	$(DEL) gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs
-	$(DEL) gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
-	$(DEL) gen$Scom$Sgoogle$Sortools$Sflow$S*.cs
-	$(DEL) objs$S*csharp_wrap.$O
-	$(DEL) cs*.exe
+	-$(DEL) $(LIBPREFIX)Google.OrTools.*.$(SHAREDLIBEXT)
+	-$(DEL) Google.OrTools.*.dll
+	-$(DEL) $(LIBPREFIX)Google.OrTools.*.lib
+	-$(DEL) $(LIBPREFIX)Google.OrTools.*.pdb
+	-$(DEL) $(LIBPREFIX)Google.OrTools.*.exp
+	-$(DEL) $(LIBPREFIX)Google.OrTools.*.netmodule
+	-$(DEL) gen$Slinear_solver$S*csharp_wrap*
+	-$(DEL) gen$Sconstraint_solver$S*csharp_wrap*
+	-$(DEL) gen$Salgorithms$S*csharp_wrap*
+	-$(DEL) gen$Sgraph$S*csharp_wrap*
+	-$(DEL) gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
+	-$(DEL) gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs
+	-$(DEL) gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
+	-$(DEL) gen$Scom$Sgoogle$Sortools$Sgraph*.cs
+	-$(DEL) objs$S*csharp_wrap.$O
+	-$(DEL) cs*.exe
 
 # csharplp
 
