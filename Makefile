@@ -37,9 +37,7 @@ include makefiles/Makefile.third_party.$(SYSTEM)
 include makefiles/Makefile.cpp.mk
 include makefiles/Makefile.python.mk
 include makefiles/Makefile.java.mk
-ifeq ("$(SYSTEM)","win")
 include makefiles/Makefile.csharp.mk
-endif
 
 # Include test
 include makefiles/Makefile.test.$(SYSTEM)

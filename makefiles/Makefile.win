@@ -1,5 +1,5 @@
 DEBUG=/O2 -DNDEBUG
-CCC=cl /EHsc /MD
+CCC=cl /EHsc /MD /nologo
 CSC=csc
 
 GFLAGS_INC = /I$(WINDOWS_GFLAGS_DIR)\\src\\windows /I$(WINDOWS_GFLAGS_DIR)\\src /DGFLAGS_DLL_DECL= /DGFLAGS_DLL_DECLARE_FLAG= /DGFLAGS_DLL_DEFINE_FLAG=
@@ -71,7 +71,7 @@ EXEOUT=/Fe
 SHAREDLIBEXT=dll
 JNILIBEXT=dll
 LDOUT=/OUT:
-LD = link /DLL
+LD = link /DLL /LTCG
 S=\\
 CPSEP=;
 DEL=del
@@ -79,3 +79,4 @@ DELREC=tools\rm.exe -rf
 MKDIR=md
 COPY=copy
 TOUCH=tools\touch.exe
+SED=tools\sed.exe

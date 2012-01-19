@@ -180,6 +180,8 @@ DEL = rm -f
 DELREC = rm -rf
 S = /
 CPSEP = :
+CSC = gmcs
+SED = sed
 
 print_fix_swig:
 	@echo UNIX_SWIG_BINARY = $(UNIX_SWIG_BINARY)
