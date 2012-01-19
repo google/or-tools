@@ -18,3 +18,10 @@ test_python: python
 
 test_java: java run_RabbitsPheasants run_FlowExample run_LinearProgramming run_IntegerProgramming run_Knapsack
 
+# csharp test
+test_csharp: $(CSHARPEXE)
+	mono cslinearprogramming
+	mono csintegerprogramming
+	mono csrabbitspheasants
+	mono csflow
+	mono csknapsack
