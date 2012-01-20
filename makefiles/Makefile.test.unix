@@ -1,5 +1,5 @@
 .PHONY : test
-test: test_cc test_python test_java
+test: test_cc test_python test_java test_csharp
 
 test_cc: cc
 	./golomb --size=5
