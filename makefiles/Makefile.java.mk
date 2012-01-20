@@ -1,3 +1,24 @@
+# Main target
+java: javacp javaalgorithms javagraph javalp
+
+# Clean target
+clean_java:
+	-$(DEL) $(LIBPREFIX)jni*.$(JNILIBEXT)
+	-$(DEL) *.jar
+	-$(DEL) gen$Salgorithms$S*java_wrap*
+	-$(DEL) gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java
+	-$(DEL) gen$Scom$Sgoogle$Sortools$Sgraph$S*.java
+	-$(DEL) gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.java
+	-$(DEL) gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
+	-$(DEL) gen$Sconstraint_solver$S*java_wrap*
+	-$(DEL) gen$Sgraph$S*java_wrap*
+	-$(DEL) gen$Slinear_solver$S*java_wrap*
+	-$(DEL) objs$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.class
+	-$(DEL) objs$Scom$Sgoogle$Sortools$Sgraph$S*.class
+	-$(DEL) objs$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.class
+	-$(DEL) objs$Scom$Sgoogle$Sortools$Slinearsolver$S*.class
+	-$(DEL) objs$S*java_wrap.$O
+
 # ---------- Java support using SWIG ----------
 
 # javacp

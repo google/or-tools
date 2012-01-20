@@ -97,6 +97,29 @@ DIMACS_LNK = $(PRE_LIB)dimacs$(POST_LIB)
 
 # Makefile targets.
 
+# Main target
+cc: cplibs cpexe algorithmslibs graphlibs lplibs lpexe
+
+# Clean target
+
+clean_cc:
+	-$(DEL) $(LIBPREFIX)base.$(LIBSUFFIX)
+	-$(DEL) $(LIBPREFIX)util.$(LIBSUFFIX)
+	-$(DEL) $(LIBPREFIX)constraint_solver.$(LIBSUFFIX)
+	-$(DEL) $(LIBPREFIX)linear_solver.$(LIBSUFFIX)
+	-$(DEL) $(LIBPREFIX)graph.$(LIBSUFFIX)
+	-$(DEL) $(LIBPREFIX)routing.$(LIBSUFFIX)
+	-$(DEL) $(LIBPREFIX)algorithms.$(LIBSUFFIX)
+	-$(DEL) $(LIBPREFIX)dimacs.$(LIBSUFFIX)
+	-$(DEL) $(LIBPREFIX)shortestpaths.$(LIBSUFFIX)
+	-$(DEL) objs$S*.$O
+	-$(DEL) $(CPBINARIES)
+	-$(DEL) $(LPBINARIES)
+	-$(DEL) gen$Sconstraint_solver$S*.pb.*
+	-$(DEL) gen$Slinear_solver$S*.pb.*
+	-$(DEL) *.exp
+
+# Individual targets.
 algorithmslibs: $(ALGORITHMS_DEPS)
 
 cpexe: $(CPBINARIES)
@@ -110,36 +133,6 @@ lplibs: $(LP_DEPS)
 graphlibs: $(GRAPH_DEPS)
 
 dimacslibs: $(DIMACS_LIBS)
-
-# Clean target.
-
-clean:
-	-$(DEL) *.$(LIBSUFFIX)
-	-$(DEL) objs$S*.$O
-	-$(DEL) $(CPBINARIES)
-	-$(DEL) $(LPBINARIES)
-	-$(DEL) gen$Salgorithms$S*wrap*
-	-$(DEL) gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java
-	-$(DEL) gen$Scom$Sgoogle$Sortools$Sgraph$S*.java
-	-$(DEL) gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.java
-	-$(DEL) gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
-	-$(DEL) gen$Sconstraint_solver$S*.pb.*
-	-$(DEL) gen$Sconstraint_solver$S*wrap*
-	-$(DEL) gen$Sgraph$S*wrap*
-	-$(DEL) gen$Slinear_solver$S*.pb.*
-	-$(DEL) gen$Slinear_solver$S*wrap*
-	-$(DEL) objs$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.class
-	-$(DEL) objs$Scom$Sgoogle$Sortools$Sgraph$S*.class
-	-$(DEL) objs$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.class
-	-$(DEL) objs$Scom$Sgoogle$Sortools$Slinearsolver$S*.class
-	-$(DEL) *.$(SHAREDLIBEXT)
-	-$(DEL) *.$(JNILIBEXT)
-	-$(DEL) *.jar
-	-$(DEL) *.pdb
-	-$(DEL) *.exp
-	-$(DEL) cs*.exe
-	-$(DEL) Google.*.netmodule
-	-$(DEL) Google.*.lib
 
 # Constraint Solver Lib.
 

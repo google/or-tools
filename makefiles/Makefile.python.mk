@@ -1,7 +1,22 @@
 # Python support using SWIG
 
-# pywrapknapsack_solver
+# Main target
+python: pycp pyalgorithms pygraph pylp
 
+# Clean target
+clean_python:
+	-$(DEL) gen$Salgorithms$S*python_wrap*
+	-$(DEL) gen$Sconstraint_solver$S*python_wrap*
+	-$(DEL) gen$Sgraph$S*python_wrap*
+	-$(DEL) gen$Slinear_solver$S*python_wrap*
+	-$(DEL) gen$Salgorithms$S*.py
+	-$(DEL) gen$Sconstraint_solver$S*.py
+	-$(DEL) gen$Sgraph$S*.py
+	-$(DEL) gen$Slinear_solver$S*.py
+	-$(DEL) _pywrap*.$(SHAREDLIBEXT)
+	-$(DEL) objs$S*python_wrap.$O
+
+# pywrapknapsack_solver
 pyalgorithms: _pywrapknapsack_solver.$(SHAREDLIBEXT) gen/algorithms/pywrapknapsack_solver.py
 
 gen/algorithms/pywrapknapsack_solver.py: algorithms/knapsack_solver.swig algorithms/knapsack_solver.h base/base.swig
@@ -17,8 +32,8 @@ _pywrapknapsack_solver.$(SHAREDLIBEXT): objs/knapsack_solver_python_wrap.$O $(AL
 ifeq "$(SYSTEM)" "win"
 	copy _pywrapknapsack_solver.dll gen\\algorithms\\_pywrapknapsack_solver.pyd
 endif
-# pywrapgraph
 
+# pywrapgraph
 pygraph: _pywrapgraph.$(SHAREDLIBEXT) gen/graph/pywrapgraph.py
 
 gen/graph/pywrapgraph.py: graph/graph.swig graph/min_cost_flow.h graph/max_flow.h graph/ebert_graph.h base/base.swig

@@ -1,9 +1,4 @@
 # ---------- CSharp support using SWIG ----------
-
-# csharp
-
-csharp: csharpcp csharplp csharpalgorithms csharpgraph
-
 CSHARPEXE = \
 	cslinearprogramming.exe \
 	csintegerprogramming.exe \
@@ -13,11 +8,14 @@ CSHARPEXE = \
 
 csharpexe: $(CSHARPEXE)
 
-# clearcsharp
+# Main target.
+csharp: csharpcp csharplp csharpalgorithms csharpgraph csharpexe
 
-cleancsharp:
+# Clean target.
+clean_csharp:
 	-$(DEL) $(LIBPREFIX)Google.OrTools.*.$(SHAREDLIBEXT)
 	-$(DEL) Google.OrTools.*.dll
+	-$(DEL) Google.OrTools.*.mdb
 	-$(DEL) $(LIBPREFIX)Google.OrTools.*.lib
 	-$(DEL) $(LIBPREFIX)Google.OrTools.*.pdb
 	-$(DEL) $(LIBPREFIX)Google.OrTools.*.exp
