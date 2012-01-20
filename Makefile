@@ -12,11 +12,11 @@ help:
 
 OR_TOOLS_VERSION = 1.0.0
 
-.PHONY : python cc java
+.PHONY : python cc java csharp
 cc: cplibs cpexe algorithmslibs graphlibs lplibs lpexe
 java: javacp javaalgorithms javagraph javalp
 python: pycp pyalgorithms pygraph pylp
-all: cc java python
+all: cc java python csharp
 
 # First, we try to detect the platform.
 include makefiles/Makefile.port
