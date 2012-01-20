@@ -87,6 +87,9 @@ endif
 csrabbitspheasants.exe: csharpcp csharp/csrabbitspheasants.cs
 	$(CSC) /target:exe /out:csrabbitspheasants.exe /platform:$(NETPLATFORM) /r:Google.OrTools.ConstraintSolver.dll csharp$Scsrabbitspheasants.cs
 
+send_more_money.exe: csharpcp csharp/send_more_money.cs
+	$(CSC) /target:exe /out:send_more_money.exe /platform:$(NETPLATFORM) /r:Google.OrTools.ConstraintSolver.dll csharp$Ssend_more_money.cs
+
 
 # csharpalgorithms
 

@@ -1887,6 +1887,12 @@ namespace operations_research {
   public static ValCstPair operator !=(IntExpr a, long v) {
     return new ValCstPair(a.solver().MakeNonEquality(a.Var(), v));
   }
+  public Constraint Equality(IntExpr b) {
+    return this.solver().MakeEquality(this.Var(), b.Var());
+  }
+  public Constraint NonEquality(IntExpr b) {
+    return this.solver().MakeNonEquality(this.Var(), b.Var());
+  }
   public static ValCstPair operator >=(IntExpr a, long v) {
     return new ValCstPair(a.solver().MakeGreaterOrEqual(a, v));
   }
