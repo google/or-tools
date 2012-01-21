@@ -41,18 +41,20 @@ DEFINE_bool(cp_share_int_consts, true,
 
 namespace operations_research {
 
+// ---------- IntExpr ----------
+
+IntVar* IntExpr::VarWithName(const string& name) {
+  IntVar* const var = Var();
+  var->set_name(name);
+  return var;
+}
+
 // ---------- IntVar ----------
 
 IntVar::IntVar(Solver* const s) : IntExpr(s) {}
 
 IntVar::IntVar(Solver* const s, const string& name) : IntExpr(s) {
   set_name(name);
-}
-
-IntVar* IntExpr::VarWithName(const string& name) {
-  IntVar* const var = Var();
-  var->set_name(name);
-  return var;
 }
 
 namespace {
