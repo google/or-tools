@@ -67,14 +67,14 @@ def main(sol = 'GLPK'):
   #
   # variables
   #
-  p = [solver.NumVar(0, solver.infinity(), 'p[%i]' % i) for i in Metals]
-  r = [solver.NumVar(0, solver.infinity(), 'r[%i]' % i) for i in Raws]
-  s = [solver.NumVar(0, solver.infinity(), 's[%i]' % i) for i in Scraps]
-  ii = [solver.IntVar(0, solver.infinity(), 'ii[%i]' % i) for i in Ingos]
+  p = [solver.NumVar(0, solver.Infinity(), 'p[%i]' % i) for i in Metals]
+  r = [solver.NumVar(0, solver.Infinity(), 'r[%i]' % i) for i in Raws]
+  s = [solver.NumVar(0, solver.Infinity(), 's[%i]' % i) for i in Scraps]
+  ii = [solver.IntVar(0, solver.Infinity(), 'ii[%i]' % i) for i in Ingos]
   metal = [solver.NumVar(Low[j]*Alloy,  Up[j]*Alloy, 'metal[%i]' % j)
            for j in Metals]
 
-  z = solver.NumVar(0, solver.infinity(), 'z')
+  z = solver.NumVar(0, solver.Infinity(), 'z')
 
   #
   # constraints
