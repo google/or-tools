@@ -13,6 +13,10 @@ clean_python:
 	-$(DEL) gen$Sconstraint_solver$S*.py
 	-$(DEL) gen$Sgraph$S*.py
 	-$(DEL) gen$Slinear_solver$S*.py
+	-$(DEL) gen$Salgorithms$S*.pyc
+	-$(DEL) gen$Sconstraint_solver$S*.pyc
+	-$(DEL) gen$Sgraph$S*.pyc
+	-$(DEL) gen$Slinear_solver$S*.pyc
 	-$(DEL) _pywrap*.$(SHAREDLIBEXT)
 	-$(DEL) objs$S*python_wrap.$O
 
