@@ -70,7 +70,7 @@ def main(n=8):
                               [collector])
 
 
-    num_solutions = collector.solution_count()
+    num_solutions = collector.SolutionCount()
     print "num_solutions: ", num_solutions
     if num_solutions > 0:
         for s in range(num_solutions):
@@ -87,9 +87,9 @@ def main(n=8):
 
         print
         print "num_solutions:", num_solutions
-        print "failures:", solver.failures()
-        print "branches:", solver.branches()
-        print "wall_time:", solver.wall_time()
+        print "failures:", solver.Failures()
+        print "branches:", solver.Branches()
+        print "WallTime:", solver.WallTime()
 
     else:
          print "No solutions found"

@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -18,17 +18,17 @@
 
   This example is from the OPL example covering.mod
   '''
-  Consider selecting workers to build a house. The construction of a 
-  house can be divided into a number of tasks, each requiring a number of 
-  skills (e.g., plumbing or masonry). A worker may or may not perform a 
-  task, depending on skills. In addition, each worker can be hired for a 
-  cost that also depends on his qualifications. The problem consists of 
-  selecting a set of workers to perform all the tasks, while minimizing the 
-  cost. This is known as a set-covering problem. The key idea in modeling 
-  a set-covering problem as an integer program is to associate a 0/1 
-  variable with each worker to represent whether the worker is hired. 
-  To make sure that all the tasks are performed, it is sufficient to 
-  choose at least one worker by task. This constraint can be expressed by a 
+  Consider selecting workers to build a house. The construction of a
+  house can be divided into a number of tasks, each requiring a number of
+  skills (e.g., plumbing or masonry). A worker may or may not perform a
+  task, depending on skills. In addition, each worker can be hired for a
+  cost that also depends on his qualifications. The problem consists of
+  selecting a set of workers to perform all the tasks, while minimizing the
+  cost. This is known as a set-covering problem. The key idea in modeling
+  a set-covering problem as an integer program is to associate a 0/1
+  variable with each worker to represent whether the worker is hired.
+  To make sure that all the tasks are performed, it is sufficient to
+  choose at least one worker by task. This constraint can be expressed by a
   simple linear inequality.
   '''
 
@@ -63,10 +63,10 @@ from constraint_solver import pywrapcp
 
 
 def main():
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Set covering')
-    
+
     #
     # data
     #
@@ -114,7 +114,7 @@ def main():
         # (also, make 0-base)
         b = solver.Sum([Hire[c-1] for c in Qualified[j]])
         solver.Add(b >= 1)
-    
+
 
 
     # objective: Minimize total cost
@@ -122,32 +122,32 @@ def main():
 
     #
     # search and result
-    # 
+    #
     db = solver.Phase(Hire,
                  solver.CHOOSE_FIRST_UNBOUND,
                  solver.ASSIGN_MIN_VALUE)
 
     solver.NewSearch(db, [objective])
 
-    
+
     num_solutions = 0
     while solver.NextSolution():
         num_solutions += 1
-        print "Total cost", total_cost.Value() 
-        print "We should hire these workers: ", 
+        print "Total cost", total_cost.Value()
+        print "We should hire these workers: ",
         for w in Workers:
             if Hire[w].Value() == 1:
                 print w,
         print
         print
-        
+
     solver.EndSearch()
-    
+
     print
     print "num_solutions:", num_solutions
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time()
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
 
 
 if __name__ == '__main__':

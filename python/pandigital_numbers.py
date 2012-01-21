@@ -138,9 +138,9 @@ def main(base=10, start=1, len1=1, len2=4):
     if 0 and num_solutions > 0:
         print
         print "num_solutions:", num_solutions
-        print "failures:", solver.failures()
-        print "branches:", solver.branches()
-        print "wall_time:", solver.wall_time()
+        print "failures:", solver.Failures()
+        print "branches:", solver.Branches()
+        print "WallTime:", solver.WallTime()
         print
 
 

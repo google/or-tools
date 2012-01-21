@@ -23,19 +23,40 @@
 #ifdef SWIGPYTHON
 
 // Define the renaming of methods.
+%ignore MakeBoolVarArray;
+%ignore MakeIntVarArray;
+%ignore MakeNumVarArray;
+%ignore MakeVarArray;
+%rename (Activity) activity;
+%rename (BasisStatus) basis_status;
+%rename (BestObjectiveBound) best_objective_bound;
 %rename (BoolVar) MakeBoolVar;
-%rename (IntVar) MakeIntVar;
-%rename (NumVar) MakeNumVar;
 %rename (Constraint) MPConstraint;
 %rename (Constraint) MakeRowConstraint;
-%rename (Solver) MPSolver;
-%rename (Variable) MPVariable;
-%ignore MakeVarArray;
-%ignore MakeNumVarArray;
-%ignore MakeIntVarArray;
-%ignore MakeBoolVarArray;
+%rename (DualValue) dual_value;
+%rename (Index) index;
+%rename (Infinity) infinity;
+%rename (IntVar) MakeIntVar;
+%rename (Integer) integer;
+%rename (Iterations) iterations;
+%rename (Lb) lb;
 %rename (LookupConstraint) LookupConstraintOrNull;
 %rename (LookupVariable) LookupVariableOrNull;
+%rename (Nodes) nodes;
+%rename (NumVar) MakeNumVar;
+%rename (ObjectiveValue) objective_value;
+%rename (Offset) offset;
+%rename (ReducedCost) reduced_cost;
+%rename (SetLb) SetLB;
+%rename (SetTimeLimit) set_time_limit;
+%rename (SetUb) SetUB;
+%rename (SolutionValue) solution_value;
+%rename (Solver) MPSolver;
+%rename (TimeLimit) time_limit;
+%rename (Ub) ub;
+%rename (Variable) MPVariable;
+%rename (WallTime) wall_time;
+
 // Ignore non-mutable version of the Objective accessor, rename the mutable one.
 %ignore Objective;
 %rename (Objective) MutableObjective;
@@ -217,8 +238,8 @@ class LinearConstraint(object):
   def Extract(self, solver, name=''):
     coeffs = {}
     constant = self.__expr.Visit(coeffs)
-    lb = -solver.infinity()
-    ub = solver.infinity()
+    lb = -solver.Infinity()
+    ub = solver.Infinity()
     if self.__lb > -1e308:
       lb = self.__lb - constant
     if self.__ub < 1e308:
@@ -561,6 +582,7 @@ namespace operations_research {
 %rename (AddOffset) MPObjective::AddOffset;
 %rename (AddTerm) MPObjective::AddObjective;
 %rename (Clear) MPObjective::Clear;
+%rename (Offset) MPObjective::offset;
 %rename (SetCoefficient) MPObjective::SetCoefficient;
 %rename (SetOffset) MPObjective::SetOffset;
 

@@ -22,7 +22,7 @@
   Slides on (Finite Domain) Constraint Logic Programming, page 38f
   http://eclipse-clp.org/reports/eclipse.ppt
 
-  
+
   Compare with the following models:
   * MiniZinc: http://www.hakank.org/minizinc/organize_day.mzn
   * Comet: http://www.hakank.org/comet/organize_day.co
@@ -86,7 +86,7 @@ def main():
                 no_overlap(solver,
                            begins[i], durations[i],
                            begins[j], durations[j])
-                
+
     # specific constraints
     for (before, after) in before_tasks:
         solver.Add(ends[before] <= begins[after])
@@ -100,9 +100,9 @@ def main():
     db = solver.Phase(begins + ends,
                       solver.INT_VAR_DEFAULT,
                       solver.INT_VALUE_DEFAULT)
-    
+
     solver.NewSearch(db)
-    
+
     num_solutions = 0
     while solver.NextSolution():
         num_solutions += 1
@@ -111,9 +111,9 @@ def main():
         print
 
     print 'num_solutions:', num_solutions
-    print 'failures:', solver.failures()
-    print 'branches:', solver.branches()
-    print 'wall_time:', solver.wall_time(), 'ms'
+    print 'failures:', solver.Failures()
+    print 'branches:', solver.Branches()
+    print 'WallTime:', solver.WallTime(), 'ms'
 
 
 if __name__ == '__main__':

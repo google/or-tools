@@ -263,6 +263,7 @@ class PyDecisionBuilder(object):
 %rename (BestValueSolutionCollector) MakeBestValueSolutionCollector;
 %rename (BetweenCt) MakeBetweenCt;
 %rename (BoolVar) MakeBoolVar;
+%rename (Branches) branches;
 %rename (BranchesLimit) MakeBranchesLimit;
 %rename (ConstantRestart) MakeConstantRestart;
 %rename (ConvexPiecewiseExpr) MakeConvexPiecewiseExpr;
@@ -276,6 +277,7 @@ class PyDecisionBuilder(object):
 %rename (Distribute) MakeDistribute;
 %rename (Element) MakeElement;
 %rename (FailDecision) MakeFailDecision;
+%rename (Failures) failures;
 %rename (FailuresLimit) MakeFailuresLimit;
 %rename (FalseConstraint) MakeFalseConstraint;
 %rename (FirstSolutionCollector) MakeFirstSolutionCollector;
@@ -317,6 +319,7 @@ class PyDecisionBuilder(object):
 %rename (Minimize) MakeMinimize;
 %rename (NeighborhoodLimit) MakeNeighborhoodLimit;
 %rename (NoCycle) MakeNoCycle;
+%rename (ObjectiveValue) objective_value;
 %rename (Operator) MakeOperator;
 %rename (Optimize) MakeOptimize;
 %rename (Pack) MakePack;
@@ -334,8 +337,10 @@ class PyDecisionBuilder(object):
 %rename (SearchLog) MakeSearchLog;
 %rename (SearchTrace) MakeSearchTrace;
 %rename (SemiContinuousExpr) MakeSemiContinuousExpr;
+%rename (SetName) set_name;
 %rename (SequenceVar) MakeSequenceVar;
 %rename (SimulatedAnnealing) MakeSimulatedAnnealing;
+%rename (SolutionCount) solution_count;
 %rename (SolutionsLimit) MakeSolutionsLimit;
 %rename (SolveOnce) MakeSolveOnce;
 %rename (SplitVariableDomain) MakeSplitVariableDomain;
@@ -351,6 +356,7 @@ class PyDecisionBuilder(object):
 %rename (TransitionConstraint) MakeTransitionConstraint;
 %rename (TreeMonitor) MakeTreeMonitor;
 %rename (TrueConstraint) MakeTrueConstraint;
+%rename (WallTime) wall_time;
 %rename (WeightedMaximize) MakeWeightedMaximize;
 %rename (WeightedMinimize) MakeWeightedMinimize;
 %rename (WeightedOptimize) MakeWeightedOptimize;
@@ -1364,8 +1370,11 @@ struct FailureProtect {
 %rename (addObjective) operations_research::SolutionCollector::AddObjective;
 %rename (durationValue) operations_research::SolutionCollector::DurationValue;
 %rename (endValue) operations_research::SolutionCollector::EndValue;
+%rename (objectiveValue) operations_research::SolutionCollector::objective_value;
 %rename (performedValue) operations_research::SolutionCollector::PerformedValue;
+%rename (solutionCount) operations_research::SolutionCollector::solution_count;
 %rename (startValue) operations_research::SolutionCollector::StartValue;
+%rename (wallTime) operations_research::SolutionCollector::wall_time;;
 
 // Rename rules on Solver.
 %rename (addBacktrackAction) operations_research::Solver::AddBacktrackAction;
@@ -1519,6 +1528,7 @@ struct FailureProtect {
 %rename (solve) operations_research::Solver::Solve;
 %rename (solveDepth) operations_research::Solver::SolveDepth;
 %rename (updateLimits) operations_research::Solver::UpdateLimits;
+%rename (wallTime) operations_research::Solver::wall_time;
 
 // Rename rules on IntVar and IntExpr.
 %rename (var) operations_research::IntExpr::Var;
@@ -1544,6 +1554,9 @@ struct FailureProtect {
 
 // Rename rules on Action.
 %rename (run) operations_research::Action::Run;
+
+// Rename rules on PropagationBaseObject.
+%rename (setName) operations_research::PropagationBaseObject::set_name;
 
 // Rename rules on Search Monitor
 %rename (acceptDelta) operations_research::SearchMonitor::AcceptDelta;
@@ -1840,6 +1853,9 @@ struct FailureProtect {
 
 // Rename rules on Action.
 %rename (Run) operations_research::Action::Run;
+
+// Rename rules on PropagationBaseObject
+%rename (SetName) operations_research::PropagationBaseObject::set_name;
 
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::IntVar, IntVar)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SearchMonitor, SearchMonitor)

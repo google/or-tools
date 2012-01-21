@@ -18,11 +18,11 @@
 
   Model and data from the OPL Manual, which describes the problem:
   '''
-  The P-Median problem is a well known problem in Operations Research. 
-  The problem can be stated very simply, like this: given a set of customers 
-  with known amounts of demand, a set of candidate locations for warehouses, 
-  and the distance between each pair of customer-warehouse, choose P 
-  warehouses to open that minimize the demand-weighted distance of serving 
+  The P-Median problem is a well known problem in Operations Research.
+  The problem can be stated very simply, like this: given a set of customers
+  with known amounts of demand, a set of candidate locations for warehouses,
+  and the distance between each pair of customer-warehouse, choose P
+  warehouses to open that minimize the demand-weighted distance of serving
   all customers from those P warehouses.
   '''
 
@@ -106,9 +106,9 @@ def main():
     db = solver.Phase(open + ship_flat,
                       solver.INT_VAR_DEFAULT,
                       solver.INT_VALUE_DEFAULT)
-    
+
     solver.NewSearch(db, [objective])
-    
+
     num_solutions = 0
     while solver.NextSolution():
         num_solutions += 1
@@ -121,9 +121,9 @@ def main():
         print
 
     print 'num_solutions:', num_solutions
-    print 'failures:', solver.failures()
-    print 'branches:', solver.branches()
-    print 'wall_time:', solver.wall_time(), 'ms'
+    print 'failures:', solver.Failures()
+    print 'branches:', solver.Branches()
+    print 'WallTime:', solver.WallTime(), 'ms'
 
 
 if __name__ == '__main__':

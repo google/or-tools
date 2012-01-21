@@ -18,7 +18,7 @@
 
   2 player zero sum game.
 
-  From Taha, Operations Research (8'th edition), page 528. 
+  From Taha, Operations Research (8'th edition), page 528.
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
@@ -28,7 +28,7 @@ import sys
 from linear_solver import pywraplp
 
 def main(sol = 'GLPK'):
-  
+
   # Create the solver.
 
   # using GLPK
@@ -44,9 +44,9 @@ def main(sol = 'GLPK'):
   # data
   rows = 3
   cols = 3
-  
+
   game = [[3.0, -1.0, -3.0],
-          [-2.0,  4.0, -1.0], 
+          [-2.0,  4.0, -1.0],
           [-5.0, -6.0,  2.0]
           ]
 
@@ -109,10 +109,10 @@ def main(sol = 'GLPK'):
 
 
   print
-  print 'walltime  :', solver.wall_time(), 'ms'
+  print 'walltime  :', solver.WallTime(), 'ms'
   print 'iterations:', solver.iterations()
   print
- 
+
 if __name__ == '__main__':
 
   sol = 'GLPK'
@@ -121,5 +121,5 @@ if __name__ == '__main__':
     if sol != 'GLPK' and sol != 'CBC':
       print 'Solver must be either GLPK or CBC'
       sys.exit(1)
-  
+
   main(sol)

@@ -61,7 +61,7 @@ public class Map2 {
                           {Belgium,    Germany},
                           {Germany,    Netherlands},
                           {Germany,    Denmark}};
-    
+
 
     //
     // Variables
@@ -70,10 +70,10 @@ public class Map2 {
 
     //
     // Constraints
-    // 
+    //
     for(int i = 0; i < neighbours.length; i++) {
       solver.addConstraint(
-                           solver.makeNonEquality(color[neighbours[i][0]], 
+                           solver.makeNonEquality(color[neighbours[i][0]],
                                                   color[neighbours[i][1]]));
     }
 
@@ -103,7 +103,7 @@ public class Map2 {
     System.out.println("Solutions: " + solver.solutions());
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
-    System.out.println("Wall time: " + solver.wall_time() + "ms");
+    System.out.println("Wall time: " + solver.wallTime() + "ms");
 
   }
 

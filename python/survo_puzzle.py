@@ -125,7 +125,7 @@ def main(r=0, c=0, rowsums=[], colsums=[], game=[]):
                               solver.ASSIGN_MIN_VALUE),
                               [collector])
 
-    num_solutions = collector.solution_count()
+    num_solutions = collector.SolutionCount()
     print "\nnum_solutions: ", num_solutions
     if num_solutions > 0:
         for s in range(num_solutions):
@@ -140,9 +140,9 @@ def main(r=0, c=0, rowsums=[], colsums=[], game=[]):
 
         print
         print "num_solutions:", num_solutions
-        print "failures:", solver.failures()
-        print "branches:", solver.branches()
-        print "wall_time:", solver.wall_time()
+        print "failures:", solver.Failures()
+        print "branches:", solver.Branches()
+        print "WallTime:", solver.WallTime()
 
     else:
         print "No solutions found"

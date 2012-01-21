@@ -1,29 +1,29 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
   3 jugs problem using regular constraint in Google CP Solver.
 
   A.k.a. water jugs problem.
-  
+
   Problem from Taha 'Introduction to Operations Research',
   page 245f .
 
   For more info about the problem, see:
   http://mathworld.wolfram.com/ThreeJugProblem.html
-  
+
   This model use a regular constraint for handling the
   transitions between the states. Instead of minimizing
   the cost in a cost matrix (as shortest path problem),
@@ -36,15 +36,15 @@
   * Comet: http://www.hakank.org/comet/water_buckets1.co
   * MiniZinc: http://www.hakank.org/minizinc/3_jugs.mzn
   * MiniZinc: http://www.hakank.org/minizinc/3_jugs2.mzn
-  * SICStus: http://www.hakank.org/sicstus/3_jugs.pl  
-  * ECLiPSe: http://www.hakank.org/eclipse/3_jugs.ecl  
+  * SICStus: http://www.hakank.org/sicstus/3_jugs.pl
+  * ECLiPSe: http://www.hakank.org/eclipse/3_jugs.ecl
   * ECLiPSe: http://www.hakank.org/eclipse/3_jugs2.ecl
   * Gecode: http://www.hakank.org/gecode/3_jugs2.cpp
 
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
-  
+
 """
 
 from constraint_solver import pywrapcp
@@ -53,7 +53,7 @@ from collections import defaultdict
 #
 # Global constraint regular
 #
-# This is a translation of MiniZinc's regular constraint (defined in 
+# This is a translation of MiniZinc's regular constraint (defined in
 # lib/zinc/globals.mzn), via the Comet code refered above.
 # All comments are from the MiniZinc code.
 # '''
@@ -73,7 +73,7 @@ from collections import defaultdict
 def regular(x, Q, S, d, q0, F):
 
     solver = x[0].solver()
-    
+
     assert Q > 0, 'regular: "Q" must be greater than zero'
     assert S > 0, 'regular: "S" must be greater than zero'
 
@@ -81,7 +81,7 @@ def regular(x, Q, S, d, q0, F):
     # each possible input;  each extra transition is from state zero
     # to state zero.  This allows us to continue even if we hit a
     # non-accepted input.
-    
+
     # Comet: int d2[0..Q, 1..S]
     d2 = []
     for i in range(Q+1):
@@ -102,25 +102,25 @@ def regular(x, Q, S, d, q0, F):
     x_range = range(0,len(x))
     m = 0
     n = len(x)
-    
-    a = [solver.IntVar(0, Q+1, 'a[%i]' % i) for i in range(m, n+1)] 
-    
+
+    a = [solver.IntVar(0, Q+1, 'a[%i]' % i) for i in range(m, n+1)]
+
     # Check that the final state is in F
     solver.Add(solver.MemberCt(a[-1], F))
     # First state is q0
-    solver.Add(a[m] == q0)    
+    solver.Add(a[m] == q0)
     for i in x_range:
         solver.Add(x[i] >= 1)
         solver.Add(x[i] <= S)
-        
+
         # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
         solver.Add(a[i+1] == solver.Element(d2_flatten, ((a[i])*S)+(x[i]-1)))
 
-       
+
 
 
 def main(n):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('3 jugs problem using regular constraint')
 
@@ -137,9 +137,9 @@ def main(n):
     ##
     ## Manually crafted DFA
     ## (from the adjacency matrix used in the other models)
-    ## 
+    ##
     # transition_fn =  [
-    #    # 1  2  3  4  5  6  7  8  9  0  1  2  3  4  5 
+    #    # 1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
     #     [0, 2, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0],  # 1
     #     [0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # 2
     #     [0, 0, 0, 4, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0],  # 3
@@ -194,8 +194,8 @@ def main(n):
     nodes = [
         '8,0,0', # 1 start
         '5,0,3', # 2
-        '5,3,0', # 3 
-        '2,3,3', # 4 
+        '5,3,0', # 3
+        '2,3,3', # 4
         '2,5,1', # 5
         '7,0,1', # 6
         '7,1,0', # 7
@@ -208,29 +208,29 @@ def main(n):
         '1,4,3', # 14
         '4,4,0'  # 15 goal
         ]
-    
-   
+
+
     #
     # declare variables
     #
-    x = [solver.IntVar(1, input_max, 'x[%i]'% i) for i in range(n)]    
+    x = [solver.IntVar(1, input_max, 'x[%i]'% i) for i in range(n)]
 
     #
     # constraints
     #
     regular(x, n_states, input_max, transition_fn,
             initial_state, accepting_states)
-  
-    
+
+
     #
     # solution and search
-    #   
+    #
     db = solver.Phase(x,
-                      solver.INT_VAR_DEFAULT,                     
+                      solver.INT_VAR_DEFAULT,
                       solver.INT_VALUE_DEFAULT)
 
     solver.NewSearch(db)
-    
+
     num_solutions = 0
     x_val = []
     while solver.NextSolution():
@@ -239,15 +239,15 @@ def main(n):
         print 'x:', x_val
         for i in range(1, n+1):
             print '%s -> %s' % (nodes[x_val[i-1]-1], nodes[x_val[i]-1])
-        
+
     solver.EndSearch()
-    
+
     if num_solutions > 0:
         print
         print 'num_solutions:', num_solutions
-        print 'failures:', solver.failures()
-        print 'branches:', solver.branches()
-        print 'wall_time:', solver.wall_time(), 'ms'
+        print 'failures:', solver.Failures()
+        print 'branches:', solver.Branches()
+        print 'WallTime:', solver.WallTime(), 'ms'
 
     # return the solution (or an empty array)
     return x_val
@@ -260,7 +260,7 @@ if __name__ == '__main__':
         result = main(n)
         result_len = len(result)
         if result_len:
-            print '\nFound a solution of length %i:' % result_len, 
+            print '\nFound a solution of length %i:' % result_len,
             print result
             print
             break

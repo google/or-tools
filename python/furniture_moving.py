@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -31,7 +31,7 @@
   * SICStus: http://hakank.org/sicstus/furniture_moving.pl
   * Zinc: http://hakank.org/minizinc/furniture_moving.zinc
 
-  
+
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
@@ -60,7 +60,7 @@ from constraint_solver import pywrapcp
 # b: resource limit assumption: IntVar or int
 #
 def my_cumulative(solver, s, d, r, b):
-    
+
     # tasks = [i for i in range(len(s))]
     tasks = [i for i in range(len(s)) if r[i] > 0 and d[i] > 0]
     times_min = min([s[i].Min() for i in tasks])
@@ -69,14 +69,14 @@ def my_cumulative(solver, s, d, r, b):
         bb = []
         for i in tasks:
             c1 = solver.IsLessOrEqualCstVar(s[i], t)  # s[i] <= t
-            c2 = solver.IsGreaterCstVar(s[i]+d[i], t) # t < s[i] + d[i]              
+            c2 = solver.IsGreaterCstVar(s[i]+d[i], t) # t < s[i] + d[i]
             bb.append(c1*c2*r[i])
         solver.Add(solver.Sum(bb) <= b)
 
     # Somewhat experimental:
     # This constraint is needed to contrain the upper limit of b.
     if not isinstance(b, int):
-        solver.Add(b <= sum(r))       
+        solver.Add(b <= sum(r))
 
 
 def main():
@@ -86,7 +86,7 @@ def main():
 
     #
     # data
-    # 
+    #
     n = 4
     duration    = [30,10,15,15]
     demand      = [ 3, 1, 3, 2]
@@ -117,7 +117,7 @@ def main():
     #
     # Some extra constraints to play with
     #
-    
+
     ## all tasks must end within an hour
     # solver.Add(end_time <= 60)
 
@@ -125,16 +125,16 @@ def main():
     # for i in range(n):
     #    solver.Add(start_times[i] == 0)
 
-       
+
     ## limitation of the number of people
     # solver.Add(num_resources <= 3)
 
 
     #
     # objective
-    # 
+    #
     # objective = solver.Minimize(end_time, 1)
-    objective = solver.Minimize(num_resources, 1)    
+    objective = solver.Minimize(num_resources, 1)
 
     #
     # solution and search
@@ -143,7 +143,7 @@ def main():
     solution.Add(start_times)
     solution.Add(end_times)
     solution.Add(end_time)
-    solution.Add(num_resources)    
+    solution.Add(num_resources)
 
     db = solver.Phase(start_times,
                       solver.CHOOSE_FIRST_UNBOUND,
@@ -151,25 +151,25 @@ def main():
 
     #
     # result
-    # 
+    #
     solver.NewSearch(db, [objective])
     num_solutions = 0
     while solver.NextSolution():
         num_solutions += 1
-        print "num_resources:", num_resources.Value()        
+        print "num_resources:", num_resources.Value()
         print "start_times  :", [start_times[i].Value() for i in range(n)]
-        print "duration     :", [duration[i] for i in range(n)]        
+        print "duration     :", [duration[i] for i in range(n)]
         print "end_times    :", [end_times[i].Value() for i in range(n)]
         print "end_time     :", end_time.Value()
         print
 
     solver.EndSearch()
-    
+
     print
     print "num_solutions:", num_solutions
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time()
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
 
 if __name__ == '__main__':
     main()

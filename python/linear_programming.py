@@ -25,7 +25,7 @@ def RunLinearExampleNaturalLanguageAPI(optimization_problem_type):
   """Example of simple linear program with natural language API."""
   solver = pywraplp.Solver('RunLinearExampleNaturalLanguageAPI',
                            optimization_problem_type)
-  infinity = solver.infinity()
+  infinity = solver.Infinity()
   # x1, x2 and x3 are continuous non-negative variables.
   x1 = solver.NumVar(0.0, infinity, 'x1')
   x2 = solver.NumVar(0.0, infinity, 'x2')
@@ -45,7 +45,7 @@ def RunLinearExampleCppStyleAPI(optimization_problem_type):
   """Example of simple linear program with the C++ style API."""
   solver = pywraplp.Solver('RunLinearExampleCppStyle',
                            optimization_problem_type)
-  infinity = solver.infinity()
+  infinity = solver.Infinity()
   # x1, x2 and x3 are continuous non-negative variables.
   x1 = solver.NumVar(0.0, infinity, 'x1')
   x2 = solver.NumVar(0.0, infinity, 'x2')
@@ -88,23 +88,23 @@ def SolveAndPrint(solver, variable_list, constraint_list):
   # The problem has an optimal solution.
   assert result_status == pywraplp.Solver.OPTIMAL
 
-  print 'Problem solved in %f milliseconds' % solver.wall_time()
+  print 'Problem solved in %f milliseconds' % solver.WallTime()
 
   # The objective value of the solution.
-  print 'Optimal objective value = %f' % solver.objective_value()
+  print 'Optimal objective value = %f' % solver.ObjectiveValue()
 
   # The value of each variable in the solution.
   for variable in variable_list:
-    print '%s = %f' % (variable.name(), variable.solution_value())
+    print '%s = %f' % (variable.name(), variable.SolutionValue())
 
   print 'Advanced usage:'
-  print 'Problem solved in %d iterations' % solver.iterations()
+  print 'Problem solved in %d iterations' % solver.Iterations()
   for variable in variable_list:
-    print '%s: reduced cost = %f' % (variable.name(), variable.reduced_cost())
+    print '%s: reduced cost = %f' % (variable.name(), variable.ReducedCost())
   for i, constraint in enumerate(constraint_list):
     print ('constraint %d: dual value = %f\n'
            '               activity = %f' %
-           (i, constraint.dual_value(), constraint.activity()))
+           (i, constraint.DualValue(), constraint.Activity()))
 
 
 def Announce(solver, api_type):

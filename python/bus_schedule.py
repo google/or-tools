@@ -92,7 +92,7 @@ def main(num_buses_check=0):
                               solver.ASSIGN_MIN_VALUE),
                               cargs)
 
-    num_solutions = collector.solution_count()
+    num_solutions = collector.SolutionCount()
     num_buses_check_value = 0
     for s in range(num_solutions):
         print "x:", [collector.Value(s, x[i]) for i in range(len(x))],
@@ -101,9 +101,9 @@ def main(num_buses_check=0):
 
     print
     print "num_solutions:", num_solutions
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time()
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
     print
     if num_buses_check == 0:
         return num_buses_check_value

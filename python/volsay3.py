@@ -26,7 +26,7 @@
 from linear_solver import pywraplp
 
 def main(unused_argv):
-  
+
   # Create the solver.
 
   # using GLPK
@@ -40,7 +40,7 @@ def main(unused_argv):
 
   # data
   num_products = 2
-  
+
   products = ['Gas', 'Chloride']
   components = ['nitrogen', 'hydrogen', 'chlorine']
 
@@ -58,7 +58,7 @@ def main(unused_argv):
   for c in range(len(components)):
     solver.Add(solver.Sum([demand[p][c]*production[p]
                            for p in range(len(products)) ]) <= stock[c])
-  
+
 
   # objective
   # Note: there is no support for solver.ScalProd in the LP/IP interface
@@ -82,9 +82,9 @@ def main(unused_argv):
       print 'reduced_cost = ', production[i].reduced_cost()
 
   print
-  print 'walltime  :', solver.wall_time(), 'ms'
+  print 'walltime  :', solver.WallTime(), 'ms'
   print 'iterations:', solver.iterations()
- 
- 
+
+
 if __name__ == '__main__':
     main('Volsay')

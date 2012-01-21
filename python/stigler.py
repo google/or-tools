@@ -19,7 +19,7 @@
   From GLPK:s example stigler.mod
   '''
   STIGLER, original Stigler's 1939 diet problem
- 
+
   The Stigler Diet is an optimization problem named for George Stigler,
   a 1982 Nobel Laureate in economics, who posed the following problem:
   For a moderately active man weighing 154 pounds, how much of each of
@@ -27,20 +27,20 @@
   nine nutrients will be at least equal to the recommended dietary
   allowances (RDSs) suggested by the National Research Council in 1943,
   with the cost of the diet being minimal?
- 
+
   The nutrient RDAs required to be met in Stigler's experiment were
   calories, protein, calcium, iron, vitamin A, thiamine, riboflavin,
   niacin, and ascorbic acid. The result was an annual budget allocated
   to foods such as evaporated milk, cabbage, dried navy beans, and beef
   liver at a cost of approximately $0.11 a day in 1939 U.S. dollars.
- 
+
   While the name 'Stigler Diet' was applied after the experiment by
   outsiders, according to Stigler, 'No one recommends these diets for
   anyone, let alone everyone.' The Stigler diet has been much ridiculed
   for its lack of variety and palatability, however his methodology has
   received praise and is considered to be some of the earliest work in
   linear programming.
- 
+
   The Stigler diet question is a linear programming problem. Lacking
   any sophisticated method of solving such a problem, Stigler was
   forced to utilize heuristic methods in order to find a solution. The
@@ -58,9 +58,9 @@
   consumer price index, the cost of the diet in 2005 dollars is
   $561.43. The specific combination of foods and quantities is as
   follows:
- 
+
   Stigler's 1939 Diet
- 
+
   Food             Annual Quantities Annual Cost
   ---------------- ----------------- -----------
   Wheat Flour           370 lb.         $13.33
@@ -70,12 +70,12 @@
   Dried Navy Beans      285 lb.          16.80
   ----------------------------------------------
   Total Annual Cost                     $39.93
- 
+
   The 9 nutrients that Stigler's diet took into consideration and their
   respective recommended daily amounts were:
- 
+
   Table of nutrients considered in Stigler's diet
- 
+
   Nutrient                  Daily Recommended Intake
   ------------------------- ------------------------
   Calories                       3,000 Calories
@@ -87,7 +87,7 @@
   Riboflavin (Vitamin B2)          2.7 milligrams
   Niacin                            18 milligrams
   Ascorbic Acid (Vitamin C)         75 milligrams
- 
+
   Seven years after Stigler made his initial estimates, the development
   of George Dantzig's Simplex algorithm made it possible to solve the
   problem without relying on heuristic methods. The exact value was
@@ -95,25 +95,25 @@
   algorithm describes a method of traversing the vertices of a polytope
   of N+1 dimensions in order to find the optimal solution to a specific
   situation.
- 
+
   (From Wikipedia, the free encyclopedia.)
- 
+
   Translated from GAMS by Andrew Makhorin <mao@mai2.rcnet.ru>.
- 
+
   For the original GAMS model stigler1939.gms see [3].
- 
+
   References:
- 
+
   1. George J. Stigler, 'The Cost of Subsistence,' J. Farm Econ. 27,
      1945, pp. 303-14.
- 
+
   2. National Research Council, 'Recommended Daily Allowances,' Reprint
      and Circular Series No. 115, January, 1943.
- 
+
   3. Erwin Kalvelagen, 'Model building with GAMS,' Chapter 2, 'Building
      linear programming models,' pp. 128-34.
   '''
- 
+
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
@@ -122,7 +122,7 @@ from linear_solver import pywraplp
 
 
 def main(sol = 'GLPK'):
-  
+
   # Create the solver.
 
   print 'Solver: ', sol
@@ -144,24 +144,24 @@ def main(sol = 'GLPK'):
   num_commodities = 77
   C = range(num_commodities)
 
-  #  days in a year 
+  #  days in a year
   days = 365.25
 
-  # nutrients 
+  # nutrients
   num_nutrients = 9
   N = range(num_nutrients)
 
 
   nutrients = [
-    "calories",      # Calories, unit = 1000 
-    "protein",       # Protein, unit = grams 
-    "calcium",       # Calcium, unit = grams 
-    "iron",          # Iron, unit = milligrams 
-    "vitaminA",      # Vitamin A, unit = 1000 International Units 
-    "thiamine",      # Thiamine, Vit. B1, unit = milligrams 
-    "riboflavin",    # Riboflavin, Vit. B2, unit = milligrams 
-    "niacin",        # Niacin (Nicotinic Acid), unit = milligrams 
-    "ascorbicAcid"   # Ascorbic Acid, Vit. C, unit = milligrams 
+    "calories",      # Calories, unit = 1000
+    "protein",       # Protein, unit = grams
+    "calcium",       # Calcium, unit = grams
+    "iron",          # Iron, unit = milligrams
+    "vitaminA",      # Vitamin A, unit = 1000 International Units
+    "thiamine",      # Thiamine, Vit. B1, unit = milligrams
+    "riboflavin",    # Riboflavin, Vit. B2, unit = milligrams
+    "niacin",        # Niacin (Nicotinic Acid), unit = milligrams
+    "ascorbicAcid"   # Ascorbic Acid, Vit. C, unit = milligrams
     ]
 
   commodities = [
@@ -325,7 +325,7 @@ def main(sol = 'GLPK'):
     [13.6,   3752.0,   9.0,      0.0,  10.3,    244.0,   0.0,   1.9,    7.5,   146.0,     0.0],
     [20.5,   2213.0,   6.4,     11.0,   0.4,      7.0,   0.2,   0.2,    0.4,     3.0,     0.0]]
 
-  # recommended daily allowance for a moderately active man 
+  # recommended daily allowance for a moderately active man
   allowance =  [3.0, 70.0, 0.8, 12.0,  5.0,  1.8, 2.7, 18.0, 75.0]
 
 
@@ -334,7 +334,7 @@ def main(sol = 'GLPK'):
   #
   x = [solver.NumVar(0, 1000, 'x[%i]' % i) for i in C]
   x_cost = [solver.NumVar(0, 1000, 'x_cost[%i]' % i) for i in C]
-  quant = [solver.NumVar(0, 1000, 'quant[%i]' % i) for i in C]    
+  quant = [solver.NumVar(0, 1000, 'quant[%i]' % i) for i in C]
 
   # total food bill
   total_cost = solver.NumVar(0, 1000, 'total_cost')
@@ -354,7 +354,7 @@ def main(sol = 'GLPK'):
   # nutrient balance
   for n in range(2, num_nutrients+2):
     solver.Add(solver.Sum([data[c][n] * x[c] for  c in C]) >= allowance[n-2])
-    
+
 
   objective = solver.Minimize(cost)
 
@@ -371,12 +371,12 @@ def main(sol = 'GLPK'):
   print
   for i in C:
     if x[i].solution_value() > 0:
-      print "%-21s %-11s  %0.2f  %0.2f" % (commodities[i][0], commodities[i][1], 
+      print "%-21s %-11s  %0.2f  %0.2f" % (commodities[i][0], commodities[i][1],
                                      x_cost[i].solution_value(), quant[i].solution_value())
 
   print
 
-  print 'walltime  :', solver.wall_time(), 'ms'
+  print 'walltime  :', solver.WallTime(), 'ms'
   if sol == 'CBC':
     print 'iterations:', solver.iterations()
 
@@ -389,5 +389,5 @@ if __name__ == '__main__':
       if sol != 'GLPK' and sol != 'CBC':
         print 'Solver must be either GLPK or CBC'
         sys.exit(1)
-    
+
     main(sol)

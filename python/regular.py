@@ -1,22 +1,22 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
   Global constraint regular in Google CP Solver.
 
-  This is a translation of MiniZinc's regular constraint (defined in 
+  This is a translation of MiniZinc's regular constraint (defined in
   lib/zinc/globals.mzn). All comments are from the MiniZinc code.
   '''
   The sequence of values in array 'x' (which must all be in the range 1..S)
@@ -35,7 +35,7 @@
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
-  
+
 """
 
 from constraint_solver import pywrapcp
@@ -44,7 +44,7 @@ from constraint_solver import pywrapcp
 #
 # Global constraint regular
 #
-# This is a translation of MiniZinc's regular constraint (defined in 
+# This is a translation of MiniZinc's regular constraint (defined in
 # lib/zinc/globals.mzn), via the Comet code refered above.
 # All comments are from the MiniZinc code.
 # '''
@@ -64,7 +64,7 @@ from constraint_solver import pywrapcp
 def regular(x, Q, S, d, q0, F):
 
     solver = x[0].solver()
-    
+
     assert Q > 0, 'regular: "Q" must be greater than zero'
     assert S > 0, 'regular: "S" must be greater than zero'
 
@@ -72,7 +72,7 @@ def regular(x, Q, S, d, q0, F):
     # each possible input;  each extra transition is from state zero
     # to state zero.  This allows us to continue even if we hit a
     # non-accepted input.
-    
+
     # int d2[0..Q, 1..S];
     d2 = []
     for i in range(Q+1):
@@ -93,28 +93,28 @@ def regular(x, Q, S, d, q0, F):
     x_range = range(0,len(x))
     m = 0
     n = len(x)
-    
+
     a = [solver.IntVar(0, Q+1, 'a[%i]' % i) for i in range(m, n+1)]
-    
+
     # Check that the final state is in F
     solver.Add(solver.MemberCt(a[-1], F))
     # First state is q0
-    solver.Add(a[m] == q0)    
+    solver.Add(a[m] == q0)
     for i in x_range:
         solver.Add(x[i] >= 1)
         solver.Add(x[i] <= S)
-        
+
         # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
         solver.Add(a[i+1] == solver.Element(d2_flatten, ((a[i])*S)+(x[i]-1)))
 
-       
+
 
 #
 # Make a transition (automaton) matrix from a
 # single pattern, e.g. [3,2,1]
-# 
+#
 def make_transition_matrix(pattern):
-    
+
     p_len = len(pattern)
     print 'p_len:', p_len
     num_states = p_len + sum(pattern)
@@ -125,7 +125,7 @@ def make_transition_matrix(pattern):
         for j in range(2):
             row.append(0)
         t_matrix.append(row)
-    
+
     # convert pattern to a 0/1 pattern for easy handling of
     # the states
     tmp = [0 for i in range(num_states)]
@@ -140,10 +140,10 @@ def make_transition_matrix(pattern):
             tmp[c] = 0
     print 'tmp:', tmp
 
-  
+
     t_matrix[num_states-1][0] = num_states
     t_matrix[num_states-1][1] = 0
-  
+
     for i in range(num_states):
         if tmp[i] == 0:
             t_matrix[i][0] = i+1
@@ -161,13 +161,13 @@ def make_transition_matrix(pattern):
     for i in range(num_states):
         for j in range(2):
             print t_matrix[i][j],
-        print 
+        print
     print
 
     return t_matrix
 
 def main():
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Regular test')
 
@@ -181,7 +181,7 @@ def main():
     transition_fn = make_transition_matrix(pp)
     n_states = len(transition_fn)
     input_max = 2
-    
+
     # Note: we use '1' and '2' (rather than 0 and 1)
     # since 0 represents the failing state.
     initial_state = 1
@@ -198,27 +198,27 @@ def main():
     regular(reg_input, n_states, input_max, transition_fn,
             initial_state, accepting_states)
 
-    
+
     #
     # solution and search
     #
     db = solver.Phase(reg_input,
-                      solver.CHOOSE_MIN_SIZE_HIGHEST_MAX,                     
+                      solver.CHOOSE_MIN_SIZE_HIGHEST_MAX,
                       solver.ASSIGN_MIN_VALUE)
 
     solver.NewSearch(db)
-    
+
     num_solutions = 0
     while solver.NextSolution():
         print 'reg_input:', [reg_input[i].Value()-1 for i in range(this_len)]
         num_solutions += 1
-        
+
     solver.EndSearch()
     print
     print 'num_solutions:', num_solutions
-    print 'failures:', solver.failures()
-    print 'branches:', solver.branches()
-    print 'wall_time:', solver.wall_time(), 'ms'
+    print 'failures:', solver.Failures()
+    print 'branches:', solver.Branches()
+    print 'WallTime:', solver.WallTime(), 'ms'
 
 
 if __name__ == '__main__':

@@ -61,7 +61,7 @@ def main():
     #
     n = 5
 
-    
+
     #
     # declare variables
     #
@@ -77,7 +77,7 @@ def main():
     # I've kept the MiniZinc constraints for clarity
     # and debugging.
     #
-    
+
     # If Mr Smith comes then his wife will come too.
     # (Mr_Smith -> Mrs_Smith)
     solver.Add(Mr_Smith-Mrs_Smith <= 0)
@@ -106,9 +106,9 @@ def main():
     db = solver.Phase(x,
                       solver.INT_VAR_DEFAULT,
                       solver.INT_VALUE_DEFAULT)
-    
+
     solver.NewSearch(db)
-    
+
     num_solutions = 0
     while solver.NextSolution():
         num_solutions += 1
@@ -116,9 +116,9 @@ def main():
 
     print
     print 'num_solutions:', num_solutions
-    print 'failures:', solver.failures()
-    print 'branches:', solver.branches()
-    print 'wall_time:', solver.wall_time(), 'ms'
+    print 'failures:', solver.Failures()
+    print 'branches:', solver.Branches()
+    print 'WallTime:', solver.WallTime(), 'ms'
 
 
 if __name__ == '__main__':

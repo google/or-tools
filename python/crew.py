@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -69,7 +69,7 @@ def main(sols=1):
              "Heather",
              "Juliet"
              ]
-    
+
     num_persons = len(names) #  number of persons
 
     attributes = [
@@ -135,10 +135,10 @@ def main(sols=1):
     # constraints
     #
 
-    # number of working persons 
+    # number of working persons
     solver.Add(num_working == solver.Sum(
                        [solver.IsGreaterOrEqualCstVar(solver.Sum([crew[(f,p)]
-                                    for f in range(num_flights)]), 1)  
+                                    for f in range(num_flights)]), 1)
                                 for p in range(num_persons) ]) )
 
     for f in range(num_flights):
@@ -175,7 +175,7 @@ def main(sols=1):
 
     #
     # result
-    # 
+    #
     solver.NewSearch(db)
     num_solutions = 0
     while solver.NextSolution():
@@ -205,16 +205,16 @@ def main(sols=1):
                     print flight,
             print
         print
-        
+
         if num_solutions >= sols:
             break
     solver.EndSearch()
-    
+
     print
     print "num_solutions:", num_solutions
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time()
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
 
 num_solutions_to_show = 1
 if __name__ == '__main__':

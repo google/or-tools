@@ -55,7 +55,7 @@ def main():
         [4, 5],
         [5, 1]
         ]
-    
+
     # convert arcs to 0-based
     arcs = []
     for (a_from, a_to) in arcs1:
@@ -67,7 +67,7 @@ def main():
 
     # capacities
     cap = [2,3,3,4,2,1,100]
-    
+
     # convert arcs to matrix
     # for sanity checking below
     mat = {}
@@ -100,12 +100,12 @@ def main():
     # capacity of arcs
     for i in range(num_arcs):
         solver.Add(flow[arcs[i][0], arcs[i][1]] <= cap[i])
-                            
+
 
     # inflows == outflows
     for i in nodes:
         s1 = solver.Sum([flow[arcs[k][0], arcs[k][1]]
-                         for k in range(num_arcs) if arcs[k][1] == i]) 
+                         for k in range(num_arcs) if arcs[k][1] == i])
         s2 = solver.Sum([flow[arcs[k][0], arcs[k][1]]
                          for k in range(num_arcs) if arcs[k][0] == i])
         solver.Add(s1 == s2)
@@ -127,7 +127,7 @@ def main():
     db = solver.Phase(flow_flat,
                       solver.INT_VAR_DEFAULT,
                       solver.INT_VALUE_DEFAULT)
-    
+
     solver.NewSearch(db, [objective])
     num_solutions = 0
     while solver.NextSolution():
@@ -140,9 +140,9 @@ def main():
         print
 
     print 'num_solutions:', num_solutions
-    print 'failures:', solver.failures()
-    print 'branches:', solver.branches()
-    print 'wall_time:', solver.wall_time(), 'ms'
+    print 'failures:', solver.Failures()
+    print 'branches:', solver.Branches()
+    print 'WallTime:', solver.WallTime(), 'ms'
 
 if __name__ == '__main__':
     main()

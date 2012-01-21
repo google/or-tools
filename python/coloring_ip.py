@@ -42,7 +42,7 @@ from linear_solver import pywraplp
 
 
 def main(sol = 'GLPK'):
-  
+
   # Create the solver.
 
   print 'Solver: ', sol
@@ -68,14 +68,14 @@ def main(sol = 'GLPK'):
   n = 11
   # set of nodes
   V = range(n)
-  
+
   num_edges = 20
 
   #
   # Neighbours
   #
   # This data correspond to the instance myciel3.col from:
-  # http://mat.gsia.cmu.edu/COLOR/instances.html 
+  # http://mat.gsia.cmu.edu/COLOR/instances.html
   #
   # Note: 1-based (adjusted below)
   E =  [[1, 2],
@@ -99,19 +99,19 @@ def main(sol = 'GLPK'):
         [9, 11],
         [10, 11]]
 
-  
+
   #
   # declare variables
   #
-  
-  # x[i,c] = 1 means that node i is assigned color c 
+
+  # x[i,c] = 1 means that node i is assigned color c
   x = {}
   for v in V:
     for j in range(nc):
       x[v,j] = solver.IntVar(0, 1, 'v[%i,%i]' % (v, j))
 
-      
-  # u[c] = 1 means that color c is used, i.e. assigned to some node 
+
+  # u[c] = 1 means that color c is used, i.e. assigned to some node
   u = [solver.IntVar(0, 1, 'u[%i]' % i) for i in range(nc)]
 
   # number of colors used, to minimize
@@ -122,7 +122,7 @@ def main(sol = 'GLPK'):
   # constraints
   #
 
-  # each node must be assigned exactly one color 
+  # each node must be assigned exactly one color
   for i in V:
        solver.Add(solver.Sum([x[i,c] for c in range(nc)]) == 1)
 
@@ -144,7 +144,7 @@ def main(sol = 'GLPK'):
 
   print
   print "number of colors:", int(solver.objective_value())
-  print "colors used:", [int(u[i].solution_value()) for i in range(nc)] 
+  print "colors used:", [int(u[i].solution_value()) for i in range(nc)]
   print
 
   for v in V:
@@ -154,10 +154,10 @@ def main(sol = 'GLPK'):
         print c
 
   print
-  print "wall_time:", solver.wall_time()
+  print "WallTime:", solver.WallTime()
   if sol == 'CBC':
     print 'iterations:', solver.iterations()
-  
+
 
 
 if __name__ == '__main__':
@@ -168,5 +168,5 @@ if __name__ == '__main__':
     if sol != 'GLPK' and sol != 'CBC':
       print 'Solver must be either GLPK or CBC'
       sys.exit(1)
-  
+
   main(sol)

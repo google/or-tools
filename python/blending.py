@@ -17,7 +17,7 @@
   Blending problem in Google or-tools.
 
   From the OPL model blending.mod.
-  
+
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
@@ -26,7 +26,7 @@ from linear_solver import pywraplp
 
 
 def main(sol = 'GLPK'):
-  
+
   # Create the solver.
 
   print 'Solver: ', sol
@@ -69,10 +69,10 @@ def main(sol = 'GLPK'):
   #
   p = [solver.NumVar(0, solver.infinity(), 'p[%i]' % i) for i in Metals]
   r = [solver.NumVar(0, solver.infinity(), 'r[%i]' % i) for i in Raws]
-  s = [solver.NumVar(0, solver.infinity(), 's[%i]' % i) for i in Scraps]   
+  s = [solver.NumVar(0, solver.infinity(), 's[%i]' % i) for i in Scraps]
   ii = [solver.IntVar(0, solver.infinity(), 'ii[%i]' % i) for i in Ingos]
   metal = [solver.NumVar(Low[j]*Alloy,  Up[j]*Alloy, 'metal[%i]' % j)
-           for j in Metals]  
+           for j in Metals]
 
   z = solver.NumVar(0, solver.infinity(), 'z')
 
@@ -82,15 +82,15 @@ def main(sol = 'GLPK'):
 
   solver.Add(z ==
              solver.Sum([CostMetal[i] * p[i]  for i in Metals]) +
-             solver.Sum([CostRaw[i]   * r[i]  for i in Raws]) + 
+             solver.Sum([CostRaw[i]   * r[i]  for i in Raws]) +
              solver.Sum([CostScrap[i] * s[i]  for i in Scraps]) +
              solver.Sum([CostIngo[i]  * ii[i] for i in Ingos]))
-  
+
 
   for j in Metals:
     solver.Add(
       metal[j] == p[j] +
-      solver.Sum([PercRaw[j][k]   * r[k]  for k in Raws]) + 
+      solver.Sum([PercRaw[j][k]   * r[k]  for k in Raws]) +
       solver.Sum([PercScrap[j][k] * s[k]  for k in Scraps]) +
       solver.Sum([PercIngo[j][k]  * ii[k] for k in Ingos]))
 
@@ -134,7 +134,7 @@ def main(sol = 'GLPK'):
 
   print
 
-  print 'walltime  :', solver.wall_time(), 'ms'
+  print 'walltime  :', solver.WallTime(), 'ms'
   if sol == 'CBC':
     print 'iterations:', solver.iterations()
 
@@ -147,5 +147,5 @@ if __name__ == '__main__':
       if sol != 'GLPK' and sol != 'CBC':
         print 'Solver must be either GLPK or CBC'
         sys.exit(1)
-    
+
     main(sol)

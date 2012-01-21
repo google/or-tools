@@ -54,7 +54,7 @@
   This model gives 4089600 solutions and the following statistics:
   - failures: 31264
   - branches: 8241726
-  - wall_time: 23735 ms (note: without any printing of the solutions)
+  - WallTime: 23735 ms (note: without any printing of the solutions)
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
@@ -109,9 +109,9 @@ def main():
         print
 
     print 'num_solutions:', num_solutions
-    print 'failures:', solver.failures()
-    print 'branches:', solver.branches()
-    print 'wall_time:', solver.wall_time(), 'ms'
+    print 'failures:', solver.Failures()
+    print 'branches:', solver.Branches()
+    print 'WallTime:', solver.WallTime(), 'ms'
 
 if __name__ == '__main__':
     main()

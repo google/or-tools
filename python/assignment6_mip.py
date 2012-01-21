@@ -20,18 +20,18 @@
   '''
   The assignment problem is one of the fundamental combinatorial
   optimization problems.
- 
+
   In its most general form, the problem is as follows:
- 
+
   There are a number of agents and a number of tasks. Any agent can be
   assigned to perform any task, incurring some cost that may vary
   depending on the agent-task assignment. It is required to perform all
   tasks by assigning exactly one agent to each task in such a way that
   the total cost of the assignment is minimized.
- 
-  (From Wikipedia, the free encyclopedia.) 
+
+  (From Wikipedia, the free encyclopedia.)
   '''
-  
+
   Compare with the Comet model:
      http://www.hakank.org/comet/assignment6.co
 
@@ -43,7 +43,7 @@ import sys
 from linear_solver import pywraplp
 
 def main(sol = 'GLPK'):
-  
+
   # Create the solver.
 
   print 'Solver: ', sol
@@ -63,18 +63,18 @@ def main(sol = 'GLPK'):
   #
 
   # number of agents
-  m = 8 
+  m = 8
 
   # number of tasks
   n = 8
 
-  # set of agents 
+  # set of agents
   I = range(m)
 
-  # set of tasks 
+  # set of tasks
   J = range(n)
 
-  # cost of allocating task j to agent i 
+  # cost of allocating task j to agent i
   # """
   # These data correspond to an example from [Christofides].
   #
@@ -96,7 +96,7 @@ def main(sol = 'GLPK'):
   # For the output: the assignment as task number.
   assigned = [solver.IntVar(0, 10000, 'assigned[%i]' % j) for j in J]
 
-  costs = [solver.IntVar(0, 10000, 'costs[%i]' % i) for i in I]  
+  costs = [solver.IntVar(0, 10000, 'costs[%i]' % i) for i in I]
 
   x = {}
   for i in range(n):
@@ -111,12 +111,12 @@ def main(sol = 'GLPK'):
   #
   # constraints
   #
-  # each agent can perform at most one task 
+  # each agent can perform at most one task
   for i in I:
     solver.Add(solver.Sum([x[i,j] for j in J]) <= 1)
 
-  # each task must be assigned exactly to one agent                 
-  for j in J: 
+  # each task must be assigned exactly to one agent
+  for j in J:
     solver.Add(solver.Sum([x[i,j] for i in I]) == 1)
 
 
@@ -140,7 +140,7 @@ def main(sol = 'GLPK'):
 
   print 'Assigned'
   for j in J:
-    print int(assigned[j].solution_value()), 
+    print int(assigned[j].solution_value()),
   print
 
   print 'Matrix:'
@@ -153,7 +153,7 @@ def main(sol = 'GLPK'):
 
 
   print
-  print 'walltime  :', solver.wall_time(), 'ms'
+  print 'walltime  :', solver.WallTime(), 'ms'
   if sol == 'CBC':
     print 'iterations:', solver.iterations()
 
@@ -166,5 +166,5 @@ if __name__ == '__main__':
     if sol != 'GLPK' and sol != 'CBC':
       print 'Solver must be either GLPK or CBC'
       sys.exit(1)
-  
+
   main(sol)

@@ -145,9 +145,9 @@ def main(streams="", placed=""):
 
     print
     print 'num_solutions:', num_solutions
-    print 'failures:', solver.failures()
-    print 'branches:', solver.branches()
-    print 'wall_time:', solver.wall_time(), 'ms'
+    print 'failures:', solver.Failures()
+    print 'branches:', solver.Branches()
+    print 'WallTime:', solver.WallTime(), 'ms'
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:

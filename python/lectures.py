@@ -56,7 +56,7 @@ def main():
     #
     # data
     #
-    
+
     #
     # The schedule requirements:
     # lecture a cannot be held at the same time as b
@@ -113,9 +113,9 @@ def main():
     db = solver.Phase(v,
                       solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
                       solver.ASSIGN_CENTER_VALUE)
-    
+
     solver.NewSearch(db, [objective])
-    
+
     num_solutions = 0
     while solver.NextSolution():
         num_solutions += 1
@@ -124,9 +124,9 @@ def main():
         print
 
     print 'num_solutions:', num_solutions
-    print 'failures:', solver.failures()
-    print 'branches:', solver.branches()
-    print 'wall_time:', solver.wall_time(), 'ms'
+    print 'failures:', solver.Failures()
+    print 'branches:', solver.Branches()
+    print 'WallTime:', solver.WallTime(), 'ms'
 
 
 if __name__ == '__main__':

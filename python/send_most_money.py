@@ -99,7 +99,7 @@ def main(MONEY=0):
                               solver.ASSIGN_MAX_VALUE),
                               cargs)
 
-    num_solutions = collector.solution_count()
+    num_solutions = collector.SolutionCount()
     money_val = 0
     for s in range(num_solutions):
         print "x:", [collector.Value(s, x[i]) for i in range(len(x))]
@@ -108,9 +108,9 @@ def main(MONEY=0):
         print
 
     print "num_solutions:", num_solutions
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time()
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
 
     if MONEY == 0:
         return money_val

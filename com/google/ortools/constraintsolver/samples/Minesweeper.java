@@ -94,7 +94,7 @@ public class Minesweeper {
 
     //
     // Constraints
-    // 
+    //
     for(int i = 0; i < r; i++) {
       for(int j = 0; j < c; j++) {
         if (game[i][j] >= 0) {
@@ -119,7 +119,7 @@ public class Minesweeper {
         }
 
         if (game[i][j] > X) {
-          // This cell cannot be a mine since it 
+          // This cell cannot be a mine since it
           // has some value assigned to it
           solver.addConstraint(
               solver.makeEquality(mines[i][j], 0));
@@ -137,7 +137,7 @@ public class Minesweeper {
 
     int sol = 0;
     while (solver.nextSolution()) {
-      sol++; 
+      sol++;
       System.out.println("Solution #" + sol + ":");
       for(int i = 0; i < r; i++) {
         for(int j = 0; j < c; j++) {
@@ -155,7 +155,7 @@ public class Minesweeper {
     System.out.println("Solutions: " + solver.solutions());
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
-    System.out.println("Wall time: " + solver.wall_time() + "ms");
+    System.out.println("Wall time: " + solver.wallTime() + "ms");
 
   }
 
@@ -171,9 +171,9 @@ public class Minesweeper {
    *  <
    *    row number of neighbours lines...
    *  >
-   * 
+   *
    * 0..8 means number of neighbours, "." mean unknown (may be a mine)
-   * 
+   *
    * Example (from minesweeper0.txt)
    * # Problem from Gecode/examples/minesweeper.cc  problem 0
    * 6
@@ -190,7 +190,7 @@ public class Minesweeper {
 
     System.out.println("readFile(" + file + ")");
     int lineCount = 0;
-        
+
     try {
 
       BufferedReader inr = new BufferedReader(new FileReader(file));

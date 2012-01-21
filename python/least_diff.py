@@ -107,9 +107,9 @@ def main(unused_argv):
   print xval,"-", yval,"=", diffval
   print [("abcdefghij"[i], collector.Value(0, letters[i])) for i in range(10)]
   print
-  print "failures:", solver.failures()
-  print "branches:", solver.branches()
-  print "wall_time:", solver.wall_time()
+  print "failures:", solver.Failures()
+  print "branches:", solver.Branches()
+  print "WallTime:", solver.WallTime()
   print
 
 if __name__ == '__main__':

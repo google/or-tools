@@ -113,7 +113,7 @@ def main(unused_argv):
                               [collector])
                               #[collector, search_log])
 
-    num_solutions = collector.solution_count()
+    num_solutions = collector.SolutionCount()
     # print "x:", x
     print "num_solutions:", num_solutions
     print
@@ -127,9 +127,9 @@ def main(unused_argv):
             print
         print
 
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time()
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
     print "num_solutions:", num_solutions
 
 

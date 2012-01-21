@@ -18,20 +18,20 @@
 
   From http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/basiclogic
   '''
-  Each puzzle consists of a grid containing clues in various places. The 
-  object is to reveal a hidden picture by painting the squares around each 
-  clue so that the number of painted squares, including the square with 
-  the clue, matches the value of the clue. 
+  Each puzzle consists of a grid containing clues in various places. The
+  object is to reveal a hidden picture by painting the squares around each
+  clue so that the number of painted squares, including the square with
+  the clue, matches the value of the clue.
   '''
-  
+
   http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/rules
   '''
-  Fill-a-Pix is a Minesweeper-like puzzle based on a grid with a pixilated 
-  picture hidden inside. Using logic alone, the solver determines which 
-  squares are painted and which should remain empty until the hidden picture 
+  Fill-a-Pix is a Minesweeper-like puzzle based on a grid with a pixilated
+  picture hidden inside. Using logic alone, the solver determines which
+  squares are painted and which should remain empty until the hidden picture
   is completely exposed.
   '''
-  
+
   Fill-a-pix History:
   http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/history
 
@@ -53,7 +53,7 @@ import sys
 from constraint_solver import pywrapcp
 
 
-# Puzzle 1 from 
+# Puzzle 1 from
 # http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/rules
 default_n = 10
 X = -1
@@ -88,7 +88,7 @@ def main(puzzle='', n=''):
         print 'n:', n
 
     # for the neighbors of 'this' cell
-    S = [-1,0,1] 
+    S = [-1,0,1]
 
     # print problem instance
     print 'Problem:'
@@ -134,7 +134,7 @@ def main(puzzle='', n=''):
     db = solver.Phase(pict_flat,
                       solver.INT_VAR_DEFAULT,
                       solver.INT_VALUE_DEFAULT)
-    
+
     solver.NewSearch(db)
     num_solutions = 0
     print "Solution:"
@@ -151,9 +151,9 @@ def main(puzzle='', n=''):
         print
 
     print 'num_solutions:', num_solutions
-    print 'failures:', solver.failures()
-    print 'branches:', solver.branches()
-    print 'wall_time:', solver.wall_time(), 'ms'
+    print 'failures:', solver.Failures()
+    print 'branches:', solver.Branches()
+    print 'WallTime:', solver.WallTime(), 'ms'
 
 
 #

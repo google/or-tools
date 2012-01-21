@@ -32,12 +32,12 @@ def dudeney(n):
                             solver.INT_VALUE_DEFAULT),
                [collector])
 
-  for i in range(collector.solution_count()):
+  for i in range(collector.SolutionCount()):
     nbsol = collector.Value(i, nb)
     print nbsol
 
-  print '#fails:', solver.failures()
-  print 'time:', solver.wall_time(), 'ms'
+  print '#fails:', solver.Failures()
+  print 'time:', solver.WallTime(), 'ms'
 
 if __name__ == '__main__':
   dudeney(6)

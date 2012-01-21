@@ -63,16 +63,16 @@ def main(unused_argv):
                             solver.CHOOSE_FIRST_UNBOUND,
                             solver.ASSIGN_MIN_VALUE),
                [objective, collector])
-  for i in range(0, collector.solution_count()):
+  for i in range(0, collector.SolutionCount()):
     obj_value = collector.Value(i, marks[size -1])
-    time = collector.wall_time(i)
+    time = collector.WallTime(i)
     branches = collector.branches(i)
     failures = collector.failures(i)
     print ('Solution #%i: value = %i, failures = %i, branches = %i,'
            'time = %i ms') % (i, obj_value, failures, branches, time)
-  time = solver.wall_time()
-  branches = solver.branches()
-  failures = solver.failures()
+  time = solver.WallTime()
+  branches = solver.Branches()
+  failures = solver.Failures()
   print ('Total run : failures = %i, branches = %i, time = %i ms' %
          (failures, branches, time))
 

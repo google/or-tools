@@ -114,7 +114,7 @@ def make_transition_tuples(pattern):
 def check_rule(rules, y):
   cleaned_rule = [rules[i] for i in range(len(rules)) if rules[i] > 0]
   (transition_tuples, last_state) = make_transition_tuples(cleaned_rule)
-  
+
   initial_state = 1
   accepting_states = [last_state]
 
@@ -170,7 +170,7 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
                     solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
-  print 'before solver, wall time = ', solver.wall_time(), 'ms'
+  print 'before solver, wall time = ', solver.WallTime(), 'ms'
   solver.NewSearch(db)
 
   num_solutions = 0
@@ -197,9 +197,9 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
   solver.EndSearch()
   print
   print 'num_solutions:', num_solutions
-  print 'failures:', solver.failures()
-  print 'branches:', solver.branches()
-  print 'wall_time:', solver.wall_time(), 'ms'
+  print 'failures:', solver.Failures()
+  print 'branches:', solver.Branches()
+  print 'WallTime:', solver.WallTime(), 'ms'
 
 
 

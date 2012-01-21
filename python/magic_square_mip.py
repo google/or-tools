@@ -19,15 +19,15 @@
   Translated from GLPK:s example magic.mod
   '''
   MAGIC, Magic Square
- 
+
   Written in GNU MathProg by Andrew Makhorin <mao@mai2.rcnet.ru>
- 
+
   In recreational mathematics, a magic square of order n is an
   arrangement of n^2 numbers, usually distinct integers, in a square,
   such that n numbers in all rows, all columns, and both diagonals sum
   to the same constant. A normal magic square contains the integers
   from 1 to n^2.
- 
+
   (From Wikipedia, the free encyclopedia.)
   '''
 
@@ -37,7 +37,7 @@
   Here we also experiment with how long it takes when
   using an output_matrix (much longer).
 
-  
+
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
@@ -50,7 +50,7 @@ from linear_solver import pywraplp
 #   use_output_matrix: use the output_matrix
 #
 def main(n = 3, sol = 'GLPK', use_output_matrix = 0):
-  
+
   # Create the solver.
 
   print 'Solver: ', sol
@@ -114,14 +114,14 @@ def main(n = 3, sol = 'GLPK', use_output_matrix = 0):
                            for i in range_n
                            for j in range_n]) == 1)
 
-  # # the sum in each row must be the magic sum 
+  # # the sum in each row must be the magic sum
   for i in range_n:
      solver.Add(solver.Sum([k * x[i,j,k]
                             for j in range_n
                             for k in range_N]) == s)
 
   # # the sum in each column must be the magic sum
-  for j in range_n: 
+  for j in range_n:
      solver.Add(solver.Sum([k * x[i,j,k]
                             for i in range_n
                             for k in range_N]) == s)
@@ -159,14 +159,14 @@ def main(n = 3, sol = 'GLPK', use_output_matrix = 0):
 
   print
 
-  print 's: ', int(s.solution_value())  
+  print 's: ', int(s.solution_value())
   if use_output_matrix == 1:
     for i in range_n:
       for j in range_n:
         print int(square[i, j].solution_value()),
       print
     print
-  else: 
+  else:
     for i in range_n:
       for j in range_n:
         print sum([int(k * x[i,j,k].solution_value()) for k in range_N]), " ",
@@ -180,7 +180,7 @@ def main(n = 3, sol = 'GLPK', use_output_matrix = 0):
       print
 
   print
-  print 'walltime  :', solver.wall_time(), 'ms'
+  print 'walltime  :', solver.WallTime(), 'ms'
   if sol == 'CBC':
     print 'iterations:', solver.iterations()
 
@@ -197,7 +197,7 @@ if __name__ == '__main__':
       if sol != 'GLPK' and sol != 'CBC':
         print 'Solver must be either GLPK or CBC'
         sys.exit(1)
-    
+
     if len(sys.argv) > 3:
       use_output_matrix = int(sys.argv[3])
 

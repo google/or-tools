@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -36,10 +36,10 @@ from constraint_solver import pywrapcp
 
 
 def main(num_sol=3):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Car sequence')
-    
+
     #
     # data
     #
@@ -51,7 +51,7 @@ def main(num_sol=3):
     Options = range(nbOptions)
     Slots = range(nbSlots)
 
-    #    car 0   1  2  3  4  5 
+    #    car 0   1  2  3  4  5
     demand = [1, 1, 2, 2, 2, 2]
 
     option = [
@@ -73,7 +73,7 @@ def main(num_sol=3):
 
     optionDemand = [sum([demand[j]*option[i][j] for j in Cars]) \
                                                     for i in Options]
-  
+
     #
     # declare variables
     #
@@ -112,18 +112,18 @@ def main(num_sol=3):
 
     #
     # search and result
-    # 
+    #
     db = solver.Phase(slot + setup_flat,
                  solver.CHOOSE_FIRST_UNBOUND,
                  solver.ASSIGN_MIN_VALUE)
-    
+
     solver.NewSearch(db)
     num_solutions = 0
     while solver.NextSolution():
         print "slot:%s" % ",".join([str(slot[i].Value()) for i in Slots])
         print "setup:"
         for o in Options:
-            print "%i/%i:" % (capacity[o][0], capacity[o][1]), 
+            print "%i/%i:" % (capacity[o][0], capacity[o][1]),
             for s in Slots:
                 print setup[o,s].Value(),
             print
@@ -132,14 +132,14 @@ def main(num_sol=3):
 
         if num_solutions >= num_sol:
             break
-        
+
     solver.EndSearch()
-    
+
     print
     print "num_solutions:", num_solutions
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time()
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
 
 num_sol = 3
 if __name__ == '__main__':

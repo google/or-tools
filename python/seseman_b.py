@@ -1,22 +1,22 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
   Seseman Convent problem in Google CP Solver.
 
-  
+
   n is the length of a border
   There are (n-2)^2 "holes", i.e.
   there are n^2 - (n-2)^2 variables to find out.
@@ -24,10 +24,10 @@
   The simplest problem, n = 3 (n x n matrix)
   which is represented by the following matrix:
 
-   a b c 
-   d   e 
-   f g h 
-  
+   a b c
+   d   e
+   f g h
+
   Where the following constraints must hold:
 
     a + b + c = border_sum
@@ -65,7 +65,7 @@ def main(unused_argv):
     # data
     n = 3
     border_sum = n*n
-    
+
     # declare variables
     total_sum = solver.IntVar(1,n*n*n*n, 'total_sum')
     # x[0..n-1,0..n-1]
@@ -74,11 +74,11 @@ def main(unused_argv):
         for j in range(n):
             x[(i,j)] = solver.IntVar(0,n*n, 'x %i %i' % (i, j))
 
-            
+
     #
     # constraints
     #
-    # zero all middle cells    
+    # zero all middle cells
     for i in range(1,n-1):
         for j in range(1,n-1):
             solver.Add(x[(i,j)] == 0)
@@ -92,7 +92,7 @@ def main(unused_argv):
 
     # sum the borders (border_sum)
     solver.Add(solver.Sum([x[(i,0)]   for i in range(n)]) == border_sum)
-    solver.Add(solver.Sum([x[(i,n-1)] for i in range(n)]) == border_sum)                       
+    solver.Add(solver.Sum([x[(i,n-1)] for i in range(n)]) == border_sum)
     solver.Add(solver.Sum([x[(0,i)]   for i in range(n)]) == border_sum)
     solver.Add(solver.Sum([x[(n-1,i)] for i in range(n)]) == border_sum)
 
@@ -105,7 +105,7 @@ def main(unused_argv):
     solution = solver.Assignment()
     solution.Add([x[(i,j)] for i in range(n) for j in range(n)])
     solution.Add(total_sum)
-    
+
     db = solver.Phase([x[(i,j)] for i in range(n) for j in range(n)],
                               solver.CHOOSE_PATH,
                               solver.ASSIGN_MIN_VALUE)
@@ -125,10 +125,10 @@ def main(unused_argv):
 
 
     print "num_solutions:", num_solutions
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time()
-    
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
+
 
 if __name__ == '__main__':
     main("cp sample")

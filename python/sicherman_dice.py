@@ -1,27 +1,27 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
   Sicherman Dice in Google CP Solver.
 
   From http://en.wikipedia.org/wiki/Sicherman_dice
-  "" 
-  Sicherman dice are the only pair of 6-sided dice which are not normal dice, 
-  bear only positive integers, and have the same probability distribution for 
+  ""
+  Sicherman dice are the only pair of 6-sided dice which are not normal dice,
+  bear only positive integers, and have the same probability distribution for
   the sum as normal dice.
-  
+
   The faces on the dice are numbered 1, 2, 2, 3, 3, 4 and 1, 3, 4, 5, 6, 8.
   ""
 
@@ -31,7 +31,7 @@
 
   This model gets the two different ways, first the standard way and
   then the Sicherman dice:
-  
+
   x1 = [1, 2, 3, 4, 5, 6]
   x2 = [1, 2, 3, 4, 5, 6]
   ----------
@@ -39,15 +39,15 @@
   x2 = [1, 3, 4, 5, 6, 8]
 
 
-  Extra: If we also allow 0 (zero) as a valid value then the 
+  Extra: If we also allow 0 (zero) as a valid value then the
   following two solutions are also valid:
-  
+
   x1 = [0, 1, 1, 2, 2, 3]
   x2 = [2, 4, 5, 6, 7, 9]
   ----------
   x1 = [0, 1, 2, 3, 4, 5]
   x2 = [2, 3, 4, 5, 6, 7]
-  
+
   These two extra cases are mentioned here:
   http://mathworld.wolfram.com/SichermanDice.html
 
@@ -63,7 +63,7 @@ from constraint_solver import pywrapcp
 
 
 def main():
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Sicherman dice')
 
@@ -79,7 +79,7 @@ def main():
     #
     # declare variables
     #
-    
+
     # the two dice
     x1 = [solver.IntVar(0, m,"x1(%i)"%i) for i in range(n)]
     x2 = [solver.IntVar(0, m,"x2(%i)"%i) for i in range(n)]
@@ -100,39 +100,39 @@ def main():
     # symmetry breaking
     [solver.Add(x1[i] <= x1[i+1]) for i in range(n-1)],
     [solver.Add(x2[i] <= x2[i+1]) for i in range(n-1)],
-    [solver.Add(x1[i] <= x2[i]) for i in range(n-1)],                        
+    [solver.Add(x1[i] <= x2[i]) for i in range(n-1)],
 
     #
     # solution and search
     #
     solution = solver.Assignment()
     solution.Add(x1)
-    solution.Add(x2)    
+    solution.Add(x2)
 
 
     # db: DecisionBuilder
     db = solver.Phase(x1 + x2,
                  solver.INT_VAR_SIMPLE,
                  solver.ASSIGN_MIN_VALUE)
-    
+
     solver.NewSearch(db)
     num_solutions = 0
     while solver.NextSolution():
         print "x1:", [x1[i].Value() for i in range(n)]
         print "x2:", [x2[i].Value() for i in range(n)]
         print
-        
-        num_solutions += 1        
+
+        num_solutions += 1
     solver.EndSearch()
-    
+
     print
     print "num_solutions:", num_solutions, "solver.solutions:", solver.solutions()
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time() 
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
     print "MemoryUsage:", solver.MemoryUsage()
     print "SearchDepth:", solver.SearchDepth()
-    print "SolveDepth:", solver.SolveDepth()        
+    print "SolveDepth:", solver.SolveDepth()
     print "stamp:", solver.stamp()
     print "solver", solver
 

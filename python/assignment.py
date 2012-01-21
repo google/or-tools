@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -41,7 +41,7 @@ def main(cost, rows, cols):
     #
     # data
     #
-    
+
 
     # declare variables
     total_cost = solver.IntVar(0, 100, 'total_cost')
@@ -51,7 +51,7 @@ def main(cost, rows, cols):
         for j in range(cols):
             t.append(solver.IntVar(0,1, 'x[%i,%i]'%(i,j)))
         x.append(t)
-    x_flat = [x[i][j] for i in range(rows) for j in range(cols)]    
+    x_flat = [x[i][j] for i in range(rows) for j in range(cols)]
 
     #
     # constraints
@@ -59,14 +59,14 @@ def main(cost, rows, cols):
 
     # total_cost
     solver.Add(total_cost == solver.Sum([solver.ScalProd(x_row,  cost_row) for (x_row, cost_row) in zip(x, cost)]))
-    
-        
+
+
     # exacly one assignment per row, all rows must be assigned
     [solver.Add(solver.Sum([x[row][j] for j in range(cols)]) == 1) for row in range(rows)]
 
     # zero or one assignments per column
     [solver.Add(solver.Sum([x[i][col] for i in range(rows)]) <= 1) for col in range(cols)]
-    
+
     objective = solver.Minimize(total_cost, 1)
 
     #
@@ -74,17 +74,17 @@ def main(cost, rows, cols):
     #
     solution = solver.Assignment()
     solution.Add(x_flat)
-    solution.Add(total_cost)    
+    solution.Add(total_cost)
 
 
     # db: DecisionBuilder
     db = solver.Phase(x_flat,
                  solver.INT_VAR_SIMPLE,
                  solver.ASSIGN_MIN_VALUE)
-    
+
     solver.NewSearch(db,[objective])
     num_solutions = 0
-    while solver.NextSolution():  
+    while solver.NextSolution():
         print "total_cost:", total_cost.Value()
         for i in range(rows):
             for j in range(cols):
@@ -98,15 +98,15 @@ def main(cost, rows, cols):
                 if x[i][j].Value() == 1:
                     print " is done by ", j
         print
-        
-        num_solutions += 1        
+
+        num_solutions += 1
     solver.EndSearch()
-    
+
     print
     print "num_solutions:", num_solutions
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time()
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
 
 
 # Problem instance

@@ -25,7 +25,7 @@ def RunIntegerExampleNaturalLanguageAPI(optimization_problem_type):
   """Example of simple integer program with natural language API."""
   solver = pywraplp.Solver('RunIntegerExampleNaturalLanguageAPI',
                            optimization_problem_type)
-  infinity = solver.infinity()
+  infinity = solver.Infinity()
   # x1 and x2 are integer non-negative variables.
   x1 = solver.IntVar(0.0, infinity, 'x1')
   x2 = solver.IntVar(0.0, infinity, 'x2')
@@ -40,7 +40,7 @@ def RunIntegerExampleCppStyleAPI(optimization_problem_type):
   """Example of simple integer program with the C++ style API."""
   solver = pywraplp.Solver('RunIntegerExampleCppStyleAPI',
                            optimization_problem_type)
-  infinity = solver.infinity()
+  infinity = solver.Infinity()
   # x1 and x2 are integer non-negative variables.
   x1 = solver.IntVar(0.0, infinity, 'x1')
   x2 = solver.IntVar(0.0, infinity, 'x2')
@@ -67,17 +67,17 @@ def SolveAndPrint(solver, variable_list):
   # The problem has an optimal solution.
   assert result_status == pywraplp.Solver.OPTIMAL
 
-  print 'Problem solved in %f milliseconds' % solver.wall_time()
+  print 'Problem solved in %f milliseconds' % solver.WallTime()
 
   # The objective value of the solution.
-  print 'Optimal objective value = %f' % solver.objective_value()
+  print 'Optimal objective value = %f' % solver.ObjectiveValue()
 
   # The value of each variable in the solution.
   for variable in variable_list:
-    print '%s = %f' % (variable.name(), variable.solution_value())
+    print '%s = %f' % (variable.name(), variable.SolutionValue())
 
   print 'Advanced usage:'
-  print 'Problem solved in %d branch-and-bound nodes' % solver.nodes()
+  print 'Problem solved in %d branch-and-bound nodes' % solver.Nodes()
 
 
 def Announce(solver, api_type):

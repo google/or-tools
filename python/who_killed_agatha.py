@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -20,17 +20,17 @@
 
   http://www.lsv.ens-cachan.fr/~goubault/H1.dist/H1.1/Doc/h1003.html
   '''
-  Someone in Dreadsbury Mansion killed Aunt Agatha. 
-  Agatha, the butler, and Charles live in Dreadsbury Mansion, and 
-  are the only ones to live there. A killer always hates, and is no 
-  richer than his victim. Charles hates noone that Agatha hates. Agatha 
-  hates everybody except the butler. The butler hates everyone not richer 
-  than Aunt Agatha. The butler hates everyone whom Agatha hates. 
-  Noone hates everyone. Who killed Agatha? 
+  Someone in Dreadsbury Mansion killed Aunt Agatha.
+  Agatha, the butler, and Charles live in Dreadsbury Mansion, and
+  are the only ones to live there. A killer always hates, and is no
+  richer than his victim. Charles hates noone that Agatha hates. Agatha
+  hates everybody except the butler. The butler hates everyone not richer
+  than Aunt Agatha. The butler hates everyone whom Agatha hates.
+  Noone hates everyone. Who killed Agatha?
   '''
 
-  Originally from F. J. Pelletier: 
-  Seventy-five problems for testing automatic theorem provers. 
+  Originally from F. J. Pelletier:
+  Seventy-five problems for testing automatic theorem provers.
   Journal of Automated Reasoning, 2: 216, 1986.
 
   Note1: Since Google CP Solver/Pythons (currently) don't have
@@ -41,7 +41,7 @@
   Note2: There are 8 different solutions, all stating that Agatha
          killed herself
 
-  Compare with the following models: 
+  Compare with the following models:
   * Choco   : http://www.hakank.org/choco/WhoKilledAgatha.java
   * Choco   : http://www.hakank.org/choco/WhoKilledAgatha_element.java
   * Comet   : http://www.hakank.org/comet/who_killed_agatha.co
@@ -70,7 +70,7 @@ def var_matrix_array(solver, rows, cols, lb, ub, name):
             t.append(solver.IntVar(lb, ub, '%s[%i,%i]'%(name, i,j)))
         x.append(t)
     return x
-    
+
 def flatten_matrix(solver, m, rows, cols):
     return [m[i][j] for i in range(rows) for j in range(cols)]
 
@@ -81,10 +81,10 @@ def print_flat_matrix(m_flat, rows, cols):
             print m_flat[i*cols+j].Value(),
         print
     print
-                    
+
 
 def main(the_killers):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Who killed agatha?')
 
@@ -95,29 +95,29 @@ def main(the_killers):
     agatha  = 0
     butler  = 1
     charles = 2
-    
+
     #
     # declare variables
     #
     the_killer = solver.IntVar(0,2, 'the_killer')
-    the_victim = solver.IntVar(0,2, 'the_victim' )   
+    the_victim = solver.IntVar(0,2, 'the_victim' )
 
     hates = var_matrix_array(solver, n, n, 0, 1, 'hates')
-    richer = var_matrix_array(solver, n, n, 0, 1, 'richer')    
+    richer = var_matrix_array(solver, n, n, 0, 1, 'richer')
 
     hates_flat = flatten_matrix(solver, hates, n, n)
-    richer_flat = flatten_matrix(solver, richer, n, n)    
+    richer_flat = flatten_matrix(solver, richer, n, n)
 
     #
     # constraints
     #
 
-    # Agatha, the butler, and Charles live in Dreadsbury Mansion, and 
-    # are the only ones to live there. 
+    # Agatha, the butler, and Charles live in Dreadsbury Mansion, and
+    # are the only ones to live there.
 
-    # A killer always hates, and is no richer than his victim. 
+    # A killer always hates, and is no richer than his victim.
     # solver.Add(hates[the_killer, the_victim] == 1)
-    solver.Add(solver.Element(hates_flat,the_killer*n+the_victim) == 1)    
+    solver.Add(solver.Element(hates_flat,the_killer*n+the_victim) == 1)
 
     # solver.Add(richer[the_killer, the_victim] == 0)
     solver.Add(solver.Element(richer_flat,the_killer*n+the_victim) == 0)
@@ -135,46 +135,46 @@ def main(the_killers):
                 bj = solver.IsEqualCstVar(richer[j][i], 0)
                 solver.Add(bi == bj)
 
-    # Charles hates noone that Agatha hates. 
-    #forall i : Range . 
+    # Charles hates noone that Agatha hates.
+    #forall i : Range .
     #  (hates[agatha, i] = 1) => (hates[charles, i] = 0),
     for i in range(n):
         b1a = solver.IsEqualCstVar(hates[agatha][i], 1)
         b1b = solver.IsEqualCstVar(hates[charles][i], 0)
         solver.Add(b1a-b1b <= 0)
 
-    # Agatha hates everybody except the butler. 
+    # Agatha hates everybody except the butler.
     solver.Add(hates[agatha][charles] == 1)
     solver.Add(hates[agatha][agatha] == 1)
     solver.Add(hates[agatha][butler] == 0)
 
 
-    # The butler hates everyone not richer than Aunt Agatha. 
+    # The butler hates everyone not richer than Aunt Agatha.
     # forall i : Range .
     #  (richer[i, agatha] = 0) => (hates[butler, i] = 1),
     for i in range(n):
         b2a = solver.IsEqualCstVar(richer[i][agatha], 0)
         b2b = solver.IsEqualCstVar(hates[butler][i], 1)
         solver.Add(b2a-b2b<=0)
-        
 
-    # The butler hates everyone whom Agatha hates. 
+
+    # The butler hates everyone whom Agatha hates.
     #forall i : Range .
     #  (hates[agatha, i] = 1) => (hates[butler, i] = 1),
     for i in range(n):
         b3a = solver.IsEqualCstVar(hates[agatha][i], 1)
         b3b = solver.IsEqualCstVar(hates[butler][i], 1)
         solver.Add(b3a-b3b <= 0)
-    
 
-    # Noone hates everyone. 
+
+    # Noone hates everyone.
     # forall i : Range .
     #   (sum j : Range . hates[i,j]) <= 2,
     for i in range(n):
         solver.Add(solver.Sum([hates[i][j] for j in range(n)]) <= 2)
 
 
-    # Who killed Agatha? 
+    # Who killed Agatha?
     solver.Add(the_victim == agatha)
 
     #
@@ -182,15 +182,15 @@ def main(the_killers):
     #
     solution = solver.Assignment()
     solution.Add(the_killer)
-    solution.Add(the_victim)    
+    solution.Add(the_victim)
     solution.Add(hates_flat)
-    solution.Add(richer_flat)    
+    solution.Add(richer_flat)
 
     # db: DecisionBuilder
     db = solver.Phase(hates_flat + richer_flat,
                  solver.CHOOSE_FIRST_UNBOUND,
                  solver.ASSIGN_MIN_VALUE)
-    
+
     solver.NewSearch(db)
     num_solutions = 0
     while solver.NextSolution():
@@ -199,25 +199,25 @@ def main(the_killers):
         print "the_victim:", the_victim.Value()
         print "hates:"
         print_flat_matrix(hates_flat,n,n)
-        print "richer:"        
-        print_flat_matrix(richer_flat,n,n)        
+        print "richer:"
+        print_flat_matrix(richer_flat,n,n)
         print
         num_solutions += 1
-        
+
     solver.EndSearch()
-    
+
     print
     print "num_solutions:", num_solutions
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time()
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
 
 
 the_killers = defaultdict(int)
 p = ["agatha", "butler", "charles"]
 if __name__ == '__main__':
     main(the_killers)
-    
+
     print "\n"
     for k in the_killers:
         print "the killer %s was choosen in %i solutions" % (p[k], the_killers[k])

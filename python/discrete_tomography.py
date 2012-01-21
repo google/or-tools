@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -28,22 +28,22 @@
 
   ?- go.
     0 0 7 1 6 3 4 5 2 7 0 0
- 0                         
- 0                         
- 8      * * * * * * * *    
- 2      *             *    
- 6      *   * * * *   *    
- 4      *   *     *   *    
- 5      *   *   * *   *    
- 3      *   *         *    
- 7      *   * * * * * *    
- 0                         
- 0                         
+ 0
+ 0
+ 8      * * * * * * * *
+ 2      *             *
+ 6      *   * * * *   *
+ 4      *   *     *   *
+ 5      *   *   * *   *
+ 3      *   *         *
+ 7      *   * * * * * *
+ 0
+ 0
 
  Eclipse solution by Joachim Schimpf, IC-Parc
  '''
 
- Compare with the following models: 
+ Compare with the following models:
  * Comet: http://www.hakank.org/comet/discrete_tomography.co
  * Gecode: http://www.hakank.org/gecode/discrete_tomography.cpp
  * MiniZinc: http://www.hakank.org/minizinc/tomography.mzn
@@ -58,7 +58,7 @@ from constraint_solver import pywrapcp
 
 
 def main(row_sums="", col_sums=""):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('n-queens')
 
@@ -82,13 +82,13 @@ def main(row_sums="", col_sums=""):
         for j in range(c):
             t.append(solver.IntVar(0,1, 'x[%i,%i]'%(i,j)))
         x.append(t)
-    x_flat = [x[i][j] for i in range(r) for j in range(c)]    
+    x_flat = [x[i][j] for i in range(r) for j in range(c)]
 
     #
     # constraints
     #
     [solver.Add(solver.Sum([x[i][j] for j in range(c)]) == row_sums[i]) for i in range(r)]
-    [solver.Add(solver.Sum([x[i][j] for i in range(r)]) == col_sums[j]) for j in range(c)]        
+    [solver.Add(solver.Sum([x[i][j] for i in range(r)]) == col_sums[j]) for j in range(c)]
 
     #
     # solution and search
@@ -101,22 +101,22 @@ def main(row_sums="", col_sums=""):
     db = solver.Phase(x_flat,
                  solver.INT_VAR_SIMPLE,
                  solver.ASSIGN_MIN_VALUE)
-    
+
     solver.NewSearch(db)
     num_solutions = 0
     while solver.NextSolution():
         print_solution(x, r, c, row_sums, col_sums)
         print
 
-        
-        num_solutions += 1        
+
+        num_solutions += 1
     solver.EndSearch()
-    
+
     print
     print "num_solutions:", num_solutions
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time()
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
 
 #
 # Print solution
@@ -125,7 +125,7 @@ def print_solution(x, rows, cols, row_sums, col_sums):
     print "  ",
     for j in range(cols):
         print col_sums[j],
-    print 
+    print
     for i in range(rows):
         print row_sums[i],
         for j in range(cols):
@@ -145,7 +145,7 @@ def read_problem(file):
     col_sums = f.readline()
     row_sums = [int(r) for r in (row_sums.rstrip()).split(",")]
     col_sums = [int(c) for c in (col_sums.rstrip()).split(",")]
-    
+
     return [row_sums, col_sums]
 
 if __name__ == '__main__':

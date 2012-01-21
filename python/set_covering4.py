@@ -143,9 +143,9 @@ def main(set_partition=1):
     print "selected alternatives:", [i + 1 for i in range(num_alternatives)
                  if collector.Value(0, x[i]) == 1]
 
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time()
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
 
 
 if __name__ == '__main__':

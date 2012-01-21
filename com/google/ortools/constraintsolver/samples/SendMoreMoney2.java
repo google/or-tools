@@ -204,7 +204,7 @@ public class SendMoreMoney2 {
     System.out.println("Solutions: " + sol.solutions());
     System.out.println("Failures: " + sol.failures());
     System.out.println("Branches: " + sol.branches());
-    System.out.println("Wall time: " + sol.wall_time() + "ms");
+    System.out.println("Wall time: " + sol.wallTime() + "ms");
 
   }
 

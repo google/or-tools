@@ -17,9 +17,9 @@
   Max flow problem in Google CP Solver.
 
   From Taha 'Introduction to Operations Research', Example 6.4-2
-  
+
   Translated from the AMPL code at
-  http://taha.ineg.uark.edu/maxflo.txt  
+  http://taha.ineg.uark.edu/maxflo.txt
 
   Compare with the following model:
   * MiniZinc: http://www.hakank.org/minizinc/max_flow_taha.mzn
@@ -34,7 +34,7 @@ def main():
 
     # Create the solver.
     solver = pywrapcp.Solver('Max flow problem, Taha')
-    
+
     #
     # data
     #
@@ -65,7 +65,7 @@ def main():
 
     x_flat = [x[i,j] for i in nodes for j in nodes]
     out_flow = [solver.IntVar(0, 10000, 'out_flow[%i]' % i) for i in nodes]
-    in_flow = [solver.IntVar(0, 10000, 'in_flow[%i]' % i) for i in nodes]    
+    in_flow = [solver.IntVar(0, 10000, 'in_flow[%i]' % i) for i in nodes]
 
     total = solver.IntVar(0, 10000, 'z')
 
@@ -109,14 +109,14 @@ def main():
     db = solver.Phase(x_flat,
                       solver.INT_VAR_DEFAULT,
                       solver.ASSIGN_MAX_VALUE)
-    
+
     solver.NewSearch(db, [objective])
     num_solutions = 0
     while solver.NextSolution():
         num_solutions += 1
-        print 'total:', total.Value()        
+        print 'total:', total.Value()
         print 'in_flow:', [in_flow[i].Value() for i in nodes]
-        print 'out_flow:', [out_flow[i].Value() for i in nodes]        
+        print 'out_flow:', [out_flow[i].Value() for i in nodes]
         for i in nodes:
             for j in nodes:
                 print '%2i' % x[i,j].Value(),
@@ -124,9 +124,9 @@ def main():
         print
 
     print 'num_solutions:', num_solutions
-    print 'failures:', solver.failures()
-    print 'branches:', solver.branches()
-    print 'wall_time:', solver.wall_time(), 'ms'
+    print 'failures:', solver.Failures()
+    print 'branches:', solver.Branches()
+    print 'WallTime:', solver.WallTime(), 'ms'
 
 if __name__ == '__main__':
     main()

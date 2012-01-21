@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the 'License'); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the 'License');
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an 'AS IS' BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an 'AS IS' BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -18,31 +18,31 @@
 
   From http://www.mathlesstraveled.com/?p=701
   '''
-  Here's a fantastic problem I recently heard. Apparently it was first 
-  posed by Claude Gaspard Bachet de Meziriac in a book of arithmetic problems 
-  published in 1612, and can also be found in Heinrich Dorrie's 100 
+  Here's a fantastic problem I recently heard. Apparently it was first
+  posed by Claude Gaspard Bachet de Meziriac in a book of arithmetic problems
+  published in 1612, and can also be found in Heinrich Dorrie's 100
   Great Problems of Elementary Mathematics.
-  
-      A merchant had a forty pound measuring weight that broke 
-      into four pieces as the result of a fall. When the pieces were 
-      subsequently weighed, it was found that the weight of each piece 
-      was a whole number of pounds and that the four pieces could be 
-      used to weigh every integral weight between 1 and 40 pounds. What 
+
+      A merchant had a forty pound measuring weight that broke
+      into four pieces as the result of a fall. When the pieces were
+      subsequently weighed, it was found that the weight of each piece
+      was a whole number of pounds and that the four pieces could be
+      used to weigh every integral weight between 1 and 40 pounds. What
       were the weights of the pieces?
-  
-  Note that since this was a 17th-century merchant, he of course used a 
-  balance scale to weigh things. So, for example, he could use a 1-pound 
-  weight and a 4-pound weight to weigh a 3-pound object, by placing the 
-  3-pound object and 1-pound weight on one side of the scale, and 
+
+  Note that since this was a 17th-century merchant, he of course used a
+  balance scale to weigh things. So, for example, he could use a 1-pound
+  weight and a 4-pound weight to weigh a 3-pound object, by placing the
+  3-pound object and 1-pound weight on one side of the scale, and
   the 4-pound weight on the other side.
   '''
-  
+
   Compare with the following problems:
   * MiniZinc: http://www.hakank.org/minizinc/broken_weights.mzn
   * ECLiPSE: http://www.hakank.org/eclipse/broken_weights.ecl
   * Gecode: http://www.hakank.org/gecode/broken_weights.cpp
   * Comet: http://hakank.org/comet/broken_weights.co
-  
+
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
@@ -53,14 +53,14 @@ from constraint_solver import pywrapcp
 
 
 def main(m=40, n=4):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Broken weights')
-    
+
     #
     # data
     #
-    print 'total weight (m):', m    
+    print 'total weight (m):', m
     print 'number of pieces (n):', n
     print
 
@@ -81,7 +81,7 @@ def main(m=40, n=4):
     # symmetry breaking
     for j in range(1, n):
         solver.Add(weights[j-1] < weights[j])
-      
+
     solver.Add(solver.SumEquality(weights, m))
 
     # Check that all weights from 1 to 40 can be made.
@@ -101,7 +101,7 @@ def main(m=40, n=4):
 
     #
     # search and result
-    # 
+    #
     db = solver.Phase(weights + x_flat,
                  solver.CHOOSE_FIRST_UNBOUND,
                  solver.ASSIGN_MIN_VALUE)
@@ -116,7 +116,7 @@ def main(m=40, n=4):
         print 'weights:   ',
         for w in [weights[j].Value() for j in range(n)]:
             print '%3i ' % w,
-        print 
+        print
         print '-' * 30
         for i in range(m):
             print 'weight  %2i:' % (i+1),
@@ -126,11 +126,11 @@ def main(m=40, n=4):
         print
     print
     solver.EndSearch()
-    
+
     print 'num_solutions:', num_solutions
-    print 'failures :', solver.failures()
-    print 'branches :', solver.branches()
-    print 'wall_time:', solver.wall_time(), 'ms'
+    print 'failures :', solver.Failures()
+    print 'branches :', solver.Branches()
+    print 'WallTime:', solver.WallTime(), 'ms'
 
 
 m = 40

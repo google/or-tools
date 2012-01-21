@@ -98,9 +98,9 @@ def main(unused_argv):
     print "z:", collector.objective_value(0)
     print "x:", [collector.Value(0, x[i]) for i in range(n)]
 
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time()
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
 
 
 if __name__ == '__main__':

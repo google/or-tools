@@ -17,7 +17,7 @@
   3 jugs problem using MIP in Google or-tools.
 
   A.k.a. water jugs problem.
-  
+
   Problem from Taha 'Introduction to Operations Research',
   page 245f .
 
@@ -31,7 +31,7 @@ import sys
 from linear_solver import pywraplp
 
 def main(sol = 'GLPK'):
-  
+
   # Create the solver.
 
   print 'Solver: ', sol
@@ -70,7 +70,7 @@ def main(sol = 'GLPK'):
            '1,4,3',
            '4,4,0'  # goal!
           ]
-  
+
   # distance
   d = [[M, 1, M, M, M, M, M, M, 1, M, M, M, M, M, M],
        [M, M, 1, M, M, M, M, M, M, M, M, M, M, M, M],
@@ -79,13 +79,13 @@ def main(sol = 'GLPK'):
        [M, M, M, M, M, 1, M, M, 1, M, M, M, M, M, M],
        [M, M, M, M, M, M, 1, M, M, M, M, M, M, M, M],
        [M, M, M, M, M, M, M, 1, 1, M, M, M, M, M, M],
-       [M, M, M, M, M, M, M, M, M, M, M, M, M, M, 1], 
+       [M, M, M, M, M, M, M, M, M, M, M, M, M, M, 1],
        [M, M, M, M, M, M, M, M, M, 1, M, M, M, M, M],
        [M, 1, M, M, M, M, M, M, M, M, 1, M, M, M, M],
        [M, M, M, M, M, M, M, M, M, M, M, 1, M, M, M],
        [M, 1, M, M, M, M, M, M, M, M, M, M, 1, M, M],
        [M, M, M, M, M, M, M, M, M, M, M, M, M, 1, M],
-       [M, 1, M, M, M, M, M, M, M, M, M, M, M, M, 1], 
+       [M, 1, M, M, M, M, M, M, M, M, M, M, M, M, 1],
        [M, M, M, M, M, M, M, M, M, M, M, M, M, M, M]]
 
 
@@ -128,7 +128,7 @@ def main(sol = 'GLPK'):
     solver.Add(out_flow[i] == solver.Sum([x[i,j]
                                           for j in range(n)
                                           if d[i][j] < M]))
-  
+
   # inflow constraint
   for j in range(n):
     solver.Add(in_flow[j] == solver.Sum([x[i,j]
@@ -138,7 +138,7 @@ def main(sol = 'GLPK'):
   # inflow = outflow
   for i in range(n):
      solver.Add(out_flow[i]-in_flow[i] == rhs[i])
-  
+
 
   # objective
   objective = solver.Minimize(z)
@@ -162,7 +162,7 @@ def main(sol = 'GLPK'):
         break
 
   print
-  print 'walltime  :', solver.wall_time(), 'ms'
+  print 'walltime  :', solver.WallTime(), 'ms'
   if sol == 'CBC':
     print 'iterations:', solver.iterations()
 
@@ -175,5 +175,5 @@ if __name__ == '__main__':
     if sol != 'GLPK' and sol != 'CBC':
       print 'Solver must be either GLPK or CBC'
       sys.exit(1)
-  
+
   main(sol)

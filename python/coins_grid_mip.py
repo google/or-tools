@@ -43,7 +43,7 @@
 from linear_solver import pywraplp
 
 def main(unused_argv):
-  
+
   # Create the solver.
 
   # using GLPK
@@ -97,7 +97,7 @@ def main(unused_argv):
   print
 
   print
-  print 'walltime  :', solver.wall_time(), 'ms'
+  print 'walltime  :', solver.WallTime(), 'ms'
   # print 'iterations:', solver.iterations()
 
 

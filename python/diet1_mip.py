@@ -40,7 +40,7 @@ from linear_solver import pywraplp
 
 
 def main(sol = 'GLPK'):
-  
+
   # Create the solver.
 
   print 'Solver: ', sol
@@ -98,10 +98,10 @@ def main(sol = 'GLPK'):
   print [int(x[i].solution_value()) for i in range(n)]
 
   print
-  print "wall_time:", solver.wall_time()
+  print "WallTime:", solver.WallTime()
   if sol == 'CBC':
     print 'iterations:', solver.iterations()
-  
+
 
 
 if __name__ == '__main__':
@@ -112,5 +112,5 @@ if __name__ == '__main__':
     if sol != 'GLPK' and sol != 'CBC':
       print 'Solver must be either GLPK or CBC'
       sys.exit(1)
-  
+
   main(sol)

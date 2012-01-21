@@ -1,16 +1,16 @@
 # Copyright 2011 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -33,7 +33,7 @@
   * http://www.hakank.org/google_or_tools/rogo_mike_trick.py
   * http://www.hakank.org/google_or_tools/rogo_20110106.py
   * http://www.hakank.org/google_or_tools/rogo_20110107.py
- 
+
 
   Compare with the following models:
   * Answer Set Programming:
@@ -49,7 +49,7 @@ import sys, string, re
 from constraint_solver import pywrapcp
 
 def main(problem, rows, cols, max_steps):
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Rogo grid puzzle')
 
@@ -66,14 +66,14 @@ def main(problem, rows, cols, max_steps):
     max_sum = sum(problem_flatten)
     print "max_sum:", max_sum
     print
-    
+
     #
     # declare variables
     #
 
     # the coordinates
     x = [solver.IntVar(0, rows-1, "x[%i]"%i) for i in range(max_steps)]
-    y = [solver.IntVar(0, cols-1, "y[%i]"%i) for i in range(max_steps)]    
+    y = [solver.IntVar(0, cols-1, "y[%i]"%i) for i in range(max_steps)]
 
     # the collected points
     points = [solver.IntVar(0, max_point, "points[%i]"%i) for i in range(max_steps)]
@@ -125,7 +125,7 @@ def main(problem, rows, cols, max_steps):
     # objective
     #
     objective = solver.Maximize(sum_points, 1)
- 
+
     #
     # solution and search
     #
@@ -135,7 +135,7 @@ def main(problem, rows, cols, max_steps):
 
     # Default search
     parameters = pywrapcp.DefaultPhaseParameters()
-    
+
     parameters.heuristic_period = 200000
     # parameters.var_selection_schema = parameters.CHOOSE_MAX_SUM_IMPACT
     parameters.var_selection_schema = parameters.CHOOSE_MAX_AVERAGE_IMPACT # <-
@@ -145,8 +145,8 @@ def main(problem, rows, cols, max_steps):
     # parameters.value_selection_schema = parameters.SELECT_MAX_IMPACT
 
     # parameters.initialization_splits = 10
-    
-    db = solver.DefaultPhase(x + y, parameters)  
+
+    db = solver.DefaultPhase(x + y, parameters)
 
     solver.NewSearch(db, [objective])
 
@@ -157,12 +157,12 @@ def main(problem, rows, cols, max_steps):
         print "adding 1 to coords..."
         for s in range(max_steps):
             print "%i %i" % (x[s].Value()+1,y[s].Value()+1)
-        print 
-        
+        print
+
     print "\nnum_solutions:", num_solutions
-    print "failures:", solver.failures()
-    print "branches:", solver.branches()
-    print "wall_time:", solver.wall_time()
+    print "failures:", solver.Failures()
+    print "branches:", solver.Branches()
+    print "WallTime:", solver.WallTime()
 
 
 

@@ -201,7 +201,7 @@ def main(unused_argv):
 
   solver.Solve(main_phase, [collector, search_log, objective])
 
-  if collector.solution_count() > 0:
+  if collector.SolutionCount() > 0:
 
     print ('we could schedule %d persons in room %d starting at quarter %d' %
            (collector.Value(0, people_count),

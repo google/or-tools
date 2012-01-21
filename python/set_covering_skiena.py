@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the 'License'); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the 'License');
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an 'AS IS' BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an 'AS IS' BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -19,15 +19,15 @@
   Example from Steven Skiena, The Stony Brook Algorithm Repository
   http://www.cs.sunysb.edu/~algorith/files/set-cover.shtml
   '''
-  Input Description: A set of subsets S_1, ..., S_m of the 
+  Input Description: A set of subsets S_1, ..., S_m of the
   universal set U = {1,...,n}.
-  
-  Problem: What is the smallest subset of subsets T subset S such 
+
+  Problem: What is the smallest subset of subsets T subset S such
   that \cup_{t_i in T} t_i = U?
   '''
   Data is from the pictures INPUT/OUTPUT.
 
-  Compare with the following models: 
+  Compare with the following models:
   * MiniZinc: http://www.hakank.org/minizinc/set_covering_skiena.mzn
   * Comet: http://www.hakank.org/comet/set_covering_skiena.co
   * ECLiPSe: http://www.hakank.org/eclipse/set_covering_skiena.ecl
@@ -42,8 +42,8 @@
 from constraint_solver import pywrapcp
 
 
-def main():    
-    
+def main():
+
     # Create the solver.
     solver = pywrapcp.Solver('Set covering Skiena')
 
@@ -67,19 +67,19 @@ def main():
     # variables
     #
     x = [solver.IntVar(0, 1, 'x[%i]' % i) for i in range(num_sets)]
-    
+
     # number of choosen sets
     z = solver.IntVar(0, num_sets*2, 'z')
 
     # total number of elements in the choosen sets
     tot_elements = solver.IntVar(0, num_sets*num_elements)
 
-    
+
     #
     # constraints
     #
     solver.Add(z == solver.Sum(x))
-    
+
     # all sets must be used
     for j in range(num_elements):
         s = solver.Sum([belongs[i][j]*x[i] for i in range(num_sets)])
@@ -98,13 +98,13 @@ def main():
     # search and result
     #
     db = solver.Phase(x,
-                      solver.INT_VAR_DEFAULT,                      
-                      solver.INT_VALUE_DEFAULT 
-                      )   
+                      solver.INT_VAR_DEFAULT,
+                      solver.INT_VALUE_DEFAULT
+                      )
 
     solver.NewSearch(db, [objective])
 
-    
+
     num_solutions = 0
     while solver.NextSolution():
         num_solutions += 1
@@ -113,13 +113,13 @@ def main():
         print 'x:', [x[i].Value() for i in range(num_sets)]
 
     solver.EndSearch()
-    
+
     print
     print 'num_solutions:', num_solutions
-    print 'failures:', solver.failures()
-    print 'branches:', solver.branches()
-    print 'wall_time:', solver.wall_time(), 'ms'
+    print 'failures:', solver.Failures()
+    print 'branches:', solver.Branches()
+    print 'WallTime:', solver.WallTime(), 'ms'
 
-   
+
 if __name__ == '__main__':
     main()

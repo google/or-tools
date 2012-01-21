@@ -1,16 +1,16 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); 
-# you may not use this file except in compliance with the License. 
-# You may obtain a copy of the License at 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0 
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software 
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-# See the License for the specific language governing permissions and 
-# limitations under the License. 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 
@@ -26,7 +26,7 @@
 
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   Also see my other Google CP Solver models: http://www.hakank.org/google_or_tools/
-  
+
 """
 
 from constraint_solver import pywrapcp
@@ -35,7 +35,7 @@ from collections import defaultdict
 #
 # Global constraint regular
 #
-# This is a translation of MiniZinc's regular constraint (defined in 
+# This is a translation of MiniZinc's regular constraint (defined in
 # lib/zinc/globals.mzn), via the Comet code refered above.
 # All comments are from the MiniZinc code.
 # '''
@@ -55,7 +55,7 @@ from collections import defaultdict
 def regular(x, Q, S, d, q0, F):
 
     solver = x[0].solver()
-    
+
     assert Q > 0, 'regular: "Q" must be greater than zero'
     assert S > 0, 'regular: "S" must be greater than zero'
 
@@ -63,7 +63,7 @@ def regular(x, Q, S, d, q0, F):
     # each possible input;  each extra transition is from state zero
     # to state zero.  This allows us to continue even if we hit a
     # non-accepted input.
-    
+
     # Comet: int d2[0..Q, 1..S]
     d2 = []
     for i in range(Q+1):
@@ -84,25 +84,25 @@ def regular(x, Q, S, d, q0, F):
     x_range = range(0,len(x))
     m = 0
     n = len(x)
-    
-    a = [solver.IntVar(0, Q+1, 'a[%i]' % i) for i in range(m, n+1)] 
-    
+
+    a = [solver.IntVar(0, Q+1, 'a[%i]' % i) for i in range(m, n+1)]
+
     # Check that the final state is in F
     solver.Add(solver.MemberCt(a[-1], F))
     # First state is q0
-    solver.Add(a[m] == q0)    
+    solver.Add(a[m] == q0)
     for i in x_range:
         solver.Add(x[i] >= 1)
         solver.Add(x[i] <= S)
-        
+
         # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
         solver.Add(a[i+1] == solver.Element(d2_flatten, ((a[i])*S)+(x[i]-1)))
 
-       
+
 
 
 def main():
-    
+
     # Create the solver.
     solver = pywrapcp.Solver('Nurse rostering using regular')
 
@@ -115,7 +115,7 @@ def main():
     #       on nurse_stat and/or day_stat.
     num_nurses = 7
     num_days = 14
-    
+
     day_shift = 1
     night_shift = 2
     off_shift = 3
@@ -131,7 +131,7 @@ def main():
        # d,n,o
         [2,3,1], # state 1
         [4,4,1], # state 2
-        [4,5,1], # state 3 
+        [4,5,1], # state 3
         [6,6,1], # state 4
         [6,0,1], # state 5
         [0,0,1]  # state 6
@@ -159,7 +159,7 @@ def main():
         for j in shifts:
             day_stat[i,j] = solver.IntVar(0, num_nurses, 'day_stat[%i,%i]'% (i,j))
 
-    day_stat_flat = [day_stat[i,j] for i in range(num_days) for j in shifts]    
+    day_stat_flat = [day_stat[i,j] for i in range(num_days) for j in shifts]
 
 
     #
@@ -183,8 +183,8 @@ def main():
         # Each nurse must work between 7 and 10
         # days during this period
         solver.Add(nurse_stat[i] >= 7)
-        solver.Add(nurse_stat[i] <= 10)        
-        
+        solver.Add(nurse_stat[i] <= 10)
+
 
     #
     # Statistics and constraints for each day
@@ -202,36 +202,36 @@ def main():
         #       the number of shifts.
         #       Using atleast constraints is much harder
         #       in this model.
-        #       
+        #
         if j % 7 == 5 or j % 7 == 6:
             # special constraints for the weekends
             solver.Add(day_stat[j,day_shift] == 2)
             solver.Add(day_stat[j,night_shift] == 1)
-            solver.Add(day_stat[j,off_shift] == 4 )  
+            solver.Add(day_stat[j,off_shift] == 4 )
         else:
             # workdays:
-            
+
             # - exactly 3 on day shift
             solver.Add(day_stat[j,day_shift] == 3)
             # - exactly 2 on night
             solver.Add(day_stat[j,night_shift] == 2)
             # - exactly 1 off duty
-            solver.Add(day_stat[j,off_shift] == 2 )  
+            solver.Add(day_stat[j,off_shift] == 2 )
 
-    
+
     #
     # solution and search
-    #   
+    #
     db = solver.Phase(day_stat_flat + x_flat + nurse_stat,
-                      solver.CHOOSE_FIRST_UNBOUND,                     
+                      solver.CHOOSE_FIRST_UNBOUND,
                       solver.ASSIGN_MIN_VALUE)
 
     solver.NewSearch(db)
-    
+
     num_solutions = 0
     while solver.NextSolution():
         num_solutions += 1
-        
+
         for i in range(num_nurses):
             print 'Nurse%i: ' % i,
             this_day_stat = defaultdict(int)
@@ -255,13 +255,13 @@ def main():
         if num_solutions >= 2:
             break
 
-        
+
     solver.EndSearch()
     print
     print 'num_solutions:', num_solutions
-    print 'failures:', solver.failures()
-    print 'branches:', solver.branches()
-    print 'wall_time:', solver.wall_time(), 'ms'
+    print 'failures:', solver.Failures()
+    print 'branches:', solver.Branches()
+    print 'WallTime:', solver.WallTime(), 'ms'
 
 
 if __name__ == '__main__':

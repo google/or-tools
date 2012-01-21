@@ -85,7 +85,7 @@ def main(unused_argv):
   # And solve.
   solver.Solve(vars_phase, [collector])
 
-  if collector.solution_count() == 1:
+  if collector.SolutionCount() == 1:
     for i in line:
       print [int(collector.Value(0, grid[(i, j)])) for j in line]
 
