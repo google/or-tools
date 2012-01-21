@@ -17,6 +17,10 @@ clean_java:
 	-$(DEL) objs$Scom$Sgoogle$Sortools$Sgraph$S*.class
 	-$(DEL) objs$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.class
 	-$(DEL) objs$Scom$Sgoogle$Sortools$Slinearsolver$S*.class
+	-$(DEL) objs$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$S*.class
+	-$(DEL) objs$Scom$Sgoogle$Sortools$Sgraph$Ssamples$S*.class
+	-$(DEL) objs$Scom$Sgoogle$Sortools$Sknapsacksolver$Ssamples$S*.class
+	-$(DEL) objs$Scom$Sgoogle$Sortools$Slinearsolver$Ssamples$S*.class
 	-$(DEL) objs$S*java_wrap.$O
 
 # ---------- Java support using SWIG ----------

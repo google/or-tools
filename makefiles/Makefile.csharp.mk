@@ -27,7 +27,7 @@ clean_csharp:
 	-$(DEL) gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
 	-$(DEL) gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs
 	-$(DEL) gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
-	-$(DEL) gen$Scom$Sgoogle$Sortools$Sgraph*.cs
+	-$(DEL) gen$Scom$Sgoogle$Sortools$Sgraph$S*.cs
 	-$(DEL) objs$S*csharp_wrap.$O
 	-$(DEL) cs*.exe
 
