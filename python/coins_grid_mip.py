@@ -92,7 +92,7 @@ def main(unused_argv):
   for i in range(n):
     for j in range(n):
       # int representation
-      print int(x[(i, j)].solution_value()),
+      print int(x[(i, j)].SolutionValue()),
     print
   print
 

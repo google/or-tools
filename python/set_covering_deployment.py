@@ -122,7 +122,7 @@ def main():
                               solver.INT_VALUE_DEFAULT),
                  [collector, objective])
 
-    print "num_armies:", collector.objective_value(0)
+    print "num_armies:", collector.ObjectiveValue(0)
     print "X:", [collector.Value(0, X[i]) for i in range(n)]
     print "Y:", [collector.Value(0, Y[i]) for i in range(n)]
 

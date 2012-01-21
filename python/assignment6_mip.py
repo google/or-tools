@@ -136,17 +136,17 @@ def main(sol = 'GLPK'):
   solver.Solve()
 
   print
-  print 'z: ', int(solver.objective_value())
+  print 'z: ', int(solver.ObjectiveValue())
 
   print 'Assigned'
   for j in J:
-    print int(assigned[j].solution_value()),
+    print int(assigned[j].SolutionValue()),
   print
 
   print 'Matrix:'
   for i in I:
     for j in J:
-      print int(x[i,j].solution_value()),
+      print int(x[i,j].SolutionValue()),
     print
   print
 

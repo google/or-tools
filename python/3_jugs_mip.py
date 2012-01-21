@@ -150,13 +150,13 @@ def main(sol = 'GLPK'):
   solver.Solve()
 
   print
-  print 'z: ', int(solver.objective_value())
+  print 'z: ', int(solver.ObjectiveValue())
 
   t = start
   while t != end:
     print nodes[t], '->',
     for j in range(n):
-      if x[t,j].solution_value() == 1:
+      if x[t,j].SolutionValue() == 1:
         print nodes[j]
         t = j
         break

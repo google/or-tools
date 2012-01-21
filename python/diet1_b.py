@@ -102,7 +102,7 @@ def main(unused_argv):
                             [objective, search_log, collector])
 
   # get the first (and only) solution
-  print "cost:", collector.objective_value(0)
+  print "cost:", collector.ObjectiveValue(0)
   print [("abcdefghij"[i], collector.Value(0, x[i])) for i in range(n)]
   print
   print "failures:", solver.Failures()

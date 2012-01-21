@@ -85,7 +85,7 @@ def main(unused_argv):
                               solver.INT_VALUE_DEFAULT),
                  [collector, objective])
 
-    print "z:", collector.objective_value(0)
+    print "z:", collector.ObjectiveValue(0)
     print "x:", [collector.Value(0, x[i]) for i in range(num_cities)]
 
     print "failures:", solver.Failures()

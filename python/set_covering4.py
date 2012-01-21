@@ -139,7 +139,7 @@ def main(set_partition=1):
                               solver.INT_VALUE_DEFAULT),
                  [collector, objective])
 
-    print "z:", collector.objective_value(0)
+    print "z:", collector.ObjectiveValue(0)
     print "selected alternatives:", [i + 1 for i in range(num_alternatives)
                  if collector.Value(0, x[i]) == 1]
 

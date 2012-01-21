@@ -106,30 +106,30 @@ def main(sol = 'GLPK'):
 
   print
 
-  print 'z = ', solver.objective_value()
+  print 'z = ', solver.ObjectiveValue()
   print 'Metals'
   for i in Metals:
-    print p[i].solution_value(),
+    print p[i].SolutionValue(),
   print
 
   print 'Raws'
   for i in Raws:
-    print r[i].solution_value(),
+    print r[i].SolutionValue(),
   print
 
   print 'Scraps'
   for i in Scraps:
-    print s[i].solution_value(),
+    print s[i].SolutionValue(),
   print
 
   print 'Ingos'
   for i in Ingos:
-    print ii[i].solution_value(),
+    print ii[i].SolutionValue(),
   print
 
   print 'Metals'
   for i in Metals:
-    print metal[i].solution_value(),
+    print metal[i].SolutionValue(),
   print
 
   print

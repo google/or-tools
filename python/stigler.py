@@ -365,14 +365,14 @@ def main(sol = 'GLPK'):
 
   print
 
-  print 'Cost = %0.2f' % solver.objective_value()
-  # print 'Cost:', cost.solution_value()
-  print 'Total cost: %0.2f' % total_cost.solution_value()
+  print 'Cost = %0.2f' % solver.ObjectiveValue()
+  # print 'Cost:', cost.SolutionValue()
+  print 'Total cost: %0.2f' % total_cost.SolutionValue()
   print
   for i in C:
-    if x[i].solution_value() > 0:
+    if x[i].SolutionValue() > 0:
       print "%-21s %-11s  %0.2f  %0.2f" % (commodities[i][0], commodities[i][1],
-                                     x_cost[i].solution_value(), quant[i].solution_value())
+                                     x_cost[i].SolutionValue(), quant[i].SolutionValue())
 
   print
 

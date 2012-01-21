@@ -159,24 +159,24 @@ def main(n = 3, sol = 'GLPK', use_output_matrix = 0):
 
   print
 
-  print 's: ', int(s.solution_value())
+  print 's: ', int(s.SolutionValue())
   if use_output_matrix == 1:
     for i in range_n:
       for j in range_n:
-        print int(square[i, j].solution_value()),
+        print int(square[i, j].SolutionValue()),
       print
     print
   else:
     for i in range_n:
       for j in range_n:
-        print sum([int(k * x[i,j,k].solution_value()) for k in range_N]), " ",
+        print sum([int(k * x[i,j,k].SolutionValue()) for k in range_N]), " ",
       print
 
   print "\nx:"
   for i in range_n:
     for j in range_n:
       for k in range_N:
-        print int(x[i,j,k].solution_value()),
+        print int(x[i,j,k].SolutionValue()),
       print
 
   print

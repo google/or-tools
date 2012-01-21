@@ -94,8 +94,8 @@ def main(sol = 'GLPK'):
   #
   solver.Solve()
 
-  print "Cost:", solver.objective_value()
-  print [int(x[i].solution_value()) for i in range(n)]
+  print "Cost:", solver.ObjectiveValue()
+  print [int(x[i].SolutionValue()) for i in range(n)]
 
   print
   print "WallTime:", solver.WallTime()
