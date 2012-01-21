@@ -49,7 +49,7 @@ public class Circuit {
     for(int i = 1; i < n-1; i++) {
       solver.addConstraint(
           solver.makeEquality(z[i],
-              solver.makeElement(x, z[i-1]).Var()));
+              solver.makeElement(x, z[i-1]).var()));
     }
 
     // z may not be 0 for i < n-1

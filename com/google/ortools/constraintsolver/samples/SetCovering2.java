@@ -41,7 +41,7 @@ public class SetCovering2 {
 
     //
     // data
-    // 
+    //
 
     // Example 9.1-2 from
     // Taha "Operations Research - An Introduction",
@@ -65,14 +65,14 @@ public class SetCovering2 {
                       {2,4},
                       {5,8},
                       {3,5}};
-                            
+
     //
     // variables
     //
     IntVar[] x = solver.makeIntVarArray(n, 0, 1, "x");
 
     // number of telephones, to be minimize
-    IntVar z = solver.makeSum(x).Var();
+    IntVar z = solver.makeSum(x).var();
 
     //
     // constraints

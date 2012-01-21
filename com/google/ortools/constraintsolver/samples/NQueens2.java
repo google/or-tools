@@ -53,8 +53,8 @@ public class NQueens2 {
     IntVar[] q1 = new IntVar[n];
     IntVar[] q2 = new IntVar[n];
     for(int i = 0; i < n; i++) {
-      q1[i] = solver.makeSum(q[i], i).Var();
-      q2[i] = solver.makeSum(q[i], -i).Var();
+      q1[i] = solver.makeSum(q[i], i).var();
+      q2[i] = solver.makeSum(q[i], -i).var();
     }
     solver.addConstraint(solver.makeAllDifferent(q1));
     solver.addConstraint(solver.makeAllDifferent(q2));

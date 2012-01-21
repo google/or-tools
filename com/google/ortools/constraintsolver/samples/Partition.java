@@ -82,9 +82,9 @@ public class Partition {
     sx = new IntVar[m];
     sy = new IntVar[m];
     for (int i = m - 1; i >= 0; i--) {
-      sx[i] = solver.makeSquare(x[i]).Var();
+      sx[i] = solver.makeSquare(x[i]).var();
       sxy[i] = sx[i];
-      sy[i] = solver.makeSquare(y[i]).Var();
+      sy[i] = solver.makeSquare(y[i]).var();
       sxy[m + i] = sy[i];
     }
     solver.addConstraint(solver.makeScalProdEquality(sxy, coeffs, 0));

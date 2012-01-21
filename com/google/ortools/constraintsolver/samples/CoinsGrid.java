@@ -30,8 +30,8 @@ public class CoinsGrid {
   }
 
   /**
-   * 
-   * Solves the Coins Grid problm. 
+   *
+   * Solves the Coins Grid problm.
    * See http://www.hakank.org/google_or_tools/coins_grid.py
    *
    */
@@ -41,11 +41,11 @@ public class CoinsGrid {
 
     //
     // data
-    // 
+    //
     int n = 31;
     int c = 14;
-        
-    // 
+
+    //
     // variables
     //
     IntVar[][] x = new IntVar[n][n];
@@ -61,7 +61,7 @@ public class CoinsGrid {
     //
     // constraints
     //
-        
+
     // sum row/columns == c
     for(int i = 0; i < n; i++) {
       IntVar[] row = new IntVar[n];
@@ -80,11 +80,11 @@ public class CoinsGrid {
     IntVar[] obj_tmp = new IntVar[n * n];
     for(int i = 0; i < n; i++) {
       for(int j = 0; j < n; j++) {
-        obj_tmp[i * n + j] = 
-          solver.makeProd(x[i][j],(i - j) * (i - j)).Var();
+        obj_tmp[i * n + j] =
+          solver.makeProd(x[i][j],(i - j) * (i - j)).var();
       }
     }
-    IntVar obj_var = solver.makeSum(obj_tmp).Var();
+    IntVar obj_var = solver.makeSum(obj_tmp).var();
 
     //
     // objective

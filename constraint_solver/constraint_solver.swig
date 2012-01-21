@@ -1520,6 +1520,15 @@ struct FailureProtect {
 %rename (solveDepth) operations_research::Solver::SolveDepth;
 %rename (updateLimits) operations_research::Solver::UpdateLimits;
 
+// Rename rules on IntVar and IntExpr.
+%rename (var) operations_research::IntExpr::Var;
+%rename (range) operations_research::IntExpr::Range;
+%rename (addName) operations_research::IntVar::AddName;
+%rename (isVar) operations_research::IntExpr::IsVar;
+%rename (removeValue) operations_research::IntVar::RemoveValue;
+%rename (removeValue) operations_research::IntVar::RemoveValues;
+%rename (removeValue) operations_research::IntVar::RemoveInterval;
+
 // Generic rename rules.
 %rename (bound) *::Bound;
 %rename (max) *::Max;
@@ -1528,8 +1537,10 @@ struct FailureProtect {
 %rename (setMin) *::SetMin;
 %rename (setRange) *::SetRange;
 %rename (setValue) *::SetValue;
+%rename (setValue) *::SetValues;
 %rename (toString) *::DebugString;
 %rename (value) *::Value;
+%rename (accept) *::Accept;
 
 // Rename rules on Action.
 %rename (run) operations_research::Action::Run;

@@ -359,7 +359,8 @@ void SportsScheduling(int num_teams) {
   std::vector<SearchMonitor*> monitors;
 
   // Objective.
-  IntVar* const objective_var = solver.MakeSum(team_breaks)->Var();
+  IntVar* const objective_var =
+      solver.MakeSum(team_breaks)->Var()->AddName("SumOfBreaks");
   OptimizeVar* const objective_monitor = solver.MakeMinimize(objective_var, 1);
   monitors.push_back(objective_monitor);
 

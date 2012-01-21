@@ -68,7 +68,7 @@ public class SendMostMoney {
     solver.addConstraint(solver.makeScalProdEquality(eq, coeffs, 0));
 
     IntVar money = solver.makeScalProd(new IntVar[] {m, o, n, e, y},
-                                       new int[] {10000, 1000, 100, 10, 1}).Var();
+                                       new int[] {10000, 1000, 100, 10, 1}).var();
 
     //
     // constraints

@@ -58,13 +58,13 @@ public class NQueens {
                 // // q[i]+i != q[j]+j
                 solver.addConstraint(
                     solver.makeNonEquality(
-                         solver.makeSum(q[i],i).Var(),
-                         solver.makeSum(q[j],j).Var()));
+                         solver.makeSum(q[i],i).var(),
+                         solver.makeSum(q[j],j).var()));
 
                 // q[i]-i != q[j]-j
                 solver.addConstraint(
-                     solver.makeNonEquality(solver.makeSum(q[i],-i).Var(),
-                                            solver.makeSum(q[j],-j).Var()));
+                     solver.makeNonEquality(solver.makeSum(q[i],-i).var(),
+                                            solver.makeSum(q[j],-j).var()));
             }
         }
 

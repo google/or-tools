@@ -69,7 +69,7 @@ public class GolombRuler {
 
     for (int k = 0, i = 0; i < m - 1; i++) {
       for (int j = i + 1; j < m; j++, k++) {
-        diff[k] = solver.makeDifference(ticks[j], ticks[i]).Var();
+        diff[k] = solver.makeDifference(ticks[j], ticks[i]).var();
         solver.addConstraint(
             solver.makeGreaterOrEqual(diff[k], (j - i) * (j - i + 1) / 2));
       }

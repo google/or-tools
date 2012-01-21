@@ -41,8 +41,8 @@ public class SetCovering {
 
     //
     // data
-    // 
-    // Placing of firestations, from Winston 'Operations Research', 
+    //
+    // Placing of firestations, from Winston 'Operations Research',
     // page 486.
     int min_distance = 15;
     int num_cities = 6;
@@ -53,19 +53,19 @@ public class SetCovering {
                         {30,35,15, 0,15,25},
                         {30,20,30,15, 0,14},
                         {20,10,20,25,14, 0}};
-  
+
 
     //
     // variables
     //
     IntVar[] x = solver.makeIntVarArray(num_cities, 0, 1, "x");
-    IntVar z = solver.makeSum(x).Var();
+    IntVar z = solver.makeSum(x).var();
 
 
     //
     // constraints
     //
-    
+
     // ensure that all cities are covered
     for(int i = 0; i < num_cities; i++) {
       ArrayList<IntVar> b = new ArrayList<IntVar>();

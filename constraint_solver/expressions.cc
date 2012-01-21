@@ -49,6 +49,10 @@ IntVar::IntVar(Solver* const s, const string& name) : IntExpr(s) {
   set_name(name);
 }
 
+IntVar* IntVar::AddName(const string& name) {
+  set_name(name);
+  return this;
+}
 
 namespace {
 int64* NewUniqueSortedArray(const int64* const values, int* size) {

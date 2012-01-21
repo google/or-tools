@@ -129,13 +129,13 @@ public class Crossword {
               solver.makeElement(A_flat,
                   solver.makeSum(
                       solver.makeProd(
-                          E[overlapping[I][0]], word_len).Var(),
-                      overlapping[I][1]).Var()).Var(),
+                          E[overlapping[I][0]], word_len).var(),
+                      overlapping[I][1]).var()).var(),
               solver.makeElement(A_flat,
                   solver.makeSum(
                       solver.makeProd(
-                          E[overlapping[I][2]], word_len).Var(),
-                      overlapping[I][3]).Var()).Var() ));
+                          E[overlapping[I][2]], word_len).var(),
+                      overlapping[I][3]).var()).var() ));
     }
 
     //

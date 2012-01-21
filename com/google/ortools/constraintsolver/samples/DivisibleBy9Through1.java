@@ -56,17 +56,17 @@ public class DivisibleBy9Through1 {
     // x*r >= 0
     solver.addConstraint(
         solver.makeGreaterOrEqual(
-            solver.makeProd(x,r).Var(), 0));
+            solver.makeProd(x,r).var(), 0));
 
     // -abs(y) < r
     solver.addConstraint(
         solver.makeLess(
-            solver.makeOpposite(solver.makeAbs(y).Var()).Var(), r));
+            solver.makeOpposite(solver.makeAbs(y).var()).var(), r));
 
     // r < abs(y)
     solver.addConstraint(
         solver.makeLess(r,
-            solver.makeAbs(y).Var().Var()));
+            solver.makeAbs(y).var().var()));
 
     // min_x <= d, i.e. d > min_x
     solver.addConstraint(solver.makeGreater(d, min_x));
@@ -78,7 +78,7 @@ public class DivisibleBy9Through1 {
     // x == y*d+r
     solver.addConstraint(solver.makeEquality(x,
         solver.makeSum(
-            solver.makeProd(y,d).Var(),r).Var()));
+            solver.makeProd(y,d).var(),r).var()));
 
   }
 
@@ -95,10 +95,10 @@ public class DivisibleBy9Through1 {
 
     IntVar[] tmp = new IntVar[len];
     for(int i = 0; i < len; i++) {
-      tmp[i] = solver.makeProd(a[i], (int)Math.pow(base,(len-i-1))).Var();
+      tmp[i] = solver.makeProd(a[i], (int)Math.pow(base,(len-i-1))).var();
     }
     solver.addConstraint(
-        solver.makeEquality(solver.makeSum(tmp).Var(), num));
+        solver.makeEquality(solver.makeSum(tmp).var(), num));
   }
 
   /**

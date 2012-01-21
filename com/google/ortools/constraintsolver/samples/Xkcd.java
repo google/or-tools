@@ -32,7 +32,7 @@ public class Xkcd {
   /**
    *
    * Solves the xkcd problem.
-   * See http://www.hakank.org/google_or_tools/xkcd.py 
+   * See http://www.hakank.org/google_or_tools/xkcd.py
    *
    */
   private static void solve() {
@@ -51,9 +51,9 @@ public class Xkcd {
 
     //
     // Constraints
-    // 
+    //
     solver.addConstraint(
-        solver.makeEquality(solver.makeScalProd(x, price).Var(), total));
+        solver.makeEquality(solver.makeScalProd(x, price).var(), total));
 
     //
     // Search

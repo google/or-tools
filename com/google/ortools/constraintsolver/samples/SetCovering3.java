@@ -41,10 +41,10 @@ public class SetCovering3 {
 
     //
     // data
-    // 
+    //
 
     // Set covering problem from
-    // Katta G. Murty: 'Optimization Models for Decision Making', 
+    // Katta G. Murty: 'Optimization Models for Decision Making',
     // page 302f
     // http://ioe.engin.umich.edu/people/fac/books/murty/opti_model/junior-7.pdf
     int num_groups = 6;
@@ -64,19 +64,19 @@ public class SetCovering3 {
     IntVar[] x = solver.makeIntVarArray(num_senators, 0, 1, "x");
 
     // number of assigned senators, to be minimize
-    IntVar z = solver.makeSum(x).Var();
+    IntVar z = solver.makeSum(x).var();
 
     //
     // constraints
     //
 
-    
+
     // ensure that each group is covered by at least
     // one senator
     for(int i = 0; i < num_groups; i++) {
       IntVar[] b = new IntVar[num_senators];
       for(int j = 0; j < num_senators; j++) {
-        b[j] = solver.makeProd(x[j], belongs[i][j]).Var();
+        b[j] = solver.makeProd(x[j], belongs[i][j]).var();
       }
       solver.addConstraint(
           solver.makeSumGreaterOrEqual(b, 1));
@@ -110,7 +110,7 @@ public class SetCovering3 {
       // More details
       for(int j = 0; j < num_senators; j++) {
         if (x[j].value() == 1) {
-          System.out.print("Senator " + (1 + j) + 
+          System.out.print("Senator " + (1 + j) +
                            " belongs to these groups: ");
           for(int i = 0; i < num_groups; i++) {
             if (belongs[i][j] == 1) {
@@ -120,7 +120,7 @@ public class SetCovering3 {
           System.out.println();
         }
       }
-      
+
 
     }
     solver.endSearch();

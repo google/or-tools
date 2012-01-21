@@ -40,10 +40,10 @@ public class ToNum {
 
     IntVar[] tmp = new IntVar[len];
     for(int i = 0; i < len; i++) {
-      tmp[i] = solver.makeProd(a[i], (int)Math.pow(base,(len-i-1))).Var();
+      tmp[i] = solver.makeProd(a[i], (int)Math.pow(base,(len-i-1))).var();
     }
     solver.addConstraint(
-        solver.makeEquality(solver.makeSum(tmp).Var(), num));
+        solver.makeEquality(solver.makeSum(tmp).var(), num));
   }
 
 

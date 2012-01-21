@@ -41,7 +41,7 @@ public class SetCovering4 {
 
     //
     // data
-    // 
+    //
 
 
     // Set partition and set covering problem from
@@ -75,17 +75,17 @@ public class SetCovering4 {
     IntVar[] x = solver.makeIntVarArray(num_alternatives, 0, 1, "x");
 
     // number of assigned senators, to be minimize
-    IntVar z = solver.makeScalProd(x, costs).Var();
+    IntVar z = solver.makeScalProd(x, costs).var();
 
     //
     // constraints
     //
 
-    
+
     for(int j = 0; j < num_objects; j++) {
       IntVar[] b = new IntVar[num_alternatives];
       for(int i = 0; i < num_alternatives; i++) {
-        b[i] = solver.makeProd(x[i], a[i][j]).Var();
+        b[i] = solver.makeProd(x[i], a[i][j]).var();
       }
 
       if (set_partition == 1) {

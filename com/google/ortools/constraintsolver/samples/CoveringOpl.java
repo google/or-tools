@@ -29,7 +29,7 @@ public class CoveringOpl {
   }
 
   /**
-   * 
+   *
    * Solves a set covering problem.
    * See http://www.hakank.org/google_or_tools/covering_opl.py
    *
@@ -62,15 +62,15 @@ public class CoveringOpl {
                           { 16, 19, 23, 31 },
                           { 9, 18, 26, 28, 31, 32 }};
 
-    int[] cost = {1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 
+    int[] cost = {1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3,
                   3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 8, 9};
 
-                           
-    // 
+
+    //
     // variables
     //
     IntVar[] hire = solver.makeIntVarArray(num_workers, 0, 1, "workers");
-    IntVar total_cost = solver.makeScalProd(hire, cost).Var();
+    IntVar total_cost = solver.makeScalProd(hire, cost).var();
 
     //
     // constraints
@@ -83,7 +83,7 @@ public class CoveringOpl {
       for(int c = 0; c < len; c++) {
         tmp[c] = hire[qualified[j][c] - 1];
       }
-      IntVar b = solver.makeSum(tmp).Var();
+      IntVar b = solver.makeSum(tmp).var();
       solver.addConstraint(solver.makeGreaterOrEqual(b, 1));
     }
 

@@ -30,7 +30,7 @@ public class AllDifferentExcept0 {
   //
   // alldifferent_except_0(solver, x)
   //
-  // A decomposition of the global constraint 
+  // A decomposition of the global constraint
   // alldifferent_except_0, i.e. all values
   // must be either distinct, or 0.
   //
@@ -44,15 +44,15 @@ public class AllDifferentExcept0 {
         IntVar bij = solver.makeIsDifferentCstVar(a[i], a[j]);
         solver.addConstraint(
             solver.makeLessOrEqual(
-                solver.makeProd(bi, bj).Var(), bij));
+                solver.makeProd(bi, bj).var(), bij));
       }
     }
   }
 
 
   /**
-   * 
-   * Implements a (decomposition) of global constraint 
+   *
+   * Implements a (decomposition) of global constraint
    * alldifferent_except_0.
    * See http://www.hakank.org/google_or_tools/circuit.py
    *
@@ -63,10 +63,10 @@ public class AllDifferentExcept0 {
 
     //
     // data
-    // 
+    //
     int n = 5;
-        
-    // 
+
+    //
     // variables
     //
     IntVar[] x = solver.makeIntVarArray(n, 0, n - 1, "x");
@@ -83,7 +83,7 @@ public class AllDifferentExcept0 {
           solver.makeIsEqualCstCt(x[i], 0, z_tmp[i]));
     }
 
-    IntVar z = solver.makeSum(z_tmp).Var();
+    IntVar z = solver.makeSum(z_tmp).var();
     solver.addConstraint(solver.makeEquality(z, 2));
 
     //

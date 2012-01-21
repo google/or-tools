@@ -58,9 +58,9 @@ public class LeastDiff {
     // Constraints
     //
     int[] coeffs = {10000, 1000, 100, 10, 1};
-    IntVar x = solver.makeScalProd(new IntVar[]{a,b,c,d,e}, coeffs).Var();
+    IntVar x = solver.makeScalProd(new IntVar[]{a,b,c,d,e}, coeffs).var();
     x.set_name("x");
-    IntVar y = solver.makeScalProd(new IntVar[]{f,g,h,i,j}, coeffs).Var();
+    IntVar y = solver.makeScalProd(new IntVar[]{f,g,h,i,j}, coeffs).var();
     y.set_name("y");
 
     // a > 0
@@ -69,7 +69,7 @@ public class LeastDiff {
     solver.addConstraint(solver.makeGreater(f, 0));
 
     // diff = x - y
-    IntVar diff = solver.makeDifference(x, y).Var();
+    IntVar diff = solver.makeDifference(x, y).var();
     diff.set_name("diff");
 
     solver.addConstraint(solver.makeAllDifferent(all));

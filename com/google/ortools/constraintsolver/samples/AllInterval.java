@@ -54,7 +54,7 @@ public class AllInterval {
     for(int k = 0; k < n - 1; k++) {
       solver.addConstraint(
           solver.makeEquality(diffs[k],
-              solver.makeAbs(solver.makeDifference(x[k + 1], x[k])).Var()));
+              solver.makeAbs(solver.makeDifference(x[k + 1], x[k])).var()));
     }
 
 

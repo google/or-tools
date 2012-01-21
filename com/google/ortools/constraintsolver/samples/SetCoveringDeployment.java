@@ -41,7 +41,7 @@ public class SetCoveringDeployment {
 
     //
     // data
-    // 
+    //
 
     // From http://mathworld.wolfram.com/SetCoveringDeployment.html
     String[] countries = {"Alexandria",
@@ -77,8 +77,8 @@ public class SetCoveringDeployment {
     IntVar[] y = solver.makeIntVarArray(n, 0, 1, "y");
 
     // total number of armies
-    IntVar num_armies = solver.makeSum(solver.makeSum(x), 
-                                       solver.makeSum(y)).Var();
+    IntVar num_armies = solver.makeSum(solver.makeSum(x),
+                                       solver.makeSum(y)).var();
 
     //
     // constraints
@@ -95,7 +95,7 @@ public class SetCoveringDeployment {
     }
 
     //
-    // Constraint 2: There should always be an backup 
+    // Constraint 2: There should always be an backup
     //               army near every city
     //
     for(int i = 0; i < n; i++) {
@@ -109,7 +109,7 @@ public class SetCoveringDeployment {
           solver.makeGreaterOrEqual(
               solver.makeSum(x[i],
                   solver.makeSum(
-                      count_neighbours.toArray(new IntVar[1])).Var()), 1));
+                      count_neighbours.toArray(new IntVar[1])).var()), 1));
     }
 
     //

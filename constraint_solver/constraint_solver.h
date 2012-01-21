@@ -3718,6 +3718,9 @@ class IntVar : public IntExpr {
 
   virtual bool IsVar() const { return true; }
   virtual IntVar* Var() { return this; }
+  // Name the current variable and returns the variable.
+  // This method is useful after a Var() call.
+  IntVar* AddName(const string& name);
 
   // This method returns the value of the variable. This method checks
   // before that the variable is bound.

@@ -37,7 +37,7 @@ public class Seseman {
   private static void solve(int n) {
 
     Solver solver = new Solver("Seseman");
-      
+
     //
     // data
     //
@@ -55,13 +55,13 @@ public class Seseman {
       }
     }
 
-    IntVar total_sum = solver.makeSum(x_flat).Var();
+    IntVar total_sum = solver.makeSum(x_flat).var();
 
 
     //
     // constraints
     //
-        
+
     // zero in all middle cells
     for(int i = 1; i < n-1; i++) {
       for(int j = 1; j < n-1; j++) {

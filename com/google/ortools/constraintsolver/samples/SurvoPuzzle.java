@@ -106,7 +106,7 @@ public class SurvoPuzzle {
         row[j] = x[i][j];
       }
       solver.addConstraint(
-          solver.makeEquality(solver.makeSum(row).Var(), rowsums[i]));
+          solver.makeEquality(solver.makeSum(row).var(), rowsums[i]));
     }
 
     for(int j = 0; j < c; j++) {
@@ -115,7 +115,7 @@ public class SurvoPuzzle {
         col[i] = x[i][j];
       }
       solver.addConstraint(
-          solver.makeEquality(solver.makeSum(col).Var(), colsums[j]));
+          solver.makeEquality(solver.makeSum(col).var(), colsums[j]));
     }
 
 
