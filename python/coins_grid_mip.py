@@ -98,7 +98,7 @@ def main(unused_argv):
 
   print
   print 'walltime  :', solver.WallTime(), 'ms'
-  # print 'iterations:', solver.iterations()
+  # print 'iterations:', solver.Iterations()
 
 
 if __name__ == '__main__':

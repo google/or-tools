@@ -79,11 +79,11 @@ def main(unused_argv):
   print 'objective = ', solver.objective_value()
   for i in range(num_products):
       print products[i], '=', production[i].solution_value(),
-      print 'reduced_cost = ', production[i].reduced_cost()
+      print 'ReducedCost = ', production[i].ReducedCost()
 
   print
   print 'walltime  :', solver.WallTime(), 'ms'
-  print 'iterations:', solver.iterations()
+  print 'iterations:', solver.Iterations()
 
 
 if __name__ == '__main__':

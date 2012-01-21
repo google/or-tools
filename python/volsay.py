@@ -63,8 +63,8 @@ def main(unused_argv):
 
   print
   print 'objective = ', solver.objective_value()
-  print 'Gas = ', Gas.solution_value(), 'reduced_cost =', Gas.reduced_cost()
-  print 'Chloride:', Chloride.solution_value(), 'reduced_cost =', Chloride.reduced_cost()
+  print 'Gas = ', Gas.solution_value(), 'ReducedCost =', Gas.ReducedCost()
+  print 'Chloride:', Chloride.solution_value(), 'ReducedCost =', Chloride.ReducedCost()
  
 if __name__ == '__main__':
     main('Volsay')

@@ -155,7 +155,7 @@ def main(sol = 'GLPK'):
   print
   print 'walltime  :', solver.WallTime(), 'ms'
   if sol == 'CBC':
-    print 'iterations:', solver.iterations()
+    print 'iterations:', solver.Iterations()
 
 
 if __name__ == '__main__':

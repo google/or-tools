@@ -89,8 +89,8 @@ def main(sol = 'GLPK'):
   print 'z = ', solver.objective_value()
 
   for p in range(num_products):
-     print products[p], ': inside:', inside[p].solution_value(), '(reduced_cost:', inside[p].reduced_cost(), ')',
-     print 'outside:', outside[p].solution_value(), ' (reduced_cost:', outside[p].reduced_cost(), ')'
+     print products[p], ': inside:', inside[p].solution_value(), '(ReducedCost:', inside[p].ReducedCost(), ')',
+     print 'outside:', outside[p].solution_value(), ' (ReducedCost:', outside[p].ReducedCost(), ')'
   print
 
  

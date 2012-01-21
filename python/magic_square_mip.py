@@ -182,7 +182,7 @@ def main(n = 3, sol = 'GLPK', use_output_matrix = 0):
   print
   print 'walltime  :', solver.WallTime(), 'ms'
   if sol == 'CBC':
-    print 'iterations:', solver.iterations()
+    print 'iterations:', solver.Iterations()
 
 
 if __name__ == '__main__':

@@ -70,7 +70,7 @@ def main(unused_argv):
   print 'objective = ', solver.objective_value()
   for i in range(num_products):
       print products[i], '=', production[i].solution_value(),
-      print 'reduced_cost = ', production[i].reduced_cost()
+      print 'ReducedCost = ', production[i].ReducedCost()
  
 if __name__ == '__main__':
     main('Volsay')

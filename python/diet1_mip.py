@@ -100,7 +100,7 @@ def main(sol = 'GLPK'):
   print
   print "WallTime:", solver.WallTime()
   if sol == 'CBC':
-    print 'iterations:', solver.iterations()
+    print 'iterations:', solver.Iterations()
 
 
 

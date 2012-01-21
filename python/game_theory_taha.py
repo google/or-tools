@@ -110,7 +110,7 @@ def main(sol = 'GLPK'):
 
   print
   print 'walltime  :', solver.WallTime(), 'ms'
-  print 'iterations:', solver.iterations()
+  print 'iterations:', solver.Iterations()
   print
 
 if __name__ == '__main__':
