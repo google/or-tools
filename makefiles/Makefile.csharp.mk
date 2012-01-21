@@ -52,10 +52,10 @@ endif
 
 # csharp linearsolver examples
 
-cslinearprogramming.exe: csharplp csharp/cslinearprogramming.cs
+cslinearprogramming.exe: $(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) csharp/cslinearprogramming.cs
 	$(CSC) /target:exe /out:cslinearprogramming.exe /platform:$(NETPLATFORM) /r:Google.OrTools.LinearSolver.dll csharp$Scslinearprogramming.cs
 
-csintegerprogramming.exe: csharplp csharp/csintegerprogramming.cs
+csintegerprogramming.exe: $(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) csharp/csintegerprogramming.cs
 	$(CSC) /target:exe /out:csintegerprogramming.exe /platform:$(NETPLATFORM) /r:Google.OrTools.LinearSolver.dll csharp$Scsintegerprogramming.cs
 
 
@@ -82,10 +82,10 @@ endif
 
 # csharp cp examples
 
-csrabbitspheasants.exe: csharpcp csharp/csrabbitspheasants.cs
+csrabbitspheasants.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/csrabbitspheasants.cs
 	$(CSC) /target:exe /out:csrabbitspheasants.exe /platform:$(NETPLATFORM) /r:Google.OrTools.ConstraintSolver.dll csharp$Scsrabbitspheasants.cs
 
-send_more_money.exe: csharpcp csharp/send_more_money.cs
+send_more_money.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/send_more_money.cs
 	$(CSC) /target:exe /out:send_more_money.exe /platform:$(NETPLATFORM) /r:Google.OrTools.ConstraintSolver.dll csharp$Ssend_more_money.cs
 
 
@@ -110,7 +110,7 @@ endif
 
 # csharp algorithm examples
 
-csknapsack.exe: csharpalgorithms csharp/csknapsack.cs
+csknapsack.exe: $(LIBPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT) csharp/csknapsack.cs
 	$(CSC) /target:exe /out:csknapsack.exe /platform:$(NETPLATFORM) /r:Google.OrTools.Algorithms.dll csharp$Scsknapsack.cs
 
 # csharpgraph
@@ -134,7 +134,7 @@ endif
 
 # csharp graph examples
 
-csflow.exe: csharpgraph csharp/csflow.cs
+csflow.exe: $(LIBPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT) csharp/csflow.cs
 	$(CSC) /target:exe /out:csflow.exe /platform:$(NETPLATFORM) /r:Google.OrTools.Graph.dll csharp$Scsflow.cs
 
 # Build archive.
