@@ -49,9 +49,10 @@ IntVar::IntVar(Solver* const s, const string& name) : IntExpr(s) {
   set_name(name);
 }
 
-IntVar* IntVar::AddName(const string& name) {
-  set_name(name);
-  return this;
+IntVar* IntExpr::VarWithName(const string& name) {
+  IntVar* const var = Var();
+  var->set_name(name);
+  return var;
 }
 
 namespace {

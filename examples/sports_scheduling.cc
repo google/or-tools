@@ -360,7 +360,7 @@ void SportsScheduling(int num_teams) {
 
   // Objective.
   IntVar* const objective_var =
-      solver.MakeSum(team_breaks)->Var()->AddName("SumOfBreaks");
+      solver.MakeSum(team_breaks)->VarWithName("SumOfBreaks");
   OptimizeVar* const objective_monitor = solver.MakeMinimize(objective_var, 1);
   monitors.push_back(objective_monitor);
 

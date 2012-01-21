@@ -3657,6 +3657,10 @@ class IntExpr : public PropagationBaseObject {
   // Creates a variable from the expression.
   virtual IntVar* Var() = 0;
 
+  // Creates a variable from the expression and set the name of the
+  // resulting var.
+  IntVar* VarWithName(const string& name);
+
   // Attach a demon that will watch the min or the max of the expression.
   virtual void WhenRange(Demon* d) = 0;
 
@@ -3718,9 +3722,6 @@ class IntVar : public IntExpr {
 
   virtual bool IsVar() const { return true; }
   virtual IntVar* Var() { return this; }
-  // Name the current variable and returns the variable.
-  // This method is useful after a Var() call.
-  IntVar* AddName(const string& name);
 
   // This method returns the value of the variable. This method checks
   // before that the variable is bound.
