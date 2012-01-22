@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
@@ -92,17 +93,13 @@ public class SetCoveringDeployment
     //               army near every city
     //
     for(int i = 0; i < n; i++) {
-      ArrayList count_neighbours = new ArrayList();
-      for(int j = 0; j < n; j++) {
-        if (mat[i,j] == 1) {
-          count_neighbours.Add(y[j]);
-        }
-      }
-      solver.Add(
-        solver.MakeGreaterOrEqual(
-           solver.MakeSum(x[i],
-              solver.MakeSum(count_neighbours.ToArray(typeof(IntVar)) as IntVar[])).Var(), 
-                             1));
+      IntVar[] count_neighbours = (
+                                   from j in Enumerable.Range(0, n)
+                                   where mat[i,j] == 1
+                                   select(y[j])).ToArray();
+
+      solver.Add(solver.MakeSum(x[i], count_neighbours.Sum()).Var() >= 1);
+
     }
    
     

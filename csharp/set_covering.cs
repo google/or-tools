@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
@@ -61,14 +62,10 @@ public class SetCovering
 
     // ensure that all cities are covered
     for(int i = 0; i < num_cities; i++) {
-      ArrayList b = new ArrayList();
-      for(int j = 0; j < num_cities; j++) {
-        if (distance[i,j] <= min_distance) {
-          b.Add(x[j]);
-        }
-      }
-      solver.Add(solver.MakeSumGreaterOrEqual(
-                        b.ToArray(typeof(IntVar)) as IntVar[], 1));
+      IntVar[] b = (from j in Enumerable.Range(0, num_cities) 
+                 where distance[i,j] <= min_distance
+                                 select x[j]).ToArray();
+      solver.Add(b.Sum() >= 1);
 
     }
 

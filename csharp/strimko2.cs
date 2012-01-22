@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
@@ -89,15 +90,12 @@ public class Strimko2
       
     // streams
     for(int s = 1; s <= n; s++) {
-      ArrayList tmp = new ArrayList();
-      for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
-          if (streams[i,j] == s) {
-            tmp.Add(x[i,j]);
-          }
-        }
-      }
-      solver.Add(solver.MakeAllDifferent(tmp.ToArray(typeof(IntVar)) as IntVar[]));
+      IntVar[] tmp = (from i in Enumerable.Range(0, n) 
+                      from j in Enumerable.Range(0, n)
+                      where streams[i,j] == s
+                      select x[i,j]).ToArray();
+      solver.Add(solver.MakeAllDifferent(tmp));
+
     }
 
     // placed

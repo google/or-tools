@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
@@ -96,13 +97,12 @@ public class CostasArray
     // "All entries in a particular row of the difference
     //  triangle must be distint."
     for(int i = 0; i < n-2; i++) {
-      ArrayList tmp = new ArrayList();
-      for(int j = 0; j < n; j++) {
-        if (j > i) {
-          tmp.Add(differences[i,j]);
-        }
-      }
-      solver.Add(solver.MakeAllDifferent(tmp.ToArray(typeof(IntVar)) as IntVar[]));
+      IntVar[] tmp = (
+                      from j in Enumerable.Range(0, n) 
+                      where j > i
+                      select differences[i,j]).ToArray();
+      solver.Add(solver.MakeAllDifferent(tmp));
+
     }
     
     //
