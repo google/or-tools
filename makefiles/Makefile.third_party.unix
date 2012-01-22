@@ -6,6 +6,7 @@ GOOGLE_SPARSEHASH_TAG = 105 # trunk
 CBC_TAG = 2.7.5
 SWIG_TAG = rel-2.0.4
 PCRE_TAG = 800 # version 8.21
+MONO_TAG = 2.10.8.1
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.47.tar.gz
@@ -37,6 +38,18 @@ else
     GLPK_MAKEFILE = UNIX_GLPK_DIR = $(TOP)/dependencies/install
 endif
 
+#detect if mono archive is there
+# Detect if GLPK archive is there.
+ifeq ($(wildcard dependencies/archives/mono-$(MONO_TAG).tar.gz),)
+    MONO_TARGET =
+    MONO_MAKEFILE = # MONO support not included.
+else
+    MONO_TARGET = dependencies/install/bin/gmcs
+    MONO_MAKEFILE = UNIX_MONO_DIR = $(TOP)/dependencies/install
+endif
+
+
+
 # Main target.
 .PHONY: third_party build_third_party makefile_third_party
 third_party: build_third_party makefile_third_party
@@ -49,7 +62,8 @@ build_third_party: \
 	install_swig \
 	install_coin_cbc \
 	install_glpk \
-	install_scip
+	install_scip \
+	install_mono
 
 # Install google-gflags.
 install_gflags: dependencies/install/bin/gflags_completions.sh
@@ -161,6 +175,23 @@ install_scip: $(SCIP_TARGET)
 dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz
 	cd dependencies/install && tar xvzmf ../archives/ziboptsuite-$(SCIP_TAG).tgz && cd ziboptsuite-$(SCIP_TAG) && $(BUILD_SCIP)
 
+# Install mono if needed
+install_mono: $(MONO_TARGET)
+
+dependencies/install/bin/gmcs: dependencies/sources/mono-$(MONO_TAG)/Makefile
+	cd dependencies/sources/mono-$(MONO_TAG) && make && make install
+
+dependencies/sources/mono-$(MONO_TAG)/Makefile: dependencies/sources/mono-$(MONO_TAG)/configure
+ifeq ($(PLATFORM),MACOSX)
+	cd dependencies/sources/mono-$(MONO_TAG) && ./configure --prefix=$(TOP)/dependencies/install --with-glib=embedded --enable-nls=no --host=x86_64-apple-darwin10
+else
+	cd dependencies/sources/mono-$(MONO_TAG) && ./configure --prefix=$(TOP)/dependencies/install
+endif
+
+dependencies/sources/mono-$(MONO_TAG)/configure: dependencies/archives/mono-$(MONO_TAG).tar.gz
+	cd dependencies/sources && tar xvzmf ../archives/mono-$(MONO_TAG).tar.gz
+
+
 # Clean everything.
 clean_third_party:
 	$(DELREC) dependencies/install
@@ -185,4 +216,6 @@ Makefile.local:
 	@echo UNIX_CBC_DIR = $(TOP)/dependencies/install >> Makefile.local
 	@echo $(GLPK_MAKEFILE) >> Makefile.local
 	@echo $(SCIP_MAKEFILE) >> Makefile.local
+	@echo $(MONO_MAKEFILE) >> Makefile.local
 	@echo $(SELECTED_JDK_DEF) >> Makefile.local
+

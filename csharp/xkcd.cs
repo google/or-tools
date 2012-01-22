@@ -36,7 +36,6 @@ public class Xkcd
     int[] price = {215, 275, 335, 355, 420, 580};
     int total = 1505;
 
-
     //
     // Decision variables
     //
@@ -45,8 +44,7 @@ public class Xkcd
     //
     // Constraints
     //
-    solver.Add(solver.MakeEquality(solver.MakeScalProd(x, price), total));
-
+    solver.Add(x.ScalProd(price) == total);
 
     //
     // Search
@@ -64,7 +62,7 @@ public class Xkcd
     }
 
     Console.WriteLine("\nSolutions: {0}", solver.Solutions());
-    Console.WriteLine("WallTime: {0}ms", solver.WallTime());
+    Console.WriteLine("WallTime: {0} ms", solver.WallTime());
     Console.WriteLine("Failures: {0}", solver.Failures());
     Console.WriteLine("Branches: {0}", solver.Branches());
 

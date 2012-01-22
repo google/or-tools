@@ -65,7 +65,13 @@ ifeq ($(PTRLENGTH),64)
 else
    ARCH  =
 endif
+ifeq ($(UNIX_MONO_DIR),)
 CSC = mono-csc
+MONO = mono
+else
+CSC = $(UNIX_MONO_DIR)/bin/mono-csc
+MONO = $(UNIX_MONO_DIR)/bin/mono
+endif
 
 # This is needed to find libgflags.a
 GFLAGS_LNK = -Wl,-rpath $(UNIX_GFLAGS_DIR)/lib -L$(UNIX_GFLAGS_DIR)/lib -lgflags
@@ -106,7 +112,13 @@ endif  # LINUX
 ifeq ($(PLATFORM),MACOSX)
 LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
 JNILIBEXT = jnilib
+ifeq ($(UNIX_MONO_DIR),)
 CSC = gmcs
+MONO = mono
+else
+CSC = $(UNIX_MONO_DIR)/bin/gmcs
+MONO = $(UNIX_MONO_DIR)/bin/mono
+endif
 
 GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
 ZLIB_LNK = -lz
