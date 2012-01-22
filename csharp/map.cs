@@ -42,7 +42,6 @@ public class Map
     int n = 6;
     int max_num_colors = 4;
 
-
     //
     // Decision variables
     //
@@ -50,29 +49,19 @@ public class Map
 
     //
     // Constraints
-    //  
-    solver.Add(solver.MakeNonEquality(color[France],
-                                      color[Belgium]));
-    solver.Add(solver.MakeNonEquality(color[France], 
-                                      color[Luxembourg]));
-    solver.Add(solver.MakeNonEquality(color[France], 
-                                      color[Germany]));
-    solver.Add(solver.MakeNonEquality(color[Luxembourg], 
-                                      color[Germany]));
-    solver.Add(solver.MakeNonEquality(color[Luxembourg], 
-                                      color[Belgium]));
-    solver.Add(solver.MakeNonEquality(color[Belgium], 
-                                      color[Netherlands]));
-    solver.Add(solver.MakeNonEquality(color[Belgium], 
-                                      color[Germany]));
-    solver.Add(solver.MakeNonEquality(color[Germany], 
-                                      color[Netherlands]));
-    solver.Add(solver.MakeNonEquality(color[Germany], 
-                                      color[Denmark]));
+    //
+    solver.Add(color[France].NonEquality(color[Belgium]));
+    solver.Add(color[France].NonEquality(color[Luxembourg]));
+    solver.Add(color[France].NonEquality(color[Germany]));
+    solver.Add(color[Luxembourg].NonEquality(color[Germany]));
+    solver.Add(color[Luxembourg].NonEquality(color[Belgium]));
+    solver.Add(color[Belgium].NonEquality(color[Netherlands]));
+    solver.Add(color[Belgium].NonEquality(color[Germany]));
+    solver.Add(color[Germany].NonEquality(color[Netherlands]));
+    solver.Add(color[Germany].NonEquality(color[Denmark]));
 
     // Symmetry breaking
     solver.Add(color[Belgium] == 1);
-
 
     //
     // Search
@@ -87,12 +76,12 @@ public class Map
       for(int i = 0; i < n; i++) {
         Console.Write("{0} ", color[i].Value());
       }
-      
+
       Console.WriteLine();
     }
 
     Console.WriteLine("\nSolutions: {0}", solver.Solutions());
-    Console.WriteLine("WallTime: {0}ms", solver.WallTime());
+    Console.WriteLine("WallTime: {0} ms", solver.WallTime());
     Console.WriteLine("Failures: {0}", solver.Failures());
     Console.WriteLine("Branches: {0} ", solver.Branches());
 

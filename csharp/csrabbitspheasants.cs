@@ -62,9 +62,9 @@ public class CsRabbitsPheasants
         new AssignFirstUnboundToMin(new IntVar[] {rabbits, pheasants});
     solver.NewSearch(db);
     solver.NextSolution();
-    Console.WriteLine("Solved Rabbits + Pheasants in " +
-                      solver.WallTime() + " ms, and " + solver.Branches() +
-                      " search tree branches.");
+    Console.WriteLine(
+        "Solved Rabbits + Pheasants in {0} ms, and {1} search tree branches.",
+        solver.WallTime(),  solver.Branches());
     Console.WriteLine(rabbits.ToString());
     Console.WriteLine(pheasants.ToString());
     solver.EndSearch();
