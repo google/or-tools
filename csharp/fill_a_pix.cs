@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
@@ -118,20 +119,15 @@ public class FillAPix
         if (puzzle[i,j] > X) {
 
           // this cell is the sum of all surrounding cells
-          ArrayList neighbours = new ArrayList();
-          foreach(int a in S) {
-            foreach(int b in S) {
-              if (i + a >= 0 &&
-                  j + b >= 0 &&
-                  i + a < n &&
-                  j + b < n) {
-                neighbours.Add(pict[i+a, j+b]);
-              }
-            }
-          }
-          solver.Add(
-            solver.MakeSumEquality(
-              neighbours.ToArray(typeof(IntVar)) as IntVar[], puzzle[i,j]));
+          var tmp = from a in S from b in S where 
+            i + a >= 0 &&
+            j + b >= 0 &&
+            i + a < n &&
+            j + b < n
+            select(pict[i+a,j+b]);
+
+          solver.Add(tmp.ToArray().Sum() == puzzle[i,j]);
+
         }
       }
     }

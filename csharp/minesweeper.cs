@@ -16,6 +16,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
@@ -80,13 +81,16 @@ public class Minesweeper
     // Decision variables
     //
     IntVar[,] mines =  new IntVar[r,c];
-    IntVar[] mines_flat = new IntVar[r * c]; // for branching
     for(int i = 0; i < r; i++) {
       for(int j = 0; j < c; j++) {
         mines[i,j] = solver.MakeIntVar(0, 1, "mines[" + i + ", " + j + "]");
-        mines_flat[i * c + j] = mines[i,j];
       }
     }
+
+    // for branching
+    IntVar[] mines_flat = (from i in Enumerable.Range(0, r) 
+                             from j in Enumerable.Range(0, c) 
+                                 select mines[i,j]).ToArray();
 
 
     //
@@ -95,31 +99,24 @@ public class Minesweeper
     for(int i = 0; i < r; i++) {
       for(int j = 0; j < c; j++) {
         if (game[i,j] >= 0) {
-          solver.Add(
-              solver.MakeEquality(mines[i,j], 0));
+          solver.Add( mines[i,j] == 0);
 
           // this cell is the sum of all its neighbours
-          ArrayList neighbours = new ArrayList();
-          foreach(int a in S) {
-            foreach(int b in S) {
-              if (i + a >= 0 &&
-                  j + b >= 0 &&
-                  i + a < r &&
-                  j + b < c) {
-                neighbours.Add(mines[i + a,j + b]);
-              }
-            }
-          }
-          solver.Add(
-              solver.MakeSumEquality(
-                                     neighbours.ToArray(typeof(IntVar)) as IntVar[], game[i,j]));
+          var tmp = from a in S from b in S where 
+            i + a >= 0 &&
+            j + b >= 0 &&
+            i + a < r &&
+            j + b < c
+            select(mines[i+a,j+b]);
+
+          solver.Add(tmp.ToArray().Sum() == game[i,j]);
+
         }
 
         if (game[i,j] > X) {
           // This cell cannot be a mine since it 
           // has some value assigned to it
-          solver.Add(
-              solver.MakeEquality(mines[i,j], 0));
+          solver.Add(mines[i,j] == 0);
         }
       }
     }
