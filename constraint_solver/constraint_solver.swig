@@ -2008,6 +2008,18 @@ namespace operations_research {
   IntVar* IsLessOrEqual(int64 value) {
     return self->solver()->MakeIsLessOrEqualCstVar(self, value);
   }
+  IntVar* IsMember(const std::vector<int64>& values) {
+    return self->solver()->MakeIsMemberVar(self, values);
+  }
+  IntVar* IsMember(const std::vector<int>& values) {
+    return self->solver()->MakeIsMemberVar(self, values);
+  }
+  Constraint* Member(const std::vector<int64>& values) {
+    return self->solver()->MakeMemberCt(self, values);
+  }
+  Constraint* Member(const std::vector<int>& values) {
+    return self->solver()->MakeMemberCt(self, values);
+  }
   IntVar* IsEqual(IntExpr* const other) {
     return self->solver()->MakeIsEqualVar(self, other->Var());
   }
