@@ -71,11 +71,11 @@ public class Sudoku
       IntVar[] row = new IntVar[n];
       for(int j = 0; j < n; j++) {
         if (initial_grid[i,j] > 0) {
-          solver.Add(solver.MakeEquality(grid[i,j], initial_grid[i,j]));
+          solver.Add(grid[i,j] == initial_grid[i,j]);
         }
         row[j] = grid[i,j];
       }
-      solver.Add(solver.MakeAllDifferent(row));
+      solver.Add(row.AllDifferent());
     }
 
     // columns
@@ -84,7 +84,7 @@ public class Sudoku
       for(int i = 0; i < n; i++) {
         col[i] = grid[i,j];
       }
-      solver.Add(solver.MakeAllDifferent(col));
+      solver.Add(col.AllDifferent());
     }
 
     // cells
@@ -97,7 +97,7 @@ public class Sudoku
               grid[i * cell_size + di,j * cell_size + dj];
           }
         }
-        solver.Add(solver.MakeAllDifferent(cell));
+        solver.Add(cell.AllDifferent());
       }
     }        
 

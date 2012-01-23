@@ -56,14 +56,15 @@ public class MagicSquare
         row[j] = x[i,j];
       }
       // sum row to s
-      solver.Add(solver.MakeSumEquality(row, s));
+      solver.Add(row.Sum() == s);
 
       diag1[i] = x[i,i];
       diag2[i] = x[i,n - i - 1];
     }
+
     // sum diagonals to s
-    solver.Add(solver.MakeSumEquality(diag1, s));
-    solver.Add(solver.MakeSumEquality(diag2, s));
+    solver.Add(diag1.Sum() == s);
+    solver.Add(diag2.Sum() == s);
 
     // sum columns to s
     for(int j = 0; j < n; j++) {
@@ -71,11 +72,11 @@ public class MagicSquare
       for(int i = 0; i < n; i++) {
         col[i] = x[i,j];
       }
-      solver.Add(solver.MakeSumEquality(col, s));
+      solver.Add(col.Sum() == s);
     }
 
     // all are different
-    solver.Add(solver.MakeAllDifferent(x_flat));
+    solver.Add(x_flat.AllDifferent());
 
     // symmetry breaking: upper left is 1
     // solver.Add(x[0,0] == 1);
