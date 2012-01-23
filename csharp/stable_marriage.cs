@@ -61,42 +61,34 @@ public class StableMarriage
     for(int m = 0; m < n; m++) {
       solver.Add(husband.Element(wife[m]) == m);
     }
-  
+
     //   forall(w in Women)
     //     cp.post(wife[husband[w]] == w);
     for(int w = 0; w < n; w++) {
       solver.Add(wife.Element(husband[w]) == w);
     }
 
- 
+
     //   forall(m in Men, o in Women)
-    //       cp.post(rankMen[m,o] < rankMen[m, wife[m]] => 
+    //       cp.post(rankMen[m,o] < rankMen[m, wife[m]] =>
     //               rankWomen[o,husband[o]] < rankWomen[o,m]);
     for(int m = 0; m < n; m++) {
       for(int o = 0; o < n; o++) {
-        IntVar b1 = solver.MakeIsGreaterCstVar(
-                           rankMen[m].Element(wife[m]).Var(), 
-                           rankMen[m][o]);
-        IntVar b2 = solver.MakeIsLessCstVar(
-                         rankWomen[o].Element(husband[o]).Var(),
-                         rankWomen[o][m]);
-        solver.Add(b1-b2 <= 0);
+        IntVar b1 = rankMen[m].Element(wife[m]).IsGreater(rankMen[m][o]);
+        IntVar b2 = rankWomen[o].Element(husband[o]).IsLess(rankWomen[o][m]);
+        solver.Add(b1 <= b2);
       }
 
     }
 
     //   forall(w in Women, o in Men)
-    //      cp.post(rankWomen[w,o] < rankWomen[w,husband[w]] => 
+    //      cp.post(rankWomen[w,o] < rankWomen[w,husband[w]] =>
     //              rankMen[o,wife[o]] < rankMen[o,w]);
     for(int w = 0; w < n; w++) {
       for(int o = 0; o < n; o++) {
-        IntVar b1 = solver.MakeIsGreaterCstVar(
-                        rankWomen[w].Element(husband[w]).Var(),
-                        rankWomen[w][o]);
-        IntVar b2 = solver.MakeIsLessCstVar(
-                        rankMen[o].Element(wife[o]).Var(), 
-                        rankMen[o][w]);
-        solver.Add(b1-b2<=0);
+        IntVar b1 = rankWomen[w].Element(husband[w]).IsGreater(rankWomen[w][o]);
+        IntVar b2 = rankMen[o].Element(wife[o]).IsLess(rankMen[o][w]);
+        solver.Add(b1 <= b2);
         }
       }
 
@@ -145,7 +137,7 @@ public class StableMarriage
         new int[] {5, 4, 2, 1, 3},
         new int[] {1, 3, 5, 4, 2},
         new int[] {4, 2, 3, 5, 1}},
-      
+
       // rankMen
       new int[][] {
         new int[] {5, 1, 2, 4, 3},
@@ -154,11 +146,11 @@ public class StableMarriage
         new int[] {1, 5, 4, 3, 2},
         new int[] {4, 3, 2, 1, 5}}
     };
-    
+
     //
     // Data from MathWorld
     // http://mathworld.wolfram.com/StableMarriageProblem.html
-    // 
+    //
     int[][][] mathworld = {
       // rankWomen
       new int[][] {
@@ -171,7 +163,7 @@ public class StableMarriage
         new int[] {9, 3, 8, 2, 7, 5, 4, 6, 1},
         new int[] {6, 3, 2, 1, 8, 4, 5, 9, 7},
         new int[] {8, 2, 6, 4, 9, 1, 3, 7, 5}},
-      
+
       // rankMen
       new int[][] {
         new int[] {7, 3, 8, 9, 6, 4, 2, 1, 5},
@@ -184,9 +176,9 @@ public class StableMarriage
         new int[] {5, 6, 9, 1, 2, 8, 4, 3, 7},
         new int[] {6, 1, 4, 7, 5, 8, 3, 9, 2}}
     };
-    
+
     //
-    // Data from 
+    // Data from
     // http://www.csee.wvu.edu/~ksmani/courses/fa01/random/lecnotes/lecture5.pdf
     //
     int[][][] problem3 = {
@@ -196,7 +188,7 @@ public class StableMarriage
         new int[] {4,3,2,1},
         new int[] {1,2,3,4},
         new int[] {3,4,1,2}},
-      
+
       // rankMen
       new int[][] {
         new int[] {1,2,3,4},
@@ -204,7 +196,7 @@ public class StableMarriage
         new int[] {1,4,3,2},
         new int[] {4,3,1,2}}
     };
-    
+
 
     //
     // Data from
@@ -220,7 +212,7 @@ public class StableMarriage
         new int[] {1,5,2,4,3,6},
         new int[] {4,2,1,5,6,3},
         new int[] {2,6,3,5,1,4}},
-      
+
       // rankMen
       new int[][] {
         new int[] {1,4,2,5,6,3},

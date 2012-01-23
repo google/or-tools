@@ -68,49 +68,47 @@ public class WhoKilledAgatha
     // Constraints
     //
 
-    // Agatha, the butler, and Charles live in Dreadsbury Mansion, and 
-    // are the only ones to live there. 
+    // Agatha, the butler, and Charles live in Dreadsbury Mansion, and
+    // are the only ones to live there.
 
-    // A killer always hates, and is no richer than his victim. 
+    // A killer always hates, and is no richer than his victim.
     //     hates[the_killer, the_victim] == 1
     //     hates_flat[the_killer * n + the_victim] == 1
     solver.Add(
         solver.MakeEquality(
             solver.MakeElement(
-                hates_flat, 
+                hates_flat,
                 solver.MakeSum(
-                    solver.MakeProd(the_killer, n).Var(), 
+                    solver.MakeProd(the_killer, n).Var(),
                     the_victim).Var()).Var(), 1));
 
     //    richer[the_killer, the_victim] == 0
     solver.Add(
         solver.MakeEquality(
             solver.MakeElement(
-                richer_flat, 
+                richer_flat,
                 solver.MakeSum(
-                    solver.MakeProd(the_killer, n).Var(), 
+                    solver.MakeProd(the_killer, n).Var(),
                     the_victim).Var()).Var(), 0));
 
-    // define the concept of richer: 
+    // define the concept of richer:
     //     no one is richer than him-/herself...
     for(int i = 0; i < n; i++) {
-      solver.Add(solver.MakeEquality(richer[i,i], 0));
+      solver.Add(richer[i,i] == 0);
     }
 
     // (contd...) if i is richer than j then j is not richer than i
-    //   if (i != j) => 
+    //   if (i != j) =>
     //       ((richer[i,j] = 1) <=> (richer[j,i] = 0))
     for(int i = 0; i < n; i++) {
       for(int j = 0; j < n; j++) {
         if (i != j) {
-          IntVar bi = solver.MakeIsEqualCstVar(richer[i,j], 1);
-          IntVar bj = solver.MakeIsEqualCstVar(richer[j,i], 0);
-          solver.Add(solver.MakeEquality(bi, bj));
+          solver.Add(richer[i, j].IsEqual(1) - richer[j, i].IsEqual(0) == 0);
         }
       }
     }
- 
-    // Charles hates no one that Agatha hates. 
+
+    // Charles hates no one that Agatha hates.
     //    forall i in 0..2:
     //       (hates[agatha, i] = 1) => (hates[charles, i] = 0)
     for(int i = 0; i < n; i++) {
@@ -124,7 +122,7 @@ public class WhoKilledAgatha
     solver.Add(hates[agatha,agatha] == 1);
     solver.Add(hates[agatha,butler] == 0);
 
-    // The butler hates everyone not richer than Aunt Agatha. 
+    // The butler hates everyone not richer than Aunt Agatha.
     //    forall i in 0..2:
     //       (richer[i, agatha] = 0) => (hates[butler, i] = 1)
     for(int i = 0; i < n; i++) {
@@ -132,8 +130,8 @@ public class WhoKilledAgatha
       IntVar b2b = solver.MakeIsEqualCstVar(hates[butler,i], 1);
       solver.Add(b2a-b2b<=0);
     }
-    
-    // The butler hates everyone whom Agatha hates. 
+
+    // The butler hates everyone whom Agatha hates.
     //     forall i : 0..2:
     //         (hates[agatha, i] = 1) => (hates[butler, i] = 1)
     for(int i = 0; i < n; i++) {
@@ -142,7 +140,7 @@ public class WhoKilledAgatha
       solver.Add(b3a-b3b<=0);
     }
 
-    // Noone hates everyone. 
+    // Noone hates everyone.
     //     forall i in 0..2:
     //         (sum j in 0..2: hates[i,j]) <= 2
     for(int i = 0; i < n; i++) {

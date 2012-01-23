@@ -1987,56 +1987,53 @@ namespace operations_research {
   IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
     return self->solver()->MakeElement(vars, self->Var());
   }
-}
-
-%extend IntVar {
   IntVar* IsEqual(int64 value) {
-    return self->solver()->MakeIsEqualCstVar(self, value);
+    return self->solver()->MakeIsEqualCstVar(self->Var(), value);
   }
   IntVar* IsDifferent(int64 value) {
-    return self->solver()->MakeIsDifferentCstVar(self, value);
+    return self->solver()->MakeIsDifferentCstVar(self->Var(), value);
   }
   IntVar* IsGreater(int64 value) {
-    return self->solver()->MakeIsGreaterCstVar(self, value);
+    return self->solver()->MakeIsGreaterCstVar(self->Var(), value);
   }
   IntVar* IsGreaterOrEqual(int64 value) {
-    return self->solver()->MakeIsGreaterOrEqualCstVar(self, value);
+    return self->solver()->MakeIsGreaterOrEqualCstVar(self->Var(), value);
   }
   IntVar* IsLess(int64 value) {
-    return self->solver()->MakeIsLessCstVar(self, value);
+    return self->solver()->MakeIsLessCstVar(self->Var(), value);
   }
   IntVar* IsLessOrEqual(int64 value) {
-    return self->solver()->MakeIsLessOrEqualCstVar(self, value);
+    return self->solver()->MakeIsLessOrEqualCstVar(self->Var(), value);
   }
   IntVar* IsMember(const std::vector<int64>& values) {
-    return self->solver()->MakeIsMemberVar(self, values);
+    return self->solver()->MakeIsMemberVar(self->Var(), values);
   }
   IntVar* IsMember(const std::vector<int>& values) {
-    return self->solver()->MakeIsMemberVar(self, values);
+    return self->solver()->MakeIsMemberVar(self->Var(), values);
   }
   Constraint* Member(const std::vector<int64>& values) {
-    return self->solver()->MakeMemberCt(self, values);
+    return self->solver()->MakeMemberCt(self->Var(), values);
   }
   Constraint* Member(const std::vector<int>& values) {
-    return self->solver()->MakeMemberCt(self, values);
+    return self->solver()->MakeMemberCt(self->Var(), values);
   }
   IntVar* IsEqual(IntExpr* const other) {
-    return self->solver()->MakeIsEqualVar(self, other->Var());
+    return self->solver()->MakeIsEqualVar(self->Var(), other->Var());
   }
   IntVar* IsDifferent(IntExpr* const other) {
-    return self->solver()->MakeIsDifferentVar(self, other->Var());
+    return self->solver()->MakeIsDifferentVar(self->Var(), other->Var());
   }
   IntVar* IsGreater(IntExpr* const other) {
-    return self->solver()->MakeIsGreaterVar(self, other->Var());
+    return self->solver()->MakeIsGreaterVar(self->Var(), other->Var());
   }
   IntVar* IsGreaterOrEqual(IntExpr* const other) {
-    return self->solver()->MakeIsGreaterOrEqualVar(self, other->Var());
+    return self->solver()->MakeIsGreaterOrEqualVar(self->Var(), other->Var());
   }
   IntVar* IsLess(IntExpr* const other) {
-    return self->solver()->MakeIsLessVar(self, other->Var());
+    return self->solver()->MakeIsLessVar(self->Var(), other->Var());
   }
   IntVar* IsLessOrEqual(IntExpr* const other) {
-    return self->solver()->MakeIsLessOrEqualVar(self, other->Var());
+    return self->solver()->MakeIsLessOrEqualVar(self->Var(), other->Var());
   }
 }
 

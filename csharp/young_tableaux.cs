@@ -57,27 +57,25 @@ public class YoungTableaux
 
     //
     // Constraints
-    //  
+    //
     // 1..n is used exactly once
     for(int i = 1; i <= n; i++) {
       solver.Add(solver.MakeCount(x_flat, i, 1));
     }
-    
-    solver.Add(solver.MakeEquality(x[0,0], 1));
+
+    solver.Add(x[0,0] == 1);
 
     // row wise
     for(int i = 0; i < n; i++) {
       for(int j = 1; j < n; j++) {
-        solver.Add(
-                   solver.MakeGreaterOrEqual(x[i,j], x[i,j - 1]));
+        solver.Add(x[i,j] >= x[i,j - 1]);
       }
     }
 
     // column wise
     for(int j = 0; j < n; j++) {
       for(int i = 1; i < n; i++) {
-        solver.Add(
-                   solver.MakeGreaterOrEqual(x[i,j], x[i - 1,j]));
+        solver.Add(x[i,j] >= x[i - 1, j]);
       }
     }
 
@@ -85,17 +83,15 @@ public class YoungTableaux
     for(int i = 0; i < n; i++) {
       IntVar[] b = new IntVar[n];
       for(int j = 0; j < n; j++) {
-        b[j] = solver.MakeIsLessOrEqualCstVar(x[i,j], n);
+        b[j] = x[i, j].IsLessOrEqual(n);
       }
-      solver.Add(
-          solver.MakeEquality(p[i], solver.MakeSum(b).Var()));
+      solver.Add(p[i].Equality(b.Sum()));
     }
 
-    solver.Add(
-        solver.MakeEquality(solver.MakeSum(p).Var(), n));
+    solver.Add(p.Sum() == n);
 
     for(int i = 1; i < n; i++) {
-      solver.Add(solver.MakeGreaterOrEqual(p[i - 1], p[i]));
+      solver.Add(p[i - 1] >= p[i]);
     }
 
 
