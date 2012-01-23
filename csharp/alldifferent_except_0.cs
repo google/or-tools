@@ -28,20 +28,14 @@ public class AllDifferentExcept0Test
     int n = a.Length;
     for(int i = 0; i < n; i++) {
       for(int j = 0; j < i; j++) {
-        IntVar bi = solver.MakeIsDifferentCstVar(a[i], 0);
-        IntVar bj = solver.MakeIsDifferentCstVar(a[j], 0);
-        IntVar bij = solver.MakeIsDifferentVar(a[i], a[j]);
-        // solver.Add(
-        //     solver.MakeLessOrEqual(
-        //         solver.MakeProd(bi, bj).Var(), bij));
-        // nicer:
-        solver.Add(bi*bj <= bij);
-
+        IntVar bi = a[i].IsDifferent(0);
+        IntVar bj = a[j].IsDifferent(0);
+        IntVar bij = a[i].IsDifferent(a[j]);
+        solver.Add(bi * bj <= bij);
       }
-      
     }
   }
-  
+
 
   /**
    *
@@ -67,15 +61,15 @@ public class AllDifferentExcept0Test
 
     //
     // Constraints
-    //  
+    //
     AllDifferentExcept0(solver, x);
 
     // we also require at least 2 0's
-    IntVar[] z_tmp = solver.MakeBoolVarArray(n, "z_tmp");
+    IntVar[] z_tmp = new IntVar[n];
     for(int i = 0; i < n; i++) {
-      solver.Add(solver.MakeIsEqualCstCt(x[i], 0, z_tmp[i]));
+      z_tmp[i] = x[i].IsEqual(0);
     }
-    IntVar z = solver.MakeSum(z_tmp).Var();
+    IntVar z = z_tmp.Sum().Var();
     solver.Add(z == 2);
 
 
@@ -92,7 +86,7 @@ public class AllDifferentExcept0Test
       for(int i = 0; i < n; i++) {
         Console.Write("{0} ", x[i].Value());
       }
-      
+
       Console.WriteLine();
     }
 
