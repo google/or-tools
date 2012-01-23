@@ -252,6 +252,7 @@ class PyDecisionBuilder(object):
 }  // namespace operations_research
 
 // Define the renaming of methods.
+%rename (AcceptedNeighbors) accepted_neighbors;
 %rename (Add) AddConstraint;
 %rename (AllDifferent) MakeAllDifferent;
 %rename (AllSolutionCollector) MakeAllSolutionCollector;
@@ -272,6 +273,7 @@ class PyDecisionBuilder(object):
 %rename (CustomLimit) MakeCustomLimit;
 %rename (DecisionBuilderFromAssignment) MakeDecisionBuilderFromAssignment;
 %rename (DefaultPhase) MakeDefaultPhase;
+%rename (DemonRuns) demon_runs;
 %rename (Deviation) MakeDeviation;
 %rename (DisjunctiveConstraint) MakeDisjunctiveConstraint;
 %rename (Distribute) MakeDistribute;
@@ -280,6 +282,7 @@ class PyDecisionBuilder(object):
 %rename (Failures) failures;
 %rename (FailuresLimit) MakeFailuresLimit;
 %rename (FalseConstraint) MakeFalseConstraint;
+%rename (FilteredNeighbors) filtered_neighbors;
 %rename (FirstSolutionCollector) MakeFirstSolutionCollector;
 %rename (FixedDurationIntervalVar) MakeFixedDurationIntervalVar;
 %rename (FixedInterval) MakeFixedInterval;
@@ -318,6 +321,7 @@ class PyDecisionBuilder(object):
 %rename (Min) MakeMin;
 %rename (Minimize) MakeMinimize;
 %rename (NeighborhoodLimit) MakeNeighborhoodLimit;
+%rename (Neighbors) neighbors;
 %rename (NoCycle) MakeNoCycle;
 %rename (ObjectiveValue) objective_value;
 %rename (Operator) MakeOperator;
@@ -341,6 +345,7 @@ class PyDecisionBuilder(object):
 %rename (SequenceVar) MakeSequenceVar;
 %rename (SimulatedAnnealing) MakeSimulatedAnnealing;
 %rename (SolutionCount) solution_count;
+%rename (Solution) solution;
 %rename (SolutionsLimit) MakeSolutionsLimit;
 %rename (SolveOnce) MakeSolveOnce;
 %rename (SplitVariableDomain) MakeSplitVariableDomain;
@@ -1374,9 +1379,10 @@ struct FailureProtect {
 %rename (performedValue) operations_research::SolutionCollector::PerformedValue;
 %rename (solutionCount) operations_research::SolutionCollector::solution_count;
 %rename (startValue) operations_research::SolutionCollector::StartValue;
-%rename (wallTime) operations_research::SolutionCollector::wall_time;;
+%rename (wallTime) operations_research::SolutionCollector::wall_time;
 
 // Rename rules on Solver.
+%rename (acceptedNeighbors) operations_research::Solver::accepted_neighbors;
 %rename (addBacktrackAction) operations_research::Solver::AddBacktrackAction;
 %rename (addConstraint) operations_research::Solver::AddConstraint;
 %rename (addFailHook) operations_research::Solver::AddFailHook;
@@ -1386,6 +1392,7 @@ struct FailureProtect {
 %rename (endSearch) operations_research::Solver::EndSearch;
 %rename (exportProfilingOverview) operations_research::Solver::ExportProfilingOverview;
 %rename (fail) operations_research::Solver::Fail;
+%rename (filteredNeighbors) operations_research::Solver::filtered_neighbors;
 %rename (getTime) operations_research::Solver::GetTime;
 %rename (makeAbs) operations_research::Solver::MakeAbs;
 %rename (makeAllDifferent) operations_research::Solver::MakeAllDifferent;
