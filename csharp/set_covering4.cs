@@ -61,7 +61,7 @@ public class SetCovering4
         {0,0,0,1,1,0,0,1},  // alternative 8
         {0,0,1,0,0,1,0,1},  // alternative 9
         {1,0,0,0,0,1,1,0}}; // alternative 10
- 
+
     //
     // Decision variables
     //
@@ -71,13 +71,13 @@ public class SetCovering4
 
     //
     // Constraints
-    //  
+    //
 
-   
+
     for(int j = 0; j < num_objects; j++) {
       IntVar[] b = new IntVar[num_alternatives];
       for(int i = 0; i < num_alternatives; i++) {
-        b[i] = solver.MakeProd(x[i], a[i,j]).Var();
+        b[i] = (x[i] * a[i,j]).Var();
       }
 
       if (set_partition == 1) {
@@ -87,7 +87,7 @@ public class SetCovering4
       }
     }
 
-    
+
     //
     // objective
     //

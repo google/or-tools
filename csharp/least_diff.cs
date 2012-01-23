@@ -46,7 +46,7 @@ public class LeastDiff
     int[] coeffs = {10000,1000,100,10,1};
     IntVar x = new IntVar[]{A,B,C,D,E}.ScalProd(coeffs).Var();
     IntVar y = new IntVar[]{F,G,H,I,J}.ScalProd(coeffs).Var();
-    IntVar diff = solver.MakeDifference(x,y).VarWithName("diff");
+    IntVar diff = (x - y).VarWithName("diff");
 
 
     //
@@ -58,7 +58,7 @@ public class LeastDiff
     solver.Add(diff > 0);
 
 
-    // 
+    //
     // Objective
     //
     OptimizeVar obj = solver.MakeMinimize(diff, 1);
