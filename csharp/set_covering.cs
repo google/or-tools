@@ -54,7 +54,7 @@ public class SetCovering
     // Decision variables
     //
     IntVar[] x = solver.MakeIntVarArray(num_cities, 0, 1, "x");
-    IntVar z = solver.MakeSum(x).Var();
+    IntVar z = x.Sum().Var();
 
     //
     // Constraints

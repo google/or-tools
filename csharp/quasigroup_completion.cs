@@ -93,7 +93,7 @@ public class QuasigroupCompletion
    for(int i = 0; i < n; i++) {
       for(int j = 0; j < n; j++) {
         if (problem[i,j] > X) {
-          solver.Add(solver.MakeEquality(x[i,j], problem[i,j]));
+          solver.Add(x[i,j] == problem[i,j]);
         }
       }
     }
@@ -108,8 +108,7 @@ public class QuasigroupCompletion
       for(int j = 0; j < n; j++) {
         row[j] = x[i,j];
       }
-      solver.Add(solver.MakeAllDifferent(row, true));
-
+      solver.Add(row.AllDifferent());
     }
 
     // columns
@@ -118,7 +117,7 @@ public class QuasigroupCompletion
       for(int i = 0; i < n; i++) {
         col[i] = x[i,j];
       }
-      solver.Add(solver.MakeAllDifferent(col, true));
+      solver.Add(col.AllDifferent());
     }
 
 

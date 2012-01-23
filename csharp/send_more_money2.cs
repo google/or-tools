@@ -46,7 +46,7 @@ public class SendMoreMoney
     //
     // Constraints
     //
-    solver.Add(solver.MakeAllDifferent(x));
+    solver.Add(x.AllDifferent());
 
     /*
     solver.Add((S*1000 + E*100 + N*10 + D + M*1000 + O*100 + R*10 + E).Equality(
@@ -54,6 +54,7 @@ public class SendMoreMoney
     */
 
     // Here we use scalar product instead.
+    /*
     solver.Add(
                solver.MakeSum(
                               solver.MakeScalProd(new IntVar[] {S, E, N, D},
@@ -64,6 +65,15 @@ public class SendMoreMoney
                         solver.MakeScalProd(new IntVar[] {M,O,N,E,Y},
                                             new int[] {10000, 1000, 100, 10, 1}
                                             ))
+               );
+    */
+    // Alternative 
+    int[] s1 = new int[] {1000,100,10,1};
+    int[] s2 = new int[] {10000,1000,100,10,1};
+    solver.Add(solver.MakeSum(new IntVar[] {S,E,N,D}.ScalProd(s1),
+                              new IntVar[] {M,O,R,E}.ScalProd(s1))
+               .Equality(
+                         new IntVar[] {M,O,N,E,Y}.ScalProd(s2))
                );
 
 

@@ -48,7 +48,7 @@ public class Diet
     // Decision variables
     //
     IntVar[] x = solver.MakeIntVarArray(n, 0, 100, "x");
-    IntVar cost = solver.MakeScalProd(x, price).Var();
+    IntVar cost = x.ScalProd(price).Var();
 
 
 
@@ -56,10 +56,11 @@ public class Diet
     // Constraints
     //
     
-    solver.Add(solver.MakeScalProdGreaterOrEqual(x, calories,  limits[0]));
-    solver.Add(solver.MakeScalProdGreaterOrEqual(x, chocolate, limits[1]));
-    solver.Add(solver.MakeScalProdGreaterOrEqual(x, sugar,     limits[2]));
-    solver.Add(solver.MakeScalProdGreaterOrEqual(x, fat,       limits[3]));
+    // solver.Add(solver.MakeScalProdGreaterOrEqual(x, calories,  limits[0]));
+    solver.Add(x.ScalProd(calories)  >= limits[0]);
+    solver.Add(x.ScalProd(chocolate) >= limits[1]);
+    solver.Add(x.ScalProd(sugar)     >= limits[2]);
+    solver.Add(x.ScalProd(fat)       >= limits[3]);
 
     // 
     // Objective

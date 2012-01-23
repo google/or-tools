@@ -45,7 +45,7 @@ public class SendMoreMoney
     //
     // Constraints
     //
-    solver.Add(solver.MakeAllDifferent(x));
+    solver.Add(x.AllDifferent());
     solver.Add((S*1000 + E*100 + N*10 + D + M*1000 + O*100 + R*10 + E).Equality(
         M*10000 + O*1000 + N*100 + E*10 + Y));
 

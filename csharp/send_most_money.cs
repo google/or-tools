@@ -50,7 +50,7 @@ public class SendMostMoney
                       1000, 100, 10, 1,        //    M O S T
                     -10000,-1000, -100,-10,-1  // == M O N E Y
                     };
-    solver.Add(solver.MakeScalProdEquality(eq, coeffs, 0));
+    solver.Add(eq.ScalProd(coeffs) == 0);
 
     IntVar money = solver.MakeScalProd(new IntVar[] {M, O, N, E, Y},
                                        new int[] {10000, 1000, 100, 10, 1}).Var();
@@ -58,7 +58,7 @@ public class SendMostMoney
     //
     // Constraints
     //
-    solver.Add(solver.MakeAllDifferent(x));
+    solver.Add(x.AllDifferent());
     solver.Add(S > 0);
     solver.Add(M > 0);
 

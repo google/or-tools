@@ -54,8 +54,8 @@ public class CoinsGrid
         row[j] = x[i,j];
         col[j] = x[j,i];
       }
-      solver.Add(solver.MakeSumEquality(row, c));
-      solver.Add(solver.MakeSumEquality(col, c));
+      solver.Add(row.Sum() == c);
+      solver.Add(col.Sum() == c);
     }
 
     // quadratic horizonal distance
@@ -66,7 +66,7 @@ public class CoinsGrid
           solver.MakeProd(x[i,j],(i - j) * (i - j)).Var();
       }
     }
-    IntVar obj_var = solver.MakeSum(obj_tmp).Var();
+    IntVar obj_var = obj_tmp.Sum().Var();
 
     //
     // Objective

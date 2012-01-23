@@ -65,7 +65,7 @@ public class SetCovering2
     //
     IntVar[] x = solver.MakeIntVarArray(n, 0, 1, "x");
     // number of telephones, to be minimized
-    IntVar z = solver.MakeSum(x).Var();
+    IntVar z = x.Sum().Var();
 
     //
     // Constraints
@@ -73,10 +73,7 @@ public class SetCovering2
 
     // ensure that all streets are covered
     for(int i = 0; i < num_streets; i++) {
-      IntVar[] b = new IntVar[2];
-      b[0] = x[corner[i,0] - 1]; // fix 1-base
-      b[1] = x[corner[i,1] - 1];
-      solver.Add(solver.MakeSumGreaterOrEqual(b, 1));
+      solver.Add(x[corner[i,0] - 1] + x[corner[i,1] - 1]  >= 1);
     }
     
     //

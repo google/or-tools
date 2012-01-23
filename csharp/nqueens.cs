@@ -14,6 +14,7 @@
 // limitations under the License.
 
 using System;
+using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
 public class NQueens
@@ -42,16 +43,25 @@ public class NQueens
     //
     // Constraints
     //  
-    solver.Add(solver.MakeAllDifferent(q));
+    solver.Add(q.AllDifferent());
 
     IntVar[] q1 = new IntVar[n];
     IntVar[] q2 = new IntVar[n];
     for(int i = 0; i < n; i++) {
-      q1[i] = solver.MakeSum(q[i], i).Var();
-      q2[i] = solver.MakeSum(q[i], -i).Var();
+      q1[i] = (q[i] + i).Var();
+      q2[i] = (q[i] - i).Var();
     }
-    solver.Add(solver.MakeAllDifferent(q1));
-    solver.Add(solver.MakeAllDifferent(q2));
+    solver.Add(q1.AllDifferent());
+    solver.Add(q2.AllDifferent());
+
+    // Alternative version: it works as well but are not that clear
+    /*
+    solver.Add((from i in Enumerable.Range(0, n)
+                select (q[i] + i).Var()).ToArray().AllDifferent());
+
+    solver.Add((from i in Enumerable.Range(0, n)
+                select (q[i] - i).Var()).ToArray().AllDifferent());
+    */
 
     //
     // Search

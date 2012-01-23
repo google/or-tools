@@ -81,8 +81,7 @@ public class SetCoveringOPL
       for(int c = 0; c < len; c++) {
         tmp[c] = hire[qualified[j][c] - 1];
       }
-      IntVar b = solver.MakeSum(tmp).Var();
-      solver.Add(solver.MakeGreaterOrEqual(b, 1));
+      solver.Add(tmp.Sum() >= 1);
     }
 
     

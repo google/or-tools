@@ -71,8 +71,8 @@ public class SetCoveringDeployment
     IntVar[] y = solver.MakeIntVarArray(n, 0, 1, "y");
 
     // total number of armies
-    IntVar num_armies = solver.MakeSum(solver.MakeSum(x), 
-                                       solver.MakeSum(y)).Var();
+    IntVar num_armies = solver.MakeSum(x.Sum(), y.Sum()).Var();
+
 
     //
     // Constraints
@@ -85,7 +85,7 @@ public class SetCoveringDeployment
     //                must be an an army
     //
     for(int i = 0; i < n; i++) {
-      solver.Add(solver.MakeGreaterOrEqual(x[i], y[i]));
+      solver.Add(x[i] >= y[i]);
     }
 
     //
@@ -98,7 +98,7 @@ public class SetCoveringDeployment
                                    where mat[i,j] == 1
                                    select(y[j])).ToArray();
 
-      solver.Add(solver.MakeSum(x[i], count_neighbours.Sum()).Var() >= 1);
+      solver.Add((x[i] + count_neighbours.Sum()) >= 1);
 
     }
    

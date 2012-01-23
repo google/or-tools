@@ -34,7 +34,7 @@ public class DeBruijn
     for(int i = 0; i < len; i++) {
       tmp[i] = solver.MakeProd(a[i], (int)Math.Pow(bbase,(len-i-1))).Var();
     }
-    solver.Add(solver.MakeEquality(solver.MakeSum(tmp).Var(), num));
+    solver.Add(tmp.Sum() - num == 0);
   }
 
 
@@ -89,7 +89,7 @@ public class DeBruijn
     // Constraints
     //
 
-    solver.Add(solver.MakeAllDifferent(x, true));
+    solver.Add(x.AllDifferent());
 
     // converts x <-> binary
     for(int i = 0; i < m; i++) {
@@ -105,18 +105,19 @@ public class DeBruijn
     // elements in binary[i-1]
     for(int i = 1; i < m; i++) {
       for(int j = 1; j < n; j++) {
-        solver.Add(solver.MakeEquality(binary[i - 1,j], binary[i,j - 1]));
+        solver.Add(binary[i - 1,j].Equality(binary[i,j - 1]));
       }
     }
 
     // ... and around the corner
     for(int j = 1; j < n; j++) {
-      solver.Add(solver.MakeEquality(binary[m - 1,j], binary[0,j - 1]));
+      solver.Add(binary[m - 1,j].Equality(binary[0,j - 1]));
     }
 
     // converts binary -> bin_code (de Bruijn sequence)
     for(int i = 0; i < m; i++) {
-      solver.Add(solver.MakeEquality(bin_code[i], binary[i,0]));
+      solver.Add(bin_code[i].Equality(binary[i,0]));
+
     }
 
 
@@ -126,7 +127,7 @@ public class DeBruijn
     solver.Add(solver.MakeDistribute(bin_code, gcc));
     if (check_same_gcc && m % bbase == 0) {
       for(int i = 1; i < bbase; i++) {
-        solver.Add(solver.MakeEquality(gcc[i], gcc[i - 1]));
+        solver.Add(gcc[i].Equality(gcc[i - 1]));
       }
     } 
 

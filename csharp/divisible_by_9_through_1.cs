@@ -46,35 +46,26 @@ public class DivisibleBy9Through1
     IntVar d = solver.MakeIntVar(min_x, max_x, "d");
     
     // r >= 0
-    solver.Add(solver.MakeGreaterOrEqual(r,0));
+    solver.Add(r >= 0);
 
     // x*r >= 0
-    solver.Add(
-        solver.MakeGreaterOrEqual(
-            solver.MakeProd(x,r).Var(), 0));
+    solver.Add( x*r >= 0);
 
     // -abs(y) < r
-    solver.Add(
-        solver.MakeLess(
-            solver.MakeOpposite(solver.MakeAbs(y).Var()).Var(), r));
+    solver.Add(-y.Abs() < r);
 
     // r < abs(y)
-    solver.Add(
-        solver.MakeLess(r,
-            solver.MakeAbs(y).Var().Var()));
+    solver.Add(r < y.Abs());
 
     // min_x <= d, i.e. d > min_x
-    solver.Add(solver.MakeGreater(d, min_x));
-
+    solver.Add(d > min_x);
 
     // d <= max_x
-    solver.Add(solver.MakeLessOrEqual(d, max_x));
+    solver.Add(d <= max_x);
 
     // x == y*d+r
-    solver.Add(solver.MakeEquality(x,
-        solver.MakeSum(
-            solver.MakeProd(y,d).Var(),r).Var()));
-
+    solver.Add(x - (y*d + r) == 0);
+    
   }
 
 
@@ -92,8 +83,7 @@ public class DivisibleBy9Through1
     for(int i = 0; i < len; i++) {
       tmp[i] = solver.MakeProd(a[i], (int)Math.Pow(bbase,(len-i-1))).Var();
     }
-    solver.Add(
-        solver.MakeEquality(solver.MakeSum(tmp).Var(), num));
+    solver.Add(tmp.Sum() - num == 0);
   }
 
   /**
@@ -129,7 +119,7 @@ public class DivisibleBy9Through1
     // Constraints
     //
 
-   solver.Add(solver.MakeAllDifferent(x, true));
+   solver.Add(x.AllDifferent());
 
     // Ensure the divisibility of base .. 1
     IntVar zero = solver.MakeIntConst(0);
@@ -140,8 +130,8 @@ public class DivisibleBy9Through1
         tt[j] = x[j];
       }
       ToNum(solver, tt, t[i], bbase);
-      IntVar mm_const = solver.MakeIntConst(mm);      
-      MyMod(solver, t[i], mm_const, zero);
+      MyMod(solver, t[i], solver.MakeIntConst(mm), zero);
+
     }
 
     //

@@ -86,12 +86,12 @@ public class SurvoPuzzle
     for(int i = 0; i < r; i++) {
       for(int j = 0; j < c; j++) {
         if (game[i,j] > 0) {
-          solver.Add(solver.MakeEquality(x[i,j], game[i,j]));
+          solver.Add(x[i,j] == game[i,j]);
         }
       }
     }
 
-    solver.Add(solver.MakeAllDifferent(x_flat));
+    solver.Add(x_flat.AllDifferent());
 
 
     //
@@ -102,8 +102,7 @@ public class SurvoPuzzle
       for(int j = 0; j < c; j++) {
         row[j] = x[i,j];
       }
-      solver.Add(
-          solver.MakeEquality(solver.MakeSum(row).Var(), rowsums[i]));
+      solver.Add(row.Sum() == rowsums[i]);
     }
 
     for(int j = 0; j < c; j++) {
@@ -111,8 +110,8 @@ public class SurvoPuzzle
       for(int i = 0; i < r; i++) {
         col[i] = x[i,j];
       }
-      solver.Add(
-          solver.MakeEquality(solver.MakeSum(col).Var(), colsums[j]));
+      solver.Add(col.Sum() == colsums[j]);
+
     }
 
 

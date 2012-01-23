@@ -80,7 +80,7 @@ public class CostasArray
     // hakank: All the following constraints are from
     // Barry O'Sullivans's original model.
     //
-    solver.Add(solver.MakeAllDifferent(costas));
+    solver.Add(costas.AllDifferent());
 
 
     // "How do the positions in the Costas array relate
@@ -101,7 +101,7 @@ public class CostasArray
                       from j in Enumerable.Range(0, n) 
                       where j > i
                       select differences[i,j]).ToArray();
-      solver.Add(solver.MakeAllDifferent(tmp));
+      solver.Add(tmp.AllDifferent());
 
     }
     
@@ -113,6 +113,7 @@ public class CostasArray
     for(int i = 0; i < n; i++) {
       for(int j = 0; j < n; j++) {
         if (i < j) {
+          solver.Add(differences[i,j] != 0);
           solver.Add(differences[i,j] != 0);
         }
       }

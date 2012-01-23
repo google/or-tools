@@ -46,7 +46,7 @@ public class Seseman
         x_flat[i * n + j] = x[i,j];
       }
     }
-    IntVar total_sum = solver.MakeSum(x_flat).Var();
+    IntVar total_sum = x_flat.Sum().Var();
 
 
     //
@@ -80,10 +80,10 @@ public class Seseman
       border3[i] = x[0,i];
       border4[i] = x[n-1,i];
     }
-    solver.Add(solver.MakeSumEquality(border1, border_sum));
-    solver.Add(solver.MakeSumEquality(border2, border_sum));
-    solver.Add(solver.MakeSumEquality(border3, border_sum));
-    solver.Add(solver.MakeSumEquality(border4, border_sum));
+    solver.Add(border1.Sum() == border_sum);
+    solver.Add(border2.Sum() == border_sum);
+    solver.Add(border3.Sum() == border_sum);
+    solver.Add(border4.Sum() == border_sum);
 
 
     //

@@ -34,7 +34,7 @@ public class ToNumTest
     for(int i = 0; i < len; i++) {
       tmp[i] = solver.MakeProd(a[i], (int)Math.Pow(bbase,(len-i-1))).Var();
     }
-    solver.Add(solver.MakeEquality(solver.MakeSum(tmp).Var(), num));
+    solver.Add(tmp.Sum().Equality(num));
   }
 
 
@@ -62,7 +62,7 @@ public class ToNumTest
     // Constraints
     //
 
-    solver.Add(solver.MakeAllDifferent(x));
+    solver.Add(x.AllDifferent());
     ToNum(solver, x, num, bbase);
 
     // extra constraint (just for fun)

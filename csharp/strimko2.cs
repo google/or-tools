@@ -84,8 +84,8 @@ public class Strimko2
         col[j] = x[j,i];
       }
 
-      solver.Add(solver.MakeAllDifferent(row));
-      solver.Add(solver.MakeAllDifferent(col));
+      solver.Add(row.AllDifferent());
+      solver.Add(col.AllDifferent());
     }
       
     // streams
@@ -94,7 +94,7 @@ public class Strimko2
                       from j in Enumerable.Range(0, n)
                       where streams[i,j] == s
                       select x[i,j]).ToArray();
-      solver.Add(solver.MakeAllDifferent(tmp));
+      solver.Add(tmp.AllDifferent());
 
     }
 

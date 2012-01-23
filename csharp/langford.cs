@@ -49,7 +49,7 @@ public class Langford
     //
     // Constraints
     //
-    solver.Add(solver.MakeAllDifferent(position));
+    solver.Add(position.AllDifferent());
 
     for(int i = 1; i <= k; i++) {
       solver.Add(position[i+k-1] - (position[i-1] + solver.MakeIntVar(i+1,i+1)) == 0);

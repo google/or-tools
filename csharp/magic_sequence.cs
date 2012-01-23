@@ -61,7 +61,7 @@ public class MagicSequence
     // Constraints
     //
     solver.Add(solver.MakeDistribute(all_vars, all_values, all_vars));
-    solver.Add(solver.MakeSum(all_vars) == size);
+    solver.Add(all_vars.Sum() == size);
 
 
     //

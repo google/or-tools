@@ -52,10 +52,10 @@ public class Partition
     //
        // break symmetries
     for (int i = 0; i < m - 1; i++) {
-      solver.Add(solver.MakeLess(x[i], x[i + 1]));
-      solver.Add(solver.MakeLess(y[i], y[i + 1]));
+      solver.Add(x[i] < x[i + 1]);
+      solver.Add(y[i] < y[i + 1]);
     }
-    solver.Add(solver.MakeLess(x[0], y[0]));
+    solver.Add(x[0] < y[0]);
 
     IntVar[] xy = new IntVar[2 * m];
     for (int i = m - 1; i >= 0; i--) {
@@ -63,35 +63,31 @@ public class Partition
       xy[m + i] = y[i];
     }
 
-    solver.Add(solver.MakeAllDifferent(xy));
+    solver.Add(xy.AllDifferent());
 
     int[] coeffs = new int[2 * m];
     for (int i = m - 1; i >= 0; i--) {
       coeffs[i] = 1;
       coeffs[m + i] = -1;
     }
-    solver.Add(solver.MakeScalProdEquality(xy, coeffs, 0));
+    solver.Add(xy.ScalProd(coeffs) == 0);
 
     IntVar[] sxy, sx, sy;
     sxy = new IntVar[2 * m];
     sx = new IntVar[m];
     sy = new IntVar[m];
     for (int i = m - 1; i >= 0; i--) {
-      sx[i] = solver.MakeSquare(x[i]).Var();
+      sx[i] = x[i].Square().Var();
       sxy[i] = sx[i];
-      sy[i] = solver.MakeSquare(y[i]).Var();
+      sy[i] = y[i].Square().Var();
       sxy[m + i] = sy[i];
     }
-    solver.Add(solver.MakeScalProdEquality(sxy, coeffs, 0));
+    solver.Add(sxy.ScalProd(coeffs) == 0);
 
-    solver.Add(
-        solver.MakeSumEquality(x, 2 * m * (2 * m + 1) / 4));
-    solver.Add(
-        solver.MakeSumEquality(y, 2 * m * (2 * m + 1) / 4));
-    solver.Add(
-        solver.MakeSumEquality(sx, 2 * m * (2 * m + 1) * (4 * m + 1) / 12));
-    solver.Add(
-        solver.MakeSumEquality(sy, 2 * m * (2 * m + 1) * (4 * m + 1) / 12));
+    solver.Add(x.Sum() == 2 * m * (2 * m + 1) / 4);
+    solver.Add(y.Sum() == 2 * m * (2 * m + 1) / 4);
+    solver.Add(sx.Sum() == 2 * m * (2 * m + 1) * (4 * m + 1) / 12);
+    solver.Add(sy.Sum() == 2 * m * (2 * m + 1) * (4 * m + 1) / 12);
 
     //
     // Search

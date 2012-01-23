@@ -71,7 +71,7 @@ public class SetCovering3
       for(int j = 0; j < num_senators; j++) {
         b[j] = solver.MakeProd(x[j], belongs[i,j]).Var();
       }
-      solver.Add(solver.MakeSumGreaterOrEqual(b, 1));
+      solver.Add(b.Sum() >= 1);
     }
 
     

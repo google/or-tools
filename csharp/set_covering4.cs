@@ -67,7 +67,7 @@ public class SetCovering4
     //
     IntVar[] x = solver.MakeIntVarArray(num_alternatives, 0, 1, "x");
     // number of assigned senators, to be minimized
-    IntVar z = solver.MakeScalProd(x, costs).VarWithName("z");
+    IntVar z = x.ScalProd(costs).VarWithName("z");
 
     //
     // Constraints
@@ -81,11 +81,9 @@ public class SetCovering4
       }
 
       if (set_partition == 1) {
-        solver.Add(
-            solver.MakeSumGreaterOrEqual(b, 1));
+        solver.Add(b.Sum() >= 1);
       } else {
-        solver.Add(
-            solver.MakeSumEquality(b, 1));
+        solver.Add(b.Sum() == 1);
       }
     }
 
