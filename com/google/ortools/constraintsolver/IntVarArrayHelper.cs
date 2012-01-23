@@ -19,6 +19,12 @@ namespace Google.OrTools.ConstraintSolver
   // IntVar[] helper class.
   public static class IntVarArrayHelper
   {
+    // All Different
+    public static Constraint AllDifferent(this IntVar[] vars)
+    {
+      Solver solver = GetSolver(vars);
+      return solver.MakeAllDifferent(vars);
+    }
     // sum of all vars.
     public static IntExpr Sum(this IntVar[] vars)
     {

@@ -65,12 +65,12 @@ public class CuriousSetOfIntegers
     //
     // Constraints
     //
-    solver.Add(solver.MakeAllDifferent(x));
+    solver.Add(x.AllDifferent());
 
     for(int i = 0; i < n - 1; i++) {
       for(int j = i + 1; j < n; j++) {
         IntVar p = solver.MakeIntVar(0, max_val);
-        solver.Add((p*p-1) -(x[i]*x[j]) == 0);
+        solver.Add((p.Square() - 1) -(x[i]*x[j]) == 0);
       }
     }
 
