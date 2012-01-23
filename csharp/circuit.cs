@@ -38,21 +38,20 @@ public class CircuitTest
     int n = x.Length;
     IntVar[] z = solver.MakeIntVarArray(n, 0, n - 1, "z");
 
-    solver.Add(solver.MakeAllDifferent(x));
-    solver.Add(solver.MakeAllDifferent(z));
+    solver.Add(x.AllDifferent());
+    solver.Add(z.AllDifferent());
 
     // put the orbit of x[0] in z[0..n-1]
-    solver.Add(solver.MakeEquality(z[0], x[0]));
+    solver.Add(z[0].Equality(x[0]));
     for(int i = 1; i < n-1; i++) {
-      solver.Add(solver.MakeEquality(z[i], 
-                                     solver.MakeElement(x, z[i-1]).Var()));
+      solver.Add(z[i].Equality(x.Element(z[i-1]).Var()));
     }
 
     // z may not be 0 for i < n-1
     for(int i = 1; i < n - 1; i++) {
       solver.Add(z[i] != 0);
     }
-        
+
     // when i = n-1 it must be 0
     solver.Add(z[n - 1] == 0);
 
@@ -76,7 +75,7 @@ public class CircuitTest
 
     //
     // Constraints
-    //  
+    //
     circuit(solver, x);
 
 

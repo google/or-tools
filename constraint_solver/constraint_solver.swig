@@ -1989,6 +1989,45 @@ namespace operations_research {
   }
 }
 
+%extend IntVar {
+  IntVar* IsEqual(int64 value) {
+    return self->solver()->MakeIsEqualCstVar(self, value);
+  }
+  IntVar* IsDifferent(int64 value) {
+    return self->solver()->MakeIsDifferentCstVar(self, value);
+  }
+  IntVar* IsGreater(int64 value) {
+    return self->solver()->MakeIsGreaterCstVar(self, value);
+  }
+  IntVar* IsGreaterOrEqual(int64 value) {
+    return self->solver()->MakeIsGreaterOrEqualCstVar(self, value);
+  }
+  IntVar* IsLess(int64 value) {
+    return self->solver()->MakeIsLessCstVar(self, value);
+  }
+  IntVar* IsLessOrEqual(int64 value) {
+    return self->solver()->MakeIsLessOrEqualCstVar(self, value);
+  }
+  IntVar* IsEqual(IntExpr* const other) {
+    return self->solver()->MakeIsEqualVar(self, other->Var());
+  }
+  IntVar* IsDifferent(IntExpr* const other) {
+    return self->solver()->MakeIsDifferentVar(self, other->Var());
+  }
+  IntVar* IsGreater(IntExpr* const other) {
+    return self->solver()->MakeIsGreaterVar(self, other->Var());
+  }
+  IntVar* IsGreaterOrEqual(IntExpr* const other) {
+    return self->solver()->MakeIsGreaterOrEqualVar(self, other->Var());
+  }
+  IntVar* IsLess(IntExpr* const other) {
+    return self->solver()->MakeIsLessVar(self, other->Var());
+  }
+  IntVar* IsLessOrEqual(IntExpr* const other) {
+    return self->solver()->MakeIsLessOrEqualVar(self, other->Var());
+  }
+}
+
 %typemap(cscode) Solver %{
   public IntVar[] MakeIntVarArray(int count, long min, long max) {
     IntVar[] array = new IntVar[count];

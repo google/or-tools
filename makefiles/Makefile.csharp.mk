@@ -137,6 +137,15 @@ endif
 csflow.exe: $(LIBPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT) csharp/csflow.cs
 	$(CSC) /target:exe /out:csflow.exe /platform:$(NETPLATFORM) /r:Google.OrTools.Graph.dll csharp$Scsflow.cs
 
+# Build and compile custome CP examples
+
+csc: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/$(EX).cs
+	$(CSC) /target:exe /out:$(EX).exe /platform:$(NETPLATFORM) /r:Google.OrTools.ConstraintSolver.dll csharp$S$(EX).cs
+
+rcs: csc
+	$(MONO) $(EX).exe $(ARGS)
+
+
 # Build archive.
 
 dotnet_archive: csharp
