@@ -20,7 +20,7 @@ using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
 
-// Note: During compilation, there are a couple of 
+// Note: During compilation, there are a couple of
 //       warnings about assigned but never used variables.
 //       It's the characters a..z so it's quite benign.
 
@@ -47,13 +47,13 @@ public class Crossword
                       "n","o","p","q","r","s","t",
                       "u","v","w","x","y","z"};
 
-    int a=1;  int b=2;  int c=3; int d=4;  int e=5;  int f=6;  
-    int g=7;  int h=8;  int i=9; int j=10; int k=11; int l=12; 
-    int m=13; int n=14; int o=15; int p=16; int q=17; int r=18; 
-    int s=19; int t=20; int u=21; int v=22; int w=23; int x=24; 
+    int a=1;  int b=2;  int c=3; int d=4;  int e=5;  int f=6;
+    int g=7;  int h=8;  int i=9; int j=10; int k=11; int l=12;
+    int m=13; int n=14; int o=15; int p=16; int q=17; int r=18;
+    int s=19; int t=20; int u=21; int v=22; int w=23; int x=24;
     int y=25; int z=26;
 
-    int num_words = 15;
+    const int num_words = 15;
     int word_len = 5;
 
     int[,] AA = {{h, o, s, e, s},  //  HOSES
@@ -74,16 +74,16 @@ public class Crossword
 
     int num_overlapping = 12;
     int[,] overlapping = {{0, 2, 1, 0},  //  s
-                          {0, 4, 2, 0},  //  s 
-                          
+                          {0, 4, 2, 0},  //  s
+
                           {3, 1, 1, 2},  //  i
                           {3, 2, 4, 0},  //  k
                           {3, 3, 2, 2},  //  e
-                          
+
                           {6, 0, 1, 3},  //  l
                           {6, 1, 4, 1},  //  e
                           {6, 2, 2, 3},  //  e
-                          
+
                           {7, 0, 5, 1},  //  l
                           {7, 2, 1, 4},  //  s
                           {7, 3, 4, 2},  //  e
@@ -111,26 +111,26 @@ public class Crossword
     for(int I = 0; I < N; I++) {
       all[num_words * word_len + I] = E[I];
     }
-    
+
 
 
     //
     // Constraints
-    //  
-    solver.Add(solver.MakeAllDifferent(E));
+    //
+    solver.Add(E.AllDifferent());
 
     for(int I = 0; I < num_words; I++) {
       for(int J = 0; J < word_len; J++) {
-        solver.Add(solver.MakeEquality(A[I,J], AA[I,J]));
+        solver.Add(A[I,J] == AA[I,J]);
       }
     }
 
     // This contraint handles the overlappings.
-    // 
-    // It's coded in MiniZinc as 
+    //
+    // It's coded in MiniZinc as
     //
     //   forall(i in 1..num_overlapping) (
-    //      A[E[overlapping[i,1]], overlapping[i,2]] =  
+    //      A[E[overlapping[i,1]], overlapping[i,2]] =
     //      A[E[overlapping[i,3]], overlapping[i,4]]
     //   )
     // and in or-tools/Python as
@@ -142,16 +142,10 @@ public class Crossword
     for(int I = 0; I < num_overlapping; I++) {
       solver.Add(
           solver.MakeEquality(
-              solver.MakeElement(A_flat, 
-                  solver.MakeSum(
-                      solver.MakeProd(
-                         E[overlapping[I,0]], word_len).Var(),
-                      overlapping[I,1]).Var()).Var(),
-              solver.MakeElement(A_flat, 
-                  solver.MakeSum(
-                      solver.MakeProd(
-                         E[overlapping[I,2]], word_len).Var(),
-                      overlapping[I,3]).Var()).Var() ));
+              A_flat.Element(E[overlapping[I,0]] * word_len +
+                             overlapping[I,1]).Var(),
+              A_flat.Element(E[overlapping[I,2]] * word_len +
+                             overlapping[I,3]).Var()));
     }
 
 
