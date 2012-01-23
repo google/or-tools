@@ -34,7 +34,7 @@ public class CuriousSetOfIntegers
   /**
    *
    * Crypto problem in Google CP Solver.
-   * 
+   *
    * Martin Gardner (February 1967):
    * """
    * The integers 1,3,8, and 120 form a set with a remarkable property: the
@@ -67,12 +67,10 @@ public class CuriousSetOfIntegers
     //
     solver.Add(solver.MakeAllDifferent(x));
 
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        if (i != j) {
-          IntVar p = solver.MakeIntVar(0, max_val);
-          solver.Add((p*p-1) -(x[i]*x[j]) == 0);
-        }
+    for(int i = 0; i < n - 1; i++) {
+      for(int j = i + 1; j < n; j++) {
+        IntVar p = solver.MakeIntVar(0, max_val);
+        solver.Add((p*p-1) -(x[i]*x[j]) == 0);
       }
     }
 
@@ -82,7 +80,7 @@ public class CuriousSetOfIntegers
     // This is the original problem
     // Which is the fifth number?
     int[] v = {1,3,8,120};
-    IntVar[] b = (from i in Enumerable.Range(0, n) 
+    IntVar[] b = (from i in Enumerable.Range(0, n)
                   select solver.MakeIsMemberVar(x[i], v)).ToArray();
     solver.Add(b.Sum() == 4);
 
