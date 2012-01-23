@@ -62,13 +62,13 @@ public class DeBruijn
     IntVar[,] binary = new IntVar[m,n];
     for(int i = 0; i < m; i++) {
       for(int j = 0; j < n; j++) {
-        binary[i,j] = 
+        binary[i,j] =
           solver.MakeIntVar(0, bbase - 1, "binary[" + i + "," + j + "]");
       }
     }
 
     // this is the de Bruijn sequence
-    IntVar[] bin_code = 
+    IntVar[] bin_code =
       solver.MakeIntVarArray(m, 0, bbase - 1, "bin_code");
 
     // occurences of each number in bin_code
@@ -124,16 +124,16 @@ public class DeBruijn
     // extra: ensure that all the numbers in the de Bruijn sequence
     // (bin_code) has the same occurrences (if check_same_gcc is True
     // and mathematically possible)
-    solver.Add(solver.MakeDistribute(bin_code, gcc));
+    solver.Add(bin_code.Distribute(gcc));
     if (check_same_gcc && m % bbase == 0) {
       for(int i = 1; i < bbase; i++) {
         solver.Add(gcc[i].Equality(gcc[i - 1]));
       }
-    } 
+    }
 
     // symmetry breaking:
     // the minimum value of x should be first
-    // solver.Add(solver.MakeEquality(x[0], solver.MakeMin(x).Var())); 
+    // solver.Add(solver.MakeEquality(x[0], solver.MakeMin(x).Var()));
 
 
     //
@@ -161,7 +161,7 @@ public class DeBruijn
         Console.Write(gcc[i].Value() + " ");
       }
       Console.WriteLine("\n");
-      
+
 
       // for debugging etc: show the full binary table
       /*

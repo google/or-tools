@@ -42,15 +42,15 @@ public class AllInterval
 
     //
     // Constraints
-    //  
+    //
     solver.Add(x.AllDifferent());
     solver.Add(diffs.AllDifferent());
 
     for(int k = 0; k < n - 1; k++) {
       // solver.Add(
-      //     solver.MakeEquality(diffs[k], 
+      //     solver.MakeEquality(diffs[k],
       //         solver.MakeAbs(x[k + 1] - x[k]).Var()));
-      solver.Add(diffs[k] - (x[k + 1] - x[k]).Var().Abs() == 0);
+      solver.Add(diffs[k].Equality((x[k + 1] - x[k]).Abs()));
     }
 
 

@@ -26,7 +26,7 @@ public class MagicSequence
   /**
    *
    * Magic sequence problem.
-   * 
+   *
    * This is a port of the Python model
    * https://code.google.com/p/or-tools/source/browse/trunk/python/magic_sequence_distribute.py
    * """
@@ -60,7 +60,7 @@ public class MagicSequence
     //
     // Constraints
     //
-    solver.Add(solver.MakeDistribute(all_vars, all_values, all_vars));
+    solver.Add(all_vars.Distribute(all_values, all_vars));
     solver.Add(all_vars.Sum() == size);
 
 

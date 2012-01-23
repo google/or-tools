@@ -60,7 +60,7 @@ public class YoungTableaux
     //
     // 1..n is used exactly once
     for(int i = 1; i <= n; i++) {
-      solver.Add(solver.MakeCount(x_flat, i, 1));
+      solver.Add(x_flat.Count(i, 1));
     }
 
     solver.Add(x[0,0] == 1);

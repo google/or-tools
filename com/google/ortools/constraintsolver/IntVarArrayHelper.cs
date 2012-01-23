@@ -57,6 +57,59 @@ namespace Google.OrTools.ConstraintSolver
     public static IntExpr Element(this IntVar[] array, IntExpr index) {
       return index.solver().MakeElement(array, index.Var());
     }
-
+    // min of all vars.
+    public static IntExpr Min(this IntVar[] vars)
+    {
+      Solver solver = GetSolver(vars);
+      return solver.MakeMin(vars);
+    }
+    // min of all vars.
+    public static IntExpr Max(this IntVar[] vars)
+    {
+      Solver solver = GetSolver(vars);
+      return solver.MakeMax(vars);
+    }
+    // count of all vars.
+    public static Constraint Count(this IntVar[] vars, long value, long count)
+    {
+      Solver solver = GetSolver(vars);
+      return solver.MakeCount(vars, value, count);
+    }
+    // count of all vars.
+    public static Constraint Count(this IntVar[] vars,
+                                   long value,
+                                   IntExpr count)
+    {
+      Solver solver = GetSolver(vars);
+      return solver.MakeCount(vars, value, count.Var());
+    }
+    public static Constraint Distribute(this IntVar[] vars,
+                                        long[] values,
+                                        IntVar[] cards)
+    {
+      Solver solver = GetSolver(vars);
+      return solver.MakeDistribute(vars, values, cards);
+    }
+    public static Constraint Distribute(this IntVar[] vars,
+                                        int[] values,
+                                        IntVar[] cards)
+    {
+      Solver solver = GetSolver(vars);
+      return solver.MakeDistribute(vars, values, cards);
+    }
+    public static Constraint Distribute(this IntVar[] vars,
+                                        IntVar[] cards)
+    {
+      Solver solver = GetSolver(vars);
+      return solver.MakeDistribute(vars, cards);
+    }
+    public static Constraint Distribute(this IntVar[] vars,
+                                        long card_min,
+                                        long card_max,
+                                        long card_size)
+    {
+      Solver solver = GetSolver(vars);
+      return solver.MakeDistribute(vars, card_min, card_max, card_size);
+    }
   }
 }  // namespace Google.OrTools.ConstraintSolver
