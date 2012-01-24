@@ -76,14 +76,14 @@ public class DivisibleBy9Through1
    *  channelling between the array a and the number num
    *
    */
-  private static void ToNum(Solver solver, IntVar[] a, IntVar num, int bbase) {
+  private static Constraint ToNum(IntVar[] a, IntVar num, int bbase) {
     int len = a.Length;
 
     IntVar[] tmp = new IntVar[len];
     for(int i = 0; i < len; i++) {
       tmp[i] = (a[i]*(int)Math.Pow(bbase,(len-i-1))).Var();
     }
-    solver.Add(tmp.Sum() - num == 0);
+     return tmp.Sum().Equality(num);
   }
 
   /**
@@ -129,7 +129,7 @@ public class DivisibleBy9Through1
       for(int j = 0; j < mm; j++) {
         tt[j] = x[j];
       }
-      ToNum(solver, tt, t[i], bbase);
+      solver.Add(ToNum(tt, t[i], bbase));
       MyMod(solver, t[i], solver.MakeIntConst(mm), zero);
 
     }

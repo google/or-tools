@@ -86,7 +86,7 @@ public class BusSchedule
     if (num_buses_check == 0) {
 
       // Minimize num_buses
-      OptimizeVar obj = solver.MakeMinimize(num_buses, 1);
+      OptimizeVar obj = num_buses.Minimize(1);
       solver.NewSearch(db, obj);
 
     } else {

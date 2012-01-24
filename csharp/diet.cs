@@ -65,7 +65,7 @@ public class Diet
     // 
     // Objective
     //
-    OptimizeVar obj = solver.MakeMinimize(cost, 1);
+    OptimizeVar obj = cost.Minimize(1);
 
     //
     // Search

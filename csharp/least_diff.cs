@@ -61,7 +61,7 @@ public class LeastDiff
     //
     // Objective
     //
-    OptimizeVar obj = solver.MakeMinimize(diff, 1);
+    OptimizeVar obj = diff.Minimize(1);
 
     //
     // Search

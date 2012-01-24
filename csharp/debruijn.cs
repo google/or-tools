@@ -27,14 +27,14 @@ public class DeBruijn
    *  channelling between the array a and the number num.
    *
    */
-  private static void ToNum(Solver solver, IntVar[] a, IntVar num, int bbase) {
+  private static Constraint ToNum(IntVar[] a, IntVar num, int bbase) {
     int len = a.Length;
 
     IntVar[] tmp = new IntVar[len];
     for(int i = 0; i < len; i++) {
       tmp[i] = (a[i]*(int)Math.Pow(bbase,(len-i-1))).Var();
     }
-    solver.Add(tmp.Sum() - num == 0);
+     return tmp.Sum().Equality(num);
   }
 
 
@@ -97,7 +97,7 @@ public class DeBruijn
       for(int j = 0; j < n; j++) {
         t[j] = binary[i,j];
       }
-      ToNum(solver, t, x[i], bbase);
+      solver.Add(ToNum(t, x[i], bbase));
     }
 
     // the de Bruijn condition:
@@ -133,7 +133,7 @@ public class DeBruijn
 
     // symmetry breaking:
     // the minimum value of x should be first
-    solver.Add(x[0].Equality(x.Min()));
+    // solver.Add(x[0].Equality(x.Min()));
 
 
     //
