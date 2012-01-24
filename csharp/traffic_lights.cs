@@ -49,13 +49,13 @@ public class TrafficLights
    * (V1,P1,V2,P2,V3,P3,V4,P4) =
    * {(r,r,g,g,r,r,g,g), (ry,r,y,r,ry,r,y,r), (g,g,r,r,g,g,r,r), (y,r,ry,r,y,r,ry,r)}
    * [(1,1,3,3,1,1,3,3), ( 2,1,4,1, 2,1,4,1), (3,3,1,1,3,3,1,1), (4,1, 2,1,4,1, 2,1)}
-   *
-   * The problem has relative few constraints, but each is very tight. Local propagation
-   * appears to be rather ineffective on this problem.
+   * The problem has relative few constraints, but each is very
+   * tight. Local propagation appears to be rather ineffective on this
+   * problem.
    *
    * """
-   *
-   *  Note: In this model we use only the constraint solver.AllowedAssignments().
+   * Note: In this model we use only the constraint
+   *  solver.AllowedAssignments().
    *
    *
    * See http://www.hakank.org/or-tools/traffic_lights.py
@@ -79,10 +79,10 @@ public class TrafficLights
     string[] lights = {"r", "ry", "g", "y"};
 
     // The allowed combinations
-    long[,] allowed = {{r,r,g,g},
-                       {ry,r,y,r},
-                       {g,g,r,r},
-                       {y,r,ry,r}};
+    int[,] allowed = {{r,r,g,g},
+                      {ry,r,y,r},
+                      {g,g,r,r},
+                      {y,r,ry,r}};
     //
     // Decision variables
     //
@@ -90,7 +90,7 @@ public class TrafficLights
     IntVar[] P = solver.MakeIntVarArray(n, 0, n-1, "P");
 
     // for search
-    IntVar[] VP = solver.MakeIntVarArray(2*n, 0, n-1, "P");
+    IntVar[] VP = new IntVar[2 * n];
     for(int i = 0; i < n; i++) {
       VP[i] = V[i];
       VP[i+n] = P[i];
@@ -120,7 +120,9 @@ public class TrafficLights
 
     while (solver.NextSolution()) {
       for(int i = 0; i < n; i++) {
-        Console.Write("{0,2} {1,2} ", lights[V[i].Value()], lights[P[i].Value()]);
+        Console.Write("{0,2} {1,2} ",
+                      lights[V[i].Value()],
+                      lights[P[i].Value()]);
       }
       Console.WriteLine();
     }
@@ -133,8 +135,6 @@ public class TrafficLights
     solver.EndSearch();
 
   }
-
-
 
   public static void Main(String[] args)
   {

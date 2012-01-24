@@ -590,8 +590,6 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 // This typemap will transform a multidimensional array into a triplet
 // size_z, size_y, flattened array.  This is then recomposed in the
 // final part to rebuild the std::vector<std::vector<T>> part.
-%define CS_TYPEMAP_STDVECTOR_IN1(TYPE, CTYPE, CSHARPTYPE)
-
 %typemap(cscode) NestedArrayHelper %{
   public static T[] GetFlatArray<T>(T[,] arr) {
     int flatLength = arr.GetLength(0) * arr.GetLength(1);
@@ -610,6 +608,7 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
   class NestedArrayHelper {};
 %}
 
+%define CS_TYPEMAP_STDVECTOR_IN1(TYPE, CTYPE, CSHARPTYPE)
 %typemap(ctype)    const std::vector<std::vector<TYPE> >&  %{ int len$argnum_1, int len$argnum_2, CTYPE* %}
 %typemap(imtype)  const std::vector<std::vector<TYPE> >&  %{ int len$argnum_1, int len$argnum_2, CSHARPTYPE[] %}
 %typemap(cstype)  const std::vector<std::vector<TYPE> >&  %{ CSHARPTYPE[,] %}
@@ -784,6 +783,7 @@ class LongResultCallback3 {
 CS_TYPEMAP_STDVECTOR(int64, int64, long)
 CS_TYPEMAP_STDVECTOR(int, int, int)
 CS_TYPEMAP_STDVECTOR_IN1(int64, int64, long)
+CS_TYPEMAP_STDVECTOR_IN1(int, int, int)
 
 // SWIG macros to be used in generating C# wrappers for C++ protocol
 // message parameters.  Each protocol message is serialized into
