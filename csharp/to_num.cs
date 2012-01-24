@@ -27,14 +27,14 @@ public class ToNumTest
    *  channelling between the array a and the number num.
    *
    */
-  private static void ToNum(Solver solver, IntVar[] a, IntVar num, int bbase) {
+  private static Constraint ToNum(IntVar[] a, IntVar num, int bbase) {
     int len = a.Length;
 
     IntVar[] tmp = new IntVar[len];
     for(int i = 0; i < len; i++) {
       tmp[i] = (a[i]*(int)Math.Pow(bbase,(len-i-1))).Var();
     }
-    solver.Add(tmp.Sum().Equality(num));
+     return tmp.Sum().Equality(num);
   }
 
 
@@ -63,7 +63,7 @@ public class ToNumTest
     //
 
     solver.Add(x.AllDifferent());
-    ToNum(solver, x, num, bbase);
+    solver.Add(ToNum(x, num, bbase));
 
     // extra constraint (just for fun)
     // second digit should be 7

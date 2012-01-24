@@ -55,7 +55,7 @@ public class Map2
                          {Belgium,    Germany},
                          {Germany,    Netherlands},
                          {Germany,    Denmark}};
-    
+
 
 
     //
@@ -65,11 +65,9 @@ public class Map2
 
     //
     // Constraints
-    //  
+    //
     for(int i = 0; i < neighbours.GetLength(0); i++) {
-      solver.Add(
-                 solver.MakeNonEquality(color[neighbours[i,0]], 
-                                        color[neighbours[i,1]]));
+      solver.Add(color[neighbours[i,0]].NonEquality(color[neighbours[i,1]]));
     }
 
     // Symmetry breaking
@@ -89,7 +87,7 @@ public class Map2
       for(int i = 0; i < n; i++) {
         Console.Write("{0} ", color[i].Value());
       }
-      
+
       Console.WriteLine();
     }
 

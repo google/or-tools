@@ -2042,6 +2042,12 @@ namespace operations_research {
   IntVar* IsLessOrEqual(IntExpr* const other) {
     return self->solver()->MakeIsLessOrEqualVar(self->Var(), other->Var());
   }
+  OptimizeVar* Minimize(long step) {
+    return self->solver()->MakeMinimize(self->Var(), step);
+  }
+  OptimizeVar* Maximize(long step) {
+    return self->solver()->MakeMaximize(self->Var(), step);
+  }
 }
 
 %typemap(cscode) Solver %{

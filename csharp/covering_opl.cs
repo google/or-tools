@@ -59,10 +59,10 @@ public class SetCoveringOPL
       new int[] { 9, 18, 26, 28, 31, 32 }
     };
 
-    int[] cost = {1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 
+    int[] cost = {1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3,
                   3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 8, 9};
 
-   
+
     //
     // Decision variables
     //
@@ -72,7 +72,7 @@ public class SetCoveringOPL
     //
     // Constraints
     //
-  
+
     for(int j = 0; j < num_tasks; j++) {
       // Sum the cost for hiring the qualified workers
       // (also, make 0-base).
@@ -84,11 +84,11 @@ public class SetCoveringOPL
       solver.Add(tmp.Sum() >= 1);
     }
 
-    
+
     //
     // objective
     //
-    OptimizeVar objective = solver.MakeMinimize(total_cost, 1);
+    OptimizeVar objective = total_cost.Minimize(1);
 
 
     //

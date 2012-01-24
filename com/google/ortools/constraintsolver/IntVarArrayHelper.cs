@@ -25,6 +25,20 @@ namespace Google.OrTools.ConstraintSolver
       Solver solver = GetSolver(vars);
       return solver.MakeAllDifferent(vars);
     }
+    // Allowed assignment
+    public static Constraint AllowedAssignments(this IntVar[] vars,
+                                                long[,] tuples)
+    {
+      Solver solver = GetSolver(vars);
+      return solver.MakeAllowedAssignments(vars, tuples);
+    }
+    // Allowed assignment
+    // public static Constraint AllowedAssignments(this IntVar[] vars,
+    //                                             int[,] tuples)
+    // {
+    //   Solver solver = GetSolver(vars);
+    //   return solver.MakeAllowedAssignments(vars, tuples);
+    // }
     // sum of all vars.
     public static IntExpr Sum(this IntVar[] vars)
     {
