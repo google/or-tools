@@ -74,22 +74,10 @@ public class WhoKilledAgatha
     // A killer always hates, and is no richer than his victim.
     //     hates[the_killer, the_victim] == 1
     //     hates_flat[the_killer * n + the_victim] == 1
-    solver.Add(
-        solver.MakeEquality(
-            solver.MakeElement(
-                hates_flat,
-                solver.MakeSum(
-                    solver.MakeProd(the_killer, n).Var(),
-                    the_victim).Var()).Var(), 1));
+    solver.Add(hates_flat.Element(the_killer * n + the_victim) == 1);
 
     //    richer[the_killer, the_victim] == 0
-    solver.Add(
-        solver.MakeEquality(
-            solver.MakeElement(
-                richer_flat,
-                solver.MakeSum(
-                    solver.MakeProd(the_killer, n).Var(),
-                    the_victim).Var()).Var(), 0));
+    solver.Add(richer_flat.Element(the_killer * n + the_victim) == 0);
 
     // define the concept of richer:
     //     no one is richer than him-/herself...
@@ -112,8 +100,8 @@ public class WhoKilledAgatha
     //    forall i in 0..2:
     //       (hates[agatha, i] = 1) => (hates[charles, i] = 0)
     for(int i = 0; i < n; i++) {
-      IntVar b1a = solver.MakeIsEqualCstVar(hates[agatha,i], 1);
-      IntVar b1b = solver.MakeIsEqualCstVar(hates[charles,i], 0);
+      IntVar b1a = hates[agatha,i].IsEqual(1);
+      IntVar b1b = hates[charles,i].IsEqual(0);
       solver.Add(b1a-b1b <= 0);
     }
 
@@ -126,8 +114,8 @@ public class WhoKilledAgatha
     //    forall i in 0..2:
     //       (richer[i, agatha] = 0) => (hates[butler, i] = 1)
     for(int i = 0; i < n; i++) {
-      IntVar b2a = solver.MakeIsEqualCstVar(richer[i,agatha], 0);
-      IntVar b2b = solver.MakeIsEqualCstVar(hates[butler,i], 1);
+      IntVar b2a = richer[i,agatha].IsEqual(0);
+      IntVar b2b = hates[butler,i].IsEqual(1);
       solver.Add(b2a-b2b<=0);
     }
 
@@ -135,8 +123,8 @@ public class WhoKilledAgatha
     //     forall i : 0..2:
     //         (hates[agatha, i] = 1) => (hates[butler, i] = 1)
     for(int i = 0; i < n; i++) {
-      IntVar b3a = solver.MakeIsEqualCstVar(hates[agatha,i], 1);
-      IntVar b3b = solver.MakeIsEqualCstVar(hates[butler,i], 1);
+      IntVar b3a = hates[agatha,i].IsEqual(1);
+      IntVar b3b = hates[butler,i].IsEqual(1);
       solver.Add(b3a-b3b<=0);
     }
 
@@ -148,7 +136,7 @@ public class WhoKilledAgatha
       for(int j = 0; j < n; j++) {
         tmp[j] = hates[i,j];
       }
-      solver.Add(solver.MakeLessOrEqual(solver.MakeSum(tmp).Var(), 2));
+      solver.Add(tmp.Sum() <= 2);
     }
 
 

@@ -58,7 +58,7 @@ public class SetCovering3
     //
     IntVar[] x = solver.MakeIntVarArray(num_senators, 0, 1, "x");
     // number of assigned senators, to be minimized
-    IntVar z = solver.MakeSum(x).Var();
+    IntVar z = x.Sum().Var();
 
     //
     // Constraints
@@ -69,7 +69,7 @@ public class SetCovering3
     for(int i = 0; i < num_groups; i++) {
       IntVar[] b = new IntVar[num_senators];
       for(int j = 0; j < num_senators; j++) {
-        b[j] = solver.MakeProd(x[j], belongs[i,j]).Var();
+        b[j] = (x[j]*belongs[i,j]).Var();
       }
       solver.Add(b.Sum() >= 1);
     }

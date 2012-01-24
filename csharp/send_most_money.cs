@@ -52,8 +52,10 @@ public class SendMostMoney
                     };
     solver.Add(eq.ScalProd(coeffs) == 0);
 
-    IntVar money = solver.MakeScalProd(new IntVar[] {M, O, N, E, Y},
-                                       new int[] {10000, 1000, 100, 10, 1}).Var();
+    // IntVar money = solver.MakeScalProd(new IntVar[] {M, O, N, E, Y},
+    //                                    new int[] {10000, 1000, 100, 10, 1}).Var();
+    IntVar money = (new IntVar[] {M, O, N, E, Y}).
+                          ScalProd(new int[] {10000, 1000, 100, 10, 1}).Var();
 
     //
     // Constraints

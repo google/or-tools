@@ -62,8 +62,7 @@ public class CoinsGrid
     IntVar[] obj_tmp = new IntVar[n * n];
     for(int i = 0; i < n; i++) {
       for(int j = 0; j < n; j++) {
-        obj_tmp[i * n + j] = 
-          solver.MakeProd(x[i,j],(i - j) * (i - j)).Var();
+        obj_tmp[i * n + j] = (x[i,j] * (i - j) * (i - j)).Var();
       }
     }
     IntVar obj_var = obj_tmp.Sum().Var();

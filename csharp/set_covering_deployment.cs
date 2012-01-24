@@ -71,7 +71,7 @@ public class SetCoveringDeployment
     IntVar[] y = solver.MakeIntVarArray(n, 0, 1, "y");
 
     // total number of armies
-    IntVar num_armies = solver.MakeSum(x.Sum(), y.Sum()).Var();
+    IntVar num_armies = (x.Sum() + y.Sum()).Var();
 
 
     //

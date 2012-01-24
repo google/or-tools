@@ -32,7 +32,7 @@ public class DeBruijn
 
     IntVar[] tmp = new IntVar[len];
     for(int i = 0; i < len; i++) {
-      tmp[i] = solver.MakeProd(a[i], (int)Math.Pow(bbase,(len-i-1))).Var();
+      tmp[i] = (a[i]*(int)Math.Pow(bbase,(len-i-1))).Var();
     }
     solver.Add(tmp.Sum() - num == 0);
   }
@@ -133,7 +133,7 @@ public class DeBruijn
 
     // symmetry breaking:
     // the minimum value of x should be first
-    // solver.Add(solver.MakeEquality(x[0], solver.MakeMin(x).Var()));
+    solver.Add(x[0].Equality(x.Min()));
 
 
     //

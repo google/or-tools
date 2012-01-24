@@ -46,7 +46,7 @@ public class Map2
     int n = 6;
     int max_num_colors = 4;
 
-    int[,] neigbours =  {{France,     Belgium},
+    int[,] neighbours =  {{France,     Belgium},
                          {France,     Luxembourg},
                          {France,     Germany},
                          {Luxembourg, Germany},
@@ -66,10 +66,10 @@ public class Map2
     //
     // Constraints
     //  
-    for(int i = 0; i < neighbours.length; i++) {
+    for(int i = 0; i < neighbours.GetLength(0); i++) {
       solver.Add(
-                 solver.MakeNonEquality(color[neighbours[i][0]], 
-                                        color[neighbours[i][1]]));
+                 solver.MakeNonEquality(color[neighbours[i,0]], 
+                                        color[neighbours[i,1]]));
     }
 
     // Symmetry breaking

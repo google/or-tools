@@ -67,7 +67,7 @@ public class SetCoveringOPL
     // Decision variables
     //
     IntVar[] hire = solver.MakeIntVarArray(num_workers, 0, 1, "workers");
-    IntVar total_cost = solver.MakeScalProd(hire, cost).Var();
+    IntVar total_cost = hire.ScalProd(cost).Var();
 
     //
     // Constraints

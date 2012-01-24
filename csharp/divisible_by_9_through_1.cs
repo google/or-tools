@@ -81,7 +81,7 @@ public class DivisibleBy9Through1
 
     IntVar[] tmp = new IntVar[len];
     for(int i = 0; i < len; i++) {
-      tmp[i] = solver.MakeProd(a[i], (int)Math.Pow(bbase,(len-i-1))).Var();
+      tmp[i] = (a[i]*(int)Math.Pow(bbase,(len-i-1))).Var();
     }
     solver.Add(tmp.Sum() - num == 0);
   }

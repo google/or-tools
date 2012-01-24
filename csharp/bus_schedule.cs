@@ -56,7 +56,7 @@ public class BusSchedule
     // How many buses start the schedule at time slot t
     IntVar[] x = solver.MakeIntVarArray(time_slots, 0, max_num, "x");
     // Total number of buses
-    IntVar num_buses = solver.MakeSum(x).VarWithName("num_buses");
+    IntVar num_buses = x.Sum().VarWithName("num_buses");
 
     //
     // Constraints
