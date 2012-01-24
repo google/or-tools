@@ -100,12 +100,9 @@ public class TrafficLights
     // Constraints
     //
     for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        if(j==(1+i) % n) {
-          IntVar[] tmp = new IntVar[] {V[i],P[i],V[j],P[j]};
-          solver.Add(tmp.AllowedAssignments(allowed));
-        }
-      }
+      int j =(1+i) % n;
+      IntVar[] tmp = new IntVar[] {V[i],P[i],V[j],P[j]};
+      solver.Add(tmp.AllowedAssignments(allowed));
     }
 
     //
