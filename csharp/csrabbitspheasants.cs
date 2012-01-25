@@ -32,10 +32,6 @@ public class AssignFirstUnboundToMin : NetDecisionBuilder
       {
         return solver.MakeAssignVariableValue(var, var.Min());
       }
-      else
-      {
-        solver.Fail();
-      }
     }
     return null;
   }
