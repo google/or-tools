@@ -427,13 +427,14 @@ Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars) {
   return MakeAllDifferent(vars.data(), vars.size(), true);
 }
 
-Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars, bool range) {
-  return MakeAllDifferent(vars.data(), vars.size(), range);
+Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars,
+                                     bool stronger_propagation) {
+  return MakeAllDifferent(vars.data(), vars.size(), stronger_propagation);
 }
 
 Constraint* Solver::MakeAllDifferent(const IntVar* const* vars,
                                      int size,
-                                     bool range) {
+                                     bool stronger_propagation) {
   for (int i = 0; i < size; ++i) {
     CHECK_EQ(this, vars[i]->solver());
   }
@@ -443,7 +444,7 @@ Constraint* Solver::MakeAllDifferent(const IntVar* const* vars,
     return MakeNonEquality(const_cast<IntVar* const>(vars[0]),
                            const_cast<IntVar* const>(vars[1]));
   } else {
-    if (range) {
+    if (stronger_propagation) {
       return RevAlloc(new BoundsAllDifferent(this, vars, size));
     } else {
       return RevAlloc(new ValueAllDifferent(this, vars, size));

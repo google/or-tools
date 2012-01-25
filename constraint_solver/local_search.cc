@@ -187,6 +187,28 @@ void IntVarLocalSearchOperator::MarkChange(int64 index) {
   }
 }
 
+bool IntVarLocalSearchOperator::MakeNextNeighbor(Assignment* delta,
+                                                 Assignment* deltadelta) {
+  CHECK_NOTNULL(delta);
+  while (true) {
+    RevertChanges(true);
+
+    if (!MakeOneNeighbor()) {
+      return false;
+    }
+
+    if (ApplyChanges(delta, deltadelta)) {
+      VLOG(1) << "Delta = " << delta->DebugString();
+      return true;
+    }
+  }
+  return false;
+}
+// TODO(user): Make this a pure virtual.
+bool IntVarLocalSearchOperator::MakeOneNeighbor() {
+  return true;
+}
+
 // ----- Sequence Var Local Search Operator -----
 
 SequenceVarLocalSearchOperator::SequenceVarLocalSearchOperator()
@@ -753,7 +775,11 @@ bool PathOperator::IncrementPosition() {
   const int base_node_size = base_nodes_.size();
   if (!just_started_) {
     const int number_of_paths = path_starts_.size();
-    // Finding next nodes.
+    // Finding next base node positions.
+    // Increment the position of inner base nodes first (higher index nodes);
+    // if a base node is at the end of a path, reposition it at the start
+    // of the path and increment the position of the preceding base node (this
+    // action is called a restart).
     int last_restarted = base_node_size;
     for (int i = base_node_size - 1; i >= 0; --i) {
       if (base_nodes_[i] < number_of_nexts_) {
@@ -763,14 +789,22 @@ bool PathOperator::IncrementPosition() {
       base_nodes_[i] = StartNode(i);
       last_restarted = i;
     }
-    // Correcting restart positions.
+    // At the end of the loop, base nodes with indexes in
+    // [last_restarted, base_node_size[ have been restarted.
+    // Restarted base nodes are then repositioned by the virtual
+    // GetBaseNodeRestartPosition to reflect position constraints between
+    // base nodes (by default GetBaseNodeRestartPosition leaves the nodes
+    // at the start of the path).
+    // Base nodes are repositioned in ascending order to ensure that all
+    // base nodes "below" the node being repositioned have their final
+    // position.
     for (int i = last_restarted; i < base_node_size; ++i) {
       base_nodes_[i] = GetBaseNodeRestartPosition(i);
     }
     if (last_restarted > 0) {
       return CheckEnds();
     }
-    // Finding next paths.
+    // If all base nodes have been restarted, base nodes are moved to new paths.
     for (int i = base_node_size - 1; i >= 0; --i) {
       const int next_path_index = base_paths_[i] + 1;
       if (next_path_index < number_of_paths) {

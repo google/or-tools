@@ -826,7 +826,18 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   IntVar* Var(int64 index) const { return vars_[index]; }
   virtual bool SkipUnchanged(int index) const { return false; }
 
+  // Redefines MakeNextNeighbor to export a simpler interface.
+  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
+
  protected:
+  // Creates a new neighbor. It returns false when the neighborhood is
+  // completely explored. The call to ApplyChanges() and
+  // RevertChanges() have been factored in the MakeNextNeighbor()
+  // method and should not appear in this method. This is the method
+  // to redefine when creating a new operator, preferably to
+  // MakeNextNeighbor.
+  virtual bool MakeOneNeighbor();
+
   int64 OldValue(int64 index) const { return old_values_[index]; }
   void SetValue(int64 index, int64 value);
   bool Activated(int64 index) const;
@@ -1047,8 +1058,10 @@ class PathOperator : public IntVarLocalSearchOperator {
   // Returns the index of the node to which the base node of index base_index
   // must be set to when it reaches the end of a path.
   // By default, it is set to the start of the current path.
+  // When this method is called, one can only assume that base nodes with
+  // indices < base_index have their final position.
   virtual int64 GetBaseNodeRestartPosition(int base_index) {
-    return path_starts_[base_paths_[base_index]];
+    return StartNode(base_index);
   }
 
   int64 OldNext(int64 node_index) const {

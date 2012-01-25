@@ -1542,15 +1542,20 @@ class Solver {
                             IntVar* const deviation_var,
                             int64 total_sum);
 
-  // All variables are pairwise different.
+  // All variables are pairwise different. This corresponds to the
+  // stronger version of the propagation algorithm.
   Constraint* MakeAllDifferent(const std::vector<IntVar*>& vars);
-  // All variables are pairwise different. If 'range' is true,
-  // stronger , and potentially slower propagation will occur.
-  Constraint* MakeAllDifferent(const std::vector<IntVar*>& vars, bool range);
-  // All variables are pairwise different. If 'range' is true,
-  // stronger , and potentially slower propagation will occur.
+
+  // All variables are pairwise different.  If 'stronger_propagation'
+  // is true, stronger, and potentially slower propagation will
+  // occur. This API will be deprecated in the future.
+  Constraint* MakeAllDifferent(const std::vector<IntVar*>& vars,
+                               bool stronger_propagation);
+  // All variables are pairwise different. If 'stronger_propagation'
+  // is true, stronger, and potentially slower propagation will
+  // occur. This API will be deprecated in the future.
   Constraint* MakeAllDifferent(const IntVar* const* vars,
-                               int size, bool range);
+                               int size, bool stronger_propagation);
 
   // Prevent cycles, nexts variables representing the next in the chain.
   // Active variables indicate if the corresponding next variable is active;
