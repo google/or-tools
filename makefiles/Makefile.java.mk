@@ -330,6 +330,16 @@ objs/com/google/ortools/linearsolver/samples/IntegerProgramming.class: javalp co
 run_IntegerProgramming: compile_IntegerProgramming
 	$(JAVA_BIN) -Xss2048k -Djava.library.path=. -cp objs$(CPSEP)com.google.ortools.linearsolver.jar com.google.ortools.linearsolver.samples.IntegerProgramming
 
+# Compile and Run CP java example:
+
+objs/com/google/ortools/constraintsolver/samples/$(EX).class: javacp com/google/ortools/constraintsolver/samples/$(EX).java
+	$(JAVAC_BIN) -d objs -cp com.google.ortools.constraintsolver.jar com/google/ortools/constraintsolver/samples/$(EX).java
+
+cjava: objs/com/google/ortools/constraintsolver/samples/$(EX).class com.google.ortools.constraintsolver.jar
+
+rjava: objs/com/google/ortools/constraintsolver/samples/$(EX).class $(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT) com.google.ortools.constraintsolver.jar
+	$(JAVA_BIN) -Djava.library.path=. -cp objs$(CPSEP)com.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.$(EX)
+
 # Build stand-alone archive file for redistribution.
 
 java_archive: java

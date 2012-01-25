@@ -107,6 +107,18 @@ ifeq "$(SYSTEM)" "win"
 	copy _pywraplp.dll gen\\linear_solver\\_pywraplp.pyd
 endif
 
+# Run a single example
+
+rpy: _pywraplp.$(SHAREDLIBEXT) _pywrapcp.$(SHAREDLIBEXT) _pywrapgraph.$(SHAREDLIBEXT) _pywrapknapsack_solver.$(SHAREDLIBEXT) _pywraprouting.$(SHAREDLIBEXT) python/$(EX).py
+ifeq ($(SYSTEM),win)
+	@echo Running python$S$(EX).py
+	@set PYTHONPATH=$(TOP) && $(WINDOWS_PYTHON_PATH)$Spython python$S$(EX).py
+else
+	@echo Running python$S$(EX).py
+	@PYTHONPATH=$(TOP) python$(PYTHONVERSION) python$S$(EX).py
+endif
+
+
 # Build stand-alone archive file for redistribution.
 
 python_archive: python
