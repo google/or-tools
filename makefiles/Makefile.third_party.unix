@@ -38,8 +38,7 @@ else
     GLPK_MAKEFILE = UNIX_GLPK_DIR = $(TOP)/dependencies/install
 endif
 
-#detect if mono archive is there
-# Detect if GLPK archive is there.
+# Detect if mono archive is there
 ifeq ($(wildcard dependencies/archives/mono-$(MONO_TAG).tar.gz),)
     MONO_TARGET =
     MONO_MAKEFILE = # MONO support not included.
