@@ -23,6 +23,9 @@ Operations Research libraries. </summary>
     - sports_scheduling.cc Finds a soccer championship schedule. Its uses an
       original approach where all constraints attached to either one team,
       or one week are regrouped into one global 'AllowedAssignment' constraints.
+    - dobble_ls.cc Shows how to write Local Search operators and Local Search
+      filters in a context of an assignment/partitioning problem. It also
+      shows how to write a simple constraint.
 
   - Routing examples:
     - tsp.cc    Travelling Salesman Problem.
