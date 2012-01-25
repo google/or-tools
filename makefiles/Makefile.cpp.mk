@@ -67,6 +67,7 @@ CPBINARIES = \
 	costas_array$E \
 	cryptarithm$E \
         cvrptw$E \
+	dobble_ls$E \
 	flow_api$E \
 	golomb$E \
 	jobshop$E \

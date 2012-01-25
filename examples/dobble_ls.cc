@@ -1,4 +1,4 @@
-// Copyright 2010 Google
+// Copyright 2010-2011 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,304 +11,346 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Dobble Generation problem:
-//  - We have 57 cards
-//  - 57 symbols
-//  - 8 symbols per card
-// We want to assign symbols per card such that any two cards have exactly
-// one symbol in common.
+// This problem is inspired by the Dobble game (aka Spot-It in the
+// USA).  In this game, we have 57 cards, 57 symbols, and 8 symbols
+// per card.  We want to assign symbols per card such that any two
+// cards have exactly one symbol in common. These numbers can be
+// generalized: we have N cards, each with K different symbols, and
+// there are N different symbols overall.
+//
+// This is a feasability problem. We transform that into an
+// optimization problem where we penalize cards whose intersection is
+// of cardinality different from 1. A feasible solution of the
+// original problem is a solution with a zero cost.
+//
+// Furthermore, we solve this problem using local search, and with a
+// dedicated constraint.
+//
+// The purpose of the example is to demonstrates how to write local
+// search operators and local search filters.
+
+#include <algorithm>
+#include <vector>
 
 #include "base/commandlineflags.h"
+#include "base/commandlineflags.h"
 #include "base/integral_types.h"
-#include "base/logging.h"
 #include "base/concise_iterator.h"
-#include "base/scoped_ptr.h"
-#include "base/stringprintf.h"
+#include "base/map-util.h"
+#include "base/mathutil.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
 #include "base/random.h"
 
-DEFINE_int32(lns_size, 10, "Size of the lns fragment.");
-DEFINE_int32(lns_limit, 5, "Limit the number of failures of the lns loop.");
-DEFINE_int32(lns_seed, 1, "Seed for the LNS random number generator.");
-DEFINE_int32(fail_limit, 50000, "Fail limit for the global search.");
+DEFINE_int32(symbols_per_card, 8, "Number of symbols per card.");
+DEFINE_int32(ls_seed, 1, "Seed for the random number generator (used by "
+             "the Local Neighborhood Search).");
+DEFINE_bool(use_filter, true, "Use filter in the local search to prune moves.");
+DEFINE_int32(num_swaps, 4, "If num_swap > 0, the search for an optimal "
+             "solution will be allowed to use an operator that swaps the "
+             "symbols of up to num_swap pairs ((card1, symbol on card1), "
+             "(card2, symbol on card2)).");
+DEFINE_int32(time_limit_in_ms,
+             60000,
+             "Time limit for the global search in ms.");
 
 namespace operations_research {
-class IntersectionCount : public Constraint {
+
+// ----- Dedicated constraint to count the symbols shared by two cards -----
+
+// This constraint maintains:
+// sum_i(card1_symbol_vars[i]*card2_symbol_vars[i]) == count_var.
+// with all card_symbol_vars[i] being boolean variables.
+class SymbolsSharedByTwoCardsConstraint : public Constraint {
  public:
-  IntersectionCount(Solver* const solver,
-                    const vector<IntVar*>& vars1,
-                    const vector<IntVar*>& vars2,
-                    IntVar* const count_var,
-                    int count)
+  // This constructor does not take any ownership on its arguments.
+  SymbolsSharedByTwoCardsConstraint(Solver* const solver,
+                                    const std::vector<IntVar*>& card1_symbol_vars,
+                                    const std::vector<IntVar*>& card2_symbol_vars,
+                                    IntVar* const num_symbols_in_common_var)
       : Constraint(solver),
-        vars1_(new IntVar*[vars1.size()]),
-        vars2_(new IntVar*[vars2.size()]),
-        size_(vars1.size()),
-        count_var_(count_var),
-        count_(count) {
-    CHECK_EQ(vars1.size(), vars2.size());
-    memcpy(vars1_.get(), vars1.data(), vars1.size() * sizeof(vars1.data()));
-    memcpy(vars2_.get(), vars2.data(), vars2.size() * sizeof(vars2.data()));
-    for (int i = 0; i < size_; ++i) {
-      CHECK_GE(vars1_[i]->Min(), 0);
-      CHECK_GE(vars2_[i]->Min(), 0);
-      CHECK_LE(vars1_[i]->Max(), 1);
-      CHECK_LE(vars2_[i]->Max(), 1);
+        card1_symbol_vars_(card1_symbol_vars),
+        card2_symbol_vars_(card2_symbol_vars),
+        num_symbols_(card1_symbol_vars.size()),
+        num_symbols_in_common_var_(num_symbols_in_common_var) {
+    // Checks that cards have the same size.
+    CHECK_EQ(card1_symbol_vars.size(), card2_symbol_vars.size());
+
+    // Verify that we are really dealing with boolean variables.
+    for (int i = 0; i < num_symbols_; ++i) {
+      CHECK_GE(card1_symbol_vars_[i]->Min(), 0);
+      CHECK_GE(card2_symbol_vars_[i]->Min(), 0);
+      CHECK_LE(card1_symbol_vars_[i]->Max(), 1);
+      CHECK_LE(card2_symbol_vars_[i]->Max(), 1);
     }
   }
 
+  virtual ~SymbolsSharedByTwoCardsConstraint() {}
+
+  // Adds observers (named Demon) to variable events. These demons are
+  // responsible for implementing the propagation algorithm of the
+  // constraint.
   virtual void Post() {
-    Demon* const delayed =
+    // Create a demon 'global_demon' that will bind events on
+    // variables to the calling of the 'InitialPropagate()' method. As
+    // this method is expensive, 'global_demon' has a low priority. As
+    // such, InitialPropagate will be called after all normal demons
+    // and constraints have reached a fixed point. Note
+    // that ownership of the 'global_demon' belongs to the solver.
+    Demon* const global_demon =
         solver()->MakeDelayedConstraintInitialPropagateCallback(this);
-    for (int i = 0; i < size_; ++i) {
-      vars1_[i]->WhenBound(delayed);
-      vars2_[i]->WhenBound(delayed);
+    // Attach to all variables.
+    for (int i = 0; i < num_symbols_; ++i) {
+      card1_symbol_vars_[i]->WhenBound(global_demon);
+      card2_symbol_vars_[i]->WhenBound(global_demon);
+    }
+    // Attach to cardinality variable.
+    num_symbols_in_common_var_->WhenBound(global_demon);
+  }
+
+  // This is the main propagation method.
+  //
+  // It scans all card1_symbol_vars * card2_symbol_vars and increments 3
+  // counters:
+  //  - min_symbols_in_common if both booleans variables are bound to true.
+  //  - max_symbols_in_common if both booleans are not bound to false.
+  //
+  // Then we know that num_symbols_in_common_var is in the range
+  //    [min_symbols_in_common .. max_symbols_in_common].
+  //
+  // Now, if num_symbols_in_common_var->Max() ==
+  // min_symbols_in_common, then all products that contribute to
+  // max_symbols_in_common but not to min_symbols_in_common should be
+  // set to 0.
+  //
+  // Conversely, if num_symbols_in_common_var->Min() ==
+  // max_symbols_in_common, then all products that contribute to
+  // max_symbols_in_common should be set to 1.
+  virtual void InitialPropagate() {
+    int max_symbols_in_common = 0;
+    int min_symbols_in_common = 0;
+    for (int i = 0; i < num_symbols_; ++i) {
+      if (card1_symbol_vars_[i]->Min() == 1 &&
+          card2_symbol_vars_[i]->Min() == 1) {
+        min_symbols_in_common++;
+      }
+      if (card1_symbol_vars_[i]->Max() == 1 &&
+          card2_symbol_vars_[i]->Max() == 1) {
+        max_symbols_in_common++;
+      }
+    }
+    num_symbols_in_common_var_->SetRange(min_symbols_in_common,
+                                         max_symbols_in_common);
+    // If min_symbols_in_common == max_symbols_in_common, it means
+    // that num_symbols_in_common_var_ is already fully determined: we
+    // have nothing to do.
+    if (min_symbols_in_common == max_symbols_in_common) {
+      DCHECK_EQ(min_symbols_in_common, num_symbols_in_common_var_->Max());
+      DCHECK_EQ(min_symbols_in_common, num_symbols_in_common_var_->Min());
+      return;
+    }
+    if (num_symbols_in_common_var_->Max() == min_symbols_in_common) {
+      // All undecided product terms should be forced to 0.
+      for (int i = 0; i < num_symbols_; ++i) {
+        // If both Min() are 0, then we can't force either variable to
+        // be zero (even if we know that their product is zero),
+        // because either variable could be 1 as long as the other is
+        // 0.
+        if (card1_symbol_vars_[i]->Min() == 1 &&
+            card2_symbol_vars_[i]->Min() == 0) {
+          card2_symbol_vars_[i]->SetValue(0);
+        } else if (card2_symbol_vars_[i]->Min() == 1 &&
+                   card1_symbol_vars_[i]->Min() == 0) {
+          card1_symbol_vars_[i]->SetValue(0);
+        }
+      }
+    } else if (num_symbols_in_common_var_->Min() == max_symbols_in_common) {
+      // All undecided product terms should be forced to 1.
+      for (int i = 0; i < num_symbols_; ++i) {
+        if (card1_symbol_vars_[i]->Max() == 1 &&
+            card2_symbol_vars_[i]->Max() == 1) {
+          // Note that we also force already-decided product terms,
+          // but this doesn't change anything.
+          card1_symbol_vars_[i]->SetValue(1);
+          card2_symbol_vars_[i]->SetValue(1);
+        }
+      }
     }
   }
 
-  virtual void InitialPropagate() {
-    int possible = 0;
-    int sure = 0;
-    int unbounded = 0;
-    for (int i = 0; i < size_; ++i) {
-      if (vars1_[i]->Min() == 1 && vars2_[i]->Min() == 1) {
-        sure++;
-      }
-      if (vars1_[i]->Max() == 1 && vars2_[i]->Max() == 1) {
-        possible++;
-      }
-      if (!vars1_[i]->Bound() || !vars2_[i]->Bound()) {
-        unbounded++;
-      }
-    }
-    count_var_->SetRange(sure, possible);
-    if (unbounded > 0) {
-      if (count_var_->Max() == sure) {
-        for (int i = 0; i < size_; ++i) {
-          if (vars1_[i]->Min() == 1 && vars2_[i]->Min() == 0) {
-            vars2_[i]->SetValue(0);
-          } else if (vars2_[i]->Min() == 1 && vars1_[i]->Min() == 0) {
-            vars1_[i]->SetValue(0);
-          }
-        }
-      } else if (count_var_->Min() == possible) {
-        for (int i = 0; i < size_; ++i) {
-          if (vars1_[i]->Max() == 1 && vars2_[i]->Max() == 1) {
-            vars1_[i]->SetValue(1);
-            vars2_[i]->SetValue(1);
-          }
-        }
-      }
-    }
-  }
  private:
-  scoped_array<IntVar*> vars1_;
-  scoped_array<IntVar*> vars2_;
-  const int size_;
-  IntVar* const count_var_;
-  const int count_;
+  std::vector<IntVar*> card1_symbol_vars_;
+  std::vector<IntVar*> card2_symbol_vars_;
+  const int num_symbols_;
+  IntVar* const num_symbols_in_common_var_;
 };
 
-IntVar* AddIntersectionVar(Solver* const solver,
-                           const vector<IntVar*>& vars1,
-                           const vector<IntVar*>& vars2,
-                           int count) {
-  IntVar* const cardinality = solver->MakeIntVar(0, count);
-  solver->AddConstraint(solver->RevAlloc(new IntersectionCount(solver,
-                                                               vars1,
-                                                               vars2,
-                                                               cardinality,
-                                                               count)));
-  return solver->MakeAbs(solver->MakeSum(cardinality, -1))->Var();
+// Creates two integer variables: one that counts the number of
+// symbols common to two cards, and one that counts the absolute
+// difference between the first var and 1 (i.e. the violation of the
+// objective). Returns the latter (both vars are owned by the Solver
+// anyway).
+IntVar* CreateViolationVar(Solver* const solver,
+                           const std::vector<IntVar*>& card1_symbol_vars,
+                           const std::vector<IntVar*>& card2_symbol_vars,
+                           int num_symbols_per_card) {
+  IntVar* const num_symbols_in_common_var =
+      solver->MakeIntVar(0, num_symbols_per_card);
+  // RevAlloc transfers the ownership of the constraint to the solver.
+  solver->AddConstraint(
+      solver->RevAlloc(
+          new SymbolsSharedByTwoCardsConstraint(solver,
+                                                card1_symbol_vars,
+                                                card2_symbol_vars,
+                                                num_symbols_in_common_var)));
+  return solver->MakeAbs(solver->MakeSum(num_symbols_in_common_var, -1))->Var();
 }
 
-class CardLns : public BaseLNS {
+// ---------- Local Search ----------
+
+// The "local search", or "local neighborhood search", works like
+// this: starting from a given solution to the problem, other
+// solutions in its neighborhood are generated from it, some of them
+// might be selected (because they're better, for example) to become a
+// starting point for other neighborhood searches, and so on.. The
+// detailed search algorithm can vary and depends on the problem to
+// solve.
+//
+// The fundamental building block for the local search is the "search
+// operator", which has three fundamental methods in its API:
+//
+// - Its constructor, which keeps (mutable) references to the
+// solver's internal variables (here, the card symbol variables).
+//
+// - OnStart(), which is called at the start of a local search, and
+// after each solution (i.e. when the local search starts again from
+// that new solution). The solver variables are supposed to represent
+// a valid solution at this point. This method is used by the search
+// operator to initialize its state and be ready to start the
+// exploration of the neighborhood of the given solution.
+//
+// - MakeOneNeighbor(), which picks a neighbor of the initial
+// solution, and changes the solver's internal variables accordingly
+// to represent that new state.
+//
+// All local search operators on this problem will derive from the
+// parent class below, which contains some shared code to store a
+// compact representation of which symbols appeal on each cards.
+class DobbleOperator : public IntVarLocalSearchOperator {
  public:
-  CardLns(const IntVar* const* vars,
-          int size,
-          int fragment_size,
-          int num_cards,
-          int num_symbols)
-      : BaseLNS(vars, size),
-        rand_(FLAGS_lns_seed),
-        fragment_size_(fragment_size),
-        num_cards_(num_cards),
-        num_symbols_(num_symbols) {}
-
-  virtual ~CardLns() {}
-
-  virtual bool NextFragment(vector<int>* fragment) {
-    if (rand_.Uniform(2)) {  // Release Cards.
-      for (int i = 0; i < fragment_size_; ++i) {
-        const int card_index = rand_.Uniform(num_cards_);
-        for (int symbol_index = 0;
-             symbol_index < num_symbols_;
-             ++symbol_index) {
-          fragment->push_back(card_index * num_symbols_ + symbol_index);
-        }
-      }
-    } else {  // Release Symbols.
-      for (int i = 0; i < fragment_size_; ++i) {
-        const int symbol_index = rand_.Uniform(num_symbols_);
-        for (int card_index = 0; card_index < num_cards_; ++card_index) {
-          fragment->push_back(card_index * num_symbols_ + symbol_index);
-        }
-      }
-    }
-    return true;
-  }
- private:
-  ACMRandom rand_;
-  const int fragment_size_;
-  const int num_cards_;
-  const int num_symbols_;
-};
-
-class CrossLns : public BaseLNS {
- public:
-  CrossLns(const IntVar* const* vars,
-           int size,
-           int fragment_size,
-           int num_cards,
-           int num_symbols,
-           int num_symbols_per_card)
-      : BaseLNS(vars, size),
-        rand_(FLAGS_lns_seed),
-        fragment_size_(fragment_size),
+  DobbleOperator(const IntVar* const* card_symbol_vars,
+                 int num_vars,
+                 int num_cards,
+                 int num_symbols,
+                 int num_symbols_per_card)
+      : IntVarLocalSearchOperator(card_symbol_vars, num_vars),
         num_cards_(num_cards),
         num_symbols_(num_symbols),
         num_symbols_per_card_(num_symbols_per_card),
         symbols_per_card_(num_cards) {
-    for (int card = 0; card < num_cards_; ++card) {
-      symbols_per_card_[card].resize(num_symbols_per_card_, -1);
+    CHECK_GT(num_cards, 0);
+    CHECK_GT(num_vars, 0);
+    CHECK_GT(num_symbols, 0);
+    CHECK_GT(num_symbols_per_card, 0);
+    for (int card = 0; card < num_cards; ++card) {
+      symbols_per_card_[card].assign(num_symbols_per_card, -1);
     }
   }
 
-  virtual ~CrossLns() {}
+  virtual ~DobbleOperator() {}
 
-  virtual void InitFragments() {
+ protected:
+  // OnStart() simply stores the current symbols per card in
+  // symbols_per_card_, and defers further initialization to the
+  // subclass's InitNeighborhoodSearch() method.
+  virtual void OnStart() {
     for (int card = 0; card < num_cards_; ++card) {
       int found = 0;
       for (int symbol = 0; symbol < num_symbols_; ++symbol) {
-        if (Value(Index(card, symbol)) == 1) {
+        if (Value(VarIndex(card, symbol)) == 1) {
           symbols_per_card_[card][found++] = symbol;
         }
       }
       DCHECK_EQ(num_symbols_per_card_, found);
     }
+    InitNeighborhoodSearch();
   }
 
-  virtual bool NextFragment(vector<int>* fragment) {
-    hash_set<int> cards_to_release;
-    const int max_cards = max(fragment_size_, num_cards_ / 2);
-    hash_set<int> symbols_to_release;
-    while (cards_to_release.size() < max_cards) {
-      const int card = rand_.Uniform(num_cards_);
-      const int symbol =
-          symbols_per_card_[card][rand_.Uniform(num_symbols_per_card_)];
-      cards_to_release.insert(card);
-      symbols_to_release.insert(symbol);
-    }
+  virtual void InitNeighborhoodSearch() = 0;
 
-    for (ConstIter<hash_set<int> > card_it(cards_to_release);
-         !card_it.at_end();
-         ++card_it) {
-      for (ConstIter<hash_set<int> > symbol_it(symbols_to_release);
-           !symbol_it.at_end();
-           ++symbol_it) {
-        fragment->push_back(Index(*card_it, *symbol_it));
-      }
-    }
-    return true;
-  }
- private:
-  int Index(int card, int symbol) {
+  // Find the index of the variable corresponding to the given symbol
+  // on the given card.
+  int VarIndex(int card, int symbol) {
     return card * num_symbols_ + symbol;
   }
 
-  ACMRandom rand_;
-  const int fragment_size_;
+  // Move symbol1 from card1 to card2, and symbol2 from card2 to card1.
+  void SwapTwoSymbolsOnCards(int card1, int symbol1, int card2, int symbol2) {
+    SetValue(VarIndex(card1, symbol1), 0);
+    SetValue(VarIndex(card2, symbol2), 0);
+    SetValue(VarIndex(card1, symbol2), 1);
+    SetValue(VarIndex(card2, symbol1), 1);
+  }
+
   const int num_cards_;
   const int num_symbols_;
   const int num_symbols_per_card_;
-  vector<vector<int> > symbols_per_card_;
+  std::vector<std::vector<int> > symbols_per_card_;
 };
 
-class SwitchSymbols : public IntVarLocalSearchOperator {
+// ----- Swap 2 symbols -----
+
+// This operator explores *all* pairs (card1, some symbol on card1),
+// (card2, some symbol on card2) and swaps the symbols between the two
+// cards.
+//
+// Note that this could create invalid moves (for example, by adding a
+// symbol to a card that already had it); see the DobbleFilter class
+// below to see how we filter those out.
+class SwapSymbols : public DobbleOperator {
  public:
-  SwitchSymbols(const IntVar* const* vars,
-                int size,
+  SwapSymbols(const IntVar* const* card_symbol_vars,
+                int num_vars,
                 int num_cards,
                 int num_symbols,
                 int num_symbols_per_card)
-      : IntVarLocalSearchOperator(vars, size),
-        num_cards_(num_cards),
-        num_symbols_(num_symbols),
-        num_symbols_per_card_(num_symbols_per_card),
+      : DobbleOperator(card_symbol_vars,
+                       num_vars,
+                       num_cards,
+                       num_symbols,
+                       num_symbols_per_card),
         current_card1_(-1),
         current_card2_(-1),
         current_symbol1_(-1),
-        current_symbol2_(-1),
-        symbols_per_card_(num_cards) {
-    for (int card = 0; card < num_cards; ++card) {
-      symbols_per_card_[card].resize(num_symbols_per_card, -1);
-    }
+        current_symbol2_(-1) {
   }
 
-  virtual ~SwitchSymbols() {}
+  virtual ~SwapSymbols() {}
 
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
-    CHECK_NOTNULL(delta);
-    while (true) {
-      RevertChanges(true);
-      if (!Increment()) {
-        VLOG(1) << "finished nhood";
-        return false;
-      }
-      const int symbol1 = symbols_per_card_[current_card1_][current_symbol1_];
-      const int symbol2 = symbols_per_card_[current_card2_][current_symbol2_];
-      DCHECK(Value(Index(current_card1_, symbol1)));
-      DCHECK(Value(Index(current_card2_, symbol2)));
-      if (Value(Index(current_card1_, symbol2)) ||
-          Value(Index(current_card2_, symbol1))) {
-        VLOG(1) << "Will overwrite symbol, continuing";
-        continue;
-      }
-      SetValue(Index(current_card1_, symbol1), 0);
-      SetValue(Index(current_card2_, symbol2), 0);
-      SetValue(Index(current_card1_, symbol2), 1);
-      SetValue(Index(current_card2_, symbol1), 1);
-      if (ApplyChanges(delta, deltadelta)) {
-        VLOG(1) << "Delta = " << delta->DebugString();
-        return true;
-      }
+  // Finds the next swap, returns false when it has finished.
+  virtual bool MakeOneNeighbor() {
+    if (!PickNextSwap()) {
+      VLOG(1) << "finished neighborhood";
+      return false;
     }
-    return false;
+
+    const int symbol1 = symbols_per_card_[current_card1_][current_symbol1_];
+    const int symbol2 = symbols_per_card_[current_card2_][current_symbol2_];
+    SwapTwoSymbolsOnCards(current_card1_, symbol1, current_card2_, symbol2);
+    return true;
   }
- protected:
-  virtual void OnStart() {
-    VLOG(1) << "start nhood";
-    for (int card = 0; card < num_cards_; ++card) {
-      int found = 0;
-      for (int symbol = 0; symbol < num_symbols_; ++symbol) {
-        if (Value(Index(card, symbol)) == 1) {
-          symbols_per_card_[card][found++] = symbol;
-        }
-      }
-      DCHECK_EQ(num_symbols_per_card_, found);
-    }
+
+ private:
+  // Reinit the exploration loop.
+  virtual void InitNeighborhoodSearch() {
     current_card1_ = 0;
     current_card2_ = 1;
     current_symbol1_ = 0;
     current_symbol2_ = -1;
   }
- private:
-  int Index(int card, int symbol) {
-    return card * num_symbols_ + symbol;
-  }
 
-  bool Increment() {
+  // Compute the next move. It returns false when there are none.
+  bool PickNextSwap() {
     current_symbol2_++;
     if (current_symbol2_ == num_symbols_per_card_) {
       current_symbol2_ = 0;
@@ -325,376 +367,280 @@ class SwitchSymbols : public IntVarLocalSearchOperator {
     return current_card1_ < num_cards_ - 1;
   }
 
-  const int num_cards_;
-  const int num_symbols_;
-  const int num_symbols_per_card_;
   int current_card1_;
   int current_card2_;
   int current_symbol1_;
   int current_symbol2_;
-  vector<vector<int> > symbols_per_card_;
 };
 
-class CycleSymbols : public IntVarLocalSearchOperator {
+// Multiple swaps of two symbols. This operator is an expanded version
+// of the previous operator.
+//
+// At each step, it will pick a number num_swaps at random in
+// [2 .. max_num_swaps], and then pick num_swaps random pairs (card1,
+// some symbol on card1), (card2, some symbol on card2), and swap the
+// symbols of each pair.
+//
+// As the search space (the "neighborhood") is huge, we use a
+// randomized "infinite" version instead of an iterative, exhaustive
+// one.
+class SwapSymbolsOnCardPairs : public DobbleOperator {
  public:
-  CycleSymbols(const IntVar* const* vars,
-               int size,
-               int num_cards,
-               int num_symbols,
-               int num_symbols_per_card)
-      : IntVarLocalSearchOperator(vars, size),
-        num_cards_(num_cards),
-        num_symbols_(num_symbols),
-        num_symbols_per_card_(num_symbols_per_card),
-        current_card1_(-1),
-        current_card2_(-1),
-        current_symbol1_(-1),
-        current_symbol2_(-1),
-        symbols_per_card_(num_cards) {
-    for (int card = 0; card < num_cards; ++card) {
-      symbols_per_card_[card].resize(num_symbols_per_card, -1);
-    }
-    InitTriples();
+  SwapSymbolsOnCardPairs(const IntVar* const* card_symbol_vars,
+                         int num_vars,
+                         int num_cards,
+                         int num_symbols,
+                         int num_symbols_per_card,
+                         int max_num_swaps)
+      : DobbleOperator(card_symbol_vars,
+                       num_vars,
+                       num_cards,
+                       num_symbols,
+                       num_symbols_per_card),
+        rand_(FLAGS_ls_seed),
+        max_num_swaps_(max_num_swaps) {
+    CHECK_GE(max_num_swaps, 2);
   }
 
-  virtual ~CycleSymbols() {}
+  virtual ~SwapSymbolsOnCardPairs() {}
 
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
-    CHECK_NOTNULL(delta);
-    while (true) {
-      RevertChanges(true);
-      if (!Increment()) {
-        VLOG(1) << "finished nhood";
-        return false;
-      }
-      const int symbol1 = symbols_per_card_[current_card1_][current_symbol1_];
-      const int symbol2 = symbols_per_card_[current_card2_][current_symbol2_];
-      const int symbol3 = symbols_per_card_[current_card3_][current_symbol3_];
-      DCHECK(Value(Index(current_card1_, symbol1)));
-      DCHECK(Value(Index(current_card2_, symbol2)));
-      DCHECK(Value(Index(current_card3_, symbol3)));
-      if (Value(Index(current_card1_, symbol2)) ||
-          Value(Index(current_card2_, symbol3)) ||
-          Value(Index(current_card3_, symbol1))) {
-        VLOG(1) << "Will overwrite symbol, continuing";
-        continue;
-      }
-      SetValue(Index(current_card1_, symbol1), 0);
-      SetValue(Index(current_card2_, symbol2), 0);
-      SetValue(Index(current_card3_, symbol3), 0);
-      SetValue(Index(current_card1_, symbol2), 1);
-      SetValue(Index(current_card2_, symbol3), 1);
-      SetValue(Index(current_card3_, symbol1), 1);
-      if (ApplyChanges(delta, deltadelta)) {
-        VLOG(1) << "Delta = " << delta->DebugString();
-        return true;
-      }
-    }
-    return false;
-  }
  protected:
-  virtual void OnStart() {
-    VLOG(1) << "start nhood";
-    for (int card = 0; card < num_cards_; ++card) {
-      int found = 0;
-      for (int symbol = 0; symbol < num_symbols_; ++symbol) {
-        if (Value(Index(card, symbol)) == 1) {
-          symbols_per_card_[card][found++] = symbol;
-        }
-      }
-      DCHECK_EQ(num_symbols_per_card_, found);
+  virtual bool MakeOneNeighbor() {
+    const int num_swaps = rand_.Uniform(max_num_swaps_ - 1) + 2;
+    for (int i = 0; i < num_swaps; ++i) {
+      const int card_1 = rand_.Uniform(num_cards_);
+      const int symbol_index_1 = rand_.Uniform(num_symbols_per_card_);
+      const int symbol_1 = symbols_per_card_[card_1][symbol_index_1];
+      const int card_2 = rand_.Uniform(num_cards_);
+      const int symbol_index_2 = rand_.Uniform(num_symbols_per_card_);
+      const int symbol_2 = symbols_per_card_[card_2][symbol_index_2];
+      SwapTwoSymbolsOnCards(card_1, symbol_1, card_2, symbol_2);
     }
-    card_triple_index_ = 0;
-    current_card1_ = card_triples_[0].card1;
-    current_card2_ = card_triples_[0].card2;
-    current_card3_ = card_triples_[0].card3;
-    current_symbol1_ = 0;
-    current_symbol2_ = 0;
-    current_symbol3_ = -1;
-  }
- private:
-  struct Triple {
-    Triple(int c1, int c2, int c3) : card1(c1), card2(c2), card3(c3) {}
-    int card1;
-    int card2;
-    int card3;
-  };
-
-  void InitTriples() {
-    for (int c1 = 0; c1 < num_cards_; ++c1) {
-      for (int c2 = 0; c2 < num_cards_; ++c2) {
-        for (int c3 = 0; c3 < num_cards_; ++c3) {
-          if (c1 != c2 && c1 != c3 && c2 != c3) {
-            card_triples_.push_back(Triple(c1, c2, c3));
-          }
-        }
-      }
-    }
+    return true;
   }
 
-  int Index(int card, int symbol) {
-    return card * num_symbols_ + symbol;
-  }
-
-  void NextCardTriple() {
-    card_triple_index_++;
-    if (card_triple_index_ < card_triples_.size()) {
-      const Triple& triple = card_triples_[card_triple_index_];
-      current_card1_ = triple.card1;
-      current_card2_ = triple.card2;
-      current_card3_ = triple.card3;
-    }
-  }
-
-  bool Increment() {
-    current_symbol3_++;
-    if (current_symbol3_ == num_symbols_per_card_) {
-      current_symbol3_ = 0;
-      current_symbol2_++;
-      if (current_symbol2_ == num_symbols_per_card_) {
-        current_symbol2_ = 0;
-        current_symbol1_++;
-        if (current_symbol1_ == num_symbols_per_card_) {
-          current_symbol1_ = 0;
-          NextCardTriple();
-        }
-      }
-    }
-    return card_triple_index_ < card_triples_.size();
-  }
-
-  const int num_cards_;
-  const int num_symbols_;
-  const int num_symbols_per_card_;
-  int current_card1_;
-  int current_card2_;
-  int current_card3_;
-  int current_symbol1_;
-  int current_symbol2_;
-  int current_symbol3_;
-  vector<vector<int> > symbols_per_card_;
-  int card_triple_index_;
-  vector<Triple> card_triples_;
-};
-
-class CycleNeighborhood : public IntVarLocalSearchOperator {
- public:
-  CycleNeighborhood(const IntVar* const* vars,
-                    int size,
-                    int max_size,
-                    int num_cards,
-                    int num_symbols,
-                    int num_symbols_per_card)
-      : IntVarLocalSearchOperator(vars, size),
-        rand_(FLAGS_lns_seed),
-        max_size_(max_size),
-        num_cards_(num_cards),
-        num_symbols_(num_symbols),
-        num_symbols_per_card_(num_symbols_per_card),
-        symbols_per_card_(num_cards) {
-    for (int card = 0; card < num_cards_; ++card) {
-      symbols_per_card_[card].resize(num_symbols_per_card_, -1);
-    }
-  }
-
-  virtual ~CycleNeighborhood() {}
-
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
-    CHECK_NOTNULL(delta);
-    while (true) {
-      RevertChanges(true);
-
-      const int num_cards_to_release = rand_.Uniform(max_size_ - 3) + 3;
-      hash_set<int> cards_set;
-      vector<ToSwap> to_swap;
-      hash_set<int> symbols_to_release;
-      while (cards_set.size() < num_cards_to_release) {
-        const int card = rand_.Uniform(num_cards_);
-        if (ContainsKey(cards_set, card)) {
-          continue;
-        }
-        while (true) {
-          const int symbol =
-              symbols_per_card_[card][rand_.Uniform(num_symbols_per_card_)];
-          if (!ContainsKey(symbols_to_release, symbol)) {
-            to_swap.push_back(ToSwap(card, symbol));
-            symbols_to_release.insert(symbol);
-            break;
-          }
-        }
-      }
-
-      std::random_shuffle(to_swap.begin(), to_swap.end());
-      for (int i = 0; i < num_cards_to_release; ++i) {
-        SetValue(Index(to_swap[i].card, to_swap[i].symbol), 0);
-        SetValue(Index(to_swap[i].card,
-                       to_swap[(i + 1) % num_cards_to_release].symbol), 1);
-      }
-
-      if (ApplyChanges(delta, deltadelta)) {
-        VLOG(1) << "Delta = " << delta->DebugString();
-        return true;
-      }
-    }
-    return false;
-  }
- protected:
-  virtual void OnStart() {
-    for (int card = 0; card < num_cards_; ++card) {
-      int found = 0;
-      for (int symbol = 0; symbol < num_symbols_; ++symbol) {
-        if (Value(Index(card, symbol)) == 1) {
-          symbols_per_card_[card][found++] = symbol;
-        }
-      }
-      DCHECK_EQ(num_symbols_per_card_, found);
-    }
-  }
+  virtual void InitNeighborhoodSearch() {}
 
  private:
-  struct ToSwap {
-    ToSwap(int c, int s) : card(c), symbol(s) {}
-    int card;
-    int symbol;
-  };
-
-  int Index(int card, int symbol) {
-    return card * num_symbols_ + symbol;
-  }
-
   ACMRandom rand_;
-  const int max_size_;
-  const int num_cards_;
-  const int num_symbols_;
-  const int num_symbols_per_card_;
-  vector<vector<int> > symbols_per_card_;
+  const int max_num_swaps_;
 };
 
+// ----- Local Search Filter -----
 
+// A filter is responsible for rejecting a local search move faster
+// than what the propagation of the constraint solver would do.
+// Its API consists in:
+//   - The constructor, which takes as input a reference to all the
+//     variables relevant to the filter.
+//   - OnSynchronize(), called at the beginning of the search and
+//     after each move to a new solution (when the local search
+//     restarts from it).
+//   - Accept(), which takes as input an attempted move (in the form
+//     of a Delta to tentatively apply to the variables), and returns
+//     true iff this move is found valid.
+//
+// To decide if a move is valid, first this DobbleFilter builds a
+// bitmap of symbols per card.  Then for each move, it updates the
+// bitmap according to the move and checks the following constraints:
+// - First, each card still has num_symbols_per_card symbols.  - The
+// cost of the assignment described by the move is better than the
+// current one.
+
+// After the check is done, the original bitmap is restored if the
+// move was rejected, so as to be ready for the next evaluation.
+//
+// Please note that this filter uses a fixed size bitset and
+// effectively limits the number of cards to 63, and thus the number
+// of symbols per card to 8.
 class DobbleFilter : public IntVarLocalSearchFilter {
  public:
-  DobbleFilter(const IntVar* const* vars,
-               int size,
+  DobbleFilter(const IntVar* const* card_symbol_vars,
+               int num_vars,
                int num_cards,
                int num_symbols,
                int num_symbols_per_card)
-      : IntVarLocalSearchFilter(vars, size),
+      : IntVarLocalSearchFilter(card_symbol_vars, num_vars),
         num_cards_(num_cards),
         num_symbols_(num_symbols),
         num_symbols_per_card_(num_symbols_per_card),
-        cards_(num_cards, 0ULL),
-        costs_(num_cards_) {
-    for (int card = 0; card < num_cards_; ++card) {
-      costs_[card].resize(num_cards_, 0);
-    }
-  }
+        temporary_bitset_(0),
+        symbol_bitmask_per_card_(num_cards, 0),
+        violation_costs_(num_cards_, std::vector<int>(num_cards_, 0)) {}
 
+  // We build the current bitmap and the matrix of violation cost
+  // between any two cards.
   virtual void OnSynchronize() {
-    memset(cards_.data(), 0, num_cards_ * sizeof(*cards_.data()));
+    symbol_bitmask_per_card_.assign(num_cards_, 0);
     for (int card = 0; card < num_cards_; ++card) {
       for (int symbol = 0; symbol < num_symbols_; ++symbol) {
-        if (Value(card * num_symbols_ + symbol)) {
-          SetBit64(&cards_[card], symbol);
+        if (Value(VarIndex(card, symbol))) {
+          SetBit64(&symbol_bitmask_per_card_[card], symbol);
         }
       }
     }
     for (int card1 = 0; card1 < num_cards_; ++card1) {
       for (int card2 = 0; card2 < num_cards_; ++card2) {
-        costs_[card1][card2] =
-            Cost(BitCount64(cards_[card1] & cards_[card2]));
+        violation_costs_[card1][card2] =
+            MathUtil::Abs(BitCount64(symbol_bitmask_per_card_[card1] &
+                                     symbol_bitmask_per_card_[card2]) - 1);
       }
     }
     DCHECK(CheckCards());
   }
 
-  virtual bool Accept(const Assignment* delta, const Assignment* deltadelta) {
+  // The LocalSearchFilter::Accept() API also takes a deltadelta,
+  // which is the difference between the current delta and the last
+  // delta that was given to Accept() -- but we don't use it here.
+  virtual bool Accept(const Assignment* delta,
+                      const Assignment* unused_deltadelta) {
     const Assignment::IntContainer& solution_delta = delta->IntVarContainer();
     const int solution_delta_size = solution_delta.Size();
 
-    // First we check we are not using LNS.
+    // The input const Assignment* delta given to Accept() may
+    // actually contain "Deactivated" elements, which represent
+    // variables that have been freed -- they are not bound to a
+    // single value anymore. This happens with LNS-type (Large
+    // Neighborhood Search) LocalSearchOperator, which are not used in
+    // this example as of 2012-01; and we refer the reader to
+    // ./routing.cc for an example of such LNS-type operators.
+    //
+    // For didactical purposes, we will assume for a moment that a
+    // LNS-type operator might be applied. The Filter will still be
+    // called, but our DobbleFilter here won't be able to work, since
+    // it needs every variable to be bound (i.e. have a fixed value),
+    // in the assignment that it considers. Therefore, we include here
+    // a snippet of code that will detect if the input assignment is
+    // not fully bound. For further details, read ./routing.cc -- but
+    // we strongly advise the reader to first try and understand all
+    // of this file.
     for (int i = 0; i < solution_delta_size; ++i) {
-      const IntVarElement& element = solution_delta.Element(i);
-      if (!element.Activated()) {
-        // Doodle filters are not robust to LNS, so skip filters when
-        // some elements are not activated.
-        VLOG(1) << "LNS";
+      if (!solution_delta.Element(i).Activated()) {
+        VLOG(1)
+            << "Element #" << i << " of the delta assignment given to"
+            << " DobbleFilter::Accept() is not activated (i.e. its variable"
+            << " is not bound to a single value anymore). This means that"
+            << " we are in a LNS phase, and the DobbleFilter won't be able"
+            << " to filter anything. Returning true.";
         return true;
       }
     }
     VLOG(1) << "No LNS, size = " << solution_delta_size;
-    backtrack_.clear();
-    hash_set<int> touched_cards;
-    for (int index = 0; index < solution_delta_size; ++index) {
-      int64 touched_var = -1;
-      FindIndex(solution_delta.Element(index).Var(), &touched_var);
-      const int card = touched_var / num_symbols_;
-      const int symbol = touched_var % num_symbols_;
-      const int new_value = solution_delta.Element(index).Value();
-      if (!ContainsKey(touched_cards, card)) {
-        Save(card);
-        touched_cards.insert(card);
-      }
-      if (new_value) {
-        SetBit64(&cards_[card], symbol);
-      } else {
-        ClearBit64(&cards_[card], symbol);
-      }
-    }
 
+    // Collect the set of cards that have been modified by this move.
+    std::vector<int> touched_cards;
+    ComputeTouchedCards(solution_delta, &touched_cards);
+
+    // Check basic metrics to fail fast.
     if (!CheckCards()) {
-      Backtrack();
+      RestoreBitsetPerCard();
       DCHECK(CheckCards());
       VLOG(1) << "reject by size";
       return false;
     }
 
-    hash_set<int> treated_cards;
-    int cost_delta = 0;
-    for (ConstIter<hash_set<int> > card_it(touched_cards);
-         !card_it.at_end();
-         ++card_it) {
-      treated_cards.insert(*card_it);
-      const uint64 bitset = cards_[*card_it];
-      const vector<int>& row_cost = costs_[*card_it];
-      for (int card = 0; card < num_cards_; ++card) {
-        if (!ContainsKey(treated_cards, card)) {
-          cost_delta +=
-              Cost(BitCount64(bitset & cards_[card])) - row_cost[card];
-        }
-      }
-    }
-    Backtrack();
+    // Compute new cost.
+    const int cost_delta = ComputeNewCost(touched_cards);
+
+    // Reset the data structure to the state before the evaluation.
+    RestoreBitsetPerCard();
+
+    // And exit (this is only valid for a greedy descent and would
+    // reject valid moves in tabu search for instance).
     if (cost_delta >= 0) {
       VLOG(1) << "reject";
     }
     return cost_delta < 0;
   }
+
  private:
-  struct Undo {
-    Undo(int c, uint64 b) : card(c), bitset(b) {}
+  // Undo information after an evaluation.
+  struct UndoChange {
+    UndoChange(int c, uint64 b) : card(c), bitset(b) {}
     int card;
     uint64 bitset;
   };
 
-  int Cost(int intersection_size) {
-    return abs(intersection_size - 1);
+  int VarIndex(int card, int symbol) {
+    return card * num_symbols_ + symbol;
   }
 
-  void Backtrack() {
-    for (int i = 0; i < backtrack_.size(); ++i) {
-      cards_[backtrack_[i].card] = backtrack_[i].bitset;
+  void ClearBitset() {
+    temporary_bitset_ = 0;
+  }
+
+  // For each touched card, compare against all others to compute the
+  // delta in term of cost. We use an bitset to avoid counting twice
+  // between two cards appearing in the local search move.
+  int ComputeNewCost(const std::vector<int>& touched_cards) {
+    ClearBitset();
+    int cost_delta = 0;
+    for (int i = 0; i < touched_cards.size(); ++i) {
+      const int touched = touched_cards[i];
+      SetBit64(&temporary_bitset_, touched);
+      const uint64 card_bitset = symbol_bitmask_per_card_[touched];
+      const std::vector<int>& row_cost = violation_costs_[touched];
+      for (int other_card = 0; other_card < num_cards_; ++other_card) {
+        if (!IsBitSet64(&temporary_bitset_, other_card)) {
+          cost_delta +=
+              MathUtil::Abs(
+                  BitCount64(card_bitset &
+                             symbol_bitmask_per_card_[other_card]) - 1);
+          cost_delta -= row_cost[other_card];
+        }
+      }
+    }
+    return cost_delta;
+  }
+
+  // Collects all card indices appearing in the local search move.
+  void ComputeTouchedCards(const Assignment::IntContainer& solution_delta,
+                           std::vector<int>* const touched_cards) {
+    ClearBitset();
+    const int solution_delta_size = solution_delta.Size();
+    const int kUnassigned = -1;
+    for (int index = 0; index < solution_delta_size; ++index) {
+      int64 touched_var = kUnassigned;
+      FindIndex(solution_delta.Element(index).Var(), &touched_var);
+      CHECK_NE(touched_var, kUnassigned);
+      const int card = touched_var / num_symbols_;
+      const int symbol = touched_var % num_symbols_;
+      const int new_value = solution_delta.Element(index).Value();
+      if (!IsBitSet64(&temporary_bitset_, card)) {
+        SaveRestoreInformation(card);
+        touched_cards->push_back(card);
+        SetBit64(&temporary_bitset_, card);
+      }
+      if (new_value) {
+        SetBit64(&symbol_bitmask_per_card_[card], symbol);
+      } else {
+        ClearBit64(&symbol_bitmask_per_card_[card], symbol);
+      }
     }
   }
 
-  void Save(int card) {
-    backtrack_.push_back(Undo(card, cards_[card]));
+  // Undo all modifications done when evaluating a move.
+  void RestoreBitsetPerCard() {
+    for (int i = 0; i < restore_information_.size(); ++i) {
+      symbol_bitmask_per_card_[restore_information_[i].card] =
+          restore_information_[i].bitset;
+    }
+    restore_information_.clear();
   }
 
+  // Stores undo information for a given card.
+  void SaveRestoreInformation(int card) {
+    restore_information_.push_back(UndoChange(card,
+                                              symbol_bitmask_per_card_[card]));
+  }
+
+  // Checks that after the local search move, each card would still have
+  // num_symbols_per_card symbols on it.
   bool CheckCards() {
     for (int i = 0; i < num_cards_; ++i) {
-      if (num_symbols_per_card_ != BitCount64(cards_[i])) {
+      if (num_symbols_per_card_ != BitCount64(symbol_bitmask_per_card_[i])) {
         VLOG(1) << "card " << i << " has bitset of size "
-                  << BitCount64(cards_[i]);
+                  << BitCount64(symbol_bitmask_per_card_[i]);
         return false;
       }
     }
@@ -704,10 +650,13 @@ class DobbleFilter : public IntVarLocalSearchFilter {
   const int num_cards_;
   const int num_symbols_;
   const int num_symbols_per_card_;
-  vector<uint64> cards_;
-  vector<vector<int> > costs_;
-  vector<Undo> backtrack_;
+  uint64 temporary_bitset_;
+  std::vector<uint64> symbol_bitmask_per_card_;
+  std::vector<std::vector<int> > violation_costs_;
+  std::vector<UndoChange> restore_information_;
 };
+
+// ----- Main Method -----
 
 void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
   LOG(INFO) << "Solving dobble assignment problem:";
@@ -715,148 +664,147 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
   LOG(INFO) << "  - " << num_symbols << " symbols";
   LOG(INFO) << "  - " << num_symbols_per_card << " symbols per card";
 
+  // Creates the solver.
   Solver solver("dobble");
-  vector<vector<IntVar*> > vars(num_cards);
-  vector<IntVar*> all_vars;
+  // Creates the matrix of boolean variables (cards * symbols).
+  std::vector<std::vector<IntVar*> > card_symbol_vars(num_cards);
+  std::vector<IntVar*> all_card_symbol_vars;
   for (int card_index = 0; card_index < num_cards; ++card_index) {
     solver.MakeBoolVarArray(num_symbols,
                             StringPrintf("card_%i_", card_index),
-                            &vars[card_index]);
+                            &card_symbol_vars[card_index]);
     for (int symbol_index = 0;
          symbol_index < num_symbols;
          ++symbol_index) {
-      all_vars.push_back(vars[card_index][symbol_index]);
+      all_card_symbol_vars.push_back(
+          card_symbol_vars[card_index][symbol_index]);
     }
   }
-  vector<IntVar*> slack_vars;
+  // Creates cardinality intersection variables and remember the
+  // violation variables.
+  std::vector<IntVar*> violation_vars;
   for (int card1 = 0; card1 < num_cards; ++card1) {
     for (int card2 = 0; card2 < num_cards; ++card2) {
       if (card1 != card2) {
-        slack_vars.push_back(AddIntersectionVar(&solver,
-                                                vars[card1],
-                                                vars[card2],
-                                                num_symbols_per_card));
+        violation_vars.push_back(CreateViolationVar(&solver,
+                                                    card_symbol_vars[card1],
+                                                    card_symbol_vars[card2],
+                                                    num_symbols_per_card));
       }
     }
   }
+  // Create the objective variable.
+  IntVar* const objective_var = solver.MakeSum(violation_vars)->Var();
 
+  // Add constraint: there must be exactly num_symbols_per_card
+  // symbols per card.
   for (int card = 0; card < num_cards; ++card) {
-    solver.AddConstraint(solver.MakeSumEquality(vars[card],
+    solver.AddConstraint(solver.MakeSumEquality(card_symbol_vars[card],
                                                 num_symbols_per_card));
   }
 
+  // IMPORTANT OPTIMIZATION:
+  // Add constraint: each symbol appears on exactly
+  // num_symbols_per_card cards (i.e. symbols are evenly
+  // distributed). This constraint is actually redundant, because it
+  // is a (non-trivial) consequence of the other constraints and of
+  // the model. But adding it makes the search go faster.
   for (int symbol_index = 0; symbol_index < num_symbols; ++symbol_index) {
-    vector<IntVar*> tmp;
+    std::vector<IntVar*> tmp;
     for (int card_index = 0; card_index < num_cards; ++card_index) {
-      tmp.push_back(vars[card_index][symbol_index]);
+      tmp.push_back(card_symbol_vars[card_index][symbol_index]);
      }
     solver.AddConstraint(solver.MakeSumEquality(tmp, num_symbols_per_card));
   }
 
-  LOG(INFO) << "Solving with LNS";
-  LOG(INFO) << "  - lns_size = " << FLAGS_lns_size;
-  LOG(INFO) << "  - lns_limit = " << FLAGS_lns_limit;
-  LOG(INFO) << "  - fail_limit = " << FLAGS_fail_limit;
+  // Search.
+  LOG(INFO) << "Solving with Local Search";
+  LOG(INFO) << "  - time limit = " << FLAGS_time_limit_in_ms << " ms";
 
-  DecisionBuilder* const build_db = solver.MakePhase(all_vars,
-                                                     Solver::CHOOSE_RANDOM,
-                                                     Solver::ASSIGN_MAX_VALUE);
+  // Start a DecisionBuilder phase to find a first solution, using the
+  // strategy "Pick some random, yet unassigned card symbol variable
+  // and set its value to 1".
+  DecisionBuilder* const build_db = solver.MakePhase(
+      all_card_symbol_vars,
+      Solver::CHOOSE_RANDOM,      // Solver::IntVarStrategy
+      Solver::ASSIGN_MAX_VALUE);  // Solver::IntValueStrategy
 
-  const int kNhoodLimit = 1000;
+  // Creates local search operators.
+  std::vector<LocalSearchOperator*> operators;
   LocalSearchOperator* const switch_operator =
-      solver.RevAlloc(new SwitchSymbols(all_vars.data(),
-                                        all_vars.size(),
-                                        num_cards,
-                                        num_symbols,
-                                        num_symbols_per_card));
-  LocalSearchOperator* const cycle_operator =
-      solver.RevAlloc(new CycleSymbols(all_vars.data(),
-                                       all_vars.size(),
-                                       num_cards,
-                                       num_symbols,
-                                       num_symbols_per_card));
-  LocalSearchOperator* const long_cycle_operator_limited =
-      solver.MakeNeighborhoodLimit(
-          solver.RevAlloc(new CycleNeighborhood(all_vars.data(),
-                                                all_vars.size(),
-                                                FLAGS_lns_size,
-                                                num_cards,
-                                                num_symbols,
-                                                num_symbols_per_card)),
-          kNhoodLimit);
-  LocalSearchOperator* const long_cycle_operator_unlimited =
-      solver.RevAlloc(new CycleNeighborhood(all_vars.data(),
-                                            all_vars.size(),
-                                            FLAGS_lns_size,
-                                            num_cards,
-                                            num_symbols,
-                                            num_symbols_per_card));
-  // LocalSearchOperator* const cross_lns_operator_limited =
-  //     solver.MakeNeighborhoodLimit(
-  //         solver.RevAlloc(new CrossLns(all_vars.data(),
-  //                                      all_vars.size(),
-  //                                      FLAGS_lns_size,
-  //                                      num_cards,
-  //                                      num_symbols,
-  //                                      num_symbols_per_card)),
-  //         kNhoodLimit);
-  LocalSearchOperator* const card_lns_operator_limited =
-      solver.MakeNeighborhoodLimit(
-          solver.RevAlloc(new CardLns(all_vars.data(),
-                                      all_vars.size(),
-                                      FLAGS_lns_size,
+      solver.RevAlloc(new SwapSymbols(all_card_symbol_vars.data(),
+                                      all_card_symbol_vars.size(),
                                       num_cards,
-                                      num_symbols)),
-          kNhoodLimit);
-  LocalSearchOperator* const card_lns_operator_unlimited =
-      solver.RevAlloc(new CardLns(all_vars.data(),
-                                  all_vars.size(),
-                                  FLAGS_lns_size,
-                                  num_cards,
-                                  num_symbols));
-
-  vector<LocalSearchOperator*> operators;
+                                      num_symbols,
+                                      num_symbols_per_card));
   operators.push_back(switch_operator);
-  operators.push_back(card_lns_operator_limited);
-  operators.push_back(long_cycle_operator_limited);
-  operators.push_back(cycle_operator);
-  //  operators.push_back(card_lns_operator_unlimited);
-  operators.push_back(long_cycle_operator_unlimited);
-  LocalSearchOperator* const concat =
-      solver.ConcatenateOperators(operators, true);
-  SearchLimit* const lns_limit =
-      solver.MakeLimit(kint64max, kint64max, FLAGS_lns_limit, kint64max);
-  DecisionBuilder* const ls_db = solver.MakeSolveOnce(build_db, lns_limit);
-  vector<LocalSearchFilter*> filters;
-  filters.push_back(solver.RevAlloc(new DobbleFilter(all_vars.data(),
-                                                     all_vars.size(),
-                                                     num_cards,
-                                                     num_symbols,
-                                                     num_symbols_per_card)));
-  LocalSearchPhaseParameters* const parameters =
-      solver.MakeLocalSearchPhaseParameters(concat, ls_db, NULL, filters);
+  LOG(INFO) << "  - add switch operator";
+  if (FLAGS_num_swaps > 0) {
+    LocalSearchOperator* const swaps_operator =
+        solver.RevAlloc(new SwapSymbolsOnCardPairs(all_card_symbol_vars.data(),
+                                                   all_card_symbol_vars.size(),
+                                                   num_cards,
+                                                   num_symbols,
+                                                   num_symbols_per_card,
+                                                   FLAGS_num_swaps));
+    operators.push_back(swaps_operator);
+    LOG(INFO) << "  - add swaps operator with at most "
+              << FLAGS_num_swaps << " swaps";
+  }
+
+  // Creates filter.
+  std::vector<LocalSearchFilter*> filters;
+  if (FLAGS_use_filter) {
+    filters.push_back(solver.RevAlloc(
+        new DobbleFilter(all_card_symbol_vars.data(),
+                         all_card_symbol_vars.size(),
+                         num_cards,
+                         num_symbols,
+                         num_symbols_per_card)));
+  }
+
+  // Main decision builder that regroups the first solution decision
+  // builder and the combination of local search operators and
+  // filters.
   DecisionBuilder* const final_db =
-      solver.MakeLocalSearchPhase(all_vars, build_db, parameters);
+      solver.MakeLocalSearchPhase(
+          all_card_symbol_vars,
+          build_db,
+          solver.MakeLocalSearchPhaseParameters(
+              solver.ConcatenateOperators(operators, true),
+              NULL,  // Sub decision builder, not needed here.
+              NULL,  // Limit the search for improving move, we will stop
+                     // the exploration of the local search at the first
+                     // improving solution (first accept).
+              filters));
 
-  IntVar* const objective_var = solver.MakeSum(slack_vars)->Var();
 
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
+  // Optimize var search monitor.
   OptimizeVar* const optimize = solver.MakeMinimize(objective_var, 1);
   monitors.push_back(optimize);
+
+  // Search log.
   SearchMonitor* const log = solver.MakeSearchLog(100000, optimize);
   monitors.push_back(log);
-  SearchLimit* const fail_limit =
-      solver.MakeLimit(kint64max, kint64max, FLAGS_fail_limit, kint64max);
-  monitors.push_back(fail_limit);
+
+  // Search limit.
+  SearchLimit* const time_limit =
+      solver.MakeLimit(FLAGS_time_limit_in_ms, kint64max, kint64max, kint64max);
+  monitors.push_back(time_limit);
+
+  // And solve!
   solver.Solve(final_db, monitors);
 }
-}
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
-  const int kCards = 57;
-  const int kSymbols = 57;
-  const int kSymbolsPerCard = 8;
+  // These constants comes directly from the dobble game.
+  // There are actually 55 cards, but we can create up to 57 cards.
+  const int kSymbolsPerCard = FLAGS_symbols_per_card;
+  const int kCards = kSymbolsPerCard * (kSymbolsPerCard - 1) + 1;
+  const int kSymbols = kCards;
   operations_research::SolveDobble(kCards,
                                    kSymbols,
                                    kSymbolsPerCard);
