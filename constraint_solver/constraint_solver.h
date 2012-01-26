@@ -4510,13 +4510,13 @@ template <class V, class E> class AssignmentContainer {
   E& MutableElement(const V* const var) {
     int index = -1;
     const bool found = Find(var, &index);
-    DCHECK(found);
+    CHECK(found);
     return MutableElement(index);
   }
   const E& Element(const V* const var) const {
     int index = -1;
     const bool found = Find(var, &index);
-    DCHECK(found);
+    CHECK(found);
     return Element(index);
   }
   const std::vector<E>& elements() const { return elements_; }
