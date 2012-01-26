@@ -46,7 +46,7 @@ public class ARoundOfGolf
    * cook), and each shot a different score in the game. No one scored below
    * 70 or above 85 strokes. From the clues below, can you discover each man's
    * full name, job and golf score?
-   * 
+   *
    * 1. Bill, who is not the maintenance man, plays golf often and had the lowest
    * score of the foursome.
    * 2. Mr. Clubb, who isn't Paul, hit several balls into the woods and scored ten
@@ -56,7 +56,7 @@ public class ARoundOfGolf
    * 4. Mr. Carter thought his score of 78 was one of his better games, even
    *    though Frank's score  was lower.
    * 5. None of the four scored exactly 81 strokes.
-   * 
+   *
    * Determine: First Name - Last Name - Job - Score
    * """
    *
@@ -109,7 +109,6 @@ public class ARoundOfGolf
 
     // 1. Bill, who is not the maintenance man, plays golf often and had
     //    the lowest score of the foursome.
-    // solver.Add(maintenance_man.NonEquality(BillC));
     solver.Add(maintenance_man != Bill);
     solver.Add(score[Bill] < score[Jack]);
     solver.Add(score[Bill] < score[Paul]);
@@ -143,7 +142,6 @@ public class ARoundOfGolf
       solver.Add(score[i] != 81);
     }
 
-
     //
     // Search
     //
@@ -154,14 +152,18 @@ public class ARoundOfGolf
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
-      Console.WriteLine("Last name: " + 
-                        string.Join(",  ", (from i in last_name 
-                                           select i.Value())));
-      Console.WriteLine("Job      : " + 
-                        string.Join(",  ", (from i in job 
-                                           select i.Value())));
-      Console.WriteLine("Score    : " + 
-                        string.Join(", ", (from i in score select i.Value())));
+      Console.WriteLine(
+          "Last name: " +
+          String.Join(",  ", (from i in last_name
+                              select i.Value().ToString()).ToArray()));
+      Console.WriteLine(
+          "Job      : " +
+          String.Join(",  ", (from i in job
+                              select i.Value().ToString()).ToArray()));
+      Console.WriteLine(
+          "Score    : " +
+          String.Join(", ", (from i in score
+                             select i.Value().ToString()).ToArray()));
     }
 
     Console.WriteLine("\nSolutions: {0}", solver.Solutions());
