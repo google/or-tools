@@ -25,3 +25,4 @@ test_csharp: $(CSHARPEXE)
 	$(MONO) csrabbitspheasants.exe
 	$(MONO) csflow.exe
 	$(MONO) csknapsack.exe
+	$(MONO) furniture_moving_intervals.exe

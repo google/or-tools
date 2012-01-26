@@ -4,7 +4,8 @@ CSHARPEXE = \
 	csintegerprogramming.exe \
 	csrabbitspheasants.exe \
 	csflow.exe \
-	csknapsack.exe
+	csknapsack.exe \
+	furniture_moving_intervals.exe
 
 csharpexe: $(CSHARPEXE)
 
@@ -88,6 +89,8 @@ csrabbitspheasants.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBE
 send_more_money.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/send_more_money.cs
 	$(CSC) /target:exe /out:send_more_money.exe /platform:$(NETPLATFORM) /r:Google.OrTools.ConstraintSolver.dll csharp$Ssend_more_money.cs
 
+furniture_moving_intervals.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/furniture_moving_intervals.cs
+	$(CSC) /target:exe /out:furniture_moving_intervals.exe /platform:$(NETPLATFORM) /r:Google.OrTools.ConstraintSolver.dll csharp$Sfurniture_moving_intervals.cs
 
 # csharpalgorithms
 

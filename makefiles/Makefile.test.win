@@ -19,11 +19,12 @@ test_java: java run_RabbitsPheasants run_FlowExample run_LinearProgramming run_I
 
 # csharp test
 test_csharp: $(CSHARPEXE)
-	cslinearprogramming
-	csintegerprogramming
-	csrabbitspheasants
-	csflow
-	csknapsack
+	cslinearprogramming.exe
+	csintegerprogramming.exe
+	csrabbitspheasants.exe
+	csflow.exe
+	csknapsack.exe
+	furniture_moving_intervals.exe
 
 
 
