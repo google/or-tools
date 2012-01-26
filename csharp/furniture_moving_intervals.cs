@@ -33,8 +33,8 @@ public class FurnitureMovingIntervals
     Solver solver = new Solver("FurnitureMovingIntervals");
 
     const int n = 4;
-    int[] duration    = {30,10,15,15};
-    int[] demand      = { 3, 1, 3, 2};
+    int[] durations = {30,10,15,15};
+    int[] demand = {3, 1, 3, 2};
     const int upper_limit = 160;
     const int max_num_workers = 5;
 
@@ -44,10 +44,9 @@ public class FurnitureMovingIntervals
     IntervalVar[] tasks = new IntervalVar[n];
     for (int i = 0; i < n; ++i)
     {
-      int d = duration[i];
       tasks[i] = solver.MakeFixedDurationIntervalVar(0,
-                                                     upper_limit - duration[i],
-                                                     duration[i],
+                                                     upper_limit - durations[i],
+                                                     durations[i],
                                                      false,
                                                      "task_" + i);
     }
@@ -78,7 +77,7 @@ public class FurnitureMovingIntervals
     {
       ends[i] = tasks[i].EndExpr().Var();
     }
-    IntVar end_time = solver.MakeMax(ends).Var();
+    IntVar end_time = solver.MakeMax(ends).VarWithName("end_time");
 
     //
     // Constraints
@@ -98,7 +97,7 @@ public class FurnitureMovingIntervals
     solver.Add(solver.MakeCumulative(all_tasks,
                                      all_demands,
                                      max_num_workers,
-                                     "Main Cumulative Resource"));
+                                     "workers"));
 
     //
     // Some extra constraints to play with
@@ -132,11 +131,9 @@ public class FurnitureMovingIntervals
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
-      Console.WriteLine("num_workers = {0}, end_time = {1}",
-                        num_workers.Value(),
-                        end_time.Value());
+      Console.WriteLine(num_workers.ToString() + ", " + end_time.ToString());
       for(int i = 0; i < n; i++) {
-        Console.WriteLine(tasks[i].ToString());
+        Console.WriteLine("{0} (demand:{1})", tasks[i].ToString(), demand[i]);
       }
       Console.WriteLine();
     }
