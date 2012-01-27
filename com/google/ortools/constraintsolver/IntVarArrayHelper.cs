@@ -145,5 +145,19 @@ namespace Google.OrTools.ConstraintSolver
                                              initial_state,
                                              final_states);
     }
+
+    // Matrix API
+    public static IntVar[] Flatten(this IntVar[,] vars)
+    {
+      int rows = vars.GetLength(0);
+      int cols = vars.GetLength(1);
+      IntVar[] flat = new IntVar[cols * rows];
+      for(int i = 0; i < rows; i++) {
+        for(int j = 0; j < cols; j++) {
+          flat[i * cols + j] = vars[i, j];
+        }
+      }
+      return flat;
+    }
   }
 }  // namespace Google.OrTools.ConstraintSolver

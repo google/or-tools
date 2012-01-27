@@ -1727,6 +1727,93 @@ namespace operations_research {
     return array;
   }
 
+  public IntVar[,] MakeIntVarMatrix(int rows, int cols, long min, long max) {
+    IntVar[,] array = new IntVar[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        array[i,j] = MakeIntVar(min, max);
+      }
+    }
+    return array;
+  }
+
+  public IntVar[,] MakeIntVarMatrix(int rows, int cols,
+                                    long min, long max, string name) {
+    IntVar[,] array = new IntVar[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        string var_name = name + i + "_" + j;
+        array[i,j] = MakeIntVar(min, max, var_name);
+      }
+    }
+    return array;
+  }
+
+  public IntVar[,] MakeIntVarMatrix(int rows, int cols, long[] values) {
+    IntVar[,] array = new IntVar[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        array[i,j] = MakeIntVar(values);
+      }
+    }
+    return array;
+  }
+
+  public IntVar[,] MakeIntVarMatrix(int rows, int cols,
+                                    long[] values, string name) {
+    IntVar[,] array = new IntVar[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        string var_name = name + i + "_" + j;
+        array[i,j] = MakeIntVar(values, var_name);
+      }
+    }
+    return array;
+  }
+
+  public IntVar[,] MakeIntVarMatrix(int rows, int cols, int[] values) {
+    IntVar[,] array = new IntVar[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        array[i,j] = MakeIntVar(values);
+      }
+    }
+    return array;
+  }
+
+  public IntVar[,] MakeIntVarMatrix(int rows, int cols,
+                                    int[] values, string name) {
+    IntVar[,] array = new IntVar[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        string var_name = name + i + "_" + j;
+        array[i,j] = MakeIntVar(values, var_name);
+      }
+    }
+    return array;
+  }
+
+  public IntVar[,] MakeBoolVarMatrix(int rows, int cols) {
+    IntVar[,] array = new IntVar[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        array[i,j] = MakeBoolVar();
+      }
+    }
+    return array;
+  }
+
+  public IntVar[,] MakeBoolVarMatrix(int rows, int cols, string name) {
+    IntVar[,] array = new IntVar[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        string var_name = name + i + "_" + j;
+        array[i,j] = MakeBoolVar(var_name);
+      }
+    }
+    return array;
+  }
+
   public IntervalVar[] MakeFixedDurationIntervalVarArray(int count,
                                                          long start_min,
                                                          long start_max,
