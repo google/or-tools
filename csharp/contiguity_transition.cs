@@ -31,7 +31,7 @@ public class ContiguityRegular
     int[] accepting_states = {1,2,3};
 
     // The regular expression 0*1*0*
-    int[,] transition_tuples = 
+    int[,] transition_tuples =
       {
         // state, input, next state
         {1, 0, 1},
@@ -40,13 +40,10 @@ public class ContiguityRegular
         {2, 1, 2},
         {3, 0, 3}
       };
-      
-    solver.Add(solver.MakeTransitionConstraint(x,
-                                           transition_tuples,
-                                           initial_state,
-                                           accepting_states));
 
-
+    solver.Add(x.Transition(transition_tuples,
+                            initial_state,
+                            accepting_states));
   }
 
 
@@ -59,13 +56,13 @@ public class ContiguityRegular
    * From Global Constraint Catalogue
    * http://www.emn.fr/x-info/sdemasse/gccat/Cglobal_contiguity.html
    * """
-   * Enforce all variables of the VARIABLES collection to be assigned to 0 or 1. 
+   * Enforce all variables of the VARIABLES collection to be assigned to 0 or 1.
    * In addition, all variables assigned to value 1 appear contiguously.
    *
    * Example:
    * (<0, 1, 1, 0>)
    *
-   * The global_contiguity constraint holds since the sequence 0 1 1 0 contains 
+   * The global_contiguity constraint holds since the sequence 0 1 1 0 contains
    * no more than one group of contiguous 1.
    * """
    *
@@ -85,7 +82,7 @@ public class ContiguityRegular
     //
     // Decision variables
     //
-    
+
     IntVar[] reg_input = solver.MakeIntVarArray(n, 0, 1, "reg_input");
 
 

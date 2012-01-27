@@ -125,5 +125,25 @@ namespace Google.OrTools.ConstraintSolver
       Solver solver = GetSolver(vars);
       return solver.MakeDistribute(vars, card_min, card_max, card_size);
     }
+    public static Constraint Transition(this IntVar[] vars,
+                                        long[,] transitions,
+                                        long initial_state,
+                                        long[] final_states) {
+      Solver solver = GetSolver(vars);
+      return solver.MakeTransitionConstraint(vars,
+                                             transitions,
+                                             initial_state,
+                                             final_states);
+    }
+    public static Constraint Transition(this IntVar[] vars,
+                                        int[,] transitions,
+                                        long initial_state,
+                                        int[] final_states) {
+      Solver solver = GetSolver(vars);
+      return solver.MakeTransitionConstraint(vars,
+                                             transitions,
+                                             initial_state,
+                                             final_states);
+    }
   }
 }  // namespace Google.OrTools.ConstraintSolver

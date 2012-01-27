@@ -147,10 +147,9 @@ public class NurseRostering
         reg_input[j] = x[i,j];
       }
 
-      solver.Add(solver.MakeTransitionConstraint(reg_input,
-                                                 transition_tuples,
-                                                 initial_state,
-                                                 accepting_states));
+      solver.Add(reg_input.Transition(transition_tuples,
+                                      initial_state,
+                                      accepting_states));
     }
 
     //
