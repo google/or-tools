@@ -67,7 +67,7 @@ public class Map2
     // Constraints
     //
     for(int i = 0; i < neighbours.GetLength(0); i++) {
-      solver.Add(color[neighbours[i,0]].NonEquality(color[neighbours[i,1]]));
+      solver.Add(color[neighbours[i,0]] != color[neighbours[i,1]]);
     }
 
     // Symmetry breaking

@@ -44,7 +44,7 @@ public class Strimko2
                       {4,6,6,6,7,7,5},
                       {6,4,6,4,5,5,7},
                       {6,6,4,7,7,7,7}};
-    
+
     // Note: This is 1-based
     int[,] placed = {{2,1,1},
                      {2,3,7},
@@ -59,7 +59,7 @@ public class Strimko2
 
     int n = streams.GetLength(0);
     int num_placed = placed.GetLength(0);
-  
+
     //
     // Decision variables
     //
@@ -74,7 +74,7 @@ public class Strimko2
 
     //
     // Constraints
-    //  
+    //
     // all rows and columns must be unique, i.e. a Latin Square
     for(int i = 0; i < n; i++) {
       IntVar[] row = new IntVar[n];
@@ -87,10 +87,10 @@ public class Strimko2
       solver.Add(row.AllDifferent());
       solver.Add(col.AllDifferent());
     }
-      
+
     // streams
     for(int s = 1; s <= n; s++) {
-      IntVar[] tmp = (from i in Enumerable.Range(0, n) 
+      IntVar[] tmp = (from i in Enumerable.Range(0, n)
                       from j in Enumerable.Range(0, n)
                       where streams[i,j] == s
                       select x[i,j]).ToArray();
@@ -101,8 +101,7 @@ public class Strimko2
     // placed
     for(int i = 0; i <  num_placed; i++) {
       // note: also adjust to 0-based
-      solver.Add(solver.MakeEquality(x[placed[i,0] - 1,placed[i,1] - 1],
-                                     placed[i,2]));
+      solver.Add(x[placed[i,0] - 1,placed[i,1] - 1] ==  placed[i,2]);
     }
 
     //

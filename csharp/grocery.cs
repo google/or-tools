@@ -61,7 +61,7 @@ public class Grocery
     solver.Add(item.Sum() == c);
     solver.Add(item[0] * item[1] * item[2] * item[3] - (c * 100*100*100) == 0);
     // solver.Add(item.Prod() - (c * 100*100*100) == 0);
-    // solver.Add(item.Prod().Equality(c * 100*100*100));
+    // solver.Add(item.Prod() == c * 100*100*100);
 
     // Symmetry breaking
     Decreasing(solver, item);

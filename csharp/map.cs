@@ -50,15 +50,15 @@ public class Map
     //
     // Constraints
     //
-    solver.Add(color[France].NonEquality(color[Belgium]));
-    solver.Add(color[France].NonEquality(color[Luxembourg]));
-    solver.Add(color[France].NonEquality(color[Germany]));
-    solver.Add(color[Luxembourg].NonEquality(color[Germany]));
-    solver.Add(color[Luxembourg].NonEquality(color[Belgium]));
-    solver.Add(color[Belgium].NonEquality(color[Netherlands]));
-    solver.Add(color[Belgium].NonEquality(color[Germany]));
-    solver.Add(color[Germany].NonEquality(color[Netherlands]));
-    solver.Add(color[Germany].NonEquality(color[Denmark]));
+    solver.Add(color[France] != color[Belgium]);
+    solver.Add(color[France] != color[Luxembourg]);
+    solver.Add(color[France] != color[Germany]);
+    solver.Add(color[Luxembourg] != color[Germany]);
+    solver.Add(color[Luxembourg] != color[Belgium]);
+    solver.Add(color[Belgium] != color[Netherlands]);
+    solver.Add(color[Belgium] != color[Germany]);
+    solver.Add(color[Germany] != color[Netherlands]);
+    solver.Add(color[Germany] != color[Denmark]);
 
     // Symmetry breaking
     solver.Add(color[Belgium] == 1);

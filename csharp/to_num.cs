@@ -34,7 +34,7 @@ public class ToNumTest
     for(int i = 0; i < len; i++) {
       tmp[i] = (a[i]*(int)Math.Pow(bbase,(len-i-1))).Var();
     }
-     return tmp.Sum().Equality(num);
+     return tmp.Sum() == num;
   }
 
 

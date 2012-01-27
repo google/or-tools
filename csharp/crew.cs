@@ -37,7 +37,7 @@ public class Crew
    * number of cabin crew, and they have to speak certain languages.
    * Every cabin crew member has two flights off after an attended flight.
    * """
-   * 
+   *
    * Also see http://www.hakank.org/or-tools/crew.pl
    *
    */
@@ -68,7 +68,7 @@ public class Crew
                       "Jean",
                       "Heather",
                       "Juliet"};
- 
+
     int num_persons = names.Length;
 
 
@@ -98,7 +98,7 @@ public class Crew
       {0,1,0,1,1},   // Heather = 18
       {0,1,1,0,0}    // Juliet  = 19
     };
-    
+
 
     //
     // Required number of crew members.
@@ -155,7 +155,7 @@ public class Crew
       }
       nw[p] = tmp.Sum().IsGreater(0);
     }
-    solver.Add(nw.Sum().Equality(num_working));
+    solver.Add(nw.Sum() == num_working);
 
     for(int f = 0; f < num_flights; f++) {
       // size of crew
@@ -164,7 +164,7 @@ public class Crew
         tmp[p] = crew[f,p];
       }
       solver.Add(tmp.Sum() == required_crew[f,0]);
-      
+
       // attributes and requirements
       for(int a = 0; a < 5; a++) {
         IntVar[] tmp2 = new IntVar[num_persons];
@@ -181,7 +181,7 @@ public class Crew
         solver.Add(crew[f,i] + crew[f+1,i] + crew[f+2,i] <= 1);
       }
     }
-    
+
     // extra contraint: all must work at least two of the flights
     /*
     for(int p = 0; p < num_persons; p++) {
@@ -269,7 +269,7 @@ public class Crew
     }
 
     if (args.Length > 1) {
-      min = Convert.ToInt32(args[0]);
+      min = Convert.ToInt32(args[1]);
     }
 
     Solve(n, min);

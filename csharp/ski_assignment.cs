@@ -79,7 +79,7 @@ public class SkiAssignment
     }
 
     //    IntVar z = solver.MakeIntVar(0, ski_heights.Sum(), "z");
-    //    solver.Add(z_tmp.Sum().Equality(z));
+    //    solver.Add(z_tmp.Sum() == z);
     // The direct cast from IntExpr to IntVar is potentially faster than
     // the above code.
     IntVar z = z_tmp.Sum().VarWithName("z");

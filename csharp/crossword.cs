@@ -141,11 +141,8 @@ public class Crossword
     //
     for(int I = 0; I < num_overlapping; I++) {
       solver.Add(
-          solver.MakeEquality(
-              A_flat.Element(E[overlapping[I,0]] * word_len +
-                             overlapping[I,1]).Var(),
-              A_flat.Element(E[overlapping[I,2]] * word_len +
-                             overlapping[I,3]).Var()));
+          A_flat.Element(E[overlapping[I,0]] * word_len + overlapping[I,1]) ==
+          A_flat.Element(E[overlapping[I,2]] * word_len + overlapping[I,3]));
     }
 
 

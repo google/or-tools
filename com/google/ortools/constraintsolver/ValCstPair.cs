@@ -42,4 +42,45 @@ namespace Google.OrTools.ConstraintSolver
       return valCstPair.Cst;
     }
   }
+
+  public class ConstraintAndEquality
+  {
+    public ConstraintAndEquality(IntExpr a, IntExpr b, bool equality)
+    {
+      this.left_ = a;
+      this.right_ = b;
+      this.equality_ = equality;
+    }
+
+    bool IsTrue()
+    {
+      return (object)left_ == (object)right_ ? equality_ : !equality_;
+    }
+
+    Constraint ToConstraint()
+    {
+      return equality_ ?
+          left_.solver().MakeEquality(left_.Var(), right_.Var()) :
+          left_.solver().MakeNonEquality(left_.Var(), right_.Var());
+    }
+
+    public static bool operator true(ConstraintAndEquality eq)
+    {
+      return eq.IsTrue();
+    }
+
+    public static bool operator false(ConstraintAndEquality eq)
+    {
+      return !eq.IsTrue();
+    }
+
+    public static implicit operator Constraint(ConstraintAndEquality eq)
+    {
+      return eq.ToConstraint();
+    }
+
+    private IntExpr left_;
+    private IntExpr right_;
+    private bool equality_;
+  }
 }  // namespace Google.OrTools.ConstraintSolver

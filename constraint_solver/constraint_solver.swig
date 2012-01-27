@@ -1563,11 +1563,11 @@ namespace operations_research {
   public static ValCstPair operator !=(IntExpr a, long v) {
     return new ValCstPair(a.solver().MakeNonEquality(a.Var(), v));
   }
-  public Constraint Equality(IntExpr b) {
-    return this.solver().MakeEquality(this.Var(), b.Var());
+  public static ConstraintAndEquality operator ==(IntExpr a, IntExpr b) {
+    return new ConstraintAndEquality(a, b, true);
   }
-  public Constraint NonEquality(IntExpr b) {
-    return this.solver().MakeNonEquality(this.Var(), b.Var());
+  public static ConstraintAndEquality operator !=(IntExpr a, IntExpr b) {
+    return new ConstraintAndEquality(a, b, false);
   }
   public static ValCstPair operator >=(IntExpr a, long v) {
     return new ValCstPair(a.solver().MakeGreaterOrEqual(a, v));

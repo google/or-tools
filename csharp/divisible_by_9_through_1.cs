@@ -35,7 +35,7 @@ public class DivisibleBy9Through1
    *
    */
   public static void MyMod(Solver solver, IntVar x, IntVar y, IntVar r) {
-        
+
     long lbx = x.Min();
     long ubx = x.Max();
     long ubx_neg = -ubx;
@@ -44,7 +44,7 @@ public class DivisibleBy9Through1
     int max_x = (int)Math.Max(ubx, lbx_neg);
 
     IntVar d = solver.MakeIntVar(min_x, max_x, "d");
-    
+
     // r >= 0
     solver.Add(r >= 0);
 
@@ -65,7 +65,7 @@ public class DivisibleBy9Through1
 
     // x == y*d+r
     solver.Add(x - (y*d + r) == 0);
-    
+
   }
 
 
@@ -83,7 +83,7 @@ public class DivisibleBy9Through1
     for(int i = 0; i < len; i++) {
       tmp[i] = (a[i]*(int)Math.Pow(bbase,(len-i-1))).Var();
     }
-     return tmp.Sum().Equality(num);
+     return tmp.Sum() == num;
   }
 
   /**
@@ -153,7 +153,7 @@ public class DivisibleBy9Through1
         Console.Write(t[i].Value() + " ");
       }
       Console.WriteLine("\n");
-      
+
       if (bbase != 10) {
         Console.Write("Number base 10: " + t[0].Value());
         Console.Write(" Base " + bbase + ": ");
@@ -161,7 +161,7 @@ public class DivisibleBy9Through1
           Console.Write(digits_str[(int)x[i].Value() + 1]);
         }
         Console.WriteLine("\n");
-        
+
       }
     }
 

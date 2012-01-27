@@ -44,11 +44,11 @@ public class FurnitureMoving
    *
    */
   static void MyCumulative(Solver solver,
-                           IntVar[] s, 
-                           int[] d, 
-                           int[] r, 
+                           IntVar[] s,
+                           int[] d,
+                           int[] r,
                            IntVar b) {
-       
+
     int[] tasks = (from i in Enumerable.Range(0, s.Length)
                    where r[i] > 0 && d[i] > 0
                    select i).ToArray();
@@ -64,7 +64,7 @@ public class FurnitureMoving
       }
       solver.Add((bb.ToArray(typeof(IntVar)) as IntVar[]).Sum() <= b);
     }
-    
+
     // Somewhat experimental:
     // This constraint is needed to constrain the upper limit of b.
     if (b is IntVar) {
@@ -80,7 +80,7 @@ public class FurnitureMoving
    *
    * Marriott & Stukey: 'Programming with constraints', page  112f
    *
-   * The model implements an decomposition of the global constraint 
+   * The model implements an decomposition of the global constraint
    * cumulative (see above).
    *
    * Also see http://www.hakank.org/or-tools/furniture_moving.py
@@ -111,10 +111,10 @@ public class FurnitureMoving
     // Constraints
     //
     for(int i = 0; i < n; i++) {
-      solver.Add(end_times[i].Equality(start_times[i] + duration[i]));
+      solver.Add(end_times[i] == start_times[i] + duration[i]);
     }
 
-    solver.Add(end_time.Equality(end_times.Max()));
+    solver.Add(end_time == end_times.Max());
     MyCumulative(solver, start_times, duration, demand, num_resources);
 
 
@@ -156,7 +156,7 @@ public class FurnitureMoving
       Console.WriteLine("num_resources: {0} end_time: {1}",
                         num_resources.Value(), end_time.Value());
       for(int i = 0; i < n; i++) {
-        Console.WriteLine("Task {0,1}: {1,2} -> {2,2} -> {3,2} (demand: {4})", 
+        Console.WriteLine("Task {0,1}: {1,2} -> {2,2} -> {3,2} (demand: {4})",
                           i,
                           start_times[i].Value(),
                           duration[i],

@@ -108,7 +108,7 @@ public class NurseRostering
     //
     // Decision variables
     //
-    
+
     //
     // For TransitionConstraint
     //
@@ -153,7 +153,7 @@ public class NurseRostering
                                                  accepting_states));
     }
 
-    // 
+    //
     // Statistics and constraints for each nurse
     //
     for(int i = 0; i < num_nurses; i++) {
@@ -163,7 +163,7 @@ public class NurseRostering
       for(int j = 0; j < num_days; j++) {
         b[j] = (x[i,j].IsEqual(day_shift) + x[i,j].IsEqual(night_shift)).Var();
       }
-      solver.Add(b.Sum().Equality(nurse_stat[i]));
+      solver.Add(b.Sum() == nurse_stat[i]);
 
       // Each nurse must work between 7 and 10
       // days/nights during this period
@@ -173,7 +173,7 @@ public class NurseRostering
     }
 
 
-    // 
+    //
     // Statistics and constraints for each day
     //
     for(int j = 0; j < num_days; j++) {
@@ -182,7 +182,7 @@ public class NurseRostering
         for(int i = 0; i < num_nurses; i++) {
           b[i] = (x[i,j].IsEqual(t)).Var();
         }
-        solver.Add(b.Sum().Equality(day_stat[j,t]));
+        solver.Add(b.Sum() == day_stat[j,t]);
       }
 
       //
@@ -234,7 +234,7 @@ public class NurseRostering
           occ[v]++;
           Console.Write(days[v] + " ");
         }
-        
+
         Console.Write(" #workdays: {0,2}", nurse_stat[i].Value());
         foreach(int s in valid_shifts) {
           int v = 0;
@@ -244,7 +244,7 @@ public class NurseRostering
           Console.Write("  {0}:{1}", days[s-1], v);
         }
         Console.WriteLine();
-        
+
       }
       Console.WriteLine();
 

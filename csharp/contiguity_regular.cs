@@ -26,7 +26,7 @@ public class ContiguityRegular
   /*
    * Global constraint regular
    *
-   * This is a translation of MiniZinc's regular constraint (defined in 
+   * This is a translation of MiniZinc's regular constraint (defined in
    * lib/zinc/globals.mzn), via the Comet code refered above.
    * All comments are from the MiniZinc code.
    * """
@@ -52,9 +52,9 @@ public class ContiguityRegular
                         int[,] d,
                         int q0,
                         int[] F) {
-   
 
-   
+
+
     Debug.Assert(Q > 0, "regular: 'Q' must be greater than zero");
     Debug.Assert(S > 0, "regular: 'S' must be greater than zero");
 
@@ -85,8 +85,8 @@ public class ContiguityRegular
     // string).
     int m = 0;
     int n = x.Length;
-    
-    IntVar[] a = solver.MakeIntVarArray(n+1-m, 0,Q+1, "a");   
+
+    IntVar[] a = solver.MakeIntVarArray(n+1-m, 0,Q+1, "a");
     // Check that the final state is in F
     solver.Add(a[a.Length-1].Member(F));
     // First state is q0
@@ -96,10 +96,10 @@ public class ContiguityRegular
       solver.Add(x[i] >= 1);
       solver.Add(x[i] <= S);
       // Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-      solver.Add(a[i+1].Equality(d2_flatten.Element(((a[i])*S)+(x[i]-1))));
+      solver.Add(a[i+1] == d2_flatten.Element(((a[i]*S)+(x[i]-1))));
 
     }
-        
+
   }
 
 
@@ -115,13 +115,13 @@ public class ContiguityRegular
     int[] accepting_states = {1,2,3};
 
     // The regular expression 0*1*0*
-    int[,] transition_fn =  
+    int[,] transition_fn =
       {
         {1,2}, // state 1 (start): input 0 -> state 1, input 1 -> state 2 i.e. 0*
-        {3,2}, // state 2: 1* 
-        {3,0}, // state 3: 0* 
+        {3,2}, // state 2: 1*
+        {3,0}, // state 3: 0*
       };
-    
+
     MyRegular(solver, x, n_states, input_max, transition_fn,
               initial_state, accepting_states);
 
@@ -139,13 +139,13 @@ public class ContiguityRegular
    * From Global Constraint Catalogue
    * http://www.emn.fr/x-info/sdemasse/gccat/Cglobal_contiguity.html
    * """
-   * Enforce all variables of the VARIABLES collection to be assigned to 0 or 1. 
+   * Enforce all variables of the VARIABLES collection to be assigned to 0 or 1.
    * In addition, all variables assigned to value 1 appear contiguously.
    *
    * Example:
    * (<0, 1, 1, 0>)
    *
-   * The global_contiguity constraint holds since the sequence 0 1 1 0 contains 
+   * The global_contiguity constraint holds since the sequence 0 1 1 0 contains
    * no more than one group of contiguous 1.
    * """
    *
@@ -165,7 +165,7 @@ public class ContiguityRegular
     //
     // Decision variables
     //
-    
+
     // Note: We use 1..2 (instead of 0..1) and subtract 1 in the solution
     IntVar[] reg_input = solver.MakeIntVarArray(n, 1, 2, "reg_input");
 

@@ -85,7 +85,7 @@ public class YoungTableaux
       for(int j = 0; j < n; j++) {
         b[j] = x[i, j].IsLessOrEqual(n);
       }
-      solver.Add(p[i].Equality(b.Sum()));
+      solver.Add(p[i] == b.Sum());
     }
 
     solver.Add(p.Sum() == n);

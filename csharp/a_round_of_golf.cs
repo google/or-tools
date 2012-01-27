@@ -117,13 +117,13 @@ public class ARoundOfGolf
     // 2. Mr. Clubb, who isn't Paul, hit several balls into the woods and
     //    scored ten strokes more than the pro-shop clerk.
     solver.Add(Clubb != Paul);
-    solver.Add(score.Element(Clubb).Equality(score.Element(clerk) + 10));
+    solver.Add(score.Element(Clubb) == score.Element(clerk) + 10);
 
     // 3. In some order, Frank and the caddy scored four and seven more
     //    strokes than Mr. Sands.
     solver.Add(caddy != Frank);
     solver.Add(Sands != Frank);
-    solver.Add(caddy.NonEquality(Sands));
+    solver.Add(caddy != Sands);
 
     IntVar b3_a_1 = (score.Element(Sands) + 4).IsEqual(score[Frank]);
     IntVar b3_a_2 = score.Element(caddy).IsEqual(score.Element(Sands) + 7);

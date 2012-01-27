@@ -47,10 +47,8 @@ public class AllInterval
     solver.Add(diffs.AllDifferent());
 
     for(int k = 0; k < n - 1; k++) {
-      // solver.Add(
-      //     solver.MakeEquality(diffs[k],
-      //         solver.MakeAbs(x[k + 1] - x[k]).Var()));
-      solver.Add(diffs[k].Equality((x[k + 1] - x[k]).Abs()));
+      // solver.Add(diffs[k] == (x[k + 1] - x[k]).Abs());
+      solver.Add(diffs[k] == (x[k + 1] - x[k].Abs()));
     }
 
 

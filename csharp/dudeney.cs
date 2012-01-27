@@ -22,7 +22,7 @@ using Google.OrTools.ConstraintSolver;
 
 public class DudeneyNumbers
 {
-  
+
 
   private static Constraint ToNum(IntVar[] a, IntVar num, int bbase) {
     int len = a.Length;
@@ -31,7 +31,7 @@ public class DudeneyNumbers
     for(int i = 0; i < len; i++) {
       tmp[i] = (a[i]*(int)Math.Pow(bbase,(len-i-1))).Var();
     }
-     return tmp.Sum().Equality(num);
+     return tmp.Sum() == num;
   }
 
 
@@ -43,17 +43,17 @@ public class DudeneyNumbers
    * http://cp-is-fun.blogspot.com/2010/09/test-python.html
    * """
    * I discovered yesterday Dudeney Numbers
-   * A Dudeney Numbers is a positive integer that is a perfect cube such that the sum 
-   * of its decimal digits is equal to the cube root of the number. There are only six 
+   * A Dudeney Numbers is a positive integer that is a perfect cube such that the sum
+   * of its decimal digits is equal to the cube root of the number. There are only six
    * Dudeney Numbers and those are very easy to find with CP.
-   * I made my first experience with google cp solver so find these numbers (model below) 
+   * I made my first experience with google cp solver so find these numbers (model below)
    * and must say that I found it very convenient to build CP models in python!
-   * When you take a close look at the line: 
+   * When you take a close look at the line:
    *     solver.Add(sum([10**(n-i-1)*x[i] for i in range(n)]) == nb)
-   * It is difficult to argue that it is very far from dedicated 
+   * It is difficult to argue that it is very far from dedicated
    * optimization languages!
    * """
-   * 
+   *
    * Also see: http://en.wikipedia.org/wiki/Dudeney_number
    *
    */
@@ -77,15 +77,15 @@ public class DudeneyNumbers
     //
     // Constraints
     //
-    solver.Add(nb.Equality(s*s*s)); 
-    solver.Add(x.Sum().Equality(s));
+    solver.Add(nb == s*s*s);
+    solver.Add(x.Sum() == s);
 
     // solver.Add(ToNum(x, nb, 10));
 
     // alternative
     solver.Add((from i in Enumerable.Range(0, n)
                 select (x[i]*(int)Math.Pow(10,n-i-1)).Var()).
-               ToArray().Sum().Equality(nb));
+               ToArray().Sum() == nb);
 
 
     //
