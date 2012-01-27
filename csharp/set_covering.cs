@@ -38,7 +38,7 @@ public class SetCovering
     // data
     //
 
-    // Placing of firestations, from Winston 'Operations Research', 
+    // Placing of firestations, from Winston 'Operations Research',
     // page 486.
     int min_distance = 15;
     int num_cities = 6;
@@ -49,7 +49,7 @@ public class SetCovering
                         {30,35,15, 0,15,25},
                         {30,20,30,15, 0,14},
                         {20,10,20,25,14, 0}};
-  
+
     //
     // Decision variables
     //
@@ -58,11 +58,11 @@ public class SetCovering
 
     //
     // Constraints
-    //  
+    //
 
     // ensure that all cities are covered
     for(int i = 0; i < num_cities; i++) {
-      IntVar[] b = (from j in Enumerable.Range(0, num_cities) 
+      IntVar[] b = (from j in Enumerable.Range(0, num_cities)
                  where distance[i,j] <= min_distance
                                  select x[j]).ToArray();
       solver.Add(b.Sum() >= 1);
@@ -72,7 +72,7 @@ public class SetCovering
    //
     // objective
     //
-    OptimizeVar objective = solver.MakeMinimize(z, 1);
+    OptimizeVar objective = z.Minimize(1);
 
 
     //

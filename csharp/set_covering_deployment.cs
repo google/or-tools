@@ -49,7 +49,7 @@ public class SetCoveringDeployment
                           "Tunis"};
 
     int n = countries.Length;
-    
+
     // the incidence matrix (neighbours)
     int[,] mat = {{0, 1, 0, 1, 0, 0, 1, 1},
                   {1, 0, 0, 1, 0, 0, 0, 0},
@@ -59,7 +59,7 @@ public class SetCoveringDeployment
                   {0, 0, 1, 0, 1, 0, 1, 1},
                   {1, 0, 0, 1, 1, 1, 0, 1},
                   {1, 0, 0, 0, 0, 1, 1, 0}};
-    
+
     //
     // Decision variables
     //
@@ -77,7 +77,7 @@ public class SetCoveringDeployment
     //
     // Constraints
     //
-  
+
     //
     //  Constraint 1: There is always an army in a city
     //                (+ maybe a backup)
@@ -89,7 +89,7 @@ public class SetCoveringDeployment
     }
 
     //
-    // Constraint 2: There should always be an backup 
+    // Constraint 2: There should always be an backup
     //               army near every city
     //
     for(int i = 0; i < n; i++) {
@@ -101,12 +101,12 @@ public class SetCoveringDeployment
       solver.Add((x[i] + count_neighbours.Sum()) >= 1);
 
     }
-   
-    
+
+
     //
     // objective
     //
-    OptimizeVar objective = solver.MakeMinimize(num_armies, 1);
+    OptimizeVar objective = num_armies.Minimize(1);
 
 
     //

@@ -59,7 +59,7 @@ public class SetCovering2
                      {2,4},
                      {5,8},
                      {3,5}};
- 
+
     //
     // Decision variables
     //
@@ -69,18 +69,17 @@ public class SetCovering2
 
     //
     // Constraints
-    //  
+    //
 
     // ensure that all streets are covered
     for(int i = 0; i < num_streets; i++) {
       solver.Add(x[corner[i,0] - 1] + x[corner[i,1] - 1]  >= 1);
     }
-    
+
     //
     // objective
     //
-    OptimizeVar objective = solver.MakeMinimize(z, 1);
-
+    OptimizeVar objective = z.Minimize(1);
 
     //
     // Search

@@ -27,7 +27,7 @@ public class GolombRuler
    *
    * Golomb Ruler problem.
    *
-   * This C# implementation is based on Charles Prud'homme's 
+   * This C# implementation is based on Charles Prud'homme's
    * or-tools/Java model:
    * http://code.google.com/p/or-tools/source/browse/trunk/com/google/ortools/constraintsolver/samples/GolombRuler.java
    *
@@ -40,9 +40,9 @@ public class GolombRuler
     //
     // Decision variables
     //
-    IntVar[] ticks =  solver.MakeIntVarArray(m, 
-                                             0, 
-                                             ((m < 31) ? (1 << (m + 1)) - 1 : 9999), 
+    IntVar[] ticks =  solver.MakeIntVarArray(m,
+                                             0,
+                                             ((m < 31) ? (1 << (m + 1)) - 1 : 9999),
                                              "ticks");
 
     IntVar[] diff = new IntVar[(m * m - m) / 2];
@@ -50,14 +50,14 @@ public class GolombRuler
 
     //
     // Constraints
-    //  
+    //
     solver.Add(ticks[0] == 0);
 
     for(int i = 0; i < ticks.Length - 1; i++) {
       solver.Add(ticks[i] < ticks[i+1]);
     }
 
-    
+
     for (int k = 0, i = 0; i < m - 1; i++) {
       for (int j = i + 1; j < m; j++, k++) {
         diff[k] = (ticks[j]-ticks[i]).Var();
@@ -76,8 +76,8 @@ public class GolombRuler
     //
     // Optimization
     //
-    OptimizeVar opt = solver.MakeMinimize(ticks[m-1], 1);
-    
+    OptimizeVar opt = ticks[m - 1].Minimize(1);
+
 
     //
     // Search

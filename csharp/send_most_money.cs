@@ -20,7 +20,7 @@ public class SendMostMoney
 {
   /**
    *
-   * Solve the SEND+MOST=MONEY problem 
+   * Solve the SEND+MOST=MONEY problem
    * where the object is to maximize MONEY
    * See http://www.hakank.org/google_or_tools/send_most_money.py
    *
@@ -76,7 +76,7 @@ public class SendMostMoney
                                           Solver.ASSIGN_MIN_VALUE);
 
     if (MONEY == 0) {
-      OptimizeVar obj = solver.MakeMaximize(money, 1);
+      OptimizeVar obj = money.Maximize(1);
       solver.NewSearch(db, obj);
     } else {
       solver.NewSearch(db);

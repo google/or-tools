@@ -91,7 +91,7 @@ public class SetCovering4
     //
     // objective
     //
-    OptimizeVar objective = solver.MakeMinimize(z, 1);
+    OptimizeVar objective = z.Minimize(1);
 
 
     //

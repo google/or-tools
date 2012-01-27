@@ -21,7 +21,7 @@ public class CoinsGrid
 
   /**
    *
-   * Solves the Coins Grid problm. 
+   * Solves the Coins Grid problm.
    * See http://www.hakank.org/google_or_tools/coins_grid.py
    *
    */
@@ -70,7 +70,7 @@ public class CoinsGrid
     //
     // Objective
     //
-    OptimizeVar obj = solver.MakeMinimize(obj_var, 1);
+    OptimizeVar obj = obj_var.Minimize(1);
 
     //
     // Search
