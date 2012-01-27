@@ -94,18 +94,18 @@ public class Crossword
     //
     // Decision variables
     //
-    IntVar[,] A = new IntVar[num_words, word_len];
-    IntVar[] A_flat = new IntVar[num_words * word_len];
     // for labeling on A and E
+    IntVar[,] A = solver.MakeIntVarMatrix(num_words, word_len,
+                                          0, 26, "A");
+    IntVar[] A_flat = A.Flatten();
     IntVar[] all = new IntVar[(num_words * word_len) + N];
-
     for(int I = 0; I < num_words; I++) {
       for(int J = 0; J < word_len; J++) {
-        A[I,J] = solver.MakeIntVar(0, 26, "A[" + I + "," + J + "]");
-        A_flat[I * word_len + J] = A[I,J];
         all[I * word_len + J] = A[I,J];
       }
     }
+
+    
 
     IntVar[] E = solver.MakeIntVarArray(N, 0, num_words, "E");
     for(int I = 0; I < N; I++) {

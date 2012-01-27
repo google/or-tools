@@ -53,14 +53,8 @@ public class Sudoku
     //
     // Decision variables
     //
-    IntVar[,] grid =  new IntVar[n,n];
-    IntVar[] grid_flat = new IntVar[n * n];
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        grid[i,j] = solver.MakeIntVar(1, 9, "grid[" + i + "," + j + "]");
-        grid_flat[i * n + j] = grid[i,j];
-      }
-    }
+    IntVar[,] grid =  solver.MakeIntVarMatrix(n, n, 1, 9, "grid");
+    IntVar[] grid_flat = grid.Flatten();
 
     //
     // Constraints

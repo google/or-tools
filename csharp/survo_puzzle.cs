@@ -70,14 +70,8 @@ public class SurvoPuzzle
     //
     // Decision variables
     //
-   IntVar[,] x =  new IntVar[r,c];
-    IntVar[] x_flat = new IntVar[r * c]; // for branching
-    for(int i = 0; i < r; i++) {
-      for(int j = 0; j < c; j++) {
-        x[i,j] = solver.MakeIntVar(1, r * c, "x[" + i + "," + j + "]");
-        x_flat[i * c + j] = x[i,j];
-      }
-    }
+    IntVar[,] x = solver.MakeIntVarMatrix(r, c, 1, r*c, "x");
+    IntVar[] x_flat = x.Flatten();
 
 
     //

@@ -130,14 +130,9 @@ public class Crew
     //
     // Decision variables
     //
-    IntVar[,] crew =  new IntVar[num_flights, num_persons];
-    IntVar[] crew_flat = new IntVar[num_flights*num_persons]; // for search
-    for(int f = 0; f < num_flights; f++) {
-      for(int p = 0; p < num_persons; p++) {
-        crew[f,p] = solver.MakeIntVar(0, 1, "crew["+f+","+p+"]");
-        crew_flat[f*num_persons+p] = crew[f,p];
-      }
-    }
+    IntVar[,] crew = solver.MakeIntVarMatrix(num_flights, num_persons,
+                                             0, 1, "crew");
+    IntVar[] crew_flat = crew.Flatten();
 
     // number of working persons
     IntVar num_working = solver.MakeIntVar(1, num_persons, "num_working");

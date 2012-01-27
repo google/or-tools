@@ -80,18 +80,9 @@ public class Minesweeper
     //
     // Decision variables
     //
-    IntVar[,] mines =  new IntVar[r,c];
-    for(int i = 0; i < r; i++) {
-      for(int j = 0; j < c; j++) {
-        mines[i,j] = solver.MakeIntVar(0, 1, "mines[" + i + ", " + j + "]");
-      }
-    }
-
+    IntVar[,] mines = solver.MakeIntVarMatrix(r, c, 0, 1, "mines");
     // for branching
-    IntVar[] mines_flat = (from i in Enumerable.Range(0, r) 
-                             from j in Enumerable.Range(0, c) 
-                                 select mines[i,j]).ToArray();
-
+    IntVar[] mines_flat = mines.Flatten();
 
     //
     // Constraints

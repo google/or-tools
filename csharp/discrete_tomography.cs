@@ -90,14 +90,8 @@ public class DiscreteTomography
     //
     // Decision variables
     //
-    IntVar[,] x = new IntVar[r,c];
-    IntVar[] x_flat = new IntVar[r*c];
-    for(int i = 0; i < r; i++) {
-      for(int j = 0; j < c; j++) {
-        x[i,j] = solver.MakeIntVar(0, 1);
-        x_flat[i*c+j] = x[i,j];
-      }
-    }
+    IntVar[,] x = solver.MakeIntVarMatrix(r, c, 0, 1, "x");
+    IntVar[] x_flat = x.Flatten();
 
 
     //

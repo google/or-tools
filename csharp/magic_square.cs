@@ -34,9 +34,9 @@ public class MagicSquare
     //
     // Decision variables
     //
-    IntVar[,] x = new IntVar[n,n];
+    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 1, n*n, "x");
     // for the branching
-    IntVar[] x_flat = new IntVar[n*n];
+    IntVar[] x_flat = x.Flatten();
 
     
     //
@@ -44,15 +44,12 @@ public class MagicSquare
     //
     long s = (n * (n * n + 1)) / 2;
     Console.WriteLine("s: " + s);
-    // IntVar s = solver.MakeIntVar(0, n*n*n, "s");
 
     IntVar[] diag1 = new IntVar[n];
     IntVar[] diag2 = new IntVar[n];
     for(int i = 0; i < n; i++) {
       IntVar[] row = new IntVar[n];
       for(int j = 0; j < n; j++) {
-        x[i,j] = solver.MakeIntVar(1, n * n, "x[" + i + "," + j + "]");
-        x_flat[i * n + j] = x[i,j];
         row[j] = x[i,j];
       }
       // sum row to s

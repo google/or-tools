@@ -56,13 +56,8 @@ public class CostasArray
     // Decision variables
     //
     IntVar[] costas = solver.MakeIntVarArray(n, 1, n, "costas");
-
-    IntVar[,] differences = new IntVar[n,n];
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        differences[i,j] = solver.MakeIntVar(-n+1,n-1);
-      }
-    }
+    IntVar[,] differences = solver.MakeIntVarMatrix(n, n, -n+1, n-1,
+                                                    "differences");
 
     //
     // Constraints

@@ -63,14 +63,8 @@ public class Strimko2
     //
     // Decision variables
     //
-    IntVar[,] x = new IntVar[n,n];
-    IntVar[] x_flat = new IntVar[n * n];
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        x[i,j] = solver.MakeIntVar(1, n, "x[" + i + "," + j + "]");
-        x_flat[i * n + j] = x[i,j];
-      }
-    }
+    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 1, n, "x");
+    IntVar[] x_flat = x.Flatten();
 
     //
     // Constraints

@@ -39,30 +39,16 @@ public class WhoKilledAgatha
     //
     IntVar the_killer = solver.MakeIntVar(0, 2, "the_killer");
     IntVar the_victim = solver.MakeIntVar(0, 2, "the_victim");
+    IntVar[,] hates = solver.MakeIntVarMatrix(n, n, 0, 1, "hates");
+    IntVar[] hates_flat = hates.Flatten();
+    IntVar[,] richer = solver.MakeIntVarMatrix(n, n, 0, 1, "richer");
+    IntVar[] richer_flat = richer.Flatten();
 
     IntVar[] all = new IntVar[2 * n * n]; // for branching
-
-    IntVar[,] hates = new IntVar[n,n];
-    IntVar[] hates_flat = new IntVar[n * n];
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        hates[i,j] = solver.MakeIntVar(0, 1, "hates[" + i + "," + j + "]");
-        hates_flat[i * n + j] = hates[i,j];
-        all[i * n + j] = hates[i,j];
-      }
+    for(int i = 0; i < n*n; i++) {
+      all[i] = hates_flat[i];
+      all[(n*n)+i] = richer_flat[i]; 
     }
-
-    IntVar[,] richer = new IntVar[n,n];
-    IntVar[] richer_flat = new IntVar[n * n];
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        richer[i,j] = solver.MakeIntVar(0, 1, "richer[" + i + "," + j + "]");
-        richer_flat[i * n + j] = richer[i,j];
-        all[(n * n) + (i * n + j)] = richer[i,j];
-      }
-    }
-
-
 
     //
     // Constraints

@@ -102,14 +102,8 @@ public class FillAPix
     //
     // Decision variables
     //
-    IntVar[,] pict =  new IntVar[n, n];
-    IntVar[] pict_flat = new IntVar[n * n]; // for branching
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        pict[i,j] = solver.MakeIntVar(0, 1);
-        pict_flat[i * n + j] = pict[i,j];
-      }
-    }
+    IntVar[,] pict = solver.MakeIntVarMatrix(n, n, 0, 1, "pict");
+    IntVar[] pict_flat = pict.Flatten(); // for branching
 
     //
     // Constraints

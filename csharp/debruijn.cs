@@ -58,14 +58,7 @@ public class DeBruijn
     // Decision variables
     //
     IntVar[] x = solver.MakeIntVarArray(m, 0, (int)Math.Pow(bbase, n) - 1, "x");
-
-    IntVar[,] binary = new IntVar[m,n];
-    for(int i = 0; i < m; i++) {
-      for(int j = 0; j < n; j++) {
-        binary[i,j] =
-          solver.MakeIntVar(0, bbase - 1, "binary[" + i + "," + j + "]");
-      }
-    }
+    IntVar[,] binary = solver.MakeIntVarMatrix(m, n, 0, bbase - 1, "binary");
 
     // this is the de Bruijn sequence
     IntVar[] bin_code =

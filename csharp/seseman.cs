@@ -38,14 +38,8 @@ public class Seseman
     //
     // Decision variables
     //
-    IntVar[,] x = new IntVar[n,n];
-    IntVar[] x_flat = new IntVar[n * n];
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        x[i,j] = solver.MakeIntVar(0, n * n);
-        x_flat[i * n + j] = x[i,j];
-      }
-    }
+    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 0, n*n, "x");
+    IntVar[] x_flat = x.Flatten();
     IntVar total_sum = x_flat.Sum().Var();
 
 
