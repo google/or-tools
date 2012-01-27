@@ -1742,7 +1742,7 @@ namespace operations_research {
     IntVar[,] array = new IntVar[rows, cols];
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
-        string var_name = name + i + "_" + j;
+        string var_name = name + "["+ i + ", " + j +"]";
         array[i,j] = MakeIntVar(min, max, var_name);
       }
     }
@@ -1764,7 +1764,7 @@ namespace operations_research {
     IntVar[,] array = new IntVar[rows, cols];
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
-        string var_name = name + i + "_" + j;
+        string var_name = name + "["+ i + ", " + j +"]";
         array[i,j] = MakeIntVar(values, var_name);
       }
     }
@@ -1786,7 +1786,7 @@ namespace operations_research {
     IntVar[,] array = new IntVar[rows, cols];
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
-        string var_name = name + i + "_" + j;
+        string var_name = name + "["+ i + ", " + j +"]";
         array[i,j] = MakeIntVar(values, var_name);
       }
     }
@@ -1807,7 +1807,7 @@ namespace operations_research {
     IntVar[,] array = new IntVar[rows, cols];
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
-        string var_name = name + i + "_" + j;
+        string var_name = name + "["+ i + ", " + j +"]";
         array[i,j] = MakeBoolVar(var_name);
       }
     }

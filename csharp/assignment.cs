@@ -27,7 +27,7 @@ public class Assignment
    *
    * Assignment problem
    *
-   * From Wayne Winston "Operations Research", 
+   * From Wayne Winston "Operations Research",
    * Assignment Problems, page 393f
    * (generalized version with added test column)
    *
@@ -55,25 +55,19 @@ public class Assignment
       { 2,  4, 6, 10,   1}
     };
 
-  
+
     //
     // Decision variables
     //
-    IntVar[,] x = new IntVar[rows, cols];
-    IntVar[] x_flat = new IntVar[rows*cols];
-    for(int i = 0; i < rows; i++) {
-      for(int j = 0; j < cols; j++) {
-        x[i,j] = solver.MakeIntVar(0, 1, "x["+i+","+j+"]");
-        x_flat[i*cols+j] = x[i,j];
-      }
-    }
+    IntVar[,] x = solver.MakeBoolVarMatrix(rows, cols, "x_");
+    IntVar[] x_flat = x.Flatten();
 
     //
     // Constraints
-    //  
+    //
 
-    // Exacly one assignment per row (task), 
-    // i.e. all rows must be assigned with one worker   
+    // Exacly one assignment per row (task),
+    // i.e. all rows must be assigned with one worker
     for(int i = 0; i < rows; i++) {
       solver.Add((from j in Enumerable.Range(0, cols)
                   select x[i,j]).ToArray().Sum() == 1);
