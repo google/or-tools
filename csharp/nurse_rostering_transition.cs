@@ -112,19 +112,15 @@ public class NurseRostering
     //
     // For TransitionConstraint
     //
-    IntVar[,] x = new IntVar[num_nurses, num_days];
-    IntVar[] x_flat = new IntVar[num_nurses*num_days];
-    for(int i = 0; i < num_nurses; i++) {
-      for(int j = 0; j < num_days; j++) {
-        x[i,j] = solver.MakeIntVar(valid_shifts,"x");
-        x_flat[i*num_days+j] = x[i,j];
-      }
-    }
+    IntVar[,] x =
+        solver.MakeIntVarMatrix(num_nurses, num_days, valid_shifts, "x");
+    IntVar[] x_flat = x.Flatten();
 
     //
     // summary of the nurses
     //
-    IntVar[] nurse_stat = solver.MakeIntVarArray(num_nurses, 0, num_days, "nurse_stat");
+    IntVar[] nurse_stat =
+        solver.MakeIntVarArray(num_nurses, 0, num_days, "nurse_stat");
 
     //
     // summary of the shifts per day
