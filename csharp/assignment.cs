@@ -59,7 +59,7 @@ public class Assignment
     //
     // Decision variables
     //
-    IntVar[,] x = solver.MakeBoolVarMatrix(rows, cols, "x_");
+    IntVar[,] x = solver.MakeBoolVarMatrix(rows, cols, "x");
     IntVar[] x_flat = x.Flatten();
 
     //
