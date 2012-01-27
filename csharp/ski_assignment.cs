@@ -66,19 +66,24 @@ public class SkiAssignment
     // Decision variables
     //
     IntVar[] x = solver.MakeIntVarArray(num_skiers, 0, num_skis-1, "x");
-    IntVar z = solver.MakeIntVar(0, ski_heights.Sum(), "z");
 
 
     //
     // Constraints
     //
     solver.Add(x.AllDifferent());
+
     IntVar[] z_tmp = new IntVar[num_skiers];
     for(int i = 0; i < num_skiers; i++) {
       z_tmp[i] = (ski_heights.Element(x[i])-skier_heights[i]).Abs().Var();
     }
-    solver.Add(z_tmp.Sum().Equality(z));
-    
+
+    //    IntVar z = solver.MakeIntVar(0, ski_heights.Sum(), "z");
+    //    solver.Add(z_tmp.Sum().Equality(z));
+    // The direct cast from IntExpr to IntVar is potentially faster than
+    // the above code.
+    IntVar z = z_tmp.Sum().VarWithName("z");
+
     //
     // Objective
     //

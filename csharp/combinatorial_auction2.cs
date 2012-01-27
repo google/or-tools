@@ -60,7 +60,7 @@ public class CombinatorialAuction2
     // Decision variables
     //
     IntVar[] x = solver.MakeIntVarArray(n, 0, 1, "x");
-    IntVar z = x.ScalProd(bid_amount).Var();
+    IntVar z = x.ScalProd(bid_amount).VarWithName("z");
 
     //
     // Constraints
@@ -74,10 +74,10 @@ public class CombinatorialAuction2
                    select x[item]);
 
       solver.Add(tmp2.ToArray().Sum() <= 1);
-  
+
     }
 
-    
+
 
 
     //
