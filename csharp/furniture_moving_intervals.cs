@@ -94,10 +94,7 @@ public class FurnitureMovingIntervals
       all_tasks[i + n] = fillers[i];
       all_demands[i + n] = 1;
     }
-    solver.Add(solver.MakeCumulative(all_tasks,
-                                     all_demands,
-                                     max_num_workers,
-                                     "workers"));
+    solver.Add(all_tasks.Cumulative(all_demands, max_num_workers, "workers"));
 
     //
     // Some extra constraints to play with

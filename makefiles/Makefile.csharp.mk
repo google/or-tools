@@ -72,7 +72,7 @@ gen/constraint_solver/constraint_solver_csharp_wrap.cc: constraint_solver/routin
 objs/constraint_solver_csharp_wrap.$O: gen/constraint_solver/constraint_solver_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c gen/constraint_solver/constraint_solver_csharp_wrap.cc $(OBJOUT)objs/constraint_solver_csharp_wrap.$O
 
-$(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT): objs/constraint_solver_csharp_wrap.$O $(ROUTING_DEPS) com/google/ortools/constraintsolver/IntVarArrayHelper.cs com/google/ortools/constraintsolver/IntArrayHelper.cs com/google/ortools/constraintsolver/ValCstPair.cs com/google/ortools/constraintsolver/NetDecisionBuilder.cs
+$(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT): objs/constraint_solver_csharp_wrap.$O $(ROUTING_DEPS) com/google/ortools/constraintsolver/IntVarArrayHelper.cs com/google/ortools/constraintsolver/IntervalVarArrayHelper.cs com/google/ortools/constraintsolver/IntArrayHelper.cs com/google/ortools/constraintsolver/ValCstPair.cs com/google/ortools/constraintsolver/NetDecisionBuilder.cs
 ifeq ($(SYSTEM),win)
 	$(CSC) /target:module /out:Google.OrTools.ConstraintSolver.netmodule /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs com$Sgoogle$Sortools$Sconstraintsolver$S*.cs
 	$(LD) $(LDOUT)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) Google.OrTools.ConstraintSolver.netmodule objs/constraint_solver_csharp_wrap.$O $(ROUTING_LNK) $(LDFLAGS)
