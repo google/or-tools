@@ -39,8 +39,8 @@ from constraint_solver import pywrapcp
 # No overlapping of tasks s1 and s2
 #
 def no_overlap(solver, s1, d1, s2, d2):
-    b1 = solver.MakeIsLessOrEqualVar(s1 + d1, s2) # s1 + d1 <= s2
-    b2 = solver.MakeIsLessOrEqualVar(s2 + d2, s1) # s2 + d2 <= s1
+    b1 = solver.IsLessOrEqualVar(s1 + d1, s2) # s1 + d1 <= s2
+    b2 = solver.IsLessOrEqualVar(s2 + d2, s1) # s2 + d2 <= s1
     solver.Add(b1 + b2 >= 1)
 
 

@@ -133,11 +133,11 @@ def main(m=3, n=6, minimize_val=0):
     # and now we roll...
     #  Number of wins for [A vs B, B vs A]
     for d in range(m):
-        b1 = [solver.MakeIsGreaterVar(dice[d % m, r1], dice[(d+1) % m, r2])
+        b1 = [solver.IsGreaterVar(dice[d % m, r1], dice[(d+1) % m, r2])
               for r1 in range(n) for r2 in range(n)]
         solver.Add(comp[d%m,0] == solver.Sum(b1))
 
-        b2 = [solver.MakeIsGreaterVar(dice[(d+1) % m, r1], dice[d % m, r2])
+        b2 = [solver.IsGreaterVar(dice[(d+1) % m, r1], dice[d % m, r2])
               for r1 in range(n) for r2 in range(n)]
         solver.Add(comp[d%m,1] == solver.Sum(b2))
 
