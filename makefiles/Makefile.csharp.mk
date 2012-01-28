@@ -5,7 +5,8 @@ CSHARPEXE = \
 	csrabbitspheasants.exe \
 	csflow.exe \
 	csknapsack.exe \
-	furniture_moving_intervals.exe
+	furniture_moving_intervals.exe \
+	organize_day_intervals.exe
 
 csharpexe: $(CSHARPEXE)
 
@@ -91,6 +92,9 @@ send_more_money.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT)
 
 furniture_moving_intervals.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/furniture_moving_intervals.cs
 	$(CSC) /target:exe /out:furniture_moving_intervals.exe /platform:$(NETPLATFORM) /r:Google.OrTools.ConstraintSolver.dll csharp$Sfurniture_moving_intervals.cs
+
+organize_day_intervals.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/organize_day_intervals.cs
+	$(CSC) /target:exe /out:organize_day_intervals.exe /platform:$(NETPLATFORM) /r:Google.OrTools.ConstraintSolver.dll csharp$Sorganize_day_intervals.cs
 
 # csharpalgorithms
 
