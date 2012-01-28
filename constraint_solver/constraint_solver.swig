@@ -754,7 +754,46 @@ namespace operations_research {
                                                    operations_research::Solver::STAYS_IN_SYNC,
                                                    other);
   }
-
+  Constraint* EndsAfter(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::ENDS_AFTER,
+                                                   date);
+  }
+  Constraint* EndsAt(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::ENDS_AT,
+                                                   date);
+  }
+  Constraint* EndsBefore(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::ENDS_BEFORE,
+                                                   date);
+  }
+  Constraint* StartsAfter(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::STARTS_AFTER,
+                                                   date);
+  }
+  Constraint* StartsAt(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::STARTS_AT,
+                                                   date);
+  }
+  Constraint* StartsBefore(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::STARTS_BEFORE,
+                                                   date);
+  }
+  Constraint* CrossesDate(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::CROSS_DATE,
+                                                   date);
+  }
+  Constraint* AvoidsDate(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::AVOID_DATE,
+                                                   date);
+  }
 }
 
 %extend SequenceVar {
@@ -1510,7 +1549,7 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::IntVar, IntVar)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SearchMonitor, SearchMonitor)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::DecisionBuilder, DecisionBuilder)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::IntervalVar, IntervalVar)
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::Sequence, Sequence)
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SequenceVar, SequenceVar)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchOperator, LocalSearchOperator)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchFilter)
 
@@ -1623,6 +1662,46 @@ namespace operations_research {
     return self->solver()->MakeIntervalVarRelation(self,
                                                    operations_research::Solver::STARTS_AT_START,
                                                    other);
+  }
+  Constraint* EndsAfter(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::ENDS_AFTER,
+                                                   date);
+  }
+  Constraint* EndsAt(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::ENDS_AT,
+                                                   date);
+  }
+  Constraint* EndsBefore(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::ENDS_BEFORE,
+                                                   date);
+  }
+  Constraint* StartsAfter(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::STARTS_AFTER,
+                                                   date);
+  }
+  Constraint* StartsAt(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::STARTS_AT,
+                                                   date);
+  }
+  Constraint* StartsBefore(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::STARTS_BEFORE,
+                                                   date);
+  }
+  Constraint* CrossesDate(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::CROSS_DATE,
+                                                   date);
+  }
+  Constraint* AvoidsDate(int64 date) {
+    return self->solver()->MakeIntervalVarRelation(self,
+                                                   operations_research::Solver::AVOID_DATE,
+                                                   date);
   }
 }
 
@@ -1847,6 +1926,39 @@ namespace operations_research {
     return array;
   }
 
+  public IntervalVar[] MakeFixedDurationIntervalVarArray(int count,
+                                                         long[] start_min,
+                                                         long[] start_max,
+                                                         long[] duration,
+                                                         bool optional,
+                                                         string name) {
+    IntervalVar[] array = new IntervalVar[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = MakeFixedDurationIntervalVar(start_min[i],
+                                              start_max[i],
+                                              duration[i],
+                                              optional,
+                                              name + i);
+    }
+    return array;
+  }
+
+  public IntervalVar[] MakeFixedDurationIntervalVarArray(int count,
+                                                         int[] start_min,
+                                                         int[] start_max,
+                                                         int[] duration,
+                                                         bool optional,
+                                                         string name) {
+    IntervalVar[] array = new IntervalVar[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = MakeFixedDurationIntervalVar(start_min[i],
+                                              start_max[i],
+                                              duration[i],
+                                              optional,
+                                              name + i);
+    }
+    return array;
+  }
 %}
 
 // Protect from failure
