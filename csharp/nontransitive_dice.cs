@@ -33,7 +33,7 @@ public class NonTransitiveDice
    * A set of nontransitive dice is a set of dice for which the relation
    * 'is more likely to roll a higher number' is not transitive. See also
    * intransitivity.
-   * 
+   *
    * This situation is similar to that in the game Rock, Paper, Scissors,
    * in which each element has an advantage over one choice and a
    * disadvantage to the other.
@@ -83,11 +83,7 @@ public class NonTransitiveDice
     //
 
     // Number of occurrences for each number
-    int[] r = new int[n*2+1];
-    for(int i = 0; i < n*2+1; i++) {
-      r[i] = i;
-    }
-    solver.Add(dice_flat.Distribute(r, counts));
+    solver.Add(dice_flat.Distribute(counts));
 
     // Order of the number of each die, lowest first
     for(int i = 0; i < m; i++) {
@@ -113,7 +109,7 @@ public class NonTransitiveDice
       IntVar[] b1 = (
                      from r1 in Enumerable.Range(0, n)
                      from r2 in Enumerable.Range(0, n)
-                     select 
+                     select
                      dice[d % m, r1].IsGreater(dice[(d+1) % m, r2]).Var()
                      ).ToArray();
 
@@ -122,7 +118,7 @@ public class NonTransitiveDice
       IntVar[] b2 = (
                      from r1 in Enumerable.Range(0, n)
                      from r2 in Enumerable.Range(0, n)
-                     select 
+                     select
                      dice[(d+1) % m, r1].IsGreater(dice[d % m, r2]).Var()
                      ).ToArray();
 
@@ -140,7 +136,7 @@ public class NonTransitiveDice
 
     if (minimize_val > 0) {
       Console.WriteLine("Minimizing max_val");
-     
+
       OptimizeVar obj = max_val.Minimize(1);
 
       // Other experiments:
