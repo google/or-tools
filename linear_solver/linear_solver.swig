@@ -560,6 +560,12 @@ Class c = Class.forName("com.google.ortools.linearsolver.MPSolver");
 
 %module(directors="1") operations_research;
 
+%typemap(csimports) SWIGTYPE %{
+  using System;
+  using System.Collections.Generic;
+  using System.Runtime.InteropServices;
+%}
+
 namespace operations_research {
 // Rename rules on MPVariable.
 %rename (ReducedCost) MPVariable::reduced_cost;
@@ -644,6 +650,168 @@ namespace operations_research {
 %ignore MPSolver::FillSolutionResponse;
 %ignore MPSolver::SolveWithProtocolBuffers;
 
+%typemap(cscode) MPVariable %{
+  public static LinearExpr operator+(MPVariable a, double v)
+  {
+    return new VarWrapper(a) + v;
+  }
+
+  public static LinearExpr operator+(double v, MPVariable a)
+  {
+    return a + v;
+  }
+
+  public static LinearExpr operator+(MPVariable a, LinearExpr b)
+  {
+    return new VarWrapper(a) + b;
+  }
+
+  public static LinearExpr operator+(MPVariable a, MPVariable b)
+  {
+    return new VarWrapper(a) + new VarWrapper(b);
+  }
+
+  public static LinearExpr operator+(LinearExpr a, MPVariable b)
+  {
+    return a + new VarWrapper(b);
+  }
+
+  public static LinearExpr operator-(MPVariable a, double v)
+  {
+    return new VarWrapper(a) - v;
+  }
+
+  public static LinearExpr operator-(double v, MPVariable a)
+  {
+    return v - new VarWrapper(a);
+  }
+
+  public static LinearExpr operator-(MPVariable a, LinearExpr b)
+  {
+    return new VarWrapper(a) - b;
+  }
+
+  public static LinearExpr operator-(LinearExpr a, MPVariable b)
+  {
+    return a - new VarWrapper(b);
+  }
+
+  public static LinearExpr operator-(MPVariable a, MPVariable b)
+  {
+    return new VarWrapper(a) - new VarWrapper(b);
+  }
+
+  public static LinearExpr operator-(MPVariable a)
+  {
+    return - new VarWrapper(a);
+  }
+
+  public static LinearExpr operator*(MPVariable a, double v)
+  {
+    return new VarWrapper(a) * v;
+  }
+
+  public static LinearExpr operator/(MPVariable a, double v)
+  {
+    return new VarWrapper(a) / v;
+  }
+
+  public static LinearExpr operator*(double v, MPVariable a)
+  {
+    return v * new VarWrapper(a);
+  }
+
+  public static RangeConstraint operator==(MPVariable a, double v)
+  {
+    return new VarWrapper(a) == v;
+  }
+
+  public static RangeConstraint operator==(double v, MPVariable a)
+  {
+    return v == new VarWrapper(a);
+  }
+
+  public static RangeConstraint operator!=(MPVariable a, double v)
+  {
+    return new VarWrapper(a) != v;
+  }
+
+  public static RangeConstraint operator!=(double v, MPVariable a)
+  {
+    return new VarWrapper(a) != v;
+  }
+
+  public static Equality operator==(MPVariable a, LinearExpr b)
+  {
+    return new VarWrapper(a) == b;
+  }
+
+  public static Equality operator==(LinearExpr a, MPVariable b)
+  {
+    return a == new VarWrapper(b);
+  }
+
+  public static Equality operator==(MPVariable a, MPVariable b)
+  {
+    return new VarWrapper(a) == new VarWrapper(b);
+  }
+
+  public static Equality operator!=(MPVariable a, LinearExpr b)
+  {
+    return new VarWrapper(a) != b;
+  }
+
+  public static Equality operator!=(LinearExpr a, MPVariable b)
+  {
+    return a != new VarWrapper(b);
+  }
+
+  public static Equality operator!=(MPVariable a, MPVariable b)
+  {
+    return new VarWrapper(a) != new VarWrapper(b);
+  }
+
+  public static RangeConstraint operator<=(MPVariable a, double v)
+  {
+    return new VarWrapper(a) <= v;
+  }
+
+  public static RangeConstraint operator>=(MPVariable a, double v)
+  {
+    return new VarWrapper(a) >= v;
+  }
+
+  public static RangeConstraint operator<=(MPVariable a, LinearExpr b)
+  {
+    return new VarWrapper(a) <= b;
+  }
+
+  public static RangeConstraint operator>=(MPVariable a, LinearExpr b)
+  {
+    return new VarWrapper(a) >= b;
+  }
+
+  public static RangeConstraint operator<=(MPVariable a, MPVariable b)
+  {
+    return new VarWrapper(a) <= new VarWrapper(b);
+  }
+
+  public static RangeConstraint operator>=(MPVariable a, MPVariable b)
+  {
+    return new VarWrapper(a) >= new VarWrapper(b);
+  }
+
+  public static RangeConstraint operator<=(LinearExpr a, MPVariable b)
+  {
+    return a <= new VarWrapper(b);
+  }
+
+  public static RangeConstraint operator>=(LinearExpr a, MPVariable b)
+  {
+    return a >= new VarWrapper(b);
+  }
+%}
+
 // Add csharp code on MPSolver.
 %typemap(cscode) MPSolver %{
   public MPVariable[] MakeVarArray(int count,
@@ -717,6 +885,52 @@ namespace operations_research {
     } else {
       return null;
     }
+  }
+
+  public MPConstraint Add(LinearConstraint constraint) {
+    return constraint.Extract(this);
+  }
+
+  public void Minimize(LinearExpr expr)
+  {
+    ClearObjective();
+    SetMinimization();
+    Dictionary<MPVariable, double> coefficients =
+        new Dictionary<MPVariable, double>();
+    double constant = expr.Visit(coefficients);
+    foreach (KeyValuePair<MPVariable, double> pair in coefficients)
+    {
+      SetObjectiveCoefficient(pair.Key, pair.Value);
+      SetObjectiveOffset(constant);
+    }
+  }
+
+  public void Maximize(LinearExpr expr)
+  {
+    ClearObjective();
+    SetMaximization();
+    Dictionary<MPVariable, double> coefficients =
+        new Dictionary<MPVariable, double>();
+    double constant = expr.Visit(coefficients);
+    foreach (KeyValuePair<MPVariable, double> pair in coefficients)
+    {
+      SetObjectiveCoefficient(pair.Key, pair.Value);
+      SetObjectiveOffset(constant);
+    }
+  }
+
+  public void Minimize(MPVariable var)
+  {
+    ClearObjective();
+    SetMinimization();
+    SetObjectiveCoefficient(var, 1.0);
+  }
+
+  public void Maximize(MPVariable var)
+  {
+    ClearObjective();
+    SetMaximization();
+    SetObjectiveCoefficient(var, 1.0);
   }
 %}
 

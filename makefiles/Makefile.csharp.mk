@@ -43,12 +43,12 @@ gen/linear_solver/linear_solver_csharp_wrap.cc: linear_solver/linear_solver.swig
 objs/linear_solver_csharp_wrap.$O: gen/linear_solver/linear_solver_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c gen/linear_solver/linear_solver_csharp_wrap.cc $(OBJOUT)objs/linear_solver_csharp_wrap.$O
 
-$(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT): objs/linear_solver_csharp_wrap.$O $(LP_DEPS)
+$(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT): objs/linear_solver_csharp_wrap.$O $(LP_DEPS) com/google/ortools/linearsolver/LinearExpr.cs com/google/ortools/linearsolver/LinearConstraint.cs
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:Google.OrTools.LinearSolver.netmodule /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
+	$(CSC) /target:module /out:Google.OrTools.LinearSolver.netmodule /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs com$Sgoogle$Sortools$Slinearsolver$S*.cs
 	$(LD) $(LDOUT)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) Google.OrTools.LinearSolver.netmodule objs/linear_solver_csharp_wrap.$O $(LP_LNK) $(LDFLAGS)
 else
-	$(CSC) /target:library /out:Google.OrTools.LinearSolver.dll /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
+	$(CSC) /target:library /out:Google.OrTools.LinearSolver.dll /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs com$Sgoogle$Sortools$Slinearsolver$S*.cs
 	$(LD) $(LDOUT)$(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) objs/linear_solver_csharp_wrap.$O $(LP_LNK) $(LDFLAGS)
 endif
 

@@ -26,10 +26,10 @@ public class PostOfficeProblem2
   /**
    *
    * Post office problem.
-   * 
+   *
    * Problem statement:
    * http://www-128.ibm.com/developerworks/linux/library/l-glpk2/
-   * 
+   *
    * From Winston 'Operations Research: Applications and Algorithms':
    * """
    * A post office requires a different number of full-time employees working
@@ -39,7 +39,7 @@ public class PostOfficeProblem2
    * must be off on Saturday and Sunday. The post office wants to meet its
    * daily requirements using only full-time employees. Minimize the number
    * of employees that must be hired.
-   * 
+   *
    * To summarize the important information about the problem:
    *
    * Every full-time worker works for 5 consecutive days and takes 2 days off
@@ -65,7 +65,7 @@ public class PostOfficeProblem2
 
     //
     // Data
-    // 
+    //
 
     // days 0..6, monday 0
     int n = 7;
@@ -100,14 +100,14 @@ public class PostOfficeProblem2
 
     // Add a limit for the cost
     solver.Add(total_cost <= 20000);
-    
-    // 
-    
+
+    //
+
     // objective
     //
     //
     OptimizeVar obj = total_cost.Minimize(100);
-    
+
 
 
     //
