@@ -492,8 +492,9 @@ typedef oldtype newtype;
 %enddef
 
 COPY_TYPEMAPS(signed char, schar);
-COPY_TYPEMAPS(long long, int64);
 COPY_TYPEMAPS(int, int32);
+COPY_TYPEMAPS(unsigned int, uint32);
+COPY_TYPEMAPS(long long, int64);
 COPY_TYPEMAPS(unsigned long long, uint64);
 
 #undef COPY_TYPEMAPS
@@ -526,8 +527,9 @@ typedef oldtype newtype;
 %enddef
 
 COPY_TYPEMAPS(signed char, schar);
-COPY_TYPEMAPS(long long, int64);
 COPY_TYPEMAPS(int, int32);
+COPY_TYPEMAPS(unsigned int, uint32);
+COPY_TYPEMAPS(long long, int64);
 COPY_TYPEMAPS(unsigned long long, uint64);
 
 #undef COPY_TYPEMAPS
