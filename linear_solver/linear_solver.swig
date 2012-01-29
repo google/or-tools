@@ -567,77 +567,12 @@ Class c = Class.forName("com.google.ortools.linearsolver.MPSolver");
 %}
 
 namespace operations_research {
-// Rename rules on MPVariable.
-%rename (ReducedCost) MPVariable::reduced_cost;
-%rename (SetBounds) MPVariable::SetBounds;
-%rename (SetInteger) MPVariable::SetInteger;
-%rename (SetLb) MPVariable::SetLB;
-%rename (SetUb) MPVariable::SetUB;
-%rename (SolutionValue) MPVariable::solution_value;
-
-// Rename rules on MPConstraint.
-%rename (Activity) MPConstraint::activity;
-%rename (AddTerm) MPConstraint::AddTerm;
-%rename (DualValue) MPConstraint::dual_value;
-%rename (SetBounds) MPConstraint::SetBounds;
-%rename (SetCoefficient) MPConstraint::SetCoefficient;
-%rename (SetLb) MPConstraint::SetLB;
-%rename (SetUb) MPConstraint::SetUB;
-
-// Rename rules on MPObjective.
-%rename (AddOffset) MPObjective::AddOffset;
-%rename (AddTerm) MPObjective::AddObjective;
-%rename (Clear) MPObjective::Clear;
-%rename (Offset) MPObjective::offset;
-%rename (SetCoefficient) MPObjective::SetCoefficient;
-%rename (SetOffset) MPObjective::SetOffset;
-
-// Rename rules on MPSolverParameters.
-%rename (GetDoubleParam) MPSolverParameters::GetDoubleParam;
-%rename (GetIntegerParam) MPSolverParameters::GetIntegerParam;
-%rename (Reset) MPSolverParameters::Reset;
-%rename (ResetDoubleParam) MPSolverParameters::ResetDoubleParam;
-%rename (ResetIntegerParam) MPSolverParameters::ResetIntegerParam;
-%rename (SetDoubleParam) MPSolverParameters::SetDoubleParam;
-%rename (SetIntegerParam) MPSolverParameters::SetIntegerParam;
-
-// Rename rules on MPSolver.
-%rename (AddObjectiveOffset) MPSolver::AddObjectiveOffset;
-%rename (AddObjectiveTerm) MPSolver::AddObjectiveTerm;
-%rename (BestObjectiveBound) MPSolver::best_objective_bound;
-%rename (CheckAllNamesValidity) MPSolver::CheckAllNamesValidity;
-%rename (CheckNameValidity) MPSolver::CheckNameValidity;
-%rename (Clear) MPSolver::Clear;
-%rename (ClearObjective) MPSolver::ClearObjective;
-%rename (Infinity) MPSolver::infinity;
-%rename (Init) MPSolver::Init;
-%rename (Iterations) MPSolver::iterations;
-%rename (IsLpFormat) MPSolver::IsLPFormat;
-%rename (LoadModel) MPSolver::LoadModel;
-%rename (MakeBoolVar) MPSolver::MakeBoolVar;
-%rename (MakeIntVar) MPSolver::MakeIntVar;
-%rename (MakeNumVar) MPSolver::MakeNumVar;
+// Use system infinity.
+%ignore MPSolver::infinity;
+// Automatic renaming to camel case.
+%rename("%(camelcase)s", %$isfunction) "";
+// Rename MakeRowConstraint into MakeConstraint
 %rename (MakeConstraint) MPSolver::MakeRowConstraint;
-%rename (MakeVar) MPSolver::MakeVar;
-%rename (Minimization) MPSolver::Minimization;
-%rename (Nodes) MPSolver::nodes;
-%rename (NumConstraints) MPSolver::NumConstraints;
-%rename (NumVariables) MPSolver::NumVariables;
-%rename (ObjectiveValue) MPSolver::objective_value;
-%rename (Reset) MPSolver::Reset;
-%rename (SetMaximization) MPSolver::SetMaximization;
-%rename (SetMinimization) MPSolver::SetMinimization;
-%rename (SetObjectiveCoefficient) MPSolver::SetObjectiveCoefficient;
-%rename (SetObjectiveOffset) MPSolver::SetObjectiveOffset;
-%rename (SetOptimizationDirection) MPSolver::SetOptimizationDirection;
-%rename (SetTimeLimit) MPSolver::set_time_limit;
-%rename (SetWriteModelFilename) MPSolver::set_write_model_filename;
-%rename (Solve) MPSolver::Solve;
-%rename (SolverVersion) MPSolver::SolverVersion;
-%rename (SuppressOutput) MPSolver::SuppressOutput;
-%rename (TimeLimit) MPSolver::time_limit;
-%rename (WallTime) MPSolver::wall_time;
-%rename (WriteModelFilename) MPSolver::write_model_filename;
 // Ignore code on MPSolver, see replacement java code below.
 %ignore MPSolver::MakeVarArray;
 %ignore MPSolver::MakeNumVarArray;
@@ -751,9 +686,9 @@ namespace operations_research {
     return a == new VarWrapper(b);
   }
 
-  public static Equality operator==(MPVariable a, MPVariable b)
+  public static VarEquality operator==(MPVariable a, MPVariable b)
   {
-    return new VarWrapper(a) == new VarWrapper(b);
+    return new VarEquality(a, b, true);
   }
 
   public static Equality operator!=(MPVariable a, LinearExpr b)
@@ -766,9 +701,9 @@ namespace operations_research {
     return a != new VarWrapper(b);
   }
 
-  public static Equality operator!=(MPVariable a, MPVariable b)
+  public static VarEquality operator!=(MPVariable a, MPVariable b)
   {
-    return new VarWrapper(a) != new VarWrapper(b);
+    return new VarEquality(a, b, false);
   }
 
   public static RangeConstraint operator<=(MPVariable a, double v)

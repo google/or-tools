@@ -226,7 +226,7 @@ class VarWrapper : LinearExpr
 
   public override String ToString()
   {
-    return var_.name();
+    return var_.Name();
   }
 
   public override double DoVisit(Dictionary<MPVariable, double> coefficients,

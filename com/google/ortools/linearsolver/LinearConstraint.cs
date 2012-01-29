@@ -105,4 +105,36 @@ public class Equality : LinearConstraint
   private LinearExpr right_;
   private bool equality_;
 }
+
+public class VarEquality : LinearConstraint
+{
+  public VarEquality(MPVariable left, MPVariable right, bool equality)
+  {
+    this.left_ = left;
+    this.right_ = right;
+    this.equality_ = equality;
+  }
+
+  public override String ToString()
+  {
+    return "" + left_.Name() + " == " + right_.Name();
+  }
+
+  public override MPConstraint Extract(MPSolver solver)
+  {
+    MPConstraint ct = solver.MakeConstraint(0.0, 0.0);
+    ct.SetCoefficient(left_, 1.0);
+    ct.SetCoefficient(right_, -1.0);
+    return ct;
+  }
+
+  public static implicit operator bool(VarEquality ct)
+  {
+    return (object)ct.left_ == (object)ct.right_ ? ct.equality_ : !ct.equality_;
+  }
+
+  private MPVariable left_;
+  private MPVariable right_;
+  private bool equality_;
+}
 }  // namespace Google.OrTools.LinearSolver
