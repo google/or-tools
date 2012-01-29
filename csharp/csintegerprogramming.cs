@@ -63,6 +63,47 @@ public class CsIntegerProgramming
                        " branch-and-bound nodes");
   }
 
+  private static void RunIntegerProgrammingExampleNaturalApi(String solverType)
+  {
+    MPSolver solver = MPSolver.CreateSolver("IntegerProgramming", solverType);
+    if (solver == null)
+    {
+      Console.WriteLine("Could not create solver " + solverType);
+      return;
+    }
+    double infinity = MPSolver.Infinity();
+    // x1 and x2 are integer non-negative variables.
+    MPVariable x1 = solver.MakeIntVar(0.0, infinity, "x1");
+    MPVariable x2 = solver.MakeIntVar(0.0, infinity, "x2");
+
+    solver.Minimize(x1 + 2 * x2);
+    solver.Add(2 * x2 + 3 * x1 >= 17);
+
+    int resultStatus = solver.Solve();
+
+    // Check that the problem has an optimal solution.
+    if (resultStatus != MPSolver.OPTIMAL)
+    {
+      Console.WriteLine("The problem does not have an optimal solution!");
+      return;
+    }
+
+    Console.WriteLine("Problem solved in " + solver.WallTime() +
+                       " milliseconds");
+
+    // The objective value of the solution.
+    Console.WriteLine("Optimal objective value = " +
+                       solver.ObjectiveValue());
+
+    // The value of each variable in the solution.
+    Console.WriteLine("x1 = " + x1.SolutionValue());
+    Console.WriteLine("x2 = " + x2.SolutionValue());
+
+    Console.WriteLine("Advanced usage:");
+    Console.WriteLine("Problem solved in " + solver.Nodes() +
+                       " branch-and-bound nodes");
+  }
+
   static void Main()
   {
     Console.WriteLine("---- Integer programming example with GLPK ----");
@@ -71,5 +112,14 @@ public class CsIntegerProgramming
     RunIntegerProgrammingExample("CBC_MIXED_INTEGER_PROGRAMMING");
     Console.WriteLine("---- Linear programming example with SCIP ----");
     RunIntegerProgrammingExample("SCIP_MIXED_INTEGER_PROGRAMMING");
+    Console.WriteLine(
+        "---- Integer programming example Natural API with GLPK ----");
+    RunIntegerProgrammingExampleNaturalApi("GLPK_MIXED_INTEGER_PROGRAMMING");
+    Console.WriteLine(
+        "---- Linear programming example Natural API with CBC ----");
+    RunIntegerProgrammingExampleNaturalApi("CBC_MIXED_INTEGER_PROGRAMMING");
+    Console.WriteLine(
+        "---- Linear programming example Natural API with SCIP ----");
+    RunIntegerProgrammingExampleNaturalApi("SCIP_MIXED_INTEGER_PROGRAMMING");
   }
 }
