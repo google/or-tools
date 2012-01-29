@@ -112,10 +112,38 @@ public class CsTestLp
     CheckEquality(ct5.Ub(), -8.0, "test12");
   }
 
+  static void TestBinaryOperations()
+  {
+    Console.WriteLine("Running TestBinaryOperations");
+    MPSolver solver = new MPSolver("TestBinaryOperations",
+                                   MPSolver.CLP_LINEAR_PROGRAMMING);
+    MPVariable x = solver.MakeNumVar(0.0, 100.0, "x");
+    MPVariable y = solver.MakeNumVar(0.0, 100.0, "y");
+    MPConstraint ct1 = solver.Add(x == y);
+    CheckEquality(ct1.GetCoefficient(x), 1.0, "test1");
+    CheckEquality(ct1.GetCoefficient(y), -1.0, "test2");
+    MPConstraint ct2 = solver.Add(x == 3 * y + 5);
+    CheckEquality(ct2.GetCoefficient(x), 1.0, "test3");
+    CheckEquality(ct2.GetCoefficient(y), -3.0, "test4");
+    CheckEquality(ct2.Lb(), 5.0, "test5");
+    CheckEquality(ct2.Ub(), 5.0, "test6");
+    MPConstraint ct3 = solver.Add(2 * x - 9 == y);
+    CheckEquality(ct3.GetCoefficient(x), 2.0, "test7");
+    CheckEquality(ct3.GetCoefficient(y), -1.0, "test8");
+    CheckEquality(ct3.Lb(), 9.0, "test9");
+    CheckEquality(ct3.Ub(), 9.0, "test10");
+    Check(x == x, "test11");
+    Check(!(x == y), "test12");
+    Check(!(x != x), "test13");
+    Check((x != y), "test14");
+
+  }
+
   static void Main()
   {
     TestVarOperator();
     TestVarAddition();
     TestVarMultiplication();
+    TestBinaryOperations();
   }
 }
