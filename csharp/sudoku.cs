@@ -15,7 +15,8 @@
 
 using System;
 using System.Collections;
-using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
@@ -36,7 +37,9 @@ public class Sudoku
     // data
     //
     int cell_size = 3;
+    IEnumerable<int> CELL = Enumerable.Range(0, cell_size);
     int n = cell_size * cell_size;
+    IEnumerable<int> RANGE = Enumerable.Range(0, n);
 
     // 0 marks an unknown value
     int[,] initial_grid = {{0, 6, 0, 0, 5, 0, 0, 2, 0},
@@ -60,38 +63,35 @@ public class Sudoku
     // Constraints
     //  
 
-    // init and rows
-    for(int i = 0; i < n; i++) {
-      IntVar[] row = new IntVar[n];
-      for(int j = 0; j < n; j++) {
+    // init
+    foreach(int i in RANGE) {
+      foreach(int j in RANGE) {
         if (initial_grid[i,j] > 0) {
           solver.Add(grid[i,j] == initial_grid[i,j]);
         }
-        row[j] = grid[i,j];
       }
-      solver.Add(row.AllDifferent());
     }
 
-    // columns
-    for(int j = 0; j < n; j++) {
-      IntVar[] col = new IntVar[n];
-      for(int i = 0; i < n; i++) {
-        col[i] = grid[i,j];
-      }
-      solver.Add(col.AllDifferent());
+    
+    foreach(int i in RANGE) {
+
+      // rows
+      solver.Add( (from j in RANGE
+                   select grid[i,j].Var()).ToArray().AllDifferent());
+
+      // cols
+      solver.Add( (from j in RANGE
+                   select grid[j,i].Var()).ToArray().AllDifferent());
+
     }
 
     // cells
-    for(int i = 0; i < cell_size; i++) {
-      for(int j = 0; j < cell_size; j++) {
-        IntVar[] cell = new IntVar[n];
-        for(int di = 0; di < cell_size; di++) {
-          for(int dj = 0; dj < cell_size; dj++) {
-            cell[di * cell_size + dj] = 
-              grid[i * cell_size + di,j * cell_size + dj];
-          }
-        }
-        solver.Add(cell.AllDifferent());
+    foreach(int i in CELL) {
+      foreach(int j in CELL) {
+        solver.Add( (from di in CELL
+                     from dj in CELL
+                     select grid[i*cell_size+di, j*cell_size+dj].Var()
+                     ).ToArray().AllDifferent());
       }
     }        
 
