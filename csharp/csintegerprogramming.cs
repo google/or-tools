@@ -18,29 +18,29 @@ public class CsIntegerProgramming
 {
   private static void RunIntegerProgrammingExample(String solverType)
   {
-    MPSolver solver = MPSolver.CreateSolver("IntegerProgramming", solverType);
+    Solver solver = Solver.CreateSolver("IntegerProgramming", solverType);
     if (solver == null)
     {
       Console.WriteLine("Could not create solver " + solverType);
       return;
     }
     // x1 and x2 are integer non-negative variables.
-    MPVariable x1 = solver.MakeIntVar(0.0, double.PositiveInfinity, "x1");
-    MPVariable x2 = solver.MakeIntVar(0.0, double.PositiveInfinity, "x2");
+    Variable x1 = solver.MakeIntVar(0.0, double.PositiveInfinity, "x1");
+    Variable x2 = solver.MakeIntVar(0.0, double.PositiveInfinity, "x2");
 
     // Minimize x1 + 2 * x2.
     solver.SetObjectiveCoefficient(x1, 1);
     solver.SetObjectiveCoefficient(x2, 2);
 
     // 2 * x2 + 3 * x1 >= 17.
-    MPConstraint ct = solver.MakeConstraint(17, double.PositiveInfinity);
+    Constraint ct = solver.MakeConstraint(17, double.PositiveInfinity);
     ct.SetCoefficient(x1, 3);
     ct.SetCoefficient(x2, 2);
 
     int resultStatus = solver.Solve();
 
     // Check that the problem has an optimal solution.
-    if (resultStatus != MPSolver.OPTIMAL)
+    if (resultStatus != Solver.OPTIMAL)
     {
       Console.WriteLine("The problem does not have an optimal solution!");
       return;
@@ -64,15 +64,15 @@ public class CsIntegerProgramming
 
   private static void RunIntegerProgrammingExampleNaturalApi(String solverType)
   {
-    MPSolver solver = MPSolver.CreateSolver("IntegerProgramming", solverType);
+    Solver solver = Solver.CreateSolver("IntegerProgramming", solverType);
     if (solver == null)
     {
       Console.WriteLine("Could not create solver " + solverType);
       return;
     }
     // x1 and x2 are integer non-negative variables.
-    MPVariable x1 = solver.MakeIntVar(0.0, double.PositiveInfinity, "x1");
-    MPVariable x2 = solver.MakeIntVar(0.0, double.PositiveInfinity, "x2");
+    Variable x1 = solver.MakeIntVar(0.0, double.PositiveInfinity, "x1");
+    Variable x2 = solver.MakeIntVar(0.0, double.PositiveInfinity, "x2");
 
     solver.Minimize(x1 + 2 * x2);
     solver.Add(2 * x2 + 3 * x1 >= 17);
@@ -80,7 +80,7 @@ public class CsIntegerProgramming
     int resultStatus = solver.Solve();
 
     // Check that the problem has an optimal solution.
-    if (resultStatus != MPSolver.OPTIMAL)
+    if (resultStatus != Solver.OPTIMAL)
     {
       Console.WriteLine("The problem does not have an optimal solution!");
       return;

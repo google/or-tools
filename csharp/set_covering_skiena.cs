@@ -29,7 +29,7 @@ public class SetCoveringSkiena
    * """
    * Input Description: A set of subsets S_1, ..., S_m of the
    * universal set U = {1,...,n}.
-   * 
+   *
    * Problem: What is the smallest subset of subsets T subset S such
    * that \cup_{t_i in T} t_i = U?
    * """
@@ -50,7 +50,7 @@ public class SetCoveringSkiena
     IEnumerable<int> Elements = Enumerable.Range(0, num_elements);
 
     // Which element belongs to which set
-    int[,] belongs =  
+    int[,] belongs =
       {
         // 1 2 3 4 5 6 7 8 9 0 1 2  elements
         {1,1,0,0,0,0,0,0,0,0,0,0}, // Set 1
@@ -88,7 +88,7 @@ public class SetCoveringSkiena
                 from j in Elements
                 select (x[i]*belongs[i,j]).Var()
                 ).ToArray().Sum() == tot_elements);
-    
+
     //
     // Objective
     //
@@ -107,10 +107,10 @@ public class SetCoveringSkiena
       Console.WriteLine("z: {0}", z.Value());
       Console.WriteLine("tot_elements: {0}", tot_elements.Value());
       Console.WriteLine(
-               "x: {0}", 
+               "x: {0}",
                String.Join(" ", (from i in Enumerable.Range(0, num_sets)
-                                 select x[i].Value()).ToArray()));
-      
+                                 select x[i].Value().ToString()).ToArray()));
+
     }
 
     Console.WriteLine("\nSolutions: {0}", solver.Solutions());

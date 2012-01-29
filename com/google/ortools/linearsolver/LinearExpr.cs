@@ -18,13 +18,13 @@ namespace Google.OrTools.LinearSolver
 
 public class LinearExpr
 {
-  public virtual double DoVisit(Dictionary<MPVariable, double> coefficients,
+  public virtual double DoVisit(Dictionary<Variable, double> coefficients,
                                 double multiplier)
   {
     return 0;
   }
 
-  public double Visit(Dictionary<MPVariable, double> coefficients)
+  public double Visit(Dictionary<Variable, double> coefficients)
   {
     return DoVisit(coefficients, 1.0);
   }
@@ -129,7 +129,7 @@ public class LinearExpr
     return a - b >= 0;
   }
 
-  public static implicit operator LinearExpr(MPVariable a)
+  public static implicit operator LinearExpr(Variable a)
   {
     return new VarWrapper(a);
   }
@@ -142,7 +142,7 @@ public static class LinearExprArrayHelper
     return new SumArray(exprs);
   }
 
-  public static LinearExpr Sum(this MPVariable[] vars)
+  public static LinearExpr Sum(this Variable[] vars)
   {
     return new SumVarArray(vars);
   }
@@ -174,7 +174,7 @@ class ProductCst : LinearExpr
     return "(" + expr_.ToString() + " * " + coeff_ + ")";
   }
 
-  public override double DoVisit(Dictionary<MPVariable, double> coefficients,
+  public override double DoVisit(Dictionary<Variable, double> coefficients,
                                  double multiplier)
   {
     double current_multiplier = multiplier * coeff_;
@@ -205,7 +205,7 @@ class SumCst : LinearExpr
     return "(" + expr_.ToString() + " + " + coeff_ + ")";
   }
 
-  public override double DoVisit(Dictionary<MPVariable, double> coefficients,
+  public override double DoVisit(Dictionary<Variable, double> coefficients,
                                  double multiplier)
   {
     if (multiplier != 0.0)
@@ -224,7 +224,7 @@ class SumCst : LinearExpr
 
 class VarWrapper : LinearExpr
 {
-  public VarWrapper(MPVariable var)
+  public VarWrapper(Variable var)
   {
     this.var_ = var;
   }
@@ -234,7 +234,7 @@ class VarWrapper : LinearExpr
     return var_.Name();
   }
 
-  public override double DoVisit(Dictionary<MPVariable, double> coefficients,
+  public override double DoVisit(Dictionary<Variable, double> coefficients,
                                  double multiplier)
   {
     if (multiplier != 0.0)
@@ -251,7 +251,7 @@ class VarWrapper : LinearExpr
     return 0.0;
   }
 
-  private MPVariable var_;
+  private Variable var_;
 }
 
 
@@ -268,7 +268,7 @@ class Sum : LinearExpr
     return "(" + left_.ToString() + " + " + right_.ToString() + ")";
   }
 
-  public override double DoVisit(Dictionary<MPVariable, double> coefficients,
+  public override double DoVisit(Dictionary<Variable, double> coefficients,
                                  double multiplier)
   {
     if (multiplier != 0.0)
@@ -293,7 +293,7 @@ public class SumArray : LinearExpr
     this.array_ = array;
   }
 
-  public override double DoVisit(Dictionary<MPVariable, double> coefficients,
+  public override double DoVisit(Dictionary<Variable, double> coefficients,
                                  double multiplier) {
     if (multiplier != 0.0)
     {
@@ -315,16 +315,16 @@ public class SumArray : LinearExpr
 
 public class SumVarArray : LinearExpr
 {
-  public SumVarArray(MPVariable[] array)
+  public SumVarArray(Variable[] array)
   {
     this.array_ = array;
   }
 
-  public override double DoVisit(Dictionary<MPVariable, double> coefficients,
+  public override double DoVisit(Dictionary<Variable, double> coefficients,
                                  double multiplier) {
     if (multiplier != 0.0)
     {
-      foreach (MPVariable var in array_)
+      foreach (Variable var in array_)
       {
         if (coefficients.ContainsKey(var))
         {
@@ -339,6 +339,6 @@ public class SumVarArray : LinearExpr
     return 0.0;
   }
 
-  private MPVariable[] array_;
+  private Variable[] array_;
 }
 }  // namespace Google.OrTools.LinearSolver

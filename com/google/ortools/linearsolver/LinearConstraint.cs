@@ -24,7 +24,7 @@ public class LinearConstraint
     return "LinearConstraint";
   }
 
-  public virtual MPConstraint Extract(MPSolver solver)
+  public virtual Constraint Extract(Solver solver)
   {
     return null;
   }
@@ -45,13 +45,13 @@ public class RangeConstraint : LinearConstraint
     return "" + lb_ + " <= " + expr_.ToString() + " <= " + ub_;
   }
 
-  public override MPConstraint Extract(MPSolver solver)
+  public override Constraint Extract(Solver solver)
   {
-    Dictionary<MPVariable, double> coefficients =
-        new Dictionary<MPVariable, double>();
+    Dictionary<Variable, double> coefficients =
+        new Dictionary<Variable, double>();
     double constant = expr_.Visit(coefficients);
-    MPConstraint ct = solver.MakeConstraint(lb_ - constant, ub_ - constant);
-    foreach (KeyValuePair<MPVariable, double> pair in coefficients)
+    Constraint ct = solver.MakeConstraint(lb_ - constant, ub_ - constant);
+    foreach (KeyValuePair<Variable, double> pair in coefficients)
     {
       ct.SetCoefficient(pair.Key, pair.Value);
     }
@@ -82,14 +82,14 @@ public class Equality : LinearConstraint
     return "" + left_.ToString() + " == " + right_.ToString();
   }
 
-  public override MPConstraint Extract(MPSolver solver)
+  public override Constraint Extract(Solver solver)
   {
-    Dictionary<MPVariable, double> coefficients =
-        new Dictionary<MPVariable, double>();
+    Dictionary<Variable, double> coefficients =
+        new Dictionary<Variable, double>();
     double constant = left_.Visit(coefficients);
     constant += right_.DoVisit(coefficients, -1);
-    MPConstraint ct = solver.MakeConstraint(-constant, -constant);
-    foreach (KeyValuePair<MPVariable, double> pair in coefficients)
+    Constraint ct = solver.MakeConstraint(-constant, -constant);
+    foreach (KeyValuePair<Variable, double> pair in coefficients)
     {
       ct.SetCoefficient(pair.Key, pair.Value);
     }
@@ -108,7 +108,7 @@ public class Equality : LinearConstraint
 
 public class VarEquality : LinearConstraint
 {
-  public VarEquality(MPVariable left, MPVariable right, bool equality)
+  public VarEquality(Variable left, Variable right, bool equality)
   {
     this.left_ = left;
     this.right_ = right;
@@ -120,9 +120,9 @@ public class VarEquality : LinearConstraint
     return "" + left_.Name() + " == " + right_.Name();
   }
 
-  public override MPConstraint Extract(MPSolver solver)
+  public override Constraint Extract(Solver solver)
   {
-    MPConstraint ct = solver.MakeConstraint(0.0, 0.0);
+    Constraint ct = solver.MakeConstraint(0.0, 0.0);
     ct.SetCoefficient(left_, 1.0);
     ct.SetCoefficient(right_, -1.0);
     return ct;
@@ -133,8 +133,8 @@ public class VarEquality : LinearConstraint
     return (object)ct.left_ == (object)ct.right_ ? ct.equality_ : !ct.equality_;
   }
 
-  private MPVariable left_;
-  private MPVariable right_;
+  private Variable left_;
+  private Variable right_;
   private bool equality_;
 }
 }  // namespace Google.OrTools.LinearSolver

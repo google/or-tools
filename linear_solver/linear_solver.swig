@@ -573,6 +573,13 @@ namespace operations_research {
 %rename("%(camelcase)s", %$isfunction) "";
 // Rename MakeRowConstraint into MakeConstraint
 %rename (MakeConstraint) MPSolver::MakeRowConstraint;
+// Rename classes, remove MP prefix.
+%rename (Solver) MPSolver;
+%rename (Variable) MPVariable;
+%rename (Constraint) MPConstraint;
+%rename (Objective) MPObjective;
+%rename (SolverParameters) MPSolverParameters;
+
 // Ignore code on MPSolver, see replacement java code below.
 %ignore MPSolver::MakeVarArray;
 %ignore MPSolver::MakeNumVarArray;
@@ -586,235 +593,235 @@ namespace operations_research {
 %ignore MPSolver::SolveWithProtocolBuffers;
 
 %typemap(cscode) MPVariable %{
-  public static LinearExpr operator+(MPVariable a, double v)
+  public static LinearExpr operator+(Variable a, double v)
   {
     return new VarWrapper(a) + v;
   }
 
-  public static LinearExpr operator+(double v, MPVariable a)
+  public static LinearExpr operator+(double v, Variable a)
   {
     return a + v;
   }
 
-  public static LinearExpr operator+(MPVariable a, LinearExpr b)
+  public static LinearExpr operator+(Variable a, LinearExpr b)
   {
     return new VarWrapper(a) + b;
   }
 
-  public static LinearExpr operator+(MPVariable a, MPVariable b)
+  public static LinearExpr operator+(Variable a, Variable b)
   {
     return new VarWrapper(a) + new VarWrapper(b);
   }
 
-  public static LinearExpr operator+(LinearExpr a, MPVariable b)
+  public static LinearExpr operator+(LinearExpr a, Variable b)
   {
     return a + new VarWrapper(b);
   }
 
-  public static LinearExpr operator-(MPVariable a, double v)
+  public static LinearExpr operator-(Variable a, double v)
   {
     return new VarWrapper(a) - v;
   }
 
-  public static LinearExpr operator-(double v, MPVariable a)
+  public static LinearExpr operator-(double v, Variable a)
   {
     return v - new VarWrapper(a);
   }
 
-  public static LinearExpr operator-(MPVariable a, LinearExpr b)
+  public static LinearExpr operator-(Variable a, LinearExpr b)
   {
     return new VarWrapper(a) - b;
   }
 
-  public static LinearExpr operator-(LinearExpr a, MPVariable b)
+  public static LinearExpr operator-(LinearExpr a, Variable b)
   {
     return a - new VarWrapper(b);
   }
 
-  public static LinearExpr operator-(MPVariable a, MPVariable b)
+  public static LinearExpr operator-(Variable a, Variable b)
   {
     return new VarWrapper(a) - new VarWrapper(b);
   }
 
-  public static LinearExpr operator-(MPVariable a)
+  public static LinearExpr operator-(Variable a)
   {
     return - new VarWrapper(a);
   }
 
-  public static LinearExpr operator*(MPVariable a, double v)
+  public static LinearExpr operator*(Variable a, double v)
   {
     return new VarWrapper(a) * v;
   }
 
-  public static LinearExpr operator/(MPVariable a, double v)
+  public static LinearExpr operator/(Variable a, double v)
   {
     return new VarWrapper(a) / v;
   }
 
-  public static LinearExpr operator*(double v, MPVariable a)
+  public static LinearExpr operator*(double v, Variable a)
   {
     return v * new VarWrapper(a);
   }
 
-  public static RangeConstraint operator==(MPVariable a, double v)
+  public static RangeConstraint operator==(Variable a, double v)
   {
     return new VarWrapper(a) == v;
   }
 
-  public static RangeConstraint operator==(double v, MPVariable a)
+  public static RangeConstraint operator==(double v, Variable a)
   {
     return v == new VarWrapper(a);
   }
 
-  public static RangeConstraint operator!=(MPVariable a, double v)
+  public static RangeConstraint operator!=(Variable a, double v)
   {
     return new VarWrapper(a) != v;
   }
 
-  public static RangeConstraint operator!=(double v, MPVariable a)
+  public static RangeConstraint operator!=(double v, Variable a)
   {
     return new VarWrapper(a) != v;
   }
 
-  public static Equality operator==(MPVariable a, LinearExpr b)
+  public static Equality operator==(Variable a, LinearExpr b)
   {
     return new VarWrapper(a) == b;
   }
 
-  public static Equality operator==(LinearExpr a, MPVariable b)
+  public static Equality operator==(LinearExpr a, Variable b)
   {
     return a == new VarWrapper(b);
   }
 
-  public static VarEquality operator==(MPVariable a, MPVariable b)
+  public static VarEquality operator==(Variable a, Variable b)
   {
     return new VarEquality(a, b, true);
   }
 
-  public static Equality operator!=(MPVariable a, LinearExpr b)
+  public static Equality operator!=(Variable a, LinearExpr b)
   {
     return new VarWrapper(a) != b;
   }
 
-  public static Equality operator!=(LinearExpr a, MPVariable b)
+  public static Equality operator!=(LinearExpr a, Variable b)
   {
     return a != new VarWrapper(b);
   }
 
-  public static VarEquality operator!=(MPVariable a, MPVariable b)
+  public static VarEquality operator!=(Variable a, Variable b)
   {
     return new VarEquality(a, b, false);
   }
 
-  public static RangeConstraint operator<=(MPVariable a, double v)
+  public static RangeConstraint operator<=(Variable a, double v)
   {
     return new VarWrapper(a) <= v;
   }
 
-  public static RangeConstraint operator>=(MPVariable a, double v)
+  public static RangeConstraint operator>=(Variable a, double v)
   {
     return new VarWrapper(a) >= v;
   }
 
-  public static RangeConstraint operator<=(double v, MPVariable a)
+  public static RangeConstraint operator<=(double v, Variable a)
   {
     return new VarWrapper(a) >= v;
   }
 
-  public static RangeConstraint operator>=(double v, MPVariable a)
+  public static RangeConstraint operator>=(double v, Variable a)
   {
     return new VarWrapper(a) <= v;
   }
 
-  public static RangeConstraint operator<=(MPVariable a, LinearExpr b)
+  public static RangeConstraint operator<=(Variable a, LinearExpr b)
   {
     return new VarWrapper(a) <= b;
   }
 
-  public static RangeConstraint operator>=(MPVariable a, LinearExpr b)
+  public static RangeConstraint operator>=(Variable a, LinearExpr b)
   {
     return new VarWrapper(a) >= b;
   }
 
-  public static RangeConstraint operator<=(MPVariable a, MPVariable b)
+  public static RangeConstraint operator<=(Variable a, Variable b)
   {
     return new VarWrapper(a) <= new VarWrapper(b);
   }
 
-  public static RangeConstraint operator>=(MPVariable a, MPVariable b)
+  public static RangeConstraint operator>=(Variable a, Variable b)
   {
     return new VarWrapper(a) >= new VarWrapper(b);
   }
 
-  public static RangeConstraint operator<=(LinearExpr a, MPVariable b)
+  public static RangeConstraint operator<=(LinearExpr a, Variable b)
   {
     return a <= new VarWrapper(b);
   }
 
-  public static RangeConstraint operator>=(LinearExpr a, MPVariable b)
+  public static RangeConstraint operator>=(LinearExpr a, Variable b)
   {
     return a >= new VarWrapper(b);
   }
 %}
 
-// Add csharp code on MPSolver.
+// Add csharp code on Solver.
 %typemap(cscode) MPSolver %{
-  public MPVariable[] MakeVarArray(int count,
+  public Variable[] MakeVarArray(int count,
                                    double lb,
                                    double ub,
                                    bool integer) {
-    MPVariable[] array = new MPVariable[count];
+    Variable[] array = new Variable[count];
     for (int i = 0; i < count; ++i) {
       array[i] = MakeVar(lb, ub, integer, "");
     }
     return array;
   }
 
-  public MPVariable[] MakeVarArray(int count,
+  public Variable[] MakeVarArray(int count,
                                    double lb,
                                    double ub,
                                    bool integer,
                                    string var_name) {
-    MPVariable[] array = new MPVariable[count];
+    Variable[] array = new Variable[count];
     for (int i = 0; i < count; ++i) {
       array[i] = MakeVar(lb, ub, integer, var_name + i);
     }
     return array;
   }
 
-  public MPVariable[] MakeNumVarArray(int count, double lb, double ub) {
+  public Variable[] MakeNumVarArray(int count, double lb, double ub) {
     return MakeVarArray(count, lb, ub, false);
   }
 
-  public MPVariable[] MakeNumVarArray(int count,
+  public Variable[] MakeNumVarArray(int count,
                                       double lb,
                                       double ub,
                                       string var_name) {
     return MakeVarArray(count, lb, ub, false, var_name);
   }
 
-  public MPVariable[] MakeIntVarArray(int count, double lb, double ub) {
+  public Variable[] MakeIntVarArray(int count, double lb, double ub) {
     return MakeVarArray(count, lb, ub, true);
   }
 
-  public MPVariable[] MakeIntVarArray(int count,
+  public Variable[] MakeIntVarArray(int count,
                                       double lb,
                                       double ub,
                                       string var_name) {
     return MakeVarArray(count, lb, ub, true, var_name);
   }
 
-  public MPVariable[] MakeBoolVarArray(int count) {
+  public Variable[] MakeBoolVarArray(int count) {
     return MakeVarArray(count, 0.0, 1.0, true);
   }
 
-  public MPVariable[] MakeBoolVarArray(int count, string var_name) {
+  public Variable[] MakeBoolVarArray(int count, string var_name) {
     return MakeVarArray(count, 0.0, 1.0, true, var_name);
   }
 
   public static int GetSolverEnum(String solverType) {
     System.Reflection.FieldInfo fieldInfo =
-      typeof(MPSolver).GetField(solverType);
+      typeof(Solver).GetField(solverType);
     if (fieldInfo != null) {
       return (int)fieldInfo.GetValue(null);
     } else {
@@ -822,17 +829,17 @@ namespace operations_research {
     }
   }
 
-  public static MPSolver CreateSolver(String name, String type) {
+  public static Solver CreateSolver(String name, String type) {
     System.Reflection.FieldInfo fieldInfo =
-        typeof(MPSolver).GetField(type);
+        typeof(Solver).GetField(type);
     if (fieldInfo != null) {
-      return new MPSolver(name, (int)fieldInfo.GetValue(null));
+      return new Solver(name, (int)fieldInfo.GetValue(null));
     } else {
       return null;
     }
   }
 
-  public MPConstraint Add(LinearConstraint constraint) {
+  public Constraint Add(LinearConstraint constraint) {
     return constraint.Extract(this);
   }
 
@@ -840,10 +847,10 @@ namespace operations_research {
   {
     ClearObjective();
     SetMinimization();
-    Dictionary<MPVariable, double> coefficients =
-        new Dictionary<MPVariable, double>();
+    Dictionary<Variable, double> coefficients =
+        new Dictionary<Variable, double>();
     double constant = expr.Visit(coefficients);
-    foreach (KeyValuePair<MPVariable, double> pair in coefficients)
+    foreach (KeyValuePair<Variable, double> pair in coefficients)
     {
       SetObjectiveCoefficient(pair.Key, pair.Value);
       SetObjectiveOffset(constant);
@@ -854,24 +861,24 @@ namespace operations_research {
   {
     ClearObjective();
     SetMaximization();
-    Dictionary<MPVariable, double> coefficients =
-        new Dictionary<MPVariable, double>();
+    Dictionary<Variable, double> coefficients =
+        new Dictionary<Variable, double>();
     double constant = expr.Visit(coefficients);
-    foreach (KeyValuePair<MPVariable, double> pair in coefficients)
+    foreach (KeyValuePair<Variable, double> pair in coefficients)
     {
       SetObjectiveCoefficient(pair.Key, pair.Value);
       SetObjectiveOffset(constant);
     }
   }
 
-  public void Minimize(MPVariable var)
+  public void Minimize(Variable var)
   {
     ClearObjective();
     SetMinimization();
     SetObjectiveCoefficient(var, 1.0);
   }
 
-  public void Maximize(MPVariable var)
+  public void Maximize(Variable var)
   {
     ClearObjective();
     SetMaximization();

@@ -18,7 +18,7 @@ test_python: python
 test_java: java run_RabbitsPheasants run_FlowExample run_LinearProgramming run_IntegerProgramming run_Knapsack
 
 # csharp test
-test_csharp: $(CSHARPEXE)
+test_csharp: $(CSHARPEXE) testlp.exe
 	cslinearprogramming.exe
 	csintegerprogramming.exe
 	csrabbitspheasants.exe
@@ -26,6 +26,7 @@ test_csharp: $(CSHARPEXE)
 	csknapsack.exe
 	furniture_moving_intervals.exe
         organize_day_intervals.exe
+        testlp.exe
 
 
 

@@ -26,8 +26,7 @@ public class SetPartition
     //
     // Partition the sets (binary matrix representation).
     //
-    public static void partition_sets(
-                                      Solver solver,
+    public static void partition_sets(Solver solver,
                                       IntVar[,] x, int num_sets, int n)
     {
 
@@ -109,14 +108,14 @@ public class SetPartition
                    (from k in NRange select a[i,k].Var()).ToArray().Sum()
                    ==
                    (from k in NRange select a[j,k].Var()).ToArray().Sum());
-        
+
         // same sum
         solver.Add(
                    (from k in NRange select (k*a[i,k]).Var()).ToArray().Sum()
                    ==
                    (from k in NRange select (k*a[j,k]).Var()).ToArray().Sum());
-        
-        
+
+
         // same sum squared
         solver.Add(
                    (from k in NRange select (k*a[i,k]*k*a[i,k]).Var()).ToArray().Sum()
@@ -169,7 +168,7 @@ public class SetPartition
         }
       }
       Console.WriteLine();
-          
+
     }
 
     Console.WriteLine("\nSolutions: {0}", solver.Solutions());
@@ -195,7 +194,7 @@ public class SetPartition
     }
 
     if (n % num_sets == 0) {
-      
+
       Solve(n, num_sets);
     } else {
       Console.WriteLine("n {0} num_sets {1}: Equal sets is not possible!",
