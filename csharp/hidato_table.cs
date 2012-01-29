@@ -35,14 +35,14 @@ public class HidatoTable
    * rows: the number of rows in the grid
    *  cols: the number of columns in the grid
    */
-  public static int[,] BuildPairs(int rows, int cols) 
+  public static int[,] BuildPairs(int rows, int cols)
   {
     int[] ix = {-1, 0, 1};
     var result_tmp = (from x in Enumerable.Range(0, rows)
                       from y in Enumerable.Range(0, cols)
                       from dx in ix
                       from dy in ix
-                      where 
+                      where
                       x + dx >= 0 &&
                       x + dx < rows &&
                       y + dy >= 0 &&
@@ -50,7 +50,7 @@ public class HidatoTable
                       (dx != 0 || dy != 0)
                    select new int[] {x * cols + y, (x + dx) * cols + (y + dy)}
                       ).ToArray();
-    
+
     // Convert to len x 2 matrix
     int len = result_tmp.Length;
     int[,] result = new int[len, 2];
@@ -61,9 +61,7 @@ public class HidatoTable
       }
       i++;
     }
-      
     return result;
-
   }
 
 
@@ -81,9 +79,9 @@ public class HidatoTable
    * """
    *
    * This is a port of the Python model hidato_table.py
-   * made by Laurent Perron (using AllowedAssignments), 
+   * made by Laurent Perron (using AllowedAssignments),
    * based on my (much slower) model hidato.py.
-   * 
+   *
    */
   private static void Solve(int model = 1)
   {
@@ -106,9 +104,9 @@ public class HidatoTable
                         {0, 2, 8},
                         {1, 0, 0}};
       puzzle = puzzle1;
-      
+
     } else if (model == 2) {
-      
+
       int[,] puzzle2 = {{0, 44, 41, 0, 0, 0, 0},
                         {0, 43, 0, 28, 29, 0, 0},
                         {0, 1, 0, 0, 0, 33, 0},
@@ -117,7 +115,7 @@ public class HidatoTable
                         {0, 19, 0, 0, 12, 7, 0},
                         {0, 0, 0, 14, 0, 0, 0}};
       puzzle = puzzle2;
-      
+
     } else if (model == 3) {
       // Problems from the book:
       // Gyora Bededek: "Hidato: 2000 Pure Logic Puzzles"
@@ -229,7 +227,7 @@ public class HidatoTable
   public static void PrintOneSolution(IntVar[] positions,
                                       int rows,
                                       int cols,
-                                      int num_solution) 
+                                      int num_solution)
   {
 
     Console.WriteLine("Solution {0}", num_solution);
@@ -240,8 +238,8 @@ public class HidatoTable
       for(int j = 0; j < cols; j++) {
         board[i,j] = 0;
       }
-    } 
-    
+    }
+
     // Fill board with solution value
     for(int k = 0; k < rows*cols; k++) {
       int position = (int)positions[k].Value();
@@ -251,10 +249,10 @@ public class HidatoTable
     PrintMatrix(board);
 
   }
-  
+
 
   // Pretty print of the matrix
-  public static void PrintMatrix(int[,] game) 
+  public static void PrintMatrix(int[,] game)
   {
     int rows = game.GetLength(0);
     int cols = game.GetLength(1);
