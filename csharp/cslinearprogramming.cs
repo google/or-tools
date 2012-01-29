@@ -24,11 +24,10 @@ public class CsLinearProgramming
       Console.WriteLine("Could not create solver " + solverType);
       return;
     }
-    double infinity = MPSolver.Infinity();
     // x1, x2 and x3 are continuous non-negative variables.
-    MPVariable x1 = solver.MakeNumVar(0.0, infinity, "x1");
-    MPVariable x2 = solver.MakeNumVar(0.0, infinity, "x2");
-    MPVariable x3 = solver.MakeNumVar(0.0, infinity, "x3");
+    MPVariable x1 = solver.MakeNumVar(0.0, double.PositiveInfinity, "x1");
+    MPVariable x2 = solver.MakeNumVar(0.0, double.PositiveInfinity, "x2");
+    MPVariable x3 = solver.MakeNumVar(0.0, double.PositiveInfinity, "x3");
 
     // Maximize 10 * x1 + 6 * x2 + 4 * x3.
     solver.SetObjectiveCoefficient(x1, 10);
@@ -37,19 +36,19 @@ public class CsLinearProgramming
     solver.SetMaximization();
 
     // x1 + x2 + x3 <= 100.
-    MPConstraint c0 = solver.MakeConstraint(-infinity, 100.0);
+    MPConstraint c0 = solver.MakeConstraint(double.NegativeInfinity, 100.0);
     c0.SetCoefficient(x1, 1);
     c0.SetCoefficient(x2, 1);
     c0.SetCoefficient(x3, 1);
 
     // 10 * x1 + 4 * x2 + 5 * x3 <= 600.
-    MPConstraint c1 = solver.MakeConstraint(-infinity, 600.0);
+    MPConstraint c1 = solver.MakeConstraint(double.NegativeInfinity, 600.0);
     c1.SetCoefficient(x1, 10);
     c1.SetCoefficient(x2, 4);
     c1.SetCoefficient(x3, 5);
 
     // 2 * x1 + 2 * x2 + 6 * x3 <= 300.
-    MPConstraint c2 = solver.MakeConstraint(-infinity, 300.0);
+    MPConstraint c2 = solver.MakeConstraint(double.NegativeInfinity, 300.0);
     c2.SetCoefficient(x1, 2);
     c2.SetCoefficient(x2, 2);
     c2.SetCoefficient(x3, 6);
@@ -98,11 +97,10 @@ public class CsLinearProgramming
       Console.WriteLine("Could not create solver " + solverType);
       return;
     }
-    double infinity = MPSolver.Infinity();
     // x1, x2 and x3 are continuous non-negative variables.
-    MPVariable x1 = solver.MakeNumVar(0.0, infinity, "x1");
-    MPVariable x2 = solver.MakeNumVar(0.0, infinity, "x2");
-    MPVariable x3 = solver.MakeNumVar(0.0, infinity, "x3");
+    MPVariable x1 = solver.MakeNumVar(0.0, double.PositiveInfinity, "x1");
+    MPVariable x2 = solver.MakeNumVar(0.0, double.PositiveInfinity, "x2");
+    MPVariable x3 = solver.MakeNumVar(0.0, double.PositiveInfinity, "x3");
 
     solver.Maximize(10 * x1 + 6 * x2 + 4 * x3);
     MPConstraint c0 = solver.Add(x1 + x2 + x3 <= 100);

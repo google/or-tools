@@ -24,17 +24,16 @@ public class CsIntegerProgramming
       Console.WriteLine("Could not create solver " + solverType);
       return;
     }
-    double infinity = MPSolver.Infinity();
     // x1 and x2 are integer non-negative variables.
-    MPVariable x1 = solver.MakeIntVar(0.0, infinity, "x1");
-    MPVariable x2 = solver.MakeIntVar(0.0, infinity, "x2");
+    MPVariable x1 = solver.MakeIntVar(0.0, double.PositiveInfinity, "x1");
+    MPVariable x2 = solver.MakeIntVar(0.0, double.PositiveInfinity, "x2");
 
     // Minimize x1 + 2 * x2.
     solver.SetObjectiveCoefficient(x1, 1);
     solver.SetObjectiveCoefficient(x2, 2);
 
     // 2 * x2 + 3 * x1 >= 17.
-    MPConstraint ct = solver.MakeConstraint(17, infinity);
+    MPConstraint ct = solver.MakeConstraint(17, double.PositiveInfinity);
     ct.SetCoefficient(x1, 3);
     ct.SetCoefficient(x2, 2);
 
@@ -71,10 +70,9 @@ public class CsIntegerProgramming
       Console.WriteLine("Could not create solver " + solverType);
       return;
     }
-    double infinity = MPSolver.Infinity();
     // x1 and x2 are integer non-negative variables.
-    MPVariable x1 = solver.MakeIntVar(0.0, infinity, "x1");
-    MPVariable x2 = solver.MakeIntVar(0.0, infinity, "x2");
+    MPVariable x1 = solver.MakeIntVar(0.0, double.PositiveInfinity, "x1");
+    MPVariable x2 = solver.MakeIntVar(0.0, double.PositiveInfinity, "x2");
 
     solver.Minimize(x1 + 2 * x2);
     solver.Add(2 * x2 + 3 * x1 >= 17);
