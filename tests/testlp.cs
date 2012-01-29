@@ -136,7 +136,70 @@ public class CsTestLp
     Check(!(x == y), "test12");
     Check(!(x != x), "test13");
     Check((x != y), "test14");
+  }
 
+  static void TestInequalities()
+  {
+    Console.WriteLine("Running TestInequalities");
+    MPSolver solver = new MPSolver("TestInequalities",
+                                   MPSolver.CLP_LINEAR_PROGRAMMING);
+    MPVariable x = solver.MakeNumVar(0.0, 100.0, "x");
+    MPVariable y = solver.MakeNumVar(0.0, 100.0, "y");
+    MPConstraint ct1 = solver.Add(2 * (x + 3) + 5 * (y + x -1) >= 3);
+    CheckEquality(ct1.GetCoefficient(x), 7.0, "test1");
+    CheckEquality(ct1.GetCoefficient(y), 5.0, "test2");
+    CheckEquality(ct1.Lb(), 2.0, "test3");
+    CheckEquality(ct1.Ub(), double.PositiveInfinity, "test4");
+    MPConstraint ct2 = solver.Add(2 * (x + 3) + 5 * (y + x -1) <= 3);
+    CheckEquality(ct2.GetCoefficient(x), 7.0, "test5");
+    CheckEquality(ct2.GetCoefficient(y), 5.0, "test6");
+    CheckEquality(ct2.Lb(), double.NegativeInfinity, "test7");
+    CheckEquality(ct2.Ub(), 2.0, "test8");
+    MPConstraint ct3 = solver.Add(2 * (x + 3) + 5 * (y + x -1) >= 3 - x - y);
+    CheckEquality(ct3.GetCoefficient(x), 8.0, "test9");
+    CheckEquality(ct3.GetCoefficient(y), 6.0, "test10");
+    CheckEquality(ct3.Lb(), 2.0, "test11");
+    CheckEquality(ct3.Ub(), double.PositiveInfinity, "test12");
+    MPConstraint ct4 = solver.Add(2 * (x + 3) + 5 * (y + x -1) <= -x - y + 3);
+    CheckEquality(ct4.GetCoefficient(x), 8.0, "test13");
+    CheckEquality(ct4.GetCoefficient(y), 6.0, "test14");
+    CheckEquality(ct4.Lb(), double.NegativeInfinity, "test15");
+    CheckEquality(ct4.Ub(), 2.0, "test16");
+  }
+
+  static void TestSumArray()
+  {
+    Console.WriteLine("Running TestSumArray");
+    MPSolver solver = new MPSolver("TestSumArray",
+                                   MPSolver.CLP_LINEAR_PROGRAMMING);
+    MPVariable[] x = solver.MakeBoolVarArray(10, "x");
+    MPConstraint ct1 = solver.Add(x.Sum() == 3);
+    CheckEquality(ct1.GetCoefficient(x[0]), 1.0, "test1");
+    MPConstraint ct2 = solver.Add(-2 * x.Sum() == 3);
+    CheckEquality(ct2.GetCoefficient(x[0]), -2.0, "test2");
+    LinearExpr[] array = new LinearExpr[] { x[0]+ 2.0, x[0] + 3, x[0] + 4 };
+    MPConstraint ct3 = solver.Add(array.Sum() == 1);
+    CheckEquality(ct3.GetCoefficient(x[0]), 3.0, "test3");
+    CheckEquality(ct3.Lb(), -8.0, "test4");
+    CheckEquality(ct3.Ub(), -8.0, "test5");
+  }
+
+  static void TestObjective()
+  {
+    Console.WriteLine("Running TestObjective");
+    MPSolver solver = new MPSolver("TestObjective",
+                                   MPSolver.CLP_LINEAR_PROGRAMMING);
+    MPVariable x = solver.MakeNumVar(0.0, 100.0, "x");
+    MPVariable y = solver.MakeNumVar(0.0, 100.0, "y");
+    solver.Maximize(x);
+    CheckEquality(0.0, solver.Objective().Offset(), "test1");
+    CheckEquality(1.0, solver.Objective().GetCoefficient(x), "test2");
+    Check(solver.Objective().Maximization(), "test3");
+    solver.Minimize(-x - 2 * y + 3);
+    CheckEquality(3.0, solver.Objective().Offset(), "test4");
+    CheckEquality(-1.0, solver.Objective().GetCoefficient(x), "test5");
+    CheckEquality(-2.0, solver.Objective().GetCoefficient(y), "test6");
+    Check(solver.Objective().Minimization(), "test7");
   }
 
   static void Main()
@@ -145,5 +208,8 @@ public class CsTestLp
     TestVarAddition();
     TestVarMultiplication();
     TestBinaryOperations();
+    TestInequalities();
+    TestSumArray();
+    TestObjective();
   }
 }

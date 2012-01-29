@@ -141,6 +141,11 @@ public static class LinearExprArrayHelper
   {
     return new SumArray(exprs);
   }
+
+  public static LinearExpr Sum(this MPVariable[] vars)
+  {
+    return new SumVarArray(vars);
+  }
 }
 
   // def __ge__(self, arg):
@@ -306,5 +311,34 @@ public class SumArray : LinearExpr
   }
 
   private LinearExpr[] array_;
+}
+
+public class SumVarArray : LinearExpr
+{
+  public SumVarArray(MPVariable[] array)
+  {
+    this.array_ = array;
+  }
+
+  public override double DoVisit(Dictionary<MPVariable, double> coefficients,
+                                 double multiplier) {
+    if (multiplier != 0.0)
+    {
+      foreach (MPVariable var in array_)
+      {
+        if (coefficients.ContainsKey(var))
+        {
+          coefficients[var] += multiplier;
+        }
+        else
+        {
+          coefficients[var] = multiplier;
+        }
+      }
+    }
+    return 0.0;
+  }
+
+  private MPVariable[] array_;
 }
 }  // namespace Google.OrTools.LinearSolver
