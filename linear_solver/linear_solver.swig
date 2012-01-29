@@ -716,6 +716,16 @@ namespace operations_research {
     return new VarWrapper(a) >= v;
   }
 
+  public static RangeConstraint operator<=(double v, MPVariable a)
+  {
+    return new VarWrapper(a) >= v;
+  }
+
+  public static RangeConstraint operator>=(double v, MPVariable a)
+  {
+    return new VarWrapper(a) <= v;
+  }
+
   public static RangeConstraint operator<=(MPVariable a, LinearExpr b)
   {
     return new VarWrapper(a) <= b;
