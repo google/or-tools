@@ -111,13 +111,13 @@ public class CsIntegerProgramming
     Console.WriteLine("---- Linear programming example with SCIP ----");
     RunIntegerProgrammingExample("SCIP_MIXED_INTEGER_PROGRAMMING");
     Console.WriteLine(
-        "---- Integer programming example Natural API with GLPK ----");
+        "---- Integer programming example (Natural API) with GLPK ----");
     RunIntegerProgrammingExampleNaturalApi("GLPK_MIXED_INTEGER_PROGRAMMING");
     Console.WriteLine(
-        "---- Linear programming example Natural API with CBC ----");
+        "---- Linear programming example (Natural API) with CBC ----");
     RunIntegerProgrammingExampleNaturalApi("CBC_MIXED_INTEGER_PROGRAMMING");
     Console.WriteLine(
-        "---- Linear programming example Natural API with SCIP ----");
+        "---- Linear programming example (Natural API) with SCIP ----");
     RunIntegerProgrammingExampleNaturalApi("SCIP_MIXED_INTEGER_PROGRAMMING");
   }
 }

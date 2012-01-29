@@ -150,10 +150,10 @@ public class CsLinearProgramming
     Console.WriteLine("---- Linear programming example with CLP ----");
     RunLinearProgrammingExample("CLP_LINEAR_PROGRAMMING");
     Console.WriteLine(
-        "---- Linear programming example Natural API with GLPK ----");
+        "---- Linear programming example (Natural API) with GLPK ----");
     RunLinearProgrammingExampleNaturalApi("GLPK_LINEAR_PROGRAMMING");
     Console.WriteLine(
-        "---- Linear programming example Natural API with CLP ----");
+        "---- Linear programming example (Natural API) with CLP ----");
     RunLinearProgrammingExampleNaturalApi("CLP_LINEAR_PROGRAMMING");
   }
 }
