@@ -960,8 +960,8 @@ namespace operations_research {
     foreach (KeyValuePair<Variable, double> pair in coefficients)
     {
       SetObjectiveCoefficient(pair.Key, pair.Value);
-      SetObjectiveOffset(constant);
     }
+    SetObjectiveOffset(constant);
   }
 
   public void Maximize(LinearExpr expr)
@@ -974,8 +974,8 @@ namespace operations_research {
     foreach (KeyValuePair<Variable, double> pair in coefficients)
     {
       SetObjectiveCoefficient(pair.Key, pair.Value);
-      SetObjectiveOffset(constant);
     }
+    SetObjectiveOffset(constant);
   }
 
   public void Minimize(Variable var)
