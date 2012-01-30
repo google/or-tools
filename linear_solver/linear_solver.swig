@@ -767,9 +767,9 @@ namespace operations_research {
 // Add csharp code on Solver.
 %typemap(cscode) MPSolver %{
   public Variable[] MakeVarArray(int count,
-                                   double lb,
-                                   double ub,
-                                   bool integer) {
+                                 double lb,
+                                 double ub,
+                                 bool integer) {
     Variable[] array = new Variable[count];
     for (int i = 0; i < count; ++i) {
       array[i] = MakeVar(lb, ub, integer, "");
@@ -778,10 +778,10 @@ namespace operations_research {
   }
 
   public Variable[] MakeVarArray(int count,
-                                   double lb,
-                                   double ub,
-                                   bool integer,
-                                   string var_name) {
+                                 double lb,
+                                 double ub,
+                                 bool integer,
+                                 string var_name) {
     Variable[] array = new Variable[count];
     for (int i = 0; i < count; ++i) {
       array[i] = MakeVar(lb, ub, integer, var_name + i);
@@ -794,9 +794,9 @@ namespace operations_research {
   }
 
   public Variable[] MakeNumVarArray(int count,
-                                      double lb,
-                                      double ub,
-                                      string var_name) {
+                                    double lb,
+                                    double ub,
+                                    string var_name) {
     return MakeVarArray(count, lb, ub, false, var_name);
   }
 
@@ -805,9 +805,9 @@ namespace operations_research {
   }
 
   public Variable[] MakeIntVarArray(int count,
-                                      double lb,
-                                      double ub,
-                                      string var_name) {
+                                    double lb,
+                                    double ub,
+                                    string var_name) {
     return MakeVarArray(count, lb, ub, true, var_name);
   }
 
@@ -817,6 +817,27 @@ namespace operations_research {
 
   public Variable[] MakeBoolVarArray(int count, string var_name) {
     return MakeVarArray(count, 0.0, 1.0, true, var_name);
+  }
+
+  public Variable[,] MakeBoolVarMatrix(int rows, int cols) {
+    Variable[,] matrix = new Variable[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        matrix[i,j] = MakeBoolVar("");
+      }
+    }
+    return matrix;
+  }
+
+  public Variable[,] MakeBoolVarMatrix(int rows, int cols, string name) {
+    Variable[,] matrix = new Variable[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        string var_name = name + "[" + i + ", " + j +"]";
+        matrix[i,j] = MakeBoolVar(var_name);
+      }
+    }
+    return matrix;
   }
 
   public static int GetSolverEnum(String solverType) {
