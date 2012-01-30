@@ -789,6 +789,38 @@ namespace operations_research {
     return array;
   }
 
+  public Variable[,] MakeVarMatrix(int rows,
+                                   int cols,
+                                   double lb,
+                                   double ub,
+                                   bool integer) {
+    Variable[,] matrix = new Variable[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        matrix[i,j] = MakeVar(lb, ub, integer, "");
+      }
+    }
+    return matrix;
+  }
+
+  public Variable[,] MakeVarMatrix(int rows,
+                                   int cols,
+                                   double lb,
+                                   double ub,
+                                   bool integer,
+                                   string name) {
+    Variable[,] matrix = new Variable[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        string var_name = name + "[" + i + ", " + j +"]";
+        matrix[i,j] = MakeVar(lb, ub, integer, var_name);
+      }
+    }
+    return matrix;
+  }
+
+
+
   public Variable[] MakeNumVarArray(int count, double lb, double ub) {
     return MakeVarArray(count, lb, ub, false);
   }
@@ -800,6 +832,34 @@ namespace operations_research {
     return MakeVarArray(count, lb, ub, false, var_name);
   }
 
+  public Variable[,] MakeNumVarMatrix(int rows,
+                                      int cols,
+                                      double lb,
+                                      double ub) {
+    Variable[,] matrix = new Variable[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        matrix[i,j] = MakeNumVar(lb, ub, "");
+      }
+    }
+    return matrix;
+  }
+
+  public Variable[,] MakeNumVarMatrix(int rows,
+                                      int cols,
+                                      double lb,
+                                      double ub,
+                                      string name) {
+    Variable[,] matrix = new Variable[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        string var_name = name + "[" + i + ", " + j +"]";
+        matrix[i,j] = MakeNumVar(lb, ub, var_name);
+      }
+    }
+    return matrix;
+  }
+
   public Variable[] MakeIntVarArray(int count, double lb, double ub) {
     return MakeVarArray(count, lb, ub, true);
   }
@@ -809,6 +869,34 @@ namespace operations_research {
                                     double ub,
                                     string var_name) {
     return MakeVarArray(count, lb, ub, true, var_name);
+  }
+
+  public Variable[,] MakeIntVarMatrix(int rows,
+                                      int cols,
+                                      double lb,
+                                      double ub) {
+    Variable[,] matrix = new Variable[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        matrix[i,j] = MakeIntVar(lb, ub, "");
+      }
+    }
+    return matrix;
+  }
+
+  public Variable[,] MakeIntVarMatrix(int rows,
+                                      int cols,
+                                      double lb,
+                                      double ub,
+                                      string name) {
+    Variable[,] matrix = new Variable[rows, cols];
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        string var_name = name + "[" + i + ", " + j +"]";
+        matrix[i,j] = MakeIntVar(lb, ub, var_name);
+      }
+    }
+    return matrix;
   }
 
   public Variable[] MakeBoolVarArray(int count) {
