@@ -819,8 +819,6 @@ namespace operations_research {
     return matrix;
   }
 
-
-
   public Variable[] MakeNumVarArray(int count, double lb, double ub) {
     return MakeVarArray(count, lb, ub, false);
   }
