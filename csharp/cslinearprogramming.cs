@@ -65,7 +65,7 @@ public class CsLinearProgramming
     }
 
     Console.WriteLine("Problem solved in " + solver.WallTime() +
-                       " milliseconds");
+                      " milliseconds");
 
     // The objective value of the solution.
     Console.WriteLine("Optimal objective value = " + solver.ObjectiveValue());
@@ -119,7 +119,7 @@ public class CsLinearProgramming
     }
 
     Console.WriteLine("Problem solved in " + solver.WallTime() +
-                       " milliseconds");
+                      " milliseconds");
 
     // The objective value of the solution.
     Console.WriteLine("Optimal objective value = " + solver.ObjectiveValue());

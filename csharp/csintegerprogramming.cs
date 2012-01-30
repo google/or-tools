@@ -47,11 +47,10 @@ public class CsIntegerProgramming
     }
 
     Console.WriteLine("Problem solved in " + solver.WallTime() +
-                       " milliseconds");
+                      " milliseconds");
 
     // The objective value of the solution.
-    Console.WriteLine("Optimal objective value = " +
-                       solver.ObjectiveValue());
+    Console.WriteLine("Optimal objective value = " + solver.ObjectiveValue());
 
     // The value of each variable in the solution.
     Console.WriteLine("x1 = " + x1.SolutionValue());
@@ -59,7 +58,7 @@ public class CsIntegerProgramming
 
     Console.WriteLine("Advanced usage:");
     Console.WriteLine("Problem solved in " + solver.Nodes() +
-                       " branch-and-bound nodes");
+                      " branch-and-bound nodes");
   }
 
   private static void RunIntegerProgrammingExampleNaturalApi(String solverType)
@@ -87,11 +86,10 @@ public class CsIntegerProgramming
     }
 
     Console.WriteLine("Problem solved in " + solver.WallTime() +
-                       " milliseconds");
+                      " milliseconds");
 
     // The objective value of the solution.
-    Console.WriteLine("Optimal objective value = " +
-                       solver.ObjectiveValue());
+    Console.WriteLine("Optimal objective value = " + solver.ObjectiveValue());
 
     // The value of each variable in the solution.
     Console.WriteLine("x1 = " + x1.SolutionValue());
@@ -99,7 +97,7 @@ public class CsIntegerProgramming
 
     Console.WriteLine("Advanced usage:");
     Console.WriteLine("Problem solved in " + solver.Nodes() +
-                       " branch-and-bound nodes");
+                      " branch-and-bound nodes");
   }
 
   static void Main()
