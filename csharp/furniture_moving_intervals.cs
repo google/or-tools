@@ -77,7 +77,7 @@ public class FurnitureMovingIntervals
     {
       ends[i] = tasks[i].EndExpr().Var();
     }
-    IntVar end_time = solver.MakeMax(ends).VarWithName("end_time");
+    IntVar end_time = ends.Max().VarWithName("end_time");
 
     //
     // Constraints
