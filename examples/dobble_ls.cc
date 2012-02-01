@@ -37,7 +37,6 @@
 #include "base/integral_types.h"
 #include "base/concise_iterator.h"
 #include "base/map-util.h"
-#include "base/mathutil.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
 #include "base/random.h"
@@ -482,8 +481,8 @@ class DobbleFilter : public IntVarLocalSearchFilter {
     for (int card1 = 0; card1 < num_cards_; ++card1) {
       for (int card2 = 0; card2 < num_cards_; ++card2) {
         violation_costs_[card1][card2] =
-            Cost(BitCount64(symbol_bitmask_per_card_[card1] &
-                            symbol_bitmask_per_card_[card2]));
+            ViolationCost(BitCount64(symbol_bitmask_per_card_[card1] &
+                                     symbol_bitmask_per_card_[card2]));
       }
     }
     DCHECK(CheckCards());
@@ -569,10 +568,6 @@ class DobbleFilter : public IntVarLocalSearchFilter {
     temporary_bitset_ = 0;
   }
 
-  int64 Cost(int intersection_size) {
-    return MathUtil::Abs(intersection_size - 1);
-  }
-
   // For each touched card, compare against all others to compute the
   // delta in term of cost. We use an bitset to avoid counting twice
   // between two cards appearing in the local search move.
@@ -587,8 +582,8 @@ class DobbleFilter : public IntVarLocalSearchFilter {
       for (int other_card = 0; other_card < num_cards_; ++other_card) {
         if (!IsBitSet64(&temporary_bitset_, other_card)) {
           cost_delta +=
-              Cost(BitCount64(card_bitset &
-                              symbol_bitmask_per_card_[other_card]));
+              ViolationCost(BitCount64(card_bitset &
+                                       symbol_bitmask_per_card_[other_card]));
           cost_delta -= row_cost[other_card];
         }
       }
@@ -648,6 +643,10 @@ class DobbleFilter : public IntVarLocalSearchFilter {
       }
     }
     return true;
+  }
+
+  int ViolationCost(uint64 cardinality) const {
+    return (cardinality > 0 ? cardinality - 1 : 1);
   }
 
   const int num_cards_;
