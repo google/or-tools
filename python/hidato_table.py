@@ -177,7 +177,7 @@ def Solve(model):
   print 'num_solutions:', num_solutions
   print 'failures:', solver.Failures()
   print 'branches:', solver.Branches()
-  print 'WallTime:', solver.WallTime()
+  print 'wall time:', solver.WallTime()
 
 
 def PrintOneSolution(positions, rows, cols, num_solution):
