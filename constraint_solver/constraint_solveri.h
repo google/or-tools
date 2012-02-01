@@ -826,16 +826,19 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   IntVar* Var(int64 index) const { return vars_[index]; }
   virtual bool SkipUnchanged(int index) const { return false; }
 
-  // Redefines MakeNextNeighbor to export a simpler interface.
+  // Redefines MakeNextNeighbor to export a simpler interface. The calls to
+  // ApplyChanges() and RevertChanges() are factored in this method, hiding both
+  // delta and deltadelta from subclasses which only need to override
+  // MakeOneNeighbor().
+  // Therefore this method should not be overridden. Override MakeOneNeighbor()
+  // instead.
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
 
  protected:
   // Creates a new neighbor. It returns false when the neighborhood is
-  // completely explored. The call to ApplyChanges() and
-  // RevertChanges() have been factored in the MakeNextNeighbor()
-  // method and should not appear in this method. This is the method
-  // to redefine when creating a new operator, preferably to
-  // MakeNextNeighbor.
+  // completely explored.
+  // TODO(user): make it pure virtual, implies porting all apps overriding
+  // MakeNextNeighbor() in a subclass of IntVarLocalSearchOperator.
   virtual bool MakeOneNeighbor();
 
   int64 OldValue(int64 index) const { return old_values_[index]; }
@@ -957,10 +960,12 @@ class BaseLNS : public IntVarLocalSearchOperator {
  public:
   BaseLNS(const IntVar* const* vars, int size);
   virtual ~BaseLNS();
-  // This method should not be overridden (it calls NextFragment()).
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual void InitFragments();
   virtual bool NextFragment(std::vector<int>* fragment) = 0;
+
+ protected:
+  // This method should not be overridden. Override NextFragment() instead.
+  virtual bool MakeOneNeighbor();
 
  private:
   // This method should not be overridden. Override InitFragments() instead.
@@ -977,8 +982,11 @@ class ChangeValue : public IntVarLocalSearchOperator {
  public:
   ChangeValue(const IntVar* const* vars, int size);
   virtual ~ChangeValue();
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual int64 ModifyValue(int64 index, int64 value) = 0;
+
+ protected:
+  // This method should not be overridden. Override ModifyValue() instead.
+  virtual bool MakeOneNeighbor();
 
  private:
   virtual void OnStart();
@@ -1009,7 +1017,6 @@ class PathOperator : public IntVarLocalSearchOperator {
                int number_of_base_nodes);
   virtual ~PathOperator() {}
   virtual bool MakeNeighbor() = 0;
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
 
   // TODO(user): Make the following methods protected.
   virtual bool SkipUnchanged(int index) const;
@@ -1031,6 +1038,9 @@ class PathOperator : public IntVarLocalSearchOperator {
   int number_of_nexts() const { return number_of_nexts_; }
 
  protected:
+  // This method should not be overridden. Override MakeNeighbor() instead.
+  virtual bool MakeOneNeighbor();
+
   // Returns the index of the variable corresponding to the ith base node.
   int64 BaseNode(int i) const { return base_nodes_[i]; }
   // Returns the index of the variable corresponding to the current path

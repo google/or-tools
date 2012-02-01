@@ -356,57 +356,49 @@ class RoutingCache {
 
 namespace {
 
-// PathCumul filter
-// TODO(user): Move this to local_search.cc.
+// Generic path-based filter class.
+// TODO(user): Move all filters to local_search.cc.
 
-class PathCumulFilter : public IntVarLocalSearchFilter {
+class BasePathFilter : public IntVarLocalSearchFilter {
  public:
-  // Does not take ownership of evaluator.
-  PathCumulFilter(const IntVar* const* nexts,
-                  int nexts_size,
-                  const IntVar* const* cumuls,
-                  int cumuls_size,
-                  Solver::IndexEvaluator2* evaluator,
-                  const string& name);
-  virtual ~PathCumulFilter() {}
-  virtual bool Accept(const Assignment* delta,
-                      const Assignment* deltadelta);
+  BasePathFilter(const IntVar* const* nexts,
+                 int nexts_size,
+                 int next_domain_size,
+                 const string& name);
+  virtual ~BasePathFilter() {}
+  virtual bool Accept(const Assignment* delta, const Assignment* deltadelta);
   virtual void OnSynchronize();
- private:
-  scoped_array<IntVar*> cumuls_;
-  const int cumuls_size_;
-  std::vector<int64> saved_nexts_;
-  std::vector<int64> node_path_starts_;
-  Solver::IndexEvaluator2* const evaluator_;
-  const string name_;
+
+ protected:
   static const int64 kUnassigned;
+
+  int64 GetNext(const Assignment::IntContainer& container, int64 node) const;
+
+ private:
+  virtual bool AcceptPath(const Assignment::IntContainer& container,
+                          int64 path_start) = 0;
+
+  std::vector<int64> node_path_starts_;
+  const string name_;
 };
 
-const int64 PathCumulFilter::kUnassigned = -1;
+const int64 BasePathFilter::kUnassigned = -1;
 
-PathCumulFilter::PathCumulFilter(const IntVar* const* nexts,
-                                 int nexts_size,
-                                 const IntVar* const* cumuls,
-                                 int cumuls_size,
-                                 Solver::IndexEvaluator2* evaluator,
-                                 const string& name)
+BasePathFilter::BasePathFilter(const IntVar* const* nexts,
+                               int nexts_size,
+                               int next_domain_size,
+                               const string& name)
     : IntVarLocalSearchFilter(nexts, nexts_size),
-      cumuls_size_(cumuls_size),
-      saved_nexts_(nexts_size),
-      node_path_starts_(cumuls_size),
-      evaluator_(evaluator),
-      name_(name) {
-  cumuls_.reset(new IntVar*[cumuls_size_]);
-  memcpy(cumuls_.get(), cumuls, cumuls_size_ * sizeof(*cumuls));
-}
+      node_path_starts_(next_domain_size),
+      name_(name) {}
 
-// Complexity: O(Sum(Length(paths modified)) + #paths modified ^ 2).
-// (#paths modified is usually very small).
-bool PathCumulFilter::Accept(const Assignment* delta,
-                             const Assignment* deltadelta) {
+bool BasePathFilter::Accept(const Assignment* delta,
+                            const Assignment* deltadelta) {
   const Assignment::IntContainer& container = delta->IntVarContainer();
   const int delta_size = container.Size();
-  // Determining touched paths.
+  // Determining touched paths. Number of touched paths should be very small
+  // given the set of available operators (1 or 2 paths), so performing
+  // a linear search to find an element is faster than using a set.
   std::vector<int64> touched_paths;
   for (int i = 0; i < delta_size; ++i) {
     const IntVarElement& new_element = container.Element(i);
@@ -424,35 +416,18 @@ bool PathCumulFilter::Accept(const Assignment* delta,
   // Checking feasibility of touched paths.
   const int touched_paths_size = touched_paths.size();
   for (int i = 0; i < touched_paths_size; ++i) {
-    int64 node = touched_paths[i];
-    int64 cumul = cumuls_[node]->Min();
-    while (node < Size()) {
-      const IntVar* const next_var = Var(node);
-      int64 next = saved_nexts_[node];
-      if (container.Contains(next_var)) {
-        const IntVarElement& element = container.Element(next_var);
-        if (element.Bound()) {
-          next = element.Value();
-        } else {
-          // LNS detected, return true since path was ok up to now.
-          return true;
-        }
-      }
-      cumul += evaluator_->Run(node, next);
-      if (cumul > cumuls_[next]->Max()) {
-        return false;
-      }
-      cumul = std::max(cumuls_[next]->Min(), cumul);
-      node = next;
+    if (!AcceptPath(container, touched_paths[i])) {
+      return false;
     }
   }
   return true;
 }
 
-void PathCumulFilter::OnSynchronize() {
+void BasePathFilter::OnSynchronize() {
   const int nexts_size = Size();
   // Detecting path starts, used to track which node belongs to which path.
   std::vector<int64> path_starts;
+  // TODO(user): Replace Bitmap by std::vector<bool> if it's as fast.
   Bitmap has_prevs(nexts_size, false);
   for (int i = 0; i < nexts_size; ++i) {
     const int next = Value(i);
@@ -466,140 +441,150 @@ void PathCumulFilter::OnSynchronize() {
     }
   }
   // Marking unactive nodes (which are not on a path).
-  node_path_starts_.assign(cumuls_size_, kUnassigned);
+  node_path_starts_.assign(node_path_starts_.size(), kUnassigned);
   // Marking nodes on a path and storing next values.
   for (int i = 0; i < path_starts.size(); ++i) {
     const int64 start = path_starts[i];
     int node = start;
     node_path_starts_[node] = start;
     int next = Value(node);
-    saved_nexts_[node] = next;
     while (next < nexts_size) {
       node = next;
       node_path_starts_[node] = start;
       next = Value(node);
-      saved_nexts_[node] = next;
     }
-    saved_nexts_[node] = next;
     node_path_starts_[next] = start;
   }
 }
 
-// Node precedence filter, resulting from pickup and delivery pairs.
-// TODO(user): Move this to local_search.cc.
+int64 BasePathFilter::GetNext(const Assignment::IntContainer& container,
+                              int64 node) const {
+  const IntVar* const next_var = Var(node);
+  int64 next = Value(node);
+  if (container.Contains(next_var)) {
+    const IntVarElement& element = container.Element(next_var);
+    if (element.Bound()) {
+      next = element.Value();
+    } else {
+      return kUnassigned;
+    }
+  }
+  return next;
+}
 
-class NodePrecedenceFilter : public IntVarLocalSearchFilter {
+// PathCumul filter.
+
+class PathCumulFilter : public BasePathFilter {
+ public:
+  // Does not take ownership of evaluator.
+  PathCumulFilter(const IntVar* const* nexts,
+                  int nexts_size,
+                  const IntVar* const* cumuls,
+                  int cumuls_size,
+                  Solver::IndexEvaluator2* evaluator,
+                  const string& name);
+  virtual ~PathCumulFilter() {}
+
+ private:
+  virtual bool AcceptPath(const Assignment::IntContainer& container,
+                          int64 path_start);
+
+  scoped_array<IntVar*> cumuls_;
+  const int cumuls_size_;
+  Solver::IndexEvaluator2* const evaluator_;
+};
+
+PathCumulFilter::PathCumulFilter(const IntVar* const* nexts,
+                                 int nexts_size,
+                                 const IntVar* const* cumuls,
+                                 int cumuls_size,
+                                 Solver::IndexEvaluator2* evaluator,
+                                 const string& name)
+    : BasePathFilter(nexts, nexts_size, cumuls_size, name),
+      cumuls_size_(cumuls_size),
+      evaluator_(evaluator) {
+  cumuls_.reset(new IntVar*[cumuls_size_]);
+  memcpy(cumuls_.get(), cumuls, cumuls_size_ * sizeof(*cumuls));
+}
+
+bool PathCumulFilter::AcceptPath(const Assignment::IntContainer& container,
+                                 int64 path_start) {
+  int64 node = path_start;
+  int64 cumul = cumuls_[node]->Min();
+  while (node < Size()) {
+    const int64 next = GetNext(container, node);
+    if (next == kUnassigned) {
+      // LNS detected, return true since path was ok up to now.
+      return true;
+    }
+    cumul += evaluator_->Run(node, next);
+    if (cumul > cumuls_[next]->Max()) {
+      return false;
+    }
+    cumul = std::max(cumuls_[next]->Min(), cumul);
+    node = next;
+  }
+  return true;
+}
+
+// Node precedence filter, resulting from pickup and delivery pairs.
+class NodePrecedenceFilter : public BasePathFilter {
  public:
   NodePrecedenceFilter(const IntVar* const* nexts,
                        int nexts_size,
-                       int max_size,
-                       const RoutingModel::NodePairs& pairs)
-      : IntVarLocalSearchFilter(nexts, nexts_size),
-        pair_firsts_(max_size, kUnassigned),
-        pair_seconds_(max_size, kUnassigned),
-        node_path_starts_(max_size, kUnassigned) {
-    for (int i = 0; i < pairs.size(); ++i) {
-      pair_firsts_[pairs[i].first] = pairs[i].second;
-      pair_seconds_[pairs[i].second] = pairs[i].first;
-    }
-  }
+                       int next_domain_size,
+                       const RoutingModel::NodePairs& pairs,
+                       const string& name);
   virtual ~NodePrecedenceFilter() {}
-  virtual bool Accept(const Assignment* delta,
-                      const Assignment* deltadelta) {
-    const Assignment::IntContainer& container = delta->IntVarContainer();
-    const int delta_size = container.Size();
-    // Determining touched paths. Number of touched paths should be very small
-    // given the set of available operators (1 or 2 paths), so performing
-    // a linear search to find an element is faster than using a set.
-    std::vector<int64> touched_paths;
-    for (int i = 0; i < delta_size; ++i) {
-      const IntVarElement& new_element = container.Element(i);
-      const IntVar* const var = new_element.Var();
-      int64 index = kUnassigned;
-      if (FindIndex(var, &index)) {
-        const int64 start = node_path_starts_[index];
-        if (start != kUnassigned
-            && find(touched_paths.begin(), touched_paths.end(), start)
-            == touched_paths.end()) {
-          touched_paths.push_back(start);
-        }
-      }
-    }
-    // Checking feasibility of touched paths.
-    const int touched_paths_size = touched_paths.size();
-    for (int i = 0; i < touched_paths_size; ++i) {
-      std::vector<bool> visited(Size(), false);
-      int64 node = touched_paths[i];
-      int64 path_length = 1;
-      while (node < Size()) {
-        if (path_length > Size()) {
-          return false;
-        }
-        if (pair_firsts_[node] != kUnassigned
-            && visited[pair_firsts_[node]]) {
-          return false;
-        }
-        if (pair_seconds_[node] != kUnassigned
-            && !visited[pair_seconds_[node]]) {
-          return false;
-        }
-        visited[node] = true;
-        const IntVar* const next_var = Var(node);
-        int64 next = Value(node);
-        if (container.Contains(next_var)) {
-          const IntVarElement& element = container.Element(next_var);
-          if (element.Bound()) {
-            next = element.Value();
-          } else {
-            return true;
-          }
-        }
-        node = next;
-        ++path_length;
-      }
-    }
-    return true;
-  }
-  virtual void OnSynchronize() {
-    const int nexts_size = Size();
-    // Detecting path starts, used to track which node belongs to which path.
-    std::vector<int64> path_starts;
-    // TODO(user): Replace Bitmap by std::vector<bool> if it's as fast.
-    Bitmap has_prevs(nexts_size, false);
-    for (int i = 0; i < nexts_size; ++i) {
-      const int next = Value(i);
-      if (next < nexts_size) {
-        has_prevs.Set(next, true);
-      }
-    }
-    for (int i = 0; i < nexts_size; ++i) {
-      if (!has_prevs.Get(i)) {
-        path_starts.push_back(i);
-      }
-    }
-    // Marking unactive nodes (which are not on a path).
-    node_path_starts_.assign(node_path_starts_.size(), kUnassigned);
-    // Marking nodes on a path and storing next values.
-    for (int i = 0; i < path_starts.size(); ++i) {
-      const int64 start = path_starts[i];
-      int node = start;
-      node_path_starts_[node] = start;
-      int next = Value(node);
-      while (next < nexts_size) {
-        node = next;
-        node_path_starts_[node] = start;
-        next = Value(node);
-      }
-      node_path_starts_[next] = start;
-    }
-  }
+  bool AcceptPath(const Assignment::IntContainer& container, int64 path_start);
 
  private:
-  static const int kUnassigned = -1;
   std::vector<int> pair_firsts_;
   std::vector<int> pair_seconds_;
-  std::vector<int64> node_path_starts_;
 };
+
+NodePrecedenceFilter::NodePrecedenceFilter(const IntVar* const* nexts,
+                                           int nexts_size,
+                                           int next_domain_size,
+                                           const RoutingModel::NodePairs& pairs,
+                                           const string& name)
+    : BasePathFilter(nexts, nexts_size, next_domain_size, name),
+      pair_firsts_(next_domain_size, kUnassigned),
+      pair_seconds_(next_domain_size, kUnassigned) {
+  for (int i = 0; i < pairs.size(); ++i) {
+    pair_firsts_[pairs[i].first] = pairs[i].second;
+    pair_seconds_[pairs[i].second] = pairs[i].first;
+  }
+}
+
+bool NodePrecedenceFilter::AcceptPath(const Assignment::IntContainer& container,
+                                      int64 path_start) {
+  std::vector<bool> visited(Size(), false);
+  int64 node = path_start;
+  int64 path_length = 1;
+  while (node < Size()) {
+    if (path_length > Size()) {
+      return false;
+    }
+    if (pair_firsts_[node] != kUnassigned
+        && visited[pair_firsts_[node]]) {
+      return false;
+    }
+    if (pair_seconds_[node] != kUnassigned
+        && !visited[pair_seconds_[node]]) {
+      return false;
+    }
+    visited[node] = true;
+    const int64 next = GetNext(container, node);
+    if (next == kUnassigned) {
+      // LNS detected, return true since path was ok up to now.
+      return true;
+    }
+    node = next;
+    ++path_length;
+  }
+  return true;
+}
 
 // Evaluators
 
@@ -2137,7 +2122,8 @@ void RoutingModel::SetUpSearch() {
         nexts_.get(),
         Size(),
         Size() + vehicles_,
-        pickup_delivery_pairs_)));
+        pickup_delivery_pairs_,
+        "")));
   }
   if (FLAGS_routing_use_path_cumul_filter) {
     for (ConstIter<VarMap> iter(cumuls_); !iter.at_end(); ++iter) {

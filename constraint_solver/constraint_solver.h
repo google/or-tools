@@ -3663,7 +3663,9 @@ class IntExpr : public PropagationBaseObject {
   virtual IntVar* Var() = 0;
 
   // Creates a variable from the expression and set the name of the
-  // resulting var.
+  // resulting var. If the expression is already a variable, then it
+  // will set the name of the expression, possibly overwriting it.
+  // This is just a shortcut to Var() followed by set_name().
   IntVar* VarWithName(const string& name);
 
   // Attach a demon that will watch the min or the max of the expression.
@@ -4510,13 +4512,13 @@ template <class V, class E> class AssignmentContainer {
   E& MutableElement(const V* const var) {
     int index = -1;
     const bool found = Find(var, &index);
-    CHECK(found);
+    CHECK(found) << "Unknown variable " << var->DebugString() << " in solution";
     return MutableElement(index);
   }
   const E& Element(const V* const var) const {
     int index = -1;
     const bool found = Find(var, &index);
-    CHECK(found);
+    CHECK(found) << "Unknown variable " << var->DebugString() << " in solution";
     return Element(index);
   }
   const std::vector<E>& elements() const { return elements_; }

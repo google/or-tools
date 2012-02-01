@@ -373,24 +373,17 @@ BaseLNS::BaseLNS(const IntVar* const* vars, int size)
 
 BaseLNS::~BaseLNS() {}
 
-bool BaseLNS::MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
-  CHECK(NULL != delta);
-  while (true) {
-    RevertChanges(true);
-    std::vector<int> fragment;
-    if (NextFragment(&fragment)) {
-      for (int i = 0; i < fragment.size(); ++i) {
-        DCHECK_LT(fragment[i], Size());
-        Deactivate(fragment[i]);
-      }
-      if (ApplyChanges(delta, deltadelta)) {
-        return true;
-      }
-    } else {
-      return false;
+bool BaseLNS::MakeOneNeighbor() {
+  std::vector<int> fragment;
+  if (NextFragment(&fragment)) {
+    for (int i = 0; i < fragment.size(); ++i) {
+      DCHECK_LT(fragment[i], Size());
+      Deactivate(fragment[i]);
     }
+    return true;
+  } else {
+    return false;
   }
-  return false;
 }
 
 void BaseLNS::OnStart() {
@@ -502,8 +495,8 @@ LocalSearchOperator* Solver::MakeRandomLNSOperator(const IntVar* const* vars,
 namespace {
 class MoveTowardTargetLS: public IntVarLocalSearchOperator {
  public:
-  explicit MoveTowardTargetLS(const std::vector<IntVar*>& variables,
-                              const std::vector<int64>& target_values)
+  MoveTowardTargetLS(const std::vector<IntVar*>& variables,
+                     const std::vector<int64>& target_values)
       : IntVarLocalSearchOperator(variables.data(), variables.size()),
         target_(target_values),
         // Initialize variable_index_ at the number of the of variables minus
@@ -515,20 +508,17 @@ class MoveTowardTargetLS: public IntVarLocalSearchOperator {
 
   virtual ~MoveTowardTargetLS() {}
 
+ protected:
   // Make a neighbor assigning one variable to its target value.
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
-    CHECK_NOTNULL(delta);
+  virtual bool MakeOneNeighbor() {
     while (num_var_since_last_start_ < Size()) {
       ++num_var_since_last_start_;
       variable_index_ = (variable_index_ + 1) % Size();
       const int64 target_value = target_.at(variable_index_);
       const int64 current_value = OldValue(variable_index_);
       if (current_value != target_value) {
-        RevertChanges(false);
         SetValue(variable_index_, target_value);
-        if (ApplyChanges(delta, deltadelta)) {
-          return true;
-        }
+        return true;
       }
     }
     return false;
@@ -592,17 +582,13 @@ ChangeValue::ChangeValue(const IntVar* const* vars, int size)
 
 ChangeValue::~ChangeValue() {}
 
-bool ChangeValue::MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
-  CHECK(NULL != delta);
+bool ChangeValue::MakeOneNeighbor() {
   const int size = Size();
   while (index_ < size) {
-    RevertChanges(true);
     const int64 value = ModifyValue(index_, Value(index_));
     SetValue(index_, value);
     ++index_;
-    if (ApplyChanges(delta, deltadelta)) {
-      return true;
-    }
+    return true;
   }
   return false;
 }
@@ -657,14 +643,13 @@ void PathOperator::OnStart() {
   OnNodeInitialization();
 }
 
-bool PathOperator::MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
-  DCHECK(NULL != delta);
+bool PathOperator::MakeOneNeighbor() {
   while (IncrementPosition()) {
+    // Need to revert changes here since MakeNeighbor might have returned false
+    // and have done changes in the previous iteration.
     RevertChanges(true);
     if (MakeNeighbor()) {
-      if (ApplyChanges(delta, deltadelta)) {
-        return true;
-      }
+      return true;
     }
   }
   return false;
@@ -1120,34 +1105,30 @@ bool Cross::MakeNeighbor() {
   return false;
 }
 
-// ----- MakeActiveOperator -----
+// ----- BaseInactiveNodeToPathOperator -----
+// Base class of path operators which make inactive nodes active.
 
-// MakeActiveOperator inserts an inactive node into a path.
-// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive (where 1 and
-// 4 are first and last nodes of the path) are:
-// 1 -> 5 -> 2 -> 3 -> 4
-// 1 -> 2 -> 5 -> 3 -> 4
-// 1 -> 2 -> 3 -> 5 -> 4
-
-class MakeActiveOperator : public PathOperator {
+class BaseInactiveNodeToPathOperator : public PathOperator {
  public:
-  MakeActiveOperator(const IntVar* const* vars,
-                     const IntVar* const* secondary_vars,
-                     int size)
-      : PathOperator(vars, secondary_vars, size, 1), inactive_node_(0) {}
-  virtual ~MakeActiveOperator() {}
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
-  virtual bool MakeNeighbor();
+  BaseInactiveNodeToPathOperator(const IntVar* const* vars,
+                             const IntVar* const* secondary_vars,
+                             int size,
+                             int number_of_base_nodes)
+      : PathOperator(vars, secondary_vars, size, number_of_base_nodes),
+        inactive_node_(0) {}
+  virtual ~BaseInactiveNodeToPathOperator() {}
+
+ protected:
+  virtual bool MakeOneNeighbor();
+  int64 GetInactiveNode() const { return inactive_node_; }
+
  private:
   virtual void OnNodeInitialization();
 
   int inactive_node_;
 };
 
-// TODO(user): Add a base class for operators changing the state of a node
-// (active/non-active) to factor outwhich share the same code in
-// OnNodeInitialization().
-void MakeActiveOperator::OnNodeInitialization() {
+void BaseInactiveNodeToPathOperator::OnNodeInitialization() {
   for (int i = 0; i < Size(); ++i) {
     if (IsInactive(i)) {
       inactive_node_ = i;
@@ -1157,11 +1138,9 @@ void MakeActiveOperator::OnNodeInitialization() {
   inactive_node_ = Size();
 }
 
-bool MakeActiveOperator::MakeNextNeighbor(Assignment* delta,
-                                          Assignment* deltadelta) {
+bool BaseInactiveNodeToPathOperator::MakeOneNeighbor() {
   while (inactive_node_ < Size()) {
-    if (!IsInactive(inactive_node_)
-        || !PathOperator::MakeNextNeighbor(delta, deltadelta)) {
+    if (!IsInactive(inactive_node_) || !PathOperator::MakeOneNeighbor()) {
       ResetPosition();
       ++inactive_node_;
     } else {
@@ -1171,8 +1150,27 @@ bool MakeActiveOperator::MakeNextNeighbor(Assignment* delta,
   return false;
 }
 
+// ----- MakeActiveOperator -----
+
+// MakeActiveOperator inserts an inactive node into a path.
+// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive (where 1 and
+// 4 are first and last nodes of the path) are:
+// 1 -> 5 -> 2 -> 3 -> 4
+// 1 -> 2 -> 5 -> 3 -> 4
+// 1 -> 2 -> 3 -> 5 -> 4
+
+class MakeActiveOperator : public BaseInactiveNodeToPathOperator {
+ public:
+  MakeActiveOperator(const IntVar* const* vars,
+                     const IntVar* const* secondary_vars,
+                     int size)
+      : BaseInactiveNodeToPathOperator(vars, secondary_vars, size, 1) {}
+  virtual ~MakeActiveOperator() {}
+  virtual bool MakeNeighbor();
+};
+
 bool MakeActiveOperator::MakeNeighbor() {
-  return MakeActive(inactive_node_, BaseNode(0));
+  return MakeActive(GetInactiveNode(), BaseNode(0));
 }
 
 // ----- MakeInactiveOperator -----
@@ -1207,44 +1205,15 @@ class MakeInactiveOperator : public PathOperator {
 // 1 -> 5 -> 3 -> 4 & 2 inactive
 // 1 -> 2 -> 5 -> 4 & 3 inactive
 
-class SwapActiveOperator : public PathOperator {
+class SwapActiveOperator : public BaseInactiveNodeToPathOperator {
  public:
   SwapActiveOperator(const IntVar* const* vars,
                      const IntVar* const* secondary_vars,
                      int size)
-      : PathOperator(vars, secondary_vars, size, 1), inactive_node_(0) {}
+      : BaseInactiveNodeToPathOperator(vars, secondary_vars, size, 1) {}
   virtual ~SwapActiveOperator() {}
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual bool MakeNeighbor();
- private:
-  virtual void OnNodeInitialization();
-
-  int inactive_node_;
 };
-
-void SwapActiveOperator::OnNodeInitialization() {
-  for (int i = 0; i < Size(); ++i) {
-    if (IsInactive(i)) {
-      inactive_node_ = i;
-      return;
-    }
-  }
-  inactive_node_ = Size();
-}
-
-bool SwapActiveOperator::MakeNextNeighbor(Assignment* delta,
-                                          Assignment* deltadelta) {
-  while (inactive_node_ < Size()) {
-    if (!IsInactive(inactive_node_)
-        || !PathOperator::MakeNextNeighbor(delta, deltadelta)) {
-      ResetPosition();
-      ++inactive_node_;
-    } else {
-      return true;
-    }
-  }
-  return false;
-}
 
 bool SwapActiveOperator::MakeNeighbor() {
   const int64 base = BaseNode(0);
@@ -1252,7 +1221,7 @@ bool SwapActiveOperator::MakeNeighbor() {
     return false;
   }
   return MakeChainInactive(base, Next(base))
-      && MakeActive(inactive_node_, base);
+      && MakeActive(GetInactiveNode(), base);
 }
 
 // ----- ExtendedSwapActiveOperator -----
@@ -1268,44 +1237,15 @@ bool SwapActiveOperator::MakeNeighbor() {
 // 1 -> 5 -> 2 -> 4 & 3 inactive
 // 1 -> 2 -> 5 -> 4 & 3 inactive
 
-class ExtendedSwapActiveOperator : public PathOperator {
+class ExtendedSwapActiveOperator : public BaseInactiveNodeToPathOperator {
  public:
   ExtendedSwapActiveOperator(const IntVar* const* vars,
                              const IntVar* const* secondary_vars,
                              int size)
-      : PathOperator(vars, secondary_vars, size, 2), inactive_node_(0) {}
+      : BaseInactiveNodeToPathOperator(vars, secondary_vars, size, 2) {}
   virtual ~ExtendedSwapActiveOperator() {}
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual bool MakeNeighbor();
- private:
-  virtual void OnNodeInitialization();
-
-  int inactive_node_;
 };
-
-void ExtendedSwapActiveOperator::OnNodeInitialization() {
-  for (int i = 0; i < Size(); ++i) {
-    if (IsInactive(i)) {
-      inactive_node_ = i;
-      return;
-    }
-  }
-  inactive_node_ = Size();
-}
-
-bool ExtendedSwapActiveOperator::MakeNextNeighbor(Assignment* delta,
-                                                  Assignment* deltadelta) {
-  while (inactive_node_ < Size()) {
-    if (!IsInactive(inactive_node_)
-        || !PathOperator::MakeNextNeighbor(delta, deltadelta)) {
-      ResetPosition();
-      ++inactive_node_;
-    } else {
-      return true;
-    }
-  }
-  return false;
-}
 
 bool ExtendedSwapActiveOperator::MakeNeighbor() {
   const int64 base0 = BaseNode(0);
@@ -1320,7 +1260,7 @@ bool ExtendedSwapActiveOperator::MakeNeighbor() {
     return false;
   }
   return MakeChainInactive(base0, Next(base0))
-      && MakeActive(inactive_node_, base1);
+      && MakeActive(GetInactiveNode(), base1);
 }
 
 // ----- TSP-based operators -----
@@ -1408,8 +1348,11 @@ class TSPLns : public PathOperator {
          Solver::IndexEvaluator3* evaluator,
          int tsp_size);
   virtual ~TSPLns() {}
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
   virtual bool MakeNeighbor();
+
+ protected:
+  virtual bool MakeOneNeighbor();
+
  private:
   std::vector<std::vector<int64> > cost_;
   HamiltonianPathSolver<int64> hamiltonian_path_solver_;
@@ -1434,9 +1377,9 @@ TSPLns::TSPLns(const IntVar* const* vars,
   }
 }
 
-bool TSPLns::MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
+bool TSPLns::MakeOneNeighbor() {
   while (true) {
-    if (PathOperator::MakeNextNeighbor(delta, deltadelta)) {
+    if (PathOperator::MakeOneNeighbor()) {
       return true;
     }
   }
@@ -1875,6 +1818,7 @@ class NeighborhoodLimit : public LocalSearchOperator {
     ++next_neighborhood_calls_;
     return operator_->MakeNextNeighbor(delta, deltadelta);
   }
+
  private:
   LocalSearchOperator* const operator_;
   const int64 limit_;
