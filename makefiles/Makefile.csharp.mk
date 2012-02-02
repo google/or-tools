@@ -31,7 +31,7 @@ clean_csharp:
 	-$(DEL) gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
 	-$(DEL) gen$Scom$Sgoogle$Sortools$Sgraph$S*.cs
 	-$(DEL) objs$S*csharp_wrap.$O
-	-$(DEL) cs*.exe
+	-$(DEL) *.exe
 
 # csharplp
 
