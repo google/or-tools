@@ -16,6 +16,7 @@
 using System;
 using Google.OrTools.ConstraintSolver;
 
+
 public class Grocery
 {
 
@@ -23,6 +24,20 @@ public class Grocery
     for(int i = 0; i < x.Length - 1; i++) {
       solver.Add(x[i] <= x[i+1]);
     }
+  }
+
+  //
+  // Simple decomposition of Prod() for an IntVar array
+  //
+  private static Constraint MyProd(IntVar[] x, int prod) {
+    int len = x.Length;
+    IntVar[] tmp = new IntVar[len];
+    tmp[0] = x[0];
+    for(int i = 1; i < len; i++) {
+      tmp[i] = (tmp[i-1]*x[i]).Var();
+    }
+
+    return tmp[len-1] == prod;
   }
 
 
@@ -59,9 +74,10 @@ public class Grocery
     // Constraints
     //
     solver.Add(item.Sum() == c);
-    solver.Add(item[0] * item[1] * item[2] * item[3] - (c * 100*100*100) == 0);
-    // solver.Add(item.Prod() - (c * 100*100*100) == 0);
+    // solver.Add(item[0] * item[1] * item[2] * item[3] == c * 100*100*100);
     // solver.Add(item.Prod() == c * 100*100*100);
+    solver.Add(MyProd(item, c * 100*100*100));
+
 
     // Symmetry breaking
     Decreasing(solver, item);
