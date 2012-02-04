@@ -20,7 +20,7 @@ ifeq ($(wildcard dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz),)
     SCIP_MAKEFILE = # UNIX_SCIP_DIR support not included.
 else
     SCIP_TARGET = dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
-    SCIP_MAKEFILE = UNIX_SCIP_DIR = $(TOP)/dependencies/install/ziboptsuite-2.1.1/scip-2.1.1
+    SCIP_MAKEFILE = UNIX_SCIP_DIR = $(TOP)/dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)
     ifeq ($(PLATFORM), LINUX)
 	BUILD_SCIP = make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC
     endif
