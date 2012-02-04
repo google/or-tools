@@ -30,14 +30,13 @@ public class Volsay
    * From the OPL model volsay.mod.
    *
    *
-   * Also see http://www.hakank.org/or-tools/volsay.py 
+   * Also see http://www.hakank.org/or-tools/volsay.py
    *
    */
   private static void Solve()
   {
 
-    Solver solver = new Solver("Volsay",
-                               Solver.CLP_LINEAR_PROGRAMMING);
+    Solver solver = new Solver("Volsay", Solver.CLP_LINEAR_PROGRAMMING);
 
     //
     // Variables
@@ -60,12 +59,12 @@ public class Volsay
 
     Console.WriteLine("Objective: {0}", solver.ObjectiveValue());
 
-    Console.WriteLine("Gas      : {0} ReducedCost: {1}", 
-                      Gas.SolutionValue(), 
+    Console.WriteLine("Gas      : {0} ReducedCost: {1}",
+                      Gas.SolutionValue(),
                       Gas.ReducedCost());
 
-    Console.WriteLine("Chloride : {0} ReducedCost: {1}", 
-                      Chloride.SolutionValue(), 
+    Console.WriteLine("Chloride : {0} ReducedCost: {1}",
+                      Chloride.SolutionValue(),
                       Chloride.ReducedCost());
 
     Console.WriteLine("c1       : DualValue: {0} Activity: {1}",
