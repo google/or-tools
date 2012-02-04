@@ -12,7 +12,7 @@ MONO_TAG = 2.10.8.1
 # The archive should be glpk-4.47.tar.gz
 GLPK_TAG = 4.47
 # The archive should be ziboptsuite-2.1.0.tgz
-SCIP_TAG = 2.1.0
+SCIP_TAG = 2.1.1
 
 # Detect if scip archive is there.
 ifeq ($(wildcard dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz),)
