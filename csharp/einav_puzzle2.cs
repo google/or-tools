@@ -130,9 +130,8 @@ public class EinavPuzzle2
 
     int[] signs_domain = {-1,1};
     // This don't work at the moment...
-    // IntVar[] row_signs = solver.MakeIntVarArray(rows, signs_domain, "row_signs");
-    IntVar[] row_signs = solver.MakeIntVarArray(rows, -1, 1, "row_signs");
-    IntVar[] col_signs = solver.MakeIntVarArray(cols, -1, 1, "col_signs");
+    IntVar[] row_signs = solver.MakeIntVarArray(rows, signs_domain, "row_signs");
+    IntVar[] col_signs = solver.MakeIntVarArray(cols, signs_domain, "col_signs");
 
     
     
@@ -156,7 +155,6 @@ public class EinavPuzzle2
 
     foreach(int i in ROWS) {
       row_sums[i].SetMin(0);
-      solver.Add(row_signs[i] != 0);
     }
 
     // col sums
@@ -167,7 +165,6 @@ public class EinavPuzzle2
 
     foreach(int j in COLS) {
       col_sums[j].SetMin(0);
-      solver.Add(col_signs[j] != 0);
     }
 
 
