@@ -1789,6 +1789,40 @@ namespace operations_research {
     return array;
   }
 
+  public IntVar[] MakeIntVarArray(int count, long[] values) {
+    IntVar[] array = new IntVar[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = MakeIntVar(values);
+    }
+    return array;
+  }
+
+  public IntVar[] MakeIntVarArray(int count, long[] values, string name) {
+    IntVar[] array = new IntVar[count];
+    for (int i = 0; i < count; ++i) {
+      string var_name = name + i;
+      array[i] = MakeIntVar(values, var_name);
+    }
+    return array;
+  }
+
+  public IntVar[] MakeIntVarArray(int count, int[] values) {
+    IntVar[] array = new IntVar[count];
+    for (int i = 0; i < count; ++i) {
+      array[i] = MakeIntVar(values);
+    }
+    return array;
+  }
+
+  public IntVar[] MakeIntVarArray(int count, int[] values, string name) {
+    IntVar[] array = new IntVar[count];
+    for (int i = 0; i < count; ++i) {
+      string var_name = name + i;
+      array[i] = MakeIntVar(values, var_name);
+    }
+    return array;
+  }
+
   public IntVar[] MakeBoolVarArray(int count) {
     IntVar[] array = new IntVar[count];
     for (int i = 0; i < count; ++i) {
