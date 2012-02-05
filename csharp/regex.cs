@@ -14,7 +14,6 @@
 // limitations under the License.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
@@ -102,19 +101,19 @@ public class RegexGeneration
   /**
    *
    * Simple regular expression.
-   * 
+   *
    * My last name (Kjellerstrand) is quite often misspelled
    * in ways that this regular expression shows:
    *   k(je|ä)ll(er|ar)?(st|b)r?an?d
    *
    * This model generates all the words that can be construed
    * by this regular expression.
-   * 
+   *
    *
    * Also see http://www.hakank.org/or-tools/regex.py
    *
    */
-  private static void Solve(int n, ArrayList res)
+  private static void Solve(int n, List<String> res)
   {
     Solver solver = new Solver("RegexGeneration");
 
@@ -128,14 +127,14 @@ public class RegexGeneration
 
     // The DFA
     int [,] transition_fn =  {
-      // 1 2 3 4 5 6 7 8 9 0 1 2   // 
-      {0,2,3,0,0,0,0,0,0,0,0,0},   //  1 k 
+      // 1 2 3 4 5 6 7 8 9 0 1 2   //
+      {0,2,3,0,0,0,0,0,0,0,0,0},   //  1 k
       {0,0,0,4,0,0,0,0,0,0,0,0},   //  2 je
       {0,0,0,4,0,0,0,0,0,0,0,0},   //  3 ä
       {0,0,0,0,5,6,7,8,0,0,0,0},   //  4 ll
       {0,0,0,0,0,0,7,8,0,0,0,0},   //  5 er
       {0,0,0,0,0,0,7,8,0,0,0,0},   //  6 ar
-      {0,0,0,0,0,0,0,0,9,10,0,0},  //  7 st 
+      {0,0,0,0,0,0,0,0,9,10,0,0},  //  7 st
       {0,0,0,0,0,0,0,0,9,10,0,0},  //  8 b
       {0,0,0,0,0,0,0,0,0,10,0,0},  //  9 r
       {0,0,0,0,0,0,0,0,0,0,11,12}, // 10 a
@@ -151,7 +150,7 @@ public class RegexGeneration
     // Decision variables
     //
     IntVar[] x = solver.MakeIntVarArray(n, 1, input_max, "x");
-    
+
     //
     // Constraints
     //
@@ -169,7 +168,7 @@ public class RegexGeneration
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
-      ArrayList res2 = new ArrayList();
+      List<String> res2 = new List<String>();
       // State 1 (the start state) is not included in the
       // state array (x) so we add it first.
       res2.Add(s[0]);
@@ -191,7 +190,7 @@ public class RegexGeneration
 
   public static void Main(String[] args)
   {
-    ArrayList res = new ArrayList();
+    List<String> res = new List<String>();
     for(int n = 4; n <= 9; n++) {
       Solve(n, res);
     }
