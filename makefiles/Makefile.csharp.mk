@@ -63,7 +63,7 @@ csintegerprogramming.exe: $(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT
 # csharp linearsolver tests
 
 testlp.exe: $(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) tests/testlp.cs
-	$(CSC) /target:exe /out:testlp.exe /platform:$(NETPLATFORM) /r:Google.OrTools.LinearSolver.dll tests/testlp.cs
+	$(CSC) /target:exe /out:testlp.exe /platform:$(NETPLATFORM) /r:Google.OrTools.LinearSolver.dll tests$Stestlp.cs
 
 testlp: testlp.exe
 	$(MONO) testlp.exe
