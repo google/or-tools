@@ -169,6 +169,13 @@ dotnet_archive: csharp
 	tools\mkdir temp\or-tools.$(PLATFORM)\csharp
 	tools\mkdir temp\or-tools.$(PLATFORM)\csharp\solution
 	tools\mkdir temp\or-tools.$(PLATFORM)\csharp\solution\Properties
+	tools\mkdir temp\or-tools.$(PLATFORM)\data
+	tools\mkdir temp\or-tools.$(PLATFORM)\data\discrete_tomography
+	tools\mkdir temp\or-tools.$(PLATFORM)\data\fill_a_pix
+	tools\mkdir temp\or-tools.$(PLATFORM)\data\minesweeper
+	tools\mkdir temp\or-tools.$(PLATFORM)\data\rogo
+	tools\mkdir temp\or-tools.$(PLATFORM)\data\survo_puzzle
+	tools\mkdir temp\or-tools.$(PLATFORM)\data\quasigroup_completion
 	copy $(LIBPREFIX)Google.OrTools.*.$(SHAREDLIBEXT) temp\or-tools.$(PLATFORM)
 ifneq ($(SYSTEM),win)
 	copy Google.OrTools.*.dll temp\or-tools.$(PLATFORM)
@@ -177,5 +184,11 @@ endif
 	copy csharp\*.sln temp\or-tools.$(PLATFORM)\csharp
 	copy csharp\solution\*.csproj temp\or-tools.$(PLATFORM)\csharp\solution
 	copy csharp\solution\Properties\*.cs temp\or-tools.$(PLATFORM)\csharp\solution\Properties
+	copy data\discrete_tomography\* temp\or-tools.$(PLATFORM)\data\discrete_tomography
+	copy data\fill_a_pix\* temp\or-tools.$(PLATFORM)\data\fill_a_pix
+	copy data\minesweeper\* temp\or-tools.$(PLATFORM)\data\minesweeper
+	copy data\rogo\* temp\or-tools.$(PLATFORM)\data\rogo
+	copy data\survo_puzzle\* temp\or-tools.$(PLATFORM)\data\survo_puzzle
+	copy data\quasigroup_completion\* temp\or-tools.$(PLATFORM)\data\quasigroup_completion
 	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.NET.$(PLATFORM).$(SVNVERSION).zip or-tools.$(PLATFORM)
 	-$(DELREC) temp
