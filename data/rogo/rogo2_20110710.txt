@@ -1,0 +1,13 @@
+%
+% The Rogo problem from 2011-07-10
+% 
+6
+10
+20
+55
+W 8 W W 8 W W W 8 B
+8 B W W W 4 W W W 8
+W 4 W W 3 B W W 3 W
+W W 4 W W 4 W W B 4
+W 8 B W W W W W 8 W
+8 W 4 W 4 B 4 W W 8

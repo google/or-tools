@@ -1,0 +1,14 @@
+%
+% The Rogo problem Intro 2
+% 
+% http://www.rogopuzzle.co.nz/paper-rogos/intro-rogo-2
+%
+5
+9
+12
+12
+W W B W 4 W W W W
+W W 1 W W W 1 W W
+4 W W W 3 W W W 2
+W W 2 W W W 1 W W
+W W W W 1 W B W W
