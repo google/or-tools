@@ -22,7 +22,6 @@ class Tsp
   class RandomManhattan : LongResultCallback2 {
     public RandomManhattan(int size, int seed)
     {
-      this.size_ = size;
       this.xs_ = new int[size];
       this.ys_ = new int[size];
       Random generator = new Random(seed);
@@ -38,7 +37,6 @@ class Tsp
           Math.Abs(ys_[firstIndex] - ys_[secondIndex]);
     }
 
-    private int size_;
     private int[] xs_;
     private int[] ys_;
   };

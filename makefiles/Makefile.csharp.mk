@@ -6,7 +6,8 @@ CSHARPEXE = \
 	csflow.exe \
 	csknapsack.exe \
 	furniture_moving_intervals.exe \
-	organize_day_intervals.exe
+	organize_day_intervals.exe \
+	cstsp.exe
 
 csharpexe: $(CSHARPEXE)
 
