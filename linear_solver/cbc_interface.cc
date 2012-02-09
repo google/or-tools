@@ -42,23 +42,6 @@
 DECLARE_double(solver_timeout_in_seconds);
 DECLARE_string(solver_write_model);
 
-// Parameters for cuts. ** OBSOLETE **
-// TODO(user): Add doc on parameters.
-DEFINE_bool(cbc_probing_use_objective, true, "");
-DEFINE_int32(cbc_probing_max_pass, 3, "");
-DEFINE_int32(cbc_probing_max_probe, 100, "");
-DEFINE_int32(cbc_probing_max_look, 50, "");
-DEFINE_int32(cbc_probing_row_cuts, 3, "");
-
-DEFINE_int32(cbc_gomory_limit, 300, "");
-
-DEFINE_double(cbc_odd_hole_minimum_violation, 0.005, "");
-DEFINE_double(cbc_odd_hole_minimum_violation_per, 0.00002, "");
-DEFINE_int32(cbc_odd_hole_maximum_entries, 200, "");
-
-DEFINE_bool(cbc_clique_start_clique_report, false, "");
-DEFINE_bool(cbc_clique_row_clique_report, false, "");
-
 namespace operations_research {
 
 class CBCInterface : public MPSolverInterface {
