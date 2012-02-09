@@ -375,56 +375,7 @@ namespace operations_research {
   }
 }
 
-// Add conversion rules for std::vector<SearchMonitor*>.
-%typemap(in) const std::vector<SearchMonitor*>&
-    (std::vector<SearchMonitor*> temp) {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
-    SWIG_fail;
-  }
-  bool is_tuple = PyTuple_Check($input);
-  temp.resize(is_tuple ? PyTuple_Size($input) : PyList_Size($input));
-  for (size_t i = 0; i < temp.size(); ++i) {
-    PyObject *obj = (is_tuple ? PyTuple_GetItem($input, i) :
-                     PyList_GetItem($input, i));
-    operations_research::SearchMonitor* t;
-    if ((SWIG_ConvertPtr(obj, (void**)&t,
-                         SWIGTYPE_p_operations_research__SearchMonitor,
-                         SWIG_POINTER_EXCEPTION | 0 )) == -1) {
-      SWIG_fail;
-    }
-    if (t == NULL) {
-      PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
-      SWIG_fail;
-    }
-    temp[i] = t;
-  }
-  $1 = &temp;
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<SearchMonitor*>& {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    $1 = 0;
-  } else {
-    const bool is_tuple = PyTuple_Check($input);
-    const int size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
-    bool failed = false;
-    for (size_t i = 0; i < size; ++i) {
-      PyObject* const obj =
-          is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
-      operations_research::SearchMonitor* t;
-      if ((SWIG_ConvertPtr(obj, (void**)&t,
-                           SWIGTYPE_p_operations_research__SearchMonitor,
-                           SWIG_POINTER_EXCEPTION | 0 )) == -1) {
-        PyErr_Clear();
-        failed = true;
-        break;
-      }
-    }
-    $1 = failed ? 0 : 1;
-  }
-}
-
+// TODO(user): retest directors.
 // Add conversion rules for std::vector<DecisionBuilder*>.
 %typemap(in) const std::vector<DecisionBuilder*>&
     (std::vector<DecisionBuilder*> temp) {
@@ -479,9 +430,9 @@ namespace operations_research {
   }
 }
 
-// Add conversion rules for std::vector<IntervalVar*>.
-%typemap(in) const std::vector<IntervalVar*>&
-    (std::vector<IntervalVar*> temp) {
+%define CONVERT_VECTOR(TYPE)
+%typemap(in) const std::vector<TYPE*>&
+    (std::vector<TYPE*> temp) {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
     SWIG_fail;
@@ -491,9 +442,9 @@ namespace operations_research {
   for (size_t i = 0; i < temp.size(); ++i) {
     PyObject *obj = (is_tuple ? PyTuple_GetItem($input, i) :
                      PyList_GetItem($input, i));
-    operations_research::IntervalVar* t;
+    operations_research::TYPE* t;
     if ((SWIG_ConvertPtr(obj, (void**)&t,
-                         SWIGTYPE_p_operations_research__IntervalVar,
+                         SWIGTYPE_p_operations_research__##TYPE,
                          SWIG_POINTER_EXCEPTION | 0 )) == -1) {
       SWIG_fail;
     }
@@ -506,7 +457,7 @@ namespace operations_research {
   $1 = &temp;
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<IntervalVar*>& {
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<TYPE*>& {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
   } else {
@@ -516,9 +467,9 @@ namespace operations_research {
     for (size_t i = 0; i < size; ++i) {
       PyObject* const obj =
           is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
-      operations_research::IntervalVar* t;
+      operations_research::TYPE* t;
       if ((SWIG_ConvertPtr(obj, (void**)&t,
-                           SWIGTYPE_p_operations_research__IntervalVar,
+                           SWIGTYPE_p_operations_research__##TYPE,
                            SWIG_POINTER_EXCEPTION | 0 )) == -1) {
         PyErr_Clear();
         failed = true;
@@ -528,156 +479,13 @@ namespace operations_research {
     $1 = failed ? 0 : 1;
   }
 }
+%enddef
 
-// Add conversion rules for std::vector<SequenceVar*>.
-%typemap(in) const std::vector<SequenceVar*>&
-    (std::vector<SequenceVar*> temp) {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
-    SWIG_fail;
-  }
-  bool is_tuple = PyTuple_Check($input);
-  temp.resize(is_tuple ? PyTuple_Size($input) : PyList_Size($input));
-  for (size_t i = 0; i < temp.size(); ++i) {
-    PyObject *obj = (is_tuple ? PyTuple_GetItem($input, i) :
-                     PyList_GetItem($input, i));
-    operations_research::SequenceVar* t;
-    if ((SWIG_ConvertPtr(obj, (void**)&t,
-                         SWIGTYPE_p_operations_research__SequenceVar,
-                         SWIG_POINTER_EXCEPTION | 0 )) == -1) {
-      SWIG_fail;
-    }
-    if (t == NULL) {
-      PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
-      SWIG_fail;
-    }
-    temp[i] = t;
-  }
-  $1 = &temp;
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<SequenceVar*>& {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    $1 = 0;
-  } else {
-    const bool is_tuple = PyTuple_Check($input);
-    const int size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
-    bool failed = false;
-    for (size_t i = 0; i < size; ++i) {
-      PyObject* const obj =
-          is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
-      operations_research::SequenceVar* t;
-      if ((SWIG_ConvertPtr(obj, (void**)&t,
-                           SWIGTYPE_p_operations_research__SequenceVar,
-                           SWIG_POINTER_EXCEPTION | 0 )) == -1) {
-        PyErr_Clear();
-        failed = true;
-        break;
-      }
-    }
-    $1 = failed ? 0 : 1;
-  }
-}
-
-// Add conversion rules for std::vector<LocalSearchOperator*>.
-%typemap(in) const std::vector<LocalSearchOperator*>&
-    (std::vector<LocalSearchOperator*> temp) {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
-    SWIG_fail;
-  }
-  bool is_tuple = PyTuple_Check($input);
-  temp.resize(is_tuple ? PyTuple_Size($input) : PyList_Size($input));
-  for (size_t i = 0; i < temp.size(); ++i) {
-    PyObject *obj = (is_tuple ? PyTuple_GetItem($input, i) :
-                     PyList_GetItem($input, i));
-    operations_research::LocalSearchOperator* t;
-    if ((SWIG_ConvertPtr(obj, (void**)&t,
-                         SWIGTYPE_p_operations_research__LocalSearchOperator,
-                         SWIG_POINTER_EXCEPTION | 0 )) == -1) {
-      SWIG_fail;
-    }
-    if (t == NULL) {
-      PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
-      SWIG_fail;
-    }
-    temp[i] = t;
-  }
-  $1 = &temp;
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<LocalSearchOperator*>& {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    $1 = 0;
-  } else {
-    const bool is_tuple = PyTuple_Check($input);
-    const int size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
-    bool failed = false;
-    for (size_t i = 0; i < size; ++i) {
-      PyObject* const obj =
-          is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
-      operations_research::LocalSearchOperator* t;
-      if ((SWIG_ConvertPtr(obj, (void**)&t,
-                           SWIGTYPE_p_operations_research__LocalSearchOperator,
-                           SWIG_POINTER_EXCEPTION | 0 )) == -1) {
-        PyErr_Clear();
-        failed = true;
-        break;
-      }
-    }
-    $1 = failed ? 0 : 1;
-  }
-}
-
-// Conversion for std::vector<LocalSearchFilter*>
-%typemap(in) const std::vector<LocalSearchFilter*>&
-    (std::vector<LocalSearchFilter*> temp) {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
-    SWIG_fail;
-  }
-  bool is_tuple = PyTuple_Check($input);
-  temp.resize(is_tuple ? PyTuple_Size($input) : PyList_Size($input));
-  for (size_t i = 0; i < temp.size(); ++i) {
-    PyObject *obj = (is_tuple ? PyTuple_GetItem($input, i) :
-                     PyList_GetItem($input, i));
-    operations_research::LocalSearchFilter* t;
-    if ((SWIG_ConvertPtr(obj, (void**)&t,
-                         SWIGTYPE_p_operations_research__LocalSearchFilter,
-                         SWIG_POINTER_EXCEPTION | 0 )) == -1) {
-      SWIG_fail;
-    }
-    if (t == NULL) {
-      PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
-      SWIG_fail;
-    }
-    temp[i] = t;
-  }
-  $1 = &temp;
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<LocalSearchFilter*>& {
-  if (!PyTuple_Check($input) && !PyList_Check($input)) {
-    $1 = 0;
-  } else {
-    const bool is_tuple = PyTuple_Check($input);
-    const int size = is_tuple ? PyTuple_Size($input) : PyList_Size($input);
-    bool failed = false;
-    for (size_t i = 0; i < size; ++i) {
-      PyObject* const obj =
-          is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
-      operations_research::LocalSearchFilter* t;
-      if ((SWIG_ConvertPtr(obj, (void**)&t,
-                           SWIGTYPE_p_operations_research__LocalSearchFilter,
-                           SWIG_POINTER_EXCEPTION | 0 )) == -1) {
-        PyErr_Clear();
-        failed = true;
-        break;
-      }
-    }
-    $1 = failed ? 0 : 1;
-  }
-}
+CONVERT_VECTOR(SearchMonitor);
+CONVERT_VECTOR(IntervalVar);
+CONVERT_VECTOR(SequenceVar);
+CONVERT_VECTOR(LocalSearchOperator);
+CONVERT_VECTOR(LocalSearchFilter);
 
 %typemap(in) DecisionBuilder* const {
   operations_research::DecisionBuilder* tmp;
@@ -1268,6 +1076,7 @@ struct FailureProtect {
 
 %rename (nextWrap) operations_research::DecisionBuilder::Next;
 %rename (toString) *::DebugString;
+
 %rename("%(lowercamelcase)s", %$isfunction) "";
 
 namespace operations_research {
