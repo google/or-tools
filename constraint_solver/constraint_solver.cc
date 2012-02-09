@@ -895,6 +895,7 @@ class Search {
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
   void AcceptNeighbor();
   void PeriodicCheck();
+  int ProgressPercent();
   void Accept(ModelVisitor* const visitor) const;
   void push_monitor(SearchMonitor* const m);
   void Clear();
@@ -1274,6 +1275,16 @@ void Search::PeriodicCheck() {
   }
 }
 
+int Search::ProgressPercent() {
+  int progress = SearchMonitor::kNoProgress;
+  for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
+       it != monitors_.end();
+       ++it) {
+    progress = std::max(progress, (*it)->ProgressPercent());
+  }
+  return progress;
+}
+
 void Search::Accept(ModelVisitor* const visitor) const {
   for (std::vector<SearchMonitor*>::const_iterator it = monitors_.begin();
        it != monitors_.end();
@@ -1513,6 +1524,10 @@ void Solver::AcceptNeighbor() {
 
 void Solver::TopPeriodicCheck() {
   TopLevelSearch()->PeriodicCheck();
+}
+
+int Solver::TopProgressPercent() {
+  return TopLevelSearch()->ProgressPercent();
 }
 
 void Solver::PushState() {

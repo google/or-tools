@@ -287,9 +287,8 @@ SearchMonitor* Solver::MakeSearchLog(int period, OptimizeVar* const obj,
   return RevAlloc(new SearchLog(this, obj, NULL, display_callback, period));
 }
 
+
 // ---------- Search Trace ----------
-
-
 namespace {
 class SearchTrace : public SearchMonitor {
  public:
@@ -3587,6 +3586,7 @@ class RegularLimit : public SearchLimit {
                     int64 failures,
                     int64 solutions);
   int64 wall_time() { return wall_time_; }
+  virtual int ProgressPercent();
   virtual string DebugString() const;
 
   void Accept(ModelVisitor* const visitor) const {
@@ -3607,9 +3607,15 @@ class RegularLimit : public SearchLimit {
 
  private:
   bool CheckTime();
+  int64 TimeDelta();
+  static int64 GetPercent(int value, int offset, int total) {
+    return (total > 0 && total < kint64max) ?
+        100 * (value - offset) / total : -1;
+  }
 
   int64 wall_time_;
   int64 wall_time_offset_;
+  int64 last_time_delta_;
   int64 check_count_;
   int64 next_check_;
   bool smart_time_check_;
@@ -3639,6 +3645,7 @@ RegularLimit::RegularLimit(Solver* const s,
     : SearchLimit(s),
       wall_time_(time),
       wall_time_offset_(0),
+      last_time_delta_(-1),
       check_count_(0),
       next_check_(0),
       smart_time_check_(smart_time_check),
@@ -3681,11 +3688,26 @@ bool RegularLimit::Check()  {
       s->solutions() - solutions_offset_ >= solutions_;
 }
 
+int RegularLimit::ProgressPercent() {
+  Solver* const s = solver();
+  int64 progress = GetPercent(s->branches(), branches_offset_, branches_);
+  progress = std::max(progress,
+                      GetPercent(s->failures(), failures_offset_, failures_));
+  progress =
+      std::max(progress,
+               GetPercent(s->solutions(), solutions_offset_, solutions_));
+  if (wall_time_ < kint64max) {
+    progress = std::max(progress, (100 * TimeDelta()) / wall_time_);
+  }
+  return progress;
+}
+
 void RegularLimit::Init() {
   Solver* const s = solver();
   branches_offset_ = s->branches();
   failures_offset_ = s->failures();
   wall_time_offset_ = s->wall_time();
+  last_time_delta_ = -1;
   solutions_offset_ = s->solutions();
   check_count_ = 0;
   next_check_ = 0;
@@ -3724,6 +3746,10 @@ string RegularLimit::DebugString() const {
 }
 
 bool RegularLimit::CheckTime() {
+  return TimeDelta() >= wall_time_;
+}
+
+int64 RegularLimit::TimeDelta() {
   const int64 kMaxSkip = 100;
   const int64 kCheckWarmupIterations = 100;
   ++check_count_;
@@ -3736,10 +3762,9 @@ bool RegularLimit::CheckTime() {
       int64 approximate_calls = (wall_time_ * check_count_) / time_delta;
       next_check_ = check_count_ + std::min(kMaxSkip, approximate_calls);
     }
-    return time_delta >= wall_time_;
-  } else {
-    return false;
+    last_time_delta_ = time_delta;
   }
+  return last_time_delta_;
 }
 }  // namespace
 

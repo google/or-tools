@@ -2152,6 +2152,7 @@ class Solver {
                                OptimizeVar* const objective,
                                ResultCallback<string>* display_callback);
 
+
   // ----- Search Trace ------
 
   // Creates a search monitor that will trace precisely the behavior of the
@@ -2673,6 +2674,11 @@ class Solver {
   // Performs PeriodicCheck on the top-level search; can be called from a nested
   // solve to check top-level limits for instance.
   void TopPeriodicCheck();
+  // Returns a percentage representing the propress of the search before
+  // reaching the limits of the top-level search (can be called from a nested
+  // solve).
+  int TopProgressPercent();
+
   // The PushState and PopState methods manipulates the states
   // of the reversible objects. They are visible only because they
   // are useful to write unitary tests.
@@ -3435,6 +3441,8 @@ class CastConstraint : public Constraint {
 // A search monitor is a simple set of callbacks to monitor all search events
 class SearchMonitor : public BaseObject {
  public:
+  static const int kNoProgress = -1;
+
   explicit SearchMonitor(Solver* const s) : solver_(s) {}
   virtual ~SearchMonitor() {}
   // Beginning of the search.
@@ -3507,6 +3515,10 @@ class SearchMonitor : public BaseObject {
 
   // Periodic call to check limits in long running methods.
   virtual void PeriodicCheck();
+
+  // Returns a percentage representing the propress of the search before
+  // reaching limits.
+  virtual int ProgressPercent() { return kNoProgress; }
 
   // Accepts the given model visitor.
   virtual void Accept(ModelVisitor* const visitor) const;
@@ -4271,7 +4283,7 @@ class IntVarElement : public AssignmentElement {
   int64 Max() const { return max_; }
   void SetMax(int64 m) { max_ = m; }
   int64 Value() const {
-    DCHECK(min_ == max_);
+    DCHECK_EQ(min_, max_);
     // Getting the value from an unbound int var assignment element.
     return min_;
   }

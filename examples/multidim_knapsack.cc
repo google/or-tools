@@ -37,6 +37,7 @@ DEFINE_string(
 DEFINE_int32(time_limit_in_ms, 0, "Time limit in ms, <= 0 means no limit.");
 DEFINE_int32(simplex_frequency, 0, "Number of nodes explored between each"
              " call to the simplex optimizer.");
+DEFINE_bool(display_search_log, true, "Display search log.");
 
 namespace operations_research {
 
@@ -286,8 +287,10 @@ void SolveKnapsack(MultiDimKnapsackData* const data) {
   std::vector<SearchMonitor*> monitors;
   OptimizeVar* const objective_monitor = solver.MakeMaximize(objective, 1);
   monitors.push_back(objective_monitor);
-  SearchMonitor* const search_log = solver.MakeSearchLog(1000000, objective);
-  monitors.push_back(search_log);
+  if (FLAGS_display_search_log) {
+    SearchMonitor* const search_log = solver.MakeSearchLog(1000000, objective);
+    monitors.push_back(search_log);
+  }
   DecisionBuilder* const db =
       solver.MakePhase(assign,
                        NewPermanentCallback(&EvaluateItem, data),
