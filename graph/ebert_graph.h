@@ -439,7 +439,7 @@ template<typename NodeIndexType, typename ArcIndexType,
   // Returns the head or end-node of arc.
   NodeIndexType Head(const ArcIndexType arc) const {
     DCHECK(ThisAsDerived()->CheckArcValidity(arc));
-    return this->head_[arc];
+    return head_[arc];
   }
 
   string NodeDebugString(const NodeIndexType node) const {
@@ -645,14 +645,38 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
   friend class EbertGraphCore<NodeIndexType, ArcIndexType,
                               EbertGraph<NodeIndexType, ArcIndexType> >;
 
+  using Base::ArcDebugString;
+  using Base::FirstIncidentArc;
+  using Base::Initialize;
+  using Base::NextAdjacentArc;
+  using Base::NodeDebugString;
+
+  using Base::first_incident_arc_;
+  using Base::head_;
+  using Base::max_num_arcs_;
+  using Base::max_num_nodes_;
+  using Base::next_adjacent_arc_;
+  using Base::num_arcs_;
+  using Base::num_nodes_;
+  using Base::representation_clean_;
+
  public:
+#ifndef SWIG
+  using Base::kFirstArc;
+  using Base::kFirstNode;
+  using Base::kNilArc;
+  using Base::kNilNode;
+  using Base::Head;
+  using Base::IsNodeValid;
+#endif  // SWIG
+
   typedef NodeIndexType NodeIndex;
   typedef ArcIndexType ArcIndex;
 
   EbertGraph() {}
 
   EbertGraph(NodeIndexType max_num_nodes, ArcIndexType max_num_arcs) {
-    this->Initialize(max_num_nodes, max_num_arcs);
+    Initialize(max_num_nodes, max_num_arcs);
   }
 
   ~EbertGraph() {}
@@ -687,7 +711,7 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
     }
 
     // Returns true unless all the adjancent arcs have been traversed.
-    bool Ok() const { return arc_ != Base::kNilArc; }
+    bool Ok() const { return arc_ != kNilArc; }
 
     // Advances the current adjacent arc index.
     void Next() {
@@ -702,7 +726,7 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
     // Returns true if the invariant for the iterator is verified.
     // To be used in a DCHECK.
     bool CheckInvariant() const {
-      if (arc_ == Base::kNilArc) {
+      if (arc_ == kNilArc) {
         return true;  // This occurs when the iterator has reached the end.
       }
       DCHECK(graph_.IsIncident(arc_, node_));
@@ -752,7 +776,7 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
     }
 
     // Returns true unless all the incoming arcs have been traversed.
-    bool Ok() const { return arc_ != Base::kNilArc; }
+    bool Ok() const { return arc_ != kNilArc; }
 
     // Advances the current incoming arc index.
     void Next() {
@@ -767,7 +791,7 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
     // Returns true if the invariant for the iterator is verified.
     // To be used in a DCHECK.
     bool CheckInvariant() const {
-      if (arc_ == Base::kNilArc) {
+      if (arc_ == kNilArc) {
         return true;  // This occurs when the iterator has reached the end.
       }
       DCHECK(graph_.IsIncoming(arc_, node_));
@@ -812,7 +836,7 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
     }
 
     // Returns true unless all the outgoing arcs have been traversed.
-    bool Ok() const { return arc_ != Base::kNilArc; }
+    bool Ok() const { return arc_ != kNilArc; }
 
     // Advances the current outgoing arc index.
     void Next() {
@@ -827,7 +851,7 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
     // Returns true if the invariant for the iterator is verified.
     // To be used in a DCHECK.
     bool CheckInvariant() const {
-      if (arc_ == Base::kNilArc) {
+      if (arc_ == kNilArc) {
         return true;  // This occurs when the iterator has reached the end.
       }
       DCHECK(graph_.IsOutgoing(arc_, node_));
@@ -848,8 +872,7 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
   // It is exported so that users of the EbertGraph class can use it.
   // To be used in a DCHECK.
   bool CheckArcBounds(const ArcIndexType arc) const {
-    return (arc == Base::kNilArc) ||
-        (arc >= -this->max_num_arcs_ && arc < this->max_num_arcs_);
+    return (arc == kNilArc) || (arc >= -max_num_arcs_ && arc < max_num_arcs_);
   }
 
   // Utility function to check that an arc index is within the bounds AND
@@ -857,14 +880,13 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
   // It is exported so that users of the EbertGraph class can use it.
   // To be used in a DCHECK.
   bool CheckArcValidity(const ArcIndexType arc) const {
-    return (arc != Base::kNilArc) &&
-        (arc >= -this->max_num_arcs_ && arc < this->max_num_arcs_);
+    return (arc != kNilArc) && (arc >= -max_num_arcs_ && arc < max_num_arcs_);
   }
 
   // Returns the tail or start-node of arc.
   NodeIndexType Tail(const ArcIndexType arc) const {
     DCHECK(CheckArcValidity(arc));
-    return this->head_[Opposite(arc)];
+    return head_[Opposite(arc)];
   }
 
   // Returns the tail or start-node of arc if it is positive
@@ -878,7 +900,7 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
   // (i.e. it is taken in the direction it was entered in the graph),
   // and the tail or start-node otherwise. 'That' in Ebert's paper.
   NodeIndexType DirectArcHead(const ArcIndexType arc) const {
-    return this->Head(DirectArc(arc));
+    return Head(DirectArc(arc));
   }
 
   // Returns the arc in normal/direct direction.
@@ -905,13 +927,13 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
   // Returns true if the arc is direct.
   bool IsDirect(const ArcIndexType arc) const {
     DCHECK(CheckArcBounds(arc));
-    return arc != Base::kNilArc && arc >= 0;
+    return arc != kNilArc && arc >= 0;
   }
 
   // Returns true if the arc is in the reverse direction.
   bool IsReverse(const ArcIndexType arc) const {
     DCHECK(CheckArcBounds(arc));
-    return arc != Base::kNilArc && arc < 0;
+    return arc != kNilArc && arc < 0;
   }
 
   // Returns true if arc is incident to node.
@@ -934,31 +956,26 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
   // This is useful if head_ array has been sorted according to a given
   // criterion, for example.
   void BuildRepresentation() {
-    this->first_incident_arc_.SetAll(Base::kNilArc);
-    for (ArcIndexType arc = Base::kFirstArc;
-         arc <  this->max_num_arcs_;
-         ++arc) {
+    first_incident_arc_.SetAll(kNilArc);
+    for (ArcIndexType arc = kFirstArc; arc <  max_num_arcs_; ++arc) {
       Attach(arc);
     }
-    this->representation_clean_ = true;
+    representation_clean_ = true;
   }
 
   // Returns a debug string containing all the information contained in the
   // data structure in raw form.
   string DebugString() const {
-    DCHECK(this->representation_clean_);
+    DCHECK(representation_clean_);
     string result = "Arcs:(node, next arc) :\n";
-    for (ArcIndexType arc = -this->num_arcs_; arc < this->num_arcs_; ++arc) {
-      result += " " + this->ArcDebugString(arc) + ":("
-          + this->NodeDebugString(this->head_[arc])
-          + "," + this->ArcDebugString(this->next_adjacent_arc_[arc]) + ")\n";
+    for (ArcIndexType arc = -num_arcs_; arc < num_arcs_; ++arc) {
+      result += " " + ArcDebugString(arc) + ":(" + NodeDebugString(head_[arc])
+          + "," + ArcDebugString(next_adjacent_arc_[arc]) + ")\n";
     }
     result += "Node:First arc :\n";
-    for (NodeIndexType node = Base::kFirstNode;
-         node < this->num_nodes_;
-         ++node) {
-      result += " " + this->NodeDebugString(node) + ":"
-              + this->ArcDebugString(this->first_incident_arc_[node]) + "\n";
+    for (NodeIndexType node = kFirstNode; node < num_nodes_; ++node) {
+      result += " " + NodeDebugString(node) + ":"
+          + ArcDebugString(first_incident_arc_[node]) + "\n";
     }
     return result;
   }
@@ -972,19 +989,15 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
   // the code to set those arrays up is in a method of the derived
   // class.
   void ReserveNextAdjacentArcAndHeadEntries(ArcIndexType new_max_num_arcs) {
-    this->head_.Reserve(-new_max_num_arcs, new_max_num_arcs - 1);
-    this->next_adjacent_arc_.Reserve(-new_max_num_arcs, new_max_num_arcs - 1);
-    for (ArcIndexType arc = -new_max_num_arcs;
-         arc < -this->max_num_arcs_;
-         ++arc) {
-      this->head_.Set(arc, Base::kNilNode);
-      this->next_adjacent_arc_.Set(arc, Base::kNilArc);
+    head_.Reserve(-new_max_num_arcs, new_max_num_arcs - 1);
+    next_adjacent_arc_.Reserve(-new_max_num_arcs, new_max_num_arcs - 1);
+    for (ArcIndexType arc = -new_max_num_arcs; arc < -max_num_arcs_; ++arc) {
+      head_.Set(arc, kNilNode);
+      next_adjacent_arc_.Set(arc, kNilArc);
     }
-    for (ArcIndexType arc = this->max_num_arcs_;
-         arc < new_max_num_arcs;
-         ++arc) {
-      this->head_.Set(arc, Base::kNilNode);
-      this->next_adjacent_arc_.Set(arc, Base::kNilArc);
+    for (ArcIndexType arc = max_num_arcs_; arc < new_max_num_arcs; ++arc) {
+      head_.Set(arc, kNilNode);
+      next_adjacent_arc_.Set(arc, kNilArc);
     }
   }
 
@@ -996,28 +1009,28 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
   ArcIndexType NextOutgoingArc(const ArcIndexType arc) const {
     DCHECK(CheckArcValidity(arc));
     DCHECK(IsDirect(arc));
-    return FindNextOutgoingArc(this->NextAdjacentArc(arc));
+    return FindNextOutgoingArc(NextAdjacentArc(arc));
   }
 
   // Returns the first incoming arc for node.
   ArcIndexType FirstIncomingArc(const NodeIndexType node) const {
-    DCHECK_LE(Base::kFirstNode, node);
-    DCHECK_GE(this->max_num_nodes_, node);
-    return FindNextIncomingArc(this->FirstIncidentArc(node));
+    DCHECK_LE(kFirstNode, node);
+    DCHECK_GE(max_num_nodes_, node);
+    return FindNextIncomingArc(FirstIncidentArc(node));
   }
 
   // Returns the incoming arc following the argument in the adjacency list.
   ArcIndexType NextIncomingArc(const ArcIndexType arc) const {
     DCHECK(CheckArcValidity(arc));
     DCHECK(IsReverse(arc));
-    return FindNextIncomingArc(this->NextAdjacentArc(arc));
+    return FindNextIncomingArc(NextAdjacentArc(arc));
   }
 
   // Handles the part of AddArc() that is not in common with other
   // graph classes based on the EbertGraphCore template.
   void RecordArc(ArcIndexType arc, NodeIndexType tail, NodeIndexType head) {
-    this->head_.Set(Opposite(arc), tail);
-    this->head_.Set(arc, head);
+    head_.Set(Opposite(arc), tail);
+    head_.Set(arc, head);
     Attach(arc);
   }
 
@@ -1025,29 +1038,28 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
   // method must be called to restore consistency before the graph is
   // used.
   void SetTail(const ArcIndexType arc, const NodeIndexType tail) {
-    this->representation_clean_ = false;
-    this->head_.Set(Opposite(arc), tail);
+    representation_clean_ = false;
+    head_.Set(Opposite(arc), tail);
   }
 
   // Utility method to attach a new arc.
   void Attach(ArcIndexType arc) {
     DCHECK(CheckArcValidity(arc));
-    const NodeIndexType tail = this->head_[Opposite(arc)];
-    DCHECK(this->IsNodeValid(tail));
-    this->next_adjacent_arc_.Set(arc, this->first_incident_arc_[tail]);
-    this->first_incident_arc_.Set(tail, arc);
-    const NodeIndexType head = this->head_[arc];
-    DCHECK(this->IsNodeValid(head));
-    this->next_adjacent_arc_.Set(Opposite(arc),
-                                 this->first_incident_arc_[head]);
-    this->first_incident_arc_.Set(head, Opposite(arc));
+    const NodeIndexType tail = head_[Opposite(arc)];
+    DCHECK(IsNodeValid(tail));
+    next_adjacent_arc_.Set(arc, first_incident_arc_[tail]);
+    first_incident_arc_.Set(tail, arc);
+    const NodeIndexType head = head_[arc];
+    DCHECK(IsNodeValid(head));
+    next_adjacent_arc_.Set(Opposite(arc), first_incident_arc_[head]);
+    first_incident_arc_.Set(head, Opposite(arc));
   }
 
   // Utility method that finds the next outgoing arc.
   ArcIndexType FindNextOutgoingArc(ArcIndexType arc) const {
     DCHECK(CheckArcBounds(arc));
     while (IsReverse(arc)) {
-      arc = this->NextAdjacentArc(arc);
+      arc = NextAdjacentArc(arc);
       DCHECK(CheckArcBounds(arc));
     }
     return arc;
@@ -1057,7 +1069,7 @@ template<typename NodeIndexType, typename ArcIndexType> class EbertGraph
   ArcIndexType FindNextIncomingArc(ArcIndexType arc) const {
     DCHECK(CheckArcBounds(arc));
     while (IsDirect(arc)) {
-      arc = this->NextAdjacentArc(arc);
+      arc = NextAdjacentArc(arc);
       DCHECK(CheckArcBounds(arc));
     }
     return arc;
@@ -1074,14 +1086,37 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
   friend class EbertGraphCore<NodeIndexType, ArcIndexType,
                               ForwardEbertGraph<NodeIndexType, ArcIndexType> >;
 
+  using Base::ArcDebugString;
+  using Base::Initialize;
+  using Base::NextAdjacentArc;
+  using Base::NodeDebugString;
+
+  using Base::first_incident_arc_;
+  using Base::head_;
+  using Base::max_num_arcs_;
+  using Base::max_num_nodes_;
+  using Base::next_adjacent_arc_;
+  using Base::num_arcs_;
+  using Base::num_nodes_;
+  using Base::representation_clean_;
+
  public:
+#ifndef SWIG
+  using Base::kFirstArc;
+  using Base::kFirstNode;
+  using Base::kNilArc;
+  using Base::kNilNode;
+
+  using Base::Head;
+#endif  // SWIG
+
   typedef NodeIndexType NodeIndex;
   typedef ArcIndexType ArcIndex;
 
   ForwardEbertGraph() {}
 
   ForwardEbertGraph(NodeIndexType max_num_nodes, ArcIndexType max_num_arcs) {
-    this->Initialize(max_num_nodes, max_num_arcs);
+    Initialize(max_num_nodes, max_num_arcs);
   }
 
   ~ForwardEbertGraph() {}
@@ -1112,7 +1147,7 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
     }
 
     // Returns true unless all the adjancent arcs have been traversed.
-    bool Ok() const { return arc_ != Base::kNilArc; }
+    bool Ok() const { return arc_ != kNilArc; }
 
     // Advances the current adjacent arc index.
     void Next() {
@@ -1137,8 +1172,7 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
   // It is exported so that users of the ForwardEbertGraph class can use it.
   // To be used in a DCHECK.
   bool CheckArcBounds(const ArcIndexType arc) const {
-    return ((arc == Base::kNilArc) ||
-            (arc >= Base::kFirstArc && arc < this->max_num_arcs_));
+    return (arc == kNilArc) || (arc >= kFirstArc && arc < max_num_arcs_);
   }
 
   // Utility function to check that an arc index is within the bounds AND
@@ -1146,8 +1180,7 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
   // It is exported so that users of the ForwardEbertGraph class can use it.
   // To be used in a DCHECK.
   bool CheckArcValidity(const ArcIndexType arc) const {
-    return ((arc != Base::kNilArc) &&
-            (arc >= Base::kFirstArc && arc < this->max_num_arcs_));
+    return (arc != kNilArc) && (arc >= kFirstArc && arc < max_num_arcs_);
   }
 
   // Utility function to check that a node index is within the bounds AND
@@ -1156,14 +1189,12 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
   // To be used in a DCHECK; also used internally to validate
   // arguments passed to our methods from clients (e.g., AddArc())..
   bool IsNodeValid(const NodeIndexType node) const {
-    return node >= Base::kFirstNode && node < this->max_num_nodes_;
+    return node >= kFirstNode && node < max_num_nodes_;
   }
 
   // Returns true if arc is a valid index into the (*tail_) array.
   bool CheckTailIndexValidity(const ArcIndexType arc) const {
-    return ((tail_ != NULL) &&
-            (arc >= Base::kFirstArc) &&
-            (arc <= tail_->max_index()));
+    return (tail_ != NULL) && (arc >= kFirstArc) && (arc <= tail_->max_index());
   }
 
   // Returns the tail or start-node of arc.
@@ -1175,7 +1206,7 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
 
   // Returns true if arc is incoming to node.
   bool IsIncoming(ArcIndexType arc, NodeIndexType node) const {
-    return this->Head(arc) == node;
+    return Head(arc) == node;
   }
 
   // Recreates the next_adjacent_arc_ and first_incident_arc_
@@ -1183,15 +1214,13 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
   // is useful if the head_ and tail_ arrays have been sorted
   // according to a given criterion, for example.
   void BuildRepresentation() {
-    this->first_incident_arc_.SetAll(Base::kNilArc);
+    first_incident_arc_.SetAll(kNilArc);
     DCHECK(TailArrayComplete());
-    for (ArcIndexType arc = Base::kFirstArc;
-         arc <  this->max_num_arcs_;
-         ++arc) {
+    for (ArcIndexType arc = kFirstArc; arc <  max_num_arcs_; ++arc) {
       DCHECK(CheckTailIndexValidity(arc));
       Attach((*tail_)[arc], arc);
     }
-    this->representation_clean_ = true;
+    representation_clean_ = true;
   }
 
   bool BuildTailArray() {
@@ -1199,7 +1228,7 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
     // its contents are canonical, so we do not need to do anything
     // here in that case except return true.
     if (tail_ == NULL) {
-      if (!this->representation_clean_) {
+      if (!representation_clean_) {
         // We have been asked to build the (*tail_) array, but we have
         // no valid information from which to build it. The graph is
         // in an unrecoverable, inconsistent state.
@@ -1208,7 +1237,7 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
       // Reallocate (*tail_) and rebuild its contents from the
       // adjacency lists.
       tail_.reset(new ZVector<NodeIndexType>);
-      tail_->Reserve(Base::kFirstArc, this->max_num_arcs_ - 1);
+      tail_->Reserve(kFirstArc, max_num_arcs_ - 1);
       typename Base::NodeIterator node_it(*this);
       for (; node_it.Ok(); node_it.Next()) {
         NodeIndexType node = node_it.Index();
@@ -1229,7 +1258,7 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
   // To be used in a DCHECK().
   bool TailArrayComplete() const {
     CHECK_NOTNULL(tail_);
-    for (ArcIndexType arc = Base::kFirstArc; arc < this->num_arcs_; ++arc) {
+    for (ArcIndexType arc = kFirstArc; arc < num_arcs_; ++arc) {
       CHECK(CheckTailIndexValidity(arc));
       CHECK(IsNodeValid((*tail_)[arc]));
     }
@@ -1239,19 +1268,17 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
   // Returns a debug string containing all the information contained in the
   // data structure in raw form.
   string DebugString() const {
-    DCHECK(this->representation_clean_);
+    DCHECK(representation_clean_);
     string result = "Arcs:(node, next arc) :\n";
-    for (ArcIndexType arc = Base::kFirstArc; arc < this->num_arcs_; ++arc) {
-      result += " " + this->ArcDebugString(arc) + ":("
-          + this->NodeDebugString(this->head_[arc])
-          + "," + this->ArcDebugString(this->next_adjacent_arc_[arc]) + ")\n";
+    for (ArcIndexType arc = kFirstArc; arc < num_arcs_; ++arc) {
+      result += " " + ArcDebugString(arc) + ":("
+          + NodeDebugString(head_[arc])
+          + "," + ArcDebugString(next_adjacent_arc_[arc]) + ")\n";
     }
     result += "Node:First arc :\n";
-    for (NodeIndexType node = Base::kFirstNode;
-         node < this->num_nodes_;
-         ++node) {
-      result += " " + this->NodeDebugString(node) + ":"
-              + this->ArcDebugString(this->first_incident_arc_[node]) + "\n";
+    for (NodeIndexType node = kFirstNode; node < num_nodes_; ++node) {
+      result += " " + NodeDebugString(node) + ":"
+          + ArcDebugString(first_incident_arc_[node]) + "\n";
     }
     return result;
   }
@@ -1281,13 +1308,11 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
   // representation allocates space for both positive- and
   // negative-indexed arcs (i.e., both forward and reverse arcs).
   void ReserveNextAdjacentArcAndHeadEntries(ArcIndexType new_max_num_arcs) {
-    this->head_.Reserve(Base::kFirstArc, new_max_num_arcs - 1);
-    this->next_adjacent_arc_.Reserve(Base::kFirstArc, new_max_num_arcs - 1);
-    for (ArcIndexType arc = this->max_num_arcs_;
-         arc < new_max_num_arcs;
-         ++arc) {
-      this->head_.Set(arc, Base::kNilNode);
-      this->next_adjacent_arc_.Set(arc, Base::kNilArc);
+    head_.Reserve(kFirstArc, new_max_num_arcs - 1);
+    next_adjacent_arc_.Reserve(kFirstArc, new_max_num_arcs - 1);
+    for (ArcIndexType arc = max_num_arcs_; arc < new_max_num_arcs; ++arc) {
+      head_.Set(arc, kNilNode);
+      next_adjacent_arc_.Set(arc, kNilArc);
     }
   }
 
@@ -1305,11 +1330,11 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
       // The (*tail_) values are already canonical, so we're just
       // reserving additional space for new arcs that haven't been
       // added yet.
-      if (tail_->Reserve(Base::kFirstArc, new_max_num_arcs - 1)) {
+      if (tail_->Reserve(kFirstArc, new_max_num_arcs - 1)) {
         for (ArcIndexType arc = tail_->max_index() + 1;
              arc < new_max_num_arcs;
              ++arc) {
-          tail_->Set(arc, Base::kNilNode);
+          tail_->Set(arc, kNilNode);
         }
       }
     }
@@ -1323,13 +1348,13 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
   // Returns the outgoing arc following the argument in the adjacency list.
   ArcIndexType NextOutgoingArc(const ArcIndexType arc) const {
     DCHECK(CheckArcValidity(arc));
-    return FindNextOutgoingArc(this->NextAdjacentArc(arc));
+    return FindNextOutgoingArc(NextAdjacentArc(arc));
   }
 
   // Handles the part of AddArc() that is not in common wth other
   // graph classes based on the EbertGraphCore template.
   void RecordArc(ArcIndexType arc, NodeIndexType tail, NodeIndexType head) {
-    this->head_.Set(arc, head);
+    head_.Set(arc, head);
     Attach(tail, arc);
   }
 
@@ -1339,7 +1364,7 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
   void SetTail(const ArcIndexType arc, const NodeIndexType tail) {
     DCHECK(CheckTailIndexValidity(arc));
     CHECK_NOTNULL(tail_);
-    this->representation_clean_ = false;
+    representation_clean_ = false;
     tail_->Set(arc, tail);
   }
 
@@ -1347,9 +1372,9 @@ template<typename NodeIndexType, typename ArcIndexType> class ForwardEbertGraph
   void Attach(NodeIndexType tail, ArcIndexType arc) {
     DCHECK(CheckArcValidity(arc));
     DCHECK(IsNodeValid(tail));
-    this->next_adjacent_arc_.Set(arc, this->first_incident_arc_[tail]);
-    this->first_incident_arc_.Set(tail, arc);
-    const NodeIndexType head = this->head_[arc];
+    next_adjacent_arc_.Set(arc, first_incident_arc_[tail]);
+    first_incident_arc_.Set(tail, arc);
+    const NodeIndexType head = head_[arc];
     DCHECK(IsNodeValid(head));
     // Because Attach() is a public method, keeping (*tail_) canonical
     // requires us to record the new arc's tail here.
