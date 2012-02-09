@@ -724,25 +724,25 @@ using std::string;
 
 class LongResultCallback1 {
  public:
-  virtual int64 run(int64) = 0;
+  virtual int64 Run(int64) = 0;
   ResultCallback1<int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback1::run);
+    return NewPermanentCallback(this, &LongResultCallback1::Run);
   }
   virtual ~LongResultCallback1() {}
 };
 class LongResultCallback2 {
  public:
-  virtual int64 run(int64, int64) = 0;
+  virtual int64 Run(int64, int64) = 0;
   ResultCallback2<int64, int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback2::run);
+    return NewPermanentCallback(this, &LongResultCallback2::Run);
   }
   virtual ~LongResultCallback2() {}
 };
 class LongResultCallback3 {
  public:
-  virtual int64 run(int64, int64, int64) = 0;
+  virtual int64 Run(int64, int64, int64) = 0;
   ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback3::run);
+    return NewPermanentCallback(this, &LongResultCallback3::Run);
   }
   virtual ~LongResultCallback3() {}
 };
@@ -751,19 +751,19 @@ class LongResultCallback3 {
 
 class LongResultCallback1 {
  public:
-  virtual int64 run(int64) = 0;
+  virtual int64 Run(int64) = 0;
   ResultCallback1<int64, int64>* GetPermanentCallback();
   virtual ~LongResultCallback1();
 };
 class LongResultCallback2 {
  public:
-  virtual int64 run(int64, int64) = 0;
+  virtual int64 Run(int64, int64) = 0;
   ResultCallback2<int64, int64, int64>* GetPermanentCallback();
   virtual ~LongResultCallback2();
 };
 class LongResultCallback3 {
  public:
-  virtual int64 run(int64, int64, int64) = 0;
+  virtual int64 Run(int64, int64, int64) = 0;
   ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback();
   virtual ~LongResultCallback3();
 };

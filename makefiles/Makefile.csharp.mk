@@ -103,6 +103,9 @@ furniture_moving_intervals.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SH
 organize_day_intervals.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/organize_day_intervals.cs
 	$(CSC) /target:exe /out:organize_day_intervals.exe /platform:$(NETPLATFORM) /r:Google.OrTools.ConstraintSolver.dll csharp$Sorganize_day_intervals.cs
 
+cstsp.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/cstsp.cs
+	$(CSC) /target:exe /out:cstsp.exe /platform:$(NETPLATFORM) /r:Google.OrTools.ConstraintSolver.dll csharp$Scstsp.cs
+
 # csharpalgorithms
 
 csharpalgorithms: $(LIBPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT)

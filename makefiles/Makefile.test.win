@@ -26,6 +26,7 @@ test_csharp: $(CSHARPEXE) testlp.exe
 	csknapsack.exe
 	furniture_moving_intervals.exe
 	organize_day_intervals.exe
+	cstsp.exe
 	testlp.exe
 
 
