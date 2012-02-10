@@ -145,6 +145,10 @@ bool SearchLog::AtSolution() {
                   solver()->filtered_neighbors(),
                   solver()->accepted_neighbors());
   }
+  const int progress = solver()->TopProgressPercent();
+  if (progress != SearchMonitor::kNoProgress) {
+    StringAppendF(&log, ", limit = %d%%", progress);
+  }
   StringAppendF(&log, ", %s)", MemoryUsage().c_str());
   LG << log;
   if (display_callback_.get() != NULL) {
