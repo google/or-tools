@@ -217,6 +217,10 @@ void SearchLog::OutputDecision() {
                   ", objective maximum = %" GG_LL_FORMAT "d",
                   objective_min_, objective_max_);
   }
+  const int progress = solver()->TopProgressPercent();
+  if (progress != SearchMonitor::kNoProgress) {
+    StringAppendF(&buffer, ", limit = %d%%", progress);
+  }
   OutputLine(buffer);
 }
 
