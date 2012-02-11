@@ -52,7 +52,7 @@ build_third_party: \
 #	install_scip
 
 download_third_party: \
-        dependencies/archives/zlib125.zip \
+        dependencies/archives/zlib126.zip \
 	dependencies/sources/gflags/autogen.sh \
 	dependencies/sources/protobuf/autogen.sh \
 	dependencies/sources/sparsehash/autogen.sh \
@@ -95,24 +95,23 @@ dependencies/install:
 # Install zlib
 install_zlib: dependencies\install\include\zlib.h dependencies\install\include\zconf.h dependencies\install\lib\zlib.lib
 
-dependencies\install\include\zlib.h: dependencies\sources\zlib-1.2.5\zlib.h
-	copy dependencies\sources\zlib-1.2.5\zlib.h dependencies\install\include
+dependencies\install\include\zlib.h: dependencies\sources\zlib-1.2.6\zlib.h
+	copy dependencies\sources\zlib-1.2.6\zlib.h dependencies\install\include
 
-dependencies\install\include\zconf.h: dependencies\sources\zlib-1.2.5\zlib.h
-	copy dependencies\sources\zlib-1.2.5\zconf.h dependencies\install\include
+dependencies\install\include\zconf.h: dependencies\sources\zlib-1.2.6\zlib.h
+	copy dependencies\sources\zlib-1.2.6\zconf.h dependencies\install\include
 	tools\touch.exe dependencies\install\include\zconf.h
 
-dependencies\install\lib\zlib.lib: dependencies\sources\zlib-1.2.5\zlib.h
-	copy dependencies\solutions\Makefile.msc dependencies\sources\zlib-1.2.5
-	cd dependencies\sources\zlib-1.2.5 && nmake -f Makefile.msc
-	copy dependencies\sources\zlib-1.2.5\zlib.lib dependencies\install\lib
+dependencies\install\lib\zlib.lib: dependencies\sources\zlib-1.2.6\zlib.h
+	cd dependencies\sources\zlib-1.2.6 && nmake -f win32\Makefile.msc zlib.lib
+	copy dependencies\sources\zlib-1.2.6\zlib.lib dependencies\install\lib
 
-dependencies\sources\zlib-1.2.5\zlib.h: dependencies\archives\zlib125.zip
-	tools\unzip -d dependencies\sources dependencies\archives\zlib125.zip
-	tools\touch.exe dependencies\sources\zlib-1.2.5\zlib.h
+dependencies\sources\zlib-1.2.6\zlib.h: dependencies\archives\zlib126.zip
+	tools\unzip -d dependencies\sources dependencies\archives\zlib126.zip
+	tools\touch.exe dependencies\sources\zlib-1.2.6\zlib.h
 
-dependencies\archives\zlib125.zip:
-	tools\wget -P dependencies\archives http://zlib.net/zlib125.zip
+dependencies\archives\zlib126.zip:
+	tools\wget -P dependencies\archives http://zlib.net/zlib126.zip
 
 # Install google-gflags.
 install_gflags: dependencies\install\lib\libgflags.lib dependencies\install\include\gflags\gflags.h
