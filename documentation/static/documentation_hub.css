@@ -56,7 +56,7 @@ li {
     margin:1px 0px 1px 0px;
 }
 
-.seealso, .warning, .note, .topic {
+.seealso, .warning, .note, .topic, .safe_trees {
     border: 1px solid;
     margin: 10px 0px;
     padding:15px 10px 15px 50px;
@@ -82,4 +82,10 @@ li {
     color: #00529B;
     background-color: #BDE5F8;
     background-image: url('dialog-topic.png');
+}
+
+.safe_trees {
+    color: #338C1E;
+    background-color: #C0EF4A; /*#A8D141;*/
+    background-image: url('earth.png');
 }
