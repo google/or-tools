@@ -30,7 +30,6 @@ clean_java:
 javacp: com.google.ortools.constraintsolver.jar $(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT)
 gen/constraint_solver/constraint_solver_java_wrap.cc: constraint_solver/constraint_solver.swig base/base.swig util/data.swig constraint_solver/constraint_solver.h
 	$(SWIG_BINARY) -c++ -java -o gen$Sconstraint_solver$Sconstraint_solver_java_wrap.cc -package com.google.ortools.constraintsolver -outdir gen$Scom$Sgoogle$Sortools$Sconstraintsolver constraint_solver$Sconstraint_solver.swig
-	$(FIX_SWIG)
 
 objs/constraint_solver_java_wrap.$O: gen/constraint_solver/constraint_solver_java_wrap.cc
 	$(CCC) $(JNIFLAGS) $(JAVA_INC) -c gen/constraint_solver/constraint_solver_java_wrap.cc $(OBJOUT)objs/constraint_solver_java_wrap.$O

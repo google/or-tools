@@ -381,15 +381,15 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 
 // Typemaps for callbacks in java.
 %typemap(jstype) ResultCallback1<int64, int64>* "LongResultCallback1";
-%typemap(javain) ResultCallback1<int64, int64>* "SWIGTYPE_p_ResultCallback1Tlong_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
+%typemap(javain) ResultCallback1<int64, int64>* "SWIGTYPE_p_ResultCallback1T_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
 
 %typemap(jstype) ResultCallback2<int64, int64, int64>* "LongResultCallback2";
-%typemap(javain) ResultCallback2<int64, int64, int64>* "SWIGTYPE_p_ResultCallback2Tlong_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
+%typemap(javain) ResultCallback2<int64, int64, int64>* "SWIGTYPE_p_ResultCallback2T_long_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
 
 %typemap(jstype) ResultCallback3<int64, int64, int64, int64>*
 "LongResultCallback3";
 %typemap(javain) ResultCallback3<int64, int64, int64, int64>*
- "SWIGTYPE_p_ResultCallback3Tlong_long_long_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
+ "SWIGTYPE_p_ResultCallback3T_long_long_long_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
 
 
 // Typemaps to represent const std::vector<int64>& arguments as arrays of long.

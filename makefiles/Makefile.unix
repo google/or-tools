@@ -161,22 +161,6 @@ JNIFLAGS = $(SYSCFLAGS) $(JNIDEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
 LDFLAGS = $(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
 LDLPDEPS = $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK)
 
-# Do we need to run a sed script to fix swig output?
-ifeq ($(UNIX_SWIG_BINARY),swig)
-  SWIG_VERSION = $(shell $(UNIX_SWIG_BINARY) -version | grep SWIG)
-  SWIG_TEST = $(findstring 1.3.31,$(SWIG_VERSION))
-  ifeq (,$(SWIG_TEST))
-    FIX_SWIG = sed -i -e 's/Tlong/T_long/g' gen/com/google/ortools/constraintsolver/Solver.java
-  endif
-endif
-ifneq ($(wildcard $(UNIX_SWIG_BINARY)),)
-  SWIG_VERSION = $(shell $(UNIX_SWIG_BINARY) -version | grep SWIG)
-  SWIG_TEST = $(findstring 1.3.31,$(SWIG_VERSION))
-  ifeq (,$(SWIG_TEST))
-    FIX_SWIG = sed -i -e 's/Tlong/T_long/g' gen/com/google/ortools/constraintsolver/Solver.java
-  endif
-endif
-
 # Unix specific definitions
 PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
 SWIG_BINARY = $(UNIX_SWIG_BINARY)
@@ -194,10 +178,4 @@ DEL = rm -f
 DELREC = rm -rf
 S = /
 CPSEP = :
-SED = sed
 
-print_fix_swig:
-	@echo UNIX_SWIG_BINARY = $(UNIX_SWIG_BINARY)
-	@echo SWIG_VERSION = $(SWIG_VERSION)
-	@echo SWIG_TEST = $(SWIG_TEST)
-	@echo FIX_SWIG = $(FIX_SWIG)
