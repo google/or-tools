@@ -1,0 +1,244 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2.2. The problem and a first model &mdash; or-tools User&#39;s Manual&#39;</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../../_static/logo.ico"/>
+    <link rel="top" title="or-tools User&#39;s Manual&#39;" href="../../index.html" />
+    <link rel="up" title="2. First steps with or-tools: cryptarithmetic puzzles" href="../first_steps.html" />
+    <link rel="next" title="2.3. Anatomy of a basic C++ code" href="anatomy.html" />
+    <link rel="prev" title="2.1. Getting started" href="getting_started.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="anatomy.html" title="2.3. Anatomy of a basic C++ code"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="getting_started.html" title="2.1. Getting started"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li>
+          <li><a href="../first_steps.html" accesskey="U">2. First steps with or-tools: cryptarithmetic puzzles</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-problem-and-a-first-model">
+<span id="cryptarithmetic-problem"></span><h1>2.2. The problem and a first model</h1>
+<p>Now that your system is up and running (if not, see <a class="reference internal" href="getting_started.html#getting-started"><em>Getting started</em></a>), let us solve a cryptarithmetic
+puzzle with the help of the or-tools library.</p>
+<p>In this section, we describe the problem and propose a first model to solve it. This model is by  no means efficient but allows us
+a gentle introduction to the library. A better model is presented in the corresponding lab session.</p>
+<div class="section" id="description-of-the-problem">
+<h2>2.2.1. Description of the problem</h2>
+<p>A cryptarithmetic puzzle is a mathematical game where the digits of some numbers
+are represented by letters (or symbols). Each letter represents a unique digit. The
+goal is to find the digits such that a given mathematical equation is verified.</p>
+<p>Here is an example:</p>
+<div class="highlight-cpp"><div class="highlight"><pre>      <span class="n">C</span> <span class="n">P</span>
+<span class="o">+</span>     <span class="n">I</span> <span class="n">S</span>
+<span class="o">+</span>   <span class="n">F</span> <span class="n">U</span> <span class="n">N</span>
+<span class="o">---------</span>
+<span class="o">=</span> <span class="n">T</span> <span class="n">R</span> <span class="n">U</span> <span class="n">E</span>
+</pre></div>
+</div>
+<p>One solution is <tt class="docutils literal"><span class="pre">C=2</span> <span class="pre">P=3</span> <span class="pre">I=7</span> <span class="pre">S=4</span> <span class="pre">F=9</span> <span class="pre">U=6</span> <span class="pre">N=8</span> <span class="pre">T=1</span> <span class="pre">R=0</span> <span class="pre">E=5</span></tt> because
+<tt class="docutils literal"><span class="pre">23+74+968</span> <span class="pre">=</span> <span class="pre">1065</span></tt>. Ideally, a good cryptarithmetic puzzle must have only
+one solution<a class="footnote-reference" href="#famous-cryptarithmetic" id="id1">[1]</a>. We derogate from this tradition. The above example
+has multiple solutions. We use it to show you how to collect all solutions of a problem.</p>
+<table class="docutils footnote" frame="void" id="famous-cryptarithmetic" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Like the famous <tt class="docutils literal"><span class="pre">SEND</span> <span class="pre">+</span> <span class="pre">MORE</span> <span class="pre">=</span> <span class="pre">MONEY</span></tt>.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="how-to-solve-the-problem">
+<h2>2.2.2. How to solve the problem?</h2>
+<p>We follow the classical <a class="reference internal" href="../introduction/three_stages.html#three-stages"><em>The three-stage method</em></a>.</p>
+<div class="section" id="describe">
+<h3>2.2.2.1. Describe</h3>
+<p>The first stage is to describe the problem, preferably in natural language. What is the
+goal of the puzzle? To replace letters by digits such that the sum
+<tt class="docutils literal"><span class="pre">CP+IS+FUN=TRUE</span></tt> is verified.</p>
+<p>What are the unknowns? The digits that the letters represent. In other words, for each letter we have one
+decision variable that can take any digit
+as value.</p>
+<p>What are the constraints? The obvious constraint is the sum that has to be verified.
+But there are other - implicit -
+constraints. First, two different
+letters represent two different digits. This implies that all the variables must
+have different values in a feasible solution. Second, it is implicit that the first
+digit of a number can not be 0. Letters <tt class="docutils literal"><span class="pre">C</span></tt>, <tt class="docutils literal"><span class="pre">I</span></tt>, <tt class="docutils literal"><span class="pre">F</span></tt> and <tt class="docutils literal"><span class="pre">T</span></tt> can thus
+not represent 0. Third, there are 10 letters, so we need at least 10
+different digits. The traditional decimal base is sufficient but let&#8217;s be more general
+and allow for a bigger base. We will use a constant <tt class="docutils literal"><span class="pre">kBase</span></tt>. This last constraint is not a CP constraint.
+After all, the base is not a variable but a given integer that is chosen once
+and for all for the whole program<a class="footnote-reference" href="#base-not-var" id="id2">[2]</a>.</p>
+<table class="docutils footnote" frame="void" id="base-not-var" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>We could have chosen the base as a variable. For instance,
+to consider such a question as: &#8220;What are the bases for which this
+puzzle has less than <tt class="docutils literal"><span class="pre">x</span></tt> solutions?&#8221;</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="model">
+<h3>2.2.2.2. Model</h3>
+<p>For each letter, we have a decision variable (we keep the same letters to name the variables).
+Given a base <tt class="docutils literal"><span class="pre">b</span></tt>, digits range from 0 to <tt class="docutils literal"><span class="pre">b</span></tt>-1.
+Remember that variables corresponding to <tt class="docutils literal"><span class="pre">C</span></tt>, <tt class="docutils literal"><span class="pre">I</span></tt>, <tt class="docutils literal"><span class="pre">F</span></tt> and <tt class="docutils literal"><span class="pre">T</span></tt> should be different
+from 0. Thus <tt class="docutils literal"><span class="pre">C</span></tt>, <tt class="docutils literal"><span class="pre">I</span></tt>, <tt class="docutils literal"><span class="pre">F</span></tt> and <tt class="docutils literal"><span class="pre">T</span></tt> have <img class="math" src="../../_images/math/22b701bc2dd899be5eb627e42bb246b79917eadb.png" alt="[1,\mathtt{b}-1]"/> as domain and <tt class="docutils literal"><span class="pre">P</span></tt>, <tt class="docutils literal"><span class="pre">S</span></tt>, <tt class="docutils literal"><span class="pre">U</span></tt>, <tt class="docutils literal"><span class="pre">N</span></tt>, <tt class="docutils literal"><span class="pre">R</span></tt> and  <tt class="docutils literal"><span class="pre">E</span></tt>
+have <img class="math" src="../../_images/math/02a1f06ac5198ee9c1210aaf6cda82150d29c04c.png" alt="[0,\mathtt{b}-1]"/> as domain. Another possibility is to keep the same domain <img class="math" src="../../_images/math/02a1f06ac5198ee9c1210aaf6cda82150d29c04c.png" alt="[0,\mathtt{b}-1]"/> for all
+variables and force <tt class="docutils literal"><span class="pre">C</span></tt>, <tt class="docutils literal"><span class="pre">I</span></tt>, <tt class="docutils literal"><span class="pre">F</span></tt> and <tt class="docutils literal"><span class="pre">T</span></tt> to be different from 0 by adding inequalities. However, restraining the domain to <img class="math" src="../../_images/math/22b701bc2dd899be5eb627e42bb246b79917eadb.png" alt="[1,\mathtt{b}-1]"/> is more efficient.</p>
+<p>To model the sum constraint in any base <tt class="docutils literal"><span class="pre">b</span></tt>, we add the linear equation:</p>
+<div class="math">
+<p><img src="../../_images/math/af653c84a8859ae2494c58e015ad9e94231eb505.png" alt="\begin{align*}
+     &amp;                                  &amp;   &amp;                                  &amp;   &amp; {\color{blue}{\mathtt{C}}} \cdot \mathtt{b} &amp; + &amp; {\color{blue}{\mathtt{P}}}\\
+   + &amp;                                  &amp;   &amp;                                  &amp;   &amp; {\color{blue}{\mathtt{I}}} \cdot \mathtt{b} &amp; + &amp; {\color{blue}{\mathtt{S}}}\\
+   + &amp;                                  &amp;   &amp; {\color{blue}{\mathtt{F}}} \cdot \mathtt{b}^2 &amp; + &amp; {\color{blue}{\mathtt{U}}} \cdot \mathtt{b} &amp; + &amp; {\color{blue}{\mathtt{N}}}\\
+   = &amp; {\color{blue}{\mathtt{T}}} \cdot \mathtt{b}^3 &amp; + &amp; {\color{blue}{\mathtt{R}}} \cdot \mathtt{b}^2 &amp; + &amp; {\color{blue}{\mathtt{U}}} \cdot \mathtt{b} &amp; + &amp; {\color{blue}{\mathtt{E}}}.
+\end{align*}"/></p>
+</div><p>The global constraint <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> springs to mind to model that variables must all have different values:</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span class="n">AllDifferent</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="n">P</span><span class="p">,</span><span class="n">I</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">F</span><span class="p">,</span><span class="n">U</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">T</span><span class="p">,</span><span class="n">R</span><span class="p">,</span><span class="n">E</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="solve">
+<h3>2.2.2.3. Solve</h3>
+<p>At this stage of our discovery of the library, we will not try to find a good way to solve this model.
+A default basic strategy will do for the moment.</p>
+<p>Chapter <a class="reference internal" href="../search_primitives.html#search-primitives"><em>Defining search primitives in constraint programming</em></a> is entirely devoted to this subject.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+
+  <h2>User's Manual</h2>
+  </br>
+  
+   
+	
+
+
+<h3>Google search</h3>
+
+<form method="get" action="http://www.google.com/search">
+
+<div style="padding:-1px;width:15em;">
+<table border="0" cellpadding="0">
+<tr><td>
+<input type="text"   name="q" size="25"
+ maxlength="255" value="" />
+<input type="submit" value="Go" /></td></tr>
+<tr><td align="center" style="font-size:65%">
+<input type="checkbox"  name="sitesearch"
+ value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
+</td></tr></table>
+</div>
+
+</form>
+</br>
+
+  <h3>Welcome</h3>
+  
+  <ul>
+  	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
+	<li><a href="../../index.html">Back to main page</a></li>
+
+  </ul>
+  
+   
+	
+
+
+  <h3>Tutorial examples</h3>
+  
+  <ul>
+	<li>C++</li>
+	<li>Python</li>	
+	<li>Java</li>
+	<li>C#</li>
+</ul>
+  
+   
+	
+
+  <h3>Sections</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2.2. The problem and a first model</a><ul>
+<li><a class="reference internal" href="#description-of-the-problem">2.2.1. Description of the problem</a></li>
+<li><a class="reference internal" href="#how-to-solve-the-problem">2.2.2. How to solve the problem?</a><ul>
+<li><a class="reference internal" href="#describe">2.2.2.1. Describe</a></li>
+<li><a class="reference internal" href="#model">2.2.2.2. Model</a></li>
+<li><a class="reference internal" href="#solve">2.2.2.3. Solve</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="anatomy.html" title="2.3. Anatomy of a basic C++ code"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="getting_started.html" title="2.1. Getting started"
+             >previous</a> |</li>
+        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li>
+          <li><a href="../first_steps.html" >2. First steps with or-tools: cryptarithmetic puzzles</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Google.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

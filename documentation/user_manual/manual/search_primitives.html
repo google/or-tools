@@ -1,0 +1,155 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>4. Defining search primitives in Constraint Programming &mdash; or-tools User&#39;s Manual&#39;</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/logo.ico"/>
+    <link rel="top" title="or-tools User&#39;s Manual&#39;" href="../index.html" />
+    <link rel="next" title="5. Implementing Large Neighbourhood Search" href="LNS.html" />
+    <link rel="prev" title="3. Using objectives in constraint programming: golomb rulers" href="objectives.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="LNS.html" title="5. Implementing Large Neighbourhood Search"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="objectives.html" title="3. Using objectives in constraint programming: golomb rulers"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">User&#39;s Manual</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="defining-search-primitives-in-constraint-programming">
+<span id="search-primitives"></span><h1>4. Defining search primitives in Constraint Programming</h1>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+
+  <h2>User's Manual</h2>
+  </br>
+  
+   
+	
+
+
+<h3>Google search</h3>
+
+<form method="get" action="http://www.google.com/search">
+
+<div style="padding:-1px;width:15em;">
+<table border="0" cellpadding="0">
+<tr><td>
+<input type="text"   name="q" size="25"
+ maxlength="255" value="" />
+<input type="submit" value="Go" /></td></tr>
+<tr><td align="center" style="font-size:65%">
+<input type="checkbox"  name="sitesearch"
+ value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
+</td></tr></table>
+</div>
+
+</form>
+</br>
+
+  <h3>Welcome</h3>
+  
+  <ul>
+  	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
+	<li><a href="../index.html">Back to main page</a></li>
+
+  </ul>
+  
+   
+	
+
+
+  <h3>Tutorial examples</h3>
+  
+  <ul>
+	<li>C++</li>
+	<li>Python</li>	
+	<li>Java</li>
+	<li>C#</li>
+</ul>
+  
+   
+	
+
+<h3>Chapters</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction to CP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="first_steps.html">2. First steps with or-tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="objectives.html">3. Using objectives in CP</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">4. Search primitives in CP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LNS.html">5. Large Neighbourhood Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LSO.html">6. Local Search operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="custom_constraints.html">7. Implementing custom constraints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modeling_tricks.html">8. Modeling tricks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="TSP.html">9. Routing: Taveling Salesman Problem with constraints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="VRP.html">10. Vehicule Routing Problem with constraints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utilities.html">11. Utilities</a></li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="LNS.html" title="5. Implementing Large Neighbourhood Search"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="objectives.html" title="3. Using objectives in constraint programming: golomb rulers"
+             >previous</a> |</li>
+        <li><a href="../index.html">User&#39;s Manual</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Google.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>
