@@ -19,7 +19,7 @@ using Google.OrTools.ConstraintSolver;
 
 class Tsp
 {
-  class RandomManhattan : LongResultCallback2 {
+  class RandomManhattan : NodeEvaluator2 {
     public RandomManhattan(int size, int seed)
     {
       this.xs_ = new int[size];
@@ -32,7 +32,7 @@ class Tsp
       }
     }
 
-    public override long Run(long firstIndex, long secondIndex) {
+    public override long Run(int firstIndex, int secondIndex) {
       return Math.Abs(xs_[firstIndex] - xs_[secondIndex]) +
           Math.Abs(ys_[firstIndex] - ys_[secondIndex]);
     }
@@ -41,8 +41,8 @@ class Tsp
     private int[] ys_;
   };
 
-  class ConstantCallback : LongResultCallback2 {
-    public override long Run(long firstIndex, long secondIndex) {
+  class ConstantCallback : NodeEvaluator2 {
+    public override long Run(int firstIndex, int secondIndex) {
       return 1;
     }
   };

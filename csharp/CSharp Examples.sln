@@ -1,15 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitsPheasants", "solution/RabbitsPheasants.csproj", "{E7AFEF5F-7580-45B0-A8F1-8B63CDF73A51}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitsPheasants", "solution\RabbitsPheasants.csproj", "{E7AFEF5F-7580-45B0-A8F1-8B63CDF73A51}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegerProgramming", "solution/IntegerProgramming.csproj", "{7E74C275-F822-4817-A940-3EA93C50FD57}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tsp", "solution\Tsp.csproj", "{7084D1DB-2554-4FE3-833E-16BD0082D177}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinearProgramming", "solution/LinearProgramming.csproj", "{FB4FF416-E290-4D00-AA03-3CF373AF1067}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegerProgramming", "solution\IntegerProgramming.csproj", "{7E74C275-F822-4817-A940-3EA93C50FD57}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Flow", "solution/Flow.csproj", "{206011C7-15C3-48A5-9AA2-F43064AB8FC4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinearProgramming", "solution\LinearProgramming.csproj", "{FB4FF416-E290-4D00-AA03-3CF373AF1067}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Knapsack", "solution/Knapsack.csproj", "{4AC717C5-D784-44F4-9B14-C0FF067D23C3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Flow", "solution\Flow.csproj", "{206011C7-15C3-48A5-9AA2-F43064AB8FC4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Knapsack", "solution\Knapsack.csproj", "{4AC717C5-D784-44F4-9B14-C0FF067D23C3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{E7AFEF5F-7580-45B0-A8F1-8B63CDF73A51}.Release|x64.Build.0 = Release|x64
 		{E7AFEF5F-7580-45B0-A8F1-8B63CDF73A51}.Release|x86.ActiveCfg = Release|x86
 		{E7AFEF5F-7580-45B0-A8F1-8B63CDF73A51}.Release|x86.Build.0 = Release|x86
+		{7084D1DB-2554-4FE3-833E-16BD0082D177}.Debug|x64.ActiveCfg = Debug|x64
+		{7084D1DB-2554-4FE3-833E-16BD0082D177}.Debug|x86.ActiveCfg = Debug|x86
+		{7084D1DB-2554-4FE3-833E-16BD0082D177}.Release|x64.ActiveCfg = Release|x64
+		{7084D1DB-2554-4FE3-833E-16BD0082D177}.Release|x86.ActiveCfg = Release|x86
 		{7E74C275-F822-4817-A940-3EA93C50FD57}.Debug|x64.ActiveCfg = Debug|x64
 		{7E74C275-F822-4817-A940-3EA93C50FD57}.Debug|x64.Build.0 = Debug|x64
 		{7E74C275-F822-4817-A940-3EA93C50FD57}.Debug|x86.ActiveCfg = Debug|x86

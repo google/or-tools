@@ -770,15 +770,15 @@ class LongResultCallback3 {
 
 // Typemaps for callbacks in csharp.
 %typemap(cstype) ResultCallback1<int64, int64>* "LongResultCallback1";
-%typemap(csin) ResultCallback1<int64, int64>* "SWIGTYPE_p_ResultCallback1Tlong_long_long_long_t.getCPtr($csinput.GetPermanentCallback())";
+%typemap(csin) ResultCallback1<int64, int64>* "SWIGTYPE_p_ResultCallback1T_long_long_long_long_t.getCPtr($csinput.GetPermanentCallback())";
 
 %typemap(cstype) ResultCallback2<int64, int64, int64>* "LongResultCallback2";
-%typemap(csin) ResultCallback2<int64, int64, int64>* "SWIGTYPE_p_ResultCallback2Tlong_long_long_long_long_long_t.getCPtr($csinput.GetPermanentCallback())";
+%typemap(csin) ResultCallback2<int64, int64, int64>* "SWIGTYPE_p_ResultCallback2T_long_long_long_long_long_long_t.getCPtr($csinput.GetPermanentCallback())";
 
 %typemap(cstype) ResultCallback3<int64, int64, int64, int64>*
 "LongResultCallback3";
 %typemap(csin) ResultCallback3<int64, int64, int64, int64>*
- "SWIGTYPE_p_ResultCallback3Tlong_long_long_long_long_long_long_long_t.getCPtr($csinput.GetPermanentCallback())";
+ "SWIGTYPE_p_ResultCallback3T_long_long_long_long_long_long_long_long_t.getCPtr($csinput.GetPermanentCallback())";
 
 CS_TYPEMAP_STDVECTOR(int64, int64, long)
 CS_TYPEMAP_STDVECTOR(int, int, int)

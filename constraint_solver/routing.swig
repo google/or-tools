@@ -218,30 +218,34 @@ class NodeIndexResultCallback2
 }
 #endif  // SWIGJAVA
 #ifdef SWIGCSHARP
+%module(directors="1") main
+%feature("director") NodeEvaluator2;
 %{
-class NodeIndexResultCallback2
-  : public ResultCallback2<int64,
-                           operations_research::RoutingModel::NodeIndex,
-                           operations_research::RoutingModel::NodeIndex> {
+namespace operations_research {
+class NodeEvaluator2 {
  public:
-  NodeIndexResultCallback2(ResultCallback2<int64, int64, int64>* callback)
-      : callback_(callback) {
-    CHECK_NOTNULL(callback_);
+  int64 RunAux(RoutingModel::NodeIndex i, RoutingModel::NodeIndex j) {
+    return Run(i.value(), j.value());
   }
-  virtual ~NodeIndexResultCallback2() {}
-  virtual bool IsRepeatable() const { return true; }
-  virtual int64 Run(operations_research::RoutingModel::NodeIndex i,
-                    operations_research::RoutingModel::NodeIndex j) {
-    return callback_->Run(i.value(), j.value());
+  virtual int64 Run(int i, int j) = 0;
+  RoutingModel::NodeEvaluator2* GetPermanentCallback() {
+    return NewPermanentCallback(this, &NodeEvaluator2::RunAux);
   }
-  operations_research::scoped_ptr<ResultCallback2<int64, int64, int64> > callback_;
+  virtual ~NodeEvaluator2() {}
 };
+}  // namespace operations_research
 %}
 
-%typemap(cstype) RoutingModel::NodeEvaluator2* "LongResultCallback2";
-%typemap(csin) RoutingModel::NodeEvaluator2* "SWIGTYPE_p_ResultCallback2Tlong_long_long_long_long_long_t.getCPtr($csinput.GetPermanentCallback())";
-#endif  // SWIGCSHARP
+class NodeEvaluator2 {
+ public:
+  virtual ~NodeEvaluator2();
+  virtual int64 Run(int i,int j) = 0;
+  operations_research::RoutingModel::NodeEvaluator2* GetPermanentCallback();
+};
 
+%typemap(cstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
+%typemap(csin) operations_research::RoutingModel::NodeEvaluator2* "SWIGTYPE_p_ResultCallback2T_long_long__RoutingModel_NodeIndex__RoutingModel_NodeIndex_t.getCPtr($csinput.GetPermanentCallback())";
+#endif  // SWIGCSHARP
 
 %ignore RoutingModel::AddVectorDimension(const int64* values,
                                          int64 capacity,
