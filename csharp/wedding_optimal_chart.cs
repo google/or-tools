@@ -63,7 +63,6 @@ public class WeddingOptimalChart
     int a = 10; // maximum number of guests a table can seat
     int b = 1;  // minimum number of people each guest knows at their table
 
-
     /*
     // Sligthly harder problem (also from the paper)
     int n = 5; // number of tables
@@ -153,11 +152,20 @@ public class WeddingOptimalChart
     // Constraints
     //
     foreach(int i in NRANGE) {
+
+      solver.Add((from j in MRANGE
+                  from k in MRANGE
+                  where j < k
+                  select ((solver.MakeIntConst(C[j,k]).IsGreater(0))*
+                          (tables[j].IsEqual(i))*
+                          (tables[k].IsEqual(i))).Var()
+                  ).ToArray().Sum() >= b); 
+
+
       IntVar tmp = (from j in MRANGE
                     select tables[j].IsEqual(i).Var()
                     ).ToArray().Sum().Var(); 
       solver.Add(tmp <= a);
-      solver.Add(tmp >= b);
 
     }
 
