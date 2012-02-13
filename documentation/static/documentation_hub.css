@@ -26,7 +26,7 @@ a:hover { color: #0000ff;}
 }
 
 h1 {
-   font-size:2.2em;
+   font-size:1.8em;
    font-weight:bold;
 }
 
@@ -43,6 +43,7 @@ h2 {
 }
 .description {
     margin-top:10px;
+    font-size:1.2em;
 }
 .toolbar {
     margin-top:20px;
