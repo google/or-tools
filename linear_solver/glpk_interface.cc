@@ -247,7 +247,7 @@ void GLPKInterface::WriteModel(const string& filename) {
   if (HasSuffixString(filename, ".lp")) {
     glp_write_lp(lp_, NULL, filename.c_str());
   } else {
-    glp_write_mps(lp_, GLP_MPS_DECK, NULL, filename.c_str());
+    glp_write_mps(lp_, GLP_MPS_FILE, NULL, filename.c_str());
   }
 }
 
