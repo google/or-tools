@@ -1,5 +1,5 @@
 # SVN tags of dependencies to checkout.
-GFLAGS_TAG = 72 # version 1.7
+GFLAGS_TAG = 76 # version 2.0
 PROTOBUF_TAG = 391 # version 2.4.1
 GOOGLE_APPUTILS_TAG = 11 # trunk
 GOOGLE_SPARSEHASH_TAG = 105 # trunk
@@ -64,7 +64,7 @@ build_third_party: \
 	install_scip \
 	install_mono
 
-# Install google-gflags.
+# Install gflags.
 install_gflags: dependencies/install/bin/gflags_completions.sh
 
 dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags/Makefile
@@ -77,7 +77,7 @@ dependencies/sources/gflags/configure: dependencies/sources/gflags/autogen.sh
 	cd dependencies/sources/gflags && ./autogen.sh
 
 dependencies/sources/gflags/autogen.sh:
-	svn co http://google-gflags.googlecode.com/svn/trunk/ -r $(GFLAGS_TAG) dependencies/sources/gflags
+	svn co http://gflags.googlecode.com/svn/trunk/ -r $(GFLAGS_TAG) dependencies/sources/gflags
 
 # Install protocol buffers.
 install_protobuf: dependencies/install/bin/protoc

@@ -1,5 +1,5 @@
 # SVN tags of dependencies to checkout.
-GFLAGS_TAG = 72 # version 1.7
+GFLAGS_TAG = 76 # version 2.0
 PROTOBUF_TAG = 391 # version 2.4.1
 GOOGLE_APPUTILS_TAG = 11 # trunk
 GOOGLE_SPARSEHASH_TAG = 103 # trunk
@@ -113,7 +113,7 @@ dependencies\sources\zlib-1.2.6\zlib.h: dependencies\archives\zlib126.zip
 dependencies\archives\zlib126.zip:
 	tools\wget -P dependencies\archives http://zlib.net/zlib126.zip
 
-# Install google-gflags.
+# Install gflags.
 install_gflags: dependencies\install\lib\libgflags.lib dependencies\install\include\gflags\gflags.h
 
 dependencies\install\lib\libgflags.lib: dependencies\sources\gflags\autogen.sh
@@ -131,7 +131,7 @@ endif
 dependencies\sources\gflags\src\windows\gflags\gflags.h: dependencies\sources\gflags\autogen.sh
 
 dependencies\sources\gflags\autogen.sh:
-	svn co http://google-gflags.googlecode.com/svn/trunk/ -r $(GFLAGS_TAG) dependencies/sources/gflags
+	svn co http://gflags.googlecode.com/svn/trunk/ -r $(GFLAGS_TAG) dependencies/sources/gflags
 
 # Install protocol buffers.
 install_protobuf: dependencies\install\bin\protoc.exe  dependencies\install\include\google\protobuf\message.h
