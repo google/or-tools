@@ -27,104 +27,7 @@
 
 namespace operations_research {
 namespace {
-
-class ArgumentHolder {
- public:
-  struct Matrix {
-    Matrix() : values(NULL), rows(0), columns(0) {}
-    // We do not take ownership as the data will only be used temporarly.
-    Matrix(const int64 * const * v, int r, int c)
-        : values(v), rows(r), columns(c) {}
-    const int64* const * values;
-    int rows;
-    int columns;
-  };
-
-  const string& type_name() const {
-    return type_name_;
-  }
-
-  void set_type_name(const string& type_name) {
-    type_name_ = type_name;
-  }
-
-  void SetIntegerMatrixArgument(const string& arg_name,
-                                const int64* const * const values,
-                                int rows,
-                                int columns) {
-    matrix_argument_[arg_name] = Matrix(values, rows, columns);
-  }
-
-  void SetIntegerExpressionArgument(const string& arg_name,
-                                    const IntExpr* const expr) {
-    integer_expression_argument_[arg_name] = expr;
-  }
-
-  void SetIntegerVariableArrayArgument(const string& arg_name,
-                                       const IntVar* const * const vars,
-                                       int size) {
-    for (int i = 0; i < size; ++i) {
-      integer_variable_array_argument_[arg_name].push_back(vars[i]);
-    }
-  }
-
-  void SetIntervalArgument(const string& arg_name,
-                           const IntervalVar* const var) {
-    interval_argument_[arg_name] = var;
-  }
-
-  void SetIntervalArrayArgument(const string& arg_name,
-                                const IntervalVar* const * const vars,
-                                int size) {
-    for (int i = 0; i < size; ++i) {
-      interval_array_argument_[arg_name].push_back(vars[i]);
-    }
-  }
-
-  void SetSequenceArgument(const string& arg_name,
-                           const SequenceVar* const var) {
-    sequence_argument_[arg_name] = var;
-  }
-
-  void SetSequenceArrayArgument(const string& arg_name,
-                                const SequenceVar* const * const vars,
-                                int size) {
-    for (int i = 0; i < size; ++i) {
-      sequence_array_argument_[arg_name].push_back(vars[i]);
-    }
-  }
-
-  bool HasIntegerExpressionArgument(const string& arg_name) const {
-    return ContainsKey(integer_expression_argument_, arg_name);
-  }
-
-  const IntExpr* FindIntegerExpressionArgumentOrDie(
-      const string& arg_name) const {
-    return FindOrDie(integer_expression_argument_, arg_name);
-  }
-
-  const std::vector<const IntVar*>& FindIntegerVariableArrayArgumentOrDie(
-      const string& arg_name) {
-    return FindOrDie(integer_variable_array_argument_, arg_name);
-  }
-
-  const Matrix& FindIntegerMatrixArgumentOrDie(const string& arg_name) const {
-    return FindOrDie(matrix_argument_, arg_name);
-  }
-
- private:
-  string type_name_;
-  hash_map<string, const IntExpr*> integer_expression_argument_;
-  hash_map<string, const IntervalVar*> interval_argument_;
-  hash_map<string, const SequenceVar*> sequence_argument_;
-  hash_map<string,
-           std::vector<const IntVar*> > integer_variable_array_argument_;
-  hash_map<string, std::vector<const IntervalVar*> > interval_array_argument_;
-  hash_map<string, std::vector<const SequenceVar*> > sequence_array_argument_;
-  hash_map<string, Matrix> matrix_argument_;
-};
-
-class CollectVariablesVisitor : public ModelVisitor {
+class CollectVariablesVisitor : public ModelParser {
  public:
   CollectVariablesVisitor(std::vector<IntVar*>* const primary_integer_variables,
                           std::vector<IntVar*>* const secondary_integer_variables,
@@ -135,14 +38,8 @@ class CollectVariablesVisitor : public ModelVisitor {
         sequences_(sequence_variables),
         intervals_(interval_variables) {}
 
-  virtual ~CollectVariablesVisitor() {
-    CHECK(holders_.empty());
-  }
+  virtual ~CollectVariablesVisitor() {}
 
-  // Header/footers.
-  virtual void BeginVisitModel(const string& solver_name) {
-    PushArgumentHolder();
-  }
 
   virtual void EndVisitModel(const string& solver_name) {
     PopArgumentHolder();
@@ -150,11 +47,6 @@ class CollectVariablesVisitor : public ModelVisitor {
     secondaries_->assign(secondary_set_.begin(), secondary_set_.end());
     intervals_->assign(interval_set_.begin(), interval_set_.end());
     sequences_->assign(sequence_set_.begin(), sequence_set_.end());
-  }
-
-  virtual void BeginVisitConstraint(const string& type_name,
-                                    const Constraint* const constraint) {
-    PushArgumentHolder();
   }
 
   virtual void EndVisitConstraint(const string& type_name,
@@ -169,22 +61,22 @@ class CollectVariablesVisitor : public ModelVisitor {
         type_name.compare(ModelVisitor::kIsLessOrEqual) == 0) {
       IntExpr* const target_expr =
           const_cast<IntExpr*>(
-              top()->FindIntegerExpressionArgumentOrDie(
+              Top()->FindIntegerExpressionArgumentOrDie(
                   ModelVisitor::kTargetArgument));
       IntVar* const target_var = target_expr->Var();
       IgnoreIntegerVariable(target_var);
     } else if (type_name.compare(ModelVisitor::kCountEqual) == 0 &&
-               top()->HasIntegerExpressionArgument(
+               Top()->HasIntegerExpressionArgument(
                    ModelVisitor::kCountArgument)) {
       IntExpr* const count_expr =
           const_cast<IntExpr*>(
-              top()->FindIntegerExpressionArgumentOrDie(
+              Top()->FindIntegerExpressionArgumentOrDie(
                   ModelVisitor::kCountArgument));
       IntVar* const count_var = count_expr->Var();
       IgnoreIntegerVariable(count_var);
     } else if (type_name.compare(ModelVisitor::kAllowedAssignments) == 0) {
       const ArgumentHolder::Matrix& matrix =
-          top()->FindIntegerMatrixArgumentOrDie(ModelVisitor::kTuplesArgument);
+          Top()->FindIntegerMatrixArgumentOrDie(ModelVisitor::kTuplesArgument);
       std::vector<hash_set<int> > counters(matrix.columns);
       for (int i = 0; i < matrix.rows; ++i) {
         for (int j = 0; j < matrix.columns; ++j) {
@@ -194,7 +86,7 @@ class CollectVariablesVisitor : public ModelVisitor {
       for (int j = 0; j < matrix.columns; ++j) {
         if (counters[j].size() == matrix.rows) {
           const std::vector<const IntVar*>& vars =
-              top()->FindIntegerVariableArrayArgumentOrDie(
+              Top()->FindIntegerVariableArrayArgumentOrDie(
                   ModelVisitor::kVarsArgument);
           for (int k = 0; k < matrix.columns; ++k) {
             if (j != k) {
@@ -206,36 +98,26 @@ class CollectVariablesVisitor : public ModelVisitor {
       }
     } else if (type_name.compare(ModelVisitor::kNoCycle) == 0) {
       const std::vector<const IntVar*>& vars =
-          top()->FindIntegerVariableArrayArgumentOrDie(
+          Top()->FindIntegerVariableArrayArgumentOrDie(
               ModelVisitor::kActiveArgument);
       for (int i = 0; i < vars.size(); ++i) {
         IgnoreIntegerVariable(const_cast<IntVar*>(vars[i]));
       }
     } else if (type_name.compare(ModelVisitor::kPathCumul) == 0) {
       const std::vector<const IntVar*>& vars =
-          top()->FindIntegerVariableArrayArgumentOrDie(
+          Top()->FindIntegerVariableArrayArgumentOrDie(
               ModelVisitor::kActiveArgument);
       for (int i = 0; i < vars.size(); ++i) {
         IgnoreIntegerVariable(const_cast<IntVar*>(vars[i]));
       }
     } else if (type_name.compare(ModelVisitor::kDistribute) == 0) {
       const std::vector<const IntVar*>& vars =
-          top()->FindIntegerVariableArrayArgumentOrDie(
+          Top()->FindIntegerVariableArrayArgumentOrDie(
               ModelVisitor::kCardsArgument);
       for (int i = 0; i < vars.size(); ++i) {
         IgnoreIntegerVariable(const_cast<IntVar*>(vars[i]));
       }
     }
-    PopArgumentHolder();
-  }
-
-  virtual void BeginVisitIntegerExpression(const string& type_name,
-                                           const IntExpr* const expr) {
-    PushArgumentHolder();
-  }
-
-  virtual void EndVisitIntegerExpression(const string& type_name,
-                                         const IntExpr* const expr) {
     PopArgumentHolder();
   }
 
@@ -293,80 +175,7 @@ class CollectVariablesVisitor : public ModelVisitor {
     }
   }
 
-  // Integer arguments
-  virtual void VisitIntegerMatrixArgument(const string& arg_name,
-                                          const int64* const * const values,
-                                          int rows,
-                                          int columns) {
-    top()->SetIntegerMatrixArgument(arg_name, values, rows, columns);
-  }
-
-  // Variables.
-  virtual void VisitIntegerExpressionArgument(
-      const string& arg_name,
-      const IntExpr* const argument) {
-    top()->SetIntegerExpressionArgument(arg_name, argument);
-    argument->Accept(this);
-  }
-
-  virtual void VisitIntegerVariableArrayArgument(
-      const string& arg_name,
-      const IntVar* const * arguments,
-      int size) {
-    top()->SetIntegerVariableArrayArgument(arg_name, arguments, size);
-    for (int i = 0; i < size; ++i) {
-      arguments[i]->Accept(this);
-    }
-  }
-
-  // Visit interval argument.
-  virtual void VisitIntervalArgument(const string& arg_name,
-                                     const IntervalVar* const argument) {
-    top()->SetIntervalArgument(arg_name, argument);
-    argument->Accept(this);
-  }
-
-  virtual void VisitIntervalArrayArgument(const string& arg_name,
-                                          const IntervalVar* const * arguments,
-                                          int size) {
-    top()->SetIntervalArrayArgument(arg_name, arguments, size);
-    for (int i = 0; i < size; ++i) {
-      arguments[i]->Accept(this);
-    }
-  }
-
-  // Visit sequence argument.
-  virtual void VisitSequenceArgument(const string& arg_name,
-                                     const SequenceVar* const argument) {
-    top()->SetSequenceArgument(arg_name, argument);
-    argument->Accept(this);
-  }
-
-  virtual void VisitSequenceArrayArgument(const string& arg_name,
-                                          const SequenceVar* const * arguments,
-                                          int size) {
-    top()->SetSequenceArrayArgument(arg_name, arguments, size);
-    for (int i = 0; i < size; ++i) {
-      arguments[i]->Accept(this);
-    }
-  }
-
  private:
-  void PushArgumentHolder() {
-    holders_.push_back(new ArgumentHolder);
-  }
-
-  void PopArgumentHolder() {
-    CHECK(!holders_.empty());
-    delete holders_.back();
-    holders_.pop_back();
-  }
-
-  ArgumentHolder* top() const {
-    CHECK(!holders_.empty());
-    return holders_.back();
-  }
-
   void IgnoreIntegerVariable(IntVar* const var) {
     primary_set_.erase(var);
     secondary_set_.erase(var);
@@ -386,7 +195,6 @@ class CollectVariablesVisitor : public ModelVisitor {
   hash_set<IntVar*> ignored_set_;
   hash_set<SequenceVar*> sequence_set_;
   hash_set<IntervalVar*> interval_set_;
-  std::vector<ArgumentHolder*> holders_;
 };
 }  // namespace
 

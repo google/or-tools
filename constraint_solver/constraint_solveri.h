@@ -1617,6 +1617,154 @@ class DependencyGraph : public BaseObject {
   std::vector<DependencyGraphNode*> managed_nodes_;
 };
 #endif
+
+// Argument Holder: useful when visiting a model.
+#if !defined(SWIG)
+class ArgumentHolder {
+ public:
+  // Internal structure to store an integer matrix.
+  struct Matrix {
+    Matrix() : values(NULL), rows(0), columns(0) {}
+    // We do not take ownership as the data will only be used temporarly.
+    Matrix(const int64 * const * v, int r, int c)
+        : values(v), rows(r), columns(c) {}
+    const int64* const * values;
+    int rows;
+    int columns;
+  };
+
+  // Type of the argument.
+  const string& TypeName() const;
+  void SetTypeName(const string& type_name);
+
+  // Setters.
+  void SetIntegerArgument(const string& arg_name, int64 value);
+  void SetIntegerArrayArgument(const string& arg_name,
+                               const int64* const values,
+                               int size);
+  void SetIntegerMatrixArgument(const string& arg_name,
+                                const int64* const * const values,
+                                int rows,
+                                int columns);
+  void SetIntegerExpressionArgument(const string& arg_name,
+                                    const IntExpr* const expr);
+  void SetIntegerVariableArrayArgument(const string& arg_name,
+                                       const IntVar* const * const vars,
+                                       int size);
+  void SetIntervalArgument(const string& arg_name,
+                           const IntervalVar* const var);
+  void SetIntervalArrayArgument(const string& arg_name,
+                                const IntervalVar* const * const vars,
+                                int size);
+  void SetSequenceArgument(const string& arg_name,
+                           const SequenceVar* const var);
+  void SetSequenceArrayArgument(const string& arg_name,
+                                const SequenceVar* const * const vars,
+                                int size);
+
+  // Checks if arguments exist.
+  bool HasIntegerExpressionArgument(const string& arg_name) const;
+  bool HasIntegerVariableArrayArgument(const string& arg_name) const;
+
+  // Getters.
+  int64 FindIntegerArgumentWithDefault(
+      const string& arg_name,
+      int64 def) const;
+  int64 FindIntegerArgumentOrDie(const string& arg_name) const;
+  const std::vector<int64>& FindIntegerArrayArgumentOrDie(
+      const string& arg_name) const;
+  const Matrix& FindIntegerMatrixArgumentOrDie(const string& arg_name) const;
+
+  const IntExpr* FindIntegerExpressionArgumentOrDie(
+      const string& arg_name) const;
+  const std::vector<const IntVar*>& FindIntegerVariableArrayArgumentOrDie(
+      const string& arg_name) const;
+
+ private:
+  string type_name_;
+  hash_map<string, int64> integer_argument_;
+  hash_map<string, std::vector<int64> > integer_array_argument_;
+  hash_map<string, Matrix> matrix_argument_;
+  hash_map<string, const IntExpr*> integer_expression_argument_;
+  hash_map<string, const IntervalVar*> interval_argument_;
+  hash_map<string, const SequenceVar*> sequence_argument_;
+  hash_map<string, std::vector<const IntVar*> > integer_variable_array_argument_;
+  hash_map<string, std::vector<const IntervalVar*> > interval_array_argument_;
+  hash_map<string, std::vector<const SequenceVar*> > sequence_array_argument_;
+};
+
+// Model Parser
+
+class ModelParser : public ModelVisitor {
+ public:
+  ModelParser();
+
+  virtual ~ModelParser();
+
+  // Header/footers.
+  virtual void BeginVisitModel(const string& solver_name);
+  virtual void EndVisitModel(const string& solver_name);
+  virtual void BeginVisitConstraint(const string& type_name,
+                                    const Constraint* const constraint);
+  virtual void EndVisitConstraint(const string& type_name,
+                                  const Constraint* const constraint);
+  virtual void BeginVisitIntegerExpression(const string& type_name,
+                                           const IntExpr* const expr);
+  virtual void EndVisitIntegerExpression(const string& type_name,
+                                         const IntExpr* const expr);
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const IntExpr* const delegate);
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const string& operation,
+                                    int64 value,
+                                    const IntVar* const delegate);
+  virtual void VisitIntervalVariable(const IntervalVar* const variable,
+                                     const string& operation,
+                                     const IntervalVar* const delegate);
+  virtual void VisitIntervalVariable(const IntervalVar* const variable,
+                                     const string& operation,
+                                     const IntervalVar* const * delegates,
+                                     int size);
+  virtual void VisitSequenceVariable(const SequenceVar* const variable);
+  // Integer arguments
+  virtual void VisitIntegerArgument(const string& arg_name, int64 value);
+  virtual void VisitIntegerArrayArgument(const string& arg_name,
+                                         const int64* const values,
+                                         int size);
+  virtual void VisitIntegerMatrixArgument(const string& arg_name,
+                                          const int64* const * const values,
+                                          int rows,
+                                          int columns);
+  // Variables.
+  virtual void VisitIntegerExpressionArgument(
+      const string& arg_name,
+      const IntExpr* const argument);
+  virtual void VisitIntegerVariableArrayArgument(
+      const string& arg_name,
+      const IntVar* const * arguments,
+      int size);
+  // Visit interval argument.
+  virtual void VisitIntervalArgument(const string& arg_name,
+                                     const IntervalVar* const argument);
+  virtual void VisitIntervalArrayArgument(const string& arg_name,
+                                          const IntervalVar* const * arguments,
+                                          int size);
+  // Visit sequence argument.
+  virtual void VisitSequenceArgument(const string& arg_name,
+                                     const SequenceVar* const argument);
+  virtual void VisitSequenceArrayArgument(const string& arg_name,
+                                          const SequenceVar* const * arguments,
+                                          int size);
+
+ protected:
+  void PushArgumentHolder();
+  void PopArgumentHolder();
+  ArgumentHolder* Top() const;
+
+ private:
+  std::vector<ArgumentHolder*> holders_;
+};
+#endif  // SWIG
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_

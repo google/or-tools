@@ -47,6 +47,22 @@ DEFINE_int32(cp_local_search_tsp_lns_size, 10,
 
 namespace operations_research {
 
+// Utility methods to ensure the communication between local search and the
+// search.
+
+// Returns true if a local optimum has been reached and that it cannot be
+// improved.
+bool LocalOptimumReached(Search* const search);
+
+// Returns true if the search accepts the delta (actually checking this by
+// calling AcceptDelta on the monitors of the search).
+bool AcceptDelta(Search* const search,
+                 Assignment* delta,
+                 Assignment* deltadelta);
+
+// Notifies the search that a neighbor has been accepted by local search.
+void AcceptNeighbor(Search* const search);
+
 // ----- Base operator class for operators manipulating IntVars -----
 
 IntVarLocalSearchOperator::IntVarLocalSearchOperator()
@@ -2830,7 +2846,8 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
         // to resync filters on non-incremental (empty) moves.
         // TODO(user): Don't call both if no filter is incremental and one
         // of them returned false.
-        const bool mh_filter = solver->AcceptDelta(delta, deltadelta);
+        const bool mh_filter =
+            AcceptDelta(solver->ParentSearch(), delta, deltadelta);
         const bool move_filter = FilterAccept(delta, deltadelta);
         if (mh_filter && move_filter) {
           solver->filtered_neighbors_ += 1;
@@ -2845,7 +2862,7 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
         }
       } else {
         if (neighbor_found_) {
-          solver->AcceptNeighbor();
+          AcceptNeighbor(solver->ParentSearch());
           // Keeping the code in case a performance problem forces us to
           // use the old code with a zero test on pool_.
           //          reference_assignment_->Copy(assignment_);
@@ -3208,7 +3225,7 @@ Decision* LocalSearch::Next(Solver* const solver) {
   const int state = decision->state();
   switch (state) {
     case NestedSolveDecision::DECISION_FAILED: {
-      if (!solver->LocalOptimum()) {
+      if (!LocalOptimumReached(solver->ActiveSearch())) {
         nested_decision_index_ = -1;  // Stop the search
       }
       solver->Fail();

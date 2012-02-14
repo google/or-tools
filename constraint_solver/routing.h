@@ -198,7 +198,11 @@ class RoutingModel {
     ROUTING_EVALUATOR_STRATEGY,
     // Make all node inactive. Only finds a solution if nodes are optional (are
     // element of a disjunction constraint with a finite penalty cost).
-    ROUTING_ALL_UNPERFORMED
+    ROUTING_ALL_UNPERFORMED,
+    // Iteratively build a solution by inserting nodes at their cheapest (best)
+    // position. As of 2/2012, only works on models with optional nodes
+    // (with finite penalty costs).
+    ROUTING_BEST_INSERTION
   };
 
   // Metaheuristics used to guide the search. Apart greedy descent, they will

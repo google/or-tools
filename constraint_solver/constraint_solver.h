@@ -2665,12 +2665,6 @@ class Solver {
       Solver::LocalSearchFilterBound filter_enum,
       Solver::LocalSearchOperation op_enum);
 
-  // Ensures communication of local optima between monitors and search
-  bool LocalOptimum();
-  // Checks with monitors if delta is acceptable
-  bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
-  // Ensures communication of accepted neighbors between monitors and search
-  void AcceptNeighbor();
   // Performs PeriodicCheck on the top-level search; can be called from a nested
   // solve to check top-level limits for instance.
   void TopPeriodicCheck();
@@ -2880,6 +2874,14 @@ class Solver {
   // top of the stack.
   Search* TopLevelSearch() const {
     return searches_.at(1);
+  }
+  // Returns the Search object which is the parent of the active search, i.e.
+  // the search below the top of the stack. If the active search is at the
+  // bottom of the stack, returns the active search.
+  Search* ParentSearch() const {
+    const size_t search_size = searches_.size();
+    DCHECK_GT(search_size, 1);
+    return searches_[search_size - 2];
   }
 
   // Naming

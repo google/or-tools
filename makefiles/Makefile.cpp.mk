@@ -171,7 +171,8 @@ CONSTRAINT_SOLVER_LIB_OS = \
 	objs/timetabling.$O\
 	objs/trace.$O\
 	objs/tree_monitor.$O\
-	objs/utilities.$O
+	objs/utilities.$O \
+	objs/visitor.$O
 
 objs/alldiff_cst.$O:constraint_solver/alldiff_cst.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/alldiff_cst.cc $(OBJOUT)objs/alldiff_cst.$O
@@ -294,6 +295,9 @@ objs/tree_monitor.$O:constraint_solver/tree_monitor.cc
 
 objs/utilities.$O:constraint_solver/utilities.cc
 	$(CCC) $(CFLAGS) -c constraint_solver/utilities.cc $(OBJOUT)objs/utilities.$O
+
+objs/visitor.$O:constraint_solver/visitor.cc
+	$(CCC) $(CFLAGS) -c constraint_solver/visitor.cc $(OBJOUT)objs/visitor.$O
 
 $(LIBPREFIX)constraint_solver.$(LIBSUFFIX): $(CONSTRAINT_SOLVER_LIB_OS)
 	$(LINKCMD) $(LINKPREFIX)$(LIBPREFIX)constraint_solver.$(LIBSUFFIX) $(CONSTRAINT_SOLVER_LIB_OS)

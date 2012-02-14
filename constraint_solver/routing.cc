@@ -1186,6 +1186,8 @@ RoutingModel::GetSelectedFirstSolutionStrategy() const {
     return ROUTING_PATH_CHEAPEST_ARC;
   } else if (FLAGS_routing_first_solution.compare("AllUnperformed") == 0) {
     return ROUTING_ALL_UNPERFORMED;
+  } else if (FLAGS_routing_first_solution.compare("BestInsertion") == 0) {
+    return ROUTING_BEST_INSERTION;
   }
   return first_solution_strategy_;
 }
@@ -1963,19 +1965,32 @@ void RoutingModel::SetUpSearch() {
                                   kint64max);
 
   std::vector<LocalSearchOperator*> operators = extra_operators_;
+  LocalSearchOperator* insertion_operator = NULL;
   if (pickup_delivery_pairs_.size() > 0) {
     const IntVar* const* vehicle_vars =
         homogeneous_costs_ ? NULL : vehicle_vars_.get();
-    operators.push_back(MakePairActive(solver_.get(),
-                                       nexts_.get(),
-                                       vehicle_vars,
-                                       pickup_delivery_pairs_,
-                                       size));
+    insertion_operator = MakePairActive(solver_.get(),
+                                        nexts_.get(),
+                                        vehicle_vars,
+                                        pickup_delivery_pairs_,
+                                        size);
+    operators.push_back(insertion_operator);
     operators.push_back(MakePairRelocate(solver_.get(),
                                          nexts_.get(),
                                          vehicle_vars,
                                          pickup_delivery_pairs_,
                                          size));
+  } else {
+    if (homogeneous_costs_) {
+      insertion_operator = solver_->MakeOperator(nexts_.get(),
+                                                 size,
+                                                 Solver::MAKEACTIVE);
+    } else {
+      insertion_operator = solver_->MakeOperator(nexts_.get(),
+                                                 vehicle_vars_.get(),
+                                                 size,
+                                                 Solver::MAKEACTIVE);
+    }
   }
   if (vehicles_ > 1) {
     if (!FLAGS_routing_no_relocate) {
@@ -2034,62 +2049,6 @@ void RoutingModel::SetUpSearch() {
                          Solver::CHOOSE_FIRST_UNBOUND,
                          Solver::ASSIGN_MIN_VALUE);
 
-  DecisionBuilder* first_solution = finalize_solution;
-  switch (GetSelectedFirstSolutionStrategy()) {
-    case ROUTING_GLOBAL_CHEAPEST_ARC:
-      LG << "Using ROUTING_GLOBAL_CHEAPEST_ARC";
-      first_solution =
-          solver_->MakePhase(nexts_.get(), size,
-                             NewPermanentCallback(
-                                 this,
-                                 &RoutingModel::GetFirstSolutionCost),
-                             Solver::CHOOSE_STATIC_GLOBAL_BEST);
-      break;
-    case ROUTING_LOCAL_CHEAPEST_ARC:
-      LG << "Using ROUTING_LOCAL_CHEAPEST_ARC";
-      first_solution =
-          solver_->MakePhase(nexts_.get(), size,
-                             Solver::CHOOSE_FIRST_UNBOUND,
-                             NewPermanentCallback(
-                                 this,
-                                 &RoutingModel::GetFirstSolutionCost));
-      break;
-    case ROUTING_PATH_CHEAPEST_ARC:
-      LG << "Using ROUTING_PATH_CHEAPEST_ARC";
-      first_solution =
-          solver_->MakePhase(nexts_.get(), size,
-                             Solver::CHOOSE_PATH,
-                             NewPermanentCallback(
-                                 this,
-                                 &RoutingModel::GetFirstSolutionCost));
-      break;
-    case ROUTING_EVALUATOR_STRATEGY:
-      LG << "Using ROUTING_EVALUATOR_STRATEGY";
-      CHECK(first_solution_evaluator_ != NULL);
-      first_solution =
-          solver_->MakePhase(nexts_.get(), size,
-                             Solver::CHOOSE_PATH,
-                             NewPermanentCallback(
-                                 first_solution_evaluator_.get(),
-                                 &Solver::IndexEvaluator2::Run));
-      break;
-    case ROUTING_DEFAULT_STRATEGY:
-      LG << "Using DEFAULT";
-      break;
-    case ROUTING_ALL_UNPERFORMED:
-      first_solution =
-          solver_->RevAlloc(new AllUnperformed(this));
-      break;
-    default:
-      LOG(WARNING) << "Unknown argument for routing_first_solution, "
-          "using default";
-  }
-  if (FLAGS_routing_use_first_solution_dive) {
-    DecisionBuilder* apply =
-        solver_->MakeApplyBranchSelector(NewPermanentCallback(&LeftDive));
-    first_solution = solver_->Compose(apply, first_solution);
-  }
-
   std::vector<LocalSearchFilter*> filters;
   if (FLAGS_routing_use_objective_filter) {
     if (homogeneous_costs_) {
@@ -2144,6 +2103,92 @@ void RoutingModel::SetUpSearch() {
           solver_->MakeSolveOnce(finalize_solution, lns_limit_),
           ls_limit_,
           filters);
+
+  DecisionBuilder* first_solution = finalize_solution;
+  switch (GetSelectedFirstSolutionStrategy()) {
+    case ROUTING_GLOBAL_CHEAPEST_ARC:
+      LG << "Using ROUTING_GLOBAL_CHEAPEST_ARC";
+      first_solution =
+          solver_->MakePhase(nexts_.get(), size,
+                             NewPermanentCallback(
+                                 this,
+                                 &RoutingModel::GetFirstSolutionCost),
+                             Solver::CHOOSE_STATIC_GLOBAL_BEST);
+      break;
+    case ROUTING_LOCAL_CHEAPEST_ARC:
+      LG << "Using ROUTING_LOCAL_CHEAPEST_ARC";
+      first_solution =
+          solver_->MakePhase(nexts_.get(), size,
+                             Solver::CHOOSE_FIRST_UNBOUND,
+                             NewPermanentCallback(
+                                 this,
+                                 &RoutingModel::GetFirstSolutionCost));
+      break;
+    case ROUTING_PATH_CHEAPEST_ARC:
+      LG << "Using ROUTING_PATH_CHEAPEST_ARC";
+      first_solution =
+          solver_->MakePhase(nexts_.get(), size,
+                             Solver::CHOOSE_PATH,
+                             NewPermanentCallback(
+                                 this,
+                                 &RoutingModel::GetFirstSolutionCost));
+      break;
+    case ROUTING_EVALUATOR_STRATEGY:
+      LG << "Using ROUTING_EVALUATOR_STRATEGY";
+      CHECK(first_solution_evaluator_ != NULL);
+      first_solution =
+          solver_->MakePhase(nexts_.get(), size,
+                             Solver::CHOOSE_PATH,
+                             NewPermanentCallback(
+                                 first_solution_evaluator_.get(),
+                                 &Solver::IndexEvaluator2::Run));
+      break;
+    case ROUTING_DEFAULT_STRATEGY:
+      LG << "Using DEFAULT";
+      break;
+    case ROUTING_ALL_UNPERFORMED:
+      first_solution =
+          solver_->RevAlloc(new AllUnperformed(this));
+      break;
+    case ROUTING_BEST_INSERTION: {
+      LG << "Using ROUTING_BEST_INSERTION";
+      SearchLimit* const ls_limit = solver_->MakeLimit(time_limit_ms_,
+                                                       kint64max,
+                                                       kint64max,
+                                                       kint64max,
+                                                       true);
+      DecisionBuilder* const finalize =
+          solver_->MakeSolveOnce(finalize_solution, lns_limit_);
+      LocalSearchPhaseParameters* const insertion_parameters =
+          solver_->MakeLocalSearchPhaseParameters(
+              insertion_operator,
+              finalize,
+              ls_limit,
+              filters);
+      std::vector<SearchMonitor*> monitors;
+      monitors.push_back(limit_);
+      first_solution = solver_->MakeNestedOptimize(
+          solver_->MakeLocalSearchPhase(
+              nexts_.get(),
+              size,
+              solver_->RevAlloc(new AllUnperformed(this)),
+              insertion_parameters),
+          assignment_,
+          false,
+          FLAGS_routing_optimization_step,
+          monitors);
+      first_solution = solver_->Compose(first_solution, finalize);
+      break;
+    }
+    default:
+      LOG(WARNING) << "Unknown argument for routing_first_solution, "
+          "using default";
+  }
+  if (FLAGS_routing_use_first_solution_dive) {
+    DecisionBuilder* apply =
+        solver_->MakeApplyBranchSelector(NewPermanentCallback(&LeftDive));
+    first_solution = solver_->Compose(apply, first_solution);
+  }
 
   if (FLAGS_routing_dfs) {
     solve_db_ = finalize_solution;

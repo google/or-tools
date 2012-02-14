@@ -636,7 +636,7 @@ class SecondPassVisitor : public ModelVisitor {
       const string& arg_name,
       const IntExpr* const argument) {
     top()->set_integer_expression_argument(arg_name,
-                                           FindExpressionIndex(argument));
+                                           FindExpressionIndexOrDie(argument));
   }
 
   virtual void VisitIntegerVariableArrayArgument(
@@ -645,7 +645,7 @@ class SecondPassVisitor : public ModelVisitor {
       int size) {
     std::vector<int> indices;
     for (int i = 0; i < size; ++i) {
-      indices.push_back(FindExpressionIndex(arguments[i]));
+      indices.push_back(FindExpressionIndexOrDie(arguments[i]));
     }
     top()->set_integer_variable_array_argument(arg_name,
                                                indices.data(),
@@ -655,7 +655,7 @@ class SecondPassVisitor : public ModelVisitor {
   virtual void VisitIntervalArgument(
       const string& arg_name,
       const IntervalVar* argument) {
-    top()->set_interval_argument(arg_name, FindIntervalIndex(argument));
+    top()->set_interval_argument(arg_name, FindIntervalIndexOrDie(argument));
   }
 
   virtual void VisitIntervalArrayArgument(
@@ -664,7 +664,7 @@ class SecondPassVisitor : public ModelVisitor {
       int size) {
     std::vector<int> indices;
     for (int i = 0; i < size; ++i) {
-      indices.push_back(FindIntervalIndex(arguments[i]));
+      indices.push_back(FindIntervalIndexOrDie(arguments[i]));
     }
     top()->set_interval_array_argument(arg_name,
                                        indices.data(),
@@ -674,7 +674,7 @@ class SecondPassVisitor : public ModelVisitor {
   virtual void VisitSequenceArgument(
       const string& arg_name,
       const SequenceVar* argument) {
-    top()->set_sequence_argument(arg_name, FindSequenceIndex(argument));
+    top()->set_sequence_argument(arg_name, FindSequenceIndexOrDie(argument));
   }
 
   virtual void VisitSequenceArrayArgument(
@@ -683,7 +683,7 @@ class SecondPassVisitor : public ModelVisitor {
       int size) {
     std::vector<int> indices;
     for (int i = 0; i < size; ++i) {
-      indices.push_back(FindSequenceIndex(arguments[i]));
+      indices.push_back(FindSequenceIndexOrDie(arguments[i]));
     }
     top()->set_sequence_array_argument(arg_name,
                                        indices.data(),
@@ -701,7 +701,8 @@ class SecondPassVisitor : public ModelVisitor {
       CPArgumentProto* const sub_proto = var_proto->add_arguments();
       sub_proto->set_argument_index(
           TagIndex(ModelVisitor::kExpressionArgument));
-      sub_proto->set_integer_expression_index(FindExpressionIndex(delegate));
+      sub_proto->set_integer_expression_index(
+          FindExpressionIndexOrDie(delegate));
     } else {
       const int index = model_proto_->expressions_size();
       CPIntegerExpressionProto* const var_proto =
@@ -744,7 +745,7 @@ class SecondPassVisitor : public ModelVisitor {
     CPArgumentProto* const sub_proto = var_proto->add_arguments();
     sub_proto->set_argument_index(
         TagIndex(ModelVisitor::kVariableArgument));
-    sub_proto->set_integer_expression_index(FindExpressionIndex(delegate));
+    sub_proto->set_integer_expression_index(FindExpressionIndexOrDie(delegate));
     CPArgumentProto* const value_proto = var_proto->add_arguments();
     value_proto->set_argument_index(TagIndex(operation));
     value_proto->set_integer_value(value);
@@ -760,7 +761,7 @@ class SecondPassVisitor : public ModelVisitor {
       var_proto->set_type_index(TagIndex(ModelVisitor::kIntervalVariable));
       CPArgumentProto* const sub_proto = var_proto->add_arguments();
       sub_proto->set_argument_index(TagIndex(operation));
-      sub_proto->set_interval_index(FindIntervalIndex(delegate));
+      sub_proto->set_interval_index(FindIntervalIndexOrDie(delegate));
     } else {
       const int index = model_proto_->intervals_size();
       CPIntervalVariableProto* const var_proto = model_proto_->add_intervals();
@@ -816,7 +817,7 @@ class SecondPassVisitor : public ModelVisitor {
     CPArgumentProto* const sub_proto = var_proto->add_arguments();
     sub_proto->set_argument_index(TagIndex(operation));
     for (int i = 0; i < size; ++i) {
-      sub_proto->add_interval_array(FindIntervalIndex(delegates[i]));
+      sub_proto->add_interval_array(FindIntervalIndexOrDie(delegates[i]));
     }
   }
 
@@ -832,7 +833,7 @@ class SecondPassVisitor : public ModelVisitor {
     sub_proto->set_argument_index(TagIndex(ModelVisitor::kIntervalsArgument));
     for (int i = 0; i < sequence->size(); ++i) {
       IntervalVar* const interval = sequence->Interval(i);
-      sub_proto->add_interval_array(FindIntervalIndex(interval));
+      sub_proto->add_interval_array(FindIntervalIndexOrDie(interval));
     }
   }
 
@@ -942,22 +943,16 @@ class SecondPassVisitor : public ModelVisitor {
     return holders_.back();
   }
 
-  int FindExpressionIndex(const IntExpr* const expression) const {
-    const int result = FindWithDefault(expression_map_, expression, -1);
-    CHECK_NE(-1, result);
-    return result;
+  int FindExpressionIndexOrDie(const IntExpr* const expression) const {
+    return FindOrDie(expression_map_, expression);
   }
 
-  int FindIntervalIndex(const IntervalVar* const interval) const {
-    const int result = FindWithDefault(interval_map_, interval, -1);
-    CHECK_NE(-1, result);
-    return result;
+  int FindIntervalIndexOrDie(const IntervalVar* const interval) const {
+    return FindOrDie(interval_map_, interval);
   }
 
-  int FindSequenceIndex(const SequenceVar* const sequence) const {
-    const int result = FindWithDefault(sequence_map_, sequence, -1);
-    CHECK_NE(-1, result);
-    return result;
+  int FindSequenceIndexOrDie(const SequenceVar* const sequence) const {
+    return FindOrDie(sequence_map_, sequence);
   }
 
 
