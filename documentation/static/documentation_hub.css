@@ -57,6 +57,16 @@ li {
     margin:1px 0px 1px 0px;
 }
 
+dt {
+    text-decoration: underline;
+    
+}
+
+.language {
+    font-variant: small-caps;
+    font-weight: bold;
+    
+}
 .seealso, .warning, .note, .topic, .safe_trees {
     border: 1px solid;
     margin: 10px 0px;
