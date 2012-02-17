@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '1.0.2',
+        VERSION:     'doc version 0.0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  false
@@ -135,6 +135,19 @@ variables and force <tt class="docutils literal"><span class="pre">C</span></tt>
 <div class="highlight-cpp"><div class="highlight"><pre><span class="n">AllDifferent</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="n">P</span><span class="p">,</span><span class="n">I</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">F</span><span class="p">,</span><span class="n">U</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">T</span><span class="p">,</span><span class="n">R</span><span class="p">,</span><span class="n">E</span><span class="p">)</span>
 </pre></div>
 </div>
+<div class="topic" id="index-1">
+<p class="topic-title first">What is the <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint?</p>
+<p>The <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint enforces a set of variables to take distinct values. For instance, the solution
+<tt class="docutils literal"><span class="pre">C=2</span> <span class="pre">P=3</span> <span class="pre">I=7</span> <span class="pre">S=4</span> <span class="pre">F=9</span> <span class="pre">U=6</span> <span class="pre">N=8</span> <span class="pre">T=1</span> <span class="pre">R=0</span> <span class="pre">E=5</span></tt> for our cryptarithmetic puzzle satisfies the <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint as
+all the values taken are pairwise different. There exist a variety of propagation algorithm for this constraint.
+The one used in <tt class="docutils literal"><span class="pre">or-tools</span></tt> is bound based (see <a class="reference internal" href="#lopez-ortiz2003">[Lopez-Ortiz2003]</a>).</p>
+</div>
+<table class="docutils citation" frame="void" id="lopez-ortiz2003" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[Lopez-Ortiz2003]</a></td><td>Alejandro Lopez-Ortiz, Claude-Guy Quimper, John Tromp and Peter Van Beek. <em>A fast and simple algorithm for bounds consistency of the all different constraint</em>, Proceedings of the 18<sup>th</sup> international joint conference on Artificial intelligence, Acapulco, Mexico, pp 245-250, 2003, Morgan Kaufmann Publishers Inc.</td></tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="solve">
 <h3>2.2.2.3. Solve</h3>

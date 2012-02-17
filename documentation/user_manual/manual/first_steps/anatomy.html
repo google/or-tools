@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '1.0.2',
+        VERSION:     'doc version 0.0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  false
@@ -57,13 +57,13 @@
   <div class="section" id="anatomy-of-a-basic-c-code">
 <span id="anatomy-c"></span><h1>2.3. Anatomy of a basic C++ code</h1>
 <p>In this section, we code the model developed in <a class="reference internal" href="cryptarithmetic.html#cryptarithmetic-problem"><em>The problem and a first model</em></a>.</p>
-<p>You can find the code in the file <tt class="docutils literal"><span class="pre">tutorial/chap2/cp_is_fun1.cc</span></tt>.</p>
+<p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap2/cp_is_fun1.cc">tutorials/C++/chap2/cp_is_fun1.cc</a></p>
 <p>We quickly scan through the code and describe the basic constituents needed to solve
 the cryptarithmetic puzzle in C++. In the next chapters, we will cover some of them
 in more details.</p>
 <div class="section" id="at-a-glance">
 <span id="anatomy-at-a-glance"></span><h2>2.3.1. At a glance</h2>
-<img alt="../../_images/anatomy1.png" src="../../_images/anatomy1.png" style="height: 550pt;" />
+<img alt="../../_images/anatomy1.png" src="../../_images/anatomy1.png" style="height: 500pt;" />
 <img alt="../../_images/anatomy2.png" src="../../_images/anatomy2.png" style="height: 250pt;" />
 </div>
 <div class="section" id="headers">
@@ -78,7 +78,7 @@ assert-like macros. The header <tt class="docutils literal"><span class="pre">co
 to the CP solver and must be included whenever you intend to use it.</p>
 </div>
 <div class="section" id="the-namespace-operations-research">
-<h2>2.3.3. The namespace <tt class="docutils literal"><span class="pre">operations_research</span></tt></h2>
+<span id="index-0"></span><h2>2.3.3. The namespace <tt class="docutils literal"><span class="pre">operations_research</span></tt></h2>
 <p>The whole library is nested in the namespace <tt class="docutils literal"><span class="pre">operations_research</span></tt>. We follow
 the same convention in all our examples and code inside this namespace:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">namespace</span> <span class="n">operations_research</span> <span class="p">{</span>
@@ -113,7 +113,7 @@ the function <tt class="docutils literal"><span class="pre">CPIsFun()</span></tt
 </table>
 </div>
 <div class="section" id="the-cp-solver">
-<h2>2.3.4. The CP solver</h2>
+<span id="index-1"></span><h2>2.3.4. The CP solver</h2>
 <p>The CP solver is the main engine to solve an
 instance. It is also responsible for the creation of the model. It has a very
 rich Application Programming Interface (API) and provides a lots of
@@ -126,7 +126,7 @@ functionalities.</p>
 <p>The <tt class="docutils literal"><span class="pre">Solver</span></tt> class has one additional constructor covered  in <a class="reference internal" href="parameters.html#parameters"><em>Parameters</em></a>.</p>
 </div>
 <div class="section" id="variables">
-<h2>2.3.5. Variables</h2>
+<span id="index-2"></span><h2>2.3.5. Variables</h2>
 <p>To create the model, we first need to create the decision variables:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">const</span> <span class="n">int64</span> <span class="n">kBase</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
 <span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">c</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeIntVar</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">kBase</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;C&quot;</span><span class="p">);</span>
@@ -135,14 +135,14 @@ functionalities.</p>
 <span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">e</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeIntVar</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">kBase</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;E&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
-<p id="index-0">For each letter, we create an integer variable <tt class="docutils literal"><span class="pre">IntVar</span></tt> whose domain is <img class="math" src="../../_images/math/eec74ab2ca83865096af94ada03733d24295a2f2.png" alt="[0,\mathtt{kBase} - 1]"/>
+<p id="index-3">For each letter, we create an integer variable <tt class="docutils literal"><span class="pre">IntVar</span></tt> whose domain is <img class="math" src="../../_images/math/eec74ab2ca83865096af94ada03733d24295a2f2.png" alt="[0,\mathtt{kBase} - 1]"/>
 except for the variables <tt class="docutils literal"><span class="pre">c</span></tt>, <tt class="docutils literal"><span class="pre">i</span></tt>, <tt class="docutils literal"><span class="pre">f</span></tt> and <tt class="docutils literal"><span class="pre">t</span></tt> that cannot take the value <tt class="docutils literal"><span class="pre">0</span></tt>.
 The <tt class="docutils literal"><span class="pre">MakeIntVar(i,</span> <span class="pre">j,</span> <span class="pre">name)</span></tt> method is a <em>factory method</em> that creates an
 integer variable whose domain is <img class="math" src="../../_images/math/8f76a4c9b2e1d0a7eb2016aefa4a26a464143d12.png" alt="[i,j]=\{i, i+1, \dotsc
 , j-1, j\}"/> and has a name <tt class="docutils literal"><span class="pre">name</span></tt>. It returns a pointer to an <tt class="docutils literal"><span class="pre">IntVar</span></tt>. The declaration <tt class="docutils literal"><span class="pre">IntVar*</span> <span class="pre">const</span> <span class="pre">c</span></tt>
 may seem a little be complicated at first. It is easier to understand if read from right to left: <tt class="docutils literal"><span class="pre">c</span></tt> is a constant pointer to an
 <tt class="docutils literal"><span class="pre">IntVar</span></tt>. We can modify the object pointed by <tt class="docutils literal"><span class="pre">c</span></tt> but this pointer, because it is constant, always refers to the same object.</p>
-<div class="topic" id="index-1">
+<div class="topic" id="index-4">
 <p class="topic-title first">Factory methods in or-tools</p>
 <p>The solver API provides
 numerous factory methods to create different objects. These methods
@@ -176,7 +176,7 @@ Aborted</pre>
 <p>In <a class="reference internal" href="../utilities/asserting.html#asserting"><em>Asserting</em></a>, we cover assert-like macros in more details.</p>
 </div>
 <div class="section" id="constraints">
-<span id="id2"></span><h2>2.3.7. Constraints</h2>
+<span id="index-5"></span><span id="id2"></span><h2>2.3.7. Constraints</h2>
 <p>To create a integer linear constraint, we need to know how to multiply an integer variable
 with an integer constant and how to add two integer variables. We have seen that
 the solver creates a variable and only provides a pointer to that variable.
@@ -189,7 +189,7 @@ an <tt class="docutils literal"><span class="pre">IntVar</span></tt> given by a 
 <p>Note how the method <tt class="docutils literal"><span class="pre">Var()</span></tt> is called to cast the result of <tt class="docutils literal"><span class="pre">MakeProd()</span></tt>
 into a pointer to <tt class="docutils literal"><span class="pre">IntVar</span></tt>. Indeed, <tt class="docutils literal"><span class="pre">MakeProd()</span></tt> returns a pointer to
 an <tt class="docutils literal"><span class="pre">IntExpr</span></tt>. The class <tt class="docutils literal"><span class="pre">IntExpr</span></tt> is a base class to represent
-any integer expressions.</p>
+any integer expression.</p>
 <p>Note also the order of the arguments <tt class="docutils literal"><span class="pre">MakeProd()</span></tt> takes: first the pointer
 to an <tt class="docutils literal"><span class="pre">IntVar</span></tt> and then the integer constant.</p>
 <p>To add two <tt class="docutils literal"><span class="pre">IntVar</span></tt> given by their respective pointers, the solver provides
@@ -234,7 +234,7 @@ term of our cryptarithmetic puzzle <tt class="docutils literal"><span class="pre
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>If the number of terms in the sum to construct is large, you can use <tt class="docutils literal"><span class="pre">MakeScalProd()</span></tt>.
+<p id="index-6">If the number of terms in the sum to construct is large, you can use <tt class="docutils literal"><span class="pre">MakeScalProd()</span></tt>.
 This factory method accepts an <tt class="docutils literal"><span class="pre">std::vector</span></tt> of pointers to <tt class="docutils literal"><span class="pre">IntVar</span></tt>s and an <tt class="docutils literal"><span class="pre">std::vector</span></tt> of integer
 coefficients:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var1</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeInt</span><span class="p">(...);</span>
@@ -255,7 +255,7 @@ coefficients:</p>
 </div>
 <p>In the code, we use <tt class="docutils literal"><span class="pre">MakeScalProd()</span></tt> in the helper functions <tt class="docutils literal"><span class="pre">MakeBaseLine3()</span></tt> and
 <tt class="docutils literal"><span class="pre">MakeBaseLine4()</span></tt>.</p>
-<p>To create the sum constraint, we use the factory method <tt class="docutils literal"><span class="pre">MakeEquality()</span></tt>
+<p id="index-7">To create the sum constraint, we use the factory method <tt class="docutils literal"><span class="pre">MakeEquality()</span></tt>
 that returns a pointer to a <tt class="docutils literal"><span class="pre">Constraint</span></tt> object:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">term1</span> <span class="o">=</span> <span class="p">...</span>
 <span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">term2</span> <span class="o">=</span> <span class="p">...</span>
@@ -269,7 +269,7 @@ that returns a pointer to a <tt class="docutils literal"><span class="pre">Const
 <span class="n">Constraint</span><span class="o">*</span> <span class="k">const</span> <span class="n">sum_constraint</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeEquality</span><span class="p">(</span><span class="n">sum_terms</span><span class="p">,</span> <span class="n">sum</span><span class="p">);</span>
 </pre></div>
 </div>
-<p>Finally, to add a constraint, we use the method <tt class="docutils literal"><span class="pre">AddConstraint()</span></tt>:</p>
+<p id="index-8">Finally, to add a constraint, we use the method <tt class="docutils literal"><span class="pre">AddConstraint()</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">solver</span><span class="p">.</span><span class="n">AddConstraint</span><span class="p">(</span><span class="n">sum_constraint</span><span class="p">);</span>
 </pre></div>
 </div>
@@ -277,7 +277,7 @@ that returns a pointer to a <tt class="docutils literal"><span class="pre">Const
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">solver</span><span class="p">.</span><span class="n">AddConstraint</span><span class="p">(</span><span class="n">solver</span><span class="p">.</span><span class="n">MakeEquality</span><span class="p">(</span><span class="n">sum_terms</span><span class="p">,</span> <span class="n">sum</span><span class="p">));</span>
 </pre></div>
 </div>
-<p>Adding the global <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint is a little bit easier because the solver
+<p id="index-9">Adding the global <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint is a little bit easier because the solver
 provides a factory method <tt class="docutils literal"><span class="pre">MakeAllDifferent()</span></tt>. This methods accepts an <tt class="docutils literal"><span class="pre">std::vector</span></tt> of
 <tt class="docutils literal"><span class="pre">IntVar*</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;</span> <span class="n">letters</span><span class="p">;</span>
@@ -291,7 +291,7 @@ provides a factory method <tt class="docutils literal"><span class="pre">MakeAll
 </div>
 </div>
 <div class="section" id="the-decision-builder">
-<h2>2.3.8. The Decision Builder</h2>
+<span id="index-10"></span><h2>2.3.8. The Decision Builder</h2>
 <p>A <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is responsible for creating the actual search tree, i.e.
 it is responsible for the search. The solver provides a factory method
 <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> that returns a pointer to the newly created  <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> object:</p>
@@ -304,7 +304,7 @@ it is responsible for the search. The solver provides a factory method
 the <tt class="docutils literal"><span class="pre">IntVar</span></tt> decision variables. The second parameter specifies how to choose the next <tt class="docutils literal"><span class="pre">IntVar</span></tt> variable to be selected in the search. Here we choose the first unbounded variable. The third parameter indicates what value to assign to the selected <tt class="docutils literal"><span class="pre">IntVar</span></tt>. The solver will assign the smallest available value.</p>
 </div>
 <div class="section" id="the-search-and-the-solutions">
-<h2>2.3.9. The search and the solutions</h2>
+<span id="index-11"></span><h2>2.3.9. The search and the solutions</h2>
 <p>To prepare for a new search:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="k">const</span> <span class="n">db</span> <span class="o">=</span> <span class="p">...</span>
 <span class="n">solver</span><span class="p">.</span><span class="n">NewSearch</span><span class="p">(</span><span class="n">db</span><span class="p">);</span>
@@ -348,7 +348,7 @@ $[23:51:34] examples/cp_is_fun1.cc:133: C=2 P=3 I=7 S=4 F=9 U=6 N=8 T=1 R=0 E=5<
 </div>
 </div>
 <div class="section" id="the-end-of-the-search">
-<h2>2.3.10. The end of the search</h2>
+<span id="index-12"></span><h2>2.3.10. The end of the search</h2>
 <p>To finish the search, invoke:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">solver</span><span class="p">.</span><span class="n">EndSearch</span><span class="p">();</span>
 </pre></div>

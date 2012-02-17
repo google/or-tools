@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '1.0.2',
+        VERSION:     'doc version 0.0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  false
@@ -54,11 +54,11 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="solutioncollectors-and-assignments-to-collect-solutions">
-<span id="monitors-solutions"></span><h1>2.4. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</h1>
+  <span class="target" id="monitors-solutions"></span><div class="section" id="solutioncollectors-and-assignments-to-collect-solutions">
+<span id="index-0"></span><h1>2.4. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</h1>
 <p>The or-tools library let you collect and store the solutions of your searches with the help of
 <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s. We use them to store the solutions of our cryptarithmetic puzzle.</p>
-<p>You can find the code in the file <tt class="docutils literal"><span class="pre">tutorial/chap2/cp_is_fun2.cc</span></tt>.</p>
+<p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap2/cp_is_fun2.cc">tutorials/C++/chap2/cp_is_fun2.cc</a>.</p>
 <p>A <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt> class is one of several specialized <tt class="docutils literal"><span class="pre">SearchMonitors</span></tt> classes. i.e. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>
 inherits from <tt class="docutils literal"><span class="pre">SearchMonitors</span></tt>. <tt class="docutils literal"><span class="pre">SearchMonitors</span></tt> provides a set of callbacks to monitor all search events.
 We will learn more about them in the next chapter.</p>
@@ -76,7 +76,7 @@ We will learn more about them in the next chapter.</p>
 <li><tt class="docutils literal"><span class="pre">MakeBestValueSolutionCollector()</span></tt>;</li>
 <li><tt class="docutils literal"><span class="pre">MakeAllSolutionCollector()</span></tt>.</li>
 </ul>
-<p>The simplest way to use a <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt> is
+<p>The simplest way to use a <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>
 is to use it as is. This can be handy if you are only interested in global
 results such as the number of solutions:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">SolutionCollector</span><span class="o">*</span> <span class="k">const</span> <span class="n">all_solutions</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeAllSolutionCollector</span><span class="p">();</span>
@@ -90,7 +90,7 @@ results such as the number of solutions:</p>
 <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Number of solutions: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">all_solutions</span><span class="o">-&gt;</span><span class="n">solution_count</span><span class="p">();</span>
 </pre></div>
 </div>
-<p>Instead of using <tt class="docutils literal"><span class="pre">NewSearch()</span></tt>, <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> repeatedly and <tt class="docutils literal"><span class="pre">EndSearch()</span></tt>, you can use
+<p id="index-1">Instead of using <tt class="docutils literal"><span class="pre">NewSearch()</span></tt>, <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> repeatedly and <tt class="docutils literal"><span class="pre">EndSearch()</span></tt>, you can use
 the <tt class="docutils literal"><span class="pre">Solve()</span></tt> method:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">solver</span><span class="p">.</span><span class="n">Solve</span><span class="p">(</span><span class="n">db</span><span class="p">,</span><span class="n">all_solutions</span><span class="p">);</span>
 </pre></div>
@@ -105,8 +105,8 @@ Let&#8217;s say you would like to know what the value of variable <tt class="doc
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">first_solution</span><span class="o">-&gt;</span><span class="n">Add</span><span class="p">(</span><span class="n">c</span><span class="p">);</span>
 </pre></div>
 </div>
-<div class="admonition caution">
-<p class="first admonition-title">Caution</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
 <p class="last">The method <tt class="docutils literal"><span class="pre">Add()</span></tt> simply adds the variable <tt class="docutils literal"><span class="pre">c</span></tt> to the <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>. The variable <tt class="docutils literal"><span class="pre">c</span></tt> is not tied
 to the solver, i.e. you will not be able to retrieve its value by <tt class="docutils literal"><span class="pre">c-&gt;Value()</span></tt> after a search with the method <tt class="docutils literal"><span class="pre">Solve()</span></tt>.</p>
 </div>
@@ -135,10 +135,10 @@ to the solver, i.e. you will not be able to retrieve its value by <tt class="doc
 <span class="n">solver</span><span class="p">.</span><span class="n">Solve</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">all_solutions</span><span class="p">);</span>
 
 <span class="c1">//  Retrieve the solutions</span>
-<span class="k">const</span> <span class="kt">int</span> <span class="n">numberSolutions</span> <span class="o">=</span> <span class="n">all_solutions</span><span class="o">-&gt;</span><span class="n">solution_count</span><span class="p">();</span>
-<span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Number of solutions: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">numberSolutions</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="k">const</span> <span class="kt">int</span> <span class="n">number_solutions</span> <span class="o">=</span> <span class="n">all_solutions</span><span class="o">-&gt;</span><span class="n">solution_count</span><span class="p">();</span>
+<span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Number of solutions: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">number_solutions</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
 
-<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">numberSolutions</span><span class="p">;</span> <span class="o">++</span><span class="n">index</span><span class="p">)</span> <span class="p">{</span>
+<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">number_solutions</span><span class="p">;</span> <span class="o">++</span><span class="n">index</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Solution found:&quot;</span><span class="p">;</span>
   <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;C=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">all_solutions</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">(</span><span class="n">index</span><span class="p">,</span><span class="n">c</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot; &quot;</span>
             <span class="o">&lt;&lt;</span> <span class="s">&quot;P=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">all_solutions</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">(</span><span class="n">index</span><span class="p">,</span><span class="n">p</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot; &quot;</span>
@@ -163,10 +163,10 @@ to the solver, i.e. you will not be able to retrieve its value by <tt class="doc
 <span class="n">solver</span><span class="p">.</span><span class="n">Solve</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">all_solutions</span><span class="p">);</span>
 
 <span class="c1">//  Retrieve the solutions</span>
-<span class="k">const</span> <span class="kt">int</span> <span class="n">numberSolutions</span> <span class="o">=</span> <span class="n">all_solutions</span><span class="o">-&gt;</span><span class="n">solution_count</span><span class="p">();</span>
-<span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Number of solutions: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">numberSolutions</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="k">const</span> <span class="kt">int</span> <span class="n">number_solutions</span> <span class="o">=</span> <span class="n">all_solutions</span><span class="o">-&gt;</span><span class="n">solution_count</span><span class="p">();</span>
+<span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Number of solutions: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">number_solutions</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
 
-<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">numberSolutions</span><span class="p">;</span> <span class="o">++</span><span class="n">index</span><span class="p">)</span> <span class="p">{</span>
+<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">number_solutions</span><span class="p">;</span> <span class="o">++</span><span class="n">index</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Solution found:&quot;</span><span class="p">;</span>
   <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;v1=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">all_solutions</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">(</span><span class="n">index</span><span class="p">,</span><span class="n">v1</span><span class="p">);</span>
 <span class="p">}</span>
@@ -184,10 +184,10 @@ to the solver, i.e. you will not be able to retrieve its value by <tt class="doc
 <span class="n">solver</span><span class="p">.</span><span class="n">Solve</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">all_solutions</span><span class="p">);</span>
 
 <span class="c1">//  Retrieve the solutions</span>
-<span class="k">const</span> <span class="kt">int</span> <span class="n">numberSolutions</span> <span class="o">=</span> <span class="n">all_solutions</span><span class="o">-&gt;</span><span class="n">solution_count</span><span class="p">();</span>
-<span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Number of solutions: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">numberSolutions</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="k">const</span> <span class="kt">int</span> <span class="n">number_solutions</span> <span class="o">=</span> <span class="n">all_solutions</span><span class="o">-&gt;</span><span class="n">solution_count</span><span class="p">();</span>
+<span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Number of solutions: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">number_solutions</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
 
-<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">numberSolutions</span><span class="p">;</span> <span class="o">++</span><span class="n">index</span><span class="p">)</span> <span class="p">{</span>
+<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">number_solutions</span><span class="p">;</span> <span class="o">++</span><span class="n">index</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">Assignment</span><span class="o">*</span> <span class="k">const</span> <span class="n">solution</span> <span class="o">=</span> <span class="n">all_solutions</span><span class="o">-&gt;</span><span class="n">solution</span><span class="p">(</span><span class="n">index</span><span class="p">);</span>
   <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Solution found:&quot;</span><span class="p">;</span>
   <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;v1=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">solution</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">(</span><span class="n">v1</span><span class="p">);</span>
