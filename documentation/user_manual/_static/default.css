@@ -262,8 +262,8 @@ div.topic {
 }
 
 div.warning {
-    color: #D8000C;
-    background-color: #FFBABA;
+    color: #AD1B01; /*#000000;#D8000C;*/
+    background-color: #FFC0C0;  /* #FFFFFF; #EFC2C2; #FFD2CE; #FFBABA; */
     background-image:url('dialog-warning.png');
 }
 
@@ -281,8 +281,8 @@ p.admonition-title:after {
 
 pre {
     padding: 5px;
-    background-color: #F8F8F8;
-    color: #333333;
+/*    background-color: #F8F8F8; */
+/*    color: #333333;*/
     line-height: 120%;
     border: 1px solid #ac9;
     border-left: none;
@@ -292,7 +292,7 @@ pre {
 /* code */
 tt {
 /*    background-color: #FFFFFF; */
-    color: #112A7C;
+/*    color: #112A7C;*/
     padding: 0 1px 0 1px;
     font-size: 130%;
 }
@@ -302,7 +302,7 @@ th {
 }
 
 .warning tt {
-    background: #efc2c2;
+    background: #FFC0C0; /*#efc2c2;*/
 }
 
 .note tt {

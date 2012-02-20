@@ -1,0 +1,7 @@
+
+v.0.0.3: (2012-02-20 11:03:03)
+------------------------------
+* Minor enhancements to the manual:
+    - pdf version: title, disclaimer, index.
+* Scripted update and upload (no more mistake?).
+* Bash scripts replaced by Python scripts.
