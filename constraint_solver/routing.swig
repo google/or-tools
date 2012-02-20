@@ -183,39 +183,33 @@ static int64 PyCallback2NodeIndexNodeIndex(
 }
 #endif
 #ifdef SWIGJAVA
+%module(directors="1") main
+%feature("director") NodeEvaluator2;
 %{
-class NodeIndexResultCallback2
-  : public ResultCallback2<int64,
-                           operations_research::RoutingModel::NodeIndex,
-                           operations_research::RoutingModel::NodeIndex> {
+namespace operations_research {
+class NodeEvaluator2 {
  public:
-  NodeIndexResultCallback2(ResultCallback2<int64, int64, int64>* callback)
-      : callback_(callback) {
-    CHECK_NOTNULL(callback_);
+  int64 runAux(RoutingModel::NodeIndex i, RoutingModel::NodeIndex j) {
+    return run(i.value(), j.value());
   }
-  virtual ~NodeIndexResultCallback2() {}
-  virtual bool IsRepeatable() const { return true; }
-  virtual int64 Run(operations_research::RoutingModel::NodeIndex i,
-                    operations_research::RoutingModel::NodeIndex j) {
-    return callback_->Run(i.value(), j.value());
+  virtual int64 run(int i, int j) = 0;
+  RoutingModel::NodeEvaluator2* GetPermanentCallback() {
+    return NewPermanentCallback(this, &NodeEvaluator2::runAux);
   }
-  scoped_ptr<ResultCallback2<int64, int64, int64> > callback_;
+  virtual ~NodeEvaluator2() {}
 };
+}  // namespace operations_research
 %}
 
-%typemap(jstype) RoutingModel::NodeEvaluator2* "LongResultCallback2";
-%typemap(javain) RoutingModel::NodeEvaluator2* "SWIGTYPE_p_ResultCallback2Tlong_long_long_long_long_long_t.getCPtr($javainput.GetPermanentCallback())";
-%typemap(in) RoutingModel::NodeEvaluator2* {
-  if ($input) {
-    ResultCallback2<int64, int64, int64>* const callback =
-        (ResultCallback2<int64, int64, int64>*)$input;
-    $1 = new NodeIndexResultCallback2(callback);
-  } else {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException,
-                            "null evaluator");
-    return $null;
-  }
-}
+class NodeEvaluator2 {
+ public:
+  virtual ~NodeEvaluator2();
+  virtual int64 run(int i, int j) = 0;
+  operations_research::RoutingModel::NodeEvaluator2* GetPermanentCallback();
+};
+
+%typemap(jstype) RoutingModel::NodeEvaluator2* "NodeEvaluator2";
+%typemap(javain) RoutingModel::NodeEvaluator2* "SWIGTYPE_p_ResultCallback2T_long_long__RoutingModel_NodeIndex__RoutingModel_NodeIndex_t.getCPtr($javainput.GetPermanentCallback())";
 #endif  // SWIGJAVA
 #ifdef SWIGCSHARP
 %module(directors="1") main

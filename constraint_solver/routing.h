@@ -182,7 +182,7 @@ class RoutingModel {
     // Select the first node with an unbound successor and connect it to the
     // first available node.
     // This is equivalent to the CHOOSE_FIRST_UNBOUND strategy combined with
-    // ASSIGN_MIN_VALUE (cf. constraint_soler.h).
+    // ASSIGN_MIN_VALUE (cf. constraint_solver.h).
     ROUTING_DEFAULT_STRATEGY,
     // Iteratively connect two nodes which produce the cheapest route segment.
     ROUTING_GLOBAL_CHEAPEST_ARC,
@@ -202,7 +202,13 @@ class RoutingModel {
     // Iteratively build a solution by inserting nodes at their cheapest (best)
     // position. As of 2/2012, only works on models with optional nodes
     // (with finite penalty costs).
-    ROUTING_BEST_INSERTION
+    ROUTING_BEST_INSERTION,
+    // Builds a solution with a single path without propagating. Is very fast
+    // but has a very high probability of failing if the problem contains other
+    // constraints than path-related constraints.
+    // Based on an addition heuristics extending a path from its start node with
+    // the cheapest arc according to an evaluator.
+    ROUTING_FAST_ONE_PATH
   };
 
   // Metaheuristics used to guide the search. Apart greedy descent, they will
@@ -577,6 +583,9 @@ class RoutingModel {
   // considered a failure case.  Clients who need start and end
   // variable indices should use RoutingModel::Start and RoutingModel::End.
   int64 NodeToIndex(NodeIndex node) const;
+  // Returns the variable indices of the nodes in the same disjunction as the
+  // node corresponding to the variable of index 'index'.
+  void GetDisjunctionIndicesFromIndex(int64 index, std::vector<int>* indices) const;
 
   // Time limits
   // Returns the current time limit used in the search.
@@ -644,7 +653,26 @@ class RoutingModel {
       CloseModel();
     }
   }
-  void SetUpSearch();
+  // Sets up search objects, such as decision builders and monitors.
+  void SetupSearch();
+  // Set of auxiliary methods used to setup the search.
+  // TODO(user): Document each auxiliary method.
+  Assignment* GetOrCreateAssignment();
+  SearchLimit* GetOrCreateLimit();
+  SearchLimit* GetOrCreateLocalSearchLimit();
+  SearchLimit* GetOrCreateLargeNeighborhoodSearchLimit();
+  LocalSearchOperator* CreateInsertionOperator();
+  LocalSearchOperator* CreateNeighborhoodOperators();
+  const std::vector<LocalSearchFilter*>& GetOrCreateLocalSearchFilters();
+  DecisionBuilder* CreateSolutionFinalizer();
+  DecisionBuilder* CreateFirstSolutionDecisionBuilder();
+  LocalSearchPhaseParameters* CreateLocalSearchParameters();
+  DecisionBuilder* CreateLocalSearchDecisionBuilder();
+  void SetupDecisionBuilders();
+  void SetupMetaheuristics();
+  void SetupAssignmentCollector();
+  void SetupTrace();
+  void SetupSearchMonitors();
 
   IntVar** GetOrMakeCumuls(int64 capacity, const string& name);
   IntVar** GetOrMakeTransits(NodeEvaluator2* evaluator,
@@ -701,6 +729,7 @@ class RoutingModel {
   Assignment* preassignment_;
   std::vector<IntVar*> extra_vars_;
   std::vector<LocalSearchOperator*> extra_operators_;
+  std::vector<LocalSearchFilter*> filters_;
 
   int64 time_limit_ms_;
   int64 lns_time_limit_ms_;

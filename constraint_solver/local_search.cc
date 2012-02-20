@@ -50,8 +50,7 @@ namespace operations_research {
 // Utility methods to ensure the communication between local search and the
 // search.
 
-// Returns true if a local optimum has been reached and that it cannot be
-// improved.
+// Returns true if a local optimum has been reached and cannot be improved.
 bool LocalOptimumReached(Search* const search);
 
 // Returns true if the search accepts the delta (actually checking this by

@@ -2215,7 +2215,14 @@ class Solver {
                                       const std::vector<int64>& values);
   Decision* MakeFailDecision();
 
-  // Sequential composition of Decision Builders
+  // Creates a decision builder which sequentially composes decision builders.
+  // At each leaf of a decision builder, the next decision builder is therefore
+  // called. For instance Compose(db1, db2) will result in the following tree:
+  //          d1 tree              |
+  //         /   |   \             |
+  //         db1 leaves            |
+  //       /     |     \           |
+  //  db2 tree db2 tree db2 tree   |
   DecisionBuilder* Compose(DecisionBuilder* const db1,
                            DecisionBuilder* const db2);
   DecisionBuilder* Compose(DecisionBuilder* const db1,
@@ -2226,6 +2233,34 @@ class Solver {
                            DecisionBuilder* const db3,
                            DecisionBuilder* const db4);
   DecisionBuilder* Compose(const std::vector<DecisionBuilder*>& dbs);
+
+  // Creates a decision builder which will create a search tree where each
+  // decision builder is called from the top of the search tree. For instance
+  // the decision builder Try(db1, db2) will entirely explore the search tree
+  // of db1 then the one of db2, resulting in the following search tree:
+  //        Tree root            |
+  //        /       \            |
+  //  db1 tree     db2 tree      |
+  //
+  // This is very handy to try a decision builder which partially explores the
+  // search space and if it fails to try another decision builder.
+  //
+  // TODO(user): The search tree can be balanced by using binary
+  // "Try"-builders "recursively". For instance, Try(a,b,c,d) will give a tree
+  // unbalanced to the right, whereas Try(Try(a,b), Try(b,c)) will give a
+  // balanced tree. Investigate if we should only provide the binary version
+  // and/or if we should balance automatically.
+  DecisionBuilder* Try(DecisionBuilder* const db1,
+                       DecisionBuilder* const db2);
+  DecisionBuilder* Try(DecisionBuilder* const db1,
+                       DecisionBuilder* const db2,
+                       DecisionBuilder* const db3);
+  DecisionBuilder* Try(DecisionBuilder* const db1,
+                       DecisionBuilder* const db2,
+                       DecisionBuilder* const db3,
+                       DecisionBuilder* const db4);
+  DecisionBuilder* Try(const std::vector<DecisionBuilder*>& dbs);
+
 
   // Phases on IntVar arrays.
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,

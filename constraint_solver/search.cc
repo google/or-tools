@@ -365,46 +365,81 @@ SearchMonitor* Solver::MakeSearchTrace(const string& prefix) {
   return RevAlloc(new SearchTrace(this, prefix));
 }
 
+// ---------- Composite Decision Builder --------
+
+namespace {
+class CompositeDecisionBuilder : public DecisionBuilder {
+ public:
+  CompositeDecisionBuilder();
+  explicit CompositeDecisionBuilder(const std::vector<DecisionBuilder*>& dbs);
+  virtual ~CompositeDecisionBuilder();
+  void Add(DecisionBuilder* const db);
+  virtual void AppendMonitors(Solver* const solver,
+                              std::vector<SearchMonitor*>* const monitors);
+  virtual void Accept(ModelVisitor* const visitor) const;
+
+ protected:
+  std::vector<DecisionBuilder*> builders_;
+};
+
+CompositeDecisionBuilder::CompositeDecisionBuilder() {}
+
+CompositeDecisionBuilder::CompositeDecisionBuilder(
+    const std::vector<DecisionBuilder*>& dbs) {
+  for (int i = 0; i < dbs.size(); ++i) {
+    Add(dbs[i]);
+  }
+}
+
+CompositeDecisionBuilder::~CompositeDecisionBuilder() {}
+
+void CompositeDecisionBuilder::Add(DecisionBuilder* const db) {
+  if (db != NULL) {
+    builders_.push_back(db);
+  }
+}
+
+void CompositeDecisionBuilder::AppendMonitors(
+    Solver* const solver,
+    std::vector<SearchMonitor*>* const monitors) {
+  for (ConstIter<std::vector<DecisionBuilder*> > it(builders_);
+       !it.at_end();
+       ++it) {
+    (*it)->AppendMonitors(solver, monitors);
+  }
+}
+
+void CompositeDecisionBuilder::Accept(ModelVisitor* const visitor) const {
+  for (ConstIter<std::vector<DecisionBuilder*> > it(builders_);
+       !it.at_end();
+       ++it) {
+    (*it)->Accept(visitor);
+  }
+}
+}  // namespace
 
 // ---------- Compose Decision Builder ----------
 
 namespace {
-class ComposeDecisionBuilder : public DecisionBuilder {
+class ComposeDecisionBuilder : public CompositeDecisionBuilder {
  public:
   ComposeDecisionBuilder();
-  explicit ComposeDecisionBuilder(const std::vector<DecisionBuilder*>& dbs)
-      : start_index_(0) {
-    for (int i = 0; i < dbs.size(); ++i) {
-      Add(dbs[i]);
-    }
-  }
-  virtual ~ComposeDecisionBuilder() {}
+  explicit ComposeDecisionBuilder(const std::vector<DecisionBuilder*>& dbs);
+  ~ComposeDecisionBuilder();
   virtual Decision* Next(Solver* const s);
   virtual string DebugString() const;
-  void Add(DecisionBuilder* const db);
-  virtual void AppendMonitors(Solver* const solver,
-                              std::vector<SearchMonitor*>* const monitors) {
-    for (ConstIter<std::vector<DecisionBuilder*> > it(builders_);
-         !it.at_end();
-         ++it) {
-      (*it)->AppendMonitors(solver, monitors);
-    }
-  }
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    for (ConstIter<std::vector<DecisionBuilder*> > it(builders_);
-         !it.at_end();
-         ++it) {
-      (*it)->Accept(visitor);
-    }
-  }
 
  private:
-  std::vector<DecisionBuilder*> builders_;
   int start_index_;
 };
 
 ComposeDecisionBuilder::ComposeDecisionBuilder() : start_index_(0) {}
+
+ComposeDecisionBuilder::ComposeDecisionBuilder(
+    const std::vector<DecisionBuilder*>& dbs)
+    : CompositeDecisionBuilder(dbs), start_index_(0) {}
+
+ComposeDecisionBuilder::~ComposeDecisionBuilder() {}
 
 Decision* ComposeDecisionBuilder::Next(Solver* const s) {
   const int size = builders_.size();
@@ -423,12 +458,6 @@ string ComposeDecisionBuilder::DebugString() const {
   return StringPrintf(
       "ComposeDecisionBuilder(%s)",
       DebugStringArray(builders_.data(), builders_.size(), ", ").c_str());
-}
-
-void ComposeDecisionBuilder::Add(DecisionBuilder* const db) {
-  if (db != NULL) {
-    builders_.push_back(db);
-  }
 }
 }  // namespace
 
@@ -464,6 +493,129 @@ DecisionBuilder* Solver::Compose(DecisionBuilder* const db1,
 
 DecisionBuilder* Solver::Compose(const std::vector<DecisionBuilder*>& dbs) {
   return  RevAlloc(new ComposeDecisionBuilder(dbs));
+}
+
+// ---------- Try Decision Builder ----------
+
+namespace {
+
+class TryDecisionBuilder;
+
+class TryDecision : public Decision {
+ public:
+  explicit TryDecision(TryDecisionBuilder* const try_builder);
+  virtual ~TryDecision();
+  virtual void Apply(Solver* const solver);
+  virtual void Refute(Solver* const solver);
+  virtual string DebugString() const {
+    return "TryDecision";
+  }
+
+ private:
+  TryDecisionBuilder* const try_builder_;
+};
+
+class TryDecisionBuilder : public CompositeDecisionBuilder {
+ public:
+  TryDecisionBuilder();
+  explicit TryDecisionBuilder(const std::vector<DecisionBuilder*>& dbs);
+  virtual ~TryDecisionBuilder();
+  virtual Decision* Next(Solver* const s);
+  virtual string DebugString() const;
+  void AdvanceToNextBuilder(Solver* const solver);
+
+ private:
+  TryDecision try_decision_;
+  int current_builder_;
+  bool start_new_builder_;
+};
+
+TryDecision::TryDecision(TryDecisionBuilder* const try_builder)
+    : try_builder_(try_builder) {}
+
+TryDecision::~TryDecision() {}
+
+void TryDecision::Apply(Solver* const solver) {}
+
+void TryDecision::Refute(Solver* const solver) {
+  try_builder_->AdvanceToNextBuilder(solver);
+}
+
+TryDecisionBuilder::TryDecisionBuilder()
+    : CompositeDecisionBuilder(),
+      try_decision_(this),
+      current_builder_(-1),
+      start_new_builder_(true) {}
+
+TryDecisionBuilder::TryDecisionBuilder(const std::vector<DecisionBuilder*>& dbs)
+    : CompositeDecisionBuilder(dbs),
+      try_decision_(this),
+      current_builder_(-1),
+      start_new_builder_(true) {}
+
+TryDecisionBuilder::~TryDecisionBuilder() {}
+
+Decision* TryDecisionBuilder::Next(Solver* const solver) {
+  if (current_builder_ < 0) {
+    solver->SaveAndSetValue(&current_builder_, 0);
+    start_new_builder_ = true;
+  }
+  if (start_new_builder_) {
+    start_new_builder_ = false;
+    return &try_decision_;
+  } else {
+    return builders_[current_builder_]->Next(solver);
+  }
+}
+
+string TryDecisionBuilder::DebugString() const {
+  return StringPrintf(
+      "TryDecisionBuilder(%s)",
+      DebugStringArray(builders_.data(), builders_.size(), ", ").c_str());
+}
+
+void TryDecisionBuilder::AdvanceToNextBuilder(Solver* const solver) {
+  ++current_builder_;
+  start_new_builder_ = true;
+  if (current_builder_ >= builders_.size()) {
+    solver->Fail();
+  }
+}
+
+}  // namespace
+
+DecisionBuilder* Solver::Try(DecisionBuilder* const db1,
+                             DecisionBuilder* const db2) {
+  TryDecisionBuilder* try_db = RevAlloc(new TryDecisionBuilder());
+  try_db->Add(db1);
+  try_db->Add(db2);
+  return try_db;
+}
+
+DecisionBuilder* Solver::Try(DecisionBuilder* const db1,
+                             DecisionBuilder* const db2,
+                             DecisionBuilder* const db3) {
+  TryDecisionBuilder* try_db = RevAlloc(new TryDecisionBuilder());
+  try_db->Add(db1);
+  try_db->Add(db2);
+  try_db->Add(db3);
+  return try_db;
+}
+
+DecisionBuilder* Solver::Try(DecisionBuilder* const db1,
+                             DecisionBuilder* const db2,
+                             DecisionBuilder* const db3,
+                             DecisionBuilder* const db4) {
+  TryDecisionBuilder* try_db = RevAlloc(new TryDecisionBuilder());
+  try_db->Add(db1);
+  try_db->Add(db2);
+  try_db->Add(db3);
+  try_db->Add(db4);
+  return try_db;
+}
+
+DecisionBuilder* Solver::Try(const std::vector<DecisionBuilder*>& dbs) {
+  return  RevAlloc(new TryDecisionBuilder(dbs));
 }
 
 // ----------  Variable Assignments ----------
