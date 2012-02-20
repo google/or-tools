@@ -2815,8 +2815,8 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
 
   {
     // Another assignment is needed to apply the delta
-    Assignment* assignment_copy = solver->RevAlloc(
-            new Assignment(reference_assignment_.get()));
+    Assignment* assignment_copy =
+        solver->MakeAssignment(reference_assignment_.get());
     int counter = 0;
 
     DecisionBuilder* restore =
@@ -2824,8 +2824,8 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
     if (sub_decision_builder_) {
       restore = solver->Compose(restore, sub_decision_builder_);
     }
-    Assignment* delta = solver->RevAlloc(new Assignment(solver));
-    Assignment* deltadelta = solver->RevAlloc(new Assignment(solver));
+    Assignment* delta = solver->MakeAssignment();
+    Assignment* deltadelta = solver->MakeAssignment();
     while (true) {
       delta->Clear();
       deltadelta->Clear();

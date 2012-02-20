@@ -815,7 +815,7 @@ void RoutingModel::Initialize() {
     cache.vehicle = kUnassigned;
     cache.cost = 0;
   }
-  preassignment_ = solver_->RevAlloc(new Assignment(solver_.get()));
+  preassignment_ = solver_->MakeAssignment();
 }
 
 RoutingModel::~RoutingModel() {
@@ -1155,8 +1155,8 @@ void RoutingModel::CloseModel() {
 }
 
 // Decision builder building a solution with a single path without propagating.
-// Has a very high probability of failing if the problem contains other
-// constraints than path-related constraints.
+// Is very fast but has a very high probability of failing if the problem
+// contains other constraints than path-related constraints.
 // Based on an addition heuristics extending a path from its start node with
 // the cheapest arc according to an evaluator.
 class FastOnePathBuilder : public DecisionBuilder {
@@ -1312,8 +1312,6 @@ RoutingModel::GetSelectedFirstSolutionStrategy() const {
     return ROUTING_ALL_UNPERFORMED;
   } else if (FLAGS_routing_first_solution.compare("BestInsertion") == 0) {
     return ROUTING_BEST_INSERTION;
-  } else if (FLAGS_routing_first_solution.compare("FastOnePath") == 0) {
-    return ROUTING_FAST_ONE_PATH;
   }
   return first_solution_strategy_;
 }
@@ -1992,7 +1990,7 @@ void RoutingModel::CheckDepot() {
 Assignment* RoutingModel::GetOrCreateAssignment() {
   if (assignment_ == NULL) {
     const int size = Size();
-    assignment_ = solver_->RevAlloc(new Assignment(solver_.get()));
+    assignment_ = solver_->MakeAssignment();
     assignment_->Add(nexts_.get(), size);
     if (!homogeneous_costs_) {
       assignment_->Add(vehicle_vars_.get(), size + vehicles_);
@@ -2245,6 +2243,15 @@ DecisionBuilder* RoutingModel::CreateFirstSolutionDecisionBuilder() {
                              NewPermanentCallback(
                                  this,
                                  &RoutingModel::GetFirstSolutionCost));
+      if (vehicles() == 1) {
+        DecisionBuilder* fast_one_path_builder =
+            solver_->RevAlloc(new FastOnePathBuilder(
+                this,
+                NewPermanentCallback(
+                    this,
+                    &RoutingModel::GetFirstSolutionCost)));
+        first_solution = solver_->Try(fast_one_path_builder, first_solution);
+      }
       break;
     case ROUTING_EVALUATOR_STRATEGY:
       LG << "Using ROUTING_EVALUATOR_STRATEGY";
@@ -2294,14 +2301,6 @@ DecisionBuilder* RoutingModel::CreateFirstSolutionDecisionBuilder() {
       first_solution = solver_->Compose(first_solution, finalize);
       break;
     }
-    case ROUTING_FAST_ONE_PATH:
-      first_solution =
-          solver_->RevAlloc(new FastOnePathBuilder(
-              this,
-              NewPermanentCallback(
-                  this,
-                  &RoutingModel::GetFirstSolutionCost)));
-      break;
     default:
       LOG(WARNING) << "Unknown argument for routing_first_solution, "
           "using default";
@@ -2415,8 +2414,7 @@ void RoutingModel::SetupMetaheuristics() {
 
 void RoutingModel::SetupAssignmentCollector() {
   const int size = Size();
-  Assignment* full_assignment =
-      solver_->RevAlloc(new Assignment(solver_.get()));
+  Assignment* full_assignment = solver_->MakeAssignment();
   for (ConstIter<VarMap> it(cumuls_); !it.at_end(); ++it) {
     full_assignment->Add(it->second, size + vehicles_);
   }

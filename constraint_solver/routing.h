@@ -202,13 +202,7 @@ class RoutingModel {
     // Iteratively build a solution by inserting nodes at their cheapest (best)
     // position. As of 2/2012, only works on models with optional nodes
     // (with finite penalty costs).
-    ROUTING_BEST_INSERTION,
-    // Builds a solution with a single path without propagating. Is very fast
-    // but has a very high probability of failing if the problem contains other
-    // constraints than path-related constraints.
-    // Based on an addition heuristics extending a path from its start node with
-    // the cheapest arc according to an evaluator.
-    ROUTING_FAST_ONE_PATH
+    ROUTING_BEST_INSERTION
   };
 
   // Metaheuristics used to guide the search. Apart greedy descent, they will
