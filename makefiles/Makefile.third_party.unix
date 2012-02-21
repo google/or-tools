@@ -6,7 +6,7 @@ GOOGLE_SPARSEHASH_TAG = 105 # trunk
 CBC_TAG = 2.7.5
 SWIG_TAG = rel-2.0.4
 PCRE_TAG = 800 # version 8.21
-MONO_TAG = 2.10.8.1
+MONO_TAG = 2.10.9
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.47.tar.gz
@@ -39,7 +39,7 @@ else
 endif
 
 # Detect if mono archive is there
-ifeq ($(wildcard dependencies/archives/mono-$(MONO_TAG).tar.gz),)
+ifeq ($(wildcard dependencies/archives/mono-$(MONO_TAG).tar.bz2),)
     MONO_TARGET =
     MONO_MAKEFILE = # MONO support not included.
 else
@@ -187,8 +187,8 @@ else
 	cd dependencies/sources/mono-$(MONO_TAG) && ./configure --prefix=$(TOP)/dependencies/install
 endif
 
-dependencies/sources/mono-$(MONO_TAG)/configure: dependencies/archives/mono-$(MONO_TAG).tar.gz
-	cd dependencies/sources && tar xvzmf ../archives/mono-$(MONO_TAG).tar.gz
+dependencies/sources/mono-$(MONO_TAG)/configure: dependencies/archives/mono-$(MONO_TAG).tar.bz2
+	cd dependencies/sources && tar xvjmf ../archives/mono-$(MONO_TAG).tar.bz2
 
 
 # Clean everything.
