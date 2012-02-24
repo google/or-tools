@@ -348,12 +348,38 @@ java_archive: java
 	$(COPY) *.jar temp$Sor-tools.$(PLATFORM)
 	$(COPY) $(LIBPREFIX)jni*.$(JNILIBEXT) temp$Sor-tools.$(PLATFORM)
 ifeq ("$(SYSTEM)","win")
+	tools\mkdir temp\or-tools.$(PLATFORM)\com
+	tools\mkdir temp\or-tools.$(PLATFORM)\com\google
+	tools\mkdir temp\or-tools.$(PLATFORM)\com\google\ortools
+	tools\mkdir temp\or-tools.$(PLATFORM)\com\google\ortools\constraintsolver
+	tools\mkdir temp\or-tools.$(PLATFORM)\com\google\ortools\constraintsolver\samples
+	tools\mkdir temp\or-tools.$(PLATFORM)\com\google\ortools\linearsolver
+	tools\mkdir temp\or-tools.$(PLATFORM)\com\google\ortools\linearsolver\samples
+	tools\mkdir temp\or-tools.$(PLATFORM)\com\google\ortools\graph
+	tools\mkdir temp\or-tools.$(PLATFORM)\com\google\ortools\graph\samples
+	tools\mkdir temp\or-tools.$(PLATFORM)\com\google\ortools\knapsacksolver
+	tools\mkdir temp\or-tools.$(PLATFORM)\com\google\ortools\knapsacksolver\samples
+	tools\mkdir temp\or-tools.$(PLATFORM)\data
+	tools\mkdir temp\or-tools.$(PLATFORM)\data\discrete_tomography
+	tools\mkdir temp\or-tools.$(PLATFORM)\data\fill_a_pix
+	tools\mkdir temp\or-tools.$(PLATFORM)\data\minesweeper
+	tools\mkdir temp\or-tools.$(PLATFORM)\data\rogo
+	tools\mkdir temp\or-tools.$(PLATFORM)\data\survo_puzzle
+	tools\mkdir temp\or-tools.$(PLATFORM)\data\quasigroup_completion
+	copy data\discrete_tomography\* temp\or-tools.$(PLATFORM)\data\discrete_tomography
+	copy data\fill_a_pix\* temp\or-tools.$(PLATFORM)\data\fill_a_pix
+	copy data\minesweeper\* temp\or-tools.$(PLATFORM)\data\minesweeper
+	copy data\rogo\* temp\or-tools.$(PLATFORM)\data\rogo
+	copy data\survo_puzzle\* temp\or-tools.$(PLATFORM)\data\survo_puzzle
+	copy data\quasigroup_completion\* temp\or-tools.$(PLATFORM)\data\quasigroup_completion
+	copy com\google\ortools\constraintsolver\samples\*.java temp\or-tools.$(PLATFORM)\com\google\ortools\constraintsolver\samples
+	copy com\google\ortools\linearsolver\samples\*.java temp\or-tools.$(PLATFORM)\com\google\ortools\linearsolver\samples
+	copy com\google\ortools\graph\samples\*.java temp\or-tools.$(PLATFORM)\com\google\ortools\graph\samples
+	copy com\google\ortools\knapsacksolver\samples\*.java temp\or-tools.$(PLATFORM)\com\google\ortools\knapsacksolver\samples
 	cd temp$Sor-tools.$(PLATFORM) && tar -C ..$S.. -c -v com | tar -x -v -m --exclude=*.cs --exclude=*svn*
-
 	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.java.$(PLATFORM).$(SVNVERSION).zip or-tools.$(PLATFORM)
 else
 	cd temp$Sor-tools.$(PLATFORM) && tar -C ..$S.. -c -v com | tar -x -v -m --exclude=\*.cs --exclude=\*svn\*
-
 	cd temp && tar cvzf ..$SGoogle.OrTools.java.$(PLATFORM).$(SVNVERSION).tar.gz or-tools.$(PLATFORM)
 endif
 	-$(DELREC) temp
