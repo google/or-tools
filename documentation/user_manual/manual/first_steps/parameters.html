@@ -139,7 +139,8 @@ we define a <tt class="docutils literal"><span class="pre">time_limit</span></tt
 </pre></div>
 </div>
 <p>Since <tt class="docutils literal"><span class="pre">SearchLimit</span></tt> inherits from <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>, <tt class="docutils literal"><span class="pre">Solve()</span></tt> accepts it:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">SolutionCollector</span><span class="o">*</span> <span class="k">const</span> <span class="n">all_solutions</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeAllSolutionCollector</span><span class="p">();</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">SolutionCollector</span><span class="o">*</span> <span class="k">const</span> <span class="n">all_solutions</span> <span class="o">=</span>
+                                      <span class="n">solver</span><span class="p">.</span><span class="n">MakeAllSolutionCollector</span><span class="p">();</span>
 <span class="p">...</span>
 <span class="c1">// Add time limit</span>
 <span class="n">SearchLimit</span><span class="o">*</span> <span class="k">const</span> <span class="n">time_limit</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeTimeLimit</span><span class="p">(</span><span class="n">FLAGS_time_limit</span><span class="p">);</span>

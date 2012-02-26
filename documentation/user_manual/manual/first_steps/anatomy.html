@@ -170,7 +170,8 @@ the base has to be at greater than or equal to 10:</p>
 </div>
 <p><tt class="docutils literal"><span class="pre">CHECK_GE(x,y)</span></tt> is a macro that checks if condition <tt class="docutils literal"><span class="pre">(x)</span> <span class="pre">&gt;=</span> <span class="pre">(y)</span></tt> is true.
 If not, the program is aborted and the cause is printed:</p>
-<div class="highlight-python"><pre>[23:51:34] examples/cp_is_fun1.cc:108: Check failed: (kBase) &gt;= (letters.size())
+<div class="highlight-python"><pre>[23:51:34] examples/cp_is_fun1.cc:108: Check failed:
+                                             (kBase) &gt;= (letters.size())
 Aborted</pre>
 </div>
 <p>In <a class="reference internal" href="../utilities/asserting.html#asserting"><em>Asserting</em></a>, we cover assert-like macros in more details.</p>
@@ -296,8 +297,8 @@ provides a factory method <tt class="docutils literal"><span class="pre">MakeAll
 it is responsible for the search. The solver provides a factory method
 <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> that returns a pointer to the newly created  <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> object:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">DecisionBuilder</span><span class="o">*</span> <span class="k">const</span> <span class="n">db</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakePhase</span><span class="p">(</span><span class="n">letters</span><span class="p">,</span>
-                                             <span class="n">Solver</span><span class="o">::</span><span class="n">CHOOSE_FIRST_UNBOUND</span><span class="p">,</span>
-                                             <span class="n">Solver</span><span class="o">::</span><span class="n">ASSIGN_MIN_VALUE</span><span class="p">);</span>
+                                          <span class="n">Solver</span><span class="o">::</span><span class="n">CHOOSE_FIRST_UNBOUND</span><span class="p">,</span>
+                                          <span class="n">Solver</span><span class="o">::</span><span class="n">ASSIGN_MIN_VALUE</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>The first parameter of the method <tt class="docutils literal"><span class="pre">MakePhase</span></tt> is an <tt class="docutils literal"><span class="pre">std::vector</span></tt> with pointers to
@@ -336,7 +337,8 @@ a solution was found and <tt class="docutils literal"><span class="pre">false</s
 </div>
 <p>The output is:</p>
 <div class="highlight-python"><pre>$[23:51:34] examples/cp_is_fun1.cc:132: Solution found:
-$[23:51:34] examples/cp_is_fun1.cc:133: C=2 P=3 I=7 S=4 F=9 U=6 N=8 T=1 R=0 E=5</pre>
+$[23:51:34] examples/cp_is_fun1.cc:133: C=2 P=3 I=7 S=4 F=9 U=6 N=8 T=1
+                                                                R=0 E=5</pre>
 </div>
 <p>To obtain all the solutions, <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> can be called repeatedly:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">while</span> <span class="p">(</span><span class="n">solver</span><span class="p">.</span><span class="n">NextSolution</span><span class="p">())</span> <span class="p">{</span>

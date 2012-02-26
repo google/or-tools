@@ -1,4 +1,10 @@
 
+v.0.0.4: (2012-02-25 22:14:12)
+------------------------------
+* Minor enhancements to the manual:
+    - pdf version: admonitions, background around code, page layout
+* Minor corrections.
+
 v.0.0.3: (2012-02-20 11:03:03)
 ------------------------------
 * Minor enhancements to the manual:
