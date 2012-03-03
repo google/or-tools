@@ -29,7 +29,7 @@
 #include "constraint_solver/constraint_solver.h"
 
 DEFINE_int64(base, 10, "Base used to solve the problem.");
-DEFINE_bool(print_all_solution, false, "Print all solutions?");
+DEFINE_bool(print_all_solutions, false, "Print all solutions?");
 
 namespace operations_research {
 
@@ -116,7 +116,7 @@ void CPIsFun() {
   // Constraints
   solver.AddConstraint(solver.MakeAllDifferent(letters));
 
-  // CP + IS + FUN = FUN
+  // CP + IS + FUN = TRUE
   IntVar* const term1 = MakeBaseLine2(&solver, c, p, kBase);
   IntVar* const term2 = MakeBaseLine2(&solver, i, s, kBase);
   IntVar* const term3 = MakeBaseLine3(&solver, f, u, n, kBase);
@@ -143,7 +143,7 @@ void CPIsFun() {
   const int numberSolutions = all_solutions->solution_count();
   LOG(INFO) << "Number of solutions: " << numberSolutions << std::endl;
 
-  if (FLAGS_print_all_solution) {
+  if (FLAGS_print_all_solutions) {
     for (int index = 0; index < numberSolutions; ++index) {
       LOG(INFO) << "C=" << all_solutions->Value(index, c) << " "
       << "P=" << all_solutions->Value(index, p) << " "

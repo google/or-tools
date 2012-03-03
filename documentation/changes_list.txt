@@ -1,4 +1,14 @@
 
+v.0.0.5: (2012-03-03 17:16:37)
+------------------------------
+* Minor enhancements to the manual:
+  - anatomy2: gray removed.
+  (NO NEED TO DOWNLOAD THE NEW VERSION!!!)
+* Minor corrections:
+  - code in C++.
+* Tutorial code in Python for chap 2 added.
+* FAQ added.
+
 v.0.0.4: (2012-02-25 22:14:12)
 ------------------------------
 * Minor enhancements to the manual:

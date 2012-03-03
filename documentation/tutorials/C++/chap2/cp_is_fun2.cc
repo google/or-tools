@@ -113,7 +113,7 @@ void CPIsFun() {
   // Constraints
   solver.AddConstraint(solver.MakeAllDifferent(letters));
 
-  // CP + IS + FUN = FUN
+  // CP + IS + FUN = TRUE
   IntVar* const term1 = MakeBaseLine2(&solver, c, p, kBase);
   IntVar* const term2 = MakeBaseLine2(&solver, i, s, kBase);
   IntVar* const term3 = MakeBaseLine3(&solver, f, u, n, kBase);
