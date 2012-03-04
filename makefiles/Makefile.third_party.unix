@@ -2,7 +2,7 @@
 GFLAGS_TAG = 76 # version 2.0
 PROTOBUF_TAG = 391 # version 2.4.1
 GOOGLE_APPUTILS_TAG = 11 # trunk
-GOOGLE_SPARSEHASH_TAG = 105 # trunk
+SPARSEHASH_TAG = 116 # 2.0.2
 CBC_TAG = 2.7.6
 SWIG_TAG = rel-2.0.4
 PCRE_TAG = 800 # version 8.21
@@ -57,7 +57,7 @@ build_third_party: \
 	install_gflags \
 	install_protobuf \
 	install_google_apputils \
-	install_google_sparsehash \
+	install_sparsehash \
 	install_swig \
 	install_coin_cbc \
 	install_glpk \
@@ -100,8 +100,8 @@ install_google_apputils: dependencies/sources/google-apputils/README
 dependencies/sources/google-apputils/README:
 	svn co http://google-apputils-python.googlecode.com/svn/trunk/ -r $(GOOGLE_APPUTILS_TAG) dependencies/sources/google-apputils
 
-# Install google-sparsehash.
-install_google_sparsehash: dependencies/install/include/google/dense_hash_map
+# Install sparsehash.
+install_sparsehash: dependencies/install/include/google/dense_hash_map
 
 dependencies/install/include/google/dense_hash_map: dependencies/sources/sparsehash/Makefile
 	cd dependencies/sources/sparsehash && make install
@@ -113,7 +113,7 @@ dependencies/sources/sparsehash/configure: dependencies/sources/sparsehash/autog
 	cd dependencies/sources/sparsehash && ./autogen.sh
 
 dependencies/sources/sparsehash/autogen.sh:
-	svn co http://google-sparsehash.googlecode.com/svn/trunk/ -r $(GOOGLE_SPARSEHASH_TAG) dependencies/sources/sparsehash
+	svn co http://sparsehash.googlecode.com/svn/trunk/ -r $(SPARSEHASH_TAG) dependencies/sources/sparsehash
 
 
 # Install Coin CBC.
