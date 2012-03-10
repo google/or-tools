@@ -1318,41 +1318,23 @@ struct FailureProtect {
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
 
+// Generic rename rule.
+%rename("%(camelcase)s", %$isfunction) "";
+
 // Rename rule on DecisionBuilder;
 %rename (NextWrap) operations_research::DecisionBuilder::Next;
-
-// Rename rules on SolutionCollector.
-%rename (Branches) operations_research::SolutionCollector::branches;
-%rename (Failures) operations_research::SolutionCollector::failures;
-%rename (ObjectiveValue) operations_research::SolutionCollector::objective_value;
-%rename (Solution) operations_research::SolutionCollector::solution;
-%rename (SolutionCount) operations_research::SolutionCollector::solution_count;
-%rename (WallTime) operations_research::SolutionCollector::wall_time;
-
-// Rename rule on OptimizeVar
-%rename (Best) operations_research::OptimizeVar::best;
 
 // Rename rule on SearchLimit
 %rename (IsCrossed) operations_research::SearchLimit::crossed;
 
 // Rename rules on Solver.
-%rename (AcceptedNeighbors) operations_research::Solver::accepted_neighbors;
 %rename (Add) operations_research::Solver::AddConstraint;
-%rename (Branches) operations_research::Solver::branches;
-%rename (DemonRuns) operations_research::Solver::demon_runs;
-%rename (FailStamp) operations_research::Solver::fail_stamp;
-%rename (Failures) operations_research::Solver::failures;
-%rename (FilteredNeighbors) operations_research::Solver::filtered_neighbors;
-%rename (Neighbors) operations_research::Solver::neighbors;
-%rename (Solutions) operations_research::Solver::solutions;
-%rename (Stamp) operations_research::Solver::stamp;
-%rename (WallTime) operations_research::Solver::wall_time;
 
 // Generic rename rules.
 %rename (ToString) *::DebugString;
 
-// Rename rules on PropagationBaseObject
-%rename (SetName) operations_research::PropagationBaseObject::set_name;
+// Keep the .solver() API.
+%rename (solver) *::solver;
 
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::IntVar, IntVar)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SearchMonitor, SearchMonitor)

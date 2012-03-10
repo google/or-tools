@@ -45,7 +45,6 @@ namespace Google.OrTools.ConstraintSolver
       Solver solver = GetSolver(vars);
       return solver.MakeSum(vars);
     }
-
     // scalar product
     public static IntExpr ScalProd(this IntVar[] vars, long[] coefs)
     {
