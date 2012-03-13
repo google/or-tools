@@ -3253,6 +3253,7 @@ class ModelVisitor : public BaseObject {
   static const char kScalProdLessOrEqual[];
   static const char kSemiContinuous[];
   static const char kSequenceVariable[];
+  static const char kSort[];
   static const char kSquare[];
   static const char kStartExpr[];
   static const char kSum[];
@@ -3421,6 +3422,10 @@ class ModelVisitor : public BaseObject {
   void VisitInt64ToInt64AsArray(ResultCallback1<int64, int64>* const callback,
                                 const string& arg_name,
                                 int64 index_max);
+  void VisitIntegerVariableArrayArgument(
+      const string& arg_name,
+      const ConstPtrArray<IntVar>& arguments);
+
 #endif  // #if !defined(SWIG)
 };
 

@@ -2631,6 +2631,7 @@ const char ModelVisitor::kScalProdGreaterOrEqual[] =
 const char ModelVisitor::kScalProdLessOrEqual[] = "ScalarProductLessOrEqual";
 const char ModelVisitor::kSemiContinuous[] = "SemiContinuous";
 const char ModelVisitor::kSequenceVariable[] = "SequenceVariable";
+const char ModelVisitor::kSort[] = "Sort";
 const char ModelVisitor::kSquare[] = "Square";
 const char ModelVisitor::kStartExpr[]= "StartExpression";
 const char ModelVisitor::kSum[] = "Sum";
@@ -2799,6 +2800,14 @@ void ModelVisitor::VisitIntegerVariableArrayArgument(
   for (int i = 0; i < size; ++i) {
     arguments[i]->Accept(this);
   }
+}
+
+void ModelVisitor::VisitIntegerVariableArrayArgument(
+    const string& arg_name,
+    const ConstPtrArray<IntVar>& arguments) {
+  VisitIntegerVariableArrayArgument(arg_name,
+                                    arguments.RawData(),
+                                    arguments.size());
 }
 
 void ModelVisitor::VisitIntervalArgument(
