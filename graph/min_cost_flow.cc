@@ -197,8 +197,8 @@ bool MinCostFlow::CheckCostRange() const {
   VLOG(3) << "Min cost magnitude = " << min_cost_magnitude
           << ", Max cost magnitude = " << max_cost_magnitude;
 #if !defined(_MSC_VER)
-  if (log(std::numeric_limits<CostValue>::max())
-          < log(max_cost_magnitude) + log(graph_->num_nodes() + 1)) {
+  if (log(std::numeric_limits<CostValue>::max()) <
+      log(max_cost_magnitude + 1) + log(graph_->num_nodes() + 1)) {
     LOG(DFATAL) << "Maximum cost magnitude " << max_cost_magnitude << " is too "
                 << "high for the number of nodes. Try changing the data.";
     return false;
