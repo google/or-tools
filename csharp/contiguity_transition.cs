@@ -30,21 +30,15 @@ public class ContiguityRegular
     // all states are accepting states
     int[] accepting_states = {1,2,3};
 
-    // The regular expression 0*1*0*
-    int[][] transition_tuples =
-      {
-        // state, input, next state
-        new int[] {1, 0, 1},
-        new int[] {1, 1, 2},
-        new int[] {2, 0, 3},
-        new int[] {2, 1, 2},
-        new int[] {3, 0, 3}
-      };
+    // The regular expression 0*1*0* {state, input, next state}
+    int[,] transition_tuples = { {1, 0, 1},
+                                 {1, 1, 2},
+                                 {2, 0, 3},
+                                 {2, 1, 2},
+                                 {3, 0, 3} };
 
     IntTupleSet result = new IntTupleSet(3);
-    foreach(int[] t in transition_tuples) {
-      result.Insert(t);
-    }
+    result.InsertAll(transition_tuples);
 
     solver.Add(x.Transition(result,
                             initial_state,
