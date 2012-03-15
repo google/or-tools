@@ -263,11 +263,9 @@ class Linearizer : public ModelParser {
   }
 
   virtual void VisitIntegerMatrixArgument(const string& arg_name,
-                                          const int64* const * const values,
-                                          int rows,
-                                          int columns) {
+                                          const IntTupleSet& values) {
     if (DoVisit()) {
-      Top()->SetIntegerMatrixArgument(arg_name, values, rows, columns);
+      Top()->SetIntegerMatrixArgument(arg_name, values);
     }
   }
 

@@ -1060,7 +1060,7 @@ void RoutingModel::SetStartEnd(
   VLOG(1) << "Number of nodes: " << nodes_;
   VLOG(1) << "Number of vehicles: " << vehicles_;
   for (int index = 0; index < index_to_node_.size(); ++index) {
-    VLOG(1) << "Variable index " << index
+    VLOG(2) << "Variable index " << index
             << " -> Node index " << index_to_node_[index];
   }
   for (NodeIndex node = kFirstNode; node < node_to_index_.size(); ++node) {

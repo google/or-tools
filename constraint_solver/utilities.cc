@@ -346,9 +346,9 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerMatrixArgument(const string& arg_name,
-                                          const int64* const * const values,
-                                          int rows,
-                                          int columns) {
+                                          const IntTupleSet& values) {
+    const int rows = values.NumTuples();
+    const int columns = values.Arity();
     string array = "[";
     for (int i = 0; i < rows; ++i) {
       if (i != 0) {
@@ -359,7 +359,7 @@ class PrintModelVisitor : public ModelVisitor {
         if (j != 0) {
           array.append(", ");
         }
-        StringAppendF(&array, "%lld", values[i][j]);
+        StringAppendF(&array, "%lld", values.Value(i, j));
       }
       array.append("]");
     }

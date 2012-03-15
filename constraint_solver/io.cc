@@ -30,6 +30,7 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/model.pb.h"
 #include "constraint_solver/search_limit.pb.h"
+#include "util/tuple_set.h"
 #include "util/vector_map.h"
 
 namespace operations_research {
@@ -76,7 +77,7 @@ class CPModelLoader {
 
   bool ScanOneArgument(int type_index,
                        const CPArgumentProto& arg_proto,
-                       std::vector<std::vector<int64> >* to_fill);
+                       IntTupleSet* to_fill);
 
   bool ScanOneArgument(int type_index,
                        const CPArgumentProto& arg_proto,
@@ -442,15 +443,15 @@ class ArgumentHolder {
   }
 
   void set_integer_matrix_argument(const string& arg_name,
-                                   const int64* const * const values,
-                                   int rows,
-                                   int columns) {
+                                   const IntTupleSet& values) {
+    const int rows = values.NumTuples();
+    const int columns = values.Arity();
     std::pair<int, std::vector<int64> > matrix = make_pair(columns, std::vector<int64>());
     integer_matrix_argument_[arg_name] = matrix;
     std::vector<int64>* const vals = &integer_matrix_argument_[arg_name].second;
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < columns; ++j) {
-        vals->push_back(values[i][j]);
+        vals->push_back(values.Value(i, j));
       }
     }
   }
@@ -626,10 +627,8 @@ class SecondPassVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntegerMatrixArgument(const string& arg_name,
-                                          const int64* const * const values,
-                                          int rows,
-                                          int columns) {
-    top()->set_integer_matrix_argument(arg_name, values, rows, columns);
+                                          const IntTupleSet& values) {
+    top()->set_integer_matrix_argument(arg_name, values);
   }
 
   virtual void VisitIntegerExpressionArgument(
@@ -1056,8 +1055,10 @@ Constraint* BuildAllowedAssignments(CPModelLoader* const builder,
                                     const CPConstraintProto& proto) {
   std::vector<IntVar*> vars;
   VERIFY(builder->ScanArguments(ModelVisitor::kVarsArgument, proto, &vars));
-  std::vector<std::vector<int64> > tuples;
-  VERIFY(builder->ScanArguments(ModelVisitor::kTuplesArgument, proto, &tuples));
+  IntTupleSet tuples(vars.size());
+  VERIFY(builder->ScanArguments(ModelVisitor::kTuplesArgument,
+                                proto,
+                                &tuples));
   return builder->solver()->MakeAllowedAssignments(vars, tuples);
 }
 
@@ -2154,8 +2155,10 @@ Constraint* BuildTransition(CPModelLoader* const builder,
                             const CPConstraintProto& proto) {
   std::vector<IntVar*> vars;
   VERIFY(builder->ScanArguments(ModelVisitor::kVarsArgument, proto, &vars));
-  std::vector<std::vector<int64> > tuples;
-  VERIFY(builder->ScanArguments(ModelVisitor::kTuplesArgument, proto, &tuples));
+  IntTupleSet tuples(3);
+  VERIFY(builder->ScanArguments(ModelVisitor::kTuplesArgument,
+                                proto,
+                                &tuples));
   int64 initial_state = 0;
   VERIFY(builder->ScanArguments(ModelVisitor::kInitialState,
                                 proto,
@@ -2302,20 +2305,21 @@ bool CPModelLoader::ScanOneArgument(int type_index,
 
 bool CPModelLoader::ScanOneArgument(int type_index,
                                      const CPArgumentProto& arg_proto,
-                                     std::vector<std::vector<int64> >* to_fill) {
+                                     IntTupleSet* to_fill) {
   if (arg_proto.argument_index() == type_index &&
       arg_proto.has_integer_matrix()) {
-    to_fill->clear();
+    to_fill->Clear();
     const CPIntegerMatrixProto& matrix = arg_proto.integer_matrix();
     const int rows = matrix.rows();
     const int columns = matrix.columns();
-    to_fill->resize(rows);
     int counter = 0;
     for (int i = 0; i < rows; ++i) {
+      std::vector<int64> tuple;
       for (int j = 0; j < columns; ++j) {
         const int64 value = matrix.values(counter++);
-        (*to_fill)[i].push_back(value);
+        tuple.push_back(value);
       }
+      to_fill->Insert(tuple);
     }
     CHECK_EQ(matrix.values_size(), counter);
     return true;

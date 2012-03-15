@@ -109,10 +109,13 @@ template <class T> class ConstPtrArray {
 
   // Access to const raw data.
   // TODO(user) : deprecate API.
-  const IntVar* const* RawData() const {
-    return data_->data();
+  const T* const* RawData() const {
+    if (data_.get() == NULL) {
+      return data_->data();
+    } else {
+      return NULL;
+    }
   }
-
 
  private:
   scoped_ptr<std::vector<T*> > data_;

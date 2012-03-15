@@ -35,7 +35,7 @@ public class HidatoTable
    * rows: the number of rows in the grid
    *  cols: the number of columns in the grid
    */
-  public static int[,] BuildPairs(int rows, int cols)
+  public static IntTupleSet BuildPairs(int rows, int cols)
   {
     int[] ix = {-1, 0, 1};
     var result_tmp = (from x in Enumerable.Range(0, rows)
@@ -53,13 +53,9 @@ public class HidatoTable
 
     // Convert to len x 2 matrix
     int len = result_tmp.Length;
-    int[,] result = new int[len, 2];
-    int i = 0;
+    IntTupleSet result = new IntTupleSet(2);
     foreach(int[] r in result_tmp) {
-      for(int j = 0; j < 2; j++) {
-        result[i, j] = r[j];
-      }
-      i++;
+      result.Insert(r);
     }
     return result;
   }
@@ -192,7 +188,7 @@ public class HidatoTable
 
     // Consecutive numbers much touch each other in the grid.
     // We use an allowed assignment constraint to model it.
-    int[,] close_tuples = BuildPairs(r, c);
+    IntTupleSet close_tuples = BuildPairs(r, c);
     for(int k = 1; k < r * c - 1; k++) {
       IntVar[] tmp = new IntVar[] {positions[k], positions[k + 1]};
       solver.Add(tmp.AllowedAssignments(close_tuples));

@@ -27,14 +27,7 @@ namespace Google.OrTools.ConstraintSolver
     }
     // Allowed assignment
     public static Constraint AllowedAssignments(this IntVar[] vars,
-                                                long[,] tuples)
-    {
-      Solver solver = GetSolver(vars);
-      return solver.MakeAllowedAssignments(vars, tuples);
-    }
-    // Allowed assignment
-    public static Constraint AllowedAssignments(this IntVar[] vars,
-                                                int[,] tuples)
+                                                IntTupleSet tuples)
     {
       Solver solver = GetSolver(vars);
       return solver.MakeAllowedAssignments(vars, tuples);
@@ -45,6 +38,7 @@ namespace Google.OrTools.ConstraintSolver
       Solver solver = GetSolver(vars);
       return solver.MakeSum(vars);
     }
+
     // scalar product
     public static IntExpr ScalProd(this IntVar[] vars, long[] coefs)
     {
@@ -125,7 +119,7 @@ namespace Google.OrTools.ConstraintSolver
       return solver.MakeDistribute(vars, card_min, card_max, card_size);
     }
     public static Constraint Transition(this IntVar[] vars,
-                                        long[,] transitions,
+                                        IntTupleSet transitions,
                                         long initial_state,
                                         long[] final_states) {
       Solver solver = GetSolver(vars);
@@ -135,7 +129,7 @@ namespace Google.OrTools.ConstraintSolver
                                              final_states);
     }
     public static Constraint Transition(this IntVar[] vars,
-                                        int[,] transitions,
+                                        IntTupleSet transitions,
                                         long initial_state,
                                         int[] final_states) {
       Solver solver = GetSolver(vars);

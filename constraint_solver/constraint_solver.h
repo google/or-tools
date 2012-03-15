@@ -126,6 +126,7 @@ class DependencyGraph;
 class Dimension;
 class ExpressionCache;
 class IntExpr;
+class IntTupleSet;
 class IntVar;
 class IntVarAssignmentProto;
 class IntVarElement;
@@ -1611,33 +1612,9 @@ class Solver {
   // This method creates a constraint where the graph of the relation
   // between the variables is given in extension. There are 'arity'
   // variables involved in the relation and the graph is given by a
-  // matrix of size 'tuple_count' x 'arity'.
-  Constraint* MakeAllowedAssignments(const IntVar* const * vars,
-                                     const int64* const * tuples,
-                                     int tuple_count,
-                                     int arity);
-
-  // This method creates a constraint where the graph of the relation
-  // between the variables is given in extension. There are 'arity'
-  // variables involved in the relation and the graph is given by a
-  // matrix of size 'tuple_count' x 'arity'.
-  Constraint* MakeAllowedAssignments(const IntVar* const * vars,
-                                     const int* const * tuples,
-                                     int tuple_count,
-                                     int arity);
-
-  // This method creates a constraint where the graph of the relation
-  // between the variables is given in extension. The graph is given by a
-  // matrix of size tuples.size() x vars.size().
+  // integer tuple set.
   Constraint* MakeAllowedAssignments(const std::vector<IntVar*>& vars,
-                                     const std::vector<std::vector<int64> >& tuples);
-
-  // This method creates a constraint where the graph of the relation
-  // between the variables is given in extension. The graph is given by a
-  // matrix of size tuples.size() x vars.size().
-  Constraint* MakeAllowedAssignments(const std::vector<IntVar*>& vars,
-                                     const std::vector<std::vector<int> >& tuples);
-
+                                     const IntTupleSet& tuples);
 
   // This constraint create a finite automaton that will check the
   // sequence of variables vars. It uses a transition table called
@@ -1648,7 +1625,7 @@ class Solver {
   // Only the transitions (i.e. the variables) are visible.
   Constraint* MakeTransitionConstraint(
       const std::vector<IntVar*>& vars,
-      const std::vector<std::vector<int64> >& transitions,
+      const IntTupleSet& transitions,
       int64 initial_state,
       const std::vector<int64>& final_states);
 
@@ -1661,7 +1638,7 @@ class Solver {
   // Only the transitions (i.e. the variables) are visible.
   Constraint* MakeTransitionConstraint(
       const std::vector<IntVar*>& vars,
-      const std::vector<std::vector<int> >& transitions,
+      const IntTupleSet& transitions,
       int64 initial_state,
       const std::vector<int>& final_states);
 
@@ -3378,9 +3355,7 @@ class ModelVisitor : public BaseObject {
                                          const int64* const values,
                                          int size);
   virtual void VisitIntegerMatrixArgument(const string& arg_name,
-                                          const int64* const * const values,
-                                          int rows,
-                                          int columns);
+                                          const IntTupleSet& tuples);
 
   // Visit integer expression argument.
   virtual void VisitIntegerExpressionArgument(
@@ -3425,7 +3400,6 @@ class ModelVisitor : public BaseObject {
   void VisitIntegerVariableArrayArgument(
       const string& arg_name,
       const ConstPtrArray<IntVar>& arguments);
-
 #endif  // #if !defined(SWIG)
 };
 

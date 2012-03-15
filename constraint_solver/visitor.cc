@@ -54,10 +54,9 @@ void ArgumentHolder::SetIntegerArrayArgument(
 
 void ArgumentHolder::SetIntegerMatrixArgument(
     const string& arg_name,
-    const int64* const * const values,
-    int rows,
-    int columns) {
-  matrix_argument_[arg_name] = Matrix(values, rows, columns);
+    const IntTupleSet& values) {
+  std::pair<string, IntTupleSet> to_insert= std::make_pair(arg_name, values);
+  matrix_argument_.insert(to_insert);
 }
 
 void ArgumentHolder::SetIntegerExpressionArgument(
@@ -143,7 +142,7 @@ ArgumentHolder::FindIntegerVariableArrayArgumentOrDie(
   return FindOrDie(integer_variable_array_argument_, arg_name);
 }
 
-const ArgumentHolder::Matrix& ArgumentHolder::FindIntegerMatrixArgumentOrDie(
+const IntTupleSet& ArgumentHolder::FindIntegerMatrixArgumentOrDie(
     const string& arg_name) const {
   return FindOrDie(matrix_argument_, arg_name);
 }
@@ -234,10 +233,8 @@ void ModelParser::VisitIntegerArrayArgument(const string& arg_name,
 }
 
 void ModelParser::VisitIntegerMatrixArgument(const string& arg_name,
-                                             const int64* const * const values,
-                                             int rows,
-                                             int columns) {
-  Top()->SetIntegerMatrixArgument(arg_name, values, rows, columns);
+                                             const IntTupleSet& values) {
+  Top()->SetIntegerMatrixArgument(arg_name, values);
 }
 
 // Variables.

@@ -71,6 +71,7 @@
 #include "constraint_solver/constraint_solver.h"
 #include "util/const_int_array.h"
 #include "util/const_ptr_array.h"
+#include "util/tuple_set.h"
 #include "util/vector_map.h"
 
 template <typename T> class ResultCallback;
@@ -1622,17 +1623,6 @@ class DependencyGraph : public BaseObject {
 #if !defined(SWIG)
 class ArgumentHolder {
  public:
-  // Internal structure to store an integer matrix.
-  struct Matrix {
-    Matrix() : values(NULL), rows(0), columns(0) {}
-    // We do not take ownership as the data will only be used temporarly.
-    Matrix(const int64 * const * v, int r, int c)
-        : values(v), rows(r), columns(c) {}
-    const int64* const * values;
-    int rows;
-    int columns;
-  };
-
   // Type of the argument.
   const string& TypeName() const;
   void SetTypeName(const string& type_name);
@@ -1643,9 +1633,7 @@ class ArgumentHolder {
                                const int64* const values,
                                int size);
   void SetIntegerMatrixArgument(const string& arg_name,
-                                const int64* const * const values,
-                                int rows,
-                                int columns);
+                                const IntTupleSet& values);
   void SetIntegerExpressionArgument(const string& arg_name,
                                     const IntExpr* const expr);
   void SetIntegerVariableArrayArgument(const string& arg_name,
@@ -1673,7 +1661,8 @@ class ArgumentHolder {
   int64 FindIntegerArgumentOrDie(const string& arg_name) const;
   const std::vector<int64>& FindIntegerArrayArgumentOrDie(
       const string& arg_name) const;
-  const Matrix& FindIntegerMatrixArgumentOrDie(const string& arg_name) const;
+  const IntTupleSet& FindIntegerMatrixArgumentOrDie(
+      const string& arg_name) const;
 
   const IntExpr* FindIntegerExpressionArgumentOrDie(
       const string& arg_name) const;
@@ -1684,7 +1673,7 @@ class ArgumentHolder {
   string type_name_;
   hash_map<string, int64> integer_argument_;
   hash_map<string, std::vector<int64> > integer_array_argument_;
-  hash_map<string, Matrix> matrix_argument_;
+  hash_map<string, IntTupleSet> matrix_argument_;
   hash_map<string, const IntExpr*> integer_expression_argument_;
   hash_map<string, const IntervalVar*> interval_argument_;
   hash_map<string, const SequenceVar*> sequence_argument_;
@@ -1732,9 +1721,7 @@ class ModelParser : public ModelVisitor {
                                          const int64* const values,
                                          int size);
   virtual void VisitIntegerMatrixArgument(const string& arg_name,
-                                          const int64* const * const values,
-                                          int rows,
-                                          int columns);
+                                          const IntTupleSet& values);
   // Variables.
   virtual void VisitIntegerExpressionArgument(
       const string& arg_name,

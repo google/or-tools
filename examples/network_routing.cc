@@ -43,6 +43,7 @@
 #include "base/hash.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "graph/shortestpaths.h"
+#include "util/tuple_set.h"
 #include "base/random.h"
 
 // ----- Data Generator -----
@@ -408,7 +409,7 @@ class NetworkRoutingSolver {
  public:
   typedef hash_set<int> OnePath;
 
-  NetworkRoutingSolver() : num_nodes_(-1) {}
+  NetworkRoutingSolver() : arcs_data_(3), num_nodes_(-1) {}
 
   void ComputeAllPathsForOneDemandAndOnePathLength(int demand_index,
                                                    int max_length,
@@ -477,15 +478,11 @@ class NetworkRoutingSolver {
   }
 
   void AddArcData(int index, int source, int destination, int arc_id) {
-    arcs_data_[index].resize(3);
-    arcs_data_[index][0] = source;
-    arcs_data_[index][1] = destination;
-    arcs_data_[index][2] = arc_id;
+    arcs_data_.Insert3(source, destination, arc_id);
   }
 
   void InitArcInfo(const NetworkRoutingData& data) {
     const int num_arcs = data.num_arcs();
-    arcs_data_.resize(2 * num_arcs);
     capacity_.clear();
     capacity_.resize(num_nodes_);
     for (int node_index = 0; node_index < num_nodes_; ++node_index) {
@@ -609,20 +606,20 @@ class NetworkRoutingSolver {
                                std::vector<IntVar*>* decision_vars) {
     // Fill Tuple Set for AllowedAssignment constraint.
     const std::vector<OnePath> paths = all_paths_[demand_index];
-    std::vector<std::vector<int64> > tuple_set;
-    tuple_set.resize(paths.size());
+    IntTupleSet tuple_set(count_arcs() + 1);
     for (int path_id = 0; path_id < paths.size(); ++path_id) {
-      tuple_set[path_id].resize(count_arcs() + 1, false);
-      tuple_set[path_id][0] = path_id;
+      std::vector<int> tuple(count_arcs() + 1);
+      tuple[0] = path_id;
       for (ConstIter<OnePath> it(paths[path_id]); !it.at_end(); ++it) {
         const int arc = *it;
         // + 1 because tuple_set.back()[0] contains path_id.
-        tuple_set[path_id][arc + 1] = true;
+        tuple[arc + 1] = true;
       }
+      tuple_set.Insert(tuple);
     }
 
     const string name = StringPrintf("PathDecision_%i", demand_index);
-    IntVar* const var = solver->MakeIntVar(0, tuple_set.size() - 1, name);
+    IntVar* const var = solver->MakeIntVar(0, tuple_set.NumTuples() - 1, name);
     std::vector<IntVar*> tmp_vars;
     tmp_vars.push_back(var);
     for (int i = 0; i < count_arcs(); ++i) {
@@ -855,7 +852,8 @@ class NetworkRoutingSolver {
     std::vector<IntVar*> comfort_costs;
     for (int arc_index = 0; arc_index < num_arcs; ++arc_index) {
       const int capacity =
-          capacity_[arcs_data_[2 * arc_index][0]][arcs_data_[2 * arc_index][1]];
+          capacity_[arcs_data_.Value(2 * arc_index, 0)]
+                   [arcs_data_.Value(2 * arc_index, 1)];
       IntVar* const usage_cost =
           solver.MakeDiv(solver.MakeProd(vtraffic[arc_index], kOneThousand),
                          capacity)->Var();
@@ -990,8 +988,8 @@ class NetworkRoutingSolver {
     for (int i = 0; i < num_arcs; ++i) {
       const int64 arc_usage = usage_costs[i]->Value();
       if (arc_usage >= cutoff) {
-        const int source_index = arcs_data_[2 * i][0];
-        const int destination_index = arcs_data_[2 * i][1];
+        const int source_index = arcs_data_.Value(2 * i, 0);
+        const int destination_index = arcs_data_.Value(2 * i, 1);
         LOG(INFO) << " + Arc " << source_index
                   << " <-> " << destination_index
                   << " has a usage = " << arc_usage / 10.0
@@ -1017,9 +1015,9 @@ class NetworkRoutingSolver {
   }
 
  private:
-  int count_arcs() const { return arcs_data_.size() / 2; }
+  int count_arcs() const { return arcs_data_.NumTuples() / 2; }
 
-  std::vector<std::vector<int64> > arcs_data_;
+  IntTupleSet arcs_data_;
   std::vector<int> arc_capacity_;
   std::vector<Demand> demands_array_;
   int num_nodes_;

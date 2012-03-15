@@ -37,6 +37,7 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/model.pb.h"
 #include "util/const_int_array.h"
+#include "util/tuple_set.h"
 
 DEFINE_bool(cp_trace_propagation,
             false,
@@ -2783,9 +2784,7 @@ void ModelVisitor::VisitIntegerArrayArgument(const string& arg_name,
                                              int size) {}
 
 void ModelVisitor::VisitIntegerMatrixArgument(const string& arg_name,
-                                              const int64* const * const values,
-                                              int rows,
-                                              int columns) {}
+                                              const IntTupleSet& tuples) {}
 
 void ModelVisitor::VisitIntegerExpressionArgument(
     const string& arg_name,

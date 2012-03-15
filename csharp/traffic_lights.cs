@@ -79,10 +79,11 @@ public class TrafficLights
     string[] lights = {"r", "ry", "g", "y"};
 
     // The allowed combinations
-    int[,] allowed = {{r,r,g,g},
-                      {ry,r,y,r},
-                      {g,g,r,r},
-                      {y,r,ry,r}};
+    IntTupleSet allowed = new IntTupleSet(4);
+    allowed.InsertAll(new int[,] {{r,r,g,g},
+                                  {ry,r,y,r},
+                                  {g,g,r,r},
+                                  {y,r,ry,r}});
     //
     // Decision variables
     //

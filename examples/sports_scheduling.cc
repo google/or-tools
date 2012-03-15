@@ -39,7 +39,7 @@
 // and to do search on it.
 //
 // We use an original approch in this model as most of the constraints will
-// be pre-computed and asserted using an AllowedAssignemnt constraint (see
+// be pre-computed and asserted using an AllowedAssignment constraint (see
 // Solver::MakeAllowedAssignment() in constraint_solver.h).
 // In particular:
 //   - Each day, we have a perfect matching between teams
@@ -91,14 +91,10 @@ namespace operations_research {
 
 // Computes the tuple set that links opponents, home_away, and
 // signed_opponent on a single day for a single team.
-void ComputeOneDayOneTeamTuples(int num_teams, std::vector<std::vector<int> >* tuples) {
+void ComputeOneDayOneTeamTuples(int num_teams, IntTupleSet* const tuples) {
   for (int home_away = 0; home_away <= 1; ++home_away) {
     for (int opponent = 0; opponent < num_teams; ++opponent) {
-      tuples->resize(tuples->size() + 1);
-      tuples->back().resize(3);
-      tuples->back()[0] = opponent;
-      tuples->back()[1] = home_away;
-      tuples->back()[2] = opponent + home_away * num_teams;
+      tuples->Insert3(opponent, home_away, opponent + home_away * num_teams);
     }
   }
 }
@@ -107,7 +103,7 @@ void AddOneDayOneTeamConstraint(Solver* const solver,
                                 IntVar* const opponent,
                                 IntVar* const home_away,
                                 IntVar* const signed_opponent,
-                                const std::vector<std::vector<int> >& intra_day_tuples) {
+                                const IntTupleSet& intra_day_tuples) {
   std::vector<IntVar*> tmp_vars;
   tmp_vars.push_back(opponent);
   tmp_vars.push_back(home_away);
@@ -120,7 +116,7 @@ void AddOneDayOneTeamConstraint(Solver* const solver,
 
 // Computes all valid combination of signed_opponent for a single
 // day and all teams.
-void ComputeOneDayTuples(int num_teams, std::vector<std::vector<int> >* day_tuples) {
+void ComputeOneDayTuples(int num_teams, IntTupleSet* const day_tuples) {
   LOG(INFO) << "Compute possible opponents and locations for any day.";
   Solver solver("ComputeOneDayTuples");
 
@@ -159,7 +155,7 @@ void ComputeOneDayTuples(int num_teams, std::vector<std::vector<int> >* day_tupl
   solver.AddConstraint(solver.MakeSumEquality(home_aways, num_teams / 2));
 
   // Link signed_opponents, home_away and opponents
-  std::vector<std::vector<int> > one_day_one_team_tuples;
+  IntTupleSet one_day_one_team_tuples(3);
   ComputeOneDayOneTeamTuples(num_teams, &one_day_one_team_tuples);
   for (int team_index = 0; team_index < num_teams; ++team_index) {
     std::vector<IntVar*> tmp_vars;
@@ -191,10 +187,10 @@ void ComputeOneDayTuples(int num_teams, std::vector<std::vector<int> >* day_tupl
     for (int i = 0; i < num_teams; ++i) {
       solution.push_back(signed_opponents[i]->Value());
     }
-    day_tuples->push_back(solution);
+    day_tuples->Insert(solution);
   }
   solver.EndSearch();
-  LOG(INFO) << day_tuples->size()
+  LOG(INFO) << day_tuples->NumTuples()
             << " solutions to the one-day matching problem";
 }
 
@@ -203,7 +199,7 @@ void AddOneTeamConstraints(Solver* const solver,
                            const std::vector<IntVar*>& opponents,
                            const std::vector<IntVar*>& home_aways,
                            const std::vector<IntVar*>& signed_opponents,
-                           const std::vector<std::vector<int> >& home_away_tuples,
+                           const IntTupleSet& home_away_tuples,
                            IntVar* const break_var,
                            int num_teams) {
   const int half_season = num_teams - 1;
@@ -238,7 +234,7 @@ void AddOneTeamConstraints(Solver* const solver,
 // Computes all valid tuples for home_away variables for a single team
 // on the full lenght of the season.
 void ComputeOneTeamHomeAwayTuples(int num_teams,
-                                  std::vector<std::vector<int> >* home_away_tuples) {
+                                  IntTupleSet* const home_away_tuples) {
   LOG(INFO) << "Compute possible sequence of home and aways for any team.";
   const int half_season = num_teams - 1;
   const int full_season = 2 * half_season;
@@ -268,10 +264,10 @@ void ComputeOneTeamHomeAwayTuples(int num_teams,
       breaks += (solution[i] == solution[i + 1]);
     }
     solution.push_back(breaks);
-    home_away_tuples->push_back(solution);
+    home_away_tuples->Insert(solution);
   }
   solver.EndSearch();
-  LOG(INFO) << home_away_tuples->size()
+  LOG(INFO) << home_away_tuples->NumTuples()
             << " combination of home_aways for a team on the full season";
 }
 
@@ -311,7 +307,7 @@ void SportsScheduling(int num_teams) {
   // ----- Constraints -----
 
   // Constraints on a given day.
-  std::vector<std::vector<int> > one_day_tuples;
+  IntTupleSet one_day_tuples(num_teams);
   ComputeOneDayTuples(num_teams, &one_day_tuples);
   for (int day = 0; day < full_season; ++day) {
     std::vector<IntVar*> all_vars;
@@ -323,7 +319,7 @@ void SportsScheduling(int num_teams) {
   }
 
   // Links signed_opponents, home_away and opponents.
-  std::vector<std::vector<int> > one_day_one_team_tuples;
+  IntTupleSet one_day_one_team_tuples(3);
   ComputeOneDayOneTeamTuples(num_teams, &one_day_one_team_tuples);
   for (int day = 0; day < full_season; ++day) {
     for (int team_index = 0; team_index < num_teams; ++team_index) {
@@ -336,7 +332,7 @@ void SportsScheduling(int num_teams) {
   }
 
   // Constraints on a team.
-  std::vector<std::vector<int> > home_away_tuples;
+  IntTupleSet home_away_tuples(full_season + 1);
   ComputeOneTeamHomeAwayTuples(num_teams, &home_away_tuples);
   std::vector<IntVar*> team_breaks;
   solver.MakeIntVarArray(num_teams,

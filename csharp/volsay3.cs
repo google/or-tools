@@ -31,9 +31,9 @@ public class Volsay3
    * This version use arrays and matrices
    *
    *
-   * Also see 
+   * Also see
    *  http://www.hakank.org/or-tools/volsay2.cs
-   *  http://www.hakank.org/or-tools/volsay3.py 
+   *  http://www.hakank.org/or-tools/volsay3.py
    *
    */
   private static void Solve()
@@ -63,15 +63,15 @@ public class Volsay3
 
     //
     // Constraints
-    // 
+    //
     int c_len = components.Length;
     Constraint[] cons = new Constraint[c_len];
     for(int c = 0; c < c_len; c++) {
       cons[c] = solver.Add( (from p in PRODUCTS
-                     select (demand[p,c]*production[p])).
-                 ToArray().Sum() <= stock[c]);
+                             select (demand[p,c]*production[p])).
+                            ToArray().Sum() <= stock[c]);
     }
-    
+
     //
     // Objective
     //
@@ -89,17 +89,17 @@ public class Volsay3
 
     Console.WriteLine("Objective: {0}", solver.ObjectiveValue());
     foreach(int p in PRODUCTS) {
-      Console.WriteLine("{0,-10}: {1} ReducedCost: {2}", 
+      Console.WriteLine("{0,-10}: {1} ReducedCost: {2}",
                         products[p],
-                        production[p].SolutionValue(), 
+                        production[p].SolutionValue(),
                         production[p].ReducedCost());
     }
 
 
     for(int c = 0; c < c_len; c++) {
-      Console.WriteLine("Constraint {0} DualValue {1} Activity: {2} lb: {3} ub: {4}", 
+      Console.WriteLine("Constraint {0} DualValue {1} Activity: {2} lb: {3} ub: {4}",
                         c,
-                        cons[c].DualValue(), 
+                        cons[c].DualValue(),
                         cons[c].Activity(),
                         cons[c].Lb(),
                         cons[c].Ub());

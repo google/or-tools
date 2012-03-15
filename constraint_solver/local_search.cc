@@ -210,7 +210,7 @@ bool IntVarLocalSearchOperator::MakeNextNeighbor(Assignment* delta,
     }
 
     if (ApplyChanges(delta, deltadelta)) {
-      VLOG(1) << "Delta = " << delta->DebugString();
+      VLOG(2) << "Delta = " << delta->DebugString();
       return true;
     }
   }

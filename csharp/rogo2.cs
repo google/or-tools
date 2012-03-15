@@ -63,17 +63,17 @@ public class Rogo2
    * Build the table of valid connections of the grid.
    *
    */
-  public static int[,] ValidConnections(int rows, int cols)
+  public static IntTupleSet ValidConnections(int rows, int cols)
   {
 
     IEnumerable<int> ROWS = Enumerable.Range(0, rows);
     IEnumerable<int> COLS = Enumerable.Range(0, cols);
     var result_tmp = (
-                      from i1 in ROWS 
-                      from j1 in COLS 
+                      from i1 in ROWS
+                      from j1 in COLS
                       from i2 in ROWS
-                      from j2 in COLS 
-                      where 
+                      from j2 in COLS
+                      where
                       (Math.Abs(j1-j2) == 1 && i1 == i2) ||
                       (Math.Abs(i1-i2) == 1 && j1 % cols == j2 % cols)
                       select new int[] {i1*cols+j1, i2*cols+j2}
@@ -81,15 +81,10 @@ public class Rogo2
 
     // Convert to len x 2 matrix
     int len = result_tmp.Length;
-    int[,] result = new int[len, 2];
-    int i = 0;
+    IntTupleSet result = new IntTupleSet(2);
     foreach(int[] r in result_tmp) {
-      for(int j = 0; j < 2; j++) {
-        result[i, j] = r[j];
-      }
-      i++;
+      result.Insert(r);
     }
-
     return result;
 
   }
@@ -118,7 +113,8 @@ public class Rogo2
    * though this model differs in a couple of central points
    * which makes it much faster:
    *
-   * - it use a table (AllowedAssignments) with the valid connections
+   * - it use a table (
+AllowedAssignments) with the valid connections
    * - instead of two coordinates arrays, it use a single path array
    *
    */
@@ -149,7 +145,7 @@ public class Rogo2
     IEnumerable<int> STEPS1 = Enumerable.Range(0, max_steps-1);
 
     // the valid connections, to be used with AllowedAssignments
-    int[,] valid_connections = ValidConnections(rows, cols);
+    IntTupleSet valid_connections = ValidConnections(rows, cols);
 
 
     //
@@ -158,11 +154,11 @@ public class Rogo2
     IntVar[] path = solver.MakeIntVarArray(max_steps, 0, rows*cols-1, "path");
     IntVar[] points = solver.MakeIntVarArray(max_steps, 0, best, "points");
     IntVar sum_points = points.Sum().VarWithName("sum_points");
-    
+
 
     //
     // Constraints
-    //  
+    //
 
     foreach(int s in STEPS) {
       // calculate the points (to maximize)
@@ -207,7 +203,7 @@ public class Rogo2
 
     solver.NewSearch(db, obj);
 
-    while (solver.NextSolution()) {     
+    while (solver.NextSolution()) {
       Console.WriteLine("sum_points: {0}", sum_points.Value());
       Console.Write("path: ");
       foreach(int s in STEPS) {
@@ -227,7 +223,7 @@ public class Rogo2
       for(int i = 0; i < rows; i++) {
         for(int j = 0; j < cols; j++) {
           String p = sol[i,j] == 1 ? "X" : " ";
-          String q = problem[i,j] == B ? "B" : 
+          String q = problem[i,j] == B ? "B" :
             problem[i,j] == 0 ? "." : problem[i,j].ToString();
           Console.Write("{0,2}{1} ", q, p);
         }
@@ -259,8 +255,8 @@ public class Rogo2
    *  max_step
    *  best
    *  <data>
-   *  
-   * Where <data> is a rows x cols matrix of 
+   *
+   * Where <data> is a rows x cols matrix of
    *   digits (points), W (white), B (black)
    *
    * """
@@ -282,13 +278,13 @@ public class Rogo2
   private static void ReadFile(String file) {
 
     Console.WriteLine("readFile(" + file + ")");
-        
+
     TextReader inr = new StreamReader(file);
     String str;
     int lineCount = 0;
-    while ((str = inr.ReadLine()) != null && str.Length > 0) {    
+    while ((str = inr.ReadLine()) != null && str.Length > 0) {
       str = str.Trim();
-     
+
       Console.WriteLine(str);
 
       // ignore comments
@@ -310,7 +306,7 @@ public class Rogo2
         best = Convert.ToInt32(str);
 
       } else {
-        
+
         String[] tmp = Regex.Split(str, "[,\\s]+");
         for(int j = 0; j < cols; j++) {
           int val = 0;
@@ -324,13 +320,13 @@ public class Rogo2
           problem[lineCount-4, j] = val;
         }
       }
-       
+
       lineCount++;
-     
+
     } // end while
-    
+
     inr.Close();
-    
+
   } // end readFile
 
 

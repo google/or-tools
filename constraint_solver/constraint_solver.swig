@@ -13,6 +13,7 @@
 
 %include exception.i
 %include util/data.swig
+%include util/util.swig
 
 // Include the file we want to wrap a first time.
 #ifdef SWIGPYTHON

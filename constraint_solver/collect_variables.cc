@@ -75,20 +75,20 @@ class CollectVariablesVisitor : public ModelParser {
       IntVar* const count_var = count_expr->Var();
       IgnoreIntegerVariable(count_var);
     } else if (type_name.compare(ModelVisitor::kAllowedAssignments) == 0) {
-      const ArgumentHolder::Matrix& matrix =
+      const IntTupleSet& matrix =
           Top()->FindIntegerMatrixArgumentOrDie(ModelVisitor::kTuplesArgument);
-      std::vector<hash_set<int> > counters(matrix.columns);
-      for (int i = 0; i < matrix.rows; ++i) {
-        for (int j = 0; j < matrix.columns; ++j) {
-          counters[j].insert(matrix.values[i][j]);
+      std::vector<hash_set<int> > counters(matrix.Arity());
+      for (int i = 0; i < matrix.NumTuples(); ++i) {
+        for (int j = 0; j < matrix.Arity(); ++j) {
+          counters[j].insert(matrix.Value(i, j));
         }
       }
-      for (int j = 0; j < matrix.columns; ++j) {
-        if (counters[j].size() == matrix.rows) {
+      for (int j = 0; j < matrix.Arity(); ++j) {
+        if (counters[j].size() == matrix.NumTuples()) {
           const std::vector<const IntVar*>& vars =
               Top()->FindIntegerVariableArrayArgumentOrDie(
                   ModelVisitor::kVarsArgument);
-          for (int k = 0; k < matrix.columns; ++k) {
+          for (int k = 0; k < matrix.Arity(); ++k) {
             if (j != k) {
               IgnoreIntegerVariable(const_cast<IntVar*>(vars[k]));
             }
