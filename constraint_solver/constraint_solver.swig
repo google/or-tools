@@ -277,7 +277,6 @@ class PyDecisionBuilder(object):
 %rename (Neighbors) operations_research::Solver::neighbors;
 %rename (Solutions) operations_research::Solver::solutions;
 %rename (Stamp) operations_research::Solver::stamp;
-%rename (tryDecisions) operations_research::Solver::Try;
 %rename (WallTime) operations_research::Solver::wall_time;
 
 // Automatic rule.
@@ -1078,6 +1077,8 @@ struct FailureProtect {
 
 %rename (nextWrap) operations_research::DecisionBuilder::Next;
 %rename (toString) *::DebugString;
+%rename (tryDecisions) operations_research::Solver::Try;
+
 
 %rename("%(lowercamelcase)s", %$isfunction) "";
 
