@@ -65,7 +65,7 @@ public class AllDifferentExcept0Test
     // we also require at least 2 0's
     IntVar[] z_tmp = new IntVar[n];
     for(int i = 0; i < n; i++) {
-      z_tmp[i] = (x[i] == 0).StatusVar();
+      z_tmp[i] = x[i] == 0;
     }
     IntVar z = z_tmp.Sum().VarWithName("z");
     solver.Add(z == 2);

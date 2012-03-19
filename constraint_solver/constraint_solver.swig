@@ -1586,6 +1586,18 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchOperator, LocalSearc
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchFilter)
 
 namespace operations_research {
+%typemap(cscode) Constraint %{
+  public static implicit operator IntVar(Constraint eq)
+  {
+    return eq.StatusVar();
+  }
+
+  public static implicit operator IntExpr(Constraint eq)
+  {
+    return eq.StatusVar();
+  }
+%}
+
 
 // Add arithmetic operators to integer expressions.
 %typemap(cscode) IntExpr %{
