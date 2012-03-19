@@ -28,10 +28,8 @@ public class AllDifferentExcept0Test
     int n = a.Length;
     for(int i = 0; i < n; i++) {
       for(int j = 0; j < i; j++) {
-        IntVar bi = a[i].IsDifferent(0);
-        IntVar bj = a[j].IsDifferent(0);
-        IntVar bij = a[i].IsDifferent(a[j]);
-        solver.Add(bi * bj <= bij);
+        solver.Add((a[i] != 0).StatusVar() * (a[j] != 0).StatusVar() <=
+                   (a[i] != a[j]).StatusVar());
       }
     }
   }
@@ -67,9 +65,9 @@ public class AllDifferentExcept0Test
     // we also require at least 2 0's
     IntVar[] z_tmp = new IntVar[n];
     for(int i = 0; i < n; i++) {
-      z_tmp[i] = x[i].IsEqual(0);
+      z_tmp[i] = (x[i] == 0).StatusVar();
     }
-    IntVar z = z_tmp.Sum().Var();
+    IntVar z = z_tmp.Sum().VarWithName("z");
     solver.Add(z == 2);
 
 

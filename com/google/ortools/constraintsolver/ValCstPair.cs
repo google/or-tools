@@ -37,6 +37,11 @@ namespace Google.OrTools.ConstraintSolver
       return valCstPair.Val;
     }
 
+    public IntVar StatusVar()
+    {
+      return this.Cst.StatusVar();
+    }
+
     public static implicit operator Constraint(ValCstPair valCstPair)
     {
       return valCstPair.Cst;
@@ -77,6 +82,12 @@ namespace Google.OrTools.ConstraintSolver
     public static implicit operator Constraint(ConstraintAndEquality eq)
     {
       return eq.ToConstraint();
+    }
+    public IntVar StatusVar()
+    {
+      return equality_ ?
+          left_.solver().MakeIsEqualVar(left_, right_) :
+          left_.solver().MakeIsDifferentVar(left_, right_);
     }
 
     private IntExpr left_;
