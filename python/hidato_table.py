@@ -41,7 +41,7 @@ def BuildPairs(rows, cols):
     rows: the number of rows in the grid
     cols: the number of columns in the grid
   """
-  results = pywrapcp.IntTupleSet(2)
+  results = []
   for x in range(rows):
     for y in range(cols):
       for dx in (-1, 0, 1):
@@ -51,7 +51,7 @@ def BuildPairs(rows, cols):
               y + dy >= 0 and
               y + dy < cols and
               (dx != 0 or dy != 0)):
-            results.Insert2(x * cols + y, (x + dx) * cols + (y + dy))
+            results.append((x * cols + y, (x + dx) * cols + (y + dy)))
   return results
 
 

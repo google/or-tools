@@ -62,17 +62,12 @@ def alldifferent_except_0(solver, a):
     n = len(a)
     for i in range(n):
         for j in range(i):
-            bi = solver.IsDifferentCstVar(a[i],0)
-            bj = solver.IsDifferentCstVar(a[j],0)
-            bij = solver.IsDifferentVar(a[i],a[j])
-            solver.Add(bi*bj <= bij)
+            solver.Add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]))
 
 # more compact version:
 def alldifferent_except_0_b(solver, a):
     n = len(a)
-    [solver.Add(solver.IsDifferentCstVar(a[i],0)*
-              solver.IsDifferentCstVar(a[j],0) <=
-              solver.IsDifferentVar(a[i],a[j]))
+    [solver.Add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]))
      for i in range(n) for j in range(i)]
 
 
@@ -87,7 +82,8 @@ def main(unused_argv):
 
     # declare variables
     x = [solver.IntVar(0,n-1, 'x%i' % i) for i in range(n)]
-    z = solver.IntVar(0,n-1, 'z') # number of zeros
+    # Number of zeros.
+    z = solver.Sum([x[i] == 0 for i in range(n)]).VarWithName('z')
 
     #
     # constraints
@@ -95,12 +91,7 @@ def main(unused_argv):
     alldifferent_except_0(solver, x)
 
     # we require 2 0's
-    z_tmp = [solver.BoolVar('z_tmp % i' % i) for i in range(n)]
-    for i in range(n):
-        solver.Add(solver.IsEqualCstCt(x[i], 0, z_tmp[i]))
-    solver.Add(solver.Sum(z_tmp) == z)
     solver.Add(z == 2)
-
 
     #
     # solution and search

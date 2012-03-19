@@ -41,6 +41,9 @@ class EqualityExprCst : public Constraint {
   virtual ~EqualityExprCst() {}
   virtual void Post();
   virtual void InitialPropagate();
+  virtual IntVar* StatusVar() {
+    return solver()->MakeIsEqualCstVar(expr_->Var(), value_);
+  }
   virtual string DebugString() const;
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -97,6 +100,9 @@ class GreaterEqExprCst : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
+  virtual IntVar* StatusVar() {
+    return solver()->MakeIsGreaterOrEqualCstVar(expr_->Var(), value_);
+  }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kGreaterOrEqual, this);
@@ -162,6 +168,9 @@ class LessEqExprCst : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
+  virtual IntVar* StatusVar() {
+    return solver()->MakeIsLessOrEqualCstVar(expr_->Var(), value_);
+  }
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kLessOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
@@ -226,6 +235,9 @@ class DiffCst : public Constraint {
   virtual void InitialPropagate();
   void BoundPropagate();
   virtual string DebugString() const;
+  virtual IntVar* StatusVar() {
+    return solver()->MakeIsDifferentCstVar(var_, value_);
+  }
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kNonEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,

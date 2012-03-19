@@ -283,24 +283,91 @@ class PyDecisionBuilder(object):
 %rename("%(strip:[Make])s", %$isfunction) "";
 
 namespace operations_research {
+%typemap(in) IntExpr* const {
+  operations_research::IntExpr* t;
+  if (SWIG_ConvertPtr($input,
+                      (void**)&t,
+                      SWIGTYPE_p_operations_research__IntExpr,
+                      SWIG_POINTER_EXCEPTION | 0 ) == -1) {
+    operations_research::Constraint* c;
+    if (SWIG_ConvertPtr($input,
+                        (void**)&c,
+                        SWIGTYPE_p_operations_research__Constraint,
+                        SWIG_POINTER_EXCEPTION | 0 ) != -1) {
+      operations_research::IntVar* const v = c->StatusVar();
+      if (v == NULL) {
+        SWIG_fail;
+      } else {
+        $1 = v;
+      }
+    } else {
+      SWIG_fail;
+    }
+  } else {
+    $1 = t;
+  }
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER) IntExpr* const {
+  operations_research::IntExpr* t;
+  operations_research::Constraint* c;
+  $1 = (SWIG_ConvertPtr($input,
+                        (void**)&t,
+                        SWIGTYPE_p_operations_research__IntExpr,
+                        SWIG_POINTER_EXCEPTION | 0 ) != -1 ||
+        SWIG_ConvertPtr($input,
+                        (void**)&c,
+                        SWIGTYPE_p_operations_research__Constraint,
+                        SWIG_POINTER_EXCEPTION | 0 ) != -1);
+  if ($1 == 0) {
+    PyErr_Clear();
+  }
+}
+
 %typemap(in) IntVar* const {
   operations_research::IntExpr* t;
   if (SWIG_ConvertPtr($input,
                       (void**)&t,
                       SWIGTYPE_p_operations_research__IntExpr,
                       SWIG_POINTER_EXCEPTION | 0 ) == -1) {
-    SWIG_fail;
+    operations_research::Constraint* c;
+    if (SWIG_ConvertPtr($input,
+                        (void**)&c,
+                        SWIGTYPE_p_operations_research__Constraint,
+                        SWIG_POINTER_EXCEPTION | 0 ) != -1) {
+      if (c == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
+        SWIG_fail;
+      }
+      operations_research::IntVar* const v = c->StatusVar();
+      if (v == NULL) {
+        SWIG_fail;
+      } else {
+        $1 = v;
+      }
+    } else {
+      SWIG_fail;
+    }
+  } else {
+    $1 = t->Var();
   }
-  $1 = t->Var();
 }
 
 %typecheck(SWIG_TYPECHECK_POINTER) IntVar* const {
   operations_research::IntExpr* t;
-  $1 = SWIG_ConvertPtr($input,
-                       (void**)&t,
-                       SWIGTYPE_p_operations_research__IntExpr,
-                       SWIG_POINTER_EXCEPTION | 0 ) != -1;
-  PyErr_Clear();
+  operations_research::Constraint* c;
+  $1 = (SWIG_ConvertPtr($input,
+                        (void**)&t,
+                        SWIGTYPE_p_operations_research__IntExpr,
+                        SWIG_POINTER_EXCEPTION | 0 ) != -1 ||
+        SWIG_ConvertPtr($input,
+                        (void**)&c,
+                        SWIGTYPE_p_operations_research__Constraint,
+                        SWIG_POINTER_EXCEPTION | 0 ) != -1);
+
+  if ($1 == 0) {
+    PyErr_Clear();
+  }
 }
 
 %typemap(in) const IntVar* const {
@@ -342,13 +409,31 @@ namespace operations_research {
     if ((SWIG_ConvertPtr(obj, (void**)&t,
                          SWIGTYPE_p_operations_research__IntExpr,
                          SWIG_POINTER_EXCEPTION | 0 )) == -1) {
-      SWIG_fail;
+      operations_research::Constraint* c;
+      if (SWIG_ConvertPtr(obj,
+                          (void**)&c,
+                          SWIGTYPE_p_operations_research__Constraint,
+                          SWIG_POINTER_EXCEPTION | 0 ) != -1) {
+        if (c == NULL) {
+          PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
+          SWIG_fail;
+        }
+        operations_research::IntVar* const v = c->StatusVar();
+        if (v == NULL) {
+          SWIG_fail;
+        } else {
+          temp[i] = v;
+        }
+      } else {
+        SWIG_fail;
+      }
+    } else {
+      if (t == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
+        SWIG_fail;
+      }
+      temp[i] = t->Var();
     }
-    if (t == NULL) {
-      PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
-      SWIG_fail;
-    }
-    temp[i] = t->Var();
   }
   $1 = &temp;
 }
@@ -364,9 +449,14 @@ namespace operations_research {
       PyObject* const obj =
           is_tuple ? PyTuple_GetItem($input, i) : PyList_GetItem($input, i);
       operations_research::IntExpr* t;
+      operations_research::Constraint* c;
       if ((SWIG_ConvertPtr(obj, (void**)&t,
                            SWIGTYPE_p_operations_research__IntExpr,
-                           SWIG_POINTER_EXCEPTION | 0 )) == -1) {
+                           SWIG_POINTER_EXCEPTION | 0 )) == -1 &&
+          SWIG_ConvertPtr(obj,
+                          (void**)&c,
+                          SWIGTYPE_p_operations_research__Constraint,
+                          SWIG_POINTER_EXCEPTION | 0 ) == -1) {
         PyErr_Clear();
         failed = true;
         break;
@@ -856,6 +946,9 @@ static void SetPythonFlags(bool trace_propagation,
   IntExpr* __add__(IntExpr* other) {
     return self->solver()->MakeSum(self, other);
   }
+  IntExpr* __add__(Constraint* other) {
+    return self->solver()->MakeSum(self, other->StatusVar());
+  }
   IntExpr* __add__(int64 v) {
     return self->solver()->MakeSum(self, v);
   }
@@ -865,6 +958,9 @@ static void SetPythonFlags(bool trace_propagation,
   IntExpr* __sub__(IntExpr* other) {
     return self->solver()->MakeDifference(self, other);
   }
+  IntExpr* __sub__(Constraint* other) {
+    return self->solver()->MakeDifference(self, other->StatusVar());
+  }
   IntExpr* __sub__(int64 v) {
     return self->solver()->MakeSum(self, -v);
   }
@@ -873,6 +969,9 @@ static void SetPythonFlags(bool trace_propagation,
   }
   IntExpr* __mul__(IntExpr* other) {
     return self->solver()->MakeProd(self, other);
+  }
+  IntExpr* __mul__(Constraint* other) {
+    return self->solver()->MakeProd(self, other->StatusVar());
   }
   IntExpr* __mul__(int64 v) {
     return self->solver()->MakeProd(self, v);
@@ -930,6 +1029,24 @@ static void SetPythonFlags(bool trace_propagation,
   Constraint* __lt__(IntExpr* other) {
     return self->solver()->MakeLess(self->Var(), other->Var());
   }
+  Constraint* __eq__(Constraint* other) {
+    return self->solver()->MakeEquality(self->Var(), other->StatusVar());
+  }
+  Constraint* __ne__(Constraint* other) {
+    return self->solver()->MakeNonEquality(self->Var(), other->StatusVar());
+  }
+  Constraint* __ge__(Constraint* other) {
+    return self->solver()->MakeGreaterOrEqual(self->Var(), other->StatusVar());
+  }
+  Constraint* __gt__(Constraint* other) {
+    return self->solver()->MakeGreater(self->Var(), other->StatusVar());
+  }
+  Constraint* __le__(Constraint* other) {
+    return self->solver()->MakeLessOrEqual(self->Var(), other->StatusVar());
+  }
+  Constraint* __lt__(Constraint* other) {
+    return self->solver()->MakeLess(self->Var(), other->StatusVar());
+  }
   Constraint* MapTo(const std::vector<IntVar*>& vars) {
     return self->solver()->MakeMapDomain(self->Var(), vars);
   }
@@ -938,6 +1055,127 @@ static void SetPythonFlags(bool trace_propagation,
   }
   IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
     return self->solver()->MakeElement(vars, self->Var());
+  }
+}
+
+// Add arithmetic operators to integer expressions.
+%extend Constraint {
+  IntExpr* __add__(IntExpr* other) {
+    return self->solver()->MakeSum(self->StatusVar(), other);
+  }
+  IntExpr* __add__(Constraint* other) {
+    return self->solver()->MakeSum(self->StatusVar(), other->StatusVar());
+  }
+  IntExpr* __add__(int64 v) {
+    return self->solver()->MakeSum(self->StatusVar(), v);
+  }
+  IntExpr* __radd__(int64 v) {
+    return self->solver()->MakeSum(self->StatusVar(), v);
+  }
+  IntExpr* __sub__(IntExpr* other) {
+    return self->solver()->MakeDifference(self->StatusVar(), other);
+  }
+  IntExpr* __sub__(Constraint* other) {
+    return self->solver()->MakeDifference(self->StatusVar(),
+                                          other->StatusVar());
+  }
+  IntExpr* __sub__(int64 v) {
+    return self->solver()->MakeSum(self->StatusVar(), -v);
+  }
+  IntExpr* __rsub__(int64 v) {
+    return self->solver()->MakeDifference(v, self->StatusVar());
+  }
+  IntExpr* __mul__(IntExpr* other) {
+    return self->solver()->MakeProd(self->StatusVar(), other);
+  }
+  IntExpr* __mul__(Constraint* other) {
+    return self->solver()->MakeProd(self->StatusVar(), other->StatusVar());
+  }
+  IntExpr* __mul__(int64 v) {
+    return self->solver()->MakeProd(self->StatusVar(), v);
+  }
+  IntExpr* __rmul__(int64 v) {
+    return self->solver()->MakeProd(self->StatusVar(), v);
+  }
+  IntExpr* __floordiv__(int64 v) {
+    return self->solver()->MakeDiv(self->StatusVar(), v);
+  }
+
+  IntExpr* __neg__() {
+    return self->solver()->MakeOpposite(self->StatusVar());
+  }
+  IntExpr* __abs__() {
+    return self->solver()->MakeAbs(self->StatusVar());
+  }
+  IntExpr* Square() {
+    return self->solver()->MakeSquare(self->StatusVar());
+  }
+
+  Constraint* __eq__(int64 v) {
+    return self->solver()->MakeEquality(self->StatusVar(), v);
+  }
+  Constraint* __ne__(int64 v) {
+    return self->solver()->MakeNonEquality(self->StatusVar(), v);
+  }
+  Constraint* __ge__(int64 v) {
+    return self->solver()->MakeGreaterOrEqual(self->StatusVar(), v);
+  }
+  Constraint* __gt__(int64 v) {
+    return self->solver()->MakeGreater(self->StatusVar(), v);
+  }
+  Constraint* __le__(int64 v) {
+    return self->solver()->MakeLessOrEqual(self->StatusVar(), v);
+  }
+  Constraint* __lt__(int64 v) {
+    return self->solver()->MakeLess(self->StatusVar(), v);
+  }
+  Constraint* __eq__(IntExpr* other) {
+    return self->solver()->MakeEquality(self->StatusVar(), other->Var());
+  }
+  Constraint* __ne__(IntExpr* other) {
+    return self->solver()->MakeNonEquality(self->StatusVar(), other->Var());
+  }
+  Constraint* __ge__(IntExpr* other) {
+    return self->solver()->MakeGreaterOrEqual(self->StatusVar(), other->Var());
+  }
+  Constraint* __gt__(IntExpr* other) {
+    return self->solver()->MakeGreater(self->StatusVar(), other->Var());
+  }
+  Constraint* __le__(IntExpr* other) {
+    return self->solver()->MakeLessOrEqual(self->StatusVar(), other->Var());
+  }
+  Constraint* __lt__(IntExpr* other) {
+    return self->solver()->MakeLess(self->StatusVar(), other->Var());
+  }
+  Constraint* __eq__(Constraint* other) {
+    return self->solver()->MakeEquality(self->StatusVar(), other->StatusVar());
+  }
+  Constraint* __ne__(Constraint* other) {
+    return self->solver()->MakeNonEquality(self->StatusVar(),
+                                           other->StatusVar());
+  }
+  Constraint* __ge__(Constraint* other) {
+    return self->solver()->MakeGreaterOrEqual(self->StatusVar(),
+                                              other->StatusVar());
+  }
+  Constraint* __gt__(Constraint* other) {
+    return self->solver()->MakeGreater(self->StatusVar(), other->StatusVar());
+  }
+  Constraint* __le__(Constraint* other) {
+    return self->solver()->MakeLessOrEqual(self->StatusVar(),
+                                           other->StatusVar());
+  }
+  Constraint* __lt__(Constraint* other) {
+    return self->solver()->MakeLess(self->StatusVar(), other->StatusVar());
+  }
+  Constraint* MapTo(const std::vector<IntVar*>& vars) {
+    return self->solver()->MakeMapDomain(self->StatusVar(), vars);
+  }
+  IntExpr* IndexOf(const std::vector<int64>& vars) {
+    return self->solver()->MakeElement(vars, self->StatusVar());
+  }
+  IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
+    return self->solver()->MakeElement(vars, self->StatusVar());
   }
 }
 

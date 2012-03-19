@@ -32,6 +32,9 @@ class RangeEquality : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
+  virtual IntVar* StatusVar() {
+    return solver()->MakeIsEqualVar(left_, right_);
+  }
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kEquality, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
@@ -83,6 +86,9 @@ class RangeLessOrEqual : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
+  virtual IntVar* StatusVar() {
+    return solver()->MakeIsLessOrEqualVar(left_, right_);
+  }
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kLessOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
@@ -135,6 +141,9 @@ class RangeGreaterOrEqual : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
+  virtual IntVar* StatusVar() {
+    return solver()->MakeIsGreaterOrEqualVar(left_, right_);
+  }
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kGreaterOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
@@ -187,6 +196,9 @@ class RangeLess : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
+  virtual IntVar* StatusVar() {
+    return solver()->MakeIsLessVar(left_, right_);
+  }
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kLess, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
@@ -238,6 +250,9 @@ class RangeGreater : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
+  virtual IntVar* StatusVar() {
+    return solver()->MakeIsGreaterVar(left_, right_);
+  }
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kGreater, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
@@ -289,6 +304,10 @@ class DiffVar : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
+  virtual IntVar* StatusVar() {
+    return solver()->MakeIsDifferentVar(left_, right_);
+  }
+
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kNonEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);

@@ -3242,6 +3242,10 @@ bool Constraint::IsCastConstraint() const {
   return ContainsKey(solver()->cast_constraints_, this);
 }
 
+IntVar* Constraint::StatusVar() {
+  return NULL;
+}
+
 // ----- Class IntExpr -----
 
 void IntExpr::Accept(ModelVisitor* const visitor) const {

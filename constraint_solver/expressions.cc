@@ -4551,7 +4551,31 @@ IntVar* Solver::MakeIsEqualVar(IntExpr* const v1, IntExpr* const v2) {
   } else if (v2->Bound()) {
     return MakeIsEqualCstVar(v1->Var(), v2->Min());
   }
-  return MakeIsEqualCstVar(MakeDifference(v1, v2)->Var(), 0);
+  IntVar* const var1 = v1->Var();
+  IntVar* const var2 = v2->Var();
+  IntExpr* const cache = model_cache_->FindVarVarExpression(
+      var1,
+      var2,
+      ModelCache::VAR_VAR_IS_EQUAL);
+  if (cache != NULL) {
+    return cache->Var();
+  } else {
+    string name1 = var1->name();
+    if (name1.empty()) {
+      name1 = var1->DebugString();
+    }
+    string name2 = var2->name();
+    if (name2.empty()) {
+      name2 = var2->DebugString();
+    }
+    IntVar* const boolvar = MakeIsEqualCstVar(MakeDifference(v1, v2)->Var(), 0);
+    model_cache_->InsertVarVarExpression(
+        boolvar,
+        var1,
+        var2,
+        ModelCache::VAR_VAR_IS_EQUAL);
+    return boolvar;
+  }
 }
 
 Constraint* Solver::MakeIsEqualCt(IntExpr* const v1,
@@ -4575,7 +4599,32 @@ IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
   } else if (v2->Bound()) {
     return MakeIsDifferentCstVar(v1->Var(), v2->Min());
   }
-  return MakeIsDifferentCstVar(MakeDifference(v1, v2)->Var(), 0);
+  IntVar* const var1 = v1->Var();
+  IntVar* const var2 = v2->Var();
+  IntExpr* const cache = model_cache_->FindVarVarExpression(
+      var1,
+      var2,
+      ModelCache::VAR_VAR_IS_NOT_EQUAL);
+  if (cache != NULL) {
+    return cache->Var();
+  } else {
+    string name1 = var1->name();
+    if (name1.empty()) {
+      name1 = var1->DebugString();
+    }
+    string name2 = var2->name();
+    if (name2.empty()) {
+      name2 = var2->DebugString();
+    }
+    IntVar* const boolvar =
+        MakeIsDifferentCstVar(MakeDifference(v1, v2)->Var(), 0);
+    model_cache_->InsertVarVarExpression(
+        boolvar,
+        var1,
+        var2,
+        ModelCache::VAR_VAR_IS_NOT_EQUAL);
+    return boolvar;
+  }
 }
 
 Constraint* Solver::MakeIsDifferentCt(IntExpr* const v1,
@@ -4600,7 +4649,32 @@ IntVar* Solver::MakeIsLessOrEqualVar(
   } else if (right->Bound()) {
     return MakeIsLessOrEqualCstVar(left->Var(), right->Min());
   }
-  return MakeIsLessOrEqualCstVar(MakeDifference(left, right)->Var(), 0);
+  IntVar* const var1 = left->Var();
+  IntVar* const var2 = right->Var();
+  IntExpr* const cache = model_cache_->FindVarVarExpression(
+      var1,
+      var2,
+      ModelCache::VAR_VAR_IS_LESS_OR_EQUAL);
+  if (cache != NULL) {
+    return cache->Var();
+  } else {
+    string name1 = var1->name();
+    if (name1.empty()) {
+      name1 = var1->DebugString();
+    }
+    string name2 = var2->name();
+    if (name2.empty()) {
+      name2 = var2->DebugString();
+    }
+    IntVar* const boolvar =
+        MakeIsLessOrEqualCstVar(MakeDifference(left, right)->Var(), 0);
+    model_cache_->InsertVarVarExpression(
+        boolvar,
+        var1,
+        var2,
+        ModelCache::VAR_VAR_IS_LESS_OR_EQUAL);
+    return boolvar;
+  }
 }
 
 Constraint* Solver::MakeIsLessOrEqualCt(
@@ -4624,7 +4698,32 @@ IntVar* Solver::MakeIsLessVar(
   } else if (right->Bound()) {
     return MakeIsLessCstVar(left->Var(), right->Min());
   }
-  return MakeIsLessCstVar(MakeDifference(left, right)->Var(), 0);
+  IntVar* const var1 = left->Var();
+  IntVar* const var2 = right->Var();
+  IntExpr* const cache = model_cache_->FindVarVarExpression(
+      var1,
+      var2,
+      ModelCache::VAR_VAR_IS_LESS);
+  if (cache != NULL) {
+    return cache->Var();
+  } else {
+    string name1 = var1->name();
+    if (name1.empty()) {
+      name1 = var1->DebugString();
+    }
+    string name2 = var2->name();
+    if (name2.empty()) {
+      name2 = var2->DebugString();
+    }
+    IntVar* const boolvar =
+        MakeIsLessCstVar(MakeDifference(left, right)->Var(), 0);
+    model_cache_->InsertVarVarExpression(
+        boolvar,
+        var1,
+        var2,
+        ModelCache::VAR_VAR_IS_LESS);
+    return boolvar;
+  }
 }
 
 Constraint* Solver::MakeIsLessCt(

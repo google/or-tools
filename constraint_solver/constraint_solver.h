@@ -83,6 +83,7 @@
 #include "base/map-util.h"
 #include "base/hash.h"
 #include "base/random.h"
+#include "util/tuple_set.h"
 
 class Closure;
 class File;
@@ -1641,6 +1642,29 @@ class Solver {
       const IntTupleSet& transitions,
       int64 initial_state,
       const std::vector<int>& final_states);
+
+#if defined(SWIGPYTHON)
+  // Compatibility layer for python API.
+  Constraint* MakeAllowedAssignments(const std::vector<IntVar*>& vars,
+                                     const std::vector<std::vector<int64> >& raw_tuples) {
+    IntTupleSet tuples(vars.size());
+    tuples.InsertAll(raw_tuples);
+    return MakeAllowedAssignments(vars, tuples);
+  }
+
+  Constraint* MakeTransitionConstraint(
+      const std::vector<IntVar*>& vars,
+      const std::vector<std::vector<int64> >& raw_transitions,
+      int64 initial_state,
+      const std::vector<int>& final_states) {
+    IntTupleSet transitions(3);
+    transitions.InsertAll(raw_transitions);
+    return MakeTransitionConstraint(vars,
+                                    transitions,
+                                    initial_state,
+                                    final_states);
+  }
+#endif
 
 
   // ----- Packing constraint -----
@@ -3432,6 +3456,11 @@ class Constraint : public PropagationBaseObject {
 
   // Is the constraint created by a cast from expression to integer variable?
   bool IsCastConstraint() const;
+
+  // Creates an boolean variable representing the status of the
+  // variable (false = constraint is violated, true constraint is
+  // satisfied). It returns NULL if the constraint does not support his API.
+  virtual IntVar* StatusVar();
 
  private:
   DISALLOW_COPY_AND_ASSIGN(Constraint);
