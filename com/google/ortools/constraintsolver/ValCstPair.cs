@@ -13,104 +13,132 @@
 
 namespace Google.OrTools.ConstraintSolver
 {
-  using System;
-  using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 
-  public class ValCstPair
+public interface IConstraintWithStatus
+{
+  Solver solver();
+  IntVar Var();
+}
+
+public class ValCstPair : IConstraintWithStatus
+{
+  public bool Val { get; set; }
+
+  public Constraint Cst { get; set; }
+
+  public ValCstPair(Constraint cst) : this(true, cst) {}
+
+  public ValCstPair(bool val) : this(val, null) {}
+
+  public ValCstPair(bool val, Constraint cst)
   {
-    public bool Val { get; set; }
-
-    public Constraint Cst { get; set; }
-
-    public ValCstPair(Constraint cst) : this(true, cst) {}
-
-    public ValCstPair(bool val) : this(val, null) {}
-
-    public ValCstPair(bool val, Constraint cst)
-    {
-      this.Val = val;
-      this.Cst = cst;
-    }
-
-    public static implicit operator bool(ValCstPair valCstPair)
-    {
-      return valCstPair.Val;
-    }
-
-    public IntVar StatusVar()
-    {
-      return this.Cst.StatusVar();
-    }
-
-    public static implicit operator Constraint(ValCstPair valCstPair)
-    {
-      return valCstPair.Cst;
-    }
-
-    public static implicit operator IntVar(ValCstPair eq)
-    {
-      return eq.StatusVar();
-    }
-
-    public static implicit operator IntExpr(ValCstPair eq)
-    {
-      return eq.StatusVar();
-    }
+    this.Val = val;
+    this.Cst = cst;
   }
 
-  public class ConstraintAndEquality
+  public static implicit operator bool(ValCstPair valCstPair)
   {
-    public ConstraintAndEquality(IntExpr a, IntExpr b, bool equality)
-    {
-      this.left_ = a;
-      this.right_ = b;
-      this.equality_ = equality;
-    }
-
-    bool IsTrue()
-    {
-      return (object)left_ == (object)right_ ? equality_ : !equality_;
-    }
-
-    Constraint ToConstraint()
-    {
-      return equality_ ?
-          left_.solver().MakeEquality(left_.Var(), right_.Var()) :
-          left_.solver().MakeNonEquality(left_.Var(), right_.Var());
-    }
-
-    public static bool operator true(ConstraintAndEquality eq)
-    {
-      return eq.IsTrue();
-    }
-
-    public static bool operator false(ConstraintAndEquality eq)
-    {
-      return !eq.IsTrue();
-    }
-
-    public static implicit operator Constraint(ConstraintAndEquality eq)
-    {
-      return eq.ToConstraint();
-    }
-    public IntVar StatusVar()
-    {
-      return equality_ ?
-          left_.solver().MakeIsEqualVar(left_, right_) :
-          left_.solver().MakeIsDifferentVar(left_, right_);
-    }
-    public static implicit operator IntVar(ConstraintAndEquality eq)
-    {
-      return eq.StatusVar();
-    }
-
-    public static implicit operator IntExpr(ConstraintAndEquality eq)
-    {
-      return eq.StatusVar();
-    }
-
-    private IntExpr left_;
-    private IntExpr right_;
-    private bool equality_;
+    return valCstPair.Val;
   }
+
+  public static implicit operator Constraint(ValCstPair valCstPair)
+  {
+    return valCstPair.Cst;
+  }
+
+  public static implicit operator IntVar(ValCstPair eq)
+  {
+    return eq.StatusVar();
+  }
+
+  public static implicit operator IntExpr(ValCstPair eq)
+  {
+    return eq.StatusVar();
+  }
+
+  public IntVar StatusVar()
+  {
+    return Cst.StatusVar();
+  }
+
+  public Solver solver()
+  {
+    return this.Cst.solver();
+  }
+
+  public IntVar Var()
+  {
+    return StatusVar();
+  }
+}
+
+public class ConstraintAndEquality : IConstraintWithStatus
+{
+  public ConstraintAndEquality(IntExpr a, IntExpr b, bool equality)
+  {
+    this.left_ = a;
+    this.right_ = b;
+    this.equality_ = equality;
+  }
+
+  bool IsTrue()
+  {
+    return (object)left_ == (object)right_ ? equality_ : !equality_;
+  }
+
+  Constraint ToConstraint()
+  {
+    return equality_ ?
+        left_.solver().MakeEquality(left_.Var(), right_.Var()) :
+        left_.solver().MakeNonEquality(left_.Var(), right_.Var());
+  }
+
+  public static bool operator true(ConstraintAndEquality eq)
+  {
+    return eq.IsTrue();
+  }
+
+  public static bool operator false(ConstraintAndEquality eq)
+  {
+    return !eq.IsTrue();
+  }
+
+  public static implicit operator Constraint(ConstraintAndEquality eq)
+  {
+    return eq.ToConstraint();
+  }
+
+  public IntVar StatusVar()
+  {
+    return equality_ ?
+        left_.solver().MakeIsEqualVar(left_, right_) :
+        left_.solver().MakeIsDifferentVar(left_, right_);
+  }
+
+  public static implicit operator IntVar(ConstraintAndEquality eq)
+  {
+    return eq.StatusVar();
+  }
+
+  public static implicit operator IntExpr(ConstraintAndEquality eq)
+  {
+    return eq.StatusVar();
+  }
+
+  public Solver solver()
+  {
+    return left_.solver();
+  }
+
+  public IntVar Var()
+  {
+    return StatusVar();
+  }
+
+  private IntExpr left_;
+  private IntExpr right_;
+  private bool equality_;
+}
 }  // namespace Google.OrTools.ConstraintSolver

@@ -1519,41 +1519,52 @@ struct FailureProtect {
 };
 %}
 
-%ignore Solver::MakeScalProd(IntVar* const* vars,
-                             const int64* const coefs,
-                             int size);
-%ignore Solver::MakeScalProd(IntVar* const* vars,
-                             const int* const coefs,
-                             int size);
-%ignore Solver::MakeScalProdEquality(IntVar* const* vars,
-                                     const int64* const coefs,
-                                     int size);
-%ignore Solver::MakeScalProdEquality(IntVar* const* vars,
-                                     const int* const coefs,
-                                     int size);
-%ignore Solver::MakeScalProdLessOrEqual(IntVar* const* vars,
-                                        const int64* const coefs,
-                                        int size);
-%ignore Solver::MakeScalProdLessOrEqual(IntVar* const* vars,
-                                        const int* const coefs,
-                                        int size);
-%ignore Solver::MakeScalProdGreaterOrEqual(IntVar* const* vars,
-                                           const int64* const coefs,
-                                           int size);
-%ignore Solver::MakeScalProdGreaterOrEqual(IntVar* const* vars,
-                                           const int* const coefs,
-                                           int size);
-%ignore Solver::MakeRandomLNSOperator(const IntVar* const* vars,
-                                      int size,
-                                      int number_of_variables);
-%ignore Solver::MakeRandomLNSOperator(const IntVar* const* vars,
-                                      int size,
-                                      int number_of_variables,
-                                      int32 seed);
-%ignore Solver::MakeAllowedAssignments(const IntVar* const * vars,
-                                       const int64* const * tuples,
-                                       int tuple_count,
-                                       int arity);
+%ignore operations_research::Solver::MakeScalProd(
+    IntVar* const* vars,
+    const int64* const coefs,
+    int size);
+%ignore operations_research::Solver::MakeScalProd(
+    IntVar* const* vars,
+    const int* const coefs,
+    int size);
+%ignore operations_research::Solver::MakeScalProdEquality(
+    IntVar* const* vars,
+    const int64* const coefs,
+    int size);
+%ignore operations_research::Solver::MakeScalProdEquality(
+    IntVar* const* vars,
+    const int* const coefs,
+    int size);
+%ignore operations_research::Solver::MakeScalProdLessOrEqual(
+    IntVar* const* vars,
+    const int64* const coefs,
+    int size);
+%ignore operations_research::Solver::MakeScalProdLessOrEqual(
+    IntVar* const* vars,
+    const int* const coefs,
+    int size);
+%ignore operations_research::Solver::MakeScalProdGreaterOrEqual(
+    IntVar* const* vars,
+    const int64* const coefs,
+    int size);
+%ignore operations_research::Solver::MakeScalProdGreaterOrEqual(
+    IntVar* const* vars,
+    const int* const coefs,
+    int size);
+%ignore operations_research::Solver::MakeRandomLNSOperator(
+    const IntVar* const* vars,
+    int size,
+    int number_of_variables);
+%ignore operations_research::Solver::MakeRandomLNSOperator(
+    const IntVar* const* vars,
+    int size,
+    int number_of_variables,
+    int32 seed);
+%ignore operations_research::Solver::MakeAllowedAssignments(
+    const IntVar* const * vars,
+    const int64* const * tuples,
+    int tuple_count,
+    int arity);
 
 %ignore operations_research::Solver::MakeIntVarArray;
 %ignore operations_research::Solver::MakeBoolVarArray;
@@ -1585,8 +1596,8 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SequenceVar, SequenceVar)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchOperator, LocalSearchOperator)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchFilter)
 
-namespace operations_research {
-%typemap(cscode) Constraint %{
+%typemap(csinterfaces) operations_research::Constraint "IConstraintWithStatus";
+%typemap(cscode) operations_research::Constraint %{
   public static implicit operator IntVar(Constraint eq)
   {
     return eq.StatusVar();
@@ -1596,11 +1607,15 @@ namespace operations_research {
   {
     return eq.StatusVar();
   }
+  public IntVar Var()
+  {
+    return StatusVar();
+  }
 %}
 
 
 // Add arithmetic operators to integer expressions.
-%typemap(cscode) IntExpr %{
+%typemap(cscode) operations_research::IntExpr %{
   public static IntExpr operator+(IntExpr a, IntExpr b) {
     return a.solver().MakeSum(a, b);
   }
@@ -1678,6 +1693,7 @@ namespace operations_research {
   }
 %}
 
+namespace operations_research {
 %extend IntervalVar {
   Constraint* EndsAfterEnd(IntervalVar* other) {
     return self->solver()->MakeIntervalVarRelation(self, operations_research::Solver::ENDS_AFTER_END, other);

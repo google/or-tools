@@ -28,8 +28,9 @@ public class AllDifferentExcept0Test
     int n = a.Length;
     for(int i = 0; i < n; i++) {
       for(int j = 0; j < i; j++) {
-        solver.Add((a[i] != 0).StatusVar() * (a[j] != 0).StatusVar() <=
-                   (a[i] != a[j]).StatusVar());
+        solver.Add((a[i] != 0).Var() * (a[j] != 0).Var() <=
+                   (a[i] != a[j]).Var());
+//        solver.Add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]));
       }
     }
   }
