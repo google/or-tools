@@ -70,7 +70,7 @@ public class SichermanDice
 
     //
     // Data
-    // 
+    //
     int n = 6;
     int m = 10;
     int lowest_value = 0;
@@ -96,7 +96,7 @@ public class SichermanDice
     for(int k = 0; k < standard_dist.Length; k++) {
       solver.Add((from i in RANGE
                   from j in RANGE
-                  select (x1[i] + x2[j]).IsEqual(k+2).Var()
+                  select x1[i] + x2[j] == k + 2
                   ).ToArray().Sum() == standard_dist[k]);
     }
 

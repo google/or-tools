@@ -1782,17 +1782,17 @@ struct FailureProtect {
   public IntExpr Square() {
     return this.solver().MakeSquare(this);
   }
-  public static WrappedConstraint operator ==(IntExpr a, long v) {
-    return new WrappedConstraint(a.solver().MakeEquality(a, v));
-  }
-  public static WrappedConstraint operator !=(IntExpr a, long v) {
-    return new WrappedConstraint(a.solver().MakeNonEquality(a.Var(), v));
-  }
   public static IntExprEquality operator ==(IntExpr a, IntExpr b) {
     return new IntExprEquality(a, b, true);
   }
   public static IntExprEquality operator !=(IntExpr a, IntExpr b) {
     return new IntExprEquality(a, b, false);
+  }
+  public static WrappedConstraint operator ==(IntExpr a, long v) {
+    return new WrappedConstraint(a.solver().MakeEquality(a, v));
+  }
+  public static WrappedConstraint operator !=(IntExpr a, long v) {
+    return new WrappedConstraint(a.solver().MakeNonEquality(a.Var(), v));
   }
   public static WrappedConstraint operator >=(IntExpr a, long v) {
     return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a, v));

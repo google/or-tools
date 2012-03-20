@@ -82,24 +82,23 @@ public class NurseRostering
 
 
     // For TransitionConstraint
-    int[,] transition_tuples = {
-      // state, input, next state
-      {1,1,2},
-      {1,2,3},
-      {1,3,1},
-      {2,1,4},
-      {2,2,4},
-      {2,3,1},
-      {3,1,4},
-      {3,2,5},
-      {3,3,1},
-      {4,1,6},
-      {4,2,6},
-      {4,3,1},
-      {5,1,6},
-      {5,3,1},
-      {6,3,1},
-    };
+    IntTupleSet transition_tuples = new IntTupleSet(3);
+    // state, input, next state
+    transition_tuples.InsertAll(new int[,] { {1,1,2},
+                                             {1,2,3},
+                                             {1,3,1},
+                                             {2,1,4},
+                                             {2,2,4},
+                                             {2,3,1},
+                                             {3,1,4},
+                                             {3,2,5},
+                                             {3,3,1},
+                                             {4,1,6},
+                                             {4,2,6},
+                                             {4,3,1},
+                                             {5,1,6},
+                                             {5,3,1},
+                                             {6,3,1} });
 
     string[] days = {"d","n","o"}; // for presentation
 
@@ -156,7 +155,7 @@ public class NurseRostering
       // Number of worked days (either day or night shift)
       IntVar[] b = new IntVar[num_days];
       for(int j = 0; j < num_days; j++) {
-        b[j] = (x[i,j].IsEqual(day_shift) + x[i,j].IsEqual(night_shift)).Var();
+        b[j] = ((x[i,j] == day_shift) + (x[i,j] == night_shift)).Var();
       }
       solver.Add(b.Sum() == nurse_stat[i]);
 
@@ -175,7 +174,7 @@ public class NurseRostering
       for(int t = 0; t < num_shifts; t++) {
         IntVar[] b = new IntVar[num_nurses];
         for(int i = 0; i < num_nurses; i++) {
-          b[i] = (x[i,j].IsEqual(t)).Var();
+          b[i] = x[i,j] == t;
         }
         solver.Add(b.Sum() == day_stat[j,t]);
       }

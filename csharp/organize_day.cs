@@ -28,13 +28,11 @@ public class OrganizeDay
   //
   // No overlapping of tasks s1 and s2
   //
-  public static void NoOverlap(Solver solver, 
-                               IntVar s1, int d1, 
-                               IntVar s2, int d2) 
+  public static void NoOverlap(Solver solver,
+                               IntVar s1, int d1,
+                               IntVar s2, int d2)
   {
-    IntVar b1 = (s1 + d1).IsLessOrEqual(s2); // s1 + d1 <= s2;
-    IntVar b2 = (s2 + d2).IsLessOrEqual(s1); // s2 + d2 <= s1;
-    solver.Add(b1 + b2 >= 1);
+    solver.Add((s1 + d1 <= s2) + (s2 + d2 <= s1) == 1);
   }
 
 
@@ -58,10 +56,10 @@ public class OrganizeDay
   {
     Solver solver = new Solver("OrganizeDay");
 
-    
+
     int n = 4;
 
-    
+
     int work = 0;
     int mail = 1;
     int shop = 2;

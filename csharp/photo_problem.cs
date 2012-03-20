@@ -96,12 +96,11 @@ public class PhotoProblem
     solver.Add(positions.AllDifferent());
 
     // calculate all the successful preferences
-    solver.Add( (from i in RANGE
-                 from j in RANGE
-                 where preferences[i,j] == 1
-                 select 
-                 (positions[i]-positions[j]).Abs().IsEqual(1)
-                 ).ToArray().Sum() == z);
+    solver.Add( ( from i in RANGE
+                  from j in RANGE
+                  where preferences[i,j] == 1
+                  select (positions[i] - positions[j]).Abs() == 1
+                ).ToArray().Sum() == z);
 
     //
     // Symmetry breaking (from the Oz page):

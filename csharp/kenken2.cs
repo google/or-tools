@@ -28,32 +28,32 @@ public class KenKen2
    * in cc == res
    *
    */
-  public static void calc(Solver solver, 
-                           int[] cc, 
+  public static void calc(Solver solver,
+                           int[] cc,
                            IntVar[,] x,
-                           int res) 
+                           int res)
   {
 
     int ccLen = cc.Length;
     if (ccLen == 4) {
 
-      // for two operands there's 
+      // for two operands there's
       // a lot of possible variants
       IntVar a = x[cc[0]-1, cc[1]-1];
       IntVar b = x[cc[2]-1, cc[3]-1];
-      
-      IntVar r1 = (a + b).IsEqual(res);
-      IntVar r2 = (a * b).IsEqual(res);
-      IntVar r3 = (a * res).IsEqual(b);
-      IntVar r4 = (b * res).IsEqual(a);
-      IntVar r5 = (a - b).IsEqual(res);
-      IntVar r6 = (b - a).IsEqual(res);
+
+      IntVar r1 = a + b == res;
+      IntVar r2 = a * b == res;
+      IntVar r3 = a * res == b;
+      IntVar r4 = b * res == a;
+      IntVar r5 = a - b == res;
+      IntVar r6 = b - a == res;
 
       solver.Add(r1+r2+r3+r4+r5+r6 >= 1);
 
     } else {
-      
-      // For length > 2 then res is either the sum 
+
+      // For length > 2 then res is either the sum
       // the the product of the segment
 
       // sum the numbers
@@ -62,7 +62,7 @@ public class KenKen2
                      select x[cc[i*2]-1,cc[i*2+1]-1].Var()).ToArray();
 
       // Sum
-      IntVar this_sum = xx.Sum().IsEqual(res);
+      IntVar this_sum = xx.Sum() == res;
 
       // Product
       // IntVar this_prod = (xx.Prod() == res).Var(); // don't work
@@ -70,13 +70,13 @@ public class KenKen2
       if (xx.Length == 3) {
         this_prod = (x[cc[0]-1,cc[1]-1] *
                      x[cc[2]-1,cc[3]-1] *
-                     x[cc[4]-1,cc[5]-1]).IsEqual(res);
+                     x[cc[4]-1,cc[5]-1]) == res;
       } else {
         this_prod = (
                      x[cc[0]-1,cc[1]-1] *
                      x[cc[2]-1,cc[3]-1] *
                      x[cc[4]-1,cc[5]-1] *
-                     x[cc[6]-1,cc[7]-1]).IsEqual(res);
+                     x[cc[6]-1,cc[7]-1]) == res;
 
       }
 
@@ -91,7 +91,7 @@ public class KenKen2
   /**
    *
    * KenKen puzzle.
-   * 
+   *
    * http://en.wikipedia.org/wiki/KenKen
    * """
    * KenKen or KEN-KEN is a style of arithmetic and logical puzzle sharing
@@ -127,7 +127,7 @@ public class KenKen2
    *
    *
    * Also see http://www.hakank.org/or-tools/kenken2.py
-   * though this C# model has another representation of 
+   * though this C# model has another representation of
    * the problem instance.
    *
    */
@@ -146,7 +146,7 @@ public class KenKen2
     // hints
     //  sum, the hints
     // Note: this is 1-based
-    int[][] problem = 
+    int[][] problem =
       {
         new int[] { 11,  1,1, 2,1},
         new int[] {  2,  1,2, 1,3},
@@ -165,7 +165,7 @@ public class KenKen2
         new int[] {  2,  6,4, 6,5}
       };
 
-    
+
     int num_p = problem.GetLength(0); // Number of segments
 
     //
@@ -200,8 +200,8 @@ public class KenKen2
       // Remove the sum from the segment
       int len = segment.Length-1;
       int[] s2 = new int[len];
-      Array.Copy(segment, 1, s2, 0, len); 
-   
+      Array.Copy(segment, 1, s2, 0, len);
+
       // sum this segment
       calc(solver, s2, x, segment[0]);
 

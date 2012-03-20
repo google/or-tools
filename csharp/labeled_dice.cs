@@ -59,7 +59,7 @@ public class LabeledDice
     //
     int n = 4;
     int m = 24;
-    
+
     int A = 0;
     int B = 1;
     int C = 2;
@@ -90,7 +90,7 @@ public class LabeledDice
                             "N","O","P","Q","R","S","T","U","V","W","Y"};
 
     int num_words = 13;
-    int[,] words = 
+    int[,] words =
       {
         {B,U,O,Y},
         {C,A,V,E},
@@ -130,13 +130,13 @@ public class LabeledDice
     /*
     for(int i = 0; i < n; i++) {
       solver.Add( ( from j in Enumerable.Range(0, m)
-                    select dice[j].IsEqual(i)
+                    select (dice[j] == i)
                    ).ToArray().Sum() == 6 );
     }
     */
     // Use Distribute (Global Cardinality Count) instead.
     solver.Add(dice.Distribute(gcc));
-    
+
     //
     // Search
     //

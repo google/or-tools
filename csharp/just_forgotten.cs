@@ -33,11 +33,11 @@ public class JustForgotten
    * From http://www.f1compiler.com/samples/Enigma 201517.f1.html
    * """
    * Enigma 1517 Bob Walker, New Scientist magazine, October 25, 2008.
-   * 
+   *
    * Joe was furious when he forgot one of his bank account numbers.
    * He remembered that it had all the digits 0 to 9 in some order,
    * so he tried the following four sets without success:
-   * 
+   *
    * 9 4 6 2 1 5 7 8 3 0
    * 8 6 0 4 3 9 1 2 5 7
    * 1 6 4 0 2 9 7 8 5 3
@@ -56,7 +56,7 @@ public class JustForgotten
   {
     Solver solver = new Solver("JustForgotten");
 
-    
+
     int rows = 4;
     int cols = 10;
 
@@ -65,7 +65,7 @@ public class JustForgotten
                 {8,6,0,4,3,9,1,2,5,7},
                 {1,6,4,0,2,9,7,8,5,3},
                 {6,8,2,4,3,1,9,0,7,5}};
-    
+
 
     //
     // Decision variables
@@ -78,8 +78,7 @@ public class JustForgotten
     solver.Add(x.AllDifferent());
     for(int r = 0; r < rows; r++) {
       solver.Add( (from c in Enumerable.Range(0, cols)
-                   select 
-                   x[c].IsEqual(a[r,c])).ToArray().Sum() == 4);
+                   select x[c] == a[r,c]).ToArray().Sum() == 4);
     }
 
 

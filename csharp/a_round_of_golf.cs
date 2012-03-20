@@ -125,10 +125,10 @@ public class ARoundOfGolf
     solver.Add(Sands != Frank);
     solver.Add(caddy != Sands);
 
-    IntVar b3_a_1 = (score.Element(Sands) + 4).IsEqual(score[Frank]);
-    IntVar b3_a_2 = score.Element(caddy).IsEqual(score.Element(Sands) + 7);
-    IntVar b3_b_1 = (score.Element(Sands) + 7).IsEqual(score[Frank]);
-    IntVar b3_b_2 = score.Element(caddy).IsEqual(score.Element(Sands) + 4);
+    IntVar b3_a_1 = score.Element(Sands) + 4 == score[Frank];
+    IntVar b3_a_2 = score.Element(caddy) == score.Element(Sands) + 7;
+    IntVar b3_b_1 = score.Element(Sands) + 7 == score[Frank];
+    IntVar b3_b_2 = score.Element(caddy) == score.Element(Sands) + 4;
     solver.Add( (b3_a_1*b3_a_2) + (b3_b_1*b3_b_2) == 1);
 
     // 4. Mr. Carter thought his score of 78 was one of his better games,

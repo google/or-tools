@@ -74,8 +74,8 @@ public class StableMarriage
     //               rankWomen[o,husband[o]] < rankWomen[o,m]);
     for(int m = 0; m < n; m++) {
       for(int o = 0; o < n; o++) {
-        IntVar b1 = rankMen[m].Element(wife[m]).IsGreater(rankMen[m][o]);
-        IntVar b2 = rankWomen[o].Element(husband[o]).IsLess(rankWomen[o][m]);
+        IntVar b1 = rankMen[m].Element(wife[m]) > rankMen[m][o];
+        IntVar b2 = rankWomen[o].Element(husband[o]) < rankWomen[o][m];
         solver.Add(b1 <= b2);
       }
 
@@ -86,8 +86,8 @@ public class StableMarriage
     //              rankMen[o,wife[o]] < rankMen[o,w]);
     for(int w = 0; w < n; w++) {
       for(int o = 0; o < n; o++) {
-        IntVar b1 = rankWomen[w].Element(husband[w]).IsGreater(rankWomen[w][o]);
-        IntVar b2 = rankMen[o].Element(wife[o]).IsLess(rankMen[o][w]);
+        IntVar b1 = rankWomen[w].Element(husband[w]) > rankWomen[w][o];
+        IntVar b2 = rankMen[o].Element(wife[o]) < rankMen[o][w];
         solver.Add(b1 <= b2);
         }
       }

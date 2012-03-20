@@ -25,24 +25,24 @@ public class WeddingOptimalChart
    *
    * Finding an optimal wedding seating chart.
    *
-   * From 
+   * From
    * Meghan L. Bellows and J. D. Luc Peterson
    * "Finding an optimal seating chart for a wedding"
    * http://www.improbable.com/news/2012/Optimal-seating-chart.pdf
    * http://www.improbable.com/2012/02/12/finding-an-optimal-seating-chart-for-a-wedding
-   * 
+   *
    * """
-   * Every year, millions of brides (not to mention their mothers, future 
-   * mothers-in-law, and occasionally grooms) struggle with one of the 
-   * most daunting tasks during the wedding-planning process: the 
-   * seating chart. The guest responses are in, banquet hall is booked, 
-   * menu choices have been made. You think the hard parts are over, 
-   * but you have yet to embark upon the biggest headache of them all. 
-   * In order to make this process easier, we present a mathematical 
-   * formulation that models the seating chart problem. This model can 
-   * be solved to find the optimal arrangement of guests at tables. 
-   * At the very least, it can provide a starting point and hopefully 
-   * minimize stress and arguments… 
+   * Every year, millions of brides (not to mention their mothers, future
+   * mothers-in-law, and occasionally grooms) struggle with one of the
+   * most daunting tasks during the wedding-planning process: the
+   * seating chart. The guest responses are in, banquet hall is booked,
+   * menu choices have been made. You think the hard parts are over,
+   * but you have yet to embark upon the biggest headache of them all.
+   * In order to make this process easier, we present a mathematical
+   * formulation that models the seating chart problem. This model can
+   * be solved to find the optimal arrangement of guests at tables.
+   * At the very least, it can provide a starting point and hopefully
+   * minimize stress and arguments…
    * """
    *
    *
@@ -133,7 +133,7 @@ public class WeddingOptimalChart
 
 
     int m = C.GetLength(0); // number of quests
-    
+
     IEnumerable<int> NRANGE = Enumerable.Range(0, n);
     IEnumerable<int> MRANGE = Enumerable.Range(0, m);
 
@@ -145,7 +145,7 @@ public class WeddingOptimalChart
     IntVar z = (from j in MRANGE
                 from k in MRANGE
                 where j < k
-                select (C[j,k]*tables[j].IsEqual(tables[k])).Var()
+                select C[j,k] * tables[j] == tables[k]
                 ).ToArray().Sum().VarWithName("z");
 
     //
@@ -155,18 +155,12 @@ public class WeddingOptimalChart
 
       solver.Add((from j in MRANGE
                   from k in MRANGE
-                  where j < k
-                  select ((solver.MakeIntConst(C[j,k]).IsGreater(0))*
-                          (tables[j].IsEqual(i))*
-                          (tables[k].IsEqual(i))).Var()
-                  ).ToArray().Sum() >= b); 
+                  where j < k && C[j, k] > 0
+                  select (tables[j] == i) * (tables[k] == i)
+                  ).ToArray().Sum() >= b);
 
 
-      IntVar tmp = (from j in MRANGE
-                    select tables[j].IsEqual(i).Var()
-                    ).ToArray().Sum().Var(); 
-      solver.Add(tmp <= a);
-
+      solver.Add((from j in MRANGE select tables[j] == i).ToArray().Sum() <= a);
     }
 
     // Symmetry breaking

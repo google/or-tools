@@ -148,7 +148,7 @@ public class Crew
       for(int f = 0; f < num_flights; f++) {
         tmp[f] = crew[f,p];
       }
-      nw[p] = tmp.Sum().IsGreater(0);
+      nw[p] = tmp.Sum() > 0;
     }
     solver.Add(nw.Sum() == num_working);
 

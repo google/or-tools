@@ -38,6 +38,27 @@ namespace Google.OrTools.ConstraintSolver
       Solver solver = GetSolver(vars);
       return solver.MakeSum(vars);
     }
+    // sum of all constraints.
+    public static IntExpr Sum(this IConstraintWithStatus[] cts)
+    {
+      Solver solver = GetSolver(cts);
+      IntVar[] vars = new IntVar[cts.Length];
+      for (int i = 0; i < cts.Length; ++i)
+      {
+        vars[i] = cts[i].Var();
+      }
+      return solver.MakeSum(vars);
+    }
+    public static IntExpr Sum(this IntExpr[] exprs)
+    {
+      Solver solver = GetSolver(exprs);
+      IntVar[] vars = new IntVar[exprs.Length];
+      for (int i = 0; i < exprs.Length; ++i)
+      {
+        vars[i] = exprs[i].Var();
+      }
+      return solver.MakeSum(vars);
+    }
 
     // scalar product
     public static IntExpr ScalProd(this IntVar[] vars, long[] coefs)
@@ -60,6 +81,21 @@ namespace Google.OrTools.ConstraintSolver
         throw new ArgumentException("Array <vars> cannot be null or empty");
 
       return vars[0].solver();
+    }
+    // get solver from array of integer expressions
+    private static Solver GetSolver(IntExpr[] expressions)
+    {
+      if (expressions == null || expressions.Length <= 0)
+        throw new ArgumentException("Array <expr> cannot be null or empty");
+
+      return expressions[0].solver();
+    }
+    private static Solver GetSolver(IConstraintWithStatus[] cts)
+    {
+      if (cts == null || cts.Length <= 0)
+        throw new ArgumentException("Array <cts> cannot be null or empty");
+
+      return cts[0].solver();
     }
     public static IntExpr Element(this IntVar[] array, IntExpr index) {
       return index.solver().MakeElement(array, index.Var());

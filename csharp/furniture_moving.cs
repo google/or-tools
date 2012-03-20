@@ -58,9 +58,7 @@ public class FurnitureMoving
     for(int t = times_min; t <= times_max; t++) {
       ArrayList bb = new ArrayList();
       foreach(int i in tasks) {
-        IntVar c1 = (s[i]).IsLessOrEqual(t).Var();
-        IntVar c2 = (s[i] + d[i]).IsGreater(t).Var();
-        bb.Add((c1*c2*r[i]).Var());
+        bb.Add(((s[i] <= t) * (s[i] + d[i]> t) * r[i]).Var());
       }
       solver.Add((bb.ToArray(typeof(IntVar)) as IntVar[]).Sum() <= b);
     }
