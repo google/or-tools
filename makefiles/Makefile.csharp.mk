@@ -105,6 +105,14 @@ organize_day_intervals.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHARED
 cstsp.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/cstsp.cs
 	$(CSC) /target:exe /out:cstsp.exe /platform:$(NETPLATFORM) /r:Google.OrTools.ConstraintSolver.dll csharp$Scstsp.cs
 
+# csharp constraint solver tests
+
+testcp.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) tests/testcp.cs
+	$(CSC) /target:exe /out:testcp.exe /platform:$(NETPLATFORM) /r:Google.OrTools.ConstraintSolver.dll tests$Stestcp.cs
+
+testcp: testcp.exe
+	$(MONO) testcp.exe
+
 # csharpalgorithms
 
 csharpalgorithms: $(LIBPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT)
