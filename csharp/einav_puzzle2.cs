@@ -73,8 +73,8 @@ public class EinavPuzzle2
 
     //
     // Data
-    // 
-    
+    //
+
     // Small problem
     // int rows = 3;
     // int cols = 3;
@@ -133,8 +133,8 @@ public class EinavPuzzle2
     IntVar[] row_signs = solver.MakeIntVarArray(rows, signs_domain, "row_signs");
     IntVar[] col_signs = solver.MakeIntVarArray(cols, signs_domain, "col_signs");
 
-    
-    
+
+
     // To optimize
     IntVar total_sum = x_flat.Sum().VarWithName("total_sum");
 
@@ -150,8 +150,8 @@ public class EinavPuzzle2
     // row sums
     IntVar[] row_sums = (from i in ROWS
                          select (from j in COLS
-                                 select x[i,j].Var()
-                                 ).ToArray().Sum().Var()).ToArray();
+                                 select x[i,j]
+                                ).ToArray().Sum().Var()).ToArray();
 
     foreach(int i in ROWS) {
       row_sums[i].SetMin(0);
@@ -160,7 +160,7 @@ public class EinavPuzzle2
     // col sums
     IntVar[] col_sums = (from j in COLS
                          select (from i in ROWS
-                                 select x[i,j].Var()
+                                 select x[i,j]
                                  ).ToArray().Sum().Var()).ToArray();
 
     foreach(int j in COLS) {

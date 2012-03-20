@@ -106,19 +106,19 @@ public class NonTransitiveDice
     // And now we roll...
     // comp[] is the number of wins for [A vs B, B vs A]
     for(int d = 0; d < m; d++) {
-      IntVar[] b1 = ( from r1 in Enumerable.Range(0, n)
+      IntVar sum1 = ( from r1 in Enumerable.Range(0, n)
                       from r2 in Enumerable.Range(0, n)
-                      select (dice[d % m, r1] > dice[(d+1) % m, r2]).Var()
-                    ).ToArray();
+                      select (dice[d % m, r1] > dice[(d+1) % m, r2])
+                      ).ToArray().Sum().Var();
 
-      solver.Add(comp[d%m,0] == b1.Sum());
+      solver.Add(comp[d%m,0] == sum1);
 
-      IntVar[] b2 = ( from r1 in Enumerable.Range(0, n)
+      IntVar sum2 = ( from r1 in Enumerable.Range(0, n)
                       from r2 in Enumerable.Range(0, n)
-                      select (dice[(d+1) % m, r1] > dice[d % m, r2]).Var()
-                    ).ToArray();
+                      select (dice[(d+1) % m, r1] > dice[d % m, r2])
+                      ).ToArray().Sum().Var();
 
-      solver.Add(comp[d%m,1] == b2.Sum());
+      solver.Add(comp[d%m,1] == sum2);
     }
 
 

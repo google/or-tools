@@ -122,7 +122,7 @@ public class LabeledDice
     // the letters in a word must be on a different die
     for(int i = 0; i < num_words; i++) {
       solver.Add( (from j in Enumerable.Range(0, n)
-                   select dice[words[i,j]].Var()
+                   select dice[words[i,j]]
                    ).ToArray().AllDifferent());
     }
 

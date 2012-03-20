@@ -36,7 +36,7 @@ public class SetPartition
             // b = solver.Sum([x[i,k]*x[j,k] for k in range(n)]);
             // solver.Add(b == 0);
             solver.Add( (from k in Enumerable.Range(0, n)
-                         select (x[i,k]*x[j,k]).Var()).
+                         select (x[i,k]*x[j,k])).
                         ToArray().Sum() == 0);
           }
         }
@@ -46,7 +46,7 @@ public class SetPartition
       // (exactly) one partition
       solver.Add( (from i in Enumerable.Range(0, num_sets)
                    from j in Enumerable.Range(0, n)
-                   select x[i,j].Var()).ToArray().Sum() == n);
+                   select x[i,j]).ToArray().Sum() == n);
     }
 
 
@@ -105,22 +105,22 @@ public class SetPartition
 
         // same cardinality
         solver.Add(
-                   (from k in NRange select a[i,k].Var()).ToArray().Sum()
+                   (from k in NRange select a[i,k]).ToArray().Sum()
                    ==
-                   (from k in NRange select a[j,k].Var()).ToArray().Sum());
+                   (from k in NRange select a[j,k]).ToArray().Sum());
 
         // same sum
         solver.Add(
-                   (from k in NRange select (k*a[i,k]).Var()).ToArray().Sum()
+                   (from k in NRange select (k*a[i,k])).ToArray().Sum()
                    ==
-                   (from k in NRange select (k*a[j,k]).Var()).ToArray().Sum());
+                   (from k in NRange select (k*a[j,k])).ToArray().Sum());
 
 
         // same sum squared
         solver.Add(
-                   (from k in NRange select (k*a[i,k]*k*a[i,k]).Var()).ToArray().Sum()
+                   (from k in NRange select (k*a[i,k]*k*a[i,k])).ToArray().Sum()
                    ==
-                   (from k in NRange select (k*a[j,k]*k*a[j,k]).Var()).ToArray().Sum());
+                   (from k in NRange select (k*a[j,k]*k*a[j,k])).ToArray().Sum());
       }
     }
 

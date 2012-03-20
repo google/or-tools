@@ -63,24 +63,15 @@ public class MagicSquareAndCards
     // the standard magic square constraints (sans all_different)
     foreach(int i in RANGE) {
       // rows
-      solver.Add( (from j in RANGE 
-                   select x[i,j].Var()
-                   ).ToArray().Sum() == s);
+      solver.Add( (from j in RANGE select x[i,j]).ToArray().Sum() == s);
 
       // columns
-      solver.Add( (from j in RANGE 
-                   select x[j,i].Var()
-                   ).ToArray().Sum() == s);
+      solver.Add( (from j in RANGE select x[j,i]).ToArray().Sum() == s);
     }
 
     // diagonals
-    solver.Add( (from i in RANGE 
-                 select x[i,i].Var()
-                 ).ToArray().Sum() == s);
-    solver.Add( (from i in RANGE 
-                 select x[i,n-i-1].Var()
-                 ).ToArray().Sum() == s);
-
+    solver.Add( (from i in RANGE select x[i,i]).ToArray().Sum() == s);
+    solver.Add( (from i in RANGE select x[i,n-i-1]).ToArray().Sum() == s);
 
 
     // redundant constraint

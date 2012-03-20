@@ -82,7 +82,7 @@ public class Assignment
     // Total cost
     IntVar total_cost = (from i in Enumerable.Range(0, rows)
                          from j in Enumerable.Range(0, cols)
-                select (cost[i,j]*x[i,j]).Var()).ToArray().Sum().Var();
+                         select (cost[i,j] * x[i,j])).ToArray().Sum().Var();
 
     //
     // objective

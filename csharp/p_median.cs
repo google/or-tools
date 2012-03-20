@@ -66,7 +66,7 @@ public class PMedian
     //
 
     IntVar[] open = solver.MakeIntVarArray(num_warehouses, 0, num_warehouses, "open");
-    IntVar[,] ship = solver.MakeIntVarMatrix(num_customers, num_warehouses, 
+    IntVar[,] ship = solver.MakeIntVarMatrix(num_customers, num_warehouses,
                                              0, 1, "ship");
     IntVar z = solver.MakeIntVar(0, 1000, "z");
 
@@ -77,9 +77,9 @@ public class PMedian
 
     solver.Add((from c in CUSTOMERS
                 from w in WAREHOUSES
-                select (demand[c]*distance[c,w]*ship[c,w]).Var()
+                select (demand[c]*distance[c,w]*ship[c,w])
                 ).ToArray().Sum() == z);
-      
+
     solver.Add(open.Sum() == p);
 
     foreach(int c in CUSTOMERS) {
@@ -87,9 +87,7 @@ public class PMedian
         solver.Add(ship[c,w] <= open[w]);
       }
 
-      solver.Add((from w in WAREHOUSES
-                  select ship[c,w].Var()
-                   ).ToArray().Sum() == 1);
+      solver.Add((from w in WAREHOUSES select ship[c,w]).ToArray().Sum() == 1);
     }
 
 

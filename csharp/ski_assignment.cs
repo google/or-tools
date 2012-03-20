@@ -75,7 +75,7 @@ public class SkiAssignment
 
     IntVar[] z_tmp = new IntVar[num_skiers];
     for(int i = 0; i < num_skiers; i++) {
-      z_tmp[i] = (ski_heights.Element(x[i])-skier_heights[i]).Abs().Var();
+      z_tmp[i] = (ski_heights.Element(x[i]) - skier_heights[i]).Abs().Var();
     }
 
     //    IntVar z = solver.MakeIntVar(0, ski_heights.Sum(), "z");

@@ -29,8 +29,8 @@ public class PandigitalNumbers
    *  channelling between the array a and the number num.
    *
    */
-  private static Constraint ToNum(IntVar[] a, 
-                                  IntVar num, 
+  private static Constraint ToNum(IntVar[] a,
+                                  IntVar num,
                                   int bbase) {
     int len = a.Length;
     IntVar[] tmp = new IntVar[len];
@@ -49,7 +49,7 @@ public class PandigitalNumbers
    * quoted from http://www.worldofnumbers.com/ninedig1.htm
    * """
    * Chapter VIII : Digits - and the magic of 9
-   * 
+   *
    * The following curious table shows how to arrange the 9 digits so that
    * the product of 2 groups is equal to a number represented by the
    * remaining digits.
@@ -114,20 +114,20 @@ public class PandigitalNumbers
     // Constraints
     //
     solver.Add(x.AllDifferent());
-    
+
     solver.Add(ToNum(( from i in Enumerable.Range(0, len1)
-                       select x[i].Var()).ToArray(),
-                     num1, 
+                       select x[i]).ToArray(),
+                     num1,
                      bbase));
 
     solver.Add(ToNum(( from i in Enumerable.Range(len1, len2)
-                       select x[i].Var()).ToArray(),
-                     num2, 
+                       select x[i]).ToArray(),
+                     num2,
                      bbase));
-    
+
     solver.Add(ToNum(( from i in Enumerable.Range(len1+len2, x_len-(len1+len2))
-                       select x[i].Var()).ToArray(),
-                     res, 
+                       select x[i]).ToArray(),
+                     res,
                      bbase));
 
 

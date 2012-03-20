@@ -28,17 +28,16 @@ public class KillerSudoku
    * in cc == res
    *
    */
-  public static void  calc(Solver solver, 
-                           int[] cc, 
+  public static void  calc(Solver solver,
+                           int[] cc,
                            IntVar[,] x,
-                           int res) 
+                           int res)
   {
 
     // sum the numbers
     int len = cc.Length / 2;
     solver.Add( (from i in Enumerable.Range(0, len)
-                 select x[cc[i*2]-1,cc[i*2+1]-1].Var())
-                .ToArray().Sum() == res);
+                 select x[cc[i*2]-1,cc[i*2+1]-1]).ToArray().Sum() == res);
   }
 
 
@@ -54,9 +53,9 @@ public class KillerSudoku
    * Despite the name, the simpler killer sudokus can be easier to solve
    * than regular sudokus, depending on the solver's skill at mental arithmetic;
    * the hardest ones, however, can take hours to crack.
-   * 
+   *
    * ...
-   * 
+   *
    * The objective is to fill the grid with numbers from 1 to 9 in a way that
    * the following conditions are met:
    *
@@ -66,7 +65,7 @@ public class KillerSudoku
    * - No number appears more than once in a cage. (This is the standard rule
    *   for killer sudokus, and implies that no cage can include more
    *   than 9 cells.)
-   * 
+   *
    * In 'Killer X', an additional rule is that each of the long diagonals
    * contains each number once.
    * """
@@ -86,7 +85,7 @@ public class KillerSudoku
    *   4 3 7 1 6 5 2 8 9
    *
    * Also see http://www.hakank.org/or-tools/killer_sudoku.py
-   * though this C# model has another representation of 
+   * though this C# model has another representation of
    * the problem instance.
    *
    */
@@ -107,7 +106,7 @@ public class KillerSudoku
     // hints
     //  sum, the hints
     // Note: this is 1-based
-    int[][] problem = 
+    int[][] problem =
       {
         new int[] { 3,  1,1,  1,2},
         new int[] {15,  1,3,  1,4, 1,5},
@@ -161,11 +160,11 @@ public class KillerSudoku
     foreach(int i in RANGE) {
       // rows
       solver.Add( (from j in RANGE
-                   select x[i,j].Var()).ToArray().AllDifferent());
+                   select x[i,j]).ToArray().AllDifferent());
 
       // cols
       solver.Add( (from j in RANGE
-                   select x[j,i].Var()).ToArray().AllDifferent());
+                   select x[j,i]).ToArray().AllDifferent());
 
     }
 
@@ -174,10 +173,10 @@ public class KillerSudoku
       foreach(int j in CELL) {
         solver.Add( (from di in CELL
                      from dj in CELL
-                     select x[i*cell_size+di, j*cell_size+dj].Var()
+                     select x[i*cell_size+di, j*cell_size+dj]
                      ).ToArray().AllDifferent());
       }
-    }        
+    }
 
 
     // Sum the segments and ensure alldifferent
@@ -189,14 +188,14 @@ public class KillerSudoku
       for(int j = 1; j < segment.Length; j++) {
         s2[j-1] = segment[j];
       }
-   
+
       // sum this segment
       calc(solver, s2, x, segment[0]);
 
       // all numbers in this segment must be distinct
       int len = segment.Length / 2;
       solver.Add( (from j in Enumerable.Range(0, len)
-                   select x[s2[j*2]-1, s2[j*2+1]-1].Var())
+                   select x[s2[j*2]-1, s2[j*2+1]-1])
                   .ToArray().AllDifferent());
     }
 

@@ -44,7 +44,7 @@ public class MaxFlowWinston1
     IEnumerable<int> NODES = Enumerable.Range(0, n);
 
     // The arcs
-    // Note: 
+    // Note:
     // This is 1-based to be compatible with other implementations.
     //
     int[,] arcs1 = {
@@ -59,7 +59,7 @@ public class MaxFlowWinston1
 
     // Capacities
     int [] cap = {2,3,3,4,2,1,100};
-   
+
     // Convert arcs to 0-based
     int num_arcs = arcs1.GetLength(0);
     IEnumerable<int> ARCS = Enumerable.Range(0, num_arcs);
@@ -103,12 +103,12 @@ public class MaxFlowWinston1
     foreach(int i in NODES) {
       var s1 = (from k in ARCS
                 where arcs[k,1] == i
-                select flow[arcs[k,0], arcs[k,1]].Var()
+                select flow[arcs[k,0], arcs[k,1]]
                 ).ToArray().Sum();
 
       var s2 = (from k in ARCS
                 where arcs[k,0] == i
-                select flow[arcs[k,0], arcs[k,1]].Var()
+                select flow[arcs[k,0], arcs[k,1]]
                 ).ToArray().Sum();
 
       solver.Add(s1 == s2);

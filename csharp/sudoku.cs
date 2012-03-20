@@ -51,7 +51,7 @@ public class Sudoku
                            {0, 4, 0, 0, 0, 1, 0, 0, 6},
                            {0, 3, 0, 0, 0, 8, 0, 0, 0},
                            {0, 2, 0, 0, 4, 0, 0, 5, 0}};
-    
+
 
     //
     // Decision variables
@@ -61,7 +61,7 @@ public class Sudoku
 
     //
     // Constraints
-    //  
+    //
 
     // init
     foreach(int i in RANGE) {
@@ -72,16 +72,16 @@ public class Sudoku
       }
     }
 
-    
+
     foreach(int i in RANGE) {
 
       // rows
       solver.Add( (from j in RANGE
-                   select grid[i,j].Var()).ToArray().AllDifferent());
+                   select grid[i,j]).ToArray().AllDifferent());
 
       // cols
       solver.Add( (from j in RANGE
-                   select grid[j,i].Var()).ToArray().AllDifferent());
+                   select grid[j,i]).ToArray().AllDifferent());
 
     }
 
@@ -90,10 +90,10 @@ public class Sudoku
       foreach(int j in CELL) {
         solver.Add( (from di in CELL
                      from dj in CELL
-                     select grid[i*cell_size+di, j*cell_size+dj].Var()
+                     select grid[i*cell_size+di, j*cell_size+dj]
                      ).ToArray().AllDifferent());
       }
-    }        
+    }
 
 
     //
@@ -107,12 +107,12 @@ public class Sudoku
 
     while (solver.NextSolution()) {
       for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++){ 
+        for(int j = 0; j < n; j++){
           Console.Write("{0} ", grid[i,j].Value());
         }
         Console.WriteLine();
       }
-      
+
       Console.WriteLine();
     }
 

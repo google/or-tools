@@ -60,7 +60,7 @@ public class Futoshiki
     // Constraints
     //
 
-  
+
     // set initial values
     foreach(int row in RANGE) {
       foreach(int col in RANGE) {
@@ -74,14 +74,14 @@ public class Futoshiki
     // all rows have to be different
     foreach(int row in RANGE) {
       solver.Add((from col in RANGE
-                  select field[row,col].Var()).ToArray().AllDifferent());
+                  select field[row,col]).ToArray().AllDifferent());
     }
-    
+
 
     // all columns have to be different
     foreach(int col in RANGE) {
       solver.Add((from row in RANGE
-                  select field[row,col].Var()).ToArray().AllDifferent());
+                  select field[row,col]).ToArray().AllDifferent());
     }
 
 
@@ -91,7 +91,7 @@ public class Futoshiki
       solver.Add(field[ lt[i,0]-1, lt[i,1]-1 ] <
                  field[ lt[i,2]-1, lt[i,3]-1 ] );
     }
-  
+
 
 
 
@@ -111,7 +111,7 @@ public class Futoshiki
         }
         Console.WriteLine();
       }
-      
+
       Console.WriteLine();
     }
 

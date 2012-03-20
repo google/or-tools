@@ -55,11 +55,11 @@ public class APuzzle
    * 2581 = ?
    * """
    *
-   * Note: 
-   * This model yields 10 solutions, since x4 is not 
-   * restricted in the constraints. 
-   * All solutions has x assigned to the correct result. 
-   * 
+   * Note:
+   * This model yields 10 solutions, since x4 is not
+   * restricted in the constraints.
+   * All solutions has x assigned to the correct result.
+   *
    *
    * (Problem 2)
    * The problem stated in "A puzzle"
@@ -77,11 +77,11 @@ public class APuzzle
    *
    * 2581 = ?
    * """
-   * This problem instance yields two different solutions of x, 
-   * one is the same (correct) as for the above problem instance, 
+   * This problem instance yields two different solutions of x,
+   * one is the same (correct) as for the above problem instance,
    * and one is not.
    * This is because here x0,x1,x4 and x9 are underdefined.
-   * 
+   *
    *
    */
   private static void Solve(int p = 1)
@@ -118,7 +118,7 @@ public class APuzzle
 
     //
     // Constraints
-    //  
+    //
 
     // Both problem are here shown in two
     // approaches:
@@ -177,15 +177,15 @@ public class APuzzle
         {9,8,8,1, 5},
         {5,5,3,1, 0}
       };
-      
+
       for(int i = 0; i < problem1.GetLength(0); i++) {
         solver.Add( (from j in Enumerable.Range(0, 4)
                      select all[problem1[i,j]].Var()
                      ).ToArray().Sum() == problem1[i,4] );
       }
-      
+
       solver.Add(all[2]+all[5]+all[8]+all[1] == x);
-      
+
     } else if (p == 3) {
 
       // Problem 2
@@ -197,7 +197,7 @@ public class APuzzle
       solver.Add(x7+x7+x5+x6 == 1);
       solver.Add(x6+x8+x5+x5 == 3);
       solver.Add(x9+x8+x8+x1 == 5);
-      
+
       // The unknown
       solver.Add(x2+x5+x8+x1 == x);
 
@@ -214,13 +214,13 @@ public class APuzzle
         {6,8,5,5, 3},
         {9,8,8,1, 5}
       };
-      
+
       for(int i = 0; i < problem2.GetLength(0); i++) {
         solver.Add( (from j in Enumerable.Range(0, 4)
-                     select all[problem2[i,j]].Var()
+                     select all[problem2[i,j]]
                      ).ToArray().Sum() == problem2[i,4] );
       }
-      
+
 
       solver.Add(all[2]+all[5]+all[8]+all[1] == x);
     }

@@ -59,7 +59,7 @@ public class KenKen2
       // sum the numbers
       int len = cc.Length / 2;
       IntVar[] xx = (from i in Enumerable.Range(0, len)
-                     select x[cc[i*2]-1,cc[i*2+1]-1].Var()).ToArray();
+                     select x[cc[i*2]-1,cc[i*2+1]-1]).ToArray();
 
       // Sum
       IntVar this_sum = xx.Sum() == res;
@@ -182,12 +182,10 @@ public class KenKen2
     //  alldifferent rows and columns
     foreach(int i in RANGE) {
       // rows
-      solver.Add( (from j in RANGE
-                   select x[i,j].Var()).ToArray().AllDifferent());
+      solver.Add( (from j in RANGE select x[i,j]).ToArray().AllDifferent());
 
       // cols
-      solver.Add( (from j in RANGE
-                   select x[j,i].Var()).ToArray().AllDifferent());
+      solver.Add( (from j in RANGE select x[j,i]).ToArray().AllDifferent());
 
     }
 

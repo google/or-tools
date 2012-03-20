@@ -46,7 +46,7 @@ public class BrokenWeights
    * the 4-pound weight on the other side.
    * """
    *
-   * Also see http://www.hakank.org/or-tools/broken_weights.py 
+   * Also see http://www.hakank.org/or-tools/broken_weights.py
    *
    */
   private static void Solve(int m=40, int n=4)
@@ -88,7 +88,7 @@ public class BrokenWeights
       solver.Add(weights[j-1] < weights[j]);
     }
 
-    
+
     solver.Add(weights.Sum() == m);
 
     // Check that all weights from 1 to n (default 40) can be made.
@@ -100,8 +100,7 @@ public class BrokenWeights
     //
     for(int i = 0; i < m; i++) {
       solver.Add( (from j in Enumerable.Range(0, n)
-                   select (weights[j]*x[i,j]).Var()
-                   ).ToArray().Sum() == i+1);
+                   select weights[j] * x[i,j]).ToArray().Sum() == i+1);
     }
 
 

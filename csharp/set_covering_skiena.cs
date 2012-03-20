@@ -78,16 +78,13 @@ public class SetCoveringSkiena
 
     // all sets must be used
     foreach(int j in Elements) {
-      solver.Add( (from i in Sets
-                   select (belongs[i,j]*x[i]).Var())
+      solver.Add( (from i in Sets select belongs[i,j] * x[i])
                    .ToArray().Sum() >= 1);
     }
 
     // number of used elements
-    solver.Add((from i in Sets
-                from j in Elements
-                select (x[i]*belongs[i,j]).Var()
-                ).ToArray().Sum() == tot_elements);
+    solver.Add((from i in Sets from j in Elements select x[i] * belongs[i,j])
+               .ToArray().Sum() == tot_elements);
 
     //
     // Objective

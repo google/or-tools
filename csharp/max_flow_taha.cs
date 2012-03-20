@@ -79,14 +79,14 @@ public class MaxFlowTaha
     //
     solver.Add( (from j in NODES
                  where c[start,j] > 0
-                 select x[start,j].Var()
+                 select x[start,j]
                  ).ToArray().Sum() == total);
 
     foreach(int i in NODES) {
 
       var in_flow_sum = (from j in NODES
                          where c[j,i] > 0
-                         select x[j,i].Var()
+                         select x[j,i]
                          );
       if (in_flow_sum.Count() > 0) {
         solver.Add(in_flow_sum.ToArray().Sum()  == in_flow[i]);
@@ -94,12 +94,12 @@ public class MaxFlowTaha
 
       var out_flow_sum = (from j in NODES
                           where c[i,j] > 0
-                          select x[i,j].Var()
+                          select x[i,j]
                           );
       if (out_flow_sum.Count() > 0) {
         solver.Add(out_flow_sum.ToArray().Sum()  == out_flow[i]);
       }
-      
+
     }
 
     // in_flow == out_flow
@@ -110,12 +110,12 @@ public class MaxFlowTaha
     }
 
     var s1 = (from i in NODES where c[i,start] > 0 select x[i,start]);
-    if (s1.Count() > 0) {      
+    if (s1.Count() > 0) {
       solver.Add(s1.ToArray().Sum() == 0);
     }
 
     var s2 = (from j in NODES where c[end, j] > 0 select x[end,j]);
-    if (s2.Count() > 0) {      
+    if (s2.Count() > 0) {
       solver.Add(s2.ToArray().Sum() == 0);
     }
 
