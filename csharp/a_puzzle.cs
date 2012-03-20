@@ -180,7 +180,7 @@ public class APuzzle
 
       for(int i = 0; i < problem1.GetLength(0); i++) {
         solver.Add( (from j in Enumerable.Range(0, 4)
-                     select all[problem1[i,j]].Var()
+                     select all[problem1[i,j]]
                      ).ToArray().Sum() == problem1[i,4] );
       }
 
