@@ -131,17 +131,13 @@ def main(the_killers):
     for i in range(n):
         for j in range(n):
             if i != j:
-                bi = solver.IsEqualCstVar(richer[i][j], 1)
-                bj = solver.IsEqualCstVar(richer[j][i], 0)
-                solver.Add(bi == bj)
+                solver.Add((richer[i][j] == 1) == (richer[j][i] == 0) )
 
     # Charles hates noone that Agatha hates.
     #forall i : Range .
     #  (hates[agatha, i] = 1) => (hates[charles, i] = 0),
     for i in range(n):
-        b1a = solver.IsEqualCstVar(hates[agatha][i], 1)
-        b1b = solver.IsEqualCstVar(hates[charles][i], 0)
-        solver.Add(b1a-b1b <= 0)
+        solver.Add((hates[agatha][i]==1)-(hates[charles][i] == 0) <= 0)
 
     # Agatha hates everybody except the butler.
     solver.Add(hates[agatha][charles] == 1)
@@ -153,18 +149,14 @@ def main(the_killers):
     # forall i : Range .
     #  (richer[i, agatha] = 0) => (hates[butler, i] = 1),
     for i in range(n):
-        b2a = solver.IsEqualCstVar(richer[i][agatha], 0)
-        b2b = solver.IsEqualCstVar(hates[butler][i], 1)
-        solver.Add(b2a-b2b<=0)
+        solver.Add((richer[i][agatha]==0)-(hates[butler][i]==1)<=0)
 
 
     # The butler hates everyone whom Agatha hates.
     #forall i : Range .
     #  (hates[agatha, i] = 1) => (hates[butler, i] = 1),
     for i in range(n):
-        b3a = solver.IsEqualCstVar(hates[agatha][i], 1)
-        b3b = solver.IsEqualCstVar(hates[butler][i], 1)
-        solver.Add(b3a-b3b <= 0)
+        solver.Add((hates[agatha][i]==1)-(hates[butler][i]==1) <= 0)
 
 
     # Noone hates everyone.
