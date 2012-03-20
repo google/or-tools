@@ -1597,12 +1597,6 @@ struct FailureProtect {
   public static IntExpr operator+(Constraint a, Constraint b) {
     return a.solver().MakeSum(a.Var(), b.Var());
   }
-  public static IntExpr operator+(Constraint a, IConstraintWithStatus b) {
-    return a.solver().MakeSum(a.Var(), b.Var());
-  }
-  public static IntExpr operator+(IConstraintWithStatus a, Constraint b) {
-    return a.solver().MakeSum(a.Var(), b.Var());
-  }
   public static IntExpr operator+(Constraint a, long v) {
     return a.solver().MakeSum(a.Var(), v);
   }
@@ -1612,12 +1606,6 @@ struct FailureProtect {
   public static IntExpr operator-(Constraint a, Constraint b) {
     return a.solver().MakeDifference(a.Var(), b.Var());
   }
-  public static IntExpr operator-(IConstraintWithStatus a, Constraint b) {
-    return a.solver().MakeDifference(a.Var(), b.Var());
-  }
-  public static IntExpr operator-(Constraint a, IConstraintWithStatus b) {
-    return a.solver().MakeDifference(a.Var(), b.Var());
-  }
   public static IntExpr operator-(Constraint a, long v) {
     return a.solver().MakeSum(a.Var(), -v);
   }
@@ -1625,12 +1613,6 @@ struct FailureProtect {
     return a.solver().MakeDifference(v, a.Var());
   }
   public static IntExpr operator*(Constraint a, Constraint b) {
-    return a.solver().MakeProd(a.Var(), b.Var());
-  }
-  public static IntExpr operator*(IConstraintWithStatus a, Constraint b) {
-    return a.solver().MakeProd(a.Var(), b.Var());
-  }
-  public static IntExpr operator*(Constraint a, IConstraintWithStatus b) {
     return a.solver().MakeProd(a.Var(), b.Var());
   }
   public static IntExpr operator*(Constraint a, long v) {
@@ -1654,55 +1636,49 @@ struct FailureProtect {
   public static WrappedConstraint operator ==(Constraint a, long v) {
     return new WrappedConstraint(a.solver().MakeEquality(a.Var(), v));
   }
+  public static WrappedConstraint operator ==(long v, Constraint a) {
+    return new WrappedConstraint(a.solver().MakeEquality(a.Var(), v));
+  }
   public static WrappedConstraint operator !=(Constraint a, long v) {
+    return new WrappedConstraint(a.solver().MakeNonEquality(a.Var(), v));
+  }
+  public static WrappedConstraint operator !=(long v, Constraint a) {
     return new WrappedConstraint(a.solver().MakeNonEquality(a.Var(), v));
   }
   public static WrappedConstraint operator >=(Constraint a, long v) {
     return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), v));
   }
+  public static WrappedConstraint operator >=(long v, Constraint a) {
+    return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), v));
+  }
   public static WrappedConstraint operator >(Constraint a, long v) {
     return new WrappedConstraint(a.solver().MakeGreater(a.Var(), v));
+  }
+  public static WrappedConstraint operator >(long v, Constraint a) {
+    return new WrappedConstraint(a.solver().MakeLess(a.Var(), v));
   }
   public static WrappedConstraint operator <=(Constraint a, long v) {
     return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), v));
   }
+  public static WrappedConstraint operator <=(long v, Constraint a) {
+    return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), v));
+  }
   public static WrappedConstraint operator <(Constraint a, long v) {
     return new WrappedConstraint(a.solver().MakeLess(a.Var(), v));
   }
+  public static WrappedConstraint operator <(long v, Constraint a) {
+    return new WrappedConstraint(a.solver().MakeGreater(a.Var(), v));
+  }
   public static WrappedConstraint operator >=(Constraint a, Constraint b) {
-    return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
-  }
-  public static WrappedConstraint operator >=(Constraint a, IConstraintWithStatus b) {
-    return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
-  }
-  public static WrappedConstraint operator >=(IConstraintWithStatus a, Constraint b) {
     return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
   }
   public static WrappedConstraint operator >(Constraint a, Constraint b) {
     return new WrappedConstraint(a.solver().MakeGreater(a.Var(), b.Var()));
   }
-  public static WrappedConstraint operator >(IConstraintWithStatus a, Constraint b) {
-    return new WrappedConstraint(a.solver().MakeGreater(a.Var(), b.Var()));
-  }
-  public static WrappedConstraint operator >(Constraint a, IConstraintWithStatus b) {
-    return new WrappedConstraint(a.solver().MakeGreater(a.Var(), b.Var()));
-  }
   public static WrappedConstraint operator <=(Constraint a, Constraint b) {
     return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), b.Var()));
   }
-  public static WrappedConstraint operator <=(IConstraintWithStatus a, Constraint b) {
-    return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), b.Var()));
-  }
-  public static WrappedConstraint operator <=(Constraint a, IConstraintWithStatus b) {
-    return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), b.Var()));
-  }
   public static WrappedConstraint operator <(Constraint a, Constraint b) {
-    return new WrappedConstraint(a.solver().MakeLess(a.Var(), b.Var()));
-  }
-  public static WrappedConstraint operator <(IConstraintWithStatus a, Constraint b) {
-    return new WrappedConstraint(a.solver().MakeLess(a.Var(), b.Var()));
-  }
-  public static WrappedConstraint operator <(Constraint a, IConstraintWithStatus b) {
     return new WrappedConstraint(a.solver().MakeLess(a.Var(), b.Var()));
   }
   public static ConstraintEquality operator ==(Constraint a, Constraint b) {
@@ -1719,12 +1695,6 @@ struct FailureProtect {
   public static IntExpr operator+(IntExpr a, IntExpr b) {
     return a.solver().MakeSum(a, b);
   }
-  public static IntExpr operator+(IntExpr a, IConstraintWithStatus b) {
-    return a.solver().MakeSum(a, b.Var());
-  }
-  public static IntExpr operator+(IConstraintWithStatus a, IntExpr b) {
-    return a.solver().MakeSum(a.Var(), b);
-  }
   public static IntExpr operator+(IntExpr a, long v) {
     return a.solver().MakeSum(a, v);
   }
@@ -1734,12 +1704,6 @@ struct FailureProtect {
   public static IntExpr operator-(IntExpr a, IntExpr b) {
     return a.solver().MakeDifference(a, b);
   }
-  public static IntExpr operator-(IConstraintWithStatus a, IntExpr b) {
-    return a.solver().MakeDifference(a.Var(), b);
-  }
-  public static IntExpr operator-(IntExpr a, IConstraintWithStatus b) {
-    return a.solver().MakeDifference(a, b.Var());
-  }
   public static IntExpr operator-(IntExpr a, long v) {
     return a.solver().MakeSum(a, -v);
   }
@@ -1748,12 +1712,6 @@ struct FailureProtect {
   }
   public static IntExpr operator*(IntExpr a, IntExpr b) {
     return a.solver().MakeProd(a, b);
-  }
-  public static IntExpr operator*(IConstraintWithStatus a, IntExpr b) {
-    return a.solver().MakeProd(a.Var(), b);
-  }
-  public static IntExpr operator*(IntExpr a, IConstraintWithStatus b) {
-    return a.solver().MakeProd(a, b.Var());
   }
   public static IntExpr operator*(IntExpr a, long v) {
     return a.solver().MakeProd(a, v);

@@ -45,7 +45,7 @@ public class CircuitTest2
     // put the orbit of x[0] in z[0..n-1]
     solver.Add(z[0] == x[0]);
     for(int i = 1; i < n-1; i++) {
-      solver.Add(z[i] == x.Element(z[i-1].Var()));
+      solver.Add(z[i] == x.Element(z[i-1]));
     }
 
     // z may not be 0 for i < n-1

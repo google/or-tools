@@ -69,20 +69,38 @@ public abstract class BaseEquality : IConstraintWithStatus
   public static WrappedConstraint operator ==(BaseEquality a, long v) {
     return new WrappedConstraint(a.solver().MakeEquality(a.Var(), v));
   }
+  public static WrappedConstraint operator ==(long v, BaseEquality a) {
+    return new WrappedConstraint(a.solver().MakeEquality(a.Var(), v));
+  }
   public static WrappedConstraint operator !=(BaseEquality a, long v) {
+    return new WrappedConstraint(a.solver().MakeNonEquality(a.Var(), v));
+  }
+  public static WrappedConstraint operator !=(long v, BaseEquality a) {
     return new WrappedConstraint(a.solver().MakeNonEquality(a.Var(), v));
   }
   public static WrappedConstraint operator >=(BaseEquality a, long v) {
     return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), v));
   }
+  public static WrappedConstraint operator >=(long v, BaseEquality a) {
+    return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), v));
+  }
   public static WrappedConstraint operator >(BaseEquality a, long v) {
     return new WrappedConstraint(a.solver().MakeGreater(a.Var(), v));
+  }
+  public static WrappedConstraint operator >(long v, BaseEquality a) {
+    return new WrappedConstraint(a.solver().MakeLess(a.Var(), v));
   }
   public static WrappedConstraint operator <=(BaseEquality a, long v) {
     return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), v));
   }
+  public static WrappedConstraint operator <=(long v, BaseEquality a) {
+    return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), v));
+  }
   public static WrappedConstraint operator <(BaseEquality a, long v) {
     return new WrappedConstraint(a.solver().MakeLess(a.Var(), v));
+  }
+  public static WrappedConstraint operator <(long v, BaseEquality a) {
+    return new WrappedConstraint(a.solver().MakeGreater(a.Var(), v));
   }
   public static WrappedConstraint operator >=(BaseEquality a, BaseEquality b) {
     return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));

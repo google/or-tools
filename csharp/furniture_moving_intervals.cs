@@ -68,7 +68,7 @@ public class FurnitureMovingIntervals
     // Links fillers and num_workers.
     for (int i = 0; i < max_num_workers; ++i)
     {
-      solver.Add((num_workers > i).Var() + fillers[i].PerformedExpr() == 1);
+      solver.Add((num_workers > i) + fillers[i].PerformedExpr() == 1);
     }
 
     // Creates makespan.
