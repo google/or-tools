@@ -1588,15 +1588,7 @@ struct FailureProtect {
 // Keep the .solver() API.
 %rename (solver) *::solver;
 
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::IntVar, IntVar)
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SearchMonitor, SearchMonitor)
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::DecisionBuilder, DecisionBuilder)
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::IntervalVar, IntervalVar)
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SequenceVar, SequenceVar)
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchOperator, LocalSearchOperator)
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchFilter)
-
-%typemap(csinterfaces) operations_research::Constraint "IConstraintWithStatus";
+%typemap(csinterfaces_derived) operations_research::Constraint "IConstraintWithStatus";
 %typemap(cscode) operations_research::Constraint %{
   public static implicit operator IntVar(Constraint eq)
   {
@@ -1611,6 +1603,63 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchF
   {
     return StatusVar();
   }
+  public static IntExpr operator+(Constraint a, Constraint b) {
+    return a.solver().MakeSum(a.Var(), b.Var());
+  }
+  public static IntExpr operator+(Constraint a, IConstraintWithStatus b) {
+    return a.solver().MakeSum(a.Var(), b.Var());
+  }
+  public static IntExpr operator+(IConstraintWithStatus a, Constraint b) {
+    return a.solver().MakeSum(a.Var(), b.Var());
+  }
+  public static IntExpr operator+(Constraint a, long v) {
+    return a.solver().MakeSum(a.Var(), v);
+  }
+  public static IntExpr operator+(long v, Constraint a) {
+    return a.solver().MakeSum(a.Var(), v);
+  }
+  public static IntExpr operator-(Constraint a, Constraint b) {
+    return a.solver().MakeDifference(a.Var(), b.Var());
+  }
+  public static IntExpr operator-(IConstraintWithStatus a, Constraint b) {
+    return a.solver().MakeDifference(a.Var(), b.Var());
+  }
+  public static IntExpr operator-(Constraint a, IConstraintWithStatus b) {
+    return a.solver().MakeDifference(a.Var(), b.Var());
+  }
+  public static IntExpr operator-(Constraint a, long v) {
+    return a.solver().MakeSum(a.Var(), -v);
+  }
+  public static IntExpr operator-(long v, Constraint a) {
+    return a.solver().MakeDifference(v, a.Var());
+  }
+  public static IntExpr operator*(Constraint a, Constraint b) {
+    return a.solver().MakeProd(a.Var(), b.Var());
+  }
+  public static IntExpr operator*(IConstraintWithStatus a, Constraint b) {
+    return a.solver().MakeProd(a.Var(), b.Var());
+  }
+  public static IntExpr operator*(Constraint a, IConstraintWithStatus b) {
+    return a.solver().MakeProd(a.Var(), b.Var());
+  }
+  public static IntExpr operator*(Constraint a, long v) {
+    return a.solver().MakeProd(a.Var(), v);
+  }
+  public static IntExpr operator*(long v, Constraint a) {
+    return a.solver().MakeProd(a.Var(), v);
+  }
+  public static IntExpr operator/(Constraint a, long v) {
+    return a.solver().MakeDiv(a.Var(), v);
+  }
+  public static IntExpr operator-(Constraint a) {
+    return a.solver().MakeOpposite(a.Var());
+  }
+  public IntExpr Abs() {
+    return this.solver().MakeAbs(this.Var());
+  }
+  public IntExpr Square() {
+    return this.solver().MakeSquare(this.Var());
+  }
 %}
 
 
@@ -1618,6 +1667,12 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchF
 %typemap(cscode) operations_research::IntExpr %{
   public static IntExpr operator+(IntExpr a, IntExpr b) {
     return a.solver().MakeSum(a, b);
+  }
+  public static IntExpr operator+(IntExpr a, IConstraintWithStatus b) {
+    return a.solver().MakeSum(a, b.Var());
+  }
+  public static IntExpr operator+(IConstraintWithStatus a, IntExpr b) {
+    return a.solver().MakeSum(a.Var(), b);
   }
   public static IntExpr operator+(IntExpr a, long v) {
     return a.solver().MakeSum(a, v);
@@ -1628,6 +1683,12 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchF
   public static IntExpr operator-(IntExpr a, IntExpr b) {
     return a.solver().MakeDifference(a, b);
   }
+  public static IntExpr operator-(IConstraintWithStatus a, IntExpr b) {
+    return a.solver().MakeDifference(a.Var(), b);
+  }
+  public static IntExpr operator-(IntExpr a, IConstraintWithStatus b) {
+    return a.solver().MakeDifference(a, b.Var());
+  }
   public static IntExpr operator-(IntExpr a, long v) {
     return a.solver().MakeSum(a, -v);
   }
@@ -1636,6 +1697,12 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchF
   }
   public static IntExpr operator*(IntExpr a, IntExpr b) {
     return a.solver().MakeProd(a, b);
+  }
+  public static IntExpr operator*(IConstraintWithStatus a, IntExpr b) {
+    return a.solver().MakeProd(a.Var(), b);
+  }
+  public static IntExpr operator*(IntExpr a, IConstraintWithStatus b) {
+    return a.solver().MakeProd(a, b.Var());
   }
   public static IntExpr operator*(IntExpr a, long v) {
     return a.solver().MakeProd(a, v);
@@ -1692,6 +1759,14 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchF
     return new ValCstPair(a.solver().MakeLess(a.Var(), b.Var()));
   }
 %}
+
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::IntVar, IntVar)
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SearchMonitor, SearchMonitor)
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::DecisionBuilder, DecisionBuilder)
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::IntervalVar, IntervalVar)
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SequenceVar, SequenceVar)
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchOperator, LocalSearchOperator)
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchFilter)
 
 namespace operations_research {
 %extend IntervalVar {

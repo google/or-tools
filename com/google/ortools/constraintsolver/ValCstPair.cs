@@ -22,7 +22,53 @@ public interface IConstraintWithStatus
   IntVar Var();
 }
 
-public class ValCstPair : IConstraintWithStatus
+public abstract class BaseEquality : IConstraintWithStatus
+{
+  abstract public Solver solver();
+  abstract public IntVar Var();
+
+  public static IntExpr operator+(BaseEquality a, BaseEquality b) {
+    return a.solver().MakeSum(a.Var(), b.Var());
+  }
+  public static IntExpr operator+(BaseEquality a, long v) {
+    return a.solver().MakeSum(a.Var(), v);
+  }
+  public static IntExpr operator+(long v, BaseEquality a) {
+    return a.solver().MakeSum(a.Var(), v);
+  }
+  public static IntExpr operator-(BaseEquality a, BaseEquality b) {
+    return a.solver().MakeDifference(a.Var(), b.Var());
+  }
+  public static IntExpr operator-(BaseEquality a, long v) {
+    return a.solver().MakeSum(a.Var(), -v);
+  }
+  public static IntExpr operator-(long v, BaseEquality a) {
+    return a.solver().MakeDifference(v, a.Var());
+  }
+  public static IntExpr operator*(BaseEquality a, BaseEquality b) {
+    return a.solver().MakeProd(a.Var(), b.Var());
+  }
+  public static IntExpr operator*(BaseEquality a, long v) {
+    return a.solver().MakeProd(a.Var(), v);
+  }
+  public static IntExpr operator*(long v, BaseEquality a) {
+    return a.solver().MakeProd(a.Var(), v);
+  }
+  public static IntExpr operator/(BaseEquality a, long v) {
+    return a.solver().MakeDiv(a.Var(), v);
+  }
+  public static IntExpr operator-(BaseEquality a) {
+    return a.solver().MakeOpposite(a.Var());
+  }
+  public IntExpr Abs() {
+    return this.solver().MakeAbs(this.Var());
+  }
+  public IntExpr Square() {
+    return this.solver().MakeSquare(this.Var());
+  }
+}
+
+public class ValCstPair : BaseEquality
 {
   public bool Val { get; set; }
 
@@ -63,18 +109,18 @@ public class ValCstPair : IConstraintWithStatus
     return Cst.StatusVar();
   }
 
-  public Solver solver()
+  public override Solver solver()
   {
     return this.Cst.solver();
   }
 
-  public IntVar Var()
+  public override IntVar Var()
   {
     return StatusVar();
   }
 }
 
-public class ConstraintAndEquality : IConstraintWithStatus
+public class ConstraintAndEquality : BaseEquality
 {
   public ConstraintAndEquality(IntExpr a, IntExpr b, bool equality)
   {
@@ -127,12 +173,12 @@ public class ConstraintAndEquality : IConstraintWithStatus
     return eq.StatusVar();
   }
 
-  public Solver solver()
+  public override Solver solver()
   {
     return left_.solver();
   }
 
-  public IntVar Var()
+  public override IntVar Var()
   {
     return StatusVar();
   }
