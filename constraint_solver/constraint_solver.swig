@@ -1660,6 +1660,66 @@ struct FailureProtect {
   public IntExpr Square() {
     return this.solver().MakeSquare(this.Var());
   }
+  public static WrappedConstraint operator ==(Constraint a, long v) {
+    return new WrappedConstraint(a.solver().MakeEquality(a.Var(), v));
+  }
+  public static WrappedConstraint operator !=(Constraint a, long v) {
+    return new WrappedConstraint(a.solver().MakeNonEquality(a.Var(), v));
+  }
+  public static WrappedConstraint operator >=(Constraint a, long v) {
+    return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), v));
+  }
+  public static WrappedConstraint operator >(Constraint a, long v) {
+    return new WrappedConstraint(a.solver().MakeGreater(a.Var(), v));
+  }
+  public static WrappedConstraint operator <=(Constraint a, long v) {
+    return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), v));
+  }
+  public static WrappedConstraint operator <(Constraint a, long v) {
+    return new WrappedConstraint(a.solver().MakeLess(a.Var(), v));
+  }
+  public static WrappedConstraint operator >=(Constraint a, Constraint b) {
+    return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
+  }
+  public static WrappedConstraint operator >=(Constraint a, IConstraintWithStatus b) {
+    return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
+  }
+  public static WrappedConstraint operator >=(IConstraintWithStatus a, Constraint b) {
+    return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
+  }
+  public static WrappedConstraint operator >(Constraint a, Constraint b) {
+    return new WrappedConstraint(a.solver().MakeGreater(a.Var(), b.Var()));
+  }
+  public static WrappedConstraint operator >(IConstraintWithStatus a, Constraint b) {
+    return new WrappedConstraint(a.solver().MakeGreater(a.Var(), b.Var()));
+  }
+  public static WrappedConstraint operator >(Constraint a, IConstraintWithStatus b) {
+    return new WrappedConstraint(a.solver().MakeGreater(a.Var(), b.Var()));
+  }
+  public static WrappedConstraint operator <=(Constraint a, Constraint b) {
+    return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), b.Var()));
+  }
+  public static WrappedConstraint operator <=(IConstraintWithStatus a, Constraint b) {
+    return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), b.Var()));
+  }
+  public static WrappedConstraint operator <=(Constraint a, IConstraintWithStatus b) {
+    return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), b.Var()));
+  }
+  public static WrappedConstraint operator <(Constraint a, Constraint b) {
+    return new WrappedConstraint(a.solver().MakeLess(a.Var(), b.Var()));
+  }
+  public static WrappedConstraint operator <(IConstraintWithStatus a, Constraint b) {
+    return new WrappedConstraint(a.solver().MakeLess(a.Var(), b.Var()));
+  }
+  public static WrappedConstraint operator <(Constraint a, IConstraintWithStatus b) {
+    return new WrappedConstraint(a.solver().MakeLess(a.Var(), b.Var()));
+  }
+  public static ConstraintEquality operator ==(Constraint a, Constraint b) {
+    return new ConstraintEquality(a, b, true);
+  }
+  public static ConstraintEquality operator !=(Constraint a, Constraint b) {
+    return new ConstraintEquality(a, b, false);
+  }
 %}
 
 
@@ -1722,41 +1782,41 @@ struct FailureProtect {
   public IntExpr Square() {
     return this.solver().MakeSquare(this);
   }
-  public static ValCstPair operator ==(IntExpr a, long v) {
-    return new ValCstPair(a.solver().MakeEquality(a, v));
+  public static WrappedConstraint operator ==(IntExpr a, long v) {
+    return new WrappedConstraint(a.solver().MakeEquality(a, v));
   }
-  public static ValCstPair operator !=(IntExpr a, long v) {
-    return new ValCstPair(a.solver().MakeNonEquality(a.Var(), v));
+  public static WrappedConstraint operator !=(IntExpr a, long v) {
+    return new WrappedConstraint(a.solver().MakeNonEquality(a.Var(), v));
   }
-  public static ConstraintAndEquality operator ==(IntExpr a, IntExpr b) {
-    return new ConstraintAndEquality(a, b, true);
+  public static IntExprEquality operator ==(IntExpr a, IntExpr b) {
+    return new IntExprEquality(a, b, true);
   }
-  public static ConstraintAndEquality operator !=(IntExpr a, IntExpr b) {
-    return new ConstraintAndEquality(a, b, false);
+  public static IntExprEquality operator !=(IntExpr a, IntExpr b) {
+    return new IntExprEquality(a, b, false);
   }
-  public static ValCstPair operator >=(IntExpr a, long v) {
-    return new ValCstPair(a.solver().MakeGreaterOrEqual(a, v));
+  public static WrappedConstraint operator >=(IntExpr a, long v) {
+    return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a, v));
   }
-  public static ValCstPair operator >(IntExpr a, long v) {
-    return new ValCstPair(a.solver().MakeGreater(a, v));
+  public static WrappedConstraint operator >(IntExpr a, long v) {
+    return new WrappedConstraint(a.solver().MakeGreater(a, v));
   }
-  public static ValCstPair operator <=(IntExpr a, long v) {
-    return new ValCstPair(a.solver().MakeLessOrEqual(a, v));
+  public static WrappedConstraint operator <=(IntExpr a, long v) {
+    return new WrappedConstraint(a.solver().MakeLessOrEqual(a, v));
   }
-  public static ValCstPair operator <(IntExpr a, long v) {
-    return new ValCstPair(a.solver().MakeLess(a, v));
+  public static WrappedConstraint operator <(IntExpr a, long v) {
+    return new WrappedConstraint(a.solver().MakeLess(a, v));
   }
-  public static ValCstPair operator >=(IntExpr a, IntExpr b) {
-    return new ValCstPair(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
+  public static WrappedConstraint operator >=(IntExpr a, IntExpr b) {
+    return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
   }
-  public static ValCstPair operator >(IntExpr a, IntExpr b) {
-    return new ValCstPair(a.solver().MakeGreater(a.Var(), b.Var()));
+  public static WrappedConstraint operator >(IntExpr a, IntExpr b) {
+    return new WrappedConstraint(a.solver().MakeGreater(a.Var(), b.Var()));
   }
-  public static ValCstPair operator <=(IntExpr a, IntExpr b) {
-    return new ValCstPair(a.solver().MakeLessOrEqual(a.Var(), b.Var()));
+  public static WrappedConstraint operator <=(IntExpr a, IntExpr b) {
+    return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), b.Var()));
   }
-  public static ValCstPair operator <(IntExpr a, IntExpr b) {
-    return new ValCstPair(a.solver().MakeLess(a.Var(), b.Var()));
+  public static WrappedConstraint operator <(IntExpr a, IntExpr b) {
+    return new WrappedConstraint(a.solver().MakeLess(a.Var(), b.Var()));
   }
 %}
 
