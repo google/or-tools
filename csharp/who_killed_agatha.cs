@@ -15,6 +15,8 @@
 
 using System;
 using Google.OrTools.ConstraintSolver;
+using System.Collections;
+using System.Linq;
 
 public class WhoKilledAgatha
 {
@@ -77,7 +79,7 @@ public class WhoKilledAgatha
     for(int i = 0; i < n; i++) {
       for(int j = 0; j < n; j++) {
         if (i != j) {
-          solver.Add(richer[i, j].IsEqual(1) - richer[j, i].IsEqual(0) == 0);
+          solver.Add((richer[i, j]==1) - (richer[j, i]==0) == 0);
         }
       }
     }
@@ -86,9 +88,8 @@ public class WhoKilledAgatha
     //    forall i in 0..2:
     //       (hates[agatha, i] = 1) => (hates[charles, i] = 0)
     for(int i = 0; i < n; i++) {
-      IntVar b1a = hates[agatha,i].IsEqual(1);
-      IntVar b1b = hates[charles,i].IsEqual(0);
-      solver.Add(b1a-b1b <= 0);
+      solver.Add((hates[agatha,i]==1) - (hates[charles,i]==0) <= 0);
+
     }
 
     // Agatha hates everybody except the butler.
@@ -100,29 +101,23 @@ public class WhoKilledAgatha
     //    forall i in 0..2:
     //       (richer[i, agatha] = 0) => (hates[butler, i] = 1)
     for(int i = 0; i < n; i++) {
-      IntVar b2a = richer[i,agatha].IsEqual(0);
-      IntVar b2b = hates[butler,i].IsEqual(1);
-      solver.Add(b2a-b2b<=0);
+      solver.Add((richer[i,agatha] == 0)-(hates[butler,i] == 1)<=0);
     }
 
     // The butler hates everyone whom Agatha hates.
     //     forall i : 0..2:
     //         (hates[agatha, i] = 1) => (hates[butler, i] = 1)
     for(int i = 0; i < n; i++) {
-      IntVar b3a = hates[agatha,i].IsEqual(1);
-      IntVar b3b = hates[butler,i].IsEqual(1);
-      solver.Add(b3a-b3b<=0);
+      solver.Add((hates[agatha,i] == 1)-(hates[butler,i] == 1)<=0);
     }
 
     // Noone hates everyone.
     //     forall i in 0..2:
     //         (sum j in 0..2: hates[i,j]) <= 2
     for(int i = 0; i < n; i++) {
-      IntVar[] tmp = new IntVar[n];
-      for(int j = 0; j < n; j++) {
-        tmp[j] = hates[i,j];
-      }
-      solver.Add(tmp.Sum() <= 2);
+      solver.Add((from j in Enumerable.Range(0, n)
+                  select hates[i,j]
+                  ).ToArray().Sum() <= 2 );
     }
 
 
