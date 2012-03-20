@@ -294,7 +294,7 @@ namespace operations_research {
                         (void**)&c,
                         SWIGTYPE_p_operations_research__Constraint,
                         SWIG_POINTER_EXCEPTION | 0 ) != -1) {
-      operations_research::IntVar* const v = c->StatusVar();
+      operations_research::IntVar* const v = c->Var();
       if (v == NULL) {
         SWIG_fail;
       } else {
@@ -339,7 +339,7 @@ namespace operations_research {
         PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
         SWIG_fail;
       }
-      operations_research::IntVar* const v = c->StatusVar();
+      operations_research::IntVar* const v = c->Var();
       if (v == NULL) {
         SWIG_fail;
       } else {
@@ -418,7 +418,7 @@ namespace operations_research {
           PyErr_SetString(PyExc_TypeError, "Invalid LanguageCode");
           SWIG_fail;
         }
-        operations_research::IntVar* const v = c->StatusVar();
+        operations_research::IntVar* const v = c->Var();
         if (v == NULL) {
           SWIG_fail;
         } else {
@@ -947,7 +947,7 @@ static void SetPythonFlags(bool trace_propagation,
     return self->solver()->MakeSum(self, other);
   }
   IntExpr* __add__(Constraint* other) {
-    return self->solver()->MakeSum(self, other->StatusVar());
+    return self->solver()->MakeSum(self, other->Var());
   }
   IntExpr* __add__(int64 v) {
     return self->solver()->MakeSum(self, v);
@@ -959,7 +959,7 @@ static void SetPythonFlags(bool trace_propagation,
     return self->solver()->MakeDifference(self, other);
   }
   IntExpr* __sub__(Constraint* other) {
-    return self->solver()->MakeDifference(self, other->StatusVar());
+    return self->solver()->MakeDifference(self, other->Var());
   }
   IntExpr* __sub__(int64 v) {
     return self->solver()->MakeSum(self, -v);
@@ -971,7 +971,7 @@ static void SetPythonFlags(bool trace_propagation,
     return self->solver()->MakeProd(self, other);
   }
   IntExpr* __mul__(Constraint* other) {
-    return self->solver()->MakeProd(self, other->StatusVar());
+    return self->solver()->MakeProd(self, other->Var());
   }
   IntExpr* __mul__(int64 v) {
     return self->solver()->MakeProd(self, v);
@@ -1030,22 +1030,22 @@ static void SetPythonFlags(bool trace_propagation,
     return self->solver()->MakeLess(self->Var(), other->Var());
   }
   Constraint* __eq__(Constraint* other) {
-    return self->solver()->MakeEquality(self->Var(), other->StatusVar());
+    return self->solver()->MakeEquality(self->Var(), other->Var());
   }
   Constraint* __ne__(Constraint* other) {
-    return self->solver()->MakeNonEquality(self->Var(), other->StatusVar());
+    return self->solver()->MakeNonEquality(self->Var(), other->Var());
   }
   Constraint* __ge__(Constraint* other) {
-    return self->solver()->MakeGreaterOrEqual(self->Var(), other->StatusVar());
+    return self->solver()->MakeGreaterOrEqual(self->Var(), other->Var());
   }
   Constraint* __gt__(Constraint* other) {
-    return self->solver()->MakeGreater(self->Var(), other->StatusVar());
+    return self->solver()->MakeGreater(self->Var(), other->Var());
   }
   Constraint* __le__(Constraint* other) {
-    return self->solver()->MakeLessOrEqual(self->Var(), other->StatusVar());
+    return self->solver()->MakeLessOrEqual(self->Var(), other->Var());
   }
   Constraint* __lt__(Constraint* other) {
-    return self->solver()->MakeLess(self->Var(), other->StatusVar());
+    return self->solver()->MakeLess(self->Var(), other->Var());
   }
   Constraint* MapTo(const std::vector<IntVar*>& vars) {
     return self->solver()->MakeMapDomain(self->Var(), vars);
@@ -1061,121 +1061,117 @@ static void SetPythonFlags(bool trace_propagation,
 // Add arithmetic operators to integer expressions.
 %extend Constraint {
   IntExpr* __add__(IntExpr* other) {
-    return self->solver()->MakeSum(self->StatusVar(), other);
+    return self->solver()->MakeSum(self->Var(), other);
   }
   IntExpr* __add__(Constraint* other) {
-    return self->solver()->MakeSum(self->StatusVar(), other->StatusVar());
+    return self->solver()->MakeSum(self->Var(), other->Var());
   }
   IntExpr* __add__(int64 v) {
-    return self->solver()->MakeSum(self->StatusVar(), v);
+    return self->solver()->MakeSum(self->Var(), v);
   }
   IntExpr* __radd__(int64 v) {
-    return self->solver()->MakeSum(self->StatusVar(), v);
+    return self->solver()->MakeSum(self->Var(), v);
   }
   IntExpr* __sub__(IntExpr* other) {
-    return self->solver()->MakeDifference(self->StatusVar(), other);
+    return self->solver()->MakeDifference(self->Var(), other);
   }
   IntExpr* __sub__(Constraint* other) {
-    return self->solver()->MakeDifference(self->StatusVar(),
-                                          other->StatusVar());
+    return self->solver()->MakeDifference(self->Var(), other->Var());
   }
   IntExpr* __sub__(int64 v) {
-    return self->solver()->MakeSum(self->StatusVar(), -v);
+    return self->solver()->MakeSum(self->Var(), -v);
   }
   IntExpr* __rsub__(int64 v) {
-    return self->solver()->MakeDifference(v, self->StatusVar());
+    return self->solver()->MakeDifference(v, self->Var());
   }
   IntExpr* __mul__(IntExpr* other) {
-    return self->solver()->MakeProd(self->StatusVar(), other);
+    return self->solver()->MakeProd(self->Var(), other);
   }
   IntExpr* __mul__(Constraint* other) {
-    return self->solver()->MakeProd(self->StatusVar(), other->StatusVar());
+    return self->solver()->MakeProd(self->Var(), other->Var());
   }
   IntExpr* __mul__(int64 v) {
-    return self->solver()->MakeProd(self->StatusVar(), v);
+    return self->solver()->MakeProd(self->Var(), v);
   }
   IntExpr* __rmul__(int64 v) {
-    return self->solver()->MakeProd(self->StatusVar(), v);
+    return self->solver()->MakeProd(self->Var(), v);
   }
   IntExpr* __floordiv__(int64 v) {
-    return self->solver()->MakeDiv(self->StatusVar(), v);
+    return self->solver()->MakeDiv(self->Var(), v);
   }
 
   IntExpr* __neg__() {
-    return self->solver()->MakeOpposite(self->StatusVar());
+    return self->solver()->MakeOpposite(self->Var());
   }
   IntExpr* __abs__() {
-    return self->solver()->MakeAbs(self->StatusVar());
+    return self->solver()->MakeAbs(self->Var());
   }
   IntExpr* Square() {
-    return self->solver()->MakeSquare(self->StatusVar());
+    return self->solver()->MakeSquare(self->Var());
   }
 
   Constraint* __eq__(int64 v) {
-    return self->solver()->MakeEquality(self->StatusVar(), v);
+    return self->solver()->MakeEquality(self->Var(), v);
   }
   Constraint* __ne__(int64 v) {
-    return self->solver()->MakeNonEquality(self->StatusVar(), v);
+    return self->solver()->MakeNonEquality(self->Var(), v);
   }
   Constraint* __ge__(int64 v) {
-    return self->solver()->MakeGreaterOrEqual(self->StatusVar(), v);
+    return self->solver()->MakeGreaterOrEqual(self->Var(), v);
   }
   Constraint* __gt__(int64 v) {
-    return self->solver()->MakeGreater(self->StatusVar(), v);
+    return self->solver()->MakeGreater(self->Var(), v);
   }
   Constraint* __le__(int64 v) {
-    return self->solver()->MakeLessOrEqual(self->StatusVar(), v);
+    return self->solver()->MakeLessOrEqual(self->Var(), v);
   }
   Constraint* __lt__(int64 v) {
-    return self->solver()->MakeLess(self->StatusVar(), v);
+    return self->solver()->MakeLess(self->Var(), v);
   }
   Constraint* __eq__(IntExpr* other) {
-    return self->solver()->MakeEquality(self->StatusVar(), other->Var());
+    return self->solver()->MakeEquality(self->Var(), other->Var());
   }
   Constraint* __ne__(IntExpr* other) {
-    return self->solver()->MakeNonEquality(self->StatusVar(), other->Var());
+    return self->solver()->MakeNonEquality(self->Var(), other->Var());
   }
   Constraint* __ge__(IntExpr* other) {
-    return self->solver()->MakeGreaterOrEqual(self->StatusVar(), other->Var());
+    return self->solver()->MakeGreaterOrEqual(self->Var(), other->Var());
   }
   Constraint* __gt__(IntExpr* other) {
-    return self->solver()->MakeGreater(self->StatusVar(), other->Var());
+    return self->solver()->MakeGreater(self->Var(), other->Var());
   }
   Constraint* __le__(IntExpr* other) {
-    return self->solver()->MakeLessOrEqual(self->StatusVar(), other->Var());
+    return self->solver()->MakeLessOrEqual(self->Var(), other->Var());
   }
   Constraint* __lt__(IntExpr* other) {
-    return self->solver()->MakeLess(self->StatusVar(), other->Var());
+    return self->solver()->MakeLess(self->Var(), other->Var());
   }
   Constraint* __eq__(Constraint* other) {
-    return self->solver()->MakeEquality(self->StatusVar(), other->StatusVar());
+    return self->solver()->MakeEquality(self->Var(), other->Var());
   }
   Constraint* __ne__(Constraint* other) {
-    return self->solver()->MakeNonEquality(self->StatusVar(),
-                                           other->StatusVar());
+    return self->solver()->MakeNonEquality(self->Var(), other->Var());
   }
   Constraint* __ge__(Constraint* other) {
-    return self->solver()->MakeGreaterOrEqual(self->StatusVar(),
-                                              other->StatusVar());
+    return self->solver()->MakeGreaterOrEqual(self->Var(), other->Var());
   }
   Constraint* __gt__(Constraint* other) {
-    return self->solver()->MakeGreater(self->StatusVar(), other->StatusVar());
+    return self->solver()->MakeGreater(self->Var(), other->Var());
   }
   Constraint* __le__(Constraint* other) {
-    return self->solver()->MakeLessOrEqual(self->StatusVar(),
-                                           other->StatusVar());
+    return self->solver()->MakeLessOrEqual(self->Var(), other->Var());
   }
   Constraint* __lt__(Constraint* other) {
-    return self->solver()->MakeLess(self->StatusVar(), other->StatusVar());
+    return self->solver()->MakeLess(self->Var(), other->Var());
   }
   Constraint* MapTo(const std::vector<IntVar*>& vars) {
-    return self->solver()->MakeMapDomain(self->StatusVar(), vars);
+    return self->solver()->MakeMapDomain(self->Var(), vars);
   }
   IntExpr* IndexOf(const std::vector<int64>& vars) {
-    return self->solver()->MakeElement(vars, self->StatusVar());
+    return self->solver()->MakeElement(vars, self->Var());
   }
   IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
-    return self->solver()->MakeElement(vars, self->StatusVar());
+    return self->solver()->MakeElement(vars, self->Var());
   }
 }
 
@@ -1316,7 +1312,6 @@ struct FailureProtect {
 %rename (nextWrap) operations_research::DecisionBuilder::Next;
 %rename (toString) *::DebugString;
 %rename (tryDecisions) operations_research::Solver::Try;
-
 
 %rename("%(lowercamelcase)s", %$isfunction) "";
 
@@ -1592,16 +1587,12 @@ struct FailureProtect {
 %typemap(cscode) operations_research::Constraint %{
   public static implicit operator IntVar(Constraint eq)
   {
-    return eq.StatusVar();
+    return eq.Var();
   }
 
   public static implicit operator IntExpr(Constraint eq)
   {
-    return eq.StatusVar();
-  }
-  public IntVar Var()
-  {
-    return StatusVar();
+    return eq.Var();
   }
   public static IntExpr operator+(Constraint a, Constraint b) {
     return a.solver().MakeSum(a.Var(), b.Var());

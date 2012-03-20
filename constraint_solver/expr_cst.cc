@@ -27,7 +27,7 @@
 #include "util/const_int_array.h"
 
 DEFINE_int32(cache_initial_size, 1024, "Initial size of the array of the hash "
-             "table of caches for objects of type StatusVar(x == 3)");
+             "table of caches for objects of type Var(x == 3)");
 
 namespace operations_research {
 
@@ -41,7 +41,7 @@ class EqualityExprCst : public Constraint {
   virtual ~EqualityExprCst() {}
   virtual void Post();
   virtual void InitialPropagate();
-  virtual IntVar* StatusVar() {
+  virtual IntVar* Var() {
     return solver()->MakeIsEqualCstVar(expr_->Var(), value_);
   }
   virtual string DebugString() const;
@@ -100,7 +100,7 @@ class GreaterEqExprCst : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
-  virtual IntVar* StatusVar() {
+  virtual IntVar* Var() {
     return solver()->MakeIsGreaterOrEqualCstVar(expr_->Var(), value_);
   }
 
@@ -168,7 +168,7 @@ class LessEqExprCst : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
-  virtual IntVar* StatusVar() {
+  virtual IntVar* Var() {
     return solver()->MakeIsLessOrEqualCstVar(expr_->Var(), value_);
   }
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -235,7 +235,7 @@ class DiffCst : public Constraint {
   virtual void InitialPropagate();
   void BoundPropagate();
   virtual string DebugString() const;
-  virtual IntVar* StatusVar() {
+  virtual IntVar* Var() {
     return solver()->MakeIsDifferentCstVar(var_, value_);
   }
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -374,7 +374,7 @@ IntVar* Solver::MakeIsEqualCstVar(IntVar* const var, int64 value) {
       name = var->DebugString();
     }
     IntVar* const boolvar = MakeBoolVar(
-        StringPrintf("StatusVar<%s == %" GG_LL_FORMAT "d>",
+        StringPrintf("Var<%s == %" GG_LL_FORMAT "d>",
                      name.c_str(), value));
     CastConstraint* const maintain =
         RevAlloc(new IsEqualCstCt(this, var, value, boolvar));
@@ -490,7 +490,7 @@ IntVar* Solver::MakeIsDifferentCstVar(IntVar* const var, int64 value) {
       name = var->DebugString();
     }
     IntVar* const boolvar = MakeBoolVar(
-        StringPrintf("StatusVar<%s != %" GG_LL_FORMAT "d>",
+        StringPrintf("Var<%s != %" GG_LL_FORMAT "d>",
                      name.c_str(), value));
     CastConstraint* const maintain =
         RevAlloc(new IsDiffCstCt(this, var, value, boolvar));
@@ -596,7 +596,7 @@ IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntVar* const var, int64 value) {
       name = var->DebugString();
     }
     IntVar* const boolvar = MakeBoolVar(
-        StringPrintf("StatusVar<%s >= %" GG_LL_FORMAT "d>",
+        StringPrintf("Var<%s >= %" GG_LL_FORMAT "d>",
                      name.c_str(), value));
     CastConstraint* const maintain =
         RevAlloc(new IsGreaterEqualCstCt(this, var, value, boolvar));
@@ -708,7 +708,7 @@ IntVar* Solver::MakeIsLessOrEqualCstVar(IntVar* const var, int64 value) {
       name = var->DebugString();
     }
     IntVar* const boolvar = MakeBoolVar(
-        StringPrintf("StatusVar<%s <= %" GG_LL_FORMAT "d>",
+        StringPrintf("Var<%s <= %" GG_LL_FORMAT "d>",
                      name.c_str(), value));
     CastConstraint* const maintain =
         RevAlloc(new IsLessEqualCstCt(this, var, value, boolvar));

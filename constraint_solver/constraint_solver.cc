@@ -3242,7 +3242,7 @@ bool Constraint::IsCastConstraint() const {
   return ContainsKey(solver()->cast_constraints_, this);
 }
 
-IntVar* Constraint::StatusVar() {
+IntVar* Constraint::Var() {
   return NULL;
 }
 

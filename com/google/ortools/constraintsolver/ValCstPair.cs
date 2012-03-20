@@ -132,17 +132,12 @@ public class WrappedConstraint : BaseEquality
 
   public static implicit operator IntVar(WrappedConstraint eq)
   {
-    return eq.StatusVar();
+    return eq.Var();
   }
 
   public static implicit operator IntExpr(WrappedConstraint eq)
   {
-    return eq.StatusVar();
-  }
-
-  public IntVar StatusVar()
-  {
-    return Cst.StatusVar();
+    return eq.Var();
   }
 
   public override Solver solver()
@@ -152,7 +147,7 @@ public class WrappedConstraint : BaseEquality
 
   public override IntVar Var()
   {
-    return StatusVar();
+    return Cst.Var();
   }
 }
 
@@ -192,7 +187,7 @@ public class IntExprEquality : BaseEquality
     return eq.ToConstraint();
   }
 
-  public IntVar StatusVar()
+  public override IntVar Var()
   {
     return equality_ ?
         left_.solver().MakeIsEqualVar(left_, right_) :
@@ -201,22 +196,17 @@ public class IntExprEquality : BaseEquality
 
   public static implicit operator IntVar(IntExprEquality eq)
   {
-    return eq.StatusVar();
+    return eq.Var();
   }
 
   public static implicit operator IntExpr(IntExprEquality eq)
   {
-    return eq.StatusVar();
+    return eq.Var();
   }
 
   public override Solver solver()
   {
     return left_.solver();
-  }
-
-  public override IntVar Var()
-  {
-    return StatusVar();
   }
 
   private IntExpr left_;
@@ -262,7 +252,7 @@ public class ConstraintEquality : BaseEquality
     return eq.ToConstraint();
   }
 
-  public IntVar StatusVar()
+  public override IntVar Var()
   {
     return equality_ ?
         left_.solver().MakeIsEqualVar(left_.Var(), right_.Var()) :
@@ -271,22 +261,17 @@ public class ConstraintEquality : BaseEquality
 
   public static implicit operator IntVar(ConstraintEquality eq)
   {
-    return eq.StatusVar();
+    return eq.Var();
   }
 
   public static implicit operator IntExpr(ConstraintEquality eq)
   {
-    return eq.StatusVar();
+    return eq.Var();
   }
 
   public override Solver solver()
   {
     return left_.solver();
-  }
-
-  public override IntVar Var()
-  {
-    return StatusVar();
   }
 
   private IConstraintWithStatus left_;

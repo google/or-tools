@@ -3460,7 +3460,7 @@ class Constraint : public PropagationBaseObject {
   // Creates an boolean variable representing the status of the
   // variable (false = constraint is violated, true constraint is
   // satisfied). It returns NULL if the constraint does not support his API.
-  virtual IntVar* StatusVar();
+  virtual IntVar* Var();
 
  private:
   DISALLOW_COPY_AND_ASSIGN(Constraint);

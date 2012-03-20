@@ -217,7 +217,7 @@ class CountValueEq : public Constraint {
   virtual void InitialPropagate();
   void OneBound(int index);
   void OneDomain(int index);
-  void Var();
+  void CountVar();
   void CardMin();
   void CardMax();
   virtual string DebugString() const;
@@ -282,7 +282,7 @@ void CountValueEq::Post() {
   if (!count_->Bound()) {
     Demon* d = MakeConstraintDemon0(solver(),
                                         this,
-                                        &CountValueEq::Var,
+                                        &CountValueEq::CountVar,
                                         "Var");
     count_->WhenRange(d);
   }
@@ -350,7 +350,7 @@ void CountValueEq::OneDomain(int index) {
   }
 }
 
-void CountValueEq::Var() {
+void CountValueEq::CountVar() {
   if (count_->Min() > max_.Value()) {
     solver()->Fail();
   }
@@ -415,7 +415,7 @@ class Distribute : public Constraint {
   virtual void InitialPropagate();
   void OneBound(int vindex);
   void OneDomain(int vindex);
-  void Var(int cindex);
+  void CountVar(int cindex);
   void CardMin(int cindex);
   void CardMax(int cindex);
   virtual string DebugString() const;
@@ -517,7 +517,7 @@ void Distribute::Post() {
     if (!cards_[i]->Bound()) {
       Demon* d = MakeConstraintDemon1(solver(),
                                       this,
-                                      &Distribute::Var,
+                                      &Distribute::CountVar,
                                       "Var",
                                       i);
       cards_[i]->WhenRange(d);
@@ -595,7 +595,7 @@ void Distribute::OneDomain(int index) {
   }
 }
 
-void Distribute::Var(int cindex) {
+void Distribute::CountVar(int cindex) {
   if (cards_[cindex]->Min() > max_[cindex] ||
       cards_[cindex]->Max() < min_[cindex]) {
     solver()->Fail();
@@ -639,7 +639,7 @@ class FastDistribute : public Constraint {
   virtual void InitialPropagate();
   void OneBound(int vindex);
   void OneDomain(int vindex);
-  void Var(int card_index);
+  void CountVar(int card_index);
   void CardMin(int card_index);
   void CardMax(int card_index);
   virtual string DebugString() const;
@@ -734,7 +734,7 @@ void FastDistribute::Post() {
     if (!cards_[card_index]->Bound()) {
       Demon* d = MakeConstraintDemon1(solver(),
                                       this,
-                                      &FastDistribute::Var,
+                                      &FastDistribute::CountVar,
                                       "Var",
                                       card_index);
       cards_[card_index]->WhenRange(d);
@@ -759,7 +759,7 @@ void FastDistribute::InitialPropagate() {
     }
     min_.SetValue(s, card_index, min);
     max_.SetValue(s, card_index, max);
-    Var(card_index);
+    CountVar(card_index);
   }
 }
 
@@ -807,7 +807,7 @@ void FastDistribute::OneDomain(int index) {
   }
 }
 
-void FastDistribute::Var(int card_index) {
+void FastDistribute::CountVar(int card_index) {
   const int64 stored_min = min_[card_index];
   const int64 stored_max = max_[card_index];
   cards_[card_index]->SetRange(min_[card_index], max_[card_index]);
@@ -851,7 +851,7 @@ class BoundedDistribute : public Constraint {
   virtual void InitialPropagate();
   void OneBound(int vindex);
   void OneDomain(int vindex);
-  void Var(int card_index);
+  void CountVar(int card_index);
   void CardMin(int card_index);
   void CardMax(int card_index);
   virtual string DebugString() const;
@@ -985,7 +985,7 @@ void BoundedDistribute::InitialPropagate() {
     }
     min_.SetValue(s, card_index, min);
     max_.SetValue(s, card_index, max);
-    Var(card_index);
+    CountVar(card_index);
   }
 }
 
@@ -1034,7 +1034,7 @@ void BoundedDistribute::OneDomain(int index) {
   }
 }
 
-void BoundedDistribute::Var(int card_index) {
+void BoundedDistribute::CountVar(int card_index) {
   const int64 stored_min = min_[card_index];
   const int64 stored_max = max_[card_index];
   if (card_min_ > stored_max || card_max_ < stored_min) {

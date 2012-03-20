@@ -32,7 +32,7 @@ class RangeEquality : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
-  virtual IntVar* StatusVar() {
+  virtual IntVar* Var() {
     return solver()->MakeIsEqualVar(left_, right_);
   }
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -86,7 +86,7 @@ class RangeLessOrEqual : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
-  virtual IntVar* StatusVar() {
+  virtual IntVar* Var() {
     return solver()->MakeIsLessOrEqualVar(left_, right_);
   }
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -141,7 +141,7 @@ class RangeGreaterOrEqual : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
-  virtual IntVar* StatusVar() {
+  virtual IntVar* Var() {
     return solver()->MakeIsGreaterOrEqualVar(left_, right_);
   }
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -196,7 +196,7 @@ class RangeLess : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
-  virtual IntVar* StatusVar() {
+  virtual IntVar* Var() {
     return solver()->MakeIsLessVar(left_, right_);
   }
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -250,7 +250,7 @@ class RangeGreater : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
-  virtual IntVar* StatusVar() {
+  virtual IntVar* Var() {
     return solver()->MakeIsGreaterVar(left_, right_);
   }
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -304,7 +304,7 @@ class DiffVar : public Constraint {
   virtual void Post();
   virtual void InitialPropagate();
   virtual string DebugString() const;
-  virtual IntVar* StatusVar() {
+  virtual IntVar* Var() {
     return solver()->MakeIsDifferentVar(left_, right_);
   }
 
