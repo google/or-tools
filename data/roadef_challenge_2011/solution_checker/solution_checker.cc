@@ -268,6 +268,7 @@ int64 SolutionChecker::GetObjectiveCost() const {
   return total_cost;
 }
 
+
 bool SolutionChecker::HasProcessMoved(const Process& process) const {
   const ProcessIndex process_id = process.id();
   const MachineIndex initial_machine_id = initial_assignments_.at(process_id);

@@ -275,6 +275,7 @@ class SolutionChecker {
   // document. Note this method assumes all hard constraints are satisfied.
   int64 GetObjectiveCost() const;
 
+
  private:
   // Returns true if process doesn't run on the same machine in the
   // initial assignment and in the new assignment.

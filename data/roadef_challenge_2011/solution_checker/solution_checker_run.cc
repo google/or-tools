@@ -75,5 +75,6 @@ int main(int argc, char **argv) {
     LG << "Solution is invalid." << endl;
   }
 
+
   return 0;
 }
