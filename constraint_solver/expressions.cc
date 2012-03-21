@@ -101,25 +101,42 @@ bool IsArrayActuallySorted(const int64* const values, int size) {
 class DomainIntVar : public IntVar {
  public:
   // Utility classes
-  class BitSet : public BaseObject {
-   public:
-    class Iterator : public BaseObject {
+    class BitSetIterator : public BaseObject {
      public:
-      virtual ~Iterator() {}
+      BitSetIterator(uint64* const bitset, int64 omin)
+          : bitset_(bitset),
+            omin_(omin),
+            max_(kint64min),
+            current_(kint64max) {}
 
-      // This method must be called before each loop.
-      virtual void Init(int64 min, int64 max) = 0;
+      ~BitSetIterator() {}
 
-      // This method indicates if we can call Value() or not.
-      virtual bool Ok() const = 0;
+      void Init(int64 min, int64 max) {
+        max_ = max;
+        current_ = min;
+      }
 
-      // This method returns the value of the hole.
-      virtual int64 Value() const = 0;
+      bool Ok() const { return current_ <= max_; }
 
-      // This method moves the iterator to the next value.
-      virtual void Next() = 0;
+      int64 Value() const { return current_; }
+
+      void Next() {
+        if (++current_ <= max_) {
+          current_ = UnsafeLeastSignificantBitPosition64(bitset_,
+                                                         current_ - omin_,
+                                                         max_ - omin_) + omin_;
+        }
+      }
+
+     private:
+      uint64* const bitset_;
+      const int64 omin_;
+      int64 max_;
+      int64 current_;
     };
 
+  class BitSet : public BaseObject {
+   public:
     virtual ~BitSet() {}
 
     virtual int64 ComputeNewMin(int64 nmin, int64 cmin, int64 cmax) = 0;
@@ -137,7 +154,7 @@ class DomainIntVar : public IntVar {
     virtual void ClearHoles() = 0;
     virtual int HolesSize() const = 0;
     virtual int64 Hole(int index) const = 0;
-    virtual Iterator* MakeIterator() = 0;
+    virtual BitSetIterator* MakeIterator() = 0;
   };
 
   class QueueHandler : public Demon {
@@ -256,41 +273,6 @@ class DomainIntVar : public IntVar {
 
 class SimpleBitSet : public DomainIntVar::BitSet {
  public:
-  class SimpleIterator : public DomainIntVar::BitSet::Iterator {
-   public:
-    explicit  SimpleIterator(uint64* const bitset, int64 omin)
-        : bitset_(bitset), omin_(omin), max_(kint64min), current_(kint64max) {}
-
-    virtual ~SimpleIterator() {}
-
-    virtual void Init(int64 min, int64 max) {
-      max_ = max;
-      current_ = min;
-    }
-
-    virtual bool Ok() const {
-      return current_ <= max_;
-    }
-
-    virtual int64 Value() const {
-      return current_;
-    }
-
-    virtual void Next() {
-      if (++current_ <= max_) {
-        current_ = UnsafeLeastSignificantBitPosition64(bitset_,
-                                                       current_ - omin_,
-                                                       max_ - omin_) + omin_;
-      }
-    }
-
-   private:
-    uint64* const bitset_;
-    const int64 omin_;
-    int64 max_;
-    int64 current_;
-  };
-
   SimpleBitSet(Solver* const s, int64 vmin, int64 vmax)
       : bits_(NULL),
         stamps_(NULL),
@@ -505,8 +487,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     return out;
   }
 
-  virtual Iterator* MakeIterator() {
-    return new SimpleIterator(bits_, omin_);
+  virtual DomainIntVar::BitSetIterator* MakeIterator() {
+    return new DomainIntVar::BitSetIterator(bits_, omin_);
   }
 
  private:
@@ -526,45 +508,6 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 // In that case, there are no offset to compute.
 class SmallBitSet : public DomainIntVar::BitSet {
  public:
-  class SmallIterator : public DomainIntVar::BitSet::Iterator {
-   public:
-    SmallIterator(uint64* bits, int64 omin)
-        : bits_(bits), omin_(omin), max_(kint64min), current_(-1) {}
-
-    virtual ~SmallIterator() {}
-
-    virtual void Init(int64 min, int64 max) {
-      max_ = max - omin_;
-      current_ = min - omin_;
-    }
-
-    virtual bool Ok() const {
-      return current_ <= max_;
-    }
-
-    virtual int64 Value() const {
-      return current_ + omin_;
-    }
-
-    virtual void Next() {
-      current_++;
-      if (!((*bits_) & OneBit64(current_))) {
-        uint64 mask = (*bits_) & IntervalUp64(current_);
-        if (!mask) {
-          current_ = max_ + 1;
-        } else {
-          current_ = LeastSignificantBitPosition64(mask);
-        }
-      }
-    }
-
-   private:
-    uint64* const bits_;
-    const int64 omin_;
-    int64 max_;
-    int64 current_;
-  };
-
   SmallBitSet(Solver* const s, int64 vmin, int64 vmax)
     : bits_(GG_ULONGLONG(0)),
       stamp_(s->stamp() - 1),
@@ -775,8 +718,8 @@ class SmallBitSet : public DomainIntVar::BitSet {
     return out;
   }
 
-  virtual Iterator* MakeIterator() {
-    return new SmallIterator(&bits_, omin_);
+  virtual DomainIntVar::BitSetIterator* MakeIterator() {
+    return new DomainIntVar::BitSetIterator(&bits_, omin_);
   }
 
  private:
@@ -927,7 +870,7 @@ class DomainIntVarDomainIterator : public IntVarIterator {
 
  private:
   const DomainIntVar* const var_;
-  DomainIntVar::BitSet::Iterator* bitset_iterator_;
+  DomainIntVar::BitSetIterator* bitset_iterator_;
   int64 min_;
   int64 max_;
   int64 current_;

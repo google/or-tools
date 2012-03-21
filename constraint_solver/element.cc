@@ -144,9 +144,8 @@ void BaseIntExprElement::UpdateSupports() const {
     int64 max_value = min_value;
     int min_support = emax;
     int max_support = emax;
-    for (expr_iterator_->Init(); expr_iterator_->Ok(); expr_iterator_->Next()) {
-      const int64 index = expr_iterator_->Value();
-      if (index >= emin && index <= emax) {
+    if (expr_->Size() == emax - emin + 1) {
+      for (int64 index = emin; index <= emax; ++index) {
         const int64 value = ElementValue(index);
         if (value > max_value) {
           max_value = value;
@@ -154,6 +153,22 @@ void BaseIntExprElement::UpdateSupports() const {
         } else if (value < min_value) {
           min_value = value;
           min_support = index;
+        }
+      }
+    } else {
+      for (expr_iterator_->Init();
+           expr_iterator_->Ok();
+           expr_iterator_->Next()) {
+        const int64 index = expr_iterator_->Value();
+        if (index >= emin && index <= emax) {
+          const int64 value = ElementValue(index);
+          if (value > max_value) {
+            max_value = value;
+            max_support = index;
+          } else if (value < min_value) {
+            min_value = value;
+            min_support = index;
+          }
         }
       }
     }
