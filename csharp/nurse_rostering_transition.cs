@@ -40,8 +40,12 @@ public class NurseRostering
    *    which use (a decomposition of) regular constraint
    *
    */
-  private static void Solve()
+  private static void Solve(int nurse_multiplier, int week_multiplier)
   {
+    Console.WriteLine("Starting Nurse Rostering");
+    Console.WriteLine("  - {0} teams of 7 nurses", nurse_multiplier);
+    Console.WriteLine("  - {0} blocks of 14 days", week_multiplier);
+
     Solver solver = new Solver("NurseRostering");
 
     //
@@ -51,8 +55,8 @@ public class NurseRostering
     // Note: If you change num_nurses or num_days,
     //       please also change the constraints
     //       on nurse_stat and/or day_stat.
-    int num_nurses = 7;
-    int num_days = 14;
+    int num_nurses = 7 * nurse_multiplier;
+    int num_days = 14 * week_multiplier;
 
     // Note: I had to add a dummy shift.
     int dummy_shift = 0;
@@ -80,7 +84,6 @@ public class NurseRostering
     };
     */
 
-
     // For TransitionConstraint
     IntTupleSet transition_tuples = new IntTupleSet(3);
     // state, input, next state
@@ -102,8 +105,6 @@ public class NurseRostering
 
     string[] days = {"d","n","o"}; // for presentation
 
-
-
     //
     // Decision variables
     //
@@ -118,8 +119,7 @@ public class NurseRostering
     //
     // summary of the nurses
     //
-    IntVar[] nurse_stat =
-        solver.MakeIntVarArray(num_nurses, 0, num_days, "nurse_stat");
+    IntVar[] nurse_stat = new IntVar[num_nurses];
 
     //
     // summary of the shifts per day
@@ -131,7 +131,6 @@ public class NurseRostering
         day_stat[i,j] = solver.MakeIntVar(0, num_nurses, "day_stat");
       }
     }
-
 
     //
     // Constraints
@@ -150,34 +149,37 @@ public class NurseRostering
     //
     // Statistics and constraints for each nurse
     //
-    for(int i = 0; i < num_nurses; i++) {
+    for(int nurse = 0; nurse < num_nurses; nurse++) {
 
       // Number of worked days (either day or night shift)
-      IntVar[] b = new IntVar[num_days];
-      for(int j = 0; j < num_days; j++) {
-        b[j] = ((x[i,j] == day_shift) + (x[i,j] == night_shift)).Var();
+      IntVar[] nurse_days = new IntVar[num_days];
+      for(int day = 0; day < num_days; day++) {
+        nurse_days[day] =
+            x[nurse, day].IsMember(new int[] { day_shift, night_shift });
       }
-      solver.Add(b.Sum() == nurse_stat[i]);
+      nurse_stat[nurse] = nurse_days.Sum().Var();
 
       // Each nurse must work between 7 and 10
       // days/nights during this period
-      solver.Add(nurse_stat[i] >= 7);
-      solver.Add(nurse_stat[i] <= 10);
+      solver.Add(nurse_stat[nurse] >= 7 * week_multiplier / nurse_multiplier);
+      solver.Add(nurse_stat[nurse] <= 10 * week_multiplier / nurse_multiplier);
 
     }
-
 
     //
     // Statistics and constraints for each day
     //
-    for(int j = 0; j < num_days; j++) {
-      for(int t = 0; t < num_shifts; t++) {
-        IntVar[] b = new IntVar[num_nurses];
-        for(int i = 0; i < num_nurses; i++) {
-          b[i] = x[i,j] == t;
-        }
-        solver.Add(b.Sum() == day_stat[j,t]);
+    for(int day = 0; day < num_days; day++) {
+      IntVar[] nurses = new IntVar[num_nurses];
+      for(int nurse = 0; nurse < num_nurses; nurse++) {
+        nurses[nurse] = x[nurse, day];
       }
+      IntVar[] stats = new IntVar[num_shifts];
+      for (int shift = 0; shift < num_shifts; ++shift)
+      {
+        stats[shift] = day_stat[day, shift];
+      }
+      solver.Add(nurses.Distribute(stats));
 
       //
       // Some constraints for each day:
@@ -187,23 +189,22 @@ public class NurseRostering
       //       Using atleast constraints is harder
       //       in this model.
       //
-      if (j % 7 == 5 || j % 7 == 6) {
+      if (day % 7 == 5 || day % 7 == 6) {
         // special constraints for the weekends
-        solver.Add(day_stat[j,day_shift] == 2);
-        solver.Add(day_stat[j,night_shift] == 1);
-        solver.Add(day_stat[j,off_shift] == 4 );
+        solver.Add(day_stat[day, day_shift] == 2 * nurse_multiplier);
+        solver.Add(day_stat[day, night_shift] == nurse_multiplier);
+        solver.Add(day_stat[day, off_shift] == 4 * nurse_multiplier);
       } else {
         // for workdays:
 
         // - exactly 3 on day shift
-        solver.Add(day_stat[j,day_shift] == 3);
+        solver.Add(day_stat[day, day_shift] == 3 * nurse_multiplier);
         // - exactly 2 on night
-        solver.Add(day_stat[j,night_shift] == 2);
+        solver.Add(day_stat[day, night_shift] == 2 * nurse_multiplier);
         // - exactly 2 off duty
-        solver.Add(day_stat[j,off_shift] == 2 );
+        solver.Add(day_stat[day, off_shift] == 2 * nurse_multiplier);
       }
     }
-
 
     //
     // Search
@@ -212,7 +213,9 @@ public class NurseRostering
                                           Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
 
-    solver.NewSearch(db);
+    SearchMonitor log = solver.MakeSearchLog(1000000);
+
+    solver.NewSearch(db, log);
 
     int num_solutions = 0;
     while (solver.NextSolution()) {
@@ -269,6 +272,15 @@ public class NurseRostering
 
   public static void Main(String[] args)
   {
-    Solve();
+    int nurse_multiplier = 1;
+    int week_multiplier = 1;
+    if (args.Length > 0) {
+      nurse_multiplier = Convert.ToInt32(args[0]);
+    }
+    if (args.Length > 1) {
+      week_multiplier = Convert.ToInt32(args[1]);
+    }
+
+    Solve(nurse_multiplier, week_multiplier);
   }
 }
