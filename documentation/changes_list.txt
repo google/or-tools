@@ -1,4 +1,17 @@
 
+v.0.1.0: (2012-03-21 14:04:14)
+------------------------------
+* Major enhancements to the manual:
+  - chapter 3.
+* Minor enhancements to the manual:
+  - section SolutionCollectors and Assigments with subsections.
+  - index improved.
+* Minor corrections:
+  - code in C++.
+
+
+
+
 v.0.0.5: (2012-03-03 17:16:37)
 ------------------------------
 * Minor enhancements to the manual:

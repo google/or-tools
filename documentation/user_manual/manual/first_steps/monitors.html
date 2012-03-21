@@ -59,6 +59,8 @@
 <p>The or-tools library let you collect and store the solutions of your searches with the help of
 <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s. We use them to store the solutions of our cryptarithmetic puzzle.</p>
 <p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap2/cp_is_fun2.cc">tutorials/C++/chap2/cp_is_fun2.cc</a>.</p>
+<div class="section" id="solutioncollectors">
+<h2>2.4.1. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s</h2>
 <p>A <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt> class is one of several specialized <tt class="docutils literal"><span class="pre">SearchMonitors</span></tt> classes. i.e. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>
 inherits from <tt class="docutils literal"><span class="pre">SearchMonitors</span></tt>. <tt class="docutils literal"><span class="pre">SearchMonitors</span></tt> provides a set of callbacks to monitor all search events.
 We will learn more about them in the next chapter.</p>
@@ -176,6 +178,9 @@ to the solver, i.e. you will not be able to retrieve its value by <tt class="doc
 <span class="p">}</span>
 </pre></div>
 </div>
+</div>
+<div class="section" id="assignments">
+<h2>2.4.2. <tt class="docutils literal"><span class="pre">Assignment</span></tt>s</h2>
 <p>The or-tools library provides the class <tt class="docutils literal"><span class="pre">Assignment</span></tt> to store the solution (in parts or as a whole):</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">SolutionCollector</span><span class="o">*</span> <span class="k">const</span> <span class="n">all_solutions</span> <span class="o">=</span>
                                       <span class="n">solver</span><span class="p">.</span><span class="n">MakeAllSolutionCollector</span><span class="p">();</span>
@@ -218,6 +223,7 @@ also additional information. You can also act on some of the variables for insta
 </div>
 <p>With <tt class="docutils literal"><span class="pre">NewSearch()</span></tt> you can access the variables of the current solutions (no need for a <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>).
 More importantly, you can interfere with the search.</p>
+</div>
 </div>
 </div>
 
@@ -277,6 +283,15 @@ More importantly, you can interfere with the search.</p>
   
    
 	
+
+  <h3>Sections</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">2.4. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</a><ul>
+<li><a class="reference internal" href="#solutioncollectors">2.4.1. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s</a></li>
+<li><a class="reference internal" href="#assignments">2.4.2. <tt class="docutils literal"><span class="pre">Assignment</span></tt>s</a></li>
+</ul>
+</li>
+</ul>
 
         </div>
       </div>

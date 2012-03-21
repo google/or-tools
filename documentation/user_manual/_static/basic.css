@@ -164,6 +164,11 @@ table.indextable tr.cap {
     background-color: #f2f2f2;
 }
 
+
+.table {
+  align: center; 
+}
+
 img.toggler {
     margin-right: 3px;
     margin-top: 3px;
@@ -311,6 +316,7 @@ div.body p.centered {
 table.docutils {
     border: 0;
     border-collapse: collapse;
+    align: center;
 }
 
 table.docutils td, table.docutils th {

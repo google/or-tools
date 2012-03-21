@@ -1,0 +1,187 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3.5. Some global data about the search &mdash; or-tools User&#39;s Manual&#39;</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     'doc version 0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../../_static/logo.ico"/>
+    <link rel="top" title="or-tools User&#39;s Manual&#39;" href="../../index.html" />
+    <link rel="up" title="3. Using objectives in constraint programming: Golomb rulers" href="../objectives.html" />
+    <link rel="next" title="3.6. A second model and its implementation" href="second_implementation.html" />
+    <link rel="prev" title="3.4. What model did I pass to the solver?" href="content_model.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="second_implementation.html" title="3.6. A second model and its implementation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="content_model.html" title="3.4. What model did I pass to the solver?"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li>
+          <li><a href="../objectives.html" accesskey="U">3. Using objectives in constraint programming: Golomb rulers</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="some-global-data-about-the-search">
+<span id="data-search"></span><h1>3.5. Some global data about the search</h1>
+<p>[THIS SECTION IS IN CONSTRUCTION]</p>
+<p>In section <a class="reference internal" href="objective_functions.html#objective-functions"><em>Objective functions and how to compare search strategies</em></a>, we talked about some global indicators about the search.
+In this section we review them one by one.</p>
+<div class="section" id="time">
+<span id="index-0"></span><h2>3.5.1. Time</h2>
+<p>This is probably the most common indicator. There exist several timing libraries or tools to measure the duration of an algorithm. The or-tools
+library offers a basic but portable timer. This timer starts to measure the time from the creation of the solver.</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">solver</span><span class="p">(</span><span class="s">&quot;TicTac&quot;</span><span class="p">)</span> <span class="n">s</span><span class="p">;</span>  <span class="c1">//  Starts the timer of the solver.</span>
+</pre></div>
+</div>
+<p>If you need the elapsed time since the creation of the timer, just call <tt class="docutils literal"><span class="pre">wall_time()</span></tt>:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="k">const</span> <span class="n">int64</span> <span class="n">elapsed_time</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">wall_time</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>The time is given in milliseconds. If you only want to measure the time spent to solve the problem, just subtract times:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="k">const</span> <span class="n">int64</span> <span class="n">time1</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">wall_time</span><span class="p">();</span>
+<span class="n">s</span><span class="p">.</span><span class="n">Solve</span><span class="p">(...);</span>
+<span class="k">const</span> <span class="n">int64</span> <span class="n">time2</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">wall_time</span><span class="p">();</span>
+<span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;The Solve method took &quot;</span> <span class="o">&lt;&lt;</span> <span class="p">(</span><span class="n">time2</span> <span class="o">-</span> <span class="n">time1</span><span class="p">)</span><span class="o">/</span><span class="mf">1000.0</span> <span class="o">&lt;&lt;</span>
+                                                             <span class="s">&quot; seconds&quot;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>As its name implies, the time measured is the wall time, i.e. ... TO BE COMPLETED.</p>
+<p>For instance, on my computer, the program in <tt class="file docutils literal"><span class="pre">golomb1.cc</span></tt> for <img class="math" src="../../_images/math/1819f547a53f667e1a44a49ba2bec08c28d7f222.png" alt="n = 9"/> takes</p>
+<div class="highlight-bash"><div class="highlight"><pre>Time: 4,773 seconds
+</pre></div>
+</div>
+</div>
+<div class="section" id="failures">
+<h2>3.5.2. Failures</h2>
+</div>
+<div class="section" id="branches">
+<h2>3.5.3. Branches</h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+
+  <h2>User's Manual</h2>
+  </br>
+  
+   
+	
+
+
+<h3>Google search</h3>
+
+<form method="get" action="http://www.google.com/search">
+
+<div style="padding:-1px;width:15em;">
+<table border="0" cellpadding="0">
+<tr><td>
+<input type="text"   name="q" size="25"
+ maxlength="255" value="" />
+<input type="submit" value="Go" /></td></tr>
+<tr><td align="center" style="font-size:65%">
+<input type="checkbox"  name="sitesearch"
+ value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
+</td></tr></table>
+</div>
+
+</form>
+</br>
+
+  <h3>Welcome</h3>
+  
+  <ul>
+  	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
+	<li><a href="../../index.html">Back to main page</a></li>
+
+  </ul>
+  
+   
+	
+
+
+  <h3>Tutorial examples</h3>
+  
+  <ul>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
+	<li>Java</li>
+	<li>C#</li>
+</ul>
+  
+   
+	
+
+  <h3>Sections</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">3.5. Some global data about the search</a><ul>
+<li><a class="reference internal" href="#time">3.5.1. Time</a></li>
+<li><a class="reference internal" href="#failures">3.5.2. Failures</a></li>
+<li><a class="reference internal" href="#branches">3.5.3. Branches</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="second_implementation.html" title="3.6. A second model and its implementation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="content_model.html" title="3.4. What model did I pass to the solver?"
+             >previous</a> |</li>
+        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li>
+          <li><a href="../objectives.html" >3. Using objectives in constraint programming: Golomb rulers</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Google.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>
