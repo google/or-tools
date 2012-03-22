@@ -131,13 +131,13 @@ def main(the_killers):
     for i in range(n):
         for j in range(n):
             if i != j:
-                solver.Add((richer[i][j] == 1) == (richer[j][i] == 0) )
+                solver.Add((richer[i][j] == 1) == (richer[j][i] == 0))
 
     # Charles hates noone that Agatha hates.
     #forall i : Range .
     #  (hates[agatha, i] = 1) => (hates[charles, i] = 0),
     for i in range(n):
-        solver.Add((hates[agatha][i]==1)-(hates[charles][i] == 0) <= 0)
+        solver.Add((hates[agatha][i]==1) <= (hates[charles][i] == 0))
 
     # Agatha hates everybody except the butler.
     solver.Add(hates[agatha][charles] == 1)
@@ -149,14 +149,14 @@ def main(the_killers):
     # forall i : Range .
     #  (richer[i, agatha] = 0) => (hates[butler, i] = 1),
     for i in range(n):
-        solver.Add((richer[i][agatha]==0)-(hates[butler][i]==1)<=0)
+        solver.Add((richer[i][agatha]==0) <= (hates[butler][i]==1))
 
 
     # The butler hates everyone whom Agatha hates.
     #forall i : Range .
     #  (hates[agatha, i] = 1) => (hates[butler, i] = 1),
     for i in range(n):
-        solver.Add((hates[agatha][i]==1)-(hates[butler][i]==1) <= 0)
+        solver.Add((hates[agatha][i]==1) <= (hates[butler][i]==1))
 
 
     # Noone hates everyone.
