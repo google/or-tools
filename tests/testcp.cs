@@ -142,7 +142,7 @@ public class CsTestCpOperator
     Constraint c10a = c1 == c2;
     Console.WriteLine(c10a.ToString());
     Constraint c10c = c1 != c2;
-    Console.WriteLine(c10a.ToString());
+    Console.WriteLine(c10c.ToString());
     Constraint c10e = c1 >= c2;
     Console.WriteLine(c10e.ToString());
     Constraint c10g = c1 > c2;
@@ -278,7 +278,7 @@ public class CsTestCpOperator
     Constraint c10a = (x == 1) == (y == 2);
     Console.WriteLine(c10a.ToString());
     Constraint c10c = (x == 1) != (y == 2);
-    Console.WriteLine(c10a.ToString());
+    Console.WriteLine(c10c.ToString());
     Constraint c10e = (x == 1) >= (y == 2);
     Console.WriteLine(c10e.ToString());
     Constraint c10g = (x == 1) > (y == 2);
@@ -378,7 +378,7 @@ public class CsTestCpOperator
     Constraint c10a = (x >= 1) >= (y >= 2);
     Console.WriteLine(c10a.ToString());
     Constraint c10c = (x >= 1) != (y >= 2);
-    Console.WriteLine(c10a.ToString());
+    Console.WriteLine(c10c.ToString());
     Constraint c10e = (x >= 1) >= (y >= 2);
     Console.WriteLine(c10e.ToString());
     Constraint c10g = (x >= 1) > (y >= 2);
