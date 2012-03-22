@@ -503,7 +503,6 @@ class SimpleBitSet : public DomainIntVar::BitSet {
   NumericalRev<int64> size_;
   const int bsize_;
   std::vector<int64> removed_;
-  std::vector<int64> holes_;
 };
 
 // This is a special case where the bitset fits into one 64 bit integer.
