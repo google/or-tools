@@ -137,6 +137,7 @@ class DomainIntVar : public IntVar {
 
   class BitSet : public BaseObject {
    public:
+    BitSet(Solver* const s) : solver_(s), holes_stamp_(0) {}
     virtual ~BitSet() {}
 
     virtual int64 ComputeNewMin(int64 nmin, int64 cmin, int64 cmax) = 0;
@@ -149,12 +150,34 @@ class DomainIntVar : public IntVar {
     virtual void ApplyRemovedValues(DomainIntVar* var) = 0;
     virtual void ClearRemovedValues() = 0;
     virtual string pretty_DebugString(int64 min, int64 max) const = 0;
-
-    virtual void InitHoles() = 0;
-    virtual void ClearHoles() = 0;
-    virtual int HolesSize() const = 0;
-    virtual int64 Hole(int index) const = 0;
     virtual BitSetIterator* MakeIterator() = 0;
+
+    void InitHoles() {
+      const uint64 current_stamp = solver_->stamp();
+      if (holes_stamp_ < current_stamp) {
+        holes_.clear();
+        holes_stamp_ = current_stamp;
+      }
+    }
+
+    virtual void ClearHoles() {
+      holes_.clear();
+    }
+
+    const vector<int64>& Holes() {
+      return holes_;
+    }
+
+    void AddHole(int64 value) {
+      holes_.push_back(value);
+    }
+
+   protected:
+    Solver* const solver_;
+
+   private:
+    std::vector<int64> holes_;
+    uint64 holes_stamp_;
   };
 
   class QueueHandler : public Demon {
@@ -274,14 +297,13 @@ class DomainIntVar : public IntVar {
 class SimpleBitSet : public DomainIntVar::BitSet {
  public:
   SimpleBitSet(Solver* const s, int64 vmin, int64 vmax)
-      : bits_(NULL),
+      : BitSet(s),
+        bits_(NULL),
         stamps_(NULL),
         omin_(vmin),
         omax_(vmax),
         size_(vmax - vmin + 1),
-        solver_(s),
-        bsize_(BitLength64(size_.Value())),
-        holes_stamp_(s->stamp() - 1) {
+        bsize_(BitLength64(size_.Value())) {
     CHECK_LT(size_.Value(), 0xFFFFFFFF) << "Bitset too large";
     bits_ = new uint64[bsize_];
     stamps_ = new uint64[bsize_];
@@ -298,11 +320,13 @@ class SimpleBitSet : public DomainIntVar::BitSet {
                const std::vector<int64>& sorted_values,
                int64 vmin,
                int64 vmax)
-      : bits_(NULL), stamps_(NULL), omin_(vmin), omax_(vmax),
+      : BitSet(s),
+        bits_(NULL),
+        stamps_(NULL),
+        omin_(vmin),
+        omax_(vmax),
         size_(sorted_values.size()),
-        solver_(s),
-        bsize_(BitLength64(vmax - vmin + 1)),
-        holes_stamp_(s->stamp() - 1) {
+        bsize_(BitLength64(vmax - vmin + 1)) {
     CHECK_LT(size_.Value(), 0xFFFFFFFF) << "Bitset too large";
     bits_ = new uint64[bsize_];
     stamps_ = new uint64[bsize_];
@@ -387,7 +411,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     size_.Decr(solver_);
     // Holes.
     InitHoles();
-    holes_.push_back(val);
+    AddHole(val);
     return true;
   }
   virtual uint64 Size() const {
@@ -420,26 +444,6 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 
   virtual void ClearRemovedValues() {
     removed_.clear();
-  }
-
-  virtual void InitHoles() {
-    const uint64 current_stamp = solver_->stamp();
-    if (holes_stamp_ < current_stamp) {
-      holes_.clear();
-      holes_stamp_ = current_stamp;
-    }
-  }
-
-  virtual void ClearHoles() {
-    holes_.clear();
-  }
-
-  virtual int HolesSize() const {
-    return holes_.size();
-  }
-
-  virtual int64 Hole(int index) const {
-    return holes_[index];
   }
 
   virtual string pretty_DebugString(int64 min, int64 max) const {
@@ -497,11 +501,9 @@ class SimpleBitSet : public DomainIntVar::BitSet {
   const int64 omin_;
   const int64 omax_;
   NumericalRev<int64> size_;
-  Solver* const solver_;
   const int bsize_;
   std::vector<int64> removed_;
   std::vector<int64> holes_;
-  uint64 holes_stamp_;
 };
 
 // This is a special case where the bitset fits into one 64 bit integer.
@@ -509,12 +511,11 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 class SmallBitSet : public DomainIntVar::BitSet {
  public:
   SmallBitSet(Solver* const s, int64 vmin, int64 vmax)
-    : bits_(GG_ULONGLONG(0)),
-      stamp_(s->stamp() - 1),
-      omin_(vmin), omax_(vmax),
-      size_(vmax - vmin + 1),
-      solver_(s),
-      holes_stamp_(stamp_) {
+      : BitSet(s),
+        bits_(GG_ULONGLONG(0)),
+        stamp_(s->stamp() - 1),
+        omin_(vmin), omax_(vmax),
+        size_(vmax - vmin + 1) {
     CHECK_LE(size_.Value(), 64) << "Bitset too large";
     bits_ = OneRange64(0, size_.Value() - 1);
   }
@@ -523,9 +524,12 @@ class SmallBitSet : public DomainIntVar::BitSet {
               const std::vector<int64>& sorted_values,
               int64 vmin,
               int64 vmax)
-    : bits_(GG_ULONGLONG(0)), stamp_(s->stamp() - 1), omin_(vmin), omax_(vmax),
-      size_(sorted_values.size()),
-      solver_(s), holes_stamp_(stamp_) {
+      : BitSet(s),
+        bits_(GG_ULONGLONG(0)),
+        stamp_(s->stamp() - 1),
+        omin_(vmin),
+        omax_(vmax),
+        size_(sorted_values.size()) {
     // We know the array is sorted and does not contains duplicate values.
     CHECK_LE(size_.Value(), 64) << "Bitset too large";
     for (int i = 0; i < sorted_values.size(); ++i) {
@@ -615,7 +619,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
       size_.Decr(solver_);
       // Holes.
       InitHoles();
-      holes_.push_back(val);
+      AddHole(val);
       return true;
     } else {
       return false;
@@ -650,28 +654,6 @@ class SmallBitSet : public DomainIntVar::BitSet {
     removed_.clear();
   }
 
-
-  // TODO(user): knowing we have a small bitset, we can have an in-one-word
-  // implementation of holes.
-  virtual void InitHoles() {
-    const uint64 current_stamp = solver_->stamp();
-    if (holes_stamp_ < current_stamp) {
-      holes_.clear();
-      holes_stamp_ = current_stamp;
-    }
-  }
-
-  virtual void ClearHoles() {
-    holes_.clear();
-  }
-
-  virtual int HolesSize() const {
-    return holes_.size();
-  }
-
-  virtual int64 Hole(int index) const {
-    return holes_[index];
-  }
 
   virtual string pretty_DebugString(int64 min, int64 max) const {
     string out;
@@ -728,10 +710,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
   const int64 omin_;
   const int64 omax_;
   NumericalRev<int64> size_;
-  Solver* const solver_;
   std::vector<int64> removed_;
-  std::vector<int64> holes_;
-  uint64 holes_stamp_;
 };
 
 class EmptyIterator : public IntVarIterator {
@@ -775,7 +754,7 @@ class RangeIterator : public IntVarIterator {
 class DomainIntVarHoleIterator : public IntVarIterator {
  public:
   explicit DomainIntVarHoleIterator(const DomainIntVar* const v)
-      : var_(v), bits_(NULL), size_(0), index_(0) {}
+  : var_(v), bits_(NULL), values_(NULL), size_(0), index_(0) {}
 
   ~DomainIntVarHoleIterator() {}
 
@@ -783,8 +762,12 @@ class DomainIntVarHoleIterator : public IntVarIterator {
     bits_ = var_->bitset();
     if (bits_ != 0) {
       bits_->InitHoles();
+      values_ = bits_->Holes().data();
+      size_ = bits_->Holes().size();
+    } else {
+      values_ = NULL;
+      size_ = 0;
     }
-    size_ = (bits_ != NULL ? bits_->HolesSize() : 0);
     index_ = 0;
   }
 
@@ -795,7 +778,7 @@ class DomainIntVarHoleIterator : public IntVarIterator {
   virtual int64 Value() const {
     DCHECK(bits_ != NULL);
     DCHECK(index_ < size_);
-    return bits_->Hole(index_);
+    return values_[index_];
   }
 
   virtual void Next() {
@@ -805,6 +788,7 @@ class DomainIntVarHoleIterator : public IntVarIterator {
  private:
   const DomainIntVar* const var_;
   DomainIntVar::BitSet* bits_;
+  const int64* values_;
   int size_;
   int index_;
 };
