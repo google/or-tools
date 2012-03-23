@@ -137,7 +137,7 @@ class DomainIntVar : public IntVar {
 
   class BitSet : public BaseObject {
    public:
-    BitSet(Solver* const s) : solver_(s), holes_stamp_(0) {}
+    explicit BitSet(Solver* const s) : solver_(s), holes_stamp_(0) {}
     virtual ~BitSet() {}
 
     virtual int64 ComputeNewMin(int64 nmin, int64 cmin, int64 cmax) = 0;
@@ -164,7 +164,7 @@ class DomainIntVar : public IntVar {
       holes_.clear();
     }
 
-    const vector<int64>& Holes() {
+    const std::vector<int64>& Holes() {
       return holes_;
     }
 
@@ -810,7 +810,7 @@ class DomainIntVarDomainIterator : public IntVarIterator {
   }
 
   virtual void Init() {
-    if (var_->bitset() != NULL) {
+    if (var_->bitset() != NULL && !var_->Bound()) {
       if (reversible_) {
         if (!bitset_iterator_) {
           Solver* const solver = var_->solver();
@@ -825,9 +825,15 @@ class DomainIntVarDomainIterator : public IntVarIterator {
       }
       bitset_iterator_->Init(var_->Min(), var_->Max());
     } else {
-      if (!reversible_ && bitset_iterator_) {
-        delete bitset_iterator_;
-        bitset_iterator_ = NULL;
+      if (bitset_iterator_) {
+        if (reversible_) {
+          Solver* const solver = var_->solver();
+          solver->SaveAndSetValue(reinterpret_cast<void**>(&bitset_iterator_),
+                                  reinterpret_cast<void*>(NULL));
+        } else {
+          delete bitset_iterator_;
+          bitset_iterator_ = NULL;
+        }
       }
       min_ = var_->Min();
       max_ = var_->Max();
