@@ -10,9 +10,9 @@ help:
 
 OR_TOOLS_VERSION = 1.0.0
 ifeq ($(TOP),)
-  MAKEFILE_DIR=makefiles
+  MAKEFILE_ROOT=
 else
-  MAKEFILE_DIR=$(TOP)/makefiles
+  MAKEFILE_ROOT=$(TOP)/
 endif
 
 .PHONY : python cc java csharp
@@ -20,28 +20,28 @@ all: cc java python csharp
 clean: clean_cc clean_java clean_python clean_csharp
 
 # First, we try to detect the platform.
-include $(MAKEFILE_DIR)/Makefile.port
+include $(MAKEFILE_ROOT)makefiles/Makefile.port
 
 # We include predefined variables
-include $(MAKEFILE_DIR)/Makefile.def
+include $(MAKEFILE_ROOT)makefiles/Makefile.def
 
 # Then we overwrite the local ones if the Makefile.local file exists.
--include Makefile.local
+-include $(MAKEFILE_ROOT)Makefile.local
 
 # Then include specific system commands and definitions
-include $(MAKEFILE_DIR)/Makefile.$(SYSTEM)
+include $(MAKEFILE_ROOT)makefiles/Makefile.$(SYSTEM)
 
 # Rules to fetch and build third party dependencies.
-include $(MAKEFILE_DIR)/Makefile.third_party.$(SYSTEM)
+include $(MAKEFILE_ROOT)makefiles/Makefile.third_party.$(SYSTEM)
 
 # Include .mk files.
-include $(MAKEFILE_DIR)/Makefile.cpp.mk
-include $(MAKEFILE_DIR)/Makefile.python.mk
-include $(MAKEFILE_DIR)/Makefile.java.mk
-include $(MAKEFILE_DIR)/Makefile.csharp.mk
+include $(MAKEFILE_ROOT)makefiles/Makefile.cpp.mk
+include $(MAKEFILE_ROOT)makefiles/Makefile.python.mk
+include $(MAKEFILE_ROOT)makefiles/Makefile.java.mk
+include $(MAKEFILE_ROOT)makefiles/Makefile.csharp.mk
 
 # Include test
-include $(MAKEFILE_DIR)/Makefile.test.$(SYSTEM)
+include $(MAKEFILE_ROOT)makefiles/Makefile.test.$(SYSTEM)
 
 # Finally include user makefile if it exists
--include Makefile.user
+-include $(MAKEFILE_ROOT)Makefile.user
