@@ -21,101 +21,100 @@ clean_python:
 	-$(DEL) objs$S*python_wrap.$O
 
 # pywrapknapsack_solver
-pyalgorithms: lib/_pywrapknapsack_solver.$(SHAREDLIBEXT) gen/algorithms/pywrapknapsack_solver.py
+pyalgorithms: $(TOP)/lib/_pywrapknapsack_solver.$(SHAREDLIBEXT) $(TOP)/gen/algorithms/pywrapknapsack_solver.py
 
-gen/algorithms/pywrapknapsack_solver.py: algorithms/knapsack_solver.swig algorithms/knapsack_solver.h base/base.swig
-	$(SWIG_BINARY) -c++ -python -o gen/algorithms/knapsack_solver_python_wrap.cc -module pywrapknapsack_solver algorithms/knapsack_solver.swig
+$(TOP)/gen/algorithms/pywrapknapsack_solver.py: $(TOP)/algorithms/knapsack_solver.swig $(TOP)/algorithms/knapsack_solver.h $(TOP)/base/base.swig
+	$(SWIG_BINARY) -I$(TOP) -c++ -python -o $(TOP)$Sgen$Salgorithms$Sknapsack_solver_python_wrap.cc -module pywrapknapsack_solver $(TOP)$Salgorithms$Sknapsack_solver.swig
 
-gen/algorithms/knapsack_solver_python_wrap.cc: gen/algorithms/pywrapknapsack_solver.py
+$(TOP)/gen/algorithms/knapsack_solver_python_wrap.cc: $(TOP)/gen/algorithms/pywrapknapsack_solver.py
 
-objs/knapsack_solver_python_wrap.$O: gen/algorithms/knapsack_solver_python_wrap.cc
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/algorithms/knapsack_solver_python_wrap.cc $(OBJOUT)objs/knapsack_solver_python_wrap.$O
+$(TOP)/objs/knapsack_solver_python_wrap.$O: $(TOP)/gen/algorithms/knapsack_solver_python_wrap.cc
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(TOP)$Sgen$Salgorithms$Sknapsack_solver_python_wrap.cc $(OBJOUT)objs$Sknapsack_solver_python_wrap.$O
 
-lib/_pywrapknapsack_solver.$(SHAREDLIBEXT): objs/knapsack_solver_python_wrap.$O $(ALGORITHMS_LIBS) $(LP_LIBS) $(BASE_LIBS)
-	$(LD) $(LDOUT)lib$S_pywrapknapsack_solver.$(SHAREDLIBEXT) objs/knapsack_solver_python_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS) $(PYTHON_LNK)
+$(TOP)/lib/_pywrapknapsack_solver.$(SHAREDLIBEXT): $(TOP)/objs/knapsack_solver_python_wrap.$O $(ALGORITHMS_LIBS) $(LP_LIBS) $(BASE_LIBS)
+	$(LD) $(LDOUT)$(TOP)$Slib$S_pywrapknapsack_solver.$(SHAREDLIBEXT) $(TOP)$Sobjs$Sknapsack_solver_python_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
-	copy lib\\_pywrapknapsack_solver.dll gen\\algorithms\\_pywrapknapsack_solver.pyd
+	copy $(TOP)\\lib\\_pywrapknapsack_solver.dll $(TOP)\\gen\\algorithms\\_pywrapknapsack_solver.pyd
 endif
 
 # pywrapgraph
-pygraph: lib/_pywrapgraph.$(SHAREDLIBEXT) gen/graph/pywrapgraph.py
+pygraph: $(TOP)/lib/_pywrapgraph.$(SHAREDLIBEXT) $(TOP)/gen/graph/pywrapgraph.py
 
-gen/graph/pywrapgraph.py: graph/graph.swig graph/min_cost_flow.h graph/max_flow.h graph/ebert_graph.h base/base.swig
-	$(SWIG_BINARY) -c++ -python -o gen/graph/pywrapgraph_python_wrap.cc -module pywrapgraph graph/graph.swig
+$(TOP)/gen/graph/pywrapgraph.py: $(TOP)/graph/graph.swig $(TOP)/graph/min_cost_flow.h $(TOP)/graph/max_flow.h $(TOP)/graph/ebert_graph.h $(TOP)/base/base.swig
+	$(SWIG_BINARY) -I$(TOP) -c++ -python -o $(TOP)$Sgen$Sgraph$Spywrapgraph_python_wrap.cc -module pywrapgraph $(TOP)$Sgraph$Sgraph.swig
 
-gen/graph/pywrapgraph_python_wrap.cc: gen/graph/pywrapgraph.py
+$(TOP)/gen/graph/pywrapgraph_python_wrap.cc: $(TOP)/gen/graph/pywrapgraph.py
 
-objs/pywrapgraph_python_wrap.$O: gen/graph/pywrapgraph_python_wrap.cc
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/graph/pywrapgraph_python_wrap.cc $(OBJOUT)objs/pywrapgraph_python_wrap.$O
+$(TOP)/objs/pywrapgraph_python_wrap.$O: $(TOP)/gen/graph/pywrapgraph_python_wrap.cc
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(TOP)/gen/graph/pywrapgraph_python_wrap.cc $(OBJOUT)objs$Spywrapgraph_python_wrap.$O
 
-lib/_pywrapgraph.$(SHAREDLIBEXT): objs/pywrapgraph_python_wrap.$O $(GRAPH_DEPS)
-	$(LD) $(LDOUT)lib$S_pywrapgraph.$(SHAREDLIBEXT) objs/pywrapgraph_python_wrap.$O $(GRAPH_LNK) $(LDFLAGS) $(PYTHON_LNK)
+$(TOP)/lib/_pywrapgraph.$(SHAREDLIBEXT): $(TOP)/objs/pywrapgraph_python_wrap.$O $(GRAPH_DEPS)
+	$(LD) $(LDOUT)$(TOP)$Slib$S_pywrapgraph.$(SHAREDLIBEXT) $(TOP)$Sobjs$Spywrapgraph_python_wrap.$O $(GRAPH_LNK) $(LDFLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
-	copy lib\\_pywrapgraph.dll gen\\graph\\_pywrapgraph.pyd
+	copy $(TOP)\\lib\\_pywrapgraph.dll $(TOP)\\gen\\graph\\_pywrapgraph.pyd
 endif
 
 # pywrapcp
 
-pycp: lib/_pywrapcp.$(SHAREDLIBEXT) gen/constraint_solver/pywrapcp.py lib/_pywraprouting.$(SHAREDLIBEXT) gen/constraint_solver/pywraprouting.py
+pycp: $(TOP)/lib/_pywrapcp.$(SHAREDLIBEXT) $(TOP)/gen/constraint_solver/pywrapcp.py $(TOP)/lib/_pywraprouting.$(SHAREDLIBEXT) $(TOP)/gen/constraint_solver/pywraprouting.py
 
-gen/constraint_solver/pywrapcp.py: constraint_solver/constraint_solver.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h base/base.swig
-	$(SWIG_BINARY) -c++ -python -o gen/constraint_solver/constraint_solver_python_wrap.cc -module pywrapcp constraint_solver/constraint_solver.swig
+$(TOP)/gen/constraint_solver/pywrapcp.py: $(TOP)/constraint_solver/constraint_solver.swig $(TOP)/constraint_solver/constraint_solver.h $(TOP)/constraint_solver/constraint_solveri.h $(TOP)/base/base.swig
+	$(SWIG_BINARY) -I$(TOP) -c++ -python -o $(TOP)$Sgen$Sconstraint_solver$Sconstraint_solver_python_wrap.cc -module pywrapcp $(TOP)$Sconstraint_solver$Sconstraint_solver.swig
 
-gen/constraint_solver/constraint_solver_python_wrap.cc: gen/constraint_solver/pywrapcp.py
+$(TOP)/gen/constraint_solver/constraint_solver_python_wrap.cc: $(TOP)/gen/constraint_solver/pywrapcp.py
 
-objs/constraint_solver_python_wrap.$O: gen/constraint_solver/constraint_solver_python_wrap.cc
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/constraint_solver/constraint_solver_python_wrap.cc $(OBJOUT)objs/constraint_solver_python_wrap.$O
+$(TOP)/objs/constraint_solver_python_wrap.$O: $(TOP)/gen/constraint_solver/constraint_solver_python_wrap.cc
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(TOP)$Sgen$Sconstraint_solver$Sconstraint_solver_python_wrap.cc $(OBJOUT)objs/constraint_solver_python_wrap.$O
 
-lib/_pywrapcp.$(SHAREDLIBEXT): objs/constraint_solver_python_wrap.$O $(CP_DEPS)
-	$(LD) $(LDOUT)lib$S_pywrapcp.$(SHAREDLIBEXT) objs/constraint_solver_python_wrap.$O $(CP_LNK) $(LDFLAGS) $(PYTHON_LNK)
+$(TOP)/lib/_pywrapcp.$(SHAREDLIBEXT): $(TOP)/objs/constraint_solver_python_wrap.$O $(CP_DEPS)
+	$(LD) $(LDOUT)$(TOP)$Slib$S_pywrapcp.$(SHAREDLIBEXT) $(TOP)$Sobjs$Sconstraint_solver_python_wrap.$O $(CP_LNK) $(LDFLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
-	copy lib\\_pywrapcp.dll gen\\constraint_solver\\_pywrapcp.pyd
+	copy $(TOP)\\lib\\_pywrapcp.dll $(TOP)\\gen\\constraint_solver\\_pywrapcp.pyd
 endif
-
 
 # pywraprouting
 
-gen/constraint_solver/pywraprouting.py: constraint_solver/routing.swig constraint_solver/constraint_solver.h constraint_solver/constraint_solveri.h constraint_solver/routing.h base/base.swig
-	$(SWIG_BINARY) -c++ -python -o gen/constraint_solver/routing_python_wrap.cc -module pywraprouting constraint_solver/routing.swig
+$(TOP)/gen/constraint_solver/pywraprouting.py: $(TOP)/constraint_solver/routing.swig $(TOP)/constraint_solver/constraint_solver.h $(TOP)/constraint_solver/constraint_solveri.h $(TOP)/constraint_solver/routing.h $(TOP)/base/base.swig
+	$(SWIG_BINARY) -I$(TOP) -c++ -python -o $(TOP)$Sgen$Sconstraint_solver$Srouting_python_wrap.cc -module pywraprouting $(TOP)$Sconstraint_solver$Srouting.swig
 
-gen/constraint_solver/routing_python_wrap.cc: gen/constraint_solver/pywraprouting.py
+$(TOP)/gen/constraint_solver/routing_python_wrap.cc: $(TOP)/gen/constraint_solver/pywraprouting.py
 
-objs/routing_python_wrap.$O: gen/constraint_solver/routing_python_wrap.cc
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/constraint_solver/routing_python_wrap.cc $(OBJOUT)objs/routing_python_wrap.$O
+$(TOP)/objs/routing_python_wrap.$O: $(TOP)/gen/constraint_solver/routing_python_wrap.cc
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(TOP)/gen/constraint_solver/routing_python_wrap.cc $(OBJOUT)objs/routing_python_wrap.$O
 
-lib/_pywraprouting.$(SHAREDLIBEXT): objs/routing_python_wrap.$O $(ROUTING_DEPS)
-	$(LD) $(LDOUT)lib/_pywraprouting.$(SHAREDLIBEXT) objs/routing_python_wrap.$O $(ROUTING_LNK) $(LDFLAGS) $(PYTHON_LNK)
+$(TOP)/lib/_pywraprouting.$(SHAREDLIBEXT): $(TOP)/objs/routing_python_wrap.$O $(ROUTING_DEPS)
+	$(LD) $(LDOUT)$(TOP)$Slib$S_pywraprouting.$(SHAREDLIBEXT) $(TOP)$Sobjs$Srouting_python_wrap.$O $(ROUTING_LNK) $(LDFLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
-	copy lib/_pywraprouting.dll gen\\constraint_solver\\_pywraprouting.pyd
+	copy $(TOP)\\lib\\_pywraprouting.dll $(TOP)\\gen\\constraint_solver\\_pywraprouting.pyd
 endif
 
 # pywraplp
 
-pylp: lib/_pywraplp.$(SHAREDLIBEXT) gen/linear_solver/pywraplp.py
+pylp: $(TOP)/lib/_pywraplp.$(SHAREDLIBEXT) $(TOP)/gen/linear_solver/pywraplp.py
 
-gen/linear_solver/pywraplp.py: linear_solver/linear_solver.swig linear_solver/linear_solver.h base/base.swig gen/linear_solver/linear_solver.pb.h
-	$(SWIG_BINARY)  $(SWIG_INC) -c++ -python -o gen/linear_solver/linear_solver_python_wrap.cc -module pywraplp linear_solver/linear_solver.swig
+$(TOP)/gen/linear_solver/pywraplp.py: $(TOP)/linear_solver/linear_solver.swig $(TOP)/linear_solver/linear_solver.h $(TOP)/base/base.swig $(TOP)/gen/linear_solver/linear_solver.pb.h
+	$(SWIG_BINARY)  $(SWIG_INC) -I$(TOP) -c++ -python -o $(TOP)$Sgen$Slinear_solver$Slinear_solver_python_wrap.cc -module pywraplp $(TOP)$Slinear_solver$Slinear_solver.swig
 
-gen/linear_solver/linear_solver_python_wrap.cc: gen/linear_solver/pywraplp.py
+$(TOP)/gen/linear_solver/linear_solver_python_wrap.cc: $(TOP)/gen/linear_solver/pywraplp.py
 
-objs/linear_solver_python_wrap.$O: gen/linear_solver/linear_solver_python_wrap.cc
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c gen/linear_solver/linear_solver_python_wrap.cc $(OBJOUT)objs/linear_solver_python_wrap.$O
+$(TOP)/objs/linear_solver_python_wrap.$O: $(TOP)/gen/linear_solver/linear_solver_python_wrap.cc
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(TOP)$Sgen$Slinear_solver$Slinear_solver_python_wrap.cc $(OBJOUT)objs/linear_solver_python_wrap.$O
 
-lib/_pywraplp.$(SHAREDLIBEXT): objs/linear_solver_python_wrap.$O $(LP_DEPS)
-	$(LD) $(LDOUT)lib$S_pywraplp.$(SHAREDLIBEXT) objs/linear_solver_python_wrap.$O $(LP_LNK) $(LDFLAGS) $(PYTHON_LNK)
+$(TOP)/lib/_pywraplp.$(SHAREDLIBEXT): $(TOP)/objs/linear_solver_python_wrap.$O $(LP_DEPS)
+	$(LD) $(LDOUT)$(TOP)$Slib$S_pywraplp.$(SHAREDLIBEXT) $(TOP)$Sobjs$Slinear_solver_python_wrap.$O $(LP_LNK) $(LDFLAGS) $(PYTHON_LNK)
 ifeq "$(SYSTEM)" "win"
-	copy lib\\_pywraplp.dll gen\\linear_solver\\_pywraplp.pyd
+	copy $(TOP)\\lib\\_pywraplp.dll $(TOP)\\gen\\linear_solver\\_pywraplp.pyd
 endif
 
 # Run a single example
 
-rpy: lib/_pywraplp.$(SHAREDLIBEXT) lib/_pywrapcp.$(SHAREDLIBEXT) lib/_pywrapgraph.$(SHAREDLIBEXT) lib/_pywrapknapsack_solver.$(SHAREDLIBEXT) lib/_pywraprouting.$(SHAREDLIBEXT) python/$(EX).py
+rpy: $(TOP)/lib/_pywraplp.$(SHAREDLIBEXT) $(TOP)/lib/_pywrapcp.$(SHAREDLIBEXT) $(TOP)/lib/_pywrapgraph.$(SHAREDLIBEXT) $(TOP)/lib/_pywrapknapsack_solver.$(SHAREDLIBEXT) $(TOP)/lib/_pywraprouting.$(SHAREDLIBEXT) $(TOP)/python/$(EX).py
 ifeq ($(SYSTEM),win)
 	@echo Running python$S$(EX).py
-	@set PYTHONPATH=$(TOP) && $(WINDOWS_PYTHON_PATH)$Spython python$S$(EX).py
+	@set PYTHONPATH=$(TOP) && $(WINDOWS_PYTHON_PATH)$Spython $(TOP)$Spython$S$(EX).py
 else
 	@echo Running python$S$(EX).py
-	@PYTHONPATH=$(TOP) python$(PYTHONVERSION) python$S$(EX).py
+	@PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(TOP)$Spython$S$(EX).py
 endif
 
 
