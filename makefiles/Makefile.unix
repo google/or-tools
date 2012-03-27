@@ -153,10 +153,10 @@ ifeq ($(PLATFORM),MACOSX)
   endif
 endif  # MAC OS X
 
-CFLAGS = $(SYSCFLAGS) $(DEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
+CFLAGS = $(SYSCFLAGS) $(DEBUG) -I$(TOP) -I$(TOP)/gen $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) \
 	$(SCIP_INC) $(SPARSEHASH_INC)
-JNIFLAGS = $(SYSCFLAGS) $(JNIDEBUG) -I. -Igen $(GFLAGS_INC) $(ARCH) \
+JNIFLAGS = $(SYSCFLAGS) $(JNIDEBUG) -I$(TOP) -I$(TOP)/gen $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC)
 LDFLAGS = $(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
 LDLPDEPS = $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK)
@@ -173,8 +173,8 @@ O = o
 E =
 SHAREDLIBEXT = so
 LDOUT = -o # need the space.
-OBJOUT = -o # need the space.
-EXEOUT = -o bin/
+OBJOUT = -o $(TOP)/
+EXEOUT = -o $(TOP)/bin/
 DEL = rm -f
 DELREC = rm -rf
 S = /
