@@ -36,34 +36,40 @@ clean_csharp:
 
 # csharplp
 
-csharplp: $(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT)
+ifeq ($(SYSTEM),win)
+IMPORTPREFIX=$(TOP)\\bin\\
+else
+IMPORTPREFIX=$(TOP)/lib/lib
+endif
+
+csharplp: bin/Google.OrTools.LinearSolver.dll
 
 gen/linear_solver/linear_solver_csharp_wrap.cc: linear_solver/linear_solver.swig base/base.swig util/data.swig linear_solver/linear_solver.h gen/linear_solver/linear_solver.pb.h
-	$(SWIG_BINARY) $(SWIG_INC) -c++ -csharp -o gen$Slinear_solver$Slinear_solver_csharp_wrap.cc -module operations_research -namespace Google.OrTools.LinearSolver -dllimport $(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) -outdir gen$Scom$Sgoogle$Sortools$Slinearsolver linear_solver$Slinear_solver.swig
+	$(SWIG_BINARY) $(SWIG_INC) -c++ -csharp -o gen$Slinear_solver$Slinear_solver_csharp_wrap.cc -module operations_research -namespace Google.OrTools.LinearSolver -dllimport $(IMPORTPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) -outdir gen$Scom$Sgoogle$Sortools$Slinearsolver linear_solver$Slinear_solver.swig
 
 objs/linear_solver_csharp_wrap.$O: gen/linear_solver/linear_solver_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c gen/linear_solver/linear_solver_csharp_wrap.cc $(OBJOUT)objs/linear_solver_csharp_wrap.$O
 
-$(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT): objs/linear_solver_csharp_wrap.$O $(LP_DEPS) com/google/ortools/linearsolver/LinearExpr.cs com/google/ortools/linearsolver/LinearConstraint.cs
+bin/Google.OrTools.LinearSolver.dll: objs/linear_solver_csharp_wrap.$O $(LP_DEPS) com/google/ortools/linearsolver/LinearExpr.cs com/google/ortools/linearsolver/LinearConstraint.cs
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:$(LIBPREFIX)Google.OrTools.LinearSolver.netmodule /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs com$Sgoogle$Sortools$Slinearsolver$S*.cs
-	$(LD) $(LDOUT)$(TOP)$Sbin$SGoogle.OrTools.LinearSolver.$(SHAREDLIBEXT) $(LIBPREFIX)Google.OrTools.LinearSolver.netmodule objs/linear_solver_csharp_wrap.$O $(LP_LNK) $(LDFLAGS)
+	$(CSC) /target:module /out:$(LIBPREFIX)Google.OrTools.LinearSolver.netmodule /warn:0 /nologo /debug gen\\com\\google\\ortools\\linearsolver\\*.cs com\\google\\ortools\\linearsolver\\*.cs
+	$(LD) $(LDOUT)$(TOP)\\bin\\Google.OrTools.LinearSolver.dll $(LIBPREFIX)Google.OrTools.LinearSolver.netmodule objs/linear_solver_csharp_wrap.$O $(LP_LNK) $(LDFLAGS)
 else
-	$(CSC) /target:library /out:$(TOP)/bin$SGoogle.OrTools.LinearSolver.dll /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs com$Sgoogle$Sortools$Slinearsolver$S*.cs
+	$(CSC) /target:library /out:$(TOP)/bin/Google.OrTools.LinearSolver.dll /warn:0 /nologo /debug gen/com/google/ortools/linearsolver/*.cs com/google/ortools/linearsolver/*.cs
 	$(LD) $(LDOUT)$(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) objs/linear_solver_csharp_wrap.$O $(LP_LNK) $(LDFLAGS)
 endif
 
 # csharp linearsolver examples
 
-$(BINPREFIX)/cslinearprogramming.exe: $(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) csharp/cslinearprogramming.cs
+$(BINPREFIX)/cslinearprogramming.exe: bin/Google.OrTools.LinearSolver.dll csharp/cslinearprogramming.cs
 	$(CSC) /target:exe /out:$(BINPREFIX)$Scslinearprogramming.exe /platform:$(NETPLATFORM) /lib:$(TOP)$Sbin /r:Google.OrTools.LinearSolver.dll csharp$Scslinearprogramming.cs
 
-$(BINPREFIX)/csintegerprogramming.exe: $(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) csharp/csintegerprogramming.cs
+$(BINPREFIX)/csintegerprogramming.exe: bin/Google.OrTools.LinearSolver.dll csharp/csintegerprogramming.cs
 	$(CSC) /target:exe /out:$(BINPREFIX)$Scsintegerprogramming.exe /platform:$(NETPLATFORM) /lib:$(TOP)$Sbin /r:Google.OrTools.LinearSolver.dll csharp$Scsintegerprogramming.cs
 
 # csharp linearsolver tests
 
-$(BINPREFIX)/testlp.exe: $(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) tests/testlp.cs
+$(BINPREFIX)/testlp.exe: bin/Google.OrTools.LinearSolver.dll tests/testlp.cs
 	$(CSC) /target:exe /out:$(BINPREFIX)$Stestlp.exe /platform:$(NETPLATFORM) /r:$(TOP)$Sbin$SGoogle.OrTools.LinearSolver.dll tests$Stestlp.cs
 
 testlp: $(BINPREFIX)/testlp.exe
@@ -71,43 +77,43 @@ testlp: $(BINPREFIX)/testlp.exe
 
 # csharpcp
 
-csharpcp: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT)
+csharpcp: bin/Google.OrTools.ConstraintSolver.dll
 
 gen/constraint_solver/constraint_solver_csharp_wrap.cc: constraint_solver/routing.swig constraint_solver/constraint_solver.swig base/base.swig util/data.swig constraint_solver/constraint_solver.h
-	$(SWIG_BINARY) $(SWIG_INC) -c++ -csharp -o gen$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc -module operations_research -namespace Google.OrTools.ConstraintSolver -dllimport $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) -outdir gen$Scom$Sgoogle$Sortools$Sconstraintsolver constraint_solver$Srouting.swig
+	$(SWIG_BINARY) $(SWIG_INC) -c++ -csharp -o gen$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc -module operations_research -namespace Google.OrTools.ConstraintSolver -dllimport $(IMPORTPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) -outdir gen$Scom$Sgoogle$Sortools$Sconstraintsolver constraint_solver$Srouting.swig
 
 objs/constraint_solver_csharp_wrap.$O: gen/constraint_solver/constraint_solver_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c gen/constraint_solver/constraint_solver_csharp_wrap.cc $(OBJOUT)objs/constraint_solver_csharp_wrap.$O
 
-$(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT): objs/constraint_solver_csharp_wrap.$O $(ROUTING_DEPS) com/google/ortools/constraintsolver/IntVarArrayHelper.cs com/google/ortools/constraintsolver/IntervalVarArrayHelper.cs com/google/ortools/constraintsolver/IntArrayHelper.cs com/google/ortools/constraintsolver/ValCstPair.cs com/google/ortools/constraintsolver/NetDecisionBuilder.cs
+bin/Google.OrTools.ConstraintSolver.dll: objs/constraint_solver_csharp_wrap.$O $(ROUTING_DEPS) com/google/ortools/constraintsolver/IntVarArrayHelper.cs com/google/ortools/constraintsolver/IntervalVarArrayHelper.cs com/google/ortools/constraintsolver/IntArrayHelper.cs com/google/ortools/constraintsolver/ValCstPair.cs com/google/ortools/constraintsolver/NetDecisionBuilder.cs
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:$(LIBPREFIX)Google.OrTools.ConstraintSolver.netmodule /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs com$Sgoogle$Sortools$Sconstraintsolver$S*.cs
-	$(LD) $(LDOUT)$(TOP)$Sbin$SGoogle.OrTools.ConstraintSolver.$(SHAREDLIBEXT) $(LIBPREFIX)Google.OrTools.ConstraintSolver.netmodule objs/constraint_solver_csharp_wrap.$O $(ROUTING_LNK) $(LDFLAGS)
+	$(CSC) /target:module /out:$(LIBPREFIX)Google.OrTools.ConstraintSolver.netmodule /warn:0 /nologo /debug gen\\com\\google\\ortools\\constraintsolver\\*.cs com\\google\\ortools\\constraintsolver\\*.cs
+	$(LD) $(LDOUT)$(TOP)\\bin\\Google.OrTools.ConstraintSolver.dll $(LIBPREFIX)Google.OrTools.ConstraintSolver.netmodule objs/constraint_solver_csharp_wrap.$O $(ROUTING_LNK) $(LDFLAGS)
 else
-	$(CSC) /target:library /out:bin$SGoogle.OrTools.ConstraintSolver.dll /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs com$Sgoogle$Sortools$Sconstraintsolver$S*.cs
+	$(CSC) /target:library /out:bin/Google.OrTools.ConstraintSolver.dll /warn:0 /nologo /debug gen/com/google/ortools/constraintsolver/*.cs com/google/ortools/constraintsolver/*.cs
 	$(LD)  $(LDOUT)$(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) objs/constraint_solver_csharp_wrap.$O $(ROUTING_LNK) $(LDFLAGS)
 endif
 
 # csharp cp examples
 
-$(BINPREFIX)/csrabbitspheasants.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/csrabbitspheasants.cs
+$(BINPREFIX)/csrabbitspheasants.exe: bin/Google.OrTools.ConstraintSolver.dll csharp/csrabbitspheasants.cs
 	$(CSC) /target:exe /out:$(BINPREFIX)$Scsrabbitspheasants.exe /platform:$(NETPLATFORM) /lib:$(TOP)$Sbin /r:Google.OrTools.ConstraintSolver.dll csharp$Scsrabbitspheasants.cs
 
-$(BINPREFIX)/send_more_money.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/send_more_money.cs
+$(BINPREFIX)/send_more_money.exe: bin/Google.OrTools.ConstraintSolver.dll csharp/send_more_money.cs
 	$(CSC) /target:exe /out:$(BINPREFIX)$Ssend_more_money.exe /platform:$(NETPLATFORM) /lib:$(TOP)$Sbin /r:Google.OrTools.ConstraintSolver.dll csharp$Ssend_more_money.cs
 
-$(BINPREFIX)/furniture_moving_intervals.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/furniture_moving_intervals.cs
+$(BINPREFIX)/furniture_moving_intervals.exe: bin/Google.OrTools.ConstraintSolver.dll csharp/furniture_moving_intervals.cs
 	$(CSC) /target:exe /out:$(BINPREFIX)$Sfurniture_moving_intervals.exe /platform:$(NETPLATFORM) /lib:$(TOP)$Sbin /r:Google.OrTools.ConstraintSolver.dll csharp$Sfurniture_moving_intervals.cs
 
-$(BINPREFIX)/organize_day_intervals.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/organize_day_intervals.cs
+$(BINPREFIX)/organize_day_intervals.exe: bin/Google.OrTools.ConstraintSolver.dll csharp/organize_day_intervals.cs
 	$(CSC) /target:exe /out:$(BINPREFIX)$Sorganize_day_intervals.exe /platform:$(NETPLATFORM) /lib:$(TOP)$Sbin /r:Google.OrTools.ConstraintSolver.dll csharp$Sorganize_day_intervals.cs
 
-$(BINPREFIX)/cstsp.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/cstsp.cs
+$(BINPREFIX)/cstsp.exe: bin/Google.OrTools.ConstraintSolver.dll csharp/cstsp.cs
 	$(CSC) /target:exe /out:$(BINPREFIX)$Scstsp.exe /platform:$(NETPLATFORM) /lib:$(TOP)$Sbin /r:Google.OrTools.ConstraintSolver.dll csharp$Scstsp.cs
 
 # csharp constraint solver tests
 
-$(BINPREFIX)/testcp.exe: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) tests/testcp.cs
+$(BINPREFIX)/testcp.exe: bin/Google.OrTools.ConstraintSolver.dll tests/testcp.cs
 	$(CSC) /target:exe /out:$(BINPREFIX)$Stestcp.exe /platform:$(NETPLATFORM) /lib:$(TOP)$Sbin /r:Google.OrTools.ConstraintSolver.dll tests$Stestcp.cs
 
 testcp: testcp.exe
@@ -115,55 +121,55 @@ testcp: testcp.exe
 
 # csharpalgorithms
 
-csharpalgorithms: $(LIBPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT)
+csharpalgorithms: bin/Google.OrTools.Algorithms.dll
 
 gen/algorithms/knapsack_solver_csharp_wrap.cc: algorithms/knapsack_solver.swig algorithms/knapsack_solver.swig base/base.swig util/data.swig algorithms/knapsack_solver.h
-	$(SWIG_BINARY) $(SWIG_INC) -c++ -csharp -o gen$Salgorithms$Sknapsack_solver_csharp_wrap.cc -module operations_research -namespace Google.OrTools.Algorithms -dllimport $(LIBPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT) -outdir gen$Scom$Sgoogle$Sortools$Sknapsacksolver algorithms$Sknapsack_solver.swig
+	$(SWIG_BINARY) $(SWIG_INC) -c++ -csharp -o gen$Salgorithms$Sknapsack_solver_csharp_wrap.cc -module operations_research -namespace Google.OrTools.Algorithms -dllimport $(IMPORTPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT) -outdir gen$Scom$Sgoogle$Sortools$Sknapsacksolver algorithms$Sknapsack_solver.swig
 
 objs/knapsack_solver_csharp_wrap.$O: gen/algorithms/knapsack_solver_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c gen/algorithms/knapsack_solver_csharp_wrap.cc $(OBJOUT)objs/knapsack_solver_csharp_wrap.$O
 
-$(LIBPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT): objs/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_DEPS)
+bin/Google.OrTools.Algorithms.dll: objs/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_DEPS)
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:$(LIBPREFIX)Google.OrTools.Algorithms.netmodule /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
-	$(LD) $(LDOUT)$(TOP)$sbin$SGoogle.OrTools.Algorithms.$(SHAREDLIBEXT) $(LIBPREFIX)Google.OrTools.Algorithms.netmodule objs/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS)
+	$(CSC) /target:module /out:$(LIBPREFIX)Google.OrTools.Algorithms.netmodule /warn:0 /nologo /debug gen\\com\\google\\ortools\\knapsacksolver\\*.cs
+	$(LD) $(LDOUT)$(TOP)\\bin\\Google.OrTools.Algorithms.dll $(LIBPREFIX)Google.OrTools.Algorithms.netmodule objs/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS)
 else
-	$(CSC) /target:library /out:$(TOP)$Sbin$SGoogle.OrTools.Algorithms.dll /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
+	$(CSC) /target:library /out:$(TOP)/bin/Google.OrTools.Algorithms.dll /warn:0 /nologo /debug gen/com/google/ortools/knapsacksolver/*.cs
 	$(LD) $(LDOUT)$(LIBPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT) objs/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS)
 endif
 
 # csharp algorithm examples
 
-$(BINPREFIX)/csknapsack.exe: $(LIBPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT) csharp/csknapsack.cs
+$(BINPREFIX)/csknapsack.exe: bin/Google.OrTools.Algorithms.dll csharp/csknapsack.cs
 	$(CSC) /target:exe /out:$(BINPREFIX)$Scsknapsack.exe /platform:$(NETPLATFORM) /lib:$(TOP)$Sbin /r:Google.OrTools.Algorithms.dll csharp$Scsknapsack.cs
 
 # csharpgraph
 
-csharpgraph: $(LIBPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT)
+csharpgraph: bin/Google.OrTools.Graph.dll
 
 gen/graph/graph_csharp_wrap.cc: graph/graph.swig base/base.swig util/data.swig graph/max_flow.h graph/min_cost_flow.h
-	$(SWIG_BINARY) $(SWIG_INC) -c++ -csharp -o gen$Sgraph$Sgraph_csharp_wrap.cc -module operations_research -namespace Google.OrTools.Graph -dllimport $(LIBPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT) -outdir gen$Scom$Sgoogle$Sortools$Sgraph graph$Sgraph.swig
+	$(SWIG_BINARY) $(SWIG_INC) -c++ -csharp -o gen$Sgraph$Sgraph_csharp_wrap.cc -module operations_research -namespace Google.OrTools.Graph -dllimport $(IMPORTPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT) -outdir gen$Scom$Sgoogle$Sortools$Sgraph graph$Sgraph.swig
 
 objs/graph_csharp_wrap.$O: gen/graph/graph_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c gen$Sgraph$Sgraph_csharp_wrap.cc $(OBJOUT)objs$Sgraph_csharp_wrap.$O
 
-$(LIBPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT): objs/graph_csharp_wrap.$O $(GRAPH_DEPS)
+bin/Google.OrTools.Graph.dll: objs/graph_csharp_wrap.$O $(GRAPH_DEPS)
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /unsafe /out:$(LIBPREFIX)Google.OrTools.Graph.netmodule /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sgraph$S*.cs
-	$(LD) $(LDOUT)$(TOP)$Sbin$SGoogle.OrTools.Graph.$(SHAREDLIBEXT) $(LIBPREFIX)Google.OrTools.Graph.netmodule objs$Sgraph_csharp_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
+	$(CSC) /target:module /unsafe /out:$(LIBPREFIX)Google.OrTools.Graph.netmodule /warn:0 /nologo /debug gen\\com\\google\\ortools\\graph\\*.cs
+	$(LD) $(LDOUT)$(TOP)\\bin\\Google.OrTools.Graph.dll $(LIBPREFIX)Google.OrTools.Graph.netmodule objs\\graph_csharp_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
 else
-	$(CSC) /target:library /unsafe /out:$(TOP)$Sbin$SGoogle.OrTools.Graph.dll /warn:0 /nologo /debug gen$Scom$Sgoogle$Sortools$Sgraph$S*.cs
-	$(LD) $(LDOUT)$(LIBPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT) objs$Sgraph_csharp_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
+	$(CSC) /target:library /unsafe /out:$(TOP)/bin/Google.OrTools.Graph.dll /warn:0 /nologo /debug gen/com/google/ortools/graph/*.cs
+	$(LD) $(LDOUT)$(LIBPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT) objs/graph_csharp_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
 endif
 
 # csharp graph examples
 
-$(BINPREFIX)/csflow.exe: $(LIBPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT) csharp/csflow.cs
+$(BINPREFIX)/csflow.exe: bin/Google.OrTools.Graph.dll csharp/csflow.cs
 	$(CSC) /target:exe /out:$(BINPREFIX)$Scsflow.exe /platform:$(NETPLATFORM) /lib:$(TOP)$Sbin /r:Google.OrTools.Graph.dll csharp$Scsflow.cs
 
 # Build and compile custome CP examples
 
-csc: $(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) csharp/$(EX).cs
+csc: bin/Google.OrTools.ConstraintSolver.dll csharp/$(EX).cs
 	$(CSC) /target:exe /out:$(BINPREFIX)$S$(EX).exe /platform:$(NETPLATFORM) /lib:$(TOP)$Sbin /r:Google.OrTools.ConstraintSolver.dll csharp$S$(EX).cs
 
 rcs: csc
@@ -176,6 +182,8 @@ dotnet_archive: csharp
 	-$(DELREC) temp
 	tools\mkdir temp
 	tools\mkdir temp\or-tools.$(PLATFORM)
+	tools\mkdir temp\or-tools.$(PLATFORM)\lib
+	tools\mkdir temp\or-tools.$(PLATFORM)\bin
 	tools\mkdir temp\or-tools.$(PLATFORM)\csharp
 	tools\mkdir temp\or-tools.$(PLATFORM)\csharp\solution
 	tools\mkdir temp\or-tools.$(PLATFORM)\csharp\solution\Properties
@@ -186,9 +194,8 @@ dotnet_archive: csharp
 	tools\mkdir temp\or-tools.$(PLATFORM)\data\rogo
 	tools\mkdir temp\or-tools.$(PLATFORM)\data\survo_puzzle
 	tools\mkdir temp\or-tools.$(PLATFORM)\data\quasigroup_completion
-	copy $(LIBPREFIX)Google.OrTools.*.$(SHAREDLIBEXT) temp\or-tools.$(PLATFORM)
 ifneq ($(SYSTEM),win)
-	copy Google.OrTools.*.dll temp\or-tools.$(PLATFORM)
+	copy bin\Google.OrTools.*.dll temp\or-tools.$(PLATFORM)\bin
 endif
 	copy csharp\*.cs temp\or-tools.$(PLATFORM)\csharp
 	copy csharp\*.sln temp\or-tools.$(PLATFORM)\csharp
