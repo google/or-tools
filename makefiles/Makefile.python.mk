@@ -5,20 +5,20 @@ python: pycp pyalgorithms pygraph pylp
 
 # Clean target
 clean_python:
-	-$(DEL) gen$Salgorithms$S*python_wrap*
-	-$(DEL) gen$Sconstraint_solver$S*python_wrap*
-	-$(DEL) gen$Sgraph$S*python_wrap*
-	-$(DEL) gen$Slinear_solver$S*python_wrap*
-	-$(DEL) gen$Salgorithms$S*.py
-	-$(DEL) gen$Sconstraint_solver$S*.py
-	-$(DEL) gen$Sgraph$S*.py
-	-$(DEL) gen$Slinear_solver$S*.py
-	-$(DEL) gen$Salgorithms$S*.pyc
-	-$(DEL) gen$Sconstraint_solver$S*.pyc
-	-$(DEL) gen$Sgraph$S*.pyc
-	-$(DEL) gen$Slinear_solver$S*.pyc
-	-$(DEL) lib$S_pywrap*.$(SHAREDLIBEXT)
-	-$(DEL) objs$S*python_wrap.$O
+	-$(DEL) $(TOP)$Sgen$Salgorithms$S*python_wrap*
+	-$(DEL) $(TOP)$Sgen$Sconstraint_solver$S*python_wrap*
+	-$(DEL) $(TOP)$Sgen$Sgraph$S*python_wrap*
+	-$(DEL) $(TOP)$Sgen$Slinear_solver$S*python_wrap*
+	-$(DEL) $(TOP)$Sgen$Salgorithms$S*.py
+	-$(DEL) $(TOP)$Sgen$Sconstraint_solver$S*.py
+	-$(DEL) $(TOP)$Sgen$Sgraph$S*.py
+	-$(DEL) $(TOP)$Sgen$Slinear_solver$S*.py
+	-$(DEL) $(TOP)$Sgen$Salgorithms$S*.pyc
+	-$(DEL) $(TOP)$Sgen$Sconstraint_solver$S*.pyc
+	-$(DEL) $(TOP)$Sgen$Sgraph$S*.pyc
+	-$(DEL) $(TOP)$Sgen$Slinear_solver$S*.pyc
+	-$(DEL) $(TOP)$Slib$S_pywrap*.$(SHAREDLIBEXT)
+	-$(DEL) $(TOP)$Sobjs$S*python_wrap.$O
 
 # pywrapknapsack_solver
 pyalgorithms: $(TOP)/lib/_pywrapknapsack_solver.$(SHAREDLIBEXT) $(TOP)/gen/algorithms/pywrapknapsack_solver.py

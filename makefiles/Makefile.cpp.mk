@@ -113,12 +113,12 @@ clean_cc:
 	-$(DEL) $(LIBPREFIX)algorithms.$(LIBSUFFIX)
 	-$(DEL) $(LIBPREFIX)dimacs.$(LIBSUFFIX)
 	-$(DEL) $(LIBPREFIX)shortestpaths.$(LIBSUFFIX)
-	-$(DEL) objs$S*.$O
+	-$(DEL) $(TOP)$Sobjs$S*.$O
 	-$(DEL) $(CPBINARIES)
 	-$(DEL) $(LPBINARIES)
-	-$(DEL) gen$Sconstraint_solver$S*.pb.*
-	-$(DEL) gen$Slinear_solver$S*.pb.*
-	-$(DEL) *.exp
+	-$(DEL) $(TOP)$Sgen$Sconstraint_solver$S*.pb.*
+	-$(DEL) $(TOP)$Sgen$Slinear_solver$S*.pb.*
+	-$(DEL) $(TOP)$S*.exp
 
 # Individual targets.
 algorithmslibs: $(ALGORITHMS_DEPS)

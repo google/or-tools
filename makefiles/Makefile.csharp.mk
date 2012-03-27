@@ -17,22 +17,22 @@ csharp: csharpcp csharplp csharpalgorithms csharpgraph csharpexe
 # Clean target.
 clean_csharp:
 	-$(DEL) $(LIBPREFIX)Google.OrTools.*.$(SHAREDLIBEXT)
-	-$(DEL) bin$SGoogle.OrTools.*.dll
-	-$(DEL) bin$SGoogle.OrTools.*.mdb
+	-$(DEL) $(BINPREFIX)$SGoogle.OrTools.*.dll
+	-$(DEL) $(BINPREFIX)$SGoogle.OrTools.*.mdb
 	-$(DEL) $(LIBPREFIX)Google.OrTools.*.lib
 	-$(DEL) $(LIBPREFIX)Google.OrTools.*.pdb
 	-$(DEL) $(LIBPREFIX)Google.OrTools.*.exp
 	-$(DEL) $(LIBPREFIX)Google.OrTools.*.netmodule
-	-$(DEL) gen$Slinear_solver$S*csharp_wrap*
-	-$(DEL) gen$Sconstraint_solver$S*csharp_wrap*
-	-$(DEL) gen$Salgorithms$S*csharp_wrap*
-	-$(DEL) gen$Sgraph$S*csharp_wrap*
-	-$(DEL) gen$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
-	-$(DEL) gen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs
-	-$(DEL) gen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
-	-$(DEL) gen$Scom$Sgoogle$Sortools$Sgraph$S*.cs
-	-$(DEL) objs$S*csharp_wrap.$O
-	-$(DEL) bin$S*.exe
+	-$(DEL) $(TOP)$Sgen$Slinear_solver$S*csharp_wrap*
+	-$(DEL) $(TOP)$Sgen$Sconstraint_solver$S*csharp_wrap*
+	-$(DEL) $(TOP)$Sgen$Salgorithms$S*csharp_wrap*
+	-$(DEL) $(TOP)$Sgen$Sgraph$S*csharp_wrap*
+	-$(DEL) $(TOP)$Sgen$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
+	-$(DEL) $(TOP)$Sgen$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs
+	-$(DEL) $(TOP)$Sgen$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
+	-$(DEL) $(TOP)$Sgen$Scom$Sgoogle$Sortools$Sgraph$S*.cs
+	-$(DEL) $(TOP)$Sobjs$S*csharp_wrap.$O
+	-$(DEL) $(BINPREFIX)$S*.exe
 
 # csharplp
 

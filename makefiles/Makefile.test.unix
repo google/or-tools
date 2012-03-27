@@ -2,11 +2,11 @@
 test: test_cc test_python test_java test_csharp
 
 test_cc: cc
-	./bin/golomb --size=5
-	./bin/cvrptw
-	./bin/flow_api
-	./bin/linear_programming
-	./bin/integer_programming
+	$(TOP)/bin/golomb --size=5
+	$(TOP)/bin/cvrptw
+	$(TOP)/bin/flow_api
+	$(TOP)/bin/linear_programming
+	$(TOP)/bin/integer_programming
 
 test_python: python
 	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/hidato_table.py
