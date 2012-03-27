@@ -20,13 +20,13 @@ test_java: java run_RabbitsPheasants run_FlowExample run_LinearProgramming run_I
 
 # csharp test
 test_csharp: $(CSHARPEXE) $(BINPREFIX)/testlp.exe $(BINPREFIX)/testcp.exe
-	$(MONO) bin/cslinearprogramming.exe
-	$(MONO) bin/csintegerprogramming.exe
-	$(MONO) bin/csrabbitspheasants.exe
-	$(MONO) bin/csflow.exe
-	$(MONO) bin/csknapsack.exe
-	$(MONO) bin/furniture_moving_intervals.exe
-	$(MONO) bin/organize_day_intervals.exe
-	$(MONO) bin/cstsp.exe
-	$(MONO) bin/testlp.exe
-	$(MONO) bin/testcp.exe
+	$(MONO) $(BINPREFIX)/cslinearprogramming.exe
+	$(MONO) $(BINPREFIX)/csintegerprogramming.exe
+	$(MONO) $(BINPREFIX)/csrabbitspheasants.exe
+	$(MONO) $(BINPREFIX)/csflow.exe
+	$(MONO) $(BINPREFIX)/csknapsack.exe
+	$(MONO) $(BINPREFIX)/furniture_moving_intervals.exe
+	$(MONO) $(BINPREFIX)/organize_day_intervals.exe
+	$(MONO) $(BINPREFIX)/cstsp.exe
+	$(MONO) $(BINPREFIX)/testlp.exe
+	$(MONO) $(BINPREFIX)/testcp.exe
