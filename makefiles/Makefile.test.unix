@@ -9,12 +9,12 @@ test_cc: cc
 	$(TOP)/bin/integer_programming
 
 test_python: python
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/hidato_table.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/tsp.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/pyflow_example.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/knapsack.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/linear_programming.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/integer_programming.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(TOP)/python/hidato_table.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(TOP)/python/tsp.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(TOP)/python/pyflow_example.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(TOP)/python/knapsack.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(TOP)/python/linear_programming.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(TOP)/python/integer_programming.py
 
 test_java: java run_RabbitsPheasants run_FlowExample run_LinearProgramming run_IntegerProgramming run_Knapsack
 
