@@ -91,7 +91,7 @@ public class GolombRuler {
     collector.addObjective(ticks[m - 1]);
     SearchMonitor log = solver.makeSearchLog(10000, opt);
     solver.solve(db, opt, log, collector);
-    System.out.println("Optimal solution = " + collector.objective_value(0));
+    System.out.println("Optimal solution = " + collector.objectiveValue(0));
     for (int i = 0; i < m; ++i) {
       System.out.print("[" + collector.value(0, ticks[i]) + "] ");
     }
