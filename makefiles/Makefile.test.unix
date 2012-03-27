@@ -2,11 +2,11 @@
 test: test_cc test_python test_java test_csharp
 
 test_cc: cc
-	./golomb --size=5
-	./cvrptw
-	./flow_api
-	./linear_programming
-	./integer_programming
+	./bin/golomb --size=5
+	./bin/cvrptw
+	./bin/flow_api
+	./bin/linear_programming
+	./bin/integer_programming
 
 test_python: python
 	PYTHONPATH=$(TOP) python$(PYTHONVERSION) python/hidato_table.py
@@ -19,14 +19,14 @@ test_python: python
 test_java: java run_RabbitsPheasants run_FlowExample run_LinearProgramming run_IntegerProgramming run_Knapsack
 
 # csharp test
-test_csharp: $(CSHARPEXE) testlp.exe testcp.exe
-	$(MONO) cslinearprogramming.exe
-	$(MONO) csintegerprogramming.exe
-	$(MONO) csrabbitspheasants.exe
-	$(MONO) csflow.exe
-	$(MONO) csknapsack.exe
-	$(MONO) furniture_moving_intervals.exe
-	$(MONO) organize_day_intervals.exe
-	$(MONO) cstsp.exe
-	$(MONO) testlp.exe
-	$(MONO) testcp.exe
+test_csharp: $(CSHARPEXE) $(BINPREFIX)/testlp.exe $(BINPREFIX)/testcp.exe
+	$(MONO) bin/cslinearprogramming.exe
+	$(MONO) bin/csintegerprogramming.exe
+	$(MONO) bin/csrabbitspheasants.exe
+	$(MONO) bin/csflow.exe
+	$(MONO) bin/csknapsack.exe
+	$(MONO) bin/furniture_moving_intervals.exe
+	$(MONO) bin/organize_day_intervals.exe
+	$(MONO) bin/cstsp.exe
+	$(MONO) bin/testlp.exe
+	$(MONO) bin/testcp.exe

@@ -106,7 +106,7 @@ ifeq ($(PLATFORM),LINUX)
   LIBSUFFIX = so
   LINKCMD = g++ -shared
   LINKPREFIX = -o # Need the space.
-  PRE_LIB = -Wl,-rpath $(TOP) -L$(TOP) -l
+  PRE_LIB = -Wl,-rpath $(TOP)/lib -L$(TOP)/lib -l
   POST_LIB =
 endif  # LINUX
 ifeq ($(PLATFORM),MACOSX)
@@ -131,7 +131,7 @@ ifeq ($(PLATFORM),MACOSX)
   JAVA_BIN = java
   JAR_BIN = jar
 
-  PRE_LIB = -L$(TOP) -l
+  PRE_LIB = -L$(TOP)/lib -l
   POST_LIB =
   LIBSUFFIX = dylib
   LINKCMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
@@ -167,13 +167,14 @@ SWIG_BINARY = $(UNIX_SWIG_BINARY)
 MKDIR=mkdir
 COPY=cp
 TOUCH=touch
-LIBPREFIX = $(TOP)$Slib
+LIBPREFIX = $(TOP)/lib/lib
+BINPREFIX = $(TOP)/bin
 O = o
 E =
 SHAREDLIBEXT = so
 LDOUT = -o # need the space.
 OBJOUT = -o # need the space.
-EXEOUT = -o # need the space.
+EXEOUT = -o bin/
 DEL = rm -f
 DELREC = rm -rf
 S = /

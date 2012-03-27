@@ -64,30 +64,30 @@ GRAPH_LNK = \
 # Binaries
 
 CPBINARIES = \
-	costas_array$E \
-	cryptarithm$E \
-        cvrptw$E \
-	dobble_ls$E \
-	flow_api$E \
-	golomb$E \
-	jobshop$E \
-	jobshop_ls$E \
-	linear_assignment_api$E \
-	magic_square$E \
-	model_util$E \
-	multidim_knapsack$E \
-	network_routing$E \
-	nqueens$E \
-	pdptw$E \
-	dimacs_assignment$E \
-	sports_scheduling$E \
-	tsp$E
+	$(BINPREFIX)$Scostas_array$E \
+	$(BINPREFIX)$Scryptarithm$E \
+	$(BINPREFIX)$Scvrptw$E \
+	$(BINPREFIX)$Sdobble_ls$E \
+	$(BINPREFIX)$Sflow_api$E \
+	$(BINPREFIX)$Sgolomb$E \
+	$(BINPREFIX)$Sjobshop$E \
+	$(BINPREFIX)$Sjobshop_ls$E \
+	$(BINPREFIX)$Slinear_assignment_api$E \
+	$(BINPREFIX)$Smagic_square$E \
+	$(BINPREFIX)$Smodel_util$E \
+	$(BINPREFIX)$Smultidim_knapsack$E \
+	$(BINPREFIX)$Snetwork_routing$E \
+	$(BINPREFIX)$Snqueens$E \
+	$(BINPREFIX)$Spdptw$E \
+	$(BINPREFIX)$Sdimacs_assignment$E \
+	$(BINPREFIX)$Ssports_scheduling$E \
+	$(BINPREFIX)$Stsp$E
 
 LPBINARIES = \
-	integer_programming$E \
-	linear_programming$E \
-	linear_solver_protocol_buffers$E \
-	strawberry_fields_with_column_generation$E
+	$(BINPREFIX)$Sinteger_programming$E \
+	$(BINPREFIX)$Slinear_programming$E \
+	$(BINPREFIX)$Slinear_solver_protocol_buffers$E \
+	$(BINPREFIX)$Sstrawberry_fields_with_column_generation$E
 
 # Special dimacs example.
 
@@ -503,19 +503,19 @@ $(LIBPREFIX)dimacs.$(LIBSUFFIX): $(DIMACS_LIB_OS)
 objs/linear_assignment_api.$O:examples/linear_assignment_api.cc
 	$(CCC) $(CFLAGS) -c examples/linear_assignment_api.cc $(OBJOUT)objs/linear_assignment_api.$O
 
-linear_assignment_api$E: $(GRAPH_DEPS) objs/linear_assignment_api.$O
+$(BINPREFIX)/linear_assignment_api$E: $(GRAPH_DEPS) objs/linear_assignment_api.$O
 	$(CCC) $(CFLAGS) objs/linear_assignment_api.$O $(GRAPH_LNK) $(LDFLAGS) $(EXEOUT)linear_assignment_api$E
 
 objs/flow_api.$O:examples/flow_api.cc
 	$(CCC) $(CFLAGS) -c examples/flow_api.cc $(OBJOUT)objs/flow_api.$O
 
-flow_api$E: $(GRAPH_DEPS) objs/flow_api.$O
+$(BINPREFIX)/flow_api$E: $(GRAPH_DEPS) objs/flow_api.$O
 	$(CCC) $(CFLAGS) objs/flow_api.$O $(GRAPH_LNK) $(LDFLAGS) $(EXEOUT)flow_api$E
 
 objs/dimacs_assignment.$O:examples/dimacs_assignment.cc
 	$(CCC) $(CFLAGS) -c examples/dimacs_assignment.cc $(OBJOUT)objs/dimacs_assignment.$O
 
-dimacs_assignment$E: $(ALGORITHMS_DEPS) $(GRAPH_DEPS) $(DIMACS_LIBS) objs/dimacs_assignment.$O
+$(BINPREFIX)/dimacs_assignment$E: $(ALGORITHMS_DEPS) $(GRAPH_DEPS) $(DIMACS_LIBS) objs/dimacs_assignment.$O
 	$(CCC) $(CFLAGS) objs/dimacs_assignment.$O $(DIMACS_LNK) $(ALGORITHMS_LNK) $(GRAPH_LNK) $(LDFLAGS) $(EXEOUT)dimacs_assignment$E
 
 # Pure CP and Routing Examples
@@ -523,91 +523,91 @@ dimacs_assignment$E: $(ALGORITHMS_DEPS) $(GRAPH_DEPS) $(DIMACS_LIBS) objs/dimacs
 objs/costas_array.$O: examples/costas_array.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/costas_array.cc $(OBJOUT)objs/costas_array.$O
 
-costas_array$E: $(CP_DEPS) objs/costas_array.$O
+$(BINPREFIX)/costas_array$E: $(CP_DEPS) objs/costas_array.$O
 	$(CCC) $(CFLAGS) objs/costas_array.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)costas_array$E
 
 objs/cryptarithm.$O:examples/cryptarithm.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/cryptarithm.cc $(OBJOUT)objs/cryptarithm.$O
 
-cryptarithm$E: $(CP_DEPS) objs/cryptarithm.$O
+$(BINPREFIX)/cryptarithm$E: $(CP_DEPS) objs/cryptarithm.$O
 	$(CCC) $(CFLAGS) objs/cryptarithm.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)cryptarithm$E
 
 objs/cvrptw.$O: examples/cvrptw.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/cvrptw.cc $(OBJOUT)objs/cvrptw.$O
 
-cvrptw$E: $(ROUTING_DEPS) objs/cvrptw.$O
+$(BINPREFIX)/cvrptw$E: $(ROUTING_DEPS) objs/cvrptw.$O
 	$(CCC) $(CFLAGS) objs/cvrptw.$O $(ROUTING_LNK) $(LDFLAGS) $(EXEOUT)cvrptw$E
 
 objs/dobble_ls.$O:examples/dobble_ls.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/dobble_ls.cc $(OBJOUT)objs/dobble_ls.$O
 
-dobble_ls$E: $(CP_DEPS) objs/dobble_ls.$O
+$(BINPREFIX)/dobble_ls$E: $(CP_DEPS) objs/dobble_ls.$O
 	$(CCC) $(CFLAGS) objs/dobble_ls.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)dobble_ls$E
 
 objs/golomb.$O:examples/golomb.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/golomb.cc $(OBJOUT)objs/golomb.$O
 
-golomb$E: $(CP_DEPS) objs/golomb.$O
+$(BINPREFIX)/golomb$E: $(CP_DEPS) objs/golomb.$O
 	$(CCC) $(CFLAGS) objs/golomb.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)golomb$E
 
 objs/jobshop.$O:examples/jobshop.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/jobshop.cc $(OBJOUT)objs/jobshop.$O
 
-jobshop$E: $(CP_DEPS) objs/jobshop.$O
+$(BINPREFIX)/jobshop$E: $(CP_DEPS) objs/jobshop.$O
 	$(CCC) $(CFLAGS) objs/jobshop.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)jobshop$E
 
 objs/jobshop_ls.$O:examples/jobshop_ls.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/jobshop_ls.cc $(OBJOUT)objs/jobshop_ls.$O
 
-jobshop_ls$E: $(CP_DEPS) objs/jobshop_ls.$O
+$(BINPREFIX)/jobshop_ls$E: $(CP_DEPS) objs/jobshop_ls.$O
 	$(CCC) $(CFLAGS) objs/jobshop_ls.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)jobshop_ls$E
 
 objs/magic_square.$O:examples/magic_square.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/magic_square.cc $(OBJOUT)objs/magic_square.$O
 
-magic_square$E: $(CP_DEPS) objs/magic_square.$O
+$(BINPREFIX)/magic_square$E: $(CP_DEPS) objs/magic_square.$O
 	$(CCC) $(CFLAGS) objs/magic_square.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)magic_square$E
 
 objs/model_util.$O:examples/model_util.cc gen/constraint_solver/model.pb.h constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/model_util.cc $(OBJOUT)objs/model_util.$O
 
-model_util$E: $(CP_DEPS) objs/model_util.$O
+$(BINPREFIX)/model_util$E: $(CP_DEPS) objs/model_util.$O
 	$(CCC) $(CFLAGS) objs/model_util.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)model_util$E
 
 objs/multidim_knapsack.$O:examples/multidim_knapsack.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/multidim_knapsack.cc $(OBJOUT)objs/multidim_knapsack.$O
 
-multidim_knapsack$E: $(CP_DEPS) objs/multidim_knapsack.$O
+$(BINPREFIX)/multidim_knapsack$E: $(CP_DEPS) objs/multidim_knapsack.$O
 	$(CCC) $(CFLAGS) objs/multidim_knapsack.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)multidim_knapsack$E
 
 objs/network_routing.$O:examples/network_routing.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/network_routing.cc $(OBJOUT)objs/network_routing.$O
 
-network_routing$E: $(CP_DEPS) $(GRAPH_DEPS) objs/network_routing.$O
+$(BINPREFIX)/network_routing$E: $(CP_DEPS) $(GRAPH_DEPS) objs/network_routing.$O
 	$(CCC) $(CFLAGS) objs/network_routing.$O $(CP_LNK) $(GRAPH_LNK) $(LDFLAGS) $(EXEOUT)network_routing$E
 
 objs/nqueens.$O: examples/nqueens.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/nqueens.cc $(OBJOUT)objs/nqueens.$O
 
-nqueens$E: $(CP_DEPS) objs/nqueens.$O
+$(BINPREFIX)/nqueens$E: $(CP_DEPS) objs/nqueens.$O
 	$(CCC) $(CFLAGS) objs/nqueens.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)nqueens$E
 
 objs/pdptw.$O: examples/pdptw.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/pdptw.cc $(OBJOUT)objs/pdptw.$O
 
-pdptw$E: $(ROUTING_DEPS) objs/pdptw.$O
+$(BINPREFIX)/pdptw$E: $(ROUTING_DEPS) objs/pdptw.$O
 	$(CCC) $(CFLAGS) objs/pdptw.$O $(ROUTING_LNK) $(LDFLAGS) $(EXEOUT)pdptw$E
 
 objs/sports_scheduling.$O:examples/sports_scheduling.cc constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c examples/sports_scheduling.cc $(OBJOUT)objs/sports_scheduling.$O
 
-sports_scheduling$E: $(CP_DEPS) objs/sports_scheduling.$O
+$(BINPREFIX)/sports_scheduling$E: $(CP_DEPS) objs/sports_scheduling.$O
 	$(CCC) $(CFLAGS) objs/sports_scheduling.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)sports_scheduling$E
 
 objs/tsp.$O: examples/tsp.cc constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c examples/tsp.cc $(OBJOUT)objs/tsp.$O
 
-tsp$E: $(ROUTING_DEPS) objs/tsp.$O
+$(BINPREFIX)/tsp$E: $(ROUTING_DEPS) objs/tsp.$O
 	$(CCC) $(CFLAGS) objs/tsp.$O $(ROUTING_LNK) $(LDFLAGS) $(EXEOUT)tsp$E
 
 # Linear Programming Examples
@@ -615,23 +615,23 @@ tsp$E: $(ROUTING_DEPS) objs/tsp.$O
 objs/strawberry_fields_with_column_generation.$O: examples/strawberry_fields_with_column_generation.cc linear_solver/linear_solver.h
 	$(CCC) $(CFLAGS) -c examples/strawberry_fields_with_column_generation.cc $(OBJOUT)objs/strawberry_fields_with_column_generation.$O
 
-strawberry_fields_with_column_generation$E: $(LP_DEPS) objs/strawberry_fields_with_column_generation.$O
+$(BINPREFIX)/strawberry_fields_with_column_generation$E: $(LP_DEPS) objs/strawberry_fields_with_column_generation.$O
 	$(CCC) $(CFLAGS) objs/strawberry_fields_with_column_generation.$O $(LP_LNK) $(LDFLAGS) $(EXEOUT)strawberry_fields_with_column_generation$E
 
 objs/linear_programming.$O: examples/linear_programming.cc linear_solver/linear_solver.h
 	$(CCC) $(CFLAGS) -c examples/linear_programming.cc $(OBJOUT)objs/linear_programming.$O
 
-linear_programming$E: $(LP_DEPS) objs/linear_programming.$O
+$(BINPREFIX)/linear_programming$E: $(LP_DEPS) objs/linear_programming.$O
 	$(CCC) $(CFLAGS) objs/linear_programming.$O $(LP_LNK) $(LDFLAGS) $(EXEOUT)linear_programming$E
 
 objs/linear_solver_protocol_buffers.$O: examples/linear_solver_protocol_buffers.cc linear_solver/linear_solver.h
 	$(CCC) $(CFLAGS) -c examples/linear_solver_protocol_buffers.cc $(OBJOUT)objs/linear_solver_protocol_buffers.$O
 
-linear_solver_protocol_buffers$E: $(LP_DEPS) objs/linear_solver_protocol_buffers.$O
+$(BINPREFIX)/linear_solver_protocol_buffers$E: $(LP_DEPS) objs/linear_solver_protocol_buffers.$O
 	$(CCC) $(CFLAGS) objs/linear_solver_protocol_buffers.$O $(LP_LNK) $(LDFLAGS) $(EXEOUT)linear_solver_protocol_buffers$E
 
 objs/integer_programming.$O: examples/integer_programming.cc linear_solver/linear_solver.h
 	$(CCC) $(CFLAGS) -c examples/integer_programming.cc $(OBJOUT)objs/integer_programming.$O
 
-integer_programming$E: $(LP_DEPS) objs/integer_programming.$O
+$(BINPREFIX)/integer_programming$E: $(LP_DEPS) objs/integer_programming.$O
 	$(CCC) $(CFLAGS) objs/integer_programming.$O $(LP_LNK) $(LDFLAGS) $(EXEOUT)integer_programming$E

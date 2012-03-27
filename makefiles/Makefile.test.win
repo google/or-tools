@@ -1,11 +1,11 @@
 test: test_cc test_python test_java test_csharp
 
 test_cc: cc
-	golomb --size=5
-	cvrptw
-	flow_api
-	linear_programming
-	integer_programming
+	bin\\golomb --size=5
+	bin\\cvrptw
+	bin\\flow_api
+	bin\\linear_programming
+	bin\\integer_programming
 
 test_python: python
 	set PYTHONPATH=$(TOP) && $(WINDOWS_PYTHON_PATH)\\python python/hidato_table.py
@@ -19,15 +19,15 @@ test_java: java run_RabbitsPheasants run_FlowExample run_LinearProgramming run_I
 
 # csharp test
 test_csharp: $(CSHARPEXE) testlp.exe
-	cslinearprogramming.exe
-	csintegerprogramming.exe
-	csrabbitspheasants.exe
-	csflow.exe
-	csknapsack.exe
-	furniture_moving_intervals.exe
-	organize_day_intervals.exe
-	cstsp.exe
-	testlp.exe
+	bin\\cslinearprogramming.exe
+	bin\\csintegerprogramming.exe
+	bin\\csrabbitspheasants.exe
+	bin\\csflow.exe
+	bin\\csknapsack.exe
+	bin\\furniture_moving_intervals.exe
+	bin\\organize_day_intervals.exe
+	bin\\cstsp.exe
+	bin\\testlp.exe
 
 
 
