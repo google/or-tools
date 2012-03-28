@@ -25,8 +25,8 @@
 #include "algorithms/hungarian.h"
 #include "graph/ebert_graph.h"
 #include "graph/linear_assignment.h"
-#include "examples/parse_dimacs_assignment.h"
-#include "examples/print_dimacs_assignment.h"
+#include "cpp/parse_dimacs_assignment.h"
+#include "cpp/print_dimacs_assignment.h"
 
 DEFINE_bool(assignment_compare_hungarian, false,
             "Compare result and speed against Hungarian method.");

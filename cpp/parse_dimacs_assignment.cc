@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "examples/parse_dimacs_assignment.h"
+#include "cpp/parse_dimacs_assignment.h"
 
 #include <algorithm>
 #include <cstdio>

@@ -389,11 +389,21 @@ public class CsTestCpOperator
     Console.WriteLine(c10k.ToString());
   }
 
+  static void TestDowncast()
+  {
+    Solver solver = new Solver("TestDowncast");
+    IntVar x = solver.MakeIntVar(0, 10, "x");
+    IntExpr e = x + 1;
+    IntVar y = e.Var();
+    Console.WriteLine(y.ToString());
+  }
+
   static void Main()
   {
     TestConstructors();
     TestConstraintWithExpr();
     TestWrappedConstraintWithExpr();
     TestBaseEqualityWithExpr();
+    TestDowncast();
   }
 }

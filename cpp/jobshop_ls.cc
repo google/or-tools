@@ -43,7 +43,7 @@
 #include "base/bitmap.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
-#include "examples/jobshop.h"
+#include "cpp/jobshop.h"
 
 DEFINE_string(
     data_file,
