@@ -9,10 +9,27 @@ help:
 	@echo "  - cleaning: clean clean_csharp"
 
 OR_TOOLS_VERSION = 1.0.0
+
+# OR_ROOT is the minimal prefix to define the root of or-tools, if we
+# are compiling in the or-tools root, it is empty. Otherwise, it is
+# $(TOP)/ or $(TOP)\\ depending on the platform.
+#
+# OR_ROOT_INC is like OR_ROOT, but with a default of '.' instead of
+# empty.  It is used for instance in include directives (-I.).
 ifeq ($(TOP),)
-  MAKEFILE_ROOT=
+  OR_ROOT=
+  OR_ROOT_INC=.
 else
-  MAKEFILE_ROOT=$(TOP)/
+  ifeq "$(SHELL)" "cmd.exe"
+    OR_ROOT=$(TOP)\\
+  else
+    ifeq "$(SHELL)" "sh.exe"
+      OR_ROOT=$(TOP)\\
+    else
+      OR_ROOT=$(TOP)/
+    endif
+  endif
+  OR_ROOT_INC=$(TOP)
 endif
 
 .PHONY : python cc java csharp
@@ -20,28 +37,28 @@ all: cc java python csharp
 clean: clean_cc clean_java clean_python clean_csharp
 
 # First, we try to detect the platform.
-include $(MAKEFILE_ROOT)makefiles/Makefile.port
+include $(OR_ROOT)makefiles/Makefile.port
 
 # We include predefined variables
-include $(MAKEFILE_ROOT)makefiles/Makefile.def
+include $(OR_ROOT)makefiles/Makefile.def
 
 # Then we overwrite the local ones if the Makefile.local file exists.
--include $(MAKEFILE_ROOT)Makefile.local
+-include $(OR_ROOT)Makefile.local
 
 # Then include specific system commands and definitions
-include $(MAKEFILE_ROOT)makefiles/Makefile.$(SYSTEM)
+include $(OR_ROOT)makefiles/Makefile.$(SYSTEM)
 
 # Rules to fetch and build third party dependencies.
-include $(MAKEFILE_ROOT)makefiles/Makefile.third_party.$(SYSTEM)
+include $(OR_ROOT)makefiles/Makefile.third_party.$(SYSTEM)
 
 # Include .mk files.
-include $(MAKEFILE_ROOT)makefiles/Makefile.cpp.mk
-include $(MAKEFILE_ROOT)makefiles/Makefile.python.mk
-include $(MAKEFILE_ROOT)makefiles/Makefile.java.mk
-include $(MAKEFILE_ROOT)makefiles/Makefile.csharp.mk
+include $(OR_ROOT)makefiles/Makefile.cpp.mk
+include $(OR_ROOT)makefiles/Makefile.python.mk
+include $(OR_ROOT)makefiles/Makefile.java.mk
+include $(OR_ROOT)makefiles/Makefile.csharp.mk
 
 # Include test
-include $(MAKEFILE_ROOT)makefiles/Makefile.test.$(SYSTEM)
+include $(OR_ROOT)makefiles/Makefile.test.$(SYSTEM)
 
 # Finally include user makefile if it exists
--include $(MAKEFILE_ROOT)Makefile.user
+-include $(OR_ROOT)Makefile.user

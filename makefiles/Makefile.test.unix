@@ -2,19 +2,19 @@
 test: test_cc test_python test_java test_csharp
 
 test_cc: cc
-	$(TOP)/bin/golomb --size=5
-	$(TOP)/bin/cvrptw
-	$(TOP)/bin/flow_api
-	$(TOP)/bin/linear_programming
-	$(TOP)/bin/integer_programming
+	$(OR_ROOT)bin/golomb --size=5
+	$(OR_ROOT)bin/cvrptw
+	$(OR_ROOT)bin/flow_api
+	$(OR_ROOT)bin/linear_programming
+	$(OR_ROOT)bin/integer_programming
 
 test_python: python
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(TOP)/python/hidato_table.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(TOP)/python/tsp.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(TOP)/python/pyflow_example.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(TOP)/python/knapsack.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(TOP)/python/linear_programming.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(TOP)/python/integer_programming.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(OR_ROOT)python/hidato_table.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(OR_ROOT)python/tsp.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(OR_ROOT)python/pyflow_example.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(OR_ROOT)python/knapsack.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(OR_ROOT)python/linear_programming.py
+	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(OR_ROOT)python/integer_programming.py
 
 test_java: java run_RabbitsPheasants run_FlowExample run_LinearProgramming run_IntegerProgramming run_Knapsack
 

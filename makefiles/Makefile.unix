@@ -153,10 +153,10 @@ ifeq ($(PLATFORM),MACOSX)
   endif
 endif  # MAC OS X
 
-CFLAGS = $(SYSCFLAGS) $(DEBUG) -I$(TOP) -I$(TOP)/gen $(GFLAGS_INC) $(ARCH) \
+CFLAGS = $(SYSCFLAGS) $(DEBUG) -I$(OR_ROOT_INC) -I$(OR_ROOT)gen $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) \
 	$(SCIP_INC) $(SPARSEHASH_INC)
-JNIFLAGS = $(SYSCFLAGS) $(JNIDEBUG) -I$(TOP) -I$(TOP)/gen $(GFLAGS_INC) $(ARCH) \
+JNIFLAGS = $(SYSCFLAGS) $(JNIDEBUG) -I$(OR_ROOT_INC) -I$(OR_ROOT)gen $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC)
 LDFLAGS = $(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
 LDLPDEPS = $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK)
@@ -167,14 +167,14 @@ SWIG_BINARY = $(UNIX_SWIG_BINARY)
 MKDIR=mkdir
 COPY=cp
 TOUCH=touch
-LIBPREFIX = $(TOP)/lib/lib
-BINPREFIX = $(TOP)/bin
+LIBPREFIX = $(OR_ROOT)lib/lib
+BINPREFIX = $(OR_ROOT)bin
 O = o
 E =
 SHAREDLIBEXT = so
 LDOUT = -o # need the space.
-OBJOUT = -o $(TOP)/
-EXEOUT = -o $(TOP)/bin/
+OBJOUT = -o $(OR_ROOT)
+EXEOUT = -o $(OR_ROOT)bin/
 DEL = rm -f
 DELREC = rm -rf
 S = /
