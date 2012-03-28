@@ -37,9 +37,9 @@ clean_csharp:
 # csharplp
 
 ifeq ($(SYSTEM),win)
-IMPORTPREFIX=$(TOP)\\bin\\
+IMPORTPREFIX=$(OR_ROOT_FULL)\\bin\\
 else
-IMPORTPREFIX=$(TOP)/lib/lib
+IMPORTPREFIX=$(OR_ROOT_FULL)/lib/lib
 endif
 
 csharplp: $(BINPREFIX)/Google.OrTools.LinearSolver.dll

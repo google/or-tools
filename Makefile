@@ -12,24 +12,28 @@ OR_TOOLS_VERSION = 1.0.0
 
 # OR_ROOT is the minimal prefix to define the root of or-tools, if we
 # are compiling in the or-tools root, it is empty. Otherwise, it is
-# $(TOP)/ or $(TOP)\\ depending on the platform.
+# $(TOP)/ or $(TOP)\\ depending on the platform. It contains the
+# trailing separator if not empty.
 #
 # OR_ROOT_INC is like OR_ROOT, but with a default of '.' instead of
 # empty.  It is used for instance in include directives (-I.).
+#
+# OR_ROOT_FULL is always the complete path to or-tools. It is useful
+# to store path informations inside libraries for instance.
 ifeq ($(TOP),)
-  OR_ROOT=
-  OR_ROOT_INC=.
+  OR_ROOT =
+  OR_ROOT_INC = .
 else
   ifeq "$(SHELL)" "cmd.exe"
-    OR_ROOT=$(TOP)\\
+    OR_ROOT = $(TOP)\\
   else
     ifeq "$(SHELL)" "sh.exe"
-      OR_ROOT=$(TOP)\\
+      OR_ROOT = $(TOP)\\
     else
-      OR_ROOT=$(TOP)/
+      OR_ROOT = $(TOP)/
     endif
   endif
-  OR_ROOT_INC=$(TOP)
+  OR_ROOT_INC = $(TOP)
 endif
 
 .PHONY : python cc java csharp
@@ -38,6 +42,7 @@ clean: clean_cc clean_java clean_python clean_csharp
 
 # First, we try to detect the platform.
 include $(OR_ROOT)makefiles/Makefile.port
+OR_ROOT_FULL=$(TOP)
 
 # We include predefined variables
 include $(OR_ROOT)makefiles/Makefile.def

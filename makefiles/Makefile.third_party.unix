@@ -20,7 +20,7 @@ ifeq ($(wildcard dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz),)
     SCIP_MAKEFILE = # UNIX_SCIP_DIR support not included.
 else
     SCIP_TARGET = dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
-    SCIP_MAKEFILE = UNIX_SCIP_DIR = $(TOP)/dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)
+    SCIP_MAKEFILE = UNIX_SCIP_DIR = $(OR_ROOT_FULL)/dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)
     ifeq ($(PLATFORM), LINUX)
 	BUILD_SCIP = make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC
     endif
@@ -35,7 +35,7 @@ ifeq ($(wildcard dependencies/archives/glpk-$(GLPK_TAG).tar.gz),)
     GLPK_MAKEFILE = # GLPK support not included.
 else
     GLPK_TARGET = dependencies/install/bin/glpsol
-    GLPK_MAKEFILE = UNIX_GLPK_DIR = $(TOP)/dependencies/install
+    GLPK_MAKEFILE = UNIX_GLPK_DIR = $(OR_ROOT_FULL)/dependencies/install
 endif
 
 # Detect if mono archive is there
@@ -44,7 +44,7 @@ ifeq ($(wildcard dependencies/archives/mono-$(MONO_TAG).tar.bz2),)
     MONO_MAKEFILE = # MONO support not included.
 else
     MONO_TARGET = dependencies/install/bin/gmcs
-    MONO_MAKEFILE = UNIX_MONO_DIR = $(TOP)/dependencies/install
+    MONO_MAKEFILE = UNIX_MONO_DIR = $(OR_ROOT_FULL)/dependencies/install
 endif
 
 
@@ -71,7 +71,7 @@ dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags/Make
 	cd dependencies/sources/gflags && make install
 
 dependencies/sources/gflags/Makefile: dependencies/sources/gflags/configure
-	cd dependencies/sources/gflags && ./configure --prefix=$(TOP)/dependencies/install
+	cd dependencies/sources/gflags && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/gflags/configure: dependencies/sources/gflags/autogen.sh
 	cd dependencies/sources/gflags && ./autogen.sh
@@ -86,7 +86,7 @@ dependencies/install/bin/protoc: dependencies/sources/protobuf/Makefile
 	cd dependencies/sources/protobuf && make install
 
 dependencies/sources/protobuf/Makefile: dependencies/sources/protobuf/configure
-	cd dependencies/sources/protobuf && ./configure --prefix=$(TOP)/dependencies/install
+	cd dependencies/sources/protobuf && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/protobuf/configure: dependencies/sources/protobuf/autogen.sh
 	cd dependencies/sources/protobuf && ./autogen.sh
@@ -107,7 +107,7 @@ dependencies/install/include/google/dense_hash_map: dependencies/sources/sparseh
 	cd dependencies/sources/sparsehash && make install
 
 dependencies/sources/sparsehash/Makefile: dependencies/sources/sparsehash/configure
-	cd dependencies/sources/sparsehash && ./configure --prefix=$(TOP)/dependencies/install
+	cd dependencies/sources/sparsehash && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/sparsehash/configure: dependencies/sources/sparsehash/autogen.sh
 	cd dependencies/sources/sparsehash && ./autogen.sh
@@ -124,7 +124,7 @@ dependencies/install/bin/cbc: dependencies/sources/coin-cbc/Makefile
 
 dependencies/sources/coin-cbc/Makefile:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/coin-cbc
-	cd dependencies/sources/coin-cbc && ./configure --prefix=$(TOP)/dependencies/install --disable-bzlib --without-lapack
+	cd dependencies/sources/coin-cbc && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack
 
 # Install pcre (dependency of SWIG).
 install_pcre: dependencies/install/bin/pcretest
@@ -133,7 +133,7 @@ dependencies/install/bin/pcretest: dependencies/sources/pcre/Makefile
 	cd dependencies/sources/pcre && make install
 
 dependencies/sources/pcre/Makefile: dependencies/sources/pcre/configure
-	cd dependencies/sources/pcre && ./configure --disable-shared --prefix=$(TOP)/dependencies/install
+	cd dependencies/sources/pcre && ./configure --disable-shared --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/pcre/configure: dependencies/sources/pcre/autogen.sh
 	cd dependencies/sources/pcre && ./autogen.sh
@@ -148,7 +148,7 @@ dependencies/install/bin/swig: dependencies/sources/swig/Makefile
 	cd dependencies/sources/swig && make && make install
 
 dependencies/sources/swig/Makefile: dependencies/sources/swig/configure dependencies/install/bin/pcretest
-	cd dependencies/sources/swig && ./configure --prefix=$(TOP)/dependencies/install --with-pcre-prefix=$(TOP)/dependencies/install --disable-ccache
+	cd dependencies/sources/swig && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pcre-prefix=$(OR_ROOT_FULL)/dependencies/install --disable-ccache
 
 dependencies/sources/swig/configure: dependencies/sources/swig/autogen.sh
 	cd dependencies/sources/swig && ./autogen.sh
@@ -163,7 +163,7 @@ dependencies/install/bin/glpsol: dependencies/sources/glpk-$(GLPK_TAG)/Makefile
 	cd dependencies/sources/glpk-$(GLPK_TAG) && make install
 
 dependencies/sources/glpk-$(GLPK_TAG)/Makefile: dependencies/sources/glpk-$(GLPK_TAG)/configure
-	cd dependencies/sources/glpk-$(GLPK_TAG) && ./configure --prefix=$(TOP)/dependencies/install
+	cd dependencies/sources/glpk-$(GLPK_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/glpk-$(GLPK_TAG)/configure: dependencies/archives/glpk-$(GLPK_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/glpk-$(GLPK_TAG).tar.gz
@@ -182,9 +182,9 @@ dependencies/install/bin/gmcs: dependencies/sources/mono-$(MONO_TAG)/Makefile
 
 dependencies/sources/mono-$(MONO_TAG)/Makefile: dependencies/sources/mono-$(MONO_TAG)/configure
 ifeq ($(PLATFORM),MACOSX)
-	cd dependencies/sources/mono-$(MONO_TAG) && ./configure --prefix=$(TOP)/dependencies/install --with-glib=embedded --enable-nls=no --host=x86_64-apple-darwin10
+	cd dependencies/sources/mono-$(MONO_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-glib=embedded --enable-nls=no --host=x86_64-apple-darwin10
 else
-	cd dependencies/sources/mono-$(MONO_TAG) && ./configure --prefix=$(TOP)/dependencies/install
+	cd dependencies/sources/mono-$(MONO_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 endif
 
 dependencies/sources/mono-$(MONO_TAG)/configure: dependencies/archives/mono-$(MONO_TAG).tar.bz2
@@ -207,12 +207,12 @@ install_python_modules:
 Makefile.local:
 	@echo Generating Makefile.local
 	@echo UNIX_PYTHON_VER = $(PYTHONVERSION) > Makefile.local
-	@echo UNIX_GFLAGS_DIR = $(TOP)/dependencies/install >> Makefile.local
-	@echo UNIX_PROTOBUF_DIR = $(TOP)/dependencies/install >> Makefile.local
-	@echo UNIX_SPARSEHASH_DIR = $(TOP)/dependencies/install >> Makefile.local
-	@echo UNIX_SWIG_BINARY = $(TOP)/dependencies/install/bin/swig >> Makefile.local
-	@echo UNIX_CLP_DIR = $(TOP)/dependencies/install >> Makefile.local
-	@echo UNIX_CBC_DIR = $(TOP)/dependencies/install >> Makefile.local
+	@echo UNIX_GFLAGS_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local
+	@echo UNIX_PROTOBUF_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local
+	@echo UNIX_SPARSEHASH_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local
+	@echo UNIX_SWIG_BINARY = $(OR_ROOT_FULL)/dependencies/install/bin/swig >> Makefile.local
+	@echo UNIX_CLP_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local
+	@echo UNIX_CBC_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local
 	@echo $(GLPK_MAKEFILE) >> Makefile.local
 	@echo $(SCIP_MAKEFILE) >> Makefile.local
 	@echo $(MONO_MAKEFILE) >> Makefile.local

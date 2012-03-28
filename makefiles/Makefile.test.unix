@@ -9,12 +9,12 @@ test_cc: cc
 	$(OR_ROOT)bin/integer_programming
 
 test_python: python
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(OR_ROOT)python/hidato_table.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(OR_ROOT)python/tsp.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(OR_ROOT)python/pyflow_example.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(OR_ROOT)python/knapsack.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(OR_ROOT)python/linear_programming.py
-	PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(OR_ROOT)python/integer_programming.py
+	PYTHONPATH=$(OR_ROOT_FULL) python$(PYTHONVERSION) $(OR_ROOT)python/hidato_table.py
+	PYTHONPATH=$(OR_ROOT_FULL) python$(PYTHONVERSION) $(OR_ROOT)python/tsp.py
+	PYTHONPATH=$(OR_ROOT_FULL) python$(PYTHONVERSION) $(OR_ROOT)python/pyflow_example.py
+	PYTHONPATH=$(OR_ROOT_FULL) python$(PYTHONVERSION) $(OR_ROOT)python/knapsack.py
+	PYTHONPATH=$(OR_ROOT_FULL) python$(PYTHONVERSION) $(OR_ROOT)python/linear_programming.py
+	PYTHONPATH=$(OR_ROOT_FULL) python$(PYTHONVERSION) $(OR_ROOT)python/integer_programming.py
 
 test_java: java run_RabbitsPheasants run_FlowExample run_LinearProgramming run_IntegerProgramming run_Knapsack
 

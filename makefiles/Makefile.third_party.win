@@ -18,7 +18,7 @@ ifeq ($(wildcard dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz),)
     SCIP_MAKEFILE = \# WINDOWS_SCIP_DIR support not included.
 else
     SCIP_TARGET = dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
-    SCIP_MAKEFILE = WINDOWS_SCIP_DIR = $(TOP)/dependencies/install/ziboptsuite-2.1.0/scip-2.1.0
+    SCIP_MAKEFILE = WINDOWS_SCIP_DIR = $(OR_ROOT_FULL)/dependencies/install/ziboptsuite-2.1.0/scip-2.1.0
     ifeq ($(PLATFORM), LINUX)
 	BUILD_SCIP = make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC
     endif
@@ -33,7 +33,7 @@ ifeq ($(wildcard dependencies/archives/glpk-$(GLPK_TAG).tar.gz),)
     GLPK_MAKEFILE = \# GLPK support not included.
 else
     GLPK_TARGET = dependencies\install\bin\glpsol.exe
-    GLPK_MAKEFILE = WINDOWS_GLPK_DIR = $(TOP)\\dependencies\\install
+    GLPK_MAKEFILE = WINDOWS_GLPK_DIR = $(OR_ROOT_FULL)\\dependencies\\install
 endif
 # Main target.
 .PHONY: third_party build_third_party makefile_third_party
@@ -162,7 +162,7 @@ dependencies\install\include\google\dense_hash_map: dependencies\sources\sparseh
 	cd dependencies\sources\sparsehash && make install
 
 dependencies\sources\sparsehash\Makefile: dependencies\sources\sparsehash\configure
-	cd dependencies\sources\sparsehash && ./configure --prefix=$(TOP)/dependencies/install
+	cd dependencies\sources\sparsehash && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies\sources\sparsehash\configure: dependencies\sources\sparsehash\autogen.sh
 	cd dependencies\sources\sparsehash && ./autogen.sh
@@ -241,14 +241,14 @@ install_python_modules:
 
 Makefile.local:
 	@echo Generating Makefile.local
-	@echo WINDOWS_ZLIB_DIR = $(TOP)\\dependencies\\install> Makefile.local
+	@echo WINDOWS_ZLIB_DIR = $(OR_ROOT_FULL)\\dependencies\\install> Makefile.local
 	@echo WINDOWS_ZLIB_NAME=zlib.lib>> Makefile.local
-	@echo WINDOWS_GFLAGS_DIR = $(TOP)\\dependencies\\install>> Makefile.local
-	@echo WINDOWS_PROTOBUF_DIR = $(TOP)\\dependencies\\install>> Makefile.local
-	@echo WINDOWS_SPARSEHASH_DIR = $(TOP)\\dependencies\\install>> Makefile.local
-	@echo WINDOWS_SWIG_BINARY = $(TOP)\\dependencies\\install\\swigwin-2.0.4\\swig.exe>> Makefile.local
-	@echo WINDOWS_CLP_DIR = $(TOP)\\dependencies\\install>> Makefile.local
-	@echo WINDOWS_CBC_DIR = $(TOP)\\dependencies\\install>> Makefile.local
+	@echo WINDOWS_GFLAGS_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
+	@echo WINDOWS_PROTOBUF_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
+	@echo WINDOWS_SPARSEHASH_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
+	@echo WINDOWS_SWIG_BINARY = $(OR_ROOT_FULL)\\dependencies\\install\\swigwin-2.0.4\\swig.exe>> Makefile.local
+	@echo WINDOWS_CLP_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
+	@echo WINDOWS_CBC_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
 	@echo $(GLPK_MAKEFILE)>> Makefile.local
 	@echo $(SELECTED_JDK_DEF)>> Makefile.local
 	@echo WINDOWS_PYTHON_VERSION = \# Please define the python version (27 by default)>> Makefile.local

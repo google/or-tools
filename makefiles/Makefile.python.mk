@@ -111,10 +111,10 @@ endif
 rpy: $(OR_ROOT)lib/_pywraplp.$(SHAREDLIBEXT) $(OR_ROOT)lib/_pywrapcp.$(SHAREDLIBEXT) $(OR_ROOT)lib/_pywrapgraph.$(SHAREDLIBEXT) $(OR_ROOT)lib/_pywrapknapsack_solver.$(SHAREDLIBEXT) $(OR_ROOT)lib/_pywraprouting.$(SHAREDLIBEXT) $(OR_ROOT)python/$(EX).py
 ifeq ($(SYSTEM),win)
 	@echo Running python$S$(EX).py
-	@set PYTHONPATH=$(TOP) && $(WINDOWS_PYTHON_PATH)$Spython $(OR_ROOT)python$S$(EX).py
+	@set PYTHONPATH=$(OR_ROOT_FULL) && $(WINDOWS_PYTHON_PATH)$Spython $(OR_ROOT)python$S$(EX).py
 else
 	@echo Running python$S$(EX).py
-	@PYTHONPATH=$(TOP) python$(PYTHONVERSION) $(OR_ROOT)python$S$(EX).py
+	@PYTHONPATH=$(OR_ROOT_FULL) python$(PYTHONVERSION) $(OR_ROOT)python$S$(EX).py
 endif
 
 
