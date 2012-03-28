@@ -9,3 +9,4 @@ tsp: $(ROUTING_DEPS) tsp.o
 
 local_clean:
 	rm tsp.o tsp
+
