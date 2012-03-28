@@ -12,11 +12,8 @@ or-tools/
   LICENSE-2.0.txt    <- Apache License
   Makefile           <- Main makefile.
   README             <- This file
-  algorithms/        <- Directory containing basic algorithms.
-  base/              <- Directory containing basic utilities.
   bin/               <- Directory where all binaries will be compiled.
   com/               <- Directory that contains all java code.
-  constraint_solver/ <- The main directory for the constraint solver library.
   dependencies/      <- Directory that will contain built dependencies.
   examples/          <- Root directory of all examples.
   examples/com/      <- Directory that contains all java examples.
@@ -24,14 +21,18 @@ or-tools/
   examples/csharp/   <- Directory that contains all C# examples.
   examples/python/   <- Python examples
   examples/tests/    <- C# unit tests and bug reports.
-  gen/               <- Directory that will contain generated files.
-  graph/             <- Graph algorithms.
   lib/               <- Directory where all libraries and jar files will go.
-  linear_solver/     <- Linear solver wrapper.
   makefiles/         <- Directory that contains sub-makefiles.
   objs/              <- Where C++ objs files will be stored
+  src/               <- Root directory of all libraries sources.
+  src/algorithms/    <- Directory containing basic algorithms.
+  src/base/          <- Directory containing basic utilities.
+  src/constraint_solver/ <- The main directory for the constraint library.
+  src/gen/           <- Directory that will contain generated files.
+  src/graph/         <- Graph algorithms.
+  src/linear_solver/ <- Linear solver wrapper.
+  src/util/          <- More utilities needed by the constraint solver
   tools/             <- Contains windows binaries.
-  util/              <- More utilities needed by the constraint solver
 
 For installation, please refer to the following web page:
 

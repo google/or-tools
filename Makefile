@@ -12,8 +12,8 @@ OR_TOOLS_VERSION = 1.0.0
 
 # OR_ROOT is the minimal prefix to define the root of or-tools, if we
 # are compiling in the or-tools root, it is empty. Otherwise, it is
-# $(OR_TOOLS_TOP)/ or $(OR_TOOLS_TOP)\\ depending on the platform. It contains the
-# trailing separator if not empty.
+# $(OR_TOOLS_TOP)/ or $(OR_TOOLS_TOP)\\ depending on the platform. It
+# contains the trailing separator if not empty.
 #
 # INC_DIR is like OR_ROOT, but with a default of '.' instead of
 # empty.  It is used for instance in include directives (-I.).
@@ -22,7 +22,6 @@ OR_TOOLS_VERSION = 1.0.0
 # to store path informations inside libraries for instance.
 ifeq ($(OR_TOOLS_TOP),)
   OR_ROOT =
-  INC_DIR = .
 else
   ifeq "$(SHELL)" "cmd.exe"
     OR_ROOT = $(OR_TOOLS_TOP)\\
@@ -33,7 +32,6 @@ else
       OR_ROOT = $(OR_TOOLS_TOP)/
     endif
   endif
-  INC_DIR = $(OR_TOOLS_TOP)
 endif
 
 .PHONY : python cc java csharp
