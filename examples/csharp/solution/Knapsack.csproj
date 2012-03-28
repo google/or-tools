@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{FB4FF416-E290-4D00-AA03-3CF373AF1067}</ProjectGuid>
+    <ProjectGuid>{4AC717C5-D784-44F4-9B14-C0FF067D23C3}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>LinearProgramming</RootNamespace>
-    <AssemblyName>LinearProgramming</AssemblyName>
+    <RootNamespace>Knapsack</RootNamespace>
+    <AssemblyName>Knapsack</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -52,8 +52,8 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Google.OrTools.LinearSolver">
-      <HintPath>..\..\bin\Google.OrTools.LinearSolver.dll</HintPath>
+    <Reference Include="Google.OrTools.Algorithms">
+      <HintPath>..\..\..\bin\Google.OrTools.Algorithms.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -64,8 +64,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\cslinearprogramming.cs">
-      <Link>cslinearprogramming.cs</Link>
+    <Compile Include="..\csknapsack.cs">
+      <Link>csknapsack.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

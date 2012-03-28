@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{206011C7-15C3-48A5-9AA2-F43064AB8FC4}</ProjectGuid>
+    <ProjectGuid>{FB4FF416-E290-4D00-AA03-3CF373AF1067}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Flow</RootNamespace>
-    <AssemblyName>Flow</AssemblyName>
+    <RootNamespace>LinearProgramming</RootNamespace>
+    <AssemblyName>LinearProgramming</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -52,8 +52,8 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Google.OrTools.Graph">
-      <HintPath>..\..\bin\Google.OrTools.Graph.dll</HintPath>
+    <Reference Include="Google.OrTools.LinearSolver">
+      <HintPath>..\..\..\bin\Google.OrTools.LinearSolver.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -64,8 +64,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\csflow.cs">
-      <Link>csflow.cs</Link>
+    <Compile Include="..\cslinearprogramming.cs">
+      <Link>cslinearprogramming.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

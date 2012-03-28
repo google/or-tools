@@ -9,12 +9,12 @@ test_cc: cc
 	$(BIN_DIR)\\tsp
 
 test_python: python
-	set PYTHONPATH=$(OR_ROOT_FULL) && $(WINDOWS_PYTHON_PATH)\\python $(SRC_DIR)python\\hidato_table.py
-	set PYTHONPATH=$(OR_ROOT_FULL) && $(WINDOWS_PYTHON_PATH)\\python $(SRC_DIR)python\\tsp.py
-	set PYTHONPATH=$(OR_ROOT_FULL) && $(WINDOWS_PYTHON_PATH)\\python $(SRC_DIR)python\\pyflow_example.py
-	set PYTHONPATH=$(OR_ROOT_FULL) && $(WINDOWS_PYTHON_PATH)\\python $(SRC_DIR)python\\knapsack.py
-	set PYTHONPATH=$(OR_ROOT_FULL) && $(WINDOWS_PYTHON_PATH)\\python $(SRC_DIR)python\\linear_programming.py
-	set PYTHONPATH=$(OR_ROOT_FULL) && $(WINDOWS_PYTHON_PATH)\\python $(SRC_DIR)python\\integer_programming.py
+	set PYTHONPATH=$(OR_ROOT_FULL) && $(WINDOWS_PYTHON_PATH)\\python $(EX_DIR)\\python\\hidato_table.py
+	set PYTHONPATH=$(OR_ROOT_FULL) && $(WINDOWS_PYTHON_PATH)\\python $(EX_DIR)\\python\\tsp.py
+	set PYTHONPATH=$(OR_ROOT_FULL) && $(WINDOWS_PYTHON_PATH)\\python $(EX_DIR)\\python\\pyflow_example.py
+	set PYTHONPATH=$(OR_ROOT_FULL) && $(WINDOWS_PYTHON_PATH)\\python $(EX_DIR)\\python\\knapsack.py
+	set PYTHONPATH=$(OR_ROOT_FULL) && $(WINDOWS_PYTHON_PATH)\\python $(EX_DIR)\\python\\linear_programming.py
+	set PYTHONPATH=$(OR_ROOT_FULL) && $(WINDOWS_PYTHON_PATH)\\python $(EX_DIR)\python\\integer_programming.py
 
 test_java: java run_RabbitsPheasants run_FlowExample run_LinearProgramming run_IntegerProgramming run_Knapsack
 

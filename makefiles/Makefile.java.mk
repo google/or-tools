@@ -45,23 +45,23 @@ $(LIB_DIR)/$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT): $(OBJ_DIR)/constraint_s
 
 compile_RabbitsPheasants: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/RabbitsPheasants.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/RabbitsPheasants.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/RabbitsPheasants.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SRabbitsPheasants.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/RabbitsPheasants.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/RabbitsPheasants.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SRabbitsPheasants.java
 
 run_RabbitsPheasants: compile_RabbitsPheasants
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.RabbitsPheasants
 
 compile_GolombRuler: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/GolombRuler.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/GolombRuler.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/GolombRuler.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SGolombRuler.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/GolombRuler.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/GolombRuler.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SGolombRuler.java
 
 run_GolombRuler: compile_GolombRuler
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.GolombRuler
 
 compile_Partition: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Partition.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Partition.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/Partition.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Partition.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/Partition.java
 	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SPartition.java
 
 run_Partition: compile_Partition
@@ -69,48 +69,48 @@ run_Partition: compile_Partition
 
 compile_SendMoreMoney: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/SendMoreMoney.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/SendMoreMoney.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/SendMoreMoney.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SSendMoreMoney.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/SendMoreMoney.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/SendMoreMoney.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SSendMoreMoney.java
 
 run_SendMoreMoney: compile_SendMoreMoney
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.SendMoreMoney
 
 compile_SendMoreMoney2: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/SendMoreMoney2.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/SendMoreMoney2.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/SendMoreMoney2.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SSendMoreMoney2.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/SendMoreMoney2.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/SendMoreMoney2.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SSendMoreMoney2.java
 
 run_SendMoreMoney2: compile_SendMoreMoney2
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.SendMoreMoney2
 
 compile_LeastDiff: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/LeastDiff.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/LeastDiff.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/LeastDiff.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SLeastDiff.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/LeastDiff.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/LeastDiff.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SLeastDiff.java
 
 run_LeastDiff: compile_LeastDiff
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.LeastDiff
 
 compile_MagicSquare: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/MagicSquare.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/MagicSquare.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/MagicSquare.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SMagicSquare.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/MagicSquare.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/MagicSquare.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SMagicSquare.java
 
 run_MagicSquare: compile_MagicSquare
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.MagicSquare
 
 compile_NQueens: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/NQueens.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/NQueens.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/NQueens.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SNQueens.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/NQueens.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/NQueens.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SNQueens.java
 
 run_NQueens: compile_NQueens
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.NQueens
 
 compile_NQueens2: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/NQueens2.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/NQueens2.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/NQueens2.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SNQueens2.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/NQueens2.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/NQueens2.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SNQueens2.java
 
 run_NQueens2: compile_NQueens2
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.NQueens2
@@ -118,8 +118,8 @@ run_NQueens2: compile_NQueens2
 
 compile_AllDifferentExcept0: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/AllDifferentExcept0.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/AllDifferentExcept0.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/AllDifferentExcept0.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SAllDifferentExcept0.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/AllDifferentExcept0.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/AllDifferentExcept0.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SAllDifferentExcept0.java
 
 run_AllDifferentExcept0: compile_AllDifferentExcept0
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.AllDifferentExcept0
@@ -127,8 +127,8 @@ run_AllDifferentExcept0: compile_AllDifferentExcept0
 
 compile_Diet: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Diet.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Diet.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/Diet.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SDiet.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Diet.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/Diet.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SDiet.java
 
 run_Diet: compile_Diet
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Diet
@@ -136,8 +136,8 @@ run_Diet: compile_Diet
 
 compile_Map: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Map.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Map.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/Map.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SMap.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Map.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/Map.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SMap.java
 
 run_Map: compile_Map
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Map
@@ -145,8 +145,8 @@ run_Map: compile_Map
 
 compile_Map2: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Map2.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Map2.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/Map2.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SMap2.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Map2.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/Map2.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SMap2.java
 
 run_Map2: compile_Map2
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Map2
@@ -154,8 +154,8 @@ run_Map2: compile_Map2
 
 compile_Minesweeper: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Minesweeper.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Minesweeper.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/Minesweeper.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SMinesweeper.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Minesweeper.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/Minesweeper.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SMinesweeper.java
 
 run_Minesweeper: compile_Minesweeper
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Minesweeper
@@ -163,8 +163,8 @@ run_Minesweeper: compile_Minesweeper
 
 compile_QuasigroupCompletion: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/QuasigroupCompletion.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/QuasigroupCompletion.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/QuasigroupCompletion.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SQuasigroupCompletion.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/QuasigroupCompletion.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/QuasigroupCompletion.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SQuasigroupCompletion.java
 
 run_QuasigroupCompletion: compile_QuasigroupCompletion
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.QuasigroupCompletion
@@ -172,8 +172,8 @@ run_QuasigroupCompletion: compile_QuasigroupCompletion
 
 compile_SendMostMoney: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/SendMostMoney.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/SendMostMoney.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/SendMostMoney.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SSendMostMoney.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/SendMostMoney.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/SendMostMoney.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SSendMostMoney.java
 
 run_SendMostMoney: compile_SendMostMoney
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.SendMostMoney
@@ -181,8 +181,8 @@ run_SendMostMoney: compile_SendMostMoney
 
 compile_Seseman: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Seseman.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Seseman.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/Seseman.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SSeseman.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Seseman.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/Seseman.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SSeseman.java
 
 run_Seseman: compile_Seseman
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Seseman
@@ -190,8 +190,8 @@ run_Seseman: compile_Seseman
 
 compile_Sudoku: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Sudoku.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Sudoku.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/Sudoku.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SSudoku.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Sudoku.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/Sudoku.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SSudoku.java
 
 run_Sudoku: compile_Sudoku
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Sudoku
@@ -199,8 +199,8 @@ run_Sudoku: compile_Sudoku
 
 compile_Xkcd: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Xkcd.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Xkcd.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/Xkcd.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SXkcd.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Xkcd.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/Xkcd.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SXkcd.java
 
 run_Xkcd: compile_Xkcd
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Xkcd
@@ -208,8 +208,8 @@ run_Xkcd: compile_Xkcd
 
 compile_SurvoPuzzle: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/SurvoPuzzle.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/SurvoPuzzle.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/SurvoPuzzle.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SSurvoPuzzle.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/SurvoPuzzle.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/SurvoPuzzle.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SSurvoPuzzle.java
 
 run_SurvoPuzzle: compile_SurvoPuzzle
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.SurvoPuzzle
@@ -217,8 +217,8 @@ run_SurvoPuzzle: compile_SurvoPuzzle
 
 compile_Circuit: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Circuit.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Circuit.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/Circuit.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SCircuit.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Circuit.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/Circuit.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SCircuit.java
 
 run_Circuit: compile_Circuit
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Circuit
@@ -226,8 +226,8 @@ run_Circuit: compile_Circuit
 
 compile_CoinsGrid: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/CoinsGrid.class
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/CoinsGrid.class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/CoinsGrid.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SCoinsGrid.java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/CoinsGrid.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/CoinsGrid.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SCoinsGrid.java
 
 run_CoinsGrid: compile_CoinsGrid
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.CoinsGrid
@@ -253,8 +253,8 @@ $(LIB_DIR)/$(LIBPREFIX)jniknapsacksolver.$(JNILIBEXT): $(OBJ_DIR)/knapsack_solve
 
 compile_Knapsack: $(OBJ_DIR)/com/google/ortools/knapsacksolver/samples/Knapsack.class
 
-$(OBJ_DIR)/com/google/ortools/knapsacksolver/samples/Knapsack.class: javaalgorithms $(EX_DIR)com/google/ortools/knapsacksolver/samples/Knapsack.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.knapsacksolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sknapsacksolver$Ssamples$SKnapsack.java
+$(OBJ_DIR)/com/google/ortools/knapsacksolver/samples/Knapsack.class: javaalgorithms $(EX_DIR)/com/google/ortools/knapsacksolver/samples/Knapsack.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.knapsacksolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sknapsacksolver$Ssamples$SKnapsack.java
 
 run_Knapsack: compile_Knapsack
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.knapsacksolver.jar com.google.ortools.knapsacksolver.samples.Knapsack
@@ -280,15 +280,15 @@ $(LIB_DIR)/$(LIBPREFIX)jnigraph.$(JNILIBEXT): $(OBJ_DIR)/graph_java_wrap.$O $(GR
 
 compile_FlowExample: $(OBJ_DIR)/com/google/ortools/graph/samples/FlowExample.class
 
-$(OBJ_DIR)/com/google/ortools/graph/samples/FlowExample.class: javagraph $(EX_DIR)com/google/ortools/graph/samples/FlowExample.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.graph.jar $(EX_DIR)com$Sgoogle$Sortools$Sgraph$Ssamples$SFlowExample.java
+$(OBJ_DIR)/com/google/ortools/graph/samples/FlowExample.class: javagraph $(EX_DIR)/com/google/ortools/graph/samples/FlowExample.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.graph.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sgraph$Ssamples$SFlowExample.java
 
 run_FlowExample: compile_FlowExample javagraph
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.graph.jar com.google.ortools.graph.samples.FlowExample
 
 compile_LinearAssignmentAPI: $(OBJ_DIR)/com/google/ortools/graph/samples/LinearAssignmentAPI.class
 
-$(OBJ_DIR)/com/google/ortools/graph/samples/LinearAssignmentAPI.class: javagraph $(EX_DIR)com/google/ortools/graph/samples/LinearAssignmentAPI.java
+$(OBJ_DIR)/com/google/ortools/graph/samples/LinearAssignmentAPI.class: javagraph $(EX_DIR)/com/google/ortools/graph/samples/LinearAssignmentAPI.java
 	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.graph.jar $(EX_DIR)com$Sgoogle$Sortools$Sgraph$Ssamples$SLinearAssignmentAPI.java
 
 run_LinearAssignmentAPI: compile_LinearAssignmentAPI javagraph
@@ -315,24 +315,24 @@ $(LIB_DIR)/$(LIBPREFIX)jnilinearsolver.$(JNILIBEXT): $(OBJ_DIR)/linear_solver_ja
 
 compile_LinearProgramming: $(OBJ_DIR)/com/google/ortools/linearsolver/samples/LinearProgramming.class
 
-$(OBJ_DIR)/com/google/ortools/linearsolver/samples/LinearProgramming.class: javalp $(EX_DIR)com/google/ortools/linearsolver/samples/LinearProgramming.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.linearsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Slinearsolver$Ssamples$SLinearProgramming.java
+$(OBJ_DIR)/com/google/ortools/linearsolver/samples/LinearProgramming.class: javalp $(EX_DIR)/com/google/ortools/linearsolver/samples/LinearProgramming.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.linearsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$Ssamples$SLinearProgramming.java
 
 run_LinearProgramming: compile_LinearProgramming
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.linearsolver.jar com.google.ortools.linearsolver.samples.LinearProgramming
 
 compile_IntegerProgramming: $(OBJ_DIR)/com/google/ortools/linearsolver/samples/IntegerProgramming.class
 
-$(OBJ_DIR)/com/google/ortools/linearsolver/samples/IntegerProgramming.class: javalp $(EX_DIR)com/google/ortools/linearsolver/samples/IntegerProgramming.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.linearsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Slinearsolver$Ssamples$SIntegerProgramming.java
+$(OBJ_DIR)/com/google/ortools/linearsolver/samples/IntegerProgramming.class: javalp $(EX_DIR)/com/google/ortools/linearsolver/samples/IntegerProgramming.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.linearsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$Ssamples$SIntegerProgramming.java
 
 run_IntegerProgramming: compile_IntegerProgramming
 	$(JAVA_BIN) -Xss2048k -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.linearsolver.jar com.google.ortools.linearsolver.samples.IntegerProgramming
 
 # Compile and Run CP java example:
 
-$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class: javacp $(EX_DIR)com/google/ortools/constraintsolver/samples/$(EX).java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)com$Sgoogle$Sortools$Sconstraintsolver$Ssamples$S$(EX).java
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/$(EX).java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$S$(EX).java
 
 cjava: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class com.google.ortools.constraintsolver.jar
 

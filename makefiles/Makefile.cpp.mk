@@ -490,148 +490,148 @@ DIMACS_LIB_OS=\
 	$(OBJ_DIR)/parse_dimacs_assignment.$O\
 	$(OBJ_DIR)/print_dimacs_assignment.$O
 
-$(OBJ_DIR)/parse_dimacs_assignment.$O:$(EX_DIR)cpp/parse_dimacs_assignment.cc
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/parse_dimacs_assignment.cc $(OBJ_OUT)parse_dimacs_assignment.$O
-$(OBJ_DIR)/print_dimacs_assignment.$O:$(EX_DIR)cpp/print_dimacs_assignment.cc
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/print_dimacs_assignment.cc $(OBJ_OUT)print_dimacs_assignment.$O
+$(OBJ_DIR)/parse_dimacs_assignment.$O:$(EX_DIR)/cpp/parse_dimacs_assignment.cc
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/parse_dimacs_assignment.cc $(OBJ_OUT)parse_dimacs_assignment.$O
+$(OBJ_DIR)/print_dimacs_assignment.$O:$(EX_DIR)/cpp/print_dimacs_assignment.cc
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/print_dimacs_assignment.cc $(OBJ_OUT)print_dimacs_assignment.$O
 
 $(LIB_DIR)/$(LIBPREFIX)dimacs.$(LIBSUFFIX): $(DIMACS_LIB_OS)
 	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)dimacs.$(LIBSUFFIX) $(DIMACS_LIB_OS)
 
 # Flow and linear assignment cpp
 
-$(OBJ_DIR)/linear_assignment_api.$O:$(EX_DIR)cpp/linear_assignment_api.cc
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/linear_assignment_api.cc $(OBJ_OUT)linear_assignment_api.$O
+$(OBJ_DIR)/linear_assignment_api.$O:$(EX_DIR)/cpp/linear_assignment_api.cc
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/linear_assignment_api.cc $(OBJ_OUT)linear_assignment_api.$O
 
 $(BIN_DIR)/linear_assignment_api$E: $(GRAPH_DEPS) $(OBJ_DIR)/linear_assignment_api.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_assignment_api.$O $(GRAPH_LNK) $(LDFLAGS) $(EXEOUT)linear_assignment_api$E
 
-$(OBJ_DIR)/flow_api.$O:$(EX_DIR)cpp/flow_api.cc
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/flow_api.cc $(OBJ_OUT)flow_api.$O
+$(OBJ_DIR)/flow_api.$O:$(EX_DIR)/cpp/flow_api.cc
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/flow_api.cc $(OBJ_OUT)flow_api.$O
 
 $(BIN_DIR)/flow_api$E: $(GRAPH_DEPS) $(OBJ_DIR)/flow_api.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/flow_api.$O $(GRAPH_LNK) $(LDFLAGS) $(EXEOUT)flow_api$E
 
-$(OBJ_DIR)/dimacs_assignment.$O:$(EX_DIR)cpp/dimacs_assignment.cc
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/dimacs_assignment.cc $(OBJ_OUT)dimacs_assignment.$O
+$(OBJ_DIR)/dimacs_assignment.$O:$(EX_DIR)/cpp/dimacs_assignment.cc
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/dimacs_assignment.cc $(OBJ_OUT)dimacs_assignment.$O
 
 $(BIN_DIR)/dimacs_assignment$E: $(ALGORITHMS_DEPS) $(GRAPH_DEPS) $(DIMACS_LIBS) $(OBJ_DIR)/dimacs_assignment.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/dimacs_assignment.$O $(DIMACS_LNK) $(ALGORITHMS_LNK) $(GRAPH_LNK) $(LDFLAGS) $(EXEOUT)dimacs_assignment$E
 
 # Pure CP and Routing Examples
 
-$(OBJ_DIR)/costas_array.$O: $(EX_DIR)cpp/costas_array.cc $(SRC_DIR)constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/costas_array.cc $(OBJ_OUT)costas_array.$O
+$(OBJ_DIR)/costas_array.$O: $(EX_DIR)/cpp/costas_array.cc $(SRC_DIR)constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/costas_array.cc $(OBJ_OUT)costas_array.$O
 
 $(BIN_DIR)/costas_array$E: $(CP_DEPS) $(OBJ_DIR)/costas_array.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/costas_array.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)costas_array$E
 
-$(OBJ_DIR)/cryptarithm.$O:$(EX_DIR)cpp/cryptarithm.cc $(SRC_DIR)constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/cryptarithm.cc $(OBJ_OUT)cryptarithm.$O
+$(OBJ_DIR)/cryptarithm.$O:$(EX_DIR)/cpp/cryptarithm.cc $(SRC_DIR)constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cryptarithm.cc $(OBJ_OUT)cryptarithm.$O
 
 $(BIN_DIR)/cryptarithm$E: $(CP_DEPS) $(OBJ_DIR)/cryptarithm.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/cryptarithm.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)cryptarithm$E
 
-$(OBJ_DIR)/cvrptw.$O: $(EX_DIR)cpp/cvrptw.cc $(SRC_DIR)constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/cvrptw.cc $(OBJ_OUT)cvrptw.$O
+$(OBJ_DIR)/cvrptw.$O: $(EX_DIR)/cpp/cvrptw.cc $(SRC_DIR)constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw.cc $(OBJ_OUT)cvrptw.$O
 
 $(BIN_DIR)/cvrptw$E: $(ROUTING_DEPS) $(OBJ_DIR)/cvrptw.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw.$O $(ROUTING_LNK) $(LDFLAGS) $(EXEOUT)cvrptw$E
 
-$(OBJ_DIR)/dobble_ls.$O:$(EX_DIR)cpp/dobble_ls.cc $(SRC_DIR)constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/dobble_ls.cc $(OBJ_OUT)dobble_ls.$O
+$(OBJ_DIR)/dobble_ls.$O:$(EX_DIR)/cpp/dobble_ls.cc $(SRC_DIR)constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/dobble_ls.cc $(OBJ_OUT)dobble_ls.$O
 
 $(BIN_DIR)/dobble_ls$E: $(CP_DEPS) $(OBJ_DIR)/dobble_ls.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/dobble_ls.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)dobble_ls$E
 
-$(OBJ_DIR)/golomb.$O:$(EX_DIR)cpp/golomb.cc $(SRC_DIR)constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/golomb.cc $(OBJ_OUT)golomb.$O
+$(OBJ_DIR)/golomb.$O:$(EX_DIR)/cpp/golomb.cc $(SRC_DIR)constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/golomb.cc $(OBJ_OUT)golomb.$O
 
 $(BIN_DIR)/golomb$E: $(CP_DEPS) $(OBJ_DIR)/golomb.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/golomb.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)golomb$E
 
-$(OBJ_DIR)/jobshop.$O:$(EX_DIR)cpp/jobshop.cc $(SRC_DIR)constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/jobshop.cc $(OBJ_OUT)jobshop.$O
+$(OBJ_DIR)/jobshop.$O:$(EX_DIR)/cpp/jobshop.cc $(SRC_DIR)constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/jobshop.cc $(OBJ_OUT)jobshop.$O
 
 $(BIN_DIR)/jobshop$E: $(CP_DEPS) $(OBJ_DIR)/jobshop.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)jobshop$E
 
-$(OBJ_DIR)/jobshop_ls.$O:$(EX_DIR)cpp/jobshop_ls.cc $(SRC_DIR)constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/jobshop_ls.cc $(OBJ_OUT)jobshop_ls.$O
+$(OBJ_DIR)/jobshop_ls.$O:$(EX_DIR)/cpp/jobshop_ls.cc $(SRC_DIR)constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/jobshop_ls.cc $(OBJ_OUT)jobshop_ls.$O
 
 $(BIN_DIR)/jobshop_ls$E: $(CP_DEPS) $(OBJ_DIR)/jobshop_ls.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_ls.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)jobshop_ls$E
 
-$(OBJ_DIR)/magic_square.$O:$(EX_DIR)cpp/magic_square.cc $(SRC_DIR)constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/magic_square.cc $(OBJ_OUT)magic_square.$O
+$(OBJ_DIR)/magic_square.$O:$(EX_DIR)/cpp/magic_square.cc $(SRC_DIR)constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/magic_square.cc $(OBJ_OUT)magic_square.$O
 
 $(BIN_DIR)/magic_square$E: $(CP_DEPS) $(OBJ_DIR)/magic_square.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/magic_square.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)magic_square$E
 
-$(OBJ_DIR)/model_util.$O:$(EX_DIR)cpp/model_util.cc $(GEN_DIR)/constraint_solver/model.pb.h $(SRC_DIR)constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/model_util.cc $(OBJ_OUT)model_util.$O
+$(OBJ_DIR)/model_util.$O:$(EX_DIR)/cpp/model_util.cc $(GEN_DIR)/constraint_solver/model.pb.h $(SRC_DIR)constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/model_util.cc $(OBJ_OUT)model_util.$O
 
 $(BIN_DIR)/model_util$E: $(CP_DEPS) $(OBJ_DIR)/model_util.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/model_util.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)model_util$E
 
-$(OBJ_DIR)/multidim_knapsack.$O:$(EX_DIR)cpp/multidim_knapsack.cc $(SRC_DIR)constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/multidim_knapsack.cc $(OBJ_OUT)multidim_knapsack.$O
+$(OBJ_DIR)/multidim_knapsack.$O:$(EX_DIR)/cpp/multidim_knapsack.cc $(SRC_DIR)constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/multidim_knapsack.cc $(OBJ_OUT)multidim_knapsack.$O
 
 $(BIN_DIR)/multidim_knapsack$E: $(CP_DEPS) $(OBJ_DIR)/multidim_knapsack.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/multidim_knapsack.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)multidim_knapsack$E
 
-$(OBJ_DIR)/network_routing.$O:$(EX_DIR)cpp/network_routing.cc $(SRC_DIR)constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/network_routing.cc $(OBJ_OUT)network_routing.$O
+$(OBJ_DIR)/network_routing.$O:$(EX_DIR)/cpp/network_routing.cc $(SRC_DIR)constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/network_routing.cc $(OBJ_OUT)network_routing.$O
 
 $(BIN_DIR)/network_routing$E: $(CP_DEPS) $(GRAPH_DEPS) $(OBJ_DIR)/network_routing.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/network_routing.$O $(CP_LNK) $(GRAPH_LNK) $(LDFLAGS) $(EXEOUT)network_routing$E
 
-$(OBJ_DIR)/nqueens.$O: $(EX_DIR)cpp/nqueens.cc $(SRC_DIR)constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/nqueens.cc $(OBJ_OUT)nqueens.$O
+$(OBJ_DIR)/nqueens.$O: $(EX_DIR)/cpp/nqueens.cc $(SRC_DIR)constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/nqueens.cc $(OBJ_OUT)nqueens.$O
 
 $(BIN_DIR)/nqueens$E: $(CP_DEPS) $(OBJ_DIR)/nqueens.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/nqueens.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)nqueens$E
 
-$(OBJ_DIR)/pdptw.$O: $(EX_DIR)cpp/pdptw.cc $(SRC_DIR)constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/pdptw.cc $(OBJ_OUT)pdptw.$O
+$(OBJ_DIR)/pdptw.$O: $(EX_DIR)/cpp/pdptw.cc $(SRC_DIR)constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/pdptw.cc $(OBJ_OUT)pdptw.$O
 
 $(BIN_DIR)/pdptw$E: $(ROUTING_DEPS) $(OBJ_DIR)/pdptw.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/pdptw.$O $(ROUTING_LNK) $(LDFLAGS) $(EXEOUT)pdptw$E
 
-$(OBJ_DIR)/sports_scheduling.$O:$(EX_DIR)cpp/sports_scheduling.cc $(SRC_DIR)constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/sports_scheduling.cc $(OBJ_OUT)sports_scheduling.$O
+$(OBJ_DIR)/sports_scheduling.$O:$(EX_DIR)/cpp/sports_scheduling.cc $(SRC_DIR)constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/sports_scheduling.cc $(OBJ_OUT)sports_scheduling.$O
 
 $(BIN_DIR)/sports_scheduling$E: $(CP_DEPS) $(OBJ_DIR)/sports_scheduling.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/sports_scheduling.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)sports_scheduling$E
 
-$(OBJ_DIR)/tsp.$O: $(EX_DIR)cpp/tsp.cc $(SRC_DIR)constraint_solver/routing.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/tsp.cc $(OBJ_OUT)tsp.$O
+$(OBJ_DIR)/tsp.$O: $(EX_DIR)/cpp/tsp.cc $(SRC_DIR)constraint_solver/routing.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/tsp.cc $(OBJ_OUT)tsp.$O
 
 $(BIN_DIR)/tsp$E: $(ROUTING_DEPS) $(OBJ_DIR)/tsp.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/tsp.$O $(ROUTING_LNK) $(LDFLAGS) $(EXEOUT)tsp$E
 
 # Linear Programming Examples
 
-$(OBJ_DIR)/strawberry_fields_with_column_generation.$O: $(EX_DIR)cpp/strawberry_fields_with_column_generation.cc $(SRC_DIR)linear_solver/linear_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/strawberry_fields_with_column_generation.cc $(OBJ_OUT)strawberry_fields_with_column_generation.$O
+$(OBJ_DIR)/strawberry_fields_with_column_generation.$O: $(EX_DIR)/cpp/strawberry_fields_with_column_generation.cc $(SRC_DIR)linear_solver/linear_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/strawberry_fields_with_column_generation.cc $(OBJ_OUT)strawberry_fields_with_column_generation.$O
 
 $(BIN_DIR)/strawberry_fields_with_column_generation$E: $(LP_DEPS) $(OBJ_DIR)/strawberry_fields_with_column_generation.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/strawberry_fields_with_column_generation.$O $(LP_LNK) $(LDFLAGS) $(EXEOUT)strawberry_fields_with_column_generation$E
 
-$(OBJ_DIR)/linear_programming.$O: $(EX_DIR)cpp/linear_programming.cc $(SRC_DIR)linear_solver/linear_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/linear_programming.cc $(OBJ_OUT)linear_programming.$O
+$(OBJ_DIR)/linear_programming.$O: $(EX_DIR)/cpp/linear_programming.cc $(SRC_DIR)linear_solver/linear_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/linear_programming.cc $(OBJ_OUT)linear_programming.$O
 
 $(BIN_DIR)/linear_programming$E: $(LP_DEPS) $(OBJ_DIR)/linear_programming.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_programming.$O $(LP_LNK) $(LDFLAGS) $(EXEOUT)linear_programming$E
 
-$(OBJ_DIR)/linear_solver_protocol_buffers.$O: $(EX_DIR)cpp/linear_solver_protocol_buffers.cc $(SRC_DIR)linear_solver/linear_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/linear_solver_protocol_buffers.cc $(OBJ_OUT)linear_solver_protocol_buffers.$O
+$(OBJ_DIR)/linear_solver_protocol_buffers.$O: $(EX_DIR)/cpp/linear_solver_protocol_buffers.cc $(SRC_DIR)linear_solver/linear_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/linear_solver_protocol_buffers.cc $(OBJ_OUT)linear_solver_protocol_buffers.$O
 
 $(BIN_DIR)/linear_solver_protocol_buffers$E: $(LP_DEPS) $(OBJ_DIR)/linear_solver_protocol_buffers.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_solver_protocol_buffers.$O $(LP_LNK) $(LDFLAGS) $(EXEOUT)linear_solver_protocol_buffers$E
 
-$(OBJ_DIR)/integer_programming.$O: $(EX_DIR)cpp/integer_programming.cc $(SRC_DIR)linear_solver/linear_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)cpp/integer_programming.cc $(OBJ_OUT)integer_programming.$O
+$(OBJ_DIR)/integer_programming.$O: $(EX_DIR)/cpp/integer_programming.cc $(SRC_DIR)linear_solver/linear_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/integer_programming.cc $(OBJ_OUT)integer_programming.$O
 
 $(BIN_DIR)/integer_programming$E: $(LP_DEPS) $(OBJ_DIR)/integer_programming.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/integer_programming.$O $(LP_LNK) $(LDFLAGS) $(EXEOUT)integer_programming$E

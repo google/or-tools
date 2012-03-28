@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{7084D1DB-2554-4FE3-833E-16BD0082D177}</ProjectGuid>
+    <ProjectGuid>{7E74C275-F822-4817-A940-3EA93C50FD57}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Tsp</RootNamespace>
-    <AssemblyName>Tsp</AssemblyName>
+    <RootNamespace>IntegerProgramming</RootNamespace>
+    <AssemblyName>IntegerProgramming</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -50,13 +50,10 @@
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x64</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
-    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Google.OrTools.ConstraintSolver">
-      <HintPath>..\..\bin\Google.OrTools.ConstraintSolver.dll</HintPath>
+    <Reference Include="Google.OrTools.LinearSolver">
+      <HintPath>..\..\..\bin\Google.OrTools.LinearSolver.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -67,8 +64,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\cstsp.cs">
-      <Link>cstsp.cs</Link>
+    <Compile Include="..\csintegerprogramming.cs">
+      <Link>csintegerprogramming.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

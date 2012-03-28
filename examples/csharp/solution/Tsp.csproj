@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{4AC717C5-D784-44F4-9B14-C0FF067D23C3}</ProjectGuid>
+    <ProjectGuid>{7084D1DB-2554-4FE3-833E-16BD0082D177}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Knapsack</RootNamespace>
-    <AssemblyName>Knapsack</AssemblyName>
+    <RootNamespace>Tsp</RootNamespace>
+    <AssemblyName>Tsp</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -50,10 +50,13 @@
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x64</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Google.OrTools.Algorithms">
-      <HintPath>..\..\bin\Google.OrTools.Algorithms.dll</HintPath>
+    <Reference Include="Google.OrTools.ConstraintSolver">
+      <HintPath>..\..\..\bin\Google.OrTools.ConstraintSolver.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -64,8 +67,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\csknapsack.cs">
-      <Link>csknapsack.cs</Link>
+    <Compile Include="..\cstsp.cs">
+      <Link>cstsp.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

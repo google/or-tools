@@ -17,15 +17,19 @@ or-tools/
   bin/               <- Directory where all binaries will be compiled.
   com/               <- Directory that contains all java code.
   constraint_solver/ <- The main directory for the constraint solver library.
-  cpp/               <- C++ examples
   dependencies/      <- Directory that will contain built dependencies.
+  examples/          <- Root directory of all examples.
+  examples/com/      <- Directory that contains all java examples.
+  examples/cpp/      <- C++ examples.
+  examples/csharp/   <- Directory that contains all C# examples.
+  examples/python/   <- Python examples
+  examples/tests/    <- C# unit tests and bug reports.
   gen/               <- Directory that will contain generated files.
   graph/             <- Graph algorithms.
   lib/               <- Directory where all libraries and jar files will go.
   linear_solver/     <- Linear solver wrapper.
   makefiles/         <- Directory that contains sub-makefiles.
   objs/              <- Where C++ objs files will be stored
-  python/            <- Python examples
   tools/             <- Contains windows binaries.
   util/              <- More utilities needed by the constraint solver
 
