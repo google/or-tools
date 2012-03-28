@@ -72,8 +72,7 @@ search.</td></tr>
 all, modelling is an art!</td></tr>
 </tbody>
 </table>
-<p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap3/golomb5.cc">tutorials/C++/chap3/golomb5.cc</a></p>
-<p>[CODE golomb5]</p>
+<p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap3/golomb6.cc">tutorials/C++/chap3/golomb6.cc</a></p>
 <div class="section" id="breaking-symmetries">
 <span id="id3"></span><h2>3.8.1. Breaking symmetries</h2>
 <p>In the section <a class="reference internal" href="second_implementation.html#golomb-ruler-second-implementation"><em>A second model and its implementation</em></a>, when we declared the variables <tt class="docutils literal"><span class="pre">X</span></tt>
@@ -84,7 +83,8 @@ representing the marks of a Golomb ruler, we implicitly took for granted that <t
 <span class="kt">int</span> <span class="n">k</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">next_k</span><span class="p">,</span> <span class="n">next_l</span><span class="p">;</span>
 <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;=</span> <span class="n">n</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">k</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span> <span class="n">l</span> <span class="o">=</span> <span class="n">j</span><span class="p">;</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
+    <span class="n">l</span> <span class="o">=</span> <span class="n">j</span><span class="p">;</span>
     <span class="n">diff1</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeDifference</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">-&gt;</span><span class="n">Var</span><span class="p">();</span>
     <span class="n">diff1</span><span class="o">-&gt;</span><span class="n">SetMin</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
     <span class="k">while</span> <span class="p">(</span><span class="n">next_interval</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">next_k</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">next_l</span><span class="p">))</span> <span class="p">{</span>
@@ -138,7 +138,7 @@ mathematicians.</td></tr>
 </tbody>
 </table>
 <p>The search can also benefit from lower bounds. Every difference must in itself be a Golomb ruler. Thus <tt class="docutils literal"><span class="pre">Y[i][j]</span></tt> can be bounded by below by the corresponding optimal Golomb ruler.</p>
-<p>In this section, we will use a 2-dimensional array to collect the differences: <tt class="docutils literal"><span class="pre">Y[i][j]</span> <span class="pre">=</span> <span class="pre">X[j]</span> <span class="pre">-</span> <span class="pre">X[i]</span></tt>:</p>
+<p>In this section, we use a 2-dimensional array to collect the differences: <tt class="docutils literal"><span class="pre">Y[i][j]</span> <span class="pre">=</span> <span class="pre">X[j]</span> <span class="pre">-</span> <span class="pre">X[i]</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span> <span class="o">*&gt;</span> <span class="o">&gt;</span> <span class="n">Y</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
                                           <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span> <span class="o">*&gt;</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">));</span>
 <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
@@ -165,7 +165,7 @@ mathematicians.</td></tr>
       <span class="p">}</span>
     <span class="p">}</span>
   <span class="p">}</span>
-  <span class="k">return</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">MakeAllDifferent</span><span class="p">(</span><span class="n">vars_flat</span><span class="p">,</span><span class="kc">true</span><span class="p">);</span>
+  <span class="k">return</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">MakeAllDifferent</span><span class="p">(</span><span class="n">vars_flat</span><span class="p">);</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -189,7 +189,7 @@ If we minimize the sum of these consecutive differences, we actually maximize th
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Let&#8217;s compare our tightened third implementation with the rest:</p>
+<p>Let&#8217;s compare our tightened third implementation with the rest, again to compute <img class="math" src="../../_images/math/67c4555c837d711a45a3e1af64caafc004600eee.png" alt="G(9)"/>:</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="16%" />

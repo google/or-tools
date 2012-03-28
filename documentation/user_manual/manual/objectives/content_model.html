@@ -60,6 +60,7 @@
 <p>The first model proposed to solve the Golumb Ruler Problem in the two previous sections is more complex. We suppose our model is theoretically correct. How do we know we gave the right model to the solver, i.e. how do we know that our implementation is correct? In this section, we present two tools to visualize the model we passed to the solver: the <tt class="docutils literal"><span class="pre">DebugString()</span></tt> method and the default command line flags of the CP solver.</p>
 <span class="target" id="inspect-object-with-debugstring"></span><div class="section" id="inspect-objects-with-debugstring">
 <span id="index-0"></span><h2>3.4.1. Inspect objects with <tt class="docutils literal"><span class="pre">DebugString()</span></tt></h2>
+<p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap3/golomb2.cc">tutorials/C++/chap3/golomb2.cc</a></p>
 <p>Most of the mathematical objects classes in or-tools inherit from the <tt class="docutils literal"><span class="pre">BaseObject</span></tt> class. Its only
 public method is a <tt class="docutils literal"><span class="pre">virtual</span> <span class="pre">DebugString()</span></tt>. If you are curious or just in doubt about
 the object you just constructed, <tt class="docutils literal"><span class="pre">DebugString()</span></tt> is for you.</p>
@@ -77,13 +78,15 @@ the object you just constructed, <tt class="docutils literal"><span class="pre">
 </pre></div>
 </div>
 <p>The output is:</p>
-<div class="highlight-bash"><div class="highlight"><pre>...: Y004<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y001 + Y000<span class="o">)</span>&gt;<span class="o">(</span>2..48<span class="o">)</span>
-...: Y005<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y002 + Y001<span class="o">)</span>&gt;<span class="o">(</span>2..48<span class="o">)</span>
-...: Y006<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y003 + Y002<span class="o">)</span>&gt;<span class="o">(</span>2..48<span class="o">)</span>
-...: Y007<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y002 + Var&lt;<span class="o">(</span>Y001 + Y000<span class="o">)</span>&gt;<span class="o">)</span>&gt;<span class="o">(</span>3..72<span class="o">)</span>
-...: Y008<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y003 + Var&lt;<span class="o">(</span>Y002 + Y001<span class="o">)</span>&gt;<span class="o">)</span>&gt;<span class="o">(</span>3..72<span class="o">)</span>
-...: Y009<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y003 + Var&lt;<span class="o">(</span>Y002 +
-                                           Var&lt;<span class="o">(</span>Y001 + Y000<span class="o">)</span>&gt;<span class="o">)</span>&gt;<span class="o">)</span>&gt;<span class="o">(</span>4..96<span class="o">)</span>
+<div class="highlight-bash"><div class="highlight"><pre>...: Y_4<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y_1<span class="o">(</span>1..24<span class="o">)</span> + Y_0<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">)</span>
+...: Y_5<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y_2<span class="o">(</span>1..24<span class="o">)</span> + Y_1<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">)</span>
+...: Y_6<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y_3<span class="o">(</span>1..24<span class="o">)</span> + Y_2<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">)</span>
+...: Y_7<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y_2<span class="o">(</span>1..24<span class="o">)</span> + Var&lt;<span class="o">(</span>Y_1<span class="o">(</span>1..24<span class="o">)</span> +
+                                            Y_0<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">))</span>&gt;<span class="o">(</span>3..72<span class="o">)</span>
+...: Y_8<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y_3<span class="o">(</span>1..24<span class="o">)</span> + Var&lt;<span class="o">(</span>Y_2<span class="o">(</span>1..24<span class="o">)</span> +
+                                            Y_1<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">))</span>&gt;<span class="o">(</span>3..72<span class="o">)</span>
+...: Y_9<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y_3<span class="o">(</span>1..24<span class="o">)</span> + Var&lt;<span class="o">(</span>Y_2<span class="o">(</span>1..24<span class="o">)</span> +
+                 Var&lt;<span class="o">(</span>Y_1<span class="o">(</span>1..24<span class="o">)</span> + Y_0<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">))</span>&gt;<span class="o">(</span>3..72<span class="o">))</span>&gt;<span class="o">(</span>4..96<span class="o">)</span>
 </pre></div>
 </div>
 <p>These are exactly the constraints listed in Figure <a class="reference internal" href="golomb_first_model.html#gr-first-sum"><em>Inner structure of a Golomb ruler of order 5.</em></a>.</p>
@@ -122,26 +125,28 @@ the object you just constructed, <tt class="docutils literal"><span class="pre">
 </pre></div>
 </div>
 <p>gives us:</p>
-<div class="highlight-bash"><div class="highlight"><pre>...: BoundsAllDifferent<span class="o">(</span>Y000<span class="o">(</span>1..24<span class="o">)</span>, Y001<span class="o">(</span>1..24<span class="o">)</span>, Y002<span class="o">(</span>1..24<span class="o">)</span>,
-     Y003<span class="o">(</span>1..24<span class="o">)</span>, Y004<span class="o">(</span>1..24<span class="o">)</span>, Y005<span class="o">(</span>1..24<span class="o">)</span>, Y006<span class="o">(</span>1..24<span class="o">)</span>, Y007<span class="o">(</span>1..24<span class="o">)</span>,
-                                               Y008<span class="o">(</span>1..24<span class="o">)</span>, Y009<span class="o">(</span>1..24<span class="o">))</span>
+<div class="highlight-bash"><div class="highlight"><pre>...: BoundsAllDifferent<span class="o">(</span>Y_0<span class="o">(</span>1..24<span class="o">)</span>, Y_1<span class="o">(</span>1..24<span class="o">)</span>, Y_2<span class="o">(</span>1..24<span class="o">)</span>, Y_3<span class="o">(</span>1..24<span class="o">)</span>,
+     Y_4<span class="o">(</span>1..24<span class="o">)</span>, Y_5<span class="o">(</span>1..24<span class="o">)</span>, Y_6<span class="o">(</span>1..24<span class="o">)</span>, Y_7<span class="o">(</span>1..24<span class="o">)</span>, Y_8<span class="o">(</span>1..24<span class="o">)</span>,
+                                                             Y_9<span class="o">(</span>1..24<span class="o">))</span>
 </pre></div>
 </div>
 <p>This is the <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint on bounds.</p>
 <p>Then:</p>
-<div class="highlight-bash"><div class="highlight"><pre>...: cast<span class="o">((</span>Y001<span class="o">(</span>1..24<span class="o">)</span> + Y000<span class="o">(</span>1..24<span class="o">))</span>, Var&lt;<span class="o">(</span>Y001 + Y000<span class="o">)</span>&gt;<span class="o">(</span>2..48<span class="o">))</span>
-...
+<div class="highlight-bash"><div class="highlight"><pre>...: cast<span class="o">((</span>Y_1<span class="o">(</span>1..24<span class="o">)</span> + Y_0<span class="o">(</span>1..24<span class="o">))</span>, Var&lt;<span class="o">(</span>Y_1<span class="o">(</span>1..24<span class="o">)</span> + Y_0<span class="o">(</span>1..24<span class="o">))</span>&gt;
+                                                                <span class="o">(</span>2..48<span class="o">))</span>
 </pre></div>
 </div>
 <p>The cast to transform the sum <img class="math" src="../../_images/math/80184e4cfaf5d02abb6c882519ae7ce64e8d8587.png" alt="Y_1 + Y_0"/> into an <tt class="docutils literal"><span class="pre">IntVar</span></tt>.</p>
 <p>And then:</p>
-<div class="highlight-bash"><div class="highlight"><pre>...: Y004<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y001 + Y000<span class="o">)</span>&gt;<span class="o">(</span>2..48<span class="o">)</span>
-...: Y005<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y002 + Y001<span class="o">)</span>&gt;<span class="o">(</span>2..48<span class="o">)</span>
-...: Y006<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y003 + Y002<span class="o">)</span>&gt;<span class="o">(</span>2..48<span class="o">)</span>
-...: Y007<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y002 + Var&lt;<span class="o">(</span>Y001 + Y000<span class="o">)</span>&gt;<span class="o">)</span>&gt;<span class="o">(</span>3..72<span class="o">)</span>
-...: Y008<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y003 + Var&lt;<span class="o">(</span>Y002 + Y001<span class="o">)</span>&gt;<span class="o">)</span>&gt;<span class="o">(</span>3..72<span class="o">)</span>
-...: Y009<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y003 + Var&lt;<span class="o">(</span>Y002 +
-                                           Var&lt;<span class="o">(</span>Y001 + Y000<span class="o">)</span>&gt;<span class="o">)</span>&gt;<span class="o">)</span>&gt;<span class="o">(</span>4..96<span class="o">)</span>
+<div class="highlight-bash"><div class="highlight"><pre>...: Y_4<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y_1<span class="o">(</span>1..24<span class="o">)</span> + Y_0<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">)</span>
+...: Y_5<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y_2<span class="o">(</span>1..24<span class="o">)</span> + Y_1<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">)</span>
+...: Y_6<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y_3<span class="o">(</span>1..24<span class="o">)</span> + Y_2<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">)</span>
+...: Y_7<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y_2<span class="o">(</span>1..24<span class="o">)</span> + Var&lt;<span class="o">(</span>Y_1<span class="o">(</span>1..24<span class="o">)</span> +
+                                            Y_0<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">))</span>&gt;<span class="o">(</span>3..72<span class="o">)</span>
+...: Y_8<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y_3<span class="o">(</span>1..24<span class="o">)</span> + Var&lt;<span class="o">(</span>Y_2<span class="o">(</span>1..24<span class="o">)</span> +
+                                            Y_1<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">))</span>&gt;<span class="o">(</span>3..72<span class="o">)</span>
+...: Y_9<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y_3<span class="o">(</span>1..24<span class="o">)</span> + Var&lt;<span class="o">(</span>Y_2<span class="o">(</span>1..24<span class="o">)</span> + Var&lt;<span class="o">(</span>Y_1<span class="o">(</span>1..24<span class="o">)</span> +
+                                   Y_0<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">))</span>&gt;<span class="o">(</span>3..72<span class="o">))</span>&gt;<span class="o">(</span>4..96<span class="o">)</span>
 ...: Forcing early failure
 ...: Check failed: <span class="o">(</span>collector-&gt;solution_count<span class="o">())</span> <span class="o">==</span> <span class="o">(</span>1<span class="o">)</span>
 Aborted
@@ -171,7 +176,6 @@ Aborted
 ...:   - 2 model extensions.
 ...:     * 1 VariableGroup
 ...:     * 1 Objective
-...
 </pre></div>
 </div>
 <p>Indeed, we have 1 <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint, 6 equality constraints and 10

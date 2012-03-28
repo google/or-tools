@@ -60,10 +60,9 @@
 What happens if we only consider the <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/> marks as variables?</p>
 <div class="section" id="variables">
 <h2>3.6.1. Variables</h2>
-<p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap3/golomb2.cc">tutorials/C++/chap3/golomb2.cc</a></p>
-<p>[CODE: Golomb3].</p>
+<p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap3/golomb3.cc">tutorials/C++/chap3/golomb3.cc</a></p>
 <p>Before we dive into the code, let&#8217;s be practical and ease our life a bit. One of the difficulties of the code in <tt class="file docutils literal"><span class="pre">golomb1.cc</span></tt>
-is that we use the first element of the array <tt class="docutils literal"><span class="pre">Y</span></tt>. There is no need to do so. In <tt class="file docutils literal"><span class="pre">golomb2.cc</span></tt>, we use <tt class="docutils literal"><span class="pre">X[1]</span></tt> as the first mark (and not <tt class="docutils literal"><span class="pre">X[0]</span></tt>).
+is that we use the first element of the array <tt class="docutils literal"><span class="pre">Y</span></tt>. There is no need to do so. In <tt class="file docutils literal"><span class="pre">golomb3.cc</span></tt>, we use <tt class="docutils literal"><span class="pre">X[1]</span></tt> as the first mark (and not <tt class="docutils literal"><span class="pre">X[0]</span></tt>).
 In the same vain, we redefine the array <tt class="docutils literal"><span class="pre">kG</span></tt> such that <tt class="docutils literal"><span class="pre">kG(n)</span> <span class="pre">=</span> <span class="pre">G(n)</span></tt> (and not <tt class="docutils literal"><span class="pre">kG(n-1)</span> <span class="pre">=</span> <span class="pre">G(n)</span></tt>). Thus:</p>
 <div class="highlight-c++" id="index-0"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;</span> <span class="n">X</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
 <span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeIntConst</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>  <span class="c1">// The solver doesn&#39;t allow NULL pointers</span>
@@ -72,12 +71,16 @@ In the same vain, we redefine the array <tt class="docutils literal"><span class
 </div>
 <p>We use an <tt class="docutils literal"><span class="pre">std::vector</span></tt> slightly bigger (by one more element) than absolutely necessary. Because the solver doesn&#8217;t allow NULL pointers, we have
 to assign a value to <tt class="docutils literal"><span class="pre">X[0]</span></tt>. The first mark <tt class="docutils literal"><span class="pre">X[1]</span></tt> is <tt class="docutils literal"><span class="pre">0</span></tt>. We use again <img class="math" src="../../_images/math/884c12c8169b77e2bb8f0b522112c34aa5c41ac4.png" alt="n^2 - 1"/> as an upper bound for the marks:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="k">const</span> <span class="n">int64</span> <span class="n">max</span> <span class="o">=</span> <span class="n">n</span> <span class="o">*</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="c1">// Upper bound on G(n), only valid for n &lt;= 65 000</span>
+<span class="n">CHECK_LE</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">65000</span><span class="p">);</span>
+<span class="k">const</span> <span class="n">int64</span> <span class="n">max</span> <span class="o">=</span> <span class="n">n</span> <span class="o">*</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">...</span>
 <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">n</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeIntVar</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max</span><span class="p">,</span> <span class="n">StringPrintf</span><span class="p">(</span><span class="s">&quot;X%03d&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">));</span>
 <span class="p">}</span>
 </pre></div>
 </div>
+<p>This time we don&#8217;t use <tt class="docutils literal"><span class="pre">MakeIntVarArray()</span></tt> because we want a better control on the names of the variables.</p>
 </div>
 <div class="section" id="constraints">
 <h2>3.6.2. Constraints</h2>
@@ -147,7 +150,8 @@ and so on as suggested in Figure <a class="reference internal" href="#gr-quatern
 <span class="kt">int</span> <span class="n">k</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">next_k</span><span class="p">,</span> <span class="n">next_l</span><span class="p">;</span>
 <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;=</span> <span class="n">n</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">k</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span> <span class="n">l</span> <span class="o">=</span> <span class="n">j</span><span class="p">;</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
+    <span class="n">l</span> <span class="o">=</span> <span class="n">j</span><span class="p">;</span>
     <span class="n">diff1</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">MakeDifference</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">-&gt;</span><span class="n">Var</span><span class="p">();</span>
     <span class="n">diff1</span><span class="o">-&gt;</span><span class="n">SetMin</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
     <span class="k">while</span> <span class="p">(</span><span class="n">next_interval</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">next_k</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">next_l</span><span class="p">))</span> <span class="p">{</span>
@@ -170,7 +174,7 @@ and so on as suggested in Figure <a class="reference internal" href="#gr-quatern
 <p>Note that we set the minimum value of the difference to <tt class="docutils literal"><span class="pre">1</span></tt>: <tt class="docutils literal"><span class="pre">diff1-&gt;SetMin(1)</span></tt>. Note also that the method
 <tt class="docutils literal"><span class="pre">MakeDifference()</span></tt> doesn&#8217;t allow to give a name to the new variable, which is normal as this new variable is the difference of two
 existing variables. Its name is simply <tt class="docutils literal"><span class="pre">name1</span> <span class="pre">-</span> <span class="pre">name2</span></tt>.</p>
-<p>Let&#8217;s compare the first and second implementation. The next table compare some global indicators about the search for <img class="math" src="../../_images/math/67c4555c837d711a45a3e1af64caafc004600eee.png" alt="G(9)"/>.</p>
+<p>Let&#8217;s compare the first and second implementation. The next table compares some global indicators about the search for <img class="math" src="../../_images/math/67c4555c837d711a45a3e1af64caafc004600eee.png" alt="G(9)"/>.</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="37%" />
@@ -206,8 +210,7 @@ existing variables. Its name is simply <tt class="docutils literal"><span class=
 </div>
 <div class="section" id="an-improved-version">
 <h2>3.6.3. An improved version</h2>
-<p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap3/golomb3.cc">tutorials/C++/chap3/golomb3.cc</a></p>
-<p>[CODE golomb4]</p>
+<p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap3/golomb4.cc">tutorials/C++/chap3/golomb4.cc</a></p>
 <p>Let&#8217;s improve our second model by using variables to denote the differences and define variables <tt class="docutils literal"><span class="pre">Y[i][j]</span> <span class="pre">=</span> <span class="pre">X[j]</span> <span class="pre">-</span> <span class="pre">X[i]</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span> <span class="o">*&gt;</span> <span class="o">&gt;</span><span class="n">Y</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
                                           <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span> <span class="o">*&gt;</span><span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">));</span>
@@ -233,7 +236,7 @@ existing variables. Its name is simply <tt class="docutils literal"><span class=
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>and compare this improved version with the two others:</p>
+<p>and compare this improved version with the two others, again to compute <img class="math" src="../../_images/math/67c4555c837d711a45a3e1af64caafc004600eee.png" alt="G(9)"/>:</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="28%" />

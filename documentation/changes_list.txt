@@ -1,4 +1,11 @@
 
+v.0.1.1: (2012-03-28 15:44:38)
+------------------------------
+* Minor enhancements to the manual:
+  - few corrections.
+* Tutorial code in C++ for chap 3 added.
+
+
 v.0.1.0: (2012-03-21 14:04:14)
 ------------------------------
 * Major enhancements to the manual:
@@ -8,9 +15,6 @@ v.0.1.0: (2012-03-21 14:04:14)
   - index improved.
 * Minor corrections:
   - code in C++.
-
-
-
 
 v.0.0.5: (2012-03-03 17:16:37)
 ------------------------------
