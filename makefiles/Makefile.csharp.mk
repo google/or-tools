@@ -16,13 +16,13 @@ csharp: csharpcp csharplp csharpalgorithms csharpgraph csharpexe
 
 # Clean target.
 clean_csharp:
-	-$(DEL) $(LIB_DIR)$(LIBPREFIX)Google.OrTools.*.$(SHAREDLIBEXT)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.*.$(SHAREDLIBEXT)
 	-$(DEL) $(BIN_DIR)$SGoogle.OrTools.*.dll
 	-$(DEL) $(BIN_DIR)$SGoogle.OrTools.*.mdb
-	-$(DEL) $(LIB_DIR)$(LIBPREFIX)Google.OrTools.*.lib
-	-$(DEL) $(LIB_DIR)$(LIBPREFIX)Google.OrTools.*.pdb
-	-$(DEL) $(LIB_DIR)$(LIBPREFIX)Google.OrTools.*.exp
-	-$(DEL) $(LIB_DIR)$(LIBPREFIX)Google.OrTools.*.netmodule
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.*.lib
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.*.pdb
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.*.exp
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.*.netmodule
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*csharp_wrap*
 	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*csharp_wrap*
 	-$(DEL) $(GEN_DIR)$Salgorithms$S*csharp_wrap*
@@ -52,11 +52,11 @@ $(OBJ_DIR)/linear_solver_csharp_wrap.$O: $(GEN_DIR)/linear_solver/linear_solver_
 
 $(BIN_DIR)/Google.OrTools.LinearSolver.dll: $(OBJ_DIR)/linear_solver_csharp_wrap.$O $(LP_DEPS) $(SRC_DIR)com/google/ortools/linearsolver/LinearExpr.cs $(SRC_DIR)com/google/ortools/linearsolver/LinearConstraint.cs
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:$(LIB_DIR)$(LIBPREFIX)Google.OrTools.LinearSolver.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(SRC_DIR)com\\google\\ortools\\linearsolver\\*.cs
-	$(LD) $(LDOUT)$(BIN_DIR)\\Google.OrTools.LinearSolver.dll $(LIB_DIR)$(LIBPREFIX)Google.OrTools.LinearSolver.netmodule $(OBJ_DIR)\\linear_solver_csharp_wrap.$O $(LP_LNK) $(LDFLAGS)
+	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.LinearSolver.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(SRC_DIR)com\\google\\ortools\\linearsolver\\*.cs
+	$(LD) $(LDOUT)$(BIN_DIR)\\Google.OrTools.LinearSolver.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.LinearSolver.netmodule $(OBJ_DIR)\\linear_solver_csharp_wrap.$O $(LP_LNK) $(LDFLAGS)
 else
 	$(CSC) /target:library /out:$(BIN_DIR)/Google.OrTools.LinearSolver.dll /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/linearsolver/*.cs $(SRC_DIR)com/google/ortools/linearsolver/*.cs
-	$(LD) $(LDOUT)$(LIB_DIR)$(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) $(OBJ_DIR)/linear_solver_csharp_wrap.$O $(LP_LNK) $(LDFLAGS)
+	$(LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) $(OBJ_DIR)/linear_solver_csharp_wrap.$O $(LP_LNK) $(LDFLAGS)
 endif
 
 # csharp linearsolver examples
@@ -87,11 +87,11 @@ $(OBJ_DIR)/constraint_solver_csharp_wrap.$O: $(GEN_DIR)/constraint_solver/constr
 
 $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll: $(OBJ_DIR)/constraint_solver_csharp_wrap.$O $(ROUTING_DEPS) $(SRC_DIR)com/google/ortools/constraintsolver/IntVarArrayHelper.cs $(SRC_DIR)com/google/ortools/constraintsolver/IntervalVarArrayHelper.cs $(SRC_DIR)com/google/ortools/constraintsolver/IntArrayHelper.cs $(SRC_DIR)com/google/ortools/constraintsolver/ValCstPair.cs $(SRC_DIR)com/google/ortools/constraintsolver/NetDecisionBuilder.cs
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:$(LIB_DIR)$(LIBPREFIX)Google.OrTools.ConstraintSolver.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs com\\google\\ortools\\constraintsolver\\*.cs
-	$(LD) $(LDOUT)$(BIN_DIR)\\Google.OrTools.ConstraintSolver.dll $(LIB_DIR)$(LIBPREFIX)Google.OrTools.ConstraintSolver.netmodule $(OBJ_DIR)$Sconstraint_solver_csharp_wrap.$O $(ROUTING_LNK) $(LDFLAGS)
+	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.ConstraintSolver.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs com\\google\\ortools\\constraintsolver\\*.cs
+	$(LD) $(LDOUT)$(BIN_DIR)\\Google.OrTools.ConstraintSolver.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.ConstraintSolver.netmodule $(OBJ_DIR)$Sconstraint_solver_csharp_wrap.$O $(ROUTING_LNK) $(LDFLAGS)
 else
 	$(CSC) /target:library /out:$(BIN_DIR)/Google.OrTools.ConstraintSolver.dll /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)com/google/ortools/constraintsolver/*.cs
-	$(LD)  $(LDOUT)$(LIB_DIR)$(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) $(OBJ_DIR)/constraint_solver_csharp_wrap.$O $(ROUTING_LNK) $(LDFLAGS)
+	$(LD)  $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) $(OBJ_DIR)/constraint_solver_csharp_wrap.$O $(ROUTING_LNK) $(LDFLAGS)
 endif
 
 # csharp cp examples
@@ -131,11 +131,11 @@ $(OBJ_DIR)/knapsack_solver_csharp_wrap.$O: $(GEN_DIR)/algorithms/knapsack_solver
 
 $(BIN_DIR)/Google.OrTools.Algorithms.dll: $(OBJ_DIR)/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_DEPS)
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:$(LIB_DIR)$(LIBPREFIX)Google.OrTools.Algorithms.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\knapsacksolver\\*.cs
-	$(LD) $(LDOUT)$(BIN_DIR)\\Google.OrTools.Algorithms.dll $(LIB_DIR)$(LIBPREFIX)Google.OrTools.Algorithms.netmodule $(OBJ_DIR)\\knapsack_solver_csharp_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS)
+	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Algorithms.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\knapsacksolver\\*.cs
+	$(LD) $(LDOUT)$(BIN_DIR)\\Google.OrTools.Algorithms.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Algorithms.netmodule $(OBJ_DIR)\\knapsack_solver_csharp_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS)
 else
 	$(CSC) /target:library /out:$(BIN_DIR)/Google.OrTools.Algorithms.dll /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/knapsacksolver/*.cs
-	$(LD) $(LDOUT)$(LIB_DIR)$(LIBPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT) $(OBJ_DIR)/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS)
+	$(LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT) $(OBJ_DIR)/knapsack_solver_csharp_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS)
 endif
 
 # csharp algorithm examples
@@ -155,11 +155,11 @@ $(OBJ_DIR)/graph_csharp_wrap.$O: $(GEN_DIR)/graph/graph_csharp_wrap.cc
 
 $(BIN_DIR)/Google.OrTools.Graph.dll: $(OBJ_DIR)/graph_csharp_wrap.$O $(GRAPH_DEPS)
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /unsafe /out:$(LIB_DIR)$(LIBPREFIX)Google.OrTools.Graph.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\graph\\*.cs
-	$(LD) $(LDOUT)$(BIN_DIR)\\Google.OrTools.Graph.dll $(LIB_DIR)$(LIBPREFIX)Google.OrTools.Graph.netmodule $(OBJ_DIR)\\graph_csharp_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
+	$(CSC) /target:module /unsafe /out:$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Graph.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\graph\\*.cs
+	$(LD) $(LDOUT)$(BIN_DIR)\\Google.OrTools.Graph.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Graph.netmodule $(OBJ_DIR)\\graph_csharp_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
 else
 	$(CSC) /target:library /unsafe /out:$(BIN_DIR)/Google.OrTools.Graph.dll /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/graph/*.cs
-	$(LD) $(LDOUT)$(LIB_DIR)$(LIBPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT) $(OBJ_DIR)/graph_csharp_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
+	$(LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT) $(OBJ_DIR)/graph_csharp_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
 endif
 
 # csharp graph examples

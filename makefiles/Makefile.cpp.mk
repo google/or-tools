@@ -1,23 +1,23 @@
 # List libraries by module.
 BASE_LIBS = \
-	$(LIB_DIR)$(LIBPREFIX)util.$(LIBSUFFIX)          \
-	$(LIB_DIR)$(LIBPREFIX)base.$(LIBSUFFIX)
+	$(LIB_DIR)/$(LIBPREFIX)util.$(LIBSUFFIX)          \
+	$(LIB_DIR)/$(LIBPREFIX)base.$(LIBSUFFIX)
 
 LP_LIBS = \
-	$(LIB_DIR)$(LIBPREFIX)linear_solver.$(LIBSUFFIX)
+	$(LIB_DIR)/$(LIBPREFIX)linear_solver.$(LIBSUFFIX)
 
 ALGORITHMS_LIBS = \
-	$(LIB_DIR)$(LIBPREFIX)algorithms.$(LIBSUFFIX)
+	$(LIB_DIR)/$(LIBPREFIX)algorithms.$(LIBSUFFIX)
 
 CP_LIBS = \
-	$(LIB_DIR)$(LIBPREFIX)constraint_solver.$(LIBSUFFIX)
+	$(LIB_DIR)/$(LIBPREFIX)constraint_solver.$(LIBSUFFIX)
 
 GRAPH_LIBS = \
-	$(LIB_DIR)$(LIBPREFIX)graph.$(LIBSUFFIX) \
-	$(LIB_DIR)$(LIBPREFIX)shortestpaths.$(LIBSUFFIX)
+	$(LIB_DIR)/$(LIBPREFIX)graph.$(LIBSUFFIX) \
+	$(LIB_DIR)/$(LIBPREFIX)shortestpaths.$(LIBSUFFIX)
 
 ROUTING_LIBS = \
-        $(LIB_DIR)$(LIBPREFIX)routing.$(LIBSUFFIX)
+        $(LIB_DIR)/$(LIBPREFIX)routing.$(LIBSUFFIX)
 
 # Lib dependencies.
 BASE_DEPS = $(BASE_LIBS)
@@ -92,7 +92,7 @@ LPBINARIES = \
 # Special dimacs example.
 
 DIMACS_LIBS = \
-	$(LIB_DIR)$(LIBPREFIX)dimacs.$(LIBSUFFIX)
+	$(LIB_DIR)/$(LIBPREFIX)dimacs.$(LIBSUFFIX)
 
 DIMACS_LNK = $(PRE_LIB)dimacs$(POST_LIB)
 
@@ -104,15 +104,15 @@ cc: cplibs cpexe algorithmslibs graphlibs lplibs lpexe
 # Clean target
 
 clean_cc:
-	-$(DEL) $(LIB_DIR)$(LIBPREFIX)base.$(LIBSUFFIX)
-	-$(DEL) $(LIB_DIR)$(LIBPREFIX)util.$(LIBSUFFIX)
-	-$(DEL) $(LIB_DIR)$(LIBPREFIX)constraint_solver.$(LIBSUFFIX)
-	-$(DEL) $(LIB_DIR)$(LIBPREFIX)linear_solver.$(LIBSUFFIX)
-	-$(DEL) $(LIB_DIR)$(LIBPREFIX)graph.$(LIBSUFFIX)
-	-$(DEL) $(LIB_DIR)$(LIBPREFIX)routing.$(LIBSUFFIX)
-	-$(DEL) $(LIB_DIR)$(LIBPREFIX)algorithms.$(LIBSUFFIX)
-	-$(DEL) $(LIB_DIR)$(LIBPREFIX)dimacs.$(LIBSUFFIX)
-	-$(DEL) $(LIB_DIR)$(LIBPREFIX)shortestpaths.$(LIBSUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)base.$(LIBSUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)util.$(LIBSUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)constraint_solver.$(LIBSUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)linear_solver.$(LIBSUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)graph.$(LIBSUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)routing.$(LIBSUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)algorithms.$(LIBSUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)dimacs.$(LIBSUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)shortestpaths.$(LIBSUFFIX)
 	-$(DEL) $(OBJ_DIR)$S*.$O
 	-$(DEL) $(CPBINARIES)
 	-$(DEL) $(LPBINARIES)
@@ -299,8 +299,8 @@ $(OBJ_DIR)/utilities.$O:$(SRC_DIR)constraint_solver/utilities.cc
 $(OBJ_DIR)/visitor.$O:$(SRC_DIR)constraint_solver/visitor.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)constraint_solver/visitor.cc $(OBJ_OUT)visitor.$O
 
-$(LIB_DIR)$(LIBPREFIX)constraint_solver.$(LIBSUFFIX): $(CONSTRAINT_SOLVER_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$(LIBPREFIX)constraint_solver.$(LIBSUFFIX) $(CONSTRAINT_SOLVER_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)constraint_solver.$(LIBSUFFIX): $(CONSTRAINT_SOLVER_LIB_OS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)constraint_solver.$(LIBSUFFIX) $(CONSTRAINT_SOLVER_LIB_OS)
 
 # Linear Solver Library
 
@@ -335,8 +335,8 @@ $(GEN_DIR)/linear_solver/linear_solver.pb.h:$(GEN_DIR)/linear_solver/linear_solv
 $(OBJ_DIR)/scip_interface.$O:$(SRC_DIR)linear_solver/scip_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)linear_solver/scip_interface.cc $(OBJ_OUT)scip_interface.$O
 
-$(LIB_DIR)$(LIBPREFIX)linear_solver.$(LIBSUFFIX): $(LINEAR_SOLVER_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$(LIBPREFIX)linear_solver.$(LIBSUFFIX) $(LINEAR_SOLVER_LIB_OS) $(SCIP_STATIC_LNK)
+$(LIB_DIR)/$(LIBPREFIX)linear_solver.$(LIBSUFFIX): $(LINEAR_SOLVER_LIB_OS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)linear_solver.$(LIBSUFFIX) $(LINEAR_SOLVER_LIB_OS) $(SCIP_STATIC_LNK)
 
 # Util library.
 
@@ -362,8 +362,8 @@ $(OBJ_DIR)/graph_export.$O:$(SRC_DIR)util/graph_export.cc
 $(OBJ_DIR)/xml_helper.$O:$(SRC_DIR)util/xml_helper.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)util/xml_helper.cc $(OBJ_OUT)xml_helper.$O
 
-$(LIB_DIR)$(LIBPREFIX)util.$(LIBSUFFIX): $(UTIL_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$(LIBPREFIX)util.$(LIBSUFFIX) $(UTIL_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)util.$(LIBSUFFIX): $(UTIL_LIB_OS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)util.$(LIBSUFFIX) $(UTIL_LIB_OS)
 
 # Graph library.
 
@@ -389,8 +389,8 @@ $(OBJ_DIR)/max_flow.$O:$(SRC_DIR)graph/max_flow.cc
 $(OBJ_DIR)/min_cost_flow.$O:$(SRC_DIR)graph/min_cost_flow.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)graph/min_cost_flow.cc $(OBJ_OUT)min_cost_flow.$O
 
-$(LIB_DIR)$(LIBPREFIX)graph.$(LIBSUFFIX): $(GRAPH_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$(LIBPREFIX)graph.$(LIBSUFFIX) $(GRAPH_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)graph.$(LIBSUFFIX): $(GRAPH_LIB_OS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)graph.$(LIBSUFFIX) $(GRAPH_LIB_OS)
 
 # Shortestpaths library.
 
@@ -408,8 +408,8 @@ $(OBJ_DIR)/dijkstra.$O:$(SRC_DIR)graph/dijkstra.cc
 $(OBJ_DIR)/shortestpaths.$O:$(SRC_DIR)graph/shortestpaths.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)graph/shortestpaths.cc $(OBJ_OUT)shortestpaths.$O
 
-$(LIB_DIR)$(LIBPREFIX)shortestpaths.$(LIBSUFFIX): $(SHORTESTPATHS_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$(LIBPREFIX)shortestpaths.$(LIBSUFFIX) $(SHORTESTPATHS_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)shortestpaths.$(LIBSUFFIX): $(SHORTESTPATHS_LIB_OS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)shortestpaths.$(LIBSUFFIX) $(SHORTESTPATHS_LIB_OS)
 
 # Routing library.
 
@@ -419,8 +419,8 @@ ROUTING_LIB_OS=\
 $(OBJ_DIR)/routing.$O:$(SRC_DIR)constraint_solver/routing.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)constraint_solver/routing.cc $(OBJ_OUT)routing.$O
 
-$(LIB_DIR)$(LIBPREFIX)routing.$(LIBSUFFIX): $(ROUTING_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$(LIBPREFIX)routing.$(LIBSUFFIX) $(ROUTING_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)routing.$(LIBSUFFIX): $(ROUTING_LIB_OS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)routing.$(LIBSUFFIX) $(ROUTING_LIB_OS)
 
 # Algorithms library.
 
@@ -434,8 +434,8 @@ $(OBJ_DIR)/hungarian.$O:$(SRC_DIR)algorithms/hungarian.cc
 $(OBJ_DIR)/knapsack_solver.$O:$(SRC_DIR)algorithms/knapsack_solver.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)algorithms/knapsack_solver.cc $(OBJ_OUT)knapsack_solver.$O
 
-$(LIB_DIR)$(LIBPREFIX)algorithms.$(LIBSUFFIX): $(ALGORITHMS_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$(LIBPREFIX)algorithms.$(LIBSUFFIX) $(ALGORITHMS_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)algorithms.$(LIBSUFFIX): $(ALGORITHMS_LIB_OS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)algorithms.$(LIBSUFFIX) $(ALGORITHMS_LIB_OS)
 
 # Base library.
 
@@ -481,8 +481,8 @@ $(OBJ_DIR)/sysinfo.$O:$(SRC_DIR)base/sysinfo.cc
 $(OBJ_DIR)/timer.$O:$(SRC_DIR)base/timer.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)base/timer.cc $(OBJ_OUT)timer.$O
 
-$(LIB_DIR)$(LIBPREFIX)base.$(LIBSUFFIX): $(BASE_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$(LIBPREFIX)base.$(LIBSUFFIX) $(BASE_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)base.$(LIBSUFFIX): $(BASE_LIB_OS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)base.$(LIBSUFFIX) $(BASE_LIB_OS)
 
 # DIMACS challenge problem format library
 
@@ -495,8 +495,8 @@ $(OBJ_DIR)/parse_dimacs_assignment.$O:$(SRC_DIR)examples/parse_dimacs_assignment
 $(OBJ_DIR)/print_dimacs_assignment.$O:$(SRC_DIR)examples/print_dimacs_assignment.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)examples/print_dimacs_assignment.cc $(OBJ_OUT)print_dimacs_assignment.$O
 
-$(LIB_DIR)$(LIBPREFIX)dimacs.$(LIBSUFFIX): $(DIMACS_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$(LIBPREFIX)dimacs.$(LIBSUFFIX) $(DIMACS_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)dimacs.$(LIBSUFFIX): $(DIMACS_LIB_OS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)dimacs.$(LIBSUFFIX) $(DIMACS_LIB_OS)
 
 # Flow and linear assignment examples
 
