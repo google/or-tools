@@ -11,7 +11,7 @@ endif
 
 # Unix specific part.
 ifeq ("$(SYSTEM)","unix")
-  TOP ?= $(shell pwd)
+  OR_TOOLS_TOP ?= $(shell pwd)
   OS = $(shell uname -s)
   ifneq ($(shell which python2.7),)
     PYTHONVERSION = 2.7
@@ -71,8 +71,8 @@ ifeq ("$(SYSTEM)","win")
     NETPLATFORM = x86
   endif
   OS = Windows
-  TOP_AUX = $(shell cd)
-  TOP = $(shell echo $(TOP_AUX) | tools\\sed.exe -e "s/\\/\\\\/g" | tools\\sed.exe -e "s/ //g")
+  OR_TOOLS_TOP_AUX = $(shell cd)
+  OR_TOOLS_TOP = $(shell echo $(OR_TOOLS_TOP_AUX) | tools\\sed.exe -e "s/\\/\\\\/g" | tools\\sed.exe -e "s/ //g")
 endif
 
 SVNVERSION = $(shell svnversion .)
@@ -80,7 +80,7 @@ SVNVERSION = $(shell svnversion .)
 
 printport:
 	@echo SHELL = $(SHELL)
-	@echo TOP = $(TOP)
+	@echo OR_TOOLS_TOP = $(OR_TOOLS_TOP)
 	@echo SYSTEM = $(SYSTEM)
 	@echo PLATFORM = $(PLATFORM)
 	@echo PTRLENGTH = $(PTRLENGTH)
