@@ -1,4 +1,4 @@
-// Copyright 2010-2011 Google
+// Copyright 2010-2012 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -2632,7 +2632,6 @@ const char ModelVisitor::kScalProdGreaterOrEqual[] =
 const char ModelVisitor::kScalProdLessOrEqual[] = "ScalarProductLessOrEqual";
 const char ModelVisitor::kSemiContinuous[] = "SemiContinuous";
 const char ModelVisitor::kSequenceVariable[] = "SequenceVariable";
-const char ModelVisitor::kSort[] = "Sort";
 const char ModelVisitor::kSquare[] = "Square";
 const char ModelVisitor::kStartExpr[]= "StartExpression";
 const char ModelVisitor::kSum[] = "Sum";

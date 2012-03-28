@@ -1,4 +1,4 @@
-// Copyright 2010-2011 Google
+// Copyright 2010-2012 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,7 +23,6 @@
 #include "base/scoped_ptr.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
-#include "util/const_ptr_array.h"
 #include "util/string_array.h"
 
 namespace operations_research {
@@ -422,76 +421,6 @@ bool BoundsAllDifferent::PropagateMax() {
   }
   return modified;
 }
-
-class SortConstraint : public Constraint {
- public:
-  SortConstraint(Solver* const solver,
-                 const std::vector<IntVar*>& original_vars,
-                 const std::vector<IntVar*>& sorted_vars,
-                 int size)
-      : Constraint(solver),
-        ovars_(original_vars),
-        svars_(sorted_vars),
-        mins_(NULL),
-        maxs_(NULL),
-        size_(size) {
-    if (size_ > 0) {
-      mins_.reset(new int64[size_]);
-      memset(mins_.get(), 0, size_ * sizeof(*mins_.get()));
-      maxs_.reset(new int64[size_]);
-      memset(maxs_.get(), 0, size_ * sizeof(*maxs_.get()));
-    }
-  }
-
-  virtual ~SortConstraint() {}
-
-  virtual void Post() {
-    Demon* const demon =
-        solver()->MakeDelayedConstraintInitialPropagateCallback(this);
-    for (int i = 0; i < size_; ++i) {
-      ovars_[i]->WhenRange(demon);
-      svars_[i]->WhenRange(demon);
-    }
-  }
-
-  virtual void InitialPropagate() {
-    for (int i = 0; i < size_; ++i) {
-      int64 vmin = 0;
-      int64 vmax = 0;
-      ovars_[i]->Range(&vmin, &vmax);
-      mins_[i] = vmin;
-      maxs_[i] = vmax;
-    }
-    std::sort(mins_.get(), mins_.get() + size_);
-    std::sort(maxs_.get(), maxs_.get() + size_);
-    for (int i = 0; i < size_; ++i) {
-      svars_[i]->SetRange(mins_[i], maxs_[i]);
-    }
-  }
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitConstraint(ModelVisitor::kSort, this);
-    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               ovars_);
-    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kTargetArgument,
-                                               svars_);
-    visitor->EndVisitConstraint(ModelVisitor::kSort, this);
-  }
-
-  virtual string DebugString() const {
-    return StringPrintf("Sort(%s, %s)",
-                        ovars_.DebugString().c_str(),
-                        svars_.DebugString().c_str());
-  }
-
- private:
-  ConstPtrArray<IntVar> ovars_;
-  ConstPtrArray<IntVar> svars_;
-  scoped_array<int64> mins_;
-  scoped_array<int64> maxs_;
-  const int size_;
-};
-
 }  // namespace
 
 Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars) {

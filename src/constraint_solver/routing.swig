@@ -240,7 +240,6 @@ class NodeEvaluator2 {
 %typemap(cstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
 %typemap(csin) operations_research::RoutingModel::NodeEvaluator2* "SWIGTYPE_p_ResultCallback2T_long_long__RoutingModel_NodeIndex__RoutingModel_NodeIndex_t.getCPtr($csinput.GetPermanentCallback())";
 #endif  // SWIGCSHARP
-
 %ignore RoutingModel::AddVectorDimension(const int64* values,
                                          int64 capacity,
                                          const string& name);

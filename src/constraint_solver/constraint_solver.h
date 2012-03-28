@@ -1,4 +1,4 @@
-// Copyright 2010-2011 Google
+// Copyright 2010-2012 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -3254,7 +3254,6 @@ class ModelVisitor : public BaseObject {
   static const char kScalProdLessOrEqual[];
   static const char kSemiContinuous[];
   static const char kSequenceVariable[];
-  static const char kSort[];
   static const char kSquare[];
   static const char kStartExpr[];
   static const char kSum[];

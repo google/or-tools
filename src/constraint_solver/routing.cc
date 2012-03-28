@@ -1,4 +1,4 @@
-// Copyright 2010-2011 Google
+// Copyright 2010-2012 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -332,8 +332,12 @@ LocalSearchOperator* MakePairRelocate(Solver* const solver,
 
 class RoutingCache {
  public:
-  RoutingCache(RoutingModel::NodeEvaluator2* callback, int size) :
-      cache_(size), callback_(callback) {
+  RoutingCache(RoutingModel::NodeEvaluator2* callback, int size)
+      : cached_(size), cache_(size), callback_(callback) {
+    for (RoutingModel::NodeIndex i(0); i < RoutingModel::NodeIndex(size); ++i) {
+      cached_[i].resize(size, false);
+      cache_[i].resize(size, 0);
+    }
     callback->CheckIsRepeatable();
   }
   int64 Run(RoutingModel::NodeIndex i, RoutingModel::NodeIndex j) {
@@ -341,16 +345,22 @@ class RoutingCache {
     // checks if it has been run with these parameters before, and
     // returns previous result if so, or runs underlaying callback and
     // stores its result.
-    int64 cached_value = 0;
-    if (!FindCopy(cache_[i], j, &cached_value)) {
-      cached_value = callback_->Run(i, j);
+    // Not MT-safe.
+    if (cached_[i][j]) {
+      return cache_[i][j];
+    } else {
+      const int64 cached_value = callback_->Run(i, j);
+      cached_[i][j] = true;
       cache_[i][j] = cached_value;
+      return cached_value;
     }
-    return cached_value;
   }
+
  private:
   ITIVector<RoutingModel::NodeIndex,
-            hash_map<RoutingModel::NodeIndex, int64> > cache_;
+            ITIVector<RoutingModel::NodeIndex, bool> > cached_;
+  ITIVector<RoutingModel::NodeIndex,
+            ITIVector<RoutingModel::NodeIndex, int64> > cache_;
   scoped_ptr<RoutingModel::NodeEvaluator2> callback_;
 };
 
@@ -2480,7 +2490,7 @@ void RoutingModel::AddToAssignment(IntVar* const var) {
 
 RoutingModel::NodeEvaluator2* RoutingModel::NewCachedCallback(
     NodeEvaluator2* callback) {
-  const int size = Size() + vehicles_;
+  const int size = node_to_index_.size();
   if (FLAGS_routing_cache_callbacks && size <= FLAGS_routing_max_cache_size) {
     routing_caches_.push_back(new RoutingCache(callback, size));
     NodeEvaluator2* const cached_evaluator =

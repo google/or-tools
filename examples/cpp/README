@@ -30,6 +30,7 @@ Operations Research libraries. </summary>
   - Routing examples:
     - tsp.cc    Travelling Salesman Problem.
     - cvrptw.cc Capacitated Vehicle Routing Problem with Time Windows.
+    - carptw.cc Capacitated Vehicle Arc-Routing Problem with Time Windows.
     - pdptw.cc  Pickup and Delivery Problem with Time Windows.
 
   - Graph examples:
@@ -49,6 +50,10 @@ Operations Research libraries. </summary>
     - strawberry_fields_with_column_generation.cc Complex example that
       demonstrates how to use dynamic column generation to solve a 2D
       covering problem.
+
+  - Examples using multiple technologies:
+    - warehouse_run.cc Solve a capacitated warehouse location problem with
+      different techniques.
 
   - Utilities
     - model_util.cc A utility to manipulate model files (.cp) dumped by the

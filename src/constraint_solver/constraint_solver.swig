@@ -279,7 +279,6 @@ class PyDecisionBuilder(object):
 %rename (Stamp) operations_research::Solver::stamp;
 %rename (WallTime) operations_research::Solver::wall_time;
 
-// Automatic rule.
 %rename("%(strip:[Make])s", %$isfunction) "";
 
 namespace operations_research {

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Google
+# Copyright 2010-2012 Google
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,9 +12,6 @@
 # limitations under the License.
 
 """Linear programming examples that show how to use the APIs."""
-
-__author__ = """lperron@google.com (Laurent Perron)
-                edanna@google.com (Emilie Danna)"""
 
 from google.apputils import app
 
