@@ -178,6 +178,7 @@ BIN_DIR = $(OR_ROOT)bin
 GEN_DIR = $(OR_ROOT)gen
 OBJ_DIR = $(OR_ROOT)objs
 SRC_DIR = $(OR_ROOT)
+EX_DIR  = $(OR_ROOT)
 O = o
 E =
 SHAREDLIBEXT = so

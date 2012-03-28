@@ -14,12 +14,14 @@ or-tools/
   README             <- This file
   algorithms/        <- Directory containing basic algorithms.
   base/              <- Directory containing basic utilities.
+  bin/               <- Directory where all binaries will be compiled.
   com/               <- Directory that contains all java code.
   constraint_solver/ <- The main directory for the constraint solver library.
   dependencies/      <- Directory that will contain built dependencies.
   examples/          <- C++ examples
   gen/               <- Directory that will contain generated files.
   graph/             <- Graph algorithms.
+  lib/               <- Directory where all libraries and jar files will go.
   linear_solver/     <- Linear solver wrapper.
   makefiles/         <- Directory that contains sub-makefiles.
   objs/              <- Where C++ objs files will be stored
