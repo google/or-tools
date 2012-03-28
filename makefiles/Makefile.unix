@@ -153,10 +153,10 @@ ifeq ($(PLATFORM),MACOSX)
   endif
 endif  # MAC OS X
 
-CFLAGS = $(SYSCFLAGS) $(DEBUG) -I$(OR_ROOT_INC) -I$(OR_ROOT)gen $(GFLAGS_INC) $(ARCH) \
+CFLAGS = $(SYSCFLAGS) $(DEBUG) -I$(INC_DIR) -I$(OR_ROOT)gen $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) \
 	$(SCIP_INC) $(SPARSEHASH_INC)
-JNIFLAGS = $(SYSCFLAGS) $(JNIDEBUG) -I$(OR_ROOT_INC) -I$(OR_ROOT)gen $(GFLAGS_INC) $(ARCH) \
+JNIFLAGS = $(SYSCFLAGS) $(JNIDEBUG) -I$(INC_DIR) -I$(OR_ROOT)gen $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC)
 LDFLAGS = $(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
 LDLPDEPS = $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK)
@@ -167,19 +167,23 @@ SWIG_BINARY = $(UNIX_SWIG_BINARY)
 MKDIR=mkdir
 COPY=cp
 TOUCH=touch
+LIBPREFIX = lib
 ifeq ($(PLATFORM),MACOSX)
 # Keep the path in the lib as it is stored upon construction.
-LIBPREFIX = $(OR_ROOT_FULL)/lib/lib
+LIB_DIR = $(OR_ROOT_FULL)/lib
 else # No need to keep the path in the lib, it is not stored there on linux.
-LIBPREFIX = $(OR_ROOT)lib/lib
+LIB_DIR = $(OR_ROOT)lib
 endif
-BINPREFIX = $(OR_ROOT)bin
+BIN_DIR = $(OR_ROOT)bin
+GEN_DIR = $(OR_ROOT)gen
+OBJ_DIR = $(OR_ROOT)objs
+SRC_DIR = $(OR_ROOT)
 O = o
 E =
 SHAREDLIBEXT = so
 LDOUT = -o # need the space.
-OBJOUT = -o $(OR_ROOT)
-EXEOUT = -o $(OR_ROOT)bin/
+OBJ_OUT = -o $(OBJ_DIR)/
+EXEOUT = -o $(BIN_DIR)/
 DEL = rm -f
 DELREC = rm -rf
 S = /

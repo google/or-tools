@@ -15,14 +15,14 @@ OR_TOOLS_VERSION = 1.0.0
 # $(OR_TOOLS_TOP)/ or $(OR_TOOLS_TOP)\\ depending on the platform. It contains the
 # trailing separator if not empty.
 #
-# OR_ROOT_INC is like OR_ROOT, but with a default of '.' instead of
+# INC_DIR is like OR_ROOT, but with a default of '.' instead of
 # empty.  It is used for instance in include directives (-I.).
 #
 # OR_ROOT_FULL is always the complete path to or-tools. It is useful
 # to store path informations inside libraries for instance.
 ifeq ($(OR_TOOLS_TOP),)
   OR_ROOT =
-  OR_ROOT_INC = .
+  INC_DIR = .
 else
   ifeq "$(SHELL)" "cmd.exe"
     OR_ROOT = $(OR_TOOLS_TOP)\\
@@ -33,7 +33,7 @@ else
       OR_ROOT = $(OR_TOOLS_TOP)/
     endif
   endif
-  OR_ROOT_INC = $(OR_TOOLS_TOP)
+  INC_DIR = $(OR_TOOLS_TOP)
 endif
 
 .PHONY : python cc java csharp
