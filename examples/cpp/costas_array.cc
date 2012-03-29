@@ -388,33 +388,23 @@ void CostasHard(const int dim) {
   }
   Solver solver("costas", parameters);
 
-  // we need space for the matrix and for each pair
-  const int num_elements = dim + dim * (dim - 1) / 2;
-
   // create the variables
   std::vector<IntVar*> vars;
-  solver.MakeIntVarArray(num_elements, -dim, dim, "var", &vars);
-
-  std::vector<IntVar*> matrix(dim);
+  solver.MakeIntVarArray(dim, -dim, dim, "var", &vars);
 
   // Initialize the matrix that contains the coordinates of all '1' per row
   for (int m = 0; m < dim; ++m) {
-    matrix[m] = vars[m];
     vars[m]->SetMin(1);
   }
 
-  solver.AddConstraint(solver.MakeAllDifferent(matrix));
-
-  int index = dim;
+  solver.AddConstraint(solver.MakeAllDifferent(vars));
 
   // Check that the pairwise difference is unique
   for (int i = 1; i < dim; ++i) {
     std::vector<IntVar*> subset(dim - i);
 
     for (int j = 0; j < dim - i; ++j) {
-      IntVar* const diff = solver.MakeDifference(vars[j + i], vars[j])->Var();
-      vars[index++] = diff;
-      subset[j] = diff;
+      subset[j] = solver.MakeDifference(vars[j + i], vars[j])->Var();
     }
 
     solver.AddConstraint(solver.MakeAllDifferent(subset));

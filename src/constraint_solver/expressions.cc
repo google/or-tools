@@ -4375,14 +4375,26 @@ IntVar* Solver::MakeIntConst(int64 val) {
 
 // ----- Int Var and associated methods -----
 
+namespace {
+string IndexedName(const string& prefix, int index, int max_index) {
+#if defined(_MSC_VER)
+  const int digits = max_index > 0 ?
+      static_cast<int>(log(1.0L * max_index) / log(10.0L)) + 1 :
+      1;
+#else
+  const int digits = max_index > 0 ? static_cast<int>(log10(max_index)) + 1: 1;
+#endif
+  return StringPrintf("%s%0*d", prefix.c_str(), digits, index);
+}
+}  // namespace
+
 void Solver::MakeIntVarArray(int var_count,
                              int64 vmin,
                              int64 vmax,
                              const string& name,
                              std::vector<IntVar*>* vars) {
   for (int i = 0; i < var_count; ++i) {
-    string vname = StringPrintf("%s%d", name.c_str(), i);
-    vars->push_back(MakeIntVar(vmin, vmax, vname));
+    vars->push_back(MakeIntVar(vmin, vmax, IndexedName(name, i, var_count)));
   }
 }
 
@@ -4401,8 +4413,7 @@ IntVar** Solver::MakeIntVarArray(int var_count,
                                  const string& name) {
   IntVar** vars = new IntVar*[var_count];
   for (int i = 0; i < var_count; ++i) {
-    string vname = StringPrintf("%s%d", name.c_str(), i);
-    vars[i] = MakeIntVar(vmin, vmax, vname);
+    vars[i] = MakeIntVar(vmin, vmax, IndexedName(name, i, var_count));
   }
   return vars;
 }
@@ -4411,8 +4422,7 @@ void Solver::MakeBoolVarArray(int var_count,
                               const string& name,
                               std::vector<IntVar*>* vars) {
   for (int i = 0; i < var_count; ++i) {
-    string vname = StringPrintf("%s%d", name.c_str(), i);
-    vars->push_back(MakeBoolVar(vname));
+    vars->push_back(MakeBoolVar(IndexedName(name, i, var_count)));
   }
 }
 
@@ -4425,8 +4435,7 @@ void Solver::MakeBoolVarArray(int var_count, std::vector<IntVar*>* vars) {
 IntVar** Solver::MakeBoolVarArray(int var_count, const string& name) {
   IntVar** vars = new IntVar*[var_count];
   for (int i = 0; i < var_count; ++i) {
-    string vname = StringPrintf("%s%d", name.c_str(), i);
-    vars[i] = MakeBoolVar(vname);
+    vars[i] = MakeBoolVar(IndexedName(name, i, var_count));
   }
   return vars;
 }
