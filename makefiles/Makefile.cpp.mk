@@ -120,6 +120,14 @@ clean_cc:
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pb.*
 	-$(DEL) $(OR_ROOT)*.exp
 
+clean_compat:
+	-$(DELREC) $(OR_ROOT)constraint_solver
+	-$(DELREC) $(OR_ROOT)linear_solver
+	-$(DELREC) $(OR_ROOT)algorithms
+	-$(DELREC) $(OR_ROOT)graph
+	-$(DELREC) $(OR_ROOT)gen
+
+
 # Individual targets.
 algorithmslibs: $(ALGORITHMS_DEPS)
 

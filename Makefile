@@ -36,7 +36,7 @@ endif
 
 .PHONY : python cc java csharp
 all: cc java python csharp
-clean: clean_cc clean_java clean_python clean_csharp
+clean: clean_cc clean_java clean_python clean_csharp clean_compat
 
 # First, we try to detect the platform.
 include $(OR_ROOT)makefiles/Makefile.port
