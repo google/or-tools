@@ -4957,6 +4957,95 @@ class SolutionPool : public BaseObject {
   virtual bool SyncNeeded(Assignment* const local_assignment) = 0;
 };
 
+#if !defined(SWIG)
+// ----- MultiThread and distributed LNS -----
 
+// This class acts as a glue between the master and different workers
+// in a multi thread or distributed environment. It offers
+// synchronization services and help creates the different objects
+// needed by the searches.
+
+class ParallelSolveSupport {
+ public:
+  ParallelSolveSupport(bool maximize,
+                       Callback3<ParallelSolveSupport* const, bool, int>* run_model);
+
+  virtual ~ParallelSolveSupport();
+
+  // This method is used by workers to wait for the initial solution to
+  // be found by the master. If the return value is false, then no
+  // solution has been found and the worker should exit gracefully.
+  virtual bool WaitForInitialSolution(Assignment* const to_fill,
+                                      int worker) = 0;
+
+  // This method is used be the master to signal the initial solution
+  // to workers.
+  virtual void RegisterInitialSolution(Assignment* const to_save) = 0;
+
+  // This method is used by the master to signal that no initial
+  // solution has been found.
+  virtual void RegisterNoInitialSolution() = 0;
+
+  // Creates a decision builder for the master. This decision builder
+  // will print out each solutions found by the workers.
+  virtual DecisionBuilder* MakeReplayDecisionBuilder(
+      Solver* const s, const Assignment* const solution) = 0;
+
+  // A simple shortcut to create the search log only on the master.
+  virtual SearchMonitor* MakeSearchLog(Solver* const s,
+                                       bool master,
+                                       int64 freq,
+                                       IntVar* const objective) = 0;
+
+  // A simple shortcut to create the limit only on the workers and not
+  // on the master.
+  virtual SearchMonitor* MakeLimit(Solver* const s,
+                                   bool master,
+                                   int64 time_limit,
+                                   int64 branch_limit,
+                                   int64 fail_limit,
+                                   int64 solution_limit) = 0;
+
+  // Creates a search monitor that communicates solutions found by the
+  // workers to the master. Both master and workers should use this.
+  virtual SearchMonitor* MakeCommunicationMonitor(
+      Solver* const s,
+      const Assignment* const solution,
+      bool master,
+      int worker) = 0;
+
+  // Creates a solution pool to be used in the Local Search for each
+  // worker. This solution pool is responsible for pulling improved
+  // solution from the master.
+  virtual SolutionPool* MakeSolutionPool(Solver* const s, int worker) = 0;
+
+  // This method launches the computation that will itself call the run_model
+  // callback given to the constructor.
+  virtual void Run() {}
+
+  // Are we maximizing the search.
+  bool maximize() const { return maximize_; }
+  // Returns the best stored solution.
+  AssignmentProto* solution() const { return local_solution_.get(); }
+
+ protected:
+  // Best solution found so far.
+  scoped_ptr<AssignmentProto> local_solution_;
+  // Are we maximizing.
+  const bool maximize_;
+  // Callback to run the model
+  scoped_ptr<Callback3<ParallelSolveSupport* const, bool, int> > run_model_;
+};
+
+// This method creates an instance of ParallelSolveSupport suited for
+// multi-threaded computation.  In the callback, the first argument
+// will be the instance of the ParallelSolveSupport class, the second
+// one will be a bool true for the master and the last one will be the index of
+// the slave.
+ParallelSolveSupport* MakeMtSolveSupport(
+    int workers,
+    bool maximize,
+    Callback3<ParallelSolveSupport* const, bool, int>* run_model);
+#endif
 }  // namespace operations_research
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_

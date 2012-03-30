@@ -168,6 +168,7 @@ CONSTRAINT_SOLVER_LIB_OS = \
 	$(OBJ_DIR)/local_search.$O\
 	$(OBJ_DIR)/model.pb.$O\
 	$(OBJ_DIR)/model_cache.$O\
+	$(OBJ_DIR)/mtsearch.$O\
 	$(OBJ_DIR)/nogoods.$O\
 	$(OBJ_DIR)/pack.$O\
 	$(OBJ_DIR)/range_cst.$O\
@@ -265,6 +266,9 @@ $(GEN_DIR)/constraint_solver/model.pb.h:$(GEN_DIR)/constraint_solver/model.pb.cc
 
 $(OBJ_DIR)/nogoods.$O:$(SRC_DIR)/constraint_solver/nogoods.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/nogoods.cc $(OBJ_OUT)nogoods.$O
+
+$(OBJ_DIR)/mtsearch.$O:$(SRC_DIR)/constraint_solver/mtsearch.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/mtsearch.cc $(OBJ_OUT)mtsearch.$O
 
 $(OBJ_DIR)/pack.$O:$(SRC_DIR)/constraint_solver/pack.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/pack.cc $(OBJ_OUT)pack.$O
