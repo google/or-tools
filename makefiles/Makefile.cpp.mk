@@ -454,8 +454,10 @@ BASE_LIB_OS=\
 	$(OBJ_DIR)/filelinereader.$O\
 	$(OBJ_DIR)/join.$O\
 	$(OBJ_DIR)/logging.$O\
+	$(OBJ_DIR)/mutex.$O\
 	$(OBJ_DIR)/random.$O\
 	$(OBJ_DIR)/recordio.$O\
+	$(OBJ_DIR)/threadpool.$O\
 	$(OBJ_DIR)/split.$O\
 	$(OBJ_DIR)/stringpiece.$O\
 	$(OBJ_DIR)/stringprintf.$O\
@@ -472,12 +474,16 @@ $(OBJ_DIR)/filelinereader.$O:$(SRC_DIR)/base/filelinereader.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/filelinereader.cc $(OBJ_OUT)filelinereader.$O
 $(OBJ_DIR)/logging.$O:$(SRC_DIR)/base/logging.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/logging.cc $(OBJ_OUT)logging.$O
+$(OBJ_DIR)/mutex.$O:$(SRC_DIR)/base/mutex.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/mutex.cc $(OBJ_OUT)mutex.$O
 $(OBJ_DIR)/join.$O:$(SRC_DIR)/base/join.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/join.cc $(OBJ_OUT)join.$O
 $(OBJ_DIR)/random.$O:$(SRC_DIR)/base/random.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/random.cc $(OBJ_OUT)random.$O
 $(OBJ_DIR)/recordio.$O:$(SRC_DIR)/base/recordio.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/recordio.cc $(OBJ_OUT)recordio.$O
+$(OBJ_DIR)/threadpool.$O:$(SRC_DIR)/base/threadpool.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/threadpool.cc $(OBJ_OUT)threadpool.$O
 $(OBJ_DIR)/split.$O:$(SRC_DIR)/base/split.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/split.cc $(OBJ_OUT)split.$O
 $(OBJ_DIR)/stringpiece.$O:$(SRC_DIR)/base/stringpiece.cc

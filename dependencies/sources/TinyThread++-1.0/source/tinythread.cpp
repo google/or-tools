@@ -24,6 +24,8 @@ freely, subject to the following restrictions:
 #include <exception>
 #include "tinythread.h"
 
+class thread;
+
 #if defined(_TTHREAD_POSIX_)
   #include <unistd.h>
   #include <map>
