@@ -39,7 +39,7 @@ class MtSolveSupport : public ParallelSolveSupport {
  public:
   MtSolveSupport(int workers,
                  bool maximize,
-                 Callback3<ParallelSolveSupport* const, bool, int>* run_model);
+                 ModelBuilder* const run_model);
 
   virtual ~MtSolveSupport();
 
@@ -95,16 +95,16 @@ class MtSolveSupport : public ParallelSolveSupport {
     // Start master.
     pool.Add(NewCallback(
         run_model_.get(),
-        &Callback3<ParallelSolveSupport* const, bool, int>::Run,
-        reinterpret_cast<ParallelSolveSupport* const>(this),
+        &ModelBuilder::Run,
+        reinterpret_cast<ParallelSolveSupport*>(this),
         true,
         -1));
 
     for (int index = 0; index < workers_; ++index) {
       pool.Add(NewCallback(
           run_model_.get(),
-          &Callback3<ParallelSolveSupport* const, bool, int>::Run,
-          reinterpret_cast<ParallelSolveSupport* const>(this),
+          &ModelBuilder::Run,
+          reinterpret_cast<ParallelSolveSupport*>(this),
           false,
           index));
     }
@@ -268,7 +268,7 @@ class MtSolutionDispatcher : public SearchMonitor {
 
 ParallelSolveSupport::ParallelSolveSupport(
     bool maximize,
-    Callback3<ParallelSolveSupport* const, bool, int>* run_model)
+    ModelBuilder* const run_model)
   : local_solution_(new AssignmentProto()),
     maximize_(maximize),
     run_model_(run_model) {
@@ -284,7 +284,7 @@ ParallelSolveSupport::~ParallelSolveSupport() {}
 MtSolveSupport::MtSolveSupport(
     int workers,
     bool maximize,
-    Callback3<ParallelSolveSupport* const, bool, int>* run_model)
+    ParallelSolveSupport::ModelBuilder* const run_model)
     : ParallelSolveSupport(maximize, run_model),
       workers_(workers),
       best_exported_cost_(maximize_ ? kint64min : kint64max),
@@ -301,8 +301,8 @@ MtSolveSupport::MtSolveSupport(
 ParallelSolveSupport* MakeMtSolveSupport(
     int workers,
     bool maximize,
-    Callback3<ParallelSolveSupport* const, bool, int>* run_model) {
-  return new MtSolveSupport(workers, maximize, run_model);
+    ParallelSolveSupport::ModelBuilder* const model_builder) {
+  return new MtSolveSupport(workers, maximize, model_builder);
 }
 
 MtSolveSupport::~MtSolveSupport() {}

@@ -628,6 +628,14 @@ $(OBJ_DIR)/tsp.$O: $(EX_DIR)/cpp/tsp.cc $(SRC_DIR)/constraint_solver/routing.h
 $(BIN_DIR)/tsp$E: $(ROUTING_DEPS) $(OBJ_DIR)/tsp.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/tsp.$O $(ROUTING_LNK) $(LDFLAGS) $(EXEOUT)tsp$E
 
+# CP tests.
+
+$(OBJ_DIR)/mtsearch_test.$O:$(EX_DIR)/tests/mtsearch_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/mtsearch_test.cc $(OBJ_OUT)mtsearch_test.$O
+
+$(BIN_DIR)/mtsearch_test$E: $(CP_DEPS) $(OBJ_DIR)/mtsearch_test.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/mtsearch_test.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)mtsearch_test$E
+
 # Linear Programming Examples
 
 $(OBJ_DIR)/strawberry_fields_with_column_generation.$O: $(EX_DIR)/cpp/strawberry_fields_with_column_generation.cc $(SRC_DIR)/linear_solver/linear_solver.h

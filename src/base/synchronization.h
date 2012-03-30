@@ -42,5 +42,11 @@ class Barrier {
   int num_to_exit_;
   DISALLOW_COPY_AND_ASSIGN(Barrier);
 };
+
+template<class T, class TT>
+inline T ThreadSafeIncrement( T* value, Mutex* sm, TT inc ) {
+  MutexLock l(sm);
+  return (*value) += inc;
+}
 }  // namespace operations_research
 #endif  // OR_TOOLS_BASE_SYNCHRONIZATION_H_

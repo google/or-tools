@@ -4967,8 +4967,9 @@ class SolutionPool : public BaseObject {
 
 class ParallelSolveSupport {
  public:
-  ParallelSolveSupport(bool maximize,
-                       Callback3<ParallelSolveSupport* const, bool, int>* run_model);
+  typedef Callback3<ParallelSolveSupport*, bool, int> ModelBuilder;
+
+  ParallelSolveSupport(bool maximize, ModelBuilder* const run_model);
 
   virtual ~ParallelSolveSupport();
 
@@ -5034,7 +5035,7 @@ class ParallelSolveSupport {
   // Are we maximizing.
   const bool maximize_;
   // Callback to run the model
-  scoped_ptr<Callback3<ParallelSolveSupport* const, bool, int> > run_model_;
+  scoped_ptr<ModelBuilder> run_model_;
 };
 
 // This method creates an instance of ParallelSolveSupport suited for
@@ -5045,7 +5046,7 @@ class ParallelSolveSupport {
 ParallelSolveSupport* MakeMtSolveSupport(
     int workers,
     bool maximize,
-    Callback3<ParallelSolveSupport* const, bool, int>* run_model);
+    ParallelSolveSupport::ModelBuilder* const model_builder);
 #endif
 }  // namespace operations_research
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
