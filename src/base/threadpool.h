@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BASE_THREADPOOL_H_
 #define OR_TOOLS_BASE_THREADPOOL_H__
 
+#include <string>
 #include <vector>
 
 #include "base/callback.h"
@@ -26,7 +27,7 @@
 namespace operations_research {
 class ThreadPool {
  public:
-  explicit ThreadPool(const string& prefix, int num_threads);
+  explicit ThreadPool(const std::string& prefix, int num_threads);
   ~ThreadPool();
 
   void StartWorkers();

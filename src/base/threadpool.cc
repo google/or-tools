@@ -27,7 +27,7 @@ void RunWorker(void* data) {
   thread_pool->StopOnFinalBarrier();
 }
 
-ThreadPool::ThreadPool(const string& prefix, int num_workers)
+ThreadPool::ThreadPool(const std::string& prefix, int num_workers)
     : num_workers_(num_workers),
       done_index_(0),
       waiting_to_finish_(false),
