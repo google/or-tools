@@ -20,17 +20,30 @@
 #include "base/macros.h"
 #include "base/logging.h"
 #include "base/mutex.h"
+#include "base/scoped_ptr.h"
 #include "base/synchronization.h"
 
 namespace operations_research {
 class ThreadPool {
  public:
-  explicit ThreadPool(int num_threads);
+  explicit ThreadPool(const string& prefix, int num_threads);
   ~ThreadPool();
 
   void StartWorkers();
   void Add(Closure* closure);
+  void StopOnFinalBarrier();
+  Closure* GetNextTask();
 
+private:
+  const int num_workers_;
+  std::vector<Closure*> work_to_do_;
+  int done_index_;
+  Mutex mutex_;
+  CondVar condition_;
+  bool waiting_to_finish_;
+  bool started_;
+  scoped_ptr<Barrier> final_barrier_;
+  std::vector<tthread::thread*> all_workers_;
 };
 }  // namespace operations_research
 #endif  // OR_TOOLS_BASE_THREADPOOL_H__

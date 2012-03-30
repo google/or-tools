@@ -65,5 +65,9 @@ class CondVar {
   tthread::condition_variable real_condition_;
   DISALLOW_COPY_AND_ASSIGN(CondVar);
 };
+
+// Checking macros.
+#define EXCLUSIVE_LOCK_FUNCTION(x)
+#define UNLOCK_FUNCTION(x)
 }  // namespace operations_research
 #endif  // OR_TOOLS_BASE_MUTEX_H_
