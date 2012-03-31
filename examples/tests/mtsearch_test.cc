@@ -13,6 +13,8 @@
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 
+DEFINE_int32(workers, 4, "Number of workers for tests");
+
 namespace operations_research {
 class UpVar : public BaseLNS {
  public:
@@ -56,7 +58,7 @@ void BuildModelWithSolution(int* const active,
     solution->SetValue(x, 2);
     solution->SetValue(y, 4);
     support->RegisterInitialSolution(solution);
-    ThreadSafeIncrement(active, mutex, 1);
+    ThreadSafeIncrement(active, mutex, 2);
     VLOG(1) << "Master initial solution sent";
   } else {
     VLOG(1) << "Slave " << worker;
@@ -76,7 +78,7 @@ void BuildModelWithoutSolution(int* const active,
   Solver s(StringPrintf("Worker_%i", worker));
   if (master) {
     support->RegisterNoInitialSolution();
-    ThreadSafeIncrement(active, mutex, 1);
+    ThreadSafeIncrement(active, mutex, 2);
   } else {
     Assignment* const solution = s.MakeAssignment();
     CHECK(!support->WaitForInitialSolution(solution, worker));
@@ -156,11 +158,10 @@ void BuildModelWithSearch(int workers,
 
 void TestInitialSolution() {
   LOG(INFO) << "TestInitialSolution";
-  const int kWorkers = 4;
   int work_done = 0;
   Mutex mutex;
   scoped_ptr<ParallelSolveSupport> support(
-      MakeMtSolveSupport(kWorkers,
+      MakeMtSolveSupport(FLAGS_workers,
                          false,
                          NewPermanentCallback(
                              &BuildModelWithSolution,
@@ -168,34 +169,32 @@ void TestInitialSolution() {
                              &mutex)));
 
   support->Run();
-  CHECK_EQ(kWorkers + 1, work_done);
+  CHECK_EQ(FLAGS_workers + 2, work_done);
 }
 
 void TestNoInitialSolution() {
   LOG(INFO) << "TestNoInitialSolution";
-  const int kWorkers = 4;
   int work_done = 0;
   Mutex mutex;
   scoped_ptr<ParallelSolveSupport> support(
-      MakeMtSolveSupport(kWorkers,
+      MakeMtSolveSupport(FLAGS_workers,
                          false,
                          NewPermanentCallback(
                              &BuildModelWithoutSolution,
                              &work_done,
                              &mutex)));
   support->Run();
-  CHECK_EQ(kWorkers + 1, work_done);
+  CHECK_EQ(FLAGS_workers + 2, work_done);
 }
 
 void TestModelWithSearch() {
   LOG(INFO) << "TestModelWithSearch";
-  const int kSlaves = 4;
   scoped_ptr<ParallelSolveSupport> support(
-      MakeMtSolveSupport(kSlaves,
+      MakeMtSolveSupport(FLAGS_workers,
                          true,
                          NewPermanentCallback(
                              &BuildModelWithSearch,
-                             kSlaves)));
+                             FLAGS_workers)));
   support->Run();
 }
 }  // namespace  operations_research
