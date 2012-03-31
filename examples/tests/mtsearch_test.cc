@@ -52,12 +52,16 @@ void BuildModelWithSolution(int* const active,
   solution->Add(x);
   solution->Add(y);
   if (master) {
+    VLOG(1) << "Master run";
     solution->SetValue(x, 2);
     solution->SetValue(y, 4);
     support->RegisterInitialSolution(solution);
     ThreadSafeIncrement(active, mutex, 1);
+    VLOG(1) << "Master initial solution sent";
   } else {
+    VLOG(1) << "Slave " << worker;
     CHECK(support->WaitForInitialSolution(solution, worker));
+    VLOG(1) << "Worker solution received";
     CHECK_EQ(2, solution->Value(x));
     CHECK_EQ(4, solution->Value(y));
     ThreadSafeIncrement(active, mutex, 1);

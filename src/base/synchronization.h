@@ -27,8 +27,12 @@ class Barrier {
     MutexLock l(&this->lock_);
     this->num_to_block_--;
     CHECK_GE(this->num_to_block_, 0);
-    while (num_to_block_ > 0) {
-      condition_.Wait(&lock_);
+    if (num_to_block_ > 0) {
+      while (num_to_block_ > 0) {
+        condition_.Wait(&lock_);
+      }
+    } else {
+      condition_.SignalAll();
     }
     this->num_to_exit_--;
     CHECK_GE(this->num_to_exit_, 0);
