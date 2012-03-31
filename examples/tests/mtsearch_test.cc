@@ -90,6 +90,7 @@ void BuildModelWithSearch(int workers,
                           ParallelSolveSupport* const support,
                           bool master,
                           int worker) {
+  // Standard model building.
   Solver s(StringPrintf("Worker_%i", worker));
   VLOG(1) << "Worker " << worker  << " started";
   vector<IntVar*> vars;
@@ -106,49 +107,56 @@ void BuildModelWithSearch(int workers,
   IntVar* const objective = s.MakeScalProd(vars, coefficients)->Var();
   solution->AddObjective(objective);
 
-  SolutionCollector* const collector = master ?
-      s.MakeLastSolutionCollector(solution) :
-      NULL;
+  SolutionCollector* const collector =
+      master ? s.MakeLastSolutionCollector(solution) : NULL;
 
   vector<SearchMonitor*> monitors;
 
+  // Create or wait for initial solution.
   if (master) {
+    // Only the master needs to store solutions.
     monitors.push_back(collector);
 
+    // Creates the initial solution.
     for (int i = 0; i < workers; ++i) {
       solution->SetValue(vars[i], 0);
     }
     solution->SetObjectiveValue(0);
     support->RegisterInitialSolution(solution);
   } else {
+    // Workers waits for the initial solution.
     CHECK(support->WaitForInitialSolution(solution, worker));
     CHECK_EQ(0, solution->ObjectiveValue());
   }
 
   monitors.push_back(s.MakeMaximize(objective, 1));
 
-  UpVar* local_search_operator =
+  UpVar* const local_search_operator =
       s.RevAlloc(new UpVar(vars.data(), workers, worker));
 
   DecisionBuilder* db = s.MakePhase(vars,
                                     Solver::CHOOSE_FIRST_UNBOUND,
                                     Solver::ASSIGN_MAX_VALUE);
 
-  SolutionPool* const pool = !master ?
-      support->MakeSolutionPool(&s, worker) :
-      s.MakeDefaultSolutionPool();
-
-  LocalSearchPhaseParameters* parameters =
-      s.MakeLocalSearchPhaseParameters(pool, local_search_operator, db);
-
+  // The master must run a dedicated decision builder to report
+  // solutions found by the workers. The workers run a LNS operator
+  // with a customized solution pool.
   DecisionBuilder* const final_db = master ?
-      support->MakeReplayDecisionBuilder(&s, solution) :
-      s.MakeLocalSearchPhase(solution, parameters);
+      support->MakeReplayDecisionBuilder(&s, solution) :  // Master.
+      s.MakeLocalSearchPhase(                             // Worker.
+          solution,
+          s.MakeLocalSearchPhaseParameters(
+              support->MakeSolutionPool(&s, worker),
+              local_search_operator,
+              db));
 
+  // Everybody needs this communication monitor.
   monitors.push_back(
       support->MakeCommunicationMonitor(&s, solution, master, worker));
 
-  s.Solve(final_db, monitors);
+  s.Solve(final_db, monitors);  // go!
+
+  // The master will report solutions.
   if (master && collector->solution_count()) {
     CHECK_EQ(1, collector->solution_count());
     Assignment* const best_solution = collector->solution(0);
