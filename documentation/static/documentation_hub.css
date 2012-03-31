@@ -13,6 +13,12 @@ body {
     margin:15px;
     background-color:#FFFFFF;
 }
+
+.examples_list {
+ padding:0 ! important;
+  margin:0 ! important;
+}
+
 img {border:none;}
 a { text-decoration: none;}
 a:visited  { color: #2929ff;}
@@ -57,10 +63,21 @@ li {
     margin:1px 0px 1px 0px;
 }
 
-dt {
-    text-decoration: underline;
-    
+dl{
+ width:100%;
+ overflow:hidden;
 }
+dt {
+ float:left;
+ width:10%; /* adjust the width; make sure the total of both is 100% */
+     text-decoration: underline;
+}
+dd.examples_list {
+ float:left;
+ width:90%; /* adjust the width; make sure the total of both is 100% */
+}
+
+
 
 .language {
     font-variant: small-caps;
