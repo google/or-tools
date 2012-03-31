@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>3.10. Summary &mdash; or-tools User&#39;s Manual&#39;</title>
+    <title>Own choices: next value to assign &mdash; or-tools User&#39;s Manual&#39;</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -26,10 +26,7 @@
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
-    <link rel="top" title="or-tools User&#39;s Manual&#39;" href="../../index.html" />
-    <link rel="up" title="3. Using objectives in constraint programming: Golomb rulers" href="../objectives.html" />
-    <link rel="next" title="4. Defining search primitives: NQueens problems" href="../search_primitives.html" />
-    <link rel="prev" title="3.9. How does the solver optimize?" href="optimization_how.html" /> 
+    <link rel="top" title="or-tools User&#39;s Manual&#39;" href="../../index.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,14 +35,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="../search_primitives.html" title="4. Defining search primitives: NQueens problems"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="optimization_how.html" title="3.9. How does the solver optimize?"
-             accesskey="P">previous</a> |</li>
-        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../objectives.html" accesskey="U">3. Using objectives in constraint programming: Golomb rulers</a> &raquo;</li> 
+        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -54,17 +44,20 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="summary">
-<span id="golomb-ruler-summary"></span><h1>3.10. Summary</h1>
-<p>Not a good approach. For example with our tightened implementation 3 we need <tt class="docutils literal"><span class="pre">35.679</span></tt>  seconds to solve <img class="math" src="../../_images/math/7f3c0d03225cdc3cc82b59a8f511bfdd34dcadcc.png" alt="G(11)"/>.</p>
-<p>Further reading: see <a class="reference internal" href="#smithetal">[SmithEtAl]</a></p>
-<table class="docutils citation" frame="void" id="smithetal" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[SmithEtAl]</a></td><td>Barbara M. Smith, Kostas Stergiou and Toby Walsh. <em>Modelling the Golomb Ruler Problem</em>. Report 1999.12,
-School of computer studies, University of Leeds, 1999.</td></tr>
-</tbody>
-</table>
+  <div class="section" id="own-choices-next-value-to-assign">
+<h1>Own choices: next value to assign</h1>
+<p>The Golomb Ruler Problem is one of these very easy to state problems but
+that are extremely difficult to solve despite their apparent simplicity.</p>
+<p>In this section, we describe the problem and propose a first model to solve it.
+This model is not very efficient and we will develop better models in
+the next sections.</p>
+<div class="section" id="description-of-the-problem">
+<h2>Description of the problem</h2>
+<p>A Golomb ruler is a sequence of non-negative integers such that every difference
+of two integers in the sequence is distinct. Conceptually, this is similar to construct
+a ruler in such a way that no two pairs of marks measure the same distance. The number
+of marks (elements in the sequence) is called the <em>order</em> of the Golomb ruler.</p>
+</div>
 </div>
 
 
@@ -124,6 +117,14 @@ School of computer studies, University of Leeds, 1999.</td></tr>
    
 	
 
+  <h3>Sections</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Own choices: next value to assign</a><ul>
+<li><a class="reference internal" href="#description-of-the-problem">Description of the problem</a></li>
+</ul>
+</li>
+</ul>
+
         </div>
       </div>
       <div class="clearer"></div>
@@ -134,14 +135,7 @@ School of computer studies, University of Leeds, 1999.</td></tr>
         <li class="right" style="margin-right: 10px">
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
-        <li class="right" >
-          <a href="../search_primitives.html" title="4. Defining search primitives: NQueens problems"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="optimization_how.html" title="3.9. How does the solver optimize?"
-             >previous</a> |</li>
-        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../objectives.html" >3. Using objectives in constraint programming: Golomb rulers</a> &raquo;</li> 
+        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

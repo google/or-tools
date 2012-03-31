@@ -1,0 +1,162 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Predefined choices: next variable to branch on &mdash; or-tools User&#39;s Manual&#39;</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     'doc version 0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../../_static/logo.ico"/>
+    <link rel="top" title="or-tools User&#39;s Manual&#39;" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="predefined-choices-next-variable-to-branch-on">
+<h1>Predefined choices: next variable to branch on</h1>
+<p>The Golomb Ruler Problem is one of these very easy to state problems but
+that are extremely difficult to solve despite their apparent simplicity.</p>
+<p>In this section, we describe the problem and propose a first model to solve it.
+This model is not very efficient and we will develop better models in
+the next sections.</p>
+<div class="section" id="description-of-the-problem">
+<h2>Description of the problem</h2>
+<p>enum operations_research::Solver::IntVarStrategy</p>
+<p>This enum describes the strategy used to select the next branching variable at each node during the search.</p>
+<dl class="docutils">
+<dt>Enumerator:</dt>
+<dd><p class="first">INT_VAR_DEFAULT     The default behavior is CHOOSE_FIRST_UNBOUND.
+INT_VAR_SIMPLE      The simple selection is CHOOSE_FIRST_UNBOUND.
+CHOOSE_FIRST_UNBOUND        Select the first unbound variable.</p>
+<p>Variables are considered in the order of the vector of IntVars used to create the selector.
+CHOOSE_RANDOM       Randomly select one of the remaining unbound variables.
+CHOOSE_MIN_SIZE_LOWEST_MIN  Among unbound variables, select the variable with the smallest size, i.e.</p>
+<p>the smallest number of possible values. In case of tie, the selected variables is the one with the lowest min value. In case of tie, the first one is selected, first being defined by the order in the vector of IntVars used to create the selector.
+CHOOSE_MIN_SIZE_HIGHEST_MIN         Among unbound variables, select the variable with the smallest size, i.e.</p>
+<p>the smallest number of possible values. In case of tie, the selected variables is the one with the highest min value. In case of tie, the first one is selected, first being defined by the order in the vector of IntVars used to create the selector.
+CHOOSE_MIN_SIZE_LOWEST_MAX  Among unbound variables, select the variable with the smallest size, i.e.</p>
+<p>the smallest number of possible values. In case of tie, the selected variables is the one with the lowest max value. In case of tie, the first one is selected, first being defined by the order in the vector of IntVars used to create the selector.
+CHOOSE_MIN_SIZE_HIGHEST_MAX         Among unbound variables, select the variable with the smallest size, i.e.</p>
+<p class="last">the smallest number of possible values. In case of tie, the selected variables is the one with the highest max value. In case of tie, the first one is selected, first being defined by the order in the vector of IntVars used to create the selector.
+CHOOSE_PATH         Selects the next unbound variable on a path, the path being defined by the variables: var[i] corresponds to the index of the next of i.</p>
+</dd>
+</dl>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+
+  <h2>User's Manual</h2>
+  </br>
+  
+   
+	
+
+
+<h3>Google search</h3>
+
+<form method="get" action="http://www.google.com/search">
+
+<div style="padding:-1px;width:15em;">
+<table border="0" cellpadding="0">
+<tr><td>
+<input type="text"   name="q" size="25"
+ maxlength="255" value="" />
+<input type="submit" value="Go" /></td></tr>
+<tr><td align="center" style="font-size:65%">
+<input type="checkbox"  name="sitesearch"
+ value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
+</td></tr></table>
+</div>
+
+</form>
+</br>
+
+  <h3>Welcome</h3>
+  
+  <ul>
+  	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
+	<li><a href="../../index.html">Back to main page</a></li>
+
+  </ul>
+  
+   
+	
+
+
+  <h3>Tutorial examples</h3>
+  
+  <ul>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
+	<li>Java</li>
+	<li>C#</li>
+</ul>
+  
+   
+	
+
+  <h3>Sections</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Predefined choices: next variable to branch on</a><ul>
+<li><a class="reference internal" href="#description-of-the-problem">Description of the problem</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Google.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>
