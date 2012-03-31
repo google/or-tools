@@ -556,7 +556,6 @@ class MTSharingSolutionPool : public SolutionPool {
   }
 
   virtual void GetNextSolution(Assignment* const assignment) {
-    count_ = 0;
     const int64 local_best = reference_assignment_->ObjectiveValue();
     support_->LockMutex();
     AssignmentProto* const best_solution = support_->solution();
@@ -572,6 +571,7 @@ class MTSharingSolutionPool : public SolutionPool {
 
   virtual bool SyncNeeded(Assignment* const local_assignment) {
     if (++count_ >= FLAGS_cp_parallel_update_frequency) {
+      count_ = 0;
       const int64 current_value = local_assignment->ObjectiveValue();
       support_->LockMutex();
       bool result = support_->IsSharedSolutionBetter(current_value);
