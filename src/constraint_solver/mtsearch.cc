@@ -556,34 +556,36 @@ class MTSharingSolutionPool : public SolutionPool {
   }
 
   virtual void GetNextSolution(Assignment* const assignment) {
-    if (++count_ >= FLAGS_cp_parallel_update_frequency) {
-      count_ = 0;
-      const int64 local_best = reference_assignment_->ObjectiveValue();
-      support_->LockMutex();
-      AssignmentProto* const best_solution = support_->solution();
-      if (support_->IsSharedSolutionBetter(local_best)) {
-        VLOG(1) << "slave " << worker_ << " import solution with value "
-                << best_solution->objective().min() << " from "
-                << best_solution->worker_info().worker_id();
-        reference_assignment_->Load(*best_solution);
-      }
-      support_->UnlockMutex();
+    count_ = 0;
+    const int64 local_best = reference_assignment_->ObjectiveValue();
+    support_->LockMutex();
+    AssignmentProto* const best_solution = support_->solution();
+    if (support_->IsSharedSolutionBetter(local_best)) {
+      VLOG(1) << "slave " << worker_ << " import solution with value "
+              << best_solution->objective().min() << " from "
+              << best_solution->worker_info().worker_id();
+      reference_assignment_->Load(*best_solution);
     }
+    support_->UnlockMutex();
     assignment->Copy(reference_assignment_.get());
   }
 
   virtual bool SyncNeeded(Assignment* const local_assignment) {
-    const int64 current_value = local_assignment->ObjectiveValue();
-    support_->LockMutex();
-    bool result = support_->IsSharedSolutionBetter(current_value);
-    if (result) {
-      VLOG(1) << "Synchronizing current solution with value " << current_value
-              << " with foreign solution with value "
-              << support_->solution()->objective().min()
-              << " for worker " << worker_;
+    if (++count_ >= FLAGS_cp_parallel_update_frequency) {
+      const int64 current_value = local_assignment->ObjectiveValue();
+      support_->LockMutex();
+      bool result = support_->IsSharedSolutionBetter(current_value);
+      if (result) {
+        VLOG(1) << "Synchronizing current solution with value " << current_value
+                << " with foreign solution with value "
+                << support_->solution()->objective().min()
+                << " for worker " << worker_;
+      }
+      support_->UnlockMutex();
+      return result;
+    } else {
+      return false;
     }
-    support_->UnlockMutex();
-    return result;
   }
 
  private:
