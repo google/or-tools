@@ -579,7 +579,8 @@ class MTSharingSolutionPool : public SolutionPool {
     if (result) {
       VLOG(1) << "Synchronizing current solution with value " << current_value
               << " with foreign solution with value "
-              << support_->solution()->objective().min();
+              << support_->solution()->objective().min()
+              << " for worker " << worker_;
     }
     support_->UnlockMutex();
     return result;
