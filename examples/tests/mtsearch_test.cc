@@ -201,6 +201,7 @@ void TestModelWithSearch() {
 }  // namespace  operations_research
 
 int main(int argc, char **argv) {
+  google::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::TestInitialSolution();
   operations_research::TestNoInitialSolution();
   operations_research::TestModelWithSearch();
