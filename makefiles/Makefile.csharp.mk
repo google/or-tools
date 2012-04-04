@@ -1,13 +1,13 @@
 # ---------- CSharp support using SWIG ----------
 CSHARPEXE = \
-	$(BIN_DIR)$Scslinearprogramming.exe \
-	$(BIN_DIR)$Scsintegerprogramming.exe \
-	$(BIN_DIR)$Scsrabbitspheasants.exe \
-	$(BIN_DIR)$Scsflow.exe \
-	$(BIN_DIR)$Scsknapsack.exe \
-	$(BIN_DIR)$Sfurniture_moving_intervals.exe \
-	$(BIN_DIR)$Sorganize_day_intervals.exe \
-	$(BIN_DIR)$Scstsp.exe
+	$(BIN_DIR)/cslinearprogramming.exe \
+	$(BIN_DIR)/csintegerprogramming.exe \
+	$(BIN_DIR)/csrabbitspheasants.exe \
+	$(BIN_DIR)/csflow.exe \
+	$(BIN_DIR)/csknapsack.exe \
+	$(BIN_DIR)/furniture_moving_intervals.exe \
+	$(BIN_DIR)/organize_day_intervals.exe \
+	$(BIN_DIR)/cstsp.exe
 
 csharpexe: $(CSHARPEXE)
 
@@ -45,7 +45,7 @@ endif
 csharplp: $(BIN_DIR)/Google.OrTools.LinearSolver.dll
 
 $(GEN_DIR)/linear_solver/linear_solver_csharp_wrap.cc: $(SRC_DIR)/linear_solver/linear_solver.swig $(SRC_DIR)/base/base.swig $(SRC_DIR)/util/data.swig $(SRC_DIR)/linear_solver/linear_solver.h $(GEN_DIR)/linear_solver/linear_solver.pb.h
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Slinear_solver$Slinear_solver_csharp_wrap.cc -module operations_research -namespace Google.OrTools.LinearSolver -dllimport $(IMPORTPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT) -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver $(SRC_DIR)/linear_solver$Slinear_solver.swig
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Slinear_solver$Slinear_solver_csharp_wrap.cc -module operations_research -namespace Google.OrTools.LinearSolver -dllimport "$(IMPORTPREFIX)Google.OrTools.LinearSolver.$(SHAREDLIBEXT)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver $(SRC_DIR)/linear_solver$Slinear_solver.swig
 
 $(OBJ_DIR)/linear_solver_csharp_wrap.$O: $(GEN_DIR)/linear_solver/linear_solver_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/linear_solver/linear_solver_csharp_wrap.cc $(OBJ_OUT)linear_solver_csharp_wrap.$O
@@ -80,7 +80,7 @@ testlp: $(BIN_DIR)/testlp.exe
 csharpcp: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll
 
 $(GEN_DIR)/constraint_solver/constraint_solver_csharp_wrap.cc: $(SRC_DIR)/constraint_solver/routing.swig $(SRC_DIR)/constraint_solver/constraint_solver.swig $(SRC_DIR)/base/base.swig $(SRC_DIR)/util/data.swig $(SRC_DIR)/constraint_solver/constraint_solver.h
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc -module operations_research -namespace Google.OrTools.ConstraintSolver -dllimport $(IMPORTPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT) -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver $(SRC_DIR)/constraint_solver$Srouting.swig
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc -module operations_research -namespace Google.OrTools.ConstraintSolver -dllimport "$(IMPORTPREFIX)Google.OrTools.ConstraintSolver.$(SHAREDLIBEXT)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver $(SRC_DIR)/constraint_solver$Srouting.swig
 
 $(OBJ_DIR)/constraint_solver_csharp_wrap.$O: $(GEN_DIR)/constraint_solver/constraint_solver_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc $(OBJ_OUT)constraint_solver_csharp_wrap.$O
@@ -124,7 +124,7 @@ testcp: $(BIN_DIR)/testcp.exe
 csharpalgorithms: $(BIN_DIR)/Google.OrTools.Algorithms.dll
 
 $(GEN_DIR)/algorithms/knapsack_solver_csharp_wrap.cc: $(SRC_DIR)/algorithms/knapsack_solver.swig $(SRC_DIR)/algorithms/knapsack_solver.swig $(SRC_DIR)/base/base.swig $(SRC_DIR)/util/data.swig $(SRC_DIR)/algorithms/knapsack_solver.h
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Salgorithms$Sknapsack_solver_csharp_wrap.cc -module operations_research -namespace Google.OrTools.Algorithms -dllimport $(IMPORTPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT) -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sknapsacksolver $(SRC_DIR)/algorithms$Sknapsack_solver.swig
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Salgorithms$Sknapsack_solver_csharp_wrap.cc -module operations_research -namespace Google.OrTools.Algorithms -dllimport "$(IMPORTPREFIX)Google.OrTools.Algorithms.$(SHAREDLIBEXT)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sknapsacksolver $(SRC_DIR)/algorithms$Sknapsack_solver.swig
 
 $(OBJ_DIR)/knapsack_solver_csharp_wrap.$O: $(GEN_DIR)/algorithms/knapsack_solver_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/algorithms/knapsack_solver_csharp_wrap.cc $(OBJ_OUT)knapsack_solver_csharp_wrap.$O
@@ -148,7 +148,7 @@ $(BIN_DIR)/csknapsack.exe: $(BIN_DIR)/Google.OrTools.Algorithms.dll $(EX_DIR)/cs
 csharpgraph: $(BIN_DIR)/Google.OrTools.Graph.dll
 
 $(GEN_DIR)/graph/graph_csharp_wrap.cc: $(SRC_DIR)/graph/graph.swig $(SRC_DIR)/base/base.swig $(SRC_DIR)/util/data.swig $(SRC_DIR)/graph/max_flow.h $(SRC_DIR)/graph/min_cost_flow.h
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sgraph$Sgraph_csharp_wrap.cc -module operations_research -namespace Google.OrTools.Graph -dllimport $(IMPORTPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT) -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph graph$Sgraph.swig
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sgraph$Sgraph_csharp_wrap.cc -module operations_research -namespace Google.OrTools.Graph -dllimport "$(IMPORTPREFIX)Google.OrTools.Graph.$(SHAREDLIBEXT)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph graph$Sgraph.swig
 
 $(OBJ_DIR)/graph_csharp_wrap.$O: $(GEN_DIR)/graph/graph_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sgraph$Sgraph_csharp_wrap.cc $(OBJ_OUT)graph_csharp_wrap.$O
@@ -184,9 +184,10 @@ dotnet_archive: csharp
 	tools\mkdir temp\or-tools.$(PLATFORM)
 	tools\mkdir temp\or-tools.$(PLATFORM)\lib
 	tools\mkdir temp\or-tools.$(PLATFORM)\bin
-	tools\mkdir temp\or-tools.$(PLATFORM)\csharp
-	tools\mkdir temp\or-tools.$(PLATFORM)\csharp\solution
-	tools\mkdir temp\or-tools.$(PLATFORM)\csharp\solution\Properties
+	tools\mkdir temp\or-tools.$(PLATFORM)\examples
+	tools\mkdir temp\or-tools.$(PLATFORM)\examples\csharp
+	tools\mkdir temp\or-tools.$(PLATFORM)\examples\csharp\solution
+	tools\mkdir temp\or-tools.$(PLATFORM)\examples\csharp\solution\Properties
 	tools\mkdir temp\or-tools.$(PLATFORM)\data
 	tools\mkdir temp\or-tools.$(PLATFORM)\data\discrete_tomography
 	tools\mkdir temp\or-tools.$(PLATFORM)\data\fill_a_pix
@@ -197,10 +198,10 @@ dotnet_archive: csharp
 ifneq ($(SYSTEM),win)
 	copy bin\Google.OrTools.*.dll temp\or-tools.$(PLATFORM)\bin
 endif
-	copy csharp\*.cs temp\or-tools.$(PLATFORM)\csharp
-	copy csharp\*.sln temp\or-tools.$(PLATFORM)\csharp
-	copy csharp\solution\*.csproj temp\or-tools.$(PLATFORM)\csharp\solution
-	copy csharp\solution\Properties\*.cs temp\or-tools.$(PLATFORM)\csharp\solution\Properties
+	copy examples\csharp\*.cs temp\or-tools.$(PLATFORM)\examples\csharp
+	copy examples\csharp\*.sln temp\or-tools.$(PLATFORM)\examples\csharp
+	copy examples\csharp\solution\*.csproj temp\or-tools.$(PLATFORM)\examples\csharp\solution
+	copy examples\csharp\solution\Properties\*.cs temp\or-tools.$(PLATFORM)\examples\csharp\solution\Properties
 	copy data\discrete_tomography\* temp\or-tools.$(PLATFORM)\data\discrete_tomography
 	copy data\fill_a_pix\* temp\or-tools.$(PLATFORM)\data\fill_a_pix
 	copy data\minesweeper\* temp\or-tools.$(PLATFORM)\data\minesweeper

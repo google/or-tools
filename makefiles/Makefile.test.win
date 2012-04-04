@@ -1,12 +1,13 @@
 test: test_cc test_python test_java test_csharp
 
-test_cc: cc
-	$(BIN_DIR)\\golomb --size=5
-	$(BIN_DIR)\\cvrptw
-	$(BIN_DIR)\\flow_api
-	$(BIN_DIR)\\linear_programming
-	$(BIN_DIR)\\integer_programming
-	$(BIN_DIR)\\tsp
+test_cc: cc $(BIN_DIR)/mtsearch_test.exe
+	$(BIN_DIR)\\golomb.exe --size=5
+	$(BIN_DIR)\\cvrptw.exe
+	$(BIN_DIR)\\flow_api.exe
+	$(BIN_DIR)\\linear_programming.exe
+	$(BIN_DIR)\\integer_programming.exe
+	$(BIN_DIR)\\tsp.exe
+	$(BIN_DIR)\\mtsearch_test.exe
 
 test_python: python
 	set PYTHONPATH=$(OR_ROOT_FULL)\\src && $(WINDOWS_PYTHON_PATH)\\python $(EX_DIR)\\python\\hidato_table.py
@@ -19,7 +20,7 @@ test_python: python
 test_java: java run_RabbitsPheasants run_FlowExample run_LinearProgramming run_IntegerProgramming run_Knapsack
 
 # csharp test
-test_csharp: $(CSHARPEXE) $(BIN_DIR)\\testlp.exe
+test_csharp: $(CSHARPEXE) $(BIN_DIR)/testlp.exe $(BIN_DIR)/testcp.exe
 	$(BIN_DIR)\\cslinearprogramming.exe
 	$(BIN_DIR)\\csintegerprogramming.exe
 	$(BIN_DIR)\\csrabbitspheasants.exe
@@ -29,6 +30,7 @@ test_csharp: $(CSHARPEXE) $(BIN_DIR)\\testlp.exe
 	$(BIN_DIR)\\organize_day_intervals.exe
 	$(BIN_DIR)\\cstsp.exe
 	$(BIN_DIR)\\testlp.exe
+	$(BIN_DIR)\\testcp.exe
 
 
 
