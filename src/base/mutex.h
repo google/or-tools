@@ -17,8 +17,9 @@
 #include "base/macros.h"
 #include "base/scoped_ptr.h"
 namespace tthread {
-class mutex;
 class condition_variable;
+class mutex;
+class thread;
 }  // namespace tthread
 
 namespace operations_research {

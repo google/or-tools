@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "base/mutex.h"
 #include "tinythread.h"
+#include "base/mutex.h"
 #include "tinythread.cpp"
 
 namespace operations_research {
