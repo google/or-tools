@@ -12,5 +12,23 @@
 // limitations under the License.
 
 #include "base/mutex.h"
+#include "tinythread.h"
 #include "tinythread.cpp"
+
+namespace operations_research {
+Mutex::Mutex() : real_mutex_(new tthread::mutex) {}
+Mutex::~Mutex() {}
+void Mutex::Lock() { real_mutex_->lock(); }
+void Mutex::Unlock() { real_mutex_->unlock(); }
+bool Mutex::TryLock() { real_mutex_->try_lock(); }
+tthread::mutex* Mutex::RealMutex() const { return real_mutex_.get(); }
+
+CondVar::CondVar() : real_condition_(new tthread::condition_variable) {}
+CondVar::~CondVar() {}
+void CondVar::Wait(Mutex* const mu) {
+  real_condition_->wait(*mu->RealMutex());
+}
+void CondVar::Signal() { real_condition_->notify_one(); }
+void CondVar::SignalAll() { real_condition_->notify_all(); }
+}  // namespace operations_research
 

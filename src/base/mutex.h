@@ -15,23 +15,24 @@
 #define OR_TOOLS_BASE_MUTEX_H_
 
 #include "base/macros.h"
-#include "tinythread.h"
+#include "base/scoped_ptr.h"
+namespace tthread {
+class mutex;
+class condition_variable;
+}  // namespace tthread
 
 namespace operations_research {
 class Mutex {
  public:
-  Mutex() {}
-
-  ~Mutex() {}
-
-  void Lock() { real_mutex_.lock(); }
-  void Unlock() { real_mutex_.unlock(); }
-  bool TryLock() { real_mutex_.try_lock(); }
-
-  tthread::mutex* RealMutex() { return &real_mutex_; }
+  Mutex();
+  ~Mutex();
+  void Lock();
+  void Unlock();
+  bool TryLock();
+  tthread::mutex* RealMutex() const;
 
  private:
-  tthread::mutex real_mutex_;
+  scoped_ptr<tthread::mutex> real_mutex_;
   DISALLOW_COPY_AND_ASSIGN(Mutex);
 };
 
@@ -50,19 +51,14 @@ class MutexLock {
 
 class CondVar {
  public:
-  CondVar() : real_condition_() {}
-  ~CondVar() {}
-
-  void Wait(Mutex* const mu) {
-    real_condition_.wait(*mu->RealMutex());
-  }
-
-  void Signal() { real_condition_.notify_one(); }
-
-  void SignalAll() { real_condition_.notify_all(); }
+  CondVar();
+  ~CondVar();
+  void Wait(Mutex* const mu);
+  void Signal();
+  void SignalAll();
 
  private:
-  tthread::condition_variable real_condition_;
+  scoped_ptr<tthread::condition_variable> real_condition_;
   DISALLOW_COPY_AND_ASSIGN(CondVar);
 };
 
