@@ -292,7 +292,7 @@ MtSolveSupport::MtSolveSupport(
       solution_barrier_(new Barrier(workers_ + 1)),
       enter_search_barrier_(new Barrier(workers_ + 1)),
       exit_search_barrier_(new Barrier(workers_ + 1)),
-      fail_stamp_(0LLU),
+      fail_stamp_(0ULL),
       started_slaves_(0),
       ended_slaves_(0) {
   Reset();
@@ -313,7 +313,7 @@ void MtSolveSupport::Reset() {
   ended_slaves_ = 0;
   master_blocked_ = false;
   best_exported_cost_ = maximize() ? kint64min : kint64max;
-  fail_stamp_ = 0LLU;
+  fail_stamp_ = 0ULL;
   local_solution_->mutable_worker_info()->set_worker_id(-1);
   local_solution_->set_is_valid(false);
 }

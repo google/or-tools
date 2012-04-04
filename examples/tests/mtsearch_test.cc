@@ -23,7 +23,7 @@ class UpVar : public BaseLNS {
 
   virtual ~UpVar() {}
 
-  virtual bool NextFragment(vector<int>* fragment) {
+  virtual bool NextFragment(std::vector<int>* fragment) {
     bool all_done = true;
     for (int i = 0; i < Size(); ++i) {
       if (Value(i) == 0) {
@@ -93,11 +93,11 @@ void BuildModelWithSearch(int workers,
   // Standard model building.
   Solver s(StringPrintf("Worker_%i", worker));
   VLOG(1) << "Worker " << worker  << " started";
-  vector<IntVar*> vars;
+  std::vector<IntVar*> vars;
   s.MakeBoolVarArray(workers, "vars", &vars);
   Assignment* const solution = s.MakeAssignment();
   solution->Add(vars);
-  vector<int> coefficients;
+  std::vector<int> coefficients;
   int obj_max = 0;
   for (int i = 0; i < workers; ++i) {
     const int value = (i + 1) * (i + 1);
@@ -110,7 +110,7 @@ void BuildModelWithSearch(int workers,
   SolutionCollector* const collector =
       master ? s.MakeLastSolutionCollector(solution) : NULL;
 
-  vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor*> monitors;
 
   // Create or wait for initial solution.
   if (master) {

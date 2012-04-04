@@ -64,30 +64,30 @@ GRAPH_LNK = \
 # Binaries
 
 CPBINARIES = \
-	$(BIN_DIR)$Scostas_array$E \
-	$(BIN_DIR)$Scryptarithm$E \
-	$(BIN_DIR)$Scvrptw$E \
-	$(BIN_DIR)$Sdobble_ls$E \
-	$(BIN_DIR)$Sflow_api$E \
-	$(BIN_DIR)$Sgolomb$E \
-	$(BIN_DIR)$Sjobshop$E \
-	$(BIN_DIR)$Sjobshop_ls$E \
-	$(BIN_DIR)$Slinear_assignment_api$E \
-	$(BIN_DIR)$Smagic_square$E \
-	$(BIN_DIR)$Smodel_util$E \
-	$(BIN_DIR)$Smultidim_knapsack$E \
-	$(BIN_DIR)$Snetwork_routing$E \
-	$(BIN_DIR)$Snqueens$E \
-	$(BIN_DIR)$Spdptw$E \
-	$(BIN_DIR)$Sdimacs_assignment$E \
-	$(BIN_DIR)$Ssports_scheduling$E \
-	$(BIN_DIR)$Stsp$E
+	$(BIN_DIR)/costas_array$E \
+	$(BIN_DIR)/cryptarithm$E \
+	$(BIN_DIR)/cvrptw$E \
+	$(BIN_DIR)/dobble_ls$E \
+	$(BIN_DIR)/flow_api$E \
+	$(BIN_DIR)/golomb$E \
+	$(BIN_DIR)/jobshop$E \
+	$(BIN_DIR)/jobshop_ls$E \
+	$(BIN_DIR)/linear_assignment_api$E \
+	$(BIN_DIR)/magic_square$E \
+	$(BIN_DIR)/model_util$E \
+	$(BIN_DIR)/multidim_knapsack$E \
+	$(BIN_DIR)/network_routing$E \
+	$(BIN_DIR)/nqueens$E \
+	$(BIN_DIR)/pdptw$E \
+	$(BIN_DIR)/dimacs_assignment$E \
+	$(BIN_DIR)/sports_scheduling$E \
+	$(BIN_DIR)/tsp$E
 
 LPBINARIES = \
-	$(BIN_DIR)$Sinteger_programming$E \
-	$(BIN_DIR)$Slinear_programming$E \
-	$(BIN_DIR)$Slinear_solver_protocol_buffers$E \
-	$(BIN_DIR)$Sstrawberry_fields_with_column_generation$E
+	$(BIN_DIR)/integer_programming$E \
+	$(BIN_DIR)/linear_programming$E \
+	$(BIN_DIR)/linear_solver_protocol_buffers$E \
+	$(BIN_DIR)/strawberry_fields_with_column_generation$E
 
 # Special dimacs example.
 
