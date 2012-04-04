@@ -346,9 +346,10 @@ java_archive: java
 	$(MKDIR) temp
 	$(MKDIR) temp$Sor-tools.$(PLATFORM)
 	$(MKDIR) temp$Sor-tools.$(PLATFORM)\lib
-	$(COPY) lib\*.jar temp$Sor-tools.$(PLATFORM)\lin
+	$(COPY) lib\*.jar temp$Sor-tools.$(PLATFORM)\lib
 	$(COPY) $(LIB_DIR)$S$(LIBPREFIX)jni*.$(JNILIBEXT) temp$Sor-tools.$(PLATFORM)\lib
 ifeq ("$(SYSTEM)","win")
+	tools\mkdir temp\or-tools.$(PLATFORM)\examples
 	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com
 	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com\google
 	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com\google\ortools
@@ -377,11 +378,10 @@ ifeq ("$(SYSTEM)","win")
 	copy examples\com\google\ortools\linearsolver\samples\*.java temp\or-tools.$(PLATFORM)\examples\com\google\ortools\linearsolver\samples
 	copy examples\com\google\ortools\graph\samples\*.java temp\or-tools.$(PLATFORM)\examples\com\google\ortools\graph\samples
 	copy examples\com\google\ortools\knapsacksolver\samples\*.java temp\or-tools.$(PLATFORM)\examples\com\google\ortools\knapsacksolver\samples
-	cd temp$Sor-tools.$(PLATFORM) && tar -C ..$S.. -c -v com | tar -x -v -m --exclude=*.cs --exclude=*svn*
 	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.java.$(PLATFORM).$(SVNVERSION).zip or-tools.$(PLATFORM)
 else
-	cd temp$Sor-tools.$(PLATFORM) && tar -C ..$S.. -c -v com | tar -x -v -m --exclude=\*.cs --exclude=\*svn\*
-	cd temp && tar cvzf ..$SGoogle.OrTools.java.$(PLATFORM).$(SVNVERSION).tar.gz or-tools.$(PLATFORM)
+	cd temp$Sor-tools.$(PLATFORM) && tar -C ..$S.. -c -v examples | tar -x -v -m --exclude=\*.cs --exclude=\*svn\*
+	cd temp && tools\\tar.exe cvzf ..$SGoogle.OrTools.java.$(PLATFORM).$(SVNVERSION).tar.gz or-tools.$(PLATFORM)
 endif
 	-$(DELREC) temp
 

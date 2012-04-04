@@ -182,7 +182,6 @@ dotnet_archive: csharp
 	-$(DELREC) temp
 	tools\mkdir temp
 	tools\mkdir temp\or-tools.$(PLATFORM)
-	tools\mkdir temp\or-tools.$(PLATFORM)\lib
 	tools\mkdir temp\or-tools.$(PLATFORM)\bin
 	tools\mkdir temp\or-tools.$(PLATFORM)\examples
 	tools\mkdir temp\or-tools.$(PLATFORM)\examples\csharp
@@ -195,9 +194,7 @@ dotnet_archive: csharp
 	tools\mkdir temp\or-tools.$(PLATFORM)\data\rogo
 	tools\mkdir temp\or-tools.$(PLATFORM)\data\survo_puzzle
 	tools\mkdir temp\or-tools.$(PLATFORM)\data\quasigroup_completion
-ifneq ($(SYSTEM),win)
 	copy bin\Google.OrTools.*.dll temp\or-tools.$(PLATFORM)\bin
-endif
 	copy examples\csharp\*.cs temp\or-tools.$(PLATFORM)\examples\csharp
 	copy examples\csharp\*.sln temp\or-tools.$(PLATFORM)\examples\csharp
 	copy examples\csharp\solution\*.csproj temp\or-tools.$(PLATFORM)\examples\csharp\solution
