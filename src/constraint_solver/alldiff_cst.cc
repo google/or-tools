@@ -596,5 +596,4 @@ Constraint* Solver::MakeSorted(const std::vector<IntVar*>& vars,
   CHECK_EQ(vars.size(), sorted.size());
   return RevAlloc(new SortConstraint(this, vars, sorted));
 }
-
 }  // namespace operations_research
