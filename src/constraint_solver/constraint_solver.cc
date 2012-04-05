@@ -2632,6 +2632,7 @@ const char ModelVisitor::kScalProdGreaterOrEqual[] =
 const char ModelVisitor::kScalProdLessOrEqual[] = "ScalarProductLessOrEqual";
 const char ModelVisitor::kSemiContinuous[] = "SemiContinuous";
 const char ModelVisitor::kSequenceVariable[] = "SequenceVariable";
+const char ModelVisitor::kSorted[] = "Sorted";
 const char ModelVisitor::kSquare[] = "Square";
 const char ModelVisitor::kStartExpr[]= "StartExpression";
 const char ModelVisitor::kSum[] = "Sum";

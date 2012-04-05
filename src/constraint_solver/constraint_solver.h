@@ -1559,6 +1559,11 @@ class Solver {
   Constraint* MakeAllDifferent(const IntVar* const* vars,
                                int size, bool stronger_propagation);
 
+  // Maintains the relation between an array of variable and its
+  // sorted counterpart.
+  Constraint* MakeSorted(const std::vector<IntVar*>& vars,
+                         const std::vector<IntVar*>& sorted);
+
   // Prevent cycles, nexts variables representing the next in the chain.
   // Active variables indicate if the corresponding next variable is active;
   // this could be useful to model unperformed nodes in a routing problem.
@@ -3254,6 +3259,7 @@ class ModelVisitor : public BaseObject {
   static const char kScalProdLessOrEqual[];
   static const char kSemiContinuous[];
   static const char kSequenceVariable[];
+  static const char kSorted[];
   static const char kSquare[];
   static const char kStartExpr[];
   static const char kSum[];

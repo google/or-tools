@@ -23,6 +23,7 @@
 #include "base/scoped_ptr.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/const_ptr_array.h"
 #include "util/string_array.h"
 
 namespace operations_research {
@@ -151,60 +152,18 @@ bool ValueAllDifferent::AllMoves() {
 // ---------- Bounds All Different ----------
 // See http://www.cs.uwaterloo.ca/~cquimper/Papers/ijcai03_TR.pdf for details.
 
-struct Interval {
-  int64 min;
-  int64 max;
-  int min_rank;
-  int max_rank;
-};
-
-// TODO(user) : use better sort, use bounding boxes of modifications to
-//                 improve the sorting (only modified vars).
-
-// This method is used by the STL sort.
-struct CompareIntervalMin {
-  bool operator()(const Interval* i1, const Interval* i2) {
-    return (i1->min < i2->min);
-  }
-};
-
-// This method is used by the STL sort.
-struct CompareIntervalMax {
-  bool operator()(const Interval* i1, const Interval* i2) {
-    return (i1->max < i2->max);
-  }
-};
-
-void PathSet(int start, int end, int to, int* const tree) {
-  int k = start;
-  int l = start;
-  while (l != end) {
-    k = l;
-    l = tree[k];
-    tree[k] = to;
-  }
-}
-
-int PathMin(const int* const tree, int index) {
-  int i = index;
-  while (tree[i] < i) {
-    i = tree[i];
-  }
-  return i;
-}
-
-int PathMax(const int* const tree, int index) {
-  int i = index;
-  while (tree[i] > i) {
-    i = tree[i];
-  }
-  return i;
-}
-
-class BoundsAllDifferent : public BaseAllDifferent {
+class RangeBipartiteMatching {
  public:
-  BoundsAllDifferent(Solver* const s, const IntVar* const * vars, int size)
-      : BaseAllDifferent(s, vars, size),
+  struct Interval {
+    int64 min;
+    int64 max;
+    int min_rank;
+    int max_rank;
+  };
+
+  RangeBipartiteMatching(Solver* const solver, int size)
+      : solver_(solver),
+        size_(size),
         intervals_(new Interval[size + 1]),
         min_sorted_(new Interval*[size]),
         max_sorted_(new Interval*[size]),
@@ -218,7 +177,214 @@ class BoundsAllDifferent : public BaseAllDifferent {
       min_sorted_[i] = max_sorted_[i];
     }
   }
+
+  void SetRange(int index, int64 imin, int64 imax) {
+    intervals_[index].min = imin;
+    intervals_[index].max = imax;
+  }
+
+  bool Propagate() {
+    SortArray();
+
+    bool modified = PropagateMin();
+    modified |= PropagateMax();
+    return modified;
+  }
+
+  int64 Min(int index) const {
+    return intervals_[index].min;
+  }
+
+  int64 Max(int index) const {
+    return intervals_[index].max;
+  }
+
+ private:
+  // This method with sort the min_sorted_ and max_sorted_ arrays and fill
+  // the bounds_ array (and set the active_size_ counter).
+  void SortArray() {
+    std::sort(min_sorted_.get(),
+              min_sorted_.get() + size_,
+              CompareIntervalMin());
+    std::sort(max_sorted_.get(),
+              max_sorted_.get() + size_,
+              CompareIntervalMax());
+
+    int64 min = min_sorted_[0]->min;
+    int64 max = max_sorted_[0]->max + 1;
+    int64 last = min - 2;
+    bounds_[0] = last;
+
+    int i = 0;
+    int j = 0;
+    int nb = 0;
+    for (;;) {  // merge min_sorted_[] and max_sorted_[] into bounds_[].
+      if (i < size_ && min <= max) {  // make sure min_sorted_ exhausted first.
+        if (min != last) {
+          last = min;
+          bounds_[++nb] = last;
+        }
+        min_sorted_[i]->min_rank = nb;
+        if (++i < size_) {
+          min = min_sorted_[i]->min;
+        }
+      } else {
+        if (max != last) {
+          last = max;
+          bounds_[++nb] = last;
+        }
+        max_sorted_[j]->max_rank = nb;
+        if (++j == size_) {
+          break;
+        }
+        max = max_sorted_[j]->max + 1;
+      }
+    }
+    active_size_ = nb;
+    bounds_[nb + 1] = bounds_[nb] + 2;
+  }
+
+  // These two methods will actually do the new bounds computation.
+  bool PropagateMin() {
+    bool modified = false;
+
+    for (int i = 1; i <= active_size_ + 1; ++i) {
+      hall_[i] = i - 1;
+      tree_[i] = i - 1;
+      diff_[i] = bounds_[i] - bounds_[i - 1];
+    }
+    // visit intervals in increasing max order
+    for (int i = 0; i < size_; ++i) {
+      const int x = max_sorted_[i]->min_rank;
+      const int y = max_sorted_[i]->max_rank;
+      int z = PathMax(tree_.get(), x + 1);
+      int j = tree_[z];
+      if (--diff_[z] == 0) {
+        tree_[z] = z + 1;
+        z = PathMax(tree_.get(), z + 1);
+        tree_[z] = j;
+      }
+      PathSet(x + 1, z, z, tree_.get());  // path compression
+      if (diff_[z] < bounds_[z] - bounds_[y]) {
+        solver_->Fail();
+      }
+      if (hall_[x] > x) {
+        int w = PathMax(hall_.get(), hall_[x]);
+        max_sorted_[i]->min = bounds_[w];
+        PathSet(x, w, w, hall_.get());  // path compression
+        modified = true;
+      }
+      if (diff_[z] == bounds_[z] - bounds_[y]) {
+        PathSet(hall_[y], j - 1, y, hall_.get());  // mark hall interval
+        hall_[y] = j - 1;
+      }
+    }
+    return modified;
+  }
+
+
+  bool PropagateMax() {
+    bool modified = false;
+
+    for (int i = 0; i<= active_size_; i++) {
+      tree_[i] = i + 1;
+      hall_[i] = i + 1;
+      diff_[i] = bounds_[i + 1] - bounds_[i];
+    }
+    // visit intervals in decreasing min order
+    for (int i = size_ - 1; i >= 0; --i) {
+      const int x = min_sorted_[i]->max_rank;
+      const int y = min_sorted_[i]->min_rank;
+      int z = PathMin(tree_.get(), x - 1);
+      int j = tree_[z];
+      if (--diff_[z] == 0) {
+        tree_[z] = z - 1;
+        z = PathMin(tree_.get(), z - 1);
+        tree_[z] = j;
+      }
+      PathSet(x - 1, z, z, tree_.get());
+      if (diff_[z] < bounds_[y] - bounds_[z]) {
+        solver_->Fail();
+        // useless. Should have been caught by the PropagateMin() method.
+      }
+      if (hall_[x] < x) {
+        int w = PathMin(hall_.get(), hall_[x]);
+        min_sorted_[i]->max = bounds_[w] - 1;
+        PathSet(x, w, w, hall_.get());
+        modified = true;
+      }
+      if (diff_[z] == bounds_[y] - bounds_[z]) {
+        PathSet(hall_[y], j + 1, y, hall_.get());
+        hall_[y] = j + 1;
+      }
+    }
+    return modified;
+  }
+
+  // TODO(user) : use better sort, use bounding boxes of modifications to
+  //                 improve the sorting (only modified vars).
+
+  // This method is used by the STL sort.
+  struct CompareIntervalMin {
+    bool operator()(const Interval* i1, const Interval* i2) {
+      return (i1->min < i2->min);
+    }
+  };
+
+  // This method is used by the STL sort.
+  struct CompareIntervalMax {
+    bool operator()(const Interval* i1, const Interval* i2) {
+      return (i1->max < i2->max);
+    }
+  };
+
+  void PathSet(int start, int end, int to, int* const tree) {
+    int k = start;
+    int l = start;
+    while (l != end) {
+      k = l;
+      l = tree[k];
+      tree[k] = to;
+    }
+  }
+
+  int PathMin(const int* const tree, int index) {
+    int i = index;
+    while (tree[i] < i) {
+      i = tree[i];
+    }
+    return i;
+  }
+
+  int PathMax(const int* const tree, int index) {
+    int i = index;
+    while (tree[i] > i) {
+      i = tree[i];
+    }
+    return i;
+  }
+
+  Solver* const solver_;
+  const int size_;
+  scoped_array<Interval> intervals_;
+  scoped_array<Interval*> min_sorted_;
+  scoped_array<Interval*> max_sorted_;
+  // bounds_[1..active_size_] hold set of min & max in the n intervals_
+  // while bounds_[0] and bounds_[active_size_ + 1] allow sentinels.
+  scoped_array<int64> bounds_;
+  scoped_array<int> tree_;              // tree links.
+  scoped_array<int64> diff_;            // diffs between critical capacities.
+  scoped_array<int> hall_;              // hall interval links.
+  int active_size_;
+};
+
+class BoundsAllDifferent : public BaseAllDifferent {
+ public:
+  BoundsAllDifferent(Solver* const s, const IntVar* const * vars, int size)
+      : BaseAllDifferent(s, vars, size), matching_(s, size) {}
+
   virtual ~BoundsAllDifferent() {}
+
   virtual void Post() {
     Demon* range = MakeDelayedConstraintDemon0(
         solver(),
@@ -248,18 +414,13 @@ class BoundsAllDifferent : public BaseAllDifferent {
 
   virtual void IncrementalPropagate() {
     for (int i = 0; i < size_; ++i) {
-      intervals_[i].min = vars_[i]->Min();
-      intervals_[i].max = vars_[i]->Max();
+      matching_.SetRange(i, vars_[i]->Min(), vars_[i]->Max());
     }
 
-    SortArray();
 
-    bool modified = PropagateMin();
-    modified |= PropagateMax();
-
-    if (modified) {
+    if (matching_.Propagate()) {
       for (int i = 0; i < size_; ++i) {
-        vars_[i]->SetRange(intervals_[i].min, intervals_[i].max);
+        vars_[i]->SetRange(matching_.Min(i), matching_.Max(i));
       }
     }
   }
@@ -288,139 +449,117 @@ class BoundsAllDifferent : public BaseAllDifferent {
   }
 
  private:
-  // This method with sort the min_sorted_ and max_sorted_ arrays and fill
-  // the bounds_ array (and set the active_size_ counter).
-  void SortArray();
-
-  // These two methods will actually do the new bounds computation.
-  bool PropagateMin();
-  bool PropagateMax();
-
-  int64 stamp_;
-  scoped_array<Interval> intervals_;
-  scoped_array<Interval*> min_sorted_;
-  scoped_array<Interval*> max_sorted_;
-  // bounds_[1..active_size_] hold set of min & max in the n intervals_
-  // while bounds_[0] and bounds_[active_size_ + 1] allow sentinels.
-  scoped_array<int64> bounds_;
-  scoped_array<int> tree_;              // tree links.
-  scoped_array<int64> diff_;            // diffs between critical capacities.
-  scoped_array<int> hall_;              // hall interval links.
-  int active_size_;
+  RangeBipartiteMatching matching_;
 };
 
-void BoundsAllDifferent::SortArray() {
-  std::sort(min_sorted_.get(), min_sorted_.get() + size_, CompareIntervalMin());
-  std::sort(max_sorted_.get(), max_sorted_.get() + size_, CompareIntervalMax());
-
-  int64 min = min_sorted_[0]->min;
-  int64 max = max_sorted_[0]->max + 1;
-  int64 last = min - 2;
-  bounds_[0] = last;
-
-  int i = 0;
-  int j = 0;
-  int nb = 0;
-  for (;;) {  // merge min_sorted_[] and max_sorted_[] into bounds_[].
-    if (i < size_ && min <= max) {  // make sure min_sorted_ exhausted first.
-      if (min != last) {
-        last = min;
-        bounds_[++nb] = last;
-      }
-      min_sorted_[i]->min_rank = nb;
-      if (++i < size_) {
-        min = min_sorted_[i]->min;
-      }
-    } else {
-      if (max != last) {
-        last = max;
-        bounds_[++nb] = last;
-      }
-      max_sorted_[j]->max_rank = nb;
-      if (++j == size_) {
-        break;
-      }
-      max = max_sorted_[j]->max + 1;
+class SortConstraint : public Constraint {
+ public:
+  SortConstraint(Solver* const solver,
+                 const vector<IntVar*>& original_vars,
+                 const vector<IntVar*>& sorted_vars)
+      : Constraint(solver),
+        ovars_(original_vars),
+        svars_(sorted_vars),
+        mins_(NULL),
+        maxs_(NULL),
+        size_(original_vars.size()),
+        matching_(solver, size_) {
+    if (size_ > 0) {
+      mins_.reset(new int64[size_]);
+      memset(mins_.get(), 0, size_ * sizeof(*mins_.get()));
+      maxs_.reset(new int64[size_]);
+      memset(maxs_.get(), 0, size_ * sizeof(*maxs_.get()));
     }
   }
-  active_size_ = nb;
-  bounds_[nb + 1] = bounds_[nb] + 2;
-}
 
-bool BoundsAllDifferent::PropagateMin() {
-  bool modified = false;
+  virtual ~SortConstraint() {}
 
-  for (int i = 1; i <= active_size_ + 1; ++i) {
-    hall_[i] = i - 1;
-    tree_[i] = i - 1;
-    diff_[i] = bounds_[i] - bounds_[i - 1];
-  }
-  for (int i = 0; i < size_; ++i) {  // visit intervals in increasing max order
-    const int x = max_sorted_[i]->min_rank;
-    const int y = max_sorted_[i]->max_rank;
-    int z = PathMax(tree_.get(), x + 1);
-    int j = tree_[z];
-    if (--diff_[z] == 0) {
-      tree_[z] = z + 1;
-      z = PathMax(tree_.get(), z + 1);
-      tree_[z] = j;
+  virtual void Post() {
+    Demon* const demon =
+        solver()->MakeDelayedConstraintInitialPropagateCallback(this);
+    for (int i = 0; i < size_; ++i) {
+      ovars_[i]->WhenRange(demon);
+      svars_[i]->WhenRange(demon);
     }
-    PathSet(x + 1, z, z, tree_.get());  // path compression
-    if (diff_[z] < bounds_[z] - bounds_[y]) {
+  }
+
+  virtual void InitialPropagate() {
+    for (int i = 0; i < size_; ++i) {
+      int64 vmin = 0;
+      int64 vmax = 0;
+      ovars_[i]->Range(&vmin, &vmax);
+      mins_[i] = vmin;
+      maxs_[i] = vmax;
+    }
+    // One direction, from variables to sorted variables.
+    std::sort(mins_.get(), mins_.get() + size_);
+    std::sort(maxs_.get(), maxs_.get() + size_);
+    for (int i = 0; i < size_; ++i) {
+      svars_[i]->SetRange(mins_[i], maxs_[i]);
+    }
+    // Reverse direction.
+    for (int i = 0; i < size_; ++i) {
+      int64 imin = 0;
+      int64 imax = 0;
+      FindIntersectionRange(i, &imin, &imax);
+      matching_.SetRange(i, imin, imax);
+    }
+    if (matching_.Propagate()) {
+      for (int i = 0; i < size_; ++i) {
+        const int64 vmin = mins_[matching_.Min(i)];
+        const int64 vmax = maxs_[matching_.Max(i)];
+        ovars_[i]->SetRange(vmin, vmax);
+      }
+    }
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kSorted, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               ovars_);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kTargetArgument,
+                                               svars_);
+    visitor->EndVisitConstraint(ModelVisitor::kSorted, this);
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("Sort(%s, %s)",
+                        ovars_.DebugString().c_str(),
+                        svars_.DebugString().c_str());
+  }
+
+ private:
+  void FindIntersectionRange(int index,
+                             int64* const range_min,
+                             int64* const range_max) const {
+    // Naive version.
+    int64 imin = 0;
+    while (imin < size_ && NotIntersect(index, imin)) {
+      imin++;
+    }
+    if (imin == size_) {
       solver()->Fail();
     }
-    if (hall_[x] > x) {
-      int w = PathMax(hall_.get(), hall_[x]);
-      max_sorted_[i]->min = bounds_[w];
-      PathSet(x, w, w, hall_.get());  // path compression
-      modified = true;
+    int64 imax = size_ - 1;
+    while (imax >= 0 && NotIntersect(index, imax)) {
+      imax--;
     }
-    if (diff_[z] == bounds_[z] - bounds_[y]) {
-      PathSet(hall_[y], j - 1, y, hall_.get());  // mark hall interval
-      hall_[y] = j - 1;
-    }
+    *range_min = imin;
+    *range_max = imax;
   }
-  return modified;
-}
 
-
-bool BoundsAllDifferent::PropagateMax() {
-  bool modified = false;
-
-  for (int i = 0; i<= active_size_; i++) {
-    tree_[i] = i + 1;
-    hall_[i] = i + 1;
-    diff_[i] = bounds_[i + 1] - bounds_[i];
+  bool NotIntersect(int oindex, int sindex) const {
+    return ovars_[oindex]->Min() > svars_[sindex]->Max() ||
+        ovars_[oindex]->Max() < svars_[sindex]->Min();
   }
-  // visit intervals in decreasing min order
-  for (int i = size_ - 1; i >= 0; --i) {
-    const int x = min_sorted_[i]->max_rank;
-    const int y = min_sorted_[i]->min_rank;
-    int z = PathMin(tree_.get(), x - 1);
-    int j = tree_[z];
-    if (--diff_[z] == 0) {
-      tree_[z] = z - 1;
-      z = PathMin(tree_.get(), z - 1);
-      tree_[z] = j;
-    }
-    PathSet(x - 1, z, z, tree_.get());
-    if (diff_[z] < bounds_[y] - bounds_[z]) {
-      solver()->Fail();
-      // useless. Should have been caught by the PropagateMin() method.
-    }
-    if (hall_[x] < x) {
-      int w = PathMin(hall_.get(), hall_[x]);
-      min_sorted_[i]->max = bounds_[w] - 1;
-      PathSet(x, w, w, hall_.get());
-      modified = true;
-    }
-    if (diff_[z] == bounds_[y] - bounds_[z]) {
-      PathSet(hall_[y], j + 1, y, hall_.get());
-      hall_[y] = j + 1;
-    }
-  }
-  return modified;
-}
+
+  ConstPtrArray<IntVar> ovars_;
+  ConstPtrArray<IntVar> svars_;
+  scoped_array<int64> mins_;
+  scoped_array<int64> maxs_;
+  const int size_;
+  RangeBipartiteMatching matching_;
+};
 }  // namespace
 
 Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars) {
@@ -451,4 +590,11 @@ Constraint* Solver::MakeAllDifferent(const IntVar* const* vars,
     }
   }
 }
+
+Constraint* Solver::MakeSorted(const std::vector<IntVar*>& vars,
+                               const std::vector<IntVar*>& sorted) {
+  CHECK_EQ(vars.size(), sorted.size());
+  return RevAlloc(new SortConstraint(this, vars, sorted));
+}
+
 }  // namespace operations_research
