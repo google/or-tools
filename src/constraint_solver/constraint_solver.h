@@ -5047,6 +5047,8 @@ ParallelSolveSupport* MakeMtSolveSupport(
     int workers,
     bool maximize,
     ParallelSolveSupport::ModelBuilder* const model_builder);
-#endif
+
+#endif  // SWIG
+
 }  // namespace operations_research
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "tinythread.h"
+#include "tinythread.h"  // NOLINT
 #include "base/mutex.h"
 #include "tinythread.cpp"
 
@@ -31,4 +31,3 @@ void CondVar::Wait(Mutex* const mu) {
 void CondVar::Signal() { real_condition_->notify_one(); }
 void CondVar::SignalAll() { real_condition_->notify_all(); }
 }  // namespace operations_research
-

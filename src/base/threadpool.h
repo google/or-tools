@@ -12,7 +12,7 @@
 // limitations under the License.
 
 #ifndef OR_TOOLS_BASE_THREADPOOL_H_
-#define OR_TOOLS_BASE_THREADPOOL_H__
+#define OR_TOOLS_BASE_THREADPOOL_H_
 
 #include <string>
 #include <vector>
@@ -31,11 +31,11 @@ class ThreadPool {
   ~ThreadPool();
 
   void StartWorkers();
-  void Add(Closure* closure);
+  void Add(Closure* const closure);
   void StopOnFinalBarrier();
   Closure* GetNextTask();
 
-private:
+ private:
   const int num_workers_;
   std::vector<Closure*> work_to_do_;
   int done_index_;
@@ -47,4 +47,4 @@ private:
   std::vector<tthread::thread*> all_workers_;
 };
 }  // namespace operations_research
-#endif  // OR_TOOLS_BASE_THREADPOOL_H__
+#endif  // OR_TOOLS_BASE_THREADPOOL_H_

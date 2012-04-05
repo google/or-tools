@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "tinythread.h"
+#include "tinythread.h"  // NOLINT
 #include "base/macros.h"
 #include "base/mutex.h"
 #include "base/threadpool.h"
@@ -79,11 +79,10 @@ Closure* ThreadPool::GetNextTask() {
   return NULL;
 }
 
-void ThreadPool::Add(Closure* closure) {
+void ThreadPool::Add(Closure* const closure) {
   work_to_do_.push_back(closure);
   if (started_) {
     condition_.SignalAll();
   }
 }
-
 }  // namespace operations_research

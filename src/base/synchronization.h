@@ -48,7 +48,7 @@ class Barrier {
 };
 
 template<class T, class TT>
-inline T ThreadSafeIncrement( T* value, Mutex* sm, TT inc ) {
+inline T ThreadSafeIncrement(T* value, Mutex* sm, TT inc) {
   MutexLock l(sm);
   return (*value) += inc;
 }
