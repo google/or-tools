@@ -455,8 +455,8 @@ class BoundsAllDifferent : public BaseAllDifferent {
 class SortConstraint : public Constraint {
  public:
   SortConstraint(Solver* const solver,
-                 const vector<IntVar*>& original_vars,
-                 const vector<IntVar*>& sorted_vars)
+                 const std::vector<IntVar*>& original_vars,
+                 const std::vector<IntVar*>& sorted_vars)
       : Constraint(solver),
         ovars_(original_vars),
         svars_(sorted_vars),
