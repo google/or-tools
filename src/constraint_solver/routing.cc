@@ -240,12 +240,13 @@ class PairRelocateOperator : public PathOperator {
                        const IntVar* const* secondary_vars,
                        const RoutingModel::NodePairs& pairs,
                        int size)
-      : PathOperator(vars, secondary_vars, size, 3), is_first_(size, false) {
+      : PathOperator(vars, secondary_vars, size, 3) {
     int64 index_max = 0;
     for (int i = 0; i < size; ++i) {
       index_max = std::max(index_max, vars[i]->Max());
     }
     prevs_.resize(index_max + 1, -1);
+    is_first_.resize(index_max + 1, false);
     int max_pair_index = -1;
     for (int i = 0; i < pairs.size(); ++i) {
       max_pair_index = std::max(max_pair_index, pairs[i].first);
@@ -272,6 +273,7 @@ class PairRelocateOperator : public PathOperator {
     // Base node 2 must be after base node 1 if they are both on the same path
     // and if the operator is about to move a "second" node (second node in a
     // node pair, ie. a delivery in a pickup and delivery pair).
+    DCHECK_LT(BaseNode(0), is_first_.size());
     const bool moving_first = is_first_[BaseNode(0)];
     if (!moving_first
         && base_index == 2
