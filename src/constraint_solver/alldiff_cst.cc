@@ -541,7 +541,7 @@ class SortConstraint : public Constraint {
       solver()->Fail();
     }
     int64 imax = size_ - 1;
-    while (imax >= 0 && NotIntersect(index, imax)) {
+    while (imax > imin && NotIntersect(index, imax)) {
       imax--;
     }
     *range_min = imin;
