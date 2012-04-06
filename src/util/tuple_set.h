@@ -34,6 +34,7 @@
 #define OR_TOOLS_UTIL_TUPLE_SET_H_
 
 #include "base/hash.h"
+#include "base/hash.h"
 #include <vector>
 
 #include "base/integral_types.h"
@@ -55,31 +56,41 @@ class IntTupleSet {
   // Clears data.
   void Clear();
 
-  // Inserts the tuple to the set. It does nothing if the tuple is already
-  // in the set. The size of the tuple must be equal to the arity of
-  // the set.
-  void Insert(const std::vector<int>& tuple);
-  void Insert(const std::vector<int64>& tuple);
+  // Inserts the tuple to the set. It does nothing if the tuple is
+  // already in the set. The size of the tuple must be equal to the
+  // arity of the set. It returns the index at which the tuple was
+  // inserted (-1 if it was already present).
+  int Insert(const std::vector<int>& tuple);
+  int Insert(const std::vector<int64>& tuple);
   // Arity fixed version of Insert removing the need for a vector for the user.
-  void Insert2(int64 v0, int64 v1);
-  void Insert3(int64 v0, int64 v1, int64 v2);
-  void Insert4(int64 v0, int64 v1, int64 v2, int64 v3);
+  int Insert2(int64 v0, int64 v1);
+  int Insert3(int64 v0, int64 v1, int64 v2);
+  int Insert4(int64 v0, int64 v1, int64 v2, int64 v3);
   // Inserts the tuples.
   void InsertAll(const std::vector<std::vector<int64> >& tuples);
   void InsertAll(const std::vector<std::vector<int> >& tuples);
 
   // Checks if the tuple is in the set.
-  bool Contains(const std::vector<int>& tuple);
-  bool Contains(const std::vector<int64>& tuple);
+  bool Contains(const std::vector<int>& tuple) const;
+  bool Contains(const std::vector<int64>& tuple) const;
 
   // Returns the number of tuples.
   int NumTuples() const;
-  // Get the given tuple's value at the given position.
+  // Get the given tuple's value at the given position.  The indices
+  // of the tuples correspond to the order in which they were
+  // inserted.
   int64 Value(int tuple_index, int pos_in_tuple) const;
   // Returns the arity of the set.
   int Arity() const;
   // Access the raw data, see IntTupleSet::Data::flat_tuples_.
   const int64* RawData() const;
+  // Returns the number of different values in the given column.
+  int NumDifferentValuesInColumn(int col) const;
+  // Return a copy of the set, sorted by the "col"-th value of each
+  // tuples. The sort is stable.
+  IntTupleSet SortedByColumn(int col) const;
+  // Returns a copy of the tuple set lexicographically sorted.
+  IntTupleSet SortedLexicographically() const;
 
  private:
   // Class that holds the actual data of an IntTupleSet. It handles
@@ -92,9 +103,9 @@ class IntTupleSet {
     void AddSharedOwner();
     bool RemovedSharedOwner();
     Data* CopyIfShared();
-    template <class T> void Insert(const std::vector<T>& tuple);
-    template <class T> bool Contains(const std::vector<T>& candidate);
-    template <class T> int64 Fingerprint(const std::vector<T>& tuple);
+    template <class T> int Insert(const std::vector<T>& tuple);
+    template <class T> bool Contains(const std::vector<T>& candidate) const;
+    template <class T> int64 Fingerprint(const std::vector<T>& tuple) const;
     int NumTuples() const;
     int64 Value(int index, int pos) const;
     int Arity() const;
@@ -110,6 +121,21 @@ class IntTupleSet {
     // fingerprint, represented by their start index in the
     // flat_tuples_ vector.
     hash_map<int64, std::vector<int> > tuple_fprint_to_index_;
+  };
+
+  // Used to represent a light representation of a tuple.
+  struct IndexData {
+    int index;
+    IntTupleSet::Data* data;
+    IndexData(int i, IntTupleSet::Data* const d) : index(i), data(d) {}
+    static bool Compare(const IndexData& tuple1, const IndexData& tuple2);
+  };
+
+  struct IndexValue {
+    int index;
+    int64 value;
+    IndexValue(int i, int64 v) : index(i), value(v) {}
+    static bool Compare(const IndexValue& tuple1, const IndexValue& tuple2);
   };
 
   mutable Data* data_;
@@ -144,7 +170,7 @@ inline IntTupleSet::Data* IntTupleSet::Data::CopyIfShared() {
   return this;
 }
 
-template <class T> void IntTupleSet::Data::Insert(const std::vector<T>& tuple) {
+template <class T> int IntTupleSet::Data::Insert(const std::vector<T>& tuple) {
   DCHECK(arity_ == 0 || flat_tuples_.size() % arity_ == 0);
   CHECK_EQ(arity_, tuple.size());
   DCHECK_EQ(1, num_owners_);
@@ -156,17 +182,20 @@ template <class T> void IntTupleSet::Data::Insert(const std::vector<T>& tuple) {
     }
     const int64 fingerprint = Fingerprint(tuple);
     tuple_fprint_to_index_[fingerprint].push_back(index);
+    return index;
+  } else {
+    return -1;
   }
 }
 
 template <class T> bool IntTupleSet::Data::Contains(
-    const std::vector<T>& candidate) {
+    const std::vector<T>& candidate) const {
   if (candidate.size() != arity_) {
     return false;
   }
   const int64 fingerprint = Fingerprint(candidate);
   if (ContainsKey(tuple_fprint_to_index_, fingerprint)) {
-    const std::vector<int>& indices = tuple_fprint_to_index_[fingerprint];
+    const std::vector<int>& indices = FindOrDie(tuple_fprint_to_index_, fingerprint);
     for (int i = 0; i < indices.size(); ++i) {
       const int tuple_index = indices[i];
       for (int j = 0; j < arity_; ++j) {
@@ -181,7 +210,7 @@ template <class T> bool IntTupleSet::Data::Contains(
 }
 
 template <class T> int64 IntTupleSet::Data::Fingerprint(
-    const std::vector<T>& tuple) {
+    const std::vector<T>& tuple) const {
   switch (arity_) {
     case 0:
       return 0;
@@ -251,49 +280,46 @@ inline void IntTupleSet::Clear() {
   data_->Clear();
 }
 
-inline void IntTupleSet::Insert(const std::vector<int>& tuple) {
+inline int IntTupleSet::Insert(const std::vector<int>& tuple) {
   data_ = data_->CopyIfShared();
-  data_->Insert(tuple);
+  return data_->Insert(tuple);
 }
 
-inline void IntTupleSet::Insert2(int64 v0, int64 v1) {
+inline int IntTupleSet::Insert(const std::vector<int64>& tuple) {
+  data_ = data_->CopyIfShared();
+  return data_->Insert(tuple);
+}
+
+inline int IntTupleSet::Insert2(int64 v0, int64 v1) {
   std::vector<int64> tuple(2);
   tuple[0] = v0;
   tuple[1] = v1;
-  Insert(tuple);
+  return Insert(tuple);
 }
 
-inline void IntTupleSet::Insert3(int64 v0, int64 v1, int64 v2) {
+inline int IntTupleSet::Insert3(int64 v0, int64 v1, int64 v2) {
   std::vector<int64> tuple(3);
   tuple[0] = v0;
   tuple[1] = v1;
   tuple[2] = v2;
-  Insert(tuple);
+  return Insert(tuple);
 }
 
-inline void IntTupleSet::Insert4(int64 v0, int64 v1, int64 v2, int64 v3) {
+inline int IntTupleSet::Insert4(int64 v0, int64 v1, int64 v2, int64 v3) {
   std::vector<int64> tuple(4);
   tuple[0] = v0;
   tuple[1] = v1;
   tuple[2] = v2;
   tuple[3] = v3;
-  Insert(tuple);
+  return Insert(tuple);
 }
 
-inline bool IntTupleSet::Contains(const std::vector<int>& tuple) {
+inline bool IntTupleSet::Contains(const std::vector<int>& tuple) const {
   return data_->Contains(tuple);
 }
 
-inline void IntTupleSet::Insert(const std::vector<int64>& tuple) {
-  data_ = data_->CopyIfShared();
-  data_->Insert(tuple);
-}
-
-inline void IntTupleSet::InsertAll(const std::vector<std::vector<int64> >& tuples) {
-  data_ = data_->CopyIfShared();
-  for (int i = 0; i < tuples.size(); ++i) {
-    Insert(tuples[i]);
-  }
+inline bool IntTupleSet::Contains(const std::vector<int64>& tuple) const {
+  return data_->Contains(tuple);
 }
 
 inline void IntTupleSet::InsertAll(const std::vector<std::vector<int> >& tuples) {
@@ -303,8 +329,11 @@ inline void IntTupleSet::InsertAll(const std::vector<std::vector<int> >& tuples)
   }
 }
 
-inline bool IntTupleSet::Contains(const std::vector<int64>& tuple) {
-  return data_->Contains(tuple);
+inline void IntTupleSet::InsertAll(const std::vector<std::vector<int64> >& tuples) {
+  data_ = data_->CopyIfShared();
+  for (int i = 0; i < tuples.size(); ++i) {
+    Insert(tuples[i]);
+  }
 }
 
 inline int IntTupleSet::NumTuples() const {
@@ -321,6 +350,72 @@ inline int IntTupleSet::Arity() const {
 
 inline const int64* IntTupleSet::RawData() const {
   return data_->RawData();
+}
+
+inline int IntTupleSet::NumDifferentValuesInColumn(int col) const {
+  if (col < 0 || col >= data_->Arity()) {
+    return 0;
+  }
+  hash_set<int64> values;
+  for (int i = 0; i < data_->NumTuples(); ++i) {
+    values.insert(data_->Value(i, col));
+  }
+  return values.size();
+}
+
+inline bool IntTupleSet::IndexValue::Compare(const IndexValue& a,
+                                             const IndexValue& b) {
+  return a.value < b.value || (a.value == b.value && a.index < b.index);
+}
+
+inline IntTupleSet IntTupleSet::SortedByColumn(int col) const {
+  std::vector<IndexValue> keys;
+  keys.reserve(data_->NumTuples());
+  for (int index = 0; index < data_->NumTuples(); ++index) {
+    keys.push_back(IndexValue(index, data_->Value(index, col)));
+  }
+  std::sort(keys.begin(), keys.end(), IntTupleSet::IndexValue::Compare);
+  const int arity = data_->Arity();
+  IntTupleSet sorted(arity);
+  for (int i = 0; i < keys.size(); ++i) {
+    const int64* tuple_ptr = data_->RawData() + keys[i].index * arity;
+    sorted.Insert(std::vector<int64>(tuple_ptr, tuple_ptr + arity));
+  }
+  return sorted;
+}
+
+inline bool IntTupleSet::IndexData::Compare(const IndexData& a,
+                                            const IndexData& b) {
+  const IntTupleSet::Data* const data = a.data;
+  const int arity = data->Arity();
+  for (int i = 0; i < arity; ++i) {
+    const int64 value1 = data->Value(a.index, i);
+    const int64 value2 = data->Value(b.index, i);
+    if (value1 < value2) {
+      return true;
+    }
+    if (value1 > value2) {
+      return false;
+    }
+  }
+  return false;
+}
+
+inline IntTupleSet IntTupleSet::SortedLexicographically() const {
+  std::vector<IndexData> keys;
+  keys.reserve(data_->NumTuples());
+  for (int index = 0; index < data_->NumTuples(); ++index) {
+    keys.push_back(IndexData(index, data_));
+  }
+  std::sort(keys.begin(), keys.end(), IntTupleSet::IndexData::Compare);
+  const int arity = data_->Arity();
+  IntTupleSet sorted(arity);
+  for (int i = 0; i < keys.size(); ++i) {
+    std::vector<int64> tuple(arity);
+    const int64* tuple_ptr = data_->RawData() + keys[i].index * arity;
+    sorted.Insert(std::vector<int64>(tuple_ptr, tuple_ptr + arity));
+  }
+  return sorted;
 }
 }  // namespace operations_research
 
