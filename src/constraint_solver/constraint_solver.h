@@ -1559,10 +1559,25 @@ class Solver {
   Constraint* MakeAllDifferent(const IntVar* const* vars,
                                int size, bool stronger_propagation);
 
-  // Maintains the relation between an array of variable and its
-  // sorted counterpart.
-  Constraint* MakeSorted(const std::vector<IntVar*>& vars,
-                         const std::vector<IntVar*>& sorted);
+  // Create a constraint binding the arrays of variables "vars" and
+  // "sorted_vars": sorted_vars[0] must be equal to the minimum of all
+  // variables in vars, and so on: the value of sorted_vars[i] must be
+  // equal to the i-th value of variables invars.
+  //
+  // This constraint propagate in both directions: from "vars" to
+  // "sorted_vars" and vice-versa.
+  //
+  // Behind the scenes, this constraint maintains that:
+  //   - sorted is always increasing.
+  //   - whatever the values of vars, there exists a permutation that
+  //     injects its values into the sorted variables.
+  //
+  // For more info, please have a look at:
+  //   https://mpi-inf.mpg.de/~mehlhorn/ftp/Mehlhorn-Thiel.pdf
+  Constraint* MakeSortingConstraint(const std::vector<IntVar*>& vars,
+                                    const std::vector<IntVar*>& sorted);
+  // TODO(user): Add void MakeSortedArray(const std::vector<IntVar*>& vars,
+  //                                         std::vector<IntVar*>* const sorted);
 
   // Prevent cycles, nexts variables representing the next in the chain.
   // Active variables indicate if the corresponding next variable is active;
@@ -3259,7 +3274,7 @@ class ModelVisitor : public BaseObject {
   static const char kScalProdLessOrEqual[];
   static const char kSemiContinuous[];
   static const char kSequenceVariable[];
-  static const char kSorted[];
+  static const char kSortingConstraint[];
   static const char kSquare[];
   static const char kStartExpr[];
   static const char kSum[];

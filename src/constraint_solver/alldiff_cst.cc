@@ -200,7 +200,7 @@ class RangeBipartiteMatching {
   }
 
  private:
-  // This method with sort the min_sorted_ and max_sorted_ arrays and fill
+  // This method sorts the min_sorted_ and max_sorted_ arrays and fill
   // the bounds_ array (and set the active_size_ counter).
   void SortArray() {
     std::sort(min_sorted_.get(),
@@ -491,35 +491,41 @@ class SortConstraint : public Constraint {
       mins_[i] = vmin;
       maxs_[i] = vmax;
     }
-    // One direction, from variables to sorted variables.
+    // Propagates from variables to sorted variables.
     std::sort(mins_.get(), mins_.get() + size_);
     std::sort(maxs_.get(), maxs_.get() + size_);
     for (int i = 0; i < size_; ++i) {
       svars_[i]->SetRange(mins_[i], maxs_[i]);
     }
-    // Reverse direction.
+    // Maintains sortedness.
+    for (int i = 0; i < size_ - 1; ++i) {
+      svars_[i + 1]->SetMin(svars_[i]->Min());
+    }
+    for (int i = size_ - 1; i > 0; --i) {
+      svars_[i - 1]->SetMax(svars_[i]->Max());
+    }
+    // Reverse propagation.
     for (int i = 0; i < size_; ++i) {
       int64 imin = 0;
       int64 imax = 0;
       FindIntersectionRange(i, &imin, &imax);
       matching_.SetRange(i, imin, imax);
     }
-    if (matching_.Propagate()) {
-      for (int i = 0; i < size_; ++i) {
-        const int64 vmin = mins_[matching_.Min(i)];
-        const int64 vmax = maxs_[matching_.Max(i)];
-        ovars_[i]->SetRange(vmin, vmax);
-      }
+    matching_.Propagate();
+    for (int i = 0; i < size_; ++i) {
+      const int64 vmin = svars_[matching_.Min(i)]->Min();
+      const int64 vmax = svars_[matching_.Max(i)]->Max();
+      ovars_[i]->SetRange(vmin, vmax);
     }
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitConstraint(ModelVisitor::kSorted, this);
+    visitor->BeginVisitConstraint(ModelVisitor::kSortingConstraint, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                ovars_);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kTargetArgument,
                                                svars_);
-    visitor->EndVisitConstraint(ModelVisitor::kSorted, this);
+    visitor->EndVisitConstraint(ModelVisitor::kSortingConstraint, this);
   }
 
   virtual string DebugString() const {
@@ -533,6 +539,7 @@ class SortConstraint : public Constraint {
                              int64* const range_min,
                              int64* const range_max) const {
     // Naive version.
+    // TODO(user): Implement log(n) version.
     int64 imin = 0;
     while (imin < size_ && NotIntersect(index, imin)) {
       imin++;
@@ -591,8 +598,8 @@ Constraint* Solver::MakeAllDifferent(const IntVar* const* vars,
   }
 }
 
-Constraint* Solver::MakeSorted(const std::vector<IntVar*>& vars,
-                               const std::vector<IntVar*>& sorted) {
+Constraint* Solver::MakeSortingConstraint(const std::vector<IntVar*>& vars,
+                                          const std::vector<IntVar*>& sorted) {
   CHECK_EQ(vars.size(), sorted.size());
   return RevAlloc(new SortConstraint(this, vars, sorted));
 }

@@ -117,7 +117,7 @@ class CollectVariablesVisitor : public ModelParser {
       for (int i = 0; i < vars.size(); ++i) {
         IgnoreIntegerVariable(const_cast<IntVar*>(vars[i]));
       }
-    } else if (type_name.compare(ModelVisitor::kSorted) == 0) {
+    } else if (type_name.compare(ModelVisitor::kSortingConstraint) == 0) {
       const std::vector<const IntVar*>& vars =
           Top()->FindIntegerVariableArrayArgumentOrDie(
               ModelVisitor::kTargetArgument);

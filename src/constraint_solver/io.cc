@@ -2070,16 +2070,16 @@ SequenceVar* BuildSequenceVariable(CPModelLoader* const builder,
   return builder->solver()->MakeSequenceVar(vars, proto.name());
 }
 
-// ----- kAllDifferent -----
+// ----- kSortingConstraint -----
 
-Constraint* BuildSorted(CPModelLoader* const builder,
-                        const CPConstraintProto& proto) {
+Constraint* BuildSortingConstraint(CPModelLoader* const builder,
+                                   const CPConstraintProto& proto) {
   std::vector<IntVar*> vars;
   VERIFY(builder->ScanArguments(ModelVisitor::kVarsArgument, proto, &vars));
   std::vector<IntVar*> targets;
   VERIFY(builder->ScanArguments(
       ModelVisitor::kTargetArgument, proto, &targets));
-  return builder->solver()->MakeSorted(vars, targets);
+  return builder->solver()->MakeSortingConstraint(vars, targets);
 }
 
 // ----- kSquare -----
@@ -2613,7 +2613,7 @@ void Solver::InitBuilders() {
   REGISTER(kScalProdLessOrEqual, BuildScalProdLessOrEqual);
   REGISTER(kSemiContinuous, BuildSemiContinuous);
   REGISTER(kSequenceVariable, BuildSequenceVariable);
-  REGISTER(kSorted, BuildSorted);
+  REGISTER(kSortingConstraint, BuildSortingConstraint);
   REGISTER(kSquare, BuildSquare);
   REGISTER(kStartExpr, BuildStartExpr);
   REGISTER(kSum, BuildSum);
