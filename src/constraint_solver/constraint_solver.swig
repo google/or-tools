@@ -1252,6 +1252,8 @@ static void SetPythonFlags(bool trace_propagation,
 %feature("director") Decision;
 %feature("director") SearchMonitor;
 %feature("director") Action;
+%feature("director") LocalSearchOperator;
+%feature("director") PathOperator;
 %feature("director") BaseLns;
 
 %{
@@ -1307,6 +1309,21 @@ struct FailureProtect {
 %ignore operations_research::Solver::MakeIntVarArray;
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
+%ignore operations_research::Solver::MakeLocalSearchObjectiveFilter(
+    const IntVar* const* vars,
+    int size,
+    Solver::IndexEvaluator2* const values,
+    const IntVar* const objective,
+    Solver::LocalSearchFilterBound filter_enum,
+    Solver::LocalSearchOperation op_enum);
+%ignore operations_research::Solver::MakeLocalSearchObjectiveFilter(
+    const IntVar* const* vars,
+    const IntVar* const* secondary_vars,
+    int size,
+    Solver::IndexEvaluator3* const values,
+    const IntVar* const objective,
+    Solver::LocalSearchFilterBound filter_enum,
+    Solver::LocalSearchOperation op_enum);
 
 %rename (nextWrap) operations_research::DecisionBuilder::Next;
 %rename (toString) *::DebugString;

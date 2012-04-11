@@ -2716,7 +2716,14 @@ class Solver {
       const IntVar* const* vars,
       const IntVar* const* secondary_vars,
       int size,
-      ResultCallback3<int64, int64, int64, int64>* const values,
+      Solver::IndexEvaluator3* const values,
+      const IntVar* const objective,
+      Solver::LocalSearchFilterBound filter_enum,
+      Solver::LocalSearchOperation op_enum);
+  LocalSearchFilter* MakeLocalSearchObjectiveFilter(
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars,
+      Solver::IndexEvaluator3* const values,
       const IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum,
       Solver::LocalSearchOperation op_enum);

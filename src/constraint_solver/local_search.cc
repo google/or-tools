@@ -2733,6 +2733,24 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
                                              OperationFromEnum(op_enum)));
 }
 
+LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    Solver::IndexEvaluator3* const values,
+    const IntVar* const objective,
+    Solver::LocalSearchFilterBound filter_enum,
+    Solver::LocalSearchOperation op_enum) {
+  CHECK_EQ(vars.size(), secondary_vars.size());
+  return MakeLocalSearchObjectiveFilter(vars.data(),
+                                        secondary_vars.data(),
+                                        vars.size(),
+                                        values,
+                                        objective,
+                                        filter_enum,
+                                        op_enum);
+}
+
+
 // ----- Finds a neighbor of the assignment passed -----
 
 class FindOneNeighbor : public DecisionBuilder {
