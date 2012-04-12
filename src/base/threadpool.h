@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BASE_THREADPOOL_H_
 #define OR_TOOLS_BASE_THREADPOOL_H_
 
+#include <list>
 #include <string>
 #include <vector>
 
@@ -37,8 +38,7 @@ class ThreadPool {
 
  private:
   const int num_workers_;
-  std::vector<Closure*> work_to_do_;
-  int done_index_;
+  std::list<Closure*> tasks_;
   Mutex mutex_;
   CondVar condition_;
   bool waiting_to_finish_;

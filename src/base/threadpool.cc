@@ -30,7 +30,6 @@ void RunWorker(void* data) {
 
 ThreadPool::ThreadPool(const std::string& prefix, int num_workers)
     : num_workers_(num_workers),
-      done_index_(0),
       waiting_to_finish_(false),
       started_(false),
       final_barrier_(new Barrier(num_workers + 1)) {}
@@ -65,10 +64,10 @@ void ThreadPool::StartWorkers() {
 Closure* ThreadPool::GetNextTask() {
   MutexLock lock(&mutex_);
   for (;;) {
-    if (done_index_ < work_to_do_.size()) {
-      Closure* const work = work_to_do_[done_index_];
-      done_index_++;
-      return work;
+    if (!tasks_.empty()) {
+      Closure* const task = tasks_.front();
+      tasks_.pop_front();
+      return task;
     }
     if (waiting_to_finish_) {
       return NULL;
@@ -80,7 +79,8 @@ Closure* ThreadPool::GetNextTask() {
 }
 
 void ThreadPool::Add(Closure* const closure) {
-  work_to_do_.push_back(closure);
+  MutexLock lock(&mutex_);
+  tasks_.push_back(closure);
   if (started_) {
     condition_.SignalAll();
   }
