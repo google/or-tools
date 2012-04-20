@@ -317,6 +317,7 @@ table.docutils {
     border: 0;
     border-collapse: collapse;
     align: center;
+    margin: auto;
 }
 
 table.docutils td, table.docutils th {

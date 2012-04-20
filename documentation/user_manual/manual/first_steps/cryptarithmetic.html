@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>2.2. The Cryptarithmetic Puzzle Problem and a first model &mdash; or-tools User&#39;s Manual&#39;</title>
+    <title>2.2. The Cryptarithmetic Puzzle Problem and a first model &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -26,7 +26,7 @@
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
-    <link rel="top" title="or-tools User&#39;s Manual&#39;" href="../../index.html" />
+    <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="2. First steps with or-tools: cryptarithmetic puzzles" href="../first_steps.html" />
     <link rel="next" title="2.3. Anatomy of a basic C++ code" href="anatomy.html" />
     <link rel="prev" title="2.1. Getting started" href="getting_started.html" /> 
@@ -44,7 +44,7 @@
         <li class="right" >
           <a href="getting_started.html" title="2.1. Getting started"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li>
+        <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../first_steps.html" accesskey="U">2. First steps with or-tools: cryptarithmetic puzzles</a> &raquo;</li> 
       </ul>
     </div>  
@@ -73,8 +73,15 @@ goal is to find the digits such that a given mathematical equation is verified.<
 <span class="o">=</span> <span class="n">T</span> <span class="n">R</span> <span class="n">U</span> <span class="n">E</span>
 </pre></div>
 </div>
-<p>One solution is <tt class="docutils literal"><span class="pre">C=2</span> <span class="pre">P=3</span> <span class="pre">I=7</span> <span class="pre">S=4</span> <span class="pre">F=9</span> <span class="pre">U=6</span> <span class="pre">N=8</span> <span class="pre">T=1</span> <span class="pre">R=0</span> <span class="pre">E=5</span></tt> because
-<tt class="docutils literal"><span class="pre">23+74+968</span> <span class="pre">=</span> <span class="pre">1065</span></tt>. Ideally, a good cryptarithmetic puzzle must have only
+<p>One solution is <tt class="docutils literal"><span class="pre">C=2</span> <span class="pre">P=3</span> <span class="pre">I=7</span> <span class="pre">S=4</span> <span class="pre">F=9</span> <span class="pre">U=6</span> <span class="pre">N=8</span> <span class="pre">T=1</span> <span class="pre">R=0</span> <span class="pre">E=5</span></tt> because</p>
+<div class="highlight-cpp"><div class="highlight"><pre>      <span class="mi">2</span> <span class="mi">3</span>
+<span class="o">+</span>     <span class="mi">7</span> <span class="mi">4</span>
+<span class="o">+</span>   <span class="mi">9</span> <span class="mi">6</span> <span class="mi">8</span>
+<span class="o">---------</span>
+<span class="o">=</span> <span class="mi">1</span> <span class="mi">0</span> <span class="mi">6</span> <span class="mi">5</span>
+</pre></div>
+</div>
+<p>Ideally, a good cryptarithmetic puzzle must have only
 one solution<a class="footnote-reference" href="#famous-cryptarithmetic" id="id1">[1]</a>. We derogate from this tradition. The above example
 has multiple solutions. We use it to show you how to collect all solutions of a problem.</p>
 <table class="docutils footnote" frame="void" id="famous-cryptarithmetic" rules="none">
@@ -194,9 +201,9 @@ A default basic strategy will do for the moment.</p>
   <h3>Welcome</h3>
   
   <ul>
+  	<li><a href="http://code.google.com/p/or-tools/">or-tools</a></li>  
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
 	<li><a href="../../index.html">Back to main page</a></li>
-
   </ul>
   
    
@@ -208,8 +215,8 @@ A default basic strategy will do for the moment.</p>
   <ul>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li>Java</li>
-	<li>C#</li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
 </ul>
   
    
@@ -245,7 +252,7 @@ A default basic strategy will do for the moment.</p>
         <li class="right" >
           <a href="getting_started.html" title="2.1. Getting started"
              >previous</a> |</li>
-        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li>
+        <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../first_steps.html" >2. First steps with or-tools: cryptarithmetic puzzles</a> &raquo;</li> 
       </ul>
     </div>

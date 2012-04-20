@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>The NQueen Problem &mdash; or-tools User&#39;s Manual&#39;</title>
+    <title>4.1. The n-queens Problem &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -26,7 +26,10 @@
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
-    <link rel="top" title="or-tools User&#39;s Manual&#39;" href="../../index.html" /> 
+    <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
+    <link rel="up" title="4. Defining search primitives: n-queens problems" href="../search_primitives.html" />
+    <link rel="next" title="4.2. cpviz: how to visualize the search" href="cpviz.html" />
+    <link rel="prev" title="4. Defining search primitives: n-queens problems" href="../search_primitives.html" /> 
   </head>
   <body>
     <div class="related">
@@ -35,7 +38,14 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li> 
+        <li class="right" >
+          <a href="cpviz.html" title="4.2. cpviz: how to visualize the search"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../search_primitives.html" title="4. Defining search primitives: n-queens problems"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
+          <li><a href="../search_primitives.html" accesskey="U">4. Defining search primitives: n-queens problems</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -44,103 +54,10 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="the-nqueen-problem">
-<span id="nqueen-problem"></span><h1>The NQueen Problem</h1>
-<p>The Golomb Ruler Problem is one of these very easy to state problems but
-that are extremely difficult to solve despite their apparent simplicity.</p>
-<p>In this section, we describe the problem and propose a first model to solve it.
-This model is not very efficient and we will develop better models in
-the next sections.</p>
+  <div class="section" id="the-n-queens-problem">
+<span id="nqueen-problem"></span><h1>4.1. The n-queens Problem</h1>
 <div class="section" id="description-of-the-problem">
-<h2>Description of the problem</h2>
-<p>A Golomb ruler is a sequence of non-negative integers such that every difference
-of two integers in the sequence is distinct. Conceptually, this is similar to construct
-a ruler in such a way that no two pairs of marks measure the same distance. The number
-of marks (elements in the sequence) is called the <em>order</em> of the Golomb ruler.</p>
-<p>Figure <a class="reference internal" href="#golomb-4-non-optimal"><em>A non optimal Golomb ruler of order 4.</em></a>
-illustrates a Golomb ruler of order 4 and all its - distinct - differences.</p>
-<div class="figure align-center" id="golomb-4-non-optimal">
-<img alt="A non optimal Golomb ruler of order 4." src="manual/search_primitives/images/golomb_4_non_optimal.*" />
-<p class="caption">A non optimal Golomb ruler of order 4.</p>
-</div>
-<p>You can find all the known optimal Golomb rulers and more information on <a class="reference external" href="http://en.wikipedia.org/wiki/Golomb_ruler">Wikipedia</a>.</p>
-<table class="docutils footnote" frame="void" id="ogr24" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label">[1]</td><td><a class="reference external" href="http://stats.distributed.net/projects.php?project_id=24">http://stats.distributed.net/projects.php?project_id=24</a></td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="ogr25" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label">[2]</td><td><a class="reference external" href="http://stats.distributed.net/projects.php?project_id=25">http://stats.distributed.net/projects.php?project_id=25</a></td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="ogr26" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label">[3]</td><td><a class="reference external" href="http://stats.distributed.net/projects.php?project_id=26">http://stats.distributed.net/projects.php?project_id=26</a></td></tr>
-</tbody>
-</table>
-<div class="topic">
-<p class="topic-title first">Why Golomb Rulers?</p>
-<p>Golomb rulers have a wide variety of applications, including radio astronomy and information theory.
-In radio astronomy, when constrained to be on a line, telescopes collect more accurate information if they are placed on the marks
-of a Golomb ruler. In information theory, Golomb rulers are used for error detection and correction.</p>
-</div>
-</div>
-<div class="section" id="how-to-solve-the-problem">
-<h2>How to solve the problem?</h2>
-<p>We follow again the classical <a class="reference internal" href="../introduction/three_stages.html#three-stages"><em>The three-stage method</em></a>.</p>
-<div class="section" id="describe">
-<h3>Describe</h3>
-<p>What is the goal of the Golomb Ruler Problem? To find a minimal Golomb ruler for a given
-order <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/>. Our objective function is the length of the ruler or the largest
-integer in the Golomb ruler sequence.</p>
-<p>What are the unknowns? We have at least two choices. We can either view the unknowns
-as the marks of the ruler (and retrieve all the differences from these variables) or choose the unknowns to be the differences (and retrieve the marks).
-Let&#8217;s try this second approach and use the efficient <cite>AllDifferent</cite> constraint.
-There are <img class="math" src="../../_images/math/eb643c8ee8f3686fbaa86cf68eb7e8d4b281db6e.png" alt="\frac{n (n-1)}{2}"/> such differences.</p>
-<p>What are the constraints? Using the differences as variables, we need to construct a Golomb
-ruler, i.e. the structure of the Golomb ruler has to be respected.</p>
-</div>
-<div class="section" id="model">
-<h3>Model</h3>
-<p>For each positive difference, we have a decision variable. We collect them in
-an array <img class="math" src="../../_images/math/3667c72efcf1abf0a7359a5c297d4affd54b3ed2.png" alt="Y\hspace{-0.1cm}."/>  Let&#8217;s order the differences so that we know which difference is represented by <img class="math" src="../../_images/math/50ae01c5c3fe117c6009a8784cd517f8036e6639.png" alt="Y[i]"/>.</p>
-<p>Figure <a class="reference internal" href="#gr-order1"><em>An ordered sequence of differences for the Golomb ruler of order 4.</em></a>
-illustrates an ordered sequence of differences for a Golomb ruler of order 4.</p>
-<div class="figure align-center" id="gr-order1">
-<img alt="An ordered sequence of differences for the Golomb ruler of order 4." src="manual/search_primitives/images/GR_order1.*" />
-<p class="caption">An ordered sequence of differences for the Golomb ruler of order 4.</p>
-</div>
-<p>We want to minimize the last difference in <img class="math" src="../../_images/math/ce58e4af225c93d08606c26554caaa5ae32edeba.png" alt="Y"/> i.e. <img class="math" src="../../_images/math/9cecbbeba63daadf452b55fc1c51e38e31c10ac0.png" alt="Y[\frac{n (n-1)}{2}-1]"/> since the first index of an array is <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0"/>.
-When the order is <img class="math" src="../../_images/math/5218af40079081e694d8b82eeac2d368ef6ea76a.png" alt="n = 4"/>, we want to optimize <img class="math" src="../../_images/math/8f6f6f3b9065e970e7d5f9b684f7022229dcbd91.png" alt="Y[\frac{4 (4-1)}{2}-1] = Y[5]"/> which represents the <img class="math" src="../../_images/math/811408a46dd1a6f44fbc9f58c8b41b5f0f40f2df.png" alt="6^\textrm{th}"/> difference. Instead of writing <img class="math" src="../../_images/math/50ae01c5c3fe117c6009a8784cd517f8036e6639.png" alt="Y[i]"/>, we will also use the more convenient notation <img class="math" src="../../_images/math/d1e635eb590829b488cf300af12cf0bdda6dae03.png" alt="Y_i"/>.</p>
-<p>Figure <a class="reference internal" href="#gr-first-sum"><em>Inner structure of a Golomb ruler of order 5.</em></a>
-illustrates the structure than must be respected for a Golomb ruler of order 5.</p>
-<div class="figure align-center" id="gr-first-sum">
-<img alt="An ordered sequence of differences for the Golomb ruler of order 4." src="manual/search_primitives/images/GR_first_sum.*" />
-<p class="caption">Inner structure of a Golomb ruler of order 5.</p>
-</div>
-<p>An easy way to construct all the equality constraints is to use an index <cite>index</cite> going from <img class="math" src="../../_images/math/c7cab1a05e1e0c1d51a6a219d96577a16b7abf9d.png" alt="4"/> to <img class="math" src="../../_images/math/bf2c9074b396e3af0dea52d792660eea1c77f10f.png" alt="9"/>, an
-index <cite>i</cite> to count the number of terms in a given equality and an index <cite>j</cite> to indicate the rank of the starting term in each
-equality:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">;</span>
-<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">n</span><span class="o">-</span><span class="n">i</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span> <span class="p">{</span>
-    <span class="o">++</span><span class="n">index</span><span class="p">;</span>
-    <span class="n">Y</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="p">...</span> <span class="o">+</span> <span class="n">Y</span><span class="p">[</span><span class="n">j</span> <span class="o">+</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">];</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="solve">
-<h3>Solve</h3>
-<p>Again, at this stage of our discovery of the library, we will not try to find a good way to solve this model.
-A default basic strategy will do for the moment.</p>
-<p>The next chapter <a class="reference internal" href="../search_primitives.html#search-primitives"><em>Defining search primitives in constraint programming</em></a> is entirely devoted to this subject.</p>
-</div>
+<h2>4.1.1. Description of the problem</h2>
 </div>
 </div>
 
@@ -180,9 +97,9 @@ A default basic strategy will do for the moment.</p>
   <h3>Welcome</h3>
   
   <ul>
+  	<li><a href="http://code.google.com/p/or-tools/">or-tools</a></li>  
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
 	<li><a href="../../index.html">Back to main page</a></li>
-
   </ul>
   
    
@@ -194,8 +111,8 @@ A default basic strategy will do for the moment.</p>
   <ul>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li>Java</li>
-	<li>C#</li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
 </ul>
   
    
@@ -203,14 +120,8 @@ A default basic strategy will do for the moment.</p>
 
   <h3>Sections</a></h3>
   <ul>
-<li><a class="reference internal" href="#">The NQueen Problem</a><ul>
-<li><a class="reference internal" href="#description-of-the-problem">Description of the problem</a></li>
-<li><a class="reference internal" href="#how-to-solve-the-problem">How to solve the problem?</a><ul>
-<li><a class="reference internal" href="#describe">Describe</a></li>
-<li><a class="reference internal" href="#model">Model</a></li>
-<li><a class="reference internal" href="#solve">Solve</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#">4.1. The n-queens Problem</a><ul>
+<li><a class="reference internal" href="#description-of-the-problem">4.1.1. Description of the problem</a></li>
 </ul>
 </li>
 </ul>
@@ -225,7 +136,14 @@ A default basic strategy will do for the moment.</p>
         <li class="right" style="margin-right: 10px">
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
-        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li> 
+        <li class="right" >
+          <a href="cpviz.html" title="4.2. cpviz: how to visualize the search"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../search_primitives.html" title="4. Defining search primitives: n-queens problems"
+             >previous</a> |</li>
+        <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
+          <li><a href="../search_primitives.html" >4. Defining search primitives: n-queens problems</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

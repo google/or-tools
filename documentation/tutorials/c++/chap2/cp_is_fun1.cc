@@ -18,15 +18,12 @@
 //
 // This problem has 72 different solutions in base 10.
 //
-// Use of SolutionCollectors.
-// Use of Solve().
+// Use of NewSearch.
 
 #include <vector>
 
 #include "base/logging.h"
 #include "constraint_solver/constraint_solver.h"
-
-DEFINE_int64(base, 10, "Base used to solve the problem.");
 
 namespace operations_research {
 
@@ -76,7 +73,7 @@ IntVar* const MakeBaseLine4(Solver* s,
 }
 
 void CPIsFun() {
-  // Constraint programming engine
+  // Constraint Programming engine
   Solver solver("CP is fun!");
 
   const int64 kBase = 10;
@@ -125,31 +122,33 @@ void CPIsFun() {
 
   solver.AddConstraint(solver.MakeEquality(sum_terms, sum));
 
-
-  SolutionCollector* const all_solutions = solver.MakeAllSolutionCollector();
-  //  Add the interesting variables to the SolutionCollector
-  all_solutions->Add(c);
-  all_solutions->Add(p);
-  //  Create the variable kBase * c + p
-  IntVar* v1 = solver.MakeSum(solver.MakeProd(c, kBase), p)->Var();
-  //  Add it to the SolutionCollector
-  all_solutions->Add(v1);
-
+  //  Decision Builder: hot to scour the search tree
   DecisionBuilder* const db = solver.MakePhase(letters,
                                                Solver::CHOOSE_FIRST_UNBOUND,
                                                Solver::ASSIGN_MIN_VALUE);
+  solver.NewSearch(db);
 
-  solver.Solve(db, all_solutions);
-
-  //  Retrieve the solutions
-  const int numberSolutions = all_solutions->solution_count();
-  LOG(INFO) << "Number of solutions: " << numberSolutions << std::endl;
-
-  for (int index = 0; index < numberSolutions; ++index) {
-    Assignment* const solution = all_solutions->solution(index);
+  if (solver.NextSolution()) {
     LOG(INFO) << "Solution found:";
-    LOG(INFO) << "v1=" << solution->Value(v1);
-  }
+    LOG(INFO) << "C=" << c->Value() << " " << "P=" << p->Value() << " "
+              << "I=" << i->Value() << " " << "S=" << s->Value() << " "
+              << "F=" << f->Value() << " " << "U=" << u->Value() << " "
+              << "N=" << n->Value() << " " << "T=" << t->Value() << " "
+              << "R=" << r->Value() << " " << "E=" << e->Value();
+
+  // Is CP + IS + FUN = TRUE?
+  CHECK_EQ(p->Value() + s->Value() + n->Value() +
+           kBase * (c->Value() + i->Value() + u->Value()) +
+           kBase * kBase * f->Value(),
+           e->Value() +
+           kBase * u->Value() +
+           kBase * kBase * r->Value() +
+           kBase * kBase * kBase * t->Value());
+  } else {
+    LOG(INFO) << "Cannot solve problem.";
+  }  // if (solver.NextSolution())
+
+  solver.EndSearch();
 }
 
 }   // namespace operations_research

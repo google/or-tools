@@ -1,4 +1,33 @@
 
+v.0.1.3: (2012-04-20 11:29:46)
+------------------------------
+* Minor enhancements to the manual:
+  - preface added (suggested by Hakan).
+  - parts introduced:
+    + basics,
+    + customization,
+    + routing,
+    + appendices.
+  - no more unnecessary empty pages in the LaTeX version (still "belle page").
+  - two pages mode.
+  - chapter about "Modeling tricks" put at the end in the appendices.
+  - few corrections.
+  - chap2: suggestions from Hakan (thank you) applied:
+    + typos.
+    + nqueens -> n-queens.
+    + chap2: solution in same format as problem.
+    + lots of small improvements.
+  - tables centred.
+  - tags "draft" and "final" added in Sphinx for conditional compilation.
+* Minor enhancements to the slides:
+  - chap2: few typos, better layout (thank you Dania).
+* FAQ on the documentation extended.
+* Tutorial examples:
+  - code directories changed (now they all start with lower case letter).
+  - minor corrections in the C++ code.
+  - Csharp examples for chap2 added.
+  - Java examples for chap2 added.
+
 v.0.1.2: (2012-03-30 21:13:04)
 ------------------------------
 * Minor enhancements to the manual:

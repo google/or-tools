@@ -125,6 +125,15 @@ div.sphinxsidebar h4 {
     padding: 0;
 }
 
+div.sphinxsidebar h5 {
+    font-family: 'Trebuchet MS', sans-serif;
+    color: #9A0303;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 7px 0 0 0;
+    padding: 0;
+}
+
 div.sphinxsidebar p {
     color: #909090;
 }

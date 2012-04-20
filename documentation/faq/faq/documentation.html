@@ -60,6 +60,12 @@
 <li><a class="reference internal" href="#faq-documentation-contribute"><em>I&#8217;d like to improve a section in the documentation. How do I contribute?</em></a></li>
 <li><a class="reference internal" href="#faq-documentation-compile"><em>How do I compile and run the examples in the tutorial section?</em></a></li>
 <li><a class="reference internal" href="#faq-documentation-english"><em>I&#8217;ve spotted strangely formulated sentences in the documention. How come?</em></a></li>
+<li><a class="reference internal" href="#faq-documentation-how-to-generate-documentation"><em>How can I generate the documentation?</em></a></li>
+<li><a class="reference internal" href="#faq-documentation-used-tools"><em>What tools do you use to generate the documentation?</em></a></li>
+<li><a class="reference internal" href="#faq-documentation-page-layout"><em>Isn&#8217;t the page layout sometimes rough?</em></a></li>
+<li><a class="reference internal" href="#faq-documentation-first-chapter"><em>What about the first chapter?</em></a></li>
+<li><a class="reference internal" href="#faq-documentation-search-tool"><em>Does the search tool return pertinent results?</em></a></li>
+<li><a class="reference internal" href="#faq-documentation-end-of-project"><em>When do you expect to finish?</em></a></li>
 </ul>
 <div class="section" id="help-i-m-lost-where-can-i-get-some-help">
 <span id="faq-documentation-help"></span><h2>Help! I&#8217;m lost. Where can I get some help?</h2>
@@ -73,30 +79,55 @@ the documentation. Did you visit it?</p>
 </div>
 <div class="section" id="i-d-like-to-improve-a-section-in-the-documentation-how-do-i-contribute">
 <span id="faq-documentation-contribute"></span><h2>I&#8217;d like to improve a section in the documentation. How do I contribute?</h2>
-<p>For the moment, contact us on the <a class="reference external" href="http://groups.google.com/group/or-tools-discuss">mailing list</a>. We will implement
-an interactive documentation... if we have enough time. First we document, than we improve the documentation. ;-)</p>
+<p>Send us your comments, suggestions, corrections, feedback, ... to <strong>ortools.doc</strong> at <strong>gmail.com</strong>. Thank you very much.</p>
 </div>
 <div class="section" id="how-do-i-compile-and-run-the-examples-in-the-tutorial-section">
 <span id="faq-documentation-compile"></span><h2>How do I compile and run the examples in the tutorial section?</h2>
-<p>We give you the easiest solutions to compile and run the examples or your
-code in any directory you want.</p>
-<ul>
-<li><p class="first"><tt class="docutils literal"><span class="pre">C++</span></tt>:</p>
-</li>
-<li><dl class="first docutils">
-<dt><tt class="docutils literal"><span class="pre">Python</span></tt>:</dt>
-<dd><p class="first last">the easiest way is probably to declare the main directory of the
-or-tools library in the <tt class="docutils literal"><span class="pre">PYTHONPATH</span></tt> variable. <strong class="program">python</strong> will then automatically find all the pieces of the library.</p>
-</dd>
-</dl>
-</li>
-</ul>
+<p><tt class="docutils literal"><span class="pre">Makefiles</span></tt> are (will be) provided to compile the examples (soon).</p>
 </div>
 <div class="section" id="i-ve-spotted-strangely-formulated-sentences-in-the-documention-how-come">
 <span id="faq-documentation-english"></span><h2>I&#8217;ve spotted strangely formulated sentences in the documention. How come?</h2>
 <p>Maybe becauze it iz my third language? We are always trying to improve our work. If you have comments, suggestions, corrections,...
-see <a class="reference internal" href="#faq-documentation-contribute"><em>I&#8217;d like to improve a section in the documentation. How do I contribute?</em></a></p>
+see <a class="reference internal" href="#faq-documentation-contribute"><em>I&#8217;d like to improve a section in the documentation. How do I contribute?</em></a>.</p>
 </div>
+<div class="section" id="how-can-i-generate-the-documentation">
+<span id="faq-documentation-how-to-generate-documentation"></span><h2>How can I generate the documentation?</h2>
+<p>All the necessary steps are explained in the little manual <tt class="file docutils literal"><span class="pre">howto.pdf</span></tt> in the directory <tt class="file docutils literal"><span class="pre">documentation/doc</span></tt> of the <em>or-tools</em> project. The document itself is written
+in LaTeX and can be generated with <strong class="program">pdflatex</strong>.</p>
+</div>
+<div class="section" id="what-tools-do-you-use-to-generate-the-documentation">
+<span id="faq-documentation-used-tools"></span><h2>What tools do you use to generate the documentation?</h2>
+<p>The documentation is written for the most part in reStructuredText (see <a class="reference external" href="http://docutils.sourceforge.net/rst.html">http://docutils.sourceforge.net/rst.html</a>)
+and transformed with the help of the following great open source tools:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://sphinx.pocoo.org/index.html">Sphinx</a>;</li>
+<li><a class="reference external" href="http://www.tug.org/applications/pdftex/">pdflatex/pdftex</a>;</li>
+<li><a class="reference external" href="http://www.python.org/">Python</a>.</li>
+</ul>
+<p>You will find more details in the little manual <tt class="file docutils literal"><span class="pre">howto.pdf</span></tt> in the directory <tt class="file docutils literal"><span class="pre">documentation/doc</span></tt> of the <em>or-tools</em> project.</p>
+</div>
+<div class="section" id="isn-t-the-page-layout-sometimes-rough">
+<span id="faq-documentation-page-layout"></span><h2>Isn&#8217;t the page layout sometimes rough?</h2>
+<p>We are more focused on the content for the moment. Writing documentation is a two-step process: first, we write the documentation,
+then we format the documents.</p>
+<p>You can send us your comments about the layout (see <a class="reference internal" href="#faq-documentation-contribute"><em>I&#8217;d like to improve a section in the documentation. How do I contribute?</em></a>). We might not correct the layout right away but we&#8217;ll
+keep your suggestions for later.</p>
+</div>
+<div class="section" id="what-about-the-first-chapter">
+<span id="faq-documentation-first-chapter"></span><h2>What about the first chapter?</h2>
+<p>This is probably the most difficult to write chapter and will be written last.</p>
+<p>This chapter will be an introduction to Constraint Programming and... the manual. Expect to see some common concepts explained here. If
+you see important notions in the other chapters that are not explained, this is because we will detail them in this first chapter.</p>
+</div>
+<div class="section" id="does-the-search-tool-return-pertinent-results">
+<span id="faq-documentation-search-tool"></span><h2>Does the search tool return pertinent results?</h2>
+<p>Not for the moment.
+Give us some time. For the moment, the structure of the documentation is still changing and the documentation is quite empty.</p>
+</div>
+<div class="section" id="when-do-you-expect-to-finish">
+<span id="faq-documentation-end-of-project"></span><h2>When do you expect to finish?</h2>
+<p>15 <sup>th</sup> of June... 2012!</p>
+You can see the overal progress <a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#progress">here</a>.</div>
 </div>
 
 
@@ -149,8 +180,8 @@ see <a class="reference internal" href="#faq-documentation-contribute"><em>I&#82
   <ul>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li>Java</li>
-	<li>C#</li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
 </ul>
   
    

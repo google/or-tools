@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>2.3. Anatomy of a basic C++ code &mdash; or-tools User&#39;s Manual&#39;</title>
+    <title>2.3. Anatomy of a basic C++ code &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -26,7 +26,7 @@
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
-    <link rel="top" title="or-tools User&#39;s Manual&#39;" href="../../index.html" />
+    <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="2. First steps with or-tools: cryptarithmetic puzzles" href="../first_steps.html" />
     <link rel="next" title="2.4. SolutionCollectors and Assignments to collect solutions" href="monitors.html" />
     <link rel="prev" title="2.2. The Cryptarithmetic Puzzle Problem and a first model" href="cryptarithmetic.html" /> 
@@ -44,7 +44,7 @@
         <li class="right" >
           <a href="cryptarithmetic.html" title="2.2. The Cryptarithmetic Puzzle Problem and a first model"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li>
+        <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../first_steps.html" accesskey="U">2. First steps with or-tools: cryptarithmetic puzzles</a> &raquo;</li> 
       </ul>
     </div>  
@@ -75,7 +75,7 @@ in more details.</p>
 </div>
 <p>The header <tt class="docutils literal"><span class="pre">logging.h</span></tt> is needed for some logging facilities and some
 assert-like macros. The header <tt class="docutils literal"><span class="pre">constraint_solver.h</span></tt> is the main entry point
-to the CP solver and must be included whenever you intend to use it.</p>
+to the CP solver and must be includedfootnote{Directly or indirectly when it is included in another header you include.} whenever you intend to use it.</p>
 </div>
 <div class="section" id="the-namespace-operations-research">
 <span id="index-0"></span><h2>2.3.3. The namespace <tt class="docutils literal"><span class="pre">operations_research</span></tt></h2>
@@ -114,7 +114,7 @@ the function <tt class="docutils literal"><span class="pre">CPIsFun()</span></tt
 </div>
 <div class="section" id="the-cp-solver">
 <span id="index-1"></span><h2>2.3.4. The CP solver</h2>
-<p>The CP solver is the main engine to solve an
+<p>The CP solver is the main engine to solve a problem
 instance. It is also responsible for the creation of the model. It has a very
 rich Application Programming Interface (API) and provides a lots of
 functionalities.</p>
@@ -153,8 +153,15 @@ them appropriately.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">Never delete explicitly an object created by
-a factory method!</p>
+a factory method! First, the solver deletes all the objects for you.
+Second, deleting a pointer twice in C++ gives undefined behaviour<a class="footnote-reference" href="#dont-delete-pointers" id="id2">[2]</a>!</p>
 </div>
+<table class="docutils footnote" frame="void" id="dont-delete-pointers" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>It is possible to bypass the undefined behaviour but you don&#8217;t know what the solver needs to do, so keep your hands off of the object pointers! ;-)</td></tr>
+</tbody>
+</table>
 <p>Beside integer variables, the solver provides factory methods to create
 interval variables (<tt class="docutils literal"><span class="pre">IntervalVar</span></tt>), sequence variables (<tt class="docutils literal"><span class="pre">SequenceVar</span></tt>)
 and variables to encapsulate objectives (<tt class="docutils literal"><span class="pre">OptimizeVar</span></tt>).</p>
@@ -177,11 +184,11 @@ Aborted</pre>
 <p>In <a class="reference internal" href="../utilities/asserting.html#asserting"><em>Asserting</em></a>, we cover assert-like macros in more details.</p>
 </div>
 <div class="section" id="constraints">
-<span id="index-5"></span><span id="id2"></span><h2>2.3.7. Constraints</h2>
+<span id="index-5"></span><span id="id3"></span><h2>2.3.7. Constraints</h2>
 <p>To create a integer linear constraint, we need to know how to multiply an integer variable
 with an integer constant and how to add two integer variables. We have seen that
 the solver creates a variable and only provides a pointer to that variable.
-The solver provides also factory methods to multiply an integer coefficient by
+The solver also provides factory methods to multiply an integer coefficient by
 an <tt class="docutils literal"><span class="pre">IntVar</span></tt> given by a pointer:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var1</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeIntVar</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;Var1&quot;</span><span class="p">);</span>
 <span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var2</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeProd</span><span class="p">(</span><span class="n">var1</span><span class="p">,</span><span class="mi">36</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">Var</span><span class="p">();</span>
@@ -202,7 +209,7 @@ again a factory method:</p>
 <p class="topic-title first">Is the call to <tt class="docutils literal"><span class="pre">Var()</span></tt> really necessary?</p>
 <p>Yes! <tt class="docutils literal"><span class="pre">Var()</span></tt> not only transforms a constraint into a variable but
 also a stateless expression into a stateful and monotonic variable.</p>
-<p>Variables are stateful objects that provide a rich API. On the other hand, subclasses of <tt class="docutils literal"><span class="pre">BaseIntExpr</span></tt> represent range-only stateless objects. That is, <tt class="docutils literal"><span class="pre">MakeMin(MakeSum(A,B),a)</span></tt> is recomputed each time as <tt class="docutils literal"><span class="pre">MakeMin(A,a)</span> <span class="pre">+</span> <span class="pre">MakeMin(B,a)</span></tt>. Furthermore, sometimes the propagation on an expression is not complete. For instance, if <tt class="docutils literal"><span class="pre">A</span></tt> is an <tt class="docutils literal"><span class="pre">IntVar</span></tt> with domain <tt class="docutils literal"><span class="pre">[0</span> <span class="pre">..</span> <span class="pre">5]</span></tt>, and <tt class="docutils literal"><span class="pre">B</span></tt> another <tt class="docutils literal"><span class="pre">IntVar</span></tt> with domain <tt class="docutils literal"><span class="pre">[0</span> <span class="pre">..</span> <span class="pre">5]</span></tt> then <tt class="docutils literal"><span class="pre">MakeSum(A,</span> <span class="pre">B)</span></tt> has domain <tt class="docutils literal"><span class="pre">[0,</span> <span class="pre">10]</span></tt>. If we apply <tt class="docutils literal"><span class="pre">MakeMax(MakeSum(A,</span> <span class="pre">B),</span> <span class="pre">4))</span></tt> then we will deduce that both <tt class="docutils literal"><span class="pre">A</span></tt> and <tt class="docutils literal"><span class="pre">B</span></tt> will have domain <tt class="docutils literal"><span class="pre">[0</span> <span class="pre">..</span> <span class="pre">4]</span></tt>. In that case, the max of <tt class="docutils literal"><span class="pre">MakeMax(MakeSum(A,</span> <span class="pre">B),4)</span></tt> is 8 and not 4. To get back monotonicity, we need to <em>cast</em> the expression into a variable using the <tt class="docutils literal"><span class="pre">Var()</span></tt> method: <tt class="docutils literal"><span class="pre">MakeMax(MakeSum(A,</span> <span class="pre">B),4)-&gt;Var()</span></tt>. The resulting variable is stateful and monotonic.</p>
+<p>Variables are stateful objects that provide a rich API. On the other hand, subclasses of <tt class="docutils literal"><span class="pre">BaseIntExpr</span></tt> represent range-only stateless objects. That is, <tt class="docutils literal"><span class="pre">MakeMin(MakeSum(A,B),a)</span></tt> is recomputed each time as <tt class="docutils literal"><span class="pre">MakeMin(A,a)</span> <span class="pre">+</span> <span class="pre">MakeMin(B,a)</span></tt>. Furthermore, sometimes the propagation on an expression is not complete. For instance, if <tt class="docutils literal"><span class="pre">A</span></tt> is an <tt class="docutils literal"><span class="pre">IntVar</span></tt> with domain <tt class="docutils literal"><span class="pre">[0..5]</span></tt>, and <tt class="docutils literal"><span class="pre">B</span></tt> another <tt class="docutils literal"><span class="pre">IntVar</span></tt> with domain <tt class="docutils literal"><span class="pre">[0..5]</span></tt> then <tt class="docutils literal"><span class="pre">MakeSum(A,</span> <span class="pre">B)</span></tt> has domain <tt class="docutils literal"><span class="pre">[0,</span> <span class="pre">10]</span></tt>. If we apply <tt class="docutils literal"><span class="pre">MakeMax(MakeSum(A,</span> <span class="pre">B),</span> <span class="pre">4))</span></tt> then we will deduce that both <tt class="docutils literal"><span class="pre">A</span></tt> and <tt class="docutils literal"><span class="pre">B</span></tt> will have domain <tt class="docutils literal"><span class="pre">[0..4]</span></tt>. In that case, the max of <tt class="docutils literal"><span class="pre">MakeMax(MakeSum(A,</span> <span class="pre">B),4)</span></tt> is 8 and not 4. To get back monotonicity, we need to <em>cast</em> the expression into a variable using the <tt class="docutils literal"><span class="pre">Var()</span></tt> method: <tt class="docutils literal"><span class="pre">MakeMax(MakeSum(A,</span> <span class="pre">B),4)-&gt;Var()</span></tt>. The resulting variable is stateful and monotonic.</p>
 </div>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
@@ -218,7 +225,7 @@ also a stateless expression into a stateful and monotonic variable.</p>
 <span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">term2</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeSum</span><span class="p">(</span><span class="n">solver</span><span class="p">.</span><span class="n">MakeProd</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">kBase</span><span class="p">),</span><span class="n">s</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">Var</span><span class="p">();</span>
 </pre></div>
 </div>
-<p>No need to cast the result of <tt class="docutils literal"><span class="pre">MakeProd(c,kBbase)</span></tt> into an <tt class="docutils literal"><span class="pre">IntVar</span></tt> because
+<p>There is no need to cast the result of <tt class="docutils literal"><span class="pre">MakeProd(c,kBbase)</span></tt> into an <tt class="docutils literal"><span class="pre">IntVar</span></tt> because
 <tt class="docutils literal"><span class="pre">MakeSum()</span></tt> takes two pointers to an <tt class="docutils literal"><span class="pre">IntExpr</span></tt>.</p>
 <p>The combination of <tt class="docutils literal"><span class="pre">MakeSum()</span></tt> and <tt class="docutils literal"><span class="pre">MakeProd()</span></tt> can quickly become tedious.
 We use helper functions to construct sums. For example, to construct the first
@@ -329,7 +336,15 @@ a solution was found and <tt class="docutils literal"><span class="pre">false</s
             <span class="o">&lt;&lt;</span> <span class="s">&quot;F=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="s">&quot; &quot;</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;U=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">u</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="s">&quot; &quot;</span>
             <span class="o">&lt;&lt;</span> <span class="s">&quot;N=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">n</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="s">&quot; &quot;</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;T=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">t</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="s">&quot; &quot;</span>
             <span class="o">&lt;&lt;</span> <span class="s">&quot;R=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">r</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="s">&quot; &quot;</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;E=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">e</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">();</span>
-<span class="p">...</span>
+
+  <span class="c1">// Is CP + IS + FUN = TRUE?</span>
+  <span class="n">CHECK_EQ</span><span class="p">(</span><span class="n">p</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">+</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">+</span> <span class="n">n</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">+</span>
+    <span class="n">kBase</span> <span class="o">*</span> <span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">+</span> <span class="n">i</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">+</span> <span class="n">u</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">())</span> <span class="o">+</span>
+    <span class="n">kBase</span> <span class="o">*</span> <span class="n">kBase</span> <span class="o">*</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">(),</span>
+    <span class="n">e</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">+</span>
+    <span class="n">kBase</span> <span class="o">*</span> <span class="n">u</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">+</span>
+    <span class="n">kBase</span> <span class="o">*</span> <span class="n">kBase</span> <span class="o">*</span> <span class="n">r</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">()</span> <span class="o">+</span>
+    <span class="n">kBase</span> <span class="o">*</span> <span class="n">kBase</span> <span class="o">*</span> <span class="n">kBase</span> <span class="o">*</span> <span class="n">t</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">());</span>
 <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
   <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Cannot solve problem.&quot;</span><span class="p">;</span>
 <span class="p">}</span>  <span class="c1">// if (solver.NextSolution())</span>
@@ -340,6 +355,8 @@ a solution was found and <tt class="docutils literal"><span class="pre">false</s
 $[23:51:34] examples/cp_is_fun1.cc:133: C=2 P=3 I=7 S=4 F=9 U=6 N=8 T=1
                                                                 R=0 E=5</pre>
 </div>
+<p>We check the validity of the solution <em>after</em> printing: if the solution is not valid, we can see what
+was found by the solver.</p>
 <p>To obtain all the solutions, <tt class="docutils literal"><span class="pre">NextSolution()</span></tt> can be called repeatedly:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">while</span> <span class="p">(</span><span class="n">solver</span><span class="p">.</span><span class="n">NextSolution</span><span class="p">())</span> <span class="p">{</span>
   <span class="c1">// Do something with the current solution</span>
@@ -394,9 +411,9 @@ $[23:51:34] examples/cp_is_fun1.cc:133: C=2 P=3 I=7 S=4 F=9 U=6 N=8 T=1
   <h3>Welcome</h3>
   
   <ul>
+  	<li><a href="http://code.google.com/p/or-tools/">or-tools</a></li>  
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
 	<li><a href="../../index.html">Back to main page</a></li>
-
   </ul>
   
    
@@ -408,8 +425,8 @@ $[23:51:34] examples/cp_is_fun1.cc:133: C=2 P=3 I=7 S=4 F=9 U=6 N=8 T=1
   <ul>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li>Java</li>
-	<li>C#</li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
 </ul>
   
    
@@ -448,7 +465,7 @@ $[23:51:34] examples/cp_is_fun1.cc:133: C=2 P=3 I=7 S=4 F=9 U=6 N=8 T=1
         <li class="right" >
           <a href="cryptarithmetic.html" title="2.2. The Cryptarithmetic Puzzle Problem and a first model"
              >previous</a> |</li>
-        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li>
+        <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../first_steps.html" >2. First steps with or-tools: cryptarithmetic puzzles</a> &raquo;</li> 
       </ul>
     </div>

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>or-tools user’s manual &mdash; or-tools User&#39;s Manual&#39;</title>
+    <title>Foreword &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -26,8 +26,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="shortcut icon" href="_static/logo.ico"/>
-    <link rel="top" title="or-tools User&#39;s Manual&#39;" href="#" />
-    <link rel="next" title="1. Introduction to constaint programming" href="manual/introduction.html" /> 
+    <link rel="top" title="or-tools User&#39;s Manual" href="#" />
+    <link rel="next" title="1. Introduction to constraint programming" href="manual/introduction.html" /> 
   </head>
   <body>
     <div class="related">
@@ -37,9 +37,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="manual/introduction.html" title="1. Introduction to constaint programming"
+          <a href="manual/introduction.html" title="1. Introduction to constraint programming"
              accesskey="N">next</a> |</li>
-        <li><a href="#">User&#39;s Manual</a> &raquo;</li> 
+        <li><a href="#">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -48,62 +48,256 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="or-tools-user-s-manual">
-<h1>or-tools user&#8217;s manual</h1>
-<p>Welcome to the user&#8217;s manual of the open source or-tools library made by Google.</p>
-<div class="toctree-wrapper compound">
+  <div class="section" id="foreword">
+<h1>Foreword</h1>
+<p>We are glad to welcome you to the <strong>or-tools user’s manual</strong>. In this foreword, we try to answer
+most common questions a newcomer could have when discovering this manual or the library for
+the first time.</p>
+<p>The <strong>or-tools</strong> library is a set of <strong>o</strong>perations <strong>r</strong>esearch <strong>tools</strong> developed at Google. If you have no idea
+what <a class="reference external" href="http://en.wikipedia.org/wiki/Operations_research">operations research</a> is, you still can use our
+library to solve common small problems with
+the help of our <a class="reference external" href="http://en.wikipedia.org/wiki/Constraint_programming">Constraint Programming</a> (CP) solver.
+If you do know what operations research
+is and how difficult it is sometimes to find efficient, easy to use and open source code, we hope
+you will enjoy using our library. We have put a lot of efforts in order to make it user friendly and
+continue to improve it on a daily basis. Furthermore, we encourage interactivity and are always
+open to suggestions. See the section <a class="reference internal" href="#how-to-reach-us">How to reach us?</a> below. If you have comments about this
+manual or the documentation in general, see the section <a class="reference internal" href="#do-you-have-comments">Do you have comments?</a>.</p>
+<div class="sidebar">
+<p class="first sidebar-title">Content at a glance</p>
+<p>This manual is divided in four parts:</p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="manual/introduction.html">1. Introduction to CP</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="manual/introduction/4queens.html">1.1. The 4Queens problem</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/introduction/what_is_cp.html">1.2. What is constraint programming?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/introduction/theory.html">1.3. A little bit of theory</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/introduction/real_examples.html">1.4. Real examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/introduction/three_stages.html">1.5. The three-stage method: describe, model and solve</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/introduction/or_tools.html">1.6. The Google or-tools library</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/introduction/conventions.html">1.7. Conventions used in this manual</a></li>
+<li><p class="first">Part I: Basics</p>
+<p>
+<a class="reference internal" href="manual/introduction.html"><em>1. Introduction to CP</em></a><br>
+<a class="reference internal" href="manual/first_steps.html"><em>2. First steps with or-tools</em></a><br>
+<a class="reference internal" href="manual/objectives.html"><em>3. Using objectives</em></a><br>
+<a class="reference internal" href="manual/search_primitives.html"><em>4. Search primitives</em></a>
+</p></li>
+<li><p class="first">Part II: Customization</p>
+<p>
+<a class="reference internal" href="manual/LNS.html"><em>5. Large Neighbourhood Search</em></a><br>
+<a class="reference internal" href="manual/LSO.html"><em>6. Local Search operators</em></a><br>
+<a class="reference internal" href="manual/custom_constraints.html"><em>7. Custom constraints</em></a>
+</p></li>
+<li><p class="first">Part III: Routing</p>
+<p>
+<a class="reference internal" href="manual/TSP.html"><em>8. TSP with constraints</em></a><br>
+<a class="reference internal" href="manual/VRP.html"><em>9. VRP with constraints</em></a>
+</p></li>
+<li><p class="first">Part IV: Technicalities</p>
+<p>
+<a class="reference internal" href="manual/utilities.html"><em>10. Utilities</em></a><br>
+<a class="reference internal" href="manual/modeling_tricks.html"><em>11. Modeling tricks</em></a>
+</p></li>
 </ul>
+<blockquote class="last">
+<div>If you are lost, use the links on the right sidebar <img alt="." class="align-bottom" src="_images/rarr.png" style="height: 9pt;" />
+This is the main page.</div></blockquote>
+</div>
+<ul class="simple">
+<li><a class="reference internal" href="#foreword-what"><em>What is or-tools?</em></a></li>
+<li><a class="reference internal" href="#foreword-will-learn"><em>What you will learn in this document</em></a></li>
+<li><a class="reference internal" href="#foreword-will-not-learn"><em>What you will not learn in this document</em></a></li>
+<li><a class="reference internal" href="#foreword-how-read"><em>How to read this document?</em></a></li>
+<li><a class="reference internal" href="#foreword-targeted-audience"><em>Targeted audience</em></a></li>
+<li><a class="reference internal" href="#foreword-conventions"><em>Conventions used in this manual</em></a></li>
+<li><a class="reference internal" href="#foreword-accompanying-code"><em>Accompanying code for this manual</em></a></li>
+<li><a class="reference internal" href="#foreword-lab-sessions"><em>Lab sessions</em></a></li>
+<li><a class="reference internal" href="#foreword-how-to-reach-us"><em>How to reach us?</em></a></li>
+<li><a class="reference internal" href="#foreword-how-to-reference-doc"><em>How to reference this document?</em></a></li>
+<li><a class="reference internal" href="#foreword-comments"><em>Do you have comments?</em></a></li>
+</ul>
+<div class="section" id="what-is-or-tools">
+<span id="foreword-what"></span><h2>What is or-tools?</h2>
+<p>The or-tools library is a set of operations research tools written in C++ at Google.</p>
+<p>The main tools are:</p>
+<ul class="simple">
+<li>A Constraint Programming solver.</li>
+<li>A simple and unified interface to several linear programming and mixed integer
+programming solvers (GLPK, CLP, CBC and SCIP).</li>
+<li>Knapsack algorithms.</li>
+<li>Graph algorithms (shortest paths, min cost flow, max flow, linear sum assignment).</li>
+</ul>
+<p>In short, the or-tools library is:</p>
+<ul>
+<li><p class="first"><strong>Open source and free</strong> Everything, including the examples, the implementations of the
+algorithms, the various documentations2 , is licenced under the Apache License 2.0 and
+is available for download. If you make substantial improvements to our code, please share it
+with the whole community.</p>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="manual/first_steps.html">2. First steps with or-tools</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="manual/first_steps/getting_started.html">2.1. Getting started</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/first_steps/cryptarithmetic.html">2.2. The Cryptarithmetic Puzzle Problem and a first model</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/first_steps/anatomy.html">2.3. Anatomy of a basic C++ code</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/first_steps/monitors.html">2.4. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/first_steps/parameters.html">2.5. Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/first_steps/supported_languages.html">2.6. Other supported languages</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/first_steps/summary.html">2.7. Summary</a></li>
-</ul>
+<li><p class="first"><strong>Alive</strong> The library is actively maintained and updates and improvements are made on an
+almost daily basis.</p>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="manual/objectives.html">3. Using objectives</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="manual/objectives/objective_functions.html">3.1. Objective functions and how to compare search strategies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/objectives/golomb_first_model.html">3.2. The Golomb Ruler Problem and a first model</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/objectives/first_implementation.html">3.3. An implementation of the first model</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/objectives/content_model.html">3.4. What model did I pass to the solver?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/objectives/data_search.html">3.5. Some global data about the search</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/objectives/second_implementation.html">3.6. A second model and its implementation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/objectives/third_implementation.html">3.7. A third model and its implementation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/objectives/tighten_model.html">3.8. How to tighten the model?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/objectives/optimization_how.html">3.9. How does the solver optimize?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/objectives/summary.html">3.10. Summary</a></li>
-</ul>
+<li><p class="first"><strong>Documented</strong> OK, we just started to write the documentation but there are already numerous
+examples written in C++, Python, Java and C#!</p>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="manual/search_primitives.html">4. Search primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/LNS.html">5. Large Neighbourhood Search</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/LSO.html">6. Local Search operators</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/custom_constraints.html">7. Implementing custom constraints</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/modeling_tricks.html">8. Modeling tricks</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/TSP.html">9. Routing: Taveling Salesman Problem with constraints</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/VRP.html">10. Vehicule Routing Problem with constraints</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/utilities.html">11. Utilities</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="manual/utilities/logging.html">11.1. Logging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/utilities/asserting.html">11.2. Asserting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/utilities/timing.html">11.3. Timing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/utilities/profiling.html">11.4. Profiling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/utilities/debugging.html">11.5. Debugging</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/utilities/serializing.html">11.6. Serializing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="manual/utilities/visualizing.html">11.7. Visualizing</a></li>
+<li><p class="first"><strong>Portable</strong> Because it is made by Google, the code conforms strictly to the Google coding
+styles. The code is known to compile on:</p>
+<ul class="simple">
+<li>gcc 4.4.x on ubuntu 10.04 and up (10.10, 11.04, 11.10 and 12.04).</li>
+<li>xcode &gt;= 3.2.3 on Mac OS X Snow Leopard and Mac OS X Lion (gcc 4.2.1).</li>
+<li>Microsoft Visual Studio 10.</li>
 </ul>
+<p>Both 32 bit and 64 bit architectures are supported, although the code is optimized to run in
+64 bit mode.</p>
+</li>
+<li><p class="first"><strong>Efficient</strong></p>
+</li>
+<li><p class="first"><strong>Accessible</strong> Everything is coded in C++ but is available through SWIG in Python, Java, and
+.NET (using Mono on non-Windows platforms).</p>
+</li>
+<li><p class="first"><strong>User-friendly</strong> We try to make our code as easy to use as possible (especially in Python
+and C#). Of course, there is a (small) learning curve to use our library but once you master
+several basic concepts, it is quite straightforward to code with the or-tools library.</p>
+</li>
+<li><p class="first"><strong>Tested</strong> We use it internally at Google since a few years and the community of users is
+growing.</p>
 </li>
 </ul>
+</div>
+<div class="section" id="what-you-will-learn-in-this-document">
+<span id="foreword-will-learn"></span><h2>What you will learn in this document</h2>
+<p>This manual is intended to give you the necessary knowledge to use the library and explore the
+reference manual by yourself. We describe the basic concepts but also how to customize your
+search in Constraint Programming (CP). One of the strength of our library is its routing solver in
+CP to solve arc- and vehicle routing problems with constraints. We describe how to customize your
+routing algorithms. After reading this manual, you will be able to understand our way of coding
+and how to use the full potential of our library.</p>
+</div>
+<div class="section" id="what-you-will-not-learn-in-this-document">
+<span id="foreword-will-not-learn"></span><h2>What you will not learn in this document</h2>
+<p>This document is by no means a tutorial on Operations Research nor on Contraint Programming.
+It is also NOT a reference manual (refer to the documentation hub to find the reference manual).
+There are way too many methods, parameters, functions, . . . to explain them all in details. Once
+you understand the concepts and methods explained in this manual, you shouldn’t have any
+trouble scanning the reference manual and find the right method, parameter, function, . . . or code
+them yourselves!</p>
+<p>We don’t document the non Constraint Programming (CP) part of the library. If you have any
+questions about the non-CP part of the library, don’t hesitate to ask them on the mailing list. See
+the section <a class="reference internal" href="#how-to-reach-us">How to reach us?</a> below.</p>
+<p>This document will not describe how to use the library (and the syntactic sugar introduced when
+possible) with Python, Java nor C#. This could possibly change in the future.</p>
+</div>
+<div class="section" id="how-to-read-this-document">
+<span id="foreword-how-read"></span><h2>How to read this document?</h2>
+<p>You could read this document from cover to cover but we have put a lot of efforts to make each
+chapter stands on its own. The best way to read this manual is to look for a specific answer, use
+the index, the table of contents or the glossary to find a reference to that information. If you are
+missing some requirements to understand a section, you can always backtrack on prerequisite
+knowledge. For each chapter, we list those prerequisites. This non-linear way of reading is
+probably the most efficient and rewarding one!</p>
+<p>That said, the manual is kept short so that you can read it in its entirety. The first part (<em>Basics</em>)
+is an introduction on how to use the CP solver to solve small problems. For real problems, you
+need to customize your search and this is explained in the second part (<em>Customization</em>). If you are
+interested in the routing part of the library, the third part if for you (<em>Routing</em>). Finally, some utilities
+and tricks are explained in the appendices.</p>
+</div>
+<div class="section" id="targeted-audience">
+<span id="foreword-targeted-audience"></span><h2>Targeted audience</h2>
+<p>This manual is written with two types of readers in mind. First, someone who is not familiar with Constraint Programming
+nor is she a professional programmer. Second, an educated reader who masters Constraint Programming and is quite at ease without
+necessarily mastering one of the supported computer languages. Did we succeed to write for such different profiles? You tell
+us!</p>
+</div>
+<div class="section" id="conventions-used-in-this-manual">
+<span id="foreword-conventions"></span><h2>Conventions used in this manual</h2>
+<p>All the code is systematically written in <tt class="docutils literal"><span class="pre">monospace</span> <span class="pre">font</span></tt>. Function and method’s names are
+followed by parentheses. The method <tt class="docutils literal"><span class="pre">MakeSomething()</span></tt> and the parameter <tt class="docutils literal"><span class="pre">something</span></tt> are
+two beautiful examples of this convention.</p>
+<p>To draw your attention on important matters, we use a box with a danger warning sign.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">You have been warned!</p>
+</div>
+<p>To explain some details that would break the flow of the text, we use a box with a light bulb.</p>
+<div class="topic">
+<p class="topic-title first">This is an explanation that would break the flow of the text</p>
+<p>This is why we prefer to put our explanation aside in a box with a light bulb.</p>
+</div>
+<p>To focus on some parts of the code, we omit non necessary code or code lines and replace them
+by &#8221;...&#8221;.</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="k">namespace</span> <span class="n">operations_research</span> <span class="p">{</span>
+  <span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">MakeBaseLine2</span><span class="p">(...)</span> <span class="p">{</span>
+    <span class="p">...</span>
+  <span class="p">}</span>
+  <span class="p">...</span>
+  <span class="kt">void</span> <span class="n">CPIsFun</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// Magic happens here!</span>
+  <span class="p">}</span>
+<span class="p">}</span>  <span class="c1">// namespace operations_research</span>
+</pre></div>
+</div>
+<p>In this example, the parameters of the function <tt class="docutils literal"><span class="pre">MakeBaseLine2()</span></tt> are stripped as are the content
+of this method and the code lines that follow the definition of this function. The purpose of this
+example is to show that the code is written inside the <tt class="docutils literal"><span class="pre">namespace</span> <span class="pre">operations_research</span></tt>.</p>
+</div>
+<div class="section" id="accompanying-code-for-this-manual">
+<span id="foreword-accompanying-code"></span><h2>Accompanying code for this manual</h2>
+<p>All the examples in this manual are coded in C++. For the most important code snippets, you can
+find complete examples on the documentation hub:</p>
+<p><a class="reference external" href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_examples">http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#tutorial_examples</a></p>
+<p>or under the following directory of the or-tools library:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">documentation/tutorials/C++</span></tt></li>
+</ul>
+<p>If you prefer to code in Python, Java or C#, we have translated all the examples in your
+favourite language. You can find the complete examples on the documentation hub or under the
+directories:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">documentation/tutorials/Python</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">documentation/tutorials/Java</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">documentation/tutorials/Csharp</span></tt>.</li>
+</ul>
+</div>
+<div class="section" id="lab-sessions">
+<span id="foreword-lab-sessions"></span><h2>Lab sessions</h2>
+<p>Theory is good but useless without practice and experience. For each chapter, we provide exercises.
+Most of them are practical and consist in completing some C++ code. Even if you don’t (like to)
+code in C++, these lab sessions are helpful as we develop some concepts seen in the manual more
+in details. Exercises vary between simple and straightforward to sometimes really challenging. In
+the latter case, we mark these exercises as such. For all the exercises, we provide solutions.</p>
+<p>You can find (soon!) the exercises and their solutions on the documentation hub:</p>
+<p><a class="reference external" href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#lab_sessions">http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#lab_sessions</a></p>
+<p>or under the following directory of the or-tools library:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">documentation/labs/C++</span></tt></li>
+</ul>
+</div>
+<div class="section" id="how-to-reach-us">
+<span id="foreword-how-to-reach-us"></span><h2>How to reach us?</h2>
+<p>The whole project or-tools is hosted on Google code:</p>
+<p><a class="reference external" href="http://code.google.com/p/or-tools/">http://code.google.com/p/or-tools/</a></p>
+<p>You can follow us on Google+:</p>
+<p><a class="reference external" href="https://plus.google.com/u/0/108010024297451468877/posts">https://plus.google.com/u/0/108010024297451468877/posts</a></p>
+<p>and post your questions, suggestions, remarks, . . . to the or-tools discussion group:</p>
+<p><a class="reference external" href="http://groups.google.com/group/or-tools-discuss">http://groups.google.com/group/or-tools-discuss</a></p>
+</div>
+<div class="section" id="how-to-reference-this-document">
+<span id="foreword-how-to-reference-doc"></span><h2>How to reference this document?</h2>
+<p>Refer to the written document like this:</p>
+<ol class="upperalpha simple" start="14">
+<li>van Omme and L. Perron, <em>or-tools user&#8217;s manual</em>, Google, 2012.</li>
+</ol>
+<p>Here is a bibtex entry:</p>
+<div class="highlight-text"><div class="highlight"><pre>@TECHREPORT{or-tools-user-manual,
+  author = {Nikolaj van Omme and Laurent Perron},
+  title = {or-tools user&#39;s manual},
+  institution = {Google},
+  year = {2012}
+}
+</pre></div>
+</div>
+</div>
+<div class="section" id="do-you-have-comments">
+<span id="foreword-comments"></span><h2>Do you have comments?</h2>
+<p>If you have comments, suggestions, corrections, feedback, ... , about this document or about the
+documentation of the or-tools library in general, please send them to ortools.doc AT gmail.com.</p>
+<p>Thank you very much.</p>
+<p>Happy reading!</p>
+<p>The or-tools team</p>
+</div>
+<div class="toctree-wrapper compound">
 </div>
 </div>
 
@@ -143,9 +337,9 @@
   <h3>Welcome</h3>
   
   <ul>
+  	<li><a href="http://code.google.com/p/or-tools/">or-tools</a></li>  
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
 	<li><a href="#">Back to main page</a></li>
-
   </ul>
   
    
@@ -157,28 +351,38 @@
   <ul>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li>Java</li>
-	<li>C#</li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
 </ul>
   
    
 	
 
 <h3>Chapters</h3>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="manual/introduction.html">1. Introduction to CP</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/first_steps.html">2. First steps with or-tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/objectives.html">3. Using objectives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/search_primitives.html">4. Search primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/LNS.html">5. Large Neighbourhood Search</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/LSO.html">6. Local Search operators</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/custom_constraints.html">7. Implementing custom constraints</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/modeling_tricks.html">8. Modeling tricks</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/TSP.html">9. Routing: Taveling Salesman Problem with constraints</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/VRP.html">10. Vehicule Routing Problem with constraints</a></li>
-<li class="toctree-l1"><a class="reference internal" href="manual/utilities.html">11. Utilities</a></li>
-</ul>
 
+<h5>Part I: Basics</h5>
+<p>
+<a class="reference internal" href="manual/introduction.html"><em>1. Introduction to CP</em></a><br>
+<a class="reference internal" href="manual/first_steps.html"><em>2. First steps with or-tools</em></a><br>
+<a class="reference internal" href="manual/objectives.html"><em>3. Using objectives</em></a><br>
+<a class="reference internal" href="manual/search_primitives.html"><em>4. Search primitives</em></a>
+</p>
+<h5>Part II: Customization</h5>
+<p>
+<a class="reference internal" href="manual/LNS.html"><em>5. Large Neighbourhood Search</em></a><br>
+<a class="reference internal" href="manual/LSO.html"><em>6. Local Search operators</em></a><br>
+<a class="reference internal" href="manual/custom_constraints.html"><em>7. Custom constraints</em></a>
+</p>
+<h5>Part III: Routing</h5>
+<p>
+<a class="reference internal" href="manual/TSP.html"><em>8. TSP with constraints</em></a><br>
+<a class="reference internal" href="manual/VRP.html"><em>9. VRP with constraints</em></a>
+</p>
+<h5>Part IV: Technicalities</h5>
+<p>
+<a class="reference internal" href="manual/utilities.html"><em>10. Utilities</em></a><br>
+<a class="reference internal" href="manual/modeling_tricks.html"><em>11. Modeling tricks</em></a>
+</p>
         </div>
       </div>
       <div class="clearer"></div>
@@ -190,9 +394,9 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="manual/introduction.html" title="1. Introduction to constaint programming"
+          <a href="manual/introduction.html" title="1. Introduction to constraint programming"
              >next</a> |</li>
-        <li><a href="#">User&#39;s Manual</a> &raquo;</li> 
+        <li><a href="#">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

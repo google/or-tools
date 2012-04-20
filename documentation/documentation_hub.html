@@ -39,8 +39,7 @@
 <div class="safe_trees">Please, think twice before printing. Be green, read on the screen! (Don't do like <a href="http://mail.google.com/mail/help/paper/more.html">those guys</a>!)<br />
 </div>
 
-<p>We are working hard to provide useful documentation. The documentation is distributed in several documents: 
-
+<p>We are working hard to provide useful documentation. The documentation is distributed in several documents:</p> 
 <ul>
 	 <li>the <strong><a href="http://code.google.com/p/or-tools/wiki/AGettingStarted">Getting started</a></strong> page: explains how to download and install the library.</li>
 	 <li>the <strong><a href="http://code.google.com/p/or-tools/wiki/Welcome?tm=6">wiki</a></strong>: contains nice examples. It will gradually be replaced by the user's manual.</li>
@@ -52,76 +51,239 @@
     <li>the <strong><a href="faq/index.html">F.A.Q.</a></strong>: frequently asked questions.</li>
  
 </ul>
-</p>
+
+<p>You can find more details about these documents in the foreword of the manual.</p>
+
 <p>The or-tools documentation is covered by the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.</p>
 <hr>
 <h2>What's new?</h2>
 <hr>
-<p id="new">Here is a little summary:
-<pre id="verbatim">v.0.1.2: (2012-03-30 21:13:04)
+<p id="new">Here is a little summary:</p>
+<pre id="verbatim">v.0.1.3: (2012-04-20 11:29:46)
 ------------------------------
 * Minor enhancements to the manual:
-  - conditional compilation in LaTeX:
-      code doesn't overflow anymore in A4 mode...
+  - preface added (suggested by Hakan).
+  - parts introduced:
+    + basics,
+    + customization,
+    + routing,
+    + appendices.
+  - no more unnecessary empty pages in the LaTeX version (still "belle page").
+  - two pages mode.
+  - chapter about "Modeling tricks" put at the end in the appendices.
   - few corrections.
-* Hub: 
-  - we recommend calibre as Cross-platform ebook viewer.
-* Tutorials:
-  - tutorial_all_examples.zip added.
-* Lab sessions:
-  - chap2 added.
-
-</pre></pre></pre></pre>
-</p>
-
-<p>This is the <a href="changes_list.txt">list of changes</a>.</p>
+  - chap2: suggestions from Hakan (thank you) applied:
+    + typos.
+    + nqueens -> n-queens.
+    + chap2: solution in same format as problem.
+    + lots of small improvements.
+  - tables centred.
+  - tags "draft" and "final" added in Sphinx for conditional compilation.
+* Minor enhancements to the slides:
+  - chap2: few typos, better layout (thank you Dania).
+* FAQ on the documentation extended.
+* Tutorial examples:
+  - code directories changed (now they all start with lower case letter).
+  - minor corrections in the C++ code.
+  - Csharp examples for chap2 added.
+  - Java examples for chap2 added.
+</pre>
 
 <hr>
 <h2 id="user_manual">The User's Manual</h2>
 <hr>
 <p>The epub version is still experimental. We recommend <a href="http://calibre-ebook.com/">calibre</a> to view the epub version. With this version, you should be able to convert the manual to the right format for your preferred handheld device.</p>
+
+<h4 id="progress">Progress at a glance</h4>
+<table width="100%">
+<th>Part I: Basics</th>
+<tr>
+<td width="25%">Chap1: Introduction </td>
+<td>
+<div class="progress_background">
+  <div class="progress_foreground_red" style="width:5%;">
+    <span>5%</span>
+  </div>
+</div>
+</td>
+</tr>
+<tr>
+<td>Chap2: First steps with or-tools</td>
+<td>
+<div class="progress_background">
+  <div class="progress_foreground_green" style="width:82%;">
+    <span>82%</span>
+  </div>
+</div>
+</td>
+</tr>
+<tr>
+<td>Chap3: Using objectives</td>
+<td>
+<div class="progress_background">
+  <div class="progress_foreground_green" style="width:63%;">
+    <span>63%</span>
+  </div>
+</div>
+</td>
+</tr>
+<tr>
+<td>Chap4: Search primitives</td>
+<td>
+<div class="progress_background">
+  <div class="progress_foreground_red" style="width:9%;">
+    <span>9%</span>
+  </div>
+</div>
+</td>
+</tr>
+<th>Part II: Customization</th>
+<tr>
+<td>Chap5: Large Neighbourhood Search</td>
+<td>
+<div class="progress_background">
+  <div class="progress_foreground_red" style="width:0%;">
+    <span>0%</span>
+  </div>
+</div>
+</td>
+</tr>
+<tr>
+<td>Chap6: Local Search operators</td>
+<td>
+<div class="progress_background">
+  <div class="progress_foreground_red" style="width:0%;">
+    <span>0%</span>
+  </div>
+</div>
+</td>
+</tr>
+<tr>
+<td>Chap7: Custom constraints</td>
+<td>
+<div class="progress_background">
+  <div class="progress_foreground_red" style="width:0%;">
+    <span>0%</span>
+  </div>
+</div>
+</td>
+</tr>
+<th>Part III: Routing</th>
+<tr>
+<td>Chap8: TSP with constraints</td>
+<td>
+<div class="progress_background">
+  <div class="progress_foreground_red" style="width:0%;">
+    <span>0%</span>
+  </div>
+</div>
+</td>
+</tr>
+<tr>
+<td>Chap9: VRP with constraints</td>
+<td>
+<div class="progress_background">
+  <div class="progress_foreground_red" style="width:0%;">
+    <span>0%</span>
+  </div>
+</div>
+</td>
+</tr>
+<th>Part IV: Appendices</th>
+<tr>
+<td>Chap10: Utilities</td>
+<td>
+<div class="progress_background">
+  <div class="progress_foreground_red" style="width:2%;">
+    <span>2%</span>
+  </div>
+</div>
+</td>
+</tr>
+<tr>
+<td>Chap11: Modeling tricks</td>
+<td>
+<div class="progress_background">
+  <div class="progress_foreground_red" style="width:0%;">
+    <span>0%</span>
+  </div>
+</div>
+</td>
+</tr>
+</table>
+
+
 <h4>The manual</h4>
-<p><ul>
+<ul>
 <li><a href="user_manual/index.html">Online version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_A4.v.0.1.2.pdf.zip">A4 pdf version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_USletter.v.0.1.2.pdf.zip">Letter pdf version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual.v.0.1.2.epub.zip">epub version</a> (experimental)</li>
-</ul></p>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_A4.v.0.1.3.pdf.zip">A4 pdf version</a></li>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_USletter.v.0.1.3.pdf.zip">Letter pdf version</a></li>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual.v.0.1.3.epub.zip">epub version</a> (experimental)</li>
+</ul>
 
 
 <hr>
 <h2 id="tutorial_examples">The tutorial examples</h2>
 <hr>
-<p>You can download all the code at once or pick a single file in the list below. All files are encoded in UTF-8 and we use LF (Unix) newlines.</p>
+<p>You can download all the code at once or pick a single file in the list below. All files are encoded in UTF-8 and we use LF (Unix) newlines (the code is cross-platform though).</p>
+<p>The code is not well documented inside the source files as we explain it in great details in the <a href="#user_manual">user's manual</a>. Some files don't have corresponding
+files in some languages as the features implemented just don't have an equivalent in that languages (for instance, the Google gflags library is missing in Java and C#).</p>
+<h5>Coding styles we follow:</h5> 
+<p>
+<dl>
+	<dt>C++</dt><dd><a href="http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml">Google C++ Style Guide</a></dd>
+	<dt>Python</dt><dd><a href="http://google-styleguide.googlecode.com/svn/trunk/pyguide.html">Google Python Style Guide</a></dd>
+</dl>
+</p>
+<h5>Coding styles we try to follow:</h5> 
+<p>
+<dl>
+	<dt>Java</dt><dd><a href="https://sites.google.com/a/android.com/opensource/submit-patches/code-style-guide">Android Code Style Rules</a></dd>
+	<dt>C#</dt><dd><a href="http://code.google.com/p/google-api-dotnet-client/wiki/CodingStandards">google-api-dotnet-client Coding standards</a></dd>
+</dl>
+</p>
+
+<h5>Code:</h5> 
+
 <p>Everything: <a href="http://or-tools.googlecode.com/files/tutorials_all_examples.zip">tutorial_all_examples.zip</a></p>
 
-
-<h4>Languages:</h4>
 <p>
 <div class="examples_list">
 <ul>
 <li class="language" id="C++">C++</li>
 
 <dl>
-	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_C++_examples.zip">tutorial_C++_examples.zip</a></dd>
-	<dt>chap2:</dt><dd><a href="tutorials/C++/chap2/cp_is_fun1.cc">cp_is_fun1.cc</a> &nbsp; | &nbsp; <a href="tutorials/C++/chap2/cp_is_fun2.cc">cp_is_fun2.cc</a> &nbsp; | &nbsp;
-	 <a href="tutorials/C++/chap2/cp_is_fun3.cc">cp_is_fun3.cc</a> &nbsp; | &nbsp;	<a href="tutorials/C++/chap2/cp_is_fun4.cc">cp_is_fun4.cc</a> </dd>
-	<dt>chap3:</dt><dd><a href="tutorials/C++/chap3/golomb1.cc">golomb1.cc</a> &nbsp; | &nbsp; <a href="tutorials/C++/chap3/golomb2.cc">golomb2.cc</a> &nbsp; | &nbsp;
-	 <a href="tutorials/C++/chap3/golomb3.cc">golomb3.cc</a> &nbsp; | &nbsp;	<a href="tutorials/C++/chap3/golomb4.cc">golomb4.cc</a> &nbsp; | &nbsp;	<a href="tutorials/C++/chap3/golomb5.cc">golomb5.cc</a>
-	 &nbsp; | &nbsp;	<a href="tutorials/C++/chap3/golomb6.cc">golomb6.cc</a></dd>
+	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_c++_examples.zip">tutorial_c++_examples.zip</a></dd>
+	<dt>chap2:</dt><dd><a href="tutorials/c++/chap2/cp_is_fun1.cc">cp_is_fun1.cc</a> &nbsp; | &nbsp; <a href="tutorials/c++/chap2/cp_is_fun2.cc">cp_is_fun2.cc</a> &nbsp; | &nbsp;
+	 <a href="tutorials/c++/chap2/cp_is_fun3.cc">cp_is_fun3.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap2/cp_is_fun4.cc">cp_is_fun4.cc</a> </dd>
+	<dt>chap3:</dt><dd><a href="tutorials/c++/chap3/golomb1.cc">golomb1.cc</a> &nbsp; | &nbsp; <a href="tutorials/c++/chap3/golomb2.cc">golomb2.cc</a> &nbsp; | &nbsp;
+	 <a href="tutorials/c++/chap3/golomb3.cc">golomb3.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap3/golomb4.cc">golomb4.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap3/golomb5.cc">golomb5.cc</a>
+	 &nbsp; | &nbsp;	<a href="tutorials/c++/chap3/golomb6.cc">golomb6.cc</a></dd>
 </dl>
 
 <li class="language" id="Python">Python</li>
-
 <dl>
-	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_Python_examples.zip">tutorial_Python_examples.zip</a></dd>
-	<dt>chap2:</dt><dd><a href="tutorials/Python/chap2/cp_is_fun1.py">cp_is_fun1.py</a> &nbsp; | &nbsp; <a href="tutorials/Python/chap2/cp_is_fun2.py">cp_is_fun2.py</a> &nbsp; | &nbsp;
-	 <a href="tutorials/Python/chap2/cp_is_fun3.py">cp_is_fun3.py</a> &nbsp; | &nbsp;	<a href="tutorials/Python/chap2/cp_is_fun4.py">cp_is_fun4.py</a> </dd>
+	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_python_examples.zip">tutorial_python_examples.zip</a></dd>
+	<dt>chap2:</dt><dd><a href="tutorials/python/chap2/cp_is_fun1.py">cp_is_fun1.py</a> &nbsp; | &nbsp; <a href="tutorials/python/chap2/cp_is_fun2.py">cp_is_fun2.py</a> &nbsp; | &nbsp;
+	 <a href="tutorials/python/chap2/cp_is_fun3.py">cp_is_fun3.py</a> &nbsp; | &nbsp;	<a href="tutorials/python/chap2/cp_is_fun4.py">cp_is_fun4.py</a> </dd>
 	<dt>chap3:</dt><dd></dd>
 </dl>
 
-<li class="language">Java</li>
-<li class="language">C#</li>
+<li class="language" id="Java">Java</li>
+<dl>
+	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_java_examples.zip">tutorial_java_examples.zip</a></dd>
+	<dt>chap2:</dt><dd><a href="tutorials/java/com/google/ortools/tutorial/chap2/CpIsFun1.java">CpIsFun1.java</a> &nbsp; | &nbsp; <a href="tutorials/java/com/google/ortools/tutorial/chap2/CpIsFun2.java">CpIsFun2.java</a> &nbsp; | &nbsp;
+	 <span class="empty">CpIsFun3.java</span> &nbsp; | &nbsp;	<a href="tutorials/java/com/google/ortools/tutorial/chap2/CpIsFun4.java">CpIsFun4.java</a> </dd>
+	<dt>chap3:</dt><dd></dd>
+</dl>
+
+<li class="language" id="Csharp">C#</li>
+<dl>
+	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_csharp_examples.zip">tutorial_csharp_examples.zip</a></dd>
+	<dt>chap2:</dt><dd><a href="tutorials/csharp/chap2/cp_is_fun1.cs">cp_is_fun1.cs</a> &nbsp; | &nbsp; <a href="tutorials/csharp/chap2/cp_is_fun2.cs">cp_is_fun2.cs</a> &nbsp; | &nbsp;
+	 <span class="empty">cp_is_fun3.cs</span> &nbsp; | &nbsp;	<a href="tutorials/csharp/chap2/cp_is_fun4.cs">cp_is_fun4.cs</a> </dd>
+	<dt>chap3:</dt><dd></dd>
+</dl>
 </ul>
 </div>
 </p>

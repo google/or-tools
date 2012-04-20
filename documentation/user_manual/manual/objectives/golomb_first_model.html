@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>3.2. The Golomb Ruler Problem and a first model &mdash; or-tools User&#39;s Manual&#39;</title>
+    <title>3.2. The Golomb Ruler Problem and a first model &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -26,7 +26,7 @@
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
-    <link rel="top" title="or-tools User&#39;s Manual&#39;" href="../../index.html" />
+    <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="3. Using objectives in constraint programming: Golomb rulers" href="../objectives.html" />
     <link rel="next" title="3.3. An implementation of the first model" href="first_implementation.html" />
     <link rel="prev" title="3.1. Objective functions and how to compare search strategies" href="objective_functions.html" /> 
@@ -44,7 +44,7 @@
         <li class="right" >
           <a href="objective_functions.html" title="3.1. Objective functions and how to compare search strategies"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li>
+        <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../objectives.html" accesskey="U">3. Using objectives in constraint programming: Golomb rulers</a> &raquo;</li> 
       </ul>
     </div>  
@@ -67,7 +67,7 @@ the next sections.</p>
 of two integers in the sequence is distinct. Conceptually, this is similar to construct
 a ruler in such a way that no two pairs of marks measure the same distance. The number
 of marks (elements in the sequence) is called the <em>order</em> of the Golomb ruler.</p>
-<p>Figure <a class="reference internal" href="../search_primitives/nqueens.html#golomb-4-non-optimal"><em>A non optimal Golomb ruler of order 4.</em></a>
+<p>Figure <a class="reference internal" href="#golomb-4-non-optimal"><em>A non optimal Golomb ruler of order 4.</em></a>
 illustrates a Golomb ruler of order 4 and all its - distinct - differences.</p>
 <div class="figure align-center" id="golomb-4-non-optimal">
 <img alt="A non optimal Golomb ruler of order 4." src="../../_images/golomb_4_non_optimal.png" />
@@ -181,7 +181,7 @@ ruler, i.e. the structure of the Golomb ruler has to be respected.</p>
 <h3>3.2.2.2. Model</h3>
 <p>For each positive difference, we have a decision variable. We collect them in
 an array <img class="math" src="../../_images/math/3667c72efcf1abf0a7359a5c297d4affd54b3ed2.png" alt="Y\hspace{-0.1cm}."/>  Let&#8217;s order the differences so that we know which difference is represented by <img class="math" src="../../_images/math/50ae01c5c3fe117c6009a8784cd517f8036e6639.png" alt="Y[i]"/>.</p>
-<p>Figure <a class="reference internal" href="../search_primitives/nqueens.html#gr-order1"><em>An ordered sequence of differences for the Golomb ruler of order 4.</em></a>
+<p>Figure <a class="reference internal" href="#gr-order1"><em>An ordered sequence of differences for the Golomb ruler of order 4.</em></a>
 illustrates an ordered sequence of differences for a Golomb ruler of order 4.</p>
 <div class="figure align-center" id="gr-order1">
 <img alt="An ordered sequence of differences for the Golomb ruler of order 4." src="../../_images/GR_order1.png" />
@@ -189,7 +189,7 @@ illustrates an ordered sequence of differences for a Golomb ruler of order 4.</p
 </div>
 <p>We want to minimize the last difference in <img class="math" src="../../_images/math/ce58e4af225c93d08606c26554caaa5ae32edeba.png" alt="Y"/> i.e. <img class="math" src="../../_images/math/9cecbbeba63daadf452b55fc1c51e38e31c10ac0.png" alt="Y[\frac{n (n-1)}{2}-1]"/> since the first index of an array is <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0"/>.
 When the order is <img class="math" src="../../_images/math/5218af40079081e694d8b82eeac2d368ef6ea76a.png" alt="n = 4"/>, we want to optimize <img class="math" src="../../_images/math/8f6f6f3b9065e970e7d5f9b684f7022229dcbd91.png" alt="Y[\frac{4 (4-1)}{2}-1] = Y[5]"/> which represents the <img class="math" src="../../_images/math/811408a46dd1a6f44fbc9f58c8b41b5f0f40f2df.png" alt="6^\textrm{th}"/> difference. Instead of writing <img class="math" src="../../_images/math/50ae01c5c3fe117c6009a8784cd517f8036e6639.png" alt="Y[i]"/>, we will also use the more convenient notation <img class="math" src="../../_images/math/d1e635eb590829b488cf300af12cf0bdda6dae03.png" alt="Y_i"/>.</p>
-<p>Figure <a class="reference internal" href="../search_primitives/nqueens.html#gr-first-sum"><em>Inner structure of a Golomb ruler of order 5.</em></a>
+<p>Figure <a class="reference internal" href="#gr-first-sum"><em>Inner structure of a Golomb ruler of order 5.</em></a>
 illustrates the structure than must be respected for a Golomb ruler of order 5.</p>
 <div class="figure align-center" id="gr-first-sum">
 <img alt="An ordered sequence of differences for the Golomb ruler of order 4." src="../../_images/GR_first_sum.png" />
@@ -253,9 +253,9 @@ A default basic strategy will do for the moment.</p>
   <h3>Welcome</h3>
   
   <ul>
+  	<li><a href="http://code.google.com/p/or-tools/">or-tools</a></li>  
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
 	<li><a href="../../index.html">Back to main page</a></li>
-
   </ul>
   
    
@@ -267,8 +267,8 @@ A default basic strategy will do for the moment.</p>
   <ul>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li>Java</li>
-	<li>C#</li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
 </ul>
   
    
@@ -304,7 +304,7 @@ A default basic strategy will do for the moment.</p>
         <li class="right" >
           <a href="objective_functions.html" title="3.1. Objective functions and how to compare search strategies"
              >previous</a> |</li>
-        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li>
+        <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../objectives.html" >3. Using objectives in constraint programming: Golomb rulers</a> &raquo;</li> 
       </ul>
     </div>

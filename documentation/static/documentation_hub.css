@@ -42,6 +42,9 @@ h2 {
    margin:10px 0px 10px 0px;
 }
 
+.empty {
+  color: #D8D8D8;
+}
 
 .rightmenu {
     float:right;
@@ -84,6 +87,30 @@ dd.examples_list {
     font-weight: bold;
     
 }
+
+/* Progress bars */
+
+.progress_background {
+    padding:0px;
+    background:#F2F1F0; /* #F5F5F5; #F1F1F1; */
+}
+
+
+.progress_foreground_green {
+    /* background:#00FF00; */
+    background:	#98FB98; /* #C0EF4A; */
+    text-align:center;
+} 
+
+.progress_foreground_red {
+    /* background:#FF0000; */
+    background:#FE8181; /* #FF4500;  #FEEFB3;*/
+    text-align:center;
+} 
+
+
+/* Admonitions */
+
 .seealso, .warning, .note, .topic, .safe_trees {
     border: 1px solid;
     margin: 10px 0px;

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>2. First steps with or-tools: cryptarithmetic puzzles &mdash; or-tools User&#39;s Manual&#39;</title>
+    <title>2. First steps with or-tools: cryptarithmetic puzzles &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -26,9 +26,9 @@
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
-    <link rel="top" title="or-tools User&#39;s Manual&#39;" href="../index.html" />
+    <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
     <link rel="next" title="2.1. Getting started" href="first_steps/getting_started.html" />
-    <link rel="prev" title="1.7. Conventions used in this manual" href="introduction/conventions.html" /> 
+    <link rel="prev" title="1.6. The Google or-tools library" href="introduction/or_tools.html" /> 
   </head>
   <body>
     <div class="related">
@@ -41,9 +41,9 @@
           <a href="first_steps/getting_started.html" title="2.1. Getting started"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="introduction/conventions.html" title="1.7. Conventions used in this manual"
+          <a href="introduction/or_tools.html" title="1.6. The Google or-tools library"
              accesskey="P">previous</a> |</li>
-        <li><a href="../index.html">User&#39;s Manual</a> &raquo;</li> 
+        <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -72,13 +72,13 @@ steps to write a basic program.</p>
 <p class="rubric">Prerequisites:</p>
 <ul class="simple">
 <li>Some basic knowledge of C++.</li>
-<li>Some basic knowledge of Constraint Programming (see chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constaint programming</em></a>).</li>
+<li>Some basic knowledge of Constraint Programming (see chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>).</li>
 </ul>
 <p class="rubric">Files:</p>
 <p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/C++/chap2</span></tt>.</p>
 <p>The files inside this directory are:</p>
 <ul class="simple">
-<li>cp_is_fun1.cc: Our first example: a simple cryptarithmetic puzzle.</li>
+<li>cp_is_fun1.cc: Our first example: a simple cryptarithmetic puzzle to show the basics.</li>
 <li>cp_is_fun2.cc: Use of <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s to collect some or all solutions.</li>
 <li>cp_is_fun3.cc: Use of the <a class="reference external" href="http://code.google.com/p/gflags/">Google gflags library</a> to parse command line parameters.</li>
 <li>cp_is_fun4.cc: Use of parameters.</li>
@@ -168,9 +168,9 @@ steps to write a basic program.</p>
   <h3>Welcome</h3>
   
   <ul>
+  	<li><a href="http://code.google.com/p/or-tools/">or-tools</a></li>  
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
 	<li><a href="../index.html">Back to main page</a></li>
-
   </ul>
   
    
@@ -182,28 +182,38 @@ steps to write a basic program.</p>
   <ul>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li>Java</li>
-	<li>C#</li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
 </ul>
   
    
 	
 
 <h3>Chapters</h3>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction to CP</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="">2. First steps with or-tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="objectives.html">3. Using objectives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives.html">4. Search primitives</a></li>
-<li class="toctree-l1"><a class="reference internal" href="LNS.html">5. Large Neighbourhood Search</a></li>
-<li class="toctree-l1"><a class="reference internal" href="LSO.html">6. Local Search operators</a></li>
-<li class="toctree-l1"><a class="reference internal" href="custom_constraints.html">7. Implementing custom constraints</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modeling_tricks.html">8. Modeling tricks</a></li>
-<li class="toctree-l1"><a class="reference internal" href="TSP.html">9. Routing: Taveling Salesman Problem with constraints</a></li>
-<li class="toctree-l1"><a class="reference internal" href="VRP.html">10. Vehicule Routing Problem with constraints</a></li>
-<li class="toctree-l1"><a class="reference internal" href="utilities.html">11. Utilities</a></li>
-</ul>
 
+<h5>Part I: Basics</h5>
+<p>
+<a class="reference internal" href="introduction.html"><em>1. Introduction to CP</em></a><br>
+<a class="reference internal" href="#"><em>2. First steps with or-tools</em></a><br>
+<a class="reference internal" href="objectives.html"><em>3. Using objectives</em></a><br>
+<a class="reference internal" href="search_primitives.html"><em>4. Search primitives</em></a>
+</p>
+<h5>Part II: Customization</h5>
+<p>
+<a class="reference internal" href="LNS.html"><em>5. Large Neighbourhood Search</em></a><br>
+<a class="reference internal" href="LSO.html"><em>6. Local Search operators</em></a><br>
+<a class="reference internal" href="custom_constraints.html"><em>7. Custom constraints</em></a>
+</p>
+<h5>Part III: Routing</h5>
+<p>
+<a class="reference internal" href="TSP.html"><em>8. TSP with constraints</em></a><br>
+<a class="reference internal" href="VRP.html"><em>9. VRP with constraints</em></a>
+</p>
+<h5>Part IV: Technicalities</h5>
+<p>
+<a class="reference internal" href="utilities.html"><em>10. Utilities</em></a><br>
+<a class="reference internal" href="modeling_tricks.html"><em>11. Modeling tricks</em></a>
+</p>
         </div>
       </div>
       <div class="clearer"></div>
@@ -218,9 +228,9 @@ steps to write a basic program.</p>
           <a href="first_steps/getting_started.html" title="2.1. Getting started"
              >next</a> |</li>
         <li class="right" >
-          <a href="introduction/conventions.html" title="1.7. Conventions used in this manual"
+          <a href="introduction/or_tools.html" title="1.6. The Google or-tools library"
              >previous</a> |</li>
-        <li><a href="../index.html">User&#39;s Manual</a> &raquo;</li> 
+        <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

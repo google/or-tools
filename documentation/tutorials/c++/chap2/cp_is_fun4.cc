@@ -18,12 +18,21 @@
 //
 // This problem has 72 different solutions in base 10.
 //
-// Use of NewSearch.
+// Use of SolutionCollectors.
+// Use of Solve().
+// Use of gflags to choose the base.
+// Change the time limit of the solver.
+// Use of ExportProfilingOverview().
 
 #include <vector>
 
+#include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "constraint_solver/constraint_solver.h"
+
+DEFINE_int64(base, 10, "Base used to solve the problem.");
+DEFINE_bool(print_all_solutions, false, "Print all solutions?");
+DEFINE_int64(time_limit, 10000, "Time limit in milliseconds");
 
 namespace operations_research {
 
@@ -73,10 +82,15 @@ IntVar* const MakeBaseLine4(Solver* s,
 }
 
 void CPIsFun() {
-  // Constraint programming engine
-  Solver solver("CP is fun!");
+  // Use some profiling and change the default parameters of the solver
+  SolverParameters solver_params = SolverParameters();
+  // Change the profile level
+  solver_params.profile_level = SolverParameters::NORMAL_PROFILING;
 
-  const int64 kBase = 10;
+  // Constraint programming engine
+  Solver solver("CP is fun!", solver_params);
+
+  const int64 kBase = FLAGS_base;
 
   // Decision variables
   IntVar* const c = solver.MakeIntVar(1, kBase - 1, "C");
@@ -123,38 +137,56 @@ void CPIsFun() {
   solver.AddConstraint(solver.MakeEquality(sum_terms, sum));
 
 
+  SolutionCollector* const all_solutions = solver.MakeAllSolutionCollector();
+  //  Add the interesting variables to the SolutionCollector
+  all_solutions->Add(letters);
+
   DecisionBuilder* const db = solver.MakePhase(letters,
                                                Solver::CHOOSE_FIRST_UNBOUND,
                                                Solver::ASSIGN_MIN_VALUE);
-  solver.NewSearch(db);
 
-  if (solver.NextSolution()) {
-    LOG(INFO) << "Solution found:";
-    LOG(INFO) << "C=" << c->Value() << " " << "P=" << p->Value() << " "
-              << "I=" << i->Value() << " " << "S=" << s->Value() << " "
-              << "F=" << f->Value() << " " << "U=" << u->Value() << " "
-              << "N=" << n->Value() << " " << "T=" << t->Value() << " "
-              << "R=" << r->Value() << " " << "E=" << e->Value();
+  // Add some time limit
+  SearchLimit* const time_limit = solver.MakeTimeLimit(FLAGS_time_limit);
+  
+  solver.Solve(db, all_solutions,time_limit);
 
-  // Is CP + IS + FUN = TRUE?
-  CHECK_EQ(p->Value() + s->Value() + n->Value() +
-           kBase * (c->Value() + i->Value() + u->Value()) +
-           kBase * kBase * f->Value(),
-           e->Value() +
-           kBase * u->Value() +
-           kBase * kBase * r->Value() +
-           kBase * kBase * kBase * t->Value());
-  } else {
-    LOG(INFO) << "Cannot solve problem.";
-  }  // if (solver.NextSolution())
+  //  Retrieve the solutions
+  const int numberSolutions = all_solutions->solution_count();
+  LOG(INFO) << "Number of solutions: " << numberSolutions << std::endl;
 
-  solver.EndSearch();
+  if (FLAGS_print_all_solutions) {
+    for (int index = 0; index < numberSolutions; ++index) {
+      LOG(INFO) << "C=" << all_solutions->Value(index, c) << " "
+      << "P=" << all_solutions->Value(index, p) << " "
+      << "I=" << all_solutions->Value(index, i) << " "
+      << "S=" << all_solutions->Value(index, s) << " "
+      << "F=" << all_solutions->Value(index, f) << " "
+      << "U=" << all_solutions->Value(index, u) << " "
+      << "N=" << all_solutions->Value(index, n) << " "
+      << "T=" << all_solutions->Value(index, t) << " "
+      << "R=" << all_solutions->Value(index, r) << " "
+      << "E=" << all_solutions->Value(index, e);
+
+      // Is CP + IS + FUN = TRUE?
+      CHECK_EQ(all_solutions->Value(index, p) + all_solutions->Value(index, s) + all_solutions->Value(index, n) +
+        kBase * (all_solutions->Value(index, c) + all_solutions->Value(index, i) + all_solutions->Value(index, u)) +
+        kBase * kBase * all_solutions->Value(index, f),
+                 all_solutions->Value(index, e) +
+                 kBase * all_solutions->Value(index, u) +
+                 kBase * kBase * all_solutions->Value(index, r) +
+                 kBase * kBase * kBase * all_solutions->Value(index, t));
+    }
+  }
+
+  // Save profile in file
+  solver.ExportProfilingOverview("profile.txt");
 }
 
 }   // namespace operations_research
 
 // ----- MAIN -----
 int main(int argc, char **argv) {
+  google::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::CPIsFun();
   return 0;
 }

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>2.5. Parameters &mdash; or-tools User&#39;s Manual&#39;</title>
+    <title>2.5. Parameters &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -26,7 +26,7 @@
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
-    <link rel="top" title="or-tools User&#39;s Manual&#39;" href="../../index.html" />
+    <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="2. First steps with or-tools: cryptarithmetic puzzles" href="../first_steps.html" />
     <link rel="next" title="2.6. Other supported languages" href="supported_languages.html" />
     <link rel="prev" title="2.4. SolutionCollectors and Assignments to collect solutions" href="monitors.html" /> 
@@ -44,7 +44,7 @@
         <li class="right" >
           <a href="monitors.html" title="2.4. SolutionCollectors and Assignments to collect solutions"
              accesskey="P">previous</a> |</li>
-        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li>
+        <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../first_steps.html" accesskey="U">2. First steps with or-tools: cryptarithmetic puzzles</a> &raquo;</li> 
       </ul>
     </div>  
@@ -92,7 +92,7 @@ a help string.</p>
 </pre></div>
 </div>
 <p>Note that <tt class="docutils literal"><span class="pre">argc</span></tt> and <tt class="docutils literal"><span class="pre">argv</span></tt> are passed as pointers so that <tt class="docutils literal"><span class="pre">ParseCommandLineFlags()</span></tt> is able to modify them.</p>
-<p>All defined flags are accessible as normal variables with the prefix <tt class="docutils literal"><span class="pre">Flags_</span></tt> prepended:</p>
+<p>All defined flags are accessible as normal variables with the prefix <tt class="docutils literal"><span class="pre">FLAGS_</span></tt> prepended:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">const</span> <span class="n">int64</span> <span class="n">kBase</span> <span class="o">=</span> <span class="n">FLAGS_base</span><span class="p">;</span>
 </pre></div>
 </div>
@@ -114,6 +114,8 @@ a help string.</p>
 <span id="index-3"></span><h2>2.5.2. CP <tt class="docutils literal"><span class="pre">Solver</span></tt>&#8216;s parameters</h2>
 <p>You&#8217;ll find the code in the file <a class="reference external" href="../../../tutorials/C++/chap2/cp_is_fun4.cc">tutorials/C++/chap2/cp_is_fun4.cc</a>.</p>
 <p>Parameters can be transferred to the solver in several ways.</p>
+<div class="section" id="the-solverparameters-struct">
+<h3>2.5.2.1. The <tt class="docutils literal"><span class="pre">SolverParameters</span></tt> struct</h3>
 <p>First, you can invoke
 the constructor of the <tt class="docutils literal"><span class="pre">Solver</span></tt> that takes a <tt class="docutils literal"><span class="pre">SolverParameters</span></tt> struct:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="c1">// Use some profiling and change the default parameters of the solver</span>
@@ -130,7 +132,11 @@ the constructor of the <tt class="docutils literal"><span class="pre">Solver</sp
 <span class="n">solver</span><span class="p">.</span><span class="n">ExportProfilingOverview</span><span class="p">(</span><span class="s">&quot;profile.txt&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
+<p>We will see how to profile more in details in the section <a class="reference internal" href="../utilities/profiling.html#profiling"><em>Profiling</em></a>.</p>
 <p>The <tt class="docutils literal"><span class="pre">SolverParameters</span></tt> struct mainly deals with the internal usage of memory and is for advanced users.</p>
+</div>
+<div class="section" id="searchmonitors">
+<h3>2.5.2.2. <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</h3>
 <p>Second, you can use <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s. We have already seen how to use them
 to collect solutions in <a class="reference internal" href="monitors.html#monitors-solutions"><em>SolutionCollectors and Assignments to collect solutions</em></a>.</p>
 <p>Suppose we want to limit the available time to solve a problem. To pass this parameter on the command line,
@@ -148,8 +154,12 @@ we define a <tt class="docutils literal"><span class="pre">time_limit</span></tt
 </pre></div>
 </div>
 <p>The search time is now limited to <tt class="docutils literal"><span class="pre">time_limit</span></tt> milliseconds.</p>
+</div>
+<div class="section" id="the-defaultphaseparameters-struct">
+<h3>2.5.2.3. The <tt class="docutils literal"><span class="pre">DefaultPhaseParameters</span></tt> struct</h3>
 <p>A third way is to pass parameters through the <tt class="docutils literal"><span class="pre">DefaultPhaseParameters</span></tt> struct and call <tt class="docutils literal"><span class="pre">MakeDefaultPhase()</span></tt> but
 we delay the discussion of this topic until the chapter <a class="reference internal" href="../search_primitives.html#search-primitives"><em>Defining search primitives in Constraint Programming</em></a>.</p>
+</div>
 </div>
 </div>
 
@@ -189,9 +199,9 @@ we delay the discussion of this topic until the chapter <a class="reference inte
   <h3>Welcome</h3>
   
   <ul>
+  	<li><a href="http://code.google.com/p/or-tools/">or-tools</a></li>  
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
 	<li><a href="../../index.html">Back to main page</a></li>
-
   </ul>
   
    
@@ -203,8 +213,8 @@ we delay the discussion of this topic until the chapter <a class="reference inte
   <ul>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
 	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
-	<li>Java</li>
-	<li>C#</li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
 </ul>
   
    
@@ -214,7 +224,12 @@ we delay the discussion of this topic until the chapter <a class="reference inte
   <ul>
 <li><a class="reference internal" href="#">2.5. Parameters</a><ul>
 <li><a class="reference internal" href="#google-s-gflags">2.5.1. Google&#8217;s gflags</a></li>
-<li><a class="reference internal" href="#cp-solver-s-parameters">2.5.2. CP <tt class="docutils literal"><span class="pre">Solver</span></tt>&#8216;s parameters</a></li>
+<li><a class="reference internal" href="#cp-solver-s-parameters">2.5.2. CP <tt class="docutils literal"><span class="pre">Solver</span></tt>&#8216;s parameters</a><ul>
+<li><a class="reference internal" href="#the-solverparameters-struct">2.5.2.1. The <tt class="docutils literal"><span class="pre">SolverParameters</span></tt> struct</a></li>
+<li><a class="reference internal" href="#searchmonitors">2.5.2.2. <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></li>
+<li><a class="reference internal" href="#the-defaultphaseparameters-struct">2.5.2.3. The <tt class="docutils literal"><span class="pre">DefaultPhaseParameters</span></tt> struct</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -235,7 +250,7 @@ we delay the discussion of this topic until the chapter <a class="reference inte
         <li class="right" >
           <a href="monitors.html" title="2.4. SolutionCollectors and Assignments to collect solutions"
              >previous</a> |</li>
-        <li><a href="../../index.html">User&#39;s Manual</a> &raquo;</li>
+        <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../first_steps.html" >2. First steps with or-tools: cryptarithmetic puzzles</a> &raquo;</li> 
       </ul>
     </div>
