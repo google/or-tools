@@ -43,8 +43,8 @@ namespace operations_research {
 
     Solver s("golomb");
 
-    // Upper bound on G(n), only valid for n <= 65 000
-    CHECK_LE(n, 65000);
+    // Upper bound on G(n), only valid for n < 65 000
+    CHECK_LT(n, 65000);
     const int64 max = n * n - 1;
 
     // Variables
@@ -61,8 +61,8 @@ namespace operations_research {
        for (int j = 0; j < n-i; ++j) {
          ++index;
          v2 = Y[j];
-         for (int l = j + 1; l <=  j + i - 1 ; ++l) {
-           v2 = s.MakeSum(Y[l], v2)->Var();
+         for (int p = j + 1; p <=  j + i - 1 ; ++p) {
+           v2 = s.MakeSum(Y[p], v2)->Var();
          }
          s.AddConstraint(s.MakeEquality(Y[index], v2));
        }

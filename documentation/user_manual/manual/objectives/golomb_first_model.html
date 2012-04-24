@@ -56,7 +56,7 @@
             
   <div class="section" id="the-golomb-ruler-problem-and-a-first-model">
 <span id="golomb-ruler-problem"></span><h1>3.2. The Golomb Ruler Problem and a first model</h1>
-<p>The Golomb Ruler Problem is one of these very easy to state problems but
+<p>The Golomb Ruler Problem (GRP) is one of these problems that are easy to state but
 that are extremely difficult to solve despite their apparent simplicity.</p>
 <p>In this section, we describe the problem and propose a first model to solve it.
 This model is not very efficient and we will develop better models in
@@ -65,7 +65,7 @@ the next sections.</p>
 <h2>3.2.1. Description of the problem</h2>
 <p>A Golomb ruler is a sequence of non-negative integers such that every difference
 of two integers in the sequence is distinct. Conceptually, this is similar to construct
-a ruler in such a way that no two pairs of marks measure the same distance. The number
+a ruler in such a way that no two pairs of marks measure the same distance, i.e. the differences must all be distinct. The number
 of marks (elements in the sequence) is called the <em>order</em> of the Golomb ruler.</p>
 <p>Figure <a class="reference internal" href="#golomb-4-non-optimal"><em>A non optimal Golomb ruler of order 4.</em></a>
 illustrates a Golomb ruler of order 4 and all its - distinct - differences.</p>
@@ -83,10 +83,10 @@ illustrates an optimal Golomb ruler of order 4 and all its - distinct - differen
 </div>
 <p>Its length, <img class="math" src="../../_images/math/601a7806cbfad68196c43a4665871f8c3186802e.png" alt="6"/>, is optimal: it is not possible to construct a Golomb ruler with <img class="math" src="../../_images/math/c7cab1a05e1e0c1d51a6a219d96577a16b7abf9d.png" alt="4"/> marks with
 a length smaller than <img class="math" src="../../_images/math/601a7806cbfad68196c43a4665871f8c3186802e.png" alt="6"/>. We denote this optimal value by <img class="math" src="../../_images/math/d021efbf1bdc3991bcae725ecf641e473a84ad6a.png" alt="G(4) = 6"/>. More generally, for a
-Golomb ruler of order <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/>, we denote by <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)"/> its optimal value. The <em>Golomb Ruler Problem</em> is to find, for a given
+Golomb ruler of order <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/>, we denote by <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)"/> its optimal value. The <em>Golomb Ruler Problem (GRP)</em> is to find, for a given
 order <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/>, the smallest Golomb ruler with <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/> marks.</p>
 <p>You might be surprised to learn that
-the largest order for which the experts could find an optimal Golomb ruler is... <img class="math" src="../../_images/math/bda00d9a38a0c6bd9aac2512c6d065581882d43c.png" alt="26"/>. And it was a huge hunt involving hundreds  of people!
+the largest order for which the experts have found an optimal Golomb ruler so far is... <img class="math" src="../../_images/math/bda00d9a38a0c6bd9aac2512c6d065581882d43c.png" alt="26"/>. And it was a huge hunt involving hundreds  of people!
 The next table compares the number of days, the number of participants on the Internet and the number of visited nodes in the search tree to find and prove <img class="math" src="../../_images/math/91b57f317a08928150981174b55863495f6b6d67.png" alt="G(24)"/>, <img class="math" src="../../_images/math/73cd37e4a19d777de33d09845672bf7430b7f2c9.png" alt="G(25)"/> and <img class="math" src="../../_images/math/e4654b3881c9f67ba35785b1027bc4e5f11de0a9.png" alt="G(26)"/><a class="footnote-reference" href="#ogr24" id="id1">[2]</a><a class="footnote-reference" href="#ogr25" id="id2">[3]</a><a class="footnote-reference" href="#ogr26" id="id3">[4]</a>.</p>
 <table border="1" class="docutils">
 <colgroup>
@@ -122,6 +122,7 @@ The next table compares the number of days, the number of participants on the In
 </table>
 <p>The search for <img class="math" src="../../_images/math/bf6fccb6e87ec7d41e0a872e346bc93e18b1f192.png" alt="G(27)"/> started on February 24, 2009 and at that time was expected to take... 7 years!
 Still think it is an easy<a class="footnote-reference" href="#gr-complexity" id="id4">[1]</a> problem? You too can participate: <a class="reference external" href="http://www.distributed.net/OGR">The OGR Project</a>.</p>
+<p>You can find all the known optimal Golomb rulers and more information on <a class="reference external" href="http://en.wikipedia.org/wiki/Golomb_ruler">Wikipedia</a>.</p>
 <table class="docutils footnote" frame="void" id="gr-complexity" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
@@ -136,7 +137,6 @@ the computational complexity of this problem is unknown (see <a class="reference
 Golomb Rulers</em>, Discrete Applied Mathematics, 57, pp 738–748, 2009.</td></tr>
 </tbody>
 </table>
-<p>You can find all the known optimal Golomb rulers and more information on <a class="reference external" href="http://en.wikipedia.org/wiki/Golomb_ruler">Wikipedia</a>.</p>
 <table class="docutils footnote" frame="void" id="ogr24" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
@@ -158,7 +158,7 @@ Golomb Rulers</em>, Discrete Applied Mathematics, 57, pp 738–748, 2009.</td></
 <div class="topic">
 <p class="topic-title first">Why Golomb Rulers?</p>
 <p>Golomb rulers have a wide variety of applications, including radio astronomy and information theory.
-In radio astronomy, when constrained to be on a line, telescopes collect more accurate information if they are placed on the marks
+In radio astronomy, when constrained to be lined up, telescopes collect more accurate information if they are placed on the marks
 of a Golomb ruler. In information theory, Golomb rulers are used for error detection and correction.</p>
 </div>
 </div>
@@ -167,15 +167,15 @@ of a Golomb ruler. In information theory, Golomb rulers are used for error detec
 <p>We follow again the classical <a class="reference internal" href="../introduction/three_stages.html#three-stages"><em>The three-stage method</em></a>.</p>
 <div class="section" id="describe">
 <h3>3.2.2.1. Describe</h3>
-<p>What is the goal of the Golomb Ruler Problem? To find a minimal Golomb ruler for a given
+<p>What is the <strong>goal</strong> of the Golomb Ruler Problem? To find a minimal Golomb ruler for a given
 order <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/>. Our objective function is the length of the ruler or the largest
 integer in the Golomb ruler sequence.</p>
-<p>What are the unknowns? We have at least two choices. We can either view the unknowns
+<p>What are the <strong>decision variables</strong> (unknowns)? We have at least two choices. We can either view the unknowns
 as the marks of the ruler (and retrieve all the differences from these variables) or choose the unknowns to be the differences (and retrieve the marks).
 Let&#8217;s try this second approach and use the efficient <cite>AllDifferent</cite> constraint.
 There are <img class="math" src="../../_images/math/eb643c8ee8f3686fbaa86cf68eb7e8d4b281db6e.png" alt="\frac{n (n-1)}{2}"/> such differences.</p>
-<p>What are the constraints? Using the differences as variables, we need to construct a Golomb
-ruler, i.e. the structure of the Golomb ruler has to be respected.</p>
+<p>What are the <strong>constraints</strong>? Using the differences as variables, we need to construct a Golomb
+ruler, i.e. the structure of the Golomb ruler has to be respected (see next section).</p>
 </div>
 <div class="section" id="model">
 <h3>3.2.2.2. Model</h3>
@@ -189,13 +189,14 @@ illustrates an ordered sequence of differences for a Golomb ruler of order 4.</p
 </div>
 <p>We want to minimize the last difference in <img class="math" src="../../_images/math/ce58e4af225c93d08606c26554caaa5ae32edeba.png" alt="Y"/> i.e. <img class="math" src="../../_images/math/9cecbbeba63daadf452b55fc1c51e38e31c10ac0.png" alt="Y[\frac{n (n-1)}{2}-1]"/> since the first index of an array is <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0"/>.
 When the order is <img class="math" src="../../_images/math/5218af40079081e694d8b82eeac2d368ef6ea76a.png" alt="n = 4"/>, we want to optimize <img class="math" src="../../_images/math/8f6f6f3b9065e970e7d5f9b684f7022229dcbd91.png" alt="Y[\frac{4 (4-1)}{2}-1] = Y[5]"/> which represents the <img class="math" src="../../_images/math/811408a46dd1a6f44fbc9f58c8b41b5f0f40f2df.png" alt="6^\textrm{th}"/> difference. Instead of writing <img class="math" src="../../_images/math/50ae01c5c3fe117c6009a8784cd517f8036e6639.png" alt="Y[i]"/>, we will also use the more convenient notation <img class="math" src="../../_images/math/d1e635eb590829b488cf300af12cf0bdda6dae03.png" alt="Y_i"/>.</p>
-<p>Figure <a class="reference internal" href="#gr-first-sum"><em>Inner structure of a Golomb ruler of order 5.</em></a>
-illustrates the structure than must be respected for a Golomb ruler of order 5.</p>
+<p>Figure <a class="reference internal" href="#gr-first-sum"><em>The inner structure of a Golomb ruler of order 5.</em></a>
+illustrates the structure than must be respected for a Golomb ruler of order 5. To impose the inner structure of the Golomb Ruler,
+we force <img class="math" src="../../_images/math/90fb0c8e5c45e248d9a1f8b1d1e76022f55307d2.png" alt="Y_4 = Y_0 + Y_1"/>, <img class="math" src="../../_images/math/2d3b9cf7c6dea44441c0051389430ee8280f4fa7.png" alt="Y_5 = Y_1 + Y_2"/> and so on as illustrated in Figure <a class="reference internal" href="#gr-first-sum"><em>The inner structure of a Golomb ruler of order 5.</em></a>.</p>
 <div class="figure align-center" id="gr-first-sum">
-<img alt="An ordered sequence of differences for the Golomb ruler of order 4." src="../../_images/GR_first_sum.png" />
-<p class="caption">Inner structure of a Golomb ruler of order 5.</p>
+<img alt="The inner structure of a Golomb ruler of order 5." src="../../_images/GR_first_sum.png" />
+<p class="caption">The inner structure of a Golomb ruler of order 5.</p>
 </div>
-<p>An easy way to construct all the equality constraints is to use an index <cite>index</cite> going from <img class="math" src="../../_images/math/c7cab1a05e1e0c1d51a6a219d96577a16b7abf9d.png" alt="4"/> to <img class="math" src="../../_images/math/bf2c9074b396e3af0dea52d792660eea1c77f10f.png" alt="9"/>, an
+<p>An easy way to construct these equality constraints is to use an index <cite>index</cite> going from <img class="math" src="../../_images/math/c7cab1a05e1e0c1d51a6a219d96577a16b7abf9d.png" alt="4"/> to <img class="math" src="../../_images/math/bf2c9074b396e3af0dea52d792660eea1c77f10f.png" alt="9"/><a class="footnote-reference" href="#explanation-index-4-to-9" id="id6">[5]</a>, an
 index <cite>i</cite> to count the number of terms in a given equality and an index <cite>j</cite> to indicate the rank of the starting term in each
 equality:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">;</span>
@@ -207,12 +208,20 @@ equality:</p>
 <span class="p">}</span>
 </pre></div>
 </div>
+<table class="docutils footnote" frame="void" id="explanation-index-4-to-9" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id6">[5]</a></td><td>Or more generally from the index of the first difference that is the sum of two differences in our sequence
+<img class="math" src="../../_images/math/7955459cf8b75c3ac12c23c393024177d7d56412.png" alt="(n-1)"/> to the index of the last difference <img class="math" src="../../_images/math/4eb116b498702e1fcf175d2b1e5641edfe5d0221.png" alt="\left( \frac{n(n-1)}{2} - 1 \right)"/>.</td></tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="solve">
 <h3>3.2.2.3. Solve</h3>
-<p>Again, at this stage of our discovery of the library, we will not try to find a good way to solve this model.
+<p>Again, at this stage of our discovery of the library, we will not try to find a good search strategy to solve this model.
 A default basic strategy will do for the moment.</p>
-<p>The next chapter <a class="reference internal" href="../search_primitives.html#search-primitives"><em>Defining search primitives in constraint programming</em></a> is entirely devoted to this subject.</p>
+<p>The next chapter <a class="reference internal" href="../search_primitives.html#search-primitives"><em>Defining search primitives in constraint programming</em></a> is entirely devoted to the subject
+of search strategies.</p>
 </div>
 </div>
 </div>

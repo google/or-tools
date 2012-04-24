@@ -57,7 +57,7 @@
   <div class="section" id="a-second-model-and-its-implementation">
 <span id="golomb-ruler-second-implementation"></span><h1>3.6. A second model and its implementation</h1>
 <p>Our first model is really bad. One of the reasons is that we use too many variables: <img class="math" src="../../_images/math/eb643c8ee8f3686fbaa86cf68eb7e8d4b281db6e.png" alt="\frac{n (n-1)}{2}"/> differences.
-What happens if we only consider the <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/> marks as variables?</p>
+What happens if we only consider the <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/> marks as variables instead of the differences?</p>
 <div class="section" id="variables">
 <h2>3.6.1. Variables</h2>
 <p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap3/golomb3.cc">tutorials/C++/chap3/golomb3.cc</a></p>
@@ -84,7 +84,7 @@ to assign a value to <tt class="docutils literal"><span class="pre">X[0]</span><
 </div>
 <div class="section" id="constraints">
 <h2>3.6.2. Constraints</h2>
-<p>To express that all the differences between two different marks must be distinct, we use the quaternary constraints<a class="footnote-reference" href="#quaternary-constraint" id="id1">[1]</a>:</p>
+<p>To express that all the differences between all pairs of marks must be distinct, we use the quaternary constraints<a class="footnote-reference" href="#quaternary-constraint" id="id1">[1]</a>:</p>
 <div class="math">
 <p><img src="../../_images/math/78ba869bfa5df8e9b54022e31800ae646342ca84.png" alt="X[j] - X[i] \neq X[l] - X[k] \qquad \forall \ 1 \leqslant i,k,j,l \leqslant n."/></p>
 </div><table class="docutils footnote" frame="void" id="quaternary-constraint" rules="none">
@@ -119,7 +119,7 @@ and so on as suggested in Figure <a class="reference internal" href="#gr-quatern
 <img alt="How to generate the quaternary constraints, part II." src="../../_images/GR_quaternary_generation2.png" />
 <p class="caption">How to generate the quaternary constraints, part II.</p>
 </div>
-<p>We use a helper function that, given a difference <img class="math" src="../../_images/math/887919dfbc86eebc29e0373f98f97dbf23a0ae23.png" alt="(i,j)"/> corresponding to an interval <img class="math" src="../../_images/math/de3d6be914b10a36aa1a46bdc0d2b7587b58ebf0.png" alt="X[j] - X[i]"/> computes the next difference in the sequence:</p>
+<p>We define a helper function that, given a difference <img class="math" src="../../_images/math/887919dfbc86eebc29e0373f98f97dbf23a0ae23.png" alt="(i,j)"/> corresponding to an interval <img class="math" src="../../_images/math/de3d6be914b10a36aa1a46bdc0d2b7587b58ebf0.png" alt="X[j] - X[i]"/> computes the next difference in the sequence:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="kt">bool</span> <span class="n">next_interval</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">j</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">next_i</span><span class="p">,</span>
                                                          <span class="kt">int</span><span class="o">*</span> <span class="n">next_j</span><span class="p">)</span>  <span class="p">{</span>
   <span class="n">CHECK_LT</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="p">);</span>
@@ -168,11 +168,11 @@ and so on as suggested in Figure <a class="reference internal" href="#gr-quatern
 <table class="docutils footnote" frame="void" id="again-remark" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>Remember again the remark at the beginning of this chapter.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>Remember again the remark at the beginning of this chapter about the tricky sums.</td></tr>
 </tbody>
 </table>
-<p>Note that we set the minimum value of the difference to <tt class="docutils literal"><span class="pre">1</span></tt>: <tt class="docutils literal"><span class="pre">diff1-&gt;SetMin(1)</span></tt>. Note also that the method
-<tt class="docutils literal"><span class="pre">MakeDifference()</span></tt> doesn&#8217;t allow to give a name to the new variable, which is normal as this new variable is the difference of two
+<p>Note that we set the minimum value of the difference to <tt class="docutils literal"><span class="pre">1</span></tt>, <tt class="docutils literal"><span class="pre">diff1-&gt;SetMin(1)</span></tt>, to ensure that the differences are positive and <img class="math" src="../../_images/math/a972d7535636c34ce7a0b44e80109d15288a72f6.png" alt="\geqslant 1"/>. Note also that the method
+<tt class="docutils literal"><span class="pre">MakeDifference()</span></tt> doesn&#8217;t allow us to give a name to the new variable, which is normal as this new variable is the difference of two
 existing variables. Its name is simply <tt class="docutils literal"><span class="pre">name1</span> <span class="pre">-</span> <span class="pre">name2</span></tt>.</p>
 <p>Let&#8217;s compare the first and second implementation. The next table compares some global indicators about the search for <img class="math" src="../../_images/math/67c4555c837d711a45a3e1af64caafc004600eee.png" alt="G(9)"/>.</p>
 <table border="1" class="docutils">
@@ -222,7 +222,7 @@ existing variables. Its name is simply <tt class="docutils literal"><span class=
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Let&#8217;s use our <tt class="docutils literal"><span class="pre">Y</span></tt> variables in the equality constraints:</p>
+<p>Then we can use the <tt class="docutils literal"><span class="pre">Y</span></tt> variables in the equality constraints:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="n">k</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">next_k</span><span class="p">,</span> <span class="n">next_l</span><span class="p">;</span>
 <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;=</span> <span class="n">n</span><span class="p">;</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span> <span class="p">{</span>

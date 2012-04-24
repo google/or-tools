@@ -58,7 +58,7 @@
 want the best solution! Most of the time, the search is done in two steps. First,
 we find the best solution<a class="footnote-reference" href="#best-solution-what" id="id1">[1]</a>. Second, we prove that this
 solution is indeed the best (or as good as any other feasible solution in
-case there are multiple optimal solutions) by scouring (preferably implicitly) all the search tree.</p>
+case there are multiple optimal solutions) by scouring (preferably implicitly) the complete search tree.</p>
 <table class="docutils footnote" frame="void" id="best-solution-what" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
@@ -71,22 +71,27 @@ disregarding/visiting the rest of the search tree.</td></tr>
 </tbody>
 </table>
 <p class="rubric">Overview:</p>
-<p>We start by stating the Golomb Ruler Problem and showing that this problem is difficult. We implement five models and compare them two by two. To do so, we introduce some basic indicators about the search (time, failures, branches, ...). We also show how to visualize the models we pass to the solver. We tighten our best model by adding better bounds and breaking one symmetry, two very useful techniques.  Finally, we say a word about the strategies used by the solver to optimize an objective function.</p>
+<p>We start by stating the Golomb Ruler Problem (GRP) and showing that this problem is difficult. We implement five models and compare them two by two. To do so, we introduce some basic statistics about the search (time, failures, branches, ...). Two very useful techniques are introduced:
+adding better bounds and breaking symmetries. Finally, we say a few words about the strategies used by the solver to optimize an objective function.</p>
 <p class="rubric">Prerequisites:</p>
 <ul class="simple">
-<li>Some basic knowledge of C++.</li>
-<li>Some basic knowledge of Constraint Programming (see chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>).</li>
-<li>Some basic knowledge of the Constraint Programming Solver (see chapter <a class="reference internal" href="first_steps.html#chapter-first-steps"><em>First steps with or-tools: cryptarithmetic puzzles</em></a>)</li>
+<li>Basic knowledge of C++.</li>
+<li>Basic knowledge of Constraint Programming (see chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>).</li>
+<li>Basic knowledge of the Constraint Programming Solver (see chapter <a class="reference internal" href="first_steps.html#chapter-first-steps"><em>First steps with or-tools: cryptarithmetic puzzles</em></a>)</li>
 </ul>
-<p class="rubric">Remark:</p>
-<p>The sums used in this chapter are tricky but you don&#8217;t need to master them. We do all the dirty work for you. In fact, you can
-completely skip them if you wish.</p>
+<p class="rubric">Remarks:</p>
+<ul class="simple">
+<li>The sums used in this chapter to model the GRP are tricky but you don&#8217;t need to master them. We do all the dirty work for you.
+In fact, you can completely skip them if you wish. The basic ideas behind these sums are simple and are easy to follow.</li>
+<li>We introduce two kinds of variables in our modelizations: the <strong>marks</strong> of the ruler and the <strong>differences</strong> between the marks.</li>
+</ul>
 <p class="rubric">Files:</p>
 <p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/C++/chap3</span></tt>.</p>
 <p>The files inside this directory are:</p>
 <ul class="simple">
 <li><tt class="file docutils literal"><span class="pre">golomb1.cc</span></tt>: A first implementation. We show how to tell the solver to optimize an objective function. We use the <img class="math" src="../_images/math/53404ad4af12519f95b03c74a1c7af0d609baa8e.png" alt="\frac{n(n-1)}{2}"/> differences as variables.</li>
-<li><tt class="file docutils literal"><span class="pre">golomb2.cc</span></tt>: Same file as <tt class="file docutils literal"><span class="pre">golomb1.cc</span></tt> but with some global indicators about the search added.</li>
+<li><tt class="file docutils literal"><span class="pre">golomb2.cc</span></tt>: Same file as <tt class="file docutils literal"><span class="pre">golomb1.cc</span></tt> but with some global statistics about the search added so we can see how well or bad
+a model behave.</li>
 <li><tt class="file docutils literal"><span class="pre">golomb3.cc</span></tt>: A second implementation. This time, we only use the marks as variables and introduce the quaternary inequality constraints.</li>
 <li><tt class="file docutils literal"><span class="pre">golomb4.cc</span></tt>: We improve the second implementation by reintroducing the <img class="math" src="../_images/math/53404ad4af12519f95b03c74a1c7af0d609baa8e.png" alt="\frac{n(n-1)}{2}"/> differences variables.</li>
 <li><tt class="file docutils literal"><span class="pre">golomb5.cc</span></tt>: In this third implementation, we replace the inequality constraints by the more powerful globlal <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint.</li>

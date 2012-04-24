@@ -97,12 +97,12 @@ has multiple solutions. We use it to show you how to collect all solutions of a 
 <div class="section" id="describe">
 <h3>2.2.2.1. Describe</h3>
 <p>The first stage is to describe the problem, preferably in natural language. What is the
-goal of the puzzle? To replace letters by digits such that the sum
+<strong>goal</strong> of the puzzle? To replace letters by digits such that the sum
 <tt class="docutils literal"><span class="pre">CP+IS+FUN=TRUE</span></tt> is verified.</p>
-<p>What are the unknowns? The digits that the letters represent. In other words, for each letter we have one
+<p>What are the <strong>unknowns</strong> (decision variables)? The digits that the letters represent. In other words, for each letter we have one
 decision variable that can take any digit
 as value.</p>
-<p>What are the constraints? The obvious constraint is the sum that has to be verified.
+<p>What are the <strong>constraints</strong>? The obvious constraint is the sum that has to be verified.
 But there are other - implicit -
 constraints. First, two different
 letters represent two different digits. This implies that all the variables must
@@ -158,9 +158,9 @@ The one used in <tt class="docutils literal"><span class="pre">or-tools</span></
 </div>
 <div class="section" id="solve">
 <h3>2.2.2.3. Solve</h3>
-<p>At this stage of our discovery of the library, we will not try to find a good way to solve this model.
+<p>At this stage of our discovery of the library, we will not try to find a good search strategy to solve this model.
 A default basic strategy will do for the moment.</p>
-<p>Chapter <a class="reference internal" href="../search_primitives.html#search-primitives"><em>Defining search primitives in constraint programming</em></a> is entirely devoted to this subject.</p>
+<p>Chapter <a class="reference internal" href="../search_primitives.html#search-primitives"><em>Defining search primitives in constraint programming</em></a> is entirely devoted to the subject of search strategies.</p>
 </div>
 </div>
 </div>

@@ -57,7 +57,7 @@
   <div class="section" id="objective-functions-and-how-to-compare-search-strategies">
 <span id="objective-functions"></span><h1>3.1. Objective functions and how to compare search strategies</h1>
 <p id="index-0">In this chapter, we want to construct a ruler with minimal
-length. Not any ruler, a Golomb ruler! The ruler we seek has to obey
+length. Not any ruler, a Golomb ruler. The ruler we seek has to obey
 certain constraints, i.e. it has to be a feasible solutions of the models
 we develop to represent the Golomb Ruler Problem.</p>
 <p>The objective function to minimize is the length of the Golomb ruler.
@@ -67,15 +67,13 @@ solution.</p>
 <p>Don&#8217;t worry if this is not all
 too clear. There are numerous examples in this manual and you will quickly
 learn these concepts without even realizing it.</p>
-<p>We search for the smallest Golomb ruler but we also want to do it fast<a class="footnote-reference" href="#golom-honesty" id="id1">[1]</a>! We
+<p>We search for the smallest Golomb ruler but we also want to do it fast<a class="footnote-reference" href="#golom-honesty" id="id1">[1]</a>. We
 will devise different models and search strategies and compare them.
-To do so, we will look at the following indicators:</p>
+To do so, we will look at the following statistics:</p>
 <ul class="simple">
 <li><strong>time:</strong> This our main criteria. The faster the better!</li>
-<li><strong>failures:</strong> How many times do we need to backtrack in the search tree? If it is very
-often, it might be an indication that there exist better search strategies.</li>
-<li><strong>branches:</strong> How many times do we need to branch? Faster algorithms tend to
-to visit fewer branches.</li>
+<li><strong>failures:</strong> How many times do we need to backtrack in the search tree? Many failures might be an indication that there exist better search strategies.</li>
+<li><strong>branches:</strong> How many times do we need to branch? Faster algorithms tend to visit fewer branches.</li>
 </ul>
 <table class="docutils footnote" frame="void" id="golom-honesty" rules="none">
 <colgroup><col class="label" /><col /></colgroup>

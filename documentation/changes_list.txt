@@ -1,4 +1,17 @@
 
+v.0.1.4: (2012-04-23 22:55:42)
+------------------------------
+* Major changes in the scripts to generate the doc:
+  - the scripts have been completely rewritten and the directories
+    completely rearranged.
+* Minor enhancements to the manual:
+  chap3:
+  - a lots of small improvements from Hakan (Thanks again!).
+  - some images resized in html version.
+* Tutorials:
+  - few corrections in the C++ code.
+
+
 v.0.1.3: (2012-04-20 11:29:46)
 ------------------------------
 * Minor enhancements to the manual:

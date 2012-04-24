@@ -57,7 +57,7 @@
   <div class="section" id="how-to-tighten-the-model">
 <span id="golomb-ruler-tighten-model"></span><h1>3.8. How to tighten the model?</h1>
 <p>Generally speaking, if we are able to reduce the size of the search tree (to <em>tighten</em> the model), we can speed up the search. We are talking about
-visiting (preferably implicitly) the whole search tree to be able to prove optimality (other techniques exist to find good nodes in the search tree). We present two<a class="footnote-reference" href="#two-techniques-tighten-model" id="id1">[1]</a> such techniques here. <em>Breaking symmetries</em> allows to disregard entire subtrees in the search trees that wouldn&#8217;t bring any new information to the search while <em>bounding</em> reduces the variable domains and thus reduces the number of branching and augments the efficiency of the propagation techniques<a class="footnote-reference" href="#explanation-tighten-model" id="id2">[2]</a>.</p>
+visiting (preferably implicitly) the whole search tree to be able to prove optimality (other techniques exist to find good nodes in the search tree). We present two<a class="footnote-reference" href="#two-techniques-tighten-model" id="id1">[1]</a> such techniques here. <em>Breaking symmetries</em> allows to disregard entire subtrees in the search tree that wouldn&#8217;t bring any new information to the search while <em>bounding</em> reduces the variable domains and thus reduces the number of branching and augments the efficiency of the propagation techniques<a class="footnote-reference" href="#explanation-tighten-model" id="id2">[2]</a>.</p>
 <table class="docutils footnote" frame="void" id="two-techniques-tighten-model" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
@@ -99,7 +99,13 @@ representing the marks of a Golomb ruler, we implicitly took for granted that <t
 </pre></div>
 </div>
 <p>In trying to avoid duplicating certain quaternary constraints, we actually declared implicitly to the solver that
-<tt class="docutils literal"><span class="pre">X[1]</span> <span class="pre">&lt;</span> <span class="pre">X[2]</span> <span class="pre">&lt;</span> <span class="pre">...</span> <span class="pre">&lt;</span> <span class="pre">X[n]</span></tt>. Hadn&#8217;t we done so, there was no way the solver could have guessed that the marks are in an increasing sequence<a class="footnote-reference" href="#solver-guessing-sequence-golomb" id="id4">[3]</a>. For the solver, solution <tt class="docutils literal"><span class="pre">X[1]</span> <span class="pre">=</span> <span class="pre">0,</span> <span class="pre">X[2]</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">X[3]</span> <span class="pre">=</span> <span class="pre">4,</span> <span class="pre">X[4]</span> <span class="pre">=</span> <span class="pre">6</span></tt> and solution <tt class="docutils literal"><span class="pre">X[1]</span> <span class="pre">=</span> <span class="pre">4,</span> <span class="pre">X[2]</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">X[3]</span> <span class="pre">=</span> <span class="pre">6,</span> <span class="pre">X[4]</span> <span class="pre">=</span> <span class="pre">0</span></tt> would have been two different solutions and we would explicitly have had to tell the solver not to generate the second one:</p>
+<tt class="docutils literal"><span class="pre">X[1]</span> <span class="pre">&lt;</span> <span class="pre">X[2]</span> <span class="pre">&lt;</span> <span class="pre">...</span> <span class="pre">&lt;</span> <span class="pre">X[n]</span></tt>. Hadn&#8217;t we done so, there was no way the solver could have guessed that the marks are in an increasing sequence<a class="footnote-reference" href="#solver-guessing-sequence-golomb" id="id4">[3]</a>. For the solver, the solution</p>
+<div class="math" id="equation-solution1">
+<p><span class="eqno">(1)</span><img src="../../_images/math/ec8733fe984f502b1c6bb5f70c9c048765130193.png" alt="X[1] = 0, X[2] = 1, X[3] = 4, X[4] = 6"/></p>
+</div><p>and the solution</p>
+<div class="math" id="equation-solution2">
+<p><span class="eqno">(2)</span><img src="../../_images/math/71b9c607ad0e3dce5f1994abf9cb7779e17f1b91.png" alt="X[1] = 4, X[2] = 1, X[3] = 6, X[4] = 0"/></p>
+</div><p>would have been two different solutions and we would explicitly have had to tell the solver not to generate the second one:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">s</span><span class="p">.</span><span class="n">AddConstraint</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">MakeLess</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]));</span>
 <span class="p">}</span>
@@ -111,8 +117,8 @@ representing the marks of a Golomb ruler, we implicitly took for granted that <t
 <tr><td class="label"><a class="fn-backref" href="#id4">[3]</a></td><td>Declaring variables in an <tt class="docutils literal"><span class="pre">std::vector</span></tt> doesn&#8217;t tell anything about their respective values!</td></tr>
 </tbody>
 </table>
-<p>Thanks to <tt class="docutils literal"><span class="pre">diff1-&gt;SetMin(1)</span></tt> and <tt class="docutils literal"><span class="pre">diff2-&gt;SetMin(1)</span></tt> and the two <tt class="docutils literal"><span class="pre">for</span></tt> loops this wasn&#8217;t necessary. Solutions <tt class="docutils literal"><span class="pre">X[1]</span> <span class="pre">=</span> <span class="pre">0,</span> <span class="pre">X[2]</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">X[3]</span> <span class="pre">=</span> <span class="pre">4,</span> <span class="pre">X[4]</span> <span class="pre">=</span> <span class="pre">6</span></tt> and
-<tt class="docutils literal"><span class="pre">X[1]</span> <span class="pre">=</span> <span class="pre">4,</span> <span class="pre">X[2]</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">X[3]</span> <span class="pre">=</span> <span class="pre">6,</span> <span class="pre">X[4]</span> <span class="pre">=</span> <span class="pre">0</span></tt> are said to be symmetric and avoiding the second one while accepting the first one is called <em>breaking symmetry</em>.</p>
+<p>Thanks to <tt class="docutils literal"><span class="pre">diff1-&gt;SetMin(1)</span></tt> and <tt class="docutils literal"><span class="pre">diff2-&gt;SetMin(1)</span></tt> and the two <tt class="docutils literal"><span class="pre">for</span></tt> loops, the ordered variables <img class="math" src="../../_images/math/65b572143ef64e24707414197ab3ff0acaf95aa3.png" alt="X[1], X[2], X[3], X[4]"/>
+have only increasing values, i.e. if <img class="math" src="../../_images/math/c1d952598000cf900d21f6e5054c1fc4237d2282.png" alt="i \leqslant j"/> then <img class="math" src="../../_images/math/29679f51e9632ea0ee4845b2e4b3ec86ae837bec.png" alt="X[i] \leqslant X[j]"/>. Solutions <a href="#equation-solution1">(1)</a> and <a href="#equation-solution2">(2)</a> are said to be symmetric and avoiding the second one while accepting the first one is called <em>breaking symmetry</em>.</p>
 <p>There is a well-known symmetry in the Golomb Ruler Problem that we didn&#8217;t break. Whenever you have a Golomb ruler, there exist another Golomb
 ruler with the same length that is called the <em>mirror ruler</em>.</p>
 <p>Figure <a class="reference internal" href="#golomb-4-mirror"><em>Two mirror Golomb rulers of order 4.</em></a>
@@ -133,8 +139,8 @@ illustrates two mirror Golomb rulers of order 4.</p>
 <table class="docutils footnote" frame="void" id="projective-affine-transformation-golomb" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>These transformations were discovered in the beginning of the 20th century by French
-mathematicians.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>These transformations were discovered in the beginning of the 20th century without any computer!
+See <a class="reference external" href="http://www.research.ibm.com/people/s/shearer/grtab.html">http://www.research.ibm.com/people/s/shearer/grtab.html</a>.</td></tr>
 </tbody>
 </table>
 <p>The search can also benefit from lower bounds. Every difference must in itself be a Golomb ruler. Thus <tt class="docutils literal"><span class="pre">Y[i][j]</span></tt> can be bounded by below by the corresponding optimal Golomb ruler.</p>
@@ -154,7 +160,7 @@ mathematicians.</td></tr>
 </pre></div>
 </div>
 <p>where <tt class="docutils literal"><span class="pre">kG[n]</span></tt> is <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)"/>.</p>
-<p>The <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint doesn&#8217;t take a 2-dimensional array as parameter but it is easy to create one:</p>
+<p>The <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint doesn&#8217;t take a 2-dimensional array as parameter but it is easy to create one by flattening the array:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">Constraint</span> <span class="o">*</span> <span class="n">AllDifferent</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="n">s</span><span class="p">,</span>
                      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span> <span class="o">*&gt;</span> <span class="o">&gt;</span> <span class="o">&amp;</span> <span class="n">vars</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span><span class="o">*&gt;</span> <span class="n">vars_flat</span><span class="p">;</span>

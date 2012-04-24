@@ -57,11 +57,11 @@
   <div class="section" id="what-model-did-i-pass-to-the-solver">
 <span id="what-model"></span><h1>3.4. What model did I pass to the solver?</h1>
 <p>The model we developed to solve the cryptarithmetic puzzle (see <a class="reference internal" href="../first_steps/cryptarithmetic.html#cryptarithmetic-problem"><em>The Cryptarithmetic Puzzle Problem and a first model</em></a>) was quite simple.</p>
-<p>The first model proposed to solve the Golumb Ruler Problem in the two previous sections is more complex. We suppose our model is theoretically correct. How do we know we gave the right model to the solver, i.e. how do we know that our implementation is correct? In this section, we present two tools to visualize the model we passed to the solver: the <tt class="docutils literal"><span class="pre">DebugString()</span></tt> method and the default command line flags of the CP solver.</p>
+<p>The first model proposed to solve the Golumb Ruler Problem in the two previous sections is more complex. We suppose our model is theoretically correct. How do we know we gave the right model to the solver, i.e. how do we know that our implementation is correct? In this section, we present two tools to debug the model we passed to the solver: the <tt class="docutils literal"><span class="pre">DebugString()</span></tt> method and via the default command line flags of the CP solver.</p>
 <span class="target" id="inspect-object-with-debugstring"></span><div class="section" id="inspect-objects-with-debugstring">
 <span id="index-0"></span><h2>3.4.1. Inspect objects with <tt class="docutils literal"><span class="pre">DebugString()</span></tt></h2>
 <p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap3/golomb2.cc">tutorials/C++/chap3/golomb2.cc</a></p>
-<p>Most of the mathematical objects classes in or-tools inherit from the <tt class="docutils literal"><span class="pre">BaseObject</span></tt> class. Its only
+<p>Most of the mathematical classes in or-tools inherit from the <tt class="docutils literal"><span class="pre">BaseObject</span></tt> class. Its only
 public method is a <tt class="docutils literal"><span class="pre">virtual</span> <span class="pre">DebugString()</span></tt>. If you are curious or just in doubt about
 the object you just constructed, <tt class="docutils literal"><span class="pre">DebugString()</span></tt> is for you.</p>
 <p>Let&#8217;s have a closer look at the constraints that model the inner structure of the Golomb ruler of order <img class="math" src="../../_images/math/79069377f91364c2f87a64e5f9f562a091c8a6c1.png" alt="5"/>:</p>
@@ -89,7 +89,7 @@ the object you just constructed, <tt class="docutils literal"><span class="pre">
                  Var&lt;<span class="o">(</span>Y_1<span class="o">(</span>1..24<span class="o">)</span> + Y_0<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">))</span>&gt;<span class="o">(</span>3..72<span class="o">))</span>&gt;<span class="o">(</span>4..96<span class="o">)</span>
 </pre></div>
 </div>
-<p>These are exactly the constraints listed in Figure <a class="reference internal" href="golomb_first_model.html#gr-first-sum"><em>Inner structure of a Golomb ruler of order 5.</em></a>.</p>
+<p>These are exactly the constraints listed in Figure <a class="reference internal" href="golomb_first_model.html#gr-first-sum"><em>The inner structure of a Golomb ruler of order 5.</em></a>.</p>
 </div>
 <div class="section" id="use-the-default-flags">
 <span id="use-default-flags"></span><h2>3.4.2. Use the default flags</h2>
@@ -130,7 +130,7 @@ the object you just constructed, <tt class="docutils literal"><span class="pre">
                                                              Y_9<span class="o">(</span>1..24<span class="o">))</span>
 </pre></div>
 </div>
-<p>This is the <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint on bounds.</p>
+<p>This is the <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint on bounds where we see all the variables with their initial domains.</p>
 <p>Then:</p>
 <div class="highlight-bash"><div class="highlight"><pre>...: cast<span class="o">((</span>Y_1<span class="o">(</span>1..24<span class="o">)</span> + Y_0<span class="o">(</span>1..24<span class="o">))</span>, Var&lt;<span class="o">(</span>Y_1<span class="o">(</span>1..24<span class="o">)</span> + Y_0<span class="o">(</span>1..24<span class="o">))</span>&gt;
                                                                 <span class="o">(</span>2..48<span class="o">))</span>
@@ -161,7 +161,7 @@ Aborted
 <div class="highlight-bash"><div class="highlight"><pre>./golomb1 --n<span class="o">=</span>5 --cp_no_solve --cp_model_stats
 </pre></div>
 </div>
-<p>we obtain:</p>
+<p>we obtain some statistics about the model:</p>
 <div class="highlight-bash"><div class="highlight"><pre>...: Model has:
 ...:   - 17 constraints.
 ...:     * 1 AllDifferent

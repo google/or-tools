@@ -63,8 +63,8 @@ void GolombRuler(const int n) {
 
   Solver s("golomb");
 
-  // Upper bound on G(n), only valid for n <= 65 000
-  CHECK_LE(n, 65000);
+  // Upper bound on G(n), only valid for n < 65 000
+  CHECK_LT(n, 65000);
   const int64 max = n * n - 1;
 
   // Variables
