@@ -87,6 +87,11 @@ div.sphinxsidebar input[type="submit"] {
     width: 30px;
 }
 
+div.sphinxsidebar div.sphinxsidebarwrapper h2 {
+#    font-size: 1.875em;
+#    margin:25px -30px 25px;
+}
+
 img {
     border: 0;
 }
@@ -269,6 +274,7 @@ div.sidebar {
 
 p.sidebar-title {
     font-weight: bold;
+    
 }
 
 /* -- topics ---------------------------------------------------------------- */

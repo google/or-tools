@@ -76,11 +76,11 @@ an upper bound on the length of a Golomb ruler of order <img class="math" src=".
 </div><p>Most bounds are really bad and this one isn&#8217;t an exception. The great mathematician Paul Erdös conjectured that</p>
 <div class="math">
 <p><img src="../../_images/math/26e627f0930e19476169f5e4c5c18251e33668b3.png" alt="G(n) &lt; n^2."/></p>
-</div><p>This conjecture hasn&#8217;t been proved yet but computational evidence has shown that the conjecture holds for <img class="math" src="../../_images/math/fc53204fb8443e399c9cdd4a4d1008c574c1d87a.png" alt="n &lt; 65000"/> (see[Dimitromanolakis2002]_).</p>
+</div><p>This conjecture hasn&#8217;t been proved yet but computational evidence has shown that the conjecture holds for <img class="math" src="../../_images/math/fc53204fb8443e399c9cdd4a4d1008c574c1d87a.png" alt="n &lt; 65000"/> (see <a class="reference internal" href="#dimitromanolakis2002">[Dimitromanolakis2002]</a>).</p>
 <table class="docutils citation" frame="void" id="dimitromanolakis2002" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label">[Dimitromanolakis2002]</td><td>Apostolos Dimitromanolakis. Analysis of the Golomb Ruler and the Sidon
+<tr><td class="label"><a class="fn-backref" href="#id1">[Dimitromanolakis2002]</a></td><td>Apostolos Dimitromanolakis. Analysis of the Golomb Ruler and the Sidon
 Set Problems, and Determination of Large, Near-Optimal Golomb Rulers. Ph.D. Thesis, Department of Electronic and Computer Engineering,
 Technical University of Crete.</td></tr>
 </tbody>
@@ -113,7 +113,7 @@ Technical University of Crete.</td></tr>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">s</span><span class="p">.</span><span class="n">AddConstraint</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">MakeAllDifferent</span><span class="p">(</span><span class="n">Y</span><span class="p">));</span>
 </pre></div>
 </div>
-<p>and the following constraints to ensure the inner structure of a Golomb ruler as we have seen in the previous section<a class="footnote-reference" href="#remember-tricky-sums-remark" id="id1">[1]</a>:</p>
+<p>and the following constraints to ensure the inner structure of a Golomb ruler as we have seen in the previous section<a class="footnote-reference" href="#remember-tricky-sums-remark" id="id2">[1]</a>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">2</span><span class="p">;</span>
 <span class="n">IntVar</span><span class="o">*</span> <span class="n">v2</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
 <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
@@ -132,7 +132,7 @@ Technical University of Crete.</td></tr>
 <table class="docutils footnote" frame="void" id="remember-tricky-sums-remark" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Remember the remark at the beginning of this chapter about the tricky sums!</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>Remember the remark at the beginning of this chapter about the tricky sums!</td></tr>
 </tbody>
 </table>
 <p id="index-2">How do we tell the solver to optimize? Use an <tt class="docutils literal"><span class="pre">OptimizeVar</span></tt> to declare the objective function:</p>
@@ -157,12 +157,17 @@ in</p>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+<table>
+<tr>
+<td width="60"><img src="../../_static/logo.png" width="50" height="50"  alt="" /></td>
+<td><p class="library_name">Google <a href="http://code.google.com/p/or-tools/"><strong>or-tools</strong></a><br>open source library</p></td>
+</tr>
+</table>
+<h1>User's Manual</h1>
 
-  <h2>User's Manual</h2>
-  </br>
   
    
-	
+
 
 
 <h3>Google search</h3>
@@ -187,7 +192,7 @@ in</p>
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">or-tools</a></li>  
+  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
 	<li><a href="../../index.html">Back to main page</a></li>
   </ul>

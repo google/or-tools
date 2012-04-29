@@ -90,6 +90,17 @@ div.documentwrapper {
 }
 */
 
+div.sphinxsidebar h1 {
+    font-family: 'Trebuchet MS', sans-serif;
+    color: #AD1B01;
+    font-size: 2.5em;
+    font-weight: bold;
+    margin-top: -5px;
+    margin-bottom: 10px;
+    padding: 4px;
+    text-align: center;
+}
+
 div.sphinxsidebar h2 {
     font-family: 'Trebuchet MS', sans-serif;
     color: #AD1B01;
@@ -134,8 +145,9 @@ div.sphinxsidebar h5 {
     padding: 0;
 }
 
-div.sphinxsidebar p {
-    color: #909090;
+div.sphinxsidebar p.library_name {
+    color: #AD1B01;
+    text-align: center;
 }
 
 div.sphinxsidebar p.topless {
