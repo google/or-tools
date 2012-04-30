@@ -64,7 +64,7 @@
 <p>Most of the mathematical classes in or-tools inherit from the <tt class="docutils literal"><span class="pre">BaseObject</span></tt> class. Its only
 public method is a <tt class="docutils literal"><span class="pre">virtual</span> <span class="pre">DebugString()</span></tt>. If you are curious or just in doubt about
 the object you just constructed, <tt class="docutils literal"><span class="pre">DebugString()</span></tt> is for you.</p>
-<p>Let&#8217;s have a closer look at the constraints that model the inner structure of the Golomb ruler of order <img class="math" src="../../_images/math/79069377f91364c2f87a64e5f9f562a091c8a6c1.png" alt="5"/>:</p>
+<p>Let&#8217;s have a closer look at the constraints that model the inner structure of the Golomb ruler of order <img class="math" src="../../_images/math/79069377f91364c2f87a64e5f9f562a091c8a6c1.png" alt="5" style="vertical-align: 0px"/>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">const</span> <span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
 <span class="p">...</span>
 <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
@@ -136,7 +136,7 @@ the object you just constructed, <tt class="docutils literal"><span class="pre">
                                                                 <span class="o">(</span>2..48<span class="o">))</span>
 </pre></div>
 </div>
-<p>The cast to transform the sum <img class="math" src="../../_images/math/80184e4cfaf5d02abb6c882519ae7ce64e8d8587.png" alt="Y_1 + Y_0"/> into an <tt class="docutils literal"><span class="pre">IntVar</span></tt>.</p>
+<p>The cast to transform the sum <img class="math" src="../../_images/math/80184e4cfaf5d02abb6c882519ae7ce64e8d8587.png" alt="Y_1 + Y_0" style="vertical-align: -4px"/> into an <tt class="docutils literal"><span class="pre">IntVar</span></tt>.</p>
 <p>And then:</p>
 <div class="highlight-bash"><div class="highlight"><pre>...: Y_4<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y_1<span class="o">(</span>1..24<span class="o">)</span> + Y_0<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">)</span>
 ...: Y_5<span class="o">(</span>1..24<span class="o">)</span> <span class="o">==</span> Var&lt;<span class="o">(</span>Y_2<span class="o">(</span>1..24<span class="o">)</span> + Y_1<span class="o">(</span>1..24<span class="o">))</span>&gt;<span class="o">(</span>2..48<span class="o">)</span>

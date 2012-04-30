@@ -63,8 +63,8 @@ the cryptarithmetic puzzle in C++. In the next chapters, we will cover some of t
 in more details.</p>
 <div class="section" id="at-a-glance">
 <span id="anatomy-at-a-glance"></span><h2>2.3.1. At a glance</h2>
-<img alt="../../_images/anatomy1.png" src="../../_images/anatomy1.png" style="height: 500pt;" />
-<img alt="../../_images/anatomy2.png" src="../../_images/anatomy2.png" style="height: 250pt;" />
+<img alt="../../_images/anatomy1_2.png" src="../../_images/anatomy1_2.png" style="width: 400pt;" />
+<img alt="../../_images/anatomy3_4.png" src="../../_images/anatomy3_4.png" style="width: 350pt;" />
 </div>
 <div class="section" id="headers">
 <h2>2.3.2. Headers</h2>
@@ -75,7 +75,13 @@ in more details.</p>
 </div>
 <p>The header <tt class="docutils literal"><span class="pre">logging.h</span></tt> is needed for some logging facilities and some
 assert-like macros. The header <tt class="docutils literal"><span class="pre">constraint_solver.h</span></tt> is the main entry point
-to the CP solver and must be includedfootnote{Directly or indirectly when it is included in another header you include.} whenever you intend to use it.</p>
+to the CP solver and must be included<a class="footnote-reference" href="#including-headers" id="id1">[1]</a> whenever you intend to use it.</p>
+<table class="docutils footnote" frame="void" id="including-headers" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Directly or indirectly when it is included in another header you include.</td></tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="the-namespace-operations-research">
 <span id="index-0"></span><h2>2.3.3. The namespace <tt class="docutils literal"><span class="pre">operations_research</span></tt></h2>
@@ -95,7 +101,7 @@ the same convention in all our examples and code inside this namespace:</p>
 <p><tt class="docutils literal"><span class="pre">MakeBaseLine2</span></tt>,  <tt class="docutils literal"><span class="pre">MakeBaseLine3</span></tt> and <tt class="docutils literal"><span class="pre">MakeBaseLine4</span></tt> are helper functions to create the model.</p>
 <p>We detail these functions later in <a class="reference internal" href="#constraints"><em>Constraints</em></a> but for the moment,
 let&#8217;s concentrate on <tt class="docutils literal"><span class="pre">CPIsFun()</span></tt> where all the magic happens.</p>
-<p>It is called from the main<a class="footnote-reference" href="#main-not-inside-namespace" id="id1">[1]</a>
+<p>It is called from the main<a class="footnote-reference" href="#main-not-inside-namespace" id="id2">[2]</a>
 function:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">operations_research</span><span class="o">::</span><span class="n">CPIsFun</span><span class="p">();</span>
@@ -106,7 +112,7 @@ function:</p>
 <table class="docutils footnote" frame="void" id="main-not-inside-namespace" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>The main function does not lie inside the namespace
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>The main function does not lie inside the namespace
 <tt class="docutils literal"><span class="pre">operations_research</span></tt>, hence the use of the <tt class="docutils literal"><span class="pre">operations_research</span></tt> identifier to call
 the function <tt class="docutils literal"><span class="pre">CPIsFun()</span></tt>.</td></tr>
 </tbody>
@@ -135,11 +141,11 @@ functionalities.</p>
 <span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">e</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeIntVar</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">kBase</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;E&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
-<p id="index-3">For each letter, we create an integer variable <tt class="docutils literal"><span class="pre">IntVar</span></tt> whose domain is <img class="math" src="../../_images/math/eec74ab2ca83865096af94ada03733d24295a2f2.png" alt="[0,\mathtt{kBase} - 1]"/>
+<p id="index-3">For each letter, we create an integer variable <tt class="docutils literal"><span class="pre">IntVar</span></tt> whose domain is <img class="math" src="../../_images/math/eec74ab2ca83865096af94ada03733d24295a2f2.png" alt="[0,\mathtt{kBase} - 1]" style="vertical-align: -5px"/>
 except for the variables <tt class="docutils literal"><span class="pre">c</span></tt>, <tt class="docutils literal"><span class="pre">i</span></tt>, <tt class="docutils literal"><span class="pre">f</span></tt> and <tt class="docutils literal"><span class="pre">t</span></tt> that cannot take the value <tt class="docutils literal"><span class="pre">0</span></tt>.
 The <tt class="docutils literal"><span class="pre">MakeIntVar(i,</span> <span class="pre">j,</span> <span class="pre">name)</span></tt> method is a <em>factory method</em> that creates an
 integer variable whose domain is <img class="math" src="../../_images/math/8f76a4c9b2e1d0a7eb2016aefa4a26a464143d12.png" alt="[i,j]=\{i, i+1, \dotsc
-, j-1, j\}"/> and has a name <tt class="docutils literal"><span class="pre">name</span></tt>. It returns a pointer to an <tt class="docutils literal"><span class="pre">IntVar</span></tt>. The declaration <tt class="docutils literal"><span class="pre">IntVar*</span> <span class="pre">const</span> <span class="pre">c</span></tt>
+, j-1, j\}" style="vertical-align: -5px"/> and has a name <tt class="docutils literal"><span class="pre">name</span></tt>. It returns a pointer to an <tt class="docutils literal"><span class="pre">IntVar</span></tt>. The declaration <tt class="docutils literal"><span class="pre">IntVar*</span> <span class="pre">const</span> <span class="pre">c</span></tt>
 may seem a little be complicated at first. It is easier to understand if read from right to left: <tt class="docutils literal"><span class="pre">c</span></tt> is a constant pointer to an
 <tt class="docutils literal"><span class="pre">IntVar</span></tt>. We can modify the object pointed by <tt class="docutils literal"><span class="pre">c</span></tt> but this pointer, because it is constant, always refers to the same object.</p>
 <div class="topic" id="index-4">
@@ -154,12 +160,12 @@ them appropriately.</p>
 <p class="first admonition-title">Warning</p>
 <p class="last">Never delete explicitly an object created by
 a factory method! First, the solver deletes all the objects for you.
-Second, deleting a pointer twice in C++ gives undefined behaviour<a class="footnote-reference" href="#dont-delete-pointers" id="id2">[2]</a>!</p>
+Second, deleting a pointer twice in C++ gives undefined behaviour<a class="footnote-reference" href="#dont-delete-pointers" id="id3">[3]</a>!</p>
 </div>
 <table class="docutils footnote" frame="void" id="dont-delete-pointers" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>It is possible to bypass the undefined behaviour but you don&#8217;t know what the solver needs to do, so keep your hands off of the object pointers! ;-)</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>It is possible to bypass the undefined behaviour but you don&#8217;t know what the solver needs to do, so keep your hands off of the object pointers! ;-)</td></tr>
 </tbody>
 </table>
 <p>Beside integer variables, the solver provides factory methods to create
@@ -184,13 +190,14 @@ Aborted</pre>
 <p>In <a class="reference internal" href="../utilities/asserting.html#asserting"><em>Asserting</em></a>, we cover assert-like macros in more details.</p>
 </div>
 <div class="section" id="constraints">
-<span id="index-5"></span><span id="id3"></span><h2>2.3.7. Constraints</h2>
-<p>To create a integer linear constraint, we need to know how to multiply an integer variable
+<span id="index-5"></span><span id="id4"></span><h2>2.3.7. Constraints</h2>
+<p>To create an integer linear constraint, we need to know how to multiply an integer variable
 with an integer constant and how to add two integer variables. We have seen that
 the solver creates a variable and only provides a pointer to that variable.
 The solver also provides factory methods to multiply an integer coefficient by
 an <tt class="docutils literal"><span class="pre">IntVar</span></tt> given by a pointer:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var1</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeIntVar</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;Var1&quot;</span><span class="p">);</span>
+<span class="c1">// var2 = var1 * 36</span>
 <span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var2</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeProd</span><span class="p">(</span><span class="n">var1</span><span class="p">,</span><span class="mi">36</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">Var</span><span class="p">();</span>
 </pre></div>
 </div>
@@ -202,7 +209,8 @@ any integer expression.</p>
 to an <tt class="docutils literal"><span class="pre">IntVar</span></tt> and then the integer constant.</p>
 <p>To add two <tt class="docutils literal"><span class="pre">IntVar</span></tt> given by their respective pointers, the solver provides
 again a factory method:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var3</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeSum</span><span class="p">(</span><span class="n">var1</span><span class="p">,</span><span class="n">var2</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">Var</span><span class="p">();</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="c1">//var3 = var1 + var2</span>
+<span class="n">IntVar</span><span class="o">*</span> <span class="k">const</span> <span class="n">var3</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">MakeSum</span><span class="p">(</span><span class="n">var1</span><span class="p">,</span><span class="n">var2</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">Var</span><span class="p">();</span>
 </pre></div>
 </div>
 <div class="topic">

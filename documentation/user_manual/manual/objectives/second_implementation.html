@@ -56,8 +56,8 @@
             
   <div class="section" id="a-second-model-and-its-implementation">
 <span id="golomb-ruler-second-implementation"></span><h1>3.6. A second model and its implementation</h1>
-<p>Our first model is really bad. One of the reasons is that we use too many variables: <img class="math" src="../../_images/math/eb643c8ee8f3686fbaa86cf68eb7e8d4b281db6e.png" alt="\frac{n (n-1)}{2}"/> differences.
-What happens if we only consider the <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n"/> marks as variables instead of the differences?</p>
+<p>Our first model is really bad. One of the reasons is that we use too many variables: <img class="math" src="../../_images/math/eb643c8ee8f3686fbaa86cf68eb7e8d4b281db6e.png" alt="\frac{n (n-1)}{2}" style="vertical-align: -6px"/> differences.
+What happens if we only consider the <img class="math" src="../../_images/math/174fadd07fd54c9afe288e96558c92e0c1da733a.png" alt="n" style="vertical-align: 0px"/> marks as variables instead of the differences?</p>
 <div class="section" id="variables">
 <h2>3.6.1. Variables</h2>
 <p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap3/golomb3.cc">tutorials/C++/chap3/golomb3.cc</a></p>
@@ -70,7 +70,7 @@ In the same vain, we redefine the array <tt class="docutils literal"><span class
 </pre></div>
 </div>
 <p>We use an <tt class="docutils literal"><span class="pre">std::vector</span></tt> slightly bigger (by one more element) than absolutely necessary. Because the solver doesn&#8217;t allow NULL pointers, we have
-to assign a value to <tt class="docutils literal"><span class="pre">X[0]</span></tt>. The first mark <tt class="docutils literal"><span class="pre">X[1]</span></tt> is <tt class="docutils literal"><span class="pre">0</span></tt>. We use again <img class="math" src="../../_images/math/884c12c8169b77e2bb8f0b522112c34aa5c41ac4.png" alt="n^2 - 1"/> as an upper bound for the marks:</p>
+to assign a value to <tt class="docutils literal"><span class="pre">X[0]</span></tt>. The first mark <tt class="docutils literal"><span class="pre">X[1]</span></tt> is <tt class="docutils literal"><span class="pre">0</span></tt>. We use again <img class="math" src="../../_images/math/884c12c8169b77e2bb8f0b522112c34aa5c41ac4.png" alt="n^2 - 1" style="vertical-align: -1px"/> as an upper bound for the marks:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="c1">// Upper bound on G(n), only valid for n &lt;= 65 000</span>
 <span class="n">CHECK_LE</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="mi">65000</span><span class="p">);</span>
 <span class="k">const</span> <span class="n">int64</span> <span class="n">max</span> <span class="o">=</span> <span class="n">n</span> <span class="o">*</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
@@ -93,15 +93,15 @@ to assign a value to <tt class="docutils literal"><span class="pre">X[0]</span><
 <tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><em>Quaternary constraints</em> is just a fancy way to say that the constraints each involves four variables.</td></tr>
 </tbody>
 </table>
-<p>We don&#8217;t need all combinations of <img class="math" src="../../_images/math/1802156f8c045c22ccbfaead68d03f8bb45d2659.png" alt="(i,j,k,l)"/> with <img class="math" src="../../_images/math/cdb5a7c36506631cce673e83f91f85c5ae55c604.png" alt="i \neq k"/> and <img class="math" src="../../_images/math/7a03116e0235065914fdb54d1b30c5d6383cdf43.png" alt="j \neq l"/>. For instance, combination <img class="math" src="../../_images/math/21ef0b34f891eda9d44a9ec8f96fb7f860d55925.png" alt="(3,2,6,4)"/>
-and combination <img class="math" src="../../_images/math/6c3eabdda7802e47a6fb72984f523bf152ef5dfd.png" alt="(2,3,4,6)"/> would both give the same constraint. One way to avoid such redundancy is to impose an order on unique positive differences<a class="footnote-reference" href="#avoid-redundancy-unique-difference" id="id2">[2]</a>.</p>
+<p>We don&#8217;t need all combinations of <img class="math" src="../../_images/math/1802156f8c045c22ccbfaead68d03f8bb45d2659.png" alt="(i,j,k,l)" style="vertical-align: -4px"/> with <img class="math" src="../../_images/math/cdb5a7c36506631cce673e83f91f85c5ae55c604.png" alt="i \neq k" style="vertical-align: -4px"/> and <img class="math" src="../../_images/math/7a03116e0235065914fdb54d1b30c5d6383cdf43.png" alt="j \neq l" style="vertical-align: -4px"/>. For instance, combination <img class="math" src="../../_images/math/21ef0b34f891eda9d44a9ec8f96fb7f860d55925.png" alt="(3,2,6,4)" style="vertical-align: -4px"/>
+and combination <img class="math" src="../../_images/math/6c3eabdda7802e47a6fb72984f523bf152ef5dfd.png" alt="(2,3,4,6)" style="vertical-align: -4px"/> would both give the same constraint. One way to avoid such redundancy is to impose an order on unique positive differences<a class="footnote-reference" href="#avoid-redundancy-unique-difference" id="id2">[2]</a>.</p>
 <table class="docutils footnote" frame="void" id="avoid-redundancy-unique-difference" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
 <tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>In section <a class="reference internal" href="tighten_model.html#breaking-symmetries"><em>Breaking symmetries</em></a> we&#8217;ll use another trick.</td></tr>
 </tbody>
 </table>
-<p>Take again <img class="math" src="../../_images/math/39cf3e35a4981583288d2a7c4b34989916fb7360.png" alt="n=4"/> and define the sequence of differences as in Figure <a class="reference internal" href="#gr-order2"><em>Another ordered sequence of differences for the Golomb ruler of order 4.</em></a>.</p>
+<p>Take again <img class="math" src="../../_images/math/39cf3e35a4981583288d2a7c4b34989916fb7360.png" alt="n=4" style="vertical-align: -1px"/> and define the sequence of differences as in Figure <a class="reference internal" href="#gr-order2"><em>Another ordered sequence of differences for the Golomb ruler of order 4.</em></a>.</p>
 <div class="figure align-center" id="gr-order2">
 <img alt="Another ordered sequence of differences for the Golomb ruler of order 4." src="../../_images/GR_order2.png" />
 <p class="caption">Another ordered sequence of differences for the Golomb ruler of order 4.</p>
@@ -119,7 +119,7 @@ and so on as suggested in Figure <a class="reference internal" href="#gr-quatern
 <img alt="How to generate the quaternary constraints, part II." src="../../_images/GR_quaternary_generation2.png" />
 <p class="caption">How to generate the quaternary constraints, part II.</p>
 </div>
-<p>We define a helper function that, given a difference <img class="math" src="../../_images/math/887919dfbc86eebc29e0373f98f97dbf23a0ae23.png" alt="(i,j)"/> corresponding to an interval <img class="math" src="../../_images/math/de3d6be914b10a36aa1a46bdc0d2b7587b58ebf0.png" alt="X[j] - X[i]"/> computes the next difference in the sequence:</p>
+<p>We define a helper function that, given a difference <img class="math" src="../../_images/math/887919dfbc86eebc29e0373f98f97dbf23a0ae23.png" alt="(i,j)" style="vertical-align: -4px"/> corresponding to an interval <img class="math" src="../../_images/math/de3d6be914b10a36aa1a46bdc0d2b7587b58ebf0.png" alt="X[j] - X[i]" style="vertical-align: -5px"/> computes the next difference in the sequence:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="kt">bool</span> <span class="n">next_interval</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">j</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">next_i</span><span class="p">,</span>
                                                          <span class="kt">int</span><span class="o">*</span> <span class="n">next_j</span><span class="p">)</span>  <span class="p">{</span>
   <span class="n">CHECK_LT</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="p">);</span>
@@ -171,10 +171,10 @@ and so on as suggested in Figure <a class="reference internal" href="#gr-quatern
 <tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>Remember again the remark at the beginning of this chapter about the tricky sums.</td></tr>
 </tbody>
 </table>
-<p>Note that we set the minimum value of the difference to <tt class="docutils literal"><span class="pre">1</span></tt>, <tt class="docutils literal"><span class="pre">diff1-&gt;SetMin(1)</span></tt>, to ensure that the differences are positive and <img class="math" src="../../_images/math/a972d7535636c34ce7a0b44e80109d15288a72f6.png" alt="\geqslant 1"/>. Note also that the method
+<p>Note that we set the minimum value of the difference to <tt class="docutils literal"><span class="pre">1</span></tt>, <tt class="docutils literal"><span class="pre">diff1-&gt;SetMin(1)</span></tt>, to ensure that the differences are positive and <img class="math" src="../../_images/math/a972d7535636c34ce7a0b44e80109d15288a72f6.png" alt="\geqslant 1" style="vertical-align: -3px"/>. Note also that the method
 <tt class="docutils literal"><span class="pre">MakeDifference()</span></tt> doesn&#8217;t allow us to give a name to the new variable, which is normal as this new variable is the difference of two
 existing variables. Its name is simply <tt class="docutils literal"><span class="pre">name1</span> <span class="pre">-</span> <span class="pre">name2</span></tt>.</p>
-<p>Let&#8217;s compare the first and second implementation. The next table compares some global indicators about the search for <img class="math" src="../../_images/math/67c4555c837d711a45a3e1af64caafc004600eee.png" alt="G(9)"/>.</p>
+<p>Let&#8217;s compare the first and second implementation. The next table compares some global indicators about the search for <img class="math" src="../../_images/math/67c4555c837d711a45a3e1af64caafc004600eee.png" alt="G(9)" style="vertical-align: -4px"/>.</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="37%" />
@@ -236,7 +236,7 @@ existing variables. Its name is simply <tt class="docutils literal"><span class=
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>and compare this improved version with the two others, again to compute <img class="math" src="../../_images/math/67c4555c837d711a45a3e1af64caafc004600eee.png" alt="G(9)"/>:</p>
+<p>and compare this improved version with the two others, again to compute <img class="math" src="../../_images/math/67c4555c837d711a45a3e1af64caafc004600eee.png" alt="G(9)" style="vertical-align: -4px"/>:</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="28%" />

@@ -1,4 +1,24 @@
 
+v.0.1.5: (2012-04-30 12:46:04)
+------------------------------
+* Major changes in the scripts to generate the doc:
+  - the scripts have been completely rewritten and the directories
+    completely rearranged.
+* Minor enhancements to the manual:
+  - html version: several graphic enhancements.
+  - preface: comments from Hakan (Thanks again and again! ;-) )
+  - chap2:
+    + table with cryptarithmetic puzzle improved in both version.
+    + figures "at a glance" done anew.
+    + comments from Hakan.
+* FAQ:
+  - several graphic enhancements.
+* Tutorials:
+  - few corrections in the C++ code.
+* Lab sessions:
+  - chap2: questions posted.
+
+
 v.0.1.4: (2012-04-23 22:55:42)
 ------------------------------
 * Major changes in the scripts to generate the doc:

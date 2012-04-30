@@ -117,8 +117,8 @@ representing the marks of a Golomb ruler, we implicitly took for granted that <t
 <tr><td class="label"><a class="fn-backref" href="#id4">[3]</a></td><td>Declaring variables in an <tt class="docutils literal"><span class="pre">std::vector</span></tt> doesn&#8217;t tell anything about their respective values!</td></tr>
 </tbody>
 </table>
-<p>Thanks to <tt class="docutils literal"><span class="pre">diff1-&gt;SetMin(1)</span></tt> and <tt class="docutils literal"><span class="pre">diff2-&gt;SetMin(1)</span></tt> and the two <tt class="docutils literal"><span class="pre">for</span></tt> loops, the ordered variables <img class="math" src="../../_images/math/65b572143ef64e24707414197ab3ff0acaf95aa3.png" alt="X[1], X[2], X[3], X[4]"/>
-have only increasing values, i.e. if <img class="math" src="../../_images/math/c1d952598000cf900d21f6e5054c1fc4237d2282.png" alt="i \leqslant j"/> then <img class="math" src="../../_images/math/29679f51e9632ea0ee4845b2e4b3ec86ae837bec.png" alt="X[i] \leqslant X[j]"/>. Solutions <a href="#equation-solution1">(1)</a> and <a href="#equation-solution2">(2)</a> are said to be symmetric and avoiding the second one while accepting the first one is called <em>breaking symmetry</em>.</p>
+<p>Thanks to <tt class="docutils literal"><span class="pre">diff1-&gt;SetMin(1)</span></tt> and <tt class="docutils literal"><span class="pre">diff2-&gt;SetMin(1)</span></tt> and the two <tt class="docutils literal"><span class="pre">for</span></tt> loops, the ordered variables <img class="math" src="../../_images/math/65b572143ef64e24707414197ab3ff0acaf95aa3.png" alt="X[1], X[2], X[3], X[4]" style="vertical-align: -5px"/>
+have only increasing values, i.e. if <img class="math" src="../../_images/math/c1d952598000cf900d21f6e5054c1fc4237d2282.png" alt="i \leqslant j" style="vertical-align: -4px"/> then <img class="math" src="../../_images/math/29679f51e9632ea0ee4845b2e4b3ec86ae837bec.png" alt="X[i] \leqslant X[j]" style="vertical-align: -5px"/>. Solutions <a href="#equation-solution1">(1)</a> and <a href="#equation-solution2">(2)</a> are said to be symmetric and avoiding the second one while accepting the first one is called <em>breaking symmetry</em>.</p>
 <p>There is a well-known symmetry in the Golomb Ruler Problem that we didn&#8217;t break. Whenever you have a Golomb ruler, there exist another Golomb
 ruler with the same length that is called the <em>mirror ruler</em>.</p>
 <p>Figure <a class="reference internal" href="#golomb-4-mirror"><em>Two mirror Golomb rulers of order 4.</em></a>
@@ -127,7 +127,7 @@ illustrates two mirror Golomb rulers of order 4.</p>
 <img alt="Two mirror Golomb rulers of order 4." src="../../_images/golomb_4_mirror.png" />
 <p class="caption">Two mirror Golomb rulers of order 4.</p>
 </div>
-<p id="index-0">Golomb ruler <img class="math" src="../../_images/math/c33e393c537ec80d03521b53644847c12de37c66.png" alt="\{0,1,4,6\}"/> has <img class="math" src="../../_images/math/c0ee9fc05714a1e6c25908878d9b33acffbbb2c1.png" alt="\{0,2,5,6\}"/> as mirror Golomb ruler. Both have exactly the same length and can be considered symmetric solutions. To break this symmetry and allow the search for the first one but not the second one, just add <tt class="docutils literal"><span class="pre">X[2]-X[1]</span> <span class="pre">&lt;</span> <span class="pre">X[n]</span> <span class="pre">-</span> <span class="pre">X[n-1]</span></tt>:</p>
+<p id="index-0">Golomb ruler <img class="math" src="../../_images/math/c33e393c537ec80d03521b53644847c12de37c66.png" alt="\{0,1,4,6\}" style="vertical-align: -5px"/> has <img class="math" src="../../_images/math/c0ee9fc05714a1e6c25908878d9b33acffbbb2c1.png" alt="\{0,2,5,6\}" style="vertical-align: -5px"/> as mirror Golomb ruler. Both have exactly the same length and can be considered symmetric solutions. To break this symmetry and allow the search for the first one but not the second one, just add <tt class="docutils literal"><span class="pre">X[2]-X[1]</span> <span class="pre">&lt;</span> <span class="pre">X[n]</span> <span class="pre">-</span> <span class="pre">X[n-1]</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">s</span><span class="p">.</span><span class="n">AddConstraint</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">MakeLess</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">MakeDifference</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">-&gt;</span><span class="n">Var</span><span class="p">(),</span>
                            <span class="n">s</span><span class="p">.</span><span class="n">MakeDifference</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="n">X</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">-&gt;</span><span class="n">Var</span><span class="p">()));</span>
 </pre></div>
@@ -135,7 +135,7 @@ illustrates two mirror Golomb rulers of order 4.</p>
 </div>
 <div class="section" id="better-bounds-helps">
 <h2>3.8.2. Better bounds helps</h2>
-<p>In all implementations, we used <img class="math" src="../../_images/math/884c12c8169b77e2bb8f0b522112c34aa5c41ac4.png" alt="n^2 - 1"/> as an upper bound on <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)"/>. In the case of the Golomb Ruler Problem, finding good upper bounds is a false problem. Very efficient techniques exist to find optimal or near optimal upper bounds. If we use those bounds, we reduce dramatically the domains of the variables. We can actually use <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)"/> as an upper bound for <img class="math" src="../../_images/math/7ca098493594079f39bf0a7b50d859d1d8a7decc.png" alt="n \leqslant 25"/> as these bounds can be obtained by projective and affine projections in the plane<a class="footnote-reference" href="#projective-affine-transformation-golomb" id="id5">[4]</a>.</p>
+<p>In all implementations, we used <img class="math" src="../../_images/math/884c12c8169b77e2bb8f0b522112c34aa5c41ac4.png" alt="n^2 - 1" style="vertical-align: -1px"/> as an upper bound on <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)" style="vertical-align: -4px"/>. In the case of the Golomb Ruler Problem, finding good upper bounds is a false problem. Very efficient techniques exist to find optimal or near optimal upper bounds. If we use those bounds, we reduce dramatically the domains of the variables. We can actually use <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)" style="vertical-align: -4px"/> as an upper bound for <img class="math" src="../../_images/math/7ca098493594079f39bf0a7b50d859d1d8a7decc.png" alt="n \leqslant 25" style="vertical-align: -3px"/> as these bounds can be obtained by projective and affine projections in the plane<a class="footnote-reference" href="#projective-affine-transformation-golomb" id="id5">[4]</a>.</p>
 <table class="docutils footnote" frame="void" id="projective-affine-transformation-golomb" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
@@ -159,7 +159,7 @@ See <a class="reference external" href="http://www.research.ibm.com/people/s/she
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>where <tt class="docutils literal"><span class="pre">kG[n]</span></tt> is <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)"/>.</p>
+<p>where <tt class="docutils literal"><span class="pre">kG[n]</span></tt> is <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)" style="vertical-align: -4px"/>.</p>
 <p>The <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint doesn&#8217;t take a 2-dimensional array as parameter but it is easy to create one by flattening the array:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">Constraint</span> <span class="o">*</span> <span class="n">AllDifferent</span><span class="p">(</span><span class="n">Solver</span><span class="o">*</span> <span class="n">s</span><span class="p">,</span>
                      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IntVar</span> <span class="o">*&gt;</span> <span class="o">&gt;</span> <span class="o">&amp;</span> <span class="n">vars</span><span class="p">)</span> <span class="p">{</span>
@@ -182,8 +182,8 @@ See <a class="reference external" href="http://www.research.ibm.com/people/s/she
 </div><p>so</p>
 <div class="math">
 <p><img src="../../_images/math/443ce50b2e8d8a56d1051f51a2ead55eb19e8591.png" alt="Y[i][j] = X[n] - \left\{ Y[1][2] + Y[2][3] + ... + Y[i-1][i] + Y[j][j+1] + ... + Y[n-1][n] \right\}"/></p>
-</div><p>The differences on the right hand side of this expression are a set of different integers and there are <img class="math" src="../../_images/math/b859ee6fa1ef60123e1bbaa50dfc6e982077ea87.png" alt="n-1-j+i"/> of them.
-If we minimize the sum of these consecutive differences, we actually maximize the right hand side, i.e. we bound <img class="math" src="../../_images/math/3831ee0b9c15616fc1a764b6bd148fda9de9dc70.png" alt="Y[i][j]"/> from above:</p>
+</div><p>The differences on the right hand side of this expression are a set of different integers and there are <img class="math" src="../../_images/math/b859ee6fa1ef60123e1bbaa50dfc6e982077ea87.png" alt="n-1-j+i" style="vertical-align: -4px"/> of them.
+If we minimize the sum of these consecutive differences, we actually maximize the right hand side, i.e. we bound <img class="math" src="../../_images/math/3831ee0b9c15616fc1a764b6bd148fda9de9dc70.png" alt="Y[i][j]" style="vertical-align: -5px"/> from above:</p>
 <div class="math">
 <p><img src="../../_images/math/3e8c243f94f4e13ca158395f188c47b288c31ebf.png" alt="Y[i][j] \leqslant X[n] - (n-1-j+i)(n-j+i)/2"/></p>
 </div><p>We can add:</p>
@@ -195,7 +195,7 @@ If we minimize the sum of these consecutive differences, we actually maximize th
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Let&#8217;s compare our tightened third implementation with the rest, again to compute <img class="math" src="../../_images/math/67c4555c837d711a45a3e1af64caafc004600eee.png" alt="G(9)"/>:</p>
+<p>Let&#8217;s compare our tightened third implementation with the rest, again to compute <img class="math" src="../../_images/math/67c4555c837d711a45a3e1af64caafc004600eee.png" alt="G(9)" style="vertical-align: -4px"/>:</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="16%" />
