@@ -193,7 +193,7 @@ class NodeEvaluator2 {
     return run(i.value(), j.value());
   }
   virtual int64 run(int i, int j) = 0;
-  RoutingModel::NodeEvaluator2* GetPermanentCallback() {
+  RoutingModel::NodeEvaluator2* getPermanentCallback() {
     return NewPermanentCallback(this, &NodeEvaluator2::runAux);
   }
   virtual ~NodeEvaluator2() {}
@@ -205,11 +205,11 @@ class NodeEvaluator2 {
  public:
   virtual ~NodeEvaluator2();
   virtual int64 run(int i, int j) = 0;
-  operations_research::RoutingModel::NodeEvaluator2* GetPermanentCallback();
+  operations_research::RoutingModel::NodeEvaluator2* getPermanentCallback();
 };
 
 %typemap(jstype) RoutingModel::NodeEvaluator2* "NodeEvaluator2";
-%typemap(javain) RoutingModel::NodeEvaluator2* "SWIGTYPE_p_ResultCallback2T_long_long__RoutingModel_NodeIndex__RoutingModel_NodeIndex_t.getCPtr($javainput.GetPermanentCallback())";
+%typemap(javain) RoutingModel::NodeEvaluator2* "SWIGTYPE_p_ResultCallback2T_long_long__RoutingModel_NodeIndex__RoutingModel_NodeIndex_t.getCPtr($javainput.getPermanentCallback())";
 #endif  // SWIGJAVA
 #ifdef SWIGCSHARP
 %module(directors="1") main
@@ -233,7 +233,7 @@ class NodeEvaluator2 {
 class NodeEvaluator2 {
  public:
   virtual ~NodeEvaluator2();
-  virtual int64 Run(int i,int j) = 0;
+  virtual int64 Run(int i, int j) = 0;
   operations_research::RoutingModel::NodeEvaluator2* GetPermanentCallback();
 };
 

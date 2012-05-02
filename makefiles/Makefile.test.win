@@ -17,7 +17,7 @@ test_python: python
 	set PYTHONPATH=$(OR_ROOT_FULL)\\src && $(WINDOWS_PYTHON_PATH)\\python $(EX_DIR)\\python\\linear_programming.py
 	set PYTHONPATH=$(OR_ROOT_FULL)\\src && $(WINDOWS_PYTHON_PATH)\\python $(EX_DIR)\python\\integer_programming.py
 
-test_java: java run_RabbitsPheasants run_FlowExample run_LinearProgramming run_IntegerProgramming run_Knapsack
+test_java: java run_RabbitsPheasants run_FlowExample run_Tsp run_LinearProgramming run_IntegerProgramming run_Knapsack
 
 # csharp test
 test_csharp: $(CSHARPEXE) $(BIN_DIR)/testlp.exe $(BIN_DIR)/testcp.exe

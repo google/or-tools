@@ -28,8 +28,9 @@ clean_java:
 # javacp
 
 javacp: $(LIB_DIR)/com.google.ortools.constraintsolver.jar $(LIB_DIR)/$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT)
-$(GEN_DIR)/constraint_solver/constraint_solver_java_wrap.cc: $(SRC_DIR)/constraint_solver/constraint_solver.swig $(SRC_DIR)/base/base.swig $(SRC_DIR)/util/data.swig $(SRC_DIR)/constraint_solver/constraint_solver.h
-	$(SWIG_BINARY) -I$(INC_DIR) -c++ -java -o $(GEN_DIR)$Sconstraint_solver$Sconstraint_solver_java_wrap.cc -package com.google.ortools.constraintsolver -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver $(SRC_DIR)/constraint_solver$Sconstraint_solver.swig
+
+$(GEN_DIR)/constraint_solver/constraint_solver_java_wrap.cc: $(SRC_DIR)/constraint_solver/constraint_solver.swig $(SRC_DIR)/constraint_solver/routing.swig $(SRC_DIR)/base/base.swig $(SRC_DIR)/util/data.swig $(SRC_DIR)/constraint_solver/constraint_solver.h
+	$(SWIG_BINARY) -I$(INC_DIR) -c++ -java -o $(GEN_DIR)$Sconstraint_solver$Sconstraint_solver_java_wrap.cc -package com.google.ortools.constraintsolver -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver $(SRC_DIR)$Sconstraint_solver$Srouting.swig
 
 $(OBJ_DIR)/constraint_solver_java_wrap.$O: $(GEN_DIR)/constraint_solver/constraint_solver_java_wrap.cc
 	$(CCC) $(JNIFLAGS) $(JAVA_INC) -c $(GEN_DIR)$Sconstraint_solver$Sconstraint_solver_java_wrap.cc $(OBJ_OUT)constraint_solver_java_wrap.$O
@@ -38,8 +39,8 @@ $(LIB_DIR)/com.google.ortools.constraintsolver.jar: $(GEN_DIR)/constraint_solver
 	$(JAVAC_BIN) -d $(OBJ_DIR) $(SRC_DIR)/com$Sgoogle$Sortools$Sconstraintsolver$S*.java $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java
 	$(JAR_BIN) cf $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar -C $(OBJ_DIR) $Scom$Sgoogle$Sortools$Sconstraintsolver
 
-$(LIB_DIR)/$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT): $(OBJ_DIR)/constraint_solver_java_wrap.$O $(CP_DEPS)
-	$(LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT) $(OBJ_DIR)$Sconstraint_solver_java_wrap.$O $(CP_LNK) $(LDFLAGS)
+$(LIB_DIR)/$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT): $(OBJ_DIR)/constraint_solver_java_wrap.$O $(ROUTING_DEPS)
+	$(LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT) $(OBJ_DIR)$Sconstraint_solver_java_wrap.$O $(ROUTING_LNK) $(LDFLAGS)
 
 # Java CP Examples
 
@@ -196,6 +197,13 @@ $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Sudoku.class: javacp $(EX
 run_Sudoku: compile_Sudoku
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Sudoku
 
+compile_Tsp: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Tsp.class
+
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Tsp.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/Tsp.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$STsp.java
+
+run_Tsp: compile_Tsp
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.Tsp $(ARGS)
 
 compile_Xkcd: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/Xkcd.class
 
