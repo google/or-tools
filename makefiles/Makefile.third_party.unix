@@ -6,7 +6,7 @@ SPARSEHASH_TAG = 116 # 2.0.2
 CBC_TAG = 2.7.6
 SWIG_TAG = rel-2.0.4
 PCRE_TAG = 800 # version 8.21
-MONO_TAG = 2.10.9
+MONO_TAG = 2.11.1
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.47.tar.gz
