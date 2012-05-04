@@ -298,10 +298,10 @@ class VarValue {
 class TableVar {
  public:
   TableVar(Solver* const solver,
-      BtTable* const table,
-      IntVar* const var,
-      const int ix,
-      const int n)
+           BtTable* const table,
+           IntVar* const var,
+           const int ix,
+           const int n)
       : values_(var->Size()),
         domain_iterator_(var->MakeDomainIterator(true)),
         delta_domain_iterator_(var->MakeHoleIterator(true)),
@@ -313,33 +313,40 @@ class TableVar {
     STLDeleteElements(&values_); // delete all elements of a vector (the null are managed)
   }
 
-  void CreateValues(Solver* solver, BtTable* table, int n, int ix){
+  void CreateValues(Solver* const solver, BtTable* const table, int n, int ix){
     // we do not create an instance of Value if the value does not belong to the bttable
-    IntVarIterator* it=domain_iterator_;
-    int iv=0;
-    for(it->Init();it->Ok();it->Next()){
-      int64 val=it->Value();
+    IntVarIterator* const it = domain_iterator_;
+    int iv = 0;
+    for(it->Init(); it->Ok(); it->Next()){
+      const int64 val = it->Value();
       map_.Add(val);
-      //map_.add(val,iv);
       const int ivt = table->ivalue(ix, val);
       if (ivt == TABLE_MAP_NIL){//does not belong to BtTable
-        values_[iv]=0;
+        values_[iv] = NULL;
       } else {
         values_[iv] = new VarValue(solver,ix,iv,n);
-        xToTable_[iv]=ivt;
-        tableToX_[ivt]=iv;
+        xToTable_[iv] = ivt;
+        tableToX_[ivt] = iv;
       }
       iv++;
     }
   }
 
-  IntVarIterator* domain_iterator(){return domain_iterator_;}
+  IntVarIterator* domain_iterator() {
+    return domain_iterator_;
+  }
 
-  int ivalue_of_x_in_table(int iv)const{return xToTable_[iv];}
+  int ivalue_of_x_in_table(int iv) const {
+    return xToTable_[iv];
+  }
 
-  int ivalue_of_table_in_x(int ivt)const{return tableToX_[ivt];}
+  int ivalue_of_table_in_x(int ivt) const {
+    return tableToX_[ivt];
+  }
 
-  bool in_domain(int64 val){return var_->Contains(val);}
+  bool in_domain(int64 val) {
+    return var_->Contains(val);
+  }
 
   friend class TableCt;
 
@@ -390,7 +397,7 @@ class TableCt : public Constraint {
 
   void Post(){
     const int n=n_;
-    for(int i=0;i<n;i++){
+    for(int i = 0; i < n; i++){
       vars_[i]->CreateValues(solver(), table_, n, i);
       Demon* const d = MakeConstraintDemon1(
           solver(),
@@ -408,14 +415,14 @@ class TableCt : public Constraint {
 
   // Orderings: TODO could be improved if we have a lot of variables ???
   void OrderX() {  // insertion sort: non decreasing size of domains
-    const int n=vars_.capacity();
-    for(int i=1;i<n;i++){
-      const int x=orderedX_[i];
-      for(int j=i;j>0;j--){
-        const int y=orderedX_[j-1];
+    const int n = vars_.capacity();
+    for(int i = 1; i < n; ++i){
+      const int x = orderedX_[i];
+      for(int j = i;j > 0; j--){
+        const int y = orderedX_[j - 1];
         if (vars_[x]->var_->Size() < vars_[y]->var_->Size()){
-          orderedX_[j]=y;
-          orderedX_[j-1]=x;
+          orderedX_[j] = y;
+          orderedX_[j - 1] = x;
         } else {
           break;
         }
@@ -425,14 +432,14 @@ class TableCt : public Constraint {
 
   // insertion sort: non decreasing size of the domain.
   void OrderXConflicts() {
-    const int n=vars_.capacity();
-    for(int i=1;i<n;i++){
+    const int n = vars_.capacity();
+    for(int i = 1; i < n; ++i){
       const int x=orderedX_[i];
-      for(int j=i;j>0;j--){
-        const int y=orderedX_[j-1];
+      for(int j = i; j > 0; --j){
+        const int y = orderedX_[j - 1];
         if (conflicts_[x] > conflicts_[y]){
-          orderedX_[j]=y;
-          orderedX_[j-1]=x;
+          orderedX_[j] = y;
+          orderedX_[j - 1] = x;
         } else {
           break;
         }
@@ -443,79 +450,83 @@ class TableCt : public Constraint {
   // Seek functions
   int SeekBucketForVar(const int x, const int bk){
     // we search for the value having the smallest next_bucket value from bk
-    int minbk=kint32max;		// minbk is the smallest value over the domains
-    IntVarIterator* it=vars_[x]->domain_iterator();
-    for(it->Init();it->Ok();it->Next()){ // We traverse the domain of x
-      const int64 val=it->Value();
-      const int iv=vars_[x]->map_.Index(val);
-      const int supportBucket= table_->bucket(vars_[x]->values_[iv]->support_); // there is no valid bucket before the supporting one
-      const int ivt=vars_[x]->ivalue_of_x_in_table(iv);
-      const int nBucket=table_->next_bucket(x,ivt,bk);
+    int minbk = kint32max;		// minbk is the smallest value over the domains
+    IntVarIterator* const it = vars_[x]->domain_iterator();
+    for(it->Init(); it->Ok(); it->Next()){ // We traverse the domain of x
+      const int64 val = it->Value();
+      const int iv = vars_[x]->map_.Index(val);
+      const int supportBucket = table_->bucket(vars_[x]->values_[iv]->support_); // there is no valid bucket before the supporting one
+      const int ivt = vars_[x]->ivalue_of_x_in_table(iv);
+      const int nBucket = table_->next_bucket(x,ivt,bk);
       const int q = (supportBucket > nBucket) ? supportBucket : nBucket;
-      if (q == bk) return bk; // we immediately returns bk
-      if (q < minbk) minbk=q;
+      if (q == bk) {
+        return bk; // we immediately returns bk
+      }
+      if (q < minbk) {
+        minbk=q;
+      }
     }
     return minbk;
   }
 
-  void AddToListSc(const int x, VarValue* vv,const int t){
-    for(int i=0;i<n_;i++){
-      const int ivt=table_->tuple_ivalue(t,i);
-      const int iv=vars_[i]->ivalue_of_table_in_x(ivt);
-      VarValue* vvi=vars_[i]->values_[iv];
-      VarValue* ifirst=vvi->firstSC_;
+  void AddToListSc(int x, VarValue* const vv, int t){
+    for(int i = 0; i < n_; ++i){
+      const int ivt = table_->tuple_ivalue(t, i);
+      const int iv = vars_[i]->ivalue_of_table_in_x(ivt);
+      VarValue* const vvi = vars_[i]->values_[iv];
+      VarValue* const ifirst = vvi->firstSC_;
       if (ifirst != 0){
-        ifirst->prevSC_[i]=vv;
+        ifirst->prevSC_[i] = vv;
       }
-      vv->prevSC_[i]=0;
-      vv->nextSC_[i]=vvi->firstSC_;
-      vvi->firstSC_=vv;
+      vv->prevSC_[i] = 0;
+      vv->nextSC_[i] = vvi->firstSC_;
+      vvi->firstSC_ = vv;
     }
   }
 
-  void InternalRemoveFromListSc(VarValue* vv){ // vv is removed from every list listSC
-    for(int i=0;i<n_;i++){
-      VarValue* nvv=vv->nextSC_[i];
+  void InternalRemoveFromListSc(VarValue* const vv){ // vv is removed from every list listSC
+    for(int i = 0; i < n_; ++i){
+      VarValue* const nvv = vv->nextSC_[i];
       if (nvv != 0){
-        nvv->prevSC_[i]=vv->prevSC_[i];
+        nvv->prevSC_[i] = vv->prevSC_[i];
       }
-      VarValue* pvv=vv->prevSC_[i];
-      if (pvv != 0){
-        pvv->nextSC_[i]=vv->nextSC_[i];
-      } else {// vv is the first in the listSC of the value of var i
-        const int ivti=table_->tuple_ivalue(vv->support_,i);
-        const int iv=vars_[i]->ivalue_of_table_in_x(ivti);
-        vars_[i]->values_[iv]->firstSC_=vv->nextSC_[i];
+      VarValue* const pvv = vv->prevSC_[i];
+      if (pvv != 0) {
+        pvv->nextSC_[i] = vv->nextSC_[i];
+      } else {  // vv is the first in the listSC of the value of var i
+        const int ivti = table_->tuple_ivalue(vv->support_, i);
+        const int iv = vars_[i]->ivalue_of_table_in_x(ivti);
+        vars_[i]->values_[iv]->firstSC_ = vv->nextSC_[i];
       }
     }
   }
 
-  void RemoveFromListSc(VarValue* vv){ // vv is removed from every list listSC
-    SaveSupport(vv->ix(),vv->ivalue()); // the support is saved
+  void RemoveFromListSc(VarValue* const vv){ // vv is removed from every list listSC
+    SaveSupport(vv->ix(), vv->ivalue()); // the support is saved
     InternalRemoveFromListSc(vv); // it is removed from the list ListSC
     vv->support_=TABLE_TUPLE_NIL; // the support is now NIL
   }
 
   void SaveSupport(int x, int iv){
-    VarValue* vv=vars_[x]->values_[iv];
+    VarValue* const vv=vars_[x]->values_[iv];
     if (vv->stamp_ < solver()->stamp()){
-      const int t=vv->support_;
-      TableCtRestoreSupportAction* action= new TableCtRestoreSupportAction(this,x,iv,t);
-      solver()->AddBacktrackAction(action,true);
+      const int t = vv->support_;
+      TableCtRestoreSupportAction* const action= new TableCtRestoreSupportAction(this, x, iv, t);
+      solver()->AddBacktrackAction(action, true);
       vv->stamp_ = solver()->stamp();
     }
   }
 
   void RestoreSupport(int x, int iv, int t){
-    VarValue* vv=vars_[x]->values_[iv];
+    VarValue* const vv = vars_[x]->values_[iv];
     if (vv->support_ != TABLE_TUPLE_NIL){
       InternalRemoveFromListSc(vv);
     }
-    AddToListSc(x,vv,t);
-    vv->support_=t;
+    AddToListSc(x, vv, t);
+    vv->support_ = t;
   }
 
-  void SeekInitialSupport(const int x){
+  void SeekInitialSupport(int x){
     IntVarIterator* it=vars_[x]->domain_iterator();
     for(it->Init();it->Ok();it->Next()){ // We traverse the domain of x
       const int64 val=it->Value();
