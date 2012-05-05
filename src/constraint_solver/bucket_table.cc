@@ -34,23 +34,26 @@ class BtTable;
 class DomainValue { // value in table
  public:
   DomainValue(const int num_buckets)
-  : firstTupleInBucket_(num_buckets, TABLE_TUPLE_NIL),
-    nextBucket_(num_buckets, TABLE_BUCKET_NIL) {}
+  : first_tuple_in_bucket_(num_buckets, TABLE_TUPLE_NIL),
+    next_bucket_(num_buckets, TABLE_BUCKET_NIL) {}
 
-  // ib: bucket index:; it: tuple index
-  void LinkBuckets(const int ib, const int it){
-    if (firstTupleInBucket_[ib] == TABLE_TUPLE_NIL){
-      // in this case the bucket ib does not contain any tuple involving the value
+  void LinkBuckets(const int bucket_index, const int tuple_index) {
+    if (first_tuple_in_bucket_[bucket_index] == TABLE_TUPLE_NIL) {
+      // in this case the bucket bucket_index does not contain any
+      // tuple involving the value
 
-      // it is the first tuple in the bucket
-      firstTupleInBucket_[ib]=it;
-      // nextBucket of b returns b if there is a tuple of b containing the value
-      nextBucket_[ib]=ib;
-      // the previous nextBuckets are updated
-      for(int b=ib-1;b >= 0;b--){
-        if (nextBucket_[b] == TABLE_BUCKET_NIL){
-          nextBucket_[b]=ib;
-        } else break;
+      // tuple_index is the first tuple in the bucket
+      first_tuple_in_bucket_[bucket_index] = tuple_index;
+      // next_bucket of b returns b if there is a tuple of b
+      // containing the value
+      next_bucket_[bucket_index] = bucket_index;
+      // the previous next_buckets are updated
+      for(int b = bucket_index - 1; b >= 0; --b) {
+        if (next_bucket_[b] == TABLE_BUCKET_NIL) {
+          next_bucket_[b] = bucket_index;
+        } else {
+          break;
+        }
       }
     }
   }
@@ -59,11 +62,12 @@ class DomainValue { // value in table
   friend class BtTable;
   // returns the index of the first tuple containing the involved
   // value in the given bucket
-  std::vector<int> firstTupleInBucket_;
+  std::vector<int> first_tuple_in_bucket_;
   // returns the index of the first bucket following the given
   // bucket and containing a tuple involving the value.
-  std::vector<int> nextBucket_;
-  // ATTENTION if the bucket b contains such a tuple then nextBucket_[b] returns b
+  std::vector<int> next_bucket_;
+  // ATTENTION if the bucket b contains such a tuple then
+  // next_bucket_[b] returns b
 }; // end class Value
 
 class Domain {
@@ -79,16 +83,19 @@ class Domain {
   }
 
   // internal
-  void AddValue(const int64 val){
-    if (!map_.Contains(val)){
+  void AddValue(const int64 val) {
+    if (!map_.Contains(val)) {
       map_.Add(val);
-      DomainValue* const vobj = new DomainValue(num_buckets_);
-      values_.push_back(vobj);
-      last_t_.push_back(TABLE_TUPLE_NIL);
+      DomainValue* const new_value = new DomainValue(num_buckets_);
+      values_.push_back(new_value);
+      last_tuple_index_.push_back(TABLE_TUPLE_NIL);
     }
   }
-  void LinkBuckets(const int iv, const int ib, const int it) {
-    values_[iv]->LinkBuckets(ib, it);
+
+  void LinkBuckets(const int value_index,
+                   const int bucket_index,
+                   const int tuple_index) {
+    values_[value_index]->LinkBuckets(bucket_index, tuple_index);
   }
 
   friend class BtTable;
@@ -98,120 +105,127 @@ class Domain {
   std::vector<DomainValue*> values_;
   // temporary array containing for each value its last tuple index:
   // this improves the creation of next pointers
-  std::vector<int> last_t_;
+  std::vector<int> last_tuple_index_;
   // number of buckets
   const int num_buckets_;
 }; // end class Domain
 
 class Tuple {
  public:
-  Tuple(const int n)
-  : ivalues_(n),
-    inext_(n, TABLE_TUPLE_NIL) {}
+  Tuple(const int arity)
+  : value_indices_(arity),
+    next_at_position_(arity, TABLE_TUPLE_NIL) {}
 
  private:
   friend class BtTable;
   // indices of the values in the tuple
-  std::vector<int> ivalues_;
+  std::vector<int> value_indices_;
   // for each indice (i.e. var) i, it returns the index of the next
   // tuple containing the value at the position i
-  std::vector<int> inext_;
+  std::vector<int> next_at_position_;
 }; // end class Tuple
 
 class BtTable {
  public:
   BtTable(const int n, int num_tuples, int size_bucket)
-      : doms_(n),
-        n_(n),
-        sb_(size_bucket) {
-    for(int i = 0; i < n; i++){
-      doms_[i] = new Domain(num_tuples / size_bucket + 1);
+      : domains_(n),
+        arity_(n),
+        size_of_bucket_(size_bucket) {
+    for(int i = 0; i < n; i++) {
+      domains_[i] = new Domain(num_tuples / size_bucket + 1);
     }
   }
 
   ~BtTable() {
-    STLDeleteElements(&doms_); // delete all elements of a vector
+    STLDeleteElements(&domains_); // delete all elements of a vector
+    STLDeleteElements(&tuples_);
   }
 
-  int bucket(const int t) const {
-    return t / sb_;
+  int bucket(const int tuple_index) const {
+    return tuple_index / size_of_bucket_;
   }
 
-  int domain_size(const int i) const {
-    return doms_[i]->size();
+  int domain_size(const int var_index) const {
+    return domains_[var_index]->size();
   }
 
-  bool in_domain(const int i, const int64 val) const {
-    return doms_[i]->map_.Contains(val);
+  bool in_domain(const int var_index, const int64 val) const {
+    return domains_[var_index]->map_.Contains(val);
   }
 
-  int ivalue(const int i, const int64 val) const {
-    return doms_[i]->map_.Index(val);
+  int index_from_value(const int var_index, const int64 val) const {
+    return domains_[var_index]->map_.Index(val);
   }
 
-  int64 value(const int i, const int ivt) const {
-    return doms_[i]->map_.Element(ivt);
+  int64 value(const int var_index, const int value_index_in_table) const {
+    return domains_[var_index]->map_.Element(value_index_in_table);
   }
 
-  int next_bucket(const int x, const int v, const int b) const {
-    return doms_[x]->values_[v]->nextBucket_[b];
+  int next_bucket(const int var_index,
+                  const int value_index,
+                  const int bucket) const {
+    return domains_[var_index]->values_[value_index]->next_bucket_[bucket];
   }
 
-  int first_ituple_in_bucket(const int x, const int v, const int b) const {
-    return doms_[x]->values_[v]->firstTupleInBucket_[b];
+  int first_ituple_in_bucket(const int var_index,
+                             const int value_index,
+                             const int bucket) const {
+    return domains_[var_index]->values_[value_index]
+        ->first_tuple_in_bucket_[bucket];
   }
 
-  int last_ituple_in_bucket(const int b) {
-    return (b+1)*sb_ - 1;
+  int last_ituple_in_bucket(const int bucket) {
+    return (bucket + 1) * size_of_bucket_ - 1;
   }
 
-  int tuple_ivalue(const int t, const int x) const {
-    return tuples_[t]->ivalues_[x];
+  int tuple_index_from_value(const int tuple_index, const int value) const {
+    return tuples_[tuple_index]->value_indices_[value];
   }
 
   int tuple_inext(const int t, const int x) const {
-    return tuples_[t]->inext_[x];
+    return tuples_[t]->next_at_position_[x];
   }
 
   int num_tuples() const {
     return tuples_.size();
   }
 
-  int num_vars()const{
-    return n_;
+  int num_vars() const {
+    return arity_;
   }
 
   int num_buckets() const {
-    return (tuples_.size()/sb_+1);
+    return (tuples_.size() / size_of_bucket_ + 1);
   }
 
   // add the tuple in parameters
-  void AddTuple(const std::vector<int64>& values){
+  void AddTuple(const std::vector<int64>& values) {
     // a new tuple is created
-    const int t = tuples_.size();
-    Tuple* const tuple = new Tuple(n_);
+    const int tuple_index = tuples_.size();
+    Tuple* const tuple = new Tuple(arity_);
     // we update the next_ of the tuple
-    for(int i=0;i<n_;i++){
-      if (!doms_[i]->map_.Contains(values[i])) {
-        doms_[i]->AddValue(values[i]);
+    for(int i = 0; i < arity_; ++i) {
+      if (!domains_[i]->map_.Contains(values[i])) {
+        domains_[i]->AddValue(values[i]);
       }
-      const int iv = doms_[i]->map_.Index(values[i]);
-      const int oldt = doms_[i]->last_t_[iv];
-      if (oldt != TABLE_TUPLE_NIL){
-        tuples_[oldt]->inext_[i]=t;
+      const int value_index = domains_[i]->map_.Index(values[i]);
+      const int last_tuple_index = domains_[i]->last_tuple_index_[value_index];
+      if (last_tuple_index != TABLE_TUPLE_NIL) {
+        tuples_[last_tuple_index]->next_at_position_[i] = tuple_index;
       }
-      tuple->ivalues_[i] = iv;
-      doms_[i]->last_t_[iv] = t;
+      tuple->value_indices_[i] = value_index;
+      domains_[i]->last_tuple_index_[value_index] = tuple_index;
     }
     tuples_.push_back(tuple);
   }
 
-  void CreateBuckets(){ // Must be called after all the tuples have been added
-    const int numt=tuples_.size();
-    for(int t=0;t<numt;t++){
-      Tuple* tuple=tuples_[t];
-      for(int i=0;i<n_;i++){
-        doms_[i]->LinkBuckets(tuple->ivalues_[i], bucket(t),t);
+  void CreateBuckets() { // Must be called after all the tuples have been added
+    for(int tuple_index = 0; tuple_index < tuples_.size(); ++tuple_index) {
+      Tuple* const tuple = tuples_[tuple_index];
+      for(int i = 0; i < arity_; ++i) {
+        domains_[i]->LinkBuckets(tuple->value_indices_[i],
+                                 bucket(tuple_index),
+                                 tuple_index);
       }
     }
   }
@@ -219,11 +233,9 @@ class BtTable {
  private:
   std::vector<Tuple*> tuples_;
   // domain of variables WITHIN TUPLES
-  std::vector<Domain*> doms_;
-  // arity
-  const int n_;
-  // size of a bucket
-  const int sb_;
+  std::vector<Domain*> domains_;
+  const int arity_;
+  const int size_of_bucket_;
 };
 
 /*
@@ -235,39 +247,50 @@ class BtTable {
 #define TABLECT_INVERSE 2
 #define TABLECT_ORIGINAL 3
 
-// RMK: When we traverse the domain of a variable, we obtain values and not indices of values
+// RMK: When we traverse the domain of a variable, we obtain values
+// and not indices of values
 class TableCt;
 
 class TableCtRestoreSupportAction : public Action {
  public:
-  TableCtRestoreSupportAction(TableCt* ct, int x, int iv, int t):ct_(ct),x_(x), iv_(iv), t_(t){}
+  TableCtRestoreSupportAction(TableCt* ct,
+                              int var_index,
+                              int value_index,
+                              int support)
+      : ct_(ct),
+        var_index_(var_index),
+        value_index_(value_index),
+        support_(support) {}
+
+  virtual ~TableCtRestoreSupportAction() {}
+
   void Run(Solver* const solver);
 
  private:
   TableCt* const ct_;
-  const int x_; // var index
-  const int iv_; // value index
-  const int t_; // support
+  const int var_index_;
+  const int value_index_;
+  const int support_;
 };
 
 class VarValue {
  public:
-  VarValue(Solver* solver, int ix, int iv, int n)
-      : prevSC_(n),
-        nextSC_(n),
-        firstSC_(0),
+  VarValue(Solver* solver, int var_index, int value_index, int n)
+      : prev_support_tuple_(n),
+        next_support_tuple_(n),
+        first_supported_tuple_(0),
         stamp_(solver->stamp() - 1),
         support_(TABLE_TUPLE_NIL),
-        ix_(ix),
-        iv_(iv),
+        var_index_(var_index),
+        value_index_(value_index),
         del_(0) {}
 
-  int ivalue() const {
-    return iv_;
+  int index_from_value() const {
+    return value_index_;
   }
 
-  int ix() const {
-    return ix_;
+  int var_index() const {
+    return var_index_;
   }
 
   bool deleted() const {
@@ -285,13 +308,19 @@ class VarValue {
 
  private:
   friend class TableCt;
-  std::vector<VarValue*> prevSC_; // n elements: the n prev pointers for the support tuple
-  std::vector<VarValue*> nextSC_; // n elements : the n next pointeur for the support tuple
-  VarValue* firstSC_; // first supported tuple
-  int64 stamp_; // stamp of the last saving: the current support is saved at most once per level
+  // n elements: the n prev pointers for the support tuple
+  std::vector<VarValue*> prev_support_tuple_;
+  // n elements : the n next pointeur for the support tuple
+  std::vector<VarValue*> next_support_tuple_;
+  // first supported tuple
+  VarValue* first_supported_tuple_;
+  // stamp of the last saving: the current support is saved at most
+  // once per level
+  int64 stamp_;
+
   int support_; // support tuple: i.e. tuple index
-  int ix_; // var index
-  int iv_; // value index
+  int var_index_;
+  int value_index_; // value index
   int del_; // true (>0) if the value is deleted; otherwise it is 0
 }; // end Value class
 
@@ -300,35 +329,37 @@ class TableVar {
   TableVar(Solver* const solver,
            BtTable* const table,
            IntVar* const var,
-           const int ix,
+           const int var_index,
            const int n)
       : values_(var->Size()),
         domain_iterator_(var->MakeDomainIterator(true)),
         delta_domain_iterator_(var->MakeHoleIterator(true)),
         var_(var),
         xToTable_(var->Size(),TABLE_MAP_NIL),
-        tableToX_(table->domain_size(ix),TABLE_MAP_NIL) {}
+        tableToX_(table->domain_size(var_index),TABLE_MAP_NIL) {}
 
-  ~TableVar(){
-    STLDeleteElements(&values_); // delete all elements of a vector (the null are managed)
+  ~TableVar() {
+    // delete all elements of a vector (the null are managed).
+    STLDeleteElements(&values_);
   }
 
-  void CreateValues(Solver* const solver, BtTable* const table, int n, int ix){
-    // we do not create an instance of Value if the value does not belong to the bttable
+  void CreateValues(Solver* const solver, BtTable* const table, int n, int var_index) {
+    // we do not create an instance of Value if the value does not
+    // belong to the bttable
     IntVarIterator* const it = domain_iterator_;
-    int iv = 0;
-    for(it->Init(); it->Ok(); it->Next()){
+    int value_index = 0;
+    for(it->Init(); it->Ok(); it->Next()) {
       const int64 val = it->Value();
       map_.Add(val);
-      const int ivt = table->ivalue(ix, val);
-      if (ivt == TABLE_MAP_NIL){//does not belong to BtTable
-        values_[iv] = NULL;
+      const int value_index_in_table = table->index_from_value(var_index, val);
+      if (value_index_in_table == TABLE_MAP_NIL) {//does not belong to BtTable
+        values_[value_index] = NULL;
       } else {
-        values_[iv] = new VarValue(solver,ix,iv,n);
-        xToTable_[iv] = ivt;
-        tableToX_[ivt] = iv;
+        values_[value_index] = new VarValue(solver,var_index,value_index,n);
+        xToTable_[value_index] = value_index_in_table;
+        tableToX_[value_index_in_table] = value_index;
       }
-      iv++;
+      value_index++;
     }
   }
 
@@ -336,12 +367,12 @@ class TableVar {
     return domain_iterator_;
   }
 
-  int ivalue_of_x_in_table(int iv) const {
-    return xToTable_[iv];
+  int index_value_of_x_in_table(int value_index) const {
+    return xToTable_[value_index];
   }
 
-  int ivalue_of_table_in_x(int ivt) const {
-    return tableToX_[ivt];
+  int index_value_of_table_in_x(int value_index_in_table) const {
+    return tableToX_[value_index_in_table];
   }
 
   bool in_domain(int64 val) {
@@ -375,29 +406,30 @@ class TableCt : public Constraint {
           int type)
       : Constraint(solver),
         table_(table),
-        orderedX_(table->num_vars()),
-        inOrderX_(table->num_vars()),
+        ordered_x_(table->num_vars()),
+        in_order_x_(table->num_vars()),
         conflicts_(table->num_vars(),0),
         vars_(table->num_vars()),
-        n_(table->num_vars()),
-        countValid_(0),
-        ord_(ord),
-        type_(type){
+        arity_(table->num_vars()),
+        count_valid_(0),
+        ordering_(ord),
+        type_(type) {
     const int n = table->num_vars();
-    for(int i = 0; i < n; i++){
-      orderedX_[i] = i;
-      inOrderX_[i] = i;
+    for(int i = 0; i < n; i++) {
+      ordered_x_[i] = i;
+      in_order_x_[i] = i;
       vars_[i] = new TableVar(solver, table, vars[i], i, n);
     }
   }
 
-  ~TableCt(){
+  ~TableCt() {
     STLDeleteElements(&vars_); // delete all elements of a vector
+    delete table_;
   }
 
-  void Post(){
-    const int n=n_;
-    for(int i = 0; i < n; i++){
+  void Post() {
+    const int n=arity_;
+    for(int i = 0; i < n; i++) {
       vars_[i]->CreateValues(solver(), table_, n, i);
       Demon* const d = MakeConstraintDemon1(
           solver(),
@@ -409,20 +441,20 @@ class TableCt : public Constraint {
     }
   }
 
-  void InitialPropagate(){
+  void InitialPropagate() {
     SeekInitialSupport();
   }
 
   // Orderings: TODO could be improved if we have a lot of variables ???
   void OrderX() {  // insertion sort: non decreasing size of domains
     const int n = vars_.capacity();
-    for(int i = 1; i < n; ++i){
-      const int x = orderedX_[i];
-      for(int j = i;j > 0; j--){
-        const int y = orderedX_[j - 1];
-        if (vars_[x]->var_->Size() < vars_[y]->var_->Size()){
-          orderedX_[j] = y;
-          orderedX_[j - 1] = x;
+    for(int i = 1; i < n; ++i) {
+      const int x = ordered_x_[i];
+      for(int j = i;j > 0; j--) {
+        const int y = ordered_x_[j - 1];
+        if (vars_[x]->var_->Size() < vars_[y]->var_->Size()) {
+          ordered_x_[j] = y;
+          ordered_x_[j - 1] = x;
         } else {
           break;
         }
@@ -433,13 +465,13 @@ class TableCt : public Constraint {
   // insertion sort: non decreasing size of the domain.
   void OrderXConflicts() {
     const int n = vars_.capacity();
-    for(int i = 1; i < n; ++i){
-      const int x=orderedX_[i];
-      for(int j = i; j > 0; --j){
-        const int y = orderedX_[j - 1];
-        if (conflicts_[x] > conflicts_[y]){
-          orderedX_[j] = y;
-          orderedX_[j - 1] = x;
+    for(int i = 1; i < n; ++i) {
+      const int x=ordered_x_[i];
+      for(int j = i; j > 0; --j) {
+        const int y = ordered_x_[j - 1];
+        if (conflicts_[x] > conflicts_[y]) {
+          ordered_x_[j] = y;
+          ordered_x_[j - 1] = x;
         } else {
           break;
         }
@@ -448,16 +480,19 @@ class TableCt : public Constraint {
   }
 
   // Seek functions
-  int SeekBucketForVar(const int x, const int bk){
+  int SeekBucketForVar(const int x, const int bk) {
     // we search for the value having the smallest next_bucket value from bk
-    int minbk = kint32max;		// minbk is the smallest value over the domains
+    int minbk = kint32max; // minbk is the smallest value over the domains
     IntVarIterator* const it = vars_[x]->domain_iterator();
-    for(it->Init(); it->Ok(); it->Next()){ // We traverse the domain of x
+    for(it->Init(); it->Ok(); it->Next()) { // We traverse the domain of x
       const int64 val = it->Value();
-      const int iv = vars_[x]->map_.Index(val);
-      const int supportBucket = table_->bucket(vars_[x]->values_[iv]->support_); // there is no valid bucket before the supporting one
-      const int ivt = vars_[x]->ivalue_of_x_in_table(iv);
-      const int nBucket = table_->next_bucket(x,ivt,bk);
+      const int value_index = vars_[x]->map_.Index(val);
+      // there is no valid bucket before the supporting one
+      const int supportBucket =
+          table_->bucket(vars_[x]->values_[value_index]->support_);
+      const int value_index_in_table =
+          vars_[x]->index_value_of_x_in_table(value_index);
+      const int nBucket = table_->next_bucket(x,value_index_in_table,bk);
       const int q = (supportBucket > nBucket) ? supportBucket : nBucket;
       if (q == bk) {
         return bk; // we immediately returns bk
@@ -469,116 +504,139 @@ class TableCt : public Constraint {
     return minbk;
   }
 
-  void AddToListSc(int x, VarValue* const vv, int t){
-    for(int i = 0; i < n_; ++i){
-      const int ivt = table_->tuple_ivalue(t, i);
-      const int iv = vars_[i]->ivalue_of_table_in_x(ivt);
-      VarValue* const vvi = vars_[i]->values_[iv];
-      VarValue* const ifirst = vvi->firstSC_;
-      if (ifirst != 0){
-        ifirst->prevSC_[i] = vv;
+  void AddToListSc(int x, VarValue* const vv, int t) {
+    for(int i = 0; i < arity_; ++i) {
+      const int value_index_in_table = table_->tuple_index_from_value(t, i);
+      const int value_index =
+          vars_[i]->index_value_of_table_in_x(value_index_in_table);
+      VarValue* const vvi = vars_[i]->values_[value_index];
+      VarValue* const ifirst = vvi->first_supported_tuple_;
+      if (ifirst != 0) {
+        ifirst->prev_support_tuple_[i] = vv;
       }
-      vv->prevSC_[i] = 0;
-      vv->nextSC_[i] = vvi->firstSC_;
-      vvi->firstSC_ = vv;
+      vv->prev_support_tuple_[i] = 0;
+      vv->next_support_tuple_[i] = vvi->first_supported_tuple_;
+      vvi->first_supported_tuple_ = vv;
     }
   }
 
-  void InternalRemoveFromListSc(VarValue* const vv){ // vv is removed from every list listSC
-    for(int i = 0; i < n_; ++i){
-      VarValue* const nvv = vv->nextSC_[i];
-      if (nvv != 0){
-        nvv->prevSC_[i] = vv->prevSC_[i];
+  // vv is removed from every list listSC
+  void InternalRemoveFromListSc(VarValue* const vv) {
+    for(int i = 0; i < arity_; ++i) {
+      VarValue* const nvv = vv->next_support_tuple_[i];
+      if (nvv != 0) {
+        nvv->prev_support_tuple_[i] = vv->prev_support_tuple_[i];
       }
-      VarValue* const pvv = vv->prevSC_[i];
+      VarValue* const pvv = vv->prev_support_tuple_[i];
       if (pvv != 0) {
-        pvv->nextSC_[i] = vv->nextSC_[i];
+        pvv->next_support_tuple_[i] = vv->next_support_tuple_[i];
       } else {  // vv is the first in the listSC of the value of var i
-        const int ivti = table_->tuple_ivalue(vv->support_, i);
-        const int iv = vars_[i]->ivalue_of_table_in_x(ivti);
-        vars_[i]->values_[iv]->firstSC_ = vv->nextSC_[i];
+        const int value_index_in_table_i =
+            table_->tuple_index_from_value(vv->support_, i);
+        const int value_index =
+            vars_[i]->index_value_of_table_in_x(value_index_in_table_i);
+        vars_[i]->values_[value_index]->first_supported_tuple_ =
+            vv->next_support_tuple_[i];
       }
     }
   }
 
-  void RemoveFromListSc(VarValue* const vv){ // vv is removed from every list listSC
-    SaveSupport(vv->ix(), vv->ivalue()); // the support is saved
+  // vv is removed from every list listSC
+  void RemoveFromListSc(VarValue* const vv) {
+    SaveSupport(vv->var_index(), vv->index_from_value());
     InternalRemoveFromListSc(vv); // it is removed from the list ListSC
     vv->support_=TABLE_TUPLE_NIL; // the support is now NIL
   }
 
-  void SaveSupport(int x, int iv){
-    VarValue* const vv=vars_[x]->values_[iv];
-    if (vv->stamp_ < solver()->stamp()){
+  void SaveSupport(int x, int value_index) {
+    VarValue* const vv = vars_[x]->values_[value_index];
+    if (vv->stamp_ < solver()->stamp()) {
       const int t = vv->support_;
-      TableCtRestoreSupportAction* const action= new TableCtRestoreSupportAction(this, x, iv, t);
+      TableCtRestoreSupportAction* const action =
+          solver()->RevAlloc(
+              new TableCtRestoreSupportAction(this, x, value_index, t));
       solver()->AddBacktrackAction(action, true);
       vv->stamp_ = solver()->stamp();
     }
   }
 
-  void RestoreSupport(int x, int iv, int t){
-    VarValue* const vv = vars_[x]->values_[iv];
-    if (vv->support_ != TABLE_TUPLE_NIL){
+  void RestoreSupport(int x, int value_index, int t) {
+    VarValue* const vv = vars_[x]->values_[value_index];
+    if (vv->support_ != TABLE_TUPLE_NIL) {
       InternalRemoveFromListSc(vv);
     }
     AddToListSc(x, vv, t);
     vv->support_ = t;
   }
 
-  void SeekInitialSupport(int x){
-    IntVarIterator* it=vars_[x]->domain_iterator();
-    for(it->Init();it->Ok();it->Next()){ // We traverse the domain of x
-      const int64 val=it->Value();
-      const int iv=vars_[x]->map_.Index(val); // index of value in the domain of var
-      const int ivt=vars_[x]->ivalue_of_x_in_table(iv); // index of value in the table
-      if (ivt != TABLE_TUPLE_NIL){ // the value is also in the table
-        // we look at the value of nextBucket of 0 then we take the first tuple in bucket
-        const int t=table_->first_ituple_in_bucket(x,ivt,table_->next_bucket(x,ivt,0));
-        vars_[x]->values_[iv]->support_=t;
-        AddToListSc(x,vars_[x]->values_[iv],t);
+  void SeekInitialSupport(int x) {
+    IntVarIterator* const it = vars_[x]->domain_iterator();
+    for(it->Init(); it->Ok(); it->Next()) { // We traverse the domain of x
+      const int64 val = it->Value();
+      // index of value in the domain of var
+      const int value_index = vars_[x]->map_.Index(val);
+      const int value_index_in_table =
+      vars_[x]->index_value_of_x_in_table(value_index);
+      // the value is also in the table
+      if (value_index_in_table != TABLE_TUPLE_NIL) {
+        // we look at the value of next_bucket of 0 then we take the
+        // first tuple in bucket
+        const int t =
+            table_->first_ituple_in_bucket(
+                x,
+                value_index_in_table,
+                table_->next_bucket(
+                    x,
+                    value_index_in_table,
+                    0));
+        vars_[x]->values_[value_index]->support_=t;
+        AddToListSc(x,vars_[x]->values_[value_index],t);
       } else { // the value is not in the table: we remove it from the variable
         vars_[x]->var_->RemoveValue(val);
       }
     }
   }
 
-  void SeekInitialSupport(){
-    for(int i=0;i<n_;i++){
+  void SeekInitialSupport() {
+    for(int i=0;i<arity_;i++) {
       SeekInitialSupport(i);
     }
   }
 
-  int count_valid()const{return countValid_;}
+  int count_valid() const {
+    return count_valid_;
+  }
 
-  int valid_tuple(const int t){
-    countValid_++;
-    for(int i=0;i<n_;i++){
-      const int64 val=table_->value(i,table_->tuple_ivalue(t,i));
-      if (!vars_[i]->in_domain(val)) return false;
+  int valid_tuple(const int t) {
+    count_valid_++;
+    for(int i = 0; i < arity_; ++i) {
+      const int64 val = table_->value(i, table_->tuple_index_from_value(t, i));
+      if (!vars_[i]->in_domain(val)) {
+        return false;
+      }
     }
     return true;
   }
 
-  int SeekSupport_in_bucket(const int x, const int t){
+  int SeekSupportInBucket(const int x, const int t) {
     // assume that tuple t IS NOT VALID
-    const int last_t=table_->last_ituple_in_bucket(table_->bucket(t));
+    const int last_t = table_->last_ituple_in_bucket(table_->bucket(t));
     for(int nt = table_->tuple_inext(t, x);
         nt <= last_t;
-        nt = table_->tuple_inext(nt, x)){
-      if (valid_tuple(nt)){
+        nt = table_->tuple_inext(nt, x)) {
+      if (valid_tuple(nt)) {
         return nt;
       }
     }
     return TABLE_TUPLE_NIL;
   }
 
-  int SeekBucket(const int y, const int ibt, const int bk, const int type){
-    if (bk >= table_->num_buckets()){
+  int SeekBucket(const int y, const int ibt, const int bk, const int type) {
+    if (bk >= table_->num_buckets()) {
       return TABLE_BUCKET_NIL;
     }
     // we select the desired algorithm
-    switch(type){
+    switch(type) {
       case TABLECT_RESTART : return SeekBucketRestart(y,ibt,bk);
       case TABLECT_CONTINUE : return SeekBucketContinue(y,ibt,bk);
       case TABLECT_INVERSE : return SeekBucketInverse(y,ibt,bk);
@@ -587,129 +645,152 @@ class TableCt : public Constraint {
     return TABLE_BUCKET_NIL;
   }
 
-  int SeekBucketRestart(const int y, const int ibt, const int bk){
-    int nbk=bk;
-    int j=0; // variable index
-    while(j < n_){
-      int q=(orderedX_[j]==y) ? table_->next_bucket(y,ibt,nbk) : SeekBucketForVar(orderedX_[j],nbk);
-      if (q==nbk){j++;}
-      else {// a progression occurs
-        conflicts_[orderedX_[j]]++;
-        if (q==TABLE_BUCKET_NIL){
+  int SeekBucketRestart(const int y, const int ibt, const int bk) {
+    int nbk = bk;
+    int j = 0; // variable index
+    while(j < arity_) {
+      int q = (ordered_x_[j] == y) ?
+          table_->next_bucket(y, ibt, nbk) :
+          SeekBucketForVar(ordered_x_[j], nbk);
+      if (q == nbk) {
+        j++;
+      }  else {// a progression occurs
+        conflicts_[ordered_x_[j]]++;
+        if (q == TABLE_BUCKET_NIL) {
           return TABLE_BUCKET_NIL;
         }
-        q=table_->next_bucket(y,ibt,q);
-        if (q==TABLE_BUCKET_NIL){
+        q = table_->next_bucket(y, ibt, q);
+        if (q == TABLE_BUCKET_NIL) {
           return TABLE_BUCKET_NIL;
         }
-        nbk=q;
-        j=0;
+        nbk = q;
+        j = 0;
       }
     }
     return nbk;
   }
 
-  int SeekBucketContinue(const int y, const int ibt, const int bk){
-    // var y, ibt ivalue in table, current bucket is bk
-    int nbk=bk;
-    int j=0; // variable index
-    while(j < n_){
-      // const int q=(orderedX_[j]==y) ? d_oms[y]->values_[b]->n_extPart[np] : seek_part_for_var(orderedX_[j],np);
-      int q=(orderedX_[j]==y) ? table_->next_bucket(y,ibt,nbk) : SeekBucketForVar(orderedX_[j],nbk);
-      if (q > nbk){// a progression occurs
-        if (q==TABLE_BUCKET_NIL) return TABLE_BUCKET_NIL;
-        q=table_->next_bucket(y,ibt,q);
-        if (q==TABLE_BUCKET_NIL) return TABLE_BUCKET_NIL;
-        nbk=q;
+  int SeekBucketContinue(const int y, const int ibt, const int bk) {
+    // var y, ibt index_from_value in table, current bucket is bk
+    int nbk = bk;
+    int j = 0; // variable index
+    while(j < arity_) {
+      int q = (ordered_x_[j] == y) ?
+          table_->next_bucket(y, ibt, nbk) :
+          SeekBucketForVar(ordered_x_[j], nbk);
+      if (q > nbk) {  // a progression occurs
+        if (q == TABLE_BUCKET_NIL) {
+          return TABLE_BUCKET_NIL;
+        }
+        q = table_->next_bucket(y, ibt, q);
+        if (q == TABLE_BUCKET_NIL) {
+          return TABLE_BUCKET_NIL;
+        }
+        nbk = q;
       }
       j++;
     }
     return nbk;
   }
 
-  int SeekBucketInverse(int y, int ibt, int bk){
-    // var y, ibt ivalue in table, current bucket is bk
-    int nbk=bk;
-    int j=0; // variable index
-    while(j < n_){
-      int q=(orderedX_[j]==y) ? table_->next_bucket(y,ibt,nbk) : SeekBucketForVar(orderedX_[j],nbk);
-      if (q==nbk){j++;}
-      else {// a progression occurs
-        if (q==TABLE_BUCKET_NIL) return TABLE_BUCKET_NIL;
-        q=table_->next_bucket(y,ibt,q);
-        if (q==TABLE_BUCKET_NIL) return TABLE_BUCKET_NIL;
-        nbk=q;
-        if (j > 0) j--;
+  int SeekBucketInverse(int y, int ibt, int bk) {
+    // var y, ibt index_from_value in table, current bucket is bk
+    int nbk = bk;
+    int j = 0; // variable index
+    while(j < arity_) {
+      int q = (ordered_x_[j] == y) ?
+          table_->next_bucket(y, ibt, nbk) :
+          SeekBucketForVar(ordered_x_[j], nbk);
+      if (q == nbk) {
+        j++;
+      }  else {  // a progression occurs
+        if (q == TABLE_BUCKET_NIL) {
+          return TABLE_BUCKET_NIL;
+        }
+        q = table_->next_bucket(y, ibt, q);
+        if (q==TABLE_BUCKET_NIL) {
+          return TABLE_BUCKET_NIL;
+        }
+        nbk = q;
+        if (j > 0) {
+          j--;
+        }
       }
     }
     return nbk;
   }
 
-  int SeekBucketOriginal(const int y, const int ibt, const int bk){
-    // var y, ibt ivalue in table, current bucket is bk
-    int nq=bk;
+  int SeekBucketOriginal(const int y, const int ibt, const int bk) {
+    // var y, ibt index_from_value in table, current bucket is bk
+    int nq = bk;
     int nbk;
-    int j=0; // variable index
+    int j = 0; // variable index
     do {
-      nbk=nq;
-      while(j < n_){
-        const int q=(orderedX_[j]==y) ? table_->next_bucket(y,ibt,nbk) : SeekBucketForVar(orderedX_[j],nbk);
-        if (q==TABLE_BUCKET_NIL) return TABLE_BUCKET_NIL;
+      nbk = nq;
+      while(j < arity_) {
+        const int q =(ordered_x_[j] == y) ?
+            table_->next_bucket(y, ibt, nbk) :
+            SeekBucketForVar(ordered_x_[j], nbk);
+        if (q == TABLE_BUCKET_NIL) {
+          return TABLE_BUCKET_NIL;
+        }
         j++;
       }
-      nq=table_->next_bucket(y,ibt,nbk);
+      nq = table_->next_bucket(y, ibt, nbk);
     } while (nbk < nq);
     return nbk;
   }
 
-  int SeekSupport(const int x, const int ia, const int t, const int type){// search a support for (x,a)
-    const int iat=vars_[x]->ivalue_of_x_in_table(ia);
-    int ct=t;
-    while (ct != TABLE_TUPLE_NIL){
-      int nt=SeekSupport_in_bucket(x,ct);
-      if (nt != TABLE_TUPLE_NIL){
+  // search a support for (x,a)
+  int SeekSupport(const int x, const int ia, const int t, const int type) {
+    const int iat = vars_[x]->index_value_of_x_in_table(ia);
+    int ct = t;
+    while (ct != TABLE_TUPLE_NIL) {
+      int nt = SeekSupportInBucket(x,ct);
+      if (nt != TABLE_TUPLE_NIL) {
         return nt;
       }
-      const int b = SeekBucket(x,iat,table_->bucket(ct)+1,type);
-      if (b == TABLE_TUPLE_NIL){
+      const int b = SeekBucket(x, iat, table_->bucket(ct) + 1, type);
+      if (b == TABLE_TUPLE_NIL) {
         break;
       }
-      ct = table_->first_ituple_in_bucket(x,iat,b);
-      if (valid_tuple(ct)){
+      ct = table_->first_ituple_in_bucket(x, iat, b);
+      if (valid_tuple(ct)) {
         return ct;
       }
     }
     return TABLE_TUPLE_NIL;
   }
 
-  void DeleteValue(int x, int type, VarValue* vv){
-    VarValue* vvsupp=vv->firstSC_; // first supported value
-    while(vvsupp != 0){
+  void DeleteValue(int x, int type, VarValue* const vv) {
+    VarValue* vvsupp = vv->first_supported_tuple_; // first supported value
+    while (vvsupp != 0) {
       // vvsupp is removed from the supported list of values
-      const int oldSupport=vvsupp->support_;
+      const int old_support = vvsupp->support_;
       RemoveFromListSc(vvsupp);
       // we check if vvsupp is valid
-      const int y=vvsupp->ix();
-      const int b=vvsupp->ivalue();
-      const int64 bval=vars_[y]->map_.Element(b);
-      if (vars_[y]->in_domain(bval)){ // vvsupp is valid. A new support must be sought
-        const int nt=SeekSupport(y,b,oldSupport,type);
-        if (nt==TABLE_TUPLE_NIL){ // no more support: (y,b) is deleted
+      const int y = vvsupp->var_index();
+      const int b = vvsupp->index_from_value();
+      const int64 bval = vars_[y]->map_.Element(b);
+      if (vars_[y]->in_domain(bval)) {
+        // vvsupp is valid. A new support must be sought
+        const int nt = SeekSupport(y, b, old_support, type);
+        if (nt == TABLE_TUPLE_NIL) {  // no more support: (y,b) is deleted
           vars_[y]->var_->RemoveValue(bval);
-        } else { // a new support is found
+        } else {  // a new support is found
           vars_[y]->values_[b]->support_ = nt;
-          AddToListSc(y,vars_[y]->values_[b],nt);
+          AddToListSc(y, vars_[y]->values_[b], nt);
         }
       }
-      vvsupp=vv->firstSC_;
+      vvsupp = vv->first_supported_tuple_;
     }
     vv->SetDeleted(solver());
   }
 
-  void FilterX(const int x){
+  void FilterX(const int x) {
     // the variable whose index is x is modified
-    if (ord_ > 0){
-      if (ord_==1) OrderX();
+    if (ordering_ > 0) {
+      if (ordering_==1) OrderX();
       else OrderXConflicts();
     }
     // we iterate the delta of the variable
@@ -725,14 +806,15 @@ class TableCt : public Constraint {
 
     const TableVar* const xv = vars_[x];
     // First iteration: from oldmin to min
-    const int oldmindomain = xv->var_->OldMin();
-    const int mindomain = xv->var_->Min();
-    for(int64 val = oldmindomain; val < mindomain; ++val){
-      const int iv = xv->map_.Index(val);
-      const int ivt = xv->ivalue_of_x_in_table(iv);
-      if (ivt != -1){// the index is in the VarValue array
-        VarValue* vv = xv->values_[iv];
-        if (!vv->deleted()){ // the value deletion has never been considered
+    const int64 oldmindomain = xv->var_->OldMin();
+    const int64 mindomain = xv->var_->Min();
+    for(int64 val = oldmindomain; val < mindomain; ++val) {
+      const int value_index = xv->map_.Index(val);
+      const int value_index_in_table =
+          xv->index_value_of_x_in_table(value_index);
+      if (value_index_in_table != -1) {// the index is in the VarValue array
+        VarValue* const vv = xv->values_[value_index];
+        if (!vv->deleted()) { // the value deletion has never been considered
           DeleteValue(x, type_, vv);
         }
       }
@@ -740,25 +822,27 @@ class TableCt : public Constraint {
 
     // Second iteration: "delta" domain iteration
     IntVarIterator* const it = xv->delta_domain_iterator_;
-    for(it->Init(); it->Ok(); it->Next()){
+    for(it->Init(); it->Ok(); it->Next()) {
       int64 val = it->Value();
-      const int iv = xv->map_.Index(val);
-      const int ivt = xv->ivalue_of_x_in_table(iv);
-      if (ivt != -1){// the index is in the VarValue array
-        VarValue* vv = xv->values_[iv];
+      const int value_index = xv->map_.Index(val);
+      const int value_index_in_table =
+          xv->index_value_of_x_in_table(value_index);
+      if (value_index_in_table != -1) {// the index is in the VarValue array
+        VarValue* const vv = xv->values_[value_index];
         DeleteValue(x, type_, vv);
       }
     }
 
     // Third iteration: from max to oldmax
-    const int oldmaxdomain = xv->var_->OldMax();
-    const int maxdomain = xv->var_->Max();
-    for(int64 val = maxdomain + 1; val <= oldmaxdomain; ++val){
-      const int iv = xv->map_.Index(val);
-      const int ivt = xv->ivalue_of_x_in_table(iv);
-      if (ivt != -1) {// the index is in the VarValue array
-        VarValue* const vv = xv->values_[iv];
-        if (!vv->deleted()){ // the value deletion has never been considered
+    const int64 oldmaxdomain = xv->var_->OldMax();
+    const int64 maxdomain = xv->var_->Max();
+    for(int64 val = maxdomain + 1; val <= oldmaxdomain; ++val) {
+      const int value_index = xv->map_.Index(val);
+      const int value_index_in_table =
+          xv->index_value_of_x_in_table(value_index);
+      if (value_index_in_table != -1) {// the index is in the VarValue array
+        VarValue* const vv = xv->values_[value_index];
+        if (!vv->deleted()) { // the value deletion has never been considered
           DeleteValue(x, type_, vv);
         }
       }
@@ -766,20 +850,20 @@ class TableCt : public Constraint {
   }
 
  private:
-  BtTable* table_; // table
+  BtTable* const table_;
 
-  std::vector<int> orderedX_; // order of the var array
-  std::vector<int> inOrderX_; // position in the order of var array
+  std::vector<int> ordered_x_; // order of the var array
+  std::vector<int> in_order_x_; // position in the order of var array
   std::vector<int> conflicts_; // number of conflicts
   std::vector<TableVar*> vars_; // variable of the constraint
-  const int n_; // number of variables
-  int countValid_;
-  int ord_;
-  int type_;
+  const int arity_; // number of variables
+  int count_valid_;
+  const int ordering_;
+  const int type_;
 };
 
-void TableCtRestoreSupportAction::Run(Solver* const solver){
-  ct_->RestoreSupport(x_, iv_, t_);
+void TableCtRestoreSupportAction::Run(Solver* const solver) {
+  ct_->RestoreSupport(var_index_, value_index_, support_);
 }
 }  // namespace
 
@@ -802,7 +886,7 @@ Constraint* BuildTableCt(Solver* const solver,
     table->AddTuple(one_tuple);
   }
   table->CreateBuckets();
-  return new TableCt(solver, table, vars, order, type);
+  return solver->RevAlloc(new TableCt(solver, table, vars, order, type));
 }
 
 } // namespace operations_research
