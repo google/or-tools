@@ -260,7 +260,7 @@ class TableCtRestoreSupportAction : public Action {
       : ct_(ct),
         var_index_(var_index),
         value_index_(value_index),
-        support_(support) {}
+        supporting_tuple_index_(support) {}
 
   virtual ~TableCtRestoreSupportAction() {}
 
@@ -270,7 +270,7 @@ class TableCtRestoreSupportAction : public Action {
   TableCt* const ct_;
   const int var_index_;
   const int value_index_;
-  const int support_;
+  const int supporting_tuple_index_;
 };
 
 class VarValue {
@@ -280,7 +280,7 @@ class VarValue {
         next_support_tuple_(n),
         first_supported_tuple_(0),
         stamp_(solver->stamp() - 1),
-        support_(TABLE_TUPLE_NIL),
+        supporting_tuple_index_(TABLE_TUPLE_NIL),
         var_index_(var_index),
         value_index_(value_index),
         del_(0) {}
@@ -318,7 +318,7 @@ class VarValue {
   // once per level
   int64 stamp_;
 
-  int support_; // support tuple: i.e. tuple index
+  int supporting_tuple_index_; // support tuple: i.e. tuple index
   int var_index_;
   int value_index_; // value index
   int del_; // true (>0) if the value is deleted; otherwise it is 0
@@ -489,7 +489,8 @@ class TableCt : public Constraint {
       const int value_index = vars_[x]->map_.Index(val);
       // there is no valid bucket before the supporting one
       const int supportBucket =
-          table_->bucket(vars_[x]->values_[value_index]->support_);
+          table_->bucket(
+              vars_[x]->values_[value_index]->supporting_tuple_index_);
       const int value_index_in_table =
           vars_[x]->index_value_of_x_in_table(value_index);
       const int nBucket = table_->next_bucket(x,value_index_in_table,bk);
@@ -532,7 +533,7 @@ class TableCt : public Constraint {
         pvv->next_support_tuple_[i] = vv->next_support_tuple_[i];
       } else {  // vv is the first in the listSC of the value of var i
         const int value_index_in_table_i =
-            table_->tuple_index_from_value(vv->support_, i);
+            table_->tuple_index_from_value(vv->supporting_tuple_index_, i);
         const int value_index =
             vars_[i]->index_value_of_table_in_x(value_index_in_table_i);
         vars_[i]->values_[value_index]->first_supported_tuple_ =
@@ -545,13 +546,13 @@ class TableCt : public Constraint {
   void RemoveFromListSc(VarValue* const vv) {
     SaveSupport(vv->var_index(), vv->index_from_value());
     InternalRemoveFromListSc(vv); // it is removed from the list ListSC
-    vv->support_=TABLE_TUPLE_NIL; // the support is now NIL
+    vv->supporting_tuple_index_ = TABLE_TUPLE_NIL; // the support is now NIL
   }
 
   void SaveSupport(int x, int value_index) {
     VarValue* const vv = vars_[x]->values_[value_index];
     if (vv->stamp_ < solver()->stamp()) {
-      const int t = vv->support_;
+      const int t = vv->supporting_tuple_index_;
       TableCtRestoreSupportAction* const action =
           solver()->RevAlloc(
               new TableCtRestoreSupportAction(this, x, value_index, t));
@@ -560,45 +561,48 @@ class TableCt : public Constraint {
     }
   }
 
-  void RestoreSupport(int x, int value_index, int t) {
-    VarValue* const vv = vars_[x]->values_[value_index];
-    if (vv->support_ != TABLE_TUPLE_NIL) {
+  void RestoreSupport(int var_index, int value_index, int tuple_index) {
+    VarValue* const vv = vars_[var_index]->values_[value_index];
+    if (vv->supporting_tuple_index_ != TABLE_TUPLE_NIL) {
       InternalRemoveFromListSc(vv);
     }
-    AddToListSc(x, vv, t);
-    vv->support_ = t;
+    AddToListSc(var_index, vv, tuple_index);
+    vv->supporting_tuple_index_ = tuple_index;
   }
 
-  void SeekInitialSupport(int x) {
-    IntVarIterator* const it = vars_[x]->domain_iterator();
+  void SeekInitialSupport(int var_index) {
+    IntVarIterator* const it = vars_[var_index]->domain_iterator();
     for(it->Init(); it->Ok(); it->Next()) { // We traverse the domain of x
       const int64 val = it->Value();
       // index of value in the domain of var
-      const int value_index = vars_[x]->map_.Index(val);
+      const int value_index = vars_[var_index]->map_.Index(val);
       const int value_index_in_table =
-      vars_[x]->index_value_of_x_in_table(value_index);
+          vars_[var_index]->index_value_of_x_in_table(value_index);
       // the value is also in the table
       if (value_index_in_table != TABLE_TUPLE_NIL) {
         // we look at the value of next_bucket of 0 then we take the
         // first tuple in bucket
-        const int t =
+        const int tuple_index =
             table_->first_ituple_in_bucket(
-                x,
+                var_index,
                 value_index_in_table,
                 table_->next_bucket(
-                    x,
+                    var_index,
                     value_index_in_table,
                     0));
-        vars_[x]->values_[value_index]->support_=t;
-        AddToListSc(x,vars_[x]->values_[value_index],t);
+        vars_[var_index]->values_[value_index]->supporting_tuple_index_ =
+            tuple_index;
+        AddToListSc(var_index,
+                    vars_[var_index]->values_[value_index],
+                    tuple_index);
       } else { // the value is not in the table: we remove it from the variable
-        vars_[x]->var_->RemoveValue(val);
+        vars_[var_index]->var_->RemoveValue(val);
       }
     }
   }
 
   void SeekInitialSupport() {
-    for(int i=0;i<arity_;i++) {
+    for(int i = 0; i < arity_; ++i) {
       SeekInitialSupport(i);
     }
   }
@@ -766,7 +770,7 @@ class TableCt : public Constraint {
     VarValue* vvsupp = vv->first_supported_tuple_; // first supported value
     while (vvsupp != 0) {
       // vvsupp is removed from the supported list of values
-      const int old_support = vvsupp->support_;
+      const int old_support = vvsupp->supporting_tuple_index_;
       RemoveFromListSc(vvsupp);
       // we check if vvsupp is valid
       const int y = vvsupp->var_index();
@@ -778,7 +782,7 @@ class TableCt : public Constraint {
         if (nt == TABLE_TUPLE_NIL) {  // no more support: (y,b) is deleted
           vars_[y]->var_->RemoveValue(bval);
         } else {  // a new support is found
-          vars_[y]->values_[b]->support_ = nt;
+          vars_[y]->values_[b]->supporting_tuple_index_ = nt;
           AddToListSc(y, vars_[y]->values_[b], nt);
         }
       }
@@ -863,7 +867,7 @@ class TableCt : public Constraint {
 };
 
 void TableCtRestoreSupportAction::Run(Solver* const solver) {
-  ct_->RestoreSupport(var_index_, value_index_, support_);
+  ct_->RestoreSupport(var_index_, value_index_, supporting_tuple_index_);
 }
 }  // namespace
 
