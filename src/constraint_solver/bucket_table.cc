@@ -40,7 +40,7 @@ namespace {
 /*
  * Bucketted Tuple Table
  */
-static const TupleIndex kNilTuple = TupleIndex(kint32max);
+static const TupleIndex kNilTuple = TupleIndex(-1);
 static const BucketIndex kNilBucket = BucketIndex(-1);
 static const TableValueIndex kNilTableValue = TableValueIndex(-1);
 static const VarValueIndex kNilVarValue = VarValueIndex(-1);
@@ -170,6 +170,7 @@ class BtTable {
   ~BtTable() {}
 
   BucketIndex bucket(TupleIndex tuple_index) const {
+    DCHECK_NE(tuple_index, kNilTuple);
     return BucketIndex(tuple_index.value() / size_of_bucket_);
   }
 
@@ -526,8 +527,7 @@ class TableCt : public Constraint {
     IntVarIterator* const it = vars_[var_index]->domain_iterator();
     for(it->Init(); it->Ok(); it->Next()) { // We traverse the domain of var.
       const int64 val = it->Value();
-      const VarValueIndex value_index =
-          vars_[var_index]->IndexFromValue(val);
+      const VarValueIndex value_index = vars_[var_index]->IndexFromValue(val);
       // there is no valid bucket before the supporting one
       const BucketIndex support_bucket =
           table_->bucket(vars_[var_index]->SupportingTupleIndex(value_index));
@@ -543,7 +543,7 @@ class TableCt : public Constraint {
         min_bucket = q;
       }
     }
-    return min_bucket == kint32max ? kNilBucket : min_bucket;;
+    return min_bucket == kint32max ? kNilBucket : min_bucket;
   }
 
   void AddToListSc(TableVar::Value* const var_value, TupleIndex tuple_index) {
@@ -656,6 +656,7 @@ class TableCt : public Constraint {
   }
 
   bool IsTupleValid(TupleIndex t) {
+    DCHECK_NE(t, kNilTuple);
     for(VarIndex i = VarIndex(0); i < arity_; ++i) {
       const int64 val =
           table_->value(i, table_->ValueIndexFromPositionInTuple(t, i));
@@ -667,14 +668,14 @@ class TableCt : public Constraint {
   }
 
   TupleIndex SeekSupportInBucket(VarIndex var_index, TupleIndex tuple_index) {
-    DCHECK(!IsTupleValue(tuple_index));
+    DCHECK(!IsTupleValid(tuple_index));
     const TupleIndex last_tuple_index =
         table_->LastTupleInBucket(table_->bucket(tuple_index));
     for(TupleIndex next_tuple_index =
             table_->NextTupleFromPosition(tuple_index, var_index);
-        next_tuple_index <= last_tuple_index;
-        next_tuple_index =
-            table_->NextTupleFromPosition(next_tuple_index, var_index)) {
+        next_tuple_index <= last_tuple_index && next_tuple_index != kNilTuple;
+        next_tuple_index = table_->NextTupleFromPosition(next_tuple_index,
+                                                         var_index)) {
       if (IsTupleValid(next_tuple_index)) {
         return next_tuple_index;
       }
@@ -703,14 +704,14 @@ class TableCt : public Constraint {
                                 TableValueIndex ibt,
                                 BucketIndex bucket) {
     BucketIndex next_bucket = bucket;
-    VarIndex j = VarIndex(0); // variable index
+    VarIndex j = VarIndex(0);  // variable index
     while(j < arity_) {
       BucketIndex q = (ordered_x_[j] == var_index) ?
           table_->NextBucket(var_index, ibt, next_bucket) :
           SeekBucketForVar(ordered_x_[j], next_bucket);
       if (q == next_bucket) {
         j++;
-      }  else {// a progression occurs
+      }  else {  // a progression occurs
         conflicts_[ordered_x_[j]]++;
         if (q == kNilBucket) {
           return kNilBucket;
