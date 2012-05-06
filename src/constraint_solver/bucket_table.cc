@@ -28,18 +28,15 @@ DEFINE_int32(cp_bucket_table_ordering, 0,
              "Ordering of variables in bucket table constraint: "
              " 0 = none, 1 = min domain size, 2 = max conflicts");
 
+namespace operations_research {
+namespace {
+
 DEFINE_INT_TYPE(VarIndex, int);
 DEFINE_INT_TYPE(TupleIndex, int);
 DEFINE_INT_TYPE(BucketIndex, int);
 DEFINE_INT_TYPE(TableValueIndex, int);
 DEFINE_INT_TYPE(VarValueIndex, int);
 
-namespace operations_research {
-namespace {
-
-/*
- * Bucketted Tuple Table
- */
 static const TupleIndex kNilTuple = TupleIndex(-1);
 static const BucketIndex kNilBucket = BucketIndex(-1);
 static const TableValueIndex kNilTableValue = TableValueIndex(-1);
