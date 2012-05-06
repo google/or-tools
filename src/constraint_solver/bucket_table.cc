@@ -681,7 +681,7 @@ class TableCt : public Constraint {
   }
 
   BucketIndex SeekBucket(VarIndex var_index,
-                         TableValueIndex ibt,
+                         TableValueIndex starting_value_index,
                          BucketIndex bucket,
                          Type type) {
     if (bucket >= table_->NumBuckets() || bucket == kNilBucket) {
@@ -689,22 +689,26 @@ class TableCt : public Constraint {
     }
     // we select the desired algorithm
     switch(type) {
-      case TABLECT_RESTART : return SeekBucketRestart(var_index, ibt, bucket);
-      case TABLECT_CONTINUE : return SeekBucketContinue(var_index, ibt, bucket);
-      case TABLECT_INVERSE : return SeekBucketInverse(var_index, ibt, bucket);
-      case TABLECT_ORIGINAL : return SeekBucketOriginal(var_index, ibt, bucket);
+      case TABLECT_RESTART :
+        return SeekBucketRestart(var_index, starting_value_index, bucket);
+      case TABLECT_CONTINUE :
+        return SeekBucketContinue(var_index, starting_value_index, bucket);
+      case TABLECT_INVERSE :
+        return SeekBucketInverse(var_index, starting_value_index, bucket);
+      case TABLECT_ORIGINAL :
+        return SeekBucketOriginal(var_index, starting_value_index, bucket);
     };
     return kNilBucket;
   }
 
   BucketIndex SeekBucketRestart(VarIndex var_index,
-                                TableValueIndex ibt,
+                                TableValueIndex starting_value_index,
                                 BucketIndex bucket) {
     BucketIndex next_bucket = bucket;
     VarIndex j = VarIndex(0);  // variable index
     while(j < arity_) {
       BucketIndex q = (ordered_x_[j] == var_index) ?
-          table_->NextBucket(var_index, ibt, next_bucket) :
+          table_->NextBucket(var_index, starting_value_index, next_bucket) :
           SeekBucketForVar(ordered_x_[j], next_bucket);
       if (q == next_bucket) {
         j++;
@@ -713,7 +717,7 @@ class TableCt : public Constraint {
         if (q == kNilBucket) {
           return kNilBucket;
         }
-        q = table_->NextBucket(var_index, ibt, q);
+        q = table_->NextBucket(var_index, starting_value_index, q);
         if (q == kNilBucket) {
           return kNilBucket;
         }
@@ -725,20 +729,21 @@ class TableCt : public Constraint {
   }
 
   BucketIndex SeekBucketContinue(VarIndex var_index,
-                                 TableValueIndex ibt,
+                                 TableValueIndex starting_value_index,
                                  BucketIndex bucket) {
-    // var var_index, ibt IndexFromValue in table, current bucket is bucket
+    // var var_index, starting_value_index IndexFromValue in table,
+    // current bucket is bucket
     BucketIndex next_bucket = bucket;
     VarIndex j = VarIndex(0); // variable index
     while(j < arity_) {
       BucketIndex q = (ordered_x_[j] == var_index) ?
-          table_->NextBucket(var_index, ibt, next_bucket) :
+          table_->NextBucket(var_index, starting_value_index, next_bucket) :
           SeekBucketForVar(ordered_x_[j], next_bucket);
       if (q > next_bucket) {  // a progression occurs
         if (q == kNilBucket) {
           return kNilBucket;
         }
-        q = table_->NextBucket(var_index, ibt, q);
+        q = table_->NextBucket(var_index, starting_value_index, q);
         if (q == kNilBucket) {
           return kNilBucket;
         }
@@ -750,14 +755,15 @@ class TableCt : public Constraint {
   }
 
   BucketIndex SeekBucketInverse(VarIndex var_index,
-                                TableValueIndex ibt,
+                                TableValueIndex starting_value_index,
                                 BucketIndex bucket) {
-    // var var_index, ibt IndexFromValue in table, current bucket is bucket
+    // var var_index, starting_value_index IndexFromValue in table,
+    // current bucket is bucket
     BucketIndex next_bucket = bucket;
     VarIndex j = VarIndex(0); // variable index
     while (j < arity_) {
       BucketIndex q = (ordered_x_[j] == var_index) ?
-          table_->NextBucket(var_index, ibt, next_bucket) :
+          table_->NextBucket(var_index, starting_value_index, next_bucket) :
           SeekBucketForVar(ordered_x_[j], next_bucket);
       if (q == next_bucket) {
         j++;
@@ -765,7 +771,7 @@ class TableCt : public Constraint {
         if (q == kNilBucket) {
           return kNilBucket;
         }
-        q = table_->NextBucket(var_index, ibt, q);
+        q = table_->NextBucket(var_index, starting_value_index, q);
         if (q==kNilBucket) {
           return kNilBucket;
         }
@@ -779,9 +785,10 @@ class TableCt : public Constraint {
   }
 
   BucketIndex SeekBucketOriginal(VarIndex var_index,
-                                 TableValueIndex ibt,
+                                 TableValueIndex starting_value_index,
                                  BucketIndex bucket) {
-    // var var_index, ibt IndexFromValue in table, current bucket is bucket
+    // var var_index, starting_value_index IndexFromValue in table,
+    // current bucket is bucket
     BucketIndex nq = bucket;
     BucketIndex next_bucket;
     VarIndex j = VarIndex(0); // variable index
@@ -789,19 +796,19 @@ class TableCt : public Constraint {
       next_bucket = nq;
       while (j < arity_) {
         const BucketIndex q =(ordered_x_[j] == var_index) ?
-            table_->NextBucket(var_index, ibt, next_bucket) :
+            table_->NextBucket(var_index, starting_value_index, next_bucket) :
             SeekBucketForVar(ordered_x_[j], next_bucket);
         if (q == kNilBucket) {
           return kNilBucket;
         }
         j++;
       }
-      nq = table_->NextBucket(var_index, ibt, next_bucket);
+      nq = table_->NextBucket(var_index, starting_value_index, next_bucket);
     } while (next_bucket < nq);
     return next_bucket;
   }
 
-  // search a support for (x,a)
+  // search a support for (var_index, value_index)
   TupleIndex SeekSupport(VarIndex var_index,
                          VarValueIndex value_index,
                          TupleIndex tuple_index,
