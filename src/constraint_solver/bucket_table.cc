@@ -31,7 +31,8 @@ DEFINE_int32(cp_bucket_table_ordering, 0,
 DEFINE_INT_TYPE(VarIndex, int);
 DEFINE_INT_TYPE(TupleIndex, int);
 DEFINE_INT_TYPE(BucketIndex, int);
-DEFINE_INT_TYPE(DomainValueIndex, int);
+DEFINE_INT_TYPE(TableValueIndex, int);
+DEFINE_INT_TYPE(VarValueIndex, int);
 
 namespace operations_research {
 namespace {
@@ -40,9 +41,9 @@ namespace {
  * Bucketted Tuple Table
  */
 static const TupleIndex kNilTuple = TupleIndex(kint32max);
-static const BucketIndex kNilBucket = BucketIndex(kint32max - 1);
-static const DomainValueIndex kNilDomainValue = DomainValueIndex(kint32max - 2);
-#define TABLE_MAP_NIL kint32max-2
+static const BucketIndex kNilBucket = BucketIndex(kint32max);
+static const TableValueIndex kNilTableValue = TableValueIndex(kint32max);
+static const VarValueIndex kNilVarValue = VarValueIndex(kint32max);
 
 class BtTable;
 class TableCt;
@@ -70,8 +71,8 @@ class Domain {
 
   ~Domain() {}
 
-  int size() const {
-    return values_.size();
+  TableValueIndex size() const {
+    return TableValueIndex(values_.size());
   }
 
   void AddValue(const int64 val) {
@@ -82,7 +83,7 @@ class Domain {
     }
   }
 
-  void LinkBuckets(const int value_index,
+  void LinkBuckets(TableValueIndex value_index,
                    BucketIndex bucket_index,
                    TupleIndex tuple_index) {
     if (values_[value_index].first_tuple_in_bucket[bucket_index] ==
@@ -110,36 +111,38 @@ class Domain {
     return map_.Contains(value);
   }
 
-  int IndexFromValue(int64 value) const {
+  TableValueIndex IndexFromValue(int64 value) const {
     return map_.Index(value);
   }
 
-  int64 ValueFromIndex(int index) const {
+  int64 ValueFromIndex(TableValueIndex index) const {
     return map_.Element(index);
   }
 
-  BucketIndex NextBucket(int value_index, BucketIndex bucket) const {
+  BucketIndex NextBucket(TableValueIndex value_index,
+                         BucketIndex bucket) const {
     return values_[value_index].next_bucket[bucket];
   }
 
-  TupleIndex FirstTupleInext_bucket(int value_index, BucketIndex bucket) const {
+  TupleIndex FirstTupleInext_bucket(TableValueIndex value_index,
+                                    BucketIndex bucket) const {
     return values_[value_index].first_tuple_in_bucket[bucket];
   }
 
-  TupleIndex LastTupleIndex(int value_index) const {
+  TupleIndex LastTupleIndex(TableValueIndex value_index) const {
     return last_tuple_index_[value_index];
   }
 
-  void SetLastTupleIndex(int value_index, TupleIndex tuple_index) {
+  void SetLastTupleIndex(TableValueIndex value_index, TupleIndex tuple_index) {
     last_tuple_index_[value_index] = tuple_index;
   }
 
  private:
-  VectorMap<int64> map_;
-  std::vector<Value> values_;
+  TypedVectorMap<TableValueIndex, int64> map_;
+  ITIVector<TableValueIndex, Value> values_;
   // Temporary array containing for each value its last tuple index:
   // this improves the creation of next pointers.
-  std::vector<TupleIndex> last_tuple_index_;
+  ITIVector<TableValueIndex, TupleIndex> last_tuple_index_;
   const BucketIndex num_buckets_;
 };  // Domain
 
@@ -151,7 +154,7 @@ class BtTable {
       next_at_position(arity.value(), kNilTuple) {}
 
     // Indices of the values in the tuple.
-    ITIVector<VarIndex, int> value_indices;
+    ITIVector<VarIndex, TableValueIndex> value_indices;
     // For each indice (i.e. var) i, it returns the index of the next
     // tuple containing the value at the position i.
     ITIVector<VarIndex, TupleIndex> next_at_position;
@@ -170,7 +173,7 @@ class BtTable {
     return BucketIndex(tuple_index.value() / size_of_bucket_);
   }
 
-  int domain_size(VarIndex var_index) const {
+  TableValueIndex domain_size(VarIndex var_index) const {
     return domains_[var_index].size();
   }
 
@@ -178,22 +181,22 @@ class BtTable {
     return domains_[var_index].Contains(val);
   }
 
-  int index_from_value(VarIndex var_index, const int64 val) const {
+  TableValueIndex index_from_value(VarIndex var_index, const int64 val) const {
     return domains_[var_index].IndexFromValue(val);
   }
 
-  int64 value(VarIndex var_index, const int value_index_in_table) const {
+  int64 value(VarIndex var_index, TableValueIndex value_index_in_table) const {
     return domains_[var_index].ValueFromIndex(value_index_in_table);
   }
 
   BucketIndex next_bucket(VarIndex var_index,
-                          const int value_index,
+                          TableValueIndex value_index,
                           BucketIndex bucket) const {
     return domains_[var_index].NextBucket(value_index, bucket);
   }
 
   TupleIndex first_ituple_in_bucket(VarIndex var_index,
-                                    const int value_index,
+                                    TableValueIndex value_index,
                                     BucketIndex bucket_index) const {
     return domains_[var_index].FirstTupleInext_bucket(value_index,
                                                       bucket_index);
@@ -203,8 +206,8 @@ class BtTable {
     return TupleIndex((bucket.value() + 1) * size_of_bucket_ - 1);
   }
 
-  int tuple_index_from_value(TupleIndex tuple_index,
-                             VarIndex var_index) const {
+  TableValueIndex tuple_index_from_value(TupleIndex tuple_index,
+                                         VarIndex var_index) const {
     return tuples_[tuple_index].value_indices[var_index];
   }
 
@@ -234,7 +237,8 @@ class BtTable {
       if (!domains_[i].Contains(values[i.value()])) {
         domains_[i].AddValue(values[i.value()]);
       }
-      const int value_index = domains_[i].IndexFromValue(values[i.value()]);
+      const TableValueIndex value_index =
+          domains_[i].IndexFromValue(values[i.value()]);
       const TupleIndex last_tuple_index =
           domains_[i].LastTupleIndex(value_index);
       if (last_tuple_index != kNilTuple) {
@@ -275,7 +279,7 @@ class TableCtRestoreSupportAction : public Action {
  public:
   TableCtRestoreSupportAction(TableCt* ct,
                               VarIndex var_index,
-                              int value_index,
+                              VarValueIndex value_index,
                               TupleIndex support)
       : ct_(ct),
         var_index_(var_index),
@@ -289,14 +293,17 @@ class TableCtRestoreSupportAction : public Action {
  private:
   TableCt* const ct_;
   VarIndex var_index_;
-  const int value_index_;
+  const VarValueIndex value_index_;
   const TupleIndex supporting_tuple_index_;
 };
 
 class TableVar {
  public:
   struct Value {
-    Value(Solver* solver, VarIndex var_index, int value_index, VarIndex n)
+    Value(Solver* solver,
+          VarIndex var_index,
+          VarValueIndex value_index,
+          VarIndex n)
         : prev_support_tuple(n.value()),
           next_support_tuple(n.value()),
           first_supported_tuple(NULL),
@@ -316,8 +323,8 @@ class TableVar {
     int64 stamp;
     // support tuple: i.e. tuple index
     TupleIndex supporting_tuple_index;
-    VarIndex var_index;
-    const int value_index;
+    const VarIndex var_index;
+    const VarValueIndex value_index;
     RevSwitch deleted;
   };  // Value
 
@@ -329,8 +336,8 @@ class TableVar {
         domain_iterator_(var->MakeDomainIterator(true)),
         delta_domain_iterator_(var->MakeHoleIterator(true)),
         var_(var),
-        x_to_table_(var->Size(), TABLE_MAP_NIL),
-        table_to_x_(table->domain_size(var_index), TABLE_MAP_NIL) {}
+        x_to_table_(var->Size(), kNilTableValue),
+        table_to_x_(table->domain_size(var_index).value(), kNilVarValue) {}
 
   ~TableVar() {
     // Delete all elements of a vector (the null are managed).
@@ -344,12 +351,13 @@ class TableVar {
     // We do not create an instance of Value if the value does not
     // belong to the BtTable.
     IntVarIterator* const it = domain_iterator_;
-    int value_index = 0;
+    VarValueIndex value_index = VarValueIndex(0);
     for(it->Init(); it->Ok(); it->Next()) {
       const int64 val = it->Value();
       map_.Add(val);
-      const int value_index_in_table = table->index_from_value(var_index, val);
-      if (value_index_in_table == TABLE_MAP_NIL) {
+      const TableValueIndex value_index_in_table =
+          table->index_from_value(var_index, val);
+      if (value_index_in_table == kNilTableValue) {
         //does not belong to BtTable
         values_[value_index] = NULL;
       } else {
@@ -368,11 +376,12 @@ class TableVar {
     return domain_iterator_;
   }
 
-  int index_value_of_x_in_table(int value_index) const {
+  TableValueIndex index_value_of_x_in_table(VarValueIndex value_index) const {
     return x_to_table_[value_index];
   }
 
-  int index_value_of_table_in_x(int value_index_in_table) const {
+  VarValueIndex index_value_of_table_in_x(
+      TableValueIndex value_index_in_table) const {
     return table_to_x_[value_index_in_table];
   }
 
@@ -384,19 +393,19 @@ class TableVar {
     return var_;
   }
 
-  int IndexFromValue(int64 value) const {
+  VarValueIndex IndexFromValue(int64 value) const {
     return map_.Index(value);
   }
 
-  int64 ValueFromIndex(int index) const {
+  int64 ValueFromIndex(VarValueIndex index) const {
     return map_.Element(index);
   }
 
-  TupleIndex SupportingTupleIndex(int value_index) const {
+  TupleIndex SupportingTupleIndex(VarValueIndex value_index) const {
     return values_[value_index]->supporting_tuple_index;
   }
 
-  Value* value(int value_index) const {
+  Value* value(VarValueIndex value_index) const {
     return values_[value_index];
   }
 
@@ -406,15 +415,15 @@ class TableVar {
 
  private:
   // Association with the BtTable.
-  VectorMap<int64> map_;
+  TypedVectorMap<VarValueIndex, int64> map_;
   // Correspondance between an index of the value of the variable
   // and the index of the value in the BtTable,
-  std::vector<int> x_to_table_;
+  ITIVector<VarValueIndex, TableValueIndex> x_to_table_;
   // Correspondance between an index of the value of BtTable and the
   // index of the value of the variable.
-  std::vector<int> table_to_x_;
+  ITIVector<TableValueIndex, VarValueIndex> table_to_x_;
 
-  std::vector<Value*> values_;
+  ITIVector<VarValueIndex, Value*> values_;
   IntVarIterator* domain_iterator_;
   IntVarIterator* delta_domain_iterator_;
   IntVar* var_;
@@ -443,7 +452,6 @@ class TableCt : public Constraint {
         conflicts_(table->num_vars().value(),0),
         vars_(table->num_vars().value()),
         arity_(table->num_vars().value()),
-        count_valid_(0),
         ordering_(ord),
         type_(type) {
     const VarIndex arity = table->num_vars();
@@ -511,18 +519,20 @@ class TableCt : public Constraint {
 
   // Seek functions
   BucketIndex SeekBucketForVar(VarIndex var_index, BucketIndex bucket) {
-    // we search for the value having the smallest next_bucket value from bucket
+    // we search for the value having the smallest next_bucket value
+    // from bucket
 
     // min_bucket is the smallest value over the domains
     BucketIndex min_bucket = BucketIndex(kint32max);
     IntVarIterator* const it = vars_[var_index]->domain_iterator();
     for(it->Init(); it->Ok(); it->Next()) { // We traverse the domain of var.
       const int64 val = it->Value();
-      const int value_index = vars_[var_index]->IndexFromValue(val);
+      const VarValueIndex value_index =
+          vars_[var_index]->IndexFromValue(val);
       // there is no valid bucket before the supporting one
       const BucketIndex supportBucket =
           table_->bucket(vars_[var_index]->SupportingTupleIndex(value_index));
-      const int value_index_in_table =
+      const TableValueIndex value_index_in_table =
           vars_[var_index]->index_value_of_x_in_table(value_index);
       const BucketIndex next_bucket = table_->next_bucket(var_index,
                                                           value_index_in_table,
@@ -543,9 +553,9 @@ class TableCt : public Constraint {
 
   void AddToListSc(TableVar::Value* const var_value, TupleIndex tuple_index) {
     for(VarIndex i = VarIndex(0); i < arity_; ++i) {
-      const int value_index_in_table =
+      const TableValueIndex value_index_in_table =
           table_->tuple_index_from_value(tuple_index, i);
-      const int value_index =
+      const VarValueIndex value_index =
           vars_[i]->index_value_of_table_in_x(value_index_in_table);
       TableVar::Value* const var_value_i = vars_[i]->value(value_index);
       TableVar::Value* const ifirst = var_value_i->first_supported_tuple;
@@ -572,10 +582,10 @@ class TableCt : public Constraint {
         previous_var_value->next_support_tuple[i] =
             var_value->next_support_tuple[i];
       } else {  // var_value is the first in the listSC of the value of var i
-        const int value_index_in_table_i =
+        const TableValueIndex value_index_in_table_i =
             table_->tuple_index_from_value(
                 var_value->supporting_tuple_index, i);
-        const int value_index =
+        const VarValueIndex value_index =
             vars_[i]->index_value_of_table_in_x(value_index_in_table_i);
         vars_[i]->value(value_index)->first_supported_tuple =
             var_value->next_support_tuple[i];
@@ -590,7 +600,7 @@ class TableCt : public Constraint {
     var_value->supporting_tuple_index = kNilTuple;
   }
 
-  void SaveSupport(VarIndex var_index, int value_index) {
+  void SaveSupport(VarIndex var_index, VarValueIndex value_index) {
     TableVar::Value* const var_value = vars_[var_index]->value(value_index);
     if (var_value->stamp < solver()->stamp()) {
       TupleIndex tuple_index = var_value->supporting_tuple_index;
@@ -604,7 +614,7 @@ class TableCt : public Constraint {
   }
 
   void RestoreSupport(VarIndex var_index,
-                      int value_index,
+                      VarValueIndex value_index,
                       TupleIndex tuple_index) {
     TableVar::Value* const var_value = vars_[var_index]->value(value_index);
     if (var_value->supporting_tuple_index != kNilTuple) {
@@ -619,11 +629,12 @@ class TableCt : public Constraint {
     for(it->Init(); it->Ok(); it->Next()) { // We traverse the domain of x
       const int64 val = it->Value();
       // index of value in the domain of var
-      const int value_index = vars_[var_index]->IndexFromValue(val);
-      const int value_index_in_table =
+      const VarValueIndex value_index =
+          vars_[var_index]->IndexFromValue(val);
+      const TableValueIndex value_index_in_table =
           vars_[var_index]->index_value_of_x_in_table(value_index);
       // the value is also in the table
-      if (value_index_in_table != TABLE_MAP_NIL) {
+      if (value_index_in_table != kNilTableValue) {
         // we look at the value of next_bucket of 0 then we take the
         // first tuple in bucket
         TupleIndex tuple_index =
@@ -649,12 +660,7 @@ class TableCt : public Constraint {
     }
   }
 
-  int count_valid() const {
-    return count_valid_;
-  }
-
-  int IsTupleValid(TupleIndex t) {
-    count_valid_++;
+  bool IsTupleValid(TupleIndex t) {
     for(VarIndex i = VarIndex(0); i < arity_; ++i) {
       const int64 val = table_->value(i, table_->tuple_index_from_value(t, i));
       if (!vars_[i]->in_domain(val)) {
@@ -681,7 +687,7 @@ class TableCt : public Constraint {
   }
 
   BucketIndex SeekBucket(VarIndex var_index,
-                         int ibt,
+                         TableValueIndex ibt,
                          BucketIndex bucket,
                          Type type) {
     if (bucket >= table_->num_buckets()) {
@@ -698,7 +704,7 @@ class TableCt : public Constraint {
   }
 
   BucketIndex SeekBucketRestart(VarIndex var_index,
-                                const int ibt,
+                                TableValueIndex ibt,
                                 BucketIndex bucket) {
     BucketIndex next_bucket = bucket;
     VarIndex j = VarIndex(0); // variable index
@@ -725,7 +731,7 @@ class TableCt : public Constraint {
   }
 
   BucketIndex SeekBucketContinue(VarIndex var_index,
-                                 const int ibt,
+                                 TableValueIndex ibt,
                                  BucketIndex bucket) {
     // var var_index, ibt index_from_value in table, current bucket is bucket
     BucketIndex next_bucket = bucket;
@@ -750,7 +756,7 @@ class TableCt : public Constraint {
   }
 
   BucketIndex SeekBucketInverse(VarIndex var_index,
-                                int ibt,
+                                TableValueIndex ibt,
                                 BucketIndex bucket) {
     // var var_index, ibt index_from_value in table, current bucket is bucket
     BucketIndex next_bucket = bucket;
@@ -778,9 +784,9 @@ class TableCt : public Constraint {
     return next_bucket;
   }
 
-BucketIndex SeekBucketOriginal(VarIndex var_index,
-                               const int ibt,
-                               BucketIndex bucket) {
+  BucketIndex SeekBucketOriginal(VarIndex var_index,
+                                 TableValueIndex ibt,
+                                 BucketIndex bucket) {
     // var var_index, ibt index_from_value in table, current bucket is bucket
     BucketIndex nq = bucket;
     BucketIndex next_bucket;
@@ -803,10 +809,10 @@ BucketIndex SeekBucketOriginal(VarIndex var_index,
 
   // search a support for (x,a)
   TupleIndex SeekSupport(VarIndex var_index,
-                         int value_index,
+                         VarValueIndex value_index,
                          TupleIndex tuple_index,
                          Type type) {
-    const int value_index_in_table =
+    const TableValueIndex value_index_in_table =
         vars_[var_index]->index_value_of_x_in_table(value_index);
     TupleIndex current_tuple = tuple_index;
     while (current_tuple != kNilTuple) {
@@ -817,7 +823,7 @@ BucketIndex SeekBucketOriginal(VarIndex var_index,
       const BucketIndex bucket = SeekBucket(var_index,
                                             value_index_in_table,
                                             table_->bucket(current_tuple) + 1,
-                                    type);
+                                            type);
       if (bucket == kNilBucket) {
         break;
       }
@@ -840,7 +846,7 @@ BucketIndex SeekBucketOriginal(VarIndex var_index,
       RemoveFromListSc(support_value);
       // we check if support_value is valid
       VarIndex var_index = support_value->var_index;
-      const int value_index = support_value->value_index;
+      const VarValueIndex value_index = support_value->value_index;
       const int64 value = vars_[var_index]->ValueFromIndex(value_index);
       if (vars_[var_index]->in_domain(value)) {
         // support_value is valid. A new support must be sought
@@ -886,8 +892,8 @@ BucketIndex SeekBucketOriginal(VarIndex var_index,
     const int64 oldmindomain = var->OldMin();
     const int64 mindomain = var->Min();
     for(int64 val = oldmindomain; val < mindomain; ++val) {
-      const int value_index = xv->IndexFromValue(val);
-      const int value_index_in_table =
+      const VarValueIndex value_index = xv->IndexFromValue(val);
+      const TableValueIndex value_index_in_table =
           xv->index_value_of_x_in_table(value_index);
       if (value_index_in_table != -1) {
         // the index is in the TableVar::Value array
@@ -903,8 +909,8 @@ BucketIndex SeekBucketOriginal(VarIndex var_index,
     IntVarIterator* const it = xv->DeltaDomainIterator();
     for(it->Init(); it->Ok(); it->Next()) {
       int64 val = it->Value();
-      const int value_index = xv->IndexFromValue(val);
-      const int value_index_in_table =
+      const VarValueIndex value_index = xv->IndexFromValue(val);
+      const TableValueIndex value_index_in_table =
           xv->index_value_of_x_in_table(value_index);
       if (value_index_in_table != -1) {
         // the index is in the TableVar::Value array
@@ -917,8 +923,8 @@ BucketIndex SeekBucketOriginal(VarIndex var_index,
     const int64 oldmaxdomain = var->OldMax();
     const int64 maxdomain = var->Max();
     for(int64 val = maxdomain + 1; val <= oldmaxdomain; ++val) {
-      const int value_index = xv->IndexFromValue(val);
-      const int value_index_in_table =
+      const VarValueIndex value_index = xv->IndexFromValue(val);
+      const TableValueIndex value_index_in_table =
           xv->index_value_of_x_in_table(value_index);
       if (value_index_in_table != -1) {
         // the index is in the TableVar::Value array
@@ -942,7 +948,6 @@ BucketIndex SeekBucketOriginal(VarIndex var_index,
   // variable of the constraint
   ITIVector<VarIndex, TableVar*> vars_;
   const VarIndex arity_; // number of variables
-  int count_valid_;
   const Ordering ordering_;
   const Type type_;
 };
