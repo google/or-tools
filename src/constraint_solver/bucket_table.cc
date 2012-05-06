@@ -31,6 +31,7 @@ DEFINE_int32(cp_bucket_table_ordering, 0,
 DEFINE_INT_TYPE(VarIndex, int);
 DEFINE_INT_TYPE(TupleIndex, int);
 DEFINE_INT_TYPE(BucketIndex, int);
+DEFINE_INT_TYPE(DomainValueIndex, int);
 
 namespace operations_research {
 namespace {
@@ -40,33 +41,32 @@ namespace {
  */
 static const TupleIndex kNilTuple = TupleIndex(kint32max);
 static const BucketIndex kNilBucket = BucketIndex(kint32max - 1);
-#define TABLE_BUCKET_NIL kint32max-1
+static const DomainValueIndex kNilDomainValue = DomainValueIndex(kint32max - 2);
 #define TABLE_MAP_NIL kint32max-2
 
 class BtTable;
 class TableCt;
-
 
 // Abstract domain of a variable containing abstract values.
 class Domain {
  public:
   // Abstract value containing links between tuples.
   struct Value {
-    Value(const int num_buckets)
-    : first_tuple_in_bucket(num_buckets, kNilTuple),
-      next_bucket(num_buckets, TABLE_BUCKET_NIL) {}
+    Value(BucketIndex num_buckets)
+    : first_tuple_in_bucket(num_buckets.value(), kNilTuple),
+      next_bucket(num_buckets.value(), kNilBucket) {}
 
     // Returns the index of the first tuple containing the involved
     // value in the given bucket
-    std::vector<TupleIndex> first_tuple_in_bucket;
+    ITIVector<BucketIndex, TupleIndex> first_tuple_in_bucket;
     // Returns the index of the first bucket following the given
     // bucket and containing a tuple involving the value.
-    std::vector<int> next_bucket;
+    ITIVector<BucketIndex, BucketIndex> next_bucket;
     // ATTENTION if the bucket b contains such a tuple then
     // next_bucket_[b] returns b
   };  // Value
 
-  Domain(const int num_buckets) : num_buckets_(num_buckets) {}
+  Domain(BucketIndex num_buckets) : num_buckets_(num_buckets) {}
 
   ~Domain() {}
 
@@ -83,7 +83,7 @@ class Domain {
   }
 
   void LinkBuckets(const int value_index,
-                   const int bucket_index,
+                   BucketIndex bucket_index,
                    TupleIndex tuple_index) {
     if (values_[value_index].first_tuple_in_bucket[bucket_index] ==
         kNilTuple) {
@@ -96,8 +96,8 @@ class Domain {
       // containing the value.
       values_[value_index].next_bucket[bucket_index] = bucket_index;
       // The previous next_buckets are updated.
-      for(int b = bucket_index - 1; b >= 0; --b) {
-        if (values_[value_index].next_bucket[b] == TABLE_BUCKET_NIL) {
+      for(BucketIndex b = bucket_index - 1; b >= 0; --b) {
+        if (values_[value_index].next_bucket[b] == kNilBucket) {
           values_[value_index].next_bucket[b] = bucket_index;
         } else {
           break;
@@ -118,11 +118,11 @@ class Domain {
     return map_.Element(index);
   }
 
-  int NextBucket(int value_index, int bucket) const {
+  BucketIndex NextBucket(int value_index, BucketIndex bucket) const {
     return values_[value_index].next_bucket[bucket];
   }
 
-  TupleIndex FirstTupleInext_bucket(int value_index, int bucket) const {
+  TupleIndex FirstTupleInext_bucket(int value_index, BucketIndex bucket) const {
     return values_[value_index].first_tuple_in_bucket[bucket];
   }
 
@@ -140,7 +140,7 @@ class Domain {
   // Temporary array containing for each value its last tuple index:
   // this improves the creation of next pointers.
   std::vector<TupleIndex> last_tuple_index_;
-  const int num_buckets_;
+  const BucketIndex num_buckets_;
 };  // Domain
 
 class BtTable {
@@ -157,16 +157,17 @@ class BtTable {
     ITIVector<VarIndex, TupleIndex> next_at_position;
   };  // Tuple
 
-  BtTable(VarIndex arity, int num_tuples, int size_bucket)
-      : domains_(arity.value(), Domain(num_tuples / size_bucket + 1)),
+  BtTable(VarIndex arity, int num_tuples, int size_of_bucket)
+      : domains_(arity.value(),
+                 Domain(BucketIndex(num_tuples / size_of_bucket + 1))),
         arity_(arity),
-        size_of_bucket_(size_bucket) {
+        size_of_bucket_(size_of_bucket) {
   }
 
   ~BtTable() {}
 
-  int bucket(TupleIndex tuple_index) const {
-    return tuple_index.value() / size_of_bucket_;
+  BucketIndex bucket(TupleIndex tuple_index) const {
+    return BucketIndex(tuple_index.value() / size_of_bucket_);
   }
 
   int domain_size(VarIndex var_index) const {
@@ -185,20 +186,21 @@ class BtTable {
     return domains_[var_index].ValueFromIndex(value_index_in_table);
   }
 
-  int next_bucket(VarIndex var_index,
-                  const int value_index,
-                  const int bucket) const {
+  BucketIndex next_bucket(VarIndex var_index,
+                          const int value_index,
+                          BucketIndex bucket) const {
     return domains_[var_index].NextBucket(value_index, bucket);
   }
 
   TupleIndex first_ituple_in_bucket(VarIndex var_index,
                                     const int value_index,
-                                    const int b) const {
-    return domains_[var_index].FirstTupleInext_bucket(value_index, b);
+                                    BucketIndex bucket_index) const {
+    return domains_[var_index].FirstTupleInext_bucket(value_index,
+                                                      bucket_index);
   }
 
-  TupleIndex last_ituple_in_bucket(const int bucket) {
-    return TupleIndex((bucket + 1) * size_of_bucket_ - 1);
+  TupleIndex last_ituple_in_bucket(BucketIndex bucket) {
+    return TupleIndex((bucket.value() + 1) * size_of_bucket_ - 1);
   }
 
   int tuple_index_from_value(TupleIndex tuple_index,
@@ -218,8 +220,8 @@ class BtTable {
     return arity_;
   }
 
-  int num_buckets() const {
-    return (tuples_.size() / size_of_bucket_ + 1);
+  BucketIndex num_buckets() const {
+    return BucketIndex(tuples_.size() / size_of_bucket_ + 1);
   }
 
   // Adds the tuple in parameters.
@@ -508,24 +510,27 @@ class TableCt : public Constraint {
   }
 
   // Seek functions
-  int SeekBucketForVar(VarIndex var_index, const int bucket) {
+  BucketIndex SeekBucketForVar(VarIndex var_index, BucketIndex bucket) {
     // we search for the value having the smallest next_bucket value from bucket
 
     // min_bucket is the smallest value over the domains
-    int min_bucket = kint32max;
+    BucketIndex min_bucket = BucketIndex(kint32max);
     IntVarIterator* const it = vars_[var_index]->domain_iterator();
     for(it->Init(); it->Ok(); it->Next()) { // We traverse the domain of var.
       const int64 val = it->Value();
       const int value_index = vars_[var_index]->IndexFromValue(val);
       // there is no valid bucket before the supporting one
-      const int supportBucket =
+      const BucketIndex supportBucket =
           table_->bucket(vars_[var_index]->SupportingTupleIndex(value_index));
       const int value_index_in_table =
           vars_[var_index]->index_value_of_x_in_table(value_index);
-      const int next_bucket = table_->next_bucket(var_index,
-                                                  value_index_in_table,
-                                                  bucket);
-      const int q = (supportBucket > next_bucket) ? supportBucket : next_bucket;
+      const BucketIndex next_bucket = table_->next_bucket(var_index,
+                                                          value_index_in_table,
+                                                          bucket);
+      const BucketIndex q =
+          (supportBucket > next_bucket) ?
+          supportBucket :
+          next_bucket;
       if (q == bucket) {
         return bucket; // we immediately returns bucket
       }
@@ -628,7 +633,7 @@ class TableCt : public Constraint {
                 table_->next_bucket(
                     var_index,
                     value_index_in_table,
-                    0));
+                    BucketIndex(0)));
         vars_[var_index]->value(value_index)->supporting_tuple_index =
             tuple_index;
         AddToListSc(vars_[var_index]->value(value_index), tuple_index);
@@ -675,9 +680,12 @@ class TableCt : public Constraint {
     return kNilTuple;
   }
 
-  int SeekBucket(VarIndex var_index, int ibt, int bucket, Type type) {
+  BucketIndex SeekBucket(VarIndex var_index,
+                         int ibt,
+                         BucketIndex bucket,
+                         Type type) {
     if (bucket >= table_->num_buckets()) {
-      return TABLE_BUCKET_NIL;
+      return kNilBucket;
     }
     // we select the desired algorithm
     switch(type) {
@@ -686,26 +694,28 @@ class TableCt : public Constraint {
       case TABLECT_INVERSE : return SeekBucketInverse(var_index, ibt, bucket);
       case TABLECT_ORIGINAL : return SeekBucketOriginal(var_index, ibt, bucket);
     };
-    return TABLE_BUCKET_NIL;
+    return kNilBucket;
   }
 
-  int SeekBucketRestart(VarIndex var_index, const int ibt, const int bucket) {
-    int next_bucket = bucket;
+  BucketIndex SeekBucketRestart(VarIndex var_index,
+                                const int ibt,
+                                BucketIndex bucket) {
+    BucketIndex next_bucket = bucket;
     VarIndex j = VarIndex(0); // variable index
     while(j < arity_) {
-      int q = (ordered_x_[j] == var_index) ?
+      BucketIndex q = (ordered_x_[j] == var_index) ?
           table_->next_bucket(var_index, ibt, next_bucket) :
           SeekBucketForVar(ordered_x_[j], next_bucket);
       if (q == next_bucket) {
         j++;
       }  else {// a progression occurs
         conflicts_[ordered_x_[j]]++;
-        if (q == TABLE_BUCKET_NIL) {
-          return TABLE_BUCKET_NIL;
+        if (q == kNilBucket) {
+          return kNilBucket;
         }
         q = table_->next_bucket(var_index, ibt, q);
-        if (q == TABLE_BUCKET_NIL) {
-          return TABLE_BUCKET_NIL;
+        if (q == kNilBucket) {
+          return kNilBucket;
         }
         next_bucket = q;
         j = 0;
@@ -714,21 +724,23 @@ class TableCt : public Constraint {
     return next_bucket;
   }
 
-  int SeekBucketContinue(VarIndex var_index, const int ibt, const int bucket) {
+  BucketIndex SeekBucketContinue(VarIndex var_index,
+                                 const int ibt,
+                                 BucketIndex bucket) {
     // var var_index, ibt index_from_value in table, current bucket is bucket
-    int next_bucket = bucket;
+    BucketIndex next_bucket = bucket;
     VarIndex j = VarIndex(0); // variable index
     while(j < arity_) {
-      int q = (ordered_x_[j] == var_index) ?
+      BucketIndex q = (ordered_x_[j] == var_index) ?
           table_->next_bucket(var_index, ibt, next_bucket) :
           SeekBucketForVar(ordered_x_[j], next_bucket);
       if (q > next_bucket) {  // a progression occurs
-        if (q == TABLE_BUCKET_NIL) {
-          return TABLE_BUCKET_NIL;
+        if (q == kNilBucket) {
+          return kNilBucket;
         }
         q = table_->next_bucket(var_index, ibt, q);
-        if (q == TABLE_BUCKET_NIL) {
-          return TABLE_BUCKET_NIL;
+        if (q == kNilBucket) {
+          return kNilBucket;
         }
         next_bucket = q;
       }
@@ -737,23 +749,25 @@ class TableCt : public Constraint {
     return next_bucket;
   }
 
-  int SeekBucketInverse(VarIndex var_index, int ibt, int bucket) {
+  BucketIndex SeekBucketInverse(VarIndex var_index,
+                                int ibt,
+                                BucketIndex bucket) {
     // var var_index, ibt index_from_value in table, current bucket is bucket
-    int next_bucket = bucket;
+    BucketIndex next_bucket = bucket;
     VarIndex j = VarIndex(0); // variable index
-    while(j < arity_) {
-      int q = (ordered_x_[j] == var_index) ?
+    while (j < arity_) {
+      BucketIndex q = (ordered_x_[j] == var_index) ?
           table_->next_bucket(var_index, ibt, next_bucket) :
           SeekBucketForVar(ordered_x_[j], next_bucket);
       if (q == next_bucket) {
         j++;
       }  else {  // a progression occurs
-        if (q == TABLE_BUCKET_NIL) {
-          return TABLE_BUCKET_NIL;
+        if (q == kNilBucket) {
+          return kNilBucket;
         }
         q = table_->next_bucket(var_index, ibt, q);
-        if (q==TABLE_BUCKET_NIL) {
-          return TABLE_BUCKET_NIL;
+        if (q==kNilBucket) {
+          return kNilBucket;
         }
         next_bucket = q;
         if (j > 0) {
@@ -764,19 +778,21 @@ class TableCt : public Constraint {
     return next_bucket;
   }
 
-  int SeekBucketOriginal(VarIndex var_index, const int ibt, const int bucket) {
+BucketIndex SeekBucketOriginal(VarIndex var_index,
+                               const int ibt,
+                               BucketIndex bucket) {
     // var var_index, ibt index_from_value in table, current bucket is bucket
-    int nq = bucket;
-    int next_bucket;
+    BucketIndex nq = bucket;
+    BucketIndex next_bucket;
     VarIndex j = VarIndex(0); // variable index
     do {
       next_bucket = nq;
-      while(j < arity_) {
-        const int q =(ordered_x_[j] == var_index) ?
+      while (j < arity_) {
+        const BucketIndex q =(ordered_x_[j] == var_index) ?
             table_->next_bucket(var_index, ibt, next_bucket) :
             SeekBucketForVar(ordered_x_[j], next_bucket);
-        if (q == TABLE_BUCKET_NIL) {
-          return TABLE_BUCKET_NIL;
+        if (q == kNilBucket) {
+          return kNilBucket;
         }
         j++;
       }
@@ -798,11 +814,11 @@ class TableCt : public Constraint {
       if (next_tuple != kNilTuple) {
         return next_tuple;
       }
-      const int bucket = SeekBucket(var_index,
-                                    value_index_in_table,
-                                    table_->bucket(current_tuple) + 1,
+      const BucketIndex bucket = SeekBucket(var_index,
+                                            value_index_in_table,
+                                            table_->bucket(current_tuple) + 1,
                                     type);
-      if (bucket == TABLE_BUCKET_NIL) {
+      if (bucket == kNilBucket) {
         break;
       }
       current_tuple = table_->first_ituple_in_bucket(var_index,
