@@ -166,7 +166,7 @@ class BtTable {
 
   ~BtTable() {}
 
-  BucketIndex bucket(TupleIndex tuple_index) const {
+  BucketIndex Bucket(TupleIndex tuple_index) const {
     DCHECK_NE(tuple_index, kNilTuple);
     return BucketIndex(tuple_index.value() / size_of_bucket_);
   }
@@ -255,7 +255,7 @@ class BtTable {
         ++tuple_index) {
       for(VarIndex i = VarIndex(0); i < arity_; ++i) {
         domains_[i].LinkBuckets(tuples_[tuple_index].value_indices[i],
-                                bucket(tuple_index),
+                                Bucket(tuple_index),
                                 tuple_index);
       }
     }
@@ -527,7 +527,7 @@ class TableCt : public Constraint {
       const VarValueIndex value_index = vars_[var_index]->IndexFromValue(val);
       // there is no valid bucket before the supporting one
       const BucketIndex support_bucket =
-          table_->bucket(vars_[var_index]->SupportingTupleIndex(value_index));
+          table_->Bucket(vars_[var_index]->SupportingTupleIndex(value_index));
       const TableValueIndex table_value_index =
           vars_[var_index]->VarIndexToTableIndex(value_index);
       const BucketIndex next_bucket =
@@ -667,7 +667,7 @@ class TableCt : public Constraint {
   TupleIndex SeekSupportInBucket(VarIndex var_index, TupleIndex tuple_index) {
     DCHECK(!IsTupleValid(tuple_index));
     const TupleIndex last_tuple_index =
-        table_->LastTupleInBucket(table_->bucket(tuple_index));
+        table_->LastTupleInBucket(table_->Bucket(tuple_index));
     for(TupleIndex next_tuple_index =
             table_->NextTupleFromPosition(tuple_index, var_index);
         next_tuple_index <= last_tuple_index && next_tuple_index != kNilTuple;
@@ -816,7 +816,7 @@ class TableCt : public Constraint {
       }
       const BucketIndex bucket = SeekBucket(var_index,
                                             table_value_index,
-                                            table_->bucket(current_tuple) + 1,
+                                            table_->Bucket(current_tuple) + 1,
                                             type);
       if (bucket == kNilBucket) {
         break;
