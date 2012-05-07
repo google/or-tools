@@ -176,9 +176,10 @@ template <class T> int IntTupleSet::Data::Insert(const std::vector<T>& tuple) {
   DCHECK_EQ(1, num_owners_);
   if (!Contains(tuple)) {
     const int index = NumTuples();
-    flat_tuples_.reserve(flat_tuples_.size() + arity_);
+    const int offset = flat_tuples_.size();
+    flat_tuples_.resize(offset + arity_);
     for (int i = 0; i < arity_; ++i) {
-      flat_tuples_.push_back(tuple[i]);
+      flat_tuples_[offset + i] = tuple[i];
     }
     const int64 fingerprint = Fingerprint(tuple);
     tuple_fprint_to_index_[fingerprint].push_back(index);
