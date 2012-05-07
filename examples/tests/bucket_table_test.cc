@@ -19,6 +19,11 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/constraint_solver.h"
 
+DEFINE_int32(arity, 3, "Arity of tuples");
+DEFINE_int32(upper, 10, "Upper bound of variables, lower is always 0");
+DEFINE_int32(tuples, 1000, "Number of tuples");
+DEFINE_int32(bucket, 64, "Size of buckets");
+
 namespace operations_research {
 // Enums.
 #define TABLECT_RESTART 0
@@ -40,8 +45,8 @@ void RandomFillTable(int num_tuples,
 
   for(int t = 0; t < num_tuples; ++t){
     for(int i = 0; i < tuples->Arity(); i++){
-      int64 rnumber=rgen.Next64(); // generates a 64bits number
-      vals[i] = (rnumber % (upper - lower+1)) + lower;
+      int64 rnumber = rgen.Next64(); // generates a 64bits number
+      vals[i] = (rnumber % (upper - lower + 1)) + lower;
     }
     tuples->Insert(vals);
   }
@@ -55,16 +60,19 @@ void test_table_in_bk(int n,
   // var array creation
   Solver solver("SolverInBk");
   std::vector<IntVar*> vars;
-  solver.MakeIntVarArray(n,0,upper,&vars);
+  solver.MakeIntVarArray(n, 0, upper, &vars);
 
   IntTupleSet table(n);
 
-  LOG(INFO) << (use_bucket_table ?
-                "Creation of a Bucketed tuple Table with" :
-                "Creation of a Allowed Assignment Table with");
-  LOG(INFO) << "\t" << n <<  " variables";
-  LOG(INFO) << "\t" << upper + 1 <<  " values per domain";
-  LOG(INFO) << "\t" << num_tuples << " tuples";
+  if (use_bucket_table) {
+    LOG(INFO) <<  "Creation of a Bucketed tuple Table ("
+              << size_bucket << ") with :";
+  } else {
+    LOG(INFO) << "Creation of a Allowed Assignment Table with :";
+  }
+  LOG(INFO) << " - " << n <<  " variables";
+  LOG(INFO) << " - " << upper + 1 <<  " values per domain";
+  LOG(INFO) << " - " << num_tuples << " tuples";
 
   RandomFillTable(num_tuples, 0, upper, &table);
 
@@ -77,10 +85,9 @@ void test_table_in_bk(int n,
 
   LOG(INFO) << "The constraint has been added";
 
-  DecisionBuilder* const db =
-      solver.MakePhase(vars,
-                       Solver::CHOOSE_FIRST_UNBOUND,
-                       Solver::ASSIGN_MIN_VALUE);
+  DecisionBuilder* const db = solver.MakePhase(vars,
+                                               Solver::CHOOSE_FIRST_UNBOUND,
+                                               Solver::ASSIGN_MIN_VALUE);
 
   solver.NewSearch(db);
 
@@ -99,24 +106,18 @@ void test_table_in_bk(int n,
 
 
 int main(int argc, char** argv) {
-  int n = (1 < argc) ? atoi(argv[1]) : 3; //10;
-  int upper = (2 < argc) ? atoi(argv[2]) : 3;//10;
-  int num_tuples = (3 < argc) ? atoi(argv[3]) : 15;//500;
-  int size_bucket=(4 < argc) ? atoi(argv[4]) : (upper+1)/2;
+  google::ParseCommandLineFlags(&argc, &argv, true);
 
-  LOG(INFO) << "n: " << n << " num tuples: " << num_tuples
-            << " values from 0 to "
-            << upper << " bucket size: " << size_bucket;
-
-  operations_research::test_table_in_bk(n,
-                                        num_tuples,
-                                        upper,
-                                        size_bucket,
+  operations_research::test_table_in_bk(FLAGS_arity,
+                                        FLAGS_tuples,
+                                        FLAGS_upper,
+                                        FLAGS_bucket,
                                         false);
-  operations_research::test_table_in_bk(n,
-                                        num_tuples,
-                                        upper,
-                                        size_bucket,
+
+  operations_research::test_table_in_bk(FLAGS_arity,
+                                        FLAGS_tuples,
+                                        FLAGS_upper,
+                                        FLAGS_bucket,
                                         true);
   return 0;
 }
