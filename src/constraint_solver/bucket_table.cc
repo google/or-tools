@@ -359,10 +359,8 @@ class TableVar {
         //does not belong to BtTable
         values_[value_index] = NULL;
       } else {
-        values_[value_index] = new Value(solver,
-                                         var_index,
-                                         value_index,
-                                         arity);
+        values_[value_index] =
+            new Value(solver, var_index, value_index, arity);
         var_to_table_[value_index] = table_value_index;
         table_to_var_[table_value_index] = value_index;
       }
@@ -795,7 +793,7 @@ class TableCt : public Constraint {
     do {
       next_bucket = nq;
       while (j < arity_) {
-        const BucketIndex q =(ordered_x_[j] == var_index) ?
+        const BucketIndex q = (ordered_x_[j] == var_index) ?
             table_->NextBucket(var_index, table_value_index, next_bucket) :
             SeekBucketForVar(ordered_x_[j], next_bucket);
         if (q == kNilBucket) {
