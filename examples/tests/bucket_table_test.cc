@@ -25,12 +25,6 @@ DEFINE_int32(tuples, 1000, "Number of tuples");
 DEFINE_int32(bucket, 64, "Size of buckets");
 
 namespace operations_research {
-// Enums.
-#define TABLECT_RESTART 0
-#define TABLECT_CONTINUE 1
-#define TABLECT_INVERSE 2
-#define TABLECT_ORIGINAL 3
-// External build functions.
 extern Constraint* BuildTableCt(Solver* const solver,
                                 const IntTupleSet& tuples,
                                 const std::vector<IntVar*>& vars,
@@ -52,53 +46,45 @@ void RandomFillTable(int num_tuples,
   }
 }
 
-void test_table_in_bk(int n,
-                      unsigned num_tuples,
-                      unsigned upper,
-                      unsigned size_bucket,
-                      bool use_bucket_table) {
-  // var array creation
-  Solver solver("SolverInBk");
-  std::vector<IntVar*> vars;
-  solver.MakeIntVarArray(n, 0, upper, &vars);
-
-  IntTupleSet table(n);
-
-  if (use_bucket_table) {
+void TestTable(int arity, int num_tuples, int upper, int size_bucket) {
+  if (size_bucket > 0) {
     LOG(INFO) <<  "Creation of a Bucketed tuple Table ("
               << size_bucket << ") with :";
   } else {
     LOG(INFO) << "Creation of a Allowed Assignment Table with :";
   }
-  LOG(INFO) << " - " << n <<  " variables";
+  LOG(INFO) << " - " << arity <<  " variables";
   LOG(INFO) << " - " << upper + 1 <<  " values per domain";
   LOG(INFO) << " - " << num_tuples << " tuples";
 
-  RandomFillTable(num_tuples, 0, upper, &table);
+  Solver solver("SolverInBk");
+  std::vector<IntVar*> vars;
+  solver.MakeIntVarArray(arity, 0, upper, &vars);
 
+  IntTupleSet table(arity);
+  RandomFillTable(num_tuples, 0, upper, &table);
   LOG(INFO) << "Table is created";
 
-  Constraint* const ct = use_bucket_table ?
+  Constraint* const ct = size_bucket > 0 ?
       BuildTableCt(&solver, table, vars, size_bucket) :
       solver.MakeAllowedAssignments(vars, table);
   solver.AddConstraint(ct);
-
-  LOG(INFO) << "The constraint has been added";
 
   DecisionBuilder* const db = solver.MakePhase(vars,
                                                Solver::CHOOSE_FIRST_UNBOUND,
                                                Solver::ASSIGN_MIN_VALUE);
 
-  solver.NewSearch(db);
-
+  LOG(INFO) << "Start search";
   CycleTimer t;
   t.Start();
+  solver.NewSearch(db);
   int counter = 0;
   while(solver.NextSolution()) {
     counter++;
   }
-  t.Stop();
   solver.EndSearch();
+  t.Stop();
+
   LOG(INFO) << "test time : " << t.GetInUsec() << " micro seconds";
   CHECK_EQ(counter, table.NumTuples());
 }
@@ -107,18 +93,11 @@ void test_table_in_bk(int n,
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
-
-  operations_research::test_table_in_bk(FLAGS_arity,
-                                        FLAGS_tuples,
-                                        FLAGS_upper,
-                                        FLAGS_bucket,
-                                        false);
-
-  operations_research::test_table_in_bk(FLAGS_arity,
-                                        FLAGS_tuples,
-                                        FLAGS_upper,
-                                        FLAGS_bucket,
-                                        true);
+  operations_research::TestTable(FLAGS_arity, FLAGS_tuples, FLAGS_upper, 0);
+  operations_research::TestTable(FLAGS_arity,
+                                 FLAGS_tuples,
+                                 FLAGS_upper,
+                                 FLAGS_bucket);
   return 0;
 }
 
