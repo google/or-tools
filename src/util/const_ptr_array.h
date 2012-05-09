@@ -23,6 +23,7 @@ using std::string;
 
 #include "base/integral_types.h"
 #include "base/int-type.h"
+#include "base/int-type-indexed-vector.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
