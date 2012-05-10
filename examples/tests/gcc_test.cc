@@ -44,9 +44,8 @@ int64 TestGcc(int vsize, int csize, int slack, int seed, bool use_gcc) {
     card_min[index]++;
     card_max[index]++;
   }
-  for (int i = 0; i < slack; ++i) {
-    const int index = rgen.Uniform(csize);
-    card_max[index]++;
+  for (int i = 0; i < 2 * slack; ++i) {
+    card_max[rgen.Uniform(csize)]++;
   }
 
   LOG(INFO) << (use_gcc ? "Gcc constraint:" : "Distribute constraint:");
@@ -54,6 +53,7 @@ int64 TestGcc(int vsize, int csize, int slack, int seed, bool use_gcc) {
   LOG(INFO) << "  - num values = " << csize;
   LOG(INFO) << "  - slack = " << slack;
   LOG(INFO) << "  - seed = " << seed;
+
   Solver solver("TestGcc");
   std::vector<IntVar*> vars;
   solver.MakeIntVarArray(vsize, 0, csize - 1, &vars);
