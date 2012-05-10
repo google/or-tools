@@ -66,13 +66,42 @@ class GccConstraint : public Constraint {
     // Two elements before and after the element list will be added
     // with a weight of 1.
     PartialSum(int64 offset,
-               int count,
+               int64 count,
                const std::vector<int64>& elements) :
         offset_(offset - 3),
         last_value_(offset + count + 1),
         sum_(count + 5),
         ds_(count + 5) {
-      int i, j;
+      int64 i, j;
+      sum_[0] = 0;
+      sum_[1] = 1;
+      sum_[2] = 2;
+      for (i = 2; i < count + 2; i++) {
+        sum_[i + 1] = sum_[i] + elements[i - 2];
+      }
+      sum_[i + 1] = sum_[i] + 1;
+      sum_[i + 2] = sum_[i + 1] + 1;
+
+      i = count + 3;
+      j = i;
+      while (i > 0) {
+        while (sum_[i] == sum_[i-1]) {
+          ds_[i--] = j;
+        }
+        ds_[j] = i--;
+        j = ds_[j];
+      }
+      ds_[j] = 0;
+    }
+
+    PartialSum(int64 offset,
+               int64 count,
+               const std::vector<int>& elements) :
+        offset_(offset - 3),
+        last_value_(offset + count + 1),
+        sum_(count + 5),
+        ds_(count + 5) {
+      int64 i, j;
       sum_[0] = 0;
       sum_[1] = 1;
       sum_[2] = 2;
@@ -147,6 +176,57 @@ class GccConstraint : public Constraint {
                 int64 last_domain_value,
                 const std::vector<int64>& min_occurrences,
                 const std::vector<int64>& max_occurrences)
+      : Constraint(solver),
+        variables_(vars),
+        size_(vars.size()),
+        current_level_(1),
+        last_level_(0),
+        propagate_value_(propagate_value),
+        max_occurrences_(last_domain_value - first_domain_value + 1, 0),
+        tree_(2 * size_ + 2),
+        diffs_(2 * size_ + 2),
+        hall_(2 * size_ + 2),
+        stable_intervals_(2 * size_ + 2),
+        potential_stable_sets_(2 * size_ + 2),
+        new_min_(size_),
+        intervals_(size_),
+        sorted_by_min_(size_),
+        sorted_by_max_(size_),
+        bounds_(2 * size_ + 2),
+        active_size_(0),
+        lower_sum_(first_domain_value,
+                   last_domain_value - first_domain_value + 1,
+                   min_occurrences),
+        upper_sum_(first_domain_value,
+                   last_domain_value - first_domain_value + 1,
+                   max_occurrences) {
+    int64 i, range;
+
+    range = last_domain_value - first_domain_value + 1;
+
+    last_level_ = -1;
+
+    if (propagate_value_) {
+      for(i = 0; i < range; i++) {
+        max_occurrences_.SetValue(solver,
+                                  i,
+                                  max_occurrences[i]);
+      }
+    }
+
+    for(Index i(0); i < size_; i++) {
+      sorted_by_min_[i.value()] = &intervals_[i];
+      sorted_by_max_[i.value()] = &intervals_[i];
+    }
+  }
+
+  GccConstraint(Solver* const solver,
+                const std::vector<IntVar*>& vars,
+                bool propagate_value,
+                int64 first_domain_value,
+                int64 last_domain_value,
+                const std::vector<int>& min_occurrences,
+                const std::vector<int>& max_occurrences)
       : Constraint(solver),
         variables_(vars),
         size_(vars.size()),
@@ -706,5 +786,36 @@ Constraint* NewGCC(Solver* const solver,
                                             min_occurrences,
                                             max_occurrences));
 }
-} // namespace operations_research
 
+Constraint* Gcc(Solver* const solver,
+                const std::vector<IntVar*>& vars,
+                int64 first_domain_value,
+                const std::vector<int64>& min_occurrences,
+                const std::vector<int64>& max_occurrences) {
+  return solver->RevAlloc(
+      new GccConstraint(
+          solver,
+          vars,
+          true,
+          first_domain_value,
+          first_domain_value + min_occurrences.size(),
+          min_occurrences,
+          max_occurrences));
+}
+
+Constraint* Gcc(Solver* const solver,
+                const std::vector<IntVar*>& vars,
+                int64 first_domain_value,
+                const std::vector<int>& min_occurrences,
+                const std::vector<int>& max_occurrences) {
+  return solver->RevAlloc(
+      new GccConstraint(
+          solver,
+          vars,
+          true,
+          first_domain_value,
+          first_domain_value + min_occurrences.size(),
+          min_occurrences,
+          max_occurrences));
+}
+} // namespace operations_research
