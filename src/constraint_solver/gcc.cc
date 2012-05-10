@@ -461,10 +461,9 @@ class GccConstraint : public Constraint {
    * new_min_);
    */
   bool FilterLowerMin() {
-    int64 i, w, v;
-    bool change = false;
-
-    for (w = i = active_size_ + 1; i > 0; i--) {
+    bool changed = false;
+    int64 w = active_size_ + 1;
+    for (int64 i = active_size_ + 1; i > 0; i--) {
       // diffs_[i] = Sum(l, bounds_[potential_stable_sets_[i] =
       // stable_intervals_[i]=i-1], bounds_[i]-1);
       potential_stable_sets_[i] = stable_intervals_[i] = i - 1;
@@ -479,19 +478,23 @@ class GccConstraint : public Constraint {
       }
     }
 
-    for (i = w = active_size_ + 1; i >= 0; i--) {
-      if (diffs_[i] == 0)
+    w = active_size_ + 1;
+    for (int64 i = active_size_ + 1; i >= 0; i--) {
+      if (diffs_[i] == 0) {
         tree_[i] = w;
-      else
+      } else {
         w = tree_[w] = i;
+      }
     }
 
-    for (i = 0; i < size_; i++) { // visit intervals in increasing max order
+    // visit intervals in increasing max order
+    for (int64 i = 0; i < size_; i++) {
       // Get interval bounds_
       int64 x = sorted_by_max_[i]->min_rank;
       int64 y = sorted_by_max_[i]->max_rank;
       int64 z = PathMax(tree_, x + 1);
       int64 j = tree_[z];
+      int64 v;
       if (z != x+1) {
         // if bounds_[z] - 1 belongs to a stable set,
         // [bounds_[x], bounds_[z]) is a sub set of this stable set
@@ -558,7 +561,7 @@ class GccConstraint : public Constraint {
     // structure will no longer be modified and will be
     // accessed n or 2n times. Therefore, we can afford
     // a linear time compression.
-    for (i = active_size_+1; i > 0; i--) {
+    for (int64 i = active_size_ + 1; i > 0; i--) {
       if (stable_intervals_[i] > i)
         stable_intervals_[i] = w;
       else
@@ -567,17 +570,17 @@ class GccConstraint : public Constraint {
 
     // For all variables that are not a subset of a stable set, shrink
     // the lower bound
-    for (i = size_ - 1; i >= 0; i--) {
+    for (int64 i = size_ - 1; i >= 0; i--) {
       int64 x = sorted_by_max_[i]->min_rank;
       int64 y = sorted_by_max_[i]->max_rank;
       if ((stable_intervals_[x] <= x) || (y > stable_intervals_[x])) {
         sorted_by_max_[i]->min_value =
             lower_sum_.SkipNonNullElementsRight(bounds_[new_min_[i]]);
-        change = true;
+        changed = true;
       }
     }
 
-    return change;
+    return changed;
   }
 
   /*
@@ -586,33 +589,37 @@ class GccConstraint : public Constraint {
    */
   bool FilterUpperMin() {
     // ASSERTION: FilterLowerMin returns true
-    int64 i,j,w,x,y,z;
-    bool change = false;
-
-    for (w=i=0; i<=active_size_; i++) {
+    bool changed = false;
+    int64 w = 0;
+    for (int64 i = 0; i <= active_size_; i++) {
       //  diffs_[i] = bounds_[tree_[i]=hall_[i]=i+1] - bounds_[i];
-      diffs_[i] = lower_sum_.Sum(bounds_[i], bounds_[i+1]-1);
-      if (diffs_[i] == 0)
-        tree_[i]=w;
-      else
-        w=tree_[w]=i;
+      diffs_[i] = lower_sum_.Sum(bounds_[i], bounds_[i + 1] - 1);
+      if (diffs_[i] == 0) {
+        tree_[i] = w;
+      } else {
+        tree_[w] = i;
+        w = i;
+      }
     }
-    tree_[w]=i;
-    for (i = 1, w = 0; i<=active_size_; i++) {
-      if (diffs_[i-1] == 0)
+    tree_[w] = active_size_ + 1;
+    w = 0;
+    for (int64 i = 1; i <= active_size_; i++) {
+      if (diffs_[i - 1] == 0) {
         hall_[i] = w;
-      else
-        w = hall_[w] = i;
+      } else {
+        hall_[w] = i;
+        w = i;
+      }
     }
-    hall_[w] = i;
+    hall_[w] = active_size_ + 1;;
 
-    for (i = size_; --i>=0;) { // visit intervals in decreasing min order
+    for (int64 i = size_; --i>=0;) { // visit intervals in decreasing min order
       // Get interval bounds_
-      x = sorted_by_min_[i]->max_rank;
-      y = sorted_by_min_[i]->min_rank;
-
+      int64 x = sorted_by_min_[i]->max_rank;
+      int64 y = sorted_by_min_[i]->min_rank;
+      int64 z = PathMin(tree_, x - 1);
       // Solve the lower bound problem
-      j = tree_[z = PathMin(tree_, x-1)];
+      int64 j = tree_[z];
 
       // If the variable is not in a discovered stable set Possible
       // optimization: Use the array stable_intervals_ to perform this
@@ -644,16 +651,16 @@ class GccConstraint : public Constraint {
 
     // For all variables that are not subsets of a stable set, shrink
     // the lower bound
-    for (i = size_ - 1; i >= 0; i--) {
-      x = sorted_by_min_[i]->min_rank;
-      y = sorted_by_min_[i]->max_rank;
+    for (int64 i = size_ - 1; i >= 0; i--) {
+      int64 x = sorted_by_min_[i]->min_rank;
+      int64 y = sorted_by_min_[i]->max_rank;
       if ((stable_intervals_[x] <= x) || (y > stable_intervals_[x]))
         sorted_by_min_[i]->max_value =
             lower_sum_.SkipNonNullElementsLeft(bounds_[new_min_[i]] - 1);
-      change = true;
+      changed = true;
     }
 
-    return change;
+    return changed;
   }
 
   TypedConstPtrArray<Index, IntVar> variables_;
