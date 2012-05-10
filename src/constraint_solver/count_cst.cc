@@ -25,6 +25,7 @@
 #include "base/concise_iterator.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/const_int_array.h"
 #include "util/string_array.h"
 
 namespace operations_research {
@@ -842,9 +843,13 @@ class BoundedDistribute : public Constraint {
   BoundedDistribute(Solver* const s,
                     const IntVar* const * vars,
                     int vsize,
-                    int64 card_min,
-                    int64 card_max,
-                    int64 csize);
+                    const std::vector<int64>& card_min,
+                    const std::vector<int64>& card_max);
+  BoundedDistribute(Solver* const s,
+                    const IntVar* const * vars,
+                    int vsize,
+                    const std::vector<int>& card_min,
+                    const std::vector<int>& card_max);
   virtual ~BoundedDistribute() {}
 
   virtual void Post();
@@ -859,10 +864,10 @@ class BoundedDistribute : public Constraint {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
     max_.Decr(s, card_index);
-    if (max_[card_index] < card_min_) {
+    if (max_[card_index] < card_min_[card_index]) {
       solver()->Fail();
     }
-    if (max_[card_index] == card_min_) {
+    if (max_[card_index] == card_min_[card_index]) {
       CardMax(card_index);
     }
   }
@@ -870,10 +875,10 @@ class BoundedDistribute : public Constraint {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
     min_.Incr(s, card_index);
-    if (min_[card_index] > card_max_) {
+    if (min_[card_index] > card_max_[card_index]) {
       solver()->Fail();
     }
-    if (min_[card_index] == card_max_) {
+    if (min_[card_index] == card_max_[card_index]) {
       CardMin(card_index);
     }
   }
@@ -883,18 +888,16 @@ class BoundedDistribute : public Constraint {
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.get(),
                                                var_size_);
-    visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, card_min_);
-    visitor->VisitIntegerArgument(ModelVisitor::kMaxArgument, card_max_);
-    visitor->VisitIntegerArgument(ModelVisitor::kSizeArgument,
-                                  card_size_);
+    visitor->VisitConstIntArrayArgument(ModelVisitor::kMinArgument, card_min_);
+    visitor->VisitConstIntArrayArgument(ModelVisitor::kMaxArgument, card_max_);
     visitor->EndVisitConstraint(ModelVisitor::kDistribute, this);
   }
 
  private:
   const scoped_array<IntVar*> vars_;
   const int var_size_;
-  const int64 card_min_;
-  const int64 card_max_;
+  ConstIntArray card_min_;
+  ConstIntArray card_max_;
   const int64 card_size_;
   RevBitMatrix undecided_;
   NumericalRevArray<int> min_;
@@ -905,15 +908,14 @@ class BoundedDistribute : public Constraint {
 BoundedDistribute::BoundedDistribute(Solver* const s,
                                      const IntVar* const * vars,
                                      int vsize,
-                                     int64 card_min,
-                                     int64 card_max,
-                                     int64 csize)
+                                     const std::vector<int64>& card_min,
+                                     const std::vector<int64>& card_max)
     : Constraint(s),
       vars_(new IntVar*[vsize]),
       var_size_(vsize),
       card_min_(card_min),
       card_max_(card_max),
-      card_size_(csize),
+      card_size_(card_min.size()),
       undecided_(var_size_, card_size_),
       min_(card_size_, 0),
       max_(card_size_, 0),
@@ -924,15 +926,33 @@ BoundedDistribute::BoundedDistribute(Solver* const s,
   }
 }
 
+BoundedDistribute::BoundedDistribute(Solver* const s,
+                                     const IntVar* const * vars,
+                                     int vsize,
+                                     const std::vector<int>& card_min,
+                                     const std::vector<int>& card_max)
+    : Constraint(s),
+      vars_(new IntVar*[vsize]),
+      var_size_(vsize),
+      card_min_(card_min),
+      card_max_(card_max),
+      card_size_(card_min.size()),
+      undecided_(var_size_, card_size_),
+      min_(card_size_, 0),
+      max_(card_size_, 0),
+      holes_(new IntVarIterator*[var_size_]) {
+  memcpy(vars_.get(), vars, var_size_ * sizeof(*vars));
+  for (int var_index = 0; var_index < var_size_; ++var_index) {
+    holes_[var_index] = vars_[var_index]->MakeHoleIterator(true);
+  }
+}
 
 string BoundedDistribute::DebugString() const {
-  return StringPrintf("BoundedDistribute([%s], cards = %" GG_LL_FORMAT
-                      "d * [%" GG_LL_FORMAT "d -- %"
-                      GG_LL_FORMAT "d])",
-                      DebugStringArray(vars_.get(), var_size_, ", ").c_str(),
-                      card_size_,
-                      card_min_,
-                      card_max_);
+  return StringPrintf(
+      "BoundedDistribute([%s], card_min = [%s], card_max = [%s]",
+      DebugStringArray(vars_.get(), var_size_, ", ").c_str(),
+      card_min_.DebugString().c_str(),
+      card_max_.DebugString().c_str());
 }
 
 void BoundedDistribute::Post() {
@@ -958,11 +978,14 @@ void BoundedDistribute::Post() {
 void BoundedDistribute::InitialPropagate() {
   Solver* const s = solver();
 
-  // Some initial consistency tests.
-  if (card_max_ < card_min_ || card_min_ * card_size_ > var_size_) {
-    solver()->Fail();
+  int64 sum_card_min = 0;
+  for (int i = 0; i < card_size_; ++i) {
+    if (card_max_[i] < card_min_[i]) {
+      solver()->Fail();
+    }
+    sum_card_min += card_min_[i];
   }
-  if (card_min_ * card_size_ == var_size_) {
+  if (sum_card_min == var_size_) {
     for (int i = 0; i < var_size_; ++i) {
       vars_[i]->SetRange(0, card_size_ - 1);
     }
@@ -1037,13 +1060,14 @@ void BoundedDistribute::OneDomain(int index) {
 void BoundedDistribute::CountVar(int card_index) {
   const int64 stored_min = min_[card_index];
   const int64 stored_max = max_[card_index];
-  if (card_min_ > stored_max || card_max_ < stored_min) {
+  if (card_min_[card_index] > stored_max ||
+      card_max_[card_index] < stored_min) {
     solver()->Fail();
   }
-  if (card_min_ == stored_max) {
+  if (card_min_[card_index] == stored_max) {
     CardMax(card_index);
   }
-  if (card_max_ == stored_min) {
+  if (card_max_[card_index] == stored_min) {
     CardMin(card_index);
   }
 }
@@ -1186,11 +1210,34 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    int64 card_max,
                                    int64 card_size) {
   CHECK_NE(vars.size(), 0);
+  std::vector<int64> mins(card_size, card_min);
+  std::vector<int64> maxes(card_size, card_max);
   for (ConstIter<std::vector<IntVar*> > it(vars); !it.at_end(); ++it) {
     CHECK_EQ(this, (*it)->solver());
   }
-  return RevAlloc(new BoundedDistribute(this, vars.data(), vars.size(),
-                                        card_min, card_max, card_size));
+  return RevAlloc(
+      new BoundedDistribute(this, vars.data(), vars.size(), mins, maxes));
 }
 
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   const std::vector<int64>& card_min,
+                                   const std::vector<int64>& card_max) {
+  CHECK_NE(vars.size(), 0);
+  return RevAlloc(new BoundedDistribute(this,
+                                        vars.data(),
+                                        vars.size(),
+                                        card_min,
+                                        card_max));
+}
+
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   const std::vector<int>& card_min,
+                                   const std::vector<int>& card_max) {
+  CHECK_NE(vars.size(), 0);
+  return RevAlloc(new BoundedDistribute(this,
+                                        vars.data(),
+                                        vars.size(),
+                                        card_min,
+                                        card_max));
+}
 }  // namespace operations_research
