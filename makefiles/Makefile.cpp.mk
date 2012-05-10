@@ -163,6 +163,7 @@ CONSTRAINT_SOLVER_LIB_OS = \
 	$(OBJ_DIR)/expr_array.$O\
 	$(OBJ_DIR)/expr_cst.$O\
 	$(OBJ_DIR)/expressions.$O\
+	$(OBJ_DIR)/gcc.$O\
 	$(OBJ_DIR)/hybrid.$O\
 	$(OBJ_DIR)/interval.$O\
 	$(OBJ_DIR)/io.$O\
@@ -244,6 +245,9 @@ $(OBJ_DIR)/expr_cst.$O:$(SRC_DIR)/constraint_solver/expr_cst.cc
 
 $(OBJ_DIR)/expressions.$O:$(SRC_DIR)/constraint_solver/expressions.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/expressions.cc $(OBJ_OUT)expressions.$O
+
+$(OBJ_DIR)/gcc.$O:$(SRC_DIR)/constraint_solver/gcc.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/gcc.cc $(OBJ_OUT)gcc.$O
 
 $(OBJ_DIR)/hybrid.$O:$(SRC_DIR)/constraint_solver/hybrid.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/hybrid.cc $(OBJ_OUT)hybrid.$O
