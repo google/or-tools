@@ -29,7 +29,7 @@
 namespace operations_research {
 namespace {
 
-DEFINE_INT_TYPE(Index, int64);
+DEFINE_INT_TYPE(Index, int);
 
 /*============================================================
  * User defined propagator for enforcing bounds consistency
@@ -360,7 +360,7 @@ class GccConstraint : public Constraint {
     }
   }
 
-  void PropagateValue(int64 index) {
+  void PropagateValue(int index) {
     const int64 value = variables_[Index(index)]->Value();
     const int64 cap = max_occurrences_.Value(value) - 1;
     max_occurrences_.SetValue(solver(), value, cap);
@@ -379,10 +379,9 @@ class GccConstraint : public Constraint {
                int64 start,
                int64 end,
                int64 to) {
-    int64 k = start;
     int64 l = start;
     while (l != end) {
-      k = l;
+      int64 k = l;
       l = (*tree)[k];
       (*tree)[k] = to;
     }
@@ -510,7 +509,7 @@ class GccConstraint : public Constraint {
       // Get interval bounds.
       int64 x = sorted_by_min_[i]->max_rank;
       int64 y = sorted_by_min_[i]->min_rank;
-      int64 z = PathMin(tree_, x-1);
+      int64 z = PathMin(tree_, x - 1);
       int64 j = tree_[z];
       if (--diffs_[z] == 0) {
         tree_[z] = z - 1;
@@ -805,7 +804,7 @@ Constraint* Gcc(Solver* const solver,
 
 Constraint* Gcc(Solver* const solver,
                 const std::vector<IntVar*>& vars,
-                int64 first_domain_value,
+                int64 offset,
                 const std::vector<int>& min_occurrences,
                 const std::vector<int>& max_occurrences) {
   return solver->RevAlloc(
@@ -813,8 +812,8 @@ Constraint* Gcc(Solver* const solver,
           solver,
           vars,
           true,
-          first_domain_value,
-          first_domain_value + min_occurrences.size(),
+          offset,
+          offset + min_occurrences.size() - 1,
           min_occurrences,
           max_occurrences));
 }

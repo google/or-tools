@@ -339,10 +339,9 @@ class RangeBipartiteMatching {
   };
 
   void PathSet(int start, int end, int to, int* const tree) {
-    int k = start;
     int l = start;
     while (l != end) {
-      k = l;
+      int k = l;
       l = tree[k];
       tree[k] = to;
     }
