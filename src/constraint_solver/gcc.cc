@@ -162,8 +162,8 @@ class GccConstraint : public Constraint {
    private:
     int64 offset_;
     int64 last_value_;
-    vector<int64> sum_;
-    vector<int64> ds_;
+    std::vector<int64> sum_;
+    std::vector<int64> ds_;
   };
 
   // A value "v" must be assigned to at least
