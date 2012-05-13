@@ -5,6 +5,8 @@ GOOGLE_APPUTILS_TAG = 11 # trunk
 SPARSEHASH_TAG = 116 # 2.0.2
 CLP_TAG = 1.14.4
 CBC_TAG = 2.7.6
+ZLIB_TAG = 1.2.7
+ZLIB_ARCHIVE_TAG = 127
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.47.tar.gz
@@ -52,7 +54,7 @@ build_third_party: \
 #	install_scip
 
 download_third_party: \
-        dependencies/archives/zlib126.zip \
+        dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip \
 	dependencies/sources/gflags/autogen.sh \
 	dependencies/sources/protobuf/autogen.sh \
 	dependencies/sources/sparsehash/autogen.sh \
@@ -95,23 +97,23 @@ dependencies/install:
 # Install zlib
 install_zlib: dependencies\install\include\zlib.h dependencies\install\include\zconf.h dependencies\install\lib\zlib.lib
 
-dependencies\install\include\zlib.h: dependencies\sources\zlib-1.2.6\zlib.h
-	copy dependencies\sources\zlib-1.2.6\zlib.h dependencies\install\include
+dependencies\install\include\zlib.h: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
+	copy dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h dependencies\install\include
 
-dependencies\install\include\zconf.h: dependencies\sources\zlib-1.2.6\zlib.h
-	copy dependencies\sources\zlib-1.2.6\zconf.h dependencies\install\include
+dependencies\install\include\zconf.h: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
+	copy dependencies\sources\zlib-$(ZLIB_TAG)\zconf.h dependencies\install\include
 	tools\touch.exe dependencies\install\include\zconf.h
 
-dependencies\install\lib\zlib.lib: dependencies\sources\zlib-1.2.6\zlib.h
-	cd dependencies\sources\zlib-1.2.6 && nmake -f win32\Makefile.msc zlib.lib
-	copy dependencies\sources\zlib-1.2.6\zlib.lib dependencies\install\lib
+dependencies\install\lib\zlib.lib: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
+	cd dependencies\sources\zlib-$(ZLIB_TAG) && nmake -f win32\Makefile.msc zlib.lib
+	copy dependencies\sources\zlib-$(ZLIB_TAG)\zlib.lib dependencies\install\lib
 
-dependencies\sources\zlib-1.2.6\zlib.h: dependencies\archives\zlib126.zip
-	tools\unzip -d dependencies\sources dependencies\archives\zlib126.zip
-	tools\touch.exe dependencies\sources\zlib-1.2.6\zlib.h
+dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h: dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip
+	tools\unzip -d dependencies\sources dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip
+	tools\touch.exe dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
 
-dependencies\archives\zlib126.zip:
-	tools\wget -P dependencies\archives http://zlib.net/zlib126.zip
+dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip:
+	tools\wget -P dependencies\archives http://zlib.net/zlib$(ZLIB_ARCHIVE_TAG).zip
 
 # Install gflags.
 install_gflags: dependencies\install\lib\libgflags.lib dependencies\install\include\gflags\gflags.h
