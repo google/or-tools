@@ -861,7 +861,8 @@ class Search {
         decision_builder_(NULL), created_by_solve_(false),
         selector_(NULL), search_depth_(0), left_search_depth_(0),
         should_restart_(false), should_finish_(false),
-        sentinel_pushed_(0), jmpbuf_filled_(false) {}
+        sentinel_pushed_(0), jmpbuf_filled_(false),
+        restore_(true) {}
 
   // Constructor for a dummy search. The only difference between a dummy search
   // and a regular one is that the search depth and left search depth is
@@ -871,7 +872,8 @@ class Search {
         decision_builder_(NULL), created_by_solve_(false),
         selector_(NULL), search_depth_(-1), left_search_depth_(-1),
         should_restart_(false), should_finish_(false),
-        sentinel_pushed_(0), jmpbuf_filled_(false) {}
+        sentinel_pushed_(0), jmpbuf_filled_(false),
+        restore_(true) {}
 
   ~Search() {
     STLDeleteElements(&marker_stack_);
@@ -918,6 +920,8 @@ class Search {
   void RightMove() {
     search_depth_++;
   }
+  bool restore() const { return restore_; }
+  void set_restore(bool restore) { restore_ = restore; }
   int search_depth() const { return search_depth_; }
   void set_search_depth(int d) { search_depth_ = d; }
   int left_search_depth() const { return left_search_depth_; }
@@ -954,6 +958,7 @@ class Search {
   bool should_finish_;
   int sentinel_pushed_;
   bool jmpbuf_filled_;
+  bool restore_;
 };
 
 // Backtrack is implemented using 3 primitives:
@@ -1090,6 +1095,7 @@ void Search::Clear() {
   search_depth_ = 0;
   left_search_depth_ = 0;
   selector_.reset(NULL);
+  restore_ = true;
 }
 
 void Search::EnterSearch() {
@@ -1885,18 +1891,31 @@ void Solver::NewSearch(DecisionBuilder* const db,
                        int size) {
   // TODO(user) : reset statistics
 
+  // ----- gets or creates the search object -----
+
   CHECK_NOTNULL(db);
   DCHECK_GE(size, 0);
+  const bool nested = state_ == IN_SEARCH;
 
-  if (state_ == IN_SEARCH || state_ == IN_ROOT_NODE) {
-    LOG(FATAL) << "Use NestedSolve() inside search";
+  if (state_ == IN_ROOT_NODE) {
+    LOG(FATAL) << "Cannot start new searches here.";
   }
-  // Check state and go to OUTSIDE_SEARCH.
-  Search* const search = searches_.back();
+
+  Search* const search = nested ? new Search(this) : searches_.back();
   search->set_created_by_solve(false);  // default behavior.
 
-  BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
-  state_ = OUTSIDE_SEARCH;
+  // ----- jumps to correct state -----
+
+  if (nested) {
+    DCHECK_GE(searches_.size(), 2);
+    searches_.push_back(search);
+  } else {
+    DCHECK_EQ(2, searches_.size());
+    BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
+    state_ = OUTSIDE_SEARCH;
+  }
+
+  // ----- manages all monitors -----
 
   // Always install the main propagation monitor.
   propagation_monitor_->Install();
@@ -1921,22 +1940,25 @@ void Solver::NewSearch(DecisionBuilder* const db,
   // Install the print trace if needed.
   // The print_trace needs to be last to detect propagation from the objective.
   if (FLAGS_cp_trace_propagation) {
-    print_trace_ = BuildPrintTrace(this);
+    if (!nested) {  // Build trace objet at top level.
+      print_trace_ = BuildPrintTrace(this);
+    }
     print_trace_->Install();
   } else {
     // This is useful to trace the exact behavior of the search.
     // The '######## ' prefix is the same as the progagation trace.
-    if (FLAGS_cp_trace_search) {
+    if (FLAGS_cp_trace_search && !nested) {
       SearchMonitor* const trace = MakeSearchTrace("######## ");
       trace->Install();
     }
     print_trace_ = NULL;
   }
 
+  // ----- enters search -----
+
   search->EnterSearch();
 
   // Push sentinel and set decision builder.
-  DCHECK_EQ(2, searches_.size());
   PushSentinel(INITIAL_SEARCH_SENTINEL);
   search->set_decision_builder(db);
 }
@@ -2281,22 +2303,33 @@ bool Solver::NextSolution() {
 }
 
 void Solver::EndSearch() {
-  CHECK_EQ(2, searches_.size());
   Search* const search = searches_.back();
-  BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
+  if (search->restore()) {
+    BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
+  } else {
+    CHECK_GT(searches_.size(), 2);
+    if (search->sentinel_pushed_ > 0) {
+      JumpToSentinelWhenNested();
+    }
+  }
   search->ExitSearch();
   search->Clear();
-  state_ = OUTSIDE_SEARCH;
-  if (!FLAGS_cp_profile_file.empty()) {
-    LOG(INFO) << "Exporting profile to " << FLAGS_cp_profile_file;
-    ExportProfilingOverview(FLAGS_cp_profile_file);
+  if (2 == searches_.size()) {  // Post top level search actions.
+    state_ = OUTSIDE_SEARCH;
+    if (!FLAGS_cp_profile_file.empty()) {
+      LOG(INFO) << "Exporting profile to " << FLAGS_cp_profile_file;
+      ExportProfilingOverview(FLAGS_cp_profile_file);
+    }
+  } else {  // We clean the nested Search.
+    delete search;
+    searches_.pop_back();
   }
 }
 
 bool Solver::CheckAssignment(Assignment* const solution) {
   CHECK(solution);
   if (state_ == IN_SEARCH || state_ == IN_ROOT_NODE) {
-    LOG(FATAL) << "Use NestedSolve() inside search";
+    LOG(FATAL) << "CheckAssignment is only available at the top level.";
   }
   // Check state and go to OUTSIDE_SEARCH.
   Search* const search = searches_.back();
@@ -2373,93 +2406,52 @@ bool Solver::CheckConstraint(Constraint* const ct) {
   return Solve(MakeConstraintAdder(ct));
 }
 
-bool Solver::NestedSolve(DecisionBuilder* const db,
-                         bool restore,
-                         const std::vector<SearchMonitor*>& monitors) {
-  return NestedSolve(db, restore,  monitors.data(), monitors.size());
+bool Solver::SolveAndCommit(DecisionBuilder* const db,
+                            const std::vector<SearchMonitor*>& monitors) {
+  return SolveAndCommit(db, monitors.data(), monitors.size());
 }
 
-bool Solver::NestedSolve(DecisionBuilder* const db,
-                         bool restore,
-                         SearchMonitor* const m1) {
+bool Solver::SolveAndCommit(DecisionBuilder* const db,
+                            SearchMonitor* const m1) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
-  return NestedSolve(db, restore, monitors.data(), monitors.size());
+  return SolveAndCommit(db, monitors.data(), monitors.size());
 }
 
-bool Solver::NestedSolve(DecisionBuilder* const db, bool restore) {
-  return NestedSolve(db, restore, NULL, Zero());
+bool Solver::SolveAndCommit(DecisionBuilder* const db) {
+  return SolveAndCommit(db, NULL, Zero());
 }
 
-bool Solver::NestedSolve(DecisionBuilder* const db,
-                         bool restore,
-                         SearchMonitor* const m1,
-                         SearchMonitor* const m2) {
+bool Solver::SolveAndCommit(DecisionBuilder* const db,
+                            SearchMonitor* const m1,
+                            SearchMonitor* const m2) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
-  return NestedSolve(db, restore, monitors.data(), monitors.size());
+  return SolveAndCommit(db, monitors.data(), monitors.size());
 }
 
-bool Solver::NestedSolve(DecisionBuilder* const db,
-                         bool restore,
-                         SearchMonitor* const m1,
-                         SearchMonitor* const m2,
-                         SearchMonitor* const m3) {
+bool Solver::SolveAndCommit(DecisionBuilder* const db,
+                            SearchMonitor* const m1,
+                            SearchMonitor* const m2,
+                            SearchMonitor* const m3) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   monitors.push_back(m3);
-  return NestedSolve(db, restore, monitors.data(), monitors.size());
+  return SolveAndCommit(db, monitors.data(), monitors.size());
 }
 
-bool Solver::NestedSolve(DecisionBuilder* const db,
-                         bool restore,
-                         SearchMonitor* const * monitors,
-                         int size) {
-  Search new_search(this);
-  searches_.push_back(&new_search);
-  // Always install the main propagation monitor.
-  propagation_monitor_->Install();
-  // Install the demon monitor if needed.
-  if (demon_profiler_ != NULL) {
-    InstallDemonProfiler(demon_profiler_);
-  }
-
-  for (int i = 0; i < size; ++i) {
-    if (monitors[i] != NULL) {
-      monitors[i]->Install();
-    }
-  }
-  std::vector<SearchMonitor*> extras;
-  db->AppendMonitors(this, &extras);
-  for (ConstIter<std::vector<SearchMonitor*> > it(extras); !it.at_end(); ++it) {
-    SearchMonitor* const monitor = *it;
-    if (monitor != NULL) {
-      monitor->Install();
-    }
-  }
-  // Install the print trace if needed.
-  if (print_trace_ != NULL) {
-    print_trace_->Install();
-  }
-
+bool Solver::SolveAndCommit(DecisionBuilder* const db,
+                            SearchMonitor* const * monitors,
+                            int size) {
+  NewSearch(db, monitors, size);
   searches_.back()->set_created_by_solve(true);  // Overwrites default.
-  new_search.EnterSearch();
-  PushSentinel(INITIAL_SEARCH_SENTINEL);
-  new_search.set_decision_builder(db);
-  bool res = NextSolution();
-  if (res) {
-    if (restore) {
-      BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
-    } else {
-      JumpToSentinelWhenNested();
-    }
-  }
-  new_search.ExitSearch();
-  new_search.Clear();
-  searches_.pop_back();
-  return res;
+  searches_.back()->set_restore(false);
+  NextSolution();
+  const bool solution_found = searches_.back()->solution_counter() > 0;
+  EndSearch();
+  return solution_found;
 }
 
 void Solver::Fail() {

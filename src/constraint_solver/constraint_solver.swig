@@ -924,7 +924,6 @@ static void SetPythonFlags(bool trace_propagation,
                           PhaseStrategy str);
 %ignore Solver::Solve(DecisionBuilder* const db,
                       SearchMonitor* const * monitors, int size);
-%ignore Solver::NestedSolve;
 %ignore Solver::Compose(DecisionBuilder* const db1,
                         DecisionBuilder* const db2);
 %ignore Solver::Compose(DecisionBuilder* const db1,

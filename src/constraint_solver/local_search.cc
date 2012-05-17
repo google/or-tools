@@ -2870,7 +2870,7 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
           solver->filtered_neighbors_ += 1;
           assignment_copy->Copy(reference_assignment_.get());
           assignment_copy->Copy(delta);
-          if (solver->NestedSolve(restore, false)) {
+          if (solver->SolveAndCommit(restore)) {
             solver->accepted_neighbors_ += 1;
             assignment_->Store();
             neighbor_found_ = true;
@@ -3081,11 +3081,18 @@ NestedSolveDecision::NestedSolveDecision(DecisionBuilder* const db,
 
 void NestedSolveDecision::Apply(Solver* const solver) {
   CHECK(NULL != solver);
-  if (solver->NestedSolve(db_, restore_,
-                          monitors_.data(), monitors_.size())) {
-    solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FOUND));
+  if (restore_) {
+    if (solver->Solve(db_, monitors_.data(), monitors_.size())) {
+      solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FOUND));
+    } else {
+      solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FAILED));
+    }
   } else {
-    solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FAILED));
+    if (solver->SolveAndCommit(db_, monitors_.data(), monitors_.size())) {
+      solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FOUND));
+    } else {
+      solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FAILED));
+    }
   }
 }
 

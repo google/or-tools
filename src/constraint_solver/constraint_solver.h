@@ -908,8 +908,8 @@ class Solver {
   // assigning any variable to any value is a solution, unless the root node
   // propagation discovers that the model is infeasible.
   //
-  // These function must be called from outside of search, meaning that
-  // <tt>state() == OUTSIDE_SEARCH</tt>.
+  // These function must be called from either from outside of search,
+  // or withing the Next() method of a decion builder.
   //
   // Solve will terminate whenever any of the following event arise:
   // * A search monitor asks the solver to terminate the search by calling
@@ -951,13 +951,14 @@ class Solver {
   // @}
 
   // @{
-  // Decomposed top level search.
-  // The code should look like
+  // Decomposed search.
+  // The code for a top level search should look like
   // solver->NewSearch(db);
   // while (solver->NextSolution()) {
   //   //.. use the current solution
   // }
   // solver()->EndSearch();
+
   void NewSearch(DecisionBuilder* const db,
                  const std::vector<SearchMonitor*>& monitors);
   void NewSearch(DecisionBuilder* const db,
@@ -982,37 +983,34 @@ class Solver {
   void EndSearch();
   // @}
 
-
-  // Nested solve using a decision builder and up to three
+  // SolveAndCommit using a decision builder and up to three
   //   search monitors, usually one for the objective, one for the limits
   //   and one to collect solutions.
-  // The restore parameter indicates if the search should backtrack completely
-  // after completion, even in case of success.
-  bool NestedSolve(DecisionBuilder* const db,
-                   bool restore,
-                   const std::vector<SearchMonitor*>& monitors);
-  bool NestedSolve(DecisionBuilder* const db,
-                   bool restore,
-                   SearchMonitor* const * monitors,
-                   int size);
-  bool NestedSolve(DecisionBuilder* const db, bool restore);
-  bool NestedSolve(DecisionBuilder* const db,
-                   bool restore,
-                   SearchMonitor* const m1);
-  bool NestedSolve(DecisionBuilder* const db,
-                   bool restore,
-                   SearchMonitor* const m1, SearchMonitor* const m2);
-  bool NestedSolve(DecisionBuilder* const db,
-                   bool restore,
-                   SearchMonitor* const m1,
-                   SearchMonitor* const m2,
-                   SearchMonitor* const m3);
+  //
+  // The difference between a SolveAndCommit() and a Solve() method
+  // call is the fact that SolveAndCommit will not backtrack all
+  // modifications at the end of the search. This method is only
+  // usable during the Next() method of a decision builder.
+  bool SolveAndCommit(DecisionBuilder* const db,
+                      const std::vector<SearchMonitor*>& monitors);
+  bool SolveAndCommit(DecisionBuilder* const db,
+                      SearchMonitor* const * monitors,
+                      int size);
+  bool SolveAndCommit(DecisionBuilder* const db);
+  bool SolveAndCommit(DecisionBuilder* const db,
+                      SearchMonitor* const m1);
+  bool SolveAndCommit(DecisionBuilder* const db,
+                      SearchMonitor* const m1, SearchMonitor* const m2);
+  bool SolveAndCommit(DecisionBuilder* const db,
+                      SearchMonitor* const m1,
+                      SearchMonitor* const m2,
+                      SearchMonitor* const m3);
 
   // Checks whether the given assignment satisfies all the relevant constraints.
   bool CheckAssignment(Assignment* const assignment);
 
   // Checks whether adding this constraint will lead to an immediate
-  // failure.  It will return true if the model is already
+  // failure.  It will return false if the model is already
   // inconsistent, or if adding the constraint makes it inconsistent.
   bool CheckConstraint(Constraint* const constraint);
 
@@ -1513,9 +1511,7 @@ class Solver {
 
 
   // |{i | v[i] == value}| == count
-  Constraint* MakeCount(const std::vector<IntVar*>& v,
-                        int64 value,
-                        int64 count);
+  Constraint* MakeCount(const std::vector<IntVar*>& v, int64 value, int64 count);
   // |{i | v[i] == value}| == count
   Constraint* MakeCount(const std::vector<IntVar*>& v, int64 value,
                         IntVar* const count);
@@ -2765,8 +2761,7 @@ class Solver {
   int SearchLeftDepth() const;
 
   // Gets the number of nested searches. It returns 0 outside search,
-  // 1 during the top level search, 2 if one level of NestedSolve() is
-  // used, and more if more solves are nested.
+  // 1 during the top level search, 2 or more in case of nested searched.
   int SolveDepth() const;
 
   // Sets the given branch selector on the current active search.

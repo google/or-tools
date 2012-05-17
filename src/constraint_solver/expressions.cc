@@ -4377,6 +4377,7 @@ IntVar* Solver::MakeIntConst(int64 val) {
 
 namespace {
 string IndexedName(const string& prefix, int index, int max_index) {
+#if 0
 #if defined(_MSC_VER)
   const int digits = max_index > 0 ?
       static_cast<int>(log(1.0L * max_index) / log(10.0L)) + 1 :
@@ -4385,6 +4386,9 @@ string IndexedName(const string& prefix, int index, int max_index) {
   const int digits = max_index > 0 ? static_cast<int>(log10(max_index)) + 1: 1;
 #endif
   return StringPrintf("%s%0*d", prefix.c_str(), digits, index);
+#else
+  return StringPrintf("%s%d", prefix.c_str(), index);
+#endif
 }
 }  // namespace
 

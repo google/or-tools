@@ -394,8 +394,8 @@ class ImpactRecorder {
       }
       // Reset the number of impacts initialized.
       init_count_ = 0;
-      // Use NestedSolve() to scan all values of one variable.
-      solver->NestedSolve(init_decision_builder, true);
+      // Use Solve() to scan all values of one variable.
+      solver->Solve(init_decision_builder);
 
       // If we have not initialized all values, then they can be removed.
       // As the iterator is not stable w.r.t. deletion, we need to store
@@ -1069,7 +1069,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     HeuristicWrapper* const wrapper = heuristics_[index];
 
     const bool result =
-        solver->NestedSolve(wrapper->phase, false, heuristic_limit_);
+        solver->SolveAndCommit(wrapper->phase, heuristic_limit_);
     if (result && parameters_.display_level != DefaultPhaseParameters::NONE) {
       LOG(INFO) << "Solution found by heuristic " << wrapper->name;
     }

@@ -133,6 +133,7 @@ class MtSolveSupport : public ParallelSolveSupport {
   void LockMutex();
   // Unlocks the internal mutex.
   void UnlockMutex();
+
  private:
   bool CheckTermination();
   void Reset();

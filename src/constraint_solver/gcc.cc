@@ -108,13 +108,13 @@ class GccConstraint : public Constraint {
       for (i = 2; i < count + 2; i++) {
         sum_[i + 1] = sum_[i] + elements[i - 2];
       }
-      sum_[i + 1] = sum_[i] + 1;
-      sum_[i + 2] = sum_[i + 1] + 1;
+      sum_[count + 3] = sum_[i] + 1;
+      sum_[count + 4] = sum_[i + 1] + 1;
 
       i = count + 3;
       j = i;
       while (i > 0) {
-        while (sum_[i] == sum_[i-1]) {
+        while (sum_[i] == sum_[i - 1]) {
           ds_[i--] = j;
         }
         ds_[j] = i--;
@@ -144,10 +144,10 @@ class GccConstraint : public Constraint {
     int64 Sum(int64 from, int64 to) const {
       if (from <= to) {
         DCHECK((offset_ <= from) && (to <= last_value_));
-        return sum_[to - offset_] - sum_[from - offset_ - 1];
+        return sum_[to - offset_] - sum_[from -1 - offset_];
       } else {
         DCHECK((offset_ <= to) && (from <= last_value_));
-        return sum_[to - offset_ - 1] - sum_[from - offset_];
+        return sum_[to - 1 - offset_] - sum_[from - offset_];
       }
     }
 
@@ -418,30 +418,30 @@ class GccConstraint : public Constraint {
     bounds_[0] = last;
 
     // merge sorted_by_min_[] and sorted_by_max_[] into bounds_[]
-    int64 i = 0;
-    int64 j = 0;
+    int64 min_index = 0;
+    int64 max_index = 0;
     int64 active_index = 0;
     for (;;) {
       // make sure sorted_by_min_ exhausted first
-      if (i < size_ && min <= max) {
+      if (min_index < size_ && min <= max) {
         if (min != last) {
           bounds_[++active_index] = min;
           last = min;
         }
-        sorted_by_min_[i]->min_rank = active_index;
-        if (++i < size_) {
-          min = sorted_by_min_[i]->min_value;
+        sorted_by_min_[min_index]->min_rank = active_index;
+        if (++min_index < size_) {
+          min = sorted_by_min_[min_index]->min_value;
         }
       } else {
         if (max != last) {
           bounds_[++active_index] = max;
           last = max;
         }
-        sorted_by_max_[j]->max_rank = active_index;
-        if (++j == size_) {
+        sorted_by_max_[max_index]->max_rank = active_index;
+        if (++max_index == size_) {
           break;
         }
-        max = sorted_by_max_[j]->max_value + 1;
+        max = sorted_by_max_[max_index]->max_value + 1;
       }
     }
     active_size_ = active_index;
@@ -477,7 +477,7 @@ class GccConstraint : public Constraint {
         solver()->Fail();
       }
       if (hall_[x] > x) {
-        int64 w = PathMax(hall_, hall_[x]);
+        const int64 w = PathMax(hall_, hall_[x]);
         sorted_by_max_[i]->min_value = bounds_[w];
         PathSet(&hall_, x, w, w);
         changed = true;

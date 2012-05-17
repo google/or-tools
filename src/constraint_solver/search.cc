@@ -4138,7 +4138,7 @@ class SolveOnce : public DecisionBuilder {
   virtual ~SolveOnce() {}
 
   virtual Decision* Next(Solver* s) {
-    bool res = s->NestedSolve(db_, false, monitors_);
+    bool res = s->SolveAndCommit(db_, monitors_);
     if (!res) {
       s->Fail();
     }
@@ -4255,7 +4255,7 @@ class NestedOptimize : public DecisionBuilder {
   }
 
   virtual Decision* Next(Solver* solver) {
-    solver->NestedSolve(db_, true, monitors_);
+    solver->Solve(db_, monitors_);
     if (collector_->solution_count() == 0) {
       solver->Fail();
     }
