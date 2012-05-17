@@ -220,18 +220,17 @@ class Ac4TableConstraint : public Constraint {
     Var(IntVar* var, const int var_index, IndexedTable* const table)
         : values_(table->NumDifferentValuesInColumn(var_index)),
           stamps_(values_.size(), 0),
-          active_tuples_(values_.size()),
-          index_in_active_tuples_(values_.size()),
+          active_values_(values_.size()),
+          index_in_active_values_(values_.size()),
           var_(var),
           domain_iterator_(var->MakeDomainIterator(true)),
           delta_domain_iterator_(var->MakeHoleIterator(true)),
-          stamp_active_tuples_(0) {
+          stamp_active_values_(0) {
       for (int value_index = 0; value_index < values_.size(); value_index++) {
-        values_[value_index] =
-            new TupleList(table->NumTuplesContainingValueIndex(var_index,
-                                                               value_index));
-        index_in_active_tuples_[value_index] =
-            active_tuples_.push_back(value_index);
+        values_[value_index] = new TupleList(
+            table->NumTuplesContainingValueIndex(var_index, value_index));
+        index_in_active_values_[value_index] =
+            active_values_.push_back(value_index);
       }
     }
 
@@ -239,26 +238,30 @@ class Ac4TableConstraint : public Constraint {
       STLDeleteElements(&values_); // delete all elements of a vector
     }
 
-    IntVar* Variable() const { return var_; }
+    IntVar* Variable() const {
+      return var_;
+    }
 
-    IntVarIterator* DomainIterator() const { return domain_iterator_; }
+    IntVarIterator* DomainIterator() const {
+      return domain_iterator_;
+    }
 
     IntVarIterator* DeltaDomainIterator() const {
       return delta_domain_iterator_;
     }
 
     void PropagateValueRemoval(Solver* solver, int value_index) {
-      if (stamp_active_tuples_ < solver->stamp()) {
-        solver->SaveValue(&active_tuples_.num_elements_);
-        stamp_active_tuples_ = solver->stamp();
+      if (stamp_active_values_ < solver->stamp()) {
+        solver->SaveValue(&active_values_.num_elements_);
+        stamp_active_values_ = solver->stamp();
       }
-      const int back_value_index = active_tuples_.back();
-      active_tuples_.erase(
-          index_in_active_tuples_[value_index],
+      const int back_value_index = active_values_.back();
+      active_values_.erase(
+          index_in_active_values_[value_index],
           value_index,
           back_value_index,
-          &index_in_active_tuples_[value_index],
-          &index_in_active_tuples_[back_value_index]);
+          &index_in_active_values_[value_index],
+          &index_in_active_values_[back_value_index]);
     }
 
     void SaveSizeOnce(Solver* solver, int v) {
@@ -278,12 +281,12 @@ class Ac4TableConstraint : public Constraint {
     std::vector<TupleList*> values_;
     std::vector<uint64> stamps_;
     // list of values: having a non empty tuple list
-    TupleList active_tuples_;
-    std::vector<int> index_in_active_tuples_;
+    TupleList active_values_;
+    std::vector<int> index_in_active_values_;
     IntVar* const var_;
     IntVarIterator* const domain_iterator_;
     IntVarIterator* const delta_domain_iterator_;
-    uint64 stamp_active_tuples_;
+    uint64 stamp_active_values_;
   };
 
   int Index(int tuple_index, int var_index) const {
@@ -303,10 +306,10 @@ class Ac4TableConstraint : public Constraint {
         }
       }
       // on supprime de var les valeurs ayant un tuple list vide
-      const int last_valid_value = vars_[var_index]->active_tuples_.Size();
+      const int last_valid_value = vars_[var_index]->active_values_.Size();
       for (int cpt = 0; cpt < num_removed; cpt++) {
         const int value_index =
-            vars_[var_index]->active_tuples_[last_valid_value + cpt];
+            vars_[var_index]->active_values_[last_valid_value + cpt];
         vars_[var_index]->Variable()->RemoveValue(
             table_->ValueFromIndex(var_index, value_index));
       }
@@ -345,18 +348,6 @@ class Ac4TableConstraint : public Constraint {
     }
   }
 
-  void PushBackTupleFromIndex(const int tuple_index) {
-    for (int var_index = 0; var_index < num_variables_; var_index++) {
-      TupleList* const val =
-          vars_[var_index]->values_[table_->TupleValue(tuple_index, var_index)];
-      const int index_of_value = reverse_tuples_[Index(tuple_index, var_index)];
-      const int ebt = val->end_back();
-      reverse_tuples_[Index(ebt, var_index)] = index_of_value;
-      reverse_tuples_[Index(tuple_index, var_index)] = val->Size();
-      val->push_back_from_index(index_of_value, tuple_index, ebt);
-    }
-  }
-
   // le reset est fait a partir de la variable var_index.
   void Reset(int var_index) {
     int s = 0;
@@ -371,23 +362,35 @@ class Ac4TableConstraint : public Constraint {
       }
     }
     // on effectue un clear sur TOUTES les valeurs de la liste
-    // nonEmptyTupleList On sauvegarde size pour chacune de ces
+    // active_values_. On sauvegarde size pour chacune de ces
     // valeurs avant de les mettre à 0
 
     // on clear les tuples des valeurs du domaine
     for (int i = 0; i < num_variables_; i++) {
-      for (int k = 0; k < vars_[i]->active_tuples_.Size(); k++) {
-        const int v = vars_[i]->active_tuples_[k];
+      for (int k = 0; k < vars_[i]->active_values_.Size(); k++) {
+        const int v = vars_[i]->active_values_[k];
         vars_[i]->SaveSizeOnce(solver(), v);
         vars_[i]->values_[v]->clear();
       }
     }
 
-    // on balaie tupleTMP et on remet les tuples dans les domaines
+    // on balaie tmp_ on remet les tuples dans les domaines
     const int size = tmp_.size();
     for (int j = 0; j < size; j++) {
-      PushBackTupleFromIndex(tmp_[j]);
+      const int tuple_index = tmp_[j];
+      for (int var_index = 0; var_index < num_variables_; var_index++) {
+        TupleList* const val =
+            vars_[var_index]->values_[table_->TupleValue(tuple_index,
+                                                         var_index)];
+        const int index_of_value =
+            reverse_tuples_[Index(tuple_index, var_index)];
+        const int ebt = val->end_back();
+        reverse_tuples_[Index(ebt, var_index)] = index_of_value;
+        reverse_tuples_[Index(tuple_index, var_index)] = val->Size();
+        val->push_back_from_index(index_of_value, tuple_index, ebt);
+      }
     }
+
     // Si une valeur n'a plus de support on la supprime
     EraseValuesWithoutSupport();
   }
