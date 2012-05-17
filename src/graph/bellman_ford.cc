@@ -35,6 +35,7 @@ class BellmanFord {
     graph->CheckIsRepeatable();
   }
   bool ShortestPath(int end_node, std::vector<int>* nodes);
+
  private:
   void Initialize();
   void Update();

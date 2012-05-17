@@ -24,12 +24,12 @@
 
 #if defined(SWIGJAVA)
 // Rename rules on EbertGraph.
-%rename(reserve) operations_research::EbertGraphCore::Reserve;
-%rename(numNodes) operations_research::EbertGraphCore::num_nodes;
-%rename(numArcs) operations_research::EbertGraphCore::num_arcs;
-%rename(maxNumNodes) operations_research::EbertGraphCore::max_num_nodes;
-%rename(maxNumArcs) operations_research::EbertGraphCore::max_num_arcs;
-%rename(addArc) operations_research::EbertGraphCore::AddArc;
+%rename(reserve) operations_research::EbertGraphBase::Reserve;
+%rename(numNodes) operations_research::StarGraphBase::num_nodes;
+%rename(numArcs) operations_research::StarGraphBase::num_arcs;
+%rename(maxNumNodes) operations_research::StarGraphBase::max_num_nodes;
+%rename(maxNumArcs) operations_research::StarGraphBase::max_num_arcs;
+%rename(addArc) operations_research::EbertGraphBase::AddArc;
 
 // Rename rules on MaxFlow.
 %rename (getSourceNodeIndex) operations_research::MaxFlow::GetSourceNodeIndex;
@@ -73,16 +73,16 @@
 
 #if defined(SWIGCSHARP)
 // Rename rules on EbertGraph.
-%rename(EndArcIndex) operations_research::EbertGraphCore::end_arc_index;
-%rename(EndNodeIndex) operations_research::EbertGraphCore::end_node_index;
-%rename(MaxEndArcIndex) operations_research::EbertGraphCore::max_end_arc_index;
-%rename(MaxEndNodeIndex) operations_research::EbertGraphCore::max_end_node_index;
-%rename(MaxNumArcs) operations_research::EbertGraphCore::max_num_arcs;
-%rename(MaxNumArcs) operations_research::EbertGraphCore::max_num_arcs;
-%rename(MaxNumNodes) operations_research::EbertGraphCore::max_num_nodes;
-%rename(MaxNumNodes) operations_research::EbertGraphCore::max_num_nodes;
-%rename(NumArcs) operations_research::EbertGraphCore::num_arcs;
-%rename(NumNodes) operations_research::EbertGraphCore::num_nodes;
+%rename(EndArcIndex) operations_research::StarGraphBase::end_arc_index;
+%rename(EndNodeIndex) operations_research::StarGraphBase::end_node_index;
+%rename(MaxEndArcIndex) operations_research::StarGraphBase::max_end_arc_index;
+%rename(MaxEndNodeIndex) operations_research::StarGraphBase::max_end_node_index;
+%rename(MaxNumArcs) operations_research::StarGraphBase::max_num_arcs;
+%rename(MaxNumArcs) operations_research::StarGraphBase::max_num_arcs;
+%rename(MaxNumNodes) operations_research::StarGraphBase::max_num_nodes;
+%rename(MaxNumNodes) operations_research::StarGraphBase::max_num_nodes;
+%rename(NumArcs) operations_research::StarGraphBase::num_arcs;
+%rename(NumNodes) operations_research::StarGraphBase::num_nodes;
 
 // Rename rules on MaxFlow.
 %rename (Graph) operations_research::MaxFlow::graph;
@@ -101,9 +101,13 @@
 %include "graph/max_flow.h"
 %include "graph/min_cost_flow.h"
 
-%template(StarGraphCore) operations_research::EbertGraphCore<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
+%template(StarStarGraphBase) operations_research::StarGraphBase<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
+%template(StarGraphCore) operations_research::EbertGraphBase<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
 %template(StarGraph) operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex>;
-%template(ForwardStarGraphCore) operations_research::EbertGraphCore<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
+%template(ForwardStarStarGraphBase) operations_research::StarGraphBase<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
+%template(ForwardStarGraphCore) operations_research::EbertGraphBase<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
 %template(ForwardStarGraph) operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex>;
+%template(ForwardStarStaticStarGraphBase) operations_research::StarGraphBase<operations_research::NodeIndex, operations_research::ArcIndex, operations_research::ForwardStaticGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
+%template(ForwardStarStaticGraph) operations_research::ForwardStaticGraph<operations_research::NodeIndex, operations_research::ArcIndex>;
 %template(ForwardEbertLinearSumAssignment) operations_research::LinearSumAssignment<operations_research::ForwardEbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;
 %template(EbertLinearSumAssignment) operations_research::LinearSumAssignment<operations_research::EbertGraph<operations_research::NodeIndex, operations_research::ArcIndex> >;

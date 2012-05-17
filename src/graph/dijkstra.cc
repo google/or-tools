@@ -60,6 +60,7 @@ class DijkstraSP {
     graph->CheckIsRepeatable();
   }
   bool ShortestPath(int end_node, std::vector<int>* nodes);
+
  private:
   void Initialize();
   int SelectClosestNode(int64* distance);

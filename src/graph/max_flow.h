@@ -358,6 +358,7 @@ class MaxFlow {
   // The status of the problem.
   Status status_;
 
+ private:
   DISALLOW_COPY_AND_ASSIGN(MaxFlow);
 };
 }  // namespace operations_research
