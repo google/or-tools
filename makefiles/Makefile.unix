@@ -148,7 +148,7 @@ ifeq ($(PLATFORM),MACOSX)
     CSC = gmcs
     MONO = mono
   else
-    CSC = $(UNIX_MONO_DIR)/bin/gmcs
+    CSC = $(UNIX_MONO_DIR)/bin/mcs
     MONO = $(UNIX_MONO_DIR)/bin/mono
   endif
 
