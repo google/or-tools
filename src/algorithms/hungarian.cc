@@ -45,6 +45,7 @@ class HungarianOptimizer {
   // Returns the assignment in the two vectors passed as argument.
   // agent[i] is assigned to task[i].
   void Minimize(std::vector<int>* agent, std::vector<int>* task);
+
  private:
   typedef void (HungarianOptimizer::*Step)();
 
