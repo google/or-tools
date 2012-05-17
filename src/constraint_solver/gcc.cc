@@ -21,9 +21,11 @@
 
 #include "base/int-type.h"
 #include "base/int-type-indexed-vector.h"
+#include "base/stringprintf.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/constraint_solver.h"
 #include "util/const_ptr_array.h"
+#include "util/string_array.h"
 #include "util/vector_map.h"
 
 namespace operations_research {
@@ -45,6 +47,13 @@ class GccConstraint : public Constraint {
     int64 max_value;	 // start, end of Interval
     int64 min_rank;
     int64 max_rank; // rank of min & max in bounds_[]
+    string DebugString() const {
+      return StringPrintf("Interval(value = [%lld, %lld], rank = [%lld, %lld])",
+                          min_value,
+                          max_value,
+                          min_rank,
+                          max_rank);
+    }
   };
 
   struct CompareIntervalMin {
@@ -68,24 +77,23 @@ class GccConstraint : public Constraint {
     PartialSum(int64 offset,
                int64 count,
                const std::vector<int64>& elements) :
-        offset_(offset - 3),
+        offset_(offset - 3),  // We add 3 elements at the beginning.
         last_value_(offset + count + 1),
         sum_(count + 5),
         ds_(count + 5) {
-      int64 i, j;
       sum_[0] = 0;
       sum_[1] = 1;
       sum_[2] = 2;
-      for (i = 2; i < count + 2; i++) {
+      for (int64 i = 2; i < count + 2; i++) {
         sum_[i + 1] = sum_[i] + elements[i - 2];
       }
-      sum_[i + 1] = sum_[i] + 1;
-      sum_[i + 2] = sum_[i + 1] + 1;
+      sum_[count + 3] = sum_[count + 2] + 1;
+      sum_[count + 4] = sum_[count + 3] + 1;
 
-      i = count + 3;
-      j = i;
+      int64 i = count + 3;
+      int64 j = count + 4;
       while (i > 0) {
-        while (sum_[i] == sum_[i-1]) {
+        while (sum_[i] == sum_[i - 1]) {
           ds_[i--] = j;
         }
         ds_[j] = i--;
@@ -101,18 +109,17 @@ class GccConstraint : public Constraint {
         last_value_(offset + count + 1),
         sum_(count + 5),
         ds_(count + 5) {
-      int64 i, j;
       sum_[0] = 0;
       sum_[1] = 1;
       sum_[2] = 2;
-      for (i = 2; i < count + 2; i++) {
+      for (int64 i = 2; i < count + 2; i++) {
         sum_[i + 1] = sum_[i] + elements[i - 2];
       }
-      sum_[count + 3] = sum_[i] + 1;
-      sum_[count + 4] = sum_[i + 1] + 1;
+      sum_[count + 3] = sum_[count + 2] + 1;
+      sum_[count + 4] = sum_[count + 3] + 1;
 
-      i = count + 3;
-      j = i;
+      int64 i = count + 3;
+      int64 j = count + 4;
       while (i > 0) {
         while (sum_[i] == sum_[i - 1]) {
           ds_[i--] = j;
@@ -157,6 +164,15 @@ class GccConstraint : public Constraint {
 
     int64 last_value() const {
       return last_value_;
+    }
+
+    string DebugString() const {
+      return StringPrintf(
+          "PartialSum(offset=%lld, last_value = %lld, sum = %s, ds = %s)",
+          offset_,
+          last_value_,
+          Int64VectorToString(sum_, ", ").c_str(),
+          Int64VectorToString(ds_, ", ").c_str());
     }
 
    private:
@@ -269,6 +285,11 @@ class GccConstraint : public Constraint {
       sorted_by_min_[i.value()] = &intervals_[i];
       sorted_by_max_[i.value()] = &intervals_[i];
     }
+    LOG(INFO) << IntVectorToString(max_occurrences, ", ");
+    LOG(INFO) << "Upper = " << upper_sum_.DebugString();
+    LOG(INFO) << IntVectorToString(min_occurrences, ", ");
+    LOG(INFO) << "Lower = " << lower_sum_.DebugString();
+    LOG(INFO) << DebugStringVector(sorted_by_min_, ", ");
   }
 
   virtual ~GccConstraint() {}
@@ -309,11 +330,12 @@ class GccConstraint : public Constraint {
       // incremental
       has_changed = false;
       for(Index i(0); i < size_; i++) {
-        const int64 dl = intervals_[i].min_value;
-        const int64 du = intervals_[i].max_value;
+        const int64 old_min = intervals_[i].min_value;
+        const int64 old_max = intervals_[i].max_value;
         intervals_[i].min_value = variables_[i]->Min();
         intervals_[i].max_value = variables_[i]->Max();
-        if (dl != intervals_[i].min_value || du != intervals_[i].max_value) {
+        if (old_min != intervals_[i].min_value ||
+            old_max != intervals_[i].max_value) {
           has_changed = true;
         }
       }
@@ -403,13 +425,58 @@ class GccConstraint : public Constraint {
     return i;
   }
 
+  void sortmin( Interval *v[], int n ) {
+    int i, current;
+    bool sorted;
+    Interval *t;
+
+    current = n-1;
+    sorted = false;
+    while( !sorted ) {
+      sorted = true;
+      for( i = 0; i < current; i++ ) {
+        if( v[i]->min_value > v[i+1]->min_value ) {
+          t = v[i];
+          v[i] = v[i+1];
+          v[i+1] = t;
+          sorted = false;
+        }
+      }
+      current--;
+    }
+  }
+
+  void sortmax( Interval *v[], int n ) {
+    int i, current;
+    bool sorted;
+    Interval *t;
+
+    current = 0;
+    sorted = false;
+    while( !sorted ) {
+      sorted = true;
+      for( i = n-1; i > current; i-- ) {
+        if( v[i]->max_value < v[i-1]->max_value ) {
+          t = v[i];
+          v[i] = v[i-1];
+          v[i-1] = t;
+          sorted = false;
+        }
+      }
+      current++;
+    }
+  }
+
+
   void SortIntervals() {
-    std::sort(sorted_by_min_.begin(),
-              sorted_by_min_.end(),
-              CompareIntervalMin());
-    std::sort(sorted_by_max_.begin(),
-              sorted_by_max_.end(),
-              CompareIntervalMax());
+    sortmin(sorted_by_min_.data(), size_);
+    sortmax(sorted_by_max_.data(), size_);
+    // std::sort(sorted_by_min_.begin(),
+    //           sorted_by_min_.end(),
+    //           CompareIntervalMin());
+    // std::sort(sorted_by_max_.begin(),
+    //           sorted_by_max_.end(),
+    //           CompareIntervalMax());
 
     int64 min = sorted_by_min_[0]->min_value;
     int64 max = sorted_by_max_[0]->max_value + 1;
@@ -421,6 +488,7 @@ class GccConstraint : public Constraint {
     int64 min_index = 0;
     int64 max_index = 0;
     int64 active_index = 0;
+    // merge minsorted[] and maxsorted[] into bounds[]
     for (;;) {
       // make sure sorted_by_min_ exhausted first
       if (min_index < size_ && min <= max) {
@@ -447,6 +515,8 @@ class GccConstraint : public Constraint {
     active_size_ = active_index;
     //MODIFIED: bounds_[active_index+1] = bounds_[active_index] + 2;
     bounds_[active_index + 1] = upper_sum_.last_value() + 1;
+    LOG(INFO) << DebugStringVector(sorted_by_min_, ", ");
+    LOG(INFO) << DebugStringVector(sorted_by_max_, ", ");
   }
 
   /*
@@ -468,9 +538,10 @@ class GccConstraint : public Constraint {
       int64 z = PathMax(tree_, x + 1);
       int64 j = tree_[z];
       if (--diffs_[z] == 0) {
-        tree_[z] = z + 1;
-        z = PathMax(tree_, z + 1);
-        tree_[z] = j;
+        tree_[z = PathMax(tree_, tree_[z]=z+1)] = j;
+        // tree_[z] = z + 1;
+        // z = PathMax(tree_, z + 1);
+        // tree_[z] = j;
       }
       PathSet(&tree_, x + 1, z, z);
       if (diffs_[z] < upper_sum_.Sum(bounds_[y], bounds_[z] - 1)) {
@@ -505,7 +576,10 @@ class GccConstraint : public Constraint {
     }
 
     // Visit intervals in decreasing min order
-    for (int64 i = size_ - 1; i >= 0; --i) {
+
+    for (int64 i=size_; --i>=0; ) { // visit intervals in decreasing min order
+
+      //    for (int64 i = size_ - 1; i >= 0; --i) {
       // Get interval bounds.
       int64 x = sorted_by_min_[i]->max_rank;
       int64 y = sorted_by_min_[i]->min_rank;
@@ -521,7 +595,7 @@ class GccConstraint : public Constraint {
         solver()->Fail();
       }
       if (hall_[x] < x) {
-        int64 w = PathMin(hall_, hall_[x]);
+        const int64 w = PathMin(hall_, hall_[x]);
         sorted_by_min_[i]->max_value = bounds_[w] - 1;
         PathSet(&hall_, x, w, w);
         changed = true;
@@ -573,13 +647,13 @@ class GccConstraint : public Constraint {
       int64 y = sorted_by_max_[i]->max_rank;
       int64 z = PathMax(tree_, x + 1);
       int64 j = tree_[z];
-      int64 v;
-      if (z != x+1) {
+      if (z != x + 1) {
         // if bounds_[z] - 1 belongs to a stable set,
         // [bounds_[x], bounds_[z]) is a sub set of this stable set
-        v = potential_stable_sets_[w = PathMax(potential_stable_sets_, x + 1)];
-        PathSet(&potential_stable_sets_, x+1, w, w); // path compression
-        w = y < z ? y : z;
+        w = PathMax(potential_stable_sets_, x + 1);
+        int64 v = potential_stable_sets_[w];
+        PathSet(&potential_stable_sets_, x + 1, w, w); // path compression
+        w = std::min(y, z);
         PathSet(&potential_stable_sets_, potential_stable_sets_[w], v , w);
         potential_stable_sets_[w] = v;
       }
@@ -589,7 +663,7 @@ class GccConstraint : public Constraint {
         w = PathMax(stable_intervals_, potential_stable_sets_[y]);
         // Path compression
         PathSet(&stable_intervals_, potential_stable_sets_[y], w, w);
-        v = stable_intervals_[w];
+        int64 v = stable_intervals_[w];
         PathSet(&stable_intervals_,
                 stable_intervals_[y],
                 v,
@@ -598,7 +672,7 @@ class GccConstraint : public Constraint {
       } else {
         // Decrease the capacity between the two bounds_
         if (--diffs_[z] == 0) {
-          tree_[z = PathMax(tree_, tree_[z]=z+1)] = j;
+          tree_[z = PathMax(tree_, tree_[z] = z + 1)] = j;
         }
 
         // If the lower bound belongs to an unstable or a stable set,
@@ -616,18 +690,18 @@ class GccConstraint : public Constraint {
         // If an unstable set is discovered
         if (diffs_[z] == lower_sum_.Sum(bounds_[y], bounds_[z] - 1)) {
           // Consider stable and unstable sets beyong y
-          if (hall_[y] > y)
-            // Equintervals_alent to PathMax since the path is fully
-            // compressed
+          if (hall_[y] > y) {
+            // Equivalent to PathMax since the path is fully compressed.
             y = hall_[y];
+          }
           PathSet(&hall_,
                   hall_[y],
                   j - 1,
                   y); // mark the new unstable set
-          hall_[y] = j-1;
+          hall_[y] = j - 1;
         }
       }
-      PathSet(&tree_, x+1, z, z); // path compression
+      PathSet(&tree_, x + 1, z, z); // path compression
     }
 
     // If there is a failure set
