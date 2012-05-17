@@ -215,5 +215,5 @@ template <typename IndexType> class PermutationApplier {
 
   DISALLOW_COPY_AND_ASSIGN(PermutationApplier);
 };
-}
+}  // namespace operations_research
 #endif  // OR_TOOLS_UTIL_PERMUTATION_H_

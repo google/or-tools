@@ -87,6 +87,7 @@ template<typename T> class AdjustablePriorityQueue {
       }
     }
   }
+
  private:
   void AdjustUpwards(int i) {
     T* const t = elems_[i];

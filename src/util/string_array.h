@@ -101,5 +101,5 @@ inline string IntVectorToString(const std::vector<int>& array,
   return IntArrayToString(array.data(), array.size(), separator);
 }
 
-}  // namespace
+}  // namespace operations_research
 #endif  // OR_TOOLS_UTIL_STRING_ARRAY_H_

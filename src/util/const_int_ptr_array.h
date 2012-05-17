@@ -178,6 +178,7 @@ template <class T> class ConstIntPtrArray {
     result.append("]");
     return result;
   }
+
  private:
   void Sort(std::vector<Cell>* const data, bool increasing) const {
     if (increasing) {

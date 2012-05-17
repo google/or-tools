@@ -43,14 +43,14 @@ template<class T> class ZVector {
  public:
   ZVector() : base_(NULL),
               min_index_(0),
-              max_index_(0),
+              max_index_(-1),
               size_(0),
               storage_() {}
 
   ZVector(int64 min_index, int64 max_index)
       : base_(NULL),
         min_index_(0),
-        max_index_(0),
+        max_index_(-1),
         size_(0),
         storage_() {
     if (!Reserve(min_index, max_index)) {

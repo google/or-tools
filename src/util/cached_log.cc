@@ -29,7 +29,7 @@ double FastLog2(int64 input) {
   return log2(input);
 #endif
 }
-}
+}  // namespace
 
 void CachedLog::Init(int size) {
   CHECK(cache_.empty());

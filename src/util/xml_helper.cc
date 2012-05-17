@@ -88,4 +88,4 @@ void XmlHelper::EndElement() {
 void XmlHelper::EndDocument() {}
 
 const string& XmlHelper::GetContent() const { return content_; }
-}  // namespace
+}  // namespace operations_research

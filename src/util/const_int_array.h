@@ -136,6 +136,7 @@ class ConstIntArray {
   // Check the status of a given info bit. It will scan the array on demand.
   // This is not valid after Release() has been called.
   bool HasProperty(Property info);
+
  private:
   void AndProperty(Property info, bool value);
   void Scan();

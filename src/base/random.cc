@@ -71,13 +71,13 @@ static inline uint32 Word32At(const char *ptr) {
 
 int32 ACMRandom::HostnamePidTimeSeed() {
   char name[PATH_MAX + 20];      // need 12 bytes for 3 'empty' uint32's
-  assert(sizeof(name) - PATH_MAX > sizeof(uint32) * 3);
+  assert(sizeof(name) - PATH_MAX > sizeof(uint32) * 3);  // NOLINT
 
   if (gethostname(name, PATH_MAX) != 0) {
-    strcpy(name, "default-hostname");
+    strcpy(name, "default-hostname");  // NOLINT
   }
   const int namelen = strlen(name);
-  for (int i = 0; i < sizeof(uint32) * 3; ++i) {
+  for (int i = 0; i < sizeof(uint32) * 3; ++i) {  // NOLINT
     name[namelen + i] = '\0';   // so we mix 0's once we get to end-of-string
   }
 #if defined(__GNUC__)
@@ -92,14 +92,14 @@ int32 ACMRandom::HostnamePidTimeSeed() {
   return 0;
 #endif
   uint32 c = 0;
-  for (int i = 0; i < namelen; i += sizeof(uint32) * 3) {
+  for (int i = 0; i < namelen; i += sizeof(uint32) * 3) {  // NOLINT
     a += Word32At(name + i);
-    b += Word32At(name + i + sizeof(uint32));
-    c += Word32At(name + i + sizeof(uint32) + sizeof(uint32));
+    b += Word32At(name + i + sizeof(uint32));  // NOLINT
+    c += Word32At(name + i + sizeof(uint32) + sizeof(uint32));  // NOLINT
     mix(a, b, c);
   }
   c += namelen;                      // one final mix
-  mix(a,b,c);
+  mix(a, b, c);
   return static_cast<int32>(c);      // I guess the seed can be negative
 }
 

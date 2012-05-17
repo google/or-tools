@@ -149,6 +149,7 @@ class MutableIter {
     Eraser<Container>::erase(container_, &iterator_);
     return *this;
   }
+
  private:
   container_type* container_;
   iterator_type iterator_;

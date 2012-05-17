@@ -59,5 +59,5 @@ class XmlHelper {
 
   DISALLOW_COPY_AND_ASSIGN(XmlHelper);
 };
-}
+}  // namespace operations_research
 #endif  // OR_TOOLS_UTIL_XML_HELPER_H_

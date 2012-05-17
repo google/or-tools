@@ -57,6 +57,7 @@ template <class T> class sparsetable {
   }
 
   int size() const { return size_; }
+
  private:
   static const int kBlockSize = 32;
 
@@ -64,6 +65,6 @@ template <class T> class sparsetable {
   std::vector<std::vector<T> > elements_;
   std::vector<uint32> masks_;
 };
-}
+}  // namespace operations_research
 
 #endif  // OR_TOOLS_BASE_SPARSETABLE_H_
