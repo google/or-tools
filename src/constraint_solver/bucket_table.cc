@@ -29,7 +29,7 @@ namespace {
 // GAC-4 Revisited (c) Jean-Charles Régin 2012
 //
 // ****************************************************************************
-class RTableCt;
+class Ac4TableConstraint;
 
 class IndexedTable {
  public:
@@ -96,13 +96,16 @@ class IndexedTable {
 
 class ListAsArray {
  public:
-  ListAsArray(const int n) : elements_(new int[n]), size_(0), capacity_(n) {}
+  ListAsArray(const int capacity)
+  : elements_(new int[capacity]),
+    num_elements_(0),
+    capacity_(capacity) {}
 
   ~ListAsArray() {}
 
-  int size() const { return size_; }
+  int NumElements() const { return num_elements_; }
 
-  int capacity() const { return capacity_; }
+  int Capacity() const { return capacity_; }
 
   int operator[](int i) const {
     // si l'array est const alors on ne peut pas le modifier // const T&
@@ -111,71 +114,46 @@ class ListAsArray {
   }
 
   void push_back(int elt) {
-    DCHECK_LT(size_, capacity_);
-    elements_[size_++] = elt;
+    DCHECK_LT(num_elements_, capacity_);
+    elements_[num_elements_++] = elt;
   }
 
   void push_back(int elt, int& pos) {
-    DCHECK_LT(size_, capacity_);
-    pos = size_;
-    elements_[size_++] = elt;
-  }
-
-  void push_back_from_index(int i) {
-    // place l'elt qui est à l'index i en dernier et met à sa place
-    // l'élément qui était dernier
-    const int elt = elements_[i];
-    elements_[i] = elements_[size_];
-    elements_[size_] = elt;
-    size_++;
+    DCHECK_LT(num_elements_, capacity_);
+    pos = num_elements_;
+    elements_[num_elements_++] = elt;
   }
 
   void push_back_from_index(int i, int iElt, int endBackElt) {
     elements_[i] = endBackElt;
-    elements_[size_] = iElt;
-    size_++;
+    elements_[num_elements_] = iElt;
+    num_elements_++;
   }
 
-  int end_back() const { return elements_[size_]; }
+  int end_back() const { return elements_[num_elements_]; }
 
-  int back() const { return elements_[size_ - 1]; }
-
-  void erase(int i) {
-    size_--;
-    const int elt = elements_[i];
-    elements_[i] = elements_[size_];
-    elements_[size_] = elt;
-  }
-
-  void erase(int i, int iElt, int backElt) {
-    size_--;
-    elements_[size_] = iElt;
-    elements_[i] = backElt;
-  }
+  int back() const { return elements_[num_elements_ - 1]; }
 
   void erase(int i, int iElt, int backElt, int& posElt, int& posBack) {
-    size_--;
-    elements_[size_] = iElt;
+    num_elements_--;
+    elements_[num_elements_] = iElt;
     elements_[i] = backElt;
-    posElt = size_;
+    posElt = num_elements_;
     posBack = i;
   }
 
   void clear() {
-    size_=0;
+    num_elements_=0;
   }
 
  private:
-  friend class RTableCt;
+  friend class Ac4TableConstraint;
   scoped_array<int> elements_; // set of elts
-  int size_; // number of elts in the set
+  int num_elements_; // number of elts in the set
   const int capacity_;
 };
 
-int XXXEraseTuple=0;
-int XXXPushTuple=0;
-
-class RTableCt : public Constraint {
+class Ac4TableConstraint : public Constraint {
   class Var {
    public:
     Var(IntVar* var, const int x, IndexedTable* table)
@@ -190,7 +168,7 @@ class RTableCt : public Constraint {
       const int numValues = table->NumDifferentValuesInColumn(x);
       for (int v = 0; v< numValues; v++) {
         values_[v] = new ListAsArray(table->NumTuplesContainingValue(x,v));
-        nonEmptyTupleLists_.push_back(v,indexInNonEmptyTupleLists_[v]);
+        nonEmptyTupleLists_.push_back(v, indexInNonEmptyTupleLists_[v]);
       }
     }
 
@@ -206,7 +184,7 @@ class RTableCt : public Constraint {
 
     void RemoveFromNonEmptyTupleList(Solver* solver, int v) {
       if (stampNonEmptyTupleLists_ < solver->stamp()) {
-        solver->SaveValue(&nonEmptyTupleLists_.size_);
+        solver->SaveValue(&nonEmptyTupleLists_.num_elements_);
         stampNonEmptyTupleLists_=solver->stamp();
       }
       const int bv=nonEmptyTupleLists_.back();
@@ -219,13 +197,13 @@ class RTableCt : public Constraint {
 
     void save_size_once(Solver* solver, int v) {
       if (stamps_[v] < solver->stamp()) {
-        solver->SaveValue(&values_[v]->size_);
+        solver->SaveValue(&values_[v]->num_elements_);
         stamps_[v]=solver->stamp();
       }
     }
 
    private:
-    friend class RTableCt;
+    friend class Ac4TableConstraint;
     std::vector<ListAsArray*> values_; // one LAA per value of the variable
     std::vector<uint64> stamps_; // on fait un tableau de stamp: un par valeur
     ListAsArray nonEmptyTupleLists_; // list of values: having a non empty tuple list
@@ -241,11 +219,10 @@ class RTableCt : public Constraint {
   }
 
   void erase_tuple(const int t) {
-    XXXEraseTuple++;
     for (int i=0;i<n_;i++) { // the tuple is erased for each value it contains
       const int v=table_->TupleValue(t,i);
       ListAsArray* const val=vars_[i]->values_[table_->TupleValue(t,i)];
-      const int sizeiv = val->size()-1;
+      const int sizeiv = val->NumElements() - 1;
       const int index = tuple_index_in_value_list(t,i);
       const int bt = val->back();
       vars_[i]->save_size_once(solver(),v);
@@ -268,13 +245,13 @@ class RTableCt : public Constraint {
       int numSupp = 0;
       for (it->Init(); it->Ok(); it->Next()) {
         const int val = table_->IndexFromValue(i,it->Value());
-        if (vars_[i]->values_[val]->size()==0) {
+        if (vars_[i]->values_[val]->NumElements() == 0) {
           vars_[i]->RemoveFromNonEmptyTupleList(solver(),val);
           numSupp++;
         }
       }
       // on supprime de var les valeurs ayant un tuple list vide
-      const int s = vars_[i]->nonEmptyTupleLists_.size();
+      const int s = vars_[i]->nonEmptyTupleLists_.NumElements();
       for (int cpt = 0; cpt < numSupp; cpt++) {
         const int v = vars_[i]->nonEmptyTupleLists_[s + cpt];
         vars_[i]->Variable()->RemoveValue(table_->ValueFromIndex(i, v));
@@ -284,29 +261,27 @@ class RTableCt : public Constraint {
 
   void filter_from_value_deletion(const int x, const int a) {
     ListAsArray* const val = vars_[x]->values_[a];
-    const int size=val->size();
-    for (int k=0; k < size; k++) {
+    const int size = val->NumElements();
+    for (int k = 0; k < size; k++) {
       erase_tuple((*val)[0]);
     }
   }
 
   void push_back_tuple_from_index(const int t) {
-    XXXPushTuple++;
     for (int i = 0; i < n_; i++) {
       ListAsArray* const val = vars_[i]->values_[table_->TupleValue(t, i)];
       const int indexForValue = tuple_index_in_value_list(t, i);
       const int ebt = val->end_back();
       tuple_index_in_value_list(ebt, i) = indexForValue;
-      tuple_index_in_value_list(t, i) = val->size();
-      val->push_back_from_index(indexForValue,t, ebt);
+      tuple_index_in_value_list(t, i) = val->NumElements();
+      val->push_back_from_index(indexForValue, t, ebt);
     }
   }
 
   void push_back_tuple(const int t) {
-    XXXPushTuple++;
     for (int i = 0;i < n_; i++) {
       ListAsArray* const val = vars_[i]->values_[table_->TupleValue(t, i)];
-      tuple_index_in_value_list(t, i) = val->size();
+      tuple_index_in_value_list(t, i) = val->NumElements();
       val->push_back(t);
     }
   }
@@ -318,7 +293,7 @@ class RTableCt : public Constraint {
     for (it->Init(); it->Ok(); it->Next()) {
       const int v = table_->IndexFromValue(x, it->Value());
       ListAsArray* const val = vars_[x]->values_[v];
-      const int numTuples = val->size();
+      const int numTuples = val->NumElements();
       for (int j = 0; j <numTuples; j++) {
         tmp_.push_back((*val)[j]);
       }
@@ -327,7 +302,7 @@ class RTableCt : public Constraint {
     // On sauvegarde size pour chacune de ces valeurs avant de les mettre à 0
 
     for (int i = 0;i < n_; i++) { // on clear les tuples des valeurs du domaine
-      for (int k = 0; k < vars_[i]->nonEmptyTupleLists_.size(); k++) {
+      for (int k = 0; k < vars_[i]->nonEmptyTupleLists_.NumElements(); k++) {
         const int v = vars_[i]->nonEmptyTupleLists_[k];
         vars_[i]->save_size_once(solver(), v);
         vars_[i]->values_[v]->clear();
@@ -364,7 +339,7 @@ class RTableCt : public Constraint {
     const int64 mindomain = var->Min();
     for (int64 val = oldmindomain; val < mindomain; ++val) {
       if (table_->TupleContainsValue(x,val)) {
-        delta_.push_back(table_->IndexFromValue(x,val));
+        delta_.push_back(table_->IndexFromValue(x, val));
       }
     }
     // Second iteration: "delta" domain iteration
@@ -372,7 +347,7 @@ class RTableCt : public Constraint {
     for (it->Init(); it->Ok(); it->Next()) {
       int64 val = it->Value();
       if (table_->TupleContainsValue(x,val)) {
-        delta_.push_back(table_->IndexFromValue(x,val));
+        delta_.push_back(table_->IndexFromValue(x, val));
       }
     }
     // Third iteration: from max to oldmax
@@ -380,7 +355,7 @@ class RTableCt : public Constraint {
     const int64 maxdomain = var->Max();
     for (int64 val = maxdomain + 1; val <= oldmaxdomain; ++val) {
       if (table_->TupleContainsValue(x,val)) {
-        delta_.push_back(table_->IndexFromValue(x,val));
+        delta_.push_back(table_->IndexFromValue(x, val));
       }
     }
   }
@@ -391,7 +366,7 @@ class RTableCt : public Constraint {
                                       // supprimés
     int numDelTuples=0;
     for (int k = 0; k < delta_.size(); k++) {
-      numDelTuples += vars_[x]->values_[delta_[k]]->size();
+      numDelTuples += vars_[x]->values_[delta_[k]]->NumElements();
     }
     // on calcule le nombre de tuples en balayant les valeurs du
     // domaine de la var x
@@ -399,7 +374,7 @@ class RTableCt : public Constraint {
     IntVarIterator* const it = vars_[x]->DomainIterator();
     for (it->Init(); it->Ok(); it->Next()) {
       const int v = table_->IndexFromValue(x, it->Value());
-      numTuplesInDomain += vars_[x]->values_[v]->size();
+      numTuplesInDomain += vars_[x]->values_[v]->NumElements();
     }
     return (numTuplesInDomain < numDelTuples);
   }
@@ -431,12 +406,12 @@ class RTableCt : public Constraint {
   }
 
  public:
-  RTableCt(Solver* const solver,
-           IndexedTable* table,
-           const std::vector<IntVar*>& vars)
+  Ac4TableConstraint(Solver* const solver,
+                     IndexedTable* const table,
+                     const std::vector<IntVar*>& vars)
       : Constraint(solver),
         vars_(table->NumVars()),
-        tupleIndexInValueList_(table->NumTuples()*table->NumVars()),
+        tupleIndexInValueList_(table->NumTuples() * table->NumVars()),
         table_(table),
         tmp_(table->NumTuples()),
         delta_(table->NumTuples()),
@@ -446,8 +421,9 @@ class RTableCt : public Constraint {
     }
   }
 
-  ~RTableCt() {
+  ~Ac4TableConstraint() {
     STLDeleteElements(&vars_); // delete all elements of a vector
+    delete table_;
   }
 
   void Post() {
@@ -455,7 +431,7 @@ class RTableCt : public Constraint {
       Demon* const d =
           MakeConstraintDemon1(solver(),
                                this,
-                               &RTableCt::FilterX,
+                               &Ac4TableConstraint::FilterX,
                                "FilterX",
                                i);
       vars_[i]->Variable()->WhenDomain(d);
@@ -486,7 +462,7 @@ class RTableCt : public Constraint {
   }
 
   void print_all_tuple() {
-    for (int i = 0; i < tupleIndexInValueList_.capacity(); i++) {
+    for (int i = 0; i < tupleIndexInValueList_.size(); i++) {
       print_tuple(i);
     }
   }
@@ -494,7 +470,7 @@ class RTableCt : public Constraint {
  private:
   std::vector<Var*> vars_; // variable of the constraint
   std::vector<int> tupleIndexInValueList_;
-  IndexedTable* table_; // table
+  IndexedTable* const table_; // table
   std::vector<int> tmp_; // On peut le supprimer si on a un tableau temporaire d'entier qui est disponible. Peut contenir tous les tuples
   std::vector<int> delta_; // delta of the variable
   const int n_; // number of variables
@@ -502,13 +478,13 @@ class RTableCt : public Constraint {
 }  // namespace
 
 // External API.
-Constraint* BuildRTableCt(Solver* const solver,
-                              IntTupleSet& tuples,
-                              const std::vector<IntVar*>& vars,
-                              int size_bucket) {
+Constraint* BuildAc4TableConstraint(Solver* const solver,
+                                    IntTupleSet& tuples,
+                                    const std::vector<IntVar*>& vars,
+                                    int size_bucket) {
   const int num_tuples = tuples.NumTuples();
   const int arity = vars.size();
   IndexedTable* const table = new IndexedTable(tuples);
-  return solver->RevAlloc(new RTableCt(solver, table, vars));
+  return solver->RevAlloc(new Ac4TableConstraint(solver, table, vars));
 }
 } // namespace operations_research

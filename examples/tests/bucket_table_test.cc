@@ -25,10 +25,10 @@ DEFINE_int32(tuples, 1000, "Number of tuples");
 DEFINE_int32(bucket, 64, "Size of buckets");
 
 namespace operations_research {
-extern Constraint* BuildRTableCt(Solver* const solver,
-                                 IntTupleSet& tuples,
-                                 const std::vector<IntVar*>& vars,
-                                 int size_bucket);
+extern Constraint* BuildAc4TableConstraint(Solver* const solver,
+                                           IntTupleSet& tuples,
+                                           const std::vector<IntVar*>& vars,
+                                           int size_bucket);
 
 void RandomFillTable(int num_tuples,
                      int64 lower,
@@ -66,7 +66,7 @@ void TestTable(int arity, int num_tuples, int upper, int size_bucket) {
   LOG(INFO) << "Table is created";
 
   Constraint* const ct = size_bucket > 0 ?
-      BuildRTableCt(&solver, table, vars, size_bucket) :
+      BuildAc4TableConstraint(&solver, table, vars, size_bucket) :
       solver.MakeAllowedAssignments(vars, table);
   solver.AddConstraint(ct);
 
