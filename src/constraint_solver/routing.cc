@@ -80,8 +80,9 @@ DEFINE_bool(routing_tabu_search, false, "Routing: use tabu search.");
 DEFINE_bool(routing_dfs, false,
             "Routing: use a complete deoth-first search.");
 DEFINE_string(routing_first_solution, "",
-              "Routing: first solution heuristic;possible values are "
-              "Default, GlobalCheapestArc, LocalCheapestArc, PathCheapestArc.");
+              "Routing: first solution heuristic; possible values include "
+              "Default, GlobalCheapestArc, LocalCheapestArc, PathCheapestArc. "
+              "See ParseRoutingStrategy() in the code to get a full list.");
 DEFINE_bool(routing_use_first_solution_dive, false,
             "Dive (left-branch) for first solution.");
 DEFINE_int64(routing_optimization_step, 1, "Optimization step.");
@@ -682,15 +683,15 @@ const RoutingModel::NodeIndex RoutingModel::kInvalidNodeIndex(-1);
 RoutingModel::RoutingModel(int nodes, int vehicles)
     : solver_(NULL),
       no_cycle_constraint_(NULL),
-      costs_(vehicles),
       homogeneous_costs_(FLAGS_routing_use_homogeneous_costs),
+      vehicle_cost_classes_(vehicles, -1),
       cost_(0),
       fixed_costs_(vehicles),
       nodes_(nodes),
       vehicles_(vehicles),
       starts_(vehicles),
       ends_(vehicles),
-      start_end_count_(1),
+      start_end_count_(vehicles > 0 ? 1 : 0),
       is_depot_set_(false),
       closed_(false),
       status_(ROUTING_NOT_SOLVED),
@@ -719,8 +720,8 @@ RoutingModel::RoutingModel(
     const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end)
     : solver_(NULL),
       no_cycle_constraint_(NULL),
-      costs_(vehicles),
       homogeneous_costs_(FLAGS_routing_use_homogeneous_costs),
+      vehicle_cost_classes_(vehicles, -1),
       fixed_costs_(vehicles),
       nodes_(nodes),
       vehicles_(vehicles),
@@ -762,8 +763,8 @@ RoutingModel::RoutingModel(int nodes,
                            const std::vector<NodeIndex>& ends)
     : solver_(NULL),
       no_cycle_constraint_(NULL),
-      costs_(vehicles),
       homogeneous_costs_(FLAGS_routing_use_homogeneous_costs),
+      vehicle_cost_classes_(vehicles, -1),
       fixed_costs_(vehicles),
       nodes_(nodes),
       vehicles_(vehicles),
@@ -824,7 +825,7 @@ void RoutingModel::Initialize() {
   for (int i = 0; i < size; ++i) {
     CostCacheElement& cache = cost_cache_[i];
     cache.node = kUnassigned;
-    cache.vehicle = kUnassigned;
+    cache.cost_class = kUnassigned;
     cache.cost = 0;
   }
   preassignment_ = solver_->MakeAssignment();
@@ -903,11 +904,10 @@ void RoutingModel::AddAllActive() {
 }
 
 void RoutingModel::SetCost(NodeEvaluator2* evaluator) {
-  evaluator->CheckIsRepeatable();
-  NodeEvaluator2* cached_evaluator = NewCachedCallback(evaluator);
+  CHECK_LT(0, vehicles_);
   homogeneous_costs_ = FLAGS_routing_use_homogeneous_costs;
   for (int i = 0; i < vehicles_; ++i) {
-    SetVehicleCostInternal(i, cached_evaluator);
+    SetVehicleCostInternal(i, evaluator);
   }
 }
 
@@ -916,15 +916,29 @@ int64 RoutingModel::GetRouteFixedCost() const {
 }
 
 void RoutingModel::SetVehicleCost(int vehicle, NodeEvaluator2* evaluator) {
-  evaluator->CheckIsRepeatable();
   homogeneous_costs_ = false;
-  SetVehicleCostInternal(vehicle, NewCachedCallback(evaluator));
+  SetVehicleCostInternal(vehicle, evaluator);
 }
 
 void RoutingModel::SetVehicleCostInternal(int vehicle,
                                           NodeEvaluator2* evaluator) {
+  CHECK_NOTNULL(evaluator);
   CHECK_LT(vehicle, vehicles_);
-  costs_[vehicle] = evaluator;
+  // TODO(user): Support cost modification.
+  CHECK_EQ(-1, GetVehicleCostClass(vehicle))
+      << "Vehicle cost already set for " << vehicle;
+  evaluator->CheckIsRepeatable();
+  std::vector<int>* callback_vehicles =
+      FindOrNull(cost_callback_vehicles_, evaluator);
+  if (callback_vehicles == NULL) {
+    cost_callback_vehicles_[evaluator].push_back(vehicle);
+    SetVehicleCostClass(vehicle, costs_.size());
+    costs_.push_back(NewCachedCallback(evaluator));
+  } else {
+    CHECK_NE(0, callback_vehicles->size());
+    callback_vehicles->push_back(vehicle);
+    SetVehicleCostClass(vehicle, GetVehicleCostClass(callback_vehicles->at(0)));
+  }
 }
 
 void RoutingModel::SetRouteFixedCost(int64 cost) {
@@ -1134,24 +1148,33 @@ void RoutingModel::CloseModel() {
   // Arc costs: the cost of an arc (i, nexts_[i], vehicle_vars_[i]) is
   // costs_(nexts_[i], vehicle_vars_[i]); the total cost is the sum of arc
   // costs.
-  for (int i = 0; i < size; ++i) {
-    IntExpr* expr = NULL;
-    if (homogeneous_costs_) {
-      expr = solver_->MakeElement(
-          NewPermanentCallback(this,
-                               &RoutingModel::GetHomogeneousCost,
-                               static_cast<int64>(i)),
-          nexts_[i]);
-    } else {
-      expr = solver_->MakeElement(
-          NewPermanentCallback(this,
-                               &RoutingModel::GetCost,
-                               static_cast<int64>(i)),
-          nexts_[i],
-          vehicle_vars_[i]);
+  if (vehicles_ > 0) {
+    for (int i = 0; i < size; ++i) {
+      IntExpr* expr = NULL;
+      // TODO(user): Remove the need for the homogeneous flag here once the
+      // vehicle var to cost class element constraint is fast enough.
+      if (homogeneous_costs_) {
+        expr = solver_->MakeElement(
+            NewPermanentCallback(this,
+                                 &RoutingModel::GetHomogeneousCost,
+                                 static_cast<int64>(i)),
+            nexts_[i]);
+      } else {
+        IntVar* const vehicle_class_var =
+            solver_->MakeElement(
+                NewPermanentCallback(this,
+                                     &RoutingModel::GetSafeVehicleCostClass),
+                vehicle_vars_[i])->Var();
+        expr = solver_->MakeElement(
+            NewPermanentCallback(this,
+                                 &RoutingModel::GetVehicleClassCost,
+                                 static_cast<int64>(i)),
+            nexts_[i],
+            vehicle_class_var);
+      }
+      IntVar* const var = solver_->MakeProd(expr, active_[i])->Var();
+      cost_elements.push_back(var);
     }
-    IntVar* var = solver_->MakeProd(expr, active_[i])->Var();
-    cost_elements.push_back(var);
   }
   // Penalty costs
   for (int i = 0; i < disjunctions_.size(); ++i) {
@@ -1314,16 +1337,9 @@ class AllUnperformed : public DecisionBuilder {
 // Flags override strategy selection
 RoutingModel::RoutingStrategy
 RoutingModel::GetSelectedFirstSolutionStrategy() const {
-  if (FLAGS_routing_first_solution.compare("GlobalCheapestArc") == 0) {
-    return ROUTING_GLOBAL_CHEAPEST_ARC;
-  } else if (FLAGS_routing_first_solution.compare("LocalCheapestArc") == 0) {
-    return ROUTING_LOCAL_CHEAPEST_ARC;
-  } else if (FLAGS_routing_first_solution.compare("PathCheapestArc") == 0) {
-    return ROUTING_PATH_CHEAPEST_ARC;
-  } else if (FLAGS_routing_first_solution.compare("AllUnperformed") == 0) {
-    return ROUTING_ALL_UNPERFORMED;
-  } else if (FLAGS_routing_first_solution.compare("BestInsertion") == 0) {
-    return ROUTING_BEST_INSERTION;
+  RoutingStrategy strategy;
+  if (ParseRoutingStrategy(FLAGS_routing_first_solution, &strategy)) {
+    return strategy;
   }
   return first_solution_strategy_;
 }
@@ -1665,6 +1681,62 @@ void RoutingModel::SetCommandLineOption(const string& name,
   google::SetCommandLineOption(name.c_str(), value.c_str());
 }
 
+// static
+const char* RoutingModel::RoutingStrategyName(RoutingStrategy strategy) {
+  switch (strategy) {
+    case ROUTING_DEFAULT_STRATEGY: return "DefaultStrategy";
+    case ROUTING_GLOBAL_CHEAPEST_ARC: return "GlobalCheapestArc";
+    case ROUTING_LOCAL_CHEAPEST_ARC: return "LocalCheapestArc";
+    case ROUTING_PATH_CHEAPEST_ARC: return "PathCheapestArc";
+    case ROUTING_EVALUATOR_STRATEGY: return "EvaluatorStrategy";
+    case ROUTING_ALL_UNPERFORMED: return "AllUnperformed";
+    case ROUTING_BEST_INSERTION: return "BestInsertion";
+  }
+  return NULL;
+}
+
+// static
+bool RoutingModel::ParseRoutingStrategy(const string& strategy_str,
+                                        RoutingStrategy* strategy) {
+  for (int i = 0; ; ++i) {
+    const RoutingStrategy cur_strategy = static_cast<RoutingStrategy>(i);
+    const char* cur_name = RoutingStrategyName(cur_strategy);
+    if (cur_name == NULL) return false;
+    if (strategy_str == cur_name) {
+      *strategy = cur_strategy;
+      return true;
+    }
+  }
+}
+
+// static
+const char* RoutingModel::RoutingMetaheuristicName(
+    RoutingMetaheuristic metaheuristic) {
+  switch (metaheuristic) {
+    case ROUTING_GREEDY_DESCENT: return "GreedyDescent";
+    case ROUTING_GUIDED_LOCAL_SEARCH: return "GuidedLocalSearch";
+    case ROUTING_SIMULATED_ANNEALING: return "SimulatedAnnealing";
+    case ROUTING_TABU_SEARCH: return "TabuSearch";
+  }
+  return NULL;
+}
+
+// static
+bool RoutingModel::ParseRoutingMetaheuristic(
+    const string& metaheuristic_str,
+    RoutingMetaheuristic* metaheuristic) {
+  for (int i = 0; ; ++i) {
+    const RoutingMetaheuristic cur_metaheuristic =
+        static_cast<RoutingMetaheuristic>(i);
+    const char* cur_name = RoutingMetaheuristicName(cur_metaheuristic);
+    if (cur_name == NULL) return false;
+    if (metaheuristic_str == cur_name) {
+      *metaheuristic = cur_metaheuristic;
+      return true;
+    }
+  }
+}
+
 bool RoutingModel::WriteAssignment(const string& file_name) const {
   if (collect_assignments_->solution_count() == 1 && assignment_ != NULL) {
     assignment_->Copy(collect_assignments_->solution(0));
@@ -1892,38 +1964,29 @@ void RoutingModel::GetDisjunctionIndicesFromIndex(int64 index,
   }
 }
 
-int64 RoutingModel::GetArcCost(int64 i, int64 j, int64 vehicle) {
-  if (vehicle < 0) {
-    // If a node is inactive, vehicle will be set to -1; handle this situation
-    // correctly.
-    // Even though the constraint model does not allow vehice == -1 when i != j,
-    // this method gets called with such parameters when the model is created,
-    // because the constraing solver needs to find the minimal and maximal arc
-    // costs and calls the method with all possible combinations of parameters.
-    // Zero should be a safe value here.
-    return 0;
-  }
+int64 RoutingModel::GetArcCost(int64 i, int64 j, int64 cost_class) {
+  DCHECK_LE(0, cost_class);
   CostCacheElement& cache = cost_cache_[i];
-  if (cache.node == j && cache.vehicle == vehicle) {
+  if (cache.node == j && cache.cost_class == cost_class) {
     return cache.cost;
   }
   const NodeIndex node_i = IndexToNode(i);
   const NodeIndex node_j = IndexToNode(j);
   int64 cost = 0;
   if (!IsStart(i)) {
-    cost = costs_[vehicle]->Run(node_i, node_j);
+    cost = costs_[cost_class]->Run(node_i, node_j);
   } else if (!IsEnd(j)) {
     // Apply route fixed cost on first non-first/last node, in other words on
     // the arc from the first node to its next node if it's not the last node.
-    cost = costs_[vehicle]->Run(node_i, node_j)
-      + fixed_costs_[index_to_vehicle_[i]];
+    cost = costs_[cost_class]->Run(node_i, node_j)
+        + fixed_costs_[index_to_vehicle_[i]];
   } else {
     // If there's only the first and last nodes on the route, it is considered
     // as an empty route thus the cost of 0.
     cost = 0;
   }
   cache.node = j;
-  cache.vehicle = vehicle;
+  cache.cost_class = cost_class;
   cache.cost = cost;
   return cost;
 }
@@ -1957,8 +2020,8 @@ bool RoutingModel::IsVehicleUsed(const Assignment& assignment,
   return !IsEnd(assignment.Value(start_var));
 }
 
-int RoutingModel::Next(const Assignment& assignment,
-                       int index) const {
+int64 RoutingModel::Next(const Assignment& assignment,
+                         int64 index) const {
   CHECK_EQ(solver_.get(), assignment.solver());
   IntVar* const next_var = NextVar(index);
   CHECK(assignment.Contains(next_var));
@@ -1967,16 +2030,24 @@ int RoutingModel::Next(const Assignment& assignment,
 }
 
 int64 RoutingModel::GetCost(int64 i, int64 j, int64 vehicle) {
-  if (i != j) {
-    return GetArcCost(i, j, vehicle);
+  if (i != j && vehicle >= 0) {
+    return GetArcCost(i, j, GetVehicleCostClass(vehicle));
+  } else {
+    return 0;
+  }
+}
+
+int64 RoutingModel::GetVehicleClassCost(int64 i, int64 j, int64 cost_class) {
+  if (i != j && cost_class >= 0) {
+    return GetArcCost(i, j, cost_class);
   } else {
     return 0;
   }
 }
 
 int64 RoutingModel::GetFilterCost(int64 i, int64 j, int64 vehicle) {
-  if (i != j) {
-    return GetArcCost(i, j, vehicle);
+  if (i != j && vehicle >= 0) {
+    return GetArcCost(i, j, GetVehicleCostClass(vehicle));
   } else {
     return GetPenaltyCost(i);
   }
@@ -2228,9 +2299,12 @@ DecisionBuilder* RoutingModel::CreateFirstSolutionDecisionBuilder() {
   const int size = Size();
   DecisionBuilder* finalize_solution = CreateSolutionFinalizer();
   DecisionBuilder* first_solution = finalize_solution;
-  switch (GetSelectedFirstSolutionStrategy()) {
+  const RoutingStrategy first_solution_strategy =
+      GetSelectedFirstSolutionStrategy();
+  LG << "Using first solution strategy: "
+     << RoutingStrategyName(first_solution_strategy);
+  switch (first_solution_strategy) {
     case ROUTING_GLOBAL_CHEAPEST_ARC:
-      LG << "Using ROUTING_GLOBAL_CHEAPEST_ARC";
       first_solution =
           solver_->MakePhase(nexts_.get(), size,
                              NewPermanentCallback(
@@ -2239,7 +2313,6 @@ DecisionBuilder* RoutingModel::CreateFirstSolutionDecisionBuilder() {
                              Solver::CHOOSE_STATIC_GLOBAL_BEST);
       break;
     case ROUTING_LOCAL_CHEAPEST_ARC:
-      LG << "Using ROUTING_LOCAL_CHEAPEST_ARC";
       first_solution =
           solver_->MakePhase(nexts_.get(), size,
                              Solver::CHOOSE_FIRST_UNBOUND,
@@ -2248,7 +2321,6 @@ DecisionBuilder* RoutingModel::CreateFirstSolutionDecisionBuilder() {
                                  &RoutingModel::GetFirstSolutionCost));
       break;
     case ROUTING_PATH_CHEAPEST_ARC:
-      LG << "Using ROUTING_PATH_CHEAPEST_ARC";
       first_solution =
           solver_->MakePhase(nexts_.get(), size,
                              Solver::CHOOSE_PATH,
@@ -2266,7 +2338,6 @@ DecisionBuilder* RoutingModel::CreateFirstSolutionDecisionBuilder() {
       }
       break;
     case ROUTING_EVALUATOR_STRATEGY:
-      LG << "Using ROUTING_EVALUATOR_STRATEGY";
       CHECK(first_solution_evaluator_ != NULL);
       first_solution =
           solver_->MakePhase(nexts_.get(), size,
@@ -2276,14 +2347,12 @@ DecisionBuilder* RoutingModel::CreateFirstSolutionDecisionBuilder() {
                                  &Solver::IndexEvaluator2::Run));
       break;
     case ROUTING_DEFAULT_STRATEGY:
-      LG << "Using DEFAULT";
       break;
     case ROUTING_ALL_UNPERFORMED:
       first_solution =
           solver_->RevAlloc(new AllUnperformed(this));
       break;
     case ROUTING_BEST_INSERTION: {
-      LG << "Using ROUTING_BEST_INSERTION";
       SearchLimit* const ls_limit = solver_->MakeLimit(time_limit_ms_,
                                                        kint64max,
                                                        kint64max,
@@ -2382,9 +2451,10 @@ void RoutingModel::SetupDecisionBuilders() {
 void RoutingModel::SetupMetaheuristics() {
   const int size = Size();
   SearchMonitor* optimize;
-  switch (GetSelectedMetaheuristic()) {
+  const RoutingMetaheuristic metaheuristic = GetSelectedMetaheuristic();
+  LG << "Using metaheuristic: " << RoutingMetaheuristicName(metaheuristic);
+  switch (metaheuristic) {
     case ROUTING_GUIDED_LOCAL_SEARCH:
-      LG << "Using Guided Local Search";
       if (homogeneous_costs_) {
         optimize = solver_->MakeGuidedLocalSearch(
             false,
@@ -2404,21 +2474,18 @@ void RoutingModel::SetupMetaheuristics() {
       }
       break;
     case ROUTING_SIMULATED_ANNEALING:
-      LG << "Using Simulated Annealing";
       optimize =
           solver_->MakeSimulatedAnnealing(false, cost_,
                                           FLAGS_routing_optimization_step,
                                           100);
       break;
     case ROUTING_TABU_SEARCH:
-      LG << "Using Tabu Search";
       optimize = solver_->MakeTabuSearch(false, cost_,
                                          FLAGS_routing_optimization_step,
                                          nexts_.get(), size,
                                          10, 10, .8);
       break;
     default:
-      LG << "Using greedy descent";
       optimize = solver_->MakeMinimize(cost_, FLAGS_routing_optimization_step);
   }
   monitors_.push_back(optimize);

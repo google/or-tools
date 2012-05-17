@@ -202,7 +202,7 @@ class RoutingModel {
     // Iteratively build a solution by inserting nodes at their cheapest (best)
     // position. As of 2/2012, only works on models with optional nodes
     // (with finite penalty costs).
-    ROUTING_BEST_INSERTION
+    ROUTING_BEST_INSERTION,
   };
 
   // Metaheuristics used to guide the search. Apart greedy descent, they will
@@ -220,7 +220,7 @@ class RoutingModel {
     ROUTING_SIMULATED_ANNEALING,
     // Uses tabu search to escape local minima
     // (cf. http://en.wikipedia.org/wiki/Tabu_search).
-    ROUTING_TABU_SEARCH
+    ROUTING_TABU_SEARCH,
   };
 
   // Status of the search.
@@ -515,9 +515,9 @@ class RoutingModel {
 
   // Model inspection.
   // Returns the variable index of the starting node of a vehicle route.
-  int Start(int vehicle) const { return starts_[vehicle]; }
+  int64 Start(int vehicle) const { return starts_[vehicle]; }
   // Returns the variable index of the ending node of a vehicle route.
-  int End(int vehicle) const { return ends_[vehicle]; }
+  int64 End(int vehicle) const { return ends_[vehicle]; }
   // Returns true if 'index' represents the first node of a route.
   bool IsStart(int64 index) const;
   // Returns true if 'index' represents the last node of a route.
@@ -527,7 +527,7 @@ class RoutingModel {
   // Assignment inspection
   // Returns the variable index of the node directly after the node
   // corresponding to 'index' in 'assignment'.
-  int Next(const Assignment& assignment, int index) const;
+  int64 Next(const Assignment& assignment, int64 index) const;
   // Returns true if the route of 'vehicle' is non empty in 'assignment'.
   bool IsVehicleUsed(const Assignment& assignment, int vehicle) const;
   // Variables
@@ -557,6 +557,8 @@ class RoutingModel {
   int64 GetHomogeneousCost(int64 i, int64 j) {
     return GetCost(i, j, 0);
   }
+  // Returns the number of different vehicle cost callbacks in the model.
+  int GetVehicleCostCount() const { return cost_callback_vehicles_.size(); }
 
   // Returns the underlying constraint solver. Can be used to add extra
   // constraints and/or modify search algoithms.
@@ -568,7 +570,7 @@ class RoutingModel {
   // Returns the number of vehicle routes in the model.
   int vehicles() const { return vehicles_; }
   // Returns the number of next variables in the model.
-  int Size() const { return nodes_ + vehicles_ - start_end_count_; }
+  int64 Size() const { return nodes_ + vehicles_ - start_end_count_; }
   // Returns the node index from an index value resulting fron a next variable.
   NodeIndex IndexToNode(int64 index) const;
   // Returns the variable index from a node value.
@@ -592,6 +594,18 @@ class RoutingModel {
   // Utilities for swig to set flags in python or java.
   void SetCommandLineOption(const string& name, const string& value);
 
+  // Conversion between enums and strings; the Parse*() conversions return true
+  // on success and the *Name() conversions return NULL when given unknown
+  // values. See the .cc for the name conversions. The rule of thumb is:
+  // RoutingModel::ROUTING_PATH_CHEAPEST_ARC <-> "PathCheapestArc".
+  static const char* RoutingStrategyName(RoutingStrategy strategy);
+  static bool ParseRoutingStrategy(const string& strategy_str,
+                                   RoutingStrategy* strategy);
+  static const char* RoutingMetaheuristicName(
+      RoutingMetaheuristic metaheuristic);
+  static bool ParseRoutingMetaheuristic(const string& metaheuristic_str,
+                                        RoutingMetaheuristic* metaheuristic);
+
  private:
   typedef hash_map<string, IntVar**> VarMap;
   struct Disjunction {
@@ -601,7 +615,7 @@ class RoutingModel {
 
   struct CostCacheElement {
     NodeIndex node;
-    int vehicle;
+    int cost_class;
     int64 cost;
   };
 
@@ -617,6 +631,19 @@ class RoutingModel {
   int64 GetFilterCost(int64 i, int64 j, int64 vehicle);
   int64 GetHomogeneousFilterCost(int64 i, int64 j) {
     return GetFilterCost(i, j, 0);
+  }
+  // Returns the cost of the segment between two nodes for a given vehicle
+  // class. Input are variable indices of nodes and the vehicle class.
+  int64 GetVehicleClassCost(int64 from_index, int64 to_index, int64 cost_class);
+  int64 GetSafeVehicleCostClass(int64 vehicle) const {
+    DCHECK_LT(0, vehicles_);
+    return vehicle >= 0 ? GetVehicleCostClass(vehicle) : 0;
+  }
+  int64 GetVehicleCostClass(int64 vehicle) const {
+    return vehicle_cost_classes_[vehicle];
+  }
+  void SetVehicleCostClass(int64 vehicle, int64 cost_class) {
+    vehicle_cost_classes_[vehicle] = cost_class;
   }
   // Returns NULL if no penalty cost, otherwise returns penalty variable.
   IntVar* CreateDisjunction(int disjunction);
@@ -674,7 +701,7 @@ class RoutingModel {
                              int64 capacity,
                              const string& name);
 
-  int64 GetArcCost(int64 i, int64 j, int64 vehicle);
+  int64 GetArcCost(int64 i, int64 j, int64 cost_class);
   int64 GetPenaltyCost(int64 i) const;
   int64 WrappedEvaluator(NodeEvaluator2* evaluator,
                          int64 from,
@@ -690,6 +717,8 @@ class RoutingModel {
   bool homogeneous_costs_;
   std::vector<CostCacheElement> cost_cache_;
   std::vector<RoutingCache*> routing_caches_;
+  hash_map<NodeEvaluator2*, std::vector<int> > cost_callback_vehicles_;
+  std::vector<int64> vehicle_cost_classes_;
   std::vector<Disjunction> disjunctions_;
   hash_map<int64, int> node_to_disjunction_;
   NodePairs pickup_delivery_pairs_;
@@ -700,8 +729,8 @@ class RoutingModel {
   std::vector<NodeIndex> index_to_node_;
   ITIVector<NodeIndex, int> node_to_index_;
   std::vector<int> index_to_vehicle_;
-  std::vector<int> starts_;
-  std::vector<int> ends_;
+  std::vector<int64> starts_;
+  std::vector<int64> ends_;
   int start_end_count_;
   bool is_depot_set_;
   VarMap cumuls_;
