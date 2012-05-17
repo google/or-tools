@@ -57,32 +57,32 @@ class IndexedTable {
 
   int NumVars() const { return arity_; }
 
-  int TupleValue(int t, int i) const {
-    return tuples_of_indices_[t * arity_ + i];
+  int TupleValue(int tuple_index, int var_index) const {
+    return tuples_of_indices_[tuple_index * arity_ + var_index];
   }
 
-  int IndexFromValue(int x, int64 val) const {
-    return value_map_per_variable_[x].Index(val);
+  int IndexFromValue(int var_index, int64 value) const {
+    return value_map_per_variable_[var_index].Index(value);
   }
 
-  int64 ValueFromIndex(int x, int v) const {
-    return value_map_per_variable_[x].Element(v);
+  int64 ValueFromIndex(int var_index, int value_index) const {
+    return value_map_per_variable_[var_index].Element(value_index);
   }
 
-  bool TupleContainsValueFromIndex(int x, int v) const {
-    return value_map_per_variable_[x].Contains(v);
+  bool TupleContainsValueFromIndex(int var_index, int value_index) const {
+    return value_map_per_variable_[var_index].Contains(value_index);
   }
 
-  int NumTuplesContainingValue(int x, int v) const {
-    return num_tuples_per_value_[x][v];
+  int NumTuplesContainingValue(int var_index, int value_index) const {
+    return num_tuples_per_value_[var_index][value_index];
   }
 
   int NumTuples() const {
     return num_tuples_;
   }
 
-  int NumDifferentValuesInColumn(int i) const {
-    return num_tuples_per_value_[i].size();
+  int NumDifferentValuesInColumn(int var_index) const {
+    return num_tuples_per_value_[var_index].size();
   }
 
  private:
@@ -129,12 +129,12 @@ class ListAsArray {
 
   int back() const { return elements_[num_elements_ - 1]; }
 
-  void erase(int i, int iElt, int backElt, int& posElt, int& posBack) {
+  void erase(int i, int iElt, int backElt, int* posElt, int* posBack) {
     num_elements_--;
     elements_[num_elements_] = iElt;
     elements_[i] = backElt;
-    posElt = num_elements_;
-    posBack = i;
+    *posElt = num_elements_;
+    *posBack = i;
   }
 
   void clear() {
@@ -160,8 +160,8 @@ class Ac4TableConstraint : public Constraint {
         tmp_(table->NumTuples()),
         delta_(table->NumTuples()),
         num_variables_(table->NumVars()) {
-    for (int i = 0; i < table->NumVars(); i++) {
-      vars_[i] = new Var(vars[i], i, table);
+    for (int var_index = 0; var_index < table->NumVars(); var_index++) {
+      vars_[var_index] = new Var(vars[var_index], var_index, table);
     }
   }
 
@@ -171,76 +171,64 @@ class Ac4TableConstraint : public Constraint {
   }
 
   void Post() {
-    for (int i = 0; i < num_variables_; i++) {
+    for (int var_index = 0; var_index < num_variables_; var_index++) {
       Demon* const demon =
           MakeConstraintDemon1(solver(),
                                this,
                                &Ac4TableConstraint::FilterX,
                                "FilterX",
-                               i);
-      vars_[i]->Variable()->WhenDomain(demon);
+                               var_index);
+      vars_[var_index]->Variable()->WhenDomain(demon);
     }
   }
 
   void InitialPropagate() {
-    initialize_data_structures();
+    Init();
     // we remove from the domain the values that are not in the table
-    for (int i = 0; i <num_variables_; i++) {
+    for (int var_index = 0; var_index < num_variables_; var_index++) {
       delta_.clear(); // we use the delta as a temporary array
-      IntVarIterator* const it = vars_[i]->DomainIterator();
+      IntVarIterator* const it = vars_[var_index]->DomainIterator();
       for (it->Init(); it->Ok(); it->Next()) {
-        if (!table_->TupleContainsValueFromIndex(i, it->Value())) {
+        if (!table_->TupleContainsValueFromIndex(var_index, it->Value())) {
           delta_.push_back(it->Value());
         }
       }
-      for (int k = 0; k < delta_.size(); k++) {
-        vars_[i]->Variable()->RemoveValue(delta_[k]);
+      for (int delta_index = 0; delta_index < delta_.size(); delta_index++) {
+        vars_[var_index]->Variable()->RemoveValue(delta_[delta_index]);
       }
     }
-    erase_values_without_valid_tuple();
+    EraseValuesWithoutValidTuples();
   }
 
   void FilterX(int x) {
-    compute_delta_domain(x);
-    if (check_reset_property(x)) {
-      reset(x);
+    ComputeDeltaDomain(x);
+    if (CheckResetProperty(x)) {
+      Reset(x);
     }
     const int deltaSize = delta_.size();
     for (int k = 0;k < deltaSize; k++) {
-      filter_from_value_deletion(x, delta_[k]);
-    }
-  }
-
-  void print_tuple(const int t) {
-    std::cout << "pos in values of " << t << " ";
-    for (int i = 0; i < num_variables_; i++) {
-      std::cout << tuple_index_in_value_list(t, i) << " ";
-    }
-    std::cout << std::endl;
-  }
-
-  void print_all_tuple() {
-    for (int i = 0; i < tuple_index_in_value_list_.size(); i++) {
-      print_tuple(i);
+      FilterFromValueDeletion(x, delta_[k]);
     }
   }
 
  private:
   class Var {
    public:
-    Var(IntVar* var, const int x, IndexedTable* const table)
-        : values_(table->NumDifferentValuesInColumn(x)),
-          stamps_(table->NumDifferentValuesInColumn(x),0),
-          nonEmptyTupleLists_(table->NumDifferentValuesInColumn(x)),
-          indexInNonEmptyTupleLists_(table->NumDifferentValuesInColumn(x)),
+    Var(IntVar* var, const int var_index, IndexedTable* const table)
+        : values_(table->NumDifferentValuesInColumn(var_index)),
+          stamps_(values_.size(), 0),
+          non_empty_tuples_(values_.size()),
+          index_in_non_empty_tuples_(values_.size()),
           var_(var),
           domain_iterator_(var->MakeDomainIterator(true)),
           delta_domain_iterator_(var->MakeHoleIterator(true)),
-          stampNonEmptyTupleLists_(0) {
-      const int numValues = table->NumDifferentValuesInColumn(x);
-      for (int v = 0; v < numValues; v++) {
-        values_[v] = new ListAsArray(table->NumTuplesContainingValue(x,v));
-        indexInNonEmptyTupleLists_[v] = nonEmptyTupleLists_.push_back(v);
+          stamp_non_empty_tuples_(0) {
+      for (int value_index = 0; value_index < values_.size(); value_index++) {
+        values_[value_index] =
+            new ListAsArray(table->NumTuplesContainingValue(var_index,
+                                                            value_index));
+        index_in_non_empty_tuples_[value_index] =
+            non_empty_tuples_.push_back(value_index);
       }
     }
 
@@ -248,26 +236,29 @@ class Ac4TableConstraint : public Constraint {
       STLDeleteElements(&values_); // delete all elements of a vector
     }
 
-    IntVar* Variable()const{return var_;}
+    IntVar* Variable() const { return var_; }
 
-    IntVarIterator* DomainIterator()const{return domain_iterator_;}
+    IntVarIterator* DomainIterator() const { return domain_iterator_; }
 
-    IntVarIterator* DeltaDomainIterator()const{return delta_domain_iterator_;}
-
-    void RemoveFromNonEmptyTupleList(Solver* solver, int v) {
-      if (stampNonEmptyTupleLists_ < solver->stamp()) {
-        solver->SaveValue(&nonEmptyTupleLists_.num_elements_);
-        stampNonEmptyTupleLists_=solver->stamp();
-      }
-      const int bv=nonEmptyTupleLists_.back();
-      nonEmptyTupleLists_.erase(indexInNonEmptyTupleLists_[v],
-                                v,
-                                bv,
-                                indexInNonEmptyTupleLists_[v],
-                                indexInNonEmptyTupleLists_[bv]);
+    IntVarIterator* DeltaDomainIterator() const {
+      return delta_domain_iterator_;
     }
 
-    void save_size_once(Solver* solver, int v) {
+    void RemoveFromNonEmptyTupleList(Solver* solver, int value_index) {
+      if (stamp_non_empty_tuples_ < solver->stamp()) {
+        solver->SaveValue(&non_empty_tuples_.num_elements_);
+        stamp_non_empty_tuples_ = solver->stamp();
+      }
+      const int back_value_index = non_empty_tuples_.back();
+      non_empty_tuples_.erase(
+          index_in_non_empty_tuples_[value_index],
+          value_index,
+          back_value_index,
+          &index_in_non_empty_tuples_[value_index],
+          &index_in_non_empty_tuples_[back_value_index]);
+    }
+
+    void SaveSizeOnce(Solver* solver, int v) {
       if (stamps_[v] < solver->stamp()) {
         solver->SaveValue(&values_[v]->num_elements_);
         stamps_[v]=solver->stamp();
@@ -280,37 +271,45 @@ class Ac4TableConstraint : public Constraint {
     std::vector<ListAsArray*> values_;
     std::vector<uint64> stamps_;
     // list of values: having a non empty tuple list
-    ListAsArray nonEmptyTupleLists_;
-    std::vector<int> indexInNonEmptyTupleLists_;
+    ListAsArray non_empty_tuples_;
+    std::vector<int> index_in_non_empty_tuples_;
     IntVar* const var_;
     IntVarIterator* const domain_iterator_;
     IntVarIterator* const delta_domain_iterator_;
-    int64 stampNonEmptyTupleLists_;
+    uint64 stamp_non_empty_tuples_;
   };
 
 
-  int& tuple_index_in_value_list(int tuple_index, int var_index) {
+  int TupleIndexInValueList(int tuple_index, int var_index) {
     return tuple_index_in_value_list_[tuple_index * num_variables_ + var_index];
   }
 
-  void erase_tuple(const int erased_tuple_index) {
+
+  void SetTupleIndexInValueList(int tuple_index, int var_index, int v) {
+    tuple_index_in_value_list_[tuple_index * num_variables_ + var_index] = v;
+  }
+
+  int* TupleIndexInValueListAddress(int tuple_index, int var_index) {
+    return &tuple_index_in_value_list_[tuple_index * num_variables_ +
+                                       var_index];
+  }
+
+  void EraseTuple(const int erased_tuple_index) {
     // The tuple is erased for each value it contains.
     for (int var_index = 0; var_index < num_variables_; var_index++) {
-      const int value_index =
-          table_->TupleValue(erased_tuple_index, var_index);
-      ListAsArray* const var_value =
-          vars_[var_index]->values_[table_->TupleValue(erased_tuple_index,
-                                                       var_index)];
+      const int value_index = table_->TupleValue(erased_tuple_index, var_index);
+      ListAsArray* const var_value = vars_[var_index]->values_[value_index];
       const int sizeiv = var_value->NumElements() - 1;
       const int tuple_index_in_value =
-          tuple_index_in_value_list(erased_tuple_index, var_index);
-      const int bt = var_value->back();
-      vars_[var_index]->save_size_once(solver(), value_index);
-      var_value->erase(tuple_index_in_value,
-                       erased_tuple_index,
-                       bt,
-                       tuple_index_in_value_list(erased_tuple_index, var_index),
-                       tuple_index_in_value_list(bt, var_index));
+          TupleIndexInValueList(erased_tuple_index, var_index);
+      const int back_tuple_index = var_value->back();
+      vars_[var_index]->SaveSizeOnce(solver(), value_index);
+      var_value->erase(
+          tuple_index_in_value,
+          erased_tuple_index,
+          back_tuple_index,
+          TupleIndexInValueListAddress(erased_tuple_index, var_index),
+          TupleIndexInValueListAddress(back_tuple_index, var_index));
 
       if (sizeiv == 0) {
         vars_[var_index]->Variable()->RemoveValue(
@@ -320,7 +319,7 @@ class Ac4TableConstraint : public Constraint {
     }
   }
 
-  void erase_values_without_valid_tuple() {
+  void EraseValuesWithoutValidTuples() {
     // on clear les tuples des valeurs du domaine
     for (int var_index = 0; var_index < num_variables_; var_index++) {
       IntVarIterator* const it = vars_[var_index]->DomainIterator();
@@ -333,48 +332,49 @@ class Ac4TableConstraint : public Constraint {
         }
       }
       // on supprime de var les valeurs ayant un tuple list vide
-      const int s = vars_[var_index]->nonEmptyTupleLists_.NumElements();
+      const int s = vars_[var_index]->non_empty_tuples_.NumElements();
       for (int cpt = 0; cpt < num_removed; cpt++) {
-        const int value = vars_[var_index]->nonEmptyTupleLists_[s + cpt];
+        const int value = vars_[var_index]->non_empty_tuples_[s + cpt];
         vars_[var_index]->Variable()->RemoveValue(
             table_->ValueFromIndex(var_index, value));
       }
     }
   }
 
-  void filter_from_value_deletion(const int var_index, const int value_index) {
+  void FilterFromValueDeletion(const int var_index, const int value_index) {
     ListAsArray* const var_value = vars_[var_index]->values_[value_index];
     const int size = var_value->NumElements();
     for (int index = 0; index < size; index++) {
-      erase_tuple((*var_value)[0]);
+      EraseTuple((*var_value)[0]);
     }
   }
 
-  void push_back_tuple_from_index(const int tuple_index) {
+  void PushBackTupleFromIndex(const int tuple_index) {
     for (int var_index = 0; var_index < num_variables_; var_index++) {
       ListAsArray* const val =
           vars_[var_index]->values_[table_->TupleValue(tuple_index, var_index)];
       const int index_of_value =
-          tuple_index_in_value_list(tuple_index, var_index);
+          TupleIndexInValueList(tuple_index, var_index);
       const int ebt = val->end_back();
-      tuple_index_in_value_list(ebt, var_index) = index_of_value;
-      tuple_index_in_value_list(tuple_index, var_index) = val->NumElements();
+      SetTupleIndexInValueList(ebt, var_index, index_of_value);
+      SetTupleIndexInValueList(tuple_index, var_index, val->NumElements());
       val->push_back_from_index(index_of_value, tuple_index, ebt);
     }
   }
 
-  void push_back_tuple(const int tuple_index) {
+  void PushBackTuple(const int tuple_index) {
     for (int var_index = 0; var_index < num_variables_; var_index++) {
       ListAsArray* const var_value =
           vars_[var_index]->values_[table_->TupleValue(tuple_index, var_index)];
-      tuple_index_in_value_list(tuple_index, var_index) =
-          var_value->NumElements();
+      SetTupleIndexInValueList(tuple_index,
+                               var_index,
+                               var_value->NumElements());
       var_value->push_back(tuple_index);
     }
   }
 
   // le reset est fait a partir de la variable selectedX.
-  void reset(int var_index) {
+  void Reset(int var_index) {
     int s = 0;
     tmp_.clear();
     IntVarIterator* const it = vars_[var_index]->DomainIterator();
@@ -391,9 +391,9 @@ class Ac4TableConstraint : public Constraint {
 
     // on clear les tuples des valeurs du domaine
     for (int i = 0; i < num_variables_; i++) {
-      for (int k = 0; k < vars_[i]->nonEmptyTupleLists_.NumElements(); k++) {
-        const int v = vars_[i]->nonEmptyTupleLists_[k];
-        vars_[i]->save_size_once(solver(), v);
+      for (int k = 0; k < vars_[i]->non_empty_tuples_.NumElements(); k++) {
+        const int v = vars_[i]->non_empty_tuples_[k];
+        vars_[i]->SaveSizeOnce(solver(), v);
         vars_[i]->values_[v]->clear();
       }
     }
@@ -401,13 +401,13 @@ class Ac4TableConstraint : public Constraint {
     // on balaie tupleTMP et on remet les tuples dans les domaines
     const int size = tmp_.size();
     for (int j = 0; j < size; j++) {
-      push_back_tuple_from_index(tmp_[j]);
+      PushBackTupleFromIndex(tmp_[j]);
     }
     // Si une valeur n'a plus de support on la supprime
-    erase_values_without_valid_tuple();
+    EraseValuesWithoutValidTuples();
   }
 
-  void compute_delta_domain(int var_index) {
+  void ComputeDeltaDomain(int var_index) {
     // calcul du delta domain de or-tools: on remplit le tableau
     // delta_ ATTENTION une val peut etre plusieurs fois dans le delta
     // : ici on s'en fout.
@@ -449,7 +449,7 @@ class Ac4TableConstraint : public Constraint {
     }
   }
 
-  bool check_reset_property(int var_index) {
+  bool CheckResetProperty(int var_index) {
     // retourne true si on doit faire un reset. on compte le nb de
     // tuples qui vont etre supprimés.
     int num_deleted_tuples = 0;
@@ -468,21 +468,24 @@ class Ac4TableConstraint : public Constraint {
     return (num_tuples_in_domain < num_deleted_tuples);
   }
 
-  void initialize_data_structures() {
+  void Init() {
     const int num_tuples = table_->NumTuples();
-    for (int t = 0; t < num_tuples; t++) {
+    for (int tuple_index = 0; tuple_index < num_tuples; tuple_index++) {
       // on place les tuples et on met à jour les informations
-      push_back_tuple(t);
+      PushBackTuple(tuple_index);
     }
   }
-
 
   std::vector<Var*> vars_; // variable of the constraint
   std::vector<int> tuple_index_in_value_list_;
   IndexedTable* const table_; // table
-  std::vector<int> tmp_; // On peut le supprimer si on a un tableau temporaire d'entier qui est disponible. Peut contenir tous les tuples
-  std::vector<int64> delta_; // delta of the variable
-  const int num_variables_; // number of variables
+  // On peut le supprimer si on a un tableau temporaire d'entier qui
+  // est disponible. Peut contenir tous les tuples
+  std::vector<int> tmp_;
+  // Temporary storage for delta of one variable.
+  std::vector<int64> delta_;
+  // Number of variables.
+  const int num_variables_;
 };
 }  // namespace
 
