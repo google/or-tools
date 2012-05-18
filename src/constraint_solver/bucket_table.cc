@@ -57,7 +57,7 @@ class IndexedTable {
 
   int NumVars() const { return arity_; }
 
-  int TupleValue(int tuple_index, int var_index) const {
+  int ValueIndex(int tuple_index, int var_index) const {
     return tuples_of_indices_[tuple_index * arity_ + var_index];
   }
 
@@ -94,14 +94,14 @@ class IndexedTable {
   const int num_tuples_;
 };
 
-class TupleList {
+class SwapList {
  public:
-  TupleList(const int capacity)
+  SwapList(const int capacity)
   : elements_(new int[capacity]),
     num_elements_(0),
     capacity_(capacity) {}
 
-  ~TupleList() {}
+  ~SwapList() {}
 
   int Size() const { return num_elements_; }
 
@@ -227,7 +227,7 @@ class Ac4TableConstraint : public Constraint {
           delta_domain_iterator_(var->MakeHoleIterator(true)),
           stamp_active_values_(0) {
       for (int value_index = 0; value_index < values_.size(); value_index++) {
-        values_[value_index] = new TupleList(
+        values_[value_index] = new SwapList(
             table->NumTuplesContainingValueIndex(var_index, value_index));
         index_in_active_values_[value_index] =
             active_values_.push_back(value_index);
@@ -278,10 +278,10 @@ class Ac4TableConstraint : public Constraint {
    private:
     friend class Ac4TableConstraint;
     // one LAA per value of the variable
-    std::vector<TupleList*> values_;
+    std::vector<SwapList*> values_;
     std::vector<uint64> stamps_;
     // list of values: having a non empty tuple list
-    TupleList active_values_;
+    SwapList active_values_;
     std::vector<int> index_in_active_values_;
     IntVar* const var_;
     IntVarIterator* const domain_iterator_;
@@ -317,15 +317,15 @@ class Ac4TableConstraint : public Constraint {
   }
 
   void PropagateDeletedValue(const int var_index, const int value_index) {
-    TupleList* const var_value = vars_[var_index]->values_[value_index];
+    SwapList* const var_value = vars_[var_index]->values_[value_index];
     const int num_tuples_to_erase = var_value->Size();
     for (int index = 0; index < num_tuples_to_erase; index++) {
       const int erased_tuple_index = (*var_value)[0];
       // The tuple is erased for each value it contains.
       for (int var_index2 = 0; var_index2 < num_variables_; var_index2++) {
         const int value_index2 =
-            table_->TupleValue(erased_tuple_index, var_index2);
-        TupleList* const var_value2 = vars_[var_index2]->values_[value_index2];
+            table_->ValueIndex(erased_tuple_index, var_index2);
+        SwapList* const var_value2 = vars_[var_index2]->values_[value_index2];
         const bool value_still_supported = var_value2->Size() > 1;
         const int tuple_index_in_value =
             reverse_tuples_[Index(erased_tuple_index, var_index2)];
@@ -355,7 +355,7 @@ class Ac4TableConstraint : public Constraint {
     IntVarIterator* const it = vars_[var_index]->DomainIterator();
     for (it->Init(); it->Ok(); it->Next()) {
       const int v = table_->IndexFromValue(var_index, it->Value());
-      TupleList* const val = vars_[var_index]->values_[v];
+      SwapList* const val = vars_[var_index]->values_[v];
       const int num_tuples = val->Size();
       for (int j = 0; j < num_tuples; j++) {
         tmp_.push_back((*val)[j]);
@@ -379,8 +379,8 @@ class Ac4TableConstraint : public Constraint {
     for (int j = 0; j < size; j++) {
       const int tuple_index = tmp_[j];
       for (int var_index = 0; var_index < num_variables_; var_index++) {
-        TupleList* const val =
-            vars_[var_index]->values_[table_->TupleValue(tuple_index,
+        SwapList* const val =
+            vars_[var_index]->values_[table_->ValueIndex(tuple_index,
                                                          var_index)];
         const int index_of_value =
             reverse_tuples_[Index(tuple_index, var_index)];
@@ -463,8 +463,8 @@ class Ac4TableConstraint : public Constraint {
     const int num_tuples = table_->NumTuples();
     for (int tuple_index = 0; tuple_index < num_tuples; tuple_index++) {
       for (int var_index = 0; var_index < num_variables_; var_index++) {
-        TupleList* const var_value =
-            vars_[var_index]->values_[table_->TupleValue(tuple_index,
+        SwapList* const var_value =
+            vars_[var_index]->values_[table_->ValueIndex(tuple_index,
                                                          var_index)];
         reverse_tuples_[Index(tuple_index, var_index)] = var_value->Size();
         var_value->push_back(tuple_index);
