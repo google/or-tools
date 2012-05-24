@@ -2416,15 +2416,9 @@ void Solver::ExportModel(const std::vector<SearchMonitor*>& monitors,
                          CPModelProto* const model_proto) const {
   CHECK_NOTNULL(model_proto);
   FirstPassVisitor first_pass;
-  Accept(&first_pass);
-  for (ConstIter<std::vector<SearchMonitor*> > it(monitors); !it.at_end(); ++it) {
-    (*it)->Accept(&first_pass);
-  }
+  Accept(&first_pass, monitors);
   SecondPassVisitor second_pass(first_pass, model_proto);
-  for (ConstIter<std::vector<SearchMonitor*> > it(monitors); !it.at_end(); ++it) {
-    (*it)->Accept(&second_pass);
-  }
-  Accept(&second_pass);
+  Accept(&second_pass, monitors);
 }
 
 void Solver::ExportModel(CPModelProto* const model_proto) const {

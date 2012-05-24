@@ -18,6 +18,7 @@
 #include "base/random.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/model.pb.h"
 
 namespace operations_research {
 void TestVisitSumEqual() {
@@ -51,11 +52,114 @@ void TestVisitSumEqual() {
                                   &sequence_variables,
                                   &interval_variables);
 }
+
+
+void TestExport() {
+  std::vector<int> items;
+  items.push_back(5);
+  items.push_back(4);
+  items.push_back(6);
+  items.push_back(8);
+  items.push_back(7);
+
+  std::vector<int> bins;
+  bins.push_back(10);
+  bins.push_back(10);
+  bins.push_back(10);
+
+  size_t total_items = items.size();
+  size_t total_bins = bins.size();
+
+  string nameModel("BinPacking");
+  Solver solver(nameModel);
+
+  int sumCapacityItems = 0;
+  for (int i = 0; i < total_items; ++i) {
+    sumCapacityItems += items[i];
+  }
+
+  int sumCapacityBins = 0;
+  for (int j = 0; j < total_bins; ++j) {
+    sumCapacityBins += bins[j];
+  }
+
+
+  std::vector<IntVar*> vars;
+  solver.MakeIntVarArray(total_items * total_bins, 0, 1, "", &vars);
+
+  //Contrainte ct1 : un item appartient qu'à un seul bin
+  for (int i = 0; i < total_items; ++i) {
+    std::vector<IntVar*> item_column(total_bins);
+    for(int j = 0; j < total_bins; ++j) {
+      item_column[j] = vars[j + i * total_bins];
+    }
+    solver.AddConstraint(solver.MakeSumEquality(item_column, 1));
+    ////////////////////////////////Constraint
+  }
+
+  //binNo[i(item)] = b <=> xib = 1
+  std::vector<IntVar*> tabItemInNoBin;
+  for (int i = 0; i < total_items; ++i) {
+    std::vector<IntVar*> item_column(total_bins);
+    for(int j = 0; j < total_bins; ++j) {
+      item_column[j] = vars[j + i * total_bins];
+    }
+    tabItemInNoBin.push_back(solver.MakeIntVar(0, total_bins-1));
+
+    solver.AddConstraint(solver.MakeMapDomain(tabItemInNoBin[i], item_column));
+  }
+
+  //Array of tabCapaPrises
+  std::vector<IntVar*> tabCapaPrises;
+
+  //Array of tabCapaRestantes
+  std::vector<IntVar*> tabCapaRestantes;
+
+  //Array of CapaInstancied
+  std::vector<IntVar*> tabCapaInstancied;
+
+  for(int j = 0; j < total_bins; ++j) {
+    //ct1 : Sum(ci*xij) = capaPrise[j]
+    std::vector<IntVar*> bin_column(total_items);
+    for(int i = 0; i < total_items; ++i) {
+      bin_column[i] = vars[i + j * total_items];
+    }
+    tabCapaPrises.push_back(solver.MakeScalProd(bin_column, items)->Var());
+
+    //Sum(ci*xij) = capaInstancied[j]
+    tabCapaInstancied.push_back(solver.MakeScalProd(bin_column, items)->Var());
+
+    //Add the remaining capacity on each bin
+    tabCapaRestantes.push_back(solver.MakeIntVar(0, bins[j]));
+  }
+
+  ////////////////////////// Optimization
+  //Minimize le nb de bins
+  std::vector<IntVar*> tabStatutBins;
+  for(int j = 0; j < total_bins; ++j) {
+    IntExpr* binJUsed = solver.MakeIsGreaterCstVar(tabCapaPrises[j], 0);
+    tabStatutBins.push_back(binJUsed->Var());
+  }
+  IntVar* const numNotEmptyBins = solver.MakeSum(tabStatutBins)->Var();
+
+  OptimizeVar* const minimizeNumBins = solver.MakeMinimize(numNotEmptyBins, 1);
+
+  std::vector<SearchMonitor*> monitors;
+  monitors.push_back(minimizeNumBins);
+
+  ////////////////////////// Optimization
+
+  //Export the model
+  CPModelProto model;
+  solver.ExportModel(monitors, &model);
+  CHECK(model.has_objective());
+}
 }  // namespace operations_research
 
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::TestVisitSumEqual();
+  operations_research::TestExport();
   return 0;
 }
