@@ -56,37 +56,13 @@ void TestVisitSumEqual() {
 
 
 void RunExport(CPModelProto* const model) {
-  std::vector<int> items;
-  items.push_back(5);
-  items.push_back(4);
-  items.push_back(6);
-  items.push_back(8);
-  items.push_back(7);
+  const int total_items = 3;
+  const int total_bins = 2;
 
-  std::vector<int> bins;
-  bins.push_back(10);
-  bins.push_back(10);
-  bins.push_back(10);
-
-  size_t total_items = items.size();
-  size_t total_bins = bins.size();
-
-  string nameModel("BinPacking");
-  Solver solver(nameModel);
-
-  int sumCapacityItems = 0;
-  for (int i = 0; i < total_items; ++i) {
-    sumCapacityItems += items[i];
-  }
-
-  int sumCapacityBins = 0;
-  for (int j = 0; j < total_bins; ++j) {
-    sumCapacityBins += bins[j];
-  }
-
+  Solver solver("BinPacking");
 
   std::vector<IntVar*> vars;
-  solver.MakeIntVarArray(total_items * total_bins, 0, 1, "", &vars);
+  solver.MakeIntVarArray(total_items * total_bins, 0, 1, "vars_", &vars);
 
   //Contrainte ct1 : un item appartient qu'à un seul bin
   for (int i = 0; i < total_items; ++i) {
@@ -105,78 +81,64 @@ void RunExport(CPModelProto* const model) {
     for(int j = 0; j < total_bins; ++j) {
       item_column[j] = vars[j + i * total_bins];
     }
-    tabItemInNoBin.push_back(solver.MakeIntVar(0, total_bins-1));
+    tabItemInNoBin.push_back(
+        solver.MakeIntVar(0, total_bins - 1));
 
     solver.AddConstraint(solver.MakeMapDomain(tabItemInNoBin[i], item_column));
   }
 
-  //Array of tabCapaPrises
-  std::vector<IntVar*> tabCapaPrises;
-
-  //Array of tabCapaRestantes
-  std::vector<IntVar*> tabCapaRestantes;
-
-  //Array of CapaInstancied
-  std::vector<IntVar*> tabCapaInstancied;
-
+  std::vector<IntVar*> items_per_bin;
   for(int j = 0; j < total_bins; ++j) {
-    //ct1 : Sum(ci*xij) = capaPrise[j]
     std::vector<IntVar*> bin_column(total_items);
+    std::vector<int64> weights(total_items);
     for(int i = 0; i < total_items; ++i) {
       bin_column[i] = vars[i + j * total_items];
+      weights[i] = i + 1;
     }
-    tabCapaPrises.push_back(solver.MakeScalProd(bin_column, items)->Var());
-
-    //Sum(ci*xij) = capaInstancied[j]
-    tabCapaInstancied.push_back(solver.MakeScalProd(bin_column, items)->Var());
-
-    //Add the remaining capacity on each bin
-    tabCapaRestantes.push_back(solver.MakeIntVar(0, bins[j]));
+    items_per_bin.push_back(solver.MakeScalProd(bin_column, weights)->Var());
   }
 
   ////////////////////////// Optimization
-  //Minimize le nb de bins
-  std::vector<IntVar*> tabStatutBins;
+  std::vector<IntVar*> bin_used;
   for(int j = 0; j < total_bins; ++j) {
-    IntExpr* binJUsed = solver.MakeIsGreaterCstVar(tabCapaPrises[j], 0);
-    tabStatutBins.push_back(binJUsed->Var());
+    bin_used.push_back(solver.MakeIsGreaterCstVar(items_per_bin[j], 0)->Var());
   }
   IntVar* const numNotEmptyBins =
-      solver.MakeSum(tabStatutBins)->VarWithName("objective");
+      solver.MakeSum(bin_used)->VarWithName("objective");
 
   OptimizeVar* const minimizeNumBins = solver.MakeMinimize(numNotEmptyBins, 1);
 
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(minimizeNumBins);
 
-  ////////////////////////// Optimization
-
   //Export the model
   solver.ExportModel(monitors, model);
-  CHECK(model->has_objective());
 }
 
 void TestExport() {
+  LOG(INFO) << "----- Test Export -----";
   CPModelProto model;
   RunExport(&model);
+  CHECK(model.has_objective());
 }
 
 // Test 3
 
 bool sortIntVar(const IntVar* x, const IntVar* y) {
-  return x->name() < // .compare(
-      y->name()// ) < 0
-      ;
+  return x->name() < y->name();
 }
 
 void TestImport() {
+  LOG(INFO) << "----- Test Import -----";
   CPModelProto model;
   RunExport(&model);
+  LOG(INFO) << model.DebugString();
+  LOG(INFO) << "  proto created, importing";
   Solver solver("BinPacking");
   std::vector<SearchMonitor*> monitors;
   solver.LoadModel(model, &monitors);
+  LOG(INFO) << monitors[0]->DebugString();
 
-  //ModelParser parser;
   std::vector<IntVar*> primary_integer_variables;
   std::vector<IntVar*> secondary_integer_variables;
   std::vector<SequenceVar*> sequence_variables;
@@ -194,21 +156,12 @@ void TestImport() {
       new_vars.push_back(primary_integer_variables[i]);
     }
   }
-  LOG(INFO) << "SubProblem";
-  LOG(INFO) << "Number of primary variables : "
-            << new_vars.size();
-  LOG(INFO) << "Number of secondary variables : "
-            << secondary_integer_variables.size();
-  LOG(INFO) << "Number of sequence variables : "
-            << sequence_variables.size();
-  LOG(INFO) << "Number of interval variables : "
-            << interval_variables.size();
-  LOG(INFO) << "#constraints =" << solver.constraints();
+  LOG(INFO) << "Number of primary variables : " << new_vars.size();
+  LOG(INFO) << "Number of constraints : " << solver.constraints();
 
-  solver.Accept(solver.MakePrintModelVisitor(), monitors);
   DecisionBuilder* const db = solver.MakePhase(new_vars,
-                                                Solver::CHOOSE_FIRST_UNBOUND,
-                                                Solver::ASSIGN_MIN_VALUE);
+                                               Solver::CHOOSE_FIRST_UNBOUND,
+                                               Solver::ASSIGN_MIN_VALUE);
 
   solver.NewSearch(db, monitors);
 
