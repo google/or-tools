@@ -1829,12 +1829,16 @@ class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
       const int64 value = vars_[index]->Min();  // Faster than Value().
       if (value == 0) {
         num_possible_true_vars_.Decr(solver());
+        sum_var_->SetRange(num_always_true_vars_.Value(),
+                           num_possible_true_vars_.Value());
         if (num_possible_true_vars_.Value() == sum_var_->Min()) {
           PushAllUnboundToOne();
         }
       } else {
         DCHECK_EQ(1, value);
         num_always_true_vars_.Incr(solver());
+        sum_var_->SetRange(num_always_true_vars_.Value(),
+                           num_possible_true_vars_.Value());
         if (num_always_true_vars_.Value() == sum_var_->Max()) {
           PushAllUnboundToZero();
         }
@@ -1872,7 +1876,9 @@ class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
   }
 
   virtual string DebugString() const {
-    return DebugStringInternal("SumBooleanEqualToVar");
+    return StringPrintf("%s == %s",
+                        DebugStringInternal("SumBoolean").c_str(),
+                        sum_var_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
