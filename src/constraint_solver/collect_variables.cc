@@ -52,9 +52,11 @@ class CollectVariablesVisitor : public ModelParser {
   virtual void EndVisitConstraint(const string& type_name,
                                   const Constraint* const constraint) {
     if (type_name.compare(ModelVisitor::kLinkExprVar) == 0 ||
-        type_name.compare(ModelVisitor::kSumEqual) == 0 ||
+        (type_name.compare(ModelVisitor::kSumEqual) == 0 &&
+         Top()->HasIntegerExpressionArgument(ModelVisitor::kTargetArgument))||
         type_name.compare(ModelVisitor::kElementEqual) == 0 ||
-        type_name.compare(ModelVisitor::kScalProdEqual) == 0 ||
+        (type_name.compare(ModelVisitor::kScalProdEqual) == 0 &&
+         Top()->HasIntegerExpressionArgument(ModelVisitor::kTargetArgument))||
         type_name.compare(ModelVisitor::kIsEqual) == 0 ||
         type_name.compare(ModelVisitor::kIsDifferent) == 0 ||
         type_name.compare(ModelVisitor::kIsGreaterOrEqual) == 0 ||

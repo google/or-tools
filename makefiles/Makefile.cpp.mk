@@ -656,6 +656,12 @@ $(OBJ_DIR)/gcc_test.$O:$(EX_DIR)/tests/gcc_test.cc $(SRC_DIR)/constraint_solver/
 $(BIN_DIR)/gcc_test$E: $(CP_DEPS) $(OBJ_DIR)/gcc_test.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/gcc_test.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)gcc_test$E
 
+$(OBJ_DIR)/visitor_test.$O:$(EX_DIR)/tests/visitor_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/visitor_test.cc $(OBJ_OUT)visitor_test.$O
+
+$(BIN_DIR)/visitor_test$E: $(CP_DEPS) $(OBJ_DIR)/visitor_test.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/visitor_test.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)visitor_test$E
+
 # Linear Programming Examples
 
 $(OBJ_DIR)/strawberry_fields_with_column_generation.$O: $(EX_DIR)/cpp/strawberry_fields_with_column_generation.cc $(SRC_DIR)/linear_solver/linear_solver.h
