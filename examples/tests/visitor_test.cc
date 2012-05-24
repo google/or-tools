@@ -23,6 +23,7 @@
 
 namespace operations_research {
 void TestVisitSumEqual() {
+  LOG(INFO) << "----- Test Visit Sum Equal -----";
   Solver solver("BinPacking");
   const int total_items = 10;
   const int total_bins = 3;
@@ -132,12 +133,9 @@ void TestImport() {
   LOG(INFO) << "----- Test Import -----";
   CPModelProto model;
   RunExport(&model);
-  LOG(INFO) << model.DebugString();
-  LOG(INFO) << "  proto created, importing";
   Solver solver("BinPacking");
   std::vector<SearchMonitor*> monitors;
   solver.LoadModel(model, &monitors);
-  LOG(INFO) << monitors[0]->DebugString();
 
   std::vector<IntVar*> primary_integer_variables;
   std::vector<IntVar*> secondary_integer_variables;
@@ -156,9 +154,6 @@ void TestImport() {
       new_vars.push_back(primary_integer_variables[i]);
     }
   }
-  LOG(INFO) << "Number of primary variables : " << new_vars.size();
-  LOG(INFO) << "Number of constraints : " << solver.constraints();
-
   DecisionBuilder* const db = solver.MakePhase(new_vars,
                                                Solver::CHOOSE_FIRST_UNBOUND,
                                                Solver::ASSIGN_MIN_VALUE);
