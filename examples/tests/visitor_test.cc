@@ -19,6 +19,7 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/model.pb.h"
+#include "util/string_array.h"
 
 namespace operations_research {
 void TestVisitSumEqual() {
@@ -54,7 +55,7 @@ void TestVisitSumEqual() {
 }
 
 
-void TestExport() {
+void RunExport(CPModelProto* const model) {
   std::vector<int> items;
   items.push_back(5);
   items.push_back(4);
@@ -140,7 +141,8 @@ void TestExport() {
     IntExpr* binJUsed = solver.MakeIsGreaterCstVar(tabCapaPrises[j], 0);
     tabStatutBins.push_back(binJUsed->Var());
   }
-  IntVar* const numNotEmptyBins = solver.MakeSum(tabStatutBins)->Var();
+  IntVar* const numNotEmptyBins =
+      solver.MakeSum(tabStatutBins)->VarWithName("objective");
 
   OptimizeVar* const minimizeNumBins = solver.MakeMinimize(numNotEmptyBins, 1);
 
@@ -150,9 +152,67 @@ void TestExport() {
   ////////////////////////// Optimization
 
   //Export the model
+  solver.ExportModel(monitors, model);
+  CHECK(model->has_objective());
+}
+
+void TestExport() {
   CPModelProto model;
-  solver.ExportModel(monitors, &model);
-  CHECK(model.has_objective());
+  RunExport(&model);
+}
+
+// Test 3
+
+bool sortIntVar(const IntVar* x, const IntVar* y) {
+  return x->name() < // .compare(
+      y->name()// ) < 0
+      ;
+}
+
+void TestImport() {
+  CPModelProto model;
+  RunExport(&model);
+  Solver solver("BinPacking");
+  std::vector<SearchMonitor*> monitors;
+  solver.LoadModel(model, &monitors);
+
+  //ModelParser parser;
+  std::vector<IntVar*> primary_integer_variables;
+  std::vector<IntVar*> secondary_integer_variables;
+  std::vector<SequenceVar*> sequence_variables;
+  std::vector<IntervalVar*> interval_variables;
+  solver.CollectDecisionVariables(&primary_integer_variables,
+                                   &secondary_integer_variables,
+                                   &sequence_variables,
+                                   &interval_variables);
+  std::sort(primary_integer_variables.begin(),
+            primary_integer_variables.end(),
+            sortIntVar);
+  std::vector<IntVar*> new_vars;
+  for (int i = 0; i < primary_integer_variables.size(); ++i) {
+    if (primary_integer_variables[i]->HasName()) {
+      new_vars.push_back(primary_integer_variables[i]);
+    }
+  }
+  LOG(INFO) << "SubProblem";
+  LOG(INFO) << "Number of primary variables : "
+            << new_vars.size();
+  LOG(INFO) << "Number of secondary variables : "
+            << secondary_integer_variables.size();
+  LOG(INFO) << "Number of sequence variables : "
+            << sequence_variables.size();
+  LOG(INFO) << "Number of interval variables : "
+            << interval_variables.size();
+  LOG(INFO) << "#constraints =" << solver.constraints();
+
+  solver.Accept(solver.MakePrintModelVisitor(), monitors);
+  DecisionBuilder* const db = solver.MakePhase(new_vars,
+                                                Solver::CHOOSE_FIRST_UNBOUND,
+                                                Solver::ASSIGN_MIN_VALUE);
+
+  solver.NewSearch(db, monitors);
+
+  bool result = solver.NextSolution();
 }
 }  // namespace operations_research
 
@@ -161,5 +221,6 @@ int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::TestVisitSumEqual();
   operations_research::TestExport();
+  operations_research::TestImport();
   return 0;
 }
