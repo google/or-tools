@@ -184,7 +184,7 @@ class Ac4TableConstraint : public Constraint {
 
   void InitialPropagate() {
     Init();
-    vector<int64> to_remove;
+    std::vector<int64> to_remove;
     // we remove from the domain the values that are not in the table,
     // or that have no supporting tuples.
     for (int var_index = 0; var_index < num_variables_; var_index++) {
