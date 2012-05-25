@@ -94,14 +94,14 @@ class IndexedTable {
   const int num_tuples_;
 };
 
-class SwapList {
+class FastRevIntList {
  public:
-  SwapList(const int capacity)
+  FastRevIntList(const int capacity)
   : elements_(new int[capacity]),
     num_elements_(0),
     capacity_(capacity) {}
 
-  ~SwapList() {}
+  ~FastRevIntList() {}
 
   int Size() const { return num_elements_.Value(); }
 
@@ -173,7 +173,7 @@ class TableVar {
     for (int value_index = 0;
          value_index < tuples_per_value_.size();
          value_index++) {
-      tuples_per_value_[value_index] = new SwapList(
+      tuples_per_value_[value_index] = new FastRevIntList(
           table->NumTuplesContainingValueIndex(var_index, value_index));
       index_in_active_values_[value_index] =
           active_values_.push_back(solver_, value_index);
@@ -210,7 +210,7 @@ class TableVar {
   void RemoveOneTuple(int erased_tuple_index, IndexedTable* const table) {
     const int value_index =
         table->ValueIndex(erased_tuple_index, var_index_);
-    SwapList* const var_value = tuples_per_value_[value_index];
+    FastRevIntList* const var_value = tuples_per_value_[value_index];
     const int tuple_index_in_value = reverse_tuples_[erased_tuple_index];
     const int back_tuple_index = var_value->back();
     var_value->erase(
@@ -230,7 +230,7 @@ class TableVar {
     return tuples_per_value_[value_index]->Size();
   }
 
-  SwapList* ActiveTuples(int value_index) const {
+  FastRevIntList* ActiveTuples(int value_index) const {
     return tuples_per_value_[value_index];
   }
 
@@ -243,7 +243,7 @@ class TableVar {
   }
 
   void RestoreTuple(int tuple_index, IndexedTable* const table) {
-    SwapList* const active_tuples =
+    FastRevIntList* const active_tuples =
         tuples_per_value_[table->ValueIndex(tuple_index, var_index_)];
     const int index_of_value = reverse_tuples_[tuple_index];
     const int ebt = active_tuples->end_back();
@@ -256,7 +256,7 @@ class TableVar {
   void Init(IndexedTable* const table) {
     const int num_tuples = table->NumTuples();
     for (int tuple_index = 0; tuple_index < num_tuples; tuple_index++) {
-      SwapList* const active_tuples =
+      FastRevIntList* const active_tuples =
           tuples_per_value_[table->ValueIndex(tuple_index, var_index_)];
       reverse_tuples_[tuple_index] = active_tuples->Size();
       active_tuples->push_back(var_->solver(), tuple_index);
@@ -268,9 +268,9 @@ class TableVar {
   Solver* const solver_;
   const int var_index_;
   // one LAA per value of the variable
-  std::vector<SwapList*> tuples_per_value_;
+  std::vector<FastRevIntList*> tuples_per_value_;
   // list of values: having a non empty tuple list
-  SwapList active_values_;
+  FastRevIntList active_values_;
   std::vector<int> index_in_active_values_;
   IntVar* const var_;
   IntVarIterator* const domain_iterator_;
@@ -372,7 +372,7 @@ class Ac4TableConstraint : public Constraint {
   }
 
   void PropagateDeletedValue(const int var_index, const int value_index) {
-    SwapList* const tuples_to_remove =
+    FastRevIntList* const tuples_to_remove =
         vars_[var_index]->ActiveTuples(value_index);
     const int num_tuples_to_erase = tuples_to_remove->Size();
     for (int index = 0; index < num_tuples_to_erase; index++) {
@@ -392,8 +392,8 @@ class Ac4TableConstraint : public Constraint {
     tuples_to_add_.clear();
     IntVarIterator* const it = var->DomainIterator();
     for (it->Init(); it->Ok(); it->Next()) {
-      const int v = table_->IndexFromValue(var_index, it->Value());
-      SwapList* const active_tuples = var->ActiveTuples(v);
+      const int value_index = table_->IndexFromValue(var_index, it->Value());
+      FastRevIntList* const active_tuples = var->ActiveTuples(value_index);
       const int num_tuples = active_tuples->Size();
       for (int j = 0; j < num_tuples; j++) {
         tuples_to_add_.push_back((*active_tuples)[j]);
