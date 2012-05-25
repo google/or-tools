@@ -103,48 +103,56 @@ class SwapList {
 
   ~SwapList() {}
 
-  int Size() const { return num_elements_; }
+  int Size() const { return num_elements_.Value(); }
 
   int Capacity() const { return capacity_; }
 
   int operator[](int i) const {
-    // si l'array est const alors on ne peut pas le modifier // const T&
     DCHECK_LT(i, capacity_);
     return elements_[i];
   }
 
-  int push_back(int elt) {
-    DCHECK_LT(num_elements_, capacity_);
-    elements_[num_elements_++] = elt;
-    return num_elements_ - 1;
+  int push_back(Solver* const solver, int elt) {
+    const int size = num_elements_.Value();
+    DCHECK_LT(size, capacity_);
+    elements_[size] = elt;
+    num_elements_.Incr(solver);
+    return size;
   }
 
-  void push_back_from_index(int i, int iElt, int endBackElt) {
+  void push_back_from_index(Solver* const solver,
+                            int i,
+                            int iElt, int endBackElt) {
     elements_[i] = endBackElt;
-    elements_[num_elements_] = iElt;
-    num_elements_++;
+    elements_[num_elements_.Value()] = iElt;
+    num_elements_.Incr(solver);
   }
 
-  int end_back() const { return elements_[num_elements_]; }
+  int end_back() const { return elements_[num_elements_.Value()]; }
 
-  int back() const { return elements_[num_elements_ - 1]; }
+  int back() const { return elements_[num_elements_.Value() - 1]; }
 
-  void erase(int i, int iElt, int backElt, int* posElt, int* posBack) {
-    num_elements_--;
-    elements_[num_elements_] = iElt;
+  void erase(Solver* const solver,
+             int i,
+             int iElt,
+             int backElt,
+             int* posElt,
+             int* posBack) {
+    num_elements_.Decr(solver);
+    elements_[num_elements_.Value()] = iElt;
     elements_[i] = backElt;
-    *posElt = num_elements_;
+    *posElt = num_elements_.Value();
     *posBack = i;
   }
 
-  void clear() {
-    num_elements_=0;
+  void clear(Solver* const solver) {
+    num_elements_.SetValue(solver, 0);
   }
 
  private:
   friend class Ac4TableConstraint;
   scoped_array<int> elements_; // set of elements.
-  int num_elements_; // number of elements in the set.
+  NumericalRev<int> num_elements_; // number of elements in the set.
   const int capacity_;
 };
 
@@ -161,7 +169,7 @@ class Ac4TableConstraint : public Constraint {
         delta_of_value_indices_(table->NumTuples()),
         num_variables_(table->NumVars()) {
     for (int var_index = 0; var_index < table->NumVars(); var_index++) {
-      vars_[var_index] = new Var(vars[var_index], var_index, table);
+      vars_[var_index] = new Var(solver, vars[var_index], var_index, table);
     }
   }
 
@@ -217,20 +225,22 @@ class Ac4TableConstraint : public Constraint {
  private:
   class Var {
    public:
-    Var(IntVar* var, const int var_index, IndexedTable* const table)
-        : values_(table->NumDifferentValuesInColumn(var_index)),
-          stamps_(values_.size(), 0),
+    Var(Solver* const solver,
+        IntVar* var,
+        const int var_index,
+        IndexedTable* const table)
+        : solver_(solver),
+          values_(table->NumDifferentValuesInColumn(var_index)),
           active_values_(values_.size()),
           index_in_active_values_(values_.size()),
           var_(var),
           domain_iterator_(var->MakeDomainIterator(true)),
-          delta_domain_iterator_(var->MakeHoleIterator(true)),
-          stamp_active_values_(0) {
+          delta_domain_iterator_(var->MakeHoleIterator(true)) {
       for (int value_index = 0; value_index < values_.size(); value_index++) {
         values_[value_index] = new SwapList(
             table->NumTuplesContainingValueIndex(var_index, value_index));
         index_in_active_values_[value_index] =
-            active_values_.push_back(value_index);
+            active_values_.push_back(solver_, value_index);
       }
     }
 
@@ -251,24 +261,14 @@ class Ac4TableConstraint : public Constraint {
     }
 
     void PropagateValueRemoval(Solver* solver, int value_index) {
-      if (stamp_active_values_ < solver->stamp()) {
-        solver->SaveValue(&active_values_.num_elements_);
-        stamp_active_values_ = solver->stamp();
-      }
       const int back_value_index = active_values_.back();
       active_values_.erase(
+          solver_,
           index_in_active_values_[value_index],
           value_index,
           back_value_index,
           &index_in_active_values_[value_index],
           &index_in_active_values_[back_value_index]);
-    }
-
-    void SaveSizeOnce(Solver* solver, int v) {
-      if (stamps_[v] < solver->stamp()) {
-        solver->SaveValue(&values_[v]->num_elements_);
-        stamps_[v]=solver->stamp();
-      }
     }
 
     bool AsActiveTuplesForValueIndex(int64 value_index) {
@@ -277,16 +277,15 @@ class Ac4TableConstraint : public Constraint {
 
    private:
     friend class Ac4TableConstraint;
+    Solver* const solver_;
     // one LAA per value of the variable
     std::vector<SwapList*> values_;
-    std::vector<uint64> stamps_;
     // list of values: having a non empty tuple list
     SwapList active_values_;
     std::vector<int> index_in_active_values_;
     IntVar* const var_;
     IntVarIterator* const domain_iterator_;
     IntVarIterator* const delta_domain_iterator_;
-    uint64 stamp_active_values_;
   };
 
   int Index(int tuple_index, int var_index) const {
@@ -330,8 +329,8 @@ class Ac4TableConstraint : public Constraint {
         const int tuple_index_in_value =
             reverse_tuples_[Index(erased_tuple_index, var_index2)];
         const int back_tuple_index = var_value2->back();
-        vars_[var_index2]->SaveSizeOnce(solver(), value_index2);
         var_value2->erase(
+            solver(),
             tuple_index_in_value,
             erased_tuple_index,
             back_tuple_index,
@@ -369,8 +368,7 @@ class Ac4TableConstraint : public Constraint {
     for (int i = 0; i < num_variables_; i++) {
       for (int k = 0; k < vars_[i]->active_values_.Size(); k++) {
         const int v = vars_[i]->active_values_[k];
-        vars_[i]->SaveSizeOnce(solver(), v);
-        vars_[i]->values_[v]->clear();
+        vars_[i]->values_[v]->clear(solver());
       }
     }
 
@@ -387,7 +385,7 @@ class Ac4TableConstraint : public Constraint {
         const int ebt = val->end_back();
         reverse_tuples_[Index(ebt, var_index)] = index_of_value;
         reverse_tuples_[Index(tuple_index, var_index)] = val->Size();
-        val->push_back_from_index(index_of_value, tuple_index, ebt);
+        val->push_back_from_index(solver(), index_of_value, tuple_index, ebt);
       }
     }
 
@@ -467,7 +465,7 @@ class Ac4TableConstraint : public Constraint {
             vars_[var_index]->values_[table_->ValueIndex(tuple_index,
                                                          var_index)];
         reverse_tuples_[Index(tuple_index, var_index)] = var_value->Size();
-        var_value->push_back(tuple_index);
+        var_value->push_back(solver(), tuple_index);
       }
     }
   }
