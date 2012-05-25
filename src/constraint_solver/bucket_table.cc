@@ -262,7 +262,7 @@ class Ac4TableConstraint : public Constraint {
       return delta_domain_iterator_;
     }
 
-    void RemoveFromActiveValues(Solver* solver, int value_index) {
+    void RemoveActiveValue(Solver* solver, int value_index) {
       const int back_value_index = active_values_.back();
       active_values_.erase(
           solver_,
@@ -271,6 +271,27 @@ class Ac4TableConstraint : public Constraint {
           back_value_index,
           &index_in_active_values_[value_index],
           &index_in_active_values_[back_value_index]);
+    }
+
+    void RemoveOneTuple(int var_index,
+                        int erased_tuple_index,
+                        IndexedTable* const table) {
+      const int value_index =
+          table->ValueIndex(erased_tuple_index, var_index);
+      SwapList* const var_value = tuples_per_value_[value_index];
+      const int tuple_index_in_value = reverse_tuples_[erased_tuple_index];
+      const int back_tuple_index = var_value->back();
+      var_value->erase(
+          var_->solver(),
+          tuple_index_in_value,
+          erased_tuple_index,
+          back_tuple_index,
+          &reverse_tuples_[erased_tuple_index],
+          &reverse_tuples_[back_tuple_index]);
+      if (var_value->Size() == 0) {
+        var_->RemoveValue(table->ValueFromIndex(var_index, value_index));
+        RemoveActiveValue(var_->solver(), value_index);
+      }
     }
 
     bool AsActiveTuplesForValueIndex(int64 value_index) {
@@ -301,7 +322,7 @@ class Ac4TableConstraint : public Constraint {
       for (it->Init(); it->Ok(); it->Next()) {
         const int value_index = table_->IndexFromValue(var_index, it->Value());
         if (var->tuples_per_value_[value_index]->Size() == 0) {
-          var->RemoveFromActiveValues(solver(), value_index);
+          var->RemoveActiveValue(solver(), value_index);
           num_removed++;
         }
       }
@@ -318,34 +339,15 @@ class Ac4TableConstraint : public Constraint {
   }
 
   void PropagateDeletedValue(const int var_index, const int value_index) {
-    SwapList* const var_value =
+    SwapList* const tuples_to_remove =
         vars_[var_index]->tuples_per_value_[value_index];
-    const int num_tuples_to_erase = var_value->Size();
+    const int num_tuples_to_erase = tuples_to_remove->Size();
     for (int index = 0; index < num_tuples_to_erase; index++) {
-      const int erased_tuple_index = (*var_value)[0];
+      const int erased_tuple_index = (*tuples_to_remove)[0];
       // The tuple is erased for each value it contains.
       for (int var_index2 = 0; var_index2 < num_variables_; var_index2++) {
         Var* const var2 = vars_[var_index2];
-        const int value_index2 =
-            table_->ValueIndex(erased_tuple_index, var_index2);
-        SwapList* const var_value2 = var2->tuples_per_value_[value_index2];
-        const bool value_still_supported = var_value2->Size() > 1;
-        const int tuple_index_in_value =
-            var2->reverse_tuples_[erased_tuple_index];
-        const int back_tuple_index = var_value2->back();
-        var_value2->erase(
-            solver(),
-            tuple_index_in_value,
-            erased_tuple_index,
-            back_tuple_index,
-            &var2->reverse_tuples_[erased_tuple_index],
-            &var2->reverse_tuples_[back_tuple_index]);
-
-        if (!value_still_supported) {
-          var2->Variable()->RemoveValue(
-              table_->ValueFromIndex(var_index2, value_index2));
-          var2->RemoveFromActiveValues(solver(), value_index2);
-        }
+        var2->RemoveOneTuple(var_index2, erased_tuple_index, table_);
       }
     }
   }
