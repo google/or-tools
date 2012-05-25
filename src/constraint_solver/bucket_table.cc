@@ -163,7 +163,6 @@ class Ac4TableConstraint : public Constraint {
                      const std::vector<IntVar*>& vars)
       : Constraint(solver),
         vars_(table->NumVars()),
-        reverse_tuples_(table->NumTuples() * table->NumVars()),
         table_(table),
         tuples_to_add_(table->NumTuples()),
         delta_of_value_indices_(table->NumTuples()),
@@ -235,7 +234,8 @@ class Ac4TableConstraint : public Constraint {
           index_in_active_values_(tuples_per_value_.size()),
           var_(var),
           domain_iterator_(var->MakeDomainIterator(true)),
-          delta_domain_iterator_(var->MakeHoleIterator(true)) {
+          delta_domain_iterator_(var->MakeHoleIterator(true)),
+          reverse_tuples_(table->NumTuples()) {
       for (int value_index = 0;
            value_index < tuples_per_value_.size();
            value_index++) {
@@ -288,11 +288,9 @@ class Ac4TableConstraint : public Constraint {
     IntVar* const var_;
     IntVarIterator* const domain_iterator_;
     IntVarIterator* const delta_domain_iterator_;
+    // Flat tuples of value indices.
+    std::vector<int> reverse_tuples_;
   };
-
-  int Index(int tuple_index, int var_index) const {
-    return tuple_index * num_variables_ + var_index;
-  }
 
   void RemoveUnsupportedValues() {
     // We scan values to check the ones without the supported values.
@@ -327,26 +325,26 @@ class Ac4TableConstraint : public Constraint {
       const int erased_tuple_index = (*var_value)[0];
       // The tuple is erased for each value it contains.
       for (int var_index2 = 0; var_index2 < num_variables_; var_index2++) {
+        Var* const var2 = vars_[var_index2];
         const int value_index2 =
             table_->ValueIndex(erased_tuple_index, var_index2);
-        SwapList* const var_value2 =
-            vars_[var_index2]->tuples_per_value_[value_index2];
+        SwapList* const var_value2 = var2->tuples_per_value_[value_index2];
         const bool value_still_supported = var_value2->Size() > 1;
         const int tuple_index_in_value =
-            reverse_tuples_[Index(erased_tuple_index, var_index2)];
+            var2->reverse_tuples_[erased_tuple_index];
         const int back_tuple_index = var_value2->back();
         var_value2->erase(
             solver(),
             tuple_index_in_value,
             erased_tuple_index,
             back_tuple_index,
-            &reverse_tuples_[Index(erased_tuple_index, var_index2)],
-            &reverse_tuples_[Index(back_tuple_index, var_index2)]);
+            &var2->reverse_tuples_[erased_tuple_index],
+            &var2->reverse_tuples_[back_tuple_index]);
 
         if (!value_still_supported) {
-          vars_[var_index2]->Variable()->RemoveValue(
+          var2->Variable()->RemoveValue(
               table_->ValueFromIndex(var_index2, value_index2));
-          vars_[var_index2]->RemoveFromActiveValues(solver(), value_index2);
+          var2->RemoveFromActiveValues(solver(), value_index2);
         }
       }
     }
@@ -379,14 +377,13 @@ class Ac4TableConstraint : public Constraint {
     for (int j = 0; j < size; j++) {
       const int tuple_index = tuples_to_add_[j];
       for (int var_index = 0; var_index < num_variables_; var_index++) {
+        Var* const var = vars_[var_index];
         SwapList* const val =
-            vars_[var_index]->tuples_per_value_[table_->ValueIndex(tuple_index,
-                                                                   var_index)];
-        const int index_of_value =
-            reverse_tuples_[Index(tuple_index, var_index)];
+            var->tuples_per_value_[table_->ValueIndex(tuple_index, var_index)];
+        const int index_of_value = var->reverse_tuples_[tuple_index];
         const int ebt = val->end_back();
-        reverse_tuples_[Index(ebt, var_index)] = index_of_value;
-        reverse_tuples_[Index(tuple_index, var_index)] = val->Size();
+        var->reverse_tuples_[ebt] = index_of_value;
+        var->reverse_tuples_[tuple_index] = val->Size();
         val->push_back_from_index(solver(), index_of_value, tuple_index, ebt);
       }
     }
@@ -464,18 +461,16 @@ class Ac4TableConstraint : public Constraint {
     const int num_tuples = table_->NumTuples();
     for (int tuple_index = 0; tuple_index < num_tuples; tuple_index++) {
       for (int var_index = 0; var_index < num_variables_; var_index++) {
+        Var* const var = vars_[var_index];
         SwapList* const active_tuples =
-            vars_[var_index]->tuples_per_value_[table_->ValueIndex(tuple_index,
-                                                                   var_index)];
-        reverse_tuples_[Index(tuple_index, var_index)] = active_tuples->Size();
+            var->tuples_per_value_[table_->ValueIndex(tuple_index, var_index)];
+        var->reverse_tuples_[tuple_index] = active_tuples->Size();
         active_tuples->push_back(solver(), tuple_index);
       }
     }
   }
 
   std::vector<Var*> vars_; // variable of the constraint
-  // Flat tuples of value indices.
-  std::vector<int> reverse_tuples_;
   IndexedTable* const table_; // table
   // On peut le supprimer si on a un tableau temporaire d'entier qui
   // est disponible. Peut contenir tous les tuples
