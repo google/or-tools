@@ -443,8 +443,8 @@ class Ac4TableConstraint : public Constraint {
       Demon* const demon =
           MakeConstraintDemon1(solver(),
                                this,
-                               &Ac4TableConstraint::FilterX,
-                               "FilterX",
+                               &Ac4TableConstraint::FilterOneVariable,
+                               "FilterOneVariable",
                                var_index);
       vars_[var_index]->Variable()->WhenDomain(demon);
     }
@@ -457,7 +457,7 @@ class Ac4TableConstraint : public Constraint {
     }
   }
 
-  void FilterX(int var_index) {
+  void FilterOneVariable(int var_index) {
     TableVar* const var = vars_[var_index];
     var->ComputeDeltaDomain(&delta_of_value_indices_);
     if (var->CheckResetProperty(delta_of_value_indices_)) {
