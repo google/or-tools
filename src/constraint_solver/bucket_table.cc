@@ -94,10 +94,10 @@ class IndexedTable {
   const int num_tuples_;
 };
 
-class FastRevIntList {
+template <class T> class FastRevIntList {
  public:
   FastRevIntList(const int capacity)
-  : elements_(new int[capacity]),
+  : elements_(new T[capacity]),
     num_elements_(0),
     capacity_(capacity) {}
 
@@ -107,12 +107,12 @@ class FastRevIntList {
 
   int Capacity() const { return capacity_; }
 
-  int operator[](int i) const {
+  T operator[](int i) const {
     DCHECK_LT(i, capacity_);
     return elements_[i];
   }
 
-  int push_back(Solver* const solver, int elt) {
+  int push_back(Solver* const solver, T elt) {
     const int size = num_elements_.Value();
     DCHECK_LT(size, capacity_);
     elements_[size] = elt;
@@ -122,20 +122,20 @@ class FastRevIntList {
 
   void push_back_from_index(Solver* const solver,
                             int i,
-                            int iElt, int endBackElt) {
+                            T iElt, T endBackElt) {
     elements_[i] = endBackElt;
     elements_[num_elements_.Value()] = iElt;
     num_elements_.Incr(solver);
   }
 
-  int end_back() const { return elements_[num_elements_.Value()]; }
+  T end_back() const { return elements_[num_elements_.Value()]; }
 
-  int back() const { return elements_[num_elements_.Value() - 1]; }
+  T back() const { return elements_[num_elements_.Value() - 1]; }
 
   void erase(Solver* const solver,
              int i,
-             int iElt,
-             int backElt,
+             T iElt,
+             T backElt,
              int* posElt,
              int* posBack) {
     num_elements_.Decr(solver);
@@ -150,7 +150,7 @@ class FastRevIntList {
   }
 
  private:
-  scoped_array<int> elements_; // set of elements.
+  scoped_array<T> elements_; // set of elements.
   NumericalRev<int> num_elements_; // number of elements in the set.
   const int capacity_;
 };
@@ -173,7 +173,7 @@ class TableVar {
     for (int value_index = 0;
          value_index < tuples_per_value_.size();
          value_index++) {
-      tuples_per_value_[value_index] = new FastRevIntList(
+      tuples_per_value_[value_index] = new FastRevIntList<int>(
           table->NumTuplesContainingValueIndex(var_index, value_index));
       index_in_active_values_[value_index] =
           active_values_.push_back(solver_, value_index);
@@ -210,7 +210,7 @@ class TableVar {
   void RemoveOneTuple(int erased_tuple_index, IndexedTable* const table) {
     const int value_index =
         table->ValueIndex(erased_tuple_index, var_index_);
-    FastRevIntList* const var_value = tuples_per_value_[value_index];
+    FastRevIntList<int>* const var_value = tuples_per_value_[value_index];
     const int tuple_index_in_value = reverse_tuples_[erased_tuple_index];
     const int back_tuple_index = var_value->back();
     var_value->erase(
@@ -230,7 +230,7 @@ class TableVar {
     return tuples_per_value_[value_index]->Size();
   }
 
-  FastRevIntList* ActiveTuples(int value_index) const {
+  FastRevIntList<int>* ActiveTuples(int value_index) const {
     return tuples_per_value_[value_index];
   }
 
@@ -243,7 +243,7 @@ class TableVar {
   }
 
   void RestoreTuple(int tuple_index, IndexedTable* const table) {
-    FastRevIntList* const active_tuples =
+    FastRevIntList<int>* const active_tuples =
         tuples_per_value_[table->ValueIndex(tuple_index, var_index_)];
     const int index_of_value = reverse_tuples_[tuple_index];
     const int ebt = active_tuples->end_back();
@@ -256,21 +256,114 @@ class TableVar {
   void Init(IndexedTable* const table) {
     const int num_tuples = table->NumTuples();
     for (int tuple_index = 0; tuple_index < num_tuples; tuple_index++) {
-      FastRevIntList* const active_tuples =
+      FastRevIntList<int>* const active_tuples =
           tuples_per_value_[table->ValueIndex(tuple_index, var_index_)];
       reverse_tuples_[tuple_index] = active_tuples->Size();
       active_tuples->push_back(var_->solver(), tuple_index);
     }
   }
 
+  bool CheckResetProperty(const std::vector<int>& delta,
+                          IndexedTable* const table) {
+    // retourne true si on doit faire un reset. on compte le nb de
+    // tuples qui vont etre supprimés.
+    int num_deleted_tuples = 0;
+    for (int k = 0; k < delta.size(); k++) {
+      num_deleted_tuples += NumTuplesPerValue(delta[k]);
+    }
+    // on calcule le nombre de tuples en balayant les valeurs du
+    // domaine de la var x
+    int num_tuples_in_domain = 0;
+    IntVarIterator* const it = DomainIterator();
+    for (it->Init(); it->Ok(); it->Next()) {
+      const int value_index = table->IndexFromValue(var_index_, it->Value());
+      num_tuples_in_domain += NumTuplesPerValue(value_index);
+    }
+    return (num_tuples_in_domain < num_deleted_tuples);
+  }
+
+  void ComputeDeltaDomain(IndexedTable* const table, std::vector<int>* delta) {
+    // calcul du delta domain de or-tools: on remplit le tableau
+    // delta_ ATTENTION une val peut etre plusieurs fois dans le delta
+    // : ici on s'en fout.
+    delta->clear();
+    // we iterate the delta of the variable
+    //
+    // ATTENTION code for or-tools: the delta iterator does not
+    // include the values between oldmin and min and the values
+    // between max and oldmax
+    //
+    // therefore we decompose the iteration into 3 parts
+    // - from oldmin to min
+    // - for the deleted values between min and max
+    // - from max to oldmax
+    // First iteration: from oldmin to min
+    const int64 oldmindomain = var_->OldMin();
+    const int64 mindomain = var_->Min();
+    for (int64 val = oldmindomain; val < mindomain; ++val) {
+      if (table->IsValueValid(var_index_, val)) {
+        delta->push_back(table->IndexFromValue(var_index_, val));
+      }
+    }
+    // Second iteration: "delta" domain iteration
+    IntVarIterator* const it = DeltaDomainIterator();
+    for (it->Init(); it->Ok(); it->Next()) {
+      int64 val = it->Value();
+      if (table->IsValueValid(var_index_, val)) {
+        delta->push_back(table->IndexFromValue(var_index_, val));
+      }
+    }
+    // Third iteration: from max to oldmax
+    const int64 oldmaxdomain = var_->OldMax();
+    const int64 maxdomain = var_->Max();
+    for (int64 val = maxdomain + 1; val <= oldmaxdomain; ++val) {
+      if (table->IsValueValid(var_index_, val)) {
+        delta->push_back(table->IndexFromValue(var_index_, val));
+      }
+    }
+  }
+
+  void PropagateDeletedValues(IndexedTable* const table,
+                              const std::vector<int>& delta,
+                              std::vector<int>* const removed_tuples) {
+    removed_tuples->clear();
+    const int delta_size = delta.size();
+    for (int k = 0; k < delta_size; k++) {
+      FastRevIntList<int>* const tuples_to_remove = tuples_per_value_[delta[k]];
+      const int num_tuples_to_erase = tuples_to_remove->Size();
+      for (int index = 0; index < num_tuples_to_erase; index++) {
+        removed_tuples->push_back((*tuples_to_remove)[index]);
+      }
+    }
+  }
+
+  void RemoveUnsupportedValues(IndexedTable* const table) {
+    IntVarIterator* const it = DomainIterator();
+    int num_removed = 0;
+    for (it->Init(); it->Ok(); it->Next()) {
+      const int value_index = table->IndexFromValue(var_index_, it->Value());
+      if (NumTuplesPerValue(value_index) == 0) {
+        RemoveActiveValue(var_->solver(), value_index);
+        num_removed++;
+      }
+    }
+    // Removed values have been pushed after the lists.
+    const int last_valid_value = active_values_.Size();
+    for (int cpt = 0; cpt < num_removed; cpt++) {
+      const int value_index = ActiveValue(last_valid_value + cpt);
+      const int64 removed_value =
+          table->ValueFromIndex(var_index_, value_index);
+      var_->RemoveValue(removed_value);
+    }
+  }
+
  private:
-  //  friend class Ac4TableConstraint;
   Solver* const solver_;
   const int var_index_;
   // one LAA per value of the variable
-  std::vector<FastRevIntList*> tuples_per_value_;
+  std::vector<FastRevIntList<int>*> tuples_per_value_;
   // list of values: having a non empty tuple list
-  FastRevIntList active_values_;
+  FastRevIntList<int> active_values_;
   std::vector<int> index_in_active_values_;
   IntVar* const var_;
   IntVarIterator* const domain_iterator_;
@@ -287,7 +380,7 @@ class Ac4TableConstraint : public Constraint {
       : Constraint(solver),
         vars_(table->NumVars()),
         table_(table),
-        tuples_to_add_(table->NumTuples()),
+        tmp_tuples_(table->NumTuples()),
         delta_of_value_indices_(table->NumTuples()),
         num_variables_(table->NumVars()) {
     for (int var_index = 0; var_index < table->NumVars(); var_index++) {
@@ -314,7 +407,7 @@ class Ac4TableConstraint : public Constraint {
   }
 
   void InitialPropagate() {
-    Init();
+    InitAllVariables();
     std::vector<int64> to_remove;
     // we remove from the domain the values that are not in the table,
     // or that have no supporting tuples.
@@ -335,53 +428,30 @@ class Ac4TableConstraint : public Constraint {
   }
 
   void FilterX(int var_index) {
-    ComputeDeltaDomain(var_index);
-    if (CheckResetProperty(var_index)) {
+    TableVar* const var = vars_[var_index];
+    var->ComputeDeltaDomain(table_, &delta_of_value_indices_);
+    if (var->CheckResetProperty(delta_of_value_indices_, table_)) {
       Reset(var_index);
     }
-    const int delta_size = delta_of_value_indices_.size();
-    for (int k = 0; k < delta_size; k++) {
-      PropagateDeletedValue(var_index, delta_of_value_indices_[k]);
+    var->PropagateDeletedValues(table_, delta_of_value_indices_, &tmp_tuples_);
+    // The tuple is erased for each value it contains.
+    for (int i = 0; i < tmp_tuples_.size(); ++i) {
+      RemoveOneTupleFromAllVariables(tmp_tuples_[i]);
     }
   }
 
  private:
-  void RemoveUnsupportedValues() {
-    // We scan values to check the ones without the supported values.
+  void RemoveOneTupleFromAllVariables(int tuple_index) {
     for (int var_index = 0; var_index < num_variables_; var_index++) {
       TableVar* const var = vars_[var_index];
-      IntVarIterator* const it = var->DomainIterator();
-      int num_removed = 0;
-      for (it->Init(); it->Ok(); it->Next()) {
-        const int value_index = table_->IndexFromValue(var_index, it->Value());
-        if (var->NumTuplesPerValue(value_index) == 0) {
-          var->RemoveActiveValue(solver(), value_index);
-          num_removed++;
-        }
-      }
-      // Removed values are pushed after the lists.
-      const int last_valid_value = var->NumActiveValues();
-      for (int cpt = 0; cpt < num_removed; cpt++) {
-        const int value_index =
-            vars_[var_index]->ActiveValue(last_valid_value + cpt);
-        const int64 removed_value =
-            table_->ValueFromIndex(var_index, value_index);
-        vars_[var_index]->Variable()->RemoveValue(removed_value);
-      }
+      var->RemoveOneTuple(tuple_index, table_);
     }
   }
 
-  void PropagateDeletedValue(const int var_index, const int value_index) {
-    FastRevIntList* const tuples_to_remove =
-        vars_[var_index]->ActiveTuples(value_index);
-    const int num_tuples_to_erase = tuples_to_remove->Size();
-    for (int index = 0; index < num_tuples_to_erase; index++) {
-      const int erased_tuple_index = (*tuples_to_remove)[0];
-      // The tuple is erased for each value it contains.
-      for (int var_index2 = 0; var_index2 < num_variables_; var_index2++) {
-        TableVar* const var2 = vars_[var_index2];
-        var2->RemoveOneTuple(erased_tuple_index, table_);
-      }
+  void RemoveUnsupportedValuesOnAllVariables() {
+    // We scan values to check the ones without the supported values.
+    for (int var_index = 0; var_index < num_variables_; var_index++) {
+      vars_[var_index]->RemoveUnsupportedValues(table_);
     }
   }
 
@@ -389,14 +459,14 @@ class Ac4TableConstraint : public Constraint {
   void Reset(int var_index) {
     TableVar* const var = vars_[var_index];
     int s = 0;
-    tuples_to_add_.clear();
+    tmp_tuples_.clear();
     IntVarIterator* const it = var->DomainIterator();
     for (it->Init(); it->Ok(); it->Next()) {
       const int value_index = table_->IndexFromValue(var_index, it->Value());
-      FastRevIntList* const active_tuples = var->ActiveTuples(value_index);
+      FastRevIntList<int>* const active_tuples = var->ActiveTuples(value_index);
       const int num_tuples = active_tuples->Size();
       for (int j = 0; j < num_tuples; j++) {
-        tuples_to_add_.push_back((*active_tuples)[j]);
+        tmp_tuples_.push_back((*active_tuples)[j]);
       }
     }
     // We clear all values in the TableVar structure.
@@ -407,84 +477,20 @@ class Ac4TableConstraint : public Constraint {
       }
     }
 
-    // We add tuples one by one from the tuples_to_add_ structure.
-    const int size = tuples_to_add_.size();
+    // We add tuples one by one from the tmp_tuples_ structure.
+    const int size = tmp_tuples_.size();
     for (int j = 0; j < size; j++) {
-      const int tuple_index = tuples_to_add_[j];
+      const int tuple_index = tmp_tuples_[j];
       for (int var_index = 0; var_index < num_variables_; var_index++) {
         vars_[var_index]->RestoreTuple(tuple_index, table_);
       }
     }
 
     // Si une valeur n'a plus de support on la supprime
-    RemoveUnsupportedValues();
+    RemoveUnsupportedValuesOnAllVariables();
   }
 
-  void ComputeDeltaDomain(int var_index) {
-    // calcul du delta domain de or-tools: on remplit le tableau
-    // delta_ ATTENTION une val peut etre plusieurs fois dans le delta
-    // : ici on s'en fout.
-    IntVar* const var = vars_[var_index]->Variable();
-    delta_of_value_indices_.clear();
-    // we iterate the delta of the variable
-    //
-    // ATTENTION code for or-tools: the delta iterator does not
-    // include the values between oldmin and min and the values
-    // between max and oldmax
-    //
-    // therefore we decompose the iteration into 3 parts
-    // - from oldmin to min
-    // - for the deleted values between min and max
-    // - from max to oldmax
-    // First iteration: from oldmin to min
-    const int64 oldmindomain = var->OldMin();
-    const int64 mindomain = var->Min();
-    for (int64 val = oldmindomain; val < mindomain; ++val) {
-      if (table_->IsValueValid(var_index, val)) {
-        delta_of_value_indices_.push_back(
-            table_->IndexFromValue(var_index, val));
-      }
-    }
-    // Second iteration: "delta" domain iteration
-    IntVarIterator* const it = vars_[var_index]->DeltaDomainIterator();
-    for (it->Init(); it->Ok(); it->Next()) {
-      int64 val = it->Value();
-      if (table_->IsValueValid(var_index, val)) {
-        delta_of_value_indices_.push_back(
-            table_->IndexFromValue(var_index, val));
-      }
-    }
-    // Third iteration: from max to oldmax
-    const int64 oldmaxdomain = var->OldMax();
-    const int64 maxdomain = var->Max();
-    for (int64 val = maxdomain + 1; val <= oldmaxdomain; ++val) {
-      if (table_->IsValueValid(var_index, val)) {
-        delta_of_value_indices_.push_back(
-            table_->IndexFromValue(var_index, val));
-      }
-    }
-  }
-
-  bool CheckResetProperty(int var_index) {
-    // retourne true si on doit faire un reset. on compte le nb de
-    // tuples qui vont etre supprimés.
-    TableVar* const var = vars_[var_index];
-    int num_deleted_tuples = 0;
-    for (int k = 0; k < delta_of_value_indices_.size(); k++) {
-      num_deleted_tuples += var->NumTuplesPerValue(delta_of_value_indices_[k]);
-    }
-    // on calcule le nombre de tuples en balayant les valeurs du
-    // domaine de la var x
-    int num_tuples_in_domain = 0;
-    IntVarIterator* const it = var->DomainIterator();
-    for (it->Init(); it->Ok(); it->Next()) {
-      const int value_index = table_->IndexFromValue(var_index, it->Value());
-      num_tuples_in_domain += var->NumTuplesPerValue(value_index);
-    }
-    return (num_tuples_in_domain < num_deleted_tuples);
-  }
-
-  void Init() {
+  void InitAllVariables() {
     for (int var_index = 0; var_index < num_variables_; var_index++) {
       vars_[var_index]->Init(table_);
     }
@@ -494,7 +500,7 @@ class Ac4TableConstraint : public Constraint {
   IndexedTable* const table_; // table
   // On peut le supprimer si on a un tableau temporaire d'entier qui
   // est disponible. Peut contenir tous les tuples
-  std::vector<int> tuples_to_add_;
+  std::vector<int> tmp_tuples_;
   // Temporary storage for delta of one variable.
   std::vector<int> delta_of_value_indices_;
   // Number of variables.
