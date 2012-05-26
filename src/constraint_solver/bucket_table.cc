@@ -330,15 +330,15 @@ class TableVar {
     }
   }
 
-  void PropagateDeletedValues(const std::vector<int>& delta,
-                              std::vector<int>* const removed_tuples) {
-    removed_tuples->clear();
+  void ComputeTuplesToRemove(const std::vector<int>& delta,
+                             std::vector<int>* const tuples_to_remove) {
+    tuples_to_remove->clear();
     const int delta_size = delta.size();
     for (int k = 0; k < delta_size; k++) {
-      FastRevIntList<int>* const tuples_to_remove = tuples_per_value_[delta[k]];
-      const int num_tuples_to_erase = tuples_to_remove->Size();
+      FastRevIntList<int>* const active_tuples = tuples_per_value_[delta[k]];
+      const int num_tuples_to_erase = active_tuples->Size();
       for (int index = 0; index < num_tuples_to_erase; index++) {
-        removed_tuples->push_back((*tuples_to_remove)[index]);
+        tuples_to_remove->push_back((*active_tuples)[index]);
       }
     }
   }
@@ -463,7 +463,7 @@ class Ac4TableConstraint : public Constraint {
     if (var->CheckResetProperty(delta_of_value_indices_)) {
       Reset(var_index);
     }
-    var->PropagateDeletedValues(delta_of_value_indices_, &tmp_tuples_);
+    var->ComputeTuplesToRemove(delta_of_value_indices_, &tmp_tuples_);
     for (int i = 0; i < tmp_tuples_.size(); ++i) {
       RemoveOneTupleFromAllVariables(tmp_tuples_[i]);
     }
