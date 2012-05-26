@@ -387,6 +387,20 @@ class TableVar {
     var_->RemoveValues(*to_remove);
   }
 
+  void CollectActiveTuples(std::vector<int>* const tuples_to_keep) const {
+    tuples_to_keep->clear();
+    for (domain_iterator_->Init();
+         domain_iterator_->Ok();
+         domain_iterator_->Next()) {
+      const int value_index = column_.IndexFromValue(domain_iterator_->Value());
+      FastRevIntList<int>* const active_tuples = tuples_per_value_[value_index];
+      const int num_tuples = active_tuples->Size();
+      for (int j = 0; j < num_tuples; j++) {
+        tuples_to_keep->push_back((*active_tuples)[j]);
+      }
+    }
+  }
+
  private:
   Solver* const solver_;
   const IndexedTable::Column& column_;
@@ -472,19 +486,8 @@ class Ac4TableConstraint : public Constraint {
 
   // Clean and re-add all active tuples.
   void Reset(int var_index) {
-    TableVar* const var = vars_[var_index];
-    int s = 0;
-    tmp_tuples_.clear();
-    IntVarIterator* const it = var->DomainIterator();
-    for (it->Init(); it->Ok(); it->Next()) {
-      const int value_index =
-          table_->column(var_index).IndexFromValue(it->Value());
-      FastRevIntList<int>* const active_tuples = var->ActiveTuples(value_index);
-      const int num_tuples = active_tuples->Size();
-      for (int j = 0; j < num_tuples; j++) {
-        tmp_tuples_.push_back((*active_tuples)[j]);
-      }
-    }
+    vars_[var_index]->CollectActiveTuples(&tmp_tuples_);
+
     // We clear all values in the TableVar structure.
     for (int i = 0; i < num_variables_; i++) {
       for (int k = 0; k < vars_[i]->NumActiveValues(); k++) {
