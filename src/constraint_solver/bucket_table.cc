@@ -88,7 +88,6 @@ class IndexedTable {
  private:
   std::vector<int> tuples_of_indices_;
   std::vector<VectorMap<int64> > value_map_per_variable_;
-  // number of tuples per value
   std::vector<std::vector<int> > num_tuples_per_value_;
   const int arity_;
   const int num_tuples_;
@@ -424,7 +423,6 @@ class Ac4TableConstraint : public Constraint {
       }
       vars_[var_index]->Variable()->RemoveValues(to_remove);
     }
-    //    RemoveUnsupportedValues();
   }
 
   void FilterX(int var_index) {
@@ -434,7 +432,6 @@ class Ac4TableConstraint : public Constraint {
       Reset(var_index);
     }
     var->PropagateDeletedValues(table_, delta_of_value_indices_, &tmp_tuples_);
-    // The tuple is erased for each value it contains.
     for (int i = 0; i < tmp_tuples_.size(); ++i) {
       RemoveOneTupleFromAllVariables(tmp_tuples_[i]);
     }
@@ -448,8 +445,8 @@ class Ac4TableConstraint : public Constraint {
     }
   }
 
+  // We scan values to check the ones without the supported values.
   void RemoveUnsupportedValuesOnAllVariables() {
-    // We scan values to check the ones without the supported values.
     for (int var_index = 0; var_index < num_variables_; var_index++) {
       vars_[var_index]->RemoveUnsupportedValues(table_);
     }
@@ -486,7 +483,6 @@ class Ac4TableConstraint : public Constraint {
       }
     }
 
-    // Si une valeur n'a plus de support on la supprime
     RemoveUnsupportedValuesOnAllVariables();
   }
 
@@ -496,10 +492,11 @@ class Ac4TableConstraint : public Constraint {
     }
   }
 
-  std::vector<TableVar*> vars_; // variable of the constraint
-  IndexedTable* const table_; // table
-  // On peut le supprimer si on a un tableau temporaire d'entier qui
-  // est disponible. Peut contenir tous les tuples
+  // Variables of the constraint.
+  std::vector<TableVar*> vars_;
+  // Table.
+  IndexedTable* const table_;
+  // Temporary tuple array for delayed add or delete operations.
   std::vector<int> tmp_tuples_;
   // Temporary storage for delta of one variable.
   std::vector<int> delta_of_value_indices_;
