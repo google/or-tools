@@ -23,6 +23,7 @@ DEFINE_int32(arity, 3, "Arity of tuples");
 DEFINE_int32(upper, 10, "Upper bound of variables, lower is always 0");
 DEFINE_int32(tuples, 1000, "Number of tuples");
 DEFINE_int32(bucket, 64, "Size of buckets");
+DEFINE_bool(ac4, false, "Use AC4 Table only");
 
 namespace operations_research {
 extern Constraint* BuildAc4TableConstraint(Solver* const solver,
@@ -93,7 +94,9 @@ void TestTable(int arity, int num_tuples, int upper, int size_bucket) {
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
-  operations_research::TestTable(FLAGS_arity, FLAGS_tuples, FLAGS_upper, 0);
+  if (!FLAGS_ac4) {
+    operations_research::TestTable(FLAGS_arity, FLAGS_tuples, FLAGS_upper, 0);
+  }
   operations_research::TestTable(FLAGS_arity,
                                  FLAGS_tuples,
                                  FLAGS_upper,

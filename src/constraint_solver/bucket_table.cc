@@ -279,6 +279,9 @@ class TableVar {
     for (int k = 0; k < delta.size(); k++) {
       num_deleted_tuples += NumTuplesPerValue(delta[k]);
     }
+    if (num_deleted_tuples < 10) {
+      return false;
+    }
 
     int num_remaining_tuples = 0;
     IntVarIterator* const it = DomainIterator();
@@ -286,7 +289,7 @@ class TableVar {
       const int value_index = column_.IndexFromValue(it->Value());
       num_remaining_tuples += NumTuplesPerValue(value_index);
     }
-    return (num_remaining_tuples < num_deleted_tuples);
+    return (2 * num_remaining_tuples < num_deleted_tuples);
   }
 
   void ComputeDeltaDomain(std::vector<int>* delta) {
