@@ -28,24 +28,34 @@
 
 namespace operations_research {
 namespace {
-// ---------- Base array classes used for code factorization ----------
+// ----- Tree Array Constraint -----
 
-// ----- Array Constraint -----
-
-class ArrayConstraint : public CastConstraint {
+class TreeArrayConstraint : public CastConstraint {
  public:
-  ArrayConstraint(Solver* const s,
-                  const IntVar* const * vars,
-                  int size,
-                  IntVar* const var)
-      : CastConstraint(s, var), vars_(new IntVar*[size]), size_(size) {
-    CHECK_GT(size, 0);
-    CHECK_NOTNULL(vars);
+  TreeArrayConstraint(Solver* const solver,
+                      IntVar* const* vars,
+                      int size,
+                      IntVar* const sum_var)
+      : CastConstraint(solver, sum_var),
+        vars_(new IntVar*[size]),
+        size_(size),
+        block_size_(solver->parameters().array_split_size) {
     memcpy(vars_.get(), vars, size_ * sizeof(*vars));
+    std::vector<int> lengths;
+    lengths.push_back(size_);
+    while (lengths.back() > 1) {
+      const int current = lengths.back();
+      lengths.push_back((current + block_size_ - 1) / block_size_);
+    }
+    tree_.resize(lengths.size());
+    for (int i = 0; i < lengths.size(); ++i) {
+      tree_[i].resize(lengths[lengths.size() - i - 1]);
+    }
+    DCHECK_GE(tree_.size(), 1);
+    DCHECK_EQ(1, tree_[0].size());
+    root_node_ = &tree_[0][0];
   }
-  virtual ~ArrayConstraint() {}
 
- protected:
   string DebugStringInternal(const string& name) const {
     return StringPrintf("%s(%s) == %s",
                         name.c_str(),
@@ -63,68 +73,6 @@ class ArrayConstraint : public CastConstraint {
     visitor->EndVisitConstraint(name, this);
   }
 
-  scoped_array<IntVar*> vars_;
-  const int size_;
-};
-
-// ----- ArrayExpr -----
-
-class ArrayExpr : public BaseIntExpr {
- public:
-  ArrayExpr(Solver* const s, const IntVar* const* vars, int size)
-    : BaseIntExpr(s), vars_(new IntVar*[size]), size_(size) {
-    CHECK_GT(size, 0);
-    CHECK_NOTNULL(vars);
-    memcpy(vars_.get(), vars, size_ * sizeof(*vars));
-  }
-
-  virtual ~ArrayExpr() {}
-
- protected:
-  string DebugStringInternal(const string& name) const {
-    return StringPrintf("%s(%s)",
-                        name.c_str(),
-                        DebugStringArray(vars_.get(), size_, ", ").c_str());
-  }
-
-  void AcceptInternal(const string& name, ModelVisitor* const visitor) const {
-    visitor->BeginVisitIntegerExpression(name, this);
-    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.get(),
-                                               size_);
-    visitor->EndVisitIntegerExpression(name, this);
-  }
-
-  scoped_array<IntVar*> vars_;
-  const int size_;
-};
-
-// ----- Tree Array Constraint -----
-
-// Helper class
-class TreeArrayConstraint : public ArrayConstraint {
- public:
-  TreeArrayConstraint(Solver* const solver,
-                      IntVar* const* vars,
-                      int size,
-                      IntVar* const sum_var)
-      : ArrayConstraint(solver, vars, size, sum_var),
-        block_size_(solver->parameters().array_split_size) {
-    std::vector<int> lengths;
-    lengths.push_back(size_);
-    while (lengths.back() > 1) {
-      const int current = lengths.back();
-      lengths.push_back((current + block_size_ - 1) / block_size_);
-    }
-    tree_.resize(lengths.size());
-    for (int i = 0; i < lengths.size(); ++i) {
-      tree_[i].resize(lengths[lengths.size() - i - 1]);
-    }
-    DCHECK_GE(tree_.size(), 1);
-    DCHECK_EQ(1, tree_[0].size());
-    root_node_ = &tree_[0][0];
-  }
-
   // Increases min by delta_min, reduces max by delta_max.
   void ReduceRange(int depth, int position, int64 delta_min, int64 delta_max) {
     NodeInfo* const info = &tree_[depth][position];
@@ -133,6 +81,17 @@ class TreeArrayConstraint : public ArrayConstraint {
     }
     if (delta_max > 0) {
       info->node_max.SetValue(solver(), info->node_max.Value() - delta_max);
+    }
+  }
+
+  // Sets the range on the given node.
+  void SetRange(int depth, int position, int64 new_min, int64 new_max) {
+    NodeInfo* const info = &tree_[depth][position];
+    if (new_min > info->node_min.Value()) {
+      info->node_min.SetValue(solver(), new_min);
+    }
+    if (new_max < info->node_max.Value()) {
+      info->node_max.SetValue(solver(), new_max);
     }
   }
 
@@ -192,6 +151,10 @@ class TreeArrayConstraint : public ArrayConstraint {
   int Width(int depth) const {
     return tree_[depth].size();
   }
+
+ protected:
+  scoped_array<IntVar*> vars_;
+  const int size_;
 
  private:
   struct NodeInfo {
@@ -360,1027 +323,309 @@ class SumConstraint : public TreeArrayConstraint {
 
 // ---------- Min Array ----------
 
-// ----- Min Bool Array Ct -----
-
-// This constraint implements min(vars) == var.  It is delayed such
-// that propagation only occurs when all variables have been touched.
-class MinBoolArrayCt : public ArrayConstraint {
+// This constraint implements min(vars) == min_var.
+class MinConstraint : public TreeArrayConstraint {
  public:
-  MinBoolArrayCt(Solver* const s, const IntVar* const * vars, int size,
-                 IntVar* var);
-  virtual ~MinBoolArrayCt() {}
+  MinConstraint(Solver* const solver,
+                IntVar* const * vars,
+                int size,
+                IntVar* const min_var)
+      : TreeArrayConstraint(solver, vars, size, min_var), min_demon_(NULL) {}
 
-  virtual void Post();
-  virtual void InitialPropagate();
+  virtual ~MinConstraint() {}
 
-  void Update(int index);
-  void UpdateVar();
-
-  virtual string DebugString() const;
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    AcceptInternal(ModelVisitor::kMinEqual, visitor);
-  }
-
- private:
-  SmallRevBitSet bits_;
-  RevSwitch inhibited_;
-};
-
-MinBoolArrayCt::MinBoolArrayCt(Solver* const s,
-                               const IntVar* const * vars,
-                               int size,
-                               IntVar* var)
-    : ArrayConstraint(s, vars, size, var), bits_(size) {}
-
-void MinBoolArrayCt::Post() {
-  for (int i = 0; i < size_; ++i) {
-    Demon* d = MakeConstraintDemon1(solver(),
+  virtual void Post() {
+    for (int i = 0; i < size_; ++i) {
+      Demon* const demon = MakeConstraintDemon1(solver(),
+                                                this,
+                                                &MinConstraint::LeafChanged,
+                                                "LeafChanged",
+                                                i);
+      vars_[i]->WhenRange(demon);
+    }
+    min_demon_ = solver()->RegisterDemon(
+        MakeDelayedConstraintDemon0(solver(),
                                     this,
-                                    &MinBoolArrayCt::Update,
-                                    "Update",
-                                    i);
-    vars_[i]->WhenRange(d);
+                                    &MinConstraint::MinVarChanged,
+                                    "MinVarChanged"));
+    target_var_->WhenRange(min_demon_);
   }
 
-  Demon* uv = MakeConstraintDemon0(solver(),
-                                   this,
-                                   &MinBoolArrayCt::UpdateVar,
-                                   "UpdateVar");
-  target_var_->WhenRange(uv);
-}
-
-void MinBoolArrayCt::InitialPropagate() {
-  if (target_var_->Min() == 1LL) {
+  virtual void InitialPropagate() {
+    // Copy vars to leaf nodes.
     for (int i = 0; i < size_; ++i) {
-      vars_[i]->SetMin(1LL);
+      InitLeaf(solver(), i, vars_[i]->Min(), vars_[i]->Max());
     }
-    inhibited_.Switch(solver());
-  } else {
-    for (int i = 0; i < size_; ++i) {
-      IntVar* const var = vars_[i];
-      if (var->Max() == 0LL) {
-        target_var_->SetMax(0LL);
-        inhibited_.Switch(solver());
-        return;
-      }
-      if (var->Min() == 0LL) {
-        bits_.SetToOne(solver(), i);
-      }
-    }
-    if (bits_.IsCardinalityZero()) {
-      target_var_->SetValue(1LL);
-      inhibited_.Switch(solver());
-    } else if (target_var_->Max() == 0LL && bits_.IsCardinalityOne()) {
-      vars_[bits_.GetFirstOne()]->SetValue(0LL);
-      inhibited_.Switch(solver());
-    }
-  }
-}
 
-void MinBoolArrayCt::Update(int index) {
-  if (!inhibited_.Switched()) {
-    if (vars_[index]->Max() == 0LL) {  // Bound to 0.
-      target_var_->SetValue(0LL);
-      inhibited_.Switch(solver());
-    } else {
-      bits_.SetToZero(solver(), index);
-      if (bits_.IsCardinalityZero()) {
-        target_var_->SetValue(1LL);
-        inhibited_.Switch(solver());
-      } else if (target_var_->Max() == 0LL && bits_.IsCardinalityOne()) {
-        vars_[bits_.GetFirstOne()]->SetValue(0LL);
-        inhibited_.Switch(solver());
-      }
-    }
-  }
-}
-
-void MinBoolArrayCt::UpdateVar() {
-  if (!inhibited_.Switched()) {
-    if (target_var_->Min() == 1LL) {
-      for (int i = 0; i < size_; ++i) {
-        vars_[i]->SetMin(1LL);
-      }
-      inhibited_.Switch(solver());
-    } else {
-      if (bits_.IsCardinalityOne()) {
-        vars_[bits_.GetFirstOne()]->SetValue(0LL);
-        inhibited_.Switch(solver());
-      }
-    }
-  }
-}
-
-string MinBoolArrayCt::DebugString() const {
-  return DebugStringInternal("MinBoolArrayCt");
-}
-
-// ----- MinBoolArray -----
-
-class MinBoolArray : public ArrayExpr {
- public:
-  // This constructor will copy the array. The caller can safely delete the
-  // exprs array himself
-  MinBoolArray(Solver* const s, const IntVar* const* exprs, int size);
-  virtual ~MinBoolArray();
-
-  virtual int64 Min() const;
-  virtual void SetMin(int64 m);
-  virtual int64 Max() const;
-  virtual void SetMax(int64 m);
-  virtual string DebugString() const;
-  virtual void WhenRange(Demon* d);
-  virtual IntVar* CastToVar() {
-    Solver* const s = solver();
-    int64 vmin = 0LL;
-    int64 vmax = 0LL;
-    Range(&vmin, &vmax);
-    IntVar* var = solver()->MakeIntVar(vmin, vmax);
-    CastConstraint* const ct =
-        s->RevAlloc(new MinBoolArrayCt(s, vars_.get(), size_, var));
-    s->AddCastConstraint(ct, var, this);
-    return var;
-  }
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    AcceptInternal(ModelVisitor::kMin, visitor);
-  }
-};
-
-MinBoolArray::~MinBoolArray() {}
-
-MinBoolArray::MinBoolArray(Solver* const s, const IntVar* const* vars, int size)
-    : ArrayExpr(s, vars, size) {}
-
-int64 MinBoolArray::Min() const {
-  for (int i = 0; i < size_; ++i) {
-    const int64 vmin = vars_[i]->Min();
-    if (vmin == 0LL) {
-      return 0LL;
-    }
-  }
-  return 1LL;
-}
-
-void MinBoolArray::SetMin(int64 m) {
-  if (m <= 0) {
-    return;
-  }
-  if (m > 1) {
-    solver()->Fail();
-  }
-  for (int i = 0; i < size_; ++i) {
-    vars_[i]->SetMin(1LL);
-  }
-}
-
-int64 MinBoolArray::Max() const {
-  for (int i = 0; i < size_; ++i) {
-    const int64 vmax = vars_[i]->Max();
-    if (vmax == 0LL) {
-      return 0LL;
-    }
-  }
-  return 1LL;
-}
-
-void MinBoolArray::SetMax(int64 m) {
-  if (m < 0) {
-    solver()->Fail();
-  } else if (m >= 1) {
-    return;
-  }
-  DCHECK_EQ(m, 0LL);
-  int active = 0;
-  int curr = -1;
-  for (int i = 0; i < size_; ++i) {
-    if (vars_[i]->Min() == 0LL) {
-      active++;
-      curr = i;
-    }
-  }
-  if (active == 0) {
-    solver()->Fail();
-  }
-  if (active == 1) {
-    vars_[curr]->SetMax(0LL);
-  }
-}
-
-string MinBoolArray::DebugString() const {
-  return DebugStringInternal("MinBoolArray");
-}
-
-void MinBoolArray::WhenRange(Demon* d) {
-  for (int i = 0; i < size_; ++i) {
-    vars_[i]->WhenRange(d);
-  }
-}
-
-// ----- Min Array Ct -----
-
-// This constraint implements min(vars) == var.  It is delayed such
-// that propagation only occurs when all variables have been touched.
-class MinArrayCt : public ArrayConstraint {
- public:
-  MinArrayCt(Solver* const s, const IntVar* const * vars, int size,
-             IntVar* var);
-  virtual ~MinArrayCt() {}
-
-  virtual void Post();
-  virtual void InitialPropagate();
-
-  void Update(int index);
-  void UpdateVar();
-
-  virtual string DebugString() const;
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    AcceptInternal(ModelVisitor::kMinEqual, visitor);
-  }
-
- private:
-  Rev<int> min_support_;
-};
-
-MinArrayCt::MinArrayCt(Solver* const s,
-                       const IntVar* const * vars,
-                       int size,
-                       IntVar* var)
-    : ArrayConstraint(s, vars, size, var), min_support_(0) {}
-
-void MinArrayCt::Post() {
-  for (int i = 0; i < size_; ++i) {
-    Demon* d = MakeConstraintDemon1(solver(),
-                                    this,
-                                    &MinArrayCt::Update,
-                                    "Update",
-                                    i);
-    vars_[i]->WhenRange(d);
-  }
-  Demon* uv = MakeConstraintDemon0(solver(),
-                                   this,
-                                   &MinArrayCt::UpdateVar,
-                                   "UpdateVar");
-  target_var_->WhenRange(uv);
-}
-
-void MinArrayCt::InitialPropagate() {
-  int64 vmin = target_var_->Min();
-  int64 vmax = target_var_->Max();
-  int64 cmin = kint64max;
-  int64 cmax = kint64max;
-  int min_support = -1;
-  for (int i = 0; i < size_; ++i) {
-    IntVar* const var = vars_[i];
-    var->SetMin(vmin);
-    const int64 tmin = var->Min();
-    const int64 tmax = var->Max();
-    if (tmin < cmin) {
-      cmin = tmin;
-      min_support = i;
-    }
-    if (tmax < cmax) {
-      cmax = tmax;
-    }
-  }
-  min_support_.SetValue(solver(), min_support);
-  target_var_->SetRange(cmin, cmax);
-  vmin = target_var_->Min();
-  vmax = target_var_->Max();
-  int active = 0;
-  int curr = -1;
-  for (int i = 0; i < size_; ++i) {
-    if (vars_[i]->Min() <= vmax) {
-      if (active++ >= 1) {
-        return;
-      }
-      curr = i;
-    }
-  }
-  if (active == 0) {
-    solver()->Fail();
-  }
-  if (active == 1) {
-    vars_[curr]->SetMax(vmax);
-  }
-}
-
-void MinArrayCt::Update(int index) {
-  IntVar* const modified = vars_[index];
-  if (modified->OldMax() != modified->Max()) {
-    target_var_->SetMax(modified->Max());
-  }
-  if (index == min_support_.Value() && modified->OldMin() != modified->Min()) {
-    // TODO(user) : can we merge this code with above into
-    // ComputeMinSupport?
-    int64 cmin = kint64max;
-    int min_support = -1;
-    for (int i = 0; i < size_; ++i) {
-      const int64 tmin = vars_[i]->Min();
-      if (tmin < cmin) {
-        cmin = tmin;
-        min_support = i;
-      }
-    }
-    min_support_.SetValue(solver(), min_support);
-    target_var_->SetMin(cmin);
-  }
-}
-
-void MinArrayCt::UpdateVar() {
-  const int64 vmin = target_var_->Min();
-  if (vmin != target_var_->OldMin()) {
-    for (int i = 0; i < size_; ++i) {
-      vars_[i]->SetMin(vmin);
-    }
-  }
-  const int64 vmax = target_var_->Max();
-  if (vmax != target_var_->OldMax()) {
-    int active = 0;
-    int curr = -1;
-    for (int i = 0; i < size_; ++i) {
-      if (vars_[i]->Min() <= vmax) {
-        if (active++ >= 1) {
-          return;
+    // Compute up.
+    for (int i = MaxDepth() - 1; i >= 0; --i) {
+      for (int j = 0; j < Width(i); ++j) {
+        int64 min_min = kint64max;
+        int64 min_max = kint64max;
+        const int block_start = ChildStart(j);
+        const int block_end = ChildEnd(i, j);
+        for (int k = block_start; k <= block_end; ++k) {
+          min_min = std::min(min_min, Min(i + 1, k));
+          min_max = std::min(min_max, Max(i + 1, k));
         }
-        curr = i;
+        InitNode(solver(), i, j, min_min, min_max);
       }
     }
-    if (active == 0) {
-      solver()->Fail();
+    // Propagate to min_var.
+    target_var_->SetRange(RootMin(), RootMax());
+
+    // Push down.
+    MinVarChanged();
+  }
+
+  void MinVarChanged() {
+    PushDown(0, 0, target_var_->Min(), target_var_->Max());
+  }
+
+  void PushDown(int depth, int position, int64 new_min, int64 new_max) {
+    // Nothing to do?
+    if (new_min <= Min(depth, position) && new_max >= Max(depth, position)) {
+      return;
     }
-    if (active == 1) {
-      vars_[curr]->SetMax(vmax);
+
+    // Leaf node -> push to leaf var.
+    if (IsLeaf(depth)) {
+      vars_[position]->SetRange(new_min, new_max);
+      return;
+    }
+
+    const int64 node_min = Min(depth, position);
+    const int64 node_max = Max(depth, position);
+
+    int candidate = -1;
+    int active = 0;
+    const int block_start = ChildStart(position);
+    const int block_end = ChildEnd(depth, position);
+
+    if (new_max < node_max) {
+      // Look if only one candidat to push the max down.
+      for (int i = block_start; i <= block_end; ++i) {
+        if (Min(depth + 1, i) <= new_max) {
+          if (active++ >= 1) {
+            break;
+          }
+          candidate = i;
+        }
+      }
+      if (active == 0) {
+        solver()->Fail();
+      }
+    }
+
+    if (node_min < new_min) {
+      for (int i = block_start; i <= block_end; ++i) {
+        if (i == candidate && active == 1) {
+          PushDown(depth + 1, i, new_min, new_max);
+        } else {
+          PushDown(depth + 1, i, new_min, Max(depth + 1, i));
+        }
+      }
+    } else if (active == 1) {
+      PushDown(depth + 1, candidate, Min(depth + 1, candidate), new_max);
     }
   }
-}
 
-string MinArrayCt::DebugString() const {
-  return DebugStringInternal("MinArrayCt");
-}
+  void LeafChanged(int term_index) {
+    IntVar* const var = vars_[term_index];
+    SetRange(MaxDepth(), term_index, var->Min(), var->Max());
+    PushUp(term_index);
+  }
 
-// Array Min: the min of all the elements. More efficient that using just
-// binary MinIntExpr operators when the array grows
-class MinArray : public ArrayExpr {
- public:
-  // this constructor will copy the array. The caller can safely delete the
-  // exprs array himself
-  MinArray(Solver* const s, const IntVar* const* exprs, int size);
-  virtual ~MinArray();
+  bool PushUp(int position) {
+    int depth = MaxDepth();
+    while (depth > 0) {
+      const int parent = Parent(position);
+      const int parent_depth = depth - 1;
+      int64 min_min = kint64max;
+      int64 min_max = kint64max;
+      const int block_start = ChildStart(parent);
+      const int block_end = ChildEnd(parent_depth, parent);
+      for (int k = block_start; k <= block_end; ++k) {
+        min_min = std::min(min_min, Min(depth, k));
+        min_max = std::min(min_max, Max(depth, k));
+      }
+      if (min_min > Min(parent_depth, parent) ||
+          min_max < Max(parent_depth, parent)) {
+        SetRange(parent_depth, parent, min_min, min_max);
+      } else {
+        break;
+      }
+      depth = parent_depth;
+    }
+    if (depth == 0) {  // We have pushed all the way up.
+      target_var_->SetRange(RootMin(), RootMax());
+    }
+  }
 
-  virtual int64 Min() const;
-  virtual void SetMin(int64 m);
-  virtual int64 Max() const;
-  virtual void SetMax(int64 m);
-  virtual string DebugString() const;
-  virtual void WhenRange(Demon* d);
-  virtual IntVar* CastToVar() {
-    Solver* const s = solver();
-    int64 vmin = 0LL;
-    int64 vmax = 0LL;
-    Range(&vmin, &vmax);
-    IntVar* var = solver()->MakeIntVar(vmin, vmax);
-    CastConstraint* const ct =
-        s->RevAlloc(new MinArrayCt(s, vars_.get(), size_, var));
-    s->AddCastConstraint(ct, var, this);
-    return var;
+  string DebugString() const {
+    return DebugStringInternal("Min");
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    AcceptInternal(ModelVisitor::kMin, visitor);
+    AcceptInternal(ModelVisitor::kMinEqual, visitor);
   }
+
+ private:
+  Demon* min_demon_;
 };
-
-MinArray::~MinArray() {}
-
-MinArray::MinArray(Solver* const s, const IntVar* const* vars, int size)
-    : ArrayExpr(s, vars, size) {}
-
-int64 MinArray::Min() const {
-  int64 min = kint64max;
-  for (int i = 0; i < size_; ++i) {
-    const int64 vmin = vars_[i]->Min();
-    if (min > vmin) {
-      min = vmin;
-    }
-  }
-  return min;
-}
-
-void MinArray::SetMin(int64 m) {
-  for (int i = 0; i < size_; ++i) {
-    vars_[i]->SetMin(m);
-  }
-}
-
-int64 MinArray::Max() const {
-  int64 max = kint64max;
-  for (int i = 0; i < size_; ++i) {
-    const int64 vmax = vars_[i]->Max();
-    if (max > vmax) {
-      max = vmax;
-    }
-  }
-  return max;
-}
-
-void MinArray::SetMax(int64 m) {
-  int active = 0;
-  int curr = -1;
-  for (int i = 0; i < size_; ++i) {
-    if (vars_[i]->Min() <= m) {
-      if (active++ >= 1) {
-        return;
-      }
-      curr = i;
-    }
-  }
-  if (active == 0) {
-    solver()->Fail();
-  }
-  if (active == 1) {
-    vars_[curr]->SetMax(m);
-  }
-}
-
-string MinArray::DebugString() const {
-  return DebugStringInternal("MinArray");
-}
-
-void MinArray::WhenRange(Demon* d) {
-  for (int i = 0; i < size_; ++i) {
-    vars_[i]->WhenRange(d);
-  }
-}
 
 // ---------- Max Array ----------
 
-// ----- Max Array Ct -----
-
-// This constraint implements max(vars) == var.
-class MaxArrayCt : public ArrayConstraint {
+// This constraint implements max(vars) == max_var.
+class MaxConstraint : public TreeArrayConstraint {
  public:
-  MaxArrayCt(Solver* const s, const IntVar* const * vars, int size,
-             IntVar* var);
-  virtual ~MaxArrayCt() {}
+  MaxConstraint(Solver* const solver,
+                IntVar* const * vars,
+                int size,
+                IntVar* const max_var)
+      : TreeArrayConstraint(solver, vars, size, max_var), max_demon_(NULL) {}
 
-  virtual void Post();
-  virtual void InitialPropagate();
+  virtual ~MaxConstraint() {}
 
-  void Update(int index);
-  void UpdateVar();
-
-  virtual string DebugString() const;
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    AcceptInternal(ModelVisitor::kMaxEqual, visitor);
-  }
-
- private:
-  Rev<int> max_support_;
-};
-
-MaxArrayCt::MaxArrayCt(Solver* const s,
-                       const IntVar* const * vars,
-                       int size,
-                       IntVar* var)
-    : ArrayConstraint(s, vars, size, var), max_support_(0) {}
-
-void MaxArrayCt::Post() {
-  for (int i = 0; i < size_; ++i) {
-    Demon* d = MakeConstraintDemon1(solver(),
+  virtual void Post() {
+    for (int i = 0; i < size_; ++i) {
+      Demon* const demon = MakeConstraintDemon1(solver(),
+                                                this,
+                                                &MaxConstraint::LeafChanged,
+                                                "LeafChanged",
+                                                i);
+      vars_[i]->WhenRange(demon);
+    }
+    max_demon_ = solver()->RegisterDemon(
+        MakeDelayedConstraintDemon0(solver(),
                                     this,
-                                    &MaxArrayCt::Update,
-                                    "Update",
-                                    i);
-    vars_[i]->WhenRange(d);
+                                    &MaxConstraint::MaxVarChanged,
+                                    "MaxVarChanged"));
+    target_var_->WhenRange(max_demon_);
   }
-  Demon* uv = MakeConstraintDemon0(solver(),
-                                   this,
-                                   &MaxArrayCt::UpdateVar,
-                                   "UpdateVar");
-  target_var_->WhenRange(uv);
-}
 
-void MaxArrayCt::InitialPropagate() {
-  int64 vmin = target_var_->Min();
-  int64 vmax = target_var_->Max();
-  int64 cmin = kint64min;
-  int64 cmax = kint64min;
-  int max_support = -1;
-  for (int i = 0; i < size_; ++i) {
-    IntVar* const var = vars_[i];
-    var->SetMax(vmax);
-    const int64 tmin = var->Min();
-    const int64 tmax = var->Max();
-    if (tmin > cmin) {
-      cmin = tmin;
+  virtual void InitialPropagate() {
+    // Copy vars to leaf nodes.
+    for (int i = 0; i < size_; ++i) {
+      InitLeaf(solver(), i, vars_[i]->Min(), vars_[i]->Max());
     }
-    if (tmax > cmax) {
-      cmax = tmax;
-      max_support = i;
-    }
-  }
-  max_support_.SetValue(solver(), max_support);
-  target_var_->SetRange(cmin, cmax);
-  vmin = target_var_->Min();
-  vmax = target_var_->Max();
-  int active = 0;
-  int curr = -1;
-  for (int i = 0; i < size_; ++i) {
-    if (vars_[i]->Max() >= vmin) {
-      if (active++ >= 1) {
-        return;
-      }
-      curr = i;
-    }
-  }
-  if (active == 0) {
-    solver()->Fail();
-  }
-  if (active == 1) {
-    vars_[curr]->SetMin(vmin);
-  }
-}
 
-void MaxArrayCt::Update(int index) {
-  IntVar* const modified = vars_[index];
-  if (modified->OldMin() != modified->Min()) {
-    target_var_->SetMin(modified->Min());
-  }
-  const int64 oldmax = modified->OldMax();
-  if (index == max_support_.Value() && oldmax != modified->Max()) {
-    // TODO(user) : can we merge this code with above into
-    // ComputeMaxSupport?
-    int64 cmax = kint64min;
-    int max_support = -1;
-    for (int i = 0; i < size_; ++i) {
-      const int64 tmax = vars_[i]->Max();
-      if (tmax > cmax) {
-        cmax = tmax;
-        max_support = i;
-      }
-    }
-    max_support_.SetValue(solver(), max_support);
-    target_var_->SetMax(cmax);
-  }
-}
-
-void MaxArrayCt::UpdateVar() {
-  const int64 vmax = target_var_->Max();
-  if (vmax != target_var_->OldMax()) {
-    for (int i = 0; i < size_; ++i) {
-      vars_[i]->SetMax(vmax);
-    }
-  }
-  const int64 vmin = target_var_->Min();
-  if (vmin != target_var_->OldMin()) {
-    int active = 0;
-    int curr = -1;
-    for (int i = 0; i < size_; ++i) {
-      if (vars_[i]->Max() >= vmin) {
-        if (active++ >= 1) {
-          return;
+    // Compute up.
+    for (int i = MaxDepth() - 1; i >= 0; --i) {
+      for (int j = 0; j < Width(i); ++j) {
+        int64 max_min = kint64min;
+        int64 max_max = kint64min;
+        const int block_start = ChildStart(j);
+        const int block_end = ChildEnd(i, j);
+        for (int k = block_start; k <= block_end; ++k) {
+          max_min = std::max(max_min, Min(i + 1, k));
+          max_max = std::max(max_max, Max(i + 1, k));
         }
-        curr = i;
+        InitNode(solver(), i, j, max_min, max_max);
       }
     }
-    if (active == 0) {
-      solver()->Fail();
+    // Propagate to min_var.
+    target_var_->SetRange(RootMin(), RootMax());
+
+    // Push down.
+    MaxVarChanged();
+  }
+
+  void MaxVarChanged() {
+    PushDown(0, 0, target_var_->Min(), target_var_->Max());
+  }
+
+  void PushDown(int depth, int position, int64 new_min, int64 new_max) {
+    // Nothing to do?
+    if (new_min <= Min(depth, position) && new_max >= Max(depth, position)) {
+      return;
     }
-    if (active == 1) {
-      vars_[curr]->SetMin(vmin);
+
+    // Leaf node -> push to leaf var.
+    if (IsLeaf(depth)) {
+      vars_[position]->SetRange(new_min, new_max);
+      return;
     }
-  }
-}
 
-string MaxArrayCt::DebugString() const {
-  return DebugStringInternal("MaxArrayCt");
-}
+    const int64 node_min = Min(depth, position);
+    const int64 node_max = Max(depth, position);
 
-// Array Max: the max of all the elements. More efficient that using just
-// binary MaxIntExpr operators when the array grows
-class MaxArray : public ArrayExpr {
- public:
-  // this constructor will copy the array. The caller can safely delete the
-  // exprs array himself
-  MaxArray(Solver* const s, const IntVar* const* exprs, int size);
-  virtual ~MaxArray();
+    int candidate = -1;
+    int active = 0;
+    const int block_start = ChildStart(position);
+    const int block_end = ChildEnd(depth, position);
 
-  virtual int64 Min() const;
-  virtual void SetMin(int64 m);
-  virtual int64 Max() const;
-  virtual void SetMax(int64 m);
-  virtual string DebugString() const;
-  virtual void WhenRange(Demon* d);
-  virtual IntVar* CastToVar() {
-    Solver* const s = solver();
-    int64 vmin = Min();
-    int64 vmax = Max();
-    IntVar* var = solver()->MakeIntVar(vmin, vmax);
-    CastConstraint* const ct =
-        s->RevAlloc(new MaxArrayCt(s, vars_.get(), size_, var));
-    s->AddCastConstraint(ct, var, this);
-    return var;
-  }
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    AcceptInternal(ModelVisitor::kMax, visitor);
-  }
-};
-
-MaxArray::~MaxArray() {}
-
-MaxArray::MaxArray(Solver* const s, const IntVar* const* vars, int size)
-    : ArrayExpr(s, vars, size) {}
-
-int64 MaxArray::Min() const {
-  int64 min = kint64min;
-  for (int i = 0; i < size_; ++i) {
-    const int64 vmin = vars_[i]->Min();
-    if (min < vmin) {
-      min = vmin;
+    if (node_min < new_min) {
+      // Look if only one candidat to push the max down.
+      for (int i = block_start; i <= block_end; ++i) {
+        if (Max(depth + 1, i) >= new_min) {
+          if (active++ >= 1) {
+            break;
+          }
+          candidate = i;
+        }
+      }
+      if (active == 0) {
+        solver()->Fail();
+      }
     }
-  }
-  return min;
-}
 
-void MaxArray::SetMin(int64 m) {
-  int active = 0;
-  int curr = -1;
-  for (int i = 0; i < size_; ++i) {
-    if (vars_[i]->Max() >= m) {
-      active++;
-      curr = i;
+    if (node_max > new_max) {
+      for (int i = block_start; i <= block_end; ++i) {
+        if (i == candidate && active == 1) {
+          PushDown(depth + 1, i, new_min, new_max);
+        } else {
+          PushDown(depth + 1, i, Min(depth + 1, i), new_max);
+        }
+      }
+    } else if (active == 1) {
+      PushDown(depth + 1, candidate, new_min, Max(depth + 1, candidate));
     }
   }
-  if (active == 0) {
-    solver()->Fail();
-  }
-  if (active == 1) {
-    vars_[curr]->SetMin(m);
-  }
-}
 
-int64 MaxArray::Max() const {
-  int64 max = kint64min;
-  for (int i = 0; i < size_; ++i) {
-    const int64 vmax = vars_[i]->Max();
-    if (max < vmax) {
-      max = vmax;
+  void LeafChanged(int term_index) {
+    IntVar* const var = vars_[term_index];
+    SetRange(MaxDepth(), term_index, var->Min(), var->Max());
+    PushUp(term_index);
+  }
+
+  bool PushUp(int position) {
+    int depth = MaxDepth();
+    while (depth > 0) {
+      const int parent = Parent(position);
+      const int parent_depth = depth - 1;
+      int64 max_min = kint64min;
+      int64 max_max = kint64min;
+      const int block_start = ChildStart(parent);
+      const int block_end = ChildEnd(parent_depth, parent);
+      for (int k = block_start; k <= block_end; ++k) {
+        max_min = std::min(max_min, Min(depth, k));
+        max_max = std::min(max_max, Max(depth, k));
+      }
+      if (max_min > Min(parent_depth, parent) ||
+          max_max < Max(parent_depth, parent)) {
+        SetRange(parent_depth, parent, max_min, max_max);
+      } else {
+        break;
+      }
+      depth = parent_depth;
+    }
+    if (depth == 0) {  // We have pushed all the way up.
+      target_var_->SetRange(RootMin(), RootMax());
     }
   }
-  return max;
-}
 
-void MaxArray::SetMax(int64 m) {
-  for (int i = 0; i < size_; ++i) {
-    vars_[i]->SetMax(m);
+  string DebugString() const {
+    return DebugStringInternal("Max");
   }
-}
-
-string MaxArray::DebugString() const {
-  return DebugStringInternal("MaxArray");
-}
-
-void MaxArray::WhenRange(Demon* d) {
-  for (int i = 0; i < size_; ++i) {
-    vars_[i]->WhenRange(d);
-  }
-}
-
-// ----- Max Bool Array Ct -----
-
-// This constraint implements max(vars) == var.  It is delayed such
-// that propagation only occurs when all variables have been touched.
-class MaxBoolArrayCt : public ArrayConstraint {
- public:
-  MaxBoolArrayCt(Solver* const s, const IntVar* const * vars, int size,
-                 IntVar* var);
-  virtual ~MaxBoolArrayCt() {}
-
-  virtual void Post();
-  virtual void InitialPropagate();
-
-  void Update(int index);
-  void UpdateVar();
-
-  virtual string DebugString() const;
 
   virtual void Accept(ModelVisitor* const visitor) const {
     AcceptInternal(ModelVisitor::kMaxEqual, visitor);
   }
 
  private:
-  SmallRevBitSet bits_;
-  RevSwitch inhibited_;
+  Demon* max_demon_;
 };
-
-MaxBoolArrayCt::MaxBoolArrayCt(Solver* const s,
-                               const IntVar* const * vars,
-                               int size,
-                               IntVar* var)
-    : ArrayConstraint(s, vars, size, var), bits_(size) {}
-
-void MaxBoolArrayCt::Post() {
-  for (int i = 0; i < size_; ++i) {
-    Demon* d = MakeConstraintDemon1(solver(),
-                                    this,
-                                    &MaxBoolArrayCt::Update,
-                                    "Update",
-                                    i);
-    vars_[i]->WhenRange(d);
-  }
-
-  Demon* uv = MakeConstraintDemon0(solver(),
-                                   this,
-                                   &MaxBoolArrayCt::UpdateVar,
-                                   "UpdateVar");
-  target_var_->WhenRange(uv);
-}
-
-void MaxBoolArrayCt::InitialPropagate() {
-  if (target_var_->Max() == 0) {
-    for (int i = 0; i < size_; ++i) {
-      vars_[i]->SetMax(0LL);
-    }
-    inhibited_.Switch(solver());
-  } else {
-    for (int i = 0; i < size_; ++i) {
-      IntVar* const var = vars_[i];
-      if (var->Min() == 1LL) {
-        target_var_->SetMin(1LL);
-        inhibited_.Switch(solver());
-        return;
-      }
-      if (var->Max() == 1LL) {
-        bits_.SetToOne(solver(), i);
-      }
-    }
-    if (bits_.IsCardinalityZero()) {
-      target_var_->SetValue(0LL);
-      inhibited_.Switch(solver());
-    } else if (target_var_->Min() == 1LL && bits_.IsCardinalityOne()) {
-      vars_[bits_.GetFirstOne()]->SetValue(1LL);
-      inhibited_.Switch(solver());
-    }
-  }
-}
-
-void MaxBoolArrayCt::Update(int index) {
-  if (!inhibited_.Switched()) {
-    if (vars_[index]->Min() == 1LL) {  // Bound to 1.
-      target_var_->SetValue(1LL);
-      inhibited_.Switch(solver());
-    } else {
-      bits_.SetToZero(solver(), index);
-      if (bits_.IsCardinalityZero()) {
-        target_var_->SetValue(0LL);
-        inhibited_.Switch(solver());
-      } else if (target_var_->Min() == 1LL && bits_.IsCardinalityOne()) {
-        vars_[bits_.GetFirstOne()]->SetValue(1LL);
-        inhibited_.Switch(solver());
-      }
-    }
-  }
-}
-
-void MaxBoolArrayCt::UpdateVar() {
-  if (!inhibited_.Switched()) {
-    if (target_var_->Max() == 0) {
-      for (int i = 0; i < size_; ++i) {
-        vars_[i]->SetMax(0LL);
-      }
-      inhibited_.Switch(solver());
-    } else {
-      if (bits_.IsCardinalityOne()) {
-        vars_[bits_.GetFirstOne()]->SetValue(1LL);
-        inhibited_.Switch(solver());
-      }
-    }
-  }
-}
-
-string MaxBoolArrayCt::DebugString() const {
-  return DebugStringInternal("MaxBoolArrayCt");
-}
-
-// ----- MaxBoolArray -----
-
-class MaxBoolArray : public ArrayExpr {
- public:
-  // this constructor will copy the array. The caller can safely delete the
-  // exprs array himself
-  MaxBoolArray(Solver* const s, const IntVar* const* exprs, int size);
-  virtual ~MaxBoolArray();
-
-  virtual int64 Min() const;
-  virtual void SetMin(int64 m);
-  virtual int64 Max() const;
-  virtual void SetMax(int64 m);
-  virtual string DebugString() const;
-  virtual void WhenRange(Demon* d);
-  virtual IntVar* CastToVar() {
-    Solver* const s = solver();
-    int64 vmin = Min();
-    int64 vmax = Max();
-    IntVar* var = solver()->MakeIntVar(vmin, vmax);
-    CastConstraint* const ct =
-        s->RevAlloc(new MaxBoolArrayCt(s, vars_.get(), size_, var));
-    s->AddCastConstraint(ct, var, this);
-    return var;
-  }
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    AcceptInternal(ModelVisitor::kMax, visitor);
-  }
-};
-
-MaxBoolArray::~MaxBoolArray() {}
-
-MaxBoolArray::MaxBoolArray(Solver* const s, const IntVar* const* vars, int size)
-    : ArrayExpr(s, vars, size) {}
-
-int64 MaxBoolArray::Min() const {
-  for (int i = 0; i < size_; ++i) {
-    const int64 vmin = vars_[i]->Min();
-    if (vmin == 1LL) {
-      return 1LL;
-    }
-  }
-  return 0LL;
-}
-
-void MaxBoolArray::SetMin(int64 m) {
-  if (m > 1) {
-    solver()->Fail();
-  } else if (m <= 0) {
-    return;
-  }
-  DCHECK_EQ(m, 1LL);
-  int active = 0;
-  int curr = -1;
-  for (int i = 0; i < size_; ++i) {
-    if (vars_[i]->Max() == 1LL) {
-      active++;
-      curr = i;
-    }
-  }
-  if (active == 0) {
-    solver()->Fail();
-  }
-  if (active == 1) {
-    vars_[curr]->SetMin(1LL);
-  }
-}
-
-int64 MaxBoolArray::Max() const {
-  for (int i = 0; i < size_; ++i) {
-    const int64 vmax = vars_[i]->Max();
-    if (vmax == 1LL) {
-      return 1LL;
-    }
-  }
-  return 0LL;
-}
-
-void MaxBoolArray::SetMax(int64 m) {
-  for (int i = 0; i < size_; ++i) {
-    vars_[i]->SetMax(m);
-  }
-}
-
-string MaxBoolArray::DebugString() const {
-  return DebugStringInternal("MaxBoolArray");
-}
-
-void MaxBoolArray::WhenRange(Demon* d) {
-  for (int i = 0; i < size_; ++i) {
-    vars_[i]->WhenRange(d);
-  }
-}
-
-// ----- Builders -----
-
-void ScanArray(IntVar* const* vars, int size, int* bound,
-               int64* amin, int64* amax, int64* min_max, int64* max_min) {
-  *amin = kint64max;  // Max of the array.
-  *min_max = kint64max;  // Smallest max in the array.
-  *max_min = kint64min;  // Biggest min in the array.
-  *amax = kint64min;  // Min of the array.
-  *bound = 0;
-  for (int i = 0; i < size; ++i) {
-    const int64 vmin = vars[i]->Min();
-    const int64 vmax = vars[i]->Max();
-    if (vmin < *amin) {
-      *amin = vmin;
-    }
-    if (vmax > *amax) {
-      *amax = vmax;
-    }
-    if (vmax < *min_max) {
-      *min_max = vmax;
-    }
-    if (vmin > *max_min) {
-      *max_min = vmin;
-    }
-    if (vmin == vmax) {
-      (*bound)++;
-    }
-  }
-}
-
-IntExpr* BuildMinArray(Solver* const s, IntVar* const* vars, int size) {
-  int64 amin = 0, amax = 0, min_max = 0, max_min = 0;
-  int bound = 0;
-  ScanArray(vars, size, &bound, &amin, &amax, &min_max, &max_min);
-  if (bound == size || amin == min_max) {  // Bound min(array)
-    return s->MakeIntConst(amin);
-  }
-  if (amin == 0 && amax == 1) {
-    return s->RegisterIntExpr(s->RevAlloc(new MinBoolArray(s, vars, size)));
-  }
-  return s->RegisterIntExpr(s->RevAlloc(new MinArray(s, vars, size)));
-}
-
-IntExpr* BuildMaxArray(Solver* const s, IntVar* const* vars, int size) {
-  int64 amin = 0, amax = 0, min_max = 0, max_min = 0;
-  int bound = 0;
-  ScanArray(vars, size, &bound, &amin, &amax, &min_max, &max_min);
-  if (bound == size || amax == max_min) {  // Bound max(array)
-    return s->MakeIntConst(amax);
-  }
-  if (amin == 0 && amax == 1) {
-    return s->RegisterIntExpr(s->RevAlloc(new MaxBoolArray(s, vars, size)));
-  }
-  return s->RegisterIntExpr(s->RevAlloc(new MaxArray(s, vars, size)));
-}
-
-enum BuildOp { MIN_OP, MAX_OP };
-
-IntExpr* BuildLogSplitArray(Solver* const s,
-                            IntVar* const* vars,
-                            int size,
-                            BuildOp op) {
-  const int split_size = s->parameters().array_split_size;
-  if (size == 0) {
-    return s->MakeIntConst(0LL);
-  } else if (size == 1) {
-    return vars[0];
-  } else if (size == 2) {
-    switch (op) {
-      case MIN_OP:
-        return s->MakeMin(vars[0], vars[1]);
-      case MAX_OP:
-        return s->MakeMax(vars[0], vars[1]);
-    };
-  } else if (size > split_size) {
-    const int nb_blocks = (size - 1) / split_size + 1;
-    const int block_size = (size + nb_blocks - 1) / nb_blocks;
-    std::vector<IntVar*> top_vector;
-    int start = 0;
-    while (start < size) {
-      int real_size = (start + block_size > size ? size - start : block_size);
-      IntVar* intermediate = NULL;
-      switch (op) {
-        case MIN_OP:
-          intermediate = s->MakeMin(vars + start, real_size)->Var();
-          break;
-        case MAX_OP:
-          intermediate = s->MakeMax(vars + start, real_size)->Var();
-          break;
-      }
-      top_vector.push_back(intermediate);
-      start += real_size;
-    }
-    switch (op) {
-      case MIN_OP:
-        return s->MakeMin(top_vector);
-      case MAX_OP:
-        return s->MakeMax(top_vector);
-    };
-  } else {
-    for (int i = 0; i < size; ++i) {
-      CHECK_EQ(s, vars[i]->solver());
-    }
-    switch (op) {
-      case MIN_OP:
-        return BuildMinArray(s, vars, size);
-      case MAX_OP:
-        return BuildMaxArray(s, vars, size);
-    };
-  }
-  LOG(FATAL) << "Unknown operator";
-  return NULL;
-}
-
-IntExpr* BuildLogSplitArray(Solver* const s,
-                            const std::vector<IntVar*>& vars,
-                            BuildOp op) {
-  return BuildLogSplitArray(s, vars.data(), vars.size(), op);
-}
 }  // namespace
 
 IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
@@ -1395,32 +640,64 @@ IntExpr* Solver::MakeSum(IntVar* const* vars, int size) {
   } else if (size == 2) {
     return MakeSum(vars[0], vars[1]);
   } else {
-    int64 sum_min = 0;
-    int64 sum_max = 0;
+    int64 new_min = 0;
+    int64 new_max = 0;
     for (int i = 0; i < size; ++i) {
-      sum_min += vars[i]->Min();
-      sum_max += vars[i]->Max();
+      new_min += vars[i]->Min();
+      new_max += vars[i]->Max();
     }
-    IntVar* const sum_var = MakeIntVar(sum_min, sum_max);
+    IntVar* const sum_var = MakeIntVar(new_min, new_max);
     AddConstraint(RevAlloc(new SumConstraint(this, vars, size, sum_var)));
     return sum_var;
   }
 }
 
 IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
-  return BuildLogSplitArray(this, vars, MIN_OP);
+  return MakeMin(vars.data(), vars.size());
 }
 
 IntExpr* Solver::MakeMin(IntVar* const* vars, int size) {
-  return BuildLogSplitArray(this, vars, size, MIN_OP);
+  if (size == 0) {
+    return MakeIntConst(0LL);
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeMin(vars[0], vars[1]);
+  } else {
+    int64 new_min = kint64max;
+    int64 new_max = kint64max;
+    for (int i = 0; i < size; ++i) {
+      new_min = std::min(new_min, vars[i]->Min());
+      new_max = std::min(new_max, vars[i]->Max());
+    }
+    IntVar* const new_var = MakeIntVar(new_min, new_max);
+    AddConstraint(RevAlloc(new MinConstraint(this, vars, size, new_var)));
+    return new_var;
+  }
 }
 
 IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
-  return BuildLogSplitArray(this, vars, MAX_OP);
+  return MakeMax(vars.data(), vars.size());
 }
 
 IntExpr* Solver::MakeMax(IntVar* const* vars, int size) {
-  return BuildLogSplitArray(this, vars, size, MAX_OP);
+  if (size == 0) {
+    return MakeIntConst(0LL);
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeMax(vars[0], vars[1]);
+  } else {
+    int64 new_min = kint64min;
+    int64 new_max = kint64min;
+    for (int i = 0; i < size; ++i) {
+      new_min = std::max(new_min, vars[i]->Min());
+      new_max = std::max(new_max, vars[i]->Max());
+    }
+    IntVar* const new_var = MakeIntVar(new_min, new_max);
+    AddConstraint(RevAlloc(new MaxConstraint(this, vars, size, new_var)));
+    return new_var;
+  }
 }
 
 // ---------- Specialized cases ----------

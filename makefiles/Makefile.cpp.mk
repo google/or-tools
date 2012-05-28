@@ -656,6 +656,12 @@ $(OBJ_DIR)/gcc_test.$O:$(EX_DIR)/tests/gcc_test.cc $(SRC_DIR)/constraint_solver/
 $(BIN_DIR)/gcc_test$E: $(CP_DEPS) $(OBJ_DIR)/gcc_test.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/gcc_test.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)gcc_test$E
 
+$(OBJ_DIR)/min_max_test.$O:$(EX_DIR)/tests/min_max_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/min_max_test.cc $(OBJ_OUT)min_max_test.$O
+
+$(BIN_DIR)/min_max_test$E: $(CP_DEPS) $(OBJ_DIR)/min_max_test.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/min_max_test.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)min_max_test$E
+
 $(OBJ_DIR)/visitor_test.$O:$(EX_DIR)/tests/visitor_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/visitor_test.cc $(OBJ_OUT)visitor_test.$O
 
