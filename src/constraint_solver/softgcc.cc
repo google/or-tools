@@ -28,7 +28,7 @@ class SoftGCC : public Constraint{
   // Constraint the values minval+i to appear between card_mins_i] and
   // card_max_[i] times in x but accept some violations to this rule.
   // For the value vi = minval+i, let ci be the number of occurences
-  // in x and viol(vi) = max(0,card_mins_i]-ci,ci-card_max_[i])
+  // in x and viol(vi) = max(0, card_mins_i]-ci, ci-card_max_[i])
   // i.e. viol(vi) is the shortage or excess wrt the prescribed
   // cardinalities.
   SoftGCC(Solver* const solver,
@@ -45,7 +45,36 @@ class SoftGCC : public Constraint{
         num_values_(num_values),
         card_mins_(new int64[num_values]),
         card_max_(new int64[num_values]),
-        violation_var_(violation_var) {
+        violation_var_(violation_var),
+        sum_card_min_(0),
+        underflow_(NULL),
+        under_variable_match_(NULL),
+        under_value_match_(NULL),
+        under_total_flow_(0),
+        under_next_match_(NULL),
+        under_previous_match_(NULL),
+        overflow_(NULL),
+        over_variable_match_(NULL),
+        over_value_match_(NULL),
+        over_total_flow_(0),
+        over_next_match_(NULL),
+        over_previous_match_(NULL),
+        magic_(0),
+        dfs_(0),
+        component_(0),
+        variable_component_(NULL),
+        variable_dfs_(NULL),
+        variable_high_(NULL),
+        value_component_(NULL),
+        value_dfs_(NULL),
+        value_high_(NULL),
+        sink_component_(0),
+        sink_dfs_(0),
+        sink_high_(0),
+        is_var_always_matched_in_underflow_(NULL),
+        is_var_always_matched_in_overflow_(NULL),
+        stack_(NULL),
+        type_(NULL) {
     memcpy(card_mins_.get(), card_mins, num_values_ * sizeof(*card_mins));
     memcpy(card_max_.get(), card_max, num_values_ * sizeof(*card_max));
     for (int64 i = 0; i < num_values_; i++) {
@@ -69,7 +98,36 @@ class SoftGCC : public Constraint{
         num_values_(num_values),
         card_mins_(new int64[num_values]),
         card_max_(new int64[num_values]),
-        violation_var_(violation_var) {
+        violation_var_(violation_var),
+        sum_card_min_(0),
+        underflow_(NULL),
+        under_variable_match_(NULL),
+        under_value_match_(NULL),
+        under_total_flow_(0),
+        under_next_match_(NULL),
+        under_previous_match_(NULL),
+        overflow_(NULL),
+        over_variable_match_(NULL),
+        over_value_match_(NULL),
+        over_total_flow_(0),
+        over_next_match_(NULL),
+        over_previous_match_(NULL),
+        magic_(0),
+        dfs_(0),
+        component_(0),
+        variable_component_(NULL),
+        variable_dfs_(NULL),
+        variable_high_(NULL),
+        value_component_(NULL),
+        value_dfs_(NULL),
+        value_high_(NULL),
+        sink_component_(0),
+        sink_dfs_(0),
+        sink_high_(0),
+        is_var_always_matched_in_underflow_(NULL),
+        is_var_always_matched_in_overflow_(NULL),
+        stack_(NULL),
+        type_(NULL) {
     for (int i = 0; i < num_values_; ++i) {
       card_mins_[i] = card_mins[i];
       card_max_[i] = card_max[i];
@@ -84,7 +142,7 @@ class SoftGCC : public Constraint{
   virtual void Post() {
     ComputeRangeOfValues();
     AllocateFlow();
-    findInitialFlow();
+    FindInitialFlow();
 
     AllocateScc();
 
@@ -102,23 +160,23 @@ class SoftGCC : public Constraint{
     for (int64 k = 0; k < vars_.size() ; k++) {
       if (under_variable_match_[k] != kUnassigned) {
         if (!vars_[k]->Contains(under_variable_match_[k])) {
-          unassign(k,UF);
+          unassign(k, UF);
         }
       }
       if (over_variable_match_[k] != kUnassigned) {
         if (!vars_[k]->Contains(over_variable_match_[k])) {
-          unassign(k,OF);
+          unassign(k, OF);
         }
       }
     }
 
-    const int64 min_violation = getValueViolation();
+    const int64 min_violation = ViolationValue();
 
     // Prune lower bound of violation.
     violation_var_->SetMin(min_violation);
 
     // Prune variable domains (the constraint is consistent at this point).
-    prune(min_violation);
+    Prune(min_violation);
 
     // Prune upper bound of violation if all variables are bound.
     bool all_bound = true;
@@ -144,10 +202,10 @@ class SoftGCC : public Constraint{
     num_values_ = max_value_ - min_value_ + 1;
 
     // low
-    int64* const new_card_mins = new int64[num_values_];
+    int64* const new_card_mins = NewIntArray(num_values_);
 
     // up
-    int64* const new_card_max = new int64[num_values_];
+    int64* const new_card_max = NewIntArray(num_values_);
     for (int64 k = 0; k < num_values_; k++) {
       new_card_max[k] = vars_.size();
     }
@@ -170,59 +228,10 @@ class SoftGCC : public Constraint{
     card_max_.reset(new_card_max);
   }
 
-  bool hasValInBestAssignment(int64 i) {
-    if (i < 0 || i >= vars_.size()) {
-      return false;
-    }
-    return (over_variable_match_[i] != kUnassigned);
-  }
-
-  int64 getValInBestAssignment(int64 i) {
-    if (hasValInBestAssignment(i)) {
-      return over_variable_match_[i];
-    }
-    else if (i < vars_.size() && i >= 0) {
-      return vars_[i]->Min();
-    }
-    return kUnassigned;
-  }
-
-  int64 getReducedCost(int64 i,int64 v) {
-    if (i >= vars_.size() || i < 0 || !vars_[i]->Contains(v)) {
-      return kint64max;
-    }
-
-    findBestUnderFlow();
-    findBestOverFlow();
-
-    if (!hasValInBestAssignment(i) || over_variable_match_[i]==v) {
-      return 0;
-    }
-
-    int64 reducedCost = 0;
-
-    findSCC(UF);
-    computeIsVarAlwaysMatched(UF);
-    if (variable_component_[i] != value_component_[v-min_value_] &&
-        (card_mins_[v-min_value_]>0 || is_var_always_matched_in_underflow_[i])) {
-      reducedCost += 1;
-    }
-
-    findSCC(OF);
-    computeIsVarAlwaysMatched(OF);
-    if (variable_component_[i] != value_component_[v-min_value_] &&
-       (card_max_[v-min_value_]>0 || is_var_always_matched_in_overflow_[i])) {
-      reducedCost += 1;
-    }
-
-    return reducedCost;
-  }
-
-
   void AllocateFlow() {
     // flow
-    underflow_.reset(new int64[num_values_]);
-    overflow_.reset(new int64[num_values_]);
+    underflow_.reset(NewIntArray(num_values_));
+    overflow_.reset(NewIntArray(num_values_));
 
     // first variable matched
     under_value_match_.reset(new int64 [num_values_]);
@@ -256,18 +265,24 @@ class SoftGCC : public Constraint{
       over_variable_match_[k] = kUnassigned; // unmatched
     }
 
-    // flag
     variable_seen_.reset(new int64[vars_.size()]);
-
-    // flag
     value_seen_.reset(new int64[num_values_]);
+    for (int64 k = 0; k < vars_.size(); k++) {
+      variable_seen_[k] = false;
+    }
+    for (int64 k = 0; k < num_values_; k++) {
+      value_seen_[k] = false;
+    }
+
+    under_variable_component_.reset(NewIntArray(vars_.size()));
+    under_value_component_.reset(NewIntArray(num_values_));
 
     magic_ = 0;
   }
 
   //assigns value v to variable k and update structures: sizeFlow,
   //flow, varMatch, prev, next, valMatch
-  void assign(int64 k,int64 v, FlowType ft) {
+  void assign(int64 k, int64 v, FlowType ft) {
     int64* flow;     //for each value, the quantity of flow into this value
     int64* varMatch; //for each variable, the value it is matched to
     int64* next;     //next variable matched
@@ -281,7 +296,7 @@ class SoftGCC : public Constraint{
       prev = under_previous_match_.get();
       valMatch = under_value_match_.get();
       under_total_flow_++;
-    }else{ //OF
+    } else { //OF
       flow = overflow_.get();
       varMatch = over_variable_match_.get();
       next = over_next_match_.get();
@@ -290,17 +305,18 @@ class SoftGCC : public Constraint{
       over_total_flow_++;
     }
 
-    unassign(k,ft);
+    unassign(k, ft);
 
     // k is now first on the list of v
     varMatch[k] = v;
-    flow[v-min_value_]++;
-    int64 nk = valMatch[v-min_value_];
+    flow[v - min_value_]++;
+    const int64 nk = valMatch[v - min_value_];
     next[k] = nk;
     prev[k] = kUnassigned;
-    if (nk != kUnassigned)
+    if (nk != kUnassigned) {
       prev[nk] = k;
-    valMatch[v-min_value_] = k;
+    }
+    valMatch[v - min_value_] = k;
   }
 
   //unassings variable k and updates appropriately the structures: sizeFlow, flow, varMatch, prev, next, valMatch
@@ -330,10 +346,10 @@ class SoftGCC : public Constraint{
       else over_total_flow_--;
 
       int64 w = varMatch[k];
-      flow[w-min_value_]--;
-      if (valMatch[w-min_value_] == k) { // first in the list
+      flow[w - min_value_]--;
+      if (valMatch[w - min_value_] == k) { // first in the list
         int64 nk = next[k];
-        valMatch[w-min_value_] = nk;
+        valMatch[w - min_value_] = nk;
         if (nk != kUnassigned)
           prev[nk] = kUnassigned; // nk is now first
       }
@@ -349,7 +365,7 @@ class SoftGCC : public Constraint{
   }
 
   //finds a initial flow for both the underflow and overflow
-  void findInitialFlow() {
+  void FindInitialFlow() {
     under_total_flow_ = 0;
     over_total_flow_ = 0;
     for (int64 k = 0; k < vars_.size(); k++) {
@@ -358,41 +374,41 @@ class SoftGCC : public Constraint{
       for (int64 i = var_min; i <= var_max; i++) {
         if (underflow_[i - min_value_] < card_mins_[i - min_value_])
           if (vars_[k]->Contains(i)) {
-            assign(k,i,UF);
+            assign(k, i, UF);
             break;
           }
       }
       for (int64 i = var_min; i <= var_max; i++) {
         if (overflow_[i - min_value_] < card_max_[i - min_value_])
           if (vars_[k]->Contains(i)) {
-            assign(k,i,OF);
+            assign(k, i, OF);
             break;
           }
       }
     }
   }
 
-  int64 getValueViolation() {
-    int64 buf = findBestUnderFlow();
-    int64 bof = findBestOverFlow();
+  int64 ViolationValue() {
+    int64 buf = FindBestUnderflow();
+    int64 bof = FindBestOverflow();
     return buf+bof;
   }
 
   //computes and returns the best under flow
-  int64 findBestUnderFlow() {
+  int64 FindBestUnderflow() {
     for (int64 k = 0;
          k < vars_.size() && under_total_flow_ < vars_.size();
          k++) {
       if (under_variable_match_[k] == kUnassigned) {
         magic_++;
-        findAugmentingPath(k,UF);
+        FindAugmentingPath(k, UF);
       }
     }
     return sum_card_min_ - under_total_flow_;
   }
 
   //computes and returns the best over flow
-  int64 findBestOverFlow() {
+  int64 FindBestOverflow() {
     //in order to have the best overflow AND underflow, I start from
     //the best under flow to compute the best overflow (very important
     //for the methods hasValInBestAssignment/getValInBestAssignment)
@@ -411,29 +427,27 @@ class SoftGCC : public Constraint{
     for (int64 k = 0; k < vars_.size() && over_total_flow_ < vars_.size(); k++) {
       if (over_variable_match_[k] == kUnassigned) {
         magic_++;
-        findAugmentingPath(k,OF);
+        FindAugmentingPath(k, OF);
       }
     }
     return vars_.size() - over_total_flow_;
   }
 
   //finds augmenting path from variable i which is currently not matched (true if found a path, false otherwise)
-  bool findAugmentingPath(int64 k, FlowType ft) {
-    int64*  varMatch; //for each variable, the value it is matched to
-    if (ft == UF)
-      varMatch = under_variable_match_.get();
-    else
-      varMatch = over_variable_match_.get();
+  bool FindAugmentingPath(int64 k, FlowType ft) {
+    int64* const var_match = (ft == UF) ?
+        under_variable_match_.get() :
+        over_variable_match_.get();
 
     if (variable_seen_[k] != magic_) {
       variable_seen_[k] = magic_;
       int64 var_min = vars_[k]->Min();
       int64 var_max = vars_[k]->Max();
       for (int64 v = var_min; v <= var_max; v++) {
-        if (varMatch[k] != v) {
+        if (var_match[k] != v) {
           if (vars_[k]->Contains(v)) {
-            if (findAugmentingPathValue(v,ft)) {
-              assign(k,v,ft);
+            if (FindAugmentingPathValue(v, ft)) {
+              assign(k, v, ft);
               return true;
             }
           }
@@ -443,7 +457,7 @@ class SoftGCC : public Constraint{
     return false;
   }
 
-  bool findAugmentingPathValue(int64 v, FlowType ft) {
+  bool FindAugmentingPathValue(int64 v, FlowType ft) {
 
     int64* flow;     //for each value, the quantity of flow into this value
     int64* next;     //next variable matched
@@ -462,14 +476,14 @@ class SoftGCC : public Constraint{
       capa = card_max_.get();
     }
 
-    if (value_seen_[v-min_value_] != magic_) {
-      value_seen_[v-min_value_] = magic_;
-      if (flow[v-min_value_] < capa[v-min_value_])
+    if (value_seen_[v - min_value_] != magic_) {
+      value_seen_[v - min_value_] = magic_;
+      if (flow[v - min_value_] < capa[v - min_value_])
         return true;
-      else if (flow[v-min_value_] > 0) {
-        int64 i = valMatch[v-min_value_];
+      else if (flow[v - min_value_] > 0) {
+        int64 i = valMatch[v - min_value_];
         while (i != kUnassigned) {
-          if (findAugmentingPath(i,ft))
+          if (FindAugmentingPath(i, ft))
             return true;
           i = next[i];
         }
@@ -478,51 +492,57 @@ class SoftGCC : public Constraint{
     return false;
   }
 
-  void computeIsVarAlwaysMatched(FlowType ft) {
-    bool* isVarAlwaysMatched;
-    int64* varMatch;
+  void ComputeIsVarAlwaysMatched(FlowType ft) {
+    bool* is_var_always_matched;
+    int64* var_match;
 
     if (ft == UF) {
-      isVarAlwaysMatched = is_var_always_matched_in_underflow_.get();
-      varMatch = under_variable_match_.get();
+      is_var_always_matched = is_var_always_matched_in_underflow_.get();
+      var_match = under_variable_match_.get();
     }else{
-      isVarAlwaysMatched = is_var_always_matched_in_overflow_.get();
-      varMatch = over_variable_match_.get();
+      is_var_always_matched = is_var_always_matched_in_overflow_.get();
+      var_match = over_variable_match_.get();
     }
 
 
-    scoped_array<int64> nbVarInComponent_(new int64[component_ + 1]);
+    num_vars_in_component_.resize(component_ + 1);
     for (int64 k = 0; k < vars_.size(); k++) {
-      if (varMatch[k] == kUnassigned ) {
-        nbVarInComponent_[variable_component_[k]]++;
+      if (var_match[k] == kUnassigned ) {
+        num_vars_in_component_[variable_component_[k]]++;
       }
     }
     for (int64 k = 0; k < vars_.size(); k++) {
-      isVarAlwaysMatched[k] = false;
-      if (varMatch[k] != kUnassigned &&
-          nbVarInComponent_[variable_component_[k]] == 0) {
-        isVarAlwaysMatched[k] = true;
+      is_var_always_matched[k] = false;
+      if (var_match[k] != kUnassigned &&
+          num_vars_in_component_[variable_component_[k]] == 0) {
+        is_var_always_matched[k] = true;
       }
     }
   }
 
   void AllocateScc() {
-    variable_component_.reset(new int64[vars_.size()]);
-    variable_dfs_.reset(new int64[vars_.size()]);
-    variable_high_.reset(new int64 [vars_.size()]);
+    const int size = vars_.size();
+    variable_component_.reset(NewIntArray(size));
+    variable_dfs_.reset(NewIntArray(size));
+    variable_high_.reset(NewIntArray(size));
 
-    value_component_.reset(new int64 [num_values_]);
-    value_dfs_.reset(new int64[num_values_]);
-    value_high_.reset(new int64[num_values_]);
+    value_component_.reset(NewIntArray(num_values_));
+    value_dfs_.reset(NewIntArray(num_values_));
+    value_high_.reset(NewIntArray(num_values_));
 
-    stack_.reset(new int64 [vars_.size()+num_values_+1]);
-    type_.reset(new int64 [vars_.size()+num_values_+1]);
+    stack_.reset(NewIntArray(vars_.size() + num_values_ + 1));
+    type_.reset(NewIntArray(vars_.size() + num_values_ + 1));
 
     is_var_always_matched_in_underflow_ .reset(new bool[vars_.size()]);
     is_var_always_matched_in_overflow_ .reset(new bool[vars_.size()]);
+
+    for (int k = 0; k < size; ++k) {
+      is_var_always_matched_in_underflow_[k] = false;
+      is_var_always_matched_in_overflow_[k] = false;
+    }
   }
 
-  void initSCC() {
+  void InitScc() {
     for (int64 k = 0 ; k < vars_.size(); k++) {
       variable_component_[k] = 0;
       variable_dfs_[k] = 0;
@@ -543,16 +563,16 @@ class SoftGCC : public Constraint{
     component_ = 0;
   }
 
-  void findSCC(FlowType ft) {
-    initSCC();
+  void FindScc(FlowType ft) {
+    InitScc();
     for (int64 k = 0; k < vars_.size(); k++) {
       if (variable_dfs_[k] == 0)
-        findSCCvar(k,ft);
+        FindSccVar(k, ft);
     }
   }
 
-  void findSCCvar(int64 k, FlowType ft) {
-    int64* varMatch = (ft == UF) ? under_variable_match_.get() : over_variable_match_.get(); //first variable matched to the value
+  void FindSccVar(int64 k, FlowType ft) {
+    int64* var_match = (ft == UF) ? under_variable_match_.get() : over_variable_match_.get(); //first variable matched to the value
 
     variable_dfs_[k] = dfs_--;
     variable_high_[k] = variable_dfs_[k];
@@ -566,16 +586,16 @@ class SoftGCC : public Constraint{
     int64 var_max = vars_[k]->Max();
     for (int64 w = var_min; w <= var_max; w++) {
       //go to every values of the domain of x that is not matched by x
-      if (varMatch[k] != w) {
+      if (var_match[k] != w) {
         if (vars_[k]->Contains(w)) {
-          if (value_dfs_[w-min_value_] == 0) {
-            findSCCval(w,ft);
-            if (value_high_[w-min_value_] > variable_high_[k])
-              variable_high_[k] = value_high_[w-min_value_];
+          if (value_dfs_[w - min_value_] == 0) {
+            FindSccValue(w, ft);
+            if (value_high_[w - min_value_] > variable_high_[k])
+              variable_high_[k] = value_high_[w - min_value_];
           }
-          else if ( (value_dfs_[w-min_value_] > variable_dfs_[k]) && (value_component_[w-min_value_] == 0)) {
-            if (value_dfs_[w-min_value_] > variable_high_[k])
-              variable_high_[k] = value_dfs_[w-min_value_];
+          else if ((value_dfs_[w - min_value_] > variable_dfs_[k]) && (value_component_[w - min_value_] == 0)) {
+            if (value_dfs_[w - min_value_] > variable_high_[k])
+              variable_high_[k] = value_dfs_[w - min_value_];
           }
         }
       }
@@ -584,15 +604,15 @@ class SoftGCC : public Constraint{
     //if x is matched go also to every other variables that are not
     //matched (path from x->source->x')
 
-    if (varMatch[k] != kUnassigned) {
+    if (var_match[k] != kUnassigned) {
       for (int64 i = 0; i < vars_.size(); i++) {
-        if (varMatch[i] == kUnassigned) {
+        if (var_match[i] == kUnassigned) {
           if (variable_dfs_[i] == 0) {
-            findSCCvar(i,ft);
+            FindSccVar(i, ft);
             if (variable_high_[i] > variable_high_[k])
               variable_high_[k] = variable_high_[i];
           }
-          else if ( (variable_dfs_[i] > variable_dfs_[k]) && (variable_component_[i] == 0)) {
+          else if ((variable_dfs_[i] > variable_dfs_[k]) && (variable_component_[i] == 0)) {
             if (variable_dfs_[i] > variable_high_[k])
               variable_high_[k] = variable_dfs_[i];
           }
@@ -618,7 +638,7 @@ class SoftGCC : public Constraint{
     }
   }
 
-  void findSCCval(int64 v, FlowType ft) {
+  void FindSccValue(int64 v, FlowType ft) {
     //first variable matched to the valeu
     int64*  valMatch = (ft == UF) ?
         under_value_match_.get() :
@@ -630,45 +650,45 @@ class SoftGCC : public Constraint{
     //first variable matched to the value
     int64* flow = (ft == UF) ? underflow_.get() : overflow_.get();
 
-    value_dfs_[v-min_value_] = dfs_--;
-    value_high_[v-min_value_] = value_dfs_[v-min_value_];
+    value_dfs_[v - min_value_] = dfs_--;
+    value_high_[v - min_value_] = value_dfs_[v - min_value_];
     stack_[top_] = v;
     type_[top_] = 1;
     top_++;
     assert(top_ <= vars_.size() + num_values_ + 1);
 
     // first go to the variables assigned to this value
-    int64 k = valMatch[v-min_value_];
+    int64 k = valMatch[v - min_value_];
     while (k != kUnassigned) {
       if (variable_dfs_[k] == 0) {
-        findSCCvar(k,ft);
-        if (variable_high_[k] > value_high_[v-min_value_])
-          value_high_[v-min_value_] = variable_high_[k];
+        FindSccVar(k, ft);
+        if (variable_high_[k] > value_high_[v - min_value_])
+          value_high_[v - min_value_] = variable_high_[k];
       }
-      else if ( (variable_dfs_[k] > value_dfs_[v-min_value_]) && (variable_component_[k] == 0)) {
-        if (variable_dfs_[k] > value_high_[v-min_value_])
-          value_high_[v-min_value_] = variable_dfs_[k];
+      else if ((variable_dfs_[k] > value_dfs_[v - min_value_]) && (variable_component_[k] == 0)) {
+        if (variable_dfs_[k] > value_high_[v - min_value_])
+          value_high_[v - min_value_] = variable_dfs_[k];
       }
       k = next[k];
     }
 
     // next try to see if you can go to the sink
 
-    if (flow[v-min_value_] < capa[v-min_value_]) {
+    if (flow[v - min_value_] < capa[v - min_value_]) {
       // go to the sink
       if (sink_dfs_ == 0) {
-        findSCCsink(ft);
-        if (sink_high_ > value_high_[v-min_value_])
-          value_high_[v-min_value_] = sink_high_;
+        FindSccSink(ft);
+        if (sink_high_ > value_high_[v - min_value_])
+          value_high_[v - min_value_] = sink_high_;
       }
-      else if ( (sink_dfs_ > value_dfs_[v-min_value_]) &&
+      else if ((sink_dfs_ > value_dfs_[v - min_value_]) &&
                 (sink_component_ == 0)) {
-        if (sink_dfs_ > value_high_[v-min_value_])
-          value_high_[v-min_value_] = sink_dfs_;
+        if (sink_dfs_ > value_high_[v - min_value_])
+          value_high_[v - min_value_] = sink_dfs_;
       }
     }
 
-    if (value_high_[v-min_value_] == value_dfs_[v-min_value_]) {
+    if (value_high_[v - min_value_] == value_dfs_[v - min_value_]) {
       component_++;
       do {
         assert(top_ > 0);
@@ -686,9 +706,9 @@ class SoftGCC : public Constraint{
     }
   }
 
-  void findSCCsink(FlowType ft) {
+  void FindSccSink(FlowType ft) {
     //first variable matched to the value
-    int64* const varMatch = (ft == UF) ?
+    int64* const var_match = (ft == UF) ?
         under_variable_match_.get() :
         over_variable_match_.get();
     //first variable matched to the value
@@ -705,18 +725,18 @@ class SoftGCC : public Constraint{
     //is larger than the demand in these value
 
     for (int64 i = 0; i < vars_.size(); i++) {
-      int64 w = varMatch[i];
-      if (varMatch[i] != kUnassigned) {
-        if (flow[w-min_value_] > 0) { //there is no minimum capacity
-          if (value_dfs_[w-min_value_] == 0) {
-            findSCCval(w,ft);
-            if (value_high_[w-min_value_] > sink_high_)
-              sink_high_ = value_high_[w-min_value_];
+      int64 w = var_match[i];
+      if (var_match[i] != kUnassigned) {
+        if (flow[w - min_value_] > 0) { //there is no minimum capacity
+          if (value_dfs_[w - min_value_] == 0) {
+            FindSccValue(w, ft);
+            if (value_high_[w - min_value_] > sink_high_)
+              sink_high_ = value_high_[w - min_value_];
           }
-          else if ( (value_dfs_[w-min_value_] > sink_dfs_) &&
-                    (value_component_[w-min_value_] == 0)) {
-            if (value_dfs_[w-min_value_] > sink_high_)
-              sink_high_ = value_dfs_[w-min_value_];
+          else if ((value_dfs_[w - min_value_] > sink_dfs_) &&
+                    (value_component_[w - min_value_] == 0)) {
+            if (value_dfs_[w - min_value_] > sink_high_)
+              sink_high_ = value_dfs_[w - min_value_];
           }
         }
       }
@@ -725,13 +745,13 @@ class SoftGCC : public Constraint{
     //from the sink we can also go the variables that are not matched
 
     for (int64 i = 0; i < vars_.size(); i++) {
-      if (varMatch[i] == kUnassigned) {
+      if (var_match[i] == kUnassigned) {
         if (variable_dfs_[i] == 0) {
-          findSCCvar(i,ft);
+          FindSccVar(i, ft);
           if (variable_high_[i] > sink_high_)
             sink_high_ = variable_high_[i];
         }
-        else if ( (variable_dfs_[i] > sink_dfs_) &&
+        else if ((variable_dfs_[i] > sink_dfs_) &&
                   (variable_component_[i] == 0)) {
           if (variable_dfs_[i] > sink_high_)
             sink_high_ = variable_dfs_[i];
@@ -758,7 +778,7 @@ class SoftGCC : public Constraint{
 
   }
 
-  void prune(int64 min_violation) {
+  void Prune(int64 min_violation) {
     if (min_violation < violation_var_->Max() - 1) {
       return; //the constraint is GAC
     }
@@ -766,54 +786,56 @@ class SoftGCC : public Constraint{
     //we compute the SCC in Gu and Go and also if a variable is
     //matched in every maximum matching in Gu and Go
 
-    //source of inefficiency to create the table (memory)?
-    scoped_array<int64> variable_component_uf(new int64[vars_.size()]);
-    scoped_array<int64> value_component_uf(new int64[num_values_]);
-
-    findSCC(UF);
-    computeIsVarAlwaysMatched(UF);
-    for (int64 v = 0; v<num_values_; v++) {
-      value_component_uf[v] = value_component_[v];
+    FindScc(UF);
+    ComputeIsVarAlwaysMatched(UF);
+    for (int64 v = 0; v < num_values_; v++) {
+      under_value_component_[v] = value_component_[v];
     }
     for (int64 k = 0; k < vars_.size(); k++) {
-      variable_component_uf[k] = variable_component_[k];
+      under_variable_component_[k] = variable_component_[k];
     }
 
-    findSCC(OF);
-    computeIsVarAlwaysMatched(OF);
+    FindScc(OF);
+    ComputeIsVarAlwaysMatched(OF);
 
     if (min_violation == violation_var_->Max()-1) {
       for (int64 k = 0; k < vars_.size(); k++) {
-        if ( over_variable_match_[k] == kUnassigned) continue;//all values of this variable are consistent
-        int64 var_min = vars_[k]->Min();
-        int64 var_max = vars_[k]->Max();
+        if (over_variable_match_[k] == kUnassigned) {
+          continue;  // All values of this variable are consistent.
+        }
+        const int64 var_min = vars_[k]->Min();
+        const int64 var_max = vars_[k]->Max();
         for (int64 w = var_min; w <= var_max; w++) {
           if (vars_[k]->Contains(w)) {
             if (under_variable_match_[k] != w && over_variable_match_[k] != w) {
-              if ((variable_component_uf[k] != value_component_uf[w-min_value_] &&
-                   (card_mins_[w-min_value_]>0 || is_var_always_matched_in_underflow_[k])) &&
-                  (variable_component_[k] != value_component_[w-min_value_] &&
-                   (card_max_[w-min_value_]>0 || is_var_always_matched_in_overflow_[k])) ) {
+              if ((under_variable_component_[k] !=
+                   under_value_component_[w - min_value_] &&
+                   (card_mins_[w - min_value_] > 0 ||
+                    is_var_always_matched_in_underflow_[k])) &&
+                  (variable_component_[k] != value_component_[w - min_value_] &&
+                   (card_max_[w - min_value_] > 0 ||
+                    is_var_always_matched_in_overflow_[k])) ) {
                 vars_[k]->RemoveValue(w);
               }
             }
           }
         }
       }
-    }
-    else if (min_violation == violation_var_->Max()) {
+    } else if (min_violation == violation_var_->Max()) {
       //under-flow filtering
       for (int64 k = 0; k < vars_.size(); k++) {
-        if ( over_variable_match_[k] == kUnassigned) {
-          continue;  //all values of this variable are consistent
+        if (over_variable_match_[k] == kUnassigned) {
+          continue;  // All values of this variable are consistent.
         }
-        int64 var_min = vars_[k]->Min();
-        int64 var_max = vars_[k]->Max();
+        const int64 var_min = vars_[k]->Min();
+        const int64 var_max = vars_[k]->Max();
         for (int64 w = var_min; w <= var_max; w++) {
           if (vars_[k]->Contains(w)) {
             if (under_variable_match_[k] != w && over_variable_match_[k] != w) {
-              if (variable_component_uf[k] != value_component_uf[w-min_value_] &&
-                  (card_mins_[w-min_value_]>0 || is_var_always_matched_in_underflow_[k])) {
+              if (under_variable_component_[k] !=
+                  under_value_component_[w - min_value_] &&
+                  (card_mins_[w - min_value_] > 0 ||
+                   is_var_always_matched_in_underflow_[k])) {
                 vars_[k]->RemoveValue(w);
               }
             }
@@ -823,7 +845,7 @@ class SoftGCC : public Constraint{
       //over-flow filtering
       //under-flow filtering
       for (int64 k = 0; k < vars_.size(); k++) {
-        if ( over_variable_match_[k] == kUnassigned) {
+        if (over_variable_match_[k] == kUnassigned) {
           continue;  //all values of this variable are consistent
         }
         const int64 var_min = vars_[k]->Min();
@@ -831,8 +853,9 @@ class SoftGCC : public Constraint{
         for (int64 w = var_min; w <= var_max; w++) {
           if (vars_[k]->Contains(w)) {
             if (over_variable_match_[k] != w) {
-              if (variable_component_[k] != value_component_[w-min_value_] &&
-                  (card_max_[w-min_value_]>0 || is_var_always_matched_in_overflow_[k])) {
+              if (variable_component_[k] != value_component_[w - min_value_] &&
+                  (card_max_[w - min_value_] > 0 ||
+                   is_var_always_matched_in_overflow_[k])) {
                 vars_[k]->RemoveValue(w);
               }
             }
@@ -843,6 +866,12 @@ class SoftGCC : public Constraint{
   }
 
  private:
+  int64* NewIntArray(int size) {
+    int64* const result = new int64[size];
+    memset(result, 0, size * sizeof(*result));
+    return result;
+  }
+
   std::vector<IntVar*> vars_;
   int64 min_value_;
   int64 max_value_;
@@ -866,7 +895,6 @@ class SoftGCC : public Constraint{
   scoped_array<int64> under_previous_match_;
 
   //for each value, the quantity of flow into this value
-
   scoped_array<int64> overflow_;
   //for each variable, the value it is matched to
   scoped_array<int64> over_variable_match_;
@@ -901,6 +929,9 @@ class SoftGCC : public Constraint{
   scoped_array<int64> stack_;
   scoped_array<int64> type_;
   int64 top_;
+  std::vector<int64> num_vars_in_component_;
+  scoped_array<int64> under_variable_component_;
+  scoped_array<int64> under_value_component_;
 };
 }  // namespace
 
