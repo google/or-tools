@@ -17,10 +17,11 @@
 #include "base/random.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/constraint_solver.h"
+#include "util/string_array.h"
 
-DEFINE_int32(vsize, 5, "Number of variables");
-DEFINE_int32(csize, 5, "Number of variables");
-DEFINE_int32(slack, 4, "Slack in cardinalities");
+DEFINE_int32(vsize, 2, "Number of variables");
+DEFINE_int32(csize, 3, "Number of values");
+DEFINE_int32(slack, 1, "Slack in cardinalities");
 DEFINE_int32(seed, 1, "Random seed");
 
 namespace operations_research {
@@ -29,6 +30,15 @@ extern Constraint* Gcc(Solver* const solver,
                        int64 first_domain_value,
                        const std::vector<int>& min_occurrences,
                        const std::vector<int>& max_occurrences);
+
+extern Constraint* MakeSoftGcc(Solver* const solver,
+                               const std::vector<IntVar*>& vars,
+                               int64 min_value,
+                               const std::vector<int>& card_mins,
+                               const std::vector<int>& card_max,
+                               IntVar* const violation_var);
+
+
 
 int64 TestGcc(int vsize, int csize, int slack, int seed, bool use_gcc) {
   if (vsize > csize + slack) {
@@ -53,13 +63,15 @@ int64 TestGcc(int vsize, int csize, int slack, int seed, bool use_gcc) {
   LOG(INFO) << "  - num values = " << csize;
   LOG(INFO) << "  - slack = " << slack;
   LOG(INFO) << "  - seed = " << seed;
+  LOG(INFO) << "  - min_cards = [" << IntVectorToString(card_min, " ") << "]";
+  LOG(INFO) << "  - max_cards = [" << IntVectorToString(card_max, " ") << "]";
 
   Solver solver("TestGcc");
   std::vector<IntVar*> vars;
   solver.MakeIntVarArray(vsize, 0, csize - 1, &vars);
   Constraint* const gcc = use_gcc ?
-                          Gcc(&solver, vars, 0, card_min, card_max) :
-                          solver.MakeDistribute(vars, card_min, card_max);
+      MakeSoftGcc(&solver, vars, 0, card_min, card_max, solver.MakeIntConst(0)):
+      solver.MakeDistribute(vars, card_min, card_max);
   solver.AddConstraint(gcc);
   DecisionBuilder* const db = solver.MakePhase(vars,
                                                Solver::CHOOSE_FIRST_UNBOUND,
@@ -84,15 +96,17 @@ int64 TestGcc(int vsize, int csize, int slack, int seed, bool use_gcc) {
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
-  CHECK_EQ(operations_research::TestGcc(FLAGS_vsize,
-                                        FLAGS_csize,
-                                        FLAGS_slack,
-                                        FLAGS_seed,
-                                        false),
+  // CHECK_EQ(operations_research::TestGcc(FLAGS_vsize,
+  //                                       FLAGS_csize,
+  //                                       FLAGS_slack,
+  //                                       FLAGS_seed,
+  //                                       false),
            operations_research::TestGcc(FLAGS_vsize,
                                         FLAGS_csize,
                                         FLAGS_slack,
                                         FLAGS_seed,
-                                        true));
+                                        true)
+               //)
+               ;
   return 0;
 }
