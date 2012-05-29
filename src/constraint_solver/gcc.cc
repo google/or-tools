@@ -1436,11 +1436,11 @@ class GccConstraint : public Constraint {
 // }
 } // namespace
 
-Constraint* Gcc(Solver* const solver,
-                const std::vector<IntVar*>& vars,
-                int64 first_domain_value,
-                const std::vector<int64>& min_occurrences,
-                const std::vector<int64>& max_occurrences) {
+Constraint* MakeGcc(Solver* const solver,
+                    const std::vector<IntVar*>& vars,
+                    int64 first_domain_value,
+                    const std::vector<int64>& min_occurrences,
+                    const std::vector<int64>& max_occurrences) {
   return solver->RevAlloc(
       new GccConstraint(
           solver,
@@ -1451,11 +1451,11 @@ Constraint* Gcc(Solver* const solver,
           max_occurrences));
 }
 
-Constraint* Gcc(Solver* const solver,
-                const std::vector<IntVar*>& vars,
-                int64 offset,
-                const std::vector<int>& min_occurrences,
-                const std::vector<int>& max_occurrences) {
+Constraint* MakeGcc(Solver* const solver,
+                    const std::vector<IntVar*>& vars,
+                    int64 offset,
+                    const std::vector<int>& min_occurrences,
+                    const std::vector<int>& max_occurrences) {
   return solver->RevAlloc(
       new GccConstraint(
           solver,

@@ -25,11 +25,11 @@ DEFINE_int32(slack, 1, "Slack in cardinalities");
 DEFINE_int32(seed, 1, "Random seed");
 
 namespace operations_research {
-extern Constraint* Gcc(Solver* const solver,
-                       const std::vector<IntVar*>& vars,
-                       int64 first_domain_value,
-                       const std::vector<int>& min_occurrences,
-                       const std::vector<int>& max_occurrences);
+extern Constraint* MakeGcc(Solver* const solver,
+                           const std::vector<IntVar*>& vars,
+                           int64 first_domain_value,
+                           const std::vector<int>& min_occurrences,
+                           const std::vector<int>& max_occurrences);
 
 extern Constraint* MakeSoftGcc(Solver* const solver,
                                const std::vector<IntVar*>& vars,
@@ -71,7 +71,7 @@ int64 TestGcc(int num_vars, int num_values, int slack, int seed, int type) {
       solver.AddConstraint(solver.MakeDistribute(vars, card_min, card_max));
       break;
     case 1:
-      solver.AddConstraint(Gcc(&solver, vars, 0, card_min, card_max));
+      solver.AddConstraint(MakeGcc(&solver, vars, 0, card_min, card_max));
       break;
     case 2:
       solver.AddConstraint(MakeSoftGcc(&solver,
