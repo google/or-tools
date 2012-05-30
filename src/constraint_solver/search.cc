@@ -1608,11 +1608,6 @@ void AssignVariablesValues::Refute(Solver* const s) {
 }
 }  // namespace
 
-Decision* Solver::MakeAssignVariablesValues(const IntVar* const* vars, int size,
-                                            const int64* const values) {
-  return RevAlloc(new AssignVariablesValues(vars, size, values));
-}
-
 Decision* Solver::MakeAssignVariablesValues(const std::vector<IntVar*>& vars,
                                             const std::vector<int64>& values) {
   CHECK_EQ(vars.size(), values.size());
@@ -1735,19 +1730,19 @@ BaseAssignVariables::MakePhase(Solver* const s,
 DecisionBuilder* Solver::MakePhase(IntVar* const v0,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IntValueStrategy val_str) {
-  scoped_array<IntVar*> vars(new IntVar*[1]);
+  std::vector<IntVar*> vars(1);
   vars[0] = v0;
-  return MakePhase(vars.get(), 1, var_str, val_str);
+  return MakePhase(vars, var_str, val_str);
 }
 
 DecisionBuilder* Solver::MakePhase(IntVar* const v0,
                                    IntVar* const v1,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IntValueStrategy val_str) {
-  scoped_array<IntVar*> vars(new IntVar*[2]);
+  std::vector<IntVar*> vars(2);
   vars[0] = v0;
   vars[1] = v1;
-  return MakePhase(vars.get(), 2, var_str, val_str);
+  return MakePhase(vars, var_str, val_str);
 }
 
 DecisionBuilder* Solver::MakePhase(IntVar* const v0,
@@ -1755,11 +1750,11 @@ DecisionBuilder* Solver::MakePhase(IntVar* const v0,
                                    IntVar* const v2,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IntValueStrategy val_str) {
-  scoped_array<IntVar*> vars(new IntVar*[3]);
+  std::vector<IntVar*> vars(3);
   vars[0] = v0;
   vars[1] = v1;
   vars[2] = v2;
-  return MakePhase(vars.get(), 3, var_str, val_str);
+  return MakePhase(vars, var_str, val_str);
 }
 
 DecisionBuilder* Solver::MakePhase(IntVar* const v0,
@@ -1768,34 +1763,27 @@ DecisionBuilder* Solver::MakePhase(IntVar* const v0,
                                    IntVar* const v3,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IntValueStrategy val_str) {
-  scoped_array<IntVar*> vars(new IntVar*[4]);
+  std::vector<IntVar*> vars(4);
   vars[0] = v0;
   vars[1] = v1;
   vars[2] = v2;
   vars[3] = v3;
-  return MakePhase(vars.get(), 4, var_str, val_str);
+  return MakePhase(vars, var_str, val_str);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IntValueStrategy val_str) {
-  return MakePhase(vars.data(), vars.size(), var_str, val_str);
-}
-
-DecisionBuilder* Solver::MakePhase(const IntVar* const* vars,
-                                   int size,
-                                   Solver::IntVarStrategy var_str,
-                                   Solver::IntValueStrategy val_str) {
   VariableSelector* const var_selector =
       BaseAssignVariables::MakeVariableSelector(this,
-                                                vars,
-                                                size,
+                                                vars.data(),
+                                                vars.size(),
                                                 var_str);
   ValueSelector* const value_selector =
       BaseAssignVariables::MakeValueSelector(this, val_str);
   return BaseAssignVariables::MakePhase(this,
-                                        vars,
-                                        size,
+                                        vars.data(),
+                                        vars.size(),
                                         var_selector,
                                         value_selector);
 }
@@ -1803,21 +1791,16 @@ DecisionBuilder* Solver::MakePhase(const IntVar* const* vars,
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    ResultCallback1<int64, int64>* var_evaluator,
                                    Solver::IntValueStrategy val_str) {
-  return MakePhase(vars.data(), vars.size(), var_evaluator, val_str);
-}
-
-DecisionBuilder* Solver::MakePhase(const IntVar* const* vars,
-                                   int size,
-                                   ResultCallback1<int64, int64>* var_evaluator,
-                                   Solver::IntValueStrategy val_str) {
   var_evaluator->CheckIsRepeatable();
   VariableSelector* const var_selector =
-      RevAlloc(new CheapestVarSelector(vars, size, var_evaluator));
+      RevAlloc(new CheapestVarSelector(vars.data(),
+                                       vars.size(),
+                                       var_evaluator));
   ValueSelector* const value_selector =
       BaseAssignVariables::MakeValueSelector(this, val_str);
   return BaseAssignVariables::MakePhase(this,
-                                        vars,
-                                        size,
+                                        vars.data(),
+                                        vars.size(),
                                         var_selector,
                                         value_selector);
 }
@@ -1826,80 +1809,56 @@ DecisionBuilder* Solver::MakePhase(
     const std::vector<IntVar*>& vars,
     Solver::IntVarStrategy var_str,
     ResultCallback2<int64, int64, int64>* value_evaluator) {
-  return MakePhase(vars.data(), vars.size(), var_str, value_evaluator);
-}
-
-DecisionBuilder* Solver::MakePhase(
-    const IntVar* const* vars,
-    int size,
-    Solver::IntVarStrategy var_str,
-    ResultCallback2<int64, int64, int64>* value_evaluator) {
   VariableSelector* const var_selector =
       BaseAssignVariables::MakeVariableSelector(this,
-                                                vars,
-                                                size,
+                                                vars.data(),
+                                                vars.size(),
                                                 var_str);
   value_evaluator->CheckIsRepeatable();
   ValueSelector* value_selector =
       RevAlloc(new CheapestValueSelector(value_evaluator, NULL));
   return BaseAssignVariables::MakePhase(this,
-                                        vars,
-                                        size,
+                                        vars.data(),
+                                        vars.size(),
                                         var_selector,
                                         value_selector);
 }
 
 DecisionBuilder* Solver::MakePhase(
     const std::vector<IntVar*>& vars,
-    ResultCallback1<int64, int64>* var_evaluator,
-    ResultCallback2<int64, int64, int64>* value_evaluator) {
-  return MakePhase(vars.data(), vars.size(), var_evaluator, value_evaluator);
-}
-
-DecisionBuilder* Solver::MakePhase(
-    const IntVar* const* vars,
-    int size,
     ResultCallback1<int64, int64>* var_evaluator,
     ResultCallback2<int64, int64, int64>* value_evaluator) {
   var_evaluator->CheckIsRepeatable();
   VariableSelector* const var_selector =
-      RevAlloc(new CheapestVarSelector(vars, size, var_evaluator));
+      RevAlloc(new CheapestVarSelector(vars.data(),
+                                       vars.size(),
+                                       var_evaluator));
   value_evaluator->CheckIsRepeatable();
   ValueSelector* value_selector =
       RevAlloc(new CheapestValueSelector(value_evaluator, NULL));
   return BaseAssignVariables::MakePhase(this,
-                                        vars,
-                                        size,
+                                        vars.data(),
+                                        vars.size(),
                                         var_selector,
                                         value_selector);
 }
 
 DecisionBuilder* Solver::MakePhase(
     const std::vector<IntVar*>& vars,
-    Solver::IntVarStrategy var_str,
-    ResultCallback2<int64, int64, int64>* value_evaluator,
-                                   ResultCallback1<int64, int64>* tie_breaker) {
-  return MakePhase(vars.data(), vars.size(), var_str, value_evaluator,
-                   tie_breaker);
-}
-
-DecisionBuilder* Solver::MakePhase(
-    const IntVar* const* vars,
-    int size,
     Solver::IntVarStrategy var_str,
     ResultCallback2<int64, int64, int64>* value_evaluator,
     ResultCallback1<int64, int64>* tie_breaker) {
   VariableSelector* const var_selector =
       BaseAssignVariables::MakeVariableSelector(this,
-                                                vars,
-                                                size,
+                                                vars.data(),
+                                                vars.size(),
                                                 var_str);
   value_evaluator->CheckIsRepeatable();
   ValueSelector* value_selector =
       RevAlloc(new CheapestValueSelector(value_evaluator, tie_breaker));
   return BaseAssignVariables::MakePhase(this,
-                                        vars,
-                                        size,
+                                        vars.data(),
+                                        vars.size(),
                                         var_selector,
                                         value_selector);
 }
@@ -1909,25 +1868,17 @@ DecisionBuilder* Solver::MakePhase(
     ResultCallback1<int64, int64>* var_evaluator,
     ResultCallback2<int64, int64, int64>* value_evaluator,
     ResultCallback1<int64, int64>* tie_breaker) {
-  return MakePhase(vars.data(), vars.size(), var_evaluator,
-                   value_evaluator, tie_breaker);
-}
-
-DecisionBuilder* Solver::MakePhase(
-    const IntVar* const* vars,
-    int size,
-    ResultCallback1<int64, int64>* var_evaluator,
-    ResultCallback2<int64, int64, int64>* value_evaluator,
-    ResultCallback1<int64, int64>* tie_breaker) {
   var_evaluator->CheckIsRepeatable();
   VariableSelector* const var_selector =
-      RevAlloc(new CheapestVarSelector(vars, size, var_evaluator));
+      RevAlloc(new CheapestVarSelector(vars.data(),
+                                       vars.size(),
+                                       var_evaluator));
   value_evaluator->CheckIsRepeatable();
   ValueSelector* value_selector =
       RevAlloc(new CheapestValueSelector(value_evaluator, tie_breaker));
   return BaseAssignVariables::MakePhase(this,
-                                        vars,
-                                        size,
+                                        vars.data(),
+                                        vars.size(),
                                         var_selector,
                                         value_selector);
 }
@@ -1935,25 +1886,10 @@ DecisionBuilder* Solver::MakePhase(
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    ResultCallback2<int64, int64, int64>* eval,
                                    Solver::EvaluatorStrategy str) {
-  return MakePhase(vars.data(), vars.size(), eval, str);
-}
-
-DecisionBuilder* Solver::MakePhase(const IntVar* const* vars,
-                                   int size,
-                                   ResultCallback2<int64, int64, int64>* eval,
-                                   Solver::EvaluatorStrategy str) {
-  return MakePhase(vars, size, eval, NULL, str);
+  return MakePhase(vars, eval, NULL, str);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
-                                   ResultCallback2<int64, int64, int64>* eval,
-                                   ResultCallback1<int64, int64>* tie_breaker,
-                                   Solver::EvaluatorStrategy str) {
-  return MakePhase(vars.data(), vars.size(), eval, tie_breaker, str);
-}
-
-DecisionBuilder* Solver::MakePhase(const IntVar* const* vars,
-                                   int size,
                                    ResultCallback2<int64, int64, int64>* eval,
                                    ResultCallback1<int64, int64>* tie_breaker,
                                    Solver::EvaluatorStrategy str) {
@@ -1965,11 +1901,15 @@ DecisionBuilder* Solver::MakePhase(const IntVar* const* vars,
   switch (str) {
     case Solver::CHOOSE_STATIC_GLOBAL_BEST: {
       // TODO(user): support tie breaker
-      selector = RevAlloc(new StaticEvaluatorSelector(vars, size, eval));
+      selector = RevAlloc(new StaticEvaluatorSelector(vars.data(),
+                                                      vars.size(),
+                                                      eval));
       break;
     }
     case Solver::CHOOSE_DYNAMIC_GLOBAL_BEST: {
-      selector = RevAlloc(new DynamicEvaluatorSelector(vars, size, eval,
+      selector = RevAlloc(new DynamicEvaluatorSelector(vars.data(),
+                                                       vars.size(),
+                                                       eval,
                                                        tie_breaker));
       break;
     }

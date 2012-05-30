@@ -471,32 +471,18 @@ bool RandomLNS::NextFragment(std::vector<int>* fragment) {
 
 LocalSearchOperator* Solver::MakeRandomLNSOperator(const std::vector<IntVar*>& vars,
                                                    int number_of_variables) {
-  return MakeRandomLNSOperator(vars.data(), vars.size(), number_of_variables);
+  return MakeRandomLNSOperator(vars,
+                               number_of_variables,
+                               ACMRandom::HostnamePidTimeSeed());
 }
 
 LocalSearchOperator* Solver::MakeRandomLNSOperator(const std::vector<IntVar*>& vars,
                                                    int number_of_variables,
                                                    int32 seed) {
-  return MakeRandomLNSOperator(vars.data(),
-                               vars.size(),
-                               number_of_variables,
-                               seed);
-}
-
-LocalSearchOperator* Solver::MakeRandomLNSOperator(const IntVar* const* vars,
-                                                   int size,
-                                                   int number_of_variables) {
-  return MakeRandomLNSOperator(vars,
-                               size,
-                               number_of_variables,
-                               ACMRandom::HostnamePidTimeSeed());
-}
-
-LocalSearchOperator* Solver::MakeRandomLNSOperator(const IntVar* const* vars,
-                                                   int size,
-                                                   int number_of_variables,
-                                                   int32 seed) {
-  return RevAlloc(new RandomLNS(vars, size, number_of_variables, seed));
+  return RevAlloc(new RandomLNS(vars.data(),
+                                vars.size(),
+                                number_of_variables,
+                                seed));
 }
 
 // ----- Move Toward Target Local Search operator -----

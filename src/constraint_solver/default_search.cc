@@ -49,18 +49,14 @@ namespace {
 // search space of all integer variables.
 class DomainWatcher {
  public:
-  DomainWatcher(const IntVar* const * vars, int size, int cache_size)
-      : vars_(NULL), size_(size) {
-    if (size_ > 0) {
-      vars_.reset(new IntVar*[size_]);
-      memcpy(vars_.get(), vars, size_ * sizeof(*vars));
-    }
+  DomainWatcher(const std::vector<IntVar*>& vars, int cache_size)
+      : vars_(vars) {
     cached_log_.Init(cache_size);
   }
 
   double LogSearchSpaceSize() {
     double result = 0.0;
-    for (int index = 0; index < size_; ++index) {
+    for (int index = 0; index < vars_.size(); ++index) {
       result += cached_log_.Log2(vars_[index]->Size());
     }
     return result;
@@ -71,8 +67,7 @@ class DomainWatcher {
   }
 
  private:
-  scoped_array<IntVar*> vars_;
-  const int size_;
+  std::vector<IntVar*> vars_;
   CachedLog cached_log_;
   DISALLOW_COPY_AND_ASSIGN(DomainWatcher);
 };
@@ -300,21 +295,16 @@ class ImpactRecorder {
   static const double kFailureImpact;
   static const double kInitFailureImpact;
 
-  ImpactRecorder(const IntVar* const * vars,
-                 int size,
+  ImpactRecorder(const std::vector<IntVar*>& vars,
                  DefaultPhaseParameters::DisplayLevel display_level)
-      : domain_watcher_(vars, size, kLogCacheSize),
-        size_(size),
+      : domain_watcher_(vars, kLogCacheSize),
+        vars_(vars),
+        size_(vars.size()),
         current_log_space_(0.0),
         impacts_(size_),
         original_min_(size_, 0LL),
         domain_iterators_(new IntVarIterator*[size_]),
         display_level_(display_level) {
-    CHECK_GE(size_, 0);
-    if (size_ > 0) {
-      vars_.reset(new IntVar*[size_]);
-      memcpy(vars_.get(), vars, size_ * sizeof(*vars));
-    }
     for (int i = 0; i < size_; ++i) {
       domain_iterators_[i] = vars_[i]->MakeDomainIterator(true);
       original_min_[i] = vars_[i]->Min();
@@ -534,7 +524,7 @@ class ImpactRecorder {
   };
 
   DomainWatcher domain_watcher_;
-  scoped_array<IntVar*> vars_;
+  std::vector<IntVar*> vars_;
   const int size_;
   double current_log_space_;
   // impacts_[i][j] stores the average search space reduction when assigning
@@ -597,11 +587,11 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   };
 
   ImpactDecisionBuilder(Solver* const solver,
-                        const IntVar* const* vars,
-                        int size,
+                        const std::vector<IntVar*>& vars,
                         const DefaultPhaseParameters& parameters)
-      : impact_recorder_(vars, size, parameters.display_level),
-        size_(size),
+      : impact_recorder_(vars, parameters.display_level),
+        vars_(vars),
+        size_(vars.size()),
         parameters_(parameters),
         init_done_(false),
         fail_stamp_(kUninitializedFailStamp),
@@ -617,11 +607,6 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         branches_between_restarts_(0),
         min_restart_period_(ComputeBranchRestart(parameters_.restart_log_size)),
         maximum_restart_depth_(kint64max) {
-    CHECK_GE(size_, 0);
-    if (size_ > 0) {
-      vars_.reset(new IntVar*[size_]);
-      memcpy(vars_.get(), vars, size_ * sizeof(*vars));
-    }
     InitHeuristics(solver);
   }
 
@@ -751,8 +736,8 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.get(),
-                                               size_);
+                                               vars_.data(),
+                                               vars_.size());
     visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
   }
 
@@ -792,13 +777,12 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   // number of repetitions when it is run.
   struct HeuristicWrapper {
     HeuristicWrapper(Solver* const solver,
-                     IntVar* const* vars,
-                     int size,
+                     const std::vector<IntVar*>& vars,
                      Solver::IntVarStrategy var_strategy,
                      Solver::IntValueStrategy value_strategy,
                      const string& heuristic_name,
                      int heuristic_runs)
-        : phase(solver->MakePhase(vars, size, var_strategy, value_strategy)),
+        : phase(solver->MakePhase(vars, var_strategy, value_strategy)),
           name(heuristic_name),
           runs(heuristic_runs) {}
 
@@ -841,8 +825,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
     heuristics_.push_back(
         new HeuristicWrapper(solver,
-                             vars_.get(),
-                             size_,
+                             vars_,
                              Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
                              Solver::ASSIGN_MIN_VALUE,
                              "AssignMinValueToMinDomainSize",
@@ -850,8 +833,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
     heuristics_.push_back(
         new HeuristicWrapper(solver,
-                             vars_.get(),
-                             size_,
+                             vars_,
                              Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX,
                              Solver::ASSIGN_MAX_VALUE,
                              "AssignMaxValueToMinDomainSize",
@@ -859,8 +841,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
     heuristics_.push_back(
         new HeuristicWrapper(solver,
-                             vars_.get(),
-                             size_,
+                             vars_,
                              Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
                              Solver::ASSIGN_CENTER_VALUE,
                              "AssignCenterValueToMinDomainSize",
@@ -868,8 +849,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
     heuristics_.push_back(
         new HeuristicWrapper(solver,
-                             vars_.get(),
-                             size_,
+                             vars_,
                              Solver::CHOOSE_FIRST_UNBOUND,
                              Solver::ASSIGN_RANDOM_VALUE,
                              "AssignRandomValueToFirstUnbound",
@@ -877,8 +857,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
     heuristics_.push_back(
         new HeuristicWrapper(solver,
-                             vars_.get(),
-                             size_,
+                             vars_,
                              Solver::CHOOSE_RANDOM,
                              Solver::ASSIGN_MIN_VALUE,
                              "AssignMinValueToRandomVariable",
@@ -886,8 +865,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
     heuristics_.push_back(
         new HeuristicWrapper(solver,
-                             vars_.get(),
-                             size_,
+                             vars_,
                              Solver::CHOOSE_RANDOM,
                              Solver::ASSIGN_MAX_VALUE,
                              "AssignMaxValueToRandomVariable",
@@ -895,8 +873,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
     heuristics_.push_back(
         new HeuristicWrapper(solver,
-                             vars_.get(),
-                             size_,
+                             vars_,
                              Solver::CHOOSE_RANDOM,
                              Solver::ASSIGN_RANDOM_VALUE,
                              "AssignRandomValueToRandomVariable",
@@ -1095,7 +1072,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   // ----- data members -----
 
   ImpactRecorder impact_recorder_;
-  scoped_array<IntVar*> vars_;
+  std::vector<IntVar*> vars_;
   const int size_;
   DefaultPhaseParameters parameters_;
   bool init_done_;
@@ -1124,27 +1101,12 @@ const uint64 ImpactDecisionBuilder::kUninitializedFailStamp = 0;
 
 DecisionBuilder* Solver::MakeDefaultPhase(const std::vector<IntVar*>& vars) {
   DefaultPhaseParameters parameters;
-  return MakeDefaultPhase(vars.data(), vars.size(), parameters);
+  return MakeDefaultPhase(vars, parameters);
 }
 
 DecisionBuilder* Solver::MakeDefaultPhase(
     const std::vector<IntVar*>& vars,
     const DefaultPhaseParameters& parameters) {
-  return MakeDefaultPhase(vars.data(), vars.size(), parameters);
-}
-
-DecisionBuilder* Solver::MakeDefaultPhase(
-    const IntVar* const* vars,
-    int size,
-    const DefaultPhaseParameters& parameters) {
-  return RevAlloc(new ImpactDecisionBuilder(this,
-                                            vars,
-                                            size,
-                                            parameters));
-}
-
-DecisionBuilder* Solver::MakeDefaultPhase(const IntVar* const* vars, int size) {
-  DefaultPhaseParameters parameters;
-  return MakeDefaultPhase(vars, size, parameters);
+  return RevAlloc(new ImpactDecisionBuilder(this, vars, parameters));
 }
 }  // namespace operations_research

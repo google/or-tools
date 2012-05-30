@@ -2214,8 +2214,6 @@ class Solver {
                                     int64 value,
                                     bool start_with_lower_half);
   Decision* MakeAssignVariableValueOrFail(IntVar* const var, int64 value);
-  Decision* MakeAssignVariablesValues(const IntVar* const* vars, int size,
-                                      const int64* const values);
   Decision* MakeAssignVariablesValues(const std::vector<IntVar*>& vars,
                                       const std::vector<int64>& values);
   Decision* MakeFailDecision();
@@ -2271,41 +2269,19 @@ class Solver {
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IntVarStrategy var_str,
                              IntValueStrategy val_str);
-  DecisionBuilder* MakePhase(const IntVar* const* vars,
-                             int size,
-                             IntVarStrategy var_str,
-                             IntValueStrategy val_str);
-
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IndexEvaluator1* var_evaluator,
                              IntValueStrategy val_str);
-  DecisionBuilder* MakePhase(const IntVar* const* vars,
-                             int size,
-                             IndexEvaluator1* var_evaluator,
-                             IntValueStrategy val_str);
 
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
-                             IntVarStrategy var_str,
-                             IndexEvaluator2* val_eval);
-  DecisionBuilder* MakePhase(const IntVar* const* vars,
-                             int size,
                              IntVarStrategy var_str,
                              IndexEvaluator2* val_eval);
 
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IndexEvaluator1* var_evaluator,
                              IndexEvaluator2* val_eval);
-  DecisionBuilder* MakePhase(const IntVar* const* vars,
-                             int size,
-                             IndexEvaluator1* var_evaluator,
-                             IndexEvaluator2* val_eval);
 
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
-                             IntVarStrategy var_str,
-                             IndexEvaluator2* val_eval,
-                             IndexEvaluator1* tie_breaker);
-  DecisionBuilder* MakePhase(const IntVar* const* vars,
-                             int size,
                              IntVarStrategy var_str,
                              IndexEvaluator2* val_eval,
                              IndexEvaluator1* tie_breaker);
@@ -2314,17 +2290,8 @@ class Solver {
                              IndexEvaluator1* var_evaluator,
                              IndexEvaluator2* val_eval,
                              IndexEvaluator1* tie_breaker);
-  DecisionBuilder* MakePhase(const IntVar* const* vars,
-                             int size,
-                             IndexEvaluator1* var_evaluator,
-                             IndexEvaluator2* val_eval,
-                             IndexEvaluator1* tie_breaker);
 
-  DecisionBuilder* MakeDefaultPhase(const IntVar* const* vars, int size);
   DecisionBuilder* MakeDefaultPhase(const std::vector<IntVar*>& vars);
-  DecisionBuilder* MakeDefaultPhase(const IntVar* const* vars,
-                                    int size,
-                                    const DefaultPhaseParameters& parameters);
   DecisionBuilder* MakeDefaultPhase(const std::vector<IntVar*>& vars,
                                     const DefaultPhaseParameters& parameters);
 
@@ -2375,10 +2342,6 @@ class Solver {
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IndexEvaluator2* evaluator,
                              EvaluatorStrategy str);
-  DecisionBuilder* MakePhase(const IntVar* const* vars,
-                             int size,
-                             IndexEvaluator2* evaluator,
-                             EvaluatorStrategy str);
 
   // Returns a decision builder which assigns values to variables
   // which minimize the values returned by the evaluator. In case of
@@ -2388,11 +2351,6 @@ class Solver {
   // variables in vars and the values of these variables. Ownership of
   // the callback is passed to the decision builder.
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
-                             IndexEvaluator2* evaluator,
-                             IndexEvaluator1* tie_breaker,
-                             EvaluatorStrategy str);
-  DecisionBuilder* MakePhase(const IntVar* const* vars,
-                             int size,
                              IndexEvaluator2* evaluator,
                              IndexEvaluator1* tie_breaker,
                              EvaluatorStrategy str);
@@ -2533,13 +2491,6 @@ class Solver {
   LocalSearchOperator* MakeRandomLNSOperator(const std::vector<IntVar*>& vars,
                                              int number_of_variables);
   LocalSearchOperator* MakeRandomLNSOperator(const std::vector<IntVar*>& vars,
-                                             int number_of_variables,
-                                             int32 seed);
-  LocalSearchOperator* MakeRandomLNSOperator(const IntVar* const* vars,
-                                             int size,
-                                             int number_of_variables);
-  LocalSearchOperator* MakeRandomLNSOperator(const IntVar* const* vars,
-                                             int size,
                                              int number_of_variables,
                                              int32 seed);
 

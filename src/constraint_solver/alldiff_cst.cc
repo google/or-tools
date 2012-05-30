@@ -568,17 +568,6 @@ class SortConstraint : public Constraint {
 };
 }  // namespace
 
-Constraint* MakeAllDifferent(Solver* const solver,
-                             IntVar* const * vars,
-                             int size,
-                             bool propag) {
-  if (propag) {
-    return solver->RevAlloc(new BoundsAllDifferent(solver, vars, size));
-  } else {
-    return solver->RevAlloc(new ValueAllDifferent(solver, vars, size));
-  }
-}
-
 Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars) {
   return MakeAllDifferent(vars, true);
 }

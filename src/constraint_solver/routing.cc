@@ -803,22 +803,15 @@ RoutingModel::RoutingModel(int nodes,
   SetStartEnd(start_end);
 }
 
-extern Constraint* MakeAllDifferent(Solver* const solver,
-                                    IntVar* const * vars,
-                                    int size,
-                                    bool propag);
-
 void RoutingModel::Initialize() {
   const int size = Size();
   // Next variables
-  nexts_.reset(solver_->MakeIntVarArray(size,
-                                        0,
-                                        size + vehicles_ - 1,
-                                        "Nexts"));
-  solver_->AddConstraint(MakeAllDifferent(solver_.get(),
-                                          nexts_.get(),
-                                          size,
-                                          false));
+  solver_->MakeIntVarArray(size,
+                           0,
+                           size + vehicles_ - 1,
+                           "Nexts",
+                           &nexts_);
+  solver_->AddConstraint(solver_->MakeAllDifferent(nexts_, false));
   // Vehicle variables. In case that node i is not active, vehicle_vars_[i] is
   // bound to -1.
   vehicle_vars_.reset(solver_->MakeIntVarArray(size + vehicles_,
@@ -848,7 +841,7 @@ RoutingModel::~RoutingModel() {
 void RoutingModel::AddNoCycleConstraintInternal() {
   CheckDepot();
   if (no_cycle_constraint_ == NULL) {
-    no_cycle_constraint_ = solver_->MakeNoCycle(nexts_.get(),
+    no_cycle_constraint_ = solver_->MakeNoCycle(nexts_.data(),
                                                 active_.get(),
                                                 Size());
     solver_->AddConstraint(no_cycle_constraint_);
@@ -864,7 +857,7 @@ void RoutingModel::AddDimension(NodeEvaluator2* evaluator,
   const int size = Size();
   IntVar** transits = GetOrMakeTransits(NewCachedCallback(evaluator),
                                         slack_max, capacity, name);
-  solver_->AddConstraint(solver_->MakePathCumul(nexts_.get(),
+  solver_->AddConstraint(solver_->MakePathCumul(nexts_.data(),
                                                 active_.get(),
                                                 cumuls,
                                                 transits,
@@ -1124,7 +1117,7 @@ void RoutingModel::CloseModel() {
         vehicle_vars_[ends_[i]], solver_->MakeIntConst(i)));
   }
   std::vector<IntVar*> zero_transit(size, solver_->MakeIntConst(Zero()));
-  solver_->AddConstraint(solver_->MakePathCumul(nexts_.get(),
+  solver_->AddConstraint(solver_->MakePathCumul(nexts_.data(),
                                                 active_.get(),
                                                 vehicle_vars_.get(),
                                                 zero_transit.data(),
@@ -1216,7 +1209,7 @@ class FastOnePathBuilder : public DecisionBuilder {
     if (!FindPathStart(&index)) {
       return NULL;
     }
-    IntVar** nexts = model_->Nexts();
+    IntVar* const * nexts = model_->Nexts();
     // Need to allocate in a reversible way so that if restoring the assignment
     // fails, the assignment gets de-allocated.
     Assignment* assignment = solver->MakeAssignment();
@@ -1256,7 +1249,7 @@ class FastOnePathBuilder : public DecisionBuilder {
 
  private:
   bool FindPathStart(int64* index) const {
-    IntVar** nexts = model_->Nexts();
+    IntVar* const * nexts = model_->Nexts();
     const int size = model_->Size();
     // Try to extend an existing path
     for (int i = size - 1; i >= 0; --i) {
@@ -1295,7 +1288,7 @@ class FastOnePathBuilder : public DecisionBuilder {
   }
 
   int64 FindCheapestValue(int index, const Assignment& assignment) const {
-    IntVar** nexts = model_->Nexts();
+    IntVar* const * nexts = model_->Nexts();
     const int size = model_->Size();
     int64 best_evaluation = kint64max;
     int64 best_value = -1;
@@ -2082,7 +2075,7 @@ Assignment* RoutingModel::GetOrCreateAssignment() {
   if (assignment_ == NULL) {
     const int size = Size();
     assignment_ = solver_->MakeAssignment();
-    assignment_->Add(nexts_.get(), size);
+    assignment_->Add(nexts_.data(), size);
     if (!homogeneous_costs_) {
       assignment_->Add(vehicle_vars_.get(), size + vehicles_);
     }
@@ -2129,17 +2122,17 @@ LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
     const IntVar* const* vehicle_vars =
         homogeneous_costs_ ? NULL : vehicle_vars_.get();
     return MakePairActive(solver_.get(),
-                          nexts_.get(),
+                          nexts_.data(),
                           vehicle_vars,
                           pickup_delivery_pairs_,
                           size);
   } else {
     if (homogeneous_costs_) {
-      return solver_->MakeOperator(nexts_.get(),
+      return solver_->MakeOperator(nexts_.data(),
                                    size,
                                    Solver::MAKEACTIVE);
     } else {
-      return solver_->MakeOperator(nexts_.get(),
+      return solver_->MakeOperator(nexts_.data(),
                                    vehicle_vars_.get(),
                                    size,
                                    Solver::MAKEACTIVE);
@@ -2149,11 +2142,11 @@ LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
 
 #define CP_ROUTING_PUSH_BACK_OPERATOR(operator_type)                    \
   if (homogeneous_costs_) {                                             \
-    operators.push_back(solver_->MakeOperator(nexts_.get(),             \
+    operators.push_back(solver_->MakeOperator(nexts_.data(),            \
                                               size,                     \
                                               operator_type));          \
   } else {                                                              \
-    operators.push_back(solver_->MakeOperator(nexts_.get(),             \
+    operators.push_back(solver_->MakeOperator(nexts_.data(),            \
                                               vehicle_vars_.get(),      \
                                               size,                     \
                                               operator_type));          \
@@ -2161,12 +2154,12 @@ LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
 
 #define CP_ROUTING_PUSH_BACK_CALLBACK_OPERATOR(operator_type)           \
   if (homogeneous_costs_) {                                             \
-    operators.push_back(solver_->MakeOperator(nexts_.get(),             \
+    operators.push_back(solver_->MakeOperator(nexts_.data(),            \
                                               size,                     \
                                               BuildCostCallback(),      \
                                               operator_type));          \
   } else {                                                              \
-    operators.push_back(solver_->MakeOperator(nexts_.get(),             \
+    operators.push_back(solver_->MakeOperator(nexts_.data(),            \
                                               vehicle_vars_.get(),      \
                                               size,                     \
                                               BuildCostCallback(),      \
@@ -2180,7 +2173,7 @@ LocalSearchOperator* RoutingModel::CreateNeighborhoodOperators() {
     const IntVar* const* vehicle_vars =
         homogeneous_costs_ ? NULL : vehicle_vars_.get();
     operators.push_back(MakePairRelocate(solver_.get(),
-                                         nexts_.get(),
+                                         nexts_.data(),
                                          vehicle_vars,
                                          pickup_delivery_pairs_,
                                          size));
@@ -2251,7 +2244,7 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
       if (homogeneous_costs_) {
         LocalSearchFilter* filter =
             solver_->MakeLocalSearchObjectiveFilter(
-                nexts_.get(),
+                nexts_.data(),
                 size,
                 NewPermanentCallback(this,
                                      &RoutingModel::GetHomogeneousFilterCost),
@@ -2262,7 +2255,7 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
       } else {
         LocalSearchFilter* filter =
             solver_->MakeLocalSearchObjectiveFilter(
-                nexts_.get(),
+                nexts_.data(),
                 vehicle_vars_.get(),
                 size,
                 NewPermanentCallback(this, &RoutingModel::GetFilterCost),
@@ -2275,7 +2268,7 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
     if (FLAGS_routing_use_pickup_and_delivery_filter
         && pickup_delivery_pairs_.size() > 0) {
       filters_.push_back(solver_->RevAlloc(new NodePrecedenceFilter(
-          nexts_.get(),
+          nexts_.data(),
           Size(),
           Size() + vehicles_,
           pickup_delivery_pairs_,
@@ -2285,7 +2278,7 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
       for (ConstIter<VarMap> iter(cumuls_); !iter.at_end(); ++iter) {
         const string& name = iter->first;
         filters_.push_back(solver_->RevAlloc(
-            new PathCumulFilter(nexts_.get(),
+            new PathCumulFilter(nexts_.data(),
                                 Size(),
                                 iter->second,
                                 Size() + vehicles_,
@@ -2298,7 +2291,7 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
 }
 
 DecisionBuilder* RoutingModel::CreateSolutionFinalizer() {
-  return solver_->MakePhase(nexts_.get(), Size(),
+  return solver_->MakePhase(nexts_,
                             Solver::CHOOSE_FIRST_UNBOUND,
                             Solver::ASSIGN_MIN_VALUE);
 }
@@ -2314,7 +2307,7 @@ DecisionBuilder* RoutingModel::CreateFirstSolutionDecisionBuilder() {
   switch (first_solution_strategy) {
     case ROUTING_GLOBAL_CHEAPEST_ARC:
       first_solution =
-          solver_->MakePhase(nexts_.get(), size,
+          solver_->MakePhase(nexts_,
                              NewPermanentCallback(
                                  this,
                                  &RoutingModel::GetFirstSolutionCost),
@@ -2322,7 +2315,7 @@ DecisionBuilder* RoutingModel::CreateFirstSolutionDecisionBuilder() {
       break;
     case ROUTING_LOCAL_CHEAPEST_ARC:
       first_solution =
-          solver_->MakePhase(nexts_.get(), size,
+          solver_->MakePhase(nexts_,
                              Solver::CHOOSE_FIRST_UNBOUND,
                              NewPermanentCallback(
                                  this,
@@ -2330,7 +2323,7 @@ DecisionBuilder* RoutingModel::CreateFirstSolutionDecisionBuilder() {
       break;
     case ROUTING_PATH_CHEAPEST_ARC:
       first_solution =
-          solver_->MakePhase(nexts_.get(), size,
+          solver_->MakePhase(nexts_,
                              Solver::CHOOSE_PATH,
                              NewPermanentCallback(
                                  this,
@@ -2348,7 +2341,7 @@ DecisionBuilder* RoutingModel::CreateFirstSolutionDecisionBuilder() {
     case ROUTING_EVALUATOR_STRATEGY:
       CHECK(first_solution_evaluator_ != NULL);
       first_solution =
-          solver_->MakePhase(nexts_.get(), size,
+          solver_->MakePhase(nexts_,
                              Solver::CHOOSE_PATH,
                              NewPermanentCallback(
                                  first_solution_evaluator_.get(),
@@ -2379,8 +2372,7 @@ DecisionBuilder* RoutingModel::CreateFirstSolutionDecisionBuilder() {
       monitors.push_back(GetOrCreateLimit());
       first_solution = solver_->MakeNestedOptimize(
           solver_->MakeLocalSearchPhase(
-              nexts_.get(),
-              size,
+              nexts_,
               solver_->RevAlloc(new AllUnperformed(this)),
               insertion_parameters),
           GetOrCreateAssignment(),
@@ -2416,8 +2408,7 @@ DecisionBuilder* RoutingModel::CreateLocalSearchDecisionBuilder() {
   DecisionBuilder* first_solution = CreateFirstSolutionDecisionBuilder();
   LocalSearchPhaseParameters* parameters = CreateLocalSearchParameters();
   if (homogeneous_costs_) {
-    return solver_->MakeLocalSearchPhase(nexts_.get(),
-                                         size,
+    return solver_->MakeLocalSearchPhase(nexts_,
                                          first_solution,
                                          parameters);
   } else {
@@ -2469,7 +2460,7 @@ void RoutingModel::SetupMetaheuristics() {
             cost_,
             NewPermanentCallback(this, &RoutingModel::GetHomogeneousCost),
             FLAGS_routing_optimization_step,
-            nexts_.get(), size,
+            nexts_,
             FLAGS_routing_guided_local_search_lamda_coefficient);
       } else {
         optimize = solver_->MakeGuidedLocalSearch(
@@ -2477,7 +2468,7 @@ void RoutingModel::SetupMetaheuristics() {
             cost_,
             BuildCostCallback(),
             FLAGS_routing_optimization_step,
-            nexts_.get(), vehicle_vars_.get(), size,
+            nexts_.data(), vehicle_vars_.get(), size,
             FLAGS_routing_guided_local_search_lamda_coefficient);
       }
       break;
@@ -2490,7 +2481,7 @@ void RoutingModel::SetupMetaheuristics() {
     case ROUTING_TABU_SEARCH:
       optimize = solver_->MakeTabuSearch(false, cost_,
                                          FLAGS_routing_optimization_step,
-                                         nexts_.get(), size,
+                                         nexts_.data(), size,
                                          10, 10, .8);
       break;
     default:
@@ -2508,7 +2499,7 @@ void RoutingModel::SetupAssignmentCollector() {
   for (int i = 0; i < extra_vars_.size(); ++i) {
     full_assignment->Add(extra_vars_[i]);
   }
-  full_assignment->Add(nexts_.get(), size);
+  full_assignment->Add(nexts_.data(), size);
   full_assignment->Add(active_.get(), size);
   full_assignment->Add(vehicle_vars_.get(), size + vehicles_);
   full_assignment->AddObjective(cost_);

@@ -533,7 +533,7 @@ class RoutingModel {
   // Variables
   // Returns all next variables of the model, such that Nexts(i) is the next
   // variable of the node corresponding to i.
-  IntVar** Nexts() const { return nexts_.get(); }
+  IntVar* const * Nexts() const { return nexts_.data(); }
   // Returns all vehicle variables of the model,  such that VehicleVars(i) is
   // the vehicle variable of the node corresponding to i.
   IntVar** VehicleVars() const { return vehicle_vars_.get(); }
@@ -710,7 +710,7 @@ class RoutingModel {
   // Model
   scoped_ptr<Solver> solver_;
   Constraint* no_cycle_constraint_;
-  scoped_array<IntVar*> nexts_;
+  std::vector<IntVar*> nexts_;
   scoped_array<IntVar*> vehicle_vars_;
   scoped_array<IntVar*> active_;
   std::vector<NodeEvaluator2*> costs_;
