@@ -1719,21 +1719,14 @@ IntExpr* BuildMax(CPModelLoader* const builder,
 
 // ----- kMaxEqual -----
 
-// TODO(user): Add API on solver and uncomment this method.
-/*
-  Constraint* BuildMaxEqual(CPModelLoader* const builder,
-  const CPConstraintProto& proto) {
+Constraint* BuildMaxEqual(CPModelLoader* const builder,
+                          const CPConstraintProto& proto) {
   std::vector<IntVar*> vars;
-  VERIFY(builder->ScanArguments(ModelVisitor::kVarsArgument,
-  proto,
-  &vars));
+  VERIFY(builder->ScanArguments(ModelVisitor::kVarsArgument, proto, &vars));
   IntExpr* target = NULL;
-  VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument,
-  proto,
-  &target));
-  return builder->solver()->MakeMaxEqual(vars, target->Var());
-  }
-*/
+  VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument, proto, &target));
+  return builder->solver()->MakeMaxEquality(vars, target->Var());
+}
 
 // ----- kMember -----
 
@@ -1771,7 +1764,14 @@ IntExpr* BuildMin(CPModelLoader* const builder,
 
 // ----- kMinEqual -----
 
-// TODO(user): Add API on solver and implement this method.
+Constraint* BuildMinEqual(CPModelLoader* const builder,
+                          const CPConstraintProto& proto) {
+  std::vector<IntVar*> vars;
+  VERIFY(builder->ScanArguments(ModelVisitor::kVarsArgument, proto, &vars));
+  IntExpr* target = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument, proto, &target));
+  return builder->solver()->MakeMinEquality(vars, target->Var());
+}
 
 // ----- kNoCycle -----
 
@@ -2590,10 +2590,10 @@ void Solver::InitBuilders() {
   REGISTER(kLessOrEqual, BuildLessOrEqual);
   REGISTER(kMapDomain, BuildMapDomain);
   REGISTER(kMax, BuildMax);
-  //  REGISTER(kMaxEqual, BuildMaxEqual);
+  REGISTER(kMaxEqual, BuildMaxEqual);
   REGISTER(kMember, BuildMember);
   REGISTER(kMin, BuildMin);
-  //  REGISTER(kMinEqual, BuildMinEqual);
+  REGISTER(kMinEqual, BuildMinEqual);
   REGISTER(kNoCycle, BuildNoCycle);
   REGISTER(kNonEqual, BuildNonEqual);
   REGISTER(kOpposite, BuildOpposite);

@@ -676,6 +676,11 @@ IntExpr* Solver::MakeMin(IntVar* const* vars, int size) {
   }
 }
 
+Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
+                                    IntVar* const min_var) {
+  return RevAlloc(new MinConstraint(this, vars.data(), vars.size(), min_var));
+}
+
 IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
   return MakeMax(vars.data(), vars.size());
 }
@@ -698,6 +703,11 @@ IntExpr* Solver::MakeMax(IntVar* const* vars, int size) {
     AddConstraint(RevAlloc(new MaxConstraint(this, vars, size, new_var)));
     return new_var;
   }
+}
+
+Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
+                                    IntVar* const max_var) {
+  return RevAlloc(new MaxConstraint(this, vars.data(), vars.size(), max_var));
 }
 
 // ---------- Specialized cases ----------

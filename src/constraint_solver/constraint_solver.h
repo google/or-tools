@@ -1468,6 +1468,10 @@ class Solver {
                                       int const * coefficients,
                                       int64 cst);
 
+  Constraint* MakeMinEquality(const std::vector<IntVar*>& vars, IntVar* const var);
+  Constraint* MakeMaxEquality(const std::vector<IntVar*>& vars, IntVar* const var);
+
+
   // This method is a specialized case of the MakeConstraintDemon
   // method to call the InitiatePropagate of the constraint 'ct'.
   Demon* MakeConstraintInitialPropagateCallback(Constraint* const ct);

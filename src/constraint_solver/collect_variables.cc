@@ -60,7 +60,9 @@ class CollectVariablesVisitor : public ModelParser {
         type_name.compare(ModelVisitor::kIsEqual) == 0 ||
         type_name.compare(ModelVisitor::kIsDifferent) == 0 ||
         type_name.compare(ModelVisitor::kIsGreaterOrEqual) == 0 ||
-        type_name.compare(ModelVisitor::kIsLessOrEqual) == 0) {
+        type_name.compare(ModelVisitor::kIsLessOrEqual) == 0 ||
+        type_name.compare(ModelVisitor::kMinEqual) == 0 ||
+        type_name.compare(ModelVisitor::kMaxEqual) == 0) {
       IntExpr* const target_expr =
           const_cast<IntExpr*>(
               Top()->FindIntegerExpressionArgumentOrDie(
