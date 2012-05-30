@@ -568,18 +568,24 @@ class SortConstraint : public Constraint {
 };
 }  // namespace
 
+Constraint* MakeAllDifferent(Solver* const solver,
+                             IntVar* const * vars,
+                             int size,
+                             bool propag) {
+  if (propag) {
+    return solver->RevAlloc(new BoundsAllDifferent(solver, vars, size));
+  } else {
+    return solver->RevAlloc(new ValueAllDifferent(solver, vars, size));
+  }
+}
+
 Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars) {
-  return MakeAllDifferent(vars.data(), vars.size(), true);
+  return MakeAllDifferent(vars, true);
 }
 
 Constraint* Solver::MakeAllDifferent(const std::vector<IntVar*>& vars,
                                      bool stronger_propagation) {
-  return MakeAllDifferent(vars.data(), vars.size(), stronger_propagation);
-}
-
-Constraint* Solver::MakeAllDifferent(const IntVar* const* vars,
-                                     int size,
-                                     bool stronger_propagation) {
+  const int size = vars.size();
   for (int i = 0; i < size; ++i) {
     CHECK_EQ(this, vars[i]->solver());
   }
@@ -590,9 +596,9 @@ Constraint* Solver::MakeAllDifferent(const IntVar* const* vars,
                            const_cast<IntVar* const>(vars[1]));
   } else {
     if (stronger_propagation) {
-      return RevAlloc(new BoundsAllDifferent(this, vars, size));
+      return RevAlloc(new BoundsAllDifferent(this, vars.data(), size));
     } else {
-      return RevAlloc(new ValueAllDifferent(this, vars, size));
+      return RevAlloc(new ValueAllDifferent(this, vars.data(), size));
     }
   }
 }

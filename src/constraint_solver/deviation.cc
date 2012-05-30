@@ -33,30 +33,26 @@ namespace {
 class Deviation : public Constraint {
  public:
   Deviation(Solver* const solver,
-            IntVar* const* vars,
-            int size,
+            const std::vector<IntVar*>& vars,
             IntVar* const deviation_var,
             int64 total_sum)
       : Constraint(solver),
-        vars_(new IntVar*[size]),
-        size_(size),
+        vars_(vars),
+        size_(vars.size()),
         deviation_var_(deviation_var),
         total_sum_(total_sum),
-        scaled_vars_assigned_value_(new int64[size]),
-        scaled_vars_min_(new int64[size]),
-        scaled_vars_max_(new int64[size]),
+        scaled_vars_assigned_value_(new int64[size_]),
+        scaled_vars_min_(new int64[size_]),
+        scaled_vars_max_(new int64[size_]),
         scaled_sum_max_(0),
         scaled_sum_min_(0),
-        maximum_(new int64[size]),
-        overlaps_sup_(new int64[size]),
+        maximum_(new int64[size_]),
+        overlaps_sup_(new int64[size_]),
         active_sum_(0),
         active_sum_rounded_down_(0),
         active_sum_rounded_up_(0),
         active_sum_nearest_(0) {
-    CHECK_GT(size, 0);
-    CHECK_NOTNULL(vars);
     CHECK_NOTNULL(deviation_var);
-    memcpy(vars_.get(), vars, size_ * sizeof(*vars));
   }
 
   virtual ~Deviation() {}
@@ -68,7 +64,7 @@ class Deviation : public Constraint {
       vars_[i]->WhenRange(demon);
     }
     deviation_var_->WhenRange(demon);
-    s->AddConstraint(s->MakeSumEquality(vars_.get(), size_, total_sum_));
+    s->AddConstraint(s->MakeSumEquality(vars_, total_sum_));
   }
 
   virtual void InitialPropagate() {
@@ -79,7 +75,7 @@ class Deviation : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("Deviation([%s], deviation_var = %s, sum = %lld)",
-                        DebugStringArray(vars_.get(), size_, ", ").c_str(),
+                        DebugStringVector(vars_, ", ").c_str(),
                         deviation_var_->DebugString().c_str(),
                         total_sum_);
   }
@@ -87,8 +83,8 @@ class Deviation : public Constraint {
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kDeviation, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.get(),
-                                               size_);
+                                               vars_.data(),
+                                               vars_.size());
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             deviation_var_);
     visitor->VisitIntegerArgument(ModelVisitor::kValueArgument,
@@ -403,7 +399,7 @@ class Deviation : public Constraint {
     }
   }
 
-  scoped_array<IntVar*> vars_;
+  std::vector<IntVar*> vars_;
   const int size_;
   IntVar* const deviation_var_;
   const int64 total_sum_;
@@ -427,10 +423,6 @@ class Deviation : public Constraint {
 Constraint* Solver::MakeDeviation(const std::vector<IntVar*>& vars,
                                   IntVar* const deviation_var,
                                   int64 total_sum) {
-  return RevAlloc(new Deviation(this,
-                                vars.data(),
-                                vars.size(),
-                                deviation_var,
-                                total_sum));
+  return RevAlloc(new Deviation(this, vars, deviation_var, total_sum));
 }
 }  // namespace operations_research

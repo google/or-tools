@@ -932,8 +932,6 @@ class Solver {
   // various events during the search. In their reaction to these events, such
   // monitors may influence the search.
   bool Solve(DecisionBuilder* const db, const std::vector<SearchMonitor*>& monitors);
-  bool Solve(DecisionBuilder* const db,
-             SearchMonitor* const * monitors, int size);
   bool Solve(DecisionBuilder* const db);
   bool Solve(DecisionBuilder* const db, SearchMonitor* const m1);
   bool Solve(DecisionBuilder* const db,
@@ -961,8 +959,6 @@ class Solver {
 
   void NewSearch(DecisionBuilder* const db,
                  const std::vector<SearchMonitor*>& monitors);
-  void NewSearch(DecisionBuilder* const db,
-                 SearchMonitor* const * monitors, int size);
   void NewSearch(DecisionBuilder* const db);
   void NewSearch(DecisionBuilder* const db, SearchMonitor* const m1);
   void NewSearch(DecisionBuilder* const db,
@@ -993,9 +989,6 @@ class Solver {
   // usable during the Next() method of a decision builder.
   bool SolveAndCommit(DecisionBuilder* const db,
                       const std::vector<SearchMonitor*>& monitors);
-  bool SolveAndCommit(DecisionBuilder* const db,
-                      SearchMonitor* const * monitors,
-                      int size);
   bool SolveAndCommit(DecisionBuilder* const db);
   bool SolveAndCommit(DecisionBuilder* const db,
                       SearchMonitor* const m1);
@@ -1554,11 +1547,6 @@ class Solver {
   // occur. This API will be deprecated in the future.
   Constraint* MakeAllDifferent(const std::vector<IntVar*>& vars,
                                bool stronger_propagation);
-  // All variables are pairwise different. If 'stronger_propagation'
-  // is true, stronger, and potentially slower propagation will
-  // occur. This API will be deprecated in the future.
-  Constraint* MakeAllDifferent(const IntVar* const* vars,
-                               int size, bool stronger_propagation);
 
   // Create a constraint binding the arrays of variables "vars" and
   // "sorted_vars": sorted_vars[0] must be equal to the minimum of all

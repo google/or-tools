@@ -3082,13 +3082,13 @@ NestedSolveDecision::NestedSolveDecision(DecisionBuilder* const db,
 void NestedSolveDecision::Apply(Solver* const solver) {
   CHECK(NULL != solver);
   if (restore_) {
-    if (solver->Solve(db_, monitors_.data(), monitors_.size())) {
+    if (solver->Solve(db_, monitors_)) {
       solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FOUND));
     } else {
       solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FAILED));
     }
   } else {
-    if (solver->SolveAndCommit(db_, monitors_.data(), monitors_.size())) {
+    if (solver->SolveAndCommit(db_, monitors_)) {
       solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FOUND));
     } else {
       solver->SaveAndSetValue(&state_, static_cast<int>(DECISION_FAILED));

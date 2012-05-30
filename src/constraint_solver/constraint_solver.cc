@@ -1776,19 +1776,15 @@ bool Solver::CurrentlyInSolve() const {
   return searches_.back()->created_by_solve();
 }
 
-bool Solver::Solve(DecisionBuilder* const db,
-                   const std::vector<SearchMonitor*>& monitors) {
-  return Solve(db, monitors.data(), monitors.size());
-}
-
 bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
-  return Solve(db, monitors.data(), monitors.size());
+  return Solve(db, monitors);
 }
 
 bool Solver::Solve(DecisionBuilder* const db) {
-  return Solve(db, NULL, Zero());
+  std::vector<SearchMonitor*> monitors;
+  return Solve(db, monitors);
 }
 
 bool Solver::Solve(DecisionBuilder* const db,
@@ -1797,7 +1793,7 @@ bool Solver::Solve(DecisionBuilder* const db,
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
-  return Solve(db, monitors.data(), monitors.size());
+  return Solve(db, monitors);
 }
 
 bool Solver::Solve(DecisionBuilder* const db,
@@ -1808,7 +1804,7 @@ bool Solver::Solve(DecisionBuilder* const db,
   monitors.push_back(m1);
   monitors.push_back(m2);
   monitors.push_back(m3);
-  return Solve(db, monitors.data(), monitors.size());
+  return Solve(db, monitors);
 }
 
 bool Solver::Solve(DecisionBuilder* const db,
@@ -1821,13 +1817,12 @@ bool Solver::Solve(DecisionBuilder* const db,
   monitors.push_back(m2);
   monitors.push_back(m3);
   monitors.push_back(m4);
-  return Solve(db, monitors.data(), monitors.size());
+  return Solve(db, monitors);
 }
 
 bool Solver::Solve(DecisionBuilder* const db,
-                   SearchMonitor* const * monitors,
-                   int size) {
-  NewSearch(db, monitors, size);
+                   const std::vector<SearchMonitor*>& monitors) {
+  NewSearch(db, monitors);
   searches_.back()->set_created_by_solve(true);  // Overwrites default.
   NextSolution();
   const bool solution_found = searches_.back()->solution_counter() > 0;
@@ -1835,19 +1830,15 @@ bool Solver::Solve(DecisionBuilder* const db,
   return solution_found;
 }
 
-void Solver::NewSearch(DecisionBuilder* const db,
-                       const std::vector<SearchMonitor*>& monitors) {
-  return NewSearch(db, monitors.data(), monitors.size());
-}
-
 void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
-  return NewSearch(db, monitors.data(), monitors.size());
+  return NewSearch(db, monitors);
 }
 
 void Solver::NewSearch(DecisionBuilder* const db) {
-  return NewSearch(db, NULL, Zero());
+  std::vector<SearchMonitor*> monitors;
+  return NewSearch(db, monitors);
 }
 
 void Solver::NewSearch(DecisionBuilder* const db,
@@ -1856,7 +1847,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
-  return NewSearch(db, monitors.data(), monitors.size());
+  return NewSearch(db, monitors);
 }
 
 void Solver::NewSearch(DecisionBuilder* const db,
@@ -1867,7 +1858,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
   monitors.push_back(m1);
   monitors.push_back(m2);
   monitors.push_back(m3);
-  return NewSearch(db, monitors.data(), monitors.size());
+  return NewSearch(db, monitors);
 }
 
 void Solver::NewSearch(DecisionBuilder* const db,
@@ -1880,18 +1871,19 @@ void Solver::NewSearch(DecisionBuilder* const db,
   monitors.push_back(m2);
   monitors.push_back(m3);
   monitors.push_back(m4);
-  return NewSearch(db, monitors.data(), monitors.size());
+  return NewSearch(db, monitors);
 }
 
 extern PropagationMonitor* BuildPrintTrace(Solver* const s);
 
 // Opens a new top level search.
 void Solver::NewSearch(DecisionBuilder* const db,
-                       SearchMonitor* const * monitors,
-                       int size) {
+                       const std::vector<SearchMonitor*>& monitors) {
   // TODO(user) : reset statistics
 
   // ----- gets or creates the search object -----
+
+  const int size = monitors.size();
 
   CHECK_NOTNULL(db);
   DCHECK_GE(size, 0);
@@ -2407,19 +2399,15 @@ bool Solver::CheckConstraint(Constraint* const ct) {
 }
 
 bool Solver::SolveAndCommit(DecisionBuilder* const db,
-                            const std::vector<SearchMonitor*>& monitors) {
-  return SolveAndCommit(db, monitors.data(), monitors.size());
-}
-
-bool Solver::SolveAndCommit(DecisionBuilder* const db,
                             SearchMonitor* const m1) {
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
-  return SolveAndCommit(db, monitors.data(), monitors.size());
+  return SolveAndCommit(db, monitors);
 }
 
 bool Solver::SolveAndCommit(DecisionBuilder* const db) {
-  return SolveAndCommit(db, NULL, Zero());
+  std::vector<SearchMonitor*> monitors;
+  return SolveAndCommit(db, monitors);
 }
 
 bool Solver::SolveAndCommit(DecisionBuilder* const db,
@@ -2428,7 +2416,7 @@ bool Solver::SolveAndCommit(DecisionBuilder* const db,
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
-  return SolveAndCommit(db, monitors.data(), monitors.size());
+  return SolveAndCommit(db, monitors);
 }
 
 bool Solver::SolveAndCommit(DecisionBuilder* const db,
@@ -2439,13 +2427,12 @@ bool Solver::SolveAndCommit(DecisionBuilder* const db,
   monitors.push_back(m1);
   monitors.push_back(m2);
   monitors.push_back(m3);
-  return SolveAndCommit(db, monitors.data(), monitors.size());
+  return SolveAndCommit(db, monitors);
 }
 
 bool Solver::SolveAndCommit(DecisionBuilder* const db,
-                            SearchMonitor* const * monitors,
-                            int size) {
-  NewSearch(db, monitors, size);
+                            const std::vector<SearchMonitor*>& monitors) {
+  NewSearch(db, monitors);
   searches_.back()->set_created_by_solve(true);  // Overwrites default.
   searches_.back()->set_restore(false);
   NextSolution();

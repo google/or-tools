@@ -803,6 +803,11 @@ RoutingModel::RoutingModel(int nodes,
   SetStartEnd(start_end);
 }
 
+extern Constraint* MakeAllDifferent(Solver* const solver,
+                                    IntVar* const * vars,
+                                    int size,
+                                    bool propag);
+
 void RoutingModel::Initialize() {
   const int size = Size();
   // Next variables
@@ -810,7 +815,10 @@ void RoutingModel::Initialize() {
                                         0,
                                         size + vehicles_ - 1,
                                         "Nexts"));
-  solver_->AddConstraint(solver_->MakeAllDifferent(nexts_.get(), size, false));
+  solver_->AddConstraint(MakeAllDifferent(solver_.get(),
+                                          nexts_.get(),
+                                          size,
+                                          false));
   // Vehicle variables. In case that node i is not active, vehicle_vars_[i] is
   // bound to -1.
   vehicle_vars_.reset(solver_->MakeIntVarArray(size + vehicles_,
