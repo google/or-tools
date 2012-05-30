@@ -547,10 +547,9 @@ class SoftGCC : public Constraint{
       }
     }
     for (int64 k = 0; k < vars_.size(); k++) {
-      is_var_always_matched[k] = false;
-      if (var_match[k] != kUnassigned &&
-          num_vars_in_component_[variable_component_[k]] == 0) {
-        is_var_always_matched[k] = true;
+      is_var_always_matched[k] =
+          (var_match[k] != kUnassigned &&
+           num_vars_in_component_[variable_component_[k]] == 0);
       }
     }
   }
@@ -829,11 +828,6 @@ class SoftGCC : public Constraint{
   }
 
   void Prune(int64 min_violation) {
-    if (violation_var_->Max() == 0) {
-      PruneNoViolation();
-      return;
-    }
-
     if (min_violation < violation_var_->Max() - 1) {
       return;  // The constraint is GAC.
     }
@@ -912,49 +906,6 @@ class SoftGCC : public Constraint{
                    is_var_always_matched_in_overflow_[k])) {
                 vars_[k]->RemoveValue(w);
               }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  void PruneNoViolation() {
-    FindScc(UF);
-    ComputeIsVarAlwaysMatched(UF);
-
-    //under-flow filtering
-    for (int64 k = 0; k < vars_.size(); k++) {
-      if (under_variable_match_[k] == kUnassigned) {
-        continue;  // All values of this variable are consistent.
-      }
-      const int64 var_min = vars_[k]->Min();
-      const int64 var_max = vars_[k]->Max();
-      for (int64 w = var_min; w <= var_max; w++) {
-        if (vars_[k]->Contains(w)) {
-          if (under_variable_match_[k] != w) {
-            if (variable_component_[k] != value_component_[w - min_value_] &&
-                (card_mins_[w - min_value_] > 0 ||
-                 is_var_always_matched_in_underflow_[k])) {
-              vars_[k]->RemoveValue(w);
-            }
-          }
-        }
-      }
-    }
-    for (int64 k = 0; k < vars_.size(); k++) {
-      if (under_variable_match_[k] == kUnassigned) {
-        continue;  //all values of this variable are consistent
-      }
-      const int64 var_min = vars_[k]->Min();
-      const int64 var_max = vars_[k]->Max();
-      for (int64 w = var_min; w <= var_max; w++) {
-        if (vars_[k]->Contains(w)) {
-          if (under_variable_match_[k] != w) {
-            if (variable_component_[k] != value_component_[w - min_value_] &&
-                (card_max_[w - min_value_] > 0 ||
-                 is_var_always_matched_in_underflow_[k])) {
-              vars_[k]->RemoveValue(w);
             }
           }
         }

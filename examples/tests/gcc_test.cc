@@ -112,11 +112,13 @@ int main(int argc, char** argv) {
                                FLAGS_slack,
                                FLAGS_seed,
                                0);
-  operations_research::TestGcc(FLAGS_vars,
-                               FLAGS_values,
-                               FLAGS_slack,
-                               FLAGS_seed,
-                               1);
+  if (FLAGS_slack == 0) {
+    operations_research::TestGcc(FLAGS_vars,
+                                 FLAGS_values,
+                                 FLAGS_slack,
+                                 FLAGS_seed,
+                                 1);
+  }
   operations_research::TestGcc(FLAGS_vars,
                                FLAGS_values,
                                FLAGS_slack,
