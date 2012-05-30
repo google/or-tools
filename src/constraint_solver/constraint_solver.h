@@ -2269,8 +2269,7 @@ class Solver {
   DecisionBuilder* MakeDecisionBuilderFromAssignment(
       Assignment* const assignment,
       DecisionBuilder* const db,
-      const IntVar* const* vars,
-      int size);
+      const std::vector<IntVar*>& vars);
 
   // Returns a decision builder that will add the given constraint to
   // the model.

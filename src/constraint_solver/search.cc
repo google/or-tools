@@ -1967,14 +1967,13 @@ class AssignVariablesFromAssignment : public DecisionBuilder {
 }  // namespace
 
 DecisionBuilder* Solver::MakeDecisionBuilderFromAssignment(
-                                                  Assignment* const assignment,
-                                                  DecisionBuilder* const db,
-                                                  const IntVar* const* vars,
-                                                  int size) {
+    Assignment* const assignment,
+    DecisionBuilder* const db,
+    const std::vector<IntVar*>& vars) {
   return RevAlloc(new AssignVariablesFromAssignment(assignment,
                                                     db,
-                                                    vars,
-                                                    size));
+                                                    vars.data(),
+                                                    vars.size()));
 }
 
 // ---------- Solution Collectors -----------
