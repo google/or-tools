@@ -228,21 +228,24 @@ class TableVar {
         &index_in_active_values_[back_value_index]);
   }
 
-  void RemoveOneTuple(int erased_tuple_index) {
-    const int value_index = column_.ValueIndex(erased_tuple_index);
-    FastRevIntList<int>* const var_value = tuples_per_value_[value_index];
-    const int tuple_index_in_value = reverse_tuples_[erased_tuple_index];
-    const int back_tuple_index = var_value->back();
-    var_value->erase(
-        solver_,
-        tuple_index_in_value,
-        erased_tuple_index,
-        back_tuple_index,
-        &reverse_tuples_[erased_tuple_index],
-        &reverse_tuples_[back_tuple_index]);
-    if (var_value->Size() == 0) {
-      var_->RemoveValue(column_.ValueFromIndex(value_index));
-      RemoveActiveValue(solver_, value_index);
+  void RemoveTuples(const std::vector<int>& tuples) {
+    for (int i = 0; i < tuples.size(); ++i) {
+      const int erased_tuple_index = tuples[i];
+      const int value_index = column_.ValueIndex(erased_tuple_index);
+      FastRevIntList<int>* const var_value = tuples_per_value_[value_index];
+      const int tuple_index_in_value = reverse_tuples_[erased_tuple_index];
+      const int back_tuple_index = var_value->back();
+      var_value->erase(
+          solver_,
+          tuple_index_in_value,
+          erased_tuple_index,
+          back_tuple_index,
+          &reverse_tuples_[erased_tuple_index],
+          &reverse_tuples_[back_tuple_index]);
+      if (var_value->Size() == 0) {
+        var_->RemoveValue(column_.ValueFromIndex(value_index));
+        RemoveActiveValue(solver_, value_index);
+      }
     }
   }
 
@@ -467,19 +470,12 @@ class Ac4TableConstraint : public Constraint {
       Reset(var_index);
     }
     var->ComputeTuplesToRemove(delta_of_value_indices_, &tmp_tuples_);
-    for (int i = 0; i < tmp_tuples_.size(); ++i) {
-      RemoveOneTupleFromAllVariables(tmp_tuples_[i]);
+    for (int i = 0; i < num_variables_; ++i) {
+      vars_[i]->RemoveTuples(tmp_tuples_);
     }
   }
 
  private:
-  void RemoveOneTupleFromAllVariables(int tuple_index) {
-    for (int var_index = 0; var_index < num_variables_; var_index++) {
-      TableVar* const var = vars_[var_index];
-      var->RemoveOneTuple(tuple_index);
-    }
-  }
-
   // We scan values to check the ones without the supported values.
   void RemoveUnsupportedValuesOnAllVariables() {
     for (int var_index = 0; var_index < num_variables_; var_index++) {
