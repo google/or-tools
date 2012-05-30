@@ -1433,24 +1433,15 @@ class Solver {
                               IntVar* const b);
 
   // b == (v in set)
-  Constraint* MakeIsMemberCt(IntVar* const v, const int64* const values,
-                             int size, IntVar* const b);
   Constraint* MakeIsMemberCt(IntVar* const v, const std::vector<int64>& values,
                              IntVar* const b);
-  Constraint* MakeIsMemberCt(IntVar* const v, const int* const values,
-                             int size, IntVar* const b);
   Constraint* MakeIsMemberCt(IntVar* const v, const std::vector<int>& values,
                              IntVar* const b);
-  IntVar* MakeIsMemberVar(IntVar* const v, const int64* const values, int size);
   IntVar* MakeIsMemberVar(IntVar* const v, const std::vector<int64>& values);
-  IntVar* MakeIsMemberVar(IntVar* const v, const int* const values, int size);
   IntVar* MakeIsMemberVar(IntVar* const v, const std::vector<int>& values);
   // v in set. Propagation is lazy, i.e. this constraint does not
   // creates holes in the domain of the variable.
-  Constraint* MakeMemberCt(IntVar* const v, const int64* const values,
-                           int size);
   Constraint* MakeMemberCt(IntVar* const v, const std::vector<int64>& values);
-  Constraint* MakeMemberCt(IntVar* const v, const int* const values, int size);
   Constraint* MakeMemberCt(IntVar* const v, const std::vector<int>& values);
 
 

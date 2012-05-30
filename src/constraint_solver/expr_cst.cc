@@ -897,29 +897,17 @@ class MemberCt : public Constraint {
 }  // namespace
 
 Constraint* Solver::MakeMemberCt(IntVar* const var,
-                                 const int64* const values,
-                                 int size) {
-  ConstIntArray local_values(values, size);
-  return RevAlloc(
-      new MemberCt(this, var, local_values.SortedCopyWithoutDuplicates(true)));
-}
-
-Constraint* Solver::MakeMemberCt(IntVar* const var,
                                  const std::vector<int64>& values) {
-  return MakeMemberCt(var, values.data(), values.size());
-}
-
-Constraint* Solver::MakeMemberCt(IntVar* const var,
-                                 const int* const values,
-                                 int size) {
-  ConstIntArray local_values(values, size);
+  ConstIntArray local_values(values);
   return RevAlloc(
       new MemberCt(this, var, local_values.SortedCopyWithoutDuplicates(true)));
 }
 
 Constraint* Solver::MakeMemberCt(IntVar* const var,
                                  const std::vector<int>& values) {
-  return MakeMemberCt(var, values.data(), values.size());
+  ConstIntArray local_values(values);
+  return RevAlloc(
+      new MemberCt(this, var, local_values.SortedCopyWithoutDuplicates(true)));
 }
 
 // ----- IsMemberCt -----
@@ -1012,28 +1000,9 @@ class IsMemberCt : public Constraint {
 }  // namespace
 
 Constraint* Solver::MakeIsMemberCt(IntVar* const var,
-                                   const int64* const values,
-                                   int size,
-                                   IntVar* const boolvar) {
-  ConstIntArray local_values(values, size);
-  return RevAlloc(
-      new IsMemberCt(this,
-                     var,
-                     local_values.SortedCopyWithoutDuplicates(true),
-                     boolvar));
-}
-
-Constraint* Solver::MakeIsMemberCt(IntVar* const var,
                                    const std::vector<int64>& values,
                                    IntVar* const boolvar) {
-  return MakeIsMemberCt(var, values.data(), values.size(), boolvar);
-}
-
-Constraint* Solver::MakeIsMemberCt(IntVar* const var,
-                                   const int* const values,
-                                   int size,
-                                   IntVar* const boolvar) {
-  ConstIntArray local_values(values, size);
+  ConstIntArray local_values(values);
   return RevAlloc(
       new IsMemberCt(this,
                      var,
@@ -1044,31 +1013,25 @@ Constraint* Solver::MakeIsMemberCt(IntVar* const var,
 Constraint* Solver::MakeIsMemberCt(IntVar* const var,
                                    const std::vector<int>& values,
                                    IntVar* const boolvar) {
-  return MakeIsMemberCt(var, values.data(), values.size(), boolvar);
-}
-
-IntVar* Solver::MakeIsMemberVar(IntVar* const var,
-                                const int64* const values,
-                                int size) {
-  IntVar* const b = MakeBoolVar();
-  AddConstraint(MakeIsMemberCt(var, values, size, b));
-  return b;
+  ConstIntArray local_values(values);
+  return RevAlloc(
+      new IsMemberCt(this,
+                     var,
+                     local_values.SortedCopyWithoutDuplicates(true),
+                     boolvar));
 }
 
 IntVar* Solver::MakeIsMemberVar(IntVar* const var,
                                 const std::vector<int64>& values) {
-  return MakeIsMemberVar(var, values.data(), values.size());
-}
-
-IntVar* Solver::MakeIsMemberVar(IntVar* const var,
-                                const int* const values,
-                                int size) {
   IntVar* const b = MakeBoolVar();
-  AddConstraint(MakeIsMemberCt(var, values, size, b));
+  AddConstraint(MakeIsMemberCt(var, values, b));
   return b;
 }
 
 IntVar* Solver::MakeIsMemberVar(IntVar* const var, const std::vector<int>& values) {
-  return MakeIsMemberVar(var, values.data(), values.size());
+  IntVar* const b = MakeBoolVar();
+  AddConstraint(MakeIsMemberCt(var, values, b));
+  return b;
 }
+
 }  // namespace operations_research
