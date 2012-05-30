@@ -270,11 +270,6 @@ class MapDomain : public Constraint {
 };
 }  // namespace
 
-Constraint* Solver::MakeMapDomain(IntVar* const var, IntVar* const * actives,
-                                  int size) {
-  return RevAlloc(new MapDomain(this, var, actives, size));
-}
-
 Constraint* Solver::MakeMapDomain(IntVar* const var,
                                   const std::vector<IntVar*>& actives) {
   return RevAlloc(new MapDomain(this, var, actives.data(), actives.size()));

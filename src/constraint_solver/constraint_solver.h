@@ -1624,11 +1624,6 @@ class Solver {
   // This constraint maps the domain of 'var' onto the array of
   // variables 'vars'. That is
   // for all i in [0 .. size - 1]: vars[i] == 1 <=> var->Contains(i);
-  Constraint* MakeMapDomain(IntVar* const var, IntVar* const * vars, int size);
-
-  // This constraint maps the domain of 'var' onto the array of
-  // variables 'vars'. That is
-  // for all i in [0 .. size - 1]: vars[i] == 1 <=> var->Contains(i);
   Constraint* MakeMapDomain(IntVar* const var, const std::vector<IntVar*>& vars);
 
   // This method creates a constraint where the graph of the relation
