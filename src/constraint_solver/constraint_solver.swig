@@ -886,12 +886,7 @@ static void SetPythonFlags(bool trace_propagation,
 %ignore Solver::MakeOpposite;
 %ignore Solver::MakeProd;
 %ignore Solver::MakeSquare;
-%ignore Solver::MakeElement(const int64* const vals,
-                            int size,
-                            IntVar* const index);
 %ignore Solver::MakeElement(ResultCallback1<int64, int64>* values,
-                            IntVar* const index);
-%ignore Solver::MakeElement(const IntVar* const * vars, int size,
                             IntVar* const index);
 %ignore Solver::MakeMin(IntExpr* const expr, int val);
 %ignore Solver::MakeMax(IntExpr* const expr, int val);
@@ -901,14 +896,8 @@ static void SetPythonFlags(bool trace_propagation,
 %ignore Solver::MakeGreater;
 %ignore Solver::MakeLessOrEqual;
 %ignore Solver::MakeLess;
-%ignore Solver::MakeAllDifferent(const IntVar* const* vars,
-                                 int size,
-                                 bool range);
 %ignore Solver::MakeConstraintInitialPropagateCallback;
 %ignore Solver::MakeDelayedConstraintInitialPropagateCallback;
-%ignore Solver::MakePhase(const IntVar* const* vars,
-                          int size,
-                          PhaseStrategy str);
 %ignore Solver::MakePhase(IntVar* const v0, PhaseStrategy str);
 %ignore Solver::MakePhase(IntVar* const v0,
                           IntVar* const v1,
@@ -922,8 +911,6 @@ static void SetPythonFlags(bool trace_propagation,
                           IntVar* const v3,
                           IntVar* const v4,
                           PhaseStrategy str);
-%ignore Solver::Solve(DecisionBuilder* const db,
-                      SearchMonitor* const * monitors, int size);
 %ignore Solver::Compose(DecisionBuilder* const db1,
                         DecisionBuilder* const db2);
 %ignore Solver::Compose(DecisionBuilder* const db1,
@@ -1269,42 +1256,6 @@ struct FailureProtect {
 };
 %}
 
-%ignore Solver::MakeScalProd(IntVar* const* vars,
-                             const int64* const coefs,
-                             int size);
-%ignore Solver::MakeScalProd(IntVar* const* vars,
-                             const int* const coefs,
-                             int size);
-%ignore Solver::MakeScalProdEquality(IntVar* const* vars,
-                                     const int64* const coefs,
-                                     int size);
-%ignore Solver::MakeScalProdEquality(IntVar* const* vars,
-                                     const int* const coefs,
-                                     int size);
-%ignore Solver::MakeScalProdLessOrEqual(IntVar* const* vars,
-                                        const int64* const coefs,
-                                        int size);
-%ignore Solver::MakeScalProdLessOrEqual(IntVar* const* vars,
-                                        const int* const coefs,
-                                        int size);
-%ignore Solver::MakeScalProdGreaterOrEqual(IntVar* const* vars,
-                                           const int64* const coefs,
-                                           int size);
-%ignore Solver::MakeScalProdGreaterOrEqual(IntVar* const* vars,
-                                           const int* const coefs,
-                                           int size);
-%ignore Solver::MakeRandomLNSOperator(const IntVar* const* vars,
-                                      int size,
-                                      int number_of_variables);
-%ignore Solver::MakeRandomLNSOperator(const IntVar* const* vars,
-                                      int size,
-                                      int number_of_variables,
-                                      int32 seed);
-%ignore Solver::MakeAllowedAssignments(const IntVar* const * vars,
-                                       const int64* const * tuples,
-                                       int tuple_count,
-                                       int arity);
-
 %ignore operations_research::Solver::MakeIntVarArray;
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
@@ -1528,53 +1479,6 @@ struct FailureProtect {
   }
 };
 %}
-
-%ignore operations_research::Solver::MakeScalProd(
-    IntVar* const* vars,
-    const int64* const coefs,
-    int size);
-%ignore operations_research::Solver::MakeScalProd(
-    IntVar* const* vars,
-    const int* const coefs,
-    int size);
-%ignore operations_research::Solver::MakeScalProdEquality(
-    IntVar* const* vars,
-    const int64* const coefs,
-    int size);
-%ignore operations_research::Solver::MakeScalProdEquality(
-    IntVar* const* vars,
-    const int* const coefs,
-    int size);
-%ignore operations_research::Solver::MakeScalProdLessOrEqual(
-    IntVar* const* vars,
-    const int64* const coefs,
-    int size);
-%ignore operations_research::Solver::MakeScalProdLessOrEqual(
-    IntVar* const* vars,
-    const int* const coefs,
-    int size);
-%ignore operations_research::Solver::MakeScalProdGreaterOrEqual(
-    IntVar* const* vars,
-    const int64* const coefs,
-    int size);
-%ignore operations_research::Solver::MakeScalProdGreaterOrEqual(
-    IntVar* const* vars,
-    const int* const coefs,
-    int size);
-%ignore operations_research::Solver::MakeRandomLNSOperator(
-    const IntVar* const* vars,
-    int size,
-    int number_of_variables);
-%ignore operations_research::Solver::MakeRandomLNSOperator(
-    const IntVar* const* vars,
-    int size,
-    int number_of_variables,
-    int32 seed);
-%ignore operations_research::Solver::MakeAllowedAssignments(
-    const IntVar* const * vars,
-    const int64* const * tuples,
-    int tuple_count,
-    int arity);
 
 %ignore operations_research::Solver::MakeIntVarArray;
 %ignore operations_research::Solver::MakeBoolVarArray;
