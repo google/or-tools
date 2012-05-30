@@ -475,13 +475,20 @@ class SoftGCC : public Constraint{
       variable_seen_[k] = magic_;
       int64 var_min = vars_[k]->Min();
       int64 var_max = vars_[k]->Max();
-      for (int64 v = var_min; v <= var_max; v++) {
-        if (var_match[k] != v) {
-          if (vars_[k]->Contains(v)) {
-            if (FindAugmentingPathValue(v, ft)) {
-              Assign(k, v, ft);
-              return true;
-            }
+      if (vars_[k]->Size() == var_max - var_min + 1) {  // Dense domain.
+        for (int64 v = var_min; v <= var_max; v++) {
+          if (var_match[k] != v && FindAugmentingPathValue(v, ft)) {
+            Assign(k, v, ft);
+            return true;
+          }
+        }
+      } else {
+        for (int64 v = var_min; v <= var_max; v++) {
+          if (var_match[k] != v &&
+              vars_[k]->Contains(v) &&
+              FindAugmentingPathValue(v, ft)) {
+            Assign(k, v, ft);
+            return true;
           }
         }
       }
@@ -504,7 +511,7 @@ class SoftGCC : public Constraint{
       next = under_next_match_.get();
       value_match = under_value_match_.get();
       capa = card_mins_.get();
-    } else { //OF
+    } else { // OF
       flow = overflow_.get();
       next = over_next_match_.get();
       value_match = over_value_match_.get();
@@ -619,10 +626,27 @@ class SoftGCC : public Constraint{
 
     int64 var_min = vars_[k]->Min();
     int64 var_max = vars_[k]->Max();
-    for (int64 w = var_min; w <= var_max; w++) {
-      // Go to every values of the domain of x that is not matched by x.
-      if (var_match[k] != w) {
-        if (vars_[k]->Contains(w)) {
+    if (vars_[k]->Size() == var_max - var_min + 1) {  // Dense domain.
+      for (int64 w = var_min; w <= var_max; w++) {
+        // Go to every values of the domain of x that is not matched by x.
+        if (var_match[k] != w) {
+          if (value_dfs_[w - min_value_] == 0) {
+            FindSccValue(w, ft);
+            if (value_high_[w - min_value_] > variable_high_[k]) {
+              variable_high_[k] = value_high_[w - min_value_];
+            }
+          } else if ((value_dfs_[w - min_value_] > variable_dfs_[k]) &&
+                     (value_component_[w - min_value_] == 0)) {
+            if (value_dfs_[w - min_value_] > variable_high_[k]) {
+              variable_high_[k] = value_dfs_[w - min_value_];
+            }
+          }
+        }
+      }
+    } else {
+      for (int64 w = var_min; w <= var_max; w++) {
+        // Go to every values of the domain of x that is not matched by x.
+        if (var_match[k] != w && vars_[k]->Contains(w)) {
           if (value_dfs_[w - min_value_] == 0) {
             FindSccValue(w, ft);
             if (value_high_[w - min_value_] > variable_high_[k]) {
@@ -846,7 +870,7 @@ class SoftGCC : public Constraint{
     FindScc(OF);
     ComputeIsVarAlwaysMatched(OF);
 
-    if (min_violation == violation_var_->Max()-1) {
+    if (min_violation == violation_var_->Max() - 1) {
       for (int64 k = 0; k < vars_.size(); k++) {
         if (over_variable_match_[k] == kUnassigned) {
           continue;  // All values of this variable are consistent.
@@ -854,17 +878,15 @@ class SoftGCC : public Constraint{
         const int64 var_min = vars_[k]->Min();
         const int64 var_max = vars_[k]->Max();
         for (int64 w = var_min; w <= var_max; w++) {
-          if (vars_[k]->Contains(w)) {
-            if (under_variable_match_[k] != w && over_variable_match_[k] != w) {
-              if ((under_variable_component_[k] !=
-                   under_value_component_[w - min_value_] &&
-                   (card_mins_[w - min_value_] > 0 ||
-                    is_var_always_matched_in_underflow_[k])) &&
-                  (variable_component_[k] != value_component_[w - min_value_] &&
-                   (card_max_[w - min_value_] > 0 ||
-                    is_var_always_matched_in_overflow_[k])) ) {
-                vars_[k]->RemoveValue(w);
-              }
+          if (under_variable_match_[k] != w && over_variable_match_[k] != w) {
+            if ((under_variable_component_[k] !=
+                 under_value_component_[w - min_value_] &&
+                 (card_mins_[w - min_value_] > 0 ||
+                  is_var_always_matched_in_underflow_[k])) &&
+                (variable_component_[k] != value_component_[w - min_value_] &&
+                 (card_max_[w - min_value_] > 0 ||
+                  is_var_always_matched_in_overflow_[k])) ) {
+              vars_[k]->RemoveValue(w);
             }
           }
         }
@@ -878,14 +900,12 @@ class SoftGCC : public Constraint{
         const int64 var_min = vars_[k]->Min();
         const int64 var_max = vars_[k]->Max();
         for (int64 w = var_min; w <= var_max; w++) {
-          if (vars_[k]->Contains(w)) {
-            if (under_variable_match_[k] != w && over_variable_match_[k] != w) {
-              if (under_variable_component_[k] !=
-                  under_value_component_[w - min_value_] &&
-                  (card_mins_[w - min_value_] > 0 ||
-                   is_var_always_matched_in_underflow_[k])) {
-                vars_[k]->RemoveValue(w);
-              }
+          if (under_variable_match_[k] != w && over_variable_match_[k] != w) {
+            if (under_variable_component_[k] !=
+                under_value_component_[w - min_value_] &&
+                (card_mins_[w - min_value_] > 0 ||
+                 is_var_always_matched_in_underflow_[k])) {
+              vars_[k]->RemoveValue(w);
             }
           }
         }
@@ -898,13 +918,11 @@ class SoftGCC : public Constraint{
         const int64 var_min = vars_[k]->Min();
         const int64 var_max = vars_[k]->Max();
         for (int64 w = var_min; w <= var_max; w++) {
-          if (vars_[k]->Contains(w)) {
-            if (over_variable_match_[k] != w) {
-              if (variable_component_[k] != value_component_[w - min_value_] &&
-                  (card_max_[w - min_value_] > 0 ||
-                   is_var_always_matched_in_overflow_[k])) {
-                vars_[k]->RemoveValue(w);
-              }
+          if (over_variable_match_[k] != w) {
+            if (variable_component_[k] != value_component_[w - min_value_] &&
+                (card_max_[w - min_value_] > 0 ||
+                 is_var_always_matched_in_overflow_[k])) {
+              vars_[k]->RemoveValue(w);
             }
           }
         }
