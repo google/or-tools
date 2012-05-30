@@ -550,7 +550,6 @@ class SoftGCC : public Constraint{
       is_var_always_matched[k] =
           (var_match[k] != kUnassigned &&
            num_vars_in_component_[variable_component_[k]] == 0);
-      }
     }
   }
 
