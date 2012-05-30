@@ -24,7 +24,6 @@
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/constraint_solver.h"
-#include "util/const_ptr_array.h"
 #include "util/string_array.h"
 #include "util/vector_map.h"
 
@@ -188,7 +187,7 @@ class GccConstraint : public Constraint {
                 const std::vector<int64>& min_occurrences,
                 const std::vector<int64>& max_occurrences)
       : Constraint(solver),
-        variables_(vars),
+        variables_(vars.begin(), vars.end()),
         size_(vars.size()),
         current_level_(1),
         last_level_(0),
@@ -226,7 +225,7 @@ class GccConstraint : public Constraint {
                 const std::vector<int>& min_occurrences,
                 const std::vector<int>& max_occurrences)
       : Constraint(solver),
-        variables_(vars),
+        variables_(vars.begin(), vars.end()),
         size_(vars.size()),
         current_level_(1),
         last_level_(0),
@@ -782,7 +781,7 @@ class GccConstraint : public Constraint {
     return changed;
   }
 
-  TypedConstPtrArray<Index, IntVar> variables_;
+  ITIVector<Index, IntVar*> variables_;
   const int64 size_;
   NumericalRev<int> current_level_;
   int last_level_;

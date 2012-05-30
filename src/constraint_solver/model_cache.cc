@@ -22,7 +22,6 @@
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/const_int_array.h"
-#include "util/const_ptr_array.h"
 
 DECLARE_int32(cache_initial_size);
 
@@ -49,9 +48,17 @@ bool IsEqual(const ConstIntArray*& a1, const ConstIntArray*& a2) {
   return a1->Equals(*a2);
 }
 
-template<class T> bool IsEqual(ConstPtrArray<T>* const a1,
-                               ConstPtrArray<T>* const a2) {
-  return a1->Equals(*a2);
+template<class T> bool IsEqual(std::vector<T*>* const a1,
+                               std::vector<T*>* const a2) {
+  if (a1->size() != a2->size()) {
+    return false;
+  }
+  for (int i = 0; i < a1->size(); ++i) {
+    if ((*a1)[i] != (*a2)[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 template <class A1, class A2> uint64 Hash2(const A1& a1, const A2& a2) {
@@ -347,7 +354,7 @@ template <class C, class A1, class A2, class A3> class Cache3 {
 class NonReversibleCache : public ModelCache {
  public:
   typedef Cache1<IntExpr, IntVar*> VarIntExprCache;
-  typedef Cache1<IntExpr, ConstPtrArray<IntVar>*> VarArrayIntExprCache;
+  typedef Cache1<IntExpr, std::vector<IntVar*>*> VarArrayIntExprCache;
 
   typedef Cache2<Constraint, IntVar*, int64> VarConstantConstraintCache;
   typedef Cache2<Constraint, IntVar*, IntVar*> VarVarConstraintCache;
@@ -659,7 +666,7 @@ class NonReversibleCache : public ModelCache {
   // Var Array Expression.
 
   virtual IntExpr* FindVarArrayExpression(
-      ConstPtrArray<IntVar>* const vars,
+      std::vector<IntVar*>* const vars,
       VarArrayExpressionType type) const {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_EXPRESSION_MAX);
@@ -668,7 +675,7 @@ class NonReversibleCache : public ModelCache {
 
   virtual void InsertVarArrayExpression(
       IntExpr* const expression,
-      ConstPtrArray<IntVar>* const vars,
+      std::vector<IntVar*>* const vars,
       VarArrayExpressionType type) {
     DCHECK(expression != NULL);
     DCHECK_GE(type, 0);

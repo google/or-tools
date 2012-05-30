@@ -2782,9 +2782,9 @@ void ModelVisitor::VisitIntegerVariableArrayArgument(
 
 void ModelVisitor::VisitIntegerVariableArrayArgument(
     const string& arg_name,
-    const ConstPtrArray<IntVar>& arguments) {
+    const std::vector<IntVar*>& arguments) {
   VisitIntegerVariableArrayArgument(arg_name,
-                                    arguments.RawData(),
+                                    arguments.data(),
                                     arguments.size());
 }
 

@@ -161,7 +161,6 @@ class Solver;
 class SymmetryBreaker;
 struct StateInfo;
 struct Trail;
-template <class T> class ConstPtrArray;
 template <class T> class SimpleRevFIFO;
 
 // This struct holds all parameters for the Solver object.
@@ -3382,9 +3381,8 @@ class ModelVisitor : public BaseObject {
   void VisitInt64ToInt64AsArray(ResultCallback1<int64, int64>* const callback,
                                 const string& arg_name,
                                 int64 index_max);
-  void VisitIntegerVariableArrayArgument(
-      const string& arg_name,
-      const ConstPtrArray<IntVar>& arguments);
+  void VisitIntegerVariableArrayArgument(const string& arg_name,
+                                         const std::vector<IntVar*>& arguments);
 #endif  // #if !defined(SWIG)
 };
 

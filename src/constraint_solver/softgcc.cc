@@ -14,7 +14,6 @@
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/constraint_solver.h"
-#include "util/const_ptr_array.h"
 #include "util/string_array.h"
 #include "util/vector_map.h"
 

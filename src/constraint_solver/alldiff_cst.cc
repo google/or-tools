@@ -23,7 +23,6 @@
 #include "base/scoped_ptr.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
-#include "util/const_ptr_array.h"
 #include "util/string_array.h"
 
 namespace operations_research {
@@ -75,8 +74,7 @@ class ValueAllDifferent : public BaseAllDifferent {
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kAllDifferent, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.get(),
-                                               size_);
+                                               vars_.get(), size_);
     visitor->VisitIntegerArgument(ModelVisitor::kRangeArgument, 0);
     visitor->EndVisitConstraint(ModelVisitor::kAllDifferent, this);
   }
@@ -529,8 +527,8 @@ class SortConstraint : public Constraint {
 
   virtual string DebugString() const {
     return StringPrintf("Sort(%s, %s)",
-                        ovars_.DebugString().c_str(),
-                        svars_.DebugString().c_str());
+                        DebugStringVector(ovars_, ", ").c_str(),
+                        DebugStringVector(svars_, ", ").c_str());
   }
 
  private:
@@ -559,8 +557,8 @@ class SortConstraint : public Constraint {
         ovars_[oindex]->Max() < svars_[sindex]->Min();
   }
 
-  ConstPtrArray<IntVar> ovars_;
-  ConstPtrArray<IntVar> svars_;
+  std::vector<IntVar*> ovars_;
+  std::vector<IntVar*> svars_;
   scoped_array<int64> mins_;
   scoped_array<int64> maxs_;
   const int size_;

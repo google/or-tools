@@ -24,7 +24,6 @@
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
-#include "util/const_ptr_array.h"
 #include "util/string_array.h"
 
 namespace operations_research {
@@ -58,14 +57,14 @@ class TreeArrayConstraint : public CastConstraint {
   string DebugStringInternal(const string& name) const {
     return StringPrintf("%s(%s) == %s",
                         name.c_str(),
-                        vars_.DebugString().c_str(),
+                        DebugStringVector(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 
   void AcceptInternal(const string& name, ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(name, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_);
+                                               vars_.data(), vars_.size());
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             target_var_);
     visitor->EndVisitConstraint(name, this);
@@ -151,7 +150,7 @@ class TreeArrayConstraint : public CastConstraint {
   }
 
  protected:
-  ConstPtrArray<IntVar> vars_;
+  std::vector<IntVar*> vars_;
   const int size_;
 
  private:

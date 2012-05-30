@@ -70,7 +70,6 @@
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 #include "util/const_int_array.h"
-#include "util/const_ptr_array.h"
 #include "util/tuple_set.h"
 #include "util/vector_map.h"
 
@@ -84,7 +83,6 @@ class CPConstraintProto;
 class CPIntegerExpressionProto;
 class CPIntervalVariableProto;
 class ConstIntArray;
-template <class T> class ConstPtrArray;
 
 // This is the base class for all expressions that are not variables.
 // It proposes a basic 'CastToVar()' implementation.
@@ -276,15 +274,15 @@ inline uint64 Hash1(ConstIntArray* const values) {
   }
 }
 
-template <class T> uint64 Hash1(ConstPtrArray<T>* const ptrs) {
+template <class T> uint64 Hash1(std::vector<T*>* const ptrs) {
   if (ptrs->size() == 0) {
     return 0;
   } else if (ptrs->size() == 1) {
-    return Hash1(ptrs->get(0));
+    return Hash1((*ptrs)[0]);
   } else {
-    uint64 hash = Hash1(ptrs->get(0));
+    uint64 hash = Hash1((*ptrs)[0]);
     for (int i = 1; i < ptrs->size(); ++i) {
-      hash = hash * i + Hash1(ptrs->get(i));
+      hash = hash * i + Hash1((*ptrs)[i]);
     }
     return hash;
   }
@@ -1553,12 +1551,12 @@ class ModelCache {
   // Var Array Expressions.
 
   virtual IntExpr* FindVarArrayExpression(
-      ConstPtrArray<IntVar>* const vars,
+      std::vector<IntVar*>* const vars,
       VarArrayExpressionType type) const = 0;
 
   virtual void InsertVarArrayExpression(
       IntExpr* const expression,
-      ConstPtrArray<IntVar>* const vars,
+      std::vector<IntVar*>* const vars,
       VarArrayExpressionType type) = 0;
 
   Solver* solver() const;
