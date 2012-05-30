@@ -536,7 +536,7 @@ class RoutingModel {
   IntVar* const * Nexts() const { return nexts_.data(); }
   // Returns all vehicle variables of the model,  such that VehicleVars(i) is
   // the vehicle variable of the node corresponding to i.
-  IntVar** VehicleVars() const { return vehicle_vars_.get(); }
+  IntVar* const * VehicleVars() const { return vehicle_vars_.data(); }
   // Returns the next variable of the node corresponding to index.
   IntVar* NextVar(int64 index) const { return nexts_[index]; }
   // Returns the active variable of the node corresponding to index.
@@ -607,7 +607,7 @@ class RoutingModel {
                                         RoutingMetaheuristic* metaheuristic);
 
  private:
-  typedef hash_map<string, IntVar**> VarMap;
+  typedef hash_map<string, std::vector<IntVar*> > VarMap;
   struct Disjunction {
     std::vector<int> nodes;
     int64 penalty;
@@ -695,11 +695,11 @@ class RoutingModel {
   void SetupTrace();
   void SetupSearchMonitors();
 
-  IntVar** GetOrMakeCumuls(int64 capacity, const string& name);
-  IntVar** GetOrMakeTransits(NodeEvaluator2* evaluator,
-                             int64 slack_max,
-                             int64 capacity,
-                             const string& name);
+  const std::vector<IntVar*>& GetOrMakeCumuls(int64 capacity, const string& name);
+  const std::vector<IntVar*>& GetOrMakeTransits(NodeEvaluator2* evaluator,
+                                               int64 slack_max,
+                                               int64 capacity,
+                                               const string& name);
 
   int64 GetArcCost(int64 i, int64 j, int64 cost_class);
   int64 GetPenaltyCost(int64 i) const;
@@ -711,8 +711,8 @@ class RoutingModel {
   scoped_ptr<Solver> solver_;
   Constraint* no_cycle_constraint_;
   std::vector<IntVar*> nexts_;
-  scoped_array<IntVar*> vehicle_vars_;
-  scoped_array<IntVar*> active_;
+  std::vector<IntVar*> vehicle_vars_;
+  std::vector<IntVar*> active_;
   std::vector<NodeEvaluator2*> costs_;
   bool homogeneous_costs_;
   std::vector<CostCacheElement> cost_cache_;

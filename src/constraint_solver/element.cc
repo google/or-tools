@@ -522,34 +522,18 @@ IntExpr* BuildElement(Solver* const solver,
 }
 }  // namespace
 
-IntExpr* Solver::MakeElement(const int* const vals,
-                             int size,
-                             IntVar* const index) {
-  DCHECK(index);
-  DCHECK_EQ(this, index->solver());
-  DCHECK_GT(size, 0);
-  DCHECK(vals);
-  ConstIntArray values(vals, size);
-  return BuildElement(this, &values, index);
-}
-
 IntExpr* Solver::MakeElement(const std::vector<int64>& vals, IntVar* const index) {
-  return MakeElement(vals.data(), vals.size(), index);
-}
-
-IntExpr* Solver::MakeElement(const int64* const vals,
-                             int size,
-                             IntVar* const index) {
   DCHECK(index);
   DCHECK_EQ(this, index->solver());
-  DCHECK_GT(size, 0);
-  DCHECK(vals);
-  ConstIntArray values(vals, size);
+  ConstIntArray values(vals);
   return BuildElement(this, &values, index);
 }
 
 IntExpr* Solver::MakeElement(const std::vector<int>& vals, IntVar* const index) {
-  return MakeElement(vals.data(), vals.size(), index);
+  DCHECK(index);
+  DCHECK_EQ(this, index->solver());
+  ConstIntArray values(vals);
+  return BuildElement(this, &values, index);
 }
 
 // ----- IntExprFunctionElement -----
@@ -1367,14 +1351,6 @@ bool IntExprArrayElement::Bound() const {
   return true;
 }
 }  // namespace
-
-IntExpr* Solver::MakeElement(const IntVar* const * vars,
-                             int size,
-                             IntVar* const index) {
-  CHECK_EQ(this, index->solver());
-  return RegisterIntExpr(RevAlloc(
-      new IntExprArrayElement(this, vars, size, index)));
-}
 
 IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const index) {
   CHECK_EQ(this, index->solver());

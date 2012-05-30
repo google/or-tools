@@ -541,26 +541,14 @@ Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
                                 ResultCallback1<bool, int64>* sink_handler,
                                 bool assume_paths) {
   CHECK_EQ(nexts.size(), active.size());
-  return MakeNoCycle(nexts.data(),
-                     active.data(),
-                     nexts.size(),
-                     sink_handler,
-                     assume_paths);
-}
-
-Constraint* Solver::MakeNoCycle(const IntVar* const* nexts,
-                                const IntVar* const* active,
-                                int size,
-                                ResultCallback1<bool, int64>* sink_handler,
-                                bool assume_paths) {
   if (sink_handler == NULL) {
     sink_handler = NewPermanentCallback(&GreaterThan,
-                                        static_cast<int64>(size));
+                                        static_cast<int64>(nexts.size()));
   }
   return RevAlloc(new NoCycle(this,
-                              nexts,
-                              size,
-                              active,
+                              nexts.data(),
+                              nexts.size(),
+                              active.data(),
                               sink_handler,
                               true,
                               assume_paths));
@@ -570,13 +558,6 @@ Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
                                 const std::vector<IntVar*>& active,
                                 ResultCallback1<bool, int64>* sink_handler) {
   return MakeNoCycle(nexts, active, sink_handler, true);
-}
-
-Constraint* Solver::MakeNoCycle(const IntVar* const* nexts,
-                                const IntVar* const* active,
-                                int size,
-                                ResultCallback1<bool, int64>* sink_handler) {
-  return MakeNoCycle(nexts, active, size, sink_handler, true);
 }
 
 // ----- Path cumul constraint -----
@@ -818,18 +799,4 @@ Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
                                 cumuls.data(), cumuls.size(),
                                 transits.data()));
 }
-
-Constraint* Solver::MakePathCumul(const IntVar* const* nexts,
-                                  const IntVar* const* active,
-                                  const IntVar* const* cumuls,
-                                  const IntVar* const* transits,
-                                  int next_size,
-                                  int cumul_size) {
-  return RevAlloc(new PathCumul(this,
-                                nexts, next_size,
-                                active,
-                                cumuls, cumul_size,
-                                transits));
-}
-
 }  // namespace operations_research

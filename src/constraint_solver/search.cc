@@ -4522,12 +4522,7 @@ void SymmetryBreaker::AddIntegerVariableLessOrEqualValueClause(
 
 SearchMonitor* Solver::MakeSymmetryManager(
     const std::vector<SymmetryBreaker*>& visitors) {
-  return MakeSymmetryManager(visitors.data(), visitors.size());
-}
-
-SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* const * visitors,
-                                           int size) {
-  return RevAlloc(new SymmetryManager(this, visitors, size));
+  return RevAlloc(new SymmetryManager(this, visitors.data(), visitors.size()));
 }
 
 SearchMonitor* Solver::MakeSymmetryManager(SymmetryBreaker* const v1) {

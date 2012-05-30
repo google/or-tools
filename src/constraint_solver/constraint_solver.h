@@ -1200,16 +1200,8 @@ class Solver {
   IntExpr* MakeScalProd(const std::vector<IntVar*>& vars,
                         const std::vector<int64>& coefs);
   // scalar product
-  IntExpr* MakeScalProd(IntVar* const* vars,
-                        const int64* const coefs,
-                        int size);
-  // scalar product
   IntExpr* MakeScalProd(const std::vector<IntVar*>& vars,
                         const std::vector<int>& coefs);
-  // scalar product
-  IntExpr* MakeScalProd(IntVar* const* vars,
-                        const int* const coefs,
-                        int size);
 
   // left - right
   IntExpr* MakeDifference(IntExpr* const left, IntExpr* const right);
@@ -1234,11 +1226,7 @@ class Solver {
   IntExpr* MakeSquare(IntExpr* const expr);
 
   // vals[expr]
-  IntExpr* MakeElement(const int64* const vals, int size, IntVar* const index);
-  // vals[expr]
   IntExpr* MakeElement(const std::vector<int64>& vals, IntVar* const index);
-  // vals[expr]
-  IntExpr* MakeElement(const int* const vals, int size, IntVar* const index);
   // vals[expr]
   IntExpr* MakeElement(const std::vector<int>& vals, IntVar* const index);
 
@@ -1260,9 +1248,6 @@ class Solver {
                        IntVar* const index1,
                        IntVar* const index2);
 
-  // vars[expr]
-  IntExpr* MakeElement(const IntVar* const * vars, int size,
-                       IntVar* const index);
   // vars[expr]
   IntExpr* MakeElement(const std::vector<IntVar*>& vars, IntVar* const index);
 
@@ -1407,44 +1392,20 @@ class Solver {
   Constraint* MakeScalProdEquality(const std::vector<IntVar*>& vars,
                                    const std::vector<int64>& coefficients,
                                    int64 cst);
-  Constraint* MakeScalProdEquality(IntVar* const* vars,
-                                   int size,
-                                   int64 const * coefficients,
-                                   int64 cst);
-  Constraint* MakeScalProdEquality(IntVar* const* vars,
-                                   int size,
-                                   int const * coefficients,
-                                   int64 cst);
   Constraint* MakeScalProdEquality(const std::vector<IntVar*>& vars,
                                    const std::vector<int>& coefficients,
                                    int64 cst);
   Constraint* MakeScalProdGreaterOrEqual(const std::vector<IntVar*>& vars,
                                          const std::vector<int64>& coefficients,
                                          int64 cst);
-  Constraint* MakeScalProdGreaterOrEqual(IntVar* const* vars,
-                                         int size,
-                                         int64 const * coefficients,
-                                         int64 cst);
   Constraint* MakeScalProdGreaterOrEqual(const std::vector<IntVar*>& vars,
                                          const std::vector<int>& coefficients,
-                                         int64 cst);
-  Constraint* MakeScalProdGreaterOrEqual(IntVar* const* vars,
-                                         int size,
-                                         int const * coefficients,
                                          int64 cst);
   Constraint* MakeScalProdLessOrEqual(const std::vector<IntVar*>& vars,
                                       const std::vector<int64>& coefficients,
                                       int64 cst);
-  Constraint* MakeScalProdLessOrEqual(IntVar* const* vars,
-                                      int size,
-                                      int64 const * coefficients,
-                                      int64 cst);
   Constraint* MakeScalProdLessOrEqual(const std::vector<IntVar*>& vars,
                                       const std::vector<int>& coefficients,
-                                      int64 cst);
-  Constraint* MakeScalProdLessOrEqual(IntVar* const* vars,
-                                      int size,
-                                      int const * coefficients,
                                       int64 cst);
 
   Constraint* MakeMinEquality(const std::vector<IntVar*>& vars, IntVar* const var);
@@ -1579,17 +1540,8 @@ class Solver {
   Constraint* MakeNoCycle(const std::vector<IntVar*>& nexts,
                           const std::vector<IntVar*>& active,
                           ResultCallback1<bool, int64>* sink_handler = NULL);
-  Constraint* MakeNoCycle(const IntVar* const* nexts,
-                          const IntVar* const* active,
-                          int size,
-                          ResultCallback1<bool, int64>* sink_handler = NULL);
   Constraint* MakeNoCycle(const std::vector<IntVar*>& nexts,
                           const std::vector<IntVar*>& active,
-                          ResultCallback1<bool, int64>* sink_handler,
-                          bool assume_paths);
-  Constraint* MakeNoCycle(const IntVar* const* nexts,
-                          const IntVar* const* active,
-                          int size,
                           ResultCallback1<bool, int64>* sink_handler,
                           bool assume_paths);
 
@@ -1601,12 +1553,6 @@ class Solver {
                             const std::vector<IntVar*>& active,
                             const std::vector<IntVar*>& cumuls,
                             const std::vector<IntVar*>& transits);
-  Constraint* MakePathCumul(const IntVar* const* nexts,
-                            const IntVar* const* active,
-                            const IntVar* const* cumuls,
-                            const IntVar* const* transits,
-                            int next_size,
-                            int cumul_size);
 
   // This constraint maps the domain of 'var' onto the array of
   // variables 'vars'. That is
@@ -2057,23 +2003,7 @@ class Solver {
   // Creates a tree monitor that outputs a detailed overview of the
   // decision phase in cpviz format. The XML data is written to files
   // file_tree and file_visualization as the search finishes.
-  SearchMonitor* MakeTreeMonitor(const IntVar* const* vars, int size,
-                                 const string& file_tree,
-                                 const string& file_visualization);
-
-  // Creates a tree monitor that outputs a detailed overview of the
-  // decision phase in cpviz format. The XML data is written to files
-  // file_tree and file_visualization as the search finishes.
   SearchMonitor* MakeTreeMonitor(const std::vector<IntVar*>& vars,
-                                 const string& file_tree,
-                                 const string& file_visualization);
-
-  // Creates a tree monitor that outputs a detailed overview of the
-  // decision phase in cpviz format. The XML data is written to files
-  // file_config, file_tree and file_visualization as the search
-  // finishes.
-  SearchMonitor* MakeTreeMonitor(const IntVar* const* vars, int size,
-                                 const string& file_config,
                                  const string& file_tree,
                                  const string& file_visualization);
 
@@ -2091,24 +2021,7 @@ class Solver {
   // decision phase in cpviz format. The XML data is copied to tree_xml
   // and visualization_xml as the search finishes. The tree monitor does
   // not take ownership of either string.
-  SearchMonitor* MakeTreeMonitor(const IntVar* const* vars, int size,
-                                 string* const tree_xml,
-                                 string* const visualization_xml);
-
-  // Creates a tree monitor that outputs a detailed overview of the
-  // decision phase in cpviz format. The XML data is copied to tree_xml
-  // and visualization_xml as the search finishes. The tree monitor does
-  // not take ownership of either string.
   SearchMonitor* MakeTreeMonitor(const std::vector<IntVar*>& vars,
-                                 string* const tree_xml,
-                                 string* const visualization_xml);
-
-  // Creates a tree monitor that outputs a detailed overview of the
-  // decision phase in cpviz format. The XML data is copied to config_xml,
-  // tree_xml and visualization_xml as the search finishes. The tree monitor
-  // does not take ownership of these strings.
-  SearchMonitor* MakeTreeMonitor(const IntVar* const* vars, int size,
-                                 string* const config_xml,
                                  string* const tree_xml,
                                  string* const visualization_xml);
 
@@ -2173,8 +2086,6 @@ class Solver {
   // ----- Symmetry Breaking -----
 
   SearchMonitor* MakeSymmetryManager(const std::vector<SymmetryBreaker*>& visitors);
-  SearchMonitor* MakeSymmetryManager(SymmetryBreaker* const * visitors,
-                                     int size);
   SearchMonitor* MakeSymmetryManager(SymmetryBreaker* const v1);
   SearchMonitor* MakeSymmetryManager(SymmetryBreaker* const v1,
                                      SymmetryBreaker* const v2);

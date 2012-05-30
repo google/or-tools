@@ -814,12 +814,13 @@ void RoutingModel::Initialize() {
   solver_->AddConstraint(solver_->MakeAllDifferent(nexts_, false));
   // Vehicle variables. In case that node i is not active, vehicle_vars_[i] is
   // bound to -1.
-  vehicle_vars_.reset(solver_->MakeIntVarArray(size + vehicles_,
-                                               -1,
-                                               vehicles_ - 1,
-                                               "Vehicles"));
+  solver_->MakeIntVarArray(size + vehicles_,
+                           -1,
+                           vehicles_ - 1,
+                           "Vehicles",
+                           &vehicle_vars_);
   // Active variables
-  active_.reset(solver_->MakeBoolVarArray(size, "Active"));
+  solver_->MakeBoolVarArray(size, "Active", &active_);
   // Cost cache
   cost_cache_.clear();
   cost_cache_.resize(size);
@@ -841,9 +842,7 @@ RoutingModel::~RoutingModel() {
 void RoutingModel::AddNoCycleConstraintInternal() {
   CheckDepot();
   if (no_cycle_constraint_ == NULL) {
-    no_cycle_constraint_ = solver_->MakeNoCycle(nexts_.data(),
-                                                active_.get(),
-                                                Size());
+    no_cycle_constraint_ = solver_->MakeNoCycle(nexts_, active_);
     solver_->AddConstraint(no_cycle_constraint_);
   }
 }
@@ -853,16 +852,17 @@ void RoutingModel::AddDimension(NodeEvaluator2* evaluator,
                                 int64 capacity,
                                 const string& name) {
   CheckDepot();
-  IntVar** cumuls = GetOrMakeCumuls(capacity, name);
+  const std::vector<IntVar*>& cumuls = GetOrMakeCumuls(capacity, name);
   const int size = Size();
-  IntVar** transits = GetOrMakeTransits(NewCachedCallback(evaluator),
-                                        slack_max, capacity, name);
-  solver_->AddConstraint(solver_->MakePathCumul(nexts_.data(),
-                                                active_.get(),
+  const std::vector<IntVar*>& transits =
+      GetOrMakeTransits(NewCachedCallback(evaluator),
+                        slack_max,
+                        capacity,
+                        name);
+  solver_->AddConstraint(solver_->MakePathCumul(nexts_,
+                                                active_,
                                                 cumuls,
-                                                transits,
-                                                size,
-                                                size + vehicles_));
+                                                transits));
   // Start cumuls == 0
   for (int i = 0; i < vehicles_; ++i) {
     solver_->AddConstraint(solver_->MakeEquality(cumuls[Start(i)], Zero()));
@@ -1117,12 +1117,10 @@ void RoutingModel::CloseModel() {
         vehicle_vars_[ends_[i]], solver_->MakeIntConst(i)));
   }
   std::vector<IntVar*> zero_transit(size, solver_->MakeIntConst(Zero()));
-  solver_->AddConstraint(solver_->MakePathCumul(nexts_.data(),
-                                                active_.get(),
-                                                vehicle_vars_.get(),
-                                                zero_transit.data(),
-                                                size,
-                                                size + vehicles_));
+  solver_->AddConstraint(solver_->MakePathCumul(nexts_,
+                                                active_,
+                                                vehicle_vars_,
+                                                zero_transit));
 
   // Add constraints to bind vehicle_vars_[i] to -1 in case that node i is not
   // active.
@@ -1497,7 +1495,7 @@ bool RoutingModel::ReplaceUnusedVehicle(
   // Update dimensions: update transits at the start.
   for (VarMap::const_iterator dimension = transits_.begin();
        dimension != transits_.end(); ++dimension) {
-    IntVar** const transit_variables = dimension->second;
+    const std::vector<IntVar*>& transit_variables = dimension->second;
     IntVar* const unused_vehicle_transit_var =
         transit_variables[unused_vehicle_start];
     IntVar* const active_vehicle_transit_var =
@@ -1524,9 +1522,8 @@ bool RoutingModel::ReplaceUnusedVehicle(
     }
 
     // Update dimensions: update cumuls at the end.
-    IntVar** const cumul_variables =
-        FindWithDefault(cumuls_, dimension->first, NULL);
-    CHECK_NOTNULL(cumul_variables);
+    const std::vector<IntVar*>& cumul_variables =
+        FindWithDefault(cumuls_, dimension->first, std::vector<IntVar*>());
     IntVar* const unused_vehicle_cumul_var =
         cumul_variables[unused_vehicle_end];
     IntVar* const active_vehicle_cumul_var =
@@ -2077,7 +2074,7 @@ Assignment* RoutingModel::GetOrCreateAssignment() {
     assignment_ = solver_->MakeAssignment();
     assignment_->Add(nexts_.data(), size);
     if (!homogeneous_costs_) {
-      assignment_->Add(vehicle_vars_.get(), size + vehicles_);
+      assignment_->Add(vehicle_vars_.data(), size + vehicles_);
     }
     assignment_->AddObjective(cost_);
   }
@@ -2120,7 +2117,7 @@ LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
   const int size = Size();
   if (pickup_delivery_pairs_.size() > 0) {
     const IntVar* const* vehicle_vars =
-        homogeneous_costs_ ? NULL : vehicle_vars_.get();
+        homogeneous_costs_ ? NULL : vehicle_vars_.data();
     return MakePairActive(solver_.get(),
                           nexts_.data(),
                           vehicle_vars,
@@ -2133,7 +2130,7 @@ LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
                                    Solver::MAKEACTIVE);
     } else {
       return solver_->MakeOperator(nexts_.data(),
-                                   vehicle_vars_.get(),
+                                   vehicle_vars_.data(),
                                    size,
                                    Solver::MAKEACTIVE);
     }
@@ -2147,7 +2144,7 @@ LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
                                               operator_type));          \
   } else {                                                              \
     operators.push_back(solver_->MakeOperator(nexts_.data(),            \
-                                              vehicle_vars_.get(),      \
+                                              vehicle_vars_.data(),     \
                                               size,                     \
                                               operator_type));          \
   }
@@ -2160,7 +2157,7 @@ LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
                                               operator_type));          \
   } else {                                                              \
     operators.push_back(solver_->MakeOperator(nexts_.data(),            \
-                                              vehicle_vars_.get(),      \
+                                              vehicle_vars_.data(),     \
                                               size,                     \
                                               BuildCostCallback(),      \
                                               operator_type));          \
@@ -2171,7 +2168,7 @@ LocalSearchOperator* RoutingModel::CreateNeighborhoodOperators() {
   std::vector<LocalSearchOperator*> operators = extra_operators_;
   if (pickup_delivery_pairs_.size() > 0) {
     const IntVar* const* vehicle_vars =
-        homogeneous_costs_ ? NULL : vehicle_vars_.get();
+        homogeneous_costs_ ? NULL : vehicle_vars_.data();
     operators.push_back(MakePairRelocate(solver_.get(),
                                          nexts_.data(),
                                          vehicle_vars,
@@ -2256,7 +2253,7 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
         LocalSearchFilter* filter =
             solver_->MakeLocalSearchObjectiveFilter(
                 nexts_.data(),
-                vehicle_vars_.get(),
+                vehicle_vars_.data(),
                 size,
                 NewPermanentCallback(this, &RoutingModel::GetFilterCost),
                 cost_,
@@ -2280,7 +2277,7 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
         filters_.push_back(solver_->RevAlloc(
             new PathCumulFilter(nexts_.data(),
                                 Size(),
-                                iter->second,
+                                iter->second.data(),
                                 Size() + vehicles_,
                                 transit_evaluators_[name],
                                 name)));
@@ -2468,7 +2465,7 @@ void RoutingModel::SetupMetaheuristics() {
             cost_,
             BuildCostCallback(),
             FLAGS_routing_optimization_step,
-            nexts_.data(), vehicle_vars_.get(), size,
+            nexts_.data(), vehicle_vars_.data(), size,
             FLAGS_routing_guided_local_search_lamda_coefficient);
       }
       break;
@@ -2494,14 +2491,14 @@ void RoutingModel::SetupAssignmentCollector() {
   const int size = Size();
   Assignment* full_assignment = solver_->MakeAssignment();
   for (ConstIter<VarMap> it(cumuls_); !it.at_end(); ++it) {
-    full_assignment->Add(it->second, size + vehicles_);
+    full_assignment->Add(it->second.data(), size + vehicles_);
   }
   for (int i = 0; i < extra_vars_.size(); ++i) {
     full_assignment->Add(extra_vars_[i]);
   }
   full_assignment->Add(nexts_.data(), size);
-  full_assignment->Add(active_.get(), size);
-  full_assignment->Add(vehicle_vars_.get(), size + vehicles_);
+  full_assignment->Add(active_.data(), size);
+  full_assignment->Add(vehicle_vars_.data(), size + vehicles_);
   full_assignment->AddObjective(cost_);
 
   collect_assignments_ =
@@ -2535,8 +2532,9 @@ void RoutingModel::SetupSearch() {
 
 
 IntVar* RoutingModel::CumulVar(int64 index, const string& name) const {
-  IntVar** named_cumuls = FindPtrOrNull(cumuls_, name);
-  if (named_cumuls != NULL) {
+  const std::vector<IntVar*>& named_cumuls =
+      FindWithDefault(cumuls_, name, std::vector<IntVar*>());
+  if (!named_cumuls.empty()) {
     return named_cumuls[index];
   } else {
     return NULL;
@@ -2544,8 +2542,9 @@ IntVar* RoutingModel::CumulVar(int64 index, const string& name) const {
 }
 
 IntVar* RoutingModel::TransitVar(int64 index, const string& name) const {
-  IntVar** named_transits = FindPtrOrNull(transits_, name);
-  if (named_transits != NULL) {
+  const std::vector<IntVar*>& named_transits =
+      FindWithDefault(transits_, name, std::vector<IntVar*>());
+  if (!named_transits.empty()) {
     return named_transits[index];
   } else {
     return NULL;
@@ -2575,16 +2574,16 @@ Solver::IndexEvaluator3* RoutingModel::BuildCostCallback() {
   return NewPermanentCallback(this, &RoutingModel::GetCost);
 }
 
-IntVar** RoutingModel::GetOrMakeCumuls(int64 capacity, const string& name) {
-  IntVar** named_cumuls = FindPtrOrNull(cumuls_, name);
-  if (named_cumuls == NULL) {
+const std::vector<IntVar*>& RoutingModel::GetOrMakeCumuls(int64 capacity,
+                                                          const string& name) {
+  const std::vector<IntVar*>& named_cumuls =
+      FindWithDefault(cumuls_, name, std::vector<IntVar*>());
+  if (named_cumuls.empty()) {
     std::vector<IntVar*> cumuls;
     const int size = Size() + vehicles_;
     solver_->MakeIntVarArray(size, 0LL, capacity, name, &cumuls);
-    IntVar** cumul_array = solver_->RevAllocArray(new IntVar*[size]);
-    memcpy(cumul_array, cumuls.data(), cumuls.size() * sizeof(*cumuls.data()));
-    cumuls_[name] = cumul_array;
-    return cumul_array;
+    cumuls_[name] = cumuls;
+    return cumuls_[name];
   }
   return named_cumuls;
 }
@@ -2595,41 +2594,43 @@ int64 RoutingModel::WrappedEvaluator(NodeEvaluator2* evaluator,
   return evaluator->Run(IndexToNode(from), IndexToNode(to));
 }
 
-IntVar** RoutingModel::GetOrMakeTransits(NodeEvaluator2* evaluator,
-                                         int64 slack_max,
-                                         int64 capacity,
-                                         const string& name) {
+const std::vector<IntVar*>& RoutingModel::GetOrMakeTransits(
+    NodeEvaluator2* evaluator,
+    int64 slack_max,
+    int64 capacity,
+    const string& name) {
   evaluator->CheckIsRepeatable();
-  IntVar** named_transits = FindPtrOrNull(transits_, name);
-  if (named_transits == NULL) {
-    std::vector<IntVar*> transits;
+  const std::vector<IntVar*>& named_transits =
+      FindWithDefault(transits_, name, std::vector<IntVar*>());
+  if (named_transits.empty()) {
     const int size = Size();
-    IntVar** transit_array = solver_->RevAllocArray(new IntVar*[size]);
+    std::vector<IntVar*> transits(size);
     for (int i = 0; i < size; ++i) {
       IntVar* fixed_transit =
-          solver_->MakeElement(NewPermanentCallback(
-              this,
-              &RoutingModel::WrappedEvaluator,
-              evaluator,
-              static_cast<int64>(i)),
-                               nexts_[i])->Var();
+          solver_->MakeElement(
+              NewPermanentCallback(
+                  this,
+                  &RoutingModel::WrappedEvaluator,
+                  evaluator,
+                  static_cast<int64>(i)),
+              nexts_[i])->Var();
       if (slack_max == 0) {
-        transit_array[i] = fixed_transit;
+        transits[i] = fixed_transit;
       } else {
-        IntVar* slack_var = solver_->MakeIntVar(0, slack_max, "slack");
-        transit_array[i] = solver_->MakeSum(slack_var, fixed_transit)->Var();
+        IntVar* const slack_var = solver_->MakeIntVar(0, slack_max, "slack");
+        transits[i] = solver_->MakeSum(slack_var, fixed_transit)->Var();
       }
-      transit_array[i]->SetMin(-capacity);
-      transit_array[i]->SetMax(capacity);
+      transits[i]->SetMin(-capacity);
+      transits[i]->SetMax(capacity);
     }
-    transits_[name] = transit_array;
+    transits_[name] = transits;
     transit_evaluators_[name] =
         NewPermanentCallback(this,
                              &RoutingModel::WrappedEvaluator,
                              evaluator);
     owned_index_callbacks_.insert(transit_evaluators_[name]);
     owned_node_callbacks_.insert(evaluator);
-    return transit_array;
+    return transits_[name];
   }
   return named_transits;
 }

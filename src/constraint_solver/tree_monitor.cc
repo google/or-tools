@@ -792,25 +792,10 @@ string TreeMonitorStripSpecialCharacters(string attribute) {
 
 // ----- API ----
 
-SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars, int size,
-                                       const string& file_tree,
-                                       const string& file_visualization) {
-  return RevAlloc(new TreeMonitor(this, vars, size, file_tree,
-                                  file_visualization));
-}
-
 SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
                                        const string& file_tree,
                                        const string& file_visualization) {
   return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), file_tree,
-                                  file_visualization));
-}
-
-SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars, int size,
-                                       const string& file_config,
-                                       const string& file_tree,
-                                       const string& file_visualization) {
-  return RevAlloc(new TreeMonitor(this, vars, size, file_config, file_tree,
                                   file_visualization));
 }
 
@@ -822,25 +807,10 @@ SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
                                   file_tree, file_visualization));
 }
 
-SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars,
-                                       int size, string* const tree_xml,
-                                       string* const visualization_xml) {
-  return RevAlloc(new TreeMonitor(this, vars, size, tree_xml,
-                                  visualization_xml));
-}
-
 SearchMonitor* Solver::MakeTreeMonitor(const std::vector<IntVar*>& vars,
                                        string* const tree_xml,
                                        string* const visualization_xml) {
   return RevAlloc(new TreeMonitor(this, vars.data(), vars.size(), tree_xml,
-                                  visualization_xml));
-}
-
-SearchMonitor* Solver::MakeTreeMonitor(const IntVar* const* vars,
-                                       int size, string* const config_xml,
-                                       string* const tree_xml,
-                                       string* const visualization_xml) {
-  return RevAlloc(new TreeMonitor(this, vars, size, config_xml, tree_xml,
                                   visualization_xml));
 }
 
