@@ -1202,8 +1202,6 @@ class Solver {
   // expr + value.
   IntExpr* MakeSum(IntExpr* const expr, int64 value);
   // sum of all vars.
-  IntExpr* MakeSum(IntVar* const* vars, int size);
-  // sum of all vars.
   IntExpr* MakeSum(const std::vector<IntVar*>& vars);
 
   // scalar product
@@ -1278,8 +1276,6 @@ class Solver {
 
   // min(vars)
   IntExpr* MakeMin(const std::vector<IntVar*>& vars);
-  // min(vars)
-  IntExpr* MakeMin(IntVar* const* vars, int size);
   // min (left, right)
   IntExpr* MakeMin(IntExpr* const left, IntExpr* const right);
   // min(expr, val)
@@ -1289,8 +1285,6 @@ class Solver {
 
   // max(vars)
   IntExpr* MakeMax(const std::vector<IntVar*>& vars);
-  // max(vars)
-  IntExpr* MakeMax(IntVar* const* vars, int size);
   // max(left, right)
   IntExpr* MakeMax(IntExpr* const left, IntExpr* const right);
   // max(expr, val)
@@ -1415,16 +1409,9 @@ class Solver {
 
   // Variation on arrays.
   Constraint* MakeSumLessOrEqual(const std::vector<IntVar*>& vars, int64 cst);
-  Constraint* MakeSumLessOrEqual(IntVar* const* vars, int size, int64 cst);
-
   Constraint* MakeSumGreaterOrEqual(const std::vector<IntVar*>& vars, int64 cst);
-  Constraint* MakeSumGreaterOrEqual(IntVar* const* vars, int size, int64 cst);
-
   Constraint* MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst);
-  Constraint* MakeSumEquality(IntVar* const* vars, int size, int64 cst);
   Constraint* MakeSumEquality(const std::vector<IntVar*>& vars, IntVar* const var);
-  Constraint* MakeSumEquality(IntVar* const* vars, int size, IntVar* const var);
-
   Constraint* MakeScalProdEquality(const std::vector<IntVar*>& vars,
                                    const std::vector<int64>& coefficients,
                                    int64 cst);

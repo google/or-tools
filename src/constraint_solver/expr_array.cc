@@ -24,6 +24,7 @@
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/const_ptr_array.h"
 #include "util/string_array.h"
 
 namespace operations_research {
@@ -33,14 +34,12 @@ namespace {
 class TreeArrayConstraint : public CastConstraint {
  public:
   TreeArrayConstraint(Solver* const solver,
-                      IntVar* const* vars,
-                      int size,
+                      const std::vector<IntVar*>& vars,
                       IntVar* const sum_var)
       : CastConstraint(solver, sum_var),
-        vars_(new IntVar*[size]),
-        size_(size),
+        vars_(vars),
+        size_(vars.size()),
         block_size_(solver->parameters().array_split_size) {
-    memcpy(vars_.get(), vars, size_ * sizeof(*vars));
     std::vector<int> lengths;
     lengths.push_back(size_);
     while (lengths.back() > 1) {
@@ -59,15 +58,14 @@ class TreeArrayConstraint : public CastConstraint {
   string DebugStringInternal(const string& name) const {
     return StringPrintf("%s(%s) == %s",
                         name.c_str(),
-                        DebugStringArray(vars_.get(), size_, ", ").c_str(),
+                        vars_.DebugString().c_str(),
                         target_var_->DebugString().c_str());
   }
 
   void AcceptInternal(const string& name, ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(name, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_.get(),
-                                               size_);
+                                               vars_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             target_var_);
     visitor->EndVisitConstraint(name, this);
@@ -153,7 +151,7 @@ class TreeArrayConstraint : public CastConstraint {
   }
 
  protected:
-  scoped_array<IntVar*> vars_;
+  ConstPtrArray<IntVar> vars_;
   const int size_;
 
  private:
@@ -183,10 +181,9 @@ class TreeArrayConstraint : public CastConstraint {
 class SumConstraint : public TreeArrayConstraint {
  public:
   SumConstraint(Solver* const solver,
-                IntVar* const * vars,
-                int size,
+                const std::vector<IntVar*>& vars,
                 IntVar* const sum_var)
-      : TreeArrayConstraint(solver, vars, size, sum_var), sum_demon_(NULL) {}
+      : TreeArrayConstraint(solver, vars, sum_var), sum_demon_(NULL) {}
 
   virtual ~SumConstraint() {}
 
@@ -327,10 +324,9 @@ class SumConstraint : public TreeArrayConstraint {
 class MinConstraint : public TreeArrayConstraint {
  public:
   MinConstraint(Solver* const solver,
-                IntVar* const * vars,
-                int size,
+                const std::vector<IntVar*>& vars,
                 IntVar* const min_var)
-      : TreeArrayConstraint(solver, vars, size, min_var), min_demon_(NULL) {}
+      : TreeArrayConstraint(solver, vars, min_var), min_demon_(NULL) {}
 
   virtual ~MinConstraint() {}
 
@@ -480,10 +476,9 @@ class MinConstraint : public TreeArrayConstraint {
 class MaxConstraint : public TreeArrayConstraint {
  public:
   MaxConstraint(Solver* const solver,
-                IntVar* const * vars,
-                int size,
+                const std::vector<IntVar*>& vars,
                 IntVar* const max_var)
-      : TreeArrayConstraint(solver, vars, size, max_var), max_demon_(NULL) {}
+      : TreeArrayConstraint(solver, vars, max_var), max_demon_(NULL) {}
 
   virtual ~MaxConstraint() {}
 
@@ -629,10 +624,7 @@ class MaxConstraint : public TreeArrayConstraint {
 }  // namespace
 
 IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
-  return MakeSum(vars.data(), vars.size());
-}
-
-IntExpr* Solver::MakeSum(IntVar* const* vars, int size) {
+  const int size = vars.size();
   if (size == 0) {
     return MakeIntConst(0LL);
   } else if (size == 1) {
@@ -647,16 +639,13 @@ IntExpr* Solver::MakeSum(IntVar* const* vars, int size) {
       new_max += vars[i]->Max();
     }
     IntVar* const sum_var = MakeIntVar(new_min, new_max);
-    AddConstraint(RevAlloc(new SumConstraint(this, vars, size, sum_var)));
+    AddConstraint(RevAlloc(new SumConstraint(this, vars, sum_var)));
     return sum_var;
   }
 }
 
 IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
-  return MakeMin(vars.data(), vars.size());
-}
-
-IntExpr* Solver::MakeMin(IntVar* const* vars, int size) {
+  const int size = vars.size();
   if (size == 0) {
     return MakeIntConst(0LL);
   } else if (size == 1) {
@@ -671,21 +660,18 @@ IntExpr* Solver::MakeMin(IntVar* const* vars, int size) {
       new_max = std::min(new_max, vars[i]->Max());
     }
     IntVar* const new_var = MakeIntVar(new_min, new_max);
-    AddConstraint(RevAlloc(new MinConstraint(this, vars, size, new_var)));
+    AddConstraint(RevAlloc(new MinConstraint(this, vars, new_var)));
     return new_var;
   }
 }
 
 Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
                                     IntVar* const min_var) {
-  return RevAlloc(new MinConstraint(this, vars.data(), vars.size(), min_var));
+  return RevAlloc(new MinConstraint(this, vars, min_var));
 }
 
 IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
-  return MakeMax(vars.data(), vars.size());
-}
-
-IntExpr* Solver::MakeMax(IntVar* const* vars, int size) {
+  const int size = vars.size();
   if (size == 0) {
     return MakeIntConst(0LL);
   } else if (size == 1) {
@@ -700,14 +686,14 @@ IntExpr* Solver::MakeMax(IntVar* const* vars, int size) {
       new_max = std::max(new_max, vars[i]->Max());
     }
     IntVar* const new_var = MakeIntVar(new_min, new_max);
-    AddConstraint(RevAlloc(new MaxConstraint(this, vars, size, new_var)));
+    AddConstraint(RevAlloc(new MaxConstraint(this, vars, new_var)));
     return new_var;
   }
 }
 
 Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
                                     IntVar* const max_var) {
-  return RevAlloc(new MaxConstraint(this, vars.data(), vars.size(), max_var));
+  return RevAlloc(new MaxConstraint(this, vars, max_var));
 }
 
 // ---------- Specialized cases ----------
@@ -1858,69 +1844,49 @@ class PositiveBooleanScalProdEqCst : public Constraint {
 
 }  // namespace
 Constraint* Solver::MakeSumLessOrEqual(const std::vector<IntVar*>& vars, int64 cst) {
-  return MakeSumLessOrEqual(vars.data(), vars.size(), cst);
-}
-
-Constraint* Solver::MakeSumLessOrEqual(IntVar* const* vars,
-                                       int size,
-                                       int64 cst) {
-  if (cst == 1LL && AreAllBooleans(vars, size) && size > 2) {
-    return RevAlloc(new SumBooleanLessOrEqualToOne(this, vars, size));
+  const int size = vars.size();
+  if (cst == 1LL && AreAllBooleans(vars.data(), size) && size > 2) {
+    return RevAlloc(new SumBooleanLessOrEqualToOne(this, vars.data(), size));
   } else {
-    return MakeLessOrEqual(MakeSum(vars, size), cst);
+    return MakeLessOrEqual(MakeSum(vars), cst);
   }
 }
 
 Constraint* Solver::MakeSumGreaterOrEqual(const std::vector<IntVar*>& vars,
                                           int64 cst) {
-  return MakeSumGreaterOrEqual(vars.data(), vars.size(), cst);
-}
-
-Constraint* Solver::MakeSumGreaterOrEqual(IntVar* const* vars,
-                                          int size,
-                                          int64 cst) {
-  if (cst == 1LL && AreAllBooleans(vars, size) && size > 2) {
-    return RevAlloc(new SumBooleanGreaterOrEqualToOne(this, vars, size));
+  const int size = vars.size();
+  if (cst == 1LL && AreAllBooleans(vars.data(), size) && size > 2) {
+    return RevAlloc(new SumBooleanGreaterOrEqualToOne(this, vars.data(), size));
   } else {
-    return MakeGreaterOrEqual(MakeSum(vars, size), cst);
+    return MakeGreaterOrEqual(MakeSum(vars), cst);
   }
 }
 
 Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst) {
-  return MakeSumEquality(vars.data(), vars.size(), cst);
-}
-
-Constraint* Solver::MakeSumEquality(IntVar* const* vars,
-                                    int size,
-                                    int64 cst) {
-  if (AreAllBooleans(vars, size) && size > 2) {
+  const int size = vars.size();
+  if (AreAllBooleans(vars.data(), size) && size > 2) {
     if (cst == 1) {
-      return RevAlloc(new SumBooleanEqualToOne(this, vars, size));
+      return RevAlloc(new SumBooleanEqualToOne(this, vars.data(), size));
     } else if (cst < 0 || cst > size) {
       return MakeFalseConstraint();
     } else {
       return RevAlloc(new SumBooleanEqualToVar(this,
-                                               vars,
+                                               vars.data(),
                                                size,
                                                MakeIntConst(cst)));
     }
   } else {
-    return RevAlloc(new SumConstraint(this, vars, size, MakeIntConst(cst)));
+    return RevAlloc(new SumConstraint(this, vars, MakeIntConst(cst)));
   }
 }
 
 Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
                                     IntVar* const var) {
-  return MakeSumEquality(vars.data(), vars.size(), var);
-}
-
-Constraint* Solver::MakeSumEquality(IntVar* const* vars,
-                                    int size,
-                                    IntVar* const var) {
-  if (AreAllBooleans(vars, size) && size > 2) {
-    return RevAlloc(new SumBooleanEqualToVar(this, vars, size, var));
+  const int size = vars.size();
+  if (AreAllBooleans(vars.data(), size) && size > 2) {
+    return RevAlloc(new SumBooleanEqualToVar(this, vars.data(), size, var));
   } else {
-    return RevAlloc(new SumConstraint(this, vars, size, var));
+    return RevAlloc(new SumConstraint(this, vars, var));
   }
 }
 
