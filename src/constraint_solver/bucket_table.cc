@@ -66,10 +66,6 @@ class IndexedTable {
       return value_map_.Element(value_index);
     }
 
-    bool IsValueValid(int64 value) const {
-      return value_map_.Contains(value);
-    }
-
     int NumTuplesContainingValueIndex(int value_index) const {
       return num_tuples_per_value_[value_index];
     }
@@ -230,6 +226,7 @@ class TableVar {
     for (int k = 0; k < delta.size(); k++) {
       num_deleted_tuples += NumTuplesPerValue(delta[k]);
     }
+
     if (num_deleted_tuples < 10) {
       return false;
     }
@@ -243,54 +240,12 @@ class TableVar {
     return (2 * num_remaining_tuples < num_deleted_tuples);
   }
 
-  void ComputeDeltaDomain(std::vector<int>* delta) {
-    // calcul du delta domain de or-tools: on remplit le tableau
-    // delta_ ATTENTION une val peut etre plusieurs fois dans le delta
-    // : ici on s'en fout.
-    delta->clear();
-    // we iterate the delta of the variable
-    //
-    // ATTENTION code for or-tools: the delta iterator does not
-    // include the values between oldmin and min and the values
-    // between max and oldmax
-    //
-    // therefore we decompose the iteration into 3 parts
-    // - from oldmin to min
-    // - for the deleted values between min and max
-    // - from max to oldmax
-    // First iteration: from oldmin to min
-    const int64 oldmindomain = var_->OldMin();
-    const int64 mindomain = var_->Min();
-    for (int64 val = oldmindomain; val < mindomain; ++val) {
-      if (column_.IsValueValid(val)) {
-        delta->push_back(column_.IndexFromValue(val));
-      }
-    }
-    // Second iteration: "delta" domain iteration
-    IntVarIterator* const it = delta_domain_iterator_;
-    for (it->Init(); it->Ok(); it->Next()) {
-      int64 val = it->Value();
-      if (column_.IsValueValid(val)) {
-        delta->push_back(column_.IndexFromValue(val));
-      }
-    }
-    // Third iteration: from max to oldmax
-    const int64 oldmaxdomain = var_->OldMax();
-    const int64 maxdomain = var_->Max();
-    for (int64 val = maxdomain + 1; val <= oldmaxdomain; ++val) {
-      if (column_.IsValueValid(val)) {
-        delta->push_back(column_.IndexFromValue(val));
-      }
-    }
-  }
-
   void InitialPropagate(std::vector<int64>* const to_remove) {
-    // Initialize data structures.
+    // Insert tuples in correct maps.
     const int num_tuples = column_.NumTuples();
     for (int tuple_index = 0; tuple_index < num_tuples; tuple_index++) {
-      RevIntMap<int>* const active_tuples =
-          tuples_per_value_[column_.ValueIndex(tuple_index)];
-      active_tuples->Insert(solver_, tuple_index);
+      const int value_index = column_.ValueIndex(tuple_index);
+      tuples_per_value_[value_index]->Insert(solver_, tuple_index);
     }
 
     // we remove from the domain the values that are not in the table,
@@ -299,12 +254,56 @@ class TableVar {
     IntVarIterator* const it = domain_iterator_;
     for (it->Init(); it->Ok(); it->Next()) {
       const int64 value = it->Value();
-      if (!column_.IsValueValid(value) ||
-          NumTuplesPerValue(column_.IndexFromValue(value)) == 0) {
+      const int index = column_.IndexFromValue(value);
+      if (index == -1 || NumTuplesPerValue(index) == 0) {
         to_remove->push_back(value);
       }
     }
     var_->RemoveValues(*to_remove);
+  }
+
+  void ComputeDeltaDomain(std::vector<int>* delta) {
+    delta->clear();
+    // we iterate the delta of the variable
+    //
+    // ATTENTION code for or-tools: the delta iterator does not
+    // include the values between oldmin and min and the values
+    // between max and oldmax.
+    //
+    // therefore we decompose the iteration into 3 parts
+    // - from oldmin to min
+    // - for the deleted values between min and max
+    // - from max to oldmax
+
+    // First iteration: from old_min to min.
+    const int64 old_min_domain = var_->OldMin();
+    const int64 min_domain = var_->Min();
+    const int64 max_domain = var_->Max();
+    for (int64 val = old_min_domain; val < min_domain; ++val) {
+      const int index = column_.IndexFromValue(val);
+      if (index != -1) {  // -1 means not in column.
+        delta->push_back(index);
+      }
+    }
+    // Second iteration: "delta" domain iteration.
+    IntVarIterator* const it = delta_domain_iterator_;
+    for (it->Init(); it->Ok(); it->Next()) {
+      const int64 value = it->Value();
+      if (value > min_domain && value < max_domain) {
+        const int index = column_.IndexFromValue(it->Value());
+        if (index != -1) {  // -1 means not in column.
+          delta->push_back(index);
+        }
+      }
+    }
+    // Third iteration: from max to old_max.
+    const int64 old_max_domain = var_->OldMax();
+    for (int64 val = max_domain + 1; val <= old_max_domain; ++val) {
+      const int index = column_.IndexFromValue(val);
+      if (index != -1) {  // -1 means not in column.
+        delta->push_back(index);
+      }
+    }
   }
 
   void CollectTuplesToRemove(const std::vector<int>& delta,
@@ -356,15 +355,19 @@ class TableVar {
       const int value_index = column_.ValueIndex(tuple_index);
       tuples_per_value_[value_index]->Restore(solver_, tuple_index);
     }
-    std::vector<int> to_remove;
-    for (int k = 0; k < active_values_.Size(); k++) {
+
+    // We check for unsupported values and remove them.
+    int count = 0;
+    for (int k = active_values_.Size() - 1; k >= 0; k--) {
       if (tuples_per_value_[active_values_[k]]->Size() == 0) {
-        to_remove.push_back(active_values_[k]);
+        active_values_.Remove(solver_, active_values_[k]);
+        count++;
       }
     }
-    for (int k = 0; k < to_remove.size(); ++k) {
-      var_->RemoveValue(column_.ValueFromIndex(to_remove[k]));
-      active_values_.Remove(solver_, to_remove[k]);
+    // Removed values have been inserted after the last active value.
+    const int num_active_values = active_values_.Size();
+    for (int k = num_active_values; k < count + num_active_values; ++k) {
+      var_->RemoveValue(column_.ValueFromIndex(active_values_[k]));
     }
   }
 
