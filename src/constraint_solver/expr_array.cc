@@ -431,7 +431,7 @@ class MinConstraint : public TreeArrayConstraint {
     PushUp(term_index);
   }
 
-  bool PushUp(int position) {
+  void PushUp(int position) {
     int depth = MaxDepth();
     while (depth > 0) {
       const int parent = Parent(position);
@@ -583,7 +583,7 @@ class MaxConstraint : public TreeArrayConstraint {
     PushUp(term_index);
   }
 
-  bool PushUp(int position) {
+  void PushUp(int position) {
     int depth = MaxDepth();
     while (depth > 0) {
       const int parent = Parent(position);
