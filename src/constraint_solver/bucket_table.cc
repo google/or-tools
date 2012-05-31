@@ -116,14 +116,28 @@ class IndexedTable {
   std::vector<Column> columns_;
 };
 
-template <class T> class FastRevIntList {
+template <class T> class RevIntMap {
  public:
-  FastRevIntList(const int capacity)
+  RevIntMap(const int capacity)
   : elements_(new T[capacity]),
     num_elements_(0),
-    capacity_(capacity) {}
+    capacity_(capacity),
+    position_(new int[capacity]),
+    delete_position_(true) {}
 
-  ~FastRevIntList() {}
+  RevIntMap(const int capacity, int* shared_positions)
+  : elements_(new T[capacity]),
+    num_elements_(0),
+    capacity_(capacity),
+    position_(shared_positions),
+    delete_position_(false) {}
+
+
+  ~RevIntMap() {
+    if (delete_position_) {
+      delete [] position_;
+    }
+  }
 
   int Size() const { return num_elements_.Value(); }
 
@@ -134,37 +148,34 @@ template <class T> class FastRevIntList {
     return elements_[i];
   }
 
-  int push_back(Solver* const solver, T elt) {
-    const int size = num_elements_.Value();
-    DCHECK_LT(size, capacity_);
-    elements_[size] = elt;
-    num_elements_.Incr(solver);
-    return size;
-  }
-
-  void push_back_from_index(Solver* const solver,
-                            int i,
-                            T iElt, T endBackElt) {
-    elements_[i] = endBackElt;
-    elements_[num_elements_.Value()] = iElt;
+  void Insert(Solver* const solver, T elt) {
+    const int position = num_elements_.Value();
+    DCHECK_LT(position, capacity_);
+    elements_[position] = elt;
+    position_[elt] = position;
     num_elements_.Incr(solver);
   }
 
-  T end_back() const { return elements_[num_elements_.Value()]; }
-
-  T back() const { return elements_[num_elements_.Value() - 1]; }
-
-  void erase(Solver* const solver,
-             int i,
-             T iElt,
-             T backElt,
-             int* posElt,
-             int* posBack) {
+  void Remove(Solver* const solver, T value_index) {
+    const int last_position = num_elements_.Value() - 1;
+    SwapTo(value_index, num_elements_.Value() - 1);
     num_elements_.Decr(solver);
-    elements_[num_elements_.Value()] = iElt;
-    elements_[i] = backElt;
-    *posElt = num_elements_.Value();
-    *posBack = i;
+  }
+
+  void Restore(Solver* const solver, T value_index) {
+    SwapTo(value_index, num_elements_.Value());
+    num_elements_.Incr(solver);
+  }
+
+  void SwapTo(T value_index, int next_position) {
+    const int current_position = position_[value_index];
+    if (current_position != next_position) {
+      const T next_value_index = elements_[next_position];
+      elements_[current_position] = next_value_index;
+      elements_[next_position] = value_index;
+      position_[value_index] = next_position;
+      position_[next_value_index] = current_position;
+    }
   }
 
   void clear(Solver* const solver) {
@@ -175,6 +186,8 @@ template <class T> class FastRevIntList {
   scoped_array<T> elements_; // set of elements.
   NumericalRev<int> num_elements_; // number of elements in the set.
   const int capacity_;
+  int* position_;  // Reverse mapping.
+  const bool delete_position_;
 };
 
 class TableVar {
@@ -186,18 +199,17 @@ class TableVar {
         column_(column),
         tuples_per_value_(column.NumDifferentValues()),
         active_values_(column.NumDifferentValues()),
-        index_in_active_values_(column.NumDifferentValues()),
         var_(var),
         domain_iterator_(var->MakeDomainIterator(true)),
         delta_domain_iterator_(var->MakeHoleIterator(true)),
-        reverse_tuples_(column.NumTuples()) {
+        shared_positions_(new int[column.NumTuples()]) {
     for (int value_index = 0;
          value_index < tuples_per_value_.size();
          value_index++) {
-      tuples_per_value_[value_index] = new FastRevIntList<int>(
-          column.NumTuplesContainingValueIndex(value_index));
-      index_in_active_values_[value_index] =
-          active_values_.push_back(solver_, value_index);
+      tuples_per_value_[value_index] =
+          new RevIntMap<int>(column.NumTuplesContainingValueIndex(value_index),
+                             shared_positions_.get());
+      active_values_.Insert(solver_, value_index);
     }
   }
 
@@ -218,31 +230,16 @@ class TableVar {
   }
 
   void RemoveActiveValue(Solver* solver, int value_index) {
-    const int back_value_index = active_values_.back();
-    active_values_.erase(
-        solver_,
-        index_in_active_values_[value_index],
-        value_index,
-        back_value_index,
-        &index_in_active_values_[value_index],
-        &index_in_active_values_[back_value_index]);
+    active_values_.Remove(solver, value_index);
   }
 
   void RemoveTuples(const std::vector<int>& tuples) {
     for (int i = 0; i < tuples.size(); ++i) {
       const int erased_tuple_index = tuples[i];
       const int value_index = column_.ValueIndex(erased_tuple_index);
-      FastRevIntList<int>* const var_value = tuples_per_value_[value_index];
-      const int tuple_index_in_value = reverse_tuples_[erased_tuple_index];
-      const int back_tuple_index = var_value->back();
-      var_value->erase(
-          solver_,
-          tuple_index_in_value,
-          erased_tuple_index,
-          back_tuple_index,
-          &reverse_tuples_[erased_tuple_index],
-          &reverse_tuples_[back_tuple_index]);
-      if (var_value->Size() == 0) {
+      RevIntMap<int>* const active_tuples = tuples_per_value_[value_index];
+      active_tuples->Remove(solver_, erased_tuple_index);
+      if (active_tuples->Size() == 0) {
         var_->RemoveValue(column_.ValueFromIndex(value_index));
         RemoveActiveValue(solver_, value_index);
       }
@@ -253,7 +250,7 @@ class TableVar {
     return tuples_per_value_[value_index]->Size();
   }
 
-  FastRevIntList<int>* ActiveTuples(int value_index) const {
+  RevIntMap<int>* ActiveTuples(int value_index) const {
     return tuples_per_value_[value_index];
   }
 
@@ -266,14 +263,9 @@ class TableVar {
   }
 
   void RestoreTuple(int tuple_index) {
-    FastRevIntList<int>* const active_tuples =
+    RevIntMap<int>* const active_tuples =
         tuples_per_value_[column_.ValueIndex(tuple_index)];
-    const int index_of_value = reverse_tuples_[tuple_index];
-    const int ebt = active_tuples->end_back();
-    reverse_tuples_[ebt] = index_of_value;
-    reverse_tuples_[tuple_index] = active_tuples->Size();
-    active_tuples->push_back_from_index(
-        solver_, index_of_value, tuple_index, ebt);
+    active_tuples->Restore(solver_, tuple_index);
   }
 
   // Checks whether we should do reset or not.
@@ -341,7 +333,7 @@ class TableVar {
     tuples_to_remove->clear();
     const int delta_size = delta.size();
     for (int k = 0; k < delta_size; k++) {
-      FastRevIntList<int>* const active_tuples = tuples_per_value_[delta[k]];
+      RevIntMap<int>* const active_tuples = tuples_per_value_[delta[k]];
       const int num_tuples_to_erase = active_tuples->Size();
       for (int index = 0; index < num_tuples_to_erase; index++) {
         tuples_to_remove->push_back((*active_tuples)[index]);
@@ -373,10 +365,9 @@ class TableVar {
     // Initialize data structures.
     const int num_tuples = column_.NumTuples();
     for (int tuple_index = 0; tuple_index < num_tuples; tuple_index++) {
-      FastRevIntList<int>* const active_tuples =
+      RevIntMap<int>* const active_tuples =
           tuples_per_value_[column_.ValueIndex(tuple_index)];
-      reverse_tuples_[tuple_index] = active_tuples->Size();
-      active_tuples->push_back(solver_, tuple_index);
+      active_tuples->Insert(solver_, tuple_index);
     }
 
     // we remove from the domain the values that are not in the table,
@@ -399,7 +390,7 @@ class TableVar {
          domain_iterator_->Ok();
          domain_iterator_->Next()) {
       const int value_index = column_.IndexFromValue(domain_iterator_->Value());
-      FastRevIntList<int>* const active_tuples = tuples_per_value_[value_index];
+      RevIntMap<int>* const active_tuples = tuples_per_value_[value_index];
       const int num_tuples = active_tuples->Size();
       for (int j = 0; j < num_tuples; j++) {
         tuples_to_keep->push_back((*active_tuples)[j]);
@@ -411,25 +402,25 @@ class TableVar {
   Solver* const solver_;
   const IndexedTable::Column& column_;
   // one LAA per value of the variable
-  std::vector<FastRevIntList<int>*> tuples_per_value_;
+  std::vector<RevIntMap<int>*> tuples_per_value_;
   // list of values: having a non empty tuple list
-  FastRevIntList<int> active_values_;
-  std::vector<int> index_in_active_values_;
+  RevIntMap<int> active_values_;
   IntVar* const var_;
   IntVarIterator* const domain_iterator_;
   IntVarIterator* const delta_domain_iterator_;
-  // Flat tuples of value indices.
-  std::vector<int> reverse_tuples_;
+  scoped_array<int> shared_positions_;
 };
 
 class Ac4TableConstraint : public Constraint {
  public:
   Ac4TableConstraint(Solver* const solver,
                      IndexedTable* const table,
+                     bool delete_table,
                      const std::vector<IntVar*>& vars)
       : Constraint(solver),
         vars_(table->NumVars()),
         table_(table),
+        delete_table_(delete_table),
         tmp_tuples_(table->NumTuples()),
         delta_of_value_indices_(table->NumTuples()),
         num_variables_(table->NumVars()) {
@@ -441,7 +432,9 @@ class Ac4TableConstraint : public Constraint {
 
   ~Ac4TableConstraint() {
     STLDeleteElements(&vars_); // delete all elements of a vector
-    delete table_;
+    if (delete_table_) {
+      delete table_;
+    }
   }
 
   void Post() {
@@ -511,6 +504,7 @@ class Ac4TableConstraint : public Constraint {
   std::vector<TableVar*> vars_;
   // Table.
   IndexedTable* const table_;
+  const bool delete_table_;
   // Temporary tuple array for delayed add or delete operations.
   std::vector<int> tmp_tuples_;
   // Temporary storage for delta of one variable.
@@ -526,6 +520,6 @@ Constraint* BuildAc4TableConstraint(Solver* const solver,
                                     const std::vector<IntVar*>& vars,
                                     int size_bucket) {
   return solver->RevAlloc(
-      new Ac4TableConstraint(solver, new IndexedTable(tuples), vars));
+      new Ac4TableConstraint(solver, new IndexedTable(tuples), true, vars));
 }
 } // namespace operations_research
