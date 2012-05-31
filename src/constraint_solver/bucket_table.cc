@@ -139,9 +139,17 @@ template <class T> class RevIntMap {
 
   int Capacity() const { return capacity_; }
 
-  T operator[](int i) const {
-    DCHECK_LT(i, capacity_);
+
+  T Element(int i) const {
+    DCHECK_GE(i, 0);
+    DCHECK_LT(i, num_elements_.Value());
     return elements_[i];
+  }
+
+  T RemovedElement(int i) const {
+    DCHECK_GE(i, 0);
+    DCHECK_LT(i + num_elements_.Value(), capacity_);
+    return elements_[i + num_elements_.Value()];
   }
 
   void Insert(Solver* const solver, T elt) {
@@ -314,7 +322,7 @@ class TableVar {
       RevIntMap<int>* const active_tuples = tuples_per_value_[delta[k]];
       const int num_tuples_to_erase = active_tuples->Size();
       for (int index = 0; index < num_tuples_to_erase; index++) {
-        tuples_to_remove->push_back((*active_tuples)[index]);
+        tuples_to_remove->push_back(active_tuples->Element(index));
       }
     }
   }
@@ -328,7 +336,7 @@ class TableVar {
       RevIntMap<int>* const active_tuples = tuples_per_value_[value_index];
       const int num_tuples = active_tuples->Size();
       for (int j = 0; j < num_tuples; j++) {
-        tuples_to_keep->push_back((*active_tuples)[j]);
+        tuples_to_keep->push_back(active_tuples->Element(j));
       }
     }
   }
@@ -348,7 +356,7 @@ class TableVar {
 
   void OverwriteTuples(const std::vector<int>& tuples) {
     for (int k = 0; k < active_values_.Size(); k++) {
-      tuples_per_value_[active_values_[k]]->Clear(solver_);
+      tuples_per_value_[active_values_.Element(k)]->Clear(solver_);
     }
     for (int i = 0; i < tuples.size(); ++i) {
       const int tuple_index = tuples[i];
@@ -359,15 +367,16 @@ class TableVar {
     // We check for unsupported values and remove them.
     int count = 0;
     for (int k = active_values_.Size() - 1; k >= 0; k--) {
-      if (tuples_per_value_[active_values_[k]]->Size() == 0) {
-        active_values_.Remove(solver_, active_values_[k]);
+      const int64 value_index = active_values_.Element(k);
+      if (tuples_per_value_[value_index]->Size() == 0) {
+        active_values_.Remove(solver_, value_index);
         count++;
       }
     }
     // Removed values have been inserted after the last active value.
-    const int num_active_values = active_values_.Size();
-    for (int k = num_active_values; k < count + num_active_values; ++k) {
-      var_->RemoveValue(column_.ValueFromIndex(active_values_[k]));
+    for (int k = 0; k < count; ++k) {
+      const int64 value_index = active_values_.RemovedElement(k);
+      var_->RemoveValue(column_.ValueFromIndex(value_index));
     }
   }
 
