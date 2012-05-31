@@ -157,9 +157,8 @@ template <class T> class RevIntMap {
   }
 
   void Remove(Solver* const solver, T value_index) {
-    const int last_position = num_elements_.Value() - 1;
-    SwapTo(value_index, num_elements_.Value() - 1);
     num_elements_.Decr(solver);
+    SwapTo(value_index, num_elements_.Value());
   }
 
   void Restore(Solver* const solver, T value_index) {
@@ -167,6 +166,11 @@ template <class T> class RevIntMap {
     num_elements_.Incr(solver);
   }
 
+  void Clear(Solver* const solver) {
+    num_elements_.SetValue(solver, 0);
+  }
+
+ private:
   void SwapTo(T value_index, int next_position) {
     const int current_position = position_[value_index];
     if (current_position != next_position) {
@@ -178,11 +182,6 @@ template <class T> class RevIntMap {
     }
   }
 
-  void clear(Solver* const solver) {
-    num_elements_.SetValue(solver, 0);
-  }
-
- private:
   scoped_array<T> elements_; // set of elements.
   NumericalRev<int> num_elements_; // number of elements in the set.
   const int capacity_;
@@ -221,55 +220,12 @@ class TableVar {
     return var_;
   }
 
-  IntVarIterator* DomainIterator() const {
-    return domain_iterator_;
-  }
-
-  IntVarIterator* DeltaDomainIterator() const {
-    return delta_domain_iterator_;
-  }
-
-  void RemoveActiveValue(Solver* solver, int value_index) {
-    active_values_.Remove(solver, value_index);
-  }
-
-  void RemoveTuples(const std::vector<int>& tuples) {
-    for (int i = 0; i < tuples.size(); ++i) {
-      const int erased_tuple_index = tuples[i];
-      const int value_index = column_.ValueIndex(erased_tuple_index);
-      RevIntMap<int>* const active_tuples = tuples_per_value_[value_index];
-      active_tuples->Remove(solver_, erased_tuple_index);
-      if (active_tuples->Size() == 0) {
-        var_->RemoveValue(column_.ValueFromIndex(value_index));
-        RemoveActiveValue(solver_, value_index);
-      }
-    }
-  }
-
   int NumTuplesPerValue(int value_index) const {
     return tuples_per_value_[value_index]->Size();
   }
 
-  RevIntMap<int>* ActiveTuples(int value_index) const {
-    return tuples_per_value_[value_index];
-  }
-
-  int NumActiveValues() const {
-    return active_values_.Size();
-  }
-
-  int ActiveValue(int index) const {
-    return active_values_[index];
-  }
-
-  void RestoreTuple(int tuple_index) {
-    RevIntMap<int>* const active_tuples =
-        tuples_per_value_[column_.ValueIndex(tuple_index)];
-    active_tuples->Restore(solver_, tuple_index);
-  }
-
   // Checks whether we should do reset or not.
-  bool CheckResetProperty(const std::vector<int>& delta) {
+  bool ShouldReset(const std::vector<int>& delta) {
     int num_deleted_tuples = 0;
     for (int k = 0; k < delta.size(); k++) {
       num_deleted_tuples += NumTuplesPerValue(delta[k]);
@@ -279,7 +235,7 @@ class TableVar {
     }
 
     int num_remaining_tuples = 0;
-    IntVarIterator* const it = DomainIterator();
+    IntVarIterator* const it = domain_iterator_;
     for (it->Init(); it->Ok(); it->Next()) {
       const int value_index = column_.IndexFromValue(it->Value());
       num_remaining_tuples += NumTuplesPerValue(value_index);
@@ -311,7 +267,7 @@ class TableVar {
       }
     }
     // Second iteration: "delta" domain iteration
-    IntVarIterator* const it = DeltaDomainIterator();
+    IntVarIterator* const it = delta_domain_iterator_;
     for (it->Init(); it->Ok(); it->Next()) {
       int64 val = it->Value();
       if (column_.IsValueValid(val)) {
@@ -328,39 +284,6 @@ class TableVar {
     }
   }
 
-  void ComputeTuplesToRemove(const std::vector<int>& delta,
-                             std::vector<int>* const tuples_to_remove) {
-    tuples_to_remove->clear();
-    const int delta_size = delta.size();
-    for (int k = 0; k < delta_size; k++) {
-      RevIntMap<int>* const active_tuples = tuples_per_value_[delta[k]];
-      const int num_tuples_to_erase = active_tuples->Size();
-      for (int index = 0; index < num_tuples_to_erase; index++) {
-        tuples_to_remove->push_back((*active_tuples)[index]);
-      }
-    }
-  }
-
-  void RemoveUnsupportedValues() {
-    IntVarIterator* const it = DomainIterator();
-    int num_removed = 0;
-    for (it->Init(); it->Ok(); it->Next()) {
-      const int value_index = column_.IndexFromValue(it->Value());
-      if (NumTuplesPerValue(value_index) == 0) {
-        RemoveActiveValue(solver_, value_index);
-        num_removed++;
-      }
-    }
-    // Removed values have been pushed after the lists.
-    const int last_valid_value = active_values_.Size();
-    for (int cpt = 0; cpt < num_removed; cpt++) {
-      const int value_index = ActiveValue(last_valid_value + cpt);
-      const int64 removed_value =
-          column_.ValueFromIndex(value_index);
-      var_->RemoveValue(removed_value);
-    }
-  }
-
   void InitialPropagate(std::vector<int64>* const to_remove) {
     // Initialize data structures.
     const int num_tuples = column_.NumTuples();
@@ -373,7 +296,7 @@ class TableVar {
     // we remove from the domain the values that are not in the table,
     // or that have no supporting tuples.
     to_remove->clear();
-    IntVarIterator* const it = DomainIterator();
+    IntVarIterator* const it = domain_iterator_;
     for (it->Init(); it->Ok(); it->Next()) {
       const int64 value = it->Value();
       if (!column_.IsValueValid(value) ||
@@ -384,7 +307,20 @@ class TableVar {
     var_->RemoveValues(*to_remove);
   }
 
-  void CollectActiveTuples(std::vector<int>* const tuples_to_keep) const {
+  void CollectTuplesToRemove(const std::vector<int>& delta,
+                             std::vector<int>* const tuples_to_remove) {
+    tuples_to_remove->clear();
+    const int delta_size = delta.size();
+    for (int k = 0; k < delta_size; k++) {
+      RevIntMap<int>* const active_tuples = tuples_per_value_[delta[k]];
+      const int num_tuples_to_erase = active_tuples->Size();
+      for (int index = 0; index < num_tuples_to_erase; index++) {
+        tuples_to_remove->push_back((*active_tuples)[index]);
+      }
+    }
+  }
+
+  void CollectTuplesToKeep(std::vector<int>* const tuples_to_keep) const {
     tuples_to_keep->clear();
     for (domain_iterator_->Init();
          domain_iterator_->Ok();
@@ -395,6 +331,40 @@ class TableVar {
       for (int j = 0; j < num_tuples; j++) {
         tuples_to_keep->push_back((*active_tuples)[j]);
       }
+    }
+  }
+
+  void RemoveTuples(const std::vector<int>& tuples) {
+    for (int i = 0; i < tuples.size(); ++i) {
+      const int erased_tuple_index = tuples[i];
+      const int value_index = column_.ValueIndex(erased_tuple_index);
+      RevIntMap<int>* const active_tuples = tuples_per_value_[value_index];
+      active_tuples->Remove(solver_, erased_tuple_index);
+      if (active_tuples->Size() == 0) {
+        var_->RemoveValue(column_.ValueFromIndex(value_index));
+        active_values_.Remove(solver_, value_index);
+      }
+    }
+  }
+
+  void OverwriteTuples(const std::vector<int>& tuples) {
+    for (int k = 0; k < active_values_.Size(); k++) {
+      tuples_per_value_[active_values_[k]]->Clear(solver_);
+    }
+    for (int i = 0; i < tuples.size(); ++i) {
+      const int tuple_index = tuples[i];
+      const int value_index = column_.ValueIndex(tuple_index);
+      tuples_per_value_[value_index]->Restore(solver_, tuple_index);
+    }
+    std::vector<int> to_remove;
+    for (int k = 0; k < active_values_.Size(); k++) {
+      if (tuples_per_value_[active_values_[k]]->Size() == 0) {
+        to_remove.push_back(active_values_[k]);
+      }
+    }
+    for (int k = 0; k < to_remove.size(); ++k) {
+      var_->RemoveValue(column_.ValueFromIndex(to_remove[k]));
+      active_values_.Remove(solver_, to_remove[k]);
     }
   }
 
@@ -459,47 +429,22 @@ class Ac4TableConstraint : public Constraint {
   void FilterOneVariable(int var_index) {
     TableVar* const var = vars_[var_index];
     var->ComputeDeltaDomain(&delta_of_value_indices_);
-    if (var->CheckResetProperty(delta_of_value_indices_)) {
-      Reset(var_index);
-    }
-    var->ComputeTuplesToRemove(delta_of_value_indices_, &tmp_tuples_);
-    for (int i = 0; i < num_variables_; ++i) {
-      vars_[i]->RemoveTuples(tmp_tuples_);
+    // We decide if we prefer to restart with the remaining set of
+    // tuples, or if we incrementaly remove unsupported tuples.
+    if (var->ShouldReset(delta_of_value_indices_)) {
+      var->CollectTuplesToKeep(&tmp_tuples_);
+      for (int i = 0; i < num_variables_; i++) {
+        vars_[i]->OverwriteTuples(tmp_tuples_);
+      }
+    } else {
+      var->CollectTuplesToRemove(delta_of_value_indices_, &tmp_tuples_);
+      for (int i = 0; i < num_variables_; ++i) {
+        vars_[i]->RemoveTuples(tmp_tuples_);
+      }
     }
   }
 
  private:
-  // We scan values to check the ones without the supported values.
-  void RemoveUnsupportedValuesOnAllVariables() {
-    for (int var_index = 0; var_index < num_variables_; var_index++) {
-      vars_[var_index]->RemoveUnsupportedValues();
-    }
-  }
-
-  // Clean and re-add all active tuples.
-  void Reset(int var_index) {
-    vars_[var_index]->CollectActiveTuples(&tmp_tuples_);
-
-    // We clear all values in the TableVar structure.
-    for (int i = 0; i < num_variables_; i++) {
-      for (int k = 0; k < vars_[i]->NumActiveValues(); k++) {
-        const int value_index = vars_[i]->ActiveValue(k);
-        vars_[i]->ActiveTuples(value_index)->clear(solver());
-      }
-    }
-
-    // We add tuples one by one from the tmp_tuples_ structure.
-    const int size = tmp_tuples_.size();
-    for (int j = 0; j < size; j++) {
-      const int tuple_index = tmp_tuples_[j];
-      for (int var_index = 0; var_index < num_variables_; var_index++) {
-        vars_[var_index]->RestoreTuple(tuple_index);
-      }
-    }
-
-    RemoveUnsupportedValuesOnAllVariables();
-  }
-
   // Variables of the constraint.
   std::vector<TableVar*> vars_;
   // Table.
