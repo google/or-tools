@@ -303,7 +303,7 @@ void FzPrinter::printElem(std::ostream& out, AST::Node* ai,
       out << var->DebugString();
     }
   } else if (ai->isBoolVar()) {
-    IntVar* const var = m.bv[ai->getIntVar()];
+    IntVar* const var = m.bv[ai->getBoolVar()];
     if (m.collector() != NULL && m.collector()->solution_count() > 0) {
       out << m.collector()->Value(0, var);
     } else {

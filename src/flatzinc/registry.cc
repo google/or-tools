@@ -883,8 +883,16 @@ void p_array_bool_element(FlatZincModel& s, const ConExpr& ce,
 
 /* coercion constraints */
 void p_bool2int(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool2int("<<(*ce[0])<<","<<(*ce[1])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isBoolVar() ?
+      s.bv[ce[0]->getBoolVar()] :
+      solver->MakeIntConst(ce[0]->getBool());
+  IntVar* const right = ce[1]->isIntVar() ?
+      s.iv[ce[1]->getIntVar()] :
+      solver->MakeIntConst(ce[1]->getInt());
+  Constraint* const ct = solver->MakeEquality(left, right);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_int_in(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
