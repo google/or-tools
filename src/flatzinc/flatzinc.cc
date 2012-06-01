@@ -70,7 +70,9 @@ void FlatZincModel::newIntVar(const std::string& name, IntVarSpec* vs) {
     iv[intVarCount++] = iv[vs->i];
   } else {
     AST::SetLit* domain = vs->domain.some();
-    if (domain->interval) {
+    if (domain == NULL) {
+      iv[intVarCount++] = solver_.MakeIntVar(kint32min, kint32max, name);
+    } else if (domain->interval) {
       iv[intVarCount++] = solver_.MakeIntVar(domain->min, domain->max, name);
     } else {
       iv[intVarCount++] = solver_.MakeIntVar(domain->s, name);

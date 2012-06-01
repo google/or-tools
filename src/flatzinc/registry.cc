@@ -49,8 +49,7 @@ Registry& registry(void) {
   return r;
 }
 
-void
-Registry::post(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void Registry::post(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::map<std::string,poster>::iterator i = r.find(ce.id);
   if (i == r.end()) {
     throw Error("Registry",
@@ -59,8 +58,7 @@ Registry::post(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   i->second(s, ce, ann);
 }
 
-void
-Registry::add(const std::string& id, poster p) {
+void Registry::add(const std::string& id, poster p) {
   r[id] = p;
 }
 
@@ -251,28 +249,99 @@ void p_int_lt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 
 /* Comparisons */
 void p_int_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_eq_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isIntVar() ?
+      s.iv[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  IntVar* const right = ce[1]->isIntVar() ?
+      s.iv[ce[1]->getIntVar()] :
+      solver->MakeIntConst(ce[1]->getInt());
+  IntVar* const boolvar = ce[2]->isBoolVar() ?
+      s.bv[ce[2]->getBoolVar()] :
+      solver->MakeIntConst(ce[2]->getBool());
+  Constraint* const ct = solver->MakeIsEqualCt(left, right, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_ne_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isIntVar() ?
+      s.iv[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  IntVar* const right = ce[1]->isIntVar() ?
+      s.iv[ce[1]->getIntVar()] :
+      solver->MakeIntConst(ce[1]->getInt());
+  IntVar* const boolvar = ce[2]->isBoolVar() ?
+      s.bv[ce[2]->getBoolVar()] :
+      solver->MakeIntConst(ce[2]->getBool());
+  Constraint* const ct = solver->MakeIsDifferentCt(left, right, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_ge_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_ge_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isIntVar() ?
+      s.iv[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  IntVar* const right = ce[1]->isIntVar() ?
+      s.iv[ce[1]->getIntVar()] :
+      solver->MakeIntConst(ce[1]->getInt());
+  IntVar* const boolvar = ce[2]->isBoolVar() ?
+      s.bv[ce[2]->getBoolVar()] :
+      solver->MakeIntConst(ce[2]->getBool());
+  Constraint* const ct = solver->MakeIsGreaterOrEqualCt(left, right, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_gt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_gt_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isIntVar() ?
+      s.iv[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  IntVar* const right = ce[1]->isIntVar() ?
+      s.iv[ce[1]->getIntVar()] :
+      solver->MakeIntConst(ce[1]->getInt());
+  IntVar* const boolvar = ce[2]->isBoolVar() ?
+      s.bv[ce[2]->getBoolVar()] :
+      solver->MakeIntConst(ce[2]->getBool());
+  Constraint* const ct = solver->MakeIsGreaterCt(left, right, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_le_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_le_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isIntVar() ?
+      s.iv[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  IntVar* const right = ce[1]->isIntVar() ?
+      s.iv[ce[1]->getIntVar()] :
+      solver->MakeIntConst(ce[1]->getInt());
+  IntVar* const boolvar = ce[2]->isBoolVar() ?
+      s.bv[ce[2]->getBoolVar()] :
+      solver->MakeIntConst(ce[2]->getBool());
+  Constraint* const ct = solver->MakeIsLessOrEqualCt(left, right, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_lt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lt_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isIntVar() ?
+      s.iv[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  IntVar* const right = ce[1]->isIntVar() ?
+      s.iv[ce[1]->getIntVar()] :
+      solver->MakeIntConst(ce[1]->getInt());
+  IntVar* const boolvar = ce[2]->isBoolVar() ?
+      s.bv[ce[2]->getBoolVar()] :
+      solver->MakeIntConst(ce[2]->getBool());
+  Constraint* const ct = solver->MakeIsLessCt(left, right, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_int_lin_eq(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
@@ -295,6 +364,7 @@ void p_int_lin_eq(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
+
 void p_int_lin_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   Solver* const solver = s.solver();
   AST::Array* const array_coefficents = ce[0]->getArray();
@@ -320,42 +390,130 @@ void p_int_lin_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
+
 void p_int_lin_ne(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_ne("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  AST::Array* const array_coefficents = ce[0]->getArray();
+  AST::Array* const array_variables = ce[1]->getArray();
+  AST::Node* const node_rhs = ce[2];
+  const int rhs = node_rhs->getInt();
+  const int size = array_coefficents->a.size();
+  CHECK_EQ(size, array_variables->a.size());
+  std::vector<int> coefficients(size);
+  std::vector<IntVar*> variables(size);
+
+  for (int i = 0; i < size; ++i) {
+    coefficients[i] = array_coefficents->a[i]->getInt();
+    variables[i] = s.iv[array_variables->a[i]->getIntVar()];
+  }
+  Constraint* const ct =
+      solver->MakeNonEquality(
+          solver->MakeScalProd(variables, coefficients)->Var(),
+          rhs);;
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_lin_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "int_lin_ne_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
             <<","<<(*ce[3])<<")::"<<(*ann)<<"\n";
 }
+
 void p_int_lin_le(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_le("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  AST::Array* const array_coefficents = ce[0]->getArray();
+  AST::Array* const array_variables = ce[1]->getArray();
+  AST::Node* const node_rhs = ce[2];
+  const int rhs = node_rhs->getInt();
+  const int size = array_coefficents->a.size();
+  CHECK_EQ(size, array_variables->a.size());
+  std::vector<int> coefficients(size);
+  std::vector<IntVar*> variables(size);
+
+  for (int i = 0; i < size; ++i) {
+    coefficients[i] = array_coefficents->a[i]->getInt();
+    variables[i] = s.iv[array_variables->a[i]->getIntVar()];
+  }
+  Constraint* const ct =
+      solver->MakeScalProdLessOrEqual(variables, coefficients, rhs);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_lin_le_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "int_lin_le_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
             <<","<<(*ce[3])<<")::"<<(*ann)<<"\n";
 }
 void p_int_lin_lt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_lt("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  AST::Array* const array_coefficents = ce[0]->getArray();
+  AST::Array* const array_variables = ce[1]->getArray();
+  AST::Node* const node_rhs = ce[2];
+  const int rhs = node_rhs->getInt();
+  const int size = array_coefficents->a.size();
+  CHECK_EQ(size, array_variables->a.size());
+  std::vector<int> coefficients(size);
+  std::vector<IntVar*> variables(size);
+
+  for (int i = 0; i < size; ++i) {
+    coefficients[i] = array_coefficents->a[i]->getInt();
+    variables[i] = s.iv[array_variables->a[i]->getIntVar()];
+  }
+  Constraint* const ct =
+      solver->MakeScalProdLessOrEqual(variables, coefficients, rhs - 1);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 void p_int_lin_lt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "int_lin_lt_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
             <<","<<(*ce[3])<<")::"<<(*ann)<<"\n";
 }
 void p_int_lin_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_ge("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  AST::Array* const array_coefficents = ce[0]->getArray();
+  AST::Array* const array_variables = ce[1]->getArray();
+  AST::Node* const node_rhs = ce[2];
+  const int rhs = node_rhs->getInt();
+  const int size = array_coefficents->a.size();
+  CHECK_EQ(size, array_variables->a.size());
+  std::vector<int> coefficients(size);
+  std::vector<IntVar*> variables(size);
+
+  for (int i = 0; i < size; ++i) {
+    coefficients[i] = array_coefficents->a[i]->getInt();
+    variables[i] = s.iv[array_variables->a[i]->getIntVar()];
+  }
+  Constraint* const ct =
+      solver->MakeScalProdGreaterOrEqual(variables, coefficients, rhs);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_lin_ge_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "int_lin_ge_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
             <<","<<(*ce[3])<<")::"<<(*ann)<<"\n";
 }
 void p_int_lin_gt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_gt("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  AST::Array* const array_coefficents = ce[0]->getArray();
+  AST::Array* const array_variables = ce[1]->getArray();
+  AST::Node* const node_rhs = ce[2];
+  const int rhs = node_rhs->getInt();
+  const int size = array_coefficents->a.size();
+  CHECK_EQ(size, array_variables->a.size());
+  std::vector<int> coefficients(size);
+  std::vector<IntVar*> variables(size);
+
+  for (int i = 0; i < size; ++i) {
+    coefficients[i] = array_coefficents->a[i]->getInt();
+    variables[i] = s.iv[array_variables->a[i]->getIntVar()];
+  }
+  Constraint* const ct =
+      solver->MakeScalProdGreaterOrEqual(variables, coefficients, rhs + 1);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_lin_gt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "int_lin_gt_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
             <<","<<(*ce[3])<<")::"<<(*ann)<<"\n";
@@ -364,8 +522,20 @@ void p_int_lin_gt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 /* arithmetic constraints */
 
 void p_int_plus(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_plus("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isIntVar() ?
+      s.iv[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  IntVar* const right = ce[1]->isIntVar() ?
+      s.iv[ce[1]->getIntVar()] :
+      solver->MakeIntConst(ce[1]->getInt());
+  IntVar* const target = ce[2]->isIntVar() ?
+      s.iv[ce[2]->getIntVar()] :
+      solver->MakeIntConst(ce[2]->getInt());
+  Constraint* const ct =
+      solver->MakeEquality(solver->MakeSum(left, right)->Var(), target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_int_minus(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
@@ -374,9 +544,22 @@ void p_int_minus(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_times(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_times("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isIntVar() ?
+      s.iv[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  IntVar* const right = ce[1]->isIntVar() ?
+      s.iv[ce[1]->getIntVar()] :
+      solver->MakeIntConst(ce[1]->getInt());
+  IntVar* const target = ce[2]->isIntVar() ?
+      s.iv[ce[2]->getIntVar()] :
+      solver->MakeIntConst(ce[2]->getInt());
+  Constraint* const ct =
+      solver->MakeEquality(solver->MakeProd(left, right)->Var(), target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_div(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "int_div("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
             <<")::"<<(*ann)<<"\n";
@@ -387,46 +570,170 @@ void p_int_mod(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_min(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_min("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isIntVar() ?
+      s.iv[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  IntVar* const right = ce[1]->isIntVar() ?
+      s.iv[ce[1]->getIntVar()] :
+      solver->MakeIntConst(ce[1]->getInt());
+  IntVar* const target = ce[2]->isIntVar() ?
+      s.iv[ce[2]->getIntVar()] :
+      solver->MakeIntConst(ce[2]->getInt());
+  Constraint* const ct =
+      solver->MakeEquality(solver->MakeMin(left, right)->Var(), target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_max(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_max("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isIntVar() ?
+      s.iv[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  IntVar* const right = ce[1]->isIntVar() ?
+      s.iv[ce[1]->getIntVar()] :
+      solver->MakeIntConst(ce[1]->getInt());
+  IntVar* const target = ce[2]->isIntVar() ?
+      s.iv[ce[2]->getIntVar()] :
+      solver->MakeIntConst(ce[2]->getInt());
+  Constraint* const ct =
+      solver->MakeEquality(solver->MakeMax(left, right)->Var(), target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_negate(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "int_negate("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
             <<")::"<<(*ann)<<"\n";
 }
 
 void p_bool_eq(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_eq("<<(*ce[0])<<","<<(*ce[1])
-            <<")::"<<(*ann)<<"\n";
+  Constraint* ct = NULL;
+  Solver* const solver = s.solver();
+  AST::Node* const left = ce[0];
+  AST::Node* const right = ce[1];
+  if (left->isBool()) {
+    const int left_value = left->getBool();
+    if (right->isBool()) {
+      const int right_value = right->getBool();
+      LOG(FATAL) << "Not implemented";
+    } else {
+      IntVar* const right_var = s.bv[right->getBoolVar()];
+      ct = solver->MakeEquality(right_var, left_value);
+    }
+  } else {
+    IntVar* const left_var = s.bv[left->getBoolVar()];
+    if (right->isBool()) {
+      const int right_value = right->getBool();
+      ct = solver->MakeEquality(left_var, right_value);
+    } else {
+      IntVar* const right_var = s.bv[right->getBoolVar()];
+      ct = solver->MakeEquality(left_var, right_var);
+    }
+  }
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_bool_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "bool_eq_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
             <<")::"<<(*ann)<<"\n";
 }
+
 void p_bool_ne(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_ne("<<(*ce[0])<<","<<(*ce[1])
-            <<")::"<<(*ann)<<"\n";
+  Constraint* ct = NULL;
+  Solver* const solver = s.solver();
+  AST::Node* const left = ce[0];
+  AST::Node* const right = ce[1];
+  if (left->isBool()) {
+    const int left_value = left->getBool();
+    if (right->isBool()) {
+      const int right_value = right->getBool();
+      LOG(FATAL) << "Not implemented";
+    } else {
+      IntVar* const right_var = s.bv[right->getBoolVar()];
+      ct = solver->MakeNonEquality(right_var, left_value);
+    }
+  } else {
+    IntVar* const left_var = s.bv[left->getBoolVar()];
+    if (right->isBool()) {
+      const int right_value = right->getBool();
+      ct = solver->MakeNonEquality(left_var, right_value);
+    } else {
+      IntVar* const right_var = s.bv[right->getBoolVar()];
+      ct = solver->MakeNonEquality(left_var, right_var);
+    }
+  }
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_bool_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "bool_ne_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
             <<")::"<<(*ann)<<"\n";
 }
 void p_bool_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_ge("<<(*ce[0])<<","<<(*ce[1])
-            <<")::"<<(*ann)<<"\n";
+  Constraint* ct = NULL;
+  Solver* const solver = s.solver();
+  AST::Node* const left = ce[0];
+  AST::Node* const right = ce[1];
+  if (left->isBool()) {
+    const int left_value = left->getBool();
+    if (right->isBool()) {
+      const int right_value = right->getBool();
+      LOG(FATAL) << "Not implemented";
+    } else {
+      IntVar* const right_var = s.bv[right->getBoolVar()];
+      ct = solver->MakeLessOrEqual(right_var, left_value);
+    }
+  } else {
+    IntVar* const left_var = s.bv[left->getBoolVar()];
+    if (right->isBool()) {
+      const int right_value = right->getBool();
+      ct = solver->MakeGreaterOrEqual(left_var, right_value);
+    } else {
+      IntVar* const right_var = s.bv[right->getBoolVar()];
+      ct = solver->MakeGreaterOrEqual(left_var, right_var);
+    }
+  }
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_bool_ge_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "bool_ge_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
             <<")::"<<(*ann)<<"\n";
 }
+
 void p_bool_le(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_le("<<(*ce[0])<<","<<(*ce[1])
-            <<")::"<<(*ann)<<"\n";
+  Constraint* ct = NULL;
+  Solver* const solver = s.solver();
+  AST::Node* const left = ce[0];
+  AST::Node* const right = ce[1];
+  if (left->isBool()) {
+    const int left_value = left->getBool();
+    if (right->isBool()) {
+      const int right_value = right->getBool();
+      LOG(FATAL) << "Not implemented";
+    } else {
+      IntVar* const right_var = s.bv[right->getBoolVar()];
+      ct = solver->MakeGreaterOrEqual(right_var, left_value);
+    }
+  } else {
+    IntVar* const left_var = s.bv[left->getBoolVar()];
+    if (right->isBool()) {
+      const int right_value = right->getBool();
+      ct = solver->MakeLessOrEqual(left_var, right_value);
+    } else {
+      IntVar* const right_var = s.bv[right->getBoolVar()];
+      ct = solver->MakeLessOrEqual(left_var, right_var);
+    }
+  }
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_bool_le_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "bool_le_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
             <<")::"<<(*ann)<<"\n";
@@ -449,15 +756,40 @@ void p_bool_lt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_bool_or(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_or("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isBoolVar() ?
+      s.iv[ce[0]->getBoolVar()] :
+      solver->MakeIntConst(ce[0]->getBool());
+  IntVar* const right = ce[1]->isBoolVar() ?
+      s.iv[ce[1]->getBoolVar()] :
+      solver->MakeIntConst(ce[1]->getBool());
+  IntVar* const target = ce[2]->isBoolVar() ?
+      s.iv[ce[2]->getBoolVar()] :
+      solver->MakeIntConst(ce[2]->getBool());
+  Constraint* const ct =
+      solver->MakeEquality(solver->MakeMax(left, right)->Var(), target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_bool_and(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_and("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isBoolVar() ?
+      s.iv[ce[0]->getBoolVar()] :
+      solver->MakeIntConst(ce[0]->getBool());
+  IntVar* const right = ce[1]->isBoolVar() ?
+      s.iv[ce[1]->getBoolVar()] :
+      solver->MakeIntConst(ce[1]->getBool());
+  IntVar* const target = ce[2]->isBoolVar() ?
+      s.iv[ce[2]->getBoolVar()] :
+      solver->MakeIntConst(ce[2]->getBool());
+  Constraint* const ct =
+      solver->MakeEquality(solver->MakeMin(left, right)->Var(), target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
-void p_array_bool_and(FlatZincModel& s, const ConExpr& ce, AST::Node* ann)
-{
+
+void p_array_bool_and(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   Solver* const solver = s.solver();
   AST::Array* const array_variables = ce[0]->getArray();
   AST::Node* const node_boolvar = ce[1];
@@ -475,8 +807,7 @@ void p_array_bool_and(FlatZincModel& s, const ConExpr& ce, AST::Node* ann)
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
-void p_array_bool_or(FlatZincModel& s, const ConExpr& ce, AST::Node* ann)
-{
+void p_array_bool_or(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   Solver* const solver = s.solver();
   AST::Array* const array_variables = ce[0]->getArray();
   AST::Node* const node_boolvar = ce[1];
@@ -524,8 +855,25 @@ void p_bool_not(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 /* element constraints */
 void p_array_int_element(FlatZincModel& s, const ConExpr& ce,
                          AST::Node* ann) {
-  std::cerr << "array_int_element("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const index = ce[0]->isIntVar() ?
+      s.iv[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  AST::Array* const array_coefficents = ce[1]->getArray();
+  const int size = array_coefficents->a.size();
+  std::vector<int> coefficients(size);
+  for (int i = 0; i < size; ++i) {
+    coefficients[i] = array_coefficents->a[i]->getInt();
+  }
+  IntVar* const target = ce[2]->isIntVar() ?
+      s.iv[ce[2]->getIntVar()] :
+      solver->MakeIntConst(ce[2]->getInt());
+    Constraint* const ct =
+        solver->MakeEquality(solver->MakeElement(coefficients, index)->Var(),
+                             target);
+    VLOG(1) << "Posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+
 }
 void p_array_bool_element(FlatZincModel& s, const ConExpr& ce,
                           AST::Node* ann) {
@@ -560,7 +908,17 @@ void p_int_in(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
 }
 
 void p_abs(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "abs("<<(*ce[0])<<","<<(*ce[1])<<")::"<<(*ann)<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isIntVar() ?
+      s.iv[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  IntVar* const right = ce[1]->isIntVar() ?
+      s.iv[ce[1]->getIntVar()] :
+      solver->MakeIntConst(ce[1]->getInt());
+  Constraint* const ct =
+      solver->MakeEquality(solver->MakeAbs(left)->Var(), right);
+    VLOG(1) << "Posted " << ct->DebugString();
+    solver->AddConstraint(ct);
 }
 
 void p_all_different_int(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {

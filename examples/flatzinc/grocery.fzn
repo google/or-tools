@@ -1,0 +1,11 @@
+var 0..505521: INT____00001 :: is_defined_var :: var_is_introduced;
+var 0..359425431: INT____00002 :: is_defined_var :: var_is_introduced;
+array [1..4] of var 0..711: item :: output_array([0..3]);
+constraint int_lin_eq([1, 1, 1, 1], [item[1], item[2], item[3], item[4]], 711);
+constraint int_lt(item[1], item[2]);
+constraint int_lt(item[2], item[3]);
+constraint int_lt(item[3], item[4]);
+constraint int_times(INT____00001, item[3], INT____00002) :: defines_var(INT____00002);
+constraint int_times(INT____00002, item[4], 711000000);
+constraint int_times(item[1], item[2], INT____00001) :: defines_var(INT____00001);
+solve satisfy;
