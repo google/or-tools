@@ -49,8 +49,8 @@ FlatZincModel::FlatZincModel(void)
     : intVarCount(-1), boolVarCount(-1), setVarCount(-1), _optVar(-1),
       _solveAnnotations(NULL),
       solver_("FlatZincSolver"),
-      builder_(NULL),
-      collector_(NULL) {}
+      collector_(NULL),
+      objective_(NULL) {}
 
 void FlatZincModel::init(int intVars, int boolVars, int setVars) {
   intVarCount = 0;
@@ -147,8 +147,13 @@ void FlatZincModel::createBranchers(AST::Node* ann,
         AST::Call *call = flatAnn[i]->getCall("int_search");
         AST::Array *args = call->getArgs(4);
         AST::Array *vars = args->a[0]->getArray();
-        std::cerr << "int_search\n";
-        // TODO: install search
+        std::vector<IntVar*> int_vars;
+        for (int i = 0; i < vars->a.size(); ++i) {
+          int_vars.push_back(iv[vars->a[i]->getIntVar()]);
+        }
+        builders_.push_back(solver_.MakePhase(int_vars,
+                                              Solver::CHOOSE_FIRST_UNBOUND,
+                                              Solver::ASSIGN_MIN_VALUE));
       } catch (AST::TypeError& e) {
         (void) e;
         try {
@@ -175,20 +180,23 @@ void FlatZincModel::createBranchers(AST::Node* ann,
           }
         }
       }
+      VLOG(1) << "Adding decision builder = "
+              << builders_.back()->DebugString();
     }
+  } else {
+    std::vector<IntVar*> primary_integer_variables;
+    std::vector<IntVar*> secondary_integer_variables;
+    std::vector<SequenceVar*> sequence_variables;
+    std::vector<IntervalVar*> interval_variables;
+    solver_.CollectDecisionVariables(&primary_integer_variables,
+                                     &secondary_integer_variables,
+                                     &sequence_variables,
+                                     &interval_variables);
+    builders_.push_back(solver_.MakePhase(primary_integer_variables,
+                                          Solver::CHOOSE_FIRST_UNBOUND,
+                                          Solver::ASSIGN_MIN_VALUE));
+    VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
   }
-  std::vector<IntVar*> primary_integer_variables;
-  std::vector<IntVar*> secondary_integer_variables;
-  std::vector<SequenceVar*> sequence_variables;
-  std::vector<IntervalVar*> interval_variables;
-  solver_.CollectDecisionVariables(&primary_integer_variables,
-                                   &secondary_integer_variables,
-                                   &sequence_variables,
-                                   &interval_variables);
-  builder_ = solver_.MakePhase(primary_integer_variables,
-                               Solver::CHOOSE_FIRST_UNBOUND,
-                               Solver::ASSIGN_MIN_VALUE);
-  VLOG(1) << "Decision builder = " << builder_->DebugString();
 }
 
 AST::Array* FlatZincModel::solveAnnotations(void) const {
@@ -215,6 +223,7 @@ void FlatZincModel::minimize(int var, AST::Array* ann) {
     ann = new AST::Array(c);
   else
     ann->a.push_back(c);
+  objective_ = solver_.MakeMinimize(iv[_optVar], 1);
 }
 
 void FlatZincModel::maximize(int var, AST::Array* ann) {
@@ -232,6 +241,7 @@ void FlatZincModel::maximize(int var, AST::Array* ann) {
     ann = new AST::Array(c);
   else
     ann->a.push_back(c);
+  objective_ = solver_.MakeMaximize(iv[_optVar], 1);
 }
 
 FlatZincModel::~FlatZincModel(void) {
@@ -241,17 +251,24 @@ FlatZincModel::~FlatZincModel(void) {
 void FlatZincModel::run(std::ostream& out, const FzPrinter& p) {
   switch (_method) {
     case MIN:
-    case MAX:
+    case MAX: {
       std::cerr << "start optimization search\n";
-      // TODO: perform actual search
+      SearchMonitor* const log = solver_.MakeSearchLog(100000);
+      collector_ = solver_.MakeLastSolutionCollector();
+      collector_->Add(iv);
+      collector_->Add(bv);
+      collector_->AddObjective(iv[_optVar]);
+      solver_.Solve(solver_.Compose(builders_), log, collector_, objective_);
       break;
-    case SAT:
+    }
+    case SAT: {
       SearchMonitor* const log = solver_.MakeSearchLog(100000);
       collector_ = solver_.MakeFirstSolutionCollector();
       collector_->Add(iv);
       collector_->Add(bv);
-      solver_.Solve(builder_, log, collector_);
+      solver_.Solve(solver_.Compose(builders_), log, collector_);
       break;
+    }
   }
 }
 

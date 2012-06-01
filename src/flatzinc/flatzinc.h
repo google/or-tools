@@ -91,8 +91,9 @@ class FlatZincModel {
   AST::Array* _solveAnnotations;
 
   Solver solver_;
-  DecisionBuilder* builder_;
+  std::vector<DecisionBuilder*> builders_;
   SolutionCollector* collector_;
+  OptimizeVar* objective_;
 
  public:
   /// The integer variables

@@ -52,21 +52,17 @@ DEFINE_string(file, "", "file name");
 namespace operations_research {
 void Run() {
   FzPrinter p;
-  FlatZincModel* fz_model = NULL;
-  if (FLAGS_file == "-") {
-    fz_model = parse(cin, p);
-  } else {
-    fz_model = parse(FLAGS_file.c_str(), p);
-  }
+  scoped_ptr<FlatZincModel> fz_model((FLAGS_file == "-") ?
+                                     parse(cin, p):
+                                     parse(FLAGS_file.c_str(), p));
 
-  if (fz_model) {
+  if (fz_model.get()) {
     fz_model->createBranchers(fz_model->solveAnnotations(), false, std::cerr);
     fz_model->run(std::cout, p);
     fz_model->print(std::cout, p);
   } else {
     exit(EXIT_FAILURE);
   }
-  delete fz_model;
 }
 }
 
