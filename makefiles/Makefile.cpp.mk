@@ -19,6 +19,9 @@ GRAPH_LIBS = \
 ROUTING_LIBS = \
         $(LIB_DIR)/$(LIBPREFIX)routing.$(LIBSUFFIX)
 
+FLATZINC_LIBS = \
+	$(LIB_DIR)/$(LIBPREFIX)fz.$(LIBSUFFIX)
+
 # Lib dependencies.
 BASE_DEPS = $(BASE_LIBS)
 
@@ -31,6 +34,9 @@ CP_DEPS = $(CP_LIBS) $(LP_LIBS) $(BASE_LIBS)
 GRAPH_DEPS = $(GRAPH_LIBS) $(BASE_LIBS)
 
 ROUTING_DEPS = $(ROUTING_LIBS) $(CP_LIBS) $(LP_LIBS) $(GRAPH_LIBS) $(BASE_LIBS)
+
+FLATZINC_DEPS = $(FLATZINC_LIBS) $(CP_LIBS) $(LP_LIBS) $(BASE_LIBS)
+
 
 # Create link commands.
 BASE_LNK = \
@@ -60,6 +66,10 @@ GRAPH_LNK = \
 	$(PRE_LIB)graph$(POST_LIB) \
 	$(PRE_LIB)shortestpaths$(POST_LIB) \
 	$(BASE_LNK)
+
+FLATZINC_LNK = \
+	$(PRE_LIB)fz$(POST_LIB)\
+	$(CP_LNK)
 
 # Binaries
 
@@ -145,7 +155,7 @@ dimacslibs: $(DIMACS_LIBS)
 
 # Constraint Solver Lib.
 
-CONSTRAINT_SOLVER_LIB_OS = \
+CONSTRAINT_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/alldiff_cst.$O\
 	$(OBJ_DIR)/assignment.$O\
 	$(OBJ_DIR)/assignment.pb.$O\
@@ -323,12 +333,12 @@ $(OBJ_DIR)/utilities.$O:$(SRC_DIR)/constraint_solver/utilities.cc
 $(OBJ_DIR)/visitor.$O:$(SRC_DIR)/constraint_solver/visitor.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/visitor.cc $(OBJ_OUT)visitor.$O
 
-$(LIB_DIR)/$(LIBPREFIX)constraint_solver.$(LIBSUFFIX): $(CONSTRAINT_SOLVER_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)constraint_solver.$(LIBSUFFIX) $(CONSTRAINT_SOLVER_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)constraint_solver.$(LIBSUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)constraint_solver.$(LIBSUFFIX) $(CONSTRAINT_SOLVER_LIB_OBJS)
 
 # Linear Solver Library
 
-LINEAR_SOLVER_LIB_OS = \
+LINEAR_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/cbc_interface.$O \
 	$(OBJ_DIR)/clp_interface.$O \
 	$(OBJ_DIR)/glpk_interface.$O \
@@ -359,12 +369,12 @@ $(GEN_DIR)/linear_solver/linear_solver.pb.h:$(GEN_DIR)/linear_solver/linear_solv
 $(OBJ_DIR)/scip_interface.$O:$(SRC_DIR)/linear_solver/scip_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/scip_interface.cc $(OBJ_OUT)scip_interface.$O
 
-$(LIB_DIR)/$(LIBPREFIX)linear_solver.$(LIBSUFFIX): $(LINEAR_SOLVER_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)linear_solver.$(LIBSUFFIX) $(LINEAR_SOLVER_LIB_OS) $(SCIP_STATIC_LNK)
+$(LIB_DIR)/$(LIBPREFIX)linear_solver.$(LIBSUFFIX): $(LINEAR_SOLVER_LIB_OBJS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)linear_solver.$(LIBSUFFIX) $(LINEAR_SOLVER_LIB_OBJS) $(SCIP_STATIC_LNK)
 
 # Util library.
 
-UTIL_LIB_OS=\
+UTIL_LIB_OBJS=\
 	$(OBJ_DIR)/bitset.$O \
 	$(OBJ_DIR)/cached_log.$O \
 	$(OBJ_DIR)/const_int_array.$O \
@@ -386,12 +396,12 @@ $(OBJ_DIR)/graph_export.$O:$(SRC_DIR)/util/graph_export.cc
 $(OBJ_DIR)/xml_helper.$O:$(SRC_DIR)/util/xml_helper.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/xml_helper.cc $(OBJ_OUT)xml_helper.$O
 
-$(LIB_DIR)/$(LIBPREFIX)util.$(LIBSUFFIX): $(UTIL_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)util.$(LIBSUFFIX) $(UTIL_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)util.$(LIBSUFFIX): $(UTIL_LIB_OBJS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)util.$(LIBSUFFIX) $(UTIL_LIB_OBJS)
 
 # Graph library.
 
-GRAPH_LIB_OS=\
+GRAPH_LIB_OBJS=\
 	$(OBJ_DIR)/linear_assignment.$O \
 	$(OBJ_DIR)/cliques.$O \
 	$(OBJ_DIR)/connectivity.$O \
@@ -413,12 +423,12 @@ $(OBJ_DIR)/max_flow.$O:$(SRC_DIR)/graph/max_flow.cc
 $(OBJ_DIR)/min_cost_flow.$O:$(SRC_DIR)/graph/min_cost_flow.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/min_cost_flow.cc $(OBJ_OUT)min_cost_flow.$O
 
-$(LIB_DIR)/$(LIBPREFIX)graph.$(LIBSUFFIX): $(GRAPH_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)graph.$(LIBSUFFIX) $(GRAPH_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)graph.$(LIBSUFFIX): $(GRAPH_LIB_OBJS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)graph.$(LIBSUFFIX) $(GRAPH_LIB_OBJS)
 
 # Shortestpaths library.
 
-SHORTESTPATHS_LIB_OS=\
+SHORTESTPATHS_LIB_OBJS=\
 	$(OBJ_DIR)/bellman_ford.$O \
 	$(OBJ_DIR)/dijkstra.$O \
 	$(OBJ_DIR)/shortestpaths.$O
@@ -432,23 +442,23 @@ $(OBJ_DIR)/dijkstra.$O:$(SRC_DIR)/graph/dijkstra.cc
 $(OBJ_DIR)/shortestpaths.$O:$(SRC_DIR)/graph/shortestpaths.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/shortestpaths.cc $(OBJ_OUT)shortestpaths.$O
 
-$(LIB_DIR)/$(LIBPREFIX)shortestpaths.$(LIBSUFFIX): $(SHORTESTPATHS_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)shortestpaths.$(LIBSUFFIX) $(SHORTESTPATHS_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)shortestpaths.$(LIBSUFFIX): $(SHORTESTPATHS_LIB_OBJS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)shortestpaths.$(LIBSUFFIX) $(SHORTESTPATHS_LIB_OBJS)
 
 # Routing library.
 
-ROUTING_LIB_OS=\
+ROUTING_LIB_OBJS=\
 	$(OBJ_DIR)/routing.$O
 
 $(OBJ_DIR)/routing.$O:$(SRC_DIR)/constraint_solver/routing.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing.cc $(OBJ_OUT)routing.$O
 
-$(LIB_DIR)/$(LIBPREFIX)routing.$(LIBSUFFIX): $(ROUTING_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)routing.$(LIBSUFFIX) $(ROUTING_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)routing.$(LIBSUFFIX): $(ROUTING_LIB_OBJS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)routing.$(LIBSUFFIX) $(ROUTING_LIB_OBJS)
 
 # Algorithms library.
 
-ALGORITHMS_LIB_OS=\
+ALGORITHMS_LIB_OBJS=\
 	$(OBJ_DIR)/hungarian.$O \
 	$(OBJ_DIR)/knapsack_solver.$O
 
@@ -458,12 +468,12 @@ $(OBJ_DIR)/hungarian.$O:$(SRC_DIR)/algorithms/hungarian.cc
 $(OBJ_DIR)/knapsack_solver.$O:$(SRC_DIR)/algorithms/knapsack_solver.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/algorithms/knapsack_solver.cc $(OBJ_OUT)knapsack_solver.$O
 
-$(LIB_DIR)/$(LIBPREFIX)algorithms.$(LIBSUFFIX): $(ALGORITHMS_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)algorithms.$(LIBSUFFIX) $(ALGORITHMS_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)algorithms.$(LIBSUFFIX): $(ALGORITHMS_LIB_OBJS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)algorithms.$(LIBSUFFIX) $(ALGORITHMS_LIB_OBJS)
 
 # Base library.
 
-BASE_LIB_OS=\
+BASE_LIB_OBJS=\
 	$(OBJ_DIR)/bitmap.$O\
 	$(OBJ_DIR)/callback.$O\
 	$(OBJ_DIR)/file.$O\
@@ -511,12 +521,12 @@ $(OBJ_DIR)/sysinfo.$O:$(SRC_DIR)/base/sysinfo.cc
 $(OBJ_DIR)/timer.$O:$(SRC_DIR)/base/timer.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/timer.cc $(OBJ_OUT)timer.$O
 
-$(LIB_DIR)/$(LIBPREFIX)base.$(LIBSUFFIX): $(BASE_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)base.$(LIBSUFFIX) $(BASE_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)base.$(LIBSUFFIX): $(BASE_LIB_OBJS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)base.$(LIBSUFFIX) $(BASE_LIB_OBJS)
 
 # DIMACS challenge problem format library
 
-DIMACS_LIB_OS=\
+DIMACS_LIB_OBJS=\
 	$(OBJ_DIR)/parse_dimacs_assignment.$O\
 	$(OBJ_DIR)/print_dimacs_assignment.$O
 
@@ -525,8 +535,40 @@ $(OBJ_DIR)/parse_dimacs_assignment.$O:$(EX_DIR)/cpp/parse_dimacs_assignment.cc
 $(OBJ_DIR)/print_dimacs_assignment.$O:$(EX_DIR)/cpp/print_dimacs_assignment.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/print_dimacs_assignment.cc $(OBJ_OUT)print_dimacs_assignment.$O
 
-$(LIB_DIR)/$(LIBPREFIX)dimacs.$(LIBSUFFIX): $(DIMACS_LIB_OS)
-	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)dimacs.$(LIBSUFFIX) $(DIMACS_LIB_OS)
+$(LIB_DIR)/$(LIBPREFIX)dimacs.$(LIBSUFFIX): $(DIMACS_LIB_OBJS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)dimacs.$(LIBSUFFIX) $(DIMACS_LIB_OBJS)
+
+FLATZINC_LIB_OBJS=\
+	$(OBJ_DIR)/flatzinc.$O\
+	$(OBJ_DIR)/lexer.yy.$O\
+	$(OBJ_DIR)/parser.tab.$O\
+	$(OBJ_DIR)/registry.$O
+
+$(SRC_DIR)/flatzinc/lexer.yy.cc: $(SRC_DIR)/flatzinc/lexer.lxx $(SRC_DIR)/flatzinc/parser.tab.h
+	flex -o$(SRC_DIR)/flatzinc/lexer.yy.cc $(SRC_DIR)/flatzinc/lexer.lxx
+
+$(SRC_DIR)/flatzinc/parser.tab.h $(SRC_DIR)/flatzinc/parser.tab.cc: $(SRC_DIR)/flatzinc/parser.yxx
+	bison -t -o $(SRC_DIR)/flatzinc/parser.tab.cc -d $<
+	mv $(SRC_DIR)/flatzinc/parser.tab.hh $(SRC_DIR)/flatzinc/parser.tab.h
+
+
+$(OBJ_DIR)/flatzinc.$O:$(SRC_DIR)/flatzinc/flatzinc.cc $(SRC_DIR)/flatzinc/flatzinc.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sflatzinc.cc $(OBJ_OUT)flatzinc.$O
+$(OBJ_DIR)/lexer.yy.$O:$(SRC_DIR)/flatzinc/lexer.yy.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Slexer.yy.cc $(OBJ_OUT)lexer.yy.$O
+$(OBJ_DIR)/parser.tab.$O:$(SRC_DIR)/flatzinc/parser.tab.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser.tab.cc $(OBJ_OUT)parser.tab.$O
+$(OBJ_DIR)/registry.$O:$(SRC_DIR)/flatzinc/registry.cc $(SRC_DIR)/flatzinc/registry.h $(SRC_DIR)/flatzinc/flatzinc.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sregistry.cc $(OBJ_OUT)registry.$O
+
+$(LIB_DIR)/$(LIBPREFIX)fz.$(LIBSUFFIX): $(FLATZINC_LIB_OBJS)
+	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)fz.$(LIBSUFFIX) $(FLATZINC_LIB_OBJS)
+
+$(OBJ_DIR)/fz.$O:$(SRC_DIR)/flatzinc/fz.cc $(SRC_DIR)/flatzinc/flatzinc.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz.cc $(OBJ_OUT)fz.$O
+
+$(BIN_DIR)/fz$E: $(FLATZINC_DEPS) $(OBJ_DIR)/fz.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/fz.$O $(FLATZINC_LNK) $(LDFLAGS) $(EXEOUT)fz$E
 
 # Flow and linear assignment cpp
 
