@@ -593,8 +593,8 @@ class MaxConstraint : public TreeArrayConstraint {
       const int block_start = ChildStart(parent);
       const int block_end = ChildEnd(parent_depth, parent);
       for (int k = block_start; k <= block_end; ++k) {
-        max_min = std::min(max_min, Min(depth, k));
-        max_max = std::min(max_max, Max(depth, k));
+        max_min = std::max(max_min, Min(depth, k));
+        max_max = std::max(max_max, Max(depth, k));
       }
       if (max_min > Min(parent_depth, parent) ||
           max_max < Max(parent_depth, parent)) {
