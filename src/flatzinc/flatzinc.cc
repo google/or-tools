@@ -46,69 +46,73 @@ using namespace std;
 namespace operations_research {
 
 FlatZincModel::FlatZincModel(void)
-    : intVarCount(-1), boolVarCount(-1), setVarCount(-1), _optVar(-1),
+    : int_var_count(-1),
+      bool_var_count(-1),
+      set_var_count(-1),
+      objective_variable_(-1),
       _solveAnnotations(NULL),
       solver_("FlatZincSolver"),
       collector_(NULL),
       objective_(NULL) {}
 
 void FlatZincModel::init(int intVars, int boolVars, int setVars) {
-  intVarCount = 0;
-  iv = std::vector<IntVar*>(intVars);
-  iv_introduced = std::vector<bool>(intVars);
-  iv_boolalias = std::vector<int>(intVars);
-  boolVarCount = 0;
-  bv = std::vector<IntVar*>(boolVars);
-  bv_introduced = std::vector<bool>(boolVars);
-  setVarCount = 0;
+  int_var_count = 0;
+  integer_variables_ = std::vector<IntVar*>(intVars);
+  integer_variables_introduced = std::vector<bool>(intVars);
+  integer_variables_boolalias = std::vector<int>(intVars);
+  bool_var_count = 0;
+  boolean_variables_ = std::vector<IntVar*>(boolVars);
+  boolean_variables_introduced = std::vector<bool>(boolVars);
+  set_var_count = 0;
   sv = std::vector<SetVar>(setVars);
   sv_introduced = std::vector<bool>(setVars);
 }
 
 void FlatZincModel::newIntVar(const std::string& name, IntVarSpec* vs) {
   if (vs->alias) {
-    iv[intVarCount++] = iv[vs->i];
+    integer_variables_[int_var_count++] = integer_variables_[vs->i];
   } else {
     AST::SetLit* domain = vs->domain.some();
     if (domain == NULL) {
-      iv[intVarCount++] = solver_.MakeIntVar(kint32min, kint32max, name);
+      integer_variables_[int_var_count++] = solver_.MakeIntVar(kint32min, kint32max, name);
     } else if (domain->interval) {
-      iv[intVarCount++] = solver_.MakeIntVar(domain->min, domain->max, name);
+      integer_variables_[int_var_count++] = solver_.MakeIntVar(domain->min, domain->max, name);
     } else {
-      iv[intVarCount++] = solver_.MakeIntVar(domain->s, name);
+      integer_variables_[int_var_count++] = solver_.MakeIntVar(domain->s, name);
     }
-    VLOG(1) << "Create IntVar: " << iv[intVarCount - 1]->DebugString();
+    VLOG(1) << "Create IntVar: " << integer_variables_[int_var_count - 1]->DebugString();
   }
-  iv_introduced[intVarCount-1] = vs->introduced;
-  iv_boolalias[intVarCount-1] = -1;
+  integer_variables_introduced[int_var_count-1] = vs->introduced;
+  integer_variables_boolalias[int_var_count-1] = -1;
 }
 
 void FlatZincModel::aliasBool2Int(int iv, int bv) {
-  iv_boolalias[iv] = bv;
+  integer_variables_boolalias[iv] = bv;
 }
+
 int FlatZincModel::aliasBool2Int(int iv) {
-  return iv_boolalias[iv];
+  return integer_variables_boolalias[iv];
 }
 
 void FlatZincModel::newBoolVar(const std::string& name, BoolVarSpec* vs) {
   if (vs->alias) {
-    bv[boolVarCount++] = bv[vs->i];
+    boolean_variables_[bool_var_count++] = boolean_variables_[vs->i];
   } else {
-    bv[boolVarCount++] = solver_.MakeBoolVar(name);
-    VLOG(1) << "Create BoolVar: " << bv[boolVarCount - 1]->DebugString();
+    boolean_variables_[bool_var_count++] = solver_.MakeBoolVar(name);
+    VLOG(1) << "Create BoolVar: "
+            << boolean_variables_[bool_var_count - 1]->DebugString();
   }
-  bv_introduced[boolVarCount-1] = vs->introduced;
+  boolean_variables_introduced[bool_var_count-1] = vs->introduced;
 }
 
-void
-FlatZincModel::newSetVar(SetVarSpec* vs) {
+void FlatZincModel::newSetVar(SetVarSpec* vs) {
   if (vs->alias) {
-    sv[setVarCount++] = sv[vs->i];
+    sv[set_var_count++] = sv[vs->i];
   } else {
     LOG(FATAL) << "SetVar not supported";
-    sv[setVarCount++] = SetVar();
+    sv[set_var_count++] = SetVar();
   }
-  sv_introduced[setVarCount-1] = vs->introduced;
+  sv_introduced[set_var_count-1] = vs->introduced;
 }
 
 void FlatZincModel::postConstraint(const ConExpr& ce, AST::Node* ann) {
@@ -151,7 +155,7 @@ void FlatZincModel::createBranchers(AST::Node* ann,
         AST::Array *vars = args->a[0]->getArray();
         std::vector<IntVar*> int_vars;
         for (int i = 0; i < vars->a.size(); ++i) {
-          int_vars.push_back(iv[vars->a[i]->getIntVar()]);
+          int_vars.push_back(integer_variables_[vars->a[i]->getIntVar()]);
         }
         builders_.push_back(solver_.MakePhase(int_vars,
                                               Solver::CHOOSE_FIRST_UNBOUND,
@@ -162,16 +166,20 @@ void FlatZincModel::createBranchers(AST::Node* ann,
           AST::Call *call = flatAnn[i]->getCall("bool_search");
           AST::Array *args = call->getArgs(4);
           AST::Array *vars = args->a[0]->getArray();
-          std::cerr << "bool_search\n";
-          // TODO: install search
+          std::vector<IntVar*> int_vars;
+          for (int i = 0; i < vars->a.size(); ++i) {
+            int_vars.push_back(boolean_variables_[vars->a[i]->getBoolVar()]);
+          }
+          builders_.push_back(solver_.MakePhase(int_vars,
+                                                Solver::CHOOSE_FIRST_UNBOUND,
+                                                Solver::ASSIGN_MAX_VALUE));
         } catch (AST::TypeError& e) {
           (void) e;
           try {
             AST::Call *call = flatAnn[i]->getCall("set_search");
             AST::Array *args = call->getArgs(4);
             AST::Array *vars = args->a[0]->getArray();
-            std::cerr << "set_search\n";
-            // TODO: install search
+            LOG(FATAL) << "Search on set variables not supported";
           } catch (AST::TypeError& e) {
             (void) e;
             if (!ignoreUnknown) {
@@ -206,17 +214,17 @@ AST::Array* FlatZincModel::solveAnnotations(void) const {
 }
 
 void FlatZincModel::solve(AST::Array* ann) {
-  _method = SAT;
+  method_ = SAT;
   _solveAnnotations = ann;
 }
 
 void FlatZincModel::minimize(int var, AST::Array* ann) {
-  _method = MIN;
-  _optVar = var;
+  method_ = MIN;
+  objective_variable_ = var;
   _solveAnnotations = ann;
   // Branch on optimization variable to ensure that it is given a value.
   AST::Array* args = new AST::Array(4);
-  args->a[0] = new AST::Array(new AST::IntVar(_optVar));
+  args->a[0] = new AST::Array(new AST::IntVar(objective_variable_));
   args->a[1] = new AST::Atom("input_order");
   args->a[2] = new AST::Atom("indomain_min");
   args->a[3] = new AST::Atom("complete");
@@ -225,16 +233,16 @@ void FlatZincModel::minimize(int var, AST::Array* ann) {
     ann = new AST::Array(c);
   else
     ann->a.push_back(c);
-  objective_ = solver_.MakeMinimize(iv[_optVar], 1);
+  objective_ = solver_.MakeMinimize(integer_variables_[objective_variable_], 1);
 }
 
 void FlatZincModel::maximize(int var, AST::Array* ann) {
-  _method = MAX;
-  _optVar = var;
+  method_ = MAX;
+  objective_variable_ = var;
   _solveAnnotations = ann;
   // Branch on optimization variable to ensure that it is given a value.
   AST::Array* args = new AST::Array(4);
-  args->a[0] = new AST::Array(new AST::IntVar(_optVar));
+  args->a[0] = new AST::Array(new AST::IntVar(objective_variable_));
   args->a[1] = new AST::Atom("input_order");
   args->a[2] = new AST::Atom("indomain_min");
   args->a[3] = new AST::Atom("complete");
@@ -243,7 +251,7 @@ void FlatZincModel::maximize(int var, AST::Array* ann) {
     ann = new AST::Array(c);
   else
     ann->a.push_back(c);
-  objective_ = solver_.MakeMaximize(iv[_optVar], 1);
+  objective_ = solver_.MakeMaximize(integer_variables_[objective_variable_], 1);
 }
 
 FlatZincModel::~FlatZincModel(void) {
@@ -251,23 +259,23 @@ FlatZincModel::~FlatZincModel(void) {
 }
 
 void FlatZincModel::run(std::ostream& out, const FzPrinter& p) {
-  switch (_method) {
+  switch (method_) {
     case MIN:
     case MAX: {
       std::cerr << "start optimization search\n";
       SearchMonitor* const log = solver_.MakeSearchLog(100000);
       collector_ = solver_.MakeLastSolutionCollector();
-      collector_->Add(iv);
-      collector_->Add(bv);
-      collector_->AddObjective(iv[_optVar]);
+      collector_->Add(integer_variables_);
+      collector_->Add(boolean_variables_);
+      collector_->AddObjective(integer_variables_[objective_variable_]);
       solver_.Solve(solver_.Compose(builders_), log, collector_, objective_);
       break;
     }
     case SAT: {
       SearchMonitor* const log = solver_.MakeSearchLog(100000);
       collector_ = solver_.MakeFirstSolutionCollector();
-      collector_->Add(iv);
-      collector_->Add(bv);
+      collector_->Add(integer_variables_);
+      collector_->Add(boolean_variables_);
       solver_.Solve(solver_.Compose(builders_), log, collector_);
       break;
     }
@@ -275,11 +283,11 @@ void FlatZincModel::run(std::ostream& out, const FzPrinter& p) {
 }
 
 FlatZincModel::Meth FlatZincModel::method(void) const {
-  return _method;
+  return method_;
 }
 
 int FlatZincModel::optVar(void) const {
-  return _optVar;
+  return objective_variable_;
 }
 
 void FlatZincModel::print(std::ostream& out, const FzPrinter& p) const {
@@ -296,21 +304,21 @@ void FzPrinter::printElem(std::ostream& out, AST::Node* ai,
   if (ai->isInt(k)) {
     out << k;
   } else if (ai->isIntVar()) {
-    IntVar* const var = m.iv[ai->getIntVar()];
+    IntVar* const var = m.integer_variables_[ai->getIntVar()];
     if (m.collector() != NULL && m.collector()->solution_count() > 0) {
       out << m.collector()->Value(0, var);
     } else {
       out << var->DebugString();
     }
   } else if (ai->isBoolVar()) {
-    IntVar* const var = m.bv[ai->getBoolVar()];
+    IntVar* const var = m.boolean_variables_[ai->getBoolVar()];
     if (m.collector() != NULL && m.collector()->solution_count() > 0) {
       out << m.collector()->Value(0, var);
     } else {
       out << var->DebugString();
     }
   } else if (ai->isSetVar()) {
-    // TODO: output actual variable
+    LOG(FATAL) << "Set variables not implemented";
     out << ai->getSetVar();
   } else if (ai->isBool()) {
     out << (ai->getBool() ? "true" : "false");

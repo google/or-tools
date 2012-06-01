@@ -75,17 +75,17 @@ class FlatZincModel {
   };
  protected:
   /// Number of integer variables
-  int intVarCount;
+  int int_var_count;
   /// Number of Boolean variables
-  int boolVarCount;
+  int bool_var_count;
   /// Number of set variables
-  int setVarCount;
+  int set_var_count;
 
   /// Index of the integer variable to optimize
-  int _optVar;
+  int objective_variable_;
 
   /// Whether to solve as satisfaction or optimization problem
-  Meth _method;
+  Meth method_;
 
   /// Annotations on the solve item
   AST::Array* _solveAnnotations;
@@ -97,15 +97,15 @@ class FlatZincModel {
 
  public:
   /// The integer variables
-  std::vector<operations_research::IntVar*> iv;
+  std::vector<operations_research::IntVar*> integer_variables_;
   /// Indicates whether an integer variable is introduced by mzn2fzn
-  std::vector<bool> iv_introduced;
+  std::vector<bool> integer_variables_introduced;
   /// Indicates whether an integer variable aliases a Boolean variable
-  std::vector<int> iv_boolalias;
+  std::vector<int> integer_variables_boolalias;
   /// The Boolean variables
-  std::vector<operations_research::IntVar*> bv;
+  std::vector<operations_research::IntVar*> boolean_variables_;
   /// Indicates whether a Boolean variable is introduced by mzn2fzn
-  std::vector<bool> bv_introduced;
+  std::vector<bool> boolean_variables_introduced;
   /// The set variables
   std::vector<SetVar> sv;
   /// Indicates whether a set variable is introduced by mzn2fzn
