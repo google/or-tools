@@ -74,16 +74,19 @@ void FlatZincModel::newIntVar(const std::string& name, IntVarSpec* vs) {
   } else {
     AST::SetLit* domain = vs->domain.some();
     if (domain == NULL) {
-      integer_variables_[int_var_count++] = solver_.MakeIntVar(kint32min, kint32max, name);
+      integer_variables_[int_var_count++] =
+          solver_.MakeIntVar(kint32min, kint32max, name);
     } else if (domain->interval) {
-      integer_variables_[int_var_count++] = solver_.MakeIntVar(domain->min, domain->max, name);
+      integer_variables_[int_var_count++] =
+          solver_.MakeIntVar(domain->min, domain->max, name);
     } else {
       integer_variables_[int_var_count++] = solver_.MakeIntVar(domain->s, name);
     }
-    VLOG(1) << "Create IntVar: " << integer_variables_[int_var_count - 1]->DebugString();
+    VLOG(1) << "Create IntVar: "
+            << integer_variables_[int_var_count - 1]->DebugString();
   }
-  integer_variables_introduced[int_var_count-1] = vs->introduced;
-  integer_variables_boolalias[int_var_count-1] = -1;
+  integer_variables_introduced[int_var_count - 1] = vs->introduced;
+  integer_variables_boolalias[int_var_count - 1] = -1;
 }
 
 void FlatZincModel::aliasBool2Int(int iv, int bv) {
@@ -263,7 +266,7 @@ void FlatZincModel::run(std::ostream& out, const FzPrinter& p) {
     case MIN:
     case MAX: {
       std::cerr << "start optimization search\n";
-      SearchMonitor* const log = solver_.MakeSearchLog(100000);
+      SearchMonitor* const log = solver_.MakeSearchLog(100000, objective_);
       collector_ = solver_.MakeLastSolutionCollector();
       collector_->Add(integer_variables_);
       collector_->Add(boolean_variables_);
