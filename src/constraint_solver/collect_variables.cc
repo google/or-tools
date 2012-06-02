@@ -44,6 +44,7 @@ class CollectVariablesVisitor : public ModelParser {
   virtual void EndVisitModel(const string& solver_name) {
     PopArgumentHolder();
     primaries_->assign(primary_set_.begin(), primary_set_.end());
+    std::sort(primaries_->begin(), primaries_->end());
     secondaries_->assign(secondary_set_.begin(), secondary_set_.end());
     intervals_->assign(interval_set_.begin(), interval_set_.end());
     sequences_->assign(sequence_set_.begin(), sequence_set_.end());
