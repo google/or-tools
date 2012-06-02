@@ -89,7 +89,6 @@ class FlatZincModel {
 
   Solver solver_;
   std::vector<DecisionBuilder*> builders_;
-  SolutionCollector* collector_;
   OptimizeVar* objective_;
 
  public:
@@ -110,10 +109,6 @@ class FlatZincModel {
 
   Solver* solver() {
     return &solver_;
-  }
-
-  SolutionCollector* collector() const {
-    return collector_;
   }
 
   /// Construct empty space
@@ -156,9 +151,6 @@ class FlatZincModel {
              bool all_solutions,
              bool ignore_annotations);
 
-  /// Produce output on \a out using \a p
-  void PrintAllSolutions() const;
-
   // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
   void Parse(const std::string& fileName);
 
@@ -167,7 +159,7 @@ class FlatZincModel {
 
  private:
   void CreateDecisionBuilders(bool ignore_unknown, bool ignore_annotations);
-  string DebugString(AST::Node* const ai, int solution_count) const;
+  string DebugString(AST::Node* const ai) const;
 
   AST::Array* output_;
 };

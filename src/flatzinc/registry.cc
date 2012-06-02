@@ -945,6 +945,28 @@ void p_all_different_int(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
+void p_count(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+  Solver* const solver = s.solver();
+  AST::Array* const array_variables = ce[0]->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = array_variables->a[i]->isIntVar() ?
+        s.integer_variables_[array_variables->a[i]->getIntVar()] :
+        solver->MakeIntConst(array_variables->a[i]->getInt());
+  }
+  IntVar* const count = ce[2]->isIntVar() ?
+      s.integer_variables_[ce[2]->getIntVar()] :
+      solver->MakeIntConst(ce[2]->getInt());
+  if (ce[1]->isInt()) {
+    Constraint* const ct = solver->MakeCount(variables, ce[1]->getInt(), count);
+    VLOG(1) << "Posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  } else {
+    LOG(FATAL) << "Not implemented";
+  }
+}
+
 class IntPoster {
  public:
   IntPoster(void) {
@@ -1010,7 +1032,7 @@ class IntPoster {
     registry().add("bool2int", &p_bool2int);
     registry().add("int_in", &p_int_in);
     registry().add("all_different_int", &p_all_different_int);
-
+    registry().add("count", &p_count);
   }
 };
 IntPoster __int_poster;

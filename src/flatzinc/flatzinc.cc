@@ -52,7 +52,6 @@ FlatZincModel::FlatZincModel(void)
       objective_variable_(-1),
       solve_annotations_(NULL),
       solver_("FlatZincSolver"),
-      collector_(NULL),
       objective_(NULL),
       output_(NULL) {}
 
@@ -133,10 +132,11 @@ void FlattenAnnotations(AST::Array* const annotations,
   for (unsigned int i=0; i < annotations->a.size(); i++) {
     if (annotations->a[i]->isCall("seq_search")) {
       AST::Call* c = annotations->a[i]->getCall();
-      if (c->args->isArray())
+      if (c->args->isArray()) {
         FlattenAnnotations(c->args->getArray(), out);
-      else
+      } else {
         out.push_back(c->args);
+      }
     } else {
       out.push_back(annotations->a[i]);
     }
@@ -230,10 +230,11 @@ void FlatZincModel::Minimize(int var, AST::Array* const annotations) {
   args->a[2] = new AST::Atom("indomain_min");
   args->a[3] = new AST::Atom("complete");
   AST::Call* c = new AST::Call("int_search", args);
-  if (!solve_annotations_)
+  if (!solve_annotations_) {
     solve_annotations_ = new AST::Array(c);
-  else
+  } else {
     solve_annotations_->a.push_back(c);
+  }
   objective_ = solver_.MakeMinimize(integer_variables_[objective_variable_], 1);
 }
 
@@ -248,10 +249,11 @@ void FlatZincModel::Maximize(int var, AST::Array* const annotations) {
   args->a[2] = new AST::Atom("indomain_min");
   args->a[3] = new AST::Atom("complete");
   AST::Call* c = new AST::Call("int_search", args);
-  if (!solve_annotations_)
+  if (!solve_annotations_) {
     solve_annotations_ = new AST::Array(c);
-  else
+  } else {
     solve_annotations_->a.push_back(c);
+  }
   objective_ = solver_.MakeMaximize(integer_variables_[objective_variable_], 1);
 }
 
@@ -271,37 +273,38 @@ void FlatZincModel::Solve(int solve_frequency,
       SearchMonitor* const log = use_log ?
           solver_.MakeSearchLog(solve_frequency, objective_) :
           NULL;
-      collector_ = all_solutions ?
-          solver_.MakeAllSolutionCollector() :
-          solver_.MakeLastSolutionCollector();
-      collector_->Add(integer_variables_);
-      collector_->Add(boolean_variables_);
-      collector_->AddObjective(integer_variables_[objective_variable_]);
-      solver_.Solve(solver_.Compose(builders_), log, collector_, objective_);
+      int count = 0;
+      solver_.NewSearch(solver_.Compose(builders_), log, objective_);
+      while (solver_.NextSolution()) {
+        if (output_ != NULL) {
+          for (unsigned int i = 0; i < output_->a.size(); i++) {
+            std::cout << DebugString(output_->a[i]);
+          }
+          std::cout << "----------" << std::endl;
+        }
+      }
+      solver_.EndSearch();
       break;
     }
     case SAT: {
       SearchMonitor* const log = use_log ?
           solver_.MakeSearchLog(solve_frequency) :
           NULL;
-      collector_ = all_solutions ?
-          solver_.MakeAllSolutionCollector() :
-          solver_.MakeFirstSolutionCollector();
-      collector_->Add(integer_variables_);
-      collector_->Add(boolean_variables_);
-      solver_.Solve(solver_.Compose(builders_), log, collector_);
-      break;
-    }
-  }
-}
-
-void FlatZincModel::PrintAllSolutions() const {
-  if (output_ != NULL) {
-    for (int sol = 0; sol < collector_->solution_count(); ++sol) {
-      for (unsigned int i = 0; i < output_->a.size(); i++) {
-        std::cout << DebugString(output_->a[i], sol);
+      solver_.NewSearch(solver_.Compose(builders_), log);
+      while (solver_.NextSolution()) {
+        if (output_ != NULL) {
+          for (unsigned int i = 0; i < output_->a.size(); i++) {
+            std::cout << DebugString(output_->a[i]);
+          }
+          std::cout << "----------" << std::endl;
+        }
+        if (!all_solutions) {
+          break;
+        }
       }
-      std::cout << "----------" << std::endl;
+      solver_.EndSearch();
+
+      break;
     }
   }
 }
@@ -310,7 +313,7 @@ void FlatZincModel::InitOutput(AST::Array* const output) {
   output_ = output;
 }
 
-string FlatZincModel::DebugString(AST::Node* const ai, int sol) const {
+string FlatZincModel::DebugString(AST::Node* const ai) const {
   string output;
   int k;
   if (ai->isArray()) {
@@ -318,7 +321,7 @@ string FlatZincModel::DebugString(AST::Node* const ai, int sol) const {
     int size = aia->a.size();
     output += "[";
     for (int j = 0; j < size; j++) {
-      output += DebugString(aia->a[j], sol);
+      output += DebugString(aia->a[j]);
       if (j < size - 1) {
         output += ", ";
       }
@@ -328,18 +331,10 @@ string FlatZincModel::DebugString(AST::Node* const ai, int sol) const {
     output += StringPrintf("%d", k);
   } else if (ai->isIntVar()) {
     IntVar* const var = integer_variables_[ai->getIntVar()];
-    if (collector() != NULL && collector()->solution_count() > 0) {
-      output += StringPrintf("%d", collector()->Value(sol, var));
-    } else {
-      output += var->DebugString();
-    }
+    output += StringPrintf("%d", var->Value());
   } else if (ai->isBoolVar()) {
     IntVar* const var = boolean_variables_[ai->getBoolVar()];
-    if (collector() != NULL && collector()->solution_count() > 0) {
-      output += collector()->Value(sol, var) ? "true" : "false";
-    } else {
-      output += var->DebugString();
-    }
+    output += var->Value() ? "true" : "false";
   } else if (ai->isSetVar()) {
     LOG(FATAL) << "Set variables not implemented";
   } else if (ai->isBool()) {

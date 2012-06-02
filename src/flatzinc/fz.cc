@@ -61,7 +61,6 @@ void Run(const std::string& file) {
   }
 
   fz_model.Solve(FLAGS_log_frequency, FLAGS_log, FLAGS_all, FLAGS_free);
-  fz_model.PrintAllSolutions();
 }
 }
 
