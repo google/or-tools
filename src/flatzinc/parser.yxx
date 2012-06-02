@@ -69,18 +69,16 @@ using namespace operations_research;
 
 void yyerror(void* parm, const char *str) {
   ParserState* pp = static_cast<ParserState*>(parm);
-  pp->err << "Error: " << str
-          << " in line no. " << yyget_lineno(pp->yyscanner)
-          << std::endl;
+  LOG(ERROR) << "Error: " << str
+             << " in line no. " << yyget_lineno(pp->yyscanner);
   pp->hadError = true;
 }
 
 void yyassert(ParserState* pp, bool cond, const char* str)
 {
   if (!cond) {
-    pp->err << "Error: " << str
-            << " in line no. " << yyget_lineno(pp->yyscanner)
-            << std::endl;
+    LOG(ERROR) << "Error: " << str
+               << " in line no. " << yyget_lineno(pp->yyscanner);
     pp->hadError = true;
   }
 }
@@ -109,9 +107,8 @@ AST::Node* getArrayElement(ParserState* pp, string id, unsigned int offset) {
       return new AST::SetLit(tmpS[offset-1]);
   }
 
-  pp->err << "Error: array access to " << id << " invalid"
-          << " in line no. "
-          << yyget_lineno(pp->yyscanner) << std::endl;
+  LOG(ERROR) << "Error: array access to " << id << " invalid"
+             << " in line no. " << yyget_lineno(pp->yyscanner);
   pp->hadError = true;
   return new AST::IntVar(0); // keep things consistent
 }
@@ -125,9 +122,8 @@ AST::Node* getVarRefArg(ParserState* pp, string id, bool annotation = false) {
     return new AST::SetVar(tmp);
   if (annotation)
     return new AST::Atom(id);
-  pp->err << "Error: undefined variable " << id
-          << " in line no. "
-          << yyget_lineno(pp->yyscanner) << std::endl;
+  LOG(ERROR) << "Error: undefined variable " << id
+             << " in line no. " << yyget_lineno(pp->yyscanner);
   pp->hadError = true;
   return new AST::IntVar(0); // keep things consistent
 }
@@ -172,7 +168,7 @@ void initfg(ParserState* pp) {
         pp->fg->NewIntVar(name,
                           static_cast<IntVarSpec*>(pp->intvars[i].second));
       } catch (operations_research::Error& e) {
-        yyerror(pp, e.toString().c_str());
+        yyerror(pp, e.DebugString().c_str());
       }
     }
     if (pp->intvars[i].first[0] != '[') {
@@ -199,7 +195,7 @@ void initfg(ParserState* pp) {
         pp->fg->NewBoolVar(name,
                            static_cast<BoolVarSpec*>(pp->boolvars[i].second));
       } catch (operations_research::Error& e) {
-        yyerror(pp, e.toString().c_str());
+        yyerror(pp, e.DebugString().c_str());
       }
     }
     if (pp->boolvars[i].first[0] != '[') {
@@ -212,7 +208,7 @@ void initfg(ParserState* pp) {
       try {
         pp->fg->newSetVar(static_cast<SetVarSpec*>(pp->setvars[i].second));
       } catch (operations_research::Error& e) {
-        yyerror(pp, e.toString().c_str());
+        yyerror(pp, e.DebugString().c_str());
       }
     }
     if (pp->setvars[i].first[0] != '[') {
@@ -227,14 +223,14 @@ void initfg(ParserState* pp) {
         pp->fg->PostConstraint(*pp->domainConstraints[i], NULL);
         delete pp->domainConstraints[i];
       } catch (operations_research::Error& e) {
-        yyerror(pp, e.toString().c_str());
+        yyerror(pp, e.DebugString().c_str());
       }
     }
   }
 }
 
-void fillFzPrinter(ParserState& pp, operations_research::FzPrinter& p) {
-  p.init(pp.getOutput());
+void fillOutput(ParserState& pp, operations_research::FlatZincModel& m) {
+  m.InitOutput(pp.getOutput());
 }
 
 AST::Node* arrayOutput(AST::Call* ann) {
@@ -280,36 +276,35 @@ AST::Node* arrayOutput(AST::Call* ann) {
 
 namespace operations_research {
 
-  FlatZincModel* parse(const std::string& filename, FzPrinter& p, std::ostream& err,
-                       FlatZincModel* fzs) {
+  FlatZincModel* parse(const std::string& filename, FlatZincModel* fzs) {
 #ifdef HAVE_MMAP
     int fd;
     char* data;
     struct stat sbuf;
     fd = open(filename.c_str(), O_RDONLY);
     if (fd == -1) {
-      err << "Cannot open file " << filename << endl;
+      LOG(ERROR) << "Cannot open file " << filename;
       return NULL;
     }
     if (stat(filename.c_str(), &sbuf) == -1) {
-      err << "Cannot stat file " << filename << endl;
+      LOG(ERROR) << "Cannot stat file " << filename;
       return NULL;
     }
     data = (char*)mmap((caddr_t)0, sbuf.st_size, PROT_READ, MAP_SHARED, fd,0);
     if (data == (caddr_t)(-1)) {
-      err << "Cannot mmap file " << filename << endl;
+      LOG(ERROR) << "Cannot mmap file " << filename;
       return NULL;
     }
 
     if (fzs == NULL) {
       fzs = new FlatZincModel();
     }
-    ParserState pp(data, sbuf.st_size, err, fzs);
+    ParserState pp(data, sbuf.st_size, fzs);
 #else
     std::ifstream file;
     file.open(filename.c_str());
     if (!file.is_open()) {
-      err << "Cannot open file " << filename << endl;
+      LOG(ERROR) << "Cannot open file " << filename;
       return NULL;
     }
     std::string s = string(istreambuf_iterator<char>(file),
@@ -317,33 +312,32 @@ namespace operations_research {
     if (fzs == NULL) {
       fzs = new FlatZincModel();
     }
-    ParserState pp(s, err, fzs);
+    ParserState pp(s, fzs);
 #endif
     yylex_init(&pp.yyscanner);
     yyset_extra(&pp, pp.yyscanner);
     // yydebug = 1;
     yyparse(&pp);
-    fillFzPrinter(pp, p);
+    fillOutput(pp, *fzs);
 
     if (pp.yyscanner)
       yylex_destroy(pp.yyscanner);
     return pp.hadError ? NULL : pp.fg;
   }
 
-  FlatZincModel* parse(std::istream& is, FzPrinter& p, std::ostream& err,
-                       FlatZincModel* fzs) {
+  FlatZincModel* parse(std::istream& is, FlatZincModel* fzs) {
     std::string s = string(istreambuf_iterator<char>(is),
                            istreambuf_iterator<char>());
 
     if (fzs == NULL) {
       fzs = new FlatZincModel();
     }
-    ParserState pp(s, err, fzs);
+    ParserState pp(s, fzs);
     yylex_init(&pp.yyscanner);
     yyset_extra(&pp, pp.yyscanner);
     // yydebug = 1;
     yyparse(&pp);
-    fillFzPrinter(pp, p);
+    fillOutput(pp, *fzs);
 
     if (pp.yyscanner)
       yylex_destroy(pp.yyscanner);
@@ -876,9 +870,8 @@ int_init :
         if (pp->intvarTable.get($1, v))
           $$ = new IntVarSpec(Alias(v),false);
         else {
-          pp->err << "Error: undefined identifier " << $1
-                  << " in line no. "
-                  << yyget_lineno(pp->yyscanner) << std::endl;
+          LOG(ERROR) << "Error: undefined identifier " << $1
+                     << " in line no. " << yyget_lineno(pp->yyscanner);
           pp->hadError = true;
           $$ = new IntVarSpec(0,false); // keep things consistent
         }
@@ -897,9 +890,8 @@ int_init :
           else
             $$ = new IntVarSpec(0,false); // keep things consistent
         } else {
-          pp->err << "Error: undefined array identifier " << $1
-                  << " in line no. "
-                  << yyget_lineno(pp->yyscanner) << std::endl;
+          LOG(ERROR) << "Error: undefined array identifier " << $1
+                     << " in line no. " << yyget_lineno(pp->yyscanner);
           pp->hadError = true;
           $$ = new IntVarSpec(0,false); // keep things consistent
         }
@@ -933,9 +925,8 @@ float_init :
         if (pp->floatvarTable.get($1, v))
           $$ = new FloatVarSpec(Alias(v),false);
         else {
-          pp->err << "Error: undefined identifier " << $1
-                  << " in line no. "
-                  << yyget_lineno(pp->yyscanner) << std::endl;
+          LOG(ERROR) << "Error: undefined identifier " << $1
+                  << " in line no. " << yyget_lineno(pp->yyscanner);
           pp->hadError = true;
           $$ = new FloatVarSpec(0.0,false);
         }
@@ -954,9 +945,8 @@ float_init :
           else
             $$ = new FloatVarSpec(0.0,false);
         } else {
-          pp->err << "Error: undefined array identifier " << $1
-                  << " in line no. "
-                  << yyget_lineno(pp->yyscanner) << std::endl;
+          LOG(ERROR) << "Error: undefined array identifier " << $1
+                     << " in line no. " << yyget_lineno(pp->yyscanner);
           pp->hadError = true;
           $$ = new FloatVarSpec(0.0,false);
         }
@@ -989,9 +979,8 @@ bool_init :
         if (pp->boolvarTable.get($1, v))
           $$ = new BoolVarSpec(Alias(v),false);
         else {
-          pp->err << "Error: undefined identifier " << $1
-                  << " in line no. "
-                  << yyget_lineno(pp->yyscanner) << std::endl;
+          LOG(ERROR) << "Error: undefined identifier " << $1
+                     << " in line no. " << yyget_lineno(pp->yyscanner);
           pp->hadError = true;
           $$ = new BoolVarSpec(false,false);
         }
@@ -1010,9 +999,8 @@ bool_init :
           else
             $$ = new BoolVarSpec(false,false);
         } else {
-          pp->err << "Error: undefined array identifier " << $1
-                  << " in line no. "
-                  << yyget_lineno(pp->yyscanner) << std::endl;
+          LOG(ERROR) << "Error: undefined array identifier " << $1
+                     << " in line no. " << yyget_lineno(pp->yyscanner);
           pp->hadError = true;
           $$ = new BoolVarSpec(false,false);
         }
@@ -1043,9 +1031,8 @@ set_init :
         if (pp->setvarTable.get($1, v))
           $$ = new SetVarSpec(Alias(v),false);
         else {
-          pp->err << "Error: undefined identifier " << $1
-                  << " in line no. "
-                  << yyget_lineno(pp->yyscanner) << std::endl;
+          LOG(ERROR) << "Error: undefined identifier " << $1
+                  << " in line no. " << yyget_lineno(pp->yyscanner);
           pp->hadError = true;
           $$ = new SetVarSpec(Alias(0),false);
         }
@@ -1064,9 +1051,8 @@ set_init :
           else
             $$ = new SetVarSpec(Alias(0),false);
         } else {
-          pp->err << "Error: undefined array identifier " << $1
-                  << " in line no. "
-                  << yyget_lineno(pp->yyscanner) << std::endl;
+          LOG(ERROR) << "Error: undefined array identifier " << $1
+                     << " in line no. " << yyget_lineno(pp->yyscanner);
           pp->hadError = true;
           $$ = new SetVarSpec(Alias(0),false);
         }
@@ -1121,7 +1107,7 @@ constraint_item :
           try {
             pp->fg->PostConstraint(c, $6);
           } catch (operations_research::Error& e) {
-            yyerror(pp, e.toString().c_str());
+            yyerror(pp, e.DebugString().c_str());
           }
         }
         delete $6; free($2);
@@ -1134,7 +1120,7 @@ solve_item :
           try {
             pp->fg->Solve($2);
           } catch (operations_research::Error& e) {
-            yyerror(pp, e.toString().c_str());
+            yyerror(pp, e.DebugString().c_str());
           }
         } else {
           delete $2;
@@ -1150,7 +1136,7 @@ solve_item :
             else
               pp->fg->Maximize($4,$2);
           } catch (operations_research::Error& e) {
-            yyerror(pp, e.toString().c_str());
+            yyerror(pp, e.DebugString().c_str());
           }
         } else {
           delete $2;
@@ -1363,9 +1349,8 @@ solve_expr:
       {
         ParserState *pp = static_cast<ParserState*>(parm);
         if (!pp->intvarTable.get($1, $$)) {
-          pp->err << "Error: unknown integer variable " << $1
-                  << " in line no. "
-                  << yyget_lineno(pp->yyscanner) << std::endl;
+          LOG(ERROR) << "Error: unknown integer variable " << $1
+                     << " in line no. " << yyget_lineno(pp->yyscanner);
           pp->hadError = true;
         }
         free($1);
@@ -1375,15 +1360,13 @@ solve_expr:
         vector<int> tmp;
         ParserState *pp = static_cast<ParserState*>(parm);
         if (!pp->intvararrays.get($1, tmp)) {
-          pp->err << "Error: unknown integer variable array " << $1
-                  << " in line no. "
-                  << yyget_lineno(pp->yyscanner) << std::endl;
+          LOG(ERROR) << "Error: unknown integer variable array " << $1
+                     << " in line no. " << yyget_lineno(pp->yyscanner);
           pp->hadError = true;
         }
         if ($3 == 0 || static_cast<unsigned int>($3) > tmp.size()) {
-          pp->err << "Error: array index out of bounds for array " << $1
-                  << " in line no. "
-                  << yyget_lineno(pp->yyscanner) << std::endl;
+          LOG(ERROR) << "Error: array index out of bounds for array " << $1
+                     << " in line no. " << yyget_lineno(pp->yyscanner);
           pp->hadError = true;
         } else {
           $$ = tmp[$3-1];

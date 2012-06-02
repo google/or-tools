@@ -52,17 +52,14 @@ DEFINE_bool(log, false, "Show search log");
 
 namespace operations_research {
 void Run() {
-  FzPrinter p;
   scoped_ptr<FlatZincModel> fz_model((FLAGS_file == "-") ?
-                                     parse(cin, p):
-                                     parse(FLAGS_file.c_str(), p));
+                                     parse(cin):
+                                     parse(FLAGS_file.c_str()));
 
   if (fz_model.get()) {
-    fz_model->CreateDecisionBuilders(fz_model->SolveAnnotations(),
-                                     false,
-                                     std::cerr);
-    fz_model->Run(p, FLAGS_log);
-    fz_model->Print(std::cout, p);
+    fz_model->CreateDecisionBuilders(fz_model->SolveAnnotations(), false);
+    fz_model->Run(FLAGS_log);
+    LOG(INFO) << fz_model->DebugString();
   } else {
     exit(EXIT_FAILURE);
   }

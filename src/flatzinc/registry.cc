@@ -414,8 +414,8 @@ void p_int_lin_ne(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_lin_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_ne_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<","<<(*ce[3])<<")::"<<(*ann)<<"\n";
+  std::cerr << "int_lin_ne_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<","<<(ce[3]->DebugString())<<")::"<<ann->DebugString()<<"\n";
 }
 
 void p_int_lin_le(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
@@ -440,8 +440,8 @@ void p_int_lin_le(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_lin_le_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_le_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<","<<(*ce[3])<<")::"<<(*ann)<<"\n";
+  std::cerr << "int_lin_le_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<","<<(ce[3]->DebugString())<<")::"<<ann->DebugString()<<"\n";
 }
 void p_int_lin_lt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   Solver* const solver = s.solver();
@@ -464,8 +464,8 @@ void p_int_lin_lt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 void p_int_lin_lt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_lt_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<","<<(*ce[3])<<")::"<<(*ann)<<"\n";
+  std::cerr << "int_lin_lt_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<","<<(ce[3]->DebugString())<<")::"<<ann->DebugString()<<"\n";
 }
 void p_int_lin_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   Solver* const solver = s.solver();
@@ -489,8 +489,8 @@ void p_int_lin_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_lin_ge_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_ge_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<","<<(*ce[3])<<")::"<<(*ann)<<"\n";
+  std::cerr << "int_lin_ge_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<","<<(ce[3]->DebugString())<<")::"<<ann->DebugString()<<"\n";
 }
 void p_int_lin_gt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   Solver* const solver = s.solver();
@@ -514,8 +514,8 @@ void p_int_lin_gt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_lin_gt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_gt_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<","<<(*ce[3])<<")::"<<(*ann)<<"\n";
+  std::cerr << "int_lin_gt_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<","<<(ce[3]->DebugString())<<")::"<<ann->DebugString()<<"\n";
 }
 
 /* arithmetic constraints */
@@ -538,8 +538,8 @@ void p_int_plus(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_minus(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_minus("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "int_minus("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 
 void p_int_times(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
@@ -560,12 +560,12 @@ void p_int_times(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_div(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_div("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "int_div("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 void p_int_mod(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_mod("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "int_mod("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 
 void p_int_min(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
@@ -603,8 +603,8 @@ void p_int_max(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_negate(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_negate("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "int_negate("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 
 void p_bool_eq(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
@@ -636,8 +636,8 @@ void p_bool_eq(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_bool_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_eq_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "bool_eq_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 
 void p_bool_ne(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
@@ -669,8 +669,8 @@ void p_bool_ne(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_bool_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_ne_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "bool_ne_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 void p_bool_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   Constraint* ct = NULL;
@@ -701,8 +701,8 @@ void p_bool_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_bool_ge_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_ge_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "bool_ge_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 
 void p_bool_le(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
@@ -734,24 +734,24 @@ void p_bool_le(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_bool_le_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_le_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "bool_le_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 void p_bool_gt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_gt("<<(*ce[0])<<","<<(*ce[1])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "bool_gt("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 void p_bool_gt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_gt_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "bool_gt_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 void p_bool_lt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_lt("<<(*ce[0])<<","<<(*ce[1])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "bool_lt("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 void p_bool_lt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_lt_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "bool_lt_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 
 void p_bool_or(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
@@ -826,29 +826,29 @@ void p_array_bool_or(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 void p_array_bool_clause(FlatZincModel& s, const ConExpr& ce,
                          AST::Node* ann) {
-  std::cerr << "array_bool_clause("<<(*ce[0])<<","<<(*ce[1])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "array_bool_clause("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 void p_array_bool_clause_reif(FlatZincModel& s, const ConExpr& ce,
                               AST::Node* ann) {
-  std::cerr << "array_bool_clause_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "array_bool_clause_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 void p_bool_xor(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_xor("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "bool_xor("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 void p_bool_l_imp(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_l_imp("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "bool_l_imp("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 void p_bool_r_imp(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_r_imp("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "bool_r_imp("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 void p_bool_not(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "bool_not("<<(*ce[0])<<","<<(*ce[1])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "bool_not("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 
 /* element constraints */
@@ -876,8 +876,8 @@ void p_array_int_element(FlatZincModel& s, const ConExpr& ce,
 }
 void p_array_bool_element(FlatZincModel& s, const ConExpr& ce,
                           AST::Node* ann) {
-  std::cerr << "array_bool_element("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-            <<")::"<<(*ann)<<"\n";
+  std::cerr << "array_bool_element("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+            <<")::"<<ann->DebugString()<<"\n";
 }
 
 /* coercion constraints */
@@ -1014,78 +1014,78 @@ class IntPoster {
 IntPoster __int_poster;
 
 // void p_set_union(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
-//   std::cerr << "set_union("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_union("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 // void p_set_intersect(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
-//   std::cerr << "set_intersect("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_intersect("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 // void p_set_diff(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
-//   std::cerr << "set_diff("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_diff("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 
 // void p_set_symdiff(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-//   std::cerr << "set_symdiff("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_symdiff("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 
 // void p_set_eq(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   std::cerr << "set_eq("<<(*ce[0])<<","<<(*ce[1])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_eq("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 // void p_set_ne(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   std::cerr << "set_ne("<<(*ce[0])<<","<<(*ce[1])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_ne("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 // void p_set_subset(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   std::cerr << "set_subset("<<(*ce[0])<<","<<(*ce[1])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_subset("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 // void p_set_superset(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   std::cerr << "set_superset("<<(*ce[0])<<","<<(*ce[1])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_superset("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 // void p_set_card(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   std::cerr << "set_card("<<(*ce[0])<<","<<(*ce[1])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_card("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 // void p_set_in(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   std::cerr << "set_in("<<(*ce[0])<<","<<(*ce[1])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_in("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 // void p_set_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   std::cerr << "set_eq_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_eq_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 // void p_set_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   std::cerr << "set_ne_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_ne_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 // void p_set_subset_reif(FlatZincModel& s, const ConExpr& ce,
 //                        AST::Node *ann) {
-//   std::cerr << "set_subset_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_subset_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 // void p_set_superset_reif(FlatZincModel& s, const ConExpr& ce,
 //                          AST::Node *ann) {
-//   std::cerr << "set_superset_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_superset_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 // void p_set_in_reif(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
-//   std::cerr << "set_in_reif("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_in_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 // void p_set_disjoint(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
-//   std::cerr << "set_disjoint("<<(*ce[0])<<","<<(*ce[1])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "set_disjoint("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 
 // void p_array_set_element(FlatZincModel& s, const ConExpr& ce,
 //                          AST::Node* ann) {
-//   std::cerr << "array_set_element("<<(*ce[0])<<","<<(*ce[1])<<","<<(*ce[2])
-//             <<")::"<<(*ann)<<"\n";
+//   std::cerr << "array_set_element("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
+//             <<")::"<<ann->DebugString()<<"\n";
 // }
 
 

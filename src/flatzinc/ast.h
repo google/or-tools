@@ -43,10 +43,14 @@
 #include <iostream>
 #include <cstdlib>
 
+#include "base/stringprintf.h"
+
 /**
  * \namespace operations_research::AST
  * \brief Abstract syntax trees for the %FlatZinc interpreter
  */
+
+using std::string;
 
 namespace operations_research { namespace AST {
 
@@ -131,34 +135,26 @@ namespace operations_research { namespace AST {
     bool isAtom(void);
 
     /// Output string representation
-    virtual void print(std::ostream&) const = 0;
+    virtual string DebugString() const = 0;
   };
-
-  template<class Char, class Traits>
-  std::basic_ostream<Char,Traits>&
-  operator <<(std::basic_ostream<Char,Traits>& os, const Node& x) {
-    if (&x==NULL)
-      return os << "NULL";
-    x.print(os); return os;
-  }
-
 
   /// Boolean literal node
   class BoolLit : public Node {
   public:
     bool b;
     BoolLit(bool b0) : b(b0) {}
-    virtual void print(std::ostream& os) const {
-      os << "b(" << (b ? "true" : "false") << ")";
+    virtual string DebugString() const {
+      return b ? "b(true)" : "b(false)";
     }
   };
+
   /// Integer literal node
   class IntLit : public Node {
   public:
     int i;
     IntLit(int i0) : i(i0) {}
-    virtual void print(std::ostream& os) const {
-      os << "i("<<i<<")";
+    virtual string DebugString() const {
+      return StringPrintf("i(%d)", i);
     }
   };
   /// Float literal node
@@ -166,8 +162,8 @@ namespace operations_research { namespace AST {
   public:
     double d;
     FloatLit(double d0) : d(d0) {}
-    virtual void print(std::ostream& os) const {
-      os << "f("<<d<<")";
+    virtual string DebugString() const {
+      return StringPrintf("f(%f)", d);
     }
   };
   /// %Set literal node
@@ -182,14 +178,15 @@ namespace operations_research { namespace AST {
     bool empty(void) const {
       return ( (interval && min>max) || (!interval && s.size() == 0));
     }
-    virtual void print(std::ostream& os) const {
+    virtual string DebugString() const {
       if (interval)
-        os << "s("<<min<<".."<<max<<")";
+        return StringPrintf("%d..%d", min, max);
       else {
-        os << "s({";
-        for (int i=0; i<s.size(); i++)
-          os << s[i] << ",";
-        os << "})";
+        string output = "s({";
+        for (unsigned int i = 0; i < s.size(); i++) {
+          output += StringPrintf("%d%s", s[i], (i < s.size()-1 ? ", " : "})"));
+        }
+        return output;
       }
     }
   };
@@ -204,32 +201,32 @@ namespace operations_research { namespace AST {
   class BoolVar : public Var {
   public:
     BoolVar(int i0) : Var(i0) {}
-    virtual void print(std::ostream& os) const {
-      os << "xb("<<i<<")";
+    virtual string DebugString() const {
+      return StringPrintf("xb(%d)", i);
     }
   };
   /// Integer variable node
   class IntVar : public Var {
   public:
     IntVar(int i0) : Var(i0) {}
-    virtual void print(std::ostream& os) const {
-      os << "xi("<<i<<")";
+    virtual string DebugString() const {
+      return StringPrintf("xi(%d)", i);
     }
   };
   /// Float variable node
   class FloatVar : public Var {
   public:
     FloatVar(int i0) : Var(i0) {}
-    virtual void print(std::ostream& os) const {
-      os << "xf("<<i<<")";
+    virtual string DebugString() const {
+      return StringPrintf("xf(%d)", i);
     }
   };
   /// %Set variable node
   class SetVar : public Var {
   public:
     SetVar(int i0) : Var(i0) {}
-    virtual void print(std::ostream& os) const {
-      os << "xs("<<i<<")";
+    virtual string DebugString() const {
+      return StringPrintf("xs(%d)", i);
     }
   };
 
@@ -242,14 +239,15 @@ namespace operations_research { namespace AST {
     Array(Node* n)
     : a(1) { a[0] = n; }
     Array(int n=0) : a(n) {}
-    virtual void print(std::ostream& os) const {
-      os << "[";
+    virtual string DebugString() const {
+      string output = "[";
       for (unsigned int i=0; i<a.size(); i++) {
-        a[i]->print(os);
-        if (i<a.size()-1)
-          os << ", ";
+        output += a[i]->DebugString();
+        if (i < a.size() - 1)
+          output += ", ";
       }
-      os << "]";
+      output += "]";
+      return output;
     }
     ~Array(void) {
       for (int i=a.size(); i--;)
@@ -265,8 +263,10 @@ namespace operations_research { namespace AST {
     Call(const std::string& id0, Node* args0)
     : id(id0), args(args0) {}
     ~Call(void) { delete args; }
-    virtual void print(std::ostream& os) const {
-      os << id << "("; args->print(os); os << ")";
+    virtual string DebugString() const {
+      return StringPrintf("%s(%s)",
+                          id.c_str(),
+                          args->DebugString().c_str());
     }
     Array* getArgs(unsigned int n) {
       Array *a = args->getArray();
@@ -284,11 +284,10 @@ namespace operations_research { namespace AST {
     ArrayAccess(Node* a0, Node* idx0)
     : a(a0), idx(idx0) {}
     ~ArrayAccess(void) { delete a; delete idx; }
-    virtual void print(std::ostream& os) const {
-      a->print(os);
-      os << "[";
-      idx->print(os);
-      os << "]";
+    virtual string DebugString() const {
+      return StringPrintf("%s[%s]",
+                          a->DebugString().c_str(),
+                          idx->DebugString().c_str());
     }
   };
 
@@ -297,8 +296,8 @@ namespace operations_research { namespace AST {
   public:
     std::string id;
     Atom(const std::string& id0) : id(id0) {}
-    virtual void print(std::ostream& os) const {
-      os << id;
+    virtual string DebugString() const {
+      return id;
     }
   };
 
@@ -307,8 +306,8 @@ namespace operations_research { namespace AST {
   public:
     std::string s;
     String(const std::string& s0) : s(s0) {}
-    virtual void print(std::ostream& os) const {
-      os << "s(\"" << s << "\")";
+    virtual string DebugString() const {
+      return StringPrintf("s(\"%s\")", s.c_str());
     }
   };
 

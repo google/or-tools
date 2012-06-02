@@ -89,15 +89,12 @@ namespace operations_research {
   /// %State of the %FlatZinc parser
   class ParserState {
   public:
-    ParserState(const std::string& b, std::ostream& err0,
-                operations_research::FlatZincModel* fg0)
-    : buf(b.c_str()), pos(0), length(b.size()), fg(fg0),
-      hadError(false), err(err0) {}
+    ParserState(const std::string& b, operations_research::FlatZincModel* fg0)
+    : buf(b.c_str()), pos(0), length(b.size()), fg(fg0), hadError(false) {}
 
-    ParserState(char* buf0, int length0, std::ostream& err0,
+    ParserState(char* buf0, int length0,
                 operations_research::FlatZincModel* fg0)
-    : buf(buf0), pos(0), length(length0), fg(fg0),
-      hadError(false), err(err0) {}
+    : buf(buf0), pos(0), length(length0), fg(fg0), hadError(false) {}
 
     void* yyscanner;
     const char* buf;
@@ -127,7 +124,6 @@ namespace operations_research {
     std::vector<ConExpr*> domainConstraints;
 
     bool hadError;
-    std::ostream& err;
 
     int fillBuffer(char* lexBuf, unsigned int lexBufSize) {
       if (pos >= length)

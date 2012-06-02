@@ -38,7 +38,6 @@
 #ifndef OR_TOOLS_FLATZINC_H_
 #define OR_TOOLS_FLATZINC_H_
 
-#include <iostream>
 #include <map>
 #include <cassert>
 
@@ -59,8 +58,6 @@
 
 namespace operations_research {
 class SetVar {};
-
-class FzPrinter;
 
 /**
  * \brief A space that can be initialized with a %FlatZinc model
@@ -88,7 +85,7 @@ class FlatZincModel {
   Meth method_;
 
   /// Annotations on the solve item
-  AST::Array* _solveAnnotations;
+  AST::Array* solve_annotations_;
 
   Solver solver_;
   std::vector<DecisionBuilder*> builders_;
@@ -130,6 +127,8 @@ class FlatZincModel {
             int num_bool_variables,
             int num_set_variables);
 
+  void InitOutput(AST::Array* output);
+
   /// Create new integer variable from specification
   void NewIntVar(const std::string& name, IntVarSpec* vs);
   /// Link integer variable \a iv to Boolean variable \a bv
@@ -152,10 +151,10 @@ class FlatZincModel {
   void Maximize(int var, AST::Array* annotation);
 
   /// Run the search
-  void Run(const FzPrinter& p, bool log);
+  void Run(bool log);
 
   /// Produce output on \a out using \a p
-  void Print(std::ostream& out, const FzPrinter& p) const;
+  string DebugString() const;
 
   /// Return whether to solve a satisfaction or optimization problem
   Meth Method(void) const;
@@ -169,35 +168,15 @@ class FlatZincModel {
    * If \a ignoreUnknown is true, unknown solve item annotations will be
    * ignored, otherwise a warning is written to \a err.
    */
-  void CreateDecisionBuilders(AST::Node* ann,
-                              bool ignoreUnknown,
-                              std::ostream& err = std::cerr);
+  void CreateDecisionBuilders(AST::Node* ann, bool ignore_unknown);
 
   /// Return the solve item annotations
   AST::Array* SolveAnnotations(void) const;
 
-};
-
-/**
- * \brief Output support class for %FlatZinc interpreter
- *
- */
-class FzPrinter {
  private:
-  AST::Array* _output;
-  void printElem(std::ostream& out,
-                 AST::Node* ai, const FlatZincModel& m) const;
- public:
-  FzPrinter(void) : _output(NULL) {}
-  void init(AST::Array* output);
+  AST::Array* output_;
+  string DebugString(AST::Node* ai) const;
 
-  void print(std::ostream& out, const FlatZincModel& m) const;
-
-  ~FzPrinter(void);
-
- private:
-  FzPrinter(const FzPrinter&);
-  FzPrinter& operator=(const FzPrinter&);
 };
 
 /// %Exception class for %FlatZinc errors
@@ -207,7 +186,7 @@ class Error {
  public:
   Error(const std::string& where, const std::string& what)
       : msg(where+": "+what) {}
-  const std::string& toString(void) const { return msg; }
+  const std::string& DebugString(void) const { return msg; }
 };
 
 /**
@@ -215,21 +194,15 @@ class Error {
  *
  * Creates a new empty FlatZincModel if \a fzs is NULL.
  */
-FlatZincModel* parse(const std::string& fileName,
-                     FzPrinter& p, std::ostream& err = std::cerr,
-                     FlatZincModel* fzs=NULL);
+FlatZincModel* parse(const std::string& fileName, FlatZincModel* fzs=NULL);
 
 /**
  * \brief Parse FlatZinc from \a is into \a fzs and return it.
  *
  * Creates a new empty FlatZincModel if \a fzs is NULL.
  */
-FlatZincModel* parse(std::istream& is,
-                     FzPrinter& p, std::ostream& err = std::cerr,
-                     FlatZincModel* fzs=NULL);
+FlatZincModel* parse(std::istream& is, FlatZincModel* fzs=NULL);
 
 }
 
 #endif
-
-// STATISTICS: flatzinc-any
