@@ -143,9 +143,10 @@ void FlattenAnnotations(AST::Array* const annotations,
   }
 }
 
-void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown) {
+void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
+                                           bool ignore_annotations) {
   AST::Node* annotations = solve_annotations_;
-  if (annotations) {
+  if (annotations && !ignore_annotations) {
     std::vector<AST::Node*> flat_annotations;
     if (annotations->isArray()) {
       FlattenAnnotations(annotations->getArray(), flat_annotations);
@@ -261,8 +262,9 @@ FlatZincModel::~FlatZincModel(void) {
 
 void FlatZincModel::Solve(int solve_frequency,
                           bool use_log,
-                          bool all_solutions) {
-  CreateDecisionBuilders(false);
+                          bool all_solutions,
+                          bool ignore_annotations) {
+  CreateDecisionBuilders(false, ignore_annotations);
   switch (method_) {
     case MIN:
     case MAX: {
