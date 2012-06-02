@@ -46,8 +46,11 @@ class CollectVariablesVisitor : public ModelParser {
     primaries_->assign(primary_set_.begin(), primary_set_.end());
     std::sort(primaries_->begin(), primaries_->end());
     secondaries_->assign(secondary_set_.begin(), secondary_set_.end());
+    std::sort(secondaries_->begin(), secondaries_->end());
     intervals_->assign(interval_set_.begin(), interval_set_.end());
+    std::sort(intervals_->begin(), intervals_->end());
     sequences_->assign(sequence_set_.begin(), sequence_set_.end());
+    std::sort(sequences_->begin(), sequences_->end());
   }
 
   virtual void EndVisitConstraint(const string& type_name,
