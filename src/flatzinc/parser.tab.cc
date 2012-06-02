@@ -267,7 +267,7 @@ void addDomainConstraint(ParserState* pp, std::string id, AST::Node* var,
 }
 
 /*
- * Initialize the root gecode space
+ * Initialize the root or-tools space
  *
  */
 
@@ -2754,7 +2754,7 @@ yyreduce:
         ParserState *pp = static_cast<ParserState*>(parm);
         if (!pp->hadError) {
           try {
-            pp->fg->Solve((yyvsp[(2) - (3)].argVec));
+            pp->fg->Satisfy((yyvsp[(2) - (3)].argVec));
           } catch (operations_research::Error& e) {
             yyerror(pp, e.DebugString().c_str());
           }

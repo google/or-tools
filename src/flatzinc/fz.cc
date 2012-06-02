@@ -45,6 +45,7 @@
 #include "base/stringprintf.h"
 #include "flatzinc/flatzinc.h"
 
+DEFINE_int32(log_frequency, 100000, "Search log frequency");
 DEFINE_bool(log, false, "Show search log");
 DECLARE_bool(log_prefix);
 
@@ -57,8 +58,7 @@ void Run(const std::string& file) {
     fz_model.Parse(file);
   }
 
-  fz_model.CreateDecisionBuilders(false);
-  fz_model.Run(FLAGS_log);
+  fz_model.Solve(FLAGS_log_frequency, FLAGS_log);
   LOG(INFO) << fz_model.DebugString();
 }
 }

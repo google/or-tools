@@ -127,67 +127,46 @@ class FlatZincModel {
             int num_bool_variables,
             int num_set_variables);
 
-  void InitOutput(AST::Array* output);
+  void InitOutput(AST::Array* const output);
 
   /// Create new integer variable from specification
-  void NewIntVar(const std::string& name, IntVarSpec* vs);
+  void NewIntVar(const std::string& name, IntVarSpec* const vs);
   /// Link integer variable \a iv to Boolean variable \a bv
   void aliasBool2Int(int iv, int bv);
   /// Return linked Boolean variable for integer variable \a iv
   int aliasBool2Int(int iv);
   /// Create new Boolean variable from specification
-  void NewBoolVar(const std::string& name, BoolVarSpec* vs);
+  void NewBoolVar(const std::string& name, BoolVarSpec* const vs);
   /// Create new set variable from specification
-  void newSetVar(SetVarSpec* vs);
+  void newSetVar(SetVarSpec* const vs);
 
   /// Post a constraint specified by \a ce
-  void PostConstraint(const ConExpr& ce, AST::Node* annotation);
+  void PostConstraint(const ConExpr& ce, AST::Node* const annotation);
 
   /// Post the solve item
-  void Solve(AST::Array* annotation);
+  void Satisfy(AST::Array* const annotation);
   /// Post that integer variable \a var should be minimized
-  void Minimize(int var, AST::Array* annotation);
+  void Minimize(int var, AST::Array* const annotation);
   /// Post that integer variable \a var should be maximized
-  void Maximize(int var, AST::Array* annotation);
+  void Maximize(int var, AST::Array* const annotation);
 
   /// Run the search
-  void Run(bool log);
+  void Solve(int log_frequency, bool log);
 
   /// Produce output on \a out using \a p
   string DebugString() const;
 
-  /// Return whether to solve a satisfaction or optimization problem
-  Meth Method(void) const;
-
-  /// Return index of variable used for optimization
-  int optimize_var(void) const;
-
-  /**
-   * \brief Create branchers corresponding to the solve item annotations
-   *
-   * If \a ignoreUnknown is true, unknown solve item annotations will be
-   * ignored, otherwise a warning is written to \a err.
-   */
-  void CreateDecisionBuilders(bool ignore_unknown);
-
-  /**
-   * \brief Parse FlatZinc file \a fileName into \a fzs and return it.
-   *
-   * Creates a new empty FlatZincModel if \a fzs is NULL.
-   */
+  // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
   void Parse(const std::string& fileName);
 
-  /**
-   * \brief Parse FlatZinc from \a is into \a fzs and return it.
-   *
-   * Creates a new empty FlatZincModel if \a fzs is NULL.
-   */
+  // \brief Parse FlatZinc from \a is into \a fzs and return it.
   void Parse(std::istream& is);
 
  private:
-  AST::Array* output_;
-  string DebugString(AST::Node* ai) const;
+  void CreateDecisionBuilders(bool ignore_unknown);
+  string DebugString(AST::Node* const ai) const;
 
+  AST::Array* output_;
 };
 
 /// %Exception class for %FlatZinc errors
