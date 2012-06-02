@@ -151,10 +151,10 @@ class FlatZincModel {
   void Maximize(int var, AST::Array* const annotation);
 
   /// Run the search
-  void Solve(int log_frequency, bool log);
+  void Solve(int log_frequency, bool log, bool all_solutions);
 
   /// Produce output on \a out using \a p
-  string DebugString() const;
+  void PrintAllSolutions() const;
 
   // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
   void Parse(const std::string& fileName);
@@ -164,7 +164,7 @@ class FlatZincModel {
 
  private:
   void CreateDecisionBuilders(bool ignore_unknown);
-  string DebugString(AST::Node* const ai) const;
+  string DebugString(AST::Node* const ai, int solution_count) const;
 
   AST::Array* output_;
 };

@@ -259,7 +259,9 @@ FlatZincModel::~FlatZincModel(void) {
   delete output_;
 }
 
-void FlatZincModel::Solve(int solve_frequency, bool use_log) {
+void FlatZincModel::Solve(int solve_frequency,
+                          bool use_log,
+                          bool all_solutions) {
   CreateDecisionBuilders(false);
   switch (method_) {
     case MIN:
@@ -267,7 +269,9 @@ void FlatZincModel::Solve(int solve_frequency, bool use_log) {
       SearchMonitor* const log = use_log ?
           solver_.MakeSearchLog(solve_frequency, objective_) :
           NULL;
-      collector_ = solver_.MakeLastSolutionCollector();
+      collector_ = all_solutions ?
+          solver_.MakeAllSolutionCollector() :
+          solver_.MakeLastSolutionCollector();
       collector_->Add(integer_variables_);
       collector_->Add(boolean_variables_);
       collector_->AddObjective(integer_variables_[objective_variable_]);
@@ -278,7 +282,9 @@ void FlatZincModel::Solve(int solve_frequency, bool use_log) {
       SearchMonitor* const log = use_log ?
           solver_.MakeSearchLog(solve_frequency) :
           NULL;
-      collector_ = solver_.MakeFirstSolutionCollector();
+      collector_ = all_solutions ?
+          solver_.MakeAllSolutionCollector() :
+          solver_.MakeFirstSolutionCollector();
       collector_->Add(integer_variables_);
       collector_->Add(boolean_variables_);
       solver_.Solve(solver_.Compose(builders_), log, collector_);
@@ -287,21 +293,22 @@ void FlatZincModel::Solve(int solve_frequency, bool use_log) {
   }
 }
 
-string FlatZincModel::DebugString() const {
-  if (output_ == NULL)
-    return "";
-  string output;
-  for (unsigned int i = 0; i < output_->a.size(); i++) {
-    output += DebugString(output_->a[i]);
+void FlatZincModel::PrintAllSolutions() const {
+  if (output_ != NULL) {
+    for (int sol = 0; sol < collector_->solution_count(); ++sol) {
+      for (unsigned int i = 0; i < output_->a.size(); i++) {
+        std::cout << DebugString(output_->a[i], sol);
+      }
+      std::cout << "----------" << std::endl;
+    }
   }
-  return output;
 }
 
 void FlatZincModel::InitOutput(AST::Array* const output) {
   output_ = output;
 }
 
-string FlatZincModel::DebugString(AST::Node* const ai) const {
+string FlatZincModel::DebugString(AST::Node* const ai, int sol) const {
   string output;
   int k;
   if (ai->isArray()) {
@@ -309,7 +316,7 @@ string FlatZincModel::DebugString(AST::Node* const ai) const {
     int size = aia->a.size();
     output += "[";
     for (int j = 0; j < size; j++) {
-      output += DebugString(aia->a[j]);
+      output += DebugString(aia->a[j], sol);
       if (j < size - 1) {
         output += ", ";
       }
@@ -320,14 +327,14 @@ string FlatZincModel::DebugString(AST::Node* const ai) const {
   } else if (ai->isIntVar()) {
     IntVar* const var = integer_variables_[ai->getIntVar()];
     if (collector() != NULL && collector()->solution_count() > 0) {
-      output += StringPrintf("%d", collector()->Value(0, var));
+      output += StringPrintf("%d", collector()->Value(sol, var));
     } else {
       output += var->DebugString();
     }
   } else if (ai->isBoolVar()) {
     IntVar* const var = boolean_variables_[ai->getBoolVar()];
     if (collector() != NULL && collector()->solution_count() > 0) {
-      output += collector()->Value(0, var) ? "true" : false;
+      output += collector()->Value(sol, var) ? "true" : "false";
     } else {
       output += var->DebugString();
     }
