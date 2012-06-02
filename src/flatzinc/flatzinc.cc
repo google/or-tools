@@ -327,7 +327,7 @@ string FlatZincModel::DebugString(AST::Node* const ai) const {
   } else if (ai->isBoolVar()) {
     IntVar* const var = boolean_variables_[ai->getBoolVar()];
     if (collector() != NULL && collector()->solution_count() > 0) {
-      output += StringPrintf("%d", collector()->Value(0, var));
+      output += collector()->Value(0, var) ? "true" : false;
     } else {
       output += var->DebugString();
     }
