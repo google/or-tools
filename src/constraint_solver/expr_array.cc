@@ -1911,7 +1911,7 @@ template<class T> Constraint* MakeScalProdEqualityFct(Solver* const solver,
   for (int i = 0; i < size; ++i) {
     terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
   }
-  return solver->MakeEquality(solver->MakeSum(terms), cst);
+  return solver->MakeSumEquality(terms, solver->MakeIntConst(cst));
 }
 }  // namespace
 
