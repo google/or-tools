@@ -45,16 +45,13 @@
 #include "base/stringprintf.h"
 #include "flatzinc/flatzinc.h"
 
-using namespace std;
-
-DEFINE_string(file, "", "file name");
 DEFINE_bool(log, false, "Show search log");
 
 namespace operations_research {
-void Run() {
-  scoped_ptr<FlatZincModel> fz_model((FLAGS_file == "-") ?
-                                     parse(cin):
-                                     parse(FLAGS_file.c_str()));
+void Run(const std::string& file) {
+  scoped_ptr<FlatZincModel> fz_model((file == "-") ?
+                                     parse(std::cin):
+                                     parse(file));
 
   if (fz_model.get()) {
     fz_model->CreateDecisionBuilders(fz_model->SolveAnnotations(), false);
@@ -68,11 +65,11 @@ void Run() {
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
-  if (FLAGS_file.empty()) {
-    cerr << "Usage: " << argv[0] << " <file>" << endl;
+  if (argc <= 1) {
+    LOG(ERROR) << "Usage: " << argv[0] << " <file>";
     exit(EXIT_FAILURE);
   }
-  operations_research::Run();
+  operations_research::Run(argv[1]);
   return 0;
 }
 
