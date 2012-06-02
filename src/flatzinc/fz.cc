@@ -46,24 +46,25 @@
 #include "flatzinc/flatzinc.h"
 
 DEFINE_bool(log, false, "Show search log");
+DECLARE_bool(log_prefix);
 
 namespace operations_research {
 void Run(const std::string& file) {
-  scoped_ptr<FlatZincModel> fz_model((file == "-") ?
-                                     parse(std::cin):
-                                     parse(file));
-
-  if (fz_model.get()) {
-    fz_model->CreateDecisionBuilders(fz_model->SolveAnnotations(), false);
-    fz_model->Run(FLAGS_log);
-    LOG(INFO) << fz_model->DebugString();
+  FlatZincModel fz_model;
+  if (file == "-") {
+    fz_model.Parse(std::cin);
   } else {
-    exit(EXIT_FAILURE);
+    fz_model.Parse(file);
   }
+
+  fz_model.CreateDecisionBuilders(false);
+  fz_model.Run(FLAGS_log);
+  LOG(INFO) << fz_model.DebugString();
 }
 }
 
 int main(int argc, char** argv) {
+  FLAGS_log_prefix=false;
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (argc <= 1) {
     LOG(ERROR) << "Usage: " << argv[0] << " <file>";

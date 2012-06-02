@@ -168,10 +168,21 @@ class FlatZincModel {
    * If \a ignoreUnknown is true, unknown solve item annotations will be
    * ignored, otherwise a warning is written to \a err.
    */
-  void CreateDecisionBuilders(AST::Node* ann, bool ignore_unknown);
+  void CreateDecisionBuilders(bool ignore_unknown);
 
-  /// Return the solve item annotations
-  AST::Array* SolveAnnotations(void) const;
+  /**
+   * \brief Parse FlatZinc file \a fileName into \a fzs and return it.
+   *
+   * Creates a new empty FlatZincModel if \a fzs is NULL.
+   */
+  void Parse(const std::string& fileName);
+
+  /**
+   * \brief Parse FlatZinc from \a is into \a fzs and return it.
+   *
+   * Creates a new empty FlatZincModel if \a fzs is NULL.
+   */
+  void Parse(std::istream& is);
 
  private:
   AST::Array* output_;
@@ -188,20 +199,6 @@ class Error {
       : msg(where+": "+what) {}
   const std::string& DebugString(void) const { return msg; }
 };
-
-/**
- * \brief Parse FlatZinc file \a fileName into \a fzs and return it.
- *
- * Creates a new empty FlatZincModel if \a fzs is NULL.
- */
-FlatZincModel* parse(const std::string& fileName, FlatZincModel* fzs=NULL);
-
-/**
- * \brief Parse FlatZinc from \a is into \a fzs and return it.
- *
- * Creates a new empty FlatZincModel if \a fzs is NULL.
- */
-FlatZincModel* parse(std::istream& is, FlatZincModel* fzs=NULL);
 
 }
 

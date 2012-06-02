@@ -276,7 +276,7 @@ AST::Node* arrayOutput(AST::Call* ann) {
 
 namespace operations_research {
 
-  FlatZincModel* parse(const std::string& filename, FlatZincModel* fzs) {
+void FlatZincModel::Parse(const std::string& filename) {
 #ifdef HAVE_MMAP
     int fd;
     char* data;
@@ -296,54 +296,41 @@ namespace operations_research {
       return NULL;
     }
 
-    if (fzs == NULL) {
-      fzs = new FlatZincModel();
-    }
-    ParserState pp(data, sbuf.st_size, fzs);
+    ParserState pp(data, sbuf.st_size, this);
 #else
     std::ifstream file;
     file.open(filename.c_str());
     if (!file.is_open()) {
-      LOG(ERROR) << "Cannot open file " << filename;
-      return NULL;
+      LOG(FATAL) << "Cannot open file " << filename;
     }
     std::string s = string(istreambuf_iterator<char>(file),
                            istreambuf_iterator<char>());
-    if (fzs == NULL) {
-      fzs = new FlatZincModel();
-    }
-    ParserState pp(s, fzs);
+    ParserState pp(s, this);
 #endif
     yylex_init(&pp.yyscanner);
     yyset_extra(&pp, pp.yyscanner);
     // yydebug = 1;
     yyparse(&pp);
-    fillOutput(pp, *fzs);
+    fillOutput(pp, *this);
 
     if (pp.yyscanner)
       yylex_destroy(pp.yyscanner);
-    return pp.hadError ? NULL : pp.fg;
   }
 
-  FlatZincModel* parse(std::istream& is, FlatZincModel* fzs) {
-    std::string s = string(istreambuf_iterator<char>(is),
-                           istreambuf_iterator<char>());
+void FlatZincModel::Parse(std::istream& is) {
+  std::string s = string(istreambuf_iterator<char>(is),
+                         istreambuf_iterator<char>());
 
-    if (fzs == NULL) {
-      fzs = new FlatZincModel();
-    }
-    ParserState pp(s, fzs);
-    yylex_init(&pp.yyscanner);
-    yyset_extra(&pp, pp.yyscanner);
-    // yydebug = 1;
-    yyparse(&pp);
-    fillOutput(pp, *fzs);
+  ParserState pp(s, this);
+  yylex_init(&pp.yyscanner);
+  yyset_extra(&pp, pp.yyscanner);
+  // yydebug = 1;
+  yyparse(&pp);
+  fillOutput(pp, *this);
 
-    if (pp.yyscanner)
-      yylex_destroy(pp.yyscanner);
-    return pp.hadError ? NULL : pp.fg;
-  }
-
+  if (pp.yyscanner)
+    yylex_destroy(pp.yyscanner);
+}
 }
 
 %}

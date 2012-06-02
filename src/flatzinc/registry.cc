@@ -936,7 +936,9 @@ void p_all_different_int(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
-    variables[i] = s.integer_variables_[array_variables->a[i]->getIntVar()];
+    variables[i] = array_variables->a[i]->isIntVar() ?
+        s.integer_variables_[array_variables->a[i]->getIntVar()] :
+        solver->MakeIntConst(array_variables->a[i]->getInt());
   }
   Constraint* const ct = solver->MakeAllDifferent(variables);
   VLOG(1) << "Posted " << ct->DebugString();

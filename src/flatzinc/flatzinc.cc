@@ -141,8 +141,8 @@ void FlattenAnnotations(AST::Array* annotations, std::vector<AST::Node*>& out) {
   }
 }
 
-void FlatZincModel::CreateDecisionBuilders(AST::Node* annotations,
-                                           bool ignore_unknown) {
+void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown) {
+  AST::Node* annotations = solve_annotations_;
   if (annotations) {
     std::vector<AST::Node*> flat_annotations;
     if (annotations->isArray()) {
@@ -209,10 +209,6 @@ void FlatZincModel::CreateDecisionBuilders(AST::Node* annotations,
                                           Solver::ASSIGN_MIN_VALUE));
     VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
   }
-}
-
-AST::Array* FlatZincModel::SolveAnnotations(void) const {
-  return solve_annotations_;
 }
 
 void FlatZincModel::Solve(AST::Array* annotations) {

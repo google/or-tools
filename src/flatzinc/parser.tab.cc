@@ -404,7 +404,7 @@ AST::Node* arrayOutput(AST::Call* ann) {
 
 namespace operations_research {
 
-  FlatZincModel* parse(const std::string& filename, FlatZincModel* fzs) {
+void FlatZincModel::Parse(const std::string& filename) {
 #ifdef HAVE_MMAP
     int fd;
     char* data;
@@ -424,54 +424,41 @@ namespace operations_research {
       return NULL;
     }
 
-    if (fzs == NULL) {
-      fzs = new FlatZincModel();
-    }
-    ParserState pp(data, sbuf.st_size, fzs);
+    ParserState pp(data, sbuf.st_size, this);
 #else
     std::ifstream file;
     file.open(filename.c_str());
     if (!file.is_open()) {
-      LOG(ERROR) << "Cannot open file " << filename;
-      return NULL;
+      LOG(FATAL) << "Cannot open file " << filename;
     }
     std::string s = string(istreambuf_iterator<char>(file),
                            istreambuf_iterator<char>());
-    if (fzs == NULL) {
-      fzs = new FlatZincModel();
-    }
-    ParserState pp(s, fzs);
+    ParserState pp(s, this);
 #endif
     yylex_init(&pp.yyscanner);
     yyset_extra(&pp, pp.yyscanner);
     // yydebug = 1;
     yyparse(&pp);
-    fillOutput(pp, *fzs);
+    fillOutput(pp, *this);
 
     if (pp.yyscanner)
       yylex_destroy(pp.yyscanner);
-    return pp.hadError ? NULL : pp.fg;
   }
 
-  FlatZincModel* parse(std::istream& is, FlatZincModel* fzs) {
-    std::string s = string(istreambuf_iterator<char>(is),
-                           istreambuf_iterator<char>());
+void FlatZincModel::Parse(std::istream& is) {
+  std::string s = string(istreambuf_iterator<char>(is),
+                         istreambuf_iterator<char>());
 
-    if (fzs == NULL) {
-      fzs = new FlatZincModel();
-    }
-    ParserState pp(s, fzs);
-    yylex_init(&pp.yyscanner);
-    yyset_extra(&pp, pp.yyscanner);
-    // yydebug = 1;
-    yyparse(&pp);
-    fillOutput(pp, *fzs);
+  ParserState pp(s, this);
+  yylex_init(&pp.yyscanner);
+  yyset_extra(&pp, pp.yyscanner);
+  // yydebug = 1;
+  yyparse(&pp);
+  fillOutput(pp, *this);
 
-    if (pp.yyscanner)
-      yylex_destroy(pp.yyscanner);
-    return pp.hadError ? NULL : pp.fg;
-  }
-
+  if (pp.yyscanner)
+    yylex_destroy(pp.yyscanner);
+}
 }
 
 
@@ -496,7 +483,7 @@ namespace operations_research {
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 351 "src/flatzinc/parser.yxx"
+#line 338 "src/flatzinc/parser.yxx"
 { int iValue; char* sValue; bool bValue; double dValue;
          std::vector<int>* setValue;
          operations_research::AST::SetLit* setLit;
@@ -511,7 +498,7 @@ typedef union YYSTYPE
          operations_research::AST::Array* argVec;
        }
 /* Line 193 of yacc.c.  */
-#line 515 "src/flatzinc/parser.tab.cc"
+#line 502 "src/flatzinc/parser.tab.cc"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -524,7 +511,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 528 "src/flatzinc/parser.tab.cc"
+#line 515 "src/flatzinc/parser.tab.cc"
 
 #ifdef short
 # undef short
@@ -882,22 +869,22 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   451,   451,   453,   455,   458,   459,   463,   464,   468,
-     469,   471,   473,   476,   477,   484,   486,   488,   491,   492,
-     495,   498,   499,   500,   501,   504,   505,   506,   507,   510,
-     511,   514,   515,   521,   521,   524,   553,   582,   587,   617,
-     624,   631,   640,   699,   751,   758,   815,   828,   841,   848,
-     862,   866,   880,   903,   904,   908,   910,   913,   913,   915,
-     919,   921,   935,   958,   959,   963,   965,   969,   973,   975,
-     989,  1012,  1013,  1017,  1019,  1022,  1025,  1027,  1041,  1064,
-    1065,  1069,  1071,  1074,  1079,  1080,  1085,  1086,  1091,  1092,
-    1097,  1098,  1102,  1116,  1129,  1151,  1153,  1155,  1161,  1163,
-    1176,  1177,  1184,  1186,  1193,  1194,  1198,  1200,  1205,  1206,
-    1210,  1212,  1217,  1218,  1222,  1224,  1229,  1230,  1234,  1236,
-    1244,  1246,  1250,  1252,  1257,  1258,  1262,  1264,  1266,  1268,
-    1270,  1319,  1333,  1334,  1338,  1340,  1348,  1358,  1378,  1379,
-    1387,  1388,  1392,  1394,  1398,  1402,  1406,  1408,  1412,  1414,
-    1418,  1420,  1422,  1424,  1426,  1469,  1480
+       0,   438,   438,   440,   442,   445,   446,   450,   451,   455,
+     456,   458,   460,   463,   464,   471,   473,   475,   478,   479,
+     482,   485,   486,   487,   488,   491,   492,   493,   494,   497,
+     498,   501,   502,   508,   508,   511,   540,   569,   574,   604,
+     611,   618,   627,   686,   738,   745,   802,   815,   828,   835,
+     849,   853,   867,   890,   891,   895,   897,   900,   900,   902,
+     906,   908,   922,   945,   946,   950,   952,   956,   960,   962,
+     976,   999,  1000,  1004,  1006,  1009,  1012,  1014,  1028,  1051,
+    1052,  1056,  1058,  1061,  1066,  1067,  1072,  1073,  1078,  1079,
+    1084,  1085,  1089,  1103,  1116,  1138,  1140,  1142,  1148,  1150,
+    1163,  1164,  1171,  1173,  1180,  1181,  1185,  1187,  1192,  1193,
+    1197,  1199,  1204,  1205,  1209,  1211,  1216,  1217,  1221,  1223,
+    1231,  1233,  1237,  1239,  1244,  1245,  1249,  1251,  1253,  1255,
+    1257,  1306,  1320,  1321,  1325,  1327,  1335,  1345,  1365,  1366,
+    1374,  1375,  1379,  1381,  1385,  1389,  1393,  1395,  1399,  1401,
+    1405,  1407,  1409,  1411,  1413,  1456,  1467
 };
 #endif
 
@@ -2041,17 +2028,17 @@ yyreduce:
   switch (yyn)
     {
         case 7:
-#line 463 "src/flatzinc/parser.yxx"
+#line 450 "src/flatzinc/parser.yxx"
     { initfg(static_cast<ParserState*>(parm)); ;}
     break;
 
   case 8:
-#line 465 "src/flatzinc/parser.yxx"
+#line 452 "src/flatzinc/parser.yxx"
     { initfg(static_cast<ParserState*>(parm)); ;}
     break;
 
   case 35:
-#line 525 "src/flatzinc/parser.yxx"
+#line 512 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         bool print = (yyvsp[(5) - (6)].argVec)->hasAtom("output_var");
@@ -2083,7 +2070,7 @@ yyreduce:
     break;
 
   case 36:
-#line 554 "src/flatzinc/parser.yxx"
+#line 541 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         bool print = (yyvsp[(5) - (6)].argVec)->hasAtom("output_var");
@@ -2115,7 +2102,7 @@ yyreduce:
     break;
 
   case 37:
-#line 583 "src/flatzinc/parser.yxx"
+#line 570 "src/flatzinc/parser.yxx"
     { ParserState* pp = static_cast<ParserState*>(parm);
         yyassert(pp, false, "Floats not supported.");
         delete (yyvsp[(5) - (6)].argVec); free((yyvsp[(4) - (6)].sValue));
@@ -2123,7 +2110,7 @@ yyreduce:
     break;
 
   case 38:
-#line 588 "src/flatzinc/parser.yxx"
+#line 575 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         bool print = (yyvsp[(7) - (8)].argVec)->hasAtom("output_var");
@@ -2156,7 +2143,7 @@ yyreduce:
     break;
 
   case 39:
-#line 618 "src/flatzinc/parser.yxx"
+#line 605 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         yyassert(pp, (yyvsp[(6) - (6)].arg)->isInt(), "Invalid int initializer.");
@@ -2166,7 +2153,7 @@ yyreduce:
     break;
 
   case 40:
-#line 625 "src/flatzinc/parser.yxx"
+#line 612 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         yyassert(pp, (yyvsp[(6) - (6)].arg)->isBool(), "Invalid bool initializer.");
@@ -2176,7 +2163,7 @@ yyreduce:
     break;
 
   case 41:
-#line 632 "src/flatzinc/parser.yxx"
+#line 619 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         yyassert(pp, (yyvsp[(8) - (8)].arg)->isSet(), "Invalid set initializer.");
@@ -2188,7 +2175,7 @@ yyreduce:
     break;
 
   case 42:
-#line 642 "src/flatzinc/parser.yxx"
+#line 629 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         yyassert(pp, (yyvsp[(3) - (13)].iValue)==1, "Arrays must start at 1");
@@ -2249,7 +2236,7 @@ yyreduce:
     break;
 
   case 43:
-#line 701 "src/flatzinc/parser.yxx"
+#line 688 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         bool print = (yyvsp[(12) - (13)].argVec)->hasCall("output_array");
@@ -2303,7 +2290,7 @@ yyreduce:
     break;
 
   case 44:
-#line 753 "src/flatzinc/parser.yxx"
+#line 740 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         yyassert(pp, false, "Floats not supported.");
@@ -2312,7 +2299,7 @@ yyreduce:
     break;
 
   case 45:
-#line 760 "src/flatzinc/parser.yxx"
+#line 747 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         bool print = (yyvsp[(14) - (15)].argVec)->hasCall("output_array");
@@ -2371,7 +2358,7 @@ yyreduce:
     break;
 
   case 46:
-#line 817 "src/flatzinc/parser.yxx"
+#line 804 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         yyassert(pp, (yyvsp[(3) - (15)].iValue)==1, "Arrays must start at 1");
@@ -2386,7 +2373,7 @@ yyreduce:
     break;
 
   case 47:
-#line 830 "src/flatzinc/parser.yxx"
+#line 817 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         yyassert(pp, (yyvsp[(3) - (15)].iValue)==1, "Arrays must start at 1");
@@ -2401,7 +2388,7 @@ yyreduce:
     break;
 
   case 48:
-#line 843 "src/flatzinc/parser.yxx"
+#line 830 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         yyassert(pp, false, "Floats not supported.");
@@ -2410,7 +2397,7 @@ yyreduce:
     break;
 
   case 49:
-#line 850 "src/flatzinc/parser.yxx"
+#line 837 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         yyassert(pp, (yyvsp[(3) - (17)].iValue)==1, "Arrays must start at 1");
@@ -2424,14 +2411,14 @@ yyreduce:
     break;
 
   case 50:
-#line 863 "src/flatzinc/parser.yxx"
+#line 850 "src/flatzinc/parser.yxx"
     {
         (yyval.varSpec) = new IntVarSpec((yyvsp[(1) - (1)].iValue),false);
       ;}
     break;
 
   case 51:
-#line 867 "src/flatzinc/parser.yxx"
+#line 854 "src/flatzinc/parser.yxx"
     {
         int v = 0;
         ParserState* pp = static_cast<ParserState*>(parm);
@@ -2448,7 +2435,7 @@ yyreduce:
     break;
 
   case 52:
-#line 881 "src/flatzinc/parser.yxx"
+#line 868 "src/flatzinc/parser.yxx"
     {
         vector<int> v;
         ParserState* pp = static_cast<ParserState*>(parm);
@@ -2471,37 +2458,37 @@ yyreduce:
     break;
 
   case 53:
-#line 903 "src/flatzinc/parser.yxx"
+#line 890 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = new vector<VarSpec*>(0); ;}
     break;
 
   case 54:
-#line 905 "src/flatzinc/parser.yxx"
+#line 892 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = (yyvsp[(1) - (2)].varSpecVec); ;}
     break;
 
   case 55:
-#line 909 "src/flatzinc/parser.yxx"
+#line 896 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = new vector<VarSpec*>(1); (*(yyval.varSpecVec))[0] = (yyvsp[(1) - (1)].varSpec); ;}
     break;
 
   case 56:
-#line 911 "src/flatzinc/parser.yxx"
+#line 898 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = (yyvsp[(1) - (3)].varSpecVec); (yyval.varSpecVec)->push_back((yyvsp[(3) - (3)].varSpec)); ;}
     break;
 
   case 59:
-#line 916 "src/flatzinc/parser.yxx"
+#line 903 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = (yyvsp[(2) - (3)].varSpecVec); ;}
     break;
 
   case 60:
-#line 920 "src/flatzinc/parser.yxx"
+#line 907 "src/flatzinc/parser.yxx"
     { (yyval.varSpec) = new FloatVarSpec((yyvsp[(1) - (1)].dValue),false); ;}
     break;
 
   case 61:
-#line 922 "src/flatzinc/parser.yxx"
+#line 909 "src/flatzinc/parser.yxx"
     {
         int v = 0;
         ParserState* pp = static_cast<ParserState*>(parm);
@@ -2518,7 +2505,7 @@ yyreduce:
     break;
 
   case 62:
-#line 936 "src/flatzinc/parser.yxx"
+#line 923 "src/flatzinc/parser.yxx"
     {
         vector<int> v;
         ParserState* pp = static_cast<ParserState*>(parm);
@@ -2541,37 +2528,37 @@ yyreduce:
     break;
 
   case 63:
-#line 958 "src/flatzinc/parser.yxx"
+#line 945 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = new vector<VarSpec*>(0); ;}
     break;
 
   case 64:
-#line 960 "src/flatzinc/parser.yxx"
+#line 947 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = (yyvsp[(1) - (2)].varSpecVec); ;}
     break;
 
   case 65:
-#line 964 "src/flatzinc/parser.yxx"
+#line 951 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = new vector<VarSpec*>(1); (*(yyval.varSpecVec))[0] = (yyvsp[(1) - (1)].varSpec); ;}
     break;
 
   case 66:
-#line 966 "src/flatzinc/parser.yxx"
+#line 953 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = (yyvsp[(1) - (3)].varSpecVec); (yyval.varSpecVec)->push_back((yyvsp[(3) - (3)].varSpec)); ;}
     break;
 
   case 67:
-#line 970 "src/flatzinc/parser.yxx"
+#line 957 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = (yyvsp[(2) - (3)].varSpecVec); ;}
     break;
 
   case 68:
-#line 974 "src/flatzinc/parser.yxx"
+#line 961 "src/flatzinc/parser.yxx"
     { (yyval.varSpec) = new BoolVarSpec((yyvsp[(1) - (1)].iValue),false); ;}
     break;
 
   case 69:
-#line 976 "src/flatzinc/parser.yxx"
+#line 963 "src/flatzinc/parser.yxx"
     {
         int v = 0;
         ParserState* pp = static_cast<ParserState*>(parm);
@@ -2588,7 +2575,7 @@ yyreduce:
     break;
 
   case 70:
-#line 990 "src/flatzinc/parser.yxx"
+#line 977 "src/flatzinc/parser.yxx"
     {
         vector<int> v;
         ParserState* pp = static_cast<ParserState*>(parm);
@@ -2611,37 +2598,37 @@ yyreduce:
     break;
 
   case 71:
-#line 1012 "src/flatzinc/parser.yxx"
+#line 999 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = new vector<VarSpec*>(0); ;}
     break;
 
   case 72:
-#line 1014 "src/flatzinc/parser.yxx"
+#line 1001 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = (yyvsp[(1) - (2)].varSpecVec); ;}
     break;
 
   case 73:
-#line 1018 "src/flatzinc/parser.yxx"
+#line 1005 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = new vector<VarSpec*>(1); (*(yyval.varSpecVec))[0] = (yyvsp[(1) - (1)].varSpec); ;}
     break;
 
   case 74:
-#line 1020 "src/flatzinc/parser.yxx"
+#line 1007 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = (yyvsp[(1) - (3)].varSpecVec); (yyval.varSpecVec)->push_back((yyvsp[(3) - (3)].varSpec)); ;}
     break;
 
   case 75:
-#line 1022 "src/flatzinc/parser.yxx"
+#line 1009 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = (yyvsp[(2) - (3)].varSpecVec); ;}
     break;
 
   case 76:
-#line 1026 "src/flatzinc/parser.yxx"
+#line 1013 "src/flatzinc/parser.yxx"
     { (yyval.varSpec) = new SetVarSpec((yyvsp[(1) - (1)].setLit),false); ;}
     break;
 
   case 77:
-#line 1028 "src/flatzinc/parser.yxx"
+#line 1015 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         int v = 0;
@@ -2658,7 +2645,7 @@ yyreduce:
     break;
 
   case 78:
-#line 1042 "src/flatzinc/parser.yxx"
+#line 1029 "src/flatzinc/parser.yxx"
     {
         vector<int> v;
         ParserState* pp = static_cast<ParserState*>(parm);
@@ -2681,72 +2668,72 @@ yyreduce:
     break;
 
   case 79:
-#line 1064 "src/flatzinc/parser.yxx"
+#line 1051 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = new vector<VarSpec*>(0); ;}
     break;
 
   case 80:
-#line 1066 "src/flatzinc/parser.yxx"
+#line 1053 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = (yyvsp[(1) - (2)].varSpecVec); ;}
     break;
 
   case 81:
-#line 1070 "src/flatzinc/parser.yxx"
+#line 1057 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = new vector<VarSpec*>(1); (*(yyval.varSpecVec))[0] = (yyvsp[(1) - (1)].varSpec); ;}
     break;
 
   case 82:
-#line 1072 "src/flatzinc/parser.yxx"
+#line 1059 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = (yyvsp[(1) - (3)].varSpecVec); (yyval.varSpecVec)->push_back((yyvsp[(3) - (3)].varSpec)); ;}
     break;
 
   case 83:
-#line 1075 "src/flatzinc/parser.yxx"
+#line 1062 "src/flatzinc/parser.yxx"
     { (yyval.varSpecVec) = (yyvsp[(2) - (3)].varSpecVec); ;}
     break;
 
   case 84:
-#line 1079 "src/flatzinc/parser.yxx"
+#line 1066 "src/flatzinc/parser.yxx"
     { (yyval.oVarSpecVec) = Option<vector<VarSpec*>* >::none(); ;}
     break;
 
   case 85:
-#line 1081 "src/flatzinc/parser.yxx"
+#line 1068 "src/flatzinc/parser.yxx"
     { (yyval.oVarSpecVec) = Option<vector<VarSpec*>* >::some((yyvsp[(2) - (2)].varSpecVec)); ;}
     break;
 
   case 86:
-#line 1085 "src/flatzinc/parser.yxx"
+#line 1072 "src/flatzinc/parser.yxx"
     { (yyval.oVarSpecVec) = Option<vector<VarSpec*>* >::none(); ;}
     break;
 
   case 87:
-#line 1087 "src/flatzinc/parser.yxx"
+#line 1074 "src/flatzinc/parser.yxx"
     { (yyval.oVarSpecVec) = Option<vector<VarSpec*>* >::some((yyvsp[(2) - (2)].varSpecVec)); ;}
     break;
 
   case 88:
-#line 1091 "src/flatzinc/parser.yxx"
+#line 1078 "src/flatzinc/parser.yxx"
     { (yyval.oVarSpecVec) = Option<vector<VarSpec*>* >::none(); ;}
     break;
 
   case 89:
-#line 1093 "src/flatzinc/parser.yxx"
+#line 1080 "src/flatzinc/parser.yxx"
     { (yyval.oVarSpecVec) = Option<vector<VarSpec*>* >::some((yyvsp[(2) - (2)].varSpecVec)); ;}
     break;
 
   case 90:
-#line 1097 "src/flatzinc/parser.yxx"
+#line 1084 "src/flatzinc/parser.yxx"
     { (yyval.oVarSpecVec) = Option<vector<VarSpec*>* >::none(); ;}
     break;
 
   case 91:
-#line 1099 "src/flatzinc/parser.yxx"
+#line 1086 "src/flatzinc/parser.yxx"
     { (yyval.oVarSpecVec) = Option<vector<VarSpec*>* >::some((yyvsp[(2) - (2)].varSpecVec)); ;}
     break;
 
   case 92:
-#line 1103 "src/flatzinc/parser.yxx"
+#line 1090 "src/flatzinc/parser.yxx"
     {
         ConExpr c((yyvsp[(2) - (6)].sValue), (yyvsp[(4) - (6)].argVec));
         ParserState *pp = static_cast<ParserState*>(parm);
@@ -2762,7 +2749,7 @@ yyreduce:
     break;
 
   case 93:
-#line 1117 "src/flatzinc/parser.yxx"
+#line 1104 "src/flatzinc/parser.yxx"
     {
         ParserState *pp = static_cast<ParserState*>(parm);
         if (!pp->hadError) {
@@ -2778,7 +2765,7 @@ yyreduce:
     break;
 
   case 94:
-#line 1130 "src/flatzinc/parser.yxx"
+#line 1117 "src/flatzinc/parser.yxx"
     {
         ParserState *pp = static_cast<ParserState*>(parm);
         if (!pp->hadError) {
@@ -2797,29 +2784,29 @@ yyreduce:
     break;
 
   case 95:
-#line 1152 "src/flatzinc/parser.yxx"
+#line 1139 "src/flatzinc/parser.yxx"
     { (yyval.oSet) = Option<AST::SetLit* >::none(); ;}
     break;
 
   case 96:
-#line 1154 "src/flatzinc/parser.yxx"
+#line 1141 "src/flatzinc/parser.yxx"
     { (yyval.oSet) = Option<AST::SetLit* >::some(new AST::SetLit(*(yyvsp[(2) - (3)].setValue))); ;}
     break;
 
   case 97:
-#line 1156 "src/flatzinc/parser.yxx"
+#line 1143 "src/flatzinc/parser.yxx"
     {
         (yyval.oSet) = Option<AST::SetLit* >::some(new AST::SetLit((yyvsp[(1) - (3)].iValue), (yyvsp[(3) - (3)].iValue)));
       ;}
     break;
 
   case 98:
-#line 1162 "src/flatzinc/parser.yxx"
+#line 1149 "src/flatzinc/parser.yxx"
     { (yyval.oSet) = Option<AST::SetLit* >::none(); ;}
     break;
 
   case 99:
-#line 1164 "src/flatzinc/parser.yxx"
+#line 1151 "src/flatzinc/parser.yxx"
     { bool haveTrue = false;
         bool haveFalse = false;
         for (int i=(yyvsp[(2) - (4)].setValue)->size(); i--;) {
@@ -2833,147 +2820,147 @@ yyreduce:
     break;
 
   case 102:
-#line 1185 "src/flatzinc/parser.yxx"
+#line 1172 "src/flatzinc/parser.yxx"
     { (yyval.setLit) = new AST::SetLit(*(yyvsp[(2) - (3)].setValue)); ;}
     break;
 
   case 103:
-#line 1187 "src/flatzinc/parser.yxx"
+#line 1174 "src/flatzinc/parser.yxx"
     { (yyval.setLit) = new AST::SetLit((yyvsp[(1) - (3)].iValue), (yyvsp[(3) - (3)].iValue)); ;}
     break;
 
   case 104:
-#line 1193 "src/flatzinc/parser.yxx"
+#line 1180 "src/flatzinc/parser.yxx"
     { (yyval.setValue) = new vector<int>(0); ;}
     break;
 
   case 105:
-#line 1195 "src/flatzinc/parser.yxx"
+#line 1182 "src/flatzinc/parser.yxx"
     { (yyval.setValue) = (yyvsp[(1) - (2)].setValue); ;}
     break;
 
   case 106:
-#line 1199 "src/flatzinc/parser.yxx"
+#line 1186 "src/flatzinc/parser.yxx"
     { (yyval.setValue) = new vector<int>(1); (*(yyval.setValue))[0] = (yyvsp[(1) - (1)].iValue); ;}
     break;
 
   case 107:
-#line 1201 "src/flatzinc/parser.yxx"
+#line 1188 "src/flatzinc/parser.yxx"
     { (yyval.setValue) = (yyvsp[(1) - (3)].setValue); (yyval.setValue)->push_back((yyvsp[(3) - (3)].iValue)); ;}
     break;
 
   case 108:
-#line 1205 "src/flatzinc/parser.yxx"
+#line 1192 "src/flatzinc/parser.yxx"
     { (yyval.setValue) = new vector<int>(0); ;}
     break;
 
   case 109:
-#line 1207 "src/flatzinc/parser.yxx"
+#line 1194 "src/flatzinc/parser.yxx"
     { (yyval.setValue) = (yyvsp[(1) - (2)].setValue); ;}
     break;
 
   case 110:
-#line 1211 "src/flatzinc/parser.yxx"
+#line 1198 "src/flatzinc/parser.yxx"
     { (yyval.setValue) = new vector<int>(1); (*(yyval.setValue))[0] = (yyvsp[(1) - (1)].iValue); ;}
     break;
 
   case 111:
-#line 1213 "src/flatzinc/parser.yxx"
+#line 1200 "src/flatzinc/parser.yxx"
     { (yyval.setValue) = (yyvsp[(1) - (3)].setValue); (yyval.setValue)->push_back((yyvsp[(3) - (3)].iValue)); ;}
     break;
 
   case 112:
-#line 1217 "src/flatzinc/parser.yxx"
+#line 1204 "src/flatzinc/parser.yxx"
     { (yyval.floatSetValue) = new vector<double>(0); ;}
     break;
 
   case 113:
-#line 1219 "src/flatzinc/parser.yxx"
+#line 1206 "src/flatzinc/parser.yxx"
     { (yyval.floatSetValue) = (yyvsp[(1) - (2)].floatSetValue); ;}
     break;
 
   case 114:
-#line 1223 "src/flatzinc/parser.yxx"
+#line 1210 "src/flatzinc/parser.yxx"
     { (yyval.floatSetValue) = new vector<double>(1); (*(yyval.floatSetValue))[0] = (yyvsp[(1) - (1)].dValue); ;}
     break;
 
   case 115:
-#line 1225 "src/flatzinc/parser.yxx"
+#line 1212 "src/flatzinc/parser.yxx"
     { (yyval.floatSetValue) = (yyvsp[(1) - (3)].floatSetValue); (yyval.floatSetValue)->push_back((yyvsp[(3) - (3)].dValue)); ;}
     break;
 
   case 116:
-#line 1229 "src/flatzinc/parser.yxx"
+#line 1216 "src/flatzinc/parser.yxx"
     { (yyval.setValueList) = new vector<AST::SetLit>(0); ;}
     break;
 
   case 117:
-#line 1231 "src/flatzinc/parser.yxx"
+#line 1218 "src/flatzinc/parser.yxx"
     { (yyval.setValueList) = (yyvsp[(1) - (2)].setValueList); ;}
     break;
 
   case 118:
-#line 1235 "src/flatzinc/parser.yxx"
+#line 1222 "src/flatzinc/parser.yxx"
     { (yyval.setValueList) = new vector<AST::SetLit>(1); (*(yyval.setValueList))[0] = *(yyvsp[(1) - (1)].setLit); delete (yyvsp[(1) - (1)].setLit); ;}
     break;
 
   case 119:
-#line 1237 "src/flatzinc/parser.yxx"
+#line 1224 "src/flatzinc/parser.yxx"
     { (yyval.setValueList) = (yyvsp[(1) - (3)].setValueList); (yyval.setValueList)->push_back(*(yyvsp[(3) - (3)].setLit)); delete (yyvsp[(3) - (3)].setLit); ;}
     break;
 
   case 120:
-#line 1245 "src/flatzinc/parser.yxx"
+#line 1232 "src/flatzinc/parser.yxx"
     { (yyval.argVec) = new AST::Array((yyvsp[(1) - (1)].arg)); ;}
     break;
 
   case 121:
-#line 1247 "src/flatzinc/parser.yxx"
+#line 1234 "src/flatzinc/parser.yxx"
     { (yyval.argVec) = (yyvsp[(1) - (3)].argVec); (yyval.argVec)->append((yyvsp[(3) - (3)].arg)); ;}
     break;
 
   case 122:
-#line 1251 "src/flatzinc/parser.yxx"
+#line 1238 "src/flatzinc/parser.yxx"
     { (yyval.arg) = (yyvsp[(1) - (1)].arg); ;}
     break;
 
   case 123:
-#line 1253 "src/flatzinc/parser.yxx"
+#line 1240 "src/flatzinc/parser.yxx"
     { (yyval.arg) = (yyvsp[(2) - (3)].argVec); ;}
     break;
 
   case 124:
-#line 1257 "src/flatzinc/parser.yxx"
+#line 1244 "src/flatzinc/parser.yxx"
     { (yyval.oArg) = Option<AST::Node*>::none(); ;}
     break;
 
   case 125:
-#line 1259 "src/flatzinc/parser.yxx"
+#line 1246 "src/flatzinc/parser.yxx"
     { (yyval.oArg) = Option<AST::Node*>::some((yyvsp[(2) - (2)].arg)); ;}
     break;
 
   case 126:
-#line 1263 "src/flatzinc/parser.yxx"
+#line 1250 "src/flatzinc/parser.yxx"
     { (yyval.arg) = new AST::BoolLit((yyvsp[(1) - (1)].iValue)); ;}
     break;
 
   case 127:
-#line 1265 "src/flatzinc/parser.yxx"
+#line 1252 "src/flatzinc/parser.yxx"
     { (yyval.arg) = new AST::IntLit((yyvsp[(1) - (1)].iValue)); ;}
     break;
 
   case 128:
-#line 1267 "src/flatzinc/parser.yxx"
+#line 1254 "src/flatzinc/parser.yxx"
     { (yyval.arg) = new AST::FloatLit((yyvsp[(1) - (1)].dValue)); ;}
     break;
 
   case 129:
-#line 1269 "src/flatzinc/parser.yxx"
+#line 1256 "src/flatzinc/parser.yxx"
     { (yyval.arg) = (yyvsp[(1) - (1)].setLit); ;}
     break;
 
   case 130:
-#line 1271 "src/flatzinc/parser.yxx"
+#line 1258 "src/flatzinc/parser.yxx"
     {
         vector<int> as;
         ParserState* pp = static_cast<ParserState*>(parm);
@@ -3025,7 +3012,7 @@ yyreduce:
     break;
 
   case 131:
-#line 1320 "src/flatzinc/parser.yxx"
+#line 1307 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         int i = -1;
@@ -3039,27 +3026,27 @@ yyreduce:
     break;
 
   case 132:
-#line 1333 "src/flatzinc/parser.yxx"
+#line 1320 "src/flatzinc/parser.yxx"
     { (yyval.argVec) = new AST::Array(0); ;}
     break;
 
   case 133:
-#line 1335 "src/flatzinc/parser.yxx"
+#line 1322 "src/flatzinc/parser.yxx"
     { (yyval.argVec) = (yyvsp[(1) - (2)].argVec); ;}
     break;
 
   case 134:
-#line 1339 "src/flatzinc/parser.yxx"
+#line 1326 "src/flatzinc/parser.yxx"
     { (yyval.argVec) = new AST::Array((yyvsp[(1) - (1)].arg)); ;}
     break;
 
   case 135:
-#line 1341 "src/flatzinc/parser.yxx"
+#line 1328 "src/flatzinc/parser.yxx"
     { (yyval.argVec) = (yyvsp[(1) - (3)].argVec); (yyval.argVec)->append((yyvsp[(3) - (3)].arg)); ;}
     break;
 
   case 136:
-#line 1349 "src/flatzinc/parser.yxx"
+#line 1336 "src/flatzinc/parser.yxx"
     {
         ParserState *pp = static_cast<ParserState*>(parm);
         if (!pp->intvarTable.get((yyvsp[(1) - (1)].sValue), (yyval.iValue))) {
@@ -3072,7 +3059,7 @@ yyreduce:
     break;
 
   case 137:
-#line 1359 "src/flatzinc/parser.yxx"
+#line 1346 "src/flatzinc/parser.yxx"
     {
         vector<int> tmp;
         ParserState *pp = static_cast<ParserState*>(parm);
@@ -3093,79 +3080,79 @@ yyreduce:
     break;
 
   case 140:
-#line 1387 "src/flatzinc/parser.yxx"
+#line 1374 "src/flatzinc/parser.yxx"
     { (yyval.argVec) = NULL; ;}
     break;
 
   case 141:
-#line 1389 "src/flatzinc/parser.yxx"
+#line 1376 "src/flatzinc/parser.yxx"
     { (yyval.argVec) = (yyvsp[(1) - (1)].argVec); ;}
     break;
 
   case 142:
-#line 1393 "src/flatzinc/parser.yxx"
+#line 1380 "src/flatzinc/parser.yxx"
     { (yyval.argVec) = new AST::Array((yyvsp[(2) - (2)].arg)); ;}
     break;
 
   case 143:
-#line 1395 "src/flatzinc/parser.yxx"
+#line 1382 "src/flatzinc/parser.yxx"
     { (yyval.argVec) = (yyvsp[(1) - (3)].argVec); (yyval.argVec)->append((yyvsp[(3) - (3)].arg)); ;}
     break;
 
   case 144:
-#line 1399 "src/flatzinc/parser.yxx"
+#line 1386 "src/flatzinc/parser.yxx"
     {
         (yyval.arg) = new AST::Call((yyvsp[(1) - (4)].sValue), AST::extractSingleton((yyvsp[(3) - (4)].arg))); free((yyvsp[(1) - (4)].sValue));
       ;}
     break;
 
   case 145:
-#line 1403 "src/flatzinc/parser.yxx"
+#line 1390 "src/flatzinc/parser.yxx"
     { (yyval.arg) = (yyvsp[(1) - (1)].arg); ;}
     break;
 
   case 146:
-#line 1407 "src/flatzinc/parser.yxx"
+#line 1394 "src/flatzinc/parser.yxx"
     { (yyval.arg) = new AST::Array((yyvsp[(1) - (1)].arg)); ;}
     break;
 
   case 147:
-#line 1409 "src/flatzinc/parser.yxx"
+#line 1396 "src/flatzinc/parser.yxx"
     { (yyval.arg) = (yyvsp[(1) - (3)].arg); (yyval.arg)->append((yyvsp[(3) - (3)].arg)); ;}
     break;
 
   case 148:
-#line 1413 "src/flatzinc/parser.yxx"
+#line 1400 "src/flatzinc/parser.yxx"
     { (yyval.arg) = (yyvsp[(1) - (1)].arg); ;}
     break;
 
   case 149:
-#line 1415 "src/flatzinc/parser.yxx"
+#line 1402 "src/flatzinc/parser.yxx"
     { (yyval.arg) = (yyvsp[(2) - (3)].arg); ;}
     break;
 
   case 150:
-#line 1419 "src/flatzinc/parser.yxx"
+#line 1406 "src/flatzinc/parser.yxx"
     { (yyval.arg) = new AST::BoolLit((yyvsp[(1) - (1)].iValue)); ;}
     break;
 
   case 151:
-#line 1421 "src/flatzinc/parser.yxx"
+#line 1408 "src/flatzinc/parser.yxx"
     { (yyval.arg) = new AST::IntLit((yyvsp[(1) - (1)].iValue)); ;}
     break;
 
   case 152:
-#line 1423 "src/flatzinc/parser.yxx"
+#line 1410 "src/flatzinc/parser.yxx"
     { (yyval.arg) = new AST::FloatLit((yyvsp[(1) - (1)].dValue)); ;}
     break;
 
   case 153:
-#line 1425 "src/flatzinc/parser.yxx"
+#line 1412 "src/flatzinc/parser.yxx"
     { (yyval.arg) = (yyvsp[(1) - (1)].setLit); ;}
     break;
 
   case 154:
-#line 1427 "src/flatzinc/parser.yxx"
+#line 1414 "src/flatzinc/parser.yxx"
     {
         vector<int> as;
         ParserState* pp = static_cast<ParserState*>(parm);
@@ -3211,7 +3198,7 @@ yyreduce:
     break;
 
   case 155:
-#line 1470 "src/flatzinc/parser.yxx"
+#line 1457 "src/flatzinc/parser.yxx"
     {
         ParserState* pp = static_cast<ParserState*>(parm);
         int i = -1;
@@ -3225,7 +3212,7 @@ yyreduce:
     break;
 
   case 156:
-#line 1481 "src/flatzinc/parser.yxx"
+#line 1468 "src/flatzinc/parser.yxx"
     {
         (yyval.arg) = new AST::String((yyvsp[(1) - (1)].sValue));
         free((yyvsp[(1) - (1)].sValue));
@@ -3234,7 +3221,7 @@ yyreduce:
 
 
 /* Line 1267 of yacc.c.  */
-#line 3238 "src/flatzinc/parser.tab.cc"
+#line 3225 "src/flatzinc/parser.tab.cc"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
