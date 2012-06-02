@@ -295,20 +295,7 @@ string FlatZincModel::DebugString() const {
     return "";
   string output;
   for (unsigned int i = 0; i < output_->a.size(); i++) {
-    AST::Node* ai = output_->a[i];
-    if (ai->isArray()) {
-      AST::Array* aia = ai->getArray();
-      int size = aia->a.size();
-      output += "[";
-      for (int j=0; j<size; j++) {
-        output += DebugString(aia->a[j]);
-        if (j<size-1)
-          output += ", ";
-      }
-      output += "]";
-    } else {
-      output += DebugString(ai);
-    }
+    output += DebugString(output_->a[i]);
   }
   return output;
 }
@@ -320,7 +307,18 @@ void FlatZincModel::InitOutput(AST::Array* output) {
 string FlatZincModel::DebugString(AST::Node* ai) const {
   string output;
   int k;
-  if (ai->isInt(k)) {
+  if (ai->isArray()) {
+    AST::Array* aia = ai->getArray();
+    int size = aia->a.size();
+    output += "[";
+    for (int j = 0; j < size; j++) {
+      output += DebugString(aia->a[j]);
+      if (j < size - 1) {
+        output += ", ";
+      }
+    }
+    output += "]";
+  } else if (ai->isInt(k)) {
     output += StringPrintf("%d", k);
   } else if (ai->isIntVar()) {
     IntVar* const var = integer_variables_[ai->getIntVar()];
