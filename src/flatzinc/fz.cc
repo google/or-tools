@@ -48,6 +48,7 @@
 using namespace std;
 
 DEFINE_string(file, "", "file name");
+DEFINE_bool(log, false, "Show search log");
 
 namespace operations_research {
 void Run() {
@@ -57,9 +58,11 @@ void Run() {
                                      parse(FLAGS_file.c_str(), p));
 
   if (fz_model.get()) {
-    fz_model->createBranchers(fz_model->solveAnnotations(), false, std::cerr);
-    fz_model->run(std::cout, p);
-    fz_model->print(std::cout, p);
+    fz_model->CreateDecisionBuilders(fz_model->SolveAnnotations(),
+                                     false,
+                                     std::cerr);
+    fz_model->Run(p, FLAGS_log);
+    fz_model->Print(std::cout, p);
   } else {
     exit(EXIT_FAILURE);
   }

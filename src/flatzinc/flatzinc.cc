@@ -55,7 +55,7 @@ FlatZincModel::FlatZincModel(void)
       collector_(NULL),
       objective_(NULL) {}
 
-void FlatZincModel::init(int intVars, int boolVars, int setVars) {
+void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
   int_var_count = 0;
   integer_variables_ = std::vector<IntVar*>(intVars);
   integer_variables_introduced = std::vector<bool>(intVars);
@@ -68,7 +68,7 @@ void FlatZincModel::init(int intVars, int boolVars, int setVars) {
   sv_introduced = std::vector<bool>(setVars);
 }
 
-void FlatZincModel::newIntVar(const std::string& name, IntVarSpec* vs) {
+void FlatZincModel::NewIntVar(const std::string& name, IntVarSpec* vs) {
   if (vs->alias) {
     integer_variables_[int_var_count++] = integer_variables_[vs->i];
   } else {
@@ -97,7 +97,7 @@ int FlatZincModel::aliasBool2Int(int iv) {
   return integer_variables_boolalias[iv];
 }
 
-void FlatZincModel::newBoolVar(const std::string& name, BoolVarSpec* vs) {
+void FlatZincModel::NewBoolVar(const std::string& name, BoolVarSpec* vs) {
   if (vs->alias) {
     boolean_variables_[bool_var_count++] = boolean_variables_[vs->i];
   } else {
@@ -118,7 +118,7 @@ void FlatZincModel::newSetVar(SetVarSpec* vs) {
   sv_introduced[set_var_count-1] = vs->introduced;
 }
 
-void FlatZincModel::postConstraint(const ConExpr& ce, AST::Node* ann) {
+void FlatZincModel::PostConstraint(const ConExpr& ce, AST::Node* ann) {
   try {
     registry().post(*this, ce, ann);
   } catch (AST::TypeError& e) {
@@ -140,9 +140,9 @@ void flattenAnnotations(AST::Array* ann, std::vector<AST::Node*>& out) {
   }
 }
 
-void FlatZincModel::createBranchers(AST::Node* ann,
-                                    bool ignoreUnknown,
-                                    std::ostream& err) {
+void FlatZincModel::CreateDecisionBuilders(AST::Node* ann,
+                                           bool ignoreUnknown,
+                                           std::ostream& err) {
   if (ann) {
     std::vector<AST::Node*> flatAnn;
     if (ann->isArray()) {
@@ -212,16 +212,16 @@ void FlatZincModel::createBranchers(AST::Node* ann,
   }
 }
 
-AST::Array* FlatZincModel::solveAnnotations(void) const {
+AST::Array* FlatZincModel::SolveAnnotations(void) const {
   return _solveAnnotations;
 }
 
-void FlatZincModel::solve(AST::Array* ann) {
+void FlatZincModel::Solve(AST::Array* ann) {
   method_ = SAT;
   _solveAnnotations = ann;
 }
 
-void FlatZincModel::minimize(int var, AST::Array* ann) {
+void FlatZincModel::Minimize(int var, AST::Array* ann) {
   method_ = MIN;
   objective_variable_ = var;
   _solveAnnotations = ann;
@@ -239,7 +239,7 @@ void FlatZincModel::minimize(int var, AST::Array* ann) {
   objective_ = solver_.MakeMinimize(integer_variables_[objective_variable_], 1);
 }
 
-void FlatZincModel::maximize(int var, AST::Array* ann) {
+void FlatZincModel::Maximize(int var, AST::Array* ann) {
   method_ = MAX;
   objective_variable_ = var;
   _solveAnnotations = ann;
@@ -261,12 +261,13 @@ FlatZincModel::~FlatZincModel(void) {
   delete _solveAnnotations;
 }
 
-void FlatZincModel::run(std::ostream& out, const FzPrinter& p) {
+void FlatZincModel::Run(const FzPrinter& p, bool log) {
   switch (method_) {
     case MIN:
     case MAX: {
-      std::cerr << "start optimization search\n";
-      SearchMonitor* const log = solver_.MakeSearchLog(100000, objective_);
+      SearchMonitor* const log = log ?
+          solver_.MakeSearchLog(100000, objective_) :
+          NULL;
       collector_ = solver_.MakeLastSolutionCollector();
       collector_->Add(integer_variables_);
       collector_->Add(boolean_variables_);
@@ -275,7 +276,7 @@ void FlatZincModel::run(std::ostream& out, const FzPrinter& p) {
       break;
     }
     case SAT: {
-      SearchMonitor* const log = solver_.MakeSearchLog(100000);
+      SearchMonitor* const log = log ? solver_.MakeSearchLog(100000) : NULL;
       collector_ = solver_.MakeFirstSolutionCollector();
       collector_->Add(integer_variables_);
       collector_->Add(boolean_variables_);
@@ -285,15 +286,15 @@ void FlatZincModel::run(std::ostream& out, const FzPrinter& p) {
   }
 }
 
-FlatZincModel::Meth FlatZincModel::method(void) const {
+FlatZincModel::Meth FlatZincModel::Method(void) const {
   return method_;
 }
 
-int FlatZincModel::optVar(void) const {
+int FlatZincModel::optimize_var(void) const {
   return objective_variable_;
 }
 
-void FlatZincModel::print(std::ostream& out, const FzPrinter& p) const {
+void FlatZincModel::Print(std::ostream& out, const FzPrinter& p) const {
   p.print(out, *this);
 }
 

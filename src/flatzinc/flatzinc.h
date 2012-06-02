@@ -126,40 +126,42 @@ class FlatZincModel {
   ~FlatZincModel(void);
 
   /// Initialize space with given number of variables
-  void init(int intVars, int boolVars, int setVars);
+  void Init(int num_int_variables,
+            int num_bool_variables,
+            int num_set_variables);
 
   /// Create new integer variable from specification
-  void newIntVar(const std::string& name, IntVarSpec* vs);
+  void NewIntVar(const std::string& name, IntVarSpec* vs);
   /// Link integer variable \a iv to Boolean variable \a bv
   void aliasBool2Int(int iv, int bv);
   /// Return linked Boolean variable for integer variable \a iv
   int aliasBool2Int(int iv);
   /// Create new Boolean variable from specification
-  void newBoolVar(const std::string& name, BoolVarSpec* vs);
+  void NewBoolVar(const std::string& name, BoolVarSpec* vs);
   /// Create new set variable from specification
   void newSetVar(SetVarSpec* vs);
 
   /// Post a constraint specified by \a ce
-  void postConstraint(const ConExpr& ce, AST::Node* annotation);
+  void PostConstraint(const ConExpr& ce, AST::Node* annotation);
 
   /// Post the solve item
-  void solve(AST::Array* annotation);
+  void Solve(AST::Array* annotation);
   /// Post that integer variable \a var should be minimized
-  void minimize(int var, AST::Array* annotation);
+  void Minimize(int var, AST::Array* annotation);
   /// Post that integer variable \a var should be maximized
-  void maximize(int var, AST::Array* annotation);
+  void Maximize(int var, AST::Array* annotation);
 
   /// Run the search
-  void run(std::ostream& out, const FzPrinter& p);
+  void Run(const FzPrinter& p, bool log);
 
   /// Produce output on \a out using \a p
-  void print(std::ostream& out, const FzPrinter& p) const;
+  void Print(std::ostream& out, const FzPrinter& p) const;
 
   /// Return whether to solve a satisfaction or optimization problem
-  Meth method(void) const;
+  Meth Method(void) const;
 
   /// Return index of variable used for optimization
-  int optVar(void) const;
+  int optimize_var(void) const;
 
   /**
    * \brief Create branchers corresponding to the solve item annotations
@@ -167,11 +169,12 @@ class FlatZincModel {
    * If \a ignoreUnknown is true, unknown solve item annotations will be
    * ignored, otherwise a warning is written to \a err.
    */
-  void createBranchers(AST::Node* ann, bool ignoreUnknown,
-                       std::ostream& err = std::cerr);
+  void CreateDecisionBuilders(AST::Node* ann,
+                              bool ignoreUnknown,
+                              std::ostream& err = std::cerr);
 
   /// Return the solve item annotations
-  AST::Array* solveAnnotations(void) const;
+  AST::Array* SolveAnnotations(void) const;
 
 };
 

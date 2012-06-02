@@ -277,7 +277,7 @@ void addDomainConstraint(ParserState* pp, std::string id, AST::Node* var,
 
 void initfg(ParserState* pp) {
   if (!pp->hadError)
-    pp->fg->init(pp->intvars.size(),
+    pp->fg->Init(pp->intvars.size(),
                  pp->boolvars.size(),
                  pp->setvars.size());
 
@@ -297,7 +297,7 @@ void initfg(ParserState* pp) {
             array_index = 0;
           }
         }
-        pp->fg->newIntVar(name,
+        pp->fg->NewIntVar(name,
                           static_cast<IntVarSpec*>(pp->intvars[i].second));
       } catch (operations_research::Error& e) {
         yyerror(pp, e.toString().c_str());
@@ -324,7 +324,7 @@ void initfg(ParserState* pp) {
             array_index = 0;
           }
         }
-        pp->fg->newBoolVar(name,
+        pp->fg->NewBoolVar(name,
                            static_cast<BoolVarSpec*>(pp->boolvars[i].second));
       } catch (operations_research::Error& e) {
         yyerror(pp, e.toString().c_str());
@@ -352,7 +352,7 @@ void initfg(ParserState* pp) {
     if (!pp->hadError) {
       try {
         assert(pp->domainConstraints[i]->args->a.size() == 2);
-        pp->fg->postConstraint(*pp->domainConstraints[i], NULL);
+        pp->fg->PostConstraint(*pp->domainConstraints[i], NULL);
         delete pp->domainConstraints[i];
       } catch (operations_research::Error& e) {
         yyerror(pp, e.toString().c_str());
@@ -2766,7 +2766,7 @@ yyreduce:
         ParserState *pp = static_cast<ParserState*>(parm);
         if (!pp->hadError) {
           try {
-            pp->fg->postConstraint(c, (yyvsp[(6) - (6)].argVec));
+            pp->fg->PostConstraint(c, (yyvsp[(6) - (6)].argVec));
           } catch (operations_research::Error& e) {
             yyerror(pp, e.toString().c_str());
           }
@@ -2781,7 +2781,7 @@ yyreduce:
         ParserState *pp = static_cast<ParserState*>(parm);
         if (!pp->hadError) {
           try {
-            pp->fg->solve((yyvsp[(2) - (3)].argVec));
+            pp->fg->Solve((yyvsp[(2) - (3)].argVec));
           } catch (operations_research::Error& e) {
             yyerror(pp, e.toString().c_str());
           }
@@ -2798,9 +2798,9 @@ yyreduce:
         if (!pp->hadError) {
           try {
             if ((yyvsp[(3) - (4)].bValue))
-              pp->fg->minimize((yyvsp[(4) - (4)].iValue),(yyvsp[(2) - (4)].argVec));
+              pp->fg->Minimize((yyvsp[(4) - (4)].iValue),(yyvsp[(2) - (4)].argVec));
             else
-              pp->fg->maximize((yyvsp[(4) - (4)].iValue),(yyvsp[(2) - (4)].argVec));
+              pp->fg->Maximize((yyvsp[(4) - (4)].iValue),(yyvsp[(2) - (4)].argVec));
           } catch (operations_research::Error& e) {
             yyerror(pp, e.toString().c_str());
           }

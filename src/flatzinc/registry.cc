@@ -903,10 +903,12 @@ void p_int_in(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
   IntVar* const var = s.integer_variables_[var_node->getIntVar()];
   AST::SetLit* const domain = domain_node->getSet();
   if (domain->interval) {
-    Constraint* const ct =
-        solver->MakeBetweenCt(var, domain->min, domain->max);
-    VLOG(1) << "Posted " << ct->DebugString();
-    solver->AddConstraint(ct);
+    if (var->Min() < domain->min || var->Max() > domain->max) {
+      Constraint* const ct =
+          solver->MakeBetweenCt(var, domain->min, domain->max);
+      VLOG(1) << "Posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
   } else {
     Constraint* const ct = solver->MakeMemberCt(var, domain->s);
     VLOG(1) << "Posted " << ct->DebugString();
