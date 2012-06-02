@@ -265,7 +265,8 @@ FlatZincModel::~FlatZincModel(void) {
 void FlatZincModel::Solve(int solve_frequency,
                           bool use_log,
                           bool all_solutions,
-                          bool ignore_annotations) {
+                          bool ignore_annotations,
+                          int num_solutions) {
   CreateDecisionBuilders(false, ignore_annotations);
   switch (method_) {
     case MIN:
@@ -281,6 +282,10 @@ void FlatZincModel::Solve(int solve_frequency,
             std::cout << DebugString(output_->a[i]);
           }
           std::cout << "----------" << std::endl;
+          count++;
+          if (num_solutions > 0 && count >= num_solutions) {
+            break;
+          }
         }
       }
       solver_.EndSearch();
@@ -290,6 +295,7 @@ void FlatZincModel::Solve(int solve_frequency,
       SearchMonitor* const log = use_log ?
           solver_.MakeSearchLog(solve_frequency) :
           NULL;
+      int count = 0;
       solver_.NewSearch(solver_.Compose(builders_), log);
       while (solver_.NextSolution()) {
         if (output_ != NULL) {
@@ -298,7 +304,7 @@ void FlatZincModel::Solve(int solve_frequency,
           }
           std::cout << "----------" << std::endl;
         }
-        if (!all_solutions) {
+        if (!all_solutions || (num_solutions > 0 && count >= num_solutions)) {
           break;
         }
       }

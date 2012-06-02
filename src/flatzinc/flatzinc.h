@@ -149,7 +149,8 @@ class FlatZincModel {
   void Solve(int log_frequency,
              bool log,
              bool all_solutions,
-             bool ignore_annotations);
+             bool ignore_annotations,
+             int num_solutions);
 
   // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
   void Parse(const std::string& fileName);

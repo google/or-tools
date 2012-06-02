@@ -49,6 +49,7 @@ DEFINE_int32(log_frequency, 100000, "Search log frequency");
 DEFINE_bool(log, false, "Show search log");
 DEFINE_bool(all, false, "Search for all solutions");
 DEFINE_bool(free, false, "Ignore search annotations");
+DEFINE_int32(num_solutions, 0, "Number of solution to search for");
 DECLARE_bool(log_prefix);
 
 namespace operations_research {
@@ -60,7 +61,11 @@ void Run(const std::string& file) {
     fz_model.Parse(file);
   }
 
-  fz_model.Solve(FLAGS_log_frequency, FLAGS_log, FLAGS_all, FLAGS_free);
+  fz_model.Solve(FLAGS_log_frequency,
+                 FLAGS_log,
+                 FLAGS_all,
+                 FLAGS_free,
+                 FLAGS_num_solutions);
 }
 }
 
