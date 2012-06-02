@@ -59,7 +59,8 @@ void Run(const std::string& file) {
   }
 
   fz_model.Solve(FLAGS_log_frequency, FLAGS_log);
-  LOG(INFO) << fz_model.DebugString();
+  std::cout << fz_model.DebugString() << std::endl
+            << "----------" << std::endl;
 }
 }
 
