@@ -180,24 +180,30 @@ class SetVarSpec : public VarSpec {
 
 class CtSpec {
  public:
-  CtSpec(const std::string& id0,
-         AST::Array* const args0,
-         AST::Node* const an0)
-      : id_(id0),
-        args_(args0),
-        annotations_(an0) {}
+  CtSpec(const int index,
+         const std::string& id,
+         AST::Array* const args,
+         AST::Node* const annotations)
+      : index_(index),
+        id_(id),
+        args_(args),
+        annotations_(annotations) {}
 
   ~CtSpec() {
     delete args_;
     delete annotations_;
   }
 
-  AST::Node* Arg(int index) const {
-    return args_->a[index];
+  const std::string& Id() const {
+    return id_;
   }
 
-  const std::string& id() const {
-    return id_;
+  int Index() const {
+    return index_;
+  }
+
+  AST::Node* Arg(int index) const {
+    return args_->a[index];
   }
 
   int NumArgs() const {
@@ -209,6 +215,7 @@ class CtSpec {
   }
 
  private:
+  const int index_;
   const std::string id_;
   AST::Array* const args_;
   AST::Node* const annotations_;

@@ -42,9 +42,6 @@
 #define YYLEX_PARAM static_cast<ParserState*>(parm)->yyscanner
 #include "flatzinc/flatzinc.h"
 #include "flatzinc/parser.h"
-#include <iostream>
-#include <fstream>
-#include <sstream>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,13 +53,8 @@
 
 using namespace std;
 
-int yyparse(void*);
-int yylex(YYSTYPE*, void* scanner);
-int yylex_init (void** scanner);
-int yylex_destroy (void* scanner);
-int yyget_lineno (void* scanner);
-void yyset_extra (void* user_defined ,void* yyscanner );
-
+extern int yylex(YYSTYPE*, void* scanner);
+extern int yyget_lineno (void* scanner);
 extern int yydebug;
 
 using namespace operations_research;
@@ -82,260 +74,6 @@ void yyassert(ParserState* pp, bool cond, const char* str)
     pp->hadError = true;
   }
 }
-
-/*
- * The symbol tables
- *
- */
-
-AST::Node* getArrayElement(ParserState* pp, string id, unsigned int offset) {
-  if (offset > 0) {
-    vector<int> tmp;
-    if (pp->intvararrays.get(id, tmp) && offset<=tmp.size())
-      return new AST::IntVar(tmp[offset-1]);
-    if (pp->boolvararrays.get(id, tmp) && offset<=tmp.size())
-      return new AST::BoolVar(tmp[offset-1]);
-    if (pp->setvararrays.get(id, tmp) && offset<=tmp.size())
-      return new AST::SetVar(tmp[offset-1]);
-
-    if (pp->intvalarrays.get(id, tmp) && offset<=tmp.size())
-      return new AST::IntLit(tmp[offset-1]);
-    if (pp->boolvalarrays.get(id, tmp) && offset<=tmp.size())
-      return new AST::BoolLit(tmp[offset-1]);
-    vector<AST::SetLit> tmpS;
-    if (pp->setvalarrays.get(id, tmpS) && offset<=tmpS.size())
-      return new AST::SetLit(tmpS[offset-1]);
-  }
-
-  LOG(ERROR) << "Error: array access to " << id << " invalid"
-             << " in line no. " << yyget_lineno(pp->yyscanner);
-  pp->hadError = true;
-  return new AST::IntVar(0); // keep things consistent
-}
-AST::Node* getVarRefArg(ParserState* pp, string id, bool annotation = false) {
-  int tmp;
-  if (pp->intvarTable.get(id, tmp))
-    return new AST::IntVar(tmp);
-  if (pp->boolvarTable.get(id, tmp))
-    return new AST::BoolVar(tmp);
-  if (pp->setvarTable.get(id, tmp))
-    return new AST::SetVar(tmp);
-  if (annotation)
-    return new AST::Atom(id);
-  LOG(ERROR) << "Error: undefined variable " << id
-             << " in line no. " << yyget_lineno(pp->yyscanner);
-  pp->hadError = true;
-  return new AST::IntVar(0); // keep things consistent
-}
-
-void addDomainConstraint(ParserState* pp, std::string id, AST::Node* var,
-                         Option<AST::SetLit* >& dom) {
-  if (!dom())
-    return;
-  AST::Array* args = new AST::Array(2);
-  args->a[0] = var;
-  args->a[1] = dom.some();
-  pp->domainConstraints.push_back(new CtSpec(id, args, NULL));
-}
-
-void addConstraint(ParserState* const pp,
-                   const std::string& id,
-                   AST::Array* const args,
-                   AST::Node* const annotations) {
-  pp->constraints.push_back(new CtSpec(id, args, annotations));
-}
-
-/*
- * Initialize the root or-tools space
- *
- */
-
-void initmodel(ParserState* pp) {
-  if (!pp->hadError)
-    pp->model->Init(pp->intvars.size(),
-                 pp->boolvars.size(),
-                 pp->setvars.size());
-
-  int array_index = 0;
-  for (unsigned int i=0; i<pp->intvars.size(); i++) {
-    if (!pp->hadError) {
-      try {
-        const std::string& raw_name = pp->intvars[i].first;
-        std::string name;
-        if (raw_name[0] == '[') {
-          name = StringPrintf("%s[%d]", raw_name.c_str() + 1, ++array_index);
-        } else {
-          if (array_index == 0) {
-            name = raw_name;
-          } else {
-            name = StringPrintf("%s[%d]", raw_name.c_str(), array_index + 1);
-            array_index = 0;
-          }
-        }
-        pp->model->NewIntVar(name,
-                          static_cast<IntVarSpec*>(pp->intvars[i].second));
-      } catch (operations_research::Error& e) {
-        yyerror(pp, e.DebugString().c_str());
-      }
-    }
-    if (pp->intvars[i].first[0] != '[') {
-      delete pp->intvars[i].second;
-      pp->intvars[i].second = NULL;
-    }
-  }
-  array_index = 0;
-  for (unsigned int i=0; i<pp->boolvars.size(); i++) {
-    if (!pp->hadError) {
-      try {
-        const std::string& raw_name = pp->boolvars[i].first;
-        std::string name;
-        if (raw_name[0] == '[') {
-          name = StringPrintf("%s[%d]", raw_name.c_str() + 1, ++array_index);
-        } else {
-          if (array_index == 0) {
-            name = raw_name;
-          } else {
-            name = StringPrintf("%s[%d]", raw_name.c_str(), array_index + 1);
-            array_index = 0;
-          }
-        }
-        pp->model->NewBoolVar(name,
-                           static_cast<BoolVarSpec*>(pp->boolvars[i].second));
-      } catch (operations_research::Error& e) {
-        yyerror(pp, e.DebugString().c_str());
-      }
-    }
-    if (pp->boolvars[i].first[0] != '[') {
-      delete pp->boolvars[i].second;
-      pp->boolvars[i].second = NULL;
-    }
-  }
-  for (unsigned int i=0; i<pp->setvars.size(); i++) {
-    if (!pp->hadError) {
-      //  pp->model->newSetVar(static_cast<SetVarSpec*>(pp->setvars[i].second));
-    }
-    if (pp->setvars[i].first[0] != '[') {
-      delete pp->setvars[i].second;
-      pp->setvars[i].second = NULL;
-    }
-  }
-  for (unsigned int i=pp->domainConstraints.size(); i--;) {
-    if (!pp->hadError) {
-      try {
-        assert(pp->domainConstraints[i]->NumArgs() == 2);
-        pp->model->PostConstraint(pp->domainConstraints[i]);
-        delete pp->domainConstraints[i];
-      } catch (operations_research::Error& e) {
-        yyerror(pp, e.DebugString().c_str());
-      }
-    }
-  }
-}
-
-void FillOutput(ParserState& pp, operations_research::FlatZincModel& m) {
-  m.InitOutput(pp.Output());
-}
-
-AST::Node* arrayOutput(AST::Call* ann) {
-  AST::Array* a = NULL;
-
-  if (ann->args->isArray()) {
-    a = ann->args->getArray();
-  } else {
-    a = new AST::Array(ann->args);
-  }
-
-  std::ostringstream oss;
-
-  oss << "array" << a->a.size() << "d(";
-  for (unsigned int i=0; i<a->a.size(); i++) {
-    AST::SetLit* s = a->a[i]->getSet();
-    if (s->empty())
-      oss << "{}, ";
-    else if (s->interval)
-      oss << s->min << ".." << s->max << ", ";
-    else {
-      oss << "{";
-      for (unsigned int j=0; j<s->s.size(); j++) {
-        oss << s->s[j];
-        if (j<s->s.size()-1)
-          oss << ",";
-      }
-      oss << "}, ";
-    }
-  }
-
-  if (!ann->args->isArray()) {
-    a->a[0] = NULL;
-    delete a;
-  }
-  return new AST::String(oss.str());
-}
-
-/*
- * The main program
- *
- */
-
-namespace operations_research {
-
-void FlatZincModel::Parse(const std::string& filename) {
-#ifdef HAVE_MMAP
-    int fd;
-    char* data;
-    struct stat sbuf;
-    fd = open(filename.c_str(), O_RDONLY);
-    if (fd == -1) {
-      LOG(ERROR) << "Cannot open file " << filename;
-      return NULL;
-    }
-    if (stat(filename.c_str(), &sbuf) == -1) {
-      LOG(ERROR) << "Cannot stat file " << filename;
-      return NULL;
-    }
-    data = (char*)mmap((caddr_t)0, sbuf.st_size, PROT_READ, MAP_SHARED, fd,0);
-    if (data == (caddr_t)(-1)) {
-      LOG(ERROR) << "Cannot mmap file " << filename;
-      return NULL;
-    }
-
-    ParserState pp(data, sbuf.st_size, this);
-#else
-    std::ifstream file;
-    file.open(filename.c_str());
-    if (!file.is_open()) {
-      LOG(FATAL) << "Cannot open file " << filename;
-    }
-    std::string s = string(istreambuf_iterator<char>(file),
-                           istreambuf_iterator<char>());
-    ParserState pp(s, this);
-#endif
-    yylex_init(&pp.yyscanner);
-    yyset_extra(&pp, pp.yyscanner);
-    // yydebug = 1;
-    yyparse(&pp);
-    FillOutput(pp, *this);
-
-    if (pp.yyscanner)
-      yylex_destroy(pp.yyscanner);
-  }
-
-void FlatZincModel::Parse(std::istream& is) {
-  std::string s = string(istreambuf_iterator<char>(is),
-                         istreambuf_iterator<char>());
-
-  ParserState pp(s, this);
-  yylex_init(&pp.yyscanner);
-  yyset_extra(&pp, pp.yyscanner);
-  // yydebug = 1;
-  yyparse(&pp);
-  FillOutput(pp, *this);
-
-  if (pp.yyscanner)
-    yylex_destroy(pp.yyscanner);
-}
-}
-
 %}
 
 %union { int iValue; char* sValue; bool bValue; double dValue;
@@ -450,9 +188,9 @@ preddecl_items_head:
 
 vardecl_items:
       /* emtpy */
-      { initmodel(static_cast<ParserState*>(parm)); }
+      { static_cast<ParserState*>(parm)->InitModel(); }
     | vardecl_items_head
-      { initmodel(static_cast<ParserState*>(parm)); }
+      { static_cast<ParserState*>(parm)->InitModel(); }
 
 vardecl_items_head:
       vardecl_item ';'
@@ -532,10 +270,9 @@ vardecl_item:
             yyassert(pp, false, "Invalid var int initializer.");
           }
           if (!pp->hadError)
-            addDomainConstraint(pp,
-                                "int_in",
-                                new AST::IntVar(pp->intvars.size() - 1),
-                                $2);
+            pp->AddDomainConstraint("int_in",
+                                    new AST::IntVar(pp->intvars.size() - 1),
+                                    $2);
           delete arg;
         } else {
           pp->intvars.push_back(varspec($4, new IntVarSpec($2, introduced)));
@@ -563,8 +300,9 @@ vardecl_item:
             yyassert(pp, false, "Invalid var bool initializer.");
           }
           if (!pp->hadError)
-            addDomainConstraint(pp, "int_in",
-                                new AST::BoolVar(pp->boolvars.size()-1), $2);
+            pp->AddDomainConstraint("int_in",
+                                    new AST::BoolVar(pp->boolvars.size()-1),
+                                    $2);
           delete arg;
         } else {
           pp->boolvars.push_back(varspec($4, new BoolVarSpec($2,introduced)));
@@ -599,8 +337,9 @@ vardecl_item:
             delete arg;
           }
           if (!pp->hadError)
-            addDomainConstraint(pp, "set_subset",
-                                new AST::SetVar(pp->setvars.size()-1), $4);
+            pp->AddDomainConstraint("set_subset",
+                                    new AST::SetVar(pp->setvars.size()-1),
+                                    $4);
         } else {
           pp->setvars.push_back(varspec($6, new SetVarSpec($4,introduced)));
         }
@@ -654,9 +393,9 @@ vardecl_item:
                   if (!pp->hadError && $9()) {
                     Option<AST::SetLit*> opt =
                       Option<AST::SetLit*>::some(new AST::SetLit(*$9.some()));
-                    addDomainConstraint(pp, "int_in",
-                                        new AST::IntVar(vars[i]),
-                                        opt);
+                    pp->AddDomainConstraint("int_in",
+                                            new AST::IntVar(vars[i]),
+                                            opt);
                   }
                 }
               }
@@ -676,7 +415,7 @@ vardecl_item:
           }
           if (print) {
             AST::Array* a = new AST::Array();
-            a->a.push_back(arrayOutput($12->getCall("output_array")));
+            a->a.push_back(ArrayOutput($12->getCall("output_array")));
             AST::Array* output = new AST::Array();
             for (int i=0; i<$5; i++)
               output->a.push_back(new AST::IntVar(vars[i]));
@@ -712,9 +451,9 @@ vardecl_item:
                 if (!pp->hadError && $9()) {
                   Option<AST::SetLit*> opt =
                     Option<AST::SetLit*>::some(new AST::SetLit(*$9.some()));
-                  addDomainConstraint(pp, "int_in",
-                                      new AST::BoolVar(vars[i]),
-                                      opt);
+                  pp->AddDomainConstraint("int_in",
+                                          new AST::BoolVar(vars[i]),
+                                          opt);
                 }
               }
             }
@@ -728,7 +467,7 @@ vardecl_item:
           }
           if (print) {
             AST::Array* a = new AST::Array();
-            a->a.push_back(arrayOutput($12->getCall("output_array")));
+            a->a.push_back(ArrayOutput($12->getCall("output_array")));
             AST::Array* output = new AST::Array();
             for (int i=0; i<$5; i++)
               output->a.push_back(new AST::BoolVar(vars[i]));
@@ -771,9 +510,9 @@ vardecl_item:
                 if (!pp->hadError && $11()) {
                   Option<AST::SetLit*> opt =
                     Option<AST::SetLit*>::some(new AST::SetLit(*$11.some()));
-                  addDomainConstraint(pp, "set_subset",
-                                      new AST::SetVar(vars[i]),
-                                      opt);
+                  pp->AddDomainConstraint("set_subset",
+                                          new AST::SetVar(vars[i]),
+                                          opt);
                 }
               }
             }
@@ -792,7 +531,7 @@ vardecl_item:
           }
           if (print) {
             AST::Array* a = new AST::Array();
-            a->a.push_back(arrayOutput($14->getCall("output_array")));
+            a->a.push_back(ArrayOutput($14->getCall("output_array")));
             AST::Array* output = new AST::Array();
             for (int i=0; i<$5; i++)
               output->a.push_back(new AST::SetVar(vars[i]));
@@ -1096,7 +835,7 @@ constraint_item :
         ParserState *pp = static_cast<ParserState*>(parm);
         if (!pp->hadError) {
           try {
-            addConstraint(pp, $2, $4, $6);
+            pp->AddConstraint($2, $4, $6);
           } catch (operations_research::Error& e) {
             yyerror(pp, e.DebugString().c_str());
           }
@@ -1304,7 +1043,7 @@ non_array_expr :
           } else if (pp->boolvals.get($1, bval)) {
             $$ = new AST::BoolLit(bval);
           } else {
-            $$ = getVarRefArg(pp,$1);
+            $$ = pp->VarRefArg($1, false);
           }
         }
         free($1);
@@ -1315,7 +1054,7 @@ non_array_expr :
         int i = -1;
         yyassert(pp, $3->isInt(i), "Non-integer array index.");
         if (!pp->hadError)
-          $$ = getArrayElement(static_cast<ParserState*>(parm),$1,i);
+          $$ = static_cast<ParserState*>(parm)->ArrayElement($1, i);
         else
           $$ = new AST::IntLit(0); // keep things consistent
         free($1);
@@ -1454,7 +1193,7 @@ ann_non_array_expr :
           } else if (pp->boolvals.get($1, bval)) {
             $$ = new AST::BoolLit(bval);
           } else {
-            $$ = getVarRefArg(pp,$1,true);
+            $$ = pp->VarRefArg($1, true);
           }
         }
         free($1);
@@ -1465,7 +1204,7 @@ ann_non_array_expr :
         int i = -1;
         yyassert(pp, $3->isInt(i), "Non-integer array index.");
         if (!pp->hadError)
-          $$ = getArrayElement(static_cast<ParserState*>(parm),$1,i);
+          $$ = pp->ArrayElement($1, i);
         else
           $$ = new AST::IntLit(0); // keep things consistent
         free($1);

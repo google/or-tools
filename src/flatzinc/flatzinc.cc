@@ -37,7 +37,6 @@
 
 #include "base/stringprintf.h"
 #include "flatzinc/flatzinc.h"
-//#include "flatzinc/registry.h"
 
 #include <vector>
 #include <string>

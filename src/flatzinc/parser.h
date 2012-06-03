@@ -144,8 +144,8 @@ class ParserState {
   std::vector<varspec> boolvars;
   std::vector<varspec> setvars;
 
-  std::vector<CtSpec*> domainConstraints;
-  std::vector<CtSpec*> constraints;
+  std::vector<CtSpec*> domain_constraints_;
+  std::vector<CtSpec*> constraints_;
 
   bool hadError;
 
@@ -184,14 +184,26 @@ class ParserState {
   }
 
   void AddConstraints() {
-    for (unsigned int i=constraints.size(); i--;) {
+    for (unsigned int i = constraints_.size(); i--;) {
       if (!hadError) {
-        model->PostConstraint(constraints[i]);
-        delete constraints[i];
+        model->PostConstraint(constraints_[i]);
+        delete constraints_[i];
       }
     }
   }
+
+  AST::Node* ArrayElement(string id, unsigned int offset);
+  AST::Node* VarRefArg(string id, bool annotation);
+  void AddDomainConstraint(std::string id, AST::Node* var,
+                           Option<AST::SetLit*>& dom);
+  void AddConstraint(const std::string& id,
+                     AST::Array* const args,
+                     AST::Node* const annotations);
+  void InitModel();
+  void FillOutput(operations_research::FlatZincModel& m);
 };
+
+AST::Node* ArrayOutput(AST::Call* ann);
 }  // namespace operations_research
 
 #endif

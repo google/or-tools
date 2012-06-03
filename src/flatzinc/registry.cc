@@ -61,10 +61,10 @@ class Registry {
 static Registry global_registry;
 
 void Registry::Post(FlatZincModel& s, CtSpec* const spec) {
-  std::map<std::string, poster>::iterator i = r.find(spec->id());
+  std::map<std::string, poster>::iterator i = r.find(spec->Id());
   if (i == r.end()) {
     throw Error("Registry",
-                std::string("Constraint ") + spec->id() + " not found");
+                std::string("Constraint ") + spec->Id() + " not found");
   }
   i->second(s, spec);
 }
