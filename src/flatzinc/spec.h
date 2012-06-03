@@ -86,65 +86,107 @@ class VarSpec {
   bool alias;
   /// Whether the variable is assigned
   bool assigned;
+  // name
+  string name;
   /// Constructor
-  VarSpec(bool introduced0) : introduced(introduced0) {}
+  VarSpec(const string& name0, bool introduced0)
+      : name(name0), introduced(introduced0) {}
+  // Debug string.
+  virtual string DebugString() const {
+    return "VarSpec";
+  }
+  void SetName(const string& n) {
+    name = n;
+  }
+  const string& Name() const {
+    return name;
+  }
 };
 
 /// Specification for integer variables
 class IntVarSpec : public VarSpec {
  public:
   Option<AST::SetLit*> domain;
-  IntVarSpec(const Option<AST::SetLit*>& d,
-             bool introduced)
-      : VarSpec(introduced) {
+  IntVarSpec(const string& name,
+             const Option<AST::SetLit*>& d,
+             bool introduced,
+             bool own_domain)
+      : VarSpec(name, introduced), own_domain_(own_domain) {
     alias = false;
     assigned = false;
     domain = d;
   }
-  IntVarSpec(int i0, bool introduced) : VarSpec(introduced) {
+  IntVarSpec(const string& name, int i0, bool introduced)
+      : VarSpec(name, introduced), own_domain_(false) {
     alias = false; assigned = true; i = i0;
   }
-  IntVarSpec(const Alias& eq, bool introduced) : VarSpec(introduced) {
+  IntVarSpec(const string& name, const Alias& eq, bool introduced)
+      : VarSpec(name, introduced), own_domain_(false) {
     alias = true; i = eq.v;
   }
-  ~IntVarSpec(void) {
-    if (!alias && !assigned && domain())
+  virtual ~IntVarSpec(void) {
+    if (!alias && !assigned && domain() && own_domain_)
       delete domain.some();
   }
+  virtual string DebugString() const {
+    return StringPrintf(
+        "IntVarSpec(id = %d, domain = %s)",
+        i,
+        domain.some()->DebugString().c_str());
+  }
+
+ private:
+  const bool own_domain_;
 };
 
 /// Specification for Boolean variables
 class BoolVarSpec : public VarSpec {
  public:
   Option<AST::SetLit*> domain;
-  BoolVarSpec(Option<AST::SetLit*>& d, bool introduced)
-      : VarSpec(introduced) {
+  BoolVarSpec(const string& name,
+              const Option<AST::SetLit*>& d,
+              bool introduced,
+              bool own_domain)
+      : VarSpec(name, introduced), own_domain_(own_domain) {
     alias = false; assigned = false; domain = d;
   }
-  BoolVarSpec(bool b, bool introduced) : VarSpec(introduced) {
+  BoolVarSpec(const string& name, bool b, bool introduced)
+      : VarSpec(name, introduced), own_domain_(false)  {
     alias = false; assigned = true; i = b;
   }
-  BoolVarSpec(const Alias& eq, bool introduced) : VarSpec(introduced) {
+  BoolVarSpec(const string& name, const Alias& eq, bool introduced)
+      : VarSpec(name, introduced), own_domain_(false) {
     alias = true; i = eq.v;
   }
   ~BoolVarSpec(void) {
-    if (!alias && !assigned && domain())
+    if (!alias && !assigned && domain() && own_domain_)
       delete domain.some();
   }
+  virtual string DebugString() const {
+    return StringPrintf(
+        "BoolVarSpec(id = %d, domain = %s)",
+        i,
+        domain.some()->DebugString().c_str());
+  }
+
+ private:
+  const bool own_domain_;
 };
 
 /// Specification for floating point variables
 class FloatVarSpec : public VarSpec {
  public:
   Option<std::vector<double>*> domain;
-  FloatVarSpec(Option<std::vector<double>*>& d, bool introduced)
-      : VarSpec(introduced) {
+  FloatVarSpec(const string& name, Option<std::vector<double>*>& d, bool introduced)
+      : VarSpec(name, introduced) {
     alias = false; assigned = false; domain = d;
   }
-  FloatVarSpec(bool b, bool introduced) : VarSpec(introduced) {
+  FloatVarSpec(const string& name, bool b, bool introduced)
+      : VarSpec(name, introduced) {
     alias = false; assigned = true; i = b;
   }
-  FloatVarSpec(const Alias& eq, bool introduced) : VarSpec(introduced) {
+  FloatVarSpec(const string& name, const Alias& eq, bool introduced)
+      : VarSpec(name, introduced) {
     alias = true; i = eq.v;
   }
   ~FloatVarSpec(void) {
@@ -157,19 +199,22 @@ class FloatVarSpec : public VarSpec {
 class SetVarSpec : public VarSpec {
  public:
   Option<AST::SetLit*> upperBound;
-  SetVarSpec(bool introduced) : VarSpec(introduced) {
+  SetVarSpec(const string& name, bool introduced)
+      : VarSpec(name, introduced) {
     alias = false; assigned = false;
     upperBound = Option<AST::SetLit*>::none();
   }
-  SetVarSpec(const Option<AST::SetLit*>& v, bool introduced)
-      : VarSpec(introduced) {
+  SetVarSpec(const string& name, const Option<AST::SetLit*>& v, bool introduced)
+      : VarSpec(name, introduced) {
     alias = false; assigned = false; upperBound = v;
   }
-  SetVarSpec(AST::SetLit* v, bool introduced) : VarSpec(introduced) {
+  SetVarSpec(const string& name, AST::SetLit* v, bool introduced)
+      : VarSpec(name, introduced) {
     alias = false; assigned = true;
     upperBound = Option<AST::SetLit*>::some(v);
   }
-  SetVarSpec(const Alias& eq, bool introduced) : VarSpec(introduced) {
+  SetVarSpec(const string& name, const Alias& eq, bool introduced)
+      : VarSpec(name, introduced) {
     alias = true; i = eq.v;
   }
   ~SetVarSpec(void) {
@@ -212,6 +257,16 @@ class CtSpec {
 
   AST::Node* annotations() const {
     return annotations_;
+  }
+
+  string DebugString() const {
+    return StringPrintf("CtSpec(no = %d, id = %s, args = %s, annotations=%s)",
+                        index_,
+                        id_.c_str(),
+                        args_->DebugString().c_str(),
+                        (annotations_ != NULL ?
+                         annotations_->DebugString().c_str() :
+                         "Nil"));
   }
 
  private:

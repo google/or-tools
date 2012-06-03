@@ -82,10 +82,19 @@
   std::vector<double>* floatSetValue;
   std::vector<operations_research::AST::SetLit>* setValueList;
   operations_research::Option<operations_research::AST::SetLit* > oSet;
-  operations_research::VarSpec* varSpec;
+  operations_research::IntVarSpec* varIntSpec;
+  operations_research::BoolVarSpec* varBoolSpec;
+  operations_research::SetVarSpec* varSetSpec;
+  operations_research::FloatVarSpec* varFloatSpec;
   operations_research::Option<operations_research::AST::Node*> oArg;
-  std::vector<operations_research::VarSpec*>* varSpecVec;
-  operations_research::Option<std::vector<operations_research::VarSpec*>* > oVarSpecVec;
+  std::vector<operations_research::IntVarSpec*>* varIntSpecVec;
+  std::vector<operations_research::BoolVarSpec*>* varBoolSpecVec;
+  std::vector<operations_research::SetVarSpec*>* varSetSpecVec;
+  std::vector<operations_research::FloatVarSpec*>* varFloatSpecVec;
+  operations_research::Option<std::vector<operations_research::IntVarSpec*>* > oIntVarSpecVec;
+  operations_research::Option<std::vector<operations_research::BoolVarSpec*>* > oBoolVarSpecVec;
+  operations_research::Option<std::vector<operations_research::SetVarSpec*>* > oSetVarSpecVec;
+  operations_research::Option<std::vector<operations_research::FloatVarSpec*>* > oFloatVarSpecVec;
   operations_research::AST::Node* arg;
   operations_research::AST::Array* argVec;
 }
@@ -139,21 +148,24 @@
 %type <sValue> var_par_id
 %type <setLit> set_literal
 
-%type <varSpec> int_init bool_init set_init float_init
+%type <varIntSpec> int_init
+%type <varBoolSpec> bool_init
+%type <varSetSpec> set_init
+%type <varFloatSpec> float_init
 %type <oSet> int_ti_expr_tail bool_ti_expr_tail
 
-%type <oVarSpecVec> vardecl_int_var_array_init
-%type <oVarSpecVec> vardecl_bool_var_array_init
-%type <oVarSpecVec> vardecl_float_var_array_init
-%type <oVarSpecVec> vardecl_set_var_array_init
-%type <varSpecVec> int_var_array_literal
-%type <varSpecVec> bool_var_array_literal
-%type <varSpecVec> float_var_array_literal
-%type <varSpecVec> set_var_array_literal
-%type <varSpecVec> int_init_list int_init_list_head
-%type <varSpecVec> bool_init_list bool_init_list_head
-%type <varSpecVec> float_init_list float_init_list_head
-%type <varSpecVec> set_init_list set_init_list_head
+%type <oIntVarSpecVec> vardecl_int_var_array_init
+%type <oBoolVarSpecVec> vardecl_bool_var_array_init
+%type <oFloatVarSpecVec> vardecl_float_var_array_init
+%type <oSetVarSpecVec> vardecl_set_var_array_init
+%type <varIntSpecVec> int_var_array_literal
+%type <varBoolSpecVec> bool_var_array_literal
+%type <varFloatSpecVec> float_var_array_literal
+%type <varSetSpecVec> set_var_array_literal
+%type <varIntSpecVec> int_init_list int_init_list_head
+%type <varBoolSpecVec> bool_init_list bool_init_list_head
+%type <varFloatSpecVec> float_init_list float_init_list_head
+%type <varSetSpecVec> set_init_list set_init_list_head
 
 %type <setValue> int_list int_list_head
 %type <setValue> bool_list bool_list_head
@@ -261,11 +273,11 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   if ($6()) {
     AST::Node* arg = $6.some();
     if (arg->isInt()) {
-      pp->intvars.push_back(varspec($4,
-                                    new IntVarSpec(arg->getInt(),introduced)));
+      pp->intvars.push_back(new IntVarSpec($4, arg->getInt(), introduced));
     } else if (arg->isIntVar()) {
-      pp->intvars.push_back(varspec($4,
-                                    new IntVarSpec(Alias(arg->getIntVar()),introduced)));
+      pp->intvars.push_back(new IntVarSpec($4,
+                                           Alias(arg->getIntVar()),
+                                           introduced));
     } else {
       yyassert(pp, false, "Invalid var int initializer.");
     }
@@ -275,7 +287,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
                               $2);
     delete arg;
   } else {
-    pp->intvars.push_back(varspec($4, new IntVarSpec($2, introduced)));
+    pp->intvars.push_back(new IntVarSpec($4, $2, introduced, true));
   }
   delete $5; free($4);
 }
@@ -291,11 +303,11 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   if ($6()) {
     AST::Node* arg = $6.some();
     if (arg->isBool()) {
-      pp->boolvars.push_back(varspec($4,
-                                     new BoolVarSpec(arg->getBool(),introduced)));
+      pp->boolvars.push_back(new BoolVarSpec($4, arg->getBool(),introduced));
     } else if (arg->isBoolVar()) {
-      pp->boolvars.push_back(varspec($4,
-                                     new BoolVarSpec(Alias(arg->getBoolVar()),introduced)));
+      pp->boolvars.push_back(new BoolVarSpec($4,
+                                             Alias(arg->getBoolVar()),
+                                             introduced));
     } else {
       yyassert(pp, false, "Invalid var bool initializer.");
     }
@@ -305,7 +317,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
                               $2);
     delete arg;
   } else {
-    pp->boolvars.push_back(varspec($4, new BoolVarSpec($2,introduced)));
+    pp->boolvars.push_back(new BoolVarSpec($4, $2,introduced, true));
   }
   delete $5; free($4);
 }
@@ -326,11 +338,9 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   if ($8()) {
     AST::Node* arg = $8.some();
     if (arg->isSet()) {
-      pp->setvars.push_back(varspec($6,
-                                    new SetVarSpec(arg->getSet(),introduced)));
+      pp->setvars.push_back(new SetVarSpec($6, arg->getSet(),introduced));
     } else if (arg->isSetVar()) {
-      pp->setvars.push_back(varspec($6,
-                                    new SetVarSpec(Alias(arg->getSetVar()),introduced)));
+      pp->setvars.push_back(new SetVarSpec($6, Alias(arg->getSetVar()),introduced));
       delete arg;
     } else {
       yyassert(pp, false, "Invalid var set initializer.");
@@ -341,7 +351,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
                               new AST::SetVar(pp->setvars.size()-1),
                               $4);
   } else {
-    pp->setvars.push_back(varspec($6, new SetVarSpec($4,introduced)));
+    pp->setvars.push_back(new SetVarSpec($6, $4,introduced));
   }
   delete $7; free($6);
 }
@@ -378,17 +388,18 @@ var_par_id annotations vardecl_int_var_array_init
     vector<int> vars($5);
     if (!pp->hadError) {
       if ($13()) {
-        vector<VarSpec*>* vsv = $13.some();
+        vector<IntVarSpec*>* vsv = $13.some();
         yyassert(pp, vsv->size() == static_cast<unsigned int>($5),
                  "Initializer size does not match array dimension");
         if (!pp->hadError) {
           for (int i=0; i<$5; i++) {
-            IntVarSpec* ivsv = static_cast<IntVarSpec*>((*vsv)[i]);
+            IntVarSpec* ivsv = (*vsv)[i];
             if (ivsv->alias) {
               vars[i] = ivsv->i;
             } else {
               vars[i] = pp->intvars.size();
-              pp->intvars.push_back(varspec($11, ivsv));
+              ivsv->SetName($11);
+              pp->intvars.push_back(ivsv);
             }
             if (!pp->hadError && $9()) {
               Option<AST::SetLit*> opt =
@@ -401,15 +412,14 @@ var_par_id annotations vardecl_int_var_array_init
         }
         delete vsv;
       } else {
-        if ($5>0) {
-          IntVarSpec* ispec = new IntVarSpec($9,!print);
-          string arrayname = "["; arrayname += $11;
-          for (int i=0; i<$5-1; i++) {
+        if ($5 > 0) {
+          const string arrayname = StringPrintf("[%s", $11);
+          for (int i = 0; i < $5 - 1; i++) {
             vars[i] = pp->intvars.size();
-            pp->intvars.push_back(varspec(arrayname, ispec));
+            pp->intvars.push_back(new IntVarSpec(arrayname, $9, !print, false));
           }
-          vars[$5-1] = pp->intvars.size();
-          pp->intvars.push_back(varspec($11, ispec));
+          vars[$5 - 1] = pp->intvars.size();
+          pp->intvars.push_back(new IntVarSpec($11, $9, !print, true));
         }
       }
     }
@@ -436,17 +446,18 @@ var_par_id annotations vardecl_bool_var_array_init
   if (!pp->hadError) {
     vector<int> vars($5);
     if ($13()) {
-      vector<VarSpec*>* vsv = $13.some();
+      vector<BoolVarSpec*>* vsv = $13.some();
       yyassert(pp, vsv->size() == static_cast<unsigned int>($5),
                "Initializer size does not match array dimension");
       if (!pp->hadError) {
-        for (int i=0; i<$5; i++) {
-          BoolVarSpec* bvsv = static_cast<BoolVarSpec*>((*vsv)[i]);
+        for (int i = 0; i < $5; i++) {
+          BoolVarSpec* const bvsv = (*vsv)[i];
           if (bvsv->alias)
             vars[i] = bvsv->i;
           else {
             vars[i] = pp->boolvars.size();
-            pp->boolvars.push_back(varspec($11, (*vsv)[i]));
+            (*vsv)[i]->SetName($11);
+            pp->boolvars.push_back((*vsv)[i]);
           }
           if (!pp->hadError && $9()) {
             Option<AST::SetLit*> opt =
@@ -459,10 +470,9 @@ var_par_id annotations vardecl_bool_var_array_init
       }
       delete vsv;
     } else {
-      for (int i=0; i<$5; i++) {
+      for (int i = 0; i < $5; i++) {
         vars[i] = pp->boolvars.size();
-        pp->boolvars.push_back(varspec($11,
-                                       new BoolVarSpec($9,!print)));
+        pp->boolvars.push_back(new BoolVarSpec($11, $9, !print, (i == $5 - 1)));
       }
     }
     if (print) {
@@ -495,17 +505,18 @@ var_par_id annotations vardecl_set_var_array_init
   if (!pp->hadError) {
     vector<int> vars($5);
     if ($15()) {
-      vector<VarSpec*>* vsv = $15.some();
+      vector<SetVarSpec*>* vsv = $15.some();
       yyassert(pp, vsv->size() == static_cast<unsigned int>($5),
                "Initializer size does not match array dimension");
       if (!pp->hadError) {
         for (int i=0; i<$5; i++) {
-          SetVarSpec* svsv = static_cast<SetVarSpec*>((*vsv)[i]);
+          SetVarSpec* svsv = (*vsv)[i];
           if (svsv->alias)
             vars[i] = svsv->i;
           else {
             vars[i] = pp->setvars.size();
-            pp->setvars.push_back(varspec($13, (*vsv)[i]));
+            (*vsv)[i]->SetName($13);
+            pp->setvars.push_back((*vsv)[i]);
           }
           if (!pp->hadError && $11()) {
             Option<AST::SetLit*> opt =
@@ -519,14 +530,13 @@ var_par_id annotations vardecl_set_var_array_init
       delete vsv;
     } else {
       if ($5>0) {
-        SetVarSpec* ispec = new SetVarSpec($11,!print);
         string arrayname = "["; arrayname += $13;
         for (int i=0; i<$5-1; i++) {
           vars[i] = pp->setvars.size();
-          pp->setvars.push_back(varspec(arrayname, ispec));
+          pp->setvars.push_back(new SetVarSpec(arrayname, $11, !print));
         }
         vars[$5-1] = pp->setvars.size();
-        pp->setvars.push_back(varspec($13, ispec));
+        pp->setvars.push_back(new SetVarSpec($13, $11, !print));
       }
     }
     if (print) {
@@ -592,19 +602,19 @@ var_par_id annotations '=' '[' set_literal_list ']'
 int_init :
 FZ_INT_LIT
 {
-  $$ = new IntVarSpec($1,false);
+  $$ = new IntVarSpec("", $1, false);
 }
 | var_par_id
 {
   int v = 0;
   ParserState* pp = static_cast<ParserState*>(parm);
   if (pp->intvarTable.get($1, v))
-    $$ = new IntVarSpec(Alias(v),false);
+    $$ = new IntVarSpec("", Alias(v), false);
   else {
     LOG(ERROR) << "Error: undefined identifier " << $1
                << " in line no. " << yyget_lineno(pp->yyscanner);
     pp->hadError = true;
-    $$ = new IntVarSpec(0,false); // keep things consistent
+    $$ = new IntVarSpec("", 0, false); // keep things consistent
   }
   free($1);
 }
@@ -617,27 +627,27 @@ FZ_INT_LIT
              static_cast<unsigned int>($3) <= v.size(),
              "array access out of bounds");
     if (!pp->hadError)
-      $$ = new IntVarSpec(Alias(v[$3-1]),false);
+      $$ = new IntVarSpec($1, Alias(v[$3-1]),false);
     else
-      $$ = new IntVarSpec(0,false); // keep things consistent
+      $$ = new IntVarSpec($1, 0,false); // keep things consistent
   } else {
     LOG(ERROR) << "Error: undefined array identifier " << $1
                << " in line no. " << yyget_lineno(pp->yyscanner);
     pp->hadError = true;
-    $$ = new IntVarSpec(0,false); // keep things consistent
+    $$ = new IntVarSpec($1, 0,false); // keep things consistent
   }
   free($1);
 }
 
 int_init_list :
 /* empty */
-{ $$ = new vector<VarSpec*>(0); }
+{ $$ = new vector<IntVarSpec*>(0); }
 | int_init_list_head list_tail
 { $$ = $1; }
 
 int_init_list_head :
 int_init
-{ $$ = new vector<VarSpec*>(1); (*$$)[0] = $1; }
+{ $$ = new vector<IntVarSpec*>(1); (*$$)[0] = $1; }
 | int_init_list_head ',' int_init
 { $$ = $1; $$->push_back($3); }
 
@@ -648,18 +658,18 @@ int_var_array_literal : '[' int_init_list ']'
 
 float_init :
 FZ_FLOAT_LIT
-{ $$ = new FloatVarSpec($1,false); }
+{ $$ = new FloatVarSpec("", $1,false); }
 | var_par_id
 {
   int v = 0;
   ParserState* pp = static_cast<ParserState*>(parm);
   if (pp->floatvarTable.get($1, v))
-    $$ = new FloatVarSpec(Alias(v),false);
+    $$ = new FloatVarSpec("", Alias(v),false);
   else {
     LOG(ERROR) << "Error: undefined identifier " << $1
                << " in line no. " << yyget_lineno(pp->yyscanner);
     pp->hadError = true;
-    $$ = new FloatVarSpec(0.0,false);
+    $$ = new FloatVarSpec("", 0.0,false);
   }
   free($1);
 }
@@ -672,27 +682,27 @@ FZ_FLOAT_LIT
              static_cast<unsigned int>($3) <= v.size(),
              "array access out of bounds");
     if (!pp->hadError)
-      $$ = new FloatVarSpec(Alias(v[$3-1]),false);
+      $$ = new FloatVarSpec($1, Alias(v[$3-1]),false);
     else
-      $$ = new FloatVarSpec(0.0,false);
+      $$ = new FloatVarSpec($1, 0.0,false);
   } else {
     LOG(ERROR) << "Error: undefined array identifier " << $1
                << " in line no. " << yyget_lineno(pp->yyscanner);
     pp->hadError = true;
-    $$ = new FloatVarSpec(0.0,false);
+    $$ = new FloatVarSpec($1, 0.0,false);
   }
   free($1);
 }
 
 float_init_list :
 /* empty */
-{ $$ = new vector<VarSpec*>(0); }
+{ $$ = new vector<FloatVarSpec*>(0); }
 | float_init_list_head list_tail
 { $$ = $1; }
 
 float_init_list_head :
 float_init
-{ $$ = new vector<VarSpec*>(1); (*$$)[0] = $1; }
+{ $$ = new vector<FloatVarSpec*>(1); (*$$)[0] = $1; }
 | float_init_list_head ',' float_init
 { $$ = $1; $$->push_back($3); }
 
@@ -702,18 +712,18 @@ float_var_array_literal :
 
 bool_init :
 FZ_BOOL_LIT
-{ $$ = new BoolVarSpec($1,false); }
+{ $$ = new BoolVarSpec("", $1,false); }
 | var_par_id
 {
   int v = 0;
   ParserState* pp = static_cast<ParserState*>(parm);
   if (pp->boolvarTable.get($1, v))
-    $$ = new BoolVarSpec(Alias(v),false);
+    $$ = new BoolVarSpec("", Alias(v),false);
   else {
     LOG(ERROR) << "Error: undefined identifier " << $1
                << " in line no. " << yyget_lineno(pp->yyscanner);
     pp->hadError = true;
-    $$ = new BoolVarSpec(false,false);
+    $$ = new BoolVarSpec("", false,false);
   }
   free($1);
 }
@@ -726,27 +736,27 @@ FZ_BOOL_LIT
              static_cast<unsigned int>($3) <= v.size(),
              "array access out of bounds");
     if (!pp->hadError)
-      $$ = new BoolVarSpec(Alias(v[$3-1]),false);
+      $$ = new BoolVarSpec($1, Alias(v[$3-1]),false);
     else
-      $$ = new BoolVarSpec(false,false);
+      $$ = new BoolVarSpec($1, false,false);
   } else {
     LOG(ERROR) << "Error: undefined array identifier " << $1
                << " in line no. " << yyget_lineno(pp->yyscanner);
     pp->hadError = true;
-    $$ = new BoolVarSpec(false,false);
+    $$ = new BoolVarSpec($1, false,false);
   }
   free($1);
 }
 
 bool_init_list :
 /* empty */
-{ $$ = new vector<VarSpec*>(0); }
+{ $$ = new vector<BoolVarSpec*>(0); }
 | bool_init_list_head list_tail
 { $$ = $1; }
 
 bool_init_list_head :
 bool_init
-{ $$ = new vector<VarSpec*>(1); (*$$)[0] = $1; }
+{ $$ = new vector<BoolVarSpec*>(1); (*$$)[0] = $1; }
 | bool_init_list_head ',' bool_init
 { $$ = $1; $$->push_back($3); }
 
@@ -754,18 +764,18 @@ bool_var_array_literal : '[' bool_init_list ']' { $$ = $2; }
 
 set_init :
 set_literal
-{ $$ = new SetVarSpec($1,false); }
+{ $$ = new SetVarSpec("", $1,false); }
 | var_par_id
 {
   ParserState* pp = static_cast<ParserState*>(parm);
   int v = 0;
-  if (pp->setvarTable.get($1, v))
-    $$ = new SetVarSpec(Alias(v),false);
-  else {
+  if (pp->setvarTable.get($1, v)) {
+    $$ = new SetVarSpec("", Alias(v),false);
+  } else {
     LOG(ERROR) << "Error: undefined identifier " << $1
                << " in line no. " << yyget_lineno(pp->yyscanner);
     pp->hadError = true;
-    $$ = new SetVarSpec(Alias(0),false);
+    $$ = new SetVarSpec("", Alias(0),false);
   }
   free($1);
 }
@@ -778,27 +788,27 @@ set_literal
              static_cast<unsigned int>($3) <= v.size(),
              "array access out of bounds");
     if (!pp->hadError)
-      $$ = new SetVarSpec(Alias(v[$3-1]),false);
+      $$ = new SetVarSpec($1, Alias(v[$3-1]),false);
     else
-      $$ = new SetVarSpec(Alias(0),false);
+      $$ = new SetVarSpec($1, Alias(0),false);
   } else {
     LOG(ERROR) << "Error: undefined array identifier " << $1
                << " in line no. " << yyget_lineno(pp->yyscanner);
     pp->hadError = true;
-    $$ = new SetVarSpec(Alias(0),false);
+    $$ = new SetVarSpec($1, Alias(0),false);
   }
   free($1);
 }
 
 set_init_list :
 /* empty */
-{ $$ = new vector<VarSpec*>(0); }
+{ $$ = new vector<SetVarSpec*>(0); }
 | set_init_list_head list_tail
 { $$ = $1; }
 
 set_init_list_head :
 set_init
-{ $$ = new vector<VarSpec*>(1); (*$$)[0] = $1; }
+{ $$ = new vector<SetVarSpec*>(1); (*$$)[0] = $1; }
 | set_init_list_head ',' set_init
 { $$ = $1; $$->push_back($3); }
 
@@ -807,27 +817,27 @@ set_var_array_literal : '[' set_init_list ']'
 
 vardecl_int_var_array_init :
 /* empty */
-{ $$ = Option<vector<VarSpec*>* >::none(); }
+{ $$ = Option<vector<IntVarSpec*>* >::none(); }
 | '=' int_var_array_literal
-{ $$ = Option<vector<VarSpec*>* >::some($2); }
+{ $$ = Option<vector<IntVarSpec*>* >::some($2); }
 
 vardecl_bool_var_array_init :
 /* empty */
-{ $$ = Option<vector<VarSpec*>* >::none(); }
+{ $$ = Option<vector<BoolVarSpec*>* >::none(); }
 | '=' bool_var_array_literal
-{ $$ = Option<vector<VarSpec*>* >::some($2); }
+{ $$ = Option<vector<BoolVarSpec*>* >::some($2); }
 
 vardecl_float_var_array_init :
 /* empty */
-{ $$ = Option<vector<VarSpec*>* >::none(); }
+{ $$ = Option<vector<FloatVarSpec*>* >::none(); }
 | '=' float_var_array_literal
-{ $$ = Option<vector<VarSpec*>* >::some($2); }
+{ $$ = Option<vector<FloatVarSpec*>* >::some($2); }
 
 vardecl_set_var_array_init :
 /* empty */
-{ $$ = Option<vector<VarSpec*>* >::none(); }
+{ $$ = Option<vector<SetVarSpec*>* >::none(); }
 | '=' set_var_array_literal
-{ $$ = Option<vector<VarSpec*>* >::some($2); }
+{ $$ = Option<vector<SetVarSpec*>* >::some($2); }
 
 constraint_item :
 FZ_CONSTRAINT FZ_ID '(' flat_expr_list ')' annotations

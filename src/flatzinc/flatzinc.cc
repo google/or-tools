@@ -269,6 +269,7 @@ void FlatZincModel::Solve(int solve_frequency,
           solver_.MakeSearchLog(solve_frequency, objective_) :
           NULL;
       monitors.push_back(log);
+      monitors.push_back(objective_);
       break;
     }
     case SAT: {

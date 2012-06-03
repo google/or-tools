@@ -38,8 +38,6 @@
 #ifndef __FLATZINC_PARSER_H_
 #define __FLATZINC_PARSER_H_
 
-#include <cstring>
-#include "flatzinc/flatzinc.h"
 
 // This is a workaround for a bug in flex that only shows up
 // with the Microsoft C++ compiler
@@ -57,12 +55,14 @@ extern "C" int isatty(int);
 #define fileno _fileno
 #endif
 
+#include <cstring>
 #include <string>
 #include <vector>
 #include <iostream>
 #include <algorithm>
 
 #include "flatzinc/ast.h"
+#include "flatzinc/flatzinc.h"
 #include "flatzinc/parser.tab.h"
 #include "flatzinc/spec.h"
 
@@ -89,11 +89,6 @@ template<class Val> class SymbolTable {
   std::map<std::string, Val> m;
 };
 
-typedef std::pair<std::string, Option<std::vector<int>*> > intvartype;
-
-class VarSpec;
-typedef std::pair<std::string, VarSpec*> varspec;
-
 /// Strict weak ordering for output items
 class OutputOrder {
  public:
@@ -119,6 +114,8 @@ class ParserState {
               operations_research::FlatZincModel* model0)
       : buf(buf0), pos(0), length(length0), model(model0), hadError(false) {}
 
+  ~ParserState();
+
   void* yyscanner;
   const char* buf;
   unsigned int pos, length;
@@ -140,9 +137,9 @@ class ParserState {
   SymbolTable<AST::SetLit> setvals;
   SymbolTable<std::vector<AST::SetLit> > setvalarrays;
 
-  std::vector<varspec> intvars;
-  std::vector<varspec> boolvars;
-  std::vector<varspec> setvars;
+  std::vector<IntVarSpec*> intvars;
+  std::vector<BoolVarSpec*> boolvars;
+  std::vector<SetVarSpec*> setvars;
 
   std::vector<CtSpec*> domain_constraints_;
   std::vector<CtSpec*> constraints_;

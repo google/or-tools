@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "base/stl_util.h"
 #include "base/stringprintf.h"
 #include "flatzinc/flatzinc.h"
 #include "flatzinc/parser.h"
@@ -17,6 +18,13 @@ extern void yyset_extra (void* user_defined ,void* yyscanner );
 extern void yyerror(void* parm, const char *str);
 
 namespace operations_research {
+
+ParserState::~ParserState() {
+  STLDeleteElements(&intvars);
+  STLDeleteElements(&boolvars);
+  STLDeleteElements(&setvars);
+}
+
 AST::Node* ParserState::ArrayElement(string id, unsigned int offset) {
   if (offset > 0) {
     vector<int> tmp;
@@ -87,7 +95,7 @@ void ParserState::InitModel() {
   int array_index = 0;
   for (unsigned int i=0; i<intvars.size(); i++) {
     if (!hadError) {
-      const std::string& raw_name = intvars[i].first;
+      const std::string& raw_name = intvars[i]->Name();
       std::string name;
       if (raw_name[0] == '[') {
         name = StringPrintf("%s[%d]", raw_name.c_str() + 1, ++array_index);
@@ -99,17 +107,13 @@ void ParserState::InitModel() {
           array_index = 0;
         }
       }
-      model->NewIntVar(name, static_cast<IntVarSpec*>(intvars[i].second));
-    }
-    if (intvars[i].first[0] != '[') {
-      delete intvars[i].second;
-      intvars[i].second = NULL;
+      model->NewIntVar(name, intvars[i]);
     }
   }
   array_index = 0;
   for (unsigned int i=0; i<boolvars.size(); i++) {
     if (!hadError) {
-      const std::string& raw_name = boolvars[i].first;
+      const std::string& raw_name = boolvars[i]->Name();
       std::string name;
       if (raw_name[0] == '[') {
         name = StringPrintf("%s[%d]", raw_name.c_str() + 1, ++array_index);
@@ -121,28 +125,19 @@ void ParserState::InitModel() {
           array_index = 0;
         }
       }
-      model->NewBoolVar(name, static_cast<BoolVarSpec*>(boolvars[i].second));
-    }
-    if (boolvars[i].first[0] != '[') {
-      delete boolvars[i].second;
-      boolvars[i].second = NULL;
+      model->NewBoolVar(name, boolvars[i]);
     }
   }
   for (unsigned int i=0; i<setvars.size(); i++) {
     if (!hadError) {
-      //  model->newSetVar(static_cast<SetVarSpec*>(setvars[i].second));
-    }
-    if (setvars[i].first[0] != '[') {
-      delete setvars[i].second;
-      setvars[i].second = NULL;
+      //  model->newSetVar(static_cast<SetVarSpec*>(setvars[i]));
     }
   }
-  for (unsigned int i=domain_constraints_.size(); i--;) {
+  for (unsigned int i = domain_constraints_.size(); i--;) {
     if (!hadError) {
       try {
         assert(domain_constraints_[i]->NumArgs() == 2);
         model->PostConstraint(domain_constraints_[i]);
-        delete domain_constraints_[i];
       } catch (operations_research::Error& e) {
         yyerror(this, e.DebugString().c_str());
       }

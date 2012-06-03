@@ -140,20 +140,29 @@
 typedef union YYSTYPE
 #line 79 "src/flatzinc/parser.yxx"
 { int iValue; char* sValue; bool bValue; double dValue;
-         std::vector<int>* setValue;
-         operations_research::AST::SetLit* setLit;
-         std::vector<double>* floatSetValue;
-         std::vector<operations_research::AST::SetLit>* setValueList;
-         operations_research::Option<operations_research::AST::SetLit* > oSet;
-         operations_research::VarSpec* varSpec;
-         operations_research::Option<operations_research::AST::Node*> oArg;
-         std::vector<operations_research::VarSpec*>* varSpecVec;
-         operations_research::Option<std::vector<operations_research::VarSpec*>* > oVarSpecVec;
-         operations_research::AST::Node* arg;
-         operations_research::AST::Array* argVec;
-       }
+  std::vector<int>* setValue;
+  operations_research::AST::SetLit* setLit;
+  std::vector<double>* floatSetValue;
+  std::vector<operations_research::AST::SetLit>* setValueList;
+  operations_research::Option<operations_research::AST::SetLit* > oSet;
+  operations_research::IntVarSpec* varIntSpec;
+  operations_research::BoolVarSpec* varBoolSpec;
+  operations_research::SetVarSpec* varSetSpec;
+  operations_research::FloatVarSpec* varFloatSpec;
+  operations_research::Option<operations_research::AST::Node*> oArg;
+  std::vector<operations_research::IntVarSpec*>* varIntSpecVec;
+  std::vector<operations_research::BoolVarSpec*>* varBoolSpecVec;
+  std::vector<operations_research::SetVarSpec*>* varSetSpecVec;
+  std::vector<operations_research::FloatVarSpec*>* varFloatSpecVec;
+  operations_research::Option<std::vector<operations_research::IntVarSpec*>* > oIntVarSpecVec;
+  operations_research::Option<std::vector<operations_research::BoolVarSpec*>* > oBoolVarSpecVec;
+  operations_research::Option<std::vector<operations_research::SetVarSpec*>* > oSetVarSpecVec;
+  operations_research::Option<std::vector<operations_research::FloatVarSpec*>* > oFloatVarSpecVec;
+  operations_research::AST::Node* arg;
+  operations_research::AST::Array* argVec;
+}
 /* Line 1529 of yacc.c.  */
-#line 157 "src/flatzinc/parser.tab.hh"
+#line 166 "src/flatzinc/parser.tab.hh"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
