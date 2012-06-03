@@ -1071,7 +1071,7 @@ void p_bool_not(FlatZincModel* const model, CtSpec* const spec) {
 void p_array_int_element(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const index = spec->Arg(0)->isIntVar() ?
-      model->BooleanVariable(spec->Arg(0)->getIntVar()) :
+      model->IntegerVariable(spec->Arg(0)->getIntVar()) :
       solver->MakeIntConst(spec->Arg(0)->getInt());
   AST::Array* const array_coefficents = spec->Arg(1)->getArray();
   const int size = array_coefficents->a.size();
@@ -1080,7 +1080,7 @@ void p_array_int_element(FlatZincModel* const model, CtSpec* const spec) {
     coefficients[i] = array_coefficents->a[i]->getInt();
   }
   IntVar* const target = spec->Arg(2)->isIntVar() ?
-      model->BooleanVariable(spec->Arg(2)->getIntVar()) :
+      model->IntegerVariable(spec->Arg(2)->getIntVar()) :
       solver->MakeIntConst(spec->Arg(2)->getInt());
   Constraint* const ct =
       solver->MakeEquality(solver->MakeElement(coefficients, index)->Var(),
@@ -1092,7 +1092,7 @@ void p_array_int_element(FlatZincModel* const model, CtSpec* const spec) {
 void p_array_bool_element(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const index = spec->Arg(0)->isIntVar() ?
-      model->BooleanVariable(spec->Arg(0)->getIntVar()) :
+      model->IntegerVariable(spec->Arg(0)->getIntVar()) :
       solver->MakeIntConst(spec->Arg(0)->getInt());
   AST::Array* const array_coefficents = spec->Arg(1)->getArray();
   const int size = array_coefficents->a.size();
@@ -1117,7 +1117,7 @@ void p_bool2int(FlatZincModel* const model, CtSpec* const spec) {
       model->BooleanVariable(spec->Arg(0)->getBoolVar()) :
       solver->MakeIntConst(spec->Arg(0)->getBool());
   IntVar* const right = spec->Arg(1)->isIntVar() ?
-      model->BooleanVariable(spec->Arg(1)->getIntVar()) :
+      model->IntegerVariable(spec->Arg(1)->getIntVar()) :
       solver->MakeIntConst(spec->Arg(1)->getInt());
   Constraint* const ct = solver->MakeEquality(left, right);
   VLOG(1) << "Posted " << ct->DebugString();
