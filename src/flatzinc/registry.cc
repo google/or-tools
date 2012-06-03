@@ -996,8 +996,22 @@ void p_array_bool_clause_reif(FlatZincModel& s, const ConExpr& ce,
 }
 
 void p_bool_xor(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_xor(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-             << ")::" << ann->DebugString();
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isBoolVar() ?
+      s.integer_variables_[ce[0]->getBoolVar()] :
+      solver->MakeIntConst(ce[0]->getBool());
+  IntVar* const right = ce[1]->isBoolVar() ?
+      s.integer_variables_[ce[1]->getBoolVar()] :
+      solver->MakeIntConst(ce[1]->getBool());
+  IntVar* const target = ce[2]->isBoolVar() ?
+      s.integer_variables_[ce[2]->getBoolVar()] :
+      solver->MakeIntConst(ce[2]->getBool());
+  Constraint* const ct =
+      solver->MakeIsEqualCstCt(solver->MakeSum(left, right)->Var(),
+                               1,
+                               target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_bool_l_imp(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
@@ -1011,8 +1025,17 @@ void p_bool_r_imp(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_bool_not(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_not(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString())
-             << ")::" << ann->DebugString();
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isBoolVar() ?
+      s.integer_variables_[ce[0]->getBoolVar()] :
+      solver->MakeIntConst(ce[0]->getBool());
+  IntVar* const target = ce[1]->isBoolVar() ?
+      s.integer_variables_[ce[1]->getBoolVar()] :
+      solver->MakeIntConst(ce[1]->getBool());
+  Constraint* const ct =
+      solver->MakeEquality(solver->MakeDifference(1, left)->Var(), target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 /* element constraints */
