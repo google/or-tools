@@ -936,6 +936,7 @@ void p_array_bool_and(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
+
 void p_array_bool_or(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   Solver* const solver = s.solver();
   AST::Array* const array_variables = ce[0]->getArray();
@@ -954,28 +955,34 @@ void p_array_bool_or(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
+
 void p_array_bool_clause(FlatZincModel& s, const ConExpr& ce,
                          AST::Node* ann) {
   std::cerr << "array_bool_clause("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())
             <<")::"<<ann->DebugString()<<"\n";
 }
+
 void p_array_bool_clause_reif(FlatZincModel& s, const ConExpr& ce,
                               AST::Node* ann) {
   std::cerr << "array_bool_clause_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
             <<")::"<<ann->DebugString()<<"\n";
 }
+
 void p_bool_xor(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "bool_xor("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
             <<")::"<<ann->DebugString()<<"\n";
 }
+
 void p_bool_l_imp(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "bool_l_imp("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
             <<")::"<<ann->DebugString()<<"\n";
 }
+
 void p_bool_r_imp(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "bool_r_imp("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
             <<")::"<<ann->DebugString()<<"\n";
 }
+
 void p_bool_not(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   std::cerr << "bool_not("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())
             <<")::"<<ann->DebugString()<<"\n";
@@ -997,17 +1004,33 @@ void p_array_int_element(FlatZincModel& s, const ConExpr& ce,
   IntVar* const target = ce[2]->isIntVar() ?
       s.integer_variables_[ce[2]->getIntVar()] :
       solver->MakeIntConst(ce[2]->getInt());
-    Constraint* const ct =
-        solver->MakeEquality(solver->MakeElement(coefficients, index)->Var(),
-                             target);
-    VLOG(1) << "Posted " << ct->DebugString();
-    solver->AddConstraint(ct);
-
+  Constraint* const ct =
+      solver->MakeEquality(solver->MakeElement(coefficients, index)->Var(),
+                           target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_array_bool_element(FlatZincModel& s, const ConExpr& ce,
                           AST::Node* ann) {
-  std::cerr << "array_bool_element("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
-            <<")::"<<ann->DebugString()<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const index = ce[0]->isIntVar() ?
+      s.integer_variables_[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  AST::Array* const array_coefficents = ce[1]->getArray();
+  const int size = array_coefficents->a.size();
+  std::vector<int> coefficients(size);
+  for (int i = 0; i < size; ++i) {
+    coefficients[i] = array_coefficents->a[i]->getBool();
+  }
+  IntVar* const target = ce[2]->isBoolVar() ?
+      s.integer_variables_[ce[2]->getBoolVar()] :
+      solver->MakeIntConst(ce[2]->getBool());
+  Constraint* const ct =
+      solver->MakeEquality(solver->MakeElement(coefficients, index)->Var(),
+                           target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 /* coercion constraints */
