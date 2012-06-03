@@ -246,7 +246,7 @@ class SetVarSpec : public VarSpec {
 
 class CtSpec {
  public:
-  CtSpec(const int index,
+  CtSpec(int index,
          const std::string& id,
          AST::Array* const args,
          AST::Node* const annotations)

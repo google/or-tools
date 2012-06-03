@@ -64,57 +64,15 @@ class SetVar {};
  */
 class FlatZincModel {
  public:
-  enum Meth {
-    SAT, //< Solve as satisfaction problem
-    MIN, //< Solve as minimization problem
-    MAX  //< Solve as maximization problem
-  };
- protected:
-  /// Number of integer variables
-  int int_var_count;
-  /// Number of Boolean variables
-  int bool_var_count;
-  /// Number of set variables
-  int set_var_count;
-
-  /// Index of the integer variable to optimize
-  int objective_variable_;
-
-  /// Whether to solve as satisfaction or optimization problem
-  Meth method_;
-
-  /// Annotations on the solve item
-  AST::Array* solve_annotations_;
-
-  Solver solver_;
-  std::vector<DecisionBuilder*> builders_;
-  OptimizeVar* objective_;
-
- public:
-  /// The integer variables
-  std::vector<operations_research::IntVar*> integer_variables_;
-  /// Indicates whether an integer variable is introduced by mzn2fzn
-  std::vector<bool> integer_variables_introduced;
-  /// Indicates whether an integer variable aliases a Boolean variable
-  std::vector<int> integer_variables_boolalias;
-  /// The Boolean variables
-  std::vector<operations_research::IntVar*> boolean_variables_;
-  /// Indicates whether a Boolean variable is introduced by mzn2fzn
-  std::vector<bool> boolean_variables_introduced;
-  /// The set variables
-  std::vector<SetVar> sv;
-  /// Indicates whether a set variable is introduced by mzn2fzn
-  std::vector<bool> sv_introduced;
-
-  Solver* solver() {
-    return &solver_;
-  }
-
   /// Construct empty space
   FlatZincModel(void);
 
   /// Destructor
   ~FlatZincModel(void);
+
+  Solver* solver() {
+    return &solver_;
+  }
 
   /// Initialize space with given number of variables
   void Init(int num_int_variables,
@@ -133,6 +91,14 @@ class FlatZincModel {
   void NewBoolVar(const std::string& name, BoolVarSpec* const vs);
   /// Create new set variable from specification
   //void newSetVar(SetVarSpec* const vs);
+
+  IntVar* IntegerVariable(int index) const {
+    return integer_variables_[index];
+  }
+
+  IntVar* BooleanVariable(int index) const {
+    return boolean_variables_[index];
+  }
 
   /// Post a constraint specified by \a ce
   void PostConstraint(CtSpec* const spec);
@@ -158,10 +124,50 @@ class FlatZincModel {
   void Parse(std::istream& is);
 
  private:
+  enum Meth {
+    SAT, //< Solve as satisfaction problem
+    MIN, //< Solve as minimization problem
+    MAX  //< Solve as maximization problem
+  };
+
   void CreateDecisionBuilders(bool ignore_unknown, bool ignore_annotations);
   string DebugString(AST::Node* const ai) const;
 
+  /// Number of integer variables
+  int int_var_count;
+  /// Number of Boolean variables
+  int bool_var_count;
+  /// Number of set variables
+  int set_var_count;
+
+  Solver solver_;
+  std::vector<DecisionBuilder*> builders_;
+  OptimizeVar* objective_;
+
+  /// Index of the integer variable to optimize
+  int objective_variable_;
+
+  /// Whether to solve as satisfaction or optimization problem
+  Meth method_;
+
+  /// Annotations on the solve item
+  AST::Array* solve_annotations_;
+
   AST::Array* output_;
+  /// The integer variables
+  std::vector<operations_research::IntVar*> integer_variables_;
+  /// Indicates whether an integer variable is introduced by mzn2fzn
+  std::vector<bool> integer_variables_introduced;
+  /// Indicates whether an integer variable aliases a Boolean variable
+  std::vector<int> integer_variables_boolalias;
+  /// The Boolean variables
+  std::vector<operations_research::IntVar*> boolean_variables_;
+  /// Indicates whether a Boolean variable is introduced by mzn2fzn
+  std::vector<bool> boolean_variables_introduced;
+  /// The set variables
+  std::vector<SetVar> sv;
+  /// Indicates whether a set variable is introduced by mzn2fzn
+  std::vector<bool> sv_introduced;
 };
 
 /// %Exception class for %FlatZinc errors
