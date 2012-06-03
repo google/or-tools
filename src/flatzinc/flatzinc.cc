@@ -260,6 +260,8 @@ void FlatZincModel::Solve(int solve_frequency,
   CreateDecisionBuilders(false, ignore_annotations);
   if (all_solutions && num_solutions == 0) {
     num_solutions = kint32max;
+  } else if (objective_ == NULL) {
+    num_solutions = 1;
   }
   std::vector<SearchMonitor*> monitors;
   switch (method_) {
