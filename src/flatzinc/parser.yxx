@@ -135,7 +135,14 @@ void addDomainConstraint(ParserState* pp, std::string id, AST::Node* var,
   AST::Array* args = new AST::Array(2);
   args->a[0] = var;
   args->a[1] = dom.some();
-  pp->domainConstraints.push_back(new ConExpr(id, args));
+  pp->domainConstraints.push_back(new CtSpec(id, args, NULL));
+}
+
+void addConstraint(ParserState* const pp,
+                   const std::string& id,
+                   AST::Array* const args,
+                   AST::Node* const annotations) {
+  pp->constraints.push_back(new CtSpec(id, args, annotations));
 }
 
 /*
@@ -220,7 +227,7 @@ void initfg(ParserState* pp) {
     if (!pp->hadError) {
       try {
         assert(pp->domainConstraints[i]->args->a.size() == 2);
-        pp->fg->PostConstraint(*pp->domainConstraints[i], NULL);
+        pp->fg->PostConstraint(pp->domainConstraints[i]);
         delete pp->domainConstraints[i];
       } catch (operations_research::Error& e) {
         yyerror(pp, e.DebugString().c_str());
@@ -529,11 +536,13 @@ vardecl_item:
             yyassert(pp, false, "Invalid var int initializer.");
           }
           if (!pp->hadError)
-            addDomainConstraint(pp, "int_in",
-                                new AST::IntVar(pp->intvars.size()-1), $2);
+            addDomainConstraint(pp,
+                                "int_in",
+                                new AST::IntVar(pp->intvars.size() - 1),
+                                $2);
           delete arg;
         } else {
-          pp->intvars.push_back(varspec($4, new IntVarSpec($2,introduced)));
+          pp->intvars.push_back(varspec($4, new IntVarSpec($2, introduced)));
         }
         delete $5; free($4);
       }
@@ -1088,16 +1097,15 @@ vardecl_set_var_array_init :
 constraint_item :
       FZ_CONSTRAINT FZ_ID '(' flat_expr_list ')' annotations
       {
-        ConExpr c($2, $4);
         ParserState *pp = static_cast<ParserState*>(parm);
         if (!pp->hadError) {
           try {
-            pp->fg->PostConstraint(c, $6);
+            addConstraint(pp, $2, $4, $6);
           } catch (operations_research::Error& e) {
             yyerror(pp, e.DebugString().c_str());
           }
         }
-        delete $6; free($2);
+        free($2);
       }
 solve_item :
       FZ_SOLVE annotations FZ_SATISFY
@@ -1105,6 +1113,7 @@ solve_item :
         ParserState *pp = static_cast<ParserState*>(parm);
         if (!pp->hadError) {
           try {
+            pp->AddConstraints();
             pp->fg->Satisfy($2);
           } catch (operations_research::Error& e) {
             yyerror(pp, e.DebugString().c_str());
@@ -1118,6 +1127,7 @@ solve_item :
         ParserState *pp = static_cast<ParserState*>(parm);
         if (!pp->hadError) {
           try {
+            pp->AddConstraints();
             if ($3)
               pp->fg->Minimize($4,$2);
             else

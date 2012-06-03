@@ -118,10 +118,9 @@ void FlatZincModel::newSetVar(SetVarSpec* vs) {
   sv_introduced[set_var_count-1] = vs->introduced;
 }
 
-void FlatZincModel::PostConstraint(const ConExpr& ce,
-                                   AST::Node* const annotations) {
+void FlatZincModel::PostConstraint(CtSpec* const spec) {
   try {
-    registry().post(*this, ce, annotations);
+    registry().Post(*this, spec);
   } catch (AST::TypeError& e) {
     throw Error("Type error", e.what());
   }

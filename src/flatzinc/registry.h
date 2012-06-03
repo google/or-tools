@@ -48,15 +48,15 @@ namespace operations_research {
 class Registry {
  public:
   /// Type of constraint posting function
-  typedef void (*poster) (FlatZincModel&, const ConExpr&, AST::Node*);
+  typedef void (*poster) (FlatZincModel&, CtSpec* const spec);
   /// Add posting function \a p with identifier \a id
-  void add(const std::string& id, poster p);
+  void Add(const std::string& id, poster p);
   /// Post constraint specified by \a ce
-  void post(FlatZincModel& s, const ConExpr& ce, AST::Node* ann);
+  void Post(FlatZincModel& s, CtSpec* const spec);
 
  private:
   /// The actual registry
-  std::map<std::string,poster> r;
+  std::map<std::string, poster> r;
 };
 
 /// Return global registry object

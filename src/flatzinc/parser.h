@@ -71,97 +71,105 @@ extern "C" int isatty(int);
 
 namespace operations_research {
 
-  typedef std::pair<std::string,Option<std::vector<int>* > > intvartype;
+typedef std::pair<std::string,Option<std::vector<int>* > > intvartype;
 
-  class VarSpec;
-  typedef std::pair<std::string, VarSpec*> varspec;
+class VarSpec;
+typedef std::pair<std::string, VarSpec*> varspec;
 
-  /// Strict weak ordering for output items
-  class OutputOrder {
-  public:
-    /// Return if \a x is less than \a y, based on first component
-    bool operator ()(const std::pair<std::string,AST::Node*>& x,
-                     const std::pair<std::string,AST::Node*>& y) {
-      return x.first < y.first;
-    }
-  };
+/// Strict weak ordering for output items
+class OutputOrder {
+ public:
+  /// Return if \a x is less than \a y, based on first component
+  bool operator ()(const std::pair<std::string,AST::Node*>& x,
+                   const std::pair<std::string,AST::Node*>& y) {
+    return x.first < y.first;
+  }
+};
 
-  /// %State of the %FlatZinc parser
-  class ParserState {
-  public:
-    ParserState(const std::string& b, operations_research::FlatZincModel* fg0)
-    : buf(b.c_str()), pos(0), length(b.size()), fg(fg0), hadError(false) {}
+/// %State of the %FlatZinc parser
+class ParserState {
+ public:
+  ParserState(const std::string& b, operations_research::FlatZincModel* fg0)
+      : buf(b.c_str()), pos(0), length(b.size()), fg(fg0), hadError(false) {}
 
-    ParserState(char* buf0, int length0,
-                operations_research::FlatZincModel* fg0)
-    : buf(buf0), pos(0), length(length0), fg(fg0), hadError(false) {}
+  ParserState(char* buf0, int length0,
+              operations_research::FlatZincModel* fg0)
+      : buf(buf0), pos(0), length(length0), fg(fg0), hadError(false) {}
 
-    void* yyscanner;
-    const char* buf;
-    unsigned int pos, length;
-    operations_research::FlatZincModel* fg;
-    std::vector<std::pair<std::string,AST::Node*> > _output;
+  void* yyscanner;
+  const char* buf;
+  unsigned int pos, length;
+  operations_research::FlatZincModel* fg;
+  std::vector<std::pair<std::string,AST::Node*> > _output;
 
-    SymbolTable<int> intvarTable;
-    SymbolTable<int> boolvarTable;
-    SymbolTable<int> floatvarTable;
-    SymbolTable<int> setvarTable;
-    SymbolTable<std::vector<int> > intvararrays;
-    SymbolTable<std::vector<int> > boolvararrays;
-    SymbolTable<std::vector<int> > floatvararrays;
-    SymbolTable<std::vector<int> > setvararrays;
-    SymbolTable<std::vector<int> > intvalarrays;
-    SymbolTable<std::vector<int> > boolvalarrays;
-    SymbolTable<int> intvals;
-    SymbolTable<bool> boolvals;
-    SymbolTable<AST::SetLit> setvals;
-    SymbolTable<std::vector<AST::SetLit> > setvalarrays;
+  SymbolTable<int> intvarTable;
+  SymbolTable<int> boolvarTable;
+  SymbolTable<int> floatvarTable;
+  SymbolTable<int> setvarTable;
+  SymbolTable<std::vector<int> > intvararrays;
+  SymbolTable<std::vector<int> > boolvararrays;
+  SymbolTable<std::vector<int> > floatvararrays;
+  SymbolTable<std::vector<int> > setvararrays;
+  SymbolTable<std::vector<int> > intvalarrays;
+  SymbolTable<std::vector<int> > boolvalarrays;
+  SymbolTable<int> intvals;
+  SymbolTable<bool> boolvals;
+  SymbolTable<AST::SetLit> setvals;
+  SymbolTable<std::vector<AST::SetLit> > setvalarrays;
 
-    std::vector<varspec> intvars;
-    std::vector<varspec> boolvars;
-    std::vector<varspec> setvars;
+  std::vector<varspec> intvars;
+  std::vector<varspec> boolvars;
+  std::vector<varspec> setvars;
 
-    std::vector<ConExpr*> domainConstraints;
+  std::vector<CtSpec*> domainConstraints;
+  std::vector<CtSpec*> constraints;
 
-    bool hadError;
+  bool hadError;
 
-    int fillBuffer(char* lexBuf, unsigned int lexBufSize) {
-      if (pos >= length)
-        return 0;
-      int num = std::min(length - pos, lexBufSize);
-      memcpy(lexBuf,buf+pos,num);
-      pos += num;
-      return num;
-    }
+  int fillBuffer(char* lexBuf, unsigned int lexBufSize) {
+    if (pos >= length)
+      return 0;
+    int num = std::min(length - pos, lexBufSize);
+    memcpy(lexBuf,buf+pos,num);
+    pos += num;
+    return num;
+  }
 
-    void output(std::string x, AST::Node* n) {
-      _output.push_back(std::pair<std::string,AST::Node*>(x,n));
-    }
+  void output(std::string x, AST::Node* n) {
+    _output.push_back(std::pair<std::string,AST::Node*>(x,n));
+  }
 
-    AST::Array* getOutput(void) {
-      OutputOrder oo;
-      std::sort(_output.begin(),_output.end(),oo);
-      AST::Array* a = new AST::Array();
-      for (unsigned int i=0; i<_output.size(); i++) {
-        a->a.push_back(new AST::String(_output[i].first+" = "));
-        if (_output[i].second->isArray()) {
-          AST::Array* oa = _output[i].second->getArray();
-          for (unsigned int j=0; j<oa->a.size(); j++) {
-            a->a.push_back(oa->a[j]);
-            oa->a[j] = NULL;
-          }
-          delete _output[i].second;
-        } else {
-          a->a.push_back(_output[i].second);
+  AST::Array* getOutput(void) {
+    OutputOrder oo;
+    std::sort(_output.begin(),_output.end(),oo);
+    AST::Array* a = new AST::Array();
+    for (unsigned int i=0; i<_output.size(); i++) {
+      a->a.push_back(new AST::String(_output[i].first+" = "));
+      if (_output[i].second->isArray()) {
+        AST::Array* oa = _output[i].second->getArray();
+        for (unsigned int j=0; j<oa->a.size(); j++) {
+          a->a.push_back(oa->a[j]);
+          oa->a[j] = NULL;
         }
-        a->a.push_back(new AST::String(";\n"));
+        delete _output[i].second;
+      } else {
+        a->a.push_back(_output[i].second);
       }
-      return a;
+      a->a.push_back(new AST::String(";\n"));
     }
+    return a;
+  }
 
-  };
-
-}
+  void AddConstraints() {
+    for (unsigned int i=constraints.size(); i--;) {
+      if (!hadError) {
+        fg->PostConstraint(constraints[i]);
+        delete constraints[i];
+      }
+    }
+  }
+};
+}  // namespace operations_research
 
 #endif
 

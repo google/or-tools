@@ -136,7 +136,7 @@ class FlatZincModel {
   void newSetVar(SetVarSpec* const vs);
 
   /// Post a constraint specified by \a ce
-  void PostConstraint(const ConExpr& ce, AST::Node* const annotation);
+  void PostConstraint(CtSpec* const spec);
 
   /// Post the solve item
   void Satisfy(AST::Array* const annotation);

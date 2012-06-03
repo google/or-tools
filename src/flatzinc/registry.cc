@@ -49,26 +49,26 @@ Registry& registry(void) {
   return r;
 }
 
-void Registry::post(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::map<std::string,poster>::iterator i = r.find(ce.id);
+void Registry::Post(FlatZincModel& s, CtSpec* const spec) {
+  std::map<std::string, poster>::iterator i = r.find(spec->id);
   if (i == r.end()) {
     throw Error("Registry",
-                std::string("Constraint ")+ce.id+" not found");
+                std::string("Constraint ") + spec->id + " not found");
   }
-  i->second(s, ce, ann);
+  i->second(s, spec);
 }
 
-void Registry::add(const std::string& id, poster p) {
+void Registry::Add(const std::string& id, poster p) {
   r[id] = p;
 }
 
 namespace {
 
-void p_int_eq(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_eq(FlatZincModel& s, CtSpec* const spec) {
   Constraint* ct = NULL;
   Solver* const solver = s.solver();
-  AST::Node* const left = ce[0];
-  AST::Node* const right = ce[1];
+  AST::Node* const left = spec->Arg(0);
+  AST::Node* const right = spec->Arg(1);
   if (left->isInt()) {
     const int left_value = left->getInt();
     if (right->isInt()) {
@@ -94,11 +94,11 @@ void p_int_eq(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_ne(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_ne(FlatZincModel& s, CtSpec* const spec) {
   Constraint* ct = NULL;
   Solver* const solver = s.solver();
-  AST::Node* const left = ce[0];
-  AST::Node* const right = ce[1];
+  AST::Node* const left = spec->Arg(0);
+  AST::Node* const right = spec->Arg(1);
   if (left->isInt()) {
     const int left_value = left->getInt();
     if (right->isInt()) {
@@ -125,11 +125,11 @@ void p_int_ne(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_ge(FlatZincModel& s, CtSpec* const spec) {
   Constraint* ct = NULL;
   Solver* const solver = s.solver();
-  AST::Node* const left = ce[0];
-  AST::Node* const right = ce[1];
+  AST::Node* const left = spec->Arg(0);
+  AST::Node* const right = spec->Arg(1);
   if (left->isInt()) {
     const int left_value = left->getInt();
     if (right->isInt()) {
@@ -156,11 +156,11 @@ void p_int_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_gt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_gt(FlatZincModel& s, CtSpec* const spec) {
   Constraint* ct = NULL;
   Solver* const solver = s.solver();
-  AST::Node* const left = ce[0];
-  AST::Node* const right = ce[1];
+  AST::Node* const left = spec->Arg(0);
+  AST::Node* const right = spec->Arg(1);
   if (left->isInt()) {
     const int left_value = left->getInt();
     if (right->isInt()) {
@@ -187,11 +187,11 @@ void p_int_gt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_le(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_le(FlatZincModel& s, CtSpec* const spec) {
   Constraint* ct = NULL;
   Solver* const solver = s.solver();
-  AST::Node* const left = ce[0];
-  AST::Node* const right = ce[1];
+  AST::Node* const left = spec->Arg(0);
+  AST::Node* const right = spec->Arg(1);
   if (left->isInt()) {
     const int left_value = left->getInt();
     if (right->isInt()) {
@@ -218,11 +218,11 @@ void p_int_le(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_lt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_lt(FlatZincModel& s, CtSpec* const spec) {
   Constraint* ct = NULL;
   Solver* const solver = s.solver();
-  AST::Node* const left = ce[0];
-  AST::Node* const right = ce[1];
+  AST::Node* const left = spec->Arg(0);
+  AST::Node* const right = spec->Arg(1);
   if (left->isInt()) {
     const int left_value = left->getInt();
     if (right->isInt()) {
@@ -250,107 +250,107 @@ void p_int_lt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 /* Comparisons */
-void p_int_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_eq_reif(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  IntVar* const right = ce[1]->isIntVar() ?
-      s.integer_variables_[ce[1]->getIntVar()] :
-      solver->MakeIntConst(ce[1]->getInt());
-  IntVar* const boolvar = ce[2]->isBoolVar() ?
-      s.boolean_variables_[ce[2]->getBoolVar()] :
-      solver->MakeIntConst(ce[2]->getBool());
+  IntVar* const left = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  IntVar* const right = spec->Arg(1)->isIntVar() ?
+      s.integer_variables_[spec->Arg(1)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getInt());
+  IntVar* const boolvar = spec->Arg(2)->isBoolVar() ?
+      s.boolean_variables_[spec->Arg(2)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
   Constraint* const ct = solver->MakeIsEqualCt(left, right, boolvar);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_int_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_ne_reif(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  IntVar* const right = ce[1]->isIntVar() ?
-      s.integer_variables_[ce[1]->getIntVar()] :
-      solver->MakeIntConst(ce[1]->getInt());
-  IntVar* const boolvar = ce[2]->isBoolVar() ?
-      s.boolean_variables_[ce[2]->getBoolVar()] :
-      solver->MakeIntConst(ce[2]->getBool());
+  IntVar* const left = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  IntVar* const right = spec->Arg(1)->isIntVar() ?
+      s.integer_variables_[spec->Arg(1)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getInt());
+  IntVar* const boolvar = spec->Arg(2)->isBoolVar() ?
+      s.boolean_variables_[spec->Arg(2)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
   Constraint* const ct = solver->MakeIsDifferentCt(left, right, boolvar);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_int_ge_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_ge_reif(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  IntVar* const right = ce[1]->isIntVar() ?
-      s.integer_variables_[ce[1]->getIntVar()] :
-      solver->MakeIntConst(ce[1]->getInt());
-  IntVar* const boolvar = ce[2]->isBoolVar() ?
-      s.boolean_variables_[ce[2]->getBoolVar()] :
-      solver->MakeIntConst(ce[2]->getBool());
+  IntVar* const left = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  IntVar* const right = spec->Arg(1)->isIntVar() ?
+      s.integer_variables_[spec->Arg(1)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getInt());
+  IntVar* const boolvar = spec->Arg(2)->isBoolVar() ?
+      s.boolean_variables_[spec->Arg(2)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
   Constraint* const ct = solver->MakeIsGreaterOrEqualCt(left, right, boolvar);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_int_gt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_gt_reif(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  IntVar* const right = ce[1]->isIntVar() ?
-      s.integer_variables_[ce[1]->getIntVar()] :
-      solver->MakeIntConst(ce[1]->getInt());
-  IntVar* const boolvar = ce[2]->isBoolVar() ?
-      s.boolean_variables_[ce[2]->getBoolVar()] :
-      solver->MakeIntConst(ce[2]->getBool());
+  IntVar* const left = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  IntVar* const right = spec->Arg(1)->isIntVar() ?
+      s.integer_variables_[spec->Arg(1)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getInt());
+  IntVar* const boolvar = spec->Arg(2)->isBoolVar() ?
+      s.boolean_variables_[spec->Arg(2)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
   Constraint* const ct = solver->MakeIsGreaterCt(left, right, boolvar);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_int_le_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_le_reif(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  IntVar* const right = ce[1]->isIntVar() ?
-      s.integer_variables_[ce[1]->getIntVar()] :
-      solver->MakeIntConst(ce[1]->getInt());
-  IntVar* const boolvar = ce[2]->isBoolVar() ?
-      s.boolean_variables_[ce[2]->getBoolVar()] :
-      solver->MakeIntConst(ce[2]->getBool());
+  IntVar* const left = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  IntVar* const right = spec->Arg(1)->isIntVar() ?
+      s.integer_variables_[spec->Arg(1)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getInt());
+  IntVar* const boolvar = spec->Arg(2)->isBoolVar() ?
+      s.boolean_variables_[spec->Arg(2)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
   Constraint* const ct = solver->MakeIsLessOrEqualCt(left, right, boolvar);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_int_lt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_lt_reif(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  IntVar* const right = ce[1]->isIntVar() ?
-      s.integer_variables_[ce[1]->getIntVar()] :
-      solver->MakeIntConst(ce[1]->getInt());
-  IntVar* const boolvar = ce[2]->isBoolVar() ?
-      s.boolean_variables_[ce[2]->getBoolVar()] :
-      solver->MakeIntConst(ce[2]->getBool());
+  IntVar* const left = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  IntVar* const right = spec->Arg(1)->isIntVar() ?
+      s.integer_variables_[spec->Arg(1)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getInt());
+  IntVar* const boolvar = spec->Arg(2)->isBoolVar() ?
+      s.boolean_variables_[spec->Arg(2)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
   Constraint* const ct = solver->MakeIsLessCt(left, right, boolvar);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_int_lin_eq(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_lin_eq(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_coefficents = ce[0]->getArray();
-  AST::Array* const array_variables = ce[1]->getArray();
-  AST::Node* const node_rhs = ce[2];
+  AST::Array* const array_coefficents = spec->Arg(0)->getArray();
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AST::Node* const node_rhs = spec->Arg(2);
   const int rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -367,12 +367,12 @@ void p_int_lin_eq(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_lin_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_lin_eq_reif(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_coefficents = ce[0]->getArray();
-  AST::Array* const array_variables = ce[1]->getArray();
-  AST::Node* const node_rhs = ce[2];
-  AST::Node* const node_boolvar = ce[3];
+  AST::Array* const array_coefficents = spec->Arg(0)->getArray();
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AST::Node* const node_rhs = spec->Arg(2);
+  AST::Node* const node_boolvar = spec->Arg(3);
   const int rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -393,11 +393,11 @@ void p_int_lin_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_lin_ne(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_lin_ne(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_coefficents = ce[0]->getArray();
-  AST::Array* const array_variables = ce[1]->getArray();
-  AST::Node* const node_rhs = ce[2];
+  AST::Array* const array_coefficents = spec->Arg(0)->getArray();
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AST::Node* const node_rhs = spec->Arg(2);
   const int rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -416,12 +416,12 @@ void p_int_lin_ne(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_lin_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_lin_ne_reif(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_coefficents = ce[0]->getArray();
-  AST::Array* const array_variables = ce[1]->getArray();
-  AST::Node* const node_rhs = ce[2];
-  AST::Node* const node_boolvar = ce[3];
+  AST::Array* const array_coefficents = spec->Arg(0)->getArray();
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AST::Node* const node_rhs = spec->Arg(2);
+  AST::Node* const node_boolvar = spec->Arg(3);
   const int rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -442,11 +442,11 @@ void p_int_lin_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_lin_le(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_lin_le(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_coefficents = ce[0]->getArray();
-  AST::Array* const array_variables = ce[1]->getArray();
-  AST::Node* const node_rhs = ce[2];
+  AST::Array* const array_coefficents = spec->Arg(0)->getArray();
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AST::Node* const node_rhs = spec->Arg(2);
   const int rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -463,12 +463,12 @@ void p_int_lin_le(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_lin_le_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_lin_le_reif(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_coefficents = ce[0]->getArray();
-  AST::Array* const array_variables = ce[1]->getArray();
-  AST::Node* const node_rhs = ce[2];
-  AST::Node* const node_boolvar = ce[3];
+  AST::Array* const array_coefficents = spec->Arg(0)->getArray();
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AST::Node* const node_rhs = spec->Arg(2);
+  AST::Node* const node_boolvar = spec->Arg(3);
   const int rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -489,11 +489,11 @@ void p_int_lin_le_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_lin_lt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_lin_lt(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_coefficents = ce[0]->getArray();
-  AST::Array* const array_variables = ce[1]->getArray();
-  AST::Node* const node_rhs = ce[2];
+  AST::Array* const array_coefficents = spec->Arg(0)->getArray();
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AST::Node* const node_rhs = spec->Arg(2);
   const int rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -510,12 +510,12 @@ void p_int_lin_lt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_lin_lt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_lin_lt_reif(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_coefficents = ce[0]->getArray();
-  AST::Array* const array_variables = ce[1]->getArray();
-  AST::Node* const node_rhs = ce[2];
-  AST::Node* const node_boolvar = ce[3];
+  AST::Array* const array_coefficents = spec->Arg(0)->getArray();
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AST::Node* const node_rhs = spec->Arg(2);
+  AST::Node* const node_boolvar = spec->Arg(3);
   const int rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -536,11 +536,11 @@ void p_int_lin_lt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_lin_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_lin_ge(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_coefficents = ce[0]->getArray();
-  AST::Array* const array_variables = ce[1]->getArray();
-  AST::Node* const node_rhs = ce[2];
+  AST::Array* const array_coefficents = spec->Arg(0)->getArray();
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AST::Node* const node_rhs = spec->Arg(2);
   const int rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -557,12 +557,12 @@ void p_int_lin_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_lin_ge_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_lin_ge_reif(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_coefficents = ce[0]->getArray();
-  AST::Array* const array_variables = ce[1]->getArray();
-  AST::Node* const node_rhs = ce[2];
-  AST::Node* const node_boolvar = ce[3];
+  AST::Array* const array_coefficents = spec->Arg(0)->getArray();
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AST::Node* const node_rhs = spec->Arg(2);
+  AST::Node* const node_boolvar = spec->Arg(3);
   const int rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -583,11 +583,11 @@ void p_int_lin_ge_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_lin_gt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_lin_gt(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_coefficents = ce[0]->getArray();
-  AST::Array* const array_variables = ce[1]->getArray();
-  AST::Node* const node_rhs = ce[2];
+  AST::Array* const array_coefficents = spec->Arg(0)->getArray();
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AST::Node* const node_rhs = spec->Arg(2);
   const int rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -604,12 +604,12 @@ void p_int_lin_gt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_int_lin_gt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_lin_gt_reif(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_coefficents = ce[0]->getArray();
-  AST::Array* const array_variables = ce[1]->getArray();
-  AST::Node* const node_rhs = ce[2];
-  AST::Node* const node_boolvar = ce[3];
+  AST::Array* const array_coefficents = spec->Arg(0)->getArray();
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AST::Node* const node_rhs = spec->Arg(2);
+  AST::Node* const node_boolvar = spec->Arg(3);
   const int rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -632,139 +632,139 @@ void p_int_lin_gt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 
 /* arithmetic constraints */
 
-void p_int_plus(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_plus(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  IntVar* const right = ce[1]->isIntVar() ?
-      s.integer_variables_[ce[1]->getIntVar()] :
-      solver->MakeIntConst(ce[1]->getInt());
-  IntVar* const target = ce[2]->isIntVar() ?
-      s.integer_variables_[ce[2]->getIntVar()] :
-      solver->MakeIntConst(ce[2]->getInt());
+  IntVar* const left = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  IntVar* const right = spec->Arg(1)->isIntVar() ?
+      s.integer_variables_[spec->Arg(1)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getInt());
+  IntVar* const target = spec->Arg(2)->isIntVar() ?
+      s.integer_variables_[spec->Arg(2)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getInt());
   Constraint* const ct =
       solver->MakeEquality(solver->MakeSum(left, right)->Var(), target);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_int_minus(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_minus(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  IntVar* const right = ce[1]->isIntVar() ?
-      s.integer_variables_[ce[1]->getIntVar()] :
-      solver->MakeIntConst(ce[1]->getInt());
-  IntVar* const target = ce[2]->isIntVar() ?
-      s.integer_variables_[ce[2]->getIntVar()] :
-      solver->MakeIntConst(ce[2]->getInt());
+  IntVar* const left = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  IntVar* const right = spec->Arg(1)->isIntVar() ?
+      s.integer_variables_[spec->Arg(1)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getInt());
+  IntVar* const target = spec->Arg(2)->isIntVar() ?
+      s.integer_variables_[spec->Arg(2)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getInt());
   Constraint* const ct =
       solver->MakeEquality(solver->MakeDifference(left, right)->Var(), target);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_int_times(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_times(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  IntVar* const right = ce[1]->isIntVar() ?
-      s.integer_variables_[ce[1]->getIntVar()] :
-      solver->MakeIntConst(ce[1]->getInt());
-  IntVar* const target = ce[2]->isIntVar() ?
-      s.integer_variables_[ce[2]->getIntVar()] :
-      solver->MakeIntConst(ce[2]->getInt());
+  IntVar* const left = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  IntVar* const right = spec->Arg(1)->isIntVar() ?
+      s.integer_variables_[spec->Arg(1)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getInt());
+  IntVar* const target = spec->Arg(2)->isIntVar() ?
+      s.integer_variables_[spec->Arg(2)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getInt());
   Constraint* const ct =
       solver->MakeEquality(solver->MakeProd(left, right)->Var(), target);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_int_div(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_div(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  IntVar* const target = ce[2]->isIntVar() ?
-      s.integer_variables_[ce[2]->getIntVar()] :
-      solver->MakeIntConst(ce[2]->getInt());
-  if (ce[1]->isIntVar()) {
-    IntVar* const right = s.integer_variables_[ce[1]->getIntVar()];
+  IntVar* const left = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  IntVar* const target = spec->Arg(2)->isIntVar() ?
+      s.integer_variables_[spec->Arg(2)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getInt());
+  if (spec->Arg(1)->isIntVar()) {
+    IntVar* const right = s.integer_variables_[spec->Arg(1)->getIntVar()];
     Constraint* const ct =
         solver->MakeEquality(solver->MakeDiv(left, right)->Var(), target);
     VLOG(1) << "Posted " << ct->DebugString();
     solver->AddConstraint(ct);
   } else {
     Constraint* const ct =
-        solver->MakeEquality(solver->MakeDiv(left, ce[1]->getInt())->Var(),
+        solver->MakeEquality(solver->MakeDiv(left, spec->Arg(1)->getInt())->Var(),
                              target);
     VLOG(1) << "Posted " << ct->DebugString();
     solver->AddConstraint(ct);
   }
 }
 
-void p_int_mod(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "int_mod(" << (ce[0]->DebugString()) << ","
-             << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-             << ")::" << ann->DebugString();
+void p_int_mod(FlatZincModel& s, CtSpec* const spec) {
+  LOG(FATAL) << "int_mod(" << (spec->Arg(0)->DebugString()) << ","
+             << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+             << ")::" << spec->annotations->DebugString();
 }
 
-void p_int_min(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_min(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  IntVar* const right = ce[1]->isIntVar() ?
-      s.integer_variables_[ce[1]->getIntVar()] :
-      solver->MakeIntConst(ce[1]->getInt());
-  IntVar* const target = ce[2]->isIntVar() ?
-      s.integer_variables_[ce[2]->getIntVar()] :
-      solver->MakeIntConst(ce[2]->getInt());
+  IntVar* const left = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  IntVar* const right = spec->Arg(1)->isIntVar() ?
+      s.integer_variables_[spec->Arg(1)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getInt());
+  IntVar* const target = spec->Arg(2)->isIntVar() ?
+      s.integer_variables_[spec->Arg(2)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getInt());
   Constraint* const ct =
       solver->MakeEquality(solver->MakeMin(left, right)->Var(), target);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_int_max(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_max(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  IntVar* const right = ce[1]->isIntVar() ?
-      s.integer_variables_[ce[1]->getIntVar()] :
-      solver->MakeIntConst(ce[1]->getInt());
-  IntVar* const target = ce[2]->isIntVar() ?
-      s.integer_variables_[ce[2]->getIntVar()] :
-      solver->MakeIntConst(ce[2]->getInt());
+  IntVar* const left = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  IntVar* const right = spec->Arg(1)->isIntVar() ?
+      s.integer_variables_[spec->Arg(1)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getInt());
+  IntVar* const target = spec->Arg(2)->isIntVar() ?
+      s.integer_variables_[spec->Arg(2)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getInt());
   Constraint* const ct =
       solver->MakeEquality(solver->MakeMax(left, right)->Var(), target);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_int_negate(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_int_negate(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  IntVar* const target = ce[1]->isIntVar() ?
-      s.integer_variables_[ce[1]->getIntVar()] :
-      solver->MakeIntConst(ce[1]->getInt());
+  IntVar* const left = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  IntVar* const target = spec->Arg(1)->isIntVar() ?
+      s.integer_variables_[spec->Arg(1)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getInt());
   Constraint* const ct =
       solver->MakeEquality(solver->MakeOpposite(left)->Var(), target);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_bool_eq(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_bool_eq(FlatZincModel& s, CtSpec* const spec) {
   Constraint* ct = NULL;
   Solver* const solver = s.solver();
-  AST::Node* const left = ce[0];
-  AST::Node* const right = ce[1];
+  AST::Node* const left = spec->Arg(0);
+  AST::Node* const right = spec->Arg(1);
   if (left->isBool()) {
     const int left_value = left->getBool();
     if (right->isBool()) {
@@ -788,17 +788,17 @@ void p_bool_eq(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_bool_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_eq_reif(" << (ce[0]->DebugString()) << ","
-             << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-             << ")::" << ann->DebugString();
+void p_bool_eq_reif(FlatZincModel& s, CtSpec* const spec) {
+  LOG(FATAL) << "bool_eq_reif(" << (spec->Arg(0)->DebugString()) << ","
+             << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+             << ")::" << spec->annotations->DebugString();
 }
 
-void p_bool_ne(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_bool_ne(FlatZincModel& s, CtSpec* const spec) {
   Constraint* ct = NULL;
   Solver* const solver = s.solver();
-  AST::Node* const left = ce[0];
-  AST::Node* const right = ce[1];
+  AST::Node* const left = spec->Arg(0);
+  AST::Node* const right = spec->Arg(1);
   if (left->isBool()) {
     const int left_value = left->getBool();
     if (right->isBool()) {
@@ -822,17 +822,17 @@ void p_bool_ne(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_bool_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_ne_reif(" << (ce[0]->DebugString()) << ","
-             << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-             << ")::" << ann->DebugString();
+void p_bool_ne_reif(FlatZincModel& s, CtSpec* const spec) {
+  LOG(FATAL) << "bool_ne_reif(" << (spec->Arg(0)->DebugString()) << ","
+             << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+             << ")::" << spec->annotations->DebugString();
 }
 
-void p_bool_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_bool_ge(FlatZincModel& s, CtSpec* const spec) {
   Constraint* ct = NULL;
   Solver* const solver = s.solver();
-  AST::Node* const left = ce[0];
-  AST::Node* const right = ce[1];
+  AST::Node* const left = spec->Arg(0);
+  AST::Node* const right = spec->Arg(1);
   if (left->isBool()) {
     const int left_value = left->getBool();
     if (right->isBool()) {
@@ -856,17 +856,17 @@ void p_bool_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_bool_ge_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_ge_reif(" << (ce[0]->DebugString()) << ","
-             << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-             << ")::" << ann->DebugString();
+void p_bool_ge_reif(FlatZincModel& s, CtSpec* const spec) {
+  LOG(FATAL) << "bool_ge_reif(" << (spec->Arg(0)->DebugString()) << ","
+             << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+             << ")::" << spec->annotations->DebugString();
 }
 
-void p_bool_le(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_bool_le(FlatZincModel& s, CtSpec* const spec) {
   Constraint* ct = NULL;
   Solver* const solver = s.solver();
-  AST::Node* const left = ce[0];
-  AST::Node* const right = ce[1];
+  AST::Node* const left = spec->Arg(0);
+  AST::Node* const right = spec->Arg(1);
   if (left->isBool()) {
     const int left_value = left->getBool();
     if (right->isBool()) {
@@ -890,69 +890,69 @@ void p_bool_le(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_bool_le_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_le_reif(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-             << ")::" << ann->DebugString();
+void p_bool_le_reif(FlatZincModel& s, CtSpec* const spec) {
+  LOG(FATAL) << "bool_le_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+             << ")::" << spec->annotations->DebugString();
 }
 
-void p_bool_gt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_gt(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString())
-             << ")::" << ann->DebugString();
+void p_bool_gt(FlatZincModel& s, CtSpec* const spec) {
+  LOG(FATAL) << "bool_gt(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
+             << ")::" << spec->annotations->DebugString();
 }
 
-void p_bool_gt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_gt_reif(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-             << ")::" << ann->DebugString();
+void p_bool_gt_reif(FlatZincModel& s, CtSpec* const spec) {
+  LOG(FATAL) << "bool_gt_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+             << ")::" << spec->annotations->DebugString();
 }
 
-void p_bool_lt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_lt(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString())
-             << ")::" << ann->DebugString();
+void p_bool_lt(FlatZincModel& s, CtSpec* const spec) {
+  LOG(FATAL) << "bool_lt(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
+             << ")::" << spec->annotations->DebugString();
 }
 
-void p_bool_lt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_lt_reif(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-             << ")::" << ann->DebugString();
+void p_bool_lt_reif(FlatZincModel& s, CtSpec* const spec) {
+  LOG(FATAL) << "bool_lt_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+             << ")::" << spec->annotations->DebugString();
 }
 
-void p_bool_or(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_bool_or(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isBoolVar() ?
-      s.integer_variables_[ce[0]->getBoolVar()] :
-      solver->MakeIntConst(ce[0]->getBool());
-  IntVar* const right = ce[1]->isBoolVar() ?
-      s.integer_variables_[ce[1]->getBoolVar()] :
-      solver->MakeIntConst(ce[1]->getBool());
-  IntVar* const target = ce[2]->isBoolVar() ?
-      s.integer_variables_[ce[2]->getBoolVar()] :
-      solver->MakeIntConst(ce[2]->getBool());
+  IntVar* const left = spec->Arg(0)->isBoolVar() ?
+      s.integer_variables_[spec->Arg(0)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getBool());
+  IntVar* const right = spec->Arg(1)->isBoolVar() ?
+      s.integer_variables_[spec->Arg(1)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getBool());
+  IntVar* const target = spec->Arg(2)->isBoolVar() ?
+      s.integer_variables_[spec->Arg(2)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
   Constraint* const ct =
       solver->MakeEquality(solver->MakeMax(left, right)->Var(), target);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_bool_and(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_bool_and(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isBoolVar() ?
-      s.integer_variables_[ce[0]->getBoolVar()] :
-      solver->MakeIntConst(ce[0]->getBool());
-  IntVar* const right = ce[1]->isBoolVar() ?
-      s.integer_variables_[ce[1]->getBoolVar()] :
-      solver->MakeIntConst(ce[1]->getBool());
-  IntVar* const target = ce[2]->isBoolVar() ?
-      s.integer_variables_[ce[2]->getBoolVar()] :
-      solver->MakeIntConst(ce[2]->getBool());
+  IntVar* const left = spec->Arg(0)->isBoolVar() ?
+      s.integer_variables_[spec->Arg(0)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getBool());
+  IntVar* const right = spec->Arg(1)->isBoolVar() ?
+      s.integer_variables_[spec->Arg(1)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getBool());
+  IntVar* const target = spec->Arg(2)->isBoolVar() ?
+      s.integer_variables_[spec->Arg(2)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
   Constraint* const ct =
       solver->MakeEquality(solver->MakeMin(left, right)->Var(), target);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_array_bool_and(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_array_bool_and(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_variables = ce[0]->getArray();
-  AST::Node* const node_boolvar = ce[1];
+  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  AST::Node* const node_boolvar = spec->Arg(1);
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
@@ -968,10 +968,10 @@ void p_array_bool_and(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_array_bool_or(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_array_bool_or(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_variables = ce[0]->getArray();
-  AST::Node* const node_boolvar = ce[1];
+  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  AST::Node* const node_boolvar = spec->Arg(1);
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
@@ -987,29 +987,28 @@ void p_array_bool_or(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_array_bool_clause(FlatZincModel& s, const ConExpr& ce,
-                         AST::Node* ann) {
-  LOG(FATAL) << "array_bool_clause(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString())
-             << ")::" << ann->DebugString();
+void p_array_bool_clause(FlatZincModel& s, CtSpec* const spec) {
+  LOG(FATAL) << "array_bool_clause(" << (spec->Arg(0)->DebugString()) << ","
+             << (spec->Arg(1)->DebugString())
+             << ")::" << spec->annotations->DebugString();
 }
 
-void p_array_bool_clause_reif(FlatZincModel& s, const ConExpr& ce,
-                              AST::Node* ann) {
-  LOG(FATAL) << "array_bool_clause_reif(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-             << ")::" << ann->DebugString();
+void p_array_bool_clause_reif(FlatZincModel& s, CtSpec* const spec) {
+  LOG(FATAL) << "array_bool_clause_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+             << ")::" << spec->annotations->DebugString();
 }
 
-void p_bool_xor(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_bool_xor(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isBoolVar() ?
-      s.integer_variables_[ce[0]->getBoolVar()] :
-      solver->MakeIntConst(ce[0]->getBool());
-  IntVar* const right = ce[1]->isBoolVar() ?
-      s.integer_variables_[ce[1]->getBoolVar()] :
-      solver->MakeIntConst(ce[1]->getBool());
-  IntVar* const target = ce[2]->isBoolVar() ?
-      s.integer_variables_[ce[2]->getBoolVar()] :
-      solver->MakeIntConst(ce[2]->getBool());
+  IntVar* const left = spec->Arg(0)->isBoolVar() ?
+      s.integer_variables_[spec->Arg(0)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getBool());
+  IntVar* const right = spec->Arg(1)->isBoolVar() ?
+      s.integer_variables_[spec->Arg(1)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getBool());
+  IntVar* const target = spec->Arg(2)->isBoolVar() ?
+      s.integer_variables_[spec->Arg(2)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
   Constraint* const ct =
       solver->MakeIsEqualCstCt(solver->MakeSum(left, right)->Var(),
                                1,
@@ -1018,26 +1017,26 @@ void p_bool_xor(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_bool_l_imp(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_l_imp(" << (ce[0]->DebugString()) << ","
-             << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-             << ")::" << ann->DebugString();
+void p_bool_l_imp(FlatZincModel& s, CtSpec* const spec) {
+  LOG(FATAL) << "bool_l_imp(" << (spec->Arg(0)->DebugString()) << ","
+             << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+             << ")::" << spec->annotations->DebugString();
 }
 
-void p_bool_r_imp(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_r_imp(" << (ce[0]->DebugString()) << ","
-             << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-             << ")::" << ann->DebugString();
+void p_bool_r_imp(FlatZincModel& s, CtSpec* const spec) {
+  LOG(FATAL) << "bool_r_imp(" << (spec->Arg(0)->DebugString()) << ","
+             << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+             << ")::" << spec->annotations->DebugString();
 }
 
-void p_bool_not(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_bool_not(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isBoolVar() ?
-      s.integer_variables_[ce[0]->getBoolVar()] :
-      solver->MakeIntConst(ce[0]->getBool());
-  IntVar* const target = ce[1]->isBoolVar() ?
-      s.integer_variables_[ce[1]->getBoolVar()] :
-      solver->MakeIntConst(ce[1]->getBool());
+  IntVar* const left = spec->Arg(0)->isBoolVar() ?
+      s.integer_variables_[spec->Arg(0)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getBool());
+  IntVar* const target = spec->Arg(1)->isBoolVar() ?
+      s.integer_variables_[spec->Arg(1)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getBool());
   Constraint* const ct =
       solver->MakeEquality(solver->MakeDifference(1, left)->Var(), target);
   VLOG(1) << "Posted " << ct->DebugString();
@@ -1045,21 +1044,20 @@ void p_bool_not(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 /* element constraints */
-void p_array_int_element(FlatZincModel& s, const ConExpr& ce,
-                         AST::Node* ann) {
+void p_array_int_element(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const index = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  AST::Array* const array_coefficents = ce[1]->getArray();
+  IntVar* const index = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  AST::Array* const array_coefficents = spec->Arg(1)->getArray();
   const int size = array_coefficents->a.size();
   std::vector<int> coefficients(size);
   for (int i = 0; i < size; ++i) {
     coefficients[i] = array_coefficents->a[i]->getInt();
   }
-  IntVar* const target = ce[2]->isIntVar() ?
-      s.integer_variables_[ce[2]->getIntVar()] :
-      solver->MakeIntConst(ce[2]->getInt());
+  IntVar* const target = spec->Arg(2)->isIntVar() ?
+      s.integer_variables_[spec->Arg(2)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getInt());
   Constraint* const ct =
       solver->MakeEquality(solver->MakeElement(coefficients, index)->Var(),
                            target);
@@ -1067,21 +1065,20 @@ void p_array_int_element(FlatZincModel& s, const ConExpr& ce,
   solver->AddConstraint(ct);
 }
 
-void p_array_bool_element(FlatZincModel& s, const ConExpr& ce,
-                          AST::Node* ann) {
+void p_array_bool_element(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const index = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  AST::Array* const array_coefficents = ce[1]->getArray();
+  IntVar* const index = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  AST::Array* const array_coefficents = spec->Arg(1)->getArray();
   const int size = array_coefficents->a.size();
   std::vector<int> coefficients(size);
   for (int i = 0; i < size; ++i) {
     coefficients[i] = array_coefficents->a[i]->getBool();
   }
-  IntVar* const target = ce[2]->isBoolVar() ?
-      s.integer_variables_[ce[2]->getBoolVar()] :
-      solver->MakeIntConst(ce[2]->getBool());
+  IntVar* const target = spec->Arg(2)->isBoolVar() ?
+      s.integer_variables_[spec->Arg(2)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
   Constraint* const ct =
       solver->MakeEquality(solver->MakeElement(coefficients, index)->Var(),
                            target);
@@ -1090,23 +1087,23 @@ void p_array_bool_element(FlatZincModel& s, const ConExpr& ce,
 }
 
 /* coercion constraints */
-void p_bool2int(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_bool2int(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isBoolVar() ?
-      s.boolean_variables_[ce[0]->getBoolVar()] :
-      solver->MakeIntConst(ce[0]->getBool());
-  IntVar* const right = ce[1]->isIntVar() ?
-      s.integer_variables_[ce[1]->getIntVar()] :
-      solver->MakeIntConst(ce[1]->getInt());
+  IntVar* const left = spec->Arg(0)->isBoolVar() ?
+      s.boolean_variables_[spec->Arg(0)->getBoolVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getBool());
+  IntVar* const right = spec->Arg(1)->isIntVar() ?
+      s.integer_variables_[spec->Arg(1)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getInt());
   Constraint* const ct = solver->MakeEquality(left, right);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_int_in(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
+void p_int_in(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Node* const var_node = ce[0];
-  AST::Node* const domain_node = ce[1];
+  AST::Node* const var_node = spec->Arg(0);
+  AST::Node* const domain_node = spec->Arg(1);
   CHECK(var_node->isIntVar());
   CHECK(domain_node->isSet());
   IntVar* const var = s.integer_variables_[var_node->getIntVar()];
@@ -1125,23 +1122,23 @@ void p_int_in(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
   }
 }
 
-void p_abs(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_abs(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  IntVar* const left = ce[0]->isIntVar() ?
-      s.integer_variables_[ce[0]->getIntVar()] :
-      solver->MakeIntConst(ce[0]->getInt());
-  IntVar* const right = ce[1]->isIntVar() ?
-      s.integer_variables_[ce[1]->getIntVar()] :
-      solver->MakeIntConst(ce[1]->getInt());
+  IntVar* const left = spec->Arg(0)->isIntVar() ?
+      s.integer_variables_[spec->Arg(0)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(0)->getInt());
+  IntVar* const right = spec->Arg(1)->isIntVar() ?
+      s.integer_variables_[spec->Arg(1)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(1)->getInt());
   Constraint* const ct =
       solver->MakeEquality(solver->MakeAbs(left)->Var(), right);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
 
-void p_all_different_int(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_all_different_int(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_variables = ce[0]->getArray();
+  AST::Array* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
@@ -1154,9 +1151,9 @@ void p_all_different_int(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   solver->AddConstraint(ct);
 }
 
-void p_count(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_count(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_variables = ce[0]->getArray();
+  AST::Array* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
@@ -1164,11 +1161,11 @@ void p_count(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
         s.integer_variables_[array_variables->a[i]->getIntVar()] :
         solver->MakeIntConst(array_variables->a[i]->getInt());
   }
-  IntVar* const count = ce[2]->isIntVar() ?
-      s.integer_variables_[ce[2]->getIntVar()] :
-      solver->MakeIntConst(ce[2]->getInt());
-  if (ce[1]->isInt()) {
-    Constraint* const ct = solver->MakeCount(variables, ce[1]->getInt(), count);
+  IntVar* const count = spec->Arg(2)->isIntVar() ?
+      s.integer_variables_[spec->Arg(2)->getIntVar()] :
+      solver->MakeIntConst(spec->Arg(2)->getInt());
+  if (spec->Arg(1)->isInt()) {
+    Constraint* const ct = solver->MakeCount(variables, spec->Arg(1)->getInt(), count);
     VLOG(1) << "Posted " << ct->DebugString();
     solver->AddConstraint(ct);
   } else {
@@ -1176,9 +1173,9 @@ void p_count(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   }
 }
 
-void p_global_cardinality(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+void p_global_cardinality(FlatZincModel& s, CtSpec* const spec) {
   Solver* const solver = s.solver();
-  AST::Array* const array_variables = ce[0]->getArray();
+  AST::Array* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
@@ -1186,13 +1183,13 @@ void p_global_cardinality(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
         s.integer_variables_[array_variables->a[i]->getIntVar()] :
         solver->MakeIntConst(array_variables->a[i]->getInt());
   }
-  AST::Array* const array_coefficents = ce[1]->getArray();
+  AST::Array* const array_coefficents = spec->Arg(1)->getArray();
   const int vsize = array_coefficents->a.size();
   std::vector<int> values(vsize);
   for (int i = 0; i < vsize; ++i) {
     values[i] = array_coefficents->a[i]->getInt();
   }
-  AST::Array* const array_cards = ce[2]->getArray();
+  AST::Array* const array_cards = spec->Arg(2)->getArray();
   const int csize = array_cards->a.size();
   std::vector<IntVar*> cards(csize);
   for (int i = 0; i < csize; ++i) {
@@ -1208,172 +1205,172 @@ void p_global_cardinality(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 class IntPoster {
  public:
   IntPoster(void) {
-    registry().add("int_eq", &p_int_eq);
-    registry().add("int_ne", &p_int_ne);
-    registry().add("int_ge", &p_int_ge);
-    registry().add("int_gt", &p_int_gt);
-    registry().add("int_le", &p_int_le);
-    registry().add("int_lt", &p_int_lt);
-    registry().add("int_eq_reif", &p_int_eq_reif);
-    registry().add("int_ne_reif", &p_int_ne_reif);
-    registry().add("int_ge_reif", &p_int_ge_reif);
-    registry().add("int_gt_reif", &p_int_gt_reif);
-    registry().add("int_le_reif", &p_int_le_reif);
-    registry().add("int_lt_reif", &p_int_lt_reif);
-    registry().add("int_lin_eq", &p_int_lin_eq);
-    registry().add("int_lin_eq_reif", &p_int_lin_eq_reif);
-    registry().add("int_lin_ne", &p_int_lin_ne);
-    registry().add("int_lin_ne_reif", &p_int_lin_ne_reif);
-    registry().add("int_lin_le", &p_int_lin_le);
-    registry().add("int_lin_le_reif", &p_int_lin_le_reif);
-    registry().add("int_lin_lt", &p_int_lin_lt);
-    registry().add("int_lin_lt_reif", &p_int_lin_lt_reif);
-    registry().add("int_lin_ge", &p_int_lin_ge);
-    registry().add("int_lin_ge_reif", &p_int_lin_ge_reif);
-    registry().add("int_lin_gt", &p_int_lin_gt);
-    registry().add("int_lin_gt_reif", &p_int_lin_gt_reif);
-    registry().add("int_plus", &p_int_plus);
-    registry().add("int_minus", &p_int_minus);
-    registry().add("int_times", &p_int_times);
-    registry().add("int_div", &p_int_div);
-    registry().add("int_mod", &p_int_mod);
-    registry().add("int_min", &p_int_min);
-    registry().add("int_max", &p_int_max);
-    registry().add("int_abs", &p_abs);
-    registry().add("int_negate", &p_int_negate);
-    registry().add("bool_eq", &p_bool_eq);
-    registry().add("bool_eq_reif", &p_bool_eq_reif);
-    registry().add("bool_ne", &p_bool_ne);
-    registry().add("bool_ne_reif", &p_bool_ne_reif);
-    registry().add("bool_ge", &p_bool_ge);
-    registry().add("bool_ge_reif", &p_bool_ge_reif);
-    registry().add("bool_le", &p_bool_le);
-    registry().add("bool_le_reif", &p_bool_le_reif);
-    registry().add("bool_gt", &p_bool_gt);
-    registry().add("bool_gt_reif", &p_bool_gt_reif);
-    registry().add("bool_lt", &p_bool_lt);
-    registry().add("bool_lt_reif", &p_bool_lt_reif);
-    registry().add("bool_or", &p_bool_or);
-    registry().add("bool_and", &p_bool_and);
-    registry().add("bool_xor", &p_bool_xor);
-    registry().add("array_bool_and", &p_array_bool_and);
-    registry().add("array_bool_or", &p_array_bool_or);
-    registry().add("bool_clause", &p_array_bool_clause);
-    registry().add("bool_clause_reif", &p_array_bool_clause_reif);
-    registry().add("bool_left_imp", &p_bool_l_imp);
-    registry().add("bool_right_imp", &p_bool_r_imp);
-    registry().add("bool_not", &p_bool_not);
-    registry().add("array_int_element", &p_array_int_element);
-    registry().add("array_var_int_element", &p_array_int_element);
-    registry().add("array_bool_element", &p_array_bool_element);
-    registry().add("array_var_bool_element", &p_array_bool_element);
-    registry().add("bool2int", &p_bool2int);
-    registry().add("int_in", &p_int_in);
-    registry().add("all_different_int", &p_all_different_int);
-    registry().add("count", &p_count);
-    registry().add("global_cardinality", &p_global_cardinality);
+    registry().Add("int_eq", &p_int_eq);
+    registry().Add("int_ne", &p_int_ne);
+    registry().Add("int_ge", &p_int_ge);
+    registry().Add("int_gt", &p_int_gt);
+    registry().Add("int_le", &p_int_le);
+    registry().Add("int_lt", &p_int_lt);
+    registry().Add("int_eq_reif", &p_int_eq_reif);
+    registry().Add("int_ne_reif", &p_int_ne_reif);
+    registry().Add("int_ge_reif", &p_int_ge_reif);
+    registry().Add("int_gt_reif", &p_int_gt_reif);
+    registry().Add("int_le_reif", &p_int_le_reif);
+    registry().Add("int_lt_reif", &p_int_lt_reif);
+    registry().Add("int_lin_eq", &p_int_lin_eq);
+    registry().Add("int_lin_eq_reif", &p_int_lin_eq_reif);
+    registry().Add("int_lin_ne", &p_int_lin_ne);
+    registry().Add("int_lin_ne_reif", &p_int_lin_ne_reif);
+    registry().Add("int_lin_le", &p_int_lin_le);
+    registry().Add("int_lin_le_reif", &p_int_lin_le_reif);
+    registry().Add("int_lin_lt", &p_int_lin_lt);
+    registry().Add("int_lin_lt_reif", &p_int_lin_lt_reif);
+    registry().Add("int_lin_ge", &p_int_lin_ge);
+    registry().Add("int_lin_ge_reif", &p_int_lin_ge_reif);
+    registry().Add("int_lin_gt", &p_int_lin_gt);
+    registry().Add("int_lin_gt_reif", &p_int_lin_gt_reif);
+    registry().Add("int_plus", &p_int_plus);
+    registry().Add("int_minus", &p_int_minus);
+    registry().Add("int_times", &p_int_times);
+    registry().Add("int_div", &p_int_div);
+    registry().Add("int_mod", &p_int_mod);
+    registry().Add("int_min", &p_int_min);
+    registry().Add("int_max", &p_int_max);
+    registry().Add("int_abs", &p_abs);
+    registry().Add("int_negate", &p_int_negate);
+    registry().Add("bool_eq", &p_bool_eq);
+    registry().Add("bool_eq_reif", &p_bool_eq_reif);
+    registry().Add("bool_ne", &p_bool_ne);
+    registry().Add("bool_ne_reif", &p_bool_ne_reif);
+    registry().Add("bool_ge", &p_bool_ge);
+    registry().Add("bool_ge_reif", &p_bool_ge_reif);
+    registry().Add("bool_le", &p_bool_le);
+    registry().Add("bool_le_reif", &p_bool_le_reif);
+    registry().Add("bool_gt", &p_bool_gt);
+    registry().Add("bool_gt_reif", &p_bool_gt_reif);
+    registry().Add("bool_lt", &p_bool_lt);
+    registry().Add("bool_lt_reif", &p_bool_lt_reif);
+    registry().Add("bool_or", &p_bool_or);
+    registry().Add("bool_and", &p_bool_and);
+    registry().Add("bool_xor", &p_bool_xor);
+    registry().Add("array_bool_and", &p_array_bool_and);
+    registry().Add("array_bool_or", &p_array_bool_or);
+    registry().Add("bool_clause", &p_array_bool_clause);
+    registry().Add("bool_clause_reif", &p_array_bool_clause_reif);
+    registry().Add("bool_left_imp", &p_bool_l_imp);
+    registry().Add("bool_right_imp", &p_bool_r_imp);
+    registry().Add("bool_not", &p_bool_not);
+    registry().Add("array_int_element", &p_array_int_element);
+    registry().Add("array_var_int_element", &p_array_int_element);
+    registry().Add("array_bool_element", &p_array_bool_element);
+    registry().Add("array_var_bool_element", &p_array_bool_element);
+    registry().Add("bool2int", &p_bool2int);
+    registry().Add("int_in", &p_int_in);
+    registry().Add("all_different_int", &p_all_different_int);
+    registry().Add("count", &p_count);
+    registry().Add("global_cardinality", &p_global_cardinality);
   }
 };
 IntPoster __int_poster;
 
-// void p_set_union(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
-//   LOG(FATAL) << "set_union(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-//              << ")::" << ann->DebugString();
+// void p_set_union(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations) {
+//   LOG(FATAL) << "set_union(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
-// void p_set_intersect(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
-//   LOG(FATAL) << "set_intersect(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-//              << ")::" << ann->DebugString();
+// void p_set_intersect(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations) {
+//   LOG(FATAL) << "set_intersect(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
-// void p_set_diff(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
-//   LOG(FATAL) << "set_diff(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-//              << ")::" << ann->DebugString();
-// }
-
-// void p_set_symdiff(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-//   LOG(FATAL) << "set_symdiff(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-//              << ")::" << ann->DebugString();
+// void p_set_diff(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations) {
+//   LOG(FATAL) << "set_diff(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
 
-// void p_set_eq(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   LOG(FATAL) << "set_eq(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString())
-//              << ")::" << ann->DebugString();
+// void p_set_symdiff(FlatZincModel& s, CtSpec* const spec) {
+//   LOG(FATAL) << "set_symdiff(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
-// void p_set_ne(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   LOG(FATAL) << "set_ne(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString())
-//              << ")::" << ann->DebugString();
+
+// void p_set_eq(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+//   LOG(FATAL) << "set_eq(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
-// void p_set_subset(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   LOG(FATAL) << "set_subset(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString())
-//              << ")::" << ann->DebugString();
+// void p_set_ne(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+//   LOG(FATAL) << "set_ne(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
-// void p_set_superset(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   LOG(FATAL) << "set_superset(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString())
-//              << ")::" << ann->DebugString();
+// void p_set_subset(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+//   LOG(FATAL) << "set_subset(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
-// void p_set_card(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   LOG(FATAL) << "set_card(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString())
-//              << ")::" << ann->DebugString();
+// void p_set_superset(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+//   LOG(FATAL) << "set_superset(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
-// void p_set_in(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   LOG(FATAL) << "set_in(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString())
-//              << ")::" << ann->DebugString();
+// void p_set_card(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+//   LOG(FATAL) << "set_card(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
-// void p_set_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   LOG(FATAL) << "set_eq_reif(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-//              << ")::" << ann->DebugString();
+// void p_set_in(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+//   LOG(FATAL) << "set_in(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
-// void p_set_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node * ann) {
-//   LOG(FATAL) << "set_ne_reif(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-//              << ")::" << ann->DebugString();
+// void p_set_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+//   LOG(FATAL) << "set_eq_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
+// }
+// void p_set_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+//   LOG(FATAL) << "set_ne_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
 // void p_set_subset_reif(FlatZincModel& s, const ConExpr& ce,
-//                        AST::Node *ann) {
-//   LOG(FATAL) << "set_subset_reif(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-//              << ")::" << ann->DebugString();
+//                        AST::Node *spec->annotations) {
+//   LOG(FATAL) << "set_subset_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
 // void p_set_superset_reif(FlatZincModel& s, const ConExpr& ce,
-//                          AST::Node *ann) {
-//   LOG(FATAL) << "set_superset_reif(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-//              << ")::" << ann->DebugString();
+//                          AST::Node *spec->annotations) {
+//   LOG(FATAL) << "set_superset_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
-// void p_set_in_reif(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
-//   LOG(FATAL) << "set_in_reif(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-//              << ")::" << ann->DebugString();
+// void p_set_in_reif(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations) {
+//   LOG(FATAL) << "set_in_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
-// void p_set_disjoint(FlatZincModel& s, const ConExpr& ce, AST::Node *ann) {
-//   LOG(FATAL) << "set_disjoint(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString())
-//              << ")::" << ann->DebugString();
+// void p_set_disjoint(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations) {
+//   LOG(FATAL) << "set_disjoint(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
 
 // void p_array_set_element(FlatZincModel& s, const ConExpr& ce,
-//                          AST::Node* ann) {
-//   LOG(FATAL) << "array_set_element(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
-//              << ")::" << ann->DebugString();
+//                          AST::Node* spec->annotations) {
+//   LOG(FATAL) << "array_set_element(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
+//              << ")::" << spec->annotations->DebugString();
 // }
 
 
 // class SetPoster {
 // public:
 //   SetPoster(void) {
-//     registry().add("set_eq", &p_set_eq);
-//     registry().add("set_ne", &p_set_ne);
-//     registry().add("set_union", &p_set_union);
-//     registry().add("array_set_element", &p_array_set_element);
-//     registry().add("array_var_set_element", &p_array_set_element);
-//     registry().add("set_intersect", &p_set_intersect);
-//     registry().add("set_diff", &p_set_diff);
-//     registry().add("set_symdiff", &p_set_symdiff);
-//     registry().add("set_subset", &p_set_subset);
-//     registry().add("set_superset", &p_set_superset);
-//     registry().add("set_card", &p_set_card);
-//     registry().add("set_in", &p_set_in);
-//     registry().add("set_eq_reif", &p_set_eq_reif);
-//     registry().add("equal_reif", &p_set_eq_reif);
-//     registry().add("set_ne_reif", &p_set_ne_reif);
-//     registry().add("set_subset_reif", &p_set_subset_reif);
-//     registry().add("set_superset_reif", &p_set_superset_reif);
-//     registry().add("set_in_reif", &p_set_in_reif);
-//     registry().add("disjoint", &p_set_disjoint);
+//     registry().Add("set_eq", &p_set_eq);
+//     registry().Add("set_ne", &p_set_ne);
+//     registry().Add("set_union", &p_set_union);
+//     registry().Add("array_set_element", &p_array_set_element);
+//     registry().Add("array_var_set_element", &p_array_set_element);
+//     registry().Add("set_intersect", &p_set_intersect);
+//     registry().Add("set_diff", &p_set_diff);
+//     registry().Add("set_symdiff", &p_set_symdiff);
+//     registry().Add("set_subset", &p_set_subset);
+//     registry().Add("set_superset", &p_set_superset);
+//     registry().Add("set_card", &p_set_card);
+//     registry().Add("set_in", &p_set_in);
+//     registry().Add("set_eq_reif", &p_set_eq_reif);
+//     registry().Add("equal_reif", &p_set_eq_reif);
+//     registry().Add("set_ne_reif", &p_set_ne_reif);
+//     registry().Add("set_subset_reif", &p_set_subset_reif);
+//     registry().Add("set_superset_reif", &p_set_superset_reif);
+//     registry().Add("set_in_reif", &p_set_in_reif);
+//     registry().Add("disjoint", &p_set_disjoint);
 //   }
 // };
 // SetPoster __set_poster;
