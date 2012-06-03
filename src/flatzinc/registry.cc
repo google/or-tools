@@ -707,7 +707,8 @@ void p_int_div(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_mod(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "int_mod(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
+  LOG(FATAL) << "int_mod(" << (ce[0]->DebugString()) << ","
+             << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
              << ")::" << ann->DebugString();
 }
 
@@ -788,7 +789,8 @@ void p_bool_eq(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_bool_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_eq_reif(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
+  LOG(FATAL) << "bool_eq_reif(" << (ce[0]->DebugString()) << ","
+             << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
              << ")::" << ann->DebugString();
 }
 
@@ -821,7 +823,8 @@ void p_bool_ne(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_bool_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_ne_reif(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
+  LOG(FATAL) << "bool_ne_reif(" << (ce[0]->DebugString()) << ","
+             << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
              << ")::" << ann->DebugString();
 }
 
@@ -854,7 +857,8 @@ void p_bool_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_bool_ge_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_ge_reif(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
+  LOG(FATAL) << "bool_ge_reif(" << (ce[0]->DebugString()) << ","
+             << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
              << ")::" << ann->DebugString();
 }
 
@@ -1015,12 +1019,14 @@ void p_bool_xor(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_bool_l_imp(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_l_imp(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
+  LOG(FATAL) << "bool_l_imp(" << (ce[0]->DebugString()) << ","
+             << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
              << ")::" << ann->DebugString();
 }
 
 void p_bool_r_imp(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  LOG(FATAL) << "bool_r_imp(" << (ce[0]->DebugString()) << "," << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
+  LOG(FATAL) << "bool_r_imp(" << (ce[0]->DebugString()) << ","
+             << (ce[1]->DebugString()) << "," << (ce[2]->DebugString())
              << ")::" << ann->DebugString();
 }
 
