@@ -414,8 +414,29 @@ void p_int_lin_ne(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_lin_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_ne_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
-            <<","<<(ce[3]->DebugString())<<")::"<<ann->DebugString()<<"\n";
+  Solver* const solver = s.solver();
+  AST::Array* const array_coefficents = ce[0]->getArray();
+  AST::Array* const array_variables = ce[1]->getArray();
+  AST::Node* const node_rhs = ce[2];
+  AST::Node* const node_boolvar = ce[3];
+  const int rhs = node_rhs->getInt();
+  const int size = array_coefficents->a.size();
+  CHECK_EQ(size, array_variables->a.size());
+  std::vector<int> coefficients(size);
+  std::vector<IntVar*> variables(size);
+
+  for (int i = 0; i < size; ++i) {
+    coefficients[i] = array_coefficents->a[i]->getInt();
+    variables[i] = s.integer_variables_[array_variables->a[i]->getIntVar()];
+  }
+  IntVar* const var =
+      solver->MakeScalProd(variables, coefficients)->Var();
+  IntVar* const boolvar =
+      s.boolean_variables_[node_boolvar->getBoolVar()];
+  Constraint* const ct =
+      solver->MakeIsDifferentCstCt(var, rhs, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_int_lin_le(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
@@ -440,9 +461,31 @@ void p_int_lin_le(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_lin_le_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_le_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
-            <<","<<(ce[3]->DebugString())<<")::"<<ann->DebugString()<<"\n";
+  Solver* const solver = s.solver();
+  AST::Array* const array_coefficents = ce[0]->getArray();
+  AST::Array* const array_variables = ce[1]->getArray();
+  AST::Node* const node_rhs = ce[2];
+  AST::Node* const node_boolvar = ce[3];
+  const int rhs = node_rhs->getInt();
+  const int size = array_coefficents->a.size();
+  CHECK_EQ(size, array_variables->a.size());
+  std::vector<int> coefficients(size);
+  std::vector<IntVar*> variables(size);
+
+  for (int i = 0; i < size; ++i) {
+    coefficients[i] = array_coefficents->a[i]->getInt();
+    variables[i] = s.integer_variables_[array_variables->a[i]->getIntVar()];
+  }
+  IntVar* const var =
+      solver->MakeScalProd(variables, coefficients)->Var();
+  IntVar* const boolvar =
+      s.boolean_variables_[node_boolvar->getBoolVar()];
+  Constraint* const ct =
+      solver->MakeIsLessOrEqualCstCt(var, rhs, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_lin_lt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   Solver* const solver = s.solver();
   AST::Array* const array_coefficents = ce[0]->getArray();
@@ -463,10 +506,33 @@ void p_int_lin_lt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
+
 void p_int_lin_lt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_lt_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
-            <<","<<(ce[3]->DebugString())<<")::"<<ann->DebugString()<<"\n";
+  Solver* const solver = s.solver();
+  AST::Array* const array_coefficents = ce[0]->getArray();
+  AST::Array* const array_variables = ce[1]->getArray();
+  AST::Node* const node_rhs = ce[2];
+  AST::Node* const node_boolvar = ce[3];
+  const int rhs = node_rhs->getInt();
+  const int size = array_coefficents->a.size();
+  CHECK_EQ(size, array_variables->a.size());
+  std::vector<int> coefficients(size);
+  std::vector<IntVar*> variables(size);
+
+  for (int i = 0; i < size; ++i) {
+    coefficients[i] = array_coefficents->a[i]->getInt();
+    variables[i] = s.integer_variables_[array_variables->a[i]->getIntVar()];
+  }
+  IntVar* const var =
+      solver->MakeScalProd(variables, coefficients)->Var();
+  IntVar* const boolvar =
+      s.boolean_variables_[node_boolvar->getBoolVar()];
+  Constraint* const ct =
+      solver->MakeIsLessOrEqualCstCt(var, rhs - 1, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_lin_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   Solver* const solver = s.solver();
   AST::Array* const array_coefficents = ce[0]->getArray();
@@ -489,9 +555,31 @@ void p_int_lin_ge(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_lin_ge_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_ge_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
-            <<","<<(ce[3]->DebugString())<<")::"<<ann->DebugString()<<"\n";
+  Solver* const solver = s.solver();
+  AST::Array* const array_coefficents = ce[0]->getArray();
+  AST::Array* const array_variables = ce[1]->getArray();
+  AST::Node* const node_rhs = ce[2];
+  AST::Node* const node_boolvar = ce[3];
+  const int rhs = node_rhs->getInt();
+  const int size = array_coefficents->a.size();
+  CHECK_EQ(size, array_variables->a.size());
+  std::vector<int> coefficients(size);
+  std::vector<IntVar*> variables(size);
+
+  for (int i = 0; i < size; ++i) {
+    coefficients[i] = array_coefficents->a[i]->getInt();
+    variables[i] = s.integer_variables_[array_variables->a[i]->getIntVar()];
+  }
+  IntVar* const var =
+      solver->MakeScalProd(variables, coefficients)->Var();
+  IntVar* const boolvar =
+      s.boolean_variables_[node_boolvar->getBoolVar()];
+  Constraint* const ct =
+      solver->MakeIsGreaterOrEqualCstCt(var, rhs, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
+
 void p_int_lin_gt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   Solver* const solver = s.solver();
   AST::Array* const array_coefficents = ce[0]->getArray();
@@ -514,8 +602,29 @@ void p_int_lin_gt(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_lin_gt_reif(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_lin_gt_reif("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
-            <<","<<(ce[3]->DebugString())<<")::"<<ann->DebugString()<<"\n";
+  Solver* const solver = s.solver();
+  AST::Array* const array_coefficents = ce[0]->getArray();
+  AST::Array* const array_variables = ce[1]->getArray();
+  AST::Node* const node_rhs = ce[2];
+  AST::Node* const node_boolvar = ce[3];
+  const int rhs = node_rhs->getInt();
+  const int size = array_coefficents->a.size();
+  CHECK_EQ(size, array_variables->a.size());
+  std::vector<int> coefficients(size);
+  std::vector<IntVar*> variables(size);
+
+  for (int i = 0; i < size; ++i) {
+    coefficients[i] = array_coefficents->a[i]->getInt();
+    variables[i] = s.integer_variables_[array_variables->a[i]->getIntVar()];
+  }
+  IntVar* const var =
+      solver->MakeScalProd(variables, coefficients)->Var();
+  IntVar* const boolvar =
+      s.boolean_variables_[node_boolvar->getBoolVar()];
+  Constraint* const ct =
+      solver->MakeIsGreaterOrEqualCstCt(var, rhs + 1, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 /* arithmetic constraints */
@@ -538,8 +647,20 @@ void p_int_plus(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_minus(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_minus("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
-            <<")::"<<ann->DebugString()<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isIntVar() ?
+      s.integer_variables_[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  IntVar* const right = ce[1]->isIntVar() ?
+      s.integer_variables_[ce[1]->getIntVar()] :
+      solver->MakeIntConst(ce[1]->getInt());
+  IntVar* const target = ce[2]->isIntVar() ?
+      s.integer_variables_[ce[2]->getIntVar()] :
+      solver->MakeIntConst(ce[2]->getInt());
+  Constraint* const ct =
+      solver->MakeEquality(solver->MakeDifference(left, right)->Var(), target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_int_times(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
@@ -603,8 +724,17 @@ void p_int_max(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
 }
 
 void p_int_negate(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
-  std::cerr << "int_negate("<<(ce[0]->DebugString())<<","<<(ce[1]->DebugString())<<","<<(ce[2]->DebugString())
-            <<")::"<<ann->DebugString()<<"\n";
+  Solver* const solver = s.solver();
+  IntVar* const left = ce[0]->isIntVar() ?
+      s.integer_variables_[ce[0]->getIntVar()] :
+      solver->MakeIntConst(ce[0]->getInt());
+  IntVar* const target = ce[1]->isIntVar() ?
+      s.integer_variables_[ce[1]->getIntVar()] :
+      solver->MakeIntConst(ce[1]->getInt());
+  Constraint* const ct =
+      solver->MakeEquality(solver->MakeOpposite(left)->Var(), target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_bool_eq(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
@@ -967,6 +1097,35 @@ void p_count(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
   }
 }
 
+void p_global_cardinality(FlatZincModel& s, const ConExpr& ce, AST::Node* ann) {
+  Solver* const solver = s.solver();
+  AST::Array* const array_variables = ce[0]->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = array_variables->a[i]->isIntVar() ?
+        s.integer_variables_[array_variables->a[i]->getIntVar()] :
+        solver->MakeIntConst(array_variables->a[i]->getInt());
+  }
+  AST::Array* const array_coefficents = ce[1]->getArray();
+  const int vsize = array_coefficents->a.size();
+  std::vector<int> values(vsize);
+  for (int i = 0; i < vsize; ++i) {
+    values[i] = array_coefficents->a[i]->getInt();
+  }
+  AST::Array* const array_cards = ce[2]->getArray();
+  const int csize = array_cards->a.size();
+  std::vector<IntVar*> cards(csize);
+  for (int i = 0; i < csize; ++i) {
+    cards[i] = array_cards->a[i]->isIntVar() ?
+        s.integer_variables_[array_cards->a[i]->getIntVar()] :
+        solver->MakeIntConst(array_cards->a[i]->getInt());
+  }
+  Constraint* const ct = solver->MakeDistribute(variables, values, cards);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
+}
+
 class IntPoster {
  public:
   IntPoster(void) {
@@ -1033,6 +1192,7 @@ class IntPoster {
     registry().add("int_in", &p_int_in);
     registry().add("all_different_int", &p_all_different_int);
     registry().add("count", &p_count);
+    registry().add("global_cardinality", &p_global_cardinality);
   }
 };
 IntPoster __int_poster;
