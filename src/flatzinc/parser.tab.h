@@ -144,7 +144,7 @@ typedef union YYSTYPE
   operations_research::AST::SetLit* setLit;
   std::vector<double>* floatSetValue;
   std::vector<operations_research::AST::SetLit>* setValueList;
-  operations_research::Option<operations_research::AST::SetLit* > oSet;
+  operations_research::Option<operations_research::AST::SetLit*> oSet;
   operations_research::IntVarSpec* varIntSpec;
   operations_research::BoolVarSpec* varBoolSpec;
   operations_research::SetVarSpec* varSetSpec;
@@ -154,10 +154,10 @@ typedef union YYSTYPE
   std::vector<operations_research::BoolVarSpec*>* varBoolSpecVec;
   std::vector<operations_research::SetVarSpec*>* varSetSpecVec;
   std::vector<operations_research::FloatVarSpec*>* varFloatSpecVec;
-  operations_research::Option<std::vector<operations_research::IntVarSpec*>* > oIntVarSpecVec;
-  operations_research::Option<std::vector<operations_research::BoolVarSpec*>* > oBoolVarSpecVec;
-  operations_research::Option<std::vector<operations_research::SetVarSpec*>* > oSetVarSpecVec;
-  operations_research::Option<std::vector<operations_research::FloatVarSpec*>* > oFloatVarSpecVec;
+  operations_research::Option<std::vector<operations_research::IntVarSpec*>*> oIntVarSpecVec;
+  operations_research::Option<std::vector<operations_research::BoolVarSpec*>*> oBoolVarSpecVec;
+  operations_research::Option<std::vector<operations_research::SetVarSpec*>*> oSetVarSpecVec;
+  operations_research::Option<std::vector<operations_research::FloatVarSpec*>*> oFloatVarSpecVec;
   operations_research::AST::Node* arg;
   operations_research::AST::Array* argVec;
 }

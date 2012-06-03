@@ -102,93 +102,53 @@ class OutputOrder {
 /// %State of the %FlatZinc parser
 class ParserState {
  public:
-  ParserState(const std::string& b, operations_research::FlatZincModel* model0)
+  ParserState(const std::string& b,
+              operations_research::FlatZincModel* const model0)
       : buf(b.c_str()),
         pos(0),
         length(b.size()),
-        model(model0),
+        model_(model0),
         hadError(false) {}
 
-  ParserState(char* buf0,
+  ParserState(char* const buf0,
               int length0,
-              operations_research::FlatZincModel* model0)
-      : buf(buf0), pos(0), length(length0), model(model0), hadError(false) {}
+              operations_research::FlatZincModel* const model0)
+      : buf(buf0), pos(0), length(length0), model_(model0), hadError(false) {}
 
   ~ParserState();
 
   void* yyscanner;
   const char* buf;
   unsigned int pos, length;
-  operations_research::FlatZincModel* model;
-  std::vector<std::pair<std::string,AST::Node*> > output_;
 
-  SymbolTable<int> intvarTable;
-  SymbolTable<int> boolvarTable;
-  SymbolTable<int> floatvarTable;
-  SymbolTable<int> setvarTable;
-  SymbolTable<std::vector<int> > intvararrays;
-  SymbolTable<std::vector<int> > boolvararrays;
-  SymbolTable<std::vector<int> > floatvararrays;
-  SymbolTable<std::vector<int> > setvararrays;
-  SymbolTable<std::vector<int> > intvalarrays;
-  SymbolTable<std::vector<int> > boolvalarrays;
-  SymbolTable<int> intvals;
-  SymbolTable<bool> boolvals;
-  SymbolTable<AST::SetLit> setvals;
-  SymbolTable<std::vector<AST::SetLit> > setvalarrays;
+  SymbolTable<int> int_var_map_;
+  SymbolTable<int> bool_var_map_;
+  SymbolTable<int> float_var_map_;
+  SymbolTable<int> set_var_map_;
+  SymbolTable<std::vector<int> > int_var_array_map_;
+  SymbolTable<std::vector<int> > bool_var_array_map_;
+  SymbolTable<std::vector<int> > float_var_array_map_;
+  SymbolTable<std::vector<int> > set_var_array_map_;
+  SymbolTable<std::vector<int> > int_value_array_map_;
+  SymbolTable<std::vector<int> > bool_value_array_map_;
+  SymbolTable<int> int_map_;
+  SymbolTable<bool> bool_map_;
+  SymbolTable<AST::SetLit> set_map_;
+  SymbolTable<std::vector<AST::SetLit> > set_value_array_map_;
 
-  std::vector<IntVarSpec*> intvars;
-  std::vector<BoolVarSpec*> boolvars;
-  std::vector<SetVarSpec*> setvars;
+  std::vector<IntVarSpec*> int_variables_;
+  std::vector<BoolVarSpec*> bool_variables_;
+  std::vector<SetVarSpec*> set_variables_;
 
   std::vector<CtSpec*> domain_constraints_;
   std::vector<CtSpec*> constraints_;
 
   bool hadError;
 
-  int FillBuffer(char* lexBuf, unsigned int lexBufSize) {
-    if (pos >= length)
-      return 0;
-    int num = std::min(length - pos, lexBufSize);
-    memcpy(lexBuf, buf + pos, num);
-    pos += num;
-    return num;
-  }
-
-  void output(std::string x, AST::Node* n) {
-    output_.push_back(std::pair<std::string,AST::Node*>(x,n));
-  }
-
-  AST::Array* Output(void) {
-    OutputOrder oo;
-    std::sort(output_.begin(),output_.end(),oo);
-    AST::Array* a = new AST::Array();
-    for (unsigned int i=0; i<output_.size(); i++) {
-      a->a.push_back(new AST::String(output_[i].first+" = "));
-      if (output_[i].second->isArray()) {
-        AST::Array* oa = output_[i].second->getArray();
-        for (unsigned int j=0; j<oa->a.size(); j++) {
-          a->a.push_back(oa->a[j]);
-          oa->a[j] = NULL;
-        }
-        delete output_[i].second;
-      } else {
-        a->a.push_back(output_[i].second);
-      }
-      a->a.push_back(new AST::String(";\n"));
-    }
-    return a;
-  }
-
-  void AddConstraints() {
-    for (unsigned int i = constraints_.size(); i--;) {
-      if (!hadError) {
-        model->PostConstraint(constraints_[i]);
-        delete constraints_[i];
-      }
-    }
-  }
-
+  int FillBuffer(char* lexBuf, unsigned int lexBufSize);
+  void output(std::string x, AST::Node* n);
+  AST::Array* Output(void);
+  void AddConstraints();
   AST::Node* ArrayElement(string id, unsigned int offset);
   AST::Node* VarRefArg(string id, bool annotation);
   void AddDomainConstraint(std::string id, AST::Node* var,
@@ -198,6 +158,14 @@ class ParserState {
                      AST::Node* const annotations);
   void InitModel();
   void FillOutput(operations_research::FlatZincModel& m);
+
+  FlatZincModel* model() const {
+    return model_;
+  }
+
+ private:
+  operations_research::FlatZincModel* model_;
+  std::vector<std::pair<std::string,AST::Node*> > output_;
 };
 
 AST::Node* ArrayOutput(AST::Call* ann);

@@ -18,29 +18,72 @@ extern void yyset_extra (void* user_defined ,void* yyscanner );
 extern void yyerror(void* parm, const char *str);
 
 namespace operations_research {
-
 ParserState::~ParserState() {
-  STLDeleteElements(&intvars);
-  STLDeleteElements(&boolvars);
-  STLDeleteElements(&setvars);
+  STLDeleteElements(&int_variables_);
+  STLDeleteElements(&bool_variables_);
+  STLDeleteElements(&set_variables_);
+  STLDeleteElements(&domain_constraints_);
+  STLDeleteElements(&constraints_);
+}
+
+int ParserState::FillBuffer(char* lexBuf, unsigned int lexBufSize) {
+  if (pos >= length)
+    return 0;
+  int num = std::min(length - pos, lexBufSize);
+  memcpy(lexBuf, buf + pos, num);
+  pos += num;
+  return num;
+}
+
+void ParserState::output(std::string x, AST::Node* n) {
+  output_.push_back(std::pair<std::string,AST::Node*>(x,n));
+}
+
+AST::Array* ParserState::Output(void) {
+  OutputOrder oo;
+  std::sort(output_.begin(),output_.end(),oo);
+  AST::Array* const a = new AST::Array();
+  for (unsigned int i = 0; i < output_.size(); i++) {
+    a->a.push_back(new AST::String(output_[i].first+" = "));
+    if (output_[i].second->isArray()) {
+      AST::Array* const oa = output_[i].second->getArray();
+      for (unsigned int j = 0; j < oa->a.size(); j++) {
+        a->a.push_back(oa->a[j]);
+        oa->a[j] = NULL;
+      }
+      delete output_[i].second;
+    } else {
+      a->a.push_back(output_[i].second);
+    }
+    a->a.push_back(new AST::String(";\n"));
+  }
+  return a;
+}
+
+void ParserState::AddConstraints() {
+  for (unsigned int i = constraints_.size(); i--;) {
+    if (!hadError) {
+      model_->PostConstraint(constraints_[i]);
+    }
+  }
 }
 
 AST::Node* ParserState::ArrayElement(string id, unsigned int offset) {
   if (offset > 0) {
     vector<int> tmp;
-    if (intvararrays.get(id, tmp) && offset<=tmp.size())
+    if (int_var_array_map_.get(id, tmp) && offset<=tmp.size())
       return new AST::IntVar(tmp[offset-1]);
-    if (boolvararrays.get(id, tmp) && offset<=tmp.size())
+    if (bool_var_array_map_.get(id, tmp) && offset<=tmp.size())
       return new AST::BoolVar(tmp[offset-1]);
-    if (setvararrays.get(id, tmp) && offset<=tmp.size())
+    if (set_var_array_map_.get(id, tmp) && offset<=tmp.size())
       return new AST::SetVar(tmp[offset-1]);
 
-    if (intvalarrays.get(id, tmp) && offset<=tmp.size())
+    if (int_value_array_map_.get(id, tmp) && offset<=tmp.size())
       return new AST::IntLit(tmp[offset-1]);
-    if (boolvalarrays.get(id, tmp) && offset<=tmp.size())
+    if (bool_value_array_map_.get(id, tmp) && offset<=tmp.size())
       return new AST::BoolLit(tmp[offset-1]);
     vector<AST::SetLit> tmpS;
-    if (setvalarrays.get(id, tmpS) && offset<=tmpS.size())
+    if (set_value_array_map_.get(id, tmpS) && offset<=tmpS.size())
       return new AST::SetLit(tmpS[offset-1]);
   }
 
@@ -52,11 +95,11 @@ AST::Node* ParserState::ArrayElement(string id, unsigned int offset) {
 
 AST::Node* ParserState::VarRefArg(string id, bool annotation) {
   int tmp;
-  if (intvarTable.get(id, tmp))
+  if (int_var_map_.get(id, tmp))
     return new AST::IntVar(tmp);
-  if (boolvarTable.get(id, tmp))
+  if (bool_var_map_.get(id, tmp))
     return new AST::BoolVar(tmp);
-  if (setvarTable.get(id, tmp))
+  if (set_var_map_.get(id, tmp))
     return new AST::SetVar(tmp);
   if (annotation)
     return new AST::Atom(id);
@@ -69,11 +112,11 @@ AST::Node* ParserState::VarRefArg(string id, bool annotation) {
 void ParserState::AddDomainConstraint(std::string id,
                                       AST::Node* var,
                                       Option<AST::SetLit* >& dom) {
-  if (!dom())
+  if (!dom.defined())
     return;
   AST::Array* args = new AST::Array(2);
   args->a[0] = var;
-  args->a[1] = dom.some();
+  args->a[1] = dom.value();
   domain_constraints_.push_back(new CtSpec(-1, id, args, NULL));
 }
 
@@ -88,14 +131,14 @@ void ParserState::AddConstraint(const std::string& id,
 
 void ParserState::InitModel() {
   if (!hadError)
-    model->Init(intvars.size(),
-                boolvars.size(),
-                setvars.size());
+    model_->Init(int_variables_.size(),
+                 bool_variables_.size(),
+                 set_variables_.size());
 
   int array_index = 0;
-  for (unsigned int i=0; i<intvars.size(); i++) {
+  for (unsigned int i = 0; i < int_variables_.size(); i++) {
     if (!hadError) {
-      const std::string& raw_name = intvars[i]->Name();
+      const std::string& raw_name = int_variables_[i]->Name();
       std::string name;
       if (raw_name[0] == '[') {
         name = StringPrintf("%s[%d]", raw_name.c_str() + 1, ++array_index);
@@ -107,13 +150,13 @@ void ParserState::InitModel() {
           array_index = 0;
         }
       }
-      model->NewIntVar(name, intvars[i]);
+      model_->NewIntVar(name, int_variables_[i]);
     }
   }
   array_index = 0;
-  for (unsigned int i=0; i<boolvars.size(); i++) {
+  for (unsigned int i=0; i<bool_variables_.size(); i++) {
     if (!hadError) {
-      const std::string& raw_name = boolvars[i]->Name();
+      const std::string& raw_name = bool_variables_[i]->Name();
       std::string name;
       if (raw_name[0] == '[') {
         name = StringPrintf("%s[%d]", raw_name.c_str() + 1, ++array_index);
@@ -125,19 +168,19 @@ void ParserState::InitModel() {
           array_index = 0;
         }
       }
-      model->NewBoolVar(name, boolvars[i]);
+      model_->NewBoolVar(name, bool_variables_[i]);
     }
   }
-  for (unsigned int i=0; i<setvars.size(); i++) {
+  for (unsigned int i=0; i<set_variables_.size(); i++) {
     if (!hadError) {
-      //  model->newSetVar(static_cast<SetVarSpec*>(setvars[i]));
+      //  model->newSetVar(static_cast<Set_Variables_pec*>(set_variables_[i]));
     }
   }
   for (unsigned int i = domain_constraints_.size(); i--;) {
     if (!hadError) {
       try {
         assert(domain_constraints_[i]->NumArgs() == 2);
-        model->PostConstraint(domain_constraints_[i]);
+        model_->PostConstraint(domain_constraints_[i]);
       } catch (operations_research::Error& e) {
         yyerror(this, e.DebugString().c_str());
       }
