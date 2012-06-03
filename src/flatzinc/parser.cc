@@ -117,16 +117,33 @@ void ParserState::AddDomainConstraint(std::string id,
   AST::Array* args = new AST::Array(2);
   args->a[0] = var;
   args->a[1] = dom.value();
-  domain_constraints_.push_back(new CtSpec(-1, id, args, NULL));
+  domain_constraints_.push_back(
+      new CtSpec(-1, id, args, NULL, CtSpec::kNoDefinition));
 }
 
 void ParserState::AddConstraint(const std::string& id,
                                 AST::Array* const args,
                                 AST::Node* const annotations) {
+  int target = CtSpec::kNoDefinition;
+  if (annotations != NULL) {
+    if (annotations->isArray()) {
+      AST::Array* const ann_array = annotations->getArray();
+      if (ann_array->a[0]->isCall("defines_var")) {
+        AST::Call* const call = ann_array->a[0]->getCall();
+        AST::Node* const args = call->args;
+        if (args->isIntVar()) {
+          target = args->getIntVar();
+        } else if (args->isBoolVar()) {
+          target = int_variables_.size() + args->getBoolVar();
+        }
+      }
+    }
+  }
   constraints_.push_back(new CtSpec(constraints_.size(),
                                     id,
                                     args,
-                                    annotations));
+                                    annotations,
+                                    target));
 }
 
 void ParserState::InitModel() {

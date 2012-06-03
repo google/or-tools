@@ -473,10 +473,21 @@ class Ac4TableConstraint : public Constraint {
 
 // External API.
 Constraint* BuildAc4TableConstraint(Solver* const solver,
-                                    IntTupleSet& tuples,
+                                    const IntTupleSet& tuples,
                                     const std::vector<IntVar*>& vars,
                                     int size_bucket) {
   return solver->RevAlloc(
       new Ac4TableConstraint(solver, new IndexedTable(tuples), true, vars));
+}
+
+Constraint* BuildAc4TableConstraint(Solver* const solver,
+                                    IndexedTable* const table,
+                                    const std::vector<IntVar*>& vars,
+                                    int size_bucket) {
+  return solver->RevAlloc(new Ac4TableConstraint(solver, table, true, vars));
+}
+
+IndexedTable* BuildIndexedTable(const IntTupleSet& tuples) {
+  return new IndexedTable(tuples);
 }
 } // namespace operations_research

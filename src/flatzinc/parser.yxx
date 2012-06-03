@@ -76,7 +76,11 @@
   }
   %}
 
-%union { int iValue; char* sValue; bool bValue; double dValue;
+%union {
+  int iValue;
+  char* sValue;
+  bool bValue;
+  double dValue;
   std::vector<int>* setValue;
   operations_research::AST::SetLit* setLit;
   std::vector<double>* floatSetValue;
@@ -1139,7 +1143,7 @@ FZ_COLONCOLON annotation
 annotation :
 FZ_ID '(' annotation_list ')'
 {
-  $$ = new AST::Call($1, AST::extractSingleton($3)); free($1);
+  $$ = new AST::Call($1, AST::ExtractSingleton($3)); free($1);
 }
 | annotation_expr
 { $$ = $1; }

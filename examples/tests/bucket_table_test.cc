@@ -27,7 +27,7 @@ DEFINE_bool(ac4, false, "Use AC4 Table only");
 
 namespace operations_research {
 extern Constraint* BuildAc4TableConstraint(Solver* const solver,
-                                           IntTupleSet& tuples,
+                                           const IntTupleSet& tuples,
                                            const std::vector<IntVar*>& vars,
                                            int size_bucket);
 

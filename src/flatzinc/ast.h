@@ -258,13 +258,13 @@ namespace operations_research { namespace AST {
   /// %Node representing a function call
   class Call : public Node {
   public:
-    std::string id;
-    Node* args;
+    const std::string id;
+    Node* const args;
     Call(const std::string& id0, Node* args0)
     : id(id0), args(args0) {}
     ~Call(void) { delete args; }
     virtual string DebugString() const {
-      return StringPrintf("%s(%s)",
+      return StringPrintf("call_%s(%s)",
                           id.c_str(),
                           args->DebugString().c_str());
     }
@@ -311,19 +311,16 @@ namespace operations_research { namespace AST {
     }
   };
 
-  inline
-  Node::~Node(void) {}
+  inline Node::~Node(void) {}
 
-  inline void
-  Node::append(Node* newNode) {
+  inline void Node::append(Node* newNode) {
     Array* a = dynamic_cast<Array*>(this);
     if (!a)
       throw TypeError("array expected");
     a->a.push_back(newNode);
   }
 
-  inline bool
-  Node::hasAtom(const std::string& id) {
+  inline bool Node::hasAtom(const std::string& id) {
     if (Array* a = dynamic_cast<Array*>(this)) {
       for (int i=a->a.size(); i--;)
         if (Atom* at = dynamic_cast<Atom*>(a->a[i]))
@@ -335,8 +332,7 @@ namespace operations_research { namespace AST {
     return false;
   }
 
-  inline bool
-  Node::isCall(const std::string& id) {
+  inline bool Node::isCall(const std::string& id) {
     if (Call* a = dynamic_cast<Call*>(this)) {
       if (a->id == id)
         return true;
@@ -344,15 +340,13 @@ namespace operations_research { namespace AST {
     return false;
   }
 
-  inline Call*
-  Node::getCall(void) {
+  inline Call* Node::getCall(void) {
     if (Call* a = dynamic_cast<Call*>(this))
       return a;
     throw TypeError("call expected");
   }
 
-  inline bool
-  Node::hasCall(const std::string& id) {
+  inline bool Node::hasCall(const std::string& id) {
     if (Array* a = dynamic_cast<Array*>(this)) {
       for (int i=a->a.size(); i--;)
         if (Call* at = dynamic_cast<Call*>(a->a[i]))
@@ -365,8 +359,7 @@ namespace operations_research { namespace AST {
     return false;
   }
 
-  inline bool
-  Node::isInt(int& i) {
+  inline bool Node::isInt(int& i) {
     if (IntLit* il = dynamic_cast<IntLit*>(this)) {
       i = il->i;
       return true;
@@ -374,8 +367,7 @@ namespace operations_research { namespace AST {
     return false;
   }
 
-  inline Call*
-  Node::getCall(const std::string& id) {
+  inline Call* Node::getCall(const std::string& id) {
     if (Array* a = dynamic_cast<Array*>(this)) {
       for (int i=a->a.size(); i--;)
         if (Call* at = dynamic_cast<Call*>(a->a[i]))
@@ -388,110 +380,90 @@ namespace operations_research { namespace AST {
     throw TypeError("call expected");
   }
 
-  inline Array*
-  Node::getArray(void) {
+  inline Array* Node::getArray(void) {
     if (Array* a = dynamic_cast<Array*>(this))
       return a;
     throw TypeError("array expected");
   }
 
-  inline Atom*
-  Node::getAtom(void) {
+  inline Atom* Node::getAtom(void) {
     if (Atom* a = dynamic_cast<Atom*>(this))
       return a;
     throw TypeError("atom expected");
   }
 
-  inline int
-  Node::getIntVar(void) {
+  inline int Node::getIntVar(void) {
     if (IntVar* a = dynamic_cast<IntVar*>(this))
       return a->i;
     throw TypeError("integer variable expected");
   }
-  inline int
-  Node::getBoolVar(void) {
+  inline int Node::getBoolVar(void) {
     if (BoolVar* a = dynamic_cast<BoolVar*>(this))
       return a->i;
     throw TypeError("bool variable expected");
   }
-  inline int
-  Node::getSetVar(void) {
+  inline int Node::getSetVar(void) {
     if (SetVar* a = dynamic_cast<SetVar*>(this))
       return a->i;
     throw TypeError("set variable expected");
   }
-  inline int
-  Node::getInt(void) {
+  inline int Node::getInt(void) {
     if (IntLit* a = dynamic_cast<IntLit*>(this))
       return a->i;
     throw TypeError("integer literal expected");
   }
-  inline bool
-  Node::getBool(void) {
+  inline bool Node::getBool(void) {
     if (BoolLit* a = dynamic_cast<BoolLit*>(this))
       return a->b;
     throw TypeError("bool literal expected");
   }
-  inline double
-  Node::getFloat(void) {
+  inline double Node::getFloat(void) {
     if (FloatLit* a = dynamic_cast<FloatLit*>(this))
       return a->d;
     throw TypeError("float literal expected");
   }
-  inline SetLit*
-  Node::getSet(void) {
+  inline SetLit* Node::getSet(void) {
     if (SetLit* a = dynamic_cast<SetLit*>(this))
       return a;
     throw TypeError("set literal expected");
   }
-  inline std::string
-  Node::getString(void) {
+  inline std::string Node::getString(void) {
     if (String* a = dynamic_cast<String*>(this))
       return a->s;
     throw TypeError("string literal expected");
   }
-  inline bool
-  Node::isIntVar(void) {
+  inline bool Node::isIntVar(void) {
     return (dynamic_cast<IntVar*>(this) != NULL);
   }
-  inline bool
-  Node::isBoolVar(void) {
+  inline bool Node::isBoolVar(void) {
     return (dynamic_cast<BoolVar*>(this) != NULL);
   }
-  inline bool
-  Node::isSetVar(void) {
+  inline bool Node::isSetVar(void) {
     return (dynamic_cast<SetVar*>(this) != NULL);
   }
-  inline bool
-  Node::isInt(void) {
+  inline bool Node::isInt(void) {
     return (dynamic_cast<IntLit*>(this) != NULL);
   }
-  inline bool
-  Node::isBool(void) {
+  inline bool Node::isBool(void) {
     return (dynamic_cast<BoolLit*>(this) != NULL);
   }
-  inline bool
-  Node::isSet(void) {
+  inline bool Node::isSet(void) {
     return (dynamic_cast<SetLit*>(this) != NULL);
   }
-  inline bool
-  Node::isString(void) {
+  inline bool Node::isString(void) {
     return (dynamic_cast<String*>(this) != NULL);
   }
-  inline bool
-  Node::isArray(void) {
+  inline bool Node::isArray(void) {
     return (dynamic_cast<Array*>(this) != NULL);
   }
-  inline bool
-  Node::isAtom(void) {
+  inline bool Node::isAtom(void) {
     return (dynamic_cast<Atom*>(this) != NULL);
   }
 
-  inline Node*
-  extractSingleton(Node* n) {
-    if (Array* a = dynamic_cast<Array*>(n)) {
+  inline Node* ExtractSingleton(Node* n) {
+    if (Array* const a = dynamic_cast<Array*>(n)) {
       if (a->a.size() == 1) {
-        Node *ret = a->a[0];
+        Node* const ret = a->a[0];
         a->a[0] = NULL;
         delete a;
         return ret;
@@ -500,8 +472,6 @@ namespace operations_research { namespace AST {
     return n;
   }
 
-}}
-
+}
+}  // namespace operations_research
 #endif
-
-// STATISTICS: flatzinc-any

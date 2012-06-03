@@ -107,18 +107,18 @@ int64 TestGcc(int num_vars, int num_values, int slack, int seed, int type) {
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
-  operations_research::TestGcc(FLAGS_vars,
-                               FLAGS_values,
-                               FLAGS_slack,
-                               FLAGS_seed,
-                               0);
-  if (FLAGS_slack == 0) {
-    operations_research::TestGcc(FLAGS_vars,
-                                 FLAGS_values,
-                                 FLAGS_slack,
-                                 FLAGS_seed,
-                                 1);
-  }
+  // operations_research::TestGcc(FLAGS_vars,
+  //                              FLAGS_values,
+  //                              FLAGS_slack,
+  //                              FLAGS_seed,
+  //                              0);
+  // if (FLAGS_slack == 0) {
+  //   operations_research::TestGcc(FLAGS_vars,
+  //                                FLAGS_values,
+  //                                FLAGS_slack,
+  //                                FLAGS_seed,
+  //                                1);
+  // }
   operations_research::TestGcc(FLAGS_vars,
                                FLAGS_values,
                                FLAGS_slack,

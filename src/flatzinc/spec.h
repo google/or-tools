@@ -246,14 +246,19 @@ class SetVarSpec : public VarSpec {
 
 class CtSpec {
  public:
+  static const int kNoDefinition = -1;
+
   CtSpec(int index,
          const std::string& id,
          AST::Array* const args,
-         AST::Node* const annotations)
+         AST::Node* const annotations,
+         int defines)
       : index_(index),
         id_(id),
         args_(args),
-        annotations_(annotations) {}
+        annotations_(annotations),
+        defines_(defines) {
+  }
 
   ~CtSpec() {
     delete args_;
@@ -295,6 +300,8 @@ class CtSpec {
   const std::string id_;
   AST::Array* const args_;
   AST::Node* const annotations_;
+  int defines_;
+  std::vector<int> uses_;
 };
 }  // namespace operations_research
 #endif
