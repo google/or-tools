@@ -89,11 +89,11 @@ void FlatZincModel::NewIntVar(const std::string& name, IntVarSpec* const vs) {
   integer_variables_boolalias[int_var_count - 1] = -1;
 }
 
-void FlatZincModel::aliasBool2Int(int iv, int bv) {
+void FlatZincModel::AliasBool2Int(int iv, int bv) {
   integer_variables_boolalias[iv] = bv;
 }
 
-int FlatZincModel::aliasBool2Int(int iv) {
+int FlatZincModel::AliasBool2Int(int iv) {
   return integer_variables_boolalias[iv];
 }
 
@@ -268,51 +268,43 @@ void FlatZincModel::Solve(int solve_frequency,
                           bool ignore_annotations,
                           int num_solutions) {
   CreateDecisionBuilders(false, ignore_annotations);
+  if (all_solutions && num_solutions == 0) {
+    num_solutions = kint32max;
+  }
+  std::vector<SearchMonitor*> monitors;
   switch (method_) {
     case MIN:
     case MAX: {
       SearchMonitor* const log = use_log ?
           solver_.MakeSearchLog(solve_frequency, objective_) :
           NULL;
-      int count = 0;
-      solver_.NewSearch(solver_.Compose(builders_), log, objective_);
-      while (solver_.NextSolution()) {
-        if (output_ != NULL) {
-          for (unsigned int i = 0; i < output_->a.size(); i++) {
-            std::cout << DebugString(output_->a[i]);
-          }
-          std::cout << "----------" << std::endl;
-          count++;
-          if (num_solutions > 0 && count >= num_solutions) {
-            break;
-          }
-        }
-      }
-      solver_.EndSearch();
+      monitors.push_back(log);
       break;
     }
     case SAT: {
       SearchMonitor* const log = use_log ?
           solver_.MakeSearchLog(solve_frequency) :
           NULL;
-      int count = 0;
-      solver_.NewSearch(solver_.Compose(builders_), log);
-      while (solver_.NextSolution()) {
-        if (output_ != NULL) {
-          for (unsigned int i = 0; i < output_->a.size(); i++) {
-            std::cout << DebugString(output_->a[i]);
-          }
-          std::cout << "----------" << std::endl;
-        }
-        if (!all_solutions || (num_solutions > 0 && count >= num_solutions)) {
-          break;
-        }
-      }
-      solver_.EndSearch();
-
+      monitors.push_back(log);
       break;
     }
   }
+
+  int count = 0;
+  solver_.NewSearch(solver_.Compose(builders_), monitors);
+  while (solver_.NextSolution()) {
+    if (output_ != NULL) {
+      for (unsigned int i = 0; i < output_->a.size(); i++) {
+        std::cout << DebugString(output_->a[i]);
+      }
+      std::cout << "----------" << std::endl;
+    }
+    count++;
+    if (num_solutions > 0 && count >= num_solutions) {
+      break;
+    }
+  }
+  solver_.EndSearch();
 }
 
 void FlatZincModel::InitOutput(AST::Array* const output) {

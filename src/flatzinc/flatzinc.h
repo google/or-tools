@@ -127,9 +127,9 @@ class FlatZincModel {
   /// Create new integer variable from specification
   void NewIntVar(const std::string& name, IntVarSpec* const vs);
   /// Link integer variable \a iv to Boolean variable \a bv
-  void aliasBool2Int(int iv, int bv);
+  void AliasBool2Int(int iv, int bv);
   /// Return linked Boolean variable for integer variable \a iv
-  int aliasBool2Int(int iv);
+  int AliasBool2Int(int iv);
   /// Create new Boolean variable from specification
   void NewBoolVar(const std::string& name, BoolVarSpec* const vs);
   /// Create new set variable from specification
