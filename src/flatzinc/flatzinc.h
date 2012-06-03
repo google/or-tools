@@ -41,9 +41,8 @@
 #include <map>
 #include <cassert>
 
-#include "flatzinc/conexpr.h"
 #include "flatzinc/ast.h"
-#include "flatzinc/varspec.h"
+#include "flatzinc/spec.h"
 
 #include "constraint_solver/constraint_solver.h"
 
@@ -133,7 +132,7 @@ class FlatZincModel {
   /// Create new Boolean variable from specification
   void NewBoolVar(const std::string& name, BoolVarSpec* const vs);
   /// Create new set variable from specification
-  void newSetVar(SetVarSpec* const vs);
+  //void newSetVar(SetVarSpec* const vs);
 
   /// Post a constraint specified by \a ce
   void PostConstraint(CtSpec* const spec);

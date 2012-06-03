@@ -62,16 +62,34 @@ extern "C" int isatty(int);
 #include <iostream>
 #include <algorithm>
 
-#include "flatzinc/option.h"
-#include "flatzinc/varspec.h"
-#include "flatzinc/conexpr.h"
 #include "flatzinc/ast.h"
 #include "flatzinc/parser.tab.h"
-#include "flatzinc/symboltable.h"
+#include "flatzinc/spec.h"
 
 namespace operations_research {
+/// Symbol table mapping identifiers (strings) to values
+template<class Val> class SymbolTable {
+ public:
+  /// Insert \a val with \a key
+  void put(const std::string& key, const Val& val) {
+    m[key] = val;
+  }
 
-typedef std::pair<std::string,Option<std::vector<int>* > > intvartype;
+  /// Return whether \a key exists, and set \a val if it does exist
+  bool get(const std::string& key, Val& val) const {
+    typename std::map<std::string,Val>::const_iterator i =
+        m.find(key);
+    if (i == m.end())
+      return false;
+    val = i->second;
+    return true;
+  }
+
+ private:
+  std::map<std::string, Val> m;
+};
+
+typedef std::pair<std::string, Option<std::vector<int>*> > intvartype;
 
 class VarSpec;
 typedef std::pair<std::string, VarSpec*> varspec;
@@ -89,18 +107,23 @@ class OutputOrder {
 /// %State of the %FlatZinc parser
 class ParserState {
  public:
-  ParserState(const std::string& b, operations_research::FlatZincModel* fg0)
-      : buf(b.c_str()), pos(0), length(b.size()), fg(fg0), hadError(false) {}
+  ParserState(const std::string& b, operations_research::FlatZincModel* model0)
+      : buf(b.c_str()),
+        pos(0),
+        length(b.size()),
+        model(model0),
+        hadError(false) {}
 
-  ParserState(char* buf0, int length0,
-              operations_research::FlatZincModel* fg0)
-      : buf(buf0), pos(0), length(length0), fg(fg0), hadError(false) {}
+  ParserState(char* buf0,
+              int length0,
+              operations_research::FlatZincModel* model0)
+      : buf(buf0), pos(0), length(length0), model(model0), hadError(false) {}
 
   void* yyscanner;
   const char* buf;
   unsigned int pos, length;
-  operations_research::FlatZincModel* fg;
-  std::vector<std::pair<std::string,AST::Node*> > _output;
+  operations_research::FlatZincModel* model;
+  std::vector<std::pair<std::string,AST::Node*> > output_;
 
   SymbolTable<int> intvarTable;
   SymbolTable<int> boolvarTable;
@@ -126,34 +149,34 @@ class ParserState {
 
   bool hadError;
 
-  int fillBuffer(char* lexBuf, unsigned int lexBufSize) {
+  int FillBuffer(char* lexBuf, unsigned int lexBufSize) {
     if (pos >= length)
       return 0;
     int num = std::min(length - pos, lexBufSize);
-    memcpy(lexBuf,buf+pos,num);
+    memcpy(lexBuf, buf + pos, num);
     pos += num;
     return num;
   }
 
   void output(std::string x, AST::Node* n) {
-    _output.push_back(std::pair<std::string,AST::Node*>(x,n));
+    output_.push_back(std::pair<std::string,AST::Node*>(x,n));
   }
 
-  AST::Array* getOutput(void) {
+  AST::Array* Output(void) {
     OutputOrder oo;
-    std::sort(_output.begin(),_output.end(),oo);
+    std::sort(output_.begin(),output_.end(),oo);
     AST::Array* a = new AST::Array();
-    for (unsigned int i=0; i<_output.size(); i++) {
-      a->a.push_back(new AST::String(_output[i].first+" = "));
-      if (_output[i].second->isArray()) {
-        AST::Array* oa = _output[i].second->getArray();
+    for (unsigned int i=0; i<output_.size(); i++) {
+      a->a.push_back(new AST::String(output_[i].first+" = "));
+      if (output_[i].second->isArray()) {
+        AST::Array* oa = output_[i].second->getArray();
         for (unsigned int j=0; j<oa->a.size(); j++) {
           a->a.push_back(oa->a[j]);
           oa->a[j] = NULL;
         }
-        delete _output[i].second;
+        delete output_[i].second;
       } else {
-        a->a.push_back(_output[i].second);
+        a->a.push_back(output_[i].second);
       }
       a->a.push_back(new AST::String(";\n"));
     }
@@ -163,7 +186,7 @@ class ParserState {
   void AddConstraints() {
     for (unsigned int i=constraints.size(); i--;) {
       if (!hadError) {
-        fg->PostConstraint(constraints[i]);
+        model->PostConstraint(constraints[i]);
         delete constraints[i];
       }
     }

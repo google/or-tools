@@ -39,21 +39,32 @@
  *
  */
 
-#include "flatzinc/registry.h"
 #include "flatzinc/flatzinc.h"
 
 namespace operations_research {
 
-Registry& registry(void) {
-  static Registry r;
-  return r;
-}
+/// Map from constraint identifier to constraint posting functions
+class Registry {
+ public:
+  /// Type of constraint posting function
+  typedef void (*poster) (FlatZincModel&, CtSpec* const spec);
+  /// Add posting function \a p with identifier \a id
+  void Add(const std::string& id, poster p);
+  /// Post constraint specified by \a ce
+  void Post(FlatZincModel& s, CtSpec* const spec);
+
+ private:
+  /// The actual registry
+  std::map<std::string, poster> r;
+};
+
+static Registry global_registry;
 
 void Registry::Post(FlatZincModel& s, CtSpec* const spec) {
-  std::map<std::string, poster>::iterator i = r.find(spec->id);
+  std::map<std::string, poster>::iterator i = r.find(spec->id());
   if (i == r.end()) {
     throw Error("Registry",
-                std::string("Constraint ") + spec->id + " not found");
+                std::string("Constraint ") + spec->id() + " not found");
   }
   i->second(s, spec);
 }
@@ -709,7 +720,7 @@ void p_int_div(FlatZincModel& s, CtSpec* const spec) {
 void p_int_mod(FlatZincModel& s, CtSpec* const spec) {
   LOG(FATAL) << "int_mod(" << (spec->Arg(0)->DebugString()) << ","
              << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations->DebugString();
+             << ")::" << spec->annotations()->DebugString();
 }
 
 void p_int_min(FlatZincModel& s, CtSpec* const spec) {
@@ -791,7 +802,7 @@ void p_bool_eq(FlatZincModel& s, CtSpec* const spec) {
 void p_bool_eq_reif(FlatZincModel& s, CtSpec* const spec) {
   LOG(FATAL) << "bool_eq_reif(" << (spec->Arg(0)->DebugString()) << ","
              << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations->DebugString();
+             << ")::" << spec->annotations()->DebugString();
 }
 
 void p_bool_ne(FlatZincModel& s, CtSpec* const spec) {
@@ -825,7 +836,7 @@ void p_bool_ne(FlatZincModel& s, CtSpec* const spec) {
 void p_bool_ne_reif(FlatZincModel& s, CtSpec* const spec) {
   LOG(FATAL) << "bool_ne_reif(" << (spec->Arg(0)->DebugString()) << ","
              << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations->DebugString();
+             << ")::" << spec->annotations()->DebugString();
 }
 
 void p_bool_ge(FlatZincModel& s, CtSpec* const spec) {
@@ -859,7 +870,7 @@ void p_bool_ge(FlatZincModel& s, CtSpec* const spec) {
 void p_bool_ge_reif(FlatZincModel& s, CtSpec* const spec) {
   LOG(FATAL) << "bool_ge_reif(" << (spec->Arg(0)->DebugString()) << ","
              << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations->DebugString();
+             << ")::" << spec->annotations()->DebugString();
 }
 
 void p_bool_le(FlatZincModel& s, CtSpec* const spec) {
@@ -892,27 +903,27 @@ void p_bool_le(FlatZincModel& s, CtSpec* const spec) {
 
 void p_bool_le_reif(FlatZincModel& s, CtSpec* const spec) {
   LOG(FATAL) << "bool_le_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations->DebugString();
+             << ")::" << spec->annotations()->DebugString();
 }
 
 void p_bool_gt(FlatZincModel& s, CtSpec* const spec) {
   LOG(FATAL) << "bool_gt(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-             << ")::" << spec->annotations->DebugString();
+             << ")::" << spec->annotations()->DebugString();
 }
 
 void p_bool_gt_reif(FlatZincModel& s, CtSpec* const spec) {
   LOG(FATAL) << "bool_gt_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations->DebugString();
+             << ")::" << spec->annotations()->DebugString();
 }
 
 void p_bool_lt(FlatZincModel& s, CtSpec* const spec) {
   LOG(FATAL) << "bool_lt(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-             << ")::" << spec->annotations->DebugString();
+             << ")::" << spec->annotations()->DebugString();
 }
 
 void p_bool_lt_reif(FlatZincModel& s, CtSpec* const spec) {
   LOG(FATAL) << "bool_lt_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations->DebugString();
+             << ")::" << spec->annotations()->DebugString();
 }
 
 void p_bool_or(FlatZincModel& s, CtSpec* const spec) {
@@ -990,12 +1001,12 @@ void p_array_bool_or(FlatZincModel& s, CtSpec* const spec) {
 void p_array_bool_clause(FlatZincModel& s, CtSpec* const spec) {
   LOG(FATAL) << "array_bool_clause(" << (spec->Arg(0)->DebugString()) << ","
              << (spec->Arg(1)->DebugString())
-             << ")::" << spec->annotations->DebugString();
+             << ")::" << spec->annotations()->DebugString();
 }
 
 void p_array_bool_clause_reif(FlatZincModel& s, CtSpec* const spec) {
   LOG(FATAL) << "array_bool_clause_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations->DebugString();
+             << ")::" << spec->annotations()->DebugString();
 }
 
 void p_bool_xor(FlatZincModel& s, CtSpec* const spec) {
@@ -1020,13 +1031,13 @@ void p_bool_xor(FlatZincModel& s, CtSpec* const spec) {
 void p_bool_l_imp(FlatZincModel& s, CtSpec* const spec) {
   LOG(FATAL) << "bool_l_imp(" << (spec->Arg(0)->DebugString()) << ","
              << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations->DebugString();
+             << ")::" << spec->annotations()->DebugString();
 }
 
 void p_bool_r_imp(FlatZincModel& s, CtSpec* const spec) {
   LOG(FATAL) << "bool_r_imp(" << (spec->Arg(0)->DebugString()) << ","
              << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations->DebugString();
+             << ")::" << spec->annotations()->DebugString();
 }
 
 void p_bool_not(FlatZincModel& s, CtSpec* const spec) {
@@ -1205,177 +1216,183 @@ void p_global_cardinality(FlatZincModel& s, CtSpec* const spec) {
 class IntPoster {
  public:
   IntPoster(void) {
-    registry().Add("int_eq", &p_int_eq);
-    registry().Add("int_ne", &p_int_ne);
-    registry().Add("int_ge", &p_int_ge);
-    registry().Add("int_gt", &p_int_gt);
-    registry().Add("int_le", &p_int_le);
-    registry().Add("int_lt", &p_int_lt);
-    registry().Add("int_eq_reif", &p_int_eq_reif);
-    registry().Add("int_ne_reif", &p_int_ne_reif);
-    registry().Add("int_ge_reif", &p_int_ge_reif);
-    registry().Add("int_gt_reif", &p_int_gt_reif);
-    registry().Add("int_le_reif", &p_int_le_reif);
-    registry().Add("int_lt_reif", &p_int_lt_reif);
-    registry().Add("int_lin_eq", &p_int_lin_eq);
-    registry().Add("int_lin_eq_reif", &p_int_lin_eq_reif);
-    registry().Add("int_lin_ne", &p_int_lin_ne);
-    registry().Add("int_lin_ne_reif", &p_int_lin_ne_reif);
-    registry().Add("int_lin_le", &p_int_lin_le);
-    registry().Add("int_lin_le_reif", &p_int_lin_le_reif);
-    registry().Add("int_lin_lt", &p_int_lin_lt);
-    registry().Add("int_lin_lt_reif", &p_int_lin_lt_reif);
-    registry().Add("int_lin_ge", &p_int_lin_ge);
-    registry().Add("int_lin_ge_reif", &p_int_lin_ge_reif);
-    registry().Add("int_lin_gt", &p_int_lin_gt);
-    registry().Add("int_lin_gt_reif", &p_int_lin_gt_reif);
-    registry().Add("int_plus", &p_int_plus);
-    registry().Add("int_minus", &p_int_minus);
-    registry().Add("int_times", &p_int_times);
-    registry().Add("int_div", &p_int_div);
-    registry().Add("int_mod", &p_int_mod);
-    registry().Add("int_min", &p_int_min);
-    registry().Add("int_max", &p_int_max);
-    registry().Add("int_abs", &p_abs);
-    registry().Add("int_negate", &p_int_negate);
-    registry().Add("bool_eq", &p_bool_eq);
-    registry().Add("bool_eq_reif", &p_bool_eq_reif);
-    registry().Add("bool_ne", &p_bool_ne);
-    registry().Add("bool_ne_reif", &p_bool_ne_reif);
-    registry().Add("bool_ge", &p_bool_ge);
-    registry().Add("bool_ge_reif", &p_bool_ge_reif);
-    registry().Add("bool_le", &p_bool_le);
-    registry().Add("bool_le_reif", &p_bool_le_reif);
-    registry().Add("bool_gt", &p_bool_gt);
-    registry().Add("bool_gt_reif", &p_bool_gt_reif);
-    registry().Add("bool_lt", &p_bool_lt);
-    registry().Add("bool_lt_reif", &p_bool_lt_reif);
-    registry().Add("bool_or", &p_bool_or);
-    registry().Add("bool_and", &p_bool_and);
-    registry().Add("bool_xor", &p_bool_xor);
-    registry().Add("array_bool_and", &p_array_bool_and);
-    registry().Add("array_bool_or", &p_array_bool_or);
-    registry().Add("bool_clause", &p_array_bool_clause);
-    registry().Add("bool_clause_reif", &p_array_bool_clause_reif);
-    registry().Add("bool_left_imp", &p_bool_l_imp);
-    registry().Add("bool_right_imp", &p_bool_r_imp);
-    registry().Add("bool_not", &p_bool_not);
-    registry().Add("array_int_element", &p_array_int_element);
-    registry().Add("array_var_int_element", &p_array_int_element);
-    registry().Add("array_bool_element", &p_array_bool_element);
-    registry().Add("array_var_bool_element", &p_array_bool_element);
-    registry().Add("bool2int", &p_bool2int);
-    registry().Add("int_in", &p_int_in);
-    registry().Add("all_different_int", &p_all_different_int);
-    registry().Add("count", &p_count);
-    registry().Add("global_cardinality", &p_global_cardinality);
+    global_registry.Add("int_eq", &p_int_eq);
+    global_registry.Add("int_ne", &p_int_ne);
+    global_registry.Add("int_ge", &p_int_ge);
+    global_registry.Add("int_gt", &p_int_gt);
+    global_registry.Add("int_le", &p_int_le);
+    global_registry.Add("int_lt", &p_int_lt);
+    global_registry.Add("int_eq_reif", &p_int_eq_reif);
+    global_registry.Add("int_ne_reif", &p_int_ne_reif);
+    global_registry.Add("int_ge_reif", &p_int_ge_reif);
+    global_registry.Add("int_gt_reif", &p_int_gt_reif);
+    global_registry.Add("int_le_reif", &p_int_le_reif);
+    global_registry.Add("int_lt_reif", &p_int_lt_reif);
+    global_registry.Add("int_lin_eq", &p_int_lin_eq);
+    global_registry.Add("int_lin_eq_reif", &p_int_lin_eq_reif);
+    global_registry.Add("int_lin_ne", &p_int_lin_ne);
+    global_registry.Add("int_lin_ne_reif", &p_int_lin_ne_reif);
+    global_registry.Add("int_lin_le", &p_int_lin_le);
+    global_registry.Add("int_lin_le_reif", &p_int_lin_le_reif);
+    global_registry.Add("int_lin_lt", &p_int_lin_lt);
+    global_registry.Add("int_lin_lt_reif", &p_int_lin_lt_reif);
+    global_registry.Add("int_lin_ge", &p_int_lin_ge);
+    global_registry.Add("int_lin_ge_reif", &p_int_lin_ge_reif);
+    global_registry.Add("int_lin_gt", &p_int_lin_gt);
+    global_registry.Add("int_lin_gt_reif", &p_int_lin_gt_reif);
+    global_registry.Add("int_plus", &p_int_plus);
+    global_registry.Add("int_minus", &p_int_minus);
+    global_registry.Add("int_times", &p_int_times);
+    global_registry.Add("int_div", &p_int_div);
+    global_registry.Add("int_mod", &p_int_mod);
+    global_registry.Add("int_min", &p_int_min);
+    global_registry.Add("int_max", &p_int_max);
+    global_registry.Add("int_abs", &p_abs);
+    global_registry.Add("int_negate", &p_int_negate);
+    global_registry.Add("bool_eq", &p_bool_eq);
+    global_registry.Add("bool_eq_reif", &p_bool_eq_reif);
+    global_registry.Add("bool_ne", &p_bool_ne);
+    global_registry.Add("bool_ne_reif", &p_bool_ne_reif);
+    global_registry.Add("bool_ge", &p_bool_ge);
+    global_registry.Add("bool_ge_reif", &p_bool_ge_reif);
+    global_registry.Add("bool_le", &p_bool_le);
+    global_registry.Add("bool_le_reif", &p_bool_le_reif);
+    global_registry.Add("bool_gt", &p_bool_gt);
+    global_registry.Add("bool_gt_reif", &p_bool_gt_reif);
+    global_registry.Add("bool_lt", &p_bool_lt);
+    global_registry.Add("bool_lt_reif", &p_bool_lt_reif);
+    global_registry.Add("bool_or", &p_bool_or);
+    global_registry.Add("bool_and", &p_bool_and);
+    global_registry.Add("bool_xor", &p_bool_xor);
+    global_registry.Add("array_bool_and", &p_array_bool_and);
+    global_registry.Add("array_bool_or", &p_array_bool_or);
+    global_registry.Add("bool_clause", &p_array_bool_clause);
+    global_registry.Add("bool_clause_reif", &p_array_bool_clause_reif);
+    global_registry.Add("bool_left_imp", &p_bool_l_imp);
+    global_registry.Add("bool_right_imp", &p_bool_r_imp);
+    global_registry.Add("bool_not", &p_bool_not);
+    global_registry.Add("array_int_element", &p_array_int_element);
+    global_registry.Add("array_var_int_element", &p_array_int_element);
+    global_registry.Add("array_bool_element", &p_array_bool_element);
+    global_registry.Add("array_var_bool_element", &p_array_bool_element);
+    global_registry.Add("bool2int", &p_bool2int);
+    global_registry.Add("int_in", &p_int_in);
+    global_registry.Add("all_different_int", &p_all_different_int);
+    global_registry.Add("count", &p_count);
+    global_registry.Add("global_cardinality", &p_global_cardinality);
   }
 };
 IntPoster __int_poster;
 
-// void p_set_union(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations) {
+// void p_set_union(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations()) {
 //   LOG(FATAL) << "set_union(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
-// void p_set_intersect(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations) {
+// void p_set_intersect(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations()) {
 //   LOG(FATAL) << "set_intersect(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
-// void p_set_diff(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations) {
+// void p_set_diff(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations()) {
 //   LOG(FATAL) << "set_diff(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
 
 // void p_set_symdiff(FlatZincModel& s, CtSpec* const spec) {
 //   LOG(FATAL) << "set_symdiff(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
 
-// void p_set_eq(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+// void p_set_eq(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations()) {
 //   LOG(FATAL) << "set_eq(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
-// void p_set_ne(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+// void p_set_ne(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations()) {
 //   LOG(FATAL) << "set_ne(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
-// void p_set_subset(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+// void p_set_subset(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations()) {
 //   LOG(FATAL) << "set_subset(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
-// void p_set_superset(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+// void p_set_superset(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations()) {
 //   LOG(FATAL) << "set_superset(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
-// void p_set_card(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+// void p_set_card(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations()) {
 //   LOG(FATAL) << "set_card(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
-// void p_set_in(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+// void p_set_in(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations()) {
 //   LOG(FATAL) << "set_in(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
-// void p_set_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+// void p_set_eq_reif(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations()) {
 //   LOG(FATAL) << "set_eq_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
-// void p_set_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations) {
+// void p_set_ne_reif(FlatZincModel& s, const ConExpr& ce, AST::Node * spec->annotations()) {
 //   LOG(FATAL) << "set_ne_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
 // void p_set_subset_reif(FlatZincModel& s, const ConExpr& ce,
-//                        AST::Node *spec->annotations) {
+//                        AST::Node *spec->annotations()) {
 //   LOG(FATAL) << "set_subset_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
 // void p_set_superset_reif(FlatZincModel& s, const ConExpr& ce,
-//                          AST::Node *spec->annotations) {
+//                          AST::Node *spec->annotations()) {
 //   LOG(FATAL) << "set_superset_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
-// void p_set_in_reif(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations) {
+// void p_set_in_reif(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations()) {
 //   LOG(FATAL) << "set_in_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
-// void p_set_disjoint(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations) {
+// void p_set_disjoint(FlatZincModel& s, const ConExpr& ce, AST::Node *spec->annotations()) {
 //   LOG(FATAL) << "set_disjoint(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
 
 // void p_array_set_element(FlatZincModel& s, const ConExpr& ce,
-//                          AST::Node* spec->annotations) {
+//                          AST::Node* spec->annotations()) {
 //   LOG(FATAL) << "array_set_element(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations->DebugString();
+//              << ")::" << spec->annotations()->DebugString();
 // }
 
 
 // class SetPoster {
 // public:
 //   SetPoster(void) {
-//     registry().Add("set_eq", &p_set_eq);
-//     registry().Add("set_ne", &p_set_ne);
-//     registry().Add("set_union", &p_set_union);
-//     registry().Add("array_set_element", &p_array_set_element);
-//     registry().Add("array_var_set_element", &p_array_set_element);
-//     registry().Add("set_intersect", &p_set_intersect);
-//     registry().Add("set_diff", &p_set_diff);
-//     registry().Add("set_symdiff", &p_set_symdiff);
-//     registry().Add("set_subset", &p_set_subset);
-//     registry().Add("set_superset", &p_set_superset);
-//     registry().Add("set_card", &p_set_card);
-//     registry().Add("set_in", &p_set_in);
-//     registry().Add("set_eq_reif", &p_set_eq_reif);
-//     registry().Add("equal_reif", &p_set_eq_reif);
-//     registry().Add("set_ne_reif", &p_set_ne_reif);
-//     registry().Add("set_subset_reif", &p_set_subset_reif);
-//     registry().Add("set_superset_reif", &p_set_superset_reif);
-//     registry().Add("set_in_reif", &p_set_in_reif);
-//     registry().Add("disjoint", &p_set_disjoint);
+//     global_registry.Add("set_eq", &p_set_eq);
+//     global_registry.Add("set_ne", &p_set_ne);
+//     global_registry.Add("set_union", &p_set_union);
+//     global_registry.Add("array_set_element", &p_array_set_element);
+//     global_registry.Add("array_var_set_element", &p_array_set_element);
+//     global_registry.Add("set_intersect", &p_set_intersect);
+//     global_registry.Add("set_diff", &p_set_diff);
+//     global_registry.Add("set_symdiff", &p_set_symdiff);
+//     global_registry.Add("set_subset", &p_set_subset);
+//     global_registry.Add("set_superset", &p_set_superset);
+//     global_registry.Add("set_card", &p_set_card);
+//     global_registry.Add("set_in", &p_set_in);
+//     global_registry.Add("set_eq_reif", &p_set_eq_reif);
+//     global_registry.Add("equal_reif", &p_set_eq_reif);
+//     global_registry.Add("set_ne_reif", &p_set_ne_reif);
+//     global_registry.Add("set_subset_reif", &p_set_subset_reif);
+//     global_registry.Add("set_superset_reif", &p_set_superset_reif);
+//     global_registry.Add("set_in_reif", &p_set_in_reif);
+//     global_registry.Add("disjoint", &p_set_disjoint);
 //   }
 // };
 // SetPoster __set_poster;
-
-}
 }
 
-// STATISTICS: flatzinc-any
+void FlatZincModel::PostConstraint(CtSpec* const spec) {
+  try {
+    global_registry.Post(*this, spec);
+  } catch (AST::TypeError& e) {
+    throw Error("Type error", e.what());
+  }
+}
+}  // namespace operations_research
+

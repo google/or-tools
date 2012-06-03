@@ -150,9 +150,9 @@ void addConstraint(ParserState* const pp,
  *
  */
 
-void initfg(ParserState* pp) {
+void initmodel(ParserState* pp) {
   if (!pp->hadError)
-    pp->fg->Init(pp->intvars.size(),
+    pp->model->Init(pp->intvars.size(),
                  pp->boolvars.size(),
                  pp->setvars.size());
 
@@ -172,7 +172,7 @@ void initfg(ParserState* pp) {
             array_index = 0;
           }
         }
-        pp->fg->NewIntVar(name,
+        pp->model->NewIntVar(name,
                           static_cast<IntVarSpec*>(pp->intvars[i].second));
       } catch (operations_research::Error& e) {
         yyerror(pp, e.DebugString().c_str());
@@ -199,7 +199,7 @@ void initfg(ParserState* pp) {
             array_index = 0;
           }
         }
-        pp->fg->NewBoolVar(name,
+        pp->model->NewBoolVar(name,
                            static_cast<BoolVarSpec*>(pp->boolvars[i].second));
       } catch (operations_research::Error& e) {
         yyerror(pp, e.DebugString().c_str());
@@ -212,11 +212,7 @@ void initfg(ParserState* pp) {
   }
   for (unsigned int i=0; i<pp->setvars.size(); i++) {
     if (!pp->hadError) {
-      try {
-        pp->fg->newSetVar(static_cast<SetVarSpec*>(pp->setvars[i].second));
-      } catch (operations_research::Error& e) {
-        yyerror(pp, e.DebugString().c_str());
-      }
+      //  pp->model->newSetVar(static_cast<SetVarSpec*>(pp->setvars[i].second));
     }
     if (pp->setvars[i].first[0] != '[') {
       delete pp->setvars[i].second;
@@ -226,8 +222,8 @@ void initfg(ParserState* pp) {
   for (unsigned int i=pp->domainConstraints.size(); i--;) {
     if (!pp->hadError) {
       try {
-        assert(pp->domainConstraints[i]->args->a.size() == 2);
-        pp->fg->PostConstraint(pp->domainConstraints[i]);
+        assert(pp->domainConstraints[i]->NumArgs() == 2);
+        pp->model->PostConstraint(pp->domainConstraints[i]);
         delete pp->domainConstraints[i];
       } catch (operations_research::Error& e) {
         yyerror(pp, e.DebugString().c_str());
@@ -236,8 +232,8 @@ void initfg(ParserState* pp) {
   }
 }
 
-void fillOutput(ParserState& pp, operations_research::FlatZincModel& m) {
-  m.InitOutput(pp.getOutput());
+void FillOutput(ParserState& pp, operations_research::FlatZincModel& m) {
+  m.InitOutput(pp.Output());
 }
 
 AST::Node* arrayOutput(AST::Call* ann) {
@@ -318,7 +314,7 @@ void FlatZincModel::Parse(const std::string& filename) {
     yyset_extra(&pp, pp.yyscanner);
     // yydebug = 1;
     yyparse(&pp);
-    fillOutput(pp, *this);
+    FillOutput(pp, *this);
 
     if (pp.yyscanner)
       yylex_destroy(pp.yyscanner);
@@ -333,7 +329,7 @@ void FlatZincModel::Parse(std::istream& is) {
   yyset_extra(&pp, pp.yyscanner);
   // yydebug = 1;
   yyparse(&pp);
-  fillOutput(pp, *this);
+  FillOutput(pp, *this);
 
   if (pp.yyscanner)
     yylex_destroy(pp.yyscanner);
@@ -454,9 +450,9 @@ preddecl_items_head:
 
 vardecl_items:
       /* emtpy */
-      { initfg(static_cast<ParserState*>(parm)); }
+      { initmodel(static_cast<ParserState*>(parm)); }
     | vardecl_items_head
-      { initfg(static_cast<ParserState*>(parm)); }
+      { initmodel(static_cast<ParserState*>(parm)); }
 
 vardecl_items_head:
       vardecl_item ';'
@@ -1114,7 +1110,7 @@ solve_item :
         if (!pp->hadError) {
           try {
             pp->AddConstraints();
-            pp->fg->Satisfy($2);
+            pp->model->Satisfy($2);
           } catch (operations_research::Error& e) {
             yyerror(pp, e.DebugString().c_str());
           }
@@ -1129,9 +1125,9 @@ solve_item :
           try {
             pp->AddConstraints();
             if ($3)
-              pp->fg->Minimize($4,$2);
+              pp->model->Minimize($4,$2);
             else
-              pp->fg->Maximize($4,$2);
+              pp->model->Maximize($4,$2);
           } catch (operations_research::Error& e) {
             yyerror(pp, e.DebugString().c_str());
           }

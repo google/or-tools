@@ -37,7 +37,7 @@
 
 #include "base/stringprintf.h"
 #include "flatzinc/flatzinc.h"
-#include "flatzinc/registry.h"
+//#include "flatzinc/registry.h"
 
 #include <vector>
 #include <string>
@@ -108,23 +108,15 @@ void FlatZincModel::NewBoolVar(const std::string& name, BoolVarSpec* const vs) {
   boolean_variables_introduced[bool_var_count-1] = vs->introduced;
 }
 
-void FlatZincModel::newSetVar(SetVarSpec* vs) {
-  if (vs->alias) {
-    sv[set_var_count++] = sv[vs->i];
-  } else {
-    LOG(FATAL) << "SetVar not supported";
-    sv[set_var_count++] = SetVar();
-  }
-  sv_introduced[set_var_count-1] = vs->introduced;
-}
-
-void FlatZincModel::PostConstraint(CtSpec* const spec) {
-  try {
-    registry().Post(*this, spec);
-  } catch (AST::TypeError& e) {
-    throw Error("Type error", e.what());
-  }
-}
+// void FlatZincModel::newSetVar(SetVarSpec* vs) {
+//   if (vs->alias) {
+//     sv[set_var_count++] = sv[vs->i];
+//   } else {
+//     LOG(FATAL) << "SetVar not supported";
+//     sv[set_var_count++] = SetVar();
+//   }
+//   sv_introduced[set_var_count-1] = vs->introduced;
+// }
 
 void FlattenAnnotations(AST::Array* const annotations,
                         std::vector<AST::Node*>& out) {

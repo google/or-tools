@@ -2443,7 +2443,7 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 int yy_input_proc(char* buf, int size, yyscan_t yyscanner) {
   operations_research::ParserState* parm =
     static_cast<operations_research::ParserState*>(yyget_extra(yyscanner));
-  return parm->fillBuffer(buf, size);
+  return parm->FillBuffer(buf, size);
   // work around warning that yyunput is unused
   yyunput (0,buf,yyscanner);
 }
