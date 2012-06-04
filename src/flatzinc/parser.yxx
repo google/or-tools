@@ -1071,7 +1071,7 @@ FZ_BOOL_LIT
     $$ = static_cast<ParserState*>(parm)->ArrayElement($1, i);
   else
     $$ = new AST::IntLit(0); // keep things consistent
-  free($1);
+  free($1); delete $3;
 }
 
 non_array_expr_list :
@@ -1226,7 +1226,7 @@ FZ_BOOL_LIT
     $$ = pp->ArrayElement($1, i);
   else
     $$ = new AST::IntLit(0); // keep things consistent
-  free($1);
+  free($1); delete $3;
 }
 | FZ_STRING_LIT
 {
