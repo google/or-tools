@@ -985,6 +985,9 @@ void BoundedDistribute::InitialPropagate() {
     }
     sum_card_min += card_min_[i];
   }
+  if (sum_card_min > var_size_) {
+    solver()->Fail();
+  }
   if (sum_card_min == var_size_) {
     for (int i = 0; i < var_size_; ++i) {
       vars_[i]->SetRange(0, card_size_ - 1);

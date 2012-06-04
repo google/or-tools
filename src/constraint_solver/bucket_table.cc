@@ -245,7 +245,7 @@ class TableVar {
       const int value_index = column_.IndexFromValue(it->Value());
       num_remaining_tuples += NumTuplesPerValue(value_index);
     }
-    return (2 * num_remaining_tuples < num_deleted_tuples);
+    return (num_remaining_tuples < num_deleted_tuples);
   }
 
   void InitialPropagate(std::vector<int64>* const to_remove) {
