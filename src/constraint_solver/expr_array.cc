@@ -455,6 +455,7 @@ class MinConstraint : public TreeArrayConstraint {
     if (depth == 0) {  // We have pushed all the way up.
       target_var_->SetRange(RootMin(), RootMax());
     }
+    MinVarChanged();
   }
 
   string DebugString() const {
@@ -607,6 +608,7 @@ class MaxConstraint : public TreeArrayConstraint {
     if (depth == 0) {  // We have pushed all the way up.
       target_var_->SetRange(RootMin(), RootMax());
     }
+    MaxVarChanged();
   }
 
   string DebugString() const {
