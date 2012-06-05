@@ -70,12 +70,11 @@ void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
 void FlatZincModel::NewIntVar(const std::string& name, IntVarSpec* const vs) {
   if (vs->alias) {
     integer_variables_[int_var_count++] = integer_variables_[vs->i];
+  } else if (!vs->HasDomain()) {
+    integer_variables_[int_var_count++] = solver_.MakeIntConst(vs->i, name);
   } else {
     AST::SetLit* const domain = vs->Domain();
-    if (domain == NULL) {
-      integer_variables_[int_var_count++] =
-          solver_.MakeIntVar(kint32min, kint32max, name);
-    } else if (domain->interval) {
+    if (domain->interval) {
       integer_variables_[int_var_count++] =
           solver_.MakeIntVar(domain->min, domain->max, name);
     } else {
@@ -99,6 +98,8 @@ int FlatZincModel::AliasBool2Int(int iv) {
 void FlatZincModel::NewBoolVar(const std::string& name, BoolVarSpec* const vs) {
   if (vs->alias) {
     boolean_variables_[bool_var_count++] = boolean_variables_[vs->i];
+  } else if (!vs->HasDomain()) {
+    boolean_variables_[bool_var_count++] = solver_.MakeIntConst(vs->i, name);
   } else {
     boolean_variables_[bool_var_count++] = solver_.MakeBoolVar(name);
     VLOG(1) << "Create BoolVar: "
@@ -142,6 +143,21 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
       FlattenAnnotations(annotations->getArray(), flat_annotations);
     } else {
       flat_annotations.push_back(annotations);
+    }
+
+    if (method_ != SAT && flat_annotations.size() == 1) {
+      std::vector<IntVar*> primary_integer_variables;
+      std::vector<IntVar*> secondary_integer_variables;
+      std::vector<SequenceVar*> sequence_variables;
+      std::vector<IntervalVar*> interval_variables;
+      solver_.CollectDecisionVariables(&primary_integer_variables,
+                                       &secondary_integer_variables,
+                                       &sequence_variables,
+                                       &interval_variables);
+      builders_.push_back(solver_.MakePhase(primary_integer_variables,
+                                            Solver::CHOOSE_FIRST_UNBOUND,
+                                            Solver::ASSIGN_MIN_VALUE));
+      VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
     }
 
     for (unsigned int i=0; i < flat_annotations.size(); i++) {
