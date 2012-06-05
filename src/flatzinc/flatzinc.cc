@@ -379,6 +379,20 @@ string FlatZincModel::DebugString(AST::Node* const ai) const {
   }
   return output;
 }
+
+IntVar* FlatZincModel::GetIntVar(AST::Node* const node) {
+  if (node->isIntVar()) {
+    return integer_variables_[node->getIntVar()];
+  } else if (node->isBoolVar()) {
+    return boolean_variables_[node->getBoolVar()];
+  } else if (node->isInt()) {
+    return solver_.MakeIntConst(node->getInt());
+  } else if (node->isBool()) {
+    return solver_.MakeIntConst(node->getBool());
+  } else {
+    LOG(FATAL) << "Cannot build an IntVar from " << node->DebugString();
+    return NULL;
+  }
 }
 
-// STATISTICS: flatzinc-any
+}  // namespace operations_research

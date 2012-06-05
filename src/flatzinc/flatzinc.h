@@ -92,6 +92,8 @@ class FlatZincModel {
   /// Create new set variable from specification
   //void newSetVar(SetVarSpec* const vs);
 
+  IntVar* GetIntVar(AST::Node* const node);
+
   IntVar* IntegerVariable(int index) const {
     return integer_variables_[index];
   }
