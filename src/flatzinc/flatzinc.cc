@@ -70,7 +70,7 @@ void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
 void FlatZincModel::NewIntVar(const std::string& name, IntVarSpec* const vs) {
   if (vs->alias) {
     integer_variables_[int_var_count++] = integer_variables_[vs->i];
-  } else if (!vs->HasDomain()) {
+  } else if (vs->assigned) {
     integer_variables_[int_var_count++] = solver_.MakeIntConst(vs->i, name);
   } else {
     AST::SetLit* const domain = vs->Domain();
@@ -98,7 +98,7 @@ int FlatZincModel::AliasBool2Int(int iv) {
 void FlatZincModel::NewBoolVar(const std::string& name, BoolVarSpec* const vs) {
   if (vs->alias) {
     boolean_variables_[bool_var_count++] = boolean_variables_[vs->i];
-  } else if (!vs->HasDomain()) {
+  } else if (vs->assigned) {
     boolean_variables_[bool_var_count++] = solver_.MakeIntConst(vs->i, name);
   } else {
     boolean_variables_[bool_var_count++] = solver_.MakeBoolVar(name);
