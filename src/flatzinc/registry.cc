@@ -659,6 +659,7 @@ void p_bool_not(FlatZincModel* const model, CtSpec* const spec) {
 void p_array_int_element(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const index =  model->GetIntVar(spec->Arg(0));
+  IntVar* const shifted_index = solver->MakeSum(index, -1)->Var();
   AST::Array* const array_coefficents = spec->Arg(1)->getArray();
   const int size = array_coefficents->a.size();
   std::vector<int> coefficients(size);
@@ -667,8 +668,9 @@ void p_array_int_element(FlatZincModel* const model, CtSpec* const spec) {
   }
   IntVar* const target = model->GetIntVar(spec->Arg(2));
   Constraint* const ct =
-      solver->MakeEquality(solver->MakeElement(coefficients, index)->Var(),
-                           target);
+      solver->MakeEquality(
+          solver->MakeElement(coefficients, shifted_index)->Var(),
+          target);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
@@ -676,6 +678,7 @@ void p_array_int_element(FlatZincModel* const model, CtSpec* const spec) {
 void p_array_var_int_element(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const index =  model->GetIntVar(spec->Arg(0));
+  IntVar* const shifted_index = solver->MakeSum(index, -1)->Var();
   AST::Array* const array_variables = spec->Arg(1)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
@@ -684,7 +687,7 @@ void p_array_var_int_element(FlatZincModel* const model, CtSpec* const spec) {
   }
   IntVar* const target = model->GetIntVar(spec->Arg(2));
   Constraint* const ct =
-      solver->MakeEquality(solver->MakeElement(variables, index)->Var(),
+      solver->MakeEquality(solver->MakeElement(variables, shifted_index)->Var(),
                            target);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
@@ -693,6 +696,7 @@ void p_array_var_int_element(FlatZincModel* const model, CtSpec* const spec) {
 void p_array_bool_element(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const index = model->GetIntVar(spec->Arg(0));
+  IntVar* const shifted_index = solver->MakeSum(index, -1)->Var();
   AST::Array* const array_coefficents = spec->Arg(1)->getArray();
   const int size = array_coefficents->a.size();
   std::vector<int> coefficients(size);
@@ -701,8 +705,9 @@ void p_array_bool_element(FlatZincModel* const model, CtSpec* const spec) {
   }
   IntVar* const target = model->GetIntVar(spec->Arg(2));
   Constraint* const ct =
-      solver->MakeEquality(solver->MakeElement(coefficients, index)->Var(),
-                           target);
+      solver->MakeEquality(
+          solver->MakeElement(coefficients, shifted_index)->Var(),
+          target);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }

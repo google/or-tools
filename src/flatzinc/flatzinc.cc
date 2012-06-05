@@ -73,12 +73,18 @@ void FlatZincModel::NewIntVar(const std::string& name, IntVarSpec* const vs) {
   } else if (vs->assigned) {
     integer_variables_[int_var_count++] = solver_.MakeIntConst(vs->i, name);
   } else {
-    AST::SetLit* const domain = vs->Domain();
-    if (domain->interval) {
-      integer_variables_[int_var_count++] =
-          solver_.MakeIntVar(domain->min, domain->max, name);
+    if (!vs->HasDomain()) {
+        integer_variables_[int_var_count++] =
+            solver_.MakeIntVar(kint32min, kint32max, name);
     } else {
-      integer_variables_[int_var_count++] = solver_.MakeIntVar(domain->s, name);
+      AST::SetLit* const domain = vs->Domain();
+      if (domain->interval) {
+        integer_variables_[int_var_count++] =
+            solver_.MakeIntVar(domain->min, domain->max, name);
+      } else {
+        integer_variables_[int_var_count++] =
+            solver_.MakeIntVar(domain->s, name);
+      }
     }
     VLOG(1) << "Create IntVar: "
             << integer_variables_[int_var_count - 1]->DebugString();

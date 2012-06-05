@@ -148,6 +148,10 @@ class IntVarSpec : public VarSpec {
     return domain_.value();
   }
 
+  bool HasDomain() const {
+    return domain_.defined();
+  }
+
  private:
   Option<AST::SetLit*> domain_;
   const bool own_domain_;
