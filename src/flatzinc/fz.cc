@@ -50,6 +50,7 @@ DEFINE_bool(log, false, "Show search log");
 DEFINE_bool(all, false, "Search for all solutions");
 DEFINE_bool(free, false, "Ignore search annotations");
 DEFINE_int32(num_solutions, 0, "Number of solution to search for");
+DEFINE_int32(time_limit, 0, "time limit in ms");
 DECLARE_bool(log_prefix);
 
 namespace operations_research {
@@ -65,7 +66,8 @@ void Run(const std::string& file) {
                  FLAGS_log,
                  FLAGS_all,
                  FLAGS_free,
-                 FLAGS_num_solutions);
+                 FLAGS_num_solutions,
+                 FLAGS_time_limit);
 }
 }
 
@@ -79,4 +81,3 @@ int main(int argc, char** argv) {
   operations_research::Run(argv[1]);
   return 0;
 }
-

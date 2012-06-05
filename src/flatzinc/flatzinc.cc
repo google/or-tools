@@ -272,7 +272,8 @@ void FlatZincModel::Solve(int solve_frequency,
                           bool use_log,
                           bool all_solutions,
                           bool ignore_annotations,
-                          int num_solutions) {
+                          int num_solutions,
+                          int time_limit_in_ms) {
   CreateDecisionBuilders(false, ignore_annotations);
   if (all_solutions && num_solutions == 0) {
     num_solutions = kint32max;
@@ -297,6 +298,13 @@ void FlatZincModel::Solve(int solve_frequency,
       monitors.push_back(log);
       break;
     }
+  }
+
+  if (time_limit_in_ms > 0) {
+    monitors.push_back(solver_.MakeLimit(time_limit_in_ms,
+                                         kint64max,
+                                         kint64max,
+                                         kint64max));
   }
 
   int count = 0;
