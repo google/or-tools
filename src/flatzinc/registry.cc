@@ -83,7 +83,9 @@ void p_int_eq(FlatZincModel* const model, CtSpec* const spec) {
     const int left_value = left->getInt();
     if (right->isInt()) {
       const int right_value = right->getInt();
-
+      if (left_value != right_value) {
+        ct = solver->MakeFalseConstraint();
+      }
     } else {
       IntVar* const right_var = model->IntegerVariable(right->getIntVar());
       ct = solver->MakeEquality(right_var, left_value);
@@ -113,7 +115,9 @@ void p_int_ne(FlatZincModel* const model, CtSpec* const spec) {
     const int left_value = left->getInt();
     if (right->isInt()) {
       const int right_value = right->getInt();
-      LOG(FATAL) << "Not implemented";
+      if (left_value == right_value) {
+        ct = solver->MakeFalseConstraint();
+      }
     } else {
       IntVar* const right_var =
           model->IntegerVariable(right->getIntVar());
@@ -144,7 +148,9 @@ void p_int_ge(FlatZincModel* const model, CtSpec* const spec) {
     const int left_value = left->getInt();
     if (right->isInt()) {
       const int right_value = right->getInt();
-      LOG(FATAL) << "Not implemented";
+      if (left_value < right_value) {
+        ct = solver->MakeFalseConstraint();
+      }
     } else {
       IntVar* const right_var =
           model->IntegerVariable(right->getIntVar());
@@ -175,7 +181,9 @@ void p_int_gt(FlatZincModel* const model, CtSpec* const spec) {
     const int left_value = left->getInt();
     if (right->isInt()) {
       const int right_value = right->getInt();
-      LOG(FATAL) << "Not implemented";
+      if (left_value <= right_value) {
+        ct = solver->MakeFalseConstraint();
+      }
     } else {
       IntVar* const right_var =
           model->IntegerVariable(right->getIntVar());
@@ -206,7 +214,9 @@ void p_int_le(FlatZincModel* const model, CtSpec* const spec) {
     const int left_value = left->getInt();
     if (right->isInt()) {
       const int right_value = right->getInt();
-      LOG(FATAL) << "Not implemented";
+      if (left_value > right_value) {
+        ct = solver->MakeFalseConstraint();
+      }
     } else {
       IntVar* const right_var =
           model->IntegerVariable(right->getIntVar());
@@ -237,7 +247,9 @@ void p_int_lt(FlatZincModel* const model, CtSpec* const spec) {
     const int left_value = left->getInt();
     if (right->isInt()) {
       const int right_value = right->getInt();
-
+      if (left_value >= right_value) {
+        ct = solver->MakeFalseConstraint();
+      }
     } else {
       IntVar* const right_var = model->IntegerVariable(right->getIntVar());
       ct = solver->MakeGreater(right_var, left_value);
@@ -778,7 +790,9 @@ void p_bool_eq(FlatZincModel* const model, CtSpec* const spec) {
     const int left_value = left->getBool();
     if (right->isBool()) {
       const int right_value = right->getBool();
-      LOG(FATAL) << "Not implemented";
+      if (left_value != right_value) {
+        ct = solver->MakeFalseConstraint();
+      }
     } else {
       IntVar* const right_var = model->BooleanVariable(right->getBoolVar());
       ct = solver->MakeEquality(right_var, left_value);
@@ -798,10 +812,19 @@ void p_bool_eq(FlatZincModel* const model, CtSpec* const spec) {
 }
 
 void p_bool_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
-  LOG(FATAL) << "bool_eq_reif(" << (spec->Arg(0)->DebugString()) << ","
-             << (spec->Arg(1)->DebugString()) << ","
-             << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations()->DebugString();
+  Solver* const solver = model->solver();
+  IntVar* const left = spec->Arg(0)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(0)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(0)->getBool());
+  IntVar* const right = spec->Arg(1)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(1)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(1)->getBool());
+  IntVar* const boolvar = spec->Arg(2)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(2)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
+  Constraint* const ct = solver->MakeIsEqualCt(left, right, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_bool_ne(FlatZincModel* const model, CtSpec* const spec) {
@@ -813,7 +836,9 @@ void p_bool_ne(FlatZincModel* const model, CtSpec* const spec) {
     const int left_value = left->getBool();
     if (right->isBool()) {
       const int right_value = right->getBool();
-      LOG(FATAL) << "Not implemented";
+      if (left_value == right_value) {
+        ct = solver->MakeFalseConstraint();
+      }
     } else {
       IntVar* const right_var = model->BooleanVariable(right->getBoolVar());
       ct = solver->MakeNonEquality(right_var, left_value);
@@ -833,10 +858,19 @@ void p_bool_ne(FlatZincModel* const model, CtSpec* const spec) {
 }
 
 void p_bool_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
-  LOG(FATAL) << "bool_ne_reif(" << (spec->Arg(0)->DebugString()) << ","
-             << (spec->Arg(1)->DebugString()) << ","
-             << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations()->DebugString();
+  Solver* const solver = model->solver();
+  IntVar* const left = spec->Arg(0)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(0)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(0)->getBool());
+  IntVar* const right = spec->Arg(1)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(1)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(1)->getBool());
+  IntVar* const boolvar = spec->Arg(2)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(2)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
+  Constraint* const ct = solver->MakeIsDifferentCt(left, right, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_bool_ge(FlatZincModel* const model, CtSpec* const spec) {
@@ -848,7 +882,9 @@ void p_bool_ge(FlatZincModel* const model, CtSpec* const spec) {
     const int left_value = left->getBool();
     if (right->isBool()) {
       const int right_value = right->getBool();
-      LOG(FATAL) << "Not implemented";
+      if (left_value < right_value) {
+        ct = solver->MakeFalseConstraint();
+      }
     } else {
       IntVar* const right_var = model->BooleanVariable(right->getBoolVar());
       ct = solver->MakeLessOrEqual(right_var, left_value);
@@ -868,10 +904,19 @@ void p_bool_ge(FlatZincModel* const model, CtSpec* const spec) {
 }
 
 void p_bool_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
-  LOG(FATAL) << "bool_ge_reif(" << (spec->Arg(0)->DebugString()) << ","
-             << (spec->Arg(1)->DebugString()) << ","
-             << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations()->DebugString();
+  Solver* const solver = model->solver();
+  IntVar* const left = spec->Arg(0)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(0)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(0)->getBool());
+  IntVar* const right = spec->Arg(1)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(1)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(1)->getBool());
+  IntVar* const boolvar = spec->Arg(2)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(2)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
+  Constraint* const ct = solver->MakeIsGreaterOrEqualCt(left, right, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_bool_le(FlatZincModel* const model, CtSpec* const spec) {
@@ -883,7 +928,9 @@ void p_bool_le(FlatZincModel* const model, CtSpec* const spec) {
     const int left_value = left->getBool();
     if (right->isBool()) {
       const int right_value = right->getBool();
-      LOG(FATAL) << "Not implemented";
+      if (left_value > right_value) {
+        ct = solver->MakeFalseConstraint();
+      }
     } else {
       IntVar* const right_var = model->BooleanVariable(right->getBoolVar());
       ct = solver->MakeGreaterOrEqual(right_var, left_value);
@@ -903,36 +950,111 @@ void p_bool_le(FlatZincModel* const model, CtSpec* const spec) {
 }
 
 void p_bool_le_reif(FlatZincModel* const model, CtSpec* const spec) {
-  LOG(FATAL) << "bool_le_reif(" << (spec->Arg(0)->DebugString()) << ","
-             << (spec->Arg(1)->DebugString()) << ","
-             << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations()->DebugString();
+  Solver* const solver = model->solver();
+  IntVar* const left = spec->Arg(0)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(0)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(0)->getBool());
+  IntVar* const right = spec->Arg(1)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(1)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(1)->getBool());
+  IntVar* const boolvar = spec->Arg(2)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(2)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
+  Constraint* const ct = solver->MakeIsLessOrEqualCt(left, right, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_bool_gt(FlatZincModel* const model, CtSpec* const spec) {
-  LOG(FATAL) << "bool_gt(" << (spec->Arg(0)->DebugString()) << ","
-             << (spec->Arg(1)->DebugString())
-             << ")::" << spec->annotations()->DebugString();
+  Constraint* ct = NULL;
+  Solver* const solver = model->solver();
+  AST::Node* const left = spec->Arg(0);
+  AST::Node* const right = spec->Arg(1);
+  if (left->isBool()) {
+    const int left_value = left->getBool();
+    if (right->isBool()) {
+      const int right_value = right->getBool();
+      if (left_value <= right_value) {
+        ct = solver->MakeFalseConstraint();
+      }
+    } else {
+      IntVar* const right_var = model->BooleanVariable(right->getBoolVar());
+      ct = solver->MakeLess(right_var, left_value);
+    }
+  } else {
+    IntVar* const left_var = model->BooleanVariable(left->getBoolVar());
+    if (right->isBool()) {
+      const int right_value = right->getBool();
+      ct = solver->MakeGreater(left_var, right_value);
+    } else {
+      IntVar* const right_var = model->BooleanVariable(right->getBoolVar());
+      ct = solver->MakeGreater(left_var, right_var);
+    }
+  }
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_bool_gt_reif(FlatZincModel* const model, CtSpec* const spec) {
-  LOG(FATAL) << "bool_gt_reif(" << (spec->Arg(0)->DebugString()) << ","
-             << (spec->Arg(1)->DebugString()) << ","
-             << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations()->DebugString();
+  Solver* const solver = model->solver();
+  IntVar* const left = spec->Arg(0)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(0)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(0)->getBool());
+  IntVar* const right = spec->Arg(1)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(1)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(1)->getBool());
+  IntVar* const boolvar = spec->Arg(2)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(2)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
+  Constraint* const ct = solver->MakeIsGreaterCt(left, right, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_bool_lt(FlatZincModel* const model, CtSpec* const spec) {
-  LOG(FATAL) << "bool_lt(" << (spec->Arg(0)->DebugString()) << ","
-             << (spec->Arg(1)->DebugString())
-             << ")::" << spec->annotations()->DebugString();
+  Constraint* ct = NULL;
+  Solver* const solver = model->solver();
+  AST::Node* const left = spec->Arg(0);
+  AST::Node* const right = spec->Arg(1);
+  if (left->isBool()) {
+    const int left_value = left->getBool();
+    if (right->isBool()) {
+      const int right_value = right->getBool();
+      if (left_value >= right_value) {
+        ct = solver->MakeFalseConstraint();
+      }
+    } else {
+      IntVar* const right_var = model->BooleanVariable(right->getBoolVar());
+      ct = solver->MakeGreater(right_var, left_value);
+    }
+  } else {
+    IntVar* const left_var = model->BooleanVariable(left->getBoolVar());
+    if (right->isBool()) {
+      const int right_value = right->getBool();
+      ct = solver->MakeLess(left_var, right_value);
+    } else {
+      IntVar* const right_var = model->BooleanVariable(right->getBoolVar());
+      ct = solver->MakeLess(left_var, right_var);
+    }
+  }
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_bool_lt_reif(FlatZincModel* const model, CtSpec* const spec) {
-  LOG(FATAL) << "bool_lt_reif(" << (spec->Arg(0)->DebugString()) << ","
-             << (spec->Arg(1)->DebugString()) << ","
-             << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations()->DebugString();
+  Solver* const solver = model->solver();
+  IntVar* const left = spec->Arg(0)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(0)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(0)->getBool());
+  IntVar* const right = spec->Arg(1)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(1)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(1)->getBool());
+  IntVar* const boolvar = spec->Arg(2)->isBoolVar() ?
+      model->BooleanVariable(spec->Arg(2)->getBoolVar()) :
+      solver->MakeIntConst(spec->Arg(2)->getBool());
+  Constraint* const ct = solver->MakeIsLessCt(left, right, boolvar);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_bool_or(FlatZincModel* const model, CtSpec* const spec) {
@@ -1410,4 +1532,3 @@ void FlatZincModel::PostConstraint(CtSpec* const spec) {
   }
 }
 }  // namespace operations_research
-
