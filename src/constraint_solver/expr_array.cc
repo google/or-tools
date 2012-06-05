@@ -451,6 +451,7 @@ class MinConstraint : public TreeArrayConstraint {
         break;
       }
       depth = parent_depth;
+      position = parent;
     }
     if (depth == 0) {  // We have pushed all the way up.
       target_var_->SetRange(RootMin(), RootMax());
@@ -604,6 +605,7 @@ class MaxConstraint : public TreeArrayConstraint {
         break;
       }
       depth = parent_depth;
+      position = parent;
     }
     if (depth == 0) {  // We have pushed all the way up.
       target_var_->SetRange(RootMin(), RootMax());
