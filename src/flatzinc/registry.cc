@@ -701,13 +701,22 @@ void p_array_int_element(FlatZincModel* const model, CtSpec* const spec) {
   for (int i = 0; i < size; ++i) {
     coefficients[i] = array_coefficents->a[i]->getInt();
   }
-  IntVar* const target = model->GetIntVar(spec->Arg(2));
-  Constraint* const ct =
-      solver->MakeEquality(
-          solver->MakeElement(coefficients, shifted_index)->Var(),
-          target);
-  VLOG(1) << "Posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (spec->Arg(2)->isIntVar() &&
+      spec->defines() == spec->Arg(2)->getIntVar()) {
+    VLOG(1) << "Aliasing array_int_element";
+    IntVar* const target =
+        solver->MakeElement(coefficients, shifted_index)->Var();
+    CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
+    model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
+  } else {
+    IntVar* const target = model->GetIntVar(spec->Arg(2));
+    Constraint* const ct =
+        solver->MakeEquality(
+            solver->MakeElement(coefficients, shifted_index)->Var(),
+            target);
+    VLOG(1) << "Posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_array_var_int_element(FlatZincModel* const model, CtSpec* const spec) {
@@ -720,12 +729,21 @@ void p_array_var_int_element(FlatZincModel* const model, CtSpec* const spec) {
   for (int i = 0; i < size; ++i) {
     variables[i] = model->GetIntVar(array_variables->a[i]);
   }
-  IntVar* const target = model->GetIntVar(spec->Arg(2));
-  Constraint* const ct =
-      solver->MakeEquality(solver->MakeElement(variables, shifted_index)->Var(),
-                           target);
-  VLOG(1) << "Posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (spec->Arg(2)->isIntVar() &&
+      spec->defines() == spec->Arg(2)->getIntVar()) {
+    VLOG(1) << "Aliasing array_var_int_element";
+    IntVar* const target = solver->MakeElement(variables, shifted_index)->Var();
+    CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
+    model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
+  } else {
+    IntVar* const target = model->GetIntVar(spec->Arg(2));
+    Constraint* const ct =
+        solver->MakeEquality(solver->MakeElement(variables,
+                                                 shifted_index)->Var(),
+                             target);
+    VLOG(1) << "Posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_array_bool_element(FlatZincModel* const model, CtSpec* const spec) {
@@ -738,13 +756,22 @@ void p_array_bool_element(FlatZincModel* const model, CtSpec* const spec) {
   for (int i = 0; i < size; ++i) {
     coefficients[i] = array_coefficents->a[i]->getBool();
   }
-  IntVar* const target = model->GetIntVar(spec->Arg(2));
-  Constraint* const ct =
-      solver->MakeEquality(
-          solver->MakeElement(coefficients, shifted_index)->Var(),
-          target);
-  VLOG(1) << "Posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (spec->Arg(2)->isIntVar() &&
+      spec->defines() == spec->Arg(2)->getIntVar()) {
+    VLOG(1) << "Aliasing array_bool_element";
+    IntVar* const target =
+        solver->MakeElement(coefficients, shifted_index)->Var();
+    CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
+    model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
+  } else {
+    IntVar* const target = model->GetIntVar(spec->Arg(2));
+    Constraint* const ct =
+        solver->MakeEquality(
+            solver->MakeElement(coefficients, shifted_index)->Var(),
+            target);
+    VLOG(1) << "Posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 /* coercion constraints */

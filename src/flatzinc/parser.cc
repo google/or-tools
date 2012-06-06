@@ -106,7 +106,10 @@ void ParserState::ComputeViableTarget(
   if (id == "bool2int" ||
       id == "int_plus" ||
       id == "int_minus" ||
-      id == "int_times") {
+      id == "int_times" ||
+      id == "array_var_int_element" ||
+      id == "array_int_element" ||
+      id == "array_bool_element") {
     // Defines an int var.
     const int define = FindTarget(spec->annotations());
     if (define != CtSpec::kNoDefinition) {
