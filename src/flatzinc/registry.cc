@@ -590,9 +590,7 @@ void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
     AST::Node* const a = array_variables->a[i];
-    variables[i] = a->isBoolVar() ?
-                   model->BooleanVariable(a->getBoolVar()) :
-                   solver->MakeIntConst(a->getBool());
+    variables[i] = model->GetIntVar(a);
   }
   if (node_boolvar->isBoolVar() &&
       node_boolvar->getBoolVar() + model->IntVarCount() == spec->defines()) {
@@ -617,9 +615,7 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
     AST::Node* const a = array_variables->a[i];
-    variables[i] = a->isBoolVar() ?
-                   model->BooleanVariable(a->getBoolVar()) :
-                   solver->MakeIntConst(a->getBool());
+    variables[i] = model->GetIntVar(a);
   }
   if (node_boolvar->isBoolVar() &&
       node_boolvar->getBoolVar() + model->IntVarCount() == spec->defines()) {
