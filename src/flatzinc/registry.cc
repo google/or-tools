@@ -753,9 +753,25 @@ void p_bool2int(FlatZincModel* const model, CtSpec* const spec) {
   IntVar* const left = model->GetIntVar(spec->Arg(0));
   if (spec->Arg(1)->isIntVar() &&
       spec->defines() == spec->Arg(1)->getIntVar()) {
-    VLOG(1) << "Aliasing int2int";
+    VLOG(1) << "Aliasing bool2int";
     CHECK(model->IntegerVariable(spec->defines()) == NULL);
     model->SetIntegerVariable(spec->defines(), left);
+  } else {
+    IntVar* const right = model->GetIntVar(spec->Arg(1));
+    Constraint* const ct = solver->MakeEquality(left, right);
+    VLOG(1) << "Posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
+}
+
+void p_bool2bool(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  IntVar* const left = model->GetIntVar(spec->Arg(0));
+  if (spec->Arg(1)->isBoolVar() &&
+      spec->defines() == spec->Arg(1)->getBoolVar() + model->IntVarCount()) {
+    VLOG(1) << "Aliasing bool2bool";
+    CHECK(model->BooleanVariable(spec->Arg(1)->getBoolVar()) == NULL);
+    model->SetBooleanVariable(spec->Arg(1)->getBoolVar(), left);
   } else {
     IntVar* const right = model->GetIntVar(spec->Arg(1));
     Constraint* const ct = solver->MakeEquality(left, right);
@@ -932,6 +948,7 @@ class IntBuilder {
     global_model_builder.Register("array_var_int_element", &p_array_var_int_element);
     global_model_builder.Register("array_bool_element", &p_array_bool_element);
     global_model_builder.Register("array_var_bool_element", &p_array_bool_element);
+    global_model_builder.Register("bool2bool", &p_bool2bool);
     global_model_builder.Register("bool2int", &p_bool2int);
     global_model_builder.Register("int2int", &p_int2int);
     global_model_builder.Register("int_in", &p_int_in);

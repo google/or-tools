@@ -125,6 +125,10 @@ void ParserState::ComputeViableTarget(
   } else if (id == "int2int") {
     candidates->insert(spec->Arg(1)->getIntVar());
     VLOG(1) << id << " -> insert " << spec->Arg(1)->getIntVar();
+  } else if (id == "bool2bool") {
+    const int bool_define = spec->Arg(1)->getBoolVar() + int_variables_.size();
+    candidates->insert(bool_define);
+    VLOG(1) << id << " -> insert " << bool_define;
   }
 }
 
@@ -170,6 +174,21 @@ void ParserState::CreateModel() {
                                           args,
                                           NULL);
       alias_ct->set_defines(i);
+      constraints_.push_back(alias_ct);
+    }
+  }
+
+  for (int i = 0; i < bool_variables_.size(); ++i) {
+    BoolVarSpec* const spec = bool_variables_[i];
+    if (spec->alias) {
+      AST::Array* args = new AST::Array(2);
+      args->a[0] = new AST::BoolVar(spec->i);
+      args->a[1] = new AST::BoolVar(i);
+      CtSpec* const alias_ct = new CtSpec(constraints_.size(),
+                                          "bool2bool",
+                                          args,
+                                          NULL);
+      alias_ct->set_defines(i + int_variables_.size());
       constraints_.push_back(alias_ct);
     }
   }
