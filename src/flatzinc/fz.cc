@@ -51,6 +51,7 @@ DEFINE_bool(all, false, "Search for all solutions");
 DEFINE_bool(free, false, "Ignore search annotations");
 DEFINE_int32(num_solutions, 0, "Number of solution to search for");
 DEFINE_int32(time_limit, 0, "time limit in ms");
+DEFINE_int32(threads, 0, "threads");
 DECLARE_bool(log_prefix);
 
 namespace operations_research {
@@ -73,6 +74,17 @@ void Run(const std::string& file) {
 
 int main(int argc, char** argv) {
   FLAGS_log_prefix=false;
+  for (int i = 1; i < argc; ++i) {
+    if (strcmp(argv[i], "-a") == 0) {
+      argv[i] = "--all";
+    }
+    if (strcmp(argv[i], "-f") == 0) {
+      argv[i] = "--free";
+    }
+    if (strcmp(argv[i], "-p") == 0) {
+      argv[i] = "--threads";
+    }
+  }
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (argc <= 1) {
     LOG(ERROR) << "Usage: " << argv[0] << " <file>";
