@@ -52,7 +52,8 @@ FlatZincModel::FlatZincModel(void)
       solve_annotations_(NULL),
       solver_("FlatZincSolver"),
       objective_(NULL),
-      output_(NULL) {}
+      output_(NULL),
+      parsed_ok_(true) {}
 
 void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
   int_var_count = 0;
@@ -280,6 +281,10 @@ void FlatZincModel::Solve(int solve_frequency,
                           bool ignore_annotations,
                           int num_solutions,
                           int time_limit_in_ms) {
+  if (!parsed_ok_) {
+    return;
+  }
+
   CreateDecisionBuilders(false, ignore_annotations);
   if (all_solutions && num_solutions == 0) {
     num_solutions = kint32max;

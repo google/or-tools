@@ -335,10 +335,6 @@ class CtSpec {
     return defines_;
   }
 
-  void add_requires(int require) {
-    requires_.insert(require);
-  }
-
   bool Require(int require) const {
     return ContainsKey(requires_, require);
   }

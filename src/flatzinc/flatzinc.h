@@ -106,6 +106,10 @@ class FlatZincModel {
     return boolean_variables_[index];
   }
 
+  void SetBooleanVariable(int index, IntVar* const var) {
+    boolean_variables_[index] = var;
+  }
+
   /// Post a constraint specified by \a ce
   void PostConstraint(CtSpec* const spec);
 
@@ -168,6 +172,7 @@ class FlatZincModel {
   /// The set variables
   std::vector<SetVar> sv;
   std::vector<IntVar*> active_variables_;
+  bool parsed_ok_;
 };
 
 /// %Exception class for %FlatZinc errors

@@ -102,17 +102,46 @@ void ParserState::CollectRequired(AST::Array* const args,
 void ParserState::ComputeViableTarget(
     CtSpec* const spec,
     hash_set<int>* const candidates) const {
-  if (spec->Id() == "bool2int") {
+  const string& id = spec->Id();
+  if (id == "bool2int" ||
+      id == "int_plus" ||
+      id == "int_minus" ||
+      id == "int_times") {
+    // Defines an int var.
     const int define = FindTarget(spec->annotations());
-    CHECK(int_variables_[define]->introduced);
-    candidates->insert(define);
-    VLOG(1) << "bool2int -> insert " << define;
+    if (define != CtSpec::kNoDefinition) {
+      CHECK(int_variables_[define]->introduced);
+      candidates->insert(define);
+      VLOG(1) << id << " -> insert " << define;
+    }
+  } else if (id == "array_bool_and" || id == "array_bool_or") {
+    // Defines a bool var.
+    const int bool_define = FindTarget(spec->annotations());
+    if (bool_define != CtSpec::kNoDefinition) {
+      CHECK(bool_variables_[bool_define - int_variables_.size()]->introduced);
+      candidates->insert(bool_define);
+      VLOG(1) << id << " -> insert " << bool_define;
+    }
+  } else if (id == "int2int") {
+    candidates->insert(spec->Arg(1)->getIntVar());
+    VLOG(1) << id << " -> insert " << spec->Arg(1)->getIntVar();
   }
 }
 
 bool ConstraintDependsOn(const CtSpec* const spec1,
                          const CtSpec* const spec2) {
-  return spec2->Require(spec1->defines()) || spec1->Index() < spec2->Index();
+  if (spec1->defines() != CtSpec::kNoDefinition) {
+    if (spec2->defines() == CtSpec::kNoDefinition) {
+      return true;
+    } else if (spec2->Require(spec1->defines())) {
+      return true;
+    } else if (spec1->Require(spec2->defines())) {
+      return false;
+    }
+  } else if (spec2->defines() != CtSpec::kNoDefinition) {
+    return false;
+  }
+  return spec1->Index() < spec2->Index();
 }
 
 void ParserState::ComputeDependencies(const hash_set<int>& candidates,
@@ -129,12 +158,28 @@ void ParserState::ComputeDependencies(const hash_set<int>& candidates,
 
 void ParserState::CreateModel() {
   hash_set<int> candidates;
-  for (unsigned int i = constraints_.size(); i--;) {
+  // Add aliasing constraints.
+  for (int i = 0; i < int_variables_.size(); ++i) {
+    IntVarSpec* const spec = int_variables_[i];
+    if (spec->alias) {
+      AST::Array* args = new AST::Array(2);
+      args->a[0] = new AST::IntVar(spec->i);
+      args->a[1] = new AST::IntVar(i);
+      CtSpec* const alias_ct = new CtSpec(constraints_.size(),
+                                          "int2int",
+                                          args,
+                                          NULL);
+      alias_ct->set_defines(i);
+      constraints_.push_back(alias_ct);
+    }
+  }
+
+  for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
     ComputeViableTarget(spec, &candidates);
   }
 
-  for (unsigned int i = constraints_.size(); i--;) {
+  for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
     ComputeDependencies(candidates, spec);
     if (spec->defines() != CtSpec::kNoDefinition ||
@@ -147,11 +192,12 @@ void ParserState::CreateModel() {
   std::sort(constraints_.begin(), constraints_.end(), ConstraintDependsOn);
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
-    //    LOG(INFO) << i << " -> " << spec->DebugString();
+    VLOG(1) << i << " -> " << spec->DebugString();
   }
 
   int array_index = 0;
   for (unsigned int i = 0; i < int_variables_.size(); i++) {
+    VLOG(1) << "Var spec " << i << int_variables_[i]->DebugString();
     if (!hadError) {
       const std::string& raw_name = int_variables_[i]->Name();
       std::string name;
@@ -203,6 +249,12 @@ void ParserState::CreateModel() {
       //  model->newSetVar(static_cast<Set_Variables_pec*>(set_variables_[i]));
     }
   }
+  for (unsigned int i = 0; i < constraints_.size(); i++) {
+    if (!hadError) {
+      CtSpec* const spec = constraints_[i];
+      model_->PostConstraint(constraints_[i]);
+    }
+  }
   for (unsigned int i = domain_constraints_.size(); i--;) {
     if (!hadError) {
       try {
@@ -211,13 +263,6 @@ void ParserState::CreateModel() {
       } catch (operations_research::Error& e) {
         yyerror(this, e.DebugString().c_str());
       }
-    }
-  }
-
-  for (unsigned int i = 0; i < constraints_.size(); i++) {
-    if (!hadError) {
-      CtSpec* const spec = constraints_[i];
-      model_->PostConstraint(constraints_[i]);
     }
   }
 }
@@ -295,44 +340,45 @@ void ParserState::FillOutput(operations_research::FlatZincModel& m) {
 
 bool FlatZincModel::Parse(const std::string& filename) {
 #ifdef HAVE_MMAP
-    int fd;
-    char* data;
-    struct stat sbuf;
-    fd = open(filename.c_str(), O_RDONLY);
-    if (fd == -1) {
-      LOG(ERROR) << "Cannot open file " << filename;
-      return NULL;
-    }
-    if (stat(filename.c_str(), &sbuf) == -1) {
-      LOG(ERROR) << "Cannot stat file " << filename;
-      return NULL;
-    }
-    data = (char*)mmap((caddr_t)0, sbuf.st_size, PROT_READ, MAP_SHARED, fd,0);
-    if (data == (caddr_t)(-1)) {
-      LOG(ERROR) << "Cannot mmap file " << filename;
-      return NULL;
-    }
-
-    ParserState pp(data, sbuf.st_size, this);
-#else
-    std::ifstream file;
-    file.open(filename.c_str());
-    if (!file.is_open()) {
-      LOG(FATAL) << "Cannot open file " << filename;
-    }
-    std::string s = string(istreambuf_iterator<char>(file),
-                           istreambuf_iterator<char>());
-    ParserState pp(s, this);
-#endif
-    yylex_init(&pp.yyscanner);
-    yyset_extra(&pp, pp.yyscanner);
-    // yydebug = 1;
-    yyparse(&pp);
-    pp.FillOutput(*this);
-
-    if (pp.yyscanner)
-      yylex_destroy(pp.yyscanner);
+  int fd;
+  char* data;
+  struct stat sbuf;
+  fd = open(filename.c_str(), O_RDONLY);
+  if (fd == -1) {
+    LOG(ERROR) << "Cannot open file " << filename;
+    return NULL;
   }
+  if (stat(filename.c_str(), &sbuf) == -1) {
+    LOG(ERROR) << "Cannot stat file " << filename;
+    return NULL;
+  }
+  data = (char*)mmap((caddr_t)0, sbuf.st_size, PROT_READ, MAP_SHARED, fd,0);
+  if (data == (caddr_t)(-1)) {
+    LOG(ERROR) << "Cannot mmap file " << filename;
+    return NULL;
+  }
+
+  ParserState pp(data, sbuf.st_size, this);
+#else
+  std::ifstream file;
+  file.open(filename.c_str());
+  if (!file.is_open()) {
+    LOG(FATAL) << "Cannot open file " << filename;
+  }
+  std::string s = string(istreambuf_iterator<char>(file),
+                         istreambuf_iterator<char>());
+  ParserState pp(s, this);
+#endif
+  yylex_init(&pp.yyscanner);
+  yyset_extra(&pp, pp.yyscanner);
+  // yydebug = 1;
+  yyparse(&pp);
+  pp.FillOutput(*this);
+
+  if (pp.yyscanner)
+    yylex_destroy(pp.yyscanner);
+  parsed_ok_ = !pp.hadError;
+}
 
 bool FlatZincModel::Parse(std::istream& is) {
   std::string s = string(istreambuf_iterator<char>(is),
@@ -347,6 +393,7 @@ bool FlatZincModel::Parse(std::istream& is) {
 
   if (pp.yyscanner)
     yylex_destroy(pp.yyscanner);
+  parsed_ok_ = !pp.hadError;
 }
 
 AST::Node* ArrayOutput(AST::Call* ann) {
