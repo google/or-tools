@@ -799,4 +799,67 @@ Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
                                 cumuls.data(), cumuls.size(),
                                 transits.data()));
 }
+
+namespace {
+class Modulo : public Constraint {
+ public:
+  Modulo(Solver* const solver, IntVar* const x, int64 mod, IntVar* const y)
+      : Constraint(solver),
+        x_(x),
+        mod_(mod),
+        y_(y),
+        x_iterator_(x_->MakeDomainIterator(true)),
+        y_iterator_(y_->MakeDomainIterator(true)) {
+    CHECK_GE(mod_, 0);
+  }
+
+  virtual ~Modulo() {}
+
+  virtual void Post() {
+    Demon* const demon = solver()->MakeConstraintInitialPropagateCallback(this);
+    x_->WhenDomain(demon);
+    y_->WhenDomain(demon);
+  }
+
+  virtual void InitialPropagate() {
+    y_->SetRange(0, mod_ - 1);
+    to_remove_.clear();
+    for (x_iterator_->Init(); x_iterator_->Ok(); x_iterator_->Next()) {
+      const int64 value = x_iterator_->Value();
+      if (!y_->Contains(value % mod_)) {
+        to_remove_.push_back(value);
+      }
+    }
+    x_->RemoveValues(to_remove_);
+    to_remove_.clear();
+    for (y_iterator_->Init(); y_iterator_->Ok(); y_iterator_->Next()) {
+      const int64 value = y_iterator_->Value();
+      bool support = false;
+      for (int64 w = 0; w <= x_->Max() / mod_; ++w) {
+        if (x_->Contains(w * mod_ + value)) {
+          support = true;
+          break;
+        }
+      }
+      if (!support) {
+        to_remove_.push_back(value);
+      }
+    }
+    y_->RemoveValues(to_remove_);
+  }
+
+ private:
+  IntVar* const x_;
+  IntVar* const y_;
+  const int64 mod_;
+  IntVarIterator* const x_iterator_;
+  IntVarIterator* const y_iterator_;
+  std::vector<int64> to_remove_;
+};
+}  // namespace
+Constraint* Solver::MakeModuloConstraint(IntVar* const x,
+                                         int64 mod,
+                                         IntVar* const y) {
+  return RevAlloc(new Modulo(this, x, mod, y));
+}
 }  // namespace operations_research

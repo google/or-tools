@@ -541,10 +541,13 @@ void p_int_div(FlatZincModel* const model, CtSpec* const spec) {
 }
 
 void p_int_mod(FlatZincModel* const model, CtSpec* const spec) {
-  LOG(FATAL) << "int_mod(" << (spec->Arg(0)->DebugString()) << ","
-             << (spec->Arg(1)->DebugString()) << ","
-             << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations()->DebugString();
+  Solver* const solver = model->solver();
+  IntVar* const left = model->GetIntVar(spec->Arg(0));
+  const int mod = spec->Arg(1)->getInt();
+  IntVar* const target = model->GetIntVar(spec->Arg(2));
+  Constraint* const ct = solver->MakeModuloConstraint(left, mod, target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_int_min(FlatZincModel* const model, CtSpec* const spec) {

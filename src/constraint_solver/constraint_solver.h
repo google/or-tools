@@ -1446,6 +1446,11 @@ class Solver {
   // Creates a demon from a closure.
   Demon* MakeCallbackDemon(Closure* const closure);
 
+  // Modulo constraint  v % m == y
+  Constraint* MakeModuloConstraint(IntVar* const x,
+                                   int64 mod,
+                                   IntVar* const y);
+
 
   // (l <= b <= u)
   Constraint* MakeBetweenCt(IntVar* const v, int64 l, int64 u);

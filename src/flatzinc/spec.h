@@ -142,13 +142,25 @@ class IntVarSpec : public VarSpec {
   }
 
   virtual string DebugString() const {
-    return StringPrintf(
-        "IntVarSpec(name = %s, id = %d, domain = %s)",
-        name.c_str(),
-        i,
-        (domain_.defined() ?
-         domain_.value()->DebugString().c_str() :
-         "no domain"));
+    if (alias) {
+      return StringPrintf(
+          "IntVarSpec(name = %s, alias to = %d)",
+          name.c_str(),
+          i);
+    } else if (assigned) {
+      return StringPrintf(
+          "IntVarSpec(name = %s, assigned to = %d)",
+          name.c_str(),
+          i);
+    } else {
+      return StringPrintf(
+          "IntVarSpec(name = %s, id = %d, domain = %s)",
+          name.c_str(),
+          i,
+          (domain_.defined() ?
+           domain_.value()->DebugString().c_str() :
+           "no domain"));
+    }
   }
 
   AST::SetLit* Domain() const {
