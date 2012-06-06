@@ -83,19 +83,23 @@ class FlatZincModel {
 
   /// Create new integer variable from specification
   void NewIntVar(const std::string& name, IntVarSpec* const vs);
-  /// Link integer variable \a iv to Boolean variable \a bv
-  void AliasBool2Int(int iv, int bv);
-  /// Return linked Boolean variable for integer variable \a iv
-  int AliasBool2Int(int iv);
+  // Skips the creation of the variable.
+  void SkipIntVar();
   /// Create new Boolean variable from specification
+  int IntVarCount() const { return integer_variables_.size(); }
   void NewBoolVar(const std::string& name, BoolVarSpec* const vs);
-  /// Create new set variable from specification
-  //void newSetVar(SetVarSpec* const vs);
+  // Skips the creation of the variable.
+  void SkipBoolVar();
+
 
   IntVar* GetIntVar(AST::Node* const node);
 
   IntVar* IntegerVariable(int index) const {
     return integer_variables_[index];
+  }
+
+  void SetIntegerVariable(int index, IntVar* const var) {
+    integer_variables_[index] = var;
   }
 
   IntVar* BooleanVariable(int index) const {
@@ -121,10 +125,10 @@ class FlatZincModel {
              int time_limit_in_ms);
 
   // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
-  void Parse(const std::string& fileName);
+  bool Parse(const std::string& fileName);
 
   // \brief Parse FlatZinc from \a is into \a fzs and return it.
-  void Parse(std::istream& is);
+  bool Parse(std::istream& is);
 
  private:
   enum Meth {
@@ -158,19 +162,12 @@ class FlatZincModel {
 
   AST::Array* output_;
   /// The integer variables
-  std::vector<operations_research::IntVar*> integer_variables_;
-  /// Indicates whether an integer variable is introduced by mzn2fzn
-  std::vector<bool> integer_variables_introduced;
-  /// Indicates whether an integer variable aliases a Boolean variable
-  std::vector<int> integer_variables_boolalias;
+  std::vector<IntVar*> integer_variables_;
   /// The Boolean variables
-  std::vector<operations_research::IntVar*> boolean_variables_;
-  /// Indicates whether a Boolean variable is introduced by mzn2fzn
-  std::vector<bool> boolean_variables_introduced;
+  std::vector<IntVar*> boolean_variables_;
   /// The set variables
   std::vector<SetVar> sv;
-  /// Indicates whether a set variable is introduced by mzn2fzn
-  std::vector<bool> sv_introduced;
+  std::vector<IntVar*> active_variables_;
 };
 
 /// %Exception class for %FlatZinc errors

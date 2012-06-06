@@ -60,9 +60,163 @@ AST::Array* ParserState::Output(void) {
   return a;
 }
 
-void ParserState::AddConstraints() {
+int ParserState::FindTarget(AST::Node* const annotations) const {
+  if (annotations != NULL) {
+    if (annotations->isArray()) {
+      AST::Array* const ann_array = annotations->getArray();
+      if (ann_array->a[0]->isCall("defines_var")) {
+        AST::Call* const call = ann_array->a[0]->getCall();
+        AST::Node* const args = call->args;
+        if (args->isIntVar()) {
+          return args->getIntVar();
+        } else if (args->isBoolVar()) {
+          return int_variables_.size() + args->getBoolVar();
+        }
+      }
+    }
+  }
+  return CtSpec::kNoDefinition;
+}
+
+void ParserState::CollectRequired(AST::Array* const args,
+                                  const hash_set<int>& candidates,
+                                  hash_set<int>* const require) const {
+  for (int i = 0; i < args->a.size(); ++i) {
+    AST::Node* const node = args->a[i];
+    if (node->isArray()) {
+      CollectRequired(node->getArray(), candidates, require);
+    } else if (node->isIntVar()) {
+      const int req = node->getIntVar();
+      if (ContainsKey(candidates, req)) {
+        require->insert(req);
+      }
+    } else if (node->isBoolVar()) {
+      const int req = node->getBoolVar() + int_variables_.size();
+      if (ContainsKey(candidates, req)) {
+        require->insert(req);
+      }
+    }
+  }
+}
+
+void ParserState::ComputeViableTarget(
+    CtSpec* const spec,
+    hash_set<int>* const candidates) const {
+  if (spec->Id() == "bool2int") {
+    const int define = FindTarget(spec->annotations());
+    CHECK(int_variables_[define]->introduced);
+    candidates->insert(define);
+    VLOG(1) << "bool2int -> insert " << define;
+  }
+}
+
+bool ConstraintDependsOn(const CtSpec* const spec1,
+                         const CtSpec* const spec2) {
+  return spec2->Require(spec1->defines()) || spec1->Index() < spec2->Index();
+}
+
+void ParserState::ComputeDependencies(const hash_set<int>& candidates,
+                                      CtSpec* const spec) const {
+  const int define = FindTarget(spec->annotations());
+  if (ContainsKey(candidates, define)) {
+    spec->set_defines(define);
+  }
+  CollectRequired(spec->Args(), candidates, spec->require_map());
+  if (define != CtSpec::kNoDefinition) {
+    spec->require_map()->erase(define);
+  }
+}
+
+void ParserState::CreateModel() {
+  hash_set<int> candidates;
   for (unsigned int i = constraints_.size(); i--;) {
+    CtSpec* const spec = constraints_[i];
+    ComputeViableTarget(spec, &candidates);
+  }
+
+  for (unsigned int i = constraints_.size(); i--;) {
+    CtSpec* const spec = constraints_[i];
+    ComputeDependencies(candidates, spec);
+    if (spec->defines() != CtSpec::kNoDefinition ||
+        !spec->require_map()->empty()) {
+      VLOG(1) << spec->DebugString();
+    }
+  }
+
+  VLOG(1) << "Sort constraints";
+  std::sort(constraints_.begin(), constraints_.end(), ConstraintDependsOn);
+  for (unsigned int i = 0; i < constraints_.size(); i++) {
+    CtSpec* const spec = constraints_[i];
+    //    LOG(INFO) << i << " -> " << spec->DebugString();
+  }
+
+  int array_index = 0;
+  for (unsigned int i = 0; i < int_variables_.size(); i++) {
     if (!hadError) {
+      const std::string& raw_name = int_variables_[i]->Name();
+      std::string name;
+      if (raw_name[0] == '[') {
+        name = StringPrintf("%s[%d]", raw_name.c_str() + 1, ++array_index);
+      } else {
+        if (array_index == 0) {
+          name = raw_name;
+        } else {
+          name = StringPrintf("%s[%d]", raw_name.c_str(), array_index + 1);
+          array_index = 0;
+        }
+      }
+      if (!ContainsKey(candidates, i)) {
+        model_->NewIntVar(name, int_variables_[i]);
+      } else {
+        model_->SkipIntVar();
+        VLOG(1) << "Skipping " << int_variables_[i]->DebugString();
+      }
+    }
+  }
+
+  array_index = 0;
+  for (unsigned int i=0; i<bool_variables_.size(); i++) {
+    if (!hadError) {
+      const std::string& raw_name = bool_variables_[i]->Name();
+      std::string name;
+      if (raw_name[0] == '[') {
+        name = StringPrintf("%s[%d]", raw_name.c_str() + 1, ++array_index);
+      } else {
+        if (array_index == 0) {
+          name = raw_name;
+        } else {
+          name = StringPrintf("%s[%d]", raw_name.c_str(), array_index + 1);
+          array_index = 0;
+        }
+      }
+      if (!ContainsKey(candidates, i + int_variables_.size())) {
+        model_->NewBoolVar(name, bool_variables_[i]);
+      } else {
+        model_->SkipBoolVar();
+        VLOG(1) << "Skipping " << bool_variables_[i]->DebugString();
+      }
+    }
+  }
+
+  for (unsigned int i=0; i<set_variables_.size(); i++) {
+    if (!hadError) {
+      //  model->newSetVar(static_cast<Set_Variables_pec*>(set_variables_[i]));
+    }
+  }
+  for (unsigned int i = domain_constraints_.size(); i--;) {
+    if (!hadError) {
+      try {
+        assert(domain_constraints_[i]->NumArgs() == 2);
+        model_->PostConstraint(domain_constraints_[i]);
+      } catch (operations_research::Error& e) {
+        yyerror(this, e.DebugString().c_str());
+      }
+    }
+  }
+
+  for (unsigned int i = 0; i < constraints_.size(); i++) {
+    if (!hadError) {
+      CtSpec* const spec = constraints_[i];
       model_->PostConstraint(constraints_[i]);
     }
   }
@@ -117,33 +271,15 @@ void ParserState::AddDomainConstraint(std::string id,
   AST::Array* args = new AST::Array(2);
   args->a[0] = var;
   args->a[1] = dom.value();
-  domain_constraints_.push_back(
-      new CtSpec(-1, id, args, NULL, CtSpec::kNoDefinition));
+  domain_constraints_.push_back(new CtSpec(-1, id, args, NULL));
 }
 
 void ParserState::AddConstraint(const std::string& id,
                                 AST::Array* const args,
                                 AST::Node* const annotations) {
   int target = CtSpec::kNoDefinition;
-  if (annotations != NULL) {
-    if (annotations->isArray()) {
-      AST::Array* const ann_array = annotations->getArray();
-      if (ann_array->a[0]->isCall("defines_var")) {
-        AST::Call* const call = ann_array->a[0]->getCall();
-        AST::Node* const args = call->args;
-        if (args->isIntVar()) {
-          target = args->getIntVar();
-        } else if (args->isBoolVar()) {
-          target = int_variables_.size() + args->getBoolVar();
-        }
-      }
-    }
-  }
-  constraints_.push_back(new CtSpec(constraints_.size(),
-                                    id,
-                                    args,
-                                    annotations,
-                                    target));
+  constraints_.push_back(
+      new CtSpec(constraints_.size(), id, args, annotations));
 }
 
 void ParserState::InitModel() {
@@ -151,65 +287,13 @@ void ParserState::InitModel() {
     model_->Init(int_variables_.size(),
                  bool_variables_.size(),
                  set_variables_.size());
-
-  int array_index = 0;
-  for (unsigned int i = 0; i < int_variables_.size(); i++) {
-    if (!hadError) {
-      const std::string& raw_name = int_variables_[i]->Name();
-      std::string name;
-      if (raw_name[0] == '[') {
-        name = StringPrintf("%s[%d]", raw_name.c_str() + 1, ++array_index);
-      } else {
-        if (array_index == 0) {
-          name = raw_name;
-        } else {
-          name = StringPrintf("%s[%d]", raw_name.c_str(), array_index + 1);
-          array_index = 0;
-        }
-      }
-      model_->NewIntVar(name, int_variables_[i]);
-    }
-  }
-  array_index = 0;
-  for (unsigned int i=0; i<bool_variables_.size(); i++) {
-    if (!hadError) {
-      const std::string& raw_name = bool_variables_[i]->Name();
-      std::string name;
-      if (raw_name[0] == '[') {
-        name = StringPrintf("%s[%d]", raw_name.c_str() + 1, ++array_index);
-      } else {
-        if (array_index == 0) {
-          name = raw_name;
-        } else {
-          name = StringPrintf("%s[%d]", raw_name.c_str(), array_index + 1);
-          array_index = 0;
-        }
-      }
-      model_->NewBoolVar(name, bool_variables_[i]);
-    }
-  }
-  for (unsigned int i=0; i<set_variables_.size(); i++) {
-    if (!hadError) {
-      //  model->newSetVar(static_cast<Set_Variables_pec*>(set_variables_[i]));
-    }
-  }
-  for (unsigned int i = domain_constraints_.size(); i--;) {
-    if (!hadError) {
-      try {
-        assert(domain_constraints_[i]->NumArgs() == 2);
-        model_->PostConstraint(domain_constraints_[i]);
-      } catch (operations_research::Error& e) {
-        yyerror(this, e.DebugString().c_str());
-      }
-    }
-  }
 }
 
 void ParserState::FillOutput(operations_research::FlatZincModel& m) {
   m.InitOutput(Output());
 }
 
-void FlatZincModel::Parse(const std::string& filename) {
+bool FlatZincModel::Parse(const std::string& filename) {
 #ifdef HAVE_MMAP
     int fd;
     char* data;
@@ -250,7 +334,7 @@ void FlatZincModel::Parse(const std::string& filename) {
       yylex_destroy(pp.yyscanner);
   }
 
-void FlatZincModel::Parse(std::istream& is) {
+bool FlatZincModel::Parse(std::istream& is) {
   std::string s = string(istreambuf_iterator<char>(is),
                          istreambuf_iterator<char>());
 

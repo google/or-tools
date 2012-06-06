@@ -264,7 +264,7 @@ namespace operations_research { namespace AST {
     : id(id0), args(args0) {}
     ~Call(void) { delete args; }
     virtual string DebugString() const {
-      return StringPrintf("call_%s(%s)",
+      return StringPrintf("%s(%s)",
                           id.c_str(),
                           args->DebugString().c_str());
     }

@@ -716,10 +716,17 @@ void p_array_bool_element(FlatZincModel* const model, CtSpec* const spec) {
 void p_bool2int(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const left = model->GetIntVar(spec->Arg(0));
-  IntVar* const right = model->GetIntVar(spec->Arg(1));
-  Constraint* const ct = solver->MakeEquality(left, right);
-  VLOG(1) << "Posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (spec->Arg(1)->isIntVar() &&
+      spec->defines() == spec->Arg(1)->getIntVar()) {
+    VLOG(1) << "Aliasing bool2int";
+    CHECK(model->IntegerVariable(spec->defines()) == NULL);
+    model->SetIntegerVariable(spec->defines(), left);
+  } else {
+    IntVar* const right = model->GetIntVar(spec->Arg(1));
+    Constraint* const ct = solver->MakeEquality(left, right);
+    VLOG(1) << "Posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_int_in(FlatZincModel* const model, CtSpec* const spec) {

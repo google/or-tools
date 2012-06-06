@@ -57,14 +57,9 @@ FlatZincModel::FlatZincModel(void)
 void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
   int_var_count = 0;
   integer_variables_.resize(intVars);
-  integer_variables_introduced.resize(intVars);
-  integer_variables_boolalias.resize(intVars);
   bool_var_count = 0;
   boolean_variables_.resize(boolVars);
-  boolean_variables_introduced.resize(boolVars);
   set_var_count = 0;
-  // sv = std::vector<SetVar>(setVars);
-  // sv_introduced = std::vector<bool>(setVars);
 }
 
 void FlatZincModel::NewIntVar(const std::string& name, IntVarSpec* const vs) {
@@ -88,17 +83,14 @@ void FlatZincModel::NewIntVar(const std::string& name, IntVarSpec* const vs) {
     }
     VLOG(1) << "Create IntVar: "
             << integer_variables_[int_var_count - 1]->DebugString();
+    if (!vs->introduced) {
+      active_variables_.push_back(integer_variables_[int_var_count - 1]);
+    }
   }
-  integer_variables_introduced[int_var_count - 1] = vs->introduced;
-  integer_variables_boolalias[int_var_count - 1] = -1;
 }
 
-void FlatZincModel::AliasBool2Int(int iv, int bv) {
-  integer_variables_boolalias[iv] = bv;
-}
-
-int FlatZincModel::AliasBool2Int(int iv) {
-  return integer_variables_boolalias[iv];
+void FlatZincModel::SkipIntVar() {
+  integer_variables_[int_var_count++] = NULL;
 }
 
 void FlatZincModel::NewBoolVar(const std::string& name, BoolVarSpec* const vs) {
@@ -110,8 +102,14 @@ void FlatZincModel::NewBoolVar(const std::string& name, BoolVarSpec* const vs) {
     boolean_variables_[bool_var_count++] = solver_.MakeBoolVar(name);
     VLOG(1) << "Create BoolVar: "
             << boolean_variables_[bool_var_count - 1]->DebugString();
+    if (!vs->introduced) {
+      active_variables_.push_back(boolean_variables_[bool_var_count - 1]);
+    }
   }
-  boolean_variables_introduced[bool_var_count-1] = vs->introduced;
+}
+
+void FlatZincModel::SkipBoolVar() {
+  boolean_variables_[bool_var_count++] = NULL;
 }
 
 // void FlatZincModel::newSetVar(SetVarSpec* vs) {
@@ -152,15 +150,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
     }
 
     if (method_ != SAT && flat_annotations.size() == 1) {
-      std::vector<IntVar*> primary_integer_variables;
-      std::vector<IntVar*> secondary_integer_variables;
-      std::vector<SequenceVar*> sequence_variables;
-      std::vector<IntervalVar*> interval_variables;
-      solver_.CollectDecisionVariables(&primary_integer_variables,
-                                       &secondary_integer_variables,
-                                       &sequence_variables,
-                                       &interval_variables);
-      builders_.push_back(solver_.MakePhase(primary_integer_variables,
+      builders_.push_back(solver_.MakePhase(active_variables_,
                                             Solver::CHOOSE_FIRST_UNBOUND,
                                             Solver::ASSIGN_MIN_VALUE));
       VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
@@ -169,15 +159,35 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
     for (unsigned int i=0; i < flat_annotations.size(); i++) {
       try {
         AST::Call *call = flat_annotations[i]->getCall("int_search");
+        LOG(INFO) << call->DebugString();
         AST::Array *args = call->getArgs(4);
+        LOG(INFO) << "args = " << args->DebugString();
         AST::Array *vars = args->a[0]->getArray();
+        Solver::IntVarStrategy str = Solver::CHOOSE_FIRST_UNBOUND;
+        if (args->hasAtom("first_fail")) {
+          str = Solver::CHOOSE_MIN_SIZE;
+        }
+        if (args->hasAtom("anti_first_fail")) {
+          str = Solver::CHOOSE_MAX_SIZE;
+        }
+        if (args->hasAtom("smallest")) {
+          str = Solver::CHOOSE_LOWEST_MIN;
+        }
+        if (args->hasAtom("largest")) {
+          str = Solver::CHOOSE_HIGHEST_MAX;
+        }
+        Solver::IntValueStrategy vstr = Solver::ASSIGN_MIN_VALUE;
+        if (args->hasAtom("indomain_max")) {
+          vstr = Solver::ASSIGN_MAX_VALUE;
+        }
+        if (args->hasAtom("indomain_median")) {
+          vstr = Solver::ASSIGN_CENTER_VALUE;
+        }
         std::vector<IntVar*> int_vars;
         for (int i = 0; i < vars->a.size(); ++i) {
           int_vars.push_back(integer_variables_[vars->a[i]->getIntVar()]);
         }
-        builders_.push_back(solver_.MakePhase(int_vars,
-                                              Solver::CHOOSE_FIRST_UNBOUND,
-                                              Solver::ASSIGN_MIN_VALUE));
+        builders_.push_back(solver_.MakePhase(int_vars, str, vstr));
       } catch (AST::TypeError& e) {
         (void) e;
         try {
@@ -211,15 +221,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
               << builders_.back()->DebugString();
     }
   } else {
-    std::vector<IntVar*> primary_integer_variables;
-    std::vector<IntVar*> secondary_integer_variables;
-    std::vector<SequenceVar*> sequence_variables;
-    std::vector<IntervalVar*> interval_variables;
-    solver_.CollectDecisionVariables(&primary_integer_variables,
-                                     &secondary_integer_variables,
-                                     &sequence_variables,
-                                     &interval_variables);
-    builders_.push_back(solver_.MakePhase(primary_integer_variables,
+    builders_.push_back(solver_.MakePhase(active_variables_,
                                           Solver::CHOOSE_FIRST_UNBOUND,
                                           Solver::ASSIGN_MIN_VALUE));
     VLOG(1) << "Decision builder = " << builders_.back()->DebugString();

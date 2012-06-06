@@ -1,0 +1,16 @@
+array [1..21] of int: Formula = [1, 2, 3, 1, 2, -3, 1, -2, 3, 1, -2, -3, -1, 2, 3, -1, 2, -3, -1, -2, 3];
+var bool: BOOL____00001 :: is_defined_var :: var_is_introduced;
+var bool: BOOL____00002 :: is_defined_var :: var_is_introduced;
+var bool: BOOL____00004 :: is_defined_var :: var_is_introduced;
+array [1..3] of var bool: assignment :: output_array([1..3]);
+constraint array_bool_or([BOOL____00004, BOOL____00001, assignment[2]], true);
+constraint array_bool_or([BOOL____00004, assignment[1], BOOL____00002], true);
+constraint array_bool_or([BOOL____00004, assignment[1], assignment[2]], true);
+constraint array_bool_or([assignment[3], BOOL____00001, BOOL____00002], true);
+constraint array_bool_or([assignment[3], BOOL____00001, assignment[2]], true);
+constraint array_bool_or([assignment[3], assignment[1], BOOL____00002], true);
+constraint array_bool_or([assignment[3], assignment[1], assignment[2]], true);
+constraint bool_eq_reif(assignment[1], false, BOOL____00001) :: defines_var(BOOL____00001);
+constraint bool_eq_reif(assignment[2], false, BOOL____00002) :: defines_var(BOOL____00002);
+constraint bool_eq_reif(assignment[3], false, BOOL____00004) :: defines_var(BOOL____00004);
+solve satisfy;

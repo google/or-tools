@@ -148,7 +148,7 @@ class ParserState {
   int FillBuffer(char* lexBuf, unsigned int lexBufSize);
   void output(std::string x, AST::Node* n);
   AST::Array* Output(void);
-  void AddConstraints();
+  void CreateModel();
   AST::Node* ArrayElement(string id, unsigned int offset);
   AST::Node* VarRefArg(string id, bool annotation);
   void AddDomainConstraint(std::string id, AST::Node* var,
@@ -164,6 +164,15 @@ class ParserState {
   }
 
  private:
+  int FindTarget(AST::Node* const annotations) const;
+  void CollectRequired(AST::Array* const args,
+                       const hash_set<int>& candidates,
+                       hash_set<int>* const require) const;
+  void ComputeDependencies(const hash_set<int>& candidates,
+                           CtSpec* const spec) const;
+  void ComputeViableTarget(CtSpec* const spec,
+                           hash_set<int>* const candidates) const;
+
   operations_research::FlatZincModel* model_;
   std::vector<std::pair<std::string,AST::Node*> > output_;
 };

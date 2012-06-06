@@ -1,4 +1,8 @@
 predicate all_different_int(array [int] of var int: x);
+predicate count(array [int] of var int: x, var int: y, var int: c);
+predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
+predicate table_bool(array [int] of var bool: x, array [int, int] of bool: t);
+predicate table_int(array [int] of var int: x, array [int, int] of int: t);
 var bool: BOOL____00001 :: is_defined_var :: var_is_introduced;
 var bool: BOOL____00002 :: is_defined_var :: var_is_introduced;
 var bool: BOOL____00004 :: is_defined_var :: var_is_introduced;

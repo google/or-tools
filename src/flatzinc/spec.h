@@ -38,6 +38,9 @@
 #ifndef OR_TOOLS_FLATZINC_SPEC__H_
 #define OR_TOOLS_FLATZINC_SPEC__H_
 
+#include "base/concise_iterator.h"
+#include "base/hash.h"
+#include "base/map-util.h"
 #include "flatzinc/ast.h"
 #include <vector>
 #include <iostream>
@@ -117,6 +120,7 @@ class IntVarSpec : public VarSpec {
              bool own_domain)
       : VarSpec(name, introduced, false, false),
         own_domain_(own_domain) {
+    i = -1;
     domain_ = d;
   }
 
@@ -139,9 +143,12 @@ class IntVarSpec : public VarSpec {
 
   virtual string DebugString() const {
     return StringPrintf(
-        "IntVarSpec(id = %d, domain = %s)",
+        "IntVarSpec(name = %s, id = %d, domain = %s)",
+        name.c_str(),
         i,
-        domain_.value()->DebugString().c_str());
+        (domain_.defined() ?
+         domain_.value()->DebugString().c_str() :
+         "no domain"));
   }
 
   AST::SetLit* Domain() const {
@@ -165,6 +172,7 @@ class BoolVarSpec : public VarSpec {
               bool introduced,
               bool own_domain)
       : VarSpec(name, introduced, false, false), own_domain_(own_domain) {
+    i = -1;
     domain_ = d;
   }
 
@@ -185,9 +193,12 @@ class BoolVarSpec : public VarSpec {
 
   virtual string DebugString() const {
     return StringPrintf(
-        "BoolVarSpec(id = %d, domain = %s)",
+        "BoolVarSpec(name = %s, id = %d, domain = %s)",
+        name.c_str(),
         i,
-        domain_.value()->DebugString().c_str());
+        (domain_.defined() ?
+         domain_.value()->DebugString().c_str():
+         "no domain"));
   }
 
  private:
@@ -255,13 +266,12 @@ class CtSpec {
   CtSpec(int index,
          const std::string& id,
          AST::Array* const args,
-         AST::Node* const annotations,
-         int defines)
+         AST::Node* const annotations)
       : index_(index),
         id_(id),
         args_(args),
         annotations_(annotations),
-        defines_(defines) {
+        defines_(kNoDefinition) {
   }
 
   ~CtSpec() {
@@ -285,18 +295,56 @@ class CtSpec {
     return args_->a.size();
   }
 
+  AST::Array* Args() const {
+    return args_;
+  }
+
   AST::Node* annotations() const {
     return annotations_;
   }
 
   string DebugString() const {
-    return StringPrintf("CtSpec(no = %d, id = %s, args = %s, annotations=%s)",
-                        index_,
-                        id_.c_str(),
-                        args_->DebugString().c_str(),
-                        (annotations_ != NULL ?
-                         annotations_->DebugString().c_str() :
-                         "Nil"));
+    string output =
+        StringPrintf("CtSpec(no = %d, id = %s, args = %s",
+                     index_,
+                     id_.c_str(),
+                     args_->DebugString().c_str());
+    if (annotations_ != NULL) {
+      output += StringPrintf(", annotations = %s",
+                             annotations_->DebugString().c_str());
+    }
+    if (defines_ != kNoDefinition) {
+      output += StringPrintf(", target = %d", defines_);
+    }
+    if (!requires_.empty()) {
+      output += ", requires = [";
+      for (ConstIter<hash_set<int> > it(requires_); !it.at_end(); ++it) {
+        output += StringPrintf("%d ", *it);
+      }
+      output += "]";
+    }
+    output += ")";
+    return output;
+  }
+
+  void set_defines(int defines) {
+    defines_ = defines;
+  }
+
+  int defines() const {
+    return defines_;
+  }
+
+  void add_requires(int require) {
+    requires_.insert(require);
+  }
+
+  bool Require(int require) const {
+    return ContainsKey(requires_, require);
+  }
+
+  hash_set<int>* require_map() {
+    return &requires_;
   }
 
  private:
@@ -306,6 +354,7 @@ class CtSpec {
   AST::Node* const annotations_;
   int defines_;
   std::vector<int> uses_;
+  hash_set<int> requires_;
 };
 }  // namespace operations_research
 #endif
