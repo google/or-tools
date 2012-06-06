@@ -843,6 +843,142 @@ IntVar* MinSizeHighestMaxSelector::Select(Solver* const s, int64* id) {
   }
 }
 
+// ----- Choose Lowest Min --
+
+class LowestMinSelector : public VariableSelector {
+ public:
+  LowestMinSelector(const IntVar* const* vars, int size)
+      : VariableSelector(vars, size) {}
+  virtual ~LowestMinSelector() {}
+  virtual IntVar* Select(Solver* const s, int64* id);
+  virtual string DebugString() const { return "LowestMinSelector"; }
+};
+
+IntVar* LowestMinSelector::Select(Solver* const s, int64* id) {
+  IntVar* result = NULL;
+  int64 best_min = kint64max;
+  int index = -1;
+  for (int i = 0; i < size_; ++i) {
+    IntVar* const var = vars_[i];
+    if (!var->Bound()) {
+      if (var->Min() < best_min) {
+        best_min = var->Min();
+        index = i;
+        result = var;
+      }
+    }
+  }
+  if (index == -1) {
+    *id = size_;
+    return NULL;
+  } else {
+    *id = index;
+    return result;
+  }
+}
+
+// ----- Choose Highest Max -----
+
+class HighestMaxSelector : public VariableSelector {
+ public:
+  HighestMaxSelector(const IntVar* const* vars, int size)
+      : VariableSelector(vars, size) {}
+  virtual ~HighestMaxSelector() {}
+  virtual IntVar* Select(Solver* const s, int64* id);
+  virtual string DebugString() const { return "HighestMaxSelector"; }
+};
+
+IntVar* HighestMaxSelector::Select(Solver* const s, int64* id) {
+  IntVar* result = NULL;
+  int64 best_max = kint64min;
+  int index = -1;
+  for (int i = 0; i < size_; ++i) {
+    IntVar* const var = vars_[i];
+    if (!var->Bound()) {
+      if (var->Max() > best_max) {
+        best_max = var->Max();
+        index = i;
+        result = var;
+      }
+    }
+  }
+  if (index == -1) {
+    *id = size_;
+    return NULL;
+  } else {
+    *id = index;
+    return result;
+  }
+}
+
+// ----- Choose Lowest Size --
+
+class LowestSizeSelector : public VariableSelector {
+ public:
+  LowestSizeSelector(const IntVar* const* vars, int size)
+      : VariableSelector(vars, size) {}
+  virtual ~LowestSizeSelector() {}
+  virtual IntVar* Select(Solver* const s, int64* id);
+  virtual string DebugString() const { return "MinSizeSelector"; }
+};
+
+IntVar* LowestSizeSelector::Select(Solver* const s, int64* id) {
+  IntVar* result = NULL;
+  int64 best_size = kint64max;
+  int index = -1;
+  for (int i = 0; i < size_; ++i) {
+    IntVar* const var = vars_[i];
+    if (!var->Bound()) {
+      if (var->Size() < best_size) {
+        best_size = var->Size();
+        index = i;
+        result = var;
+      }
+    }
+  }
+  if (index == -1) {
+    *id = size_;
+    return NULL;
+  } else {
+    *id = index;
+    return result;
+  }
+}
+
+// ----- Choose Highest Size -----
+
+class HighestSizeSelector : public VariableSelector {
+ public:
+  HighestSizeSelector(const IntVar* const* vars, int size)
+      : VariableSelector(vars, size) {}
+  virtual ~HighestSizeSelector() {}
+  virtual IntVar* Select(Solver* const s, int64* id);
+  virtual string DebugString() const { return "MaxSizeSelector"; }
+};
+
+IntVar* HighestSizeSelector::Select(Solver* const s, int64* id) {
+  IntVar* result = NULL;
+  int64 best_size = kint64min;
+  int index = -1;
+  for (int i = 0; i < size_; ++i) {
+    IntVar* const var = vars_[i];
+    if (!var->Bound()) {
+      if (var->Size() > best_size) {
+        best_size = var->Size();
+        index = i;
+        result = var;
+      }
+    }
+  }
+  if (index == -1) {
+    *id = size_;
+    return NULL;
+  } else {
+    *id = index;
+    return result;
+  }
+}
+
 // ----- Choose random unbound --
 
 class RandomSelector : public VariableSelector {
@@ -1641,22 +1777,34 @@ class BaseAssignVariables : public DecisionBuilder {
       case Solver::CHOOSE_FIRST_UNBOUND:
         var_selector = s->RevAlloc(new FirstUnboundSelector(vars, size));
         break;
-      case  Solver::CHOOSE_RANDOM:
+      case Solver::CHOOSE_RANDOM:
         var_selector = s->RevAlloc(new RandomSelector(vars, size));
         break;
-      case  Solver::CHOOSE_MIN_SIZE_LOWEST_MIN:
+      case Solver::CHOOSE_MIN_SIZE_LOWEST_MIN:
         var_selector = s->RevAlloc(new MinSizeLowestMinSelector(vars, size));
         break;
-      case  Solver::CHOOSE_MIN_SIZE_HIGHEST_MIN:
+      case Solver::CHOOSE_MIN_SIZE_HIGHEST_MIN:
         var_selector = s->RevAlloc(new MinSizeHighestMinSelector(vars, size));
         break;
-      case  Solver::CHOOSE_MIN_SIZE_LOWEST_MAX:
+      case Solver::CHOOSE_MIN_SIZE_LOWEST_MAX:
         var_selector = s->RevAlloc(new MinSizeLowestMaxSelector(vars, size));
         break;
-      case  Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX:
+      case Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX:
         var_selector = s->RevAlloc(new MinSizeHighestMaxSelector(vars, size));
         break;
-      case  Solver::CHOOSE_PATH:
+      case Solver::CHOOSE_LOWEST_MIN:
+        var_selector = s->RevAlloc(new LowestMinSelector(vars, size));
+        break;
+      case Solver::CHOOSE_HIGHEST_MAX:
+        var_selector = s->RevAlloc(new HighestMaxSelector(vars, size));
+        break;
+      case Solver::CHOOSE_MIN_SIZE:
+        var_selector = s->RevAlloc(new LowestSizeSelector(vars, size));
+        break;
+      case Solver::CHOOSE_MAX_SIZE:
+        var_selector = s->RevAlloc(new HighestSizeSelector(vars, size));
+        break;
+      case Solver::CHOOSE_PATH:
         var_selector = s->RevAlloc(new PathSelector(vars, size));
         break;
       default:
@@ -1672,16 +1820,16 @@ class BaseAssignVariables : public DecisionBuilder {
     switch (val_str) {
       case Solver::INT_VALUE_DEFAULT:
       case Solver::INT_VALUE_SIMPLE:
-      case  Solver::ASSIGN_MIN_VALUE:
+      case Solver::ASSIGN_MIN_VALUE:
         value_selector = s->RevAlloc(new MinValueSelector);
         break;
-      case  Solver::ASSIGN_MAX_VALUE:
+      case Solver::ASSIGN_MAX_VALUE:
         value_selector = s->RevAlloc(new MaxValueSelector);
         break;
-      case  Solver::ASSIGN_RANDOM_VALUE:
+      case Solver::ASSIGN_RANDOM_VALUE:
         value_selector = s->RevAlloc(new RandomValueSelector);
         break;
-      case  Solver::ASSIGN_CENTER_VALUE:
+      case Solver::ASSIGN_CENTER_VALUE:
         value_selector = s->RevAlloc(new CenterValueSelector);
         break;
       default:

@@ -425,6 +425,28 @@ class Solver {
     // order in the vector of IntVars used to create the selector.
     CHOOSE_MIN_SIZE_HIGHEST_MAX,
 
+    // Among unbound variables, select the variable with the smallest minimal
+    // value.
+    // In case of tie, the first one is selected, first being defined by the
+    // order in the vector of IntVars used to create the selector.
+    CHOOSE_LOWEST_MIN,
+
+    // Among unbound variables, select the variable with the highest maximal
+    // value.
+    // In case of tie, the first one is selected, first being defined by the
+    // order in the vector of IntVars used to create the selector.
+    CHOOSE_HIGHEST_MAX,
+
+    // Among unbound variables, select the variable with the smallest size.
+    // In case of tie, the first one is selected, first being defined by the
+    // order in the vector of IntVars used to create the selector.
+    CHOOSE_MIN_SIZE,
+
+    // Among unbound variables, select the variable with the highest size.
+    // In case of tie, the first one is selected, first being defined by the
+    // order in the vector of IntVars used to create the selector.
+    CHOOSE_MAX_SIZE,
+
     // Selects the next unbound variable on a path, the path being defined by
     // the variables: var[i] corresponds to the index of the next of i.
     CHOOSE_PATH,
