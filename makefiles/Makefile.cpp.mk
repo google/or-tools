@@ -159,7 +159,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/alldiff_cst.$O\
 	$(OBJ_DIR)/assignment.$O\
 	$(OBJ_DIR)/assignment.pb.$O\
-	$(OBJ_DIR)/bucket_table.$O\
+	$(OBJ_DIR)/ac4r_table.$O\
 	$(OBJ_DIR)/collect_variables.$O\
 	$(OBJ_DIR)/constraint_solver.$O\
 	$(OBJ_DIR)/constraints.$O\
@@ -205,8 +205,8 @@ $(OBJ_DIR)/assignment.$O:$(SRC_DIR)/constraint_solver/assignment.cc $(GEN_DIR)/c
 $(OBJ_DIR)/assignment.pb.$O:$(GEN_DIR)/constraint_solver/assignment.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/assignment.pb.cc $(OBJ_OUT)assignment.pb.$O
 
-$(OBJ_DIR)/bucket_table.$O:$(SRC_DIR)/constraint_solver/bucket_table.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/bucket_table.cc	 $(OBJ_OUT)bucket_table.$O
+$(OBJ_DIR)/ac4r_table.$O:$(SRC_DIR)/constraint_solver/ac4r_table.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/ac4r_table.cc	 $(OBJ_OUT)ac4r_table.$O
 
 $(GEN_DIR)/constraint_solver/assignment.pb.cc:$(SRC_DIR)/constraint_solver/assignment.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/constraint_solver/assignment.proto
@@ -694,11 +694,11 @@ $(OBJ_DIR)/mtsearch_test.$O:$(EX_DIR)/tests/mtsearch_test.cc $(SRC_DIR)/constrai
 $(BIN_DIR)/mtsearch_test$E: $(CP_DEPS) $(OBJ_DIR)/mtsearch_test.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/mtsearch_test.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)mtsearch_test$E
 
-$(OBJ_DIR)/bucket_table_test.$O:$(EX_DIR)/tests/bucket_table_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/bucket_table_test.cc $(OBJ_OUT)bucket_table_test.$O
+$(OBJ_DIR)/ac4r_table_test.$O:$(EX_DIR)/tests/ac4r_table_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/ac4r_table_test.cc $(OBJ_OUT)ac4r_table_test.$O
 
-$(BIN_DIR)/bucket_table_test$E: $(CP_DEPS) $(OBJ_DIR)/bucket_table_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/bucket_table_test.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)bucket_table_test$E
+$(BIN_DIR)/ac4r_table_test$E: $(CP_DEPS) $(OBJ_DIR)/ac4r_table_test.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/ac4r_table_test.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)ac4r_table_test$E
 
 $(OBJ_DIR)/gcc_test.$O:$(EX_DIR)/tests/gcc_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/gcc_test.cc $(OBJ_OUT)gcc_test.$O
