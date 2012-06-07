@@ -140,7 +140,7 @@ class ParserState {
   std::vector<BoolVarSpec*> bool_variables_;
   std::vector<SetVarSpec*> set_variables_;
 
-  std::vector<CtSpec*> domain_constraints_;
+  std::vector<std::pair<int, AST::SetLit*> > domain_constraints_;
   std::vector<CtSpec*> constraints_;
 
   bool hadError;
@@ -151,8 +151,7 @@ class ParserState {
   void CreateModel();
   AST::Node* ArrayElement(string id, unsigned int offset);
   AST::Node* VarRefArg(string id, bool annotation);
-  void AddDomainConstraint(std::string id, AST::Node* var,
-                           Option<AST::SetLit*>& dom);
+  void AddIntVarDomainConstraint(int var_id, AST::SetLit* const dom);
   void AddConstraint(const std::string& id,
                      AST::Array* const args,
                      AST::Node* const annotations);

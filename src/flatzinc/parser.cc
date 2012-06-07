@@ -22,8 +22,10 @@ ParserState::~ParserState() {
   STLDeleteElements(&int_variables_);
   STLDeleteElements(&bool_variables_);
   STLDeleteElements(&set_variables_);
-  STLDeleteElements(&domain_constraints_);
   STLDeleteElements(&constraints_);
+  for (int i = 0; i < domain_constraints_.size(); ++i) {
+    delete domain_constraints_[i].second;
+  }
 }
 
 int ParserState::FillBuffer(char* lexBuf, unsigned int lexBufSize) {
@@ -353,11 +355,14 @@ void ParserState::CreateModel() {
   }
   for (unsigned int i = domain_constraints_.size(); i--;) {
     if (!hadError) {
-      try {
-        assert(domain_constraints_[i]->NumArgs() == 2);
-        model_->PostConstraint(domain_constraints_[i]);
-      } catch (operations_research::Error& e) {
-        yyerror(this, e.DebugString().c_str());
+      const int var_id = domain_constraints_[i].first;
+      AST::SetLit* const dom = domain_constraints_[i].second;
+      VLOG(1) << "Reduce integer variable " << var_id
+              << " to " << dom->DebugString();
+      if (dom->interval) {
+        model_->IntegerVariable(var_id)->SetRange(dom->min, dom->max);
+      } else {
+        model_->IntegerVariable(var_id)->SetValues(dom->s);
       }
     }
   }
@@ -404,15 +409,9 @@ AST::Node* ParserState::VarRefArg(string id, bool annotation) {
   return new AST::IntVar(0); // keep things consistent
 }
 
-void ParserState::AddDomainConstraint(std::string id,
-                                      AST::Node* var,
-                                      Option<AST::SetLit* >& dom) {
-  if (!dom.defined())
-    return;
-  AST::Array* args = new AST::Array(2);
-  args->a[0] = var;
-  args->a[1] = dom.value();
-  domain_constraints_.push_back(new CtSpec(-1, id, args, NULL));
+void ParserState::AddIntVarDomainConstraint(int var_id,
+                                            AST::SetLit* const dom) {
+  domain_constraints_.push_back(std::make_pair(var_id, dom));
 }
 
 void ParserState::AddConstraint(const std::string& id,
