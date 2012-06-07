@@ -250,25 +250,35 @@ class SetVarSpec : public VarSpec {
  public:
   Option<AST::SetLit*> upperBound;
   SetVarSpec(const string& name, bool introduced)
-      : VarSpec(name, introduced, false, false) {
+      : VarSpec(name, introduced, false, false),
+        own_domain_(false) {
     upperBound = Option<AST::SetLit*>::none();
   }
-  SetVarSpec(const string& name, const Option<AST::SetLit*>& v, bool introduced)
-      : VarSpec(name, introduced, false, false) {
+  SetVarSpec(const string& name,
+             const Option<AST::SetLit*>& v,
+             bool introduced, bool own_domain)
+      : VarSpec(name, introduced, false, false),
+        own_domain_(own_domain) {
     upperBound = v;
+
   }
   SetVarSpec(const string& name, AST::SetLit* v, bool introduced)
-      : VarSpec(name, introduced, false, true) {
+      : VarSpec(name, introduced, false, true),
+        own_domain_(false) {
     upperBound = Option<AST::SetLit*>::some(v);
   }
   SetVarSpec(const string& name, const Alias& eq, bool introduced)
-      : VarSpec(name, introduced, true, false) {
+      : VarSpec(name, introduced, true, false),
+        own_domain_(false) {
     i = eq.v;
   }
   ~SetVarSpec(void) {
-    if (!alias && upperBound.defined())
+    if (!alias && upperBound.defined() && own_domain_)
       delete upperBound.value();
   }
+
+ private:
+  const bool own_domain_;
 };
 
 class CtSpec {
