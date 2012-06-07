@@ -154,7 +154,9 @@ bool ConstraintDependsOn(const CtSpec* const spec1,
 
 void ParserState::ComputeDependencies(const hash_set<int>& candidates,
                                       CtSpec* const spec) const {
-  const int define = FindTarget(spec->annotations());
+  const int define = spec->defines() == CtSpec::kNoDefinition ?
+      FindTarget(spec->annotations()) :
+      spec->defines();
   if (ContainsKey(candidates, define)) {
     spec->set_defines(define);
   }
@@ -225,19 +227,54 @@ void ParserState::CreateModel() {
       defines_and_require.push_back(spec);
     }
   }
-  std::sort(defines_and_require.begin(),
-            defines_and_require.end(),
-            ConstraintDependsOn);
+
   const int size = constraints_.size();
   constraints_.clear();
   constraints_.resize(size);
   int index = 0;
+  hash_set<int> defined;
   for (int i = 0; i < defines_only.size(); ++i) {
     constraints_[index++] = defines_only[i];
+    defined.insert(defines_only[i]->defines());
+    LOG(INFO) << "defined.insert(" << defines_only[i]->defines() << ")";
   }
+
+  // Topological sorting.
+  hash_set<int> to_insert;
   for (int i = 0; i < defines_and_require.size(); ++i) {
-    constraints_[index++] = defines_and_require[i];
+    to_insert.insert(i);
+    LOG(INFO) << " to_insert " << defines_and_require[i]->DebugString();
   }
+
+  while (!to_insert.empty()) {
+    std::vector<int> inserted;
+    for (ConstIter<hash_set<int> > it(to_insert); !it.at_end(); ++it) {
+      CtSpec* const spec = defines_and_require[*it];
+      LOG(INFO) << "check " << spec->DebugString();
+      bool ok = true;
+      hash_set<int>* const required = spec->require_map();
+      for (ConstIter<hash_set<int> > def(*required);
+           !def.at_end();
+           ++def) {
+        if (!ContainsKey(defined, *def)) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) {
+        inserted.push_back(*it);
+        defined.insert(spec->defines());
+        LOG(INFO) << "inserted.push_back " << *it;
+        LOG(INFO) << "defined.insert(" << spec->defines() << ")";
+      }
+    }
+    CHECK(!inserted.empty());
+    for (int i = 0; i < inserted.size(); ++i) {
+      to_insert.erase(inserted[i]);
+    }
+  }
+
+  // Push the rest.
   for (int i = 0; i < no_defines.size(); ++i) {
     constraints_[index++] = no_defines[i];
   }
