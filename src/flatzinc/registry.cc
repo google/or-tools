@@ -985,107 +985,59 @@ class IntBuilder {
 };
 IntBuilder __int_Builder;
 
-// void p_set_union(FlatZincModel* const model, const ConExpr& ce, AST::Node *spec->annotations()) {
-//   LOG(FATAL) << "set_union(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-// void p_set_intersect(FlatZincModel* const model, const ConExpr& ce, AST::Node *spec->annotations()) {
-//   LOG(FATAL) << "set_intersect(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-// void p_set_diff(FlatZincModel* const model, const ConExpr& ce, AST::Node *spec->annotations()) {
-//   LOG(FATAL) << "set_diff(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
+void p_set_in(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  IntVar* const var = model->GetIntVar(spec->Arg(0));
+  if (spec->Arg(1)->isSet()) {
+    AST::SetLit* const domain = spec->Arg(1)->getSet();
+    if (domain->interval) {
+      Constraint* const ct =
+          solver->MakeBetweenCt(var, domain->min, domain->max);
+      VLOG(1) << "Posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    } else {
+      Constraint* const ct = solver->MakeMemberCt(var, domain->s);
+      VLOG(1) << "Posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
+  } else {
+    LOG(FATAL) << "set_in(" << (spec->Arg(0)->DebugString())
+               << "," << (spec->Arg(1)->DebugString())
+               << ")::" << spec->annotations()->DebugString();
+  }
+}
+void p_set_in_reif(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  IntVar* const var = model->GetIntVar(spec->Arg(0));
+  IntVar* const target = model->GetIntVar(spec->Arg(2));
+  if (spec->Arg(1)->isSet()) {
+    AST::SetLit* const domain = spec->Arg(1)->getSet();
+    if (domain->interval) {
+      Constraint* const ct =
+          solver->MakeIsBetweenCt(var, domain->min, domain->max, target);
+      VLOG(1) << "Posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    } else {
+      Constraint* const ct = solver->MakeIsMemberCt(var, domain->s, target);
+      VLOG(1) << "Posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
+  } else {
+    LOG(FATAL) << "set_in_reif(" << (spec->Arg(0)->DebugString())
+               << "," << (spec->Arg(1)->DebugString()) << ","
+               << (spec->Arg(2)->DebugString())
+               << ")::" << spec->annotations()->DebugString();
+  }
+}
 
-// void p_set_symdiff(FlatZincModel* const model, CtSpec* const spec) {
-//   LOG(FATAL) << "set_symdiff(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-
-// void p_set_eq(FlatZincModel* const model, const ConExpr& ce, AST::Node * spec->annotations()) {
-//   LOG(FATAL) << "set_eq(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-// void p_set_ne(FlatZincModel* const model, const ConExpr& ce, AST::Node * spec->annotations()) {
-//   LOG(FATAL) << "set_ne(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-// void p_set_subset(FlatZincModel* const model, const ConExpr& ce, AST::Node * spec->annotations()) {
-//   LOG(FATAL) << "set_subset(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-// void p_set_superset(FlatZincModel* const model, const ConExpr& ce, AST::Node * spec->annotations()) {
-//   LOG(FATAL) << "set_superset(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-// void p_set_card(FlatZincModel* const model, const ConExpr& ce, AST::Node * spec->annotations()) {
-//   LOG(FATAL) << "set_card(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-// void p_set_in(FlatZincModel* const model, const ConExpr& ce, AST::Node * spec->annotations()) {
-//   LOG(FATAL) << "set_in(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-// void p_set_eq_reif(FlatZincModel* const model, const ConExpr& ce, AST::Node * spec->annotations()) {
-//   LOG(FATAL) << "set_eq_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-// void p_set_ne_reif(FlatZincModel* const model, const ConExpr& ce, AST::Node * spec->annotations()) {
-//   LOG(FATAL) << "set_ne_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-// void p_set_subset_reif(FlatZincModel* const model, const ConExpr& ce,
-//                        AST::Node *spec->annotations()) {
-//   LOG(FATAL) << "set_subset_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-// void p_set_superset_reif(FlatZincModel* const model, const ConExpr& ce,
-//                          AST::Node *spec->annotations()) {
-//   LOG(FATAL) << "set_superset_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-// void p_set_in_reif(FlatZincModel* const model, const ConExpr& ce, AST::Node *spec->annotations()) {
-//   LOG(FATAL) << "set_in_reif(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-// void p_set_disjoint(FlatZincModel* const model, const ConExpr& ce, AST::Node *spec->annotations()) {
-//   LOG(FATAL) << "set_disjoint(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-
-// void p_array_set_element(FlatZincModel* const model, const ConExpr& ce,
-//                          AST::Node* spec->annotations()) {
-//   LOG(FATAL) << "array_set_element(" << (spec->Arg(0)->DebugString()) << "," << (spec->Arg(1)->DebugString()) << "," << (spec->Arg(2)->DebugString())
-//              << ")::" << spec->annotations()->DebugString();
-// }
-
-
-// class SetBuilder {
-// public:
-//   SetBuilder(void) {
-//     global_model_builder.Register("set_eq", &p_set_eq);
-//     global_model_builder.Register("set_ne", &p_set_ne);
-//     global_model_builder.Register("set_union", &p_set_union);
-//     global_model_builder.Register("array_set_element", &p_array_set_element);
-//     global_model_builder.Register("array_var_set_element", &p_array_set_element);
-//     global_model_builder.Register("set_intersect", &p_set_intersect);
-//     global_model_builder.Register("set_diff", &p_set_diff);
-//     global_model_builder.Register("set_symdiff", &p_set_symdiff);
-//     global_model_builder.Register("set_subset", &p_set_subset);
-//     global_model_builder.Register("set_superset", &p_set_superset);
-//     global_model_builder.Register("set_card", &p_set_card);
-//     global_model_builder.Register("set_in", &p_set_in);
-//     global_model_builder.Register("set_eq_reif", &p_set_eq_reif);
-//     global_model_builder.Register("equal_reif", &p_set_eq_reif);
-//     global_model_builder.Register("set_ne_reif", &p_set_ne_reif);
-//     global_model_builder.Register("set_subset_reif", &p_set_subset_reif);
-//     global_model_builder.Register("set_superset_reif", &p_set_superset_reif);
-//     global_model_builder.Register("set_in_reif", &p_set_in_reif);
-//     global_model_builder.Register("disjoint", &p_set_disjoint);
-//   }
-// };
-// SetBuilder __set_Builder;
+class SetBuilder {
+ public:
+  SetBuilder(void) {
+    global_model_builder.Register("set_in", &p_set_in);
+    global_model_builder.Register("set_in_reif", &p_set_in_reif);
+  }
+};
+SetBuilder __set_Builder;
 }  // namespace
 
 void FlatZincModel::PostConstraint(CtSpec* const spec) {
