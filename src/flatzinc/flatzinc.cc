@@ -275,6 +275,26 @@ FlatZincModel::~FlatZincModel(void) {
   delete output_;
 }
 
+string FlatZincMemoryUsage() {
+  static const int64 kDisplayThreshold = 2;
+  static const int64 kKiloByte = 1024;
+  static const int64 kMegaByte = kKiloByte * kKiloByte;
+  static const int64 kGigaByte = kMegaByte * kKiloByte;
+  const int64 memory_usage = Solver::MemoryUsage();
+  if (memory_usage > kDisplayThreshold * kGigaByte) {
+    return StringPrintf("%.2lf GB",
+                        memory_usage  * 1.0 / kGigaByte);
+  } else if (memory_usage > kDisplayThreshold * kMegaByte) {
+    return StringPrintf("%.2lf MB",
+                        memory_usage  * 1.0 / kMegaByte);
+  } else if (memory_usage > kDisplayThreshold * kKiloByte) {
+    return StringPrintf("%2lf KB",
+                        memory_usage * 1.0 / kKiloByte);
+  } else {
+    return StringPrintf("%" GG_LL_FORMAT "d", memory_usage);
+  }
+}
+
 void FlatZincModel::Solve(int solve_frequency,
                           bool use_log,
                           bool all_solutions,
@@ -339,15 +359,25 @@ void FlatZincModel::Solve(int solve_frequency,
   if (limit != NULL && limit->crossed()) {
       std::cout << "%% TIMEOUT" << std::endl;
   }
-  if (num_solutions > count &&
-      !breaked &&
-      (limit == NULL || !limit->crossed())) {
-    std::cout << "==========" << std::endl;
-  }
   if (!breaked && count == 0 && (limit == NULL || !limit->crossed())) {
     std::cout <<  "=====UNSATISFIABLE=====" << std::endl;
+  } else if (num_solutions > count &&
+             !breaked &&
+             (limit == NULL || !limit->crossed())) {
+    std::cout << "==========" << std::endl;
   }
-  std::cout << "%% Solver statistics: " << solver_.DebugString() << std::endl;
+  std::cout << "%%  runtime:        " << solver_.wall_time()
+            << " ms" << std::endl;
+  std::cout << "%%  solutions:      " << solver_.solutions() << std::endl;
+  std::cout << "%%  constraints:    " << solver_.constraints() << std::endl;
+  std::cout << "%%  normal demons:  "
+            << solver_.demon_runs(Solver::NORMAL_PRIORITY) << std::endl;
+  std::cout << "%%  delayed demons: "
+            << solver_.demon_runs(Solver::DELAYED_PRIORITY) << std::endl;
+  std::cout << "%%  branches        " << solver_.branches() << std::endl;
+  std::cout << "%%  failures:       " << solver_.failures() << std::endl;
+  //  std::cout << "%%  peak depth:    16" << std::endl;
+  std::cout << "%%  memory:         " << FlatZincMemoryUsage() << std::endl;
 }
 
 void FlatZincModel::InitOutput(AST::Array* const output) {
