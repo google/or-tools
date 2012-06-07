@@ -3701,6 +3701,8 @@ class IntVar : public IntExpr {
     SetValues(values.data(), values.size());
   }
 
+  void SetValues(const std::vector<int>& values);
+
   // This method attaches a demon that will be awakened when the
   // variable is bound.
   virtual void WhenBound(Demon* d) = 0;

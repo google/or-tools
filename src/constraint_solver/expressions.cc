@@ -58,6 +58,35 @@ IntVar::IntVar(Solver* const s, const string& name) : IntExpr(s) {
 }
 
 namespace {
+int64* NewUniqueSortedArray(const int* const values, int* size) {
+  int64* new_array = new int64[*size];
+  for (int i = 0; i < *size; ++i) {
+    new_array[i] = values[i];
+  }
+  std::sort(new_array, new_array + (*size));
+  int non_unique = 0;
+  for (int i = 0; i < (*size) - 1; ++i) {
+    if (new_array[i] == new_array[i + 1]) {
+      non_unique++;
+    }
+  }
+  if (non_unique > 0) {
+    scoped_array<int64> sorted(new_array);
+    DCHECK_GT(*size, 0);
+    new_array = new int64[(*size) - non_unique];
+    new_array[0] = sorted[0];
+    int pos = 1;
+    for (int i = 1; i < (*size); ++i) {
+      if (sorted[i] != sorted[i - 1]) {
+        new_array[pos++] = sorted[i];
+      }
+    }
+    DCHECK_EQ((*size) - non_unique, pos);
+    *size = pos;
+  }
+  return new_array;
+}
+
 int64* NewUniqueSortedArray(const int64* const values, int* size) {
   int64* new_array = new int64[*size];
   memcpy(new_array, values, (*size) * sizeof(*values));
@@ -4974,6 +5003,46 @@ void IntVar::Accept(ModelVisitor* const visitor) const {
     casted = cast_info->expression;
   }
   visitor->VisitIntegerVariable(this, casted);
+}
+
+void IntVar::SetValues(const std::vector<int>& values) {
+  // TODO(user): reimplement all this!!
+  // TODO(user): This code leaks if the array is not sorted.
+  int size = values.size();
+  const int64* const new_array = NewUniqueSortedArray(values.data(), &size);
+  const int64 vmin = Min();
+  const int64 vmax = Max();
+  const int64* first_pos = new_array;
+  const int64* last_pos = first_pos + size - 1;
+  if (*first_pos > vmax || *last_pos < vmin) {
+    solver()->Fail();
+  }
+  // TODO(user) : We could find the first position >= vmin by dichotomy.
+  while (first_pos <= last_pos &&
+         (*first_pos < vmin || !Contains(*first_pos))) {
+    if (*first_pos > vmax) {
+      solver()->Fail();
+    }
+    first_pos++;
+  }
+  if (first_pos > last_pos) {
+    solver()->Fail();
+  }
+  while (last_pos >= first_pos &&
+         (*last_pos > vmax ||
+          !Contains(*last_pos))) {
+    last_pos--;
+  }
+  DCHECK_GE(last_pos, first_pos);
+  SetRange(*first_pos, *last_pos);
+  while (first_pos < last_pos) {
+    const int64 start = (*first_pos) + 1;
+    const int64 end = *(first_pos + 1) - 1;
+    if (start <= end) {
+      RemoveInterval(start, end);
+    }
+    first_pos++;
+  }
 }
 
 void IntVar::SetValues(const int64* const values, int size) {
