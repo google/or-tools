@@ -228,6 +228,10 @@ void ParserState::CreateModel() {
     }
   }
 
+  VLOG(1) << "defines only        : " << defines_only.size();
+  VLOG(1) << "no_defines          : " << no_defines.size();
+  VLOG(1) << "defines_and_require : " << defines_and_require.size();
+
   const int size = constraints_.size();
   constraints_.clear();
   constraints_.resize(size);
@@ -236,21 +240,21 @@ void ParserState::CreateModel() {
   for (int i = 0; i < defines_only.size(); ++i) {
     constraints_[index++] = defines_only[i];
     defined.insert(defines_only[i]->defines());
-    LOG(INFO) << "defined.insert(" << defines_only[i]->defines() << ")";
+    VLOG(1) << "defined.insert(" << defines_only[i]->defines() << ")";
   }
 
   // Topological sorting.
   hash_set<int> to_insert;
   for (int i = 0; i < defines_and_require.size(); ++i) {
     to_insert.insert(i);
-    LOG(INFO) << " to_insert " << defines_and_require[i]->DebugString();
+    VLOG(1) << " to_insert " << defines_and_require[i]->DebugString();
   }
 
   while (!to_insert.empty()) {
     std::vector<int> inserted;
     for (ConstIter<hash_set<int> > it(to_insert); !it.at_end(); ++it) {
       CtSpec* const spec = defines_and_require[*it];
-      LOG(INFO) << "check " << spec->DebugString();
+      VLOG(1) << "check " << spec->DebugString();
       bool ok = true;
       hash_set<int>* const required = spec->require_map();
       for (ConstIter<hash_set<int> > def(*required);
@@ -264,8 +268,9 @@ void ParserState::CreateModel() {
       if (ok) {
         inserted.push_back(*it);
         defined.insert(spec->defines());
-        LOG(INFO) << "inserted.push_back " << *it;
-        LOG(INFO) << "defined.insert(" << spec->defines() << ")";
+        VLOG(1) << "inserted.push_back " << *it;
+        VLOG(1) << "defined.insert(" << spec->defines() << ")";
+        constraints_[index++] = spec;
       }
     }
     CHECK(!inserted.empty());
@@ -278,6 +283,8 @@ void ParserState::CreateModel() {
   for (int i = 0; i < no_defines.size(); ++i) {
     constraints_[index++] = no_defines[i];
   }
+
+  VLOG(1) << "Sorting finished";
 
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
