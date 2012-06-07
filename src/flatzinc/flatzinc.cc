@@ -311,14 +311,16 @@ void FlatZincModel::Solve(int solve_frequency,
     }
   }
 
-  if (time_limit_in_ms > 0) {
-    monitors.push_back(solver_.MakeLimit(time_limit_in_ms,
-                                         kint64max,
-                                         kint64max,
-                                         kint64max));
-  }
+  SearchLimit* const limit = (time_limit_in_ms > 0 ?
+                              solver_.MakeLimit(time_limit_in_ms,
+                                                kint64max,
+                                                kint64max,
+                                                kint64max) :
+                              NULL);
+  monitors.push_back(limit);
 
   int count = 0;
+  bool breaked = false;
   solver_.NewSearch(solver_.Compose(builders_), monitors);
   while (solver_.NextSolution()) {
     if (output_ != NULL) {
@@ -329,10 +331,23 @@ void FlatZincModel::Solve(int solve_frequency,
     }
     count++;
     if (num_solutions > 0 && count >= num_solutions) {
+      breaked = true;
       break;
     }
   }
   solver_.EndSearch();
+  if (limit != NULL && limit->crossed()) {
+      std::cout << "%% TIMEOUT" << std::endl;
+  }
+  if (num_solutions > count &&
+      !breaked &&
+      (limit == NULL || !limit->crossed())) {
+    std::cout << "==========" << std::endl;
+  }
+  if (!breaked && count == 0 && (limit == NULL || !limit->crossed())) {
+    std::cout <<  "=====UNSATISFIABLE=====" << std::endl;
+  }
+  std::cout << "%% Solver statistics: " << solver_.DebugString() << std::endl;
 }
 
 void FlatZincModel::InitOutput(AST::Array* const output) {
