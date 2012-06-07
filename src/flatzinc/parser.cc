@@ -295,7 +295,7 @@ void ParserState::CreateModel() {
 
   int array_index = 0;
   for (unsigned int i = 0; i < int_variables_.size(); i++) {
-    VLOG(1) << "Var spec " << i << int_variables_[i]->DebugString();
+    VLOG(1) << "Var spec " << i << " -> " << int_variables_[i]->DebugString();
     if (!hadError) {
       const std::string& raw_name = int_variables_[i]->Name();
       std::string name;
@@ -411,6 +411,8 @@ AST::Node* ParserState::VarRefArg(string id, bool annotation) {
 
 void ParserState::AddIntVarDomainConstraint(int var_id,
                                             AST::SetLit* const dom) {
+  VLOG(1) << "Adding int var domain constraint " << var_id
+          << ": " << dom->DebugString();
   domain_constraints_.push_back(std::make_pair(var_id, dom));
 }
 

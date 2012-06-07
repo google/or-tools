@@ -282,11 +282,10 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
     } else if (arg->isIntVar()) {
       pp->int_variables_.push_back(
           new IntVarSpec($4, Alias(arg->getIntVar()), introduced));
+      pp->AddIntVarDomainConstraint(pp->int_variables_.size() - 1, $2.value());
+
     } else {
       yyassert(pp, false, "Invalid var int initializer.");
-    }
-    if (!pp->hadError) {
-      pp->AddIntVarDomainConstraint(pp->int_variables_.size() - 1, $2.value());
     }
     delete arg;
   } else {
@@ -405,13 +404,11 @@ var_par_id annotations vardecl_int_var_array_init
             IntVarSpec* ivsv = (*vsv)[i];
             if (ivsv->alias) {
               vars[i] = ivsv->i;
+              pp->AddIntVarDomainConstraint(i, new AST::SetLit(*$9.value()));
             } else {
               vars[i] = pp->int_variables_.size();
               ivsv->SetName($11);
               pp->int_variables_.push_back(ivsv);
-            }
-            if (!pp->hadError && $9.defined()) {
-              pp->AddIntVarDomainConstraint(i, new AST::SetLit(*$9.value()));
             }
           }
         }

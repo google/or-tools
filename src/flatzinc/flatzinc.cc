@@ -358,12 +358,9 @@ void FlatZincModel::Solve(int solve_frequency,
   solver_.EndSearch();
   if (limit != NULL && limit->crossed()) {
       std::cout << "%% TIMEOUT" << std::endl;
-  }
-  if (!breaked && count == 0 && (limit == NULL || !limit->crossed())) {
+  } else if (!breaked && count == 0 && (limit == NULL || !limit->crossed())) {
     std::cout <<  "=====UNSATISFIABLE=====" << std::endl;
-  } else if (num_solutions > count &&
-             !breaked &&
-             (limit == NULL || !limit->crossed())) {
+  } else if (!breaked && (limit == NULL || !limit->crossed())) {
     std::cout << "==========" << std::endl;
   }
   std::cout << "%%  runtime:        " << solver_.wall_time()
