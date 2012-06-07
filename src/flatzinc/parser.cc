@@ -135,17 +135,18 @@ void ParserState::ComputeViableTarget(
   }
 }
 
+bool DoDefine(const CtSpec* const spec) {
+  return spec->defines() != CtSpec::kNoDefinition;
+}
+
 bool ConstraintDependsOn(const CtSpec* const spec1,
                          const CtSpec* const spec2) {
-  if (spec1->defines() != CtSpec::kNoDefinition) {
-    if (spec2->defines() == CtSpec::kNoDefinition) {
-      return true;
-    } else if (spec2->Require(spec1->defines())) {
-      return true;
-    } else if (spec1->Require(spec2->defines())) {
-      return false;
-    }
-  } else if (spec2->defines() != CtSpec::kNoDefinition) {
+  const int def1 = spec1->defines();
+  const int def2 = spec2->defines();
+  if (spec2->Require(def1)) {
+    return true;
+  }
+  if (spec1->Require(def2)) {
     return false;
   }
   return spec1->Index() < spec2->Index();
@@ -211,7 +212,36 @@ void ParserState::CreateModel() {
   }
 
   VLOG(1) << "Sort constraints";
-  std::sort(constraints_.begin(), constraints_.end(), ConstraintDependsOn);
+  std::vector<CtSpec*> defines_only;
+  std::vector<CtSpec*> no_defines;
+  std::vector<CtSpec*> defines_and_require;
+  for (unsigned int i = 0; i < constraints_.size(); i++) {
+    CtSpec* const spec = constraints_[i];
+    if (DoDefine(spec) && spec->require_map()->empty()) {
+      defines_only.push_back(spec);
+    } else if (!DoDefine(spec)) {
+      no_defines.push_back(spec);
+    } else {
+      defines_and_require.push_back(spec);
+    }
+  }
+  std::sort(defines_and_require.begin(),
+            defines_and_require.end(),
+            ConstraintDependsOn);
+  const int size = constraints_.size();
+  constraints_.clear();
+  constraints_.resize(size);
+  int index = 0;
+  for (int i = 0; i < defines_only.size(); ++i) {
+    constraints_[index++] = defines_only[i];
+  }
+  for (int i = 0; i < defines_and_require.size(); ++i) {
+    constraints_[index++] = defines_and_require[i];
+  }
+  for (int i = 0; i < no_defines.size(); ++i) {
+    constraints_[index++] = no_defines[i];
+  }
+
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
     VLOG(1) << i << " -> " << spec->DebugString();
