@@ -43,6 +43,7 @@
 #include <iostream>
 #include <cstdlib>
 
+#include "base/logging.h"
 #include "base/stringprintf.h"
 
 /**
@@ -173,7 +174,9 @@ namespace operations_research { namespace AST {
     int min; int max;
     std::vector<int> s;
     SetLit(void) {}
-    SetLit(int min0, int max0) : interval(true), min(min0), max(max0) {}
+    SetLit(int min0, int max0) : interval(true), min(min0), max(max0) {
+      DCHECK(min0 <= max0);
+    }
     SetLit(const std::vector<int>& s0) : interval(false), s(s0) {}
     bool empty(void) const {
       return ( (interval && min>max) || (!interval && s.size() == 0));

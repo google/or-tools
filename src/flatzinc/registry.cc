@@ -561,6 +561,11 @@ void p_int_div(FlatZincModel* const model, CtSpec* const spec) {
 void p_int_mod(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const left = model->GetIntVar(spec->Arg(0));
+  if (!spec->Arg(1)->isInt()) {
+    throw Error("ModelBuilder",
+                std::string("Constraint ") + spec->Id() +
+                " does not support variable modulo");
+  }
   const int mod = spec->Arg(1)->getInt();
   IntVar* const target = model->GetIntVar(spec->Arg(2));
   Constraint* const ct = solver->MakeModuloConstraint(left, mod, target);

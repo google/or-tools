@@ -45,6 +45,7 @@
 void yyerror(void*, const char*);
 #define yyerror(s) yyerror(yyextra, s)
 
+#include "base/strtoint.h"
 #include "flatzinc/parser.h"
 
 const char* stringbuf;
@@ -64,7 +65,17 @@ int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 
 "true"            { yylval->iValue = 1; return FZ_BOOL_LIT; }
 "false"           { yylval->iValue = 0; return FZ_BOOL_LIT; }
--?[0-9]+          { yylval->iValue = atoi(yytext); return FZ_INT_LIT; }
+-?[0-9]+          {
+  const int64 val = operations_research::atoi64(yytext);
+  if (val >= kint32min && val < kint32max) {
+    yylval->iValue = val;
+  } else if (val < kint32min) {
+    yylval->iValue = kint32min;
+  } else {
+    yylval->iValue = kint32max;
+  }
+  return FZ_INT_LIT;
+  }
 -?0x[0-9A-Fa-f]+  { yylval->iValue = atoi(yytext); return FZ_INT_LIT; }
 -?0o[0-7]+        { yylval->iValue = atoi(yytext); return FZ_INT_LIT; }
 -?[0-9]+\.[0-9]+  { yylval->dValue = strtod(yytext,NULL);
