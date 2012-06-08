@@ -404,7 +404,8 @@ var_par_id annotations vardecl_int_var_array_init
             IntVarSpec* ivsv = (*vsv)[i];
             if (ivsv->alias) {
               vars[i] = ivsv->i;
-              pp->AddIntVarDomainConstraint(i, new AST::SetLit(*$9.value()));
+              pp->AddIntVarDomainConstraint(ivsv->i,
+                                            new AST::SetLit(*$9.value()));
             } else {
               vars[i] = pp->int_variables_.size();
               ivsv->SetName($11);
