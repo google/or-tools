@@ -184,7 +184,9 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
         }
         std::vector<IntVar*> int_vars;
         for (int i = 0; i < vars->a.size(); ++i) {
-          int_vars.push_back(integer_variables_[vars->a[i]->getIntVar()]);
+          if (vars->a[i]->isIntVar()) {
+            int_vars.push_back(integer_variables_[vars->a[i]->getIntVar()]);
+          }
         }
         builders_.push_back(solver_.MakePhase(int_vars, str, vstr));
       } catch (AST::TypeError& e) {
@@ -195,7 +197,9 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
           AST::Array *vars = args->a[0]->getArray();
           std::vector<IntVar*> int_vars;
           for (int i = 0; i < vars->a.size(); ++i) {
-            int_vars.push_back(boolean_variables_[vars->a[i]->getBoolVar()]);
+            if (vars->a[i]->isBoolVar()) {
+              int_vars.push_back(boolean_variables_[vars->a[i]->getBoolVar()]);
+            }
           }
           builders_.push_back(solver_.MakePhase(int_vars,
                                                 Solver::CHOOSE_FIRST_UNBOUND,

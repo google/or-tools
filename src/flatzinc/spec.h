@@ -141,6 +141,28 @@ class IntVarSpec : public VarSpec {
       delete domain_.value();
   }
 
+  bool MergeBounds(int nmin, int nmax) {
+    CHECK(!alias);
+    if (assigned) {
+      return false;
+    }
+    if (!domain_.defined()) {
+      domain_ =  Option<AST::SetLit*>::some(new AST::SetLit(nmin, nmax));
+      own_domain_ = true;
+      return true;
+    }
+    if (!own_domain_) {
+      return false;  // IMPROVE ME.
+    }
+    AST::SetLit* const domain = domain_.value();
+    if (domain->interval) {
+      domain->min = std::max(domain->min, nmin);
+      domain->max = std::min(domain->max, nmax);
+      return true;
+    }
+    return false;
+  }
+
   virtual string DebugString() const {
     if (alias) {
       return StringPrintf(
@@ -173,7 +195,7 @@ class IntVarSpec : public VarSpec {
 
  private:
   Option<AST::SetLit*> domain_;
-  const bool own_domain_;
+  bool own_domain_;
 };
 
 /// Specification for Boolean variables

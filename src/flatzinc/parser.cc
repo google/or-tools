@@ -446,9 +446,40 @@ void ParserState::AddBoolVarDomainConstraint(int var_id,
   }
 }
 
+int ParserState::FindEndIntegerVariable(int index) {
+  while (int_variables_[index]->alias) {
+    index = int_variables_[index]->i;
+  }
+  return index;
+}
+
 void ParserState::AddConstraint(const std::string& id,
                                 AST::Array* const args,
                                 AST::Node* const annotations) {
+  if (id == "int_le") {
+    const std::vector<AST::Node*>& nodes = args->a;
+    if (nodes[0]->isIntVar() && nodes[1]->isInt()) {
+      IntVarSpec* const spec =
+          int_variables_[FindEndIntegerVariable(nodes[0]->getIntVar())];
+      VLOG(1) << spec->DebugString() << "Merge with kint32min.."
+              << nodes[1]->getInt();
+      const bool ok = spec->MergeBounds(kint32min, nodes[1]->getInt());
+      VLOG(1) << "  -> " << spec->DebugString();
+      if (ok) {
+        return;
+      }
+    } else if (args->a[0]->isInt() && args->a[1]->isIntVar()) {
+      IntVarSpec* const spec =
+          int_variables_[FindEndIntegerVariable(nodes[1]->getIntVar())];
+      VLOG(1) << spec->DebugString() << "Merge with " << nodes[0]->getInt()
+              << "..kint32max";
+      const bool ok = spec->MergeBounds(nodes[0]->getInt(), kint32max);
+      VLOG(1) << "  -> " << spec->DebugString();
+      if (ok) {
+        return;
+      }
+    }
+  }
   int target = CtSpec::kNoDefinition;
   constraints_.push_back(
       new CtSpec(constraints_.size(), id, args, annotations));
