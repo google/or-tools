@@ -966,6 +966,56 @@ void p_global_cardinality(FlatZincModel* const model, CtSpec* const spec) {
   solver->AddConstraint(ct);
 }
 
+void p_table_int(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntVar(array_variables->a[i]);
+  }
+  IntTupleSet tuples(size);
+  AST::Array* const t = spec->Arg(1)->getArray();
+  const int t_size = t->a.size();
+  DCHECK(t_size % size == 0);
+  const int num_tuples = t_size / size;
+  std::vector<int> one_tuple(size);
+  for (int tuple_index = 0; tuple_index < num_tuples; ++tuple_index) {
+    for (int var_index = 0; var_index < size; ++var_index) {
+      one_tuple[var_index] = t->a[tuple_index * size + var_index]->getInt();
+    }
+    tuples.Insert(one_tuple);
+  }
+  Constraint* const ct = solver->MakeAllowedAssignments(variables, tuples);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
+}
+
+void p_table_bool(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntVar(array_variables->a[i]);
+  }
+  IntTupleSet tuples(size);
+  AST::Array* const t = spec->Arg(1)->getArray();
+  const int t_size = t->a.size();
+  DCHECK(t_size % size == 0);
+  const int num_tuples = t_size / size;
+  std::vector<int> one_tuple(size);
+  for (int tuple_index = 0; tuple_index < num_tuples; ++tuple_index) {
+    for (int var_index = 0; var_index < size; ++var_index) {
+      one_tuple[var_index] = t->a[tuple_index * size + var_index]->getBool();
+    }
+    tuples.Insert(one_tuple);
+  }
+  Constraint* const ct = solver->MakeAllowedAssignments(variables, tuples);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
+}
+
 class IntBuilder {
  public:
   IntBuilder(void) {
@@ -1035,6 +1085,8 @@ class IntBuilder {
     global_model_builder.Register("all_different_int", &p_all_different_int);
     global_model_builder.Register("count", &p_count);
     global_model_builder.Register("global_cardinality", &p_global_cardinality);
+    global_model_builder.Register("table_int", &p_table_int);
+    global_model_builder.Register("table_int", &p_table_bool);
   }
 };
 IntBuilder __int_Builder;
