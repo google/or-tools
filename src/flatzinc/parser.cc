@@ -411,9 +411,11 @@ AST::Node* ParserState::VarRefArg(string id, bool annotation) {
 
 void ParserState::AddIntVarDomainConstraint(int var_id,
                                             AST::SetLit* const dom) {
-  VLOG(1) << "Adding int var domain constraint (" << var_id
-          << ") : " << dom->DebugString();
-  domain_constraints_.push_back(std::make_pair(var_id, dom));
+  if (dom != NULL) {
+    VLOG(1) << "Adding int var domain constraint (" << var_id
+            << ") : " << dom->DebugString();
+    domain_constraints_.push_back(std::make_pair(var_id, dom));
+  }
 }
 
 void ParserState::AddConstraint(const std::string& id,

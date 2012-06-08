@@ -791,6 +791,35 @@ void p_array_bool_element(FlatZincModel* const model, CtSpec* const spec) {
   }
 }
 
+void p_array_var_bool_element(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  IntVar* const index =  model->GetIntVar(spec->Arg(0));
+  IntVar* const shifted_index = solver->MakeSum(index, -1)->Var();
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntVar(array_variables->a[i]);
+  }
+  if (spec->Arg(2)->isBoolVar() &&
+      spec->defines() == spec->Arg(2)->getBoolVar() + model->IntVarCount()) {
+    VLOG(1) << "Aliasing array_var_bool_element";
+    IntVar* const target = solver->MakeElement(variables, shifted_index)->Var();
+    CHECK(model->BooleanVariable(spec->Arg(2)->getBoolVar()) == NULL);
+    model->SetBooleanVariable(spec->Arg(2)->getBoolVar(), target);
+  } else {
+    IntVar* const target = model->GetIntVar(spec->Arg(2));
+    Constraint* const ct =
+        solver->MakeEquality(solver->MakeElement(variables,
+                                                 shifted_index)->Var(),
+                             target);
+    VLOG(1) << "Posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
+}
+
+
+
 /* coercion constraints */
 void p_bool2int(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
@@ -901,7 +930,9 @@ void p_count(FlatZincModel* const model, CtSpec* const spec) {
     VLOG(1) << "Posted " << ct->DebugString();
     solver->AddConstraint(ct);
   } else {
-    LOG(FATAL) << "Not implemented";
+    throw Error("ModelBuilder",
+                std::string("Constraint ") + spec->Id() +
+                " does not support variable values");
   }
 }
 
@@ -991,7 +1022,7 @@ class IntBuilder {
     global_model_builder.Register("array_int_element", &p_array_int_element);
     global_model_builder.Register("array_var_int_element", &p_array_var_int_element);
     global_model_builder.Register("array_bool_element", &p_array_bool_element);
-    global_model_builder.Register("array_var_bool_element", &p_array_bool_element);
+    global_model_builder.Register("array_var_bool_element", &p_array_var_bool_element);
     global_model_builder.Register("bool2bool", &p_bool2bool);
     global_model_builder.Register("bool2int", &p_bool2int);
     global_model_builder.Register("int2int", &p_int2int);
@@ -1019,9 +1050,9 @@ void p_set_in(FlatZincModel* const model, CtSpec* const spec) {
       solver->AddConstraint(ct);
     }
   } else {
-    LOG(FATAL) << "set_in(" << (spec->Arg(0)->DebugString())
-               << "," << (spec->Arg(1)->DebugString())
-               << ")::" << spec->annotations()->DebugString();
+    throw Error("ModelBuilder",
+                std::string("Constraint ") + spec->Id() +
+                " does not support variable sets");
   }
 }
 void p_set_in_reif(FlatZincModel* const model, CtSpec* const spec) {
@@ -1041,10 +1072,9 @@ void p_set_in_reif(FlatZincModel* const model, CtSpec* const spec) {
       solver->AddConstraint(ct);
     }
   } else {
-    LOG(FATAL) << "set_in_reif(" << (spec->Arg(0)->DebugString())
-               << "," << (spec->Arg(1)->DebugString()) << ","
-               << (spec->Arg(2)->DebugString())
-               << ")::" << spec->annotations()->DebugString();
+    throw Error("ModelBuilder",
+                std::string("Constraint ") + spec->Id() +
+                " does not support variable sets");
   }
 }
 
