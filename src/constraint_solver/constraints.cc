@@ -832,6 +832,9 @@ class Modulo : public Constraint {
     }
     x_->RemoveValues(to_remove_);
     to_remove_.clear();
+    if (y_->Size() == mod_) {
+      return;
+    }
     for (y_iterator_->Init(); y_iterator_->Ok(); y_iterator_->Next()) {
       const int64 value = y_iterator_->Value();
       bool support = false;
