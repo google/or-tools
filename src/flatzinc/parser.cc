@@ -113,8 +113,7 @@ void ParserState::ComputeViableTarget(
       id == "int_minus" ||
       id == "int_times" ||
       id == "array_var_int_element" ||
-      id == "array_int_element" ||
-      id == "array_bool_element") {
+      id == "array_int_element") {
     // Defines an int var.
     const int define = FindTarget(spec->annotations());
     if (define != CtSpec::kNoDefinition) {
@@ -122,7 +121,9 @@ void ParserState::ComputeViableTarget(
       candidates->insert(define);
       VLOG(1) << id << " -> insert " << define;
     }
-  } else if (id == "array_bool_and" || id == "array_bool_or") {
+  } else if (id == "array_bool_and" ||
+             id == "array_bool_or" ||
+             id == "array_bool_element") {
     // Defines a bool var.
     const int bool_define = FindTarget(spec->annotations());
     if (bool_define != CtSpec::kNoDefinition) {
@@ -474,6 +475,28 @@ void ParserState::AddConstraint(const std::string& id,
       VLOG(1) << spec->DebugString() << "Merge with " << nodes[0]->getInt()
               << "..kint32max";
       const bool ok = spec->MergeBounds(nodes[0]->getInt(), kint32max);
+      VLOG(1) << "  -> " << spec->DebugString();
+      if (ok) {
+        return;
+      }
+    }
+  }
+  if (id == "int_eq") {
+    const std::vector<AST::Node*>& nodes = args->a;
+    if (nodes[0]->isIntVar() && nodes[1]->isInt()) {
+      IntVarSpec* const spec =
+          int_variables_[FindEndIntegerVariable(nodes[0]->getIntVar())];
+      VLOG(1) << spec->DebugString() << "Merge with " << nodes[1]->getInt();
+      const bool ok = spec->MergeBounds(nodes[1]->getInt(), nodes[1]->getInt());
+      VLOG(1) << "  -> " << spec->DebugString();
+      if (ok) {
+        return;
+      }
+    } else if (args->a[0]->isInt() && args->a[1]->isIntVar()) {
+      IntVarSpec* const spec =
+          int_variables_[FindEndIntegerVariable(nodes[1]->getIntVar())];
+      VLOG(1) << spec->DebugString() << "Merge with " << nodes[0]->getInt();
+      const bool ok = spec->MergeBounds(nodes[0]->getInt(), nodes[0]->getInt());
       VLOG(1) << "  -> " << spec->DebugString();
       if (ok) {
         return;

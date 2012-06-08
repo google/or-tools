@@ -704,8 +704,7 @@ void p_bool_r_imp(FlatZincModel* const model, CtSpec* const spec) {
 void p_bool_not(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const left = model->GetIntVar(spec->Arg(0));
-  IntVar* const right = model->GetIntVar(spec->Arg(1));
-  IntVar* const target = model->GetIntVar(spec->Arg(2));
+  IntVar* const target = model->GetIntVar(spec->Arg(1));
   Constraint* const ct =
       solver->MakeEquality(solver->MakeDifference(1, left)->Var(), target);
   VLOG(1) << "Posted " << ct->DebugString();
@@ -778,13 +777,13 @@ void p_array_bool_element(FlatZincModel* const model, CtSpec* const spec) {
   for (int i = 0; i < size; ++i) {
     coefficients[i] = array_coefficents->a[i]->getBool();
   }
-  if (spec->Arg(2)->isIntVar() &&
-      spec->defines() == spec->Arg(2)->getIntVar()) {
+  if (spec->Arg(2)->isBoolVar() &&
+      spec->defines() == spec->Arg(2)->getBoolVar() + model->IntVarCount()) {
     VLOG(1) << "Aliasing array_bool_element";
     IntVar* const target =
         solver->MakeElement(coefficients, shifted_index)->Var();
-    CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
-    model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
+    CHECK(model->BooleanVariable(spec->Arg(2)->getBoolVar()) == NULL);
+    model->SetBooleanVariable(spec->Arg(2)->getBoolVar(), target);
   } else {
     IntVar* const target = model->GetIntVar(spec->Arg(2));
     Constraint* const ct =

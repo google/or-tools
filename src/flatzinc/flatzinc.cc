@@ -367,18 +367,20 @@ void FlatZincModel::Solve(int solve_frequency,
   } else if (!breaked && (limit == NULL || !limit->crossed())) {
     std::cout << "==========" << std::endl;
   }
-  std::cout << "%%  runtime:        " << solver_.wall_time()
+  std::cout << "%%  runtime:              " << solver_.wall_time()
             << " ms" << std::endl;
-  std::cout << "%%  solutions:      " << solver_.solutions() << std::endl;
-  std::cout << "%%  constraints:    " << solver_.constraints() << std::endl;
-  std::cout << "%%  normal demons:  "
+  std::cout << "%%  solutions:            " << solver_.solutions() << std::endl;
+  std::cout << "%%  constraints:          " << solver_.constraints()
+            << std::endl;
+  std::cout << "%%  normal propagations:  "
             << solver_.demon_runs(Solver::NORMAL_PRIORITY) << std::endl;
-  std::cout << "%%  delayed demons: "
+  std::cout << "%%  delayed propagations: "
             << solver_.demon_runs(Solver::DELAYED_PRIORITY) << std::endl;
-  std::cout << "%%  branches        " << solver_.branches() << std::endl;
-  std::cout << "%%  failures:       " << solver_.failures() << std::endl;
+  std::cout << "%%  branches:             " << solver_.branches() << std::endl;
+  std::cout << "%%  failures:             " << solver_.failures() << std::endl;
   //  std::cout << "%%  peak depth:    16" << std::endl;
-  std::cout << "%%  memory:         " << FlatZincMemoryUsage() << std::endl;
+  std::cout << "%%  memory:               " << FlatZincMemoryUsage()
+            << std::endl;
 }
 
 void FlatZincModel::InitOutput(AST::Array* const output) {
