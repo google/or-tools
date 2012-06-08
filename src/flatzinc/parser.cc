@@ -23,8 +23,11 @@ ParserState::~ParserState() {
   STLDeleteElements(&bool_variables_);
   STLDeleteElements(&set_variables_);
   STLDeleteElements(&constraints_);
-  for (int i = 0; i < domain_constraints_.size(); ++i) {
-    delete domain_constraints_[i].second;
+  for (int i = 0; i < int_domain_constraints_.size(); ++i) {
+    delete int_domain_constraints_[i].second;
+  }
+  for (int i = 0; i < bool_domain_constraints_.size(); ++i) {
+    delete bool_domain_constraints_[i].second;
   }
 }
 
@@ -342,27 +345,43 @@ void ParserState::CreateModel() {
     }
   }
 
-  for (unsigned int i=0; i<set_variables_.size(); i++) {
-    if (!hadError) {
-      //  model->newSetVar(static_cast<Set_Variables_pec*>(set_variables_[i]));
-    }
-  }
+  // for (unsigned int i=0; i<set_variables_.size(); i++) {
+  //   if (!hadError) {
+  //     model->newSetVar(static_cast<Set_Variables_pec*>(set_variables_[i]));
+  //   }
+  // }
+
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     if (!hadError) {
       CtSpec* const spec = constraints_[i];
       model_->PostConstraint(constraints_[i]);
     }
   }
-  for (unsigned int i = domain_constraints_.size(); i--;) {
+
+  for (unsigned int i = int_domain_constraints_.size(); i--;) {
     if (!hadError) {
-      const int var_id = domain_constraints_[i].first;
-      AST::SetLit* const dom = domain_constraints_[i].second;
+      const int var_id = int_domain_constraints_[i].first;
+      AST::SetLit* const dom = int_domain_constraints_[i].second;
       VLOG(1) << "Reduce integer variable " << var_id
               << " to " << dom->DebugString();
       if (dom->interval) {
         model_->IntegerVariable(var_id)->SetRange(dom->min, dom->max);
       } else {
         model_->IntegerVariable(var_id)->SetValues(dom->s);
+      }
+    }
+  }
+
+  for (unsigned int i = bool_domain_constraints_.size(); i--;) {
+    if (!hadError) {
+      const int var_id = bool_domain_constraints_[i].first;
+      AST::SetLit* const dom = bool_domain_constraints_[i].second;
+      VLOG(1) << "Reduce bool variable " << var_id
+              << " to " << dom->DebugString();
+      if (dom->interval) {
+        model_->BooleanVariable(var_id)->SetRange(dom->min, dom->max);
+      } else {
+        model_->BooleanVariable(var_id)->SetValues(dom->s);
       }
     }
   }
@@ -414,7 +433,16 @@ void ParserState::AddIntVarDomainConstraint(int var_id,
   if (dom != NULL) {
     VLOG(1) << "Adding int var domain constraint (" << var_id
             << ") : " << dom->DebugString();
-    domain_constraints_.push_back(std::make_pair(var_id, dom));
+    int_domain_constraints_.push_back(std::make_pair(var_id, dom));
+  }
+}
+
+void ParserState::AddBoolVarDomainConstraint(int var_id,
+                                             AST::SetLit* const dom) {
+  if (dom != NULL) {
+    VLOG(1) << "Adding bool var domain constraint (" << var_id
+            << ") : " << dom->DebugString();
+    bool_domain_constraints_.push_back(std::make_pair(var_id, dom));
   }
 }
 

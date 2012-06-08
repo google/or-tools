@@ -314,10 +314,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
       yyassert(pp, false, "Invalid var bool initializer.");
     }
     if (!pp->hadError) {
-      LOG(FATAL) << "Not implemented";
-      // pp->AddDomainConstraint("int_in",
-      //                         new AST::BoolVar(pp->bool_variables_.size()-1),
-      //                         $2);
+      pp->AddBoolVarDomainConstraint(pp->bool_variables_.size()-1, $2.value());
     }
     delete arg;
   } else {
@@ -353,7 +350,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
       delete arg;
     }
     if (!pp->hadError) {
-      LOG(FATAL) << "Not implemented";
+      LOG(FATAL) << "Not implemented - 2";
       // pp->AddDomainConstraint("set_subset",
       //                         new AST::SetVar(pp->set_variables_.size()-1),
       //                         $4);
@@ -465,12 +462,8 @@ var_par_id annotations vardecl_bool_var_array_init
             pp->bool_variables_.push_back((*vsv)[i]);
           }
           if (!pp->hadError && $9.defined()) {
-            Option<AST::SetLit*> opt =
-                Option<AST::SetLit*>::some(new AST::SetLit(*$9.value()));
-            LOG(FATAL) << "Not implemented";
-            // pp->AddDomainConstraint("int_in",
-            //                         new AST::BoolVar(vars[i]),
-            //                         opt);
+            AST::SetLit* const domain = new AST::SetLit(*$9.value());
+            pp->AddBoolVarDomainConstraint(vars[i], domain);
           }
         }
       }
@@ -478,7 +471,8 @@ var_par_id annotations vardecl_bool_var_array_init
     } else {
       for (int i = 0; i < $5; i++) {
         vars[i] = pp->bool_variables_.size();
-        pp->bool_variables_.push_back(new BoolVarSpec($11, $9, !print, (i == $5 - 1)));
+        pp->bool_variables_.push_back(
+            new BoolVarSpec($11, $9, !print, (i == $5 - 1)));
       }
     }
     if (print) {
@@ -525,7 +519,7 @@ var_par_id annotations vardecl_set_var_array_init
             pp->set_variables_.push_back((*vsv)[i]);
           }
           if (!pp->hadError && $11.defined()) {
-            LOG(FATAL) << "Not implemented";
+            LOG(FATAL) << "Not implemented - 4";
             // Option<AST::SetLit*> opt =
             //     Option<AST::SetLit*>::some(new AST::SetLit(*$11.value()));
             // pp->AddDomainConstraint("set_subset",
