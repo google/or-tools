@@ -399,6 +399,13 @@ Constraint* Solver::MakeIsEqualCstCt(IntVar* const var,
   if (value == var->Max()) {
     return MakeIsGreaterOrEqualCstCt(var, value, boolvar);
   }
+  if (boolvar->Bound()) {
+    if (boolvar->Min() == 0) {
+      return MakeNonEquality(var, value);
+    } else {
+      return MakeEquality(var, value);
+    }
+  }
   // TODO(user) : what happens if the constraint is not posted?
   // The cache becomes tainted.
   model_cache_->InsertVarConstantExpression(
@@ -514,6 +521,13 @@ Constraint* Solver::MakeIsDifferentCstCt(IntVar* const var,
   }
   if (value == var->Max()) {
     return MakeIsLessOrEqualCstCt(var, value - 1, boolvar);
+  }
+  if (boolvar->Bound()) {
+    if (boolvar->Min() == 0) {
+      return MakeEquality(var, value);
+    } else {
+      return MakeNonEquality(var, value);
+    }
   }
   model_cache_->InsertVarConstantExpression(
       boolvar,

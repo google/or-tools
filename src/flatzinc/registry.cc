@@ -1086,7 +1086,7 @@ class IntBuilder {
     global_model_builder.Register("count", &p_count);
     global_model_builder.Register("global_cardinality", &p_global_cardinality);
     global_model_builder.Register("table_int", &p_table_int);
-    global_model_builder.Register("table_int", &p_table_bool);
+    global_model_builder.Register("table_bool", &p_table_bool);
   }
 };
 IntBuilder __int_Builder;
