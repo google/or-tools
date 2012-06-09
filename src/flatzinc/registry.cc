@@ -525,8 +525,9 @@ void p_int_times(FlatZincModel* const model, CtSpec* const spec) {
   IntVar* const right = model->GetIntVar(spec->Arg(1));
   if (spec->Arg(2)->isIntVar() &&
       spec->defines() == spec->Arg(2)->getIntVar()) {
-    VLOG(1) << "Aliasing int_plus";
     IntVar* const target = solver->MakeProd(left, right)->Var();
+    VLOG(1) << "Created " << spec->Arg(2)->DebugString() << " == "
+            << target->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
   } else {
@@ -965,6 +966,25 @@ void p_global_cardinality(FlatZincModel* const model, CtSpec* const spec) {
   solver->AddConstraint(ct);
 }
 
+void p_global_cardinality_old(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntVar(array_variables->a[i]);
+  }
+  AST::Array* const array_cards = spec->Arg(1)->getArray();
+  const int csize = array_cards->a.size();
+  std::vector<IntVar*> cards(csize);
+  for (int i = 0; i < csize; ++i) {
+    cards[i] = model->GetIntVar(array_cards->a[i]);
+  }
+  Constraint* const ct = solver->MakeDistribute(variables, cards);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
+}
+
 void p_table_int(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   AST::Array* const array_variables = spec->Arg(0)->getArray();
@@ -1084,6 +1104,8 @@ class IntBuilder {
     global_model_builder.Register("all_different_int", &p_all_different_int);
     global_model_builder.Register("count", &p_count);
     global_model_builder.Register("global_cardinality", &p_global_cardinality);
+    global_model_builder.Register("global_cardinality_old",
+                                  &p_global_cardinality_old);
     global_model_builder.Register("table_int", &p_table_int);
     global_model_builder.Register("table_bool", &p_table_bool);
   }
