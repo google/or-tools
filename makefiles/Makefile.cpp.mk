@@ -547,13 +547,13 @@ FLATZINC_LIB_OBJS=\
 
 ifeq ($(SYSTEM),win)
 $(SRC_DIR)/flatzinc/lexer.yy.cc: $(SRC_DIR)/flatzinc/lexer.win.cc
-	copy $(SRC_DIR)/flatzinc/lexer.win.cc $(SRC_DIR)/flatzinc/lexer.yy.cc
+	copy $(SRC_DIR)\\flatzinc\\lexer.win.cc $(SRC_DIR)\\flatzinc\\lexer.yy.cc
 
 $(SRC_DIR)/flatzinc/parser.tab.cc: $(SRC_DIR)/flatzinc/parser.win.cc
-	copy $(SRC_DIR)/flatzinc/parser.win.cc $(SRC_DIR)/flatzinc/parser.tab.cc
+	copy $(SRC_DIR)\\flatzinc\\parser.win.cc $(SRC_DIR)\\flatzinc\\parser.tab.cc
 
 $(SRC_DIR)/flatzinc/parser.tab.h: $(SRC_DIR)/flatzinc/parser.win.hh
-	copy $(SRC_DIR)/flatzinc/parser.win.hh $(SRC_DIR)/flatzinc/parser.tab.h
+	copy $(SRC_DIR)\\flatzinc\\parser.win.hh $(SRC_DIR)\\flatzinc\\parser.tab.h
 
 else
 $(SRC_DIR)/flatzinc/lexer.yy.cc: $(SRC_DIR)/flatzinc/lexer.lxx $(SRC_DIR)/flatzinc/parser.tab.h $(SRC_DIR)/flatzinc/parser.h $(SRC_DIR)/flatzinc/spec.h $(SRC_DIR)/flatzinc/flatzinc.h
