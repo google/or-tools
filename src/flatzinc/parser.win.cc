@@ -176,9 +176,9 @@
 #include <fcntl.h>
 #if !defined(_MSC_VER)
 #include <unistd.h>
+#include <sys/mman.h>
 #endif
 #include <sys/types.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
 
   using namespace std;
