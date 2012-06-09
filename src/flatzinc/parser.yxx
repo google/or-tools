@@ -418,8 +418,14 @@ var_par_id annotations vardecl_int_var_array_init
           const string arrayname = StringPrintf("[%s", $11);
           for (int i = 0; i < $5 - 1; i++) {
             vars[i] = pp->int_variables_.size();
-            pp->int_variables_.push_back(
-                new IntVarSpec(arrayname, $9, !print, false));
+            if ($9.defined()) {
+              Option<AST::SetLit*> copy = Option<AST::SetLit*>::some($9.value()->Copy());
+              pp->int_variables_.push_back(
+                  new IntVarSpec(arrayname, copy, !print, true));
+            } else {
+              pp->int_variables_.push_back(
+                  new IntVarSpec(arrayname, $9, !print, true));
+            }
           }
           vars[$5 - 1] = pp->int_variables_.size();
           pp->int_variables_.push_back(

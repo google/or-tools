@@ -181,6 +181,13 @@ namespace operations_research { namespace AST {
     bool empty(void) const {
       return ( (interval && min>max) || (!interval && s.size() == 0));
     }
+    SetLit* Copy() {
+      if (interval) {
+        return new SetLit(min, max);
+      } else {
+        return new SetLit(s);
+      }
+    }
     virtual string DebugString() const {
       if (interval)
         return StringPrintf("%d..%d", min, max);

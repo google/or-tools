@@ -45,7 +45,7 @@
 #include "base/stringprintf.h"
 #include "flatzinc/flatzinc.h"
 
-DEFINE_int32(log_frequency, 100000, "Search log frequency");
+DEFINE_int32(log_frequency, 10000000, "Search log frequency");
 DEFINE_bool(log, false, "Show search log");
 DEFINE_bool(all, false, "Search for all solutions");
 DEFINE_bool(free, false, "Ignore search annotations");
