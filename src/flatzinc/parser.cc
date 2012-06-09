@@ -519,7 +519,7 @@ void ParserState::FillOutput(operations_research::FlatZincModel& m) {
   m.InitOutput(Output());
 }
 
-bool FlatZincModel::Parse(const std::string& filename) {
+void FlatZincModel::Parse(const std::string& filename) {
 #ifdef HAVE_MMAP
   int fd;
   char* data;
@@ -561,7 +561,7 @@ bool FlatZincModel::Parse(const std::string& filename) {
   parsed_ok_ = !pp.hadError;
 }
 
-bool FlatZincModel::Parse(std::istream& is) {
+void FlatZincModel::Parse(std::istream& is) {
   std::string s = string(istreambuf_iterator<char>(is),
                          istreambuf_iterator<char>());
 

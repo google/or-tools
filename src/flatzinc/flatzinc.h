@@ -129,10 +129,10 @@ class FlatZincModel {
              int time_limit_in_ms);
 
   // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
-  bool Parse(const std::string& fileName);
+  void Parse(const std::string& fileName);
 
   // \brief Parse FlatZinc from \a is into \a fzs and return it.
-  bool Parse(std::istream& is);
+  void Parse(std::istream& is);
 
  private:
   enum Meth {
