@@ -822,19 +822,24 @@ class Modulo : public Constraint {
   }
 
   virtual void InitialPropagate() {
-    y_->SetRange(0, mod_ - 1);
-    to_remove_.clear();
-    for (x_iterator_->Init(); x_iterator_->Ok(); x_iterator_->Next()) {
-      const int64 value = x_iterator_->Value();
-      if (!y_->Contains(value % mod_)) {
-        to_remove_.push_back(value);
-      }
-    }
-    x_->RemoveValues(to_remove_);
-    to_remove_.clear();
-    if (y_->Size() == mod_) {
+    if (x_->Bound()) {
+      y_->SetValue(x_->Min() % mod_);
       return;
     }
+
+    y_->SetRange(0, mod_ - 1);
+    if (y_->Size() <= mod_) {
+      to_remove_.clear();
+      for (x_iterator_->Init(); x_iterator_->Ok(); x_iterator_->Next()) {
+        const int64 value = x_iterator_->Value();
+        if (!y_->Contains(value % mod_)) {
+          to_remove_.push_back(value);
+        }
+      }
+      x_->RemoveValues(to_remove_);
+      to_remove_.clear();
+    }
+
     for (y_iterator_->Init(); y_iterator_->Ok(); y_iterator_->Next()) {
       const int64 value = y_iterator_->Value();
       bool support = false;
@@ -849,6 +854,13 @@ class Modulo : public Constraint {
       }
     }
     y_->RemoveValues(to_remove_);
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("(%s %% %" GG_LL_FORMAT "d == %s",
+                        x_->DebugString().c_str(),
+                        mod_,
+                        y_->DebugString().c_str());
   }
 
  private:
