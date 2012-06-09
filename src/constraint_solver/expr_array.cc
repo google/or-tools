@@ -1953,9 +1953,12 @@ template<class T> Constraint* MakeScalProdEqualityFct(Solver* const solver,
       }
       return solver->MakeSumEquality(neg_terms, pos_terms[0]);
     } else {
+      if (rhs != 0) {
+        neg_terms.push_back(solver->MakeIntConst(rhs));
+      }
       return solver->MakeEquality(
           solver->MakeSum(pos_terms)->Var(),
-          solver->MakeSum(solver->MakeSum(neg_terms)->Var(), rhs)->Var());
+          solver->MakeSum(neg_terms)->Var());
     }
   } else if (positives == 1) {
     IntVar* pos_term = NULL;
