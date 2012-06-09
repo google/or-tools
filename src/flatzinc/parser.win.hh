@@ -138,7 +138,7 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 79 "src/flatzinc/parser.yxx"
+#line 81 "src/flatzinc/parser.yxx"
 {
   int iValue;
   char* sValue;
