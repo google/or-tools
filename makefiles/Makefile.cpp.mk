@@ -546,7 +546,7 @@ FLATZINC_LIB_OBJS=\
 	$(OBJ_DIR)/registry.$O
 
 ifeq ($(SYSTEM),win)
-$(SRC_DIR)/flatzinc/lexer.yy.cc: $(SRC_DIR)/flatzinc/lexer.win.cc
+$(SRC_DIR)/flatzinc/lexer.yy.cc: $(SRC_DIR)/flatzinc/lexer.win.cc $(SRC_DIR)/flatzinc/parser.tab.h
 	copy $(SRC_DIR)\\flatzinc\\lexer.win.cc $(SRC_DIR)\\flatzinc\\lexer.yy.cc
 
 $(SRC_DIR)/flatzinc/parser.tab.cc: $(SRC_DIR)/flatzinc/parser.win.cc
