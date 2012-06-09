@@ -267,6 +267,9 @@ class Queue {
         solver_->GetPropagationMonitor()->BeginDemonRun(demon);
       }
       solver_->demon_runs_[prio]++;
+      if (solver_->demon_runs_[prio] % 10000 == 0) {
+        solver_->TopPeriodicCheck();
+      }
       demon->Run(solver_);
       if (instruments_demons_) {
         solver_->GetPropagationMonitor()->EndDemonRun(demon);

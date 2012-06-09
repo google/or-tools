@@ -859,10 +859,52 @@ class Modulo : public Constraint {
   IntVarIterator* const y_iterator_;
   std::vector<int64> to_remove_;
 };
+
+class VariableModulo : public Constraint {
+ public:
+  VariableModulo(Solver* const solver,
+         IntVar* const x,
+         IntVar* const mod,
+         IntVar* const y)
+      : Constraint(solver),
+        x_(x),
+        mod_(mod),
+        y_(y) {
+    CHECK_NOTNULL(solver);
+    CHECK_NOTNULL(x);
+    CHECK_NOTNULL(mod);
+    CHECK_NOTNULL(y);
+  }
+
+  virtual ~VariableModulo() {}
+
+  virtual void Post() {
+    Solver* const s = solver();
+  }
+
+  virtual void InitialPropagate() {
+    mod_->SetMin(1);
+  }
+
+ private:
+  IntVar* const x_;
+  IntVar* const mod_;
+  IntVar* const y_;
+};
 }  // namespace
 Constraint* Solver::MakeModuloConstraint(IntVar* const x,
                                          int64 mod,
                                          IntVar* const y) {
   return RevAlloc(new Modulo(this, x, mod, y));
+}
+
+Constraint* Solver::MakeModuloConstraint(IntVar* const x,
+                                         IntVar* const mod,
+                                         IntVar* const y) {
+  if (mod->Bound()) {
+    return MakeModuloConstraint(x, mod->Min(), y);
+  } else {
+    return RevAlloc(new VariableModulo(this, x, mod, y));
+  }
 }
 }  // namespace operations_research

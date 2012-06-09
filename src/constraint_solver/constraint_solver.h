@@ -1451,6 +1451,10 @@ class Solver {
                                    int64 mod,
                                    IntVar* const y);
 
+  // Modulo constraint  v % m == y
+  Constraint* MakeModuloConstraint(IntVar* const x,
+                                   IntVar* const mod,
+                                   IntVar* const y);
 
   // (l <= b <= u)
   Constraint* MakeBetweenCt(IntVar* const v, int64 l, int64 u);
