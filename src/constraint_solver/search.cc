@@ -1215,15 +1215,12 @@ int64 RandomValueSelector::Select(const IntVar* const v, int64 id) {
 
 class CenterValueSelector : public ValueSelector {
  public:
-  CenterValueSelector(const string& name) : name_(name) {}
+  CenterValueSelector() {}
   virtual ~CenterValueSelector() {}
   virtual int64 Select(const IntVar* const v, int64 id);
   string DebugString() const {
-    return name_;
+    return "AssignCenter";
   }
-
- private:
-  const string name_;
 };
 
 int64 CenterValueSelector::Select(const IntVar* const v, int64 id) {
@@ -1243,6 +1240,28 @@ int64 CenterValueSelector::Select(const IntVar* const v, int64 id) {
     }
   }
   return 0LL;
+}
+
+// ----- Select center -----
+
+class SplitValueSelector : public ValueSelector {
+ public:
+  SplitValueSelector(const string& name) : name_(name) {}
+  virtual ~SplitValueSelector() {}
+  virtual int64 Select(const IntVar* const v, int64 id);
+  string DebugString() const {
+    return name_;
+  }
+
+ private:
+  const string name_;
+};
+
+int64 SplitValueSelector::Select(const IntVar* const v, int64 id) {
+  const int64 vmin = v->Min();
+  const int64 vmax = v->Max();
+  const int64 mid = (vmin + vmax) / 2;
+  return mid;
 }
 
 // ----- Best value -----
@@ -1843,13 +1862,13 @@ class BaseAssignVariables : public DecisionBuilder {
         value_selector = s->RevAlloc(new RandomValueSelector);
         break;
       case Solver::ASSIGN_CENTER_VALUE:
-        value_selector = s->RevAlloc(new CenterValueSelector("AssignCenter"));
+        value_selector = s->RevAlloc(new CenterValueSelector());
         break;
       case Solver::SPLIT_LOWER_HALF:
-        value_selector = s->RevAlloc(new CenterValueSelector("SplitLower"));
+        value_selector = s->RevAlloc(new SplitValueSelector("SplitLower"));
         break;
       case Solver::SPLIT_UPPER_HALF:
-        value_selector = s->RevAlloc(new CenterValueSelector("SplitUpper"));
+        value_selector = s->RevAlloc(new SplitValueSelector("SplitUpper"));
         break;
       default:
         LOG(FATAL) << "Unknown int value strategy " << val_str;
