@@ -452,8 +452,8 @@ class Solver {
     CHOOSE_PATH,
   };
 
-  // This enum describes the strategy used to select the next variable value to
-  // set.
+  // This enum describes the strategy used to select the next decision
+  // to apply on this variable.
   enum IntValueStrategy {
     // The default behavior is ASSIGN_MIN_VALUE.
     INT_VALUE_DEFAULT,
@@ -474,6 +474,14 @@ class Solver {
     // of the domain of the selected variable.
     // The center is defined as (min + max) / 2.
     ASSIGN_CENTER_VALUE,
+
+    // Split the domain in two around the center, and choose the lower
+    // part first.
+    SPLIT_LOWER_HALF,
+
+    // Split the domain in two around the center, and choose the lower
+    // part first.
+    SPLIT_UPPER_HALF,
   };
 
   // This enum is used by Solver::MakePhase to specify how to select variables

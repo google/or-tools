@@ -1215,10 +1215,15 @@ int64 RandomValueSelector::Select(const IntVar* const v, int64 id) {
 
 class CenterValueSelector : public ValueSelector {
  public:
-  CenterValueSelector() {}
+  CenterValueSelector(const string& name) : name_(name) {}
   virtual ~CenterValueSelector() {}
   virtual int64 Select(const IntVar* const v, int64 id);
-  string DebugString() const { return "AssignCenter"; }
+  string DebugString() const {
+    return name_;
+  }
+
+ private:
+  const string name_;
 };
 
 int64 CenterValueSelector::Select(const IntVar* const v, int64 id) {
@@ -1756,8 +1761,15 @@ Decision* Solver::MakeAssignVariablesValues(const std::vector<IntVar*>& vars,
 namespace {
 class BaseAssignVariables : public DecisionBuilder {
  public:
-  explicit BaseAssignVariables(BaseVariableAssignmentSelector* const selector)
-      : selector_(selector) {}
+  enum Mode {
+    ASSIGN,
+    SPLIT_LOWER,
+    SPLIT_UPPER,
+  };
+
+  explicit BaseAssignVariables(BaseVariableAssignmentSelector* const selector,
+                               Mode mode)
+      : selector_(selector), mode_(mode) {}
   virtual ~BaseAssignVariables();
   virtual Decision* Next(Solver* const s);
   virtual string DebugString() const;
@@ -1765,7 +1777,8 @@ class BaseAssignVariables : public DecisionBuilder {
                                         const IntVar* const* vars,
                                         int size,
                                         VariableSelector* const var_selector,
-                                        ValueSelector* const value_selector);
+                                        ValueSelector* const value_selector,
+                                        BaseAssignVariables::Mode mode);
   static VariableSelector* MakeVariableSelector(Solver* const s,
                                                 const IntVar* const* vars,
                                                 int size,
@@ -1830,7 +1843,13 @@ class BaseAssignVariables : public DecisionBuilder {
         value_selector = s->RevAlloc(new RandomValueSelector);
         break;
       case Solver::ASSIGN_CENTER_VALUE:
-        value_selector = s->RevAlloc(new CenterValueSelector);
+        value_selector = s->RevAlloc(new CenterValueSelector("AssignCenter"));
+        break;
+      case Solver::SPLIT_LOWER_HALF:
+        value_selector = s->RevAlloc(new CenterValueSelector("SplitLower"));
+        break;
+      case Solver::SPLIT_UPPER_HALF:
+        value_selector = s->RevAlloc(new CenterValueSelector("SplitUpper"));
         break;
       default:
         LOG(FATAL) << "Unknown int value strategy " << val_str;
@@ -1845,6 +1864,7 @@ class BaseAssignVariables : public DecisionBuilder {
 
  protected:
   BaseVariableAssignmentSelector* const selector_;
+  const Mode mode_;
 };
 
 BaseAssignVariables::~BaseAssignVariables() {}
@@ -1854,7 +1874,14 @@ Decision* BaseAssignVariables::Next(Solver* const s) {
   IntVar* const var = selector_->SelectVariable(s, &id);
   if (NULL != var) {
     const int64 value = selector_->SelectValue(var, id);
-    return s->RevAlloc(new AssignOneVariableValue(var, value));
+    switch (mode_) {
+      case ASSIGN:
+        return s->RevAlloc(new AssignOneVariableValue(var, value));
+      case SPLIT_LOWER:
+        return s->RevAlloc(new SplitOneVariable(var, value, true));
+      case SPLIT_UPPER:
+        return s->RevAlloc(new SplitOneVariable(var, value, false));
+    }
   }
   return NULL;
 }
@@ -1868,10 +1895,11 @@ BaseAssignVariables::MakePhase(Solver* const s,
                                const IntVar* const* vars,
                                int size,
                                VariableSelector* const var_selector,
-                               ValueSelector* const value_selector) {
+                               ValueSelector* const value_selector,
+                               BaseAssignVariables::Mode mode) {
   BaseVariableAssignmentSelector* selector =
       s->RevAlloc(new VariableAssignmentSelector(var_selector, value_selector));
-  return s->RevAlloc(new BaseAssignVariables(selector));
+  return s->RevAlloc(new BaseAssignVariables(selector, mode));
 }
 }  // namespace
 
@@ -1919,6 +1947,16 @@ DecisionBuilder* Solver::MakePhase(IntVar* const v0,
   return MakePhase(vars, var_str, val_str);
 }
 
+BaseAssignVariables::Mode ChooseMode(Solver::IntValueStrategy val_str) {
+  BaseAssignVariables::Mode mode = BaseAssignVariables::ASSIGN;
+  if (val_str == Solver::SPLIT_LOWER_HALF) {
+    mode = BaseAssignVariables::SPLIT_LOWER;
+  } else if (val_str == Solver::SPLIT_UPPER_HALF) {
+    mode = BaseAssignVariables::SPLIT_UPPER;
+  }
+  return mode;
+}
+
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IntValueStrategy val_str) {
@@ -1933,7 +1971,8 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                         vars.data(),
                                         vars.size(),
                                         var_selector,
-                                        value_selector);
+                                        value_selector,
+                                        ChooseMode(val_str));
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
@@ -1950,7 +1989,8 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                         vars.data(),
                                         vars.size(),
                                         var_selector,
-                                        value_selector);
+                                        value_selector,
+                                        ChooseMode(val_str));
 }
 
 DecisionBuilder* Solver::MakePhase(
@@ -1969,7 +2009,8 @@ DecisionBuilder* Solver::MakePhase(
                                         vars.data(),
                                         vars.size(),
                                         var_selector,
-                                        value_selector);
+                                        value_selector,
+                                        BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(
@@ -1988,7 +2029,8 @@ DecisionBuilder* Solver::MakePhase(
                                         vars.data(),
                                         vars.size(),
                                         var_selector,
-                                        value_selector);
+                                        value_selector,
+                                        BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(
@@ -2008,7 +2050,8 @@ DecisionBuilder* Solver::MakePhase(
                                         vars.data(),
                                         vars.size(),
                                         var_selector,
-                                        value_selector);
+                                        value_selector,
+                                        BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(
@@ -2028,7 +2071,8 @@ DecisionBuilder* Solver::MakePhase(
                                         vars.data(),
                                         vars.size(),
                                         var_selector,
-                                        value_selector);
+                                        value_selector,
+                                        BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
@@ -2062,7 +2106,8 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
       break;
     }
   }
-  return RevAlloc(new BaseAssignVariables(selector));
+  return RevAlloc(new BaseAssignVariables(selector,
+                                          BaseAssignVariables::ASSIGN));
 }
 
 // ----- AssignAllVariablesFromAssignment decision builder -----
