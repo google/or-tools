@@ -892,6 +892,11 @@ class VariableModulo : public Constraint {
 
   virtual void Post() {
     Solver* const s = solver();
+    IntVar* const div = s->MakeDiv(x_, mod_)->Var();
+    s->AddConstraint(s->MakeLess(y_, mod_));
+    s->AddConstraint(s->MakeGreaterOrEqual(y_, Zero()));
+    s->AddConstraint(s->MakeGreater(mod_, Zero()));
+    s->AddConstraint(s->MakeEquality(y_, s->MakeProd(div, mod_)->Var()));
   }
 
   virtual void InitialPropagate() {

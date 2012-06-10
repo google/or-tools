@@ -562,16 +562,18 @@ void p_int_div(FlatZincModel* const model, CtSpec* const spec) {
 void p_int_mod(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const left = model->GetIntVar(spec->Arg(0));
-  if (!spec->Arg(1)->isInt()) {
-    throw Error("ModelBuilder",
-                std::string("Constraint ") + spec->Id() +
-                " does not support variable modulo");
-  }
-  const int mod = spec->Arg(1)->getInt();
   IntVar* const target = model->GetIntVar(spec->Arg(2));
-  Constraint* const ct = solver->MakeModuloConstraint(left, mod, target);
-  VLOG(1) << "Posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (spec->Arg(1)->isIntVar()) {
+    IntVar* const mod = model->GetIntVar(spec->Arg(1));
+    Constraint* const ct = solver->MakeModuloConstraint(left, mod, target);
+    VLOG(1) << "Posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  } else {
+    const int mod = spec->Arg(1)->getInt();
+    Constraint* const ct = solver->MakeModuloConstraint(left, mod, target);
+    VLOG(1) << "Posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_int_min(FlatZincModel* const model, CtSpec* const spec) {
