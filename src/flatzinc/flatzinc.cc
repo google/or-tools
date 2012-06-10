@@ -182,6 +182,15 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
         if (args->hasAtom("indomain_median")) {
           vstr = Solver::ASSIGN_CENTER_VALUE;
         }
+        if (args->hasAtom("indomain_random")) {
+          vstr = Solver::ASSIGN_RANDOM_VALUE;
+        }
+        if (args->hasAtom("indomain_split")) {
+          vstr = Solver::SPLIT_LOWER_HALF;
+        }
+        if (args->hasAtom("indomain_reverse_split")) {
+          vstr = Solver::SPLIT_UPPER_HALF;
+        }
         std::vector<IntVar*> int_vars;
         for (int i = 0; i < vars->a.size(); ++i) {
           if (vars->a[i]->isIntVar()) {
