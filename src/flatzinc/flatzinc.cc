@@ -162,7 +162,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
         AST::Call *call = flat_annotations[i]->getCall("int_search");
         AST::Array *args = call->getArgs(4);
         AST::Array *vars = args->a[0]->getArray();
-        Solver::IntVarStrategy str = Solver::CHOOSE_FIRST_UNBOUND;
+        Solver::IntVarStrategy str = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
         if (args->hasAtom("first_fail")) {
           str = Solver::CHOOSE_MIN_SIZE;
         }
