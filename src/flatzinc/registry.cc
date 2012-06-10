@@ -468,24 +468,27 @@ void p_int_plus(FlatZincModel* const model, CtSpec* const spec) {
       spec->defines() == spec->Arg(0)->getIntVar()) {
     IntVar* const right = model->GetIntVar(spec->Arg(1));
     IntVar* const target = model->GetIntVar(spec->Arg(2));
-    VLOG(1) << "Aliasing int_plus";
     IntVar* const left = solver->MakeDifference(target, right)->Var();
+    VLOG(1) << "Created " << spec->Arg(2)->DebugString() << " == "
+            << left->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(0)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(0)->getIntVar(), left);
   } else if (spec->Arg(1)->isIntVar() &&
       spec->defines() == spec->Arg(1)->getIntVar()) {
     IntVar* const left = model->GetIntVar(spec->Arg(0));
     IntVar* const target = model->GetIntVar(spec->Arg(2));
-    VLOG(1) << "Aliasing int_plus";
     IntVar* const right = solver->MakeDifference(target, left)->Var();
+    VLOG(1) << "Created " << spec->Arg(2)->DebugString() << " == "
+            << right->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(1)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(1)->getIntVar(), left);
   } else if (spec->Arg(2)->isIntVar() &&
       spec->defines() == spec->Arg(2)->getIntVar()) {
     IntVar* const left = model->GetIntVar(spec->Arg(0));
     IntVar* const right = model->GetIntVar(spec->Arg(1));
-    VLOG(1) << "Aliasing int_plus";
     IntVar* const target = solver->MakeSum(left, right)->Var();
+    VLOG(1) << "Created " << spec->Arg(2)->DebugString() << " == "
+            << target->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
   } else {

@@ -318,6 +318,10 @@ void ParserState::CreateModel() {
       } else {
         model_->SkipIntVar();
         VLOG(1) << "Skipping " << int_variables_[i]->DebugString();
+        if (int_variables_[i]->HasDomain() &&
+            int_variables_[i]->Domain() != NULL) {
+          AddIntVarDomainConstraint(i, int_variables_[i]->Domain()->Copy());
+        }
       }
     }
   }
