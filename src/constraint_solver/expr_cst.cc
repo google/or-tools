@@ -631,6 +631,13 @@ IntVar* Solver::MakeIsGreaterCstVar(IntVar* const var, int64 value) {
 Constraint* Solver::MakeIsGreaterOrEqualCstCt(IntVar* const var,
                                               int64 value,
                                               IntVar* const boolvar) {
+  if (boolvar->Bound()) {
+    if (boolvar->Min() == 0) {
+      return MakeLess(var, value);
+    } else {
+      return MakeGreaterOrEqual(var, value);
+    }
+  }
   CHECK_EQ(this, var->solver());
   CHECK_EQ(this, boolvar->solver());
   model_cache_->InsertVarConstantExpression(
@@ -743,6 +750,13 @@ IntVar* Solver::MakeIsLessCstVar(IntVar* const var, int64 value) {
 Constraint* Solver::MakeIsLessOrEqualCstCt(IntVar* const var,
                                            int64 value,
                                            IntVar* const boolvar) {
+  if (boolvar->Bound()) {
+    if (boolvar->Min() == 0) {
+      return MakeGreater(var, value);
+    } else {
+      return MakeLessOrEqual(var, value);
+    }
+  }
   CHECK_EQ(this, var->solver());
   CHECK_EQ(this, boolvar->solver());
   model_cache_->InsertVarConstantExpression(

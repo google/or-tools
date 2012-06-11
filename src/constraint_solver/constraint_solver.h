@@ -1441,6 +1441,15 @@ class Solver {
   Constraint* MakeMinEquality(const std::vector<IntVar*>& vars, IntVar* const var);
   Constraint* MakeMaxEquality(const std::vector<IntVar*>& vars, IntVar* const var);
 
+  Constraint* MakeElementEquality(const std::vector<int64>& vals,
+                                  IntVar* const index,
+                                  IntVar* const target);
+  Constraint* MakeElementEquality(const std::vector<int>& vals,
+                                  IntVar* const index,
+                                  IntVar* const target);
+  Constraint* MakeElementEquality(const std::vector<IntVar*>& vars,
+                                  IntVar* const index,
+                                  IntVar* const target);
 
   // This method is a specialized case of the MakeConstraintDemon
   // method to call the InitiatePropagate of the constraint 'ct'.

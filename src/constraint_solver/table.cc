@@ -80,7 +80,7 @@ class BasePositiveTableConstraint : public Constraint {
   virtual ~BasePositiveTableConstraint() {}
 
   virtual string DebugString() const {
-    return StringPrintf("AllowedAssignments(arity = %d, tuple_count = %d",
+    return StringPrintf("AllowedAssignments(arity = %d, tuple_count = %d)",
                         arity_,
                         tuple_count_);
   }
