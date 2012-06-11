@@ -1212,18 +1212,14 @@ class IntExprArrayElementCstCt : public Constraint {
                              this,
                              &IntExprArrayElementCstCt::PropagateIndex,
                              "PropagateIndex");
-    index_->WhenDomain(index_demon);
+    index_->WhenBound(index_demon);
   }
 
   virtual void InitialPropagate() {
     for (int i = 0; i < size_; ++i) {
-      if (!index_->Contains(i)) {
-        vars_[i]->RemoveValue(target_);
-      }
       if (!vars_[i]->Contains(target_)) {
         index_->RemoveValue(i);
-      } else if (vars_[i]->Bound()) {
-        index_->SetValue(i);
+        demons_[i]->inhibit(solver());
       }
     }
     if (index_->Bound()) {
@@ -1232,10 +1228,6 @@ class IntExprArrayElementCstCt : public Constraint {
   }
 
   void Propagate(int index) {
-    if (vars_[index]->Bound() && vars_[index]->Min() == target_) {
-      index_->SetValue(index);
-    }
-
     if (!vars_[index]->Contains(target_)) {
       index_->RemoveValue(index);
       demons_[index]->inhibit(solver());
@@ -1243,25 +1235,6 @@ class IntExprArrayElementCstCt : public Constraint {
   }
 
   void PropagateIndex() {
-    const int64 oldmax = index_->OldMax();
-    const int64 vmin = index_->Min();
-    const int64 vmax = index_->Max();
-    for (int64 value = index_->OldMin(); value < vmin; ++value) {
-      vars_[value]->RemoveValue(target_);
-      demons_[value]->inhibit(solver());
-    }
-    for (index_iterator_->Init();
-         index_iterator_->Ok();
-         index_iterator_->Next()) {
-      const int64 value = index_iterator_->Value();
-      vars_[value]->RemoveValue(target_);
-      demons_[value]->inhibit(solver());
-    }
-    for (int64 value = vmax + 1; value <= oldmax; ++value) {
-      vars_[value]->RemoveValue(target_);
-      demons_[value]->inhibit(solver());
-    }
-
     if (index_->Bound()) {
       vars_[index_->Min()]->SetValue(target_);
     }
