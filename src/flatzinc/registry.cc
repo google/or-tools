@@ -1063,6 +1063,53 @@ void p_table_bool(FlatZincModel* const model, CtSpec* const spec) {
   solver->AddConstraint(ct);
 }
 
+void p_maximum_int(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  IntVar* const target = model->GetIntVar(spec->Arg(0));
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntVar(array_variables->a[i]);
+  }
+  Constraint* const ct = solver->MakeMaxEquality(variables, target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
+}
+
+void p_minimum_int(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  IntVar* const target = model->GetIntVar(spec->Arg(0));
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntVar(array_variables->a[i]);
+  }
+  Constraint* const ct = solver->MakeMinEquality(variables, target);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
+}
+
+void p_sort(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntVar(array_variables->a[i]);
+  }
+  AST::Array* const array_sorted = spec->Arg(1)->getArray();
+  const int csize = array_sorted->a.size();
+  std::vector<IntVar*> sorted(csize);
+  for (int i = 0; i < csize; ++i) {
+    sorted[i] = model->GetIntVar(array_sorted->a[i]);
+  }
+  Constraint* const ct = solver->MakeSortingConstraint(variables, sorted);
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
+}
+
 class IntBuilder {
  public:
   IntBuilder(void) {
@@ -1136,6 +1183,9 @@ class IntBuilder {
                                   &p_global_cardinality_old);
     global_model_builder.Register("table_int", &p_table_int);
     global_model_builder.Register("table_bool", &p_table_bool);
+    global_model_builder.Register("maximum_int", &p_maximum_int);
+    global_model_builder.Register("minimum_int", &p_minimum_int);
+    global_model_builder.Register("sort", &p_sort);
   }
 };
 IntBuilder __int_Builder;
