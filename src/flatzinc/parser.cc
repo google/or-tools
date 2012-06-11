@@ -83,6 +83,13 @@ int ParserState::FindTarget(AST::Node* const annotations) const {
   return CtSpec::kNoDefinition;
 }
 
+bool StrongPropagation(AST::Node* const annotations) {
+  if (annotations != NULL) {
+    return annotations->hasAtom("domain");
+  }
+  return false;
+}
+
 void ParserState::CollectRequired(AST::Array* const args,
                                   const hash_set<int>& candidates,
                                   hash_set<int>* const require) const {
@@ -143,19 +150,6 @@ void ParserState::ComputeViableTarget(
 
 bool DoDefine(const CtSpec* const spec) {
   return spec->defines() != CtSpec::kNoDefinition;
-}
-
-bool ConstraintDependsOn(const CtSpec* const spec1,
-                         const CtSpec* const spec2) {
-  const int def1 = spec1->defines();
-  const int def2 = spec2->defines();
-  if (spec2->Require(def1)) {
-    return true;
-  }
-  if (spec1->Require(def2)) {
-    return false;
-  }
-  return spec1->Index() < spec2->Index();
 }
 
 void ParserState::ComputeDependencies(const hash_set<int>& candidates,

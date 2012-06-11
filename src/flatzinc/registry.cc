@@ -42,7 +42,35 @@
 #include "flatzinc/flatzinc.h"
 
 namespace operations_research {
+extern bool StrongPropagation(AST::Node* const annotations);
 namespace {
+// Help
+
+Constraint* MakeStrongScalProdEquality(Solver* const solver,
+                                       std::vector<IntVar*>& variables,
+                                       std::vector<int>& coefficients,
+                                       int rhs) {
+  const int size = variables.size();
+  IntTupleSet tuples(size);
+  Solver s("build");
+  std::vector<IntVar*> copy_vars(size);
+  for (int i = 0; i < size; ++i) {
+    copy_vars[i] = s.MakeIntVar(variables[i]->Min(), variables[i]->Max());
+  }
+  s.AddConstraint(s.MakeScalProdEquality(copy_vars, coefficients, rhs));
+  s.NewSearch(s.MakePhase(copy_vars,
+                          Solver::CHOOSE_FIRST_UNBOUND,
+                          Solver::ASSIGN_MIN_VALUE));
+  while (s.NextSolution()) {
+    std::vector<int> one_tuple(size);
+    for (int i = 0; i < size; ++i) {
+      one_tuple[i] = copy_vars[i]->Value();
+    }
+    tuples.Insert(one_tuple);
+  }
+  s.EndSearch();
+  return solver->MakeAllowedAssignments(variables, tuples);
+}
 
 /// Map from constraint identifier to constraint posting functions
 class ModelBuilder {
@@ -190,6 +218,7 @@ void p_int_lt_reif(FlatZincModel* const model, CtSpec* const spec) {
 }
 
 void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
+  bool strong_propagation = StrongPropagation(spec->annotations());
   Solver* const solver = model->solver();
   AST::Array* const array_coefficents = spec->Arg(0)->getArray();
   AST::Array* const array_variables = spec->Arg(1)->getArray();
@@ -205,6 +234,8 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
     variables[i] = model->GetIntVar(array_variables->a[i]);
   }
   Constraint* const ct =
+      strong_propagation ?
+      MakeStrongScalProdEquality(solver, variables, coefficients, rhs) :
       solver->MakeScalProdEquality(variables, coefficients, rhs);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
@@ -738,9 +769,7 @@ void p_array_int_element(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntVar* const target = model->GetIntVar(spec->Arg(2));
     Constraint* const ct =
-        solver->MakeEquality(
-            solver->MakeElement(coefficients, shifted_index)->Var(),
-            target);
+        solver->MakeElementEquality(coefficients, shifted_index, target);
     VLOG(1) << "Posted " << ct->DebugString();
     solver->AddConstraint(ct);
   }
@@ -765,9 +794,7 @@ void p_array_var_int_element(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntVar* const target = model->GetIntVar(spec->Arg(2));
     Constraint* const ct =
-        solver->MakeEquality(solver->MakeElement(variables,
-                                                 shifted_index)->Var(),
-                             target);
+        solver->MakeElementEquality(variables, shifted_index, target);
     VLOG(1) << "Posted " << ct->DebugString();
     solver->AddConstraint(ct);
   }
@@ -793,9 +820,7 @@ void p_array_bool_element(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntVar* const target = model->GetIntVar(spec->Arg(2));
     Constraint* const ct =
-        solver->MakeEquality(
-            solver->MakeElement(coefficients, shifted_index)->Var(),
-            target);
+        solver->MakeElementEquality(coefficients, shifted_index, target);
     VLOG(1) << "Posted " << ct->DebugString();
     solver->AddConstraint(ct);
   }
@@ -820,9 +845,7 @@ void p_array_var_bool_element(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntVar* const target = model->GetIntVar(spec->Arg(2));
     Constraint* const ct =
-        solver->MakeEquality(solver->MakeElement(variables,
-                                                 shifted_index)->Var(),
-                             target);
+        solver->MakeElementEquality(variables, shifted_index, target);
     VLOG(1) << "Posted " << ct->DebugString();
     solver->AddConstraint(ct);
   }
