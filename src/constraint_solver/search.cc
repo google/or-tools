@@ -929,8 +929,9 @@ IntVar* LowestSizeSelector::Select(Solver* const s, int64* id) {
   for (int i = 0; i < size_; ++i) {
     IntVar* const var = vars_[i];
     if (!var->Bound()) {
-      if (var->Size() < best_size) {
-        best_size = var->Size();
+      const int64 size = var->Size();
+      if (size < best_size) {
+        best_size = size;
         index = i;
         result = var;
       }
