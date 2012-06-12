@@ -1110,6 +1110,36 @@ void p_sort(FlatZincModel* const model, CtSpec* const spec) {
   solver->AddConstraint(ct);
 }
 
+void p_fixed_cumulative(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> start_variables(size);
+  for (int i = 0; i < size; ++i) {
+    start_variables[i] = model->GetIntVar(array_variables->a[i]);
+  }
+  AST::Array* const array_durations = spec->Arg(1)->getArray();
+  const int dsize = array_durations->a.size();
+  std::vector<int> durations(dsize);
+  for (int i = 0; i < dsize; ++i) {
+    durations[i] = array_durations->a[i]->getInt();
+  }
+  AST::Array* const array_usages = spec->Arg(2)->getArray();
+  const int usize = array_usages->a.size();
+  std::vector<int> usages(usize);
+  for (int i = 0; i < usize; ++i) {
+    usages[i] = array_usages->a[i]->getInt();
+  }
+  std::vector<IntervalVar*> intervals;
+  solver->MakeFixedDurationIntervalVarArray(start_variables, durations, "", &intervals);
+  const int capacity = spec->Arg(3)->getInt();
+  Constraint* const ct = solver->MakeCumulative(intervals, usages, capacity, "");
+  VLOG(1) << "Posted " << ct->DebugString();
+  solver->AddConstraint(ct);
+}
+
+
+
 class IntBuilder {
  public:
   IntBuilder(void) {
@@ -1186,6 +1216,7 @@ class IntBuilder {
     global_model_builder.Register("maximum_int", &p_maximum_int);
     global_model_builder.Register("minimum_int", &p_minimum_int);
     global_model_builder.Register("sort", &p_sort);
+    global_model_builder.Register("fixed_cumulative", &p_fixed_cumulative);
   }
 };
 IntBuilder __int_Builder;
