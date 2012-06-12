@@ -1684,7 +1684,36 @@ class Solver {
                                          int64 duration,
                                          bool optional,
                                          const string& name,
-                                         std::vector<IntervalVar*>* array);
+                                         std::vector<IntervalVar*>* const array);
+
+  // Creates an interval var with a fixed duration. The duration must
+  // be greater than 0.
+  IntervalVar* MakeFixedDurationIntervalVar(IntVar* const start_variable,
+                                            int64 duration,
+                                            const string& name);
+
+  // This method fills the vector with 'count' interval var built with
+  // the corresponding start variables.
+  void MakeFixedDurationIntervalVarArray(
+      const std::vector<IntVar*>& start_variables,
+      int64 duration,
+      const string& name,
+      std::vector<IntervalVar*>* const array);
+
+  // This method fills the vector with interval variables built with
+  // the corresponding start variables.
+  void MakeFixedDurationIntervalVarArray(
+      const std::vector<IntVar*>& start_variables,
+      const std::vector<int64>& durations,
+      const string& name,
+      std::vector<IntervalVar*>* const array);
+  // This method fills the vector with interval variables built with
+  // the corresponding start variables.
+  void MakeFixedDurationIntervalVarArray(
+      const std::vector<IntVar*>& start_variables,
+      const std::vector<int>& durations,
+      const string& name,
+      std::vector<IntervalVar*>* const array);
 
 
   // Creates an fixed and performed interval.
