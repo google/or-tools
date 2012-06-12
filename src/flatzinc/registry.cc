@@ -1131,14 +1131,18 @@ void p_fixed_cumulative(FlatZincModel* const model, CtSpec* const spec) {
     usages[i] = array_usages->a[i]->getInt();
   }
   std::vector<IntervalVar*> intervals;
-  solver->MakeFixedDurationIntervalVarArray(start_variables, durations, "", &intervals);
+  solver->MakeFixedDurationIntervalVarArray(start_variables,
+                                            durations,
+                                            "",
+                                            &intervals);
   const int capacity = spec->Arg(3)->getInt();
-  Constraint* const ct = solver->MakeCumulative(intervals, usages, capacity, "");
+  Constraint* const ct = solver->MakeCumulative(intervals,
+                                                usages,
+                                                capacity,
+                                                "");
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
-
-
 
 class IntBuilder {
  public:
