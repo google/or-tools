@@ -958,13 +958,14 @@ class HighestSizeSelector : public VariableSelector {
 
 IntVar* HighestSizeSelector::Select(Solver* const s, int64* id) {
   IntVar* result = NULL;
-  int64 best_size = kint64min;
+  int64 best_size = -1;
   int index = -1;
   for (int i = 0; i < size_; ++i) {
     IntVar* const var = vars_[i];
     if (!var->Bound()) {
-      if (var->Size() > best_size) {
-        best_size = var->Size();
+      const int64 size = var->Size();
+      if (size > best_size) {
+        best_size = size;
         index = i;
         result = var;
       }
