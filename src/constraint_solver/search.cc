@@ -708,7 +708,7 @@ class MinSizeLowestMinSelector : public VariableSelector {
 
 IntVar* MinSizeLowestMinSelector::Select(Solver* const s, int64* id) {
   IntVar* result = NULL;
-  int64 best_size = kint64max;
+  uint64 best_size = kint64max;
   int64 best_min = kint64max;
   int index = -1;
   for (int i = 0; i < size_; ++i) {
@@ -745,7 +745,7 @@ class MinSizeHighestMinSelector : public VariableSelector {
 
 IntVar* MinSizeHighestMinSelector::Select(Solver* const s, int64* id) {
   IntVar* result = NULL;
-  int64 best_size = kint64max;
+  uint64 best_size = kint64max;
   int64 best_min = kint64min;
   int index = -1;
   for (int i = 0; i < size_; ++i) {
@@ -782,7 +782,7 @@ class MinSizeLowestMaxSelector : public VariableSelector {
 
 IntVar* MinSizeLowestMaxSelector::Select(Solver* const s, int64* id) {
   IntVar* result = NULL;
-  int64 best_size = kint64max;
+  uint64 best_size = kint64max;
   int64 best_max = kint64max;
   int index = -1;
   for (int i = 0; i < size_; ++i) {
@@ -819,7 +819,7 @@ class MinSizeHighestMaxSelector : public VariableSelector {
 
 IntVar* MinSizeHighestMaxSelector::Select(Solver* const s, int64* id) {
   IntVar* result = NULL;
-  int64 best_size = kint64max;
+  uint64 best_size = kint64max;
   int64 best_max = kint64min;
   int index = -1;
   for (int i = 0; i < size_; ++i) {
@@ -924,12 +924,12 @@ class LowestSizeSelector : public VariableSelector {
 
 IntVar* LowestSizeSelector::Select(Solver* const s, int64* id) {
   IntVar* result = NULL;
-  int64 best_size = kint64max;
+  uint64 best_size = kint64max;
   int index = -1;
   for (int i = 0; i < size_; ++i) {
     IntVar* const var = vars_[i];
     if (!var->Bound()) {
-      const int64 size = var->Size();
+      const uint64 size = var->Size();
       if (size < best_size) {
         best_size = size;
         index = i;
@@ -959,12 +959,12 @@ class HighestSizeSelector : public VariableSelector {
 
 IntVar* HighestSizeSelector::Select(Solver* const s, int64* id) {
   IntVar* result = NULL;
-  int64 best_size = -1;
+  uint64 best_size = 0;
   int index = -1;
   for (int i = 0; i < size_; ++i) {
     IntVar* const var = vars_[i];
     if (!var->Bound()) {
-      const int64 size = var->Size();
+      const uint64 size = var->Size();
       if (size > best_size) {
         best_size = size;
         index = i;
@@ -1178,7 +1178,7 @@ class RandomValueSelector : public ValueSelector {
 
 int64 RandomValueSelector::Select(const IntVar* const v, int64 id) {
   const int64 span = v->Max() - v->Min() + 1;
-  const int64 size = v->Size();
+  const uint64 size = v->Size();
   Solver* const s = v->solver();
   if (size > span / 4) {  // Dense enough, we can try to find the
     // value randomly.
