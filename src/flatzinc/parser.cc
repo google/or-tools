@@ -355,6 +355,7 @@ void ParserState::CreateModel() {
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     if (!hadError) {
       CtSpec* const spec = constraints_[i];
+      VLOG(1) << "Posting -> " << constraints_[i]->DebugString();
       model_->PostConstraint(constraints_[i]);
     }
   }

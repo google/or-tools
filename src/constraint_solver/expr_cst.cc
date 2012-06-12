@@ -1030,23 +1030,31 @@ class IsMemberCt : public Constraint {
 Constraint* Solver::MakeIsMemberCt(IntVar* const var,
                                    const std::vector<int64>& values,
                                    IntVar* const boolvar) {
-  ConstIntArray local_values(values);
-  return RevAlloc(
-      new IsMemberCt(this,
-                     var,
-                     local_values.SortedCopyWithoutDuplicates(true),
-                     boolvar));
+  if (values.size() == 0) {
+    return MakeFalseConstraint();
+  } else {
+    ConstIntArray local_values(values);
+    return RevAlloc(
+        new IsMemberCt(this,
+                       var,
+                       local_values.SortedCopyWithoutDuplicates(true),
+                       boolvar));
+  }
 }
 
 Constraint* Solver::MakeIsMemberCt(IntVar* const var,
                                    const std::vector<int>& values,
                                    IntVar* const boolvar) {
-  ConstIntArray local_values(values);
-  return RevAlloc(
-      new IsMemberCt(this,
-                     var,
-                     local_values.SortedCopyWithoutDuplicates(true),
-                     boolvar));
+  if (values.size() == 0) {
+    return MakeFalseConstraint();
+  } else {
+    ConstIntArray local_values(values);
+    return RevAlloc(
+        new IsMemberCt(this,
+                       var,
+                       local_values.SortedCopyWithoutDuplicates(true),
+                       boolvar));
+  }
 }
 
 IntVar* Solver::MakeIsMemberVar(IntVar* const var,
