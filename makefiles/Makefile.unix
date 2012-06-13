@@ -136,9 +136,9 @@ ifeq ($(PLATFORM),LINUX)
   endif
   ifdef UNIX_SLM_DIR
     ifeq ($(PTRLENGTH),64)
-      SLM_LNK = -Wl,-rpath -L$(UNIX_SLM_DIR)/linux64/bin/ -m64 -lc -ldl -lm -lpthread -lsulum10
+      SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux64/bin/ -L$(UNIX_SLM_DIR)/linux64/bin/ -m64 -lc -ldl -lm -lpthread -lsulum10
     else
-      SLM_LNK = -Wl,-rpath -L$(UNIX_SLM_DIR)/linux32/bin/ -m32 -lc -ldl -lm -lpthread -lsulum10
+      SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux32/bin/ -L$(UNIX_SLM_DIR)/linux32/bin/ -m32 -lc -ldl -lm -lpthread -lsulum10
     endif
   endif
   SYS_LNK = -lrt
@@ -203,4 +203,4 @@ CFLAGS = $(SYSCFLAGS) $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_IN
 JNIFLAGS = $(SYSCFLAGS) $(JNIDEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(SLM_INC)
 LDFLAGS = $(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
-LDLPDEPS = $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK)
+LDLPDEPS = $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK) $(SLM_LNK)
