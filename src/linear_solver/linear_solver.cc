@@ -289,6 +289,9 @@ extern MPSolverInterface* BuildGLPKInterface(MPSolver* const solver, bool mip);
 #if defined(USE_SCIP)
 extern MPSolverInterface* BuildSCIPInterface(MPSolver* const solver);
 #endif
+#if defined(USE_SLM)
+extern MPSolverInterface* BuildSLMInterface(MPSolver* const solver, bool mip);
+#endif
 
 namespace {
 MPSolverInterface* BuildSolverInterface(
@@ -311,6 +314,12 @@ MPSolverInterface* BuildSolverInterface(
 #if defined(USE_SCIP)
     case MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING:
       return BuildSCIPInterface(solver);
+#endif
+#if defined(USE_SLM)
+    case MPSolver::SULUM_LINEAR_PROGRAMMING:
+      return BuildSlmInterface(solver, false);
+    case MPSolver::SULUM_MIXED_INTEGER_PROGRAMMING:
+      return BuildSulumInterface(solver, true);
 #endif
     default:
       LOG(FATAL) << "Linear solver not recognized.";

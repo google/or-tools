@@ -344,7 +344,9 @@ LINEAR_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/glpk_interface.$O \
 	$(OBJ_DIR)/linear_solver.$O \
 	$(OBJ_DIR)/linear_solver.pb.$O \
-	$(OBJ_DIR)/scip_interface.$O
+	$(OBJ_DIR)/scip_interface.$O \
+	$(OBJ_DIR)/sulum_interface.$O
+
 
 $(OBJ_DIR)/cbc_interface.$O:$(SRC_DIR)/linear_solver/cbc_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/cbc_interface.cc $(OBJ_OUT)cbc_interface.$O
@@ -368,6 +370,9 @@ $(GEN_DIR)/linear_solver/linear_solver.pb.h:$(GEN_DIR)/linear_solver/linear_solv
 
 $(OBJ_DIR)/scip_interface.$O:$(SRC_DIR)/linear_solver/scip_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/scip_interface.cc $(OBJ_OUT)scip_interface.$O
+
+$(OBJ_DIR)/sulum_interface.$O:$(SRC_DIR)/linear_solver/sulum_interface.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/sulum_interface.cc $(OBJ_OUT)sulum_interface.$O
 
 $(LIB_DIR)/$(LIBPREFIX)linear_solver.$(LIBSUFFIX): $(LINEAR_SOLVER_LIB_OBJS)
 	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)linear_solver.$(LIBSUFFIX) $(LINEAR_SOLVER_LIB_OBJS) $(SCIP_STATIC_LNK)

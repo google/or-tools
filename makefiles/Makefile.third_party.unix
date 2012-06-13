@@ -215,6 +215,7 @@ Makefile.local:
 	@echo UNIX_CBC_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local
 	@echo $(GLPK_MAKEFILE) >> Makefile.local
 	@echo $(SCIP_MAKEFILE) >> Makefile.local
+	@echo # Please define UNIX_SULUM_DIR to use Sulum Optimization. >> Makefile.local
 	@echo $(MONO_MAKEFILE) >> Makefile.local
 	@echo $(SELECTED_JDK_DEF) >> Makefile.local
 

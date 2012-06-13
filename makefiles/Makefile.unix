@@ -69,8 +69,13 @@ ifdef UNIX_SCIP_DIR
   SCIP_INC = -I$(UNIX_SCIP_DIR)/src -DUSE_SCIP
   SCIP_SWIG = $(SCIP_INC)
 endif
+# This is needed to find SULUM include files.
+ifdef UNIX_SLM_DIR
+  SLM_INC = -I$(UNIX_SLM_DIR)/header -DUSE_SLM
+  SLM_SWIG = $(SLM_INC)
+endif
 
-SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG)
+SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG) $(SLM_SWIG)
 
 # Compilation flags
 DEBUG = -O3 -DNDEBUG
@@ -129,6 +134,13 @@ ifeq ($(PLATFORM),LINUX)
     SCIP_LNK =
     SCIP_STATIC_LNK = -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH)
   endif
+  ifdef UNIX_SLM_DIR
+    ifeq ($(PTRLENGTH),64)
+      SLM_LNK = -Wl,-rpath -L$(UNIX_SLM_DIR)/linux64/bin/ -m64 -lc -ldl -lm -lpthread -lsulum10
+    else
+      SLM_LNK = -Wl,-rpath -L$(UNIX_SLM_DIR)/linux32/bin/ -m32 -lc -ldl -lm -lpthread -lsulum10
+    endif
+  endif
   SYS_LNK = -lrt
   JAVA_INC = -I$(LINUX_JDK_ROOT)/include -I$(LINUX_JDK_ROOT)/include/linux
   JAVAC_BIN = $(LINUX_JDK_ROOT)/bin/javac
@@ -186,11 +198,9 @@ ifeq ($(PLATFORM),MACOSX)
 endif  # MAC OS X
 
 CFLAGS = $(SYSCFLAGS) $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH)  $(THREAD_INC)\
-        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) \
-	$(SCIP_INC) $(SPARSEHASH_INC)
+        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(SLM_INC)  $(SPARSEHASH_INC)
+
 JNIFLAGS = $(SYSCFLAGS) $(JNIDEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
-        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC)
+        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(SLM_INC)
 LDFLAGS = $(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
 LDLPDEPS = $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK)
-
-

@@ -173,6 +173,10 @@ class MPSolver {
 #if defined(USE_CLP)
     CLP_LINEAR_PROGRAMMING,
 #endif
+#if defined(USE_SLM)
+    SULUM_LINEAR_PROGRAMMING,
+    SULUM_MIXED_INTEGER_PROGRAMMING,
+#endif
 #if defined(USE_CBC)
     CBC_MIXED_INTEGER_PROGRAMMING,
 #endif
@@ -419,6 +423,7 @@ class MPSolver {
   friend class CLPInterface;
   friend class CBCInterface;
   friend class SCIPInterface;
+  friend class SLMInterface;
   friend class MPSolverInterface;
 
   // *** DEPRECATED ***
@@ -529,6 +534,7 @@ class MPObjective {
   friend class CLPInterface;
   friend class GLPKInterface;
   friend class SCIPInterface;
+  friend class SLMInterface;
 
   // Constructor. An objective points to a single MPSolverInterface
   // that is specified in the constructor. An objective cannot belong
@@ -593,6 +599,7 @@ class MPVariable {
   friend class CLPInterface;
   friend class GLPKInterface;
   friend class SCIPInterface;
+  friend class SLMInterface;
 
   // Constructor. A variable points to a single MPSolverInterface that
   // is specified in the constructor. A variable cannot belong to
@@ -669,6 +676,7 @@ class MPConstraint {
   friend class CLPInterface;
   friend class GLPKInterface;
   friend class SCIPInterface;
+  friend class SLMInterface;
 
   // Constructor. A constraint points to a single MPSolverInterface
   // that is specified in the constructor. A constraint cannot belong
