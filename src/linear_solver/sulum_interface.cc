@@ -481,7 +481,7 @@ void SLMInterface::ExtractNewConstraints() {
       newanz += ct->coefficients_.size();
     }
 
-    int addrows = total_num_rows - last_constraint_index_; 
+    int addrows = total_num_rows - last_constraint_index_;
 
     // Add sizes for efficiens
     CheckReturnKey(SlmGetANz64(model_,&oldanz));
@@ -604,8 +604,8 @@ MPSolver::ResultStatus SLMInterface::Solve(const MPSolverParameters& param) {
       VLOG(4) << "row " << ct->index()
               << ": activity = " << row_activity;
     } else {
-      double dual_value; 
-      CheckReturnKey(SlmGetSolDualVarsI(model_,ct->index(),&dual_value));
+      double dual_value;
+      CheckReturnKey(SlmGetSolDualConsI(model_,ct->index(),&dual_value));
       ct->set_dual_value(dual_value);
       VLOG(4) << "row " << ct->index()
               << ": activity = " << row_activity
@@ -645,7 +645,7 @@ MPSolver::ResultStatus SLMInterface::Solve(const MPSolverParameters& param) {
       break;
     case SlmSolStatIntFeas :
       VLOG(1) << "slm result status: SlmSolStatIntFeas";
-      result_status_ = MPSolver::FEASIBLE; 
+      result_status_ = MPSolver::FEASIBLE;
       break;
     case SlmSolStatIntInf :
       VLOG(1) << "slm result status: SlmSolStatIntInf";
@@ -774,8 +774,8 @@ double SLMInterface::ComputeExactConditionNumber() const {
   // Simplex is the only LP algorithm supported in the wrapper for
   // SLM, so when a solution exists, a basis exists.
   CheckSolutionExists();
-  int num_rows; 
-  int num_cols; 
+  int num_rows;
+  int num_cols;
 
   CheckReturnKey(SlmGetCons(model_,&num_rows));
   CheckReturnKey(SlmGetVars(model_,&num_cols));
@@ -801,7 +801,7 @@ double SLMInterface::ComputeExactConditionNumber() const {
 
 double SLMInterface::ComputeScaledBasisL1Norm(
     int num_rows, int num_cols,
-    double* row_scaling_factor, double* column_scaling_factor) const {  
+    double* row_scaling_factor, double* column_scaling_factor) const {
   double norm = 0.0;
 
   scoped_array<double> values(new double[num_rows]);
