@@ -70,7 +70,7 @@ using std::string;
 DEFINE_bool(colgen_verbose, false, "print verbosely");
 DEFINE_bool(colgen_complete, false, "generate all columns initially");
 DEFINE_int32(colgen_max_iterations, 500, "max iterations");
-DEFINE_string(colgen_solver, "clp", "solver - glpk or clp (default)");
+DEFINE_string(colgen_solver, "clp", "solver - glpk, sulum, or clp (default)");
 DEFINE_int32(colgen_instance, -1, "Which instance to solve (0 - 9)");
 
 namespace operations_research {
@@ -636,6 +636,12 @@ int main(int argc, char** argv) {
     found = true;
   }
 #endif  // USE_GLPK
+#if defined(USE_SLM)
+  if (FLAGS_colgen_solver == "sulum") {
+    solver_type = operations_research::MPSolver::SULUM_LINEAR_PROGRAMMING;
+    found = true;
+  }
+#endif  // USE_SLM
   if (!found) {
     LOG(ERROR) << "Unknown solver " << FLAGS_colgen_solver;
     return 1;
