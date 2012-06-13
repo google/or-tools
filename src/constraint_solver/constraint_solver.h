@@ -447,6 +447,10 @@ class Solver {
     // order in the vector of IntVars used to create the selector.
     CHOOSE_MAX_SIZE,
 
+    // Among unbound variables, select the variable with the biggest
+    // gap between the first and the second values of the domain.
+    CHOOSE_MAX_REGRET,
+
     // Selects the next unbound variable on a path, the path being defined by
     // the variables: var[i] corresponds to the index of the next of i.
     CHOOSE_PATH,

@@ -981,6 +981,59 @@ IntVar* HighestSizeSelector::Select(Solver* const s, int64* id) {
   }
 }
 
+// ----- Choose Highest Regret -----
+
+class HighestRegretSelector : public VariableSelector {
+ public:
+  HighestRegretSelector(const IntVar* const* vars, int size)
+      : VariableSelector(vars, size),
+        iterators_(size) {
+    for (int i = 0; i < size; ++i) {
+      iterators_[i] = vars[i]->MakeDomainIterator(true);
+    }
+  }
+  virtual ~HighestRegretSelector() {}
+  virtual IntVar* Select(Solver* const s, int64* id);
+  virtual string DebugString() const { return "MaxRegretSelector"; }
+
+  int64 ComputeRegret(int index) const {
+    const int64 vmin = vars_[index]->Min();
+    if (vars_[index]->Contains(vmin + 1)) {
+      return 1;
+    }
+    iterators_[index]->Init();
+    iterators_[index]->Next();
+    return iterators_[index]->Value() - vmin;
+  }
+
+private:
+  std::vector<IntVarIterator*> iterators_;
+};
+
+IntVar* HighestRegretSelector::Select(Solver* const s, int64* id) {
+  IntVar* result = NULL;
+  int64 best_regret = 0;
+  int index = -1;
+  for (int i = 0; i < size_; ++i) {
+    IntVar* const var = vars_[i];
+    if (!var->Bound()) {
+      const int64 regret = ComputeRegret(i);
+      if (regret > best_regret) {
+        best_regret = regret;
+        index = i;
+        result = var;
+      }
+    }
+  }
+  if (index == -1) {
+    *id = size_;
+    return NULL;
+  } else {
+    *id = index;
+    return result;
+  }
+}
+
 // ----- Choose random unbound --
 
 class RandomSelector : public VariableSelector {
@@ -1837,6 +1890,9 @@ class BaseAssignVariables : public DecisionBuilder {
         break;
       case Solver::CHOOSE_MAX_SIZE:
         var_selector = s->RevAlloc(new HighestSizeSelector(vars, size));
+        break;
+      case Solver::CHOOSE_MAX_REGRET:
+        var_selector = s->RevAlloc(new HighestRegretSelector(vars, size));
         break;
       case Solver::CHOOSE_PATH:
         var_selector = s->RevAlloc(new PathSelector(vars, size));
