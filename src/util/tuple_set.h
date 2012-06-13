@@ -178,6 +178,7 @@ template <class T> int IntTupleSet::Data::Insert(const std::vector<T>& tuple) {
     const int index = NumTuples();
     const int offset = flat_tuples_.size();
     flat_tuples_.resize(offset + arity_);
+    // On mac os X, using this instead of push_back gives a 10x speedup!
     for (int i = 0; i < arity_; ++i) {
       flat_tuples_[offset + i] = tuple[i];
     }

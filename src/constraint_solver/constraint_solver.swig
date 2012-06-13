@@ -920,11 +920,6 @@ static void SetPythonFlags(bool trace_propagation,
                         DecisionBuilder* const db2,
                         DecisionBuilder* const db3,
                         DecisionBuilder* const db4);
-%ignore Solver::MakeCumulative(IntervalVar* const * intervals,
-                               const int64 * demands,
-                               int size,
-                               int64 capacity,
-                               const string& name);
 
 // Add arithmetic operators to integer expressions.
 %extend IntExpr {
@@ -1259,21 +1254,6 @@ struct FailureProtect {
 %ignore operations_research::Solver::MakeIntVarArray;
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
-%ignore operations_research::Solver::MakeLocalSearchObjectiveFilter(
-    const IntVar* const* vars,
-    int size,
-    Solver::IndexEvaluator2* const values,
-    const IntVar* const objective,
-    Solver::LocalSearchFilterBound filter_enum,
-    Solver::LocalSearchOperation op_enum);
-%ignore operations_research::Solver::MakeLocalSearchObjectiveFilter(
-    const IntVar* const* vars,
-    const IntVar* const* secondary_vars,
-    int size,
-    Solver::IndexEvaluator3* const values,
-    const IntVar* const objective,
-    Solver::LocalSearchFilterBound filter_enum,
-    Solver::LocalSearchOperation op_enum);
 
 %rename (nextWrap) operations_research::DecisionBuilder::Next;
 %rename (toString) *::DebugString;

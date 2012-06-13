@@ -168,7 +168,7 @@ bool SafeParseInt64Array(const string& str, std::vector<int64>* parsed_int) {
   }
   return true;
 }
-}
+}  // namespace
 
 // Builds and solves a model from a file in the format defined by Li & Lim
 // (http://www.sintef.no/static/am/opti/projects/top/vrp/format_pdp.htm).

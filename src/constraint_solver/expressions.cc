@@ -2396,6 +2396,32 @@ string TimesPosCstBoolVar::DebugString() const {
 
 // ---------- arithmetic expressions ----------
 
+bool AddOverflows(int64 left, int64 right) {
+  return right > 0 && left > kint64max - right;
+}
+
+bool AddUnderflows(int64 left, int64 right) {
+  return right < 0 && left < kint64min - right;
+}
+
+int64 CapAdd(int64 left, int64 right) {
+  return AddOverflows(left, right) ? kint64max :
+      (AddUnderflows(left, right) ? kint64min : left + right);
+}
+
+bool SubOverflows(int64 left, int64 right) {
+  return right < 0 && left > kint64max + right;
+}
+
+bool SubUnderflows(int64 left, int64 right) {
+  return right > 0 && left < kint64min + right;
+}
+
+int64 CapSub(int64 left, int64 right) {
+  return SubOverflows(left, right) ? kint64max :
+      (SubUnderflows(left, right) ? kint64min : left - right);
+}
+
 // ----- PlusIntExpr -----
 
 class PlusIntExpr : public BaseIntExpr {
@@ -2404,19 +2430,23 @@ class PlusIntExpr : public BaseIntExpr {
       : BaseIntExpr(s), left_(l), right_(r) {}
   virtual ~PlusIntExpr() {}
   virtual int64 Min() const {
-    return (left_->Min() + right_->Min());
+    return CapAdd(left_->Min(), right_->Min());
   }
   virtual void SetMin(int64 m) {
-    left_->SetMin(m - right_->Max());
-    right_->SetMin(m - left_->Max());
+    left_->SetMin(CapSub(m, right_->Max()));
+    right_->SetMin(CapSub(m, left_->Max()));
   }
   virtual void SetRange(int64 l, int64 u);
   virtual int64 Max() const {
-    return (left_->Max() + right_->Max());
+    return CapAdd(left_->Max(), right_->Max());
   }
   virtual void SetMax(int64 m) {
-    left_->SetMax(m - right_->Min());
-    right_->SetMax(m - left_->Min());
+    if (!SubOverflows(m, right_->Min())) {
+      left_->SetMax(CapSub(m, right_->Min()));
+    }
+    if (!SubOverflows(m, left_->Min())) {
+      right_->SetMax(CapSub(m, left_->Min()));
+    }
   }
   virtual bool Bound() const { return (left_->Bound() && right_->Bound()); }
   virtual string name() const {
@@ -2450,16 +2480,16 @@ class PlusIntExpr : public BaseIntExpr {
 
 void PlusIntExpr::SetRange(int64 l, int64 u) {
   const int64 left_min = left_->Min();
-  const int64 left_max = right_->Min();
-  const int64 right_min = left_->Max();
+  const int64 right_min = right_->Min();
+  const int64 left_max = left_->Max();
   const int64 right_max = right_->Max();
-  if (l > left_min + left_max) {
-    left_->SetMin(l - right_max);
-    right_->SetMin(l - right_min);
+  if (l > CapAdd(left_min, right_min)) {
+    left_->SetMin(CapSub(l, right_max));
+    right_->SetMin(CapSub(l, left_max));
   }
-  if (u < right_min + right_max) {
-    left_->SetMax(u - left_max);
-    right_->SetMax(u - left_min);
+  if (u < CapAdd(left_max, right_max)) {
+    left_->SetMax(CapSub(u, right_min));
+    right_->SetMax(CapSub(u, left_min));
   }
 }
 

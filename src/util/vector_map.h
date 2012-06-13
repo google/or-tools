@@ -19,8 +19,6 @@
 #include "base/hash.h"
 #include <vector>
 #include "base/map-util.h"
-#include "base/int-type.h"
-#include "base/int-type-indexed-vector.h"
 
 namespace operations_research {
 
@@ -104,88 +102,6 @@ template <class T> class VectorMap {
  private:
   std::vector<T> list_;
   hash_map<T, int> map_;
-};
-
-// This class stores a vector of distinct elements, as well as a map
-// from elements to index to find the index in the vector.
-// This is useful to store mapping between objects and indices.
-template <class I, class T> class TypedVectorMap {
- public:
-  // Adds an element if not already present, and returns its index in
-  // the vector-map.
-  I Add(const T& element) {
-    I current_index = Index(element);
-    if (current_index != -1) {
-      return current_index;
-    }
-    const I index = I(list_.size());
-    CHECK_EQ(index.value(), map_.size());
-    list_.push_back(element);
-    map_[element] = index;
-    return index;
-  }
-  // TODO(user): Use ArraySlice.
-
-  // Adds all elements of the vector.
-  void Add(const std::vector<T>& elements) {
-    for (int i = 0; i < elements.size(); ++i) {
-      Add(elements[i]);
-    }
-  }
-
-  // Returns -1 if the element is not in the vector, or its unique
-  // index if it is.
-  I Index(const T& element) const {
-    return FindWithDefault(map_, element, I(-1));
-  }
-  // TODO(user): explore a int-type version.
-
-  // Returns wether the element has already been added to the vector-map.
-  bool Contains(const T& element) const {
-    return ContainsKey(map_, element);
-  }
-
-  // Returns the element at position index.
-  const T& Element(I index) const {
-    CHECK_GE(index, 0);
-    CHECK_LT(index, list_.size());
-    return list_[index];
-  }
-
-  // Returns the number of distinct elements added to the vector-map.
-  I size() const { return I(list_.size()); }
-
-  // Clears all the elements added to the vector-map.
-  void clear() {
-    list_.clear();
-    map_.clear();
-  }
-
-  // Returns a read-only access to the vector of elements.
-  const ITIVector<I, T>& list() const { return list_; }
-
-  // Standard STL container boilerplate.
-  typedef T value_type;
-  typedef const T* pointer;
-  typedef const T& reference;
-  typedef const T& const_reference;
-  typedef size_t size_type;
-  typedef ptrdiff_t difference_type;
-  static const size_type npos;
-  typedef const T* const_iterator;
-  typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-  const_iterator begin() const { return list_.data(); }
-  const_iterator end() const { return list_.data() + list_.size(); }
-  const_reverse_iterator rbegin() const {
-    return const_reverse_iterator(list_.data() + list_.size());
-  }
-  const_reverse_iterator rend() const {
-    return const_reverse_iterator(list_.data());
-  }
-
- private:
-  ITIVector<I, T> list_;
-  hash_map<T, I> map_;
 };
 
 }  // namespace operations_research

@@ -865,8 +865,8 @@ class Modulo : public Constraint {
 
  private:
   IntVar* const x_;
-  IntVar* const y_;
   const int64 mod_;
+  IntVar* const y_;
   IntVarIterator* const x_iterator_;
   IntVarIterator* const y_iterator_;
   std::vector<int64> to_remove_;

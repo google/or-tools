@@ -25,7 +25,6 @@
 #include "base/concise_iterator.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
-#include "util/const_int_array.h"
 #include "util/string_array.h"
 
 namespace operations_research {
@@ -986,7 +985,7 @@ void BoundedDistribute::InitialPropagate() {
     sum_card_min += card_min_[i];
   }
   if (sum_card_min > var_size_) {
-    solver()->Fail();
+    s->Fail();
   }
   if (sum_card_min == var_size_) {
     for (int i = 0; i < var_size_; ++i) {

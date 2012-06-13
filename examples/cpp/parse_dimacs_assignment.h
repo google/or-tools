@@ -18,13 +18,241 @@
 #ifndef OR_TOOLS_EXAMPLES_PARSE_DIMACS_ASSIGNMENT_H_
 #define OR_TOOLS_EXAMPLES_PARSE_DIMACS_ASSIGNMENT_H_
 
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
 #include <string>
 
+#include "base/callback.h"
+#include "base/commandlineflags.h"
+#include "base/logging.h"
+#include "base/scoped_ptr.h"
 #include "graph/ebert_graph.h"
+#include "graph/linear_assignment.h"
+
+DECLARE_bool(assignment_maximize_cost);
+DECLARE_bool(assignment_optimize_layout);
 
 namespace operations_research {
 
 template <typename GraphType> class LinearSumAssignment;
+
+template <typename GraphType> class DimacsAssignmentParser {
+ public:
+  explicit DimacsAssignmentParser(const string filename)
+      : filename_(filename),
+        graph_builder_(NULL),
+        assignment_(NULL) { }
+
+  // Reads an assignment problem description from the given file in
+  // DIMACS format and returns a LinearSumAssignment object representing
+  // the problem description. For a description of the format, see
+  // http://lpsolve.sourceforge.net/5.5/DIMACS_asn.htm
+  //
+  // Also returns an error message (empty if no error) and a handle on
+  // the underlying graph representation. The error_message pointer must
+  // not be NULL because we insist on returning an explanatory message
+  // in the case of error. The graph_handle pointer must not be NULL
+  // because unless we pass a non-const pointer to the graph
+  // representation back to the caller, the caller lacks a good way to
+  // free the underlying graph (which isn't owned by the
+  // LinearAssignment instance).
+  LinearSumAssignment<GraphType>* Parse(string* error_message,
+                                        GraphType** graph);
+
+ private:
+  void ParseProblemLine(const char* line);
+
+  void ParseNodeLine(const char* line);
+
+  void ParseArcLine(const char* line);
+
+  void ParseOneLine(char* line);
+
+  void ParseFileByLines(const string& filename,
+                        Callback1<char*>* line_parser);
+
+  string filename_;
+
+  struct ErrorTrackingState {
+    ErrorTrackingState()
+        : bad(false),
+          expect_last_line(false),
+          nodes_described(false),
+          reason(NULL),
+          num_left_nodes(0),
+          num_arcs(0) { }
+
+    bool bad;
+    bool expect_last_line;
+    bool nodes_described;
+    const char* reason;
+    NodeIndex num_left_nodes;
+    ArcIndex num_arcs;
+    scoped_ptr<string> bad_line;
+  };
+
+  ErrorTrackingState state_;
+
+  AnnotatedGraphBuildManager<GraphType>* graph_builder_;
+
+  LinearSumAssignment<GraphType>* assignment_;
+};
+
+// Implementation is below here.
+template <typename GraphType>
+void DimacsAssignmentParser<GraphType>::ParseProblemLine(
+    const char* line) {
+  static const char* kIncorrectProblemLine =
+      "Incorrect assignment problem line.";
+  static const char* kAssignmentProblemType = "asn";
+  char problem_type[4];
+  NodeIndex num_nodes;
+  ArcIndex num_arcs;
+
+  if ((sscanf(line, "%*c%3s%d%d",  // NOLINT
+              problem_type,
+              &num_nodes,
+              &num_arcs) != 3) ||
+      (strncmp(kAssignmentProblemType,
+               problem_type,
+               strlen(kAssignmentProblemType)) != 0)) {
+    state_.bad = true;
+    state_.reason = kIncorrectProblemLine;
+    state_.bad_line.reset(new string(line));
+    return;
+  }
+
+  state_.num_arcs = num_arcs;
+  graph_builder_ = new AnnotatedGraphBuildManager<GraphType>(
+      num_nodes, num_arcs, FLAGS_assignment_optimize_layout);
+}
+
+template <typename GraphType>
+void DimacsAssignmentParser<GraphType>::ParseNodeLine(const char* line) {
+  NodeIndex node_id;
+  if (sscanf(line, "%*c%d", &node_id) != 1) {  // NOLINT
+    state_.bad = true;
+    state_.reason = "Syntax error in node desciption.";
+    state_.bad_line.reset(new string(line));
+    return;
+  }
+  if (state_.nodes_described) {
+    state_.bad = true;
+    state_.reason = "All node description must precede first arc description.";
+    state_.bad_line.reset(new string(line));
+    return;
+  }
+  state_.num_left_nodes = ::std::max(state_.num_left_nodes, node_id);
+}
+
+template <typename GraphType>
+void DimacsAssignmentParser<GraphType>::ParseArcLine(
+    const char* line) {
+  if (graph_builder_ == NULL) {
+    state_.bad = true;
+    state_.reason =
+        "Problem specification line must precede any arc specification.";
+    state_.bad_line.reset(new string(line));
+    return;
+  }
+  if (!state_.nodes_described) {
+    state_.nodes_described = true;
+    DCHECK(assignment_ == NULL);
+    assignment_ = new LinearSumAssignment<GraphType>(
+        state_.num_left_nodes, state_.num_arcs);
+  }
+  NodeIndex tail;
+  NodeIndex head;
+  CostValue cost;
+  if (sscanf(line, "%*c%d%d%lld", &tail, &head, &cost) != 3) {  // NOLINT
+    state_.bad = true;
+    state_.reason = "Syntax error in arc descriptor.";
+    state_.bad_line.reset(new string(line));
+  }
+  ArcIndex arc = graph_builder_->AddArc(tail - 1, head - 1);
+  assignment_->SetArcCost(arc, FLAGS_assignment_maximize_cost ? -cost : cost);
+}
+
+// Parameters out of style-guide order because this function is used
+// as a callback that varies the input line.
+template <typename GraphType>
+void DimacsAssignmentParser<GraphType>::ParseOneLine(char* line) {
+  if (state_.bad) {
+    return;
+  }
+
+  if (state_.expect_last_line) {
+    state_.bad = true;
+    state_.reason = "Input line is too long.";
+    // state_.bad_line was already set when we noticed the line
+    // didn't end with '\n'.
+    return;
+  }
+
+  size_t length = strlen(line);
+  // The final line might not end with newline. Any other line
+  // that seems not to is actually a line that was too long
+  // for our input buffer.
+  if (line[length - 1] != '\n') {
+    state_.expect_last_line = true;
+    // Prepare for the worst; we might need to inform the user of
+    // an error on this line even though we can't detect the error
+    // yet.
+    state_.bad_line.reset(new string(line));
+  }
+
+
+  switch (line[0]) {
+    case 'p': {
+      // Problem-specification line
+      ParseProblemLine(line);
+      break;
+    }
+    case 'c': {
+      // Comment; do nothing.
+      return;
+    }
+    case 'n': {
+      // Node line defining a node on the left side
+      ParseNodeLine(line);
+      break;
+    }
+    case 'a': {
+      ParseArcLine(line);
+      break;
+    }
+    case '0':
+    case '\n':
+        break;
+    default: {
+      state_.bad = true;
+      state_.reason = "Unknown line type in the input.";
+      state_.bad_line.reset(new string(line));
+      break;
+    }
+  }
+}
+
+template <typename GraphType>
+void DimacsAssignmentParser<GraphType>::ParseFileByLines(
+    const string& filename,
+    Callback1<char*>* line_parser) {
+  FILE* fp = fopen(filename.c_str(), "r");
+  const int kMaximumLineSize = 1024;
+  char line[kMaximumLineSize];
+  if (fp != NULL) {
+    char* result;
+    do {
+      result = fgets(line, kMaximumLineSize, fp);
+      if (result != NULL) {
+        line_parser->Run(result);
+      }
+    } while (result != NULL);
+  }
+  delete line_parser;
+}
+
 
 // Reads an assignment problem description from the given file in
 // DIMACS format and returns a LinearSumAssignment object representing
@@ -39,10 +267,42 @@ template <typename GraphType> class LinearSumAssignment;
 // representation back to the caller, the caller lacks a good way to
 // free the underlying graph (which isn't owned by the
 // LinearAssignment instance).
-LinearSumAssignment<ForwardStarGraph>* ParseDimacsAssignment(
-    const string& filename,
+template <typename GraphType>
+LinearSumAssignment<GraphType>* DimacsAssignmentParser<GraphType>::Parse(
     string* error_message,
-    ForwardStarGraph** graph);
+    GraphType** graph_handle) {
+  CHECK_NOTNULL(error_message);
+  CHECK_NOTNULL(graph_handle);
+  Callback1<char*>* cb =
+      NewPermanentCallback(
+          this, &DimacsAssignmentParser<GraphType>::ParseOneLine);
+  // ParseFileByLines takes ownership of cb and deletes it.
+  ParseFileByLines(filename_, cb);
+
+  if (state_.bad) {
+    *error_message = state_.reason;
+    *error_message = *error_message + ": \"" + *state_.bad_line + "\"";
+    return NULL;
+  }
+  if (graph_builder_ == NULL) {
+    *error_message = "empty graph description";
+    return NULL;
+  }
+  scoped_ptr<PermutationCycleHandler<ArcIndex> > cycle_handler(
+      assignment_->ArcAnnotationCycleHandler());
+  GraphType* graph = graph_builder_->Graph(cycle_handler.get());
+  if (graph == NULL) {
+    *error_message = "unable to create compact static graph";
+    return NULL;
+  }
+  assignment_->SetGraph(graph);
+  *error_message = "";
+  // Return a handle on the graph to the caller so the caller can free
+  // the graph's memory, because the LinearSumAssignment object does
+  // not take ownership of the graph and hence will not free it.
+  *graph_handle = graph;
+  return assignment_;
+}
 
 }  // namespace operations_research
 

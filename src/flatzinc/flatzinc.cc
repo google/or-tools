@@ -157,7 +157,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
       VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
     }
 
-    for (unsigned int i=0; i < flat_annotations.size(); i++) {
+    for (unsigned int i = 0; i < flat_annotations.size(); i++) {
       try {
         AST::Call *call = flat_annotations[i]->getCall("int_search");
         AST::Array *args = call->getArgs(4);

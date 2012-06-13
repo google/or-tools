@@ -21,6 +21,7 @@ namespace operations_research {
 // ACM minimal standard random number generator.  (re-entrant.)
 class ACMRandom {
  public:
+  typedef int64_t difference_type;
   explicit ACMRandom(int32 seed) : seed_(seed) {}
   int32 Next();
   int32 Uniform(int32 max_value);

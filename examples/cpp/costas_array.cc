@@ -348,10 +348,7 @@ void CostasSoft(const int dim) {
           subdecision_builder);
 
   DecisionBuilder* const second_phase =
-      solver.MakeLocalSearchPhase(matrix.data(),
-                                  matrix.size(),
-                                  first_solution,
-                                  ls_params);
+      solver.MakeLocalSearchPhase(matrix, first_solution, ls_params);
 
   // Try to find a solution
   solver.Solve(second_phase,

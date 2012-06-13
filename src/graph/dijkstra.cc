@@ -17,6 +17,7 @@
 #include "base/callback.h"
 #include "base/integral_types.h"
 #include "base/scoped_ptr.h"
+#include "graph/shortestpaths.h"
 #include "base/adjustable_priority_queue.h"
 
 

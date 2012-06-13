@@ -865,7 +865,7 @@ class Search {
         selector_(NULL), search_depth_(0), left_search_depth_(0),
         should_restart_(false), should_finish_(false),
         sentinel_pushed_(0), jmpbuf_filled_(false),
-        restore_(true) {}
+        backtrack_at_the_end_of_the_search_(true) {}
 
   // Constructor for a dummy search. The only difference between a dummy search
   // and a regular one is that the search depth and left search depth is
@@ -876,7 +876,7 @@ class Search {
         selector_(NULL), search_depth_(-1), left_search_depth_(-1),
         should_restart_(false), should_finish_(false),
         sentinel_pushed_(0), jmpbuf_filled_(false),
-        restore_(true) {}
+        backtrack_at_the_end_of_the_search_(true) {}
 
   ~Search() {
     STLDeleteElements(&marker_stack_);
@@ -923,8 +923,12 @@ class Search {
   void RightMove() {
     search_depth_++;
   }
-  bool restore() const { return restore_; }
-  void set_restore(bool restore) { restore_ = restore; }
+  bool backtrack_at_the_end_of_the_search() const {
+    return backtrack_at_the_end_of_the_search_;
+  }
+  void set_backtrack_at_the_end_of_the_search(bool restore) {
+    backtrack_at_the_end_of_the_search_ = restore;
+  }
   int search_depth() const { return search_depth_; }
   void set_search_depth(int d) { search_depth_ = d; }
   int left_search_depth() const { return left_search_depth_; }
@@ -961,7 +965,7 @@ class Search {
   bool should_finish_;
   int sentinel_pushed_;
   bool jmpbuf_filled_;
-  bool restore_;
+  bool backtrack_at_the_end_of_the_search_;
 };
 
 // Backtrack is implemented using 3 primitives:
@@ -1098,7 +1102,7 @@ void Search::Clear() {
   search_depth_ = 0;
   left_search_depth_ = 0;
   selector_.reset(NULL);
-  restore_ = true;
+  backtrack_at_the_end_of_the_search_ = true;
 }
 
 void Search::EnterSearch() {
@@ -1115,6 +1119,8 @@ void Search::EnterSearch() {
 }
 
 void Search::ExitSearch() {
+  // Backtrack to the correct state.
+
   for (std::vector<SearchMonitor*>::iterator it = monitors_.begin();
        it != monitors_.end();
        ++it) {
@@ -1884,12 +1890,9 @@ void Solver::NewSearch(DecisionBuilder* const db,
                        const std::vector<SearchMonitor*>& monitors) {
   // TODO(user) : reset statistics
 
-  // ----- gets or creates the search object -----
-
   const int size = monitors.size();
 
   CHECK_NOTNULL(db);
-  DCHECK_GE(size, 0);
   const bool nested = state_ == IN_SEARCH;
 
   if (state_ == IN_ROOT_NODE) {
@@ -1902,10 +1905,14 @@ void Solver::NewSearch(DecisionBuilder* const db,
   // ----- jumps to correct state -----
 
   if (nested) {
+    // Nested searches are created on demand, and deleted afterwards.
     DCHECK_GE(searches_.size(), 2);
     searches_.push_back(search);
   } else {
+    // Top level search is persistent.
+    // TODO(user): delete top level search after EndSearch().
     DCHECK_EQ(2, searches_.size());
+    // TODO(user): Check if these two lines are still necessary.
     BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
     state_ = OUTSIDE_SEARCH;
   }
@@ -1934,19 +1941,23 @@ void Solver::NewSearch(DecisionBuilder* const db,
   }
   // Install the print trace if needed.
   // The print_trace needs to be last to detect propagation from the objective.
-  if (FLAGS_cp_trace_propagation) {
-    if (!nested) {  // Build trace objet at top level.
-      print_trace_ = BuildPrintTrace(this);
+  if (nested) {
+    if (print_trace_ != NULL) {  // Was installed at the top level?
+      print_trace_->Install();  // Propagates to nested search.
     }
-    print_trace_->Install();
-  } else {
-    // This is useful to trace the exact behavior of the search.
-    // The '######## ' prefix is the same as the progagation trace.
-    if (FLAGS_cp_trace_search && !nested) {
+  } else {  // Top level search
+    print_trace_ = NULL;  // Clears it first.
+    if (FLAGS_cp_trace_propagation) {
+      print_trace_ = BuildPrintTrace(this);
+      print_trace_->Install();
+    } else if (FLAGS_cp_trace_search) {
+      // This is useful to trace the exact behavior of the search.
+      // The '######## ' prefix is the same as the progagation trace.
+      // Search trace is subsumed by propagation trace, thus only one
+      // is necessary.
       SearchMonitor* const trace = MakeSearchTrace("######## ");
       trace->Install();
     }
-    print_trace_ = NULL;
   }
 
   // ----- enters search -----
@@ -2299,7 +2310,7 @@ bool Solver::NextSolution() {
 
 void Solver::EndSearch() {
   Search* const search = searches_.back();
-  if (search->restore()) {
+  if (search->backtrack_at_the_end_of_the_search()) {
     BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
   } else {
     CHECK_GT(searches_.size(), 2);
@@ -2309,8 +2320,10 @@ void Solver::EndSearch() {
   }
   search->ExitSearch();
   search->Clear();
-  if (2 == searches_.size()) {  // Post top level search actions.
+  if (2 == searches_.size()) {  // Ending top level search.
+    // Restores the state.
     state_ = OUTSIDE_SEARCH;
+    // Checks if we want to export the profile info.
     if (!FLAGS_cp_profile_file.empty()) {
       LOG(INFO) << "Exporting profile to " << FLAGS_cp_profile_file;
       ExportProfilingOverview(FLAGS_cp_profile_file);
@@ -2437,7 +2450,7 @@ bool Solver::SolveAndCommit(DecisionBuilder* const db,
                             const std::vector<SearchMonitor*>& monitors) {
   NewSearch(db, monitors);
   searches_.back()->set_created_by_solve(true);  // Overwrites default.
-  searches_.back()->set_restore(false);
+  searches_.back()->set_backtrack_at_the_end_of_the_search(false);
   NextSolution();
   const bool solution_found = searches_.back()->solution_counter() > 0;
   EndSearch();

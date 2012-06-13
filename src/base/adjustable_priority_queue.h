@@ -25,7 +25,6 @@ namespace operations_research {
 
 template<typename T> class AdjustablePriorityQueue {
  public:
-
   AdjustablePriorityQueue() {}
 
   void Add(T* const val) {

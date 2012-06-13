@@ -1974,11 +1974,14 @@ class RandomCompoundOperator : public LocalSearchOperator {
  public:
   explicit RandomCompoundOperator(
       const std::vector<LocalSearchOperator*>& operators);
+  RandomCompoundOperator(
+      const std::vector<LocalSearchOperator*>& operators, int32 seed);
   virtual ~RandomCompoundOperator() {}
   virtual void Start(const Assignment* assignment);
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
  private:
   const int size_;
+  ACMRandom rand_;
   scoped_array<LocalSearchOperator*> operators_;
 };
 
@@ -1991,11 +1994,23 @@ void RandomCompoundOperator::Start(const Assignment* assignment) {
 RandomCompoundOperator::RandomCompoundOperator(
     const std::vector<LocalSearchOperator*>& operators)
     : size_(operators.size()),
+      rand_(ACMRandom::HostnamePidTimeSeed()),
       operators_(new LocalSearchOperator*[size_]) {
   for (int i = 0; i < size_; ++i) {
     operators_[i] = operators[i];
   }
 }
+
+RandomCompoundOperator::RandomCompoundOperator(
+    const std::vector<LocalSearchOperator*>& operators, int32 seed)
+    : size_(operators.size()),
+      rand_(seed),
+      operators_(new LocalSearchOperator*[size_]) {
+  for (int i = 0; i < size_; ++i) {
+    operators_[i] = operators[i];
+  }
+}
+
 
 bool RandomCompoundOperator::MakeNextNeighbor(Assignment* delta,
                                               Assignment* deltadelta) {
@@ -2003,7 +2018,8 @@ bool RandomCompoundOperator::MakeNextNeighbor(Assignment* delta,
   for (int i = 0; i < size_; ++i) {
     indices[i] = i;
   }
-  random_shuffle(indices.begin(), indices.end());
+  //  std::random_shuffle(indices.begin(), indices.end(), rand_);
+  std::random_shuffle(indices.begin(), indices.end());
   for (int i = 0; i < size_; ++i) {
     if (operators_[indices[i]]->MakeNextNeighbor(delta, deltadelta)) {
       return true;
@@ -2018,40 +2034,33 @@ LocalSearchOperator* Solver::RandomConcatenateOperators(
   return RevAlloc(new RandomCompoundOperator(ops));
 }
 
+LocalSearchOperator* Solver::RandomConcatenateOperators(
+    const std::vector<LocalSearchOperator*>& ops, int32 seed) {
+  return RevAlloc(new RandomCompoundOperator(ops, seed));
+}
+
 // ----- Operator factory -----
 
 LocalSearchOperator* Solver::MakeOperator(const std::vector<IntVar*>& vars,
                                           Solver::LocalSearchOperators op) {
-  return MakeOperator(vars.data(), vars.size(), op);
-}
-
-LocalSearchOperator* Solver::MakeOperator(const IntVar* const* vars,
-                                          int size,
-                                          Solver::LocalSearchOperators op) {
-  return MakeOperator(vars, NULL, size, op);
+  return MakeOperator(vars, std::vector<IntVar*>(), op);
 }
 
 LocalSearchOperator* Solver::MakeOperator(const std::vector<IntVar*>& vars,
                                           const std::vector<IntVar*>& secondary_vars,
                                           Solver::LocalSearchOperators op) {
-  return MakeOperator(vars.data(), secondary_vars.data(), vars.size(), op);
-}
-
-LocalSearchOperator* Solver::MakeOperator(const IntVar* const* vars,
-                                          const IntVar* const* secondary_vars,
-                                          int size,
-                                          Solver::LocalSearchOperators op) {
+  const int size = vars.size();
   LocalSearchOperator* result = NULL;
   switch (op) {
     case Solver::TWOOPT: {
-      result = RevAlloc(new TwoOpt(vars, secondary_vars, size));
+      result = RevAlloc(new TwoOpt(vars.data(), secondary_vars.data(), size));
       break;
     }
     case Solver::OROPT: {
       std::vector<LocalSearchOperator*> operators;
       for (int i = 1; i < 4; ++i)
-        operators.push_back(RevAlloc(new Relocate(vars,
-                                                  secondary_vars,
+        operators.push_back(RevAlloc(new Relocate(vars.data(),
+                                                  secondary_vars.data(),
                                                   size,
                                                   i,
                                                   true)));
@@ -2059,45 +2068,53 @@ LocalSearchOperator* Solver::MakeOperator(const IntVar* const* vars,
       break;
     }
     case Solver::RELOCATE: {
-      result = RevAlloc(new Relocate(vars, secondary_vars, size));
+      result = RevAlloc(new Relocate(vars.data(), secondary_vars.data(), size));
       break;
     }
     case Solver::EXCHANGE: {
-      result = RevAlloc(new Exchange(vars, secondary_vars, size));
+      result = RevAlloc(new Exchange(vars.data(), secondary_vars.data(), size));
       break;
     }
     case Solver::CROSS: {
-      result = RevAlloc(new Cross(vars, secondary_vars, size));
+      result = RevAlloc(new Cross(vars.data(), secondary_vars.data(), size));
       break;
     }
     case Solver::MAKEACTIVE: {
-      result = RevAlloc(new MakeActiveOperator(vars, secondary_vars, size));
+      result = RevAlloc(
+          new MakeActiveOperator(vars.data(), secondary_vars.data(), size));
       break;
     }
     case Solver::MAKEINACTIVE: {
-      result = RevAlloc(new MakeInactiveOperator(vars, secondary_vars, size));
+      result = RevAlloc(
+          new MakeInactiveOperator(vars.data(), secondary_vars.data(), size));
       break;
     }
     case Solver::SWAPACTIVE: {
-      result = RevAlloc(new SwapActiveOperator(vars, secondary_vars, size));
+      result = RevAlloc(
+          new SwapActiveOperator(vars.data(), secondary_vars.data(), size));
       break;
     }
     case Solver::EXTENDEDSWAPACTIVE: {
       result = RevAlloc(
-          new ExtendedSwapActiveOperator(vars, secondary_vars, size));
+          new ExtendedSwapActiveOperator(
+              vars.data(),
+              secondary_vars.data(),
+              size));
       break;
     }
     case Solver::PATHLNS: {
-      result = RevAlloc(new PathLNS(vars, secondary_vars, size, 2, 3, false));
+      result = RevAlloc(
+          new PathLNS(vars.data(), secondary_vars.data(), size, 2, 3, false));
       break;
     }
     case Solver::UNACTIVELNS: {
-      result = RevAlloc(new PathLNS(vars, secondary_vars, size, 1, 6, true));
+      result = RevAlloc(
+          new PathLNS(vars.data(), secondary_vars.data(), size, 1, 6, true));
       break;
     }
     case Solver::INCREMENT: {
-      if (secondary_vars == NULL) {
-        result = RevAlloc(new IncrementValue(vars, size));
+      if (secondary_vars.size() == 0) {
+        result = RevAlloc(new IncrementValue(vars.data(), size));
       } else {
         LOG(FATAL) << "Operator " << op
                    << " does not support secondary variables";
@@ -2105,8 +2122,8 @@ LocalSearchOperator* Solver::MakeOperator(const IntVar* const* vars,
       break;
     }
     case Solver::DECREMENT: {
-      if (secondary_vars == NULL) {
-        result = RevAlloc(new DecrementValue(vars, size));
+      if (secondary_vars.size() == 0) {
+        result = RevAlloc(new DecrementValue(vars.data(), size));
       } else {
         LOG(FATAL) << "Operator " << op
                    << " does not support secondary variables";
@@ -2114,8 +2131,8 @@ LocalSearchOperator* Solver::MakeOperator(const IntVar* const* vars,
       break;
     }
     case Solver::SIMPLELNS: {
-      if (secondary_vars == NULL) {
-        result = RevAlloc(new SimpleLNS(vars, size, 1));
+      if (secondary_vars.size() == 0) {
+        result = RevAlloc(new SimpleLNS(vars.data(), size, 1));
       } else {
         LOG(FATAL) << "Operator " << op
                    << " does not support secondary variables";
@@ -2132,15 +2149,7 @@ LocalSearchOperator* Solver::MakeOperator(
     const std::vector<IntVar*>& vars,
     Solver::IndexEvaluator3* const evaluator,
     Solver::EvaluatorLocalSearchOperators op) {
-  return MakeOperator(vars.data(), vars.size(), evaluator, op);
-}
-
-LocalSearchOperator* Solver::MakeOperator(
-    const IntVar* const* vars,
-    int size,
-    Solver::IndexEvaluator3* const evaluator,
-    Solver::EvaluatorLocalSearchOperators op) {
-  return MakeOperator(vars, NULL, size, evaluator, op);
+  return MakeOperator(vars, std::vector<IntVar*>(), evaluator, op);
 }
 
 LocalSearchOperator* Solver::MakeOperator(
@@ -2148,32 +2157,20 @@ LocalSearchOperator* Solver::MakeOperator(
     const std::vector<IntVar*>& secondary_vars,
     Solver::IndexEvaluator3* const evaluator,
     Solver::EvaluatorLocalSearchOperators op) {
-  return MakeOperator(vars.data(),
-                      secondary_vars.data(),
-                      vars.size(),
-                      evaluator,
-                      op);
-}
-
-LocalSearchOperator* Solver::MakeOperator(
-    const IntVar* const* vars,
-    const IntVar* const* secondary_vars,
-    int size,
-    Solver::IndexEvaluator3* const evaluator,
-    Solver::EvaluatorLocalSearchOperators op) {
+  const int size = vars.size();
   LocalSearchOperator* result = NULL;
   switch (op) {
     case Solver::LK: {
       std::vector<LocalSearchOperator*> operators;
       operators.push_back(
-          RevAlloc(new LinKernighan(vars,
-                                    secondary_vars,
+          RevAlloc(new LinKernighan(vars.data(),
+                                    secondary_vars.data(),
                                     size,
                                     evaluator,
                                     true, false)));
       operators.push_back(
-          RevAlloc(new LinKernighan(vars,
-                                    secondary_vars,
+          RevAlloc(new LinKernighan(vars.data(),
+                                    secondary_vars.data(),
                                     size,
                                     evaluator,
                                     false, true)));
@@ -2181,12 +2178,18 @@ LocalSearchOperator* Solver::MakeOperator(
       break;
     }
     case Solver::TSPOPT: {
-      result = RevAlloc(new TSPOpt(vars, secondary_vars, size, evaluator,
+      result = RevAlloc(new TSPOpt(vars.data(),
+                                   secondary_vars.data(),
+                                   size,
+                                   evaluator,
                                    FLAGS_cp_local_search_tsp_opt_size));
       break;
     }
     case Solver::TSPLNS: {
-      result = RevAlloc(new TSPLns(vars, secondary_vars, size, evaluator,
+      result = RevAlloc(new TSPLns(vars.data(),
+                                   secondary_vars.data(),
+                                   size,
+                                   evaluator,
                                    FLAGS_cp_local_search_tsp_lns_size));
       break;
     }
@@ -2673,20 +2676,6 @@ LSOperation* OperationFromEnum(Solver::LocalSearchOperation op_enum) {
 }
 }  // namespace
 
-LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
-    const IntVar* const* vars,
-    int size,
-    Solver::IndexEvaluator2* const values,
-    const IntVar* const objective,
-    Solver::LocalSearchFilterBound filter_enum,
-    Solver::LocalSearchOperation op_enum) {
-  return RevAlloc(new BinaryObjectiveFilter(vars,
-                                            size,
-                                            values,
-                                            objective,
-                                            filter_enum,
-                                            OperationFromEnum(op_enum)));
-}
 
 LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
     const std::vector<IntVar*>& vars,
@@ -2694,29 +2683,12 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
     const IntVar* const objective,
     Solver::LocalSearchFilterBound filter_enum,
     Solver::LocalSearchOperation op_enum) {
-  return MakeLocalSearchObjectiveFilter(vars.data(),
-                                        vars.size(),
-                                        values,
-                                        objective,
-                                        filter_enum,
-                                        op_enum);
-}
-
-LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
-    const IntVar* const* vars,
-    const IntVar* const* secondary_vars,
-    int size,
-    Solver::IndexEvaluator3* const values,
-    const IntVar* const objective,
-    Solver::LocalSearchFilterBound filter_enum,
-    Solver::LocalSearchOperation op_enum) {
-  return RevAlloc(new TernaryObjectiveFilter(vars,
-                                             secondary_vars,
-                                             size,
-                                             values,
-                                             objective,
-                                             filter_enum,
-                                             OperationFromEnum(op_enum)));
+  return RevAlloc(new BinaryObjectiveFilter(vars.data(),
+                                            vars.size(),
+                                            values,
+                                            objective,
+                                            filter_enum,
+                                            OperationFromEnum(op_enum)));
 }
 
 LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
@@ -2726,15 +2698,14 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
     const IntVar* const objective,
     Solver::LocalSearchFilterBound filter_enum,
     Solver::LocalSearchOperation op_enum) {
-  CHECK_EQ(vars.size(), secondary_vars.size());
-  return MakeLocalSearchObjectiveFilter(vars.data(),
-                                        secondary_vars.data(),
-                                        vars.size(),
-                                        values,
-                                        objective,
-                                        filter_enum,
-                                        op_enum);
-}
+  return  RevAlloc(new TernaryObjectiveFilter(vars.data(),
+                                              secondary_vars.data(),
+                                              vars.size(),
+                                              values,
+                                              objective,
+                                              filter_enum,
+                                              OperationFromEnum(op_enum)));
+                   }
 
 
 // ----- Finds a neighbor of the assignment passed -----
@@ -3341,17 +3312,7 @@ DecisionBuilder* Solver::MakeLocalSearchPhase(
     const std::vector<IntVar*>& vars,
     DecisionBuilder* first_solution,
     LocalSearchPhaseParameters* parameters) {
-  return MakeLocalSearchPhase(vars.data(),
-                              vars.size(),
-                              first_solution,
-                              parameters);
-}
-
-DecisionBuilder* Solver::MakeLocalSearchPhase(
-    IntVar* const* vars, int size,
-    DecisionBuilder* first_solution,
-    LocalSearchPhaseParameters* parameters) {
-  return RevAlloc(new LocalSearch(vars, size,
+  return RevAlloc(new LocalSearch(vars.data(), vars.size(),
                                   parameters->solution_pool(),
                                   first_solution,
                                   parameters->ls_operator(),

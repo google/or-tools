@@ -941,8 +941,8 @@ class Solver {
   // assigning any variable to any value is a solution, unless the root node
   // propagation discovers that the model is infeasible.
   //
-  // These function must be called from either from outside of search,
-  // or withing the Next() method of a decion builder.
+  // This function must be called either from outside of search,
+  // or from within the Next() method of a decision builder.
   //
   // Solve will terminate whenever any of the following event arise:
   // * A search monitor asks the solver to terminate the search by calling
@@ -1944,14 +1944,6 @@ class Solver {
                                 int64 keep_tenure,
                                 int64 forbid_tenure,
                                 double tabu_factor);
-  SearchMonitor* MakeTabuSearch(bool maximize,
-                                IntVar* const v,
-                                int64 step,
-                                const IntVar* const* vars,
-                                int size,
-                                int64 keep_tenure,
-                                int64 forbid_tenure,
-                                double tabu_factor);
 
   // Creates a Simulated Annealing monitor.
   // TODO(user): document behavior
@@ -1970,25 +1962,10 @@ class Solver {
                                        double penalty_factor);
   SearchMonitor* MakeGuidedLocalSearch(bool maximize,
                                        IntVar* const objective,
-                                       IndexEvaluator2* objective_function,
-                                       int64 step,
-                                       const IntVar* const* vars,
-                                       int size,
-                                       double penalty_factor);
-  SearchMonitor* MakeGuidedLocalSearch(bool maximize,
-                                       IntVar* const objective,
                                        IndexEvaluator3* objective_function,
                                        int64 step,
                                        const std::vector<IntVar*>& vars,
                                        const std::vector<IntVar*>& secondary_vars,
-                                       double penalty_factor);
-  SearchMonitor* MakeGuidedLocalSearch(bool maximize,
-                                       IntVar* const objective,
-                                       IndexEvaluator3* objective_function,
-                                       int64 step,
-                                       const IntVar* const* vars,
-                                       const IntVar* const* secondary_vars,
-                                       int size,
                                        double penalty_factor);
 
   // ----- Restart Search -----
@@ -2433,32 +2410,16 @@ class Solver {
 
   LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
                                     LocalSearchOperators op);
-  LocalSearchOperator* MakeOperator(const IntVar* const* vars,
-                                    int size,
-                                    LocalSearchOperators op);
   LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
                                     const std::vector<IntVar*>& secondary_vars,
-                                    LocalSearchOperators op);
-  LocalSearchOperator* MakeOperator(const IntVar* const* vars,
-                                    const IntVar* const* secondary_vars,
-                                    int size,
                                     LocalSearchOperators op);
   // TODO(user): Make the callback an IndexEvaluator2 when there are no
   // secondary variables.
   LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
                                     IndexEvaluator3* const evaluator,
                                     EvaluatorLocalSearchOperators op);
-  LocalSearchOperator* MakeOperator(const IntVar* const* vars,
-                                    int size,
-                                    IndexEvaluator3* const evaluator,
-                                    EvaluatorLocalSearchOperators op);
   LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
                                     const std::vector<IntVar*>& secondary_vars,
-                                    IndexEvaluator3* const evaluator,
-                                    EvaluatorLocalSearchOperators op);
-  LocalSearchOperator* MakeOperator(const IntVar* const* vars,
-                                    const IntVar* const* secondary_vars,
-                                    int size,
                                     IndexEvaluator3* const evaluator,
                                     EvaluatorLocalSearchOperators op);
 
@@ -2533,6 +2494,12 @@ class Solver {
   LocalSearchOperator* RandomConcatenateOperators(
       const std::vector<LocalSearchOperator*>& ops);
 
+  // Randomized version of local search concatenator; calls a random operator at
+  // each call to MakeNextNeighbor(). The provided seed is used to init
+  // the random number generator.
+  LocalSearchOperator* RandomConcatenateOperators(
+      const std::vector<LocalSearchOperator*>& ops, int32 seed);
+
   // Creates a local search operator that wraps another local search
   // operator and limits the number of neighbors explored (i.e. calls
   // to MakeNextNeighbor from the current solution (between two calls
@@ -2575,10 +2542,6 @@ class Solver {
       const std::vector<IntVar*>& vars,
       DecisionBuilder* const first_solution,
       LocalSearchPhaseParameters* const parameters);
-  DecisionBuilder* MakeLocalSearchPhase(
-      IntVar* const* vars, int size,
-      DecisionBuilder* const first_solution,
-      LocalSearchPhaseParameters* const parameters);
 
   // Solution Pool.
   SolutionPool* MakeDefaultSolutionPool();
@@ -2616,23 +2579,8 @@ class Solver {
   // Local Search Filters
   LocalSearchFilter* MakeVariableDomainFilter();
   LocalSearchFilter* MakeLocalSearchObjectiveFilter(
-      const IntVar* const* vars,
-      int size,
-      IndexEvaluator2* const values,
-      const IntVar* const objective,
-      Solver::LocalSearchFilterBound filter_enum,
-      Solver::LocalSearchOperation op_enum);
-  LocalSearchFilter* MakeLocalSearchObjectiveFilter(
       const std::vector<IntVar*>& vars,
       IndexEvaluator2* const values,
-      const IntVar* const objective,
-      Solver::LocalSearchFilterBound filter_enum,
-      Solver::LocalSearchOperation op_enum);
-  LocalSearchFilter* MakeLocalSearchObjectiveFilter(
-      const IntVar* const* vars,
-      const IntVar* const* secondary_vars,
-      int size,
-      Solver::IndexEvaluator3* const values,
       const IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum,
       Solver::LocalSearchOperation op_enum);
@@ -2667,7 +2615,7 @@ class Solver {
   int SearchLeftDepth() const;
 
   // Gets the number of nested searches. It returns 0 outside search,
-  // 1 during the top level search, 2 or more in case of nested searched.
+  // 1 during the top level search, 2 or more in case of nested searches.
   int SolveDepth() const;
 
   // Sets the given branch selector on the current active search.

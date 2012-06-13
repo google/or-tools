@@ -33,12 +33,21 @@ DEFINE_bool(assignment_compare_hungarian, false,
 DEFINE_string(assignment_problem_output_file, "",
               "Print the problem to this file in DIMACS format (after layout "
               "is optimized, if applicable).");
+DEFINE_bool(assignment_reverse_arcs, false,
+            "Ignored if --assignment_static_graph=true. Use StarGraph "
+            "if true, ForwardStarGraph if false.");
+DEFINE_bool(assignment_static_graph, true,
+            "Use the ForwardStarStaticGraph representation, "
+            "otherwise ForwardStarGraph or StarGraph according "
+            "to --assignment_reverse_arcs.");
 
 namespace operations_research {
 
-CostValue BuildAndSolveHungarianInstance(
-    const LinearSumAssignment<ForwardStarGraph>& assignment) {
-  const ForwardStarGraph& graph = assignment.Graph();
+typedef ForwardStarStaticGraph GraphType;
+
+template<typename GraphType> CostValue BuildAndSolveHungarianInstance(
+    const LinearSumAssignment<GraphType>& assignment) {
+  const GraphType& graph = assignment.Graph();
   typedef std::vector<double> HungarianRow;
   typedef std::vector<HungarianRow> HungarianProblem;
   HungarianProblem hungarian_cost;
@@ -46,7 +55,7 @@ CostValue BuildAndSolveHungarianInstance(
   // First we have to find the biggest cost magnitude so we can
   // initialize the arc costs that aren't really there.
   CostValue largest_cost_magnitude = 0;
-  for (ForwardStarGraph::ArcIterator arc_it(graph);
+  for (typename GraphType::ArcIterator arc_it(graph);
        arc_it.Ok();
        arc_it.Next()) {
     ArcIndex arc = arc_it.Index();
@@ -63,23 +72,23 @@ CostValue BuildAndSolveHungarianInstance(
                 missing_arc_cost);
   }
   // We're using a graph representation without forward arcs, so in
-  // order to use the generic ForwardStarGraph::ArcIterator we would
+  // order to use the generic GraphType::ArcIterator we would
   // need to increase our memory footprint by building the array of
   // arc tails (since we need tails to build the input to the
   // hungarian algorithm). We opt for the alternative of iterating
   // over hte arcs via adjacency lists, which gives us the arc tails
   // implicitly.
-  for (ForwardStarGraph::NodeIterator node_it(graph);
+  for (typename GraphType::NodeIterator node_it(graph);
        node_it.Ok();
        node_it.Next()) {
     NodeIndex node = node_it.Index();
-    NodeIndex tail = (node - ForwardStarGraph::kFirstNode);
-    for (ForwardStarGraph::OutgoingArcIterator arc_it(graph, node);
+    NodeIndex tail = (node - GraphType::kFirstNode);
+    for (typename GraphType::OutgoingArcIterator arc_it(graph, node);
          arc_it.Ok();
          arc_it.Next()) {
       ArcIndex arc = arc_it.Index();
       NodeIndex head = (graph.Head(arc) - assignment.NumLeftNodes() -
-                        ForwardStarGraph::kFirstNode);
+                        GraphType::kFirstNode);
       double cost = static_cast<double>(assignment.ArcCost(arc));
       hungarian_cost[tail][head] = cost;
     }
@@ -100,9 +109,9 @@ CostValue BuildAndSolveHungarianInstance(
   return static_cast<CostValue>(result_cost);
 }
 
-void DisplayAssignment(
-    const LinearSumAssignment<ForwardStarGraph>& assignment) {
-  for (LinearSumAssignment<ForwardStarGraph>::BipartiteLeftNodeIterator
+template<typename GraphType> void DisplayAssignment(
+    const LinearSumAssignment<GraphType>& assignment) {
+  for (typename LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator
            node_it(assignment);
        node_it.Ok();
        node_it.Next()) {
@@ -114,27 +123,15 @@ void DisplayAssignment(
   }
 }
 
-static const char* const kUsageTemplate = "usage: %s <filename>";
-
-int solve_dimacs_assignment(int argc, char* argv[]) {
-  string usage;
-  if (argc < 1) {
-    usage = StringPrintf(kUsageTemplate, "solve_dimacs_assignment");
-  } else {
-    usage = StringPrintf(kUsageTemplate, argv[0]);
-  }
-  google::SetUsageMessage(usage);
-  google::ParseCommandLineFlags(&argc, &argv, true);
-
-  if (argc < 2) {
-    LOG(FATAL) << usage;
-  }
+template<typename GraphType>
+int SolveDimacsAssignment(int argc, char* argv[]) {
   string error_message;
   // Handle on the graph we will need to delete because the
   // LinearSumAssignment object does not take ownership of it.
-  ForwardStarGraph* graph = NULL;
-  LinearSumAssignment<ForwardStarGraph>* assignment =
-      ParseDimacsAssignment(argv[1], &error_message, &graph);
+  GraphType* graph = NULL;
+  DimacsAssignmentParser<GraphType> parser(argv[1]);
+  LinearSumAssignment<GraphType>* assignment =
+      parser.Parse(&error_message, &graph);
   if (assignment == NULL) {
     LOG(FATAL) << error_message;
   }
@@ -145,9 +142,9 @@ int solve_dimacs_assignment(int argc, char* argv[]) {
     // know the type of the graph explicitly. In this way, the type of
     // the graph can be switched just by changing the graph type in
     // this file and making no other changes to the code.
-    TailArrayManager<ForwardStarGraph> tail_array_manager(graph);
-    PrintDimacsAssignmentProblem(*assignment, tail_array_manager,
-                                 FLAGS_assignment_problem_output_file);
+    TailArrayManager<GraphType> tail_array_manager(graph);
+    PrintDimacsAssignmentProblem<GraphType>(
+        *assignment, tail_array_manager, FLAGS_assignment_problem_output_file);
     tail_array_manager.ReleaseTailArrayIfForwardGraph();
   }
   CostValue hungarian_cost = 0.0;
@@ -179,6 +176,33 @@ int solve_dimacs_assignment(int argc, char* argv[]) {
 }
 }  // namespace operations_research
 
+static const char* const kUsageTemplate = "usage: %s <filename>";
+
+using ::operations_research::ForwardStarStaticGraph;
+using ::operations_research::ForwardStarGraph;
+using ::operations_research::SolveDimacsAssignment;
+using ::operations_research::StarGraph;
+using ::operations_research::StringPrintf;
+
 int main(int argc, char* argv[]) {
-  return ::operations_research::solve_dimacs_assignment(argc, argv);
+  string usage;
+  if (argc < 1) {
+    usage = StringPrintf(kUsageTemplate, "solve_dimacs_assignment");
+  } else {
+    usage = StringPrintf(kUsageTemplate, argv[0]);
+  }
+  google::SetUsageMessage(usage);
+  google::ParseCommandLineFlags(&argc, &argv, true);
+
+  if (argc < 2) {
+    LOG(FATAL) << usage;
+  }
+
+  if (FLAGS_assignment_static_graph) {
+    return SolveDimacsAssignment<ForwardStarStaticGraph>(argc, argv);
+  } else if (FLAGS_assignment_reverse_arcs) {
+    return SolveDimacsAssignment<StarGraph>(argc, argv);
+  } else {
+    return SolveDimacsAssignment<ForwardStarGraph>(argc, argv);
+  }
 }

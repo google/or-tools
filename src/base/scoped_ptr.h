@@ -46,7 +46,6 @@ scoped_ptr<C> make_scoped_ptr(C * param);
 template <class C>
 class scoped_ptr {
  public:
-
   // The element type
   typedef C element_type;
 
@@ -165,7 +164,6 @@ scoped_ptr<C> make_scoped_ptr(C *p) {
 template <class C>
 class scoped_array {
  public:
-
   // The element type
   typedef C element_type;
 
@@ -271,7 +269,6 @@ class ScopedPtrMallocFree {
 template<class C, class FreeProc = ScopedPtrMallocFree>
 class scoped_ptr_malloc {
  public:
-
   // The element type
   typedef C element_type;
 

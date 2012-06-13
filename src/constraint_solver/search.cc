@@ -3128,25 +3128,6 @@ SearchMonitor* Solver::MakeTabuSearch(bool maximize,
                                  tabu_factor));
 }
 
-SearchMonitor* Solver::MakeTabuSearch(bool maximize,
-                                      IntVar* const v,
-                                      int64 step,
-                                      const IntVar* const* vars,
-                                      int size,
-                                      int64 keep_tenure,
-                                      int64 forbid_tenure,
-                                      double tabu_factor) {
-  return RevAlloc(new TabuSearch(this,
-                                 maximize,
-                                 v,
-                                 step,
-                                 vars,
-                                 size,
-                                 keep_tenure,
-                                 forbid_tenure,
-                                 tabu_factor));
-}
-
 // ---------- Simulated Annealing ----------
 
 namespace {
@@ -3839,30 +3820,13 @@ SearchMonitor* Solver::MakeGuidedLocalSearch(
     int64 step,
     const std::vector<IntVar*>& vars,
     double penalty_factor) {
-  return MakeGuidedLocalSearch(maximize,
-                               objective,
-                               objective_function,
-                               step,
-                               vars.data(),
-                               vars.size(),
-                               penalty_factor);
-}
-
-SearchMonitor* Solver::MakeGuidedLocalSearch(
-    bool maximize,
-    IntVar* const objective,
-    ResultCallback2<int64, int64, int64>* objective_function,
-    int64 step,
-    const IntVar* const* vars,
-    int size,
-    double penalty_factor) {
   return RevAlloc(new BinaryGuidedLocalSearch(this,
                                               objective,
                                               objective_function,
                                               maximize,
                                               step,
-                                              vars,
-                                              size,
+                                              vars.data(),
+                                              vars.size(),
                                               penalty_factor));
 }
 
@@ -3874,33 +3838,14 @@ SearchMonitor* Solver::MakeGuidedLocalSearch(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     double penalty_factor) {
-  return MakeGuidedLocalSearch(maximize,
-                               objective,
-                               objective_function,
-                               step,
-                               vars.data(),
-                               secondary_vars.data(),
-                               vars.size(),
-                               penalty_factor);
-}
-
-SearchMonitor* Solver::MakeGuidedLocalSearch(
-    bool maximize,
-    IntVar* const objective,
-    ResultCallback3<int64, int64, int64, int64>* objective_function,
-    int64 step,
-    const IntVar* const* vars,
-    const IntVar* const* secondary_vars,
-    int size,
-    double penalty_factor) {
   return RevAlloc(new TernaryGuidedLocalSearch(this,
                                                objective,
                                                objective_function,
                                                maximize,
                                                step,
-                                               vars,
-                                               secondary_vars,
-                                               size,
+                                               vars.data(),
+                                               secondary_vars.data(),
+                                               vars.size(),
                                                penalty_factor));
 }
 

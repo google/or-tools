@@ -531,12 +531,14 @@ class RoutingModel {
   // Returns true if the route of 'vehicle' is non empty in 'assignment'.
   bool IsVehicleUsed(const Assignment& assignment, int vehicle) const;
   // Variables
+#if !defined(SWIG)
   // Returns all next variables of the model, such that Nexts(i) is the next
   // variable of the node corresponding to i.
-  IntVar* const * Nexts() const { return nexts_.data(); }
+  const std::vector<IntVar*>& Nexts() const { return nexts_; }
   // Returns all vehicle variables of the model,  such that VehicleVars(i) is
   // the vehicle variable of the node corresponding to i.
-  IntVar* const * VehicleVars() const { return vehicle_vars_.data(); }
+  const std::vector<IntVar*>& VehicleVars() const { return vehicle_vars_; }
+#endif
   // Returns the next variable of the node corresponding to index.
   IntVar* NextVar(int64 index) const { return nexts_[index]; }
   // Returns the active variable of the node corresponding to index.
