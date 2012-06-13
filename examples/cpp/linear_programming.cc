@@ -95,6 +95,10 @@ void RunAllExamples() {
   LOG(INFO) << "---- Linear programming example with CLP ----";
   RunLinearProgrammingExample(MPSolver::CLP_LINEAR_PROGRAMMING);
 #endif  // USE_CLP
+#if defined(USE_SLM)
+  LOG(INFO) << "---- Linear programming example with Sulum ----";
+  RunLinearProgrammingExample(MPSolver::SULUM_LINEAR_PROGRAMMING);
+#endif  // USE_CLP
 }
 }  // namespace operations_research
 

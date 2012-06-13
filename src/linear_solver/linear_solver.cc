@@ -317,9 +317,9 @@ MPSolverInterface* BuildSolverInterface(
 #endif
 #if defined(USE_SLM)
     case MPSolver::SULUM_LINEAR_PROGRAMMING:
-      return BuildSlmInterface(solver, false);
+      return BuildSLMInterface(solver, false);
     case MPSolver::SULUM_MIXED_INTEGER_PROGRAMMING:
-      return BuildSulumInterface(solver, true);
+      return BuildSLMInterface(solver, true);
 #endif
     default:
       LOG(FATAL) << "Linear solver not recognized.";

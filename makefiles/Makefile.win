@@ -74,7 +74,7 @@ endif
 ifdef WINDOWS_SLM_DIR
 SLM_INC = /I$(WINDOWS_SLM_DIR)\\header /DUSE_SLM
 SLM_SWIG = -DUSE_SLM
-SLM_LNK = $(WINDOWS_SLM_DIR)\\win32\\bin\\sulum10.lib
+SLM_LNK = $(WINDOWS_SLM_DIR)\\win$(PTRLENGTH)\\bin\\sulum10.lib
 endif
 
 SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG) $(SWIG_SLM)
