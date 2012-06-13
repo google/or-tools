@@ -175,6 +175,9 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
         if (args->hasAtom("largest")) {
           str = Solver::CHOOSE_HIGHEST_MAX;
         }
+        if (args->hasAtom("max_regret")) {
+          str = Solver::CHOOSE_MAX_REGRET;
+        }
         Solver::IntValueStrategy vstr = Solver::ASSIGN_MIN_VALUE;
         if (args->hasAtom("indomain_max")) {
           vstr = Solver::ASSIGN_MAX_VALUE;
