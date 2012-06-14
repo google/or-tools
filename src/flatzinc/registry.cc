@@ -873,6 +873,7 @@ void p_bool2int(FlatZincModel* const model, CtSpec* const spec) {
 void p_bool2bool(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const left = model->GetIntVar(spec->Arg(0));
+  CHECK_NOTNULL(left);
   if (spec->Arg(1)->isBoolVar() &&
       spec->defines() == spec->Arg(1)->getBoolVar() + model->IntVarCount()) {
     VLOG(1) << "Aliasing bool2bool";

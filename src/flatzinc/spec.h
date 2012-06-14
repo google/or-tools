@@ -226,13 +226,25 @@ class BoolVarSpec : public VarSpec {
   }
 
   virtual string DebugString() const {
-    return StringPrintf(
-        "BoolVarSpec(name = %s, id = %d, domain = %s)",
-        name.c_str(),
-        i,
-        (domain_.defined() ?
-         domain_.value()->DebugString().c_str():
-         "no domain"));
+    if (alias) {
+      return StringPrintf(
+          "BoolVarSpec(name = %s, alias to = %d)",
+          name.c_str(),
+          i);
+    } else if (assigned) {
+      return StringPrintf(
+          "BoolVarSpec(name = %s, assigned to = %d)",
+          name.c_str(),
+          i);
+    } else {
+      return StringPrintf(
+          "BoolVarSpec(name = %s, id = %d, domain = %s)",
+          name.c_str(),
+          i,
+          (domain_.defined() ?
+           domain_.value()->DebugString().c_str() :
+           "no domain"));
+    }
   }
 
  private:
