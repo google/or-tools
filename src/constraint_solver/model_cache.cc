@@ -48,13 +48,13 @@ bool IsEqual(const ConstIntArray*& a1, const ConstIntArray*& a2) {
   return a1->Equals(*a2);
 }
 
-template<class T> bool IsEqual(std::vector<T*>* const a1,
-                               std::vector<T*>* const a2) {
-  if (a1->size() != a2->size()) {
+template<class T> bool IsEqual(const std::vector<T*>& a1,
+                               const std::vector<T*>& a2) {
+  if (a1.size() != a2.size()) {
     return false;
   }
-  for (int i = 0; i < a1->size(); ++i) {
-    if ((*a1)[i] != (*a2)[i]) {
+  for (int i = 0; i < a1.size(); ++i) {
+    if (a1[i] != a2[i]) {
       return false;
     }
   }
@@ -354,12 +354,13 @@ template <class C, class A1, class A2, class A3> class Cache3 {
 class NonReversibleCache : public ModelCache {
  public:
   typedef Cache1<IntExpr, IntVar*> VarIntExprCache;
-  typedef Cache1<IntExpr, std::vector<IntVar*>*> VarArrayIntExprCache;
+  typedef Cache1<IntExpr, std::vector<IntVar*> > VarArrayIntExprCache;
 
   typedef Cache2<Constraint, IntVar*, int64> VarConstantConstraintCache;
   typedef Cache2<Constraint, IntVar*, IntVar*> VarVarConstraintCache;
   typedef Cache2<IntExpr, IntVar*, int64> VarConstantIntExprCache;
   typedef Cache2<IntExpr, IntVar*, IntVar*> VarVarIntExprCache;
+  typedef Cache2<IntExpr, IntExpr*, IntExpr*> ExprExprIntExprCache;
   typedef Cache2<IntExpr, IntVar*, ConstIntArray*> VarConstantArrayIntExprCache;
 
   typedef Cache3<IntExpr, IntVar*, int64, int64>
@@ -388,6 +389,9 @@ class NonReversibleCache : public ModelCache {
     }
     for (int i = 0; i < VAR_VAR_EXPRESSION_MAX; ++i) {
       var_var_expressions_.push_back(new VarVarIntExprCache);
+    }
+    for (int i = 0; i < EXPR_EXPR_EXPRESSION_MAX; ++i) {
+      expr_expr_expressions_.push_back(new ExprExprIntExprCache);
     }
     for (int i = 0; i < VAR_CONSTANT_CONSTANT_EXPRESSION_MAX; ++i) {
       var_constant_constant_expressions_.push_back(
@@ -600,6 +604,35 @@ class NonReversibleCache : public ModelCache {
     }
   }
 
+  // Expr Expr Expression.
+
+  virtual IntExpr* FindExprExprExpression(
+      IntExpr* const var1,
+      IntExpr* const var2,
+      ExprExprExpressionType type) const {
+    DCHECK(var1 != NULL);
+    DCHECK(var2 != NULL);
+    DCHECK_GE(type, 0);
+    DCHECK_LT(type, VAR_VAR_EXPRESSION_MAX);
+    return expr_expr_expressions_[type]->Find(var1, var2);
+  }
+
+  virtual void InsertExprExprExpression(
+      IntExpr* const expression,
+      IntExpr* const var1,
+      IntExpr* const var2,
+      ExprExprExpressionType type) {
+    DCHECK(expression != NULL);
+    DCHECK(var1 != NULL);
+    DCHECK(var2 != NULL);
+    DCHECK_GE(type, 0);
+    DCHECK_LT(type, VAR_VAR_EXPRESSION_MAX);
+    if (solver()->state() != Solver::IN_SEARCH &&
+        expr_expr_expressions_[type]->Find(var1, var2) == NULL) {
+      expr_expr_expressions_[type]->UnsafeInsert(var1, var2, expression);
+    }
+  }
+
   // Var Constant Constant Expression.
 
   virtual IntExpr* FindVarConstantConstantExpression(
@@ -666,7 +699,7 @@ class NonReversibleCache : public ModelCache {
   // Var Array Expression.
 
   virtual IntExpr* FindVarArrayExpression(
-      std::vector<IntVar*>* const vars,
+      const std::vector<IntVar*>& vars,
       VarArrayExpressionType type) const {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_EXPRESSION_MAX);
@@ -675,7 +708,7 @@ class NonReversibleCache : public ModelCache {
 
   virtual void InsertVarArrayExpression(
       IntExpr* const expression,
-      std::vector<IntVar*>* const vars,
+      const std::vector<IntVar*>& vars,
       VarArrayExpressionType type) {
     DCHECK(expression != NULL);
     DCHECK_GE(type, 0);
@@ -695,6 +728,7 @@ class NonReversibleCache : public ModelCache {
   std::vector<VarIntExprCache*> var_expressions_;
   std::vector<VarConstantIntExprCache*> var_constant_expressions_;
   std::vector<VarVarIntExprCache*> var_var_expressions_;
+  std::vector<ExprExprIntExprCache*> expr_expr_expressions_;
   std::vector<VarConstantConstantIntExprCache*> var_constant_constant_expressions_;
   std::vector<VarConstantArrayIntExprCache*> var_constant_array_expressions_;
   std::vector<VarArrayIntExprCache*> var_array_expressions_;

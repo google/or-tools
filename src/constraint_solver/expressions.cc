@@ -4618,7 +4618,24 @@ IntExpr* Solver::MakeSum(IntExpr* const l, IntExpr* const r) {
   if (l == r) {
     return MakeProd(l, 2);
   }
-  return RegisterIntExpr(RevAlloc(new PlusIntExpr(this, l, r)));
+  IntExpr* cache =
+      model_cache_->FindExprExprExpression(l, r, ModelCache::EXPR_EXPR_SUM);
+  if (cache == NULL) {
+    cache =
+        model_cache_->FindExprExprExpression(r, l, ModelCache::EXPR_EXPR_SUM);
+  }
+  if (cache != NULL) {
+    return cache;
+  } else {
+    IntExpr* const result =
+        RegisterIntExpr(RevAlloc(new PlusIntExpr(this, l, r)));
+    model_cache_->InsertExprExprExpression(
+        result,
+        l,
+        r,
+        ModelCache::EXPR_EXPR_SUM);
+    return result;
+  }
 }
 
 IntExpr* Solver::MakeSum(IntExpr* const e, int64 v) {

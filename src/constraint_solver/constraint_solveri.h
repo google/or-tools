@@ -274,15 +274,15 @@ inline uint64 Hash1(ConstIntArray* const values) {
   }
 }
 
-template <class T> uint64 Hash1(std::vector<T*>* const ptrs) {
-  if (ptrs->size() == 0) {
+template <class T> uint64 Hash1(const std::vector<T*>& ptrs) {
+  if (ptrs.size() == 0) {
     return 0;
-  } else if (ptrs->size() == 1) {
-    return Hash1((*ptrs)[0]);
+  } else if (ptrs.size() == 1) {
+    return Hash1(ptrs[0]);
   } else {
-    uint64 hash = Hash1((*ptrs)[0]);
-    for (int i = 1; i < ptrs->size(); ++i) {
-      hash = hash * i + Hash1((*ptrs)[i]);
+    uint64 hash = Hash1(ptrs[0]);
+    for (int i = 1; i < ptrs.size(); ++i) {
+      hash = hash * i + Hash1(ptrs[i]);
     }
     return hash;
   }
@@ -1442,16 +1442,20 @@ class ModelCache {
   };
 
   enum VarVarExpressionType {
-    VAR_VAR_DIFFERENCE = 0,
-    VAR_VAR_PROD,
-    VAR_VAR_MAX,
-    VAR_VAR_MIN,
-    VAR_VAR_SUM,
-    VAR_VAR_IS_EQUAL,
+    VAR_VAR_IS_EQUAL = 0,
     VAR_VAR_IS_NOT_EQUAL,
     VAR_VAR_IS_LESS,
     VAR_VAR_IS_LESS_OR_EQUAL,
     VAR_VAR_EXPRESSION_MAX,
+  };
+
+  enum ExprExprExpressionType {
+    EXPR_EXPR_DIFFERENCE = 0,
+    EXPR_EXPR_PROD,
+    EXPR_EXPR_MAX,
+    EXPR_EXPR_MIN,
+    EXPR_EXPR_SUM,
+    EXPR_EXPR_EXPRESSION_MAX,
   };
 
   enum VarConstantConstantExpressionType {
@@ -1556,6 +1560,19 @@ class ModelCache {
       IntVar* const var2,
       VarVarExpressionType type) = 0;
 
+  // Expr Expr Expressions.
+
+  virtual IntExpr* FindExprExprExpression(
+      IntExpr* const var1,
+      IntExpr* const var2,
+      ExprExprExpressionType type) const = 0;
+
+  virtual void InsertExprExprExpression(
+      IntExpr* const expression,
+      IntExpr* const var1,
+      IntExpr* const var2,
+      ExprExprExpressionType type) = 0;
+
   // Var Constant Constant Expressions.
 
   virtual IntExpr* FindVarConstantConstantExpression(
@@ -1587,12 +1604,12 @@ class ModelCache {
   // Var Array Expressions.
 
   virtual IntExpr* FindVarArrayExpression(
-      std::vector<IntVar*>* const vars,
+      const std::vector<IntVar*>& vars,
       VarArrayExpressionType type) const = 0;
 
   virtual void InsertVarArrayExpression(
       IntExpr* const expression,
-      std::vector<IntVar*>* const vars,
+      const std::vector<IntVar*>& vars,
       VarArrayExpressionType type) = 0;
 
   Solver* solver() const;

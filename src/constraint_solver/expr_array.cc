@@ -848,13 +848,21 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
         new_max = CapAdd(vars[i]->Max(), new_max);
       }
     }
-    IntVar* const sum_var = MakeIntVar(new_min, new_max);
-    if (new_min != kint64min && new_max != kint64max) {
-      AddConstraint(RevAlloc(new SumConstraint(this, vars, sum_var)));
+    IntExpr* const cache =
+        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_SUM);
+    if (cache != NULL) {
+      return cache->Var();
     } else {
-      AddConstraint(RevAlloc(new SafeSumConstraint(this, vars, sum_var)));
+      IntVar* const sum_var = MakeIntVar(new_min, new_max);
+      if (new_min != kint64min && new_max != kint64max) {
+        AddConstraint(RevAlloc(new SumConstraint(this, vars, sum_var)));
+      } else {
+        AddConstraint(RevAlloc(new SafeSumConstraint(this, vars, sum_var)));
+      }
+      model_cache_->InsertVarArrayExpression(
+          sum_var, vars, ModelCache::VAR_ARRAY_SUM);
+      return sum_var;
     }
-    return sum_var;
   }
 }
 
@@ -935,6 +943,15 @@ template<class T> bool AreAllPositive(const T* const values, int size) {
 template<class T> bool AreAllNull(const T* const values, int size) {
   for (int i = 0; i < size; ++i) {
     if (values[i] != 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template<class T> bool AreAllOnes(const T* const values, int size) {
+  for (int i = 0; i < size; ++i) {
+    if (values[i] != 1) {
       return false;
     }
   }
@@ -2357,23 +2374,27 @@ Constraint* Solver::MakeScalProdLessOrEqual(const std::vector<IntVar*>& vars,
 
 namespace {
 template<class T> IntExpr* MakeScalProdFct(Solver* solver,
-                                           IntVar* const * vars,
-                                           const T* const coefs,
-                                           int size) {
-  if (size == 0 || AreAllNull<T>(coefs, size)) {
+                                           const std::vector<IntVar*>& vars,
+                                           const std::vector<T>& coefs) {
+  const int size = vars.size();
+  if (vars.empty() || AreAllNull<T>(coefs.data(), size)) {
     return solver->MakeIntConst(0LL);
   }
-  if (AreAllBoundOrNull(vars, coefs, size)) {
+  if (AreAllBoundOrNull(vars.data(), coefs.data(), size)) {
     int64 cst = 0;
     for (int i = 0; i < size; ++i) {
       cst += vars[i]->Min() * coefs[i];
     }
     return solver->MakeIntConst(cst);
   }
-  if (AreAllBooleans(vars, size)) {
-    if (AreAllPositive<T>(coefs, size)) {
+  if (AreAllOnes(coefs.data(), size)) {
+    return solver->MakeSum(vars);
+  }
+  if (AreAllBooleans(vars.data(), size)) {
+    if (AreAllPositive<T>(coefs.data(), size)) {
       return solver->RegisterIntExpr(solver->RevAlloc(
-          new PositiveBooleanScalProd(solver, vars, size, coefs)));
+          new PositiveBooleanScalProd(
+              solver, vars.data(), size, coefs.data())));
     } else {
       // If some coefficients are non-positive, partition coefficients in two
       // sets, one for the positive coefficients P and one for the negative
@@ -2429,13 +2450,13 @@ template<class T> IntExpr* MakeScalProdFct(Solver* solver,
 IntExpr* Solver::MakeScalProd(const std::vector<IntVar*>& vars,
                               const std::vector<int64>& coefs) {
   DCHECK_EQ(vars.size(), coefs.size());
-  return MakeScalProdFct<int64>(this, vars.data(), coefs.data(), vars.size());
+  return MakeScalProdFct<int64>(this, vars, coefs);
 }
 
 IntExpr* Solver::MakeScalProd(const std::vector<IntVar*>& vars,
                               const std::vector<int>& coefs) {
   DCHECK_EQ(vars.size(), coefs.size());
-  return MakeScalProdFct<int>(this, vars.data(), coefs.data(), vars.size());
+  return MakeScalProdFct<int>(this, vars, coefs);
 }
 
 
