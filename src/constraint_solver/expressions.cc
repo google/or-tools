@@ -301,6 +301,14 @@ class DomainIntVar : public IntVar {
     }
   }
 
+  virtual IntVar* IsEqual(int64 constant) {
+    return NULL; // IMPLEMENT ME.
+  }
+
+  virtual IntVar* IsDifferent(int64 constant) {
+    return NULL;  // IMPLEMENT ME
+  }
+
   void Process();
   void Push();
   void ClearInProcess();
@@ -1342,6 +1350,28 @@ class BooleanVar : public IntVar {
   virtual string DebugString() const;
   virtual int VarType() const { return BOOLEAN_VAR; }
 
+  virtual IntVar* IsEqual(int64 constant) {
+    if (constant > 1 || constant < 0) {
+      return solver()->MakeIntConst(0);
+    }
+    if (constant == 1) {
+      return this;
+    } else { // constant == 0.
+      return solver()->MakeDifference(1, this)->Var();
+    }
+  }
+
+  virtual IntVar* IsDifferent(int64 constant) {
+    if (constant > 1 || constant < 0) {
+      return solver()->MakeIntConst(1);
+    }
+    if (constant == 1) {
+      return solver()->MakeDifference(1, this)->Var();
+    } else { // constant == 0.
+      return this;
+    }
+  }
+
   void RestoreValue() { value_ = kUnboundBooleanVarValue; }
 
   virtual string BaseName() const { return "BooleanVar"; }
@@ -1524,6 +1554,22 @@ class IntConst : public IntVar {
   virtual string DebugString() const;
   virtual int VarType() const { return CONST_VAR; }
 
+  virtual IntVar* IsEqual(int64 constant) {
+    if (constant == value_) {
+      return solver()->MakeIntConst(1);
+    } else {
+      return solver()->MakeIntConst(0);
+    }
+  }
+
+  virtual IntVar* IsDifferent(int64 constant) {
+    if (constant == value_) {
+      return solver()->MakeIntConst(0);
+    } else {
+      return solver()->MakeIntConst(1);
+    }
+  }
+
  private:
   int64 value_;
 };
@@ -1600,6 +1646,14 @@ class PlusCstIntVar : public IntVar {
                                   ModelVisitor::kSumOperation,
                                   cst_,
                                   var_);
+  }
+
+  virtual IntVar* IsEqual(int64 constant) {
+    return var_->IsEqual(constant - cst_);
+  }
+
+  virtual IntVar* IsDifferent(int64 constant) {
+    return var_->IsDifferent(constant - cst_);
   }
 
  private:
@@ -1737,6 +1791,14 @@ class PlusCstDomainIntVar : public IntVar {
                                   ModelVisitor::kSumOperation,
                                   cst_,
                                   var_);
+  }
+
+  virtual IntVar* IsEqual(int64 constant) {
+    return var_->IsEqual(constant - cst_);
+  }
+
+  virtual IntVar* IsDifferent(int64 constant) {
+    return var_->IsDifferent(constant - cst_);
   }
 
  private:
@@ -1878,6 +1940,14 @@ class SubCstIntVar : public IntVar {
                                   var_);
   }
 
+  virtual IntVar* IsEqual(int64 constant) {
+    return var_->IsEqual(cst_ - constant);
+  }
+
+  virtual IntVar* IsDifferent(int64 constant) {
+    return var_->IsDifferent(cst_ - constant);
+  }
+
  private:
   IntVar* const var_;
   const int64 cst_;
@@ -2007,6 +2077,14 @@ class OppIntVar : public IntVar {
                                   ModelVisitor::kDifferenceOperation,
                                   0,
                                   var_);
+  }
+
+  virtual IntVar* IsEqual(int64 constant) {
+    return var_->IsEqual(-constant);
+  }
+
+  virtual IntVar* IsDifferent(int64 constant) {
+    return var_->IsDifferent(-constant);
   }
 
  private:
@@ -2162,6 +2240,22 @@ class TimesPosCstIntVar : public IntVar {
                                   var_);
   }
 
+  virtual IntVar* IsEqual(int64 constant) {
+    if (constant % cst_ == 0) {
+      return var_->IsEqual(constant / cst_);
+    } else {
+      return solver()->MakeIntConst(0);
+    }
+  }
+
+  virtual IntVar* IsDifferent(int64 constant) {
+    if (constant % cst_ == 0) {
+      return var_->IsDifferent(constant / cst_);
+    } else {
+      return solver()->MakeIntConst(1);
+    }
+  }
+
  private:
   IntVar* const var_;
   const int64 cst_;
@@ -2313,6 +2407,22 @@ class TimesPosCstBoolVar : public IntVar {
                                   ModelVisitor::kProductOperation,
                                   cst_,
                                   var_);
+  }
+
+  virtual IntVar* IsEqual(int64 constant) {
+    if (constant % cst_ == 0) {
+      return var_->IsEqual(constant / cst_);
+    } else {
+      return solver()->MakeIntConst(0);
+    }
+  }
+
+  virtual IntVar* IsDifferent(int64 constant) {
+    if (constant % cst_ == 0) {
+      return var_->IsDifferent(constant / cst_);
+    } else {
+      return solver()->MakeIntConst(1);
+    }
   }
 
  private:

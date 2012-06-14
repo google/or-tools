@@ -3738,6 +3738,10 @@ class IntVar : public IntExpr {
   // Accepts the given visitor.
   virtual void Accept(ModelVisitor* const visitor) const;
 
+  // IsEqual
+  virtual IntVar* IsEqual(int64 constant) = 0;
+  virtual IntVar* IsDifferent(int64 constant) = 0;
+
  private:
   DISALLOW_COPY_AND_ASSIGN(IntVar);
 };
