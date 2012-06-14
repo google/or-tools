@@ -706,14 +706,11 @@ void PathCumul::NextBound(int index) {
   IntVar* cumul_next = cumuls_[next];
   IntVar* transit = transits_[index];
   cumul_next->SetMin(cumul->Min() + transit->Min());
-  const int64 cumul_next_max = cumul->Max() + transit->Max();
-  if (cumul_next_max >= 0) {  // detect integer overflow
-    cumul_next->SetMax(cumul_next_max);
-  }
-  cumul->SetMin(cumul_next->Min() - transit->Max());
-  cumul->SetMax(cumul_next->Max() - transit->Min());
-  transit->SetMin(cumul_next->Min() - cumul->Max());
-  transit->SetMax(cumul_next->Max() - cumul->Min());
+  cumul_next->SetMax(CapAdd(cumul->Max(), transit->Max()));
+  cumul->SetMin(CapSub(cumul_next->Min(), transit->Max()));
+  cumul->SetMax(CapSub(cumul_next->Max(), transit->Min()));
+  transit->SetMin(CapSub(cumul_next->Min(), cumul->Max()));
+  transit->SetMax(CapSub(cumul_next->Max(), cumul->Min()));
   if (prevs_[next] < 0) {
     prevs_.SetValue(solver(), next, index);
   }
@@ -759,8 +756,8 @@ bool PathCumul::AcceptLink(int i, int j) const {
   const IntVar* const cumul_i = cumuls_[i];
   const IntVar* const cumul_j = cumuls_[j];
   const IntVar* const transit_i = transits_[i];
-  return transit_i->Min() <= cumul_j->Max() - cumul_i->Min()
-      && cumul_j->Min() - cumul_i->Max() <= transit_i->Max();
+  return transit_i->Min() <= CapSub(cumul_j->Max(), cumul_i->Min())
+      && CapSub(cumul_j->Min(), cumul_i->Max()) <= transit_i->Max();
 }
 
 void PathCumul::UpdateSupport(int index) {

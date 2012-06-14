@@ -41,6 +41,36 @@ DEFINE_bool(cp_share_int_consts, true,
 
 namespace operations_research {
 
+// ---------- Overflow utility functions ----------
+
+int64 CapProd(int64 left, int64 right) {
+  if (left == 0 || right == 0) {
+    return 0;
+  }
+  if (left > 0) {  /* left is positive */
+    if (right > 0) {  /* left and right are positive */
+      if (left > (kint64max / right)) {
+        return kint64max;
+      }
+    }  else { /* left positive, right non-positive */
+      if (right < (kint64min / left)) {
+        return kint64min;
+      }
+    } /* left positive, right non-positive */
+  } else { /* left is non-positive */
+    if (right > 0) { /* left is non-positive, right is positive */
+      if (left < (kint64min / right)) {
+        return kint64min;
+      }
+    } else { /* left and right are non-positive */
+      if (right < (kint64max / left)) {
+        return kint64max;
+      }
+    } /* end if left and right are non-positive */
+  } /* end if left is non-positive */
+  return left * right;
+}
+
 // ---------- IntExpr ----------
 
 IntVar* IntExpr::VarWithName(const string& name) {
@@ -2145,19 +2175,23 @@ TimesPosCstIntVar::TimesPosCstIntVar(Solver* const s, IntVar* v, int64 c)
 TimesPosCstIntVar::~TimesPosCstIntVar() {}
 
 int64 TimesPosCstIntVar::Min() const {
-  return var_->Min() * cst_;
+  return CapProd(var_->Min(), cst_);
 }
 
 void TimesPosCstIntVar::SetMin(int64 m) {
-  var_->SetMin(PosIntDivUp(m, cst_));
+  if (m != kint64min) {
+    var_->SetMin(PosIntDivUp(m, cst_));
+  }
 }
 
 int64 TimesPosCstIntVar::Max() const {
-  return var_->Max() * cst_;
+  return CapProd(var_->Max(), cst_);
 }
 
 void TimesPosCstIntVar::SetMax(int64 m) {
-  var_->SetMax(PosIntDivDown(m, cst_));
+  if (m != kint64max) {
+    var_->SetMax(PosIntDivDown(m, cst_));
+  }
 }
 
 void TimesPosCstIntVar::SetRange(int64 l, int64 u) {
@@ -2180,7 +2214,7 @@ void TimesPosCstIntVar::WhenRange(Demon* d) {
 }
 
 int64 TimesPosCstIntVar::Value() const {
-  return var_->Value() * cst_;
+  return CapProd(var_->Value(), cst_);
 }
 
 void TimesPosCstIntVar::RemoveValue(int64 v) {
@@ -2396,32 +2430,6 @@ string TimesPosCstBoolVar::DebugString() const {
 
 // ---------- arithmetic expressions ----------
 
-bool AddOverflows(int64 left, int64 right) {
-  return right > 0 && left > kint64max - right;
-}
-
-bool AddUnderflows(int64 left, int64 right) {
-  return right < 0 && left < kint64min - right;
-}
-
-int64 CapAdd(int64 left, int64 right) {
-  return AddOverflows(left, right) ? kint64max :
-      (AddUnderflows(left, right) ? kint64min : left + right);
-}
-
-bool SubOverflows(int64 left, int64 right) {
-  return right < 0 && left > kint64max + right;
-}
-
-bool SubUnderflows(int64 left, int64 right) {
-  return right > 0 && left < kint64min + right;
-}
-
-int64 CapSub(int64 left, int64 right) {
-  return SubOverflows(left, right) ? kint64max :
-      (SubUnderflows(left, right) ? kint64min : left - right);
-}
-
 // ----- PlusIntExpr -----
 
 class PlusIntExpr : public BaseIntExpr {
@@ -2501,16 +2509,16 @@ class PlusIntCstExpr : public BaseIntExpr {
       : BaseIntExpr(s), expr_(e), value_(v) {}
   virtual ~PlusIntCstExpr() {}
   virtual int64 Min() const {
-    return (expr_->Min() + value_);
+    return CapAdd(expr_->Min(), value_);
   }
   virtual void SetMin(int64 m) {
-    expr_->SetMin(m - value_);
+    expr_->SetMin(CapSub(m, value_));
   }
   virtual int64 Max() const {
-    return (expr_->Max() + value_);
+    return CapAdd(expr_->Max(), value_);
   }
   virtual void SetMax(int64 m) {
-    expr_->SetMax(m - value_);
+    expr_->SetMax(CapSub(m, value_));
   }
   virtual bool Bound() const { return (expr_->Bound()); }
   virtual string name() const {
@@ -2542,6 +2550,10 @@ IntVar* PlusIntCstExpr::CastToVar() {
   Solver* const s = solver();
   IntVar* const var = expr_->Var();
   IntVar* cast = NULL;
+  if (AddOverflows(value_, expr_->Max())
+      || AddUnderflows(value_, expr_->Min())) {
+    return BaseIntExpr::CastToVar();
+  }
   switch (var->VarType()) {
     case DOMAIN_INT_VAR:
       cast = s->RegisterIntVar(s->RevAlloc(
@@ -2562,19 +2574,19 @@ class SubIntExpr : public BaseIntExpr {
       : BaseIntExpr(s), left_(l), right_(r) {}
   virtual ~SubIntExpr() {}
   virtual int64 Min() const {
-    return (left_->Min() - right_->Max());
+    return CapSub(left_->Min(), right_->Max());
   }
   virtual void SetMin(int64 m) {
-    left_->SetMin(m + right_->Min());
-    right_->SetMax(left_->Max() - m);
+    left_->SetMin(CapAdd(m, right_->Min()));
+    right_->SetMax(CapSub(left_->Max(), m));
   }
   virtual void SetRange(int64 l, int64 u);
   virtual int64 Max() const {
-    return (left_->Max() - right_->Min());
+    return CapSub(left_->Max(), right_->Min());
   }
   virtual void SetMax(int64 m) {
-    left_->SetMax(m + right_->Max());
-    right_->SetMin(left_->Min() - m);
+    left_->SetMax(CapAdd(m, right_->Max()));
+    right_->SetMin(CapSub(left_->Min(), m));
   }
   virtual bool Bound() const { return (left_->Bound() && right_->Bound()); }
   virtual string name() const {
@@ -2607,16 +2619,16 @@ class SubIntExpr : public BaseIntExpr {
 
 void SubIntExpr::SetRange(int64 l, int64 u) {
   const int64 left_min = left_->Min();
-  const int64 left_max = right_->Min();
-  const int64 right_min = left_->Max();
+  const int64 right_min = right_->Min();
+  const int64 left_max = left_->Max();
   const int64 right_max = right_->Max();
-  if (l > left_min - right_max) {
-    left_->SetMin(l + left_max);
-    right_->SetMax(right_min - l);
+  if (l > CapSub(left_min, right_max)) {
+    left_->SetMin(CapAdd(l, right_min));
+    right_->SetMax(CapSub(left_max, l));
   }
-  if (u < right_min - left_max) {
-    left_->SetMax(u + right_max);
-    right_->SetMin(left_min - u);
+  if (u < CapSub(left_max, right_min)) {
+    left_->SetMax(CapAdd(u, right_max));
+    right_->SetMin(CapSub(left_min, u));
   }
 }
 
@@ -2630,16 +2642,16 @@ class SubIntCstExpr : public BaseIntExpr {
       : BaseIntExpr(s), expr_(e), value_(v) {}
   virtual ~SubIntCstExpr() {}
   virtual int64 Min() const {
-    return (value_ - expr_->Max());
+    return CapSub(value_, expr_->Max());
   }
   virtual void SetMin(int64 m) {
-    expr_->SetMax(value_ - m);
+    expr_->SetMax(CapSub(value_, m));
   }
   virtual int64 Max() const {
-    return (value_ - expr_->Min());
+    return CapSub(value_, expr_->Min());
   }
   virtual void SetMax(int64 m) {
-    expr_->SetMin(value_ - m);
+    expr_->SetMin(CapSub(value_, m));
   }
   virtual bool Bound() const { return (expr_->Bound()); }
   virtual string name() const {
@@ -2669,6 +2681,10 @@ class SubIntCstExpr : public BaseIntExpr {
 };
 
 IntVar* SubIntCstExpr::CastToVar() {
+  if (SubOverflows(value_, expr_->Min())
+      || SubUnderflows(value_, expr_->Max())) {
+    return BaseIntExpr::CastToVar();
+  }
   Solver* const s = solver();
   IntVar* const var =
       s->RegisterIntVar(s->RevAlloc(new SubCstIntVar(s, expr_->Var(), value_)));
@@ -2730,11 +2746,11 @@ class TimesIntPosCstExpr : public BaseIntExpr {
   TimesIntPosCstExpr(Solver* const s, IntExpr* const e, int64 v);
   virtual ~TimesIntPosCstExpr();
   virtual int64 Min() const {
-    return (expr_->Min() * value_);
+    return CapProd(expr_->Min(), value_);
   }
   virtual void SetMin(int64 m);
   virtual int64 Max() const {
-    return (expr_->Max() * value_);
+    return CapProd(expr_->Max(), value_);
   }
   virtual void SetMax(int64 m);
   virtual bool Bound() const { return (expr_->Bound()); }
@@ -2774,11 +2790,15 @@ TimesIntPosCstExpr::TimesIntPosCstExpr(Solver* const s,
 TimesIntPosCstExpr::~TimesIntPosCstExpr() {}
 
 void TimesIntPosCstExpr::SetMin(int64 m) {
-  expr_->SetMin(PosIntDivUp(m, value_));
+  if (m != kint64min) {
+    expr_->SetMin(PosIntDivUp(m, value_));
+  }
 }
 
 void TimesIntPosCstExpr::SetMax(int64 m) {
-  expr_->SetMax(PosIntDivDown(m, value_));
+  if (m != kint64max) {
+    expr_->SetMax(PosIntDivDown(m, value_));
+  }
 }
 
 IntVar* TimesIntPosCstExpr::CastToVar() {
@@ -2804,11 +2824,11 @@ class TimesIntNegCstExpr : public BaseIntExpr {
   TimesIntNegCstExpr(Solver* const s, IntExpr* const e, int64 v);
   virtual ~TimesIntNegCstExpr();
   virtual int64 Min() const {
-    return (expr_->Max() * value_);
+    return CapProd(expr_->Max(), value_);
   }
   virtual void SetMin(int64 m);
   virtual int64 Max() const {
-    return (expr_->Min() * value_);
+    return CapProd(expr_->Min(), value_);
   }
   virtual void SetMax(int64 m);
   virtual bool Bound() const { return (expr_->Bound()); }
@@ -2847,11 +2867,15 @@ TimesIntNegCstExpr::TimesIntNegCstExpr(Solver* const s,
 TimesIntNegCstExpr::~TimesIntNegCstExpr() {}
 
 void TimesIntNegCstExpr::SetMin(int64 m) {
-  expr_->SetMax(PosIntDivDown(-m, -value_));
+  if (m != kint64min) {
+    expr_->SetMax(PosIntDivDown(-m, -value_));
+  }
 }
 
 void TimesIntNegCstExpr::SetMax(int64 m) {
-  expr_->SetMin(PosIntDivUp(-m, -value_));
+  if (m != kint64max) {
+    expr_->SetMin(PosIntDivUp(-m, -value_));
+  }
 }
 
 
@@ -2863,10 +2887,10 @@ void SetPosPosMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
   DCHECK_GE(right->Min(), 0);
   const int64 lmax = left->Max();
   const int64 rmax = right->Max();
-  if (m > lmax * rmax) {
+  if (m > CapProd(lmax, rmax)) {
     left->solver()->Fail();
   }
-  if (m > left->Min() * right->Min()) {
+  if (m > CapProd(left->Min(), right->Min())) {
     // Ok for m == 0 due to left and right being positive
     if (0 != rmax) {
       left->SetMin(PosIntDivUp(m, rmax));
@@ -2883,10 +2907,10 @@ void SetPosPosMaxExpr(IntExpr* const left, IntExpr* const right, int64 m) {
   DCHECK_GE(right->Min(), 0);
   const int64 lmin = left->Min();
   const int64 rmin = right->Min();
-  if (m < lmin * rmin) {
+  if (m < CapProd(lmin, rmin)) {
     left->solver()->Fail();
   }
-  if (m < left->Max() * right->Max()) {
+  if (m < CapProd(left->Max(), right->Max())) {
     if (0 != lmin) {
       right->SetMax(PosIntDivDown(m, lmin));
     }
@@ -2904,7 +2928,7 @@ void SetPosGenMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
   DCHECK_LT(right->Min(), 0);
   const int64 lmax = left->Max();
   const int64 rmax = right->Max();
-  if (m > lmax * rmax) {
+  if (m > CapProd(lmax, rmax)) {
     left->solver()->Fail();
   }
   DCHECK_GT(left->Max(), 0);
@@ -2934,13 +2958,13 @@ void SetGenGenMinExpr(IntExpr* const left, IntExpr* const right, int64 m) {
   const int64 lmax = left->Max();
   const int64 rmin = right->Min();
   const int64 rmax = right->Max();
-  if (m > std::max(lmin * rmin, lmax * rmax)) {
+  if (m > std::max(CapProd(lmin, rmin), CapProd(lmax, rmax))) {
     left->solver()->Fail();
   }
   if (m > lmin * rmin) {  // Must be positive section * positive section.
     left->SetMin(PosIntDivUp(m, rmax));
     right->SetMin(PosIntDivUp(m, lmax));
-  } else if (m > lmax * rmax) {  // Negative section * negative section.
+  } else if (m > CapProd(lmax, rmax)) {  // Negative section * negative section.
     left->SetMax(-PosIntDivUp(m, -rmin));
     right->SetMax(-PosIntDivUp(m, -lmin));
   }
@@ -2993,8 +3017,8 @@ class TimesIntExpr : public BaseIntExpr {
     const int64 lmax = left_->Max();
     const int64 rmin = right_->Min();
     const int64 rmax = right_->Max();
-    return std::min(std::min(lmin * rmin, lmax * rmax),
-                    std::min(lmax * rmin, lmin * rmax));
+    return std::min(std::min(CapProd(lmin, rmin), CapProd(lmax, rmax)),
+                    std::min(CapProd(lmax, rmin), CapProd(lmin, rmax)));
   }
   virtual void SetMin(int64 m);
   virtual int64 Max() const {
@@ -3002,8 +3026,8 @@ class TimesIntExpr : public BaseIntExpr {
     const int64 lmax = left_->Max();
     const int64 rmin = right_->Min();
     const int64 rmax = right_->Max();
-    return std::max(std::max(lmin * rmin, lmax * rmax),
-                    std::max(lmax * rmin, lmin * rmax));
+    return std::max(std::max(CapProd(lmin, rmin), CapProd(lmax, rmax)),
+                    std::max(CapProd(lmax, rmin), CapProd(lmin, rmax)));
   }
   virtual void SetMax(int64 m);
   virtual bool Bound() const;
@@ -3038,11 +3062,15 @@ class TimesIntExpr : public BaseIntExpr {
 };
 
 void TimesIntExpr::SetMin(int64 m) {
-  TimesSetMin(left_, right_, minus_left_, minus_right_, m);
+  if (m != kint64min) {
+    TimesSetMin(left_, right_, minus_left_, minus_right_, m);
+  }
 }
 
 void TimesIntExpr::SetMax(int64 m) {
-  TimesSetMin(left_, minus_right_, minus_left_, right_, -m);
+  if (m != kint64max) {
+    TimesSetMin(left_, minus_right_, minus_left_, right_, -m);
+  }
 }
 
 bool TimesIntExpr::Bound() const {
@@ -3110,6 +3138,62 @@ bool TimesIntPosExpr::Bound() const {
           right_->Max() == 0 ||
           (left_->Bound() && right_->Bound()));
 }
+
+// ----- SafeTimesIntPosExpr -----
+
+class SafeTimesIntPosExpr : public BaseIntExpr {
+ public:
+  SafeTimesIntPosExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
+      : BaseIntExpr(s), left_(l), right_(r) {}
+  virtual ~SafeTimesIntPosExpr() {}
+  virtual int64 Min() const {
+    return CapProd(left_->Min(), right_->Min());
+  }
+  virtual void SetMin(int64 m) {
+    if (m != kint64min) {
+      SetPosPosMinExpr(left_, right_, m);
+    }
+  }
+  virtual int64 Max() const {
+    return CapProd(left_->Max(), right_->Max());
+  }
+  virtual void SetMax(int64 m) {
+    if (m != kint64max) {
+      SetPosPosMaxExpr(left_, right_, m);
+    }
+  }
+  virtual bool Bound() const {
+    return (left_->Max() == 0 ||
+            right_->Max() == 0 ||
+            (left_->Bound() && right_->Bound()));
+  }
+  virtual string name() const {
+    return StringPrintf("(%s * %s)",
+                        left_->name().c_str(),
+                        right_->name().c_str());
+  }
+  virtual string DebugString() const {
+    return StringPrintf("(%s * %s)",
+                        left_->DebugString().c_str(),
+                        right_->DebugString().c_str());
+  }
+  virtual void WhenRange(Demon* d) {
+    left_->WhenRange(d);
+    right_->WhenRange(d);
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
+                                            right_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kProduct, this);
+  }
+
+ private:
+  IntExpr* const left_;
+  IntExpr* const right_;
+};
 
 // ----- TimesBooleanPosIntExpr -----
 
@@ -3512,6 +3596,8 @@ int64 IntAbs::Max() const {
 
 // ----- Square -----
 
+
+// TODO(user): shouldn't we compare to kint32max^2 instead of kint64max?
 class IntSquare : public BaseIntExpr {
  public:
   IntSquare(Solver* const s, IntExpr* const e) : BaseIntExpr(s), expr_(e) {}
@@ -3520,11 +3606,11 @@ class IntSquare : public BaseIntExpr {
   virtual int64 Min() const {
     const int64 emin = expr_->Min();
     if (emin >= 0) {
-      return emin * emin;
+      return emin >= kint32max ? kint64max : emin * emin;
     }
     const int64 emax = expr_->Max();
     if (emax < 0) {
-      return emax * emax;
+      return emax <= -kint32max ? kint64max : emax * emax;
     }
     return 0LL;
   }
@@ -3532,6 +3618,7 @@ class IntSquare : public BaseIntExpr {
     if (m <= 0) {
       return;
     }
+    // TODO(user): What happens if m is kint64max?
     const int64 emin = expr_->Min();
     const int64 emax = expr_->Max();
     const int64 root = static_cast<int64>(ceil(sqrt(static_cast<double>(m))));
@@ -3546,11 +3633,17 @@ class IntSquare : public BaseIntExpr {
   virtual int64 Max() const {
     const int64 emax = expr_->Max();
     const int64 emin = expr_->Min();
+    if (emax >= kint32max || emin <= -kint32max) {
+      return kint64max;
+    }
     return std::max(emin * emin, emax * emax);
   }
   virtual void SetMax(int64 m) {
     if (m < 0) {
       solver()->Fail();
+    }
+    if (m == kint64max) {
+      return;
     }
     const int64 root = static_cast<int64>(floor(sqrt(static_cast<double>(m))));
     expr_->SetRange(-root, root);
@@ -3586,7 +3679,7 @@ class PosIntSquare : public BaseIntExpr {
 
   virtual int64 Min() const {
     const int64 emin = expr_->Min();
-    return emin * emin;
+    return emin >= kint32max ? kint64max : emin * emin;
   }
   virtual void SetMin(int64 m) {
     if (m <= 0) {
@@ -3597,11 +3690,14 @@ class PosIntSquare : public BaseIntExpr {
   }
   virtual int64 Max() const {
     const int64 emax = expr_->Max();
-    return emax * emax;
+    return emax >= kint32max ? kint64max : emax * emax;
   }
   virtual void SetMax(int64 m) {
     if (m < 0) {
       solver()->Fail();
+    }
+    if (m == kint64max) {
+      return;
     }
     const int64 root = static_cast<int64>(floor(sqrt(static_cast<double>(m))));
     expr_->SetMax(root);
@@ -4821,8 +4917,7 @@ IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
   }
   CHECK_EQ(this, l->solver());
   CHECK_EQ(this, r->solver());
-  if (l->IsVar() &&
-      reinterpret_cast<IntVar*>(l)->VarType() == BOOLEAN_VAR) {
+  if (l->IsVar() && l->Var()->VarType() == BOOLEAN_VAR) {
     if (r->Min() >= 0) {
       return RegisterIntExpr(RevAlloc(
           new TimesBooleanPosIntExpr(this,
@@ -4844,7 +4939,11 @@ IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
     }
   }
   if (l->Min() >= 0 && r->Min() >= 0) {
-    return RegisterIntExpr(RevAlloc(new TimesIntPosExpr(this, l, r)));
+    if (CapProd(l->Max(), r->Max()) == kint64max) {  // Potential overflow.
+      return RegisterIntExpr(RevAlloc(new SafeTimesIntPosExpr(this, l, r)));
+    } else {
+      return RegisterIntExpr(RevAlloc(new TimesIntPosExpr(this, l, r)));
+    }
   } else {
     return RegisterIntExpr(RevAlloc(new TimesIntExpr(this, l, r)));
   }

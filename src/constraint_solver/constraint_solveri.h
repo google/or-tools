@@ -1270,6 +1270,42 @@ class PropagationMonitor : public SearchMonitor {
   virtual void Install();
 };
 
+// ---------- Overflow utility functions ----------
+
+// A note on overflow treatment.
+// kint64min and kint64max are treated as infinity.
+// Thus if the computation overflows, the result is always kint64m(ax/in).
+// On the other hand, SetMin(kint64min) and SetMax(kint64max) are always a no-op
+// on expressions that can overflow.
+
+inline bool AddOverflows(int64 left, int64 right) {
+  return right > 0 && left > kint64max - right;
+}
+
+inline bool AddUnderflows(int64 left, int64 right) {
+  return right < 0 && left < kint64min - right;
+}
+
+inline int64 CapAdd(int64 left, int64 right) {
+  return AddOverflows(left, right) ? kint64max :
+      (AddUnderflows(left, right) ? kint64min : left + right);
+}
+
+inline bool SubOverflows(int64 left, int64 right) {
+  return right < 0 && left > kint64max + right;
+}
+
+inline bool SubUnderflows(int64 left, int64 right) {
+  return right > 0 && left < kint64min + right;
+}
+
+inline int64 CapSub(int64 left, int64 right) {
+  return SubOverflows(left, right) ? kint64max :
+      (SubUnderflows(left, right) ? kint64min : left - right);
+}
+
+int64 CapProd(int64 left, int64 right);
+
 // ---------- SymmetryBreaker ----------
 
 class SymmetryManager;
