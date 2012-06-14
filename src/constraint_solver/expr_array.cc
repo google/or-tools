@@ -92,20 +92,18 @@ class TreeArrayConstraint : public CastConstraint {
     }
   }
 
-  void InitLeaf(Solver* const solver,
-                int position,
+  void InitLeaf(int position,
                 int64 var_min,
                 int64 var_max) {
-    InitNode(solver, MaxDepth(), position, var_min, var_max);
+    InitNode(MaxDepth(), position, var_min, var_max);
   }
 
-  void InitNode(Solver* const solver,
-                int depth,
+  void InitNode(int depth,
                 int position,
                 int64 node_min,
                 int64 node_max) {
-    tree_[depth][position].node_min.SetValue(solver, node_min);
-    tree_[depth][position].node_max.SetValue(solver, node_max);
+    tree_[depth][position].node_min.SetValue(solver(), node_min);
+    tree_[depth][position].node_max.SetValue(solver(), node_max);
   }
 
   int64 Min(int depth, int position) const {
@@ -206,7 +204,7 @@ class SumConstraint : public TreeArrayConstraint {
   virtual void InitialPropagate() {
     // Copy vars to leaf nodes.
     for (int i = 0; i < size_; ++i) {
-      InitLeaf(solver(), i, vars_[i]->Min(), vars_[i]->Max());
+      InitLeaf(i, vars_[i]->Min(), vars_[i]->Max());
     }
     // Compute up.
     for (int i = MaxDepth() - 1; i >= 0; --i) {
@@ -219,7 +217,7 @@ class SumConstraint : public TreeArrayConstraint {
           sum_min += Min(i + 1, k);
           sum_max += Max(i + 1, k);
         }
-        InitNode(solver(), i, j, sum_min, sum_max);
+        InitNode(i, j, sum_min, sum_max);
       }
     }
     // Propagate to sum_var.
@@ -230,12 +228,13 @@ class SumConstraint : public TreeArrayConstraint {
   }
 
   void SumChanged() {
-    if (target_var_->Max() == RootMin()) {
+    if (target_var_->Max() == RootMin() && target_var_->Max() != kint64max) {
       // We can fix all terms to min.
       for (int i = 0; i < size_; ++i) {
         vars_[i]->SetValue(vars_[i]->Min());
       }
-    } else if (target_var_->Min() == RootMax()) {
+    } else if (target_var_->Min() == RootMax() &&
+               target_var_->Min() != kint64min) {
       // We can fix all terms to max.
       for (int i = 0; i < size_; ++i) {
         vars_[i]->SetValue(vars_[i]->Max());
@@ -317,6 +316,210 @@ class SumConstraint : public TreeArrayConstraint {
   Demon* sum_demon_;
 };
 
+// ----- SafeSumConstraint -----
+
+bool DetectSumOverflow(const std::vector<IntVar*>& vars) {
+  int64 sum_min = 0;
+  int64 sum_max = 0;
+  for (int i = 0; i < vars.size(); ++i) {
+    sum_min = CapAdd(sum_min, vars[i]->Min());
+    sum_max = CapAdd(sum_max, vars[i]->Max());
+    if (sum_min == kint64min || sum_max == kint64max) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// This constraint implements sum(vars) == sum_var.
+class SafeSumConstraint : public TreeArrayConstraint {
+ public:
+  SafeSumConstraint(Solver* const solver,
+                    const std::vector<IntVar*>& vars,
+                    IntVar* const sum_var)
+      : TreeArrayConstraint(solver, vars, sum_var), sum_demon_(NULL) {}
+
+  virtual ~SafeSumConstraint() {}
+
+  virtual void Post() {
+    for (int i = 0; i < size_; ++i) {
+      Demon* const demon = MakeConstraintDemon1(solver(),
+                                                this,
+                                                &SafeSumConstraint::LeafChanged,
+                                                "LeafChanged",
+                                                i);
+      vars_[i]->WhenRange(demon);
+    }
+    sum_demon_ = solver()->RegisterDemon(
+        MakeDelayedConstraintDemon0(solver(),
+                                    this,
+                                    &SafeSumConstraint::SumChanged,
+                                    "SumChanged"));
+    target_var_->WhenRange(sum_demon_);
+  }
+
+  void SafeComputeNode(int depth,
+                       int position,
+                       int64* const sum_min,
+                       int64* const sum_max) {
+    DCHECK_LT(depth, MaxDepth());
+    const int block_start = ChildStart(position);
+    const int block_end = ChildEnd(depth, position);
+    for (int k = block_start; k <= block_end; ++k) {
+      if (*sum_min != kint64min) {
+        *sum_min = CapAdd(*sum_min, Min(depth + 1, k));
+      }
+      if (*sum_max != kint64max) {
+        *sum_max = CapAdd(*sum_max, Max(depth + 1, k));
+      }
+      if (*sum_min == kint64min && *sum_max == kint64max) {
+        break;
+      }
+    }
+  }
+
+  virtual void InitialPropagate() {
+    // Copy vars to leaf nodes.
+    for (int i = 0; i < size_; ++i) {
+      InitLeaf(i, vars_[i]->Min(), vars_[i]->Max());
+    }
+    // Compute up.
+    for (int i = MaxDepth() - 1; i >= 0; --i) {
+      for (int j = 0; j < Width(i); ++j) {
+        int64 sum_min = 0;
+        int64 sum_max = 0;
+        SafeComputeNode(i, j, &sum_min, &sum_max);
+        InitNode(i, j, sum_min, sum_max);
+      }
+    }
+    // Propagate to sum_var.
+    target_var_->SetRange(RootMin(), RootMax());
+
+    // Push down.
+    SumChanged();
+  }
+
+  void SumChanged() {
+    if (target_var_->Max() == RootMin()) {
+      // We can fix all terms to min.
+      for (int i = 0; i < size_; ++i) {
+        vars_[i]->SetValue(vars_[i]->Min());
+      }
+    } else if (target_var_->Min() == RootMax()) {
+      // We can fix all terms to max.
+      for (int i = 0; i < size_; ++i) {
+        vars_[i]->SetValue(vars_[i]->Max());
+      }
+    } else {
+      PushDown(0, 0, target_var_->Min(), target_var_->Max());
+    }
+  }
+
+  void PushDown(int depth, int position, int64 new_min, int64 new_max) {
+    // Nothing to do?
+    if (new_min <= Min(depth, position) && new_max >= Max(depth, position)) {
+      return;
+    }
+
+    // Leaf node -> push to leaf var.
+    if (IsLeaf(depth)) {
+      vars_[position]->SetRange(new_min, new_max);
+      return;
+    }
+
+    // Standard propagation from the bounds of the sum to the
+    // individuals terms.
+
+    // These are maintained automatically in the tree structure.
+    const int64 sum_min = Min(depth, position);
+    const int64 sum_max = Max(depth, position);
+
+    // Intersect the new bounds with the computed bounds.
+    new_max = std::min(sum_max, new_max);
+    new_min = std::max(sum_min, new_min);
+
+    // Detect failure early.
+    if (new_max < sum_min || new_min > sum_max) {
+      solver()->Fail();
+    }
+
+    // Push to children nodes.
+    const int block_start = ChildStart(position);
+    const int block_end = ChildEnd(depth, position);
+    for (int pos = block_start; pos <= block_end; ++pos) {
+      const int64 target_var_min = Min(depth + 1, pos);
+      const int64 residual_min = sum_min != kint64min ?
+                                 CapSub(sum_min, target_var_min) :
+                                 kint64min;
+      const int64 target_var_max = Max(depth + 1, pos);
+      const int64 residual_max = sum_max != kint64max ?
+                                 CapSub(sum_max, target_var_max) :
+                                 kint64max;
+      PushDown(depth + 1,
+               pos,
+               (residual_max == kint64min ?
+                kint64min :
+                CapSub(new_min, residual_max)),
+               (residual_min == kint64max ?
+                kint64min :
+                CapSub(new_max, residual_min)));
+    }
+    // TODO(user) : Is the diameter optimization (see reference
+    // above, rule 5) useful?
+  }
+
+  void LeafChanged(int term_index) {
+    IntVar* const var = vars_[term_index];
+    PushUp(term_index,
+           CapSub(var->Min(), var->OldMin()),
+           CapSub(var->OldMax(), var->Max()));
+    Enqueue(sum_demon_);  // TODO(user): Is this needed?
+  }
+
+  void PushUp(int position, int64 delta_min, int64 delta_max) {
+    DCHECK_GE(delta_max, 0);
+    DCHECK_GE(delta_min, 0);
+    DCHECK_GT(CapAdd(delta_min, delta_max), 0);
+    bool delta_corrupted = false;
+    for (int depth = MaxDepth(); depth >= 0; --depth) {
+      if (Min(depth, position) != kint64min &&
+          Max(depth, position) != kint64max &&
+          !delta_corrupted) {  // No overflow.
+        ReduceRange(depth, position, delta_min, delta_max);
+      } else if (depth == MaxDepth()) {  // Leaf.
+        SetRange(depth,
+                 position,
+                 vars_[position]->Min(),
+                 vars_[position]->Max());
+        delta_corrupted = true;
+      } else {  // Recompute.
+        int64 sum_min = 0;
+        int64 sum_max = 0;
+        SafeComputeNode(depth, position, &sum_min, &sum_max);
+        if (sum_min == kint64min && sum_max == kint64max) {
+          return;  // Nothing to do upward.
+        }
+        SetRange(depth, position, sum_min, sum_max);
+        delta_corrupted = true;
+      }
+      position = Parent(position);
+    }
+    DCHECK_EQ(0, position);
+    target_var_->SetRange(RootMin(), RootMax());
+  }
+
+  string DebugString() const {
+    return DebugStringInternal("Sum");
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    AcceptInternal(ModelVisitor::kSumEqual, visitor);
+  }
+
+ private:
+  Demon* sum_demon_;
+};
+
 // ---------- Min Array ----------
 
 // This constraint implements min(vars) == min_var.
@@ -349,7 +552,7 @@ class MinConstraint : public TreeArrayConstraint {
   virtual void InitialPropagate() {
     // Copy vars to leaf nodes.
     for (int i = 0; i < size_; ++i) {
-      InitLeaf(solver(), i, vars_[i]->Min(), vars_[i]->Max());
+      InitLeaf(i, vars_[i]->Min(), vars_[i]->Max());
     }
 
     // Compute up.
@@ -363,7 +566,7 @@ class MinConstraint : public TreeArrayConstraint {
           min_min = std::min(min_min, Min(i + 1, k));
           min_max = std::min(min_max, Max(i + 1, k));
         }
-        InitNode(solver(), i, j, min_min, min_max);
+        InitNode(i, j, min_min, min_max);
       }
     }
     // Propagate to min_var.
@@ -503,7 +706,7 @@ class MaxConstraint : public TreeArrayConstraint {
   virtual void InitialPropagate() {
     // Copy vars to leaf nodes.
     for (int i = 0; i < size_; ++i) {
-      InitLeaf(solver(), i, vars_[i]->Min(), vars_[i]->Max());
+      InitLeaf(i, vars_[i]->Min(), vars_[i]->Max());
     }
 
     // Compute up.
@@ -517,7 +720,7 @@ class MaxConstraint : public TreeArrayConstraint {
           max_min = std::max(max_min, Min(i + 1, k));
           max_max = std::max(max_max, Max(i + 1, k));
         }
-        InitNode(solver(), i, j, max_min, max_max);
+        InitNode(i, j, max_min, max_max);
       }
     }
     // Propagate to min_var.
@@ -638,11 +841,19 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
     int64 new_min = 0;
     int64 new_max = 0;
     for (int i = 0; i < size; ++i) {
-      new_min += vars[i]->Min();
-      new_max += vars[i]->Max();
+      if (new_min != kint64min) {
+        new_min = CapAdd(vars[i]->Min(), new_min);
+      }
+      if (new_max != kint64max) {
+        new_max = CapAdd(vars[i]->Max(), new_max);
+      }
     }
     IntVar* const sum_var = MakeIntVar(new_min, new_max);
-    AddConstraint(RevAlloc(new SumConstraint(this, vars, sum_var)));
+    if (new_min != kint64min && new_max != kint64max) {
+      AddConstraint(RevAlloc(new SumConstraint(this, vars, sum_var)));
+    } else {
+      AddConstraint(RevAlloc(new SafeSumConstraint(this, vars, sum_var)));
+    }
     return sum_var;
   }
 }
@@ -1879,12 +2090,11 @@ Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst)
                                                MakeIntConst(cst)));
     }
   } else {
-    if (vars.size() == 1) {
-      return MakeEquality(vars[0], cst);
-    } else if (vars.size() == 2) {
-      return MakeEquality(vars[0], MakeDifference(cst, vars[1])->Var());
+    if (DetectSumOverflow(vars)) {
+      return RevAlloc(new SafeSumConstraint(this, vars, MakeIntConst(cst)));
+    } else {
+      return RevAlloc(new SumConstraint(this, vars, MakeIntConst(cst)));
     }
-    return RevAlloc(new SumConstraint(this, vars, MakeIntConst(cst)));
   }
 }
 
@@ -1894,7 +2104,11 @@ Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
   if (AreAllBooleans(vars.data(), size) && size > 2) {
     return RevAlloc(new SumBooleanEqualToVar(this, vars.data(), size, var));
   } else {
-    return RevAlloc(new SumConstraint(this, vars, var));
+    if (DetectSumOverflow(vars)) {
+      return RevAlloc(new SafeSumConstraint(this, vars, var));
+    } else {
+      return RevAlloc(new SumConstraint(this, vars, var));
+    }
   }
 }
 
