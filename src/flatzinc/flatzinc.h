@@ -172,6 +172,7 @@ class FlatZincModel {
   /// The set variables
   std::vector<SetVar> sv;
   std::vector<IntVar*> active_variables_;
+  std::vector<IntVar*> introduced_variables_;
   bool parsed_ok_;
 };
 

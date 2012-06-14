@@ -86,6 +86,8 @@ void FlatZincModel::NewIntVar(const std::string& name, IntVarSpec* const vs) {
             << integer_variables_[int_var_count - 1]->DebugString();
     if (!vs->introduced) {
       active_variables_.push_back(integer_variables_[int_var_count - 1]);
+    } else {
+      introduced_variables_.push_back(integer_variables_[int_var_count - 1]);
     }
   }
 }
@@ -105,6 +107,8 @@ void FlatZincModel::NewBoolVar(const std::string& name, BoolVarSpec* const vs) {
             << boolean_variables_[bool_var_count - 1]->DebugString();
     if (!vs->introduced) {
       active_variables_.push_back(boolean_variables_[bool_var_count - 1]);
+    } else {
+      introduced_variables_.push_back(boolean_variables_[bool_var_count - 1]);
     }
   }
 }
@@ -152,7 +156,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
 
     if (method_ != SAT && flat_annotations.size() == 1) {
       builders_.push_back(solver_.MakePhase(active_variables_,
-                                            Solver::CHOOSE_FIRST_UNBOUND,
+                                            Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
                                             Solver::ASSIGN_MIN_VALUE));
       VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
     }
@@ -237,6 +241,10 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
     }
   } else {
     builders_.push_back(solver_.MakePhase(active_variables_,
+                                          Solver::CHOOSE_FIRST_UNBOUND,
+                                          Solver::ASSIGN_MIN_VALUE));
+    VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
+    builders_.push_back(solver_.MakePhase(introduced_variables_,
                                           Solver::CHOOSE_FIRST_UNBOUND,
                                           Solver::ASSIGN_MIN_VALUE));
     VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
