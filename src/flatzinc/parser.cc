@@ -131,7 +131,8 @@ void ParserState::ComputeViableTarget(
   } else if (id == "array_bool_and" ||
              id == "array_bool_or" ||
              id == "array_bool_element" ||
-             id == "int_lin_eq_reif") {
+             id == "int_lin_eq_reif" ||
+             id == "int_eq_reif") {
     // Defines a bool var.
     const int bool_define = FindTarget(spec->annotations());
     if (bool_define != CtSpec::kNoDefinition) {
@@ -139,7 +140,7 @@ void ParserState::ComputeViableTarget(
       candidates->insert(bool_define);
       VLOG(1) << id << " -> insert " << bool_define;
     }
-  } else if (id == "int2int") {
+  }else if (id == "int2int") {
     candidates->insert(spec->Arg(1)->getIntVar());
     VLOG(1) << id << " -> insert " << spec->Arg(1)->getIntVar();
   } else if (id == "bool2bool") {

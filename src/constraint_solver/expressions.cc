@@ -255,6 +255,196 @@ class DomainIntVar : public IntVar {
    private:
     DomainIntVar* const var_;
   };
+
+  class Watcher : public Constraint {
+   public:
+    class WatchDemon : public Demon {
+     public:
+      WatchDemon(Watcher* const watcher, int64 index)
+          : watcher_(watcher), index_(index) {}
+      virtual ~WatchDemon() {}
+
+      virtual void Run(Solver* const solver) {
+        watcher_->ProcessWatcher(index_);
+      }
+
+     private:
+      Watcher* const watcher_;
+      const int64 index_;
+    };
+
+    class VarDemon : public Demon {
+     public:
+      VarDemon(Watcher* const watcher) : watcher_(watcher) {}
+      virtual ~VarDemon() {}
+
+      virtual void Run(Solver* const solver) {
+        watcher_->ProcessVar();
+      }
+
+     private:
+      Watcher* const watcher_;
+    };
+
+    Watcher(Solver* const solver, DomainIntVar* const variable)
+        : Constraint(solver),
+          variable_(variable),
+          iterator_(variable_->MakeHoleIterator(true)),
+          watchers_(16),
+          min_range_(kint64max),
+          max_range_(kint64min),
+          var_demon_(NULL),
+          active_watchers_(0) {}
+
+    ~Watcher() {}
+
+    IntVar* GetOrMakeWatcher(int64 value) {
+      IntVar* const watcher = watchers_.At(value);
+      if (watcher != NULL) {
+        return watcher;
+      }
+      IntVar* boolvar = NULL;
+      if (variable_->Contains(value)) {
+        if (variable_->Bound()) {
+          boolvar = solver()->MakeIntConst(0);
+        } else {
+          const string vname =
+              variable_->HasName() ?
+              variable_->name() :
+              variable_->DebugString();
+          const string bname = StringPrintf("Watch<%s, %" GG_LL_FORMAT "d>",
+                                            vname.c_str(),
+                                            value);
+          boolvar = solver()->MakeBoolVar(bname);
+        }
+      } else {
+        boolvar = variable_->solver()->MakeIntConst(0);
+      }
+      min_range_.SetValue(solver(), std::min(min_range_.Value(), value));
+      max_range_.SetValue(solver(), std::max(max_range_.Value(), value));
+      watchers_.RevInsert(variable_->solver(), value, boolvar);
+      if (!added_.Switched()) {
+        solver()->AddConstraint(this);
+        added_.Switch(solver());
+      }
+      if (posted_.Switched() && !boolvar->Bound()) {
+        boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
+      }
+      return boolvar;
+    }
+
+    virtual void Post() {
+      var_demon_ = solver()->RevAlloc(new VarDemon(this));
+      variable_->WhenDomain(var_demon_);
+      const int64 max_r = max_range_.Value();
+      const int64 min_r = min_range_.Value();
+      int count = 0;
+      for (int64 value = min_r; value <= max_r; ++value) {
+        IntVar* const boolvar = watchers_.At(value);
+        if (boolvar != NULL) {
+          boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
+          count++;
+        }
+      }
+      posted_.Switch(solver());
+      //      LOG(INFO) << "Posted " << count  << " watchers on " << variable_->DebugString() << (void*)variable_;
+    }
+
+    virtual void InitialPropagate() {
+      const int64 max_r = max_range_.Value();
+      const int64 min_r = min_range_.Value();
+      for (int64 value = min_r; value <= max_r; ++value) {
+        IntVar* const boolvar = watchers_.At(value);
+        if (!variable_->Contains(value)) {
+          Zero(value);
+        }
+      }
+      if (variable_->Bound()) {
+        One(variable_->Min());
+      }
+    }
+
+    void ProcessWatcher(int index) {
+      IntVar* const boolvar = watchers_.At(index);
+      DCHECK(boolvar != NULL);
+      if (boolvar->Min() == 0) {
+        variable_->RemoveValue(index);
+      } else {
+        variable_->SetValue(index);
+      }
+    }
+
+    void ProcessVar() {
+      const int64 max_r = max_range_.Value();
+      const int64 min_r = min_range_.Value();
+      if (max_r - min_r < 5) {
+        for (int64 i = min_r; i <= max_r; ++i) {
+          if (!variable_->Contains(i)) {
+            Zero(i);
+          }
+        }
+      } else {
+        const int64 old_min_domain = variable_->OldMin();
+        const int64 min_domain = variable_->Min();
+        const int64 max_domain = variable_->Max();
+        for (int64 val = std::max(min_r, old_min_domain);
+             val <= std::min(min_domain - 1, max_r);
+             ++val) {
+          Zero(val);
+        }
+        // Second iteration: "delta" domain iteration.
+        IntVarIterator* const it = iterator_;
+        for (it->Init(); it->Ok(); it->Next()) {
+          const int64 val = it->Value();
+          if (val >= min_r && val <= max_r) {
+            Zero(val);
+          }
+        }
+        // Third iteration: from max to old_max.
+        const int64 old_max_domain = variable_->OldMax();
+        for (int64 val = std::max(min_r, max_domain + 1);
+             val <= std::min(max_r, old_max_domain);
+             ++val) {
+          Zero(val);
+        }
+      }
+      if (variable_->Bound()) {
+        One(variable_->Min());
+      }
+    }
+
+   private:
+    void Zero(int64 index) {
+      IntVar* const boolvar = watchers_.At(index);
+      if (boolvar != NULL) {
+        if (boolvar->Max() == 1) {
+          boolvar->SetValue(0);
+          active_watchers_.Decr(solver());
+        }
+      }
+      if (active_watchers_.Value() == 0) {
+        var_demon_->inhibit(solver());
+      }
+    }
+
+    void One(int64 index) {
+      IntVar* const boolvar = watchers_.At(index);
+      if (boolvar != NULL) {
+        boolvar->SetValue(1);
+      }
+    }
+
+    DomainIntVar* const variable_;
+    IntVarIterator* const iterator_;
+    RevGrowingArray<IntVar*, void*> watchers_;
+    RevSwitch added_;
+    RevSwitch posted_;
+    NumericalRev<int64> min_range_;
+    NumericalRev<int64> max_range_;
+    Demon* var_demon_;
+    NumericalRev<int> active_watchers_;
+  };
+
   // ----- Main Class -----
   DomainIntVar(Solver* const s,
                int64 vmin,
@@ -326,12 +516,13 @@ class DomainIntVar : public IntVar {
       if (vname.empty()) {
         vname = DebugString();
       }
-      IntVar* const boolvar = s->MakeBoolVar(
-          StringPrintf("Var<%s == %" GG_LL_FORMAT "d>",
-                       vname.c_str(), value));
-      Constraint* const maintain =
-          s->MakeIsEqualCstCt(this, value, boolvar);
-      s->AddConstraint(maintain);
+      if (watcher_ == NULL) {
+        solver()->SaveAndSetValue(
+            reinterpret_cast<void**>(&watcher_),
+            reinterpret_cast<void*>(
+                solver()->RevAlloc(new Watcher(solver(), this))));
+      }
+      IntVar* const boolvar = watcher_->GetOrMakeWatcher(value);
       return boolvar;
     }
   }
@@ -388,6 +579,7 @@ class DomainIntVar : public IntVar {
   QueueHandler handler_;
   bool in_process_;
   BitSet* bits_;
+  Watcher* watcher_;
 };
 
 // ----- BitSet -----
@@ -1001,14 +1193,14 @@ DomainIntVar::DomainIntVar(Solver* const s,
                            const string& name)
     : IntVar(s, name), min_(vmin), max_(vmax), old_min_(vmin),
       old_max_(vmax), new_min_(vmin), new_max_(vmax),
-      handler_(this), in_process_(false), bits_(NULL) {}
+      handler_(this), in_process_(false), bits_(NULL), watcher_(NULL) {}
 
 DomainIntVar::DomainIntVar(Solver* const s,
                            const std::vector<int64>& sorted_values,
                            const string& name)
     : IntVar(s, name), min_(kint64max), max_(kint64min), old_min_(kint64max),
       old_max_(kint64min), new_min_(kint64max), new_max_(kint64min),
-      handler_(this), in_process_(false), bits_(NULL) {
+      handler_(this), in_process_(false), bits_(NULL), watcher_(NULL) {
   CHECK_GE(sorted_values.size(), 1);
   // We know that the vector is sorted and does not have duplicate values.
   const int64 vmin = sorted_values.front();

@@ -1468,6 +1468,11 @@ class ModelCache {
     VAR_CONSTANT_ARRAY_EXPRESSION_MAX,
   };
 
+  enum VarArrayConstantArrayExpressionType {
+    VAR_ARRAY_CONSTANT_ARRAY_SCAL_PROD = 0,
+    VAR_ARRAY_CONSTANT_ARRAY_EXPRESSION_MAX,
+  };
+
   enum VarArrayExpressionType {
     VAR_ARRAY_MAX = 0,
     VAR_ARRAY_MIN,
@@ -1611,6 +1616,19 @@ class ModelCache {
       IntExpr* const expression,
       const std::vector<IntVar*>& vars,
       VarArrayExpressionType type) = 0;
+
+  // Var Array Constant Array Expressions.
+
+  virtual IntExpr* FindVarArrayConstantArrayExpression(
+      const std::vector<IntVar*>& vars,
+      ConstIntArray* const values,
+      VarArrayConstantArrayExpressionType type) const = 0;
+
+  virtual void InsertArrayVarConstantArrayExpression(
+      IntExpr* const expression,
+      const std::vector<IntVar*>& var,
+      ConstIntArray* const values,
+      VarArrayConstantArrayExpressionType type) = 0;
 
   Solver* solver() const;
 
@@ -1807,6 +1825,82 @@ class ModelParser : public ModelVisitor {
   std::vector<ArgumentHolder*> holders_;
 };
 #endif  // SWIG
+
+template <class T, class C> class RevGrowingArray {
+ public:
+  RevGrowingArray(int64 block_size) : block_size_(block_size) {}
+
+  ~RevGrowingArray() {}
+
+  T At(int64 index) {
+    const int64 block_index = ComputeBlockIndex(index);
+    if (block_index < block_offset_ ||
+        block_index - block_offset_ >= elements_.size()) {
+      return 0;
+    }
+    const T* block = elements_[block_index - block_offset_];
+    return block != NULL ? block[index - block_index * block_size_] : 0;
+  }
+
+  void RevInsert(Solver* const solver, int64 index, T value) {
+    const int64 block_index = ComputeBlockIndex(index);
+    T* block = GetOrCreateBlock(block_index);
+    const int64 residual = index - block_index * block_size_;
+    solver->SaveAndSetValue(reinterpret_cast<C*>(&block[residual]),
+                            reinterpret_cast<C>(value));
+  }
+
+ private:
+  T* NewBlock() {
+    T* result = new T[block_size_];
+    for (int i = 0; i < block_size_; ++i) {
+      result[i] = 0;
+    }
+    return result;
+  }
+
+  T* GetOrCreateBlock(int block_index) {
+    if (elements_.size() == 0) {
+      block_offset_ = block_index;
+      GrowUp(block_index);
+    } else if (block_index < block_offset_) {
+      GrowDown(block_index);
+    } else if (block_index - block_offset_ >= elements_.size()) {
+      GrowUp(block_index);
+    }
+    T* block = elements_[block_index - block_offset_];
+    if (block == NULL) {
+      block = NewBlock();
+      elements_[block_index - block_offset_] = block;
+    }
+    return block;
+  }
+
+  int64 ComputeBlockIndex(int64 value) {
+    return value / block_size_ - (value < 0);
+  }
+
+  void GrowUp(int64 block_index) {
+    elements_.resize(block_index - block_offset_ + 1);
+    elements_[block_index - block_offset_] = NewBlock();
+  }
+
+  void GrowDown(int64 block_index) {
+    const int64 delta = block_offset_ - block_index;
+    DCHECK_GT(delta, 0);
+    elements_.resize(elements_.size() + delta);
+    for (int i = elements_.size() - 1; i >= delta; ++i) {
+      elements_[i] = elements_[i - delta];
+    }
+    for (int i = 0; i < delta; ++i) {
+      elements_[i] = NULL;
+    }
+  }
+
+  const int64 block_size_;
+  std::vector<T*> elements_;
+  int block_offset_;
+};
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_

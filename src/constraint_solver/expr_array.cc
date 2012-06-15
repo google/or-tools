@@ -2008,7 +2008,9 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
           new_max = CapAdd(vars[i]->Max(), new_max);
         }
       }
-      IntVar* const sum_var = MakeIntVar(new_min, new_max);
+      const string name =
+          StringPrintf("Sum([%s])", DebugStringVector(vars, ", ").c_str());
+      IntVar* const sum_var = MakeIntVar(new_min, new_max, name);
       if (new_min != kint64min && new_max != kint64max) {
         AddConstraint(RevAlloc(new SumConstraint(this, vars, sum_var)));
       } else {
@@ -2412,6 +2414,9 @@ template<class T> IntExpr* MakeScalProdFct(Solver* solver,
   }
   if (AreAllOnes(coefs.data(), size)) {
     return solver->MakeSum(vars);
+  }
+  if (size == 1) {
+    return solver->MakeProd(vars[0], coefs[0]);
   }
   if (AreAllBooleans(vars.data(), size)) {
     if (AreAllPositive<T>(coefs.data(), size)) {

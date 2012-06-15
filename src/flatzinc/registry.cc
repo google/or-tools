@@ -160,11 +160,25 @@ void p_int_lt(FlatZincModel* const model, CtSpec* const spec) {
 void p_int_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const left = model->GetIntVar(spec->Arg(0));
-  IntVar* const right = model->GetIntVar(spec->Arg(1));
-  IntVar* const boolvar = model->GetIntVar(spec->Arg(2));
-  Constraint* const ct = solver->MakeIsEqualCt(left, right, boolvar);
-  VLOG(1) << "Posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  AST::Node* const node_right = spec->Arg(1);
+  AST::Node* const node_boolvar = spec->Arg(2);
+  if (node_boolvar->isBoolVar() &&
+      node_boolvar->getBoolVar() + model->IntVarCount() == spec->defines()) {
+    VLOG(1) << "Aliasing int_eq_reif";
+    IntVar* const boolvar =
+        node_right->isInt() ?
+        solver->MakeIsEqualCstVar(left, node_right->getInt()) :
+        solver->MakeIsEqualVar(left, model->GetIntVar(node_right));
+    CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
+    model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
+    CHECK_NOTNULL(boolvar);
+  } else {
+    IntVar* const right = model->GetIntVar(node_right);
+    IntVar* const boolvar = model->GetIntVar(node_boolvar);
+    Constraint* const ct = solver->MakeIsEqualCt(left, right, boolvar);
+    VLOG(1) << "Posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_int_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
