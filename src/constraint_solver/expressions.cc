@@ -347,7 +347,6 @@ class DomainIntVar : public IntVar {
         }
       }
       posted_.Switch(solver());
-      //      LOG(INFO) << "Posted " << count  << " watchers on " << variable_->DebugString() << (void*)variable_;
     }
 
     virtual void InitialPropagate() {
@@ -523,6 +522,8 @@ class DomainIntVar : public IntVar {
                 solver()->RevAlloc(new Watcher(solver(), this))));
       }
       IntVar* const boolvar = watcher_->GetOrMakeWatcher(value);
+      s->Cache()->InsertVarConstantExpression(
+          boolvar, this, value, ModelCache::VAR_CONSTANT_IS_EQUAL);
       return boolvar;
     }
   }
@@ -5235,24 +5236,31 @@ IntExpr* Solver::MakeOpposite(IntExpr* const e) {
 
 IntExpr* Solver::MakeProd(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
-  IntExpr* result;
-  if (e->Bound()) {
-    return MakeIntConst(v * e->Min());
-  } else if (v == 1) {
-    return e;
-  } else if (v == -1) {
-    return MakeOpposite(e);
-  } else if (v > 0) {
-    result = RegisterIntExpr(RevAlloc(new TimesIntPosCstExpr(this, e, v)));
-  } else if (v == 0) {
-    result = MakeIntConst(0);
+  IntExpr* result = Cache()->FindExprConstantExpression(
+      e, v, ModelCache::EXPR_CONSTANT_PROD);
+  if (result != NULL) {
+    return result;
   } else {
-    result = RegisterIntExpr(RevAlloc(new TimesIntNegCstExpr(this, e, v)));
+    if (e->Bound()) {
+      return MakeIntConst(v * e->Min());
+    } else if (v == 1) {
+      return e;
+    } else if (v == -1) {
+      return MakeOpposite(e);
+    } else if (v > 0) {
+      result = RegisterIntExpr(RevAlloc(new TimesIntPosCstExpr(this, e, v)));
+    } else if (v == 0) {
+      result = MakeIntConst(0);
+    } else {
+      result = RegisterIntExpr(RevAlloc(new TimesIntNegCstExpr(this, e, v)));
+    }
+    if (e->IsVar() && !FLAGS_cp_disable_expression_optimization) {
+      result = result->Var();
+    }
+    Cache()->InsertExprConstantExpression(
+        result, e, v, ModelCache::EXPR_CONSTANT_PROD);
+    return result;
   }
-  if (e->IsVar() && !FLAGS_cp_disable_expression_optimization) {
-    result = result->Var();
-  }
-  return result;
 }
 
 IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {

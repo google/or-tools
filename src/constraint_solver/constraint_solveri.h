@@ -1428,13 +1428,7 @@ class ModelCache {
   };
 
   enum VarConstantExpressionType {
-    VAR_CONSTANT_DIFFERENCE = 0,
-    VAR_CONSTANT_DIVIDE,
-    VAR_CONSTANT_PROD,
-    VAR_CONSTANT_MAX,
-    VAR_CONSTANT_MIN,
-    VAR_CONSTANT_SUM,
-    VAR_CONSTANT_IS_EQUAL,
+    VAR_CONSTANT_IS_EQUAL = 0,
     VAR_CONSTANT_IS_NOT_EQUAL,
     VAR_CONSTANT_IS_GREATER_OR_EQUAL,
     VAR_CONSTANT_IS_LESS_OR_EQUAL,
@@ -1458,6 +1452,15 @@ class ModelCache {
     EXPR_EXPR_EXPRESSION_MAX,
   };
 
+  enum ExprConstantExpressionType {
+    EXPR_CONSTANT_DIFFERENCE = 0,
+    EXPR_CONSTANT_DIVIDE,
+    EXPR_CONSTANT_PROD,
+    EXPR_CONSTANT_MAX,
+    EXPR_CONSTANT_MIN,
+    EXPR_CONSTANT_SUM,
+    EXPR_CONSTANT_EXPRESSION_MAX,
+  };
   enum VarConstantConstantExpressionType {
     VAR_CONSTANT_CONSTANT_SEMI_CONTINUOUS = 0,
     VAR_CONSTANT_CONSTANT_EXPRESSION_MAX,
@@ -1564,6 +1567,19 @@ class ModelCache {
       IntVar* const var1,
       IntVar* const var2,
       VarVarExpressionType type) = 0;
+
+   // Expr Constant Expressions.
+
+  virtual IntExpr* FindExprConstantExpression(
+      IntExpr* const expr,
+      int64 value,
+      ExprConstantExpressionType type) const = 0;
+
+  virtual void InsertExprConstantExpression(
+      IntExpr* const expression,
+      IntExpr* const var,
+      int64 value,
+      ExprConstantExpressionType type) = 0;
 
   // Expr Expr Expressions.
 

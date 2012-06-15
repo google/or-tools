@@ -359,6 +359,7 @@ class NonReversibleCache : public ModelCache {
   typedef Cache2<Constraint, IntVar*, int64> VarConstantConstraintCache;
   typedef Cache2<Constraint, IntVar*, IntVar*> VarVarConstraintCache;
   typedef Cache2<IntExpr, IntVar*, int64> VarConstantIntExprCache;
+  typedef Cache2<IntExpr, IntExpr*, int64> ExprConstantIntExprCache;
   typedef Cache2<IntExpr, IntVar*, IntVar*> VarVarIntExprCache;
   typedef Cache2<IntExpr, IntExpr*, IntExpr*> ExprExprIntExprCache;
   typedef Cache2<IntExpr, IntVar*, ConstIntArray*> VarConstantArrayIntExprCache;
@@ -387,6 +388,9 @@ class NonReversibleCache : public ModelCache {
     }
     for (int i = 0; i < VAR_CONSTANT_EXPRESSION_MAX; ++i) {
       var_constant_expressions_.push_back(new VarConstantIntExprCache);
+    }
+    for (int i = 0; i < EXPR_CONSTANT_EXPRESSION_MAX; ++i) {
+      expr_constant_expressions_.push_back(new ExprConstantIntExprCache);
     }
     for (int i = 0; i < VAR_VAR_EXPRESSION_MAX; ++i) {
       var_var_expressions_.push_back(new VarVarIntExprCache);
@@ -609,6 +613,33 @@ class NonReversibleCache : public ModelCache {
     }
   }
 
+   // Expr Constant Expressions.
+
+  virtual IntExpr* FindExprConstantExpression(
+      IntExpr* const expr,
+      int64 value,
+      ExprConstantExpressionType type) const {
+    DCHECK(expr != NULL);
+    DCHECK_GE(type, 0);
+    DCHECK_LT(type, EXPR_CONSTANT_EXPRESSION_MAX);
+    return expr_constant_expressions_[type]->Find(expr, value);
+  }
+
+  virtual void InsertExprConstantExpression(
+      IntExpr* const expression,
+      IntExpr* const expr,
+      int64 value,
+      ExprConstantExpressionType type) {
+    DCHECK(expression != NULL);
+    DCHECK(expr != NULL);
+    DCHECK_GE(type, 0);
+    DCHECK_LT(type, EXPR_CONSTANT_EXPRESSION_MAX);
+    if (solver()->state() != Solver::IN_SEARCH &&
+        expr_constant_expressions_[type]->Find(expr, value) == NULL) {
+      expr_constant_expressions_[type]->UnsafeInsert(expr, value, expression);
+    }
+  }
+
   // Expr Expr Expression.
 
   virtual IntExpr* FindExprExprExpression(
@@ -762,6 +793,7 @@ class NonReversibleCache : public ModelCache {
   std::vector<VarIntExprCache*> var_expressions_;
   std::vector<VarConstantIntExprCache*> var_constant_expressions_;
   std::vector<VarVarIntExprCache*> var_var_expressions_;
+  std::vector<ExprConstantIntExprCache*> expr_constant_expressions_;
   std::vector<ExprExprIntExprCache*> expr_expr_expressions_;
   std::vector<VarConstantConstantIntExprCache*> var_constant_constant_expressions_;
   std::vector<VarConstantArrayIntExprCache*> var_constant_array_expressions_;
