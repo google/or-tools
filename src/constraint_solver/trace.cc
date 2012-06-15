@@ -165,6 +165,14 @@ class TraceIntVar : public IntVar {
     return inner_->DebugString();
   }
 
+  virtual IntVar* IsEqual(int64 constant) {
+    return inner_->IsEqual(constant);
+  }
+
+  virtual IntVar* IsDifferent(int64 constant) {
+    return inner_->IsDifferent(constant);
+  }
+
  private:
   IntVar* const inner_;
 };
