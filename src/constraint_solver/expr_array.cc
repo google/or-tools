@@ -827,116 +827,9 @@ class MaxConstraint : public TreeArrayConstraint {
  private:
   Demon* max_demon_;
 };
-}  // namespace
-
-IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
-  const int size = vars.size();
-  if (size == 0) {
-    return MakeIntConst(0LL);
-  } else if (size == 1) {
-    return vars[0];
-  } else if (size == 2) {
-    return MakeSum(vars[0], vars[1]);
-  } else {
-    IntExpr* const cache =
-        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_SUM);
-    if (cache != NULL) {
-      return cache->Var();
-    } else {
-      int64 new_min = 0;
-      int64 new_max = 0;
-      for (int i = 0; i < size; ++i) {
-        if (new_min != kint64min) {
-          new_min = CapAdd(vars[i]->Min(), new_min);
-        }
-        if (new_max != kint64max) {
-          new_max = CapAdd(vars[i]->Max(), new_max);
-        }
-      }
-      IntVar* const sum_var = MakeIntVar(new_min, new_max);
-      if (new_min != kint64min && new_max != kint64max) {
-        AddConstraint(RevAlloc(new SumConstraint(this, vars, sum_var)));
-      } else {
-        AddConstraint(RevAlloc(new SafeSumConstraint(this, vars, sum_var)));
-      }
-      model_cache_->InsertVarArrayExpression(
-          sum_var, vars, ModelCache::VAR_ARRAY_SUM);
-      return sum_var;
-    }
-  }
-}
-
-IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
-  const int size = vars.size();
-  if (size == 0) {
-    return MakeIntConst(0LL);
-  } else if (size == 1) {
-    return vars[0];
-  } else if (size == 2) {
-    return MakeMin(vars[0], vars[1]);
-  } else {
-    IntExpr* const cache =
-        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_MIN);
-    if (cache != NULL) {
-      return cache->Var();
-    } else {
-      int64 new_min = kint64max;
-      int64 new_max = kint64max;
-      for (int i = 0; i < size; ++i) {
-        new_min = std::min(new_min, vars[i]->Min());
-        new_max = std::min(new_max, vars[i]->Max());
-      }
-      IntVar* const new_var = MakeIntVar(new_min, new_max);
-      AddConstraint(RevAlloc(new MinConstraint(this, vars, new_var)));
-      model_cache_->InsertVarArrayExpression(
-          new_var, vars, ModelCache::VAR_ARRAY_MIN);
-      return new_var;
-    }
-  }
-}
-
-Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
-                                    IntVar* const min_var) {
-  return RevAlloc(new MinConstraint(this, vars, min_var));
-}
-
-IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
-  const int size = vars.size();
-  if (size == 0) {
-    return MakeIntConst(0LL);
-  } else if (size == 1) {
-    return vars[0];
-  } else if (size == 2) {
-    return MakeMax(vars[0], vars[1]);
-  } else {
-    IntExpr* const cache =
-        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_MAX);
-    if (cache != NULL) {
-      return cache->Var();
-    } else {
-      int64 new_min = kint64min;
-      int64 new_max = kint64min;
-      for (int i = 0; i < size; ++i) {
-        new_min = std::max(new_min, vars[i]->Min());
-        new_max = std::max(new_max, vars[i]->Max());
-      }
-      IntVar* const new_var = MakeIntVar(new_min, new_max);
-      AddConstraint(RevAlloc(new MaxConstraint(this, vars, new_var)));
-      model_cache_->InsertVarArrayExpression(
-          new_var, vars, ModelCache::VAR_ARRAY_MAX);
-      return new_var;
-    }
-  }
-}
-
-Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
-                                    IntVar* const max_var) {
-  return RevAlloc(new MaxConstraint(this, vars, max_var));
-}
 
 // ---------- Specialized cases ----------
 
-namespace {
 bool AreAllBooleans(const IntVar* const* vars, int size) {
   for (int i = 0; i < size; ++i) {
     const IntVar* var = vars[i];
@@ -2087,9 +1980,123 @@ class PositiveBooleanScalProdEqCst : public Constraint {
   Rev<int64> max_coefficient_;
 };
 
+}  // namespace
+
 // ----- API -----
 
-}  // namespace
+IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
+  const int size = vars.size();
+  if (size == 0) {
+    return MakeIntConst(0LL);
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeSum(vars[0], vars[1]);
+  } else {
+    IntExpr* const cache =
+        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_SUM);
+    if (cache != NULL) {
+      return cache->Var();
+    } else {
+      int64 new_min = 0;
+      int64 new_max = 0;
+      for (int i = 0; i < size; ++i) {
+        if (new_min != kint64min) {
+          new_min = CapAdd(vars[i]->Min(), new_min);
+        }
+        if (new_max != kint64max) {
+          new_max = CapAdd(vars[i]->Max(), new_max);
+        }
+      }
+      IntVar* const sum_var = MakeIntVar(new_min, new_max);
+      if (new_min != kint64min && new_max != kint64max) {
+        AddConstraint(RevAlloc(new SumConstraint(this, vars, sum_var)));
+      } else {
+        AddConstraint(RevAlloc(new SafeSumConstraint(this, vars, sum_var)));
+      }
+      model_cache_->InsertVarArrayExpression(
+          sum_var, vars, ModelCache::VAR_ARRAY_SUM);
+      return sum_var;
+    }
+  }
+}
+
+IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
+  const int size = vars.size();
+  if (size == 0) {
+    return MakeIntConst(0LL);
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeMin(vars[0], vars[1]);
+  } else {
+    IntExpr* const cache =
+        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_MIN);
+    if (cache != NULL) {
+      return cache->Var();
+    } else {
+      int64 new_min = kint64max;
+      int64 new_max = kint64max;
+      for (int i = 0; i < size; ++i) {
+        new_min = std::min(new_min, vars[i]->Min());
+        new_max = std::min(new_max, vars[i]->Max());
+      }
+      IntVar* const new_var = MakeIntVar(new_min, new_max);
+      AddConstraint(RevAlloc(new MinConstraint(this, vars, new_var)));
+      model_cache_->InsertVarArrayExpression(
+          new_var, vars, ModelCache::VAR_ARRAY_MIN);
+      return new_var;
+    }
+  }
+}
+
+IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
+  const int size = vars.size();
+  if (size == 0) {
+    return MakeIntConst(0LL);
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeMax(vars[0], vars[1]);
+  } else {
+    IntExpr* const cache =
+        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_MAX);
+    if (cache != NULL) {
+      return cache->Var();
+    } else {
+      int64 new_min = kint64min;
+      int64 new_max = kint64min;
+      for (int i = 0; i < size; ++i) {
+        new_min = std::max(new_min, vars[i]->Min());
+        new_max = std::max(new_max, vars[i]->Max());
+      }
+      IntVar* const new_var = MakeIntVar(new_min, new_max);
+      AddConstraint(RevAlloc(new MaxConstraint(this, vars, new_var)));
+      model_cache_->InsertVarArrayExpression(
+          new_var, vars, ModelCache::VAR_ARRAY_MAX);
+      return new_var;
+    }
+  }
+}
+
+Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
+                                    IntVar* const min_var) {
+  return RevAlloc(new MinConstraint(this, vars, min_var));
+}
+
+Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
+                                    IntVar* const max_var) {
+  if (max_var->Bound() &&
+      max_var->Min() == 1 &&
+      AreAllBooleans(vars.data(), vars.size()) &&
+      vars.size() > 2) {
+    return RevAlloc(
+        new SumBooleanGreaterOrEqualToOne(this, vars.data(), vars.size()));
+  } else {
+    return RevAlloc(new MaxConstraint(this, vars, max_var));
+  }
+}
+
 Constraint* Solver::MakeSumLessOrEqual(const std::vector<IntVar*>& vars, int64 cst) {
   const int size = vars.size();
   if (cst == 1LL && AreAllBooleans(vars.data(), size) && size > 2) {

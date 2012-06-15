@@ -350,42 +350,7 @@ class IsEqualCstCt : public CastConstraint {
 }  // namespace
 
 IntVar* Solver::MakeIsEqualCstVar(IntVar* const var, int64 value) {
-  if (value == var->Min()) {
-    return MakeIsLessOrEqualCstVar(var, value);
-  }
-  if (value == var->Max()) {
-    return MakeIsGreaterOrEqualCstVar(var, value);
-  }
-  if (!var->Contains(value)) {
-    return MakeIntConst(0LL);
-  }
-  if (var->Bound() && var->Value() == value) {
-    return MakeIntConst(1LL);
-  }
-  IntExpr* const cache = model_cache_->FindVarConstantExpression(
-      var,
-      value,
-      ModelCache::VAR_CONSTANT_IS_EQUAL);
-  if (cache != NULL) {
-    return cache->Var();
-  } else {
-    string name = var->name();
-    if (name.empty()) {
-      name = var->DebugString();
-    }
-    IntVar* const boolvar = MakeBoolVar(
-        StringPrintf("Var<%s == %" GG_LL_FORMAT "d>",
-                     name.c_str(), value));
-    CastConstraint* const maintain =
-        RevAlloc(new IsEqualCstCt(this, var, value, boolvar));
-    AddConstraint(maintain);
-    model_cache_->InsertVarConstantExpression(
-        boolvar,
-        var,
-        value,
-        ModelCache::VAR_CONSTANT_IS_EQUAL);
-    return boolvar;
-  }
+  return var->IsEqual(value);
 }
 
 Constraint* Solver::MakeIsEqualCstCt(IntVar* const var,

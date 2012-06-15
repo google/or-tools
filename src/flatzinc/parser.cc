@@ -130,7 +130,8 @@ void ParserState::ComputeViableTarget(
     }
   } else if (id == "array_bool_and" ||
              id == "array_bool_or" ||
-             id == "array_bool_element") {
+             id == "array_bool_element" ||
+             id == "int_lin_eq_reif") {
     // Defines a bool var.
     const int bool_define = FindTarget(spec->annotations());
     if (bool_define != CtSpec::kNoDefinition) {

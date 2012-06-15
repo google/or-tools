@@ -2868,6 +2868,7 @@ class Solver {
   scoped_ptr<PropagationMonitor> propagation_monitor_;
   PropagationMonitor* print_trace_;
   int anonymous_variable_index_;
+  hash_map<IntVar*, Constraint*> watchers_;
 
   DISALLOW_COPY_AND_ASSIGN(Solver);
 };

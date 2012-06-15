@@ -258,10 +258,18 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
     variables[i] = model->GetIntVar(array_variables->a[i]);
   }
   IntVar* const var = solver->MakeScalProd(variables, coefficients)->Var();
-  IntVar* const boolvar = model->GetIntVar(node_boolvar);
-  Constraint* const ct = solver->MakeIsEqualCstCt(var, rhs, boolvar);
-  VLOG(1) << "Posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (node_boolvar->isBoolVar() &&
+      node_boolvar->getBoolVar() + model->IntVarCount() == spec->defines()) {
+    VLOG(1) << "Aliasing int_lin_eq_reif";
+    IntVar* const boolvar = solver->MakeIsEqualCstVar(var, rhs);
+    CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
+    model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
+  } else {
+    IntVar* const boolvar = model->GetIntVar(node_boolvar);
+    Constraint* const ct = solver->MakeIsEqualCstCt(var, rhs, boolvar);
+    VLOG(1) << "Posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_int_lin_ne(FlatZincModel* const model, CtSpec* const spec) {

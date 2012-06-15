@@ -301,8 +301,39 @@ class DomainIntVar : public IntVar {
     }
   }
 
-  virtual IntVar* IsEqual(int64 constant) {
-    return NULL; // IMPLEMENT ME.
+  virtual IntVar* IsEqual(int64 value) {
+    Solver* const s = solver();
+    if (value == min_.Value()) {
+      return s->MakeIsLessOrEqualCstVar(this, value);
+    }
+    if (value == max_.Value()) {
+      return s->MakeIsGreaterOrEqualCstVar(this, value);
+    }
+    if (!Contains(value)) {
+      return s->MakeIntConst(0LL);
+    }
+    if (Bound() && min_.Value() == value) {
+      return s->MakeIntConst(1LL);
+    }
+    IntExpr* const cache = s->Cache()->FindVarConstantExpression(
+        this,
+        value,
+        ModelCache::VAR_CONSTANT_IS_EQUAL);
+    if (cache != NULL) {
+      return cache->Var();
+    } else {
+      string vname = name();
+      if (vname.empty()) {
+        vname = DebugString();
+      }
+      IntVar* const boolvar = s->MakeBoolVar(
+          StringPrintf("Var<%s == %" GG_LL_FORMAT "d>",
+                       vname.c_str(), value));
+      Constraint* const maintain =
+          s->MakeIsEqualCstCt(this, value, boolvar);
+      s->AddConstraint(maintain);
+      return boolvar;
+    }
   }
 
   virtual IntVar* IsDifferent(int64 constant) {
