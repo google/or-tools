@@ -353,7 +353,7 @@ template <class C, class A1, class A2, class A3> class Cache3 {
 
 class NonReversibleCache : public ModelCache {
  public:
-  typedef Cache1<IntExpr, IntVar*> VarIntExprCache;
+  typedef Cache1<IntExpr, IntExpr*> ExprIntExprCache;
   typedef Cache1<IntExpr, std::vector<IntVar*> > VarArrayIntExprCache;
 
   typedef Cache2<Constraint, IntVar*, int64> VarConstantConstraintCache;
@@ -383,8 +383,8 @@ class NonReversibleCache : public ModelCache {
       var_constant_constant_constraints_.push_back(
           new VarConstantConstantConstraintCache);
     }
-    for (int i = 0; i < VAR_EXPRESSION_MAX; ++i) {
-      var_expressions_.push_back(new VarIntExprCache);
+    for (int i = 0; i < EXPR_EXPRESSION_MAX; ++i) {
+      expr_expressions_.push_back(new ExprIntExprCache);
     }
     for (int i = 0; i < VAR_CONSTANT_EXPRESSION_MAX; ++i) {
       var_constant_expressions_.push_back(new VarConstantIntExprCache);
@@ -419,7 +419,7 @@ class NonReversibleCache : public ModelCache {
     STLDeleteElements(&var_constant_constraints_);
     STLDeleteElements(&var_var_constraints_);
     STLDeleteElements(&var_constant_constant_constraints_);
-    STLDeleteElements(&var_expressions_);
+    STLDeleteElements(&expr_expressions_);
     STLDeleteElements(&var_constant_expressions_);
     STLDeleteElements(&var_var_expressions_);
     STLDeleteElements(&var_constant_constant_expressions_);
@@ -536,24 +536,24 @@ class NonReversibleCache : public ModelCache {
 
   // Var Expression.
 
-  virtual IntExpr* FindVarExpression(IntVar* const var,
-                                     VarExpressionType type) const {
-    DCHECK(var != NULL);
+  virtual IntExpr* FindExprExpression(IntExpr* const expr,
+                                      ExprExpressionType type) const {
+    DCHECK(expr != NULL);
     DCHECK_GE(type, 0);
-    DCHECK_LT(type, VAR_EXPRESSION_MAX);
-    return var_expressions_[type]->Find(var);
+    DCHECK_LT(type, EXPR_EXPRESSION_MAX);
+    return expr_expressions_[type]->Find(expr);
   }
 
-  virtual void InsertVarExpression(IntExpr* const expression,
-                                   IntVar* const var,
-                                   VarExpressionType type) {
+  virtual void InsertExprExpression(IntExpr* const expression,
+                                   IntExpr* const expr,
+                                   ExprExpressionType type) {
     DCHECK(expression != NULL);
-    DCHECK(var != NULL);
+    DCHECK(expr != NULL);
     DCHECK_GE(type, 0);
-    DCHECK_LT(type, VAR_EXPRESSION_MAX);
+    DCHECK_LT(type, EXPR_EXPRESSION_MAX);
     if (solver()->state() != Solver::IN_SEARCH &&
-        var_expressions_[type]->Find(var) == NULL) {
-      var_expressions_[type]->UnsafeInsert(var, expression);
+        expr_expressions_[type]->Find(expr) == NULL) {
+      expr_expressions_[type]->UnsafeInsert(expr, expression);
     }
   }
 
@@ -790,7 +790,7 @@ class NonReversibleCache : public ModelCache {
   std::vector<VarVarConstraintCache*> var_var_constraints_;
   std::vector<VarConstantConstantConstraintCache*>
       var_constant_constant_constraints_;
-  std::vector<VarIntExprCache*> var_expressions_;
+  std::vector<ExprIntExprCache*> expr_expressions_;
   std::vector<VarConstantIntExprCache*> var_constant_expressions_;
   std::vector<VarVarIntExprCache*> var_var_expressions_;
   std::vector<ExprConstantIntExprCache*> expr_constant_expressions_;

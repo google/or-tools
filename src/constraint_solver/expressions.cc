@@ -4980,8 +4980,16 @@ IntExpr* Solver::MakeSum(IntExpr* const e, int64 v) {
   if (v == 0) {
     return e;
   }
-  return RegisterIntExpr(RevAlloc(new PlusIntCstExpr(this, e, v)));
+  IntExpr* result = Cache()->FindExprConstantExpression(
+      e, v, ModelCache::EXPR_CONSTANT_SUM);
+  if (result == NULL) {
+    result = RegisterIntExpr(RevAlloc(new PlusIntCstExpr(this, e, v)));
+    Cache()->InsertExprConstantExpression(
+        result, e, v, ModelCache::EXPR_CONSTANT_SUM);
+  }
+  return result;
 }
+
 IntExpr* Solver::MakeDifference(IntExpr* const l, IntExpr* const r) {
   CHECK_EQ(this, l->solver());
   CHECK_EQ(this, r->solver());
@@ -4991,7 +4999,14 @@ IntExpr* Solver::MakeDifference(IntExpr* const l, IntExpr* const r) {
   if (r->Bound()) {
     return MakeSum(l, -r->Min());
   }
-  return RegisterIntExpr(RevAlloc(new SubIntExpr(this, l, r)));
+  IntExpr* result = Cache()->FindExprExprExpression(
+      l, r, ModelCache::EXPR_EXPR_DIFFERENCE);
+  if (result == NULL) {
+    result = RegisterIntExpr(RevAlloc(new SubIntExpr(this, l, r)));
+    Cache()->InsertExprExprExpression(
+        result, l, r, ModelCache::EXPR_EXPR_DIFFERENCE);
+  }
+  return result;
 }
 
 IntVar* Solver::MakeIsEqualVar(IntExpr* const v1, IntExpr* const v2) {
@@ -5219,7 +5234,14 @@ IntExpr* Solver::MakeDifference(int64 v, IntExpr* const e) {
   if (v == 0) {
     return MakeOpposite(e);
   }
-  return RegisterIntExpr(RevAlloc(new SubIntCstExpr(this, e, v)));
+  IntExpr* result = Cache()->FindExprConstantExpression(
+      e, v, ModelCache::EXPR_CONSTANT_DIFFERENCE);
+  if (result == NULL) {
+    result = RegisterIntExpr(RevAlloc(new SubIntCstExpr(this, e, v)));
+    Cache()->InsertExprConstantExpression(
+        result, e, v, ModelCache::EXPR_CONSTANT_DIFFERENCE);
+  }
+  return result;
 }
 
 IntExpr* Solver::MakeOpposite(IntExpr* const e) {
@@ -5227,11 +5249,16 @@ IntExpr* Solver::MakeOpposite(IntExpr* const e) {
   if (e->Bound()) {
     return MakeIntConst(-e->Min());
   }
-  if (e->IsVar()) {
-    return RegisterIntVar(RevAlloc(new OppIntExpr(this, e))->Var());
-  } else {
-    return RegisterIntExpr(RevAlloc(new OppIntExpr(this, e)));
+  IntExpr* result = Cache()->FindExprExpression(e, ModelCache::EXPR_OPPOSITE);
+  if (result == NULL) {
+    if (e->IsVar()) {
+      result = RegisterIntVar(RevAlloc(new OppIntExpr(this, e))->Var());
+    } else {
+      result = RegisterIntExpr(RevAlloc(new OppIntExpr(this, e)));
+    }
+    Cache()->InsertExprExpression(result, e, ModelCache::EXPR_OPPOSITE);
   }
+  return result;
 }
 
 IntExpr* Solver::MakeProd(IntExpr* const e, int64 v) {

@@ -1420,11 +1420,11 @@ class ModelCache {
     VAR_VAR_CONSTRAINT_MAX,
   };
 
-  enum VarExpressionType {
-    VAR_OPPOSITE = 0,
-    VAR_ABS,
-    VAR_SQUARE,
-    VAR_EXPRESSION_MAX,
+  enum ExprExpressionType {
+    EXPR_OPPOSITE = 0,
+    EXPR_ABS,
+    EXPR_SQUARE,
+    EXPR_EXPRESSION_MAX,
   };
 
   enum VarConstantExpressionType {
@@ -1534,13 +1534,13 @@ class ModelCache {
 
   // Var Expressions.
 
-  virtual IntExpr* FindVarExpression(
-      IntVar* const var,
-      VarExpressionType type) const = 0;
+  virtual IntExpr* FindExprExpression(
+      IntExpr* const expr,
+      ExprExpressionType type) const = 0;
 
-  virtual void InsertVarExpression(IntExpr* const expression,
-                                   IntVar* const var,
-                                   VarExpressionType type) = 0;
+  virtual void InsertExprExpression(IntExpr* const expression,
+                                    IntExpr* const expr,
+                                    ExprExpressionType type) = 0;
 
   // Var Constant Expressions .
 
