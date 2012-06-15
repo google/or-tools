@@ -5379,7 +5379,12 @@ IntExpr* Solver::MakeAbs(IntExpr* const e) {
   } else if (e->Max() <= 0) {
     return MakeOpposite(e);
   }
-  return RegisterIntExpr(RevAlloc(new IntAbs(this, e)));
+  IntExpr* result = Cache()->FindExprExpression(e, ModelCache::EXPR_ABS);
+  if (result == NULL) {
+    result = RegisterIntExpr(RevAlloc(new IntAbs(this, e)));
+    Cache()->InsertExprExpression(result, e, ModelCache::EXPR_ABS);
+  }
+  return result;
 }
 
 IntExpr* Solver::MakeSquare(IntExpr* const e) {
@@ -5388,10 +5393,16 @@ IntExpr* Solver::MakeSquare(IntExpr* const e) {
     const int64 v = e->Min();
     return MakeIntConst(v * v);
   }
-  if (e->Min() >= 0) {
-    return RegisterIntExpr(RevAlloc(new PosIntSquare(this, e)));
+  IntExpr* result = Cache()->FindExprExpression( e, ModelCache::EXPR_SQUARE);
+  if (result == NULL) {
+    if (e->Min() >= 0) {
+      result = RegisterIntExpr(RevAlloc(new PosIntSquare(this, e)));
+    } else {
+      result = RegisterIntExpr(RevAlloc(new IntSquare(this, e)));
+    }
+    Cache()->InsertExprExpression(result, e, ModelCache::EXPR_SQUARE);
   }
-  return RegisterIntExpr(RevAlloc(new IntSquare(this, e)));
+  return result;
 }
 
 IntExpr* Solver::MakeMin(IntExpr* const l, IntExpr* const r) {
