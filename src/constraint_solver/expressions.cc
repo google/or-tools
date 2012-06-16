@@ -3912,7 +3912,7 @@ class DivIntPosCstExpr : public BaseIntExpr {
     if (m >= 0) {
       expr_->SetMax((m + 1) * value_ - 1);
     } else {
-      expr_->SetMax(m * value);
+      expr_->SetMax(m * value_);
     }
   }
   virtual string name() const {
