@@ -1829,6 +1829,34 @@ class Solver {
                              int64 capacity,
                              const string& name);
 
+  // This constraint forces that, for any integer t, the sum of the demands
+  // corresponding to an interval containing t does not exceed the given
+  // capacity.
+  //
+  // Intervals and demands should be vectors of equal size.
+  //
+  // Demands should only contain non-negative values. Zero values are supported,
+  // and the corresponding intervals are filtered out, as they neither impact
+  // nor are impacted by this constraint.
+  Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                             const std::vector<int64>& demands,
+                             IntVar* const capacity,
+                             const string& name);
+
+  // This constraint forces that, for any integer t, the sum of the demands
+  // corresponding to an interval containing t does not exceed the given
+  // capacity.
+  //
+  // Intervals and demands should be vectors of equal size.
+  //
+  // Demands should only contain non-negative values. Zero values are supported,
+  // and the corresponding intervals are filtered out, as they neither impact
+  // nor are impacted by this constraint.
+  Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                             const std::vector<int>& demands,
+                             IntVar* const capacity,
+                             const string& name);
+
   // ----- Assignments -----
 
   // This method creates an empty assignment.

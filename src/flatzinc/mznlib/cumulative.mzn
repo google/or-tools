@@ -10,6 +10,11 @@ predicate fixed_cumulative(array[int] of var int: s,
                            array[int] of int: r,
                            int: b);
 
+predicate var_cumulative(array[int] of var int: s,
+                         array[int] of int: d,
+                         array[int] of int: r,
+                         var int: b);
+
 predicate variable_cumulative(array[int] of var int: s,
                               array[int] of var int: d,
                               array[int] of var int: r,
@@ -39,6 +44,12 @@ predicate cumulative(array[int] of var int: s,
                      array[int] of int: r,
                      int: b) =
     fixed_cumulative(s, d, r, b);
+
+predicate cumulative(array[int] of var int: s,
+                     array[int] of int: d,
+                     array[int] of int: r,
+                     var int: b) =
+    var_cumulative(s, d, r, b);
 
 predicate cumulative(array[int] of var int: s,
                      array[int] of var int: d,

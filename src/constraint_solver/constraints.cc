@@ -889,15 +889,17 @@ class VariableModulo : public Constraint {
 
   virtual void Post() {
     Solver* const s = solver();
-    IntVar* const div = s->MakeDiv(x_, mod_)->Var();
-    s->AddConstraint(s->MakeLess(y_, mod_));
-    s->AddConstraint(s->MakeGreaterOrEqual(y_, Zero()));
-    s->AddConstraint(s->MakeGreater(mod_, Zero()));
-    s->AddConstraint(s->MakeEquality(y_, s->MakeProd(div, mod_)->Var()));
+    IntVar* const d = s->MakeIntVar(std::min(x_->Min(), -x_->Max()),
+                                    std::max(x_->Max(), -x_->Min()));
+    s->AddConstraint(s->MakeEquality(x_, s->MakeSum(s->MakeProd(mod_, d), y_)->Var()));
+    s->AddConstraint(s->MakeGreater(y_, s->MakeOpposite(s->MakeAbs(mod_))->Var()));
+    s->AddConstraint(s->MakeLess(y_, s->MakeAbs(mod_)->Var()));
+    s->AddConstraint(s->MakeGreaterOrEqual(d, s->MakeMin(x_, s->MakeOpposite(x_))->Var()));
+    s->AddConstraint(s->MakeLessOrEqual(d, s->MakeMax(x_, s->MakeOpposite(x_))->Var()));
   }
 
   virtual void InitialPropagate() {
-    mod_->SetMin(1);
+    mod_->RemoveValue(0);
   }
 
  private:

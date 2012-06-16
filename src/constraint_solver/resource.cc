@@ -2189,4 +2189,110 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
                                            capacity,
                                            name));
 }
+
+Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                                   const std::vector<int64>& demands,
+                                   IntVar* const capacity,
+                                   const string& name) {
+  CHECK_EQ(intervals.size(), demands.size());
+  for (int i = 0; i < intervals.size(); ++i) {
+    CHECK_GE(demands[i], 0);
+  }
+  if (capacity->Bound()) {
+    return MakeCumulative(intervals, demands, capacity->Min(), name);
+  }
+  std::vector<IntervalVar*> a_intervals;
+  std::vector<int64> a_demands;
+  int64 horizon_min = kint64max;
+  int64 horizon_max = kint64min;
+  for (int i = 0; i < demands.size(); ++i) {
+    if (demands[i] > 0) {
+      a_intervals.push_back(intervals[i]);
+      a_demands.push_back(demands[i]);
+      horizon_max = std::max(horizon_max, intervals[i]->EndMax());
+      horizon_min = std::min(horizon_min, intervals[i]->StartMin());
+    }
+  }
+  const int64 total_duration = horizon_max = horizon_max + 1;
+  const int64 capacity_min = std::max(capacity->Min(), 0LL);
+  const int64 capacity_max = capacity->Max();
+  const int64 delta_capacity = capacity_max - capacity_min;
+  std::vector<IntVar*> o_vars;  // Optional variables.
+  std::vector<int64> o_coefs;
+  for (int64 mult = 1; mult <= delta_capacity; mult *= 2) {
+    const string name =
+        StringPrintf("VariableCapacity<%" GG_LL_FORMAT "d>", mult);
+    IntervalVar* const var = MakeFixedDurationIntervalVar(horizon_min,
+                                                          horizon_min,
+                                                          total_duration,
+                                                          true,
+                                                          name);
+    a_intervals.push_back(var);
+    a_demands.push_back(mult);
+    o_vars.push_back(var->PerformedExpr()->Var());
+    o_coefs.push_back(mult);
+  }
+  o_vars.push_back(capacity);
+  o_coefs.push_back(1);
+  AddConstraint(MakeScalProdEquality(o_vars, o_coefs, capacity_max));
+  return RevAlloc(new CumulativeConstraint(this,
+                                           a_intervals.data(),
+                                           a_demands.data(),
+                                           a_intervals.size(),
+                                           capacity_max,
+                                           name));
+}
+
+Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                                   const std::vector<int>& demands,
+                                   IntVar* const capacity,
+                                   const string& name) {
+  CHECK_EQ(intervals.size(), demands.size());
+  for (int i = 0; i < intervals.size(); ++i) {
+    CHECK_GE(demands[i], 0);
+  }
+  if (capacity->Bound()) {
+    return MakeCumulative(intervals, demands, capacity->Min(), name);
+  }
+  std::vector<IntervalVar*> a_intervals;
+  std::vector<int64> a_demands;
+  int64 horizon_min = kint64max;
+  int64 horizon_max = kint64min;
+  for (int i = 0; i < demands.size(); ++i) {
+    if (demands[i] > 0) {
+      a_intervals.push_back(intervals[i]);
+      a_demands.push_back(demands[i]);
+      horizon_max = std::max(horizon_max, intervals[i]->EndMax());
+      horizon_min = std::min(horizon_min, intervals[i]->StartMin());
+    }
+  }
+  const int64 total_duration = horizon_max = horizon_max + 1;
+  const int64 capacity_min = std::max(capacity->Min(), 0LL);
+  const int64 capacity_max = capacity->Max();
+  const int64 delta_capacity = capacity_max - capacity_min;
+  std::vector<IntVar*> o_vars;  // Optional variables.
+  std::vector<int64> o_coefs;
+  for (int64 mult = 1; mult <= delta_capacity; mult *= 2) {
+    const string name =
+        StringPrintf("VariableCapacity<%" GG_LL_FORMAT "d>", mult);
+    IntervalVar* const var = MakeFixedDurationIntervalVar(horizon_min,
+                                                          horizon_min,
+                                                          total_duration,
+                                                          true,
+                                                          name);
+    a_intervals.push_back(var);
+    a_demands.push_back(mult);
+    o_vars.push_back(var->PerformedExpr()->Var());
+    o_coefs.push_back(mult);
+  }
+  o_vars.push_back(capacity);
+  o_coefs.push_back(1);
+  AddConstraint(MakeScalProdEquality(o_vars, o_coefs, capacity_max));
+  return RevAlloc(new CumulativeConstraint(this,
+                                           a_intervals.data(),
+                                           a_demands.data(),
+                                           a_intervals.size(),
+                                           capacity_max,
+                                           name));
+}
 }  // namespace operations_research
