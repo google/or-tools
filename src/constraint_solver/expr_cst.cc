@@ -487,6 +487,12 @@ Constraint* Solver::MakeIsDifferentCstCt(IntVar* const var,
   if (value == var->Max()) {
     return MakeIsLessOrEqualCstCt(var, value - 1, boolvar);
   }
+  if (!var->Contains(value)) {
+    return MakeEquality(boolvar, 1LL);
+  }
+  if (var->Bound() && var->Value() == value) {
+    return MakeEquality(boolvar, Zero());
+  }
   if (boolvar->Bound()) {
     if (boolvar->Min() == 0) {
       return MakeEquality(var, value);
