@@ -3896,16 +3896,24 @@ class DivIntPosCstExpr : public BaseIntExpr {
   }
   virtual ~DivIntPosCstExpr() {}
   virtual int64 Min() const {
-    return PosIntDivDown(expr_->Min(), value_);
+    return expr_->Min() / value_;
   }
   virtual void SetMin(int64 m) {
-    expr_->SetMin(m * value_);
+    if (m >= 0) {
+      expr_->SetMin(m * value_);
+    } else {
+      expr_->SetMin((m - 1) * value_ + 1);
+    }
   }
   virtual int64 Max() const {
-    return PosIntDivDown(expr_->Max(), value_);
+    return expr_->Max() / value_;
   }
   virtual void SetMax(int64 m) {
-    expr_->SetMax((m + 1) * value_ - 1);
+    if (m >= 0) {
+      expr_->SetMax((m + 1) * value_ - 1);
+    } else {
+      expr_->SetMax(m * value);
+    }
   }
   virtual string name() const {
     return StringPrintf("(%s div %" GG_LL_FORMAT "d)",
@@ -5444,7 +5452,7 @@ IntExpr* Solver::MakeDiv(IntExpr* const e, int64 v) {
   CHECK(e != NULL);
   CHECK_EQ(this, e->solver());
   if (e->Bound()) {
-    return MakeIntConst(PosIntDivDown(e->Min(), v));
+    return MakeIntConst(e->Min() / v);
   } else if (v == 1) {
     return e;
   } else if (v == -1) {
