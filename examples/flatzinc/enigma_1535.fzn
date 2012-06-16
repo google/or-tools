@@ -1,0 +1,17 @@
+var 100001..999999: INT____00001 :: is_defined_var :: var_is_introduced;
+var 100000..999998: INT____00002 :: is_defined_var :: var_is_introduced;
+var 100000..999999: x1 :: output_var = INT____00001;
+array [1..6] of var 0..9: x1_a;
+var 100000..999999: x2 :: output_var = INT____00002;
+array [1..6] of var 0..9: x2_a;
+constraint int_eq(x2_a[1], x1_a[6]);
+constraint int_eq(x2_a[2], x1_a[5]);
+constraint int_eq(x2_a[3], x1_a[4]);
+constraint int_eq(x2_a[4], x1_a[3]);
+constraint int_eq(x2_a[5], x1_a[2]);
+constraint int_eq(x2_a[6], x1_a[1]);
+constraint int_lin_eq([-1, 100000, 10000, 1000, 100, 10, 1], [INT____00001, x1_a[1], x1_a[2], x1_a[3], x1_a[4], x1_a[5], x1_a[6]], 0) :: defines_var(INT____00001);
+constraint int_lin_eq([-1, 100000, 10000, 1000, 100, 10, 1], [INT____00002, x2_a[1], x2_a[2], x2_a[3], x2_a[4], x2_a[5], x2_a[6]], 0) :: defines_var(INT____00002);
+constraint int_lt(INT____00002, INT____00001);
+constraint int_mod(INT____00001, INT____00002, 0);
+solve  :: int_search([x1_a[1], x1_a[2], x1_a[3], x1_a[4], x1_a[5], x1_a[6], x2_a[1], x2_a[2], x2_a[3], x2_a[4], x2_a[5], x2_a[6], INT____00001, INT____00002], first_fail, indomain_min, complete) satisfy;
