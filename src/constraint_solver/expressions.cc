@@ -306,7 +306,7 @@ class DomainIntVar : public IntVar {
       IntVar* boolvar = NULL;
       if (variable_->Contains(value)) {
         if (variable_->Bound()) {
-          boolvar = solver()->MakeIntConst(0);
+          boolvar = solver()->MakeIntConst(1);
         } else {
           const string vname =
               variable_->HasName() ?
@@ -317,6 +317,7 @@ class DomainIntVar : public IntVar {
                                             value);
           boolvar = solver()->MakeBoolVar(bname);
         }
+        active_watchers_.Incr(solver());
       } else {
         boolvar = variable_->solver()->MakeIntConst(0);
       }
@@ -3081,29 +3082,62 @@ IntVar* OppIntExpr::CastToVar() {
 
 class TimesIntPosCstExpr : public BaseIntExpr {
  public:
-  TimesIntPosCstExpr(Solver* const s, IntExpr* const e, int64 v);
-  virtual ~TimesIntPosCstExpr();
+  TimesIntPosCstExpr(Solver* const s, IntExpr* const e, int64 v)
+      : BaseIntExpr(s), expr_(e), value_(v) {
+    CHECK_GE(v, 0);
+  }
+
+  virtual ~TimesIntPosCstExpr(){}
+
   virtual int64 Min() const {
-    return CapProd(expr_->Min(), value_);
+    return expr_->Min() * value_;
   }
-  virtual void SetMin(int64 m);
+
+  virtual void SetMin(int64 m) {
+    expr_->SetMin(PosIntDivUp(m, value_));
+  }
+
   virtual int64 Max() const {
-    return CapProd(expr_->Max(), value_);
+    return expr_->Max() * value_;
   }
-  virtual void SetMax(int64 m);
-  virtual bool Bound() const { return (expr_->Bound()); }
+
+  virtual void SetMax(int64 m) {
+    expr_->SetMax(PosIntDivDown(m, value_));
+  }
+
+  virtual bool Bound() const {
+    return (expr_->Bound());
+  }
+
   virtual string name() const {
     return StringPrintf("(%s * %" GG_LL_FORMAT "d)",
                         expr_->name().c_str(), value_);
   }
+
   virtual string DebugString() const {
     return StringPrintf("(%s * %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), value_);
   }
+
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
-  virtual IntVar* CastToVar();
+
+  virtual IntVar* CastToVar() {
+    Solver* const s = solver();
+    IntVar* var = NULL;
+    if (expr_->IsVar() &&
+        reinterpret_cast<IntVar*>(expr_)->VarType() == BOOLEAN_VAR) {
+      var = s->RegisterIntVar(s->RevAlloc(
+          new TimesPosCstBoolVar(s,
+                                 reinterpret_cast<BooleanVar*>(expr_),
+                                 value_)));
+    } else {
+      var = s->RegisterIntVar(
+          s->RevAlloc(new TimesPosCstIntVar(s, expr_->Var(), value_)));
+    }
+    return var;
+  }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
@@ -3118,42 +3152,81 @@ class TimesIntPosCstExpr : public BaseIntExpr {
   const int64 value_;
 };
 
-TimesIntPosCstExpr::TimesIntPosCstExpr(Solver* const s,
-                                       IntExpr* const e,
-                                       int64 v)
-    : BaseIntExpr(s), expr_(e), value_(v) {
-  CHECK_GE(v, 0);
-}
-
-TimesIntPosCstExpr::~TimesIntPosCstExpr() {}
-
-void TimesIntPosCstExpr::SetMin(int64 m) {
-  if (m != kint64min) {
-    expr_->SetMin(PosIntDivUp(m, value_));
+class SafeTimesIntPosCstExpr : public BaseIntExpr {
+ public:
+  SafeTimesIntPosCstExpr(Solver* const s, IntExpr* const e, int64 v)
+      : BaseIntExpr(s), expr_(e), value_(v) {
+    CHECK_GE(v, 0);
   }
-}
 
-void TimesIntPosCstExpr::SetMax(int64 m) {
-  if (m != kint64max) {
-    expr_->SetMax(PosIntDivDown(m, value_));
-  }
-}
+  virtual ~SafeTimesIntPosCstExpr(){}
 
-IntVar* TimesIntPosCstExpr::CastToVar() {
-  Solver* const s = solver();
-  IntVar* var = NULL;
-  if (expr_->IsVar() &&
-      reinterpret_cast<IntVar*>(expr_)->VarType() == BOOLEAN_VAR) {
-    var = s->RegisterIntVar(s->RevAlloc(
-        new TimesPosCstBoolVar(s,
-                               reinterpret_cast<BooleanVar*>(expr_),
-                               value_)));
-  } else {
-    var = s->RegisterIntVar(
-        s->RevAlloc(new TimesPosCstIntVar(s, expr_->Var(), value_)));
+  virtual int64 Min() const {
+    return CapProd(expr_->Min(), value_);
   }
-  return var;
-}
+
+  virtual void SetMin(int64 m) {
+    if (m != kint64min) {
+      expr_->SetMin(PosIntDivUp(m, value_));
+    }
+  }
+
+  virtual int64 Max() const {
+    return CapProd(expr_->Max(), value_);
+  }
+
+  virtual void SetMax(int64 m) {
+    if (m != kint64max) {
+      expr_->SetMax(PosIntDivDown(m, value_));
+    }
+  }
+
+  virtual bool Bound() const {
+    return (expr_->Bound());
+  }
+
+  virtual string name() const {
+    return StringPrintf("(%s * %" GG_LL_FORMAT "d)",
+                        expr_->name().c_str(), value_);
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("(%s * %" GG_LL_FORMAT "d)",
+                        expr_->DebugString().c_str(), value_);
+  }
+
+  virtual void WhenRange(Demon* d) {
+    expr_->WhenRange(d);
+  }
+
+  virtual IntVar* CastToVar() {
+    Solver* const s = solver();
+    IntVar* var = NULL;
+    if (expr_->IsVar() &&
+        reinterpret_cast<IntVar*>(expr_)->VarType() == BOOLEAN_VAR) {
+      var = s->RegisterIntVar(s->RevAlloc(
+          new TimesPosCstBoolVar(s,
+                                 reinterpret_cast<BooleanVar*>(expr_),
+                                 value_)));
+    } else {
+      var = s->RegisterIntVar(
+          s->RevAlloc(new TimesPosCstIntVar(s, expr_->Var(), value_)));
+    }
+    return var;
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kProduct, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kProduct, this);
+  }
+
+ private:
+  IntExpr* const expr_;
+  const int64 value_;
+};
 
 // ----- TimesIntNegCstExpr -----
 
@@ -5286,7 +5359,12 @@ IntExpr* Solver::MakeProd(IntExpr* const e, int64 v) {
     } else if (v == -1) {
       return MakeOpposite(e);
     } else if (v > 0) {
-      result = RegisterIntExpr(RevAlloc(new TimesIntPosCstExpr(this, e, v)));
+      if (e->Max() > kint64max / v || e->Min() < kint64min / v) {
+        result =
+            RegisterIntExpr(RevAlloc(new SafeTimesIntPosCstExpr(this, e, v)));
+      } else {
+        result = RegisterIntExpr(RevAlloc(new TimesIntPosCstExpr(this, e, v)));
+      }
     } else if (v == 0) {
       result = MakeIntConst(0);
     } else {

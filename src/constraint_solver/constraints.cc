@@ -798,9 +798,9 @@ Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
 }
 
 namespace {
-class Modulo : public Constraint {
+class IntModulo : public Constraint {
  public:
-  Modulo(Solver* const solver, IntVar* const x, int64 mod, IntVar* const y)
+  IntModulo(Solver* const solver, IntVar* const x, int64 mod, IntVar* const y)
       : Constraint(solver),
         x_(x),
         mod_(mod),
@@ -810,12 +810,12 @@ class Modulo : public Constraint {
     CHECK_GE(mod_, 0);
   }
 
-  virtual ~Modulo() {}
+  virtual ~IntModulo() {}
 
   virtual void Post() {
-    Demon* const demon = solver()->MakeConstraintInitialPropagateCallback(this);
-    x_->WhenDomain(demon);
-    y_->WhenDomain(demon);
+    demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
+    x_->WhenDomain(demon_);
+    y_->WhenDomain(demon_);
   }
 
   virtual void InitialPropagate() {
@@ -825,32 +825,46 @@ class Modulo : public Constraint {
     }
 
     y_->SetRange(0, mod_ - 1);
-    if (y_->Size() <= mod_) {
+
+    if (y_->Bound()) {
+      const int64 result = y_->Min();
       to_remove_.clear();
       for (x_iterator_->Init(); x_iterator_->Ok(); x_iterator_->Next()) {
         const int64 value = x_iterator_->Value();
-        if (!y_->Contains(value % mod_)) {
+        if (value % mod_ != result) {
           to_remove_.push_back(value);
         }
       }
       x_->RemoveValues(to_remove_);
-      to_remove_.clear();
-    }
+      demon_->inhibit(solver());
+    } else {
+      if (y_->Size() <= mod_) {
+        to_remove_.clear();
+        for (x_iterator_->Init(); x_iterator_->Ok(); x_iterator_->Next()) {
+          const int64 value = x_iterator_->Value();
+          if (!y_->Contains(value % mod_)) {
+            to_remove_.push_back(value);
+          }
+        }
+        x_->RemoveValues(to_remove_);
+        to_remove_.clear();
+      }
 
-    for (y_iterator_->Init(); y_iterator_->Ok(); y_iterator_->Next()) {
-      const int64 value = y_iterator_->Value();
-      bool support = false;
-      for (int64 w = 0; w <= x_->Max() / mod_; ++w) {
-        if (x_->Contains(w * mod_ + value)) {
-          support = true;
-          break;
+      for (y_iterator_->Init(); y_iterator_->Ok(); y_iterator_->Next()) {
+        const int64 value = y_iterator_->Value();
+        bool support = false;
+        for (int64 w = 0; w <= x_->Max() / mod_; ++w) {
+          if (x_->Contains(w * mod_ + value)) {
+            support = true;
+            break;
+          }
+        }
+        if (!support) {
+          to_remove_.push_back(value);
         }
       }
-      if (!support) {
-        to_remove_.push_back(value);
-      }
+      y_->RemoveValues(to_remove_);
     }
-    y_->RemoveValues(to_remove_);
   }
 
   virtual string DebugString() const {
@@ -867,6 +881,7 @@ class Modulo : public Constraint {
   IntVarIterator* const x_iterator_;
   IntVarIterator* const y_iterator_;
   std::vector<int64> to_remove_;
+  Demon* demon_;
 };
 
 class VariableModulo : public Constraint {
@@ -891,15 +906,26 @@ class VariableModulo : public Constraint {
     Solver* const s = solver();
     IntVar* const d = s->MakeIntVar(std::min(x_->Min(), -x_->Max()),
                                     std::max(x_->Max(), -x_->Min()));
-    s->AddConstraint(s->MakeEquality(x_, s->MakeSum(s->MakeProd(mod_, d), y_)->Var()));
-    s->AddConstraint(s->MakeGreater(y_, s->MakeOpposite(s->MakeAbs(mod_))->Var()));
+    s->AddConstraint(
+        s->MakeEquality(x_, s->MakeSum(s->MakeProd(mod_, d), y_)->Var()));
+    s->AddConstraint(
+        s->MakeGreater(y_, s->MakeOpposite(s->MakeAbs(mod_))->Var()));
     s->AddConstraint(s->MakeLess(y_, s->MakeAbs(mod_)->Var()));
-    s->AddConstraint(s->MakeGreaterOrEqual(d, s->MakeMin(x_, s->MakeOpposite(x_))->Var()));
-    s->AddConstraint(s->MakeLessOrEqual(d, s->MakeMax(x_, s->MakeOpposite(x_))->Var()));
+    s->AddConstraint(
+        s->MakeGreaterOrEqual(d, s->MakeMin(x_, s->MakeOpposite(x_))->Var()));
+    s->AddConstraint(
+        s->MakeLessOrEqual(d, s->MakeMax(x_, s->MakeOpposite(x_))->Var()));
   }
 
   virtual void InitialPropagate() {
     mod_->RemoveValue(0);
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("VariableModulo(%s, %s, %s)",
+                        x_->DebugString().c_str(),
+                        mod_->DebugString().c_str(),
+                        y_->DebugString().c_str());
   }
 
  private:
@@ -907,11 +933,89 @@ class VariableModulo : public Constraint {
   IntVar* const mod_;
   IntVar* const y_;
 };
+
+class BoundModulo : public Constraint {
+ public:
+  BoundModulo(Solver* const solver, IntVar* const x, IntVar* const mod)
+      : Constraint(solver), x_(x), mod_(mod) {
+    CHECK_NOTNULL(solver);
+    CHECK_NOTNULL(x);
+    CHECK_NOTNULL(mod);
+  }
+
+  virtual ~BoundModulo() {}
+
+  virtual void Post() {
+    Solver* const s = solver();
+    IntVar* const d = s->MakeIntVar(std::min(x_->Min(), -x_->Max()),
+                                    std::max(x_->Max(), -x_->Min()));
+    s->AddConstraint(s->MakeEquality(x_, s->MakeProd(mod_, d)->Var()));
+  }
+
+  virtual void InitialPropagate() {
+    mod_->RemoveValue(0);
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("BoundModulo(%s, %s)",
+                        x_->DebugString().c_str(),
+                        mod_->DebugString().c_str());
+  }
+
+ private:
+  IntVar* const x_;
+  IntVar* const mod_;
+};
+
+class PositiveModulo : public Constraint {
+ public:
+  PositiveModulo(Solver* const solver,
+                 IntVar* const x,
+                 IntVar* const mod,
+                 IntVar* const y)
+      : Constraint(solver),
+        x_(x),
+        mod_(mod),
+        y_(y) {
+    CHECK_NOTNULL(solver);
+    CHECK_NOTNULL(x);
+    CHECK_NOTNULL(mod);
+    CHECK_NOTNULL(y);
+  }
+
+  virtual ~PositiveModulo() {}
+
+  virtual void Post() {
+    Solver* const s = solver();
+    IntVar* const d = s->MakeIntVar(1, x_->Max());
+    s->AddConstraint(
+        s->MakeEquality(x_, s->MakeSum(s->MakeProd(mod_, d), y_)->Var()));
+    s->AddConstraint(s->MakeLess(y_, mod_));
+  }
+
+  virtual void InitialPropagate() {
+    mod_->RemoveValue(0);
+    y_->SetMin(0);
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("PositiveModulo(%s, %s, %s)",
+                        x_->DebugString().c_str(),
+                        mod_->DebugString().c_str(),
+                        y_->DebugString().c_str());
+  }
+
+ private:
+  IntVar* const x_;
+  IntVar* const mod_;
+  IntVar* const y_;
+};
+
 }  // namespace
 Constraint* Solver::MakeModuloConstraint(IntVar* const x,
                                          int64 mod,
                                          IntVar* const y) {
-  return RevAlloc(new Modulo(this, x, mod, y));
+  return RevAlloc(new IntModulo(this, x, mod, y));
 }
 
 Constraint* Solver::MakeModuloConstraint(IntVar* const x,
@@ -919,6 +1023,10 @@ Constraint* Solver::MakeModuloConstraint(IntVar* const x,
                                          IntVar* const y) {
   if (mod->Bound()) {
     return MakeModuloConstraint(x, mod->Min(), y);
+  } else if (x->Min() >= 0 && y->Min() >= 0 && mod->Min() >= 0) {
+    return RevAlloc(new PositiveModulo(this, x, mod, y));
+  } else if (y->Bound() && y->Min() == 0) {
+    return RevAlloc(new BoundModulo(this, x, mod));
   } else {
     return RevAlloc(new VariableModulo(this, x, mod, y));
   }
