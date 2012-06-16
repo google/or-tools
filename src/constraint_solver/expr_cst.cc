@@ -255,7 +255,7 @@ DiffCst::DiffCst(Solver* const s, IntVar* const var, int64 value)
     : Constraint(s), var_(var), value_(value), demon_(NULL) {}
 
 void DiffCst::InitialPropagate() {
-  if (var_->Size() >= 0xFFFFFFFF) {
+  if (var_->Size() >= 0xFFFFFF) {
     demon_ = MakeConstraintDemon0(solver(),
                                   this,
                                   &DiffCst::BoundPropagate,

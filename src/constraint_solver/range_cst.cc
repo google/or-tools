@@ -333,12 +333,18 @@ void DiffVar::Post() {
 
 void DiffVar::InitialPropagate() {
   if (left_->Bound()) {
-    right_->RemoveValue(left_->Min());  // we use min instead of value
-    // because we do not check again if the variable is bound
-    // when the variable is bound, Min() == Max() == Value()
+    if (right_->Size() < 0xFFFFFF) {
+      right_->RemoveValue(left_->Min());  // we use min instead of value
+    } else {
+      solver()->AddConstraint(solver()->MakeNonEquality(right_, left_->Min()));
+    }
   }
   if (right_->Bound()) {
-    left_->RemoveValue(right_->Min());  // see above
+    if (left_->Size() < 0xFFFFFF) {
+      left_->RemoveValue(right_->Min());  // see above
+    } else {
+      solver()->AddConstraint(solver()->MakeNonEquality(left_, right_->Min()));
+    }
   }
 }
 

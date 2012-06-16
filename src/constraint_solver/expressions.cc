@@ -363,11 +363,15 @@ class DomainIntVar : public IntVar {
       }
     }
 
-    void ProcessWatcher(int index) {
+    void ProcessWatcher(int64 index) {
       IntVar* const boolvar = watchers_.At(index);
       DCHECK(boolvar != NULL);
       if (boolvar->Min() == 0) {
-        variable_->RemoveValue(index);
+        if (variable_->Size() < 0xFFFFFF) {
+          variable_->RemoveValue(index);
+        } else {
+          solver()->AddConstraint(solver()->MakeNonEquality(variable_, index));
+        }
       } else {
         variable_->SetValue(index);
       }
@@ -5053,6 +5057,13 @@ Constraint* Solver::MakeIsEqualCt(IntExpr* const v1,
     return MakeIsEqualCstCt(v2->Var(), v1->Min(), b);
   } else if (v2->Bound()) {
     return MakeIsEqualCstCt(v1->Var(), v2->Min(), b);
+  }
+  if (b->Bound()) {
+    if (b->Min() == 0) {
+      return MakeNonEquality(v1->Var(), v2->Var());
+    } else {
+      return MakeEquality(v1->Var(), v2->Var());
+    }
   }
   return MakeIsEqualCstCt(MakeDifference(v1, v2)->Var(), 0, b);
 }
