@@ -3385,7 +3385,7 @@ void TimesSetMin(IntExpr* const left,
                  IntExpr* const right,
                  IntExpr* const minus_left,
                  IntExpr* const minus_right,
-                 int m) {
+                 int64 m) {
   if (left->Min() >= 0) {
     if (right->Min() >= 0) {
       SetPosPosMinExpr(left, right, m);
