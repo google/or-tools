@@ -56,8 +56,6 @@
  */
 
 namespace operations_research {
-class SetVar {};
-
 /**
  * \brief A space that can be initialized with a %FlatZinc model
  *
@@ -81,16 +79,17 @@ class FlatZincModel {
 
   void InitOutput(AST::Array* const output);
 
-  /// Create new integer variable from specification
+  /// Creates a new integer variable from specification.
   void NewIntVar(const std::string& name, IntVarSpec* const vs);
   // Skips the creation of the variable.
   void SkipIntVar();
-  /// Create new Boolean variable from specification
+  /// Creates a new boolean variable from specification.
   int IntVarCount() const { return integer_variables_.size(); }
   void NewBoolVar(const std::string& name, BoolVarSpec* const vs);
   // Skips the creation of the variable.
   void SkipBoolVar();
-
+  // Creates a new set variable from specification.
+  void NewSetVar(const std::string& name, SetVarSpec* const vs);
 
   IntVar* GetIntVar(AST::Node* const node);
 
@@ -108,6 +107,14 @@ class FlatZincModel {
 
   void SetBooleanVariable(int index, IntVar* const var) {
     boolean_variables_[index] = var;
+  }
+
+  SetVar* SetVariable(int index) const {
+    return set_variables_[index];
+  }
+
+  void SetSetVariable(int index, SetVar* const var) {
+    set_variables_[index] = var;
   }
 
   /// Post a constraint specified by \a ce
@@ -170,7 +177,8 @@ class FlatZincModel {
   /// The Boolean variables
   std::vector<IntVar*> boolean_variables_;
   /// The set variables
-  std::vector<SetVar> sv;
+  std::vector<SetVar*> set_variables_;
+  // Useful for search.
   std::vector<IntVar*> active_variables_;
   std::vector<IntVar*> introduced_variables_;
   bool parsed_ok_;

@@ -4210,6 +4210,30 @@ class SequenceVar : public PropagationBaseObject {
   hash_set<int> last_set_;
 };
 
+// ----- Class Set Var -----
+
+class SetVar : public PropagationBaseObject {
+ public:
+  SetVar(Solver* const s, int64 min_value, int64 max_value);
+  SetVar(Solver* const s, const std::vector<int64>& values);
+  SetVar(Solver* const s, const std::vector<int>& values);
+  virtual ~SetVar();
+
+  IntVar* Var(int64 value) const;
+  IntVar* CardVar() const;
+
+  virtual string DebugString() const;
+
+  int64 SetMin() const;
+  int64 SetMax() const;
+
+ private:
+  const int64 min_value_;
+  const int64 max_value_;
+  std::vector<IntVar*> elements_;
+  IntVar* card_var_;
+};
+
 // --------- Assignments ----------------------------
 
 // ---------- Assignment Elements ----------

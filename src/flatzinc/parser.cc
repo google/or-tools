@@ -349,11 +349,24 @@ void ParserState::CreateModel() {
     }
   }
 
-  // for (unsigned int i=0; i<set_variables_.size(); i++) {
-  //   if (!hadError) {
-  //     model->newSetVar(static_cast<Set_Variables_pec*>(set_variables_[i]));
-  //   }
-  // }
+  array_index = 0;
+  for (unsigned int i = 0; i < set_variables_.size(); i++) {
+    if (!hadError) {
+      const std::string& raw_name = set_variables_[i]->Name();
+      std::string name;
+      if (raw_name[0] == '[') {
+        name = StringPrintf("%s[%d]", raw_name.c_str() + 1, ++array_index);
+      } else {
+        if (array_index == 0) {
+          name = raw_name;
+        } else {
+          name = StringPrintf("%s[%d]", raw_name.c_str(), array_index + 1);
+          array_index = 0;
+        }
+      }
+      model_->NewSetVar(name, set_variables_[i]);
+    }
+  }
 
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     if (!hadError) {

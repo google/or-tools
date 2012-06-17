@@ -282,34 +282,57 @@ class FloatVarSpec : public VarSpec {
 /// Specification for set variables
 class SetVarSpec : public VarSpec {
  public:
-  Option<AST::SetLit*> upperBound;
+  Option<AST::SetLit*> domain_;
   SetVarSpec(const string& name, bool introduced)
       : VarSpec(name, introduced, false, false),
         own_domain_(false) {
-    upperBound = Option<AST::SetLit*>::none();
+    domain_ = Option<AST::SetLit*>::none();
   }
   SetVarSpec(const string& name,
              const Option<AST::SetLit*>& v,
              bool introduced, bool own_domain)
       : VarSpec(name, introduced, false, false),
         own_domain_(own_domain) {
-    upperBound = v;
+    domain_ = v;
 
   }
   SetVarSpec(const string& name, AST::SetLit* v, bool introduced)
       : VarSpec(name, introduced, false, true),
         own_domain_(false) {
-    upperBound = Option<AST::SetLit*>::some(v);
+    domain_ = Option<AST::SetLit*>::some(v);
   }
   SetVarSpec(const string& name, const Alias& eq, bool introduced)
       : VarSpec(name, introduced, true, false),
         own_domain_(false) {
     i = eq.v;
   }
-  ~SetVarSpec(void) {
-    if (!alias && upperBound.defined() && own_domain_)
-      delete upperBound.value();
+  virtual ~SetVarSpec(void) {
+    if (!alias && domain_.defined() && own_domain_)
+      delete domain_.value();
   }
+
+  virtual string DebugString() const {
+    if (alias) {
+      return StringPrintf(
+          "SetVarSpec(name = %s, alias to = %d)",
+          name.c_str(),
+          i);
+    } else if (assigned) {
+      return StringPrintf(
+          "SetVarSpec(name = %s, assigned to = %d)",
+          name.c_str(),
+          i);
+    } else {
+      return StringPrintf(
+          "SetVarSpec(name = %s, id = %d, domain = %s)",
+          name.c_str(),
+          i,
+          (domain_.defined() ?
+           domain_.value()->DebugString().c_str() :
+           "no domain"));
+    }
+  }
+
 
  private:
   const bool own_domain_;
