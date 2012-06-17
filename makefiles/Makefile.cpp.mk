@@ -188,6 +188,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/sched_search.$O\
 	$(OBJ_DIR)/search.$O\
 	$(OBJ_DIR)/search_limit.pb.$O\
+	$(OBJ_DIR)/set_var.$O\
 	$(OBJ_DIR)/softgcc.$O\
 	$(OBJ_DIR)/table.$O\
 	$(OBJ_DIR)/timetabling.$O\
@@ -311,6 +312,9 @@ $(GEN_DIR)/constraint_solver/search_limit.pb.cc:$(SRC_DIR)/constraint_solver/sea
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/constraint_solver/search_limit.proto
 
 $(GEN_DIR)/constraint_solver/search_limit.pb.h:$(GEN_DIR)/constraint_solver/search_limit.pb.cc
+
+$(OBJ_DIR)/set_var.$O:$(SRC_DIR)/constraint_solver/set_var.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/set_var.cc $(OBJ_OUT)set_var.$O
 
 $(OBJ_DIR)/softgcc.$O:$(SRC_DIR)/constraint_solver/softgcc.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/softgcc.cc $(OBJ_OUT)softgcc.$O
