@@ -425,10 +425,18 @@ class BoundsAllDifferent : public BaseAllDifferent {
   void PropagateValue(int index) {
     const int64 to_remove = vars_[index]->Value();
     for (int j = 0; j < index; j++) {
-      vars_[j]->RemoveValue(to_remove);
+      if (vars_[j]->Size() < 0xFFFFFF) {
+        vars_[j]->RemoveValue(to_remove);
+      } else {
+        solver()->AddConstraint(solver()->MakeNonEquality(vars_[j], to_remove));
+      }
     }
     for (int j = index + 1; j < size_; j++) {
-      vars_[j]->RemoveValue(to_remove);
+      if (vars_[j]->Size() < 0xFFFFFF) {
+        vars_[j]->RemoveValue(to_remove);
+      } else {
+        solver()->AddConstraint(solver()->MakeNonEquality(vars_[j], to_remove));
+      }
     }
   }
 
