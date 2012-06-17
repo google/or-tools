@@ -116,6 +116,8 @@ SetVar::SetVar(Solver* const s, const std::vector<int>& values)
   card_var_ = s->MakeSum(elements_)->Var();
 }
 
+SetVar::~SetVar() {}
+
 IntVar* SetVar::Var(int64 index) const {
   DCHECK_GE(index, min_value_);
   DCHECK_LE(index, max_value_);

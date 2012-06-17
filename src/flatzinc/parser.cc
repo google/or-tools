@@ -451,6 +451,15 @@ void ParserState::AddBoolVarDomainConstraint(int var_id,
   }
 }
 
+void ParserState::AddSetVarDomainConstraint(int var_id,
+                                            AST::SetLit* const dom) {
+  if (dom != NULL) {
+    VLOG(1) << "Adding set var domain constraint (" << var_id
+            << ") : " << dom->DebugString();
+    set_domain_constraints_.push_back(std::make_pair(var_id, dom));
+  }
+}
+
 int ParserState::FindEndIntegerVariable(int index) {
   while (int_variables_[index]->alias) {
     index = int_variables_[index]->i;

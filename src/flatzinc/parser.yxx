@@ -285,7 +285,6 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
       pp->int_variables_.push_back(
           new IntVarSpec($4, Alias(arg->getIntVar()), introduced));
       pp->AddIntVarDomainConstraint(pp->int_variables_.size() - 1, $2.value());
-
     } else {
       yyassert(pp, false, "Invalid var int initializer.");
     }
@@ -352,10 +351,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
       delete arg;
     }
     if (!pp->hadError) {
-      LOG(FATAL) << "Not implemented - 2";
-      // pp->AddDomainConstraint("set_subset",
-      //                         new AST::SetVar(pp->set_variables_.size()-1),
-      //                         $4);
+      pp->AddSetVarDomainConstraint(pp->set_variables_.size() - 1, $4.value());
     }
   } else {
     pp->set_variables_.push_back(new SetVarSpec($6, $4,introduced, true));
@@ -529,12 +525,8 @@ var_par_id annotations vardecl_set_var_array_init
             pp->set_variables_.push_back((*vsv)[i]);
           }
           if (!pp->hadError && $11.defined()) {
-            LOG(FATAL) << "Not implemented - 4";
-            // Option<AST::SetLit*> opt =
-            //     Option<AST::SetLit*>::some(new AST::SetLit(*$11.value()));
-            // pp->AddDomainConstraint("set_subset",
-            //                         new AST::SetVar(vars[i]),
-            //                         opt);
+            AST::SetLit* const domain = new AST::SetLit(*$11.value());
+            pp->AddSetVarDomainConstraint(vars[i], domain);
           }
         }
       }
