@@ -43,6 +43,9 @@ class SetVar : public PropagationBaseObject {
 
   virtual string DebugString() const;
 
+  int64 SetMin() const;
+  int64 SetMax() const;
+
  private:
   const int64 min_value_;
   const int64 max_value_;
@@ -121,6 +124,14 @@ IntVar* SetVar::Var(int64 index) const {
 
 IntVar* SetVar::CardVar() const {
   return card_var_;
+}
+
+int64 SetVar::SetMin() const {
+  return min_value_;
+}
+
+int64 SetVar::SetMax() const {
+  return max_value_;
 }
 
 string SetVar::DebugString() const {
