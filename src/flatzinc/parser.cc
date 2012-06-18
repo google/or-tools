@@ -121,7 +121,10 @@ void ParserState::ComputeViableTarget(
       id == "int_times" ||
       id == "array_var_int_element" ||
       id == "array_int_element" ||
-      id == "int_abs") {
+      id == "int_abs" ||
+      id == "int_lin_eq" ||
+      id == "int_max" ||
+      id == "int_min") {
     // Defines an int var.
     const int define = FindTarget(spec->annotations());
     if (define != CtSpec::kNoDefinition) {
