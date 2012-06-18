@@ -198,7 +198,8 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
         if (args->hasAtom("indomain_max")) {
           vstr = Solver::ASSIGN_MAX_VALUE;
         }
-        if (args->hasAtom("indomain_median")) {
+        if (args->hasAtom("indomain_median") ||
+            args->hasAtom("indomain_middle")) {
           vstr = Solver::ASSIGN_CENTER_VALUE;
         }
         if (args->hasAtom("indomain_random")) {
