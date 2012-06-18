@@ -417,17 +417,21 @@ var_par_id annotations vardecl_int_var_array_init
           for (int i = 0; i < $5 - 1; i++) {
             vars[i] = pp->int_variables_.size();
             if ($9.defined()) {
-              Option<AST::SetLit*> copy = Option<AST::SetLit*>::some($9.value()->Copy());
+              Option<AST::SetLit*> copy =
+                  Option<AST::SetLit*>::some($9.value()->Copy());
               pp->int_variables_.push_back(
-                  new IntVarSpec(arrayname, copy, !print, true));
+                  new IntVarSpec(arrayname, copy, false, true));
+              // new IntVarSpec(arrayname, copy, !print, true));
             } else {
               pp->int_variables_.push_back(
-                  new IntVarSpec(arrayname, $9, !print, true));
+                  new IntVarSpec(arrayname, $9, false, true));
+              // new IntVarSpec(arrayname, $9, !print, true));
             }
           }
           vars[$5 - 1] = pp->int_variables_.size();
           pp->int_variables_.push_back(
-              new IntVarSpec($11, $9, !print, true));
+              new IntVarSpec($11, $9, false, true));
+          // new IntVarSpec($11, $9, !print, true));
         }
       }
     }

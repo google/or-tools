@@ -176,12 +176,13 @@ class IntVarSpec : public VarSpec {
           i);
     } else {
       return StringPrintf(
-          "IntVarSpec(name = %s, id = %d, domain = %s)",
+          "IntVarSpec(name = %s, id = %d, domain = %s%s)",
           name.c_str(),
           i,
           (domain_.defined() ?
            domain_.value()->DebugString().c_str() :
-           "no domain"));
+           "no domain"),
+          (introduced ? ", introduced" : ""));
     }
   }
 

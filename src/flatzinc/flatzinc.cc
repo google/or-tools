@@ -85,10 +85,14 @@ void FlatZincModel::NewIntVar(const std::string& name, IntVarSpec* const vs) {
     }
     VLOG(1) << "  - creates "
             << integer_variables_[int_var_count - 1]->DebugString();
-    if (!vs->introduced) {
-      active_variables_.push_back(integer_variables_[int_var_count - 1]);
-    } else {
-      introduced_variables_.push_back(integer_variables_[int_var_count - 1]);
+    if (!integer_variables_[int_var_count - 1]->Bound()) {
+      if (!vs->introduced) {
+        active_variables_.push_back(integer_variables_[int_var_count - 1]);
+        VLOG(1) << "  - add as active";
+      } else {
+        introduced_variables_.push_back(integer_variables_[int_var_count - 1]);
+        VLOG(1) << "  - add as introduced";
+      }
     }
   }
 }
@@ -106,10 +110,12 @@ void FlatZincModel::NewBoolVar(const std::string& name, BoolVarSpec* const vs) {
     boolean_variables_[bool_var_count++] = solver_.MakeBoolVar(name);
     VLOG(1) << "  - creates "
             << boolean_variables_[bool_var_count - 1]->DebugString();
-    if (!vs->introduced) {
-      active_variables_.push_back(boolean_variables_[bool_var_count - 1]);
-    } else {
-      introduced_variables_.push_back(boolean_variables_[bool_var_count - 1]);
+    if (!boolean_variables_[bool_var_count - 1]->Bound()) {
+      if (!vs->introduced) {
+        active_variables_.push_back(boolean_variables_[bool_var_count - 1]);
+      } else {
+        introduced_variables_.push_back(boolean_variables_[bool_var_count - 1]);
+      }
     }
   }
 }
