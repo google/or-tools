@@ -175,6 +175,22 @@ void ParserState::ComputeDependencies(const hash_set<int>& candidates,
 
 void ParserState::CreateModel() {
   hash_set<int> candidates;
+  hash_set<int> true_booleans;
+  for (int i = 0; i < constraints_.size(); ++i) {
+    CtSpec* const spec = constraints_[i];
+    if (spec->Id() == "array_bool_and" &&
+        spec->Arg(1)->isBool() &&
+        spec->Arg(1)->getBool() == 1) {
+      VLOG(1) << "  - forcing array_bool_and to 1 on " << spec->DebugString();
+      AST::Array* const array_variables = spec->Arg(0)->getArray();
+      const int size = array_variables->a.size();
+      for (int i = 0; i < size; ++i) {
+        AST::Node* const a = array_variables->a[i];
+        true_booleans.insert(a->getBoolVar());
+      }
+    }
+  }
+
   // Add aliasing constraints.
   for (int i = 0; i < int_variables_.size(); ++i) {
     IntVarSpec* const spec = int_variables_[i];
@@ -381,7 +397,7 @@ void ParserState::CreateModel() {
     if (!hadError) {
       CtSpec* const spec = constraints_[i];
       VLOG(1) << "Constraint " << constraints_[i]->DebugString();
-      model_->PostConstraint(constraints_[i]);
+      model_->PostConstraint(constraints_[i], true_booleans);
     }
   }
 

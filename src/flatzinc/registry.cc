@@ -80,7 +80,7 @@ class ModelBuilder {
   /// Add posting function \a p with identifier \a id
   void Register(const std::string& id, Builder p);
   /// Post constraint specified by \a ce
-  void Post(FlatZincModel* const model, CtSpec* const spec);
+  void Post(FlatZincModel* const model, const string& id, CtSpec* const spec);
 
  private:
   /// The actual builders.
@@ -89,8 +89,10 @@ class ModelBuilder {
 
 static ModelBuilder global_model_builder;
 
-void ModelBuilder::Post(FlatZincModel* const model, CtSpec* const spec) {
-  std::map<std::string, Builder>::iterator i = r.find(spec->Id());
+void ModelBuilder::Post(FlatZincModel* const model,
+                        const string& id,
+                        CtSpec* const spec) {
+  std::map<std::string, Builder>::iterator i = r.find(id);
   if (i == r.end()) {
     throw Error("ModelBuilder",
                 std::string("Constraint ") + spec->Id() + " not found");
@@ -1433,9 +1435,22 @@ class SetBuilder {
 SetBuilder __set_Builder;
 }  // namespace
 
-void FlatZincModel::PostConstraint(CtSpec* const spec) {
+void FlatZincModel::PostConstraint(CtSpec* const spec,
+                                   const hash_set<int>& true_booleans ) {
   try {
-    global_model_builder.Post(this, spec);
+    const string& id = spec->Id();
+    if (id.find("_reif") != string::npos &&
+        spec->Arg(spec->NumArgs() - 1)->isBoolVar() &&
+        ContainsKey(true_booleans,
+                    spec->Arg(spec->NumArgs() - 1)->getBoolVar())) {
+      string new_id = id;
+      new_id.resize(new_id.size() - 5);
+      global_model_builder.Post(this, new_id, spec);
+      const int bool_no =  spec->Arg(spec->NumArgs() - 1)->getBoolVar();
+      SetBooleanVariable(bool_no, solver_.MakeIntConst(1));
+    } else {
+      global_model_builder.Post(this, spec->Id(), spec);
+    }
   } catch (AST::TypeError& e) {
     throw Error("Type error", e.what());
   }

@@ -118,7 +118,7 @@ class FlatZincModel {
   }
 
   /// Post a constraint specified by \a ce
-  void PostConstraint(CtSpec* const spec);
+  void PostConstraint(CtSpec* const spec, const hash_set<int>& true_booleans);
 
   /// Post the solve item
   void Satisfy(AST::Array* const annotation);

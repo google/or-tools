@@ -250,7 +250,7 @@ class BoolVarSpec : public VarSpec {
     i = eq.v;
   }
 
-  ~BoolVarSpec(void) {
+  ~BoolVarSpec() {
     if (!alias && !assigned && domain_.defined() && own_domain_)
       delete domain_.value();
   }
