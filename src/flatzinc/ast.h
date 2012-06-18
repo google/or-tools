@@ -43,6 +43,7 @@
 #include <iostream>
 #include <cstdlib>
 
+#include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
 
@@ -105,7 +106,7 @@ namespace operations_research { namespace AST {
     int getSetVar(void);
 
     /// Cast this node to an integer node
-    int getInt(void);
+    int64 getInt(void);
     /// Cast this node to a Boolean node
     bool getBool(void);
     /// Cast this node to a Float node
@@ -152,10 +153,10 @@ namespace operations_research { namespace AST {
   /// Integer literal node
   class IntLit : public Node {
   public:
-    int i;
-    IntLit(int i0) : i(i0) {}
+    int64 i;
+    IntLit(int64 i0) : i(i0) {}
     virtual string DebugString() const {
-      return StringPrintf("i(%d)", i);
+      return StringPrintf("i(%" GG_LL_FORMAT "d)", i);
     }
   };
   /// Float literal node
@@ -413,7 +414,7 @@ namespace operations_research { namespace AST {
       return a->i;
     throw TypeError("set variable expected");
   }
-  inline int Node::getInt(void) {
+  inline int64 Node::getInt(void) {
     if (IntLit* a = dynamic_cast<IntLit*>(this))
       return a->i;
     throw TypeError("integer literal expected");

@@ -131,7 +131,7 @@ class ParserState {
   SymbolTable<std::vector<int> > set_var_array_map_;
   SymbolTable<std::vector<int> > int_value_array_map_;
   SymbolTable<std::vector<int> > bool_value_array_map_;
-  SymbolTable<int> int_map_;
+  SymbolTable<int64> int_map_;
   SymbolTable<bool> bool_map_;
   SymbolTable<AST::SetLit> set_map_;
   SymbolTable<std::vector<AST::SetLit> > set_value_array_map_;

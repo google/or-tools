@@ -48,8 +48,8 @@ namespace {
 
 Constraint* MakeStrongScalProdEquality(Solver* const solver,
                                        std::vector<IntVar*>& variables,
-                                       std::vector<int>& coefficients,
-                                       int rhs) {
+                                       std::vector<int64>& coefficients,
+                                       int64 rhs) {
   const int size = variables.size();
   IntTupleSet tuples(size);
   Solver s("build");
@@ -256,13 +256,13 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_coefficents = spec->Arg(0)->getArray();
   AST::Array* const array_variables = spec->Arg(1)->getArray();
   AST::Node* const node_rhs = spec->Arg(2);
-  const int rhs = node_rhs->getInt();
+  const int64 rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
   if (spec->defines() != CtSpec::kNoDefinition) {
-    std::vector<int> coefficients;
+    std::vector<int64> coefficients;
     std::vector<IntVar*> variables;
-    int constant = 0;
+    int64 constant = 0;
     for (int i = 0; i < size; ++i) {
       if (array_variables->a[i]->isInt()) {
         constant += array_coefficents->a[i]->getInt() *
@@ -290,7 +290,7 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
     CHECK(model->IntegerVariable(spec->defines()) == NULL);
     model->SetIntegerVariable(spec->defines(), target);
   } else {
-    std::vector<int> coefficients(size);
+    std::vector<int64> coefficients(size);
     std::vector<IntVar*> variables(size);
     for (int i = 0; i < size; ++i) {
       coefficients[i] = array_coefficents->a[i]->getInt();
@@ -311,7 +311,7 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_variables = spec->Arg(1)->getArray();
   AST::Node* const node_rhs = spec->Arg(2);
   AST::Node* const node_boolvar = spec->Arg(3);
-  const int rhs = node_rhs->getInt();
+  const int64 rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
   std::vector<int> coefficients(size);
@@ -342,10 +342,10 @@ void p_int_lin_ne(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_coefficents = spec->Arg(0)->getArray();
   AST::Array* const array_variables = spec->Arg(1)->getArray();
   AST::Node* const node_rhs = spec->Arg(2);
-  const int rhs = node_rhs->getInt();
+  const int64 rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
-  std::vector<int> coefficients(size);
+  std::vector<int64> coefficients(size);
   std::vector<IntVar*> variables(size);
 
   for (int i = 0; i < size; ++i) {
@@ -366,10 +366,10 @@ void p_int_lin_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_variables = spec->Arg(1)->getArray();
   AST::Node* const node_rhs = spec->Arg(2);
   AST::Node* const node_boolvar = spec->Arg(3);
-  const int rhs = node_rhs->getInt();
+  const int64 rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
-  std::vector<int> coefficients(size);
+  std::vector<int64> coefficients(size);
   std::vector<IntVar*> variables(size);
 
   for (int i = 0; i < size; ++i) {
@@ -390,10 +390,10 @@ void p_int_lin_le(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_coefficents = spec->Arg(0)->getArray();
   AST::Array* const array_variables = spec->Arg(1)->getArray();
   AST::Node* const node_rhs = spec->Arg(2);
-  const int rhs = node_rhs->getInt();
+  const int64 rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
-  std::vector<int> coefficients(size);
+  std::vector<int64> coefficients(size);
   std::vector<IntVar*> variables(size);
 
   for (int i = 0; i < size; ++i) {
@@ -412,10 +412,10 @@ void p_int_lin_le_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_variables = spec->Arg(1)->getArray();
   AST::Node* const node_rhs = spec->Arg(2);
   AST::Node* const node_boolvar = spec->Arg(3);
-  const int rhs = node_rhs->getInt();
+  const int64 rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
-  std::vector<int> coefficients(size);
+  std::vector<int64> coefficients(size);
   std::vector<IntVar*> variables(size);
 
   for (int i = 0; i < size; ++i) {
@@ -434,10 +434,10 @@ void p_int_lin_lt(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_coefficents = spec->Arg(0)->getArray();
   AST::Array* const array_variables = spec->Arg(1)->getArray();
   AST::Node* const node_rhs = spec->Arg(2);
-  const int rhs = node_rhs->getInt();
+  const int64 rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
-  std::vector<int> coefficients(size);
+  std::vector<int64> coefficients(size);
   std::vector<IntVar*> variables(size);
 
   for (int i = 0; i < size; ++i) {
@@ -456,10 +456,10 @@ void p_int_lin_lt_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_variables = spec->Arg(1)->getArray();
   AST::Node* const node_rhs = spec->Arg(2);
   AST::Node* const node_boolvar = spec->Arg(3);
-  const int rhs = node_rhs->getInt();
+  const int64 rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
-  std::vector<int> coefficients(size);
+  std::vector<int64> coefficients(size);
   std::vector<IntVar*> variables(size);
 
   for (int i = 0; i < size; ++i) {
@@ -480,10 +480,10 @@ void p_int_lin_ge(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_coefficents = spec->Arg(0)->getArray();
   AST::Array* const array_variables = spec->Arg(1)->getArray();
   AST::Node* const node_rhs = spec->Arg(2);
-  const int rhs = node_rhs->getInt();
+  const int64 rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
-  std::vector<int> coefficients(size);
+  std::vector<int64> coefficients(size);
   std::vector<IntVar*> variables(size);
 
   for (int i = 0; i < size; ++i) {
@@ -502,10 +502,10 @@ void p_int_lin_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_variables = spec->Arg(1)->getArray();
   AST::Node* const node_rhs = spec->Arg(2);
   AST::Node* const node_boolvar = spec->Arg(3);
-  const int rhs = node_rhs->getInt();
+  const int64 rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
-  std::vector<int> coefficients(size);
+  std::vector<int64> coefficients(size);
   std::vector<IntVar*> variables(size);
 
   for (int i = 0; i < size; ++i) {
@@ -524,10 +524,10 @@ void p_int_lin_gt(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_coefficents = spec->Arg(0)->getArray();
   AST::Array* const array_variables = spec->Arg(1)->getArray();
   AST::Node* const node_rhs = spec->Arg(2);
-  const int rhs = node_rhs->getInt();
+  const int64 rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
-  std::vector<int> coefficients(size);
+  std::vector<int64> coefficients(size);
   std::vector<IntVar*> variables(size);
 
   for (int i = 0; i < size; ++i) {
@@ -546,10 +546,10 @@ void p_int_lin_gt_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_variables = spec->Arg(1)->getArray();
   AST::Node* const node_rhs = spec->Arg(2);
   AST::Node* const node_boolvar = spec->Arg(3);
-  const int rhs = node_rhs->getInt();
+  const int64 rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
-  std::vector<int> coefficients(size);
+  std::vector<int64> coefficients(size);
   std::vector<IntVar*> variables(size);
 
   for (int i = 0; i < size; ++i) {
@@ -677,7 +677,7 @@ void p_int_mod(FlatZincModel* const model, CtSpec* const spec) {
     VLOG(1) << "  - posted " << ct->DebugString();
     solver->AddConstraint(ct);
   } else {
-    const int mod = spec->Arg(1)->getInt();
+    const int64 mod = spec->Arg(1)->getInt();
     Constraint* const ct = solver->MakeModuloConstraint(left, mod, target);
     VLOG(1) << "  - posted " << ct->DebugString();
     solver->AddConstraint(ct);
@@ -859,7 +859,7 @@ void p_array_int_element(FlatZincModel* const model, CtSpec* const spec) {
   IntVar* const shifted_index = solver->MakeSum(index, -1)->Var();
   AST::Array* const array_coefficents = spec->Arg(1)->getArray();
   const int size = array_coefficents->a.size();
-  std::vector<int> coefficients(size);
+  std::vector<int64> coefficients(size);
   for (int i = 0; i < size; ++i) {
     coefficients[i] = array_coefficents->a[i]->getInt();
   }
@@ -1100,7 +1100,7 @@ void p_global_cardinality(FlatZincModel* const model, CtSpec* const spec) {
   }
   AST::Array* const array_coefficents = spec->Arg(1)->getArray();
   const int vsize = array_coefficents->a.size();
-  std::vector<int> values(vsize);
+  std::vector<int64> values(vsize);
   for (int i = 0; i < vsize; ++i) {
     values[i] = array_coefficents->a[i]->getInt();
   }
@@ -1147,7 +1147,7 @@ void p_table_int(FlatZincModel* const model, CtSpec* const spec) {
   const int t_size = t->a.size();
   DCHECK(t_size % size == 0);
   const int num_tuples = t_size / size;
-  std::vector<int> one_tuple(size);
+  std::vector<int64> one_tuple(size);
   for (int tuple_index = 0; tuple_index < num_tuples; ++tuple_index) {
     for (int var_index = 0; var_index < size; ++var_index) {
       one_tuple[var_index] = t->a[tuple_index * size + var_index]->getInt();
@@ -1241,13 +1241,13 @@ void p_fixed_cumulative(FlatZincModel* const model, CtSpec* const spec) {
   }
   AST::Array* const array_durations = spec->Arg(1)->getArray();
   const int dsize = array_durations->a.size();
-  std::vector<int> durations(dsize);
+  std::vector<int64> durations(dsize);
   for (int i = 0; i < dsize; ++i) {
     durations[i] = array_durations->a[i]->getInt();
   }
   AST::Array* const array_usages = spec->Arg(2)->getArray();
   const int usize = array_usages->a.size();
-  std::vector<int> usages(usize);
+  std::vector<int64> usages(usize);
   for (int i = 0; i < usize; ++i) {
     usages[i] = array_usages->a[i]->getInt();
   }
@@ -1256,7 +1256,7 @@ void p_fixed_cumulative(FlatZincModel* const model, CtSpec* const spec) {
                                             durations,
                                             "",
                                             &intervals);
-  const int capacity = spec->Arg(3)->getInt();
+  const int64 capacity = spec->Arg(3)->getInt();
   Constraint* const ct = solver->MakeCumulative(intervals,
                                                 usages,
                                                 capacity,
@@ -1275,13 +1275,13 @@ void p_var_cumulative(FlatZincModel* const model, CtSpec* const spec) {
   }
   AST::Array* const array_durations = spec->Arg(1)->getArray();
   const int dsize = array_durations->a.size();
-  std::vector<int> durations(dsize);
+  std::vector<int64> durations(dsize);
   for (int i = 0; i < dsize; ++i) {
     durations[i] = array_durations->a[i]->getInt();
   }
   AST::Array* const array_usages = spec->Arg(2)->getArray();
   const int usize = array_usages->a.size();
-  std::vector<int> usages(usize);
+  std::vector<int64> usages(usize);
   for (int i = 0; i < usize; ++i) {
     usages[i] = array_usages->a[i]->getInt();
   }

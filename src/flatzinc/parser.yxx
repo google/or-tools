@@ -79,7 +79,7 @@
   %}
 
 %union {
-  int iValue;
+  int64 iValue;
   char* sValue;
   bool bValue;
   double dValue;
@@ -1039,7 +1039,7 @@ FZ_BOOL_LIT
   } else {
     std::vector<int> is;
     std::vector<AST::SetLit> isS;
-    int ival = 0;
+    int64 ival = 0;
     bool bval = false;
     if (pp->int_value_array_map_.get($1, is)) {
       AST::Array* v = new AST::Array(is.size());
@@ -1098,11 +1098,13 @@ solve_expr:
 var_par_id
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
-  if (!pp->int_var_map_.get($1, $$)) {
+  int value;
+  if (!pp->int_var_map_.get($1, value)) {
     LOG(ERROR) << "Error: unknown integer variable " << $1
                << " in line no. " << yyget_lineno(pp->yyscanner);
     pp->hadError = true;
   }
+  $$ = value;
   free($1);
 }
 | var_par_id '[' FZ_INT_LIT ']'
@@ -1197,7 +1199,7 @@ FZ_BOOL_LIT
     $$ = ia;
   } else {
     std::vector<int> is;
-    int ival = 0;
+    int64 ival = 0;
     bool bval = false;
     if (pp->int_value_array_map_.get($1, is)) {
       AST::Array* const v = new AST::Array(is.size());
