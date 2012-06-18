@@ -186,6 +186,22 @@ void p_int_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const left = model->GetIntVar(spec->Arg(0));
   IntVar* const right = model->GetIntVar(spec->Arg(1));
+  AST::Node* const node_boolvar = spec->Arg(2);
+  if (node_boolvar->isBoolVar() &&
+      node_boolvar->getBoolVar() + model->IntVarCount() == spec->defines()) {
+    IntVar* const boolvar = solver->MakeIsDifferentVar(left, right);
+    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " -> "
+            << boolvar->DebugString();;
+    CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
+    model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
+    CHECK_NOTNULL(boolvar);
+  } else {
+    IntVar* const boolvar = model->GetIntVar(node_boolvar);
+    Constraint* const ct = solver->MakeIsDifferentCt(left, right, boolvar);
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
+
   IntVar* const boolvar = model->GetIntVar(spec->Arg(2));
   Constraint* const ct = solver->MakeIsDifferentCt(left, right, boolvar);
   VLOG(1) << "  - posted " << ct->DebugString();
@@ -798,10 +814,10 @@ void p_array_int_element(FlatZincModel* const model, CtSpec* const spec) {
   }
   if (spec->Arg(2)->isIntVar() &&
       spec->defines() == spec->Arg(2)->getIntVar()) {
-    VLOG(1) << "Aliasing array_int_element";
     IntVar* const target =
         solver->MakeElement(coefficients, shifted_index)->Var();
-
+    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " -> "
+            << target->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
   } else {
@@ -976,7 +992,8 @@ void p_abs(FlatZincModel* const model, CtSpec* const spec) {
       spec->defines() == spec->Arg(1)->getIntVar()) {
     CHECK(model->IntegerVariable(spec->defines()) == NULL);
     IntVar* const target = solver->MakeAbs(left)->Var();
-    VLOG(1) << "Aliasing int_abs" << target->DebugString();
+    VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " -> "
+            << target->DebugString();
     model->SetIntegerVariable(spec->defines(), target);
   } else {
     IntVar* const target = model->GetIntVar(spec->Arg(1));

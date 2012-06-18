@@ -133,7 +133,8 @@ void ParserState::ComputeViableTarget(
              id == "array_bool_or" ||
              id == "array_bool_element" ||
              id == "int_lin_eq_reif" ||
-             id == "int_eq_reif" ) {
+             id == "int_eq_reif" ||
+             id == "int_ne_reif") {
     // Defines a bool var.
     const int bool_define = FindTarget(spec->annotations());
     if (bool_define != CtSpec::kNoDefinition) {
@@ -456,7 +457,7 @@ AST::Node* ParserState::VarRefArg(string id, bool annotation) {
 void ParserState::AddIntVarDomainConstraint(int var_id,
                                             AST::SetLit* const dom) {
   if (dom != NULL) {
-    VLOG(1) << "Adding int var domain constraint (" << var_id
+    VLOG(1) << "  - adding int var domain constraint (" << var_id
             << ") : " << dom->DebugString();
     int_domain_constraints_.push_back(std::make_pair(var_id, dom));
   }
@@ -465,7 +466,7 @@ void ParserState::AddIntVarDomainConstraint(int var_id,
 void ParserState::AddBoolVarDomainConstraint(int var_id,
                                              AST::SetLit* const dom) {
   if (dom != NULL) {
-    VLOG(1) << "Adding bool var domain constraint (" << var_id
+    VLOG(1) << "  - adding bool var domain constraint (" << var_id
             << ") : " << dom->DebugString();
     bool_domain_constraints_.push_back(std::make_pair(var_id, dom));
   }
@@ -474,7 +475,7 @@ void ParserState::AddBoolVarDomainConstraint(int var_id,
 void ParserState::AddSetVarDomainConstraint(int var_id,
                                             AST::SetLit* const dom) {
   if (dom != NULL) {
-    VLOG(1) << "Adding set var domain constraint (" << var_id
+    VLOG(1) << "  - adding set var domain constraint (" << var_id
             << ") : " << dom->DebugString();
     set_domain_constraints_.push_back(std::make_pair(var_id, dom));
   }
