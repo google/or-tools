@@ -1541,6 +1541,30 @@ class PositiveBooleanScalProdEqVar : public CastConstraint {
     max_coefficient_.SetValue(s, coefs_[size_ - 1]);
   }
 
+  PositiveBooleanScalProdEqVar(Solver* const s,
+                               const IntVar* const * vars,
+                               int size,
+                               const int* const coefs,
+                               IntVar* const var)
+      : CastConstraint(s, var),
+        size_(size),
+        vars_(new IntVar*[size_]),
+        coefs_(new int64[size_]),
+        first_unbound_backward_(size_ - 1),
+        sum_of_bound_variables_(0LL),
+        sum_of_all_variables_(0LL),
+        max_coefficient_(0) {
+    CHECK_GT(size, 0);
+    CHECK(vars != NULL);
+    CHECK(coefs != NULL);
+    memcpy(vars_.get(), vars, size_ * sizeof(*vars));
+    for (int i = 0; i < size_; ++i) {
+      coefs_[i] = coefs[i];
+    }
+    SortBothChangeConstant(vars_.get(), coefs_.get(), &size_, true);
+    max_coefficient_.SetValue(s, coefs_[size_ - 1]);
+  }
+
   virtual ~PositiveBooleanScalProdEqVar() {}
 
   virtual void Post() {
@@ -2275,6 +2299,29 @@ template<class T> Constraint* MakeScalProdEqualityFct(Solver* const solver,
   }
   return solver->MakeSumEquality(terms, solver->MakeIntConst(cst));
 }
+
+template<class T> Constraint* MakeScalProdEqualityVarFct(Solver* const solver,
+                                                         IntVar* const * vars,
+                                                         int size,
+                                                         T const * coefficients,
+                                                         IntVar* const target) {
+  if (size == 0 || AreAllNull<T>(coefficients, size)) {
+    return solver->MakeEquality(target, Zero());
+  }
+  if (AreAllBooleans(vars, size) && AreAllPositive<T>(coefficients, size)) {
+    // TODO(user) : bench BooleanScalProdEqVar with IntConst.
+    return solver->RevAlloc(new PositiveBooleanScalProdEqVar(solver,
+                                                             vars,
+                                                             size,
+                                                             coefficients,
+                                                             target));
+  }
+  std::vector<IntVar*> terms;
+  for (int i = 0; i < size; ++i) {
+    terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
+  }
+  return solver->MakeSumEquality(terms, target);
+}
 }  // namespace
 
 Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
@@ -2297,6 +2344,28 @@ Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
                                       vars.size(),
                                       coefficients.data(),
                                       cst);
+}
+
+Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                         const std::vector<int64>& coefficients,
+                                         IntVar* const target) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdEqualityVarFct<int64>(this,
+                                           vars.data(),
+                                           vars.size(),
+                                           coefficients.data(),
+                                           target);
+}
+
+Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                         const std::vector<int>& coefficients,
+                                         IntVar* const target) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdEqualityVarFct<int>(this,
+                                         vars.data(),
+                                         vars.size(),
+                                         coefficients.data(),
+                                         target);
 }
 
 namespace {

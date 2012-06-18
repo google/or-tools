@@ -1429,6 +1429,12 @@ class Solver {
   Constraint* MakeScalProdEquality(const std::vector<IntVar*>& vars,
                                    const std::vector<int>& coefficients,
                                    int64 cst);
+  Constraint* MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                   const std::vector<int64>& coefficients,
+                                   IntVar* const target);
+  Constraint* MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                   const std::vector<int>& coefficients,
+                                   IntVar* const target);
   Constraint* MakeScalProdGreaterOrEqual(const std::vector<IntVar*>& vars,
                                          const std::vector<int64>& coefficients,
                                          int64 cst);
