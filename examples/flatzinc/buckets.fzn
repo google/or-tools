@@ -383,4 +383,4 @@ constraint int_plus(INT____00007, bins[4], bins[1]) :: defines_var(INT____00007)
 constraint int_plus(INT____00011, bins[3], bins[2]) :: defines_var(INT____00011);
 constraint int_plus(INT____00013, bins[4], bins[2]) :: defines_var(INT____00013);
 constraint int_plus(INT____00019, bins[4], bins[3]) :: defines_var(INT____00019);
-solve  :: int_search(bins, first_fail, indomain_min, complete) minimize INT____00001;
+solve  :: int_search(x, first_fail, indomain_min, complete) minimize INT____00001;
