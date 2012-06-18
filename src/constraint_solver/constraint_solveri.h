@@ -1844,7 +1844,7 @@ class ModelParser : public ModelVisitor {
 
 template <class T, class C> class RevGrowingArray {
  public:
-  RevGrowingArray(int64 block_size) : block_size_(block_size) {}
+RevGrowingArray(int64 block_size) : block_size_(block_size), block_offset_(0) {}
 
   ~RevGrowingArray() {}
 
@@ -1860,7 +1860,7 @@ template <class T, class C> class RevGrowingArray {
 
   void RevInsert(Solver* const solver, int64 index, T value) {
     const int64 block_index = ComputeBlockIndex(index);
-    T* block = GetOrCreateBlock(block_index);
+    T* const block = GetOrCreateBlock(block_index);
     const int64 residual = index - block_index * block_size_;
     solver->SaveAndSetValue(reinterpret_cast<C*>(&block[residual]),
                             reinterpret_cast<C>(value));
@@ -1868,7 +1868,7 @@ template <class T, class C> class RevGrowingArray {
 
  private:
   T* NewBlock() {
-    T* result = new T[block_size_];
+    T* const result = new T[block_size_];
     for (int i = 0; i < block_size_; ++i) {
       result[i] = 0;
     }
@@ -1898,15 +1898,16 @@ template <class T, class C> class RevGrowingArray {
 
   void GrowUp(int64 block_index) {
     elements_.resize(block_index - block_offset_ + 1);
-    elements_[block_index - block_offset_] = NewBlock();
   }
 
   void GrowDown(int64 block_index) {
     const int64 delta = block_offset_ - block_index;
+    const int old_size = elements_.size();
+    block_offset_ = block_index;
     DCHECK_GT(delta, 0);
-    elements_.resize(elements_.size() + delta);
-    for (int i = elements_.size() - 1; i >= delta; ++i) {
-      elements_[i] = elements_[i - delta];
+    elements_.resize(old_size + delta);
+    for (int i = old_size - 1; i >=0; --i) {
+      elements_[i + delta] = elements_[i];
     }
     for (int i = 0; i < delta; ++i) {
       elements_[i] = NULL;
