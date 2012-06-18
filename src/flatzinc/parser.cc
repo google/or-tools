@@ -127,27 +127,27 @@ void ParserState::ComputeViableTarget(
     if (define != CtSpec::kNoDefinition) {
       CHECK(int_variables_[define]->introduced);
       candidates->insert(define);
-      VLOG(1) << id << " -> insert " << define;
+      VLOG(2) << id << " -> insert " << define;
     }
   } else if (id == "array_bool_and" ||
              id == "array_bool_or" ||
              id == "array_bool_element" ||
              id == "int_lin_eq_reif" ||
-             id == "int_eq_reif") {
+             id == "int_eq_reif" ) {
     // Defines a bool var.
     const int bool_define = FindTarget(spec->annotations());
     if (bool_define != CtSpec::kNoDefinition) {
       CHECK(bool_variables_[bool_define - int_variables_.size()]->introduced);
       candidates->insert(bool_define);
-      VLOG(1) << id << " -> insert " << bool_define;
+      VLOG(2) << id << " -> insert " << bool_define;
     }
-  }else if (id == "int2int") {
+  } else if (id == "int2int") {
     candidates->insert(spec->Arg(1)->getIntVar());
-    VLOG(1) << id << " -> insert " << spec->Arg(1)->getIntVar();
+    VLOG(2) << id << " -> insert " << spec->Arg(1)->getIntVar();
   } else if (id == "bool2bool") {
     const int bool_define = spec->Arg(1)->getBoolVar() + int_variables_.size();
     candidates->insert(bool_define);
-    VLOG(1) << id << " -> insert " << bool_define;
+    VLOG(2) << id << " -> insert " << bool_define;
   }
 }
 
@@ -212,7 +212,7 @@ void ParserState::CreateModel() {
     ComputeDependencies(candidates, spec);
     if (spec->defines() != CtSpec::kNoDefinition ||
         !spec->require_map()->empty()) {
-      VLOG(1) << spec->DebugString();
+      VLOG(2) << spec->DebugString();
     }
   }
 
@@ -243,21 +243,21 @@ void ParserState::CreateModel() {
   for (int i = 0; i < defines_only.size(); ++i) {
     constraints_[index++] = defines_only[i];
     defined.insert(defines_only[i]->defines());
-    VLOG(1) << "defined.insert(" << defines_only[i]->defines() << ")";
+    VLOG(2) << "defined.insert(" << defines_only[i]->defines() << ")";
   }
 
   // Topological sorting.
   hash_set<int> to_insert;
   for (int i = 0; i < defines_and_require.size(); ++i) {
     to_insert.insert(i);
-    VLOG(1) << " to_insert " << defines_and_require[i]->DebugString();
+    VLOG(2) << " to_insert " << defines_and_require[i]->DebugString();
   }
 
   while (!to_insert.empty()) {
     std::vector<int> inserted;
     for (ConstIter<hash_set<int> > it(to_insert); !it.at_end(); ++it) {
       CtSpec* const spec = defines_and_require[*it];
-      VLOG(1) << "check " << spec->DebugString();
+      VLOG(2) << "check " << spec->DebugString();
       bool ok = true;
       hash_set<int>* const required = spec->require_map();
       for (ConstIter<hash_set<int> > def(*required);
@@ -271,8 +271,8 @@ void ParserState::CreateModel() {
       if (ok) {
         inserted.push_back(*it);
         defined.insert(spec->defines());
-        VLOG(1) << "inserted.push_back " << *it;
-        VLOG(1) << "defined.insert(" << spec->defines() << ")";
+        VLOG(2) << "inserted.push_back " << *it;
+        VLOG(2) << "defined.insert(" << spec->defines() << ")";
         constraints_[index++] = spec;
       }
     }
@@ -291,12 +291,14 @@ void ParserState::CreateModel() {
 
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
-    VLOG(1) << i << " -> " << spec->DebugString();
+    VLOG(2) << i << " -> " << spec->DebugString();
   }
+
+  VLOG(1) << "Creating variables";
 
   int array_index = 0;
   for (unsigned int i = 0; i < int_variables_.size(); i++) {
-    VLOG(1) << "Var spec " << i << " -> " << int_variables_[i]->DebugString();
+    VLOG(1) << "xi(" << i << ") -> " << int_variables_[i]->DebugString();
     if (!hadError) {
       const std::string& raw_name = int_variables_[i]->Name();
       std::string name;
@@ -314,7 +316,7 @@ void ParserState::CreateModel() {
         model_->NewIntVar(name, int_variables_[i]);
       } else {
         model_->SkipIntVar();
-        VLOG(1) << "Skipping " << int_variables_[i]->DebugString();
+        VLOG(1) << "  - skipped";
         if (!int_variables_[i]->alias &&
             !int_variables_[i]->assigned &&
             int_variables_[i]->HasDomain() &&
@@ -326,7 +328,8 @@ void ParserState::CreateModel() {
   }
 
   array_index = 0;
-  for (unsigned int i=0; i<bool_variables_.size(); i++) {
+  for (unsigned int i = 0; i < bool_variables_.size(); i++) {
+    VLOG(1) << "xb(" << i << ") -> " << bool_variables_[i]->DebugString();
     if (!hadError) {
       const std::string& raw_name = bool_variables_[i]->Name();
       std::string name;
@@ -344,7 +347,7 @@ void ParserState::CreateModel() {
         model_->NewBoolVar(name, bool_variables_[i]);
       } else {
         model_->SkipBoolVar();
-        VLOG(1) << "Skipping " << bool_variables_[i]->DebugString();
+        VLOG(1) << "  - skipped";
       }
     }
   }
@@ -368,6 +371,8 @@ void ParserState::CreateModel() {
     }
   }
 
+  VLOG(1) << "Creating constraints";
+
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     if (!hadError) {
       CtSpec* const spec = constraints_[i];
@@ -375,6 +380,8 @@ void ParserState::CreateModel() {
       model_->PostConstraint(constraints_[i]);
     }
   }
+
+  VLOG(1) << "Adding domain constraints";
 
   for (unsigned int i = int_domain_constraints_.size(); i--;) {
     if (!hadError) {

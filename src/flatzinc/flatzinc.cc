@@ -83,7 +83,7 @@ void FlatZincModel::NewIntVar(const std::string& name, IntVarSpec* const vs) {
             solver_.MakeIntVar(domain->s, name);
       }
     }
-    VLOG(1) << "Create IntVar: "
+    VLOG(1) << "  - creates "
             << integer_variables_[int_var_count - 1]->DebugString();
     if (!vs->introduced) {
       active_variables_.push_back(integer_variables_[int_var_count - 1]);
@@ -104,7 +104,7 @@ void FlatZincModel::NewBoolVar(const std::string& name, BoolVarSpec* const vs) {
     boolean_variables_[bool_var_count++] = solver_.MakeIntConst(vs->i, name);
   } else {
     boolean_variables_[bool_var_count++] = solver_.MakeBoolVar(name);
-    VLOG(1) << "Create BoolVar: "
+    VLOG(1) << "  - creates "
             << boolean_variables_[bool_var_count - 1]->DebugString();
     if (!vs->introduced) {
       active_variables_.push_back(boolean_variables_[bool_var_count - 1]);

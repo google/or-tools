@@ -248,8 +248,8 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
     variables[i] = model->GetIntVar(array_variables->a[i]);
   }
   Constraint* const ct =
-      strong_propagation ?
-      MakeStrongScalProdEquality(solver, variables, coefficients, rhs) :
+      // strong_propagation ?
+      // MakeStrongScalProdEquality(solver, variables, coefficients, rhs) :
       solver->MakeScalProdEquality(variables, coefficients, rhs);
   VLOG(1) << "Posted " << ct->DebugString();
   solver->AddConstraint(ct);
@@ -819,8 +819,8 @@ void p_array_var_int_element(FlatZincModel* const model, CtSpec* const spec) {
   }
   if (spec->Arg(2)->isIntVar() &&
       spec->defines() == spec->Arg(2)->getIntVar()) {
-    VLOG(1) << "Aliasing array_var_int_element";
     IntVar* const target = solver->MakeElement(variables, shifted_index)->Var();
+    VLOG(1) << "Aliasing array_var_int_element" << target->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
   } else {
@@ -962,9 +962,9 @@ void p_abs(FlatZincModel* const model, CtSpec* const spec) {
   IntVar* const left = model->GetIntVar(spec->Arg(0));
   if (spec->Arg(1)->isIntVar() &&
       spec->defines() == spec->Arg(1)->getIntVar()) {
-    VLOG(1) << "Aliasing int_abs";
     CHECK(model->IntegerVariable(spec->defines()) == NULL);
     IntVar* const target = solver->MakeAbs(left)->Var();
+    VLOG(1) << "Aliasing int_abs" << target->DebugString();
     model->SetIntegerVariable(spec->defines(), target);
   } else {
     IntVar* const target = model->GetIntVar(spec->Arg(1));

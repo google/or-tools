@@ -299,6 +299,7 @@ class DomainIntVar : public IntVar {
     ~Watcher() {}
 
     IntVar* GetOrMakeWatcher(int64 value) {
+      CHECK_NE(solver()->state(), Solver::IN_SEARCH);
       IntVar* const watcher = watchers_.At(value);
       if (watcher != NULL) {
         return watcher;
@@ -324,10 +325,6 @@ class DomainIntVar : public IntVar {
       min_range_.SetValue(solver(), std::min(min_range_.Value(), value));
       max_range_.SetValue(solver(), std::max(max_range_.Value(), value));
       watchers_.RevInsert(variable_->solver(), value, boolvar);
-      if (!added_.Switched()) {
-        solver()->AddConstraint(this);
-        added_.Switch(solver());
-      }
       if (posted_.Switched() && !boolvar->Bound()) {
         boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
       }
@@ -339,12 +336,10 @@ class DomainIntVar : public IntVar {
       variable_->WhenDomain(var_demon_);
       const int64 max_r = max_range_.Value();
       const int64 min_r = min_range_.Value();
-      int count = 0;
       for (int64 value = min_r; value <= max_r; ++value) {
         IntVar* const boolvar = watchers_.At(value);
-        if (boolvar != NULL) {
+        if (boolvar != NULL && !boolvar->Bound()) {
           boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
-          count++;
         }
       }
       posted_.Switch(solver());
@@ -357,6 +352,13 @@ class DomainIntVar : public IntVar {
         IntVar* const boolvar = watchers_.At(value);
         if (!variable_->Contains(value)) {
           Zero(value);
+        }
+        if (boolvar->Bound()) {
+          if (boolvar->Min() == 0) {
+            variable_->RemoveValue(value);
+          } else {
+            variable_->SetValue(value);
+          }
         }
       }
       if (variable_->Bound()) {
@@ -381,7 +383,7 @@ class DomainIntVar : public IntVar {
     void ProcessVar() {
       const int64 max_r = max_range_.Value();
       const int64 min_r = min_range_.Value();
-      if (max_r - min_r < 5) {
+      if (max_r - min_r < 10000) {
         for (int64 i = min_r; i <= max_r; ++i) {
           if (!variable_->Contains(i)) {
             Zero(i);
@@ -441,7 +443,6 @@ class DomainIntVar : public IntVar {
     DomainIntVar* const variable_;
     IntVarIterator* const iterator_;
     RevGrowingArray<IntVar*, void*> watchers_;
-    RevSwitch added_;
     RevSwitch posted_;
     NumericalRev<int64> min_range_;
     NumericalRev<int64> max_range_;
@@ -497,12 +498,12 @@ class DomainIntVar : public IntVar {
 
   virtual IntVar* IsEqual(int64 value) {
     Solver* const s = solver();
-    if (value == min_.Value()) {
-      return s->MakeIsLessOrEqualCstVar(this, value);
-    }
-    if (value == max_.Value()) {
-      return s->MakeIsGreaterOrEqualCstVar(this, value);
-    }
+    // if (value == min_.Value()) {
+    //   return s->MakeIsLessOrEqualCstVar(this, value);
+    // }
+    // if (value == max_.Value()) {
+    //   return s->MakeIsGreaterOrEqualCstVar(this, value);
+    // }
     if (!Contains(value)) {
       return s->MakeIntConst(0LL);
     }
@@ -516,20 +517,17 @@ class DomainIntVar : public IntVar {
     if (cache != NULL) {
       return cache->Var();
     } else {
-      string vname = name();
-      if (vname.empty()) {
-        vname = DebugString();
-      }
-      if (watcher_ == NULL) {
-        solver()->SaveAndSetValue(
-            reinterpret_cast<void**>(&watcher_),
-            reinterpret_cast<void*>(
-                solver()->RevAlloc(new Watcher(solver(), this))));
-      }
-      IntVar* const boolvar = watcher_->GetOrMakeWatcher(value);
-      s->Cache()->InsertVarConstantExpression(
-          boolvar, this, value, ModelCache::VAR_CONSTANT_IS_EQUAL);
-      return boolvar;
+       if (watcher_ == NULL) {
+         solver()->SaveAndSetValue(
+             reinterpret_cast<void**>(&watcher_),
+             reinterpret_cast<void*>(
+                 solver()->RevAlloc(new Watcher(solver(), this))));
+         solver()->AddConstraint(watcher_);
+       }
+       IntVar* const boolvar = watcher_->GetOrMakeWatcher(value);
+       s->Cache()->InsertVarConstantExpression(
+           boolvar, this, value, ModelCache::VAR_CONSTANT_IS_EQUAL);
+       return boolvar;
     }
   }
 
@@ -3984,7 +3982,7 @@ void IntAbs::SetMin(int64 m) {
     expr_->SetMin(m);
   } else if (emax <= 0) {
     expr_->SetMax(-m);
-  } else if (expr_->IsVar()) {
+  } else if (expr_->IsVar() && m > 0) {
     reinterpret_cast<IntVar*>(expr_)->RemoveInterval(-m + 1, m - 1);
   }
 }
