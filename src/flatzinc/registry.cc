@@ -164,11 +164,11 @@ void p_int_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Node* const node_boolvar = spec->Arg(2);
   if (node_boolvar->isBoolVar() &&
       node_boolvar->getBoolVar() + model->IntVarCount() == spec->defines()) {
-    VLOG(1) << "Aliasing int_eq_reif";
     IntVar* const boolvar =
         node_right->isInt() ?
         solver->MakeIsEqualCstVar(left, node_right->getInt()) :
         solver->MakeIsEqualVar(left, model->GetIntVar(node_right));
+    VLOG(1) << "Aliasing int_eq_reif -> " << boolvar->DebugString();;
     CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
     model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
     CHECK_NOTNULL(boolvar);
@@ -676,8 +676,8 @@ void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
   }
   if (node_boolvar->isBoolVar() &&
       node_boolvar->getBoolVar() + model->IntVarCount() == spec->defines()) {
-    VLOG(1) << "Aliasing array_bool_and";
     IntVar* const boolvar = solver->MakeMin(variables)->Var();
+    VLOG(1) << "Aliasing array_bool_and -> " << boolvar->DebugString();
     CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
     model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
   } else if (node_boolvar->isBool() && node_boolvar->getBool() == 1) {
@@ -706,8 +706,8 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
   }
   if (node_boolvar->isBoolVar() &&
       node_boolvar->getBoolVar() + model->IntVarCount() == spec->defines()) {
-    VLOG(1) << "Aliasing array_bool_or";
     IntVar* const boolvar = solver->MakeMax(variables)->Var();
+    VLOG(1) << "Aliasing array_bool_or -> " << boolvar->DebugString();
     CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
     model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
   } else if (node_boolvar->isBool() && node_boolvar->getBool() == 0) {
