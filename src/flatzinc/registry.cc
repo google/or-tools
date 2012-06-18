@@ -1445,6 +1445,7 @@ void FlatZincModel::PostConstraint(CtSpec* const spec,
                     spec->Arg(spec->NumArgs() - 1)->getBoolVar())) {
       string new_id = id;
       new_id.resize(new_id.size() - 5);
+      VLOG(1) << "  - switching from " << id << " to " << new_id;
       global_model_builder.Post(this, new_id, spec);
       const int bool_no =  spec->Arg(spec->NumArgs() - 1)->getBoolVar();
       SetBooleanVariable(bool_no, solver_.MakeIntConst(1));

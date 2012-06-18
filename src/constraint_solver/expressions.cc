@@ -353,7 +353,7 @@ class DomainIntVar : public IntVar {
         if (!variable_->Contains(value)) {
           Zero(value);
         }
-        if (boolvar->Bound()) {
+        if (boolvar != NULL && boolvar->Bound()) {
           if (boolvar->Min() == 0) {
             variable_->RemoveValue(value);
           } else {
