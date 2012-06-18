@@ -163,6 +163,35 @@ class IntVarSpec : public VarSpec {
     return false;
   }
 
+  bool MergeDomain(const std::vector<int>& values) {
+    CHECK(!alias);
+    if (assigned) {
+      return false;
+    }
+    if (!domain_.defined()) {
+      domain_ =  Option<AST::SetLit*>::some(new AST::SetLit(values));
+      own_domain_ = true;
+      return true;
+    }
+    if (!own_domain_) {
+      return false;  // IMPROVE ME.
+    }
+    AST::SetLit* const domain = domain_.value();
+    if (domain->interval) {
+      const int old_min = domain->min;
+      const int old_max = domain->max;
+      for (int i = 0; i < values.size(); ++i) {
+        const int v = values[i];
+        if (v >= old_min && v <= old_max) {
+          domain->s.push_back(v);
+        }
+      }
+      domain->interval = false;
+      return true;
+    }
+    return false;
+  }
+
   virtual string DebugString() const {
     if (alias) {
       return StringPrintf(

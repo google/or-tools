@@ -536,6 +536,25 @@ void ParserState::AddConstraint(const std::string& id,
       }
     }
   }
+  if (id == "set_in") {
+    const std::vector<AST::Node*>& nodes = args->a;
+    if (nodes[0]->isIntVar() && nodes[1]->isSet()) {
+      IntVarSpec* const spec =
+          int_variables_[FindEndIntegerVariable(nodes[0]->getIntVar())];
+      AST::SetLit* const domain = nodes[1]->getSet();
+      VLOG(1) << spec->DebugString() << "Merge with " << domain;
+      bool ok = false;
+      if (domain->interval) {
+        ok = spec->MergeBounds(domain->min, domain->max);
+      } else {
+        ok = spec->MergeDomain(domain->s);
+      }
+      VLOG(1) << "  -> " << spec->DebugString();
+      if (ok) {
+        return;
+      }
+    }
+  }
   int target = CtSpec::kNoDefinition;
   constraints_.push_back(
       new CtSpec(constraints_.size(), id, args, annotations));
