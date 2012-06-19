@@ -83,7 +83,7 @@
   char* sValue;
   bool bValue;
   double dValue;
-  std::vector<int>* setValue;
+  std::vector<int64>* setValue;
   operations_research::AST::SetLit* setLit;
   std::vector<double>* floatSetValue;
   std::vector<operations_research::AST::SetLit>* setValueList;
@@ -388,7 +388,7 @@ var_par_id annotations vardecl_int_var_array_init
   yyassert(pp, $3==1, "Arrays must start at 1");
   if (!pp->hadError) {
     bool print = $12->hasCall("output_array");
-    vector<int> vars($5);
+    vector<int64> vars($5);
     if (!pp->hadError) {
       if ($13.defined()) {
         vector<IntVarSpec*>* vsv = $13.value();
@@ -456,7 +456,7 @@ var_par_id annotations vardecl_bool_var_array_init
   bool print = $12->hasCall("output_array");
   yyassert(pp, $3==1, "Arrays must start at 1");
   if (!pp->hadError) {
-    vector<int> vars($5);
+    vector<int64> vars($5);
     if ($13.defined()) {
       vector<BoolVarSpec*>* vsv = $13.value();
       yyassert(pp, vsv->size() == static_cast<unsigned int>($5),
@@ -513,7 +513,7 @@ var_par_id annotations vardecl_set_var_array_init
   bool print = $14->hasCall("output_array");
   yyassert(pp, $3==1, "Arrays must start at 1");
   if (!pp->hadError) {
-    vector<int> vars($5);
+    vector<int64> vars($5);
     if ($15.defined()) {
       vector<SetVarSpec*>* vsv = $15.value();
       yyassert(pp, vsv->size() == static_cast<unsigned int>($5),
@@ -614,7 +614,7 @@ FZ_INT_LIT
 }
 | var_par_id
 {
-  int v = 0;
+  int64 v = 0;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->int_var_map_.get($1, v))
     $$ = new IntVarSpec("", Alias(v), false);
@@ -628,7 +628,7 @@ FZ_INT_LIT
 }
 | var_par_id '[' FZ_INT_LIT ']'
 {
-  vector<int> v;
+  vector<int64> v;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->int_var_array_map_.get($1, v)) {
     yyassert(pp,static_cast<unsigned int>($3) > 0 &&
@@ -669,7 +669,7 @@ FZ_FLOAT_LIT
 { $$ = new FloatVarSpec("", $1,false); }
 | var_par_id
 {
-  int v = 0;
+  int64 v = 0;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->float_var_map_.get($1, v))
     $$ = new FloatVarSpec("", Alias(v),false);
@@ -683,7 +683,7 @@ FZ_FLOAT_LIT
 }
 | var_par_id '[' FZ_INT_LIT ']'
 {
-  vector<int> v;
+  vector<int64> v;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->float_var_array_map_.get($1, v)) {
     yyassert(pp,static_cast<unsigned int>($3) > 0 &&
@@ -723,7 +723,7 @@ FZ_BOOL_LIT
 { $$ = new BoolVarSpec("", $1,false); }
 | var_par_id
 {
-  int v = 0;
+  int64 v = 0;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->bool_var_map_.get($1, v))
     $$ = new BoolVarSpec("", Alias(v),false);
@@ -737,7 +737,7 @@ FZ_BOOL_LIT
 }
 | var_par_id '[' FZ_INT_LIT ']'
 {
-  vector<int> v;
+  vector<int64> v;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->bool_var_array_map_.get($1, v)) {
     yyassert(pp,static_cast<unsigned int>($3) > 0 &&
@@ -776,7 +776,7 @@ set_literal
 | var_par_id
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
-  int v = 0;
+  int64 v = 0;
   if (pp->set_var_map_.get($1, v)) {
     $$ = new SetVarSpec("", Alias(v),false);
   } else {
@@ -789,7 +789,7 @@ set_literal
 }
 | var_par_id '[' FZ_INT_LIT ']'
 {
-  vector<int> v;
+  vector<int64> v;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->set_var_array_map_.get($1, v)) {
     yyassert(pp,static_cast<unsigned int>($3) > 0 &&
@@ -940,25 +940,25 @@ set_literal :
 
 int_list :
 /* empty */
-{ $$ = new vector<int>(0); }
+{ $$ = new vector<int64>(0); }
 | int_list_head list_tail
 { $$ = $1; }
 
 int_list_head :
 FZ_INT_LIT
-{ $$ = new vector<int>(1); (*$$)[0] = $1; }
+{ $$ = new vector<int64>(1); (*$$)[0] = $1; }
 | int_list_head ',' FZ_INT_LIT
 { $$ = $1; $$->push_back($3); }
 
 bool_list :
 /* empty */
-{ $$ = new vector<int>(0); }
+{ $$ = new vector<int64>(0); }
 | bool_list_head list_tail
 { $$ = $1; }
 
 bool_list_head :
 FZ_BOOL_LIT
-{ $$ = new vector<int>(1); (*$$)[0] = $1; }
+{ $$ = new vector<int64>(1); (*$$)[0] = $1; }
 | bool_list_head ',' FZ_BOOL_LIT
 { $$ = $1; $$->push_back($3); }
 
@@ -1019,7 +1019,7 @@ FZ_BOOL_LIT
 { $$ = $1; }
 | var_par_id /* variable, possibly array */
 {
-  vector<int> as;
+  vector<int64> as;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->int_var_array_map_.get($1, as)) {
     AST::Array* ia = new AST::Array(as.size());
@@ -1037,7 +1037,7 @@ FZ_BOOL_LIT
       ia->a[i] = new AST::SetVar(as[i]);
     $$ = ia;
   } else {
-    std::vector<int> is;
+    std::vector<int64> is;
     std::vector<AST::SetLit> isS;
     int64 ival = 0;
     bool bval = false;
@@ -1098,7 +1098,7 @@ solve_expr:
 var_par_id
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
-  int value;
+  int64 value;
   if (!pp->int_var_map_.get($1, value)) {
     LOG(ERROR) << "Error: unknown integer variable " << $1
                << " in line no. " << yyget_lineno(pp->yyscanner);
@@ -1109,7 +1109,7 @@ var_par_id
 }
 | var_par_id '[' FZ_INT_LIT ']'
 {
-  vector<int> tmp;
+  vector<int64> tmp;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (!pp->int_var_array_map_.get($1, tmp)) {
     LOG(ERROR) << "Error: unknown integer variable array " << $1
@@ -1177,7 +1177,7 @@ FZ_BOOL_LIT
 { $$ = $1; }
 | var_par_id /* variable, possibly array */
 {
-  vector<int> as;
+  vector<int64> as;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->int_var_array_map_.get($1, as)) {
     AST::Array* const ia = new AST::Array(as.size());
@@ -1198,7 +1198,7 @@ FZ_BOOL_LIT
     }
     $$ = ia;
   } else {
-    std::vector<int> is;
+    std::vector<int64> is;
     int64 ival = 0;
     bool bval = false;
     if (pp->int_value_array_map_.get($1, is)) {

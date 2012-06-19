@@ -172,11 +172,11 @@ namespace operations_research { namespace AST {
   class SetLit : public Node {
   public:
     bool interval;
-    int min; int max;
-    std::vector<int> s;
+    int64 min; int64 max;
+    std::vector<int64> s;
     SetLit(void) {}
-    SetLit(int min0, int max0) : interval(true), min(min0), max(max0) {}
-    SetLit(const std::vector<int>& s0) : interval(false), s(s0) {}
+    SetLit(int64 min0, int64 max0) : interval(true), min(min0), max(max0) {}
+    SetLit(const std::vector<int64>& s0) : interval(false), s(s0) {}
     bool empty(void) const {
       return ( (interval && min>max) || (!interval && s.size() == 0));
     }
@@ -189,11 +189,12 @@ namespace operations_research { namespace AST {
     }
     virtual string DebugString() const {
       if (interval)
-        return StringPrintf("%d..%d", min, max);
+        return StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d", min, max);
       else {
         string output = "s({";
         for (unsigned int i = 0; i < s.size(); i++) {
-          output += StringPrintf("%d%s", s[i], (i < s.size()-1 ? ", " : "})"));
+          output += StringPrintf("%" GG_LL_FORMAT "d%s",
+                                 s[i], (i < s.size()-1 ? ", " : "})"));
         }
         return output;
       }

@@ -141,7 +141,7 @@ class IntVarSpec : public VarSpec {
       delete domain_.value();
   }
 
-  bool MergeBounds(int nmin, int nmax) {
+  bool MergeBounds(int64 nmin, int64 nmax) {
     CHECK(!alias);
     if (assigned) {
       return false;
@@ -163,7 +163,7 @@ class IntVarSpec : public VarSpec {
     return false;
   }
 
-  bool MergeDomain(const std::vector<int>& values) {
+  bool MergeDomain(const std::vector<int64>& values) {
     CHECK(!alias);
     if (assigned) {
       return false;
@@ -178,10 +178,10 @@ class IntVarSpec : public VarSpec {
     }
     AST::SetLit* const domain = domain_.value();
     if (domain->interval) {
-      const int old_min = domain->min;
-      const int old_max = domain->max;
+      const int64 old_min = domain->min;
+      const int64 old_max = domain->max;
       for (int i = 0; i < values.size(); ++i) {
-        const int v = values[i];
+        const int64 v = values[i];
         if (v >= old_min && v <= old_max) {
           domain->s.push_back(v);
         }

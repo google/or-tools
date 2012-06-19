@@ -434,7 +434,7 @@ void ParserState::CreateModel() {
 
 AST::Node* ParserState::ArrayElement(string id, unsigned int offset) {
   if (offset > 0) {
-    vector<int> tmp;
+    vector<int64> tmp;
     if (int_var_array_map_.get(id, tmp) && offset<=tmp.size())
       return new AST::IntVar(tmp[offset-1]);
     if (bool_var_array_map_.get(id, tmp) && offset<=tmp.size())
@@ -458,7 +458,7 @@ AST::Node* ParserState::ArrayElement(string id, unsigned int offset) {
 }
 
 AST::Node* ParserState::VarRefArg(string id, bool annotation) {
-  int tmp;
+  int64 tmp;
   if (int_var_map_.get(id, tmp))
     return new AST::IntVar(tmp);
   if (bool_var_map_.get(id, tmp))

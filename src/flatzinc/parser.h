@@ -121,16 +121,16 @@ class ParserState {
   const char* buf;
   unsigned int pos, length;
 
-  SymbolTable<int> int_var_map_;
-  SymbolTable<int> bool_var_map_;
-  SymbolTable<int> float_var_map_;
-  SymbolTable<int> set_var_map_;
-  SymbolTable<std::vector<int> > int_var_array_map_;
-  SymbolTable<std::vector<int> > bool_var_array_map_;
-  SymbolTable<std::vector<int> > float_var_array_map_;
-  SymbolTable<std::vector<int> > set_var_array_map_;
-  SymbolTable<std::vector<int> > int_value_array_map_;
-  SymbolTable<std::vector<int> > bool_value_array_map_;
+  SymbolTable<int64> int_var_map_;
+  SymbolTable<int64> bool_var_map_;
+  SymbolTable<int64> float_var_map_;
+  SymbolTable<int64> set_var_map_;
+  SymbolTable<std::vector<int64> > int_var_array_map_;
+  SymbolTable<std::vector<int64> > bool_var_array_map_;
+  SymbolTable<std::vector<int64> > float_var_array_map_;
+  SymbolTable<std::vector<int64> > set_var_array_map_;
+  SymbolTable<std::vector<int64> > int_value_array_map_;
+  SymbolTable<std::vector<int64> > bool_value_array_map_;
   SymbolTable<int64> int_map_;
   SymbolTable<bool> bool_map_;
   SymbolTable<AST::SetLit> set_map_;
