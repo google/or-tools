@@ -1893,7 +1893,9 @@ RevGrowingArray(int64 block_size) : block_size_(block_size), block_offset_(0) {}
   }
 
   int64 ComputeBlockIndex(int64 value) {
-    return value / block_size_ - (value < 0);
+    return value >= 0 ?
+        value / block_size_ :
+        (value - block_size_ + 1) / block_size_;
   }
 
   void GrowUp(int64 block_index) {

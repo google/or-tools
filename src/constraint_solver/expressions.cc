@@ -2398,7 +2398,7 @@ int64 PosIntDivDown(int64 e, int64 v) {
   if (e >= 0) {
     return e / v;
   } else {
-    return -(-e + v - 1) / v;
+    return (e - v + 1) / v;
   }
 }
 
