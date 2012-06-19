@@ -1846,9 +1846,13 @@ template <class T, class C> class RevGrowingArray {
  public:
 RevGrowingArray(int64 block_size) : block_size_(block_size), block_offset_(0) {}
 
-  ~RevGrowingArray() {}
+  ~RevGrowingArray() {
+    for (int i = 0; i < elements_.size(); ++i) {
+      delete [] elements_[i];
+    }
+  }
 
-  T At(int64 index) {
+  T At(int64 index) const {
     const int64 block_index = ComputeBlockIndex(index);
     if (block_index < block_offset_ ||
         block_index - block_offset_ >= elements_.size()) {
@@ -1867,7 +1871,7 @@ RevGrowingArray(int64 block_size) : block_size_(block_size), block_offset_(0) {}
   }
 
  private:
-  T* NewBlock() {
+  T* NewBlock() const {
     T* const result = new T[block_size_];
     for (int i = 0; i < block_size_; ++i) {
       result[i] = 0;
@@ -1892,7 +1896,7 @@ RevGrowingArray(int64 block_size) : block_size_(block_size), block_offset_(0) {}
     return block;
   }
 
-  int64 ComputeBlockIndex(int64 value) {
+  int64 ComputeBlockIndex(int64 value) const {
     return value >= 0 ?
         value / block_size_ :
         (value - block_size_ + 1) / block_size_;

@@ -2156,6 +2156,11 @@ Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst)
                                                MakeIntConst(cst)));
     }
   } else {
+    if (vars.size() == 1) {
+      return MakeEquality(vars[0], cst);
+    } else if (vars.size() == 2) {
+      return MakeEquality(vars[0], MakeDifference(cst, vars[1])->Var());
+    }
     if (DetectSumOverflow(vars)) {
       return RevAlloc(new SafeSumConstraint(this, vars, MakeIntConst(cst)));
     } else {

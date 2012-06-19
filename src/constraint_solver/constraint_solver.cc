@@ -2636,6 +2636,7 @@ const char ModelVisitor::kSumGreaterOrEqual[] = "SumGreaterOrEqual";
 const char ModelVisitor::kSumLessOrEqual[] = "SumLessOrEqual";
 const char ModelVisitor::kTransition[]= "Transition";
 const char ModelVisitor::kTrueConstraint[] = "TrueConstraint";
+const char ModelVisitor::kVarWatcher[] = "VarWatcher";
 
 const char ModelVisitor::kCountAssignedItemsExtension[] = "CountAssignedItems";
 const char ModelVisitor::kCountUsedBinsExtension[] = "CountUsedBins";

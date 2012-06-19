@@ -422,9 +422,12 @@ class NonReversibleCache : public ModelCache {
     STLDeleteElements(&expr_expressions_);
     STLDeleteElements(&var_constant_expressions_);
     STLDeleteElements(&var_var_expressions_);
+    STLDeleteElements(&expr_constant_expressions_);
+    STLDeleteElements(&expr_expr_expressions_);
     STLDeleteElements(&var_constant_constant_expressions_);
     STLDeleteElements(&var_constant_array_expressions_);
     STLDeleteElements(&var_array_expressions_);
+    STLDeleteElements(&var_array_constant_array_expressions_);
   }
 
   // Void Constraint.-

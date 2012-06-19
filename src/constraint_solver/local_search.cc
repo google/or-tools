@@ -2018,8 +2018,7 @@ bool RandomCompoundOperator::MakeNextNeighbor(Assignment* delta,
   for (int i = 0; i < size_; ++i) {
     indices[i] = i;
   }
-  std::random_shuffle(indices.begin(), indices.end(), rand_);
-  //std::random_shuffle(indices.begin(), indices.end());
+  random_shuffle(indices.begin(), indices.end(), rand_);
   for (int i = 0; i < size_; ++i) {
     if (operators_[indices[i]]->MakeNextNeighbor(delta, deltadelta)) {
       return true;

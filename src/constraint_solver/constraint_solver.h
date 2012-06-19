@@ -3187,6 +3187,7 @@ class ModelVisitor : public BaseObject {
   static const char kSumLessOrEqual[];
   static const char kTransition[];
   static const char kTrueConstraint[];
+  static const char kVarWatcher[];
 
   // Extension names:
   static const char kCountAssignedItemsExtension[];

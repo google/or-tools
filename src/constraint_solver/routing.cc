@@ -88,13 +88,16 @@ DEFINE_bool(routing_use_first_solution_dive, false,
 DEFINE_int64(routing_optimization_step, 1, "Optimization step.");
 
 // Filtering control
-
 DEFINE_bool(routing_use_objective_filter, true,
             "Use objective filter to speed up local search.");
 DEFINE_bool(routing_use_path_cumul_filter, true,
             "Use PathCumul constraint filter to speed up local search.");
 DEFINE_bool(routing_use_pickup_and_delivery_filter, true,
             "Use filter which filters precedence and same route constraints.");
+
+// Propagation control
+DEFINE_bool(routing_use_light_propagation, false,
+            "Use constraints with light propagation in routing model.");
 
 // Misc
 DEFINE_bool(routing_cache_callbacks, false, "Cache callback calls.");
@@ -119,6 +122,114 @@ template<> size_t hash_value<operations_research::RoutingModel::NodeIndex>(
 #endif  // _MSC_VER
 
 namespace operations_research {
+
+// Set of "light" constraints, well-suited for use within Local Search.
+// These constraints are "checking" constraints, only triggered on WhenBound
+// events. The provide very little (or no) domain filtering.
+// TODO(user): Move to core constraintsolver library.
+
+// Light one-dimension function-based element constraint ensuring:
+// var == values(index).
+// Doesn't perform bound reduction of the resulting variable until the index
+// variable is bound.
+// Ownership of the 'values' callback is taken by the constraint.
+class LightFunctionElementConstraint : public Constraint {
+ public:
+  LightFunctionElementConstraint(Solver* const solver,
+                                 IntVar* const var,
+                                 IntVar* const index,
+                                 ResultCallback1<int64, int64>* const values)
+      : Constraint(solver), var_(var), index_(index), values_(values) {
+    CHECK_NOTNULL(values_);
+    values_->CheckIsRepeatable();
+  }
+  virtual ~LightFunctionElementConstraint() {}
+  virtual void Post() {
+    Demon* demon =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &LightFunctionElementConstraint::IndexBound,
+                             "IndexBound");
+    index_->WhenBound(demon);
+  }
+  virtual void InitialPropagate() {
+    if (index_->Bound()) {
+      IndexBound();
+    }
+  }
+
+ private:
+  void IndexBound() {
+    var_->SetValue(values_->Run(index_->Value()));
+  }
+
+  IntVar* const var_;
+  IntVar* const index_;
+  scoped_ptr<ResultCallback1<int64, int64> > values_;
+};
+
+Constraint* MakeLightElement(Solver* const solver,
+                             IntVar* const var,
+                             IntVar* const index,
+                             ResultCallback1<int64, int64>* const values) {
+  return solver->RevAlloc(
+      new LightFunctionElementConstraint(solver, var, index, values));
+}
+
+// Light two-dimension function-based element constraint ensuring:
+// var == values(index1, index2).
+// Doesn't perform bound reduction of the resulting variable until the index
+// variables are bound.
+// Ownership of the 'values' callback is taken by the constraint.
+class LightFunctionElement2Constraint : public Constraint {
+ public:
+  LightFunctionElement2Constraint(
+      Solver* const solver,
+      IntVar* const var,
+      IntVar* const index1,
+      IntVar* const index2,
+      ResultCallback2<int64, int64, int64>* const values)
+      : Constraint(solver),
+        var_(var), index1_(index1), index2_(index2), values_(values) {
+    CHECK_NOTNULL(values_);
+    values_->CheckIsRepeatable();
+  }
+  virtual ~LightFunctionElement2Constraint() {}
+  virtual void Post() {
+    Demon* demon =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &LightFunctionElement2Constraint::IndexBound,
+                             "IndexBound");
+    index1_->WhenBound(demon);
+    index2_->WhenBound(demon);
+  }
+  virtual void InitialPropagate() {
+    IndexBound();
+  }
+
+ private:
+  void IndexBound() {
+    if (index1_->Bound() && index2_->Bound()) {
+      var_->SetValue(values_->Run(index1_->Value(), index2_->Value()));
+    }
+  }
+
+  IntVar* const var_;
+  IntVar* const index1_;
+  IntVar* const index2_;
+  scoped_ptr<ResultCallback2<int64, int64, int64> > values_;
+};
+
+Constraint* MakeLightElement2(
+    Solver* const solver,
+    IntVar* const var,
+    IntVar* const index1,
+    IntVar* const index2,
+    ResultCallback2<int64, int64, int64>* const values) {
+  return solver->RevAlloc(
+      new LightFunctionElement2Constraint(solver, var, index1, index2, values));
+}
 
 // Pair-based neighborhood operators, designed to move nodes by pairs (pairs
 // are static and given). These neighborhoods are very useful for Pickup and
@@ -1148,30 +1259,57 @@ void RoutingModel::CloseModel() {
   // costs.
   if (vehicles_ > 0) {
     for (int i = 0; i < size; ++i) {
-      IntExpr* expr = NULL;
-      // TODO(user): Remove the need for the homogeneous flag here once the
-      // vehicle var to cost class element constraint is fast enough.
-      if (homogeneous_costs_) {
-        expr = solver_->MakeElement(
-            NewPermanentCallback(this,
-                                 &RoutingModel::GetHomogeneousCost,
-                                 static_cast<int64>(i)),
-            nexts_[i]);
+      if (FLAGS_routing_use_light_propagation) {
+        // Only supporting positive costs.
+        // TODO(user): Detect why changing lower bound to kint64min stalls
+        // the search in GLS in some cases (Solomon instances for instance).
+        IntVar* base_cost_var = solver_->MakeIntVar(0, kint64max);
+        if (homogeneous_costs_) {
+          solver_->AddConstraint(MakeLightElement(
+              solver_.get(),
+              base_cost_var,
+              nexts_[i],
+              NewPermanentCallback(this,
+                                   &RoutingModel::GetHomogeneousCost,
+                                   static_cast<int64>(i))));
+        } else {
+          solver_->AddConstraint(MakeLightElement2(
+              solver_.get(),
+              base_cost_var,
+              nexts_[i],
+              vehicle_vars_[i],
+              NewPermanentCallback(this,
+                                   &RoutingModel::GetCost,
+                                   static_cast<int64>(i))));
+        }
+        IntVar* const var = solver_->MakeProd(base_cost_var, active_[i])->Var();
+        cost_elements.push_back(var);
       } else {
-        IntVar* const vehicle_class_var =
-            solver_->MakeElement(
-                NewPermanentCallback(this,
-                                     &RoutingModel::GetSafeVehicleCostClass),
-                vehicle_vars_[i])->Var();
-        expr = solver_->MakeElement(
-            NewPermanentCallback(this,
-                                 &RoutingModel::GetVehicleClassCost,
-                                 static_cast<int64>(i)),
-            nexts_[i],
-            vehicle_class_var);
+        IntExpr* expr = NULL;
+        // TODO(user): Remove the need for the homogeneous flag here once the
+        // vehicle var to cost class element constraint is fast enough.
+        if (homogeneous_costs_) {
+          expr = solver_->MakeElement(
+              NewPermanentCallback(this,
+                                   &RoutingModel::GetHomogeneousCost,
+                                   static_cast<int64>(i)),
+              nexts_[i]);
+        } else {
+          IntVar* const vehicle_class_var =
+              solver_->MakeElement(
+                  NewPermanentCallback(this,
+                                       &RoutingModel::GetSafeVehicleCostClass),
+                  vehicle_vars_[i])->Var();
+          expr = solver_->MakeElement(
+              NewPermanentCallback(this,
+                                   &RoutingModel::GetVehicleClassCost,
+                                   static_cast<int64>(i)),
+              nexts_[i],
+              vehicle_class_var);
+        }
+        IntVar* const var = solver_->MakeProd(expr, active_[i])->Var();
+        cost_elements.push_back(var);
       }
-      IntVar* const var = solver_->MakeProd(expr, active_[i])->Var();
-      cost_elements.push_back(var);
     }
   }
   // Penalty costs
@@ -2586,14 +2724,28 @@ const std::vector<IntVar*>& RoutingModel::GetOrMakeTransits(
     const int size = Size();
     std::vector<IntVar*> transits(size);
     for (int i = 0; i < size; ++i) {
-      IntVar* fixed_transit =
-          solver_->MakeElement(
-              NewPermanentCallback(
-                  this,
-                  &RoutingModel::WrappedEvaluator,
-                  evaluator,
-                  static_cast<int64>(i)),
-              nexts_[i])->Var();
+      IntVar* fixed_transit = NULL;
+      if (FLAGS_routing_use_light_propagation) {
+        fixed_transit = solver_->MakeIntVar(kint64min, kint64max);
+        solver_->AddConstraint(MakeLightElement(
+            solver_.get(),
+            fixed_transit,
+            nexts_[i],
+            NewPermanentCallback(
+                this,
+                &RoutingModel::WrappedEvaluator,
+                evaluator,
+                static_cast<int64>(i))));
+      } else {
+        fixed_transit =
+            solver_->MakeElement(
+                NewPermanentCallback(
+                    this,
+                    &RoutingModel::WrappedEvaluator,
+                    evaluator,
+                    static_cast<int64>(i)),
+                nexts_[i])->Var();
+      }
       if (slack_max == 0) {
         transits[i] = fixed_transit;
       } else {

@@ -299,7 +299,6 @@ class DomainIntVar : public IntVar {
     ~Watcher() {}
 
     IntVar* GetOrMakeWatcher(int64 value) {
-      CHECK_NE(solver()->state(), Solver::IN_SEARCH);
       IntVar* const watcher = watchers_.At(value);
       if (watcher != NULL) {
         return watcher;
@@ -383,7 +382,7 @@ class DomainIntVar : public IntVar {
     void ProcessVar() {
       const int64 max_r = max_range_.Value();
       const int64 min_r = min_range_.Value();
-      if (max_r - min_r < 10000) {
+      if (max_r - min_r < 5) {
         for (int64 i = min_r; i <= max_r; ++i) {
           if (!variable_->Contains(i)) {
             Zero(i);
@@ -417,6 +416,24 @@ class DomainIntVar : public IntVar {
       if (variable_->Bound()) {
         One(variable_->Min());
       }
+    }
+
+    virtual void Accept(ModelVisitor* const visitor) const {
+      visitor->BeginVisitConstraint(ModelVisitor::kVarWatcher, this);
+      visitor->VisitIntegerExpressionArgument(
+          ModelVisitor::kVariableArgument, variable_);
+      std::vector<IntVar*> all_bool_vars;
+      const int64 max_r = max_range_.Value();
+      const int64 min_r = min_range_.Value();
+      for (int64 i = min_r; i <= max_r; ++i) {
+        IntVar* const boolvar = watchers_.At(i);
+        if (boolvar != NULL) {
+          all_bool_vars.push_back(boolvar);
+        }
+      }
+      visitor->VisitIntegerVariableArrayArgument(
+          ModelVisitor::kVarsArgument, all_bool_vars);
+      visitor->EndVisitConstraint(ModelVisitor::kVarWatcher, this);
     }
 
    private:
@@ -498,12 +515,12 @@ class DomainIntVar : public IntVar {
 
   virtual IntVar* IsEqual(int64 value) {
     Solver* const s = solver();
-    // if (value == min_.Value()) {
-    //   return s->MakeIsLessOrEqualCstVar(this, value);
-    // }
-    // if (value == max_.Value()) {
-    //   return s->MakeIsGreaterOrEqualCstVar(this, value);
-    // }
+    if (value == min_.Value() && watcher_ == NULL) {
+      return s->MakeIsLessOrEqualCstVar(this, value);
+    }
+    if (value == max_.Value() && watcher_ == NULL) {
+      return s->MakeIsGreaterOrEqualCstVar(this, value);
+    }
     if (!Contains(value)) {
       return s->MakeIntConst(0LL);
     }
