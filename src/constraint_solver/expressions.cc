@@ -4149,7 +4149,8 @@ class BasePower : public BaseIntExpr {
       : BaseIntExpr(s),
         expr_(e),
         pow_(n),
-        limit_(static_cast<int64>(floor(exp(log(kint64max) / pow_)))) {}
+        limit_(static_cast<int64>(
+            floor(exp(log(static_cast<double>(kint64max)) / pow_)))) {}
 
   virtual ~BasePower() {}
 
