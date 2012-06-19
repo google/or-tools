@@ -2468,6 +2468,17 @@ void Solver::Fail() {
   searches_.back()->JumpBack();
 }
 
+// ----- Cast Expression -----
+
+IntExpr* Solver::CastExpression(IntVar* const var) const {
+  const IntegerCastInfo* const cast_info =
+      FindOrNull(cast_information_, var);
+  if (cast_info != NULL) {
+    return cast_info->expression;
+  }
+  return NULL;
+}
+
 // --- Propagation object names ---
 
 string Solver::GetName(const PropagationBaseObject* object) {
@@ -2619,6 +2630,7 @@ const char ModelVisitor::kOpposite[] = "Opposite";
 const char ModelVisitor::kPack[] = "Pack";
 const char ModelVisitor::kPathCumul[] = "PathCumul";
 const char ModelVisitor::kPerformedExpr[] = "PerformedExpression";
+const char ModelVisitor::kPower[] = "Power";
 const char ModelVisitor::kProduct[] = "Product";
 const char ModelVisitor::kScalProd[] = "ScalarProduct";
 const char ModelVisitor::kScalProdEqual[] = "ScalarProductEqual";

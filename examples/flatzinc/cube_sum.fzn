@@ -567,4 +567,5 @@ constraint int_times(x[7], x[7], INT____00214) :: defines_var(INT____00214);
 constraint int_times(x[8], x[8], INT____00216) :: defines_var(INT____00216);
 constraint int_times(x[9], x[9], INT____00218) :: defines_var(INT____00218);
 constraint int_times(x[10], x[10], INT____00220) :: defines_var(INT____00220);
+
 solve  :: int_search([x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], x[10], INT____00021], first_fail, indomain, complete) minimize INT____00021;

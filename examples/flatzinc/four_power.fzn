@@ -1,8 +1,13 @@
 predicate all_different_int(array [int] of var int: x);
 predicate count(array [int] of var int: x, var int: y, var int: c);
+predicate fixed_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, int: b);
 predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
+predicate maximum_int(var int: m, array [int] of var int: x);
+predicate minimum_int(var int: m, array [int] of var int: x);
+predicate sort(array [int] of var int: x, array [int] of var int: y);
 predicate table_bool(array [int] of var bool: x, array [int, int] of bool: t);
 predicate table_int(array [int] of var int: x, array [int, int] of int: t);
+predicate var_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, var int: b);
 var 1..160000: INT____00001 :: is_defined_var :: var_is_introduced;
 var 1..64000000: INT____00002 :: is_defined_var :: var_is_introduced;
 var 1..25600000000: INT____00003 :: is_defined_var :: var_is_introduced;
@@ -33,7 +38,7 @@ constraint int_lin_eq([-1, 1, 1, 1, 1], [INT____00016, INT____00003, INT____0000
 constraint int_times(INT____00001, x1, INT____00002) :: defines_var(INT____00002);
 constraint int_times(INT____00002, x1, INT____00003) :: defines_var(INT____00003);
 constraint int_times(INT____00004, x2, INT____00005) :: defines_var(INT____00005);
-constraint int_times(INT____00005, x3, INT____00006) :: defines_var(INT____00006);
+constraint int_times(INT____00005, x2, INT____00006) :: defines_var(INT____00006);
 constraint int_times(INT____00007, x3, INT____00008) :: defines_var(INT____00008);
 constraint int_times(INT____00008, x3, INT____00009) :: defines_var(INT____00009);
 constraint int_times(INT____00010, x4, INT____00011) :: defines_var(INT____00011);

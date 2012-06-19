@@ -1258,6 +1258,8 @@ class Solver {
   IntExpr* MakeAbs(IntExpr* const expr);
   // expr * expr
   IntExpr* MakeSquare(IntExpr* const expr);
+  // expr ^ n (n > 0)
+  IntExpr* MakePower(IntExpr* const expr, int64 n);
 
   // vals[expr]
   IntExpr* MakeElement(const std::vector<int64>& vals, IntVar* const index);
@@ -2848,6 +2850,9 @@ class Solver {
   string GetName(const PropagationBaseObject* object);
   void SetName(const PropagationBaseObject* object, const string& name);
 
+  // Internal.
+  IntExpr* CastExpression(IntVar* const var) const;
+
   const string name_;
   const SolverParameters parameters_;
   hash_map<const PropagationBaseObject*, string> propagation_object_names_;
@@ -3171,6 +3176,7 @@ class ModelVisitor : public BaseObject {
   static const char kPack[];
   static const char kPathCumul[];
   static const char kPerformedExpr[];
+  static const char kPower[];
   static const char kProduct[];
   static const char kScalProd[];
   static const char kScalProdEqual[];

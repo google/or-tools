@@ -4030,7 +4030,6 @@ int64 IntAbs::Max() const {
 
 // ----- Square -----
 
-
 // TODO(user): shouldn't we compare to kint32max^2 instead of kint64max?
 class IntSquare : public BaseIntExpr {
  public:
@@ -4102,13 +4101,17 @@ class IntSquare : public BaseIntExpr {
     visitor->EndVisitIntegerExpression(ModelVisitor::kSquare, this);
   }
 
- private:
+  IntExpr* expr() const {
+    return expr_;
+  }
+
+ protected:
   IntExpr* const expr_;
 };
 
-class PosIntSquare : public BaseIntExpr {
+class PosIntSquare : public IntSquare {
  public:
-  PosIntSquare(Solver* const s, IntExpr* const e) : BaseIntExpr(s), expr_(e) {}
+  PosIntSquare(Solver* const s, IntExpr* const e) : IntSquare(s, e) {}
   virtual ~PosIntSquare() {}
 
   virtual int64 Min() const {
@@ -4136,28 +4139,234 @@ class PosIntSquare : public BaseIntExpr {
     const int64 root = static_cast<int64>(floor(sqrt(static_cast<double>(m))));
     expr_->SetMax(root);
   }
+};
+
+// ----- EvenPower -----
+
+class BasePower : public BaseIntExpr {
+ public:
+  BasePower(Solver* const s, IntExpr* const e, int64 n)
+      : BaseIntExpr(s),
+        expr_(e),
+        pow_(n),
+        limit_(static_cast<int64>(floor(exp(log(kint64max) / pow_)))) {}
+
+  virtual ~BasePower() {}
+
   virtual bool Bound() const {
     return expr_->Bound();
   }
+
+  IntExpr* expr() const {
+    return expr_;
+  }
+
+  int64 exponant() const {
+    return pow_;
+  }
+
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
+
   virtual string name() const {
-    return StringPrintf("PosIntSquare(%s)", expr_->name().c_str());
+    return StringPrintf("IntPower(%s, %" GG_LL_FORMAT "d)",
+                        expr_->name().c_str(),
+                        pow_);
   }
+
   virtual string DebugString() const {
-    return StringPrintf("PosIntSquare(%s)", expr_->DebugString().c_str());
+    return StringPrintf("IntPower(%s, %" GG_LL_FORMAT "d)",
+                        expr_->DebugString().c_str(),
+                        pow_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitIntegerExpression(ModelVisitor::kSquare, this);
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kPower, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
-    visitor->EndVisitIntegerExpression(ModelVisitor::kSquare, this);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, pow_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kPower, this);
   }
 
- private:
+ protected:
+  int64 Pown(int64 value) const {
+    if (value >= limit_) {
+      return kint64max;
+    }
+    if (value <= -limit_) {
+      if (pow_ % 2 == 0) {
+        return kint64max;
+      } else {
+        return kint64min;
+      }
+    }
+
+    int64 result = value;
+    for (int i = 1; i < pow_; ++i) {
+      result *= value;
+    }
+    return result;
+  }
+
+  int64 SqrnDown(int64 value) const {
+    if (value == kint64min) {
+      return kint64min;
+    }
+    if (value == kint64max) {
+      return kint64max;
+    }
+    int64 res = 0;
+    if (value >= 0) {
+      const double sq =  exp(log(value) / pow_);
+      res = static_cast<int64>(floor(sq));
+    } else {
+      CHECK_EQ(1, pow_ % 2);
+      const double sq =  exp(log(-value) / pow_);
+      res = -static_cast<int64>(ceil(sq));
+    }
+    const int64 pow_res = Pown(res + 1);
+    if (pow_res <= value) {
+      return res + 1;
+    } else {
+      return res;
+    }
+  }
+
+  int64 SqrnUp(int64 value) const {
+    if (value == kint64min) {
+      return kint64min;
+    }
+    if (value == kint64max) {
+      return kint64max;
+    }
+    int64 res = 0;
+    if (value >= 0) {
+      const double sq =  exp(log(value) / pow_);
+      res = static_cast<int64>(ceil(sq));
+    } else {
+      CHECK_EQ(1, pow_ % 2);
+      const double sq =  exp(log(-value) / pow_);
+      res = -static_cast<int64>(floor(sq));
+    }
+    const int64 pow_res = Pown(res - 1);
+    if (pow_res >= value) {
+      return res - 1;
+    } else {
+      return res;
+    }
+  }
+
   IntExpr* const expr_;
+  const int64 pow_;
+  const int64 limit_;
+};
+
+class IntEvenPower : public BasePower {
+ public:
+  IntEvenPower(Solver* const s, IntExpr* const e, int64 n)
+      : BasePower(s, e, n) {}
+
+  virtual ~IntEvenPower() {}
+
+  virtual int64 Min() const {
+    const int64 emin = expr_->Min();
+    if (emin >= 0) {
+      return Pown(emin);
+    }
+    const int64 emax = expr_->Max();
+    if (emax < 0) {
+      return Pown(emax);
+    }
+    return 0LL;
+  }
+  virtual void SetMin(int64 m) {
+    if (m <= 0) {
+      return;
+    }
+    const int64 emin = expr_->Min();
+    const int64 emax = expr_->Max();
+    const int64 root = SqrnUp(m);
+    if (emin >= 0) {
+      expr_->SetMin(root);
+    } else if (emax <= 0) {
+      expr_->SetMax(-root);
+    } else if (expr_->IsVar()) {
+      reinterpret_cast<IntVar*>(expr_)->RemoveInterval(-root + 1, root - 1);
+    }
+  }
+
+  virtual int64 Max() const {
+    return std::max(Pown(expr_->Min()), Pown(expr_->Max()));
+  }
+
+  virtual void SetMax(int64 m) {
+    if (m < 0) {
+      solver()->Fail();
+    }
+    if (m == kint64max) {
+      return;
+    }
+    const int64 root = SqrnDown(m);
+    expr_->SetRange(-root, root);
+  }
+};
+
+class PosIntEvenPower : public BasePower {
+ public:
+  PosIntEvenPower(Solver* const s,
+                  IntExpr* const e,
+                  int64 pow) : BasePower(s, e, pow) {}
+
+  virtual ~PosIntEvenPower() {}
+
+  virtual int64 Min() const {
+    return Pown(expr_->Min());
+  }
+
+  virtual void SetMin(int64 m) {
+    if (m <= 0) {
+      return;
+    }
+    expr_->SetMin(SqrnUp(m));
+  }
+  virtual int64 Max() const {
+    return Pown(expr_->Max());
+  }
+
+  virtual void SetMax(int64 m) {
+    if (m < 0) {
+      solver()->Fail();
+    }
+    if (m == kint64max) {
+      return;
+    }
+    expr_->SetMax(SqrnDown(m));
+  }
+};
+
+class IntOddPower : public BasePower {
+ public:
+  IntOddPower(Solver* const s, IntExpr* const e, int64 n)
+      : BasePower(s, e, n)  {}
+
+  virtual ~IntOddPower() {}
+
+  virtual int64 Min() const {
+    return Pown(expr_->Min());
+  }
+
+  virtual void SetMin(int64 m) {
+    expr_->SetMin(SqrnUp(m));
+  }
+
+  virtual int64 Max() const {
+    return Pown(expr_->Max());
+  }
+
+  virtual void SetMax(int64 m) {
+    expr_->SetMax(SqrnDown(m));
+  }
 };
 
 // ----- Min(expr, expr) -----
@@ -5406,12 +5615,68 @@ IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
   if (l->Bound()) {
     return MakeProd(r, l->Min());
   }
+
   if (r->Bound()) {
     return MakeProd(l, r->Min());
   }
-  if (l == r) {
-    return MakeSquare(l);
+
+  IntExpr* left = l;
+  IntExpr* right = r;
+  int64 left_exponant = 1;
+  int64 right_exponant = 1;
+  if (dynamic_cast<BasePower*>(l) != NULL) {
+    BasePower* const left_power = dynamic_cast<BasePower*>(l);
+    left = left_power->expr();
+    left_exponant = left_power->exponant();
   }
+  if (dynamic_cast<IntSquare*>(l) != NULL) {
+    IntSquare* const left_power = dynamic_cast<IntSquare*>(l);
+    left = left_power->expr();
+    left_exponant = 2;
+  }
+  if (left->IsVar()) {
+    IntVar* const left_var = left->Var();
+    IntExpr* const left_sub = CastExpression(left_var);
+    if (left_sub != NULL && dynamic_cast<BasePower*>(left_sub) != NULL) {
+      BasePower* const left_power = dynamic_cast<BasePower*>(left_sub);
+      left = left_power->expr();
+      left_exponant = left_power->exponant();
+    }
+    if (left_sub != NULL && dynamic_cast<IntSquare*>(left_sub) != NULL) {
+      IntSquare* const left_power = dynamic_cast<IntSquare*>(left_sub);
+      left = left_power->expr();
+      left_exponant = 2;
+    }
+  }
+  if (dynamic_cast<BasePower*>(r) != NULL) {
+    BasePower* const right_power = dynamic_cast<BasePower*>(l);
+    right = right_power->expr();
+    right_exponant = right_power->exponant();
+  }
+  if (dynamic_cast<IntSquare*>(r) != NULL) {
+    IntSquare* const right_power = dynamic_cast<IntSquare*>(l);
+    right = right_power->expr();
+    right_exponant = 2;
+  }
+  if (right->IsVar()) {
+    IntVar* const right_var = right->Var();
+    IntExpr* const right_sub = CastExpression(right_var);
+    if (right_sub != NULL && dynamic_cast<BasePower*>(right_sub) != NULL) {
+      BasePower* const right_power = dynamic_cast<BasePower*>(right_sub);
+      right = right_power->expr();
+      right_exponant = right_power->exponant();
+    }
+    if (right_sub != NULL && dynamic_cast<IntSquare*>(right_sub) != NULL) {
+      IntSquare* const right_power = dynamic_cast<IntSquare*>(right_sub);
+      right = right_power->expr();
+      right_exponant = 2;
+    }
+  }
+
+  if (left == right) {
+    return MakePower(left, left_exponant + right_exponant);
+  }
+
   CHECK_EQ(this, l->solver());
   CHECK_EQ(this, r->solver());
   if (l->IsVar() && l->Var()->VarType() == BOOLEAN_VAR) {
@@ -5515,6 +5780,44 @@ IntExpr* Solver::MakeSquare(IntExpr* const e) {
     Cache()->InsertExprExpression(result, e, ModelCache::EXPR_SQUARE);
   }
   return result;
+}
+
+IntExpr* Solver::MakePower(IntExpr* const e, int64 n) {
+  CHECK_EQ(this, e->solver());
+  CHECK_GE(n, 0);
+  if (e->Bound()) {
+    const int64 v = e->Min();
+    int64 result = 1;
+    for (int i = 0; i < n; ++i) {
+      result = CapProd(result, v);
+    }
+    return MakeIntConst(result);
+  }
+  switch (n) {
+    case 0:
+      return MakeIntConst(1);
+    case 1:
+      return e;
+    case 2:
+      return MakeSquare(e);
+    default: {
+      IntExpr* result = NULL;
+      //Cache()->FindExprExpression( e, ModelCache::EXPR_SQUARE);
+      // if (result == NULL) {
+      if (n % 2 == 0) {  // even.
+        if (e->Min() >= 0 ) {
+          result = RegisterIntExpr(RevAlloc(new PosIntEvenPower(this, e, n)));
+        } else {
+          result = RegisterIntExpr(RevAlloc(new IntEvenPower(this, e, n)));
+        }
+      } else {
+        result = RegisterIntExpr(RevAlloc(new IntOddPower(this, e, n)));
+      }
+      //   Cache()->InsertExprExpression(result, e, ModelCache::EXPR_SQUARE);
+      // }
+      return result;
+    }
+  }
 }
 
 IntExpr* Solver::MakeMin(IntExpr* const l, IntExpr* const r) {
