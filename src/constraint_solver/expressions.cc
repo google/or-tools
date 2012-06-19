@@ -4217,12 +4217,13 @@ class BasePower : public BaseIntExpr {
       return kint64max;
     }
     int64 res = 0;
+    const double d_value = static_cast<double>(value);
     if (value >= 0) {
-      const double sq =  exp(log(value) / pow_);
+      const double sq =  exp(log(d_value) / pow_);
       res = static_cast<int64>(floor(sq));
     } else {
       CHECK_EQ(1, pow_ % 2);
-      const double sq =  exp(log(-value) / pow_);
+      const double sq =  exp(log(-d_value) / pow_);
       res = -static_cast<int64>(ceil(sq));
     }
     const int64 pow_res = Pown(res + 1);
@@ -4241,12 +4242,13 @@ class BasePower : public BaseIntExpr {
       return kint64max;
     }
     int64 res = 0;
+    const double d_value = static_cast<double>(value);
     if (value >= 0) {
-      const double sq =  exp(log(value) / pow_);
+      const double sq =  exp(log(d_value) / pow_);
       res = static_cast<int64>(ceil(sq));
     } else {
       CHECK_EQ(1, pow_ % 2);
-      const double sq =  exp(log(-value) / pow_);
+      const double sq =  exp(log(-d_value) / pow_);
       res = -static_cast<int64>(floor(sq));
     }
     const int64 pow_res = Pown(res - 1);
