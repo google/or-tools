@@ -459,15 +459,9 @@ class PrintModelVisitor : public ModelVisitor {
   int indent_;
   string prefix_;
 };
-}  // namespace
-
-ModelVisitor* Solver::MakePrintModelVisitor() {
-  return RevAlloc(new PrintModelVisitor);
-}
 
 // ---------- ModelStatisticsVisitor -----------
 
-namespace {
 class ModelStatisticsVisitor : public ModelVisitor {
  public:
   ModelStatisticsVisitor()
@@ -673,9 +667,126 @@ class ModelStatisticsVisitor : public ModelVisitor {
   int num_extensions_;
   hash_set<const BaseObject*> already_visited_;
 };
+
+// ---------- Variable Degree Visitor ---------
+
+class VariableDegreeVisitor : public ModelVisitor {
+ public:
+  VariableDegreeVisitor(hash_map<IntVar*, int>* const map)
+      : map_(map) {}
+
+  virtual ~VariableDegreeVisitor() {}
+
+  // Begin/End visit element.
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const IntExpr* const delegate) {
+    IntVar* const var = const_cast<IntVar*>(variable);
+    if (ContainsKey(*map_, var)) {
+      (*map_)[var]++;
+    }
+    if (delegate) {
+      VisitSubArgument(delegate);
+    }
+  }
+
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const string& operation,
+                                    int64 value,
+                                    const IntVar* const delegate) {
+    IntVar* const var = const_cast<IntVar*>(variable);
+    if (ContainsKey(*map_, var)) {
+      (*map_)[var]++;
+    }
+    VisitSubArgument(delegate);
+  }
+
+  virtual void VisitIntervalVariable(const IntervalVar* const variable,
+                                     const string& operation,
+                                     const IntervalVar* const delegate) {
+    if (delegate) {
+      VisitSubArgument(delegate);
+    }
+  }
+
+  virtual void VisitIntervalVariable(const IntervalVar* const variable,
+                                     const string& operation,
+                                     const IntervalVar* const * delegates,
+                                     int size) {
+    for (int i = 0; i < size; ++i) {
+      VisitSubArgument(delegates[i]);
+    }
+  }
+
+  virtual void VisitSequenceVariable(const SequenceVar* const sequence) {
+    for (int i = 0; i < sequence->size(); ++i) {
+      VisitSubArgument(sequence->Interval(i));
+    }
+  }
+
+  // Visit integer expression argument.
+  virtual void VisitIntegerExpressionArgument(
+      const string& arg_name,
+      const IntExpr* const argument) {
+    VisitSubArgument(argument);
+  }
+
+  virtual void VisitIntegerVariableArrayArgument(
+      const string& arg_name,
+      const IntVar* const * arguments,
+      int size) {
+    for (int i = 0; i < size; ++i) {
+      VisitSubArgument(arguments[i]);
+    }
+  }
+
+  // Visit interval argument.
+  virtual void VisitIntervalArgument(const string& arg_name,
+                                     const IntervalVar* const argument) {
+    VisitSubArgument(argument);
+  }
+
+  virtual void VisitIntervalArrayArgument(const string& arg_name,
+                                          const IntervalVar* const * arguments,
+                                          int size) {
+    for (int i = 0; i < size; ++i) {
+      VisitSubArgument(arguments[i]);
+    }
+  }
+
+  // Visit sequence argument.
+  virtual void VisitSequenceArgument(const string& arg_name,
+                                     const SequenceVar* const argument) {
+    VisitSubArgument(argument);
+  }
+
+  virtual void VisitSequenceArrayArgument(const string& arg_name,
+                                          const SequenceVar* const * arguments,
+                                          int size) {
+    for (int i = 0; i < size; ++i) {
+      VisitSubArgument(arguments[i]);
+    }
+  }
+
+ private:
+  // T should derive from BaseObject
+  template<typename T> void VisitSubArgument(T* object) {
+    object->Accept(this);
+  }
+
+  hash_map<IntVar*, int> * const map_;
+};
 }  // namespace
+
+ModelVisitor* Solver::MakePrintModelVisitor() {
+  return RevAlloc(new PrintModelVisitor);
+}
 
 ModelVisitor* Solver::MakeStatisticsModelVisitor() {
   return RevAlloc(new ModelStatisticsVisitor);
+}
+
+ModelVisitor* Solver::MakeVariableDegreeVisitor(
+    hash_map<IntVar*, int>* const map) {
+  return RevAlloc(new VariableDegreeVisitor(map));
 }
 }  // namespace operations_research

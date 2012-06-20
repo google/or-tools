@@ -35,11 +35,14 @@
  *
  */
 
+#include <vector>
+#include <string>
+
+#include "base/hash.h"
+#include "base/concise_iterator.h"
 #include "base/stringprintf.h"
 #include "flatzinc/flatzinc.h"
 
-#include <vector>
-#include <string>
 using namespace std;
 
 namespace operations_research {
@@ -155,6 +158,19 @@ void FlattenAnnotations(AST::Array* const annotations,
   }
 }
 
+  // Comparison helpers. This one sorts in a decreasing way.
+struct CompareVariableDegree {
+  CompareVariableDegree(const hash_map<IntVar*, int>& degrees)
+      : degrees_(degrees) {}
+  bool operator()(IntVar* const first, IntVar* const second) {
+    return FindOrNull(degrees_, first) > FindOrNull(degrees_, second);
+  }
+
+ private:
+  const hash_map<IntVar*, int>& degrees_;
+};
+
+
 void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
                                            bool ignore_annotations) {
   AST::Node* annotations = solve_annotations_;
@@ -179,6 +195,15 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
         AST::Array *args = call->getArgs(4);
         AST::Array *vars = args->a[0]->getArray();
         Solver::IntVarStrategy str = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
+        std::vector<IntVar*> int_vars;
+        for (int i = 0; i < vars->a.size(); ++i) {
+          if (vars->a[i]->isIntVar()) {
+            int_vars.push_back(integer_variables_[vars->a[i]->getIntVar()]);
+          }
+        }
+        if (args->hasAtom("input_order")) {
+          str = Solver::CHOOSE_FIRST_UNBOUND;
+        }
         if (args->hasAtom("first_fail")) {
           str = Solver::CHOOSE_MIN_SIZE;
         }
@@ -193,6 +218,24 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
         }
         if (args->hasAtom("max_regret")) {
           str = Solver::CHOOSE_MAX_REGRET;
+        }
+        if (args->hasAtom("occurrence")) {
+          hash_map<IntVar*, int> degree_map;
+          for (int i = 0; i < int_vars.size(); ++i) {
+            degree_map[int_vars[i]] = 0;
+          }
+          ModelVisitor* const degree_visitor =
+              solver_.MakeVariableDegreeVisitor(&degree_map);
+          solver_.Accept(degree_visitor);
+          for (ConstIter<hash_map<IntVar*, int> > iter(degree_map);
+               !iter.at_end();
+               ++iter) {
+            VLOG(1) << iter->first->DebugString() << " -> " << iter->second;
+          }
+          std::sort(int_vars.begin(),
+                    int_vars.end(),
+                    CompareVariableDegree(degree_map));
+          str = Solver::CHOOSE_FIRST_UNBOUND;
         }
         Solver::IntValueStrategy vstr = Solver::ASSIGN_MIN_VALUE;
         if (args->hasAtom("indomain_max")) {
@@ -210,12 +253,6 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
         }
         if (args->hasAtom("indomain_reverse_split")) {
           vstr = Solver::SPLIT_UPPER_HALF;
-        }
-        std::vector<IntVar*> int_vars;
-        for (int i = 0; i < vars->a.size(); ++i) {
-          if (vars->a[i]->isIntVar()) {
-            int_vars.push_back(integer_variables_[vars->a[i]->getIntVar()]);
-          }
         }
         builders_.push_back(solver_.MakePhase(int_vars, str, vstr));
       } catch (AST::TypeError& e) {

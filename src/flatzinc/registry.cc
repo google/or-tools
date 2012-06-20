@@ -1058,12 +1058,14 @@ void p_abs(FlatZincModel* const model, CtSpec* const spec) {
 void p_all_different_int(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   AST::Array* const array_variables = spec->Arg(0)->getArray();
+  int64 var_size = 0;
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
     variables[i] = model->GetIntVar(array_variables->a[i]);
+    var_size += variables[i]->Size();
   }
-  Constraint* const ct = solver->MakeAllDifferent(variables);
+  Constraint* const ct = solver->MakeAllDifferent(variables, var_size < 10000);
   VLOG(1) << "  - posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }
