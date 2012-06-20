@@ -84,6 +84,9 @@ int main(int argc, char** argv) {
     if (strcmp(argv[i], "-p") == 0) {
       argv[i] = "--threads";
     }
+    if (strcmp(argv[i], "-n") == 0) {
+      argv[i] = "--num_solutions";
+    }
   }
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (argc <= 1) {

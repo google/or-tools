@@ -345,11 +345,16 @@ void FlatZincModel::Solve(int solve_frequency,
   }
 
   CreateDecisionBuilders(false, ignore_annotations);
+  bool print_last = false;
   if (all_solutions && num_solutions == 0) {
     num_solutions = kint32max;
   } else if (objective_ == NULL && num_solutions == 0) {
     num_solutions = 1;
+  } else if (objective_ != NULL && !all_solutions && num_solutions > 0) {
+    num_solutions = kint32max;
+    print_last = true;
   }
+
   std::vector<SearchMonitor*> monitors;
   switch (method_) {
     case MIN:
@@ -380,13 +385,22 @@ void FlatZincModel::Solve(int solve_frequency,
 
   int count = 0;
   bool breaked = false;
+  string last_solution;
   solver_.NewSearch(solver_.Compose(builders_), monitors);
   while (solver_.NextSolution()) {
     if (output_ != NULL) {
-      for (unsigned int i = 0; i < output_->a.size(); i++) {
-        std::cout << DebugString(output_->a[i]);
+      if (print_last) {
+        last_solution.clear();
+        for (unsigned int i = 0; i < output_->a.size(); i++) {
+          last_solution.append(DebugString(output_->a[i]));
+        }
+        last_solution.append("----------\n");
+      } else {
+        for (unsigned int i = 0; i < output_->a.size(); i++) {
+          std::cout << DebugString(output_->a[i]);
+        }
+        std::cout << "----------" << std::endl;
       }
-      std::cout << "----------" << std::endl;
     }
     count++;
     if (num_solutions > 0 && count >= num_solutions) {
@@ -395,6 +409,9 @@ void FlatZincModel::Solve(int solve_frequency,
     }
   }
   solver_.EndSearch();
+  if (print_last) {
+    std::cout << last_solution;
+  }
   if (limit != NULL && limit->crossed()) {
       std::cout << "%% TIMEOUT" << std::endl;
   } else if (!breaked && count == 0 && (limit == NULL || !limit->crossed())) {
