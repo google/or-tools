@@ -3982,7 +3982,7 @@ class DivIntPosExpr : public BaseIntExpr {
 
   void SetPosMax(IntExpr* const num, IntExpr* const denom, int64 m) {
     num->SetMax((m + 1) * denom->Max() - 1);
-    denom->SetMin(num->Min() / m);
+    denom->SetMin((num->Min() + m - 1) / (m + 1));
   }
 
   virtual void SetMin(int64 m) {
