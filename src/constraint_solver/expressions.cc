@@ -3955,6 +3955,91 @@ class DivIntPosCstExpr : public BaseIntExpr {
   const int64 value_;
 };
 
+// DivIntPosExpr
+
+class DivIntPosExpr : public BaseIntExpr {
+ public:
+  DivIntPosExpr(Solver* const s, IntExpr* const num, IntExpr* const denom) :
+      BaseIntExpr(s),
+      num_(num),
+      denom_(denom),
+      opp_num_(s->MakeOpposite(num)) {
+    CHECK_GT(denom->Min(), 0);
+  }
+
+  virtual ~DivIntPosExpr() {}
+
+  virtual int64 Min() const {
+    return num_->Min() >= 0 ?
+        num_->Min() / denom_->Max() :
+        num_->Min() / denom_->Min();
+  }
+
+  void SetPosMin(IntExpr* const num, IntExpr* const denom, int64 m) {
+    num->SetMin(m * denom->Min());
+    denom->SetMax(num->Max() / m);
+  }
+
+  void SetPosMax(IntExpr* const num, IntExpr* const denom, int64 m) {
+    num->SetMax((m + 1) * denom->Max() - 1);
+    denom->SetMin(num->Min() / m);
+  }
+
+  virtual void SetMin(int64 m) {
+    if (m > 0) {
+      SetPosMin(num_, denom_, m);
+    } else if (m == 0) {
+      num_->SetMin(0);
+    } else {
+      SetPosMax(opp_num_, denom_, -m);
+    }
+  }
+  virtual int64 Max() const {
+    return num_->Max() >= 0 ?
+        num_->Max() / denom_->Min() :
+        num_->Max() / denom_->Max();
+  }
+
+  virtual void SetMax(int64 m) {
+    if (m > 0) {
+      SetPosMax(num_, denom_, m);
+    } else if (m == 0) {
+      num_->SetMax(0);
+    } else {
+      SetPosMin(opp_num_, denom_, -m);
+    }
+  }
+
+  virtual string name() const {
+    return StringPrintf("(%s div %s)",
+                        num_->name().c_str(),
+                        denom_->name().c_str());
+  }
+  virtual string DebugString() const {
+    return StringPrintf("(%s div %s)",
+                        num_->DebugString().c_str(),
+                        denom_->DebugString().c_str());
+  }
+  virtual void WhenRange(Demon* d) {
+    num_->WhenRange(d);
+    denom_->WhenRange(d);
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kDivide, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                            num_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kValueArgument,
+                                            denom_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kDivide, this);
+  }
+
+ private:
+  IntExpr* const num_;
+  IntExpr* const denom_;
+  IntExpr* const opp_num_;
+};
+
 // ----- IntAbs ------
 
 class IntAbs : public BaseIntExpr {
@@ -5715,6 +5800,10 @@ IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
 }
 
 IntExpr* Solver::MakeDiv(IntExpr* const numerator, IntExpr* const denominator) {
+  if (denominator->Min() > 0) {
+    return RevAlloc(new DivIntPosExpr(this, numerator, denominator));
+  }
+
   // Both numerator and denominator are positive.
   // Denominator needs to be != 0.
   AddConstraint(MakeGreater(denominator, 0));
