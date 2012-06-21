@@ -2167,8 +2167,10 @@ class Solver {
   ModelVisitor* MakePrintModelVisitor();
   // Displays some nice statistics on the model.
   ModelVisitor* MakeStatisticsModelVisitor();
+#if !defined(SWIG)
   // Compute the number of constraints a variable is attached to.
   ModelVisitor* MakeVariableDegreeVisitor(hash_map<IntVar*, int>* const map);
+#endif
 
   // ----- Symmetry Breaking -----
 
