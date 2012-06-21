@@ -60,6 +60,7 @@ void Run(const std::string& file) {
   if (file == "-") {
     fz_model.Parse(std::cin);
   } else {
+    std::cout << "%%  model:                " << file << std::endl;
     fz_model.Parse(file);
   }
 

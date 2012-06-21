@@ -592,6 +592,12 @@ void ParserState::FillOutput(operations_research::FlatZincModel& m) {
 }
 
 void FlatZincModel::Parse(const std::string& filename) {
+  filename_ = filename;
+  filename_.resize(filename_.size() - 4);
+  size_t found = filename_.find_last_of("/\\");
+  if (found != string::npos) {
+    filename_ = filename_.substr(found + 1);
+  }
 #ifdef HAVE_MMAP
   int fd;
   char* data;
@@ -634,6 +640,7 @@ void FlatZincModel::Parse(const std::string& filename) {
 }
 
 void FlatZincModel::Parse(std::istream& is) {
+  filename_ = "stdin";
   std::string s = string(istreambuf_iterator<char>(is),
                          istreambuf_iterator<char>());
 

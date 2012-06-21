@@ -182,6 +182,8 @@ class FlatZincModel {
   std::vector<IntVar*> active_variables_;
   std::vector<IntVar*> introduced_variables_;
   bool parsed_ok_;
+  bool free_search_;
+  string filename_;
 };
 
 /// %Exception class for %FlatZinc errors

@@ -56,7 +56,8 @@ FlatZincModel::FlatZincModel(void)
       solver_("FlatZincSolver"),
       objective_(NULL),
       output_(NULL),
-      parsed_ok_(true) {}
+      parsed_ok_(true),
+      free_search_(false) {}
 
 void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
   int_var_count = 0;
@@ -290,6 +291,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
               << builders_.back()->DebugString();
     }
   } else {
+    free_search_ = true;
     builders_.push_back(solver_.MakePhase(active_variables_,
                                           Solver::CHOOSE_FIRST_UNBOUND,
                                           Solver::ASSIGN_MIN_VALUE));
@@ -449,12 +451,14 @@ void FlatZincModel::Solve(int solve_frequency,
   if (print_last) {
     std::cout << last_solution;
   }
+  bool proven = false;
   if (limit != NULL && limit->crossed()) {
       std::cout << "%% TIMEOUT" << std::endl;
   } else if (!breaked && count == 0 && (limit == NULL || !limit->crossed())) {
     std::cout <<  "=====UNSATISFIABLE=====" << std::endl;
   } else if (!breaked && (limit == NULL || !limit->crossed())) {
     std::cout << "==========" << std::endl;
+    proven = true;
   }
   std::cout << "%%  runtime:              " << solver_.wall_time()
             << " ms" << std::endl;
@@ -470,6 +474,29 @@ void FlatZincModel::Solve(int solve_frequency,
   //  std::cout << "%%  peak depth:    16" << std::endl;
   std::cout << "%%  memory:               " << FlatZincMemoryUsage()
             << std::endl;
+  const int64 best = objective_ != NULL ? objective_->best() : 0;
+  if (objective_ != NULL) {
+    if (method_ == MIN && solver_.solutions() > 0) {
+      std::cout << "%%  min objective:        " << best
+                << (proven ? " (proven)" : "") << std::endl;
+    } else {
+      std::cout << "%%  max objective:        " << best
+                << (proven ? " (proven)" : "") << std::endl;
+    }
+  }
+  std::cout << "%% csv: " << filename_
+            << ", " << solver_.wall_time()
+            << ", " << solver_.branches()
+            << ", " << solver_.failures()
+            << ", " << solver_.solutions()
+            << ", " << (objective_ != NULL ?
+                        StringPrintf("%" GG_LL_FORMAT "d", best).c_str()
+                        : "")
+            << ", " << solver_.constraints()
+            << ", " << solver_.demon_runs(Solver::NORMAL_PRIORITY)
+            << ", " << solver_.demon_runs(Solver::DELAYED_PRIORITY)
+            << ", " << FlatZincMemoryUsage()
+            << ", " << (free_search_ ? "free" : "defined") << std::endl;
 }
 
 void FlatZincModel::InitOutput(AST::Array* const output) {
