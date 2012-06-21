@@ -3975,6 +3975,12 @@ class DivIntPosExpr : public BaseIntExpr {
         num_->Min() / denom_->Min();
   }
 
+  virtual int64 Max() const {
+    return num_->Max() >= 0 ?
+        num_->Max() / denom_->Min() :
+        num_->Max() / denom_->Max();
+  }
+
   void SetPosMin(IntExpr* const num, IntExpr* const denom, int64 m) {
     num->SetMin(m * denom->Min());
     denom->SetMax(num->Max() / m);
@@ -3988,23 +3994,14 @@ class DivIntPosExpr : public BaseIntExpr {
   virtual void SetMin(int64 m) {
     if (m > 0) {
       SetPosMin(num_, denom_, m);
-    } else if (m == 0) {
-      num_->SetMin(0);
     } else {
       SetPosMax(opp_num_, denom_, -m);
     }
   }
-  virtual int64 Max() const {
-    return num_->Max() >= 0 ?
-        num_->Max() / denom_->Min() :
-        num_->Max() / denom_->Max();
-  }
 
   virtual void SetMax(int64 m) {
-    if (m > 0) {
+    if (m >= 0) {
       SetPosMax(num_, denom_, m);
-    } else if (m == 0) {
-      num_->SetMax(0);
     } else {
       SetPosMin(opp_num_, denom_, -m);
     }
