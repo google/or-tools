@@ -2669,6 +2669,16 @@ IntVar* RoutingModel::TransitVar(int64 index, const string& name) const {
   }
 }
 
+IntVar* RoutingModel::SlackVar(int64 index, const string& name) const {
+  const std::vector<IntVar*>& named_slacks =
+      FindWithDefault(slacks_, name, std::vector<IntVar*>());
+  if (!named_slacks.empty()) {
+    return named_slacks[index];
+  } else {
+    return NULL;
+  }
+}
+
 void RoutingModel::AddToAssignment(IntVar* const var) {
   extra_vars_.push_back(var);
 }
@@ -2723,6 +2733,7 @@ const std::vector<IntVar*>& RoutingModel::GetOrMakeTransits(
   if (named_transits.empty()) {
     const int size = Size();
     std::vector<IntVar*> transits(size);
+    std::vector<IntVar*> slacks(size);
     for (int i = 0; i < size; ++i) {
       IntVar* fixed_transit = NULL;
       if (FLAGS_routing_use_light_propagation) {
@@ -2748,14 +2759,17 @@ const std::vector<IntVar*>& RoutingModel::GetOrMakeTransits(
       }
       if (slack_max == 0) {
         transits[i] = fixed_transit;
+        slacks[i] = solver_->MakeIntConst(Zero());
       } else {
         IntVar* const slack_var = solver_->MakeIntVar(0, slack_max, "slack");
         transits[i] = solver_->MakeSum(slack_var, fixed_transit)->Var();
+        slacks[i] = slack_var;
       }
       transits[i]->SetMin(-capacity);
       transits[i]->SetMax(capacity);
     }
     transits_[name] = transits;
+    slacks_[name] = slacks;
     transit_evaluators_[name] =
         NewPermanentCallback(this,
                              &RoutingModel::WrappedEvaluator,

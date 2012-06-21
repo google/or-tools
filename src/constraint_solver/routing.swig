@@ -296,6 +296,7 @@ class NodeEvaluator2 {
 %rename (activeVar) ActiveVar;
 %rename (cumulVar) CumulVar;
 %rename (transitVar) TransitVar;
+%rename (slackVar) SlackVar;
 %rename (addToAssignment) AddToAssignment;
 %rename (isVehicleUsed) IsVehicleUsed;
 %rename (next) Next;

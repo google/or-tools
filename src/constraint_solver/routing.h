@@ -549,6 +549,8 @@ class RoutingModel {
   IntVar* CumulVar(int64 index, const string& name) const;
   // Returns the transit variable for the dimension named 'name'.
   IntVar* TransitVar(int64 index, const string& name) const;
+  // Return the slack variable for the dimension named 'name'.
+  IntVar* SlackVar(int64 index, const string& name) const;
   // Returns the global cost variable which is being minimized.
   IntVar* CostVar() const { return cost_; }
   // Returns the cost of the segment between two nodes for a given vehicle
@@ -737,6 +739,7 @@ class RoutingModel {
   bool is_depot_set_;
   VarMap cumuls_;
   VarMap transits_;
+  VarMap slacks_;
   hash_map<string, Solver::IndexEvaluator2*> transit_evaluators_;
   bool closed_;
   Status status_;
