@@ -494,7 +494,7 @@ void FlatZincModel::Solve(int solve_frequency,
                                      solver_.solutions()).c_str())
             << ", " << (objective_ != NULL ?
                         StringPrintf("%" GG_LL_FORMAT "d", best).c_str()
-                        : "")
+                        : "SATISFY")
             << ", " << solver_.constraints()
             << ", " << solver_.demon_runs(Solver::NORMAL_PRIORITY)
             << ", " << solver_.demon_runs(Solver::DELAYED_PRIORITY)
