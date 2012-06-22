@@ -396,14 +396,28 @@ void p_int_lin_le(FlatZincModel* const model, CtSpec* const spec) {
   std::vector<int64> coefficients(size);
   std::vector<IntVar*> variables(size);
 
+  bool one_positive = false;
   for (int i = 0; i < size; ++i) {
     coefficients[i] = array_coefficents->a[i]->getInt();
     variables[i] = model->GetIntVar(array_variables->a[i]);
+    if (coefficients[i] > 0) {
+      one_positive = true;
+    }
   }
-  Constraint* const ct =
-      solver->MakeScalProdLessOrEqual(variables, coefficients, rhs);
-  VLOG(1) << "  - posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (one_positive) {
+    Constraint* const ct =
+        solver->MakeScalProdLessOrEqual(variables, coefficients, rhs);
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  } else {
+    for (int i = 0; i < size; ++i) {
+      coefficients[i] *= -1;
+    }
+    Constraint* const ct =
+        solver->MakeScalProdGreaterOrEqual(variables, coefficients, -rhs);
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_int_lin_le_reif(FlatZincModel* const model, CtSpec* const spec) {
