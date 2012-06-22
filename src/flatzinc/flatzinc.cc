@@ -459,8 +459,10 @@ void FlatZincModel::Solve(int solve_frequency,
     std::cout << last_solution;
   }
   bool proven = false;
+  bool timeout = false;
   if (limit != NULL && limit->crossed()) {
       std::cout << "%% TIMEOUT" << std::endl;
+      timeout = true;
   } else if (!breaked && count == 0 && (limit == NULL || !limit->crossed())) {
     std::cout <<  "=====UNSATISFIABLE=====" << std::endl;
   } else if (!breaked && (limit == NULL || !limit->crossed())) {
@@ -496,12 +498,12 @@ void FlatZincModel::Solve(int solve_frequency,
             << ", " << solver_.branches()
             << ", " << solver_.failures()
             << ", " << (solver_.solutions() == 0 ?
-                        "TIMEOUT" :
+                        (timeout ? "**timeout**" : "**unsat**") :
                         StringPrintf("%" GG_LL_FORMAT "d",
                                      solver_.solutions()).c_str())
             << ", " << (objective_ != NULL ?
                         StringPrintf("%" GG_LL_FORMAT "d", best).c_str()
-                        : "SATISFY")
+                        : "*****")
             << ", " << solver_.constraints()
             << ", " << solver_.demon_runs(Solver::NORMAL_PRIORITY)
             << ", " << solver_.demon_runs(Solver::DELAYED_PRIORITY)
