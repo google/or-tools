@@ -484,11 +484,14 @@ void FlatZincModel::Solve(int solve_frequency,
                 << (proven ? " (proven)" : "") << std::endl;
     }
   }
-  std::cout << "%% csv: " << filename_
+  std::cout << "%%  csv: " << filename_
             << ", " << solver_.wall_time()
             << ", " << solver_.branches()
             << ", " << solver_.failures()
-            << ", " << solver_.solutions()
+            << ", " << (solver_.solutions() == 0 ?
+                        "TIMEOUT" :
+                        StringPrintf("%" GG_LL_FORMAT "d",
+                                     solver_.solutions()).c_str())
             << ", " << (objective_ != NULL ?
                         StringPrintf("%" GG_LL_FORMAT "d", best).c_str()
                         : "")
