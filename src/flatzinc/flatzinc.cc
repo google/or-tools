@@ -161,16 +161,40 @@ void FlattenAnnotations(AST::Array* const annotations,
 
   // Comparison helpers. This one sorts in a decreasing way.
 struct CompareVariableDegree {
-  CompareVariableDegree(const hash_map<IntVar*, int>& degrees)
-      : degrees_(degrees) {}
+  CompareVariableDegree(const hash_map<IntVar*, int>& degrees,
+                        const hash_map<IntVar*, int>& index)
+      : degrees_(degrees), index_(index) {}
   bool operator()(IntVar* const first, IntVar* const second) {
-    return FindOrNull(degrees_, first) > FindOrNull(degrees_, second);
+    return FindOrNull(degrees_, first) > FindOrNull(degrees_, second) ||
+        (FindOrNull(degrees_, first) == FindOrNull(degrees_, second) &&
+         FindOrNull(index_, first) < FindOrNull(index_, second));
   }
 
  private:
   const hash_map<IntVar*, int>& degrees_;
+  const hash_map<IntVar*, int>& index_;
 };
 
+void SortVariableByDegree(Solver* const solver,
+                          std::vector<IntVar*>* const int_vars) {
+  hash_map<IntVar*, int> degree_map;
+  hash_map<IntVar*, int> index_map;
+  for (int i = 0; i < int_vars->size(); ++i) {
+    degree_map[(*int_vars)[i]] = 0;
+    index_map[(*int_vars)[i]] = i;
+  }
+  ModelVisitor* const degree_visitor =
+      solver->MakeVariableDegreeVisitor(&degree_map);
+  solver->Accept(degree_visitor);
+  for (ConstIter<hash_map<IntVar*, int> > iter(degree_map);
+       !iter.at_end();
+       ++iter) {
+    VLOG(2) << iter->first->DebugString() << " -> " << iter->second;
+  }
+  std::sort(int_vars->begin(),
+            int_vars->end(),
+            CompareVariableDegree(degree_map, index_map));
+}
 
 void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
                                            bool ignore_annotations) {
@@ -221,21 +245,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
           str = Solver::CHOOSE_MAX_REGRET;
         }
         if (args->hasAtom("occurrence")) {
-          hash_map<IntVar*, int> degree_map;
-          for (int i = 0; i < int_vars.size(); ++i) {
-            degree_map[int_vars[i]] = 0;
-          }
-          ModelVisitor* const degree_visitor =
-              solver_.MakeVariableDegreeVisitor(&degree_map);
-          solver_.Accept(degree_visitor);
-          for (ConstIter<hash_map<IntVar*, int> > iter(degree_map);
-               !iter.at_end();
-               ++iter) {
-            VLOG(1) << iter->first->DebugString() << " -> " << iter->second;
-          }
-          std::sort(int_vars.begin(),
-                    int_vars.end(),
-                    CompareVariableDegree(degree_map));
+          SortVariableByDegree(&solver_, &int_vars);
           str = Solver::CHOOSE_FIRST_UNBOUND;
         }
         Solver::IntValueStrategy vstr = Solver::ASSIGN_MIN_VALUE;
