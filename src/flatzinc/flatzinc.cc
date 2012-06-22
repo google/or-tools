@@ -501,7 +501,7 @@ void FlatZincModel::Solve(int solve_frequency,
                         (timeout ? "**timeout**" : "**unsat**") :
                         StringPrintf("%" GG_LL_FORMAT "d",
                                      solver_.solutions()).c_str())
-            << ", " << (objective_ != NULL ?
+            << ", " << (objective_ != NULL  && solver_.solutions() > 0 ?
                         StringPrintf("%" GG_LL_FORMAT "d", best).c_str()
                         : "*****")
             << ", " << solver_.constraints()
