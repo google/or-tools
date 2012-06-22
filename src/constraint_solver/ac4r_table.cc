@@ -85,12 +85,13 @@ class IndexedTable {
     int num_tuples_;
   };
 
-  IndexedTable(const IntTupleSet& table)
-  : arity_(table.Arity()),
-    num_tuples_(table.NumTuples()),
+  IndexedTable(const IntTupleSet& tuple_set)
+  : tuple_set_(tuple_set),
+    arity_(tuple_set.Arity()),
+    num_tuples_(tuple_set.NumTuples()),
     columns_(arity_) {
     for (int i = 0; i < arity_; i++) {
-      columns_[i].Init(table, i);
+      columns_[i].Init(tuple_set, i);
     }
   }
 
@@ -106,7 +107,12 @@ class IndexedTable {
     return num_tuples_;
   }
 
+  const IntTupleSet& tuple_set() const {
+    return tuple_set_;
+  }
+
  private:
+  const IntTupleSet tuple_set_;
   const int arity_;
   const int num_tuples_;
   std::vector<Column> columns_;
@@ -400,6 +406,7 @@ class Ac4TableConstraint : public Constraint {
                      bool delete_table,
                      const std::vector<IntVar*>& vars)
       : Constraint(solver),
+        original_vars_(vars),
         vars_(table->NumVars()),
         table_(table),
         delete_table_(delete_table),
@@ -456,7 +463,19 @@ class Ac4TableConstraint : public Constraint {
     }
   }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kAllowedAssignments, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               original_vars_.data(),
+                                               original_vars_.size());
+    visitor->VisitIntegerMatrixArgument(ModelVisitor::kTuplesArgument,
+                                        table_->tuple_set());
+    visitor->EndVisitConstraint(ModelVisitor::kAllowedAssignments, this);
+  }
+
+
  private:
+  std::vector<IntVar*> original_vars_;
   // Variables of the constraint.
   std::vector<TableVar*> vars_;
   // Table.
