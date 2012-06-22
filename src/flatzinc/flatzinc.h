@@ -80,7 +80,7 @@ class FlatZincModel {
   void InitOutput(AST::Array* const output);
 
   /// Creates a new integer variable from specification.
-  void NewIntVar(const std::string& name, IntVarSpec* const vs);
+  void NewIntVar(const std::string& name, IntVarSpec* const vs, bool active);
   // Skips the creation of the variable.
   void SkipIntVar();
   /// Creates a new boolean variable from specification.

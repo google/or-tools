@@ -68,7 +68,9 @@ void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
   set_variables_.resize(setVars);
 }
 
-void FlatZincModel::NewIntVar(const std::string& name, IntVarSpec* const vs) {
+void FlatZincModel::NewIntVar(const std::string& name,
+                              IntVarSpec* const vs,
+                              bool active) {
   if (vs->alias) {
     integer_variables_[int_var_count++] = integer_variables_[vs->i];
   } else if (vs->assigned) {
@@ -90,12 +92,12 @@ void FlatZincModel::NewIntVar(const std::string& name, IntVarSpec* const vs) {
     VLOG(1) << "  - creates "
             << integer_variables_[int_var_count - 1]->DebugString();
     if (!integer_variables_[int_var_count - 1]->Bound()) {
-      if (!vs->introduced) {
+      if (active) {
         active_variables_.push_back(integer_variables_[int_var_count - 1]);
         VLOG(1) << "  - add as active";
       } else {
         introduced_variables_.push_back(integer_variables_[int_var_count - 1]);
-        VLOG(1) << "  - add as introduced";
+        VLOG(1) << "  - add as secondary";
       }
     }
   }

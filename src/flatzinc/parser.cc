@@ -173,9 +173,34 @@ void ParserState::ComputeDependencies(const hash_set<int>& candidates,
   }
 }
 
+void MarkAllVariables(AST::Node* const node, hash_set<int>* const computed) {
+  if (node->isIntVar()) {
+    computed->insert(node->getIntVar());
+    VLOG(1) << "  - " << node->DebugString();
+  }
+  if (node->isArray()) {
+    AST::Array* const array = node->getArray();
+    for (int i = 0; i < array->a.size(); ++i) {
+      if (array->a[i]->isIntVar()) {
+        computed->insert(array->a[i]->getIntVar());
+        VLOG(1) << "  - " << array->a[i]->DebugString();
+      }
+    }
+  }
+}
+
+void MarkComputedVariables(CtSpec* const spec, hash_set<int>* const computed) {
+  const string& id = spec->Id();
+  if (id == "global_cardinality") {
+    VLOG(1) << "Marking " << spec->DebugString();
+    MarkAllVariables(spec->Arg(2), computed);
+  }
+}
+
 void ParserState::CreateModel() {
   hash_set<int> candidates;
   hash_set<int> true_booleans;
+  hash_set<int> computed_variables;
   for (int i = 0; i < constraints_.size(); ++i) {
     CtSpec* const spec = constraints_[i];
     if (spec->Id() == "array_bool_and" &&
@@ -312,6 +337,7 @@ void ParserState::CreateModel() {
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
     VLOG(2) << i << " -> " << spec->DebugString();
+    MarkComputedVariables(spec, &computed_variables);
   }
 
   VLOG(1) << "Creating variables";
@@ -333,7 +359,9 @@ void ParserState::CreateModel() {
         }
       }
       if (!ContainsKey(candidates, i)) {
-        model_->NewIntVar(name, int_variables_[i]);
+        const bool active = (!int_variables_[i]->introduced) &&
+            !ContainsKey(computed_variables, i);
+        model_->NewIntVar(name, int_variables_[i], active);
       } else {
         model_->SkipIntVar();
         VLOG(1) << "  - skipped";
