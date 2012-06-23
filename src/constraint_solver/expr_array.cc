@@ -2441,6 +2441,101 @@ template<class T> Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
                                                             coefficients,
                                                             upper_bound));
   }
+  // Some simplications
+  int constants = 0;
+  int positives = 0;
+  int negatives = 0;
+  for (int i = 0; i < size; ++i) {
+    if (coefficients[i] == 0 || vars[i]->Bound()) {
+      constants++;
+    } else if (coefficients[i] > 0) {
+      positives++;
+    } else {
+      negatives++;
+    }
+  }
+  if (positives > 0 && negatives > 0) {
+    std::vector<IntVar*> pos_terms;
+    std::vector<IntVar*> neg_terms;
+    int64 rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefficients[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefficients[i] * vars[i]->Min();
+      } else if (coefficients[i] > 0) {
+        pos_terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
+      } else {
+        neg_terms.push_back(solver->MakeProd(vars[i], -coefficients[i])->Var());
+      }
+    }
+    if (negatives == 1) {
+      IntVar* const neg_term = solver->MakeSum(neg_terms[0], rhs)->Var();
+      return solver->MakeLessOrEqual(
+          solver->MakeSum(pos_terms)->Var(), neg_term);
+    } else if (positives == 1) {
+      IntVar* const pos_term = solver->MakeSum(pos_terms[0], -rhs)->Var();
+      return solver->MakeGreaterOrEqual(
+          solver->MakeSum(neg_terms)->Var(), pos_term);
+    } else {
+      if (rhs != 0) {
+        neg_terms.push_back(solver->MakeIntConst(rhs));
+      }
+      return solver->MakeLessOrEqual(
+          solver->MakeSum(pos_terms)->Var(),
+          solver->MakeSum(neg_terms)->Var());
+    }
+  } else if (positives == 1) {
+    IntVar* pos_term = NULL;
+    int64 rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefficients[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefficients[i] * vars[i]->Min();
+      } else if (coefficients[i] > 0) {
+        pos_term = solver->MakeProd(vars[i], coefficients[i])->Var();
+      } else {
+        LOG(FATAL) << "Should not be here";
+      }
+    }
+    return solver->MakeLessOrEqual(pos_term, rhs);
+  } else if (negatives == 1) {
+    IntVar* neg_term = NULL;
+    int64 rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefficients[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefficients[i] * vars[i]->Min();
+      } else if (coefficients[i] > 0) {
+        LOG(FATAL) << "Should not be here";
+      } else {
+        neg_term = solver->MakeProd(vars[i], -coefficients[i])->Var();
+      }
+    }
+    return solver->MakeGreaterOrEqual(neg_term, -rhs);
+  } else if (positives > 1) {
+    std::vector<IntVar*> pos_terms;
+    int64 rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefficients[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefficients[i] * vars[i]->Min();
+      } else if (coefficients[i] > 0) {
+        pos_terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
+      } else {
+        LOG(FATAL) << "Should not be here";
+      }
+    }
+    return solver->MakeSumLessOrEqual(pos_terms, rhs);
+  } else if (negatives > 1) {
+    std::vector<IntVar*> neg_terms;
+    int64 rhs = upper_bound;
+    for (int i = 0; i < size; ++i) {
+      if (coefficients[i] == 0 || vars[i]->Bound()) {
+        rhs -= coefficients[i] * vars[i]->Min();
+      } else if (coefficients[i] > 0) {
+        LOG(FATAL) << "Should not be here";
+      } else {
+        neg_terms.push_back(solver->MakeProd(vars[i], -coefficients[i])->Var());
+      }
+    }
+    return solver->MakeSumGreaterOrEqual(neg_terms, -rhs);
+  }
   std::vector<IntVar*> terms;
   for (int i = 0; i < size; ++i) {
     terms.push_back(solver->MakeProd(vars[i], coefficients[i])->Var());
