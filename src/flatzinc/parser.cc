@@ -758,7 +758,7 @@ bool ParserState::Propagate(CtSpec* const spec) {
     return true;
   }
   if (id == "array_var_int_position" &&
-      !ContainsKey(stored_constraints_, index) {
+      !ContainsKey(stored_constraints_, index)) {
 
   }
   return false;
