@@ -1462,6 +1462,14 @@ class Solver {
   Constraint* MakeElementEquality(const std::vector<IntVar*>& vars,
                                   IntVar* const index,
                                   IntVar* const target);
+  // This constraints is a special case of the element constraint with
+  // an array of integer variables where all the variables are all
+  // differents.  In that case, and with a constant value, the index
+  // of the element constraint is bound to be the unique index of the
+  // variable in 'vars' equal to the value target.
+  Constraint* MakeArrayPositionConstraint(const std::vector<IntVar*>& vars,
+                                          IntVar* const position,
+                                          int64 target);
 
   // This method is a specialized case of the MakeConstraintDemon
   // method to call the InitiatePropagate of the constraint 'ct'.

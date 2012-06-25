@@ -1266,6 +1266,116 @@ class IntExprArrayElementCstCt : public Constraint {
   std::vector<Demon*> demons_;
 };
 
+// This constraint implements vars[index] == constant.
+
+class IntExprArrayPositionCt : public Constraint {
+ public:
+  IntExprArrayPositionCt(Solver* const s,
+                         const std::vector<IntVar*>& vars,
+                         IntVar* const index,
+                         int64 target)
+      : Constraint(s),
+        vars_(vars),
+        size_(vars.size()),
+        index_(index),
+        target_(target),
+        demons_(size_),
+        index_iterator_(index->MakeHoleIterator(true)) {}
+
+  virtual ~IntExprArrayPositionCt() {}
+
+  virtual void Post() {
+    for (int i = 0; i < size_; ++i) {
+      demons_[i] = MakeConstraintDemon1(solver(),
+                                        this,
+                                        &IntExprArrayPositionCt::Propagate,
+                                        "Propagate",
+                                        i);
+      vars_[i]->WhenDomain(demons_[i]);
+    }
+    Demon* const index_demon =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &IntExprArrayPositionCt::PropagateIndex,
+                             "PropagateIndex");
+    index_->WhenDomain(index_demon);
+  }
+
+  virtual void InitialPropagate() {
+    for (int i = 0; i < size_; ++i) {
+      if (!index_->Contains(i)) {
+        vars_[i]->RemoveValue(target_);
+      } else if (!vars_[i]->Contains(target_)) {
+        index_->RemoveValue(i);
+        demons_[i]->inhibit(solver());
+      } else if (vars_[i]->Bound()) {
+        index_->SetValue(i);
+        demons_[i]->inhibit(solver());
+      }
+    }
+  }
+
+  void Propagate(int index) {
+    if (!vars_[index]->Contains(target_)) {
+      index_->RemoveValue(index);
+      demons_[index]->inhibit(solver());
+    } else if (vars_[index]->Bound()) {
+      index_->SetValue(index);
+    }
+  }
+
+  void PropagateIndex() {
+    const int64 oldmax = index_->OldMax();
+    const int64 vmin = index_->Min();
+    const int64 vmax = index_->Max();
+    for (int64 value = index_->OldMin(); value < vmin; ++value) {
+      vars_[value]->RemoveValue(target_);
+      demons_[value]->inhibit(solver());
+    }
+    for (index_iterator_->Init();
+         index_iterator_->Ok();
+         index_iterator_->Next()) {
+      const int64 value = index_iterator_->Value();
+      vars_[value]->RemoveValue(target_);
+      demons_[value]->inhibit(solver());
+    }
+    for (int64 value = vmax + 1; value <= oldmax; ++value) {
+      vars_[value]->RemoveValue(target_);
+      demons_[value]->inhibit(solver());
+    }
+    if (index_->Bound()) {
+      vars_[index_->Min()]->SetValue(target_);
+    }
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("IntExprArrayPosition([%s], %s) == %" GG_LL_FORMAT "d",
+                        DebugStringVector(vars_, ", ").c_str(),
+                        index_->DebugString().c_str(),
+                        target_);
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kElementEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_.data(),
+                                               size_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
+                                            index_);
+    visitor->VisitIntegerArgument(ModelVisitor::kTargetArgument,
+                                  target_);
+    visitor->EndVisitConstraint(ModelVisitor::kElementEqual, this);
+  }
+
+ private:
+  std::vector<IntVar*> vars_;
+  const int size_;
+  IntVar* const index_;
+  const int64 target_;
+  std::vector<Demon*> demons_;
+  IntVarIterator* const index_iterator_;
+};
+
 // ----- IntExprArrayElement -----
 
 class IntExprArrayElement : public BaseIntExpr {
@@ -1495,5 +1605,12 @@ Constraint* Solver::MakeElementEquality(const std::vector<IntVar*>& vars,
                                               index,
                                               target));
   }
+}
+
+Constraint* Solver::MakeArrayPositionConstraint(
+    const std::vector<IntVar*>& vars,
+    IntVar* const index,
+    int64 target) {
+  return RevAlloc(new IntExprArrayPositionCt(this, vars, index, target));
 }
 }  // namespace operations_research

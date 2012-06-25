@@ -419,6 +419,10 @@ class CtSpec {
     return id_;
   }
 
+  void SetId(const std::string& id) {
+    id_ = id;
+  }
+
   int Index() const {
     return index_;
   }
@@ -437,6 +441,11 @@ class CtSpec {
 
   AST::Array* Args() const {
     return args_;
+  }
+
+  void ReplaceArg(int index, AST::Node* const node) {
+    delete args_->a[index];
+    args_->a[index] = node;
   }
 
   AST::Node* annotations() const {

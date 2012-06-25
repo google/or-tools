@@ -165,6 +165,7 @@ class ParserState {
   bool IsReifTrue(CtSpec* const spec) const;
   bool IsBound(AST::Node* const node) const;
   int GetBound(AST::Node* const node) const;
+  bool AllDifferent(AST::Node* const node) const;
 
   FlatZincModel* model() const {
     return model_;
@@ -184,6 +185,8 @@ class ParserState {
   operations_research::FlatZincModel* model_;
   std::vector<std::pair<std::string,AST::Node*> > output_;
   hash_set<int> orphans_;
+  hash_set<int> all_different_constraints_;
+  std::vector<std::vector<int> > all_differents_;
 };
 
 AST::Node* ArrayOutput(AST::Call* ann);

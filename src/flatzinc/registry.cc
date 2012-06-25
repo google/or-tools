@@ -937,6 +937,23 @@ void p_array_var_int_element(FlatZincModel* const model, CtSpec* const spec) {
   }
 }
 
+void p_array_var_int_position(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  IntVar* const index =  model->GetIntVar(spec->Arg(0));
+  IntVar* const shifted_index = solver->MakeSum(index, -1)->Var();
+  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntVar(array_variables->a[i]);
+  }
+  const int target = spec->Arg(2)->getInt();
+  Constraint* const ct =
+      solver->MakeArrayPositionConstraint(variables, shifted_index, target);
+  VLOG(1) << "  - posted " << ct->DebugString();
+  solver->AddConstraint(ct);
+}
+
 void p_array_bool_element(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const index = model->GetIntVar(spec->Arg(0));
@@ -1388,14 +1405,19 @@ class IntBuilder {
     global_model_builder.Register("array_bool_and", &p_array_bool_and);
     global_model_builder.Register("array_bool_or", &p_array_bool_or);
     global_model_builder.Register("bool_clause", &p_array_bool_clause);
-    global_model_builder.Register("bool_clause_reif", &p_array_bool_clause_reif);
+    global_model_builder.Register("bool_clause_reif",
+                                  &p_array_bool_clause_reif);
     global_model_builder.Register("bool_left_imp", &p_bool_l_imp);
     global_model_builder.Register("bool_right_imp", &p_bool_r_imp);
     global_model_builder.Register("bool_not", &p_bool_not);
     global_model_builder.Register("array_int_element", &p_array_int_element);
-    global_model_builder.Register("array_var_int_element", &p_array_var_int_element);
+    global_model_builder.Register("array_var_int_element",
+                                  &p_array_var_int_element);
+    global_model_builder.Register("array_var_int_position",
+                                  &p_array_var_int_position);
     global_model_builder.Register("array_bool_element", &p_array_bool_element);
-    global_model_builder.Register("array_var_bool_element", &p_array_var_bool_element);
+    global_model_builder.Register("array_var_bool_element",
+                                  &p_array_var_bool_element);
     global_model_builder.Register("bool2bool", &p_bool2bool);
     global_model_builder.Register("bool2int", &p_bool2int);
     global_model_builder.Register("int2int", &p_int2int);
