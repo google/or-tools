@@ -587,9 +587,9 @@ bool ParserState::Propagate(CtSpec* const spec) {
       IntVarSpec* const var_spec =
           int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
       const int bound = GetBound(spec->Arg(1));
-      VLOG(1) << var_spec->DebugString() << ":merge with kint32min.." << bound;
+      VLOG(1) << "## Presolve ##  Merge " << var_spec->DebugString()
+              << " with kint32min.." << bound;
       const bool ok = var_spec->MergeBounds(kint32min, bound);
-      VLOG(1) << "  -> " << var_spec->DebugString();
       if (ok) {
         spec->Nullify();
       }
@@ -598,10 +598,9 @@ bool ParserState::Propagate(CtSpec* const spec) {
       IntVarSpec* const var_spec =
           int_variables_[FindEndIntegerVariable(spec->Arg(1)->getIntVar())];
       const int bound = GetBound(spec->Arg(0));
-      VLOG(1) << var_spec->DebugString() << ": merge with "
+      VLOG(1) << "## Presolve ##  Merge " << var_spec->DebugString() << " with "
               << bound << "..kint32max";
       const bool ok = var_spec->MergeBounds(bound, kint32max);
-      VLOG(1) << "  -> " << var_spec->DebugString();
       if (ok) {
         spec->Nullify();
       }
@@ -613,9 +612,9 @@ bool ParserState::Propagate(CtSpec* const spec) {
       IntVarSpec* const var_spec =
           int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
       const int bound = GetBound(spec->Arg(1));
-      VLOG(1) << var_spec->DebugString() << ": assign to " << bound;
+      VLOG(1) << "## Presolve ##  Assign " << var_spec->DebugString()
+              << " to " << bound;
       const bool ok = var_spec->MergeBounds(bound, bound);
-      VLOG(1) << "  -> " << var_spec->DebugString();
       if (ok) {
         spec->Nullify();
       }
@@ -624,9 +623,9 @@ bool ParserState::Propagate(CtSpec* const spec) {
       IntVarSpec* const var_spec =
           int_variables_[FindEndIntegerVariable(spec->Arg(1)->getIntVar())];
       const int bound = GetBound(spec->Arg(0));
-      VLOG(1) << var_spec->DebugString() << ": assign to " << bound;
+      VLOG(1) << "## Presolve ##  Assign " <<  var_spec->DebugString()
+              << " to " << bound;
       const bool ok = var_spec->MergeBounds(bound, bound);
-      VLOG(1) << "  -> " << var_spec->DebugString();
       if (ok) {
         spec->Nullify();
       }
@@ -643,14 +642,16 @@ bool ParserState::Propagate(CtSpec* const spec) {
         AST::Call* const call =
             new AST::Call("defines_var", new AST::IntVar(var0));
         spec->AddAnnotation(call);
-        VLOG(1) << "Aliasing xi(" << var0 << ") to xi(" << var1 << ")";
+        VLOG(1) << "## Presolve ##  Aliasing xi(" << var0 << ") to xi("
+                << var1 << ")";
         return true;
       } else if (!ContainsKey(orphans_, var0) && ContainsKey(orphans_, var1)) {
         IntVarSpec* const spec1 = int_variables_[FindEndIntegerVariable(var1)];
         AST::Call* const call =
             new AST::Call("defines_var", new AST::IntVar(var1));
         spec->AddAnnotation(call);
-        VLOG(1) << "Aliasing xi(" << var1 << ") to xi(" << var0 << ")";
+        VLOG(1) << "## Presolve ##  Aliasing xi(" << var1 << ") to xi("
+                << var0 << ")";
         return true;
       }
     }
@@ -660,7 +661,7 @@ bool ParserState::Propagate(CtSpec* const spec) {
       IntVarSpec* const var_spec =
           int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
       AST::SetLit* const domain = spec->Arg(1)->getSet();
-      VLOG(1) << var_spec->DebugString() << ": merge with "
+      VLOG(1) << "## Presolve ##  Merge " << var_spec->DebugString() << " with "
               << domain->DebugString();
       bool ok = false;
       if (domain->interval) {
@@ -668,7 +669,6 @@ bool ParserState::Propagate(CtSpec* const spec) {
       } else {
         ok = var_spec->MergeDomain(domain->s);
       }
-      VLOG(1) << "  -> " << var_spec->DebugString();
       if (ok) {
         spec->Nullify();
       }
@@ -676,7 +676,8 @@ bool ParserState::Propagate(CtSpec* const spec) {
     }
   }
   if (id == "array_bool_and" && IsReifTrue(spec)) {
-    VLOG(1) << "Forcing array_bool_and to 1 on " << spec->DebugString();
+    VLOG(1) << "## Presolve ##  Forcing array_bool_and to 1 on "
+            << spec->DebugString();
     AST::Array* const array_variables = spec->Arg(0)->getArray();
     const int size = array_variables->a.size();
     for (int i = 0; i < size; ++i) {
@@ -689,7 +690,7 @@ bool ParserState::Propagate(CtSpec* const spec) {
     return true;
   }
   if (id.find("_reif") != string::npos && IsReifTrue(spec)) {
-    VLOG(1) << "Unreify " << spec->DebugString();
+    VLOG(1) << "## Presolve ##  Unreify " << spec->DebugString();
     spec->Unreify();
     return true;
   }
