@@ -485,6 +485,10 @@ class CtSpec {
 
   void Unreify() {
     id_.resize(id_.size() - 5);
+    delete annotations_;
+    annotations_ = NULL;
+    delete args_->a.back();
+    args_->a.pop_back();
   }
 
   void Nullify() {
