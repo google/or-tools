@@ -616,6 +616,7 @@ bool ParserState::AllDifferent(AST::Node* const node) const {
 
 bool ParserState::Propagate(CtSpec* const spec) {
   const string& id = spec->Id();
+  const int index = spec->Index();
   if (id == "int_le" || (id == "int_le_reif" && IsReifTrue(spec))) {
     if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
       IntVarSpec* const var_spec =
@@ -728,33 +729,37 @@ bool ParserState::Propagate(CtSpec* const spec) {
     spec->Unreify();
     return true;
   }
-  if (id == "all_different_int") {
-    if (!ContainsKey(all_different_constraints_, spec->Index())) {
-      AST::Array* const array_variables = spec->Arg(0)->getArray();
-      const int size = array_variables->a.size();
-      std::vector<int> variables(size);
-      for (int i = 0; i < size; ++i) {
-        if (array_variables->a[i]->isIntVar()) {
-          const int var = array_variables->a[i]->getIntVar();
-          variables[i] = var;
-        } else {
-          return false;
-        }
+  if (id == "all_different_int" && !ContainsKey(stored_constraints_, index)) {
+    AST::Array* const array_variables = spec->Arg(0)->getArray();
+    const int size = array_variables->a.size();
+    std::vector<int> variables(size);
+    for (int i = 0; i < size; ++i) {
+      if (array_variables->a[i]->isIntVar()) {
+        const int var = array_variables->a[i]->getIntVar();
+        variables[i] = var;
+      } else {
+        return false;
       }
-      VLOG(1) << "## Presolve ## Store all diff info " << spec->DebugString();
-      std::sort(variables.begin(), variables.end());
-      all_different_constraints_.insert(spec->Index());
-      all_differents_.push_back(variables);
     }
+    VLOG(1) << "## Presolve ## Store all diff info " << spec->DebugString();
+    std::sort(variables.begin(), variables.end());
+    stored_constraints_.insert(index);
+    all_differents_.push_back(variables);
+    return true;
   }
-  if (id == "array_var_int_element") {
-    if (IsBound(spec->Arg(2)) && AllDifferent(spec->Arg(1))) {
-      VLOG(1) << "## Presolve ##  Reinforce " << spec->DebugString()
-              << " to array_var_int_position";
-      spec->SetId("array_var_int_position");
-      const int bound = GetBound(spec->Arg(2));
-      spec->ReplaceArg(2, new AST::IntLit(bound));
-    }
+  if (id == "array_var_int_element" &&
+      IsBound(spec->Arg(2)) &&
+      AllDifferent(spec->Arg(1))) {
+    VLOG(1) << "## Presolve ##  Reinforce " << spec->DebugString()
+            << " to array_var_int_position";
+    spec->SetId("array_var_int_position");
+    const int bound = GetBound(spec->Arg(2));
+    spec->ReplaceArg(2, new AST::IntLit(bound));
+    return true;
+  }
+  if (id == "array_var_int_position" &&
+      !ContainsKey(stored_constraints_, index) {
+
   }
   return false;
 }

@@ -172,6 +172,7 @@ class ParserState {
   }
 
  private:
+
   int FindEndIntegerVariable(int index);
   int FindTarget(AST::Node* const annotations) const;
   void CollectRequired(AST::Array* const args,
@@ -185,7 +186,7 @@ class ParserState {
   operations_research::FlatZincModel* model_;
   std::vector<std::pair<std::string,AST::Node*> > output_;
   hash_set<int> orphans_;
-  hash_set<int> all_different_constraints_;
+  hash_set<int> stored_constraints_;
   std::vector<std::vector<int> > all_differents_;
 };
 
