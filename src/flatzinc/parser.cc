@@ -119,12 +119,13 @@ void ParserState::ComputeViableTarget(
       id == "int_plus" ||
       id == "int_minus" ||
       id == "int_times" ||
-      id == "array_var_int_element" ||
+      (id == "array_var_int_element" && !IsBound(spec->Arg(2))) ||
       id == "array_int_element" ||
       id == "int_abs" ||
-      id == "int_lin_eq" ||
+      (id == "int_lin_eq" && !StrongPropagation(spec->annotations())) ||
       id == "int_max" ||
-      id == "int_min") {
+      id == "int_min" ||
+      id == "int_eq") {
     // Defines an int var.
     const int define = FindTarget(spec->annotations());
     if (define != CtSpec::kNoDefinition) {
@@ -199,19 +200,34 @@ void MarkComputedVariables(CtSpec* const spec, hash_set<int>* const computed) {
 
 void ParserState::CreateModel() {
   hash_set<int> candidates;
-  hash_set<int> true_booleans;
   hash_set<int> computed_variables;
+
+  // Find orphans (is_defined && not a target).
+  hash_set<int> targets;
   for (int i = 0; i < constraints_.size(); ++i) {
-    CtSpec* const spec = constraints_[i];
-    if (spec->Id() == "array_bool_and" &&
-        spec->Arg(1)->isBool() &&
-        spec->Arg(1)->getBool() == 1) {
-      VLOG(1) << "  - forcing array_bool_and to 1 on " << spec->DebugString();
-      AST::Array* const array_variables = spec->Arg(0)->getArray();
-      const int size = array_variables->a.size();
-      for (int i = 0; i < size; ++i) {
-        AST::Node* const a = array_variables->a[i];
-        true_booleans.insert(a->getBoolVar());
+    const int target = FindTarget(constraints_[i]->annotations());
+    if (target != CtSpec::kNoDefinition) {
+      targets.insert(target);
+    }
+  }
+  for (int i = 0; i < int_variables_.size(); ++i) {
+    IntVarSpec* const spec = int_variables_[i];
+    if (spec->introduced && !ContainsKey(targets, i)) {
+      orphans_.insert(i);
+    }
+  }
+
+  // Presolve (propagate bounds).
+  bool repeat = true;
+  while (repeat) {
+    repeat = false;
+    for (int i = 0; i < constraints_.size(); ++i) {
+      CtSpec* const spec = constraints_[i];
+      if (spec->Nullified()) {
+        continue;
+      }
+      if (Propagate(spec)) {
+        repeat = true;
       }
     }
   }
@@ -246,6 +262,8 @@ void ParserState::CreateModel() {
       constraints_.push_back(alias_ct);
     }
   }
+
+  // Discover expressions, topological sort of constraints.
 
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
@@ -425,7 +443,7 @@ void ParserState::CreateModel() {
     if (!hadError) {
       CtSpec* const spec = constraints_[i];
       VLOG(1) << "Constraint " << constraints_[i]->DebugString();
-      model_->PostConstraint(constraints_[i], true_booleans);
+      model_->PostConstraint(constraints_[i]);
     }
   }
 
@@ -535,75 +553,152 @@ int ParserState::FindEndIntegerVariable(int index) {
   return index;
 }
 
+bool ParserState::IsReifTrue(CtSpec* const spec) const {
+  AST::Node* const node = spec->LastArg();
+  if (node->isBool() && node->getBool() == 1) {
+    return true;
+  }
+  if (node->isBoolVar()) {
+    const int boolvar = node->getBoolVar();
+    return bool_variables_[boolvar]->IsTrue();
+  }
+  return false;
+}
+
+bool ParserState::IsBound(AST::Node* const node) const {
+  return node->isInt() ||
+      (node->isIntVar() && int_variables_[node->getIntVar()]->IsBound());
+}
+
+int ParserState::GetBound(AST::Node* const node) const {
+  if (node->isInt()) {
+    return node->getInt();
+  }
+  if (node->isIntVar()) {
+    return int_variables_[node->getIntVar()]->GetBound();
+  }
+  return 0;
+}
+
+bool ParserState::Propagate(CtSpec* const spec) {
+  const string& id = spec->Id();
+  if (id == "int_le" || (id == "int_le_reif" && IsReifTrue(spec))) {
+    if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
+      IntVarSpec* const var_spec =
+          int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
+      const int bound = GetBound(spec->Arg(1));
+      VLOG(1) << var_spec->DebugString() << ":merge with kint32min.." << bound;
+      const bool ok = var_spec->MergeBounds(kint32min, bound);
+      VLOG(1) << "  -> " << var_spec->DebugString();
+      if (ok) {
+        spec->Nullify();
+      }
+      return ok;
+    } else if (IsBound(spec->Arg(0)) && spec->Arg(1)->isIntVar()) {
+      IntVarSpec* const var_spec =
+          int_variables_[FindEndIntegerVariable(spec->Arg(1)->getIntVar())];
+      const int bound = GetBound(spec->Arg(0));
+      VLOG(1) << var_spec->DebugString() << ": merge with "
+              << bound << "..kint32max";
+      const bool ok = var_spec->MergeBounds(bound, kint32max);
+      VLOG(1) << "  -> " << var_spec->DebugString();
+      if (ok) {
+        spec->Nullify();
+      }
+      return ok;
+    }
+  }
+  if (id == "int_eq" || (id == "int_eq_reif" && IsReifTrue(spec))) {
+    if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
+      IntVarSpec* const var_spec =
+          int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
+      const int bound = GetBound(spec->Arg(1));
+      VLOG(1) << var_spec->DebugString() << ": assign to " << bound;
+      const bool ok = var_spec->MergeBounds(bound, bound);
+      VLOG(1) << "  -> " << var_spec->DebugString();
+      if (ok) {
+        spec->Nullify();
+      }
+      return ok;
+    } else if (IsBound(spec->Arg(0)) && spec->Arg(1)->isIntVar()) {
+      IntVarSpec* const var_spec =
+          int_variables_[FindEndIntegerVariable(spec->Arg(1)->getIntVar())];
+      const int bound = GetBound(spec->Arg(0));
+      VLOG(1) << var_spec->DebugString() << ": assign to " << bound;
+      const bool ok = var_spec->MergeBounds(bound, bound);
+      VLOG(1) << "  -> " << var_spec->DebugString();
+      if (ok) {
+        spec->Nullify();
+      }
+      return ok;
+    } else if (spec->Arg(0)->isIntVar() &&
+               spec->Arg(1)->isIntVar() &&
+               spec->annotations() == NULL &&
+               (ContainsKey(orphans_, spec->Arg(0)->getIntVar()) ||
+                ContainsKey(orphans_, spec->Arg(1)->getIntVar()))) {
+      const int var0 = spec->Arg(0)->getIntVar();
+      const int var1 = spec->Arg(1)->getIntVar();
+      if (ContainsKey(orphans_, var0) && !ContainsKey(orphans_, var1)) {
+        IntVarSpec* const spec0 = int_variables_[FindEndIntegerVariable(var0)];
+        AST::Call* const call =
+            new AST::Call("defines_var", new AST::IntVar(var0));
+        spec->AddAnnotation(call);
+        VLOG(1) << "Aliasing xi(" << var0 << ") to xi(" << var1 << ")";
+        return true;
+      } else if (!ContainsKey(orphans_, var0) && ContainsKey(orphans_, var1)) {
+        IntVarSpec* const spec1 = int_variables_[FindEndIntegerVariable(var1)];
+        AST::Call* const call =
+            new AST::Call("defines_var", new AST::IntVar(var1));
+        spec->AddAnnotation(call);
+        VLOG(1) << "Aliasing xi(" << var1 << ") to xi(" << var0 << ")";
+        return true;
+      }
+    }
+  }
+  if (id == "set_in" || (id == "set_in_reif" && IsReifTrue(spec))) {
+    if (spec->Arg(0)->isIntVar() && spec->Arg(1)->isSet()) {
+      IntVarSpec* const var_spec =
+          int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
+      AST::SetLit* const domain = spec->Arg(1)->getSet();
+      VLOG(1) << var_spec->DebugString() << ": merge with "
+              << domain->DebugString();
+      bool ok = false;
+      if (domain->interval) {
+        ok = var_spec->MergeBounds(domain->min, domain->max);
+      } else {
+        ok = var_spec->MergeDomain(domain->s);
+      }
+      VLOG(1) << "  -> " << var_spec->DebugString();
+      if (ok) {
+        spec->Nullify();
+      }
+      return ok;
+    }
+  }
+  if (id == "array_bool_and" && IsReifTrue(spec)) {
+    VLOG(1) << "Forcing array_bool_and to 1 on " << spec->DebugString();
+    AST::Array* const array_variables = spec->Arg(0)->getArray();
+    const int size = array_variables->a.size();
+    for (int i = 0; i < size; ++i) {
+      if (array_variables->a[i]->isBoolVar()) {
+        const int boolvar = array_variables->a[i]->getBoolVar();
+        bool_variables_[boolvar]->Assign(true);
+      }
+    }
+    spec->Nullify();
+    return true;
+  }
+  if (id.find("_reif") != string::npos && IsReifTrue(spec)) {
+    VLOG(1) << "Unreify " << spec->DebugString();
+    spec->Unreify();
+    return true;
+  }
+  return false;
+}
+
 void ParserState::AddConstraint(const std::string& id,
                                 AST::Array* const args,
                                 AST::Node* const annotations) {
-  if (id == "int_le") {
-    const std::vector<AST::Node*>& nodes = args->a;
-    if (nodes[0]->isIntVar() && nodes[1]->isInt()) {
-      IntVarSpec* const spec =
-          int_variables_[FindEndIntegerVariable(nodes[0]->getIntVar())];
-      VLOG(1) << spec->DebugString() << "Merge with kint32min.."
-              << nodes[1]->getInt();
-      const bool ok = spec->MergeBounds(kint32min, nodes[1]->getInt());
-      VLOG(1) << "  -> " << spec->DebugString();
-      if (ok) {
-        return;
-      }
-    } else if (args->a[0]->isInt() && args->a[1]->isIntVar()) {
-      IntVarSpec* const spec =
-          int_variables_[FindEndIntegerVariable(nodes[1]->getIntVar())];
-      VLOG(1) << spec->DebugString() << "Merge with " << nodes[0]->getInt()
-              << "..kint32max";
-      const bool ok = spec->MergeBounds(nodes[0]->getInt(), kint32max);
-      VLOG(1) << "  -> " << spec->DebugString();
-      if (ok) {
-        return;
-      }
-    }
-  }
-  if (id == "int_eq") {
-    const std::vector<AST::Node*>& nodes = args->a;
-    if (nodes[0]->isIntVar() && nodes[1]->isInt()) {
-      IntVarSpec* const spec =
-          int_variables_[FindEndIntegerVariable(nodes[0]->getIntVar())];
-      VLOG(1) << spec->DebugString() << "Merge with " << nodes[1]->getInt();
-      const bool ok = spec->MergeBounds(nodes[1]->getInt(), nodes[1]->getInt());
-      VLOG(1) << "  -> " << spec->DebugString();
-      if (ok) {
-        return;
-      }
-    } else if (args->a[0]->isInt() && args->a[1]->isIntVar()) {
-      IntVarSpec* const spec =
-          int_variables_[FindEndIntegerVariable(nodes[1]->getIntVar())];
-      VLOG(1) << spec->DebugString() << "Merge with " << nodes[0]->getInt();
-      const bool ok = spec->MergeBounds(nodes[0]->getInt(), nodes[0]->getInt());
-      VLOG(1) << "  -> " << spec->DebugString();
-      if (ok) {
-        return;
-      }
-    }
-  }
-  if (id == "set_in") {
-    const std::vector<AST::Node*>& nodes = args->a;
-    if (nodes[0]->isIntVar() && nodes[1]->isSet()) {
-      IntVarSpec* const spec =
-          int_variables_[FindEndIntegerVariable(nodes[0]->getIntVar())];
-      AST::SetLit* const domain = nodes[1]->getSet();
-      VLOG(1) << spec->DebugString() << "Merge with " << domain;
-      bool ok = false;
-      if (domain->interval) {
-        ok = spec->MergeBounds(domain->min, domain->max);
-      } else {
-        ok = spec->MergeDomain(domain->s);
-      }
-      VLOG(1) << "  -> " << spec->DebugString();
-      if (ok) {
-        return;
-      }
-    }
-  }
-  int target = CtSpec::kNoDefinition;
   constraints_.push_back(
       new CtSpec(constraints_.size(), id, args, annotations));
 }

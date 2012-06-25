@@ -90,7 +90,7 @@ class VarSpec {
   /// Whether the variable aliases another variable
   const bool alias;
   /// Whether the variable is assigned
-  const bool assigned;
+  bool assigned;
   // name
   string name;
   /// Constructor
@@ -192,6 +192,19 @@ class IntVarSpec : public VarSpec {
     return false;
   }
 
+  bool IsBound() const {
+    return assigned || (domain_.defined() &&
+                        domain_.value()->min == domain_.value()->max);
+  }
+
+  int GetBound() const {
+    CHECK(IsBound());
+    if (assigned) {
+      return i;
+    }
+    return domain_.value()->min;
+  }
+
   virtual string DebugString() const {
     if (alias) {
       return StringPrintf(
@@ -253,6 +266,19 @@ class BoolVarSpec : public VarSpec {
   ~BoolVarSpec() {
     if (!alias && !assigned && domain_.defined() && own_domain_)
       delete domain_.value();
+  }
+
+  void Assign(bool value) {
+    assigned = true;
+    i = value;
+  }
+
+  bool IsTrue() const {
+    return (assigned && i == true);
+  }
+
+  bool IsFalse() const {
+    return (assigned && i == false);
   }
 
   virtual string DebugString() const {
@@ -380,7 +406,8 @@ class CtSpec {
         id_(id),
         args_(args),
         annotations_(annotations),
-        defines_(kNoDefinition) {
+        defines_(kNoDefinition),
+        nullified_(false) {
   }
 
   ~CtSpec() {
@@ -398,6 +425,10 @@ class CtSpec {
 
   AST::Node* Arg(int index) const {
     return args_->a[index];
+  }
+
+  AST::Node* LastArg() const {
+    return args_->a.back();
   }
 
   int NumArgs() const {
@@ -452,14 +483,36 @@ class CtSpec {
     return &requires_;
   }
 
+  void Unreify() {
+    id_.resize(id_.size() - 5);
+  }
+
+  void Nullify() {
+    nullified_ = true;
+    id_.append("_null");
+  }
+
+  bool Nullified() const {
+    return nullified_;
+  }
+
+  void AddAnnotation(AST::Node* const node) {
+    if (annotations_ == NULL) {
+      annotations_ = new AST::Array(node);
+    } else {
+      annotations_->getArray()->a.push_back(node);
+    }
+  }
+
  private:
   const int index_;
-  const std::string id_;
+  std::string id_;
   AST::Array* const args_;
-  AST::Node* const annotations_;
+  AST::Node* annotations_;
   int defines_;
   std::vector<int> uses_;
   hash_set<int> requires_;
+  bool nullified_;
 };
 }  // namespace operations_research
 #endif

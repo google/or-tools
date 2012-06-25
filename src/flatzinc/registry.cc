@@ -80,7 +80,7 @@ class ModelBuilder {
   /// Add posting function \a p with identifier \a id
   void Register(const std::string& id, Builder p);
   /// Post constraint specified by \a ce
-  void Post(FlatZincModel* const model, const string& id, CtSpec* const spec);
+  void Post(FlatZincModel* const model, CtSpec* const spec);
 
  private:
   /// The actual builders.
@@ -89,15 +89,16 @@ class ModelBuilder {
 
 static ModelBuilder global_model_builder;
 
-void ModelBuilder::Post(FlatZincModel* const model,
-                        const string& id,
-                        CtSpec* const spec) {
-  std::map<std::string, Builder>::iterator i = r.find(id);
-  if (i == r.end()) {
-    throw Error("ModelBuilder",
-                std::string("Constraint ") + spec->Id() + " not found");
+void ModelBuilder::Post(FlatZincModel* const model, CtSpec* const spec) {
+  if (!spec->Nullified()) {
+    const string& id = spec->Id();
+    std::map<std::string, Builder>::iterator i = r.find(id);
+    if (i == r.end()) {
+      throw Error("ModelBuilder",
+                  std::string("Constraint ") + spec->Id() + " not found");
+    }
+    i->second(model, spec);
   }
-  i->second(model, spec);
 }
 
 void ModelBuilder::Register(const std::string& id, Builder p) {
@@ -106,11 +107,27 @@ void ModelBuilder::Register(const std::string& id, Builder p) {
 
 void p_int_eq(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  IntVar* const left = model->GetIntVar(spec->Arg(0));
-  IntVar* const right = model->GetIntVar(spec->Arg(1));
-  Constraint* const ct = solver->MakeEquality(left, right);
-  VLOG(1) << "  - posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (spec->Arg(0)->isIntVar() &&
+      spec->defines() == spec->Arg(0)->getIntVar()) {
+    IntVar* const right = model->GetIntVar(spec->Arg(1));
+    VLOG(1) << "  - creating " << spec->Arg(0)->DebugString() << " == "
+            << right->DebugString();
+    CHECK(model->IntegerVariable(spec->Arg(0)->getIntVar()) == NULL);
+    model->SetIntegerVariable(spec->Arg(0)->getIntVar(), right);
+  } else if (spec->Arg(1)->isIntVar() &&
+      spec->defines() == spec->Arg(1)->getIntVar()) {
+    IntVar* const left = model->GetIntVar(spec->Arg(0));
+    VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " == "
+            << left->DebugString();
+    CHECK(model->IntegerVariable(spec->Arg(1)->getIntVar()) == NULL);
+    model->SetIntegerVariable(spec->Arg(1)->getIntVar(), left);
+  } else {
+    IntVar* const left = model->GetIntVar(spec->Arg(0));
+    IntVar* const right = model->GetIntVar(spec->Arg(1));
+    Constraint* const ct = solver->MakeEquality(left, right);
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_int_ne(FlatZincModel* const model, CtSpec* const spec) {
@@ -599,7 +616,7 @@ void p_int_plus(FlatZincModel* const model, CtSpec* const spec) {
     VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " == "
             << right->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(1)->getIntVar()) == NULL);
-    model->SetIntegerVariable(spec->Arg(1)->getIntVar(), left);
+    model->SetIntegerVariable(spec->Arg(1)->getIntVar(), right);
   } else if (spec->Arg(2)->isIntVar() &&
       spec->defines() == spec->Arg(2)->getIntVar()) {
     IntVar* const left = model->GetIntVar(spec->Arg(0));
@@ -1315,6 +1332,8 @@ void p_var_cumulative(FlatZincModel* const model, CtSpec* const spec) {
   solver->AddConstraint(ct);
 }
 
+void p_true_constraint(FlatZincModel* const model, CtSpec* const spec) {}
+
 class IntBuilder {
  public:
   IntBuilder(void) {
@@ -1393,6 +1412,7 @@ class IntBuilder {
     global_model_builder.Register("sort", &p_sort);
     global_model_builder.Register("fixed_cumulative", &p_fixed_cumulative);
     global_model_builder.Register("var_cumulative", &p_var_cumulative);
+    global_model_builder.Register("true_constraint", &p_true_constraint);
   }
 };
 IntBuilder __int_Builder;
@@ -1451,23 +1471,9 @@ class SetBuilder {
 SetBuilder __set_Builder;
 }  // namespace
 
-void FlatZincModel::PostConstraint(CtSpec* const spec,
-                                   const hash_set<int>& true_booleans ) {
+void FlatZincModel::PostConstraint(CtSpec* const spec) {
   try {
-    const string& id = spec->Id();
-    if (id.find("_reif") != string::npos &&
-        spec->Arg(spec->NumArgs() - 1)->isBoolVar() &&
-        ContainsKey(true_booleans,
-                    spec->Arg(spec->NumArgs() - 1)->getBoolVar())) {
-      string new_id = id;
-      new_id.resize(new_id.size() - 5);
-      VLOG(1) << "  - switching from " << id << " to " << new_id;
-      global_model_builder.Post(this, new_id, spec);
-      const int bool_no =  spec->Arg(spec->NumArgs() - 1)->getBoolVar();
-      SetBooleanVariable(bool_no, solver_.MakeIntConst(1));
-    } else {
-      global_model_builder.Post(this, spec->Id(), spec);
-    }
+    global_model_builder.Post(this, spec);
   } catch (AST::TypeError& e) {
     throw Error("Type error", e.what());
   }
