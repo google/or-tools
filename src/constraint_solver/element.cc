@@ -1193,8 +1193,7 @@ class IntExprArrayElementCstCt : public Constraint {
         size_(vars.size()),
         index_(index),
         target_(target),
-        demons_(size_),
-        index_iterator_(index->MakeHoleIterator(true)) {}
+        demons_(size_) {}
 
   virtual ~IntExprArrayElementCstCt() {}
 
@@ -1265,7 +1264,6 @@ class IntExprArrayElementCstCt : public Constraint {
   IntVar* const index_;
   const int64 target_;
   std::vector<Demon*> demons_;
-  IntVarIterator* const index_iterator_;
 };
 
 // ----- IntExprArrayElement -----
