@@ -216,6 +216,7 @@ void SLMInterface::Reset() {
   CheckReturnKey(SlmSetObjName(model_, solver_->name_.c_str()));
   CheckReturnKey(SlmSetParamDefault(model_));
   SetOptimizationDirection(maximize_);
+  ResetExtractionInformation();
 }
 
 void SLMInterface::WriteModel(const string& filename) {
