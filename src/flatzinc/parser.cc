@@ -269,10 +269,30 @@ void ParserState::CreateModel() {
     }
   }
 
+  // Setup mapping structures (constraints per id, and constraints per
+  // variable).
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
+    const int index = spec->Index();
     if (!spec->Nullified()) {
-      constraints_per_id_[spec->Id()].push_back(spec->Index());
+      constraints_per_id_[spec->Id()].push_back(index);
+      const int num_args = spec->NumArgs();
+      for (int i = 0; i < num_args; ++i) {
+        AST::Node* const arg = spec->Arg(i);
+        if (arg->isIntVar()) {
+          constraints_per_int_variables_[arg->getIntVar()].push_back(index);
+        } else if (arg->isBoolVar()) {
+          constraints_per_bool_variables_[arg->getBoolVar()].push_back(index);
+        } else if (arg->isArray()) {
+          const std::vector<AST::Node*>& array = arg->getArray()->a;
+          for (int j = 0; j < array.size(); ++j) {
+            if (array[j]->isIntVar()) {
+              constraints_per_int_variables_[array[j]->getIntVar()].push_back(index);        } else if (array[j]->isBoolVar()) {
+              constraints_per_bool_variables_[array[j]->getBoolVar()].push_back(index);
+            }
+          }
+        }
+      }
     }
   }
 
@@ -794,6 +814,10 @@ bool ParserState::Presolve(CtSpec* const spec) {
   return false;
 }
 
+void ParserState::Strongify(int constraint_index) {
+
+}
+
 void ParserState::AddConstraint(const std::string& id,
                                 AST::Array* const args,
                                 AST::Node* const annotations) {
@@ -802,10 +826,13 @@ void ParserState::AddConstraint(const std::string& id,
 }
 
 void ParserState::InitModel() {
-  if (!hadError)
+  if (!hadError) {
     model_->Init(int_variables_.size(),
                  bool_variables_.size(),
                  set_variables_.size());
+    constraints_per_int_variables_.resize(int_variables_.size());
+    constraints_per_bool_variables_.resize(bool_variables_.size());
+  }
 }
 
 void ParserState::FillOutput(operations_research::FlatZincModel& m) {

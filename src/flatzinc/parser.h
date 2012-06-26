@@ -204,6 +204,8 @@ class ParserState {
   hash_set<int> stored_constraints_;
   std::vector<std::vector<int> > all_differents_;
   hash_map<string, std::vector<int> > constraints_per_id_;
+  std::vector<std::vector<int> > constraints_per_int_variables_;
+  std::vector<std::vector<int> > constraints_per_bool_variables_;
 };
 
 AST::Node* ArrayOutput(AST::Call* ann);
