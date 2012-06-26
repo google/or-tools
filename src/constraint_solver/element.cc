@@ -1613,4 +1613,23 @@ Constraint* Solver::MakeArrayPositionConstraint(
     int64 target) {
   return RevAlloc(new IntExprArrayPositionCt(this, vars, index, target));
 }
+
+IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars,
+                                     int64 value) {
+  IntExpr* const cache =
+      model_cache_->FindVarArrayConstantExpression(
+          vars, value, ModelCache::VAR_ARRAY_CONSTANT_INDEX);
+  if (cache != NULL) {
+    return cache->Var();
+  } else {
+    const string name = StringPrintf("Index(%s, %" GG_LL_FORMAT "d)",
+                                     NameVector(vars, ", ").c_str(),
+                                     value);
+    IntVar* const index = MakeIntVar(0, vars.size() - 1, name);
+    AddConstraint(MakeArrayPositionConstraint(vars, index, value));
+    model_cache_->InsertVarArrayConstantExpression(
+        index, vars, value, ModelCache::VAR_ARRAY_CONSTANT_INDEX);
+    return index;
+  }
+}
 }  // namespace operations_research

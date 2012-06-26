@@ -1287,6 +1287,9 @@ class Solver {
   // vars[expr]
   IntExpr* MakeElement(const std::vector<IntVar*>& vars, IntVar* const index);
 
+  // Position of i in array.
+  IntExpr* MakeIndexExpression(const std::vector<IntVar*>& vars, int64 value);
+
   // min(vars)
   IntExpr* MakeMin(const std::vector<IntVar*>& vars);
   // min (left, right)

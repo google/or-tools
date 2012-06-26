@@ -39,7 +39,10 @@
  *
  */
 
+#include "base/commandlineflags.h"
 #include "flatzinc/flatzinc.h"
+
+DECLARE_bool(cp_trace_search);
 
 namespace operations_research {
 extern bool StrongPropagation(AST::Node* const annotations);
@@ -50,6 +53,8 @@ Constraint* MakeStrongScalProdEquality(Solver* const solver,
                                        std::vector<IntVar*>& variables,
                                        std::vector<int64>& coefficients,
                                        int64 rhs) {
+  const bool trace = FLAGS_cp_trace_search;
+  FLAGS_cp_trace_search = false;
   const int size = variables.size();
   IntTupleSet tuples(size);
   Solver s("build");
@@ -69,6 +74,7 @@ Constraint* MakeStrongScalProdEquality(Solver* const solver,
     tuples.Insert(one_tuple);
   }
   s.EndSearch();
+  FLAGS_cp_trace_search = trace;
   return solver->MakeAllowedAssignments(variables, tuples);
 }
 
@@ -949,7 +955,8 @@ void p_array_var_int_position(FlatZincModel* const model, CtSpec* const spec) {
   }
   const int target = spec->Arg(2)->getInt();
   Constraint* const ct =
-      solver->MakeArrayPositionConstraint(variables, shifted_index, target);
+      solver->MakeEquality(
+          shifted_index, solver->MakeIndexExpression(variables, target)->Var());
   VLOG(1) << "  - posted " << ct->DebugString();
   solver->AddConstraint(ct);
 }

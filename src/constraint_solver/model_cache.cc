@@ -364,6 +364,7 @@ class NonReversibleCache : public ModelCache {
   typedef Cache2<IntExpr, IntExpr*, IntExpr*> ExprExprIntExprCache;
   typedef Cache2<IntExpr, IntVar*, ConstIntArray*> VarConstantArrayIntExprCache;
   typedef Cache2<IntExpr, std::vector<IntVar*>, ConstIntArray*> VarArrayConstantArrayIntExprCache;
+  typedef Cache2<IntExpr, std::vector<IntVar*>, int64> VarArrayConstantIntExprCache;
 
   typedef Cache3<IntExpr, IntVar*, int64, int64>
       VarConstantConstantIntExprCache;
@@ -413,6 +414,10 @@ class NonReversibleCache : public ModelCache {
       var_array_constant_array_expressions_.push_back(
           new VarArrayConstantArrayIntExprCache);
     }
+    for (int i = 0; i < VAR_ARRAY_CONSTANT_EXPRESSION_MAX; ++i) {
+      var_array_constant_expressions_.push_back(
+          new VarArrayConstantIntExprCache);
+    }
   }
 
   virtual ~NonReversibleCache() {
@@ -428,6 +433,7 @@ class NonReversibleCache : public ModelCache {
     STLDeleteElements(&var_constant_array_expressions_);
     STLDeleteElements(&var_array_expressions_);
     STLDeleteElements(&var_array_constant_array_expressions_);
+    STLDeleteElements(&var_array_constant_expressions_);
   }
 
   // Void Constraint.-
@@ -770,7 +776,7 @@ class NonReversibleCache : public ModelCache {
   }
 
 
-  virtual void InsertArrayVarConstantArrayExpression(
+  virtual void InsertVarArrayConstantArrayExpression(
       IntExpr* const expression,
       const std::vector<IntVar*>& vars,
       ConstIntArray* const values,
@@ -786,6 +792,31 @@ class NonReversibleCache : public ModelCache {
     }
   }
 
+  // Var Array Constant Expressions.
+
+  virtual IntExpr* FindVarArrayConstantExpression(
+      const std::vector<IntVar*>& vars,
+      int64 value,
+      VarArrayConstantExpressionType type) const  {
+    DCHECK_GE(type, 0);
+    DCHECK_LT(type, VAR_ARRAY_CONSTANT_EXPRESSION_MAX);
+    return var_array_constant_expressions_[type]->Find(vars, value);
+  }
+
+  virtual void InsertVarArrayConstantExpression(
+      IntExpr* const expression,
+      const std::vector<IntVar*>& vars,
+      int64 value,
+      VarArrayConstantExpressionType type) {
+    DCHECK(expression != NULL);
+    DCHECK_GE(type, 0);
+    DCHECK_LT(type, VAR_ARRAY_CONSTANT_EXPRESSION_MAX);
+    if (solver()->state() != Solver::IN_SEARCH &&
+        var_array_constant_expressions_[type]->Find(vars, value) == NULL) {
+      var_array_constant_expressions_[type]->UnsafeInsert(
+          vars, value, expression);
+    }
+  }
 
  private:
   std::vector<Constraint*> void_constraints_;
@@ -802,6 +833,7 @@ class NonReversibleCache : public ModelCache {
   std::vector<VarConstantArrayIntExprCache*> var_constant_array_expressions_;
   std::vector<VarArrayIntExprCache*> var_array_expressions_;
   std::vector<VarArrayConstantArrayIntExprCache*> var_array_constant_array_expressions_;
+  std::vector<VarArrayConstantIntExprCache*> var_array_constant_expressions_;
 };
 }  // namespace
 

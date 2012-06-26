@@ -61,6 +61,13 @@ template <class T> string NameArray(T* const* array,
   return out;
 }
 
+// Creates a string from an vector of objects supporting the
+// name() method, and a separator.
+template <class T> string NameVector(const std::vector<T*>& array,
+                                     const string& separator) {
+  return NameArray(array.data(), array.size(), separator);
+}
+
 // Creates a string from an array of int64, and a separator.
 inline string Int64ArrayToString(const int64* const array,
                                  int size,

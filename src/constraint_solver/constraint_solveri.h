@@ -1481,6 +1481,11 @@ class ModelCache {
     VAR_ARRAY_EXPRESSION_MAX,
   };
 
+  enum VarArrayConstantExpressionType {
+    VAR_ARRAY_CONSTANT_INDEX = 0,
+    VAR_ARRAY_CONSTANT_EXPRESSION_MAX,
+  };
+
   explicit ModelCache(Solver* const solver);
   virtual ~ModelCache();
 
@@ -1638,11 +1643,24 @@ class ModelCache {
       ConstIntArray* const values,
       VarArrayConstantArrayExpressionType type) const = 0;
 
-  virtual void InsertArrayVarConstantArrayExpression(
+  virtual void InsertVarArrayConstantArrayExpression(
       IntExpr* const expression,
       const std::vector<IntVar*>& var,
       ConstIntArray* const values,
       VarArrayConstantArrayExpressionType type) = 0;
+
+  // Var Array Constant Expressions.
+
+  virtual IntExpr* FindVarArrayConstantExpression(
+      const std::vector<IntVar*>& vars,
+      int64 value,
+      VarArrayConstantExpressionType type) const = 0;
+
+  virtual void InsertVarArrayConstantExpression(
+      IntExpr* const expression,
+      const std::vector<IntVar*>& var,
+      int64 value,
+      VarArrayConstantExpressionType type) = 0;
 
   Solver* solver() const;
 
