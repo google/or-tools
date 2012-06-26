@@ -196,12 +196,14 @@ class ParserState {
   void ComputeViableTarget(CtSpec* const spec,
                            hash_set<int>* const candidates) const;
   void Sanitize(CtSpec* const spec);
+  void Strongify(int constraint_index);
 
   operations_research::FlatZincModel* model_;
   std::vector<std::pair<std::string,AST::Node*> > output_;
   hash_set<int> orphans_;
   hash_set<int> stored_constraints_;
   std::vector<std::vector<int> > all_differents_;
+  hash_map<string, std::vector<int> > constraints_per_id_;
 };
 
 AST::Node* ArrayOutput(AST::Call* ann);

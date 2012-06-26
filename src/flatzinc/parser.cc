@@ -269,6 +269,27 @@ void ParserState::CreateModel() {
     }
   }
 
+  for (unsigned int i = 0; i < constraints_.size(); i++) {
+    CtSpec* const spec = constraints_[i];
+    if (!spec->Nullified()) {
+      constraints_per_id_[spec->Id()].push_back(spec->Index());
+    }
+  }
+
+  VLOG(1) << "Model statistics";
+  for (ConstIter<hash_map<string, std::vector<int> > > it(constraints_per_id_);
+        !it.at_end();
+       ++it) {
+    VLOG(1) << "  - " << it->first << ": " << it->second.size();
+  }
+
+  if (ContainsKey(constraints_per_id_, "array_bool_or")) {
+    const std::vector<int>& ors = constraints_per_id_["array_bool_or"];
+    for (int i = 0; i < ors.size(); ++i) {
+      Strongify(ors[i]);
+    }
+  }
+
   // Discover expressions, topological sort of constraints.
 
   for (unsigned int i = 0; i < constraints_.size(); i++) {
