@@ -1287,11 +1287,11 @@ int64 CenterValueSelector::Select(const IntVar* const v, int64 id) {
   }
   const int64 diameter = vmax - mid;  // always greater than mid - vmix.
   for (int64 i = 1; i <= diameter; ++i) {
-    if (v->Contains(mid + i)) {
-      return mid + i;
-    }
     if (v->Contains(mid - i)) {
       return mid - i;
+    }
+    if (v->Contains(mid + i)) {
+      return mid + i;
     }
   }
   return 0LL;

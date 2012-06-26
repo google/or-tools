@@ -281,6 +281,15 @@ class BoolVarSpec : public VarSpec {
     return (assigned && i == false);
   }
 
+  bool IsBound() const {
+    return IsTrue() || IsFalse();
+  }
+
+  int GetBound() const {
+    CHECK(IsBound());
+    return IsTrue();
+  }
+
   virtual string DebugString() const {
     if (alias) {
       return StringPrintf(
@@ -514,6 +523,19 @@ class CtSpec {
       annotations_ = new AST::Array(node);
     } else {
       annotations_->getArray()->a.push_back(node);
+    }
+  }
+
+  void RemoveDefines() {
+    if (annotations_ != NULL) {
+      AST::Array* const ann_array = annotations_->getArray();
+      if (ann_array->a[0]->isCall("defines_var")) {
+        delete ann_array->a[0];
+        for (int i = 0; i < ann_array->a.size() - 1; ++i) {
+          ann_array->a[i] = ann_array->a[i + 1];
+        }
+        ann_array->a.pop_back();
+      }
     }
   }
 

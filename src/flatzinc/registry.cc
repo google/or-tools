@@ -116,14 +116,14 @@ void p_int_eq(FlatZincModel* const model, CtSpec* const spec) {
   if (spec->Arg(0)->isIntVar() &&
       spec->defines() == spec->Arg(0)->getIntVar()) {
     IntVar* const right = model->GetIntVar(spec->Arg(1));
-    VLOG(1) << "  - creating " << spec->Arg(0)->DebugString() << " == "
+    VLOG(1) << "  - creating " << spec->Arg(0)->DebugString() << " := "
             << right->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(0)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(0)->getIntVar(), right);
   } else if (spec->Arg(1)->isIntVar() &&
       spec->defines() == spec->Arg(1)->getIntVar()) {
     IntVar* const left = model->GetIntVar(spec->Arg(0));
-    VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " == "
+    VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " := "
             << left->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(1)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(1)->getIntVar(), left);
@@ -193,8 +193,8 @@ void p_int_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
         node_right->isInt() ?
         solver->MakeIsEqualCstVar(left, node_right->getInt()) :
         solver->MakeIsEqualVar(left, model->GetIntVar(node_right));
-    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " -> "
-            << boolvar->DebugString();;
+    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
+            << boolvar->DebugString();
     CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
     model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
     CHECK_NOTNULL(boolvar);
@@ -215,8 +215,8 @@ void p_int_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
   if (node_boolvar->isBoolVar() &&
       node_boolvar->getBoolVar() + model->IntVarCount() == spec->defines()) {
     IntVar* const boolvar = solver->MakeIsDifferentVar(left, right);
-    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " -> "
-            << boolvar->DebugString();;
+    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
+            << boolvar->DebugString();
     CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
     model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
     CHECK_NOTNULL(boolvar);
@@ -308,7 +308,7 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
     }
     IntVar* const target =
         solver->MakeScalProd(variables, coefficients)->Var();
-    VLOG(1) << "  - creating xi(" << spec->defines() << ") -> "
+    VLOG(1) << "  - creating xi(" << spec->defines() << ") := "
             << target->DebugString();
     CHECK(model->IntegerVariable(spec->defines()) == NULL);
     model->SetIntegerVariable(spec->defines(), target);
@@ -348,8 +348,8 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
   if (node_boolvar->isBoolVar() &&
       node_boolvar->getBoolVar() + model->IntVarCount() == spec->defines()) {
     IntVar* const boolvar = solver->MakeIsEqualCstVar(var, rhs);
-    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " -> "
-            << boolvar->DebugString();;
+    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
+            << boolvar->DebugString();
     CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
     model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
   } else {
@@ -610,7 +610,7 @@ void p_int_plus(FlatZincModel* const model, CtSpec* const spec) {
     IntVar* const right = model->GetIntVar(spec->Arg(1));
     IntVar* const target = model->GetIntVar(spec->Arg(2));
     IntVar* const left = solver->MakeDifference(target, right)->Var();
-    VLOG(1) << "  - creating " << spec->Arg(0)->DebugString() << " == "
+    VLOG(1) << "  - creating " << spec->Arg(0)->DebugString() << " := "
             << left->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(0)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(0)->getIntVar(), left);
@@ -619,7 +619,7 @@ void p_int_plus(FlatZincModel* const model, CtSpec* const spec) {
     IntVar* const left = model->GetIntVar(spec->Arg(0));
     IntVar* const target = model->GetIntVar(spec->Arg(2));
     IntVar* const right = solver->MakeDifference(target, left)->Var();
-    VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " == "
+    VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " := "
             << right->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(1)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(1)->getIntVar(), right);
@@ -628,7 +628,7 @@ void p_int_plus(FlatZincModel* const model, CtSpec* const spec) {
     IntVar* const left = model->GetIntVar(spec->Arg(0));
     IntVar* const right = model->GetIntVar(spec->Arg(1));
     IntVar* const target = solver->MakeSum(left, right)->Var();
-    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " == "
+    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
@@ -650,7 +650,7 @@ void p_int_minus(FlatZincModel* const model, CtSpec* const spec) {
   if (spec->Arg(2)->isIntVar() &&
       spec->defines() == spec->Arg(2)->getIntVar()) {
     IntVar* const target = solver->MakeDifference(left, right)->Var();
-    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " -> "
+    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
@@ -671,7 +671,7 @@ void p_int_times(FlatZincModel* const model, CtSpec* const spec) {
   if (spec->Arg(2)->isIntVar() &&
       spec->defines() == spec->Arg(2)->getIntVar()) {
     IntVar* const target = solver->MakeProd(left, right)->Var();
-    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " -> "
+    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
@@ -728,7 +728,7 @@ void p_int_min(FlatZincModel* const model, CtSpec* const spec) {
   if (spec->Arg(2)->isIntVar() &&
       spec->defines() == spec->Arg(2)->getIntVar()) {
     IntVar* const target = solver->MakeMin(left, right)->Var();
-    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " -> "
+    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
@@ -748,7 +748,7 @@ void p_int_max(FlatZincModel* const model, CtSpec* const spec) {
   if (spec->Arg(2)->isIntVar() &&
       spec->defines() == spec->Arg(2)->getIntVar()) {
     IntVar* const target = solver->MakeMax(left, right)->Var();
-    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " -> "
+    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
@@ -784,7 +784,7 @@ void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
   if (node_boolvar->isBoolVar() &&
       node_boolvar->getBoolVar() + model->IntVarCount() == spec->defines()) {
     IntVar* const boolvar = solver->MakeMin(variables)->Var();
-    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " -> "
+    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
             << boolvar->DebugString();
     CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
     model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
@@ -815,7 +815,7 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
   if (node_boolvar->isBoolVar() &&
       node_boolvar->getBoolVar() + model->IntVarCount() == spec->defines()) {
     IntVar* const boolvar = solver->MakeMax(variables)->Var();
-    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " -> "
+    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
             << boolvar->DebugString();
     CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
     model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
@@ -904,7 +904,7 @@ void p_array_int_element(FlatZincModel* const model, CtSpec* const spec) {
       spec->defines() == spec->Arg(2)->getIntVar()) {
     IntVar* const target =
         solver->MakeElement(coefficients, shifted_index)->Var();
-    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " -> "
+    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
@@ -930,7 +930,7 @@ void p_array_var_int_element(FlatZincModel* const model, CtSpec* const spec) {
   if (spec->Arg(2)->isIntVar() &&
       spec->defines() == spec->Arg(2)->getIntVar()) {
     IntVar* const target = solver->MakeElement(variables, shifted_index)->Var();
-    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " -> "
+    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     CHECK(model->IntegerVariable(spec->Arg(2)->getIntVar()) == NULL);
     model->SetIntegerVariable(spec->Arg(2)->getIntVar(), target);
@@ -975,7 +975,7 @@ void p_array_bool_element(FlatZincModel* const model, CtSpec* const spec) {
       spec->defines() == spec->Arg(2)->getBoolVar() + model->IntVarCount()) {
     IntVar* const target =
         solver->MakeElement(coefficients, shifted_index)->Var();
-    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " -> "
+    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     CHECK(model->BooleanVariable(spec->Arg(2)->getBoolVar()) == NULL);
     model->SetBooleanVariable(spec->Arg(2)->getBoolVar(), target);
@@ -1001,7 +1001,7 @@ void p_array_var_bool_element(FlatZincModel* const model, CtSpec* const spec) {
   if (spec->Arg(2)->isBoolVar() &&
       spec->defines() == spec->Arg(2)->getBoolVar() + model->IntVarCount()) {
     IntVar* const target = solver->MakeElement(variables, shifted_index)->Var();
-    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " -> "
+    VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     CHECK(model->BooleanVariable(spec->Arg(2)->getBoolVar()) == NULL);
     model->SetBooleanVariable(spec->Arg(2)->getBoolVar(), target);
@@ -1022,7 +1022,7 @@ void p_bool2int(FlatZincModel* const model, CtSpec* const spec) {
   IntVar* const left = model->GetIntVar(spec->Arg(0));
   if (spec->Arg(1)->isIntVar() &&
       spec->defines() == spec->Arg(1)->getIntVar()) {
-    VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " -> "
+    VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " := "
             << left->DebugString();
     CHECK(model->IntegerVariable(spec->defines()) == NULL);
     model->SetIntegerVariable(spec->defines(), left);
@@ -1040,7 +1040,7 @@ void p_bool2bool(FlatZincModel* const model, CtSpec* const spec) {
   CHECK_NOTNULL(left);
   if (spec->Arg(1)->isBoolVar() &&
       spec->defines() == spec->Arg(1)->getBoolVar() + model->IntVarCount()) {
-    VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " -> "
+    VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " := "
             << left->DebugString();
     CHECK(model->BooleanVariable(spec->Arg(1)->getBoolVar()) == NULL);
     model->SetBooleanVariable(spec->Arg(1)->getBoolVar(), left);
@@ -1057,7 +1057,7 @@ void p_int2int(FlatZincModel* const model, CtSpec* const spec) {
   IntVar* const left = model->GetIntVar(spec->Arg(0));
   if (spec->Arg(1)->isIntVar() &&
       spec->defines() == spec->Arg(1)->getIntVar()) {
-    VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " -> "
+    VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " := "
             << left->DebugString();
     CHECK(model->IntegerVariable(spec->defines()) == NULL);
     model->SetIntegerVariable(spec->defines(), left);
@@ -1098,7 +1098,7 @@ void p_abs(FlatZincModel* const model, CtSpec* const spec) {
       spec->defines() == spec->Arg(1)->getIntVar()) {
     CHECK(model->IntegerVariable(spec->defines()) == NULL);
     IntVar* const target = solver->MakeAbs(left)->Var();
-    VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " -> "
+    VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " := "
             << target->DebugString();
     model->SetIntegerVariable(spec->defines(), target);
   } else {

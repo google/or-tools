@@ -1266,7 +1266,7 @@ class IntExprArrayElementCstCt : public Constraint {
   std::vector<Demon*> demons_;
 };
 
-// This constraint implements vars[index] == constant.
+// This constraint implements index == position(constant in vars).
 
 class IntExprArrayPositionCt : public Constraint {
  public:

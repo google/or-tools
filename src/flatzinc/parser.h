@@ -161,14 +161,27 @@ class ParserState {
                      AST::Node* const annotations);
   void InitModel();
   void FillOutput(operations_research::FlatZincModel& m);
-  bool Propagate(CtSpec* const spec);
-  bool IsReifTrue(CtSpec* const spec) const;
+  bool Presolve(CtSpec* const spec);
   bool IsBound(AST::Node* const node) const;
   int GetBound(AST::Node* const node) const;
-  bool AllDifferent(AST::Node* const node) const;
+  bool IsAllDifferent(AST::Node* const node) const;
 
   FlatZincModel* model() const {
     return model_;
+  }
+
+  int VarIndex(AST::Node* const node) const {
+    if (node->isIntVar()) {
+      return node->getIntVar();
+    } else if (node->isBoolVar()) {
+      return node->getBoolVar() + int_variables_.size();
+    } else {
+      return -1;
+    }
+  }
+
+  int BoolFromVarIndex(int index) const {
+    return index - int_variables_.size();
   }
 
  private:
@@ -182,6 +195,7 @@ class ParserState {
                            CtSpec* const spec) const;
   void ComputeViableTarget(CtSpec* const spec,
                            hash_set<int>* const candidates) const;
+  void Sanitize(CtSpec* const spec);
 
   operations_research::FlatZincModel* model_;
   std::vector<std::pair<std::string,AST::Node*> > output_;

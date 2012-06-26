@@ -72,11 +72,7 @@ int ParserState::FindTarget(AST::Node* const annotations) const {
       if (ann_array->a[0]->isCall("defines_var")) {
         AST::Call* const call = ann_array->a[0]->getCall();
         AST::Node* const args = call->args;
-        if (args->isIntVar()) {
-          return args->getIntVar();
-        } else if (args->isBoolVar()) {
-          return int_variables_.size() + args->getBoolVar();
-        }
+        return VarIndex(args);
       }
     }
   }
@@ -97,13 +93,8 @@ void ParserState::CollectRequired(AST::Array* const args,
     AST::Node* const node = args->a[i];
     if (node->isArray()) {
       CollectRequired(node->getArray(), candidates, require);
-    } else if (node->isIntVar()) {
-      const int req = node->getIntVar();
-      if (ContainsKey(candidates, req)) {
-        require->insert(req);
-      }
-    } else if (node->isBoolVar()) {
-      const int req = node->getBoolVar() + int_variables_.size();
+    } else if (node->isIntVar() || node->isBoolVar()) {
+      const int req = VarIndex(node);
       if (ContainsKey(candidates, req)) {
         require->insert(req);
       }
@@ -142,15 +133,16 @@ void ParserState::ComputeViableTarget(
     // Defines a bool var.
     const int bool_define = FindTarget(spec->annotations());
     if (bool_define != CtSpec::kNoDefinition) {
-      CHECK(bool_variables_[bool_define - int_variables_.size()]->introduced);
+      CHECK(bool_variables_[BoolFromVarIndex(bool_define)]->introduced);
       candidates->insert(bool_define);
       VLOG(2) << id << " -> insert " << bool_define;
     }
   } else if (id == "int2int") {
-    candidates->insert(spec->Arg(1)->getIntVar());
-    VLOG(2) << id << " -> insert " << spec->Arg(1)->getIntVar();
+    const int int_define = VarIndex(spec->Arg(1));
+    candidates->insert(int_define);
+    VLOG(2) << id << " -> insert " << int_define;
   } else if (id == "bool2bool") {
-    const int bool_define = spec->Arg(1)->getBoolVar() + int_variables_.size();
+    const int bool_define = VarIndex(spec->Arg(1));
     candidates->insert(bool_define);
     VLOG(2) << id << " -> insert " << bool_define;
   }
@@ -198,15 +190,28 @@ void MarkComputedVariables(CtSpec* const spec, hash_set<int>* const computed) {
   }
 }
 
+void ParserState::Sanitize(CtSpec* const spec) {
+  if (spec->Id() == "int_lin_eq" && StrongPropagation(spec->annotations())) {
+    VLOG(1) << "## Presolve ## Remove defines part on " << spec->DebugString();
+    // Remove defines_var part.
+    spec->RemoveDefines();
+  }
+}
+
 void ParserState::CreateModel() {
   hash_set<int> candidates;
   hash_set<int> computed_variables;
 
-  // Find orphans (is_defined && not a target).
+  // Sanity.
+  for (int i = 0; i < constraints_.size(); ++i) {
+    Sanitize(constraints_[i]);
+  }
+  // Find orphans (is_defined && not a viable target).
   hash_set<int> targets;
   for (int i = 0; i < constraints_.size(); ++i) {
     const int target = FindTarget(constraints_[i]->annotations());
     if (target != CtSpec::kNoDefinition) {
+      VLOG(1) << "## Presolve ## Mark xi(" << target << ") as defined";
       targets.insert(target);
     }
   }
@@ -214,6 +219,7 @@ void ParserState::CreateModel() {
     IntVarSpec* const spec = int_variables_[i];
     if (spec->introduced && !ContainsKey(targets, i)) {
       orphans_.insert(i);
+      VLOG(1) << "## Presolve ## Mark xi(" << i << ") as orphan";
     }
   }
 
@@ -226,7 +232,7 @@ void ParserState::CreateModel() {
       if (spec->Nullified()) {
         continue;
       }
-      if (Propagate(spec)) {
+      if (Presolve(spec)) {
         repeat = true;
       }
     }
@@ -258,7 +264,7 @@ void ParserState::CreateModel() {
                                           "bool2bool",
                                           args,
                                           NULL);
-      alias_ct->set_defines(i + int_variables_.size());
+      alias_ct->set_defines(VarIndex(args->a[1]));
       constraints_.push_back(alias_ct);
     }
   }
@@ -452,13 +458,16 @@ void ParserState::CreateModel() {
   for (unsigned int i = int_domain_constraints_.size(); i--;) {
     if (!hadError) {
       const int var_id = int_domain_constraints_[i].first;
+      IntVar* const var = model_->IntegerVariable(var_id);
       AST::SetLit* const dom = int_domain_constraints_[i].second;
-      VLOG(1) << "Reduce integer variable " << var_id
-              << " to " << dom->DebugString();
-      if (dom->interval) {
-        model_->IntegerVariable(var_id)->SetRange(dom->min, dom->max);
-      } else {
-        model_->IntegerVariable(var_id)->SetValues(dom->s);
+      if (dom->interval && (dom->min > var->Min() || dom->max < var->Max())) {
+        VLOG(1) << "Reduce integer variable " << var_id
+                << " to " << dom->DebugString();
+        var->SetRange(dom->min, dom->max);
+      } else if (!dom->interval) {
+        VLOG(1) << "Reduce integer variable " << var_id
+                << " to " << dom->DebugString();
+        var->SetValues(dom->s);
       }
     }
   }
@@ -553,21 +562,11 @@ int ParserState::FindEndIntegerVariable(int index) {
   return index;
 }
 
-bool ParserState::IsReifTrue(CtSpec* const spec) const {
-  AST::Node* const node = spec->LastArg();
-  if (node->isBool() && node->getBool() == 1) {
-    return true;
-  }
-  if (node->isBoolVar()) {
-    const int boolvar = node->getBoolVar();
-    return bool_variables_[boolvar]->IsTrue();
-  }
-  return false;
-}
-
 bool ParserState::IsBound(AST::Node* const node) const {
   return node->isInt() ||
-      (node->isIntVar() && int_variables_[node->getIntVar()]->IsBound());
+      (node->isIntVar() && int_variables_[node->getIntVar()]->IsBound()) ||
+      node->isBool() ||
+      (node->isBoolVar() && bool_variables_[node->getBoolVar()]->IsBound());
 }
 
 int ParserState::GetBound(AST::Node* const node) const {
@@ -577,10 +576,16 @@ int ParserState::GetBound(AST::Node* const node) const {
   if (node->isIntVar()) {
     return int_variables_[node->getIntVar()]->GetBound();
   }
+  if (node->isBool()) {
+    return node->getBool();
+  }
+  if (node->isBoolVar()) {
+    return bool_variables_[node->getBoolVar()]->GetBound();
+  }
   return 0;
 }
 
-bool ParserState::AllDifferent(AST::Node* const node) const {
+bool ParserState::IsAllDifferent(AST::Node* const node) const {
   AST::Array* const array_variables = node->getArray();
   const int size = array_variables->a.size();
   std::vector<int> variables(size);
@@ -614,10 +619,10 @@ bool ParserState::AllDifferent(AST::Node* const node) const {
   return false;
 }
 
-bool ParserState::Propagate(CtSpec* const spec) {
+bool ParserState::Presolve(CtSpec* const spec) {
   const string& id = spec->Id();
   const int index = spec->Index();
-  if (id == "int_le" || (id == "int_le_reif" && IsReifTrue(spec))) {
+  if (id == "int_le") {
     if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
       IntVarSpec* const var_spec =
           int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
@@ -642,7 +647,7 @@ bool ParserState::Propagate(CtSpec* const spec) {
       return ok;
     }
   }
-  if (id == "int_eq" || (id == "int_eq_reif" && IsReifTrue(spec))) {
+  if (id == "int_eq") {
     if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
       IntVarSpec* const var_spec =
           int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
@@ -668,30 +673,34 @@ bool ParserState::Propagate(CtSpec* const spec) {
     } else if (spec->Arg(0)->isIntVar() &&
                spec->Arg(1)->isIntVar() &&
                spec->annotations() == NULL &&
+               !ContainsKey(stored_constraints_, index) &&
                (ContainsKey(orphans_, spec->Arg(0)->getIntVar()) ||
                 ContainsKey(orphans_, spec->Arg(1)->getIntVar()))) {
+      stored_constraints_.insert(index);
       const int var0 = spec->Arg(0)->getIntVar();
       const int var1 = spec->Arg(1)->getIntVar();
-      if (ContainsKey(orphans_, var0) && !ContainsKey(orphans_, var1)) {
+      if (ContainsKey(orphans_, var0)) {
         IntVarSpec* const spec0 = int_variables_[FindEndIntegerVariable(var0)];
         AST::Call* const call =
             new AST::Call("defines_var", new AST::IntVar(var0));
         spec->AddAnnotation(call);
         VLOG(1) << "## Presolve ##  Aliasing xi(" << var0 << ") to xi("
                 << var1 << ")";
+        orphans_.erase(var0);
         return true;
-      } else if (!ContainsKey(orphans_, var0) && ContainsKey(orphans_, var1)) {
+      } else if (ContainsKey(orphans_, var1)) {
         IntVarSpec* const spec1 = int_variables_[FindEndIntegerVariable(var1)];
         AST::Call* const call =
             new AST::Call("defines_var", new AST::IntVar(var1));
         spec->AddAnnotation(call);
         VLOG(1) << "## Presolve ##  Aliasing xi(" << var1 << ") to xi("
                 << var0 << ")";
+        orphans_.erase(var1);
         return true;
       }
     }
   }
-  if (id == "set_in" || (id == "set_in_reif" && IsReifTrue(spec))) {
+  if (id == "set_in") {
     if (spec->Arg(0)->isIntVar() && spec->Arg(1)->isSet()) {
       IntVarSpec* const var_spec =
           int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
@@ -710,7 +719,9 @@ bool ParserState::Propagate(CtSpec* const spec) {
       return ok;
     }
   }
-  if (id == "array_bool_and" && IsReifTrue(spec)) {
+  if (id == "array_bool_and" &&
+      IsBound(spec->Arg(1)) &&
+      GetBound(spec->Arg(1)) == 1) {
     VLOG(1) << "## Presolve ##  Forcing array_bool_and to 1 on "
             << spec->DebugString();
     AST::Array* const array_variables = spec->Arg(0)->getArray();
@@ -724,7 +735,9 @@ bool ParserState::Propagate(CtSpec* const spec) {
     spec->Nullify();
     return true;
   }
-  if (id.find("_reif") != string::npos && IsReifTrue(spec)) {
+  if (id.find("_reif") != string::npos &&
+      IsBound(spec->LastArg()) &&
+      GetBound(spec->LastArg()) == 1) {
     VLOG(1) << "## Presolve ##  Unreify " << spec->DebugString();
     spec->Unreify();
     return true;
@@ -749,17 +762,13 @@ bool ParserState::Propagate(CtSpec* const spec) {
   }
   if (id == "array_var_int_element" &&
       IsBound(spec->Arg(2)) &&
-      AllDifferent(spec->Arg(1))) {
+      IsAllDifferent(spec->Arg(1))) {
     VLOG(1) << "## Presolve ##  Reinforce " << spec->DebugString()
             << " to array_var_int_position";
     spec->SetId("array_var_int_position");
     const int bound = GetBound(spec->Arg(2));
     spec->ReplaceArg(2, new AST::IntLit(bound));
     return true;
-  }
-  if (id == "array_var_int_position" &&
-      !ContainsKey(stored_constraints_, index)) {
-
   }
   return false;
 }
