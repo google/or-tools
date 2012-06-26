@@ -2174,6 +2174,10 @@ Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
   const int size = vars.size();
   if (AreAllBooleans(vars.data(), size) && size > 2) {
     return RevAlloc(new SumBooleanEqualToVar(this, vars.data(), size, var));
+  } else if (size == 1) {
+    return MakeEquality(vars[0], var);
+  } else if (size == 2) {
+    return MakeEquality(MakeSum(vars[0], vars[1])->Var(), var);
   } else {
     if (DetectSumOverflow(vars)) {
       return RevAlloc(new SafeSumConstraint(this, vars, var));
