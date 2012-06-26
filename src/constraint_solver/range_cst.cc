@@ -46,10 +46,17 @@ class RangeEquality : public Constraint {
  private:
   IntVar* const left_;
   IntVar* const right_;
+  IntVarIterator* const left_domain_iterator_;
+  IntVarIterator* const right_domain_iterator_;
+  std::vector<int64> to_remove_;
 };
 
 RangeEquality::RangeEquality(Solver* const s, IntVar* const l, IntVar* const r)
-  : Constraint(s), left_(l), right_(r) {}
+  : Constraint(s),
+    left_(l),
+    right_(r),
+    left_domain_iterator_(left_->MakeDomainIterator(true)),
+    right_domain_iterator_(right_->MakeDomainIterator(true)) {}
 
 void RangeEquality::Post() {
   Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
@@ -60,6 +67,36 @@ void RangeEquality::Post() {
 void RangeEquality::InitialPropagate() {
   left_->SetRange(right_->Min(), right_->Max());
   right_->SetRange(left_->Min(), left_->Max());
+  const int64 left_size = left_->Size();
+  if (left_size < 32 && left_size != left_->Max() - left_->Min() + 1) {
+    to_remove_.clear();
+    for (right_domain_iterator_->Init();
+         right_domain_iterator_->Ok();
+         right_domain_iterator_->Next()) {
+      const int64 value = right_domain_iterator_->Value();
+      if (!left_->Contains(value)) {
+        to_remove_.push_back(value);
+      }
+    }
+    if (!to_remove_.empty()) {
+      right_->RemoveValues(to_remove_);
+    }
+  }
+  const int64 right_size = right_->Size();
+  if (right_size < 32 && right_size != right_->Max() - right_->Min() + 1) {
+    to_remove_.clear();
+    for (left_domain_iterator_->Init();
+         left_domain_iterator_->Ok();
+         left_domain_iterator_->Next()) {
+      const int64 value = left_domain_iterator_->Value();
+      if (!right_->Contains(value)) {
+        to_remove_.push_back(value);
+      }
+    }
+    if (!to_remove_.empty()) {
+      left_->RemoveValues(to_remove_);
+    }
+  }
 }
 
 string RangeEquality::DebugString() const {
