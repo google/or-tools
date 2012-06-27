@@ -192,7 +192,7 @@ void MarkComputedVariables(CtSpec* const spec, hash_set<int>* const computed) {
 
 void ParserState::Sanitize(CtSpec* const spec) {
   if (spec->Id() == "int_lin_eq" && StrongPropagation(spec->annotations())) {
-    VLOG(1) << "## Presolve ## Remove defines part on " << spec->DebugString();
+    VLOG(1) << "  - presolve: remove defines part on " << spec->DebugString();
     // Remove defines_var part.
     spec->RemoveDefines();
   }
@@ -211,7 +211,7 @@ void ParserState::CreateModel() {
   for (int i = 0; i < constraints_.size(); ++i) {
     const int target = FindTarget(constraints_[i]->annotations());
     if (target != CtSpec::kNoDefinition) {
-      VLOG(1) << "## Presolve ## Mark xi(" << target << ") as defined";
+      VLOG(1) << "  - presolve:  mark xi(" << target << ") as defined";
       targets.insert(target);
     }
   }
@@ -219,7 +219,7 @@ void ParserState::CreateModel() {
     IntVarSpec* const spec = int_variables_[i];
     if (spec->introduced && !ContainsKey(targets, i)) {
       orphans_.insert(i);
-      VLOG(1) << "## Presolve ## Mark xi(" << i << ") as orphan";
+      VLOG(1) << "  - presolve:  mark xi(" << i << ") as orphan";
     }
   }
 
@@ -341,9 +341,9 @@ void ParserState::CreateModel() {
     }
   }
 
-  VLOG(1) << "defines only        : " << defines_only.size();
-  VLOG(1) << "no_defines          : " << no_defines.size();
-  VLOG(1) << "defines_and_require : " << defines_and_require.size();
+  VLOG(1) << "  - defines only        : " << defines_only.size();
+  VLOG(1) << "  - no defines          : " << no_defines.size();
+  VLOG(1) << "  - defines and require : " << defines_and_require.size();
 
   const int size = constraints_.size();
   constraints_.clear();
@@ -396,8 +396,6 @@ void ParserState::CreateModel() {
   for (int i = 0; i < no_defines.size(); ++i) {
     constraints_[index++] = no_defines[i];
   }
-
-  VLOG(1) << "Sorting finished";
 
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
@@ -668,7 +666,7 @@ bool ParserState::Presolve(CtSpec* const spec) {
       IntVarSpec* const var_spec =
           int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
       const int bound = GetBound(spec->Arg(1));
-      VLOG(1) << "## Presolve ##  Merge " << var_spec->DebugString()
+      VLOG(1) << "  - presolve:  merge " << var_spec->DebugString()
               << " with kint32min.." << bound;
       const bool ok = var_spec->MergeBounds(kint32min, bound);
       if (ok) {
@@ -679,7 +677,7 @@ bool ParserState::Presolve(CtSpec* const spec) {
       IntVarSpec* const var_spec =
           int_variables_[FindEndIntegerVariable(spec->Arg(1)->getIntVar())];
       const int bound = GetBound(spec->Arg(0));
-      VLOG(1) << "## Presolve ##  Merge " << var_spec->DebugString() << " with "
+      VLOG(1) << "  - presolve:  merge " << var_spec->DebugString() << " with "
               << bound << "..kint32max";
       const bool ok = var_spec->MergeBounds(bound, kint32max);
       if (ok) {
@@ -693,7 +691,7 @@ bool ParserState::Presolve(CtSpec* const spec) {
       IntVarSpec* const var_spec =
           int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
       const int bound = GetBound(spec->Arg(1));
-      VLOG(1) << "## Presolve ##  Assign " << var_spec->DebugString()
+      VLOG(1) << "  - presolve:  assign " << var_spec->DebugString()
               << " to " << bound;
       const bool ok = var_spec->MergeBounds(bound, bound);
       if (ok) {
@@ -704,7 +702,7 @@ bool ParserState::Presolve(CtSpec* const spec) {
       IntVarSpec* const var_spec =
           int_variables_[FindEndIntegerVariable(spec->Arg(1)->getIntVar())];
       const int bound = GetBound(spec->Arg(0));
-      VLOG(1) << "## Presolve ##  Assign " <<  var_spec->DebugString()
+      VLOG(1) << "  - presolve:  assign " <<  var_spec->DebugString()
               << " to " << bound;
       const bool ok = var_spec->MergeBounds(bound, bound);
       if (ok) {
@@ -725,7 +723,7 @@ bool ParserState::Presolve(CtSpec* const spec) {
         AST::Call* const call =
             new AST::Call("defines_var", new AST::IntVar(var0));
         spec->AddAnnotation(call);
-        VLOG(1) << "## Presolve ##  Aliasing xi(" << var0 << ") to xi("
+        VLOG(1) << "  - presolve:  aliasing xi(" << var0 << ") to xi("
                 << var1 << ")";
         orphans_.erase(var0);
         return true;
@@ -734,7 +732,7 @@ bool ParserState::Presolve(CtSpec* const spec) {
         AST::Call* const call =
             new AST::Call("defines_var", new AST::IntVar(var1));
         spec->AddAnnotation(call);
-        VLOG(1) << "## Presolve ##  Aliasing xi(" << var1 << ") to xi("
+        VLOG(1) << "  - presolve:  aliasing xi(" << var1 << ") to xi("
                 << var0 << ")";
         orphans_.erase(var1);
         return true;
@@ -746,7 +744,7 @@ bool ParserState::Presolve(CtSpec* const spec) {
       IntVarSpec* const var_spec =
           int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
       AST::SetLit* const domain = spec->Arg(1)->getSet();
-      VLOG(1) << "## Presolve ##  Merge " << var_spec->DebugString() << " with "
+      VLOG(1) << "  - presolve:  merge " << var_spec->DebugString() << " with "
               << domain->DebugString();
       bool ok = false;
       if (domain->interval) {
@@ -763,7 +761,7 @@ bool ParserState::Presolve(CtSpec* const spec) {
   if (id == "array_bool_and" &&
       IsBound(spec->Arg(1)) &&
       GetBound(spec->Arg(1)) == 1) {
-    VLOG(1) << "## Presolve ##  Forcing array_bool_and to 1 on "
+    VLOG(1) << "  - presolve:  forcing array_bool_and to 1 on "
             << spec->DebugString();
     AST::Array* const array_variables = spec->Arg(0)->getArray();
     const int size = array_variables->a.size();
@@ -779,7 +777,7 @@ bool ParserState::Presolve(CtSpec* const spec) {
   if (id.find("_reif") != string::npos &&
       IsBound(spec->LastArg()) &&
       GetBound(spec->LastArg()) == 1) {
-    VLOG(1) << "## Presolve ##  Unreify " << spec->DebugString();
+    VLOG(1) << "  - presolve:  unreify " << spec->DebugString();
     spec->Unreify();
     return true;
   }
@@ -795,7 +793,7 @@ bool ParserState::Presolve(CtSpec* const spec) {
         return false;
       }
     }
-    VLOG(1) << "## Presolve ## Store all diff info " << spec->DebugString();
+    VLOG(1) << "  - presolve:  store all diff info " << spec->DebugString();
     std::sort(variables.begin(), variables.end());
     stored_constraints_.insert(index);
     all_differents_.push_back(variables);
@@ -804,7 +802,7 @@ bool ParserState::Presolve(CtSpec* const spec) {
   if (id == "array_var_int_element" &&
       IsBound(spec->Arg(2)) &&
       IsAllDifferent(spec->Arg(1))) {
-    VLOG(1) << "## Presolve ##  Reinforce " << spec->DebugString()
+    VLOG(1) << "  - presolve:  reinforce " << spec->DebugString()
             << " to array_var_int_position";
     spec->SetId("array_var_int_position");
     const int bound = GetBound(spec->Arg(2));
