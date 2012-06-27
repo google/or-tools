@@ -43,9 +43,10 @@
 #include "flatzinc/flatzinc.h"
 
 DECLARE_bool(cp_trace_search);
+DECLARE_bool(cp_trace_propagation);
 
 namespace operations_research {
-extern bool StrongPropagation(AST::Node* const annotations);
+extern bool HasDomainAnnotation(AST::Node* const annotations);
 namespace {
 // Help
 
@@ -54,7 +55,9 @@ Constraint* MakeStrongScalProdEquality(Solver* const solver,
                                        std::vector<int64>& coefficients,
                                        int64 rhs) {
   const bool trace = FLAGS_cp_trace_search;
+  const bool propag = FLAGS_cp_trace_propagation;
   FLAGS_cp_trace_search = false;
+  FLAGS_cp_trace_propagation = false;
   const int size = variables.size();
   IntTupleSet tuples(size);
   Solver s("build");
@@ -75,6 +78,7 @@ Constraint* MakeStrongScalProdEquality(Solver* const solver,
   }
   s.EndSearch();
   FLAGS_cp_trace_search = trace;
+  FLAGS_cp_trace_propagation = propag;
   return solver->MakeAllowedAssignments(variables, tuples);
 }
 
@@ -274,7 +278,7 @@ void p_int_lt_reif(FlatZincModel* const model, CtSpec* const spec) {
 }
 
 void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
-  bool strong_propagation = StrongPropagation(spec->annotations());
+  bool strong_propagation = HasDomainAnnotation(spec->annotations());
   Solver* const solver = model->solver();
   AST::Array* const array_coefficents = spec->Arg(0)->getArray();
   AST::Array* const array_variables = spec->Arg(1)->getArray();

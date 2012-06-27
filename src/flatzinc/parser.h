@@ -185,7 +185,6 @@ class ParserState {
   }
 
  private:
-
   int FindEndIntegerVariable(int index);
   int FindTarget(AST::Node* const annotations) const;
   void CollectRequired(AST::Array* const args,

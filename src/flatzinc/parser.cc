@@ -79,7 +79,7 @@ int ParserState::FindTarget(AST::Node* const annotations) const {
   return CtSpec::kNoDefinition;
 }
 
-bool StrongPropagation(AST::Node* const annotations) {
+bool HasDomainAnnotation(AST::Node* const annotations) {
   if (annotations != NULL) {
     return annotations->hasAtom("domain");
   }
@@ -113,7 +113,7 @@ void ParserState::ComputeViableTarget(
       (id == "array_var_int_element" && !IsBound(spec->Arg(2))) ||
       id == "array_int_element" ||
       id == "int_abs" ||
-      (id == "int_lin_eq" && !StrongPropagation(spec->annotations())) ||
+      (id == "int_lin_eq" && !HasDomainAnnotation(spec->annotations())) ||
       id == "int_max" ||
       id == "int_min" ||
       id == "int_eq") {
@@ -191,7 +191,7 @@ void MarkComputedVariables(CtSpec* const spec, hash_set<int>* const computed) {
 }
 
 void ParserState::Sanitize(CtSpec* const spec) {
-  if (spec->Id() == "int_lin_eq" && StrongPropagation(spec->annotations())) {
+  if (spec->Id() == "int_lin_eq" && HasDomainAnnotation(spec->annotations())) {
     VLOG(1) << "  - presolve: remove defines part on " << spec->DebugString();
     // Remove defines_var part.
     spec->RemoveDefines();

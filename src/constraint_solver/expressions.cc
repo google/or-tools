@@ -4128,7 +4128,157 @@ class DivIntPosExpr : public BaseIntExpr {
   IntExpr* const opp_num_;
 };
 
-// ----- IntAbs ------
+// ----- IntAbs And IntAbsConstraint ------
+
+class IntAbsConstraint : public CastConstraint {
+ public:
+  IntAbsConstraint(Solver* const s, IntVar* const sub, IntVar* const target)
+      : CastConstraint(s, target),
+        sub_(sub),
+        sub_hole_iterator_(sub->MakeHoleIterator(true)),
+        target_hole_iterator_(target->MakeHoleIterator(true)),
+        sub_domain_iterator_(sub->MakeDomainIterator(true)),
+        target_domain_iterator_(target->MakeDomainIterator(true)) {}
+
+  virtual ~IntAbsConstraint() {}
+
+  virtual void Post() {
+    Demon* const sub_demon =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &IntAbsConstraint::PropagateSub,
+                             "PropagateSub");
+    sub_->WhenDomain(sub_demon);
+    Demon* const target_demon =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &IntAbsConstraint::PropagateTarget,
+                             "PropagateTarget");
+    target_var_->WhenDomain(target_demon);
+  }
+
+  virtual void InitialPropagate() {
+    if (sub_->Max() <= 0) {
+      target_var_->SetRange(-sub_->Max(), -sub_->Min());
+    } else if (sub_->Min() >= 0) {
+      target_var_->SetRange(sub_->Min(), sub_->Max());
+    } else {
+      target_var_->SetRange(0, std::max(-sub_->Min(), sub_->Max()));
+    }
+    const int64 max_target = target_var_->Max();
+    sub_->SetRange(-max_target, max_target);
+    std::vector<int64> to_remove;
+    for (target_domain_iterator_->Init();
+         target_domain_iterator_->Ok();
+         target_domain_iterator_->Next()) {
+      const int64 value = target_domain_iterator_->Value();
+      if (!sub_->Contains(value) && !sub_->Contains(-value)) {
+        to_remove.push_back(value);
+      }
+    }
+    if (!to_remove.empty()) {
+      target_var_->RemoveValues(to_remove);
+    }
+    to_remove.clear();
+    for (sub_domain_iterator_->Init();
+         sub_domain_iterator_->Ok();
+         sub_domain_iterator_->Next()) {
+      const int64 value = sub_domain_iterator_->Value();
+      const int64 abs_value = value >= 0 ? value : -value;
+      if (!target_var_->Contains(abs_value)) {
+        to_remove.push_back(value);
+      }
+    }
+    if (!to_remove.empty()) {
+      sub_->RemoveValues(to_remove);
+    }
+  }
+
+  void PropagateSub() {
+    if (sub_->Bound()) {
+      const int64 value = sub_->Min();
+      const int64 abs_value = value >= 0 ? value : -value;
+      target_var_->SetValue(abs_value);
+    } else {
+      if (sub_->Max() <= 0) {
+        target_var_->SetRange(-sub_->Max(), -sub_->Min());
+      } else if (sub_->Min() >= 0) {
+        target_var_->SetRange(sub_->Min(), sub_->Max());
+      } else {
+        target_var_->SetRange(0, std::max(-sub_->Min(), sub_->Max()));
+      }
+      const int64 oldmax = sub_->OldMax();
+      const int64 vmin = sub_->Min();
+      const int64 vmax = sub_->Max();
+      for (int64 value = sub_->OldMin(); value < vmin; ++value) {
+        const int64 abs_value = value >= 0 ? value : -value;
+        if (!sub_->Contains(-value)) {
+          target_var_->RemoveValue(abs_value);
+        }
+      }
+      for (sub_hole_iterator_->Init();
+           sub_hole_iterator_->Ok();
+           sub_hole_iterator_->Next()) {
+        const int64 value = sub_hole_iterator_->Value();
+        const int64 abs_value = value >= 0 ? value : -value;
+        if (!sub_->Contains(-value)) {
+          target_var_->RemoveValue(abs_value);
+        }
+      }
+      for (int64 value = vmax + 1; value <= oldmax; ++value) {
+        const int64 abs_value = value >= 0 ? value : -value;
+        if (!sub_->Contains(-value)) {
+          target_var_->RemoveValue(abs_value);
+        }
+      }
+    }
+  }
+
+  void PropagateTarget() {
+    const int64 oldmax = target_var_->OldMax();
+    const int64 vmin = target_var_->Min();
+    const int64 vmax = target_var_->Max();
+    for (int64 value = std::max(0LL, target_var_->OldMin());
+         value < vmin;
+         ++value) {
+      sub_->RemoveValue(value);
+      sub_->RemoveValue(-value);
+    }
+    for (target_hole_iterator_->Init();
+         target_hole_iterator_->Ok();
+         target_hole_iterator_->Next()) {
+      const int64 value = target_hole_iterator_->Value();
+      sub_->RemoveValue(value);
+      sub_->RemoveValue(-value);
+    }
+    for (int64 value = vmax + 1; value <= oldmax; ++value) {
+      sub_->RemoveValue(value);
+      sub_->RemoveValue(-value);
+    }
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("tAbsConstraint(%s, %s)",
+                        sub_->DebugString().c_str(),
+                        target_var_->DebugString().c_str());
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kAbsEqual, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                            sub_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            target_var_);
+    visitor->EndVisitConstraint(ModelVisitor::kAbsEqual, this);
+  }
+
+ private:
+  IntVar* const sub_;
+  IntVarIterator* const target_hole_iterator_;
+  IntVarIterator* const sub_hole_iterator_;
+  IntVarIterator* const target_domain_iterator_;
+  IntVarIterator* const sub_domain_iterator_;
+};
 
 class IntAbs : public BaseIntExpr {
  public:
@@ -4159,6 +4309,22 @@ class IntAbs : public BaseIntExpr {
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kAbs, this);
+  }
+
+  virtual IntVar* CastToVar() {
+    const int64 max_value = std::max(-expr_->Min(), expr_->Max());
+    if (expr_->IsVar() && max_value < 0xFFFFFF) {
+      Solver* const s = solver();
+      const string name =
+          StringPrintf("AbsVar(%s)", expr_->name().c_str());
+      IntVar* const target = s->MakeIntVar(0, max_value, name);
+      CastConstraint* const ct =
+          s->RevAlloc(new IntAbsConstraint(s, expr_->Var(), target));
+      s->AddCastConstraint(ct, target, this);
+      return target;
+    } else {
+      return BaseIntExpr::CastToVar();
+    }
   }
 
  private:

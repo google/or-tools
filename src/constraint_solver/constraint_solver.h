@@ -3146,6 +3146,7 @@ class ModelVisitor : public BaseObject {
  public:
   // Constraint and Expression types.
   static const char kAbs[];
+  static const char kAbsEqual[];
   static const char kAllDifferent[];
   static const char kAllowedAssignments[];
   static const char kBetween[];

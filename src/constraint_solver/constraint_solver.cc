@@ -2585,6 +2585,7 @@ void DecisionVisitor::VisitRankLastInterval(SequenceVar* const sequence,
 // Tags for constraints, arguments, extensions.
 
 const char ModelVisitor::kAbs[] = "Abs";
+const char ModelVisitor::kAbsEqual[] = "AbsEqual";
 const char ModelVisitor::kAllDifferent[] = "AllDifferent";
 const char ModelVisitor::kAllowedAssignments[] = "AllowedAssignments";
 const char ModelVisitor::kBetween[] = "Between";
