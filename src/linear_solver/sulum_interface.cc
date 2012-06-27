@@ -46,8 +46,8 @@ void ExLogCallbackFunction(enum SlmStream str, const char *strprint, void *handl
 
 #define CheckReturnKey(__ret__)\
 {\
-  if( __ret__ != SlmRetOk ) {\
-    LOG(FATAL) <<"Error Sulum API call failed : at line "<<__LINE__<<" ret : "<<__ret__;\
+  if( (__ret__) != SlmRetOk ) {\
+    LOG(FATAL) <<"Error Sulum API call failed : at line "<<__LINE__<<" ret : "<<(__ret__);\
   }\
 }
 
