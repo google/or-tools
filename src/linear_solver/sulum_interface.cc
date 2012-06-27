@@ -47,6 +47,18 @@ void ExLogCallbackFunction(enum SlmStream str, const char *strprint, void *handl
 #define CheckReturnKey(__ret__)\
 {\
   if( (__ret__) != SlmRetOk ) {\
+    VLOG(0) <<"Writing problem to  : sulum_error.mps";\
+    int wret = SlmWriteProblem(model_,"sulum_error.mps");\
+    if( (wret) != SlmRetOk )\
+    {\
+      VLOG(0) <<"Error writing problem to  : sulum_error.mps : "<<(wret);\
+    }\
+    VLOG(0) <<"Writing solution to : sulum_error.sol";\
+    wret = SlmWriteSolution(model_,"sulum_error.sol");\
+    if( (wret) != SlmRetOk )\
+    {\
+      VLOG(0) <<"Error writing solution to  : sulum_error.sol : "<<(wret);\
+    }\
     LOG(FATAL) <<"Error Sulum API call failed : at line "<<__LINE__<<" ret : "<<(__ret__);\
   }\
 }
