@@ -4315,8 +4315,7 @@ class IntAbs : public BaseIntExpr {
     const int64 max_value = std::max(-expr_->Min(), expr_->Max());
     if (expr_->IsVar() && max_value < 0xFFFFFF) {
       Solver* const s = solver();
-      const string name =
-          StringPrintf("AbsVar(%s)", expr_->name().c_str());
+      const string name = StringPrintf("AbsVar(%s)", expr_->name().c_str());
       IntVar* const target = s->MakeIntVar(0, max_value, name);
       CastConstraint* const ct =
           s->RevAlloc(new IntAbsConstraint(s, expr_->Var(), target));
