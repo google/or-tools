@@ -338,29 +338,103 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_variables = spec->Arg(1)->getArray();
   AST::Node* const node_rhs = spec->Arg(2);
   AST::Node* const node_boolvar = spec->Arg(3);
-  const int64 rhs = node_rhs->getInt();
+  int64 rhs = node_rhs->getInt();
   const int size = array_coefficents->a.size();
   CHECK_EQ(size, array_variables->a.size());
   std::vector<int> coefficients(size);
   std::vector<IntVar*> variables(size);
 
+  int positive = 0;
+  int negative = 0;
   for (int i = 0; i < size; ++i) {
     coefficients[i] = array_coefficents->a[i]->getInt();
+    if (coefficients[i] > 0) {
+      positive++;
+    } else if (coefficients[i] < 0) {
+      negative++;
+    }
     variables[i] = model->GetIntVar(array_variables->a[i]);
   }
-  IntVar* const var = solver->MakeScalProd(variables, coefficients)->Var();
-  if (node_boolvar->isBoolVar() &&
-      node_boolvar->getBoolVar() + model->IntVarCount() == spec->defines()) {
-    IntVar* const boolvar = solver->MakeIsEqualCstVar(var, rhs);
-    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
-            << boolvar->DebugString();
-    CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
-    model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
+  if (negative > 0 && positive == 0) {
+    for (int i = 0; i < size; ++i) {
+      coefficients[i] *= -1;
+    }
+    rhs = -rhs;
+    positive = negative;
+    negative = 0;
+  }
+  const int offset = model->IntVarCount();
+  const bool define = node_boolvar->isBoolVar() &&
+      node_boolvar->getBoolVar() + offset == spec->defines();
+
+  if (positive == 1) {
+    IntVar* pos = NULL;
+    std::vector<IntVar*> neg_vars;
+    std::vector<int64> neg_coeffs;
+    for (int i = 0; i < size; ++i) {
+      const int64 coeff = coefficients[i];
+      if (coeff > 0) {
+        pos = solver->MakeProd(variables[i], coeff)->Var();
+      } else if (coeff < 0) {
+        neg_vars.push_back(variables[i]);
+        neg_coeffs.push_back(-coeff);
+      }
+    }
+    pos = solver->MakeSum(pos, -rhs)->Var();
+    IntVar* const other = solver->MakeScalProd(neg_vars, neg_coeffs)->Var();
+    if (define) {
+      IntVar* const boolvar = solver->MakeIsEqualVar(pos, other);
+      VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
+              << boolvar->DebugString();
+      CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
+      model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
+    } else {
+      IntVar* const boolvar = model->GetIntVar(node_boolvar);
+      Constraint* const ct = solver->MakeIsEqualCt(pos, other, boolvar);
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
+  } else if (negative == 1) {
+    IntVar* neg = NULL;
+    std::vector<IntVar*> pos_vars;
+    std::vector<int64> pos_coeffs;
+    for (int i = 0; i < size; ++i) {
+      const int64 coeff = coefficients[i];
+      if (coeff < 0) {
+        neg = solver->MakeProd(variables[i], -coeff)->Var();
+      } else if (coeff > 0) {
+        pos_vars.push_back(variables[i]);
+        pos_coeffs.push_back(coeff);
+      }
+    }
+    neg = solver->MakeSum(neg, rhs)->Var();
+    IntVar* const other = solver->MakeScalProd(pos_vars, pos_coeffs)->Var();
+    if (define) {
+      IntVar* const boolvar = solver->MakeIsEqualVar(neg, other);
+      VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
+              << boolvar->DebugString();
+      CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
+      model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
+    } else {
+      IntVar* const boolvar = model->GetIntVar(node_boolvar);
+      Constraint* const ct = solver->MakeIsEqualCt(neg, other, boolvar);
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
   } else {
-    IntVar* const boolvar = model->GetIntVar(node_boolvar);
-    Constraint* const ct = solver->MakeIsEqualCstCt(var, rhs, boolvar);
-    VLOG(1) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
+    IntVar* const var = solver->MakeScalProd(variables, coefficients)->Var();
+    if (define) {
+      IntVar* const boolvar = solver->MakeIsEqualCstVar(var, rhs);
+      VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
+              << boolvar->DebugString();
+      CHECK(model->BooleanVariable(node_boolvar->getBoolVar()) == NULL);
+      model->SetBooleanVariable(node_boolvar->getBoolVar(), boolvar);
+    } else {
+      IntVar* const boolvar = model->GetIntVar(node_boolvar);
+      Constraint* const ct = solver->MakeIsEqualCstCt(var, rhs, boolvar);
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
   }
 }
 
