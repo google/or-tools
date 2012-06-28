@@ -5434,71 +5434,70 @@ class IsEqualCt : public CastConstraint {
         right_(r),
         left_iterator_(l->MakeDomainIterator(true)),
         right_iterator_(r->MakeDomainIterator(true)),
-        demon_(NULL),
+        range_demon_(NULL),
+        domain_demon_(NULL),
         support_(l->Min() - 1) {}
 
   virtual ~IsEqualCt() {}
 
   virtual void Post() {
-    demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
-    left_->WhenDomain(demon_);
-    right_->WhenDomain(demon_);
-    target_var_->WhenBound(demon_);
+    range_demon_ =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &IsEqualCt::PropagateRange,
+                             "PropagateRange");
+    domain_demon_ =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &IsEqualCt::PropagateDomain,
+                             "PropagateDomain");
+    if (left_->Size() > 32 && right_->Size() > 32) {
+      domain_demon_->inhibit(solver());
+    } else {
+      range_demon_->inhibit(solver());
+    }
+    left_->WhenDomain(domain_demon_);
+    right_->WhenDomain(domain_demon_);
+    left_->WhenRange(range_demon_);
+    right_->WhenRange(range_demon_);
+    Demon* const target_demon =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &IsEqualCt::PropagateTarget,
+                             "PropagateTarget");
+    target_var_->WhenBound(target_demon);
   }
 
   virtual void InitialPropagate() {
+    if (left_->Size() > 32 && right_->Size() > 32) {
+      PropagateRange();
+    } else {
+      PropagateDomain();
+    }
+  }
+
+  void PropagateDomain() {
     if (target_var_->Bound()) {
       if (target_var_->Min() == 0) {
         if (left_->Bound()) {
-          demon_->inhibit(solver());
+          domain_demon_->inhibit(solver());
           right_->RemoveValue(left_->Min());
         } else if (right_->Bound()) {
-          demon_->inhibit(solver());
+          domain_demon_->inhibit(solver());
           left_->RemoveValue(right_->Min());
         }
-      } else {  // Var is true.
-        if (left_->Bound()) {
-          demon_->inhibit(solver());
-          right_->SetValue(left_->Min());
-        } else if (right_->Bound()) {
-          demon_->inhibit(solver());
-          left_->SetValue(right_->Min());
-        }
+      } else {  // target var is true.
+        left_->SetRange(right_->Min(), right_->Max());
+        right_->SetRange(left_->Min(), left_->Max());
       }
       return;
     }
     const int64 support = support_.Value();
     if (!left_->Contains(support) || !right_->Contains(support)) {
-      bool found = false;
-      // Find new support.
-      if (left_->Size() <= right_->Size()) {
-        for (left_iterator_->Init();
-             left_iterator_->Ok();
-             left_iterator_->Next()) {
-          const int64 value = left_iterator_->Value();
-          if (right_->Contains(value)) {
-            found = true;
-            support_.SetValue(solver(), value);
-            break;
-          }
-        }
-      } else {
-        for (right_iterator_->Init();
-             right_iterator_->Ok();
-             right_iterator_->Next()) {
-          const int64 value = right_iterator_->Value();
-          if (left_->Contains(value)) {
-            found = true;
-            support_.SetValue(solver(), value);
-            break;
-          }
-        }
-      }
-      if (!found) {
-        demon_->inhibit(solver());
+      if (!FindSupport()) {
+        domain_demon_->inhibit(solver());
         target_var_->SetValue(0);
       } else if (left_->Bound() && right_->Bound()) {
-        demon_->inhibit(solver());
         target_var_->SetValue(1);
       }
     } else if (left_->Bound() && right_->Bound()) {
@@ -5506,10 +5505,53 @@ class IsEqualCt : public CastConstraint {
     }
   }
 
+  void PropagateRange() {
+    if (target_var_->Bound()) {
+      if (target_var_->Min() == 0) {
+        if (left_->Bound()) {
+          range_demon_->inhibit(solver());
+          right_->RemoveValue(left_->Min());
+        } else if (right_->Bound()) {
+          range_demon_->inhibit(solver());
+          left_->RemoveValue(right_->Min());
+        }
+      } else {  // target var is true.
+        left_->SetRange(right_->Min(), right_->Max());
+        right_->SetRange(left_->Min(), left_->Max());
+      }
+      return;
+    }
+    if (left_->Size() <= 32 || right_->Size() <= 32) {
+      range_demon_->inhibit(solver());
+      domain_demon_->desinhibit(solver());
+      PropagateDomain();
+    } else  if (left_->Min() > right_->Max() || left_->Max() < right_->Min()) {
+      target_var_->SetValue(0);
+      range_demon_->inhibit(solver());
+    }
+  }
+
+  void PropagateTarget() {
+    if (target_var_->Min() == 0) {
+      if (left_->Bound()) {
+        range_demon_->inhibit(solver());
+        domain_demon_->inhibit(solver());
+        right_->RemoveValue(left_->Min());
+      } else if (right_->Bound()) {
+        range_demon_->inhibit(solver());
+        domain_demon_->inhibit(solver());
+        left_->RemoveValue(right_->Min());
+      }
+    } else {  // Var is true.
+      left_->SetRange(right_->Min(), right_->Max());
+      right_->SetRange(left_->Min(), left_->Max());
+    }
+  }
+
   string DebugString() const {
-    return StringPrintf("IsEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
+    return StringPrintf("IsEqualCstCt(%s, %s, %s)",
                         left_->DebugString().c_str(),
-                        right_,
+                        right_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
   }
 
@@ -5525,11 +5567,44 @@ class IsEqualCt : public CastConstraint {
   }
 
  private:
+  bool FindSupport() {
+    bool found = false;
+    if (left_->Max() < right_->Min() || left_->Min() > right_->Max()) {
+      return false;
+    }
+    // Find new support.
+    if (left_->Size() <= right_->Size()) {
+      for (left_iterator_->Init();
+           left_iterator_->Ok();
+           left_iterator_->Next()) {
+        const int64 value = left_iterator_->Value();
+        if (right_->Contains(value)) {
+          found = true;
+          support_.SetValue(solver(), value);
+          break;
+        }
+      }
+    } else {
+      for (right_iterator_->Init();
+           right_iterator_->Ok();
+           right_iterator_->Next()) {
+        const int64 value = right_iterator_->Value();
+        if (left_->Contains(value)) {
+          found = true;
+          support_.SetValue(solver(), value);
+          break;
+        }
+      }
+    }
+    return found;
+  }
+
   IntVar* const left_;
   IntVar* const right_;
   IntVarIterator* const left_iterator_;
   IntVarIterator* const right_iterator_;
-  Demon* demon_;
+  Demon* domain_demon_;
+  Demon* range_demon_;
   Rev<int64> support_;
 };
 }  //  namespace
@@ -5825,11 +5900,7 @@ Constraint* Solver::MakeIsEqualCt(IntExpr* const v1,
       return MakeEquality(v1->Var(), v2->Var());
     }
   }
-  if (v1->Var()->Size() > 0xFFFF || v2->Var()->Size() > 0xFFFF) {
-    return MakeIsEqualCstCt(MakeDifference(v1, v2)->Var(), 0, b);
-  } else {
-    return RevAlloc(new IsEqualCt(this, v1->Var(), v2->Var(), b));
-  }
+  return RevAlloc(new IsEqualCt(this, v1->Var(), v2->Var(), b));
 }
 
 IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
