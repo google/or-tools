@@ -5450,29 +5450,28 @@ class IsEqualCt : public CastConstraint {
     if (target_var_->Bound()) {
       if (target_var_->Min() == 0) {
         if (left_->Bound()) {
+          demon_->inhibit(solver());
           right_->RemoveValue(left_->Min());
-          demon_->inhibit(solver());
         } else if (right_->Bound()) {
-          left_->RemoveValue(right_->Min());
           demon_->inhibit(solver());
+          left_->RemoveValue(right_->Min());
         }
-        return;
       } else {  // Var is true.
         if (left_->Bound()) {
+          demon_->inhibit(solver());
           right_->SetValue(left_->Min());
-          demon_->inhibit(solver());
         } else if (right_->Bound()) {
-          left_->SetValue(right_->Min());
           demon_->inhibit(solver());
+          left_->SetValue(right_->Min());
         }
-        return;
       }
+      return;
     }
     const int64 support = support_.Value();
     if (!left_->Contains(support) || !right_->Contains(support)) {
       bool found = false;
       // Find new support.
-      if (left_->Size() < right_->Size()) {
+      if (left_->Size() <= right_->Size()) {
         for (left_iterator_->Init();
              left_iterator_->Ok();
              left_iterator_->Next()) {
@@ -5495,8 +5494,6 @@ class IsEqualCt : public CastConstraint {
           }
         }
       }
-      // LOG(INFO) << "  - support = " << support_.Value() << ", found = "
-      //           << found;
       if (!found) {
         demon_->inhibit(solver());
         target_var_->SetValue(0);
@@ -5504,6 +5501,8 @@ class IsEqualCt : public CastConstraint {
         demon_->inhibit(solver());
         target_var_->SetValue(1);
       }
+    } else if (left_->Bound() && right_->Bound()) {
+      target_var_->SetValue(1);
     }
   }
 
@@ -5826,8 +5825,7 @@ Constraint* Solver::MakeIsEqualCt(IntExpr* const v1,
       return MakeEquality(v1->Var(), v2->Var());
     }
   }
-  return MakeIsEqualCstCt(MakeDifference(v1, v2)->Var(), 0, b);
-  //  return RevAlloc(new IsEqualCt(this, v1->Var(), v2->Var(), b));
+  return RevAlloc(new IsEqualCt(this, v1->Var(), v2->Var(), b));
 }
 
 IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
