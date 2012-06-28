@@ -5825,7 +5825,11 @@ Constraint* Solver::MakeIsEqualCt(IntExpr* const v1,
       return MakeEquality(v1->Var(), v2->Var());
     }
   }
-  return RevAlloc(new IsEqualCt(this, v1->Var(), v2->Var(), b));
+  if (v1->Var()->Size() > 0xFFFF || v2->Var()->Size() > 0xFFFF) {
+    return MakeIsEqualCstCt(MakeDifference(v1, v2)->Var(), 0, b);
+  } else {
+    return RevAlloc(new IsEqualCt(this, v1->Var(), v2->Var(), b));
+  }
 }
 
 IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
