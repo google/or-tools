@@ -2199,7 +2199,9 @@ template<class T> Constraint* MakeScalProdEqualityFct(Solver* const solver,
     return cst == 0 ? solver->MakeTrueConstraint()
         : solver->MakeFalseConstraint();
   }
-  if (AreAllBooleans(vars, size) && AreAllPositive<T>(coefficients, size)) {
+  if (AreAllBooleans(vars, size) &&
+      AreAllPositive<T>(coefficients, size) &&
+      size > 2) {
     // TODO(user) : bench BooleanScalProdEqVar with IntConst.
     return solver->RevAlloc(new PositiveBooleanScalProdEqCst(solver,
                                                              vars,
@@ -2593,7 +2595,7 @@ template<class T> IntExpr* MakeScalProdFct(Solver* solver,
   if (size == 1) {
     return solver->MakeProd(vars[0], coefs[0]);
   }
-  if (AreAllBooleans(vars.data(), size)) {
+  if (AreAllBooleans(vars.data(), size) && size > 2) {
     if (AreAllPositive<T>(coefs.data(), size)) {
       return solver->RegisterIntExpr(solver->RevAlloc(
           new PositiveBooleanScalProd(
