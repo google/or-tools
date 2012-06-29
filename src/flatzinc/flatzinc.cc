@@ -387,7 +387,8 @@ void FlatZincModel::Solve(int solve_frequency,
                           bool all_solutions,
                           bool ignore_annotations,
                           int num_solutions,
-                          int time_limit_in_ms) {
+                          int time_limit_in_ms,
+                          int simplex_frequency) {
   if (!parsed_ok_) {
     return;
   }
@@ -430,6 +431,11 @@ void FlatZincModel::Solve(int solve_frequency,
                                                 kint64max) :
                               NULL);
   monitors.push_back(limit);
+
+  if (simplex_frequency > 0) {
+    monitors.push_back(solver_.MakeSimplexConstraint(simplex_frequency));
+  }
+
 
   int count = 0;
   bool breaked = false;

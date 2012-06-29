@@ -2656,7 +2656,11 @@ class ExprLinearizer : public ModelParser {
   }
 
   void PushMultiplier(int64 multiplier) {
-    multipliers_.push_back(multiplier);
+    if (multipliers_.empty()) {
+      multipliers_.push_back(multiplier);
+    } else {
+      multipliers_.push_back(multiplier * multipliers_.back());
+    }
   }
 
   void PopMultiplier() {
@@ -2845,26 +2849,26 @@ Constraint* Solver::MakeScalProdLessOrEqual(const std::vector<IntVar*>& vars,
 
 namespace {
 template<class T> IntExpr* MakeScalProdFct(Solver* solver,
-                                           const std::vector<IntVar*>& vars,
-                                           const std::vector<T>& coefs) {
-  // hash_map<const IntExpr*, int64> map;
-  // ExprLinearizer lin(&map);
-  // for (int i = 0; i < pre_vars.size(); ++i) {
-  //   lin.Visit(pre_vars[i], pre_coefs[i]);
-  // }
-  // const int64 constant = lin.Constant();
-  // std::vector<IntVar*> vars;
-  // std::vector<T> coefs;
-  // for (ConstIter<hash_map<const IntExpr*, int64> > iter(map);
-  //      !iter.at_end();
-  //      ++iter) {
-  //   vars.push_back(const_cast<IntExpr*>(iter->first)->Var());
-  //   coefs.push_back(iter->second);
-  // }
-  // if (constant != 0) {
-  //   vars.push_back(solver->MakeIntConst(1));
-  //   coefs.push_back(constant);
-  // }
+                                           const std::vector<IntVar*>& pre_vars,
+                                           const std::vector<T>& pre_coefs) {
+  hash_map<const IntExpr*, int64> map;
+  ExprLinearizer lin(&map);
+  for (int i = 0; i < pre_vars.size(); ++i) {
+    lin.Visit(pre_vars[i], pre_coefs[i]);
+  }
+  const int64 constant = lin.Constant();
+  std::vector<IntVar*> vars;
+  std::vector<T> coefs;
+  for (ConstIter<hash_map<const IntExpr*, int64> > iter(map);
+       !iter.at_end();
+       ++iter) {
+     vars.push_back(const_cast<IntExpr*>(iter->first)->Var());
+     coefs.push_back(iter->second);
+  }
+  if (constant != 0) {
+    vars.push_back(solver->MakeIntConst(1));
+    coefs.push_back(constant);
+  }
 
   const int size = vars.size();
   if (vars.empty() || AreAllNull<T>(coefs.data(), size)) {

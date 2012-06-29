@@ -133,7 +133,8 @@ class FlatZincModel {
              bool all_solutions,
              bool ignore_annotations,
              int num_solutions,
-             int time_limit_in_ms);
+             int time_limit_in_ms,
+             int simplex_frequency);
 
   // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
   void Parse(const std::string& fileName);

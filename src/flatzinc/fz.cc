@@ -52,6 +52,7 @@ DEFINE_bool(free, false, "Ignore search annotations");
 DEFINE_int32(num_solutions, 0, "Number of solution to search for");
 DEFINE_int32(time_limit, 0, "time limit in ms");
 DEFINE_int32(threads, 0, "threads");
+DEFINE_int32(simplex_frequency, 0, "Simplex frequency, 0 = no simplex");
 DECLARE_bool(log_prefix);
 
 namespace operations_research {
@@ -69,7 +70,8 @@ void Run(const std::string& file) {
                  FLAGS_all,
                  FLAGS_free,
                  FLAGS_num_solutions,
-                 FLAGS_time_limit);
+                 FLAGS_time_limit,
+                 FLAGS_simplex_frequency);
 }
 }
 
