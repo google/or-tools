@@ -379,6 +379,15 @@ IntVar* Solver::MakeIsEqualCstVar(IntVar* const var, int64 value) {
   if (value == 0 && IsADifference(var, &left, &right)) {
     return MakeIsEqualVar(left, right);
   }
+  if (var->Max() - var->Min() == 1) {
+    if (value == var->Min()) {
+      return MakeDifference(value + 1, var)->Var();
+    } else if (value == var->Max()) {
+      return MakeSum(var, -value + 1)->Var();
+    } else {
+      return MakeIntConst(0);
+    }
+  }
   return var->IsEqual(value);
 }
 
