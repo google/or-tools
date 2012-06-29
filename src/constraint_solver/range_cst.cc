@@ -395,6 +395,11 @@ Constraint* Solver::MakeNonEquality(IntVar* const l, IntVar* const r) {
   CHECK(r != NULL) << "left expression NULL, maybe a bad cast";
   CHECK_EQ(this, l->solver());
   CHECK_EQ(this, r->solver());
+  if (l->Bound()) {
+    return MakeNonEquality(r, l->Min());
+  } else if (r->Bound()) {
+    return MakeNonEquality(l, r->Min());
+  }
   return RevAlloc(new DiffVar(this, l, r));
 }
 

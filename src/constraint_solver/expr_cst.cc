@@ -81,12 +81,24 @@ string EqualityExprCst::DebugString() const {
 
 Constraint* Solver::MakeEquality(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
-  return RevAlloc(new EqualityExprCst(this, e, v));
+  IntExpr* left = NULL;
+  IntExpr* right = NULL;
+  if (v == 0 && IsADifference(e, &left, &right)) {
+    return MakeEquality(left->Var(), right->Var());
+  } else {
+    return RevAlloc(new EqualityExprCst(this, e, v));
+  }
 }
 
 Constraint* Solver::MakeEquality(IntExpr* const e, int v) {
   CHECK_EQ(this, e->solver());
-  return RevAlloc(new EqualityExprCst(this, e, v));
+  IntExpr* left = NULL;
+  IntExpr* right = NULL;
+  if (v == 0 && IsADifference(e, &left, &right)) {
+    return MakeEquality(left->Var(), right->Var());
+  } else {
+    return RevAlloc(new EqualityExprCst(this, e, v));
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -289,12 +301,24 @@ string DiffCst::DebugString() const {
 
 Constraint* Solver::MakeNonEquality(IntVar* const e, int64 v) {
   CHECK_EQ(this, e->solver());
-  return RevAlloc(new DiffCst(this, e, v));
+  IntExpr* left = NULL;
+  IntExpr* right = NULL;
+  if (v == 0 && IsADifference(e, &left, &right)) {
+    return MakeNonEquality(left->Var(), right->Var());
+  } else {
+    return RevAlloc(new DiffCst(this, e, v));
+  }
 }
 
 Constraint* Solver::MakeNonEquality(IntVar* const e, int v) {
   CHECK_EQ(this, e->solver());
-  return RevAlloc(new DiffCst(this, e, v));
+  IntExpr* left = NULL;
+  IntExpr* right = NULL;
+  if (v == 0 && IsADifference(e, &left, &right)) {
+    return MakeNonEquality(left->Var(), right->Var());
+  } else {
+    return RevAlloc(new DiffCst(this, e, v));
+  }
 }
 // ----- is_equal_cst Constraint -----
 
@@ -350,6 +374,11 @@ class IsEqualCstCt : public CastConstraint {
 }  // namespace
 
 IntVar* Solver::MakeIsEqualCstVar(IntVar* const var, int64 value) {
+  IntExpr* left = NULL;
+  IntExpr* right = NULL;
+  if (value == 0 && IsADifference(var, &left, &right)) {
+    return MakeIsEqualVar(left, right);
+  }
   return var->IsEqual(value);
 }
 
@@ -378,7 +407,13 @@ Constraint* Solver::MakeIsEqualCstCt(IntVar* const var,
       var,
       value,
       ModelCache::VAR_CONSTANT_IS_EQUAL);
-  return RevAlloc(new IsEqualCstCt(this, var, value, boolvar));
+  IntExpr* left = NULL;
+  IntExpr* right = NULL;
+  if (value == 0 && IsADifference(var, &left, &right)) {
+    return MakeIsEqualCt(left, right, boolvar);
+  } else {
+    return RevAlloc(new IsEqualCstCt(this, var, value, boolvar));
+  }
 }
 
 // ----- is_diff_cst Constraint -----
@@ -438,6 +473,11 @@ class IsDiffCstCt : public CastConstraint {
 }  // namespace
 
 IntVar* Solver::MakeIsDifferentCstVar(IntVar* const var, int64 value) {
+  IntExpr* left = NULL;
+  IntExpr* right = NULL;
+  if (value == 0 && IsADifference(var, &left, &right)) {
+    return MakeIsDifferentVar(left, right);
+  }
   return var->IsDifferent(value);
 }
 
@@ -470,7 +510,13 @@ Constraint* Solver::MakeIsDifferentCstCt(IntVar* const var,
       var,
       value,
       ModelCache::VAR_CONSTANT_IS_NOT_EQUAL);
-  return RevAlloc(new IsDiffCstCt(this, var, value, boolvar));
+  IntExpr* left = NULL;
+  IntExpr* right = NULL;
+  if (value == 0 && IsADifference(var, &left, &right)) {
+    return MakeIsDifferentCt(left, right, boolvar);
+  } else {
+    return RevAlloc(new IsDiffCstCt(this, var, value, boolvar));
+  }
 }
 
 // ----- is_greater_equal_cst Constraint -----

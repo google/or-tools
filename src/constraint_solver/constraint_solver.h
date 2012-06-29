@@ -2867,6 +2867,9 @@ class Solver {
 
   // Internal.
   IntExpr* CastExpression(IntVar* const var) const;
+  bool IsADifference(IntExpr* expr,
+                     IntExpr** const left,
+                     IntExpr** const right);
 
   const string name_;
   const SolverParameters parameters_;

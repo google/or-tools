@@ -3084,6 +3084,8 @@ class SubIntExpr : public BaseIntExpr {
     visitor->EndVisitIntegerExpression(ModelVisitor::kDifference, this);
   }
 
+  IntExpr* left() const { return left_; }
+  IntExpr* right() const { return right_; }
  private:
   IntExpr* const left_;
   IntExpr* const right_;
@@ -6785,5 +6787,23 @@ IntVar* BaseIntExpr::CastToVar() {
   IntVar* const var = solver()->MakeIntVar(vmin, vmax);
   LinkVarExpr(solver(), this, var);
   return var;
+}
+
+// Discovery methods
+bool Solver::IsADifference(IntExpr* expr,
+                           IntExpr** const left,
+                           IntExpr** const right) {
+
+  if (expr->IsVar()) {
+    IntVar* const expr_var = expr->Var();
+    expr = CastExpression(expr_var);
+  }
+  SubIntExpr* const sub_expr = dynamic_cast<SubIntExpr*>(expr);
+  if (sub_expr != NULL) {
+    *left = sub_expr->left();
+    *right = sub_expr->right();
+    return true;
+  }
+  return false;
 }
 }   // namespace operations_research

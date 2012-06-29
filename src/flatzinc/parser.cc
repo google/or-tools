@@ -809,6 +809,44 @@ bool ParserState::Presolve(CtSpec* const spec) {
     spec->ReplaceArg(2, new AST::IntLit(bound));
     return true;
   }
+  if (id == "int_abs" &&
+      !ContainsKey(stored_constraints_, index) &&
+      spec->Arg(0)->isIntVar() &&
+      spec->Arg(1)->isIntVar()) {
+    abs_map_[spec->Arg(1)->getIntVar()] = spec->Arg(0)->getIntVar();
+    stored_constraints_.insert(index);
+    return true;
+  }
+  if (id == "int_eq_reif") {
+    if (spec->Arg(0)->isIntVar() &&
+        ContainsKey(abs_map_, spec->Arg(0)->getIntVar()) &&
+        spec->Arg(1)->isInt() &&
+        spec->Arg(1)->getInt() == 0) {
+      VLOG(1) << "  - presolve:  remove abs() in " << spec->DebugString();
+      dynamic_cast<AST::IntVar*>(spec->Arg(0))->i =
+          abs_map_[spec->Arg(0)->getIntVar()];
+    }
+  }
+  if (id == "int_ne_reif") {
+    if (spec->Arg(0)->isIntVar() &&
+        ContainsKey(abs_map_, spec->Arg(0)->getIntVar()) &&
+        spec->Arg(1)->isInt() &&
+        spec->Arg(1)->getInt() == 0) {
+      VLOG(1) << "  - presolve:  remove abs() in " << spec->DebugString();
+      dynamic_cast<AST::IntVar*>(spec->Arg(0))->i =
+          abs_map_[spec->Arg(0)->getIntVar()];
+    }
+  }
+  if (id == "int_ne") {
+    if (spec->Arg(0)->isIntVar() &&
+        ContainsKey(abs_map_, spec->Arg(0)->getIntVar()) &&
+        spec->Arg(1)->isInt() &&
+        spec->Arg(1)->getInt() == 0) {
+      VLOG(1) << "  - presolve:  remove abs() in " << spec->DebugString();
+      dynamic_cast<AST::IntVar*>(spec->Arg(0))->i =
+          abs_map_[spec->Arg(0)->getIntVar()];
+    }
+  }
   return false;
 }
 
