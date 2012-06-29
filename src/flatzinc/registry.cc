@@ -317,14 +317,18 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     std::vector<int64> coefficients(size);
     std::vector<IntVar*> variables(size);
+    int ones = 0;
     for (int i = 0; i < size; ++i) {
       coefficients[i] = array_coefficents->a[i]->getInt();
+      ones += coefficients[i] == 1;
       variables[i] = model->GetIntVar(array_variables->a[i]);
     }
     Constraint* const ct =
         strong_propagation ?
          MakeStrongScalProdEquality(solver, variables, coefficients, rhs) :
-        solver->MakeScalProdEquality(variables, coefficients, rhs);
+        (ones == size ?
+         solver->MakeSumEquality(variables, rhs) :
+         solver->MakeScalProdEquality(variables, coefficients, rhs));
     VLOG(1) << "  - posted " << ct->DebugString();
     solver->AddConstraint(ct);
   }
