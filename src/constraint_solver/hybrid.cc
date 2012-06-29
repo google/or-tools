@@ -327,7 +327,6 @@ class Linearizer : public ModelParser {
       MPVariable* const mp_var = mp_solver_->MakeIntVar(cp_expr->Min(),
                                                         cp_expr->Max(),
                                                         "");
-      CHECK(cp_expr->Min() != cp_expr->Max());
       (*translation_)[cp_expr] = mp_var;
     }
   }
