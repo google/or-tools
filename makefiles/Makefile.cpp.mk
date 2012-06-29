@@ -718,6 +718,12 @@ $(BIN_DIR)/tsp$E: $(ROUTING_DEPS) $(OBJ_DIR)/tsp.$O
 
 # CP tests.
 
+$(OBJ_DIR)/bug_pack.$O:$(EX_DIR)/tests/bug_pack.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/bug_pack.cc $(OBJ_OUT)bug_pack.$O
+
+$(BIN_DIR)/bug_pack$E: $(CP_DEPS) $(OBJ_DIR)/bug_pack.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/bug_pack.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)bug_pack$E
+
 $(OBJ_DIR)/mtsearch_test.$O:$(EX_DIR)/tests/mtsearch_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/mtsearch_test.cc $(OBJ_OUT)mtsearch_test.$O
 

@@ -549,7 +549,8 @@ class DomainIntVar : public IntVar {
   }
 
   virtual IntVar* IsDifferent(int64 constant) {
-    return NULL;  // IMPLEMENT ME
+    Solver* const s = solver();
+    return s->MakeDifference(1, IsEqual(constant))->Var();
   }
 
   void Process();
@@ -5478,18 +5479,7 @@ class IsEqualCt : public CastConstraint {
 
   void PropagateDomain() {
     if (target_var_->Bound()) {
-      if (target_var_->Min() == 0) {
-        if (left_->Bound()) {
-          domain_demon_->inhibit(solver());
-          right_->RemoveValue(left_->Min());
-        } else if (right_->Bound()) {
-          domain_demon_->inhibit(solver());
-          left_->RemoveValue(right_->Min());
-        }
-      } else {  // target var is true.
-        left_->SetRange(right_->Min(), right_->Max());
-        right_->SetRange(left_->Min(), left_->Max());
-      }
+      PropagateTarget();
       return;
     }
     const int64 support = support_.Value();
@@ -5507,18 +5497,7 @@ class IsEqualCt : public CastConstraint {
 
   void PropagateRange() {
     if (target_var_->Bound()) {
-      if (target_var_->Min() == 0) {
-        if (left_->Bound()) {
-          range_demon_->inhibit(solver());
-          right_->RemoveValue(left_->Min());
-        } else if (right_->Bound()) {
-          range_demon_->inhibit(solver());
-          left_->RemoveValue(right_->Min());
-        }
-      } else {  // target var is true.
-        left_->SetRange(right_->Min(), right_->Max());
-        right_->SetRange(left_->Min(), left_->Max());
-      }
+      PropagateTarget();
       return;
     }
     if (left_->Size() <= 32 || right_->Size() <= 32) {
@@ -5549,7 +5528,7 @@ class IsEqualCt : public CastConstraint {
   }
 
   string DebugString() const {
-    return StringPrintf("IsEqualCstCt(%s, %s, %s)",
+    return StringPrintf("IsEqualCt(%s, %s, %s)",
                         left_->DebugString().c_str(),
                         right_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
@@ -5564,6 +5543,171 @@ class IsEqualCt : public CastConstraint {
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             target_var_);
     visitor->EndVisitConstraint(ModelVisitor::kIsEqual, this);
+  }
+
+ private:
+  bool FindSupport() {
+    bool found = false;
+    if (left_->Max() < right_->Min() || left_->Min() > right_->Max()) {
+      return false;
+    }
+    // Find new support.
+    if (left_->Size() <= right_->Size()) {
+      for (left_iterator_->Init();
+           left_iterator_->Ok();
+           left_iterator_->Next()) {
+        const int64 value = left_iterator_->Value();
+        if (right_->Contains(value)) {
+          found = true;
+          support_.SetValue(solver(), value);
+          break;
+        }
+      }
+    } else {
+      for (right_iterator_->Init();
+           right_iterator_->Ok();
+           right_iterator_->Next()) {
+        const int64 value = right_iterator_->Value();
+        if (left_->Contains(value)) {
+          found = true;
+          support_.SetValue(solver(), value);
+          break;
+        }
+      }
+    }
+    return found;
+  }
+
+  IntVar* const left_;
+  IntVar* const right_;
+  IntVarIterator* const left_iterator_;
+  IntVarIterator* const right_iterator_;
+  Demon* domain_demon_;
+  Demon* range_demon_;
+  Rev<int64> support_;
+};
+
+// IsDifferentCt
+
+class IsDifferentCt : public CastConstraint {
+ public:
+  IsDifferentCt(Solver* const s,
+                IntVar* const l,
+                IntVar* const r,
+                IntVar* const b)
+      : CastConstraint(s, b),
+        left_(l),
+        right_(r),
+        left_iterator_(l->MakeDomainIterator(true)),
+        right_iterator_(r->MakeDomainIterator(true)),
+        range_demon_(NULL),
+        domain_demon_(NULL),
+        support_(l->Min() - 1) {}
+
+  virtual ~IsDifferentCt() {}
+
+  virtual void Post() {
+    range_demon_ =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &IsDifferentCt::PropagateRange,
+                             "PropagateRange");
+    domain_demon_ =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &IsDifferentCt::PropagateDomain,
+                             "PropagateDomain");
+    if (left_->Size() > 32 && right_->Size() > 32) {
+      domain_demon_->inhibit(solver());
+    } else {
+      range_demon_->inhibit(solver());
+    }
+    left_->WhenDomain(domain_demon_);
+    right_->WhenDomain(domain_demon_);
+    left_->WhenRange(range_demon_);
+    right_->WhenRange(range_demon_);
+    Demon* const target_demon =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &IsDifferentCt::PropagateTarget,
+                             "PropagateTarget");
+    target_var_->WhenBound(target_demon);
+  }
+
+  virtual void InitialPropagate() {
+    if (left_->Size() > 32 && right_->Size() > 32) {
+      PropagateRange();
+    } else {
+      PropagateDomain();
+    }
+  }
+
+  void PropagateDomain() {
+    if (target_var_->Bound()) {
+      PropagateTarget();
+      return;
+    }
+    const int64 support = support_.Value();
+    if (!left_->Contains(support) || !right_->Contains(support)) {
+      if (!FindSupport()) {
+        domain_demon_->inhibit(solver());
+        target_var_->SetValue(1);
+      } else if (left_->Bound() && right_->Bound()) {
+        target_var_->SetValue(0);
+      }
+    } else if (left_->Bound() && right_->Bound()) {
+      target_var_->SetValue(0);
+    }
+  }
+
+  void PropagateRange() {
+    if (target_var_->Bound()) {
+      PropagateTarget();
+      return;
+    }
+    if (left_->Size() <= 32 || right_->Size() <= 32) {
+      range_demon_->inhibit(solver());
+      domain_demon_->desinhibit(solver());
+      PropagateDomain();
+    } else  if (left_->Min() > right_->Max() || left_->Max() < right_->Min()) {
+      target_var_->SetValue(1);
+      range_demon_->inhibit(solver());
+    }
+  }
+
+  void PropagateTarget() {
+    if (target_var_->Min() == 0) {
+      left_->SetRange(right_->Min(), right_->Max());
+      right_->SetRange(left_->Min(), left_->Max());
+    } else {  // Var is true.
+      if (left_->Bound()) {
+        range_demon_->inhibit(solver());
+        domain_demon_->inhibit(solver());
+        right_->RemoveValue(left_->Min());
+      } else if (right_->Bound()) {
+        range_demon_->inhibit(solver());
+        domain_demon_->inhibit(solver());
+        left_->RemoveValue(right_->Min());
+      }
+    }
+  }
+
+  string DebugString() const {
+    return StringPrintf("IsDifferentCt(%s, %s, %s)",
+                        left_->DebugString().c_str(),
+                        right_->DebugString().c_str(),
+                        target_var_->DebugString().c_str());
+  }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kIsDifferent, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                            left_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kValueArgument,
+                                            right_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            target_var_);
+    visitor->EndVisitConstraint(ModelVisitor::kIsDifferent, this);
   }
 
  private:
@@ -5928,8 +6072,9 @@ IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
     if (name2.empty()) {
       name2 = var2->DebugString();
     }
-    IntVar* const boolvar =
-        MakeIsDifferentCstVar(MakeDifference(v1, v2)->Var(), 0);
+    IntVar* const boolvar = MakeBoolVar(
+        StringPrintf("IsDifferentVar(%s, %s)", name1.c_str(), name2.c_str()));
+    AddConstraint(MakeIsDifferentCt(v1, v2, boolvar));
     model_cache_->InsertVarVarExpression(
         boolvar,
         var1,
@@ -5949,7 +6094,7 @@ Constraint* Solver::MakeIsDifferentCt(IntExpr* const v1,
   } else if (v2->Bound()) {
     return MakeIsDifferentCstCt(v1->Var(), v2->Min(), b);
   }
-  return MakeIsDifferentCstCt(MakeDifference(v1, v2)->Var(), 0, b);
+  return RevAlloc(new IsDifferentCt(this, v1->Var(), v2->Var(), b));
 }
 
 IntVar* Solver::MakeIsLessOrEqualVar(

@@ -438,42 +438,7 @@ class IsDiffCstCt : public CastConstraint {
 }  // namespace
 
 IntVar* Solver::MakeIsDifferentCstVar(IntVar* const var, int64 value) {
-  if (value == var->Min()) {
-    return MakeIsGreaterOrEqualCstVar(var, value + 1);
-  }
-  if (value == var->Max()) {
-    return MakeIsLessOrEqualCstVar(var, value - 1);
-  }
-  if (!var->Contains(value)) {
-    return MakeIntConst(1LL);
-  }
-  if (var->Bound() && var->Value() == value) {
-    return MakeIntConst(0LL);
-  }
-  IntExpr* const cache = model_cache_->FindVarConstantExpression(
-      var,
-      value,
-      ModelCache::VAR_CONSTANT_IS_NOT_EQUAL);
-  if (cache != NULL) {
-    return cache->Var();
-  } else {
-    string name = var->name();
-    if (name.empty()) {
-      name = var->DebugString();
-    }
-    IntVar* const boolvar = MakeBoolVar(
-        StringPrintf("Var<%s != %" GG_LL_FORMAT "d>",
-                     name.c_str(), value));
-    CastConstraint* const maintain =
-        RevAlloc(new IsDiffCstCt(this, var, value, boolvar));
-    AddConstraint(maintain);
-    model_cache_->InsertVarConstantExpression(
-        boolvar,
-        var,
-        value,
-        ModelCache::VAR_CONSTANT_IS_NOT_EQUAL);
-    return boolvar;
-  }
+  return var->IsDifferent(value);
 }
 
 Constraint* Solver::MakeIsDifferentCstCt(IntVar* const var,
