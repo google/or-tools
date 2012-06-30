@@ -217,7 +217,12 @@ void ParserState::CreateModel() {
   for (int i = 0; i < constraints_.size(); ++i) {
     const int target = FindTarget(constraints_[i]->annotations());
     if (target != CtSpec::kNoDefinition) {
-      VLOG(1) << "  - presolve:  mark xi(" << target << ") as defined";
+      if (target < int_variables_.size()) {
+        VLOG(1) << "  - presolve:  mark xi(" << target << ") as defined";
+      } else {
+        VLOG(1) << "  - presolve:  mark xb(" << target - int_variables_.size()
+                << ") as defined";
+      }
       targets.insert(target);
     }
   }

@@ -1052,7 +1052,7 @@ class ArrayBoolOrEq : public CastConstraint {
   }
 
   void PropagateTarget() {
-    if (target_var_->Min() == 0) {
+    if (target_var_->Max() == 0) {
       for (int i = 0; i < vars_.size(); ++i) {
         vars_[i]->SetMax(0);
       }
