@@ -895,6 +895,10 @@ class ArrayBoolAndEq : public CastConstraint {
   void PropagateVar(int index) {
     if (vars_[index]->Min() == 1) {
       unbounded_.Decr(solver());
+      if (unbounded_.Value() == 0 && !decided_.Switched()) {
+        target_var_->SetMin(1);
+        decided_.Switch(solver());
+      }
       if (target_var_->Max() == 0 &&
           unbounded_.Value() == 1 &&
           !decided_.Switched()) {
@@ -1034,6 +1038,10 @@ class ArrayBoolOrEq : public CastConstraint {
   void PropagateVar(int index) {
     if (vars_[index]->Min() == 0) {
       unbounded_.Decr(solver());
+      if (unbounded_.Value() == 0 && !decided_.Switched()) {
+        target_var_->SetMax(0);
+        decided_.Switch(solver());
+      }
       if (target_var_->Min() == 1 &&
           unbounded_.Value() == 1 &&
           !decided_.Switched()) {
