@@ -93,19 +93,21 @@ string CountValueEqCst::DebugString() const {
 void CountValueEqCst::Post() {
   for (int i = 0; i < size_; ++i) {
     IntVar* const var = vars_[i];
-    if (!var->Bound()) {
+    if (!var->Bound() && var->Contains(value_)) {
       Demon* d = MakeConstraintDemon1(solver(),
                                       this,
                                       &CountValueEqCst::OneBound,
                                       "OneBound",
                                       i);
       var->WhenBound(d);
-      if (var->Contains(value_)) {
-        d = MakeConstraintDemon1(solver(),
-                                 this,
-                                 &CountValueEqCst::OneDomain,
-                                 "OneDomain",
-                                 i);
+      d = MakeConstraintDemon1(solver(),
+                               this,
+                               &CountValueEqCst::OneDomain,
+                               "OneDomain",
+                               i);
+      if (var->Min() == value_ || var->Max() == value_) {
+        var->WhenRange(d);
+      } else {
         var->WhenDomain(d);
       }
     }
@@ -196,6 +198,47 @@ Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v, int64 c
   for (ConstIter<std::vector<IntVar*> > it(vars); !it.at_end(); ++it) {
     CHECK_EQ(this, (*it)->solver());
   }
+  int count_min = 0;
+  int count_max = 0;
+  int count_active = 0;
+  int count_forced = 0;
+  for (int i = 0; i < vars.size(); ++i) {
+    if (vars[i]->Contains(v)) {
+      count_active++;
+      if (vars[i]->Bound()) {
+        count_forced++;
+      }
+      if (vars[i]->Max() - vars[i]->Min() <= 1) {
+        if (vars[i]->Min() == v) {
+          count_min++;
+        } else if (vars[i]->Max() == v) {
+          count_max++;
+        }
+      }
+    }
+  }
+  if (count_active == 0) {
+    return (c == 0 ? MakeTrueConstraint() : MakeFalseConstraint());
+  } else if (count_forced == count_active) {
+    return (c == count_forced ? MakeTrueConstraint() : MakeFalseConstraint());
+  }
+  if (count_min == count_active) {
+    std::vector<IntVar*> terms;
+    for (int i = 0; i < vars.size(); ++i) {
+      if (vars[i]->Contains(v)) {
+        terms.push_back(MakeSum(vars[i], -v)->Var());
+      }
+    }
+    return MakeSumEquality(terms, count_active - c);
+  } else if (count_max == count_active) {
+    std::vector<IntVar*> terms;
+    for (int i = 0; i < vars.size(); ++i) {
+      if (vars[i]->Contains(v)) {
+        terms.push_back(MakeSum(vars[i], -v + 1)->Var());
+      }
+    }
+    return MakeSumEquality(terms, c);
+  }
   return RevAlloc(new CountValueEqCst(this, vars.data(), vars.size(), v, c));
 }
 
@@ -262,19 +305,21 @@ string CountValueEq::DebugString() const {
 void CountValueEq::Post() {
   for (int i = 0; i < size_; ++i) {
     IntVar* const var = vars_[i];
-    if (!var->Bound()) {
+    if (!var->Bound() && var->Contains(value_)) {
       Demon* d = MakeConstraintDemon1(solver(),
                                           this,
                                           &CountValueEq::OneBound,
                                           "OneBound",
                                           i);
       var->WhenBound(d);
-      if (var->Contains(value_)) {
-        d = MakeConstraintDemon1(solver(),
-                                 this,
-                                 &CountValueEq::OneDomain,
-                                 "OneDomain",
-                                 i);
+      d = MakeConstraintDemon1(solver(),
+                               this,
+                               &CountValueEq::OneDomain,
+                               "OneDomain",
+                               i);
+      if (var->Min() == value_ || var->Max() == value_) {
+        var->WhenRange(d);
+      } else {
         var->WhenDomain(d);
       }
     }
@@ -389,7 +434,11 @@ Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v, IntVar*
     CHECK_EQ(this, (*it)->solver());
   }
   CHECK_EQ(this, c->solver());
-  return RevAlloc(new CountValueEq(this, vars.data(), vars.size(), v, c));
+  if (c->Bound()) {
+    return MakeCount(vars, v, c->Min());
+  } else {
+    return RevAlloc(new CountValueEq(this, vars.data(), vars.size(), v, c));
+  }
 }
 
 // ---------- Distribute ----------
