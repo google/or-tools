@@ -828,6 +828,148 @@ class MaxConstraint : public TreeArrayConstraint {
   Demon* max_demon_;
 };
 
+// Boolean And and Ors
+
+class ArrayBoolAndEq : public CastConstraint {
+ public:
+  ArrayBoolAndEq(Solver* const s,
+                 const std::vector<IntVar*>& vars,
+                 IntVar* const target)
+      : CastConstraint(s, target),
+        vars_(vars),
+        demons_(vars.size()),
+        unbounded_(0) {}
+
+  virtual ~ArrayBoolAndEq() {}
+
+  virtual void Post() {
+    for (int i = 0; i < vars_.size(); ++i) {
+      if (!vars_[i]->Bound()) {
+        demons_[i] = MakeConstraintDemon1(solver(),
+                                          this,
+                                          &ArrayBoolAndEq::PropagateVar,
+                                          "PropagateVar",
+                                          i);
+        vars_[i]->WhenBound(demons_[i]);
+      }
+
+    }
+    Demon* const target_demon =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &ArrayBoolAndEq::PropagateTarget,
+                             "PropagateTarget");
+    target_var_->WhenBound(target_demon);
+  }
+
+  virtual void InitialPropagate() {
+    target_var_->SetRange(0, 1);
+    if (target_var_->Min() == 1) {
+      for (int i = 0; i < vars_.size(); ++i) {
+        vars_[i]->SetMin(1);
+      }
+    } else {
+      int zeros = 0;
+      int ones = 0;
+      int unbounded = 0;
+      for (int i = 0; i < vars_.size(); ++i) {
+        unbounded += !vars_[i]->Bound();
+        zeros += vars_[i]->Max() == 0;
+        ones += vars_[i]->Min() == 1;
+      }
+      if (zeros > 0) {
+        InhibitAll();
+        target_var_->SetMax(0);
+      } else if (unbounded == 0) {
+        target_var_->SetMin(1);
+      } else if (target_var_->Max() == 0 && unbounded == 1) {
+        const int index = FindPossibleZero();
+        CHECK(index != -1);
+        vars_[index]->SetMax(0);
+      } else {
+        unbounded_.SetValue(solver(), unbounded);
+      }
+    }
+  }
+
+  void PropagateVar(int index) {
+    if (vars_[index]->Min() == 1) {
+      unbounded_.Decr(solver());
+      if (target_var_->Max() == 0 &&
+          unbounded_.Value() == 1 &&
+          !decided_.Switched()) {
+        const int to_set = FindPossibleZero();
+        if (to_set != -1) {
+          vars_[to_set]->SetMax(0);
+          decided_.Switch(solver());
+        } else {
+          solver()->Fail();
+        }
+      }
+    } else {
+      InhibitAll();
+      target_var_->SetMax(0);
+    }
+  }
+
+  void PropagateTarget() {
+    if (target_var_->Min() == 1) {
+      for (int i = 0; i < vars_.size(); ++i) {
+        vars_[i]->SetMin(1);
+      }
+    } else {
+      if (unbounded_.Value() == 1 && !decided_.Switched()) {
+        const int to_set = FindPossibleZero();
+        if (to_set != -1) {
+          vars_[to_set]->SetMax(0);
+          decided_.Switch(solver());
+        } else {
+          solver()->Fail();
+        }
+      }
+    }
+  }
+
+  void InhibitAll() {
+    for (int i = 0; i < demons_.size(); ++i) {
+      if (demons_[i] != NULL) {
+        demons_[i]->inhibit(solver());
+      }
+    }
+  }
+
+  int FindPossibleZero() {
+    for (int i = 0; i < vars_.size(); ++i) {
+      if (vars_[i]->Min() == 0) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  string DebugString() const {
+    return StringPrintf("And(%s) == %s",
+                        DebugStringVector(vars_, ", ").c_str(),
+                        target_var_->DebugString().c_str());
+  }
+
+  void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kMinEqual, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_.data(), vars_.size());
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            target_var_);
+    visitor->EndVisitConstraint(ModelVisitor::kMinEqual, this);
+  }
+
+ private:
+  std::vector<IntVar*> vars_;
+  std::vector<Demon*> demons_;
+  NumericalRev<int> unbounded_;
+  RevSwitch decided_;
+};
+
+
 // ---------- Specialized cases ----------
 
 bool AreAllBooleans(const IntVar* const* vars, int size) {
@@ -2061,17 +2203,25 @@ IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
     if (cache != NULL) {
       return cache->Var();
     } else {
-      int64 new_min = kint64max;
-      int64 new_max = kint64max;
-      for (int i = 0; i < size; ++i) {
-        new_min = std::min(new_min, vars[i]->Min());
-        new_max = std::min(new_max, vars[i]->Max());
+      if (AreAllBooleans(vars.data(), vars.size())) {
+        IntVar* const new_var = MakeBoolVar();
+        AddConstraint(RevAlloc(new ArrayBoolAndEq(this, vars, new_var)));
+        model_cache_->InsertVarArrayExpression(
+            new_var, vars, ModelCache::VAR_ARRAY_MIN);
+        return new_var;
+      } else {
+        int64 new_min = kint64max;
+        int64 new_max = kint64max;
+        for (int i = 0; i < size; ++i) {
+          new_min = std::min(new_min, vars[i]->Min());
+          new_max = std::min(new_max, vars[i]->Max());
+        }
+        IntVar* const new_var = MakeIntVar(new_min, new_max);
+        AddConstraint(RevAlloc(new MinConstraint(this, vars, new_var)));
+        model_cache_->InsertVarArrayExpression(
+            new_var, vars, ModelCache::VAR_ARRAY_MIN);
+        return new_var;
       }
-      IntVar* const new_var = MakeIntVar(new_min, new_max);
-      AddConstraint(RevAlloc(new MinConstraint(this, vars, new_var)));
-      model_cache_->InsertVarArrayExpression(
-          new_var, vars, ModelCache::VAR_ARRAY_MIN);
-      return new_var;
     }
   }
 }
@@ -2107,7 +2257,11 @@ IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
 
 Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
                                     IntVar* const min_var) {
-  return RevAlloc(new MinConstraint(this, vars, min_var));
+  if (AreAllBooleans(vars.data(), vars.size())) {
+    return RevAlloc(new ArrayBoolAndEq(this, vars, min_var));
+  } else {
+    return RevAlloc(new MinConstraint(this, vars, min_var));
+  }
 }
 
 Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
@@ -2955,7 +3109,4 @@ IntExpr* Solver::MakeScalProd(const std::vector<IntVar*>& vars,
   DCHECK_EQ(vars.size(), coefs.size());
   return MakeScalProdFct<int>(this, vars, coefs);
 }
-
-
-
 }  // namespace operations_research

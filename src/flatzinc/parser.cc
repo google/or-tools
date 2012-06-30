@@ -130,8 +130,12 @@ void ParserState::ComputeViableTarget(
              id == "int_lin_eq_reif" ||
              id == "int_eq_reif" ||
              id == "int_ne_reif" ||
+             id == "int_le_reif" ||
+             id == "int_ge_reif" ||
              id == "bool_eq_reif" ||
-             id == "bool_ne_reif") {
+             id == "bool_ne_reif" ||
+             id == "bool_le_reif" ||
+             id == "bool_ge_reif") {
     // Defines a bool var.
     const int bool_define = FindTarget(spec->annotations());
     if (bool_define != CtSpec::kNoDefinition) {

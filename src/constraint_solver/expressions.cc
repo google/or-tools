@@ -2223,8 +2223,12 @@ bool SubCstIntVar::Contains(int64 v) const {
 }
 
 string SubCstIntVar::DebugString() const {
-  return StringPrintf("(%" GG_LL_FORMAT "d - %s)",
-                      cst_, var_->DebugString().c_str());
+  if (cst_ == 1 && var_->VarType() == BOOLEAN_VAR) {
+    return StringPrintf("Not(%s)", var_->DebugString().c_str());
+  } else {
+    return StringPrintf("(%" GG_LL_FORMAT "d - %s)",
+                        cst_, var_->DebugString().c_str());
+  }
 }
 
 // -x variable, optimized case
