@@ -374,11 +374,16 @@ void ParserState::CreateModel() {
     VLOG(2) << " to_insert " << defines_and_require[i]->DebugString();
   }
 
+  hash_set<int> forced;
   while (!to_insert.empty()) {
     std::vector<int> inserted;
     for (ConstIter<hash_set<int> > it(to_insert); !it.at_end(); ++it) {
       CtSpec* const spec = defines_and_require[*it];
       VLOG(2) << "check " << spec->DebugString();
+      if (ContainsKey(forced, spec->defines())) {
+        VLOG(2) << "  - cleaning defines";
+        spec->RemoveDefines();
+      }
       bool ok = true;
       hash_set<int>* const required = spec->require_map();
       for (ConstIter<hash_set<int> > def(*required);
@@ -397,9 +402,66 @@ void ParserState::CreateModel() {
         constraints_[index++] = spec;
       }
     }
-    CHECK(!inserted.empty());
-    for (int i = 0; i < inserted.size(); ++i) {
-      to_insert.erase(inserted[i]);
+    if (inserted.empty()) {
+      // Recovery mode. We have a dependency!.  Let's find the one
+      // with the smallest number of unsatisfied dependencies.
+      int to_correct = -1;
+      int best_unsatisfied = kint32max;
+      for (ConstIter<hash_set<int> > it(to_insert); !it.at_end(); ++it) {
+        CtSpec* const spec = defines_and_require[*it];
+        VLOG(2) << "evaluate " << spec->DebugString();
+
+        int unsatisfied = 0;
+        hash_set<int>* const required = spec->require_map();
+        for (ConstIter<hash_set<int> > def(*required);
+             !def.at_end();
+             ++def) {
+          const int dep = *def;
+          unsatisfied += !ContainsKey(defined, dep);
+          // Check not alias
+          if (dep > int_variables_.size()) {
+            // a bool var.
+            const int boolvar = dep - int_variables_.size();
+            if (bool_variables_[boolvar]->alias) {
+              VLOG(2) << "  - xb(" << boolvar << ") is an alias, disqualified";
+              unsatisfied = kint32max;
+              break;
+            }
+          } else {
+            if (int_variables_[dep]->alias) {
+              VLOG(2) << "  - xi(" << dep << ") is an alias, disqualified";
+              unsatisfied = kint32max;
+              break;
+            }
+          }
+        }
+        CHECK_GT(unsatisfied, 0);
+        VLOG(2) << "  - unsatisfied = " << unsatisfied;
+        if (unsatisfied < best_unsatisfied) {
+          best_unsatisfied = unsatisfied;
+          to_correct = *it;
+        }
+      }
+      CtSpec* const spec = defines_and_require[to_correct];
+      VLOG(2) << "Lifting " << spec->DebugString()
+              << " with " << best_unsatisfied << " unsatisfied dependencies";
+      hash_set<int>* const required = spec->require_map();
+      for (ConstIter<hash_set<int> > def(*required);
+           !def.at_end();
+           ++def) {
+        const int dep = *def;
+        if (!ContainsKey(defined, dep)) {
+          candidates.erase(dep);
+          defined.insert(dep);
+          forced.insert(dep);
+          VLOG(2) << "removing " << dep
+                  << " from set of candidates and forcing as defined";
+        }
+      }
+    } else {
+      for (int i = 0; i < inserted.size(); ++i) {
+        to_insert.erase(inserted[i]);
+      }
     }
   }
 

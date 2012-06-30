@@ -537,6 +537,7 @@ class CtSpec {
         ann_array->a.pop_back();
       }
     }
+    defines_ = -1;
   }
 
  private:
