@@ -403,10 +403,10 @@ class SetVarSpec : public VarSpec {
   const bool own_domain_;
 };
 
+typedef hash_set<AST::Node*> NodeSet;
+
 class CtSpec {
  public:
-  static const int kNoDefinition = -1;
-
   CtSpec(int index,
          const std::string& id,
          AST::Array* const args,
@@ -415,8 +415,8 @@ class CtSpec {
         id_(id),
         args_(args),
         annotations_(annotations),
-        defines_(kNoDefinition),
-        nullified_(false) {
+        nullified_(false),
+        defined_arg_(NULL) {
   }
 
   ~CtSpec() {
@@ -448,6 +448,18 @@ class CtSpec {
     return args_->a.size();
   }
 
+  bool IsDefined(AST::Node* const arg) {
+    if (defined_arg_ != NULL) {
+      return ((arg->isIntVar() &&
+               defined_arg_->isIntVar() &&
+               arg->getIntVar() == defined_arg_->getIntVar()) ||
+              (arg->isBoolVar() &&
+               defined_arg_->isBoolVar() &&
+               arg->getBoolVar() == defined_arg_->getBoolVar()));
+    }
+    return false;
+  }
+
   AST::Array* Args() const {
     return args_;
   }
@@ -471,13 +483,15 @@ class CtSpec {
       output += StringPrintf(", annotations = %s",
                              annotations_->DebugString().c_str());
     }
-    if (defines_ != kNoDefinition) {
-      output += StringPrintf(", target = %d", defines_);
+    if (defined_arg_ != NULL) {
+      output += StringPrintf(", target = %s",
+                             defined_arg_->DebugString().c_str());
     }
     if (!requires_.empty()) {
       output += ", requires = [";
-      for (ConstIter<hash_set<int> > it(requires_); !it.at_end(); ++it) {
-        output += StringPrintf("%d ", *it);
+      for (ConstIter<NodeSet> it(requires_); !it.at_end(); ++it) {
+        output.append((*it)->DebugString());
+        output.append(" ");
       }
       output += "]";
     }
@@ -485,19 +499,19 @@ class CtSpec {
     return output;
   }
 
-  void set_defines(int defines) {
-    defines_ = defines;
+  void SetDefinedArg(AST::Node* const arg) {
+    defined_arg_ = arg;
   }
 
-  int defines() const {
-    return defines_;
+  AST::Node* const DefinedArg() const {
+    return defined_arg_;
   }
 
-  bool Require(int require) const {
-    return ContainsKey(requires_, require);
+  const NodeSet& require_map() const {
+    return requires_;
   }
 
-  hash_set<int>* require_map() {
+  NodeSet* mutable_require_map() {
     return &requires_;
   }
 
@@ -537,7 +551,7 @@ class CtSpec {
         ann_array->a.pop_back();
       }
     }
-    defines_ = -1;
+    defined_arg_ = NULL;
   }
 
  private:
@@ -545,10 +559,10 @@ class CtSpec {
   std::string id_;
   AST::Array* const args_;
   AST::Node* annotations_;
-  int defines_;
   std::vector<int> uses_;
-  hash_set<int> requires_;
+  NodeSet requires_;
   bool nullified_;
+  AST::Node* defined_arg_;
 };
 }  // namespace operations_research
 #endif

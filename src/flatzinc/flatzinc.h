@@ -69,7 +69,7 @@ class FlatZincModel {
   ~FlatZincModel(void);
 
   Solver* solver() {
-    return &solver_;
+    return solver_.get();
   }
 
   /// Initialize space with given number of variables
@@ -93,20 +93,28 @@ class FlatZincModel {
 
   IntVar* GetIntVar(AST::Node* const node);
 
-  IntVar* IntegerVariable(int index) const {
-    return integer_variables_[index];
+  void CheckIntegerVariableIsNull(AST::Node* const node) const {
+    CHECK_NOTNULL(node);
+    if (node->isIntVar()) {
+      CHECK(integer_variables_[node->getIntVar()] == NULL);
+    } else if (node->isBoolVar()) {
+      CHECK(boolean_variables_[node->getBoolVar()] == NULL);
+    } else {
+      LOG(FATAL) << "Wrong CheckIntegerVariableIsNull with "
+                 << node->DebugString();
+    }
   }
 
-  void SetIntegerVariable(int index, IntVar* const var) {
-    integer_variables_[index] = var;
-  }
-
-  IntVar* BooleanVariable(int index) const {
-    return boolean_variables_[index];
-  }
-
-  void SetBooleanVariable(int index, IntVar* const var) {
-    boolean_variables_[index] = var;
+  void SetIntegerVariable(AST::Node* const node, IntVar* const var) {
+    CHECK_NOTNULL(node);
+    CHECK_NOTNULL(var);
+    if (node->isIntVar()) {
+      integer_variables_[node->getIntVar()] = var;
+    } else if (node->isBoolVar()) {
+      boolean_variables_[node->getBoolVar()] = var;
+    } else {
+      LOG(FATAL) << "Wrong SetIntegerVariable with " << node->DebugString();
+    }
   }
 
   SetVar* SetVariable(int index) const {
@@ -159,7 +167,7 @@ class FlatZincModel {
   /// Number of set variables
   int set_var_count;
 
-  Solver solver_;
+  scoped_ptr<Solver> solver_;
   std::vector<DecisionBuilder*> builders_;
   OptimizeVar* objective_;
 

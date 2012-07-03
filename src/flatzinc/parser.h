@@ -67,6 +67,8 @@ extern "C" int isatty(int);
 #include "flatzinc/spec.h"
 
 namespace operations_research {
+typedef hash_set<CtSpec*> ConstraintSet;
+
 /// Symbol table mapping identifiers (strings) to values
 template<class Val> class SymbolTable {
  public:
@@ -140,8 +142,7 @@ class ParserState {
   std::vector<BoolVarSpec*> bool_variables_;
   std::vector<SetVarSpec*> set_variables_;
 
-  std::vector<std::pair<int, AST::SetLit*> > int_domain_constraints_;
-  std::vector<std::pair<int, AST::SetLit*> > bool_domain_constraints_;
+  std::vector<std::pair<AST::Node*, AST::SetLit*> > int_domain_constraints_;
   std::vector<std::pair<int, AST::SetLit*> > set_domain_constraints_;
   std::vector<CtSpec*> constraints_;
 
@@ -150,7 +151,7 @@ class ParserState {
   int FillBuffer(char* lexBuf, unsigned int lexBufSize);
   void output(std::string x, AST::Node* n);
   AST::Array* Output(void);
-  void CreateModel();
+  void AnalyseAndCreateModel();
   AST::Node* ArrayElement(string id, unsigned int offset);
   AST::Node* VarRefArg(string id, bool annotation);
   void AddIntVarDomainConstraint(int var_id, AST::SetLit* const dom);
@@ -161,7 +162,7 @@ class ParserState {
                      AST::Node* const annotations);
   void InitModel();
   void FillOutput(operations_research::FlatZincModel& m);
-  bool Presolve(CtSpec* const spec);
+  void Presolve();
   bool IsBound(AST::Node* const node) const;
   int GetBound(AST::Node* const node) const;
   bool IsAllDifferent(AST::Node* const node) const;
@@ -170,43 +171,57 @@ class ParserState {
     return model_;
   }
 
-  int VarIndex(AST::Node* const node) const {
+  AST::Node* Copy(AST::Node* const node) const {
     if (node->isIntVar()) {
-      return node->getIntVar();
+      return int_args_[node->getIntVar()];
     } else if (node->isBoolVar()) {
-      return node->getBoolVar() + int_variables_.size();
-    } else {
-      return -1;
+      return bool_args_[node->getBoolVar()];
     }
+    return NULL;
   }
 
-  int BoolFromVarIndex(int index) const {
-    return index - int_variables_.size();
+  AST::Node* IntCopy(int index) const {
+    CHECK_NOTNULL(int_args_[index]);
+    return int_args_[index];
+  }
+
+  AST::Node* BoolCopy(int index) const {
+    CHECK_NOTNULL(bool_args_[index]);
+    return bool_args_[index];
   }
 
  private:
+  void MarkAllVariables(AST::Node* const node, NodeSet* const computed);
+  void MarkComputedVariables(CtSpec* const spec, NodeSet* const computed);
+  void SortConstraints(NodeSet* const candidates,
+                       NodeSet* const computed_variables);
+  void BuildModel(const NodeSet& candidates,
+                  const NodeSet& computed_variables);
+  bool PresolveOneConstraint(CtSpec* const spec);
   int FindEndIntegerVariable(int index);
-  int FindTarget(AST::Node* const annotations) const;
+  AST::Node* FindTarget(AST::Node* const annotations) const;
   void CollectRequired(AST::Array* const args,
-                       const hash_set<int>& candidates,
-                       hash_set<int>* const require) const;
-  void ComputeDependencies(const hash_set<int>& candidates,
-                           CtSpec* const spec) const;
-  void ComputeViableTarget(CtSpec* const spec,
-                           hash_set<int>* const candidates) const;
+                       const NodeSet& candidates,
+                       NodeSet* const require) const;
+  void ComputeDependencies(const NodeSet& candidates, CtSpec* const spec) const;
+  void ComputeViableTarget(CtSpec* const spec, NodeSet* const candidates) const;
   void Sanitize(CtSpec* const spec);
   void Strongify(int constraint_index);
+  bool IsAlias(AST::Node* const node) const;
+  bool IsIntroduced(AST::Node* const node) const;
 
   operations_research::FlatZincModel* model_;
   std::vector<std::pair<std::string,AST::Node*> > output_;
-  hash_set<int> orphans_;
-  hash_set<int> stored_constraints_;
+  NodeSet orphans_;
+  ConstraintSet stored_constraints_;
   std::vector<std::vector<int> > all_differents_;
   hash_map<string, std::vector<int> > constraints_per_id_;
   std::vector<std::vector<int> > constraints_per_int_variables_;
   std::vector<std::vector<int> > constraints_per_bool_variables_;
   hash_map<int, int> abs_map_;
   hash_map<int, std::pair<int, int> > differences_;
+  std::vector<AST::Node*> int_args_;
+  std::vector<AST::Node*> bool_args_;
 };
 
 AST::Node* ArrayOutput(AST::Call* ann);

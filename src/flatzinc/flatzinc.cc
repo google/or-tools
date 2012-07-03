@@ -53,7 +53,7 @@ FlatZincModel::FlatZincModel(void)
       set_var_count(-1),
       objective_variable_(-1),
       solve_annotations_(NULL),
-      solver_("FlatZincSolver"),
+      solver_(NULL),
       objective_(NULL),
       output_(NULL),
       parsed_ok_(true),
@@ -66,6 +66,7 @@ void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
   boolean_variables_.resize(boolVars);
   set_var_count = 0;
   set_variables_.resize(setVars);
+  solver_.reset(new Solver("FlatZincSolver"));
 }
 
 void FlatZincModel::NewIntVar(const std::string& name,
@@ -74,19 +75,19 @@ void FlatZincModel::NewIntVar(const std::string& name,
   if (vs->alias) {
     integer_variables_[int_var_count++] = integer_variables_[vs->i];
   } else if (vs->assigned) {
-    integer_variables_[int_var_count++] = solver_.MakeIntConst(vs->i, name);
+    integer_variables_[int_var_count++] = solver_->MakeIntConst(vs->i, name);
   } else {
     if (!vs->HasDomain()) {
         integer_variables_[int_var_count++] =
-            solver_.MakeIntVar(kint32min, kint32max, name);
+            solver_->MakeIntVar(kint32min, kint32max, name);
     } else {
       AST::SetLit* const domain = vs->Domain();
       if (domain->interval) {
         integer_variables_[int_var_count++] =
-            solver_.MakeIntVar(domain->min, domain->max, name);
+            solver_->MakeIntVar(domain->min, domain->max, name);
       } else {
         integer_variables_[int_var_count++] =
-            solver_.MakeIntVar(domain->s, name);
+            solver_->MakeIntVar(domain->s, name);
       }
     }
     VLOG(1) << "  - creates "
@@ -111,9 +112,9 @@ void FlatZincModel::NewBoolVar(const std::string& name, BoolVarSpec* const vs) {
   if (vs->alias) {
     boolean_variables_[bool_var_count++] = boolean_variables_[vs->i];
   } else if (vs->assigned) {
-    boolean_variables_[bool_var_count++] = solver_.MakeIntConst(vs->i, name);
+    boolean_variables_[bool_var_count++] = solver_->MakeIntConst(vs->i, name);
   } else {
-    boolean_variables_[bool_var_count++] = solver_.MakeBoolVar(name);
+    boolean_variables_[bool_var_count++] = solver_->MakeBoolVar(name);
     VLOG(1) << "  - creates "
             << boolean_variables_[bool_var_count - 1]->DebugString();
     if (!boolean_variables_[bool_var_count - 1]->Bound()) {
@@ -137,10 +138,11 @@ void FlatZincModel::NewSetVar(const std::string& name, SetVarSpec* vs) {
     AST::SetLit* const domain = vs->domain_.value();
     if (domain->interval) {
       set_variables_[set_var_count++] =
-          solver_.RevAlloc(new SetVar(&solver_, domain->min, domain->max));
+          solver_->RevAlloc(
+              new SetVar(solver_.get(), domain->min, domain->max));
     } else {
       set_variables_[set_var_count++] =
-          solver_.RevAlloc(new SetVar(&solver_, domain->s));
+          solver_->RevAlloc(new SetVar(solver_.get(), domain->s));
     }
   }
 }
@@ -207,7 +209,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
     }
 
     if (method_ != SAT && flat_annotations.size() == 1) {
-      builders_.push_back(solver_.MakePhase(active_variables_,
+      builders_.push_back(solver_->MakePhase(active_variables_,
                                             Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
                                             Solver::ASSIGN_MIN_VALUE));
       VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
@@ -244,7 +246,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
           str = Solver::CHOOSE_MAX_REGRET;
         }
         if (args->hasAtom("occurrence")) {
-          SortVariableByDegree(&solver_, &int_vars);
+          SortVariableByDegree(solver_.get(), &int_vars);
           str = Solver::CHOOSE_FIRST_UNBOUND;
         }
         Solver::IntValueStrategy vstr = Solver::ASSIGN_MIN_VALUE;
@@ -264,7 +266,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
         if (args->hasAtom("indomain_reverse_split")) {
           vstr = Solver::SPLIT_UPPER_HALF;
         }
-        builders_.push_back(solver_.MakePhase(int_vars, str, vstr));
+        builders_.push_back(solver_->MakePhase(int_vars, str, vstr));
       } catch (AST::TypeError& e) {
         (void) e;
         try {
@@ -277,7 +279,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
               int_vars.push_back(boolean_variables_[vars->a[i]->getBoolVar()]);
             }
           }
-          builders_.push_back(solver_.MakePhase(int_vars,
+          builders_.push_back(solver_->MakePhase(int_vars,
                                                 Solver::CHOOSE_FIRST_UNBOUND,
                                                 Solver::ASSIGN_MAX_VALUE));
         } catch (AST::TypeError& e) {
@@ -302,12 +304,12 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
   } else {
     free_search_ = true;
   }
-  builders_.push_back(solver_.MakePhase(active_variables_,
+  builders_.push_back(solver_->MakePhase(active_variables_,
                                         Solver::CHOOSE_FIRST_UNBOUND,
                                         Solver::ASSIGN_MIN_VALUE));
   VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
   if (!introduced_variables_.empty()) {
-    builders_.push_back(solver_.MakePhase(introduced_variables_,
+    builders_.push_back(solver_->MakePhase(introduced_variables_,
                                           Solver::CHOOSE_FIRST_UNBOUND,
                                           Solver::ASSIGN_MIN_VALUE));
     VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
@@ -335,7 +337,7 @@ void FlatZincModel::Minimize(int var, AST::Array* const annotations) {
   } else {
     solve_annotations_->a.push_back(c);
   }
-  objective_ = solver_.MakeMinimize(integer_variables_[objective_variable_], 1);
+  objective_ = solver_->MakeMinimize(integer_variables_[objective_variable_], 1);
 }
 
 void FlatZincModel::Maximize(int var, AST::Array* const annotations) {
@@ -354,7 +356,7 @@ void FlatZincModel::Maximize(int var, AST::Array* const annotations) {
   } else {
     solve_annotations_->a.push_back(c);
   }
-  objective_ = solver_.MakeMaximize(integer_variables_[objective_variable_], 1);
+  objective_ = solver_->MakeMaximize(integer_variables_[objective_variable_], 1);
 }
 
 FlatZincModel::~FlatZincModel(void) {
@@ -409,7 +411,7 @@ void FlatZincModel::Solve(int solve_frequency,
     case MIN:
     case MAX: {
       SearchMonitor* const log = use_log ?
-          solver_.MakeSearchLog(solve_frequency, objective_) :
+          solver_->MakeSearchLog(solve_frequency, objective_) :
           NULL;
       monitors.push_back(log);
       monitors.push_back(objective_);
@@ -417,7 +419,7 @@ void FlatZincModel::Solve(int solve_frequency,
     }
     case SAT: {
       SearchMonitor* const log = use_log ?
-          solver_.MakeSearchLog(solve_frequency) :
+          solver_->MakeSearchLog(solve_frequency) :
           NULL;
       monitors.push_back(log);
       break;
@@ -425,7 +427,7 @@ void FlatZincModel::Solve(int solve_frequency,
   }
 
   SearchLimit* const limit = (time_limit_in_ms > 0 ?
-                              solver_.MakeLimit(time_limit_in_ms,
+                              solver_->MakeLimit(time_limit_in_ms,
                                                 kint64max,
                                                 kint64max,
                                                 kint64max) :
@@ -433,15 +435,15 @@ void FlatZincModel::Solve(int solve_frequency,
   monitors.push_back(limit);
 
   if (simplex_frequency > 0) {
-    monitors.push_back(solver_.MakeSimplexConstraint(simplex_frequency));
+    monitors.push_back(solver_->MakeSimplexConstraint(simplex_frequency));
   }
 
 
   int count = 0;
   bool breaked = false;
   string last_solution;
-  solver_.NewSearch(solver_.Compose(builders_), monitors);
-  while (solver_.NextSolution()) {
+  solver_->NewSearch(solver_->Compose(builders_), monitors);
+  while (solver_->NextSolution()) {
     if (output_ != NULL) {
       if (print_last) {
         last_solution.clear();
@@ -462,7 +464,7 @@ void FlatZincModel::Solve(int solve_frequency,
       break;
     }
   }
-  solver_.EndSearch();
+  solver_->EndSearch();
   if (print_last) {
     std::cout << last_solution;
   }
@@ -477,23 +479,23 @@ void FlatZincModel::Solve(int solve_frequency,
     std::cout << "==========" << std::endl;
     proven = true;
   }
-  std::cout << "%%  runtime:              " << solver_.wall_time()
+  std::cout << "%%  runtime:              " << solver_->wall_time()
             << " ms" << std::endl;
-  std::cout << "%%  solutions:            " << solver_.solutions() << std::endl;
-  std::cout << "%%  constraints:          " << solver_.constraints()
+  std::cout << "%%  solutions:            " << solver_->solutions() << std::endl;
+  std::cout << "%%  constraints:          " << solver_->constraints()
             << std::endl;
   std::cout << "%%  normal propagations:  "
-            << solver_.demon_runs(Solver::NORMAL_PRIORITY) << std::endl;
+            << solver_->demon_runs(Solver::NORMAL_PRIORITY) << std::endl;
   std::cout << "%%  delayed propagations: "
-            << solver_.demon_runs(Solver::DELAYED_PRIORITY) << std::endl;
-  std::cout << "%%  branches:             " << solver_.branches() << std::endl;
-  std::cout << "%%  failures:             " << solver_.failures() << std::endl;
+            << solver_->demon_runs(Solver::DELAYED_PRIORITY) << std::endl;
+  std::cout << "%%  branches:             " << solver_->branches() << std::endl;
+  std::cout << "%%  failures:             " << solver_->failures() << std::endl;
   //  std::cout << "%%  peak depth:    16" << std::endl;
   std::cout << "%%  memory:               " << FlatZincMemoryUsage()
             << std::endl;
   const int64 best = objective_ != NULL ? objective_->best() : 0;
   if (objective_ != NULL) {
-    if (method_ == MIN && solver_.solutions() > 0) {
+    if (method_ == MIN && solver_->solutions() > 0) {
       std::cout << "%%  min objective:        " << best
                 << (proven ? " (proven)" : "") << std::endl;
     } else {
@@ -502,19 +504,19 @@ void FlatZincModel::Solve(int solve_frequency,
     }
   }
   std::cout << "%%  csv: " << filename_
-            << ", " << solver_.wall_time()
-            << ", " << solver_.branches()
-            << ", " << solver_.failures()
-            << ", " << (solver_.solutions() == 0 ?
+            << ", " << solver_->wall_time()
+            << ", " << solver_->branches()
+            << ", " << solver_->failures()
+            << ", " << (solver_->solutions() == 0 ?
                         (timeout ? "**timeout**" : "**unsat**") :
                         StringPrintf("%" GG_LL_FORMAT "d",
-                                     solver_.solutions()).c_str())
-            << ", " << (objective_ != NULL  && solver_.solutions() > 0 ?
+                                     solver_->solutions()).c_str())
+            << ", " << (objective_ != NULL  && solver_->solutions() > 0 ?
                         StringPrintf("%" GG_LL_FORMAT "d", best).c_str()
                         : "*****")
-            << ", " << solver_.constraints()
-            << ", " << solver_.demon_runs(Solver::NORMAL_PRIORITY)
-            << ", " << solver_.demon_runs(Solver::DELAYED_PRIORITY)
+            << ", " << solver_->constraints()
+            << ", " << solver_->demon_runs(Solver::NORMAL_PRIORITY)
+            << ", " << solver_->demon_runs(Solver::DELAYED_PRIORITY)
             << ", " << FlatZincMemoryUsage()
             << ", " << (free_search_ ? "free" : "defined") << std::endl;
 }
@@ -590,9 +592,9 @@ IntVar* FlatZincModel::GetIntVar(AST::Node* const node) {
   } else if (node->isBoolVar()) {
     return boolean_variables_[node->getBoolVar()];
   } else if (node->isInt()) {
-    return solver_.MakeIntConst(node->getInt());
+    return solver_->MakeIntConst(node->getInt());
   } else if (node->isBool()) {
-    return solver_.MakeIntConst(node->getBool());
+    return solver_->MakeIntConst(node->getBool());
   } else {
     LOG(FATAL) << "Cannot build an IntVar from " << node->DebugString();
     return NULL;
