@@ -710,7 +710,7 @@ void p_int_plus(FlatZincModel* const model, CtSpec* const spec) {
   if (spec->IsDefined(spec->Arg(0))) {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     IntExpr* const target = model->GetIntExpr(spec->Arg(2));
-    IntVar* const left = solver->MakeDifference(target, right)->Var();
+    IntExpr* const left = solver->MakeDifference(target, right);
     VLOG(1) << "  - creating " << spec->Arg(0)->DebugString() << " := "
             << left->DebugString();
     model->CheckIntegerVariableIsNull(spec->Arg(0));
@@ -718,7 +718,7 @@ void p_int_plus(FlatZincModel* const model, CtSpec* const spec) {
   } else if (spec->IsDefined(spec->Arg(1))) {
     IntExpr* const left = model->GetIntExpr(spec->Arg(0));
     IntExpr* const target = model->GetIntExpr(spec->Arg(2));
-    IntVar* const right = solver->MakeDifference(target, left)->Var();
+    IntExpr* const right = solver->MakeDifference(target, left);
     VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " := "
             << right->DebugString();
     model->CheckIntegerVariableIsNull(spec->Arg(1));
@@ -726,7 +726,7 @@ void p_int_plus(FlatZincModel* const model, CtSpec* const spec) {
   } else if (spec->IsDefined(spec->Arg(2))) {
     IntExpr* const left = model->GetIntExpr(spec->Arg(0));
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-    IntVar* const target = solver->MakeSum(left, right)->Var();
+    IntExpr* const target = solver->MakeSum(left, right);
     VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     model->CheckIntegerVariableIsNull(spec->Arg(2));
@@ -748,7 +748,7 @@ void p_int_minus(FlatZincModel* const model, CtSpec* const spec) {
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
   IntExpr* const right = model->GetIntExpr(spec->Arg(1));
   if (spec->IsDefined(spec->Arg(2))) {
-    IntVar* const target = solver->MakeDifference(left, right)->Var();
+    IntExpr* const target = solver->MakeDifference(left, right);
     VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     model->CheckIntegerVariableIsNull(spec->Arg(2));
@@ -768,7 +768,7 @@ void p_int_times(FlatZincModel* const model, CtSpec* const spec) {
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
   IntExpr* const right = model->GetIntExpr(spec->Arg(1));
   if (spec->IsDefined(spec->Arg(2))) {
-    IntVar* const target = solver->MakeProd(left, right)->Var();
+    IntExpr* const target = solver->MakeProd(left, right);
     VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     model->CheckIntegerVariableIsNull(spec->Arg(2));
@@ -824,7 +824,7 @@ void p_int_min(FlatZincModel* const model, CtSpec* const spec) {
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
   IntExpr* const right = model->GetIntExpr(spec->Arg(1));
   if (spec->IsDefined(spec->Arg(2))) {
-    IntVar* const target = solver->MakeMin(left, right)->Var();
+    IntExpr* const target = solver->MakeMin(left, right);
     VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     model->CheckIntegerVariableIsNull(spec->Arg(2));
@@ -843,7 +843,7 @@ void p_int_max(FlatZincModel* const model, CtSpec* const spec) {
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
   IntExpr* const right = model->GetIntExpr(spec->Arg(1));
   if (spec->IsDefined(spec->Arg(2))) {
-    IntVar* const target = solver->MakeMax(left, right)->Var();
+    IntExpr* const target = solver->MakeMax(left, right);
     VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     model->CheckIntegerVariableIsNull(spec->Arg(2));
@@ -989,8 +989,7 @@ void p_array_int_element(FlatZincModel* const model, CtSpec* const spec) {
     coefficients[i] = array_coefficents->a[i]->getInt();
   }
   if (spec->IsDefined(spec->Arg(2))) {
-    IntVar* const target =
-        solver->MakeElement(coefficients, shifted_index)->Var();
+    IntExpr* const target = solver->MakeElement(coefficients, shifted_index);
     VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     model->CheckIntegerVariableIsNull(spec->Arg(2));
@@ -1015,7 +1014,7 @@ void p_array_var_int_element(FlatZincModel* const model, CtSpec* const spec) {
     variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
   }
   if (spec->IsDefined(spec->Arg(2))) {
-    IntVar* const target = solver->MakeElement(variables, shifted_index)->Var();
+    IntExpr* const target = solver->MakeElement(variables, shifted_index);
     VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     model->CheckIntegerVariableIsNull(spec->Arg(2));
@@ -1058,8 +1057,7 @@ void p_array_bool_element(FlatZincModel* const model, CtSpec* const spec) {
     coefficients[i] = array_coefficents->a[i]->getBool();
   }
   if (spec->IsDefined(spec->Arg(2))) {
-    IntVar* const target =
-        solver->MakeElement(coefficients, shifted_index)->Var();
+    IntExpr* const target = solver->MakeElement(coefficients, shifted_index);
     VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     model->CheckIntegerVariableIsNull(spec->Arg(2));
@@ -1084,7 +1082,7 @@ void p_array_var_bool_element(FlatZincModel* const model, CtSpec* const spec) {
     variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
   }
   if (spec->IsDefined(spec->Arg(2))) {
-    IntVar* const target = solver->MakeElement(variables, shifted_index)->Var();
+    IntExpr* const target = solver->MakeElement(variables, shifted_index);
     VLOG(1) << "  - creating " << spec->Arg(2)->DebugString() << " := "
             << target->DebugString();
     model->CheckIntegerVariableIsNull(spec->Arg(2));
@@ -1177,7 +1175,7 @@ void p_abs(FlatZincModel* const model, CtSpec* const spec) {
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
   if (spec->IsDefined(spec->Arg(1))) {
     model->CheckIntegerVariableIsNull(spec->Arg(1));
-    IntVar* const target = solver->MakeAbs(left)->Var();
+    IntExpr* const target = solver->MakeAbs(left);
     VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " := "
             << target->DebugString();
     model->SetIntegerExpression(spec->Arg(1), target);
