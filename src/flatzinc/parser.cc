@@ -24,6 +24,7 @@ ParserState::~ParserState() {
   STLDeleteElements(&set_variables_);
   STLDeleteElements(&constraints_);
   for (int i = 0; i < int_domain_constraints_.size(); ++i) {
+    delete int_domain_constraints_[i].first;
     delete int_domain_constraints_[i].second;
   }
   STLDeleteElements(&int_args_);
@@ -635,7 +636,8 @@ void ParserState::AddIntVarDomainConstraint(int var_id,
   if (dom != NULL) {
     VLOG(1) << "  - adding int var domain constraint (" << var_id
             << ") : " << dom->DebugString();
-    int_domain_constraints_.push_back(std::make_pair(IntCopy(var_id), dom));
+    int_domain_constraints_.push_back(
+        std::make_pair(new AST::IntVar(var_id), dom));
   }
 }
 
@@ -644,7 +646,8 @@ void ParserState::AddBoolVarDomainConstraint(int var_id,
   if (dom != NULL) {
     VLOG(1) << "  - adding bool var domain constraint (" << var_id
             << ") : " << dom->DebugString();
-    int_domain_constraints_.push_back(std::make_pair(BoolCopy(var_id), dom));
+    int_domain_constraints_.push_back(
+        std::make_pair(new AST::BoolVar(var_id), dom));
   }
 }
 
