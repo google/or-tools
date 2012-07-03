@@ -567,7 +567,7 @@ void ParserState::BuildModel(const NodeSet& candidates,
   for (unsigned int i = int_domain_constraints_.size(); i--;) {
     if (!hadError) {
       AST::Node* const var_node = int_domain_constraints_[i].first;
-      IntVar* const var = model_->GetIntVar(var_node);
+      IntVar* const var = model_->GetIntExpr(var_node)->Var();
       AST::SetLit* const dom = int_domain_constraints_[i].second;
       if (dom->interval && (dom->min > var->Min() || dom->max < var->Max())) {
         VLOG(1) << "Reduce integer variable " << var->DebugString()

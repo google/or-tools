@@ -84,14 +84,13 @@ class FlatZincModel {
   // Skips the creation of the variable.
   void SkipIntVar();
   /// Creates a new boolean variable from specification.
-  int IntVarCount() const { return integer_variables_.size(); }
   void NewBoolVar(const std::string& name, BoolVarSpec* const vs);
   // Skips the creation of the variable.
   void SkipBoolVar();
   // Creates a new set variable from specification.
   void NewSetVar(const std::string& name, SetVarSpec* const vs);
 
-  IntVar* GetIntVar(AST::Node* const node);
+  IntExpr* GetIntExpr(AST::Node* const node);
 
   void CheckIntegerVariableIsNull(AST::Node* const node) const {
     CHECK_NOTNULL(node);
@@ -105,13 +104,13 @@ class FlatZincModel {
     }
   }
 
-  void SetIntegerVariable(AST::Node* const node, IntVar* const var) {
+  void SetIntegerExpression(AST::Node* const node, IntExpr* const expr) {
     CHECK_NOTNULL(node);
-    CHECK_NOTNULL(var);
+    CHECK_NOTNULL(expr);
     if (node->isIntVar()) {
-      integer_variables_[node->getIntVar()] = var;
+      integer_variables_[node->getIntVar()] = expr;
     } else if (node->isBoolVar()) {
-      boolean_variables_[node->getBoolVar()] = var;
+      boolean_variables_[node->getBoolVar()] = expr;
     } else {
       LOG(FATAL) << "Wrong SetIntegerVariable with " << node->DebugString();
     }
@@ -182,9 +181,9 @@ class FlatZincModel {
 
   AST::Array* output_;
   /// The integer variables
-  std::vector<IntVar*> integer_variables_;
+  std::vector<IntExpr*> integer_variables_;
   /// The Boolean variables
-  std::vector<IntVar*> boolean_variables_;
+  std::vector<IntExpr*> boolean_variables_;
   /// The set variables
   std::vector<SetVar*> set_variables_;
   // Useful for search.

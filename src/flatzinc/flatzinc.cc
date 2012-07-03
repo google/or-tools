@@ -72,36 +72,34 @@ void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
 void FlatZincModel::NewIntVar(const std::string& name,
                               IntVarSpec* const vs,
                               bool active) {
+  IntVar* var = NULL;
   if (vs->alias) {
-    integer_variables_[int_var_count++] = integer_variables_[vs->i];
+    var = integer_variables_[vs->i]->Var();
   } else if (vs->assigned) {
-    integer_variables_[int_var_count++] = solver_->MakeIntConst(vs->i, name);
+    var = solver_->MakeIntConst(vs->i, name);
   } else {
     if (!vs->HasDomain()) {
-        integer_variables_[int_var_count++] =
-            solver_->MakeIntVar(kint32min, kint32max, name);
+        var = solver_->MakeIntVar(kint32min, kint32max, name);
     } else {
       AST::SetLit* const domain = vs->Domain();
       if (domain->interval) {
-        integer_variables_[int_var_count++] =
-            solver_->MakeIntVar(domain->min, domain->max, name);
+        var = solver_->MakeIntVar(domain->min, domain->max, name);
       } else {
-        integer_variables_[int_var_count++] =
-            solver_->MakeIntVar(domain->s, name);
+        var = solver_->MakeIntVar(domain->s, name);
       }
     }
-    VLOG(1) << "  - creates "
-            << integer_variables_[int_var_count - 1]->DebugString();
-    if (!integer_variables_[int_var_count - 1]->Bound()) {
+    VLOG(1) << "  - creates " << var->DebugString();
+    if (!var->Bound()) {
       if (active) {
-        active_variables_.push_back(integer_variables_[int_var_count - 1]);
+        active_variables_.push_back(var);
         VLOG(1) << "  - add as active";
       } else {
-        introduced_variables_.push_back(integer_variables_[int_var_count - 1]);
+        introduced_variables_.push_back(var);
         VLOG(1) << "  - add as secondary";
       }
     }
   }
+  integer_variables_[int_var_count++] = var;
 }
 
 void FlatZincModel::SkipIntVar() {
@@ -109,22 +107,23 @@ void FlatZincModel::SkipIntVar() {
 }
 
 void FlatZincModel::NewBoolVar(const std::string& name, BoolVarSpec* const vs) {
+  IntVar* var = NULL;
   if (vs->alias) {
-    boolean_variables_[bool_var_count++] = boolean_variables_[vs->i];
+    var = boolean_variables_[vs->i]->Var();;
   } else if (vs->assigned) {
-    boolean_variables_[bool_var_count++] = solver_->MakeIntConst(vs->i, name);
+     var = solver_->MakeIntConst(vs->i, name);
   } else {
-    boolean_variables_[bool_var_count++] = solver_->MakeBoolVar(name);
-    VLOG(1) << "  - creates "
-            << boolean_variables_[bool_var_count - 1]->DebugString();
-    if (!boolean_variables_[bool_var_count - 1]->Bound()) {
+    var = solver_->MakeBoolVar(name);
+    VLOG(1) << "  - creates " << var->DebugString();
+    if (!var->Bound()) {
       if (!vs->introduced) {
-        active_variables_.push_back(boolean_variables_[bool_var_count - 1]);
+        active_variables_.push_back(var);
       } else {
-        introduced_variables_.push_back(boolean_variables_[bool_var_count - 1]);
+        introduced_variables_.push_back(var);
       }
     }
   }
+  boolean_variables_[bool_var_count++] = var;
 }
 
 void FlatZincModel::SkipBoolVar() {
@@ -224,7 +223,8 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
         std::vector<IntVar*> int_vars;
         for (int i = 0; i < vars->a.size(); ++i) {
           if (vars->a[i]->isIntVar()) {
-            int_vars.push_back(integer_variables_[vars->a[i]->getIntVar()]);
+            int_vars.push_back(
+                integer_variables_[vars->a[i]->getIntVar()]->Var());
           }
         }
         if (args->hasAtom("input_order")) {
@@ -276,7 +276,8 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
           std::vector<IntVar*> int_vars;
           for (int i = 0; i < vars->a.size(); ++i) {
             if (vars->a[i]->isBoolVar()) {
-              int_vars.push_back(boolean_variables_[vars->a[i]->getBoolVar()]);
+              int_vars.push_back(
+                  boolean_variables_[vars->a[i]->getBoolVar()]->Var());
             }
           }
           builders_.push_back(solver_->MakePhase(int_vars,
@@ -337,7 +338,8 @@ void FlatZincModel::Minimize(int var, AST::Array* const annotations) {
   } else {
     solve_annotations_->a.push_back(c);
   }
-  objective_ = solver_->MakeMinimize(integer_variables_[objective_variable_], 1);
+  objective_ =
+      solver_->MakeMinimize(integer_variables_[objective_variable_]->Var(), 1);
 }
 
 void FlatZincModel::Maximize(int var, AST::Array* const annotations) {
@@ -356,7 +358,8 @@ void FlatZincModel::Maximize(int var, AST::Array* const annotations) {
   } else {
     solve_annotations_->a.push_back(c);
   }
-  objective_ = solver_->MakeMaximize(integer_variables_[objective_variable_], 1);
+  objective_ =
+      solver_->MakeMaximize(integer_variables_[objective_variable_]->Var(), 1);
 }
 
 FlatZincModel::~FlatZincModel(void) {
@@ -542,10 +545,10 @@ string FlatZincModel::DebugString(AST::Node* const ai) const {
   } else if (ai->isInt(k)) {
     output += StringPrintf("%d", k);
   } else if (ai->isIntVar()) {
-    IntVar* const var = integer_variables_[ai->getIntVar()];
+    IntVar* const var = integer_variables_[ai->getIntVar()]->Var();
     output += StringPrintf("%d", var->Value());
   } else if (ai->isBoolVar()) {
-    IntVar* const var = boolean_variables_[ai->getBoolVar()];
+    IntVar* const var = boolean_variables_[ai->getBoolVar()]->Var();
     output += var->Value() ? "true" : "false";
   } else if (ai->isSetVar()) {
     SetVar* const var = set_variables_[ai->getSetVar()];
@@ -586,7 +589,7 @@ string FlatZincModel::DebugString(AST::Node* const ai) const {
   return output;
 }
 
-IntVar* FlatZincModel::GetIntVar(AST::Node* const node) {
+IntExpr* FlatZincModel::GetIntExpr(AST::Node* const node) {
   if (node->isIntVar()) {
     return integer_variables_[node->getIntVar()];
   } else if (node->isBoolVar()) {
