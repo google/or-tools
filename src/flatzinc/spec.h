@@ -554,6 +554,24 @@ class CtSpec {
     defined_arg_ = NULL;
   }
 
+  void RemoveDomain() {
+    if (annotations_ != NULL) {
+      if (AST::Array* a = dynamic_cast<AST::Array*>(annotations_)) {
+        for (int i = a->a.size(); i--;) {
+          if (AST::Atom* at = dynamic_cast<AST::Atom*>(a->a[i])) {
+            if (at->id == "domain") {
+              at->id = "null_annotation";
+            }
+          }
+        }
+      } else if (AST::Atom* a = dynamic_cast<AST::Atom*>(annotations_)) {
+        if (a->id == "domain") {
+          a->id = "null_annotation";
+        }
+      }
+    }
+  }
+
  private:
   const int index_;
   std::string id_;

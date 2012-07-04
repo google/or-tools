@@ -191,9 +191,14 @@ void ParserState::MarkComputedVariables(CtSpec* const spec,
 
 void ParserState::Sanitize(CtSpec* const spec) {
   if (spec->Id() == "int_lin_eq" && HasDomainAnnotation(spec->annotations())) {
-    VLOG(1) << "  - presolve: remove defines part on " << spec->DebugString();
-    // Remove defines_var part.
-    spec->RemoveDefines();
+    AST::Array* const array_coefficients = spec->Arg(0)->getArray();
+    if (array_coefficients->a.size() > 2) {
+      VLOG(1) << "  - presolve: remove defines part on " << spec->DebugString();
+      spec->RemoveDefines();
+    } else {
+      VLOG(1) << "  - presolve: remove domain part on " << spec->DebugString();
+      spec->RemoveDomain();
+    }
   }
 }
 
