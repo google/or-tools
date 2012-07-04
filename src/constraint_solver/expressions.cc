@@ -7025,6 +7025,9 @@ int IntVar::VarType() const {
 
 void IntVar::RemoveValues(const int64* const values, int size) {
   DCHECK_GE(size, 0);
+  if (size == 0) {
+    return;
+  }
   int start_index = 0;
   int64 new_min = Min();
   if (values[start_index] <= new_min) {
