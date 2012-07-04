@@ -3177,7 +3177,9 @@ class ModelVisitor : public BaseObject {
   static const char kIsBetween[];
   static const char kIsDifferent[];
   static const char kIsEqual[];
+  static const char kIsGreater[];
   static const char kIsGreaterOrEqual[];
+  static const char kIsLess[];
   static const char kIsLessOrEqual[];
   static const char kIsMember[];
   static const char kLess[];
