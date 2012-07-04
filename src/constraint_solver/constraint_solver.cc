@@ -55,6 +55,8 @@ DEFINE_bool(cp_no_solve, false, "Force failure at the beginning of a search.");
 DEFINE_string(cp_profile_file, "", "Export profiling overview to file.");
 DEFINE_bool(cp_verbose_fail, false, "Verbose output when failing.");
 DEFINE_bool(cp_name_variables, false, "Force all variables to have names.");
+DEFINE_bool(cp_name_cast_variables, false,
+            "Name variables casted from expressions");
 
 void ConstraintSolverFailsHere() {
   VLOG(3) << "Fail";
@@ -2492,9 +2494,14 @@ string Solver::GetName(const PropagationBaseObject* object) {
     if (cast_info->expression->HasName()) {
       return StringPrintf("Var<%s>",
                           cast_info->expression->name().c_str());
-    } else {
+    } else if (FLAGS_cp_name_cast_variables) {
       return StringPrintf("Var<%s>",
                           cast_info->expression->DebugString().c_str());
+    } else {
+      const string new_name =
+          StringPrintf("CastVar<%d>", anonymous_variable_index_++);
+      propagation_object_names_[object] = new_name;
+      return new_name;
     }
   }
   const string base_name = object->BaseName();
@@ -2649,7 +2656,8 @@ const char ModelVisitor::kSumGreaterOrEqual[] = "SumGreaterOrEqual";
 const char ModelVisitor::kSumLessOrEqual[] = "SumLessOrEqual";
 const char ModelVisitor::kTransition[]= "Transition";
 const char ModelVisitor::kTrueConstraint[] = "TrueConstraint";
-const char ModelVisitor::kVarWatcher[] = "VarWatcher";
+const char ModelVisitor::kVarBoundWatcher[] = "VarBoundWatcher";
+const char ModelVisitor::kVarValueWatcher[] = "VarValueWatcher";
 
 const char ModelVisitor::kCountAssignedItemsExtension[] = "CountAssignedItems";
 const char ModelVisitor::kCountUsedBinsExtension[] = "CountUsedBins";

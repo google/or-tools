@@ -300,15 +300,27 @@ class IntExprElement : public BaseIntExprElement {
   virtual ~IntExprElement();
 
   virtual string name() const {
-    return StringPrintf("IntElement(%s, %s)",
-                        values_.DebugString().c_str(),
-                        expr_->name().c_str());
+    if (values_.size() > 10) {
+      return StringPrintf("IntElement(array of size %d, %s)",
+                          values_.size(),
+                          expr_->name().c_str());
+    } else {
+      return StringPrintf("IntElement(%s, %s)",
+                          values_.DebugString().c_str(),
+                          expr_->name().c_str());
+    }
   }
 
   virtual string DebugString() const {
-    return StringPrintf("IntElement(%s, %s)",
-                        values_.DebugString().c_str(),
-                        expr_->DebugString().c_str());
+    if (values_.size() > 10) {
+      return StringPrintf("IntElement(array of size %d, %s)",
+                          values_.size(),
+                          expr_->DebugString().c_str());
+    } else {
+      return StringPrintf("IntElement(%s, %s)",
+                          values_.DebugString().c_str(),
+                          expr_->DebugString().c_str());
+    }
   }
 
   virtual IntVar* CastToVar() {
@@ -534,13 +546,30 @@ IntExpr* BuildElement(Solver* const solver,
       return b;
     }
   }
-  // Is Array increasing
-  if (values->HasProperty(ConstIntArray::IS_INCREASING)) {
-    return solver->RegisterIntExpr(solver->RevAlloc(
-        new IncreasingIntExprElement(solver, values->Release(), index)));
+  IntExpr* const cache = solver->Cache()->FindVarConstantArrayExpression(
+      index,
+      values,
+      ModelCache::VAR_CONSTANT_ARRAY_ELEMENT);
+  if (cache != NULL) {
+    LOG(INFO) << "Cache " << cache->DebugString();
+    return cache;
+  } else {
+    IntExpr* result= NULL;
+    // Is Array increasing
+    if (values->HasProperty(ConstIntArray::IS_INCREASING)) {
+    result = solver->RegisterIntExpr(solver->RevAlloc(
+        new IncreasingIntExprElement(solver, values->Copy(), index)));
+    } else {
+      result = solver->RegisterIntExpr(solver->RevAlloc(
+          new IntExprElement(solver, values->Copy(), index)));
+    }
+    solver->Cache()->InsertVarConstantArrayExpression(
+        result,
+        index,
+        values,
+        ModelCache::VAR_CONSTANT_ARRAY_ELEMENT);
+    return result;
   }
-  return solver->RegisterIntExpr(solver->RevAlloc(
-      new IntExprElement(solver, values->Release(), index)));
 }
 }  // namespace
 
@@ -1172,10 +1201,17 @@ void IntExprArrayElementCt::UpdateExpr() {
 }
 
 string IntExprArrayElementCt::DebugString() const {
-  return StringPrintf("IntExprArrayElement([%s], %s) == %s",
-                      DebugStringArray(vars_.get(), size_, ", ").c_str(),
-                      index_->DebugString().c_str(),
-                      target_var_->DebugString().c_str());
+  if (size_ > 10) {
+    return StringPrintf("IntExprArrayElement(var array of size $d, %s) == %s",
+                        size_,
+                        index_->DebugString().c_str(),
+                        target_var_->DebugString().c_str());
+  } else {
+    return StringPrintf("IntExprArrayElement([%s], %s) == %s",
+                        DebugStringArray(vars_.get(), size_, ", ").c_str(),
+                        index_->DebugString().c_str(),
+                        target_var_->DebugString().c_str());
+  }
 }
 
 // ----- IntExprArrayElementCstCt -----

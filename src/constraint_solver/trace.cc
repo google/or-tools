@@ -173,6 +173,14 @@ class TraceIntVar : public IntVar {
     return inner_->IsDifferent(constant);
   }
 
+  virtual IntVar* IsGreaterOrEqual(int64 constant) {
+    return inner_->IsGreaterOrEqual(constant);
+  }
+
+  virtual IntVar* IsLessOrEqual(int64 constant) {
+    return inner_->IsLessOrEqual(constant);
+  }
+
  private:
   IntVar* const inner_;
 };

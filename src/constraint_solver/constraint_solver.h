@@ -3212,7 +3212,8 @@ class ModelVisitor : public BaseObject {
   static const char kSumLessOrEqual[];
   static const char kTransition[];
   static const char kTrueConstraint[];
-  static const char kVarWatcher[];
+  static const char kVarBoundWatcher[];
+  static const char kVarValueWatcher[];
 
   // Extension names:
   static const char kCountAssignedItemsExtension[];
@@ -3801,6 +3802,8 @@ class IntVar : public IntExpr {
   // IsEqual
   virtual IntVar* IsEqual(int64 constant) = 0;
   virtual IntVar* IsDifferent(int64 constant) = 0;
+  virtual IntVar* IsGreaterOrEqual(int64 constant) = 0;
+  virtual IntVar* IsLessOrEqual(int64 constant) = 0;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(IntVar);

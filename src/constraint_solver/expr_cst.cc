@@ -589,30 +589,7 @@ IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntVar* const var, int64 value) {
   if (var->Max() < value) {
     return MakeIntConst(0LL);
   }
-  IntExpr* const cache = model_cache_->FindVarConstantExpression(
-      var,
-      value,
-      ModelCache::VAR_CONSTANT_IS_GREATER_OR_EQUAL);
-  if (cache != NULL) {
-    return cache->Var();
-  } else {
-    string name = var->name();
-    if (name.empty()) {
-      name = var->DebugString();
-    }
-    IntVar* const boolvar = MakeBoolVar(
-        StringPrintf("Var<%s >= %" GG_LL_FORMAT "d>",
-                     name.c_str(), value));
-    CastConstraint* const maintain =
-        RevAlloc(new IsGreaterEqualCstCt(this, var, value, boolvar));
-    AddConstraint(maintain);
-    model_cache_->InsertVarConstantExpression(
-        boolvar,
-        var,
-        value,
-        ModelCache::VAR_CONSTANT_IS_GREATER_OR_EQUAL);
-    return boolvar;
-  }
+  return var->IsGreaterOrEqual(value);
 }
 
 IntVar* Solver::MakeIsGreaterCstVar(IntVar* const var, int64 value) {
@@ -708,30 +685,7 @@ IntVar* Solver::MakeIsLessOrEqualCstVar(IntVar* const var, int64 value) {
   if (var->Min() > value) {
     return MakeIntConst(0LL);
   }
-  IntExpr* const cache = model_cache_->FindVarConstantExpression(
-      var,
-      value,
-      ModelCache::VAR_CONSTANT_IS_LESS_OR_EQUAL);
-  if (cache != NULL) {
-    return cache->Var();
-  } else {
-    string name = var->name();
-    if (name.empty()) {
-      name = var->DebugString();
-    }
-    IntVar* const boolvar = MakeBoolVar(
-        StringPrintf("Var<%s <= %" GG_LL_FORMAT "d>",
-                     name.c_str(), value));
-    CastConstraint* const maintain =
-        RevAlloc(new IsLessEqualCstCt(this, var, value, boolvar));
-    AddConstraint(maintain);
-    model_cache_->InsertVarConstantExpression(
-        boolvar,
-        var,
-        value,
-        ModelCache::VAR_CONSTANT_IS_LESS_OR_EQUAL);
-    return boolvar;
-  }
+  return var->IsLessOrEqual(value);
 }
 
 IntVar* Solver::MakeIsLessCstVar(IntVar* const var, int64 value) {
