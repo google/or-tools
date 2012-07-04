@@ -66,6 +66,9 @@ void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
   boolean_variables_.resize(boolVars);
   set_var_count = 0;
   set_variables_.resize(setVars);
+}
+
+void FlatZincModel::InitSolver() {
   solver_.reset(new Solver("FlatZincSolver"));
 }
 
@@ -445,6 +448,7 @@ void FlatZincModel::Solve(int solve_frequency,
   int count = 0;
   bool breaked = false;
   string last_solution;
+  const int64 build_time = solver_->wall_time();
   solver_->NewSearch(solver_->Compose(builders_), monitors);
   while (solver_->NextSolution()) {
     if (output_ != NULL) {
@@ -468,6 +472,7 @@ void FlatZincModel::Solve(int solve_frequency,
     }
   }
   solver_->EndSearch();
+  const int64 solve_time = solver_->wall_time() - build_time;
   if (print_last) {
     std::cout << last_solution;
   }
@@ -482,7 +487,11 @@ void FlatZincModel::Solve(int solve_frequency,
     std::cout << "==========" << std::endl;
     proven = true;
   }
-  std::cout << "%%  runtime:              " << solver_->wall_time()
+  std::cout << "%%  total runtime:        " << solve_time + build_time
+            << " ms" << std::endl;
+  std::cout << "%%  build time:           " << build_time
+            << " ms" << std::endl;
+  std::cout << "%%  solve time:           " << solve_time
             << " ms" << std::endl;
   std::cout << "%%  solutions:            " << solver_->solutions() << std::endl;
   std::cout << "%%  constraints:          " << solver_->constraints()
@@ -507,7 +516,8 @@ void FlatZincModel::Solve(int solve_frequency,
     }
   }
   std::cout << "%%  csv: " << filename_
-            << ", " << solver_->wall_time()
+            << ", " << solve_time
+            << ", " << build_time
             << ", " << solver_->branches()
             << ", " << solver_->failures()
             << ", " << (solver_->solutions() == 0 ?

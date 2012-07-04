@@ -76,6 +76,7 @@ class FlatZincModel {
   void Init(int num_int_variables,
             int num_bool_variables,
             int num_set_variables);
+  void InitSolver();
 
   void InitOutput(AST::Array* const output);
 

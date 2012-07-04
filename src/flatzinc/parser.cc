@@ -588,6 +588,7 @@ void ParserState::BuildModel(const NodeSet& candidates,
 }
 
 void ParserState::AnalyseAndCreateModel() {
+  model_->InitSolver();
   Presolve();
   NodeSet candidates;
   NodeSet computed_variables;
