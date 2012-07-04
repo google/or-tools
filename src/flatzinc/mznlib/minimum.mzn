@@ -3,7 +3,7 @@
 % Assumptions: |x| > 0.
 %-----------------------------------------------------------------------------%
 
-predicate minimum_int(var int: m, array[int] of var int: x);
+include "minimum_int.mzn";
 
 predicate minimum(var int: m, array[int] of var int: x) =
     minimum_int(m, x);

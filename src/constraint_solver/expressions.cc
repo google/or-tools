@@ -436,6 +436,10 @@ class DomainIntVar : public IntVar {
       visitor->EndVisitConstraint(ModelVisitor::kVarValueWatcher, this);
     }
 
+    virtual string DebugString() const {
+      return StringPrintf("ValueWatcher(%s)", variable_->DebugString().c_str());
+    }
+
    private:
     void Zero(int64 index) {
       IntVar* const boolvar = watchers_.At(index);
@@ -634,6 +638,10 @@ class DomainIntVar : public IntVar {
       visitor->VisitIntegerVariableArrayArgument(
           ModelVisitor::kVarsArgument, all_bool_vars);
       visitor->EndVisitConstraint(ModelVisitor::kVarBoundWatcher, this);
+    }
+
+    virtual string DebugString() const {
+      return StringPrintf("BoundWatcher(%s)", variable_->DebugString().c_str());
     }
 
    private:
@@ -1858,9 +1866,9 @@ class BooleanVar : public IntVar {
   }
 
   virtual IntVar* IsGreaterOrEqual(int64 constant) {
-    if (constant >= 1) {
+    if (constant > 1) {
       return solver()->MakeIntConst(0);
-    } else if (constant < 0) {
+    } else if (constant <= 0) {
       return solver()->MakeIntConst(1);
     } else {
       return this;
@@ -2716,7 +2724,7 @@ class TimesCstIntVar : public IntVar {
     if (cst_ > 0) {
       return var_->IsGreaterOrEqual(PosIntDivUp(constant, cst_));
     } else {
-      return var_->IsLessOrEqual(-PosIntDivUp(constant, -cst_));
+      return var_->IsLessOrEqual(PosIntDivUp(-constant, -cst_));
     }
   }  // CHECK ME
 
@@ -2724,7 +2732,7 @@ class TimesCstIntVar : public IntVar {
     if (cst_ > 0) {
       return var_->IsLessOrEqual(PosIntDivDown(constant, cst_));
     } else {
-      return var_->IsGreaterOrEqual(-PosIntDivDown(constant, -cst_));
+      return var_->IsGreaterOrEqual(PosIntDivDown(-constant, -cst_));
     }
   }  // CHECK ME
 
