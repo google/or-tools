@@ -1570,9 +1570,25 @@ bool IntExprArrayElement::Bound() const {
   }
   return true;
 }
+
+bool AreAllBound(const std::vector<IntVar*>& vars) {
+  for (int i = 0; i < vars.size(); ++i) {
+    if (!vars[i]->Bound()) {
+      return false;
+    }
+  }
+  return true;
+}
 }  // namespace
 
 IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const index) {
+  if (AreAllBound(vars)) {
+    std::vector<int64> values(vars.size());
+    for (int i = 0; i < vars.size(); ++i) {
+      values[i] = vars[i]->Value();
+    }
+    return MakeElement(values, index);
+  }
   CHECK_EQ(this, index->solver());
   return RegisterIntExpr(RevAlloc(
       new IntExprArrayElement(this, vars.data(), vars.size(), index)));
@@ -1593,6 +1609,13 @@ Constraint* Solver::MakeElementEquality(const std::vector<int>& vals,
 Constraint* Solver::MakeElementEquality(const std::vector<IntVar*>& vars,
                                         IntVar* const index,
                                         IntVar* const target) {
+  if (AreAllBound(vars)) {
+    std::vector<int64> values(vars.size());
+    for (int i = 0; i < vars.size(); ++i) {
+      values[i] = vars[i]->Value();
+    }
+    return MakeElementEquality(values, index, target);
+  }
   if (target->Bound()) {
     return RevAlloc(new IntExprArrayElementCstCt(this,
                                                  vars,
