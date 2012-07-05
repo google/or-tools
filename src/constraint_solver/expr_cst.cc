@@ -85,6 +85,10 @@ Constraint* Solver::MakeEquality(IntExpr* const e, int64 v) {
   IntExpr* right = NULL;
   if (v == 0 && IsADifference(e, &left, &right)) {
     return MakeEquality(left->Var(), right->Var());
+  } else if (e->IsVar() && !e->Var()->Contains(v)) {
+    return MakeFalseConstraint();
+  } else if (e->Min() == e->Max() && e->Min() == v) {
+    return MakeTrueConstraint();
   } else {
     return RevAlloc(new EqualityExprCst(this, e, v));
   }
@@ -96,6 +100,10 @@ Constraint* Solver::MakeEquality(IntExpr* const e, int v) {
   IntExpr* right = NULL;
   if (v == 0 && IsADifference(e, &left, &right)) {
     return MakeEquality(left->Var(), right->Var());
+  } else if (e->IsVar() && !e->Var()->Contains(v)) {
+    return MakeFalseConstraint();
+  } else if (e->Min() == e->Max() && e->Min() == v) {
+    return MakeTrueConstraint();
   } else {
     return RevAlloc(new EqualityExprCst(this, e, v));
   }
@@ -305,6 +313,10 @@ Constraint* Solver::MakeNonEquality(IntVar* const e, int64 v) {
   IntExpr* right = NULL;
   if (v == 0 && IsADifference(e, &left, &right)) {
     return MakeNonEquality(left->Var(), right->Var());
+  } else if (!e->Contains(v)) {
+    return MakeTrueConstraint();
+  } else if (e->Bound() && e->Min() == v) {
+    return MakeFalseConstraint();
   } else {
     return RevAlloc(new DiffCst(this, e, v));
   }
@@ -316,6 +328,10 @@ Constraint* Solver::MakeNonEquality(IntVar* const e, int v) {
   IntExpr* right = NULL;
   if (v == 0 && IsADifference(e, &left, &right)) {
     return MakeNonEquality(left->Var(), right->Var());
+  } else if (!e->Contains(v)) {
+    return MakeTrueConstraint();
+  } else if (e->Bound() && e->Min() == v) {
+    return MakeFalseConstraint();
   } else {
     return RevAlloc(new DiffCst(this, e, v));
   }

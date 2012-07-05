@@ -1665,6 +1665,9 @@ void Solver::clear_queue_action_on_fail() {
 }
 
 void Solver::AddConstraint(Constraint* const c) {
+  if (c == true_constraint_) {
+    return;
+  }
   if (state_ == IN_SEARCH) {
     queue_->AddConstraint(c);
   } else if (state_ == IN_ROOT_NODE) {

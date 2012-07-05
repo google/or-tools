@@ -6306,7 +6306,15 @@ IntExpr* Solver::MakeAbs(IntExpr* const e) {
   }
   IntExpr* result = Cache()->FindExprExpression(e, ModelCache::EXPR_ABS);
   if (result == NULL) {
-    result = RegisterIntExpr(RevAlloc(new IntAbs(this, e)));
+    const int64 max_value = std::max(-e->Min(), e->Max());
+    if (e->IsVar() && max_value < 0xFFFFFF) {
+      const string name = StringPrintf("AbsVar(%s)", e->name().c_str());
+      IntVar* const target = MakeIntVar(0, max_value, name);
+      AddConstraint(RevAlloc(new IntAbsConstraint(this, e->Var(), target)));
+      return target;
+    } else {
+      result = RegisterIntExpr(RevAlloc(new IntAbs(this, e)));
+    }
     Cache()->InsertExprExpression(result, e, ModelCache::EXPR_ABS);
   }
   return result;
