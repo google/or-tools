@@ -798,7 +798,13 @@ Constraint* Solver::MakeEquality(IntVar* const l, IntVar* const r) {
   CHECK(r != NULL) << "left expression NULL, maybe a bad cast";
   CHECK_EQ(this, l->solver());
   CHECK_EQ(this, r->solver());
-  return RevAlloc(new RangeEquality(this, l, r));
+  if (l->Bound()) {
+    return MakeEquality(r, l->Min());
+  } else if (r->Bound()) {
+    return MakeEquality(l, r->Min());
+  } else {
+    return RevAlloc(new RangeEquality(this, l, r));
+  }
 }
 
 Constraint* Solver::MakeLessOrEqual(IntVar* const l, IntVar* const r) {

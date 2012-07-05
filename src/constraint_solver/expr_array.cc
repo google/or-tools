@@ -2323,9 +2323,8 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
       const bool all_booleans = AreAllBooleans(vars.data(), vars.size());
 
       const string name = all_booleans ?
-          StringPrintf("BooleanSum([%s])",
-                       DebugStringVector(vars, ", ").c_str()) :
-          StringPrintf("Sum([%s])", DebugStringVector(vars, ", ").c_str());
+          StringPrintf("BooleanSum([%s])", NameVector(vars, ", ").c_str()) :
+          StringPrintf("Sum([%s])", NameVector(vars, ", ").c_str());
       IntVar* const sum_var = MakeIntVar(new_min, new_max, name);
       if (all_booleans) {
         AddConstraint(RevAlloc(
@@ -2418,19 +2417,37 @@ IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
 
 Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
                                     IntVar* const min_var) {
-  if (AreAllBooleans(vars.data(), vars.size())) {
-    return RevAlloc(new ArrayBoolAndEq(this, vars, min_var));
+  const int size = vars.size();
+  if (size > 2) {
+    if (AreAllBooleans(vars.data(), vars.size())) {
+      return RevAlloc(new ArrayBoolAndEq(this, vars, min_var));
+    } else {
+      return RevAlloc(new MinConstraint(this, vars, min_var));
+    }
+  } else if (size == 2) {
+    return MakeEquality(MakeMin(vars[0], vars[1])->Var(), min_var);
+  } else if (size == 1) {
+    return MakeEquality(vars[0], min_var);
   } else {
-    return RevAlloc(new MinConstraint(this, vars, min_var));
+    return MakeEquality(min_var, kint64min);
   }
 }
 
 Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
                                     IntVar* const max_var) {
-  if (AreAllBooleans(vars.data(), vars.size())) {
-    return RevAlloc(new ArrayBoolOrEq(this, vars, max_var));
+  const int size = vars.size();
+  if (size > 2) {
+    if (AreAllBooleans(vars.data(), vars.size())) {
+      return RevAlloc(new ArrayBoolOrEq(this, vars, max_var));
+    } else {
+      return RevAlloc(new MaxConstraint(this, vars, max_var));
+    }
+  } else if (size == 2) {
+    return MakeEquality(MakeMax(vars[0], vars[1])->Var(), max_var);
+  } else if (size == 1) {
+    return MakeEquality(vars[0], max_var);
   } else {
-    return RevAlloc(new MaxConstraint(this, vars, max_var));
+    return MakeEquality(max_var, kint64min);
   }
 }
 

@@ -872,10 +872,15 @@ void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_variables = spec->Arg(0)->getArray();
   AST::Node* const node_boolvar = spec->Arg(1);
   const int size = array_variables->a.size();
-  std::vector<IntVar*> variables(size);
+  std::vector<IntVar*> variables;
+  hash_set<IntExpr*> added;
   for (int i = 0; i < size; ++i) {
     AST::Node* const a = array_variables->a[i];
-    variables[i] = model->GetIntExpr(a)->Var();
+    IntVar* const to_add = model->GetIntExpr(a)->Var();
+    if (!ContainsKey(added, to_add)) {
+      variables.push_back(to_add);
+      added.insert(to_add);
+    }
   }
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar = solver->MakeMin(variables)->Var();
@@ -902,10 +907,15 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
   AST::Array* const array_variables = spec->Arg(0)->getArray();
   AST::Node* const node_boolvar = spec->Arg(1);
   const int size = array_variables->a.size();
-  std::vector<IntVar*> variables(size);
+  std::vector<IntVar*> variables;
+  hash_set<IntExpr*> added;
   for (int i = 0; i < size; ++i) {
     AST::Node* const a = array_variables->a[i];
-    variables[i] = model->GetIntExpr(a)->Var();
+    IntVar* const to_add = model->GetIntExpr(a)->Var();
+    if (!ContainsKey(added, to_add)) {
+      variables.push_back(to_add);
+      added.insert(to_add);
+    }
   }
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar = solver->MakeMax(variables)->Var();
