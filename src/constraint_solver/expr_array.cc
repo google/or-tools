@@ -2320,10 +2320,14 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
           new_max = CapAdd(vars[i]->Max(), new_max);
         }
       }
-      const string name =
+      const bool all_booleans = AreAllBooleans(vars.data(), vars.size());
+
+      const string name = all_booleans ?
+          StringPrintf("BooleanSum([%s])",
+                       DebugStringVector(vars, ", ").c_str()) :
           StringPrintf("Sum([%s])", DebugStringVector(vars, ", ").c_str());
       IntVar* const sum_var = MakeIntVar(new_min, new_max, name);
-      if (AreAllBooleans(vars.data(), vars.size())) {
+      if (all_booleans) {
         AddConstraint(RevAlloc(
             new SumBooleanEqualToVar(this, vars.data(), vars.size(), sum_var)));
       } else  if (new_min != kint64min && new_max != kint64max) {

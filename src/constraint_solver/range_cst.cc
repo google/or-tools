@@ -1002,7 +1002,7 @@ Constraint* Solver::MakeIsLessOrEqualCt(
   } else if (right->Bound()) {
     return MakeIsLessOrEqualCstCt(left->Var(), right->Min(), b);
   }
-  return MakeIsLessOrEqualCstCt(MakeDifference(left, right)->Var(), 0, b);
+  return RevAlloc(new IsLessOrEqualCt(this, left->Var(), right->Var(), b));
 }
 
 IntVar* Solver::MakeIsLessVar(
@@ -1054,7 +1054,7 @@ Constraint* Solver::MakeIsLessCt(
   } else if (right->Bound()) {
     return MakeIsLessCstCt(left->Var(), right->Min(), b);
   }
-  return MakeIsLessCstCt(MakeDifference(left, right)->Var(), 0, b);
+  return RevAlloc(new IsLessCt(this, left->Var(), right->Var(), b));
 }
 
 IntVar* Solver::MakeIsGreaterOrEqualVar(
