@@ -812,7 +812,13 @@ Constraint* Solver::MakeLessOrEqual(IntVar* const l, IntVar* const r) {
   CHECK(r != NULL) << "left expression NULL, maybe a bad cast";
   CHECK_EQ(this, l->solver());
   CHECK_EQ(this, r->solver());
-  return RevAlloc(new RangeLessOrEqual(this, l, r));
+  if (l->Bound()) {
+    return MakeGreaterOrEqual(r, l->Min());
+  } else if (r->Bound()) {
+    return MakeLessOrEqual(l, r->Min());
+  } else {
+    return RevAlloc(new RangeLessOrEqual(this, l, r));
+  }
 }
 
 Constraint* Solver::MakeGreaterOrEqual(IntVar* const l, IntVar* const r) {
@@ -820,7 +826,13 @@ Constraint* Solver::MakeGreaterOrEqual(IntVar* const l, IntVar* const r) {
   CHECK(r != NULL) << "left expression NULL, maybe a bad cast";
   CHECK_EQ(this, l->solver());
   CHECK_EQ(this, r->solver());
-  return RevAlloc(new RangeGreaterOrEqual(this, l, r));
+  if (l->Bound()) {
+    return MakeLessOrEqual(r, l->Min());
+  } else if (r->Bound()) {
+    return MakeGreaterOrEqual(l, r->Min());
+  } else {
+    return RevAlloc(new RangeGreaterOrEqual(this, l, r));
+  }
 }
 
 Constraint* Solver::MakeLess(IntVar* const l, IntVar* const r) {
@@ -828,7 +840,13 @@ Constraint* Solver::MakeLess(IntVar* const l, IntVar* const r) {
   CHECK(r != NULL) << "left expression NULL, maybe a bad cast";
   CHECK_EQ(this, l->solver());
   CHECK_EQ(this, r->solver());
-  return RevAlloc(new RangeLess(this, l, r));
+  if (l->Bound()) {
+    return MakeGreater(r, l->Min());
+  } else if (r->Bound()) {
+    return MakeLess(l, r->Min());
+  } else {
+    return RevAlloc(new RangeLess(this, l, r));
+  }
 }
 
 Constraint* Solver::MakeGreater(IntVar* const l, IntVar* const r) {
@@ -836,7 +854,13 @@ Constraint* Solver::MakeGreater(IntVar* const l, IntVar* const r) {
   CHECK(r != NULL) << "left expression NULL, maybe a bad cast";
   CHECK_EQ(this, l->solver());
   CHECK_EQ(this, r->solver());
-  return RevAlloc(new RangeGreater(this, l, r));
+  if (l->Bound()) {
+    return MakeLess(r, l->Min());
+  } else if (r->Bound()) {
+    return MakeGreater(l, r->Min());
+  } else {
+    return RevAlloc(new RangeGreater(this, l, r));
+  }
 }
 
 Constraint* Solver::MakeNonEquality(IntVar* const l, IntVar* const r) {
