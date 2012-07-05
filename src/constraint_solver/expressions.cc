@@ -735,10 +735,10 @@ class DomainIntVar : public IntVar {
     if (Bound() && min_.Value() == value) {
       return s->MakeIntConst(1LL);
     }
-    IntExpr* const cache = s->Cache()->FindVarConstantExpression(
+    IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this,
         value,
-        ModelCache::VAR_CONSTANT_IS_EQUAL);
+        ModelCache::EXPR_CONSTANT_IS_EQUAL);
     if (cache != NULL) {
       return cache->Var();
     } else {
@@ -750,8 +750,8 @@ class DomainIntVar : public IntVar {
          solver()->AddConstraint(value_watcher_);
        }
        IntVar* const boolvar = value_watcher_->GetOrMakeValueWatcher(value);
-       s->Cache()->InsertVarConstantExpression(
-           boolvar, this, value, ModelCache::VAR_CONSTANT_IS_EQUAL);
+       s->Cache()->InsertExprConstantExpression(
+           boolvar, this, value, ModelCache::EXPR_CONSTANT_IS_EQUAL);
        return boolvar;
     }
   }
@@ -769,10 +769,10 @@ class DomainIntVar : public IntVar {
     if (min_.Value() >= constant) {
       return s->MakeIntConst(1LL);
     }
-    IntExpr* const cache = s->Cache()->FindVarConstantExpression(
+    IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this,
         constant,
-        ModelCache::VAR_CONSTANT_IS_GREATER_OR_EQUAL);
+        ModelCache::EXPR_CONSTANT_IS_GREATER_OR_EQUAL);
     if (cache != NULL) {
       return cache->Var();
     } else {
@@ -784,11 +784,11 @@ class DomainIntVar : public IntVar {
          solver()->AddConstraint(bound_watcher_);
        }
        IntVar* const boolvar = bound_watcher_->GetOrMakeBoundWatcher(constant);
-       s->Cache()->InsertVarConstantExpression(
+       s->Cache()->InsertExprConstantExpression(
            boolvar,
            this,
            constant,
-           ModelCache::VAR_CONSTANT_IS_GREATER_OR_EQUAL);
+           ModelCache::EXPR_CONSTANT_IS_GREATER_OR_EQUAL);
        return boolvar;
     }
   }
