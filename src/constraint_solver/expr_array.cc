@@ -2323,7 +2323,10 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
       const string name =
           StringPrintf("Sum([%s])", DebugStringVector(vars, ", ").c_str());
       IntVar* const sum_var = MakeIntVar(new_min, new_max, name);
-      if (new_min != kint64min && new_max != kint64max) {
+      if (AreAllBooleans(vars.data(), vars.size())) {
+        AddConstraint(RevAlloc(
+            new SumBooleanEqualToVar(this, vars.data(), vars.size(), sum_var)));
+      } else  if (new_min != kint64min && new_max != kint64max) {
         AddConstraint(RevAlloc(new SumConstraint(this, vars, sum_var)));
       } else {
         AddConstraint(RevAlloc(new SafeSumConstraint(this, vars, sum_var)));
