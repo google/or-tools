@@ -1327,97 +1327,97 @@ class Solver {
   Constraint* MakeFalseConstraint(const string& explanation);
 
   // b == (v == c)
-  Constraint* MakeIsEqualCstCt(IntVar* const v, int64 c, IntVar* const b);
+  Constraint* MakeIsEqualCstCt(IntExpr* const v, int64 c, IntVar* const b);
   // status var of (v == c)
-  IntVar* MakeIsEqualCstVar(IntVar* const var, int64 value);
+  IntVar* MakeIsEqualCstVar(IntExpr* const var, int64 value);
   // b == (v1 == v2)
   Constraint* MakeIsEqualCt(IntExpr* const v1, IntExpr* v2, IntVar* const b);
   // status var of (v1 == v2)
   IntVar* MakeIsEqualVar(IntExpr* const var, IntExpr* v2);
   // left == right
-  Constraint* MakeEquality(IntVar* const left, IntVar* const right);
+  Constraint* MakeEquality(IntExpr* const left, IntExpr* const right);
   // expr == value
   Constraint* MakeEquality(IntExpr* const expr, int64 value);
   // expr == value
   Constraint* MakeEquality(IntExpr* const expr, int value);
 
   // b == (v != c)
-  Constraint* MakeIsDifferentCstCt(IntVar* const v, int64 c, IntVar* const b);
+  Constraint* MakeIsDifferentCstCt(IntExpr* const v, int64 c, IntVar* const b);
   // status var of (v != c)
-  IntVar* MakeIsDifferentCstVar(IntVar* const v, int64 c);
+  IntVar* MakeIsDifferentCstVar(IntExpr* const v, int64 c);
   // status var of (v1 != v2)
   IntVar* MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2);
   // b == (v1 != v2)
   Constraint* MakeIsDifferentCt(IntExpr* const v1, IntExpr* const v2,
                                 IntVar* const b);
   // left != right
-  Constraint* MakeNonEquality(IntVar* const left, IntVar* const right);
+  Constraint* MakeNonEquality(IntExpr* const left, IntExpr* const right);
   // expr != value
-  Constraint* MakeNonEquality(IntVar* const expr, int64 value);
+  Constraint* MakeNonEquality(IntExpr* const expr, int64 value);
   // expr != value
-  Constraint* MakeNonEquality(IntVar* const expr, int value);
+  Constraint* MakeNonEquality(IntExpr* const expr, int value);
 
   // b == (v <= c)
-  Constraint* MakeIsLessOrEqualCstCt(IntVar* const v, int64 c,
+  Constraint* MakeIsLessOrEqualCstCt(IntExpr* const v, int64 c,
                                      IntVar* const b);
   // status var of (v <= c)
-  IntVar* MakeIsLessOrEqualCstVar(IntVar* const v, int64 c);
+  IntVar* MakeIsLessOrEqualCstVar(IntExpr* const v, int64 c);
   // status var of (left <= right)
   IntVar* MakeIsLessOrEqualVar(IntExpr* const left, IntExpr* const right);
   // b == (left <= right)
   Constraint* MakeIsLessOrEqualCt(IntExpr* const left, IntExpr* const right,
                                   IntVar* const b);
   // left <= right
-  Constraint* MakeLessOrEqual(IntVar* const left, IntVar* const right);
+  Constraint* MakeLessOrEqual(IntExpr* const left, IntExpr* const right);
   // expr <= value
   Constraint* MakeLessOrEqual(IntExpr* const expr, int64 value);
   // expr <= value
   Constraint* MakeLessOrEqual(IntExpr* const expr, int value);
 
   // b == (v >= c)
-  Constraint* MakeIsGreaterOrEqualCstCt(IntVar* const v, int64 c,
+  Constraint* MakeIsGreaterOrEqualCstCt(IntExpr* const v, int64 c,
                                         IntVar* const b);
   // status var of (v >= c)
-  IntVar* MakeIsGreaterOrEqualCstVar(IntVar* const v, int64 c);
+  IntVar* MakeIsGreaterOrEqualCstVar(IntExpr* const v, int64 c);
   // status var of (left >= right)
   IntVar* MakeIsGreaterOrEqualVar(IntExpr* const left, IntExpr* const right);
   // b == (left >= right)
   Constraint* MakeIsGreaterOrEqualCt(IntExpr* const left, IntExpr* const right,
                                      IntVar* const b);
   // left >= right
-  Constraint* MakeGreaterOrEqual(IntVar* const left, IntVar* const right);
+  Constraint* MakeGreaterOrEqual(IntExpr* const left, IntExpr* const right);
   // expr >= value
   Constraint* MakeGreaterOrEqual(IntExpr* const expr, int64 value);
   // expr >= value
   Constraint* MakeGreaterOrEqual(IntExpr* const expr, int value);
 
   // b == (v > c)
-  Constraint* MakeIsGreaterCstCt(IntVar* const v, int64 c, IntVar* const b);
+  Constraint* MakeIsGreaterCstCt(IntExpr* const v, int64 c, IntVar* const b);
   // status var of (v > c)
-  IntVar* MakeIsGreaterCstVar(IntVar* const v, int64 c);
+  IntVar* MakeIsGreaterCstVar(IntExpr* const v, int64 c);
   // status var of (left > right)
   IntVar* MakeIsGreaterVar(IntExpr* const left, IntExpr* const right);
   // b == (left > right)
   Constraint* MakeIsGreaterCt(IntExpr* const left, IntExpr* const right,
                               IntVar* const b);
   // left > right
-  Constraint* MakeGreater(IntVar* const left, IntVar* const right);
+  Constraint* MakeGreater(IntExpr* const left, IntExpr* const right);
   // expr > value
   Constraint* MakeGreater(IntExpr* const expr, int64 value);
   // expr > value
   Constraint* MakeGreater(IntExpr* const expr, int value);
 
   // b == (v < c)
-  Constraint* MakeIsLessCstCt(IntVar* const v, int64 c, IntVar* const b);
+  Constraint* MakeIsLessCstCt(IntExpr* const v, int64 c, IntVar* const b);
   // status var of (v < c)
-  IntVar* MakeIsLessCstVar(IntVar* const v, int64 c);
+  IntVar* MakeIsLessCstVar(IntExpr* const v, int64 c);
   // status var of (left < right)
   IntVar* MakeIsLessVar(IntExpr* const left, IntExpr* const right);
   // b == (left < right)
   Constraint* MakeIsLessCt(IntExpr* const left, IntExpr* const right,
                            IntVar* const b);
   // left < right
-  Constraint* MakeLess(IntVar* const left, IntVar* const right);
+  Constraint* MakeLess(IntExpr* const left, IntExpr* const right);
   // expr < value
   Constraint* MakeLess(IntExpr* const expr, int64 value);
   // expr < value

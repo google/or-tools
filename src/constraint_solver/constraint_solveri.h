@@ -1408,14 +1408,14 @@ class ModelCache {
     VAR_CONSTANT_CONSTANT_CONSTRAINT_MAX,
   };
 
-  enum VarVarConstraintType {
-    VAR_VAR_EQUALITY = 0,
-    VAR_VAR_GREATER,
-    VAR_VAR_GREATER_OR_EQUAL,
-    VAR_VAR_LESS,
-    VAR_VAR_LESS_OR_EQUAL,
-    VAR_VAR_NON_EQUALITY,
-    VAR_VAR_CONSTRAINT_MAX,
+  enum ExprExprConstraintType {
+    EXPR_EXPR_EQUALITY = 0,
+    EXPR_EXPR_GREATER,
+    EXPR_EXPR_GREATER_OR_EQUAL,
+    EXPR_EXPR_LESS,
+    EXPR_EXPR_LESS_OR_EQUAL,
+    EXPR_EXPR_NON_EQUALITY,
+    EXPR_EXPR_CONSTRAINT_MAX,
   };
 
   enum ExprExpressionType {
@@ -1425,28 +1425,16 @@ class ModelCache {
     EXPR_EXPRESSION_MAX,
   };
 
-  enum VarConstantExpressionType {
-    VAR_CONSTANT_IS_EQUAL = 0,
-    VAR_CONSTANT_IS_NOT_EQUAL,
-    VAR_CONSTANT_IS_GREATER_OR_EQUAL,
-    VAR_CONSTANT_IS_LESS_OR_EQUAL,
-    VAR_CONSTANT_EXPRESSION_MAX,
-  };
-
-  enum VarVarExpressionType {
-    VAR_VAR_IS_EQUAL = 0,
-    VAR_VAR_IS_NOT_EQUAL,
-    VAR_VAR_IS_LESS,
-    VAR_VAR_IS_LESS_OR_EQUAL,
-    VAR_VAR_EXPRESSION_MAX,
-  };
-
   enum ExprExprExpressionType {
     EXPR_EXPR_DIFFERENCE = 0,
     EXPR_EXPR_PROD,
     EXPR_EXPR_MAX,
     EXPR_EXPR_MIN,
     EXPR_EXPR_SUM,
+    EXPR_EXPR_IS_LESS,
+    EXPR_EXPR_IS_LESS_OR_EQUAL,
+    EXPR_EXPR_IS_EQUAL,
+    EXPR_EXPR_IS_NOT_EQUAL,
     EXPR_EXPR_EXPRESSION_MAX,
   };
 
@@ -1457,6 +1445,10 @@ class ModelCache {
     EXPR_CONSTANT_MAX,
     EXPR_CONSTANT_MIN,
     EXPR_CONSTANT_SUM,
+    EXPR_CONSTANT_IS_EQUAL,
+    EXPR_CONSTANT_IS_NOT_EQUAL,
+    EXPR_CONSTANT_IS_GREATER_OR_EQUAL,
+    EXPR_CONSTANT_IS_LESS_OR_EQUAL,
     EXPR_CONSTANT_EXPRESSION_MAX,
   };
   enum VarConstantConstantExpressionType {
@@ -1525,15 +1517,15 @@ class ModelCache {
 
   // Var Var Constraints.
 
-  virtual Constraint* FindVarVarConstraint(
-      IntVar* const var1,
-      IntVar* const var2,
-      VarVarConstraintType type) const = 0;
+  virtual Constraint* FindExprExprConstraint(
+      IntExpr* const expr1,
+      IntExpr* const expr2,
+      ExprExprConstraintType type) const = 0;
 
-  virtual void InsertVarVarConstraint(Constraint* const ct,
-                                      IntVar* const var1,
-                                      IntVar* const var2,
-                                      VarVarConstraintType type) = 0;
+  virtual void InsertExprExprConstraint(Constraint* const ct,
+                                      IntExpr* const expr1,
+                                      IntExpr* const expr2,
+                                      ExprExprConstraintType type) = 0;
 
   // Var Expressions.
 
@@ -1544,32 +1536,6 @@ class ModelCache {
   virtual void InsertExprExpression(IntExpr* const expression,
                                     IntExpr* const expr,
                                     ExprExpressionType type) = 0;
-
-  // Var Constant Expressions .
-
-  virtual IntExpr* FindVarConstantExpression(
-      IntVar* const var,
-      int64 value,
-      VarConstantExpressionType type) const = 0;
-
-  virtual void InsertVarConstantExpression(
-      IntExpr* const expression,
-      IntVar* const var,
-      int64 value,
-      VarConstantExpressionType type) = 0;
-
-  // Var Var Expressions.
-
-  virtual IntExpr* FindVarVarExpression(
-      IntVar* const var1,
-      IntVar* const var2,
-      VarVarExpressionType type) const = 0;
-
-  virtual void InsertVarVarExpression(
-      IntExpr* const expression,
-      IntVar* const var1,
-      IntVar* const var2,
-      VarVarExpressionType type) = 0;
 
    // Expr Constant Expressions.
 

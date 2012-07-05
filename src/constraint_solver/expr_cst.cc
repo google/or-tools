@@ -307,33 +307,33 @@ string DiffCst::DebugString() const {
 }
 }  // namespace
 
-Constraint* Solver::MakeNonEquality(IntVar* const e, int64 v) {
+Constraint* Solver::MakeNonEquality(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
   IntExpr* left = NULL;
   IntExpr* right = NULL;
   if (v == 0 && IsADifference(e, &left, &right)) {
-    return MakeNonEquality(left->Var(), right->Var());
-  } else if (!e->Contains(v)) {
+    return MakeNonEquality(left, right);
+  } else if (e->IsVar() && !e->Var()->Contains(v)) {
     return MakeTrueConstraint();
   } else if (e->Bound() && e->Min() == v) {
     return MakeFalseConstraint();
   } else {
-    return RevAlloc(new DiffCst(this, e, v));
+    return RevAlloc(new DiffCst(this, e->Var(), v));
   }
 }
 
-Constraint* Solver::MakeNonEquality(IntVar* const e, int v) {
+Constraint* Solver::MakeNonEquality(IntExpr* const e, int v) {
   CHECK_EQ(this, e->solver());
   IntExpr* left = NULL;
   IntExpr* right = NULL;
   if (v == 0 && IsADifference(e, &left, &right)) {
     return MakeNonEquality(left->Var(), right->Var());
-  } else if (!e->Contains(v)) {
+  } else if (e->IsVar() && !e->Var()->Contains(v)) {
     return MakeTrueConstraint();
   } else if (e->Bound() && e->Min() == v) {
     return MakeFalseConstraint();
   } else {
-    return RevAlloc(new DiffCst(this, e, v));
+    return RevAlloc(new DiffCst(this, e->Var(), v));
   }
 }
 // ----- is_equal_cst Constraint -----
@@ -389,7 +389,7 @@ class IsEqualCstCt : public CastConstraint {
 };
 }  // namespace
 
-IntVar* Solver::MakeIsEqualCstVar(IntVar* const var, int64 value) {
+IntVar* Solver::MakeIsEqualCstVar(IntExpr* const var, int64 value) {
   IntExpr* left = NULL;
   IntExpr* right = NULL;
   if (value == 0 && IsADifference(var, &left, &right)) {
@@ -404,10 +404,19 @@ IntVar* Solver::MakeIsEqualCstVar(IntVar* const var, int64 value) {
       return MakeIntConst(0);
     }
   }
-  return var->IsEqual(value);
+  if (var->IsVar()) {
+    return var->Var()->IsEqual(value);
+  } else {
+    IntVar* const boolvar =
+        MakeBoolVar(StringPrintf("Is(%s == %" GG_LL_FORMAT "d",
+                                 var->DebugString().c_str(),
+                                 value));
+    AddConstraint(MakeIsEqualCstCt(var, value, boolvar));
+    return boolvar;
+  }
 }
 
-Constraint* Solver::MakeIsEqualCstCt(IntVar* const var,
+Constraint* Solver::MakeIsEqualCstCt(IntExpr* const var,
                                      int64 value,
                                      IntVar* const boolvar) {
   CHECK_EQ(this, var->solver());
@@ -427,17 +436,17 @@ Constraint* Solver::MakeIsEqualCstCt(IntVar* const var,
   }
   // TODO(user) : what happens if the constraint is not posted?
   // The cache becomes tainted.
-  model_cache_->InsertVarConstantExpression(
+  model_cache_->InsertExprConstantExpression(
       boolvar,
       var,
       value,
-      ModelCache::VAR_CONSTANT_IS_EQUAL);
+      ModelCache::EXPR_CONSTANT_IS_EQUAL);
   IntExpr* left = NULL;
   IntExpr* right = NULL;
   if (value == 0 && IsADifference(var, &left, &right)) {
     return MakeIsEqualCt(left, right, boolvar);
   } else {
-    return RevAlloc(new IsEqualCstCt(this, var, value, boolvar));
+    return RevAlloc(new IsEqualCstCt(this, var->Var(), value, boolvar));
   }
 }
 
@@ -497,16 +506,16 @@ class IsDiffCstCt : public CastConstraint {
 };
 }  // namespace
 
-IntVar* Solver::MakeIsDifferentCstVar(IntVar* const var, int64 value) {
+IntVar* Solver::MakeIsDifferentCstVar(IntExpr* const var, int64 value) {
   IntExpr* left = NULL;
   IntExpr* right = NULL;
   if (value == 0 && IsADifference(var, &left, &right)) {
     return MakeIsDifferentVar(left, right);
   }
-  return var->IsDifferent(value);
+  return var->Var()->IsDifferent(value);
 }
 
-Constraint* Solver::MakeIsDifferentCstCt(IntVar* const var,
+Constraint* Solver::MakeIsDifferentCstCt(IntExpr* const var,
                                          int64 value,
                                          IntVar* const boolvar) {
   CHECK_EQ(this, var->solver());
@@ -517,10 +526,10 @@ Constraint* Solver::MakeIsDifferentCstCt(IntVar* const var,
   if (value == var->Max()) {
     return MakeIsLessOrEqualCstCt(var, value - 1, boolvar);
   }
-  if (!var->Contains(value)) {
+  if (var->IsVar() && !var->Var()->Contains(value)) {
     return MakeEquality(boolvar, 1LL);
   }
-  if (var->Bound() && var->Value() == value) {
+  if (var->Bound() && var->Min() == value) {
     return MakeEquality(boolvar, Zero());
   }
   if (boolvar->Bound()) {
@@ -530,17 +539,17 @@ Constraint* Solver::MakeIsDifferentCstCt(IntVar* const var,
       return MakeNonEquality(var, value);
     }
   }
-  model_cache_->InsertVarConstantExpression(
+  model_cache_->InsertExprConstantExpression(
       boolvar,
       var,
       value,
-      ModelCache::VAR_CONSTANT_IS_NOT_EQUAL);
+      ModelCache::EXPR_CONSTANT_IS_NOT_EQUAL);
   IntExpr* left = NULL;
   IntExpr* right = NULL;
   if (value == 0 && IsADifference(var, &left, &right)) {
     return MakeIsDifferentCt(left, right, boolvar);
   } else {
-    return RevAlloc(new IsDiffCstCt(this, var, value, boolvar));
+    return RevAlloc(new IsDiffCstCt(this, var->Var(), value, boolvar));
   }
 }
 
@@ -549,7 +558,7 @@ Constraint* Solver::MakeIsDifferentCstCt(IntVar* const var,
 namespace {
 class IsGreaterEqualCstCt : public CastConstraint {
  public:
-  IsGreaterEqualCstCt(Solver* const s, IntVar* const v, int64 c,
+  IsGreaterEqualCstCt(Solver* const s, IntExpr* const v, int64 c,
                       IntVar* const b)
       : CastConstraint(s, b), var_(v), cst_(c), demon_(NULL) {}
   virtual void Post() {
@@ -592,27 +601,36 @@ class IsGreaterEqualCstCt : public CastConstraint {
   }
 
  private:
-  IntVar* const var_;
+  IntExpr* const var_;
   int64 cst_;
   Demon* demon_;
 };
 }  // namespace
 
-IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntVar* const var, int64 value) {
+IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntExpr* const var, int64 value) {
   if (var->Min() >= value) {
     return MakeIntConst(1LL);
   }
   if (var->Max() < value) {
     return MakeIntConst(0LL);
   }
-  return var->IsGreaterOrEqual(value);
+  if (var->IsVar()) {
+    return var->Var()->IsGreaterOrEqual(value);
+  } else {
+    IntVar* const boolvar =
+        MakeBoolVar(StringPrintf("Is(%s >= %" GG_LL_FORMAT "d",
+                                 var->DebugString().c_str(),
+                                 value));
+    AddConstraint(MakeIsGreaterOrEqualCstCt(var, value, boolvar));
+    return boolvar;
+  }
 }
 
-IntVar* Solver::MakeIsGreaterCstVar(IntVar* const var, int64 value) {
+IntVar* Solver::MakeIsGreaterCstVar(IntExpr* const var, int64 value) {
   return MakeIsGreaterOrEqualCstVar(var, value + 1);
 }
 
-Constraint* Solver::MakeIsGreaterOrEqualCstCt(IntVar* const var,
+Constraint* Solver::MakeIsGreaterOrEqualCstCt(IntExpr* const var,
                                               int64 value,
                                               IntVar* const boolvar) {
   if (boolvar->Bound()) {
@@ -624,15 +642,15 @@ Constraint* Solver::MakeIsGreaterOrEqualCstCt(IntVar* const var,
   }
   CHECK_EQ(this, var->solver());
   CHECK_EQ(this, boolvar->solver());
-  model_cache_->InsertVarConstantExpression(
+  model_cache_->InsertExprConstantExpression(
       boolvar,
       var,
       value,
-      ModelCache::VAR_CONSTANT_IS_GREATER_OR_EQUAL);
+      ModelCache::EXPR_CONSTANT_IS_GREATER_OR_EQUAL);
   return RevAlloc(new IsGreaterEqualCstCt(this, var, value, boolvar));
 }
 
-Constraint* Solver::MakeIsGreaterCstCt(IntVar* const v, int64 c,
+Constraint* Solver::MakeIsGreaterCstCt(IntExpr* const v, int64 c,
                                        IntVar* const b) {
   return MakeIsGreaterOrEqualCstCt(v, c + 1, b);
 }
@@ -642,7 +660,7 @@ Constraint* Solver::MakeIsGreaterCstCt(IntVar* const v, int64 c,
 namespace {
 class IsLessEqualCstCt : public CastConstraint {
  public:
-  IsLessEqualCstCt(Solver* const s, IntVar* const v, int64 c, IntVar* const b)
+  IsLessEqualCstCt(Solver* const s, IntExpr* const v, int64 c, IntVar* const b)
       : CastConstraint(s, b), var_(v), cst_(c), demon_(NULL) {}
 
   virtual void Post() {
@@ -687,28 +705,37 @@ class IsLessEqualCstCt : public CastConstraint {
   }
 
  private:
-  IntVar* const var_;
+  IntExpr* const var_;
   int64 cst_;
   Demon* demon_;
 };
 }  // namespace
 
 
-IntVar* Solver::MakeIsLessOrEqualCstVar(IntVar* const var, int64 value) {
+IntVar* Solver::MakeIsLessOrEqualCstVar(IntExpr* const var, int64 value) {
   if (var->Max() <= value) {
     return MakeIntConst(1LL);
   }
   if (var->Min() > value) {
     return MakeIntConst(0LL);
   }
-  return var->IsLessOrEqual(value);
+  if (var->IsVar()) {
+    return var->Var()->IsLessOrEqual(value);
+  } else {
+    IntVar* const boolvar =
+        MakeBoolVar(StringPrintf("Is(%s <= %" GG_LL_FORMAT "d",
+                                 var->DebugString().c_str(),
+                                 value));
+    AddConstraint(MakeIsLessOrEqualCstCt(var, value, boolvar));
+    return boolvar;
+  }
 }
 
-IntVar* Solver::MakeIsLessCstVar(IntVar* const var, int64 value) {
+IntVar* Solver::MakeIsLessCstVar(IntExpr* const var, int64 value) {
   return MakeIsLessOrEqualCstVar(var, value - 1);
 }
 
-Constraint* Solver::MakeIsLessOrEqualCstCt(IntVar* const var,
+Constraint* Solver::MakeIsLessOrEqualCstCt(IntExpr* const var,
                                            int64 value,
                                            IntVar* const boolvar) {
   if (boolvar->Bound()) {
@@ -720,15 +747,15 @@ Constraint* Solver::MakeIsLessOrEqualCstCt(IntVar* const var,
   }
   CHECK_EQ(this, var->solver());
   CHECK_EQ(this, boolvar->solver());
-  model_cache_->InsertVarConstantExpression(
+  model_cache_->InsertExprConstantExpression(
       boolvar,
       var,
       value,
-      ModelCache::VAR_CONSTANT_IS_LESS_OR_EQUAL);
+      ModelCache::EXPR_CONSTANT_IS_LESS_OR_EQUAL);
   return RevAlloc(new IsLessEqualCstCt(this, var, value, boolvar));
 }
 
-Constraint* Solver::MakeIsLessCstCt(IntVar* const v, int64 c,
+Constraint* Solver::MakeIsLessCstCt(IntExpr* const v, int64 c,
                                     IntVar* const b) {
   return MakeIsLessOrEqualCstCt(v, c - 1, b);
 }

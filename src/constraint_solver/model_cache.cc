@@ -357,10 +357,9 @@ class NonReversibleCache : public ModelCache {
   typedef Cache1<IntExpr, std::vector<IntVar*> > VarArrayIntExprCache;
 
   typedef Cache2<Constraint, IntVar*, int64> VarConstantConstraintCache;
-  typedef Cache2<Constraint, IntVar*, IntVar*> VarVarConstraintCache;
+  typedef Cache2<Constraint, IntExpr*, IntExpr*> ExprExprConstraintCache;
   typedef Cache2<IntExpr, IntVar*, int64> VarConstantIntExprCache;
   typedef Cache2<IntExpr, IntExpr*, int64> ExprConstantIntExprCache;
-  typedef Cache2<IntExpr, IntVar*, IntVar*> VarVarIntExprCache;
   typedef Cache2<IntExpr, IntExpr*, IntExpr*> ExprExprIntExprCache;
   typedef Cache2<IntExpr, IntVar*, ConstIntArray*> VarConstantArrayIntExprCache;
   typedef Cache2<IntExpr, std::vector<IntVar*>, ConstIntArray*> VarArrayConstantArrayIntExprCache;
@@ -377,8 +376,8 @@ class NonReversibleCache : public ModelCache {
     for (int i = 0; i < VAR_CONSTANT_CONSTRAINT_MAX; ++i) {
       var_constant_constraints_.push_back(new VarConstantConstraintCache);
     }
-    for (int i = 0; i < VAR_VAR_CONSTRAINT_MAX; ++i) {
-      var_var_constraints_.push_back(new VarVarConstraintCache);
+    for (int i = 0; i < EXPR_EXPR_CONSTRAINT_MAX; ++i) {
+      expr_expr_constraints_.push_back(new ExprExprConstraintCache);
     }
     for (int i = 0; i < VAR_CONSTANT_CONSTANT_CONSTRAINT_MAX; ++i) {
       var_constant_constant_constraints_.push_back(
@@ -387,14 +386,8 @@ class NonReversibleCache : public ModelCache {
     for (int i = 0; i < EXPR_EXPRESSION_MAX; ++i) {
       expr_expressions_.push_back(new ExprIntExprCache);
     }
-    for (int i = 0; i < VAR_CONSTANT_EXPRESSION_MAX; ++i) {
-      var_constant_expressions_.push_back(new VarConstantIntExprCache);
-    }
     for (int i = 0; i < EXPR_CONSTANT_EXPRESSION_MAX; ++i) {
       expr_constant_expressions_.push_back(new ExprConstantIntExprCache);
-    }
-    for (int i = 0; i < VAR_VAR_EXPRESSION_MAX; ++i) {
-      var_var_expressions_.push_back(new VarVarIntExprCache);
     }
     for (int i = 0; i < EXPR_EXPR_EXPRESSION_MAX; ++i) {
       expr_expr_expressions_.push_back(new ExprExprIntExprCache);
@@ -422,11 +415,9 @@ class NonReversibleCache : public ModelCache {
 
   virtual ~NonReversibleCache() {
     STLDeleteElements(&var_constant_constraints_);
-    STLDeleteElements(&var_var_constraints_);
+    STLDeleteElements(&expr_expr_constraints_);
     STLDeleteElements(&var_constant_constant_constraints_);
     STLDeleteElements(&expr_expressions_);
-    STLDeleteElements(&var_constant_expressions_);
-    STLDeleteElements(&var_var_expressions_);
     STLDeleteElements(&expr_constant_expressions_);
     STLDeleteElements(&expr_expr_expressions_);
     STLDeleteElements(&var_constant_constant_expressions_);
@@ -517,29 +508,29 @@ class NonReversibleCache : public ModelCache {
 
   // Var Var Constraint.
 
-  virtual Constraint* FindVarVarConstraint(
-      IntVar* const var1,
-      IntVar* const var2,
-      VarVarConstraintType type) const {
+  virtual Constraint* FindExprExprConstraint(
+      IntExpr* const var1,
+      IntExpr* const var2,
+      ExprExprConstraintType type) const {
     DCHECK(var1 != NULL);
     DCHECK(var2 != NULL);
     DCHECK_GE(type, 0);
-    DCHECK_LT(type, VAR_VAR_CONSTRAINT_MAX);
-    return var_var_constraints_[type]->Find(var1, var2);
+    DCHECK_LT(type, EXPR_EXPR_CONSTRAINT_MAX);
+    return expr_expr_constraints_[type]->Find(var1, var2);
   }
 
-  virtual void InsertVarVarConstraint(Constraint* const ct,
-                                      IntVar* const var1,
-                                      IntVar* const var2,
-                                      VarVarConstraintType type) {
+  virtual void InsertExprExprConstraint(Constraint* const ct,
+                                      IntExpr* const var1,
+                                      IntExpr* const var2,
+                                      ExprExprConstraintType type) {
     DCHECK(ct != NULL);
     DCHECK(var1 != NULL);
     DCHECK(var2 != NULL);
     DCHECK_GE(type, 0);
-    DCHECK_LT(type, VAR_VAR_CONSTRAINT_MAX);
+    DCHECK_LT(type, EXPR_EXPR_CONSTRAINT_MAX);
     if (solver()->state() != Solver::IN_SEARCH &&
-        var_var_constraints_[type]->Find(var1, var2) == NULL) {
-      var_var_constraints_[type]->UnsafeInsert(var1, var2, ct);
+        expr_expr_constraints_[type]->Find(var1, var2) == NULL) {
+      expr_expr_constraints_[type]->UnsafeInsert(var1, var2, ct);
     }
   }
 
@@ -563,62 +554,6 @@ class NonReversibleCache : public ModelCache {
     if (solver()->state() != Solver::IN_SEARCH &&
         expr_expressions_[type]->Find(expr) == NULL) {
       expr_expressions_[type]->UnsafeInsert(expr, expression);
-    }
-  }
-
-  // Var Constant Expression.
-
-  virtual IntExpr* FindVarConstantExpression(
-      IntVar* const var,
-      int64 value,
-      VarConstantExpressionType type) const {
-    DCHECK(var != NULL);
-    DCHECK_GE(type, 0);
-    DCHECK_LT(type, VAR_CONSTANT_EXPRESSION_MAX);
-    return var_constant_expressions_[type]->Find(var, value);
-  }
-
-  virtual void InsertVarConstantExpression(
-      IntExpr* const expression,
-      IntVar* const var,
-      int64 value,
-      VarConstantExpressionType type) {
-    DCHECK(expression != NULL);
-    DCHECK(var != NULL);
-    DCHECK_GE(type, 0);
-    DCHECK_LT(type, VAR_CONSTANT_EXPRESSION_MAX);
-    if (solver()->state() != Solver::IN_SEARCH &&
-        var_constant_expressions_[type]->Find(var, value) == NULL) {
-      var_constant_expressions_[type]->UnsafeInsert(var, value, expression);
-    }
-  }
-
-  // Var Var Expression.
-
-  virtual IntExpr* FindVarVarExpression(
-      IntVar* const var1,
-      IntVar* const var2,
-      VarVarExpressionType type) const {
-    DCHECK(var1 != NULL);
-    DCHECK(var2 != NULL);
-    DCHECK_GE(type, 0);
-    DCHECK_LT(type, VAR_VAR_EXPRESSION_MAX);
-    return var_var_expressions_[type]->Find(var1, var2);
-  }
-
-  virtual void InsertVarVarExpression(
-      IntExpr* const expression,
-      IntVar* const var1,
-      IntVar* const var2,
-      VarVarExpressionType type) {
-    DCHECK(expression != NULL);
-    DCHECK(var1 != NULL);
-    DCHECK(var2 != NULL);
-    DCHECK_GE(type, 0);
-    DCHECK_LT(type, VAR_VAR_EXPRESSION_MAX);
-    if (solver()->state() != Solver::IN_SEARCH &&
-        var_var_expressions_[type]->Find(var1, var2) == NULL) {
-      var_var_expressions_[type]->UnsafeInsert(var1, var2, expression);
     }
   }
 
@@ -821,12 +756,10 @@ class NonReversibleCache : public ModelCache {
  private:
   std::vector<Constraint*> void_constraints_;
   std::vector<VarConstantConstraintCache*> var_constant_constraints_;
-  std::vector<VarVarConstraintCache*> var_var_constraints_;
+  std::vector<ExprExprConstraintCache*> expr_expr_constraints_;
   std::vector<VarConstantConstantConstraintCache*>
       var_constant_constant_constraints_;
   std::vector<ExprIntExprCache*> expr_expressions_;
-  std::vector<VarConstantIntExprCache*> var_constant_expressions_;
-  std::vector<VarVarIntExprCache*> var_var_expressions_;
   std::vector<ExprConstantIntExprCache*> expr_constant_expressions_;
   std::vector<ExprExprIntExprCache*> expr_expr_expressions_;
   std::vector<VarConstantConstantIntExprCache*> var_constant_constant_expressions_;

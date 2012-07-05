@@ -28,7 +28,7 @@ namespace operations_research {
 namespace {
 class RangeEquality : public Constraint {
  public:
-  RangeEquality(Solver* const s, IntVar* const l, IntVar* const r)
+  RangeEquality(Solver* const s, IntExpr* const l, IntExpr* const r)
       : Constraint(s), left_(l), right_(r) {}
 
   virtual ~RangeEquality() {}
@@ -61,8 +61,8 @@ class RangeEquality : public Constraint {
   }
 
  private:
-  IntVar* const left_;
-  IntVar* const right_;
+  IntExpr* const left_;
+  IntExpr* const right_;
 };
 
 //-----------------------------------------------------------------------------
@@ -70,7 +70,7 @@ class RangeEquality : public Constraint {
 
 class RangeLessOrEqual : public Constraint {
  public:
-  RangeLessOrEqual(Solver* const s, IntVar* const l, IntVar* const r);
+  RangeLessOrEqual(Solver* const s, IntExpr* const l, IntExpr* const r);
   virtual ~RangeLessOrEqual() {}
   virtual void Post();
   virtual void InitialPropagate();
@@ -87,12 +87,12 @@ class RangeLessOrEqual : public Constraint {
   }
 
  private:
-  IntVar* const left_;
-  IntVar* const right_;
+  IntExpr* const left_;
+  IntExpr* const right_;
 };
 
-RangeLessOrEqual::RangeLessOrEqual(Solver* const s, IntVar* const l,
-                                   IntVar* const r)
+RangeLessOrEqual::RangeLessOrEqual(Solver* const s, IntExpr* const l,
+                                   IntExpr* const r)
   : Constraint(s), left_(l), right_(r) {}
 
 void RangeLessOrEqual::Post() {
@@ -115,7 +115,7 @@ string RangeLessOrEqual::DebugString() const {
 
 class RangeGreaterOrEqual : public Constraint {
  public:
-  RangeGreaterOrEqual(Solver* const s, IntVar* const l, IntVar* const r);
+  RangeGreaterOrEqual(Solver* const s, IntExpr* const l, IntExpr* const r);
   virtual ~RangeGreaterOrEqual() {}
   virtual void Post();
   virtual void InitialPropagate();
@@ -132,12 +132,12 @@ class RangeGreaterOrEqual : public Constraint {
   }
 
  private:
-  IntVar* const left_;
-  IntVar* const right_;
+  IntExpr* const left_;
+  IntExpr* const right_;
 };
 
-RangeGreaterOrEqual::RangeGreaterOrEqual(Solver* const s, IntVar* const l,
-                                         IntVar* const r)
+RangeGreaterOrEqual::RangeGreaterOrEqual(Solver* const s, IntExpr* const l,
+                                         IntExpr* const r)
     : Constraint(s), left_(l), right_(r) {}
 
 void RangeGreaterOrEqual::Post() {
@@ -160,7 +160,7 @@ string RangeGreaterOrEqual::DebugString() const {
 
 class RangeLess : public Constraint {
  public:
-  RangeLess(Solver* const s, IntVar* const l, IntVar* const r);
+  RangeLess(Solver* const s, IntExpr* const l, IntExpr* const r);
   virtual ~RangeLess() {}
   virtual void Post();
   virtual void InitialPropagate();
@@ -177,11 +177,11 @@ class RangeLess : public Constraint {
   }
 
  private:
-  IntVar* const left_;
-  IntVar* const right_;
+  IntExpr* const left_;
+  IntExpr* const right_;
 };
 
-RangeLess::RangeLess(Solver* const s, IntVar* const l, IntVar* const r)
+RangeLess::RangeLess(Solver* const s, IntExpr* const l, IntExpr* const r)
   : Constraint(s), left_(l), right_(r) {}
 
 void RangeLess::Post() {
@@ -204,7 +204,7 @@ string RangeLess::DebugString() const {
 
 class RangeGreater : public Constraint {
  public:
-  RangeGreater(Solver* const s, IntVar* const l, IntVar* const r);
+  RangeGreater(Solver* const s, IntExpr* const l, IntExpr* const r);
   virtual ~RangeGreater() {}
   virtual void Post();
   virtual void InitialPropagate();
@@ -221,11 +221,11 @@ class RangeGreater : public Constraint {
   }
 
  private:
-  IntVar* const left_;
-  IntVar* const right_;
+  IntExpr* const left_;
+  IntExpr* const right_;
 };
 
-RangeGreater::RangeGreater(Solver* const s, IntVar* const l, IntVar* const r)
+RangeGreater::RangeGreater(Solver* const s, IntExpr* const l, IntExpr* const r)
   : Constraint(s), left_(l), right_(r) {}
 
 void RangeGreater::Post() {
@@ -634,8 +634,8 @@ class IsDifferentCt : public CastConstraint {
 class IsLessOrEqualCt : public CastConstraint {
  public:
   IsLessOrEqualCt(Solver* const s,
-                  IntVar* const l,
-                  IntVar* const r,
+                  IntExpr* const l,
+                  IntExpr* const r,
                   IntVar* const b)
       : CastConstraint(s, b),
         left_(l),
@@ -687,16 +687,16 @@ class IsLessOrEqualCt : public CastConstraint {
   }
 
  private:
-  IntVar* const left_;
-  IntVar* const right_;
+  IntExpr* const left_;
+  IntExpr* const right_;
   Demon* demon_;
 };
 
 class IsLessCt : public CastConstraint {
  public:
   IsLessCt(Solver* const s,
-           IntVar* const l,
-           IntVar* const r,
+           IntExpr* const l,
+           IntExpr* const r,
            IntVar* const b)
       : CastConstraint(s, b),
         left_(l),
@@ -748,13 +748,13 @@ class IsLessCt : public CastConstraint {
   }
 
  private:
-  IntVar* const left_;
-  IntVar* const right_;
+  IntExpr* const left_;
+  IntExpr* const right_;
   Demon* demon_;
 };
 }  // namespace
 
-Constraint* Solver::MakeEquality(IntVar* const l, IntVar* const r) {
+Constraint* Solver::MakeEquality(IntExpr* const l, IntExpr* const r) {
   CHECK(l != NULL) << "left expression NULL, maybe a bad cast";
   CHECK(r != NULL) << "left expression NULL, maybe a bad cast";
   CHECK_EQ(this, l->solver());
@@ -768,7 +768,7 @@ Constraint* Solver::MakeEquality(IntVar* const l, IntVar* const r) {
   }
 }
 
-Constraint* Solver::MakeLessOrEqual(IntVar* const l, IntVar* const r) {
+Constraint* Solver::MakeLessOrEqual(IntExpr* const l, IntExpr* const r) {
   CHECK(l != NULL) << "left expression NULL, maybe a bad cast";
   CHECK(r != NULL) << "left expression NULL, maybe a bad cast";
   CHECK_EQ(this, l->solver());
@@ -782,7 +782,7 @@ Constraint* Solver::MakeLessOrEqual(IntVar* const l, IntVar* const r) {
   }
 }
 
-Constraint* Solver::MakeGreaterOrEqual(IntVar* const l, IntVar* const r) {
+Constraint* Solver::MakeGreaterOrEqual(IntExpr* const l, IntExpr* const r) {
   CHECK(l != NULL) << "left expression NULL, maybe a bad cast";
   CHECK(r != NULL) << "left expression NULL, maybe a bad cast";
   CHECK_EQ(this, l->solver());
@@ -796,7 +796,7 @@ Constraint* Solver::MakeGreaterOrEqual(IntVar* const l, IntVar* const r) {
   }
 }
 
-Constraint* Solver::MakeLess(IntVar* const l, IntVar* const r) {
+Constraint* Solver::MakeLess(IntExpr* const l, IntExpr* const r) {
   CHECK(l != NULL) << "left expression NULL, maybe a bad cast";
   CHECK(r != NULL) << "left expression NULL, maybe a bad cast";
   CHECK_EQ(this, l->solver());
@@ -810,7 +810,7 @@ Constraint* Solver::MakeLess(IntVar* const l, IntVar* const r) {
   }
 }
 
-Constraint* Solver::MakeGreater(IntVar* const l, IntVar* const r) {
+Constraint* Solver::MakeGreater(IntExpr* const l, IntExpr* const r) {
   CHECK(l != NULL) << "left expression NULL, maybe a bad cast";
   CHECK(r != NULL) << "left expression NULL, maybe a bad cast";
   CHECK_EQ(this, l->solver());
@@ -824,7 +824,7 @@ Constraint* Solver::MakeGreater(IntVar* const l, IntVar* const r) {
   }
 }
 
-Constraint* Solver::MakeNonEquality(IntVar* const l, IntVar* const r) {
+Constraint* Solver::MakeNonEquality(IntExpr* const l, IntExpr* const r) {
   CHECK(l != NULL) << "left expression NULL, maybe a bad cast";
   CHECK(r != NULL) << "left expression NULL, maybe a bad cast";
   CHECK_EQ(this, l->solver());
@@ -834,7 +834,7 @@ Constraint* Solver::MakeNonEquality(IntVar* const l, IntVar* const r) {
   } else if (r->Bound()) {
     return MakeNonEquality(l, r->Min());
   }
-  return RevAlloc(new DiffVar(this, l, r));
+  return RevAlloc(new DiffVar(this, l->Var(), r->Var()));
 }
 
 IntVar* Solver::MakeIsEqualVar(IntExpr* const v1, IntExpr* const v2) {
@@ -847,10 +847,10 @@ IntVar* Solver::MakeIsEqualVar(IntExpr* const v1, IntExpr* const v2) {
   }
   IntVar* const var1 = v1->Var();
   IntVar* const var2 = v2->Var();
-  IntExpr* const cache = model_cache_->FindVarVarExpression(
+  IntExpr* const cache = model_cache_->FindExprExprExpression(
       var1,
       var2,
-      ModelCache::VAR_VAR_IS_EQUAL);
+      ModelCache::EXPR_EXPR_IS_EQUAL);
   if (cache != NULL) {
     return cache->Var();
   } else {
@@ -865,11 +865,11 @@ IntVar* Solver::MakeIsEqualVar(IntExpr* const v1, IntExpr* const v2) {
     IntVar* const boolvar = MakeBoolVar(
         StringPrintf("IsEqualVar(%s, %s)", name1.c_str(), name2.c_str()));
     AddConstraint(MakeIsEqualCt(v1, v2, boolvar));
-    model_cache_->InsertVarVarExpression(
+    model_cache_->InsertExprExprExpression(
         boolvar,
         var1,
         var2,
-        ModelCache::VAR_VAR_IS_EQUAL);
+        ModelCache::EXPR_EXPR_IS_EQUAL);
     return boolvar;
   }
 }
@@ -904,10 +904,10 @@ IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
   }
   IntVar* const var1 = v1->Var();
   IntVar* const var2 = v2->Var();
-  IntExpr* const cache = model_cache_->FindVarVarExpression(
+  IntExpr* const cache = model_cache_->FindExprExprExpression(
       var1,
       var2,
-      ModelCache::VAR_VAR_IS_NOT_EQUAL);
+      ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
   if (cache != NULL) {
     return cache->Var();
   } else {
@@ -922,11 +922,11 @@ IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
     IntVar* const boolvar = MakeBoolVar(
         StringPrintf("IsDifferentVar(%s, %s)", name1.c_str(), name2.c_str()));
     AddConstraint(MakeIsDifferentCt(v1, v2, boolvar));
-    model_cache_->InsertVarVarExpression(
+    model_cache_->InsertExprExprExpression(
         boolvar,
         var1,
         var2,
-        ModelCache::VAR_VAR_IS_NOT_EQUAL);
+        ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
     return boolvar;
   }
 }
@@ -944,8 +944,8 @@ Constraint* Solver::MakeIsDifferentCt(IntExpr* const v1,
   return RevAlloc(new IsDifferentCt(this, v1->Var(), v2->Var(), b));
 }
 
-IntVar* Solver::MakeIsLessOrEqualVar(
-    IntExpr* const left, IntExpr* const right) {
+IntVar* Solver::MakeIsLessOrEqualVar(IntExpr* const left,
+                                     IntExpr* const right) {
   CHECK_EQ(this, left->solver());
   CHECK_EQ(this, right->solver());
   if (left->Bound()) {
@@ -953,33 +953,31 @@ IntVar* Solver::MakeIsLessOrEqualVar(
   } else if (right->Bound()) {
     return MakeIsLessOrEqualCstVar(left->Var(), right->Min());
   }
-  IntVar* const var1 = left->Var();
-  IntVar* const var2 = right->Var();
-  IntExpr* const cache = model_cache_->FindVarVarExpression(
-      var1,
-      var2,
-      ModelCache::VAR_VAR_IS_LESS_OR_EQUAL);
+  IntExpr* const cache = model_cache_->FindExprExprExpression(
+      left,
+      right,
+      ModelCache::EXPR_EXPR_IS_LESS_OR_EQUAL);
   if (cache != NULL) {
     return cache->Var();
   } else {
-    string name1 = var1->name();
+    string name1 = left->name();
     if (name1.empty()) {
-      name1 = var1->DebugString();
+      name1 = left->DebugString();
     }
-    string name2 = var2->name();
+    string name2 = right->name();
     if (name2.empty()) {
-      name2 = var2->DebugString();
+      name2 = right->DebugString();
     }
     IntVar* const boolvar = MakeBoolVar(
         StringPrintf("IsLessOrEqual(%s, %s)", name1.c_str(), name2.c_str()));
 
     AddConstraint(RevAlloc(
         new IsLessOrEqualCt(this, left->Var(), right->Var(), boolvar)));
-    model_cache_->InsertVarVarExpression(
+    model_cache_->InsertExprExprExpression(
         boolvar,
-        var1,
-        var2,
-        ModelCache::VAR_VAR_IS_LESS_OR_EQUAL);
+        left,
+        right,
+        ModelCache::EXPR_EXPR_IS_LESS_OR_EQUAL);
     return boolvar;
   }
 }
@@ -1005,33 +1003,31 @@ IntVar* Solver::MakeIsLessVar(
   } else if (right->Bound()) {
     return MakeIsLessCstVar(left->Var(), right->Min());
   }
-  IntVar* const var1 = left->Var();
-  IntVar* const var2 = right->Var();
-  IntExpr* const cache = model_cache_->FindVarVarExpression(
-      var1,
-      var2,
-      ModelCache::VAR_VAR_IS_LESS);
+  IntExpr* const cache = model_cache_->FindExprExprExpression(
+      left,
+      right,
+      ModelCache::EXPR_EXPR_IS_LESS);
   if (cache != NULL) {
     return cache->Var();
   } else {
-    string name1 = var1->name();
+    string name1 = left->name();
     if (name1.empty()) {
-      name1 = var1->DebugString();
+      name1 = left->DebugString();
     }
-    string name2 = var2->name();
+    string name2 = right->name();
     if (name2.empty()) {
-      name2 = var2->DebugString();
+      name2 = right->DebugString();
     }
     IntVar* const boolvar = MakeBoolVar(
         StringPrintf("IsLessOrEqual(%s, %s)", name1.c_str(), name2.c_str()));
 
     AddConstraint(RevAlloc(
         new IsLessCt(this, left->Var(), right->Var(), boolvar)));
-    model_cache_->InsertVarVarExpression(
+    model_cache_->InsertExprExprExpression(
         boolvar,
-        var1,
-        var2,
-        ModelCache::VAR_VAR_IS_LESS);
+        left,
+        right,
+        ModelCache::EXPR_EXPR_IS_LESS);
     return boolvar;
   }
 }
