@@ -1437,8 +1437,10 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const ind
   scoped_ptr<IntVarIterator> iterator(index->MakeDomainIterator(false));
   for (iterator->Init(); iterator->Ok(); iterator->Next()) {
     const int64 index_value = iterator->Value();
-    emin = std::min(emin, vars[index_value]->Min());
-    emax = std::max(emax, vars[index_value]->Max());
+    if (index_value >= 0 && index_value < vars.size()) {
+      emin = std::min(emin, vars[index_value]->Min());
+      emax = std::max(emax, vars[index_value]->Max());
+    }
   }
   const string vname =
       vars.size() > 10 ?
