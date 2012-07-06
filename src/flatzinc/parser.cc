@@ -981,6 +981,53 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       return true;
     }
   }
+  if (id == "int_lin_lt") {
+    AST::Array* const array_coefficients = spec->Arg(0)->getArray();
+    AST::Node* const node_rhs = spec->Arg(2);
+    const int64 rhs = node_rhs->getInt();
+    const int size = array_coefficients->a.size();
+    bool one_positive = false;
+    for (int i = 0; i < size; ++i) {
+      if (array_coefficients->a[i]->getInt() > 0) {
+        one_positive = true;
+        break;
+      }
+    }
+    if (!one_positive) {
+      VLOG(1) << "  - presolve:  transform all negative int_lin_lt into "
+              << "int_lin_gt in " << spec->DebugString();
+
+      for (int i = 0; i < size; ++i) {
+        array_coefficients->a[i]->setInt(-array_coefficients->a[i]->getInt());
+      }
+      spec->Arg(2)->setInt(-spec->Arg(2)->getInt());
+      spec->SetId("int_lin_gt");
+      return true;
+    }
+  }
+  if (id == "int_lin_lt_reif") {
+    AST::Array* const array_coefficients = spec->Arg(0)->getArray();
+    AST::Node* const node_rhs = spec->Arg(2);
+    const int64 rhs = node_rhs->getInt();
+    const int size = array_coefficients->a.size();
+    bool one_positive = false;
+    for (int i = 0; i < size; ++i) {
+      if (array_coefficients->a[i]->getInt() > 0) {
+        one_positive = true;
+        break;
+      }
+    }
+    if (!one_positive) {
+      VLOG(1) << "  - presolve:  transform all negative int_lin_lt_reif into "
+              << "int_lin_gt_reif in " << spec->DebugString();
+      for (int i = 0; i < size; ++i) {
+        array_coefficients->a[i]->setInt(-array_coefficients->a[i]->getInt());
+      }
+      spec->Arg(2)->setInt(-spec->Arg(2)->getInt());
+      spec->SetId("int_lin_gt_reif");
+      return true;
+    }
+  }
   return false;
 }
 

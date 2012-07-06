@@ -141,46 +141,79 @@ void p_int_eq(FlatZincModel* const model, CtSpec* const spec) {
 void p_int_ne(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-  Constraint* const ct = solver->MakeNonEquality(left, right);
-  VLOG(1) << "  - posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (spec->Arg(1)->isInt()) {
+    Constraint* const ct =
+        solver->MakeNonEquality(left, spec->Arg(1)->getInt());
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  } else {
+    IntExpr* const right = model->GetIntExpr(spec->Arg(1));
+    Constraint* const ct = solver->MakeNonEquality(left, right);
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_int_ge(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-  Constraint* const ct = solver->MakeGreaterOrEqual(left, right);
-  VLOG(1) << "  - posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (spec->Arg(1)->isInt()) {
+    Constraint* const ct =
+        solver->MakeGreaterOrEqual(left, spec->Arg(1)->getInt());
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  } else {
+    IntExpr* const right = model->GetIntExpr(spec->Arg(1));
+    Constraint* const ct = solver->MakeGreaterOrEqual(left, right);
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_int_gt(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-  Constraint* const ct = solver->MakeGreater(left, right);
-  VLOG(1) << "  - posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (spec->Arg(1)->isInt()) {
+    Constraint* const ct = solver->MakeGreater(left, spec->Arg(1)->getInt());
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  } else {
+    IntExpr* const right = model->GetIntExpr(spec->Arg(1));
+    Constraint* const ct = solver->MakeGreater(left, right);
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_int_le(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-  Constraint* const ct = solver->MakeLessOrEqual(left, right);
-  VLOG(1) << "  - posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (spec->Arg(1)->isInt()) {
+    Constraint* const ct =
+        solver->MakeLessOrEqual(left, spec->Arg(1)->getInt());
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  } else {
+    IntExpr* const right = model->GetIntExpr(spec->Arg(1));
+    Constraint* const ct = solver->MakeLessOrEqual(left, right);
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_int_lt(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  IntExpr* const right = model->GetIntExpr(spec->Arg(1));
-  Constraint* const ct = solver->MakeLess(left, right);
-  VLOG(1) << "  - posted " << ct->DebugString();
-  solver->AddConstraint(ct);
+  if (spec->Arg(1)->isInt()) {
+    Constraint* const ct = solver->MakeLess(left, spec->Arg(1)->getInt());
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  } else {
+    IntExpr* const right = model->GetIntExpr(spec->Arg(1));
+    Constraint* const ct = solver->MakeLess(left, right);
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 /* Comparisons */
