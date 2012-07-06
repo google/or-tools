@@ -408,7 +408,7 @@ IntVar* Solver::MakeIsEqualCstVar(IntExpr* const var, int64 value) {
     return var->Var()->IsEqual(value);
   } else {
     IntVar* const boolvar =
-        MakeBoolVar(StringPrintf("Is(%s == %" GG_LL_FORMAT "d",
+        MakeBoolVar(StringPrintf("Is(%s == %" GG_LL_FORMAT "d)",
                                  var->DebugString().c_str(),
                                  value));
     AddConstraint(MakeIsEqualCstCt(var, value, boolvar));
@@ -618,7 +618,7 @@ IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntExpr* const var, int64 value) {
     return var->Var()->IsGreaterOrEqual(value);
   } else {
     IntVar* const boolvar =
-        MakeBoolVar(StringPrintf("Is(%s >= %" GG_LL_FORMAT "d",
+        MakeBoolVar(StringPrintf("Is(%s >= %" GG_LL_FORMAT "d)",
                                  var->DebugString().c_str(),
                                  value));
     AddConstraint(MakeIsGreaterOrEqualCstCt(var, value, boolvar));
@@ -723,7 +723,7 @@ IntVar* Solver::MakeIsLessOrEqualCstVar(IntExpr* const var, int64 value) {
     return var->Var()->IsLessOrEqual(value);
   } else {
     IntVar* const boolvar =
-        MakeBoolVar(StringPrintf("Is(%s <= %" GG_LL_FORMAT "d",
+        MakeBoolVar(StringPrintf("Is(%s <= %" GG_LL_FORMAT "d)",
                                  var->DebugString().c_str(),
                                  value));
     AddConstraint(MakeIsLessOrEqualCstCt(var, value, boolvar));

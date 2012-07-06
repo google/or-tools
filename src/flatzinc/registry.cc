@@ -909,7 +909,7 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
   for (int i = 0; i < size; ++i) {
     AST::Node* const a = array_variables->a[i];
     IntVar* const to_add = model->GetIntExpr(a)->Var();
-    if (!ContainsKey(added, to_add)) {
+    if (!ContainsKey(added, to_add) && to_add->Max() != 0) {
       variables.push_back(to_add);
       added.insert(to_add);
     }
