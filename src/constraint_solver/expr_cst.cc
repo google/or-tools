@@ -83,8 +83,8 @@ Constraint* Solver::MakeEquality(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
   IntExpr* left = NULL;
   IntExpr* right = NULL;
-  if (v == 0 && IsADifference(e, &left, &right)) {
-    return MakeEquality(left->Var(), right->Var());
+  if (IsADifference(e, &left, &right)) {
+    return MakeEquality(left, MakeSum(right, v));
   } else if (e->IsVar() && !e->Var()->Contains(v)) {
     return MakeFalseConstraint();
   } else if (e->Min() == e->Max() && e->Min() == v) {
@@ -98,8 +98,8 @@ Constraint* Solver::MakeEquality(IntExpr* const e, int v) {
   CHECK_EQ(this, e->solver());
   IntExpr* left = NULL;
   IntExpr* right = NULL;
-  if (v == 0 && IsADifference(e, &left, &right)) {
-    return MakeEquality(left->Var(), right->Var());
+  if (IsADifference(e, &left, &right)) {
+    return MakeEquality(left, MakeSum(right, v));
   } else if (e->IsVar() && !e->Var()->Contains(v)) {
     return MakeFalseConstraint();
   } else if (e->Min() == e->Max() && e->Min() == v) {
@@ -311,8 +311,8 @@ Constraint* Solver::MakeNonEquality(IntExpr* const e, int64 v) {
   CHECK_EQ(this, e->solver());
   IntExpr* left = NULL;
   IntExpr* right = NULL;
-  if (v == 0 && IsADifference(e, &left, &right)) {
-    return MakeNonEquality(left, right);
+  if (IsADifference(e, &left, &right)) {
+    return MakeNonEquality(left, MakeSum(right, v));
   } else if (e->IsVar() && !e->Var()->Contains(v)) {
     return MakeTrueConstraint();
   } else if (e->Bound() && e->Min() == v) {
@@ -326,8 +326,8 @@ Constraint* Solver::MakeNonEquality(IntExpr* const e, int v) {
   CHECK_EQ(this, e->solver());
   IntExpr* left = NULL;
   IntExpr* right = NULL;
-  if (v == 0 && IsADifference(e, &left, &right)) {
-    return MakeNonEquality(left->Var(), right->Var());
+  if (IsADifference(e, &left, &right)) {
+    return MakeNonEquality(left, MakeSum(right, v));
   } else if (e->IsVar() && !e->Var()->Contains(v)) {
     return MakeTrueConstraint();
   } else if (e->Bound() && e->Min() == v) {
@@ -392,8 +392,8 @@ class IsEqualCstCt : public CastConstraint {
 IntVar* Solver::MakeIsEqualCstVar(IntExpr* const var, int64 value) {
   IntExpr* left = NULL;
   IntExpr* right = NULL;
-  if (value == 0 && IsADifference(var, &left, &right)) {
-    return MakeIsEqualVar(left, right);
+  if (IsADifference(var, &left, &right)) {
+    return MakeIsEqualVar(left, MakeSum(right, value));
   }
   if (var->Max() - var->Min() == 1) {
     if (value == var->Min()) {
@@ -443,8 +443,8 @@ Constraint* Solver::MakeIsEqualCstCt(IntExpr* const var,
       ModelCache::EXPR_CONSTANT_IS_EQUAL);
   IntExpr* left = NULL;
   IntExpr* right = NULL;
-  if (value == 0 && IsADifference(var, &left, &right)) {
-    return MakeIsEqualCt(left, right, boolvar);
+  if (IsADifference(var, &left, &right)) {
+    return MakeIsEqualCt(left, MakeSum(right, value), boolvar);
   } else {
     return RevAlloc(new IsEqualCstCt(this, var->Var(), value, boolvar));
   }
@@ -509,8 +509,8 @@ class IsDiffCstCt : public CastConstraint {
 IntVar* Solver::MakeIsDifferentCstVar(IntExpr* const var, int64 value) {
   IntExpr* left = NULL;
   IntExpr* right = NULL;
-  if (value == 0 && IsADifference(var, &left, &right)) {
-    return MakeIsDifferentVar(left, right);
+  if (IsADifference(var, &left, &right)) {
+    return MakeIsDifferentVar(left, MakeSum(right, value));
   }
   return var->Var()->IsDifferent(value);
 }
@@ -546,8 +546,8 @@ Constraint* Solver::MakeIsDifferentCstCt(IntExpr* const var,
       ModelCache::EXPR_CONSTANT_IS_NOT_EQUAL);
   IntExpr* left = NULL;
   IntExpr* right = NULL;
-  if (value == 0 && IsADifference(var, &left, &right)) {
-    return MakeIsDifferentCt(left, right, boolvar);
+  if (IsADifference(var, &left, &right)) {
+    return MakeIsDifferentCt(left, MakeSum(right, value), boolvar);
   } else {
     return RevAlloc(new IsDiffCstCt(this, var->Var(), value, boolvar));
   }
