@@ -2429,7 +2429,7 @@ Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
   } else if (size == 1) {
     return MakeEquality(vars[0], min_var);
   } else {
-    return MakeEquality(min_var, kint64min);
+    return MakeEquality(min_var, Zero());
   }
 }
 
@@ -2447,7 +2447,7 @@ Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
   } else if (size == 1) {
     return MakeEquality(vars[0], max_var);
   } else {
-    return MakeEquality(max_var, kint64min);
+    return MakeEquality(max_var, Zero());
   }
 }
 
