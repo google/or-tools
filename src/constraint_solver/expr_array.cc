@@ -1517,10 +1517,14 @@ class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
   }
 
   void UpdateVar() {
-    if (num_possible_true_vars_.Value() == sum_var_->Min()) {
-      PushAllUnboundToOne();
-    } else if (num_always_true_vars_.Value() == sum_var_->Max()) {
-      PushAllUnboundToZero();
+    if (!inactive_.Switched()) {
+      if (num_possible_true_vars_.Value() == sum_var_->Min()) {
+        PushAllUnboundToOne();
+        sum_var_->SetValue(num_possible_true_vars_.Value());
+      } else if (num_always_true_vars_.Value() == sum_var_->Max()) {
+        PushAllUnboundToZero();
+        sum_var_->SetValue(num_always_true_vars_.Value());
+      }
     }
   }
 
