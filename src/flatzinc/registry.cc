@@ -444,33 +444,40 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
     } else if (coefficients[i] < 0) {
       negative++;
     }
-    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
-  }
-  if (negative > 0 && positive == 0) {
-    for (int i = 0; i < size; ++i) {
-      coefficients[i] *= -1;
-    }
-    rhs = -rhs;
-    positive = negative;
-    negative = 0;
   }
   const bool define = spec->IsDefined(node_boolvar);
 
   if (positive == 1) {
     IntExpr* pos = NULL;
-    std::vector<IntVar*> neg_vars;
-    std::vector<int64> neg_coeffs;
-    for (int i = 0; i < size; ++i) {
-      const int64 coeff = coefficients[i];
-      if (coeff > 0) {
-        pos = solver->MakeProd(variables[i], coeff);
-      } else if (coeff < 0) {
-        neg_vars.push_back(variables[i]);
-        neg_coeffs.push_back(-coeff);
+    IntExpr* other = NULL;
+    if (negative == 2) {
+      std::vector<IntExpr*> neg_exprs;
+      for (int i = 0; i < size; ++i) {
+        IntExpr* const expr = model->GetIntExpr(array_variables->a[i]);
+        const int64 coeff = coefficients[i];
+        if (coeff > 0) {
+          pos = solver->MakeProd(expr, coeff);
+        } else if (coeff < 0) {
+          neg_exprs.push_back(solver->MakeProd(expr, -coeff));
+        }
       }
+      other = solver->MakeSum(neg_exprs[0], neg_exprs[1]);
+    } else {
+      std::vector<IntVar*> neg_vars;
+      std::vector<int64> neg_coeffs;
+      for (int i = 0; i < size; ++i) {
+        variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+        const int64 coeff = coefficients[i];
+        if (coeff > 0) {
+          pos = solver->MakeProd(variables[i], coeff);
+        } else if (coeff < 0) {
+          neg_vars.push_back(variables[i]);
+          neg_coeffs.push_back(-coeff);
+        }
+      }
+      other = solver->MakeScalProd(neg_vars, neg_coeffs);
     }
     pos = solver->MakeSum(pos, -rhs);
-    IntExpr* const other = solver->MakeScalProd(neg_vars, neg_coeffs);
     if (define) {
       IntVar* const boolvar = solver->MakeIsEqualVar(pos, other);
       VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
@@ -485,19 +492,35 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
     }
   } else if (negative == 1) {
     IntExpr* neg = NULL;
-    std::vector<IntVar*> pos_vars;
-    std::vector<int64> pos_coeffs;
-    for (int i = 0; i < size; ++i) {
-      const int64 coeff = coefficients[i];
-      if (coeff < 0) {
-        neg = solver->MakeProd(variables[i], -coeff);
-      } else if (coeff > 0) {
-        pos_vars.push_back(variables[i]);
-        pos_coeffs.push_back(coeff);
+    IntExpr* other = NULL;
+    if (positive == 2) {
+      std::vector<IntExpr*> pos_exprs;
+      for (int i = 0; i < size; ++i) {
+        const int64 coeff = coefficients[i];
+        IntExpr* const expr = model->GetIntExpr(array_variables->a[i]);
+        if (coeff < 0) {
+          neg = solver->MakeProd(variables[i], -coeff);
+        } else if (coeff > 0) {
+          pos_exprs.push_back(solver->MakeProd(expr, coeff));
+        }
       }
+      other = solver->MakeSum(pos_exprs[0], pos_exprs[1]);
+    } else {
+      std::vector<IntVar*> pos_vars;
+      std::vector<int64> pos_coeffs;
+      for (int i = 0; i < size; ++i) {
+        const int64 coeff = coefficients[i];
+        variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+        if (coeff < 0) {
+          neg = solver->MakeProd(variables[i], -coeff);
+        } else if (coeff > 0) {
+          pos_vars.push_back(variables[i]);
+          pos_coeffs.push_back(coeff);
+        }
+      }
+      other = solver->MakeScalProd(pos_vars, pos_coeffs);
     }
     neg = solver->MakeSum(neg, rhs);
-    IntExpr* const other = solver->MakeScalProd(pos_vars, pos_coeffs);
     if (define) {
       IntVar* const boolvar = solver->MakeIsEqualVar(neg, other);
       VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
@@ -511,6 +534,10 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
       solver->AddConstraint(ct);
     }
   } else {
+    for (int i = 0; i < size; ++i) {
+      coefficients[i] = array_coefficients->a[i]->getInt();
+      variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+    }
     IntExpr* const var = solver->MakeScalProd(variables, coefficients);
     if (define) {
       IntVar* const boolvar = solver->MakeIsEqualCstVar(var, rhs);
