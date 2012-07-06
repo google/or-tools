@@ -457,20 +457,20 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
   const bool define = spec->IsDefined(node_boolvar);
 
   if (positive == 1) {
-    IntVar* pos = NULL;
+    IntExpr* pos = NULL;
     std::vector<IntVar*> neg_vars;
     std::vector<int64> neg_coeffs;
     for (int i = 0; i < size; ++i) {
       const int64 coeff = coefficients[i];
       if (coeff > 0) {
-        pos = solver->MakeProd(variables[i], coeff)->Var();
+        pos = solver->MakeProd(variables[i], coeff);
       } else if (coeff < 0) {
         neg_vars.push_back(variables[i]);
         neg_coeffs.push_back(-coeff);
       }
     }
-    pos = solver->MakeSum(pos, -rhs)->Var();
-    IntVar* const other = solver->MakeScalProd(neg_vars, neg_coeffs)->Var();
+    pos = solver->MakeSum(pos, -rhs);
+    IntExpr* const other = solver->MakeScalProd(neg_vars, neg_coeffs);
     if (define) {
       IntVar* const boolvar = solver->MakeIsEqualVar(pos, other);
       VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
@@ -484,20 +484,20 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
       solver->AddConstraint(ct);
     }
   } else if (negative == 1) {
-    IntVar* neg = NULL;
+    IntExpr* neg = NULL;
     std::vector<IntVar*> pos_vars;
     std::vector<int64> pos_coeffs;
     for (int i = 0; i < size; ++i) {
       const int64 coeff = coefficients[i];
       if (coeff < 0) {
-        neg = solver->MakeProd(variables[i], -coeff)->Var();
+        neg = solver->MakeProd(variables[i], -coeff);
       } else if (coeff > 0) {
         pos_vars.push_back(variables[i]);
         pos_coeffs.push_back(coeff);
       }
     }
-    neg = solver->MakeSum(neg, rhs)->Var();
-    IntVar* const other = solver->MakeScalProd(pos_vars, pos_coeffs)->Var();
+    neg = solver->MakeSum(neg, rhs);
+    IntExpr* const other = solver->MakeScalProd(pos_vars, pos_coeffs);
     if (define) {
       IntVar* const boolvar = solver->MakeIsEqualVar(neg, other);
       VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
@@ -511,7 +511,7 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
       solver->AddConstraint(ct);
     }
   } else {
-    IntVar* const var = solver->MakeScalProd(variables, coefficients)->Var();
+    IntExpr* const var = solver->MakeScalProd(variables, coefficients);
     if (define) {
       IntVar* const boolvar = solver->MakeIsEqualCstVar(var, rhs);
       VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
@@ -544,7 +544,7 @@ void p_int_lin_ne(FlatZincModel* const model, CtSpec* const spec) {
   }
   Constraint* const ct =
       solver->MakeNonEquality(
-          solver->MakeScalProd(variables, coefficients)->Var(),
+          solver->MakeScalProd(variables, coefficients),
           rhs);
   VLOG(1) << "  - posted " << ct->DebugString();
   solver->AddConstraint(ct);
@@ -566,8 +566,8 @@ void p_int_lin_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
     coefficients[i] = array_coefficients->a[i]->getInt();
     variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
   }
-  IntVar* const var =
-      solver->MakeScalProd(variables, coefficients)->Var();
+  IntExpr* const var =
+      solver->MakeScalProd(variables, coefficients);
   IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
   Constraint* const ct = solver->MakeIsDifferentCstCt(var, rhs, boolvar);
   VLOG(1) << "  - posted " << ct->DebugString();
