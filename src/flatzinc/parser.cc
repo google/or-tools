@@ -947,6 +947,9 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       }
     }
     if (!one_positive) {
+      VLOG(1) << "  - presolve:  transform all negative int_lin_le into "
+              << "int_lin_ge in " << spec->DebugString();
+
       for (int i = 0; i < size; ++i) {
         array_coefficients->a[i]->setInt(-array_coefficients->a[i]->getInt());
       }
@@ -968,6 +971,8 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       }
     }
     if (!one_positive) {
+      VLOG(1) << "  - presolve:  transform all negative int_lin_le_reif into "
+              << "int_lin_ge_reif in " << spec->DebugString();
       for (int i = 0; i < size; ++i) {
         array_coefficients->a[i]->setInt(-array_coefficients->a[i]->getInt());
       }
