@@ -140,11 +140,11 @@
 typedef union YYSTYPE
 #line 81 "src/flatzinc/parser.yxx"
 {
-  int iValue;
+  int64 iValue;
   char* sValue;
   bool bValue;
   double dValue;
-  std::vector<int>* setValue;
+  std::vector<int64>* setValue;
   operations_research::AST::SetLit* setLit;
   std::vector<double>* floatSetValue;
   std::vector<operations_research::AST::SetLit>* setValueList;

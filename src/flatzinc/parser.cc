@@ -723,7 +723,7 @@ bool ParserState::IsAllDifferent(AST::Node* const node) const {
   }
   std::sort(variables.begin(), variables.end());
 
-  // Naive
+  // Naive.
   for (int i = 0; i < all_differents_.size(); ++i) {
     const std::vector<int>& v = all_differents_[i];
     if (v.size() != size) {

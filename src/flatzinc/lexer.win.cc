@@ -1004,258 +1004,256 @@ case 6:
 YY_RULE_SETUP
 #line 68 "src/flatzinc/lexer.lxx"
 {
-  const int64 val = operations_research::atoi64(yytext);
-  if (val >= kint32min && val < kint32max) {
+    const int64 val = operations_research::atoi64(yytext);
     yylval->iValue = val;
-  } else if (val < kint32min) {
-    yylval->iValue = kint32min;
-  } else {
-    yylval->iValue = kint32max;
-  }
-  return FZ_INT_LIT;
+    return FZ_INT_LIT;
   }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 79 "src/flatzinc/lexer.lxx"
-{ yylval->iValue = atoi(yytext); return FZ_INT_LIT; }
+#line 73 "src/flatzinc/lexer.lxx"
+{
+    yylval->iValue = operations_research::atoi64(yytext); return FZ_INT_LIT;
+  }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 80 "src/flatzinc/lexer.lxx"
-{ yylval->iValue = atoi(yytext); return FZ_INT_LIT; }
+#line 76 "src/flatzinc/lexer.lxx"
+{
+    yylval->iValue = operations_research::atoi64(yytext); return FZ_INT_LIT;
+  }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 81 "src/flatzinc/lexer.lxx"
+#line 79 "src/flatzinc/lexer.lxx"
 { yylval->dValue = strtod(yytext,NULL);
                     return FZ_FLOAT_LIT; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 83 "src/flatzinc/lexer.lxx"
+#line 81 "src/flatzinc/lexer.lxx"
 { yylval->dValue = strtod(yytext,NULL);
                                    return FZ_FLOAT_LIT; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 85 "src/flatzinc/lexer.lxx"
+#line 83 "src/flatzinc/lexer.lxx"
 { yylval->dValue = strtod(yytext,NULL);
                            return FZ_FLOAT_LIT; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 87 "src/flatzinc/lexer.lxx"
+#line 85 "src/flatzinc/lexer.lxx"
 { return *yytext; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 88 "src/flatzinc/lexer.lxx"
+#line 86 "src/flatzinc/lexer.lxx"
 { return FZ_DOTDOT; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 89 "src/flatzinc/lexer.lxx"
+#line 87 "src/flatzinc/lexer.lxx"
 { return FZ_COLONCOLON; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 90 "src/flatzinc/lexer.lxx"
+#line 88 "src/flatzinc/lexer.lxx"
 { return FZ_ANNOTATION; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 91 "src/flatzinc/lexer.lxx"
+#line 89 "src/flatzinc/lexer.lxx"
 { return FZ_ANY; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 92 "src/flatzinc/lexer.lxx"
+#line 90 "src/flatzinc/lexer.lxx"
 { return FZ_ARRAY; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 93 "src/flatzinc/lexer.lxx"
+#line 91 "src/flatzinc/lexer.lxx"
 { return FZ_BOOL; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 94 "src/flatzinc/lexer.lxx"
+#line 92 "src/flatzinc/lexer.lxx"
 { return FZ_CASE; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 95 "src/flatzinc/lexer.lxx"
+#line 93 "src/flatzinc/lexer.lxx"
 { return FZ_CONSTRAINT; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 96 "src/flatzinc/lexer.lxx"
+#line 94 "src/flatzinc/lexer.lxx"
 { return FZ_DEFAULT; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 97 "src/flatzinc/lexer.lxx"
+#line 95 "src/flatzinc/lexer.lxx"
 { return FZ_ELSE; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 98 "src/flatzinc/lexer.lxx"
+#line 96 "src/flatzinc/lexer.lxx"
 { return FZ_ELSEIF; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 99 "src/flatzinc/lexer.lxx"
+#line 97 "src/flatzinc/lexer.lxx"
 { return FZ_ENDIF; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 100 "src/flatzinc/lexer.lxx"
+#line 98 "src/flatzinc/lexer.lxx"
 { return FZ_ENUM; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 101 "src/flatzinc/lexer.lxx"
+#line 99 "src/flatzinc/lexer.lxx"
 { return FZ_FLOAT; }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 102 "src/flatzinc/lexer.lxx"
+#line 100 "src/flatzinc/lexer.lxx"
 { return FZ_FUNCTION; }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 103 "src/flatzinc/lexer.lxx"
+#line 101 "src/flatzinc/lexer.lxx"
 { return FZ_IF; }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 104 "src/flatzinc/lexer.lxx"
+#line 102 "src/flatzinc/lexer.lxx"
 { return FZ_INCLUDE; }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 105 "src/flatzinc/lexer.lxx"
+#line 103 "src/flatzinc/lexer.lxx"
 { return FZ_INT; }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 106 "src/flatzinc/lexer.lxx"
+#line 104 "src/flatzinc/lexer.lxx"
 { return FZ_LET; }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 107 "src/flatzinc/lexer.lxx"
+#line 105 "src/flatzinc/lexer.lxx"
 { yylval->bValue = false; return FZ_MAXIMIZE; }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 108 "src/flatzinc/lexer.lxx"
+#line 106 "src/flatzinc/lexer.lxx"
 { yylval->bValue = true; return FZ_MINIMIZE; }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 109 "src/flatzinc/lexer.lxx"
+#line 107 "src/flatzinc/lexer.lxx"
 { return FZ_OF; }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 110 "src/flatzinc/lexer.lxx"
+#line 108 "src/flatzinc/lexer.lxx"
 { return FZ_SATISFY; }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 111 "src/flatzinc/lexer.lxx"
+#line 109 "src/flatzinc/lexer.lxx"
 { return FZ_OUTPUT; }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 112 "src/flatzinc/lexer.lxx"
+#line 110 "src/flatzinc/lexer.lxx"
 { yylval->bValue = false; return FZ_PAR; }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 113 "src/flatzinc/lexer.lxx"
+#line 111 "src/flatzinc/lexer.lxx"
 { return FZ_PREDICATE; }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 114 "src/flatzinc/lexer.lxx"
+#line 112 "src/flatzinc/lexer.lxx"
 { return FZ_RECORD; }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 115 "src/flatzinc/lexer.lxx"
+#line 113 "src/flatzinc/lexer.lxx"
 { return FZ_SET; }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 116 "src/flatzinc/lexer.lxx"
+#line 114 "src/flatzinc/lexer.lxx"
 { return FZ_SHOWCOND; }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 117 "src/flatzinc/lexer.lxx"
+#line 115 "src/flatzinc/lexer.lxx"
 { return FZ_SHOW; }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 118 "src/flatzinc/lexer.lxx"
+#line 116 "src/flatzinc/lexer.lxx"
 { return FZ_SOLVE; }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 119 "src/flatzinc/lexer.lxx"
+#line 117 "src/flatzinc/lexer.lxx"
 { return FZ_STRING; }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 120 "src/flatzinc/lexer.lxx"
+#line 118 "src/flatzinc/lexer.lxx"
 { return FZ_TEST; }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 121 "src/flatzinc/lexer.lxx"
+#line 119 "src/flatzinc/lexer.lxx"
 { return FZ_THEN; }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 122 "src/flatzinc/lexer.lxx"
+#line 120 "src/flatzinc/lexer.lxx"
 { return FZ_TUPLE; }
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 123 "src/flatzinc/lexer.lxx"
+#line 121 "src/flatzinc/lexer.lxx"
 { return FZ_TYPE; }
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 124 "src/flatzinc/lexer.lxx"
+#line 122 "src/flatzinc/lexer.lxx"
 { yylval->bValue = true; return FZ_VAR; }
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 125 "src/flatzinc/lexer.lxx"
+#line 123 "src/flatzinc/lexer.lxx"
 { return FZ_VARIANT_RECORD; }
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 126 "src/flatzinc/lexer.lxx"
+#line 124 "src/flatzinc/lexer.lxx"
 { return FZ_WHERE; }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 127 "src/flatzinc/lexer.lxx"
+#line 125 "src/flatzinc/lexer.lxx"
 { yylval->sValue = strdup(yytext); return FZ_ID; }
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 128 "src/flatzinc/lexer.lxx"
+#line 126 "src/flatzinc/lexer.lxx"
 { yylval->sValue = strdup(yytext); return FZ_U_ID; }
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 129 "src/flatzinc/lexer.lxx"
+#line 127 "src/flatzinc/lexer.lxx"
 {
                     yylval->sValue = strdup(yytext+1);
                     yylval->sValue[strlen(yytext)-2] = 0;
@@ -1263,15 +1261,15 @@ YY_RULE_SETUP
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 133 "src/flatzinc/lexer.lxx"
+#line 131 "src/flatzinc/lexer.lxx"
 { yyerror("Unknown character"); }
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 134 "src/flatzinc/lexer.lxx"
+#line 132 "src/flatzinc/lexer.lxx"
 ECHO;
 	YY_BREAK
-#line 1275 "src/flatzinc/lexer.win.cc"
+#line 1273 "src/flatzinc/lexer.win.cc"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2448,7 +2446,7 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 134 "src/flatzinc/lexer.lxx"
+#line 132 "src/flatzinc/lexer.lxx"
 
 
 int yy_input_proc(char* buf, int size, yyscan_t yyscanner) {
