@@ -187,20 +187,24 @@ class RangeLess : public Constraint {
  private:
   IntExpr* const left_;
   IntExpr* const right_;
+  Demon* demon_;
 };
 
 RangeLess::RangeLess(Solver* const s, IntExpr* const l, IntExpr* const r)
-  : Constraint(s), left_(l), right_(r) {}
+    : Constraint(s), left_(l), right_(r), demon_(NULL) {}
 
 void RangeLess::Post() {
-  Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
-  left_->WhenRange(d);
-  right_->WhenRange(d);
+  demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
+  left_->WhenRange(demon_);
+  right_->WhenRange(demon_);
 }
 
 void RangeLess::InitialPropagate() {
   left_->SetMax(right_->Max() - 1);
   right_->SetMin(left_->Min() + 1);
+  if (left_->Max() < right_->Min()) {
+    demon_->inhibit(solver());
+  }
 }
 
 string RangeLess::DebugString() const {
@@ -231,20 +235,24 @@ class RangeGreater : public Constraint {
  private:
   IntExpr* const left_;
   IntExpr* const right_;
+  Demon* demon_;
 };
 
 RangeGreater::RangeGreater(Solver* const s, IntExpr* const l, IntExpr* const r)
-  : Constraint(s), left_(l), right_(r) {}
+    : Constraint(s), left_(l), right_(r), demon_(NULL) {}
 
 void RangeGreater::Post() {
-  Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
-  left_->WhenRange(d);
-  right_->WhenRange(d);
+  demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
+  left_->WhenRange(demon_);
+  right_->WhenRange(demon_);
 }
 
 void RangeGreater::InitialPropagate() {
   left_->SetMin(right_->Min() + 1);
   right_->SetMax(left_->Max() - 1);
+  if (left_->Min() > right_->Max()) {
+    demon_->inhibit(solver());
+  }
 }
 
 string RangeGreater::DebugString() const {
