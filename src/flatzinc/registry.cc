@@ -896,7 +896,7 @@ void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
     }
   }
   if (spec->IsDefined(node_boolvar)) {
-    IntExpr* const boolvar = solver->MakeMin(variables);
+    IntExpr* const boolvar = solver->MakeMin(variables)->Var();
     VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
             << boolvar->DebugString();
     model->CheckIntegerVariableIsNull(node_boolvar);
@@ -931,7 +931,7 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
     }
   }
   if (spec->IsDefined(node_boolvar)) {
-    IntVar* const boolvar = solver->MakeMax(variables)->Var();
+    IntVar* const boolvar = solver->MakeMax(variables)->Var()->Var();
     VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
             << boolvar->DebugString();
     model->CheckIntegerVariableIsNull(node_boolvar);
