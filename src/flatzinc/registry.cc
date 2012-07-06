@@ -963,7 +963,7 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
     }
   }
   if (spec->IsDefined(node_boolvar)) {
-    IntVar* const boolvar = solver->MakeMax(variables)->Var()->Var();
+    IntVar* const boolvar = solver->MakeMax(variables)->Var();
     VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
             << boolvar->DebugString();
     model->CheckIntegerVariableIsNull(node_boolvar);
@@ -974,10 +974,22 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
       variables[i]->SetValue(0);
     }
   } else {
-    IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-    Constraint* const ct = solver->MakeMaxEquality(variables, boolvar);
-    VLOG(1) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
+    if (node_boolvar->isBool()) {
+      if (node_boolvar->getBool() == 1) {
+        Constraint* const ct = solver->MakeSumGreaterOrEqual(variables, 1);
+        VLOG(1) << "  - posted " << ct->DebugString();
+        solver->AddConstraint(ct);
+      } else {
+        Constraint* const ct = solver->MakeSumEquality(variables, Zero());
+        VLOG(1) << "  - posted " << ct->DebugString();
+        solver->AddConstraint(ct);
+      }
+    } else {
+      IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
+      Constraint* const ct = solver->MakeMaxEquality(variables, boolvar);
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
   }
 }
 
