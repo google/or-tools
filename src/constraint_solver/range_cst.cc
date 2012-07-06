@@ -89,21 +89,25 @@ class RangeLessOrEqual : public Constraint {
  private:
   IntExpr* const left_;
   IntExpr* const right_;
+  Demon* demon_;
 };
 
 RangeLessOrEqual::RangeLessOrEqual(Solver* const s, IntExpr* const l,
                                    IntExpr* const r)
-  : Constraint(s), left_(l), right_(r) {}
+    : Constraint(s), left_(l), right_(r), demon_(NULL) {}
 
 void RangeLessOrEqual::Post() {
-  Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
-  left_->WhenRange(d);
-  right_->WhenRange(d);
+  demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
+  left_->WhenRange(demon_);
+  right_->WhenRange(demon_);
 }
 
 void RangeLessOrEqual::InitialPropagate() {
   left_->SetMax(right_->Max());
   right_->SetMin(left_->Min());
+  if (left_->Max() <= right_->Min()) {
+    demon_->inhibit(solver());
+  }
 }
 
 string RangeLessOrEqual::DebugString() const {
@@ -134,21 +138,25 @@ class RangeGreaterOrEqual : public Constraint {
  private:
   IntExpr* const left_;
   IntExpr* const right_;
+  Demon* demon_;
 };
 
 RangeGreaterOrEqual::RangeGreaterOrEqual(Solver* const s, IntExpr* const l,
                                          IntExpr* const r)
-    : Constraint(s), left_(l), right_(r) {}
+    : Constraint(s), left_(l), right_(r), demon_(NULL) {}
 
 void RangeGreaterOrEqual::Post() {
-  Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
-  left_->WhenRange(d);
-  right_->WhenRange(d);
+  demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
+  left_->WhenRange(demon_);
+  right_->WhenRange(demon_);
 }
 
 void RangeGreaterOrEqual::InitialPropagate() {
   left_->SetMin(right_->Min());
   right_->SetMax(left_->Max());
+  if (left_->Min() >= right_->Max()) {
+    demon_->inhibit(solver());
+  }
 }
 
 string RangeGreaterOrEqual::DebugString() const {
