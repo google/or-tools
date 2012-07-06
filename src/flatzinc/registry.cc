@@ -887,7 +887,7 @@ void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
     model->SetIntegerExpression(node_boolvar, boolvar);
   } else if (node_boolvar->isBool() && node_boolvar->getBool() == 1) {
     VLOG(1) << "  - forcing array_bool_and to 1";
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < variables.size(); ++i) {
       variables[i]->SetValue(1);
     }
   } else {
@@ -922,7 +922,7 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
     model->SetIntegerExpression(node_boolvar, boolvar);
   } else if (node_boolvar->isBool() && node_boolvar->getBool() == 0) {
     VLOG(1) << "  - forcing array_bool_or to 0";
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < variables.size(); ++i) {
       variables[i]->SetValue(0);
     }
   } else {
