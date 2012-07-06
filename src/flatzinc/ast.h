@@ -107,6 +107,8 @@ namespace operations_research { namespace AST {
 
     /// Cast this node to an integer node
     int64 getInt(void);
+    /// Cast thos node to an integer node and assign value.
+    void setInt(int64);
     /// Cast this node to a Boolean node
     bool getBool(void);
     /// Cast this node to a Float node
@@ -419,6 +421,12 @@ namespace operations_research { namespace AST {
     if (IntLit* a = dynamic_cast<IntLit*>(this))
       return a->i;
     throw TypeError("integer literal expected");
+  }
+  inline void Node::setInt(int64 v) {
+    if (IntLit* a = dynamic_cast<IntLit*>(this))
+      a->i = v;
+    else
+      throw TypeError("integer literal expected");
   }
   inline bool Node::getBool(void) {
     if (BoolLit* a = dynamic_cast<BoolLit*>(this))

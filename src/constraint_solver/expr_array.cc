@@ -1137,6 +1137,16 @@ template<class T> bool AreAllPositive(const T* const values, int size) {
   return true;
 }
 
+template<class T> bool AreAllStrictlyPositive(const T* const values, int size) {
+  for (int i = 0; i < size; ++i) {
+    if (values[i] <= 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
 template<class T> bool AreAllNull(const T* const values, int size) {
   for (int i = 0; i < size; ++i) {
     if (values[i] != 0) {
@@ -2723,6 +2733,17 @@ Constraint* MakeScalProdGreaterOrEqualFct(Solver* solver,
   if (size == 0 || AreAllNull<T>(coefficients, size)) {
     return cst <= 0 ? solver->MakeTrueConstraint()
         : solver->MakeFalseConstraint();
+  }
+  if (cst == 1 &&
+      AreAllBooleans(vars, size) &&
+      AreAllPositive(coefficients, size)) {  // can move all coefficients to 1.
+    std::vector<IntVar*> terms;
+    for (int i = 0; i < size; ++i) {
+      if (coefficients[i] > 0) {
+        terms.push_back(vars[i]);
+      }
+    }
+    return solver->MakeSumGreaterOrEqual(terms, 1);
   }
   std::vector<IntVar*> terms;
   for (int i = 0; i < size; ++i) {

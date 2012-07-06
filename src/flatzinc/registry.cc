@@ -272,9 +272,10 @@ void p_int_le_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Node* const node_right = spec->Arg(1);
   AST::Node* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
-    IntVar* const boolvar = node_right->isInt() ?
-                            solver->MakeIsLessOrEqualCstVar(left, node_right->getInt()) :
-                            solver->MakeIsLessOrEqualVar(left, model->GetIntExpr(node_right));
+    IntVar* const boolvar =
+        node_right->isInt() ?
+        solver->MakeIsLessOrEqualCstVar(left, node_right->getInt()) :
+        solver->MakeIsLessOrEqualVar(left, model->GetIntExpr(node_right));
     VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
             << boolvar->DebugString();
     model->CheckIntegerVariableIsNull(node_boolvar);
@@ -523,28 +524,14 @@ void p_int_lin_le(FlatZincModel* const model, CtSpec* const spec) {
   std::vector<int64> coefficients(size);
   std::vector<IntVar*> variables(size);
 
-  bool one_positive = false;
   for (int i = 0; i < size; ++i) {
     coefficients[i] = array_coefficients->a[i]->getInt();
     variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
-    if (coefficients[i] > 0) {
-      one_positive = true;
-    }
   }
-  if (one_positive) {
-    Constraint* const ct =
-        solver->MakeScalProdLessOrEqual(variables, coefficients, rhs);
-    VLOG(1) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
-  } else {
-    for (int i = 0; i < size; ++i) {
-      coefficients[i] *= -1;
-    }
-    Constraint* const ct =
-        solver->MakeScalProdGreaterOrEqual(variables, coefficients, -rhs);
-    VLOG(1) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
-  }
+  Constraint* const ct =
+      solver->MakeScalProdLessOrEqual(variables, coefficients, rhs);
+  VLOG(1) << "  - posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_int_lin_le_reif(FlatZincModel* const model, CtSpec* const spec) {
@@ -559,31 +546,15 @@ void p_int_lin_le_reif(FlatZincModel* const model, CtSpec* const spec) {
   std::vector<int64> coefficients(size);
   std::vector<IntVar*> variables(size);
 
-  bool one_positive = false;
   for (int i = 0; i < size; ++i) {
     coefficients[i] = array_coefficients->a[i]->getInt();
     variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
-    if (coefficients[i] > 0) {
-      one_positive = true;
-    }
   }
-  if (one_positive) {
-    IntExpr* const expr = solver->MakeScalProd(variables, coefficients);
-    IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-    Constraint* const ct = solver->MakeIsLessOrEqualCstCt(expr, rhs, boolvar);
-    VLOG(1) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
-  } else {
-    for (int i = 0; i < size; ++i) {
-      coefficients[i] *= -1;
-    }
-    IntExpr* const expr = solver->MakeScalProd(variables, coefficients);
-    IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-    Constraint* const ct =
-        solver->MakeIsGreaterOrEqualCstCt(expr, -rhs, boolvar);
-    VLOG(1) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
-  }
+  IntExpr* const expr = solver->MakeScalProd(variables, coefficients);
+  IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
+  Constraint* const ct = solver->MakeIsLessOrEqualCstCt(expr, rhs, boolvar);
+  VLOG(1) << "  - posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_int_lin_lt(FlatZincModel* const model, CtSpec* const spec) {
