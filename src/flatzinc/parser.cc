@@ -901,6 +901,22 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
     spec->Nullify();
     return true;
   }
+  if (id == "array_bool_or" &&
+      IsBound(spec->Arg(1)) &&
+      GetBound(spec->Arg(1)) == 0) {
+    VLOG(1) << "  - presolve:  forcing array_bool_or to 0 on "
+            << spec->DebugString();
+    AST::Array* const array_variables = spec->Arg(0)->getArray();
+    const int size = array_variables->a.size();
+    for (int i = 0; i < size; ++i) {
+      if (array_variables->a[i]->isBoolVar()) {
+        const int boolvar = array_variables->a[i]->getBoolVar();
+        bool_variables_[boolvar]->Assign(false);
+      }
+    }
+    spec->Nullify();
+    return true;
+  }
   if (id.find("_reif") != string::npos &&
       IsBound(spec->LastArg()) &&
       GetBound(spec->LastArg()) == 1) {
