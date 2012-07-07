@@ -433,7 +433,6 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
   std::vector<int> coefficients(size);
-  std::vector<IntVar*> variables(size);
 
   int positive = 0;
   int negative = 0;
@@ -466,12 +465,12 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
       std::vector<IntVar*> neg_vars;
       std::vector<int64> neg_coeffs;
       for (int i = 0; i < size; ++i) {
-        variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+        IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
         const int64 coeff = coefficients[i];
         if (coeff > 0) {
-          pos = solver->MakeProd(variables[i], coeff);
+          pos = solver->MakeProd(var, coeff);
         } else if (coeff < 0) {
-          neg_vars.push_back(variables[i]);
+          neg_vars.push_back(var);
           neg_coeffs.push_back(-coeff);
         }
       }
@@ -499,7 +498,7 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
         const int64 coeff = coefficients[i];
         IntExpr* const expr = model->GetIntExpr(array_variables->a[i]);
         if (coeff < 0) {
-          neg = solver->MakeProd(variables[i], -coeff);
+          neg = solver->MakeProd(expr, -coeff);
         } else if (coeff > 0) {
           pos_exprs.push_back(solver->MakeProd(expr, coeff));
         }
@@ -510,11 +509,11 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
       std::vector<int64> pos_coeffs;
       for (int i = 0; i < size; ++i) {
         const int64 coeff = coefficients[i];
-        variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+        IntVar* const var = model->GetIntExpr(array_variables->a[i])->Var();
         if (coeff < 0) {
-          neg = solver->MakeProd(variables[i], -coeff);
+          neg = solver->MakeProd(var, -coeff);
         } else if (coeff > 0) {
-          pos_vars.push_back(variables[i]);
+          pos_vars.push_back(var);
           pos_coeffs.push_back(coeff);
         }
       }
@@ -534,6 +533,7 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
       solver->AddConstraint(ct);
     }
   } else {
+    std::vector<IntVar*> variables(size);
     for (int i = 0; i < size; ++i) {
       coefficients[i] = array_coefficients->a[i]->getInt();
       variables[i] = model->GetIntExpr(array_variables->a[i])->Var();

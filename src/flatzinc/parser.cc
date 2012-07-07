@@ -18,6 +18,28 @@ extern void yyset_extra (void* user_defined ,void* yyscanner );
 extern void yyerror(void* parm, const char *str);
 
 namespace operations_research {
+// ----- Misc -----
+bool HasDomainAnnotation(AST::Node* const annotations) {
+  if (annotations != NULL) {
+    return annotations->hasAtom("domain");
+  }
+  return false;
+}
+
+bool HasDefineAnnotation(AST::Node* const annotations) {
+  if (annotations != NULL) {
+    if (annotations->isArray()) {
+      AST::Array* const ann_array = annotations->getArray();
+      if (ann_array->a[0]->isCall("defines_var")) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// ----- Parser State -----
+
 ParserState::~ParserState() {
   STLDeleteElements(&int_variables_);
   STLDeleteElements(&bool_variables_);
@@ -77,13 +99,6 @@ AST::Node* ParserState::FindTarget(AST::Node* const annotations) const {
     }
   }
   return NULL;
-}
-
-bool HasDomainAnnotation(AST::Node* const annotations) {
-  if (annotations != NULL) {
-    return annotations->hasAtom("domain");
-  }
-  return false;
 }
 
 void ParserState::CollectRequired(AST::Array* const args,
@@ -1040,7 +1055,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         break;
       }
     }
-    if (!one_positive) {
+    if (!one_positive && !HasDefineAnnotation(spec->annotations())) {
       VLOG(1) << "  - presolve:  transform all negative int_lin_eq into "
               << "int_lin_eq in " << spec->DebugString();
 
