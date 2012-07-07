@@ -163,6 +163,32 @@ class IntVarSpec : public VarSpec {
     return false;
   }
 
+  bool RemoveValue(int64 val) {
+    CHECK(!alias);
+    if (assigned) {
+      return val != i;
+    }
+    if (!domain_.defined()) {
+      return false;
+    }
+    if (!own_domain_) {
+      return false;  // IMPROVE ME.
+    }
+    AST::SetLit* const domain = domain_.value();
+    if (domain->interval) {
+      if (domain->min == val) {
+        domain->min++;
+        return true;
+      } else if (domain->max == val) {
+        domain->max--;
+        return true;
+      } else if (val < domain->min || val > domain->max) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool MergeDomain(const std::vector<int64>& values) {
     CHECK(!alias);
     if (assigned) {

@@ -841,6 +841,31 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       }
     }
   }
+  if (id == "int_ne") {
+    if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
+      IntVarSpec* const var_spec =
+          int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
+      const int bound = GetBound(spec->Arg(1));
+      VLOG(1) << "  - presolve:  remove value " << bound << " from "
+              << var_spec->DebugString();
+      const bool ok = var_spec->RemoveValue(bound);
+      if (ok) {
+        spec->Nullify();
+      }
+      return ok;
+    } else if (IsBound(spec->Arg(0)) && spec->Arg(1)->isIntVar()) {
+      IntVarSpec* const var_spec =
+          int_variables_[FindEndIntegerVariable(spec->Arg(1)->getIntVar())];
+      const int bound = GetBound(spec->Arg(0));
+      VLOG(1) << "  - presolve:  remove value " << bound << " from "
+              << var_spec->DebugString();
+      const bool ok = var_spec->RemoveValue(bound);
+      if (ok) {
+        spec->Nullify();
+      }
+      return ok;
+    }
+  }
   if (id == "set_in") {
     if (spec->Arg(0)->isIntVar() && spec->Arg(1)->isSet()) {
       IntVarSpec* const var_spec =
@@ -881,6 +906,50 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       GetBound(spec->LastArg()) == 1) {
     VLOG(1) << "  - presolve:  unreify " << spec->DebugString();
     spec->Unreify();
+    return true;
+  }
+  if (id.find("_reif") != string::npos &&
+      IsBound(spec->LastArg()) &&
+      GetBound(spec->LastArg()) == 0) {
+    VLOG(1) << "  - presolve:  unreify and inverse " << spec->DebugString();
+    spec->Unreify();
+    if (id == "int_eq") {
+      spec->SetId("int_ne");
+    } else if (id == "int_ne") {
+      spec->SetId("int_eq");
+    } else if (id == "int_ge") {
+      spec->SetId("int_lt");
+    } else if (id == "int_gt") {
+      spec->SetId("int_le");
+    } else if (id == "int_le") {
+      spec->SetId("int_gt");
+    } else if (id == "int_lt") {
+      spec->SetId("int_ge");
+    } else if (id == "int_lin_eq") {
+      spec->SetId("int_lin_ne");
+    } else if (id == "int_lin_ne") {
+      spec->SetId("int_lin_eq");
+    } else if (id == "int_lin_ge") {
+      spec->SetId("int_lin_lt");
+    } else if (id == "int_lin_gt") {
+      spec->SetId("int_lin_le");
+    } else if (id == "int_lin_le") {
+      spec->SetId("int_lin_gt");
+    } else if (id == "int_lin_lt") {
+      spec->SetId("int_lin_ge");
+    } else if (id == "bool_eq") {
+      spec->SetId("bool_ne");
+    } else if (id == "bool_ne") {
+      spec->SetId("bool_eq");
+    } else if (id == "bool_ge") {
+      spec->SetId("bool_lt");
+    } else if (id == "bool_gt") {
+      spec->SetId("bool_le");
+    } else if (id == "bool_le") {
+      spec->SetId("bool_gt");
+    } else if (id == "bool_lt") {
+      spec->SetId("bool_ge");
+    }
     return true;
   }
   if (id == "all_different_int" && !ContainsKey(stored_constraints_, spec)) {
