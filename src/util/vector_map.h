@@ -68,6 +68,10 @@ template <class T> class VectorMap {
     return list_[index];
   }
 
+  const T& operator[](int index) const {
+    return Element(index);
+  }
+
   // Returns the number of distinct elements added to the vector-map.
   int size() const { return list_.size(); }
 
