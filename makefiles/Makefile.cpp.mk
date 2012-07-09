@@ -160,6 +160,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/assignment.$O\
 	$(OBJ_DIR)/assignment.pb.$O\
 	$(OBJ_DIR)/ac4r_table.$O\
+	$(OBJ_DIR)/booleans.$O\
 	$(OBJ_DIR)/collect_variables.$O\
 	$(OBJ_DIR)/constraint_solver.$O\
 	$(OBJ_DIR)/constraints.$O\
@@ -207,7 +208,10 @@ $(OBJ_DIR)/assignment.pb.$O:$(GEN_DIR)/constraint_solver/assignment.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/assignment.pb.cc $(OBJ_OUT)assignment.pb.$O
 
 $(OBJ_DIR)/ac4r_table.$O:$(SRC_DIR)/constraint_solver/ac4r_table.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/ac4r_table.cc	 $(OBJ_OUT)ac4r_table.$O
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/ac4r_table.cc $(OBJ_OUT)ac4r_table.$O
+
+$(OBJ_DIR)/booleans.$O:$(SRC_DIR)/constraint_solver/booleans.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/booleans.cc $(OBJ_OUT)booleans.$O
 
 $(GEN_DIR)/constraint_solver/assignment.pb.cc:$(SRC_DIR)/constraint_solver/assignment.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/constraint_solver/assignment.proto
