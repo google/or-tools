@@ -301,6 +301,8 @@ class SumTriggerAction {
 };
 
 void Atom::Flip(Store* const store) {
+  CHECK(!flipped_.Switched());
+  flipped_.Switch(store->solver());
   for (int i = 0; i < actions_.size(); ++i) {
     store->Flip(actions_[i]);
   }
