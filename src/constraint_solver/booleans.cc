@@ -41,10 +41,7 @@ const static AtomIndex kFailAtom = AtomIndex(0);
 
 template <class T> class UnorderedRevArray {
  public:
-  UnorderedRevArray(int initial_capacity)
-  : elements_(), num_elements_(0) {
-    elements_.reserve(initial_capacity);
-  }
+  UnorderedRevArray() : elements_(), num_elements_(0) {}
 
   UnorderedRevArray(const std::vector<T>& elements)
       : elements_(elements), num_elements_(elements.size()) {}
@@ -53,7 +50,11 @@ template <class T> class UnorderedRevArray {
 
   int Size() const { return num_elements_.Value(); }
 
-  T Element(int i) const {
+  const T& operator[](int index) const {
+    return Element(index);
+  }
+
+  const T& Element(int i) const {
     DCHECK_GE(i, 0);
     DCHECK_LT(i, num_elements_.Value());
     return elements_[i];
@@ -67,6 +68,15 @@ template <class T> class UnorderedRevArray {
   void Remove(Solver* const solver, int position_of_element_to_remove) {
     num_elements_.Decr(solver);
     SwapTo(position_of_element_to_remove, num_elements_.Value());
+  }
+
+  void RemoveElement(Solver* const solver, const T& element) {
+    for (int i = 0; i < num_elements_.Value(); ++i) {
+      if (elements_[i] == element) {
+        Remove(solver, i);
+        return;
+      }
+    }
   }
 
   void Clear(Solver* const solver) {
@@ -99,12 +109,12 @@ class Atom {
     sum_less_constant_constraints_.push_back(ct);
   }
 
-  void Listen(SumTriggerAction* const ct) {
-    sum_trigger_actions_constraints_.insert(ct);
+  void Listen(Solver* const solver, SumTriggerAction* const ct) {
+    sum_trigger_actions_constraints_.Insert(solver, ct);
   }
 
-  void StopListening(SumTriggerAction* const ct) {
-    sum_trigger_actions_constraints_.erase(ct);
+  void StopListening(Solver* const solver, SumTriggerAction* const ct) {
+    sum_trigger_actions_constraints_.RemoveElement(solver, ct);
   }
 
   void AddFlipAction(AtomIndex action) {
@@ -120,7 +130,7 @@ class Atom {
  private:
   const AtomIndex atom_index_;
   std::vector<SumLessConstant*> sum_less_constant_constraints_;
-  hash_set<SumTriggerAction*> sum_trigger_actions_constraints_;
+  UnorderedRevArray<SumTriggerAction*> sum_trigger_actions_constraints_;
   std::vector<AtomIndex> actions_;
   RevSwitch flipped_;
 };
@@ -145,7 +155,7 @@ class Store : public Constraint {
   }
 
   void VariableBound(int index) {
-    if (indices_.Element(index)->Min() == 0) {
+    if (indices_[index]->Min() == 0) {
       Flip(AtomIndex(-1 - index));
     } else {
       Flip(AtomIndex(1 + index));
@@ -157,11 +167,11 @@ class Store : public Constraint {
   }
 
   void Listen(AtomIndex atom, SumTriggerAction* const ct) {
-    FindAtom(atom)->Listen(ct);
+    FindAtom(atom)->Listen(solver(), ct);
   }
 
   void StopListening(AtomIndex atom, SumTriggerAction* const ct) {
-    FindAtom(atom)->StopListening(ct);
+    FindAtom(atom)->StopListening(solver(), ct);
   }
 
   void Flip(AtomIndex atom) {
@@ -187,13 +197,13 @@ class Store : public Constraint {
                                             &Store::VariableBound,
                                             "VariableBound",
                                             i);
-      indices_.Element(i)->WhenDomain(d);
+      indices_[i]->WhenDomain(d);
     }
   }
 
   virtual void InitialPropagate() {
     for (int i = 0; i < indices_.size(); ++i) {
-      if (indices_.Element(i)->Bound()) {
+      if (indices_[i]->Bound()) {
         VariableBound(i);
       }
     }
@@ -309,9 +319,8 @@ void Atom::Flip(Store* const store) {
   for (int i = 0; i < sum_less_constant_constraints_.size(); ++i) {
     sum_less_constant_constraints_[i]->Flip(store, atom_index_);
   }
-  for (ConstIter<hash_set<SumTriggerAction*> > iter(
-           sum_trigger_actions_constraints_); !iter.at_end(); ++iter) {
-    (*iter)->Flip(store, atom_index_);
+  for (int i = 0; i < sum_trigger_actions_constraints_.Size(); ++i) {
+    sum_trigger_actions_constraints_[i]->Flip(store, atom_index_);
   }
 }
 }  // namespace
