@@ -424,6 +424,7 @@ bool AddBoolNot(Store* const store, IntExpr* const left, IntExpr* const right) {
 bool AddBoolAndArrayEqVar(Store* const store,
                           const std::vector<IntVar*>& vars,
                           IntVar* const target) {
+  return false;
 
 }
 
