@@ -106,8 +106,12 @@ class Atom {
   Atom(AtomIndex index) : atom_index_(index) {}
   ~Atom() {}
 
-  void Listen(CountInRange* const ct) {
-    sum_less_constant_constraints_.push_back(ct);
+  void Listen(CountInRange* const ct, bool direct) {
+    if (direct) {
+      direct_count_in_range_constraints_.push_back(ct);
+    } else {
+      reverse_count_in_range_constraints_.push_back(ct);
+    }
   }
 
   void Listen(Solver* const solver, SumTriggerAction* const ct) {
@@ -130,7 +134,8 @@ class Atom {
 
  private:
   const AtomIndex atom_index_;
-  std::vector<CountInRange*> sum_less_constant_constraints_;
+  std::vector<CountInRange*> direct_count_in_range_constraints_;
+  std::vector<CountInRange*> reverse_count_in_range_constraints_;
   UnorderedRevArray<SumTriggerAction*> sum_trigger_actions_constraints_;
   std::vector<AtomIndex> actions_;
   RevSwitch flipped_;
@@ -187,8 +192,8 @@ class Store : public Constraint {
     }
   }
 
-  void Listen(AtomIndex atom, CountInRange* const ct) {
-    FindAtom(atom)->Listen(ct);
+  void Listen(AtomIndex atom, CountInRange* const ct, bool direct) {
+    FindAtom(atom)->Listen(ct, direct);
   }
 
   void Listen(AtomIndex atom, SumTriggerAction* const ct) {
@@ -220,7 +225,7 @@ class Store : public Constraint {
   }
 
   void Register(CountInRange* const ct) {
-    sum_less_constant_constraints_.push_back(ct);
+    count_in_range_constraints_.push_back(ct);
   }
 
   void Register(SumTriggerAction* const ct) {
@@ -259,7 +264,7 @@ class Store : public Constraint {
   VectorMap<IntVar*> indices_;
   std::vector<Atom*> true_atoms_;
   std::vector<Atom*> false_atoms_;
-  std::vector<CountInRange*> sum_less_constant_constraints_;
+  std::vector<CountInRange*> count_in_range_constraints_;
   std::vector<SumTriggerAction*> sum_trigger_actions_constraints_;
 };
 
@@ -277,11 +282,12 @@ class CountInRange {
   void Post(Store* const store) {
     store->Register(this);
     for (int i = 0; i < vars_.size(); ++i) {
-      store->Listen(vars_[i], this);
+      store->Listen(vars_[i], this, true);
+      store->Listen(-vars_[i], this, false);
     }
   }
 
-  void Flip(Store* const store, AtomIndex index) {
+  void Flip(Store* const store, AtomIndex index, bool direct) {
     pos_count_.Incr(store->solver());
     if (pos_count_.Value() > count_max_) {
       store->solver()->Fail();
@@ -361,8 +367,11 @@ void Atom::Flip(Store* const store) {
   for (int i = 0; i < actions_.size(); ++i) {
     store->Flip(actions_[i]);
   }
-  for (int i = 0; i < sum_less_constant_constraints_.size(); ++i) {
-    sum_less_constant_constraints_[i]->Flip(store, atom_index_);
+  for (int i = 0; i < direct_count_in_range_constraints_.size(); ++i) {
+    direct_count_in_range_constraints_[i]->Flip(store, atom_index_, true);
+  }
+  for (int i = 0; i < reverse_count_in_range_constraints_.size(); ++i) {
+    reverse_count_in_range_constraints_[i]->Flip(store, atom_index_, false);
   }
   for (int i = 0; i < sum_trigger_actions_constraints_.size(); ++i) {
     sum_trigger_actions_constraints_[i]->Flip(store, atom_index_);
@@ -370,7 +379,7 @@ void Atom::Flip(Store* const store) {
 }
 
 Store::~Store() {
-  STLDeleteElements(&sum_less_constant_constraints_);
+  STLDeleteElements(&count_in_range_constraints_);
   STLDeleteElements(&sum_trigger_actions_constraints_);
 }
 }  // namespace
