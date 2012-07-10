@@ -427,7 +427,7 @@ bool AddBoolAndArrayEqVar(Store* const store,
 
 }
 
-bool AddBoolOrArrayEqualTrye(Store* const store,
+bool AddBoolOrArrayEqualTrue(Store* const store,
                              const std::vector<IntVar*>& vars) {
   if (!store->Check(vars)) {
     return false;
@@ -436,6 +436,6 @@ bool AddBoolOrArrayEqualTrye(Store* const store,
   for (int i = 0; i < vars.size(); ++i) {
     atoms[i] = store->Index(vars[i]);
   }
-
+  return false;
 }
 }  // namespace operations_research
