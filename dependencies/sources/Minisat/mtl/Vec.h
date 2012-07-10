@@ -116,7 +116,7 @@ template<class T> void vec<T>::capacity(int min_cap) {
   if (cap >= min_cap) return;
   int add = imax((min_cap - cap + 1) & ~1, ((cap >> 1) + 2) & ~1);
   // NOTE: grow by approximately 3/2
-  if (add > INT_MAX - cap ||
+  if (add > kint32max - cap ||
       ((data = (T*)::realloc(data, (cap += add) * sizeof(T))) == NULL) &&
       errno == ENOMEM)
     throw OutOfMemoryException();

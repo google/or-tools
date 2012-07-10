@@ -23,6 +23,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include <math.h>
+#include <stdio.h>
 
 #include "base/commandlineflags.h"
 #include "mtl/Sort.h"
@@ -577,14 +578,15 @@ void Solver::rebuildOrderHeap()
 }
 
 
-/*_________________________________________________________________________________________________
+/*_____________________________________________________________________________
   |
   |  simplify : [void]  ->  [bool]
   |
   |  Description:
-  |    Simplify the clause database according to the current top-level assigment. Currently, the only
-  |    thing done here is the removal of satisfied clauses, but more things can be put here.
-  |________________________________________________________________________________________________@*/
+  |    Simplify the clause database according to the current top-level
+  |     assigment. Currently, the only thing done here is the removal
+  |     of satisfied clauses, but more things can be put here.
+  |__________________________________________________________________________@*/
 bool Solver::simplify()
 {
   assert(decisionLevel() == 0);
@@ -603,13 +605,14 @@ bool Solver::simplify()
   rebuildOrderHeap();
 
   simpDB_assigns = nAssigns();
-  simpDB_props   = clauses_literals + learnts_literals;   // (shouldn't depend on stats really, but it will do for now)
+  // (shouldn't depend on stats really, but it will do for now)
+  simpDB_props   = clauses_literals + learnts_literals;
 
   return true;
 }
 
 
-/*_________________________________________________________________________________________________
+/*_____________________________________________________________________________
   |
   |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
   |
@@ -618,12 +621,13 @@ bool Solver::simplify()
   |    NOTE! Use negative value for 'nof_conflicts' indicate infinity.
   |
   |  Output:
-  |    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
-  |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
-  |    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
-  |________________________________________________________________________________________________@*/
-lbool Solver::search(int nof_conflicts)
-{
+  |    'l_True' if a partial assigment that is consistent with respect to
+  |        the clauseset is found. If all variables are decision variables,
+  |        this means that the clause set is satisfiable. 'l_False' if the
+  |        clause set is unsatisfiable. 'l_Undef' if the bound on number
+  |        of conflicts is reached.
+  |_________________________________________________________________________@*/
+lbool Solver::search(int nof_conflicts) {
   assert(ok);
   int         backtrack_level;
   int         conflictC = 0;
@@ -689,10 +693,10 @@ lbool Solver::search(int nof_conflicts)
         if (value(p) == l_True){
           // Dummy decision level:
           newDecisionLevel();
-        }else if (value(p) == l_False){
+        } else if (value(p) == l_False){
           analyzeFinal(~p, conflict);
           return l_False;
-        }else{
+        } else {
           next = p;
           break;
         }
@@ -796,28 +800,14 @@ lbool Solver::solve_()
     // Extend & copy model:
     model.growTo(nVars());
     for (int i = 0; i < nVars(); i++) model[i] = value(i);
-  }else if (status == l_False && conflict.size() == 0)
+  } else if (status == l_False && conflict.size() == 0)
     ok = false;
 
   cancelUntil(0);
   return status;
 }
 
-//=================================================================================================
-// Writing CNF to DIMACS:
-//
-// FIXME: this needs to be rewritten completely.
-
-static Var mapVar(Var x, vec<Var>& map, Var& max)
-{
-  if (map.size() <= x || map[x] == -1){
-    map.growTo(x+1, -1);
-    map[x] = max++;
-  }
-  return map[x];
-}
-
-//=================================================================================================
+//==============================================================================
 // Garbage Collection methods:
 
 void Solver::relocAll(ClauseAllocator& to)
@@ -840,7 +830,8 @@ void Solver::relocAll(ClauseAllocator& to)
   for (int i = 0; i < trail.size(); i++){
     Var v = var(trail[i]);
 
-    if (reason(v) != CRef_Undef && (ca[reason(v)].reloced() || locked(ca[reason(v)])))
+    if (reason(v) != CRef_Undef &&
+        (ca[reason(v)].reloced() || locked(ca[reason(v)])))
       ca.reloc(vardata[v].reason, to);
   }
 
@@ -856,8 +847,7 @@ void Solver::relocAll(ClauseAllocator& to)
 }
 
 
-void Solver::garbageCollect()
-{
+void Solver::garbageCollect() {
   // Initialize the next region to a size corresponding to the
   // estimated utilization degree. This is not precise but should
   // avoid some unnecessary reallocations for the new region:
