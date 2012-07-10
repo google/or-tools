@@ -6652,4 +6652,24 @@ bool Solver::IsADifference(IntExpr* expr,
   }
   return false;
 }
+
+bool Solver::IsBooleanVar(IntVar* const var,
+                          IntVar** inner_var,
+                          bool* is_negated) const {
+  if (var->VarType() == BOOLEAN_VAR) {
+    *inner_var = var;
+    *is_negated = false;
+    return true;
+  } else if (var->VarType() == CST_SUB_VAR) {
+    SubCstIntVar* const sub_var = dynamic_cast<SubCstIntVar*>(var);
+    if (sub_var != NULL &&
+        sub_var->Constant() == 1 &&
+        sub_var->SubVar()->VarType() == BOOLEAN_VAR) {
+      *is_negated = true;
+      *inner_var = sub_var->SubVar();
+      return true;
+    }
+  }
+  return false;
+}
 }   // namespace operations_research

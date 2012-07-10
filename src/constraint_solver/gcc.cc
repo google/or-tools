@@ -729,7 +729,7 @@ class GccConstraint : public Constraint {
         w = i;
       }
     }
-    hall_[w] = active_size_ + 1;;
+    hall_[w] = active_size_ + 1;
 
     for (int64 i = size_; --i>=0;) { // visit intervals in decreasing min order
       // Get interval bounds_

@@ -2789,6 +2789,9 @@ class Solver {
   template<class> friend class SimpleRevFIFO;
   template<class K, class V> friend class RevImmutableMultiMap;
 #endif
+  bool IsBooleanVar(IntVar* const var,
+                    IntVar** sub_var,
+                    bool* is_negated) const;
 
  private:
   void Init();  // Initialization. To be called by the constructors only.

@@ -27,6 +27,7 @@
 #include "base/logging.h"
 #include "base/map-util.h"
 #include "base/scoped_ptr.h"
+#include "base/stl_util.h"
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
@@ -36,6 +37,10 @@
 namespace operations_research {
 namespace {
 DEFINE_INT_TYPE(AtomIndex, int);
+
+class Store;
+class SumLessConstant;
+class SumTriggerAction;
 
 const static AtomIndex kFailAtom = AtomIndex(0);
 
@@ -48,7 +53,7 @@ template <class T> class UnorderedRevArray {
 
   ~UnorderedRevArray() {}
 
-  int Size() const { return num_elements_.Value(); }
+  int size() const { return num_elements_.Value(); }
 
   const T& operator[](int index) const {
     return Element(index);
@@ -79,7 +84,7 @@ template <class T> class UnorderedRevArray {
     }
   }
 
-  void Clear(Solver* const solver) {
+  void clear(Solver* const solver) {
     num_elements_.SetValue(solver, 0);
   }
 
@@ -95,10 +100,6 @@ template <class T> class UnorderedRevArray {
   std::vector<T> elements_; // set of elements.
   NumericalRev<int> num_elements_; // number of elements in the set.
 };
-
-class Store;
-class SumLessConstant;
-class SumTriggerAction;
 
 class Atom {
  public:
@@ -139,7 +140,7 @@ class Store : public Constraint {
  public:
   Store(Solver* const solver) : Constraint(solver) {}
 
-  ~Store() {}
+  ~Store();
 
   AtomIndex TrueIndex(IntVar* const var) {
     int raw_index = indices_.Add(var);
@@ -152,6 +153,10 @@ class Store : public Constraint {
 
   AtomIndex FalseIndex(IntVar* const var) {
     return -TrueIndex(var);
+  }
+
+  AtomIndex Index(IntVar* const var, bool negated) {
+    return negated ? FalseIndex(var) : TrueIndex(var);
   }
 
   void VariableBound(int index) {
@@ -174,6 +179,10 @@ class Store : public Constraint {
     FindAtom(atom)->StopListening(solver(), ct);
   }
 
+  void AddFlipAction(AtomIndex source, AtomIndex destination) {
+    FindAtom(source)->AddFlipAction(destination);
+  }
+
   void Flip(AtomIndex atom) {
     if (atom == kFailAtom || IsFlipped(-atom)) {
       solver()->Fail();
@@ -188,6 +197,14 @@ class Store : public Constraint {
     } else {
       return FindAtom(atom)->IsFlipped();
     }
+  }
+
+  void Register(SumLessConstant* const ct) {
+    sum_less_constant_constraints_.push_back(ct);
+  }
+
+  void Register(SumTriggerAction* const ct) {
+    sum_trigger_actions_constraints_.push_back(ct);
   }
 
   virtual void Post() {
@@ -222,6 +239,8 @@ class Store : public Constraint {
   VectorMap<IntVar*> indices_;
   std::vector<Atom*> true_atoms_;
   std::vector<Atom*> false_atoms_;
+  std::vector<SumLessConstant*> sum_less_constant_constraints_;
+  std::vector<SumTriggerAction*> sum_trigger_actions_constraints_;
 };
 
 class SumLessConstant {
@@ -234,6 +253,7 @@ class SumLessConstant {
   ~SumLessConstant() {}
 
   void Post(Store* const store) {
+    store->Register(this);
     for (int i = 0; i < vars_.size(); ++i) {
       store->Listen(vars_[i], this);
     }
@@ -278,6 +298,7 @@ class SumTriggerAction {
   ~SumTriggerAction() {}
 
   void Post(Store* const store) {
+    store->Register(this);
     for (int i = 0; i < vars_.size(); ++i) {
       store->Listen(vars_[i], this);
     }
@@ -319,13 +340,72 @@ void Atom::Flip(Store* const store) {
   for (int i = 0; i < sum_less_constant_constraints_.size(); ++i) {
     sum_less_constant_constraints_[i]->Flip(store, atom_index_);
   }
-  for (int i = 0; i < sum_trigger_actions_constraints_.Size(); ++i) {
+  for (int i = 0; i < sum_trigger_actions_constraints_.size(); ++i) {
     sum_trigger_actions_constraints_[i]->Flip(store, atom_index_);
   }
 }
+
+Store::~Store() {
+  STLDeleteElements(&sum_less_constant_constraints_);
+  STLDeleteElements(&sum_trigger_actions_constraints_);
+}
 }  // namespace
 
+bool AddBoolEq(Store* const store, IntVar* const left, IntVar* const right) {
+  IntVar* left_var = NULL;
+  bool left_negated = false;
+  if (!store->solver()->IsBooleanVar(left, &left_var, &left_negated)) {
+    return false;
+  }
+  IntVar* right_var = NULL;
+  bool right_negated = false;
+  if (!store->solver()->IsBooleanVar(right, &right_var, &right_negated)) {
+    return false;
+  }
+  AtomIndex left_atom = store->Index(left_var, left_negated);
+  AtomIndex right_atom = store->Index(right_var, right_negated);
+  store->AddFlipAction(left_atom, right_atom);
+  store->AddFlipAction(right_atom, left_atom);
+  store->AddFlipAction(-left_atom, -right_atom);
+  store->AddFlipAction(-right_atom, -left_atom);
+  return true;
+}
 
+bool AddBoolLe(Store* const store, IntVar* const left, IntVar* const right) {
+  IntVar* left_var = NULL;
+  bool left_negated = false;
+  if (!store->solver()->IsBooleanVar(left, &left_var, &left_negated)) {
+    return false;
+  }
+  IntVar* right_var = NULL;
+  bool right_negated = false;
+  if (!store->solver()->IsBooleanVar(right, &right_var, &right_negated)) {
+    return false;
+  }
+  AtomIndex left_atom = store->Index(left_var, left_negated);
+  AtomIndex right_atom = store->Index(right_var, right_negated);
+  store->AddFlipAction(left_atom, right_atom);
+  store->AddFlipAction(-right_atom, -left_atom);
+  return true;
+}
 
-
+bool AddBoolNot(Store* const store, IntVar* const left, IntVar* const right) {
+  IntVar* left_var = NULL;
+  bool left_negated = false;
+  if (!store->solver()->IsBooleanVar(left, &left_var, &left_negated)) {
+    return false;
+  }
+  IntVar* right_var = NULL;
+  bool right_negated = false;
+  if (!store->solver()->IsBooleanVar(right, &right_var, &right_negated)) {
+    return false;
+  }
+  AtomIndex left_atom = store->Index(left_var, left_negated);
+  AtomIndex right_atom = store->Index(right_var, right_negated);
+  store->AddFlipAction(left_atom, -right_atom);
+  store->AddFlipAction(right_atom, -left_atom);
+  store->AddFlipAction(-left_atom, right_atom);
+  store->AddFlipAction(-right_atom, left_atom);
+  return true;
+}
 }  // namespace operations_research
