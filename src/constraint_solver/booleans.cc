@@ -34,6 +34,8 @@
 #include "util/bitset.h"
 #include "util/const_int_array.h"
 
+#include "core/Solver.cc"
+
 namespace operations_research {
 namespace {
 DEFINE_INT_TYPE(AtomIndex, int);
@@ -261,6 +263,7 @@ class Store : public Constraint {
     }
   }
 
+  Minisat::Solver minisat_;
   VectorMap<IntVar*> indices_;
   std::vector<Atom*> true_atoms_;
   std::vector<Atom*> false_atoms_;

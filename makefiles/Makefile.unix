@@ -42,6 +42,8 @@ PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
 SPARSEHASH_INC = -I$(UNIX_SPARSEHASH_DIR)/include
 # Tinythread
 THREAD_INC = -I$(OR_ROOT)dependencies/sources/TinyThread++-1.0/source
+# Minisat
+MINISAT_INC = -I$(OR_ROOT)dependencies/sources/Minisat
 
 # Define UNIX_CLP_DIR if unset and if UNIX_CBC_DIR is set.
 ifdef UNIX_CBC_DIR
@@ -197,8 +199,8 @@ ifeq ($(PLATFORM),MACOSX)
   endif
 endif  # MAC OS X
 
-CFLAGS = $(SYSCFLAGS) $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH)  $(THREAD_INC)\
-        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(SLM_INC)  $(SPARSEHASH_INC)
+CFLAGS = $(SYSCFLAGS) $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH)  $(THREAD_INC) $(MINISAT_INC)\
+	-Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(SLM_INC)  $(SPARSEHASH_INC)
 
 JNIFLAGS = $(SYSCFLAGS) $(JNIDEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(SLM_INC)
