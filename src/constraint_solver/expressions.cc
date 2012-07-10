@@ -6653,15 +6653,15 @@ bool Solver::IsADifference(IntExpr* expr,
   return false;
 }
 
-bool Solver::IsBooleanVar(IntVar* const var,
+bool Solver::IsBooleanVar(IntExpr* const expr,
                           IntVar** inner_var,
                           bool* is_negated) const {
-  if (var->VarType() == BOOLEAN_VAR) {
-    *inner_var = var;
+  if (expr->IsVar() && expr->Var()->VarType() == BOOLEAN_VAR) {
+    *inner_var = expr->Var();
     *is_negated = false;
     return true;
-  } else if (var->VarType() == CST_SUB_VAR) {
-    SubCstIntVar* const sub_var = dynamic_cast<SubCstIntVar*>(var);
+  } else if (expr->IsVar() && expr->Var()->VarType() == CST_SUB_VAR) {
+    SubCstIntVar* const sub_var = dynamic_cast<SubCstIntVar*>(expr);
     if (sub_var != NULL &&
         sub_var->Constant() == 1 &&
         sub_var->SubVar()->VarType() == BOOLEAN_VAR) {

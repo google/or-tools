@@ -2789,7 +2789,7 @@ class Solver {
   template<class> friend class SimpleRevFIFO;
   template<class K, class V> friend class RevImmutableMultiMap;
 #endif
-  bool IsBooleanVar(IntVar* const var,
+  bool IsBooleanVar(IntExpr* const expr,
                     IntVar** sub_var,
                     bool* is_negated) const;
 

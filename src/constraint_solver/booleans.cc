@@ -39,7 +39,7 @@ namespace {
 DEFINE_INT_TYPE(AtomIndex, int);
 
 class Store;
-class SumLessConstant;
+class CountInRange;
 class SumTriggerAction;
 
 const static AtomIndex kFailAtom = AtomIndex(0);
@@ -106,7 +106,7 @@ class Atom {
   Atom(AtomIndex index) : atom_index_(index) {}
   ~Atom() {}
 
-  void Listen(SumLessConstant* const ct) {
+  void Listen(CountInRange* const ct) {
     sum_less_constant_constraints_.push_back(ct);
   }
 
@@ -130,7 +130,7 @@ class Atom {
 
  private:
   const AtomIndex atom_index_;
-  std::vector<SumLessConstant*> sum_less_constant_constraints_;
+  std::vector<CountInRange*> sum_less_constant_constraints_;
   UnorderedRevArray<SumTriggerAction*> sum_trigger_actions_constraints_;
   std::vector<AtomIndex> actions_;
   RevSwitch flipped_;
@@ -141,6 +141,30 @@ class Store : public Constraint {
   Store(Solver* const solver) : Constraint(solver) {}
 
   ~Store();
+
+  bool Check(IntExpr* const expr) const {
+    IntVar* expr_var = NULL;
+    bool expr_negated = false;
+    return solver()->IsBooleanVar(expr, &expr_var, &expr_negated);
+  }
+
+  bool Check(const std::vector<IntVar*>& vars) const {
+    for (int i = 0; i < vars.size(); ++i) {
+      if (!Check(vars[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  AtomIndex Index(IntExpr* const expr) {
+    IntVar* expr_var = NULL;
+    bool expr_negated = false;
+    if (!solver()->IsBooleanVar(expr, &expr_var, &expr_negated)) {
+      return kFailAtom;
+    }
+    return expr_negated ? FalseIndex(expr_var) : TrueIndex(expr_var);
+  }
 
   AtomIndex TrueIndex(IntVar* const var) {
     int raw_index = indices_.Add(var);
@@ -155,10 +179,6 @@ class Store : public Constraint {
     return -TrueIndex(var);
   }
 
-  AtomIndex Index(IntVar* const var, bool negated) {
-    return negated ? FalseIndex(var) : TrueIndex(var);
-  }
-
   void VariableBound(int index) {
     if (indices_[index]->Min() == 0) {
       Flip(AtomIndex(-1 - index));
@@ -167,7 +187,7 @@ class Store : public Constraint {
     }
   }
 
-  void Listen(AtomIndex atom, SumLessConstant* const ct) {
+  void Listen(AtomIndex atom, CountInRange* const ct) {
     FindAtom(atom)->Listen(ct);
   }
 
@@ -199,7 +219,7 @@ class Store : public Constraint {
     }
   }
 
-  void Register(SumLessConstant* const ct) {
+  void Register(CountInRange* const ct) {
     sum_less_constant_constraints_.push_back(ct);
   }
 
@@ -239,18 +259,20 @@ class Store : public Constraint {
   VectorMap<IntVar*> indices_;
   std::vector<Atom*> true_atoms_;
   std::vector<Atom*> false_atoms_;
-  std::vector<SumLessConstant*> sum_less_constant_constraints_;
+  std::vector<CountInRange*> sum_less_constant_constraints_;
   std::vector<SumTriggerAction*> sum_trigger_actions_constraints_;
 };
 
-class SumLessConstant {
+class CountInRange {
  public:
-  SumLessConstant(std::vector<AtomIndex>& vars, int constant)
+  CountInRange(std::vector<AtomIndex>& vars, int count_min, int count_max)
       : vars_(vars),
-        constant_(constant),
-        sum_(0) {}
+        count_min_(count_min),
+        count_max_(count_max),
+        pos_count_(0),
+        neg_count_(0) {}
 
-  ~SumLessConstant() {}
+  ~CountInRange() {}
 
   void Post(Store* const store) {
     store->Register(this);
@@ -260,10 +282,10 @@ class SumLessConstant {
   }
 
   void Flip(Store* const store, AtomIndex index) {
-    sum_.Incr(store->solver());
-    if (sum_.Value() > constant_) {
+    pos_count_.Incr(store->solver());
+    if (pos_count_.Value() > count_max_) {
       store->solver()->Fail();
-    } else if (sum_.Value() == constant_) {
+    } else if (pos_count_.Value() == count_max_) {
       UnflipAllPending(store);
     }
   }
@@ -281,8 +303,10 @@ class SumLessConstant {
 
  private:
   std::vector<AtomIndex> vars_;
-  const int constant_;
-  NumericalRev<int> sum_;
+  const int count_min_;
+  const int count_max_;
+  NumericalRev<int> pos_count_;
+  NumericalRev<int> neg_count_;
 };
 
 class SumTriggerAction {
@@ -351,19 +375,12 @@ Store::~Store() {
 }
 }  // namespace
 
-bool AddBoolEq(Store* const store, IntVar* const left, IntVar* const right) {
-  IntVar* left_var = NULL;
-  bool left_negated = false;
-  if (!store->solver()->IsBooleanVar(left, &left_var, &left_negated)) {
+bool AddBoolEq(Store* const store, IntExpr* const left, IntExpr* const right) {
+  if (!store->Check(left) || !store->Check(right)) {
     return false;
   }
-  IntVar* right_var = NULL;
-  bool right_negated = false;
-  if (!store->solver()->IsBooleanVar(right, &right_var, &right_negated)) {
-    return false;
-  }
-  AtomIndex left_atom = store->Index(left_var, left_negated);
-  AtomIndex right_atom = store->Index(right_var, right_negated);
+  AtomIndex left_atom = store->Index(left);
+  AtomIndex right_atom = store->Index(right);
   store->AddFlipAction(left_atom, right_atom);
   store->AddFlipAction(right_atom, left_atom);
   store->AddFlipAction(-left_atom, -right_atom);
@@ -371,41 +388,45 @@ bool AddBoolEq(Store* const store, IntVar* const left, IntVar* const right) {
   return true;
 }
 
-bool AddBoolLe(Store* const store, IntVar* const left, IntVar* const right) {
-  IntVar* left_var = NULL;
-  bool left_negated = false;
-  if (!store->solver()->IsBooleanVar(left, &left_var, &left_negated)) {
+bool AddBoolLe(Store* const store, IntExpr* const left, IntExpr* const right) {
+  if (!store->Check(left) || !store->Check(right)) {
     return false;
   }
-  IntVar* right_var = NULL;
-  bool right_negated = false;
-  if (!store->solver()->IsBooleanVar(right, &right_var, &right_negated)) {
-    return false;
-  }
-  AtomIndex left_atom = store->Index(left_var, left_negated);
-  AtomIndex right_atom = store->Index(right_var, right_negated);
+  AtomIndex left_atom = store->Index(left);
+  AtomIndex right_atom = store->Index(right);
   store->AddFlipAction(left_atom, right_atom);
   store->AddFlipAction(-right_atom, -left_atom);
   return true;
 }
 
-bool AddBoolNot(Store* const store, IntVar* const left, IntVar* const right) {
-  IntVar* left_var = NULL;
-  bool left_negated = false;
-  if (!store->solver()->IsBooleanVar(left, &left_var, &left_negated)) {
+bool AddBoolNot(Store* const store, IntExpr* const left, IntExpr* const right) {
+  if (!store->Check(left) || !store->Check(right)) {
     return false;
   }
-  IntVar* right_var = NULL;
-  bool right_negated = false;
-  if (!store->solver()->IsBooleanVar(right, &right_var, &right_negated)) {
-    return false;
-  }
-  AtomIndex left_atom = store->Index(left_var, left_negated);
-  AtomIndex right_atom = store->Index(right_var, right_negated);
+  AtomIndex left_atom = store->Index(left);
+  AtomIndex right_atom = store->Index(right);
   store->AddFlipAction(left_atom, -right_atom);
   store->AddFlipAction(right_atom, -left_atom);
   store->AddFlipAction(-left_atom, right_atom);
   store->AddFlipAction(-right_atom, left_atom);
   return true;
+}
+
+bool AddBoolAndArrayEqVar(Store* const store,
+                          const std::vector<IntVar*>& vars,
+                          IntVar* const target) {
+
+}
+
+bool AddBoolOrArrayEqualTrye(Store* const store,
+                             const std::vector<IntVar*>& vars) {
+  if (!store->Check(vars)) {
+    return false;
+  }
+  std::vector<AtomIndex> atoms(vars.size());
+  for (int i = 0; i < vars.size(); ++i) {
+    atoms[i] = store->Index(vars[i]);
+  }
+
 }
 }  // namespace operations_research
