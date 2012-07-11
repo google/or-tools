@@ -46,9 +46,7 @@ DEFINE_double(restart_inc, 2, "Restart interval increase factor");
 DEFINE_double(garbage_frac, 0.20, "The fraction of wasted memory allowed "
               "before a garbage collection is triggered");
 
-using namespace Minisat;
-
-
+namespace Minisat {
 //=============================================================================
 // Constructor/Destructor:
 
@@ -864,3 +862,4 @@ void Solver::garbageCollect() {
            ClauseAllocator::Unit_Size);
   to.moveTo(ca);
 }
+}  // namespace Minisat

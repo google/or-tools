@@ -758,6 +758,12 @@ $(OBJ_DIR)/visitor_test.$O:$(EX_DIR)/tests/visitor_test.cc $(SRC_DIR)/constraint
 $(BIN_DIR)/visitor_test$E: $(CP_DEPS) $(OBJ_DIR)/visitor_test.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/visitor_test.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)visitor_test$E
 
+$(OBJ_DIR)/boolean_test.$O:$(EX_DIR)/tests/boolean_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/boolean_test.cc $(OBJ_OUT)boolean_test.$O
+
+$(BIN_DIR)/boolean_test$E: $(CP_DEPS) $(OBJ_DIR)/boolean_test.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/boolean_test.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)boolean_test$E
+
 # Linear Programming Examples
 
 $(OBJ_DIR)/strawberry_fields_with_column_generation.$O: $(EX_DIR)/cpp/strawberry_fields_with_column_generation.cc $(SRC_DIR)/linear_solver/linear_solver.h

@@ -37,11 +37,11 @@
 #include "core/Solver.cc"
 
 namespace operations_research {
-namespace {
-
 class SatPropagator : public Constraint {
  public:
-  SatPropagator(Solver* const solver) : Constraint(solver) {}
+  SatPropagator(Solver* const solver)
+  : Constraint(solver),
+    num_bound_literals_(0) {}
 
   ~SatPropagator() {}
 
@@ -66,21 +66,36 @@ class SatPropagator : public Constraint {
     if (!solver()->IsBooleanVar(expr, &expr_var, &expr_negated)) {
       return Minisat::lit_Error;
     }
+    VLOG(1) << "SAT: Parse " << expr->DebugString() << " to "
+            << expr_var->DebugString() << "/" << expr_negated;
     if (ContainsKey(indices_, expr_var)) {
       return Minisat::mkLit(indices_[expr_var], expr_negated);
     } else {
       const Minisat::Var var = minisat_.newVar(true, true);
       vars_.push_back(expr_var);
-      return Minisat::mkLit(var, expr_negated);
+      indices_[expr_var] = var;
+      Minisat::Lit lit = Minisat::mkLit(var, expr_negated);
+      VLOG(1) << "Created var = " << Minisat::toInt(var)
+              << ", lit = " << Minisat::toInt(lit);
+      return lit;
     }
   }
 
   void VariableBound(int index) {
-    // if (indices_[index]->Min() == 0) {
-    //   Flip(Minisat::Var(-1 - index));
-    // } else {
-    //   Flip(Minisat::Var(1 + index));
-    // }
+    Minisat::Var var(index);
+    Minisat::Lit lit = Minisat::mkLit(var, vars_[index]->Value());
+    VLOG(1) << "Assign " << vars_[index]->DebugString()
+            << ", enqueue lit = " << Minisat::toInt(lit);
+    if (num_bound_literals_.Value() < bound_literals_.size()) {
+      bound_literals_.shrink(
+          bound_literals_.size() - num_bound_literals_.Value());
+    }
+    num_bound_literals_.Incr(solver());
+    bound_literals_.push(lit);
+    if (!minisat_.solve(bound_literals_)) {
+      VLOG(1) << "  - failure detected";
+      solver()->Fail();
+    }
   }
 
   virtual void Post() {
@@ -136,8 +151,9 @@ class SatPropagator : public Constraint {
   Minisat::Solver minisat_;
   std::vector<IntVar*> vars_;
   hash_map<IntVar*, Minisat::Var> indices_;
+  Minisat::vec<Minisat::Lit> bound_literals_;
+  NumericalRev<int> num_bound_literals_;
 };
-}  // namespace
 
 bool AddBoolEq(SatPropagator* const sat,
                IntExpr* const left,
@@ -235,5 +251,9 @@ bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
   }
   sat->AddClause(lits);
   return false;
+}
+
+SatPropagator* MakeSatPropagator(Solver* const solver) {
+  return solver->RevAlloc(new SatPropagator(solver));
 }
 }  // namespace operations_research
