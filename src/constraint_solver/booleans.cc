@@ -86,12 +86,9 @@ class SatPropagator : public Constraint {
     Minisat::Lit lit = Minisat::mkLit(var, vars_[index]->Value());
     VLOG(1) << "Assign " << vars_[index]->DebugString()
             << ", enqueue lit = " << Minisat::toInt(lit);
-    if (num_bound_literals_.Value() < bound_literals_.size()) {
-      bound_literals_.shrink(
-          bound_literals_.size() - num_bound_literals_.Value());
-    }
+    bound_literals_.resize(num_bound_literals_.Value());
     num_bound_literals_.Incr(solver());
-    bound_literals_.push(lit);
+    bound_literals_.push_back(lit);
     if (!minisat_.solve(bound_literals_)) {
       VLOG(1) << "  - failure detected";
       solver()->Fail();
@@ -151,7 +148,7 @@ class SatPropagator : public Constraint {
   Minisat::Solver minisat_;
   std::vector<IntVar*> vars_;
   hash_map<IntVar*, Minisat::Var> indices_;
-  Minisat::vec<Minisat::Lit> bound_literals_;
+  std::vector<Minisat::Lit> bound_literals_;
   NumericalRev<int> num_bound_literals_;
 };
 
