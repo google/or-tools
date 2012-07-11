@@ -52,7 +52,6 @@ using namespace Minisat;
 //=============================================================================
 // Constructor/Destructor:
 
-
 Solver::Solver() :
 
     // Parameters (user settable):
@@ -237,8 +236,7 @@ void Solver::cancelUntil(int level) {
 // Major methods:
 
 
-Lit Solver::pickBranchLit()
-{
+Lit Solver::pickBranchLit() {
   Var next = var_Undef;
 
   // Random decision:
@@ -255,7 +253,9 @@ Lit Solver::pickBranchLit()
     } else
       next = order_heap.removeMin();
 
-  return next == var_Undef ? lit_Undef : mkLit(next, rnd_pol ? drand(random_seed) < 0.5 : polarity[next]);
+  return next == var_Undef ?
+      lit_Undef :
+      mkLit(next, rnd_pol ? drand(random_seed) < 0.5 : polarity[next]);
 }
 
 
@@ -314,7 +314,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
     seen[var(p)] = 0;
     pathC--;
 
-  }while (pathC > 0);
+  } while (pathC > 0);
   out_learnt[0] = ~p;
 
   // Simplify conflict clause:
@@ -370,15 +370,15 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
     out_btlevel       = level(var(p));
   }
 
-  for (int j = 0; j < analyze_toclear.size(); j++) seen[var(analyze_toclear[j])] = 0;    // ('seen[]' is now cleared)
+  for (int j = 0; j < analyze_toclear.size(); j++)
+    seen[var(analyze_toclear[j])] = 0;    // ('seen[]' is now cleared)
 }
 
 
 // Check if 'p' can be removed. 'abstract_levels' is used to abort
 // early if the algorithm is visiting literals at levels that cannot
 // be removed later.
-bool Solver::litRedundant(Lit p, uint32 abstract_levels)
-{
+bool Solver::litRedundant(Lit p, uint32_t abstract_levels) {
   analyze_stack.clear(); analyze_stack.push(p);
   int top = analyze_toclear.size();
   while (analyze_stack.size() > 0) {
@@ -388,7 +388,8 @@ bool Solver::litRedundant(Lit p, uint32 abstract_levels)
     for (int i = 1; i < c.size(); i++) {
       Lit p  = c[i];
       if (!seen[var(p)] && level(var(p)) > 0) {
-        if (reason(var(p)) != CRef_Undef && (abstractLevel(var(p)) & abstract_levels) != 0) {
+        if (reason(var(p)) != CRef_Undef &&
+            (abstractLevel(var(p)) & abstract_levels) != 0) {
           seen[var(p)] = 1;
           analyze_stack.push(p);
           analyze_toclear.push(p);
@@ -416,8 +417,7 @@ bool Solver::litRedundant(Lit p, uint32 abstract_levels)
   |    Calculates the (possibly empty) set of assumptions that led to the
   |       assignment of 'p', and stores the result in 'out_conflict'.
   |__________________________________________________________________________@*/
-void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
-{
+void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
   out_conflict.clear();
   out_conflict.push(p);
 
@@ -445,15 +445,12 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
   seen[var(p)] = 0;
 }
 
-
-void Solver::uncheckedEnqueue(Lit p, CRef from)
-{
+void Solver::uncheckedEnqueue(Lit p, CRef from) {
   assert(value(p) == l_Undef);
   assigns[var(p)] = lbool(!sign(p));
   vardata[var(p)] = mkVarData(from, decisionLevel());
   trail.push_(p);
 }
-
 
 /*______________________________________________________________________________
   |
@@ -467,8 +464,7 @@ void Solver::uncheckedEnqueue(Lit p, CRef from)
   |    Post-conditions:
   |      * the propagation queue is empty, even if there was a conflict.
   |__________________________________________________________________________@*/
-CRef Solver::propagate()
-{
+CRef Solver::propagate() {
   CRef    confl     = CRef_Undef;
   int     num_props = 0;
   watches.cleanAll();
@@ -529,7 +525,6 @@ CRef Solver::propagate()
   return confl;
 }
 
-
 /*____________________________________________________________________________
   |
   |  reduceDB : ()  ->  [void]
@@ -565,9 +560,7 @@ void Solver::reduceDB()
   checkGarbage();
 }
 
-
-void Solver::removeSatisfied(vec<CRef>& cs)
-{
+void Solver::removeSatisfied(vec<CRef>& cs) {
   int i, j;
   for (i = j = 0; i < cs.size(); i++) {
     Clause& c = ca[cs[i]];
@@ -579,16 +572,13 @@ void Solver::removeSatisfied(vec<CRef>& cs)
   cs.shrink(i - j);
 }
 
-
-void Solver::rebuildOrderHeap()
-{
+void Solver::rebuildOrderHeap() {
   vec<Var> vs;
   for (Var v = 0; v < nVars(); v++)
     if (decision[v] && value(v) == l_Undef)
       vs.push(v);
   order_heap.build(vs);
 }
-
 
 /*_____________________________________________________________________________
   |
@@ -599,8 +589,7 @@ void Solver::rebuildOrderHeap()
   |     assigment. Currently, the only thing done here is the removal
   |     of satisfied clauses, but more things can be put here.
   |__________________________________________________________________________@*/
-bool Solver::simplify()
-{
+bool Solver::simplify() {
   assert(decisionLevel() == 0);
 
   if (!ok || propagate() != CRef_Undef)

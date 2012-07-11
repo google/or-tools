@@ -38,9 +38,6 @@
 
 namespace operations_research {
 namespace {
-DEFINE_INT_TYPE(AtomIndex, int);
-
-const static AtomIndex kFailAtom = AtomIndex(0);
 
 class SatPropagator : public Constraint {
  public:
@@ -63,59 +60,90 @@ class SatPropagator : public Constraint {
     return true;
   }
 
-  AtomIndex Index(IntExpr* const expr) {
+  Minisat::Lit Literal(IntExpr* const expr) {
     IntVar* expr_var = NULL;
     bool expr_negated = false;
     if (!solver()->IsBooleanVar(expr, &expr_var, &expr_negated)) {
-      return kFailAtom;
+      return Minisat::lit_Error;
     }
-    const AtomIndex index = AtomIndex(indices_.Add(expr_var));
-    return expr_negated ? -index : index;
+    if (ContainsKey(indices_, expr_var)) {
+      return Minisat::mkLit(indices_[expr_var], expr_negated);
+    } else {
+      const Minisat::Var var = minisat_.newVar(true, true);
+      vars_.push_back(expr_var);
+      return Minisat::mkLit(var, expr_negated);
+    }
   }
 
   void VariableBound(int index) {
     // if (indices_[index]->Min() == 0) {
-    //   Flip(AtomIndex(-1 - index));
+    //   Flip(Minisat::Var(-1 - index));
     // } else {
-    //   Flip(AtomIndex(1 + index));
+    //   Flip(Minisat::Var(1 + index));
     // }
   }
 
   virtual void Post() {
-    for (int i = 0; i < indices_.size(); ++i) {
+    for (int i = 0; i < vars_.size(); ++i) {
       Demon* const d = MakeConstraintDemon1(solver(),
                                             this,
                                             &SatPropagator::VariableBound,
                                             "VariableBound",
-                                            i);
-      indices_[i]->WhenDomain(d);
+                                            indices_[vars_[i]]);
+      vars_[i]->WhenDomain(d);
     }
   }
 
   virtual void InitialPropagate() {
-    for (int i = 0; i < indices_.size(); ++i) {
-      if (indices_[i]->Bound()) {
-        VariableBound(i);
+    for (int i = 0; i < vars_.size(); ++i) {
+      IntVar* const var = vars_[i];
+      if (var->Bound()) {
+        VariableBound(indices_[var]);
       }
     }
   }
 
+  // Add a clause to the solver.
+  bool AddClause (const vec<Lit>& ps) {
+    return minisat_.addClause(ps);
+  }
+
+  // Add the empty clause, making the solver contradictory.
+  bool AddEmptyClause() {
+    return minisat_.addEmptyClause();
+  }
+
+  // Add a unit clause to the solver.
+  bool AddClause (Lit p) {
+    return minisat_.addClause(p);
+  }
+
+  // Add a binary clause to the solver.
+  bool AddClause (Lit p, Lit q) {
+    return minisat_.addClause(p, q);
+  }
+
+  // Add a ternary clause to the solver.
+  bool AddClause (Lit p, Lit q, Lit r) {
+    return minisat_.addClause(p, q, r);
+  }
+
  private:
   Minisat::Solver minisat_;
-  VectorMap<IntVar*> indices_;
+  std::vector<IntVar*> vars_;
+  hash_map<IntVar*, Minisat::Var> indices_;
 };
 }  // namespace
 
-bool AddBoolEq(SatPropagator* const sat, IntExpr* const left, IntExpr* const right) {
+bool AddBoolEq(SatPropagator* const sat,
+               IntExpr* const left,
+               IntExpr* const right) {
   if (!sat->Check(left) || !sat->Check(right)) {
     return false;
   }
-  AtomIndex left_atom = sat->Index(left);
-  AtomIndex right_atom = sat->Index(right);
-  // sat->AddFlipAction(left_atom, right_atom);
-  // sat->AddFlipAction(right_atom, left_atom);
-  // sat->AddFlipAction(-left_atom, -right_atom);
-  // sat->AddFlipAction(-right_atom, -left_atom);
+  Minisat::Lit left_lit = sat->Literal(left);
+  Minisat::Lit right_lit = sat->Literal(right);
+
   return true;
 }
 
@@ -123,10 +151,10 @@ bool AddBoolLe(SatPropagator* const sat, IntExpr* const left, IntExpr* const rig
   if (!sat->Check(left) || !sat->Check(right)) {
     return false;
   }
-  AtomIndex left_atom = sat->Index(left);
-  AtomIndex right_atom = sat->Index(right);
-  // sat->AddFlipAction(left_atom, right_atom);
-  // sat->AddFlipAction(-right_atom, -left_atom);
+  Minisat::Lit left_lit = sat->Literal(left);
+  Minisat::Lit right_lit = sat->Literal(right);
+  // sat->AddFlipAction(left_lit, right_lit);
+  // sat->AddFlipAction(-right_lit, -left_lit);
   return true;
 }
 
@@ -134,12 +162,12 @@ bool AddBoolNot(SatPropagator* const sat, IntExpr* const left, IntExpr* const ri
   if (!sat->Check(left) || !sat->Check(right)) {
     return false;
   }
-  AtomIndex left_atom = sat->Index(left);
-  AtomIndex right_atom = sat->Index(right);
-  // sat->AddFlipAction(left_atom, -right_atom);
-  // sat->AddFlipAction(right_atom, -left_atom);
-  // sat->AddFlipAction(-left_atom, right_atom);
-  // sat->AddFlipAction(-right_atom, left_atom);
+  Minisat::Lit left_lit = sat->Literal(left);
+  Minisat::Lit right_lit = sat->Literal(right);
+  // sat->AddFlipAction(left_lit, -right_lit);
+  // sat->AddFlipAction(right_lit, -left_lit);
+  // sat->AddFlipAction(-left_lit, right_lit);
+  // sat->AddFlipAction(-right_lit, left_lit);
   return true;
 }
 
@@ -155,9 +183,9 @@ bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
   if (!sat->Check(vars)) {
     return false;
   }
-  std::vector<AtomIndex> atoms(vars.size());
+  std::vector<Minisat::Lit> atoms(vars.size());
   for (int i = 0; i < vars.size(); ++i) {
-    atoms[i] = sat->Index(vars[i]);
+    atoms[i] = sat->Literal(vars[i]);
   }
   return false;
 }
