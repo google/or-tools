@@ -46,9 +46,9 @@ template<class K> struct Equal {
 };
 
 static inline uint32 hash(uint32 x){ return x; }
-static inline uint32 hash(uint64_t x){ return (uint32)x; }
-static inline uint32 hash(int32_t x) { return (uint32)x; }
-static inline uint32 hash(int64_t x) { return (uint32)x; }
+static inline uint32 hash(uint64 x){ return (uint32)x; }
+static inline uint32 hash(int32 x) { return (uint32)x; }
+static inline uint32 hash(int64 x) { return (uint32)x; }
 
 
 //==============================================================================
@@ -81,7 +81,7 @@ class Map {
 
     bool    checkCap(int new_size) const { return new_size > cap; }
 
-    int32_t index  (const K& k) const { return hash(k) % cap; }
+    int32 index  (const K& k) const { return hash(k) % cap; }
     void   _insert (const K& k, const D& d) {
         vec<Pair>& ps = table[index(k)];
         ps.push(); ps.last().key = k; ps.last().data = d; }

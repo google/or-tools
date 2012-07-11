@@ -1,22 +1,26 @@
-/***********************************************************************************[SolverTypes.h]
+/***************************************************************[SolverTypes.h]
 Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
 Copyright (c) 2007-2010, Niklas Sorensson
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute,
-sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or
-substantial portions of the Software.
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
-OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-**************************************************************************************************/
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+******************************************************************************/
 
 
 #ifndef Minisat_SolverTypes_h
@@ -73,52 +77,55 @@ namespace Minisat {
   const Lit lit_Error = { -1 };  // }
 
 
-  //=================================================================================================
+  //===========================================================================
   // Lifted booleans:
   //
-  // NOTE: this implementation is optimized for the case when comparisons between values are mostly
-  //       between one variable and one constant. Some care had to be taken to make sure that gcc
-  //       does enough constant propagation to produce sensible code, and this appears to be somewhat
-  //       fragile unfortunately.
+  // NOTE: this implementation is optimized for the case when
+  //       comparisons between values are mostly between one variable
+  //       and one constant. Some care had to be taken to make sure
+  //       that gcc does enough constant propagation to produce
+  //       sensible code, and this appears to be somewhat fragile
+  //       unfortunately.
 
-#define l_True  (lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
-#define l_False (lbool((uint8_t)1))
-#define l_Undef (lbool((uint8_t)2))
+ // gcc does not do constant propagation if these are real constants.
+#define l_True  (lbool((uint8)0))
+#define l_False (lbool((uint8)1))
+#define l_Undef (lbool((uint8)2))
 
   class lbool {
-    uint8_t value;
+    uint8 value;
 
  public:
-    explicit lbool(uint8_t v) : value(v) { }
+    explicit lbool(uint8 v) : value(v) { }
 
  lbool()       : value(0) { }
     explicit lbool(bool x) : value(!x) { }
 
     bool  operator == (lbool b) const { return ((b.value&2) & (value&2)) | (!(b.value&2)&(value == b.value)); }
     bool  operator != (lbool b) const { return !(*this == b); }
-    lbool operator ^  (bool  b) const { return lbool((uint8_t)(value^(uint8_t)b)); }
+    lbool operator ^  (bool  b) const { return lbool((uint8)(value^(uint8)b)); }
 
     lbool operator && (lbool b) const {
-      uint8_t sel = (this->value << 1) | (b.value << 3);
-      uint8_t v   = (0xF7F755F4 >> sel) & 3;
+      uint8 sel = (this->value << 1) | (b.value << 3);
+      uint8 v   = (0xF7F755F4 >> sel) & 3;
       return lbool(v); }
 
     lbool operator || (lbool b) const {
-      uint8_t sel = (this->value << 1) | (b.value << 3);
-      uint8_t v   = (0xFCFCF400 >> sel) & 3;
+      uint8 sel = (this->value << 1) | (b.value << 3);
+      uint8 v   = (0xFCFCF400 >> sel) & 3;
       return lbool(v); }
 
     friend int   toInt  (lbool l);
     friend lbool toLbool(int   v);
   };
   inline int   toInt  (lbool l) { return l.value; }
-  inline lbool toLbool(int   v) { return lbool((uint8_t)v);  }
+  inline lbool toLbool(int   v) { return lbool((uint8)v);  }
 
   //=================================================================================================
   // Clause -- a simple class for representing a clause:
 
   class Clause;
-  typedef RegionAllocator<uint32_t>::Ref CRef;
+  typedef RegionAllocator<uint32>::Ref CRef;
 
   class Clause {
     struct {
@@ -127,7 +134,7 @@ namespace Minisat {
       unsigned has_extra : 1;
       unsigned reloced   : 1;
       unsigned size      : 27; }                            header;
-    union { Lit lit; float act; uint32_t abs; CRef rel; } data[0];
+    union { Lit lit; float act; uint32 abs; CRef rel; } data[0];
 
     friend class ClauseAllocator;
 
@@ -153,7 +160,7 @@ namespace Minisat {
  public:
     void calcAbstraction() {
       assert(header.has_extra);
-      uint32_t abstraction = 0;
+      uint32 abstraction = 0;
       for (int i = 0; i < size(); i++)
         abstraction |= 1 << (var(data[i].lit) & 31);
       data[header.size].abs = abstraction;  }
@@ -164,8 +171,8 @@ namespace Minisat {
     void         pop         ()              { shrink(1); }
     bool         learnt      ()      const   { return header.learnt; }
     bool         has_extra   ()      const   { return header.has_extra; }
-    uint32_t     mark        ()      const   { return header.mark; }
-    void         mark        (uint32_t m)    { header.mark = m; }
+    uint32     mark        ()      const   { return header.mark; }
+    void         mark        (uint32 m)    { header.mark = m; }
     const Lit&   last        ()      const   { return data[header.size-1].lit; }
 
     bool         reloced     ()      const   { return header.reloced; }
@@ -179,7 +186,7 @@ namespace Minisat {
     operator const Lit* (void) const         { return (Lit*)data; }
 
     float&       activity    ()              { assert(header.has_extra); return data[header.size].act; }
-    uint32_t     abstraction () const        { assert(header.has_extra); return data[header.size].abs; }
+    uint32     abstraction () const        { assert(header.has_extra); return data[header.size].abs; }
 
     Lit          subsumes    (const Clause& other) const;
     void         strengthen  (Lit p);
@@ -190,45 +197,45 @@ namespace Minisat {
   // ClauseAllocator -- a simple class for allocating memory for clauses:
 
 
-  const CRef CRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
-  class ClauseAllocator : public RegionAllocator<uint32_t>
+  const CRef CRef_Undef = RegionAllocator<uint32>::Ref_Undef;
+  class ClauseAllocator : public RegionAllocator<uint32>
   {
     static int clauseWord32Size(int size, bool has_extra){
-      return (sizeof(Clause) + (sizeof(Lit) * (size + (int)has_extra))) / sizeof(uint32_t); }
+      return (sizeof(Clause) + (sizeof(Lit) * (size + (int)has_extra))) / sizeof(uint32); }
  public:
     bool extra_clause_field;
 
- ClauseAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), extra_clause_field(false){}
+ ClauseAllocator(uint32 start_cap) : RegionAllocator<uint32>(start_cap), extra_clause_field(false){}
  ClauseAllocator() : extra_clause_field(false){}
 
     void moveTo(ClauseAllocator& to){
       to.extra_clause_field = extra_clause_field;
-      RegionAllocator<uint32_t>::moveTo(to); }
+      RegionAllocator<uint32>::moveTo(to); }
 
     template<class Lits>
         CRef alloc(const Lits& ps, bool learnt = false)
     {
-      assert(sizeof(Lit)      == sizeof(uint32_t));
-      assert(sizeof(float)    == sizeof(uint32_t));
+      assert(sizeof(Lit)      == sizeof(uint32));
+      assert(sizeof(float)    == sizeof(uint32));
       bool use_extra = learnt | extra_clause_field;
 
-      CRef cid = RegionAllocator<uint32_t>::alloc(clauseWord32Size(ps.size(), use_extra));
+      CRef cid = RegionAllocator<uint32>::alloc(clauseWord32Size(ps.size(), use_extra));
       new (lea(cid)) Clause(ps, use_extra, learnt);
 
       return cid;
     }
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
-    Clause&       operator[](Ref r)       { return (Clause&)RegionAllocator<uint32_t>::operator[](r); }
-    const Clause& operator[](Ref r) const { return (Clause&)RegionAllocator<uint32_t>::operator[](r); }
-    Clause*       lea       (Ref r)       { return (Clause*)RegionAllocator<uint32_t>::lea(r); }
-    const Clause* lea       (Ref r) const { return (Clause*)RegionAllocator<uint32_t>::lea(r); }
-    Ref           ael       (const Clause* t){ return RegionAllocator<uint32_t>::ael((uint32_t*)t); }
+    Clause&       operator[](Ref r)       { return (Clause&)RegionAllocator<uint32>::operator[](r); }
+    const Clause& operator[](Ref r) const { return (Clause&)RegionAllocator<uint32>::operator[](r); }
+    Clause*       lea       (Ref r)       { return (Clause*)RegionAllocator<uint32>::lea(r); }
+    const Clause* lea       (Ref r) const { return (Clause*)RegionAllocator<uint32>::lea(r); }
+    Ref           ael       (const Clause* t){ return RegionAllocator<uint32>::ael((uint32*)t); }
 
     void free(CRef cid)
     {
       Clause& c = operator[](cid);
-      RegionAllocator<uint32_t>::free(clauseWord32Size(c.size(), c.has_extra()));
+      RegionAllocator<uint32>::free(clauseWord32Size(c.size(), c.has_extra()));
     }
 
     void reloc(CRef& cr, ClauseAllocator& to)
@@ -313,11 +320,11 @@ namespace Minisat {
   // CMap -- a class for mapping clauses to values:
 
 
-  template<class T>
-      class CMap
-  {
+  template<class T> class CMap {
     struct CRefHash {
-      uint32_t operator()(CRef cr) const { return (uint32_t)cr; } };
+      uint32 operator()(CRef cr) const { return (uint32)cr;
+      }
+    };
 
     typedef Map<CRef, T, CRefHash> HashTable;
     HashTable map;
@@ -351,26 +358,27 @@ namespace Minisat {
   };
 
 
-  /*_________________________________________________________________________________________________
+  /*____________________________________________________________________________
     |
     |  subsumes : (other : const Clause&)  ->  Lit
     |
     |  Description:
-    |       Checks if clause subsumes 'other', and at the same time, if it can be used to simplify 'other'
-    |       by subsumption resolution.
+    |       Checks if clause subsumes 'other', and at the same time, if
+    |          it can be used to simplify 'other' by subsumption resolution.
     |
     |    Result:
     |       lit_Error  - No subsumption or simplification
     |       lit_Undef  - Clause subsumes 'other'
     |       p          - The literal p can be deleted from 'other'
-    |________________________________________________________________________________________________@*/
-  inline Lit Clause::subsumes(const Clause& other) const
-  {
+    |_______________________________________________________________________@*/
+  inline Lit Clause::subsumes(const Clause& other) const {
     //if (other.size() < size() || (extra.abst & ~other.extra.abst) != 0)
-    //if (other.size() < size() || (!learnt() && !other.learnt() && (extra.abst & ~other.extra.abst) != 0))
+    //if (other.size() < size() || (!learnt() && !other.learnt() &&
+    //   (extra.abst & ~other.extra.abst) != 0))
     assert(!header.learnt);   assert(!other.header.learnt);
     assert(header.has_extra); assert(other.header.has_extra);
-    if (other.header.size < header.size || (data[header.size].abs & ~other.data[other.header.size].abs) != 0)
+    if (other.header.size < header.size ||
+        (data[header.size].abs & ~other.data[other.header.size].abs) != 0)
       return lit_Error;
 
     Lit        ret = lit_Undef;
@@ -400,8 +408,5 @@ namespace Minisat {
     remove(*this, p);
     calcAbstraction();
   }
-
-  //=================================================================================================
 }
-
-#endif
+#endif  // namespace Minisat
