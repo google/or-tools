@@ -143,31 +143,33 @@ bool AddBoolEq(SatPropagator* const sat,
   }
   Minisat::Lit left_lit = sat->Literal(left);
   Minisat::Lit right_lit = sat->Literal(right);
-
+  sat->AddClause(~left_lit, right_lit);
+  sat->AddClause(left_lit, ~right_lit);
   return true;
 }
 
-bool AddBoolLe(SatPropagator* const sat, IntExpr* const left, IntExpr* const right) {
+bool AddBoolLe(SatPropagator* const sat,
+               IntExpr* const left,
+               IntExpr* const right) {
   if (!sat->Check(left) || !sat->Check(right)) {
     return false;
   }
   Minisat::Lit left_lit = sat->Literal(left);
   Minisat::Lit right_lit = sat->Literal(right);
-  // sat->AddFlipAction(left_lit, right_lit);
-  // sat->AddFlipAction(-right_lit, -left_lit);
+  sat->AddClause(~left_lit, right_lit);
   return true;
 }
 
-bool AddBoolNot(SatPropagator* const sat, IntExpr* const left, IntExpr* const right) {
+bool AddBoolNot(SatPropagator* const sat,
+                IntExpr* const left,
+                IntExpr* const right) {
   if (!sat->Check(left) || !sat->Check(right)) {
     return false;
   }
   Minisat::Lit left_lit = sat->Literal(left);
   Minisat::Lit right_lit = sat->Literal(right);
-  // sat->AddFlipAction(left_lit, -right_lit);
-  // sat->AddFlipAction(right_lit, -left_lit);
-  // sat->AddFlipAction(-left_lit, right_lit);
-  // sat->AddFlipAction(-right_lit, left_lit);
+  sat->AddClause(~left_lit, ~right_lit);
+  sat->AddClause(left_lit, right_lit);
   return true;
 }
 
