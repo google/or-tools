@@ -177,6 +177,16 @@ bool AddBoolAndArrayEqVar(SatPropagator* const sat,
                           const std::vector<IntVar*>& vars,
                           IntVar* const target) {
   return false;
+  if (!sat->Check(vars) || !sat->Check(target)) {
+    return false;
+  }
+  Minisat::Lit target_lit = sat->Literal(target);
+  std::vector<Minisat::Lit> lits(vars.size() + 1);
+  for (int i = 0; i < vars.size(); ++i) {
+    lits[i] = sat->Literal(vars[i]);
+  }
+  lits[vars.size()] = ~target_lit;
+  sat->AddClause(lits);
 
 }
 
@@ -185,10 +195,24 @@ bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
   if (!sat->Check(vars)) {
     return false;
   }
-  std::vector<Minisat::Lit> atoms(vars.size());
+  std::vector<Minisat::Lit> lits(vars.size());
   for (int i = 0; i < vars.size(); ++i) {
-    atoms[i] = sat->Literal(vars[i]);
+    lits[i] = sat->Literal(vars[i]);
   }
+  sat->AddClause(lits);
+  return false;
+}
+
+bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
+                               const std::vector<IntVar*>& vars) {
+  if (!sat->Check(vars)) {
+    return false;
+  }
+  std::vector<Minisat::Lit> lits(vars.size());
+  for (int i = 0; i < vars.size(); ++i) {
+    lits[i] = ~sat->Literal(vars[i]);
+  }
+  sat->AddClause(lits);
   return false;
 }
 }  // namespace operations_research
