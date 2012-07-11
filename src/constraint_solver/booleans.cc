@@ -104,8 +104,12 @@ class SatPropagator : public Constraint {
   }
 
   // Add a clause to the solver.
-  bool AddClause (const vec<Lit>& ps) {
-    return minisat_.addClause(ps);
+  bool AddClause (const std::vector<Minisat::Lit>& ps) {
+    Minisat::vec<Minisat::Lit> lits(ps.size());
+    for (int i = 0; i < ps.size(); ++i) {
+      lits[i] = ps[i];
+    }
+    return minisat_.addClause_(lits);
   }
 
   // Add the empty clause, making the solver contradictory.
@@ -114,17 +118,17 @@ class SatPropagator : public Constraint {
   }
 
   // Add a unit clause to the solver.
-  bool AddClause (Lit p) {
+  bool AddClause (Minisat::Lit p) {
     return minisat_.addClause(p);
   }
 
   // Add a binary clause to the solver.
-  bool AddClause (Lit p, Lit q) {
+  bool AddClause (Minisat::Lit p, Minisat:: Lit q) {
     return minisat_.addClause(p, q);
   }
 
   // Add a ternary clause to the solver.
-  bool AddClause (Lit p, Lit q, Lit r) {
+  bool AddClause (Minisat::Lit p, Minisat::Lit q, Minisat::Lit r) {
     return minisat_.addClause(p, q, r);
   }
 
@@ -183,11 +187,28 @@ bool AddBoolAndArrayEqVar(SatPropagator* const sat,
   Minisat::Lit target_lit = sat->Literal(target);
   std::vector<Minisat::Lit> lits(vars.size() + 1);
   for (int i = 0; i < vars.size(); ++i) {
-    lits[i] = sat->Literal(vars[i]);
+    lits[i] = ~sat->Literal(vars[i]);
   }
-  lits[vars.size()] = ~target_lit;
+  lits[vars.size()] = target_lit;
   sat->AddClause(lits);
+  for (int i = 0; i < vars.size(); ++i) {
+    sat->AddClause(~target_lit, ~lits[i]);
+  }
+}
 
+bool AddBoolAndEqVar(SatPropagator* const sat,
+                     IntVar* const left,
+                     IntVar* const right,
+                     IntVar* const target) {
+  if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
+    return false;
+  }
+  Minisat::Lit left_lit = sat->Literal(left);
+  Minisat::Lit right_lit = sat->Literal(right);
+  Minisat::Lit target_lit = sat->Literal(target);
+  sat->AddClause(~left_lit, ~right_lit, target_lit);
+  sat->AddClause(left_lit, ~target_lit);
+  sat->AddClause(right_lit, ~target_lit);
 }
 
 bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
