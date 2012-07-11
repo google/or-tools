@@ -115,8 +115,8 @@ class Solver {
 
   // Resource contraints:
   //
-  void    setConfBudget(int64_t x);
-  void    setPropBudget(int64_t x);
+  void    setConfBudget(int64 x);
+  void    setPropBudget(int64 x);
   void    budgetOff();
   // Trigger a (potentially asynchronous) interruption of the solver.
   void    interrupt();
@@ -175,8 +175,8 @@ class Solver {
 
   // Statistics: (read-only member variable)
   //
-  uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts;
-  uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
+  uint64 solves, starts, decisions, rnd_decisions, propagations, conflicts;
+  uint64 dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 
  protected:
 
@@ -247,7 +247,7 @@ class Solver {
   int                 simpDB_assigns;
   // Remaining number of propagations that must be made before next
   // execution of 'simplify()'.
-  int64_t             simpDB_props;
+  int64             simpDB_props;
   // Current set of assumptions provided to solve by the user.
   vec<Lit>            assumptions;
   // A priority queue of variables ordered with respect to the
@@ -276,8 +276,8 @@ class Solver {
 
   // Resource contraints:
   //
-  int64_t             conflict_budget;    // -1 means no budget.
-  int64_t             propagation_budget; // -1 means no budget.
+  int64             conflict_budget;    // -1 means no budget.
+  int64             propagation_budget; // -1 means no budget.
   bool                asynch_interrupt;
 
   // Main internal methods:
@@ -301,7 +301,7 @@ class Solver {
   // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
   void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);
   // (helper method for 'analyze()')
-  bool     litRedundant     (Lit p, uint32_t abstract_levels);
+  bool     litRedundant     (Lit p, uint32 abstract_levels);
   // Search for a given number of conflicts.
   lbool    search           (int nof_conflicts);
   // Main solve method (assumptions given in 'assumptions').
@@ -350,7 +350,7 @@ class Solver {
   // Gives the current decisionlevel.
   int      decisionLevel    ()      const;
   // Used to represent an abstraction of sets of decision levels.
-  uint32_t abstractLevel    (Var x) const;
+  uint32 abstractLevel    (Var x) const;
   CRef     reason           (Var x) const;
   int      level            (Var x) const;
   // DELETE THIS ?? IT'S NOT VERY USEFUL ...
@@ -419,7 +419,7 @@ inline bool     Solver::locked          (const Clause& c) const { return value(c
 inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
 
 inline int      Solver::decisionLevel ()      const   { return trail_lim.size(); }
-inline uint32_t Solver::abstractLevel (Var x) const   { return 1 << (level(x) & 31); }
+inline uint32 Solver::abstractLevel (Var x) const   { return 1 << (level(x) & 31); }
 inline lbool    Solver::value         (Var x) const   { return assigns[x]; }
 inline lbool    Solver::value         (Lit p) const   { return assigns[var(p)] ^ sign(p); }
 inline lbool    Solver::modelValue    (Var x) const   { return model[x]; }
@@ -438,15 +438,15 @@ inline void     Solver::setDecisionVar(Var v, bool b)
   decision[v] = b;
   insertVarOrder(v);
 }
-inline void     Solver::setConfBudget(int64_t x){ conflict_budget    = conflicts    + x; }
-inline void     Solver::setPropBudget(int64_t x){ propagation_budget = propagations + x; }
+inline void     Solver::setConfBudget(int64 x){ conflict_budget    = conflicts    + x; }
+inline void     Solver::setPropBudget(int64 x){ propagation_budget = propagations + x; }
 inline void     Solver::interrupt(){ asynch_interrupt = true; }
 inline void     Solver::clearInterrupt(){ asynch_interrupt = false; }
 inline void     Solver::budgetOff(){ conflict_budget = propagation_budget = -1; }
 inline bool     Solver::withinBudget() const {
   return !asynch_interrupt &&
-      (conflict_budget    < 0 || conflicts < (uint64_t)conflict_budget) &&
-      (propagation_budget < 0 || propagations < (uint64_t)propagation_budget); }
+      (conflict_budget    < 0 || conflicts < (uint64)conflict_budget) &&
+      (propagation_budget < 0 || propagations < (uint64)propagation_budget); }
 
 // FIXME: after the introduction of asynchronous interrruptions the
 // solve-versions that return a pure bool do not give a safe

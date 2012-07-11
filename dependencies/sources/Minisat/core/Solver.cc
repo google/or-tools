@@ -322,7 +322,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
   int i, j;
   out_learnt.copyTo(analyze_toclear);
   if (ccmin_mode == 2) {
-    uint32_t abstract_level = 0;
+    uint32 abstract_level = 0;
     for (i = 1; i < out_learnt.size(); i++)
       abstract_level |= abstractLevel(var(out_learnt[i]));
     // (maintain an abstraction of levels involved in conflict)
@@ -377,7 +377,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 // Check if 'p' can be removed. 'abstract_levels' is used to abort
 // early if the algorithm is visiting literals at levels that cannot
 // be removed later.
-bool Solver::litRedundant(Lit p, uint32_t abstract_levels)
+bool Solver::litRedundant(Lit p, uint32 abstract_levels)
 {
   analyze_stack.clear(); analyze_stack.push(p);
   int top = analyze_toclear.size();
