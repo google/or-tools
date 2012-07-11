@@ -34,7 +34,7 @@ namespace Minisat {
 //
 
 template<class K> struct Hash {
-  uint32_t operator()(const K& k) const {
+  uint32 operator()(const K& k) const {
     return 0;//hash(k);
   }
 };
@@ -45,10 +45,10 @@ template<class K> struct Equal {
   }
 };
 
-static inline uint32_t hash(uint32_t x){ return x; }
-static inline uint32_t hash(uint64_t x){ return (uint32_t)x; }
-static inline uint32_t hash(int32_t x) { return (uint32_t)x; }
-static inline uint32_t hash(int64_t x) { return (uint32_t)x; }
+static inline uint32 hash(uint32 x){ return x; }
+static inline uint32 hash(uint64_t x){ return (uint32)x; }
+static inline uint32 hash(int32_t x) { return (uint32)x; }
+static inline uint32 hash(int64_t x) { return (uint32)x; }
 
 
 //==============================================================================

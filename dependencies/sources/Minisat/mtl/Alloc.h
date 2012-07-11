@@ -36,19 +36,19 @@ namespace Minisat {
 template<class T> class RegionAllocator
 {
   T*        memory;
-  uint32_t  sz;
-  uint32_t  cap;
-  uint32_t  wasted_;
+  uint32  sz;
+  uint32  cap;
+  uint32  wasted_;
 
-  void capacity(uint32_t min_cap);
+  void capacity(uint32 min_cap);
 
  public:
   // TODO: make this a class for better type-checking?
-  typedef uint32_t Ref;
+  typedef uint32 Ref;
   enum { Ref_Undef = kint32max };
-  enum { Unit_Size = sizeof(uint32_t) };
+  enum { Unit_Size = sizeof(uint32) };
 
-  explicit RegionAllocator(uint32_t start_cap = 1024*1024) : memory(NULL), sz(0), cap(0), wasted_(0){ capacity(start_cap); }
+  explicit RegionAllocator(uint32 start_cap = 1024*1024) : memory(NULL), sz(0), cap(0), wasted_(0){ capacity(start_cap); }
   ~RegionAllocator()
   {
     if (memory != NULL)
@@ -56,8 +56,8 @@ template<class T> class RegionAllocator
   }
 
 
-  uint32_t size      () const      { return sz; }
-  uint32_t wasted    () const      { return wasted_; }
+  uint32 size      () const      { return sz; }
+  uint32 wasted    () const      { return wasted_; }
 
   Ref      alloc     (int size);
   void     free      (int size)    { wasted_ += size; }
@@ -85,18 +85,18 @@ template<class T> class RegionAllocator
 
 };
 
-template<class T> void RegionAllocator<T>::capacity(uint32_t min_cap) {
+template<class T> void RegionAllocator<T>::capacity(uint32 min_cap) {
   if (cap >= min_cap) return;
 
-  uint32_t prev_cap = cap;
+  uint32 prev_cap = cap;
   while (cap < min_cap){
     // NOTE: Multiply by a factor (13/8) without causing overflow,
     // then add 2 and make the result even by clearing the least
     // significant bit. The resulting sequence of capacities is
     // carefully chosen to hit a maximum capacity that is close to
-    // the '2^32-1' limit when using 'uint32_t' as indices so that
+    // the '2^32-1' limit when using 'uint32' as indices so that
     // as much as possible of this space can be used.
-    uint32_t delta = ((cap >> 1) + (cap >> 3) + 2) & ~1;
+    uint32 delta = ((cap >> 1) + (cap >> 3) + 2) & ~1;
     cap += delta;
 
     if (cap <= prev_cap)
@@ -116,7 +116,7 @@ typename RegionAllocator<T>::Ref RegionAllocator<T>::alloc(int size) {
   assert(size > 0);
   capacity(sz + size);
 
-  uint32_t prev_sz = sz;
+  uint32 prev_sz = sz;
   sz += size;
 
   // Handle overflow:
