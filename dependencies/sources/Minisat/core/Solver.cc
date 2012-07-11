@@ -452,7 +452,7 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
   trail.push_(p);
 }
 
-/*______________________________________________________________________________
+/* _____________________________________________________________________________
   |
   |  propagate : [void]  ->  [Clause*]
   |
@@ -525,7 +525,7 @@ CRef Solver::propagate() {
   return confl;
 }
 
-/*____________________________________________________________________________
+/* ___________________________________________________________________________
   |
   |  reduceDB : ()  ->  [void]
   |
@@ -538,7 +538,9 @@ struct reduceDB_lt {
   ClauseAllocator& ca;
   reduceDB_lt(ClauseAllocator& ca_) : ca(ca_) {}
   bool operator () (CRef x, CRef y) {
-    return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity()); }
+    return ca[x].size() > 2 && (ca[y].size() == 2 ||
+                                ca[x].activity() < ca[y].activity());
+  }
 };
 void Solver::reduceDB()
 {
@@ -551,7 +553,8 @@ void Solver::reduceDB()
   // than 'extra_lim':
   for (i = j = 0; i < learnts.size(); i++) {
     Clause& c = ca[learnts[i]];
-    if (c.size() > 2 && !locked(c) && (i < learnts.size() / 2 || c.activity() < extra_lim))
+    if (c.size() > 2 && !locked(c) &&
+        (i < learnts.size() / 2 || c.activity() < extra_lim))
       removeClause(learnts[i]);
     else
       learnts[j++] = learnts[i];
@@ -667,10 +670,16 @@ lbool Solver::search(int nof_conflicts) {
         if (verbosity >= 1)
           printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
                  (int)conflicts,
-                 (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals,
-                 (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
+                 (int)dec_vars - (trail_lim.size() == 0 ?
+                                  trail.size() :
+                                  trail_lim[0]),
+                 nClauses(),
+                 (int)clauses_literals,
+                 (int)max_learnts,
+                 nLearnts(),
+                 (double)learnts_literals/nLearnts(),
+                 progressEstimate()*100);
       }
-
     } else {
       // NO CONFLICT
       if (nof_conflicts >= 0 && conflictC >= nof_conflicts || !withinBudget()) {
@@ -721,8 +730,7 @@ lbool Solver::search(int nof_conflicts) {
 }
 
 
-double Solver::progressEstimate() const
-{
+double Solver::progressEstimate() const {
   double  progress = 0;
   double  F = 1.0 / nVars();
 
@@ -731,7 +739,6 @@ double Solver::progressEstimate() const
     int end = i == decisionLevel() ? trail.size() : trail_lim[i];
     progress += pow(F, i) * (end - beg);
   }
-
   return progress / nVars();
 }
 
@@ -748,7 +755,6 @@ double Solver::progressEstimate() const
 */
 
 static double luby(double y, int x) {
-
   // Find the finite subsequence that contains index 'x', and the
   // size of that subsequence:
   int size, seq;
@@ -800,9 +806,9 @@ lbool Solver::solve_() {
     // Extend & copy model:
     model.growTo(nVars());
     for (int i = 0; i < nVars(); i++) model[i] = value(i);
-  } else if (status == l_False && conflict.size() == 0)
+  } else if (status == l_False && conflict.size() == 0) {
     ok = false;
-
+  }
   cancelUntil(0);
   return status;
 }
