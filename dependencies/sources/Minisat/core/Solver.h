@@ -67,10 +67,10 @@ class Solver {
   // Removes already satisfied clauses.
   bool    simplify     ();
   // Search for a model that respects a given set of assumptions.
-  bool    solve        (const vec<Lit>& assumps);
+  bool    solve        (const std::vector<Lit>& assumps);
   // Search for a model that respects a given set of assumptions (With
   // resource constraints).
-  lbool   solveLimited (const vec<Lit>& assumps);
+  lbool   solveLimited (const std::vector<Lit>& assumps);
   // Search without assumptions.
   bool    solve        ();
   // Search for a model that respects a single assumption.
@@ -249,7 +249,7 @@ class Solver {
   // execution of 'simplify()'.
   int64             simpDB_props;
   // Current set of assumptions provided to solve by the user.
-  vec<Lit>            assumptions;
+  std::vector<Lit>            assumptions;
   // A priority queue of variables ordered with respect to the
   // variable activity.
   Heap<VarOrderLt>    order_heap;
@@ -454,11 +454,11 @@ inline bool     Solver::withinBudget() const {
 // all calls to solve must return an 'lbool'. I'm not yet sure which I
 // prefer.
 inline bool     Solver::solve         ()                    { budgetOff(); assumptions.clear(); return solve_() == l_True; }
-inline bool     Solver::solve         (Lit p)               { budgetOff(); assumptions.clear(); assumptions.push(p); return solve_() == l_True; }
-inline bool     Solver::solve         (Lit p, Lit q)        { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); return solve_() == l_True; }
-inline bool     Solver::solve         (Lit p, Lit q, Lit r) { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); assumptions.push(r); return solve_() == l_True; }
-inline bool     Solver::solve         (const vec<Lit>& assumps){ budgetOff(); assumps.copyTo(assumptions); return solve_() == l_True; }
-inline lbool    Solver::solveLimited  (const vec<Lit>& assumps){ assumps.copyTo(assumptions); return solve_(); }
+inline bool     Solver::solve         (Lit p)               { budgetOff(); assumptions.clear(); assumptions.push_back(p); return solve_() == l_True; }
+inline bool     Solver::solve         (Lit p, Lit q)        { budgetOff(); assumptions.clear(); assumptions.push_back(p); assumptions.push_back(q); return solve_() == l_True; }
+inline bool     Solver::solve         (Lit p, Lit q, Lit r) { budgetOff(); assumptions.clear(); assumptions.push_back(p); assumptions.push_back(q); assumptions.push_back(r); return solve_() == l_True; }
+inline bool     Solver::solve         (const std::vector<Lit>& assumps){ budgetOff(); assumptions = assumps; return solve_() == l_True; }
+inline lbool    Solver::solveLimited  (const std::vector<Lit>& assumps){ assumptions = assumps; return solve_(); }
 inline bool     Solver::okay          ()      const   { return ok; }
 }
 
