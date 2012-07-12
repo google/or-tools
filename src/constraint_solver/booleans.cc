@@ -110,7 +110,7 @@ class SatPropagator : public Constraint {
     for (int i = 0; i < vars_.size(); ++i) {
       IntVar* const var = vars_[i];
       if (var->Bound()) {
-        VariableBound(indices_[var]);
+        VariableBound(i);
       }
     }
   }
@@ -219,9 +219,26 @@ bool AddBoolAndEqVar(SatPropagator* const sat,
   Minisat::Lit left_lit = sat->Literal(left);
   Minisat::Lit right_lit = sat->Literal(right);
   Minisat::Lit target_lit = sat->Literal(target);
+  sat->AddClause(left_lit, right_lit, ~target_lit);
+  sat->AddClause(~left_lit, target_lit);
+  sat->AddClause(~right_lit, target_lit);
+  return true;
+}
+
+bool AddBoolOrEqVar(SatPropagator* const sat,
+                    IntVar* const left,
+                    IntVar* const right,
+                    IntVar* const target) {
+  if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
+    return false;
+  }
+  Minisat::Lit left_lit = sat->Literal(left);
+  Minisat::Lit right_lit = sat->Literal(right);
+  Minisat::Lit target_lit = sat->Literal(target);
   sat->AddClause(~left_lit, ~right_lit, target_lit);
   sat->AddClause(left_lit, ~target_lit);
   sat->AddClause(right_lit, ~target_lit);
+  return true;
 }
 
 bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
