@@ -99,11 +99,12 @@ class SatPropagator : public Constraint {
     Minisat::Lit lit = Minisat::mkLit(var, var_value);
     VLOG(1) << "Assign " << vars_[index]->DebugString()
             << ", enqueue lit = " << Minisat::toInt(lit);
+    const int level = minisat_.decisionLevel();
     if (!minisat_.propagateOneLiteral(lit)) {
       VLOG(1) << "  - failure detected";
       solver()->Fail();
     } else {
-      num_bound_literals_.Incr(solver());
+      num_bound_literals_.SetValue(solver(), level);
       for (int i = 0; i < minisat_.touched_variables_.size(); ++i) {
         const int var = minisat_.touched_variables_[i];
         Minisat::lbool assigned_value = minisat_.value(var);
@@ -190,7 +191,7 @@ bool AddBoolLe(SatPropagator* const sat,
   }
   Minisat::Lit left_lit = sat->Literal(left);
   Minisat::Lit right_lit = sat->Literal(right);
-  sat->AddClause(~left_lit, right_lit);
+  sat->AddClause(left_lit, ~right_lit);
   return true;
 }
 

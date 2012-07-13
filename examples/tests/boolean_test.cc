@@ -37,31 +37,31 @@ bool AddBoolNot(SatPropagator* const sat,
 
 bool AddBoolAndArrayEqVar(SatPropagator* const sat,
                           const std::vector<IntVar*>& vars,
-                          IntVar* const target);
+                          IntExpr* const target);
 
 bool AddBoolOrArrayEqVar(SatPropagator* const sat,
                          const std::vector<IntVar*>& vars,
-                         IntVar* const target);
+                         IntExpr* const target);
 
 bool AddBoolAndEqVar(SatPropagator* const sat,
-                     IntVar* const left,
-                     IntVar* const right,
-                     IntVar* const target);
+                     IntExpr* const left,
+                     IntExpr* const right,
+                     IntExpr* const target);
 
 bool AddBoolIsNEqVar(SatPropagator* const sat,
-                     IntVar* const left,
-                     IntVar* const right,
-                     IntVar* const target);
+                     IntExpr* const left,
+                     IntExpr* const right,
+                     IntExpr* const target);
 
 bool AddBoolOrEqVar(SatPropagator* const sat,
-                    IntVar* const left,
-                    IntVar* const right,
-                    IntVar* const target);
+                    IntExpr* const left,
+                    IntExpr* const right,
+                    IntExpr* const target);
 
 bool AddBoolIsEqVar(SatPropagator* const sat,
-                    IntVar* const left,
-                    IntVar* const right,
-                    IntVar* const target);
+                    IntExpr* const left,
+                    IntExpr* const right,
+                    IntExpr* const target);
 
 
 bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
@@ -71,6 +71,26 @@ bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
                                const std::vector<IntVar*>& vars);
 
 SatPropagator* MakeSatPropagator(Solver* const solver);
+
+void TestBoolLe() {
+  LOG(INFO) << "TestBoolLe";
+  Solver solver("TestBoolLe");
+  SatPropagator* const sat = MakeSatPropagator(&solver);
+  solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
+  IntVar* const x = solver.MakeBoolVar("x");
+  IntVar* const y = solver.MakeBoolVar("y");
+  CHECK(AddBoolLe(sat, x, y));
+  DecisionBuilder* const db =
+      solver.MakePhase(x, y,
+                       Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE);
+  solver.NewSearch(db);
+  while (solver.NextSolution()) {
+    LOG(INFO) << " x = " << x->Value() << ", y = " << y->Value();
+  }
+  solver.EndSearch();
+  LOG(INFO) << solver.DebugString();
+}
 
 void TestBoolEq() {
   LOG(INFO) << "TestBoolEq";
@@ -188,6 +208,7 @@ void TestInconsistent() {
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
+  operations_research::TestBoolLe();
   operations_research::TestBoolEq();
   operations_research::TestBoolAndEq();
   operations_research::TestBoolOrEq();

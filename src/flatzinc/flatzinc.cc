@@ -73,6 +73,7 @@ void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
 void FlatZincModel::InitSolver() {
   solver_.reset(new Solver("FlatZincSolver"));
   sat_ = MakeSatPropagator(solver_.get());
+  solver_->AddConstraint(reinterpret_cast<Constraint*>(sat_));
 }
 
 void FlatZincModel::NewIntVar(const std::string& name,
