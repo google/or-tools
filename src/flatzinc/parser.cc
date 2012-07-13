@@ -150,8 +150,8 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
              id == "int_ge_reif" ||
              (id == "bool_eq_reif" && !FLAGS_use_minisat) ||
              (id == "bool_ne_reif" && !FLAGS_use_minisat) ||
-             id == "bool_le_reif" ||
-             id == "bool_ge_reif" ||
+             (id == "bool_le_reif" && !FLAGS_use_minisat) ||
+             (id == "bool_ge_reif" && !FLAGS_use_minisat) ||
              id == "bool_not") {
     // Defines a bool var.
     AST::Node* const bool_define = FindTarget(spec->annotations());

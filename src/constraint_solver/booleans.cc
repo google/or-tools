@@ -41,7 +41,7 @@ class SatPropagator : public Constraint {
  public:
   SatPropagator(Solver* const solver)
   : Constraint(solver),
-    num_bound_literals_(0) {}
+    minisat_trail_(0) {}
 
   ~SatPropagator() {}
 
@@ -82,21 +82,16 @@ class SatPropagator : public Constraint {
   }
 
   void VariableBound(int index) {
-    if (num_bound_literals_.Value() < minisat_.decisionLevel()) {
-      minisat_.cancelUntil(num_bound_literals_.Value());
+    if (minisat_trail_.Value() < minisat_.decisionLevel()) {
+      minisat_.cancelUntil(minisat_trail_.Value());
     }
     VLOG(1) << "VariableBound: " << vars_[index]->DebugString();
-    Minisat::Var var(index);
-    Minisat::lbool internal_value = minisat_.value(var);
-    VLOG(1) << "  - internal value = " << toInt(internal_value);
-    const bool var_value = vars_[index]->Value() != 0;
-    if (toInt(internal_value) != 2) {  // not undefined.
-      const bool b_value = (toInt(internal_value) == 1);  // == l_True
-      if (var_value != b_value) {
-        solver()->Fail();
-      } else {
-        return;
-      }
+    const Minisat::Var var(index);
+    const int internal_value = toInt(minisat_.value(var));
+    const int64 var_value = vars_[index]->Value();
+    if (internal_value != 2 && var_value != internal_value) {
+      VLOG(1) << "  - internal value = " << internal_value << ", failing";
+      solver()->Fail();
     }
     Minisat::Lit lit = Minisat::mkLit(var, var_value);
     VLOG(1) <<  "  - enqueue lit = " << Minisat::toInt(lit);
@@ -104,8 +99,7 @@ class SatPropagator : public Constraint {
       VLOG(1) << "  - failure detected";
       solver()->Fail();
     } else {
-      const int level = minisat_.decisionLevel();
-      num_bound_literals_.SetValue(solver(), level);
+      minisat_trail_.SetValue(solver(), minisat_.decisionLevel());
       for (int i = 0; i < minisat_.touched_variables_.size(); ++i) {
         const Minisat::Lit lit = minisat_.touched_variables_[i];
         const int var = Minisat::var(lit);
@@ -169,7 +163,7 @@ class SatPropagator : public Constraint {
   std::vector<IntVar*> vars_;
   hash_map<IntVar*, Minisat::Var> indices_;
   std::vector<Minisat::Lit> bound_literals_;
-  NumericalRev<int> num_bound_literals_;
+  NumericalRev<int> minisat_trail_;
   std::vector<Demon*> demons_;
 };
 
@@ -312,6 +306,22 @@ bool AddBoolIsNEqVar(SatPropagator* const sat,
   sat->AddClause(left_lit, ~right_lit, target_lit);
   sat->AddClause(left_lit, right_lit, ~target_lit);
   sat->AddClause(~left_lit, ~right_lit, ~target_lit);
+  return true;
+}
+
+bool AddBoolIsLeVar(SatPropagator* const sat,
+                    IntExpr* const left,
+                    IntExpr* const right,
+                    IntExpr* const target) {
+  if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
+    return false;
+  }
+  Minisat::Lit left_lit = sat->Literal(left);
+  Minisat::Lit right_lit = sat->Literal(right);
+  Minisat::Lit target_lit = sat->Literal(target);
+  sat->AddClause(~left_lit, right_lit, ~target_lit);
+  sat->AddClause(left_lit, target_lit);
+  sat->AddClause(~right_lit, target_lit);
   return true;
 }
 

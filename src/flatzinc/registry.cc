@@ -78,6 +78,11 @@ bool AddBoolIsNEqVar(SatPropagator* const sat,
                      IntExpr* const right,
                      IntExpr* const target);
 
+bool AddBoolIsLeVar(SatPropagator* const sat,
+                    IntExpr* const left,
+                    IntExpr* const right,
+                    IntExpr* const target);
+
 bool AddBoolOrEqVar(SatPropagator* const sat,
                     IntExpr* const left,
                     IntExpr* const right,
@@ -1184,9 +1189,15 @@ void p_bool_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-    Constraint* const ct = solver->MakeIsGreaterOrEqualCt(left, right, boolvar);
-    VLOG(1) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
+    if (FLAGS_use_minisat &&
+        AddBoolIsLeVar(model->Sat(), right, left, boolvar)) {
+      VLOG(1) << "  - posted to minisat";
+    } else {
+      Constraint* const ct =
+          solver->MakeIsGreaterOrEqualCt(left, right, boolvar);
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
   }
 }
 
@@ -1232,9 +1243,14 @@ void p_bool_le_reif(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-    Constraint* const ct = solver->MakeIsLessOrEqualCt(left, right, boolvar);
-    VLOG(1) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
+    if (FLAGS_use_minisat &&
+        AddBoolIsLeVar(model->Sat(), left, right, boolvar)) {
+      VLOG(1) << "  - posted to minisat";
+    } else {
+      Constraint* const ct = solver->MakeIsLessOrEqualCt(left, right, boolvar);
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
   }
 }
 

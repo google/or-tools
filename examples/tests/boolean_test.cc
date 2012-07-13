@@ -64,6 +64,10 @@ bool AddBoolIsEqVar(SatPropagator* const sat,
                     IntExpr* const right,
                     IntExpr* const target);
 
+bool AddBoolIsLeVar(SatPropagator* const sat,
+                    IntExpr* const left,
+                    IntExpr* const right,
+                    IntExpr* const target);
 
 bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
                              const std::vector<IntVar*>& vars);
@@ -321,6 +325,32 @@ void TestBoolIsNEq(int rotation) {
   LOG(INFO) << solver.DebugString();
 }
 
+void TestBoolIsLe(int rotation) {
+  LOG(INFO) << "TestBoolIsLe(" << rotation << ")";
+  Solver solver("TestBoolIsLe");
+  SatPropagator* const sat = MakeSatPropagator(&solver);
+  solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
+  IntVar* const x = solver.MakeBoolVar("x");
+  IntVar* const y = solver.MakeBoolVar("y");
+  IntVar* const z = solver.MakeBoolVar("z");
+  CHECK(AddBoolIsLeVar(sat, x, y, z));
+  DecisionBuilder* const db = rotation == 1 ?
+      solver.MakePhase(x, y, z,
+                       Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE) :
+      solver.MakePhase(z, y, x,
+                       Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE);
+  solver.NewSearch(db);
+  while (solver.NextSolution()) {
+    LOG(INFO) << " x = " << x->Value()
+              << ", y = " << y->Value()
+              << ", z = " << z->Value();
+  }
+  solver.EndSearch();
+  LOG(INFO) << solver.DebugString();
+}
+
 void TestBoolArrayAndEqFalse(int rotation) {
   LOG(INFO) << "TestBoolArrayAndEqFalse(" << rotation << ")";
   Solver solver("TestBoolArrayAndEqFalse");
@@ -428,6 +458,8 @@ int main(int argc, char** argv) {
   operations_research::TestBoolIsEq(2);
   operations_research::TestBoolIsNEq(1);
   operations_research::TestBoolIsNEq(2);
+  operations_research::TestBoolIsLe(1);
+  operations_research::TestBoolIsLe(2);
   operations_research::TestBoolArrayAndEqFalse(1);
   operations_research::TestBoolArrayAndEqFalse(2);
   operations_research::TestBoolArrayOrEqTrue(1);
