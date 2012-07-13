@@ -107,10 +107,9 @@ class SatPropagator : public Constraint {
       const int level = minisat_.decisionLevel();
       num_bound_literals_.SetValue(solver(), level);
       for (int i = 0; i < minisat_.touched_variables_.size(); ++i) {
-        const int var = minisat_.touched_variables_[i];
-        Minisat::lbool assigned_value = minisat_.value(var);
-        CHECK_NE(2, toInt(assigned_value));
-        const bool assigned_bool = (toInt(assigned_value) == 1);  // == l_True
+        const Minisat::Lit lit = minisat_.touched_variables_[i];
+        const int var = Minisat::var(lit);
+        const bool assigned_bool = Minisat::sign(lit);
         VLOG(1) << "  - var " << var << " was assigned to " << assigned_bool;
         vars_[var]->SetValue(assigned_bool);
       }

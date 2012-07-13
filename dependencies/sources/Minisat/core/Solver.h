@@ -90,7 +90,7 @@ class Solver {
   // Gives the current decisionlevel.
   int decisionLevel() const;
   bool store_unit_propagation_;
-  std::vector<Var> touched_variables_;
+  std::vector<Lit> touched_variables_;
 
   // Variable mode:
   //

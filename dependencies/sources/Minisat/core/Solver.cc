@@ -439,15 +439,12 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
   assert(value(p) == l_Undef);
+  if (store_unit_propagation_ && assigns[var(p)] == l_Undef) {
+    touched_variables_.push_back(p);
+  }
   assigns[var(p)] = lbool(!sign(p));
   vardata[var(p)] = mkVarData(from, decisionLevel());
   trail.push_(p);
-  if (store_unit_propagation_) {
-    touched_variables_.push_back(var(p));
-    VLOG(1) << "  - deduce " << var(p) << " to " << toInt(assigns[var(p)])
-            << ", lit = " << toInt(p) << ", sign = " << sign(p);
-
-  }
 }
 
 /* _____________________________________________________________________________
