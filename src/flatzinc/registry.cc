@@ -988,41 +988,6 @@ void p_int_negate(FlatZincModel* const model, CtSpec* const spec) {
   solver->AddConstraint(ct);
 }
 
-void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
-  Solver* const solver = model->solver();
-  AST::Array* const array_variables = spec->Arg(0)->getArray();
-  AST::Node* const node_boolvar = spec->Arg(1);
-  const int size = array_variables->a.size();
-  std::vector<IntVar*> variables;
-  hash_set<IntExpr*> added;
-  for (int i = 0; i < size; ++i) {
-    AST::Node* const a = array_variables->a[i];
-    IntVar* const to_add = model->GetIntExpr(a)->Var();
-    if (!ContainsKey(added, to_add)) {
-      variables.push_back(to_add);
-      added.insert(to_add);
-    }
-  }
-  if (spec->IsDefined(node_boolvar)) {
-    IntExpr* const boolvar = solver->MakeMin(variables)->Var();
-    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
-            << boolvar->DebugString();
-    model->CheckIntegerVariableIsNull(node_boolvar);
-    model->SetIntegerExpression(node_boolvar, boolvar);
-  } else if (node_boolvar->isBool() && node_boolvar->getBool() == 1) {
-    VLOG(1) << "  - forcing array_bool_and to 1";
-    for (int i = 0; i < variables.size(); ++i) {
-      variables[i]->SetValue(1);
-    }
-  } else {
-    IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-    Constraint* const ct =
-        solver->MakeMinEquality(variables, boolvar);
-    VLOG(1) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
-  }
-}
-
 // Bools
 
 void p_bool_eq(FlatZincModel* const model, CtSpec* const spec) {
@@ -1055,9 +1020,9 @@ void p_bool_eq(FlatZincModel* const model, CtSpec* const spec) {
 void p_bool_ne(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  if (spec->Arg(1)->isInt()) {
+  if (spec->Arg(1)->isBool()) {
     Constraint* const ct =
-        solver->MakeNonEquality(left, spec->Arg(1)->getInt());
+        solver->MakeNonEquality(left, spec->Arg(1)->getBool());
     VLOG(1) << "  - posted " << ct->DebugString();
     solver->AddConstraint(ct);
   } else {
@@ -1075,9 +1040,9 @@ void p_bool_ne(FlatZincModel* const model, CtSpec* const spec) {
 void p_bool_ge(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  if (spec->Arg(1)->isInt()) {
+  if (spec->Arg(1)->isBool()) {
     Constraint* const ct =
-        solver->MakeGreaterOrEqual(left, spec->Arg(1)->getInt());
+        solver->MakeGreaterOrEqual(left, spec->Arg(1)->getBool());
     VLOG(1) << "  - posted " << ct->DebugString();
     solver->AddConstraint(ct);
   } else {
@@ -1095,8 +1060,8 @@ void p_bool_ge(FlatZincModel* const model, CtSpec* const spec) {
 void p_bool_gt(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  if (spec->Arg(1)->isInt()) {
-    Constraint* const ct = solver->MakeGreater(left, spec->Arg(1)->getInt());
+  if (spec->Arg(1)->isBool()) {
+    Constraint* const ct = solver->MakeGreater(left, spec->Arg(1)->getBool());
     VLOG(1) << "  - posted " << ct->DebugString();
     solver->AddConstraint(ct);
   } else {
@@ -1110,9 +1075,9 @@ void p_bool_gt(FlatZincModel* const model, CtSpec* const spec) {
 void p_bool_le(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  if (spec->Arg(1)->isInt()) {
+  if (spec->Arg(1)->isBool()) {
     Constraint* const ct =
-        solver->MakeLessOrEqual(left, spec->Arg(1)->getInt());
+        solver->MakeLessOrEqual(left, spec->Arg(1)->getBool());
     VLOG(1) << "  - posted " << ct->DebugString();
     solver->AddConstraint(ct);
   } else {
@@ -1130,8 +1095,8 @@ void p_bool_le(FlatZincModel* const model, CtSpec* const spec) {
 void p_bool_lt(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  if (spec->Arg(1)->isInt()) {
-    Constraint* const ct = solver->MakeLess(left, spec->Arg(1)->getInt());
+  if (spec->Arg(1)->isBool()) {
+    Constraint* const ct = solver->MakeLess(left, spec->Arg(1)->getBool());
     VLOG(1) << "  - posted " << ct->DebugString();
     solver->AddConstraint(ct);
   } else {
@@ -1150,8 +1115,8 @@ void p_bool_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Node* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
-        node_right->isInt() ?
-        solver->MakeIsEqualCstVar(left, node_right->getInt()) :
+        node_right->isBool() ?
+        solver->MakeIsEqualCstVar(left, node_right->getBool()) :
         solver->MakeIsEqualVar(left, model->GetIntExpr(node_right));
     VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
             << boolvar->DebugString();
@@ -1179,8 +1144,8 @@ void p_bool_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Node* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
-        node_right->isInt() ?
-        solver->MakeIsDifferentCstVar(left, node_right->getInt()) :
+        node_right->isBool() ?
+        solver->MakeIsDifferentCstVar(left, node_right->getBool()) :
         solver->MakeIsDifferentVar(left, model->GetIntExpr(node_right));
     VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
             << boolvar->DebugString();
@@ -1208,8 +1173,8 @@ void p_bool_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Node* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
-        node_right->isInt() ?
-        solver->MakeIsGreaterOrEqualCstVar(left, node_right->getInt()) :
+        node_right->isBool() ?
+        solver->MakeIsGreaterOrEqualCstVar(left, node_right->getBool()) :
         solver->MakeIsGreaterOrEqualVar(left, model->GetIntExpr(node_right));
     VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
             << boolvar->DebugString();
@@ -1232,8 +1197,8 @@ void p_bool_gt_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Node* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
-        node_right->isInt() ?
-        solver->MakeIsGreaterCstVar(left, node_right->getInt()) :
+        node_right->isBool() ?
+        solver->MakeIsGreaterCstVar(left, node_right->getBool()) :
         solver->MakeIsGreaterVar(left, model->GetIntExpr(node_right));
     VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
             << boolvar->DebugString();
@@ -1256,8 +1221,8 @@ void p_bool_le_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Node* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
-        node_right->isInt() ?
-        solver->MakeIsLessOrEqualCstVar(left, node_right->getInt()) :
+        node_right->isBool() ?
+        solver->MakeIsLessOrEqualCstVar(left, node_right->getBool()) :
         solver->MakeIsLessOrEqualVar(left, model->GetIntExpr(node_right));
     VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
             << boolvar->DebugString();
@@ -1280,8 +1245,8 @@ void p_bool_lt_reif(FlatZincModel* const model, CtSpec* const spec) {
   AST::Node* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
-        node_right->isInt() ?
-        solver->MakeIsLessCstVar(left, node_right->getInt()) :
+        node_right->isBool() ?
+        solver->MakeIsLessCstVar(left, node_right->getBool()) :
         solver->MakeIsLessVar(left, model->GetIntExpr(node_right));
     VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
             << boolvar->DebugString();
@@ -1364,9 +1329,14 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
   } else {
     if (node_boolvar->isBool()) {
       if (node_boolvar->getBool() == 1) {
-        Constraint* const ct = solver->MakeSumGreaterOrEqual(variables, 1);
-        VLOG(1) << "  - posted " << ct->DebugString();
-        solver->AddConstraint(ct);
+        if (FLAGS_use_minisat &&
+            AddBoolOrArrayEqualTrue(model->Sat(), variables)) {
+          VLOG(1) << "  - posted to minisat";
+        } else {
+          Constraint* const ct = solver->MakeSumGreaterOrEqual(variables, 1);
+          VLOG(1) << "  - posted " << ct->DebugString();
+          solver->AddConstraint(ct);
+        }
       } else {
         Constraint* const ct = solver->MakeSumEquality(variables, Zero());
         VLOG(1) << "  - posted " << ct->DebugString();
@@ -1374,9 +1344,72 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
       }
     } else {
       IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-      Constraint* const ct = solver->MakeMaxEquality(variables, boolvar);
-      VLOG(1) << "  - posted " << ct->DebugString();
-      solver->AddConstraint(ct);
+      if (FLAGS_use_minisat &&
+          AddBoolOrArrayEqVar(model->Sat(), variables, boolvar)) {
+        VLOG(1) << "  - posted to minisat";
+      } else {
+        Constraint* const ct = solver->MakeMaxEquality(variables, boolvar);
+        VLOG(1) << "  - posted " << ct->DebugString();
+        solver->AddConstraint(ct);
+      }
+    }
+  }
+}
+
+void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  AST::Node* const node_boolvar = spec->Arg(1);
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables;
+  hash_set<IntExpr*> added;
+  for (int i = 0; i < size; ++i) {
+    AST::Node* const a = array_variables->a[i];
+    IntVar* const to_add = model->GetIntExpr(a)->Var();
+    if (!ContainsKey(added, to_add)) {
+      variables.push_back(to_add);
+      added.insert(to_add);
+    }
+  }
+  if (spec->IsDefined(node_boolvar)) {
+    IntExpr* const boolvar = solver->MakeMin(variables)->Var();
+    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
+            << boolvar->DebugString();
+    model->CheckIntegerVariableIsNull(node_boolvar);
+    model->SetIntegerExpression(node_boolvar, boolvar);
+  } else if (node_boolvar->isBool() && node_boolvar->getBool() == 1) {
+    VLOG(1) << "  - forcing array_bool_and to 1";
+    for (int i = 0; i < variables.size(); ++i) {
+      variables[i]->SetValue(1);
+    }
+  } else {
+    if (node_boolvar->isBool()) {
+      if (node_boolvar->getBool() == 0) {
+        if (FLAGS_use_minisat &&
+            AddBoolAndArrayEqualFalse(model->Sat(), variables)) {
+          VLOG(1) << "  - posted to minisat";
+        } else {
+          Constraint* const ct =
+              solver->MakeSumLessOrEqual(variables, variables.size() - 1);
+          VLOG(1) << "  - posted " << ct->DebugString();
+          solver->AddConstraint(ct);
+        }
+      } else {
+        Constraint* const ct =
+            solver->MakeSumEquality(variables, variables.size());
+        VLOG(1) << "  - posted " << ct->DebugString();
+        solver->AddConstraint(ct);
+      }
+    } else {
+      IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
+      if (FLAGS_use_minisat &&
+          AddBoolAndArrayEqVar(model->Sat(), variables, boolvar)) {
+        VLOG(1) << "  - posted to minisat";
+      } else {
+        Constraint* const ct = solver->MakeMinEquality(variables, boolvar);
+        VLOG(1) << "  - posted " << ct->DebugString();
+        solver->AddConstraint(ct);
+      }
     }
   }
 }
@@ -1429,11 +1462,15 @@ void p_bool_not(FlatZincModel* const model, CtSpec* const spec) {
     model->CheckIntegerVariableIsNull(spec->Arg(1));
     model->SetIntegerExpression(spec->Arg(1), target);
   } else {
-    IntExpr* const target = model->GetIntExpr(spec->Arg(1));
-    Constraint* const ct =
-        solver->MakeEquality(solver->MakeDifference(1, left), target);
-    VLOG(1) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
+    IntExpr* const right = model->GetIntExpr(spec->Arg(1));
+    if (FLAGS_use_minisat && AddBoolNot(model->Sat(), left, right)) {
+      VLOG(1) << "  - posted to minisat";
+    } else {
+      Constraint* const ct =
+          solver->MakeEquality(solver->MakeDifference(1, left), right);
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
   }
 }
 

@@ -69,7 +69,7 @@ class SatPropagator : public Constraint {
     VLOG(1) << "SAT: Parse " << expr->DebugString() << " to "
             << expr_var->DebugString() << "/" << expr_negated;
     if (ContainsKey(indices_, expr_var)) {
-      return Minisat::mkLit(indices_[expr_var], expr_negated);
+      return Minisat::mkLit(indices_[expr_var], !expr_negated);
     } else {
       const Minisat::Var var = minisat_.newVar(true, true);
       vars_.push_back(expr_var);
@@ -209,10 +209,9 @@ bool AddBoolNot(SatPropagator* const sat,
   return true;
 }
 
-bool AddBoolAndArrayEqVar(SatPropagator* const sat,
-                          const std::vector<IntVar*>& vars,
-                          IntExpr* const target) {
-  return false;
+bool AddBoolOrArrayEqVar(SatPropagator* const sat,
+                         const std::vector<IntVar*>& vars,
+                         IntExpr* const target) {
   if (!sat->Check(vars) || !sat->Check(target)) {
     return false;
   }
@@ -226,12 +225,12 @@ bool AddBoolAndArrayEqVar(SatPropagator* const sat,
   for (int i = 0; i < vars.size(); ++i) {
     sat->AddClause(target_lit, ~lits[i]);
   }
+  return true;
 }
 
-bool AddBoolOrArrayEqVar(SatPropagator* const sat,
-                         const std::vector<IntVar*>& vars,
-                         IntExpr* const target) {
-  return false;
+bool AddBoolAndArrayEqVar(SatPropagator* const sat,
+                          const std::vector<IntVar*>& vars,
+                          IntExpr* const target) {
   if (!sat->Check(vars) || !sat->Check(target)) {
     return false;
   }
@@ -245,6 +244,7 @@ bool AddBoolOrArrayEqVar(SatPropagator* const sat,
   for (int i = 0; i < vars.size(); ++i) {
     sat->AddClause(~target_lit, ~lits[i]);
   }
+  return true;
 }
 
 bool AddBoolOrEqVar(SatPropagator* const sat,
@@ -323,7 +323,7 @@ bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
     lits[i] = sat->Literal(vars[i]);
   }
   sat->AddClause(lits);
-  return false;
+  return true;
 }
 
 bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
@@ -336,7 +336,7 @@ bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
     lits[i] = ~sat->Literal(vars[i]);
   }
   sat->AddClause(lits);
-  return false;
+  return true;
 }
 
 SatPropagator* MakeSatPropagator(Solver* const solver) {
