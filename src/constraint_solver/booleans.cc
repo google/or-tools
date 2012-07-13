@@ -277,10 +277,27 @@ bool AddBoolOrEqVar(SatPropagator* const sat,
   return true;
 }
 
-bool AddBoolXorEqVar(SatPropagator* const sat,
+bool AddBoolIsNEqVar(SatPropagator* const sat,
                      IntVar* const left,
                      IntVar* const right,
                      IntVar* const target) {
+  if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
+    return false;
+  }
+  Minisat::Lit left_lit = sat->Literal(left);
+  Minisat::Lit right_lit = sat->Literal(right);
+  Minisat::Lit target_lit = sat->Literal(target);
+  sat->AddClause(~left_lit, right_lit, ~target_lit);
+  sat->AddClause(left_lit, ~right_lit, ~target_lit);
+  sat->AddClause(left_lit, right_lit, target_lit);
+  sat->AddClause(~left_lit, ~right_lit, target_lit);
+  return true;
+}
+
+bool AddBoolIsEqVar(SatPropagator* const sat,
+                    IntVar* const left,
+                    IntVar* const right,
+                    IntVar* const target) {
   if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
     return false;
   }

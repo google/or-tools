@@ -39,7 +39,16 @@ bool AddBoolAndArrayEqVar(SatPropagator* const sat,
                           const std::vector<IntVar*>& vars,
                           IntVar* const target);
 
+bool AddBoolOrArrayEqVar(SatPropagator* const sat,
+                         const std::vector<IntVar*>& vars,
+                         IntVar* const target);
+
 bool AddBoolAndEqVar(SatPropagator* const sat,
+                     IntVar* const left,
+                     IntVar* const right,
+                     IntVar* const target);
+
+bool AddBoolIsNEqVar(SatPropagator* const sat,
                      IntVar* const left,
                      IntVar* const right,
                      IntVar* const target);
@@ -48,6 +57,12 @@ bool AddBoolOrEqVar(SatPropagator* const sat,
                     IntVar* const left,
                     IntVar* const right,
                     IntVar* const target);
+
+bool AddBoolIsEqVar(SatPropagator* const sat,
+                    IntVar* const left,
+                    IntVar* const right,
+                    IntVar* const target);
+
 
 bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
                              const std::vector<IntVar*>& vars);
@@ -123,6 +138,29 @@ void TestBoolOrEq() {
   solver.EndSearch();
   LOG(INFO) << solver.DebugString();
 }
+
+void TestBoolIsEq() {
+  LOG(INFO) << "TestBoolIsEq";
+  Solver solver("TestBoolIsEq");
+  SatPropagator* const sat = MakeSatPropagator(&solver);
+  solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
+  IntVar* const x = solver.MakeBoolVar("x");
+  IntVar* const y = solver.MakeBoolVar("y");
+  IntVar* const z = solver.MakeBoolVar("z");
+  CHECK(AddBoolIsEqVar(sat, x, y, z));
+  DecisionBuilder* const db =
+      solver.MakePhase(x, y, z,
+                       Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE);
+  solver.NewSearch(db);
+  while (solver.NextSolution()) {
+    LOG(INFO) << " x = " << x->Value()
+              << ", y = " << y->Value()
+              << ", z = " << z->Value();
+  }
+  solver.EndSearch();
+  LOG(INFO) << solver.DebugString();
+}
 }  // namespace operations_research
 
 
@@ -131,5 +169,6 @@ int main(int argc, char** argv) {
   operations_research::TestBoolEq();
   operations_research::TestBoolAndEq();
   operations_research::TestBoolOrEq();
+  operations_research::TestBoolIsEq();
   return 0;
 }
