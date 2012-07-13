@@ -111,19 +111,21 @@ class SatPropagator : public Constraint {
         const int var = Minisat::var(lit);
         const bool assigned_bool = Minisat::sign(lit);
         VLOG(1) << "  - var " << var << " was assigned to " << assigned_bool;
+        demons_[var]->inhibit(solver());
         vars_[var]->SetValue(assigned_bool);
       }
     }
   }
 
   virtual void Post() {
+    demons_.resize(vars_.size());
     for (int i = 0; i < vars_.size(); ++i) {
-      Demon* const d = MakeConstraintDemon1(solver(),
-                                            this,
-                                            &SatPropagator::VariableBound,
-                                            "VariableBound",
-                                            indices_[vars_[i]]);
-      vars_[i]->WhenDomain(d);
+      demons_[i] = MakeConstraintDemon1(solver(),
+                                        this,
+                                        &SatPropagator::VariableBound,
+                                        "VariableBound",
+                                        indices_[vars_[i]]);
+      vars_[i]->WhenDomain(demons_[i]);
     }
   }
 
@@ -168,6 +170,7 @@ class SatPropagator : public Constraint {
   hash_map<IntVar*, Minisat::Var> indices_;
   std::vector<Minisat::Lit> bound_literals_;
   NumericalRev<int> num_bound_literals_;
+  std::vector<Demon*> demons_;
 };
 
 bool AddBoolEq(SatPropagator* const sat,
