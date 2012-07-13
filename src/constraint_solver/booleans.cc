@@ -82,7 +82,7 @@ class SatPropagator : public Constraint {
   }
 
   void VariableBound(int index) {
-    if (num_bound_literals_.Value() <= minisat_.decisionLevel()) {
+    if (num_bound_literals_.Value() < minisat_.decisionLevel()) {
       minisat_.cancelUntil(num_bound_literals_.Value());
     }
     VLOG(1) << "VariableBound: " << vars_[index]->DebugString();

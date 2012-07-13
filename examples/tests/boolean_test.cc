@@ -105,7 +105,28 @@ void TestBoolEq() {
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
-  CHECK(AddBoolEq(sat, x, solver.MakeDifference(1, y)));
+  CHECK(AddBoolEq(sat, x, y));
+  DecisionBuilder* const db =
+      solver.MakePhase(x, y,
+                       Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE);
+  solver.NewSearch(db);
+  while (solver.NextSolution()) {
+    LOG(INFO) << " x = " << x->Value() << ", y = " << y->Value();
+  }
+  solver.EndSearch();
+  CHECK_EQ(2, solver.solutions());
+  LOG(INFO) << solver.DebugString();
+}
+
+void TestBoolNot() {
+  LOG(INFO) << "TestBoolNot";
+  Solver solver("TestBoolNot");
+  SatPropagator* const sat = MakeSatPropagator(&solver);
+  solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
+  IntVar* const x = solver.MakeBoolVar("x");
+  IntVar* const y = solver.MakeBoolVar("y");
+  CHECK(AddBoolNot(sat, x, y));
   DecisionBuilder* const db =
       solver.MakePhase(x, y,
                        Solver::CHOOSE_FIRST_UNBOUND,
@@ -240,6 +261,7 @@ int main(int argc, char** argv) {
   operations_research::TestConversions();
   operations_research::TestBoolLe();
   operations_research::TestBoolEq();
+  operations_research::TestBoolNot();
   operations_research::TestBoolAndEq();
   operations_research::TestBoolOrEq();
   operations_research::TestBoolIsEq();
