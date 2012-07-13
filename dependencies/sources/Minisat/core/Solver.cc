@@ -444,6 +444,9 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
   trail.push_(p);
   if (store_unit_propagation_) {
     touched_variables_.push_back(var(p));
+    VLOG(1) << "  - deduce " << var(p) << " to " << toInt(assigns[var(p)])
+            << ", lit = " << toInt(p) << ", sign = " << sign(p);
+
   }
 }
 

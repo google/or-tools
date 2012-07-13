@@ -20,6 +20,7 @@
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/model.pb.h"
 #include "util/string_array.h"
+#include "core/Solver.h"
 
 namespace operations_research {
 class SatPropagator;
@@ -71,6 +72,11 @@ bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
                                const std::vector<IntVar*>& vars);
 
 SatPropagator* MakeSatPropagator(Solver* const solver);
+
+void TestConversions() {
+  LOG(INFO) << "lbool(false) -> " << toInt(Minisat::lbool(false));
+  LOG(INFO) << "lbool(true) -> " << toInt(Minisat::lbool(true));
+}
 
 void TestBoolLe() {
   LOG(INFO) << "TestBoolLe";
@@ -182,6 +188,29 @@ void TestBoolIsEq() {
   LOG(INFO) << solver.DebugString();
 }
 
+void TestBoolIsNEq() {
+  LOG(INFO) << "TestBoolIsNEq";
+  Solver solver("TestBoolIsNEq");
+  SatPropagator* const sat = MakeSatPropagator(&solver);
+  solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
+  IntVar* const x = solver.MakeBoolVar("x");
+  IntVar* const y = solver.MakeBoolVar("y");
+  IntVar* const z = solver.MakeBoolVar("z");
+  CHECK(AddBoolIsNEqVar(sat, x, y, z));
+  DecisionBuilder* const db =
+      solver.MakePhase(x, y, z,
+                       Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE);
+  solver.NewSearch(db);
+  while (solver.NextSolution()) {
+    LOG(INFO) << " x = " << x->Value()
+              << ", y = " << y->Value()
+              << ", z = " << z->Value();
+  }
+  solver.EndSearch();
+  LOG(INFO) << solver.DebugString();
+}
+
 void TestInconsistent() {
   LOG(INFO) << "TestInconsistent";
   Solver solver("TestInconsistent");
@@ -208,11 +237,13 @@ void TestInconsistent() {
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
+  operations_research::TestConversions();
   operations_research::TestBoolLe();
   operations_research::TestBoolEq();
   operations_research::TestBoolAndEq();
   operations_research::TestBoolOrEq();
   operations_research::TestBoolIsEq();
+  operations_research::TestBoolIsNEq();
   operations_research::TestInconsistent();
   return 0;
 }

@@ -74,7 +74,7 @@ class SatPropagator : public Constraint {
       const Minisat::Var var = minisat_.newVar(true, true);
       vars_.push_back(expr_var);
       indices_[expr_var] = var;
-      Minisat::Lit lit = Minisat::mkLit(var, expr_negated);
+      Minisat::Lit lit = Minisat::mkLit(var, !expr_negated);
       VLOG(1) << "  - created var = " << Minisat::toInt(var)
               << ", lit = " << Minisat::toInt(lit);
       return lit;
@@ -85,31 +85,32 @@ class SatPropagator : public Constraint {
     if (num_bound_literals_.Value() <= minisat_.decisionLevel()) {
       minisat_.cancelUntil(num_bound_literals_.Value());
     }
+    VLOG(1) << "VariableBound: " << vars_[index]->DebugString();
     Minisat::Var var(index);
     Minisat::lbool internal_value = minisat_.value(var);
+    VLOG(1) << "  - internal value = " << toInt(internal_value);
     const bool var_value = vars_[index]->Value() != 0;
     if (toInt(internal_value) != 2) {  // not undefined.
-      const bool b_value = (toInt(internal_value) == 0);  // == l_True
+      const bool b_value = (toInt(internal_value) == 1);  // == l_True
       if (var_value != b_value) {
         solver()->Fail();
       } else {
         return;
       }
     }
-    Minisat::Lit lit = Minisat::mkLit(var, !var_value);
-    VLOG(1) << "Assign " << vars_[index]->DebugString()
-            << ", enqueue lit = " << Minisat::toInt(lit);
-    const int level = minisat_.decisionLevel();
+    Minisat::Lit lit = Minisat::mkLit(var, var_value);
+    VLOG(1) <<  "  - enqueue lit = " << Minisat::toInt(lit);
     if (!minisat_.propagateOneLiteral(lit)) {
       VLOG(1) << "  - failure detected";
       solver()->Fail();
     } else {
+      const int level = minisat_.decisionLevel();
       num_bound_literals_.SetValue(solver(), level);
       for (int i = 0; i < minisat_.touched_variables_.size(); ++i) {
         const int var = minisat_.touched_variables_[i];
         Minisat::lbool assigned_value = minisat_.value(var);
         CHECK_NE(2, toInt(assigned_value));
-        const bool assigned_bool = (toInt(assigned_value) == 0);  // == l_True
+        const bool assigned_bool = (toInt(assigned_value) == 1);  // == l_True
         VLOG(1) << "  - var " << var << " was assigned to " << assigned_bool;
         vars_[var]->SetValue(assigned_bool);
       }
@@ -246,10 +247,10 @@ bool AddBoolOrArrayEqVar(SatPropagator* const sat,
   }
 }
 
-bool AddBoolAndEqVar(SatPropagator* const sat,
-                     IntExpr* const left,
-                     IntExpr* const right,
-                     IntExpr* const target) {
+bool AddBoolOrEqVar(SatPropagator* const sat,
+                    IntExpr* const left,
+                    IntExpr* const right,
+                    IntExpr* const target) {
   if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
     return false;
   }
@@ -262,10 +263,10 @@ bool AddBoolAndEqVar(SatPropagator* const sat,
   return true;
 }
 
-bool AddBoolOrEqVar(SatPropagator* const sat,
-                    IntExpr* const left,
-                    IntExpr* const right,
-                    IntExpr* const target) {
+bool AddBoolAndEqVar(SatPropagator* const sat,
+                     IntExpr* const left,
+                     IntExpr* const right,
+                     IntExpr* const target) {
   if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
     return false;
   }
@@ -278,10 +279,10 @@ bool AddBoolOrEqVar(SatPropagator* const sat,
   return true;
 }
 
-bool AddBoolIsNEqVar(SatPropagator* const sat,
-                     IntExpr* const left,
-                     IntExpr* const right,
-                     IntExpr* const target) {
+bool AddBoolIsEqVar(SatPropagator* const sat,
+                    IntExpr* const left,
+                    IntExpr* const right,
+                    IntExpr* const target) {
   if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
     return false;
   }
@@ -295,10 +296,10 @@ bool AddBoolIsNEqVar(SatPropagator* const sat,
   return true;
 }
 
-bool AddBoolIsEqVar(SatPropagator* const sat,
-                    IntExpr* const left,
-                    IntExpr* const right,
-                    IntExpr* const target) {
+bool AddBoolIsNEqVar(SatPropagator* const sat,
+                     IntExpr* const left,
+                     IntExpr* const right,
+                     IntExpr* const target) {
   if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
     return false;
   }
