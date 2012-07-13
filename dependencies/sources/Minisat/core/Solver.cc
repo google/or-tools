@@ -54,7 +54,8 @@ Solver::Solver() :
 
     // Parameters (user settable):
     //
-    verbosity        (0)
+    store_unit_propagation_(false)
+    , verbosity        (0)
     , var_decay        (FLAGS_var_decay)
     , clause_decay     (FLAGS_clause_decay)
     , random_var_freq  (FLAGS_random_var_freq)
@@ -136,7 +137,6 @@ Var Solver::newVar(bool sign, bool dvar) {
   return v;
 }
 
-
 bool Solver::addClause_(vec<Lit>& ps) {
   assert(decisionLevel() == 0);
   if (!ok) return false;
@@ -165,14 +165,14 @@ bool Solver::addClause_(vec<Lit>& ps) {
   return true;
 }
 
-
 void Solver::attachClause(CRef cr) {
   const Clause& c = ca[cr];
   assert(c.size() > 1);
   watches[~c[0]].push(Watcher(cr, c[1]));
   watches[~c[1]].push(Watcher(cr, c[0]));
   if (c.learnt()) learnts_literals += c.size();
-  else            clauses_literals += c.size(); }
+  else            clauses_literals += c.size();
+ }
 
 
 void Solver::detachClause(CRef cr, bool strict) {
@@ -191,8 +191,7 @@ void Solver::detachClause(CRef cr, bool strict) {
 
   if (c.learnt()) learnts_literals -= c.size();
   else            clauses_literals -= c.size();
- }
-
+}
 
 void Solver::removeClause(CRef cr) {
   Clause& c = ca[cr];
@@ -203,14 +202,12 @@ void Solver::removeClause(CRef cr) {
   ca.free(cr);
 }
 
-
 bool Solver::satisfied(const Clause& c) const {
   for (int i = 0; i < c.size(); i++)
     if (value(c[i]) == l_True)
       return true;
   return false;
 }
-
 
 // Revert to the state at given level (keeping all assignment at
 // 'level' but not beyond).
@@ -229,10 +226,8 @@ void Solver::cancelUntil(int level) {
   }
 }
 
-
 //==============================================================================
 // Major methods:
-
 
 Lit Solver::pickBranchLit() {
   Var next = var_Undef;
@@ -255,7 +250,6 @@ Lit Solver::pickBranchLit() {
       lit_Undef :
       mkLit(next, rnd_pol ? drand(random_seed) < 0.5 : polarity[next]);
 }
-
 
 /*______________________________________________________________________________
   |
@@ -448,6 +442,9 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
   assigns[var(p)] = lbool(!sign(p));
   vardata[var(p)] = mkVarData(from, decisionLevel());
   trail.push_(p);
+  if (store_unit_propagation_) {
+    touched_variables_.push_back(var(p));
+  }
 }
 
 /* _____________________________________________________________________________
@@ -540,8 +537,7 @@ struct reduceDB_lt {
                                 ca[x].activity() < ca[y].activity());
   }
 };
-void Solver::reduceDB()
-{
+void Solver::reduceDB() {
   int     i, j;
   double  extra_lim = cla_inc / learnts.size();    // Remove any clause below this activity
 
@@ -765,6 +761,39 @@ static double luby(double y, int x) {
   }
 
   return pow(y, seq);
+}
+
+bool Solver::initPropagator() {
+  store_unit_propagation_ = true;
+  model.clear();
+  conflict.clear();
+  touched_variables_.clear();
+  if (!ok) return false;
+  return true;
+}
+
+bool Solver::propagateOneLiteral(Lit lit) {
+  assert(ok);
+  touched_variables_.clear();
+  CRef confl = propagate();
+  if (confl != CRef_Undef) {
+    return false;
+  }
+  if (value(lit) == l_True) {
+    // Dummy decision level:
+    newDecisionLevel();
+    return true;
+  } else if (value(lit) == l_False) {
+    return false;
+  }
+  newDecisionLevel();
+  // Unchecked enqueue
+  assert(value(lit) == l_Undef);
+  assigns[var(lit)] = lbool(!sign(lit));
+  vardata[var(lit)] = mkVarData(CRef_Undef, decisionLevel());
+  trail.push_(lit);
+  confl = propagate();
+  return confl == CRef_Undef;
 }
 
 // NOTE: assumptions passed in member-variable 'assumptions'.

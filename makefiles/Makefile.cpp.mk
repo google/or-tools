@@ -210,7 +210,7 @@ $(OBJ_DIR)/assignment.pb.$O:$(GEN_DIR)/constraint_solver/assignment.pb.cc
 $(OBJ_DIR)/ac4r_table.$O:$(SRC_DIR)/constraint_solver/ac4r_table.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/ac4r_table.cc $(OBJ_OUT)ac4r_table.$O
 
-$(OBJ_DIR)/booleans.$O:$(SRC_DIR)/constraint_solver/booleans.cc
+$(OBJ_DIR)/booleans.$O:$(SRC_DIR)/constraint_solver/booleans.cc $(OR_ROOT)dependencies/sources/Minisat/core/Solver.h $(OR_ROOT)dependencies/sources/Minisat/core/Solver.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/booleans.cc $(OBJ_OUT)booleans.$O
 
 $(GEN_DIR)/constraint_solver/assignment.pb.cc:$(SRC_DIR)/constraint_solver/assignment.proto

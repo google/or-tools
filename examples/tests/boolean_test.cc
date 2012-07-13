@@ -75,6 +75,7 @@ void TestBoolEq() {
   }
   solver.EndSearch();
   CHECK_EQ(2, solver.solutions());
+  LOG(INFO) << solver.DebugString();
 }
 
 void TestBoolAndEq() {
@@ -97,6 +98,7 @@ void TestBoolAndEq() {
               << ", z = " << z->Value();
   }
   solver.EndSearch();
+  LOG(INFO) << solver.DebugString();
 }
 
 void TestBoolOrEq() {
@@ -119,6 +121,7 @@ void TestBoolOrEq() {
               << ", z = " << z->Value();
   }
   solver.EndSearch();
+  LOG(INFO) << solver.DebugString();
 }
 }  // namespace operations_research
 

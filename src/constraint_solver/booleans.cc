@@ -75,23 +75,43 @@ class SatPropagator : public Constraint {
       vars_.push_back(expr_var);
       indices_[expr_var] = var;
       Minisat::Lit lit = Minisat::mkLit(var, expr_negated);
-      VLOG(1) << "Created var = " << Minisat::toInt(var)
+      VLOG(1) << "  - created var = " << Minisat::toInt(var)
               << ", lit = " << Minisat::toInt(lit);
       return lit;
     }
   }
 
   void VariableBound(int index) {
+    if (num_bound_literals_.Value() <= minisat_.decisionLevel()) {
+      minisat_.cancelUntil(num_bound_literals_.Value());
+    }
     Minisat::Var var(index);
-    Minisat::Lit lit = Minisat::mkLit(var, vars_[index]->Value());
+    Minisat::lbool internal_value = minisat_.value(var);
+    int64 var_value = vars_[index]->Value();
+    if (toInt(internal_value) != 2) {  // not undefined.
+      const bool b_value = (toInt(internal_value) == 1);  // == l_True
+      if (var_value != b_value) {
+        solver()->Fail();
+      } else {
+        return;
+      }
+    }
+    Minisat::Lit lit = Minisat::mkLit(var, var_value);
     VLOG(1) << "Assign " << vars_[index]->DebugString()
             << ", enqueue lit = " << Minisat::toInt(lit);
-    bound_literals_.resize(num_bound_literals_.Value());
-    num_bound_literals_.Incr(solver());
-    bound_literals_.push_back(lit);
-    if (!minisat_.solve(bound_literals_)) {
+    if (!minisat_.propagateOneLiteral(lit)) {
       VLOG(1) << "  - failure detected";
       solver()->Fail();
+    } else {
+      num_bound_literals_.Incr(solver());
+      for (int i = 0; i < minisat_.touched_variables_.size(); ++i) {
+        const int var = minisat_.touched_variables_[i];
+        Minisat::lbool assigned_value = minisat_.value(var);
+        CHECK_NE(2, toInt(assigned_value));
+        const bool assigned_bool = (toInt(assigned_value) == 1);  // == l_True
+        VLOG(1) << "  - var " << var << " was assigned to " << assigned_bool;
+        vars_[var]->SetValue(assigned_bool);
+      }
     }
   }
 
@@ -107,6 +127,7 @@ class SatPropagator : public Constraint {
   }
 
   virtual void InitialPropagate() {
+    minisat_.initPropagator();
     for (int i = 0; i < vars_.size(); ++i) {
       IntVar* const var = vars_[i];
       if (var->Bound()) {
@@ -116,12 +137,8 @@ class SatPropagator : public Constraint {
   }
 
   // Add a clause to the solver.
-  bool AddClause (const std::vector<Minisat::Lit>& ps) {
-    Minisat::vec<Minisat::Lit> lits(ps.size());
-    for (int i = 0; i < ps.size(); ++i) {
-      lits[i] = ps[i];
-    }
-    return minisat_.addClause_(lits);
+  bool AddClause (const std::vector<Minisat::Lit>& lits) {
+    return minisat_.addClause(lits);
   }
 
   // Add the empty clause, making the solver contradictory.
@@ -270,9 +287,10 @@ bool AddBoolXorEqVar(SatPropagator* const sat,
   Minisat::Lit left_lit = sat->Literal(left);
   Minisat::Lit right_lit = sat->Literal(right);
   Minisat::Lit target_lit = sat->Literal(target);
-  sat->AddClause(~left_lit, ~right_lit, target_lit);
-  sat->AddClause(left_lit, ~target_lit);
-  sat->AddClause(right_lit, ~target_lit);
+  sat->AddClause(~left_lit, right_lit, target_lit);
+  sat->AddClause(left_lit, ~right_lit, target_lit);
+  sat->AddClause(left_lit, right_lit, ~target_lit);
+  sat->AddClause(~left_lit, ~right_lit, ~target_lit);
   return true;
 }
 
