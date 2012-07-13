@@ -370,7 +370,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 // Check if 'p' can be removed. 'abstract_levels' is used to abort
 // early if the algorithm is visiting literals at levels that cannot
 // be removed later.
-bool Solver::litRedundant(Lit p, uint32_t abstract_levels) {
+bool Solver::litRedundant(Lit p, uint32 abstract_levels) {
   analyze_stack.clear(); analyze_stack.push(p);
   int top = analyze_toclear.size();
   while (analyze_stack.size() > 0) {

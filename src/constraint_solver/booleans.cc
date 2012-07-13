@@ -87,16 +87,16 @@ class SatPropagator : public Constraint {
     }
     Minisat::Var var(index);
     Minisat::lbool internal_value = minisat_.value(var);
-    int64 var_value = vars_[index]->Value();
+    const bool var_value = vars_[index]->Value() != 0;
     if (toInt(internal_value) != 2) {  // not undefined.
-      const bool b_value = (toInt(internal_value) == 1);  // == l_True
+      const bool b_value = (toInt(internal_value) == 0);  // == l_True
       if (var_value != b_value) {
         solver()->Fail();
       } else {
         return;
       }
     }
-    Minisat::Lit lit = Minisat::mkLit(var, var_value);
+    Minisat::Lit lit = Minisat::mkLit(var, !var_value);
     VLOG(1) << "Assign " << vars_[index]->DebugString()
             << ", enqueue lit = " << Minisat::toInt(lit);
     const int level = minisat_.decisionLevel();
@@ -109,7 +109,7 @@ class SatPropagator : public Constraint {
         const int var = minisat_.touched_variables_[i];
         Minisat::lbool assigned_value = minisat_.value(var);
         CHECK_NE(2, toInt(assigned_value));
-        const bool assigned_bool = (toInt(assigned_value) == 1);  // == l_True
+        const bool assigned_bool = (toInt(assigned_value) == 0);  // == l_True
         VLOG(1) << "  - var " << var << " was assigned to " << assigned_bool;
         vars_[var]->SetValue(assigned_bool);
       }
@@ -191,7 +191,7 @@ bool AddBoolLe(SatPropagator* const sat,
   }
   Minisat::Lit left_lit = sat->Literal(left);
   Minisat::Lit right_lit = sat->Literal(right);
-  sat->AddClause(left_lit, ~right_lit);
+  sat->AddClause(~left_lit, right_lit);
   return true;
 }
 
