@@ -209,7 +209,7 @@ bool AddBoolNot(SatPropagator* const sat,
 
 bool AddBoolAndArrayEqVar(SatPropagator* const sat,
                           const std::vector<IntVar*>& vars,
-                          IntVar* const target) {
+                          IntExpr* const target) {
   return false;
   if (!sat->Check(vars) || !sat->Check(target)) {
     return false;
@@ -228,7 +228,7 @@ bool AddBoolAndArrayEqVar(SatPropagator* const sat,
 
 bool AddBoolOrArrayEqVar(SatPropagator* const sat,
                          const std::vector<IntVar*>& vars,
-                         IntVar* const target) {
+                         IntExpr* const target) {
   return false;
   if (!sat->Check(vars) || !sat->Check(target)) {
     return false;
@@ -246,9 +246,9 @@ bool AddBoolOrArrayEqVar(SatPropagator* const sat,
 }
 
 bool AddBoolAndEqVar(SatPropagator* const sat,
-                     IntVar* const left,
-                     IntVar* const right,
-                     IntVar* const target) {
+                     IntExpr* const left,
+                     IntExpr* const right,
+                     IntExpr* const target) {
   if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
     return false;
   }
@@ -262,9 +262,9 @@ bool AddBoolAndEqVar(SatPropagator* const sat,
 }
 
 bool AddBoolOrEqVar(SatPropagator* const sat,
-                    IntVar* const left,
-                    IntVar* const right,
-                    IntVar* const target) {
+                    IntExpr* const left,
+                    IntExpr* const right,
+                    IntExpr* const target) {
   if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
     return false;
   }
@@ -278,9 +278,9 @@ bool AddBoolOrEqVar(SatPropagator* const sat,
 }
 
 bool AddBoolIsNEqVar(SatPropagator* const sat,
-                     IntVar* const left,
-                     IntVar* const right,
-                     IntVar* const target) {
+                     IntExpr* const left,
+                     IntExpr* const right,
+                     IntExpr* const target) {
   if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
     return false;
   }
@@ -295,9 +295,9 @@ bool AddBoolIsNEqVar(SatPropagator* const sat,
 }
 
 bool AddBoolIsEqVar(SatPropagator* const sat,
-                    IntVar* const left,
-                    IntVar* const right,
-                    IntVar* const target) {
+                    IntExpr* const left,
+                    IntExpr* const right,
+                    IntExpr* const target) {
   if (!sat->Check(left) || !sat->Check(right) || !sat->Check(target)) {
     return false;
   }

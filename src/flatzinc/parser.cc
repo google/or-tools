@@ -17,6 +17,8 @@ extern int yyget_lineno (void* scanner);
 extern void yyset_extra (void* user_defined ,void* yyscanner );
 extern void yyerror(void* parm, const char *str);
 
+DECLARE_bool(use_minisat);
+
 namespace operations_research {
 // ----- Misc -----
 bool HasDomainAnnotation(AST::Node* const annotations) {
@@ -138,18 +140,19 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
       candidates->insert(define);
       VLOG(2) << id << " -> insert " << define->DebugString();
     }
-  } else if (id == "array_bool_and" ||
-             id == "array_bool_or" ||
+  } else if ((id == "array_bool_and" && !FLAGS_use_minisat) ||
+             (id == "array_bool_or" && !FLAGS_use_minisat) ||
              id == "array_bool_element" ||
              id == "int_lin_eq_reif" ||
              id == "int_eq_reif" ||
              id == "int_ne_reif" ||
              id == "int_le_reif" ||
              id == "int_ge_reif" ||
-             id == "bool_eq_reif" ||
-             id == "bool_ne_reif" ||
+             (id == "bool_eq_reif" && !FLAGS_use_minisat) ||
+             (id == "bool_ne_reif" && !FLAGS_use_minisat) ||
              id == "bool_le_reif" ||
-             id == "bool_ge_reif") {
+             id == "bool_ge_reif" ||
+             id == "bool_not") {
     // Defines a bool var.
     AST::Node* const bool_define = FindTarget(spec->annotations());
     if (bool_define != NULL) {
@@ -1171,6 +1174,32 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       }
       spec->Arg(2)->setInt(-spec->Arg(2)->getInt());
       return true;
+    }
+  }
+  if (id == "bool_eq_reif") {
+    if (spec->Arg(0)->isBoolVar() && spec->Arg(1)->isBool()) {
+      VLOG(1) << "  - presolve:  simplify bool_eq_reif in "
+              << spec->DebugString();
+      if (spec->Arg(1)->getBool()) {  // == 1
+        spec->RemoveArg(1);
+        spec->SetId("bool_eq");
+      } else {
+        spec->RemoveArg(1);
+        spec->SetId("bool_not");
+      }
+    }
+  }
+  if (id == "bool_ne_reif") {
+    if (spec->Arg(0)->isBoolVar() && spec->Arg(1)->isBool()) {
+      VLOG(1) << "  - presolve:  simplify bool_ne_reif in "
+              << spec->DebugString();
+      if (spec->Arg(1)->getBool()) {  // == 1
+        spec->RemoveArg(1);
+        spec->SetId("bool_not");
+      } else {
+        spec->RemoveArg(1);
+        spec->SetId("bool_eq");
+      }
     }
   }
   return false;

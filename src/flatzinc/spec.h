@@ -474,6 +474,14 @@ class CtSpec {
     return args_->a.size();
   }
 
+  void RemoveArg(int index) {
+    delete args_->a[index];
+    for (int i = index; i < args_->a.size() - 1; i++) {
+      args_->a[i] = args_->a[i + 1];
+    }
+    args_->a.pop_back();
+  }
+
   bool IsDefined(AST::Node* const arg) {
     if (defined_arg_ != NULL) {
       return ((arg->isIntVar() &&

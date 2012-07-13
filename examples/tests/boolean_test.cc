@@ -161,6 +161,28 @@ void TestBoolIsEq() {
   solver.EndSearch();
   LOG(INFO) << solver.DebugString();
 }
+
+void TestInconsistent() {
+  LOG(INFO) << "TestInconsistent";
+  Solver solver("TestInconsistent");
+  SatPropagator* const sat = MakeSatPropagator(&solver);
+  solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
+  IntVar* const x = solver.MakeBoolVar("x");
+  IntVar* const y = solver.MakeBoolVar("y");
+  CHECK(AddBoolEq(sat, x, y));
+  CHECK(AddBoolEq(sat, x, solver.MakeDifference(1, y)));
+  DecisionBuilder* const db =
+      solver.MakePhase(x, y,
+                       Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE);
+  solver.NewSearch(db);
+  while (solver.NextSolution()) {
+    LOG(INFO) << " x = " << x->Value() << ", y = " << y->Value();
+  }
+  solver.EndSearch();
+  LOG(INFO) << solver.DebugString();
+
+}
 }  // namespace operations_research
 
 
@@ -170,5 +192,6 @@ int main(int argc, char** argv) {
   operations_research::TestBoolAndEq();
   operations_research::TestBoolOrEq();
   operations_research::TestBoolIsEq();
+  operations_research::TestInconsistent();
   return 0;
 }

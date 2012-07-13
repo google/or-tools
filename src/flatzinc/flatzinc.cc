@@ -46,6 +46,7 @@
 using namespace std;
 
 namespace operations_research {
+SatPropagator* MakeSatPropagator(Solver* const solver);
 
 FlatZincModel::FlatZincModel(void)
     : int_var_count(-1),
@@ -57,7 +58,8 @@ FlatZincModel::FlatZincModel(void)
       objective_(NULL),
       output_(NULL),
       parsed_ok_(true),
-      free_search_(false) {}
+      free_search_(false),
+      sat_(NULL) {}
 
 void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
   int_var_count = 0;
@@ -70,6 +72,7 @@ void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
 
 void FlatZincModel::InitSolver() {
   solver_.reset(new Solver("FlatZincSolver"));
+  sat_ = MakeSatPropagator(solver_.get());
 }
 
 void FlatZincModel::NewIntVar(const std::string& name,

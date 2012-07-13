@@ -56,6 +56,7 @@
  */
 
 namespace operations_research {
+class SatPropagator;
 /**
  * \brief A space that can be initialized with a %FlatZinc model
  *
@@ -150,6 +151,8 @@ class FlatZincModel {
   // \brief Parse FlatZinc from \a is into \a fzs and return it.
   void Parse(std::istream& is);
 
+  SatPropagator* Sat() const { return sat_; }
+
  private:
   enum Meth {
     SAT, //< Solve as satisfaction problem
@@ -193,6 +196,7 @@ class FlatZincModel {
   bool parsed_ok_;
   bool free_search_;
   string filename_;
+  SatPropagator* sat_;
 };
 
 /// %Exception class for %FlatZinc errors
