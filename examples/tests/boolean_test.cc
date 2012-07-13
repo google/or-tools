@@ -78,18 +78,22 @@ void TestConversions() {
   LOG(INFO) << "lbool(true) -> " << toInt(Minisat::lbool(true));
 }
 
-void TestBoolLe() {
-  LOG(INFO) << "TestBoolLe";
+void TestBoolLe(int rotation) {
+  LOG(INFO) << "TestBoolLe(" << rotation << ")";
   Solver solver("TestBoolLe");
   SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
   CHECK(AddBoolLe(sat, x, y));
-  DecisionBuilder* const db =
+  DecisionBuilder* const db = rotation == 1 ?
       solver.MakePhase(x, y,
                        Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE) :
+      solver.MakePhase(y, x,
+                       Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_MIN_VALUE);
+
   solver.NewSearch(db);
   while (solver.NextSolution()) {
     LOG(INFO) << " x = " << x->Value() << ", y = " << y->Value();
@@ -98,16 +102,19 @@ void TestBoolLe() {
   LOG(INFO) << solver.DebugString();
 }
 
-void TestBoolEq() {
-  LOG(INFO) << "TestBoolEq";
+void TestBoolEq(int rotation) {
+  LOG(INFO) << "TestBoolEq(" << rotation << ")";
   Solver solver("TestBoolEq");
   SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
   CHECK(AddBoolEq(sat, x, y));
-  DecisionBuilder* const db =
+  DecisionBuilder* const db = rotation == 1 ?
       solver.MakePhase(x, y,
+                       Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE) :
+      solver.MakePhase(y, x,
                        Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_MIN_VALUE);
   solver.NewSearch(db);
@@ -119,16 +126,19 @@ void TestBoolEq() {
   LOG(INFO) << solver.DebugString();
 }
 
-void TestBoolNot() {
-  LOG(INFO) << "TestBoolNot";
+void TestBoolNot(int rotation) {
+  LOG(INFO) << "TestBoolNot(" << rotation << ")";
   Solver solver("TestBoolNot");
   SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
   CHECK(AddBoolNot(sat, x, y));
-  DecisionBuilder* const db =
+  DecisionBuilder* const db = rotation == 1 ?
       solver.MakePhase(x, y,
+                       Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE) :
+      solver.MakePhase(y, x,
                        Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_MIN_VALUE);
   solver.NewSearch(db);
@@ -140,8 +150,8 @@ void TestBoolNot() {
   LOG(INFO) << solver.DebugString();
 }
 
-void TestBoolAndEq() {
-  LOG(INFO) << "TestBoolAndEq";
+void TestBoolAndEq(int rotation) {
+  LOG(INFO) << "TestBoolAndEq(" << rotation << ")";
   Solver solver("TestBoolAndEq");
   SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
@@ -149,10 +159,14 @@ void TestBoolAndEq() {
   IntVar* const y = solver.MakeBoolVar("y");
   IntVar* const z = solver.MakeBoolVar("z");
   CHECK(AddBoolAndEqVar(sat, x, y, z));
-  DecisionBuilder* const db =
+  DecisionBuilder* const db = rotation == 1 ?
       solver.MakePhase(x, y, z,
                        Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE) :
+      solver.MakePhase(z, y, x,
+                       Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_MIN_VALUE);
+
   solver.NewSearch(db);
   while (solver.NextSolution()) {
     LOG(INFO) << " x = " << x->Value()
@@ -163,8 +177,8 @@ void TestBoolAndEq() {
   LOG(INFO) << solver.DebugString();
 }
 
-void TestBoolOrEq() {
-  LOG(INFO) << "TestBoolOrEq";
+void TestBoolOrEq(int rotation) {
+  LOG(INFO) << "TestBoolOrEq(" << rotation << ")";
   Solver solver("TestBoolOrEq");
   SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
@@ -172,8 +186,11 @@ void TestBoolOrEq() {
   IntVar* const y = solver.MakeBoolVar("y");
   IntVar* const z = solver.MakeBoolVar("z");
   CHECK(AddBoolOrEqVar(sat, x, y, z));
-  DecisionBuilder* const db =
+  DecisionBuilder* const db = rotation == 1 ?
       solver.MakePhase(x, y, z,
+                       Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE) :
+      solver.MakePhase(z, y, x,
                        Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_MIN_VALUE);
   solver.NewSearch(db);
@@ -186,8 +203,8 @@ void TestBoolOrEq() {
   LOG(INFO) << solver.DebugString();
 }
 
-void TestBoolIsEq() {
-  LOG(INFO) << "TestBoolIsEq";
+void TestBoolIsEq(int rotation) {
+  LOG(INFO) << "TestBoolIsEq(" << rotation << ")";
   Solver solver("TestBoolIsEq");
   SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
@@ -195,8 +212,11 @@ void TestBoolIsEq() {
   IntVar* const y = solver.MakeBoolVar("y");
   IntVar* const z = solver.MakeBoolVar("z");
   CHECK(AddBoolIsEqVar(sat, x, y, z));
-  DecisionBuilder* const db =
+  DecisionBuilder* const db = rotation == 1 ?
       solver.MakePhase(x, y, z,
+                       Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE) :
+      solver.MakePhase(z, y, x,
                        Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_MIN_VALUE);
   solver.NewSearch(db);
@@ -209,8 +229,8 @@ void TestBoolIsEq() {
   LOG(INFO) << solver.DebugString();
 }
 
-void TestBoolIsNEq() {
-  LOG(INFO) << "TestBoolIsNEq";
+void TestBoolIsNEq(int rotation) {
+  LOG(INFO) << "TestBoolIsNEq(" << rotation << ")";
   Solver solver("TestBoolIsNEq");
   SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
@@ -218,8 +238,11 @@ void TestBoolIsNEq() {
   IntVar* const y = solver.MakeBoolVar("y");
   IntVar* const z = solver.MakeBoolVar("z");
   CHECK(AddBoolIsNEqVar(sat, x, y, z));
-  DecisionBuilder* const db =
+  DecisionBuilder* const db = rotation == 1 ?
       solver.MakePhase(x, y, z,
+                       Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE) :
+      solver.MakePhase(z, y, x,
                        Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_MIN_VALUE);
   solver.NewSearch(db);
@@ -259,13 +282,20 @@ void TestInconsistent() {
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::TestConversions();
-  operations_research::TestBoolLe();
-  operations_research::TestBoolEq();
-  operations_research::TestBoolNot();
-  operations_research::TestBoolAndEq();
-  operations_research::TestBoolOrEq();
-  operations_research::TestBoolIsEq();
-  operations_research::TestBoolIsNEq();
+  operations_research::TestBoolLe(1);
+  operations_research::TestBoolLe(2);
+  operations_research::TestBoolEq(1);
+  operations_research::TestBoolEq(2);
+  operations_research::TestBoolNot(1);
+  operations_research::TestBoolNot(2);
+  operations_research::TestBoolAndEq(1);
+  operations_research::TestBoolAndEq(2);
+  operations_research::TestBoolOrEq(1);
+  operations_research::TestBoolOrEq(2);
+  operations_research::TestBoolIsEq(1);
+  operations_research::TestBoolIsEq(2);
+  operations_research::TestBoolIsNEq(1);
+  operations_research::TestBoolIsNEq(2);
   operations_research::TestInconsistent();
   return 0;
 }
