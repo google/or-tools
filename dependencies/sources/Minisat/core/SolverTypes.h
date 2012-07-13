@@ -249,8 +249,8 @@ class ClauseAllocator : public RegionAllocator<uint32>
     cr = to.alloc(c, c.learnt());
     c.relocate(cr);
 
-    // Copy extra data-fields:
-    // (This could be cleaned-up. Generalize Clause-constructor to be applicable here instead?)
+    // Copy extra data-fields: (This could be cleaned-up. Generalize
+    // Clause-constructor to be applicable here instead?)
     to[cr].mark(c.mark());
     if (to[cr].learnt())         to[cr].activity() = c.activity();
     else if (to[cr].has_extra()) to[cr].calcAbstraction();
@@ -258,7 +258,7 @@ class ClauseAllocator : public RegionAllocator<uint32>
 };
 
 
-//=================================================================================================
+//==============================================================================
 // OccLists -- a class for maintaining occurence lists with lazy deletion:
 
 template<class Idx, class Vec, class Deleted>
@@ -298,7 +298,8 @@ template<class Idx, class Vec, class Deleted>
 void OccLists<Idx,Vec,Deleted>::cleanAll()
 {
   for (int i = 0; i < dirties.size(); i++)
-    // Dirties may contain duplicates so check here if a variable is already cleaned:
+    // Dirties may contain duplicates so check here if a variable is
+    // already cleaned:
     if (dirty[toInt(dirties[i])])
       clean(dirties[i]);
   dirties.clear();

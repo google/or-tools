@@ -39,9 +39,12 @@
 namespace operations_research {
 class SatPropagator : public Constraint {
  public:
-  SatPropagator(Solver* const solver)
+  SatPropagator(Solver* const solver,
+                bool backjump)
   : Constraint(solver),
-    minisat_trail_(0) {}
+    minisat_trail_(0),
+    backtrack_level_(-1),
+    backjump_(backjump) {}
 
   ~SatPropagator() {}
 
@@ -83,7 +86,19 @@ class SatPropagator : public Constraint {
 
   void VariableBound(int index) {
     if (minisat_trail_.Value() < minisat_.decisionLevel()) {
+      VLOG(1) << "After failure, minisat_trail = " << minisat_trail_.Value()
+              << ", minisat decision level = " << minisat_.decisionLevel();
       minisat_.cancelUntil(minisat_trail_.Value());
+      CHECK_EQ(minisat_trail_.Value(), minisat_.decisionLevel());
+      if (backjump_ && backtrack_level_ != -1) {
+        if (minisat_trail_.Value() > backtrack_level_) {
+          VLOG(1) << "  - learnt backtrack: " << minisat_trail_.Value()
+                  << "/" << backtrack_level_;
+          solver()->Fail();
+        } else {
+          backtrack_level_ = -1;
+        }
+      }
     }
     VLOG(1) << "VariableBound: " << vars_[index]->DebugString();
     const Minisat::Var var(index);
@@ -94,9 +109,12 @@ class SatPropagator : public Constraint {
       solver()->Fail();
     }
     Minisat::Lit lit = Minisat::mkLit(var, var_value);
-    VLOG(1) <<  "  - enqueue lit = " << Minisat::toInt(lit);
-    if (!minisat_.propagateOneLiteral(lit)) {
-      VLOG(1) << "  - failure detected";
+    VLOG(1) << "  - enqueue lit = " << Minisat::toInt(lit)
+            << " at depth " << minisat_trail_.Value();
+    backtrack_level_ = minisat_.propagateOneLiteral(lit);
+    if (backtrack_level_ >= 0) {
+      VLOG(1) << "  - failure detected, should backtrack to "
+              << backtrack_level_;
       solver()->Fail();
     } else {
       minisat_trail_.SetValue(solver(), minisat_.decisionLevel());
@@ -124,6 +142,7 @@ class SatPropagator : public Constraint {
   }
 
   virtual void InitialPropagate() {
+    VLOG(1) << "Initial propagation on sat solver";
     minisat_.initPropagator();
     for (int i = 0; i < vars_.size(); ++i) {
       IntVar* const var = vars_[i];
@@ -131,6 +150,7 @@ class SatPropagator : public Constraint {
         VariableBound(i);
       }
     }
+    VLOG(1) << "  - done";
   }
 
   // Add a clause to the solver.
@@ -165,6 +185,8 @@ class SatPropagator : public Constraint {
   std::vector<Minisat::Lit> bound_literals_;
   NumericalRev<int> minisat_trail_;
   std::vector<Demon*> demons_;
+  int backtrack_level_;
+  const bool backjump_;
 };
 
 bool AddBoolEq(SatPropagator* const sat,
@@ -351,7 +373,7 @@ bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
   return true;
 }
 
-SatPropagator* MakeSatPropagator(Solver* const solver) {
-  return solver->RevAlloc(new SatPropagator(solver));
+SatPropagator* MakeSatPropagator(Solver* const solver, bool backjump) {
+  return solver->RevAlloc(new SatPropagator(solver, backjump));
 }
 }  // namespace operations_research

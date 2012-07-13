@@ -84,7 +84,9 @@ class Solver {
 
   // Incremental propagation.
   bool initPropagator();
-  bool propagateOneLiteral(Lit lit);
+  // propagates one literal, return value < 0 means success, >= 0 means
+  // we should backtrack up to this level.
+  int propagateOneLiteral(Lit lit);
   // Backtrack until a certain level.
   void cancelUntil(int level);
   // Gives the current decisionlevel.

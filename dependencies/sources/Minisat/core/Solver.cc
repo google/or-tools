@@ -769,22 +769,30 @@ bool Solver::initPropagator() {
   conflict.clear();
   touched_variables_.clear();
   if (!ok) return false;
+  max_learnts               = nClauses() * learntsize_factor;
+  learntsize_adjust_confl   = learntsize_adjust_start_confl;
+  learntsize_adjust_cnt     = (int)learntsize_adjust_confl;
   return true;
 }
 
-bool Solver::propagateOneLiteral(Lit lit) {
+int Solver::propagateOneLiteral(Lit lit) {
   assert(ok);
+  int backtrack_level = decisionLevel();
+  vec<Lit> learnt_clause;
   touched_variables_.clear();
   CRef confl = propagate();
   if (confl != CRef_Undef) {
-    return false;
+    if (decisionLevel() > 0) {
+      analyze(confl, learnt_clause, backtrack_level);
+    }
+    return backtrack_level;
   }
   if (value(lit) == l_True) {
     // Dummy decision level:
     newDecisionLevel();
-    return true;
+    return -1;
   } else if (value(lit) == l_False) {
-    return false;
+    return backtrack_level;
   }
   newDecisionLevel();
   // Unchecked enqueue
@@ -793,7 +801,11 @@ bool Solver::propagateOneLiteral(Lit lit) {
   vardata[var(lit)] = mkVarData(CRef_Undef, decisionLevel());
   trail.push_(lit);
   confl = propagate();
-  return confl == CRef_Undef;
+  if (confl != CRef_Undef) {
+    analyze(confl, learnt_clause, backtrack_level);
+    return backtrack_level;
+  }
+  return -1;
 }
 
 // NOTE: assumptions passed in member-variable 'assumptions'.

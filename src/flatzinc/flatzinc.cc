@@ -45,8 +45,10 @@
 
 using namespace std;
 
+DEFINE_bool(backjump, false, "Use backjump is the minisat connection");
+
 namespace operations_research {
-SatPropagator* MakeSatPropagator(Solver* const solver);
+SatPropagator* MakeSatPropagator(Solver* const solver, bool backjump);
 
 FlatZincModel::FlatZincModel(void)
     : int_var_count(-1),
@@ -72,7 +74,7 @@ void FlatZincModel::Init(int intVars, int boolVars, int setVars) {
 
 void FlatZincModel::InitSolver() {
   solver_.reset(new Solver("FlatZincSolver"));
-  sat_ = MakeSatPropagator(solver_.get());
+  sat_ = MakeSatPropagator(solver_.get(), FLAGS_backjump);
   solver_->AddConstraint(reinterpret_cast<Constraint*>(sat_));
 }
 
