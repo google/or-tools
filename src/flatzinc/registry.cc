@@ -1290,10 +1290,15 @@ void p_bool_and(FlatZincModel* const model, CtSpec* const spec) {
     model->SetIntegerExpression(spec->Arg(2), target);
   } else {
     IntExpr* const target = model->GetIntExpr(spec->Arg(2));
-    Constraint* const ct =
-        solver->MakeEquality(solver->MakeMin(left, right), target);
-    VLOG(1) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
+    if (FLAGS_use_minisat &&
+        AddBoolAndEqVar(model->Sat(), left, right, target)) {
+      VLOG(1) << "  - posted to minisat";
+    } else {
+      Constraint* const ct =
+          solver->MakeEquality(solver->MakeMin(left, right), target);
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
   }
 }
 
@@ -1309,10 +1314,15 @@ void p_bool_or(FlatZincModel* const model, CtSpec* const spec) {
     model->SetIntegerExpression(spec->Arg(2), target);
   } else {
     IntExpr* const target = model->GetIntExpr(spec->Arg(2));
-    Constraint* const ct =
-        solver->MakeEquality(solver->MakeMax(left, right), target);
-    VLOG(1) << "  - posted " << ct->DebugString();
-    solver->AddConstraint(ct);
+    if (FLAGS_use_minisat &&
+        AddBoolOrEqVar(model->Sat(), left, right, target)) {
+      VLOG(1) << "  - posted to minisat";
+    } else {
+      Constraint* const ct =
+          solver->MakeEquality(solver->MakeMax(left, right), target);
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
   }
 }
 
@@ -1448,24 +1458,14 @@ void p_bool_xor(FlatZincModel* const model, CtSpec* const spec) {
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
   IntExpr* const right = model->GetIntExpr(spec->Arg(1));
   IntVar* const target = model->GetIntExpr(spec->Arg(2))->Var();
-  Constraint* const ct =
-      solver->MakeIsEqualCstCt(solver->MakeSum(left, right), 1, target);
-  VLOG(1) << "  - posted " << ct->DebugString();
-  solver->AddConstraint(ct);
-}
-
-void p_bool_l_imp(FlatZincModel* const model, CtSpec* const spec) {
-  LOG(FATAL) << "bool_l_imp(" << (spec->Arg(0)->DebugString()) << ","
-             << (spec->Arg(1)->DebugString()) << ","
-             << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations()->DebugString();
-}
-
-void p_bool_r_imp(FlatZincModel* const model, CtSpec* const spec) {
-  LOG(FATAL) << "bool_r_imp(" << (spec->Arg(0)->DebugString()) << ","
-             << (spec->Arg(1)->DebugString()) << ","
-             << (spec->Arg(2)->DebugString())
-             << ")::" << spec->annotations()->DebugString();
+  if (FLAGS_use_minisat && AddBoolIsNEqVar(model->Sat(), left, right, target)) {
+    VLOG(1) << "  - posted to minisat";
+  } else {
+    Constraint* const ct =
+        solver->MakeIsEqualCstCt(solver->MakeSum(left, right), 1, target);
+    VLOG(1) << "  - posted " << ct->DebugString();
+    solver->AddConstraint(ct);
+  }
 }
 
 void p_bool_not(FlatZincModel* const model, CtSpec* const spec) {
@@ -2004,8 +2004,8 @@ class IntBuilder {
     global_model_builder.Register("bool_clause", &p_array_bool_clause);
     global_model_builder.Register("bool_clause_reif",
                                   &p_array_bool_clause_reif);
-    global_model_builder.Register("bool_left_imp", &p_bool_l_imp);
-    global_model_builder.Register("bool_right_imp", &p_bool_r_imp);
+    global_model_builder.Register("bool_left_imp", &p_bool_le);
+    global_model_builder.Register("bool_right_imp", &p_bool_ge);
     global_model_builder.Register("bool_not", &p_bool_not);
     global_model_builder.Register("array_int_element", &p_array_int_element);
     global_model_builder.Register("array_var_int_element",
