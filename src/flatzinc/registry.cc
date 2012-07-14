@@ -44,7 +44,7 @@
 
 DECLARE_bool(cp_trace_search);
 DECLARE_bool(cp_trace_propagation);
-DEFINE_bool(use_minisat, false, "Use minisat in boolean formulas");
+DEFINE_bool(use_minisat, true, "Use minisat in boolean formulas");
 
 namespace operations_research {
 class SatPropagator;
