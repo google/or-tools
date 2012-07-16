@@ -63,6 +63,7 @@ DEFINE_int32(max_duration, 10, "Max duration of a task");
 DEFINE_int32(scale_factor, 130, "Scale factor (in percent)");
 DEFINE_int32(seed, 1, "Random seed");
 DEFINE_int32(time_limit_in_ms, 0, "Time limit in ms, 0 means no limit.");
+DECLARE_bool(log_prefix);
 
 namespace operations_research {
 void EtJobShop(const EtJobShopData& data) {
@@ -202,6 +203,7 @@ static const char kUsage[] =
     "output besides the debug LOGs of the solver.";
 
 int main(int argc, char **argv) {
+  FLAGS_log_prefix = false;
   google::SetUsageMessage(kUsage);
   google::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::EtJobShopData data;

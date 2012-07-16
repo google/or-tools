@@ -90,7 +90,7 @@ class EtJobShopData {
                           int max_duration,
                           int scale_factor,
                           int seed) {
-    name_ = StringPrintf("EtJobshop(m%d-j%d-mrd%d-mew%d-mtw%d-md%d-sf%d-s%d",
+    name_ = StringPrintf("EtJobshop(m%d-j%d-mrd%d-mew%d-mtw%d-md%d-sf%d-s%d)",
                          machine_count,
                          job_count,
                          max_release_date,
