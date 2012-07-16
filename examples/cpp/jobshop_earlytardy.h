@@ -45,6 +45,7 @@
 #include "base/strtoint.h"
 #include "base/file.h"
 #include "base/filelinereader.h"
+#include "base/random.h"
 #include "base/split.h"
 
 namespace operations_research {
@@ -80,6 +81,52 @@ class EtJobShopData {
   void Load(const string& filename) {
 
   }
+
+  void GenerateRandomData(int machine_count,
+                          int job_count,
+                          int max_release_date,
+                          int max_earlyness_weight,
+                          int max_tardiness_weight,
+                          int max_duration,
+                          int scale_factor,
+                          int seed) {
+    name_ = StringPrintf("EtJobshop(m%d-j%d-mrd%d-mew%d-mtw%d-md%d-sf%d-s%d",
+                         machine_count,
+                         job_count,
+                         max_release_date,
+                         max_earlyness_weight,
+                         max_tardiness_weight,
+                         max_duration,
+                         scale_factor,
+                         seed);
+    LOG(INFO) << "Generating random problem " << name_;
+    ACMRandom random(seed);
+    machine_count_ = machine_count;
+    job_count_ = job_count;
+    for (int j = 0; j < job_count_; ++j) {
+      const int release_date = random.Uniform(max_release_date);
+      int sum_of_durations = max_release_date;
+      all_jobs_.push_back(Job(release_date,
+                              0,  // due date, to be filled later.
+                              random.Uniform(max_earlyness_weight),
+                              random.Uniform(max_tardiness_weight)));
+      for (int m = 0; m < machine_count_; ++m) {
+        const int duration = random.Uniform(max_duration);
+        all_jobs_.back().all_tasks.push_back(Task(j, m, duration));
+        sum_of_durations += duration;
+      }
+      all_jobs_.back().due_date = sum_of_durations * scale_factor / 100;
+      horizon_ += all_jobs_.back().due_date;
+      // Scramble jobs.
+      for (int m = 0; m < machine_count_; ++m) {
+        Task t = all_jobs_.back().all_tasks[m];
+        const int target = random.Uniform(machine_count_);
+        all_jobs_.back().all_tasks[m] = all_jobs_.back().all_tasks[target];
+        all_jobs_.back().all_tasks[target] = t;
+      }
+    }
+  }
+
   // The number of machines in the jobshop.
   int machine_count() const { return machine_count_; }
 

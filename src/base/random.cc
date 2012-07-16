@@ -52,7 +52,7 @@ int32 ACMRandom::Next() {
 }
 
 int32 ACMRandom::Uniform(int32 n) {
-  return Next() % n;
+  return n == 0 ? 0 :Next() % n;
 }
 
 int64 ACMRandom::Next64() {

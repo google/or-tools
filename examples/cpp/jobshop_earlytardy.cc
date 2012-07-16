@@ -54,6 +54,14 @@ DEFINE_string(
     "  - then one line per job, with a single space-separated "
     "list of \"<machine index> <duration>\"\n"
     "note: jobs with one task are not supported");
+DEFINE_int32(machine_count, 10, "Machine count");
+DEFINE_int32(job_count, 10, "Job count");
+DEFINE_int32(max_release_date, 0, "Max release date");
+DEFINE_int32(max_earlyness_weight, 0, "Max earlyness weight");
+DEFINE_int32(max_tardiness_weight, 3, "Max tardiness weight");
+DEFINE_int32(max_duration, 10, "Max duration of a task");
+DEFINE_int32(scale_factor, 130, "Scale factor (in percent)");
+DEFINE_int32(seed, 1, "Random seed");
 DEFINE_int32(time_limit_in_ms, 0, "Time limit in ms, 0 means no limit.");
 
 namespace operations_research {
@@ -196,12 +204,19 @@ static const char kUsage[] =
 int main(int argc, char **argv) {
   google::SetUsageMessage(kUsage);
   google::ParseCommandLineFlags(&argc, &argv, true);
-  if (FLAGS_data_file.empty()) {
-    LOG(INFO) << "Please supply a data file with --data_file=";
-    return 1;
-  }
   operations_research::EtJobShopData data;
-  data.Load(FLAGS_data_file);
+  if (!FLAGS_data_file.empty()) {
+    data.Load(FLAGS_data_file);
+  } else {
+    data.GenerateRandomData(FLAGS_machine_count,
+                            FLAGS_job_count,
+                            FLAGS_max_release_date,
+                            FLAGS_max_earlyness_weight,
+                            FLAGS_max_tardiness_weight,
+                            FLAGS_max_duration,
+                            FLAGS_scale_factor,
+                            FLAGS_seed);
+  }
   operations_research::EtJobShop(data);
   return 0;
 }
