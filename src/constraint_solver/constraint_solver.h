@@ -1309,7 +1309,7 @@ class Solver {
   IntExpr* MakeMax(IntExpr* const expr, int val);
 
   // convex piecewise function.
-  IntExpr* MakeConvexPiecewiseExpr(IntVar* e,
+  IntExpr* MakeConvexPiecewiseExpr(IntExpr* e,
                                    int64 early_cost, int64 early_date,
                                    int64 late_date, int64 late_cost);
 

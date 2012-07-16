@@ -107,6 +107,30 @@ void EtJobShop(const EtJobShopData& data) {
     }
   }
 
+  // Add release date.
+  for (int job_id = 0; job_id < job_count; ++job_id) {
+    const Job& job = data.GetJob(job_id);
+    IntervalVar* const t = jobs_to_tasks[job_id][0];
+    Constraint* const prec =
+        solver.MakeIntervalVarRelation(t,
+                                       Solver::STARTS_AFTER,
+                                       job.release_date);
+    solver.AddConstraint(prec);
+  }
+
+  std::vector<IntVar*> penalties;
+  for (int job_id = 0; job_id < job_count; ++job_id) {
+    const Job& job = data.GetJob(job_id);
+    IntervalVar* const t = jobs_to_tasks[job_id][machine_count - 1];
+    IntVar* const penalty =
+        solver.MakeConvexPiecewiseExpr(t->EndExpr(),
+                                       job.earlyness_weight,
+                                       job.due_date,
+                                       job.due_date,
+                                       job.tardiness_weight)->Var();
+    penalties.push_back(penalty);
+  }
+
   // Adds disjunctive constraints on unary resources.
   for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
     solver.AddConstraint(
@@ -123,17 +147,8 @@ void EtJobShop(const EtJobShopData& data) {
     all_sequences.push_back(sequence);
   }
 
-  // Creates array of end_times of jobs.
-  std::vector<IntVar*> all_ends;
-  for (int job_id = 0; job_id < job_count; ++job_id) {
-    const int task_count = jobs_to_tasks[job_id].size();
-    IntervalVar* const task = jobs_to_tasks[job_id][task_count - 1];
-    all_ends.push_back(task->EndExpr()->Var());
-  }
-
-  // Objective: minimize the makespan (maximum end times of all tasks)
-  // of the problem.
-  IntVar* const objective_var = solver.MakeMax(all_ends)->Var();
+  // Objective: minimize the weighted penalties.
+  IntVar* const objective_var = solver.MakeSum(penalties)->Var();
   OptimizeVar* const objective_monitor = solver.MakeMinimize(objective_var, 1);
 
   // ----- Search monitors and decision builder -----
@@ -181,7 +196,8 @@ int main(int argc, char **argv) {
   google::SetUsageMessage(kUsage);
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_data_file.empty()) {
-    LOG(FATAL) << "Please supply a data file with --data_file=";
+    LOG(INFO) << "Please supply a data file with --data_file=";
+    return 1;
   }
   operations_research::EtJobShopData data;
   data.Load(FLAGS_data_file);

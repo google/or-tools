@@ -5228,11 +5228,12 @@ class MaxCstIntExpr : public BaseIntExpr {
 
 class SimpleConvexPiecewiseExpr : public BaseIntExpr {
  public:
-  SimpleConvexPiecewiseExpr(Solver* const s, IntVar* const e,
+  SimpleConvexPiecewiseExpr(Solver* const s,
+                            IntExpr* const e,
                             int64 ec, int64 ed,
                             int64 ld, int64 lc)
       : BaseIntExpr(s),
-    var_(e),
+    expr_(e),
     early_cost_(ec),
     early_date_(ec == 0 ? kint64min : ed),
     late_date_(lc == 0 ? kint64max : ld),
@@ -5248,8 +5249,8 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
   virtual ~SimpleConvexPiecewiseExpr() {}
 
   virtual int64 Min() const {
-    const int64 vmin = var_->Min();
-    const int64 vmax = var_->Max();
+    const int64 vmin = expr_->Min();
+    const int64 vmax = expr_->Max();
     if (vmin >= late_date_) {
       return (vmin - late_date_) * late_cost_;
     } else if (vmax <= early_date_) {
@@ -5263,20 +5264,22 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
     if (m <= 0) {
       return;
     }
-    const int64 vmin = var_->Min();
-    const int64 vmax = var_->Max();
+    const int64 vmin = expr_->Min();
+    const int64 vmax = expr_->Max();
     const int64 rb = (late_cost_ == 0 ?
                       vmax :
                       late_date_ + PosIntDivUp(m , late_cost_) - 1);
     const int64 lb = (early_cost_ == 0 ?
                       vmin :
                       early_date_ - PosIntDivUp(m , early_cost_) + 1);
-    var_->RemoveInterval(lb, rb);
+    if (expr_->IsVar()) {
+      expr_->Var()->RemoveInterval(lb, rb);
+    }
   }
 
   virtual int64 Max() const {
-    const int64 vmin = var_->Min();
-    const int64 vmax = var_->Max();
+    const int64 vmin = expr_->Min();
+    const int64 vmax = expr_->Max();
     const int64 mr = vmax > late_date_ ? (vmax - late_date_) * late_cost_ : 0;
     const int64 ml = vmin < early_date_
         ? (early_date_ - vmin) * early_cost_
@@ -5292,14 +5295,14 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
       const int64 rb = late_date_ + PosIntDivDown(m, late_cost_);
       if (early_cost_ != 0LL) {
         const int64 lb = early_date_ - PosIntDivDown(m, early_cost_);
-        var_->SetRange(lb, rb);
+        expr_->SetRange(lb, rb);
       } else {
-        var_->SetMax(rb);
+        expr_->SetMax(rb);
       }
     } else {
       if (early_cost_ != 0LL) {
         const int64 lb = early_date_ - PosIntDivDown(m, early_cost_);
-        var_->SetMin(lb);
+        expr_->SetMin(lb);
       }
     }
   }
@@ -5308,7 +5311,7 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
     return StringPrintf(
         "ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT "d, ed = %"
         GG_LL_FORMAT "d, ld = %" GG_LL_FORMAT "d, lc = %" GG_LL_FORMAT "d)",
-        var_->name().c_str(),
+        expr_->name().c_str(),
         early_cost_, early_date_, late_date_, late_cost_);
   }
 
@@ -5316,18 +5319,18 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
     return StringPrintf(
         "ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT "d, ed = %"
         GG_LL_FORMAT "d, ld = %" GG_LL_FORMAT "d, lc = %" GG_LL_FORMAT "d)",
-        var_->DebugString().c_str(),
+        expr_->DebugString().c_str(),
         early_cost_, early_date_, late_date_, late_cost_);
   }
 
   virtual void WhenRange(Demon* d) {
-    var_->WhenRange(d);
+    expr_->WhenRange(d);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kConvexPiecewise, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
-                                            var_);
+                                            expr_);
     visitor->VisitIntegerArgument(ModelVisitor::kEarlyCostArgument,
                                   early_cost_);
     visitor->VisitIntegerArgument(ModelVisitor::kEarlyDateArgument,
@@ -5340,7 +5343,7 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
   }
 
  private:
-  IntVar* const var_;
+  IntExpr* const expr_;
   const int64 early_cost_;
   const int64 early_date_;
   const int64 late_date_;
@@ -6448,7 +6451,7 @@ IntExpr* Solver::MakeMax(IntExpr* const e, int v) {
   return MakeMax(e, static_cast<int64>(v));
 }
 
-IntExpr* Solver::MakeConvexPiecewiseExpr(IntVar* e,
+IntExpr* Solver::MakeConvexPiecewiseExpr(IntExpr* e,
                                          int64 early_cost, int64 early_date,
                                          int64 late_date, int64 late_cost) {
   return RegisterIntExpr(RevAlloc(
