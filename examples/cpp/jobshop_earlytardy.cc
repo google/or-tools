@@ -11,29 +11,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// This model implements a simple jobshop problem.
+// This model implements a simple jobshop problem with
+// earlyness-tardiness costs.
 //
-// A jobshop is a standard scheduling problem where you must schedule a
-// set of jobs on a set of machines.  Each job is a sequence of tasks
-// (a task can only start when the preceding task finished), each of
-// which occupies a single specific machine during a specific
-// duration. Therefore, a job is simply given by a sequence of pairs
-// (machine id, duration).
+// A earlyness-tardinessjobshop is a standard scheduling problem where
+// you must schedule a set of jobs on a set of machines.  Each job is
+// a sequence of tasks (a task can only start when the preceding task
+// finished), each of which occupies a single specific machine during
+// a specific duration. Therefore, a job is a sequence of pairs
+// (machine id, duration), along with a release data (minimum start
+// date of the first task of the job, and due data (end time of the
+// last job) with a tardiness linear penalty.
 
-// The objective is to minimize the 'makespan', which is the duration
-// between the start of the first task (across all machines) and the
-// completion of the last task (across all machines).
+// The objective is to minimize the sum of early-tardy penalties for each job.
 //
 // This will be modelled by sets of intervals variables (see class
 // IntervalVar in constraint_solver/constraint_solver.h), one per
 // task, representing the [start_time, end_time] of the task.  Tasks
 // in the same job will be linked by precedence constraints.  Tasks on
 // the same machine will be covered by Sequence constraints.
-//
-// Search will then be applied on the sequence constraints.
 
 #include <cstdio>
 #include <cstdlib>
+
+#include <vector>
 
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
