@@ -77,7 +77,7 @@ class TimePlacement : public DecisionBuilder {
       : data_(data),
         all_sequences_(all_sequences),
         jobs_to_tasks_(jobs_to_tasks),
-        mp_solver_("TimePlacement", MPSolver::CBC_MIXED_INTEGER_PROGRAMMING) {}
+        mp_solver_("TimePlacement", MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING) {}
 
   virtual ~TimePlacement() {}
 
@@ -172,7 +172,7 @@ class TimePlacement : public DecisionBuilder {
     CHECK_EQ(MPSolver::OPTIMAL, mp_solver_.Solve());
 
     // Inject MIP solution into the CP part.
-    LOG(INFO) << "MP cost = " << mp_solver_.objective_value();
+    VLOG(1) << "MP cost = " << mp_solver_.objective_value();
     for (int j = 0; j < jobs_to_tasks_.size(); ++j) {
       for (int t = 0; t < jobs_to_tasks_[j].size(); ++t) {
         IntervalVar* const first_task = jobs_to_tasks_[j][t];
