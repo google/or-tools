@@ -78,8 +78,16 @@ class EtJobShopData {
 
   ~EtJobShopData() {}
 
-  void Load(const string& filename) {
-
+  void LoadJetFile(const string& filename) {
+    name_ = StringPrintf("JetData(%s)", filename.c_str());
+    FileLineReader reader(filename.c_str());
+    reader.set_line_callback(NewPermanentCallback(
+        this,
+        &EtJobShopData::ProcessNewJetLine));
+    reader.Reload();
+    if (!reader.loaded_successfully()) {
+      LOG(ERROR) << "Could not open jobshop file";
+    }
   }
 
   void GenerateRandomData(int machine_count,
@@ -146,6 +154,38 @@ class EtJobShopData {
   }
 
  private:
+  void ProcessNewJetLine(char* const line) {
+    // TODO(user): more robust logic to support single-task jobs.
+    static const char kWordDelimiters[] = " ";
+    std::vector<string> words;
+    SplitStringUsing(line, kWordDelimiters, &words);
+    if (words.size() == 2) {
+      job_count_ = atoi32(words[0]);
+      machine_count_ = atoi32(words[1]);
+      CHECK_GT(machine_count_, 0);
+      CHECK_GT(job_count_, 0);
+      LOG(INFO) << machine_count_ << " machines and "
+                << job_count_ << " jobs";
+    } else if (words.size() > 2 && machine_count_ != 0) {
+      const int job_id = all_jobs_.size();
+      CHECK_EQ(words.size(), machine_count_ * 2 + 3);
+      const int due_date = atoi32(words[2 * machine_count_]);
+      const int early_cost = atoi32(words[2 * machine_count_ + 1]);
+      const int late_cost = atoi32(words[2 * machine_count_ + 2]);
+      LOG(INFO) << "Add job with due date = " << due_date
+                << ", early cost = " << early_cost
+                << ", and late cost = " << late_cost;
+      all_jobs_.push_back(Job(0, due_date, early_cost, late_cost));
+      for (int i = 0; i < machine_count_; ++i) {
+        const int machine_id = atoi32(words[2 * i]);
+        const int duration = atoi32(words[2 * i + 1]);
+        all_jobs_.back().all_tasks.push_back(
+            Task(job_id, machine_id, duration));
+        horizon_ += duration;
+      }
+    }
+  }
+
   string name_;
   int machine_count_;
   int job_count_;

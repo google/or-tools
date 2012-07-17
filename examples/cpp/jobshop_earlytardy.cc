@@ -45,14 +45,14 @@
 #include "cpp/jobshop_earlytardy.h"
 
 DEFINE_string(
-    data_file,
+    jet_file,
     "",
     "Required: input file description the scheduling problem to solve, "
-    "in our jssp format:\n"
-    "  - the first line is \"instance <instance name>\"\n"
-    "  - the second line is \"<number of jobs> <number of machines>\"\n"
+    "in our jet format:\n"
+    "  - the first line is \"<number of jobs> <number of machines>\"\n"
     "  - then one line per job, with a single space-separated "
-    "list of \"<machine index> <duration>\"\n"
+    "list of \"<machine index> <duration>\", ended by due_date, early_cost,"
+    "late_cost\n"
     "note: jobs with one task are not supported");
 DEFINE_int32(machine_count, 10, "Machine count");
 DEFINE_int32(job_count, 10, "Job count");
@@ -207,8 +207,8 @@ int main(int argc, char **argv) {
   google::SetUsageMessage(kUsage);
   google::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::EtJobShopData data;
-  if (!FLAGS_data_file.empty()) {
-    data.Load(FLAGS_data_file);
+  if (!FLAGS_jet_file.empty()) {
+    data.LoadJetFile(FLAGS_jet_file);
   } else {
     data.GenerateRandomData(FLAGS_machine_count,
                             FLAGS_job_count,
