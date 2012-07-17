@@ -77,12 +77,7 @@ class TimePlacement : public DecisionBuilder {
       : data_(data),
         all_sequences_(all_sequences),
         jobs_to_tasks_(jobs_to_tasks),
-        mp_solver_("TimePlacement", MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING),
-        num_tasks_(0) {
-    for (int i = 0; i < jobs_to_tasks_.size(); ++i) {
-      num_tasks_ += jobs_to_tasks_[i].size();
-    }
-  }
+        mp_solver_("TimePlacement", MPSolver::CBC_MIXED_INTEGER_PROGRAMMING) {}
 
   virtual ~TimePlacement() {}
 
@@ -198,7 +193,6 @@ class TimePlacement : public DecisionBuilder {
   const std::vector<SequenceVar*>& all_sequences_;
   const std::vector<std::vector<IntervalVar*> >& jobs_to_tasks_;
   MPSolver mp_solver_;
-  int num_tasks_;
 };
 
 void EtJobShop(const EtJobShopData& data) {
