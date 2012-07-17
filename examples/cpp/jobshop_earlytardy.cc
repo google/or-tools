@@ -42,6 +42,8 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
+#include "linear_solver/linear_solver.h"
+#include "util/string_array.h"
 #include "cpp/jobshop_earlytardy.h"
 
 DEFINE_string(
@@ -57,15 +59,147 @@ DEFINE_string(
 DEFINE_int32(machine_count, 10, "Machine count");
 DEFINE_int32(job_count, 10, "Job count");
 DEFINE_int32(max_release_date, 0, "Max release date");
-DEFINE_int32(max_earlyness_weight, 0, "Max earlyness weight");
-DEFINE_int32(max_tardiness_weight, 3, "Max tardiness weight");
+DEFINE_int32(max_early_cost, 0, "Max earlyness weight");
+DEFINE_int32(max_tardy_cost, 3, "Max tardiness weight");
 DEFINE_int32(max_duration, 10, "Max duration of a task");
 DEFINE_int32(scale_factor, 130, "Scale factor (in percent)");
 DEFINE_int32(seed, 1, "Random seed");
 DEFINE_int32(time_limit_in_ms, 0, "Time limit in ms, 0 means no limit.");
+DEFINE_bool(time_placement, false, "Use MIP based time placement");
 DECLARE_bool(log_prefix);
 
 namespace operations_research {
+class TimePlacement : public DecisionBuilder {
+ public:
+  TimePlacement(const EtJobShopData& data,
+                const std::vector<SequenceVar*>& all_sequences,
+                const std::vector<std::vector<IntervalVar*> >& jobs_to_tasks)
+      : data_(data),
+        all_sequences_(all_sequences),
+        jobs_to_tasks_(jobs_to_tasks),
+        horizon_(data_.horizon()),
+        mp_solver_("TimePlacement", MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING),
+        num_tasks_(0) {
+    for (int i = 0; i < jobs_to_tasks_.size(); ++i) {
+      num_tasks_ += jobs_to_tasks_[i].size();
+    }
+  }
+
+  virtual ~TimePlacement() {}
+
+  virtual Decision* Next(Solver* const solver) {
+    mp_solver_.Clear();
+    std::vector<std::vector<MPVariable*> > all_vars;
+    hash_map<IntervalVar*, MPVariable*> mapping;
+    const double infinity = mp_solver_.infinity();
+    all_vars.resize(all_sequences_.size());
+
+    // Creates the MP Variables.
+    for (int s = 0; s < jobs_to_tasks_.size(); ++s) {
+      for (int t = 0; t < jobs_to_tasks_[s].size(); ++t) {
+        IntervalVar* const task = jobs_to_tasks_[s][t];
+        const string name = StringPrintf("J%dT%d", s, t);
+        MPVariable* const var =
+            mp_solver_.MakeIntVar(task->StartMin(), task->StartMax(), name);
+        mapping[task] = var;
+      }
+    }
+
+      // Adds the jobs precedence constraints.
+    for (int j = 0; j < jobs_to_tasks_.size(); ++j) {
+      for (int t = 0; t < jobs_to_tasks_[j].size() - 1; ++t) {
+        IntervalVar* const first_task = jobs_to_tasks_[j][t];
+        const int duration = first_task->DurationMax();
+        IntervalVar* const second_task = jobs_to_tasks_[j][t + 1];
+        MPVariable* const first_var = mapping[first_task];
+        MPVariable* const second_var = mapping[second_task];
+        MPConstraint* const ct =
+            mp_solver_.MakeRowConstraint(duration, infinity);
+        ct->SetCoefficient(second_var, 1.0);
+        ct->SetCoefficient(first_var, -1.0);
+      }
+    }
+
+    // Adds the ranked machines constraints.
+    for (int s = 0; s < all_sequences_.size(); ++s) {
+      SequenceVar* const sequence = all_sequences_[s];
+      std::vector<int> rank_firsts;
+      std::vector<int> rank_lasts;
+      std::vector<int> unperformed;
+      sequence->FillSequence(&rank_firsts, &rank_lasts, &unperformed);
+      CHECK_EQ(0, rank_lasts.size());
+      CHECK_EQ(0, unperformed.size());
+      for (int i = 0; i < rank_firsts.size() - 1; ++i) {
+        IntervalVar* const first_task = sequence->Interval(rank_firsts[i]);
+        const int duration = first_task->DurationMax();
+        IntervalVar* const second_task = sequence->Interval(rank_firsts[i + 1]);
+        MPVariable* const first_var = mapping[first_task];
+        MPVariable* const second_var = mapping[second_task];
+        MPConstraint* const ct =
+            mp_solver_.MakeRowConstraint(duration, infinity);
+        ct->SetCoefficient(second_var, 1.0);
+        ct->SetCoefficient(first_var, -1.0);
+      }
+    }
+
+    // Creates penalty terms
+    std::vector<MPVariable*> terms;
+    mp_solver_.MakeIntVarArray(jobs_to_tasks_.size(),
+                               0,
+                               infinity,
+                               "terms",
+                               &terms);
+    for (int j = 0; j < jobs_to_tasks_.size(); ++j) {
+      mp_solver_.MutableObjective()->SetCoefficient(terms[j], 1.0);
+    }
+    mp_solver_.MutableObjective()->SetMinimization();
+    // Forces penalty terms to be above late and early costs.
+    for (int j = 0; j < jobs_to_tasks_.size(); ++j) {
+      IntervalVar* const last_task = jobs_to_tasks_[j].back();
+      const int duration = last_task->DurationMin();
+      MPVariable* const mp_start = mapping[last_task];
+      const Job& job = data_.GetJob(j);
+      const int ideal_start = job.due_date - duration;
+      const int early_offset = job.early_cost * ideal_start;
+      MPConstraint* const early_ct =
+          mp_solver_.MakeRowConstraint(early_offset, infinity);
+      early_ct->SetCoefficient(terms[j], 1);
+      early_ct->SetCoefficient(mp_start, job.early_cost);
+
+      const int tardy_offset = job.tardy_cost * ideal_start;
+      MPConstraint* const tardy_ct =
+          mp_solver_.MakeRowConstraint(-tardy_offset, infinity);
+      tardy_ct->SetCoefficient(terms[j], 1);
+      tardy_ct->SetCoefficient(mp_start, -job.tardy_cost);
+    }
+
+    // Sets minization and solve.
+    CHECK_EQ(MPSolver::OPTIMAL, mp_solver_.Solve());
+    LOG(INFO) << "MP cost = " << mp_solver_.objective_value();
+    for (int j = 0; j < jobs_to_tasks_.size(); ++j) {
+      for (int t = 0; t < jobs_to_tasks_[j].size(); ++t) {
+        IntervalVar* const first_task = jobs_to_tasks_[j][t];
+        MPVariable* const first_var = mapping[first_task];
+        const int date = first_var->solution_value();
+        first_task->SetStartRange(date, date);
+      }
+    }
+    return NULL;
+  }
+
+  virtual string DebugString() const {
+    return "TimePlacement";
+  }
+
+ private:
+  const EtJobShopData& data_;
+  const std::vector<SequenceVar*>& all_sequences_;
+  const std::vector<std::vector<IntervalVar*> >& jobs_to_tasks_;
+  const int horizon_;
+  MPSolver mp_solver_;
+  int num_tasks_;
+};
+
 void EtJobShop(const EtJobShopData& data) {
   Solver solver("et_jobshop");
   const int machine_count = data.machine_count();
@@ -134,10 +268,10 @@ void EtJobShop(const EtJobShopData& data) {
     IntervalVar* const t = jobs_to_tasks[job_id][machine_count - 1];
     IntVar* const penalty =
         solver.MakeConvexPiecewiseExpr(t->EndExpr(),
-                                       job.earlyness_weight,
+                                       job.early_cost,
                                        job.due_date,
                                        job.due_date,
-                                       job.tardiness_weight)->Var();
+                                       job.tardy_cost)->Var();
     penalties.push_back(penalty);
   }
 
@@ -174,6 +308,8 @@ void EtJobShop(const EtJobShopData& data) {
   // conveniently done by fixing the objective variable to its
   // minimum value.
   DecisionBuilder* const obj_phase =
+      FLAGS_time_placement ?
+      solver.RevAlloc(new TimePlacement(data, all_sequences, jobs_to_tasks)) :
       solver.MakePhase(objective_var,
                        Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_MIN_VALUE);
@@ -213,8 +349,8 @@ int main(int argc, char **argv) {
     data.GenerateRandomData(FLAGS_machine_count,
                             FLAGS_job_count,
                             FLAGS_max_release_date,
-                            FLAGS_max_earlyness_weight,
-                            FLAGS_max_tardiness_weight,
+                            FLAGS_max_early_cost,
+                            FLAGS_max_tardy_cost,
                             FLAGS_max_duration,
                             FLAGS_scale_factor,
                             FLAGS_seed);

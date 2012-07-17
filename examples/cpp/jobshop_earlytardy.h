@@ -60,12 +60,12 @@ struct Job {
   Job(int r, int d, int ew, int tw)
       : release_date(r),
         due_date(d),
-        earlyness_weight(ew),
-        tardiness_weight(tw) {}
+        early_cost(ew),
+        tardy_cost(tw) {}
   int release_date;
   int due_date;
-  int earlyness_weight;
-  int tardiness_weight;
+  int early_cost;
+  int tardy_cost;
   std::vector<Task> all_tasks;
 };
 
@@ -79,6 +79,7 @@ class EtJobShopData {
   ~EtJobShopData() {}
 
   void LoadJetFile(const string& filename) {
+    LOG(INFO) << "Reading jet file " << filename;
     name_ = StringPrintf("JetData(%s)", filename.c_str());
     FileLineReader reader(filename.c_str());
     reader.set_line_callback(NewPermanentCallback(
@@ -93,8 +94,8 @@ class EtJobShopData {
   void GenerateRandomData(int machine_count,
                           int job_count,
                           int max_release_date,
-                          int max_earlyness_weight,
-                          int max_tardiness_weight,
+                          int max_early_cost,
+                          int max_tardy_cost,
                           int max_duration,
                           int scale_factor,
                           int seed) {
@@ -102,8 +103,8 @@ class EtJobShopData {
                          machine_count,
                          job_count,
                          max_release_date,
-                         max_earlyness_weight,
-                         max_tardiness_weight,
+                         max_early_cost,
+                         max_tardy_cost,
                          max_duration,
                          scale_factor,
                          seed);
@@ -116,8 +117,8 @@ class EtJobShopData {
       int sum_of_durations = max_release_date;
       all_jobs_.push_back(Job(release_date,
                               0,  // due date, to be filled later.
-                              random.Uniform(max_earlyness_weight),
-                              random.Uniform(max_tardiness_weight)));
+                              random.Uniform(max_early_cost),
+                              random.Uniform(max_tardy_cost)));
       for (int m = 0; m < machine_count_; ++m) {
         const int duration = random.Uniform(max_duration);
         all_jobs_.back().all_tasks.push_back(Task(j, m, duration));
@@ -164,7 +165,7 @@ class EtJobShopData {
       machine_count_ = atoi32(words[1]);
       CHECK_GT(machine_count_, 0);
       CHECK_GT(job_count_, 0);
-      LOG(INFO) << machine_count_ << " machines and "
+      LOG(INFO) << machine_count_ << "  - machines and "
                 << job_count_ << " jobs";
     } else if (words.size() > 2 && machine_count_ != 0) {
       const int job_id = all_jobs_.size();
