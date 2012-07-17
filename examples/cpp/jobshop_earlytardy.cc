@@ -142,7 +142,7 @@ class TimePlacement : public DecisionBuilder {
       }
     }
 
-    // Creates penalty terms
+    // Creates penalty terms and objective.
     std::vector<MPVariable*> terms;
     mp_solver_.MakeIntVarArray(jobs_to_tasks_.size(),
                                0,
@@ -153,6 +153,7 @@ class TimePlacement : public DecisionBuilder {
       mp_solver_.MutableObjective()->SetCoefficient(terms[j], 1.0);
     }
     mp_solver_.MutableObjective()->SetMinimization();
+
     // Forces penalty terms to be above late and early costs.
     for (int j = 0; j < jobs_to_tasks_.size(); ++j) {
       IntervalVar* const last_task = jobs_to_tasks_[j].back();
@@ -173,8 +174,10 @@ class TimePlacement : public DecisionBuilder {
       tardy_ct->SetCoefficient(mp_start, -job.tardy_cost);
     }
 
-    // Sets minization and solve.
+    // Solve.
     CHECK_EQ(MPSolver::OPTIMAL, mp_solver_.Solve());
+
+    // Inject MIP solution into the CP part.
     LOG(INFO) << "MP cost = " << mp_solver_.objective_value();
     for (int j = 0; j < jobs_to_tasks_.size(); ++j) {
       for (int t = 0; t < jobs_to_tasks_[j].size(); ++t) {
