@@ -77,7 +77,6 @@ class TimePlacement : public DecisionBuilder {
       : data_(data),
         all_sequences_(all_sequences),
         jobs_to_tasks_(jobs_to_tasks),
-        horizon_(data_.horizon()),
         mp_solver_("TimePlacement", MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING),
         num_tasks_(0) {
     for (int i = 0; i < jobs_to_tasks_.size(); ++i) {
@@ -198,7 +197,6 @@ class TimePlacement : public DecisionBuilder {
   const EtJobShopData& data_;
   const std::vector<SequenceVar*>& all_sequences_;
   const std::vector<std::vector<IntervalVar*> >& jobs_to_tasks_;
-  const int horizon_;
   MPSolver mp_solver_;
   int num_tasks_;
 };
