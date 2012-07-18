@@ -4927,12 +4927,16 @@ class DisjunctiveConstraint : public Constraint {
                         const string& name);
   virtual ~DisjunctiveConstraint();
 
-  SequenceVar* MakeSequenceVar();
+  // Creates a sequence variable from the constraint.
+  virtual SequenceVar* MakeSequenceVar() = 0;
+
+  virtual void BuildNextModel() = 0;
+
+  virtual const std::vector<IntVar*>& NextVariables() const = 0;
 
 protected:
   scoped_array<IntervalVar*> intervals_;
   const int size_;
-  SequenceVar* sequence_var_;
   DISALLOW_COPY_AND_ASSIGN(DisjunctiveConstraint);
 };
 

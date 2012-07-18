@@ -754,7 +754,14 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
   FullDisjunctiveConstraint(Solver* const s,
                             IntervalVar* const * intervals,
                             int size,
-                            const string& name);
+                            const string& name)
+  : DisjunctiveConstraint(s, intervals, size, name),
+    sequence_var_(NULL),
+    straight_(s, intervals, size, false),
+    mirror_(s, intervals, size, true),
+    straight_not_last_(s, intervals, size, false),
+    mirror_not_last_(s, intervals, size, true) {}
+
   virtual ~FullDisjunctiveConstraint() { }
 
   virtual void Post() {
@@ -786,27 +793,88 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         intervals_.get(),
                                         size_);
+    if (sequence_var_ != NULL) {
+      visitor->VisitSequenceArgument(ModelVisitor::kSequenceArgument,
+                                     sequence_var_);
+    }
     visitor->EndVisitConstraint(ModelVisitor::kDisjunctive, this);
   }
 
+  virtual SequenceVar* MakeSequenceVar() {
+    if (sequence_var_ == NULL) {
+      solver()->SaveValue(reinterpret_cast<void**>(&sequence_var_));
+      sequence_var_ = solver()->RevAlloc(new SequenceVar(solver(),
+                                                         intervals_.get(),
+                                                         size_,
+                                                         name()));
+    }
+    return sequence_var_;
+  }
+
+  virtual void BuildNextModel() {
+    Solver* const s = solver();
+    const string ct_name = name();
+    s->MakeIntVarArray(size_ + 1, 0, size_ + 1, ct_name + "_nexts", &nexts_);
+    int64 horizon = 0;
+    for (int i = 0; i < size_; ++i) {
+      horizon = std::max(horizon, intervals_[i]->EndMax());
+    }
+    actives_.resize(size_ + 1);
+    actives_[0] = s->MakeBoolVar("DepotActive");
+    for (int i = 0; i < size_; ++i) {
+      actives_[i + 1] = intervals_[i]->PerformedExpr()->Var();
+    }
+    // No Cycle.
+    s->AddConstraint(s->MakeNoCycle(nexts_, actives_));
+
+    // Cumul on time.
+    time_cumuls_.resize(size_ + 1);
+    time_transits_.resize(size_ + 1);
+    time_slacks_.resize(size_ + 1);
+    start_times_.resize(size_ + 1);
+    durations_.resize(size_ + 1);
+    for (int64 i = 0; i < size_; ++i) {
+      start_times_[i + 1] = intervals_[i]->StartExpr()->Var();
+      durations_[i + 1] = intervals_[i]->DurationMin();
+    }
+    start_times_[0] = s->MakeIntConst(0);
+    durations_[0] = 0;
+
+    for (int64 i = 0; i < size_; ++i) {
+      IntVar* const fixed_transit =
+          s->MakeElement(durations_, nexts_[i])->Var();
+      IntVar* const slack_var = s->MakeIntVar(0, horizon, "slack");
+      time_transits_[i + 1] = s->MakeSum(slack_var, fixed_transit)->Var();
+      time_transits_[i + 1]->SetRange(0, horizon);
+      time_slacks_[i + 1] = slack_var;
+      time_cumuls_[i + 1] = s->MakeElement(start_times_, nexts_[i])->Var();
+    }
+    time_slacks_[0] = s->MakeIntVar(0, horizon, "slack");
+    time_transits_[0] = s->MakeIntConst(0);
+    time_cumuls_[0] = s->MakeIntConst(0);
+    s->AddConstraint(
+        s->MakePathCumul(nexts_, actives_, time_transits_, time_cumuls_));
+  }
+
+  virtual const std::vector<IntVar*>& NextVariables() const {
+    return nexts_;
+  }
+
  private:
+  SequenceVar* sequence_var_;
   EdgeFinderAndDetectablePrecedences straight_;
   EdgeFinderAndDetectablePrecedences mirror_;
   NotLast straight_not_last_;
   NotLast mirror_not_last_;
+  std::vector<IntVar*> nexts_;
+  std::vector<IntVar*> actives_;
+  std::vector<IntVar*> time_cumuls_;
+  std::vector<IntVar*> time_transits_;
+  std::vector<IntVar*> time_slacks_;
+  std::vector<IntVar*> start_times_;
+  std::vector<int64> durations_;
   DISALLOW_COPY_AND_ASSIGN(FullDisjunctiveConstraint);
 };
-
-FullDisjunctiveConstraint::FullDisjunctiveConstraint(
-    Solver* const s,
-    IntervalVar* const * intervals,
-    int size,
-    const string& name)
-    : DisjunctiveConstraint(s, intervals, size, name),
-      straight_(s, intervals, size, false),
-      mirror_(s, intervals, size, true),
-      straight_not_last_(s, intervals, size, false),
-      mirror_not_last_(s, intervals, size, true) {}
 
 // =====================================================================
 //  Cumulative
@@ -2157,8 +2225,7 @@ DisjunctiveConstraint::DisjunctiveConstraint(Solver* const s,
                                              const string& name)
     : Constraint(s),
       intervals_(new IntervalVar*[size]),
-      size_(size),
-      sequence_var_(NULL) {
+      size_(size) {
   memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
   if (!name.empty()) {
     set_name(name);
@@ -2167,16 +2234,6 @@ DisjunctiveConstraint::DisjunctiveConstraint(Solver* const s,
 
 DisjunctiveConstraint::~DisjunctiveConstraint() {}
 
-SequenceVar* DisjunctiveConstraint::MakeSequenceVar() {
-  if (sequence_var_ == NULL) {
-    solver()->SaveValue(reinterpret_cast<void**>(&sequence_var_));
-    sequence_var_ = solver()->RevAlloc(new SequenceVar(solver(),
-                                                       intervals_.get(),
-                                                       size_,
-                                                       name()));
-  }
-  return sequence_var_;
-}
 
 // ----------------- Factory methods -------------------------------
 

@@ -672,6 +672,12 @@ $(OBJ_DIR)/jobshop_ls.$O:$(EX_DIR)/cpp/jobshop_ls.cc $(SRC_DIR)/constraint_solve
 $(BIN_DIR)/jobshop_ls$E: $(CP_DEPS) $(OBJ_DIR)/jobshop_ls.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_ls.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)jobshop_ls$E
 
+$(OBJ_DIR)/jobshop_next.$O:$(EX_DIR)/cpp/jobshop_next.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/jobshop_next.cc $(OBJ_OUT)jobshop_next.$O
+
+$(BIN_DIR)/jobshop_next$E: $(CP_DEPS) $(OBJ_DIR)/jobshop_next.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_next.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)jobshop_next$E
+
 $(OBJ_DIR)/jobshop_earlytardy.$O:$(EX_DIR)/cpp/jobshop_earlytardy.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(EX_DIR)/cpp/jobshop_earlytardy.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/jobshop_earlytardy.cc $(OBJ_OUT)jobshop_earlytardy.$O
 

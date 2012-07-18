@@ -115,6 +115,10 @@ class CPModelLoader {
 
   void AddTag(const string& tag) { tags_.Add(tag); }
 
+  void SetSequenceVariable(int index, SequenceVar* const var) {
+
+  }
+
  private:
   Solver* const solver_;
   std::vector<IntExpr*> expressions_;
