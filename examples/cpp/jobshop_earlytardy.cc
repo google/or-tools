@@ -12,9 +12,9 @@
 // limitations under the License.
 //
 // This model implements a simple jobshop problem with
-// earlyness-tardiness costs.
+// earliness-tardiness costs.
 //
-// A earlyness-tardinessjobshop is a standard scheduling problem where
+// A earliness-tardinessjobshop is a standard scheduling problem where
 // you must schedule a set of jobs on a set of machines.  Each job is
 // a sequence of tasks (a task can only start when the preceding task
 // finished), each of which occupies a single specific machine during
@@ -60,7 +60,7 @@ DEFINE_string(
 DEFINE_int32(machine_count, 10, "Machine count");
 DEFINE_int32(job_count, 10, "Job count");
 DEFINE_int32(max_release_date, 0, "Max release date");
-DEFINE_int32(max_early_cost, 0, "Max earlyness weight");
+DEFINE_int32(max_early_cost, 0, "Max earliness weight");
 DEFINE_int32(max_tardy_cost, 3, "Max tardiness weight");
 DEFINE_int32(max_duration, 10, "Max duration of a task");
 DEFINE_int32(scale_factor, 130, "Scale factor (in percent)");
