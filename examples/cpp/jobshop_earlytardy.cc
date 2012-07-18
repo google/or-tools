@@ -45,6 +45,7 @@
 #include "linear_solver/linear_solver.h"
 #include "util/string_array.h"
 #include "cpp/jobshop_earlytardy.h"
+#include "cpp/jobshop_ls.h"
 
 DEFINE_string(
     jet_file,
@@ -66,6 +67,13 @@ DEFINE_int32(scale_factor, 130, "Scale factor (in percent)");
 DEFINE_int32(seed, 1, "Random seed");
 DEFINE_int32(time_limit_in_ms, 0, "Time limit in ms, 0 means no limit.");
 DEFINE_bool(time_placement, false, "Use MIP based time placement");
+DEFINE_int32(shuffle_length, 4, "Length of sub-sequences to shuffle LS.");
+DEFINE_int32(sub_sequence_length, 4,
+             "Length of sub-sequences to relax in LNS.");
+DEFINE_int32(lns_seed, 1, "Seed of the LNS random search");
+DEFINE_int32(lns_limit, 30,
+             "Limit the size of the search tree in a LNS fragment");
+DEFINE_bool(use_ls, false, "Use ls");
 DECLARE_bool(log_prefix);
 
 namespace operations_research {
@@ -294,7 +302,7 @@ void EtJobShop(const EtJobShopData& data) {
 
   // This decision builder will rank all tasks on all machines.
   DecisionBuilder* const sequence_phase =
-      solver.MakePhase(all_sequences, Solver::SEQUENCE_DEFAULT);
+      solver.MakePhase(all_sequences, Solver::CHOOSE_MIN_SLACK_RANK_FORWARD);
 
   // After the ranking of tasks, the schedule is still loose and any
   // task can be postponed at will. But, because the problem is now a PERT
@@ -309,23 +317,102 @@ void EtJobShop(const EtJobShopData& data) {
                        Solver::CHOOSE_FIRST_UNBOUND,
                        Solver::ASSIGN_MIN_VALUE);
 
-  // The main decision builder (ranks all tasks, then fixes the
-  // objective_variable).
-  DecisionBuilder* const main_phase =
-      solver.Compose(sequence_phase, obj_phase);
+  if (FLAGS_use_ls) {
+    Assignment* const first_solution = solver.MakeAssignment();
+    first_solution->Add(all_sequences);
+    first_solution->AddObjective(objective_var);
+    // Store the first solution in the 'solution' object.
+    DecisionBuilder* const store_db =
+        solver.MakeStoreAssignment(first_solution);
 
-  // Search log.
-  const int kLogFrequency = 1000000;
-  SearchMonitor* const search_log =
-      solver.MakeSearchLog(kLogFrequency, objective_monitor);
+    // The main decision builder (ranks all tasks, then fixes the
+    // objective_variable).
+    DecisionBuilder* const first_solution_phase =
+        solver.Compose(sequence_phase, obj_phase, store_db);
 
-  SearchLimit* limit = NULL;
-  if (FLAGS_time_limit_in_ms > 0) {
-    limit = solver.MakeTimeLimit(FLAGS_time_limit_in_ms);
+    LOG(INFO) << "Looking for the first solution";
+    const bool first_solution_found = solver.Solve(first_solution_phase);
+    if (first_solution_found) {
+      LOG(INFO) << "Solution found with penalty cost of = "
+                << first_solution->ObjectiveValue();
+    } else {
+      LOG(INFO) << "No initial solution found!";
+      return;
+    }
+
+    LOG(INFO) << "Switching to local search";
+    std::vector<LocalSearchOperator*> operators;
+    LOG(INFO) << "  - use swap operator";
+    LocalSearchOperator* const swap_operator =
+        solver.RevAlloc(new SwapIntervals(all_sequences.data(),
+                                          all_sequences.size()));
+    operators.push_back(swap_operator);
+    LOG(INFO) << "  - use shuffle operator with a max length of "
+              << FLAGS_shuffle_length;
+    LocalSearchOperator* const shuffle_operator =
+        solver.RevAlloc(new ShuffleIntervals(all_sequences.data(),
+                                             all_sequences.size(),
+                                             FLAGS_shuffle_length));
+    operators.push_back(shuffle_operator);
+    LOG(INFO) << "  - use free sub sequences of length "
+              << FLAGS_sub_sequence_length << " lns operator";
+    LocalSearchOperator* const lns_operator =
+        solver.RevAlloc(new SequenceLns(all_sequences.data(),
+                                        all_sequences.size(),
+                                        FLAGS_lns_seed,
+                                        FLAGS_sub_sequence_length));
+    operators.push_back(lns_operator);
+
+    // Creates the local search decision builder.
+    LocalSearchOperator* const concat =
+        solver.ConcatenateOperators(operators, true);
+
+    SearchLimit* const ls_limit =
+        solver.MakeLimit(kint64max, FLAGS_lns_limit, kint64max, kint64max);
+    DecisionBuilder* const random_sequence_phase =
+        solver.MakePhase(all_sequences, Solver::CHOOSE_RANDOM_RANK_FORWARD);
+    DecisionBuilder* const ls_db =
+        solver.MakeSolveOnce(solver.Compose(random_sequence_phase, obj_phase),
+                             ls_limit);
+
+    LocalSearchPhaseParameters* const parameters =
+        solver.MakeLocalSearchPhaseParameters(concat, ls_db);
+    DecisionBuilder* const final_db =
+        solver.MakeLocalSearchPhase(first_solution, parameters);
+
+    OptimizeVar* const objective_monitor =
+        solver.MakeMinimize(objective_var, 1);
+
+    // Search log.
+    const int kLogFrequency = 1000000;
+    SearchMonitor* const search_log =
+        solver.MakeSearchLog(kLogFrequency, objective_monitor);
+
+    SearchLimit* const limit = FLAGS_time_limit_in_ms > 0 ?
+        solver.MakeTimeLimit(FLAGS_time_limit_in_ms) :
+        NULL;
+
+    // Search.
+    solver.Solve(final_db, search_log, objective_monitor, limit);
+  } else {
+    // The main decision builder (ranks all tasks, then fixes the
+    // objective_variable).
+    DecisionBuilder* const main_phase =
+        solver.Compose(sequence_phase, obj_phase);
+
+    // Search log.
+    const int kLogFrequency = 1000000;
+    SearchMonitor* const search_log =
+        solver.MakeSearchLog(kLogFrequency, objective_monitor);
+
+    SearchLimit* limit = NULL;
+    if (FLAGS_time_limit_in_ms > 0) {
+      limit = solver.MakeTimeLimit(FLAGS_time_limit_in_ms);
+    }
+
+    // Search.
+    solver.Solve(main_phase, search_log, objective_monitor, limit);
   }
-
-  // Search.
-  solver.Solve(main_phase, search_log, objective_monitor, limit);
 }
 }  // namespace operations_research
 
