@@ -82,7 +82,8 @@ public class OrganizeDay
     //
     // Constraints
     //
-    solver.Add(intervals.Disjunctive());
+    DisjunctiveConstraint disjunctive = intervals.Disjunctive("Sequence");
+    solver.Add(disjunctive);
 
     // specific constraints
     for(int t = 0; t < before_tasks.GetLength(0); t++) {
@@ -96,7 +97,7 @@ public class OrganizeDay
     //
     // Search
     //
-    SequenceVar var = intervals.SequenceVar("Sequence");
+    SequenceVar var = disjunctive.SequenceVar();
     SequenceVar[] seq_array = new SequenceVar[] { var };
     DecisionBuilder db = solver.MakePhase(seq_array, Solver.SEQUENCE_DEFAULT);
 

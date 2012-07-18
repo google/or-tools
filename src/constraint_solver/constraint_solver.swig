@@ -1476,6 +1476,9 @@ struct FailureProtect {
 // Rename rules on Solver.
 %rename (Add) operations_research::Solver::AddConstraint;
 
+// Rename rule on DisjunctiveConstraint.
+%rename (SequenceVar) operations_research::DisjunctiveConstraint::MakeSequenceVar;
+
 // Generic rename rules.
 %rename (ToString) *::DebugString;
 

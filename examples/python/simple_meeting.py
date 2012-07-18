@@ -117,9 +117,9 @@ def main(unused_argv):
     calendar = [people_meeting_copies[p], lunch]
     calendar.extend([t['meeting']
                      for t in existing_meetings if t['person'] == p])
-    all_people_calendars[p] = solver.SequenceVar(calendar,
-                                                 'people %d calendar' % p)
-    solver.Add(solver.DisjunctiveConstraint(calendar))
+    disj = solver.DisjunctiveConstraint(calendar, 'people %d calendar' % p)
+    all_people_calendars[p] = disj.SequenceVar()
+    solver.Add(disj)
     all_people_presence[p] = solver.BoolVar('presence of people %d' % p)
 
   people_count = solver.IntVar(0, attendees, 'people count')
@@ -130,9 +130,9 @@ def main(unused_argv):
     calendar = [room_meeting_copies[r]]
     calendar.extend([t['reservation']
                      for t in room_reservations if t['room'] == r])
-    all_rooms_calendars[r] = solver.SequenceVar(calendar,
-                                                'room %d calendar' % r)
-    solver.Add(solver.DisjunctiveConstraint(calendar))
+    disj = solver.DisjunctiveConstraint(calendar, 'room %d calendar' % r)
+    all_rooms_calendars[r] = disj.SequenceVar()
+    solver.Add(disj)
     all_rooms_presence[r] = solver.BoolVar('presence of room %d' %r)
 
   # Objective: maximum number of people.

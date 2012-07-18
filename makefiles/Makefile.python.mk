@@ -108,13 +108,13 @@ endif
 
 # Run a single example
 
-rpy: $(LIB_DIR)/_pywraplp.$(SHAREDLIBEXT) $(LIB_DIR)/_pywrapcp.$(SHAREDLIBEXT) $(LIB_DIR)/_pywrapgraph.$(SHAREDLIBEXT) $(LIB_DIR)/_pywrapknapsack_solver.$(SHAREDLIBEXT) $(LIB_DIR)/_pywraprouting.$(SHAREDLIBEXT) $(SRC_DIR)/python/$(EX).py
+rpy: $(LIB_DIR)/_pywraplp.$(SHAREDLIBEXT) $(LIB_DIR)/_pywrapcp.$(SHAREDLIBEXT) $(LIB_DIR)/_pywrapgraph.$(SHAREDLIBEXT) $(LIB_DIR)/_pywrapknapsack_solver.$(SHAREDLIBEXT) $(LIB_DIR)/_pywraprouting.$(SHAREDLIBEXT) $(EX_DIR)/python/$(EX).py
 ifeq ($(SYSTEM),win)
 	@echo Running python$S$(EX).py
-	@set PYTHONPATH=$(OR_ROOT_FULL)\\src && $(WINDOWS_PYTHON_PATH)$Spython $(SRC_DIR)/python$S$(EX).py
+	@set PYTHONPATH=$(OR_ROOT_FULL)\\src && $(WINDOWS_PYTHON_PATH)$Spython $(EX_DIR)/python$S$(EX).py
 else
 	@echo Running python$S$(EX).py
-	@PYTHONPATH=$(OR_ROOT_FULL)/src python$(PYTHONVERSION) $(SRC_DIR)/python$S$(EX).py
+	@PYTHONPATH=$(OR_ROOT_FULL)/src python$(PYTHONVERSION) $(EX_DIR)/python$S$(EX).py
 endif
 
 

@@ -748,18 +748,20 @@ bool EdgeFinderAndDetectablePrecedences::EdgeFinder() {
 
 // A class that stores several propagators for the sequence constraint, and
 // calls them until a fixpoint is reached.
-class DisjunctiveConstraint : public Constraint {
+
+class FullDisjunctiveConstraint : public DisjunctiveConstraint {
  public:
-  DisjunctiveConstraint(Solver* const s,
-                        IntervalVar* const * intervals,
-                        int size);
-  virtual ~DisjunctiveConstraint() { }
+  FullDisjunctiveConstraint(Solver* const s,
+                            IntervalVar* const * intervals,
+                            int size,
+                            const string& name);
+  virtual ~FullDisjunctiveConstraint() { }
 
   virtual void Post() {
     Demon* d = MakeDelayedConstraintDemon0(
         solver(),
         this,
-        &DisjunctiveConstraint::InitialPropagate,
+        &FullDisjunctiveConstraint::InitialPropagate,
         "InitialPropagate");
     for (int32 i = 0; i < straight_.size(); ++i) {
       straight_.mutable_interval(i)->WhenAnything(d);
@@ -788,27 +790,23 @@ class DisjunctiveConstraint : public Constraint {
   }
 
  private:
-  scoped_array<IntervalVar*> intervals_;
-  const int size_;
   EdgeFinderAndDetectablePrecedences straight_;
   EdgeFinderAndDetectablePrecedences mirror_;
   NotLast straight_not_last_;
   NotLast mirror_not_last_;
-  DISALLOW_COPY_AND_ASSIGN(DisjunctiveConstraint);
+  DISALLOW_COPY_AND_ASSIGN(FullDisjunctiveConstraint);
 };
 
-DisjunctiveConstraint::DisjunctiveConstraint(Solver* const s,
-                                             IntervalVar* const * intervals,
-                                             int size)
-    : Constraint(s),
-      intervals_(new IntervalVar*[size]),
-      size_(size),
+FullDisjunctiveConstraint::FullDisjunctiveConstraint(
+    Solver* const s,
+    IntervalVar* const * intervals,
+    int size,
+    const string& name)
+    : DisjunctiveConstraint(s, intervals, size, name),
       straight_(s, intervals, size, false),
       mirror_(s, intervals, size, true),
       straight_not_last_(s, intervals, size, false),
-      mirror_not_last_(s, intervals, size, true) {
-  memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
-}
+      mirror_not_last_(s, intervals, size, true) {}
 
 // =====================================================================
 //  Cumulative
@@ -1638,8 +1636,9 @@ class CumulativeConstraint : public Constraint {
       if (high_demand_intervals.size() >= 2) {
         // If there are less than 2 such intervals, the constraint would do
         // nothing
-        //        string seq_name = StrCat(name(), "-HighDemandSequence");
-        constraint = solver()->MakeDisjunctiveConstraint(high_demand_intervals);
+        string seq_name = StrCat(name(), "-HighDemandSequence");
+        constraint = solver()->MakeDisjunctiveConstraint(high_demand_intervals,
+                                                         seq_name);
       }
     }
     if (constraint != NULL) {
@@ -1724,8 +1723,9 @@ class CumulativeConstraint : public Constraint {
 
 // Sequence Constraint
 
-Constraint* Solver::MakeDisjunctiveConstraint(
-    const std::vector<IntervalVar*>& intervals) {
+DisjunctiveConstraint* Solver::MakeDisjunctiveConstraint(
+    const std::vector<IntervalVar*>& intervals,
+    const string& name) {
   // Finds all intervals that may be performed
   std::vector<IntervalVar*> may_be_performed;
   for (int i = 0; i < intervals.size(); ++i) {
@@ -1733,9 +1733,10 @@ Constraint* Solver::MakeDisjunctiveConstraint(
       may_be_performed.push_back(intervals[i]);
     }
   }
-  return RevAlloc(new DisjunctiveConstraint(this,
-                                            may_be_performed.data(),
-                                            may_be_performed.size()));
+  return RevAlloc(new FullDisjunctiveConstraint(this,
+                                                may_be_performed.data(),
+                                                may_be_performed.size(),
+                                                name));
 }
 
 // ----- SequenceVar -----
@@ -2148,15 +2149,36 @@ void SequenceVar::FillSequence(std::vector<int>* const rank_first,
   }
 }
 
-// ----------------- Factory methods -------------------------------
+// ----- Public class -----
 
-SequenceVar* Solver::MakeSequenceVar(const std::vector<IntervalVar*>& intervals,
-                                     const string& name) {
-  return RevAlloc(new SequenceVar(this,
-                                  intervals.data(),
-                                  intervals.size(),
-                                  name));
+DisjunctiveConstraint::DisjunctiveConstraint(Solver* const s,
+                                             IntervalVar* const * intervals,
+                                             int size,
+                                             const string& name)
+    : Constraint(s),
+      intervals_(new IntervalVar*[size]),
+      size_(size),
+      sequence_var_(NULL) {
+  memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
+  if (!name.empty()) {
+    set_name(name);
+  }
 }
+
+DisjunctiveConstraint::~DisjunctiveConstraint() {}
+
+SequenceVar* DisjunctiveConstraint::MakeSequenceVar() {
+  if (sequence_var_ == NULL) {
+    solver()->SaveValue(reinterpret_cast<void**>(&sequence_var_));
+    sequence_var_ = solver()->RevAlloc(new SequenceVar(solver(),
+                                                       intervals_.get(),
+                                                       size_,
+                                                       name()));
+  }
+  return sequence_var_;
+}
+
+// ----------------- Factory methods -------------------------------
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
                                    const std::vector<int64>& demands,

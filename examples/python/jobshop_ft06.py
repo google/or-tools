@@ -76,9 +76,9 @@ def main(unused_argv):
       for k in all_machines:
         if machines[j][k] == i:
           machines_jobs.append(all_tasks[(j, k)])
-
-    all_sequences[i] = solver.SequenceVar(machines_jobs, 'machine %i' % i)
-    solver.Add(solver.DisjunctiveConstraint(machines_jobs))
+    disj = solver.DisjunctiveConstraint(machines_jobs, 'machine %i' % i)
+    all_sequences[i] = disj.SequenceVar()
+    solver.Add(disj)
 
   # Makespan objective.
   obj_var = solver.Max([all_tasks[(i, machines_count - 1)].EndExpr()

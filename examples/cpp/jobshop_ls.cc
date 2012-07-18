@@ -118,20 +118,16 @@ void JobshopLs(const JobShopData& data) {
     }
   }
 
-  // Adds disjunctive constraints on unary resources.
-  for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
-    solver.AddConstraint(
-        solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id]));
-  }
-
-  // Creates sequences variables on machines. A sequence variable is a
-  // dedicated variable whose job is to sequence interval variables.
+  // Adds disjunctive constraints on unary resources, and creates
+  // sequence variables. A sequence variable is a dedicated variable
+  // whose job is to sequence interval variables.
   std::vector<SequenceVar*> all_sequences;
   for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
     const string name = StringPrintf("Machine_%d", machine_id);
-    SequenceVar* const sequence =
-        solver.MakeSequenceVar(machines_to_tasks[machine_id], name);
-    all_sequences.push_back(sequence);
+    DisjunctiveConstraint* const ct =
+        solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id], name);
+    solver.AddConstraint(ct);
+    all_sequences.push_back(ct->MakeSequenceVar());
   }
 
   // Creates array of end_times of jobs.

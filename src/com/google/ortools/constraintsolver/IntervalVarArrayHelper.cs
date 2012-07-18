@@ -27,15 +27,11 @@ namespace Google.OrTools.ConstraintSolver
 
       return vars[0].solver();
     }
-    public static Constraint Disjunctive(this IntervalVar[] vars)
+    public static DisjunctiveConstraint Disjunctive(this IntervalVar[] vars,
+                                                    String name)
     {
       Solver solver = GetSolver(vars);
-      return solver.MakeDisjunctiveConstraint(vars);
-    }
-    public static SequenceVar SequenceVar(this IntervalVar[] vars, String name)
-    {
-      Solver solver = GetSolver(vars);
-      return solver.MakeSequenceVar(vars, name);
+      return solver.MakeDisjunctiveConstraint(vars, name);
     }
     public static Constraint Cumulative(this IntervalVar[] vars,
                                         long[] demands,

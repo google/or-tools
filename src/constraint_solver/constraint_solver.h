@@ -125,6 +125,7 @@ class DemonProfiler;
 class DemonProfiler;
 class DependencyGraph;
 class Dimension;
+class DisjunctiveConstraint;
 class ExpressionCache;
 class IntExpr;
 class IntTupleSet;
@@ -1813,12 +1814,9 @@ class Solver {
 
   // This constraint forces all interval vars into an non overlapping
   // sequence.
-  Constraint* MakeDisjunctiveConstraint(const std::vector<IntervalVar*>& intervals);
-
-  // The sequence variable is used to rank disjoint intervals.
-  // It will post a SequenceConstraint upon creation.
-  SequenceVar* MakeSequenceVar(const std::vector<IntervalVar*>& intervals,
-                               const string& name);
+  DisjunctiveConstraint* MakeDisjunctiveConstraint(
+      const std::vector<IntervalVar*>& intervals,
+      const string& name);
 
   // This constraint forces that, for any integer t, the sum of the demands
   // corresponding to an interval containing t does not exceed the given
@@ -4917,6 +4915,25 @@ class Pack : public Constraint {
   std::vector<std::pair<int64, int64> > to_set_;
   std::vector<std::pair<int64, int64> > to_unset_;
   bool in_process_;
+};
+
+// ----- Disjunctive Constraint -----
+
+class DisjunctiveConstraint : public Constraint {
+ public:
+  DisjunctiveConstraint(Solver* const s,
+                        IntervalVar* const * intervals,
+                        int size,
+                        const string& name);
+  virtual ~DisjunctiveConstraint();
+
+  SequenceVar* MakeSequenceVar();
+
+protected:
+  scoped_array<IntervalVar*> intervals_;
+  const int size_;
+  SequenceVar* sequence_var_;
+  DISALLOW_COPY_AND_ASSIGN(DisjunctiveConstraint);
 };
 
 // ----- SolutionPool -----

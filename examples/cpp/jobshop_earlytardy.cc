@@ -14,7 +14,7 @@
 // This model implements a simple jobshop problem with
 // earliness-tardiness costs.
 //
-// A earliness-tardinessjobshop is a standard scheduling problem where
+// A earliness-tardiness jobshop is a standard scheduling problem where
 // you must schedule a set of jobs on a set of machines.  Each job is
 // a sequence of tasks (a task can only start when the preceding task
 // finished), each of which occupies a single specific machine during
@@ -278,20 +278,16 @@ void EtJobShop(const EtJobShopData& data) {
     penalties.push_back(penalty);
   }
 
-  // Adds disjunctive constraints on unary resources.
-  for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
-    solver.AddConstraint(
-        solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id]));
-  }
-
-  // Creates sequences variables on machines. A sequence variable is a
-  // dedicated variable whose job is to sequence interval variables.
+  // Adds disjunctive constraints on unary resources, and creates
+  // sequence variables. A sequence variable is a dedicated variable
+  // whose job is to sequence interval variables.
   std::vector<SequenceVar*> all_sequences;
   for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
     const string name = StringPrintf("Machine_%d", machine_id);
-    SequenceVar* const sequence =
-        solver.MakeSequenceVar(machines_to_tasks[machine_id], name);
-    all_sequences.push_back(sequence);
+    DisjunctiveConstraint* const ct =
+        solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id], name);
+    solver.AddConstraint(ct);
+    all_sequences.push_back(ct->MakeSequenceVar());
   }
 
   // Objective: minimize the weighted penalties.

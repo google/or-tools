@@ -591,6 +591,9 @@ class SecondPassVisitor : public ModelVisitor {
     const int index = model_proto_->constraints_size();
     CPConstraintProto* const constraint_proto = model_proto_->add_constraints();
     ExportToProto(constraint, constraint_proto, type_name, index);
+    if (constraint->HasName()) {
+      constraint_proto->set_name(constraint->name());
+    }
     PopArgumentHolder();
   }
 
@@ -1189,7 +1192,7 @@ Constraint* BuildDisjunctive(CPModelLoader* const builder,
   VERIFY(builder->ScanArguments(ModelVisitor::kIntervalsArgument,
                                 proto,
                                 &vars));
-  return builder->solver()->MakeDisjunctiveConstraint(vars);
+  return builder->solver()->MakeDisjunctiveConstraint(vars, proto.name());
 }
 
 // ----- kDistribute -----
@@ -2061,14 +2064,14 @@ IntExpr* BuildSemiContinuous(CPModelLoader* const builder,
 
 // ----- kSequenceVariable -----
 
-SequenceVar* BuildSequenceVariable(CPModelLoader* const builder,
-                                   const CPSequenceVariableProto& proto) {
-  std::vector<IntervalVar*> vars;
-  VERIFY(builder->ScanArguments(ModelVisitor::kIntervalsArgument,
-                                proto,
-                                &vars));
-  return builder->solver()->MakeSequenceVar(vars, proto.name());
-}
+// SequenceVar* BuildSequenceVariable(CPModelLoader* const builder,
+//                                    const CPSequenceVariableProto& proto) {
+//   std::vector<IntervalVar*> vars;
+//   VERIFY(builder->ScanArguments(ModelVisitor::kIntervalsArgument,
+//                                 proto,
+//                                 &vars));
+//   return builder->solver()->MakeSequenceVar(vars, proto.name());
+// }
 
 // ----- kSortingConstraint -----
 
@@ -2606,7 +2609,7 @@ void Solver::InitBuilders() {
   REGISTER(kScalProdGreaterOrEqual, BuildScalProdGreaterOrEqual);
   REGISTER(kScalProdLessOrEqual, BuildScalProdLessOrEqual);
   REGISTER(kSemiContinuous, BuildSemiContinuous);
-  REGISTER(kSequenceVariable, BuildSequenceVariable);
+  //  REGISTER(kSequenceVariable, BuildSequenceVariable);
   REGISTER(kSortingConstraint, BuildSortingConstraint);
   REGISTER(kSquare, BuildSquare);
   REGISTER(kStartExpr, BuildStartExpr);
