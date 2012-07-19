@@ -11,12 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if defined(__GNUC__) && defined(__linux__)
+# include <unistd.h>
+#endif
 #if defined(__APPLE__) && defined(__GNUC__)  // Mac OS X
-#include <mach/mach_init.h>
-#include <mach/task.h>
+# include <mach/mach_init.h>
+# include <mach/task.h>
 #elif defined(_MSC_VER)  // WINDOWS
-#include <windows.h>
-#include <psapi.h>
+# include <windows.h>
+# include <psapi.h>
 #endif
 
 #include <cstdio>

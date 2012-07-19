@@ -13,6 +13,7 @@
 
 #if defined(__GNUC__) && defined(__linux__)
 # include <linux/limits.h>
+# include <unistd.h>
 #endif
 #if defined(_MSC_VER)
 # include <windows.h>
