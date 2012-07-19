@@ -173,15 +173,15 @@ class MPSolver {
 #if defined(USE_CLP)
     CLP_LINEAR_PROGRAMMING,
 #endif
-#if defined(USE_SLM)
-    SULUM_LINEAR_PROGRAMMING,
-    SULUM_MIXED_INTEGER_PROGRAMMING,
-#endif
 #if defined(USE_CBC)
     CBC_MIXED_INTEGER_PROGRAMMING,
 #endif
 #if defined(USE_SCIP)
     SCIP_MIXED_INTEGER_PROGRAMMING,
+#endif
+#if defined(USE_SLM)
+    SULUM_LINEAR_PROGRAMMING,
+    SULUM_MIXED_INTEGER_PROGRAMMING,
 #endif
   };
 
