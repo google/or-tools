@@ -54,6 +54,7 @@ DEFINE_string(
     "list of \"<machine index> <duration>\"\n"
     "note: jobs with one task are not supported");
 DEFINE_int32(time_limit_in_ms, 0, "Time limit in ms, 0 means no limit.");
+DEFINE_bool(full_debug, false, "");
 
 namespace operations_research {
 void Jobshop(const JobShopData& data) {
@@ -172,8 +173,10 @@ void Jobshop(const JobShopData& data) {
   // Search.
   solver.NewSearch(main_phase, search_log, objective_monitor, limit);
   while (solver.NextSolution()) {
-    for (int i = 0; i < machine_count; ++i) {
-      all_machines_[i]->FullDebug();
+    if (FLAGS_full_debug) {
+      for (int i = 0; i < machine_count; ++i) {
+        all_machines_[i]->FullDebug();
+      }
     }
   }
   solver.EndSearch();

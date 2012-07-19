@@ -815,16 +815,21 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
   virtual void BuildNextModel() {
     Solver* const s = solver();
     const string ct_name = name();
-    s->MakeIntVarArray(size_ + 1, 0, size_ + 1, ct_name + "_nexts", &nexts_);
+    s->MakeIntVarArray(size_ + 1, 1, size_ + 1, ct_name + "_nexts", &nexts_);
     int64 horizon = 0;
     for (int i = 0; i < size_; ++i) {
       horizon = std::max(horizon, intervals_[i]->EndMax());
     }
     actives_.resize(size_ + 1);
-    actives_[0] = s->MakeBoolVar("DepotActive");
+    std::vector<IntVar*> performed(size_);
     for (int i = 0; i < size_; ++i) {
       actives_[i + 1] = intervals_[i]->PerformedExpr()->Var();
+      performed[i] = actives_[i + 1];
     }
+    actives_[0] = s->MakeIsDifferentCstVar(nexts_[0], Zero());
+    s->AddConstraint(s->MakeMaxEquality(performed, actives_[0]));
+    //    actives_[0]->SetValue(true);
+
     // All Diff
     s->AddConstraint(s->MakeAllDifferent(nexts_));
 
@@ -850,11 +855,11 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     for (int64 i = 0; i < size_; ++i) {
       IntVar* const fixed_transit =
           s->MakeElement(durations_, nexts_[i])->Var();
-      // IntVar* const slack_var = s->MakeIntVar(0, horizon, "slack");
-      // time_transits_[i + 1] = s->MakeSum(slack_var, fixed_transit)->Var();
-      time_transits_[i + 1] = fixed_transit;
-      // time_transits_[i + 1]->SetRange(0, horizon);
-      // time_slacks_[i + 1] = slack_var;
+      IntVar* const slack_var = s->MakeIntVar(0, horizon, "slack");
+      time_transits_[i + 1] = s->MakeSum(slack_var, fixed_transit)->Var();
+      //time_transits_[i + 1] = fixed_transit;
+      time_transits_[i + 1]->SetRange(0, horizon);
+      time_slacks_[i + 1] = slack_var;
       time_cumuls_[i + 1] = s->MakeElement(start_times_, nexts_[i])->Var();
     }
     time_cumuls_[size_ + 1] = s->MakeIntVar(0, horizon, ct_name + "_ect");
