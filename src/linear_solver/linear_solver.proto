@@ -61,6 +61,8 @@ message MPModelRequest {
     CLP_LINEAR_PROGRAMMING = 2;
     CBC_MIXED_INTEGER_PROGRAMMING = 3;
     SCIP_MIXED_INTEGER_PROGRAMMING = 4;
+    SULUM_LINEAR_PROGRAMMING = 5;
+    SULUM_MIXED_INTEGER_PROGRAMMING = 6;
   }
   required OptimizationProblemType problem_type = 2;
   optional int32 time_limit_ms = 3;
