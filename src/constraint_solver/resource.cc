@@ -839,19 +839,20 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     }
     start_times_[0] = s->MakeIntConst(0);
     durations_[0] = 0;
+    time_slacks_[0] = s->MakeIntVar(0, horizon, "slack");
+    time_transits_[0] = s->MakeIntConst(0);
+    time_cumuls_[0] = s->MakeIntConst(0);
 
     for (int64 i = 0; i < size_; ++i) {
       IntVar* const fixed_transit =
           s->MakeElement(durations_, nexts_[i])->Var();
-      IntVar* const slack_var = s->MakeIntVar(0, horizon, "slack");
-      time_transits_[i + 1] = s->MakeSum(slack_var, fixed_transit)->Var();
-      time_transits_[i + 1]->SetRange(0, horizon);
-      time_slacks_[i + 1] = slack_var;
+      // IntVar* const slack_var = s->MakeIntVar(0, horizon, "slack");
+      // time_transits_[i + 1] = s->MakeSum(slack_var, fixed_transit)->Var();
+      time_transits_[i + 1] = fixed_transit;
+      // time_transits_[i + 1]->SetRange(0, horizon);
+      // time_slacks_[i + 1] = slack_var;
       time_cumuls_[i + 1] = s->MakeElement(start_times_, nexts_[i])->Var();
     }
-    time_slacks_[0] = s->MakeIntVar(0, horizon, "slack");
-    time_transits_[0] = s->MakeIntConst(0);
-    time_cumuls_[0] = s->MakeIntConst(0);
     s->AddConstraint(
         s->MakePathCumul(nexts_, actives_, time_transits_, time_cumuls_));
   }
