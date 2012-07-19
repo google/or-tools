@@ -39,6 +39,7 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
 #include "util/monoid_operation_tree.h"
+#include "util/string_array.h"
 
 // TODO(user) Should these remains flags, or should they move to
 // SolverParameters?
@@ -824,11 +825,14 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     for (int i = 0; i < size_; ++i) {
       actives_[i + 1] = intervals_[i]->PerformedExpr()->Var();
     }
+    // All Diff
+    s->AddConstraint(s->MakeAllDifferent(nexts_));
+
     // No Cycle.
     s->AddConstraint(s->MakeNoCycle(nexts_, actives_));
 
     // Cumul on time.
-    time_cumuls_.resize(size_ + 1);
+    time_cumuls_.resize(size_ + 2);
     time_transits_.resize(size_ + 1);
     time_slacks_.resize(size_ + 1);
     start_times_.resize(size_ + 1);
@@ -853,12 +857,23 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
       // time_slacks_[i + 1] = slack_var;
       time_cumuls_[i + 1] = s->MakeElement(start_times_, nexts_[i])->Var();
     }
+    time_cumuls_[size_ + 1] = s->MakeIntVar(0, horizon, ct_name + "_ect");
     s->AddConstraint(
-        s->MakePathCumul(nexts_, actives_, time_transits_, time_cumuls_));
+        s->MakePathCumul(nexts_, actives_, time_cumuls_, time_transits_));
   }
 
   virtual const std::vector<IntVar*>& NextVariables() const {
     return nexts_;
+  }
+
+  virtual void FullDebug() {
+    LOG(INFO) << "nexts = " << DebugStringVector(nexts_, ", ");
+    LOG(INFO) << "actives = " << DebugStringVector(actives_, ", ");
+    LOG(INFO) << "time cumuls = " << DebugStringVector(time_cumuls_, ", ");
+    LOG(INFO) << "time transits = " << DebugStringVector(time_transits_, ", ");
+    LOG(INFO) << "time slacks = " << DebugStringVector(time_slacks_, ", ");
+    LOG(INFO) << "start times = " << DebugStringVector(start_times_, ", ");
+    LOG(INFO) << "durations = " << Int64VectorToString(durations_, ", ");
   }
 
  private:

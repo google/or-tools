@@ -4932,7 +4932,11 @@ class DisjunctiveConstraint : public Constraint {
 
   virtual void BuildNextModel() = 0;
 
+#if !defined(SWIG)
   virtual const std::vector<IntVar*>& NextVariables() const = 0;
+#endif
+
+  virtual void FullDebug() = 0;
 
 protected:
   scoped_array<IntervalVar*> intervals_;

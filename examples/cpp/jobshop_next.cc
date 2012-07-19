@@ -110,14 +110,16 @@ void Jobshop(const JobShopData& data) {
   // sequence variables. A sequence variable is a dedicated variable
   // whose job is to sequence interval variables.
   std::vector<IntVar*> all_nexts_;
+  std::vector<DisjunctiveConstraint*> all_machines_(machine_count);
   for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
     const string name = StringPrintf("Machine_%d", machine_id);
-    DisjunctiveConstraint* const ct =
+    all_machines_[machine_id] =
         solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id], name);
-    ct->BuildNextModel();
-    const std::vector<IntVar*>& nexts = ct->NextVariables();
+    all_machines_[machine_id]->BuildNextModel();
+    const std::vector<IntVar*>& nexts =
+        all_machines_[machine_id]->NextVariables();
     all_nexts_.insert(all_nexts_.end(), nexts.begin(), nexts.end());
-    solver.AddConstraint(ct);
+    solver.AddConstraint(all_machines_[machine_id]);
   }
 
   // Creates array of end_times of jobs.
@@ -168,7 +170,13 @@ void Jobshop(const JobShopData& data) {
   }
 
   // Search.
-  solver.Solve(main_phase, search_log, objective_monitor, limit);
+  solver.NewSearch(main_phase, search_log, objective_monitor, limit);
+  while (solver.NextSolution()) {
+    for (int i = 0; i < machine_count; ++i) {
+      all_machines_[i]->FullDebug();
+    }
+  }
+  solver.EndSearch();
 }
 }  // namespace operations_research
 
