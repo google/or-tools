@@ -42,6 +42,7 @@
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
 #include "cpp/jobshop.h"
+#include "util/string_array.h"
 
 DEFINE_string(
     data_file,
@@ -163,8 +164,22 @@ void Jobshop(const JobShopData& data) {
     limit = solver.MakeTimeLimit(FLAGS_time_limit_in_ms);
   }
 
+  SolutionCollector* const collector =
+      solver.MakeLastSolutionCollector();
+  collector->Add(all_sequences);
+
   // Search.
-  solver.Solve(main_phase, search_log, objective_monitor, limit);
+  if (solver.Solve(main_phase,
+                   search_log,
+                   objective_monitor,
+                   limit,
+                   collector)) {
+    for (int m = 0; m < machine_count; ++m) {
+      SequenceVar* const seq = all_sequences[m];
+      LOG(INFO) << seq->name() << ": "
+                << IntVectorToString(collector->ForwardSequence(0, seq), ", ");
+    }
+  }
 }
 }  // namespace operations_research
 

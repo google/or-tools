@@ -814,7 +814,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
 
   virtual void BuildNextModel() {
     Solver* const s = solver();
-    const string ct_name = name();
+    const string& ct_name = name();
     const int num_nodes = size_ + 1;
     int64 horizon = 0;
     for (int i = 0; i < size_; ++i) {
@@ -842,29 +842,14 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     // Cumul on time.
     time_cumuls_.resize(num_nodes + 1);
     time_transits_.resize(num_nodes);
-    time_slacks_.resize(num_nodes);
-    start_times_.resize(num_nodes);
-    durations_.resize(num_nodes);
 
-    start_times_[0] = s->MakeIntConst(0);
-    durations_[0] = 0;
-    time_slacks_[0] = s->MakeIntVar(0, horizon, "slack");
     time_transits_[0] = s->MakeIntVar(0, horizon, "initial_transit");
     time_cumuls_[0] = s->MakeIntConst(0);
 
     for (int64 i = 0; i < size_; ++i) {
-      start_times_[i + 1] = intervals_[i]->StartExpr()->Var();
-      durations_[i + 1] = intervals_[i]->DurationMin();
-    }
-
-    for (int64 i = 0; i < size_; ++i) {
-      IntVar* const fixed_transit =
-          s->MakeElement(durations_, nexts_[i])->Var();
-      IntVar* const slack_var = s->MakeIntVar(0, horizon, "slack");
-      time_transits_[i + 1] = s->MakeSum(slack_var, fixed_transit)->Var();
-      time_transits_[i + 1]->SetRange(0, horizon);
-      time_slacks_[i + 1] = slack_var;
-      time_cumuls_[i + 1] = s->MakeElement(start_times_, nexts_[i])->Var();
+      const int64 fixed_transit = intervals_[i]->DurationMin();
+      time_transits_[i + 1] = s->MakeIntVar(fixed_transit, horizon, "slack");
+      time_cumuls_[i + 1] = intervals_[i]->StartExpr()->Var();
     }
     time_cumuls_[size_ + 1] = s->MakeIntVar(0, horizon, ct_name + "_ect");
     s->AddConstraint(
@@ -880,9 +865,6 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     LOG(INFO) << "actives = " << DebugStringVector(actives_, ", ");
     LOG(INFO) << "time cumuls = " << DebugStringVector(time_cumuls_, ", ");
     LOG(INFO) << "time transits = " << DebugStringVector(time_transits_, ", ");
-    LOG(INFO) << "time slacks = " << DebugStringVector(time_slacks_, ", ");
-    LOG(INFO) << "start times = " << DebugStringVector(start_times_, ", ");
-    LOG(INFO) << "durations = " << Int64VectorToString(durations_, ", ");
   }
 
  private:
@@ -895,9 +877,6 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
   std::vector<IntVar*> actives_;
   std::vector<IntVar*> time_cumuls_;
   std::vector<IntVar*> time_transits_;
-  std::vector<IntVar*> time_slacks_;
-  std::vector<IntVar*> start_times_;
-  std::vector<int64> durations_;
   DISALLOW_COPY_AND_ASSIGN(FullDisjunctiveConstraint);
 };
 
