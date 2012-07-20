@@ -3828,6 +3828,8 @@ class SolutionCollector : public SearchMonitor {
   void Add(const std::vector<IntVar*>& vars);
   void Add(IntervalVar* const var);
   void Add(const std::vector<IntervalVar*>& vars);
+  void Add(SequenceVar* const var);
+  void Add(const std::vector<SequenceVar*>& vars);
   void AddObjective(IntVar* const objective);
 
   // Beginning of the search.
@@ -3866,6 +3868,19 @@ class SolutionCollector : public SearchMonitor {
 
   // This is a short-cut to get the PerformedValue of 'var' in the nth solution.
   int64 PerformedValue(int n, IntervalVar* const var) const;
+
+#if !defined(SWIG)
+  // This is a short-cut to get the ForwardSequence of 'var' in the
+  // nth solution.
+  const std::vector<int>& ForwardSequence(int n, SequenceVar* const v) const;
+  // This is a short-cut to get the BackwardSequence of 'var' in the
+  // nth solution.
+  const std::vector<int>& BackwardSequence(int n, SequenceVar* const v) const;
+  // This is a short-cut to get the list of unperformed of 'var' in the
+  // nth solution.
+  const std::vector<int>& Unperformed(int n, SequenceVar* const v) const;
+#endif
+
 
  protected:
   // Push the current state as a new solution.

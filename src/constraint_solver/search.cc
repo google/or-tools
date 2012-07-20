@@ -2285,6 +2285,18 @@ void SolutionCollector::Add(const std::vector<IntervalVar*>& vars)  {
   }
 }
 
+void SolutionCollector::Add(SequenceVar* const var)  {
+  if (prototype_.get() != NULL) {
+    prototype_->Add(var);
+  }
+}
+
+void SolutionCollector::Add(const std::vector<SequenceVar*>& vars)  {
+  if (prototype_.get() != NULL) {
+    prototype_->Add(vars);
+  }
+}
+
 void SolutionCollector::AddObjective(IntVar* const objective)  {
   if (prototype_.get() != NULL && objective != NULL) {
     prototype_->AddObjective(objective);
@@ -2397,6 +2409,21 @@ int64 SolutionCollector::EndValue(int n, IntervalVar* const var) const {
 int64 SolutionCollector::PerformedValue(int n, IntervalVar* const var) const {
   check_index(n);
   return solutions_[n]->PerformedValue(var);
+}
+
+const std::vector<int>& SolutionCollector::ForwardSequence(
+    int n, SequenceVar* const v) const {
+  return solutions_[n]->ForwardSequence(v);
+}
+
+const std::vector<int>& SolutionCollector::BackwardSequence(
+    int n, SequenceVar* const v) const {
+  return solutions_[n]->BackwardSequence(v);
+}
+
+const std::vector<int>& SolutionCollector::Unperformed(
+    int n, SequenceVar* const v) const {
+  return solutions_[n]->Unperformed(v);
 }
 
 namespace {
