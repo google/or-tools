@@ -59,6 +59,7 @@ void FileLineReader::Reload() {
       line_callback_->Run(result);
     }
   }
+  data_file->Close();
 }
 
 bool FileLineReader::loaded_successfully() const {
