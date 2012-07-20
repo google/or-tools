@@ -2093,6 +2093,10 @@ class IntConst : public IntVar {
 
   virtual string BaseName() const { return "IntegerConstant"; }
 
+  virtual string name() const {
+    return StringPrintf("%" GG_LL_FORMAT "d", value_);
+  }
+
  private:
   int64 value_;
 };
