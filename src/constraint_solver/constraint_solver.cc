@@ -2508,10 +2508,6 @@ string Solver::GetName(const PropagationBaseObject* object) {
     }
   }
   const string base_name = object->BaseName();
-  if (object->BaseName() == "IntegerConstant") {
-    return StringPrintf("%" GG_LL_FORMAT "d",
-                        reinterpret_cast<const IntVar*>(object)->Min());
-  }
   if (FLAGS_cp_name_variables && !base_name.empty()) {
     const string new_name =
         StringPrintf("%s_%d", base_name.c_str(), anonymous_variable_index_++);
