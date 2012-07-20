@@ -2091,6 +2091,8 @@ class IntConst : public IntVar {
     return solver()->MakeIntConst(value_ <= constant);
   }
 
+  virtual string BaseName() const { return "IntegerConstant"; }
+
  private:
   int64 value_;
 };

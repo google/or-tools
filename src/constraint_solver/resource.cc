@@ -815,49 +815,53 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
   virtual void BuildNextModel() {
     Solver* const s = solver();
     const string ct_name = name();
-    s->MakeIntVarArray(size_ + 1, 1, size_ + 1, ct_name + "_nexts", &nexts_);
+    const int num_nodes = size_ + 1;
     int64 horizon = 0;
     for (int i = 0; i < size_; ++i) {
       horizon = std::max(horizon, intervals_[i]->EndMax());
     }
-    actives_.resize(size_ + 1);
+
+    s->MakeIntVarArray(num_nodes, 1, num_nodes, ct_name + "_nexts", &nexts_);
+    // All Diff
+    s->AddConstraint(s->MakeAllDifferent(nexts_));
+
+    actives_.resize(num_nodes);
     std::vector<IntVar*> performed(size_);
     for (int i = 0; i < size_; ++i) {
       actives_[i + 1] = intervals_[i]->PerformedExpr()->Var();
       performed[i] = actives_[i + 1];
     }
-    actives_[0] = s->MakeIsDifferentCstVar(nexts_[0], Zero());
-    s->AddConstraint(s->MakeMaxEquality(performed, actives_[0]));
+    //    actives_[0] = s->MakeIsDifferentCstVar(nexts_[0], Zero());
+    //    s->AddConstraint(s->MakeMaxEquality(performed, actives_[0]));
     //    actives_[0]->SetValue(true);
-
-    // All Diff
-    s->AddConstraint(s->MakeAllDifferent(nexts_));
+    actives_[0] = s->MakeIntConst(1);
 
     // No Cycle.
     s->AddConstraint(s->MakeNoCycle(nexts_, actives_));
 
     // Cumul on time.
-    time_cumuls_.resize(size_ + 2);
-    time_transits_.resize(size_ + 1);
-    time_slacks_.resize(size_ + 1);
-    start_times_.resize(size_ + 1);
-    durations_.resize(size_ + 1);
+    time_cumuls_.resize(num_nodes + 1);
+    time_transits_.resize(num_nodes);
+    time_slacks_.resize(num_nodes);
+    start_times_.resize(num_nodes);
+    durations_.resize(num_nodes);
+
+    start_times_[0] = s->MakeIntConst(0);
+    durations_[0] = 0;
+    time_slacks_[0] = s->MakeIntVar(0, horizon, "slack");
+    time_transits_[0] = s->MakeIntVar(0, horizon, "initial_transit");
+    time_cumuls_[0] = s->MakeIntConst(0);
+
     for (int64 i = 0; i < size_; ++i) {
       start_times_[i + 1] = intervals_[i]->StartExpr()->Var();
       durations_[i + 1] = intervals_[i]->DurationMin();
     }
-    start_times_[0] = s->MakeIntConst(0);
-    durations_[0] = 0;
-    time_slacks_[0] = s->MakeIntVar(0, horizon, "slack");
-    time_transits_[0] = s->MakeIntConst(0);
-    time_cumuls_[0] = s->MakeIntConst(0);
 
     for (int64 i = 0; i < size_; ++i) {
       IntVar* const fixed_transit =
           s->MakeElement(durations_, nexts_[i])->Var();
       IntVar* const slack_var = s->MakeIntVar(0, horizon, "slack");
       time_transits_[i + 1] = s->MakeSum(slack_var, fixed_transit)->Var();
-      //time_transits_[i + 1] = fixed_transit;
       time_transits_[i + 1]->SetRange(0, horizon);
       time_slacks_[i + 1] = slack_var;
       time_cumuls_[i + 1] = s->MakeElement(start_times_, nexts_[i])->Var();
