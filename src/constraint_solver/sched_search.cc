@@ -20,9 +20,281 @@
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
 
 namespace operations_research {
+
+// ----- SequenceVar -----
+
+// TODO(user): Add better class invariants, in particular checks
+// that ranked_first, ranked_last, and unperformed are truly disjoint.
+
+SequenceVar::SequenceVar(Solver* const s,
+                         const IntervalVar* const * intervals,
+                         const IntVar* const * nexts,
+                         int size,
+                         const string& name)
+  : PropagationBaseObject(s),
+    intervals_(new IntervalVar*[size]),
+    nexts_(new IntVar*[size + 1]),
+    size_(size),
+    next_size_(size + 1),
+    previous_(size + 2, -1) {
+  memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
+  memcpy(nexts_.get(), nexts, next_size_ * sizeof(*nexts));
+  set_name(name);
+}
+
+SequenceVar::~SequenceVar() {}
+
+IntervalVar* SequenceVar::Interval(int index) const {
+  return intervals_[index];
+}
+
+IntVar* SequenceVar::Next(int index) const {
+  return nexts_[index];
+}
+
+string SequenceVar::DebugString() const {
+  int64 hmin, hmax, dmin, dmax;
+  HorizonRange(&hmin, &hmax);
+  DurationRange(&dmin, &dmax);
+  int unperformed = 0;
+  int ranked = 0;
+  int not_ranked = 0;
+  ComputeStatistics(&ranked, &not_ranked, &unperformed);
+  return StringPrintf("%s(horizon = %" GG_LL_FORMAT
+                      "d..%" GG_LL_FORMAT
+                      "d, duration = %" GG_LL_FORMAT
+                      "d..%" GG_LL_FORMAT
+                      "d, not ranked = %d, ranked = %d)",
+                      name().c_str(),
+                      hmin,
+                      hmax,
+                      dmin,
+                      dmax,
+                      not_ranked,
+                      ranked);
+}
+
+void SequenceVar::Accept(ModelVisitor* const visitor) const {
+  visitor->VisitSequenceVariable(this);
+}
+
+void SequenceVar::DurationRange(int64* const dmin, int64* const dmax) const {
+  int64 dur_min = 0;
+  int64 dur_max = 0;
+  for (int i = 0; i < size_; ++i) {
+    IntervalVar* const t = intervals_[i];
+    if (t->MayBePerformed()) {
+      if (t->MustBePerformed()) {
+        dur_min += t->DurationMin();
+      }
+      dur_max += t->DurationMax();
+    }
+  }
+  *dmin = dur_min;
+  *dmax = dur_max;
+}
+
+void SequenceVar::HorizonRange(int64* const hmin, int64* const hmax) const {
+  int64 hor_min = kint64max;
+  int64 hor_max = kint64min;
+  for (int i = 0; i < size_; ++i) {
+    IntervalVar* const t = intervals_[i];
+    if (t->MayBePerformed()) {
+      IntervalVar* const t = intervals_[i];
+      hor_min = std::min(hor_min, t->StartMin());
+      hor_max = std::max(hor_max, t->StartMax());
+    }
+  }
+  *hmin = hor_min;
+  *hmax = hor_max;
+}
+
+void SequenceVar::ActiveHorizonRange(int64* const hmin,
+                                     int64* const hmax) const {
+  hash_set<int> decided;
+  for (int i = 0; i < size_; ++i) {
+    if (intervals_[i]->CannotBePerformed()) {
+      decided.insert(i);
+    }
+  }
+  int first = 0;
+  while (nexts_[first]->Bound()) {
+    first = nexts_[first]->Min();
+    if (first < next_size_) {
+      decided.insert(first - 1);
+    } else {
+      break;
+    }
+  }
+  if (first != next_size_) {
+    UpdatePrevious();
+    int last = next_size_;
+    while (previous_[last] != -1) {
+      last = previous_[last];
+      decided.insert(last - 1);
+    }
+  }
+  int64 hor_min = kint64max;
+  int64 hor_max = kint64min;
+  for (int i = 0; i < size_; ++i) {
+    if (!ContainsKey(decided, i)) {
+      IntervalVar* const t = intervals_[i];
+      hor_min = std::min(hor_min, t->StartMin());
+      hor_max = std::max(hor_max, t->StartMax());
+    }
+  }
+  *hmin = hor_min;
+  *hmax = hor_max;
+}
+
+void SequenceVar::ComputeStatistics(int* const ranked,
+                                    int* const not_ranked,
+                                    int* const unperformed) const {
+  *unperformed = 0;
+  for (int i = 0; i < size_; ++i) {
+    if (intervals_[i]->CannotBePerformed()) {
+      (*unperformed)++;
+    }
+  }
+  *ranked = 0;
+  int first = 0;
+  while (first < next_size_ && nexts_[first]->Bound()) {
+    first = nexts_[first]->Min();
+    (*ranked)++;
+  }
+  if (first != next_size_) {
+    UpdatePrevious();
+    int last = next_size_;
+    while (previous_[last] != -1) {
+      last = previous_[last];
+      (*ranked)++;
+    }
+  }
+  *not_ranked = size_ - *ranked - *unperformed;
+}
+
+int SequenceVar::ComputeForwardFrontier() {
+  int first = 0;
+  while (nexts_[first]->Bound()) {
+    first = nexts_[first]->Min();
+  }
+  return first;
+}
+
+int SequenceVar::ComputeBackwardFrontier() {
+  UpdatePrevious();
+  int last = next_size_;
+  while (previous_[last] != -1) {
+    last = previous_[last];
+  }
+  return last;
+}
+
+void SequenceVar::ComputePossibleFirstsAndLasts(
+    std::vector<int>* const possible_firsts,
+    std::vector<int>* const possible_lasts) {
+  IntVar* const forward_var = nexts_[ComputeForwardFrontier()];
+  for (int64 i = forward_var->Min(); i <= forward_var->Max(); ++i) {
+    // TODO(lperron): use domain iterator.
+    if (i != 0 && i < size_ + 1 && forward_var->Contains(i)) {
+      possible_firsts->push_back(i - 1);
+    }
+  }
+  // TODO(lperron) : backward
+}
+
+void SequenceVar::RankSequence(const std::vector<int>& rank_first,
+                               const std::vector<int>& rank_last,
+                               const std::vector<int>& unperformed) {
+  solver()->GetPropagationMonitor()->RankSequence(this,
+                                                  rank_first,
+                                                  rank_last,
+                                                  unperformed);
+  // Mark unperformed.
+  for (ConstIter<std::vector<int> > it(unperformed); !it.at_end(); ++it) {
+    intervals_[*it]->SetPerformed(false);
+  }
+  // Forward.
+  int forward = 0;
+  for (int i = 0; i < rank_first.size(); ++i) {
+    const int next = 1 + rank_first[i];
+    nexts_[forward]->SetValue(next);
+    forward = next;
+  }
+  // TODO(lperron) : backward.
+}
+
+void SequenceVar::RankFirst(int index) {
+  solver()->GetPropagationMonitor()->RankFirst(this, index);
+  const int forward_frontier = ComputeForwardFrontier();
+  nexts_[forward_frontier]->SetValue(index + 1);
+}
+
+void SequenceVar::RankNotFirst(int index) {
+  solver()->GetPropagationMonitor()->RankNotFirst(this, index);
+  const int forward_frontier = ComputeForwardFrontier();
+  nexts_[forward_frontier]->RemoveValue(index + 1);
+}
+
+void SequenceVar::RankLast(int index) {
+  solver()->GetPropagationMonitor()->RankLast(this, index);
+  const int backward_frontier = ComputeBackwardFrontier();
+  nexts_[index + 1]->SetValue(backward_frontier);
+}
+
+void SequenceVar::RankNotLast(int index) {
+  solver()->GetPropagationMonitor()->RankNotLast(this, index);
+  const int backward_frontier = ComputeBackwardFrontier();
+  nexts_[index + 1]->RemoveValue(backward_frontier);
+}
+
+void SequenceVar::UpdatePrevious() const {
+  for (int i = 0; i < size_ + 2; ++i) {
+    previous_[i] = -1;
+  }
+  for (int i = 0; i < next_size_; ++i) {
+    if (nexts_[i]->Bound()) {
+      previous_[nexts_[i]->Min()] = i;
+    }
+  }
+}
+
+void SequenceVar::FillSequence(std::vector<int>* const rank_first,
+                               std::vector<int>* const rank_last,
+                               std::vector<int>* const unperformed) const {
+  CHECK_NOTNULL(rank_first);
+  CHECK_NOTNULL(rank_last);
+  CHECK_NOTNULL(unperformed);
+  rank_first->clear();
+  rank_last->clear();
+  unperformed->clear();
+  for (int i = 0; i < size_; ++i) {
+    if (intervals_[i]->CannotBePerformed()) {
+      unperformed->push_back(i);
+    }
+  }
+  int first = 0;
+  while (nexts_[first]->Bound()) {
+    first = nexts_[first]->Min();
+    if (first < next_size_) {
+      rank_first->push_back(first - 1);
+    } else {
+      break;
+    }
+  }
+  if (first != next_size_) {
+    UpdatePrevious();
+    int last = next_size_;
+    while (previous_[last] != -1) {
+      last = previous_[last];
+      rank_last->push_back(last - 1);
+    }
+  }
+}
 
 // ----- Decisions and DecisionBuilders on interval vars -----
 
@@ -198,31 +470,25 @@ class RankFirstIntervalVars : public DecisionBuilder {
 
   virtual Decision* Next(Solver* const s) {
     SequenceVar* best_sequence = NULL;
-    std::vector<int> best_possible_firsts;
+    best_possible_firsts_.clear();
     while (true) {
-      if (FindSequenceVar(s, &best_sequence, &best_possible_firsts)) {
+      if (FindSequenceVar(s, &best_sequence)) {
         // No not create a choice point if it is not needed.
         DCHECK(best_sequence != NULL);
-        if (best_possible_firsts.size() == 1 &&
+        if (best_possible_firsts_.size() == 1 &&
             best_sequence->Interval(
-                best_possible_firsts.back())->MustBePerformed()) {
-          best_sequence->RankFirst(best_possible_firsts.back());
+                best_possible_firsts_.back())->MustBePerformed()) {
+          best_sequence->RankFirst(best_possible_firsts_.back());
           continue;
         }
         int best_interval = -1;
-        if (!FindIntervalVar(s,
-                             best_sequence,
-                             best_possible_firsts,
-                             &best_interval)) {
+        if (!FindIntervalVar(s, best_sequence, &best_interval)) {
           s->Fail();
         }
         CHECK_NE(-1, best_interval);
         return s->RevAlloc(new RankFirst(best_sequence, best_interval));
     } else {
-      for (int i = 0; i < size_; ++i) {
-        CHECK_EQ(0, sequences_[i]->NotRanked()) << sequences_[i]->DebugString();
-      }
-      return NULL;
+        return NULL;
       }
     }
   }
@@ -239,12 +505,11 @@ class RankFirstIntervalVars : public DecisionBuilder {
   // Selects the interval var to rank.
   bool FindIntervalVarOnStartMin(Solver* const s,
                                  SequenceVar* const best_sequence,
-                                 const std::vector<int>& best_possible_firsts,
                                  int* const best_interval_index) {
     int best_interval = -1;
     int64 best_start_min = kint64max;
-    for (int index = 0; index < best_possible_firsts.size(); ++index) {
-      const int candidate = best_possible_firsts[index];
+    for (int index = 0; index < best_possible_firsts_.size(); ++index) {
+      const int candidate = best_possible_firsts_[index];
       IntervalVar* const interval = best_sequence->Interval(candidate);
       if (interval->StartMin() < best_start_min) {
         best_interval = candidate;
@@ -261,17 +526,15 @@ class RankFirstIntervalVars : public DecisionBuilder {
 
   bool FindIntervalVarRandomly(Solver* const s,
                                SequenceVar* const best_sequence,
-                               const std::vector<int>& best_possible_firsts,
                                int* const best_interval_index) {
-    DCHECK(!best_possible_firsts.empty());
-    const int index = s->Rand32(best_possible_firsts.size());
-    *best_interval_index = best_possible_firsts[index];
+    DCHECK(!best_possible_firsts_.empty());
+    const int index = s->Rand32(best_possible_firsts_.size());
+    *best_interval_index = best_possible_firsts_[index];
     return true;
   }
 
   bool FindIntervalVar(Solver* const s,
                        SequenceVar* const best_sequence,
-                       const std::vector<int>& best_possible_firsts,
                        int* const best_interval_index) {
     switch (strategy_) {
       case Solver::SEQUENCE_DEFAULT:
@@ -279,12 +542,10 @@ class RankFirstIntervalVars : public DecisionBuilder {
       case Solver::CHOOSE_MIN_SLACK_RANK_FORWARD:
         return FindIntervalVarOnStartMin(s,
                                          best_sequence,
-                                         best_possible_firsts,
                                          best_interval_index);
       case Solver::CHOOSE_RANDOM_RANK_FORWARD:
         return FindIntervalVarRandomly(s,
                                        best_sequence,
-                                       best_possible_firsts,
                                        best_interval_index);
       default:
         LOG(FATAL) << "Unknown strategy " << strategy_;
@@ -293,20 +554,23 @@ class RankFirstIntervalVars : public DecisionBuilder {
 
   // Selects the sequence var to start ranking.
   bool FindSequenceVarOnSlack(Solver* const s,
-                              SequenceVar** const best_sequence,
-                              std::vector<int>* const best_possible_firsts) const {
+                              SequenceVar** const best_sequence) const {
     int64 best_slack = kint64max;
     int64 best_ahmin = kint64max;
     *best_sequence = NULL;
-    best_possible_firsts->clear();
+    best_possible_firsts_.clear();
     for (int i = 0; i < size_; ++i) {
       SequenceVar* const candidate_sequence = sequences_[i];
-      if (candidate_sequence->NotRanked() > 0) {
+      int ranked = 0;
+      int not_ranked = 0;
+      int unperformed = 0;
+      candidate_sequence->ComputeStatistics(&ranked, &not_ranked, &unperformed);
+      if (not_ranked > 0) {
         std::vector<int> candidate_possible_firsts;
-        std::vector<int> candidate_possible_Lasts;
+        std::vector<int> candidate_possible_lasts;
         candidate_sequence->ComputePossibleFirstsAndLasts(
             &candidate_possible_firsts,
-            &candidate_possible_Lasts);
+            &candidate_possible_lasts);
         // No possible first, failing.
         if (candidate_possible_firsts.size() == 0) {
           s->Fail();
@@ -316,7 +580,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
             candidate_sequence->Interval(
                 candidate_possible_firsts.back())->MustBePerformed()) {
           *best_sequence = candidate_sequence;
-          *best_possible_firsts = candidate_possible_firsts;
+          best_possible_firsts_ = candidate_possible_firsts;
           return true;
         }
 
@@ -331,7 +595,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
             (current_slack == best_slack && ahmin < best_ahmin)) {
           best_slack = current_slack;
           *best_sequence = candidate_sequence;
-          *best_possible_firsts = candidate_possible_firsts;
+          best_possible_firsts_ = candidate_possible_firsts;
           best_ahmin = ahmin;
         }
       }
@@ -340,18 +604,21 @@ class RankFirstIntervalVars : public DecisionBuilder {
   }
 
   bool FindSequenceVarRandomly(Solver* const s,
-                               SequenceVar** const best_sequence,
-                               std::vector<int>* const best_possible_firsts) const {
+                               SequenceVar** const best_sequence) const {
     std::vector<int> all_candidates;
     std::vector<std::vector<int> > all_possible_firsts;
     for (int i = 0; i < size_; ++i) {
       SequenceVar* const candidate_sequence = sequences_[i];
-      if (candidate_sequence->NotRanked() > 0) {
+      int ranked = 0;
+      int not_ranked = 0;
+      int unperformed = 0;
+      candidate_sequence->ComputeStatistics(&ranked, &not_ranked, &unperformed);
+      if (not_ranked > 0) {
         std::vector<int> candidate_possible_firsts;
-        std::vector<int> candidate_possible_Lasts;
+        std::vector<int> candidate_possible_lasts;
         candidate_sequence->ComputePossibleFirstsAndLasts(
             &candidate_possible_firsts,
-            &candidate_possible_Lasts);
+            &candidate_possible_lasts);
         // No possible first, failing.
         if (candidate_possible_firsts.size() == 0) {
           s->Fail();
@@ -361,7 +628,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
             candidate_sequence->Interval(
                 candidate_possible_firsts.back())->MustBePerformed()) {
           *best_sequence = candidate_sequence;
-          *best_possible_firsts = candidate_possible_firsts;
+          best_possible_firsts_ = candidate_possible_firsts;
           return true;
         }
 
@@ -374,24 +641,19 @@ class RankFirstIntervalVars : public DecisionBuilder {
     }
     const int chosen = s->Rand32(all_candidates.size());
     *best_sequence = sequences_[all_candidates[chosen]];
-    *best_possible_firsts = all_possible_firsts[chosen];
+    best_possible_firsts_ = all_possible_firsts[chosen];
     return true;
   }
 
   bool FindSequenceVar(Solver* const s,
-                       SequenceVar** const best_sequence,
-                       std::vector<int>* const best_possible_firsts) const {
+                       SequenceVar** const best_sequence) const {
     switch (strategy_) {
       case Solver::SEQUENCE_DEFAULT:
       case Solver::SEQUENCE_SIMPLE:
       case Solver::CHOOSE_MIN_SLACK_RANK_FORWARD:
-        return FindSequenceVarOnSlack(s,
-                                      best_sequence,
-                                      best_possible_firsts);
+        return FindSequenceVarOnSlack(s, best_sequence);
       case Solver::CHOOSE_RANDOM_RANK_FORWARD:
-        return FindSequenceVarRandomly(s,
-                                       best_sequence,
-                                       best_possible_firsts);
+        return FindSequenceVarRandomly(s, best_sequence);
       default:
         LOG(FATAL) << "Unknown strategy " << strategy_;
     }
@@ -400,6 +662,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
   scoped_array<SequenceVar*> sequences_;
   const int size_;
   const Solver::SequenceStrategy strategy_;
+  mutable std::vector<int> best_possible_firsts_;
 };
 }  // namespace
 

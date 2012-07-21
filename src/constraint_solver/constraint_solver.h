@@ -4153,8 +4153,10 @@ class SequenceVar : public PropagationBaseObject {
  public:
   SequenceVar(Solver* const s,
               const IntervalVar* const * intervals,
+              const IntVar* const * nexts,
               int size,
               const string& name);
+
   virtual ~SequenceVar();
 
   virtual string DebugString() const;
@@ -4171,12 +4173,10 @@ class SequenceVar : public PropagationBaseObject {
   // unranked interval vars in the sequence.
   void ActiveHorizonRange(int64* const hmin, int64* const hmax) const;
 
-  // Returns the number of interval vars already ranked.
-  int Ranked() const;
-
-  // Returns the number of not-unperformed interval vars that may be
-  // performed and that are not yet ranked.
-  int NotRanked() const;
+  // Compute statistics on the sequence.
+  void ComputeStatistics(int* const ranked,
+                         int* const not_ranked,
+                         int* const unperformed) const;
 
   // Ranks the index_th interval var first of all unranked interval
   // vars. After that, it will no longer be considered ranked.
@@ -4194,9 +4194,9 @@ class SequenceVar : public PropagationBaseObject {
   // of all currently unranked interval vars.
   void RankNotLast(int index);
 
-  // Adds a precedence relation (STARTS_AFTER_END) between two
-  // activities of the sequence var.
-  void AddPrecedence(int before, int after);
+  // // Adds a precedence relation (STARTS_AFTER_END) between two
+  // // activities of the sequence var.
+  // void AddPrecedence(int before, int after);
 
   // Computes the set of indices of interval variables that can be
   // ranked first in the set of unranked activities.
@@ -4227,6 +4227,9 @@ class SequenceVar : public PropagationBaseObject {
   // Returns the index_th interval of the sequence.
   IntervalVar* Interval(int index) const;
 
+  // Returns the index_th next of the sequence.
+  IntVar* Next(int index) const;
+
   // Returns the number of interval vars in the sequence.
   int size() const { return size_; }
 
@@ -4234,33 +4237,15 @@ class SequenceVar : public PropagationBaseObject {
   virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
-  bool IsBefore(int before, int after) const;
-  bool IsActive(int index) const;
-  void ComputeRanks(const std::vector<int>& rank_first,
-                    const std::vector<int>& rank_last);
-  void AddPrecedences(const std::vector<int>& rank_first,
-                      const std::vector<int>& rank_last);
-  void ComputeTransitiveClosure(const std::vector<int>& rank_first,
-                                const std::vector<int>& rank_last);
-  void MarkUnperformed(const std::vector<int>& unperformed);
+  int ComputeForwardFrontier();
+  int ComputeBackwardFrontier();
+  void UpdatePrevious() const;
 
   scoped_array<IntervalVar*> intervals_;
+  scoped_array<IntVar*> nexts_;
   const int size_;
-  // For each interval, it counts the number of intervals we know are
-  // before this one.
-  RevArray<int> ranked_before_;
-  // Number of intervals ranked first.
-  NumericalRev<int> count_ranked_first_;
-  // For each interval, it counts the number of intervals we know are
-  // after this one.
-  NumericalRevArray<int> ranked_after_;
-  // Number of intervals ranked last.
-  NumericalRev<int> count_ranked_last_;
-  // Bi-dimensional bitset. bitset(i, j) if you know that i is before j.
-  scoped_ptr<RevBitMatrix> precedence_matrix_;
-  // Temporary sets during propagation.
-  hash_set<int> first_set_;
-  hash_set<int> last_set_;
+  const int next_size_;
+  mutable std::vector<int> previous_;
 };
 
 // ----- Class Set Var -----
@@ -4944,14 +4929,6 @@ class DisjunctiveConstraint : public Constraint {
 
   // Creates a sequence variable from the constraint.
   virtual SequenceVar* MakeSequenceVar() = 0;
-
-  virtual void BuildNextModel() = 0;
-
-#if !defined(SWIG)
-  virtual const std::vector<IntVar*>& NextVariables() const = 0;
-#endif
-
-  virtual void FullDebug() = 0;
 
 protected:
   scoped_array<IntervalVar*> intervals_;

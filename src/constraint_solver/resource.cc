@@ -803,16 +803,19 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
 
   virtual SequenceVar* MakeSequenceVar() {
     if (sequence_var_ == NULL) {
+      BuildNextModel();
       solver()->SaveValue(reinterpret_cast<void**>(&sequence_var_));
       sequence_var_ = solver()->RevAlloc(new SequenceVar(solver(),
                                                          intervals_.get(),
+                                                         nexts_.data(),
                                                          size_,
                                                          name()));
     }
     return sequence_var_;
   }
 
-  virtual void BuildNextModel() {
+ private:
+  void BuildNextModel() {
     Solver* const s = solver();
     const string& ct_name = name();
     const int num_nodes = size_ + 1;
@@ -826,14 +829,10 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     s->AddConstraint(s->MakeAllDifferent(nexts_));
 
     actives_.resize(num_nodes);
-    std::vector<IntVar*> performed(size_);
     for (int i = 0; i < size_; ++i) {
       actives_[i + 1] = intervals_[i]->PerformedExpr()->Var();
-      performed[i] = actives_[i + 1];
     }
-    //    actives_[0] = s->MakeIsDifferentCstVar(nexts_[0], Zero());
-    //    s->AddConstraint(s->MakeMaxEquality(performed, actives_[0]));
-    //    actives_[0]->SetValue(true);
+    // TODO(lperron): Only if at least one activity is always performed.
     actives_[0] = s->MakeIntConst(1);
 
     // No Cycle.
@@ -856,18 +855,6 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
         s->MakePathCumul(nexts_, actives_, time_cumuls_, time_transits_));
   }
 
-  virtual const std::vector<IntVar*>& NextVariables() const {
-    return nexts_;
-  }
-
-  virtual void FullDebug() {
-    LOG(INFO) << "nexts = " << DebugStringVector(nexts_, ", ");
-    LOG(INFO) << "actives = " << DebugStringVector(actives_, ", ");
-    LOG(INFO) << "time cumuls = " << DebugStringVector(time_cumuls_, ", ");
-    LOG(INFO) << "time transits = " << DebugStringVector(time_transits_, ", ");
-  }
-
- private:
   SequenceVar* sequence_var_;
   EdgeFinderAndDetectablePrecedences straight_;
   EdgeFinderAndDetectablePrecedences mirror_;
@@ -1654,7 +1641,7 @@ class CumulativeConstraint : public Constraint {
   }
 
   void Accept(ModelVisitor* const visitor) const {
-    // TODO(user): Build arrays on demaand?
+    // TODO(user): Build arrays on demand?
     visitor->BeginVisitConstraint(ModelVisitor::kCumulative, this);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         intervals_.get(),
@@ -1809,416 +1796,6 @@ DisjunctiveConstraint* Solver::MakeDisjunctiveConstraint(
                                                 may_be_performed.data(),
                                                 may_be_performed.size(),
                                                 name));
-}
-
-// ----- SequenceVar -----
-
-// TODO(user): Add better class invariants, in particular checks
-// that ranked_first, ranked_last, and unperformed are truly disjoint.
-
-// TODO(user): The current representation has many flaws and is
-// dense by nature. This is visible in the RankSequence and
-// ComputePossibleFirstsAndLasts().
-
-SequenceVar::SequenceVar(Solver* const s,
-                         const IntervalVar* const * intervals,
-                         int size,
-                         const string& name)
-  : PropagationBaseObject(s),
-    intervals_(new IntervalVar*[size]),
-    size_(size),
-    ranked_before_(size, 0),
-    count_ranked_first_(0),
-    ranked_after_(size, 0),
-    count_ranked_last_(0),
-    precedence_matrix_(new RevBitMatrix(size_, size_)) {
-  memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
-  set_name(name);
-}
-
-SequenceVar::~SequenceVar() {}
-
-IntervalVar* SequenceVar::Interval(int index) const {
-  return intervals_[index];
-}
-
-string SequenceVar::DebugString() const {
-  int64 hmin, hmax, dmin, dmax;
-  HorizonRange(&hmin, &hmax);
-  DurationRange(&dmin, &dmax);
-  return StringPrintf("%s(horizon = %" GG_LL_FORMAT
-                      "d..%" GG_LL_FORMAT
-                      "d, duration = %" GG_LL_FORMAT
-                      "d..%" GG_LL_FORMAT
-                      "d, not ranked = %d, ranked = %d)",
-                      name().c_str(),
-                      hmin,
-                      hmax,
-                      dmin,
-                      dmax,
-                      NotRanked(),
-                      Ranked());
-}
-
-void SequenceVar::Accept(ModelVisitor* const visitor) const {
-  visitor->VisitSequenceVariable(this);
-}
-
-void SequenceVar::DurationRange(int64* const dmin, int64* const dmax) const {
-  int64 dur_min = 0;
-  int64 dur_max = 0;
-  for (int i = 0; i < size_; ++i) {
-    IntervalVar* const t = intervals_[i];
-    if (t->MayBePerformed()) {
-      if (t->MustBePerformed()) {
-        dur_min += t->DurationMin();
-      }
-      dur_max += t->DurationMax();
-    }
-  }
-  *dmin = dur_min;
-  *dmax = dur_max;
-}
-
-void SequenceVar::HorizonRange(int64* const hmin, int64* const hmax) const {
-  int64 hor_min = kint64max;
-  int64 hor_max = kint64min;
-  for (int i = 0; i < size_; ++i) {
-    IntervalVar* const t = intervals_[i];
-    if (t->MayBePerformed()) {
-      const int64 tmin = t->StartMin();
-      const int64 tmax = t->EndMax();
-      if (tmin < hor_min) {
-        hor_min = tmin;
-      }
-      if (tmax > hor_max) {
-        hor_max = tmax;
-      }
-    }
-  }
-  *hmin = hor_min;
-  *hmax = hor_max;
-}
-
-bool SequenceVar::IsActive(int index) const {
-  return (intervals_[index]->MayBePerformed() &&
-          ranked_before_[index] >= count_ranked_first_.Value() &&
-          ranked_after_[index] >= count_ranked_last_.Value());
-}
-
-void SequenceVar::ActiveHorizonRange(int64* const hmin,
-                                     int64* const hmax) const {
-  int64 hor_min = kint64max;
-  int64 hor_max = kint64min;
-  for (int interval_index = 0; interval_index < size_; ++interval_index) {
-    IntervalVar* const t = intervals_[interval_index];
-    if (IsActive(interval_index)) {
-      const int64 tmin = t->StartMin();
-      const int64 tmax = t->EndMax();
-      if (tmin < hor_min) {
-        hor_min = tmin;
-      }
-      if (tmax > hor_max) {
-        hor_max = tmax;
-      }
-    }
-  }
-  *hmin = hor_min;
-  *hmax = hor_max;
-}
-
-int SequenceVar::Ranked() const {
-  return count_ranked_last_.Value() + count_ranked_first_.Value();
-}
-
-int SequenceVar::NotRanked() const {
-  int count = 0;
-  for (int interval_index = 0; interval_index < size_; ++interval_index) {
-    if (IsActive(interval_index)) {
-      count++;
-    }
-  }
-  return count;
-}
-
-void SequenceVar::ComputePossibleFirstsAndLasts(
-    std::vector<int>* const possible_firsts,
-    std::vector<int>* const possible_lasts) {
-  for (int candidate = 0; candidate < size_; ++candidate) {
-    // We skip unperformed activities.
-    if (!intervals_[candidate]->MayBePerformed()) {
-      continue;
-    }
-    if (ranked_before_[candidate] == count_ranked_first_.Value()) {
-      int ranked_before = 0;
-      int ranked_after = 0;
-      for (int other = 0; other < size_; ++other) {
-        if (other != candidate && intervals_[other]->MustBePerformed()) {
-          if (IsBefore(other, candidate)) {
-            ranked_before++;
-          } else if (IsBefore(candidate, other)) {
-            ranked_after++;
-          }
-        }
-      }
-      if (ranked_before > count_ranked_first_.Value()) {
-        ranked_before_.SetValue(solver(), candidate, ranked_before);
-      } else {
-        possible_firsts->push_back(candidate);
-      }
-      if (ranked_after > count_ranked_last_.Value()) {
-        ranked_after_.SetValue(solver(), candidate, ranked_after);
-      } else {
-        possible_lasts->push_back(candidate);
-      }
-    }
-  }
-}
-
-bool SequenceVar::IsBefore(int before, int after) const {
-  return precedence_matrix_->IsSet(before, after) ||
-      intervals_[before]->StartMax() < intervals_[after]->EndMin();
-}
-
-void SequenceVar::AddPrecedence(int before, int after) {
-  if (IsBefore(after, before)) {
-    solver()->Fail();
-  }
-  if (IsBefore(before, after)) {  // nothing to do.
-    return;
-  }
-  IntervalVar* const before_interval = intervals_[before];
-  IntervalVar* const after_interval = intervals_[after];
-  solver()->AddConstraint(
-      solver()->MakeIntervalVarRelation(after_interval,
-                                        Solver::STARTS_AFTER_END,
-                                        before_interval));
-  precedence_matrix_->SetToOne(solver(), before, after);
-}
-
-void SequenceVar::MarkUnperformed(const std::vector<int>& unperformed) {
-  for (ConstIter<std::vector<int> > it(unperformed); !it.at_end(); ++it) {
-    intervals_[*it]->SetPerformed(false);
-  }
-}
-
-void SequenceVar::ComputeRanks(const std::vector<int>& rank_first,
-                               const std::vector<int>& rank_last) {
-  // rank_before_ on elements of rank_first.
-  for (int i = 0; i < rank_first.size(); ++i) {
-    const int index = rank_first[i];
-    intervals_[index]->SetPerformed(true);
-    ranked_before_.SetValue(solver(), index, i);
-  }
-  // rank_after_ on elements of rank_last.
-  for (int i = 0; i < rank_last.size(); ++i) {
-    const int index = rank_last[i];
-    intervals_[index]->SetPerformed(true);
-    ranked_after_.SetValue(solver(), index, i);
-  }
-  // rank_before_ and rank_after_ on the rest.
-  for (int i = 0; i < size_; ++i) {
-    if (intervals_[i]->MayBePerformed()) {
-      if (!ContainsKey(first_set_, i)) {
-        ranked_before_.SetValue(solver(), i, rank_first.size());
-      }
-      if (!ContainsKey(last_set_, i)) {
-        ranked_after_.SetValue(solver(), i, rank_last.size());
-      }
-    }
-  }
-}
-
-void SequenceVar::AddPrecedences(const std::vector<int>& rank_first,
-                                 const std::vector<int>& rank_last) {
-  // Adds precedences on the forward chain.
-  for (int i = 1; i < rank_first.size(); ++i) {
-    // Only one constraint on the chain.
-    AddPrecedence(rank_first[i - 1], rank_first[i]);
-  }
-  // Adds precedences on the backward chain.
-  for (int i = 1; i < rank_last.size(); ++i) {
-    // Only one constraint on the chain.
-    AddPrecedence(rank_last[i], rank_last[i - 1]);
-  }
-  // All unranked activities are bounded by the end of the chains.
-  for (int i = 0; i < size_; ++i) {
-    if (!ContainsKey(first_set_, i) && !rank_first.empty()) {
-      AddPrecedence(rank_first.back(), i);
-    }
-    if (!ContainsKey(last_set_, i) && !rank_last.empty()) {
-      AddPrecedence(i, rank_last.back());
-    }
-  }
-}
-
-void SequenceVar::ComputeTransitiveClosure(const std::vector<int>& rank_first,
-                                           const std::vector<int>& rank_last) {
-  // Marks the transitive closure of the dependencies induced by the chains.
-  // TODO(user): Remove this function and improve
-  // ComputePossibleFirstsAndLasts().
-  hash_set<int> ranked;
-  // Forward.
-  for (ConstIter<std::vector<int> > it(rank_first); !it.at_end(); ++it) {
-    ranked.insert(*it);
-    for (int j = 0; j < size_; ++j) {
-      if (!ContainsKey(ranked, j)) {
-        precedence_matrix_->SetToOne(solver(), *it, j);
-      }
-    }
-  }
-  ranked.clear();
-  // Backward.
-  for (ConstIter<std::vector<int> > it(rank_last); !it.at_end(); ++it) {
-    ranked.insert(*it);
-    for (int j = 0; j < size_; ++j) {
-      if (!ContainsKey(ranked, j)) {
-        precedence_matrix_->SetToOne(solver(), j, *it);
-      }
-    }
-  }
-}
-
-void SequenceVar::RankSequence(const std::vector<int>& rank_first,
-                               const std::vector<int>& rank_last,
-                               const std::vector<int>& unperformed) {
-  solver()->GetPropagationMonitor()->RankSequence(this,
-                                                  rank_first,
-                                                  rank_last,
-                                                  unperformed);
-  MarkUnperformed(unperformed);
-
-  // Collects intervals in the two vectors.
-  first_set_.clear();
-  first_set_.insert(rank_first.begin(), rank_first.end());
-  last_set_.clear();
-  last_set_.insert(rank_last.begin(), rank_last.end());
-  // Apply changes.
-  ComputeRanks(rank_first, rank_last);
-  AddPrecedences(rank_first, rank_last);
-  ComputeTransitiveClosure(rank_first, rank_last);
-  // Stores count_ranked_first_ and count_ranked_last_.
-  count_ranked_first_.SetValue(solver(), rank_first.size());
-  count_ranked_last_.SetValue(solver(), rank_last.size());
-}
-
-void SequenceVar::RankFirst(int index) {
-  solver()->GetPropagationMonitor()->RankFirst(this, index);
-  IntervalVar* const t = intervals_[index];
-  t->SetPerformed(true);
-  Solver* const s = solver();
-  for (int i = 0; i < size_; ++i) {
-    if (i != index &&
-        ranked_before_[i] >= count_ranked_first_.Value() &&
-        intervals_[i]->MayBePerformed()) {
-      if (ranked_before_[i] == count_ranked_first_.Value()) {
-        ranked_before_.SetValue(s, i, count_ranked_first_.Value() + 1);
-      }
-      AddPrecedence(index, i);
-    }
-  }
-  ranked_before_.SetValue(s, index, count_ranked_first_.Value());
-  count_ranked_first_.SetValue(s, count_ranked_first_.Value() + 1);
-}
-
-void SequenceVar::RankNotFirst(int index) {
-  solver()->GetPropagationMonitor()->RankNotFirst(this, index);
-  ranked_before_.SetValue(solver(), index, count_ranked_first_.Value() + 1);
-  int possible_first = -1;
-  for (int i = 0; i < size_; ++i) {
-    if (ranked_before_[i] == count_ranked_first_.Value() &&
-        intervals_[i]->MayBePerformed()) {
-      if (possible_first != -1) {
-        return;
-      }
-      possible_first = i;
-    }
-  }
-  if (possible_first == -1) {
-    solver()->Fail();
-  }
-  if (intervals_[possible_first]->MustBePerformed()) {
-    RankFirst(possible_first);
-  }
-}
-
-void SequenceVar::RankLast(int index) {
-  solver()->GetPropagationMonitor()->RankLast(this, index);
-  IntervalVar* const t = intervals_[index];
-  t->SetPerformed(true);
-  Solver* const s = solver();
-  for (int i = 0; i < size_; ++i) {
-    if (i != index &&
-        ranked_after_[i] >= count_ranked_last_.Value() &&
-        intervals_[i]->MayBePerformed()) {
-      if (ranked_after_[i] == count_ranked_last_.Value()) {
-        ranked_after_.SetValue(s, i, count_ranked_last_.Value() + 1);
-      }
-      AddPrecedence(i, index);
-    }
-  }
-  ranked_after_.SetValue(s, index, count_ranked_last_.Value());
-  count_ranked_last_.SetValue(s, count_ranked_last_.Value() + 1);
-}
-
-void SequenceVar::RankNotLast(int index) {
-  solver()->GetPropagationMonitor()->RankNotLast(this, index);
-  ranked_after_.SetValue(solver(), index, count_ranked_last_.Value() + 1);
-  int possible_last = -1;
-  for (int i = 0; i < size_; ++i) {
-    if (ranked_after_[i] == count_ranked_last_.Value() &&
-        intervals_[i]->MayBePerformed()) {
-      if (possible_last != -1) {
-        return;
-      }
-      possible_last = i;
-    }
-  }
-  if (possible_last == -1) {
-    solver()->Fail();
-  }
-  if (intervals_[possible_last]->MustBePerformed()) {
-    RankLast(possible_last);
-  }
-}
-
-void SequenceVar::FillSequence(std::vector<int>* const rank_first,
-                               std::vector<int>* const rank_last,
-                               std::vector<int>* const unperformed) const {
-  CHECK_NOTNULL(rank_first);
-  CHECK_NOTNULL(rank_last);
-  CHECK_NOTNULL(unperformed);
-  rank_first->clear();
-  rank_first->resize(count_ranked_first_.Value(), -1);
-  rank_last->clear();
-  rank_last->resize(count_ranked_last_.Value(), -1);
-  int min_filled = 0;
-  int max_filled = 0;
-  for (int var_index = 0; var_index < size_; ++var_index) {
-    if (intervals_[var_index]->MustBePerformed()) {
-      const int ranked_before = ranked_before_[var_index];
-      const int ranked_after = ranked_after_[var_index];
-      if (ranked_before < count_ranked_first_.Value()) {
-        DCHECK_EQ(-1, (*rank_first)[ranked_before]);
-        (*rank_first)[ranked_before] = var_index;
-        min_filled++;
-      } else if (ranked_after < count_ranked_last_.Value()) {
-        (*rank_last)[ranked_after] = var_index;
-        max_filled++;
-      }
-    } else if (!intervals_[var_index]->MayBePerformed()) {
-      unperformed->push_back(var_index);
-    }
-  }
-  DCHECK_EQ(count_ranked_first_.Value(), min_filled);
-  DCHECK_EQ(count_ranked_last_.Value(), max_filled);
-  if (unperformed->size() + rank_first->size() + rank_last->size() == size_) {
-    // All ranked, pushing everything to rank_first;
-    while (!rank_last->empty()) {
-      rank_first->push_back(rank_last->back());
-      rank_last->pop_back();
-    }
-  }
 }
 
 // ----- Public class -----
