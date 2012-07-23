@@ -1997,8 +1997,8 @@ template <class T> class RevPartialSequence {
       : elements_(items),
         left_ranked_(0),
         right_ranked_(0),
-        size_(size),
-        position_(new int[size]) {
+        size_(items.size()),
+        position_(new int[size_]) {
     for (int i = 0; i < size_; ++i) {
       position_[i] = i;
     }
@@ -2013,9 +2013,9 @@ template <class T> class RevPartialSequence {
   int Size() const { return size_; }
 
   const T& operator[](int index) const {
-    DCHECK_GE(i, 0);
-    DCHECK_LT(i, size_);
-    return elements_[i];
+    DCHECK_GE(index, 0);
+    DCHECK_LT(index, size_);
+    return elements_[index];
   }
 
   void RankLeft(Solver* const solver, T elt) {
@@ -2052,7 +2052,7 @@ template <class T> class RevPartialSequence {
   NumericalRev<int> left_ranked_; // number of elements in the set.
   NumericalRev<int> right_ranked_; // number of elements in the set.
   const int size_;
-  scoped_ptr<int> position_;  // Reverse mapping.
+  scoped_array<int> position_;  // Reverse mapping.
 };
 }  // namespace operations_research
 
