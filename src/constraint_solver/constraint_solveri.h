@@ -1936,7 +1936,6 @@ template <class T> class RevIntMap {
 
   int Capacity() const { return capacity_; }
 
-
   T Element(int i) const {
     DCHECK_GE(i, 0);
     DCHECK_LT(i, num_elements_.Value());
@@ -1988,6 +1987,72 @@ template <class T> class RevIntMap {
   const int capacity_;
   int* position_;  // Reverse mapping.
   const bool delete_position_;
+};
+
+// ----- RevPartialSequence -----
+
+template <class T> class RevPartialSequence {
+ public:
+  RevPartialSequence(const std::vector<T>& items)
+      : elements_(items),
+        left_ranked_(0),
+        right_ranked_(0),
+        size_(size),
+        position_(new int[size]) {
+    for (int i = 0; i < size_; ++i) {
+      position_[i] = i;
+    }
+  }
+
+  ~RevPartialSequence() {}
+
+  int LeftRanked() const { return left_ranked_.Value(); }
+
+  int RightRanked() const { return right_ranked_.Value(); }
+
+  int Size() const { return size_; }
+
+  const T& operator[](int index) const {
+    DCHECK_GE(i, 0);
+    DCHECK_LT(i, size_);
+    return elements_[i];
+  }
+
+  void RankLeft(Solver* const solver, T elt) {
+    DCHECK_LT(left_ranked_.Value() + right_ranked_.Value(), size_);
+    SwapTo(elt, left_ranked_.Value());
+    left_ranked_.Incr(solver);
+  }
+
+  void RankRight(Solver* const solver, T elt) {
+    DCHECK_LT(left_ranked_.Value() + right_ranked_.Value(), size_);
+    SwapTo(elt, size_ - 1 - right_ranked_.Value());
+    right_ranked_.Incr(solver);
+  }
+
+  bool IsRanked(T elt) const {
+    const int position = position[elt];
+    return (position < left_ranked_.Value() ||
+            position > size_ - 1 - right_ranked_.Value());
+  }
+
+ private:
+  void SwapTo(T elt, int next_position) {
+    const int current_position = position_[elt];
+    if (current_position != next_position) {
+      const T next_elt = elements_[next_position];
+      elements_[current_position] = next_elt;
+      elements_[next_position] = elt;
+      position_[elt] = next_position;
+      position_[next_elt] = current_position;
+    }
+  }
+
+  std::vector<T> elements_; // set of elements.
+  NumericalRev<int> left_ranked_; // number of elements in the set.
+  NumericalRev<int> right_ranked_; // number of elements in the set.
+  const int size_;
+  scoped_ptr<int> position_;  // Reverse mapping.
 };
 }  // namespace operations_research
 
