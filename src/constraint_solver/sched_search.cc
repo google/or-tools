@@ -246,7 +246,13 @@ void SequenceVar::RankSequence(const std::vector<int>& rank_first,
     nexts_[forward]->SetValue(next);
     forward = next;
   }
-  // TODO(lperron) : backward.
+  // Backward.
+  int backward = size_ + 1;
+  for (int i = 0; i < rank_last.size(); ++i) {
+    const int next = 1 + rank_last[i];
+    nexts_[next]->SetValue(backward);
+    backward = next;
+  }
 }
 
 void SequenceVar::RankFirst(int index) {
