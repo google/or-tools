@@ -761,11 +761,11 @@ class RankedPropagator : public Constraint {
         transits_(new IntVar*[size]),
         size_(size),
         partial_sequence_(size),
-        previous_(new int[size + 1]) {
+        previous_(new int[size +  2]) {
     memcpy(nexts_.get(), nexts, (size_ + 1) * sizeof(*nexts));
     memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
     memcpy(transits_.get(), transits, size_ * sizeof(*transits));
-    memset(previous_.get(), 0, (size_ + 1) * sizeof(*previous_.get()));
+    memset(previous_.get(), 0, (size_ + 2) * sizeof(*previous_.get()));
   }
 
   virtual ~ RankedPropagator() {}
