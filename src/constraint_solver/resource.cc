@@ -901,7 +901,7 @@ class RankedPropagator : public Constraint {
       }
     }
     // Propagates on ranked first from right to left.
-    for (int i = std::min(first_sentinel - 1, last_position - 1); i >= 0; --i) {
+    for (int i = std::min(first_sentinel - 2, last_position - 1); i >= 0; --i) {
       IntervalVar* const interval = RankedInterval(i);
       IntervalVar* const next_interval = RankedInterval(i + 1);
       IntVar* const transit = RankedTransit(i);

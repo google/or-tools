@@ -251,6 +251,7 @@ void SequenceVar::RankSequence(const std::vector<int>& rank_first,
 
 void SequenceVar::RankFirst(int index) {
   solver()->GetPropagationMonitor()->RankFirst(this, index);
+  intervals_[index]->SetPerformed(true);
   const int forward_frontier = ComputeForwardFrontier();
   nexts_[forward_frontier]->SetValue(index + 1);
 }
@@ -267,6 +268,7 @@ void SequenceVar::RankNotFirst(int index) {
 
 void SequenceVar::RankLast(int index) {
   solver()->GetPropagationMonitor()->RankLast(this, index);
+  intervals_[index]->SetPerformed(true);
   const int backward_frontier = ComputeBackwardFrontier();
   nexts_[index + 1]->SetValue(backward_frontier);
 }
