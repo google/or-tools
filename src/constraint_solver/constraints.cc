@@ -581,6 +581,8 @@ class PathCumul : public Constraint {
   void UpdateSupport(int index);
   void CumulRange(int index);
   void TransitRange(int index);
+  void FilterNext(int index);
+
   virtual string DebugString() const;
 
   void Accept(ModelVisitor* const visitor) const {
@@ -705,12 +707,12 @@ void PathCumul::NextBound(int index) {
   IntVar* cumul = cumuls_[index];
   IntVar* cumul_next = cumuls_[next];
   IntVar* transit = transits_[index];
-  cumul_next->SetMin(cumul->Min() + transit->Min());
-  cumul_next->SetMax(CapAdd(cumul->Max(), transit->Max()));
-  cumul->SetMin(CapSub(cumul_next->Min(), transit->Max()));
-  cumul->SetMax(CapSub(cumul_next->Max(), transit->Min()));
-  transit->SetMin(CapSub(cumul_next->Min(), cumul->Max()));
-  transit->SetMax(CapSub(cumul_next->Max(), cumul->Min()));
+  cumul_next->SetRange(cumul->Min() + transit->Min(),
+                       CapAdd(cumul->Max(), transit->Max()));
+  cumul->SetRange(CapSub(cumul_next->Min(), transit->Max()),
+                  CapSub(cumul_next->Max(), transit->Min()));
+  transit->SetRange(CapSub(cumul_next->Min(), cumul->Max()),
+                    CapSub(cumul_next->Max(), cumul->Min()));
   if (prevs_[next] < 0) {
     prevs_.SetValue(solver(), next, index);
   }
@@ -721,17 +723,25 @@ void PathCumul::CumulRange(int index) {
     if (nexts_[index]->Bound()) {
       NextBound(index);
     } else {
+#if 0
+      FilterNext(index);
+#else
       UpdateSupport(index);
+#endif
     }
   }
   if (prevs_[index] >= 0) {
     NextBound(prevs_[index]);
   } else {
+#if 0
+    FilterNext(index);
+#else
     for (int i = 0; i < size_; ++i) {
       if (index == supports_[i]) {
         UpdateSupport(i);
       }
     }
+#endif
   }
 }
 
@@ -739,16 +749,24 @@ void PathCumul::TransitRange(int index) {
   if (nexts_[index]->Bound()) {
     NextBound(index);
   } else {
+#if 0
+    FilterNext(index);
+#else
     UpdateSupport(index);
+#endif
   }
   if (prevs_[index] >= 0) {
     NextBound(prevs_[index]);
   } else {
+#if 0
+    FilterNext(index);
+#else
     for (int i = 0; i < size_; ++i) {
       if (index == supports_[i]) {
         UpdateSupport(i);
       }
     }
+#endif
   }
 }
 
@@ -758,6 +776,29 @@ bool PathCumul::AcceptLink(int i, int j) const {
   const IntVar* const transit_i = transits_[i];
   return transit_i->Min() <= CapSub(cumul_j->Max(), cumul_i->Min())
       && CapSub(cumul_j->Min(), cumul_i->Max()) <= transit_i->Max();
+}
+
+void PathCumul::FilterNext(int index) {
+  IntVar* var = nexts_[index];
+  bool found = false;
+  scoped_ptr<IntVarIterator> it(var->MakeDomainIterator(false));
+  std::vector<int64> to_remove;
+  for (it->Init(); it->Ok(); it->Next()) {
+    const int value = it->Value();
+    if (AcceptLink(index, value)) {
+      if (!found) {
+        found = true;
+        supports_[index] = value;
+      }
+    } else {
+      to_remove.push_back(value);
+    }
+  }
+  if (!found) {
+    active_[index]->SetMax(0);
+  } else {
+    var->RemoveValues(to_remove);
+  }
 }
 
 void PathCumul::UpdateSupport(int index) {

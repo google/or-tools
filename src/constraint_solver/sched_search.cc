@@ -106,7 +106,7 @@ void SequenceVar::HorizonRange(int64* const hmin, int64* const hmax) const {
     if (t->MayBePerformed()) {
       IntervalVar* const t = intervals_[i];
       hor_min = std::min(hor_min, t->StartMin());
-      hor_max = std::max(hor_max, t->StartMax());
+      hor_max = std::max(hor_max, t->EndMax());
     }
   }
   *hmin = hor_min;
@@ -144,7 +144,7 @@ void SequenceVar::ActiveHorizonRange(int64* const hmin,
     if (!ContainsKey(decided, i)) {
       IntervalVar* const t = intervals_[i];
       hor_min = std::min(hor_min, t->StartMin());
-      hor_max = std::max(hor_max, t->StartMax());
+      hor_max = std::max(hor_max, t->EndMax());
     }
   }
   *hmin = hor_min;
@@ -181,6 +181,9 @@ int SequenceVar::ComputeForwardFrontier() {
   int first = 0;
   while (nexts_[first]->Bound()) {
     first = nexts_[first]->Min();
+    if (first == next_size_) {
+      return first;
+    }
   }
   return first;
 }
@@ -198,12 +201,30 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
     std::vector<int>* const possible_firsts,
     std::vector<int>* const possible_lasts) {
   IntVar* const forward_var = nexts_[ComputeForwardFrontier()];
+  std::vector<int> candidates;
+  int64 smallest_start_max = kint64max;
+  int ssm_support = -1;
   for (int64 i = forward_var->Min(); i <= forward_var->Max(); ++i) {
     // TODO(lperron): use domain iterator.
     if (i != 0 && i < size_ + 1 && forward_var->Contains(i)) {
-      possible_firsts->push_back(i - 1);
+      const int candidate = i - 1;
+      candidates.push_back(candidate);
+      if (intervals_[candidate]->MustBePerformed()) {
+        if (smallest_start_max > intervals_[candidate]->StartMax()) {
+          smallest_start_max = intervals_[candidate]->StartMax();
+          ssm_support = candidate;
+        }
+      }
     }
   }
+  for (int i = 0; i < candidates.size(); ++i) {
+    const int candidate = candidates[i];
+    if (candidate == ssm_support ||
+        intervals_[candidate]->EndMin() <= smallest_start_max) {
+      possible_firsts->push_back(candidate);
+    }
+  }
+
   // TODO(lperron) : backward
 }
 
@@ -237,7 +258,11 @@ void SequenceVar::RankFirst(int index) {
 void SequenceVar::RankNotFirst(int index) {
   solver()->GetPropagationMonitor()->RankNotFirst(this, index);
   const int forward_frontier = ComputeForwardFrontier();
-  nexts_[forward_frontier]->RemoveValue(index + 1);
+  if (forward_frontier < next_size_) {
+    nexts_[forward_frontier]->RemoveValue(index + 1);
+  } else {
+    solver()->Fail();
+  }
 }
 
 void SequenceVar::RankLast(int index) {
@@ -511,6 +536,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
     for (int index = 0; index < best_possible_firsts_.size(); ++index) {
       const int candidate = best_possible_firsts_[index];
       IntervalVar* const interval = best_sequence->Interval(candidate);
+      //      LOG(INFO) << "  - " << candidate << " -> " << interval->DebugString();
       if (interval->StartMin() < best_start_min) {
         best_interval = candidate;
         best_start_min = interval->StartMin();

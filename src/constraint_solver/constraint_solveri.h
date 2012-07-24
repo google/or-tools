@@ -1991,12 +1991,12 @@ template <class T> class RevIntMap {
 
 // ----- RevPartialSequence -----
 
-template <class T> class RevPartialSequence {
+class RevPartialSequence {
  public:
-  RevPartialSequence(const std::vector<T>& items)
+  RevPartialSequence(const std::vector<int>& items)
       : elements_(items),
-        left_ranked_(0),
-        right_ranked_(0),
+        first_ranked_(0),
+        last_ranked_(0),
         size_(items.size()),
         position_(new int[size_]) {
     for (int i = 0; i < size_; ++i) {
@@ -2004,43 +2004,83 @@ template <class T> class RevPartialSequence {
     }
   }
 
+  RevPartialSequence(int size)
+      : elements_(size),
+        first_ranked_(0),
+        last_ranked_(0),
+        size_(size),
+        position_(new int[size_]) {
+    for (int i = 0; i < size_; ++i) {
+      elements_[i] = i;
+      position_[i] = i;
+    }
+  }
+
   ~RevPartialSequence() {}
 
-  int LeftRanked() const { return left_ranked_.Value(); }
+  int FirstRanked() const { return first_ranked_.Value(); }
 
-  int RightRanked() const { return right_ranked_.Value(); }
+  int LastRanked() const { return last_ranked_.Value(); }
 
   int Size() const { return size_; }
 
-  const T& operator[](int index) const {
+  const int& operator[](int index) const {
     DCHECK_GE(index, 0);
     DCHECK_LT(index, size_);
     return elements_[index];
   }
 
-  void RankLeft(Solver* const solver, T elt) {
-    DCHECK_LT(left_ranked_.Value() + right_ranked_.Value(), size_);
-    SwapTo(elt, left_ranked_.Value());
-    left_ranked_.Incr(solver);
+  void RankFirst(Solver* const solver, int elt) {
+    DCHECK_LE(first_ranked_.Value() + last_ranked_.Value(), size_);
+    SwapTo(elt, first_ranked_.Value());
+    first_ranked_.Incr(solver);
   }
 
-  void RankRight(Solver* const solver, T elt) {
-    DCHECK_LT(left_ranked_.Value() + right_ranked_.Value(), size_);
-    SwapTo(elt, size_ - 1 - right_ranked_.Value());
-    right_ranked_.Incr(solver);
+  void RankLast(Solver* const solver, int elt) {
+    DCHECK_LE(first_ranked_.Value() + last_ranked_.Value(), size_);
+    SwapTo(elt, size_ - 1 - last_ranked_.Value());
+    last_ranked_.Incr(solver);
   }
 
-  bool IsRanked(T elt) const {
-    const int position = position[elt];
-    return (position < left_ranked_.Value() ||
-            position > size_ - 1 - right_ranked_.Value());
+  bool IsRanked(int elt) const {
+    const int position = position_[elt];
+    return (position < first_ranked_.Value() ||
+            position > size_ - 1 - last_ranked_.Value());
+  }
+
+  string DebugString() const {
+    string result = "[";
+    for (int i = 0; i < first_ranked_.Value(); ++i) {
+      result.append(StringPrintf("%d", elements_[i]));
+      if (i != first_ranked_.Value() - 1) {
+        result.append("-");
+      }
+    }
+    result.append("|");
+    for (int i = first_ranked_.Value();
+         i <= size_ - 1 - last_ranked_.Value();
+         ++i) {
+      result.append(StringPrintf("%d", elements_[i]));
+      if (i != size_ - 1 - last_ranked_.Value()) {
+        result.append("-");
+      }
+    }
+    result.append("|");
+    for (int i = size_ - last_ranked_.Value(); i < size_; ++i) {
+      result.append(StringPrintf("%d", elements_[i]));
+      if (i != size_ - 1) {
+        result.append("-");
+      }
+    }
+    result.append("]");
+    return result;
   }
 
  private:
-  void SwapTo(T elt, int next_position) {
+  void SwapTo(int elt, int next_position) {
     const int current_position = position_[elt];
     if (current_position != next_position) {
-      const T next_elt = elements_[next_position];
+      const int next_elt = elements_[next_position];
       elements_[current_position] = next_elt;
       elements_[next_position] = elt;
       position_[elt] = next_position;
@@ -2048,9 +2088,9 @@ template <class T> class RevPartialSequence {
     }
   }
 
-  std::vector<T> elements_; // set of elements.
-  NumericalRev<int> left_ranked_; // number of elements in the set.
-  NumericalRev<int> right_ranked_; // number of elements in the set.
+  std::vector<int> elements_; // set of elements.
+  NumericalRev<int> first_ranked_; // number of elements in the set.
+  NumericalRev<int> last_ranked_; // number of elements in the set.
   const int size_;
   scoped_array<int> position_;  // Reverse mapping.
 };

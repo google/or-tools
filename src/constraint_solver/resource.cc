@@ -183,7 +183,6 @@ bool TaskStartMinLessThan(const CumulativeTask* const task1,
   return (task1->interval()->StartMin() < task2->interval()->StartMin());
 }
 
-
 // ----------------- Theta-Trees --------------------------------
 
 // Node of a Theta-tree
@@ -747,6 +746,203 @@ bool EdgeFinderAndDetectablePrecedences::EdgeFinder() {
 
 // ----------------- Disjunctive Constraint ------------
 
+// ----- Propagation on ranked activities -----
+
+class RankedPropagator : public Constraint {
+ public:
+  RankedPropagator(Solver* const solver,
+                   IntVar* const * nexts,
+                   IntervalVar* const * intervals,
+                   IntVar* const * transits,
+                   int size)
+      : Constraint(solver),
+        nexts_(new IntVar*[size + 1]),
+        intervals_(new IntervalVar*[size]),
+        transits_(new IntVar*[size]),
+        size_(size),
+        partial_sequence_(size),
+        previous_(new int[size + 1]) {
+    memcpy(nexts_.get(), nexts, (size_ + 1) * sizeof(*nexts));
+    memcpy(intervals_.get(), intervals, size_ * sizeof(*intervals));
+    memcpy(transits_.get(), transits, size_ * sizeof(*transits));
+    memset(previous_.get(), 0, (size_ + 1) * sizeof(*previous_.get()));
+  }
+
+  virtual ~ RankedPropagator() {}
+
+  virtual void Post() {
+    Demon* const delayed =
+        solver()->MakeDelayedConstraintInitialPropagateCallback(this);
+    for (int i = 0; i < size_; ++i) {
+      nexts_[i]->WhenBound(delayed);
+      intervals_[i]->WhenAnything(delayed);
+      transits_[i]->WhenRange(delayed);
+    }
+    nexts_[size_]->WhenBound(delayed);
+  }
+
+  virtual void InitialPropagate() {
+    PropagateNexts();
+    PropagateSequence();
+  }
+
+  void PropagateNexts() {
+    Solver* const s = solver();
+    const int ranked_first = partial_sequence_.FirstRanked();
+    const int ranked_last = partial_sequence_.LastRanked();
+    const int sentinel = ranked_last == 0 ?
+        size_ + 1 :
+        partial_sequence_[size_ - ranked_last] + 1;
+    int first = 0;
+    int counter = 0;
+    while (nexts_[first]->Bound()) {
+      first = nexts_[first]->Min();
+      if (first == sentinel) {
+        return;
+      }
+      if (++counter > ranked_first) {
+        partial_sequence_.RankFirst(s, first - 1);
+        VLOG(1) << "RankFirst " << first - 1
+                << " -> " << partial_sequence_.DebugString();
+      }
+    }
+    for (int i = 0; i < size_ + 2; ++i) {
+      previous_[i] = -1;
+    }
+    for (int i = 0; i < size_ + 1; ++i) {
+      if (nexts_[i]->Bound()) {
+        previous_[nexts_[i]->Min()] = i;
+      }
+    }
+    int last = size_ + 1;
+    counter = 0;
+    while (previous_[last] != -1) {
+      last = previous_[last];
+      if (++counter > ranked_last) {
+        partial_sequence_.RankLast(s, last - 1);
+        VLOG(1) << "RankLast " << last - 1
+                << " -> " << partial_sequence_.DebugString();
+      }
+    }
+    VLOG(1) << "PropagateNext("
+            << DebugStringArray(nexts_.get(), size_ + 1, ", ")
+            << ", " << partial_sequence_.DebugString() << ")";
+  }
+
+  void PropagateSequence() {
+    const int last_position = size_ - 1;
+    const int first_sentinel = partial_sequence_.FirstRanked();
+    const int last_sentinel = last_position - partial_sequence_.LastRanked();
+    // Propagates on ranked first from left to right.
+    for (int i = 0; i < first_sentinel - 1; ++i) {
+      IntervalVar* const interval = RankedInterval(i);
+      IntervalVar* const next_interval = RankedInterval(i + 1);
+      IntVar* const transit = RankedTransit(i);
+      next_interval->SetStartRange(interval->StartMin() + transit->Min(),
+                                   interval->StartMax() + transit->Max());
+    }
+    // Propagates on ranked last from right to left.
+    for (int i = last_position; i > last_sentinel; --i) {
+      IntervalVar* const interval = RankedInterval(i -1);
+      IntervalVar* const next_interval = RankedInterval(i);
+      IntVar* const transit = RankedTransit(i - 1);
+      interval->SetStartRange(next_interval->StartMin() - transit->Max(),
+                              next_interval->StartMax() - transit->Min());
+    }
+    // Propagate across.
+    IntervalVar* const first_interval =
+        first_sentinel > 0 ?
+        RankedInterval(first_sentinel - 1) :
+        NULL;
+    IntVar* const first_transit =
+        first_sentinel > 0 ?
+        RankedTransit(first_sentinel - 1) :
+        NULL;
+    IntervalVar* const last_interval =
+        last_sentinel < last_position ?
+        RankedInterval(last_sentinel + 1) :
+        NULL;
+    IntVar* const last_transit =
+        last_sentinel < last_position ?
+        RankedTransit(last_sentinel + 1) :
+        NULL;
+
+    // Nothing to do afterwards, exiting.
+    if (first_interval == NULL && last_interval == NULL) {
+      return;
+    }
+    // Propagates to the middle part.
+    for (int i = first_sentinel; i <= last_sentinel; ++i) {
+      IntervalVar* const interval = RankedInterval(i);
+      IntVar* const transit = RankedTransit(i);
+      if (interval->MayBePerformed()) {
+        if (first_interval != NULL) {
+          interval->SetStartRange(
+              first_interval->StartMin() + first_transit->Min(),
+              first_interval->StartMax() + first_transit->Max());
+        }
+        if (last_interval != NULL) {
+          interval->SetStartRange(
+              last_interval->StartMin() - transit->Max(),
+              last_interval->StartMax() - transit->Min());
+        }
+        if (interval->MustBePerformed()) {
+          if (last_interval != NULL) {
+            last_interval->SetStartRange(
+                interval->StartMin() + transit->Min(),
+                interval->StartMax() + transit->Max());
+          }
+          if (first_interval != NULL) {
+            first_interval->SetStartRange(
+                interval->StartMin() - first_transit->Max(),
+                interval->StartMax() - first_transit->Min());
+          }
+        }
+      }
+    }
+    // Propagates on ranked first from right to left.
+    for (int i = std::min(first_sentinel - 1, last_position - 1); i >= 0; --i) {
+      IntervalVar* const interval = RankedInterval(i);
+      IntervalVar* const next_interval = RankedInterval(i + 1);
+      IntVar* const transit = RankedTransit(i);
+      interval->SetStartRange(next_interval->StartMin() - transit->Max(),
+                              next_interval->StartMax() - transit->Min());
+    }
+    // Propagates on ranked last from left to right.
+    for (int i = last_sentinel; i < last_position - 1; ++i) {
+      IntervalVar* const interval = RankedInterval(i);
+      IntervalVar* const next_interval = RankedInterval(i + 1);
+      IntVar* const transit = RankedTransit(i);
+      next_interval->SetStartRange(interval->StartMin() + transit->Min(),
+                                   interval->StartMax() + transit->Max());
+    }
+    // TODO(lperron) : Propagate on transits.
+  }
+
+  IntervalVar* RankedInterval(int i) const {
+    const int index = partial_sequence_[i];
+    return intervals_[index];
+  }
+
+  IntVar* RankedTransit(int i) const {
+    const int index = partial_sequence_[i];
+    return transits_[index];
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("RankedPropagator([%s])",
+                        partial_sequence_.DebugString().c_str());
+  }
+
+ private:
+  scoped_array<IntVar*> nexts_;
+  scoped_array<IntervalVar*> intervals_;
+  scoped_array<IntVar*> transits_;
+  const int size_;
+  RevPartialSequence partial_sequence_;
+  scoped_array<int> previous_;
+};
+
 // A class that stores several propagators for the sequence constraint, and
 // calls them until a fixpoint is reached.
 
@@ -845,14 +1041,26 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     time_transits_[0] = s->MakeIntVar(0, horizon, "initial_transit");
     time_cumuls_[0] = s->MakeIntConst(0);
 
+    int64 max_transit = kint64min;
     for (int64 i = 0; i < size_; ++i) {
       const int64 fixed_transit = intervals_[i]->DurationMin();
-      time_transits_[i + 1] = s->MakeIntVar(fixed_transit, horizon, "slack");
+      time_transits_[i + 1] =
+          s->MakeIntVar(fixed_transit,
+                        horizon,
+                        StringPrintf("time_transit(%d)", i + 1));
+      //      max_transit = std::max(max_transit, fixed_transit);
+      max_transit = std::max(max_transit, time_transits_[i + 1]->Max());
       time_cumuls_[i + 1] = intervals_[i]->StartExpr()->Var();
     }
-    time_cumuls_[size_ + 1] = s->MakeIntVar(0, horizon, ct_name + "_ect");
+    time_cumuls_[size_ + 1] =
+        s->MakeIntVar(0, horizon + max_transit, ct_name + "_ect");
     s->AddConstraint(
         s->MakePathCumul(nexts_, actives_, time_cumuls_, time_transits_));
+    s->AddConstraint(s->RevAlloc(new RankedPropagator(s,
+                                                      nexts_.data(),
+                                                      intervals_.get(),
+                                                      time_transits_.data() + 1,
+                                                      size_)));
   }
 
   SequenceVar* sequence_var_;
