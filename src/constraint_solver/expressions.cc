@@ -312,7 +312,7 @@ class DomainIntVar : public IntVar {
               variable_->HasName() ?
               variable_->name() :
               variable_->DebugString();
-          const string bname = StringPrintf("Watch<%s ==  %" GG_LL_FORMAT "d>",
+          const string bname = StringPrintf("Watch<%s == %" GG_LL_FORMAT "d>",
                                             vname.c_str(),
                                             value);
           boolvar = solver()->MakeBoolVar(bname);
@@ -758,7 +758,18 @@ class DomainIntVar : public IntVar {
 
   virtual IntVar* IsDifferent(int64 constant) {
     Solver* const s = solver();
-    return s->MakeDifference(1, IsEqual(constant))->Var();
+    IntExpr* const cache = s->Cache()->FindExprConstantExpression(
+        this,
+        constant,
+        ModelCache::EXPR_CONSTANT_IS_NOT_EQUAL);
+    if (cache != NULL) {
+      return cache->Var();
+    } else {
+      IntVar* const boolvar = s->MakeDifference(1, IsEqual(constant))->Var();
+       s->Cache()->InsertExprConstantExpression(
+           boolvar, this, constant, ModelCache::EXPR_CONSTANT_IS_NOT_EQUAL);
+       return boolvar;
+    }
   }
 
   virtual IntVar* IsGreaterOrEqual(int64 constant) {
@@ -795,7 +806,19 @@ class DomainIntVar : public IntVar {
 
   virtual IntVar* IsLessOrEqual(int64 constant) {
     Solver* const s = solver();
-    return s->MakeDifference(1, IsGreaterOrEqual(constant + 1))->Var();
+    IntExpr* const cache = s->Cache()->FindExprConstantExpression(
+        this,
+        constant,
+        ModelCache::EXPR_CONSTANT_IS_LESS_OR_EQUAL);
+    if (cache != NULL) {
+      return cache->Var();
+    } else {
+      IntVar* const boolvar =
+          s->MakeDifference(1, IsGreaterOrEqual(constant))->Var();
+       s->Cache()->InsertExprConstantExpression(
+           boolvar, this, constant, ModelCache::EXPR_CONSTANT_IS_LESS_OR_EQUAL);
+       return boolvar;
+    }
   }
 
   void Process();
@@ -4849,11 +4872,11 @@ class BasePower : public BaseIntExpr {
     int64 res = 0;
     const double d_value = static_cast<double>(value);
     if (value >= 0) {
-      const double sq =  exp(log(d_value) / pow_);
+      const double sq = exp(log(d_value) / pow_);
       res = static_cast<int64>(floor(sq));
     } else {
       CHECK_EQ(1, pow_ % 2);
-      const double sq =  exp(log(-d_value) / pow_);
+      const double sq = exp(log(-d_value) / pow_);
       res = -static_cast<int64>(ceil(sq));
     }
     const int64 pow_res = Pown(res + 1);
@@ -4874,11 +4897,11 @@ class BasePower : public BaseIntExpr {
     int64 res = 0;
     const double d_value = static_cast<double>(value);
     if (value >= 0) {
-      const double sq =  exp(log(d_value) / pow_);
+      const double sq = exp(log(d_value) / pow_);
       res = static_cast<int64>(ceil(sq));
     } else {
       CHECK_EQ(1, pow_ % 2);
-      const double sq =  exp(log(-d_value) / pow_);
+      const double sq = exp(log(-d_value) / pow_);
       res = -static_cast<int64>(floor(sq));
     }
     const int64 pow_res = Pown(res - 1);
