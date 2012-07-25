@@ -200,7 +200,22 @@ int SequenceVar::ComputeBackwardFrontier() {
 void SequenceVar::ComputePossibleFirstsAndLasts(
     std::vector<int>* const possible_firsts,
     std::vector<int>* const possible_lasts) {
-  IntVar* const forward_var = nexts_[ComputeForwardFrontier()];
+  hash_set<int> to_check;
+  for (int i = 0; i < size_; ++i) {
+    if (intervals_[i]->MayBePerformed()) {
+      to_check.insert(i);
+    }
+  }
+  int first = 0;
+  while (nexts_[first]->Bound()) {
+    first = nexts_[first]->Min();
+    to_check.erase(first - 1);
+    if (first == next_size_) {
+      return;
+    }
+  }
+
+  IntVar* const forward_var = nexts_[first];
   std::vector<int> candidates;
   int64 smallest_start_max = kint64max;
   int ssm_support = -1;
@@ -225,7 +240,36 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
     }
   }
 
-  // TODO(lperron) : backward
+  UpdatePrevious();
+  int last = next_size_;
+  while (previous_[last] != -1) {
+    last = previous_[last];
+    to_check.erase(last - 1);
+  }
+
+  candidates.clear();
+  int64 biggest_end_min = kint64min;
+  int bem_support = -1;
+  for (ConstIter<hash_set<int> > it(to_check); !it.at_end(); ++it) {
+    const int candidate = *it;
+    if (nexts_[candidate + 1]->Contains(last)) {
+      candidates.push_back(candidate);
+      if (intervals_[candidate]->MustBePerformed()) {
+        if (biggest_end_min < intervals_[candidate]->EndMin()) {
+          biggest_end_min = intervals_[candidate]->EndMin();
+          bem_support = candidate;
+        }
+      }
+    }
+  }
+
+  for (int i = 0; i < candidates.size(); ++i) {
+    const int candidate = candidates[i];
+    if (candidate == bem_support ||
+        intervals_[candidate]->StartMax() >= biggest_end_min) {
+      possible_lasts->push_back(candidate);
+    }
+  }
 }
 
 void SequenceVar::RankSequence(const std::vector<int>& rank_first,
