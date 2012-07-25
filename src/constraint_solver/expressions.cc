@@ -721,23 +721,23 @@ class DomainIntVar : public IntVar {
     }
   }
 
-  virtual IntVar* IsEqual(int64 value) {
+  virtual IntVar* IsEqual(int64 constant) {
     Solver* const s = solver();
-    if (value == min_.Value() && value_watcher_ == NULL) {
-      return s->MakeIsLessOrEqualCstVar(this, value);
+    if (constant == min_.Value() && value_watcher_ == NULL) {
+      return s->MakeIsLessOrEqualCstVar(this, constant);
     }
-    if (value == max_.Value() && value_watcher_ == NULL) {
-      return s->MakeIsGreaterOrEqualCstVar(this, value);
+    if (constant == max_.Value() && value_watcher_ == NULL) {
+      return s->MakeIsGreaterOrEqualCstVar(this, constant);
     }
-    if (!Contains(value)) {
+    if (!Contains(constant)) {
       return s->MakeIntConst(0LL);
     }
-    if (Bound() && min_.Value() == value) {
+    if (Bound() && min_.Value() == constant) {
       return s->MakeIntConst(1LL);
     }
     IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this,
-        value,
+        constant,
         ModelCache::EXPR_CONSTANT_IS_EQUAL);
     if (cache != NULL) {
       return cache->Var();
@@ -749,15 +749,27 @@ class DomainIntVar : public IntVar {
                  solver()->RevAlloc(new ValueWatcher(solver(), this))));
          solver()->AddConstraint(value_watcher_);
        }
-       IntVar* const boolvar = value_watcher_->GetOrMakeValueWatcher(value);
+       IntVar* const boolvar = value_watcher_->GetOrMakeValueWatcher(constant);
        s->Cache()->InsertExprConstantExpression(
-           boolvar, this, value, ModelCache::EXPR_CONSTANT_IS_EQUAL);
+           boolvar, this, constant, ModelCache::EXPR_CONSTANT_IS_EQUAL);
        return boolvar;
     }
   }
 
   virtual IntVar* IsDifferent(int64 constant) {
     Solver* const s = solver();
+    if (constant == min_.Value() && value_watcher_ == NULL) {
+      return s->MakeIsGreaterOrEqualCstVar(this, constant + 1);
+    }
+    if (constant == max_.Value() && value_watcher_ == NULL) {
+      return s->MakeIsLessOrEqualCstVar(this, constant - 1);
+    }
+    if (!Contains(constant)) {
+      return s->MakeIntConst(1LL);
+    }
+    if (Bound() && min_.Value() == constant) {
+      return s->MakeIntConst(0LL);
+    }
     IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this,
         constant,
@@ -814,7 +826,7 @@ class DomainIntVar : public IntVar {
       return cache->Var();
     } else {
       IntVar* const boolvar =
-          s->MakeDifference(1, IsGreaterOrEqual(constant))->Var();
+          s->MakeDifference(1, IsGreaterOrEqual(constant + 1))->Var();
        s->Cache()->InsertExprConstantExpression(
            boolvar, this, constant, ModelCache::EXPR_CONSTANT_IS_LESS_OR_EQUAL);
        return boolvar;

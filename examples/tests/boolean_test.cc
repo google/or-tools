@@ -434,6 +434,22 @@ void TestInconsistent() {
   LOG(INFO) << solver.DebugString();
 
 }
+
+
+void TestSimplification() {
+  Solver s("TestSimplification");
+  IntVar* const v = s.MakeIntVar(0, 10);
+  IntVar* const b1 = s.MakeIsDifferentCstVar(v, 0);
+  IntVar* const b2 = s.MakeIsDifferentCstVar(v, 10);
+  IntVar* const b3 = s.MakeIsGreaterOrEqualCstVar(v, 1);
+  IntVar* const b4 = s.MakeIsLessOrEqualCstVar(v, 9);
+  LOG(INFO) << b1->DebugString();
+  LOG(INFO) << b2->DebugString();
+  LOG(INFO) << b3->DebugString();
+  LOG(INFO) << b4->DebugString();
+  CHECK_EQ(b1, b3);
+  CHECK_EQ(b2, b4);
+}
 }  // namespace operations_research
 
 
@@ -465,5 +481,6 @@ int main(int argc, char** argv) {
   operations_research::TestBoolArrayOrEqTrue(1);
   operations_research::TestBoolArrayOrEqTrue(2);
   operations_research::TestInconsistent();
+  operations_research::TestSimplification();
   return 0;
 }
