@@ -2126,10 +2126,12 @@ class IntConst : public IntVar {
     return solver()->MakeIntConst(value_ <= constant);
   }
 
-  virtual string BaseName() const { return "IntegerConstant"; }
-
   virtual string name() const {
-    return StringPrintf("%" GG_LL_FORMAT "d", value_);
+    if (solver()->HasName(this)) {
+      return PropagationBaseObject::name();
+    } else {
+      return StringPrintf("%" GG_LL_FORMAT "d", value_);
+    }
   }
 
  private:

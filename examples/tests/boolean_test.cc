@@ -449,6 +449,8 @@ void TestSimplification() {
   LOG(INFO) << b4->DebugString();
   CHECK_EQ(b1, b3);
   CHECK_EQ(b2, b4);
+  IntVar* const cst = s.MakeIntConst(2, "test");
+  LOG(INFO) << cst->name() << "/" << cst->DebugString();
 }
 }  // namespace operations_research
 
