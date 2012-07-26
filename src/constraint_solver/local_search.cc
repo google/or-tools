@@ -2333,6 +2333,13 @@ IntVarLocalSearchFilter::IntVarLocalSearchFilter(const IntVar* const* vars,
   CHECK_GE(size_, 0);
 }
 
+IntVarLocalSearchFilter::IntVarLocalSearchFilter(
+    const std::vector<IntVar*>& vars)
+    : vars_(NULL), values_(NULL), size_(0) {
+  AddVars(vars.data(), vars.size());
+  CHECK_GE(size_, 0);
+}
+
 void IntVarLocalSearchFilter::AddVars(const IntVar* const* vars, int size) {
   if (size > 0) {
     for (int i = 0; i < size; ++i) {

@@ -1176,14 +1176,12 @@ class LocalSearchFilter : public BaseObject {
 class IntVarLocalSearchFilter : public LocalSearchFilter {
  public:
   IntVarLocalSearchFilter(const IntVar* const* vars, int size);
+  IntVarLocalSearchFilter(const std::vector<IntVar*>& vars);
   ~IntVarLocalSearchFilter();
   // This method should not be overridden. Override OnSynchronize() instead
   // which is called before exiting this method.
   virtual void Synchronize(const Assignment* assignment);
 
- protected:
-  // Add variables to "track" to the filter.
-  void AddVars(const IntVar* const* vars, int size);
   bool FindIndex(const IntVar* const var, int64* index) const {
     DCHECK(index != NULL);
     return FindCopy(var_to_index_, var, index);
@@ -1192,9 +1190,13 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   IntVar* Var(int index) const { return vars_[index]; }
   int64 Value(int index) const { return values_[index]; }
 
- private:
+ protected:
+  // Add variables to "track" to the filter.
+  void AddVars(const IntVar* const* vars, int size);
+
   virtual void OnSynchronize() {}
 
+ private:
   scoped_array<IntVar*> vars_;
   scoped_array<int64> values_;
   int size_;

@@ -1440,6 +1440,7 @@ CONVERT_VECTOR(LocalSearchFilter);
 %feature("director") Action;
 %feature("director") BaseLNS;
 %feature("director") IntVarLocalSearchOperator;
+%feature("director") IntVarLocalSearchFilter;;
 
 %include "std_vector.i"
 
@@ -1474,6 +1475,7 @@ struct FailureProtect {
 %ignore operations_research::Solver::MakeIntVarArray;
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
+%ignore operations_research::IntVarLocalSearchFilter::FindIndex;
 
 // Generic rename rule.
 %rename("%(camelcase)s", %$isfunction) "";
@@ -2050,7 +2052,16 @@ namespace operations_research {
     }
     return array;
   }
+
 %}
+
+%extend IntVarLocalSearchFilter {
+  int Index(IntVar* const var) {
+    int64 index = -1;
+    self->FindIndex(var, &index);
+    return index;
+  }
+}
 
 // Protect from failure
 #define PREPROTECT\
@@ -2131,4 +2142,6 @@ class LocalSearchPhaseParameters {
 namespace operations_research {
 %template(RevInteger) Rev<int64>;
 %template(RevBool) Rev<bool>;
+typedef Assignment::AssignmentContainer AssignmentContainer;
+%template(AssignmentIntContainer) AssignmentContainer<IntVar, IntVarElement>;
 }
