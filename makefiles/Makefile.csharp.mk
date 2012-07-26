@@ -7,6 +7,7 @@ CSHARPEXE = \
 	$(BIN_DIR)/csknapsack.exe \
 	$(BIN_DIR)/furniture_moving_intervals.exe \
 	$(BIN_DIR)/organize_day_intervals.exe \
+	$(BIN_DIR)/csls_api.exe \
 	$(BIN_DIR)/cstsp.exe
 
 csharpexe: $(CSHARPEXE)

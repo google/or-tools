@@ -808,6 +808,7 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
  public:
   IntVarLocalSearchOperator();
   IntVarLocalSearchOperator(const IntVar* const* vars, int size);
+  IntVarLocalSearchOperator(const std::vector<IntVar*>& vars);
   virtual ~IntVarLocalSearchOperator();
   // This method should not be overridden. Override OnStart() instead which is
   // called before exiting this method.
@@ -831,13 +832,6 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   // instead.
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
 
- protected:
-  // Creates a new neighbor. It returns false when the neighborhood is
-  // completely explored.
-  // TODO(user): make it pure virtual, implies porting all apps overriding
-  // MakeNextNeighbor() in a subclass of IntVarLocalSearchOperator.
-  virtual bool MakeOneNeighbor();
-
   int64 OldValue(int64 index) const { return old_values_[index]; }
   void SetValue(int64 index, int64 value);
   bool Activated(int64 index) const;
@@ -845,13 +839,21 @@ class IntVarLocalSearchOperator : public LocalSearchOperator {
   void Deactivate(int64 index);
   bool ApplyChanges(Assignment* delta, Assignment* deltadelta) const;
   void RevertChanges(bool incremental);
-  void AddVars(const IntVar* const* vars, int size);
 
- private:
+ protected:
+  // Creates a new neighbor. It returns false when the neighborhood is
+  // completely explored.
+  // TODO(user): make it pure virtual, implies porting all apps overriding
+  // MakeNextNeighbor() in a subclass of IntVarLocalSearchOperator.
+  virtual bool MakeOneNeighbor();
+
+  void AddVars(const IntVar* const* vars, int size);
   // Called by Start() after synchronizing the operator with the current
   // assignment. Should be overridden instead of Start() to avoid calling
   // IntVarLocalSearchOperator::Start explicitly.
   virtual void OnStart() {}
+
+ private:
   void MarkChange(int64 index);
 
   scoped_array<IntVar*> vars_;

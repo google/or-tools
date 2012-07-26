@@ -90,6 +90,21 @@ IntVarLocalSearchOperator::IntVarLocalSearchOperator(const IntVar* const* vars,
   AddVars(vars, size);
 }
 
+IntVarLocalSearchOperator::IntVarLocalSearchOperator(
+    const std::vector<IntVar*>& vars)
+    : vars_(NULL),
+      size_(0),
+      values_(NULL),
+      old_values_(NULL),
+      activated_(vars.size(), false),
+      was_activated_(vars.size(), false),
+      has_changed_(vars.size(), false),
+      has_delta_changed_(vars.size(), false),
+      cleared_(true) {
+  CHECK_GE(size_, 0);
+  AddVars(vars.data(), vars.size());
+}
+
 IntVarLocalSearchOperator::~IntVarLocalSearchOperator() {}
 
 void IntVarLocalSearchOperator::AddVars(const IntVar* const* vars, int size) {

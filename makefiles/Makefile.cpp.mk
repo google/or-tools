@@ -83,6 +83,7 @@ CPBINARIES = \
 	$(BIN_DIR)/jobshop$E \
 	$(BIN_DIR)/jobshop_ls$E \
 	$(BIN_DIR)/linear_assignment_api$E \
+	$(BIN_DIR)/ls_api$E \
 	$(BIN_DIR)/magic_square$E \
 	$(BIN_DIR)/model_util$E \
 	$(BIN_DIR)/multidim_knapsack$E \

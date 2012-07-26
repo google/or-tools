@@ -1439,6 +1439,7 @@ CONVERT_VECTOR(LocalSearchFilter);
 %feature("director") SearchMonitor;
 %feature("director") Action;
 %feature("director") BaseLNS;
+%feature("director") IntVarLocalSearchOperator;
 
 %include "std_vector.i"
 
