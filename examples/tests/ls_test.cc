@@ -46,7 +46,43 @@ class OneVarLns : public BaseLNS {
   int index_;
 };
 
-void Basic_LS() {
+class MoveOneVar: public IntVarLocalSearchOperator {
+ public:
+  MoveOneVar(const std::vector<IntVar*>& variables)
+      : IntVarLocalSearchOperator(variables.data(), variables.size()),
+        variable_index_(0),
+        move_up_(false) {}
+
+  virtual ~MoveOneVar() {}
+
+ protected:
+  // Make a neighbor assigning one variable to its target value.
+  virtual bool MakeOneNeighbor() {
+    const int64 current_value = OldValue(variable_index_);
+    if (move_up_) {
+      SetValue(variable_index_, current_value  + 1);
+      variable_index_ = (variable_index_ + 1) % Size();
+    } else {
+      SetValue(variable_index_, current_value  - 1);
+    }
+    move_up_ = !move_up_;
+    return true;
+  }
+
+ private:
+  virtual void OnStart() {
+    CHECK_GE(variable_index_, 0);
+    CHECK_LT(variable_index_, Size());
+  }
+
+  // Index of the next variable to try to restore
+  int64 variable_index_;
+  // Direction of the modification.
+  bool move_up_;
+};
+
+
+void BasicLns() {
   Solver s("Sample");
   vector<IntVar*> vars;
   s.MakeIntVarArray(10, 0, 10, &vars);
@@ -62,7 +98,29 @@ void Basic_LS() {
   DecisionBuilder* const ls = s.MakeLocalSearchPhase(vars, db, ls_params);
   SolutionCollector* const collector = s.MakeLastSolutionCollector();
   collector->Add(vars);
-  //  collector->AddObjective(sum_var);
+  collector->AddObjective(sum_var);
+  SearchMonitor* const log = s.MakeSearchLog(100, obj);
+  s.Solve(ls, collector, obj, log);
+  LOG(INFO) << "Objective value = " << collector->objective_value(0);
+}
+
+void BasicLs() {
+  Solver s("Sample");
+  vector<IntVar*> vars;
+  s.MakeIntVarArray(10, 0, 10, &vars);
+  IntVar* const sum_var = s.MakeSum(vars)->Var();
+  OptimizeVar* const obj = s.MakeMinimize(sum_var, 1);
+  DecisionBuilder* const db =
+      s.MakePhase(vars,
+                  Solver::CHOOSE_FIRST_UNBOUND,
+                  Solver::ASSIGN_MAX_VALUE);
+  MoveOneVar one_var_ls(vars);
+  LocalSearchPhaseParameters* const ls_params =
+      s.MakeLocalSearchPhaseParameters(&one_var_ls, db);
+  DecisionBuilder* const ls = s.MakeLocalSearchPhase(vars, db, ls_params);
+  SolutionCollector* const collector = s.MakeLastSolutionCollector();
+  collector->Add(vars);
+  collector->AddObjective(sum_var);
   SearchMonitor* const log = s.MakeSearchLog(100, obj);
   s.Solve(ls, collector, obj, log);
   LOG(INFO) << "Objective value = " << collector->objective_value(0);
@@ -71,7 +129,8 @@ void Basic_LS() {
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
-  operations_research::Basic_LS();
+  operations_research::BasicLns();
+  operations_research::BasicLs();
   return 0;
 }
 
