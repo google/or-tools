@@ -48,11 +48,6 @@ public class MoveOneVar : BaseLNS
 
 public class CsLsApi
 {
-  /**
-   * Solves the rabbits + pheasants problem.  We are seing 20 heads
-   * and 56 legs. How many rabbits and how many pheasants are we thus
-   * seeing?
-   */
   private static void BasicLns()
   {
     Solver solver = new Solver("BasicLns");
