@@ -770,11 +770,11 @@ $(OBJ_DIR)/boolean_test.$O:$(EX_DIR)/tests/boolean_test.cc $(SRC_DIR)/constraint
 $(BIN_DIR)/boolean_test$E: $(CP_DEPS) $(OBJ_DIR)/boolean_test.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/boolean_test.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)boolean_test$E
 
-$(OBJ_DIR)/ls_test.$O:$(EX_DIR)/tests/ls_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/ls_test.cc $(OBJ_OUT)ls_test.$O
+$(OBJ_DIR)/ls_api.$O:$(EX_DIR)/cpp/ls_api.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/ls_api.cc $(OBJ_OUT)ls_api.$O
 
-$(BIN_DIR)/ls_test$E: $(CP_DEPS) $(OBJ_DIR)/ls_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/ls_test.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)ls_test$E
+$(BIN_DIR)/ls_api$E: $(CP_DEPS) $(OBJ_DIR)/ls_api.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/ls_api.$O $(CP_LNK) $(LDFLAGS) $(EXEOUT)ls_api$E
 
 # Linear Programming Examples
 
