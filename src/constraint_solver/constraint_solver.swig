@@ -1235,13 +1235,27 @@ static void SetPythonFlags(bool trace_propagation,
 %feature("director") Action;
 %feature("director") LocalSearchOperator;
 %feature("director") PathOperator;
-%feature("director") BaseLns;
+%feature("director") BaseLNS;
+%feature("director") IntVarLocalSearchOperator;
+%feature("director") IntVarLocalSearchFilter;
+
+%include "std_vector.i"
+
+%template(IntVector) std::vector<int>;
 
 %{
 #include <setjmp.h>
 
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+
+namespace operations_research {
+class LocalSearchPhaseParameters {
+ public:
+  LocalSearchPhaseParameters();
+  ~LocalSearchPhaseParameters();
+};
+}  // namespace operations_research
 
 struct FailureProtect {
   jmp_buf exception_buffer;
@@ -1254,6 +1268,7 @@ struct FailureProtect {
 %ignore operations_research::Solver::MakeIntVarArray;
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
+%ignore operations_research::IntVarLocalSearchFilter::FindIndex;
 
 %rename (nextWrap) operations_research::DecisionBuilder::Next;
 %rename (toString) *::DebugString;
@@ -1365,6 +1380,14 @@ CONVERT_VECTOR(LocalSearchFilter);
 
 %}
 
+%extend IntVarLocalSearchFilter {
+  int Index(IntVar* const var) {
+    int64 index = -1;
+    self->FindIndex(var, &index);
+    return index;
+  }
+}
+
 // Protect from failure
 #define PREPROTECT\
   FailureProtect protect;\
@@ -1429,6 +1452,14 @@ CONVERT_VECTOR(LocalSearchFilter);
 }
 }  // namespace operations_research
 
+namespace operations_research {
+class LocalSearchPhaseParameters {
+ public:
+  LocalSearchPhaseParameters();
+  ~LocalSearchPhaseParameters();
+};
+}  // namespace operations_research
+
 #endif  // SWIGJAVA
 
 #if defined(SWIGCSHARP)
@@ -1444,9 +1475,7 @@ CONVERT_VECTOR(LocalSearchFilter);
 
 %include "std_vector.i"
 
-namespace std {
 %template(IntVector) std::vector<int>;
-}
 
 %{
 #include <setjmp.h>

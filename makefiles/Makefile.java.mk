@@ -52,6 +52,14 @@ $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/RabbitsPheasants.class: j
 run_RabbitsPheasants: compile_RabbitsPheasants
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.RabbitsPheasants
 
+compile_LsApi: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/LsApi.class
+
+$(OBJ_DIR)/com/google/ortools/constraintsolver/samples/LsApi.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/LsApi.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$Ssamples$SLsApi.java
+
+run_LsApi: compile_LsApi
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.LsApi
+
 compile_GolombRuler: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/GolombRuler.class
 
 $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/GolombRuler.class: javacp $(EX_DIR)/com/google/ortools/constraintsolver/samples/GolombRuler.java

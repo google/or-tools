@@ -52,19 +52,23 @@ class MoveOneVar : IntVarLocalSearchOperator {
     move_up_ = false;
   }
 
-  protected override bool MakeOneNeighbor() {
+  protected override bool MakeOneNeighbor()
+  {
     long current_value = OldValue(variable_index_);
-    if (move_up_) {
+    if (move_up_)
+    {
       SetValue(variable_index_, current_value  + 1);
       variable_index_ = (variable_index_ + 1) % Size();
-    } else {
+    }
+    else
+    {
       SetValue(variable_index_, current_value  - 1);
     }
     move_up_ = !move_up_;
     return true;
   }
 
-  protected  override void OnStart() {}
+  protected override void OnStart() {}
 
   // Index of the next variable to try to restore
   private long variable_index_;
@@ -78,9 +82,11 @@ public class SumFilter : IntVarLocalSearchFilter {
     sum_ = 0;
   }
 
-  protected override void OnSynchronize() {
+  protected override void OnSynchronize()
+  {
     sum_ = 0;
-    for (int index = 0; index < Size(); ++index) {
+    for (int index = 0; index < Size(); ++index)
+    {
       sum_ += Value(index);
     }
   }
@@ -89,13 +95,16 @@ public class SumFilter : IntVarLocalSearchFilter {
     AssignmentIntContainer solution_delta = delta.IntVarContainer();
     int solution_delta_size = solution_delta.Size();
 
-    for (int i = 0; i < solution_delta_size; ++i) {
-      if (!solution_delta.Element(i).Activated()) {
+    for (int i = 0; i < solution_delta_size; ++i)
+    {
+      if (!solution_delta.Element(i).Activated())
+      {
         return true;
       }
     }
     long new_sum = sum_;
-    for (int index = 0; index < solution_delta_size; ++index) {
+    for (int index = 0; index < solution_delta_size; ++index)
+    {
       int touched_var = Index(solution_delta.Element(index).Var());
       long old_value = Value(touched_var);
       long new_value = solution_delta.Element(index).Value();
