@@ -383,6 +383,9 @@ void SequenceVarLocalSearchOperator::MarkChange(int64 index) {
 BaseLNS::BaseLNS(const IntVar* const* vars, int size)
     : IntVarLocalSearchOperator(vars, size) {}
 
+BaseLNS::BaseLNS(const std::vector<IntVar*>& vars)
+    : IntVarLocalSearchOperator(vars.data(), vars.size()) {}
+
 BaseLNS::~BaseLNS() {}
 
 bool BaseLNS::MakeOneNeighbor() {

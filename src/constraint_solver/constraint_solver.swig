@@ -1438,7 +1438,7 @@ CONVERT_VECTOR(LocalSearchFilter);
 %feature("director") Decision;
 %feature("director") SearchMonitor;
 %feature("director") Action;
-%feature("director") BaseLns;
+%feature("director") BaseLNS;
 
 %include "std_vector.i"
 
@@ -1451,6 +1451,16 @@ namespace std {
 
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+
+namespace operations_research {
+class LocalSearchPhaseParameters {
+ public:
+  LocalSearchPhaseParameters();
+  ~LocalSearchPhaseParameters();
+};
+}  // namespace operations_research
+
+
 
 struct FailureProtect {
   jmp_buf exception_buffer;
@@ -2100,6 +2110,14 @@ namespace operations_research {
     $action
   POSTPROTECT
 }
+}  // namespace operations_research
+
+namespace operations_research {
+class LocalSearchPhaseParameters {
+ public:
+  LocalSearchPhaseParameters();
+  ~LocalSearchPhaseParameters();
+};
 }  // namespace operations_research
 
 #endif  // SWIGCSHARP

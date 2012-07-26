@@ -956,6 +956,7 @@ class SequenceVarLocalSearchOperator : public LocalSearchOperator {
 class BaseLNS : public IntVarLocalSearchOperator {
  public:
   BaseLNS(const IntVar* const* vars, int size);
+  BaseLNS(const std::vector<IntVar*>& vars);
   virtual ~BaseLNS();
   virtual void InitFragments();
   virtual bool NextFragment(std::vector<int>* fragment) = 0;
