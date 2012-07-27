@@ -150,7 +150,7 @@ class SumFilter : public IntVarLocalSearchFilter {
 void BasicLns() {
   LOG(INFO) << "Basic LNS";
   Solver s("Sample");
-  vector<IntVar*> vars;
+  std::vector<IntVar*> vars;
   s.MakeIntVarArray(4, 0, 4, &vars);
   IntVar* const sum_var = s.MakeSum(vars)->Var();
   OptimizeVar* const obj = s.MakeMinimize(sum_var, 1);
@@ -173,7 +173,7 @@ void BasicLns() {
 void BasicLs() {
   LOG(INFO) << "Basic LS";
   Solver s("Sample");
-  vector<IntVar*> vars;
+  std::vector<IntVar*> vars;
   s.MakeIntVarArray(4, 0, 4, &vars);
   IntVar* const sum_var = s.MakeSum(vars)->Var();
   OptimizeVar* const obj = s.MakeMinimize(sum_var, 1);
@@ -196,7 +196,7 @@ void BasicLs() {
 void BasicLsWithFilter() {
   LOG(INFO) << "Basic LS with Filter";
   Solver s("Sample");
-  vector<IntVar*> vars;
+  std::vector<IntVar*> vars;
   s.MakeIntVarArray(4, 0, 4, &vars);
   IntVar* const sum_var = s.MakeSum(vars)->Var();
   OptimizeVar* const obj = s.MakeMinimize(sum_var, 1);
