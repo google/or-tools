@@ -450,7 +450,9 @@ void TestSimplification() {
   CHECK_EQ(b1, b3);
   CHECK_EQ(b2, b4);
   IntVar* const cst = s.MakeIntConst(2, "test");
+  IntVar* const cst2 = s.MakeIntConst(4);
   LOG(INFO) << cst->name() << "/" << cst->DebugString();
+  LOG(INFO) << cst2->name() << "/" << cst2->DebugString();
 }
 }  // namespace operations_research
 

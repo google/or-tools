@@ -551,7 +551,6 @@ IntExpr* BuildElement(Solver* const solver,
       values,
       ModelCache::VAR_CONSTANT_ARRAY_ELEMENT);
   if (cache != NULL) {
-    LOG(INFO) << "Cache " << cache->DebugString();
     return cache;
   } else {
     IntExpr* result= NULL;

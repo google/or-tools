@@ -2099,7 +2099,17 @@ class IntConst : public IntVar {
   virtual int64 OldMax() const {
     return value_;
   }
-  virtual string DebugString() const;
+  virtual string DebugString() const {
+    string out;
+    if (solver()->HasName(this)) {
+      const string& var_name = name();
+      SStringPrintf(&out, "%s(%" GG_LL_FORMAT "d)", var_name.c_str(), value_);
+    } else {
+      SStringPrintf(&out, "IntConst(%" GG_LL_FORMAT "d)", value_);
+    }
+    return out;
+  }
+
   virtual int VarType() const { return CONST_VAR; }
 
   virtual IntVar* IsEqual(int64 constant) {
@@ -2137,17 +2147,6 @@ class IntConst : public IntVar {
  private:
   int64 value_;
 };
-
-string IntConst::DebugString() const {
-  string out;
-  const string& var_name = name();
-  if (!var_name.empty()) {
-    SStringPrintf(&out, "%s(%" GG_LL_FORMAT "d)", var_name.c_str(), value_);
-  } else {
-    SStringPrintf(&out, "IntConst(%" GG_LL_FORMAT "d)", value_);
-  }
-  return out;
-}
 
 // ----- x + c variable, optimized case -----
 
@@ -3480,8 +3479,8 @@ class SubIntCstExpr : public BaseIntExpr {
 };
 
 IntVar* SubIntCstExpr::CastToVar() {
-  if (SubOverflows(value_, expr_->Min())
-      || SubUnderflows(value_, expr_->Max())) {
+  if (SubOverflows(value_, -expr_->Min())
+      || SubUnderflows(value_, -expr_->Max())) {
     return BaseIntExpr::CastToVar();
   }
   Solver* const s = solver();
@@ -5970,7 +5969,9 @@ IntExpr* Solver::MakeSum(IntExpr* const e, int64 v) {
   IntExpr* result = Cache()->FindExprConstantExpression(
       e, v, ModelCache::EXPR_CONSTANT_SUM);
   if (result == NULL) {
-    if (e->IsVar()) {
+    if (e->IsVar() &&
+        !AddOverflows(v, e->Max()) &&
+        !AddUnderflows(v, e->Min())) {
       IntVar* const var = e->Var();
       switch (var->VarType()) {
         case DOMAIN_INT_VAR: {
@@ -6059,7 +6060,10 @@ IntExpr* Solver::MakeDifference(int64 v, IntExpr* const e) {
   IntExpr* result = Cache()->FindExprConstantExpression(
       e, v, ModelCache::EXPR_CONSTANT_DIFFERENCE);
   if (result == NULL) {
-    if (e->IsVar()) {
+    if (e->IsVar() &&
+        e->Min() != kint64min &&
+        !SubOverflows(v, e->Min()) &&
+        !SubUnderflows(v, e->Max())) {
       IntVar* const var = e->Var();
       switch (var->VarType()) {
         case VAR_ADD_CST: {

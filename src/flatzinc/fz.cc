@@ -73,7 +73,7 @@ void Run(const std::string& file) {
                  FLAGS_time_limit,
                  FLAGS_simplex_frequency);
 }
-}
+}  // namespace operations_research
 
 int main(int argc, char** argv) {
   FLAGS_log_prefix=false;
