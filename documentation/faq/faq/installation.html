@@ -57,26 +57,57 @@
 <ul class="simple">
 <li><a class="reference internal" href="#faq-installation-compile"><em>How do I download, install and compile the or-tools library?</em></a></li>
 <li><a class="reference internal" href="#faq-installation-compile-independently"><em>How do I compile and run my code in a directory of my choice?</em></a></li>
-<li><a class="reference internal" href="#faq-documentation-compile"><em>How do I compile and run the examples in the tutorial section?</em></a></li>
+<li><a class="reference internal" href="#faq-installation-compile-tutorial"><em>How do I compile and run the examples in the tutorial section?</em></a></li>
+<li><a class="reference internal" href="#faq-installation-update"><em>How do I update the library?</em></a></li>
+<li><a class="reference internal" href="#faq-installation-what-to-do-when-update-is-broken"><em>The update process is not working and I get an error. What should I do?</em></a></li>
 </ul>
 <blockquote>
 <div></div></blockquote>
 <div class="section" id="how-do-i-download-install-and-compile-the-or-tools-library">
 <span id="faq-installation-compile"></span><h2>How do I download, install and compile the or-tools library?</h2>
 <p>The wiki page <a class="reference external" href="http://code.google.com/p/or-tools/wiki/AGettingStarted">Getting Started</a> explains
-how to donwload, install and compile the or-tools library.</p>
+how to download, install and compile the or-tools library.</p>
 <blockquote>
 <div></div></blockquote>
 </div>
 <div class="section" id="how-do-i-compile-and-run-my-code-in-a-directory-of-my-choice">
 <span id="faq-installation-compile-independently"></span><h2>How do I compile and run my code in a directory of my choice?</h2>
-<p>For the easy solution, have a look at <a class="reference internal" href="#faq-documentation-compile"><em>How do I compile and run the examples in the tutorial section?</em></a></p>
-<p>For the less easy solution. Let&#8217;s say, you want to keep your code up to date with your version of the library.
-We suggest you to use a <tt class="docutils literal"><span class="pre">Makefile</span></tt>. More about this later.</p>
+<p>Take a look at <a class="reference internal" href="#faq-installation-compile"><em>How do I download, install and compile the or-tools library?</em></a></p>
 </div>
 <div class="section" id="how-do-i-compile-and-run-the-examples-in-the-tutorial-section">
-<span id="faq-documentation-compile"></span><h2>How do I compile and run the examples in the tutorial section?</h2>
+<span id="faq-installation-compile-tutorial"></span><h2>How do I compile and run the examples in the tutorial section?</h2>
 <p><tt class="docutils literal"><span class="pre">Makefiles</span></tt> are (will be) provided to compile the examples (soon).</p>
+</div>
+<div class="section" id="how-do-i-update-the-library">
+<span id="faq-installation-update"></span><h2>How do I update the library?</h2>
+<p>In your base directory, type:</p>
+<div class="highlight-bash"><div class="highlight"><pre>svn update
+</pre></div>
+</div>
+<p>then:</p>
+<div class="highlight-bash"><div class="highlight"><pre>make all
+</pre></div>
+</div>
+</div>
+<div class="section" id="the-update-process-is-not-working-and-i-get-an-error-what-should-i-do">
+<span id="faq-installation-what-to-do-when-update-is-broken"></span><h2>The update process is not working and I get an error. What should I do?</h2>
+<p>We try our best to commit only working versions of the <em>or-tools</em> library.
+From time to time, it can happen that for your configuration we forgot something but
+it should not happen too often. It could be that you need to clean the library.</p>
+<p>Try in your base directory:</p>
+<div class="highlight-bash"><div class="highlight"><pre>make clean
+</pre></div>
+</div>
+<p>then:</p>
+<div class="highlight-bash"><div class="highlight"><pre>make all
+</pre></div>
+</div>
+<p>If the problem persists, ask for some help on the <a class="reference external" href="http://groups.google.com/group/or-tools-discuss">mailing list</a>.
+Meanwhile, you can revert to an older and working version:</p>
+<div class="highlight-bash"><div class="highlight"><pre>svn update -r REV
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">REV</span></tt> is the revision number.</p>
 <br>
 <br>
 <br>
@@ -122,14 +153,23 @@ We suggest you to use a <tt class="docutils literal"><span class="pre">Makefile<
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/">user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/" selected>faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
+
+
+
 
   <h3>Welcome</h3>
   

@@ -56,38 +56,57 @@
 <span id="faq-library-questions"></span><h1>General questions about the library</h1>
 <blockquote>
 <div><ul class="simple">
-<li><a class="reference internal" href="#faq-library-separate-directory"><em>How can I use a separate directory, i.e. a directory outside the main or-tools directory, to compile and run my code?</em></a></li>
-<li><a class="reference internal" href="#faq-library-licence"><em>What is the licence you use?</em></a></li>
+<li><a class="reference internal" href="#faq-library-when-released"><em>When was the library released?</em></a></li>
+<li><a class="reference internal" href="#faq-library-license"><em>What is the license you use?</em></a></li>
+<li><a class="reference internal" href="#faq-library-really-free"><em>Is it really free and open source?</em></a></li>
+<li><a class="reference internal" href="#faq-library-guarantuees"><em>What guarantees do you provide on the quality of this library?</em></a></li>
 <li><a class="reference internal" href="#faq-library-language-coded"><em>In what language(s) is the library coded?</em></a></li>
 <li><a class="reference internal" href="#faq-library-language-supported"><em>What are the supported languages?</em></a></li>
 <li><a class="reference internal" href="#faq-library-supported-platforms"><em>What are the supported platforms?</em></a></li>
 <li><a class="reference internal" href="#faq-library-use-at-google"><em>Do you use this library at Google?</em></a></li>
+<li><a class="reference internal" href="#faq-library-future"><em>What is the future of this library?</em></a></li>
+<li><a class="reference internal" href="#faq-library-future-plans"><em>What new technologies do you plan to release in the future?</em></a></li>
+<li><a class="reference internal" href="#faq-library-why-open-source"><em>Why did Google, a private company, open source such a project?</em></a></li>
 </ul>
 </div></blockquote>
-<div class="section" id="how-can-i-use-a-separate-directory-i-e-a-directory-outside-the-main-or-tools-directory-to-compile-and-run-my-code">
-<span id="faq-library-separate-directory"></span><h2>How can I use a separate directory, i.e. a directory outside the main or-tools directory, to compile and run my code?</h2>
-</div>
 <div class="section" id="when-was-the-library-released">
 <span id="faq-library-when-released"></span><h2>When was the library released?</h2>
 <p>It was released as an open project in September 2010.</p>
 </div>
-<div class="section" id="what-is-the-licence-you-use">
-<span id="faq-library-licence"></span><h2>What is the licence you use?</h2>
+<div class="section" id="what-is-the-license-you-use">
+<span id="faq-library-license"></span><h2>What is the license you use?</h2>
+<p><a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a></p>
 </div>
 <div class="section" id="is-it-really-free-and-open-source">
 <span id="faq-library-really-free"></span><h2>Is it really free and open source?</h2>
+<p>As long as you comply with the license.</p>
 </div>
-<div class="section" id="what-guarantees-do-you-provide-about-the-quality-of-this-library">
-<span id="faq-library-guarantuees"></span><h2>What guarantees do you provide about the quality of this library?</h2>
+<div class="section" id="what-guarantees-do-you-provide-on-the-quality-of-this-library">
+<span id="faq-library-guarantuees"></span><h2>What guarantees do you provide on the quality of this library?</h2>
+<p>None. We use it internally at Google and we are happy with it.</p>
 </div>
 <div class="section" id="in-what-language-s-is-the-library-coded">
 <span id="faq-library-language-coded"></span><h2>In what language(s) is the library coded?</h2>
+<p>The library itself is coded in C++.</p>
 </div>
 <div class="section" id="what-are-the-supported-languages">
 <span id="faq-library-language-supported"></span><h2>What are the supported languages?</h2>
+<p>Through SWIG, the library is available in</p>
+<ul class="simple">
+<li>Python,</li>
+<li>Java,</li>
+<li>and .NET (using mono on non windows platforms).</li>
+</ul>
 </div>
 <div class="section" id="what-are-the-supported-platforms">
 <span id="faq-library-supported-platforms"></span><h2>What are the supported platforms?</h2>
+<p>The code is known to compile on:</p>
+<ul class="simple">
+<li>gcc 4.4.x on ubuntu 10.04 and up (10.10, 11.04, 11.10 and 12.04)</li>
+<li>xcode &gt;= 3.2.3 on Mac OS X Snow Leopard and Mac OS X Lion (gcc 4.2.1)</li>
+<li>Microsoft Visual Studio 10.</li>
+</ul>
+<p>Both 32 bit and 64 bit architectures are supported, although the code is optimized to run in 64 bit mode.</p>
 </div>
 <div class="section" id="do-you-use-this-library-at-google">
 <span id="faq-library-use-at-google"></span><h2>Do you use this library at Google?</h2>
@@ -105,20 +124,13 @@ this library will remain actively developed and open sourced.</p>
 <div class="section" id="what-new-technologies-do-you-plan-to-release-in-the-future">
 <span id="faq-library-future-plans"></span><h2>What new technologies do you plan to release in the future?</h2>
 <p>While we have a clear idea about the tools we would like to add (or already have implemented in our internal version of the library)
-we don&#8217;t want to commit publicly. We develop the library primary for our internal needs and offer parts of our code along the way.
+we don&#8217;t want to commit publicly. We develop the library primarily for our internal needs and offer parts of our code along the way.
 If you have followed this project since its open source release, you know that it is under active development. We don&#8217;t plan to change
 this.</p>
 </div>
 <div class="section" id="why-did-google-a-private-company-open-source-such-a-project">
 <span id="faq-library-why-open-source"></span><h2>Why did Google, a private company, open source such a project?</h2>
-</div>
-<div class="section" id="why-didn-t-you-use-or-did-you-use-in-your-library">
-<span id="faq-library-why-coding-style"></span><h2>Why didn&#8217;t you use... or did you use... in your library?</h2>
-<p>As member of Google, we have to follow some guidelines.</p>
-<p>For instance, streams are highly discouraged. Why? Because...</p>
-<p>Another convention we have to follow is to use small letter &#8220;k&#8221; in front
-of global constants.</p>
-<p>We cannot use reference if there are not constant.</p>
+<p>We would like to make contacts with the academic community and benefit from mutual and productive exchanges.</p>
 </div>
 </div>
 
@@ -150,14 +162,23 @@ of global constants.</p>
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/">user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/" selected>faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
+
+
+
 
   <h3>Welcome</h3>
   
