@@ -1252,8 +1252,8 @@ static void SetPythonFlags(bool trace_propagation,
 namespace operations_research {
 class LocalSearchPhaseParameters {
  public:
-  LocalSearchPhaseParameters();
-  ~LocalSearchPhaseParameters();
+  LocalSearchPhaseParameters() {}
+  ~LocalSearchPhaseParameters() {}
 };
 }  // namespace operations_research
 
@@ -1455,8 +1455,8 @@ CONVERT_VECTOR(LocalSearchFilter);
 namespace operations_research {
 class LocalSearchPhaseParameters {
  public:
-  LocalSearchPhaseParameters();
-  ~LocalSearchPhaseParameters();
+  LocalSearchPhaseParameters() {}
+  ~LocalSearchPhaseParameters() {}
 };
 }  // namespace operations_research
 
@@ -1486,8 +1486,8 @@ class LocalSearchPhaseParameters {
 namespace operations_research {
 class LocalSearchPhaseParameters {
  public:
-  LocalSearchPhaseParameters();
-  ~LocalSearchPhaseParameters();
+  LocalSearchPhaseParameters() {}
+  ~LocalSearchPhaseParameters() {}
 };
 }  // namespace operations_research
 
@@ -2156,8 +2156,8 @@ namespace operations_research {
 namespace operations_research {
 class LocalSearchPhaseParameters {
  public:
-  LocalSearchPhaseParameters();
-  ~LocalSearchPhaseParameters();
+  LocalSearchPhaseParameters() {}
+  ~LocalSearchPhaseParameters() {}
 };
 }  // namespace operations_research
 
