@@ -153,6 +153,7 @@ ifeq ("$(SYSTEM)","win")
 	$(COPY) src$Sgen$Sgraph$S_pywrapgraph.pyd temp$Sor-tools.$(PLATFORM)$Ssrc$Sgen$Sgraph
 	$(COPY) src$Sgen$Salgorithms$S_pywrapknapsack_solver.pyd temp$Sor-tools.$(PLATFORM)$Ssrc$Sgen$Salgorithms
 	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.python.$(PLATFORM).$(SVNVERSION).zip or-tools.$(PLATFORM)
+	$(WINDOWS_PYTHON_PATH)$Spython dependencies\sources\googlecode-support\scripts\googlecode_upload.py -s "Google OR-Tools, Python archive, Windows $(PLATFORM) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,OpSys-Windows,Featured Google.OrTools.python.$(PLATFORM).$(SVNVERSION).zip -u laurent.perron@gmail.com -w $(PW)
 else
 	cd temp$Sor-tools.$(PLATFORM) && tar -C ..$S.. -c -v --exclude \*svn\* data | tar xvm -
 	$(COPY) _pywrap*.$(SHAREDLIBEXT) temp$Sor-tools.$(PLATFORM)
