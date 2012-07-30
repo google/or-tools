@@ -58,6 +58,7 @@ build_third_party: \
 	install_protobuf \
 	install_google_apputils \
 	install_sparsehash \
+	install_support \
 	install_swig \
 	install_coin_cbc \
 	install_glpk \
@@ -114,6 +115,12 @@ dependencies/sources/sparsehash/configure: dependencies/sources/sparsehash/autog
 
 dependencies/sources/sparsehash/autogen.sh:
 	svn co http://sparsehash.googlecode.com/svn/trunk/ -r $(SPARSEHASH_TAG) dependencies/sources/sparsehash
+
+# Install google code support.
+install_support: dependencies/sources/googlecode-support/scripts/googlecode_upload.py
+
+dependencies/sources/googlecode-support/scripts/googlecode_upload.py:
+	svn checkout http://support.googlecode.com/svn/trunk/ dependencies/sources/googlecode-support
 
 
 # Install Coin CBC.

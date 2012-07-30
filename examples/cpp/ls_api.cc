@@ -145,8 +145,6 @@ class SumFilter : public IntVarLocalSearchFilter {
   int64 sum_;
 };
 
-
-
 void BasicLns() {
   LOG(INFO) << "Basic LNS";
   Solver s("Sample");
