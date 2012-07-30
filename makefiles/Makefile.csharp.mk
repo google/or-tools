@@ -210,4 +210,5 @@ dotnet_archive: csharp
 	copy data\survo_puzzle\* temp\or-tools.$(PLATFORM)\data\survo_puzzle
 	copy data\quasigroup_completion\* temp\or-tools.$(PLATFORM)\data\quasigroup_completion
 	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.NET.$(PLATFORM).$(SVNVERSION).zip or-tools.$(PLATFORM)
+	$(WINDOWS_PYTHON_PATH)$Spython dependencies\sources\googlecode-support\scripts\googlecode_upload.py -s "Google OR-Tools, .NET archive, Windows $(PLATFORM) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,OpSys-Windows,Featured Google.OrTools.NET.$(PLATFORM).$(SVNVERSION).zip -u $(USER) -w $(PASSWORD)
 	-$(DELREC) temp

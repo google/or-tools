@@ -395,9 +395,9 @@ ifeq ("$(SYSTEM)","win")
 	copy examples\com\google\ortools\graph\samples\*.java temp\or-tools.$(PLATFORM)\examples\com\google\ortools\graph\samples
 	copy examples\com\google\ortools\knapsacksolver\samples\*.java temp\or-tools.$(PLATFORM)\examples\com\google\ortools\knapsacksolver\samples
 	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.java.$(PLATFORM).$(SVNVERSION).zip or-tools.$(PLATFORM)
+	$(WINDOWS_PYTHON_PATH)$Spython dependencies\sources\googlecode-support\scripts\googlecode_upload.py -s "Google OR-Tools, Java 1.7 archive, Windows $(PLATFORM) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,OpSys-Windows,Featured Google.OrTools.java.$(PLATFORM).$(SVNVERSION).zip -u $(USER) -w $(PASSWORD)
 else
 	cd temp$Sor-tools.$(PLATFORM) && tar -C ..$S.. -c -v examples | tar -x -v -m --exclude=\*.cs --exclude=\*svn\*
 	cd temp && tools\\tar.exe cvzf ..$SGoogle.OrTools.java.$(PLATFORM).$(SVNVERSION).tar.gz or-tools.$(PLATFORM)
 endif
 	-$(DELREC) temp
-
