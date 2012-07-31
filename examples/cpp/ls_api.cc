@@ -18,7 +18,6 @@
 #include "base/random.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/model.pb.h"
 
 namespace operations_research {
 class OneVarLns : public BaseLNS {
