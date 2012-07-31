@@ -1948,6 +1948,27 @@ void p_var_cumulative(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_true_constraint(FlatZincModel* const model, CtSpec* const spec) {}
 
+void p_sliding_sum(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  const int low = spec->Arg(0)->getInt();
+  const int up = spec->Arg(1)->getInt();
+  const int seq = spec->Arg(2)->getInt();
+  AST::Array* const array_variables = spec->Arg(3)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+  }
+  for (int i = 0; i < size - seq; ++i) {
+    std::vector<IntVar*> tmp(seq);
+    for (int k = 0; k < seq; ++k) {
+      tmp[k] = variables[i + k];
+    }
+    IntVar* const sum_var = solver->MakeSum(tmp)->Var();
+    sum_var->SetRange(low, up);
+  }
+}
+
 class IntBuilder {
  public:
   IntBuilder(void) {
@@ -2032,6 +2053,7 @@ class IntBuilder {
     global_model_builder.Register("fixed_cumulative", &p_fixed_cumulative);
     global_model_builder.Register("var_cumulative", &p_var_cumulative);
     global_model_builder.Register("true_constraint", &p_true_constraint);
+    global_model_builder.Register("sliding_sum", &p_sliding_sum);
   }
 };
 IntBuilder __int_Builder;
