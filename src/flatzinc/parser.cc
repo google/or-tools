@@ -82,6 +82,16 @@ void ParserState::output(std::string x, AstNode* n) {
   output_.push_back(std::pair<std::string,AstNode*>(x,n));
 }
 
+/// Strict weak ordering for output items
+class OutputOrder {
+ public:
+  /// Return if \a x is less than \a y, based on first component
+  bool operator ()(const std::pair<std::string, AstNode*>& x,
+                   const std::pair<std::string, AstNode*>& y) {
+    return x.first < y.first;
+  }
+};
+
 AstArray* ParserState::Output(void) {
   OutputOrder oo;
   std::sort(output_.begin(), output_.end(), oo);

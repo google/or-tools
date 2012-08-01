@@ -537,16 +537,6 @@ template<class Val> class SymbolTable {
   std::map<std::string, Val> m;
 };
 
-/// Strict weak ordering for output items
-class OutputOrder {
- public:
-  /// Return if \a x is less than \a y, based on first component
-  bool operator ()(const std::pair<std::string, AstNode*>& x,
-                   const std::pair<std::string, AstNode*>& y) {
-    return x.first < y.first;
-  }
-};
-
 /// %Alias for a variable specification
 class Alias {
  public:
