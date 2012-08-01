@@ -6,6 +6,10 @@
  *  Contributing authors:
  *     Mikael Lagerkvist <lagerkvist@gmail.com>
  *
+ *  Modified:
+ *     Laurent Perron <lperron@google.com>
+ *
+ *
  *  Copyright:
  *     Guido Tack, 2007
  *     Mikael Lagerkvist, 2009

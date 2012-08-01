@@ -5,6 +5,8 @@
  *
  *  Copyright:
  *     Guido Tack, 2007
+ *  Modified:
+ *     Laurent Perron <lperron@google.com>
  *
  *  Last modified:
  *     $Date: 2010-07-02 19:18:43 +1000 (Fri, 02 Jul 2010) $ by $Author: tack $

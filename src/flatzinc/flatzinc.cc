@@ -2,6 +2,7 @@
 /*
  *  Main authors:
  *     Guido Tack <tack@gecode.org>
+ *  Modified by Laurent Perron for Google (lperron@google.com)
  *
  *  Copyright:
  *     Guido Tack, 2007

@@ -2,6 +2,8 @@
 /*
  *  Main authors:
  *     Guido Tack <tack@gecode.org>
+ *  Modified:
+ *     Laurent Perron <lperron@google.com>
  *
  *  Copyright:
  *     Guido Tack, 2007
