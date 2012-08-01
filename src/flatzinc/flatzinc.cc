@@ -521,18 +521,26 @@ void FlatZincModel::Solve(int solve_frequency,
                 << (proven ? " (proven)" : "") << std::endl;
     }
   }
+  const int num_solutions = solver_->solutions();
+  const string status_string =
+      (num_solutions == 0 ?
+       (timeout ? "**timeout**" : "**unsat**") :
+       (objective_ == NULL ?
+        "**sat**" :
+        (timeout ? "**timeout**" :"**proven**")));
+  const string obj_string = (objective_ != NULL && num_solutions > 0 ?
+                             StringPrintf("%" GG_LL_FORMAT "d", best) :
+                             "");
+  std::cout << "%%  name, status, obj, s_time, b_time, br, fails, "
+            << "solns, cts, demon, delayed, mem, search" << std::endl;
   std::cout << "%%  csv: " << filename_
-            << ", " << solve_time
-            << ", " << build_time
+            << ", " << status_string
+            << ", " << obj_string
+            << ", " << solve_time << " ms"
+            << ", " << build_time << " ms"
             << ", " << solver_->branches()
             << ", " << solver_->failures()
-            << ", " << (solver_->solutions() == 0 ?
-                        (timeout ? "**timeout**" : "**unsat**") :
-                        StringPrintf("%" GG_LL_FORMAT "d",
-                                     solver_->solutions()).c_str())
-            << ", " << (objective_ != NULL  && solver_->solutions() > 0 ?
-                        StringPrintf("%" GG_LL_FORMAT "d", best).c_str()
-                        : "*****")
+            << ", " << num_solutions
             << ", " << solver_->constraints()
             << ", " << solver_->demon_runs(Solver::NORMAL_PRIORITY)
             << ", " << solver_->demon_runs(Solver::DELAYED_PRIORITY)
