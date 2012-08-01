@@ -871,7 +871,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       AstNode* const var1 = Copy(spec->Arg(1));
       IntVarSpec* const spec0 = IntSpec(var0);
       IntVarSpec* const spec1 = IntSpec(var1);
-      if (!ContainsKey(targets_, var0) && !spec0->alias) {
+      if (!ContainsKey(targets_, var0)) {
         AstCall* const call =
             new AstCall("defines_var", new AstIntVar(var0->getIntVar()));
         spec->AddAnnotation(call);
@@ -879,7 +879,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
                 << " to " << var1->DebugString();
         targets_.insert(var0);
         return true;
-      } else if (!ContainsKey(targets_, var1) && !spec1->alias) {
+      } else if (!ContainsKey(targets_, var1)) {
         AstCall* const call =
             new AstCall("defines_var", new AstIntVar(var1->getIntVar()));
         spec->AddAnnotation(call);
