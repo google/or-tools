@@ -138,22 +138,22 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 81 "src/flatzinc/parser.yxx"
+#line 84 "src/flatzinc/parser.yxx"
 {
   int64 iValue;
   char* sValue;
   bool bValue;
   double dValue;
   std::vector<int64>* setValue;
-  operations_research::AST::SetLit* setLit;
+  operations_research::AstSetLit* setLit;
   std::vector<double>* floatSetValue;
-  std::vector<operations_research::AST::SetLit>* setValueList;
-  operations_research::Option<operations_research::AST::SetLit*> oSet;
+  std::vector<operations_research::AstSetLit>* setValueList;
+  operations_research::Option<operations_research::AstSetLit*> oSet;
   operations_research::IntVarSpec* varIntSpec;
   operations_research::BoolVarSpec* varBoolSpec;
   operations_research::SetVarSpec* varSetSpec;
   operations_research::FloatVarSpec* varFloatSpec;
-  operations_research::Option<operations_research::AST::Node*> oArg;
+  operations_research::Option<operations_research::AstNode*> oArg;
   std::vector<operations_research::IntVarSpec*>* varIntSpecVec;
   std::vector<operations_research::BoolVarSpec*>* varBoolSpecVec;
   std::vector<operations_research::SetVarSpec*>* varSetSpecVec;
@@ -162,8 +162,8 @@ typedef union YYSTYPE
   operations_research::Option<std::vector<operations_research::BoolVarSpec*>*> oBoolVarSpecVec;
   operations_research::Option<std::vector<operations_research::SetVarSpec*>*> oSetVarSpecVec;
   operations_research::Option<std::vector<operations_research::FloatVarSpec*>*> oFloatVarSpecVec;
-  operations_research::AST::Node* arg;
-  operations_research::AST::Array* argVec;
+  operations_research::AstNode* arg;
+  operations_research::AstArray* argVec;
 }
 /* Line 1529 of yacc.c.  */
 #line 170 "src/flatzinc/parser.win.hh"

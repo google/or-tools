@@ -20,6 +20,7 @@
 #include "base/stringprintf.h"
 #include "flatzinc/flatzinc.h"
 #include "flatzinc/parser.h"
+#include "flatzinc/parser.tab.h"
 
 using namespace std;
 extern int yyparse(void*);
@@ -34,17 +35,17 @@ DECLARE_bool(use_minisat);
 
 namespace operations_research {
 // ----- Misc -----
-bool HasDomainAnnotation(AST::Node* const annotations) {
+bool HasDomainAnnotation(AstNode* const annotations) {
   if (annotations != NULL) {
     return annotations->hasAtom("domain");
   }
   return false;
 }
 
-bool HasDefineAnnotation(AST::Node* const annotations) {
+bool HasDefineAnnotation(AstNode* const annotations) {
   if (annotations != NULL) {
     if (annotations->isArray()) {
-      AST::Array* const ann_array = annotations->getArray();
+      AstArray* const ann_array = annotations->getArray();
       if (ann_array->a[0]->isCall("defines_var")) {
         return true;
       }
@@ -77,18 +78,18 @@ int ParserState::FillBuffer(char* lexBuf, unsigned int lexBufSize) {
   return num;
 }
 
-void ParserState::output(std::string x, AST::Node* n) {
-  output_.push_back(std::pair<std::string,AST::Node*>(x,n));
+void ParserState::output(std::string x, AstNode* n) {
+  output_.push_back(std::pair<std::string,AstNode*>(x,n));
 }
 
-AST::Array* ParserState::Output(void) {
+AstArray* ParserState::Output(void) {
   OutputOrder oo;
-  std::sort(output_.begin(),output_.end(),oo);
-  AST::Array* const a = new AST::Array();
+  std::sort(output_.begin(), output_.end(), oo);
+  AstArray* const a = new AstArray();
   for (unsigned int i = 0; i < output_.size(); i++) {
-    a->a.push_back(new AST::String(output_[i].first+" = "));
+    a->a.push_back(new AstString(output_[i].first+" = "));
     if (output_[i].second->isArray()) {
-      AST::Array* const oa = output_[i].second->getArray();
+      AstArray* const oa = output_[i].second->getArray();
       for (unsigned int j = 0; j < oa->a.size(); j++) {
         a->a.push_back(oa->a[j]);
         oa->a[j] = NULL;
@@ -97,18 +98,18 @@ AST::Array* ParserState::Output(void) {
     } else {
       a->a.push_back(output_[i].second);
     }
-    a->a.push_back(new AST::String(";\n"));
+    a->a.push_back(new AstString(";\n"));
   }
   return a;
 }
 
-AST::Node* ParserState::FindTarget(AST::Node* const annotations) const {
+AstNode* ParserState::FindTarget(AstNode* const annotations) const {
   if (annotations != NULL) {
     if (annotations->isArray()) {
-      AST::Array* const ann_array = annotations->getArray();
+      AstArray* const ann_array = annotations->getArray();
       if (ann_array->a[0]->isCall("defines_var")) {
-        AST::Call* const call = ann_array->a[0]->getCall();
-        AST::Node* const args = call->args;
+        AstCall* const call = ann_array->a[0]->getCall();
+        AstNode* const args = call->args;
         return Copy(args);
       }
     }
@@ -116,15 +117,15 @@ AST::Node* ParserState::FindTarget(AST::Node* const annotations) const {
   return NULL;
 }
 
-void ParserState::CollectRequired(AST::Array* const args,
+void ParserState::CollectRequired(AstArray* const args,
                                   const NodeSet& candidates,
                                   NodeSet* const require) const {
   for (int i = 0; i < args->a.size(); ++i) {
-    AST::Node* const node = args->a[i];
+    AstNode* const node = args->a[i];
     if (node->isArray()) {
       CollectRequired(node->getArray(), candidates, require);
     } else {
-      AST::Node* const copy = Copy(node);
+      AstNode* const copy = Copy(node);
       if (copy != NULL && ContainsKey(candidates, copy)) {
         require->insert(copy);
       }
@@ -147,7 +148,7 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
       id == "int_min" ||
       id == "int_eq") {
     // Defines an int var.
-    AST::Node* const define = FindTarget(spec->annotations());
+    AstNode* const define = FindTarget(spec->annotations());
     if (define != NULL) {
       CHECK(IsIntroduced(define));
       candidates->insert(define);
@@ -167,7 +168,7 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
              (id == "bool_ge_reif" && !FLAGS_use_minisat) ||
              id == "bool_not") {
     // Defines a bool var.
-    AST::Node* const bool_define = FindTarget(spec->annotations());
+    AstNode* const bool_define = FindTarget(spec->annotations());
     if (bool_define != NULL) {
       CHECK(IsIntroduced(bool_define));
       candidates->insert(bool_define);
@@ -181,7 +182,7 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
 
 void ParserState::ComputeDependencies(const NodeSet& candidates,
                                       CtSpec* const spec) const {
-  AST::Node* const define = spec->DefinedArg() == NULL ?
+  AstNode* const define = spec->DefinedArg() == NULL ?
       FindTarget(spec->annotations()) :
       spec->DefinedArg();
   if (ContainsKey(candidates, define)) {
@@ -194,14 +195,14 @@ void ParserState::ComputeDependencies(const NodeSet& candidates,
   }
 }
 
-void ParserState::MarkAllVariables(AST::Node* const node,
+void ParserState::MarkAllVariables(AstNode* const node,
                                    NodeSet* const computed) {
   if (node->isIntVar()) {
     computed->insert(Copy(node));
     VLOG(1) << "  - " << node->DebugString();
   }
   if (node->isArray()) {
-    AST::Array* const array = node->getArray();
+    AstArray* const array = node->getArray();
     for (int i = 0; i < array->a.size(); ++i) {
       if (array->a[i]->isIntVar()) {
         computed->insert(Copy(array->a[i]));
@@ -222,7 +223,7 @@ void ParserState::MarkComputedVariables(CtSpec* const spec,
 
 void ParserState::Sanitize(CtSpec* const spec) {
   if (spec->Id() == "int_lin_eq" && HasDomainAnnotation(spec->annotations())) {
-    AST::Array* const array_coefficients = spec->Arg(0)->getArray();
+    AstArray* const array_coefficients = spec->Arg(0)->getArray();
     if (array_coefficients->a.size() > 2) {
       VLOG(1) << "  - presolve: remove defines part on " << spec->DebugString();
       spec->RemoveDefines();
@@ -241,7 +242,7 @@ void ParserState::Presolve() {
   // Find orphans (is_defined && not a viable target).
   NodeSet targets;
   for (int i = 0; i < constraints_.size(); ++i) {
-    AST::Node* const target = FindTarget(constraints_[i]->annotations());
+    AstNode* const target = FindTarget(constraints_[i]->annotations());
     if (target != NULL) {
       VLOG(1) << "  - presolve:  mark " << target->DebugString()
               << " as defined";
@@ -250,7 +251,7 @@ void ParserState::Presolve() {
   }
   for (int i = 0; i < int_variables_.size(); ++i) {
     IntVarSpec* const spec = int_variables_[i];
-    AST::Node* const var = IntCopy(i);
+    AstNode* const var = IntCopy(i);
     if (spec->introduced && !ContainsKey(targets, var)) {
       orphans_.insert(var);
       VLOG(1) << "  - presolve:  mark " << var->DebugString() << " as orphan";
@@ -276,9 +277,9 @@ void ParserState::Presolve() {
   for (int i = 0; i < int_variables_.size(); ++i) {
     IntVarSpec* const spec = int_variables_[i];
     if (spec->alias) {
-      AST::Array* args = new AST::Array(2);
-      args->a[0] = new AST::IntVar(spec->i);
-      args->a[1] = new AST::IntVar(i);
+      AstArray* args = new AstArray(2);
+      args->a[0] = new AstIntVar(spec->i);
+      args->a[1] = new AstIntVar(i);
       CtSpec* const alias_ct = new CtSpec(constraints_.size(),
                                           "int2int",
                                           args,
@@ -291,9 +292,9 @@ void ParserState::Presolve() {
   for (int i = 0; i < bool_variables_.size(); ++i) {
     BoolVarSpec* const spec = bool_variables_[i];
     if (spec->alias) {
-      AST::Array* args = new AST::Array(2);
-      args->a[0] = new AST::BoolVar(spec->i);
-      args->a[1] = new AST::BoolVar(i);
+      AstArray* args = new AstArray(2);
+      args->a[0] = new AstBoolVar(spec->i);
+      args->a[1] = new AstBoolVar(i);
       CtSpec* const alias_ct = new CtSpec(constraints_.size(),
                                           "bool2bool",
                                           args,
@@ -312,13 +313,13 @@ void ParserState::Presolve() {
       constraints_per_id_[spec->Id()].push_back(index);
       const int num_args = spec->NumArgs();
       for (int i = 0; i < num_args; ++i) {
-        AST::Node* const arg = spec->Arg(i);
+        AstNode* const arg = spec->Arg(i);
         if (arg->isIntVar()) {
           constraints_per_int_variables_[arg->getIntVar()].push_back(index);
         } else if (arg->isBoolVar()) {
           constraints_per_bool_variables_[arg->getBoolVar()].push_back(index);
         } else if (arg->isArray()) {
-          const std::vector<AST::Node*>& array = arg->getArray()->a;
+          const std::vector<AstNode*>& array = arg->getArray()->a;
           for (int j = 0; j < array.size(); ++j) {
             if (array[j]->isIntVar()) {
               constraints_per_int_variables_[array[j]->getIntVar()].push_back(
@@ -335,7 +336,7 @@ void ParserState::Presolve() {
 
   VLOG(1) << "Model statistics";
   for (ConstIter<hash_map<string, std::vector<int> > > it(constraints_per_id_);
-        !it.at_end();
+       !it.at_end();
        ++it) {
     VLOG(1) << "  - " << it->first << ": " << it->second.size();
   }
@@ -452,7 +453,7 @@ void ParserState::SortConstraints(NodeSet* const candidates,
         int unsatisfied = 0;
         const NodeSet& required = spec->require_map();
         for (ConstIter<NodeSet> def(required); !def.at_end(); ++def) {
-          AST::Node* const dep = *def;
+          AstNode* const dep = *def;
           unsatisfied += !ContainsKey(defined, dep);
           if (IsAlias(dep)) {
             VLOG(2) << "  - " << dep->DebugString()
@@ -472,7 +473,7 @@ void ParserState::SortConstraints(NodeSet* const candidates,
               << " with " << best_unsatisfied << " unsatisfied dependencies";
       const NodeSet& required = to_correct->require_map();
       for (ConstIter<NodeSet> def(required); !def.at_end(); ++def) {
-        AST::Node* const dep = Copy(*def);
+        AstNode* const dep = Copy(*def);
         if (!ContainsKey(defined, dep)) {
           candidates->erase(dep);
           defined.insert(dep);
@@ -524,7 +525,7 @@ void ParserState::BuildModel(const NodeSet& candidates,
           array_index = 0;
         }
       }
-      AST::Node* const var = IntCopy(i);
+      AstNode* const var = IntCopy(i);
       if (!ContainsKey(candidates, var)) {
         const bool active =
             !IsIntroduced(var) && !ContainsKey(computed_variables, var);
@@ -544,7 +545,7 @@ void ParserState::BuildModel(const NodeSet& candidates,
 
   array_index = 0;
   for (unsigned int i = 0; i < bool_variables_.size(); i++) {
-    AST::Node* const var = BoolCopy(i);
+    AstNode* const var = BoolCopy(i);
     VLOG(1) << var->DebugString() << " -> "
             << bool_variables_[i]->DebugString();
     if (!hadError) {
@@ -602,13 +603,13 @@ void ParserState::BuildModel(const NodeSet& candidates,
 
   for (unsigned int i = int_domain_constraints_.size(); i--;) {
     if (!hadError) {
-      AST::Node* const var_node = int_domain_constraints_[i].first;
+      AstNode* const var_node = int_domain_constraints_[i].first;
       IntVar* const var = model_->GetIntExpr(var_node)->Var();
-      AST::SetLit* const dom = int_domain_constraints_[i].second;
-      if (dom->interval && (dom->min > var->Min() || dom->max < var->Max())) {
+      AstSetLit* const dom = int_domain_constraints_[i].second;
+      if (dom->interval && (dom->imin > var->Min() || dom->imax < var->Max())) {
         VLOG(1) << "Reduce integer variable " << var->DebugString()
                 << " to " << dom->DebugString();
-        var->SetRange(dom->min, dom->max);
+        var->SetRange(dom->imin, dom->imax);
       } else if (!dom->interval) {
         VLOG(1) << "Reduce integer variable " << var->DebugString()
                 << " to " << dom->DebugString();
@@ -627,69 +628,69 @@ void ParserState::AnalyseAndCreateModel() {
   BuildModel(candidates, computed_variables);
 }
 
-AST::Node* ParserState::ArrayElement(string id, unsigned int offset) {
+AstNode* ParserState::ArrayElement(string id, unsigned int offset) {
   if (offset > 0) {
     vector<int64> tmp;
     if (int_var_array_map_.get(id, tmp) && offset<=tmp.size())
-      return new AST::IntVar(tmp[offset-1]);
+      return new AstIntVar(tmp[offset-1]);
     if (bool_var_array_map_.get(id, tmp) && offset<=tmp.size())
-      return new AST::BoolVar(tmp[offset-1]);
+      return new AstBoolVar(tmp[offset-1]);
     if (set_var_array_map_.get(id, tmp) && offset<=tmp.size())
-      return new AST::SetVar(tmp[offset-1]);
+      return new AstSetVar(tmp[offset-1]);
 
     if (int_value_array_map_.get(id, tmp) && offset<=tmp.size())
-      return new AST::IntLit(tmp[offset-1]);
+      return new AstIntLit(tmp[offset-1]);
     if (bool_value_array_map_.get(id, tmp) && offset<=tmp.size())
-      return new AST::BoolLit(tmp[offset-1]);
-    vector<AST::SetLit> tmpS;
+      return new AstBoolLit(tmp[offset-1]);
+    vector<AstSetLit> tmpS;
     if (set_value_array_map_.get(id, tmpS) && offset<=tmpS.size())
-      return new AST::SetLit(tmpS[offset-1]);
+      return new AstSetLit(tmpS[offset-1]);
   }
 
   LOG(ERROR) << "Error: array access to " << id << " invalid"
              << " in line no. " << yyget_lineno(yyscanner);
   hadError = true;
-  return new AST::IntVar(0); // keep things consistent
+  return new AstIntVar(0); // keep things consistent
 }
 
-AST::Node* ParserState::VarRefArg(string id, bool annotation) {
+AstNode* ParserState::VarRefArg(string id, bool annotation) {
   int64 tmp;
   if (int_var_map_.get(id, tmp))
-    return new AST::IntVar(tmp);
+    return new AstIntVar(tmp);
   if (bool_var_map_.get(id, tmp))
-    return new AST::BoolVar(tmp);
+    return new AstBoolVar(tmp);
   if (set_var_map_.get(id, tmp))
-    return new AST::SetVar(tmp);
+    return new AstSetVar(tmp);
   if (annotation)
-    return new AST::Atom(id);
+    return new AstAtom(id);
   LOG(ERROR) << "Error: undefined variable " << id
              << " in line no. " << yyget_lineno(yyscanner);
   hadError = true;
-  return new AST::IntVar(0); // keep things consistent
+  return new AstIntVar(0); // keep things consistent
 }
 
 void ParserState::AddIntVarDomainConstraint(int var_id,
-                                            AST::SetLit* const dom) {
+                                            AstSetLit* const dom) {
   if (dom != NULL) {
     VLOG(1) << "  - adding int var domain constraint (" << var_id
             << ") : " << dom->DebugString();
     int_domain_constraints_.push_back(
-        std::make_pair(new AST::IntVar(var_id), dom));
+        std::make_pair(new AstIntVar(var_id), dom));
   }
 }
 
 void ParserState::AddBoolVarDomainConstraint(int var_id,
-                                             AST::SetLit* const dom) {
+                                             AstSetLit* const dom) {
   if (dom != NULL) {
     VLOG(1) << "  - adding bool var domain constraint (" << var_id
             << ") : " << dom->DebugString();
     int_domain_constraints_.push_back(
-        std::make_pair(new AST::BoolVar(var_id), dom));
+        std::make_pair(new AstBoolVar(var_id), dom));
   }
 }
 
 void ParserState::AddSetVarDomainConstraint(int var_id,
-                                            AST::SetLit* const dom) {
+                                            AstSetLit* const dom) {
   if (dom != NULL) {
     VLOG(1) << "  - adding set var domain constraint (" << var_id
             << ") : " << dom->DebugString();
@@ -704,19 +705,19 @@ int ParserState::FindEndIntegerVariable(int index) {
   return index;
 }
 
-bool ParserState::IsBound(AST::Node* const node) const {
+bool ParserState::IsBound(AstNode* const node) const {
   return node->isInt() ||
       (node->isIntVar() && int_variables_[node->getIntVar()]->IsBound()) ||
       node->isBool() ||
       (node->isBoolVar() && bool_variables_[node->getBoolVar()]->IsBound());
 }
 
-bool ParserState::IsIntroduced(AST::Node* const node) const {
+bool ParserState::IsIntroduced(AstNode* const node) const {
   return (node->isIntVar() && int_variables_[node->getIntVar()]->introduced) ||
       (node->isBoolVar() && bool_variables_[node->getBoolVar()]->introduced);
 }
 
-bool ParserState::IsAlias(AST::Node* const node) const {
+bool ParserState::IsAlias(AstNode* const node) const {
   if (node->isIntVar()) {
     return int_variables_[node->getIntVar()]->alias;
   } else if (node->isBoolVar()) {
@@ -724,7 +725,7 @@ bool ParserState::IsAlias(AST::Node* const node) const {
   }
 }
 
-int ParserState::GetBound(AST::Node* const node) const {
+int ParserState::GetBound(AstNode* const node) const {
   if (node->isInt()) {
     return node->getInt();
   }
@@ -740,8 +741,8 @@ int ParserState::GetBound(AST::Node* const node) const {
   return 0;
 }
 
-bool ParserState::IsAllDifferent(AST::Node* const node) const {
-  AST::Array* const array_variables = node->getArray();
+bool ParserState::IsAllDifferent(AstNode* const node) const {
+  AstArray* const array_variables = node->getArray();
   const int size = array_variables->a.size();
   std::vector<int> variables(size);
   for (int i = 0; i < size; ++i) {
@@ -832,13 +833,13 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
                (ContainsKey(orphans_, Copy(spec->Arg(0))) ||
                 ContainsKey(orphans_, Copy(spec->Arg(1))))) {
       stored_constraints_.insert(spec);
-      AST::Node* const var0 = Copy(spec->Arg(0));
-      AST::Node* const var1 = Copy(spec->Arg(1));
+      AstNode* const var0 = Copy(spec->Arg(0));
+      AstNode* const var1 = Copy(spec->Arg(1));
       if (ContainsKey(orphans_, var0)) {
         IntVarSpec* const spec0 =
             int_variables_[FindEndIntegerVariable(var0->getIntVar())];
-        AST::Call* const call =
-            new AST::Call("defines_var", new AST::IntVar(var0->getIntVar()));
+        AstCall* const call =
+            new AstCall("defines_var", new AstIntVar(var0->getIntVar()));
         spec->AddAnnotation(call);
         VLOG(1) << "  - presolve:  aliasing " << var0->DebugString()
                 << " to " << var1->DebugString();
@@ -847,8 +848,8 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       } else if (ContainsKey(orphans_, var1)) {
         IntVarSpec* const spec1 =
             int_variables_[FindEndIntegerVariable(var1->getIntVar())];
-        AST::Call* const call =
-            new AST::Call("defines_var", new AST::IntVar(var1->getIntVar()));
+        AstCall* const call =
+            new AstCall("defines_var", new AstIntVar(var1->getIntVar()));
         spec->AddAnnotation(call);
         VLOG(1) << "  - presolve:  aliasing " << var1->DebugString()
                 << " to " << var0->DebugString();
@@ -886,12 +887,12 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
     if (spec->Arg(0)->isIntVar() && spec->Arg(1)->isSet()) {
       IntVarSpec* const var_spec =
           int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
-      AST::SetLit* const domain = spec->Arg(1)->getSet();
+      AstSetLit* const domain = spec->Arg(1)->getSet();
       VLOG(1) << "  - presolve:  merge " << var_spec->DebugString() << " with "
               << domain->DebugString();
       bool ok = false;
       if (domain->interval) {
-        ok = var_spec->MergeBounds(domain->min, domain->max);
+        ok = var_spec->MergeBounds(domain->imin, domain->imax);
       } else {
         ok = var_spec->MergeDomain(domain->s);
       }
@@ -906,7 +907,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       GetBound(spec->Arg(1)) == 1) {
     VLOG(1) << "  - presolve:  forcing array_bool_and to 1 on "
             << spec->DebugString();
-    AST::Array* const array_variables = spec->Arg(0)->getArray();
+    AstArray* const array_variables = spec->Arg(0)->getArray();
     const int size = array_variables->a.size();
     for (int i = 0; i < size; ++i) {
       if (array_variables->a[i]->isBoolVar()) {
@@ -922,7 +923,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       GetBound(spec->Arg(1)) == 0) {
     VLOG(1) << "  - presolve:  forcing array_bool_or to 0 on "
             << spec->DebugString();
-    AST::Array* const array_variables = spec->Arg(0)->getArray();
+    AstArray* const array_variables = spec->Arg(0)->getArray();
     const int size = array_variables->a.size();
     for (int i = 0; i < size; ++i) {
       if (array_variables->a[i]->isBoolVar()) {
@@ -985,7 +986,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
     return true;
   }
   if (id == "all_different_int" && !ContainsKey(stored_constraints_, spec)) {
-    AST::Array* const array_variables = spec->Arg(0)->getArray();
+    AstArray* const array_variables = spec->Arg(0)->getArray();
     const int size = array_variables->a.size();
     std::vector<int> variables(size);
     for (int i = 0; i < size; ++i) {
@@ -1009,7 +1010,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
             << " to array_var_int_position";
     spec->SetId("array_var_int_position");
     const int bound = GetBound(spec->Arg(2));
-    spec->ReplaceArg(2, new AST::IntLit(bound));
+    spec->ReplaceArg(2, new AstIntLit(bound));
     return true;
   }
   if (id == "int_abs" &&
@@ -1026,7 +1027,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         spec->Arg(1)->isInt() &&
         spec->Arg(1)->getInt() == 0) {
       VLOG(1) << "  - presolve:  remove abs() in " << spec->DebugString();
-      dynamic_cast<AST::IntVar*>(spec->Arg(0))->i =
+      dynamic_cast<AstIntVar*>(spec->Arg(0))->i =
           abs_map_[spec->Arg(0)->getIntVar()];
     }
   }
@@ -1036,7 +1037,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         spec->Arg(1)->isInt() &&
         spec->Arg(1)->getInt() == 0) {
       VLOG(1) << "  - presolve:  remove abs() in " << spec->DebugString();
-      dynamic_cast<AST::IntVar*>(spec->Arg(0))->i =
+      dynamic_cast<AstIntVar*>(spec->Arg(0))->i =
           abs_map_[spec->Arg(0)->getIntVar()];
     }
   }
@@ -1046,13 +1047,13 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         spec->Arg(1)->isInt() &&
         spec->Arg(1)->getInt() == 0) {
       VLOG(1) << "  - presolve:  remove abs() in " << spec->DebugString();
-      dynamic_cast<AST::IntVar*>(spec->Arg(0))->i =
+      dynamic_cast<AstIntVar*>(spec->Arg(0))->i =
           abs_map_[spec->Arg(0)->getIntVar()];
     }
   }
   if (id == "int_lin_le") {
-    AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-    AST::Node* const node_rhs = spec->Arg(2);
+    AstArray* const array_coefficients = spec->Arg(0)->getArray();
+    AstNode* const node_rhs = spec->Arg(2);
     const int64 rhs = node_rhs->getInt();
     const int size = array_coefficients->a.size();
     bool one_positive = false;
@@ -1075,8 +1076,8 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
     }
   }
   if (id == "int_lin_le_reif") {
-    AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-    AST::Node* const node_rhs = spec->Arg(2);
+    AstArray* const array_coefficients = spec->Arg(0)->getArray();
+    AstNode* const node_rhs = spec->Arg(2);
     const int64 rhs = node_rhs->getInt();
     const int size = array_coefficients->a.size();
     bool one_positive = false;
@@ -1098,8 +1099,8 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
     }
   }
   if (id == "int_lin_lt") {
-    AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-    AST::Node* const node_rhs = spec->Arg(2);
+    AstArray* const array_coefficients = spec->Arg(0)->getArray();
+    AstNode* const node_rhs = spec->Arg(2);
     const int64 rhs = node_rhs->getInt();
     const int size = array_coefficients->a.size();
     bool one_positive = false;
@@ -1122,8 +1123,8 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
     }
   }
   if (id == "int_lin_lt_reif") {
-    AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-    AST::Node* const node_rhs = spec->Arg(2);
+    AstArray* const array_coefficients = spec->Arg(0)->getArray();
+    AstNode* const node_rhs = spec->Arg(2);
     const int64 rhs = node_rhs->getInt();
     const int size = array_coefficients->a.size();
     bool one_positive = false;
@@ -1145,8 +1146,8 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
     }
   }
   if (id == "int_lin_eq") {
-    AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-    AST::Node* const node_rhs = spec->Arg(2);
+    AstArray* const array_coefficients = spec->Arg(0)->getArray();
+    AstNode* const node_rhs = spec->Arg(2);
     const int64 rhs = node_rhs->getInt();
     const int size = array_coefficients->a.size();
     bool one_positive = false;
@@ -1168,8 +1169,8 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
     }
   }
   if (id == "int_lin_eq_reif") {
-    AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-    AST::Node* const node_rhs = spec->Arg(2);
+    AstArray* const array_coefficients = spec->Arg(0)->getArray();
+    AstNode* const node_rhs = spec->Arg(2);
     const int64 rhs = node_rhs->getInt();
     const int size = array_coefficients->a.size();
     bool one_positive = false;
@@ -1223,8 +1224,8 @@ void ParserState::Strongify(int constraint_index) {
 }
 
 void ParserState::AddConstraint(const std::string& id,
-                                AST::Array* const args,
-                                AST::Node* const annotations) {
+                                AstArray* const args,
+                                AstNode* const annotations) {
   constraints_.push_back(
       new CtSpec(constraints_.size(), id, args, annotations));
 }
@@ -1238,11 +1239,11 @@ void ParserState::InitModel() {
     constraints_per_bool_variables_.resize(bool_variables_.size());
     int_args_.resize(int_variables_.size());
     for (int i = 0; i < int_args_.size(); ++i) {
-      int_args_[i] = new AST::IntVar(i);
+      int_args_[i] = new AstIntVar(i);
     }
     bool_args_.resize(bool_variables_.size());
     for (int i = 0; i < bool_args_.size(); ++i) {
-      bool_args_[i] = new AST::BoolVar(i);
+      bool_args_[i] = new AstBoolVar(i);
     }
   }
 }
@@ -1316,24 +1317,24 @@ void FlatZincModel::Parse(std::istream& is) {
   parsed_ok_ = !pp.hadError;
 }
 
-AST::Node* ArrayOutput(AST::Call* ann) {
-  AST::Array* a = NULL;
+AstNode* ArrayOutput(AstCall* ann) {
+  AstArray* a = NULL;
 
   if (ann->args->isArray()) {
     a = ann->args->getArray();
   } else {
-    a = new AST::Array(ann->args);
+    a = new AstArray(ann->args);
   }
 
   std::string out;
 
   out = StringPrintf("array%dd(", a->a.size());;
   for (unsigned int i = 0; i < a->a.size(); i++) {
-    AST::SetLit* s = a->a[i]->getSet();
+    AstSetLit* s = a->a[i]->getSet();
     if (s->empty()) {
       out += "{}, ";
     } else if (s->interval) {
-      out += StringPrintf("%d..%d, ", s->min, s->max);
+      out += StringPrintf("%d..%d, ", s->imin, s->imax);
     } else {
       out += "{";
       for (unsigned int j = 0; j < s->s.size(); j++) {
@@ -1350,6 +1351,6 @@ AST::Node* ArrayOutput(AST::Call* ann) {
     a->a[0] = NULL;
     delete a;
   }
-  return new AST::String(out);
+  return new AstString(out);
 }
 }  // namespace operations_research

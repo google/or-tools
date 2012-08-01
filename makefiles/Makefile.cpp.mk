@@ -570,10 +570,10 @@ $(SRC_DIR)/flatzinc/parser.tab.h: $(SRC_DIR)/flatzinc/parser.win.hh
 	copy $(SRC_DIR)\\flatzinc\\parser.win.hh $(SRC_DIR)\\flatzinc\\parser.tab.h
 
 else
-$(SRC_DIR)/flatzinc/lexer.yy.cc: $(SRC_DIR)/flatzinc/lexer.lxx $(SRC_DIR)/flatzinc/parser.tab.h $(SRC_DIR)/flatzinc/parser.h $(SRC_DIR)/flatzinc/spec.h $(SRC_DIR)/flatzinc/flatzinc.h
+$(SRC_DIR)/flatzinc/lexer.yy.cc: $(SRC_DIR)/flatzinc/lexer.lxx $(SRC_DIR)/flatzinc/parser.tab.h $(SRC_DIR)/flatzinc/parser.h $(SRC_DIR)/flatzinc/flatzinc.h
 	flex -o$(SRC_DIR)/flatzinc/lexer.yy.cc $(SRC_DIR)/flatzinc/lexer.lxx
 
-$(SRC_DIR)/flatzinc/parser.tab.cc: $(SRC_DIR)/flatzinc/parser.yxx $(SRC_DIR)/flatzinc/parser.h $(SRC_DIR)/flatzinc/spec.h $(SRC_DIR)/flatzinc/flatzinc.h
+$(SRC_DIR)/flatzinc/parser.tab.cc: $(SRC_DIR)/flatzinc/parser.yxx $(SRC_DIR)/flatzinc/parser.h $(SRC_DIR)/flatzinc/flatzinc.h
 	bison -t -o $(SRC_DIR)/flatzinc/parser.tab.cc -d $<
 	mv $(SRC_DIR)/flatzinc/parser.tab.hh $(SRC_DIR)/flatzinc/parser.tab.h
 
@@ -581,29 +581,29 @@ $(SRC_DIR)/flatzinc/parser.tab.h: $(SRC_DIR)/flatzinc/parser.tab.cc
 
 win_parser: $(SRC_DIR)/flatzinc/lexer.win.cc $(SRC_DIR)/flatzinc/parser.win.cc
 
-$(SRC_DIR)/flatzinc/lexer.win.cc: $(SRC_DIR)/flatzinc/lexer.lxx $(SRC_DIR)/flatzinc/parser.tab.h $(SRC_DIR)/flatzinc/parser.h $(SRC_DIR)/flatzinc/spec.h $(SRC_DIR)/flatzinc/flatzinc.h
+$(SRC_DIR)/flatzinc/lexer.win.cc: $(SRC_DIR)/flatzinc/lexer.lxx $(SRC_DIR)/flatzinc/parser.tab.h $(SRC_DIR)/flatzinc/parser.h $(SRC_DIR)/flatzinc/flatzinc.h
 	flex -nounistd -o$(SRC_DIR)/flatzinc/lexer.win.cc $(SRC_DIR)/flatzinc/lexer.lxx
 
-$(SRC_DIR)/flatzinc/parser.win.cc: $(SRC_DIR)/flatzinc/parser.yxx $(SRC_DIR)/flatzinc/parser.h $(SRC_DIR)/flatzinc/spec.h $(SRC_DIR)/flatzinc/flatzinc.h
+$(SRC_DIR)/flatzinc/parser.win.cc: $(SRC_DIR)/flatzinc/parser.yxx $(SRC_DIR)/flatzinc/parser.h $(SRC_DIR)/flatzinc/flatzinc.h
 	bison -t -o $(SRC_DIR)/flatzinc/parser.win.cc -d $<
 
 endif
 
-$(OBJ_DIR)/flatzinc.$O:$(SRC_DIR)/flatzinc/flatzinc.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/spec.h
+$(OBJ_DIR)/flatzinc.$O:$(SRC_DIR)/flatzinc/flatzinc.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sflatzinc.cc $(OBJ_OUT)flatzinc.$O
 $(OBJ_DIR)/lexer.yy.$O:$(SRC_DIR)/flatzinc/lexer.yy.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Slexer.yy.cc $(OBJ_OUT)lexer.yy.$O
-$(OBJ_DIR)/parser.$O:$(SRC_DIR)/flatzinc/parser.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h $(SRC_DIR)/flatzinc/spec.h
+$(OBJ_DIR)/parser.$O:$(SRC_DIR)/flatzinc/parser.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser.cc $(OBJ_OUT)parser.$O
 $(OBJ_DIR)/parser.tab.$O:$(SRC_DIR)/flatzinc/parser.tab.cc $(SRC_DIR)/flatzinc/flatzinc.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser.tab.cc $(OBJ_OUT)parser.tab.$O
-$(OBJ_DIR)/registry.$O:$(SRC_DIR)/flatzinc/registry.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/spec.h
+$(OBJ_DIR)/registry.$O:$(SRC_DIR)/flatzinc/registry.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sregistry.cc $(OBJ_OUT)registry.$O
 
 $(LIB_DIR)/$(LIBPREFIX)fz.$(LIBSUFFIX): $(FLATZINC_LIB_OBJS)
 	$(LINKCMD) $(LINKPREFIX)$(LIB_DIR)$S$(LIBPREFIX)fz.$(LIBSUFFIX) $(FLATZINC_LIB_OBJS)
 
-$(OBJ_DIR)/fz.$O:$(SRC_DIR)/flatzinc/fz.cc $(SRC_DIR)/flatzinc/flatzinc.h
+$(OBJ_DIR)/fz.$O:$(SRC_DIR)/flatzinc/fz.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz.cc $(OBJ_OUT)fz.$O
 
 $(BIN_DIR)/fz$E: $(FLATZINC_DEPS) $(OBJ_DIR)/fz.$O

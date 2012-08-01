@@ -170,11 +170,6 @@ typedef void* yyscan_t;
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 #endif
 
-#ifndef YY_TYPEDEF_YY_SIZE_T
-#define YY_TYPEDEF_YY_SIZE_T
-typedef size_t yy_size_t;
-#endif
-
 #define EOB_ACT_CONTINUE_SCAN 0
 #define EOB_ACT_END_OF_FILE 1
 #define EOB_ACT_LAST_MATCH 2
@@ -188,7 +183,7 @@ typedef size_t yy_size_t;
      */
     #define  YY_LESS_LINENO(n) \
             do { \
-                yy_size_t yyl;\
+                int yyl;\
                 for ( yyl = n; yyl < yyleng; ++yyl )\
                     if ( yytext[yyl] == '\n' )\
                         --yylineno;\
@@ -210,6 +205,11 @@ typedef size_t yy_size_t;
 
 #define unput(c) yyunput( c, yyg->yytext_ptr , yyscanner )
 
+#ifndef YY_TYPEDEF_YY_SIZE_T
+#define YY_TYPEDEF_YY_SIZE_T
+typedef size_t yy_size_t;
+#endif
+
 #ifndef YY_STRUCT_YY_BUFFER_STATE
 #define YY_STRUCT_YY_BUFFER_STATE
 struct yy_buffer_state
@@ -227,7 +227,7 @@ struct yy_buffer_state
 	/* Number of characters read into yy_ch_buf, not including EOB
 	 * characters.
 	 */
-	yy_size_t yy_n_chars;
+	int yy_n_chars;
 
 	/* Whether we "own" the buffer - i.e., we know we created it,
 	 * and can realloc() it to grow it, and should free() it to
@@ -306,7 +306,7 @@ static void yy_init_buffer (YY_BUFFER_STATE b,FILE *file ,yyscan_t yyscanner );
 
 YY_BUFFER_STATE yy_scan_buffer (char *base,yy_size_t size ,yyscan_t yyscanner );
 YY_BUFFER_STATE yy_scan_string (yyconst char *yy_str ,yyscan_t yyscanner );
-YY_BUFFER_STATE yy_scan_bytes (yyconst char *bytes,yy_size_t len ,yyscan_t yyscanner );
+YY_BUFFER_STATE yy_scan_bytes (yyconst char *bytes,int len ,yyscan_t yyscanner );
 
 void *yyalloc (yy_size_t ,yyscan_t yyscanner );
 void *yyrealloc (void *,yy_size_t ,yyscan_t yyscanner );
@@ -594,6 +594,8 @@ static yyconst flex_int32_t yy_rule_can_match_eol[57] =
 /*
  *  Main authors:
  *     Guido Tack <tack@gecode.org>
+ *  Modified:
+ *     Laurent Perron <lperron@google.com>
  *
  *  Copyright:
  *     Guido Tack, 2007
@@ -626,13 +628,14 @@ static yyconst flex_int32_t yy_rule_can_match_eol[57] =
  *  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-#line 44 "src/flatzinc/lexer.lxx"
+#line 46 "src/flatzinc/lexer.lxx"
 
 void yyerror(void*, const char*);
 #define yyerror(s) yyerror(yyextra, s)
 
 #include "base/strtoint.h"
 #include "flatzinc/parser.h"
+#include "flatzinc/parser.tab.h"
 
 const char* stringbuf;
 int stringbuflen;
@@ -641,7 +644,7 @@ int stringbufpos;
 int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 #define YY_INPUT(buf, result, max_size) \
   result = yy_input_proc(buf, max_size, yyscanner);
-#line 645 "src/flatzinc/lexer.win.cc"
+#line 648 "src/flatzinc/lexer.win.cc"
 
 #define INITIAL 0
 
@@ -670,8 +673,8 @@ struct yyguts_t
     size_t yy_buffer_stack_max; /**< capacity of stack. */
     YY_BUFFER_STATE * yy_buffer_stack; /**< Stack as an array. */
     char yy_hold_char;
-    yy_size_t yy_n_chars;
-    yy_size_t yyleng_r;
+    int yy_n_chars;
+    int yyleng_r;
     char *yy_c_buf_p;
     int yy_init;
     int yy_start;
@@ -724,7 +727,7 @@ FILE *yyget_out (yyscan_t yyscanner );
 
 void yyset_out  (FILE * out_str ,yyscan_t yyscanner );
 
-yy_size_t yyget_leng (yyscan_t yyscanner );
+int yyget_leng (yyscan_t yyscanner );
 
 char *yyget_text (yyscan_t yyscanner );
 
@@ -874,10 +877,10 @@ YY_DECL
 	register int yy_act;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
-#line 60 "src/flatzinc/lexer.lxx"
+#line 63 "src/flatzinc/lexer.lxx"
 
 
-#line 881 "src/flatzinc/lexer.win.cc"
+#line 884 "src/flatzinc/lexer.win.cc"
 
     yylval = yylval_param;
 
@@ -977,32 +980,32 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 62 "src/flatzinc/lexer.lxx"
+#line 65 "src/flatzinc/lexer.lxx"
 { /*yylineno++;*/ /* ignore EOL */ }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 63 "src/flatzinc/lexer.lxx"
+#line 66 "src/flatzinc/lexer.lxx"
 { /* ignore whitespace */ }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 64 "src/flatzinc/lexer.lxx"
+#line 67 "src/flatzinc/lexer.lxx"
 { /* ignore comments */ }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 66 "src/flatzinc/lexer.lxx"
+#line 69 "src/flatzinc/lexer.lxx"
 { yylval->iValue = 1; return FZ_BOOL_LIT; }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 67 "src/flatzinc/lexer.lxx"
+#line 70 "src/flatzinc/lexer.lxx"
 { yylval->iValue = 0; return FZ_BOOL_LIT; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 68 "src/flatzinc/lexer.lxx"
+#line 71 "src/flatzinc/lexer.lxx"
 {
     const int64 val = operations_research::atoi64(yytext);
     yylval->iValue = val;
@@ -1011,249 +1014,249 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 73 "src/flatzinc/lexer.lxx"
+#line 76 "src/flatzinc/lexer.lxx"
 {
     yylval->iValue = operations_research::atoi64(yytext); return FZ_INT_LIT;
   }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 76 "src/flatzinc/lexer.lxx"
+#line 79 "src/flatzinc/lexer.lxx"
 {
     yylval->iValue = operations_research::atoi64(yytext); return FZ_INT_LIT;
   }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 79 "src/flatzinc/lexer.lxx"
+#line 82 "src/flatzinc/lexer.lxx"
 { yylval->dValue = strtod(yytext,NULL);
                     return FZ_FLOAT_LIT; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 81 "src/flatzinc/lexer.lxx"
+#line 84 "src/flatzinc/lexer.lxx"
 { yylval->dValue = strtod(yytext,NULL);
                                    return FZ_FLOAT_LIT; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 83 "src/flatzinc/lexer.lxx"
+#line 86 "src/flatzinc/lexer.lxx"
 { yylval->dValue = strtod(yytext,NULL);
                            return FZ_FLOAT_LIT; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 85 "src/flatzinc/lexer.lxx"
+#line 88 "src/flatzinc/lexer.lxx"
 { return *yytext; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 86 "src/flatzinc/lexer.lxx"
+#line 89 "src/flatzinc/lexer.lxx"
 { return FZ_DOTDOT; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 87 "src/flatzinc/lexer.lxx"
+#line 90 "src/flatzinc/lexer.lxx"
 { return FZ_COLONCOLON; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 88 "src/flatzinc/lexer.lxx"
+#line 91 "src/flatzinc/lexer.lxx"
 { return FZ_ANNOTATION; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 89 "src/flatzinc/lexer.lxx"
+#line 92 "src/flatzinc/lexer.lxx"
 { return FZ_ANY; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 90 "src/flatzinc/lexer.lxx"
+#line 93 "src/flatzinc/lexer.lxx"
 { return FZ_ARRAY; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 91 "src/flatzinc/lexer.lxx"
+#line 94 "src/flatzinc/lexer.lxx"
 { return FZ_BOOL; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 92 "src/flatzinc/lexer.lxx"
+#line 95 "src/flatzinc/lexer.lxx"
 { return FZ_CASE; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 93 "src/flatzinc/lexer.lxx"
+#line 96 "src/flatzinc/lexer.lxx"
 { return FZ_CONSTRAINT; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 94 "src/flatzinc/lexer.lxx"
+#line 97 "src/flatzinc/lexer.lxx"
 { return FZ_DEFAULT; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 95 "src/flatzinc/lexer.lxx"
+#line 98 "src/flatzinc/lexer.lxx"
 { return FZ_ELSE; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 96 "src/flatzinc/lexer.lxx"
+#line 99 "src/flatzinc/lexer.lxx"
 { return FZ_ELSEIF; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 97 "src/flatzinc/lexer.lxx"
+#line 100 "src/flatzinc/lexer.lxx"
 { return FZ_ENDIF; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 98 "src/flatzinc/lexer.lxx"
+#line 101 "src/flatzinc/lexer.lxx"
 { return FZ_ENUM; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 99 "src/flatzinc/lexer.lxx"
+#line 102 "src/flatzinc/lexer.lxx"
 { return FZ_FLOAT; }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 100 "src/flatzinc/lexer.lxx"
+#line 103 "src/flatzinc/lexer.lxx"
 { return FZ_FUNCTION; }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 101 "src/flatzinc/lexer.lxx"
+#line 104 "src/flatzinc/lexer.lxx"
 { return FZ_IF; }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 102 "src/flatzinc/lexer.lxx"
+#line 105 "src/flatzinc/lexer.lxx"
 { return FZ_INCLUDE; }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 103 "src/flatzinc/lexer.lxx"
+#line 106 "src/flatzinc/lexer.lxx"
 { return FZ_INT; }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 104 "src/flatzinc/lexer.lxx"
+#line 107 "src/flatzinc/lexer.lxx"
 { return FZ_LET; }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 105 "src/flatzinc/lexer.lxx"
+#line 108 "src/flatzinc/lexer.lxx"
 { yylval->bValue = false; return FZ_MAXIMIZE; }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 106 "src/flatzinc/lexer.lxx"
+#line 109 "src/flatzinc/lexer.lxx"
 { yylval->bValue = true; return FZ_MINIMIZE; }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 107 "src/flatzinc/lexer.lxx"
+#line 110 "src/flatzinc/lexer.lxx"
 { return FZ_OF; }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 108 "src/flatzinc/lexer.lxx"
+#line 111 "src/flatzinc/lexer.lxx"
 { return FZ_SATISFY; }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 109 "src/flatzinc/lexer.lxx"
+#line 112 "src/flatzinc/lexer.lxx"
 { return FZ_OUTPUT; }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 110 "src/flatzinc/lexer.lxx"
+#line 113 "src/flatzinc/lexer.lxx"
 { yylval->bValue = false; return FZ_PAR; }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 111 "src/flatzinc/lexer.lxx"
+#line 114 "src/flatzinc/lexer.lxx"
 { return FZ_PREDICATE; }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 112 "src/flatzinc/lexer.lxx"
+#line 115 "src/flatzinc/lexer.lxx"
 { return FZ_RECORD; }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 113 "src/flatzinc/lexer.lxx"
+#line 116 "src/flatzinc/lexer.lxx"
 { return FZ_SET; }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 114 "src/flatzinc/lexer.lxx"
+#line 117 "src/flatzinc/lexer.lxx"
 { return FZ_SHOWCOND; }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 115 "src/flatzinc/lexer.lxx"
+#line 118 "src/flatzinc/lexer.lxx"
 { return FZ_SHOW; }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 116 "src/flatzinc/lexer.lxx"
+#line 119 "src/flatzinc/lexer.lxx"
 { return FZ_SOLVE; }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 117 "src/flatzinc/lexer.lxx"
+#line 120 "src/flatzinc/lexer.lxx"
 { return FZ_STRING; }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 118 "src/flatzinc/lexer.lxx"
+#line 121 "src/flatzinc/lexer.lxx"
 { return FZ_TEST; }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 119 "src/flatzinc/lexer.lxx"
+#line 122 "src/flatzinc/lexer.lxx"
 { return FZ_THEN; }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 120 "src/flatzinc/lexer.lxx"
+#line 123 "src/flatzinc/lexer.lxx"
 { return FZ_TUPLE; }
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 121 "src/flatzinc/lexer.lxx"
+#line 124 "src/flatzinc/lexer.lxx"
 { return FZ_TYPE; }
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 122 "src/flatzinc/lexer.lxx"
+#line 125 "src/flatzinc/lexer.lxx"
 { yylval->bValue = true; return FZ_VAR; }
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 123 "src/flatzinc/lexer.lxx"
+#line 126 "src/flatzinc/lexer.lxx"
 { return FZ_VARIANT_RECORD; }
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 124 "src/flatzinc/lexer.lxx"
+#line 127 "src/flatzinc/lexer.lxx"
 { return FZ_WHERE; }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 125 "src/flatzinc/lexer.lxx"
+#line 128 "src/flatzinc/lexer.lxx"
 { yylval->sValue = strdup(yytext); return FZ_ID; }
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 126 "src/flatzinc/lexer.lxx"
+#line 129 "src/flatzinc/lexer.lxx"
 { yylval->sValue = strdup(yytext); return FZ_U_ID; }
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 127 "src/flatzinc/lexer.lxx"
+#line 130 "src/flatzinc/lexer.lxx"
 {
                     yylval->sValue = strdup(yytext+1);
                     yylval->sValue[strlen(yytext)-2] = 0;
@@ -1261,15 +1264,15 @@ YY_RULE_SETUP
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 131 "src/flatzinc/lexer.lxx"
+#line 134 "src/flatzinc/lexer.lxx"
 { yyerror("Unknown character"); }
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 132 "src/flatzinc/lexer.lxx"
+#line 135 "src/flatzinc/lexer.lxx"
 ECHO;
 	YY_BREAK
-#line 1273 "src/flatzinc/lexer.win.cc"
+#line 1276 "src/flatzinc/lexer.win.cc"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1456,7 +1459,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 	else
 		{
-			yy_size_t num_to_read =
+			int num_to_read =
 			YY_CURRENT_BUFFER_LVALUE->yy_buf_size - number_to_move - 1;
 
 		while ( num_to_read <= 0 )
@@ -1470,7 +1473,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 			if ( b->yy_is_our_buffer )
 				{
-				yy_size_t new_size = b->yy_buf_size * 2;
+				int new_size = b->yy_buf_size * 2;
 
 				if ( new_size <= 0 )
 					b->yy_buf_size += b->yy_buf_size / 8;
@@ -1501,7 +1504,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 		/* Read in more data. */
 		YY_INPUT( (&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move]),
-			yyg->yy_n_chars, num_to_read );
+			yyg->yy_n_chars, (size_t) num_to_read );
 
 		YY_CURRENT_BUFFER_LVALUE->yy_n_chars = yyg->yy_n_chars;
 		}
@@ -1614,7 +1617,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 	if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
 		{ /* need to shift things up to make room */
 		/* +2 for EOB chars. */
-		register yy_size_t number_to_move = yyg->yy_n_chars + 2;
+		register int number_to_move = yyg->yy_n_chars + 2;
 		register char *dest = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[
 					YY_CURRENT_BUFFER_LVALUE->yy_buf_size + 2];
 		register char *source =
@@ -1668,7 +1671,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 		else
 			{ /* need more input */
-			yy_size_t offset = yyg->yy_c_buf_p - yyg->yytext_ptr;
+			int offset = yyg->yy_c_buf_p - yyg->yytext_ptr;
 			++yyg->yy_c_buf_p;
 
 			switch ( yy_get_next_buffer( yyscanner ) )
@@ -1692,7 +1695,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 				case EOB_ACT_END_OF_FILE:
 					{
 					if ( yywrap(yyscanner ) )
-						return 0;
+						return EOF;
 
 					if ( ! yyg->yy_did_buffer_switch_on_eof )
 						YY_NEW_FILE;
@@ -1959,7 +1962,7 @@ void yypop_buffer_state (yyscan_t yyscanner)
  */
 static void yyensure_buffer_stack (yyscan_t yyscanner)
 {
-	yy_size_t num_to_alloc;
+	int num_to_alloc;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
 	if (!yyg->yy_buffer_stack) {
@@ -2057,11 +2060,12 @@ YY_BUFFER_STATE yy_scan_string (yyconst char * yystr , yyscan_t yyscanner)
  * @param yyscanner The scanner object.
  * @return the newly allocated buffer state object.
  */
-YY_BUFFER_STATE yy_scan_bytes  (yyconst char * yybytes, yy_size_t  _yybytes_len , yyscan_t yyscanner)
+YY_BUFFER_STATE yy_scan_bytes  (yyconst char * yybytes, int  _yybytes_len , yyscan_t yyscanner)
 {
 	YY_BUFFER_STATE b;
 	char *buf;
-	yy_size_t n, i;
+	yy_size_t n;
+	int i;
     
 	/* Get memory for full buffer, including space for trailing EOB's. */
 	n = _yybytes_len + 2;
@@ -2171,7 +2175,7 @@ FILE *yyget_out  (yyscan_t yyscanner)
 /** Get the length of the current token.
  * @param yyscanner The scanner object.
  */
-yy_size_t yyget_leng  (yyscan_t yyscanner)
+int yyget_leng  (yyscan_t yyscanner)
 {
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
     return yyleng;
@@ -2446,7 +2450,7 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 132 "src/flatzinc/lexer.lxx"
+#line 135 "src/flatzinc/lexer.lxx"
 
 
 int yy_input_proc(char* buf, int size, yyscan_t yyscanner) {

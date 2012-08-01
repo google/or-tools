@@ -104,7 +104,7 @@ bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
 bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
                                const std::vector<IntVar*>& vars);
 
-extern bool HasDomainAnnotation(AST::Node* const annotations);
+extern bool HasDomainAnnotation(AstNode* const annotations);
 namespace {
 // Help
 
@@ -278,8 +278,8 @@ void p_int_lt(FlatZincModel* const model, CtSpec* const spec) {
 void p_int_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  AST::Node* const node_right = spec->Arg(1);
-  AST::Node* const node_boolvar = spec->Arg(2);
+  AstNode* const node_right = spec->Arg(1);
+  AstNode* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
         node_right->isInt() ?
@@ -302,8 +302,8 @@ void p_int_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
 void p_int_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  AST::Node* const node_right = spec->Arg(1);
-  AST::Node* const node_boolvar = spec->Arg(2);
+  AstNode* const node_right = spec->Arg(1);
+  AstNode* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
         node_right->isInt() ?
@@ -326,8 +326,8 @@ void p_int_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
 void p_int_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  AST::Node* const node_right = spec->Arg(1);
-  AST::Node* const node_boolvar = spec->Arg(2);
+  AstNode* const node_right = spec->Arg(1);
+  AstNode* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
         node_right->isInt() ?
@@ -350,8 +350,8 @@ void p_int_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
 void p_int_gt_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  AST::Node* const node_right = spec->Arg(1);
-  AST::Node* const node_boolvar = spec->Arg(2);
+  AstNode* const node_right = spec->Arg(1);
+  AstNode* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
         node_right->isInt() ?
@@ -374,8 +374,8 @@ void p_int_gt_reif(FlatZincModel* const model, CtSpec* const spec) {
 void p_int_le_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  AST::Node* const node_right = spec->Arg(1);
-  AST::Node* const node_boolvar = spec->Arg(2);
+  AstNode* const node_right = spec->Arg(1);
+  AstNode* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
         node_right->isInt() ?
@@ -398,8 +398,8 @@ void p_int_le_reif(FlatZincModel* const model, CtSpec* const spec) {
 void p_int_lt_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  AST::Node* const node_right = spec->Arg(1);
-  AST::Node* const node_boolvar = spec->Arg(2);
+  AstNode* const node_right = spec->Arg(1);
+  AstNode* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
         node_right->isInt() ?
@@ -422,9 +422,9 @@ void p_int_lt_reif(FlatZincModel* const model, CtSpec* const spec) {
 void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
   bool strong_propagation = HasDomainAnnotation(spec->annotations());
   Solver* const solver = model->solver();
-  AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
-  AST::Node* const node_rhs = spec->Arg(2);
+  AstArray* const array_coefficients = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
+  AstNode* const node_rhs = spec->Arg(2);
   const int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -432,7 +432,7 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
     std::vector<int64> coefficients;
     std::vector<IntVar*> variables;
     int64 constant = 0;
-    AST::Node* defined = NULL;
+    AstNode* defined = NULL;
     for (int i = 0; i < size; ++i) {
       if (array_variables->a[i]->isInt()) {
         constant += array_coefficients->a[i]->getInt() *
@@ -483,10 +483,10 @@ void p_int_lin_eq(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
-  AST::Node* const node_rhs = spec->Arg(2);
-  AST::Node* const node_boolvar = spec->Arg(3);
+  AstArray* const array_coefficients = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
+  AstNode* const node_rhs = spec->Arg(2);
+  AstNode* const node_boolvar = spec->Arg(3);
   int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -614,9 +614,9 @@ void p_int_lin_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_int_lin_ne(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
-  AST::Node* const node_rhs = spec->Arg(2);
+  AstArray* const array_coefficients = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
+  AstNode* const node_rhs = spec->Arg(2);
   const int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -637,10 +637,10 @@ void p_int_lin_ne(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_int_lin_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
-  AST::Node* const node_rhs = spec->Arg(2);
-  AST::Node* const node_boolvar = spec->Arg(3);
+  AstArray* const array_coefficients = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
+  AstNode* const node_rhs = spec->Arg(2);
+  AstNode* const node_boolvar = spec->Arg(3);
   const int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -661,9 +661,9 @@ void p_int_lin_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_int_lin_le(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
-  AST::Node* const node_rhs = spec->Arg(2);
+  AstArray* const array_coefficients = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
+  AstNode* const node_rhs = spec->Arg(2);
   const int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -682,10 +682,10 @@ void p_int_lin_le(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_int_lin_le_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
-  AST::Node* const node_rhs = spec->Arg(2);
-  AST::Node* const node_boolvar = spec->Arg(3);
+  AstArray* const array_coefficients = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
+  AstNode* const node_rhs = spec->Arg(2);
+  AstNode* const node_boolvar = spec->Arg(3);
   const int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -705,9 +705,9 @@ void p_int_lin_le_reif(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_int_lin_lt(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
-  AST::Node* const node_rhs = spec->Arg(2);
+  AstArray* const array_coefficients = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
+  AstNode* const node_rhs = spec->Arg(2);
   const int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -726,10 +726,10 @@ void p_int_lin_lt(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_int_lin_lt_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
-  AST::Node* const node_rhs = spec->Arg(2);
-  AST::Node* const node_boolvar = spec->Arg(3);
+  AstArray* const array_coefficients = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
+  AstNode* const node_rhs = spec->Arg(2);
+  AstNode* const node_boolvar = spec->Arg(3);
   const int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -750,9 +750,9 @@ void p_int_lin_lt_reif(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_int_lin_ge(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
-  AST::Node* const node_rhs = spec->Arg(2);
+  AstArray* const array_coefficients = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
+  AstNode* const node_rhs = spec->Arg(2);
   const int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -771,10 +771,10 @@ void p_int_lin_ge(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_int_lin_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
-  AST::Node* const node_rhs = spec->Arg(2);
-  AST::Node* const node_boolvar = spec->Arg(3);
+  AstArray* const array_coefficients = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
+  AstNode* const node_rhs = spec->Arg(2);
+  AstNode* const node_boolvar = spec->Arg(3);
   const int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -794,9 +794,9 @@ void p_int_lin_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_int_lin_gt(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
-  AST::Node* const node_rhs = spec->Arg(2);
+  AstArray* const array_coefficients = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
+  AstNode* const node_rhs = spec->Arg(2);
   const int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -815,10 +815,10 @@ void p_int_lin_gt(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_int_lin_gt_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_coefficients = spec->Arg(0)->getArray();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
-  AST::Node* const node_rhs = spec->Arg(2);
-  AST::Node* const node_boolvar = spec->Arg(3);
+  AstArray* const array_coefficients = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
+  AstNode* const node_rhs = spec->Arg(2);
+  AstNode* const node_boolvar = spec->Arg(3);
   const int64 rhs = node_rhs->getInt();
   const int size = array_coefficients->a.size();
   CHECK_EQ(size, array_variables->a.size());
@@ -1120,8 +1120,8 @@ void p_bool_lt(FlatZincModel* const model, CtSpec* const spec) {
 void p_bool_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  AST::Node* const node_right = spec->Arg(1);
-  AST::Node* const node_boolvar = spec->Arg(2);
+  AstNode* const node_right = spec->Arg(1);
+  AstNode* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
         node_right->isBool() ?
@@ -1149,8 +1149,8 @@ void p_bool_eq_reif(FlatZincModel* const model, CtSpec* const spec) {
 void p_bool_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  AST::Node* const node_right = spec->Arg(1);
-  AST::Node* const node_boolvar = spec->Arg(2);
+  AstNode* const node_right = spec->Arg(1);
+  AstNode* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
         node_right->isBool() ?
@@ -1178,8 +1178,8 @@ void p_bool_ne_reif(FlatZincModel* const model, CtSpec* const spec) {
 void p_bool_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  AST::Node* const node_right = spec->Arg(1);
-  AST::Node* const node_boolvar = spec->Arg(2);
+  AstNode* const node_right = spec->Arg(1);
+  AstNode* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
         node_right->isBool() ?
@@ -1208,8 +1208,8 @@ void p_bool_ge_reif(FlatZincModel* const model, CtSpec* const spec) {
 void p_bool_gt_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  AST::Node* const node_right = spec->Arg(1);
-  AST::Node* const node_boolvar = spec->Arg(2);
+  AstNode* const node_right = spec->Arg(1);
+  AstNode* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
         node_right->isBool() ?
@@ -1232,8 +1232,8 @@ void p_bool_gt_reif(FlatZincModel* const model, CtSpec* const spec) {
 void p_bool_le_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  AST::Node* const node_right = spec->Arg(1);
-  AST::Node* const node_boolvar = spec->Arg(2);
+  AstNode* const node_right = spec->Arg(1);
+  AstNode* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
         node_right->isBool() ?
@@ -1261,8 +1261,8 @@ void p_bool_le_reif(FlatZincModel* const model, CtSpec* const spec) {
 void p_bool_lt_reif(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const left = model->GetIntExpr(spec->Arg(0));
-  AST::Node* const node_right = spec->Arg(1);
-  AST::Node* const node_boolvar = spec->Arg(2);
+  AstNode* const node_right = spec->Arg(1);
+  AstNode* const node_boolvar = spec->Arg(2);
   if (spec->IsDefined(node_boolvar)) {
     IntVar* const boolvar =
         node_right->isBool() ?
@@ -1332,13 +1332,13 @@ void p_bool_or(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_variables = spec->Arg(0)->getArray();
-  AST::Node* const node_boolvar = spec->Arg(1);
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  AstNode* const node_boolvar = spec->Arg(1);
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables;
   hash_set<IntExpr*> added;
   for (int i = 0; i < size; ++i) {
-    AST::Node* const a = array_variables->a[i];
+    AstNode* const a = array_variables->a[i];
     IntVar* const to_add = model->GetIntExpr(a)->Var();
     if (!ContainsKey(added, to_add) && to_add->Max() != 0) {
       variables.push_back(to_add);
@@ -1388,13 +1388,13 @@ void p_array_bool_or(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_variables = spec->Arg(0)->getArray();
-  AST::Node* const node_boolvar = spec->Arg(1);
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  AstNode* const node_boolvar = spec->Arg(1);
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables;
   hash_set<IntExpr*> added;
   for (int i = 0; i < size; ++i) {
-    AST::Node* const a = array_variables->a[i];
+    AstNode* const a = array_variables->a[i];
     IntVar* const to_add = model->GetIntExpr(a)->Var();
     if (!ContainsKey(added, to_add)) {
       variables.push_back(to_add);
@@ -1499,7 +1499,7 @@ void p_array_int_element(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const index =  model->GetIntExpr(spec->Arg(0));
   IntVar* const shifted_index = solver->MakeSum(index, -1)->Var();
-  AST::Array* const array_coefficients = spec->Arg(1)->getArray();
+  AstArray* const array_coefficients = spec->Arg(1)->getArray();
   const int size = array_coefficients->a.size();
   std::vector<int64> coefficients(size);
   for (int i = 0; i < size; ++i) {
@@ -1524,7 +1524,7 @@ void p_array_var_int_element(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const index =  model->GetIntExpr(spec->Arg(0));
   IntVar* const shifted_index = solver->MakeSum(index, -1)->Var();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
@@ -1549,7 +1549,7 @@ void p_array_var_int_position(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const index =  model->GetIntExpr(spec->Arg(0));
   IntVar* const shifted_index = solver->MakeSum(index, -1)->Var();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
@@ -1567,7 +1567,7 @@ void p_array_bool_element(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const index = model->GetIntExpr(spec->Arg(0));
   IntVar* const shifted_index = solver->MakeSum(index, -1)->Var();
-  AST::Array* const array_coefficients = spec->Arg(1)->getArray();
+  AstArray* const array_coefficients = spec->Arg(1)->getArray();
   const int size = array_coefficients->a.size();
   std::vector<int> coefficients(size);
   for (int i = 0; i < size; ++i) {
@@ -1592,7 +1592,7 @@ void p_array_var_bool_element(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntExpr* const index =  model->GetIntExpr(spec->Arg(0));
   IntVar* const shifted_index = solver->MakeSum(index, -1)->Var();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
@@ -1667,16 +1667,16 @@ void p_int2int(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_int_in(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Node* const var_node = spec->Arg(0);
-  AST::Node* const domain_node = spec->Arg(1);
+  AstNode* const var_node = spec->Arg(0);
+  AstNode* const domain_node = spec->Arg(1);
   CHECK(var_node->isIntVar());
   CHECK(domain_node->isSet());
   IntVar* const var = model->GetIntExpr(var_node)->Var();
-  AST::SetLit* const domain = domain_node->getSet();
+  AstSetLit* const domain = domain_node->getSet();
   if (domain->interval) {
-    if (var->Min() < domain->min || var->Max() > domain->max) {
+    if (var->Min() < domain->imin || var->Max() > domain->imax) {
       Constraint* const ct =
-          solver->MakeBetweenCt(var, domain->min, domain->max);
+          solver->MakeBetweenCt(var, domain->imin, domain->imax);
       VLOG(1) << "  - posted " << ct->DebugString();
       solver->AddConstraint(ct);
     }
@@ -1706,7 +1706,7 @@ void p_abs(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_all_different_int(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
   int64 var_size = 0;
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
@@ -1721,7 +1721,7 @@ void p_all_different_int(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_count(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
@@ -1743,19 +1743,19 @@ void p_count(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_global_cardinality(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
     variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
   }
-  AST::Array* const array_coefficients = spec->Arg(1)->getArray();
+  AstArray* const array_coefficients = spec->Arg(1)->getArray();
   const int vsize = array_coefficients->a.size();
   std::vector<int64> values(vsize);
   for (int i = 0; i < vsize; ++i) {
     values[i] = array_coefficients->a[i]->getInt();
   }
-  AST::Array* const array_cards = spec->Arg(2)->getArray();
+  AstArray* const array_cards = spec->Arg(2)->getArray();
   const int csize = array_cards->a.size();
   std::vector<IntVar*> cards(csize);
   for (int i = 0; i < csize; ++i) {
@@ -1768,13 +1768,13 @@ void p_global_cardinality(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_global_cardinality_old(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
     variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
   }
-  AST::Array* const array_cards = spec->Arg(1)->getArray();
+  AstArray* const array_cards = spec->Arg(1)->getArray();
   const int csize = array_cards->a.size();
   std::vector<IntVar*> cards(csize);
   for (int i = 0; i < csize; ++i) {
@@ -1787,14 +1787,14 @@ void p_global_cardinality_old(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_table_int(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
     variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
   }
   IntTupleSet tuples(size);
-  AST::Array* const t = spec->Arg(1)->getArray();
+  AstArray* const t = spec->Arg(1)->getArray();
   const int t_size = t->a.size();
   DCHECK(t_size % size == 0);
   const int num_tuples = t_size / size;
@@ -1812,14 +1812,14 @@ void p_table_int(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_table_bool(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
     variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
   }
   IntTupleSet tuples(size);
-  AST::Array* const t = spec->Arg(1)->getArray();
+  AstArray* const t = spec->Arg(1)->getArray();
   const int t_size = t->a.size();
   DCHECK(t_size % size == 0);
   const int num_tuples = t_size / size;
@@ -1838,7 +1838,7 @@ void p_table_bool(FlatZincModel* const model, CtSpec* const spec) {
 void p_maximum_int(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const target = model->GetIntExpr(spec->Arg(0))->Var();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
@@ -1852,7 +1852,7 @@ void p_maximum_int(FlatZincModel* const model, CtSpec* const spec) {
 void p_minimum_int(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const target = model->GetIntExpr(spec->Arg(0))->Var();
-  AST::Array* const array_variables = spec->Arg(1)->getArray();
+  AstArray* const array_variables = spec->Arg(1)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
@@ -1865,13 +1865,13 @@ void p_minimum_int(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_sort(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
     variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
   }
-  AST::Array* const array_sorted = spec->Arg(1)->getArray();
+  AstArray* const array_sorted = spec->Arg(1)->getArray();
   const int csize = array_sorted->a.size();
   std::vector<IntVar*> sorted(csize);
   for (int i = 0; i < csize; ++i) {
@@ -1884,19 +1884,19 @@ void p_sort(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_fixed_cumulative(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> start_variables(size);
   for (int i = 0; i < size; ++i) {
     start_variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
   }
-  AST::Array* const array_durations = spec->Arg(1)->getArray();
+  AstArray* const array_durations = spec->Arg(1)->getArray();
   const int dsize = array_durations->a.size();
   std::vector<int64> durations(dsize);
   for (int i = 0; i < dsize; ++i) {
     durations[i] = array_durations->a[i]->getInt();
   }
-  AST::Array* const array_usages = spec->Arg(2)->getArray();
+  AstArray* const array_usages = spec->Arg(2)->getArray();
   const int usize = array_usages->a.size();
   std::vector<int64> usages(usize);
   for (int i = 0; i < usize; ++i) {
@@ -1918,19 +1918,19 @@ void p_fixed_cumulative(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_var_cumulative(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  AST::Array* const array_variables = spec->Arg(0)->getArray();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> start_variables(size);
   for (int i = 0; i < size; ++i) {
     start_variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
   }
-  AST::Array* const array_durations = spec->Arg(1)->getArray();
+  AstArray* const array_durations = spec->Arg(1)->getArray();
   const int dsize = array_durations->a.size();
   std::vector<int64> durations(dsize);
   for (int i = 0; i < dsize; ++i) {
     durations[i] = array_durations->a[i]->getInt();
   }
-  AST::Array* const array_usages = spec->Arg(2)->getArray();
+  AstArray* const array_usages = spec->Arg(2)->getArray();
   const int usize = array_usages->a.size();
   std::vector<int64> usages(usize);
   for (int i = 0; i < usize; ++i) {
@@ -1957,7 +1957,7 @@ void p_sliding_sum(FlatZincModel* const model, CtSpec* const spec) {
   const int low = spec->Arg(0)->getInt();
   const int up = spec->Arg(1)->getInt();
   const int seq = spec->Arg(2)->getInt();
-  AST::Array* const array_variables = spec->Arg(3)->getArray();
+  AstArray* const array_variables = spec->Arg(3)->getArray();
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
@@ -2066,10 +2066,10 @@ void p_set_in(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   IntVar* const var = model->GetIntExpr(spec->Arg(0))->Var();
   if (spec->Arg(1)->isSet()) {
-    AST::SetLit* const domain = spec->Arg(1)->getSet();
+    AstSetLit* const domain = spec->Arg(1)->getSet();
     if (domain->interval) {
       Constraint* const ct =
-          solver->MakeBetweenCt(var, domain->min, domain->max);
+          solver->MakeBetweenCt(var, domain->imin, domain->imax);
       VLOG(1) << "  - posted " << ct->DebugString();
       solver->AddConstraint(ct);
     } else {
@@ -2088,10 +2088,10 @@ void p_set_in_reif(FlatZincModel* const model, CtSpec* const spec) {
   IntVar* const var = model->GetIntExpr(spec->Arg(0))->Var();
   IntVar* const target = model->GetIntExpr(spec->Arg(2))->Var();
   if (spec->Arg(1)->isSet()) {
-    AST::SetLit* const domain = spec->Arg(1)->getSet();
+    AstSetLit* const domain = spec->Arg(1)->getSet();
     if (domain->interval) {
       Constraint* const ct =
-          solver->MakeIsBetweenCt(var, domain->min, domain->max, target);
+          solver->MakeIsBetweenCt(var, domain->imin, domain->imax, target);
       VLOG(1) << "  - posted " << ct->DebugString();
       solver->AddConstraint(ct);
     } else {
@@ -2119,7 +2119,7 @@ SetBuilder __set_Builder;
 void FlatZincModel::PostConstraint(CtSpec* const spec) {
   try {
     global_model_builder.Post(this, spec);
-  } catch (AST::TypeError& e) {
+  } catch (AstTypeError& e) {
     throw Error("Type error", e.what());
   }
 }

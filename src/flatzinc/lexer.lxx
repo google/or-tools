@@ -49,6 +49,7 @@ void yyerror(void*, const char*);
 
 #include "base/strtoint.h"
 #include "flatzinc/parser.h"
+#include "flatzinc/parser.tab.h"
 
 const char* stringbuf;
 int stringbuflen;

@@ -91,9 +91,9 @@ void FlatZincModel::NewIntVar(const std::string& name,
     if (!vs->HasDomain()) {
         var = solver_->MakeIntVar(kint32min, kint32max, name);
     } else {
-      AST::SetLit* const domain = vs->Domain();
+      AstSetLit* const domain = vs->Domain();
       if (domain->interval) {
-        var = solver_->MakeIntVar(domain->min, domain->max, name);
+        var = solver_->MakeIntVar(domain->imin, domain->imax, name);
       } else {
         var = solver_->MakeIntVar(domain->s, name);
       }
@@ -144,11 +144,11 @@ void FlatZincModel::NewSetVar(const std::string& name, SetVarSpec* vs) {
   if (vs->alias) {
     set_variables_[set_var_count++] = set_variables_[vs->i];
   } else {
-    AST::SetLit* const domain = vs->domain_.value();
+    AstSetLit* const domain = vs->domain_.value();
     if (domain->interval) {
       set_variables_[set_var_count++] =
           solver_->RevAlloc(
-              new SetVar(solver_.get(), domain->min, domain->max));
+              new SetVar(solver_.get(), domain->imin, domain->imax));
     } else {
       set_variables_[set_var_count++] =
           solver_->RevAlloc(new SetVar(solver_.get(), domain->s));
@@ -156,11 +156,11 @@ void FlatZincModel::NewSetVar(const std::string& name, SetVarSpec* vs) {
   }
 }
 
-void FlattenAnnotations(AST::Array* const annotations,
-                        std::vector<AST::Node*>& out) {
+void FlattenAnnotations(AstArray* const annotations,
+                        std::vector<AstNode*>& out) {
   for (unsigned int i=0; i < annotations->a.size(); i++) {
     if (annotations->a[i]->isCall("seq_search")) {
-      AST::Call* c = annotations->a[i]->getCall();
+      AstCall* c = annotations->a[i]->getCall();
       if (c->args->isArray()) {
         FlattenAnnotations(c->args->getArray(), out);
       } else {
@@ -208,9 +208,9 @@ void SortVariableByDegree(Solver* const solver,
 
 void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
                                            bool ignore_annotations) {
-  AST::Node* annotations = solve_annotations_;
+  AstNode* annotations = solve_annotations_;
   if (annotations && !ignore_annotations) {
-    std::vector<AST::Node*> flat_annotations;
+    std::vector<AstNode*> flat_annotations;
     if (annotations->isArray()) {
       FlattenAnnotations(annotations->getArray(), flat_annotations);
     } else {
@@ -226,9 +226,9 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
 
     for (unsigned int i = 0; i < flat_annotations.size(); i++) {
       try {
-        AST::Call *call = flat_annotations[i]->getCall("int_search");
-        AST::Array *args = call->getArgs(4);
-        AST::Array *vars = args->a[0]->getArray();
+        AstCall *call = flat_annotations[i]->getCall("int_search");
+        AstArray *args = call->getArgs(4);
+        AstArray *vars = args->a[0]->getArray();
         Solver::IntVarStrategy str = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
         std::vector<IntVar*> int_vars;
         for (int i = 0; i < vars->a.size(); ++i) {
@@ -277,12 +277,12 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
           vstr = Solver::SPLIT_UPPER_HALF;
         }
         builders_.push_back(solver_->MakePhase(int_vars, str, vstr));
-      } catch (AST::TypeError& e) {
+      } catch (AstTypeError& e) {
         (void) e;
         try {
-          AST::Call *call = flat_annotations[i]->getCall("bool_search");
-          AST::Array *args = call->getArgs(4);
-          AST::Array *vars = args->a[0]->getArray();
+          AstCall *call = flat_annotations[i]->getCall("bool_search");
+          AstArray *args = call->getArgs(4);
+          AstArray *vars = args->a[0]->getArray();
           std::vector<IntVar*> int_vars;
           for (int i = 0; i < vars->a.size(); ++i) {
             if (vars->a[i]->isBoolVar()) {
@@ -293,14 +293,14 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
           builders_.push_back(solver_->MakePhase(int_vars,
                                                 Solver::CHOOSE_FIRST_UNBOUND,
                                                 Solver::ASSIGN_MAX_VALUE));
-        } catch (AST::TypeError& e) {
+        } catch (AstTypeError& e) {
           (void) e;
           try {
-            AST::Call *call = flat_annotations[i]->getCall("set_search");
-            AST::Array *args = call->getArgs(4);
-            AST::Array *vars = args->a[0]->getArray();
+            AstCall *call = flat_annotations[i]->getCall("set_search");
+            AstArray *args = call->getArgs(4);
+            AstArray *vars = args->a[0]->getArray();
             LOG(FATAL) << "Search on set variables not supported";
-          } catch (AST::TypeError& e) {
+          } catch (AstTypeError& e) {
             (void) e;
             if (!ignore_unknown) {
               LOG(WARNING) << "Warning, ignored search annotation: "
@@ -327,24 +327,24 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
   }
 }
 
-void FlatZincModel::Satisfy(AST::Array* const annotations) {
+void FlatZincModel::Satisfy(AstArray* const annotations) {
   method_ = SAT;
   solve_annotations_ = annotations;
 }
 
-void FlatZincModel::Minimize(int var, AST::Array* const annotations) {
+void FlatZincModel::Minimize(int var, AstArray* const annotations) {
   method_ = MIN;
   objective_variable_ = var;
   solve_annotations_ = annotations;
   // Branch on optimization variable to ensure that it is given a value.
-  AST::Array* args = new AST::Array(4);
-  args->a[0] = new AST::Array(new AST::IntVar(objective_variable_));
-  args->a[1] = new AST::Atom("input_order");
-  args->a[2] = new AST::Atom("indomain_min");
-  args->a[3] = new AST::Atom("complete");
-  AST::Call* c = new AST::Call("int_search", args);
+  AstArray* args = new AstArray(4);
+  args->a[0] = new AstArray(new AstIntVar(objective_variable_));
+  args->a[1] = new AstAtom("input_order");
+  args->a[2] = new AstAtom("indomain_min");
+  args->a[3] = new AstAtom("complete");
+  AstCall* c = new AstCall("int_search", args);
   if (!solve_annotations_) {
-    solve_annotations_ = new AST::Array(c);
+    solve_annotations_ = new AstArray(c);
   } else {
     solve_annotations_->a.push_back(c);
   }
@@ -352,19 +352,19 @@ void FlatZincModel::Minimize(int var, AST::Array* const annotations) {
       solver_->MakeMinimize(integer_variables_[objective_variable_]->Var(), 1);
 }
 
-void FlatZincModel::Maximize(int var, AST::Array* const annotations) {
+void FlatZincModel::Maximize(int var, AstArray* const annotations) {
   method_ = MAX;
   objective_variable_ = var;
   solve_annotations_ = annotations;
   // Branch on optimization variable to ensure that it is given a value.
-  AST::Array* args = new AST::Array(4);
-  args->a[0] = new AST::Array(new AST::IntVar(objective_variable_));
-  args->a[1] = new AST::Atom("input_order");
-  args->a[2] = new AST::Atom("indomain_min");
-  args->a[3] = new AST::Atom("complete");
-  AST::Call* c = new AST::Call("int_search", args);
+  AstArray* args = new AstArray(4);
+  args->a[0] = new AstArray(new AstIntVar(objective_variable_));
+  args->a[1] = new AstAtom("input_order");
+  args->a[2] = new AstAtom("indomain_min");
+  args->a[3] = new AstAtom("complete");
+  AstCall* c = new AstCall("int_search", args);
   if (!solve_annotations_) {
-    solve_annotations_ = new AST::Array(c);
+    solve_annotations_ = new AstArray(c);
   } else {
     solve_annotations_->a.push_back(c);
   }
@@ -549,15 +549,15 @@ void FlatZincModel::Solve(int solve_frequency,
             << ", " << (free_search_ ? "free" : "defined") << std::endl;
 }
 
-void FlatZincModel::InitOutput(AST::Array* const output) {
+void FlatZincModel::InitOutput(AstArray* const output) {
   output_ = output;
 }
 
-string FlatZincModel::DebugString(AST::Node* const ai) const {
+string FlatZincModel::DebugString(AstNode* const ai) const {
   string output;
   int k;
   if (ai->isArray()) {
-    AST::Array* aia = ai->getArray();
+    AstArray* aia = ai->getArray();
     int size = aia->a.size();
     output += "[";
     for (int j = 0; j < size; j++) {
@@ -581,9 +581,9 @@ string FlatZincModel::DebugString(AST::Node* const ai) const {
   } else if (ai->isBool()) {
     output += (ai->getBool() ? "true" : "false");
   } else if (ai->isSet()) {
-    AST::SetLit* s = ai->getSet();
+    AstSetLit* s = ai->getSet();
     if (s->interval) {
-      output += StringPrintf("%d..%d", s->min, s->max);
+      output += StringPrintf("%d..%d", s->imin, s->imax);
     } else {
       output += "{";
       for (unsigned int i=0; i<s->s.size(); i++) {
@@ -614,7 +614,7 @@ string FlatZincModel::DebugString(AST::Node* const ai) const {
   return output;
 }
 
-IntExpr* FlatZincModel::GetIntExpr(AST::Node* const node) {
+IntExpr* FlatZincModel::GetIntExpr(AstNode* const node) {
   if (node->isIntVar()) {
     return integer_variables_[node->getIntVar()];
   } else if (node->isBoolVar()) {

@@ -44,6 +44,7 @@
 #define YYLEX_PARAM static_cast<ParserState*>(parm)->yyscanner
 #include "flatzinc/flatzinc.h"
 #include "flatzinc/parser.h"
+#include "flatzinc/parser.tab.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -86,15 +87,15 @@
   bool bValue;
   double dValue;
   std::vector<int64>* setValue;
-  operations_research::AST::SetLit* setLit;
+  operations_research::AstSetLit* setLit;
   std::vector<double>* floatSetValue;
-  std::vector<operations_research::AST::SetLit>* setValueList;
-  operations_research::Option<operations_research::AST::SetLit*> oSet;
+  std::vector<operations_research::AstSetLit>* setValueList;
+  operations_research::Option<operations_research::AstSetLit*> oSet;
   operations_research::IntVarSpec* varIntSpec;
   operations_research::BoolVarSpec* varBoolSpec;
   operations_research::SetVarSpec* varSetSpec;
   operations_research::FloatVarSpec* varFloatSpec;
-  operations_research::Option<operations_research::AST::Node*> oArg;
+  operations_research::Option<operations_research::AstNode*> oArg;
   std::vector<operations_research::IntVarSpec*>* varIntSpecVec;
   std::vector<operations_research::BoolVarSpec*>* varBoolSpecVec;
   std::vector<operations_research::SetVarSpec*>* varSetSpecVec;
@@ -103,8 +104,8 @@
   operations_research::Option<std::vector<operations_research::BoolVarSpec*>*> oBoolVarSpecVec;
   operations_research::Option<std::vector<operations_research::SetVarSpec*>*> oSetVarSpecVec;
   operations_research::Option<std::vector<operations_research::FloatVarSpec*>*> oFloatVarSpecVec;
-  operations_research::AST::Node* arg;
-  operations_research::AST::Array* argVec;
+  operations_research::AstNode* arg;
+  operations_research::AstArray* argVec;
 }
 
 %error-verbose
@@ -276,10 +277,10 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   bool introduced = $5->hasAtom("var_is_introduced");
   pp->int_var_map_.put($4, pp->int_variables_.size());
   if (print) {
-    pp->output(std::string($4), new AST::IntVar(pp->int_variables_.size()));
+    pp->output(std::string($4), new AstIntVar(pp->int_variables_.size()));
   }
   if ($6.defined()) {
-    AST::Node* arg = $6.value();
+    AstNode* arg = $6.value();
     if (arg->isInt()) {
       pp->int_variables_.push_back(
           new IntVarSpec($4, arg->getInt(), introduced));
@@ -303,10 +304,10 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   bool introduced = $5->hasAtom("var_is_introduced");
   pp->bool_var_map_.put($4, pp->bool_variables_.size());
   if (print) {
-    pp->output(std::string($4), new AST::BoolVar(pp->bool_variables_.size()));
+    pp->output(std::string($4), new AstBoolVar(pp->bool_variables_.size()));
   }
   if ($6.defined()) {
-    AST::Node* arg = $6.value();
+    AstNode* arg = $6.value();
     if (arg->isBool()) {
       pp->bool_variables_.push_back(
           new BoolVarSpec($4, arg->getBool(),introduced));
@@ -337,10 +338,10 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
   bool introduced = $7->hasAtom("var_is_introduced");
   pp->set_var_map_.put($6, pp->set_variables_.size());
   if (print) {
-    pp->output(std::string($6), new AST::SetVar(pp->set_variables_.size()));
+    pp->output(std::string($6), new AstSetVar(pp->set_variables_.size()));
   }
   if ($8.defined()) {
-    AST::Node* arg = $8.value();
+    AstNode* arg = $8.value();
     if (arg->isSet()) {
       pp->set_variables_.push_back(
           new SetVarSpec($6, arg->getSet(),introduced));
@@ -378,7 +379,7 @@ FZ_VAR int_ti_expr_tail ':' var_par_id annotations non_array_expr_opt
 {
   ParserState* const pp = static_cast<ParserState*>(parm);
   yyassert(pp, $8->isSet(), "Invalid set initializer.");
-  AST::SetLit* set = $8->getSet();
+  AstSetLit* set = $8->getSet();
   pp->set_map_.put($5, *set);
   delete set;
   delete $6; free($5);
@@ -403,7 +404,7 @@ var_par_id annotations vardecl_int_var_array_init
               vars[i] = ivsv->i;
               if ($9.defined()) {
                 pp->AddIntVarDomainConstraint(ivsv->i,
-                                              new AST::SetLit(*$9.value()));
+                                              new AstSetLit(*$9.value()));
               }
             } else {
               vars[i] = pp->int_variables_.size();
@@ -419,8 +420,8 @@ var_par_id annotations vardecl_int_var_array_init
           for (int i = 0; i < $5 - 1; i++) {
             vars[i] = pp->int_variables_.size();
             if ($9.defined()) {
-              Option<AST::SetLit*> copy =
-                  Option<AST::SetLit*>::some($9.value()->Copy());
+              Option<AstSetLit*> copy =
+                  Option<AstSetLit*>::some($9.value()->Copy());
               pp->int_variables_.push_back(
                   new IntVarSpec(arrayname, copy, false, true));
               // new IntVarSpec(arrayname, copy, !print, true));
@@ -438,13 +439,13 @@ var_par_id annotations vardecl_int_var_array_init
       }
     }
     if (print) {
-      AST::Array* a = new AST::Array();
+      AstArray* a = new AstArray();
       a->a.push_back(ArrayOutput($12->getCall("output_array")));
-      AST::Array* output = new AST::Array();
+      AstArray* output = new AstArray();
       for (int i=0; i<$5; i++)
-        output->a.push_back(new AST::IntVar(vars[i]));
+        output->a.push_back(new AstIntVar(vars[i]));
       a->a.push_back(output);
-      a->a.push_back(new AST::String(")"));
+      a->a.push_back(new AstString(")"));
       pp->output(std::string($11), a);
     }
     pp->int_var_array_map_.put($11, vars);
@@ -474,7 +475,7 @@ var_par_id annotations vardecl_bool_var_array_init
             pp->bool_variables_.push_back((*vsv)[i]);
           }
           if (!pp->hadError && $9.defined()) {
-            AST::SetLit* const domain = new AST::SetLit(*$9.value());
+            AstSetLit* const domain = new AstSetLit(*$9.value());
             pp->AddBoolVarDomainConstraint(vars[i], domain);
           }
         }
@@ -488,13 +489,13 @@ var_par_id annotations vardecl_bool_var_array_init
       }
     }
     if (print) {
-      AST::Array* a = new AST::Array();
+      AstArray* a = new AstArray();
       a->a.push_back(ArrayOutput($12->getCall("output_array")));
-      AST::Array* output = new AST::Array();
+      AstArray* output = new AstArray();
       for (int i=0; i<$5; i++)
-        output->a.push_back(new AST::BoolVar(vars[i]));
+        output->a.push_back(new AstBoolVar(vars[i]));
       a->a.push_back(output);
-      a->a.push_back(new AST::String(")"));
+      a->a.push_back(new AstString(")"));
       pp->output(std::string($11), a);
     }
     pp->bool_var_array_map_.put($11, vars);
@@ -531,7 +532,7 @@ var_par_id annotations vardecl_set_var_array_init
             pp->set_variables_.push_back((*vsv)[i]);
           }
           if (!pp->hadError && $11.defined()) {
-            AST::SetLit* const domain = new AST::SetLit(*$11.value());
+            AstSetLit* const domain = new AstSetLit(*$11.value());
             pp->AddSetVarDomainConstraint(vars[i], domain);
           }
         }
@@ -550,13 +551,13 @@ var_par_id annotations vardecl_set_var_array_init
       }
     }
     if (print) {
-      AST::Array* a = new AST::Array();
+      AstArray* a = new AstArray();
       a->a.push_back(ArrayOutput($14->getCall("output_array")));
-      AST::Array* output = new AST::Array();
+      AstArray* output = new AstArray();
       for (int i=0; i<$5; i++)
-        output->a.push_back(new AST::SetVar(vars[i]));
+        output->a.push_back(new AstSetVar(vars[i]));
       a->a.push_back(output);
-      a->a.push_back(new AST::String(")"));
+      a->a.push_back(new AstString(")"));
       pp->output(std::string($13), a);
     }
     pp->set_var_array_map_.put($13, vars);
@@ -901,17 +902,17 @@ FZ_SOLVE annotations FZ_SATISFY
 
 int_ti_expr_tail :
 FZ_INT
-{ $$ = Option<AST::SetLit*>::none(); }
+{ $$ = Option<AstSetLit*>::none(); }
 | '{' int_list '}'
-{ $$ = Option<AST::SetLit*>::some(new AST::SetLit(*$2)); }
+{ $$ = Option<AstSetLit*>::some(new AstSetLit(*$2)); }
 | FZ_INT_LIT FZ_DOTDOT FZ_INT_LIT
 {
-  $$ = Option<AST::SetLit*>::some(new AST::SetLit($1, $3));
+  $$ = Option<AstSetLit*>::some(new AstSetLit($1, $3));
 }
 
 bool_ti_expr_tail :
 FZ_BOOL
-{ $$ = Option<AST::SetLit*>::none(); }
+{ $$ = Option<AstSetLit*>::none(); }
 | '{' bool_list_head list_tail '}'
 { bool haveTrue = false;
   bool haveFalse = false;
@@ -920,8 +921,8 @@ FZ_BOOL
     haveFalse |= ((*$2)[i] == 0);
   }
   delete $2;
-  $$ = Option<AST::SetLit*>::some(
-      new AST::SetLit(!haveFalse,haveTrue));
+  $$ = Option<AstSetLit*>::some(
+      new AstSetLit(!haveFalse,haveTrue));
 }
 
 float_ti_expr_tail :
@@ -934,9 +935,9 @@ FZ_FLOAT
 
 set_literal :
 '{' int_list '}'
-{ $$ = new AST::SetLit(*$2); }
+{ $$ = new AstSetLit(*$2); }
 | FZ_INT_LIT FZ_DOTDOT FZ_INT_LIT
-{ $$ = new AST::SetLit($1, $3); }
+{ $$ = new AstSetLit($1, $3); }
 
 /* list containing only primitive literals */
 
@@ -978,13 +979,13 @@ FZ_FLOAT_LIT
 
 set_literal_list :
 /* empty */
-{ $$ = new vector<AST::SetLit>(0); }
+{ $$ = new vector<AstSetLit>(0); }
 | set_literal_list_head list_tail
 { $$ = $1; }
 
 set_literal_list_head :
 set_literal
-{ $$ = new vector<AST::SetLit>(1); (*$$)[0] = *$1; delete $1; }
+{ $$ = new vector<AstSetLit>(1); (*$$)[0] = *$1; delete $1; }
 | set_literal_list_head ',' set_literal
 { $$ = $1; $$->push_back(*$3); delete $3; }
 
@@ -994,7 +995,7 @@ set_literal
 
 flat_expr_list :
 flat_expr
-{ $$ = new AST::Array($1); }
+{ $$ = new AstArray($1); }
 | flat_expr_list ',' flat_expr
 { $$ = $1; $$->append($3); }
 
@@ -1006,17 +1007,17 @@ non_array_expr
 
 non_array_expr_opt :
 /* empty */
-{ $$ = Option<AST::Node*>::none(); }
+{ $$ = Option<AstNode*>::none(); }
 | '=' non_array_expr
-{ $$ = Option<AST::Node*>::some($2); }
+{ $$ = Option<AstNode*>::some($2); }
 
 non_array_expr :
 FZ_BOOL_LIT
-{ $$ = new AST::BoolLit($1); }
+{ $$ = new AstBoolLit($1); }
 | FZ_INT_LIT
-{ $$ = new AST::IntLit($1); }
+{ $$ = new AstIntLit($1); }
 | FZ_FLOAT_LIT
-{ $$ = new AST::FloatLit($1); }
+{ $$ = new AstFloatLit($1); }
 | set_literal
 { $$ = $1; }
 | var_par_id /* variable, possibly array */
@@ -1024,44 +1025,44 @@ FZ_BOOL_LIT
   vector<int64> as;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->int_var_array_map_.get($1, as)) {
-    AST::Array* ia = new AST::Array(as.size());
+    AstArray* ia = new AstArray(as.size());
     for (int i=as.size(); i--;)
-      ia->a[i] = new AST::IntVar(as[i]);
+      ia->a[i] = new AstIntVar(as[i]);
     $$ = ia;
   } else if (pp->bool_var_array_map_.get($1, as)) {
-    AST::Array* ia = new AST::Array(as.size());
+    AstArray* ia = new AstArray(as.size());
     for (int i=as.size(); i--;)
-      ia->a[i] = new AST::BoolVar(as[i]);
+      ia->a[i] = new AstBoolVar(as[i]);
     $$ = ia;
   } else if (pp->set_var_array_map_.get($1, as)) {
-    AST::Array* ia = new AST::Array(as.size());
+    AstArray* ia = new AstArray(as.size());
     for (int i=as.size(); i--;)
-      ia->a[i] = new AST::SetVar(as[i]);
+      ia->a[i] = new AstSetVar(as[i]);
     $$ = ia;
   } else {
     std::vector<int64> is;
-    std::vector<AST::SetLit> isS;
+    std::vector<AstSetLit> isS;
     int64 ival = 0;
     bool bval = false;
     if (pp->int_value_array_map_.get($1, is)) {
-      AST::Array* v = new AST::Array(is.size());
+      AstArray* v = new AstArray(is.size());
       for (int i=is.size(); i--;)
-        v->a[i] = new AST::IntLit(is[i]);
+        v->a[i] = new AstIntLit(is[i]);
       $$ = v;
     } else if (pp->bool_value_array_map_.get($1, is)) {
-      AST::Array* v = new AST::Array(is.size());
+      AstArray* v = new AstArray(is.size());
       for (int i=is.size(); i--;)
-        v->a[i] = new AST::BoolLit(is[i]);
+        v->a[i] = new AstBoolLit(is[i]);
       $$ = v;
     } else if (pp->set_value_array_map_.get($1, isS)) {
-      AST::Array* v = new AST::Array(isS.size());
+      AstArray* v = new AstArray(isS.size());
       for (int i=isS.size(); i--;)
-        v->a[i] = new AST::SetLit(isS[i]);
+        v->a[i] = new AstSetLit(isS[i]);
       $$ = v;
     } else if (pp->int_map_.get($1, ival)) {
-      $$ = new AST::IntLit(ival);
+      $$ = new AstIntLit(ival);
     } else if (pp->bool_map_.get($1, bval)) {
-      $$ = new AST::BoolLit(bval);
+      $$ = new AstBoolLit(bval);
     } else {
       $$ = pp->VarRefArg($1, false);
     }
@@ -1076,19 +1077,19 @@ FZ_BOOL_LIT
   if (!pp->hadError)
     $$ = static_cast<ParserState*>(parm)->ArrayElement($1, i);
   else
-    $$ = new AST::IntLit(0); // keep things consistent
+    $$ = new AstIntLit(0); // keep things consistent
   free($1); delete $3;
 }
 
 non_array_expr_list :
 /* empty */
-{ $$ = new AST::Array(0); }
+{ $$ = new AstArray(0); }
 | non_array_expr_list_head list_tail
 { $$ = $1; }
 
 non_array_expr_list_head :
 non_array_expr
-{ $$ = new AST::Array($1); }
+{ $$ = new AstArray($1); }
 | non_array_expr_list_head ',' non_array_expr
 { $$ = $1; $$->append($3); }
 
@@ -1144,21 +1145,21 @@ annotations :
 
 annotations_head :
 FZ_COLONCOLON annotation
-{ $$ = new AST::Array($2); }
+{ $$ = new AstArray($2); }
 | annotations_head FZ_COLONCOLON annotation
 { $$ = $1; $$->append($3); }
 
 annotation :
 FZ_ID '(' annotation_list ')'
 {
-  $$ = new AST::Call($1, AST::ExtractSingleton($3)); free($1);
+  $$ = new AstCall($1, AstExtractSingleton($3)); free($1);
 }
 | annotation_expr
 { $$ = $1; }
 
 annotation_list:
 annotation
-{ $$ = new AST::Array($1); }
+{ $$ = new AstArray($1); }
 | annotation_list ',' annotation
 { $$ = $1; $$->append($3); }
 
@@ -1170,11 +1171,11 @@ ann_non_array_expr
 
 ann_non_array_expr :
 FZ_BOOL_LIT
-{ $$ = new AST::BoolLit($1); }
+{ $$ = new AstBoolLit($1); }
 | FZ_INT_LIT
-{ $$ = new AST::IntLit($1); }
+{ $$ = new AstIntLit($1); }
 | FZ_FLOAT_LIT
-{ $$ = new AST::FloatLit($1); }
+{ $$ = new AstFloatLit($1); }
 | set_literal
 { $$ = $1; }
 | var_par_id /* variable, possibly array */
@@ -1182,21 +1183,21 @@ FZ_BOOL_LIT
   vector<int64> as;
   ParserState* const pp = static_cast<ParserState*>(parm);
   if (pp->int_var_array_map_.get($1, as)) {
-    AST::Array* const ia = new AST::Array(as.size());
+    AstArray* const ia = new AstArray(as.size());
     for (int i = as.size(); i--;) {
-      ia->a[i] = new AST::IntVar(as[i]);
+      ia->a[i] = new AstIntVar(as[i]);
     }
     $$ = ia;
   } else if (pp->bool_var_array_map_.get($1, as)) {
-    AST::Array* const ia = new AST::Array(as.size());
+    AstArray* const ia = new AstArray(as.size());
     for (int i=as.size(); i--;) {
-      ia->a[i] = new AST::BoolVar(as[i]);
+      ia->a[i] = new AstBoolVar(as[i]);
     }
     $$ = ia;
   } else if (pp->set_var_array_map_.get($1, as)) {
-    AST::Array* const ia = new AST::Array(as.size());
+    AstArray* const ia = new AstArray(as.size());
     for (int i = as.size(); i--;) {
-      ia->a[i] = new AST::SetVar(as[i]);
+      ia->a[i] = new AstSetVar(as[i]);
     }
     $$ = ia;
   } else {
@@ -1204,21 +1205,21 @@ FZ_BOOL_LIT
     int64 ival = 0;
     bool bval = false;
     if (pp->int_value_array_map_.get($1, is)) {
-      AST::Array* const v = new AST::Array(is.size());
+      AstArray* const v = new AstArray(is.size());
       for (int i = is.size(); i--;) {
-        v->a[i] = new AST::IntLit(is[i]);
+        v->a[i] = new AstIntLit(is[i]);
       }
       $$ = v;
     } else if (pp->bool_value_array_map_.get($1, is)) {
-      AST::Array* const v = new AST::Array(is.size());
+      AstArray* const v = new AstArray(is.size());
       for (int i = is.size(); i--;) {
-        v->a[i] = new AST::BoolLit(is[i]);
+        v->a[i] = new AstBoolLit(is[i]);
       }
       $$ = v;
     } else if (pp->int_map_.get($1, ival)) {
-      $$ = new AST::IntLit(ival);
+      $$ = new AstIntLit(ival);
     } else if (pp->bool_map_.get($1, bval)) {
-      $$ = new AST::BoolLit(bval);
+      $$ = new AstBoolLit(bval);
     } else {
       $$ = pp->VarRefArg($1, true);
     }
@@ -1233,11 +1234,11 @@ FZ_BOOL_LIT
   if (!pp->hadError)
     $$ = pp->ArrayElement($1, i);
   else
-    $$ = new AST::IntLit(0); // keep things consistent
+    $$ = new AstIntLit(0); // keep things consistent
   free($1); delete $3;
 }
 | FZ_STRING_LIT
 {
-  $$ = new AST::String($1);
+  $$ = new AstString($1);
   free($1);
 }

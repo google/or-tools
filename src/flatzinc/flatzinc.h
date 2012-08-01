@@ -42,9 +42,7 @@
 #include <map>
 #include <cassert>
 
-#include "flatzinc/ast.h"
-#include "flatzinc/spec.h"
-
+#include "flatzinc/parser.h"
 #include "constraint_solver/constraint_solver.h"
 
 /**
@@ -80,7 +78,7 @@ class FlatZincModel {
             int num_set_variables);
   void InitSolver();
 
-  void InitOutput(AST::Array* const output);
+  void InitOutput(AstArray* const output);
 
   /// Creates a new integer variable from specification.
   void NewIntVar(const std::string& name, IntVarSpec* const vs, bool active);
@@ -93,9 +91,9 @@ class FlatZincModel {
   // Creates a new set variable from specification.
   void NewSetVar(const std::string& name, SetVarSpec* const vs);
 
-  IntExpr* GetIntExpr(AST::Node* const node);
+  IntExpr* GetIntExpr(AstNode* const node);
 
-  void CheckIntegerVariableIsNull(AST::Node* const node) const {
+  void CheckIntegerVariableIsNull(AstNode* const node) const {
     CHECK_NOTNULL(node);
     if (node->isIntVar()) {
       CHECK(integer_variables_[node->getIntVar()] == NULL);
@@ -107,7 +105,7 @@ class FlatZincModel {
     }
   }
 
-  void SetIntegerExpression(AST::Node* const node, IntExpr* const expr) {
+  void SetIntegerExpression(AstNode* const node, IntExpr* const expr) {
     CHECK_NOTNULL(node);
     CHECK_NOTNULL(expr);
     if (node->isIntVar()) {
@@ -131,11 +129,11 @@ class FlatZincModel {
   void PostConstraint(CtSpec* const spec);
 
   /// Post the solve item
-  void Satisfy(AST::Array* const annotation);
+  void Satisfy(AstArray* const annotation);
   /// Post that integer variable \a var should be minimized
-  void Minimize(int var, AST::Array* const annotation);
+  void Minimize(int var, AstArray* const annotation);
   /// Post that integer variable \a var should be maximized
-  void Maximize(int var, AST::Array* const annotation);
+  void Maximize(int var, AstArray* const annotation);
 
   /// Run the search
   void Solve(int log_frequency,
@@ -162,7 +160,7 @@ class FlatZincModel {
   };
 
   void CreateDecisionBuilders(bool ignore_unknown, bool ignore_annotations);
-  string DebugString(AST::Node* const ai) const;
+  string DebugString(AstNode* const ai) const;
 
   /// Number of integer variables
   int int_var_count;
@@ -182,9 +180,9 @@ class FlatZincModel {
   Meth method_;
 
   /// Annotations on the solve item
-  AST::Array* solve_annotations_;
+  AstArray* solve_annotations_;
 
-  AST::Array* output_;
+  AstArray* output_;
   /// The integer variables
   std::vector<IntExpr*> integer_variables_;
   /// The Boolean variables
