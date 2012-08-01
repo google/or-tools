@@ -451,7 +451,7 @@ void ParserState::SortConstraints(NodeSet* const candidates,
       }
     }
     if (inserted.empty()) {
-      // Recovery mode. We have a dependency!.  Let's find the one
+      // Recovery mode. We have a cycle!.  Let's find the one
       // with the smallest number of unsatisfied dependencies.
       CtSpec* to_correct = NULL;
       int best_unsatisfied = kint32max;
