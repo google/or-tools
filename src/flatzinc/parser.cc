@@ -707,17 +707,17 @@ void ParserState::AddSetVarDomainConstraint(int var_id,
   }
 }
 
-int ParserState::FindEndIntegerVariable(int index) const {
+IntVarSpec* ParserState::IntSpec(AstNode* const node) const {
+  int index = node->getIntVar();
   while (int_variables_[index]->alias) {
     index = int_variables_[index]->i;
   }
-  return index;
+  return int_variables_[index];
 }
 
 bool ParserState::IsBound(AstNode* const node) const {
   return node->isInt() ||
-      (node->isIntVar() &&
-       int_variables_[FindEndIntegerVariable(node->getIntVar())]->IsBound()) ||
+      (node->isIntVar() && IntSpec(node)->IsBound()) ||
       node->isBool() ||
       (node->isBoolVar() && bool_variables_[node->getBoolVar()]->IsBound());
 }
@@ -740,7 +740,7 @@ int ParserState::GetBound(AstNode* const node) const {
     return node->getInt();
   }
   if (node->isIntVar()) {
-    return int_variables_[node->getIntVar()]->GetBound();
+    return IntSpec(node)->GetBound();
   }
   if (node->isBool()) {
     return node->getBool();
@@ -790,8 +790,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
   const int index = spec->Index();
   if (id == "int_le") {
     if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
-      IntVarSpec* const var_spec =
-          int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
+      IntVarSpec* const var_spec = IntSpec(spec->Arg(0));
       const int bound = GetBound(spec->Arg(1));
       VLOG(1) << "  - presolve:  merge " << var_spec->DebugString()
               << " with kint32min.." << bound;
@@ -801,8 +800,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       }
       return ok;
     } else if (IsBound(spec->Arg(0)) && spec->Arg(1)->isIntVar()) {
-      IntVarSpec* const var_spec =
-          int_variables_[FindEndIntegerVariable(spec->Arg(1)->getIntVar())];
+      IntVarSpec* const var_spec = IntSpec(spec->Arg(1));
       const int bound = GetBound(spec->Arg(0));
       VLOG(1) << "  - presolve:  merge " << var_spec->DebugString() << " with "
               << bound << "..kint32max";
@@ -815,8 +813,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
   }
   if (id == "int_eq") {
     if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
-      IntVarSpec* const var_spec =
-          int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
+      IntVarSpec* const var_spec = IntSpec(spec->Arg(0));
       const int bound = GetBound(spec->Arg(1));
       VLOG(1) << "  - presolve:  assign " << var_spec->DebugString()
               << " to " << bound;
@@ -826,8 +823,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       }
       return ok;
     } else if (IsBound(spec->Arg(0)) && spec->Arg(1)->isIntVar()) {
-      IntVarSpec* const var_spec =
-          int_variables_[FindEndIntegerVariable(spec->Arg(1)->getIntVar())];
+      IntVarSpec* const var_spec = IntSpec(spec->Arg(1));
       const int bound = GetBound(spec->Arg(0));
       VLOG(1) << "  - presolve:  assign " <<  var_spec->DebugString()
               << " to " << bound;
@@ -846,8 +842,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       AstNode* const var0 = Copy(spec->Arg(0));
       AstNode* const var1 = Copy(spec->Arg(1));
       if (ContainsKey(orphans_, var0)) {
-        IntVarSpec* const spec0 =
-            int_variables_[FindEndIntegerVariable(var0->getIntVar())];
+        IntVarSpec* const spec0 = IntSpec(var0);
         AstCall* const call =
             new AstCall("defines_var", new AstIntVar(var0->getIntVar()));
         spec->AddAnnotation(call);
@@ -856,8 +851,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         orphans_.erase(var0);
         return true;
       } else if (ContainsKey(orphans_, var1)) {
-        IntVarSpec* const spec1 =
-            int_variables_[FindEndIntegerVariable(var1->getIntVar())];
+        IntVarSpec* const spec1 = IntSpec(var1);
         AstCall* const call =
             new AstCall("defines_var", new AstIntVar(var1->getIntVar()));
         spec->AddAnnotation(call);
@@ -875,8 +869,8 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       stored_constraints_.insert(spec);
       AstNode* const var0 = Copy(spec->Arg(0));
       AstNode* const var1 = Copy(spec->Arg(1));
-      IntVarSpec* const spec0 = int_variables_[var0->getIntVar()];
-      IntVarSpec* const spec1 = int_variables_[var1->getIntVar()];
+      IntVarSpec* const spec0 = IntSpec(var0);
+      IntVarSpec* const spec1 = IntSpec(var1);
       if (!ContainsKey(targets_, var0) && !spec0->alias) {
         AstCall* const call =
             new AstCall("defines_var", new AstIntVar(var0->getIntVar()));
@@ -898,8 +892,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
   }
   if (id == "int_ne") {
     if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
-      IntVarSpec* const var_spec =
-          int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
+      IntVarSpec* const var_spec = IntSpec(spec->Arg(0));
       const int bound = GetBound(spec->Arg(1));
       VLOG(1) << "  - presolve:  remove value " << bound << " from "
               << var_spec->DebugString();
@@ -909,8 +902,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       }
       return ok;
     } else if (IsBound(spec->Arg(0)) && spec->Arg(1)->isIntVar()) {
-      IntVarSpec* const var_spec =
-          int_variables_[FindEndIntegerVariable(spec->Arg(1)->getIntVar())];
+      IntVarSpec* const var_spec = IntSpec(spec->Arg(1));
       const int bound = GetBound(spec->Arg(0));
       VLOG(1) << "  - presolve:  remove value " << bound << " from "
               << var_spec->DebugString();
@@ -923,8 +915,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
   }
   if (id == "set_in") {
     if (spec->Arg(0)->isIntVar() && spec->Arg(1)->isSet()) {
-      IntVarSpec* const var_spec =
-          int_variables_[FindEndIntegerVariable(spec->Arg(0)->getIntVar())];
+      IntVarSpec* const var_spec = IntSpec(spec->Arg(0));
       AstSetLit* const domain = spec->Arg(1)->getSet();
       VLOG(1) << "  - presolve:  merge " << var_spec->DebugString() << " with "
               << domain->DebugString();

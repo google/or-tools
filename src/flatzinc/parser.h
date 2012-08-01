@@ -1202,7 +1202,6 @@ class ParserState {
   void BuildModel(const NodeSet& candidates,
                   const NodeSet& computed_variables);
   bool PresolveOneConstraint(CtSpec* const spec);
-  int FindEndIntegerVariable(int index) const;
   AstNode* FindTarget(AstNode* const annotations) const;
   void CollectRequired(AstArray* const args,
                        const NodeSet& candidates,
@@ -1213,6 +1212,7 @@ class ParserState {
   void Strongify(int constraint_index);
   bool IsAlias(AstNode* const node) const;
   bool IsIntroduced(AstNode* const node) const;
+  IntVarSpec* IntSpec(AstNode* const node) const;
 
   operations_research::FlatZincModel* model_;
   std::vector<std::pair<std::string,AstNode*> > output_;
@@ -1227,6 +1227,8 @@ class ParserState {
   hash_map<int, std::pair<int, int> > differences_;
   std::vector<AstNode*> int_args_;
   std::vector<AstNode*> bool_args_;
+  hash_map<int, int> int_aliases_;
+  hash_map<int, hash_set<int> > reverse_int_aliases_;
 };
 
 AstNode* ArrayOutput(AstCall* ann);
