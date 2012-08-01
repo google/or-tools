@@ -160,7 +160,7 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
     // Defines an int var.
     AstNode* const define = FindTarget(spec->annotations());
     if (define != NULL) {
-      CHECK(IsIntroduced(define));
+      //      CHECK(IsIntroduced(define));
       candidates->insert(define);
       VLOG(2) << id << " -> insert " << define->DebugString();
     }
@@ -250,19 +250,18 @@ void ParserState::Presolve() {
     Sanitize(constraints_[i]);
   }
   // Find orphans (is_defined && not a viable target).
-  NodeSet targets;
   for (int i = 0; i < constraints_.size(); ++i) {
     AstNode* const target = FindTarget(constraints_[i]->annotations());
     if (target != NULL) {
       VLOG(1) << "  - presolve:  mark " << target->DebugString()
               << " as defined";
-      targets.insert(target);
+      targets_.insert(target);
     }
   }
   for (int i = 0; i < int_variables_.size(); ++i) {
     IntVarSpec* const spec = int_variables_[i];
     AstNode* const var = IntCopy(i);
-    if (spec->introduced && !ContainsKey(targets, var)) {
+    if (spec->introduced && !ContainsKey(targets_, var)) {
       orphans_.insert(var);
       VLOG(1) << "  - presolve:  mark " << var->DebugString() << " as orphan";
     }
@@ -708,7 +707,7 @@ void ParserState::AddSetVarDomainConstraint(int var_id,
   }
 }
 
-int ParserState::FindEndIntegerVariable(int index) {
+int ParserState::FindEndIntegerVariable(int index) const {
   while (int_variables_[index]->alias) {
     index = int_variables_[index]->i;
   }
@@ -717,7 +716,8 @@ int ParserState::FindEndIntegerVariable(int index) {
 
 bool ParserState::IsBound(AstNode* const node) const {
   return node->isInt() ||
-      (node->isIntVar() && int_variables_[node->getIntVar()]->IsBound()) ||
+      (node->isIntVar() &&
+       int_variables_[FindEndIntegerVariable(node->getIntVar())]->IsBound()) ||
       node->isBool() ||
       (node->isBoolVar() && bool_variables_[node->getBoolVar()]->IsBound());
 }
@@ -864,6 +864,34 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         VLOG(1) << "  - presolve:  aliasing " << var1->DebugString()
                 << " to " << var0->DebugString();
         orphans_.erase(var1);
+        return true;
+      }
+    } else if (spec->Arg(0)->isIntVar() &&
+               spec->Arg(1)->isIntVar() &&
+               spec->annotations() == NULL &&
+               !ContainsKey(stored_constraints_, spec) &&
+               (!ContainsKey(targets_, Copy(spec->Arg(0))) ||
+                !ContainsKey(targets_, Copy(spec->Arg(1))))) {
+      stored_constraints_.insert(spec);
+      AstNode* const var0 = Copy(spec->Arg(0));
+      AstNode* const var1 = Copy(spec->Arg(1));
+      IntVarSpec* const spec0 = int_variables_[var0->getIntVar()];
+      IntVarSpec* const spec1 = int_variables_[var1->getIntVar()];
+      if (!ContainsKey(targets_, var0) && !spec0->alias) {
+        AstCall* const call =
+            new AstCall("defines_var", new AstIntVar(var0->getIntVar()));
+        spec->AddAnnotation(call);
+        VLOG(1) << "  - presolve:  force aliasing " << var0->DebugString()
+                << " to " << var1->DebugString();
+        targets_.insert(var0);
+        return true;
+      } else if (!ContainsKey(targets_, var1) && !spec1->alias) {
+        AstCall* const call =
+            new AstCall("defines_var", new AstIntVar(var1->getIntVar()));
+        spec->AddAnnotation(call);
+        VLOG(1) << "  - presolve:  force aliasing " << var1->DebugString()
+                << " to " << var0->DebugString();
+        targets_.insert(var1);
         return true;
       }
     }

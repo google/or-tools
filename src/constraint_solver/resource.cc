@@ -1202,7 +1202,7 @@ class EnvJCComputeDiver {
     energy_alpha_ = argument.energy();
     energetic_end_min_alpha_ = argument.energetic_end_min();
     // We should reach a leaf that is not the identity
-    DCHECK_GT(energetic_end_min_alpha_, kint64min);
+    //    DCHECK_GT(energetic_end_min_alpha_, kint64min);  TODO(user): Check me.
   }
   bool ChooseGoLeft(const DualCapacityThetaNode& current,
                     const DualCapacityThetaNode& left_child,

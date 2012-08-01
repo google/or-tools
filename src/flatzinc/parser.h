@@ -1202,7 +1202,7 @@ class ParserState {
   void BuildModel(const NodeSet& candidates,
                   const NodeSet& computed_variables);
   bool PresolveOneConstraint(CtSpec* const spec);
-  int FindEndIntegerVariable(int index);
+  int FindEndIntegerVariable(int index) const;
   AstNode* FindTarget(AstNode* const annotations) const;
   void CollectRequired(AstArray* const args,
                        const NodeSet& candidates,
@@ -1217,6 +1217,7 @@ class ParserState {
   operations_research::FlatZincModel* model_;
   std::vector<std::pair<std::string,AstNode*> > output_;
   NodeSet orphans_;
+  NodeSet targets_;
   ConstraintSet stored_constraints_;
   std::vector<std::vector<int> > all_differents_;
   hash_map<string, std::vector<int> > constraints_per_id_;
