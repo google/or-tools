@@ -255,7 +255,7 @@ void p_int_le(FlatZincModel* const model, CtSpec* const spec) {
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     Constraint* const ct = solver->MakeLessOrEqual(left, right);
     VLOG(1) << "  - posted " << ct->DebugString();
-    LOG(INFO) << "  - posted " << ct->DebugString();
+    //    LOG(INFO) << "  - posted " << ct->DebugString();
     solver->AddConstraint(ct);
   }
 }
