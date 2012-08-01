@@ -527,7 +527,7 @@ void FlatZincModel::Solve(int solve_frequency,
        (timeout ? "**timeout**" : "**unsat**") :
        (objective_ == NULL ?
         "**sat**" :
-        (timeout ? "**timeout**" :"**proven**")));
+        (timeout ? "**feasible**" :"**proven**")));
   const string obj_string = (objective_ != NULL && num_solutions > 0 ?
                              StringPrintf("%" GG_LL_FORMAT "d", best) :
                              "");
