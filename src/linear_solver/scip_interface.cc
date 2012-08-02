@@ -150,6 +150,9 @@ class SCIPInterface : public MPSolverInterface {
   SCIP* scip_;
   std::vector<SCIP_VAR*> scip_variables_;
   std::vector<SCIP_CONS*> scip_constraints_;
+#if (SCIP_VERSION >= 300)
+  SCIP_MESSAGEHDLR* message_handler_;
+#endif
 };
 
 // Creates a LP/MIP instance with the specified name and minimization objective.
@@ -189,6 +192,9 @@ void SCIPInterface::CreateSCIP() {
       true, false, NULL, NULL, NULL, NULL, NULL));
   ORTOOLS_SCIP_CALL(SCIPaddVar(scip_, scip_var));
   scip_variables_.push_back(scip_var);
+#if (SCIP_VERSION >= 300)
+  message_handler_ = SCIPgetMessagehdlr(scip_);
+#endif
 }
 
 void SCIPInterface::DeleteSCIP() {
@@ -208,11 +214,19 @@ void SCIPInterface::DeleteSCIP() {
 void SCIPInterface::WriteModel(const string& filename) {
   // The message handler also controls how the model is written to a file.
   // If it is NULL, then nothing is written to the file.
+#if (SCIP_VERSION >= 300)
+  ORTOOLS_SCIP_CALL(SCIPsetMessagehdlr(scip_, message_handler_));
+#else
   ORTOOLS_SCIP_CALL(SCIPsetDefaultMessagehdlr());
+#endif
   ORTOOLS_SCIP_CALL(SCIPwriteOrigProblem(scip_, filename.c_str(), NULL, false));
   // Restore mesage handler to its original value.
   if (quiet_) {
+#if (SCIP_VERSION >= 300)
+    ORTOOLS_SCIP_CALL(SCIPsetMessagehdlr(scip_, NULL));
+#else
     ORTOOLS_SCIP_CALL(SCIPsetMessagehdlr(NULL));
+#endif
   }
 }
 
@@ -476,9 +490,17 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
 
   // Set log level.
   if (quiet_) {
+#if (SCIP_VERSION >= 300)
+    ORTOOLS_SCIP_CALL(SCIPsetMessagehdlr(scip_, NULL));
+#else
     ORTOOLS_SCIP_CALL(SCIPsetMessagehdlr(NULL));
+#endif
   } else {
+#if (SCIP_VERSION >= 300)
+  ORTOOLS_SCIP_CALL(SCIPsetMessagehdlr(scip_, message_handler_));
+#else
     ORTOOLS_SCIP_CALL(SCIPsetDefaultMessagehdlr());
+#endif
   }
 
   // Special case if the model is empty since SCIP expects a non-empty model

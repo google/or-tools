@@ -1,26 +1,26 @@
 # SVN tags of dependencies to checkout.
 GFLAGS_TAG = 76 # version 2.0
 PROTOBUF_TAG = 391 # version 2.4.1
-GOOGLE_APPUTILS_TAG = 11 # trunk
+GOOGLE_APPUTILS_TAG = 13 # 0.3.0
 SPARSEHASH_TAG = 116 # 2.0.2
 CBC_TAG = 2.7.7
-SWIG_TAG = rel-2.0.4
+SWIG_TAG = rel-2.0.7
 PCRE_TAG = 800 # version 8.21
-MONO_TAG = 2.11.1
+MONO_TAG = 2.10.9
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.47.tar.gz
 GLPK_TAG = 4.47
-# The archive should be ziboptsuite-2.1.1.tgz
-SCIP_TAG = 2.1.1
+# The archive should be scipoptsuite-2.1.1.tgz
+SCIP_TAG = 3.0.0
 
 # Detect if scip archive is there.
-ifeq ($(wildcard dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz),)
+ifeq ($(wildcard dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz),)
     SCIP_TARGET =
     SCIP_MAKEFILE = # UNIX_SCIP_DIR support not included.
 else
-    SCIP_TARGET = dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
-    SCIP_MAKEFILE = UNIX_SCIP_DIR = $(OR_ROOT_FULL)/dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)
+    SCIP_TARGET = dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
+    SCIP_MAKEFILE = UNIX_SCIP_DIR = $(OR_ROOT_FULL)/dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)
     ifeq ($(PLATFORM), LINUX)
 	BUILD_SCIP = make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC
     endif
@@ -178,8 +178,8 @@ dependencies/sources/glpk-$(GLPK_TAG)/configure: dependencies/archives/glpk-$(GL
 # Install scip if needed.
 install_scip: $(SCIP_TARGET)
 
-dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: dependencies/archives/ziboptsuite-$(SCIP_TAG).tgz
-	cd dependencies/install && tar xvzmf ../archives/ziboptsuite-$(SCIP_TAG).tgz && cd ziboptsuite-$(SCIP_TAG) && $(BUILD_SCIP)
+dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz
+	cd dependencies/install && tar xvzmf ../archives/scipoptsuite-$(SCIP_TAG).tgz && cd scipoptsuite-$(SCIP_TAG) && $(BUILD_SCIP)
 
 # Install mono if needed
 install_mono: $(MONO_TARGET)
@@ -222,6 +222,7 @@ Makefile.local:
 	@echo UNIX_CBC_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local
 	@echo $(GLPK_MAKEFILE) >> Makefile.local
 	@echo $(SCIP_MAKEFILE) >> Makefile.local
+	@echo UNIX_SCIP_TAG = $(SCIP_TAG) >> Makefile.local
 	@echo # Please define UNIX_SLM_DIR to use Sulum Optimization. >> Makefile.local
 	@echo $(MONO_MAKEFILE) >> Makefile.local
 	@echo $(SELECTED_JDK_DEF) >> Makefile.local
