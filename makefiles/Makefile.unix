@@ -134,7 +134,7 @@ ifeq ($(PLATFORM),LINUX)
       SCIP_ARCH = linux.x86.gnu.opt
     endif
     SCIP_LNK =
-    ifeq (UNIX_SCIP_TAG,3.0.0)
+    ifeq ($(UNIX_SCIP_TAG),3.0.0)
       SCIP_STATIC_LNK = -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.cppad.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH)
     else
       SCIP_STATIC_LNK = -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH)
