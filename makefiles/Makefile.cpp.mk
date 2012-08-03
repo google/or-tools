@@ -606,6 +606,8 @@ $(LIB_DIR)/$(LIBPREFIX)fz.$(LIBSUFFIX): $(FLATZINC_LIB_OBJS)
 $(OBJ_DIR)/fz.$O:$(SRC_DIR)/flatzinc/fz.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_DIR)/flatzinc/parser.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz.cc $(OBJ_OUT)fz.$O
 
+fz: $(BIN_DIR)/fz$E
+
 $(BIN_DIR)/fz$E: $(FLATZINC_DEPS) $(OBJ_DIR)/fz.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/fz.$O $(FLATZINC_LNK) $(LDFLAGS) $(EXEOUT)fz$E
 

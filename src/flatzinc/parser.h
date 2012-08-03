@@ -792,11 +792,11 @@ class BoolVarSpec : public VarSpec {
   }
 
   bool IsTrue() const {
-    return (assigned && i == true);
+    return (assigned && i == 1);
   }
 
   bool IsFalse() const {
-    return (assigned && i == false);
+    return (assigned && i == 0);
   }
 
   bool IsBound() const {
@@ -1239,4 +1239,3 @@ AstNode* ArrayOutput(AstCall* ann);
 }  // namespace operations_research
 
 #endif
-
