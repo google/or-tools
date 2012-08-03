@@ -316,8 +316,8 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
     free_search_ = true;
   }
   builders_.push_back(solver_->MakePhase(active_variables_,
-                                        Solver::CHOOSE_FIRST_UNBOUND,
-                                        Solver::ASSIGN_MIN_VALUE));
+                                         Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
+                                         Solver::ASSIGN_MIN_VALUE));
   VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
   if (!introduced_variables_.empty()) {
     builders_.push_back(solver_->MakePhase(introduced_variables_,

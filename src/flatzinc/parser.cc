@@ -295,14 +295,11 @@ void ParserState::Presolve() {
         index = int_variables_[index]->i;
       }
       int_aliases_[i] = index;
-      IntVarSpec* const target_spec = int_variables_[index];
-      if (!MergeIntDomain(spec, target_spec)) {
-        VLOG(1) << "  - could not merge, adding domain constraint";
-        AddIntVarDomainConstraint(index, spec->Domain()->Copy());
-      }
+      MergeIntDomain(spec, int_variables_[index]);
     }
   }
 
+  // Remove all aliases from constraints.
   for (int i = 0; i < constraints_.size(); ++i) {
     CtSpec* const spec = constraints_[i];
     if (!spec->Nullified()) {
@@ -310,7 +307,7 @@ void ParserState::Presolve() {
     }
   }
 
-  // Presolve (propagate bounds).
+  // Presolve (propagate bounds, simplify constraints...).
   bool repeat = true;
   while (repeat) {
     repeat = false;
@@ -326,20 +323,20 @@ void ParserState::Presolve() {
   }
 
   // Add aliasing constraints.
-  for (int i = 0; i < int_variables_.size(); ++i) {
-    IntVarSpec* const spec = int_variables_[i];
-    if (spec->alias) {
-      AstArray* args = new AstArray(2);
-      args->a[0] = new AstIntVar(spec->i);
-      args->a[1] = new AstIntVar(i);
-      CtSpec* const alias_ct = new CtSpec(constraints_.size(),
-                                          "int2int",
-                                          args,
-                                          NULL);
-      alias_ct->SetDefinedArg(IntCopy(i));
-      constraints_.push_back(alias_ct);
-    }
-  }
+  // for (int i = 0; i < int_variables_.size(); ++i) {
+  //   IntVarSpec* const spec = int_variables_[i];
+  //   if (spec->alias) {
+  //     AstArray* args = new AstArray(2);
+  //     args->a[0] = new AstIntVar(spec->i);
+  //     args->a[1] = new AstIntVar(i);
+  //     CtSpec* const alias_ct = new CtSpec(constraints_.size(),
+  //                                         "int2int",
+  //                                         args,
+  //                                         NULL);
+  //     alias_ct->SetDefinedArg(IntCopy(i));
+  //     constraints_.push_back(alias_ct);
+  //   }
+  // }
 
   for (int i = 0; i < bool_variables_.size(); ++i) {
     BoolVarSpec* const spec = bool_variables_[i];
@@ -578,16 +575,14 @@ void ParserState::BuildModel(const NodeSet& candidates,
         }
       }
       AstNode* const var = IntCopy(i);
-      if (!ContainsKey(candidates, var)) {
+      if (!ContainsKey(candidates, var) && !ContainsKey(int_aliases_, i)) {
         const bool active =
             !IsIntroduced(var) && !ContainsKey(computed_variables, var);
         model_->NewIntVar(name, int_variables_[i], active);
       } else {
         model_->SkipIntVar();
         VLOG(1) << "  - skipped";
-        if (!IsAlias(var) &&
-            !int_variables_[i]->assigned &&
-            int_variables_[i]->HasDomain()) {
+        if (int_variables_[i]->HasDomain()) {
           AddIntVarDomainConstraint(i, int_variables_[i]->Domain()->Copy());
         }
       }
@@ -647,6 +642,17 @@ void ParserState::BuildModel(const NodeSet& candidates,
       CtSpec* const spec = constraints_[i];
       VLOG(1) << "Constraint " << constraints_[i]->DebugString();
       model_->PostConstraint(constraints_[i]);
+    }
+  }
+
+  VLOG(1) << "Populating aliases";
+  for (int i = 0; i < int_variables_.size(); ++i) {
+    if (ContainsKey(int_aliases_, i)) {
+      IntExpr* const expr = model_->GetIntExpr(IntCopy(int_aliases_[i]));
+      CHECK(expr != NULL);
+      model_->CheckIntegerVariableIsNull(IntCopy(i));
+      model_->SetIntegerExpression(IntCopy(i), expr);
+      VLOG(1) << "  - setting x(" << i << ") to be " << expr->DebugString();
     }
   }
 
@@ -856,12 +862,11 @@ bool ParserState::DiscoverAliases(CtSpec* const spec) {
       AstNode* const var1 = Copy(spec->Arg(1));
       IntVarSpec* const spec0 = IntSpec(var0);
       IntVarSpec* const spec1 = IntSpec(var1);
-      MergeIntDomain(spec0,spec1);
+      MergeIntDomain(spec0, spec1);
       MergeIntDomain(spec1, spec0);
       if (spec->annotations() == NULL &&
           (ContainsKey(orphans_, Copy(spec->Arg(0))) ||
            ContainsKey(orphans_, Copy(spec->Arg(1))))) {
-        stored_constraints_.insert(spec);
         if (ContainsKey(orphans_, var0)) {
           AstCall* const call =
               new AstCall("defines_var", new AstIntVar(var0->getIntVar()));
@@ -884,7 +889,6 @@ bool ParserState::DiscoverAliases(CtSpec* const spec) {
       } else if (spec->annotations() == NULL &&
                  (!ContainsKey(targets_, Copy(spec->Arg(0))) ||
                   !ContainsKey(targets_, Copy(spec->Arg(1))))) {
-        stored_constraints_.insert(spec);
         if (!ContainsKey(targets_, var0)) {
           AstCall* const call =
               new AstCall("defines_var", new AstIntVar(var0->getIntVar()));

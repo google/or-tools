@@ -644,6 +644,10 @@ class IntVarSpec : public VarSpec {
       return true;
     }
     if (!own_domain_) {
+      AstSetLit* const domain = domain_.value();
+      if (domain->interval && domain->imin >= nmin && domain->imax <= nmax) {
+        return true;
+      }
       return false;  // IMPROVE ME.
     }
     AstSetLit* const domain = domain_.value();
