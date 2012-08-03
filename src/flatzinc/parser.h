@@ -1206,6 +1206,7 @@ class ParserState {
                   const NodeSet& computed_variables);
   bool PresolveOneConstraint(CtSpec* const spec);
   bool DiscoverAliases(CtSpec* const spec);
+  void ReplaceAliases(CtSpec* const spec);
   AstNode* FindTarget(AstNode* const annotations) const;
   void CollectRequired(AstArray* const args,
                        const NodeSet& candidates,
