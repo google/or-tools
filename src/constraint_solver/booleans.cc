@@ -69,7 +69,7 @@ class SatPropagator : public Constraint {
     if (!solver()->IsBooleanVar(expr, &expr_var, &expr_negated)) {
       return Minisat::lit_Error;
     }
-    VLOG(1) << "SAT: Parse " << expr->DebugString() << " to "
+    VLOG(2) << "SAT: Parse " << expr->DebugString() << " to "
             << expr_var->DebugString() << "/" << expr_negated;
     if (ContainsKey(indices_, expr_var)) {
       return Minisat::mkLit(indices_[expr_var], !expr_negated);
@@ -78,7 +78,7 @@ class SatPropagator : public Constraint {
       vars_.push_back(expr_var);
       indices_[expr_var] = var;
       Minisat::Lit lit = Minisat::mkLit(var, !expr_negated);
-      VLOG(1) << "  - created var = " << Minisat::toInt(var)
+      VLOG(2) << "  - created var = " << Minisat::toInt(var)
               << ", lit = " << Minisat::toInt(lit);
       return lit;
     }
@@ -86,13 +86,13 @@ class SatPropagator : public Constraint {
 
   void VariableBound(int index) {
     if (minisat_trail_.Value() < minisat_.decisionLevel()) {
-      VLOG(1) << "After failure, minisat_trail = " << minisat_trail_.Value()
+      VLOG(2) << "After failure, minisat_trail = " << minisat_trail_.Value()
               << ", minisat decision level = " << minisat_.decisionLevel();
       minisat_.cancelUntil(minisat_trail_.Value());
       CHECK_EQ(minisat_trail_.Value(), minisat_.decisionLevel());
       if (backjump_ && backtrack_level_ != -1) {
         if (minisat_trail_.Value() > backtrack_level_) {
-          VLOG(1) << "  - learnt backtrack: " << minisat_trail_.Value()
+          VLOG(2) << "  - learnt backtrack: " << minisat_trail_.Value()
                   << "/" << backtrack_level_;
           solver()->Fail();
         } else {
@@ -100,20 +100,20 @@ class SatPropagator : public Constraint {
         }
       }
     }
-    VLOG(1) << "VariableBound: " << vars_[index]->DebugString();
+    VLOG(2) << "VariableBound: " << vars_[index]->DebugString();
     const Minisat::Var var(index);
     const int internal_value = toInt(minisat_.value(var));
     const int64 var_value = vars_[index]->Value();
     if (internal_value != 2 && var_value != internal_value) {
-      VLOG(1) << "  - internal value = " << internal_value << ", failing";
+      VLOG(2) << "  - internal value = " << internal_value << ", failing";
       solver()->Fail();
     }
     Minisat::Lit lit = Minisat::mkLit(var, var_value);
-    VLOG(1) << "  - enqueue lit = " << Minisat::toInt(lit)
+    VLOG(2) << "  - enqueue lit = " << Minisat::toInt(lit)
             << " at depth " << minisat_trail_.Value();
     backtrack_level_ = minisat_.propagateOneLiteral(lit);
     if (backtrack_level_ >= 0) {
-      VLOG(1) << "  - failure detected, should backtrack to "
+      VLOG(2) << "  - failure detected, should backtrack to "
               << backtrack_level_;
       solver()->Fail();
     } else {
@@ -122,7 +122,7 @@ class SatPropagator : public Constraint {
         const Minisat::Lit lit = minisat_.touched_variables_[i];
         const int var = Minisat::var(lit);
         const bool assigned_bool = Minisat::sign(lit);
-        VLOG(1) << "  - var " << var << " was assigned to " << assigned_bool;
+        VLOG(2) << "  - var " << var << " was assigned to " << assigned_bool;
         demons_[var]->inhibit(solver());
         vars_[var]->SetValue(assigned_bool);
       }
@@ -142,7 +142,7 @@ class SatPropagator : public Constraint {
   }
 
   virtual void InitialPropagate() {
-    VLOG(1) << "Initial propagation on sat solver";
+    VLOG(2) << "Initial propagation on sat solver";
     minisat_.initPropagator();
     for (int i = 0; i < vars_.size(); ++i) {
       IntVar* const var = vars_[i];
@@ -150,7 +150,7 @@ class SatPropagator : public Constraint {
         VariableBound(i);
       }
     }
-    VLOG(1) << "  - done";
+    VLOG(2) << "  - done";
   }
 
   // Add a clause to the solver.

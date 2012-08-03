@@ -267,6 +267,46 @@ void ParserState::Presolve() {
     }
   }
 
+  // Collect aliases.
+  for (int i = 0; i < int_variables_.size(); ++i) {
+    IntVarSpec* const spec = int_variables_[i];
+    if (spec->alias) {
+      int_aliases_[i] = spec->i;
+    }
+  }
+
+  // Discover new aliases
+  for (int i = 0; i < constraints_.size(); ++i) {
+    CtSpec* const spec = constraints_[i];
+    if (spec->Nullified()) {
+      continue;
+    }
+    DiscoverAliases(spec);
+  }
+
+  // Merge domains of aliases, update alias map to point to root.
+  for (int i = 0; i < int_variables_.size(); ++i) {
+    IntVarSpec* const spec = int_variables_[i];
+    AstNode* const var = IntCopy(i);
+    // TODO(lperron) : loop on hash_table.
+    if (spec->alias &&
+        !spec->assigned && spec->HasDomain() && spec->Domain() != NULL) {
+      int index = i;
+      while (int_variables_[index]->alias) {
+        index = int_variables_[index]->i;
+      }
+      int_aliases_[i] = index;
+      reverse_int_aliases_[index].insert(i);
+
+      IntVarSpec* const target_spec = int_variables_[index];
+      if (!MergeIntDomain(spec, target_spec)) {
+        VLOG(1) << "  - could not merge, adding domain constraint";
+        AddIntVarDomainConstraint(index, spec->Domain()->Copy());
+      }
+    }
+  }
+
+
   // Presolve (propagate bounds).
   bool repeat = true;
   while (repeat) {
@@ -785,6 +825,84 @@ bool ParserState::IsAllDifferent(AstNode* const node) const {
   return false;
 }
 
+bool ParserState::MergeIntDomain(IntVarSpec* const source,
+                                 IntVarSpec* const dest) {
+  VLOG(1) << "Merge " << dest->DebugString() << " with "
+          << source->DebugString();
+  AstSetLit* domain = source->Domain();
+  if (domain->interval) {
+    return dest->MergeBounds(domain->imin, domain->imax);
+  } else {
+    return dest->MergeDomain(domain->s);
+  }
+}
+
+bool ParserState::DiscoverAliases(CtSpec* const spec) {
+  const string& id = spec->Id();
+  const int index = spec->Index();
+  if (id == "int_eq") {
+    if (spec->Arg(0)->isIntVar() &&
+        spec->Arg(1)->isIntVar() &&
+        spec->annotations() == NULL &&
+        !ContainsKey(stored_constraints_, spec) &&
+        (ContainsKey(orphans_, Copy(spec->Arg(0))) ||
+         ContainsKey(orphans_, Copy(spec->Arg(1))))) {
+      stored_constraints_.insert(spec);
+      AstNode* const var0 = Copy(spec->Arg(0));
+      AstNode* const var1 = Copy(spec->Arg(1));
+      if (ContainsKey(orphans_, var0)) {
+        IntVarSpec* const spec0 = IntSpec(var0);
+        AstCall* const call =
+            new AstCall("defines_var", new AstIntVar(var0->getIntVar()));
+        spec->AddAnnotation(call);
+        VLOG(1) << "  - presolve:  aliasing " << var0->DebugString()
+                << " to " << var1->DebugString();
+        orphans_.erase(var0);
+        return true;
+      } else if (ContainsKey(orphans_, var1)) {
+        IntVarSpec* const spec1 = IntSpec(var1);
+        AstCall* const call =
+            new AstCall("defines_var", new AstIntVar(var1->getIntVar()));
+        spec->AddAnnotation(call);
+        VLOG(1) << "  - presolve:  aliasing " << var1->DebugString()
+                << " to " << var0->DebugString();
+        orphans_.erase(var1);
+        return true;
+      }
+    } else if (spec->Arg(0)->isIntVar() &&
+               spec->Arg(1)->isIntVar() &&
+               spec->annotations() == NULL &&
+               !ContainsKey(stored_constraints_, spec) &&
+               (!ContainsKey(targets_, Copy(spec->Arg(0))) ||
+                !ContainsKey(targets_, Copy(spec->Arg(1))))) {
+      stored_constraints_.insert(spec);
+      AstNode* const var0 = Copy(spec->Arg(0));
+      AstNode* const var1 = Copy(spec->Arg(1));
+      IntVarSpec* const spec0 = IntSpec(var0);
+      IntVarSpec* const spec1 = IntSpec(var1);
+      if (!ContainsKey(targets_, var0)) {
+        AstCall* const call =
+            new AstCall("defines_var", new AstIntVar(var0->getIntVar()));
+        spec->AddAnnotation(call);
+        VLOG(1) << "  - presolve:  force aliasing " << var0->DebugString()
+                << "(" << spec0->DebugString() << ") to "
+                << var1->DebugString() << "(" << spec1->DebugString() << ")";
+        targets_.insert(var0);
+        return true;
+      } else if (!ContainsKey(targets_, var1)) {
+        AstCall* const call =
+            new AstCall("defines_var", new AstIntVar(var1->getIntVar()));
+        spec->AddAnnotation(call);
+        VLOG(1) << "  - presolve:  force aliasing " << var1->DebugString()
+                << "(" << spec1->DebugString() << ") to "
+                << var0->DebugString() << "(" << spec0->DebugString() << ")";
+        targets_.insert(var1);
+        return true;
+      }
+    }
+  }
+}
+
 bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
   const string& id = spec->Id();
   const int index = spec->Index();
@@ -832,62 +950,6 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         spec->Nullify();
       }
       return ok;
-    } else if (spec->Arg(0)->isIntVar() &&
-               spec->Arg(1)->isIntVar() &&
-               spec->annotations() == NULL &&
-               !ContainsKey(stored_constraints_, spec) &&
-               (ContainsKey(orphans_, Copy(spec->Arg(0))) ||
-                ContainsKey(orphans_, Copy(spec->Arg(1))))) {
-      stored_constraints_.insert(spec);
-      AstNode* const var0 = Copy(spec->Arg(0));
-      AstNode* const var1 = Copy(spec->Arg(1));
-      if (ContainsKey(orphans_, var0)) {
-        IntVarSpec* const spec0 = IntSpec(var0);
-        AstCall* const call =
-            new AstCall("defines_var", new AstIntVar(var0->getIntVar()));
-        spec->AddAnnotation(call);
-        VLOG(1) << "  - presolve:  aliasing " << var0->DebugString()
-                << " to " << var1->DebugString();
-        orphans_.erase(var0);
-        return true;
-      } else if (ContainsKey(orphans_, var1)) {
-        IntVarSpec* const spec1 = IntSpec(var1);
-        AstCall* const call =
-            new AstCall("defines_var", new AstIntVar(var1->getIntVar()));
-        spec->AddAnnotation(call);
-        VLOG(1) << "  - presolve:  aliasing " << var1->DebugString()
-                << " to " << var0->DebugString();
-        orphans_.erase(var1);
-        return true;
-      }
-    } else if (spec->Arg(0)->isIntVar() &&
-               spec->Arg(1)->isIntVar() &&
-               spec->annotations() == NULL &&
-               !ContainsKey(stored_constraints_, spec) &&
-               (!ContainsKey(targets_, Copy(spec->Arg(0))) ||
-                !ContainsKey(targets_, Copy(spec->Arg(1))))) {
-      stored_constraints_.insert(spec);
-      AstNode* const var0 = Copy(spec->Arg(0));
-      AstNode* const var1 = Copy(spec->Arg(1));
-      IntVarSpec* const spec0 = IntSpec(var0);
-      IntVarSpec* const spec1 = IntSpec(var1);
-      if (!ContainsKey(targets_, var0)) {
-        AstCall* const call =
-            new AstCall("defines_var", new AstIntVar(var0->getIntVar()));
-        spec->AddAnnotation(call);
-        VLOG(1) << "  - presolve:  force aliasing " << var0->DebugString()
-                << " to " << var1->DebugString();
-        targets_.insert(var0);
-        return true;
-      } else if (!ContainsKey(targets_, var1)) {
-        AstCall* const call =
-            new AstCall("defines_var", new AstIntVar(var1->getIntVar()));
-        spec->AddAnnotation(call);
-        VLOG(1) << "  - presolve:  force aliasing " << var1->DebugString()
-                << " to " << var0->DebugString();
-        targets_.insert(var1);
-        return true;
-      }
     }
   }
   if (id == "int_ne") {

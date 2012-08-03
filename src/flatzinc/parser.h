@@ -616,13 +616,15 @@ class IntVarSpec : public VarSpec {
 
   IntVarSpec(const string& name, int i0, bool introduced)
       : VarSpec(name, introduced, false, true),
-        own_domain_(false) {
+        own_domain_(false),
+        domain_(Option<AstSetLit*>::none()) {
     i = i0;
   }
 
   IntVarSpec(const string& name, const Alias& eq, bool introduced)
       : VarSpec(name, introduced, true, false),
-        own_domain_(false) {
+        own_domain_(false),
+        domain_(Option<AstSetLit*>::none()) {
     i = eq.v;
   }
 
@@ -1170,6 +1172,7 @@ class ParserState {
   bool IsBound(AstNode* const node) const;
   int GetBound(AstNode* const node) const;
   bool IsAllDifferent(AstNode* const node) const;
+  bool MergeIntDomain(IntVarSpec* const source, IntVarSpec* const dest);
 
   FlatZincModel* model() const {
     return model_;
@@ -1202,6 +1205,7 @@ class ParserState {
   void BuildModel(const NodeSet& candidates,
                   const NodeSet& computed_variables);
   bool PresolveOneConstraint(CtSpec* const spec);
+  bool DiscoverAliases(CtSpec* const spec);
   AstNode* FindTarget(AstNode* const annotations) const;
   void CollectRequired(AstArray* const args,
                        const NodeSet& candidates,
