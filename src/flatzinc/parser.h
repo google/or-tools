@@ -751,7 +751,7 @@ class IntVarSpec : public VarSpec {
   }
 
   bool HasDomain() const {
-    return domain_.defined();
+    return domain_.defined() && domain_.value() != NULL;
   }
 
  private:

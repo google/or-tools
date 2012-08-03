@@ -1651,13 +1651,21 @@ void p_bool2bool(FlatZincModel* const model, CtSpec* const spec) {
 
 void p_int2int(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
-  IntExpr* const left = model->GetIntExpr(spec->Arg(0));
   if (spec->IsDefined(spec->Arg(1))) {
+    IntExpr* const left = model->GetIntExpr(spec->Arg(0));
     VLOG(1) << "  - creating " << spec->Arg(1)->DebugString() << " := "
             << left->DebugString();
     model->CheckIntegerVariableIsNull(spec->Arg(1));
     model->SetIntegerExpression(spec->Arg(1), left);
+  } else if (spec->IsDefined(spec->Arg(0))) {
+    IntExpr* const right = model->GetIntExpr(spec->Arg(1));
+    VLOG(1) << "  - creating " << spec->Arg(0)->DebugString() << " := "
+            << right->DebugString();
+    model->CheckIntegerVariableIsNull(spec->Arg(0));
+    model->SetIntegerExpression(spec->Arg(0), right);
+
   } else {
+    IntExpr* const left = model->GetIntExpr(spec->Arg(0));
     IntExpr* const right = model->GetIntExpr(spec->Arg(1));
     Constraint* const ct = solver->MakeEquality(left, right);
     VLOG(1) << "  - posted " << ct->DebugString();
