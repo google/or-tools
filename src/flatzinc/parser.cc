@@ -168,6 +168,9 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
              (id == "array_bool_or" && !FLAGS_use_minisat) ||
              id == "array_bool_element" ||
              id == "int_lin_eq_reif" ||
+             id == "int_lin_ne_reif" ||
+             id == "int_lin_ge_reif" ||
+             id == "int_lin_le_reif" ||
              id == "int_eq_reif" ||
              id == "int_ne_reif" ||
              id == "int_le_reif" ||
