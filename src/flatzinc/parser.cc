@@ -271,6 +271,8 @@ void ParserState::Presolve() {
   for (int i = 0; i < int_variables_.size(); ++i) {
     IntVarSpec* const spec = int_variables_[i];
     if (spec->alias) {
+      VLOG(1) << "  - presolve: xi(" << i << ") is aliased to xi(" << spec->i
+              << ")";
       int_aliases_[i] = spec->i;
     }
   }
@@ -289,13 +291,15 @@ void ParserState::Presolve() {
     IntVarSpec* const spec = int_variables_[i];
     AstNode* const var = IntCopy(i);
     // TODO(lperron) : loop on hash_table.
-    if (ContainsKey(int_aliases_, i) && spec->HasDomain()) {
+    if (ContainsKey(int_aliases_, i)) {
       int index = i;
       while (int_variables_[index]->alias) {
         index = int_variables_[index]->i;
       }
       int_aliases_[i] = index;
-      MergeIntDomain(spec, int_variables_[index]);
+      if (spec->HasDomain()) {
+        MergeIntDomain(spec, int_variables_[index]);
+      }
     }
   }
 
