@@ -171,6 +171,8 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
              id == "int_lin_ne_reif" ||
              id == "int_lin_ge_reif" ||
              id == "int_lin_le_reif" ||
+             id == "int_lin_gt_reif" ||
+             id == "int_lin_lt_reif" ||
              id == "int_eq_reif" ||
              id == "int_ne_reif" ||
              id == "int_le_reif" ||
