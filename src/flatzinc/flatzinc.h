@@ -142,7 +142,9 @@ class FlatZincModel {
              bool ignore_annotations,
              int num_solutions,
              int time_limit_in_ms,
-             int simplex_frequency);
+             int simplex_frequency,
+             bool use_impact,
+             double restart_log_size);
 
   // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
   void Parse(const std::string& fileName);
@@ -159,7 +161,11 @@ class FlatZincModel {
     MAX  //< Solve as maximization problem
   };
 
-  void CreateDecisionBuilders(bool ignore_unknown, bool ignore_annotations);
+  void CreateDecisionBuilders(bool ignore_unknown,
+                              bool ignore_annotations,
+                              bool use_impact,
+                              double restart_log_size,
+                              bool log);
   string DebugString(AstNode* const ai) const;
 
   /// Number of integer variables

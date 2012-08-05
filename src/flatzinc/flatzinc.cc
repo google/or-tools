@@ -207,7 +207,10 @@ void SortVariableByDegree(Solver* const solver,
 }
 
 void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
-                                           bool ignore_annotations) {
+                                           bool ignore_annotations,
+                                           bool use_impact,
+                                           double restart_log_size,
+                                           bool log) {
   AstNode* annotations = solve_annotations_;
   if (annotations && !ignore_annotations) {
     std::vector<AstNode*> flat_annotations;
@@ -315,9 +318,26 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
   } else {
     free_search_ = true;
   }
-  builders_.push_back(solver_->MakePhase(active_variables_,
-                                         Solver::CHOOSE_FIRST_UNBOUND,
-                                         Solver::ASSIGN_MIN_VALUE));
+  if (use_impact) {
+    DefaultPhaseParameters parameters;
+    parameters.run_all_heuristics = true;
+    parameters.heuristic_period = 50;
+    parameters.restart_log_size = restart_log_size;
+    parameters.display_level = log ?
+        DefaultPhaseParameters::NORMAL :
+        DefaultPhaseParameters::NONE;
+    parameters.use_no_goods = true;
+    parameters.var_selection_schema =
+        DefaultPhaseParameters::CHOOSE_MAX_SUM_IMPACT;
+    parameters.value_selection_schema =
+        DefaultPhaseParameters::SELECT_MIN_IMPACT;
+    builders_.push_back(
+        solver_->MakeDefaultPhase(active_variables_, parameters));
+  } else {
+    builders_.push_back(solver_->MakePhase(active_variables_,
+                                           Solver::CHOOSE_FIRST_UNBOUND,
+                                           Solver::ASSIGN_MIN_VALUE));
+  }
   VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
   if (!introduced_variables_.empty()) {
     builders_.push_back(solver_->MakePhase(introduced_variables_,
@@ -403,12 +423,18 @@ void FlatZincModel::Solve(int solve_frequency,
                           bool ignore_annotations,
                           int num_solutions,
                           int time_limit_in_ms,
-                          int simplex_frequency) {
+                          int simplex_frequency,
+                          bool use_impact,
+                          double restart_log_size) {
   if (!parsed_ok_) {
     return;
   }
 
-  CreateDecisionBuilders(false, ignore_annotations);
+  CreateDecisionBuilders(false,
+                         ignore_annotations,
+                         use_impact,
+                         restart_log_size,
+                         use_log);
   bool print_last = false;
   if (all_solutions && num_solutions == 0) {
     num_solutions = kint32max;

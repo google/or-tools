@@ -53,6 +53,8 @@ DEFINE_int32(num_solutions, 0, "Number of solution to search for");
 DEFINE_int32(time_limit, 0, "time limit in ms");
 DEFINE_int32(threads, 0, "threads");
 DEFINE_int32(simplex_frequency, 0, "Simplex frequency, 0 = no simplex");
+DEFINE_bool(use_impact, false, "Use impact based search");
+DEFINE_double(restart_log_size, -1, "Restart log size for impact search");
 DECLARE_bool(log_prefix);
 
 namespace operations_research {
@@ -71,7 +73,9 @@ void Run(const std::string& file) {
                  FLAGS_free,
                  FLAGS_num_solutions,
                  FLAGS_time_limit,
-                 FLAGS_simplex_frequency);
+                 FLAGS_simplex_frequency,
+                 FLAGS_use_impact,
+                 FLAGS_restart_log_size);
 }
 }  // namespace operations_research
 
