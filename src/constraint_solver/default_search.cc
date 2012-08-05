@@ -308,6 +308,11 @@ class ImpactRecorder {
         display_level_(display_level) {
     for (int i = 0; i < size_; ++i) {
       domain_iterators_[i] = vars_[i]->MakeDomainIterator(true);
+    }
+  }
+
+  void ResetImpacts() {
+    for (int i = 0; i < size_; ++i) {
       original_min_[i] = vars_[i]->Min();
       // By default, we init impacts to 2.0 -> equivalent to failure.
       // This will be overwritten to real impact values on valid domain
@@ -315,9 +320,7 @@ class ImpactRecorder {
       impacts_[i].resize(vars_[i]->Max() - vars_[i]->Min() + 1,
                          kInitFailureImpact);
     }
-  }
 
-  void ResetImpacts() {
     for (int i = 0; i < size_; ++i) {
       for (int j = 0; j < impacts_[i].size(); ++j) {
         impacts_[i][j] = kInitFailureImpact;
