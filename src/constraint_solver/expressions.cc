@@ -244,7 +244,9 @@ class DomainIntVar : public IntVar {
     explicit QueueHandler(DomainIntVar* const var) : var_(var) {}
     virtual ~QueueHandler() {}
     virtual void Run(Solver* const s) {
+      s->GetPropagationMonitor()->StartProcessingIntegerVariable(var_);
       var_->Process();
+      s->GetPropagationMonitor()->EndProcessingIntegerVariable(var_);
     }
     virtual Solver::DemonPriority priority() const {
       return Solver::VAR_PRIORITY;
@@ -1804,7 +1806,9 @@ class BooleanVar : public IntVar {
     explicit Handler(BooleanVar* const var) : Demon(), var_(var) {}
     virtual ~Handler() {}
     virtual void Run(Solver* const s) {
+      s->GetPropagationMonitor()->StartProcessingIntegerVariable(var_);
       var_->Process();
+      s->GetPropagationMonitor()->EndProcessingIntegerVariable(var_);
     }
     virtual Solver::DemonPriority priority() const {
       return Solver::VAR_PRIORITY;

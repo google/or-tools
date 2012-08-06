@@ -590,6 +590,15 @@ class PrintTrace : public PropagationMonitor {
     }
   }
 
+  virtual void StartProcessingIntegerVariable(const IntVar* const var) {
+    PushDelayedInfo(StringPrintf("StartProcessing(%s)",
+                                 var->DebugString().c_str()));
+  }
+
+  virtual void EndProcessingIntegerVariable(const IntVar* const var) {
+    PopDelayedInfo();
+  }
+
   virtual void PushContext(const string& context) {
     PushDelayedInfo(context);
   }

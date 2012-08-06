@@ -1098,8 +1098,8 @@ class Solver {
                        SequenceVariableBuilder* const builder);
 
   ConstraintBuilder* GetConstraintBuilder(const string& tag) const;
-  IntegerExpressionBuilder*
-      GetIntegerExpressionBuilder(const string& tag) const;
+  IntegerExpressionBuilder* GetIntegerExpressionBuilder(
+      const string& tag) const;
   IntervalVariableBuilder* GetIntervalVariableBuilder(const string& tag) const;
   SequenceVariableBuilder* GetSequenceVariableBuilder(const string& tag) const;
 
@@ -3582,7 +3582,7 @@ template <class T> class NumericalRev : public Rev<T> {
 template <class T> class RevArray {
  public:
   RevArray(int size, const T& val)
-  : stamps_(new uint64[size]), values_(new T[size]) {
+      : stamps_(new uint64[size]), values_(new T[size]) {
     for (int i = 0; i < size; ++i) {
       stamps_[i] = 0;
       values_[i] = val;
@@ -4930,7 +4930,7 @@ class DisjunctiveConstraint : public Constraint {
   // Creates a sequence variable from the constraint.
   virtual SequenceVar* MakeSequenceVar() = 0;
 
-protected:
+ protected:
   scoped_array<IntervalVar*> intervals_;
   const int size_;
   DISALLOW_COPY_AND_ASSIGN(DisjunctiveConstraint);

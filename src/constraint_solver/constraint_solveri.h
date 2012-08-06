@@ -1224,6 +1224,8 @@ class PropagationMonitor : public SearchMonitor {
   virtual void RegisterDemon(const Demon* const demon) = 0;
   virtual void BeginDemonRun(const Demon* const demon) = 0;
   virtual void EndDemonRun(const Demon* const demon) = 0;
+  virtual void StartProcessingIntegerVariable(const IntVar* const var) = 0;
+  virtual void EndProcessingIntegerVariable(const IntVar* const var) = 0;
   virtual void PushContext(const string& context) = 0;
   virtual void PopContext() = 0;
   // IntExpr modifiers.

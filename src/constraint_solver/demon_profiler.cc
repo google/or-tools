@@ -157,6 +157,8 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     active_demon_ = NULL;
   }
 
+  virtual void StartProcessingIntegerVariable(const IntVar* const var) {}
+  virtual void EndProcessingIntegerVariable(const IntVar* const var) {}
   virtual void PushContext(const string& context) {}
   virtual void PopContext() {}
 

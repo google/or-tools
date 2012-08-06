@@ -3028,6 +3028,18 @@ class Trace : public PropagationMonitor {
     }
   }
 
+  virtual void StartProcessingIntegerVariable(const IntVar* const var) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->StartProcessingIntegerVariable(var);
+    }
+  }
+
+  virtual void EndProcessingIntegerVariable(const IntVar* const var) {
+    for (int i = 0; i < monitors_.size(); ++i) {
+      monitors_[i]->EndProcessingIntegerVariable(var);
+    }
+  }
+
   virtual void PushContext(const string& context) {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->PushContext(context);
