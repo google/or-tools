@@ -118,10 +118,11 @@ assign it a value (<tt class="docutils literal"><span class="pre">ASSIGN_MIN_VAL
 <li class="toctree-l2"><a class="reference internal" href="objectives/content_model.html#use-the-default-flags">3.4.2. Use the default flags</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="objectives/data_search.html">3.5. Some global data about the search</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="objectives/data_search.html">3.5. Some global statistics about the search and how to limit the search</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="objectives/data_search.html#time">3.5.1. Time</a></li>
 <li class="toctree-l2"><a class="reference internal" href="objectives/data_search.html#failures">3.5.2. Failures</a></li>
 <li class="toctree-l2"><a class="reference internal" href="objectives/data_search.html#branches">3.5.3. Branches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="objectives/data_search.html#searchlimits">3.5.4. <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="objectives/second_implementation.html">3.6. A second model and its implementation</a><ul>
@@ -132,7 +133,7 @@ assign it a value (<tt class="docutils literal"><span class="pre">ASSIGN_MIN_VAL
 </li>
 <li class="toctree-l1"><a class="reference internal" href="objectives/third_implementation.html">3.7. A third model and its implementation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="objectives/tighten_model.html">3.8. How to tighten the model?</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="objectives/tighten_model.html#breaking-symmetries">3.8.1. Breaking symmetries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="objectives/tighten_model.html#breaking-symmetries-part-i">3.8.1. Breaking symmetries (part I)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="objectives/tighten_model.html#better-bounds-helps">3.8.2. Better bounds helps</a></li>
 </ul>
 </li>
@@ -171,21 +172,30 @@ assign it a value (<tt class="docutils literal"><span class="pre">ASSIGN_MIN_VAL
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="../index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -211,26 +221,34 @@ assign it a value (<tt class="docutils literal"><span class="pre">ASSIGN_MIN_VAL
 <li><a class="reference internal" href="introduction.html">1. Introduction to CP</a></li>
 <li><a class="reference internal" href="first_steps.html">2. First steps with or-tools</a></li>
 <li><a class="reference internal" href="#">3. Using objectives</a></li>
-<li><a class="reference internal" href="search_primitives.html">4. Search primitives</li>
+<li><a class="reference internal" href="reification.html">4. Reification</a></li>
+<li><a class="reference internal" href="scheduling.html">5. Scheduling</a></li>
 </ul>
 
 <h5>Part II: Customization</h5>
 <ul>
-<li><a class="reference internal" href="LNS.html">5. Large Neighbourhood Search</a></li>
-<li><a class="reference internal" href="LSO.html">6. Local Search operators</a></li>
-<li><a class="reference internal" href="custom_constraints.html">7. Custom constraints</a></li>
+<li><a class="reference internal" href="search_primitives.html">6. Search primitives</li>
+<li><a class="reference internal" href="LS.html">7. Local Search</a></li>
+<li><a class="reference internal" href="LNS.html">8. Large Neighbourhood Search</a></li>
+<li><a class="reference internal" href="custom_constraints.html">9. Custom constraints</a></li>
 </ul>
 
 <h5>Part III: Routing</h5>
 <ul>
-<li><a class="reference internal" href="TSP.html">8. TSP with constraints</a></li>
-<li><a class="reference internal" href="VRP.html">9. VRP with constraints</a></li>
+<li><a class="reference internal" href="TSP.html">10. TSP with constraints</a></li>
+<li><a class="reference internal" href="VRP.html">11. VRP with constraints</a></li>
 </ul>
 
 <h5>Part IV: Technicalities</h5>
 <ul>
-<li><a class="reference internal" href="utilities.html">10. Utilities</a></li>
-<li><a class="reference internal" href="modeling_tricks.html">11. Modeling tricks</a></li>
+<li><a class="reference internal" href="utilities.html">12. Utilities</a></li>
+<li><a class="reference internal" href="modeling_tricks.html">13. Modeling tricks</a></li>
+<li><a class="reference internal" href="under_the_hood.html">14. Under the hood</a></li>
+</ul>
+
+<h5>Appendices</h5>
+<ul>
+<li><a class="reference internal" href="../genindex.html">Index</a></li>
 </ul>
         </div>
       </div>
@@ -253,7 +271,7 @@ assign it a value (<tt class="docutils literal"><span class="pre">ASSIGN_MIN_VAL
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>

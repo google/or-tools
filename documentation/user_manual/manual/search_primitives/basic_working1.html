@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>4.3. Basic working of the solver: part I &mdash; or-tools User&#39;s Manual</title>
+    <title>6.3. Basic working of the solver &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="4. Defining search primitives: n-queens problems" href="../search_primitives.html" />
-    <link rel="next" title="4.4. Predefined choices: next variable to branch on" href="predefined_next_var.html" />
-    <link rel="prev" title="4.2. cpviz: how to visualize the search" href="cpviz.html" /> 
+    <link rel="up" title="6. Defining search primitives: n-queens problems" href="../search_primitives.html" />
+    <link rel="next" title="6.4. cpviz: how to visualize the search" href="cpviz.html" />
+    <link rel="prev" title="6.2. Implementation of the basic model" href="basic_model_implementation.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,13 +39,13 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="predefined_next_var.html" title="4.4. Predefined choices: next variable to branch on"
+          <a href="cpviz.html" title="6.4. cpviz: how to visualize the search"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="cpviz.html" title="4.2. cpviz: how to visualize the search"
+          <a href="basic_model_implementation.html" title="6.2. Implementation of the basic model"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../search_primitives.html" accesskey="U">4. Defining search primitives: n-queens problems</a> &raquo;</li> 
+          <li><a href="../search_primitives.html" accesskey="U">6. Defining search primitives: n-queens problems</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -54,10 +54,40 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="basic-working-of-the-solver-part-i">
-<span id="basic-workingi"></span><h1>4.3. Basic working of the solver: part I</h1>
-<div class="section" id="description">
-<h2>4.3.1. Description</h2>
+  <div class="section" id="basic-working-of-the-solver">
+<span id="basic-workingi"></span><h1>6.3. Basic working of the solver</h1>
+<div class="section" id="basic-definitions">
+<span id="basic-definition"></span><h2>6.3.1. Basic definitions</h2>
+<div class="section" id="search-trees">
+<h3>6.3.1.1. Search trees</h3>
+</div>
+<div class="section" id="callbacks">
+<h3>6.3.1.2. Callbacks</h3>
+</div>
+<div class="section" id="phases">
+<h3>6.3.1.3. Phases</h3>
+</div>
+</div>
+<div class="section" id="the-basic-idea">
+<h2>6.3.2. The basic idea</h2>
+</div>
+<div class="section" id="the-basic-search-algorithm-and-the-callback-hooks-for-the-searchmonitors">
+<h2>6.3.3. The basic search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</h2>
+<div class="section" id="newsearch">
+<h3>6.3.3.1. <tt class="docutils literal"><span class="pre">NewSearch()</span></tt></h3>
+</div>
+<div class="section" id="nextsolution">
+<h3>6.3.3.2. <tt class="docutils literal"><span class="pre">NextSolution()</span></tt></h3>
+</div>
+<div class="section" id="endsearch">
+<h3>6.3.3.3. <tt class="docutils literal"><span class="pre">EndSearch()</span></tt></h3>
+</div>
+</div>
+<div class="section" id="the-decisionbuilder-and-decisions">
+<span id="decision-toto"></span><h2>6.3.4. The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</h2>
+</div>
+<div class="section" id="nested-searches">
+<h2>6.3.5. Nested searches</h2>
 </div>
 </div>
 
@@ -90,21 +120,30 @@
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="../../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="../../index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -123,10 +162,30 @@
    
 	
 
-  <h3>Sections</a></h3>
+  <h3>Previous section</h3>
+  <p class="topless"><a href="basic_model_implementation.html"
+                        title="previous chapter">6.2. Implementation of the basic model</a></p>
+  <h3>Next section</h3>
+  <p class="topless"><a href="cpviz.html"
+                        title="next chapter">6.4. <strong class="program">cpviz</strong>: how to visualize the search</a></p>
+  <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">4.3. Basic working of the solver: part I</a><ul>
-<li><a class="reference internal" href="#description">4.3.1. Description</a></li>
+<li><a class="reference internal" href="#">6.3. Basic working of the solver</a><ul>
+<li><a class="reference internal" href="#basic-definitions">6.3.1. Basic definitions</a><ul>
+<li><a class="reference internal" href="#search-trees">6.3.1.1. Search trees</a></li>
+<li><a class="reference internal" href="#callbacks">6.3.1.2. Callbacks</a></li>
+<li><a class="reference internal" href="#phases">6.3.1.3. Phases</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-basic-idea">6.3.2. The basic idea</a></li>
+<li><a class="reference internal" href="#the-basic-search-algorithm-and-the-callback-hooks-for-the-searchmonitors">6.3.3. The basic search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a><ul>
+<li><a class="reference internal" href="#newsearch">6.3.3.1. <tt class="docutils literal"><span class="pre">NewSearch()</span></tt></a></li>
+<li><a class="reference internal" href="#nextsolution">6.3.3.2. <tt class="docutils literal"><span class="pre">NextSolution()</span></tt></a></li>
+<li><a class="reference internal" href="#endsearch">6.3.3.3. <tt class="docutils literal"><span class="pre">EndSearch()</span></tt></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-decisionbuilder-and-decisions">6.3.4. The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a></li>
+<li><a class="reference internal" href="#nested-searches">6.3.5. Nested searches</a></li>
 </ul>
 </li>
 </ul>
@@ -142,18 +201,18 @@
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="predefined_next_var.html" title="4.4. Predefined choices: next variable to branch on"
+          <a href="cpviz.html" title="6.4. cpviz: how to visualize the search"
              >next</a> |</li>
         <li class="right" >
-          <a href="cpviz.html" title="4.2. cpviz: how to visualize the search"
+          <a href="basic_model_implementation.html" title="6.2. Implementation of the basic model"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../search_primitives.html" >4. Defining search primitives: n-queens problems</a> &raquo;</li> 
+          <li><a href="../search_primitives.html" >6. Defining search primitives: n-queens problems</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>

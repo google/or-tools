@@ -572,21 +572,30 @@
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -620,7 +629,7 @@
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>

@@ -54,8 +54,8 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <span class="target" id="monitors-solutions"></span><div class="section" id="solutioncollectors-and-assignments-to-collect-solutions">
-<span id="index-0"></span><h1>2.4. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</h1>
+  <div class="section" id="solutioncollectors-and-assignments-to-collect-solutions">
+<span id="monitors-solutions"></span><span id="index-0"></span><h1>2.4. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</h1>
 <p>The or-tools library let you collect and store the solutions of your searches with the help of
 <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s. We use them to store the solutions of our cryptarithmetic puzzle.</p>
 <p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap2/cp_is_fun2.cc">tutorials/C++/chap2/cp_is_fun2.cc</a>.</p>
@@ -105,7 +105,7 @@ Let&#8217;s say you would like to know what the value of variable <tt class="doc
                                     <span class="n">solver</span><span class="p">.</span><span class="n">MakeFirstSolutionCollector</span><span class="p">();</span>
 </pre></div>
 </div>
-<p>Then you <em>add</em> the variable you are interested in:</p>
+<p>Then you <em>add</em> the variable you are interested in to the <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">first_solution</span><span class="o">-&gt;</span><span class="n">Add</span><span class="p">(</span><span class="n">c</span><span class="p">);</span>
 </pre></div>
 </div>
@@ -122,7 +122,7 @@ to the solver, i.e. you will not be able to retrieve its value by <tt class="doc
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">first_solution</span><span class="o">-&gt;</span><span class="n">solution</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>or this:</p>
+<p>or through the shortcut:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">first_solution</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">c</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -200,14 +200,14 @@ also additional information. You can also act on some of the variables for insta
 <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Number of solutions: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">number_solutions</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
 
 <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">number_solutions</span><span class="p">;</span> <span class="o">++</span><span class="n">index</span><span class="p">)</span> <span class="p">{</span>
-<span class="hll">  <span class="n">Assignment</span><span class="o">*</span> <span class="k">const</span> <span class="n">solution</span> <span class="o">=</span> <span class="n">all_solutions</span><span class="o">-&gt;</span><span class="n">solution</span><span class="p">(</span><span class="n">index</span><span class="p">);</span>
-</span>  <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Solution found:&quot;</span><span class="p">;</span>
+  <span class="n">Assignment</span><span class="o">*</span> <span class="k">const</span> <span class="n">solution</span> <span class="o">=</span> <span class="n">all_solutions</span><span class="o">-&gt;</span><span class="n">solution</span><span class="p">(</span><span class="n">index</span><span class="p">);</span>
+  <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Solution found:&quot;</span><span class="p">;</span>
   <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;v1=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">solution</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">(</span><span class="n">v1</span><span class="p">);</span>
 <span class="p">}</span>
 </pre></div>
 </div>
 <p>In <a class="reference internal" href="../utilities/serializing.html#serializing"><em>Serializing</em></a>, we&#8217;ll use it to serialize a solution.</p>
-<div class="topic">
+<div class="topic" id="topic-difference-between-newsearch-and-solve">
 <p class="topic-title first">What is the difference between <tt class="docutils literal"><span class="pre">NewSearch()</span></tt> and <tt class="docutils literal"><span class="pre">Solve()</span></tt>?</p>
 <p>Depending on the search, <tt class="docutils literal"><span class="pre">Solve()</span></tt> is equivalent to either</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">solver</span><span class="p">.</span><span class="n">NewSearch</span><span class="p">();</span>
@@ -256,21 +256,30 @@ More importantly, you can interfere with the search.</p>
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="../../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="../../index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -289,7 +298,13 @@ More importantly, you can interfere with the search.</p>
    
 	
 
-  <h3>Sections</a></h3>
+  <h3>Previous section</h3>
+  <p class="topless"><a href="anatomy.html"
+                        title="previous chapter">2.3. Anatomy of a basic C++ code</a></p>
+  <h3>Next section</h3>
+  <p class="topless"><a href="parameters.html"
+                        title="next chapter">2.5. Parameters</a></p>
+  <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">2.4. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</a><ul>
 <li><a class="reference internal" href="#solutioncollectors">2.4.1. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s</a></li>
@@ -320,7 +335,7 @@ More importantly, you can interfere with the search.</p>
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>

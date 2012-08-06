@@ -73,8 +73,8 @@ all, modelling is an art!</td></tr>
 </tbody>
 </table>
 <p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap3/golomb6.cc">tutorials/C++/chap3/golomb6.cc</a></p>
-<div class="section" id="breaking-symmetries">
-<span id="id3"></span><h2>3.8.1. Breaking symmetries</h2>
+<div class="section" id="breaking-symmetries-part-i">
+<span id="objectives-breaking-symmetries"></span><h2>3.8.1. Breaking symmetries (part I)</h2>
 <p>In the section <a class="reference internal" href="second_implementation.html#golomb-ruler-second-implementation"><em>A second model and its implementation</em></a>, when we declared the variables <tt class="docutils literal"><span class="pre">X</span></tt>
 representing the marks of a Golomb ruler, we implicitly took for granted that <tt class="docutils literal"><span class="pre">X[1]</span> <span class="pre">&lt;</span> <span class="pre">X[2]</span> <span class="pre">&lt;</span> <span class="pre">...</span> <span class="pre">&lt;</span> <span class="pre">X[n]</span></tt>.</p>
 <p>That is exactly what we did when we imposed the differences to be positive:</p>
@@ -99,7 +99,7 @@ representing the marks of a Golomb ruler, we implicitly took for granted that <t
 </pre></div>
 </div>
 <p>In trying to avoid duplicating certain quaternary constraints, we actually declared implicitly to the solver that
-<tt class="docutils literal"><span class="pre">X[1]</span> <span class="pre">&lt;</span> <span class="pre">X[2]</span> <span class="pre">&lt;</span> <span class="pre">...</span> <span class="pre">&lt;</span> <span class="pre">X[n]</span></tt>. Hadn&#8217;t we done so, there was no way the solver could have guessed that the marks are in an increasing sequence<a class="footnote-reference" href="#solver-guessing-sequence-golomb" id="id4">[3]</a>. For the solver, the solution</p>
+<tt class="docutils literal"><span class="pre">X[1]</span> <span class="pre">&lt;</span> <span class="pre">X[2]</span> <span class="pre">&lt;</span> <span class="pre">...</span> <span class="pre">&lt;</span> <span class="pre">X[n]</span></tt>. Hadn&#8217;t we done so, there was no way the solver could have guessed that the marks are in an increasing sequence<a class="footnote-reference" href="#solver-guessing-sequence-golomb" id="id3">[3]</a>. For the solver, the solution</p>
 <div class="math" id="equation-solution1">
 <p><span class="eqno">(1)</span><img src="../../_images/math/ec8733fe984f502b1c6bb5f70c9c048765130193.png" alt="X[1] = 0, X[2] = 1, X[3] = 4, X[4] = 6"/></p>
 </div><p>and the solution</p>
@@ -114,7 +114,7 @@ representing the marks of a Golomb ruler, we implicitly took for granted that <t
 <table class="docutils footnote" frame="void" id="solver-guessing-sequence-golomb" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id4">[3]</a></td><td>Declaring variables in an <tt class="docutils literal"><span class="pre">std::vector</span></tt> doesn&#8217;t tell anything about their respective values!</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>Declaring variables in an <tt class="docutils literal"><span class="pre">std::vector</span></tt> doesn&#8217;t tell anything about their respective values!</td></tr>
 </tbody>
 </table>
 <p>Thanks to <tt class="docutils literal"><span class="pre">diff1-&gt;SetMin(1)</span></tt> and <tt class="docutils literal"><span class="pre">diff2-&gt;SetMin(1)</span></tt> and the two <tt class="docutils literal"><span class="pre">for</span></tt> loops, the ordered variables <img class="math" src="../../_images/math/65b572143ef64e24707414197ab3ff0acaf95aa3.png" alt="X[1], X[2], X[3], X[4]" style="vertical-align: -5px"/>
@@ -135,11 +135,11 @@ illustrates two mirror Golomb rulers of order 4.</p>
 </div>
 <div class="section" id="better-bounds-helps">
 <h2>3.8.2. Better bounds helps</h2>
-<p>In all implementations, we used <img class="math" src="../../_images/math/884c12c8169b77e2bb8f0b522112c34aa5c41ac4.png" alt="n^2 - 1" style="vertical-align: -1px"/> as an upper bound on <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)" style="vertical-align: -4px"/>. In the case of the Golomb Ruler Problem, finding good upper bounds is a false problem. Very efficient techniques exist to find optimal or near optimal upper bounds. If we use those bounds, we reduce dramatically the domains of the variables. We can actually use <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)" style="vertical-align: -4px"/> as an upper bound for <img class="math" src="../../_images/math/7ca098493594079f39bf0a7b50d859d1d8a7decc.png" alt="n \leqslant 25" style="vertical-align: -3px"/> as these bounds can be obtained by projective and affine projections in the plane<a class="footnote-reference" href="#projective-affine-transformation-golomb" id="id5">[4]</a>.</p>
+<p>In all implementations, we used <img class="math" src="../../_images/math/884c12c8169b77e2bb8f0b522112c34aa5c41ac4.png" alt="n^2 - 1" style="vertical-align: -1px"/> as an upper bound on <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)" style="vertical-align: -4px"/>. In the case of the Golomb Ruler Problem, finding good upper bounds is a false problem. Very efficient techniques exist to find optimal or near optimal upper bounds. If we use those bounds, we reduce dramatically the domains of the variables. We can actually use <img class="math" src="../../_images/math/cb446ee2b5cf82811436022be4db770e5b32ca1c.png" alt="G(n)" style="vertical-align: -4px"/> as an upper bound for <img class="math" src="../../_images/math/7ca098493594079f39bf0a7b50d859d1d8a7decc.png" alt="n \leqslant 25" style="vertical-align: -3px"/> as these bounds can be obtained by projective and affine projections in the plane<a class="footnote-reference" href="#projective-affine-transformation-golomb" id="id4">[4]</a>.</p>
 <table class="docutils footnote" frame="void" id="projective-affine-transformation-golomb" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>These transformations were discovered in the beginning of the 20th century without any computer!
+<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td>These transformations were discovered in the beginning of the 20th century without any computer!
 See <a class="reference external" href="http://www.research.ibm.com/people/s/shearer/grtab.html">http://www.research.ibm.com/people/s/shearer/grtab.html</a>.</td></tr>
 </tbody>
 </table>
@@ -206,7 +206,7 @@ If we minimize the sum of these consecutive differences, we actually maximize th
 <col width="29%" />
 </colgroup>
 <thead valign="bottom">
-<tr class="row-odd"><th class="head">Indicators</th>
+<tr class="row-odd"><th class="head">Statistics</th>
 <th class="head">Impl1</th>
 <th class="head">Impl2</th>
 <th class="head">Impl2+</th>
@@ -249,7 +249,7 @@ If we minimize the sum of these consecutive differences, we actually maximize th
 <table class="docutils citation" frame="void" id="galinieretal" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id6">[GalinierEtAl]</a></td><td>Philippe Galinier, Brigitte Jaumard, Rodrigo Morales and Gilles Pesant. <em>A Constraint-Based Approach to the
+<tr><td class="label"><a class="fn-backref" href="#id5">[GalinierEtAl]</a></td><td>Philippe Galinier, Brigitte Jaumard, Rodrigo Morales and Gilles Pesant. <em>A Constraint-Based Approach to the
 Golomb Ruler Problem</em>, XXX, 2007.</td></tr>
 </tbody>
 </table>
@@ -285,21 +285,30 @@ Golomb Ruler Problem</em>, XXX, 2007.</td></tr>
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="../../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="../../index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -318,10 +327,16 @@ Golomb Ruler Problem</em>, XXX, 2007.</td></tr>
    
 	
 
-  <h3>Sections</a></h3>
+  <h3>Previous section</h3>
+  <p class="topless"><a href="third_implementation.html"
+                        title="previous chapter">3.7. A third model and its implementation</a></p>
+  <h3>Next section</h3>
+  <p class="topless"><a href="optimization_how.html"
+                        title="next chapter">3.9. How does the solver optimize?</a></p>
+  <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">3.8. How to tighten the model?</a><ul>
-<li><a class="reference internal" href="#breaking-symmetries">3.8.1. Breaking symmetries</a></li>
+<li><a class="reference internal" href="#breaking-symmetries-part-i">3.8.1. Breaking symmetries (part I)</a></li>
 <li><a class="reference internal" href="#better-bounds-helps">3.8.2. Better bounds helps</a></li>
 </ul>
 </li>
@@ -349,7 +364,7 @@ Golomb Ruler Problem</em>, XXX, 2007.</td></tr>
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>

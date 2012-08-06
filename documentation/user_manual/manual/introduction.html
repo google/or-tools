@@ -54,6 +54,12 @@
             
   <div class="section" id="introduction-to-constraint-programming">
 <span id="chapter-introduction"></span><h1>1. Introduction to constraint programming</h1>
+<p class="rubric">Overview:</p>
+<p class="rubric">Prerequisites:</p>
+<ul class="simple">
+<li>None.</li>
+</ul>
+<p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="introduction/4queens.html">1.1. The 4-queens problem</a></li>
@@ -64,7 +70,8 @@
 <li class="toctree-l1"><a class="reference internal" href="introduction/or_tools.html">1.6. The Google or-tools library</a></li>
 </ul>
 </div>
-</div>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 
 
           </div>
@@ -95,21 +102,30 @@
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="../index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -135,26 +151,34 @@
 <li><a class="reference internal" href="#">1. Introduction to CP</a></li>
 <li><a class="reference internal" href="first_steps.html">2. First steps with or-tools</a></li>
 <li><a class="reference internal" href="objectives.html">3. Using objectives</a></li>
-<li><a class="reference internal" href="search_primitives.html">4. Search primitives</li>
+<li><a class="reference internal" href="reification.html">4. Reification</a></li>
+<li><a class="reference internal" href="scheduling.html">5. Scheduling</a></li>
 </ul>
 
 <h5>Part II: Customization</h5>
 <ul>
-<li><a class="reference internal" href="LNS.html">5. Large Neighbourhood Search</a></li>
-<li><a class="reference internal" href="LSO.html">6. Local Search operators</a></li>
-<li><a class="reference internal" href="custom_constraints.html">7. Custom constraints</a></li>
+<li><a class="reference internal" href="search_primitives.html">6. Search primitives</li>
+<li><a class="reference internal" href="LS.html">7. Local Search</a></li>
+<li><a class="reference internal" href="LNS.html">8. Large Neighbourhood Search</a></li>
+<li><a class="reference internal" href="custom_constraints.html">9. Custom constraints</a></li>
 </ul>
 
 <h5>Part III: Routing</h5>
 <ul>
-<li><a class="reference internal" href="TSP.html">8. TSP with constraints</a></li>
-<li><a class="reference internal" href="VRP.html">9. VRP with constraints</a></li>
+<li><a class="reference internal" href="TSP.html">10. TSP with constraints</a></li>
+<li><a class="reference internal" href="VRP.html">11. VRP with constraints</a></li>
 </ul>
 
 <h5>Part IV: Technicalities</h5>
 <ul>
-<li><a class="reference internal" href="utilities.html">10. Utilities</a></li>
-<li><a class="reference internal" href="modeling_tricks.html">11. Modeling tricks</a></li>
+<li><a class="reference internal" href="utilities.html">12. Utilities</a></li>
+<li><a class="reference internal" href="modeling_tricks.html">13. Modeling tricks</a></li>
+<li><a class="reference internal" href="under_the_hood.html">14. Under the hood</a></li>
+</ul>
+
+<h5>Appendices</h5>
+<ul>
+<li><a class="reference internal" href="../genindex.html">Index</a></li>
 </ul>
         </div>
       </div>
@@ -177,7 +201,7 @@
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>

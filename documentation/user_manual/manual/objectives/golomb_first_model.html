@@ -164,7 +164,7 @@ of a Golomb ruler. In information theory, Golomb rulers are used for error detec
 </div>
 <div class="section" id="how-to-solve-the-problem">
 <h2>3.2.2. How to solve the problem?</h2>
-<p>We follow again the classical <a class="reference internal" href="../introduction/three_stages.html#three-stages"><em>The three-stage method</em></a>.</p>
+<p>We follow again the classical <a class="reference internal" href="../introduction/three_stages.html#three-stages"><em>The three-stage method</em></a>: describe, model and solve.</p>
 <div class="section" id="describe">
 <h3>3.2.2.1. Describe</h3>
 <p>What is the <strong>goal</strong> of the Golomb Ruler Problem? To find a minimal Golomb ruler for a given
@@ -255,21 +255,30 @@ of search strategies.</p>
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="../../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="../../index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -288,7 +297,13 @@ of search strategies.</p>
    
 	
 
-  <h3>Sections</a></h3>
+  <h3>Previous section</h3>
+  <p class="topless"><a href="objective_functions.html"
+                        title="previous chapter">3.1. Objective functions and how to compare search strategies</a></p>
+  <h3>Next section</h3>
+  <p class="topless"><a href="first_implementation.html"
+                        title="next chapter">3.3. An implementation of the first model</a></p>
+  <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">3.2. The Golomb Ruler Problem and a first model</a><ul>
 <li><a class="reference internal" href="#description-of-the-problem">3.2.1. Description of the problem</a></li>
@@ -324,7 +339,7 @@ of search strategies.</p>
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>

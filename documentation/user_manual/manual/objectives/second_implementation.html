@@ -29,7 +29,7 @@
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="3. Using objectives in constraint programming: Golomb rulers" href="../objectives.html" />
     <link rel="next" title="3.7. A third model and its implementation" href="third_implementation.html" />
-    <link rel="prev" title="3.5. Some global data about the search" href="data_search.html" /> 
+    <link rel="prev" title="3.5. Some global statistics about the search and how to limit the search" href="data_search.html" /> 
   </head>
   <body>
     <div class="related">
@@ -42,7 +42,7 @@
           <a href="third_implementation.html" title="3.7. A third model and its implementation"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="data_search.html" title="3.5. Some global data about the search"
+          <a href="data_search.html" title="3.5. Some global statistics about the search and how to limit the search"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../objectives.html" accesskey="U">3. Using objectives in constraint programming: Golomb rulers</a> &raquo;</li> 
@@ -98,7 +98,7 @@ and combination <img class="math" src="../../_images/math/6c3eabdda7802e47a6fb72
 <table class="docutils footnote" frame="void" id="avoid-redundancy-unique-difference" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>In section <a class="reference internal" href="tighten_model.html#breaking-symmetries"><em>Breaking symmetries</em></a> we&#8217;ll use another trick.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>In section <a class="reference internal" href="tighten_model.html#objectives-breaking-symmetries"><em>Breaking symmetries (part I)</em></a> we&#8217;ll use another trick.</td></tr>
 </tbody>
 </table>
 <p>Take again <img class="math" src="../../_images/math/39cf3e35a4981583288d2a7c4b34989916fb7360.png" alt="n=4" style="vertical-align: -1px"/> and define the sequence of differences as in Figure <a class="reference internal" href="#gr-order2"><em>Another ordered sequence of differences for the Golomb ruler of order 4.</em></a>.</p>
@@ -174,7 +174,7 @@ and so on as suggested in Figure <a class="reference internal" href="#gr-quatern
 <p>Note that we set the minimum value of the difference to <tt class="docutils literal"><span class="pre">1</span></tt>, <tt class="docutils literal"><span class="pre">diff1-&gt;SetMin(1)</span></tt>, to ensure that the differences are positive and <img class="math" src="../../_images/math/a972d7535636c34ce7a0b44e80109d15288a72f6.png" alt="\geqslant 1" style="vertical-align: -3px"/>. Note also that the method
 <tt class="docutils literal"><span class="pre">MakeDifference()</span></tt> doesn&#8217;t allow us to give a name to the new variable, which is normal as this new variable is the difference of two
 existing variables. Its name is simply <tt class="docutils literal"><span class="pre">name1</span> <span class="pre">-</span> <span class="pre">name2</span></tt>.</p>
-<p>Let&#8217;s compare the first and second implementation. The next table compares some global indicators about the search for <img class="math" src="../../_images/math/67c4555c837d711a45a3e1af64caafc004600eee.png" alt="G(9)" style="vertical-align: -4px"/>.</p>
+<p>Let&#8217;s compare the first and second implementation. The next table compares some global statistics about the search for <img class="math" src="../../_images/math/67c4555c837d711a45a3e1af64caafc004600eee.png" alt="G(9)" style="vertical-align: -4px"/>.</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="37%" />
@@ -182,7 +182,7 @@ existing variables. Its name is simply <tt class="docutils literal"><span class=
 <col width="33%" />
 </colgroup>
 <thead valign="bottom">
-<tr class="row-odd"><th class="head">Indicators</th>
+<tr class="row-odd"><th class="head">Statistics</th>
 <th class="head">Impl1</th>
 <th class="head">Impl2</th>
 </tr>
@@ -245,7 +245,7 @@ existing variables. Its name is simply <tt class="docutils literal"><span class=
 <col width="25%" />
 </colgroup>
 <thead valign="bottom">
-<tr class="row-odd"><th class="head">Indicators</th>
+<tr class="row-odd"><th class="head">Statistics</th>
 <th class="head">Impl1</th>
 <th class="head">Impl2</th>
 <th class="head">Impl2+</th>
@@ -308,21 +308,30 @@ Can we do better? You bet!</p>
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="../../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="../../index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -341,7 +350,13 @@ Can we do better? You bet!</p>
    
 	
 
-  <h3>Sections</a></h3>
+  <h3>Previous section</h3>
+  <p class="topless"><a href="data_search.html"
+                        title="previous chapter">3.5. Some global statistics about the search and how to limit the search</a></p>
+  <h3>Next section</h3>
+  <p class="topless"><a href="third_implementation.html"
+                        title="next chapter">3.7. A third model and its implementation</a></p>
+  <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">3.6. A second model and its implementation</a><ul>
 <li><a class="reference internal" href="#variables">3.6.1. Variables</a></li>
@@ -365,7 +380,7 @@ Can we do better? You bet!</p>
           <a href="third_implementation.html" title="3.7. A third model and its implementation"
              >next</a> |</li>
         <li class="right" >
-          <a href="data_search.html" title="3.5. Some global data about the search"
+          <a href="data_search.html" title="3.5. Some global statistics about the search and how to limit the search"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../objectives.html" >3. Using objectives in constraint programming: Golomb rulers</a> &raquo;</li> 
@@ -373,7 +388,7 @@ Can we do better? You bet!</p>
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>

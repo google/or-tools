@@ -64,7 +64,13 @@ a gentle introduction to the library. A better model is presented in the corresp
 <h2>2.2.1. Description of the problem</h2>
 <p>A cryptarithmetic puzzle is a mathematical game where the digits of some numbers
 are represented by letters (or symbols). Each letter represents a unique digit. The
-goal is to find the digits such that a given mathematical equation is verified.</p>
+goal is to find the digits such that a given mathematical equation is verified<a class="footnote-reference" href="#term-verified" id="id1">[1]</a>.</p>
+<table class="docutils footnote" frame="void" id="term-verified" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>This the mathematical term to specify that the <em>equation is true</em>.</td></tr>
+</tbody>
+</table>
 <p>Here is an example:</p>
 <div class="highlight-cpp"><div class="highlight"><pre>      <span class="n">C</span> <span class="n">P</span>
 <span class="o">+</span>     <span class="n">I</span> <span class="n">S</span>
@@ -82,12 +88,12 @@ goal is to find the digits such that a given mathematical equation is verified.<
 </pre></div>
 </div>
 <p>Ideally, a good cryptarithmetic puzzle must have only
-one solution<a class="footnote-reference" href="#famous-cryptarithmetic" id="id1">[1]</a>. We derogate from this tradition. The above example
+one solution<a class="footnote-reference" href="#famous-cryptarithmetic" id="id2">[2]</a>. We derogate from this tradition. The above example
 has multiple solutions. We use it to show you how to collect all solutions of a problem.</p>
 <table class="docutils footnote" frame="void" id="famous-cryptarithmetic" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Like the famous <tt class="docutils literal"><span class="pre">SEND</span> <span class="pre">+</span> <span class="pre">MORE</span> <span class="pre">=</span> <span class="pre">MONEY</span></tt>.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>Like the famous <tt class="docutils literal"><span class="pre">SEND</span> <span class="pre">+</span> <span class="pre">MORE</span> <span class="pre">=</span> <span class="pre">MONEY</span></tt>.</td></tr>
 </tbody>
 </table>
 </div>
@@ -112,11 +118,11 @@ not represent 0. Third, there are 10 letters, so we need at least 10
 different digits. The traditional decimal base is sufficient but let&#8217;s be more general
 and allow for a bigger base. We will use a constant <tt class="docutils literal"><span class="pre">kBase</span></tt>. The fact that we need at least 10 digits is not really a CP constraint.
 After all, the base is not a variable but a given integer that is chosen once
-and for all for the whole program<a class="footnote-reference" href="#base-not-var" id="id2">[2]</a>.</p>
+and for all for the whole program<a class="footnote-reference" href="#base-not-var" id="id3">[3]</a>.</p>
 <table class="docutils footnote" frame="void" id="base-not-var" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>We could have chosen the base as a variable. For instance,
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>We could have chosen the base as a variable. For instance,
 to consider such a question as: &#8220;What are the bases for which this
 puzzle has less than <tt class="docutils literal"><span class="pre">x</span></tt> solutions?&#8221;</td></tr>
 </tbody>
@@ -146,16 +152,22 @@ variables and force <tt class="docutils literal"><span class="pre">C</span></tt>
 </pre></div>
 </div>
 <div class="topic" id="index-1">
-<p class="topic-title first">What is the <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint?</p>
+<p class="topic-title first">What is the <tt class="docutils literal"><span class="pre">AllDifferent</span></tt><a class="footnote-reference" href="#all-different-in-or-tools" id="id4">[4]</a> constraint?</p>
 <p>The <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint enforces a set of variables to take distinct values. For instance, the solution
 <tt class="docutils literal"><span class="pre">C=2</span> <span class="pre">P=3</span> <span class="pre">I=7</span> <span class="pre">S=4</span> <span class="pre">F=9</span> <span class="pre">U=6</span> <span class="pre">N=8</span> <span class="pre">T=1</span> <span class="pre">R=0</span> <span class="pre">E=5</span></tt> for our cryptarithmetic puzzle satisfies the <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint as
 all the values taken are pairwise different. There exist a variety of propagation algorithms for this constraint.
 The one used in <tt class="docutils literal"><span class="pre">or-tools</span></tt> is bound based (see <a class="reference internal" href="#lopez-ortiz2003">[Lopez-Ortiz2003]</a>).</p>
 </div>
-<table class="docutils citation" frame="void" id="lopez-ortiz2003" rules="none">
+<table class="docutils footnote" frame="void" id="all-different-in-or-tools" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[Lopez-Ortiz2003]</a></td><td>Alejandro Lopez-Ortiz, Claude-Guy Quimper, John Tromp and Peter Van Beek. <em>A fast and simple algorithm for bounds consistency of the all different constraint</em>, Proceedings of the 18<sup>th</sup> international joint conference on Artificial intelligence, Acapulco, Mexico, pp 245-250, 2003, Morgan Kaufmann Publishers Inc.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td>We talk here about the generic <tt class="docutils literal"><span class="pre">AllDifferent</span></tt> constraint. In <em>or-tools</em>, we use the method <tt class="docutils literal"><span class="pre">MakeAllDifferent()</span></tt>.</td></tr>
+</tbody>
+</table>
+<br><table class="docutils citation" frame="void" id="lopez-ortiz2003" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[Lopez-Ortiz2003]</a></td><td>Alejandro Lopez-Ortiz, Claude-Guy Quimper, John Tromp and Peter Van Beek. <em>A fast and simple algorithm for bounds consistency of the all different constraint</em>, Proceedings of the 18<sup>th</sup> international joint conference on Artificial intelligence, Acapulco, Mexico, pp 245-250, 2003, Morgan Kaufmann Publishers Inc.</td></tr>
 </tbody>
 </table>
 </div>
@@ -197,21 +209,30 @@ A default basic strategy will do for the moment.</p>
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="../../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="../../index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -230,7 +251,13 @@ A default basic strategy will do for the moment.</p>
    
 	
 
-  <h3>Sections</a></h3>
+  <h3>Previous section</h3>
+  <p class="topless"><a href="getting_started.html"
+                        title="previous chapter">2.1. Getting started</a></p>
+  <h3>Next section</h3>
+  <p class="topless"><a href="anatomy.html"
+                        title="next chapter">2.3. Anatomy of a basic C++ code</a></p>
+  <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">2.2. The Cryptarithmetic Puzzle Problem and a first model</a><ul>
 <li><a class="reference internal" href="#description-of-the-problem">2.2.1. Description of the problem</a></li>
@@ -266,7 +293,7 @@ A default basic strategy will do for the moment.</p>
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>

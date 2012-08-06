@@ -81,15 +81,18 @@ steps to write a basic program.</p>
 <li>cp_is_fun1.cc: Our first example: a simple cryptarithmetic puzzle to show the basics.</li>
 <li>cp_is_fun2.cc: Use of <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s to collect some or all solutions.</li>
 <li>cp_is_fun3.cc: Use of the <a class="reference external" href="http://code.google.com/p/gflags/">Google gflags library</a> to parse command line parameters.</li>
-<li>cp_is_fun4.cc: Use of parameters.</li>
+<li>cp_is_fun4.cc: Use of read-only solver parameters.</li>
 </ul>
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="first_steps/getting_started.html">2.1. Getting started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#windows">2.1.1. Windows</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#mac">2.1.2. Mac</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#unix">2.1.3. Unix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#getting-the-source">2.1.1. Getting the source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#content-of-the-archive">2.1.2. Content of the Archive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#installation-on-unix-platforms">2.1.3. Installation on unix platforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#installation-on-windows">2.1.4. Installation on Windows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#running-tests">2.1.5. Running tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="first_steps/getting_started.html#compiling-libraries-and-running-examples">2.1.6. Compiling libraries and running examples</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="first_steps/cryptarithmetic.html">2.2. The Cryptarithmetic Puzzle Problem and a first model</a><ul>
@@ -120,13 +123,7 @@ steps to write a basic program.</p>
 <li class="toctree-l2"><a class="reference internal" href="first_steps/parameters.html#cp-solver-s-parameters">2.5.2. CP <tt class="docutils literal"><span class="pre">Solver</span></tt>&#8216;s parameters</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="first_steps/supported_languages.html">2.6. Other supported languages</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/supported_languages.html#python">2.6.1. Python</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/supported_languages.html#java">2.6.2. Java</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/supported_languages.html#c">2.6.3. C#</a></li>
-<li class="toctree-l2"><a class="reference internal" href="first_steps/supported_languages.html#swig">2.6.4. Swig</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="first_steps/supported_languages.html">2.6. Other supported languages</a></li>
 <li class="toctree-l1"><a class="reference internal" href="first_steps/summary.html">2.7. Summary</a></li>
 </ul>
 </div>
@@ -161,21 +158,30 @@ steps to write a basic program.</p>
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="../index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -201,26 +207,34 @@ steps to write a basic program.</p>
 <li><a class="reference internal" href="introduction.html">1. Introduction to CP</a></li>
 <li><a class="reference internal" href="#">2. First steps with or-tools</a></li>
 <li><a class="reference internal" href="objectives.html">3. Using objectives</a></li>
-<li><a class="reference internal" href="search_primitives.html">4. Search primitives</li>
+<li><a class="reference internal" href="reification.html">4. Reification</a></li>
+<li><a class="reference internal" href="scheduling.html">5. Scheduling</a></li>
 </ul>
 
 <h5>Part II: Customization</h5>
 <ul>
-<li><a class="reference internal" href="LNS.html">5. Large Neighbourhood Search</a></li>
-<li><a class="reference internal" href="LSO.html">6. Local Search operators</a></li>
-<li><a class="reference internal" href="custom_constraints.html">7. Custom constraints</a></li>
+<li><a class="reference internal" href="search_primitives.html">6. Search primitives</li>
+<li><a class="reference internal" href="LS.html">7. Local Search</a></li>
+<li><a class="reference internal" href="LNS.html">8. Large Neighbourhood Search</a></li>
+<li><a class="reference internal" href="custom_constraints.html">9. Custom constraints</a></li>
 </ul>
 
 <h5>Part III: Routing</h5>
 <ul>
-<li><a class="reference internal" href="TSP.html">8. TSP with constraints</a></li>
-<li><a class="reference internal" href="VRP.html">9. VRP with constraints</a></li>
+<li><a class="reference internal" href="TSP.html">10. TSP with constraints</a></li>
+<li><a class="reference internal" href="VRP.html">11. VRP with constraints</a></li>
 </ul>
 
 <h5>Part IV: Technicalities</h5>
 <ul>
-<li><a class="reference internal" href="utilities.html">10. Utilities</a></li>
-<li><a class="reference internal" href="modeling_tricks.html">11. Modeling tricks</a></li>
+<li><a class="reference internal" href="utilities.html">12. Utilities</a></li>
+<li><a class="reference internal" href="modeling_tricks.html">13. Modeling tricks</a></li>
+<li><a class="reference internal" href="under_the_hood.html">14. Under the hood</a></li>
+</ul>
+
+<h5>Appendices</h5>
+<ul>
+<li><a class="reference internal" href="../genindex.html">Index</a></li>
 </ul>
         </div>
       </div>
@@ -243,7 +257,7 @@ steps to write a basic program.</p>
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>

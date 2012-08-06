@@ -1,4 +1,28 @@
 
+v.0.1.6: (2012-08-06 18:44:13)
+------------------------------
+* sphinxortools extension:
+  - roles:
+    or-tools-ref: nice references both for html and LaTeX outputs.(BROKEN and 
+    disregarded for the moment).
+* Minor enhancements to the manual:
+  - html version: several graphic enhancements.
+  - tried to add page numbers to the preface: not easy! and not done yet...
+  - chapter structure changed. 
+  - chap2: 
+    + getting started added.
+    + minor enhancements.
+    + comments from Hakan (Thanks!) added.
+  - html version: search options changed.
+  - glossary disregarded: definitions can be found throughout the manual.
+* Minor enhancements to the FAQ:
+  - html version: search options changed.
+  - few questions added.
+  - few corrections.
+* Major enhancement to the manual:
+  - Vincent joined the team.
+
+
 v.0.1.5: (2012-04-30 12:46:04)
 ------------------------------
 * Major changes in the scripts to generate the doc:

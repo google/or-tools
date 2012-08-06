@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6. Implementing Local Search operators &mdash; or-tools User&#39;s Manual</title>
+    <title>5. Scheduling &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -27,8 +27,8 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
-    <link rel="next" title="7. Implementing custom constraints" href="custom_constraints.html" />
-    <link rel="prev" title="5. Implementing Large Neighbourhood Search" href="LNS.html" /> 
+    <link rel="next" title="5.1. What is Scheduling?" href="scheduling/scheduling.html" />
+    <link rel="prev" title="4.1. What is reification?" href="reification/reification.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,10 +38,10 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="custom_constraints.html" title="7. Implementing custom constraints"
+          <a href="scheduling/scheduling.html" title="5.1. What is Scheduling?"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="LNS.html" title="5. Implementing Large Neighbourhood Search"
+          <a href="reification/reification.html" title="4.1. What is reification?"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
@@ -52,9 +52,15 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="implementing-local-search-operators">
-<h1>6. Implementing Local Search operators</h1>
+  <div class="section" id="scheduling">
+<span id="chapter-scheduling"></span><h1>5. Scheduling</h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scheduling/scheduling.html">5.1. What is Scheduling?</a></li>
+</ul>
 </div>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 
 
           </div>
@@ -85,21 +91,30 @@
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="../index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -118,34 +133,12 @@
    
 	
 
-<h3>Chapters</h3>
-
-<h5>Part I: Basics</h5>
-<ul>
-<li><a class="reference internal" href="introduction.html">1. Introduction to CP</a></li>
-<li><a class="reference internal" href="first_steps.html">2. First steps with or-tools</a></li>
-<li><a class="reference internal" href="objectives.html">3. Using objectives</a></li>
-<li><a class="reference internal" href="search_primitives.html">4. Search primitives</li>
-</ul>
-
-<h5>Part II: Customization</h5>
-<ul>
-<li><a class="reference internal" href="LNS.html">5. Large Neighbourhood Search</a></li>
-<li><a class="reference internal" href="#">6. Local Search operators</a></li>
-<li><a class="reference internal" href="custom_constraints.html">7. Custom constraints</a></li>
-</ul>
-
-<h5>Part III: Routing</h5>
-<ul>
-<li><a class="reference internal" href="TSP.html">8. TSP with constraints</a></li>
-<li><a class="reference internal" href="VRP.html">9. VRP with constraints</a></li>
-</ul>
-
-<h5>Part IV: Technicalities</h5>
-<ul>
-<li><a class="reference internal" href="utilities.html">10. Utilities</a></li>
-<li><a class="reference internal" href="modeling_tricks.html">11. Modeling tricks</a></li>
-</ul>
+  <h3>Previous section</h3>
+  <p class="topless"><a href="reification/reification.html"
+                        title="previous chapter">4.1. What is reification?</a></p>
+  <h3>Next section</h3>
+  <p class="topless"><a href="scheduling/scheduling.html"
+                        title="next chapter">5.1. What is Scheduling?</a></p>
         </div>
       </div>
       <div class="clearer"></div>
@@ -157,17 +150,17 @@
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="custom_constraints.html" title="7. Implementing custom constraints"
+          <a href="scheduling/scheduling.html" title="5.1. What is Scheduling?"
              >next</a> |</li>
         <li class="right" >
-          <a href="LNS.html" title="5. Implementing Large Neighbourhood Search"
+          <a href="reification/reification.html" title="4.1. What is reification?"
              >previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>

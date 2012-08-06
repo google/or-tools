@@ -56,17 +56,26 @@
             
   <div class="section" id="other-supported-languages">
 <h1>2.6. Other supported languages</h1>
-<div class="section" id="python">
-<h2>2.6.1. Python</h2>
-</div>
-<div class="section" id="java">
-<h2>2.6.2. Java</h2>
-</div>
-<div class="section" id="c">
-<h2>2.6.3. C#</h2>
-</div>
-<div class="section" id="swig">
-<h2>2.6.4. Swig</h2>
+<p>Everything is coded in <tt class="docutils literal"><span class="pre">C++</span></tt> and available through <tt class="docutils literal"><span class="pre">SWIG</span></tt> in <tt class="docutils literal"><span class="pre">Python</span></tt>, <tt class="docutils literal"><span class="pre">Java</span></tt>, and <tt class="docutils literal"><span class="pre">.NET</span></tt> (using <tt class="docutils literal"><span class="pre">mono</span></tt> on non <tt class="docutils literal"><span class="pre">windows</span></tt> platforms).</p>
+<p>What language you use is a matter of taste. If you main concern is efficiency and your problem is really difficult, we
+advise you to use <tt class="docutils literal"><span class="pre">C++</span></tt> for meanly two reasons:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">C++</span></tt> is faster than <tt class="docutils literal"><span class="pre">Python</span></tt>, <tt class="docutils literal"><span class="pre">Java</span></tt> or <tt class="docutils literal"><span class="pre">C#</span></tt> and even more importantly</li>
+<li>you can tweak the library to your needs without worrying about <tt class="docutils literal"><span class="pre">SWIG</span></tt>.</li>
+</ul>
+<p>That said, you might not notice differences in time executions between the different languages.</p>
+<p>We have tried to add <em>syntactic sugar</em> when possible, particularly in <tt class="docutils literal"><span class="pre">Python</span></tt> and <tt class="docutils literal"><span class="pre">C#</span></tt>. If you aim for the ease of use
+to, for instance, prototype, <tt class="docutils literal"><span class="pre">Python</span></tt> or <tt class="docutils literal"><span class="pre">C#</span></tt> are our preferred languages.</p>
+<p>Most methods are available in all four flavors with the following naming convention:</p>
+<div class="topic">
+<p class="topic-title first">Naming convention for methods in <em>or-tools</em></p>
+<p>A <tt class="docutils literal"><span class="pre">C++</span></tt> method named <tt class="docutils literal"><span class="pre">MYMethod()</span></tt> becomes:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">MyMethod()</span></tt> in <tt class="docutils literal"><span class="pre">Python</span></tt> (pascal case);</li>
+<li><tt class="docutils literal"><span class="pre">myMethod()</span></tt> in <tt class="docutils literal"><span class="pre">Java</span></tt> (camel case);</li>
+<li><tt class="docutils literal"><span class="pre">MyMethod()</span></tt> in <tt class="docutils literal"><span class="pre">C#</span></tt> (pascal case).</li>
+</ul>
+<p>Methods with &#8220;_&#8221; (underscore) like <tt class="docutils literal"><span class="pre">objective_value()</span></tt> become <tt class="docutils literal"><span class="pre">ObjectiveValue()</span></tt> or <tt class="docutils literal"><span class="pre">objectiveValue()</span></tt>.</p>
 </div>
 </div>
 
@@ -99,21 +108,30 @@
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="../../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="../../index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -132,17 +150,12 @@
    
 	
 
-  <h3>Sections</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">2.6. Other supported languages</a><ul>
-<li><a class="reference internal" href="#python">2.6.1. Python</a></li>
-<li><a class="reference internal" href="#java">2.6.2. Java</a></li>
-<li><a class="reference internal" href="#c">2.6.3. C#</a></li>
-<li><a class="reference internal" href="#swig">2.6.4. Swig</a></li>
-</ul>
-</li>
-</ul>
-
+  <h3>Previous section</h3>
+  <p class="topless"><a href="parameters.html"
+                        title="previous chapter">2.5. Parameters</a></p>
+  <h3>Next section</h3>
+  <p class="topless"><a href="summary.html"
+                        title="next chapter">2.7. Summary</a></p>
         </div>
       </div>
       <div class="clearer"></div>
@@ -165,7 +178,7 @@
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>

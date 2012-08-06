@@ -1,0 +1,232 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>7. Local Search &mdash; or-tools User&#39;s Manual</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'doc version 0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/logo.ico"/>
+    <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
+    <link rel="next" title="7.1. What is Local Search (LS)?" href="ls/local_search.html" />
+    <link rel="prev" title="6.9. Summary" href="search_primitives/summary.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ls/local_search.html" title="7.1. What is Local Search (LS)?"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="search_primitives/summary.html" title="6.9. Summary"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="local-search">
+<span id="chapter-local-search"></span><h1>7. Local Search</h1>
+<p class="rubric">Overview:</p>
+<p class="rubric">Prerequisites:</p>
+<p class="rubric">Files:</p>
+<p class="rubric">Content:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ls/local_search.html">7.1. What is Local Search (LS)?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ls/local_search.html#the-basic-ingredients">7.1.1. The basic ingredients</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/local_search.html#is-local-search-efficient">7.1.2. Is Local Search efficient?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/local_search.html#what-about-the-quality-of-the-solutions-found-by-local-search">7.1.3. What about the quality of the solutions found by local search?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/local_search.html#global-optimization-methods">7.1.4. Global optimization methods</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ls/examples.html">7.2. Examples of Local Search</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ls/examples.html#the-golomb-ruler-problem">7.2.1. The Golomb ruler problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/examples.html#the-n-queens-problem">7.2.2. The n-queens problem</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ls/ls_or_tools.html">7.3. Local Search in <em>or-tools</em></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#local-search-mechanism-in-or-tools">7.3.1. Local Search Mechanism in <em>or-tools</em></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#localsearchphaseparameters">7.3.2. <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#local-search-neighborhood-lsn-operators">7.3.3. Local Search Neighborhood (LSN) Operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#defining-a-custom-lsn-operator">7.3.4. Defining a custom LSN operator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#combining-lsn-operators">7.3.5. Combining LSN operators</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ls/examples_revisited.html">7.4. Examples of Local Search implemented</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ls/examples_revisited.html#the-golomb-ruler-problem">7.4.1. The Golomb ruler problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/examples_revisited.html#the-n-queens-problem">7.4.2. The n-queens problem</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ls/ls_filtering.html">7.5. Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/guided_ls.html">7.6. Guided Local Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/metaheuristics.html">7.7. Metaheuristics and <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ls/metaheuristics.html#tabu-search">7.7.1. Tabu Search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/metaheuristics.html#simulated-annealing">7.7.2. Simulated Annealing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ls/ls_summary.html">7.8. Summary</a></li>
+</ul>
+</div>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<table>
+<tr>
+<td width="60"><img src="../_static/logo.png" width="50" height="50"  alt="" /></td>
+<td><p class="library_name">Google <a href="http://code.google.com/p/or-tools/"><strong>or-tools</strong></a><br>open source library</p></td>
+</tr>
+</table>
+<h1>User's Manual</h1>
+
+  
+   
+
+
+
+<h3>Google search</h3>
+
+<form method="get" action="http://www.google.com/search">
+
+<div style="padding:-1px;width:15em;">
+<table border="0" cellpadding="0">
+<tr><td>
+<input type="text"   name="q" size="25"
+ maxlength="255" value="" />
+<input type="submit" value="Go" /></td></tr>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
+</div>
+
+</form>
+</br>
+
+
+
+
+  <h3>Welcome</h3>
+  
+  <ul>
+  	<li><a href="../index.html">Foreword and content</a></li>
+  	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
+  </ul>
+  
+   
+	
+
+
+  <h3>Tutorial examples</h3>
+  
+  <ul>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#C++">C++</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Python">Python</a></li>	
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Java">Java</a></li>
+	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html#Csharp">C#</a></li>
+</ul>
+  
+   
+	
+
+<h3>Chapters</h3>
+
+<h5>Part I: Basics</h5>
+<ul>
+<li><a class="reference internal" href="introduction.html">1. Introduction to CP</a></li>
+<li><a class="reference internal" href="first_steps.html">2. First steps with or-tools</a></li>
+<li><a class="reference internal" href="objectives.html">3. Using objectives</a></li>
+<li><a class="reference internal" href="reification.html">4. Reification</a></li>
+<li><a class="reference internal" href="scheduling.html">5. Scheduling</a></li>
+</ul>
+
+<h5>Part II: Customization</h5>
+<ul>
+<li><a class="reference internal" href="search_primitives.html">6. Search primitives</li>
+<li><a class="reference internal" href="#">7. Local Search</a></li>
+<li><a class="reference internal" href="LNS.html">8. Large Neighbourhood Search</a></li>
+<li><a class="reference internal" href="custom_constraints.html">9. Custom constraints</a></li>
+</ul>
+
+<h5>Part III: Routing</h5>
+<ul>
+<li><a class="reference internal" href="TSP.html">10. TSP with constraints</a></li>
+<li><a class="reference internal" href="VRP.html">11. VRP with constraints</a></li>
+</ul>
+
+<h5>Part IV: Technicalities</h5>
+<ul>
+<li><a class="reference internal" href="utilities.html">12. Utilities</a></li>
+<li><a class="reference internal" href="modeling_tricks.html">13. Modeling tricks</a></li>
+<li><a class="reference internal" href="under_the_hood.html">14. Under the hood</a></li>
+</ul>
+
+<h5>Appendices</h5>
+<ul>
+<li><a class="reference internal" href="../genindex.html">Index</a></li>
+</ul>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ls/local_search.html" title="7.1. What is Local Search (LS)?"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="search_primitives/summary.html" title="6.9. Summary"
+             >previous</a> |</li>
+        <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Google.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
+    </div>
+  </body>
+</html>

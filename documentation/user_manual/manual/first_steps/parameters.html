@@ -115,7 +115,7 @@ a help string.</p>
 <p>You&#8217;ll find the code in the file <a class="reference external" href="../../../tutorials/C++/chap2/cp_is_fun4.cc">tutorials/C++/chap2/cp_is_fun4.cc</a>.</p>
 <p>Parameters can be transferred to the solver in several ways.</p>
 <div class="section" id="the-solverparameters-struct">
-<h3>2.5.2.1. The <tt class="docutils literal"><span class="pre">SolverParameters</span></tt> struct</h3>
+<span id="parameters-solverparameters-struct"></span><h3>2.5.2.1. The <tt class="docutils literal"><span class="pre">SolverParameters</span></tt> struct</h3>
 <p>First, you can invoke
 the constructor of the <tt class="docutils literal"><span class="pre">Solver</span></tt> that takes a <tt class="docutils literal"><span class="pre">SolverParameters</span></tt> struct:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="c1">// Use some profiling and change the default parameters of the solver</span>
@@ -192,21 +192,30 @@ we delay the discussion of this topic until the chapter <a class="reference inte
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="../../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="../../index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -225,7 +234,13 @@ we delay the discussion of this topic until the chapter <a class="reference inte
    
 	
 
-  <h3>Sections</a></h3>
+  <h3>Previous section</h3>
+  <p class="topless"><a href="monitors.html"
+                        title="previous chapter">2.4. <tt class="docutils literal docutils literal docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal docutils literal docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</a></p>
+  <h3>Next section</h3>
+  <p class="topless"><a href="supported_languages.html"
+                        title="next chapter">2.6. Other supported languages</a></p>
+  <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">2.5. Parameters</a><ul>
 <li><a class="reference internal" href="#google-s-gflags">2.5.1. Google&#8217;s gflags</a></li>
@@ -261,7 +276,7 @@ we delay the discussion of this topic until the chapter <a class="reference inte
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>

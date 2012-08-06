@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>3.5. Some global data about the search &mdash; or-tools User&#39;s Manual</title>
+    <title>3.5. Some global statistics about the search and how to limit the search &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -54,15 +54,14 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="some-global-data-about-the-search">
-<span id="data-search"></span><h1>3.5. Some global data about the search</h1>
-<p>[THIS SECTION IS IN CONSTRUCTION]</p>
-<p>In section <a class="reference internal" href="objective_functions.html#objective-functions"><em>Objective functions and how to compare search strategies</em></a>, we talked about some global indicators about the search.
+  <div class="section" id="some-global-statistics-about-the-search-and-how-to-limit-the-search">
+<span id="data-search"></span><h1>3.5. Some global statistics about the search and how to limit the search</h1>
+<p>In the section <a class="reference internal" href="objective_functions.html#objective-functions"><em>Objective functions and how to compare search strategies</em></a>, we talked about some global statistics about the search.
 In this section we review them one by one.</p>
 <p>You can find the code in the file <a class="reference external" href="../../../tutorials/C++/chap3/golomb2.cc">tutorials/C++/chap3/golomb2.cc</a></p>
 <div class="section" id="time">
 <span id="index-0"></span><h2>3.5.1. Time</h2>
-<p>This is probably the most common indicator. There exist several timing libraries or tools to measure the duration of an algorithm. The or-tools
+<p>This is probably the most common statistic. There exist several timing libraries or tools to measure the duration of an algorithm. The or-tools
 library offers a basic but portable timer. This timer starts to measure the time from the creation of the solver.</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">solver</span><span class="p">(</span><span class="s">&quot;TicTac&quot;</span><span class="p">)</span> <span class="n">s</span><span class="p">;</span>  <span class="c1">//  Starts the timer of the solver.</span>
 </pre></div>
@@ -79,8 +78,9 @@ library offers a basic but portable timer. This timer starts to measure the time
                                                              <span class="s">&quot; seconds&quot;</span><span class="p">;</span>
 </pre></div>
 </div>
-<p>As its name implies, the time measured is the wall time, i.e. ... TO BE COMPLETED.</p>
-<p>For instance, on my computer, the program in <tt class="file docutils literal"><span class="pre">golomb1.cc</span></tt> for <img class="math" src="../../_images/math/1819f547a53f667e1a44a49ba2bec08c28d7f222.png" alt="n = 9" style="vertical-align: 0px"/> takes</p>
+<p>As its name implies, the time measured is the wall time, i.e. it is the difference between the time at which a task
+finishes and the time at which the task started and not the actual time spent by the computer to solve a problem.</p>
+<p>For instance, on our computer, the program in <tt class="file docutils literal"><span class="pre">golomb1.cc</span></tt> for <img class="math" src="../../_images/math/1819f547a53f667e1a44a49ba2bec08c28d7f222.png" alt="n = 9" style="vertical-align: 0px"/> takes</p>
 <div class="highlight-bash"><div class="highlight"><pre>Time: 4,773 seconds
 </pre></div>
 </div>
@@ -90,6 +90,9 @@ library offers a basic but portable timer. This timer starts to measure the time
 </div>
 <div class="section" id="branches">
 <h2>3.5.3. Branches</h2>
+</div>
+<div class="section" id="searchlimits">
+<h2>3.5.4. <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s</h2>
 </div>
 </div>
 
@@ -122,21 +125,30 @@ library offers a basic but portable timer. This timer starts to measure the time
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="../../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="../../index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -155,12 +167,19 @@ library offers a basic but portable timer. This timer starts to measure the time
    
 	
 
-  <h3>Sections</a></h3>
+  <h3>Previous section</h3>
+  <p class="topless"><a href="content_model.html"
+                        title="previous chapter">3.4. What model did I pass to the solver?</a></p>
+  <h3>Next section</h3>
+  <p class="topless"><a href="second_implementation.html"
+                        title="next chapter">3.6. A second model and its implementation</a></p>
+  <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">3.5. Some global data about the search</a><ul>
+<li><a class="reference internal" href="#">3.5. Some global statistics about the search and how to limit the search</a><ul>
 <li><a class="reference internal" href="#time">3.5.1. Time</a></li>
 <li><a class="reference internal" href="#failures">3.5.2. Failures</a></li>
 <li><a class="reference internal" href="#branches">3.5.3. Branches</a></li>
+<li><a class="reference internal" href="#searchlimits">3.5.4. <tt class="docutils literal"><span class="pre">SearchLimit</span></tt>s</a></li>
 </ul>
 </li>
 </ul>
@@ -187,7 +206,7 @@ library offers a basic but portable timer. This timer starts to measure the time
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>

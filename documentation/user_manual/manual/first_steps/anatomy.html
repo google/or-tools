@@ -63,8 +63,8 @@ the cryptarithmetic puzzle in C++. In the next chapters, we will cover some of t
 in more details.</p>
 <div class="section" id="at-a-glance">
 <span id="anatomy-at-a-glance"></span><h2>2.3.1. At a glance</h2>
-<img alt="../../_images/anatomy1_2.png" src="../../_images/anatomy1_2.png" style="width: 400pt;" />
-<img alt="../../_images/anatomy3_4.png" src="../../_images/anatomy3_4.png" style="width: 350pt;" />
+<a class="reference internal image-reference" href="../../_images/anatomy1_2.png"><img alt="../../_images/anatomy1_2.png" src="../../_images/anatomy1_2.png" style="width: 400pt;" /></a>
+<a class="reference internal image-reference" href="../../_images/anatomy3_4.png"><img alt="../../_images/anatomy3_4.png" src="../../_images/anatomy3_4.png" style="width: 350pt;" /></a>
 </div>
 <div class="section" id="headers">
 <h2>2.3.2. Headers</h2>
@@ -176,7 +176,7 @@ and variables to encapsulate objectives (<tt class="docutils literal"><span clas
 <h2>2.3.6. Assert-like macros</h2>
 <p>It is always a good idea to program defensively. We use several assert-like macros
 defined in the header <tt class="docutils literal"><span class="pre">logging.h</span></tt> to assert some expressions. We know that
-the base has to be at greater than or equal to 10:</p>
+the base has to be greater than or equal to 10, so we add a check for this:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="c1">// Check if we have enough digits</span>
 <span class="n">CHECK_GE</span><span class="p">(</span><span class="n">kBase</span><span class="p">,</span> <span class="n">letters</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
 </pre></div>
@@ -380,6 +380,11 @@ was found by the solver.</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">solver</span><span class="p">.</span><span class="n">EndSearch</span><span class="p">();</span>
 </pre></div>
 </div>
+<p>This method ensures that the solver is ready for a new search and if you asked for a profile file, this file is saved.</p>
+<p>In <a class="reference internal" href="parameters.html#parameters-solverparameters-struct"><em>The SolverParameters struct</em></a>, we cover profile files in more details.</p>
+<p>What happens if you forget to end the search and didn&#8217;t ask for a profile file? If you don&#8217;t ask the solver to start a new search, nothing
+bad will happen. It is just better practice to finish the search with the method <tt class="docutils literal"><span class="pre">EndSearch()</span></tt>.</p>
+<p>See also <a class="reference internal" href="monitors.html#topic-difference-between-newsearch-and-solve"><em>What is the difference between NewSearch() and Solve()?</em></a>.</p>
 </div>
 </div>
 
@@ -412,21 +417,30 @@ was found by the solver.</p>
 <input type="text"   name="q" size="25"
  maxlength="255" value="" />
 <input type="submit" value="Go" /></td></tr>
-<tr><td align="center" style="font-size:65%">
-<input type="checkbox"  name="sitesearch"
- value="http://or-tools.googlecode.com/svn/trunk/documentation/" checked />only search or-tools documentation<br />
-</td></tr></table>
+<tr><td align="center" style="font-size:80%">
+Search:
+<select name="sitesearch" width="125" style="width: 125px">
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/user_manual/" selected>user's manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/faq/">faq</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/reference_manual/or-tools/">reference manual</option>
+<option value="http://or-tools.googlecode.com/svn/trunk/documentation/">All or-tools doc</option>
+</select>
+</td></tr>
+</table>
 </div>
 
 </form>
 </br>
 
+
+
+
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li>  
+  	<li><a href="../../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
-	<li><a href="../../index.html">Back to main page</a></li>
+	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
   
    
@@ -445,7 +459,13 @@ was found by the solver.</p>
    
 	
 
-  <h3>Sections</a></h3>
+  <h3>Previous section</h3>
+  <p class="topless"><a href="cryptarithmetic.html"
+                        title="previous chapter">2.2. The Cryptarithmetic Puzzle Problem and a first model</a></p>
+  <h3>Next section</h3>
+  <p class="topless"><a href="monitors.html"
+                        title="next chapter">2.4. <tt class="docutils literal"><span class="pre">SolutionCollector</span></tt>s and <tt class="docutils literal"><span class="pre">Assignment</span></tt>s to collect solutions</a></p>
+  <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">2.3. Anatomy of a basic C++ code</a><ul>
 <li><a class="reference internal" href="#at-a-glance">2.3.1. At a glance</a></li>
@@ -484,7 +504,7 @@ was found by the solver.</p>
     </div>
     <div class="footer">
         &copy; Copyright 2012, Google.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2pre.
     </div>
   </body>
 </html>
