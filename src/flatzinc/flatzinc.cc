@@ -321,7 +321,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
   if (use_impact) {
     DefaultPhaseParameters parameters;
     parameters.run_all_heuristics = true;
-    parameters.heuristic_period = 50;
+    parameters.heuristic_period = 30;
     parameters.restart_log_size = restart_log_size;
     parameters.display_level = log ?
         DefaultPhaseParameters::NORMAL :
