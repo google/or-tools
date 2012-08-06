@@ -561,19 +561,17 @@ int64 ComputeBranchRestart(int64 log) {
 // This structure stores 'var[index] (left?==:!=) value'.
 class ChoiceInfo {
  public:
-  ChoiceInfo() : value_(0), index_(-1), var_(NULL), left_(false) {}
+  ChoiceInfo() : value_(0), var_(NULL), left_(false) {}
 
-  ChoiceInfo(int index, int64 value, IntVar* const var, bool left)
-      : value_(value), index_(index), var_(var), left_(left) {}
+  ChoiceInfo(IntVar* const var, int64 value, bool left)
+      : value_(value), var_(var), left_(left) {}
 
   string DebugString() const {
-    return StringPrintf("var(%d) %s %lld",
-                        index_,
+    return StringPrintf("5s %s %lld",
+                        var_->name().c_str(),
                         (left_ ? "==" : "!="),
                         value_);
   }
-
-  int index() const { return index_; }
 
   IntVar* var() const { return var_; }
 
@@ -583,7 +581,6 @@ class ChoiceInfo {
 
  private:
   int64 value_;
-  int index_;
   IntVar* var_;
   bool left_;
 };
@@ -724,13 +721,13 @@ class RestartMonitor : public SearchMonitor {
       NoGood* const nogood = no_good_manager_->MakeNoGood();
       // if the nogood contains both x == 3 and x != 4, we can simplify
       // to keep only x == 3.
-      hash_set<int> positive_variable_indices;
+      hash_set<IntVar*> positive_variable_indices;
       for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_);
            it.ok();
            ++it) {
         const ChoiceInfo& choice = *it;
         if (choice.left()) {
-          positive_variable_indices.insert(choice.index());
+          positive_variable_indices.insert(choice.var());
         }
       }
       // We fill the nogood structure.
@@ -742,7 +739,7 @@ class RestartMonitor : public SearchMonitor {
         const int64 value = choice.value();
         if (choice.left()) {
           nogood->AddIntegerVariableEqualValueTerm(var, value);
-        } else if (!ContainsKey(positive_variable_indices, choice.index())) {
+        } else if (!ContainsKey(positive_variable_indices, choice.var())) {
           nogood->AddIntegerVariableNotEqualValueTerm(var, value);
         }
       }
@@ -840,11 +837,10 @@ class ImpactDecisionBuilder : public DecisionBuilder {
           } else {
             const ChoiceInfo* const info = restart_monitor_->choices()->Last();
             if (info != NULL) {
-              DCHECK_EQ(info->index(), current_var_index_.Value());
+              DCHECK_EQ(info->var(), vars_[current_var_index_.Value()]);
               DCHECK_EQ(info->value(), current_value_.Value());
-              const int index = info->index();
               restart_monitor_->choices()->SetLastValue(
-                  ChoiceInfo(index, info->value(), vars_[index], false));
+                  ChoiceInfo(info->var(), info->value(), false));
             }
             impact_recorder_.UpdateAfterFailure(current_var_index_.Value(),
                                                 current_value_.Value());
@@ -863,11 +859,8 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       if (FindVarValue(&var_index, &value)) {
         current_var_index_.SetValue(solver, var_index);
         current_value_.SetValue(solver, value);
-        restart_monitor_->choices()->Push(solver,
-                                          ChoiceInfo(var_index,
-                                                     value,
-                                                     vars_[var_index],
-                                                     true));
+        restart_monitor_->choices()->Push(
+            solver, ChoiceInfo(vars_[var_index], value, true));
         return solver->MakeAssignVariableValue(
             vars_[current_var_index_.Value()], current_value_.Value());
       } else {
@@ -889,10 +882,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
           DCHECK_EQ(info->index(), current_var_index_.Value());
           DCHECK_EQ(info->value(), current_value_.Value());
           restart_monitor_->choices()->SetLastValue(
-              ChoiceInfo(info->index(),
-                         info->value(),
-                         vars_[info->index()],
-                         false));
+              ChoiceInfo(info->var(), info->value(), false));
         }
       }
       fail_stamp_ = solver->fail_stamp();
@@ -902,7 +892,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         current_var_index_.SetValue(solver, var_index);
         current_value_.SetValue(solver, value);
         restart_monitor_->choices()->Push(
-            solver, ChoiceInfo(var_index, value, vars_[var_index], true));
+            solver, ChoiceInfo(vars_[var_index], value, true));
         return solver->MakeAssignVariableValue(
             vars_[current_var_index_.Value()], current_value_.Value());
       }
