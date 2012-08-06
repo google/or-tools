@@ -619,6 +619,15 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   }
 
   virtual Decision* Next(Solver* const solver) {
+    if (!init_done_ && parameters_.use_impacts) {
+      // Decide if we are doing impacts, no if one variable is too big.
+      for (int i = 0; i < size_; ++i) {
+        if (vars_[i]->Max() - vars_[i]->Min() > 0xFFFFFF) {
+          parameters_.use_impacts = false;
+          break;
+        }
+      }
+    }
     if (parameters_.use_impacts) {
       if (!init_done_) {
         if (parameters_.display_level != DefaultPhaseParameters::NONE) {
