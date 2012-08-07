@@ -391,20 +391,22 @@ class ImpactRecorder : public SearchMonitor {
   }
 
   virtual void AfterDecision(Decision* const d, bool apply) {
-    if (apply && current_var_ != -1) {
+    if (current_var_ != -1) {
       CHECK_GT(current_log_space_, 0.0);
       const double log_space = domain_watcher_->LogSearchSpaceSize();
-      const double impact = kPerfectImpact - log_space / current_log_space_;
-      UpdateImpact(current_var_, current_value_, impact);
+      if (apply) {
+        const double impact = kPerfectImpact - log_space / current_log_space_;
+        UpdateImpact(current_var_, current_value_, impact);
+      }
       current_log_space_ = log_space;
-    } else if (!apply) {
-      current_log_space_ = domain_watcher_->LogSearchSpaceSize();
     }
   }
 
   virtual void BeginFail() {
     if (current_var_ != -1) {
       UpdateImpact(current_var_, current_value_, kFailureImpact);
+      current_var_ = -1;
+      current_value_ = 0;
     }
   }
 
@@ -863,16 +865,21 @@ class RestartMonitor : public SearchMonitor {
 
 class RunHeuristicsAsDives : public Decision {
  public:
-  explicit RunHeuristicsAsDives(DefaultPhaseParameters::DisplayLevel level,
-                                bool run_all_heuristics,
-                                int random_seed,
-                                int heuristic_period)
+  RunHeuristicsAsDives(Solver* const solver,
+                       const std::vector<IntVar*>& vars,
+                       DefaultPhaseParameters::DisplayLevel level,
+                       bool run_all_heuristics,
+                       int random_seed,
+                       int heuristic_period,
+                       int heuristic_num_failures_limit)
       : heuristic_limit_(NULL),
         display_level_(level),
         run_all_heuristics_(run_all_heuristics),
         random_(random_seed),
         heuristic_period_(heuristic_period),
-        heuristic_branch_count_(0) {}
+        heuristic_branch_count_(0) {
+    Init(solver, vars, heuristic_num_failures_limit);
+  }
 
   virtual ~RunHeuristicsAsDives() {
     STLDeleteElements(&heuristics_);
@@ -918,9 +925,9 @@ class RunHeuristicsAsDives : public Decision {
     }
   }
 
-  void InitHeuristics(Solver* const solver,
-                      const std::vector<IntVar*>& vars,
-                      int heuristic_num_failures_limit) {
+  void Init(Solver* const solver,
+            const std::vector<IntVar*>& vars,
+            int heuristic_num_failures_limit) {
     const int kRunOnce = 1;
     const int kRunMore = 2;
     const int kRunALot = 3;
@@ -1021,39 +1028,37 @@ class RunHeuristicsAsDives : public Decision {
   int heuristic_branch_count_;
 };
 
-// ---------- ImpactDecisionBuilder ----------
+// ---------- DefaultIntegerSearch ----------
 
 // Default phase decision builder.
-class ImpactDecisionBuilder : public DecisionBuilder {
+class DefaultIntegerSearch : public DecisionBuilder {
  public:
-  ImpactDecisionBuilder(Solver* const solver,
-                        const std::vector<IntVar*>& vars,
-                        const DefaultPhaseParameters& parameters)
-
-      : domain_watcher_(vars, ImpactRecorder::kLogCacheSize),
+  DefaultIntegerSearch(Solver* const solver,
+                       const std::vector<IntVar*>& vars,
+                       const DefaultPhaseParameters& parameters)
+      : vars_(vars),
+        parameters_(parameters),
+        domain_watcher_(vars, ImpactRecorder::kLogCacheSize),
         impact_recorder_(solver,
                          &domain_watcher_,
                          vars,
                          parameters.display_level),
-        vars_(vars),
-        parameters_(parameters),
-        init_done_(false),
-        runner_(parameters_.display_level,
-                parameters_.run_all_heuristics,
-                parameters_.random_seed,
-                parameters_.heuristic_period) {
-    runner_.InitHeuristics(solver,
-                           vars_,
-                           parameters_.heuristic_num_failures_limit);
-  }
+        heuristics_(solver,
+                    vars_,
+                    parameters_.display_level,
+                    parameters_.run_all_heuristics,
+                    parameters_.random_seed,
+                    parameters_.heuristic_period,
+                    parameters_.heuristic_num_failures_limit),
+        init_done_(false) {}
 
-  virtual ~ImpactDecisionBuilder() {}
+  virtual ~DefaultIntegerSearch() {}
 
   virtual Decision* Next(Solver* const solver) {
     CheckInit(solver);
 
-    if (runner_.ShouldRun()) {
-      return &runner_;
+    if (heuristics_.ShouldRun()) {
+      return &heuristics_;
     }
 
     IntVar* var = NULL;
@@ -1069,6 +1074,9 @@ class ImpactDecisionBuilder : public DecisionBuilder {
                               std::vector<SearchMonitor*>* const extras) {
     CHECK_NOTNULL(solver);
     CHECK_NOTNULL(extras);
+    if (parameters_.use_impacts) {
+      impact_recorder_.Install();
+    }
     if (parameters_.restart_log_size >= 0) {
       extras->push_back(solver->RevAlloc(
           new RestartMonitor(solver, parameters_, &domain_watcher_)));
@@ -1167,12 +1175,12 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
   // ----- data members -----
 
-  DomainWatcher domain_watcher_;
-  ImpactRecorder impact_recorder_;
   std::vector<IntVar*> vars_;
   DefaultPhaseParameters parameters_;
+  DomainWatcher domain_watcher_;
+  ImpactRecorder impact_recorder_;
+  RunHeuristicsAsDives heuristics_;
   bool init_done_;
-  RunHeuristicsAsDives runner_;
 };
 }  // namespace
 
@@ -1186,6 +1194,6 @@ DecisionBuilder* Solver::MakeDefaultPhase(const std::vector<IntVar*>& vars) {
 DecisionBuilder* Solver::MakeDefaultPhase(
     const std::vector<IntVar*>& vars,
     const DefaultPhaseParameters& parameters) {
-  return RevAlloc(new ImpactDecisionBuilder(this, vars, parameters));
+  return RevAlloc(new DefaultIntegerSearch(this, vars, parameters));
 }
 }  // namespace operations_research
