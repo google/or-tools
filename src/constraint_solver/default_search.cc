@@ -589,7 +589,7 @@ class ChoiceInfo {
 class RestartMonitor : public SearchMonitor {
  public:
   RestartMonitor(Solver* const solver,
-                 const DefaultPhaseParameters& parameters,
+                 DefaultPhaseParameters parameters,
                  ImpactRecorder* const impact_recorder)
       : SearchMonitor(solver),
         parameters_(parameters),
@@ -607,12 +607,22 @@ class RestartMonitor : public SearchMonitor {
 
   virtual void ApplyDecision(Decision* const d) {
     branches_between_restarts_++;
+    d->Accept(&find_var_);
+    if (find_var_.valid()) {
+      choices_.Push(solver(),
+                    ChoiceInfo(find_var_.var(), find_var_.value(), true));
+    }
   }
 
   virtual void RefuteDecision(Decision* const d) {
     CHECK_NOTNULL(d);
     Solver* const s = solver();
     branches_between_restarts_++;
+    d->Accept(&find_var_);
+    if (find_var_.valid()) {
+      choices_.Push(solver(),
+                    ChoiceInfo(find_var_.var(), find_var_.value(), false));
+    }
     if (CheckRestartOnRefute(s)) {
       DoRestartAndAddNoGood(s);
       RestartCurrentSearch();
@@ -628,8 +638,14 @@ class RestartMonitor : public SearchMonitor {
     }
   }
 
-  SimpleRevFIFO<ChoiceInfo>* choices() {
-    return &choices_;
+  virtual bool AtSolution() {
+    if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+      LOG(INFO) << "Found a solution after the following decisions:";
+      for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_); it.ok(); ++it) {
+        LOG(INFO) << "  " << (*it).DebugString();
+      }
+    }
+    return false;
   }
 
   void Install() {
@@ -640,6 +656,61 @@ class RestartMonitor : public SearchMonitor {
   }
 
  private:
+  class FindVar : public DecisionVisitor {
+   public:
+    FindVar() : var_(NULL), value_(0), valid_(false) {}
+
+    virtual ~FindVar() {}
+
+    virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
+      var_ = var;
+      value_ = value;
+      valid_ = true;
+    }
+
+    virtual void VisitSplitVariableDomain(IntVar* const var,
+                                          int64 value,
+                                          bool start_with_lower_half) {
+      valid_ = false;
+    }
+
+    virtual void VisitScheduleOrPostpone(IntervalVar* const var, int64 est) {
+      valid_ = false;
+    }
+
+    virtual void VisitTryRankFirst(SequenceVar* const sequence, int index) {
+      valid_ = false;
+    }
+
+    virtual void VisitTryRankLast(SequenceVar* const sequence, int index) {
+      valid_ = false;
+    }
+
+    virtual void VisitUnknownDecision() {
+      valid_ = false;
+    }
+
+    // Indicates whether name and value can be called.
+    bool valid() { return valid_; }
+
+    // Returns the name of the current variable.
+    IntVar* const var() const {
+    CHECK(valid_);
+    return var_;
+    }
+
+    // Returns the value of the current variable.
+    int64 value() {
+      CHECK(valid_);
+      return value_;
+    }
+
+   private:
+    IntVar* var_;
+    int64 value_;
+    bool valid_;
+  };
+
   // Called before applying the refutation of the decision.  This
   // method must decide if we need to restart or not.  The main
   // decision is based on the restart_log_size and the current search
@@ -760,6 +831,7 @@ class RestartMonitor : public SearchMonitor {
   const int64 min_restart_period_;
   int64 maximum_restart_depth_;
   SimpleRevFIFO<ChoiceInfo> choices_;
+  FindVar find_var_;
 };
 
 // ---------- ImpactDecisionBuilder ----------
@@ -835,13 +907,6 @@ class ImpactDecisionBuilder : public DecisionBuilder {
             impact_recorder_.UpdateAfterAssignment(current_var_index_.Value(),
                                                    current_value_.Value());
           } else {
-            const ChoiceInfo* const info = restart_monitor_->choices()->Last();
-            if (info != NULL) {
-              DCHECK_EQ(info->var(), vars_[current_var_index_.Value()]);
-              DCHECK_EQ(info->value(), current_value_.Value());
-              restart_monitor_->choices()->SetLastValue(
-                  ChoiceInfo(info->var(), info->value(), false));
-            }
             impact_recorder_.UpdateAfterFailure(current_var_index_.Value(),
                                                 current_value_.Value());
           }
@@ -859,40 +924,18 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       if (FindVarValue(&var_index, &value)) {
         current_var_index_.SetValue(solver, var_index);
         current_value_.SetValue(solver, value);
-        restart_monitor_->choices()->Push(
-            solver, ChoiceInfo(vars_[var_index], value, true));
         return solver->MakeAssignVariableValue(
             vars_[current_var_index_.Value()], current_value_.Value());
       } else {
-        if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-          LOG(INFO) << "Found a solution after the following decisions:";
-          for (SimpleRevFIFO<ChoiceInfo>::Iterator it(
-                   restart_monitor_->choices());
-               it.ok();
-               ++it) {
-            LOG(INFO) << "  " << (*it).DebugString();
-          }
-        }
         return NULL;
       }
     } else {  // Not using impacts
-      if (solver->fail_stamp() != fail_stamp_) {
-        const ChoiceInfo* const info = restart_monitor_->choices()->Last();
-        if (info != NULL) {
-          DCHECK_EQ(info->index(), current_var_index_.Value());
-          DCHECK_EQ(info->value(), current_value_.Value());
-          restart_monitor_->choices()->SetLastValue(
-              ChoiceInfo(info->var(), info->value(), false));
-        }
-      }
       fail_stamp_ = solver->fail_stamp();
       int var_index = kUninitializedVarIndex;
       int64 value = 0;
       if (FindVarValueNoImpact(&var_index, &value)) {
         current_var_index_.SetValue(solver, var_index);
         current_value_.SetValue(solver, value);
-        restart_monitor_->choices()->Push(
-            solver, ChoiceInfo(vars_[var_index], value, true));
         return solver->MakeAssignVariableValue(
             vars_[current_var_index_.Value()], current_value_.Value());
       }
