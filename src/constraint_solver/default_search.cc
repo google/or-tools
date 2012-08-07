@@ -385,27 +385,29 @@ class ImpactRecorder : public SearchMonitor {
       current_value_ = find_var_.value();
       current_log_space_ = domain_watcher_->LogSearchSpaceSize();
     } else {
-      current_var_ = -1;
+      current_var_ = kUninitializedVarIndex;
       current_value_ = 0;
     }
   }
 
   virtual void AfterDecision(Decision* const d, bool apply) {
-    if (current_var_ != -1) {
+    if (current_var_ != kUninitializedVarIndex) {
       CHECK_GT(current_log_space_, 0.0);
       const double log_space = domain_watcher_->LogSearchSpaceSize();
       if (apply) {
         const double impact = kPerfectImpact - log_space / current_log_space_;
         UpdateImpact(current_var_, current_value_, impact);
+        current_var_ = kUninitializedVarIndex;
+        current_value_ = 0;
       }
       current_log_space_ = log_space;
     }
   }
 
   virtual void BeginFail() {
-    if (current_var_ != -1) {
+    if (current_var_ != kUninitializedVarIndex) {
       UpdateImpact(current_var_, current_value_, kFailureImpact);
-      current_var_ = -1;
+      current_var_ = kUninitializedVarIndex;
       current_value_ = 0;
     }
   }
@@ -630,7 +632,6 @@ const double ImpactRecorder::kPerfectImpact = 1.0;
 const double ImpactRecorder::kFailureImpact = 1.0;
 const double ImpactRecorder::kInitFailureImpact = 2.0;
 const int ImpactRecorder::kUninitializedVarIndex = -1;
-
 
 // ----- Restart -----
 
@@ -1050,6 +1051,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
                     parameters_.random_seed,
                     parameters_.heuristic_period,
                     parameters_.heuristic_num_failures_limit),
+        restart_monitor_(solver, parameters_, &domain_watcher_),
         init_done_(false) {}
 
   virtual ~DefaultIntegerSearch() {}
@@ -1075,11 +1077,10 @@ class DefaultIntegerSearch : public DecisionBuilder {
     CHECK_NOTNULL(solver);
     CHECK_NOTNULL(extras);
     if (parameters_.use_impacts) {
-      impact_recorder_.Install();
+      extras->push_back(&impact_recorder_);
     }
     if (parameters_.restart_log_size >= 0) {
-      extras->push_back(solver->RevAlloc(
-          new RestartMonitor(solver, parameters_, &domain_watcher_)));
+      extras->push_back(&restart_monitor_);
     }
   }
 
@@ -1180,6 +1181,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
   DomainWatcher domain_watcher_;
   ImpactRecorder impact_recorder_;
   RunHeuristicsAsDives heuristics_;
+  RestartMonitor restart_monitor_;
   bool init_done_;
 };
 }  // namespace
