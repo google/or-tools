@@ -1003,7 +1003,6 @@ class ImpactDecisionBuilder : public DecisionBuilder {
                         const DefaultPhaseParameters& parameters)
       : impact_recorder_(vars, parameters.display_level),
         vars_(vars),
-        size_(vars.size()),
         parameters_(parameters),
         init_done_(false),
         fail_stamp_(kUninitializedFailStamp),
@@ -1023,7 +1022,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   virtual Decision* Next(Solver* const solver) {
     if (!init_done_ && parameters_.use_impacts) {
       // Decide if we are doing impacts, no if one variable is too big.
-      for (int i = 0; i < size_; ++i) {
+      for (int i = 0; i < vars_.size(); ++i) {
         if (vars_[i]->Max() - vars_[i]->Min() > 0xFFFFFF) {
           parameters_.use_impacts = false;
           break;
@@ -1033,7 +1032,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     if (parameters_.use_impacts) {
       if (!init_done_) {
         if (parameters_.display_level != DefaultPhaseParameters::NONE) {
-          LOG(INFO) << "Init impact based search phase on " << size_
+          LOG(INFO) << "Init impact based search phase on " << vars_.size()
                     << " variables, initialization splits = "
                     << parameters_.initialization_splits
                     << ", heuristic_period = " << parameters_.heuristic_period
@@ -1126,7 +1125,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     *var_index = -1;
     *value = 0;
     double best_var_impact = -std::numeric_limits<double>::max();
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         int64 current_value = 0;
         double current_var_impact = 0.0;
@@ -1150,7 +1149,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     CHECK_NOTNULL(value);
     *var_index = -1;
     *value = 0;
-    for (int i = 0; i < size_; ++i) {
+    for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         *var_index = i;
         *value = vars_[i]->Min();
@@ -1164,14 +1163,14 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
   ImpactRecorder impact_recorder_;
   std::vector<IntVar*> vars_;
-  const int size_;
   DefaultPhaseParameters parameters_;
   bool init_done_;
+  // Move 3 to ImpactRecorder as search monitor.
   uint64 fail_stamp_;
   Rev<int> current_var_index_;
   Rev<int64> current_value_;
   RunHeuristicsAsDives runner_;
-  int heuristic_branch_count_;
+  int heuristic_branch_count_; // Move to runner.
 };
 
 const int ImpactDecisionBuilder::kUninitializedVarIndex = -1;
