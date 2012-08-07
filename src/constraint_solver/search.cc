@@ -1232,6 +1232,9 @@ class RandomValueSelector : public ValueSelector {
 
 int64 RandomValueSelector::Select(const IntVar* const v, int64 id) {
   const int64 span = v->Max() - v->Min() + 1;
+  if (span > 0xFFFFFF) {
+    return v->Min();
+  }
   const uint64 size = v->Size();
   Solver* const s = v->solver();
   if (size > span / 4) {  // Dense enough, we can try to find the
@@ -1282,6 +1285,9 @@ class CenterValueSelector : public ValueSelector {
 int64 CenterValueSelector::Select(const IntVar* const v, int64 id) {
   const int64 vmin = v->Min();
   const int64 vmax = v->Max();
+  if (vmax - vmin > 0xFFFFFF) {
+    return vmin;
+  }
   const int64 mid = (vmin + vmax) / 2;
   if (v->Contains(mid)) {
     return mid;

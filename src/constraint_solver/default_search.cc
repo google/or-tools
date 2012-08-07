@@ -30,6 +30,7 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "util/cached_log.h"
 #include "base/random.h"
+#include "util/string_array.h"
 
 DEFINE_int32(cp_impact_divider, 10, "Divider for continuous update.");
 
@@ -454,12 +455,12 @@ class ImpactRecorder : public SearchMonitor {
 
   void FirstRun(int64 splits) {
     Solver* const s = solver();
-    ResetAllImpacts();
     current_log_space_ = domain_watcher_->LogSearchSpaceSize();
     if (display_level_ != DefaultPhaseParameters::NONE) {
       LOG(INFO) << "  - initial log2(SearchSpace) = " << current_log_space_;
     }
     const int64 init_time = s->wall_time();
+    ResetAllImpacts();
     int64 removed_counter = 0;
     FirstRunVariableContainers* container = s->RevAlloc(
         new FirstRunVariableContainers(this, splits));
@@ -1099,6 +1100,13 @@ class DefaultIntegerSearch : public DecisionBuilder {
     visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
   }
 
+  virtual string DebugString() const {
+    string out = "DefaultIntegerSearch(";
+    out.append(DebugStringVector(vars_, ", "));
+    out.append(")");
+    return out;
+  }
+
  private:
   void CheckInit(Solver* const solver) {
     if (init_done_) {
@@ -1108,23 +1116,26 @@ class DefaultIntegerSearch : public DecisionBuilder {
       // Decide if we are doing impacts, no if one variable is too big.
       for (int i = 0; i < vars_.size(); ++i) {
         if (vars_[i]->Max() - vars_[i]->Min() > 0xFFFFFF) {
+          VLOG(1) << "Domains are too large, switching to simple heuristics";
+          LOG(INFO) << vars_[i]->DebugString();
           parameters_.use_impacts = false;
+          init_done_ = true;
           return;
         }
       }
+      if (parameters_.display_level != DefaultPhaseParameters::NONE) {
+        LOG(INFO) << "Init impact based search phase on " << vars_.size()
+                  << " variables, initialization splits = "
+                  << parameters_.initialization_splits
+                  << ", heuristic_period = " << parameters_.heuristic_period
+                  << ", run_all_heuristics = "
+                  << parameters_.run_all_heuristics
+                  << ", restart_log_size = " << parameters_.restart_log_size;
+      }
+      // We need to reset the impacts because FirstRun calls RemoveValues
+      // which can result in a Fail() therefore calling this method again.
+      impact_recorder_.FirstRun(parameters_.initialization_splits);
     }
-    if (parameters_.display_level != DefaultPhaseParameters::NONE) {
-      LOG(INFO) << "Init impact based search phase on " << vars_.size()
-                << " variables, initialization splits = "
-                << parameters_.initialization_splits
-                << ", heuristic_period = " << parameters_.heuristic_period
-                << ", run_all_heuristics = "
-                << parameters_.run_all_heuristics
-                << ", restart_log_size = " << parameters_.restart_log_size;
-    }
-    // We need to reset the impacts because FirstRun calls RemoveValues
-    // which can result in a Fail() therefore calling this method again.
-    impact_recorder_.FirstRun(parameters_.initialization_splits);
     if (parameters_.persistent_impact) {
       init_done_ = true;
     } else {
