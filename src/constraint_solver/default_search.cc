@@ -372,7 +372,7 @@ class ImpactRecorder {
     }
   }
 
-  void ResetImpacts() {
+  void ResetAllImpacts() {
     for (int i = 0; i < size_; ++i) {
       original_min_[i] = vars_[i]->Min();
       // By default, we init impacts to 2.0 -> equivalent to failure.
@@ -417,7 +417,7 @@ class ImpactRecorder {
   }
 
   void FirstRun(Solver* const solver, int64 splits) {
-    ResetImpacts();
+    ResetAllImpacts();
     current_log_space_ = domain_watcher_->LogSearchSpaceSize();
     if (display_level_ != DefaultPhaseParameters::NONE) {
       LOG(INFO) << "  - initial log2(SearchSpace) = " << current_log_space_;
@@ -844,11 +844,14 @@ class RunHeuristicsAsDives : public Decision {
  public:
   explicit RunHeuristicsAsDives(DefaultPhaseParameters::DisplayLevel level,
                                 bool run_all_heuristics,
-                                int random_seed)
+                                int random_seed,
+                                int heuristic_period)
       : heuristic_limit_(NULL),
         display_level_(level),
         run_all_heuristics_(run_all_heuristics),
-        random_(random_seed) {}
+        random_(random_seed),
+        heuristic_period_(heuristic_period),
+        heuristic_branch_count_(0) {}
 
   virtual ~RunHeuristicsAsDives() {
     STLDeleteElements(&heuristics_);
@@ -861,6 +864,11 @@ class RunHeuristicsAsDives : public Decision {
   }
 
   virtual void Refute(Solver* const solver) {}
+
+  bool ShouldRun() {
+    ++heuristic_branch_count_;
+    return heuristic_branch_count_ % heuristic_period_ == 0;
+  }
 
   bool RunOneHeuristic(Solver* const solver, int index) {
     HeuristicWrapper* const wrapper = heuristics_[index];
@@ -988,6 +996,8 @@ class RunHeuristicsAsDives : public Decision {
   DefaultPhaseParameters::DisplayLevel display_level_;
   bool run_all_heuristics_;
   ACMRandom random_;
+  const int heuristic_period_;
+  int heuristic_branch_count_;
 };
 
 // ---------- ImpactDecisionBuilder ----------
@@ -1012,8 +1022,8 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         current_value_(0),
         runner_(parameters_.display_level,
                 parameters_.run_all_heuristics,
-                parameters_.random_seed),
-        heuristic_branch_count_(0) {
+                parameters_.random_seed,
+                parameters_.heuristic_period) {
     runner_.InitHeuristics(solver,
                            vars_,
                            parameters_.heuristic_num_failures_limit);
@@ -1022,36 +1032,8 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   virtual ~ImpactDecisionBuilder() {}
 
   virtual Decision* Next(Solver* const solver) {
-    if (!init_done_ && parameters_.use_impacts) {
-      // Decide if we are doing impacts, no if one variable is too big.
-      for (int i = 0; i < vars_.size(); ++i) {
-        if (vars_[i]->Max() - vars_[i]->Min() > 0xFFFFFF) {
-          parameters_.use_impacts = false;
-          break;
-        }
-      }
-    }
+    CheckInit(solver);
     if (parameters_.use_impacts) {
-      if (!init_done_) {
-        if (parameters_.display_level != DefaultPhaseParameters::NONE) {
-          LOG(INFO) << "Init impact based search phase on " << vars_.size()
-                    << " variables, initialization splits = "
-                    << parameters_.initialization_splits
-                    << ", heuristic_period = " << parameters_.heuristic_period
-                    << ", run_all_heuristics = "
-                    << parameters_.run_all_heuristics
-                    << ", restart_log_size = " << parameters_.restart_log_size;
-        }
-        // We need to reset the impacts because FirstRun calls RemoveValues
-        // which can result in a Fail() therefore calling this method again.
-        impact_recorder_.FirstRun(solver, parameters_.initialization_splits);
-        if (parameters_.persistent_impact) {
-          init_done_ = true;
-        } else {
-          solver->SaveAndSetValue(&init_done_, true);
-        }
-      }
-
       if (current_var_index_.Value() == kUninitializedVarIndex &&
           fail_stamp_ != kUninitializedFailStamp) {
         // After solution or after heuristics.
@@ -1069,14 +1051,13 @@ class ImpactDecisionBuilder : public DecisionBuilder {
       }
       fail_stamp_ = solver->fail_stamp();
 
-      ++heuristic_branch_count_;
-      if (heuristic_branch_count_ % parameters_.heuristic_period == 0) {
+      if (runner_.ShouldRun()) {
         current_var_index_.SetValue(solver, kUninitializedVarIndex);
         return &runner_;
       }
       int var_index = kUninitializedVarIndex;
       int64 value = 0;
-      if (FindVarValue(&var_index, &value)) {
+      if (FindVarValueWithImpact(&var_index, &value)) {
         current_var_index_.SetValue(solver, var_index);
         current_value_.SetValue(solver, value);
         return solver->MakeAssignVariableValue(
@@ -1102,8 +1083,10 @@ class ImpactDecisionBuilder : public DecisionBuilder {
                               std::vector<SearchMonitor*>* const extras) {
     CHECK_NOTNULL(solver);
     CHECK_NOTNULL(extras);
-    extras->push_back(solver->RevAlloc(
-        new RestartMonitor(solver, parameters_, &domain_watcher_)));
+    if (parameters_.restart_log_size >= 0) {
+      extras->push_back(solver->RevAlloc(
+          new RestartMonitor(solver, parameters_, &domain_watcher_)));
+    }
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -1115,11 +1098,42 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   }
 
  private:
+  void CheckInit(Solver* const solver) {
+    if (!init_done_ && parameters_.use_impacts) {
+      // Decide if we are doing impacts, no if one variable is too big.
+      for (int i = 0; i < vars_.size(); ++i) {
+        if (vars_[i]->Max() - vars_[i]->Min() > 0xFFFFFF) {
+          parameters_.use_impacts = false;
+          break;
+        }
+      }
+    }
+    if (!init_done_) {
+      if (parameters_.display_level != DefaultPhaseParameters::NONE) {
+        LOG(INFO) << "Init impact based search phase on " << vars_.size()
+                  << " variables, initialization splits = "
+                  << parameters_.initialization_splits
+                  << ", heuristic_period = " << parameters_.heuristic_period
+                  << ", run_all_heuristics = "
+                  << parameters_.run_all_heuristics
+                  << ", restart_log_size = " << parameters_.restart_log_size;
+      }
+      // We need to reset the impacts because FirstRun calls RemoveValues
+      // which can result in a Fail() therefore calling this method again.
+      impact_recorder_.FirstRun(solver, parameters_.initialization_splits);
+      if (parameters_.persistent_impact) {
+        init_done_ = true;
+      } else {
+        solver->SaveAndSetValue(&init_done_, true);
+      }
+    }
+  }
+
   // This method will do an exhaustive scan of all domains of all
   // variables to select the variable with the maximal sum of impacts
   // per value in its domain, and then select the value with the
   // minimal impact.
-  bool FindVarValue(int* const var_index, int64* const value) {
+  bool FindVarValueWithImpact(int* const var_index, int64* const value) {
     CHECK_NOTNULL(var_index);
     CHECK_NOTNULL(value);
     *var_index = -1;
@@ -1171,7 +1185,6 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   Rev<int> current_var_index_;
   Rev<int64> current_value_;
   RunHeuristicsAsDives runner_;
-  int heuristic_branch_count_; // Move to runner.
 };
 
 const int ImpactDecisionBuilder::kUninitializedVarIndex = -1;
