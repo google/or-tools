@@ -210,7 +210,8 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
                                            bool ignore_annotations,
                                            bool use_impact,
                                            double restart_log_size,
-                                           bool log) {
+                                           bool log,
+                                           bool verbose_impact) {
   AstNode* annotations = solve_annotations_;
   if (annotations && !ignore_annotations) {
     std::vector<AstNode*> flat_annotations;
@@ -318,13 +319,15 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
   } else {
     free_search_ = true;
   }
-  if (use_impact) {
+  if (use_impact && free_search_) {
     DefaultPhaseParameters parameters;
     parameters.run_all_heuristics = true;
     parameters.heuristic_period = 30;
     parameters.restart_log_size = restart_log_size;
     parameters.display_level = log ?
-        DefaultPhaseParameters::NORMAL :
+        (verbose_impact ?
+         DefaultPhaseParameters::VERBOSE :
+         DefaultPhaseParameters::NORMAL) :
         DefaultPhaseParameters::NONE;
     parameters.use_no_goods = true;
     parameters.var_selection_schema =
@@ -425,7 +428,8 @@ void FlatZincModel::Solve(int solve_frequency,
                           int time_limit_in_ms,
                           int simplex_frequency,
                           bool use_impact,
-                          double restart_log_size) {
+                          double restart_log_size,
+                          bool verbose_impact) {
   if (!parsed_ok_) {
     return;
   }
@@ -434,7 +438,8 @@ void FlatZincModel::Solve(int solve_frequency,
                          ignore_annotations,
                          use_impact,
                          restart_log_size,
-                         use_log);
+                         use_log,
+                         verbose_impact);
   bool print_last = false;
   if (all_solutions && num_solutions == 0) {
     num_solutions = kint32max;

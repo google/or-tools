@@ -144,7 +144,8 @@ class FlatZincModel {
              int time_limit_in_ms,
              int simplex_frequency,
              bool use_impact,
-             double restart_log_size);
+             double restart_log_size,
+             bool verbose_impact);
 
   // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
   void Parse(const std::string& fileName);
@@ -165,7 +166,8 @@ class FlatZincModel {
                               bool ignore_annotations,
                               bool use_impact,
                               double restart_log_size,
-                              bool log);
+                              bool log,
+                              bool verbose_impact);
   string DebugString(AstNode* const ai) const;
 
   /// Number of integer variables

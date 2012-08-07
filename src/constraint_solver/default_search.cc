@@ -448,15 +448,16 @@ class ImpactRecorder : public SearchMonitor {
     init_count_++;
   }
 
-  void FirstRun(Solver* const solver, int64 splits) {
+  void FirstRun(int64 splits) {
+    Solver* const s = solver();
     ResetAllImpacts();
     current_log_space_ = domain_watcher_->LogSearchSpaceSize();
     if (display_level_ != DefaultPhaseParameters::NONE) {
       LOG(INFO) << "  - initial log2(SearchSpace) = " << current_log_space_;
     }
-    const int64 init_time = solver->wall_time();
+    const int64 init_time = s->wall_time();
     int64 removed_counter = 0;
-    FirstRunVariableContainers* container = solver->RevAlloc(
+    FirstRunVariableContainers* container = s->RevAlloc(
         new FirstRunVariableContainers(this, splits));
     // Loop on the variables, scan domains and initialize impacts.
     for (int var_index = 0; var_index < size_; ++var_index) {
@@ -483,7 +484,7 @@ class ImpactRecorder : public SearchMonitor {
       // Reset the number of impacts initialized.
       init_count_ = 0;
       // Use Solve() to scan all values of one variable.
-      solver->Solve(init_decision_builder);
+      s->Solve(init_decision_builder);
 
       // If we have not initialized all values, then they can be removed.
       // As the iterator is not stable w.r.t. deletion, we need to store
@@ -507,13 +508,13 @@ class ImpactRecorder : public SearchMonitor {
     if (display_level_ != DefaultPhaseParameters::NONE) {
       if (removed_counter) {
         LOG(INFO) << "  - init done, time = "
-                  << solver->wall_time() - init_time
+                  << s->wall_time() - init_time
                   << " ms, " << removed_counter
                   << " values removed, log2(SearchSpace) = "
                   << current_log_space_;
       } else {
         LOG(INFO) << "  - init done, time = "
-                  << solver->wall_time() - init_time << " ms";
+                  << s->wall_time() - init_time << " ms";
       }
     }
   }
@@ -1115,7 +1116,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
       }
       // We need to reset the impacts because FirstRun calls RemoveValues
       // which can result in a Fail() therefore calling this method again.
-      impact_recorder_.FirstRun(solver, parameters_.initialization_splits);
+      impact_recorder_.FirstRun(parameters_.initialization_splits);
       if (parameters_.persistent_impact) {
         init_done_ = true;
       } else {
