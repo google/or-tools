@@ -362,6 +362,7 @@ class ImpactRecorder {
   }
 
   void FirstRun(Solver* const solver, int64 splits) {
+    ResetImpacts();
     current_log_space_ = domain_watcher_.LogSearchSpaceSize();
     if (display_level_ != DefaultPhaseParameters::NONE) {
       LOG(INFO) << "  - initial log2(SearchSpace) = " << current_log_space_;
@@ -1042,7 +1043,6 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         }
         // We need to reset the impacts because FirstRun calls RemoveValues
         // which can result in a Fail() therefore calling this method again.
-        impact_recorder_.ResetImpacts();
         impact_recorder_.FirstRun(solver, parameters_.initialization_splits);
         if (parameters_.persistent_impact) {
           init_done_ = true;
