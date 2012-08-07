@@ -234,6 +234,22 @@ void ParserState::MarkComputedVariables(CtSpec* const spec,
     VLOG(1) << "Marking " << spec->DebugString();
     MarkAllVariables(spec->Arg(2), computed);
   }
+  if (id == "int_lin_eq" && spec->DefinedArg() == NULL) {
+    AstArray* const array_coefficients = spec->Arg(0)->getArray();
+    const int size = array_coefficients->a.size();
+    if (array_coefficients->a[0]->getInt() == -1) {
+      for (int i = 1; i < size; ++i) {
+        if (array_coefficients->a[i]->getInt() < 0) {
+          return;
+        }
+      }
+      // Can mark the first one, this is a hidden sum.
+      VLOG(1) << "Marking " << spec->DebugString();
+      AstArray* const array_variables = spec->Arg(1)->getArray();
+      computed->insert(Copy(array_variables->a[0]));
+      VLOG(1) << "  - " << array_variables->a[0]->DebugString();
+    }
+  }
 }
 
 void ParserState::Sanitize(CtSpec* const spec) {

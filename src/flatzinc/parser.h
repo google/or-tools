@@ -1031,7 +1031,7 @@ class CtSpec {
     defined_arg_ = arg;
   }
 
-  AstNode* const DefinedArg() const {
+  AstNode* DefinedArg() const {
     return defined_arg_;
   }
 

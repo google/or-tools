@@ -1117,7 +1117,6 @@ class DefaultIntegerSearch : public DecisionBuilder {
       for (int i = 0; i < vars_.size(); ++i) {
         if (vars_[i]->Max() - vars_[i]->Min() > 0xFFFFFF) {
           VLOG(1) << "Domains are too large, switching to simple heuristics";
-          LOG(INFO) << vars_[i]->DebugString();
           parameters_.use_impacts = false;
           init_done_ = true;
           return;
