@@ -75,6 +75,64 @@ class DomainWatcher {
   DISALLOW_COPY_AND_ASSIGN(DomainWatcher);
 };
 
+
+// ---------- FindVar decision visitor ---------
+
+class FindVar : public DecisionVisitor {
+ public:
+  FindVar() : var_(NULL), value_(0), valid_(false) {}
+
+  virtual ~FindVar() {}
+
+  virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
+    var_ = var;
+    value_ = value;
+    valid_ = true;
+  }
+
+  virtual void VisitSplitVariableDomain(IntVar* const var,
+                                        int64 value,
+                                        bool start_with_lower_half) {
+    valid_ = false;
+  }
+
+  virtual void VisitScheduleOrPostpone(IntervalVar* const var, int64 est) {
+    valid_ = false;
+  }
+
+  virtual void VisitTryRankFirst(SequenceVar* const sequence, int index) {
+    valid_ = false;
+  }
+
+  virtual void VisitTryRankLast(SequenceVar* const sequence, int index) {
+    valid_ = false;
+  }
+
+  virtual void VisitUnknownDecision() {
+    valid_ = false;
+  }
+
+  // Indicates whether name and value can be called.
+  bool valid() { return valid_; }
+
+  // Returns the name of the current variable.
+  IntVar* const var() const {
+    CHECK(valid_);
+    return var_;
+  }
+
+  // Returns the value of the current variable.
+  int64 value() {
+    CHECK(valid_);
+    return value_;
+  }
+
+ private:
+  IntVar* var_;
+  int64 value_;
+  bool valid_;
+};
+
 // ----- Auxilliary decision builders to init impacts -----
 
 // This class initialize impacts by scanning each value of the domain
@@ -298,9 +356,10 @@ class ImpactRecorder {
   static const double kFailureImpact;
   static const double kInitFailureImpact;
 
-  ImpactRecorder(const std::vector<IntVar*>& vars,
+  ImpactRecorder(DomainWatcher* const domain_watcher,
+                 const std::vector<IntVar*>& vars,
                  DefaultPhaseParameters::DisplayLevel display_level)
-      : domain_watcher_(vars, kLogCacheSize),
+      : domain_watcher_(domain_watcher),
         vars_(vars),
         size_(vars.size()),
         current_log_space_(0.0),
@@ -331,15 +390,11 @@ class ImpactRecorder {
   }
 
   void RecordLogSearchSpace() {
-    current_log_space_ = domain_watcher_.LogSearchSpaceSize();
+    current_log_space_ = domain_watcher_->LogSearchSpaceSize();
   }
 
   double LogSearchSpaceSize() const {
     return current_log_space_;
-  }
-
-  DomainWatcher* domain_watcher() {
-    return &domain_watcher_;
   }
 
   void UpdateImpact(int var_index, int64 value, double impact) {
@@ -352,7 +407,7 @@ class ImpactRecorder {
   }
 
   void InitImpact(int var_index, int64 value) {
-    const double log_space = domain_watcher_.LogSearchSpaceSize();
+    const double log_space = domain_watcher_->LogSearchSpaceSize();
     const double impact = kPerfectImpact - log_space / current_log_space_;
     const int64 value_index = value - original_min_[var_index];
     DCHECK_LT(var_index, size_);
@@ -363,7 +418,7 @@ class ImpactRecorder {
 
   void FirstRun(Solver* const solver, int64 splits) {
     ResetImpacts();
-    current_log_space_ = domain_watcher_.LogSearchSpaceSize();
+    current_log_space_ = domain_watcher_->LogSearchSpaceSize();
     if (display_level_ != DefaultPhaseParameters::NONE) {
       LOG(INFO) << "  - initial log2(SearchSpace) = " << current_log_space_;
     }
@@ -412,9 +467,9 @@ class ImpactRecorder {
         }
         CHECK(container->HasRemovedValues()) << var->DebugString();
         removed_counter += container->NumRemovedValues();
-        const double old_log = domain_watcher_.Log2(var->Size());
+        const double old_log = domain_watcher_->Log2(var->Size());
         var->RemoveValues(container->removed_values());
-        current_log_space_ += domain_watcher_.Log2(var->Size()) - old_log;
+        current_log_space_ += domain_watcher_->Log2(var->Size()) - old_log;
       }
     }
     if (display_level_ != DefaultPhaseParameters::NONE) {
@@ -433,7 +488,7 @@ class ImpactRecorder {
 
   void UpdateAfterAssignment(int var_index, int64 value) {
     CHECK_GT(current_log_space_, 0.0);
-    const double log_space = domain_watcher_.LogSearchSpaceSize();
+    const double log_space = domain_watcher_->LogSearchSpaceSize();
     const double impact = kPerfectImpact - log_space / current_log_space_;
     UpdateImpact(var_index, value, impact);
     current_log_space_ = log_space;
@@ -441,7 +496,7 @@ class ImpactRecorder {
 
   void UpdateAfterFailure(int var_index, int64 value) {
     UpdateImpact(var_index, value, kFailureImpact);
-    current_log_space_ = domain_watcher_.LogSearchSpaceSize();
+    current_log_space_ = domain_watcher_->LogSearchSpaceSize();
   }
 
   // This method scans the domain of one variable and returns the sum
@@ -534,7 +589,7 @@ class ImpactRecorder {
     InitVarImpactsWithSplits with_splits_;
   };
 
-  DomainWatcher domain_watcher_;
+  DomainWatcher* const domain_watcher_;
   std::vector<IntVar*> vars_;
   const int size_;
   double current_log_space_;
@@ -661,61 +716,6 @@ class RestartMonitor : public SearchMonitor {
   }
 
  private:
-  class FindVar : public DecisionVisitor {
-   public:
-    FindVar() : var_(NULL), value_(0), valid_(false) {}
-
-    virtual ~FindVar() {}
-
-    virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
-      var_ = var;
-      value_ = value;
-      valid_ = true;
-    }
-
-    virtual void VisitSplitVariableDomain(IntVar* const var,
-                                          int64 value,
-                                          bool start_with_lower_half) {
-      valid_ = false;
-    }
-
-    virtual void VisitScheduleOrPostpone(IntervalVar* const var, int64 est) {
-      valid_ = false;
-    }
-
-    virtual void VisitTryRankFirst(SequenceVar* const sequence, int index) {
-      valid_ = false;
-    }
-
-    virtual void VisitTryRankLast(SequenceVar* const sequence, int index) {
-      valid_ = false;
-    }
-
-    virtual void VisitUnknownDecision() {
-      valid_ = false;
-    }
-
-    // Indicates whether name and value can be called.
-    bool valid() { return valid_; }
-
-    // Returns the name of the current variable.
-    IntVar* const var() const {
-    CHECK(valid_);
-    return var_;
-    }
-
-    // Returns the value of the current variable.
-    int64 value() {
-      CHECK(valid_);
-      return value_;
-    }
-
-   private:
-    IntVar* var_;
-    int64 value_;
-    bool valid_;
-  };
-
   // Called before applying the refutation of the decision.  This
   // method must decide if we need to restart or not.  The main
   // decision is based on the restart_log_size and the current search
@@ -1001,7 +1001,9 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   ImpactDecisionBuilder(Solver* const solver,
                         const std::vector<IntVar*>& vars,
                         const DefaultPhaseParameters& parameters)
-      : impact_recorder_(vars, parameters.display_level),
+
+      : domain_watcher_(vars, ImpactRecorder::kLogCacheSize),
+        impact_recorder_(&domain_watcher_, vars, parameters.display_level),
         vars_(vars),
         parameters_(parameters),
         init_done_(false),
@@ -1101,9 +1103,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     CHECK_NOTNULL(solver);
     CHECK_NOTNULL(extras);
     extras->push_back(solver->RevAlloc(
-        new RestartMonitor(solver,
-                           parameters_,
-                           impact_recorder_.domain_watcher())));
+        new RestartMonitor(solver, parameters_, &domain_watcher_)));
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -1161,6 +1161,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
   // ----- data members -----
 
+  DomainWatcher domain_watcher_;
   ImpactRecorder impact_recorder_;
   std::vector<IntVar*> vars_;
   DefaultPhaseParameters parameters_;
