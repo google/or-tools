@@ -834,6 +834,158 @@ class RestartMonitor : public SearchMonitor {
   FindVar find_var_;
 };
 
+// ---------- Heuristics ----------
+
+class RunHeuristicsAsDives : public Decision {
+ public:
+  explicit RunHeuristicsAsDives(DefaultPhaseParameters::DisplayLevel level,
+                                bool run_all_heuristics,
+                                int random_seed)
+      : heuristic_limit_(NULL),
+        display_level_(level),
+        run_all_heuristics_(run_all_heuristics),
+        random_(random_seed) {}
+
+  virtual ~RunHeuristicsAsDives() {
+    STLDeleteElements(&heuristics_);
+  }
+
+  virtual void Apply(Solver* const solver) {
+    if (!RunAllHeuristics(solver)) {
+      solver->Fail();
+    }
+  }
+
+  virtual void Refute(Solver* const solver) {}
+
+  bool RunOneHeuristic(Solver* const solver, int index) {
+    HeuristicWrapper* const wrapper = heuristics_[index];
+
+    const bool result =
+        solver->SolveAndCommit(wrapper->phase, heuristic_limit_);
+    if (result && display_level_ != DefaultPhaseParameters::NONE) {
+      LOG(INFO) << "Solution found by heuristic " << wrapper->name;
+    }
+    return result;
+  }
+
+  bool RunAllHeuristics(Solver* const solver) {
+    if (run_all_heuristics_) {
+      for (int index = 0; index < heuristics_.size(); ++index) {
+        for (int run = 0; run < heuristics_[index]->runs; ++run) {
+          if (RunOneHeuristic(solver, index)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    } else {
+      const int index = random_.Uniform(heuristics_.size());
+      return RunOneHeuristic(solver, index);
+    }
+  }
+
+  void InitHeuristics(Solver* const solver,
+                      const std::vector<IntVar*>& vars,
+                      int heuristic_num_failures_limit) {
+    const int kRunOnce = 1;
+    const int kRunMore = 2;
+    const int kRunALot = 3;
+
+    heuristics_.push_back(
+        new HeuristicWrapper(solver,
+                             vars,
+                             Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
+                             Solver::ASSIGN_MIN_VALUE,
+                             "AssignMinValueToMinDomainSize",
+                             kRunOnce));
+
+    heuristics_.push_back(
+        new HeuristicWrapper(solver,
+                             vars,
+                             Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX,
+                             Solver::ASSIGN_MAX_VALUE,
+                             "AssignMaxValueToMinDomainSize",
+                             kRunOnce));
+
+    heuristics_.push_back(
+        new HeuristicWrapper(solver,
+                             vars,
+                             Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
+                             Solver::ASSIGN_CENTER_VALUE,
+                             "AssignCenterValueToMinDomainSize",
+                             kRunOnce));
+
+    heuristics_.push_back(
+        new HeuristicWrapper(solver,
+                             vars,
+                             Solver::CHOOSE_FIRST_UNBOUND,
+                             Solver::ASSIGN_RANDOM_VALUE,
+                             "AssignRandomValueToFirstUnbound",
+                             kRunALot));
+
+    heuristics_.push_back(
+        new HeuristicWrapper(solver,
+                             vars,
+                             Solver::CHOOSE_RANDOM,
+                             Solver::ASSIGN_MIN_VALUE,
+                             "AssignMinValueToRandomVariable",
+                             kRunMore));
+
+    heuristics_.push_back(
+        new HeuristicWrapper(solver,
+                             vars,
+                             Solver::CHOOSE_RANDOM,
+                             Solver::ASSIGN_MAX_VALUE,
+                             "AssignMaxValueToRandomVariable",
+                             kRunMore));
+
+    heuristics_.push_back(
+        new HeuristicWrapper(solver,
+                             vars,
+                             Solver::CHOOSE_RANDOM,
+                             Solver::ASSIGN_RANDOM_VALUE,
+                             "AssignRandomValueToRandomVariable",
+                             kRunMore));
+
+    heuristic_limit_ =
+        solver->MakeLimit(kint64max,  // time.
+                          kint64max,  // branches.
+                          heuristic_num_failures_limit,  // fails.
+                          kint64max);  // solutions.
+  }
+
+ private:
+  // This class wrap one heuristics with extra information: name and
+  // number of repetitions when it is run.
+  struct HeuristicWrapper {
+    HeuristicWrapper(Solver* const solver,
+                     const std::vector<IntVar*>& vars,
+                     Solver::IntVarStrategy var_strategy,
+                     Solver::IntValueStrategy value_strategy,
+                     const string& heuristic_name,
+                     int heuristic_runs)
+        : phase(solver->MakePhase(vars, var_strategy, value_strategy)),
+          name(heuristic_name),
+          runs(heuristic_runs) {}
+
+    // The decision builder we are going to use in this dive.
+    DecisionBuilder* const phase;
+    // A name for logging purposes.
+    const string name;
+    // How many times we will run this particular heuristic in case the
+    // parameter run_all_heuristics is true. This is useful for random
+    // heuristics where it makes sense to run them more than once.
+    const int runs;
+  };
+
+  std::vector<HeuristicWrapper*> heuristics_;
+  SearchMonitor* heuristic_limit_;
+  DefaultPhaseParameters::DisplayLevel display_level_;
+  bool run_all_heuristics_;
+  ACMRandom random_;
+};
+
 // ---------- ImpactDecisionBuilder ----------
 
 // Default phase decision builder.
@@ -853,17 +1005,16 @@ class ImpactDecisionBuilder : public DecisionBuilder {
         fail_stamp_(kUninitializedFailStamp),
         current_var_index_(kUninitializedVarIndex),
         current_value_(0),
-        heuristic_limit_(NULL),
-        random_(parameters_.random_seed),
-        runner_(NewPermanentCallback(this,
-                                     &ImpactDecisionBuilder::RunHeuristics)),
+        runner_(parameters_.display_level,
+                parameters_.run_all_heuristics,
+                parameters_.random_seed),
         heuristic_branch_count_(0) {
-    InitHeuristics(solver);
+    runner_.InitHeuristics(solver,
+                           vars_,
+                           parameters_.heuristic_num_failures_limit);
   }
 
-  virtual ~ImpactDecisionBuilder() {
-    STLDeleteElements(&heuristics_);
-  }
+  virtual ~ImpactDecisionBuilder() {}
 
   virtual Decision* Next(Solver* const solver) {
     if (!init_done_ && parameters_.use_impacts) {
@@ -961,119 +1112,6 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   }
 
  private:
-  // This class wrap one heuristics with extra information: name and
-  // number of repetitions when it is run.
-  struct HeuristicWrapper {
-    HeuristicWrapper(Solver* const solver,
-                     const std::vector<IntVar*>& vars,
-                     Solver::IntVarStrategy var_strategy,
-                     Solver::IntValueStrategy value_strategy,
-                     const string& heuristic_name,
-                     int heuristic_runs)
-        : phase(solver->MakePhase(vars, var_strategy, value_strategy)),
-          name(heuristic_name),
-          runs(heuristic_runs) {}
-
-    // The decision builder we are going to use in this dive.
-    DecisionBuilder* const phase;
-    // A name for logging purposes.
-    const string name;
-    // How many times we will run this particular heuristic in case the
-    // parameter run_all_heuristics is true. This is useful for random
-    // heuristics where it makes sense to run them more than once.
-    const int runs;
-  };
-
-  // ----- heuristic helper ------
-
-  class RunHeuristic : public Decision {
-   public:
-    explicit RunHeuristic(ResultCallback1<bool, Solver*>* call_heuristics)
-        : call_heuristics_(call_heuristics) {
-      CHECK_NOTNULL(call_heuristics);
-    }
-    virtual ~RunHeuristic() {}
-
-    virtual void Apply(Solver* const solver) {
-      if (!call_heuristics_->Run(solver)) {
-        solver->Fail();
-      }
-    }
-
-    virtual void Refute(Solver* const solver) {}
-
-   private:
-    scoped_ptr<ResultCallback1<bool, Solver*> >  call_heuristics_;
-  };
-
-  void InitHeuristics(Solver* const solver) {
-    const int kRunOnce = 1;
-    const int kRunMore = 2;
-    const int kRunALot = 3;
-
-    heuristics_.push_back(
-        new HeuristicWrapper(solver,
-                             vars_,
-                             Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
-                             Solver::ASSIGN_MIN_VALUE,
-                             "AssignMinValueToMinDomainSize",
-                             kRunOnce));
-
-    heuristics_.push_back(
-        new HeuristicWrapper(solver,
-                             vars_,
-                             Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX,
-                             Solver::ASSIGN_MAX_VALUE,
-                             "AssignMaxValueToMinDomainSize",
-                             kRunOnce));
-
-    heuristics_.push_back(
-        new HeuristicWrapper(solver,
-                             vars_,
-                             Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
-                             Solver::ASSIGN_CENTER_VALUE,
-                             "AssignCenterValueToMinDomainSize",
-                             kRunOnce));
-
-    heuristics_.push_back(
-        new HeuristicWrapper(solver,
-                             vars_,
-                             Solver::CHOOSE_FIRST_UNBOUND,
-                             Solver::ASSIGN_RANDOM_VALUE,
-                             "AssignRandomValueToFirstUnbound",
-                             kRunALot));
-
-    heuristics_.push_back(
-        new HeuristicWrapper(solver,
-                             vars_,
-                             Solver::CHOOSE_RANDOM,
-                             Solver::ASSIGN_MIN_VALUE,
-                             "AssignMinValueToRandomVariable",
-                             kRunMore));
-
-    heuristics_.push_back(
-        new HeuristicWrapper(solver,
-                             vars_,
-                             Solver::CHOOSE_RANDOM,
-                             Solver::ASSIGN_MAX_VALUE,
-                             "AssignMaxValueToRandomVariable",
-                             kRunMore));
-
-    heuristics_.push_back(
-        new HeuristicWrapper(solver,
-                             vars_,
-                             Solver::CHOOSE_RANDOM,
-                             Solver::ASSIGN_RANDOM_VALUE,
-                             "AssignRandomValueToRandomVariable",
-                             kRunMore));
-
-    heuristic_limit_ =
-        solver->MakeLimit(kint64max,  // time.
-                          kint64max,  // branches.
-                          parameters_.heuristic_num_failures_limit,  // fails.
-                          kint64max);  // solutions.
-  }
-
   // This method will do an exhaustive scan of all domains of all
   // variables to select the variable with the maximal sum of impacts
   // per value in its domain, and then select the value with the
@@ -1118,33 +1156,6 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     return false;
   }
 
-  bool RunOneHeuristic(Solver* const solver, int index) {
-    HeuristicWrapper* const wrapper = heuristics_[index];
-
-    const bool result =
-        solver->SolveAndCommit(wrapper->phase, heuristic_limit_);
-    if (result && parameters_.display_level != DefaultPhaseParameters::NONE) {
-      LOG(INFO) << "Solution found by heuristic " << wrapper->name;
-    }
-    return result;
-  }
-
-  bool RunHeuristics(Solver* const solver) {
-    if (parameters_.run_all_heuristics) {
-      for (int index = 0; index < heuristics_.size(); ++index) {
-        for (int run = 0; run < heuristics_[index]->runs; ++run) {
-          if (RunOneHeuristic(solver, index)) {
-            return true;
-          }
-        }
-      }
-      return false;
-    } else {
-      const int index = random_.Uniform(heuristics_.size());
-      return RunOneHeuristic(solver, index);
-    }
-  }
-
   // ----- data members -----
 
   ImpactRecorder impact_recorder_;
@@ -1155,10 +1166,7 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   uint64 fail_stamp_;
   Rev<int> current_var_index_;
   Rev<int64> current_value_;
-  std::vector<HeuristicWrapper*> heuristics_;
-  SearchMonitor* heuristic_limit_;
-  ACMRandom random_;
-  RunHeuristic runner_;
+  RunHeuristicsAsDives runner_;
   int heuristic_branch_count_;
   RestartMonitor* restart_monitor_;
 };
