@@ -1104,7 +1104,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
         }
       }
     }
-    if (!init_done_) {
+    if (!init_done_ && parameters_.use_impacts) {
       if (parameters_.display_level != DefaultPhaseParameters::NONE) {
         LOG(INFO) << "Init impact based search phase on " << vars_.size()
                   << " variables, initialization splits = "
