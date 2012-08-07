@@ -52,7 +52,7 @@ void MagicSquare(int grid_size) {
   const int sum = grid_size * (total_size + 1) / 2;
   // create the variables
   std::vector<IntVar*> vars;
-  solver.MakeIntVarArray(total_size, 1, total_size, "", &vars);
+  solver.MakeIntVarArray(total_size, 1, total_size, "v", &vars);
   solver.AddConstraint(solver.MakeAllDifferent(vars));
 
   // create the constraints

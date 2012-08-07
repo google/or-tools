@@ -567,7 +567,7 @@ class ChoiceInfo {
       : value_(value), var_(var), left_(left) {}
 
   string DebugString() const {
-    return StringPrintf("5s %s %lld",
+    return StringPrintf("%s %s %lld",
                         var_->name().c_str(),
                         (left_ ? "==" : "!="),
                         value_);
