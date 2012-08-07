@@ -338,6 +338,10 @@ class ImpactRecorder {
     return current_log_space_;
   }
 
+  DomainWatcher* domain_watcher() {
+    return &domain_watcher_;
+  }
+
   void UpdateImpact(int var_index, int64 value, double impact) {
     const int64 value_index = value - original_min_[var_index];
     const double current_impact = impacts_[var_index][value_index];
@@ -590,10 +594,10 @@ class RestartMonitor : public SearchMonitor {
  public:
   RestartMonitor(Solver* const solver,
                  DefaultPhaseParameters parameters,
-                 ImpactRecorder* const impact_recorder)
+                 DomainWatcher* const domain_watcher_)
       : SearchMonitor(solver),
         parameters_(parameters),
-        impact_recorder_(impact_recorder),
+        domain_watcher_(domain_watcher_),
         min_log_search_space_(std::numeric_limits<double>::infinity()),
         no_good_manager_(parameters_.restart_log_size >= 0 &&
                          parameters_.use_no_goods ?
@@ -731,9 +735,8 @@ class RestartMonitor : public SearchMonitor {
     // We do nothing if restart_log_size is < 0.
     if (parameters_.restart_log_size >= 0) {
       const int search_depth = solver->SearchDepth();
-      impact_recorder_->RecordLogSearchSpace();
       const double log_search_space_size =
-          impact_recorder_->LogSearchSpaceSize();
+          domain_watcher_->LogSearchSpaceSize();
       if (min_log_search_space_ > log_search_space_size) {
         min_log_search_space_ = log_search_space_size;
       }
@@ -824,7 +827,7 @@ class RestartMonitor : public SearchMonitor {
   }
 
   const DefaultPhaseParameters parameters_;
-  ImpactRecorder* const impact_recorder_;
+  DomainWatcher* const domain_watcher_;
   double min_log_search_space_;
   NoGoodManager* no_good_manager_;
   int64 branches_between_restarts_;
@@ -1098,9 +1101,10 @@ class ImpactDecisionBuilder : public DecisionBuilder {
                               std::vector<SearchMonitor*>* const extras) {
     CHECK_NOTNULL(solver);
     CHECK_NOTNULL(extras);
-    restart_monitor_ = solver->RevAlloc(
-        new RestartMonitor(solver, parameters_, &impact_recorder_));
-    extras->push_back(restart_monitor_);
+    extras->push_back(solver->RevAlloc(
+        new RestartMonitor(solver,
+                           parameters_,
+                           impact_recorder_.domain_watcher())));
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -1168,7 +1172,6 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   Rev<int64> current_value_;
   RunHeuristicsAsDives runner_;
   int heuristic_branch_count_;
-  RestartMonitor* restart_monitor_;
 };
 
 const int ImpactDecisionBuilder::kUninitializedVarIndex = -1;
