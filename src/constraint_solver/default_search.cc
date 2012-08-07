@@ -371,7 +371,8 @@ class ImpactRecorder : public SearchMonitor {
         domain_iterators_(new IntVarIterator*[size_]),
         display_level_(display_level),
         current_var_(kUninitializedVarIndex),
-        current_value_(0) {
+        current_value_(0),
+        init_done_(false) {
     for (int i = 0; i < size_; ++i) {
       domain_iterators_[i] = vars_[i]->MakeDomainIterator(true);
       var_map_[vars_[i]] = i;
@@ -379,6 +380,9 @@ class ImpactRecorder : public SearchMonitor {
   }
 
   virtual void ApplyDecision(Decision* const d) {
+    if (!init_done_) {
+      return;
+    }
     d->Accept(&find_var_);
     if (find_var_.valid()) {
       current_var_ = var_map_[find_var_.var()];
@@ -391,7 +395,7 @@ class ImpactRecorder : public SearchMonitor {
   }
 
   virtual void AfterDecision(Decision* const d, bool apply) {
-    if (current_var_ != kUninitializedVarIndex) {
+    if (init_done_ && current_var_ != kUninitializedVarIndex) {
       CHECK_GT(current_log_space_, 0.0);
       const double log_space = domain_watcher_->LogSearchSpaceSize();
       if (apply) {
@@ -405,7 +409,7 @@ class ImpactRecorder : public SearchMonitor {
   }
 
   virtual void BeginFail() {
-    if (current_var_ != kUninitializedVarIndex) {
+    if (init_done_ && current_var_ != kUninitializedVarIndex) {
       UpdateImpact(current_var_, current_value_, kFailureImpact);
       current_var_ = kUninitializedVarIndex;
       current_value_ = 0;
@@ -517,6 +521,7 @@ class ImpactRecorder : public SearchMonitor {
                   << s->wall_time() - init_time << " ms";
       }
     }
+    s->SaveAndSetValue(&init_done_, true);
   }
 
   // This method scans the domain of one variable and returns the sum
@@ -624,6 +629,7 @@ class ImpactRecorder : public SearchMonitor {
   int64 current_value_;
   FindVar find_var_;
   hash_map<IntVar*, int> var_map_;
+  bool init_done_;
 
   DISALLOW_COPY_AND_ASSIGN(ImpactRecorder);
 };
