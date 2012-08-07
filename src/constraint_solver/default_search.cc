@@ -1095,33 +1095,34 @@ class DefaultIntegerSearch : public DecisionBuilder {
 
  private:
   void CheckInit(Solver* const solver) {
-    if (!init_done_ && parameters_.use_impacts) {
+    if (init_done_) {
+      return;
+    }
+    if (parameters_.use_impacts) {
       // Decide if we are doing impacts, no if one variable is too big.
       for (int i = 0; i < vars_.size(); ++i) {
         if (vars_[i]->Max() - vars_[i]->Min() > 0xFFFFFF) {
           parameters_.use_impacts = false;
-          break;
+          return;
         }
       }
     }
-    if (!init_done_ && parameters_.use_impacts) {
-      if (parameters_.display_level != DefaultPhaseParameters::NONE) {
-        LOG(INFO) << "Init impact based search phase on " << vars_.size()
-                  << " variables, initialization splits = "
-                  << parameters_.initialization_splits
-                  << ", heuristic_period = " << parameters_.heuristic_period
-                  << ", run_all_heuristics = "
-                  << parameters_.run_all_heuristics
-                  << ", restart_log_size = " << parameters_.restart_log_size;
-      }
-      // We need to reset the impacts because FirstRun calls RemoveValues
-      // which can result in a Fail() therefore calling this method again.
-      impact_recorder_.FirstRun(parameters_.initialization_splits);
-      if (parameters_.persistent_impact) {
-        init_done_ = true;
-      } else {
-        solver->SaveAndSetValue(&init_done_, true);
-      }
+    if (parameters_.display_level != DefaultPhaseParameters::NONE) {
+      LOG(INFO) << "Init impact based search phase on " << vars_.size()
+                << " variables, initialization splits = "
+                << parameters_.initialization_splits
+                << ", heuristic_period = " << parameters_.heuristic_period
+                << ", run_all_heuristics = "
+                << parameters_.run_all_heuristics
+                << ", restart_log_size = " << parameters_.restart_log_size;
+    }
+    // We need to reset the impacts because FirstRun calls RemoveValues
+    // which can result in a Fail() therefore calling this method again.
+    impact_recorder_.FirstRun(parameters_.initialization_splits);
+    if (parameters_.persistent_impact) {
+      init_done_ = true;
+    } else {
+      solver->SaveAndSetValue(&init_done_, true);
     }
   }
 
