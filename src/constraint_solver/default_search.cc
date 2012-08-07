@@ -349,26 +349,62 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
 // This class will record the impacts of all assignment of values to
 // variables. Its main output is to find the optimal pair (variable/value)
 // based on default phase parameters.
-class ImpactRecorder {
+class ImpactRecorder : public SearchMonitor {
  public:
   static const int kLogCacheSize;
   static const double kPerfectImpact;
   static const double kFailureImpact;
   static const double kInitFailureImpact;
+  static const int kUninitializedVarIndex;
 
-  ImpactRecorder(DomainWatcher* const domain_watcher,
+  ImpactRecorder(Solver* const solver,
+                 DomainWatcher* const domain_watcher,
                  const std::vector<IntVar*>& vars,
                  DefaultPhaseParameters::DisplayLevel display_level)
-      : domain_watcher_(domain_watcher),
+      : SearchMonitor(solver),
+        domain_watcher_(domain_watcher),
         vars_(vars),
         size_(vars.size()),
         current_log_space_(0.0),
         impacts_(size_),
         original_min_(size_, 0LL),
         domain_iterators_(new IntVarIterator*[size_]),
-        display_level_(display_level) {
+        display_level_(display_level),
+        current_var_(kUninitializedVarIndex),
+        current_value_(0) {
     for (int i = 0; i < size_; ++i) {
       domain_iterators_[i] = vars_[i]->MakeDomainIterator(true);
+      var_map_[vars_[i]] = i;
+    }
+  }
+
+  virtual void ApplyDecision(Decision* const d) {
+    d->Accept(&find_var_);
+    if (find_var_.valid()) {
+      current_var_ = var_map_[find_var_.var()];
+      current_value_ = find_var_.value();
+      current_log_space_ = domain_watcher_->LogSearchSpaceSize();
+    } else {
+      current_var_ = -1;
+      current_value_ = 0;
+    }
+  }
+
+  virtual void AfterDecision(Decision* const d, bool apply) {
+    if (apply && current_var_ != -1) {
+      CHECK_GT(current_log_space_, 0.0);
+      const double log_space = domain_watcher_->LogSearchSpaceSize();
+      const double impact = kPerfectImpact - log_space / current_log_space_;
+      UpdateImpact(current_var_, current_value_, impact);
+      current_log_space_ = log_space;
+    } else if (!apply) {
+      current_log_space_ = domain_watcher_->LogSearchSpaceSize();
+    }
+  }
+
+  virtual void BeginFail() {
+    if (current_var_ != -1) {
+      UpdateImpact(current_var_, current_value_, kFailureImpact);
     }
   }
 
@@ -387,14 +423,6 @@ class ImpactRecorder {
         impacts_[i][j] = kInitFailureImpact;
       }
     }
-  }
-
-  void RecordLogSearchSpace() {
-    current_log_space_ = domain_watcher_->LogSearchSpaceSize();
-  }
-
-  double LogSearchSpaceSize() const {
-    return current_log_space_;
   }
 
   void UpdateImpact(int var_index, int64 value, double impact) {
@@ -484,19 +512,6 @@ class ImpactRecorder {
                   << solver->wall_time() - init_time << " ms";
       }
     }
-  }
-
-  void UpdateAfterAssignment(int var_index, int64 value) {
-    CHECK_GT(current_log_space_, 0.0);
-    const double log_space = domain_watcher_->LogSearchSpaceSize();
-    const double impact = kPerfectImpact - log_space / current_log_space_;
-    UpdateImpact(var_index, value, impact);
-    current_log_space_ = log_space;
-  }
-
-  void UpdateAfterFailure(int var_index, int64 value) {
-    UpdateImpact(var_index, value, kFailureImpact);
-    current_log_space_ = domain_watcher_->LogSearchSpaceSize();
   }
 
   // This method scans the domain of one variable and returns the sum
@@ -600,6 +615,10 @@ class ImpactRecorder {
   scoped_array<IntVarIterator*> domain_iterators_;
   int64 init_count_;
   const DefaultPhaseParameters::DisplayLevel display_level_;
+  int current_var_;
+  int64 current_value_;
+  FindVar find_var_;
+  hash_map<IntVar*, int> var_map_;
 
   DISALLOW_COPY_AND_ASSIGN(ImpactRecorder);
 };
@@ -608,6 +627,8 @@ const int ImpactRecorder::kLogCacheSize = 1000;
 const double ImpactRecorder::kPerfectImpact = 1.0;
 const double ImpactRecorder::kFailureImpact = 1.0;
 const double ImpactRecorder::kInitFailureImpact = 2.0;
+const int ImpactRecorder::kUninitializedVarIndex = -1;
+
 
 // ----- Restart -----
 
@@ -1005,21 +1026,18 @@ class RunHeuristicsAsDives : public Decision {
 // Default phase decision builder.
 class ImpactDecisionBuilder : public DecisionBuilder {
  public:
-  static const int kUninitializedVarIndex;
-  static const uint64 kUninitializedFailStamp;
-
   ImpactDecisionBuilder(Solver* const solver,
                         const std::vector<IntVar*>& vars,
                         const DefaultPhaseParameters& parameters)
 
       : domain_watcher_(vars, ImpactRecorder::kLogCacheSize),
-        impact_recorder_(&domain_watcher_, vars, parameters.display_level),
+        impact_recorder_(solver,
+                         &domain_watcher_,
+                         vars,
+                         parameters.display_level),
         vars_(vars),
         parameters_(parameters),
         init_done_(false),
-        fail_stamp_(kUninitializedFailStamp),
-        current_var_index_(kUninitializedVarIndex),
-        current_value_(0),
         runner_(parameters_.display_level,
                 parameters_.run_all_heuristics,
                 parameters_.random_seed,
@@ -1033,48 +1051,16 @@ class ImpactDecisionBuilder : public DecisionBuilder {
 
   virtual Decision* Next(Solver* const solver) {
     CheckInit(solver);
-    if (parameters_.use_impacts) {
-      if (current_var_index_.Value() == kUninitializedVarIndex &&
-          fail_stamp_ != kUninitializedFailStamp) {
-        // After solution or after heuristics.
-        impact_recorder_.RecordLogSearchSpace();
-      } else {
-        if (fail_stamp_ != kUninitializedFailStamp) {
-          if (solver->fail_stamp() == fail_stamp_) {
-            impact_recorder_.UpdateAfterAssignment(current_var_index_.Value(),
-                                                   current_value_.Value());
-          } else {
-            impact_recorder_.UpdateAfterFailure(current_var_index_.Value(),
-                                                current_value_.Value());
-          }
-        }
-      }
-      fail_stamp_ = solver->fail_stamp();
 
-      if (runner_.ShouldRun()) {
-        current_var_index_.SetValue(solver, kUninitializedVarIndex);
-        return &runner_;
-      }
-      int var_index = kUninitializedVarIndex;
-      int64 value = 0;
-      if (FindVarValueWithImpact(&var_index, &value)) {
-        current_var_index_.SetValue(solver, var_index);
-        current_value_.SetValue(solver, value);
-        return solver->MakeAssignVariableValue(
-            vars_[current_var_index_.Value()], current_value_.Value());
-      } else {
-        return NULL;
-      }
-    } else {  // Not using impacts
-      fail_stamp_ = solver->fail_stamp();
-      int var_index = kUninitializedVarIndex;
-      int64 value = 0;
-      if (FindVarValueNoImpact(&var_index, &value)) {
-        current_var_index_.SetValue(solver, var_index);
-        current_value_.SetValue(solver, value);
-        return solver->MakeAssignVariableValue(
-            vars_[current_var_index_.Value()], current_value_.Value());
-      }
+    if (runner_.ShouldRun()) {
+      return &runner_;
+    }
+
+    IntVar* var = NULL;
+    int64 value = 0;
+    if (FindVarValue(&var, &value)) {
+      return solver->MakeAssignVariableValue(var, value);
+    } else {
       return NULL;
     }
   }
@@ -1129,14 +1115,20 @@ class ImpactDecisionBuilder : public DecisionBuilder {
     }
   }
 
+  bool FindVarValue(IntVar** const var, int64* const value) {
+    return parameters_.use_impacts ?
+        FindVarValueWithImpact(var, value) :
+        FindVarValueNoImpact(var, value);
+  }
+
   // This method will do an exhaustive scan of all domains of all
   // variables to select the variable with the maximal sum of impacts
   // per value in its domain, and then select the value with the
   // minimal impact.
-  bool FindVarValueWithImpact(int* const var_index, int64* const value) {
-    CHECK_NOTNULL(var_index);
+  bool FindVarValueWithImpact(IntVar** const var, int64* const value) {
+    CHECK_NOTNULL(var);
     CHECK_NOTNULL(value);
-    *var_index = -1;
+    *var = NULL;
     *value = 0;
     double best_var_impact = -std::numeric_limits<double>::max();
     for (int i = 0; i < vars_.size(); ++i) {
@@ -1149,23 +1141,23 @@ class ImpactDecisionBuilder : public DecisionBuilder {
                                         parameters_.var_selection_schema,
                                         parameters_.value_selection_schema);
         if (current_var_impact > best_var_impact) {
-          *var_index = i;
+          *var = vars_[i];
           *value = current_value;
           best_var_impact = current_var_impact;
         }
       }
     }
-    return (*var_index != -1);
+    return (*var != NULL);
   }
 
-  bool FindVarValueNoImpact(int* const var_index, int64* const value) {
-    CHECK_NOTNULL(var_index);
+  bool FindVarValueNoImpact(IntVar** const var, int64* const value) {
+    CHECK_NOTNULL(var);
     CHECK_NOTNULL(value);
-    *var_index = -1;
+    *var = NULL;
     *value = 0;
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
-        *var_index = i;
+        *var = vars_[i];;
         *value = vars_[i]->Min();
         return true;
       }
@@ -1180,16 +1172,8 @@ class ImpactDecisionBuilder : public DecisionBuilder {
   std::vector<IntVar*> vars_;
   DefaultPhaseParameters parameters_;
   bool init_done_;
-  // Move 3 to ImpactRecorder as search monitor.
-  uint64 fail_stamp_;
-  Rev<int> current_var_index_;
-  Rev<int64> current_value_;
   RunHeuristicsAsDives runner_;
 };
-
-const int ImpactDecisionBuilder::kUninitializedVarIndex = -1;
-const uint64 ImpactDecisionBuilder::kUninitializedFailStamp = 0;
-
 }  // namespace
 
 // ---------- API ----------
