@@ -1116,7 +1116,10 @@ class DefaultIntegerSearch : public DecisionBuilder {
       // Decide if we are doing impacts, no if one variable is too big.
       for (int i = 0; i < vars_.size(); ++i) {
         if (vars_[i]->Max() - vars_[i]->Min() > 0xFFFFFF) {
-          VLOG(1) << "Domains are too large, switching to simple heuristics";
+          if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+            LOG(INFO) << "Domains are too large, switching to simple "
+                      << "heuristics";
+          }
           parameters_.use_impacts = false;
           init_done_ = true;
           return;
@@ -1124,7 +1127,10 @@ class DefaultIntegerSearch : public DecisionBuilder {
       }
       // No if the search space is too small.
       if (domain_watcher_.LogSearchSpaceSize() < 10) {
-        VLOG(1) << "Search space is too small, switching to simple heuristics";
+        if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+          LOG(INFO) << "Search space is too small, switching to simple "
+                    << "heuristics";
+        }
         parameters_.use_impacts = false;
         init_done_ = true;
         return;

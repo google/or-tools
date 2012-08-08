@@ -564,16 +564,16 @@ void FlatZincModel::Solve(int solve_frequency,
   const string obj_string = (objective_ != NULL && !no_solutions ?
                              StringPrintf("%" GG_LL_FORMAT "d", best) :
                              "");
-  std::cout << "%%  name, status, obj, s_time, b_time, br, fails, "
-            << "solns, cts, demon, delayed, mem, search" << std::endl;
+  std::cout << "%%  name, status, obj, solns, s_time, b_time, br, fails, "
+            << "cts, demon, delayed, mem, search" << std::endl;
   std::cout << "%%  csv: " << filename_
             << ", " << status_string
             << ", " << obj_string
+            << ", " << num_solutions_found
             << ", " << solve_time << " ms"
             << ", " << build_time << " ms"
             << ", " << solver_->branches()
             << ", " << solver_->failures()
-            << ", " << num_solutions_found
             << ", " << solver_->constraints()
             << ", " << solver_->demon_runs(Solver::NORMAL_PRIORITY)
             << ", " << solver_->demon_runs(Solver::DELAYED_PRIORITY)
