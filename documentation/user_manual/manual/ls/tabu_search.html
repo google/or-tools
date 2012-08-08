@@ -8,42 +8,44 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>5. Scheduling &mdash; or-tools User&#39;s Manual</title>
+    <title>6.7. Tabu search &mdash; or-tools User&#39;s Manual</title>
     
-    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../',
+        URL_ROOT:    '../../',
         VERSION:     'doc version 0.0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  false
       };
     </script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="shortcut icon" href="../_static/logo.ico"/>
-    <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
-    <link rel="next" title="5.1. What is Scheduling?" href="scheduling/scheduling.html" />
-    <link rel="prev" title="4.1. What is reification?" href="reification/reification.html" /> 
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../../_static/logo.ico"/>
+    <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
+    <link rel="up" title="6. Local search: the jobshop problem" href="../LS.html" />
+    <link rel="next" title="6.8. Simulated annealing" href="simulated_annealing.html" />
+    <link rel="prev" title="6.6. Metaheuristics and SearchMonitors" href="metaheuristics.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
-          <a href="../genindex.html" title="General Index"
+          <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="scheduling/scheduling.html" title="5.1. What is Scheduling?"
+          <a href="simulated_annealing.html" title="6.8. Simulated annealing"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="reification/reification.html" title="4.1. What is reification?"
+          <a href="metaheuristics.html" title="6.6. Metaheuristics and SearchMonitors"
              accesskey="P">previous</a> |</li>
-        <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
+        <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
+          <li><a href="../LS.html" accesskey="U">6. Local search: the jobshop problem</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -52,13 +54,8 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="scheduling">
-<span id="chapter-scheduling"></span><h1>5. Scheduling</h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="scheduling/scheduling.html">5.1. What is Scheduling?</a></li>
-</ul>
-</div>
+  <div class="section" id="tabu-search">
+<h1>6.7. Tabu search</h1>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 
@@ -70,7 +67,7 @@
         <div class="sphinxsidebarwrapper">
 <table>
 <tr>
-<td width="60"><img src="../_static/logo.png" width="50" height="50"  alt="" /></td>
+<td width="60"><img src="../../_static/logo.png" width="50" height="50"  alt="" /></td>
 <td><p class="library_name">Google <a href="http://code.google.com/p/or-tools/"><strong>or-tools</strong></a><br>open source library</p></td>
 </tr>
 </table>
@@ -112,7 +109,7 @@ Search:
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="../index.html">Foreword and content</a></li>
+  	<li><a href="../../index.html">Foreword and content</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
 	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
@@ -134,11 +131,11 @@ Search:
 	
 
   <h3>Previous section</h3>
-  <p class="topless"><a href="reification/reification.html"
-                        title="previous chapter">4.1. What is reification?</a></p>
+  <p class="topless"><a href="metaheuristics.html"
+                        title="previous chapter">6.6. Metaheuristics and <tt class="docutils literal docutils literal docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="scheduling/scheduling.html"
-                        title="next chapter">5.1. What is Scheduling?</a></p>
+  <p class="topless"><a href="simulated_annealing.html"
+                        title="next chapter">6.8. Simulated annealing</a></p>
         </div>
       </div>
       <div class="clearer"></div>
@@ -147,15 +144,16 @@ Search:
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
-          <a href="../genindex.html" title="General Index"
+          <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="scheduling/scheduling.html" title="5.1. What is Scheduling?"
+          <a href="simulated_annealing.html" title="6.8. Simulated annealing"
              >next</a> |</li>
         <li class="right" >
-          <a href="reification/reification.html" title="4.1. What is reification?"
+          <a href="metaheuristics.html" title="6.6. Metaheuristics and SearchMonitors"
              >previous</a> |</li>
-        <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
+        <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
+          <li><a href="../LS.html" >6. Local search: the jobshop problem</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

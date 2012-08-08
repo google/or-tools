@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>7.3. Local Search in or-tools &mdash; or-tools User&#39;s Manual</title>
+    <title>6.2. Local Search in or-tools &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="7. Local Search" href="../LS.html" />
-    <link rel="next" title="7.4. Examples of Local Search implemented" href="examples_revisited.html" />
-    <link rel="prev" title="7.2. Examples of Local Search" href="examples.html" /> 
+    <link rel="up" title="6. Local search: the jobshop problem" href="../LS.html" />
+    <link rel="next" title="6.3. The jobshop problem and a first model" href="jobshop_first_model.html" />
+    <link rel="prev" title="6.1. What is local search?" href="local_search.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,13 +39,13 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="examples_revisited.html" title="7.4. Examples of Local Search implemented"
+          <a href="jobshop_first_model.html" title="6.3. The jobshop problem and a first model"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="examples.html" title="7.2. Examples of Local Search"
+          <a href="local_search.html" title="6.1. What is local search?"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" accesskey="U">7. Local Search</a> &raquo;</li> 
+          <li><a href="../LS.html" accesskey="U">6. Local search: the jobshop problem</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -55,27 +55,27 @@
           <div class="body">
             
   <div class="section" id="local-search-in-or-tools">
-<span id="local-search-or-tools"></span><h1>7.3. Local Search in <em>or-tools</em></h1>
+<span id="local-search-or-tools"></span><h1>6.2. Local Search in <em>or-tools</em></h1>
 <div class="section" id="local-search-mechanism-in-or-tools">
-<span id="local-search-mechanism"></span><h2>7.3.1. Local Search Mechanism in <em>or-tools</em></h2>
+<span id="local-search-mechanism"></span><h2>6.2.1. Local Search Mechanism in <em>or-tools</em></h2>
 <div class="section" id="the-basic-idea">
-<h3>7.3.1.1. The basic idea</h3>
+<h3>6.2.1.1. The basic idea</h3>
 </div>
 <div class="section" id="first-solution">
-<h3>7.3.1.2. First solution</h3>
+<h3>6.2.1.2. First solution</h3>
 </div>
 </div>
 <div class="section" id="localsearchphaseparameters">
-<h2>7.3.2. <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt></h2>
+<h2>6.2.2. <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt></h2>
 </div>
 <div class="section" id="local-search-neighborhood-lsn-operators">
-<h2>7.3.3. Local Search Neighborhood (LSN) Operators</h2>
+<h2>6.2.3. Local Search Neighborhood (LSN) Operators</h2>
 </div>
 <div class="section" id="defining-a-custom-lsn-operator">
-<h2>7.3.4. Defining a custom LSN operator</h2>
+<h2>6.2.4. Defining a custom LSN operator</h2>
 </div>
 <div class="section" id="combining-lsn-operators">
-<h2>7.3.5. Combining LSN operators</h2>
+<h2>6.2.5. Combining LSN operators</h2>
 <br><br><br><br><br></div>
 </div>
 
@@ -151,23 +151,23 @@ Search:
 	
 
   <h3>Previous section</h3>
-  <p class="topless"><a href="examples.html"
-                        title="previous chapter">7.2. Examples of Local Search</a></p>
+  <p class="topless"><a href="local_search.html"
+                        title="previous chapter">6.1. What is local search?</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="examples_revisited.html"
-                        title="next chapter">7.4. Examples of Local Search implemented</a></p>
+  <p class="topless"><a href="jobshop_first_model.html"
+                        title="next chapter">6.3. The jobshop problem and a first model</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">7.3. Local Search in <em>or-tools</em></a><ul>
-<li><a class="reference internal" href="#local-search-mechanism-in-or-tools">7.3.1. Local Search Mechanism in <em>or-tools</em></a><ul>
-<li><a class="reference internal" href="#the-basic-idea">7.3.1.1. The basic idea</a></li>
-<li><a class="reference internal" href="#first-solution">7.3.1.2. First solution</a></li>
+<li><a class="reference internal" href="#">6.2. Local Search in <em>or-tools</em></a><ul>
+<li><a class="reference internal" href="#local-search-mechanism-in-or-tools">6.2.1. Local Search Mechanism in <em>or-tools</em></a><ul>
+<li><a class="reference internal" href="#the-basic-idea">6.2.1.1. The basic idea</a></li>
+<li><a class="reference internal" href="#first-solution">6.2.1.2. First solution</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#localsearchphaseparameters">7.3.2. <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt></a></li>
-<li><a class="reference internal" href="#local-search-neighborhood-lsn-operators">7.3.3. Local Search Neighborhood (LSN) Operators</a></li>
-<li><a class="reference internal" href="#defining-a-custom-lsn-operator">7.3.4. Defining a custom LSN operator</a></li>
-<li><a class="reference internal" href="#combining-lsn-operators">7.3.5. Combining LSN operators</a></li>
+<li><a class="reference internal" href="#localsearchphaseparameters">6.2.2. <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt></a></li>
+<li><a class="reference internal" href="#local-search-neighborhood-lsn-operators">6.2.3. Local Search Neighborhood (LSN) Operators</a></li>
+<li><a class="reference internal" href="#defining-a-custom-lsn-operator">6.2.4. Defining a custom LSN operator</a></li>
+<li><a class="reference internal" href="#combining-lsn-operators">6.2.5. Combining LSN operators</a></li>
 </ul>
 </li>
 </ul>
@@ -183,13 +183,13 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="examples_revisited.html" title="7.4. Examples of Local Search implemented"
+          <a href="jobshop_first_model.html" title="6.3. The jobshop problem and a first model"
              >next</a> |</li>
         <li class="right" >
-          <a href="examples.html" title="7.2. Examples of Local Search"
+          <a href="local_search.html" title="6.1. What is local search?"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" >7. Local Search</a> &raquo;</li> 
+          <li><a href="../LS.html" >6. Local search: the jobshop problem</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

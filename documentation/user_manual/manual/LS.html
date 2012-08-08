@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>7. Local Search &mdash; or-tools User&#39;s Manual</title>
+    <title>6. Local search: the jobshop problem &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -27,8 +27,8 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
-    <link rel="next" title="7.1. What is Local Search (LS)?" href="ls/local_search.html" />
-    <link rel="prev" title="6.9. Summary" href="search_primitives/summary.html" /> 
+    <link rel="next" title="6.1. What is local search?" href="ls/local_search.html" />
+    <link rel="prev" title="5.9. Summary" href="search_primitives/summary.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,10 +38,10 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="ls/local_search.html" title="7.1. What is Local Search (LS)?"
+          <a href="ls/local_search.html" title="6.1. What is local search?"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="search_primitives/summary.html" title="6.9. Summary"
+          <a href="search_primitives/summary.html" title="5.9. Summary"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
@@ -52,47 +52,37 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="local-search">
-<span id="chapter-local-search"></span><h1>7. Local Search</h1>
+  <div class="section" id="local-search-the-jobshop-problem">
+<span id="chapter-local-search"></span><h1>6. Local search: the jobshop problem</h1>
 <p class="rubric">Overview:</p>
 <p class="rubric">Prerequisites:</p>
 <p class="rubric">Files:</p>
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="ls/local_search.html">7.1. What is Local Search (LS)?</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ls/local_search.html#the-basic-ingredients">7.1.1. The basic ingredients</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/local_search.html#is-local-search-efficient">7.1.2. Is Local Search efficient?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/local_search.html#what-about-the-quality-of-the-solutions-found-by-local-search">7.1.3. What about the quality of the solutions found by local search?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/local_search.html#global-optimization-methods">7.1.4. Global optimization methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/local_search.html">6.1. What is local search?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ls/local_search.html#the-basic-ingredients">6.1.1. The basic ingredients</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/local_search.html#is-local-search-efficient">6.1.2. Is Local Search efficient?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/local_search.html#what-about-the-quality-of-the-solutions-found-by-local-search">6.1.3. What about the quality of the solutions found by local search?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/local_search.html#global-optimization-methods">6.1.4. Global optimization methods</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="ls/examples.html">7.2. Examples of Local Search</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ls/examples.html#the-golomb-ruler-problem">7.2.1. The Golomb ruler problem</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/examples.html#the-n-queens-problem">7.2.2. The n-queens problem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/ls_or_tools.html">6.2. Local Search in <em>or-tools</em></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#local-search-mechanism-in-or-tools">6.2.1. Local Search Mechanism in <em>or-tools</em></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#localsearchphaseparameters">6.2.2. <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#local-search-neighborhood-lsn-operators">6.2.3. Local Search Neighborhood (LSN) Operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#defining-a-custom-lsn-operator">6.2.4. Defining a custom LSN operator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#combining-lsn-operators">6.2.5. Combining LSN operators</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="ls/ls_or_tools.html">7.3. Local Search in <em>or-tools</em></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#local-search-mechanism-in-or-tools">7.3.1. Local Search Mechanism in <em>or-tools</em></a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#localsearchphaseparameters">7.3.2. <tt class="docutils literal"><span class="pre">LocalSearchPhaseParameters</span></tt></a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#local-search-neighborhood-lsn-operators">7.3.3. Local Search Neighborhood (LSN) Operators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#defining-a-custom-lsn-operator">7.3.4. Defining a custom LSN operator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/ls_or_tools.html#combining-lsn-operators">7.3.5. Combining LSN operators</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="ls/examples_revisited.html">7.4. Examples of Local Search implemented</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ls/examples_revisited.html#the-golomb-ruler-problem">7.4.1. The Golomb ruler problem</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/examples_revisited.html#the-n-queens-problem">7.4.2. The n-queens problem</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="ls/ls_filtering.html">7.5. Filtering</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ls/guided_ls.html">7.6. Guided Local Search</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ls/metaheuristics.html">7.7. Metaheuristics and <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ls/metaheuristics.html#tabu-search">7.7.1. Tabu Search</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ls/metaheuristics.html#simulated-annealing">7.7.2. Simulated Annealing</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="ls/ls_summary.html">7.8. Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/jobshop_first_model.html">6.3. The jobshop problem and a first model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/jobshop_ls.html">6.4. The jobshop problem: and now with local search!</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/ls_filtering.html">6.5. Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/metaheuristics.html">6.6. Metaheuristics and <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/tabu_search.html">6.7. Tabu search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/simulated_annealing.html">6.8. Simulated annealing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/guided_ls.html">6.9. Guided local search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ls/ls_summary.html">6.10. Summary</a></li>
 </ul>
 </div>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
@@ -177,28 +167,27 @@ Search:
 <li><a class="reference internal" href="first_steps.html">2. First steps with or-tools</a></li>
 <li><a class="reference internal" href="objectives.html">3. Using objectives</a></li>
 <li><a class="reference internal" href="reification.html">4. Reification</a></li>
-<li><a class="reference internal" href="scheduling.html">5. Scheduling</a></li>
 </ul>
 
 <h5>Part II: Customization</h5>
 <ul>
-<li><a class="reference internal" href="search_primitives.html">6. Search primitives</li>
-<li><a class="reference internal" href="#">7. Local Search</a></li>
-<li><a class="reference internal" href="LNS.html">8. Large Neighbourhood Search</a></li>
-<li><a class="reference internal" href="custom_constraints.html">9. Custom constraints</a></li>
+<li><a class="reference internal" href="search_primitives.html">5. Search primitives</li>
+<li><a class="reference internal" href="#">6. Local Search</a></li>
+<li><a class="reference internal" href="LNS.html">7. Large Neighbourhood Search</a></li>
+<li><a class="reference internal" href="custom_constraints.html">8. Custom constraints</a></li>
 </ul>
 
 <h5>Part III: Routing</h5>
 <ul>
-<li><a class="reference internal" href="TSP.html">10. TSP with constraints</a></li>
-<li><a class="reference internal" href="VRP.html">11. VRP with constraints</a></li>
+<li><a class="reference internal" href="TSP.html">9. TSP with constraints</a></li>
+<li><a class="reference internal" href="VRP.html">10. VRP with constraints</a></li>
 </ul>
 
 <h5>Part IV: Technicalities</h5>
 <ul>
-<li><a class="reference internal" href="utilities.html">12. Utilities</a></li>
-<li><a class="reference internal" href="modeling_tricks.html">13. Modeling tricks</a></li>
-<li><a class="reference internal" href="under_the_hood.html">14. Under the hood</a></li>
+<li><a class="reference internal" href="utilities.html">11. Utilities</a></li>
+<li><a class="reference internal" href="modeling_tricks.html">12. Modeling tricks</a></li>
+<li><a class="reference internal" href="under_the_hood.html">13. Under the hood</a></li>
 </ul>
 
 <h5>Appendices</h5>
@@ -216,10 +205,10 @@ Search:
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="ls/local_search.html" title="7.1. What is Local Search (LS)?"
+          <a href="ls/local_search.html" title="6.1. What is local search?"
              >next</a> |</li>
         <li class="right" >
-          <a href="search_primitives/summary.html" title="6.9. Summary"
+          <a href="search_primitives/summary.html" title="5.9. Summary"
              >previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>

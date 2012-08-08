@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6. Defining search primitives: n-queens problems &mdash; or-tools User&#39;s Manual</title>
+    <title>5. Defining search primitives: the n-queens problem &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -27,8 +27,8 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
-    <link rel="next" title="6.1. The n-queens Problem" href="search_primitives/nqueens.html" />
-    <link rel="prev" title="5.1. What is Scheduling?" href="scheduling/scheduling.html" /> 
+    <link rel="next" title="5.1. The n-queens problem" href="search_primitives/nqueens.html" />
+    <link rel="prev" title="4.1. What is reification?" href="reification/reification.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,10 +38,10 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="search_primitives/nqueens.html" title="6.1. The n-queens Problem"
+          <a href="search_primitives/nqueens.html" title="5.1. The n-queens problem"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="scheduling/scheduling.html" title="5.1. What is Scheduling?"
+          <a href="reification/reification.html" title="4.1. What is reification?"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
@@ -52,50 +52,50 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="defining-search-primitives-n-queens-problems">
-<span id="search-primitives"></span><h1>6. Defining search primitives: n-queens problems</h1>
+  <div class="section" id="defining-search-primitives-the-n-queens-problem">
+<span id="search-primitives"></span><h1>5. Defining search primitives: the n-queens problem</h1>
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/nqueens.html">6.1. The n-queens Problem</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/nqueens.html#how-to-solve-the-problem">6.1.1. How to solve the problem?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/nqueens.html">5.1. The n-queens problem</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/nqueens.html#how-to-solve-the-problem">5.1.1. How to solve the problem?</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/basic_model_implementation.html">6.2. Implementation of the basic model</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_model_implementation.html#the-model">6.2.1. The model</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_model_implementation.html#the-helper-functions">6.2.2. The helper functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_model_implementation.html#first-results">6.2.3. First results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/basic_model_implementation.html">5.2. Implementation of the basic model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_model_implementation.html#the-model">5.2.1. The model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_model_implementation.html#the-helper-functions">5.2.2. The helper functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_model_implementation.html#first-results">5.2.3. First results</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/basic_working1.html">6.3. Basic working of the solver</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#basic-definitions">6.3.1. Basic definitions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#the-basic-idea">6.3.2. The basic idea</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#the-basic-search-algorithm-and-the-callback-hooks-for-the-searchmonitors">6.3.3. The basic search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#the-decisionbuilder-and-decisions">6.3.4. The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#nested-searches">6.3.5. Nested searches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/basic_working1.html">5.3. Basic working of the solver</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#basic-definitions">5.3.1. Basic definitions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#the-basic-idea">5.3.2. The basic idea</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#the-basic-search-algorithm-and-the-callback-hooks-for-the-searchmonitors">5.3.3. The basic search algorithm and the callback hooks for the <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#the-decisionbuilder-and-decisions">5.3.4. The <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> and <tt class="docutils literal"><span class="pre">Decision</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/basic_working1.html#nested-searches">5.3.5. Nested searches</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/cpviz.html">6.4. <strong class="program">cpviz</strong>: how to visualize the search</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/cpviz.html#treemonitors-to-provide-the-cpviz-input">6.4.1. <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt>s to provide the <strong class="program">cpviz</strong> input</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/cpviz.html#interpreting-the-graphic-results">6.4.2. Interpreting the graphic results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/cpviz.html">5.4. <strong class="program">cpviz</strong>: how to visualize the search</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/cpviz.html#treemonitors-to-provide-the-cpviz-input">5.4.1. <tt class="docutils literal"><span class="pre">TreeMonitor</span></tt>s to provide the <strong class="program">cpviz</strong> input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/cpviz.html#interpreting-the-graphic-results">5.4.2. Interpreting the graphic results</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html">6.5. Out of the box selection primitives</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html#to-select-next-variable">6.5.1. To select next variable</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html#to-select-next-value">6.5.2. To select next value</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html">5.5. Out of the box selection primitives</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html#to-select-next-variable">5.5.1. To select next variable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/out_of_the_box_search_primitives.html#to-select-next-value">5.5.2. To select next value</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/customized_search_primitives.html">6.6. Customized search primitives</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#the-makephase-method-more-in-details">6.6.1. The <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> method more in details</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#composing-decisionbuilders">6.6.2. Composing <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</a></li>
-<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#nested-searches">6.6.3. Nested searches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/customized_search_primitives.html">5.6. Customized search primitives</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#the-makephase-method-more-in-details">5.6.1. The <tt class="docutils literal"><span class="pre">MakePhase()</span></tt> method more in details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#composing-decisionbuilders">5.6.2. Composing <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt>s</a></li>
+<li class="toctree-l2"><a class="reference internal" href="search_primitives/customized_search_primitives.html#nested-searches">5.6.3. Nested searches</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/default_search.html">6.7. Default search</a></li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/breaking_symmetry.html">6.8. Breaking symmetries (part II) with <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</a><ul class="simple">
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/default_search.html">5.7. Default search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/breaking_symmetry.html">5.8. Breaking symmetries (part II) with <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s</a><ul class="simple">
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="search_primitives/summary.html">6.9. Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search_primitives/summary.html">5.9. Summary</a></li>
 </ul>
 </div>
 </div>
@@ -179,28 +179,27 @@ Search:
 <li><a class="reference internal" href="first_steps.html">2. First steps with or-tools</a></li>
 <li><a class="reference internal" href="objectives.html">3. Using objectives</a></li>
 <li><a class="reference internal" href="reification.html">4. Reification</a></li>
-<li><a class="reference internal" href="scheduling.html">5. Scheduling</a></li>
 </ul>
 
 <h5>Part II: Customization</h5>
 <ul>
-<li><a class="reference internal" href="#">6. Search primitives</li>
-<li><a class="reference internal" href="LS.html">7. Local Search</a></li>
-<li><a class="reference internal" href="LNS.html">8. Large Neighbourhood Search</a></li>
-<li><a class="reference internal" href="custom_constraints.html">9. Custom constraints</a></li>
+<li><a class="reference internal" href="#">5. Search primitives</li>
+<li><a class="reference internal" href="LS.html">6. Local Search</a></li>
+<li><a class="reference internal" href="LNS.html">7. Large Neighbourhood Search</a></li>
+<li><a class="reference internal" href="custom_constraints.html">8. Custom constraints</a></li>
 </ul>
 
 <h5>Part III: Routing</h5>
 <ul>
-<li><a class="reference internal" href="TSP.html">10. TSP with constraints</a></li>
-<li><a class="reference internal" href="VRP.html">11. VRP with constraints</a></li>
+<li><a class="reference internal" href="TSP.html">9. TSP with constraints</a></li>
+<li><a class="reference internal" href="VRP.html">10. VRP with constraints</a></li>
 </ul>
 
 <h5>Part IV: Technicalities</h5>
 <ul>
-<li><a class="reference internal" href="utilities.html">12. Utilities</a></li>
-<li><a class="reference internal" href="modeling_tricks.html">13. Modeling tricks</a></li>
-<li><a class="reference internal" href="under_the_hood.html">14. Under the hood</a></li>
+<li><a class="reference internal" href="utilities.html">11. Utilities</a></li>
+<li><a class="reference internal" href="modeling_tricks.html">12. Modeling tricks</a></li>
+<li><a class="reference internal" href="under_the_hood.html">13. Under the hood</a></li>
 </ul>
 
 <h5>Appendices</h5>
@@ -218,10 +217,10 @@ Search:
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="search_primitives/nqueens.html" title="6.1. The n-queens Problem"
+          <a href="search_primitives/nqueens.html" title="5.1. The n-queens problem"
              >next</a> |</li>
         <li class="right" >
-          <a href="scheduling/scheduling.html" title="5.1. What is Scheduling?"
+          <a href="reification/reification.html" title="4.1. What is reification?"
              >previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>

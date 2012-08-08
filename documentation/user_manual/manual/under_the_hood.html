@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>14. Under the hood &mdash; or-tools User&#39;s Manual</title>
+    <title>13. Under the hood &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -27,8 +27,8 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
-    <link rel="next" title="14.1. Main files" href="under_the_hood/files.html" />
-    <link rel="prev" title="13. Modeling tricks" href="modeling_tricks.html" /> 
+    <link rel="next" title="13.1. Main files" href="under_the_hood/files.html" />
+    <link rel="prev" title="12. Modeling tricks" href="modeling_tricks.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,10 +38,10 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="under_the_hood/files.html" title="14.1. Main files"
+          <a href="under_the_hood/files.html" title="13.1. Main files"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="modeling_tricks.html" title="13. Modeling tricks"
+          <a href="modeling_tricks.html" title="12. Modeling tricks"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
@@ -53,18 +53,18 @@
           <div class="body">
             
   <div class="section" id="under-the-hood">
-<span id="chapter-under-the-hood"></span><h1>14. Under the hood</h1>
+<span id="chapter-under-the-hood"></span><h1>13. Under the hood</h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/files.html">14.1. Main files</a></li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/trail.html">14.2. The <tt class="docutils literal"><span class="pre">Trail</span></tt> struct</a></li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/search.html">14.3. The search</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="under_the_hood/search.html#the-search-class">14.3.1. The <tt class="docutils literal"><span class="pre">Search</span></tt> class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/files.html">13.1. Main files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/trail.html">13.2. The <tt class="docutils literal"><span class="pre">Trail</span></tt> struct</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/search.html">13.3. The search</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="under_the_hood/search.html#the-search-class">13.3.1. The <tt class="docutils literal"><span class="pre">Search</span></tt> class</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/queue.html">14.4. The <tt class="docutils literal"><span class="pre">Queue</span></tt> class</a></li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/search_monitors.html">14.5. <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></li>
-<li class="toctree-l1"><a class="reference internal" href="under_the_hood/summary.html">14.6. Summary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/queue.html">13.4. The <tt class="docutils literal"><span class="pre">Queue</span></tt> class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/search_monitors.html">13.5. <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt>s</a></li>
+<li class="toctree-l1"><a class="reference internal" href="under_the_hood/summary.html">13.6. Summary</a></li>
 </ul>
 </div>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
@@ -148,28 +148,27 @@ Search:
 <li><a class="reference internal" href="first_steps.html">2. First steps with or-tools</a></li>
 <li><a class="reference internal" href="objectives.html">3. Using objectives</a></li>
 <li><a class="reference internal" href="reification.html">4. Reification</a></li>
-<li><a class="reference internal" href="scheduling.html">5. Scheduling</a></li>
 </ul>
 
 <h5>Part II: Customization</h5>
 <ul>
-<li><a class="reference internal" href="search_primitives.html">6. Search primitives</li>
-<li><a class="reference internal" href="LS.html">7. Local Search</a></li>
-<li><a class="reference internal" href="LNS.html">8. Large Neighbourhood Search</a></li>
-<li><a class="reference internal" href="custom_constraints.html">9. Custom constraints</a></li>
+<li><a class="reference internal" href="search_primitives.html">5. Search primitives</li>
+<li><a class="reference internal" href="LS.html">6. Local Search</a></li>
+<li><a class="reference internal" href="LNS.html">7. Large Neighbourhood Search</a></li>
+<li><a class="reference internal" href="custom_constraints.html">8. Custom constraints</a></li>
 </ul>
 
 <h5>Part III: Routing</h5>
 <ul>
-<li><a class="reference internal" href="TSP.html">10. TSP with constraints</a></li>
-<li><a class="reference internal" href="VRP.html">11. VRP with constraints</a></li>
+<li><a class="reference internal" href="TSP.html">9. TSP with constraints</a></li>
+<li><a class="reference internal" href="VRP.html">10. VRP with constraints</a></li>
 </ul>
 
 <h5>Part IV: Technicalities</h5>
 <ul>
-<li><a class="reference internal" href="utilities.html">12. Utilities</a></li>
-<li><a class="reference internal" href="modeling_tricks.html">13. Modeling tricks</a></li>
-<li><a class="reference internal" href="#">14. Under the hood</a></li>
+<li><a class="reference internal" href="utilities.html">11. Utilities</a></li>
+<li><a class="reference internal" href="modeling_tricks.html">12. Modeling tricks</a></li>
+<li><a class="reference internal" href="#">13. Under the hood</a></li>
 </ul>
 
 <h5>Appendices</h5>
@@ -187,10 +186,10 @@ Search:
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="under_the_hood/files.html" title="14.1. Main files"
+          <a href="under_the_hood/files.html" title="13.1. Main files"
              >next</a> |</li>
         <li class="right" >
-          <a href="modeling_tricks.html" title="13. Modeling tricks"
+          <a href="modeling_tricks.html" title="12. Modeling tricks"
              >previous</a> |</li>
         <li><a href="../index.html">or-tools User&#39;s Manual</a> &raquo;</li> 
       </ul>
