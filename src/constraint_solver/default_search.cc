@@ -1122,6 +1122,14 @@ class DefaultIntegerSearch : public DecisionBuilder {
           return;
         }
       }
+      // No if the search space is too small.
+      if (domain_watcher_->LogSearchSpaceSize() < 10) {
+        VLOG(1) << "Search space is too small, switching to simple heuristics";
+        parameters_.use_impacts = false;
+        init_done_ = true;
+        return;
+      }
+
       if (parameters_.display_level != DefaultPhaseParameters::NONE) {
         LOG(INFO) << "Init impact based search phase on " << vars_.size()
                   << " variables, initialization splits = "
