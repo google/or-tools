@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -129,7 +129,7 @@ This is the base class for all expressions that are not variables.
 <p>
 It proposes a basic 'CastToVar()' implementation. The class of expressions represent two types of objects: variables and subclasses of <a class="el" href="classoperations__research_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables.">BaseIntExpr</a>. Variables are stateful objects that provide a rich API (remove values, WhenBound...). On the other hand, subclasses of <a class="el" href="classoperations__research_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables.">BaseIntExpr</a> represent range-only stateless objects. That is the min(A + B) is recomputed each time as min(A) + min(B). Furthermore, sometimes, the propagation on an expression is not complete, and <a class="el" href="classoperations__research_1_1IntExpr.html#58d589131cbea30d4826248a2fa06aba">Min()</a>, <a class="el" href="classoperations__research_1_1IntExpr.html#1fb9e08cff06a9a5b5739de4acba587c">Max()</a> are not monononic with respect to <a class="el" href="classoperations__research_1_1IntExpr.html#fec5a6eea8ee64fbc7fa34d7d28f8d8f">SetMin()</a> and <a class="el" href="classoperations__research_1_1IntExpr.html#dee9a082160df545671781df47f2b985">SetMax()</a>. For instance, A is a var with domain [0 .. 5], and B another variable with domain [0 .. 5]. Then Plus(A, B) has domain [0, 10]. If we apply SetMax(Plus(A, B), 4)). Then we will deduce that both A and B will have domain [0 .. 4]. In that case, Max(Plus(A, B)) is 8 and not 4. To get back monotonicity, we will 'cast' the expression into a variable using the <a class="el" href="classoperations__research_1_1BaseIntExpr.html#bc0b1cac77e1e4aac41bb6f95b441349" title="Creates a variable from the expression.">Var()</a> method (that will call <a class="el" href="classoperations__research_1_1BaseIntExpr.html#1d4d6a63140435221e0dfcaf913d6ffb">CastToVar()</a> internally). The resulting variable will be stateful and monotonic.<p>
 Finally, one should never store a pointer to a <a class="el" href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming...">IntExpr</a>, or <a class="el" href="classoperations__research_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables.">BaseIntExpr</a> in the code. The safe code should always call <a class="el" href="classoperations__research_1_1BaseIntExpr.html#bc0b1cac77e1e4aac41bb6f95b441349" title="Creates a variable from the expression.">Var()</a> on an expression built by the solver, and store the object as an IntVar*. This is a consequence of the stateless nature of the expressions that makes the code error-prone. 
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00111">111</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00109">109</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
 <hr><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" name="d7d12cdfcb4b9340db0ea792b5545419"></a><!-- doxytag: member="operations_research::BaseIntExpr::BaseIntExpr" ref="d7d12cdfcb4b9340db0ea792b5545419" args="(Solver *const s)" -->
 <div class="memitem">
@@ -149,7 +149,7 @@ Finally, one should never store a pointer to a <a class="el" href="classoperatio
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00113">113</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00111">111</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div><p>
@@ -170,7 +170,7 @@ Finally, one should never store a pointer to a <a class="el" href="classoperatio
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00114">114</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00112">112</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div><p>
@@ -196,7 +196,7 @@ Creates a variable from the expression.
 
 <p>Implements <a class="el" href="classoperations__research_1_1IntExpr.html#751d151bfe120bc6d378c4570505cbd4">operations_research::IntExpr</a>.</p>
 
-<p>Definition at line <a class="el" href="expressions_8cc-source.html#l05031">5031</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
+<p>Definition at line <a class="el" href="expressions_8cc-source.html#l06676">6676</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
 
 </div>
 </div><p>
@@ -217,7 +217,7 @@ Creates a variable from the expression.
 
 <p>
 
-<p>Definition at line <a class="el" href="expressions_8cc-source.html#l05039">5039</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
+<p>Definition at line <a class="el" href="expressions_8cc-source.html#l06684">6684</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
 
 </div>
 </div><p>
@@ -231,7 +231,7 @@ Creates a variable from the expression.
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/graph/index.html">graph</a>/
@@ -292,7 +292,7 @@
 <a name="l00208"></a>00208   <span class="comment">// Sets the supply corresponding to node. A demand is modeled as a negative</span>
 <a name="l00209"></a>00209   <span class="comment">// supply.</span>
 <a name="l00210"></a><a class="code" href="classoperations__research_1_1MinCostFlow.html#8b2730a274a58ea6151b2b45740fae6a">00210</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1MinCostFlow.html#8b2730a274a58ea6151b2b45740fae6a" title="Sets the supply corresponding to node.">SetNodeSupply</a>(<a class="code" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb" title="Standard instantiation of ForwardEbertGraph (named &amp;#39;ForwardStarGraph&amp;#39;) of...">NodeIndex</a> node, <a class="code" href="namespaceoperations__research.html#5841ff601ab08548afb15c45b2245de7">FlowQuantity</a> supply) {
-<a name="l00211"></a>00211     DCHECK(graph_-&gt;<a class="code" href="classoperations__research_1_1EbertGraphCore.html#5512b28f43c116f0e85adfc61438617c" title="Utility function to check that a node index is within the bounds AND different from...">IsNodeValid</a>(node));
+<a name="l00211"></a>00211     DCHECK(graph_-&gt;<a class="code" href="classoperations__research_1_1StarGraphBase.html#9c98cdf6c4df529dabad80f6b9b40f43" title="Utility function to check that a node index is within the bounds AND different from...">IsNodeValid</a>(node));
 <a name="l00212"></a>00212     node_excess_.Set(node, supply);
 <a name="l00213"></a>00213     initial_node_excess_.Set(node, supply);
 <a name="l00214"></a>00214     status_ = <a class="code" href="classoperations__research_1_1MinCostFlow.html#0611f6893cafb23017127868f6fe92d9f51633721c5550df8d2f05f10bfca19a">NOT_SOLVED</a>;
@@ -379,7 +379,7 @@
 <a name="l00295"></a>00295 
 <a name="l00296"></a>00296   <span class="comment">// Returns the supply at node. Demands are modelled as negative supplies.</span>
 <a name="l00297"></a><a class="code" href="classoperations__research_1_1MinCostFlow.html#1406c1a70ab07cd2a57242a3d26ea1c4">00297</a>   <a class="code" href="namespaceoperations__research.html#5841ff601ab08548afb15c45b2245de7">FlowQuantity</a> <a class="code" href="classoperations__research_1_1MinCostFlow.html#1406c1a70ab07cd2a57242a3d26ea1c4" title="Returns the supply at node. Demands are modelled as negative supplies.">Supply</a>(<a class="code" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb" title="Standard instantiation of ForwardEbertGraph (named &amp;#39;ForwardStarGraph&amp;#39;) of...">NodeIndex</a> node)<span class="keyword"> const </span>{
-<a name="l00298"></a>00298     DCHECK(graph_-&gt;<a class="code" href="classoperations__research_1_1EbertGraphCore.html#5512b28f43c116f0e85adfc61438617c" title="Utility function to check that a node index is within the bounds AND different from...">IsNodeValid</a>(node));
+<a name="l00298"></a>00298     DCHECK(graph_-&gt;<a class="code" href="classoperations__research_1_1StarGraphBase.html#9c98cdf6c4df529dabad80f6b9b40f43" title="Utility function to check that a node index is within the bounds AND different from...">IsNodeValid</a>(node));
 <a name="l00299"></a>00299     <span class="keywordflow">return</span> node_excess_[node];
 <a name="l00300"></a>00300   }
 <a name="l00301"></a>00301 
@@ -583,7 +583,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

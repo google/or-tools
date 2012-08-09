@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -113,9 +113,9 @@ Inheritance diagram for operations_research::SequenceVar:</div>
 <a href="classoperations__research_1_1SequenceVar-members.html">List of all members.</a><table border="0" cellpadding="0" cellspacing="0">
 <tr><td></td></tr>
 <tr><td colspan="2"><br><h2>Public Member Functions</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#ad1cb53d7ef5e149b429cdef65f972ea">SequenceVar</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const s, const <a class="el" href="classoperations__research_1_1IntervalVar.html">IntervalVar</a> *const *intervals, int size, const string &amp;name)</td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#98568869d424f144ca62fad12811b598">SequenceVar</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const s, const <a class="el" href="classoperations__research_1_1IntervalVar.html">IntervalVar</a> *const *intervals, const <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const *nexts, int size, const string &amp;name)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight"><a class="el" href="classoperations__research_1_1SequenceVar.html" title="SequenceVar.">SequenceVar</a>.  <a href="#ad1cb53d7ef5e149b429cdef65f972ea"></a><br></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight"><a class="el" href="classoperations__research_1_1SequenceVar.html" title="SequenceVar.">SequenceVar</a>.  <a href="#98568869d424f144ca62fad12811b598"></a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">virtual&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#17b665c3304d22dab2b269dcb08af125">~SequenceVar</a> ()</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">virtual string&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#d927d143ecd704f965234395366711b0">DebugString</a> () const </td></tr>
@@ -129,12 +129,9 @@ Inheritance diagram for operations_research::SequenceVar:</div>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#8f7e49cb3627933ae27eddfad881fb97">ActiveHorizonRange</a> (int64 *const hmin, int64 *const hmax) const </td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Returns the minimum start min and the maximum end max of all unranked interval vars in the sequence.  <a href="#8f7e49cb3627933ae27eddfad881fb97"></a><br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#c1e0af747f1b320d86007c3c4fc37721">Ranked</a> () const </td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#0c9275c793b1193035a704e0f11fe604">ComputeStatistics</a> (int *const ranked, int *const not_ranked, int *const unperformed) const </td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Returns the number of interval vars already ranked.  <a href="#c1e0af747f1b320d86007c3c4fc37721"></a><br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#1b12202eebc9e94d988e6a3687cee435">NotRanked</a> () const </td></tr>
-
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Returns the number of not-unperformed interval vars that may be performed and that are not yet ranked.  <a href="#1b12202eebc9e94d988e6a3687cee435"></a><br></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Compute statistics on the sequence.  <a href="#0c9275c793b1193035a704e0f11fe604"></a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#e44ab42e06f43ced3bd04b251965b73f">RankFirst</a> (int <a class="el" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>)</td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Ranks the index_th interval var first of all unranked interval vars.  <a href="#e44ab42e06f43ced3bd04b251965b73f"></a><br></td></tr>
@@ -147,12 +144,9 @@ Inheritance diagram for operations_research::SequenceVar:</div>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#4e4a8cbd11cbf363fe073dca6e757b37">RankNotLast</a> (int <a class="el" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>)</td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Indicates that the index_th interval var will not be ranked first of all currently unranked interval vars.  <a href="#4e4a8cbd11cbf363fe073dca6e757b37"></a><br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#9f09066cc08f7ccf463fd10c58ea2596">AddPrecedence</a> (int before, int after)</td></tr>
-
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Adds a precedence relation (STARTS_AFTER_END) between two activities of the sequence var.  <a href="#9f09066cc08f7ccf463fd10c58ea2596"></a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#c8f9d8f2220c77dd4f79a652e6aa7b88">ComputePossibleFirstsAndLasts</a> (std::vector&lt; int &gt; *const possible_firsts, std::vector&lt; int &gt; *const possible_lasts)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Computes the set of indices of interval variables that can be ranked first in the set of unranked activities.  <a href="#c8f9d8f2220c77dd4f79a652e6aa7b88"></a><br></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">// Adds a precedence relation (STARTS_AFTER_END) between two activities of the sequence var.  <a href="#c8f9d8f2220c77dd4f79a652e6aa7b88"></a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#fdf0878d369acdc5acbb4b25938a5d3d">RankSequence</a> (const std::vector&lt; int &gt; &amp;rank_firsts, const std::vector&lt; int &gt; &amp;rank_lasts, const std::vector&lt; int &gt; &amp;unperformed)</td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Applies the following sequence of ranks, ranks first, then rank last.  <a href="#fdf0878d369acdc5acbb4b25938a5d3d"></a><br></td></tr>
@@ -162,6 +156,9 @@ Inheritance diagram for operations_research::SequenceVar:</div>
 <tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="el" href="classoperations__research_1_1IntervalVar.html">IntervalVar</a> *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#17f7db24d131c87dbe7f76b23480adfc">Interval</a> (int <a class="el" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>) const </td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Returns the index_th interval of the sequence.  <a href="#17f7db24d131c87dbe7f76b23480adfc"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#7225cccb6f01731b8508aa95201f5493">Next</a> (int <a class="el" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>) const </td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Returns the index_th next of the sequence.  <a href="#7225cccb6f01731b8508aa95201f5493"></a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SequenceVar.html#377be35bc09d3725de4c7515ea60e55e">size</a> () const </td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Returns the number of interval vars in the sequence.  <a href="#377be35bc09d3725de4c7515ea60e55e"></a><br></td></tr>
@@ -172,10 +169,10 @@ Inheritance diagram for operations_research::SequenceVar:</div>
 <hr><a name="_details"></a><h2>Detailed Description</h2>
 <a class="el" href="classoperations__research_1_1SequenceVar.html" title="SequenceVar.">SequenceVar</a>. 
 <p>
-A sequence variable is a variable which domain is a set of possible orderings of the interval variables. It allows ordering tasks. It has two sets of methods: <a class="el" href="classoperations__research_1_1SequenceVar.html#c8f9d8f2220c77dd4f79a652e6aa7b88" title="Computes the set of indices of interval variables that can be ranked first in the...">ComputePossibleFirstsAndLasts()</a> which returns the list of interval variables thant can be ranked first or lasts, and RankFirst/RankNotFirst/RankLast/RankNotLast which can be used to create the search decision. 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l04175">4175</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+A sequence variable is a variable which domain is a set of possible orderings of the interval variables. It allows ordering tasks. It has two sets of methods: <a class="el" href="classoperations__research_1_1SequenceVar.html#c8f9d8f2220c77dd4f79a652e6aa7b88" title="// Adds a precedence relation (STARTS_AFTER_END) between two activities of the sequence...">ComputePossibleFirstsAndLasts()</a> which returns the list of interval variables thant can be ranked first or lasts, and RankFirst/RankNotFirst/RankLast/RankNotLast which can be used to create the search decision. 
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l04152">4152</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 <hr><h2>Constructor &amp; Destructor Documentation</h2>
-<a class="anchor" name="ad1cb53d7ef5e149b429cdef65f972ea"></a><!-- doxytag: member="operations_research::SequenceVar::SequenceVar" ref="ad1cb53d7ef5e149b429cdef65f972ea" args="(Solver *const s, const IntervalVar *const *intervals, int size, const string &amp;name)" -->
+<a class="anchor" name="98568869d424f144ca62fad12811b598"></a><!-- doxytag: member="operations_research::SequenceVar::SequenceVar" ref="98568869d424f144ca62fad12811b598" args="(Solver *const s, const IntervalVar *const *intervals, const IntVar *const *nexts, int size, const string &amp;name)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -190,6 +187,12 @@ A sequence variable is a variable which domain is a set of possible orderings of
           <td></td>
           <td class="paramtype">const <a class="el" href="classoperations__research_1_1IntervalVar.html">IntervalVar</a> *const *&nbsp;</td>
           <td class="paramname"> <em>intervals</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const *&nbsp;</td>
+          <td class="paramname"> <em>nexts</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -215,8 +218,9 @@ A sequence variable is a variable which domain is a set of possible orderings of
 <p>
 <a class="el" href="classoperations__research_1_1SequenceVar.html" title="SequenceVar.">SequenceVar</a>. 
 <p>
-\xrefitem todo 37 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01750">1750</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<dl compact><dt><b><a class="el" href="todo.html#_todo000045">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): Add better class invariants, in particular checks that ranked_first, ranked_last, and unperformed are truly disjoint. </dd></dl>
+
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00033">33</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -237,7 +241,7 @@ A sequence variable is a variable which domain is a set of possible orderings of
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01766">1766</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00049">49</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -261,7 +265,7 @@ A sequence variable is a variable which domain is a set of possible orderings of
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1PropagationBaseObject.html#fc971d7ca0617641f29e7e510e98a767">operations_research::PropagationBaseObject</a>.</p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01772">1772</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00059">59</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -294,7 +298,7 @@ A sequence variable is a variable which domain is a set of possible orderings of
 Returns the minimum and maximum duration of combined interval vars in the sequence. 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01794">1794</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00085">85</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -327,7 +331,7 @@ Returns the minimum and maximum duration of combined interval vars in the sequen
 Returns the minimum start min and the maximum end max of all interval vars in the sequence. 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01810">1810</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00101">101</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -360,53 +364,46 @@ Returns the minimum start min and the maximum end max of all interval vars in th
 Returns the minimum start min and the maximum end max of all unranked interval vars in the sequence. 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01836">1836</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00116">116</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
-<a class="anchor" name="c1e0af747f1b320d86007c3c4fc37721"></a><!-- doxytag: member="operations_research::SequenceVar::Ranked" ref="c1e0af747f1b320d86007c3c4fc37721" args="() const " -->
+<a class="anchor" name="0c9275c793b1193035a704e0f11fe604"></a><!-- doxytag: member="operations_research::SequenceVar::ComputeStatistics" ref="0c9275c793b1193035a704e0f11fe604" args="(int *const ranked, int *const not_ranked, int *const unperformed) const " -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int operations_research::SequenceVar::Ranked           </td>
+          <td class="memname">void operations_research::SequenceVar::ComputeStatistics           </td>
           <td>(</td>
-          <td class="paramname">          </td>
-          <td>&nbsp;)&nbsp;</td>
-          <td> const</td>
+          <td class="paramtype">int *const &nbsp;</td>
+          <td class="paramname"> <em>ranked</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int *const &nbsp;</td>
+          <td class="paramname"> <em>not_ranked</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int *const &nbsp;</td>
+          <td class="paramname"> <em>unperformed</em></td><td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td><td> const</td>
         </tr>
       </table>
 </div>
 <div class="memdoc">
 
 <p>
-Returns the number of interval vars already ranked. 
+Compute statistics on the sequence. 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01857">1857</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
-
-</div>
-</div><p>
-<a class="anchor" name="1b12202eebc9e94d988e6a3687cee435"></a><!-- doxytag: member="operations_research::SequenceVar::NotRanked" ref="1b12202eebc9e94d988e6a3687cee435" args="() const " -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int operations_research::SequenceVar::NotRanked           </td>
-          <td>(</td>
-          <td class="paramname">          </td>
-          <td>&nbsp;)&nbsp;</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-Returns the number of not-unperformed interval vars that may be performed and that are not yet ranked. 
-<p>
-
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01861">1861</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00154">154</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -430,7 +427,7 @@ Returns the number of not-unperformed interval vars that may be performed and th
 Ranks the index_th interval var first of all unranked interval vars. 
 <p>
 After that, it will no longer be considered ranked. 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l02032">2032</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00302">302</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -454,7 +451,7 @@ After that, it will no longer be considered ranked.
 Indicates that the index_th interval var will not be ranked first of all currently unranked interval vars. 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l02051">2051</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00309">309</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -478,7 +475,7 @@ Indicates that the index_th interval var will not be ranked first of all current
 Ranks the index_th interval var first of all unranked interval vars. 
 <p>
 After that, it will no longer be considered ranked. 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l02072">2072</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00319">319</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -502,40 +499,7 @@ After that, it will no longer be considered ranked.
 Indicates that the index_th interval var will not be ranked first of all currently unranked interval vars. 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l02091">2091</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
-
-</div>
-</div><p>
-<a class="anchor" name="9f09066cc08f7ccf463fd10c58ea2596"></a><!-- doxytag: member="operations_research::SequenceVar::AddPrecedence" ref="9f09066cc08f7ccf463fd10c58ea2596" args="(int before, int after)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void operations_research::SequenceVar::AddPrecedence           </td>
-          <td>(</td>
-          <td class="paramtype">int&nbsp;</td>
-          <td class="paramname"> <em>before</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&nbsp;</td>
-          <td class="paramname"> <em>after</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-Adds a precedence relation (STARTS_AFTER_END) between two activities of the sequence var. 
-<p>
-
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01910">1910</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00326">326</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -565,10 +529,10 @@ Adds a precedence relation (STARTS_AFTER_END) between two activities of the sequ
 <div class="memdoc">
 
 <p>
-Computes the set of indices of interval variables that can be ranked first in the set of unranked activities. 
+// Adds a precedence relation (STARTS_AFTER_END) between two activities of the sequence var. 
 <p>
-
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01871">1871</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+void AddPrecedence(int before, int after); Computes the set of indices of interval variables that can be ranked first in the set of unranked activities. 
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00200">200</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -607,7 +571,7 @@ Computes the set of indices of interval variables that can be ranked first in th
 Applies the following sequence of ranks, ranks first, then rank last. 
 <p>
 rank_first and rank_last represents different directions. rank_first[0] corresponds to the first interval of the sequence. rank_last[0] corresponds to the last interval of the sequence. All intervals in the unperformed vector will be marked as such. 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l02009">2009</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00275">275</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -646,7 +610,7 @@ rank_first and rank_last represents different directions. rank_first[0] correspo
 Clears 'rank_first' and 'rank_last', and fills them with the intervals in the order of the ranks. 
 <p>
 If all variables are ranked, 'rank_first' will contain all variables, and 'rank_last' will contain none. 'unperformed' will contains all such interval variables. rank_first and rank_last represents different directions. rank_first[0] corresponds to the first interval of the sequence. rank_last[0] corresponds to the last interval of the sequence. 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l02112">2112</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00343">343</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -670,7 +634,31 @@ If all variables are ranked, 'rank_first' will contain all variables, and 'rank_
 Returns the index_th interval of the sequence. 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01768">1768</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00051">51</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="7225cccb6f01731b8508aa95201f5493"></a><!-- doxytag: member="operations_research::SequenceVar::Next" ref="7225cccb6f01731b8508aa95201f5493" args="(int index) const " -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * operations_research::SequenceVar::Next           </td>
+          <td>(</td>
+          <td class="paramtype">int&nbsp;</td>
+          <td class="paramname"> <em>index</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+Returns the index_th next of the sequence. 
+<p>
+
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00055">55</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -693,7 +681,7 @@ Returns the index_th interval of the sequence.
 Returns the number of interval vars in the sequence. 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l04254">4254</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l04234">4234</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -717,12 +705,12 @@ Returns the number of interval vars in the sequence.
 Accepts the given visitor. 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01790">1790</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="sched__search_8cc-source.html#l00081">81</a> of file <a class="el" href="sched__search_8cc-source.html">sched_search.cc</a>.</p>
 
 </div>
 </div><p>
 <hr>The documentation for this class was generated from the following files:<ul>
-<li>or-tools/src/constraint_solver/<a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a><li>or-tools/src/constraint_solver/<a class="el" href="resource_8cc-source.html">resource.cc</a></ul>
+<li>or-tools/src/constraint_solver/<a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a><li>or-tools/src/constraint_solver/<a class="el" href="sched__search_8cc-source.html">sched_search.cc</a></ul>
 </div>
 
   <!-- Start of footer. -->
@@ -731,7 +719,7 @@ Accepts the given visitor.
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

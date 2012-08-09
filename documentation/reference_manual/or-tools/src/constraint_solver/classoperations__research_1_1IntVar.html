@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -148,6 +148,8 @@ Inheritance diagram for operations_research::IntVar:</div>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVar.html#25fd97147e0f6a8b3cdd8797edc77027">SetValues</a> (const std::vector&lt; int64 &gt; &amp;values)</td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This method intersects the current domain with the values in the array.  <a href="#25fd97147e0f6a8b3cdd8797edc77027"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVar.html#97c0e823f140f10b8dc10ed83ee09ffa">SetValues</a> (const std::vector&lt; int &gt; &amp;values)</td></tr>
+
 <tr><td class="memItemLeft" nowrap align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVar.html#1501b060a0ae4f2ae77d8008479944ca">WhenBound</a> (<a class="el" href="classoperations__research_1_1Demon.html">Demon</a> *d)=0</td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This method attaches a demon that will be awakened when the variable is bound.  <a href="#1501b060a0ae4f2ae77d8008479944ca"></a><br></td></tr>
@@ -178,12 +180,21 @@ Inheritance diagram for operations_research::IntVar:</div>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVar.html#13a1f9a3f350e785eecc80ad9f1ece65">Accept</a> (<a class="el" href="classoperations__research_1_1ModelVisitor.html">ModelVisitor</a> *const visitor) const </td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Accepts the given visitor.  <a href="#13a1f9a3f350e785eecc80ad9f1ece65"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">virtual <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVar.html#df461eaaf6bcf01239e77fa8ed407ff0">IsEqual</a> (int64 constant)=0</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">IsEqual.  <a href="#df461eaaf6bcf01239e77fa8ed407ff0"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">virtual <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVar.html#791449c48c24075f82b47848038b5ffd">IsDifferent</a> (int64 constant)=0</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">virtual <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVar.html#4566c3b4fe20baa14354525be9b31bca">IsGreaterOrEqual</a> (int64 constant)=0</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">virtual <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVar.html#f5197b4635e1581a9bdecdfba44d2428">IsLessOrEqual</a> (int64 constant)=0</td></tr>
+
 </table>
 <hr><a name="_details"></a><h2>Detailed Description</h2>
 The class <a class="el" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a> is a subset of <a class="el" href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming...">IntExpr</a>. 
 <p>
 In addition to the <a class="el" href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming...">IntExpr</a> protocol, it offers persistance, removing values from the domains and a finer model for events 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03780">3780</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03734">3734</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 <hr><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" name="119cae716dbbdaa31b476ef904c99776"></a><!-- doxytag: member="operations_research::IntVar::IntVar" ref="119cae716dbbdaa31b476ef904c99776" args="(Solver *const s)" -->
 <div class="memitem">
@@ -205,7 +216,7 @@ In addition to the <a class="el" href="classoperations__research_1_1IntExpr.html
 <a class="el" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>. 
 <p>
 
-<p>Definition at line <a class="el" href="expressions_8cc-source.html#l00054">54</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
+<p>Definition at line <a class="el" href="expressions_8cc-source.html#l00084">84</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
 
 </div>
 </div><p>
@@ -236,7 +247,7 @@ In addition to the <a class="el" href="classoperations__research_1_1IntExpr.html
 
 <p>
 
-<p>Definition at line <a class="el" href="expressions_8cc-source.html#l00056">56</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
+<p>Definition at line <a class="el" href="expressions_8cc-source.html#l00086">86</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
 
 </div>
 </div><p>
@@ -257,7 +268,7 @@ In addition to the <a class="el" href="classoperations__research_1_1IntExpr.html
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03784">3784</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03738">3738</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -283,7 +294,7 @@ Returns true if the expression is indeed a variable.
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1IntExpr.html#779dea5a722df700411e947f7739dc56">operations_research::IntExpr</a>.</p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03786">3786</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03740">3740</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -308,7 +319,7 @@ Creates a variable from the expression.
 
 <p>Implements <a class="el" href="classoperations__research_1_1IntExpr.html#751d151bfe120bc6d378c4570505cbd4">operations_research::IntExpr</a>.</p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03787">3787</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03741">3741</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -415,7 +426,7 @@ This method removes the interval 'l' .
 This method remove the values from the domain of the variable. 
 <p>
 
-<p>Definition at line <a class="el" href="expressions_8cc-source.html#l04958">4958</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
+<p>Definition at line <a class="el" href="expressions_8cc-source.html#l06541">6541</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
 
 </div>
 </div><p>
@@ -439,7 +450,7 @@ This method remove the values from the domain of the variable.
 This method remove the values from the domain of the variable. 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03804">3804</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03758">3758</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -472,7 +483,7 @@ This method remove the values from the domain of the variable.
 This method intersects the current domain with the values in the array. 
 <p>
 
-<p>Definition at line <a class="el" href="expressions_8cc-source.html#l04975">4975</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
+<p>Definition at line <a class="el" href="expressions_8cc-source.html#l06620">6620</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
 
 </div>
 </div><p>
@@ -496,7 +507,29 @@ This method intersects the current domain with the values in the array.
 This method intersects the current domain with the values in the array. 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03812">3812</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03766">3766</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="97c0e823f140f10b8dc10ed83ee09ffa"></a><!-- doxytag: member="operations_research::IntVar::SetValues" ref="97c0e823f140f10b8dc10ed83ee09ffa" args="(const std::vector&lt; int &gt; &amp;values)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void operations_research::IntVar::SetValues           </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; int &gt; &amp;&nbsp;</td>
+          <td class="paramname"> <em>values</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="expressions_8cc-source.html#l06580">6580</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
 
 </div>
 </div><p>
@@ -692,7 +725,7 @@ Returns the previous max.
 <a class="el" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>. 
 <p>
 
-<p>Definition at line <a class="el" href="expressions_8cc-source.html#l04954">4954</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
+<p>Definition at line <a class="el" href="expressions_8cc-source.html#l06537">6537</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
 
 </div>
 </div><p>
@@ -718,7 +751,89 @@ Accepts the given visitor.
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1IntExpr.html#3a82999dc986a540904daf053ddb9269">operations_research::IntExpr</a>.</p>
 
-<p>Definition at line <a class="el" href="expressions_8cc-source.html#l04965">4965</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
+<p>Definition at line <a class="el" href="expressions_8cc-source.html#l06570">6570</a> of file <a class="el" href="expressions_8cc-source.html">expressions.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="df461eaaf6bcf01239e77fa8ed407ff0"></a><!-- doxytag: member="operations_research::IntVar::IsEqual" ref="df461eaaf6bcf01239e77fa8ed407ff0" args="(int64 constant)=0" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a>* operations_research::IntVar::IsEqual           </td>
+          <td>(</td>
+          <td class="paramtype">int64&nbsp;</td>
+          <td class="paramname"> <em>constant</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td><code> [pure virtual]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+IsEqual. 
+<p>
+
+</div>
+</div><p>
+<a class="anchor" name="791449c48c24075f82b47848038b5ffd"></a><!-- doxytag: member="operations_research::IntVar::IsDifferent" ref="791449c48c24075f82b47848038b5ffd" args="(int64 constant)=0" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a>* operations_research::IntVar::IsDifferent           </td>
+          <td>(</td>
+          <td class="paramtype">int64&nbsp;</td>
+          <td class="paramname"> <em>constant</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td><code> [pure virtual]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+</div>
+</div><p>
+<a class="anchor" name="4566c3b4fe20baa14354525be9b31bca"></a><!-- doxytag: member="operations_research::IntVar::IsGreaterOrEqual" ref="4566c3b4fe20baa14354525be9b31bca" args="(int64 constant)=0" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a>* operations_research::IntVar::IsGreaterOrEqual           </td>
+          <td>(</td>
+          <td class="paramtype">int64&nbsp;</td>
+          <td class="paramname"> <em>constant</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td><code> [pure virtual]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+</div>
+</div><p>
+<a class="anchor" name="f5197b4635e1581a9bdecdfba44d2428"></a><!-- doxytag: member="operations_research::IntVar::IsLessOrEqual" ref="f5197b4635e1581a9bdecdfba44d2428" args="(int64 constant)=0" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a>* operations_research::IntVar::IsLessOrEqual           </td>
+          <td>(</td>
+          <td class="paramtype">int64&nbsp;</td>
+          <td class="paramname"> <em>constant</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td><code> [pure virtual]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
 
 </div>
 </div><p>
@@ -732,7 +847,7 @@ Accepts the given visitor.
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

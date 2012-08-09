@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -102,6 +102,7 @@
 <code>#include &quot;<a class="el" href="constraint__solveri_8h-source.html">constraint_solver/constraint_solveri.h</a>&quot;</code><br>
 <code>#include &quot;util/bitset.h&quot;</code><br>
 <code>#include &quot;util/monoid_operation_tree.h&quot;</code><br>
+<code>#include &quot;util/string_array.h&quot;</code><br>
 
 <p>
 <a href="resource_8cc-source.html">Go to the source code of this file.</a><table border="0" cellpadding="0" cellspacing="0">
@@ -127,30 +128,30 @@
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="resource_8cc.html#e49f4441db3fc882f6c7ced5546e6d89">DEFINE_bool</a> (cp_use_all_possible_disjunctions, true,&quot;Post temporal disjunctions for all pairs of tasks sharing a &quot;&quot;cumulative resource and that cannot overlap because the sum of &quot;&quot;their demand exceeds the capacity.&quot;)</td></tr>
 
 <tr><td class="memTemplParams" nowrap colspan="2">template&lt;class Task&gt; </td></tr>
-<tr><td class="memTemplItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ca5df874c380be75bef97219403b8081">operations_research::StartMinLessThan</a> (const IndexedTask&lt; Task &gt; *const w1, const IndexedTask&lt; Task &gt; *const w2)</td></tr>
+<tr><td class="memTemplItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#8afc34574084a58dade93f5b8eb8987f">operations_research::StartMinLessThan</a> (const IndexedTask&lt; Task &gt; *const w1, const IndexedTask&lt; Task &gt; *const w2)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Comparison methods, used by the STL sort.  <a href="#ca5df874c380be75bef97219403b8081"></a><br></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Comparison methods, used by the STL sort.  <a href="#8afc34574084a58dade93f5b8eb8987f"></a><br></td></tr>
 <tr><td class="memTemplParams" nowrap colspan="2">template&lt;class Task&gt; </td></tr>
-<tr><td class="memTemplItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#fbcf6ba52ece6ac7ad94034210b4723c">operations_research::EndMaxLessThan</a> (const IndexedTask&lt; Task &gt; *const w1, const IndexedTask&lt; Task &gt; *const w2)</td></tr>
-
-<tr><td class="memTemplParams" nowrap colspan="2">template&lt;class Task&gt; </td></tr>
-<tr><td class="memTemplItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a5ef8e0597a8fc6a490aa0da52410d56">operations_research::StartMaxLessThan</a> (const IndexedTask&lt; Task &gt; *const w1, const IndexedTask&lt; Task &gt; *const w2)</td></tr>
+<tr><td class="memTemplItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#c58c591326ff2e8f00c8ad1097b0f786">operations_research::EndMaxLessThan</a> (const IndexedTask&lt; Task &gt; *const w1, const IndexedTask&lt; Task &gt; *const w2)</td></tr>
 
 <tr><td class="memTemplParams" nowrap colspan="2">template&lt;class Task&gt; </td></tr>
-<tr><td class="memTemplItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#14ffdb16929ef806a49bd0f33e39eed4">operations_research::EndMinLessThan</a> (const IndexedTask&lt; Task &gt; *const w1, const IndexedTask&lt; Task &gt; *const w2)</td></tr>
+<tr><td class="memTemplItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a0f7daf3357add972e7a7e6321e4cc99">operations_research::StartMaxLessThan</a> (const IndexedTask&lt; Task &gt; *const w1, const IndexedTask&lt; Task &gt; *const w2)</td></tr>
+
+<tr><td class="memTemplParams" nowrap colspan="2">template&lt;class Task&gt; </td></tr>
+<tr><td class="memTemplItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#94ceec9fac2c3bfddfd04d65a180631f">operations_research::EndMinLessThan</a> (const IndexedTask&lt; Task &gt; *const w1, const IndexedTask&lt; Task &gt; *const w2)</td></tr>
 
 <tr><td class="memTemplParams" nowrap colspan="2">template&lt;typename T, typename Compare&gt; </td></tr>
-<tr><td class="memTemplItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ab265eb393a2d126b721d167affba14e">operations_research::Sort</a> (std::vector&lt; T &gt; *vector, Compare compare)</td></tr>
+<tr><td class="memTemplItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#48e1e4129e460b5c0b8185c5fa9ede30">operations_research::Sort</a> (std::vector&lt; T &gt; *vector, Compare compare)</td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ff2aaf4b19cb4ed4df164416742f755f">operations_research::TaskStartMinLessThan</a> (const CumulativeTask *const task1, const CumulativeTask *const task2)</td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#cc7cce0e96b178a0996e10ece8f4c88b">operations_research::TaskStartMinLessThan</a> (const CumulativeTask *const task1, const CumulativeTask *const task2)</td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top">CumulativeTask *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#bc86a2fcb3d64cbdb8bc81fe37d9b643">operations_research::MakeTask</a> (Solver *solver, IntervalVar *interval, int64 demand)</td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">CumulativeTask *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#fdb9cd62a1a1700adcfca7791f66d563">operations_research::MakeTask</a> (Solver *solver, IntervalVar *interval, int64 demand)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Cumulative.  <a href="#bc86a2fcb3d64cbdb8bc81fe37d9b643"></a><br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">int64&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#f6e3dadc9a953ff79c525be1c284027e">operations_research::SafeProduct</a> (int64 a, int64 b)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Cumulative.  <a href="#fdb9cd62a1a1700adcfca7791f66d563"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">int64&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#c67113d42010b1755555fe94ff1f6f97">operations_research::SafeProduct</a> (int64 a, int64 b)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Returns min(a * b, kint64max). a is positive.  <a href="#f6e3dadc9a953ff79c525be1c284027e"></a><br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#6adc0b3fa9bccc1ef7ba102f5894f912">operations_research::TimeLessThan</a> (const ProfileDelta &amp;delta1, const ProfileDelta &amp;delta2)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Returns min(a * b, kint64max). a is positive.  <a href="#c67113d42010b1755555fe94ff1f6f97"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#0900bf580a602e3ba09d76e55ad6ef50">operations_research::TimeLessThan</a> (const ProfileDelta &amp;delta1, const ProfileDelta &amp;delta2)</td></tr>
 
 </table>
 <hr><h2>Function Documentation</h2>
@@ -306,6 +307,23 @@ Unless required by applicable law or agreed to in writing, software distributed 
 </div>
 </div><p>
 <hr><h2>Variable Documentation</h2>
+<a class="anchor" name="44f9edf98894609878ec63d796329ff5"></a><!-- doxytag: member="resource.cc::actives_" ref="44f9edf98894609878ec63d796329ff5" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;IntVar*&gt; <a class="el" href="resource_8cc.html#44f9edf98894609878ec63d796329ff5">actives_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01072">1072</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+
+</div>
+</div><p>
 <a class="anchor" name="ae47b8a105cabdfb1f3aa879efefe7fd"></a><!-- doxytag: member="resource.cc::argmax_energetic_end_min_opt_" ref="ae47b8a105cabdfb1f3aa879efefe7fd" args="" -->
 <div class="memitem">
 <div class="memproto">
@@ -450,7 +468,7 @@ Capacity of the cumulative resource.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01336">1336</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01601">1601</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -467,7 +485,7 @@ Capacity of the cumulative resource.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00111">111</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l00112">112</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -486,7 +504,7 @@ Capacity of the cumulative resource.
 Array of demands for the visitor. 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01719">1719</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01985">1985</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -524,7 +542,7 @@ Max_{subset S of Theta} (capacity * start_min(S) + energy(S)).
 Energetic end min of the alpha set. 
 <p>
 Used when swimming up only. 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00993">993</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01258">1258</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -581,7 +599,7 @@ This is energy(Theta).
 Energy of the alpha set, that is, the set of tasks whose start min does not exceed the max start min of a set with excess residual energy. 
 <p>
 Used when swimming up only. 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00988">988</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01253">1253</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -619,7 +637,7 @@ Max_{i in Lambda} (energy(Theta union {i})).
 Energy threshold such that if a set has an energetic_end_min greater than the threshold, then it can push tasks that must end at or after the currently considered end max. 
 <p>
 Used when diving down only. 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00982">982</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01247">1247</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -636,7 +654,7 @@ Used when diving down only.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00081">81</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l00082">82</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -655,7 +673,7 @@ Used when diving down only.
 Array of intervals for the visitor. 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00791">791</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l00939">939</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -691,7 +709,7 @@ Special value for task indices meaning 'no such task'.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00931">931</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01196">1196</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -708,7 +726,7 @@ Special value for task indices meaning 'no such task'.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00893">893</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01158">1158</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -725,7 +743,7 @@ Special value for task indices meaning 'no such task'.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00119">119</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l00120">120</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -761,7 +779,7 @@ Cumulative theta-lamba tree.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00794">794</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01068">1068</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -778,7 +796,7 @@ Cumulative theta-lamba tree.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00796">796</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01070">1070</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -835,7 +853,58 @@ new_lct_[i] is the new end max for interval est_[i]-&gt;interval().
 Stack of updates to the new start min to do. 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01008">1008</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01273">1273</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="55ec7554c8864b6266691e71f0c58f39"></a><!-- doxytag: member="resource.cc::nexts_" ref="55ec7554c8864b6266691e71f0c58f39" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;IntVar*&gt; <a class="el" href="resource_8cc.html#55ec7554c8864b6266691e71f0c58f39">nexts_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l00938">938</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="cebebd7c9b96f7edee0302b319d93b25"></a><!-- doxytag: member="resource.cc::partial_sequence_" ref="cebebd7c9b96f7edee0302b319d93b25" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">RevPartialSequence <a class="el" href="resource_8cc.html#cebebd7c9b96f7edee0302b319d93b25">partial_sequence_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l00942">942</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="265defcfd093cf7ad255cff96a0fbdd6"></a><!-- doxytag: member="resource.cc::previous_" ref="265defcfd093cf7ad255cff96a0fbdd6" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">scoped_array&lt;int&gt; <a class="el" href="resource_8cc.html#265defcfd093cf7ad255cff96a0fbdd6">previous_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l00943">943</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -852,7 +921,7 @@ Stack of updates to the new start min to do.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01515">1515</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01780">1780</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -869,7 +938,7 @@ Stack of updates to the new start min to do.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01514">1514</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01779">1779</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -886,7 +955,7 @@ Stack of updates to the new start min to do.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00913">913</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01178">1178</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -905,7 +974,24 @@ Stack of updates to the new start min to do.
 Max_{subset S of Theta} (residual_capacity * start_min(S) + energy(S)). 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00883">883</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01148">1148</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="90c958e3e75d1573ce9838cd18af94a5"></a><!-- doxytag: member="resource.cc::sequence_var_" ref="90c958e3e75d1573ce9838cd18af94a5" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">SequenceVar* <a class="el" href="resource_8cc.html#90c958e3e75d1573ce9838cd18af94a5">sequence_var_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01066">1066</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -958,7 +1044,7 @@ Number of tasks.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00141">141</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l00142">142</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -975,7 +1061,7 @@ Number of tasks.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00793">793</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01067">1067</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -992,7 +1078,7 @@ Number of tasks.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00795">795</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01069">1069</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1009,7 +1095,7 @@ Number of tasks.
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l00140">140</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l00141">141</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1028,7 +1114,7 @@ Number of tasks.
 The tasks that share the cumulative resource. 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01711">1711</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01977">1977</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1064,7 +1150,41 @@ All of these vectors store the same set of objects. Therefore, at destruction ti
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01335">1335</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01600">1600</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="c7fee49a05dab3d7c08c5e02167b3675"></a><!-- doxytag: member="resource.cc::time_cumuls_" ref="c7fee49a05dab3d7c08c5e02167b3675" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;IntVar*&gt; <a class="el" href="resource_8cc.html#c7fee49a05dab3d7c08c5e02167b3675">time_cumuls_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01073">1073</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="b9e099893c1071950888afeac432ce10"></a><!-- doxytag: member="resource.cc::time_transits_" ref="b9e099893c1071950888afeac432ce10" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;IntVar*&gt; <a class="el" href="resource_8cc.html#b9e099893c1071950888afeac432ce10">time_transits_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01074">1074</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1102,6 +1222,23 @@ All of these vectors store the same set of objects. Therefore, at destruction ti
 
 </div>
 </div><p>
+<a class="anchor" name="e1539cbd63572595ec520a42526ddfa0"></a><!-- doxytag: member="resource.cc::transits_" ref="e1539cbd63572595ec520a42526ddfa0" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">scoped_array&lt;IntVar*&gt; <a class="el" href="resource_8cc.html#e1539cbd63572595ec520a42526ddfa0">transits_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l00940">940</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+
+</div>
+</div><p>
 <a class="anchor" name="88954a36b4e0d841c115d2005c1eb84d"></a><!-- doxytag: member="resource.cc::up_to_date_" ref="88954a36b4e0d841c115d2005c1eb84d" args="" -->
 <div class="memitem">
 <div class="memproto">
@@ -1115,7 +1252,7 @@ All of these vectors store the same set of objects. Therefore, at destruction ti
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01033">1033</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01298">1298</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1134,7 +1271,7 @@ All of these vectors store the same set of objects. Therefore, at destruction ti
 update_map_[d][i] is an integer such that if a task whose demand is d cannot end before by_end_max_[i], then it cannot start before update_map_[d][i]. 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01307">1307</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01572">1572</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1151,7 +1288,7 @@ update_map_[d][i] is an integer such that if a task whose demand is d cannot end
 
 <p>
 
-<p>Definition at line <a class="el" href="resource_8cc-source.html#l01032">1032</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
+<p>Definition at line <a class="el" href="resource_8cc-source.html#l01297">1297</a> of file <a class="el" href="resource_8cc-source.html">resource.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1163,7 +1300,7 @@ update_map_[d][i] is an integer such that if a task whose demand is d cannot end
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

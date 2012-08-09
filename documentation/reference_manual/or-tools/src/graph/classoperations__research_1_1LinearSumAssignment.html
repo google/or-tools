@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/graph/index.html">graph</a>/
@@ -93,7 +93,10 @@
   </div>
 </div>
 <div class="contents">
-<h1>operations_research::LinearSumAssignment&lt; GraphType &gt; Class Template Reference</h1><!-- doxytag: class="operations_research::LinearSumAssignment" --><code>#include &lt;<a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>&gt;</code>
+<h1>operations_research::LinearSumAssignment&lt; GraphType &gt; Class Template Reference</h1><!-- doxytag: class="operations_research::LinearSumAssignment" -->This class does not take ownership of its underlying graph.  
+<a href="#_details">More...</a>
+<p>
+<code>#include &lt;<a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>&gt;</code>
 <p>
 
 <p>
@@ -102,12 +105,22 @@
 <tr><td colspan="2"><br><h2>Public Member Functions</h2></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LinearSumAssignment.html#1eae4227ff347a3d9b66cc705118f092">LinearSumAssignment</a> (const GraphType &amp;graph, <a class="el" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb">NodeIndex</a> num_left_nodes)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This class modifies the given graph by adding arcs to it as costs are specified via SetArcCost, but does not take ownership.  <a href="#1eae4227ff347a3d9b66cc705118f092"></a><br></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Constructor for the case in which we will build the graph incrementally as we discover arc costs, as might be done with any of the dynamic graph representations such as StarGraph or ForwardStarGraph.  <a href="#1eae4227ff347a3d9b66cc705118f092"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LinearSumAssignment.html#eab56b5cf9d29dd479588f6ae9905df6">LinearSumAssignment</a> (<a class="el" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb">NodeIndex</a> num_left_nodes, <a class="el" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> num_arcs)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Constructor for the case in which the underlying graph cannot be built until after all the arc costs are known, as is the case with ForwardStarStaticGraph.  <a href="#eab56b5cf9d29dd479588f6ae9905df6"></a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">virtual&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LinearSumAssignment.html#2e1de9a6d3ecaea08138e6829899e94c">~LinearSumAssignment</a> ()</td></tr>
 
+<tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LinearSumAssignment.html#505cde11a037301682460196f8c6b93b">SetGraph</a> (const GraphType *graph)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Sets the graph used by the <a class="el" href="classoperations__research_1_1LinearSumAssignment.html" title="This class does not take ownership of its underlying graph.">LinearSumAssignment</a> instance, for use when the graph layout can be determined only after arc costs are set.  <a href="#505cde11a037301682460196f8c6b93b"></a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LinearSumAssignment.html#b0da9fe270ac009766835e156e88691d">SetCostScalingDivisor</a> (<a class="el" href="namespaceoperations__research.html#a7950685633ee869aa9471b2ec5fbcfa">CostValue</a> factor)</td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Sets the cost-scaling divisor, i.e., the amount by which we divide the scaling parameter on each iteration.  <a href="#b0da9fe270ac009766835e156e88691d"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">operations_research::PermutationCycleHandler<br>
+&lt; typename GraphType::ArcIndex &gt; *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LinearSumAssignment.html#f6bc9d1acdf2224915aa2441e11e0012">ArcAnnotationCycleHandler</a> ()</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Returns a permutation cycle handler that can be passed to the TransformToForwardStaticGraph method so that arc costs get permuted along with arcs themselves.  <a href="#f6bc9d1acdf2224915aa2441e11e0012"></a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LinearSumAssignment.html#15cfa33783e509c9ab447858abf6cdab">OptimizeGraphLayout</a> (GraphType *graph)</td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Optimizes the layout of the graph for the access pattern our implementation will use.  <a href="#15cfa33783e509c9ab447858abf6cdab"></a><br></td></tr>
@@ -165,8 +178,8 @@
 <h3>template&lt;typename GraphType&gt;<br>
  class operations_research::LinearSumAssignment&lt; GraphType &gt;</h3>
 
-
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00199">199</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+This class does not take ownership of its underlying graph. 
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00200">200</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 <hr><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" name="1eae4227ff347a3d9b66cc705118f092"></a><!-- doxytag: member="operations_research::LinearSumAssignment::LinearSumAssignment" ref="1eae4227ff347a3d9b66cc705118f092" args="(const GraphType &amp;graph, NodeIndex num_left_nodes)" -->
 <div class="memitem">
@@ -196,10 +209,45 @@ template&lt;typename GraphType&gt; </div>
 <div class="memdoc">
 
 <p>
-This class modifies the given graph by adding arcs to it as costs are specified via SetArcCost, but does not take ownership. 
+Constructor for the case in which we will build the graph incrementally as we discover arc costs, as might be done with any of the dynamic graph representations such as StarGraph or ForwardStarGraph. 
 <p>
 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00916">916</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00955">955</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="eab56b5cf9d29dd479588f6ae9905df6"></a><!-- doxytag: member="operations_research::LinearSumAssignment::LinearSumAssignment" ref="eab56b5cf9d29dd479588f6ae9905df6" args="(NodeIndex num_left_nodes, ArcIndex num_arcs)" -->
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename GraphType&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1LinearSumAssignment.html">operations_research::LinearSumAssignment</a>&lt; GraphType &gt;::<a class="el" href="classoperations__research_1_1LinearSumAssignment.html">LinearSumAssignment</a>           </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb">NodeIndex</a>&nbsp;</td>
+          <td class="paramname"> <em>num_left_nodes</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a>&nbsp;</td>
+          <td class="paramname"> <em>num_arcs</em></td><td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td><td><code> [inline]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+Constructor for the case in which the underlying graph cannot be built until after all the arc costs are known, as is the case with ForwardStarStaticGraph. 
+<p>
+In this case, the graph is passed to us later via the <a class="el" href="classoperations__research_1_1LinearSumAssignment.html#505cde11a037301682460196f8c6b93b" title="Sets the graph used by the LinearSumAssignment instance, for use when the graph layout...">SetGraph()</a> method, below. 
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00978">978</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -222,11 +270,37 @@ template&lt;typename GraphType&gt; </div>
 
 <p>
 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00207">207</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00213">213</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
 <hr><h2>Member Function Documentation</h2>
+<a class="anchor" name="505cde11a037301682460196f8c6b93b"></a><!-- doxytag: member="operations_research::LinearSumAssignment::SetGraph" ref="505cde11a037301682460196f8c6b93b" args="(const GraphType *graph)" -->
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename GraphType&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classoperations__research_1_1LinearSumAssignment.html">operations_research::LinearSumAssignment</a>&lt; GraphType &gt;::SetGraph           </td>
+          <td>(</td>
+          <td class="paramtype">const GraphType *&nbsp;</td>
+          <td class="paramname"> <em>graph</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td><code> [inline]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+Sets the graph used by the <a class="el" href="classoperations__research_1_1LinearSumAssignment.html" title="This class does not take ownership of its underlying graph.">LinearSumAssignment</a> instance, for use when the graph layout can be determined only after arc costs are set. 
+<p>
+This happens, for example, when we use a ForwardStarStaticGraph. 
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00218">218</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+
+</div>
+</div><p>
 <a class="anchor" name="b0da9fe270ac009766835e156e88691d"></a><!-- doxytag: member="operations_research::LinearSumAssignment::SetCostScalingDivisor" ref="b0da9fe270ac009766835e156e88691d" args="(CostValue factor)" -->
 <div class="memitem">
 <div class="memproto">
@@ -249,7 +323,33 @@ template&lt;typename GraphType&gt; </div>
 Sets the cost-scaling divisor, i.e., the amount by which we divide the scaling parameter on each iteration. 
 <p>
 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00211">211</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00225">225</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="f6bc9d1acdf2224915aa2441e11e0012"></a><!-- doxytag: member="operations_research::LinearSumAssignment::ArcAnnotationCycleHandler" ref="f6bc9d1acdf2224915aa2441e11e0012" args="()" -->
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename GraphType&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classPermutationCycleHandler.html">PermutationCycleHandler</a>&lt; typename GraphType::ArcIndex &gt; * <a class="el" href="classoperations__research_1_1LinearSumAssignment.html">operations_research::LinearSumAssignment</a>&lt; GraphType &gt;::ArcAnnotationCycleHandler           </td>
+          <td>(</td>
+          <td class="paramname">          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td><code> [inline]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+Returns a permutation cycle handler that can be passed to the TransformToForwardStaticGraph method so that arc costs get permuted along with arcs themselves. 
+<p>
+Passes ownership of the cycle handler to the caller.<p>
+Passes ownership of the cycle handler to the caller. 
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l01078">1078</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -274,8 +374,9 @@ template&lt;typename GraphType&gt; </div>
 <p>
 Optimizes the layout of the graph for the access pattern our implementation will use. 
 <p>
-
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l01009">1009</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+REQUIRES for <a class="el" href="classoperations__research_1_1LinearSumAssignment.html" title="This class does not take ownership of its underlying graph.">LinearSumAssignment</a> template instantiation if a call to the <a class="el" href="classoperations__research_1_1LinearSumAssignment.html#15cfa33783e509c9ab447858abf6cdab" title="Optimizes the layout of the graph for the access pattern our implementation will...">OptimizeGraphLayout()</a> method is compiled: GraphType is a dynamic graph, i.e., one that implements the GroupForwardArcsByFunctor() member template method.<p>
+If analogous optimization is needed for <a class="el" href="classoperations__research_1_1LinearSumAssignment.html" title="This class does not take ownership of its underlying graph.">LinearSumAssignment</a> instances based on static graphs, the graph layout should be constructed such that each node's outgoing arcs are sorted by head node index before the <a class="el" href="classoperations__research_1_1LinearSumAssignment.html#505cde11a037301682460196f8c6b93b" title="Sets the graph used by the LinearSumAssignment instance, for use when the graph layout...">LinearSumAssignment&lt;GraphType&gt;::SetGraph()</a> method is called. 
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l01084">1084</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -300,7 +401,7 @@ template&lt;typename GraphType&gt; </div>
 Allows tests, iterators, etc., to inspect our underlying graph. 
 <p>
 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00220">220</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00254">254</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -326,7 +427,7 @@ template&lt;typename GraphType&gt; </div>
 These handy member functions make the code more compact, and we expose them to clients so that client code that doesn't have direct access to the graph can learn about the optimum assignment once it is computed. 
 <p>
 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00226">226</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00260">260</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -352,7 +453,7 @@ template&lt;typename GraphType&gt; </div>
 Returns the original arc cost for use by a client that's iterating over the optimum assignment. 
 <p>
 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00232">232</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00266">266</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -387,7 +488,7 @@ template&lt;typename GraphType&gt; </div>
 Sets the cost of an arc already present in the given graph. 
 <p>
 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00939">939</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l01003">1003</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -414,7 +515,7 @@ Completes initialization after the problem is fully specified.
 Returns true if we successfully prove that arithmetic calculations are guaranteed not to overflow. <a class="el" href="classoperations__research_1_1LinearSumAssignment.html#5784b0e0c525622091351e1ee4d4e73d" title="Computes the optimum assignment.">ComputeAssignment()</a> calls this method itself, so only clients that care about obtaining a warning about the possibility of arithmetic precision problems need to call this method explicitly.<p>
 Separate from <a class="el" href="classoperations__research_1_1LinearSumAssignment.html#5784b0e0c525622091351e1ee4d4e73d" title="Computes the optimum assignment.">ComputeAssignment()</a> for white-box testing and for clients that need to react to the possibility that arithmetic overflow is not ruled out.<p>
 <a class="el" href="classoperations__research_1_1LinearSumAssignment.html#43439fdb497f05396053b387ea880ebc" title="Completes initialization after the problem is fully specified.">FinalizeSetup()</a> is idempotent. 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l01300">1300</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l01375">1375</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -439,7 +540,7 @@ template&lt;typename GraphType&gt; </div>
 Computes the optimum assignment. 
 <p>
 Returns true on success. Return value of false implies the given problem is infeasible. 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l01357">1357</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l01436">1436</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -464,7 +565,7 @@ template&lt;typename GraphType&gt; </div>
 Returns the cost of the minimum-cost perfect matching. 
 <p>
 Precondition: success_ == true, signifying that we computed the optimum assignment for a feasible problem. 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l01379">1379</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l01460">1460</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -489,7 +590,7 @@ template&lt;typename GraphType&gt; </div>
 Returns the total number of nodes in the given problem. 
 <p>
 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00265">265</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00299">299</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -514,7 +615,7 @@ template&lt;typename GraphType&gt; </div>
 Returns the number of nodes on the left side of the given problem. 
 <p>
 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00271">271</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00311">311</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -540,7 +641,7 @@ template&lt;typename GraphType&gt; </div>
 Returns the arc through which the given node is matched. 
 <p>
 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00276">276</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00316">316</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -566,7 +667,7 @@ template&lt;typename GraphType&gt; </div>
 Returns the cost of the assignment arc incident to the given node. 
 <p>
 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00283">283</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00323">323</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -592,7 +693,7 @@ template&lt;typename GraphType&gt; </div>
 Returns the node to which the given node is matched. 
 <p>
 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00288">288</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00328">328</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -615,7 +716,7 @@ template&lt;typename GraphType&gt; </div>
 
 <p>
 
-<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00295">295</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
+<p>Definition at line <a class="el" href="linear__assignment_8h-source.html#l00335">335</a> of file <a class="el" href="linear__assignment_8h-source.html">linear_assignment.h</a>.</p>
 
 </div>
 </div><p>
@@ -629,7 +730,7 @@ template&lt;typename GraphType&gt; </div>
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

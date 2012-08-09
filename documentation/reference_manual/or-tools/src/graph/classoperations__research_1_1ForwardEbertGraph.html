@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/graph/index.html">graph</a>/
@@ -93,7 +93,7 @@
   </div>
 </div>
 <div class="contents">
-<h1>operations_research::ForwardEbertGraph&lt; NodeIndexType, ArcIndexType &gt; Class Template Reference</h1><!-- doxytag: class="operations_research::ForwardEbertGraph" --><!-- doxytag: inherits="operations_research::EbertGraphCore" -->A forward-star-only graph representation for greater efficiency in those algorithms that don't need reverse arcs.  
+<h1>operations_research::ForwardEbertGraph&lt; NodeIndexType, ArcIndexType &gt; Class Template Reference</h1><!-- doxytag: class="operations_research::ForwardEbertGraph" --><!-- doxytag: inherits="operations_research::EbertGraphBase" -->A forward-star-only graph representation for greater efficiency in those algorithms that don't need reverse arcs.  
 <a href="#_details">More...</a>
 <p>
 <code>#include &lt;<a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>&gt;</code>
@@ -104,7 +104,8 @@ Inheritance diagram for operations_research::ForwardEbertGraph&lt; NodeIndexType
 
 <p><center><img src="classoperations__research_1_1ForwardEbertGraph.png" usemap="#operations_research::ForwardEbertGraph< NodeIndexType, ArcIndexType >_map" border="0" alt=""></center>
 <map name="operations_research::ForwardEbertGraph< NodeIndexType, ArcIndexType >_map">
-<area href="classoperations__research_1_1EbertGraphCore.html" alt="operations_research::EbertGraphCore< NodeIndexType, ArcIndexType, DerivedGraph >" shape="rect" coords="0,0,873,24">
+<area href="classoperations__research_1_1EbertGraphBase.html" alt="operations_research::EbertGraphBase< NodeIndexType, ArcIndexType, DerivedGraph >" shape="rect" coords="0,56,873,80">
+<area href="classoperations__research_1_1StarGraphBase.html" alt="operations_research::StarGraphBase< NodeIndexType, ArcIndexType, DerivedGraph >" shape="rect" coords="0,0,873,24">
 </map>
 </div>
 
@@ -130,9 +131,6 @@ Inheritance diagram for operations_research::ForwardEbertGraph&lt; NodeIndexType
 <tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="el" href="classbool.html">bool</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1ForwardEbertGraph.html#ccfcdabe8f8e6106447aa4f15518f74d">CheckArcValidity</a> (const ArcIndexType arc) const </td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Utility function to check that an arc index is within the bounds AND different from kNilArc.  <a href="#ccfcdabe8f8e6106447aa4f15518f74d"></a><br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="el" href="classbool.html">bool</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1ForwardEbertGraph.html#42c020d24846f682ccf66a99a83b63e6">IsNodeValid</a> (const NodeIndexType node) const </td></tr>
-
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Utility function to check that a node index is within the bounds AND different from kNilNode.  <a href="#42c020d24846f682ccf66a99a83b63e6"></a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top"><a class="el" href="classbool.html">bool</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1ForwardEbertGraph.html#14b6acddd955471a1b6d99af91f90670">CheckTailIndexValidity</a> (const ArcIndexType arc) const </td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Returns true if arc is a valid index into the (*tail_) array.  <a href="#14b6acddd955471a1b6d99af91f90670"></a><br></td></tr>
@@ -156,12 +154,10 @@ Inheritance diagram for operations_research::ForwardEbertGraph&lt; NodeIndexType
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Returns a debug string containing all the information contained in the data structure in raw form.  <a href="#6c747cdf67c3eeba716b958e34803945"></a><br></td></tr>
 <tr><td colspan="2"><br><h2>Friends</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">class&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1ForwardEbertGraph.html#3657ae71b5ef2f8de826aef7c53784f7">EbertGraphCore&lt; NodeIndexType, ArcIndexType, ForwardEbertGraph&lt; NodeIndexType, ArcIndexType &gt; &gt;</a></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1ForwardEbertGraph.html#f084abb84ae971af22c7f8d6d572ad72">EbertGraphBase&lt; NodeIndexType, ArcIndexType, ForwardEbertGraph&lt; NodeIndexType, ArcIndexType &gt; &gt;</a></td></tr>
 
-<tr><td colspan="2"><br><h2>Classes</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1ForwardEbertGraph_1_1OutgoingArcIterator.html">OutgoingArcIterator</a></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1ForwardEbertGraph.html#3db211f6708280a44a73fd3bb0594142">StarGraphBase&lt; NodeIndexType, ArcIndexType, ForwardEbertGraph&lt; NodeIndexType, ArcIndexType &gt; &gt;</a></td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Iterator class for traversing the arcs incident to a given node in the graph.  <a href="classoperations__research_1_1ForwardEbertGraph_1_1OutgoingArcIterator.html#_details">More...</a><br></td></tr>
 </table>
 <hr><a name="_details"></a><h2>Detailed Description</h2>
 <h3>template&lt;typename NodeIndexType, typename ArcIndexType&gt;<br>
@@ -170,7 +166,7 @@ Inheritance diagram for operations_research::ForwardEbertGraph&lt; NodeIndexType
 A forward-star-only graph representation for greater efficiency in those algorithms that don't need reverse arcs. 
 <p>
 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01081">1081</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01592">1592</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 <hr><h2>Member Typedef Documentation</h2>
 <a class="anchor" name="be6bf9da3d9867dfb88d65d99ce657ad"></a><!-- doxytag: member="operations_research::ForwardEbertGraph::NodeIndex" ref="be6bf9da3d9867dfb88d65d99ce657ad" args="" -->
 <div class="memitem">
@@ -189,7 +185,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 &lt; SWIG 
 <p>
 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01113">1113</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01627">1627</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -208,7 +204,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 
 <p>
 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01114">1114</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01628">1628</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -232,7 +228,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 
 <p>
 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01116">1116</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01630">1630</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -265,7 +261,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 
 <p>
 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01118">1118</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01632">1632</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -288,7 +284,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 
 <p>
 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01122">1122</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01636">1636</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -315,7 +311,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 Utility function to check that an arc index is within the bounds. 
 <p>
 It is exported so that users of the <a class="el" href="classoperations__research_1_1ForwardEbertGraph.html" title="A forward-star-only graph representation for greater efficiency in those algorithms...">ForwardEbertGraph</a> class can use it. To be used in a DCHECK. 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01174">1174</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01641">1641</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -341,35 +337,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 Utility function to check that an arc index is within the bounds AND different from kNilArc. 
 <p>
 It is exported so that users of the <a class="el" href="classoperations__research_1_1ForwardEbertGraph.html" title="A forward-star-only graph representation for greater efficiency in those algorithms...">ForwardEbertGraph</a> class can use it. To be used in a DCHECK. 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01182">1182</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
-
-</div>
-</div><p>
-<a class="anchor" name="42c020d24846f682ccf66a99a83b63e6"></a><!-- doxytag: member="operations_research::ForwardEbertGraph::IsNodeValid" ref="42c020d24846f682ccf66a99a83b63e6" args="(const NodeIndexType node) const " -->
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> <a class="el" href="classoperations__research_1_1ForwardEbertGraph.html">operations_research::ForwardEbertGraph</a>&lt; NodeIndexType, ArcIndexType &gt;::IsNodeValid           </td>
-          <td>(</td>
-          <td class="paramtype">const NodeIndexType&nbsp;</td>
-          <td class="paramname"> <em>node</em>          </td>
-          <td>&nbsp;)&nbsp;</td>
-          <td> const<code> [inline]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-Utility function to check that a node index is within the bounds AND different from kNilNode. 
-<p>
-It is exported so that users of the <a class="el" href="classoperations__research_1_1ForwardEbertGraph.html" title="A forward-star-only graph representation for greater efficiency in those algorithms...">ForwardEbertGraph</a> class can use it. To be used in a DCHECK; also used internally to validate arguments passed to our methods from clients (e.g., <a class="el" href="classoperations__research_1_1EbertGraphCore.html#dd0adb80f6cf1d97a07663ddd21f56af" title="Adds an arc to the graph and returns its index.">AddArc()</a>).. 
-<p>Reimplemented from <a class="el" href="classoperations__research_1_1EbertGraphCore.html#5512b28f43c116f0e85adfc61438617c">operations_research::EbertGraphCore&lt; NodeIndexType, ArcIndexType, DerivedGraph &gt;</a>.</p>
-
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01191">1191</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01649">1649</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -395,7 +363,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 Returns true if arc is a valid index into the (*tail_) array. 
 <p>
 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01196">1196</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01654">1654</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -421,7 +389,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 Returns the tail or start-node of arc. 
 <p>
 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01201">1201</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01659">1659</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -456,7 +424,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 Returns true if arc is incoming to node. 
 <p>
 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01208">1208</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01666">1666</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -481,7 +449,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 Recreates the next_adjacent_arc_ and first_incident_arc_ variables from the arrays head_ and tail_ in O(n + m) time. 
 <p>
 This is useful if the head_ and tail_ arrays have been sorted according to a given criterion, for example. 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01216">1216</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01674">1674</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -504,7 +472,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 
 <p>
 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01226">1226</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01684">1684</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -527,7 +495,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 
 <p>
 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01254">1254</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01712">1712</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -552,7 +520,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 To be used in a DCHECK(). 
 <p>
 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01259">1259</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01717">1717</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -577,19 +545,19 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 Returns a debug string containing all the information contained in the data structure in raw form. 
 <p>
 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01270">1270</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01728">1728</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
 <hr><h2>Friends And Related Function Documentation</h2>
-<a class="anchor" name="3657ae71b5ef2f8de826aef7c53784f7"></a><!-- doxytag: member="operations_research::ForwardEbertGraph::EbertGraphCore&lt; NodeIndexType, ArcIndexType, ForwardEbertGraph&lt; NodeIndexType, ArcIndexType &gt; &gt;" ref="3657ae71b5ef2f8de826aef7c53784f7" args="" -->
+<a class="anchor" name="f084abb84ae971af22c7f8d6d572ad72"></a><!-- doxytag: member="operations_research::ForwardEbertGraph::EbertGraphBase&lt; NodeIndexType, ArcIndexType, ForwardEbertGraph&lt; NodeIndexType, ArcIndexType &gt; &gt;" ref="f084abb84ae971af22c7f8d6d572ad72" args="" -->
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">friend class <a class="el" href="classoperations__research_1_1EbertGraphCore.html">EbertGraphCore</a>&lt; NodeIndexType, ArcIndexType,<a class="el" href="classoperations__research_1_1ForwardEbertGraph.html">ForwardEbertGraph</a>&lt; NodeIndexType, ArcIndexType &gt; &gt;<code> [friend]</code>          </td>
+          <td class="memname">friend class <a class="el" href="classoperations__research_1_1EbertGraphBase.html">EbertGraphBase</a>&lt; NodeIndexType, ArcIndexType,<a class="el" href="classoperations__research_1_1ForwardEbertGraph.html">ForwardEbertGraph</a>&lt; NodeIndexType, ArcIndexType &gt; &gt;<code> [friend]</code>          </td>
         </tr>
       </table>
 </div>
@@ -597,7 +565,26 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
 
 <p>
 
-<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01087">1087</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01598">1598</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="3db211f6708280a44a73fd3bb0594142"></a><!-- doxytag: member="operations_research::ForwardEbertGraph::StarGraphBase&lt; NodeIndexType, ArcIndexType, ForwardEbertGraph&lt; NodeIndexType, ArcIndexType &gt; &gt;" ref="3db211f6708280a44a73fd3bb0594142" args="" -->
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">friend class <a class="el" href="classoperations__research_1_1StarGraphBase.html">StarGraphBase</a>&lt; NodeIndexType, ArcIndexType,<a class="el" href="classoperations__research_1_1ForwardEbertGraph.html">ForwardEbertGraph</a>&lt; NodeIndexType, ArcIndexType &gt; &gt;<code> [friend]</code>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="ebert__graph_8h-source.html#l01600">1600</a> of file <a class="el" href="ebert__graph_8h-source.html">ebert_graph.h</a>.</p>
 
 </div>
 </div><p>
@@ -611,7 +598,7 @@ template&lt;typename NodeIndexType, typename ArcIndexType&gt; </div>
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -221,7 +221,7 @@
 <a name="l00137"></a>00137   };
 <a name="l00138"></a>00138 
 <a name="l00139"></a>00139   <span class="keyword">explicit</span> NonReversibleDependencyGraph(Solver* <span class="keyword">const</span> solver)
-<a name="l00140"></a>00140       : <a class="code" href="dependency__graph_8cc.html#bd6bfbf6753a5deb0ce273fad6408e1e">solver_</a>(solver), <a class="code" href="dependency__graph_8cc.html#3c556bc2d9f39f48c121b6222892ef2f">in_process_</a>(0) {}
+<a name="l00140"></a>00140       : <a class="code" href="ac4r__table_8cc.html#bd6bfbf6753a5deb0ce273fad6408e1e">solver_</a>(solver), <a class="code" href="dependency__graph_8cc.html#3c556bc2d9f39f48c121b6222892ef2f">in_process_</a>(0) {}
 <a name="l00141"></a>00141 
 <a name="l00142"></a>00142   <span class="keyword">virtual</span> ~NonReversibleDependencyGraph() {}
 <a name="l00143"></a>00143 
@@ -287,9 +287,9 @@
 <a name="l00203"></a>00203   }
 <a name="l00204"></a>00204 
 <a name="l00205"></a>00205   <span class="keywordtype">void</span> CheckStamp() {
-<a name="l00206"></a>00206     <span class="keywordflow">if</span> (<a class="code" href="dependency__graph_8cc.html#3c556bc2d9f39f48c121b6222892ef2f">in_process_</a> == 0 &amp;&amp; <a class="code" href="dependency__graph_8cc.html#bd6bfbf6753a5deb0ce273fad6408e1e">solver_</a>-&gt;fail_stamp() != <a class="code" href="default__search_8cc.html#8ca05b086f171637a3db5ceac193956e">fail_stamp_</a>) {
+<a name="l00206"></a>00206     <span class="keywordflow">if</span> (<a class="code" href="dependency__graph_8cc.html#3c556bc2d9f39f48c121b6222892ef2f">in_process_</a> == 0 &amp;&amp; <a class="code" href="ac4r__table_8cc.html#bd6bfbf6753a5deb0ce273fad6408e1e">solver_</a>-&gt;fail_stamp() != <a class="code" href="dependency__graph_8cc.html#8ca05b086f171637a3db5ceac193956e">fail_stamp_</a>) {
 <a name="l00207"></a>00207       Clear();
-<a name="l00208"></a>00208       <a class="code" href="default__search_8cc.html#8ca05b086f171637a3db5ceac193956e">fail_stamp_</a> = <a class="code" href="dependency__graph_8cc.html#bd6bfbf6753a5deb0ce273fad6408e1e">solver_</a>-&gt;fail_stamp();
+<a name="l00208"></a>00208       <a class="code" href="dependency__graph_8cc.html#8ca05b086f171637a3db5ceac193956e">fail_stamp_</a> = <a class="code" href="ac4r__table_8cc.html#bd6bfbf6753a5deb0ce273fad6408e1e">solver_</a>-&gt;fail_stamp();
 <a name="l00209"></a>00209     }
 <a name="l00210"></a>00210   }
 <a name="l00211"></a>00211 
@@ -308,10 +308,10 @@
 <a name="l00224"></a>00224     <a class="code" href="dependency__graph_8cc.html#3c556bc2d9f39f48c121b6222892ef2f">in_process_</a> = 0;
 <a name="l00225"></a>00225   }
 <a name="l00226"></a>00226 
-<a name="l00227"></a><a class="code" href="dependency__graph_8cc.html#bd6bfbf6753a5deb0ce273fad6408e1e">00227</a>   Solver* <span class="keyword">const</span> <a class="code" href="dependency__graph_8cc.html#bd6bfbf6753a5deb0ce273fad6408e1e">solver_</a>;
+<a name="l00227"></a><a class="code" href="dependency__graph_8cc.html#bd6bfbf6753a5deb0ce273fad6408e1e">00227</a>   Solver* <span class="keyword">const</span> <a class="code" href="ac4r__table_8cc.html#bd6bfbf6753a5deb0ce273fad6408e1e">solver_</a>;
 <a name="l00228"></a><a class="code" href="dependency__graph_8cc.html#487bbf68fa6bf1c4d58153e72964b7ff">00228</a>   std::deque&lt;QueueElem&gt; <a class="code" href="constraints_8cc.html#6bf440196874c8c841dc90dbd64d4577">actives_</a>;
 <a name="l00229"></a><a class="code" href="dependency__graph_8cc.html#3c556bc2d9f39f48c121b6222892ef2f">00229</a>   <span class="keywordtype">int</span> <a class="code" href="dependency__graph_8cc.html#3c556bc2d9f39f48c121b6222892ef2f">in_process_</a>;
-<a name="l00230"></a><a class="code" href="dependency__graph_8cc.html#8ca05b086f171637a3db5ceac193956e">00230</a>   uint64 <a class="code" href="default__search_8cc.html#8ca05b086f171637a3db5ceac193956e">fail_stamp_</a>;
+<a name="l00230"></a><a class="code" href="dependency__graph_8cc.html#8ca05b086f171637a3db5ceac193956e">00230</a>   uint64 <a class="code" href="dependency__graph_8cc.html#8ca05b086f171637a3db5ceac193956e">fail_stamp_</a>;
 <a name="l00231"></a>00231 };
 <a name="l00232"></a>00232 }  <span class="comment">// namespace</span>
 <a name="l00233"></a>00233 
@@ -432,7 +432,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

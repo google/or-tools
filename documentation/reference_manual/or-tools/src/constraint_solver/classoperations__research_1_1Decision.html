@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -104,7 +104,8 @@ Inheritance diagram for operations_research::Decision:</div>
 
 <p><center><img src="classoperations__research_1_1Decision.png" usemap="#operations_research::Decision_map" border="0" alt=""></center>
 <map name="operations_research::Decision_map">
-<area href="classoperations__research_1_1BaseObject.html" alt="operations_research::BaseObject" shape="rect" coords="0,0,200,24">
+<area href="classoperations__research_1_1BaseObject.html" alt="operations_research::BaseObject" shape="rect" coords="0,0,233,24">
+<area href="classoperations__research_1_1MtReplaySolution.html" alt="operations_research::MtReplaySolution" shape="rect" coords="0,112,233,136">
 </map>
 </div>
 
@@ -132,7 +133,7 @@ Inheritance diagram for operations_research::Decision:</div>
 A <a class="el" href="classoperations__research_1_1Decision.html" title="A Decision represents a choice point in the search tree.">Decision</a> represents a choice point in the search tree. 
 <p>
 The two main methods are <a class="el" href="classoperations__research_1_1Decision.html#88aea04b24727f86d465479464437b2e" title="Apply will be called first when the decision is executed.">Apply()</a> to go left, or <a class="el" href="classoperations__research_1_1Decision.html#04e7498b68e7bfc7caeacad7c4272c1f" title="Refute will be called after a backtrack.">Refute()</a> to go right. 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03078">3078</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03026">3026</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 <hr><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" name="20a827cbc3c6cf9ecbef85bc3ba85cdb"></a><!-- doxytag: member="operations_research::Decision::Decision" ref="20a827cbc3c6cf9ecbef85bc3ba85cdb" args="()" -->
 <div class="memitem">
@@ -151,7 +152,7 @@ The two main methods are <a class="el" href="classoperations__research_1_1Decisi
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03080">3080</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03028">3028</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -172,7 +173,7 @@ The two main methods are <a class="el" href="classoperations__research_1_1Decisi
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03081">3081</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03029">3029</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -197,6 +198,8 @@ The two main methods are <a class="el" href="classoperations__research_1_1Decisi
 Apply will be called first when the decision is executed. 
 <p>
 
+<p>Implemented in <a class="el" href="classoperations__research_1_1MtReplaySolution.html#06e034480f400906a7c51bb969c7e5c7">operations_research::MtReplaySolution</a>.</p>
+
 </div>
 </div><p>
 <a class="anchor" name="04e7498b68e7bfc7caeacad7c4272c1f"></a><!-- doxytag: member="operations_research::Decision::Refute" ref="04e7498b68e7bfc7caeacad7c4272c1f" args="(Solver *const s)=0" -->
@@ -219,6 +222,8 @@ Apply will be called first when the decision is executed.
 Refute will be called after a backtrack. 
 <p>
 
+<p>Implemented in <a class="el" href="classoperations__research_1_1MtReplaySolution.html#1889210ec6fd9bb5b90bd5b5681e394a">operations_research::MtReplaySolution</a>.</p>
+
 </div>
 </div><p>
 <a class="anchor" name="a4e1962f036693f666f76cc3daf4524a"></a><!-- doxytag: member="operations_research::Decision::DebugString" ref="a4e1962f036693f666f76cc3daf4524a" args="() const " -->
@@ -240,7 +245,7 @@ Refute will be called after a backtrack.
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1BaseObject.html#f3317b4111dc4a7b6939cb9c52592e93">operations_research::BaseObject</a>.</p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03089">3089</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03037">3037</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -264,7 +269,7 @@ Refute will be called after a backtrack.
 Accepts the given visitor. 
 <p>
 <a class="el" href="classoperations__research_1_1Decision.html" title="A Decision represents a choice point in the search tree.">Decision</a> and <a class="el" href="classoperations__research_1_1DecisionVisitor.html" title="A DecisionVisitor is used to inspect a decision.">DecisionVisitor</a>. 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l02569">2569</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l02585">2585</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -278,7 +283,7 @@ Accepts the given visitor.
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

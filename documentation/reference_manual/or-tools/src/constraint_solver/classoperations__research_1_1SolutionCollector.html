@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -129,6 +129,10 @@ Inheritance diagram for operations_research::SolutionCollector:</div>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SolutionCollector.html#51ce54667ab06c9c32857f928476d220">Add</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntervalVar.html">IntervalVar</a> * &gt; &amp;vars)</td></tr>
 
+<tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SolutionCollector.html#7dd03e41cfdcfb608c9cbe2c7595ce0d">Add</a> (<a class="el" href="classoperations__research_1_1SequenceVar.html">SequenceVar</a> *const <a class="el" href="search_8cc.html#96c77f9f3a7baec84b9b8add26a31787">var</a>)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SolutionCollector.html#06d633a79efa310261266714930356bf">Add</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1SequenceVar.html">SequenceVar</a> * &gt; &amp;vars)</td></tr>
+
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SolutionCollector.html#9661ec736470edba26f92dfac906a114">AddObjective</a> (<a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const objective)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SolutionCollector.html#8f6364a97af51d83ab27ecdb00ea04a9">EnterSearch</a> ()</td></tr>
@@ -167,6 +171,15 @@ Inheritance diagram for operations_research::SolutionCollector:</div>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">int64&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SolutionCollector.html#aeb28684918b717da235c7a804459b71">PerformedValue</a> (int n, <a class="el" href="classoperations__research_1_1IntervalVar.html">IntervalVar</a> *const <a class="el" href="search_8cc.html#96c77f9f3a7baec84b9b8add26a31787">var</a>) const </td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This is a short-cut to get the PerformedValue of 'var' in the nth solution.  <a href="#aeb28684918b717da235c7a804459b71"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">const std::vector&lt; int &gt; &amp;&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SolutionCollector.html#efc4b96ff0c4ce4a390c05ae02a90f8c">ForwardSequence</a> (int n, <a class="el" href="classoperations__research_1_1SequenceVar.html">SequenceVar</a> *const v) const </td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This is a short-cut to get the ForwardSequence of 'var' in the nth solution.  <a href="#efc4b96ff0c4ce4a390c05ae02a90f8c"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">const std::vector&lt; int &gt; &amp;&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SolutionCollector.html#545c5d0b5f7db21ce9b3b56bdbfa46ab">BackwardSequence</a> (int n, <a class="el" href="classoperations__research_1_1SequenceVar.html">SequenceVar</a> *const v) const </td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This is a short-cut to get the BackwardSequence of 'var' in the nth solution.  <a href="#545c5d0b5f7db21ce9b3b56bdbfa46ab"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">const std::vector&lt; int &gt; &amp;&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SolutionCollector.html#2825d932a062ae3c6789d37f0be41a2d">Unperformed</a> (int n, <a class="el" href="classoperations__research_1_1SequenceVar.html">SequenceVar</a> *const v) const </td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This is a short-cut to get the list of unperformed of 'var' in the nth solution.  <a href="#2825d932a062ae3c6789d37f0be41a2d"></a><br></td></tr>
 <tr><td colspan="2"><br><h2>Protected Member Functions</h2></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SolutionCollector.html#917706361bb737a32be97259dae4c3f4">PushSolution</a> ()</td></tr>
 
@@ -196,7 +209,7 @@ Inheritance diagram for operations_research::SolutionCollector:</div>
 Solution Collectors. 
 <p>
 This class is the root class of all solution collectors It implements a basic query API to be used independently from the collector used. 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03858">3858</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03820">3820</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 <hr><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" name="a108a9494f1ab5b17fc548351222e17b"></a><!-- doxytag: member="operations_research::SolutionCollector::SolutionCollector" ref="a108a9494f1ab5b17fc548351222e17b" args="(Solver *const s, const Assignment *assignment)" -->
 <div class="memitem">
@@ -227,7 +240,7 @@ This class is the root class of all solution collectors It implements a basic qu
 Solution Collectors. 
 <p>
 Base Class 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02044">2044</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02260">2260</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -249,7 +262,7 @@ Base Class
 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02047">2047</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02263">2263</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -270,7 +283,7 @@ Base Class
 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02050">2050</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02266">2266</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -295,7 +308,7 @@ Base Class
 Add API. 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02055">2055</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02271">2271</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -317,7 +330,7 @@ Add API.
 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02061">2061</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02277">2277</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -339,7 +352,7 @@ Add API.
 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02067">2067</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02283">2283</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -361,7 +374,51 @@ Add API.
 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02073">2073</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02289">2289</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="7dd03e41cfdcfb608c9cbe2c7595ce0d"></a><!-- doxytag: member="operations_research::SolutionCollector::Add" ref="7dd03e41cfdcfb608c9cbe2c7595ce0d" args="(SequenceVar *const var)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void operations_research::SolutionCollector::Add           </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1SequenceVar.html">SequenceVar</a> *const &nbsp;</td>
+          <td class="paramname"> <em>var</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02295">2295</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="06d633a79efa310261266714930356bf"></a><!-- doxytag: member="operations_research::SolutionCollector::Add" ref="06d633a79efa310261266714930356bf" args="(const std::vector&lt; SequenceVar * &gt; &amp;vars)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void operations_research::SolutionCollector::Add           </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1SequenceVar.html">SequenceVar</a> * &gt; &amp;&nbsp;</td>
+          <td class="paramname"> <em>vars</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02301">2301</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -383,7 +440,7 @@ Add API.
 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02079">2079</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02307">2307</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -408,7 +465,7 @@ Beginning of the search.
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1SearchMonitor.html#eb9c7b1f2ebe7f24cf33cdf958bbdd14">operations_research::SearchMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02085">2085</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02313">2313</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -431,7 +488,7 @@ Beginning of the search.
 Returns how many solutions were stored during the search. 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02144">2144</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02372">2372</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -455,7 +512,7 @@ Returns how many solutions were stored during the search.
 Returns the nth solution. 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02139">2139</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02367">2367</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -479,7 +536,7 @@ Returns the nth solution.
 Returns the wall time in ms for the nth solution. 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02148">2148</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02376">2376</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -503,7 +560,7 @@ Returns the wall time in ms for the nth solution.
 Returns the number of branches when the nth solution was found. 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02153">2153</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02381">2381</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -527,7 +584,7 @@ Returns the number of branches when the nth solution was found.
 Returns the number of failures encountered at the time of the nth solution. 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02158">2158</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02386">2386</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -551,7 +608,7 @@ Returns the number of failures encountered at the time of the nth solution.
 Returns the objective value of the nth solution. 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02163">2163</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02391">2391</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -584,7 +641,7 @@ Returns the objective value of the nth solution.
 This is a short-cut to get the Value of 'var' in the nth solution. 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02168">2168</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02396">2396</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -617,7 +674,7 @@ This is a short-cut to get the Value of 'var' in the nth solution.
 This is a short-cut to get the StartValue of 'var' in the nth solution. 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02173">2173</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02401">2401</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -650,7 +707,7 @@ This is a short-cut to get the StartValue of 'var' in the nth solution.
 This is a short-cut to get the EndValue of 'var' in the nth solution. 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02183">2183</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02411">2411</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -683,7 +740,7 @@ This is a short-cut to get the EndValue of 'var' in the nth solution.
 This is a short-cut to get the DurationValue of 'var' in the nth solution. 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02178">2178</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02406">2406</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -716,7 +773,106 @@ This is a short-cut to get the DurationValue of 'var' in the nth solution.
 This is a short-cut to get the PerformedValue of 'var' in the nth solution. 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02188">2188</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02416">2416</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="efc4b96ff0c4ce4a390c05ae02a90f8c"></a><!-- doxytag: member="operations_research::SolutionCollector::ForwardSequence" ref="efc4b96ff0c4ce4a390c05ae02a90f8c" args="(int n, SequenceVar *const v) const " -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::vector&lt; int &gt; &amp; operations_research::SolutionCollector::ForwardSequence           </td>
+          <td>(</td>
+          <td class="paramtype">int&nbsp;</td>
+          <td class="paramname"> <em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1SequenceVar.html">SequenceVar</a> *const &nbsp;</td>
+          <td class="paramname"> <em>v</em></td><td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td><td> const</td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+This is a short-cut to get the ForwardSequence of 'var' in the nth solution. 
+<p>
+
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02421">2421</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="545c5d0b5f7db21ce9b3b56bdbfa46ab"></a><!-- doxytag: member="operations_research::SolutionCollector::BackwardSequence" ref="545c5d0b5f7db21ce9b3b56bdbfa46ab" args="(int n, SequenceVar *const v) const " -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::vector&lt; int &gt; &amp; operations_research::SolutionCollector::BackwardSequence           </td>
+          <td>(</td>
+          <td class="paramtype">int&nbsp;</td>
+          <td class="paramname"> <em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1SequenceVar.html">SequenceVar</a> *const &nbsp;</td>
+          <td class="paramname"> <em>v</em></td><td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td><td> const</td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+This is a short-cut to get the BackwardSequence of 'var' in the nth solution. 
+<p>
+
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02426">2426</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="2825d932a062ae3c6789d37f0be41a2d"></a><!-- doxytag: member="operations_research::SolutionCollector::Unperformed" ref="2825d932a062ae3c6789d37f0be41a2d" args="(int n, SequenceVar *const v) const " -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::vector&lt; int &gt; &amp; operations_research::SolutionCollector::Unperformed           </td>
+          <td>(</td>
+          <td class="paramtype">int&nbsp;</td>
+          <td class="paramname"> <em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1SequenceVar.html">SequenceVar</a> *const &nbsp;</td>
+          <td class="paramname"> <em>v</em></td><td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td><td> const</td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+This is a short-cut to get the list of unperformed of 'var' in the nth solution. 
+<p>
+
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02431">2431</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -739,7 +895,7 @@ This is a short-cut to get the PerformedValue of 'var' in the nth solution.
 Push the current state as a new solution. 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02096">2096</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02324">2324</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -762,7 +918,7 @@ Push the current state as a new solution.
 Remove and delete the last popped solution. 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02120">2120</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02348">2348</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -784,7 +940,7 @@ Remove and delete the last popped solution.
 
 <p>
 
-<p>Definition at line <a class="el" href="search_8cc-source.html#l02134">2134</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
+<p>Definition at line <a class="el" href="search_8cc-source.html#l02362">2362</a> of file <a class="el" href="search_8cc-source.html">search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -802,7 +958,7 @@ Remove and delete the last popped solution.
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03915">3915</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03892">3892</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -819,7 +975,7 @@ Remove and delete the last popped solution.
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03916">3916</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03893">3893</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -836,7 +992,7 @@ Remove and delete the last popped solution.
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03917">3917</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03894">3894</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -853,7 +1009,7 @@ Remove and delete the last popped solution.
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03918">3918</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03895">3895</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -870,7 +1026,7 @@ Remove and delete the last popped solution.
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03919">3919</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03896">3896</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -887,7 +1043,7 @@ Remove and delete the last popped solution.
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03920">3920</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03897">3897</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -904,7 +1060,7 @@ Remove and delete the last popped solution.
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03921">3921</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03898">3898</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -918,7 +1074,7 @@ Remove and delete the last popped solution.
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

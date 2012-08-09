@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -123,6 +123,8 @@ Inheritance diagram for operations_research::IntVarLocalSearchOperator:</div>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Base operator class for operators manipulating IntVars.  <a href="#1981dffba9e0458f5bd4669a5f1c15e1"></a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#3740dbc5d381ba063f5ac0f0134b1edf">IntVarLocalSearchOperator</a> (const <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const *vars, int size)</td></tr>
 
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#350fc4d7f2ce8b649d6d2a51333614b2">IntVarLocalSearchOperator</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;vars)</td></tr>
+
 <tr><td class="memItemLeft" nowrap align="right" valign="top">virtual&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#d61ecedaa6bdfb4a34c01687ec7bb197">~IntVarLocalSearchOperator</a> ()</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#86ada2075515afdcd7f8979f4a2ee55d">Start</a> (const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *assignment)</td></tr>
@@ -143,10 +145,6 @@ Inheritance diagram for operations_research::IntVarLocalSearchOperator:</div>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">virtual bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#888d01db3a407e1f4e09108d2c6e1fbc">MakeNextNeighbor</a> (<a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *<a class="el" href="resource_8cc.html#73461c37822b6ebb75b54ba1a9ffb442">delta</a>, <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *deltadelta)</td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Redefines MakeNextNeighbor to export a simpler interface.  <a href="#888d01db3a407e1f4e09108d2c6e1fbc"></a><br></td></tr>
-<tr><td colspan="2"><br><h2>Protected Member Functions</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">virtual bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#c8bc688def85b27b6aa66e1f099050a4">MakeOneNeighbor</a> ()</td></tr>
-
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Creates a new neighbor.  <a href="#c8bc688def85b27b6aa66e1f099050a4"></a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">int64&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#dcb0d248ee16199ea6dbfad900a1e0ec">OldValue</a> (int64 <a class="el" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>) const </td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#50588f7d283f450f9d78ecdabd402e95">SetValue</a> (int64 <a class="el" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>, int64 <a class="el" href="search_8cc.html#21edc7ca4cc5802c8779d68556bc09cf">value</a>)</td></tr>
@@ -161,14 +159,21 @@ Inheritance diagram for operations_research::IntVarLocalSearchOperator:</div>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#ea723d799bb0f6d39ee2f80c7c3eef44">RevertChanges</a> (bool incremental)</td></tr>
 
+<tr><td colspan="2"><br><h2>Protected Member Functions</h2></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">virtual bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#c8bc688def85b27b6aa66e1f099050a4">MakeOneNeighbor</a> ()</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Creates a new neighbor.  <a href="#c8bc688def85b27b6aa66e1f099050a4"></a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#373531e56b70f8487427129f2daeb5a5">AddVars</a> (const <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const *vars, int size)</td></tr>
 
+<tr><td class="memItemLeft" nowrap align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#279160bdb41d77ea714bcd5960685ff3">OnStart</a> ()</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Called by <a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#86ada2075515afdcd7f8979f4a2ee55d" title="This method should not be overridden.">Start()</a> after synchronizing the operator with the current assignment.  <a href="#279160bdb41d77ea714bcd5960685ff3"></a><br></td></tr>
 </table>
 <hr><a name="_details"></a><h2>Detailed Description</h2>
 Base operator class for operators manipulating IntVars. 
 <p>
 Specialization of <a class="el" href="classoperations__research_1_1LocalSearchOperator.html" title="&lt; !defined(SWIG)">LocalSearchOperator</a> built from an array of IntVars which specifies the scope of the operator. This class also takes care of storing current variable values in <a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#86ada2075515afdcd7f8979f4a2ee55d" title="This method should not be overridden.">Start()</a>, keeps track of changes done by the operator and builds the delta. The <a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#f08da496dbe37aceaacd1833b95a5c4f">Deactivate()</a> method can be used to perform Large Neighborhood <a class="el" href="classoperations__research_1_1Search.html" title="Search class.">Search</a>. 
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00811">811</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00807">807</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
 <hr><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" name="1981dffba9e0458f5bd4669a5f1c15e1"></a><!-- doxytag: member="operations_research::IntVarLocalSearchOperator::IntVarLocalSearchOperator" ref="1981dffba9e0458f5bd4669a5f1c15e1" args="()" -->
 <div class="memitem">
@@ -224,6 +229,28 @@ Base operator class for operators manipulating IntVars.
 
 </div>
 </div><p>
+<a class="anchor" name="350fc4d7f2ce8b649d6d2a51333614b2"></a><!-- doxytag: member="operations_research::IntVarLocalSearchOperator::IntVarLocalSearchOperator" ref="350fc4d7f2ce8b649d6d2a51333614b2" args="(const std::vector&lt; IntVar * &gt; &amp;vars)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">operations_research::IntVarLocalSearchOperator::IntVarLocalSearchOperator           </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;&nbsp;</td>
+          <td class="paramname"> <em>vars</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00093">93</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+
+</div>
+</div><p>
 <a class="anchor" name="d61ecedaa6bdfb4a34c01687ec7bb197"></a><!-- doxytag: member="operations_research::IntVarLocalSearchOperator::~IntVarLocalSearchOperator" ref="d61ecedaa6bdfb4a34c01687ec7bb197" args="()" -->
 <div class="memitem">
 <div class="memproto">
@@ -241,7 +268,7 @@ Base operator class for operators manipulating IntVars.
 
 <p>
 
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00093">93</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00108">108</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -265,10 +292,10 @@ Base operator class for operators manipulating IntVars.
 <p>
 This method should not be overridden. 
 <p>
-Override OnStart() instead which is called before exiting this method. 
+Override <a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#279160bdb41d77ea714bcd5960685ff3" title="Called by Start() after synchronizing the operator with the current assignment.">OnStart()</a> instead which is called before exiting this method. 
 <p>Implements <a class="el" href="classoperations__research_1_1LocalSearchOperator.html#832fd07f7355d16895841a4735e544c1">operations_research::LocalSearchOperator</a>.</p>
 
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00114">114</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00129">129</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -289,7 +316,7 @@ Override OnStart() instead which is called before exiting this method.
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00819">819</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00816">816</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div><p>
@@ -310,7 +337,7 @@ Override OnStart() instead which is called before exiting this method.
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00820">820</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00817">817</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div><p>
@@ -334,7 +361,7 @@ Override OnStart() instead which is called before exiting this method.
 Returns the value in the current assignment of the variable of given index. 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00822">822</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00819">819</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div><p>
@@ -358,7 +385,7 @@ Returns the value in the current assignment of the variable of given index.
 Returns the variable of given index. 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00827">827</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00824">824</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div><p>
@@ -382,7 +409,7 @@ Returns the variable of given index.
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1PathOperator.html#ecfa54a5dd5c8ee384330c9ce4111d44">operations_research::PathOperator</a>.</p>
 
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00828">828</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00825">825</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div><p>
@@ -419,34 +446,7 @@ The calls to <a class="el" href="classoperations__research_1_1IntVarLocalSearchO
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1MakePairActiveOperator.html#e3cafe5eda5a2a50e8615704e14fef4f">operations_research::MakePairActiveOperator</a>.</p>
 
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00202">202</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
-
-</div>
-</div><p>
-<a class="anchor" name="c8bc688def85b27b6aa66e1f099050a4"></a><!-- doxytag: member="operations_research::IntVarLocalSearchOperator::MakeOneNeighbor" ref="c8bc688def85b27b6aa66e1f099050a4" args="()" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool operations_research::IntVarLocalSearchOperator::MakeOneNeighbor           </td>
-          <td>(</td>
-          <td class="paramname">          </td>
-          <td>&nbsp;)&nbsp;</td>
-          <td><code> [protected, virtual]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-Creates a new neighbor. 
-<p>
-It returns false when the neighborhood is completely explored. <dl compact><dt><b><a class="el" href="todo.html#_todo000018">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): make it pure virtual, implies porting all apps overriding <a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#888d01db3a407e1f4e09108d2c6e1fbc" title="Redefines MakeNextNeighbor to export a simpler interface.">MakeNextNeighbor()</a> in a subclass of <a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html" title="Base operator class for operators manipulating IntVars.">IntVarLocalSearchOperator</a>. </dd></dl>
-<dl compact><dt><b><a class="el" href="todo.html#_todo000031">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): Make this a pure virtual. </dd></dl>
-
-<p>Reimplemented in <a class="el" href="classoperations__research_1_1BaseLNS.html#adbc1f567e21618e7006d4504f3c2fac">operations_research::BaseLNS</a>, <a class="el" href="classoperations__research_1_1ChangeValue.html#7ee24a45527b6b0eb4e336fee3fe9e41">operations_research::ChangeValue</a>, and <a class="el" href="classoperations__research_1_1PathOperator.html#bbe7ad3e663c43539a6304a1b71390ea">operations_research::PathOperator</a>.</p>
-
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00220">220</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00217">217</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -460,7 +460,7 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
           <td class="paramtype">int64&nbsp;</td>
           <td class="paramname"> <em>index</em>          </td>
           <td>&nbsp;)&nbsp;</td>
-          <td> const<code> [inline, protected]</code></td>
+          <td> const<code> [inline]</code></td>
         </tr>
       </table>
 </div>
@@ -468,7 +468,7 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00845">845</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00835">835</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div><p>
@@ -491,7 +491,7 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
         <tr>
           <td></td>
           <td>)</td>
-          <td></td><td></td><td><code> [protected]</code></td>
+          <td></td><td></td><td></td>
         </tr>
       </table>
 </div>
@@ -499,7 +499,7 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
 
 <p>
 
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00137">137</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00152">152</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -513,7 +513,7 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
           <td class="paramtype">int64&nbsp;</td>
           <td class="paramname"> <em>index</em>          </td>
           <td>&nbsp;)&nbsp;</td>
-          <td> const<code> [protected]</code></td>
+          <td> const</td>
         </tr>
       </table>
 </div>
@@ -521,7 +521,7 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
 
 <p>
 
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00142">142</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00157">157</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -535,7 +535,7 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
           <td class="paramtype">int64&nbsp;</td>
           <td class="paramname"> <em>index</em>          </td>
           <td>&nbsp;)&nbsp;</td>
-          <td><code> [protected]</code></td>
+          <td></td>
         </tr>
       </table>
 </div>
@@ -543,7 +543,7 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
 
 <p>
 
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00146">146</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00161">161</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -557,7 +557,7 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
           <td class="paramtype">int64&nbsp;</td>
           <td class="paramname"> <em>index</em>          </td>
           <td>&nbsp;)&nbsp;</td>
-          <td><code> [protected]</code></td>
+          <td></td>
         </tr>
       </table>
 </div>
@@ -565,7 +565,7 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
 
 <p>
 
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00151">151</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00166">166</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -588,7 +588,7 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
         <tr>
           <td></td>
           <td>)</td>
-          <td></td><td></td><td> const<code> [protected]</code></td>
+          <td></td><td></td><td> const</td>
         </tr>
       </table>
 </div>
@@ -596,7 +596,7 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
 
 <p>
 
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00156">156</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00171">171</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -610,7 +610,7 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
           <td class="paramtype">bool&nbsp;</td>
           <td class="paramname"> <em>incremental</em>          </td>
           <td>&nbsp;)&nbsp;</td>
-          <td><code> [protected]</code></td>
+          <td></td>
         </tr>
       </table>
 </div>
@@ -618,7 +618,34 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
 
 <p>
 
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00178">178</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00193">193</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="c8bc688def85b27b6aa66e1f099050a4"></a><!-- doxytag: member="operations_research::IntVarLocalSearchOperator::MakeOneNeighbor" ref="c8bc688def85b27b6aa66e1f099050a4" args="()" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool operations_research::IntVarLocalSearchOperator::MakeOneNeighbor           </td>
+          <td>(</td>
+          <td class="paramname">          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td><code> [protected, virtual]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+Creates a new neighbor. 
+<p>
+It returns false when the neighborhood is completely explored. <dl compact><dt><b><a class="el" href="todo.html#_todo000019">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): make it pure virtual, implies porting all apps overriding <a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#888d01db3a407e1f4e09108d2c6e1fbc" title="Redefines MakeNextNeighbor to export a simpler interface.">MakeNextNeighbor()</a> in a subclass of <a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html" title="Base operator class for operators manipulating IntVars.">IntVarLocalSearchOperator</a>. </dd></dl>
+<dl compact><dt><b><a class="el" href="todo.html#_todo000031">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): Make this a pure virtual. </dd></dl>
+
+<p>Reimplemented in <a class="el" href="classoperations__research_1_1BaseLNS.html#adbc1f567e21618e7006d4504f3c2fac">operations_research::BaseLNS</a>, <a class="el" href="classoperations__research_1_1ChangeValue.html#7ee24a45527b6b0eb4e336fee3fe9e41">operations_research::ChangeValue</a>, and <a class="el" href="classoperations__research_1_1PathOperator.html#bbe7ad3e663c43539a6304a1b71390ea">operations_research::PathOperator</a>.</p>
+
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00235">235</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -649,7 +676,30 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
 
 <p>
 
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00095">95</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l00110">110</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="279160bdb41d77ea714bcd5960685ff3"></a><!-- doxytag: member="operations_research::IntVarLocalSearchOperator::OnStart" ref="279160bdb41d77ea714bcd5960685ff3" args="()" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void operations_research::IntVarLocalSearchOperator::OnStart           </td>
+          <td>(</td>
+          <td class="paramname">          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td><code> [inline, protected, virtual]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+Called by <a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#86ada2075515afdcd7f8979f4a2ee55d" title="This method should not be overridden.">Start()</a> after synchronizing the operator with the current assignment. 
+<p>
+Should be overridden instead of <a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#86ada2075515afdcd7f8979f4a2ee55d" title="This method should not be overridden.">Start()</a> to avoid calling <a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#86ada2075515afdcd7f8979f4a2ee55d" title="This method should not be overridden.">IntVarLocalSearchOperator::Start</a> explicitly. 
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l00854">854</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div><p>
@@ -663,7 +713,7 @@ It returns false when the neighborhood is completely explored. <dl compact><dt><
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

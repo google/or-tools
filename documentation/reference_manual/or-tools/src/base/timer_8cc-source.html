@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/base/index.html">base</a>/
@@ -113,7 +113,7 @@
 <a name="l00030"></a>00030 
 <a name="l00031"></a>00031 <span class="preprocessor">#if !defined(_MSC_VER)</span>
 <a name="l00032"></a>00032 <span class="preprocessor"></span><span class="keyword">namespace </span>{
-<a name="l00033"></a><a class="code" href="namespaceoperations__research.html#1ba8a0d7b8c957ada7eab5638cb0e0d5">00033</a> <span class="keyword">static</span> <span class="keyword">inline</span> <a class="code" href="integral__types_8h.html#ecfc3c54bd29ad5964e1c1c3ccbf89df" title="NOLINT.">int64</a> <a class="code" href="namespaceoperations__research.html#1ba8a0d7b8c957ada7eab5638cb0e0d5">TimevalToUsec</a>(<span class="keyword">const</span> timeval &amp;tv) {
+<a name="l00033"></a><a class="code" href="namespaceoperations__research.html#4791dc5ea61960ffae49b758825c56d3">00033</a> <span class="keyword">static</span> <span class="keyword">inline</span> <a class="code" href="integral__types_8h.html#ecfc3c54bd29ad5964e1c1c3ccbf89df" title="NOLINT.">int64</a> <a class="code" href="namespaceoperations__research.html#4791dc5ea61960ffae49b758825c56d3">TimevalToUsec</a>(<span class="keyword">const</span> timeval &amp;tv) {
 <a name="l00034"></a>00034   <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span><a class="code" href="integral__types_8h.html#ecfc3c54bd29ad5964e1c1c3ccbf89df" title="NOLINT.">int64</a><span class="keyword">&gt;</span>(1000000) * tv.tv_sec + tv.tv_usec;
 <a name="l00035"></a>00035 }
 <a name="l00036"></a>00036 }  <span class="comment">// namespace</span>
@@ -128,7 +128,7 @@
 <a name="l00045"></a>00045 <span class="preprocessor">#elif defined(__GNUC__)</span>
 <a name="l00046"></a>00046 <span class="preprocessor"></span>  <span class="keyword">struct </span>timeval tv;
 <a name="l00047"></a>00047   gettimeofday(&amp;tv, NULL);
-<a name="l00048"></a>00048   start_usec_ = <a class="code" href="namespaceoperations__research.html#1ba8a0d7b8c957ada7eab5638cb0e0d5">TimevalToUsec</a>(tv);
+<a name="l00048"></a>00048   start_usec_ = <a class="code" href="namespaceoperations__research.html#4791dc5ea61960ffae49b758825c56d3">TimevalToUsec</a>(tv);
 <a name="l00049"></a>00049 <span class="preprocessor">#endif</span>
 <a name="l00050"></a>00050 <span class="preprocessor"></span>  has_started_ = <span class="keyword">true</span>;
 <a name="l00051"></a>00051 }
@@ -140,7 +140,7 @@
 <a name="l00057"></a>00057 <span class="preprocessor">#elif defined(__GNUC__)</span>
 <a name="l00058"></a>00058 <span class="preprocessor"></span>    <span class="keyword">struct </span>timeval tv;
 <a name="l00059"></a>00059     gettimeofday(&amp;tv, NULL);
-<a name="l00060"></a>00060     sum_usec_ += <a class="code" href="namespaceoperations__research.html#1ba8a0d7b8c957ada7eab5638cb0e0d5">TimevalToUsec</a>(tv) - start_usec_;
+<a name="l00060"></a>00060     sum_usec_ += <a class="code" href="namespaceoperations__research.html#4791dc5ea61960ffae49b758825c56d3">TimevalToUsec</a>(tv) - start_usec_;
 <a name="l00061"></a>00061 <span class="preprocessor">#endif</span>
 <a name="l00062"></a>00062 <span class="preprocessor"></span>    has_started_ = <span class="keyword">false</span>;
 <a name="l00063"></a>00063   }
@@ -175,7 +175,7 @@
 <a name="l00092"></a>00092   <span class="keywordflow">if</span> (has_started_) {           <span class="comment">// need to include current time too</span>
 <a name="l00093"></a>00093     <span class="keyword">struct </span>timeval tv;
 <a name="l00094"></a>00094     gettimeofday(&amp;tv, NULL);
-<a name="l00095"></a>00095     local_sum_usec += <a class="code" href="namespaceoperations__research.html#1ba8a0d7b8c957ada7eab5638cb0e0d5">TimevalToUsec</a>(tv) - start_usec_;
+<a name="l00095"></a>00095     local_sum_usec += <a class="code" href="namespaceoperations__research.html#4791dc5ea61960ffae49b758825c56d3">TimevalToUsec</a>(tv) - start_usec_;
 <a name="l00096"></a>00096   }
 <a name="l00097"></a>00097   <span class="keywordflow">return</span> local_sum_usec / kMilliSecInMicroSec;
 <a name="l00098"></a>00098 <span class="preprocessor">#endif</span>
@@ -252,7 +252,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

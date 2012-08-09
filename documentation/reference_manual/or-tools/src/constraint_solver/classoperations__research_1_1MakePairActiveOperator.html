@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -133,11 +133,11 @@ Inheritance diagram for operations_research::MakePairActiveOperator:</div>
 <hr><a name="_details"></a><h2>Detailed Description</h2>
 Pair-based neighborhood operators, designed to move nodes by pairs (pairs are static and given). 
 <p>
-These neighborhoods are very useful for Pickup and Delivery problems where pickup and delivery nodes must remain on the same route. <dl compact><dt><b><a class="el" href="todo.html#_todo000038">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): Add option to prune neighbords where the order of node pairs is violated (ie precedence between pickup and delivery nodes). </dd></dl>
-<dl compact><dt><b><a class="el" href="todo.html#_todo000038">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): Move this to <a class="el" href="local__search_8cc.html">local_search.cc</a> if it's generic enough. </dd></dl>
-<dl compact><dt><b><a class="el" href="todo.html#_todo000038">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): Detect pairs automatically by parsing the constraint model; we could then get rid of the pair API in the <a class="el" href="classoperations__research_1_1RoutingModel.html">RoutingModel</a> class. </dd></dl>
+These neighborhoods are very useful for Pickup and Delivery problems where pickup and delivery nodes must remain on the same route. <dl compact><dt><b><a class="el" href="todo.html#_todo000037">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): Add option to prune neighbords where the order of node pairs is violated (ie precedence between pickup and delivery nodes). </dd></dl>
+<dl compact><dt><b><a class="el" href="todo.html#_todo000037">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): Move this to <a class="el" href="local__search_8cc.html">local_search.cc</a> if it's generic enough. </dd></dl>
+<dl compact><dt><b><a class="el" href="todo.html#_todo000037">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): Detect pairs automatically by parsing the constraint model; we could then get rid of the pair API in the <a class="el" href="classoperations__research_1_1RoutingModel.html">RoutingModel</a> class. </dd></dl>
 Operator which inserts pairs of inactive nodes into a path. Possible neighbors for the path 1 -&gt; 2 -&gt; 3 with pair (A, B) inactive (where 1 and 3 are first and last nodes of the path) are: 1 -&gt; [A] -&gt; [B] -&gt; 2 -&gt; 3 1 -&gt; [B] -&gt; 2 -&gt; [A] -&gt; 3 1 -&gt; [A] -&gt; 2 -&gt; [B] -&gt; 3 1 -&gt; 2 -&gt; [A] -&gt; [B] -&gt; 3 Note that this operator does not expicitely insert the nodes of a pair one after the other which forbids the following solutions: 1 -&gt; [B] -&gt; [A] -&gt; 2 -&gt; 3 1 -&gt; 2 -&gt; [B] -&gt; [A] -&gt; 3 which can only be obtained by inserting A after B. 
-<p>Definition at line <a class="el" href="routing_8cc-source.html#l00145">145</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
+<p>Definition at line <a class="el" href="routing_8cc-source.html#l00257">257</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
 <hr><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" name="16bc53d4360c5b70ebfb0555fdc131da"></a><!-- doxytag: member="operations_research::MakePairActiveOperator::MakePairActiveOperator" ref="16bc53d4360c5b70ebfb0555fdc131da" args="(const IntVar *const *vars, const IntVar *const *secondary_vars, const RoutingModel::NodePairs &amp;pairs, int size)" -->
 <div class="memitem">
@@ -178,7 +178,7 @@ Operator which inserts pairs of inactive nodes into a path. Possible neighbors f
 
 <p>
 
-<p>Definition at line <a class="el" href="routing_8cc-source.html#l00147">147</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
+<p>Definition at line <a class="el" href="routing_8cc-source.html#l00259">259</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
 
 </div>
 </div><p>
@@ -199,7 +199,7 @@ Operator which inserts pairs of inactive nodes into a path. Possible neighbors f
 
 <p>
 
-<p>Definition at line <a class="el" href="routing_8cc-source.html#l00154">154</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
+<p>Definition at line <a class="el" href="routing_8cc-source.html#l00266">266</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
 
 </div>
 </div><p>
@@ -235,7 +235,7 @@ Redefines MakeNextNeighbor to export a simpler interface.
 The calls to <a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#57026a137a5e7edb907db52299150598">ApplyChanges()</a> and <a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#ea723d799bb0f6d39ee2f80c7c3eef44">RevertChanges()</a> are factored in this method, hiding both delta and deltadelta from subclasses which only need to override <a class="el" href="classoperations__research_1_1PathOperator.html#bbe7ad3e663c43539a6304a1b71390ea" title="This method should not be overridden. Override MakeNeighbor() instead.">MakeOneNeighbor()</a>. Therefore this method should not be overridden. Override <a class="el" href="classoperations__research_1_1PathOperator.html#bbe7ad3e663c43539a6304a1b71390ea" title="This method should not be overridden. Override MakeNeighbor() instead.">MakeOneNeighbor()</a> instead. 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#888d01db3a407e1f4e09108d2c6e1fbc">operations_research::IntVarLocalSearchOperator</a>.</p>
 
-<p>Definition at line <a class="el" href="routing_8cc-source.html#l00191">191</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
+<p>Definition at line <a class="el" href="routing_8cc-source.html#l00303">303</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
 
 </div>
 </div><p>
@@ -258,7 +258,7 @@ The calls to <a class="el" href="classoperations__research_1_1IntVarLocalSearchO
 
 <p>Implements <a class="el" href="classoperations__research_1_1PathOperator.html#bf884d7efc40fbf9932b64623604c23a">operations_research::PathOperator</a>.</p>
 
-<p>Definition at line <a class="el" href="routing_8cc-source.html#l00206">206</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
+<p>Definition at line <a class="el" href="routing_8cc-source.html#l00318">318</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
 
 </div>
 </div><p>
@@ -281,11 +281,11 @@ The calls to <a class="el" href="classoperations__research_1_1IntVarLocalSearchO
 <p>
 Returns true if a base node has to be on the same path as the "previous" base node (base node of index base_index - 1). 
 <p>
-Useful to limit neighborhood exploration to nodes on the same path. <dl compact><dt><b><a class="el" href="todo.html#_todo000021">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): ideally this should be OnSamePath(int64 node1, int64 node2); it's currently way more complicated to implement. </dd></dl>
+Useful to limit neighborhood exploration to nodes on the same path. <dl compact><dt><b><a class="el" href="todo.html#_todo000022">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): ideally this should be OnSamePath(int64 node1, int64 node2); it's currently way more complicated to implement. </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1PathOperator.html#661ecee1a13c036a57c5c75b97882462">operations_research::PathOperator</a>.</p>
 
-<p>Definition at line <a class="el" href="routing_8cc-source.html#l00159">159</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
+<p>Definition at line <a class="el" href="routing_8cc-source.html#l00271">271</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
 
 </div>
 </div><p>
@@ -311,7 +311,7 @@ Returns the index of the node to which the base node of index base_index must be
 By default, it is set to the start of the current path. When this method is called, one can only assume that base nodes with indices &lt; base_index have their final position. 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1PathOperator.html#2c309dfacbd1dc10373408446e46f118">operations_research::PathOperator</a>.</p>
 
-<p>Definition at line <a class="el" href="routing_8cc-source.html#l00164">164</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
+<p>Definition at line <a class="el" href="routing_8cc-source.html#l00276">276</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
 
 </div>
 </div><p>
@@ -325,7 +325,7 @@ By default, it is set to the start of the current path. When this method is call
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

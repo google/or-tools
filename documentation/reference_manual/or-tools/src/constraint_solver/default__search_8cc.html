@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -101,6 +101,7 @@
 <code>#include &quot;<a class="el" href="constraint__solveri_8h-source.html">constraint_solver/constraint_solveri.h</a>&quot;</code><br>
 <code>#include &quot;util/cached_log.h&quot;</code><br>
 <code>#include &quot;base/random.h&quot;</code><br>
+<code>#include &quot;util/string_array.h&quot;</code><br>
 
 <p>
 <a href="default__search_8cc-source.html">Go to the source code of this file.</a><table border="0" cellpadding="0" cellspacing="0">
@@ -112,9 +113,9 @@
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="default__search_8cc.html#096c1c951b391cf2f9a54d3c74f0e211">DEFINE_int32</a> (cp_impact_divider, 10,&quot;Divider for continuous update.&quot;)</td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.  <a href="#096c1c951b391cf2f9a54d3c74f0e211"></a><br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">int64&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#2c56aab0a1324b3f62e1fda969a9edf9">operations_research::ComputeBranchRestart</a> (int64 log)</td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">int64&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a092adf6393483f020778fd728bd92a3">operations_research::ComputeBranchRestart</a> (int64 log)</td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">ImpactDecisionBuilder.  <a href="#2c56aab0a1324b3f62e1fda969a9edf9"></a><br></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Restart.  <a href="#a092adf6393483f020778fd728bd92a3"></a><br></td></tr>
 </table>
 <hr><h2>Function Documentation</h2>
 <a class="anchor" name="096c1c951b391cf2f9a54d3c74f0e211"></a><!-- doxytag: member="default_search.cc::DEFINE_int32" ref="096c1c951b391cf2f9a54d3c74f0e211" args="(cp_impact_divider, 10,&quot;Divider for continuous update.&quot;)" -->
@@ -170,7 +171,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00172">172</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00229">229</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -187,7 +188,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01113">1113</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00866">866</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -204,24 +205,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00076">76</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
-
-</div>
-</div><p>
-<a class="anchor" name="e649cb77032b97e446ce278e542f518a"></a><!-- doxytag: member="default_search.cc::call_heuristics_" ref="e649cb77032b97e446ce278e542f518a" args="" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">scoped_ptr&lt;ResultCallback1&lt;bool, Solver*&gt; &gt; <a class="el" href="default__search_8cc.html#e649cb77032b97e446ce278e542f518a">call_heuristics_</a>          </td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00834">834</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00075">75</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -238,7 +222,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01111">1111</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00869">869</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -255,16 +239,16 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00539">539</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00621">621</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
-<a class="anchor" name="4276196d23e30e4149ce561619ca4c8d"></a><!-- doxytag: member="default_search.cc::current_value_" ref="4276196d23e30e4149ce561619ca4c8d" args="" -->
+<a class="anchor" name="5125dcd90dc46c57f4a223ae14581370"></a><!-- doxytag: member="default_search.cc::current_value_" ref="5125dcd90dc46c57f4a223ae14581370" args="" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">Rev&lt;int64&gt; <a class="el" href="default__search_8cc.html#4276196d23e30e4149ce561619ca4c8d">current_value_</a>          </td>
+          <td class="memname">int64 <a class="el" href="default__search_8cc.html#5125dcd90dc46c57f4a223ae14581370">current_value_</a>          </td>
         </tr>
       </table>
 </div>
@@ -272,16 +256,16 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01104">1104</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00630">630</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
-<a class="anchor" name="68ac345f9f1fbc3b727a45f8de44eec3"></a><!-- doxytag: member="default_search.cc::current_var_index_" ref="68ac345f9f1fbc3b727a45f8de44eec3" args="" -->
+<a class="anchor" name="92c190af25c0be15962ca3ad2eaf8dc0"></a><!-- doxytag: member="default_search.cc::current_var_" ref="92c190af25c0be15962ca3ad2eaf8dc0" args="" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">Rev&lt;int&gt; <a class="el" href="default__search_8cc.html#68ac345f9f1fbc3b727a45f8de44eec3">current_var_index_</a>          </td>
+          <td class="memname">int <a class="el" href="default__search_8cc.html#92c190af25c0be15962ca3ad2eaf8dc0">current_var_</a>          </td>
         </tr>
       </table>
 </div>
@@ -289,16 +273,16 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01103">1103</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00629">629</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
-<a class="anchor" name="f29e6f18a2e5762e7d38d946c540f43f"></a><!-- doxytag: member="default_search.cc::db_" ref="f29e6f18a2e5762e7d38d946c540f43f" args="" -->
+<a class="anchor" name="4f15886db20b31cefbeeafb3b29925da"></a><!-- doxytag: member="default_search.cc::display_level_" ref="4f15886db20b31cefbeeafb3b29925da" args="" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">ImpactDecisionBuilder* const <a class="el" href="search_8cc.html#5d7ebe0debf7eb2b5d5e8bb2db5e526b">db_</a>          </td>
+          <td class="memname">DefaultPhaseParameters::DisplayLevel <a class="el" href="default__search_8cc.html#4f15886db20b31cefbeeafb3b29925da">display_level_</a>          </td>
         </tr>
       </table>
 </div>
@@ -306,24 +290,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00788">788</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
-
-</div>
-</div><p>
-<a class="anchor" name="bb017ec5f6853f99dacfdbac30141dc7"></a><!-- doxytag: member="default_search.cc::display_level_" ref="bb017ec5f6853f99dacfdbac30141dc7" args="" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">const DefaultPhaseParameters::DisplayLevel <a class="el" href="default__search_8cc.html#bb017ec5f6853f99dacfdbac30141dc7">display_level_</a>          </td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00546">546</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00628">628</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -340,7 +307,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00544">544</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00626">626</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -357,16 +324,16 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00536">536</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00618">618</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
-<a class="anchor" name="8ca05b086f171637a3db5ceac193956e"></a><!-- doxytag: member="default_search.cc::fail_stamp_" ref="8ca05b086f171637a3db5ceac193956e" args="" -->
+<a class="anchor" name="42a2abceeb2f6769b0280533dc4f9e79"></a><!-- doxytag: member="default_search.cc::find_var_" ref="42a2abceeb2f6769b0280533dc4f9e79" args="" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint64 <a class="el" href="expressions_8cc.html#8ca05b086f171637a3db5ceac193956e">fail_stamp_</a>          </td>
+          <td class="memname">FindVar <a class="el" href="default__search_8cc.html#42a2abceeb2f6769b0280533dc4f9e79">find_var_</a>          </td>
         </tr>
       </table>
 </div>
@@ -374,7 +341,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01102">1102</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00631">631</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -391,7 +358,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01109">1109</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01037">1037</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -408,16 +375,16 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01106">1106</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01032">1032</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
-<a class="anchor" name="b320a915b7427b19c31cf1e53ece902d"></a><!-- doxytag: member="default_search.cc::heuristics_" ref="b320a915b7427b19c31cf1e53ece902d" args="" -->
+<a class="anchor" name="6f5f2eb804e35950d51f8264c5b7b28f"></a><!-- doxytag: member="default_search.cc::heuristic_period_" ref="6f5f2eb804e35950d51f8264c5b7b28f" args="" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;HeuristicWrapper*&gt; <a class="el" href="default__search_8cc.html#b320a915b7427b19c31cf1e53ece902d">heuristics_</a>          </td>
+          <td class="memname">const int <a class="el" href="default__search_8cc.html#6f5f2eb804e35950d51f8264c5b7b28f">heuristic_period_</a>          </td>
         </tr>
       </table>
 </div>
@@ -425,7 +392,24 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01105">1105</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01036">1036</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="cb82f8bd37e545b21e93f4ad5a7c8737"></a><!-- doxytag: member="default_search.cc::heuristics_" ref="cb82f8bd37e545b21e93f4ad5a7c8737" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">RunHeuristicsAsDives <a class="el" href="default__search_8cc.html#cb82f8bd37e545b21e93f4ad5a7c8737">heuristics_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01031">1031</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -441,10 +425,8 @@ Unless required by applicable law or agreed to in writing, software distributed 
 <div class="memdoc">
 
 <p>
-data members 
-<p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01097">1097</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01214">1214</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -463,24 +445,7 @@ data members
 impacts_[i][j] stores the average search space reduction when assigning original_min_[i] + j to variable i. 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00542">542</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
-
-</div>
-</div><p>
-<a class="anchor" name="aaf1ac02dfa554a3cdffc647d512a77b"></a><!-- doxytag: member="default_search.cc::index_" ref="aaf1ac02dfa554a3cdffc647d512a77b" args="" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int <a class="el" href="sched__search_8cc.html#b7f32d492928f4b662c1f6b22d35dae8">index_</a>          </td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00595">595</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00624">624</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -497,7 +462,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00545">545</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00627">627</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -514,7 +479,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01101">1101</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00633">633</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -531,7 +496,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00170">170</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00227">227</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -548,7 +513,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00300">300</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00357">357</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -565,7 +530,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00301">301</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00358">358</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -582,7 +547,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00298">298</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00355">355</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -599,24 +564,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00299">299</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
-
-</div>
-</div><p>
-<a class="anchor" name="48203504b1025da0b0097ed36b7f3ade"></a><!-- doxytag: member="default_search.cc::kUninitializedFailStamp" ref="48203504b1025da0b0097ed36b7f3ade" args="" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">const uint64 <a class="el" href="default__search_8cc.html#48203504b1025da0b0097ed36b7f3ade">kUninitializedFailStamp</a><code> [static]</code>          </td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00570">570</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00356">356</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -633,7 +581,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00569">569</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00359">359</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -642,7 +590,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="range__cst_8cc.html#d9043b5cc6b0849d578d3e91decd673a">left_</a>          </td>
+          <td class="memname">bool <a class="el" href="range__cst_8cc.html#7076deac82dc0a4df6618e6037964b0d">left_</a>          </td>
         </tr>
       </table>
 </div>
@@ -650,7 +598,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00596">596</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00677">677</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -659,7 +607,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int64 <a class="el" href="default__search_8cc.html#c750bf5869e3b47c855219664c5f7577">max_value_</a>          </td>
+          <td class="memname">int64 <a class="el" href="softgcc_8cc.html#c750bf5869e3b47c855219664c5f7577">max_value_</a>          </td>
         </tr>
       </table>
 </div>
@@ -667,7 +615,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00284">284</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00341">341</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -684,7 +632,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01115">1115</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00868">868</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -701,7 +649,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01110">1110</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00864">864</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -718,7 +666,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01114">1114</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00867">867</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -727,7 +675,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int64 <a class="el" href="default__search_8cc.html#98161251ce8e9fdfcff6861d308d4947">min_value_</a>          </td>
+          <td class="memname">int64 <a class="el" href="softgcc_8cc.html#98161251ce8e9fdfcff6861d308d4947">min_value_</a>          </td>
         </tr>
       </table>
 </div>
@@ -735,7 +683,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00283">283</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00340">340</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -754,7 +702,7 @@ impacts_[i][j] stores the average search space reduction when assigning original
 A name for logging purposes. 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00808">808</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01024">1024</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -771,7 +719,7 @@ A name for logging purposes.
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00169">169</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00226">226</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -788,7 +736,7 @@ A name for logging purposes.
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01112">1112</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00865">865</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -805,7 +753,7 @@ A name for logging purposes.
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00543">543</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00625">625</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -822,7 +770,7 @@ A name for logging purposes.
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01100">1100</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00862">862</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -841,7 +789,7 @@ A name for logging purposes.
 The decision builder we are going to use in this dive. 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00806">806</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01022">1022</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -858,7 +806,7 @@ The decision builder we are going to use in this dive.
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01107">1107</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01035">1035</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -875,16 +823,16 @@ The decision builder we are going to use in this dive.
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00531">531</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00613">613</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
-<a class="anchor" name="4074b5ab731b0e31631e882fba56a927"></a><!-- doxytag: member="default_search.cc::runner_" ref="4074b5ab731b0e31631e882fba56a927" args="" -->
+<a class="anchor" name="7ef91107e0faf319e932fb255efbb876"></a><!-- doxytag: member="default_search.cc::restart_monitor_" ref="7ef91107e0faf319e932fb255efbb876" args="" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">RunHeuristic <a class="el" href="hybrid_8cc.html#f6884971715a332d4e9edd9608dcce5d">runner_</a>          </td>
+          <td class="memname">RestartMonitor <a class="el" href="default__search_8cc.html#7ef91107e0faf319e932fb255efbb876">restart_monitor_</a>          </td>
         </tr>
       </table>
 </div>
@@ -892,7 +840,24 @@ The decision builder we are going to use in this dive.
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01108">1108</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01216">1216</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="fac6c70e59e21f8a997abb8f090ef0d0"></a><!-- doxytag: member="default_search.cc::run_all_heuristics_" ref="fac6c70e59e21f8a997abb8f090ef0d0" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="default__search_8cc.html#fac6c70e59e21f8a997abb8f090ef0d0">run_all_heuristics_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01034">1034</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -911,7 +876,7 @@ The decision builder we are going to use in this dive.
 How many times we will run this particular heuristic in case the parameter run_all_heuristics is true. 
 <p>
 This is useful for random heuristics where it makes sense to run them more than once. 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00812">812</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l01028">1028</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -928,7 +893,7 @@ This is useful for random heuristics where it makes sense to run them more than 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00075">75</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00620">620</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -945,7 +910,7 @@ This is useful for random heuristics where it makes sense to run them more than 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00286">286</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00343">343</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -962,7 +927,7 @@ This is useful for random heuristics where it makes sense to run them more than 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00285">285</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00342">342</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -979,7 +944,7 @@ This is useful for random heuristics where it makes sense to run them more than 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00168">168</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00225">225</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -996,7 +961,7 @@ This is useful for random heuristics where it makes sense to run them more than 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00163">163</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00220">220</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1013,7 +978,24 @@ This is useful for random heuristics where it makes sense to run them more than 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00175">175</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00232">232</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="2dd81c85c0b7f68b59750ae4441f7da4"></a><!-- doxytag: member="default_search.cc::valid_" ref="2dd81c85c0b7f68b59750ae4441f7da4" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="tree__monitor_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00134">134</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1030,7 +1012,7 @@ This is useful for random heuristics where it makes sense to run them more than 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00160">160</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00133">133</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1047,7 +1029,7 @@ This is useful for random heuristics where it makes sense to run them more than 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00173">173</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00230">230</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1064,7 +1046,7 @@ This is useful for random heuristics where it makes sense to run them more than 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00206">206</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00263">263</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1081,7 +1063,7 @@ This is useful for random heuristics where it makes sense to run them more than 
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00205">205</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00262">262</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1100,7 +1082,7 @@ This is useful for random heuristics where it makes sense to run them more than 
 Public data for easy access. 
 <p>
 Public for easy access. 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00159">159</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00132">132</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1117,21 +1099,40 @@ Public for easy access.
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00171">171</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00228">228</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
-<a class="anchor" name="9547583a9de0b0177b68c0f73e1eb563"></a><!-- doxytag: member="default_search.cc::vars_" ref="9547583a9de0b0177b68c0f73e1eb563" args="" -->
+<a class="anchor" name="2233a9533175316192148dabe48f851f"></a><!-- doxytag: member="default_search.cc::var_map_" ref="2233a9533175316192148dabe48f851f" args="" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">scoped_array&lt;IntVar*&gt; <a class="el" href="tree__monitor_8cc.html#d827742c497c2ee04fdf5b7e46d1156f">vars_</a>          </td>
+          <td class="memname">hash_map&lt;IntVar*, int&gt; <a class="el" href="default__search_8cc.html#2233a9533175316192148dabe48f851f">var_map_</a>          </td>
         </tr>
       </table>
 </div>
 <div class="memdoc">
 
+<p>
+
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00632">632</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="151248525a9e07eb3e6e60ea1c4995eb"></a><!-- doxytag: member="default_search.cc::vars_" ref="151248525a9e07eb3e6e60ea1c4995eb" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;IntVar*&gt; <a class="el" href="tree__monitor_8cc.html#d827742c497c2ee04fdf5b7e46d1156f">vars_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+data members 
 <p>
 
 <p>Definition at line <a class="el" href="default__search_8cc-source.html#l00074">74</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
@@ -1151,7 +1152,7 @@ Public for easy access.
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00533">533</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00615">615</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1168,7 +1169,7 @@ Public for easy access.
 
 <p>
 
-<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00532">532</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="default__search_8cc-source.html#l00614">614</a> of file <a class="el" href="default__search_8cc-source.html">default_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1180,7 +1181,7 @@ Public for easy access.
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

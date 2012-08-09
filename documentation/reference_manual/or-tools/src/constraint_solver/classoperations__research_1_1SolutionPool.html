@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -104,7 +104,8 @@ Inheritance diagram for operations_research::SolutionPool:</div>
 
 <p><center><img src="classoperations__research_1_1SolutionPool.png" usemap="#operations_research::SolutionPool_map" border="0" alt=""></center>
 <map name="operations_research::SolutionPool_map">
-<area href="classoperations__research_1_1BaseObject.html" alt="operations_research::BaseObject" shape="rect" coords="0,0,205,24">
+<area href="classoperations__research_1_1BaseObject.html" alt="operations_research::BaseObject" shape="rect" coords="0,0,267,24">
+<area href="classoperations__research_1_1MTSharingSolutionPool.html" alt="operations_research::MTSharingSolutionPool" shape="rect" coords="0,112,267,136">
 </map>
 </div>
 
@@ -133,7 +134,7 @@ Inheritance diagram for operations_research::SolutionPool:</div>
 <a class="el" href="classoperations__research_1_1SolutionPool.html" title="SolutionPool.">SolutionPool</a>. 
 <p>
 This class is used to manage a pool of solutions. It can transform a single point local search into a multi point local search. 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l04938">4938</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l04943">4943</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 <hr><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" name="0c1b8aceb7d2732914ade32de14cfc41"></a><!-- doxytag: member="operations_research::SolutionPool::SolutionPool" ref="0c1b8aceb7d2732914ade32de14cfc41" args="()" -->
 <div class="memitem">
@@ -152,7 +153,7 @@ This class is used to manage a pool of solutions. It can transform a single poin
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l04940">4940</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l04945">4945</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -173,7 +174,7 @@ This class is used to manage a pool of solutions. It can transform a single poin
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l04941">4941</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l04946">4946</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -198,6 +199,8 @@ This class is used to manage a pool of solutions. It can transform a single poin
 This method is called to initialize the solution pool with the assignment from the local search. 
 <p>
 
+<p>Implemented in <a class="el" href="classoperations__research_1_1MTSharingSolutionPool.html#4a2f7a76c6e2e81b3b03a89daa8bb90f">operations_research::MTSharingSolutionPool</a>.</p>
+
 </div>
 </div><p>
 <a class="anchor" name="2e49e36a6c729756e59287fb8a3a3bcd"></a><!-- doxytag: member="operations_research::SolutionPool::RegisterNewSolution" ref="2e49e36a6c729756e59287fb8a3a3bcd" args="(Assignment *const assignment)=0" -->
@@ -219,6 +222,8 @@ This method is called to initialize the solution pool with the assignment from t
 <p>
 This method is called when a new solution has been accepted by the local search. 
 <p>
+
+<p>Implemented in <a class="el" href="classoperations__research_1_1MTSharingSolutionPool.html#e33f1832ae66437232209c7995b4dbb8">operations_research::MTSharingSolutionPool</a>.</p>
 
 </div>
 </div><p>
@@ -242,6 +247,8 @@ This method is called when a new solution has been accepted by the local search.
 This method is called when the local search starts a new neighborhood to initialize the default assignment. 
 <p>
 
+<p>Implemented in <a class="el" href="classoperations__research_1_1MTSharingSolutionPool.html#7a85fc94aba9e5a29eaf97fb37b2e25e">operations_research::MTSharingSolutionPool</a>.</p>
+
 </div>
 </div><p>
 <a class="anchor" name="b71086e9d6cbca14023cd54a03bd1eff"></a><!-- doxytag: member="operations_research::SolutionPool::SyncNeeded" ref="b71086e9d6cbca14023cd54a03bd1eff" args="(Assignment *const local_assignment)=0" -->
@@ -264,6 +271,8 @@ This method is called when the local search starts a new neighborhood to initial
 This method checks if the local solution needs to be updated with an external one. 
 <p>
 
+<p>Implemented in <a class="el" href="classoperations__research_1_1MTSharingSolutionPool.html#954dd5046529795b3bc1c34f50e5847b">operations_research::MTSharingSolutionPool</a>.</p>
+
 </div>
 </div><p>
 <hr>The documentation for this class was generated from the following file:<ul>
@@ -276,7 +285,7 @@ This method checks if the local solution needs to be updated with an external on
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

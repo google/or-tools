@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/base/index.html">base</a>/
@@ -108,68 +108,68 @@
 <a name="l00025"></a>00025 
 <a name="l00026"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html">00026</a> <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt; <span class="keyword">class </span><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html">AdjustablePriorityQueue</a> {
 <a name="l00027"></a>00027  <span class="keyword">public</span>:
-<a name="l00028"></a>00028 
-<a name="l00029"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#45ef5d5fa97d178f655682b62b994b8b">00029</a>   <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#45ef5d5fa97d178f655682b62b994b8b">AdjustablePriorityQueue</a>() {}
-<a name="l00030"></a>00030 
-<a name="l00031"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#18e3128541643530eff524c88c650d00">00031</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#18e3128541643530eff524c88c650d00">Add</a>(T* <span class="keyword">const</span> val) {
-<a name="l00032"></a>00032     elems_.push_back(val);
-<a name="l00033"></a>00033     AdjustUpwards(elems_.size() - 1);
-<a name="l00034"></a>00034   }
-<a name="l00035"></a>00035 
-<a name="l00036"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#d54f079d1263caadce99a2fd88d7bf92">00036</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#d54f079d1263caadce99a2fd88d7bf92">Remove</a>(T* <span class="keyword">const</span> val) {
-<a name="l00037"></a>00037     <span class="keyword">const</span> <span class="keywordtype">int</span> i = val-&gt;GetHeapIndex();
-<a name="l00038"></a>00038     <span class="keywordflow">if</span> (i == elems_.size() - 1) {
-<a name="l00039"></a>00039       elems_.pop_back();
-<a name="l00040"></a>00040       <span class="keywordflow">return</span>;
-<a name="l00041"></a>00041     }
-<a name="l00042"></a>00042     elems_[i] = elems_.back();
-<a name="l00043"></a>00043     elems_[i]-&gt;SetHeapIndex(i);
-<a name="l00044"></a>00044     elems_.pop_back();
-<a name="l00045"></a>00045     <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#f224a05010d79cb35fb79404c20f2e46">NoteChangedPriority</a>(elems_[i]);
-<a name="l00046"></a>00046   }
-<a name="l00047"></a>00047 
-<a name="l00048"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#ade7cd8e1b96f39a3d16cf5ccf2782bb">00048</a>   <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#ade7cd8e1b96f39a3d16cf5ccf2782bb">Contains</a>(<span class="keyword">const</span> T* <span class="keyword">const</span> val)<span class="keyword"> const </span>{
-<a name="l00049"></a>00049     <span class="keyword">const</span> <span class="keywordtype">int</span> i = val-&gt;GetHeapIndex();
-<a name="l00050"></a>00050     <span class="keywordflow">if</span> (i &lt; 0 || i &gt;= elems_.size() || elems_[i] != val) {
-<a name="l00051"></a>00051       <span class="keywordflow">return</span> <span class="keyword">false</span>;
-<a name="l00052"></a>00052     }
-<a name="l00053"></a>00053     <span class="keywordflow">return</span> <span class="keyword">true</span>;
-<a name="l00054"></a>00054   }
-<a name="l00055"></a>00055 
-<a name="l00056"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#f224a05010d79cb35fb79404c20f2e46">00056</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#f224a05010d79cb35fb79404c20f2e46">NoteChangedPriority</a>(T* val) {
-<a name="l00057"></a>00057     <span class="keyword">const</span> <span class="keywordtype">int</span> i = val-&gt;GetHeapIndex();
-<a name="l00058"></a>00058     <span class="keyword">const</span> <span class="keywordtype">int</span> parent = (i - 1) / 2;
-<a name="l00059"></a>00059     <span class="keywordflow">if</span> (*elems_[parent] &lt; *val) {
-<a name="l00060"></a>00060       AdjustUpwards(i);
-<a name="l00061"></a>00061     } <span class="keywordflow">else</span> {
-<a name="l00062"></a>00062       AdjustDownwards(i);
-<a name="l00063"></a>00063     }
-<a name="l00064"></a>00064   }
-<a name="l00065"></a>00065 
-<a name="l00066"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#65fad126501636ff0b95b8e8b057fb5c">00066</a>   T* <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#65fad126501636ff0b95b8e8b057fb5c">Top</a>() { <span class="keywordflow">return</span> elems_[0]; }
-<a name="l00067"></a>00067 
-<a name="l00068"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#08dc8bcf98c1c596b356076b6e174d8d">00068</a>   <span class="keyword">const</span> T* <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#65fad126501636ff0b95b8e8b057fb5c">Top</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> elems_[0]; }
-<a name="l00069"></a>00069 
-<a name="l00070"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#20df2e9d266aa5c9c82423d45815862c">00070</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#20df2e9d266aa5c9c82423d45815862c">Pop</a>() { <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#d54f079d1263caadce99a2fd88d7bf92">Remove</a>(<a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#65fad126501636ff0b95b8e8b057fb5c">Top</a>()); }
-<a name="l00071"></a>00071 
-<a name="l00072"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#d862597281c72e0c47a378a1fdd64cce">00072</a>   <span class="keywordtype">int</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#d862597281c72e0c47a378a1fdd64cce">Size</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> elems_.size(); }
-<a name="l00073"></a>00073 
-<a name="l00074"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#0cdf3610d25b70f9687dac5b5ac7423b">00074</a>   <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#0cdf3610d25b70f9687dac5b5ac7423b">IsEmpty</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> elems_.empty(); }
-<a name="l00075"></a>00075 
-<a name="l00076"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#03ba32716ecf4b25506753d9e313d0bb">00076</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#03ba32716ecf4b25506753d9e313d0bb">Clear</a>() { elems_.clear(); }
-<a name="l00077"></a>00077 
-<a name="l00078"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#3299e5cbe55ff5d3df8e841672671b8f">00078</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#3299e5cbe55ff5d3df8e841672671b8f">CheckValid</a>()<span class="keyword"> const </span>{
-<a name="l00079"></a>00079     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; elems_.size(); ++i) {
-<a name="l00080"></a>00080       <span class="keyword">const</span> <span class="keywordtype">int</span> left_child = 1 + 2 * i;
-<a name="l00081"></a>00081       <span class="keywordflow">if</span> (left_child &lt; elems_.size()) {
-<a name="l00082"></a>00082         <a class="code" href="logging_8h.html#8468e943c7f8eb267dd967db3adc6e56">CHECK_GE</a>(elems_[i], elems_[left_child]);
-<a name="l00083"></a>00083       }
-<a name="l00084"></a>00084       <span class="keyword">const</span> <span class="keywordtype">int</span> right_child = left_child + 1;
-<a name="l00085"></a>00085       <span class="keywordflow">if</span> (right_child &lt; elems_.size()) {
-<a name="l00086"></a>00086         <a class="code" href="logging_8h.html#8468e943c7f8eb267dd967db3adc6e56">CHECK_GE</a>(elems_[i], elems_[right_child]);
-<a name="l00087"></a>00087       }
-<a name="l00088"></a>00088     }
-<a name="l00089"></a>00089   }
+<a name="l00028"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#45ef5d5fa97d178f655682b62b994b8b">00028</a>   <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#45ef5d5fa97d178f655682b62b994b8b">AdjustablePriorityQueue</a>() {}
+<a name="l00029"></a>00029 
+<a name="l00030"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#18e3128541643530eff524c88c650d00">00030</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#18e3128541643530eff524c88c650d00">Add</a>(T* <span class="keyword">const</span> val) {
+<a name="l00031"></a>00031     elems_.push_back(val);
+<a name="l00032"></a>00032     AdjustUpwards(elems_.size() - 1);
+<a name="l00033"></a>00033   }
+<a name="l00034"></a>00034 
+<a name="l00035"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#d54f079d1263caadce99a2fd88d7bf92">00035</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#d54f079d1263caadce99a2fd88d7bf92">Remove</a>(T* <span class="keyword">const</span> val) {
+<a name="l00036"></a>00036     <span class="keyword">const</span> <span class="keywordtype">int</span> i = val-&gt;GetHeapIndex();
+<a name="l00037"></a>00037     <span class="keywordflow">if</span> (i == elems_.size() - 1) {
+<a name="l00038"></a>00038       elems_.pop_back();
+<a name="l00039"></a>00039       <span class="keywordflow">return</span>;
+<a name="l00040"></a>00040     }
+<a name="l00041"></a>00041     elems_[i] = elems_.back();
+<a name="l00042"></a>00042     elems_[i]-&gt;SetHeapIndex(i);
+<a name="l00043"></a>00043     elems_.pop_back();
+<a name="l00044"></a>00044     <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#f224a05010d79cb35fb79404c20f2e46">NoteChangedPriority</a>(elems_[i]);
+<a name="l00045"></a>00045   }
+<a name="l00046"></a>00046 
+<a name="l00047"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#ade7cd8e1b96f39a3d16cf5ccf2782bb">00047</a>   <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#ade7cd8e1b96f39a3d16cf5ccf2782bb">Contains</a>(<span class="keyword">const</span> T* <span class="keyword">const</span> val)<span class="keyword"> const </span>{
+<a name="l00048"></a>00048     <span class="keyword">const</span> <span class="keywordtype">int</span> i = val-&gt;GetHeapIndex();
+<a name="l00049"></a>00049     <span class="keywordflow">if</span> (i &lt; 0 || i &gt;= elems_.size() || elems_[i] != val) {
+<a name="l00050"></a>00050       <span class="keywordflow">return</span> <span class="keyword">false</span>;
+<a name="l00051"></a>00051     }
+<a name="l00052"></a>00052     <span class="keywordflow">return</span> <span class="keyword">true</span>;
+<a name="l00053"></a>00053   }
+<a name="l00054"></a>00054 
+<a name="l00055"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#f224a05010d79cb35fb79404c20f2e46">00055</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#f224a05010d79cb35fb79404c20f2e46">NoteChangedPriority</a>(T* val) {
+<a name="l00056"></a>00056     <span class="keyword">const</span> <span class="keywordtype">int</span> i = val-&gt;GetHeapIndex();
+<a name="l00057"></a>00057     <span class="keyword">const</span> <span class="keywordtype">int</span> parent = (i - 1) / 2;
+<a name="l00058"></a>00058     <span class="keywordflow">if</span> (*elems_[parent] &lt; *val) {
+<a name="l00059"></a>00059       AdjustUpwards(i);
+<a name="l00060"></a>00060     } <span class="keywordflow">else</span> {
+<a name="l00061"></a>00061       AdjustDownwards(i);
+<a name="l00062"></a>00062     }
+<a name="l00063"></a>00063   }
+<a name="l00064"></a>00064 
+<a name="l00065"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#65fad126501636ff0b95b8e8b057fb5c">00065</a>   T* <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#65fad126501636ff0b95b8e8b057fb5c">Top</a>() { <span class="keywordflow">return</span> elems_[0]; }
+<a name="l00066"></a>00066 
+<a name="l00067"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#08dc8bcf98c1c596b356076b6e174d8d">00067</a>   <span class="keyword">const</span> T* <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#65fad126501636ff0b95b8e8b057fb5c">Top</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> elems_[0]; }
+<a name="l00068"></a>00068 
+<a name="l00069"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#20df2e9d266aa5c9c82423d45815862c">00069</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#20df2e9d266aa5c9c82423d45815862c">Pop</a>() { <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#d54f079d1263caadce99a2fd88d7bf92">Remove</a>(<a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#65fad126501636ff0b95b8e8b057fb5c">Top</a>()); }
+<a name="l00070"></a>00070 
+<a name="l00071"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#d862597281c72e0c47a378a1fdd64cce">00071</a>   <span class="keywordtype">int</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#d862597281c72e0c47a378a1fdd64cce">Size</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> elems_.size(); }
+<a name="l00072"></a>00072 
+<a name="l00073"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#0cdf3610d25b70f9687dac5b5ac7423b">00073</a>   <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#0cdf3610d25b70f9687dac5b5ac7423b">IsEmpty</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> elems_.empty(); }
+<a name="l00074"></a>00074 
+<a name="l00075"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#03ba32716ecf4b25506753d9e313d0bb">00075</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#03ba32716ecf4b25506753d9e313d0bb">Clear</a>() { elems_.clear(); }
+<a name="l00076"></a>00076 
+<a name="l00077"></a><a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#3299e5cbe55ff5d3df8e841672671b8f">00077</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1AdjustablePriorityQueue.html#3299e5cbe55ff5d3df8e841672671b8f">CheckValid</a>()<span class="keyword"> const </span>{
+<a name="l00078"></a>00078     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; elems_.size(); ++i) {
+<a name="l00079"></a>00079       <span class="keyword">const</span> <span class="keywordtype">int</span> left_child = 1 + 2 * i;
+<a name="l00080"></a>00080       <span class="keywordflow">if</span> (left_child &lt; elems_.size()) {
+<a name="l00081"></a>00081         <a class="code" href="logging_8h.html#8468e943c7f8eb267dd967db3adc6e56">CHECK_GE</a>(elems_[i], elems_[left_child]);
+<a name="l00082"></a>00082       }
+<a name="l00083"></a>00083       <span class="keyword">const</span> <span class="keywordtype">int</span> right_child = left_child + 1;
+<a name="l00084"></a>00084       <span class="keywordflow">if</span> (right_child &lt; elems_.size()) {
+<a name="l00085"></a>00085         <a class="code" href="logging_8h.html#8468e943c7f8eb267dd967db3adc6e56">CHECK_GE</a>(elems_[i], elems_[right_child]);
+<a name="l00086"></a>00086       }
+<a name="l00087"></a>00087     }
+<a name="l00088"></a>00088   }
+<a name="l00089"></a>00089 
 <a name="l00090"></a>00090  <span class="keyword">private</span>:
 <a name="l00091"></a>00091   <span class="keywordtype">void</span> AdjustUpwards(<span class="keywordtype">int</span> i) {
 <a name="l00092"></a>00092     T* <span class="keyword">const</span> t = elems_[i];
@@ -223,7 +223,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

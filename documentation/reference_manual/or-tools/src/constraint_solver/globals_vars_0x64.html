@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -118,6 +118,8 @@
       <li><a href="globals_vars_0x75.html#index_u"><span>u</span></a></li>
       <li><a href="globals_vars_0x76.html#index_v"><span>v</span></a></li>
       <li><a href="globals_vars_0x77.html#index_w"><span>w</span></a></li>
+      <li><a href="globals_vars_0x78.html#index_x"><span>x</span></a></li>
+      <li><a href="globals_vars_0x79.html#index_y"><span>y</span></a></li>
     </ul>
   </div>
 </div>
@@ -130,9 +132,10 @@
 <li>data_
 : <a class="el" href="constraint__solver_8cc.html#daa4e0422c561cd3355217847b464c1a">constraint_solver.cc</a>
 <li>db_
-: <a class="el" href="local__search_8cc.html#5d7ebe0debf7eb2b5d5e8bb2db5e526b">local_search.cc</a>
-, <a class="el" href="search_8cc.html#5d7ebe0debf7eb2b5d5e8bb2db5e526b">search.cc</a>
-, <a class="el" href="default__search_8cc.html#f29e6f18a2e5762e7d38d946c540f43f">default_search.cc</a>
+: <a class="el" href="search_8cc.html#5d7ebe0debf7eb2b5d5e8bb2db5e526b">search.cc</a>
+, <a class="el" href="local__search_8cc.html#5d7ebe0debf7eb2b5d5e8bb2db5e526b">local_search.cc</a>
+<li>decided_
+: <a class="el" href="expr__array_8cc.html#d48b211ccaa9b1d274e2eeb0c5e0f256">expr_array.cc</a>
 <li>decision_
 : <a class="el" href="constraint__solver_8cc.html#1452e4944dcf272b8a473664908dc004">constraint_solver.cc</a>
 <li>delayed_info
@@ -142,11 +145,17 @@
 <li>delete_
 : <a class="el" href="element_8cc.html#4f5e0fcbcdec30f8f9fb3fd939a92373">element.cc</a>
 , <a class="el" href="search_8cc.html#205428ca8c665871c61b889326cdb29b">search.cc</a>
+<li>delete_table_
+: <a class="el" href="ac4r__table_8cc.html#4ff90bc807123488de70a58a886179e2">ac4r_table.cc</a>
 <li>delta
 : <a class="el" href="resource_8cc.html#73461c37822b6ebb75b54ba1a9ffb442">resource.cc</a>
 <li>delta_cache_
 : <a class="el" href="local__search_8cc.html#734bde319e7f1d598c9bd3a8e795750a">local_search.cc</a>
 , <a class="el" href="search_8cc.html#9a71def7cfe9c496b03264caba22b520">search.cc</a>
+<li>delta_domain_iterator_
+: <a class="el" href="ac4r__table_8cc.html#9271806b2d896abec52505c52d153c87">ac4r_table.cc</a>
+<li>delta_of_value_indices_
+: <a class="el" href="ac4r__table_8cc.html#76fccd8cbc29003428d1b74fe9994c01">ac4r_table.cc</a>
 <li>demand_
 : <a class="el" href="resource_8cc.html#3123063a15972d1788a9c30b3e5f4d49">resource.cc</a>
 <li>demands_
@@ -154,30 +163,47 @@
 <li>demon
 : <a class="el" href="constraint__solver_8cc.html#f800ac63ce2b6285ec62408b0f17acc3">constraint_solver.cc</a>
 <li>demon_
-: <a class="el" href="expr__cst_8cc.html#97c85b30cffe5d1eb526594ab1072651">expr_cst.cc</a>
+: <a class="el" href="constraints_8cc.html#97c85b30cffe5d1eb526594ab1072651">constraints.cc</a>
+, <a class="el" href="expr__cst_8cc.html#97c85b30cffe5d1eb526594ab1072651">expr_cst.cc</a>
+, <a class="el" href="range__cst_8cc.html#97c85b30cffe5d1eb526594ab1072651">range_cst.cc</a>
 , <a class="el" href="table_8cc.html#97c85b30cffe5d1eb526594ab1072651">table.cc</a>
+<li>demons_
+: <a class="el" href="element_8cc.html#dca507a0a7013819d6653c76c40f661d">element.cc</a>
+, <a class="el" href="expr__array_8cc.html#dca507a0a7013819d6653c76c40f661d">expr_array.cc</a>
+<li>denom_
+: <a class="el" href="expressions_8cc.html#b8649f74d1d161c323f35e939028b938">expressions.cc</a>
 <li>depth_
 : <a class="el" href="constraint__solver_8cc.html#d44441440d13feeced3a5592d8853ce8">constraint_solver.cc</a>
 <li>deviation_var_
 : <a class="el" href="deviation_8cc.html#65913e88b4e277f9aa7d66cc621592c6">deviation.cc</a>
+<li>dfs_
+: <a class="el" href="softgcc_8cc.html#900fe3d56c5921a28f3ae6405c9e064c">softgcc.cc</a>
 <li>diff_
 : <a class="el" href="alldiff__cst_8cc.html#6fe1da2b4f819ce0bc60a1d6d04cae38">alldiff_cst.cc</a>
+<li>diffs_
+: <a class="el" href="gcc_8cc.html#45e62c75cbe8adbbe70d2d6574c46aab">gcc.cc</a>
 <li>dim_
 : <a class="el" href="pack_8cc.html#ba790ec8ff63aa1e3e8dfdc4183c8c89">pack.cc</a>
 <li>display_level_
-: <a class="el" href="default__search_8cc.html#bb017ec5f6853f99dacfdbac30141dc7">default_search.cc</a>
+: <a class="el" href="default__search_8cc.html#4f15886db20b31cefbeeafb3b29925da">default_search.cc</a>
 <li>displayed
 : <a class="el" href="trace_8cc.html#2d5b739701c7163b04e46bf555fbba75">trace.cc</a>
 <li>domain_
 : <a class="el" href="tree__monitor_8cc.html#c185949f1a6a6fcdf61be7298a237147">tree_monitor.cc</a>
+<li>domain_demon_
+: <a class="el" href="range__cst_8cc.html#38054bd0783351213347a0fe73f6dc71">range_cst.cc</a>
 <li>domain_demons_
 : <a class="el" href="expressions_8cc.html#58b164f5d6e4fc141b7147ba69cbdb19">expressions.cc</a>
+<li>domain_iterator_
+: <a class="el" href="ac4r__table_8cc.html#f18f2868a2adc57c9591973fc91f7ff8">ac4r_table.cc</a>
 <li>domain_iterators_
 : <a class="el" href="default__search_8cc.html#796536f4383812efeec6c6fdb6145d7a">default_search.cc</a>
 <li>domain_watcher_
 : <a class="el" href="default__search_8cc.html#e4743db58c2305ea3c76ad0a77f62340">default_search.cc</a>
 <li>done_
 : <a class="el" href="search_8cc.html#ac774ec2d673bfab4851d001b6d01115">search.cc</a>
+<li>ds_
+: <a class="el" href="gcc_8cc.html#2fb233c7b93e2fdda118f8919a6fb51e">gcc.cc</a>
 <li>duration_
 : <a class="el" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">interval.cc</a>
 </ul>
@@ -189,7 +215,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

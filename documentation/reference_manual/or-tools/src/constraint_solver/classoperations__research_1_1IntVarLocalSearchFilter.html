@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -116,15 +116,13 @@ Inheritance diagram for operations_research::IntVarLocalSearchFilter:</div>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#af1e5c44d3d9f6b731f43da10d6426a3">IntVarLocalSearchFilter</a> (const <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const *vars, int size)</td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html" title="IntVarLocalSearchFilter.">IntVarLocalSearchFilter</a>.  <a href="#af1e5c44d3d9f6b731f43da10d6426a3"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#018a1764ca1b31a76a7afdb26a6d7d83">IntVarLocalSearchFilter</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;vars)</td></tr>
+
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#e955420754d0a4c2d8ca8c4b687b44a9">~IntVarLocalSearchFilter</a> ()</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#d6193dcb2fc37f0ff372b9282c112963">Synchronize</a> (const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *assignment)</td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This method should not be overridden.  <a href="#d6193dcb2fc37f0ff372b9282c112963"></a><br></td></tr>
-<tr><td colspan="2"><br><h2>Protected Member Functions</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#c3e448ecea08986763169e2a517108fb">AddVars</a> (const <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const *vars, int size)</td></tr>
-
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Add variables to "track" to the filter.  <a href="#c3e448ecea08986763169e2a517108fb"></a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#ef04544e0f3d9362ef73a027aa733553">FindIndex</a> (const <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const <a class="el" href="search_8cc.html#96c77f9f3a7baec84b9b8add26a31787">var</a>, int64 *<a class="el" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>) const </td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#9045a67d0d2cf4daa65b2a12cb8ed6e8">Size</a> () const </td></tr>
@@ -133,10 +131,16 @@ Inheritance diagram for operations_research::IntVarLocalSearchFilter:</div>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">int64&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#f5bf4ae1c58402bd4443ee00f53492cc">Value</a> (int <a class="el" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>) const </td></tr>
 
+<tr><td colspan="2"><br><h2>Protected Member Functions</h2></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#c3e448ecea08986763169e2a517108fb">AddVars</a> (const <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const *vars, int size)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Add variables to "track" to the filter.  <a href="#c3e448ecea08986763169e2a517108fb"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#310b8454d7c49178eb14a3d6cde55b4f">OnSynchronize</a> ()</td></tr>
+
 </table>
 <hr><a name="_details"></a><h2>Detailed Description</h2>
 <a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html" title="IntVarLocalSearchFilter.">IntVarLocalSearchFilter</a>. 
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l01177">1177</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l01176">1176</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
 <hr><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" name="af1e5c44d3d9f6b731f43da10d6426a3"></a><!-- doxytag: member="operations_research::IntVarLocalSearchFilter::IntVarLocalSearchFilter" ref="af1e5c44d3d9f6b731f43da10d6426a3" args="(const IntVar *const *vars, int size)" -->
 <div class="memitem">
@@ -167,7 +171,29 @@ Inheritance diagram for operations_research::IntVarLocalSearchFilter:</div>
 <a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html" title="IntVarLocalSearchFilter.">IntVarLocalSearchFilter</a>. 
 <p>
 
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l02323">2323</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l02329">2329</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="018a1764ca1b31a76a7afdb26a6d7d83"></a><!-- doxytag: member="operations_research::IntVarLocalSearchFilter::IntVarLocalSearchFilter" ref="018a1764ca1b31a76a7afdb26a6d7d83" args="(const std::vector&lt; IntVar * &gt; &amp;vars)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">operations_research::IntVarLocalSearchFilter::IntVarLocalSearchFilter           </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;&nbsp;</td>
+          <td class="paramname"> <em>vars</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l02336">2336</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -188,7 +214,7 @@ Inheritance diagram for operations_research::IntVarLocalSearchFilter:</div>
 
 <p>
 
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l02348">2348</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l02361">2361</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
 
 </div>
 </div><p>
@@ -212,10 +238,106 @@ Inheritance diagram for operations_research::IntVarLocalSearchFilter:</div>
 <p>
 This method should not be overridden. 
 <p>
-Override OnSynchronize() instead which is called before exiting this method. 
+Override <a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#310b8454d7c49178eb14a3d6cde55b4f">OnSynchronize()</a> instead which is called before exiting this method. 
 <p>Implements <a class="el" href="classoperations__research_1_1LocalSearchFilter.html#3917c647740cd170ffd44e9dd164daea">operations_research::LocalSearchFilter</a>.</p>
 
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l02350">2350</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l02363">2363</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="ef04544e0f3d9362ef73a027aa733553"></a><!-- doxytag: member="operations_research::IntVarLocalSearchFilter::FindIndex" ref="ef04544e0f3d9362ef73a027aa733553" args="(const IntVar *const var, int64 *index) const " -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool operations_research::IntVarLocalSearchFilter::FindIndex           </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const &nbsp;</td>
+          <td class="paramname"> <em>var</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int64 *&nbsp;</td>
+          <td class="paramname"> <em>index</em></td><td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td><td> const<code> [inline]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l01185">1185</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="9045a67d0d2cf4daa65b2a12cb8ed6e8"></a><!-- doxytag: member="operations_research::IntVarLocalSearchFilter::Size" ref="9045a67d0d2cf4daa65b2a12cb8ed6e8" args="() const " -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int operations_research::IntVarLocalSearchFilter::Size           </td>
+          <td>(</td>
+          <td class="paramname">          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td> const<code> [inline]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l01189">1189</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="521ec3db6e1d61bf5699dcb8193d4de4"></a><!-- doxytag: member="operations_research::IntVarLocalSearchFilter::Var" ref="521ec3db6e1d61bf5699dcb8193d4de4" args="(int index) const " -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a>* operations_research::IntVarLocalSearchFilter::Var           </td>
+          <td>(</td>
+          <td class="paramtype">int&nbsp;</td>
+          <td class="paramname"> <em>index</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td> const<code> [inline]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l01190">1190</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="f5bf4ae1c58402bd4443ee00f53492cc"></a><!-- doxytag: member="operations_research::IntVarLocalSearchFilter::Value" ref="f5bf4ae1c58402bd4443ee00f53492cc" args="(int index) const " -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64 operations_research::IntVarLocalSearchFilter::Value           </td>
+          <td>(</td>
+          <td class="paramtype">int&nbsp;</td>
+          <td class="paramname"> <em>index</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td> const<code> [inline]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l01191">1191</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div><p>
@@ -248,51 +370,20 @@ Override OnSynchronize() instead which is called before exiting this method.
 Add variables to "track" to the filter. 
 <p>
 
-<p>Definition at line <a class="el" href="local__search_8cc-source.html#l02330">2330</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
+<p>Definition at line <a class="el" href="local__search_8cc-source.html#l02343">2343</a> of file <a class="el" href="local__search_8cc-source.html">local_search.cc</a>.</p>
 
 </div>
 </div><p>
-<a class="anchor" name="ef04544e0f3d9362ef73a027aa733553"></a><!-- doxytag: member="operations_research::IntVarLocalSearchFilter::FindIndex" ref="ef04544e0f3d9362ef73a027aa733553" args="(const IntVar *const var, int64 *index) const " -->
+<a class="anchor" name="310b8454d7c49178eb14a3d6cde55b4f"></a><!-- doxytag: member="operations_research::IntVarLocalSearchFilter::OnSynchronize" ref="310b8454d7c49178eb14a3d6cde55b4f" args="()" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool operations_research::IntVarLocalSearchFilter::FindIndex           </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const &nbsp;</td>
-          <td class="paramname"> <em>var</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int64 *&nbsp;</td>
-          <td class="paramname"> <em>index</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td> const<code> [inline, protected]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l01188">1188</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
-
-</div>
-</div><p>
-<a class="anchor" name="9045a67d0d2cf4daa65b2a12cb8ed6e8"></a><!-- doxytag: member="operations_research::IntVarLocalSearchFilter::Size" ref="9045a67d0d2cf4daa65b2a12cb8ed6e8" args="() const " -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int operations_research::IntVarLocalSearchFilter::Size           </td>
+          <td class="memname">virtual void operations_research::IntVarLocalSearchFilter::OnSynchronize           </td>
           <td>(</td>
           <td class="paramname">          </td>
           <td>&nbsp;)&nbsp;</td>
-          <td> const<code> [inline, protected]</code></td>
+          <td><code> [inline, protected, virtual]</code></td>
         </tr>
       </table>
 </div>
@@ -300,51 +391,7 @@ Add variables to "track" to the filter.
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l01192">1192</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
-
-</div>
-</div><p>
-<a class="anchor" name="521ec3db6e1d61bf5699dcb8193d4de4"></a><!-- doxytag: member="operations_research::IntVarLocalSearchFilter::Var" ref="521ec3db6e1d61bf5699dcb8193d4de4" args="(int index) const " -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a>* operations_research::IntVarLocalSearchFilter::Var           </td>
-          <td>(</td>
-          <td class="paramtype">int&nbsp;</td>
-          <td class="paramname"> <em>index</em>          </td>
-          <td>&nbsp;)&nbsp;</td>
-          <td> const<code> [inline, protected]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l01193">1193</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
-
-</div>
-</div><p>
-<a class="anchor" name="f5bf4ae1c58402bd4443ee00f53492cc"></a><!-- doxytag: member="operations_research::IntVarLocalSearchFilter::Value" ref="f5bf4ae1c58402bd4443ee00f53492cc" args="(int index) const " -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int64 operations_research::IntVarLocalSearchFilter::Value           </td>
-          <td>(</td>
-          <td class="paramtype">int&nbsp;</td>
-          <td class="paramname"> <em>index</em>          </td>
-          <td>&nbsp;)&nbsp;</td>
-          <td> const<code> [inline, protected]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>
-
-<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l01194">1194</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solveri_8h-source.html#l01197">1197</a> of file <a class="el" href="constraint__solveri_8h-source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div><p>
@@ -358,7 +405,7 @@ Add variables to "track" to the filter.
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

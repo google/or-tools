@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -88,6 +88,7 @@
 <code>#include &lt;string&gt;</code><br>
 <code>#include &quot;base/logging.h&quot;</code><br>
 <code>#include &quot;<a class="el" href="constraint__solver_8h-source.html">constraint_solver/constraint_solver.h</a>&quot;</code><br>
+<code>#include &quot;<a class="el" href="constraint__solveri_8h-source.html">constraint_solver/constraint_solveri.h</a>&quot;</code><br>
 
 <p>
 <a href="range__cst_8cc-source.html">Go to the source code of this file.</a><table border="0" cellpadding="0" cellspacing="0">
@@ -97,12 +98,12 @@
 
 </table>
 <hr><h2>Variable Documentation</h2>
-<a class="anchor" name="d9043b5cc6b0849d578d3e91decd673a"></a><!-- doxytag: member="range_cst.cc::left_" ref="d9043b5cc6b0849d578d3e91decd673a" args="" -->
+<a class="anchor" name="97c85b30cffe5d1eb526594ab1072651"></a><!-- doxytag: member="range_cst.cc::demon_" ref="97c85b30cffe5d1eb526594ab1072651" args="" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar* const <a class="el" href="range__cst_8cc.html#d9043b5cc6b0849d578d3e91decd673a">left_</a>          </td>
+          <td class="memname">Demon* <a class="el" href="table_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>          </td>
         </tr>
       </table>
 </div>
@@ -110,16 +111,16 @@
 
 <p>
 
-<p>Definition at line <a class="el" href="range__cst_8cc-source.html#l00047">47</a> of file <a class="el" href="range__cst_8cc-source.html">range_cst.cc</a>.</p>
+<p>Definition at line <a class="el" href="range__cst_8cc-source.html#l00092">92</a> of file <a class="el" href="range__cst_8cc-source.html">range_cst.cc</a>.</p>
 
 </div>
 </div><p>
-<a class="anchor" name="370d83af3af066e06b53b2b2fd005b59"></a><!-- doxytag: member="range_cst.cc::right_" ref="370d83af3af066e06b53b2b2fd005b59" args="" -->
+<a class="anchor" name="38054bd0783351213347a0fe73f6dc71"></a><!-- doxytag: member="range_cst.cc::domain_demon_" ref="38054bd0783351213347a0fe73f6dc71" args="" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">IntVar* const <a class="el" href="range__cst_8cc.html#370d83af3af066e06b53b2b2fd005b59">right_</a>          </td>
+          <td class="memname">Demon* <a class="el" href="range__cst_8cc.html#38054bd0783351213347a0fe73f6dc71">domain_demon_</a>          </td>
         </tr>
       </table>
 </div>
@@ -127,7 +128,109 @@
 
 <p>
 
-<p>Definition at line <a class="el" href="range__cst_8cc-source.html#l00048">48</a> of file <a class="el" href="range__cst_8cc-source.html">range_cst.cc</a>.</p>
+<p>Definition at line <a class="el" href="range__cst_8cc-source.html#l00481">481</a> of file <a class="el" href="range__cst_8cc-source.html">range_cst.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="7076deac82dc0a4df6618e6037964b0d"></a><!-- doxytag: member="range_cst.cc::left_" ref="7076deac82dc0a4df6618e6037964b0d" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">IntExpr* const <a class="el" href="range__cst_8cc.html#7076deac82dc0a4df6618e6037964b0d">left_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="range__cst_8cc-source.html#l00064">64</a> of file <a class="el" href="range__cst_8cc-source.html">range_cst.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="c0e14c52582b60bb3b017ff322f6dfa0"></a><!-- doxytag: member="range_cst.cc::left_iterator_" ref="c0e14c52582b60bb3b017ff322f6dfa0" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">IntVarIterator* const <a class="el" href="range__cst_8cc.html#c0e14c52582b60bb3b017ff322f6dfa0">left_iterator_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="range__cst_8cc-source.html#l00479">479</a> of file <a class="el" href="range__cst_8cc-source.html">range_cst.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="7944dc654ea14f0befc1fff02766236c"></a><!-- doxytag: member="range_cst.cc::range_demon_" ref="7944dc654ea14f0befc1fff02766236c" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Demon* <a class="el" href="range__cst_8cc.html#7944dc654ea14f0befc1fff02766236c">range_demon_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="range__cst_8cc-source.html#l00482">482</a> of file <a class="el" href="range__cst_8cc-source.html">range_cst.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="96d436902170f4501df48c1a0e3c47f0"></a><!-- doxytag: member="range_cst.cc::right_" ref="96d436902170f4501df48c1a0e3c47f0" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">IntExpr* const <a class="el" href="range__cst_8cc.html#96d436902170f4501df48c1a0e3c47f0">right_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="range__cst_8cc-source.html#l00065">65</a> of file <a class="el" href="range__cst_8cc-source.html">range_cst.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="df7793d30301c959915073ac331fb196"></a><!-- doxytag: member="range_cst.cc::right_iterator_" ref="df7793d30301c959915073ac331fb196" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">IntVarIterator* const <a class="el" href="range__cst_8cc.html#df7793d30301c959915073ac331fb196">right_iterator_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="range__cst_8cc-source.html#l00480">480</a> of file <a class="el" href="range__cst_8cc-source.html">range_cst.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="bf8918dfcfd7c69651944d3fc525aaec"></a><!-- doxytag: member="range_cst.cc::support_" ref="bf8918dfcfd7c69651944d3fc525aaec" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Rev&lt;int64&gt; <a class="el" href="range__cst_8cc.html#bf8918dfcfd7c69651944d3fc525aaec">support_</a>          </td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Definition at line <a class="el" href="range__cst_8cc-source.html#l00483">483</a> of file <a class="el" href="range__cst_8cc-source.html">range_cst.cc</a>.</p>
 
 </div>
 </div><p>
@@ -139,7 +242,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

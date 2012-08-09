@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -113,6 +113,7 @@
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1SearchMonitor.html#2527278a6808ed107f11563ea53ca175">EndInitialPropagation</a>()</td><td><a class="el" href="classoperations__research_1_1SearchMonitor.html">operations_research::SearchMonitor</a></td><td><code> [virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1PropagationMonitor.html#330ac3e096341f1f8ee3ff74012c26a2">EndNestedConstraintInitialPropagation</a>(const Constraint *const parent, const Constraint *const nested)=0</td><td><a class="el" href="classoperations__research_1_1PropagationMonitor.html">operations_research::PropagationMonitor</a></td><td><code> [pure virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1SearchMonitor.html#5e4c3bd36278ce32d488227ec365ce6e">EndNextDecision</a>(DecisionBuilder *const b, Decision *const d)</td><td><a class="el" href="classoperations__research_1_1SearchMonitor.html">operations_research::SearchMonitor</a></td><td><code> [virtual]</code></td></tr>
+  <tr class="memlist"><td><a class="el" href="classoperations__research_1_1PropagationMonitor.html#3a391671fbbaabea657a0e179aa32d92">EndProcessingIntegerVariable</a>(const IntVar *const var)=0</td><td><a class="el" href="classoperations__research_1_1PropagationMonitor.html">operations_research::PropagationMonitor</a></td><td><code> [pure virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1SearchMonitor.html#eb9c7b1f2ebe7f24cf33cdf958bbdd14">EnterSearch</a>()</td><td><a class="el" href="classoperations__research_1_1SearchMonitor.html">operations_research::SearchMonitor</a></td><td><code> [virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1SearchMonitor.html#9a0fa1566b29e82604731222ba27810e">ExitSearch</a>()</td><td><a class="el" href="classoperations__research_1_1SearchMonitor.html">operations_research::SearchMonitor</a></td><td><code> [virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1SearchMonitor.html#46bba755961234b929a8dd2f440f1cfd">FinishCurrentSearch</a>()</td><td><a class="el" href="classoperations__research_1_1SearchMonitor.html">operations_research::SearchMonitor</a></td><td></td></tr>
@@ -157,6 +158,7 @@
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1PropagationMonitor.html#ea14a7436f45e5ed69bc1d2d3c67fe1b">SetValue</a>(IntVar *const var, int64 value)=0</td><td><a class="el" href="classoperations__research_1_1PropagationMonitor.html">operations_research::PropagationMonitor</a></td><td><code> [pure virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1PropagationMonitor.html#6c17c2a5a31b1c07640afb1d34893342">SetValues</a>(IntVar *const var, const int64 *const values, int size)=0</td><td><a class="el" href="classoperations__research_1_1PropagationMonitor.html">operations_research::PropagationMonitor</a></td><td><code> [pure virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1SearchMonitor.html#b7032463a55bd7d196d1fefde47f0238">solver</a>() const </td><td><a class="el" href="classoperations__research_1_1SearchMonitor.html">operations_research::SearchMonitor</a></td><td><code> [inline]</code></td></tr>
+  <tr class="memlist"><td><a class="el" href="classoperations__research_1_1PropagationMonitor.html#90a6fdc8f17d5ad04cfb84d02f5b53ef">StartProcessingIntegerVariable</a>(const IntVar *const var)=0</td><td><a class="el" href="classoperations__research_1_1PropagationMonitor.html">operations_research::PropagationMonitor</a></td><td><code> [pure virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1BaseObject.html#9bd95fcee9e5856c6097b5dfae0b7076">~BaseObject</a>()</td><td><a class="el" href="classoperations__research_1_1BaseObject.html">operations_research::BaseObject</a></td><td><code> [inline, virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1PropagationMonitor.html#d39d7927e758cb9ca671f25ce3868b2a">~PropagationMonitor</a>()</td><td><a class="el" href="classoperations__research_1_1PropagationMonitor.html">operations_research::PropagationMonitor</a></td><td><code> [virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1SearchMonitor.html#2cfa0f4229990b58c9eaae2438e1fe48">~SearchMonitor</a>()</td><td><a class="el" href="classoperations__research_1_1SearchMonitor.html">operations_research::SearchMonitor</a></td><td><code> [inline, virtual]</code></td></tr>
@@ -168,7 +170,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

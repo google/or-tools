@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -207,15 +207,15 @@
 <a name="l00123"></a>00123            <span class="keywordtype">int</span> vsize,
 <a name="l00124"></a>00124            int64 number_of_bins)
 <a name="l00125"></a>00125     : <a class="code" href="classoperations__research_1_1Constraint.html" title="A constraint is the main modeling object.">Constraint</a>(s),
-<a name="l00126"></a>00126       <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>(new <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>*[vsize]),
+<a name="l00126"></a>00126       <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>(new <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>*[vsize]),
 <a name="l00127"></a>00127       vsize_(vsize),
 <a name="l00128"></a>00128       bins_(number_of_bins),
 <a name="l00129"></a>00129       unprocessed_(new <a class="code" href="classoperations__research_1_1RevBitMatrix.html" title="Matrix version of the RevBitSet class.">RevBitMatrix</a>(bins_ + 1, vsize_)),
 <a name="l00130"></a>00130       forced_(bins_ + 1),
 <a name="l00131"></a>00131       <a class="code" href="expressions_8cc.html#6d1128c41c120dc2e8db8a49e610881c">removed_</a>(bins_ + 1),
 <a name="l00132"></a>00132       <a class="code" href="constraints_8cc.html#7ae143e486b92a413da4904068b6162e">holes_</a>(new <a class="code" href="classoperations__research_1_1IntVarIterator.html" title="The class Iterator has two direct subclasses.">IntVarIterator</a>*[vsize_]),
-<a name="l00133"></a>00133       <a class="code" href="alldiff__cst_8cc.html#1ab3854946bf086fbb0971cc82516104">stamp_</a>(GG_ULONGLONG(0)),
-<a name="l00134"></a>00134       <a class="code" href="expr__cst_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>(NULL),
+<a name="l00133"></a>00133       <a class="code" href="expressions_8cc.html#978ce78f3214dcdb733a12a350c1611a">stamp_</a>(GG_ULONGLONG(0)),
+<a name="l00134"></a>00134       <a class="code" href="constraints_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>(NULL),
 <a name="l00135"></a>00135       <a class="code" href="dependency__graph_8cc.html#3c556bc2d9f39f48c121b6222892ef2f">in_process_</a>(false) {
 <a name="l00136"></a>00136   memcpy(vars_.get(), vars, vsize_ * <span class="keyword">sizeof</span>(*vars));
 <a name="l00137"></a>00137   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; vsize_; ++i) {
@@ -547,7 +547,7 @@
 <a name="l00463"></a>00463 }
 <a name="l00464"></a>00464 
 <a name="l00465"></a><a class="code" href="classoperations__research_1_1Pack.html#f5320bb80fa131e7120f8bc0766951d3">00465</a> <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <a class="code" href="classoperations__research_1_1Pack.html#f5320bb80fa131e7120f8bc0766951d3">Pack::AssignVar</a>(int64 var_index, int64 bin_index)<span class="keyword"> const </span>{
-<a name="l00466"></a>00466   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#840c0de8978cabdfac9a0e3a9841d438" title="status var of (v == c)">MakeIsEqualCstVar</a>(vars_[var_index], bin_index);
+<a name="l00466"></a>00466   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#7b143244d03d0a405e3bc3eda6d0dc86" title="status var of (v == c)">MakeIsEqualCstVar</a>(vars_[var_index], bin_index);
 <a name="l00467"></a>00467 }
 <a name="l00468"></a>00468 
 <a name="l00469"></a><a class="code" href="classoperations__research_1_1Pack.html#64124f0bed45db5f7aa8bbddb18362c1">00469</a> <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1Pack.html#64124f0bed45db5f7aa8bbddb18362c1">Pack::SetAssigned</a>(int64 var_index) {
@@ -629,7 +629,7 @@
 <a name="l00545"></a>00545   <span class="keywordtype">bool</span> operator&lt;(<span class="keyword">const</span> WeightContainer&amp; c)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> (<a class="code" href="pack_8cc.html#e42ca38a167164c07831993889216903">weight</a> &lt; c.weight); }
 <a name="l00546"></a>00546 };
 <a name="l00547"></a>00547 
-<a name="l00548"></a><a class="code" href="namespaceoperations__research.html#9e2985f5c6d9a7bebb6bdbb9f9f5cb92">00548</a> <span class="keywordtype">int</span> <a class="code" href="namespaceoperations__research.html#9e2985f5c6d9a7bebb6bdbb9f9f5cb92">SortIndexByWeight</a>(int64* <span class="keyword">const</span> indices,
+<a name="l00548"></a><a class="code" href="namespaceoperations__research.html#dc4b8db258083ac0cecf1637916fae32">00548</a> <span class="keywordtype">int</span> <a class="code" href="namespaceoperations__research.html#dc4b8db258083ac0cecf1637916fae32">SortIndexByWeight</a>(int64* <span class="keyword">const</span> indices,
 <a name="l00549"></a>00549                       <span class="keyword">const</span> int64* <span class="keyword">const</span> weights,
 <a name="l00550"></a>00550                       <span class="keywordtype">int</span> size) {
 <a name="l00551"></a>00551   std::vector&lt;WeightContainer&gt; to_sort;
@@ -674,7 +674,7 @@
 <a name="l00590"></a>00590     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; <a class="code" href="pack_8cc.html#a515faf14123ffc767641ddc7904630f">vars_count_</a>; ++i) {
 <a name="l00591"></a>00591       <a class="code" href="pack_8cc.html#a5162ab5ab6854d756464659d5dd5769">ranked_</a>[i] = i;
 <a name="l00592"></a>00592     }
-<a name="l00593"></a>00593     <a class="code" href="pack_8cc.html#bb9ebc28c331e29e96dec06d744d9240">ranked_size_</a> = <a class="code" href="namespaceoperations__research.html#9e2985f5c6d9a7bebb6bdbb9f9f5cb92">SortIndexByWeight</a>(<a class="code" href="pack_8cc.html#a5162ab5ab6854d756464659d5dd5769">ranked_</a>, <a class="code" href="pack_8cc.html#d56a8d34c59f1fa25b7b64dd9dedd77a">weights_</a>, vars_count_);
+<a name="l00593"></a>00593     <a class="code" href="pack_8cc.html#bb9ebc28c331e29e96dec06d744d9240">ranked_size_</a> = <a class="code" href="namespaceoperations__research.html#dc4b8db258083ac0cecf1637916fae32">SortIndexByWeight</a>(<a class="code" href="pack_8cc.html#a5162ab5ab6854d756464659d5dd5769">ranked_</a>, <a class="code" href="pack_8cc.html#d56a8d34c59f1fa25b7b64dd9dedd77a">weights_</a>, vars_count_);
 <a name="l00594"></a>00594   }
 <a name="l00595"></a>00595 
 <a name="l00596"></a>00596   <span class="keyword">virtual</span> ~DimensionLessThanConstant() {
@@ -768,16 +768,16 @@
 <a name="l00684"></a>00684   <span class="keyword">class </span>VarDemon : <span class="keyword">public</span> Demon {
 <a name="l00685"></a>00685    <span class="keyword">public</span>:
 <a name="l00686"></a>00686     VarDemon(DimensionWeightedSumEqVar* <span class="keyword">const</span> dim, <span class="keywordtype">int</span> index)
-<a name="l00687"></a>00687         : <a class="code" href="pack_8cc.html#ba790ec8ff63aa1e3e8dfdc4183c8c89">dim_</a>(dim), <a class="code" href="default__search_8cc.html#aaf1ac02dfa554a3cdffc647d512a77b">index_</a>(index) {}
+<a name="l00687"></a>00687         : <a class="code" href="pack_8cc.html#ba790ec8ff63aa1e3e8dfdc4183c8c89">dim_</a>(dim), <a class="code" href="element_8cc.html#911e107134999ceee57c30467b21be02">index_</a>(index) {}
 <a name="l00688"></a>00688     <span class="keyword">virtual</span> ~VarDemon() {}
 <a name="l00689"></a>00689 
 <a name="l00690"></a>00690     <span class="keyword">virtual</span> <span class="keywordtype">void</span> Run(Solver* <span class="keyword">const</span> s) {
-<a name="l00691"></a>00691       <a class="code" href="pack_8cc.html#ba790ec8ff63aa1e3e8dfdc4183c8c89">dim_</a>-&gt;PushFromTop(<a class="code" href="default__search_8cc.html#aaf1ac02dfa554a3cdffc647d512a77b">index_</a>);
+<a name="l00691"></a>00691       <a class="code" href="pack_8cc.html#ba790ec8ff63aa1e3e8dfdc4183c8c89">dim_</a>-&gt;PushFromTop(<a class="code" href="element_8cc.html#911e107134999ceee57c30467b21be02">index_</a>);
 <a name="l00692"></a>00692     }
 <a name="l00693"></a>00693 
 <a name="l00694"></a>00694    <span class="keyword">private</span>:
 <a name="l00695"></a><a class="code" href="pack_8cc.html#ba790ec8ff63aa1e3e8dfdc4183c8c89">00695</a>     DimensionWeightedSumEqVar* <span class="keyword">const</span> <a class="code" href="pack_8cc.html#ba790ec8ff63aa1e3e8dfdc4183c8c89">dim_</a>;
-<a name="l00696"></a><a class="code" href="pack_8cc.html#b7f32d492928f4b662c1f6b22d35dae8">00696</a>     <span class="keyword">const</span> <span class="keywordtype">int</span> <a class="code" href="default__search_8cc.html#aaf1ac02dfa554a3cdffc647d512a77b">index_</a>;
+<a name="l00696"></a><a class="code" href="pack_8cc.html#b7f32d492928f4b662c1f6b22d35dae8">00696</a>     <span class="keyword">const</span> <span class="keywordtype">int</span> <a class="code" href="element_8cc.html#911e107134999ceee57c30467b21be02">index_</a>;
 <a name="l00697"></a>00697   };
 <a name="l00698"></a>00698 
 <a name="l00699"></a>00699   DimensionWeightedSumEqVar(Solver* <span class="keyword">const</span> s,
@@ -805,7 +805,7 @@
 <a name="l00721"></a>00721     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; <a class="code" href="pack_8cc.html#a515faf14123ffc767641ddc7904630f">vars_count_</a>; ++i) {
 <a name="l00722"></a>00722       <a class="code" href="pack_8cc.html#a5162ab5ab6854d756464659d5dd5769">ranked_</a>[i] = i;
 <a name="l00723"></a>00723     }
-<a name="l00724"></a>00724     <a class="code" href="pack_8cc.html#bb9ebc28c331e29e96dec06d744d9240">ranked_size_</a> = <a class="code" href="namespaceoperations__research.html#9e2985f5c6d9a7bebb6bdbb9f9f5cb92">SortIndexByWeight</a>(<a class="code" href="pack_8cc.html#a5162ab5ab6854d756464659d5dd5769">ranked_</a>, <a class="code" href="pack_8cc.html#d56a8d34c59f1fa25b7b64dd9dedd77a">weights_</a>, vars_count_);
+<a name="l00724"></a>00724     <a class="code" href="pack_8cc.html#bb9ebc28c331e29e96dec06d744d9240">ranked_size_</a> = <a class="code" href="namespaceoperations__research.html#dc4b8db258083ac0cecf1637916fae32">SortIndexByWeight</a>(<a class="code" href="pack_8cc.html#a5162ab5ab6854d756464659d5dd5769">ranked_</a>, <a class="code" href="pack_8cc.html#d56a8d34c59f1fa25b7b64dd9dedd77a">weights_</a>, vars_count_);
 <a name="l00725"></a>00725   }
 <a name="l00726"></a>00726 
 <a name="l00727"></a>00727   <span class="keyword">virtual</span> ~DimensionWeightedSumEqVar() {
@@ -956,7 +956,7 @@
 <a name="l00872"></a>00872     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; <a class="code" href="pack_8cc.html#a515faf14123ffc767641ddc7904630f">vars_count_</a>; ++i) {
 <a name="l00873"></a>00873       <a class="code" href="pack_8cc.html#a5162ab5ab6854d756464659d5dd5769">ranked_</a>[i] = i;
 <a name="l00874"></a>00874     }
-<a name="l00875"></a>00875     <a class="code" href="pack_8cc.html#bb9ebc28c331e29e96dec06d744d9240">ranked_size_</a> = <a class="code" href="namespaceoperations__research.html#9e2985f5c6d9a7bebb6bdbb9f9f5cb92">SortIndexByWeight</a>(<a class="code" href="pack_8cc.html#a5162ab5ab6854d756464659d5dd5769">ranked_</a>, <a class="code" href="pack_8cc.html#d56a8d34c59f1fa25b7b64dd9dedd77a">weights_</a>, vars_count_);
+<a name="l00875"></a>00875     <a class="code" href="pack_8cc.html#bb9ebc28c331e29e96dec06d744d9240">ranked_size_</a> = <a class="code" href="namespaceoperations__research.html#dc4b8db258083ac0cecf1637916fae32">SortIndexByWeight</a>(<a class="code" href="pack_8cc.html#a5162ab5ab6854d756464659d5dd5769">ranked_</a>, <a class="code" href="pack_8cc.html#d56a8d34c59f1fa25b7b64dd9dedd77a">weights_</a>, vars_count_);
 <a name="l00876"></a>00876     <a class="code" href="expr__array_8cc.html#cd841fa2cfe450e9e031ff4353766607">first_unbound_backward_</a>.SetValue(s, <a class="code" href="pack_8cc.html#bb9ebc28c331e29e96dec06d744d9240">ranked_size_</a> - 1);
 <a name="l00877"></a>00877   }
 <a name="l00878"></a>00878 
@@ -1180,8 +1180,8 @@
 <a name="l01096"></a>01096         <a class="code" href="pack_8cc.html#2c9919f8d2fdb78cfbf301253124a5d3">count_var_</a>(count_var),
 <a name="l01097"></a>01097         <a class="code" href="pack_8cc.html#1a6362c89d05492979cbccd0df7929bc">used_</a>(bins_count_),
 <a name="l01098"></a>01098         <a class="code" href="pack_8cc.html#daaa29f9402d8f6f5f1ec28b604fa6c9">candidates_</a>(bins_count_, 0),
-<a name="l01099"></a>01099         <a class="code" href="count__cst_8cc.html#0b4dc8b1e8457b868588e7f854a12f51">card_min_</a>(0),
-<a name="l01100"></a>01100         <a class="code" href="count__cst_8cc.html#3f503273bea3d409e219702dcd00eb33">card_max_</a>(bins_count_),
+<a name="l01099"></a>01099         <a class="code" href="count__cst_8cc.html#0464b429ed3a31b0d471a4973d49e719">card_min_</a>(0),
+<a name="l01100"></a>01100         <a class="code" href="count__cst_8cc.html#0d7b89df2c18a49e3b5eb40550daa78e">card_max_</a>(bins_count_),
 <a name="l01101"></a>01101         <a class="code" href="pack_8cc.html#450d90a520ffce36fd9f4973f1c47c9d">initial_min_</a>(0),
 <a name="l01102"></a>01102         <a class="code" href="pack_8cc.html#56afd28154f35201093a8b31ebc6b1a6">initial_max_</a>(0) {
 <a name="l01103"></a>01103     DCHECK(count_var);
@@ -1200,14 +1200,14 @@
 <a name="l01116"></a>01116   }
 <a name="l01117"></a>01117 
 <a name="l01118"></a>01118   <span class="keywordtype">void</span> PropagateAll() {
-<a name="l01119"></a>01119     <a class="code" href="pack_8cc.html#2c9919f8d2fdb78cfbf301253124a5d3">count_var_</a>-&gt;SetRange(<a class="code" href="count__cst_8cc.html#0b4dc8b1e8457b868588e7f854a12f51">card_min_</a>.Value(), <a class="code" href="count__cst_8cc.html#3f503273bea3d409e219702dcd00eb33">card_max_</a>.Value());
-<a name="l01120"></a>01120     <span class="keywordflow">if</span> (<a class="code" href="count__cst_8cc.html#0b4dc8b1e8457b868588e7f854a12f51">card_min_</a>.Value() == <a class="code" href="pack_8cc.html#2c9919f8d2fdb78cfbf301253124a5d3">count_var_</a>-&gt;Max()) {
+<a name="l01119"></a>01119     <a class="code" href="pack_8cc.html#2c9919f8d2fdb78cfbf301253124a5d3">count_var_</a>-&gt;SetRange(<a class="code" href="count__cst_8cc.html#0464b429ed3a31b0d471a4973d49e719">card_min_</a>.Value(), <a class="code" href="count__cst_8cc.html#0d7b89df2c18a49e3b5eb40550daa78e">card_max_</a>.Value());
+<a name="l01120"></a>01120     <span class="keywordflow">if</span> (<a class="code" href="count__cst_8cc.html#0464b429ed3a31b0d471a4973d49e719">card_min_</a>.Value() == <a class="code" href="pack_8cc.html#2c9919f8d2fdb78cfbf301253124a5d3">count_var_</a>-&gt;Max()) {
 <a name="l01121"></a>01121       <span class="keywordflow">for</span> (<span class="keywordtype">int</span> bin_index = 0; bin_index &lt; bins_count_; ++bin_index) {
 <a name="l01122"></a>01122         <span class="keywordflow">if</span> (!<a class="code" href="pack_8cc.html#1a6362c89d05492979cbccd0df7929bc">used_</a>.IsSet(bin_index) &amp;&amp; <a class="code" href="pack_8cc.html#daaa29f9402d8f6f5f1ec28b604fa6c9">candidates_</a>[bin_index] &gt; 0) {
 <a name="l01123"></a>01123           <a class="code" href="classoperations__research_1_1Pack.html#883b9b2fd3d943d16e49fbdca5dbf5a5">RemoveAllPossibleFromBin</a>(bin_index);
 <a name="l01124"></a>01124         }
 <a name="l01125"></a>01125       }
-<a name="l01126"></a>01126     } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (<a class="code" href="count__cst_8cc.html#3f503273bea3d409e219702dcd00eb33">card_max_</a>.Value() == <a class="code" href="pack_8cc.html#2c9919f8d2fdb78cfbf301253124a5d3">count_var_</a>-&gt;Min()) {
+<a name="l01126"></a>01126     } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (<a class="code" href="count__cst_8cc.html#0d7b89df2c18a49e3b5eb40550daa78e">card_max_</a>.Value() == <a class="code" href="pack_8cc.html#2c9919f8d2fdb78cfbf301253124a5d3">count_var_</a>-&gt;Min()) {
 <a name="l01127"></a>01127       <span class="keywordflow">for</span> (<span class="keywordtype">int</span> bin_index = 0; bin_index &lt; bins_count_; ++bin_index) {
 <a name="l01128"></a>01128         <span class="keywordflow">if</span> (<a class="code" href="pack_8cc.html#daaa29f9402d8f6f5f1ec28b604fa6c9">candidates_</a>[bin_index] == 1) {
 <a name="l01129"></a>01129           <a class="code" href="classoperations__research_1_1Pack.html#32e5b9982bcd7e1e5d444cc81a8fb1f2">AssignFirstPossibleToBin</a>(bin_index);
@@ -1230,8 +1230,8 @@
 <a name="l01146"></a>01146   }
 <a name="l01147"></a>01147 
 <a name="l01148"></a>01148   <span class="keyword">virtual</span> <span class="keywordtype">void</span> EndInitialPropagate() {
-<a name="l01149"></a>01149     <a class="code" href="count__cst_8cc.html#0b4dc8b1e8457b868588e7f854a12f51">card_min_</a>.SetValue(<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>(), <a class="code" href="pack_8cc.html#450d90a520ffce36fd9f4973f1c47c9d">initial_min_</a>);
-<a name="l01150"></a>01150     <a class="code" href="count__cst_8cc.html#3f503273bea3d409e219702dcd00eb33">card_max_</a>.SetValue(<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>(), <a class="code" href="pack_8cc.html#56afd28154f35201093a8b31ebc6b1a6">initial_max_</a>);
+<a name="l01149"></a>01149     <a class="code" href="count__cst_8cc.html#0464b429ed3a31b0d471a4973d49e719">card_min_</a>.SetValue(<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>(), <a class="code" href="pack_8cc.html#450d90a520ffce36fd9f4973f1c47c9d">initial_min_</a>);
+<a name="l01150"></a>01150     <a class="code" href="count__cst_8cc.html#0d7b89df2c18a49e3b5eb40550daa78e">card_max_</a>.SetValue(<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>(), <a class="code" href="pack_8cc.html#56afd28154f35201093a8b31ebc6b1a6">initial_max_</a>);
 <a name="l01151"></a>01151     PropagateAll();
 <a name="l01152"></a>01152   }
 <a name="l01153"></a>01153 
@@ -1244,13 +1244,13 @@
 <a name="l01160"></a>01160     <span class="keywordflow">if</span> (!<a class="code" href="pack_8cc.html#1a6362c89d05492979cbccd0df7929bc">used_</a>.IsSet(bin_index)) {
 <a name="l01161"></a>01161       <span class="keywordflow">if</span> (forced.size() &gt; 0) {
 <a name="l01162"></a>01162         <a class="code" href="pack_8cc.html#1a6362c89d05492979cbccd0df7929bc">used_</a>.SetToOne(<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>(), bin_index);
-<a name="l01163"></a>01163         <a class="code" href="count__cst_8cc.html#0b4dc8b1e8457b868588e7f854a12f51">card_min_</a>.SetValue(<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>(), <a class="code" href="count__cst_8cc.html#0b4dc8b1e8457b868588e7f854a12f51">card_min_</a>.Value() + 1);
+<a name="l01163"></a>01163         <a class="code" href="count__cst_8cc.html#0464b429ed3a31b0d471a4973d49e719">card_min_</a>.SetValue(<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>(), <a class="code" href="count__cst_8cc.html#0464b429ed3a31b0d471a4973d49e719">card_min_</a>.Value() + 1);
 <a name="l01164"></a>01164       } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (removed.size() &gt; 0) {
 <a name="l01165"></a>01165         <a class="code" href="pack_8cc.html#daaa29f9402d8f6f5f1ec28b604fa6c9">candidates_</a>.SetValue(<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>(),
 <a name="l01166"></a>01166                              bin_index,
 <a name="l01167"></a>01167                              <a class="code" href="pack_8cc.html#daaa29f9402d8f6f5f1ec28b604fa6c9">candidates_</a>.Value(bin_index) - removed.size());
 <a name="l01168"></a>01168         <span class="keywordflow">if</span> (<a class="code" href="pack_8cc.html#daaa29f9402d8f6f5f1ec28b604fa6c9">candidates_</a>[bin_index] == 0) {
-<a name="l01169"></a>01169           <a class="code" href="count__cst_8cc.html#3f503273bea3d409e219702dcd00eb33">card_max_</a>.SetValue(<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>(), <a class="code" href="count__cst_8cc.html#3f503273bea3d409e219702dcd00eb33">card_max_</a>.Value() - 1);
+<a name="l01169"></a>01169           <a class="code" href="count__cst_8cc.html#0d7b89df2c18a49e3b5eb40550daa78e">card_max_</a>.SetValue(<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>(), <a class="code" href="count__cst_8cc.html#0d7b89df2c18a49e3b5eb40550daa78e">card_max_</a>.Value() - 1);
 <a name="l01170"></a>01170         }
 <a name="l01171"></a>01171       }
 <a name="l01172"></a>01172     }
@@ -1277,8 +1277,8 @@
 <a name="l01193"></a><a class="code" href="pack_8cc.html#2c9919f8d2fdb78cfbf301253124a5d3">01193</a>   IntVar* <span class="keyword">const</span> <a class="code" href="pack_8cc.html#2c9919f8d2fdb78cfbf301253124a5d3">count_var_</a>;
 <a name="l01194"></a><a class="code" href="pack_8cc.html#1a6362c89d05492979cbccd0df7929bc">01194</a>   RevBitSet <a class="code" href="pack_8cc.html#1a6362c89d05492979cbccd0df7929bc">used_</a>;
 <a name="l01195"></a><a class="code" href="pack_8cc.html#daaa29f9402d8f6f5f1ec28b604fa6c9">01195</a>   RevArray&lt;int&gt; <a class="code" href="pack_8cc.html#daaa29f9402d8f6f5f1ec28b604fa6c9">candidates_</a>;
-<a name="l01196"></a><a class="code" href="pack_8cc.html#e1ce21da4480bb7c321e791df06cdd4f">01196</a>   Rev&lt;int&gt; <a class="code" href="count__cst_8cc.html#0b4dc8b1e8457b868588e7f854a12f51">card_min_</a>;
-<a name="l01197"></a><a class="code" href="pack_8cc.html#4d6b6e0f9fe079e2512e2f8e75b1f12f">01197</a>   Rev&lt;int&gt; <a class="code" href="count__cst_8cc.html#3f503273bea3d409e219702dcd00eb33">card_max_</a>;
+<a name="l01196"></a><a class="code" href="pack_8cc.html#e1ce21da4480bb7c321e791df06cdd4f">01196</a>   Rev&lt;int&gt; <a class="code" href="count__cst_8cc.html#0464b429ed3a31b0d471a4973d49e719">card_min_</a>;
+<a name="l01197"></a><a class="code" href="pack_8cc.html#4d6b6e0f9fe079e2512e2f8e75b1f12f">01197</a>   Rev&lt;int&gt; <a class="code" href="count__cst_8cc.html#0d7b89df2c18a49e3b5eb40550daa78e">card_max_</a>;
 <a name="l01198"></a><a class="code" href="pack_8cc.html#450d90a520ffce36fd9f4973f1c47c9d">01198</a>   <span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#450d90a520ffce36fd9f4973f1c47c9d">initial_min_</a>;
 <a name="l01199"></a><a class="code" href="pack_8cc.html#56afd28154f35201093a8b31ebc6b1a6">01199</a>   <span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#56afd28154f35201093a8b31ebc6b1a6">initial_max_</a>;
 <a name="l01200"></a>01200 };
@@ -1382,7 +1382,7 @@
 <a name="l01298"></a>01298   dims_.push_back(dim);
 <a name="l01299"></a>01299 }
 <a name="l01300"></a>01300 
-<a name="l01301"></a><a class="code" href="classoperations__research_1_1Pack.html#cbb9380640b30f024e9986f96d5fe582">01301</a> <span class="keywordtype">void</span> <a class="code" href="namespaceoperations__research.html#04c31d05426142fb5413b0338645ac8f">Pack::AddWeightedSumOfAssignedDimension</a>(<span class="keyword">const</span> std::vector&lt;int64&gt;&amp; weights,
+<a name="l01301"></a><a class="code" href="classoperations__research_1_1Pack.html#cbb9380640b30f024e9986f96d5fe582">01301</a> <span class="keywordtype">void</span> <a class="code" href="namespaceoperations__research.html#f9d4ee274a198697197ef028f58553fb">Pack::AddWeightedSumOfAssignedDimension</a>(<span class="keyword">const</span> std::vector&lt;int64&gt;&amp; weights,
 <a name="l01302"></a>01302                                              <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <span class="keyword">const</span> cost_var) {
 <a name="l01303"></a>01303   CHECK_EQ(weights.size(), vsize_);
 <a name="l01304"></a>01304   <a class="code" href="classoperations__research_1_1Solver.html" title="Solver Class.">Solver</a>* <span class="keyword">const</span> s = <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>();
@@ -1411,14 +1411,14 @@
 <a name="l01327"></a>01327 }
 <a name="l01328"></a>01328 
 <a name="l01329"></a>01329 
-<a name="l01330"></a><a class="code" href="classoperations__research_1_1Pack.html#3030c379670033531aab20df788376ed">01330</a> <span class="keywordtype">void</span> <a class="code" href="namespaceoperations__research.html#36a512b3863e6c3c9eb366c0a1583c7d">Pack::AddCountUsedBinDimension</a>(<a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <span class="keyword">const</span> count_var) {
+<a name="l01330"></a><a class="code" href="classoperations__research_1_1Pack.html#3030c379670033531aab20df788376ed">01330</a> <span class="keywordtype">void</span> <a class="code" href="namespaceoperations__research.html#4cf00347649ea5568cfc8bf9ab63e04b">Pack::AddCountUsedBinDimension</a>(<a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <span class="keyword">const</span> count_var) {
 <a name="l01331"></a>01331   <a class="code" href="classoperations__research_1_1Solver.html" title="Solver Class.">Solver</a>* <span class="keyword">const</span> s = <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>();
 <a name="l01332"></a>01332   <a class="code" href="classoperations__research_1_1Dimension.html" title="Dimension.">Dimension</a>* <span class="keyword">const</span> dim =
 <a name="l01333"></a>01333       s-&gt;<a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> CountUsedBinDimension(s, <span class="keyword">this</span>, vsize_, bins_, count_var));
 <a name="l01334"></a>01334   dims_.push_back(dim);
 <a name="l01335"></a>01335 }
 <a name="l01336"></a>01336 
-<a name="l01337"></a><a class="code" href="classoperations__research_1_1Pack.html#a8c9281df8ab547dbed84de1364267d4">01337</a> <span class="keywordtype">void</span> <a class="code" href="namespaceoperations__research.html#08575fe68ab41d3712e5b6564ac29383">Pack::AddCountAssignedItemsDimension</a>(<a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <span class="keyword">const</span> count_var) {
+<a name="l01337"></a><a class="code" href="classoperations__research_1_1Pack.html#a8c9281df8ab547dbed84de1364267d4">01337</a> <span class="keywordtype">void</span> <a class="code" href="namespaceoperations__research.html#66a6effbd79edac6ff32db41e8cf28b5">Pack::AddCountAssignedItemsDimension</a>(<a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <span class="keyword">const</span> count_var) {
 <a name="l01338"></a>01338   <a class="code" href="classoperations__research_1_1Solver.html" title="Solver Class.">Solver</a>* <span class="keyword">const</span> s = <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>();
 <a name="l01339"></a>01339   <a class="code" href="classoperations__research_1_1Dimension.html" title="Dimension.">Dimension</a>* <span class="keyword">const</span> dim =
 <a name="l01340"></a>01340       s-&gt;<a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> CountAssignedItemsDimension(s, <span class="keyword">this</span>, vsize_,
@@ -1438,7 +1438,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

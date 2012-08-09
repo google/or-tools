@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/graph/index.html">graph</a>/
@@ -84,12 +84,14 @@
   </div>
 </div>
 <div class="contents">
-<h1>or-tools/src/graph/ebert_graph.h File Reference</h1><code>#include &lt;stddef.h&gt;</code><br>
-<code>#include &lt;algorithm&gt;</code><br>
+<h1>or-tools/src/graph/ebert_graph.h File Reference</h1><code>#include &lt;algorithm&gt;</code><br>
 <code>#include &lt;limits&gt;</code><br>
 <code>#include &lt;string&gt;</code><br>
+<code>#include &lt;utility&gt;</code><br>
+<code>#include &lt;vector&gt;</code><br>
 <code>#include &quot;base/integral_types.h&quot;</code><br>
 <code>#include &quot;base/logging.h&quot;</code><br>
+<code>#include &quot;base/macros.h&quot;</code><br>
 <code>#include &quot;base/scoped_ptr.h&quot;</code><br>
 <code>#include &quot;base/stringprintf.h&quot;</code><br>
 <code>#include &quot;util/permutation.h&quot;</code><br>
@@ -101,18 +103,31 @@
 <tr><td colspan="2"><br><h2>Namespaces</h2></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">namespace &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html">operations_research</a></td></tr>
 
+<tr><td class="memItemLeft" nowrap align="right" valign="top">namespace &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1internal.html">operations_research::internal</a></td></tr>
+
 <tr><td colspan="2"><br><h2>Classes</h2></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1EbertGraphCore.html">operations_research::EbertGraphCore&lt; NodeIndexType, ArcIndexType, DerivedGraph &gt;</a></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1StarGraphBase.html">operations_research::StarGraphBase&lt; NodeIndexType, ArcIndexType, DerivedGraph &gt;</a></td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">A template for the base class that holds the functionality that exists in common between the EbertGraph&lt;&gt; template and the ForwardEbertGraph&lt;&gt; template.  <a href="classoperations__research_1_1EbertGraphCore.html#_details">More...</a><br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1EbertGraphCore_1_1CycleHandlerForAnnotatedArcs.html">operations_research::EbertGraphCore&lt; NodeIndexType, ArcIndexType, DerivedGraph &gt;::CycleHandlerForAnnotatedArcs</a></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1StarGraphBase_1_1NodeIterator.html">operations_research::StarGraphBase&lt; NodeIndexType, ArcIndexType, DerivedGraph &gt;::NodeIterator</a></td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1EbertGraphCore_1_1NodeIterator.html">operations_research::EbertGraphCore&lt; NodeIndexType, ArcIndexType, DerivedGraph &gt;::NodeIterator</a></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Iterator class for traversing all the nodes in the graph.  <a href="classoperations__research_1_1StarGraphBase_1_1NodeIterator.html#_details">More...</a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1StarGraphBase_1_1ArcIterator.html">operations_research::StarGraphBase&lt; NodeIndexType, ArcIndexType, DerivedGraph &gt;::ArcIterator</a></td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Iterator class for traversing all the nodes in the graph.  <a href="classoperations__research_1_1EbertGraphCore_1_1NodeIterator.html#_details">More...</a><br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1EbertGraphCore_1_1ArcIterator.html">operations_research::EbertGraphCore&lt; NodeIndexType, ArcIndexType, DerivedGraph &gt;::ArcIterator</a></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Iterator class for traversing the arcs in the graph.  <a href="classoperations__research_1_1StarGraphBase_1_1ArcIterator.html#_details">More...</a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1StarGraphBase_1_1OutgoingArcIterator.html">operations_research::StarGraphBase&lt; NodeIndexType, ArcIndexType, DerivedGraph &gt;::OutgoingArcIterator</a></td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Iterator class for traversing the arcs in the graph.  <a href="classoperations__research_1_1EbertGraphCore_1_1ArcIterator.html#_details">More...</a><br></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Iterator class for traversing the outgoing arcs associated to a given node.  <a href="classoperations__research_1_1StarGraphBase_1_1OutgoingArcIterator.html#_details">More...</a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PermutationIndexComparisonByArcHead.html">operations_research::PermutationIndexComparisonByArcHead&lt; NodeIndexType, ArcIndexType &gt;</a></td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1ForwardStaticGraph.html">operations_research::ForwardStaticGraph&lt; NodeIndexType, ArcIndexType &gt;</a></td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1ForwardStaticGraph_1_1CycleHandlerForAnnotatedArcs.html">operations_research::ForwardStaticGraph&lt; NodeIndexType, ArcIndexType &gt;::CycleHandlerForAnnotatedArcs</a></td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1EbertGraphBase.html">operations_research::EbertGraphBase&lt; NodeIndexType, ArcIndexType, DerivedGraph &gt;</a></td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">A template for the base class that holds the functionality that exists in common between the EbertGraph&lt;&gt; template and the ForwardEbertGraph&lt;&gt; template.  <a href="classoperations__research_1_1EbertGraphBase.html#_details">More...</a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1EbertGraphBase_1_1CycleHandlerForAnnotatedArcs.html">operations_research::EbertGraphBase&lt; NodeIndexType, ArcIndexType, DerivedGraph &gt;::CycleHandlerForAnnotatedArcs</a></td></tr>
+
 <tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1EbertGraph.html">operations_research::EbertGraph&lt; NodeIndexType, ArcIndexType &gt;</a></td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Most users should only use StarGraph, which is EbertGraph&lt;int32, int32&gt;, and other type shortcuts; see the bottom of this file.  <a href="classoperations__research_1_1EbertGraph.html#_details">More...</a><br></td></tr>
@@ -122,34 +137,42 @@
 <tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1EbertGraph_1_1IncomingArcIterator.html">operations_research::EbertGraph&lt; NodeIndexType, ArcIndexType &gt;::IncomingArcIterator</a></td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Iterator class for traversing the incoming arcs associated to a given node.  <a href="classoperations__research_1_1EbertGraph_1_1IncomingArcIterator.html#_details">More...</a><br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1EbertGraph_1_1OutgoingArcIterator.html">operations_research::EbertGraph&lt; NodeIndexType, ArcIndexType &gt;::OutgoingArcIterator</a></td></tr>
-
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Iterator class for traversing the outgoing arcs associated to a given node.  <a href="classoperations__research_1_1EbertGraph_1_1OutgoingArcIterator.html#_details">More...</a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1ForwardEbertGraph.html">operations_research::ForwardEbertGraph&lt; NodeIndexType, ArcIndexType &gt;</a></td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">A forward-star-only graph representation for greater efficiency in those algorithms that don't need reverse arcs.  <a href="classoperations__research_1_1ForwardEbertGraph.html#_details">More...</a><br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1ForwardEbertGraph_1_1OutgoingArcIterator.html">operations_research::ForwardEbertGraph&lt; NodeIndexType, ArcIndexType &gt;::OutgoingArcIterator</a></td></tr>
-
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Iterator class for traversing the arcs incident to a given node in the graph.  <a href="classoperations__research_1_1ForwardEbertGraph_1_1OutgoingArcIterator.html#_details">More...</a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1graph__traits.html">operations_research::graph_traits&lt; GraphType &gt;</a></td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Traits for <a class="el" href="classoperations__research_1_1EbertGraphCore.html" title="A template for the base class that holds the functionality that exists in common...">EbertGraphCore</a> types, for use in testing and clients that work with both forward-only and forward/reverse graphs.  <a href="structoperations__research_1_1graph__traits.html#_details">More...</a><br></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Traits for <a class="el" href="classoperations__research_1_1EbertGraphBase.html" title="A template for the base class that holds the functionality that exists in common...">EbertGraphBase</a> types, for use in testing and clients that work with both forward-only and forward/reverse graphs.  <a href="structoperations__research_1_1graph__traits.html#_details">More...</a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1graph__traits_3_01ForwardEbertGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_01_4.html">operations_research::graph_traits&lt; ForwardEbertGraph&lt; NodeIndexType, ArcIndexType &gt; &gt;</a></td></tr>
 
-<tr><td class="memItemLeft" nowrap align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1TailArrayBuilder.html">operations_research::TailArrayBuilder&lt; GraphType, has_reverse_arcs &gt;</a></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1graph__traits_3_01ForwardStaticGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_01_4.html">operations_research::graph_traits&lt; ForwardStaticGraph&lt; NodeIndexType, ArcIndexType &gt; &gt;</a></td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The <a class="el" href="structoperations__research_1_1TailArrayBuilder.html" title="The TailArrayBuilder for graphs with reverse arcs does nothing.">TailArrayBuilder</a> for graphs with reverse arcs does nothing.  <a href="structoperations__research_1_1TailArrayBuilder.html#_details">More...</a><br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1TailArrayBuilder_3_01GraphType_00_01false_01_4.html">operations_research::TailArrayBuilder&lt; GraphType, false &gt;</a></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1internal_1_1TailArrayBuilder.html">operations_research::internal::TailArrayBuilder&lt; GraphType, has_reverse_arcs &gt;</a></td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The <a class="el" href="structoperations__research_1_1TailArrayBuilder.html" title="The TailArrayBuilder for graphs with reverse arcs does nothing.">TailArrayBuilder</a> for graphs without reverse arcs calls the appropriate method on the graph from the <a class="el" href="structoperations__research_1_1TailArrayBuilder.html" title="The TailArrayBuilder for graphs with reverse arcs does nothing.">TailArrayBuilder</a> constructor.  <a href="structoperations__research_1_1TailArrayBuilder_3_01GraphType_00_01false_01_4.html#_details">More...</a><br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1TailArrayReleaser.html">operations_research::TailArrayReleaser&lt; GraphType, has_reverse_arcs &gt;</a></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The <a class="el" href="structoperations__research_1_1internal_1_1TailArrayBuilder.html" title="The TailArrayBuilder class template is not expected to be used by clients.">TailArrayBuilder</a> class template is not expected to be used by clients.  <a href="structoperations__research_1_1internal_1_1TailArrayBuilder.html#_details">More...</a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1internal_1_1TailArrayBuilder_3_01GraphType_00_01false_01_4.html">operations_research::internal::TailArrayBuilder&lt; GraphType, false &gt;</a></td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The <a class="el" href="structoperations__research_1_1TailArrayReleaser.html" title="The TailArrayReleaser for graphs with reverse arcs does nothing.">TailArrayReleaser</a> for graphs with reverse arcs does nothing.  <a href="structoperations__research_1_1TailArrayReleaser.html#_details">More...</a><br></td></tr>
-<tr><td class="memItemLeft" nowrap align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1TailArrayReleaser_3_01GraphType_00_01false_01_4.html">operations_research::TailArrayReleaser&lt; GraphType, false &gt;</a></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The <a class="el" href="structoperations__research_1_1internal_1_1TailArrayBuilder.html" title="The TailArrayBuilder class template is not expected to be used by clients.">TailArrayBuilder</a> for graphs without reverse arcs calls the appropriate method on the graph from the <a class="el" href="structoperations__research_1_1internal_1_1TailArrayBuilder.html" title="The TailArrayBuilder class template is not expected to be used by clients.">TailArrayBuilder</a> constructor.  <a href="structoperations__research_1_1internal_1_1TailArrayBuilder_3_01GraphType_00_01false_01_4.html#_details">More...</a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1internal_1_1TailArrayReleaser.html">operations_research::internal::TailArrayReleaser&lt; GraphType, has_reverse_arcs &gt;</a></td></tr>
 
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The <a class="el" href="structoperations__research_1_1TailArrayReleaser.html" title="The TailArrayReleaser for graphs with reverse arcs does nothing.">TailArrayReleaser</a> for graphs without reverse arcs calls the appropriate method on the graph from the <a class="el" href="structoperations__research_1_1TailArrayReleaser.html" title="The TailArrayReleaser for graphs with reverse arcs does nothing.">TailArrayReleaser</a> constructor.  <a href="structoperations__research_1_1TailArrayReleaser_3_01GraphType_00_01false_01_4.html#_details">More...</a><br></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The <a class="el" href="structoperations__research_1_1internal_1_1TailArrayReleaser.html" title="The TailArrayReleaser class template is not expected to be used by clients.">TailArrayReleaser</a> class template is not expected to be used by clients.  <a href="structoperations__research_1_1internal_1_1TailArrayReleaser.html#_details">More...</a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1internal_1_1TailArrayReleaser_3_01GraphType_00_01false_01_4.html">operations_research::internal::TailArrayReleaser&lt; GraphType, false &gt;</a></td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The <a class="el" href="structoperations__research_1_1internal_1_1TailArrayReleaser.html" title="The TailArrayReleaser class template is not expected to be used by clients.">TailArrayReleaser</a> for graphs without reverse arcs calls the appropriate method on the graph from the <a class="el" href="structoperations__research_1_1internal_1_1TailArrayReleaser.html" title="The TailArrayReleaser class template is not expected to be used by clients.">TailArrayReleaser</a> constructor.  <a href="structoperations__research_1_1internal_1_1TailArrayReleaser_3_01GraphType_00_01false_01_4.html#_details">More...</a><br></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1TailArrayManager.html">operations_research::TailArrayManager&lt; GraphType &gt;</a></td></tr>
 
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">namespace <a class="el" href="namespaceoperations__research_1_1internal.html">internal</a>  <a href="classoperations__research_1_1TailArrayManager.html#_details">More...</a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1ArcFunctorOrderingByTailAndHead.html">operations_research::ArcFunctorOrderingByTailAndHead&lt; GraphType &gt;</a></td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1internal_1_1GraphBuilderFromArcs.html">operations_research::internal::GraphBuilderFromArcs&lt; GraphType, is_dynamic &gt;</a></td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The <a class="el" href="classoperations__research_1_1internal_1_1GraphBuilderFromArcs.html" title="The GraphBuilderFromArcs class template is not expected to be used by clients.">GraphBuilderFromArcs</a> class template is not expected to be used by clients.  <a href="classoperations__research_1_1internal_1_1GraphBuilderFromArcs.html#_details">More...</a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1internal_1_1GraphBuilderFromArcs_3_01GraphType_00_01true_01_4.html">operations_research::internal::GraphBuilderFromArcs&lt; GraphType, true &gt;</a></td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Trivial delegating specialization for dynamic graphs.  <a href="classoperations__research_1_1internal_1_1GraphBuilderFromArcs_3_01GraphType_00_01true_01_4.html#_details">More...</a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1AnnotatedGraphBuildManager.html">operations_research::AnnotatedGraphBuildManager&lt; GraphType &gt;</a></td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">namespace <a class="el" href="namespaceoperations__research_1_1internal.html">internal</a>  <a href="classoperations__research_1_1AnnotatedGraphBuildManager.html#_details">More...</a><br></td></tr>
 <tr><td colspan="2"><br><h2>Typedefs</h2></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">typedef int32&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb">operations_research::NodeIndex</a></td></tr>
 
@@ -165,6 +188,9 @@ ArcIndex &gt;&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" h
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">typedef ForwardEbertGraph<br>
 &lt; NodeIndex, ArcIndex &gt;&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#652af62fa5f211aa0c54d7994ca1c504">operations_research::ForwardStarGraph</a></td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">typedef ForwardStaticGraph<br>
+&lt; NodeIndex, ArcIndex &gt;&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#c7440a08c859325694df19d4d4aee95c">operations_research::ForwardStarStaticGraph</a></td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">typedef ZVector&lt; NodeIndex &gt;&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#389e5320fb5bcd0fb99d894488f9820b">operations_research::NodeIndexArray</a></td></tr>
 
@@ -188,7 +214,7 @@ ArcIndex &gt;&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" h
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -131,7 +131,7 @@ Inheritance diagram for operations_research::PairRelocateOperator:</div>
 Operator which moves a pair of nodes to another position. 
 <p>
 Possible neighbors for the path 1 -&gt; A -&gt; B -&gt; 2 -&gt; 3 (where (1, 3) are first and last nodes of the path and can therefore not be moved, and (A, B) is a pair of nodes): 1 -&gt; [A] -&gt; 2 -&gt; [B] -&gt; 3 1 -&gt; 2 -&gt; [A] -&gt; [B] -&gt; 3 1 -&gt; [B] -&gt; [A] -&gt; 2 -&gt; 3 1 -&gt; [B] -&gt; 2 -&gt; [A] -&gt; 3 1 -&gt; 2 -&gt; [B] -&gt; [A] -&gt; 3 
-<p>Definition at line <a class="el" href="routing_8cc-source.html#l00237">237</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
+<p>Definition at line <a class="el" href="routing_8cc-source.html#l00349">349</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
 <hr><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" name="41ab233fe349e2012d60282f43f5c26d"></a><!-- doxytag: member="operations_research::PairRelocateOperator::PairRelocateOperator" ref="41ab233fe349e2012d60282f43f5c26d" args="(const IntVar *const *vars, const IntVar *const *secondary_vars, const RoutingModel::NodePairs &amp;pairs, int size)" -->
 <div class="memitem">
@@ -172,7 +172,7 @@ Possible neighbors for the path 1 -&gt; A -&gt; B -&gt; 2 -&gt; 3 (where (1, 3) 
 
 <p>
 
-<p>Definition at line <a class="el" href="routing_8cc-source.html#l00239">239</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
+<p>Definition at line <a class="el" href="routing_8cc-source.html#l00351">351</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
 
 </div>
 </div><p>
@@ -193,7 +193,7 @@ Possible neighbors for the path 1 -&gt; A -&gt; B -&gt; 2 -&gt; 3 (where (1, 3) 
 
 <p>
 
-<p>Definition at line <a class="el" href="routing_8cc-source.html#l00261">261</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
+<p>Definition at line <a class="el" href="routing_8cc-source.html#l00374">374</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
 
 </div>
 </div><p>
@@ -217,7 +217,7 @@ Possible neighbors for the path 1 -&gt; A -&gt; B -&gt; 2 -&gt; 3 (where (1, 3) 
 
 <p>Implements <a class="el" href="classoperations__research_1_1PathOperator.html#bf884d7efc40fbf9932b64623604c23a">operations_research::PathOperator</a>.</p>
 
-<p>Definition at line <a class="el" href="routing_8cc-source.html#l00296">296</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
+<p>Definition at line <a class="el" href="routing_8cc-source.html#l00410">410</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
 
 </div>
 </div><p>
@@ -240,11 +240,11 @@ Possible neighbors for the path 1 -&gt; A -&gt; B -&gt; 2 -&gt; 3 (where (1, 3) 
 <p>
 Returns true if a base node has to be on the same path as the "previous" base node (base node of index base_index - 1). 
 <p>
-Useful to limit neighborhood exploration to nodes on the same path. <dl compact><dt><b><a class="el" href="todo.html#_todo000021">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): ideally this should be OnSamePath(int64 node1, int64 node2); it's currently way more complicated to implement. </dd></dl>
+Useful to limit neighborhood exploration to nodes on the same path. <dl compact><dt><b><a class="el" href="todo.html#_todo000022">Todo:</a></b></dt><dd>TODO(<a href="http://who/user">user</a>): ideally this should be OnSamePath(int64 node1, int64 node2); it's currently way more complicated to implement. </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1PathOperator.html#661ecee1a13c036a57c5c75b97882462">operations_research::PathOperator</a>.</p>
 
-<p>Definition at line <a class="el" href="routing_8cc-source.html#l00265">265</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
+<p>Definition at line <a class="el" href="routing_8cc-source.html#l00378">378</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
 
 </div>
 </div><p>
@@ -270,7 +270,7 @@ Returns the index of the node to which the base node of index base_index must be
 By default, it is set to the start of the current path. When this method is called, one can only assume that base nodes with indices &lt; base_index have their final position. 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1PathOperator.html#2c309dfacbd1dc10373408446e46f118">operations_research::PathOperator</a>.</p>
 
-<p>Definition at line <a class="el" href="routing_8cc-source.html#l00271">271</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
+<p>Definition at line <a class="el" href="routing_8cc-source.html#l00384">384</a> of file <a class="el" href="routing_8cc-source.html">routing.cc</a>.</p>
 
 </div>
 </div><p>
@@ -284,7 +284,7 @@ By default, it is set to the start of the current path. When this method is call
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -606,30 +606,30 @@
 <a name="l00522"></a>00522 
 <a name="l00523"></a>00523   <span class="keyword">class </span>Handler : <span class="keyword">public</span> Demon {
 <a name="l00524"></a>00524    <span class="keyword">public</span>:
-<a name="l00525"></a>00525     <span class="keyword">explicit</span> Handler(FixedDurationIntervalVar* <span class="keyword">const</span> <a class="code" href="expr__array_8cc.html#472a99923cbe11ae7b5a5d157d9ad465">var</a>) : <a class="code" href="constraints_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>(var) {}
+<a name="l00525"></a>00525     <span class="keyword">explicit</span> Handler(FixedDurationIntervalVar* <span class="keyword">const</span> <a class="code" href="expr__array_8cc.html#472a99923cbe11ae7b5a5d157d9ad465">var</a>) : <a class="code" href="ac4r__table_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>(var) {}
 <a name="l00526"></a>00526     <span class="keyword">virtual</span> ~Handler() {}
 <a name="l00527"></a>00527     <span class="keyword">virtual</span> <span class="keywordtype">void</span> Run(<a class="code" href="classoperations__research_1_1Solver.html#5b0165d313b9e2bfba93da6aff65052f">Solver</a>* <span class="keyword">const</span> s) {
-<a name="l00528"></a>00528       <a class="code" href="constraints_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>-&gt;Process();
+<a name="l00528"></a>00528       <a class="code" href="ac4r__table_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>-&gt;Process();
 <a name="l00529"></a>00529     }
 <a name="l00530"></a>00530     <span class="keyword">virtual</span> <a class="code" href="classoperations__research_1_1Solver.html#4b0972c731faf884eba5acab99ebb2b4" title="This enum represents the three possible priorities for a demon in the Solver queue...">Solver::DemonPriority</a> priority()<span class="keyword"> const </span>{
 <a name="l00531"></a>00531       <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#4b0972c731faf884eba5acab99ebb2b4e5f79fc80ef9ae665bcd7c0e55c02aa6" title="VAR_PRIORITY is between DELAYED_PRIORITY and NORMAL_PRIORITY.">Solver::VAR_PRIORITY</a>;
 <a name="l00532"></a>00532     }
 <a name="l00533"></a>00533     <span class="keyword">virtual</span> <span class="keywordtype">string</span> <a class="code" href="classoperations__research_1_1Solver.html#a7a09bf2f27ccbdc1d1d386bd94e142a" title="misc debug string.">DebugString</a>()<span class="keyword"> const </span>{
-<a name="l00534"></a>00534       <span class="keywordflow">return</span> StringPrintf(<span class="stringliteral">"Handler(%s)"</span>, <a class="code" href="constraints_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>-&gt;DebugString().c_str());
+<a name="l00534"></a>00534       <span class="keywordflow">return</span> StringPrintf(<span class="stringliteral">"Handler(%s)"</span>, <a class="code" href="ac4r__table_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>-&gt;DebugString().c_str());
 <a name="l00535"></a>00535     }
 <a name="l00536"></a>00536    <span class="keyword">private</span>:
-<a name="l00537"></a><a class="code" href="interval_8cc.html#b2fa974c60fba864d083fc934ad8f7ab">00537</a>     FixedDurationIntervalVar* <span class="keyword">const</span> <a class="code" href="constraints_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>;
+<a name="l00537"></a><a class="code" href="interval_8cc.html#b2fa974c60fba864d083fc934ad8f7ab">00537</a>     FixedDurationIntervalVar* <span class="keyword">const</span> <a class="code" href="ac4r__table_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>;
 <a name="l00538"></a>00538   };
 <a name="l00539"></a>00539 
 <a name="l00540"></a>00540   <span class="keyword">class </span>Cleaner : <span class="keyword">public</span> Action {
 <a name="l00541"></a>00541    <span class="keyword">public</span>:
-<a name="l00542"></a>00542     <span class="keyword">explicit</span> Cleaner(FixedDurationIntervalVar* <span class="keyword">const</span> <a class="code" href="expr__array_8cc.html#472a99923cbe11ae7b5a5d157d9ad465">var</a>) : <a class="code" href="constraints_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>(var) {}
+<a name="l00542"></a>00542     <span class="keyword">explicit</span> Cleaner(FixedDurationIntervalVar* <span class="keyword">const</span> <a class="code" href="expr__array_8cc.html#472a99923cbe11ae7b5a5d157d9ad465">var</a>) : <a class="code" href="ac4r__table_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>(var) {}
 <a name="l00543"></a>00543     <span class="keyword">virtual</span> ~Cleaner() {}
 <a name="l00544"></a>00544     <span class="keyword">virtual</span> <span class="keywordtype">void</span> Run(<a class="code" href="classoperations__research_1_1Solver.html#5b0165d313b9e2bfba93da6aff65052f">Solver</a>* <span class="keyword">const</span> s) {
-<a name="l00545"></a>00545       <a class="code" href="constraints_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>-&gt;ClearInProcess();
+<a name="l00545"></a>00545       <a class="code" href="ac4r__table_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>-&gt;ClearInProcess();
 <a name="l00546"></a>00546     }
 <a name="l00547"></a>00547    <span class="keyword">private</span>:
-<a name="l00548"></a>00548     FixedDurationIntervalVar* <span class="keyword">const</span> <a class="code" href="constraints_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>;
+<a name="l00548"></a>00548     FixedDurationIntervalVar* <span class="keyword">const</span> <a class="code" href="ac4r__table_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>;
 <a name="l00549"></a>00549   };
 <a name="l00550"></a>00550 
 <a name="l00551"></a>00551   FixedDurationIntervalVar(<a class="code" href="classoperations__research_1_1Solver.html#5b0165d313b9e2bfba93da6aff65052f">Solver</a>* <span class="keyword">const</span> s,
@@ -1020,31 +1020,31 @@
 <a name="l00936"></a>00936   <span class="keyword">class </span>Handler : <span class="keyword">public</span> Demon {
 <a name="l00937"></a>00937    <span class="keyword">public</span>:
 <a name="l00938"></a>00938     <span class="keyword">explicit</span> Handler(FixedDurationPerformedIntervalVar* <span class="keyword">const</span> var)
-<a name="l00939"></a>00939         : <a class="code" href="constraints_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>(var) {}
+<a name="l00939"></a>00939         : <a class="code" href="ac4r__table_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>(var) {}
 <a name="l00940"></a>00940     <span class="keyword">virtual</span> ~Handler() {}
 <a name="l00941"></a>00941     <span class="keyword">virtual</span> <span class="keywordtype">void</span> Run(Solver* <span class="keyword">const</span> s) {
-<a name="l00942"></a>00942       <a class="code" href="constraints_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>-&gt;Process();
+<a name="l00942"></a>00942       <a class="code" href="ac4r__table_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>-&gt;Process();
 <a name="l00943"></a>00943     }
 <a name="l00944"></a>00944     <span class="keyword">virtual</span> Solver::DemonPriority priority()<span class="keyword"> const </span>{
 <a name="l00945"></a>00945       <span class="keywordflow">return</span> Solver::VAR_PRIORITY;
 <a name="l00946"></a>00946     }
 <a name="l00947"></a>00947     <span class="keyword">virtual</span> <span class="keywordtype">string</span> DebugString()<span class="keyword"> const </span>{
-<a name="l00948"></a>00948       <span class="keywordflow">return</span> StringPrintf(<span class="stringliteral">"Handler(%s)"</span>, <a class="code" href="constraints_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>-&gt;DebugString().c_str());
+<a name="l00948"></a>00948       <span class="keywordflow">return</span> StringPrintf(<span class="stringliteral">"Handler(%s)"</span>, <a class="code" href="ac4r__table_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>-&gt;DebugString().c_str());
 <a name="l00949"></a>00949     }
 <a name="l00950"></a>00950    <span class="keyword">private</span>:
-<a name="l00951"></a>00951     FixedDurationPerformedIntervalVar* <span class="keyword">const</span> <a class="code" href="constraints_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>;
+<a name="l00951"></a>00951     FixedDurationPerformedIntervalVar* <span class="keyword">const</span> <a class="code" href="ac4r__table_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>;
 <a name="l00952"></a>00952   };
 <a name="l00953"></a>00953 
 <a name="l00954"></a>00954   <span class="keyword">class </span>Cleaner : <span class="keyword">public</span> Action {
 <a name="l00955"></a>00955    <span class="keyword">public</span>:
 <a name="l00956"></a>00956     <span class="keyword">explicit</span> Cleaner(FixedDurationPerformedIntervalVar* <span class="keyword">const</span> var)
-<a name="l00957"></a>00957         : <a class="code" href="constraints_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>(var) {}
+<a name="l00957"></a>00957         : <a class="code" href="ac4r__table_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>(var) {}
 <a name="l00958"></a>00958     <span class="keyword">virtual</span> ~Cleaner() {}
 <a name="l00959"></a>00959     <span class="keyword">virtual</span> <span class="keywordtype">void</span> Run(Solver* <span class="keyword">const</span> s) {
-<a name="l00960"></a>00960       <a class="code" href="constraints_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>-&gt;ClearInProcess();
+<a name="l00960"></a>00960       <a class="code" href="ac4r__table_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>-&gt;ClearInProcess();
 <a name="l00961"></a>00961     }
 <a name="l00962"></a>00962    <span class="keyword">private</span>:
-<a name="l00963"></a>00963     FixedDurationPerformedIntervalVar* <span class="keyword">const</span> <a class="code" href="constraints_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>;
+<a name="l00963"></a>00963     FixedDurationPerformedIntervalVar* <span class="keyword">const</span> <a class="code" href="ac4r__table_8cc.html#acb45343e78641c7b582de46225d3481">var_</a>;
 <a name="l00964"></a>00964   };
 <a name="l00965"></a>00965 
 <a name="l00966"></a>00966   FixedDurationPerformedIntervalVar(Solver* <span class="keyword">const</span> s,
@@ -1355,240 +1355,465 @@
 <a name="l01271"></a>01271   <span class="keywordflow">return</span> out;
 <a name="l01272"></a>01272 }
 <a name="l01273"></a>01273 
-<a name="l01274"></a>01274 <span class="comment">// ----- FixedInterval -----</span>
+<a name="l01274"></a>01274 <span class="comment">// ----- StartVarPerformedIntervalVar -----</span>
 <a name="l01275"></a>01275 
-<a name="l01276"></a>01276 <span class="keyword">class </span>FixedInterval : <span class="keyword">public</span> IntervalVar {
+<a name="l01276"></a>01276 <span class="keyword">class </span>StartVarPerformedIntervalVar : <span class="keyword">public</span> IntervalVar {
 <a name="l01277"></a>01277  <span class="keyword">public</span>:
-<a name="l01278"></a>01278   FixedInterval(Solver* <span class="keyword">const</span> s, int64 start, int64 duration,
-<a name="l01279"></a>01279                 <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>);
-<a name="l01280"></a>01280   <span class="keyword">virtual</span> ~FixedInterval() {}
-<a name="l01281"></a>01281 
-<a name="l01282"></a>01282   <span class="keyword">virtual</span> int64 StartMin()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>; }
-<a name="l01283"></a>01283   <span class="keyword">virtual</span> int64 StartMax()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>; }
-<a name="l01284"></a>01284   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetStartMin(int64 m);
-<a name="l01285"></a>01285   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetStartMax(int64 m);
-<a name="l01286"></a>01286   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetStartRange(int64 mi, int64 ma);
-<a name="l01287"></a>01287   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenStartRange(Demon* <span class="keyword">const</span> d) {}
-<a name="l01288"></a>01288   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenStartBound(Demon* <span class="keyword">const</span> d) {}
-<a name="l01289"></a>01289 
-<a name="l01290"></a>01290   <span class="keyword">virtual</span> int64 DurationMin()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>; }
-<a name="l01291"></a>01291   <span class="keyword">virtual</span> int64 DurationMax()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>; }
-<a name="l01292"></a>01292   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetDurationMin(int64 m);
-<a name="l01293"></a>01293   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetDurationMax(int64 m);
-<a name="l01294"></a>01294   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetDurationRange(int64 mi, int64 ma);
-<a name="l01295"></a>01295   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenDurationRange(Demon* <span class="keyword">const</span> d) { }
-<a name="l01296"></a>01296   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenDurationBound(Demon* <span class="keyword">const</span> d) { }
-<a name="l01297"></a>01297 
-<a name="l01298"></a>01298   <span class="keyword">virtual</span> int64 EndMin()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a> + <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>; }
-<a name="l01299"></a>01299   <span class="keyword">virtual</span> int64 EndMax()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a> + <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>; }
-<a name="l01300"></a>01300   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetEndMin(int64 m);
-<a name="l01301"></a>01301   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetEndMax(int64 m);
-<a name="l01302"></a>01302   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetEndRange(int64 mi, int64 ma);
-<a name="l01303"></a>01303   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenEndRange(Demon* <span class="keyword">const</span> d)  {}
-<a name="l01304"></a>01304   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenEndBound(Demon* <span class="keyword">const</span> d) {}
-<a name="l01305"></a>01305 
-<a name="l01306"></a>01306   <span class="keyword">virtual</span> <span class="keywordtype">bool</span> MustBePerformed()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <span class="keyword">true</span>; }
-<a name="l01307"></a>01307   <span class="keyword">virtual</span> <span class="keywordtype">bool</span> MayBePerformed()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <span class="keyword">true</span>; }
-<a name="l01308"></a>01308   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetPerformed(<span class="keywordtype">bool</span> val);
-<a name="l01309"></a>01309   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenPerformedBound(Demon* <span class="keyword">const</span> d) {}
-<a name="l01310"></a>01310   <span class="keyword">virtual</span> <span class="keywordtype">string</span> DebugString() <span class="keyword">const</span>;
-<a name="l01311"></a>01311 
-<a name="l01312"></a>01312   <span class="keyword">virtual</span> <span class="keywordtype">void</span> Accept(ModelVisitor* <span class="keyword">const</span> visitor)<span class="keyword"> const </span>{
-<a name="l01313"></a>01313     visitor-&gt;VisitIntervalVariable(<span class="keyword">this</span>, <span class="stringliteral">""</span>, NULL);
+<a name="l01278"></a>01278   StartVarPerformedIntervalVar(Solver* <span class="keyword">const</span> s,
+<a name="l01279"></a>01279                                IntVar* <span class="keyword">const</span> start_var,
+<a name="l01280"></a>01280                                int64 duration,
+<a name="l01281"></a>01281                                <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>);
+<a name="l01282"></a>01282   <span class="keyword">virtual</span> ~StartVarPerformedIntervalVar() {}
+<a name="l01283"></a>01283 
+<a name="l01284"></a>01284   <span class="keyword">virtual</span> int64 StartMin() <span class="keyword">const</span>;
+<a name="l01285"></a>01285   <span class="keyword">virtual</span> int64 StartMax() <span class="keyword">const</span>;
+<a name="l01286"></a>01286   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetStartMin(int64 m);
+<a name="l01287"></a>01287   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetStartMax(int64 m);
+<a name="l01288"></a>01288   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetStartRange(int64 mi, int64 ma);
+<a name="l01289"></a>01289   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenStartRange(Demon* <span class="keyword">const</span> d) {
+<a name="l01290"></a>01290     <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>-&gt;WhenRange(d);
+<a name="l01291"></a>01291   }
+<a name="l01292"></a>01292   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenStartBound(Demon* <span class="keyword">const</span> d) {
+<a name="l01293"></a>01293     <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>-&gt;WhenBound(d);
+<a name="l01294"></a>01294   }
+<a name="l01295"></a>01295 
+<a name="l01296"></a>01296   <span class="keyword">virtual</span> int64 DurationMin() <span class="keyword">const</span>;
+<a name="l01297"></a>01297   <span class="keyword">virtual</span> int64 DurationMax() <span class="keyword">const</span>;
+<a name="l01298"></a>01298   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetDurationMin(int64 m);
+<a name="l01299"></a>01299   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetDurationMax(int64 m);
+<a name="l01300"></a>01300   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetDurationRange(int64 mi, int64 ma);
+<a name="l01301"></a>01301   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenDurationRange(Demon* <span class="keyword">const</span> d) { }
+<a name="l01302"></a>01302   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenDurationBound(Demon* <span class="keyword">const</span> d) { }
+<a name="l01303"></a>01303 
+<a name="l01304"></a>01304   <span class="keyword">virtual</span> int64 EndMin() <span class="keyword">const</span>;
+<a name="l01305"></a>01305   <span class="keyword">virtual</span> int64 EndMax() <span class="keyword">const</span>;
+<a name="l01306"></a>01306   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetEndMin(int64 m);
+<a name="l01307"></a>01307   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetEndMax(int64 m);
+<a name="l01308"></a>01308   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetEndRange(int64 mi, int64 ma);
+<a name="l01309"></a>01309   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenEndRange(Demon* <span class="keyword">const</span> d)  {
+<a name="l01310"></a>01310     <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>-&gt;WhenRange(d);
+<a name="l01311"></a>01311   }
+<a name="l01312"></a>01312   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenEndBound(Demon* <span class="keyword">const</span> d) {
+<a name="l01313"></a>01313     <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>-&gt;WhenBound(d);
 <a name="l01314"></a>01314   }
 <a name="l01315"></a>01315 
-<a name="l01316"></a>01316  <span class="keyword">private</span>:
-<a name="l01317"></a><a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">01317</a>   <span class="keyword">const</span> int64 <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>;
-<a name="l01318"></a>01318   <span class="keyword">const</span> int64 <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>;
-<a name="l01319"></a>01319 };
-<a name="l01320"></a>01320 
-<a name="l01321"></a>01321 FixedInterval::FixedInterval(Solver* <span class="keyword">const</span> s,
-<a name="l01322"></a>01322                              int64 start,
-<a name="l01323"></a>01323                              int64 duration,
-<a name="l01324"></a>01324                              <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>)
-<a name="l01325"></a>01325     : IntervalVar(s, name),
-<a name="l01326"></a>01326       <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>(start),
-<a name="l01327"></a>01327       <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>(duration) {
-<a name="l01328"></a>01328 }
-<a name="l01329"></a>01329 
-<a name="l01330"></a>01330 <span class="keywordtype">void</span> FixedInterval::SetStartMin(int64 m) {
-<a name="l01331"></a>01331   <span class="keywordflow">if</span> (m &gt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>) {
-<a name="l01332"></a>01332     solver()-&gt;Fail();
-<a name="l01333"></a>01333   }
-<a name="l01334"></a>01334 }
-<a name="l01335"></a>01335 
-<a name="l01336"></a>01336 <span class="keywordtype">void</span> FixedInterval::SetStartMax(int64 m) {
-<a name="l01337"></a>01337   <span class="keywordflow">if</span> (m &lt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>) {
-<a name="l01338"></a>01338     solver()-&gt;Fail();
-<a name="l01339"></a>01339   }
-<a name="l01340"></a>01340 }
-<a name="l01341"></a>01341 
-<a name="l01342"></a>01342 <span class="keywordtype">void</span> FixedInterval::SetStartRange(int64 mi, int64 ma) {
-<a name="l01343"></a>01343   <span class="keywordflow">if</span> (mi &gt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a> || ma &lt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>) {
-<a name="l01344"></a>01344     solver()-&gt;Fail();
-<a name="l01345"></a>01345   }
-<a name="l01346"></a>01346 }
-<a name="l01347"></a>01347 
-<a name="l01348"></a>01348 <span class="keywordtype">void</span> FixedInterval::SetDurationMin(int64 m) {
-<a name="l01349"></a>01349   <span class="keywordflow">if</span> (m &gt; <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>) {
-<a name="l01350"></a>01350     solver()-&gt;Fail();
-<a name="l01351"></a>01351   }
-<a name="l01352"></a>01352 }
-<a name="l01353"></a>01353 
-<a name="l01354"></a>01354 <span class="keywordtype">void</span> FixedInterval::SetDurationMax(int64 m) {
-<a name="l01355"></a>01355   <span class="keywordflow">if</span> (m &lt; <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>) {
-<a name="l01356"></a>01356     solver()-&gt;Fail();
-<a name="l01357"></a>01357   }
-<a name="l01358"></a>01358 }
-<a name="l01359"></a>01359 
-<a name="l01360"></a>01360 <span class="keywordtype">void</span> FixedInterval::SetEndMin(int64 m) {
-<a name="l01361"></a>01361   <span class="keywordflow">if</span> (m &gt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a> + <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>) {
-<a name="l01362"></a>01362     solver()-&gt;Fail();
-<a name="l01363"></a>01363   }
-<a name="l01364"></a>01364 }
-<a name="l01365"></a>01365 
-<a name="l01366"></a>01366 <span class="keywordtype">void</span> FixedInterval::SetEndMax(int64 m) {
-<a name="l01367"></a>01367   <span class="keywordflow">if</span> (m &lt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a> + <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>) {
-<a name="l01368"></a>01368     solver()-&gt;Fail();
-<a name="l01369"></a>01369   }
-<a name="l01370"></a>01370 }
-<a name="l01371"></a>01371 
-<a name="l01372"></a>01372 <span class="keywordtype">void</span> FixedInterval::SetEndRange(int64 mi, int64 ma) {
-<a name="l01373"></a>01373   <span class="keywordflow">if</span> (mi &gt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a> + <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a> || ma &lt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a> + <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>) {
-<a name="l01374"></a>01374     solver()-&gt;Fail();
-<a name="l01375"></a>01375   }
-<a name="l01376"></a>01376 }
-<a name="l01377"></a>01377 
-<a name="l01378"></a>01378 <span class="keywordtype">void</span> FixedInterval::SetDurationRange(int64 mi, int64 ma) {
-<a name="l01379"></a>01379   <span class="keywordflow">if</span> (mi &gt; <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a> || ma &lt; <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>) {
-<a name="l01380"></a>01380     solver()-&gt;Fail();
-<a name="l01381"></a>01381   }
+<a name="l01316"></a>01316   <span class="keyword">virtual</span> <span class="keywordtype">bool</span> MustBePerformed() <span class="keyword">const</span>;
+<a name="l01317"></a>01317   <span class="keyword">virtual</span> <span class="keywordtype">bool</span> MayBePerformed() <span class="keyword">const</span>;
+<a name="l01318"></a>01318   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetPerformed(<span class="keywordtype">bool</span> val);
+<a name="l01319"></a>01319   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenPerformedBound(Demon* <span class="keyword">const</span> d) {}
+<a name="l01320"></a>01320   <span class="keyword">virtual</span> <span class="keywordtype">string</span> DebugString() <span class="keyword">const</span>;
+<a name="l01321"></a>01321 
+<a name="l01322"></a>01322   <span class="keyword">virtual</span> <span class="keywordtype">void</span> Accept(ModelVisitor* <span class="keyword">const</span> visitor)<span class="keyword"> const </span>{
+<a name="l01323"></a>01323     visitor-&gt;VisitIntervalVariable(<span class="keyword">this</span>, <span class="stringliteral">""</span>, NULL);
+<a name="l01324"></a>01324   }
+<a name="l01325"></a>01325 
+<a name="l01326"></a>01326  <span class="keyword">private</span>:
+<a name="l01327"></a><a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">01327</a>   IntVar* <span class="keyword">const</span> <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>;
+<a name="l01328"></a>01328   int64 <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>;
+<a name="l01329"></a>01329 };
+<a name="l01330"></a>01330 
+<a name="l01331"></a>01331 StartVarPerformedIntervalVar::StartVarPerformedIntervalVar(
+<a name="l01332"></a>01332     Solver* <span class="keyword">const</span> s,
+<a name="l01333"></a>01333     IntVar* <span class="keyword">const</span> var,
+<a name="l01334"></a>01334     int64 duration,
+<a name="l01335"></a>01335     <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>)
+<a name="l01336"></a>01336     : IntervalVar(s, name),
+<a name="l01337"></a>01337       <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>(var),
+<a name="l01338"></a>01338       <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>(duration) {
+<a name="l01339"></a>01339 }
+<a name="l01340"></a>01340 
+<a name="l01341"></a>01341 int64 StartVarPerformedIntervalVar::StartMin()<span class="keyword"> const </span>{
+<a name="l01342"></a>01342   <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>-&gt;Min();
+<a name="l01343"></a>01343 }
+<a name="l01344"></a>01344 
+<a name="l01345"></a>01345 int64 StartVarPerformedIntervalVar::StartMax()<span class="keyword"> const </span>{
+<a name="l01346"></a>01346   <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>-&gt;Max();
+<a name="l01347"></a>01347 }
+<a name="l01348"></a>01348 
+<a name="l01349"></a>01349 <span class="keywordtype">void</span> StartVarPerformedIntervalVar::SetStartMin(int64 m) {
+<a name="l01350"></a>01350   <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>-&gt;SetMin(m);
+<a name="l01351"></a>01351 }
+<a name="l01352"></a>01352 
+<a name="l01353"></a>01353 <span class="keywordtype">void</span> StartVarPerformedIntervalVar::SetStartMax(int64 m) {
+<a name="l01354"></a>01354   <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>-&gt;SetMax(m);
+<a name="l01355"></a>01355 }
+<a name="l01356"></a>01356 
+<a name="l01357"></a>01357 <span class="keywordtype">void</span> StartVarPerformedIntervalVar::SetStartRange(int64 mi, int64 ma) {
+<a name="l01358"></a>01358   <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>-&gt;SetRange(mi, ma);
+<a name="l01359"></a>01359 }
+<a name="l01360"></a>01360 
+<a name="l01361"></a>01361 int64 StartVarPerformedIntervalVar::DurationMin()<span class="keyword"> const </span>{
+<a name="l01362"></a>01362   <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>;
+<a name="l01363"></a>01363 }
+<a name="l01364"></a>01364 
+<a name="l01365"></a>01365 int64 StartVarPerformedIntervalVar::DurationMax()<span class="keyword"> const </span>{
+<a name="l01366"></a>01366   <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>;
+<a name="l01367"></a>01367 }
+<a name="l01368"></a>01368 
+<a name="l01369"></a>01369 <span class="keywordtype">void</span> StartVarPerformedIntervalVar::SetDurationMin(int64 m) {
+<a name="l01370"></a>01370   <span class="keywordflow">if</span> (m &gt; <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>) {
+<a name="l01371"></a>01371     solver()-&gt;Fail();
+<a name="l01372"></a>01372   }
+<a name="l01373"></a>01373 }
+<a name="l01374"></a>01374 
+<a name="l01375"></a>01375 <span class="keywordtype">void</span> StartVarPerformedIntervalVar::SetDurationMax(int64 m) {
+<a name="l01376"></a>01376   <span class="keywordflow">if</span> (m &lt; <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>) {
+<a name="l01377"></a>01377     solver()-&gt;Fail();
+<a name="l01378"></a>01378   }
+<a name="l01379"></a>01379 }
+<a name="l01380"></a>01380 int64 StartVarPerformedIntervalVar::EndMin()<span class="keyword"> const </span>{
+<a name="l01381"></a>01381   <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>-&gt;Min() + <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>;
 <a name="l01382"></a>01382 }
 <a name="l01383"></a>01383 
-<a name="l01384"></a>01384 <span class="keywordtype">void</span> FixedInterval::SetPerformed(<span class="keywordtype">bool</span> val) {
-<a name="l01385"></a>01385   <span class="keywordflow">if</span> (!val) {
-<a name="l01386"></a>01386     solver()-&gt;Fail();
-<a name="l01387"></a>01387   }
-<a name="l01388"></a>01388 }
-<a name="l01389"></a>01389 
-<a name="l01390"></a>01390 <span class="keywordtype">string</span> FixedInterval::DebugString()<span class="keyword"> const </span>{
-<a name="l01391"></a>01391   <span class="keywordtype">string</span> out;
-<a name="l01392"></a>01392   <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; var_name = <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>();
-<a name="l01393"></a>01393   <span class="keywordflow">if</span> (!var_name.empty()) {
-<a name="l01394"></a>01394     out = var_name + <span class="stringliteral">"(start = "</span>;
-<a name="l01395"></a>01395   } <span class="keywordflow">else</span> {
-<a name="l01396"></a>01396     out = <span class="stringliteral">"IntervalVar(start = "</span>;
-<a name="l01397"></a>01397   }
-<a name="l01398"></a>01398   StringAppendF(&amp;out, <span class="stringliteral">"%"</span> GG_LL_FORMAT <span class="stringliteral">"d, duration = %"</span> GG_LL_FORMAT
-<a name="l01399"></a>01399                 <span class="stringliteral">"d, status = performed)"</span>,
-<a name="l01400"></a>01400                 <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>, <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>);
-<a name="l01401"></a>01401   <span class="keywordflow">return</span> out;
-<a name="l01402"></a>01402 }
-<a name="l01403"></a>01403 }  <span class="comment">// namespace</span>
-<a name="l01404"></a>01404 
-<a name="l01405"></a>01405 <span class="comment">// ----- API -----</span>
+<a name="l01384"></a>01384 int64 StartVarPerformedIntervalVar::EndMax()<span class="keyword"> const </span>{
+<a name="l01385"></a>01385   <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>-&gt;Max() + <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>;
+<a name="l01386"></a>01386 }
+<a name="l01387"></a>01387 
+<a name="l01388"></a>01388 <span class="keywordtype">void</span> StartVarPerformedIntervalVar::SetEndMin(int64 m) {
+<a name="l01389"></a>01389   SetStartMin(m - <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>);
+<a name="l01390"></a>01390 }
+<a name="l01391"></a>01391 
+<a name="l01392"></a>01392 <span class="keywordtype">void</span> StartVarPerformedIntervalVar::SetEndMax(int64 m) {
+<a name="l01393"></a>01393   SetStartMax(m - <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>);
+<a name="l01394"></a>01394 }
+<a name="l01395"></a>01395 
+<a name="l01396"></a>01396 <span class="keywordtype">void</span> StartVarPerformedIntervalVar::SetEndRange(int64 mi, int64 ma) {
+<a name="l01397"></a>01397   SetStartRange(mi - <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>, ma - <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>);
+<a name="l01398"></a>01398 }
+<a name="l01399"></a>01399 
+<a name="l01400"></a>01400 
+<a name="l01401"></a>01401 <span class="keywordtype">void</span> StartVarPerformedIntervalVar::SetDurationRange(int64 mi, int64 ma) {
+<a name="l01402"></a>01402   <span class="keywordflow">if</span> (mi &gt; <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a> || ma &lt; duration_ || mi &gt; ma) {
+<a name="l01403"></a>01403     solver()-&gt;Fail();
+<a name="l01404"></a>01404   }
+<a name="l01405"></a>01405 }
 <a name="l01406"></a>01406 
-<a name="l01407"></a><a class="code" href="classoperations__research_1_1IntervalVar.html#031d97f0c0940a75d32debe1e7c16c43">01407</a> <span class="keywordtype">void</span> IntervalVar::WhenAnything(<a class="code" href="classoperations__research_1_1Demon.html" title="A Demon is the base element of a propagation queue.">Demon</a>* <span class="keyword">const</span> d) {
-<a name="l01408"></a>01408   <a class="code" href="classoperations__research_1_1IntervalVar.html#a109772cea3713098a40a645509f7566">WhenStartRange</a>(d);
-<a name="l01409"></a>01409   <a class="code" href="classoperations__research_1_1IntervalVar.html#f95b1b5fb7a1ff5818d7eabaafdf8408">WhenDurationRange</a>(d);
-<a name="l01410"></a>01410   <a class="code" href="classoperations__research_1_1IntervalVar.html#46f1c758e6201e2606cb3561c16c9e3d">WhenEndRange</a>(d);
-<a name="l01411"></a>01411   <a class="code" href="classoperations__research_1_1IntervalVar.html#216609be9e8d0b595ce401ca5c2d86b0">WhenPerformedBound</a>(d);
-<a name="l01412"></a>01412 }
-<a name="l01413"></a>01413 
-<a name="l01414"></a><a class="code" href="classoperations__research_1_1IntervalVar.html#3de2720b9c832d3fce64011a9b7d373b">01414</a> <a class="code" href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming...">IntExpr</a>* <a class="code" href="classoperations__research_1_1IntervalVar.html#3de2720b9c832d3fce64011a9b7d373b" title="These methods create expressions encapsulating the start, end and duration of the...">IntervalVar::StartExpr</a>() {
-<a name="l01415"></a>01415   <span class="keywordflow">if</span> (start_expr_ == NULL) {
-<a name="l01416"></a>01416     <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#7ccd4144085fe2217fd92798283e99df" title="reversibility">SaveValue</a>(reinterpret_cast&lt;void**&gt;(&amp;start_expr_));
-<a name="l01417"></a>01417     start_expr_ = <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#f5544b98eb60cbac3c4d9d10ca81ae25" title="Registers a new IntExpr and wraps it inside a TraceIntExpr if necessary.">RegisterIntExpr</a>(
-<a name="l01418"></a>01418         <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;RevAlloc(<span class="keyword">new</span> IntervalVarStartExpr(<span class="keyword">this</span>)));
-<a name="l01419"></a>01419     <span class="keywordflow">if</span> (<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#0f2327dbde296e49312e18cce89606c7" title="Returns whether the object has been named or not.">HasName</a>()) {
-<a name="l01420"></a>01420       start_expr_-&gt;<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#8b98dbf206a52e5f327b3640f71193da">set_name</a>(StringPrintf(<span class="stringliteral">"start(%s)"</span>, <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#89b827a71613c6c120d5ac326202df7e" title="Naming.">name</a>().c_str()));
-<a name="l01421"></a>01421     }
-<a name="l01422"></a>01422   }
-<a name="l01423"></a>01423   <span class="keywordflow">return</span> start_expr_;
-<a name="l01424"></a>01424 }
-<a name="l01425"></a>01425 
-<a name="l01426"></a><a class="code" href="classoperations__research_1_1IntervalVar.html#108a5c77b42c98a1678771f2d8c0ecd0">01426</a> <a class="code" href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming...">IntExpr</a>* <a class="code" href="classoperations__research_1_1IntervalVar.html#108a5c77b42c98a1678771f2d8c0ecd0">IntervalVar::DurationExpr</a>() {
-<a name="l01427"></a>01427   <span class="keywordflow">if</span> (duration_expr_ == NULL) {
-<a name="l01428"></a>01428     <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#7ccd4144085fe2217fd92798283e99df" title="reversibility">SaveValue</a>(reinterpret_cast&lt;void**&gt;(&amp;duration_expr_));
-<a name="l01429"></a>01429     duration_expr_ = <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#f5544b98eb60cbac3c4d9d10ca81ae25" title="Registers a new IntExpr and wraps it inside a TraceIntExpr if necessary.">RegisterIntExpr</a>(
-<a name="l01430"></a>01430         <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;RevAlloc(<span class="keyword">new</span> IntervalVarDurationExpr(<span class="keyword">this</span>)));
-<a name="l01431"></a>01431     <span class="keywordflow">if</span> (<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#0f2327dbde296e49312e18cce89606c7" title="Returns whether the object has been named or not.">HasName</a>()) {
-<a name="l01432"></a>01432       duration_expr_-&gt;<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#8b98dbf206a52e5f327b3640f71193da">set_name</a>(StringPrintf(<span class="stringliteral">"duration(%s)"</span>, <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#89b827a71613c6c120d5ac326202df7e" title="Naming.">name</a>().c_str()));
-<a name="l01433"></a>01433     }
-<a name="l01434"></a>01434   }
-<a name="l01435"></a>01435   <span class="keywordflow">return</span> duration_expr_;
-<a name="l01436"></a>01436 }
-<a name="l01437"></a>01437 
-<a name="l01438"></a><a class="code" href="classoperations__research_1_1IntervalVar.html#e204c9497ac12ff850b7c7a321e90b25">01438</a> <a class="code" href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming...">IntExpr</a>* <a class="code" href="classoperations__research_1_1IntervalVar.html#e204c9497ac12ff850b7c7a321e90b25">IntervalVar::EndExpr</a>() {
-<a name="l01439"></a>01439   <span class="keywordflow">if</span> (end_expr_ == NULL) {
-<a name="l01440"></a>01440     <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#7ccd4144085fe2217fd92798283e99df" title="reversibility">SaveValue</a>(reinterpret_cast&lt;void**&gt;(&amp;end_expr_));
-<a name="l01441"></a>01441     end_expr_ = <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#f5544b98eb60cbac3c4d9d10ca81ae25" title="Registers a new IntExpr and wraps it inside a TraceIntExpr if necessary.">RegisterIntExpr</a>(
-<a name="l01442"></a>01442         <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;RevAlloc(<span class="keyword">new</span> IntervalVarEndExpr(<span class="keyword">this</span>)));
-<a name="l01443"></a>01443     <span class="keywordflow">if</span> (<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#0f2327dbde296e49312e18cce89606c7" title="Returns whether the object has been named or not.">HasName</a>()) {
-<a name="l01444"></a>01444       end_expr_-&gt;<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#8b98dbf206a52e5f327b3640f71193da">set_name</a>(StringPrintf(<span class="stringliteral">"end(%s)"</span>, <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#89b827a71613c6c120d5ac326202df7e" title="Naming.">name</a>().c_str()));
-<a name="l01445"></a>01445     }
-<a name="l01446"></a>01446   }
-<a name="l01447"></a>01447   <span class="keywordflow">return</span> end_expr_;
-<a name="l01448"></a>01448 }
-<a name="l01449"></a>01449 
-<a name="l01450"></a><a class="code" href="classoperations__research_1_1IntervalVar.html#23ae360262fe84f29f4055d2393c61c1">01450</a> <a class="code" href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming...">IntExpr</a>* <a class="code" href="classoperations__research_1_1IntervalVar.html#23ae360262fe84f29f4055d2393c61c1">IntervalVar::PerformedExpr</a>() {
-<a name="l01451"></a>01451   <span class="keywordflow">if</span> (performed_expr_ == NULL) {
-<a name="l01452"></a>01452     <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#7ccd4144085fe2217fd92798283e99df" title="reversibility">SaveValue</a>(reinterpret_cast&lt;void**&gt;(&amp;performed_expr_));
-<a name="l01453"></a>01453     performed_expr_ = <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#f5544b98eb60cbac3c4d9d10ca81ae25" title="Registers a new IntExpr and wraps it inside a TraceIntExpr if necessary.">RegisterIntExpr</a>(
-<a name="l01454"></a>01454         <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;RevAlloc(<span class="keyword">new</span> IntervalVarPerformedExpr(<span class="keyword">this</span>)));
-<a name="l01455"></a>01455     <span class="keywordflow">if</span> (<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#0f2327dbde296e49312e18cce89606c7" title="Returns whether the object has been named or not.">HasName</a>()) {
-<a name="l01456"></a>01456       performed_expr_-&gt;<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#8b98dbf206a52e5f327b3640f71193da">set_name</a>(StringPrintf(<span class="stringliteral">"performed(%s)"</span>, <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#89b827a71613c6c120d5ac326202df7e" title="Naming.">name</a>().c_str()));
-<a name="l01457"></a>01457     }
-<a name="l01458"></a>01458   }
-<a name="l01459"></a>01459   <span class="keywordflow">return</span> performed_expr_;
-<a name="l01460"></a>01460 }
-<a name="l01461"></a>01461 
-<a name="l01462"></a><a class="code" href="classoperations__research_1_1Solver.html#9ecdd77ee79fecd1cac59614996dbe59">01462</a> <a class="code" href="classoperations__research_1_1IntervalVar.html" title="Interval Var.">IntervalVar</a>* <a class="code" href="classoperations__research_1_1Solver.html#9ecdd77ee79fecd1cac59614996dbe59" title="Creates an fixed and performed interval.">Solver::MakeFixedInterval</a>(int64 start,
-<a name="l01463"></a>01463                                        int64 duration,
-<a name="l01464"></a>01464                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#89b827a71613c6c120d5ac326202df7e" title="Naming.">name</a>) {
-<a name="l01465"></a>01465   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> FixedInterval(<span class="keyword">this</span>, start, duration, name));
-<a name="l01466"></a>01466 }
-<a name="l01467"></a>01467 
-<a name="l01468"></a><a class="code" href="classoperations__research_1_1Solver.html#7975bb41c0f5e13ad56ede9bfd854add">01468</a> <a class="code" href="classoperations__research_1_1IntervalVar.html" title="Interval Var.">IntervalVar</a>* <a class="code" href="classoperations__research_1_1Solver.html#7975bb41c0f5e13ad56ede9bfd854add" title="scheduling objects">Solver::MakeFixedDurationIntervalVar</a>(int64 start_min,
-<a name="l01469"></a>01469                                                   int64 start_max,
-<a name="l01470"></a>01470                                                   int64 duration,
-<a name="l01471"></a>01471                                                   <span class="keywordtype">bool</span> optional,
-<a name="l01472"></a>01472                                                   <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>) {
-<a name="l01473"></a>01473   <span class="keywordflow">if</span> (start_min == start_max &amp;&amp; !optional) {
-<a name="l01474"></a>01474     <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#9ecdd77ee79fecd1cac59614996dbe59" title="Creates an fixed and performed interval.">MakeFixedInterval</a>(start_min, duration, name);
-<a name="l01475"></a>01475   } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (!optional) {
-<a name="l01476"></a>01476     <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#56a7228933a19d676cbb5587364853bc" title="Registers a new IntervalVar and wraps it inside a TraceIntervalVar if necessary.">RegisterIntervalVar</a>(
-<a name="l01477"></a>01477         <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> FixedDurationPerformedIntervalVar(<span class="keyword">this</span>,
-<a name="l01478"></a>01478                                                        start_min,
-<a name="l01479"></a>01479                                                        start_max,
-<a name="l01480"></a>01480                                                        duration,
-<a name="l01481"></a>01481                                                        name)));
-<a name="l01482"></a>01482   }
-<a name="l01483"></a>01483   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#56a7228933a19d676cbb5587364853bc" title="Registers a new IntervalVar and wraps it inside a TraceIntervalVar if necessary.">RegisterIntervalVar</a>(
-<a name="l01484"></a>01484       <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> FixedDurationIntervalVar(<span class="keyword">this</span>, start_min, start_max,
-<a name="l01485"></a>01485                                             duration, optional, name)));
-<a name="l01486"></a>01486 }
-<a name="l01487"></a>01487 
-<a name="l01488"></a><a class="code" href="classoperations__research_1_1Solver.html#8f12127939e5abb80211f018edc46af3">01488</a> <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1Solver.html#8f12127939e5abb80211f018edc46af3" title="This method fills the vector with &amp;#39;count&amp;#39; interval var built with the corresponding...">Solver::MakeFixedDurationIntervalVarArray</a>(<span class="keywordtype">int</span> count,
-<a name="l01489"></a>01489                                                int64 start_min,
-<a name="l01490"></a>01490                                                int64 start_max,
-<a name="l01491"></a>01491                                                int64 duration,
-<a name="l01492"></a>01492                                                <span class="keywordtype">bool</span> optional,
-<a name="l01493"></a>01493                                                <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>,
-<a name="l01494"></a>01494                                                std::vector&lt;IntervalVar*&gt;* array) {
-<a name="l01495"></a>01495   CHECK_GT(count, 0);
-<a name="l01496"></a>01496   CHECK_NOTNULL(array);
-<a name="l01497"></a>01497   array-&gt;clear();
-<a name="l01498"></a>01498   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; count; ++i) {
-<a name="l01499"></a>01499     <span class="keyword">const</span> <span class="keywordtype">string</span> var_name = StringPrintf(<span class="stringliteral">"%s%i"</span>, name.c_str(), i);
-<a name="l01500"></a>01500     array-&gt;push_back(<a class="code" href="classoperations__research_1_1Solver.html#7975bb41c0f5e13ad56ede9bfd854add" title="scheduling objects">MakeFixedDurationIntervalVar</a>(start_min,
-<a name="l01501"></a>01501                                                   start_max,
-<a name="l01502"></a>01502                                                   duration,
-<a name="l01503"></a>01503                                                   optional,
-<a name="l01504"></a>01504                                                   var_name));
-<a name="l01505"></a>01505   }
-<a name="l01506"></a>01506 }
-<a name="l01507"></a>01507 }  <span class="comment">// namespace operations_research</span>
+<a name="l01407"></a>01407 <span class="keywordtype">bool</span> StartVarPerformedIntervalVar::MustBePerformed()<span class="keyword"> const </span>{
+<a name="l01408"></a>01408   <span class="keywordflow">return</span> <span class="keyword">true</span>;
+<a name="l01409"></a>01409 }
+<a name="l01410"></a>01410 
+<a name="l01411"></a>01411 <span class="keywordtype">bool</span> StartVarPerformedIntervalVar::MayBePerformed()<span class="keyword"> const </span>{
+<a name="l01412"></a>01412   <span class="keywordflow">return</span> <span class="keyword">true</span>;
+<a name="l01413"></a>01413 }
+<a name="l01414"></a>01414 
+<a name="l01415"></a>01415 <span class="keywordtype">void</span> StartVarPerformedIntervalVar::SetPerformed(<span class="keywordtype">bool</span> val) {
+<a name="l01416"></a>01416   <span class="keywordflow">if</span> (!val) {
+<a name="l01417"></a>01417     solver()-&gt;Fail();
+<a name="l01418"></a>01418   }
+<a name="l01419"></a>01419 }
+<a name="l01420"></a>01420 
+<a name="l01421"></a>01421 <span class="keywordtype">string</span> StartVarPerformedIntervalVar::DebugString()<span class="keyword"> const </span>{
+<a name="l01422"></a>01422   <span class="keywordtype">string</span> out;
+<a name="l01423"></a>01423   <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; var_name = <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>();
+<a name="l01424"></a>01424   <span class="keywordflow">if</span> (!var_name.empty()) {
+<a name="l01425"></a>01425     out = var_name + <span class="stringliteral">"(start = "</span>;
+<a name="l01426"></a>01426   } <span class="keywordflow">else</span> {
+<a name="l01427"></a>01427     out = <span class="stringliteral">"IntervalVar(start = "</span>;
+<a name="l01428"></a>01428   }
+<a name="l01429"></a>01429   StringAppendF(&amp;out, <span class="stringliteral">"%"</span> GG_LL_FORMAT <span class="stringliteral">"d"</span>, <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>-&gt;Min());
+<a name="l01430"></a>01430   <span class="keywordflow">if</span> (!<a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>-&gt;Bound()) {
+<a name="l01431"></a>01431     StringAppendF(&amp;out, <span class="stringliteral">" .. %"</span> GG_LL_FORMAT <span class="stringliteral">"d"</span>, <a class="code" href="interval_8cc.html#b0854971ef7835eaf662ef5dcbce33af">start_var_</a>-&gt;Max());
+<a name="l01432"></a>01432   }
+<a name="l01433"></a>01433 
+<a name="l01434"></a>01434   StringAppendF(&amp;out, <span class="stringliteral">", duration = %"</span> GG_LL_FORMAT <span class="stringliteral">"d, status = "</span>, <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>);
+<a name="l01435"></a>01435   out += <span class="stringliteral">"performed)"</span>;
+<a name="l01436"></a>01436   <span class="keywordflow">return</span> out;
+<a name="l01437"></a>01437 }
+<a name="l01438"></a>01438 
+<a name="l01439"></a>01439                                    <span class="comment">// ----- FixedInterval -----</span>
+<a name="l01440"></a>01440 
+<a name="l01441"></a>01441 <span class="keyword">class </span>FixedInterval : <span class="keyword">public</span> IntervalVar {
+<a name="l01442"></a>01442  <span class="keyword">public</span>:
+<a name="l01443"></a>01443   FixedInterval(Solver* <span class="keyword">const</span> s, int64 start, int64 duration,
+<a name="l01444"></a>01444                 <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>);
+<a name="l01445"></a>01445   <span class="keyword">virtual</span> ~FixedInterval() {}
+<a name="l01446"></a>01446 
+<a name="l01447"></a>01447   <span class="keyword">virtual</span> int64 StartMin()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>; }
+<a name="l01448"></a>01448   <span class="keyword">virtual</span> int64 StartMax()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>; }
+<a name="l01449"></a>01449   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetStartMin(int64 m);
+<a name="l01450"></a>01450   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetStartMax(int64 m);
+<a name="l01451"></a>01451   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetStartRange(int64 mi, int64 ma);
+<a name="l01452"></a>01452   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenStartRange(Demon* <span class="keyword">const</span> d) {}
+<a name="l01453"></a>01453   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenStartBound(Demon* <span class="keyword">const</span> d) {}
+<a name="l01454"></a>01454 
+<a name="l01455"></a>01455   <span class="keyword">virtual</span> int64 DurationMin()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>; }
+<a name="l01456"></a>01456   <span class="keyword">virtual</span> int64 DurationMax()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>; }
+<a name="l01457"></a>01457   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetDurationMin(int64 m);
+<a name="l01458"></a>01458   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetDurationMax(int64 m);
+<a name="l01459"></a>01459   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetDurationRange(int64 mi, int64 ma);
+<a name="l01460"></a>01460   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenDurationRange(Demon* <span class="keyword">const</span> d) { }
+<a name="l01461"></a>01461   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenDurationBound(Demon* <span class="keyword">const</span> d) { }
+<a name="l01462"></a>01462 
+<a name="l01463"></a>01463   <span class="keyword">virtual</span> int64 EndMin()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a> + <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>; }
+<a name="l01464"></a>01464   <span class="keyword">virtual</span> int64 EndMax()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a> + <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>; }
+<a name="l01465"></a>01465   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetEndMin(int64 m);
+<a name="l01466"></a>01466   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetEndMax(int64 m);
+<a name="l01467"></a>01467   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetEndRange(int64 mi, int64 ma);
+<a name="l01468"></a>01468   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenEndRange(Demon* <span class="keyword">const</span> d)  {}
+<a name="l01469"></a>01469   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenEndBound(Demon* <span class="keyword">const</span> d) {}
+<a name="l01470"></a>01470 
+<a name="l01471"></a>01471   <span class="keyword">virtual</span> <span class="keywordtype">bool</span> MustBePerformed()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <span class="keyword">true</span>; }
+<a name="l01472"></a>01472   <span class="keyword">virtual</span> <span class="keywordtype">bool</span> MayBePerformed()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> <span class="keyword">true</span>; }
+<a name="l01473"></a>01473   <span class="keyword">virtual</span> <span class="keywordtype">void</span> SetPerformed(<span class="keywordtype">bool</span> val);
+<a name="l01474"></a>01474   <span class="keyword">virtual</span> <span class="keywordtype">void</span> WhenPerformedBound(Demon* <span class="keyword">const</span> d) {}
+<a name="l01475"></a>01475   <span class="keyword">virtual</span> <span class="keywordtype">string</span> DebugString() <span class="keyword">const</span>;
+<a name="l01476"></a>01476 
+<a name="l01477"></a>01477   <span class="keyword">virtual</span> <span class="keywordtype">void</span> Accept(ModelVisitor* <span class="keyword">const</span> visitor)<span class="keyword"> const </span>{
+<a name="l01478"></a>01478     visitor-&gt;VisitIntervalVariable(<span class="keyword">this</span>, <span class="stringliteral">""</span>, NULL);
+<a name="l01479"></a>01479   }
+<a name="l01480"></a>01480 
+<a name="l01481"></a>01481  <span class="keyword">private</span>:
+<a name="l01482"></a><a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">01482</a>   <span class="keyword">const</span> int64 <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>;
+<a name="l01483"></a>01483   <span class="keyword">const</span> int64 <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>;
+<a name="l01484"></a>01484 };
+<a name="l01485"></a>01485 
+<a name="l01486"></a>01486 FixedInterval::FixedInterval(Solver* <span class="keyword">const</span> s,
+<a name="l01487"></a>01487                              int64 start,
+<a name="l01488"></a>01488                              int64 duration,
+<a name="l01489"></a>01489                              <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>)
+<a name="l01490"></a>01490     : IntervalVar(s, name),
+<a name="l01491"></a>01491       <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>(start),
+<a name="l01492"></a>01492       <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>(duration) {
+<a name="l01493"></a>01493 }
+<a name="l01494"></a>01494 
+<a name="l01495"></a>01495 <span class="keywordtype">void</span> FixedInterval::SetStartMin(int64 m) {
+<a name="l01496"></a>01496   <span class="keywordflow">if</span> (m &gt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>) {
+<a name="l01497"></a>01497     solver()-&gt;Fail();
+<a name="l01498"></a>01498   }
+<a name="l01499"></a>01499 }
+<a name="l01500"></a>01500 
+<a name="l01501"></a>01501 <span class="keywordtype">void</span> FixedInterval::SetStartMax(int64 m) {
+<a name="l01502"></a>01502   <span class="keywordflow">if</span> (m &lt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>) {
+<a name="l01503"></a>01503     solver()-&gt;Fail();
+<a name="l01504"></a>01504   }
+<a name="l01505"></a>01505 }
+<a name="l01506"></a>01506 
+<a name="l01507"></a>01507 <span class="keywordtype">void</span> FixedInterval::SetStartRange(int64 mi, int64 ma) {
+<a name="l01508"></a>01508   <span class="keywordflow">if</span> (mi &gt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a> || ma &lt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>) {
+<a name="l01509"></a>01509     solver()-&gt;Fail();
+<a name="l01510"></a>01510   }
+<a name="l01511"></a>01511 }
+<a name="l01512"></a>01512 
+<a name="l01513"></a>01513 <span class="keywordtype">void</span> FixedInterval::SetDurationMin(int64 m) {
+<a name="l01514"></a>01514   <span class="keywordflow">if</span> (m &gt; <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>) {
+<a name="l01515"></a>01515     solver()-&gt;Fail();
+<a name="l01516"></a>01516   }
+<a name="l01517"></a>01517 }
+<a name="l01518"></a>01518 
+<a name="l01519"></a>01519 <span class="keywordtype">void</span> FixedInterval::SetDurationMax(int64 m) {
+<a name="l01520"></a>01520   <span class="keywordflow">if</span> (m &lt; <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>) {
+<a name="l01521"></a>01521     solver()-&gt;Fail();
+<a name="l01522"></a>01522   }
+<a name="l01523"></a>01523 }
+<a name="l01524"></a>01524 
+<a name="l01525"></a>01525 <span class="keywordtype">void</span> FixedInterval::SetEndMin(int64 m) {
+<a name="l01526"></a>01526   <span class="keywordflow">if</span> (m &gt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a> + <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>) {
+<a name="l01527"></a>01527     solver()-&gt;Fail();
+<a name="l01528"></a>01528   }
+<a name="l01529"></a>01529 }
+<a name="l01530"></a>01530 
+<a name="l01531"></a>01531 <span class="keywordtype">void</span> FixedInterval::SetEndMax(int64 m) {
+<a name="l01532"></a>01532   <span class="keywordflow">if</span> (m &lt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a> + <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>) {
+<a name="l01533"></a>01533     solver()-&gt;Fail();
+<a name="l01534"></a>01534   }
+<a name="l01535"></a>01535 }
+<a name="l01536"></a>01536 
+<a name="l01537"></a>01537 <span class="keywordtype">void</span> FixedInterval::SetEndRange(int64 mi, int64 ma) {
+<a name="l01538"></a>01538   <span class="keywordflow">if</span> (mi &gt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a> + <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a> || ma &lt; <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a> + <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>) {
+<a name="l01539"></a>01539     solver()-&gt;Fail();
+<a name="l01540"></a>01540   }
+<a name="l01541"></a>01541 }
+<a name="l01542"></a>01542 
+<a name="l01543"></a>01543 <span class="keywordtype">void</span> FixedInterval::SetDurationRange(int64 mi, int64 ma) {
+<a name="l01544"></a>01544   <span class="keywordflow">if</span> (mi &gt; <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a> || ma &lt; <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>) {
+<a name="l01545"></a>01545     solver()-&gt;Fail();
+<a name="l01546"></a>01546   }
+<a name="l01547"></a>01547 }
+<a name="l01548"></a>01548 
+<a name="l01549"></a>01549 <span class="keywordtype">void</span> FixedInterval::SetPerformed(<span class="keywordtype">bool</span> val) {
+<a name="l01550"></a>01550   <span class="keywordflow">if</span> (!val) {
+<a name="l01551"></a>01551     solver()-&gt;Fail();
+<a name="l01552"></a>01552   }
+<a name="l01553"></a>01553 }
+<a name="l01554"></a>01554 
+<a name="l01555"></a>01555 <span class="keywordtype">string</span> FixedInterval::DebugString()<span class="keyword"> const </span>{
+<a name="l01556"></a>01556   <span class="keywordtype">string</span> out;
+<a name="l01557"></a>01557   <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; var_name = <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>();
+<a name="l01558"></a>01558   <span class="keywordflow">if</span> (!var_name.empty()) {
+<a name="l01559"></a>01559     out = var_name + <span class="stringliteral">"(start = "</span>;
+<a name="l01560"></a>01560   } <span class="keywordflow">else</span> {
+<a name="l01561"></a>01561     out = <span class="stringliteral">"IntervalVar(start = "</span>;
+<a name="l01562"></a>01562   }
+<a name="l01563"></a>01563   StringAppendF(&amp;out, <span class="stringliteral">"%"</span> GG_LL_FORMAT <span class="stringliteral">"d, duration = %"</span> GG_LL_FORMAT
+<a name="l01564"></a>01564                 <span class="stringliteral">"d, status = performed)"</span>,
+<a name="l01565"></a>01565                 <a class="code" href="interval_8cc.html#7cdffe377ecaed0ef72d3522ae023016">start_</a>, <a class="code" href="interval_8cc.html#e5ac1d5f707377d415e2503f43c2c494">duration_</a>);
+<a name="l01566"></a>01566   <span class="keywordflow">return</span> out;
+<a name="l01567"></a>01567 }
+<a name="l01568"></a>01568 }  <span class="comment">// namespace</span>
+<a name="l01569"></a>01569 
+<a name="l01570"></a>01570 <span class="comment">// ----- API -----</span>
+<a name="l01571"></a>01571 
+<a name="l01572"></a><a class="code" href="classoperations__research_1_1IntervalVar.html#031d97f0c0940a75d32debe1e7c16c43">01572</a> <span class="keywordtype">void</span> IntervalVar::WhenAnything(<a class="code" href="classoperations__research_1_1Demon.html" title="A Demon is the base element of a propagation queue.">Demon</a>* <span class="keyword">const</span> d) {
+<a name="l01573"></a>01573   <a class="code" href="classoperations__research_1_1IntervalVar.html#a109772cea3713098a40a645509f7566">WhenStartRange</a>(d);
+<a name="l01574"></a>01574   <a class="code" href="classoperations__research_1_1IntervalVar.html#f95b1b5fb7a1ff5818d7eabaafdf8408">WhenDurationRange</a>(d);
+<a name="l01575"></a>01575   <a class="code" href="classoperations__research_1_1IntervalVar.html#46f1c758e6201e2606cb3561c16c9e3d">WhenEndRange</a>(d);
+<a name="l01576"></a>01576   <a class="code" href="classoperations__research_1_1IntervalVar.html#216609be9e8d0b595ce401ca5c2d86b0">WhenPerformedBound</a>(d);
+<a name="l01577"></a>01577 }
+<a name="l01578"></a>01578 
+<a name="l01579"></a><a class="code" href="classoperations__research_1_1IntervalVar.html#3de2720b9c832d3fce64011a9b7d373b">01579</a> <a class="code" href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming...">IntExpr</a>* <a class="code" href="classoperations__research_1_1IntervalVar.html#3de2720b9c832d3fce64011a9b7d373b" title="These methods create expressions encapsulating the start, end and duration of the...">IntervalVar::StartExpr</a>() {
+<a name="l01580"></a>01580   <span class="keywordflow">if</span> (start_expr_ == NULL) {
+<a name="l01581"></a>01581     <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#7ccd4144085fe2217fd92798283e99df" title="reversibility">SaveValue</a>(reinterpret_cast&lt;void**&gt;(&amp;start_expr_));
+<a name="l01582"></a>01582     start_expr_ = <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#f5544b98eb60cbac3c4d9d10ca81ae25" title="Registers a new IntExpr and wraps it inside a TraceIntExpr if necessary.">RegisterIntExpr</a>(
+<a name="l01583"></a>01583         <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;RevAlloc(<span class="keyword">new</span> IntervalVarStartExpr(<span class="keyword">this</span>)));
+<a name="l01584"></a>01584     <span class="keywordflow">if</span> (<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#0f2327dbde296e49312e18cce89606c7" title="Returns whether the object has been named or not.">HasName</a>()) {
+<a name="l01585"></a>01585       start_expr_-&gt;<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#8b98dbf206a52e5f327b3640f71193da">set_name</a>(StringPrintf(<span class="stringliteral">"start(%s)"</span>, <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#89b827a71613c6c120d5ac326202df7e" title="Naming.">name</a>().c_str()));
+<a name="l01586"></a>01586     }
+<a name="l01587"></a>01587   }
+<a name="l01588"></a>01588   <span class="keywordflow">return</span> start_expr_;
+<a name="l01589"></a>01589 }
+<a name="l01590"></a>01590 
+<a name="l01591"></a><a class="code" href="classoperations__research_1_1IntervalVar.html#108a5c77b42c98a1678771f2d8c0ecd0">01591</a> <a class="code" href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming...">IntExpr</a>* <a class="code" href="classoperations__research_1_1IntervalVar.html#108a5c77b42c98a1678771f2d8c0ecd0">IntervalVar::DurationExpr</a>() {
+<a name="l01592"></a>01592   <span class="keywordflow">if</span> (duration_expr_ == NULL) {
+<a name="l01593"></a>01593     <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#7ccd4144085fe2217fd92798283e99df" title="reversibility">SaveValue</a>(reinterpret_cast&lt;void**&gt;(&amp;duration_expr_));
+<a name="l01594"></a>01594     duration_expr_ = <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#f5544b98eb60cbac3c4d9d10ca81ae25" title="Registers a new IntExpr and wraps it inside a TraceIntExpr if necessary.">RegisterIntExpr</a>(
+<a name="l01595"></a>01595         <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;RevAlloc(<span class="keyword">new</span> IntervalVarDurationExpr(<span class="keyword">this</span>)));
+<a name="l01596"></a>01596     <span class="keywordflow">if</span> (<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#0f2327dbde296e49312e18cce89606c7" title="Returns whether the object has been named or not.">HasName</a>()) {
+<a name="l01597"></a>01597       duration_expr_-&gt;<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#8b98dbf206a52e5f327b3640f71193da">set_name</a>(StringPrintf(<span class="stringliteral">"duration(%s)"</span>, <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#89b827a71613c6c120d5ac326202df7e" title="Naming.">name</a>().c_str()));
+<a name="l01598"></a>01598     }
+<a name="l01599"></a>01599   }
+<a name="l01600"></a>01600   <span class="keywordflow">return</span> duration_expr_;
+<a name="l01601"></a>01601 }
+<a name="l01602"></a>01602 
+<a name="l01603"></a><a class="code" href="classoperations__research_1_1IntervalVar.html#e204c9497ac12ff850b7c7a321e90b25">01603</a> <a class="code" href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming...">IntExpr</a>* <a class="code" href="classoperations__research_1_1IntervalVar.html#e204c9497ac12ff850b7c7a321e90b25">IntervalVar::EndExpr</a>() {
+<a name="l01604"></a>01604   <span class="keywordflow">if</span> (end_expr_ == NULL) {
+<a name="l01605"></a>01605     <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#7ccd4144085fe2217fd92798283e99df" title="reversibility">SaveValue</a>(reinterpret_cast&lt;void**&gt;(&amp;end_expr_));
+<a name="l01606"></a>01606     end_expr_ = <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#f5544b98eb60cbac3c4d9d10ca81ae25" title="Registers a new IntExpr and wraps it inside a TraceIntExpr if necessary.">RegisterIntExpr</a>(
+<a name="l01607"></a>01607         <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;RevAlloc(<span class="keyword">new</span> IntervalVarEndExpr(<span class="keyword">this</span>)));
+<a name="l01608"></a>01608     <span class="keywordflow">if</span> (<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#0f2327dbde296e49312e18cce89606c7" title="Returns whether the object has been named or not.">HasName</a>()) {
+<a name="l01609"></a>01609       end_expr_-&gt;<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#8b98dbf206a52e5f327b3640f71193da">set_name</a>(StringPrintf(<span class="stringliteral">"end(%s)"</span>, <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#89b827a71613c6c120d5ac326202df7e" title="Naming.">name</a>().c_str()));
+<a name="l01610"></a>01610     }
+<a name="l01611"></a>01611   }
+<a name="l01612"></a>01612   <span class="keywordflow">return</span> end_expr_;
+<a name="l01613"></a>01613 }
+<a name="l01614"></a>01614 
+<a name="l01615"></a><a class="code" href="classoperations__research_1_1IntervalVar.html#23ae360262fe84f29f4055d2393c61c1">01615</a> <a class="code" href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming...">IntExpr</a>* <a class="code" href="classoperations__research_1_1IntervalVar.html#23ae360262fe84f29f4055d2393c61c1">IntervalVar::PerformedExpr</a>() {
+<a name="l01616"></a>01616   <span class="keywordflow">if</span> (performed_expr_ == NULL) {
+<a name="l01617"></a>01617     <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#7ccd4144085fe2217fd92798283e99df" title="reversibility">SaveValue</a>(reinterpret_cast&lt;void**&gt;(&amp;performed_expr_));
+<a name="l01618"></a>01618     performed_expr_ = <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;<a class="code" href="classoperations__research_1_1Solver.html#f5544b98eb60cbac3c4d9d10ca81ae25" title="Registers a new IntExpr and wraps it inside a TraceIntExpr if necessary.">RegisterIntExpr</a>(
+<a name="l01619"></a>01619         <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>()-&gt;RevAlloc(<span class="keyword">new</span> IntervalVarPerformedExpr(<span class="keyword">this</span>)));
+<a name="l01620"></a>01620     <span class="keywordflow">if</span> (<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#0f2327dbde296e49312e18cce89606c7" title="Returns whether the object has been named or not.">HasName</a>()) {
+<a name="l01621"></a>01621       performed_expr_-&gt;<a class="code" href="classoperations__research_1_1PropagationBaseObject.html#8b98dbf206a52e5f327b3640f71193da">set_name</a>(StringPrintf(<span class="stringliteral">"performed(%s)"</span>, <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#89b827a71613c6c120d5ac326202df7e" title="Naming.">name</a>().c_str()));
+<a name="l01622"></a>01622     }
+<a name="l01623"></a>01623   }
+<a name="l01624"></a>01624   <span class="keywordflow">return</span> performed_expr_;
+<a name="l01625"></a>01625 }
+<a name="l01626"></a>01626 
+<a name="l01627"></a><a class="code" href="classoperations__research_1_1Solver.html#9ecdd77ee79fecd1cac59614996dbe59">01627</a> <a class="code" href="classoperations__research_1_1IntervalVar.html" title="Interval Var.">IntervalVar</a>* <a class="code" href="classoperations__research_1_1Solver.html#9ecdd77ee79fecd1cac59614996dbe59" title="Creates an fixed and performed interval.">Solver::MakeFixedInterval</a>(int64 start,
+<a name="l01628"></a>01628                                        int64 duration,
+<a name="l01629"></a>01629                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#89b827a71613c6c120d5ac326202df7e" title="Naming.">name</a>) {
+<a name="l01630"></a>01630   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> FixedInterval(<span class="keyword">this</span>, start, duration, name));
+<a name="l01631"></a>01631 }
+<a name="l01632"></a>01632 
+<a name="l01633"></a><a class="code" href="classoperations__research_1_1Solver.html#7975bb41c0f5e13ad56ede9bfd854add">01633</a> <a class="code" href="classoperations__research_1_1IntervalVar.html" title="Interval Var.">IntervalVar</a>* <a class="code" href="classoperations__research_1_1Solver.html#7975bb41c0f5e13ad56ede9bfd854add" title="scheduling objects">Solver::MakeFixedDurationIntervalVar</a>(int64 start_min,
+<a name="l01634"></a>01634                                                   int64 start_max,
+<a name="l01635"></a>01635                                                   int64 duration,
+<a name="l01636"></a>01636                                                   <span class="keywordtype">bool</span> optional,
+<a name="l01637"></a>01637                                                   <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>) {
+<a name="l01638"></a>01638   <span class="keywordflow">if</span> (start_min == start_max &amp;&amp; !optional) {
+<a name="l01639"></a>01639     <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#9ecdd77ee79fecd1cac59614996dbe59" title="Creates an fixed and performed interval.">MakeFixedInterval</a>(start_min, duration, name);
+<a name="l01640"></a>01640   } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (!optional) {
+<a name="l01641"></a>01641     <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#56a7228933a19d676cbb5587364853bc" title="Registers a new IntervalVar and wraps it inside a TraceIntervalVar if necessary.">RegisterIntervalVar</a>(
+<a name="l01642"></a>01642         <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> FixedDurationPerformedIntervalVar(<span class="keyword">this</span>,
+<a name="l01643"></a>01643                                                        start_min,
+<a name="l01644"></a>01644                                                        start_max,
+<a name="l01645"></a>01645                                                        duration,
+<a name="l01646"></a>01646                                                        name)));
+<a name="l01647"></a>01647   }
+<a name="l01648"></a>01648   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#56a7228933a19d676cbb5587364853bc" title="Registers a new IntervalVar and wraps it inside a TraceIntervalVar if necessary.">RegisterIntervalVar</a>(
+<a name="l01649"></a>01649       <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> FixedDurationIntervalVar(<span class="keyword">this</span>, start_min, start_max,
+<a name="l01650"></a>01650                                             duration, optional, name)));
+<a name="l01651"></a>01651 }
+<a name="l01652"></a>01652 
+<a name="l01653"></a><a class="code" href="classoperations__research_1_1Solver.html#4046fff0dc21e961812cf5c24515c41e">01653</a> <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1Solver.html#4046fff0dc21e961812cf5c24515c41e" title="This method fills the vector with &amp;#39;count&amp;#39; interval var built with the corresponding...">Solver::MakeFixedDurationIntervalVarArray</a>(<span class="keywordtype">int</span> count,
+<a name="l01654"></a>01654                                                int64 start_min,
+<a name="l01655"></a>01655                                                int64 start_max,
+<a name="l01656"></a>01656                                                int64 duration,
+<a name="l01657"></a>01657                                                <span class="keywordtype">bool</span> optional,
+<a name="l01658"></a>01658                                                <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>,
+<a name="l01659"></a>01659                                                std::vector&lt;IntervalVar*&gt;* array) {
+<a name="l01660"></a>01660   CHECK_GT(count, 0);
+<a name="l01661"></a>01661   CHECK_NOTNULL(array);
+<a name="l01662"></a>01662   array-&gt;clear();
+<a name="l01663"></a>01663   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; count; ++i) {
+<a name="l01664"></a>01664     <span class="keyword">const</span> <span class="keywordtype">string</span> var_name = StringPrintf(<span class="stringliteral">"%s%i"</span>, name.c_str(), i);
+<a name="l01665"></a>01665     array-&gt;push_back(<a class="code" href="classoperations__research_1_1Solver.html#7975bb41c0f5e13ad56ede9bfd854add" title="scheduling objects">MakeFixedDurationIntervalVar</a>(start_min,
+<a name="l01666"></a>01666                                                   start_max,
+<a name="l01667"></a>01667                                                   duration,
+<a name="l01668"></a>01668                                                   optional,
+<a name="l01669"></a>01669                                                   var_name));
+<a name="l01670"></a>01670   }
+<a name="l01671"></a>01671 }
+<a name="l01672"></a>01672 
+<a name="l01673"></a><a class="code" href="classoperations__research_1_1Solver.html#8c2f4c32300069051ebbda86c82dbc2f">01673</a> <a class="code" href="classoperations__research_1_1IntervalVar.html" title="Interval Var.">IntervalVar</a>* <a class="code" href="classoperations__research_1_1Solver.html#7975bb41c0f5e13ad56ede9bfd854add" title="scheduling objects">Solver::MakeFixedDurationIntervalVar</a>(<a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <span class="keyword">const</span> start_variable,
+<a name="l01674"></a>01674                                                   int64 duration,
+<a name="l01675"></a>01675                                                   <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>) {
+<a name="l01676"></a>01676   CHECK_NOTNULL(start_variable);
+<a name="l01677"></a>01677   CHECK_GE(duration, 0);
+<a name="l01678"></a>01678   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#56a7228933a19d676cbb5587364853bc" title="Registers a new IntervalVar and wraps it inside a TraceIntervalVar if necessary.">RegisterIntervalVar</a>(
+<a name="l01679"></a>01679       <span class="keyword">new</span> StartVarPerformedIntervalVar(<span class="keyword">this</span>, start_variable, duration, name));
+<a name="l01680"></a>01680 }
+<a name="l01681"></a>01681 
+<a name="l01682"></a><a class="code" href="classoperations__research_1_1Solver.html#ca261599680e460ee5cfd15c13b44bf3">01682</a> <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1Solver.html#4046fff0dc21e961812cf5c24515c41e" title="This method fills the vector with &amp;#39;count&amp;#39; interval var built with the corresponding...">Solver::MakeFixedDurationIntervalVarArray</a>(
+<a name="l01683"></a>01683     <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; start_variables,
+<a name="l01684"></a>01684     int64 duration,
+<a name="l01685"></a>01685     <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>,
+<a name="l01686"></a>01686     std::vector&lt;IntervalVar*&gt;* array) {
+<a name="l01687"></a>01687   CHECK_NOTNULL(array);
+<a name="l01688"></a>01688   array-&gt;clear();
+<a name="l01689"></a>01689   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; start_variables.size(); ++i) {
+<a name="l01690"></a>01690     <span class="keyword">const</span> <span class="keywordtype">string</span> var_name = StringPrintf(<span class="stringliteral">"%s%i"</span>, name.c_str(), i);
+<a name="l01691"></a>01691     array-&gt;push_back(<a class="code" href="classoperations__research_1_1Solver.html#7975bb41c0f5e13ad56ede9bfd854add" title="scheduling objects">MakeFixedDurationIntervalVar</a>(start_variables[i],
+<a name="l01692"></a>01692                                                   duration,
+<a name="l01693"></a>01693                                                   var_name));
+<a name="l01694"></a>01694   }
+<a name="l01695"></a>01695 }
+<a name="l01696"></a>01696 
+<a name="l01697"></a>01697   <span class="comment">// This method fills the vector with interval variables built with</span>
+<a name="l01698"></a>01698   <span class="comment">// the corresponding start variables.</span>
+<a name="l01699"></a><a class="code" href="classoperations__research_1_1Solver.html#50b230ddff4d6f072393c249fa0dbd8a">01699</a> <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1Solver.html#4046fff0dc21e961812cf5c24515c41e" title="This method fills the vector with &amp;#39;count&amp;#39; interval var built with the corresponding...">Solver::MakeFixedDurationIntervalVarArray</a>(
+<a name="l01700"></a>01700     <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; start_variables,
+<a name="l01701"></a>01701     <span class="keyword">const</span> std::vector&lt;int64&gt;&amp; durations,
+<a name="l01702"></a>01702     <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>,
+<a name="l01703"></a>01703     std::vector&lt;IntervalVar*&gt;* array) {
+<a name="l01704"></a>01704   CHECK_NOTNULL(array);
+<a name="l01705"></a>01705   CHECK_EQ(start_variables.size(), durations.size());
+<a name="l01706"></a>01706   array-&gt;clear();
+<a name="l01707"></a>01707   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; start_variables.size(); ++i) {
+<a name="l01708"></a>01708     <span class="keyword">const</span> <span class="keywordtype">string</span> var_name = StringPrintf(<span class="stringliteral">"%s%i"</span>, name.c_str(), i);
+<a name="l01709"></a>01709     array-&gt;push_back(<a class="code" href="classoperations__research_1_1Solver.html#7975bb41c0f5e13ad56ede9bfd854add" title="scheduling objects">MakeFixedDurationIntervalVar</a>(start_variables[i],
+<a name="l01710"></a>01710                                                   durations[i],
+<a name="l01711"></a>01711                                                   var_name));
+<a name="l01712"></a>01712   }
+<a name="l01713"></a>01713 }
+<a name="l01714"></a>01714 
+<a name="l01715"></a>01715 
+<a name="l01716"></a>01716 
+<a name="l01717"></a><a class="code" href="classoperations__research_1_1Solver.html#7de3dc6fc34779491317a840934226e3">01717</a> <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1Solver.html#4046fff0dc21e961812cf5c24515c41e" title="This method fills the vector with &amp;#39;count&amp;#39; interval var built with the corresponding...">Solver::MakeFixedDurationIntervalVarArray</a>(
+<a name="l01718"></a>01718     <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; start_variables,
+<a name="l01719"></a>01719     <span class="keyword">const</span> std::vector&lt;int&gt;&amp; durations,
+<a name="l01720"></a>01720     <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>,
+<a name="l01721"></a>01721     std::vector&lt;IntervalVar*&gt;* array) {
+<a name="l01722"></a>01722   CHECK_NOTNULL(array);
+<a name="l01723"></a>01723   CHECK_EQ(start_variables.size(), durations.size());
+<a name="l01724"></a>01724   array-&gt;clear();
+<a name="l01725"></a>01725   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; start_variables.size(); ++i) {
+<a name="l01726"></a>01726     <span class="keyword">const</span> <span class="keywordtype">string</span> var_name = StringPrintf(<span class="stringliteral">"%s%i"</span>, name.c_str(), i);
+<a name="l01727"></a>01727     array-&gt;push_back(<a class="code" href="classoperations__research_1_1Solver.html#7975bb41c0f5e13ad56ede9bfd854add" title="scheduling objects">MakeFixedDurationIntervalVar</a>(start_variables[i],
+<a name="l01728"></a>01728                                                   durations[i],
+<a name="l01729"></a>01729                                                   var_name));
+<a name="l01730"></a>01730   }
+<a name="l01731"></a>01731 }
+<a name="l01732"></a>01732 }  <span class="comment">// namespace operations_research</span>
 </pre></div></div>
 
   <!-- Start of footer. -->
@@ -1597,7 +1822,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

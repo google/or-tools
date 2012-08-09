@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -167,6 +167,8 @@
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="constraint__solver_8cc.html#2e5e00da6d8b3f59989dcebf684b902b">DEFINE_bool</a> (cp_name_variables, false,&quot;Force all variables to have names.&quot;)</td></tr>
 
+<tr><td class="memItemLeft" nowrap align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="constraint__solver_8cc.html#e838b78930fb065344299bd7b514ae24">DEFINE_bool</a> (cp_name_cast_variables, false,&quot;Name variables casted from expressions&quot;)</td></tr>
+
 <tr><td class="memItemLeft" nowrap align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="constraint__solver_8cc.html#c13a1be8287ff935b4a93be3cc716e79">ConstraintSolverFailsHere</a> ()</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">DemonProfiler *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#c29a3acd03ed409504d33c2ee4966a1a">operations_research::BuildDemonProfiler</a> (Solver *const solver)</td></tr>
@@ -233,7 +235,7 @@
 CP_FAST_BACKTRACK. 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00977">977</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00991">991</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -252,7 +254,7 @@ CP_FAST_BACKTRACK.
 Backtrack is implemented using 3 primitives: CP_TRY to start searching CP_DO_FAIL to signal a failure. 
 <p>
 The program will continue on the CP_ON_FAIL primitive. CP_FAST_BACKTRACK protects an implementation of backtrack using setjmp/longjmp. The clean portable way is to use exceptions, unfortunately, it can be much slower. Thus we use ideas from Prolog, CP/CLP implementations, continuations in C and implement failing and backtracking using setjmp/longjmp. 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00968">968</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00982">982</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -269,7 +271,7 @@ The program will continue on the CP_ON_FAIL primitive. CP_FAST_BACKTRACK protect
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00976">976</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00990">990</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -296,7 +298,7 @@ The program will continue on the CP_ON_FAIL primitive. CP_FAST_BACKTRACK protect
 </pre></div>We cannot use a method/function for this as we would lose the context in the setjmp implementation. 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00972">972</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00986">986</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -318,7 +320,42 @@ The program will continue on the CP_ON_FAIL primitive. CP_FAST_BACKTRACK protect
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00059">59</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00061">61</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="e838b78930fb065344299bd7b514ae24"></a><!-- doxytag: member="constraint_solver.cc::DEFINE_bool" ref="e838b78930fb065344299bd7b514ae24" args="(cp_name_cast_variables, false,&quot;Name variables casted from expressions&quot;)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DEFINE_bool           </td>
+          <td>(</td>
+          <td class="paramtype">cp_name_cast_variables&nbsp;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">false&nbsp;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&quot;Name variables casted from expressions&quot;&nbsp;</td>
+          <td class="paramname"></td><td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td><td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
 
 </div>
 </div><p>
@@ -691,7 +728,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00445">445</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00450">450</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -708,7 +745,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00462">462</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00467">467</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -725,7 +762,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00638">638</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00643">643</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -742,7 +779,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00641">641</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00646">646</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -759,7 +796,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00642">642</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00647">647</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -776,7 +813,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00606">606</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00611">611</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -793,7 +830,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l02373">2373</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l02419">2419</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -810,7 +847,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00643">643</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00648">648</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -827,7 +864,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00640">640</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00645">645</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -844,7 +881,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l02121">2121</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l02154">2154</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -861,7 +898,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00152">152</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00154">154</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -878,7 +915,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l01025">1025</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l01039">1039</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -895,7 +932,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00221">221</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00223">223</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -912,7 +949,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00639">639</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00644">644</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -929,7 +966,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00223">223</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00225">225</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -946,7 +983,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00222">222</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00224">224</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -963,7 +1000,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00153">153</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00155">155</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -980,7 +1017,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00446">446</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00451">451</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -997,7 +1034,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00636">636</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00641">641</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1014,7 +1051,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l01044">1044</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l01058">1058</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1031,7 +1068,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00644">644</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00649">649</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1048,7 +1085,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00523">523</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00528">528</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1065,7 +1102,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00522">522</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l00527">527</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1077,7 +1114,7 @@ This file implements the core objects of the constraint solver: Solver, Search, 
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

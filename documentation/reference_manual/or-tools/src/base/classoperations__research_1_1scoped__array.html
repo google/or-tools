@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/base/index.html">base</a>/
@@ -141,7 +141,7 @@ scoped_array&lt;C&gt; is like scoped_ptr&lt;C&gt;, except that the caller must a
 <p>
 As with scoped_ptr&lt;C&gt;, a scoped_array&lt;C&gt; either points to an object or is NULL. A scoped_array&lt;C&gt; owns the object that it points to.<p>
 Size: sizeof(scoped_array&lt;C&gt;) == sizeof(C*) 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00166">166</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00165">165</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 <hr><h2>Member Typedef Documentation</h2>
 <a class="anchor" name="4281cf19996d8be9a4d4799ea87f9206"></a><!-- doxytag: member="operations_research::scoped_array::element_type" ref="4281cf19996d8be9a4d4799ea87f9206" args="" -->
 <div class="memitem">
@@ -160,7 +160,7 @@ template&lt;class C&gt; </div>
 The element type. 
 <p>
 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00170">170</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00168">168</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -187,7 +187,7 @@ template&lt;class C&gt; </div>
 Constructor. 
 <p>
 Defaults to intializing with NULL. There is no way to create an uninitialized <a class="el" href="classoperations__research_1_1scoped__array.html" title="scoped_array&lt;C&gt; is like scoped_ptr&lt;C&gt;, except that the caller must allocate...">scoped_array</a>. The input parameter must be allocated with new []. 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00175">175</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00173">173</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -212,7 +212,7 @@ template&lt;class C&gt; </div>
 Destructor. 
 <p>
 If there is a C object, delete it. We don't need to test ptr_ == NULL because C++ does that for us. 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00179">179</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00177">177</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -239,7 +239,7 @@ template&lt;class C&gt; </div>
 Reset. 
 <p>
 Deletes the current owned object, if any. Then takes ownership of a new object, if given. this-&gt;reset(this-&gt;<a class="el" href="classoperations__research_1_1scoped__array.html#4ec92a6d767c1cb3c7f0ead9c32105a4" title="Get a pointer to the zeroth element of the current object.">get()</a>) works. 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00187">187</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00185">185</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -265,7 +265,7 @@ template&lt;class C&gt; </div>
 Get one element of the current object. 
 <p>
 Will assert() if there is no current object, or index i is negative. 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00197">197</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00195">195</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -290,7 +290,7 @@ template&lt;class C&gt; </div>
 Get a pointer to the zeroth element of the current object. 
 <p>
 If there is no current object, return NULL. 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00205">205</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00203">203</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -316,7 +316,7 @@ template&lt;class C&gt; </div>
 Comparison operators. 
 <p>
 These return whether two <a class="el" href="classoperations__research_1_1scoped__array.html" title="scoped_array&lt;C&gt; is like scoped_ptr&lt;C&gt;, except that the caller must allocate...">scoped_array</a> refer to the same object, not just to two different but equal objects. 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00212">212</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00210">210</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -340,7 +340,7 @@ template&lt;class C&gt; </div>
 
 <p>
 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00213">213</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00211">211</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -366,7 +366,7 @@ template&lt;class C&gt; </div>
 Swap two scoped arrays. 
 <p>
 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00216">216</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00214">214</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -391,7 +391,7 @@ template&lt;class C&gt; </div>
 Release an array. 
 <p>
 The return value is the current pointer held by this object. If this object holds a NULL pointer, the return value is NULL. After this operation, this object will hold a NULL pointer, and will not own the object any more. 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00227">227</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00225">225</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -405,7 +405,7 @@ The return value is the current pointer held by this object. If this object hold
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

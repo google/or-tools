@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -105,6 +105,10 @@
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntExpr.html#d8abff4968e302f6a8576a4bdce52a8b">IntExpr</a>(Solver *const s)</td><td><a class="el" href="classoperations__research_1_1IntExpr.html">operations_research::IntExpr</a></td><td><code> [inline, explicit]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntVar.html#119cae716dbbdaa31b476ef904c99776">IntVar</a>(Solver *const s)</td><td><a class="el" href="classoperations__research_1_1IntVar.html">operations_research::IntVar</a></td><td><code> [explicit]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntVar.html#fd961a180a35730917f6f603127287e8">IntVar</a>(Solver *const s, const string &amp;name)</td><td><a class="el" href="classoperations__research_1_1IntVar.html">operations_research::IntVar</a></td><td></td></tr>
+  <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntVar.html#791449c48c24075f82b47848038b5ffd">IsDifferent</a>(int64 constant)=0</td><td><a class="el" href="classoperations__research_1_1IntVar.html">operations_research::IntVar</a></td><td><code> [pure virtual]</code></td></tr>
+  <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntVar.html#df461eaaf6bcf01239e77fa8ed407ff0">IsEqual</a>(int64 constant)=0</td><td><a class="el" href="classoperations__research_1_1IntVar.html">operations_research::IntVar</a></td><td><code> [pure virtual]</code></td></tr>
+  <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntVar.html#4566c3b4fe20baa14354525be9b31bca">IsGreaterOrEqual</a>(int64 constant)=0</td><td><a class="el" href="classoperations__research_1_1IntVar.html">operations_research::IntVar</a></td><td><code> [pure virtual]</code></td></tr>
+  <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntVar.html#f5197b4635e1581a9bdecdfba44d2428">IsLessOrEqual</a>(int64 constant)=0</td><td><a class="el" href="classoperations__research_1_1IntVar.html">operations_research::IntVar</a></td><td><code> [pure virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntVar.html#ddf1c277889288c26d69fd2d448af80d">IsVar</a>() const </td><td><a class="el" href="classoperations__research_1_1IntVar.html">operations_research::IntVar</a></td><td><code> [inline, virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntVar.html#d371f5411c3f0aa0424181fc9936a2fb">MakeDomainIterator</a>(bool reversible) const =0</td><td><a class="el" href="classoperations__research_1_1IntVar.html">operations_research::IntVar</a></td><td><code> [pure virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntVar.html#68e475702b2e14bf968256ec36cccad7">MakeHoleIterator</a>(bool reversible) const =0</td><td><a class="el" href="classoperations__research_1_1IntVar.html">operations_research::IntVar</a></td><td><code> [pure virtual]</code></td></tr>
@@ -128,6 +132,7 @@
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntExpr.html#8889930ed76665b0f24f12df2ed4e05c">SetValue</a>(int64 v)</td><td><a class="el" href="classoperations__research_1_1IntExpr.html">operations_research::IntExpr</a></td><td><code> [inline, virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntVar.html#3eac2665d9a3a979c6c02528546dd15e">SetValues</a>(const int64 *const values, int size)</td><td><a class="el" href="classoperations__research_1_1IntVar.html">operations_research::IntVar</a></td><td><code> [virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntVar.html#25fd97147e0f6a8b3cdd8797edc77027">SetValues</a>(const std::vector&lt; int64 &gt; &amp;values)</td><td><a class="el" href="classoperations__research_1_1IntVar.html">operations_research::IntVar</a></td><td><code> [inline]</code></td></tr>
+  <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntVar.html#97c0e823f140f10b8dc10ed83ee09ffa">SetValues</a>(const std::vector&lt; int &gt; &amp;values)</td><td><a class="el" href="classoperations__research_1_1IntVar.html">operations_research::IntVar</a></td><td></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1IntVar.html#26efd8a51314b318dc14641e90af5c3a">Size</a>() const =0</td><td><a class="el" href="classoperations__research_1_1IntVar.html">operations_research::IntVar</a></td><td><code> [pure virtual]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>() const </td><td><a class="el" href="classoperations__research_1_1PropagationBaseObject.html">operations_research::PropagationBaseObject</a></td><td><code> [inline]</code></td></tr>
   <tr class="memlist"><td><a class="el" href="classoperations__research_1_1PropagationBaseObject.html#97782b79fbcf8043201fefaa7729dcf1">UnfreezeQueue</a>()</td><td><a class="el" href="classoperations__research_1_1PropagationBaseObject.html">operations_research::PropagationBaseObject</a></td><td><code> [inline]</code></td></tr>
@@ -150,7 +155,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

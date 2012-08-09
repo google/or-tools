@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -101,7 +101,6 @@
 <code>#include &quot;base/map-util.h&quot;</code><br>
 <code>#include &quot;<a class="el" href="constraint__solver_8h-source.html">constraint_solver/constraint_solver.h</a>&quot;</code><br>
 <code>#include &quot;util/const_int_array.h&quot;</code><br>
-<code>#include &quot;util/const_ptr_array.h&quot;</code><br>
 <code>#include &quot;util/tuple_set.h&quot;</code><br>
 <code>#include &quot;util/vector_map.h&quot;</code><br>
 
@@ -202,6 +201,14 @@
 <tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1ModelParser.html">operations_research::ModelParser</a></td></tr>
 
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Model Parser.  <a href="classoperations__research_1_1ModelParser.html#_details">More...</a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RevGrowingArray.html">operations_research::RevGrowingArray&lt; T, C &gt;</a></td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RevIntMap.html">operations_research::RevIntMap&lt; T &gt;</a></td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight"><a class="el" href="classoperations__research_1_1RevIntMap.html" title="RevIntMap.">RevIntMap</a>.  <a href="classoperations__research_1_1RevIntMap.html#_details">More...</a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">class &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RevPartialSequence.html">operations_research::RevPartialSequence</a></td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight"><a class="el" href="classoperations__research_1_1RevPartialSequence.html" title="RevPartialSequence.">RevPartialSequence</a>.  <a href="classoperations__research_1_1RevPartialSequence.html#_details">More...</a><br></td></tr>
 <tr><td colspan="2"><br><h2>Enumerations</h2></td></tr>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">enum &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#744e7cc90d56b2c503520ee1f97fc1db">operations_research::VarTypes</a> { <br>
 &nbsp;&nbsp;<a class="el" href="namespaceoperations__research.html#744e7cc90d56b2c503520ee1f97fc1dbb4f91414920a046da6b20cd63a2796e6">operations_research::UNSPECIFIED</a>, 
@@ -210,13 +217,11 @@
 <a class="el" href="namespaceoperations__research.html#744e7cc90d56b2c503520ee1f97fc1dbd9de5a1ac157ce63c698777275b17787">operations_research::CONST_VAR</a>, 
 <br>
 &nbsp;&nbsp;<a class="el" href="namespaceoperations__research.html#744e7cc90d56b2c503520ee1f97fc1db0cc8439ff5d71bb0c4c981cd04b73d55">operations_research::VAR_ADD_CST</a>, 
-<a class="el" href="namespaceoperations__research.html#744e7cc90d56b2c503520ee1f97fc1db8c9ffc403ba76add73d8b26501368a75">operations_research::DOMAIN_INT_VAR_ADD_CST</a>, 
-<a class="el" href="namespaceoperations__research.html#744e7cc90d56b2c503520ee1f97fc1db7669234968fc35631df97ccad34ff967">operations_research::VAR_TIMES_POS_CST</a>, 
-<a class="el" href="namespaceoperations__research.html#744e7cc90d56b2c503520ee1f97fc1dbb636d6bf6dd99781b95d37966ff6ff1d">operations_research::BOOLEAN_VAR_TIMES_POS_CST</a>, 
-<br>
-&nbsp;&nbsp;<a class="el" href="namespaceoperations__research.html#744e7cc90d56b2c503520ee1f97fc1db93697c551d06ce8d37be776116f23f66">operations_research::CST_SUB_VAR</a>, 
+<a class="el" href="namespaceoperations__research.html#744e7cc90d56b2c503520ee1f97fc1dba77c2e49834d223253421d9e3d69c51c">operations_research::VAR_TIMES_CST</a>, 
+<a class="el" href="namespaceoperations__research.html#744e7cc90d56b2c503520ee1f97fc1db93697c551d06ce8d37be776116f23f66">operations_research::CST_SUB_VAR</a>, 
 <a class="el" href="namespaceoperations__research.html#744e7cc90d56b2c503520ee1f97fc1db9558ccbf57e24d3ddde9bfbf2835e4fe">operations_research::OPP_VAR</a>, 
-<a class="el" href="namespaceoperations__research.html#744e7cc90d56b2c503520ee1f97fc1db93b00759c703fe20d9d8a5a75268a69d">operations_research::TRACE_VAR</a>
+<br>
+&nbsp;&nbsp;<a class="el" href="namespaceoperations__research.html#744e7cc90d56b2c503520ee1f97fc1db93b00759c703fe20d9d8a5a75268a69d">operations_research::TRACE_VAR</a>
 <br>
  }</td></tr>
 
@@ -236,8 +241,24 @@
 <tr><td class="memItemLeft" nowrap align="right" valign="top">uint64&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#248a5fb85d616372c801f3f1d7282cee">operations_research::Hash1</a> (ConstIntArray *const values)</td></tr>
 
 <tr><td class="memTemplParams" nowrap colspan="2">template&lt;class T&gt; </td></tr>
-<tr><td class="memTemplItemLeft" nowrap align="right" valign="top">uint64&nbsp;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#690956b178308516af142eae2357d189">operations_research::Hash1</a> (ConstPtrArray&lt; T &gt; *const ptrs)</td></tr>
+<tr><td class="memTemplItemLeft" nowrap align="right" valign="top">uint64&nbsp;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#dca83dc5312e6a6f550e721c6931d1bc">operations_research::Hash1</a> (const std::vector&lt; T * &gt; &amp;ptrs)</td></tr>
 
+<tr><td class="memItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#16259d56a8790076ef1c9ff6d02a93ea">operations_research::AddOverflows</a> (int64 left, int64 right)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Overflow utility functions.  <a href="#16259d56a8790076ef1c9ff6d02a93ea"></a><br></td></tr>
+<tr><td class="memItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#f4908557aac9377f15f0eabfc6a40fa2">operations_research::AddUnderflows</a> (int64 left, int64 right)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">int64&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#4025f0991712577dc7d2b143b3124224">operations_research::CapAdd</a> (int64 left, int64 right)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a71061de5a9bdf0d49444fe7c4edefd4">operations_research::SubOverflows</a> (int64 left, int64 right)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#74d5c96e6aed14ff448da6a85d1b2cec">operations_research::SubUnderflows</a> (int64 left, int64 right)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">int64&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a68b790d2debe3891121ef74285549b1">operations_research::CapSub</a> (int64 left, int64 right)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">int64&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#9307027d49ab91d00840eaba27403a6b">operations_research::CapProd</a> (int64 left, int64 right)</td></tr>
+
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Overflow utility functions.  <a href="#9307027d49ab91d00840eaba27403a6b"></a><br></td></tr>
 <tr><td colspan="2"><div class="groupHeader"></div></td></tr>
 <tr><td class="memTemplParams" nowrap colspan="2">template&lt;class T&gt; </td></tr>
 <tr><td class="memTemplItemLeft" nowrap align="right" valign="top">Demon *&nbsp;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#50b3d41d8dbf72bb2ad22235a9e1f53e">operations_research::MakeConstraintDemon0</a> (Solver *const s, T *const ct, void(T::*method)(), const string &amp;<a class="el" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef">name</a>)</td></tr>
@@ -267,7 +288,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

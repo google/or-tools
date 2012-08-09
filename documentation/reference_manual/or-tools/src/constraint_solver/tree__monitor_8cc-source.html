@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -198,7 +198,7 @@
 <a name="l00114"></a>00114   <span class="keyword">virtual</span> <span class="keywordtype">void</span> VisitSetVariableValue(IntVar* <span class="keyword">const</span> <a class="code" href="expr__array_8cc.html#472a99923cbe11ae7b5a5d157d9ad465">var</a>, int64 <a class="code" href="search_8cc.html#21edc7ca4cc5802c8779d68556bc09cf">value</a>) {
 <a name="l00115"></a>00115     <a class="code" href="routing_8cc.html#957ab180ea6fccb9f64da8218db44728">name_</a> = var-&gt;name();
 <a name="l00116"></a>00116     <a class="code" href="count__cst_8cc.html#c6e4658a955b43c47093a302239fc4ff">value_</a> = value;
-<a name="l00117"></a>00117     <a class="code" href="tree__monitor_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a> = <span class="keyword">true</span>;
+<a name="l00117"></a>00117     <a class="code" href="default__search_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a> = <span class="keyword">true</span>;
 <a name="l00118"></a>00118   }
 <a name="l00119"></a>00119 
 <a name="l00120"></a>00120   <span class="keyword">virtual</span> <span class="keywordtype">void</span> VisitSplitVariableDomain(IntVar* <span class="keyword">const</span> var,
@@ -206,50 +206,50 @@
 <a name="l00122"></a>00122                                         <span class="keywordtype">bool</span> start_with_lower_half) {
 <a name="l00123"></a>00123     <a class="code" href="routing_8cc.html#957ab180ea6fccb9f64da8218db44728">name_</a> = var-&gt;name();
 <a name="l00124"></a>00124     <a class="code" href="count__cst_8cc.html#c6e4658a955b43c47093a302239fc4ff">value_</a> = value;
-<a name="l00125"></a>00125     <a class="code" href="tree__monitor_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a> = <span class="keyword">true</span>;
+<a name="l00125"></a>00125     <a class="code" href="default__search_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a> = <span class="keyword">true</span>;
 <a name="l00126"></a>00126   }
 <a name="l00127"></a>00127 
 <a name="l00128"></a>00128   <span class="keyword">virtual</span> <span class="keywordtype">void</span> VisitScheduleOrPostpone(IntervalVar* <span class="keyword">const</span> var, int64 est) {
 <a name="l00129"></a>00129     <a class="code" href="routing_8cc.html#957ab180ea6fccb9f64da8218db44728">name_</a> = var-&gt;name();
 <a name="l00130"></a>00130     <a class="code" href="count__cst_8cc.html#c6e4658a955b43c47093a302239fc4ff">value_</a> = est;
-<a name="l00131"></a>00131     <a class="code" href="tree__monitor_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a> = <span class="keyword">true</span>;
+<a name="l00131"></a>00131     <a class="code" href="default__search_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a> = <span class="keyword">true</span>;
 <a name="l00132"></a>00132   }
 <a name="l00133"></a>00133 
 <a name="l00134"></a>00134   <span class="keyword">virtual</span> <span class="keywordtype">void</span> VisitTryRankFirst(SequenceVar* <span class="keyword">const</span> sequence, <span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>) {
 <a name="l00135"></a>00135     <a class="code" href="routing_8cc.html#957ab180ea6fccb9f64da8218db44728">name_</a> = sequence-&gt;name();
 <a name="l00136"></a>00136     <a class="code" href="count__cst_8cc.html#c6e4658a955b43c47093a302239fc4ff">value_</a> = index;
-<a name="l00137"></a>00137     <a class="code" href="tree__monitor_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a> = <span class="keyword">true</span>;
+<a name="l00137"></a>00137     <a class="code" href="default__search_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a> = <span class="keyword">true</span>;
 <a name="l00138"></a>00138   }
 <a name="l00139"></a>00139 
 <a name="l00140"></a>00140   <span class="keyword">virtual</span> <span class="keywordtype">void</span> VisitTryRankLast(SequenceVar* <span class="keyword">const</span> sequence, <span class="keywordtype">int</span> index) {
 <a name="l00141"></a>00141     <a class="code" href="routing_8cc.html#957ab180ea6fccb9f64da8218db44728">name_</a> = sequence-&gt;name();
 <a name="l00142"></a>00142     <a class="code" href="count__cst_8cc.html#c6e4658a955b43c47093a302239fc4ff">value_</a> = index;
-<a name="l00143"></a>00143     <a class="code" href="tree__monitor_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a> = <span class="keyword">true</span>;
+<a name="l00143"></a>00143     <a class="code" href="default__search_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a> = <span class="keyword">true</span>;
 <a name="l00144"></a>00144   }
 <a name="l00145"></a>00145 
 <a name="l00146"></a>00146   <span class="keyword">virtual</span> <span class="keywordtype">void</span> VisitUnknownDecision() {
-<a name="l00147"></a>00147     <a class="code" href="tree__monitor_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a> = <span class="keyword">false</span>;
+<a name="l00147"></a>00147     <a class="code" href="default__search_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a> = <span class="keyword">false</span>;
 <a name="l00148"></a>00148   }
 <a name="l00149"></a>00149 
 <a name="l00150"></a>00150   <span class="comment">// Indicates whether name and value can be called.</span>
-<a name="l00151"></a>00151   <span class="keywordtype">bool</span> valid() { <span class="keywordflow">return</span> <a class="code" href="tree__monitor_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a>; }
+<a name="l00151"></a>00151   <span class="keywordtype">bool</span> valid() { <span class="keywordflow">return</span> <a class="code" href="default__search_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a>; }
 <a name="l00152"></a>00152 
 <a name="l00153"></a>00153   <span class="comment">// Returns the name of the current variable.</span>
 <a name="l00154"></a>00154   <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>() {
-<a name="l00155"></a>00155     CHECK(<a class="code" href="tree__monitor_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a>);
+<a name="l00155"></a>00155     CHECK(<a class="code" href="default__search_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a>);
 <a name="l00156"></a>00156     <span class="keywordflow">return</span> <a class="code" href="routing_8cc.html#957ab180ea6fccb9f64da8218db44728">name_</a>;
 <a name="l00157"></a>00157   }
 <a name="l00158"></a>00158 
 <a name="l00159"></a>00159   <span class="comment">// Returns the value of the current variable.</span>
 <a name="l00160"></a>00160   int64 <a class="code" href="search_8cc.html#21edc7ca4cc5802c8779d68556bc09cf">value</a>() {
-<a name="l00161"></a>00161     CHECK(<a class="code" href="tree__monitor_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a>);
+<a name="l00161"></a>00161     CHECK(<a class="code" href="default__search_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a>);
 <a name="l00162"></a>00162     <span class="keywordflow">return</span> <a class="code" href="count__cst_8cc.html#c6e4658a955b43c47093a302239fc4ff">value_</a>;
 <a name="l00163"></a>00163   }
 <a name="l00164"></a>00164 
 <a name="l00165"></a>00165  <span class="keyword">private</span>:
 <a name="l00166"></a><a class="code" href="tree__monitor_8cc.html#79cfd788b219a7f48068d0e96e5e8e77">00166</a>   <span class="keywordtype">string</span> <a class="code" href="routing_8cc.html#957ab180ea6fccb9f64da8218db44728">name_</a>;
 <a name="l00167"></a><a class="code" href="tree__monitor_8cc.html#c6e4658a955b43c47093a302239fc4ff">00167</a>   int64 <a class="code" href="count__cst_8cc.html#c6e4658a955b43c47093a302239fc4ff">value_</a>;
-<a name="l00168"></a><a class="code" href="tree__monitor_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">00168</a>   <span class="keywordtype">bool</span> <a class="code" href="tree__monitor_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a>;
+<a name="l00168"></a><a class="code" href="tree__monitor_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">00168</a>   <span class="keywordtype">bool</span> <a class="code" href="default__search_8cc.html#2dd81c85c0b7f68b59750ae4441f7da4">valid_</a>;
 <a name="l00169"></a>00169 };
 <a name="l00170"></a>00170 
 <a name="l00171"></a>00171 <span class="comment">// The TreeMonitor may be attached to a search to obtain an output in CPViz</span>
@@ -321,14 +321,14 @@
 <a name="l00237"></a><a class="code" href="tree__monitor_8cc.html#729bb90bbc66e8795198fb4312e878d5">00237</a>   <span class="keyword">const</span> <span class="keywordtype">string</span> <a class="code" href="tree__monitor_8cc.html#729bb90bbc66e8795198fb4312e878d5">filename_visualizer_</a>;
 <a name="l00238"></a><a class="code" href="tree__monitor_8cc.html#204eb61f138f9a6523a8e365d548da6e">00238</a>   <span class="keywordtype">int</span> <a class="code" href="tree__monitor_8cc.html#204eb61f138f9a6523a8e365d548da6e">id_counter_</a>;
 <a name="l00239"></a><a class="code" href="tree__monitor_8cc.html#62099e67098897368ab69691ee56f301">00239</a>   <span class="keywordtype">string</span> <a class="code" href="tree__monitor_8cc.html#62099e67098897368ab69691ee56f301">last_decision_</a>;
-<a name="l00240"></a><a class="code" href="tree__monitor_8cc.html#7fa11d59f0ebd802fce510dcc0e11e86">00240</a>   hash_map&lt;string, int64&gt; <a class="code" href="tree__monitor_8cc.html#7fa11d59f0ebd802fce510dcc0e11e86">last_value_</a>;
+<a name="l00240"></a><a class="code" href="tree__monitor_8cc.html#7fa11d59f0ebd802fce510dcc0e11e86">00240</a>   hash_map&lt;string, int64&gt; <a class="code" href="gcc_8cc.html#fa2b050468026d1cce9fc68ff061d10b">last_value_</a>;
 <a name="l00241"></a><a class="code" href="tree__monitor_8cc.html#dc3a742b7141c7e72d475efbd90cb83d">00241</a>   <span class="keywordtype">string</span> <a class="code" href="tree__monitor_8cc.html#dc3a742b7141c7e72d475efbd90cb83d">last_variable_</a>;
 <a name="l00242"></a><a class="code" href="tree__monitor_8cc.html#894d910be34216a223a5fa354f5a5e95">00242</a>   int64 <a class="code" href="count__cst_8cc.html#1e31d03db11ff2faf963d4fc1d3a3000">min_</a>;
 <a name="l00243"></a><a class="code" href="tree__monitor_8cc.html#684ec7ed5c578b2377979c905b681b00">00243</a>   int64 <a class="code" href="count__cst_8cc.html#17ae9bddfc016f8466640f9de143f938">max_</a>;
 <a name="l00244"></a><a class="code" href="tree__monitor_8cc.html#c308e0c7ef78dd7f8852a45a16d44430">00244</a>   scoped_ptr&lt;TreeNode&gt; <a class="code" href="expr__array_8cc.html#fec7ef87b0ad0a9bf299a9c0c9441c3b">root_node_</a>;
 <a name="l00245"></a><a class="code" href="tree__monitor_8cc.html#7ecb722b9b846ec6b7129b20e2dd13c5">00245</a>   <span class="keywordtype">int</span> <a class="code" href="tree__monitor_8cc.html#7ecb722b9b846ec6b7129b20e2dd13c5">search_level_</a>;
 <a name="l00246"></a><a class="code" href="tree__monitor_8cc.html#a1ae9c589a1b33eac5f784364c595167">00246</a>   <span class="keywordtype">string</span>* <span class="keyword">const</span> <a class="code" href="tree__monitor_8cc.html#a1ae9c589a1b33eac5f784364c595167">tree_xml_</a>;
-<a name="l00247"></a><a class="code" href="tree__monitor_8cc.html#d827742c497c2ee04fdf5b7e46d1156f">00247</a>   IntVarMap <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>;
+<a name="l00247"></a><a class="code" href="tree__monitor_8cc.html#d827742c497c2ee04fdf5b7e46d1156f">00247</a>   IntVarMap <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>;
 <a name="l00248"></a><a class="code" href="tree__monitor_8cc.html#e852afdc2d6eeb74860d94e95802511a">00248</a>   <span class="keywordtype">string</span>* <span class="keyword">const</span> <a class="code" href="tree__monitor_8cc.html#e852afdc2d6eeb74860d94e95802511a">visualization_xml_</a>;
 <a name="l00249"></a>00249 };
 <a name="l00250"></a>00250 
@@ -666,7 +666,7 @@
 <a name="l00582"></a>00582       name = StringPrintf(<span class="stringliteral">"%d"</span>, i);
 <a name="l00583"></a>00583     }
 <a name="l00584"></a>00584 
-<a name="l00585"></a>00585     <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[name] = vars[i];
+<a name="l00585"></a>00585     <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[name] = vars[i];
 <a name="l00586"></a>00586   }
 <a name="l00587"></a>00587 }
 <a name="l00588"></a>00588 
@@ -675,9 +675,9 @@
 <a name="l00591"></a>00591     <a class="code" href="tree__monitor_8cc.html#204eb61f138f9a6523a8e365d548da6e">id_counter_</a> = 0;
 <a name="l00592"></a>00592     <a class="code" href="expr__array_8cc.html#fec7ef87b0ad0a9bf299a9c0c9441c3b">root_node_</a>.reset(<span class="keyword">new</span> TreeNode(NULL, <a class="code" href="tree__monitor_8cc.html#204eb61f138f9a6523a8e365d548da6e">id_counter_</a>++));
 <a name="l00593"></a>00593     <a class="code" href="expr__array_8cc.html#fec7ef87b0ad0a9bf299a9c0c9441c3b">root_node_</a>-&gt;set_node_type(TreeNode::ROOT);
-<a name="l00594"></a>00594     <a class="code" href="expr__array_8cc.html#fec7ef87b0ad0a9bf299a9c0c9441c3b">root_node_</a>-&gt;SetDomain(<a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>);
+<a name="l00594"></a>00594     <a class="code" href="expr__array_8cc.html#fec7ef87b0ad0a9bf299a9c0c9441c3b">root_node_</a>-&gt;SetDomain(<a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>);
 <a name="l00595"></a>00595     <a class="code" href="tree__monitor_8cc.html#2b246c5efb3a1b4b301b21c34944fa8f">current_node_</a> = <a class="code" href="expr__array_8cc.html#fec7ef87b0ad0a9bf299a9c0c9441c3b">root_node_</a>.get();
-<a name="l00596"></a>00596     <a class="code" href="tree__monitor_8cc.html#7fa11d59f0ebd802fce510dcc0e11e86">last_value_</a>[<span class="stringliteral">""</span>] = 0;  <span class="comment">// The root node's value is always zero.</span>
+<a name="l00596"></a>00596     <a class="code" href="gcc_8cc.html#fa2b050468026d1cce9fc68ff061d10b">last_value_</a>[<span class="stringliteral">""</span>] = 0;  <span class="comment">// The root node's value is always zero.</span>
 <a name="l00597"></a>00597   }
 <a name="l00598"></a>00598 
 <a name="l00599"></a>00599   ++<a class="code" href="tree__monitor_8cc.html#7ecb722b9b846ec6b7129b20e2dd13c5">search_level_</a>;
@@ -693,13 +693,13 @@
 <a name="l00609"></a>00609 
 <a name="l00610"></a>00610     <span class="keywordflow">if</span> (visitor.valid()) {
 <a name="l00611"></a>00611       <a class="code" href="tree__monitor_8cc.html#dc3a742b7141c7e72d475efbd90cb83d">last_variable_</a> = visitor.name();
-<a name="l00612"></a>00612       <a class="code" href="tree__monitor_8cc.html#7fa11d59f0ebd802fce510dcc0e11e86">last_value_</a>[<a class="code" href="tree__monitor_8cc.html#dc3a742b7141c7e72d475efbd90cb83d">last_variable_</a>] = visitor.value();
+<a name="l00612"></a>00612       <a class="code" href="gcc_8cc.html#fa2b050468026d1cce9fc68ff061d10b">last_value_</a>[<a class="code" href="tree__monitor_8cc.html#dc3a742b7141c7e72d475efbd90cb83d">last_variable_</a>] = visitor.value();
 <a name="l00613"></a>00613     }
 <a name="l00614"></a>00614   }
 <a name="l00615"></a>00615 
 <a name="l00616"></a>00616   <span class="keywordflow">if</span> (!decision || decision-&gt;DebugString() != <a class="code" href="tree__monitor_8cc.html#62099e67098897368ab69691ee56f301">last_decision_</a>) {
-<a name="l00617"></a>00617     <span class="keywordflow">if</span> (<a class="code" href="tree__monitor_8cc.html#2b246c5efb3a1b4b301b21c34944fa8f">current_node_</a>-&gt;AddChild(<a class="code" href="tree__monitor_8cc.html#204eb61f138f9a6523a8e365d548da6e">id_counter_</a>, <a class="code" href="tree__monitor_8cc.html#dc3a742b7141c7e72d475efbd90cb83d">last_variable_</a>, <a class="code" href="tree__monitor_8cc.html#7fa11d59f0ebd802fce510dcc0e11e86">last_value_</a>,
-<a name="l00618"></a>00618                                 !decision , <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>, &amp;<a class="code" href="tree__monitor_8cc.html#2b246c5efb3a1b4b301b21c34944fa8f">current_node_</a>)) {
+<a name="l00617"></a>00617     <span class="keywordflow">if</span> (<a class="code" href="tree__monitor_8cc.html#2b246c5efb3a1b4b301b21c34944fa8f">current_node_</a>-&gt;AddChild(<a class="code" href="tree__monitor_8cc.html#204eb61f138f9a6523a8e365d548da6e">id_counter_</a>, <a class="code" href="tree__monitor_8cc.html#dc3a742b7141c7e72d475efbd90cb83d">last_variable_</a>, <a class="code" href="gcc_8cc.html#fa2b050468026d1cce9fc68ff061d10b">last_value_</a>,
+<a name="l00618"></a>00618                                 !decision , <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>, &amp;<a class="code" href="tree__monitor_8cc.html#2b246c5efb3a1b4b301b21c34944fa8f">current_node_</a>)) {
 <a name="l00619"></a>00619       ++<a class="code" href="tree__monitor_8cc.html#204eb61f138f9a6523a8e365d548da6e">id_counter_</a>;
 <a name="l00620"></a>00620     }
 <a name="l00621"></a>00621   } <span class="keywordflow">else</span> {
@@ -730,7 +730,7 @@
 <a name="l00646"></a>00646     <a class="code" href="tree__monitor_8cc.html#2b246c5efb3a1b4b301b21c34944fa8f">current_node_</a>-&gt;set_node_type(TreeNode::TRY);
 <a name="l00647"></a>00647 
 <a name="l00648"></a>00648     <span class="keywordflow">if</span> (<a class="code" href="tree__monitor_8cc.html#2b246c5efb3a1b4b301b21c34944fa8f">current_node_</a>-&gt;AddChild(<a class="code" href="tree__monitor_8cc.html#204eb61f138f9a6523a8e365d548da6e">id_counter_</a>, <a class="code" href="tree__monitor_8cc.html#dc3a742b7141c7e72d475efbd90cb83d">last_variable_</a>,
-<a name="l00649"></a>00649                                 <a class="code" href="tree__monitor_8cc.html#7fa11d59f0ebd802fce510dcc0e11e86">last_value_</a>, <span class="keyword">true</span>, <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>, &amp;<a class="code" href="tree__monitor_8cc.html#2b246c5efb3a1b4b301b21c34944fa8f">current_node_</a>)) {
+<a name="l00649"></a>00649                                 <a class="code" href="gcc_8cc.html#fa2b050468026d1cce9fc68ff061d10b">last_value_</a>, <span class="keyword">true</span>, <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>, &amp;<a class="code" href="tree__monitor_8cc.html#2b246c5efb3a1b4b301b21c34944fa8f">current_node_</a>)) {
 <a name="l00650"></a>00650       ++<a class="code" href="tree__monitor_8cc.html#204eb61f138f9a6523a8e365d548da6e">id_counter_</a>;
 <a name="l00651"></a>00651     }
 <a name="l00652"></a>00652 
@@ -775,7 +775,7 @@
 <a name="l00691"></a>00691   xml_writer.AddAttribute(<span class="stringliteral">"display"</span>, <span class="stringliteral">"expanded"</span>);
 <a name="l00692"></a>00692   xml_writer.AddAttribute(<span class="stringliteral">"min"</span>, StringPrintf(<span class="stringliteral">"%"</span> GG_LL_FORMAT <span class="stringliteral">"d"</span>, <a class="code" href="count__cst_8cc.html#1e31d03db11ff2faf963d4fc1d3a3000">min_</a>));
 <a name="l00693"></a>00693   xml_writer.AddAttribute(<span class="stringliteral">"max"</span>, StringPrintf(<span class="stringliteral">"%"</span> GG_LL_FORMAT <span class="stringliteral">"d"</span>, <a class="code" href="count__cst_8cc.html#17ae9bddfc016f8466640f9de143f938">max_</a>));
-<a name="l00694"></a>00694   xml_writer.AddAttribute(<span class="stringliteral">"width"</span>, StringPrintf(<span class="stringliteral">"%zd"</span>, <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>.size()));
+<a name="l00694"></a>00694   xml_writer.AddAttribute(<span class="stringliteral">"width"</span>, StringPrintf(<span class="stringliteral">"%zd"</span>, <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>.size()));
 <a name="l00695"></a>00695   xml_writer.AddAttribute(<span class="stringliteral">"height"</span>,
 <a name="l00696"></a>00696                           StringPrintf(<span class="stringliteral">"%"</span> GG_LL_FORMAT <span class="stringliteral">"d"</span>, <a class="code" href="count__cst_8cc.html#17ae9bddfc016f8466640f9de143f938">max_</a> - <a class="code" href="count__cst_8cc.html#1e31d03db11ff2faf963d4fc1d3a3000">min_</a> + 1));
 <a name="l00697"></a>00697   xml_writer.EndElement();  <span class="comment">// End of element: visualizer</span>
@@ -876,66 +876,36 @@
 <a name="l00792"></a>00792 
 <a name="l00793"></a>00793 <span class="comment">// ----- API ----</span>
 <a name="l00794"></a>00794 
-<a name="l00795"></a><a class="code" href="classoperations__research_1_1Solver.html#e4e6bfdb966317f7a7c4123f1df05fb7">00795</a> <a class="code" href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events.">SearchMonitor</a>* Solver::MakeTreeMonitor(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <span class="keyword">const</span>* vars, <span class="keywordtype">int</span> size,
+<a name="l00795"></a><a class="code" href="classoperations__research_1_1Solver.html#3aeac50beb66daec90efc113eb7833f1">00795</a> <a class="code" href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events.">SearchMonitor</a>* Solver::MakeTreeMonitor(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; vars,
 <a name="l00796"></a>00796                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; file_tree,
 <a name="l00797"></a>00797                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; file_visualization) {
-<a name="l00798"></a>00798   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> TreeMonitor(<span class="keyword">this</span>, vars, size, file_tree,
+<a name="l00798"></a>00798   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> TreeMonitor(<span class="keyword">this</span>, vars.data(), vars.size(), file_tree,
 <a name="l00799"></a>00799                                   file_visualization));
 <a name="l00800"></a>00800 }
 <a name="l00801"></a>00801 
-<a name="l00802"></a><a class="code" href="classoperations__research_1_1Solver.html#3aeac50beb66daec90efc113eb7833f1">00802</a> <a class="code" href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events.">SearchMonitor</a>* <a class="code" href="classoperations__research_1_1Solver.html#e4e6bfdb966317f7a7c4123f1df05fb7" title="Tree Monitor Creates a tree monitor that outputs a detailed overview of the decision...">Solver::MakeTreeMonitor</a>(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; vars,
-<a name="l00803"></a>00803                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; file_tree,
-<a name="l00804"></a>00804                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; file_visualization) {
-<a name="l00805"></a>00805   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> TreeMonitor(<span class="keyword">this</span>, vars.data(), vars.size(), file_tree,
-<a name="l00806"></a>00806                                   file_visualization));
-<a name="l00807"></a>00807 }
-<a name="l00808"></a>00808 
-<a name="l00809"></a><a class="code" href="classoperations__research_1_1Solver.html#bea22168d2368d03c7e298b88dcfed5e">00809</a> <a class="code" href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events.">SearchMonitor</a>* <a class="code" href="classoperations__research_1_1Solver.html#e4e6bfdb966317f7a7c4123f1df05fb7" title="Tree Monitor Creates a tree monitor that outputs a detailed overview of the decision...">Solver::MakeTreeMonitor</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <span class="keyword">const</span>* vars, <span class="keywordtype">int</span> size,
-<a name="l00810"></a>00810                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; file_config,
-<a name="l00811"></a>00811                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; file_tree,
-<a name="l00812"></a>00812                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; file_visualization) {
-<a name="l00813"></a>00813   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> TreeMonitor(<span class="keyword">this</span>, vars, size, file_config, file_tree,
-<a name="l00814"></a>00814                                   file_visualization));
+<a name="l00802"></a><a class="code" href="classoperations__research_1_1Solver.html#4ce5cf27417509c25767a75a7db08389">00802</a> <a class="code" href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events.">SearchMonitor</a>* <a class="code" href="classoperations__research_1_1Solver.html#3aeac50beb66daec90efc113eb7833f1" title="Tree Monitor Creates a tree monitor that outputs a detailed overview of the decision...">Solver::MakeTreeMonitor</a>(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; vars,
+<a name="l00803"></a>00803                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; file_config,
+<a name="l00804"></a>00804                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; file_tree,
+<a name="l00805"></a>00805                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; file_visualization) {
+<a name="l00806"></a>00806   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> TreeMonitor(<span class="keyword">this</span>, vars.data(), vars.size(), file_config,
+<a name="l00807"></a>00807                                   file_tree, file_visualization));
+<a name="l00808"></a>00808 }
+<a name="l00809"></a>00809 
+<a name="l00810"></a><a class="code" href="classoperations__research_1_1Solver.html#d42d7cc255f18eb103969bbb8a63bed8">00810</a> <a class="code" href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events.">SearchMonitor</a>* <a class="code" href="classoperations__research_1_1Solver.html#3aeac50beb66daec90efc113eb7833f1" title="Tree Monitor Creates a tree monitor that outputs a detailed overview of the decision...">Solver::MakeTreeMonitor</a>(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; vars,
+<a name="l00811"></a>00811                                        <span class="keywordtype">string</span>* <span class="keyword">const</span> tree_xml,
+<a name="l00812"></a>00812                                        <span class="keywordtype">string</span>* <span class="keyword">const</span> visualization_xml) {
+<a name="l00813"></a>00813   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> TreeMonitor(<span class="keyword">this</span>, vars.data(), vars.size(), tree_xml,
+<a name="l00814"></a>00814                                   visualization_xml));
 <a name="l00815"></a>00815 }
 <a name="l00816"></a>00816 
-<a name="l00817"></a><a class="code" href="classoperations__research_1_1Solver.html#4ce5cf27417509c25767a75a7db08389">00817</a> <a class="code" href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events.">SearchMonitor</a>* <a class="code" href="classoperations__research_1_1Solver.html#e4e6bfdb966317f7a7c4123f1df05fb7" title="Tree Monitor Creates a tree monitor that outputs a detailed overview of the decision...">Solver::MakeTreeMonitor</a>(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; vars,
-<a name="l00818"></a>00818                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; file_config,
-<a name="l00819"></a>00819                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; file_tree,
-<a name="l00820"></a>00820                                        <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; file_visualization) {
-<a name="l00821"></a>00821   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> TreeMonitor(<span class="keyword">this</span>, vars.data(), vars.size(), file_config,
-<a name="l00822"></a>00822                                   file_tree, file_visualization));
+<a name="l00817"></a><a class="code" href="classoperations__research_1_1Solver.html#28338d9aee663243c938b4527521bb29">00817</a> <a class="code" href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events.">SearchMonitor</a>* <a class="code" href="classoperations__research_1_1Solver.html#3aeac50beb66daec90efc113eb7833f1" title="Tree Monitor Creates a tree monitor that outputs a detailed overview of the decision...">Solver::MakeTreeMonitor</a>(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; vars,
+<a name="l00818"></a>00818                                        <span class="keywordtype">string</span>* <span class="keyword">const</span> config_xml,
+<a name="l00819"></a>00819                                        <span class="keywordtype">string</span>* <span class="keyword">const</span> tree_xml,
+<a name="l00820"></a>00820                                        <span class="keywordtype">string</span>* <span class="keyword">const</span> visualization_xml) {
+<a name="l00821"></a>00821   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> TreeMonitor(<span class="keyword">this</span>, vars.data(), vars.size(), config_xml,
+<a name="l00822"></a>00822                                   tree_xml, visualization_xml));
 <a name="l00823"></a>00823 }
-<a name="l00824"></a>00824 
-<a name="l00825"></a><a class="code" href="classoperations__research_1_1Solver.html#d263136583ec1970527a061712eecaa3">00825</a> <a class="code" href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events.">SearchMonitor</a>* <a class="code" href="classoperations__research_1_1Solver.html#e4e6bfdb966317f7a7c4123f1df05fb7" title="Tree Monitor Creates a tree monitor that outputs a detailed overview of the decision...">Solver::MakeTreeMonitor</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <span class="keyword">const</span>* vars,
-<a name="l00826"></a>00826                                        <span class="keywordtype">int</span> size, <span class="keywordtype">string</span>* <span class="keyword">const</span> tree_xml,
-<a name="l00827"></a>00827                                        <span class="keywordtype">string</span>* <span class="keyword">const</span> visualization_xml) {
-<a name="l00828"></a>00828   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> TreeMonitor(<span class="keyword">this</span>, vars, size, tree_xml,
-<a name="l00829"></a>00829                                   visualization_xml));
-<a name="l00830"></a>00830 }
-<a name="l00831"></a>00831 
-<a name="l00832"></a><a class="code" href="classoperations__research_1_1Solver.html#d42d7cc255f18eb103969bbb8a63bed8">00832</a> <a class="code" href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events.">SearchMonitor</a>* <a class="code" href="classoperations__research_1_1Solver.html#e4e6bfdb966317f7a7c4123f1df05fb7" title="Tree Monitor Creates a tree monitor that outputs a detailed overview of the decision...">Solver::MakeTreeMonitor</a>(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; vars,
-<a name="l00833"></a>00833                                        <span class="keywordtype">string</span>* <span class="keyword">const</span> tree_xml,
-<a name="l00834"></a>00834                                        <span class="keywordtype">string</span>* <span class="keyword">const</span> visualization_xml) {
-<a name="l00835"></a>00835   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> TreeMonitor(<span class="keyword">this</span>, vars.data(), vars.size(), tree_xml,
-<a name="l00836"></a>00836                                   visualization_xml));
-<a name="l00837"></a>00837 }
-<a name="l00838"></a>00838 
-<a name="l00839"></a><a class="code" href="classoperations__research_1_1Solver.html#1372d347ab732d47d9ce71658ca90a98">00839</a> <a class="code" href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events.">SearchMonitor</a>* <a class="code" href="classoperations__research_1_1Solver.html#e4e6bfdb966317f7a7c4123f1df05fb7" title="Tree Monitor Creates a tree monitor that outputs a detailed overview of the decision...">Solver::MakeTreeMonitor</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <span class="keyword">const</span>* vars,
-<a name="l00840"></a>00840                                        <span class="keywordtype">int</span> size, <span class="keywordtype">string</span>* <span class="keyword">const</span> config_xml,
-<a name="l00841"></a>00841                                        <span class="keywordtype">string</span>* <span class="keyword">const</span> tree_xml,
-<a name="l00842"></a>00842                                        <span class="keywordtype">string</span>* <span class="keyword">const</span> visualization_xml) {
-<a name="l00843"></a>00843   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> TreeMonitor(<span class="keyword">this</span>, vars, size, config_xml, tree_xml,
-<a name="l00844"></a>00844                                   visualization_xml));
-<a name="l00845"></a>00845 }
-<a name="l00846"></a>00846 
-<a name="l00847"></a><a class="code" href="classoperations__research_1_1Solver.html#28338d9aee663243c938b4527521bb29">00847</a> <a class="code" href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events.">SearchMonitor</a>* <a class="code" href="classoperations__research_1_1Solver.html#e4e6bfdb966317f7a7c4123f1df05fb7" title="Tree Monitor Creates a tree monitor that outputs a detailed overview of the decision...">Solver::MakeTreeMonitor</a>(<span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; vars,
-<a name="l00848"></a>00848                                        <span class="keywordtype">string</span>* <span class="keyword">const</span> config_xml,
-<a name="l00849"></a>00849                                        <span class="keywordtype">string</span>* <span class="keyword">const</span> tree_xml,
-<a name="l00850"></a>00850                                        <span class="keywordtype">string</span>* <span class="keyword">const</span> visualization_xml) {
-<a name="l00851"></a>00851   <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(<span class="keyword">new</span> TreeMonitor(<span class="keyword">this</span>, vars.data(), vars.size(), config_xml,
-<a name="l00852"></a>00852                                   tree_xml, visualization_xml));
-<a name="l00853"></a>00853 }
-<a name="l00854"></a>00854 }  <span class="comment">// namespace operations_research</span>
+<a name="l00824"></a>00824 }  <span class="comment">// namespace operations_research</span>
 </pre></div></div>
 
   <!-- Start of footer. -->
@@ -944,7 +914,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

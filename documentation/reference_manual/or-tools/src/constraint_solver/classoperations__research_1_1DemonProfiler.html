@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -132,6 +132,10 @@ Inheritance diagram for operations_research::DemonProfiler:</div>
 <tr><td class="memItemLeft" nowrap align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DemonProfiler.html#772cdfbeda85bee820428843e353d8cb">BeginDemonRun</a> (const <a class="el" href="classoperations__research_1_1Demon.html">Demon</a> *const <a class="el" href="constraint__solver_8cc.html#f800ac63ce2b6285ec62408b0f17acc3">demon</a>)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DemonProfiler.html#eecbe42410634c9475d6fabcc2035231">EndDemonRun</a> (const <a class="el" href="classoperations__research_1_1Demon.html">Demon</a> *const <a class="el" href="constraint__solver_8cc.html#f800ac63ce2b6285ec62408b0f17acc3">demon</a>)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DemonProfiler.html#9dfb978a6f132fdacb8eac507ca9fdd5">StartProcessingIntegerVariable</a> (const <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const <a class="el" href="search_8cc.html#96c77f9f3a7baec84b9b8add26a31787">var</a>)</td></tr>
+
+<tr><td class="memItemLeft" nowrap align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DemonProfiler.html#a530ecfe89f75abe8b0139dee4c34262">EndProcessingIntegerVariable</a> (const <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const <a class="el" href="search_8cc.html#96c77f9f3a7baec84b9b8add26a31787">var</a>)</td></tr>
 
 <tr><td class="memItemLeft" nowrap align="right" valign="top">virtual void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DemonProfiler.html#076e635b0cb4517ffaad9bfd42bc3637">PushContext</a> (const string &amp;context)</td></tr>
 
@@ -473,6 +477,54 @@ Propagation events.
 
 </div>
 </div><p>
+<a class="anchor" name="9dfb978a6f132fdacb8eac507ca9fdd5"></a><!-- doxytag: member="operations_research::DemonProfiler::StartProcessingIntegerVariable" ref="9dfb978a6f132fdacb8eac507ca9fdd5" args="(const IntVar *const var)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void operations_research::DemonProfiler::StartProcessingIntegerVariable           </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const &nbsp;</td>
+          <td class="paramname"> <em>var</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td><code> [inline, virtual]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#90a6fdc8f17d5ad04cfb84d02f5b53ef">operations_research::PropagationMonitor</a>.</p>
+
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00160">160</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+
+</div>
+</div><p>
+<a class="anchor" name="a530ecfe89f75abe8b0139dee4c34262"></a><!-- doxytag: member="operations_research::DemonProfiler::EndProcessingIntegerVariable" ref="a530ecfe89f75abe8b0139dee4c34262" args="(const IntVar *const var)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void operations_research::DemonProfiler::EndProcessingIntegerVariable           </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const &nbsp;</td>
+          <td class="paramname"> <em>var</em>          </td>
+          <td>&nbsp;)&nbsp;</td>
+          <td><code> [inline, virtual]</code></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>
+
+<p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#3a391671fbbaabea657a0e179aa32d92">operations_research::PropagationMonitor</a>.</p>
+
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00161">161</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+
+</div>
+</div><p>
 <a class="anchor" name="076e635b0cb4517ffaad9bfd42bc3637"></a><!-- doxytag: member="operations_research::DemonProfiler::PushContext" ref="076e635b0cb4517ffaad9bfd42bc3637" args="(const string &amp;context)" -->
 <div class="memitem">
 <div class="memproto">
@@ -493,7 +545,7 @@ Propagation events.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#1e7a18e473c39927d6e15a991e674fda">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00160">160</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00162">162</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -516,7 +568,7 @@ Propagation events.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#17029f3eaabf4633ca85802e787df736">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00161">161</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00163">163</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -541,7 +593,7 @@ Just when the failure occurs.
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1SearchMonitor.html#cc4cc0b62205946e9c5606fac920198c">operations_research::SearchMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00163">163</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00165">165</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -566,7 +618,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1SearchMonitor.html#1fed6f3ad3f1b44746297f19df0a85cf">operations_research::SearchMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00184">184</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00186">186</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -601,7 +653,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#2078e48240cee78626eb5674be918557">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00193">193</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00195">195</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -634,7 +686,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#48f6da00d4781ef0f5b59c78d56ff3b0">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00194">194</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00196">196</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -673,7 +725,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#e230d5e381f782bd3b600c0d0e12fc83">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00195">195</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00197">197</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -708,7 +760,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#b4b57c1d6ca1e3b1f066f8a0748361e1">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00197">197</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00199">199</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -741,7 +793,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#a10e89f2c4912fa745951a03c0daf362">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00198">198</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00200">200</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -780,7 +832,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#7226a39a15681662920f91a423de6b61">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00199">199</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00201">201</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -813,7 +865,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#c8e4c7b0c60cd50d9870f3949e47828e">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00200">200</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00202">202</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -846,7 +898,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#ea14a7436f45e5ed69bc1d2d3c67fe1b">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00201">201</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00203">203</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -885,7 +937,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#d320aa7441456e36b2612908ce5cf304">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00202">202</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00204">204</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -924,7 +976,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#6c17c2a5a31b1c07640afb1d34893342">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00203">203</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00205">205</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -963,7 +1015,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#01ef2721027fc8a519247486ce0323ca">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00206">206</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00208">208</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -998,7 +1050,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#201f353378ceaff27cc9a8861a4734d5">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00210">210</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00212">212</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1031,7 +1083,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#c2c1c0b6d89eb9ee53c320509eeb9c9b">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00211">211</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00213">213</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1070,7 +1122,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#2c7679571947898865bcf04abf49fc81">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00212">212</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00214">214</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1103,7 +1155,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#045c6ca9847feb586ad5c4de1808829e">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00215">215</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00217">217</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1136,7 +1188,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#771f782aca6d12a464d660bbd023703b">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00216">216</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00218">218</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1175,7 +1227,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#ff9acdea68b68555cb1900ff7428266a">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00217">217</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00219">219</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1208,7 +1260,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#39ddbd6b9a80e5c7c5b8cca42882294d">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00220">220</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00222">222</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1241,7 +1293,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#07665062e623a550433c5845111910e3">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00221">221</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00223">223</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1280,7 +1332,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#a4bf4e7847c485be003287bc07978317">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00222">222</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00224">224</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1313,7 +1365,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#472d5349fbf47bcfa74c24e92c738402">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00225">225</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00227">227</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1348,7 +1400,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#fb22c7f645f8813c32fa34dc200a5753">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00226">226</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00228">228</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1381,7 +1433,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#9ed062f89410e8ce29e59d78e1437317">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00227">227</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00229">229</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1414,7 +1466,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#1a8db8e232b8e87f8e663aaf2f484618">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00228">228</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00230">230</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1447,7 +1499,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#2b256262632e819ceeb0cf04be0e53ad">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00229">229</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00231">231</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1492,7 +1544,7 @@ Restarts a search and clears all previously collected information.
 
 <p>Implements <a class="el" href="classoperations__research_1_1PropagationMonitor.html#07763e428da44d08eab94f5a88348777">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00230">230</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00232">232</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1537,7 +1589,7 @@ Restarts a search and clears all previously collected information.
 Useful for unit tests. 
 <p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00236">236</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00238">238</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1570,7 +1622,7 @@ Useful for unit tests.
 Exports collected data as human-readable text. 
 <p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00251">251</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00253">253</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1627,7 +1679,7 @@ Exports collected data as human-readable text.
 Export Information. 
 <p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00324">324</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00326">326</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1688,7 +1740,7 @@ Export Information.
 
 <p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00360">360</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00362">362</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1713,7 +1765,7 @@ The demon_profiler is added by default on the main propagation monitor.
 It just needs to be added to the search monitors at the start of the search. 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1PropagationMonitor.html#6fadc131ceec7028bbdc979ee330c2d0">operations_research::PropagationMonitor</a>.</p>
 
-<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00414">414</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
+<p>Definition at line <a class="el" href="demon__profiler_8cc-source.html#l00416">416</a> of file <a class="el" href="demon__profiler_8cc-source.html">demon_profiler.cc</a>.</p>
 
 </div>
 </div><p>
@@ -1727,7 +1779,7 @@ It just needs to be added to the search monitors at the start of the search.
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

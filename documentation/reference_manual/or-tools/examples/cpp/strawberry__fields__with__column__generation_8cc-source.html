@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/examples/index.html">examples</a>/
             <a href="../../../or-tools/examples/cpp/index.html">cpp</a>/
@@ -154,7 +154,7 @@
 <a name="l00070"></a>00070 <a class="code" href="costas__array_8cc.html#481252203d46207b482271a18f5b5399">DEFINE_bool</a>(colgen_verbose, <span class="keyword">false</span>, <span class="stringliteral">"print verbosely"</span>);
 <a name="l00071"></a>00071 <a class="code" href="costas__array_8cc.html#481252203d46207b482271a18f5b5399">DEFINE_bool</a>(colgen_complete, <span class="keyword">false</span>, <span class="stringliteral">"generate all columns initially"</span>);
 <a name="l00072"></a>00072 <a class="code" href="costas__array_8cc.html#af677423bc95ff6ddd8928486064c9c1" title="Licensed under the Apache License, Version 2.0 (the &amp;quot;License&amp;quot;); you may...">DEFINE_int32</a>(colgen_max_iterations, 500, <span class="stringliteral">"max iterations"</span>);
-<a name="l00073"></a>00073 <a class="code" href="costas__array_8cc.html#5236ef9cc4490cd59f344852dc768c45">DEFINE_string</a>(colgen_solver, <span class="stringliteral">"clp"</span>, <span class="stringliteral">"solver - glpk or clp (default)"</span>);
+<a name="l00073"></a>00073 <a class="code" href="costas__array_8cc.html#5236ef9cc4490cd59f344852dc768c45">DEFINE_string</a>(colgen_solver, <span class="stringliteral">"clp"</span>, <span class="stringliteral">"solver - glpk, sulum, or clp (default)"</span>);
 <a name="l00074"></a>00074 <a class="code" href="costas__array_8cc.html#af677423bc95ff6ddd8928486064c9c1" title="Licensed under the Apache License, Version 2.0 (the &amp;quot;License&amp;quot;); you may...">DEFINE_int32</a>(colgen_instance, -1, <span class="stringliteral">"Which instance to solve (0 - 9)"</span>);
 <a name="l00075"></a>00075 
 <a name="l00076"></a>00076 <span class="keyword">namespace </span>operations_research {
@@ -720,26 +720,32 @@
 <a name="l00636"></a>00636     found = <span class="keyword">true</span>;
 <a name="l00637"></a>00637   }
 <a name="l00638"></a>00638 <span class="preprocessor">#endif  // USE_GLPK</span>
-<a name="l00639"></a>00639 <span class="preprocessor"></span>  <span class="keywordflow">if</span> (!found) {
-<a name="l00640"></a>00640     LOG(ERROR) &lt;&lt; <span class="stringliteral">"Unknown solver "</span> &lt;&lt; FLAGS_colgen_solver;
-<a name="l00641"></a>00641     <span class="keywordflow">return</span> 1;
-<a name="l00642"></a>00642   }
-<a name="l00643"></a>00643 
-<a name="l00644"></a>00644   <span class="keywordflow">if</span> (FLAGS_colgen_instance == -1) {
-<a name="l00645"></a>00645     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; <a class="code" href="namespaceoperations__research.html#c2265dc10f54f77344b66f4412924c69">operations_research::kInstanceCount</a>; ++i) {
-<a name="l00646"></a>00646       <span class="keyword">const</span> <a class="code" href="structoperations__research_1_1Instance.html" title="Data Instances.">operations_research::Instance</a>&amp; instance =
-<a name="l00647"></a>00647           <a class="code" href="namespaceoperations__research.html#4de6bc76aa820bcce15808396f351b28">operations_research::kInstances</a>[i];
-<a name="l00648"></a>00648       <a class="code" href="namespaceoperations__research.html#282674364a88e72e731c34da5c5589e1" title="Main Solve Method.">operations_research::SolveInstance</a>(instance, solver_type);
-<a name="l00649"></a>00649     }
-<a name="l00650"></a>00650   } <span class="keywordflow">else</span> {
-<a name="l00651"></a>00651     CHECK_GE(FLAGS_colgen_instance, 0);
-<a name="l00652"></a>00652     CHECK_LT(FLAGS_colgen_instance, <a class="code" href="namespaceoperations__research.html#c2265dc10f54f77344b66f4412924c69">operations_research::kInstanceCount</a>);
-<a name="l00653"></a>00653     <span class="keyword">const</span> <a class="code" href="structoperations__research_1_1Instance.html" title="Data Instances.">operations_research::Instance</a>&amp; instance =
-<a name="l00654"></a>00654         <a class="code" href="namespaceoperations__research.html#4de6bc76aa820bcce15808396f351b28">operations_research::kInstances</a>[FLAGS_colgen_instance];
-<a name="l00655"></a>00655     <a class="code" href="namespaceoperations__research.html#282674364a88e72e731c34da5c5589e1" title="Main Solve Method.">operations_research::SolveInstance</a>(instance, solver_type);
-<a name="l00656"></a>00656   }
-<a name="l00657"></a>00657   <span class="keywordflow">return</span> 0;
-<a name="l00658"></a>00658 }
+<a name="l00639"></a>00639 <span class="preprocessor"></span><span class="preprocessor">#if defined(USE_SLM)</span>
+<a name="l00640"></a>00640 <span class="preprocessor"></span>  <span class="keywordflow">if</span> (FLAGS_colgen_solver == <span class="stringliteral">"sulum"</span>) {
+<a name="l00641"></a>00641     solver_type = operations_research::MPSolver::SULUM_LINEAR_PROGRAMMING;
+<a name="l00642"></a>00642     found = <span class="keyword">true</span>;
+<a name="l00643"></a>00643   }
+<a name="l00644"></a>00644 <span class="preprocessor">#endif  // USE_SLM</span>
+<a name="l00645"></a>00645 <span class="preprocessor"></span>  <span class="keywordflow">if</span> (!found) {
+<a name="l00646"></a>00646     LOG(ERROR) &lt;&lt; <span class="stringliteral">"Unknown solver "</span> &lt;&lt; FLAGS_colgen_solver;
+<a name="l00647"></a>00647     <span class="keywordflow">return</span> 1;
+<a name="l00648"></a>00648   }
+<a name="l00649"></a>00649 
+<a name="l00650"></a>00650   <span class="keywordflow">if</span> (FLAGS_colgen_instance == -1) {
+<a name="l00651"></a>00651     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; <a class="code" href="namespaceoperations__research.html#c2265dc10f54f77344b66f4412924c69">operations_research::kInstanceCount</a>; ++i) {
+<a name="l00652"></a>00652       <span class="keyword">const</span> <a class="code" href="structoperations__research_1_1Instance.html" title="Data Instances.">operations_research::Instance</a>&amp; instance =
+<a name="l00653"></a>00653           <a class="code" href="namespaceoperations__research.html#4de6bc76aa820bcce15808396f351b28">operations_research::kInstances</a>[i];
+<a name="l00654"></a>00654       <a class="code" href="namespaceoperations__research.html#282674364a88e72e731c34da5c5589e1" title="Main Solve Method.">operations_research::SolveInstance</a>(instance, solver_type);
+<a name="l00655"></a>00655     }
+<a name="l00656"></a>00656   } <span class="keywordflow">else</span> {
+<a name="l00657"></a>00657     CHECK_GE(FLAGS_colgen_instance, 0);
+<a name="l00658"></a>00658     CHECK_LT(FLAGS_colgen_instance, <a class="code" href="namespaceoperations__research.html#c2265dc10f54f77344b66f4412924c69">operations_research::kInstanceCount</a>);
+<a name="l00659"></a>00659     <span class="keyword">const</span> <a class="code" href="structoperations__research_1_1Instance.html" title="Data Instances.">operations_research::Instance</a>&amp; instance =
+<a name="l00660"></a>00660         <a class="code" href="namespaceoperations__research.html#4de6bc76aa820bcce15808396f351b28">operations_research::kInstances</a>[FLAGS_colgen_instance];
+<a name="l00661"></a>00661     <a class="code" href="namespaceoperations__research.html#282674364a88e72e731c34da5c5589e1" title="Main Solve Method.">operations_research::SolveInstance</a>(instance, solver_type);
+<a name="l00662"></a>00662   }
+<a name="l00663"></a>00663   <span class="keywordflow">return</span> 0;
+<a name="l00664"></a>00664 }
 </pre></div></div>
 
   <!-- Start of footer. -->
@@ -748,7 +754,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

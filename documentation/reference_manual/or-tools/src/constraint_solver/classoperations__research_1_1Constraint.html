@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -104,10 +104,14 @@ Inheritance diagram for operations_research::Constraint:</div>
 
 <p><center><img src="classoperations__research_1_1Constraint.png" usemap="#operations_research::Constraint_map" border="0" alt=""></center>
 <map name="operations_research::Constraint_map">
-<area href="classoperations__research_1_1PropagationBaseObject.html" alt="operations_research::PropagationBaseObject" shape="rect" coords="139,56,407,80">
-<area href="classoperations__research_1_1BaseObject.html" alt="operations_research::BaseObject" shape="rect" coords="139,0,407,24">
-<area href="classoperations__research_1_1CastConstraint.html" alt="operations_research::CastConstraint" shape="rect" coords="0,168,268,192">
-<area href="classoperations__research_1_1Pack.html" alt="operations_research::Pack" shape="rect" coords="278,168,546,192">
+<area href="classoperations__research_1_1PropagationBaseObject.html" alt="operations_research::PropagationBaseObject" shape="rect" coords="822,56,1141,80">
+<area href="classoperations__research_1_1BaseObject.html" alt="operations_research::BaseObject" shape="rect" coords="822,0,1141,24">
+<area href="classoperations__research_1_1CastConstraint.html" alt="operations_research::CastConstraint" shape="rect" coords="0,168,319,192">
+<area href="classoperations__research_1_1DisjunctiveConstraint.html" alt="operations_research::DisjunctiveConstraint" shape="rect" coords="329,168,648,192">
+<area href="classoperations__research_1_1LightFunctionElement2Constraint.html" alt="operations_research::LightFunctionElement2Constraint" shape="rect" coords="658,168,977,192">
+<area href="classoperations__research_1_1LightFunctionElementConstraint.html" alt="operations_research::LightFunctionElementConstraint" shape="rect" coords="987,168,1306,192">
+<area href="classoperations__research_1_1Pack.html" alt="operations_research::Pack" shape="rect" coords="1316,168,1635,192">
+<area href="classoperations__research_1_1SatPropagator.html" alt="operations_research::SatPropagator" shape="rect" coords="1645,168,1964,192">
 </map>
 </div>
 
@@ -147,7 +151,7 @@ A constraint is the main modeling object.
 It proposes two methods:<ul>
 <li><a class="el" href="classoperations__research_1_1Constraint.html#aa882d58b5fc0f2e3df6eff957ad4a0d" title="This method is called when the constraint is processed by the solver.">Post()</a> is responsible for creating the demons and attaching them to immediate demons()</li><li><a class="el" href="classoperations__research_1_1Constraint.html#64ab23714e57db311ba5b9fe1e742979" title="This method performs the initial propagation of the constraint.">InitialPropagate()</a> is called once just after the Post and performs the initial propagation. The subsequent propagations will be performed by the demons Posted during the post() method. </li></ul>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03435">3435</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03389">3389</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 <hr><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" name="e4bce2b10b1b0b3f953e356e6a34f339"></a><!-- doxytag: member="operations_research::Constraint::Constraint" ref="e4bce2b10b1b0b3f953e356e6a34f339" args="(Solver *const solver)" -->
 <div class="memitem">
@@ -167,7 +171,7 @@ It proposes two methods:<ul>
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03437">3437</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03391">3391</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -188,7 +192,7 @@ It proposes two methods:<ul>
 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03438">3438</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8h-source.html#l03392">3392</a> of file <a class="el" href="constraint__solver_8h-source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div><p>
@@ -212,7 +216,7 @@ It proposes two methods:<ul>
 This method is called when the constraint is processed by the solver. 
 <p>
 Its main usage is to attach demons to variables. 
-<p>Implemented in <a class="el" href="classoperations__research_1_1Pack.html#6e5b644ce97bef0f339aef8b1a4b762f">operations_research::Pack</a>.</p>
+<p>Implemented in <a class="el" href="classoperations__research_1_1SatPropagator.html#5fa83645399830253a1a32fa4674d9df">operations_research::SatPropagator</a>, <a class="el" href="classoperations__research_1_1Pack.html#6e5b644ce97bef0f339aef8b1a4b762f">operations_research::Pack</a>, <a class="el" href="classoperations__research_1_1LightFunctionElementConstraint.html#3fb6cc9c5c1aed500b91dcd844efbd17">operations_research::LightFunctionElementConstraint</a>, and <a class="el" href="classoperations__research_1_1LightFunctionElement2Constraint.html#bc48e2e15c346dfa4cd70cc485efb2da">operations_research::LightFunctionElement2Constraint</a>.</p>
 
 </div>
 </div><p>
@@ -235,7 +239,7 @@ Its main usage is to attach demons to variables.
 This method performs the initial propagation of the constraint. 
 <p>
 It is called just after the post. 
-<p>Implemented in <a class="el" href="classoperations__research_1_1Pack.html#34fccf1f7c9362ba59e9bbde3bcdba42">operations_research::Pack</a>.</p>
+<p>Implemented in <a class="el" href="classoperations__research_1_1SatPropagator.html#ad08d4d426525039cfc8bd2b28ee1fcc">operations_research::SatPropagator</a>, <a class="el" href="classoperations__research_1_1Pack.html#34fccf1f7c9362ba59e9bbde3bcdba42">operations_research::Pack</a>, <a class="el" href="classoperations__research_1_1LightFunctionElementConstraint.html#264a60cd3f4848425cb5471e44aaa860">operations_research::LightFunctionElementConstraint</a>, and <a class="el" href="classoperations__research_1_1LightFunctionElement2Constraint.html#c28b5da1aea5c3de8442014af9cf1081">operations_research::LightFunctionElement2Constraint</a>.</p>
 
 </div>
 </div><p>
@@ -262,7 +266,7 @@ It is called just after the post.
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1Pack.html#28de779675a028f7993f8dde6693b69a">operations_research::Pack</a>.</p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l03233">3233</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l03268">3268</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -285,7 +289,7 @@ It is called just after the post.
 Calls Post and then Propagate to initialize the constraints. 
 <p>
 This is usually done in the root node. 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l03237">3237</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l03272">3272</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -311,7 +315,7 @@ Accepts the given visitor.
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1Pack.html#0197464108ba879610a8ad976750fbac">operations_research::Pack</a>.</p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l03244">3244</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l03279">3279</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -334,7 +338,7 @@ Accepts the given visitor.
 Is the constraint created by a cast from expression to integer variable? 
 <p>
 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l03249">3249</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l03284">3284</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -357,7 +361,7 @@ Is the constraint created by a cast from expression to integer variable?
 Creates an boolean variable representing the status of the variable (false = constraint is violated, true constraint is satisfied). 
 <p>
 It returns NULL if the constraint does not support his API. 
-<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l03253">3253</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
+<p>Definition at line <a class="el" href="constraint__solver_8cc-source.html#l03288">3288</a> of file <a class="el" href="constraint__solver_8cc-source.html">constraint_solver.cc</a>.</p>
 
 </div>
 </div><p>
@@ -371,7 +375,7 @@ It returns NULL if the constraint does not support his API.
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 

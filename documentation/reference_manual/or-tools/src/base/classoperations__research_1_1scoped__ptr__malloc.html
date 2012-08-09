@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #287003
+      background-color: #359621
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#287003 height=3></td>
+      <td colspan=3 bgcolor=#359621 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
-            for <b>custom file set</b>
+          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
+            for Revision:2055
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#287003>
+            <td bgcolor=#359621>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/base/index.html">base</a>/
@@ -141,7 +141,7 @@
 scoped_ptr_malloc&lt;&gt; is similar to scoped_ptr&lt;&gt;, but it accepts a second template argument, the functor used to free the object. 
 <p>
 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00272">272</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00270">270</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 <hr><h2>Member Typedef Documentation</h2>
 <a class="anchor" name="c10bfcf02e95d5610b74b90d3dc1cf4d"></a><!-- doxytag: member="operations_research::scoped_ptr_malloc::element_type" ref="c10bfcf02e95d5610b74b90d3dc1cf4d" args="" -->
 <div class="memitem">
@@ -160,7 +160,7 @@ template&lt;class C, class FreeProc = ScopedPtrMallocFree&gt; </div>
 The element type. 
 <p>
 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00276">276</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00273">273</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -187,7 +187,7 @@ template&lt;class C, class FreeProc = ScopedPtrMallocFree&gt; </div>
 Constructor. 
 <p>
 Defaults to intializing with NULL. There is no way to create an uninitialized <a class="el" href="classoperations__research_1_1scoped__ptr.html" title="A scoped_ptr&lt;T&gt; is like a T*, except that the destructor of scoped_ptr&lt;T&gt;...">scoped_ptr</a>. The input parameter must be allocated with an allocator that matches the Free functor. For the default Free functor, this is malloc, calloc, or realloc. 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00283">283</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00280">280</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -212,7 +212,7 @@ template&lt;class C, class FreeProc = ScopedPtrMallocFree&gt; </div>
 Destructor. If there is a C object, call the Free functor. 
 <p>
 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00286">286</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00283">283</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -239,7 +239,7 @@ template&lt;class C, class FreeProc = ScopedPtrMallocFree&gt; </div>
 Reset. 
 <p>
 Calls the Free functor on the current owned object, if any. Then takes ownership of a new object, if given. this-&gt;reset(this-&gt;<a class="el" href="classoperations__research_1_1scoped__ptr__malloc.html#55e8b7429967f14de4e7721da8e0fda3">get()</a>) works. 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00293">293</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00290">290</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -264,7 +264,7 @@ template&lt;class C, class FreeProc = ScopedPtrMallocFree&gt; </div>
 Get the current object. 
 <p>
 operator* and operator-&gt; will cause an assert() failure if there is no current object. 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00303">303</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00300">300</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -287,7 +287,7 @@ template&lt;class C, class FreeProc = ScopedPtrMallocFree&gt; </div>
 
 <p>
 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00308">308</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00305">305</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -310,7 +310,7 @@ template&lt;class C, class FreeProc = ScopedPtrMallocFree&gt; </div>
 
 <p>
 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00313">313</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00310">310</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -336,7 +336,7 @@ template&lt;class C, class FreeProc = ScopedPtrMallocFree&gt; </div>
 Comparison operators. 
 <p>
 These return whether a <a class="el" href="classoperations__research_1_1scoped__ptr__malloc.html" title="scoped_ptr_malloc&lt;&gt; is similar to scoped_ptr&lt;&gt;, but it accepts a second...">scoped_ptr_malloc</a> and a plain pointer refer to the same object, not just to two different but equal objects. For compatibility wwith the boost-derived implementation, these take non-const arguments. 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00322">322</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00319">319</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -360,7 +360,7 @@ template&lt;class C, class FreeProc = ScopedPtrMallocFree&gt; </div>
 
 <p>
 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00326">326</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00323">323</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -386,7 +386,7 @@ template&lt;class C, class FreeProc = ScopedPtrMallocFree&gt; </div>
 Swap two scoped pointers. 
 <p>
 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00331">331</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00328">328</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -411,7 +411,7 @@ template&lt;class C, class FreeProc = ScopedPtrMallocFree&gt; </div>
 Release a pointer. 
 <p>
 The return value is the current pointer held by this object. If this object holds a NULL pointer, the return value is NULL. After this operation, this object will hold a NULL pointer, and will not own the object any more. 
-<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00342">342</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
+<p>Definition at line <a class="el" href="scoped__ptr_8h-source.html#l00339">339</a> of file <a class="el" href="scoped__ptr_8h-source.html">scoped_ptr.h</a>.</p>
 
 </div>
 </div><p>
@@ -425,7 +425,7 @@ The return value is the current pointer held by this object. If this object hold
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#287003 height=3></td>
+      <td colspan=2 bgcolor=#359621 height=3></td>
     </tr>
   </table>
 
