@@ -238,7 +238,15 @@ dependencies/install/ziboptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: dependen
 # Clean everything.
 clean_third_party:
 	$(DELREC) dependencies\install
-	$(DELREC) dependencies\sources\*
+	$(DELREC) dependencies\sources\coin-cbc*
+	$(DELREC) dependencies\sources\gflags*
+	$(DELREC) dependencies\sources\glpk*
+	$(DELREC) dependencies\sources\google*
+	$(DELREC) dependencies\sources\mono*
+	$(DELREC) dependencies\sources\pcre*
+	$(DELREC) dependencies\sources\protobuf*
+	$(DELREC) dependencies\sources\sparsehash*
+	$(DELREC) dependencies\sources\swig*
 	$(DEL) Makefile.local
 
 # Create Makefile.local
