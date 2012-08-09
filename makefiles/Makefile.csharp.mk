@@ -38,7 +38,7 @@ clean_csharp:
 # csharplp
 
 ifeq ($(SYSTEM),win)
-IMPORTPREFIX=$(OR_ROOT_FULL)\\bin\\
+IMPORTPREFIX=$(OR_ROOT)\\bin\\
 else
 IMPORTPREFIX=$(OR_ROOT_FULL)/lib/lib
 endif
