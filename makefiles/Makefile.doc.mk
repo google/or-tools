@@ -6,5 +6,5 @@ ifeq ($(PLATFORM), MACOSX)
 endif
 
 refman:
-        cd documentations/doxygen
-        $(DOXYGEN) or-tools.doxy
+	cd documentations/doxygen
+	$(DOXYGEN) or-tools.doxy
