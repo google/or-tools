@@ -145,6 +145,7 @@ class FlatZincModel {
              int simplex_frequency,
              bool use_impact,
              double restart_log_size,
+             int luby_restart,
              bool verbose_impact);
 
   // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
@@ -166,6 +167,7 @@ class FlatZincModel {
                               bool ignore_annotations,
                               bool use_impact,
                               double restart_log_size,
+                              int luby_restart,
                               bool log,
                               bool verbose_impact);
   string DebugString(AstNode* const ai) const;

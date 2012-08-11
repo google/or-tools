@@ -210,6 +210,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
                                            bool ignore_annotations,
                                            bool use_impact,
                                            double restart_log_size,
+                                           int luby_restart,
                                            bool log,
                                            bool verbose_impact) {
   AstNode* annotations = solve_annotations_;
@@ -429,6 +430,7 @@ void FlatZincModel::Solve(int solve_frequency,
                           int simplex_frequency,
                           bool use_impact,
                           double restart_log_size,
+                          int luby_restart,
                           bool verbose_impact) {
   if (!parsed_ok_) {
     return;
@@ -438,6 +440,7 @@ void FlatZincModel::Solve(int solve_frequency,
                          ignore_annotations,
                          use_impact,
                          restart_log_size,
+                         luby_restart,
                          use_log,
                          verbose_impact);
   bool print_last = false;
@@ -482,6 +485,9 @@ void FlatZincModel::Solve(int solve_frequency,
     monitors.push_back(solver_->MakeSimplexConstraint(simplex_frequency));
   }
 
+  if (luby_restart > 0) {
+    monitors.push_back(solver_->MakeLubyRestart(luby_restart));
+  }
 
   int count = 0;
   bool breaked = false;

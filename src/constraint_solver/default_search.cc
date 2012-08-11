@@ -710,15 +710,15 @@ class RestartMonitor : public SearchMonitor {
     CHECK_NOTNULL(d);
     Solver* const s = solver();
     branches_between_restarts_++;
-    d->Accept(&find_var_);
-    if (find_var_.valid()) {
-      choices_.Push(solver(),
-                    ChoiceInfo(find_var_.var(), find_var_.value(), false));
-    }
     if (CheckRestartOnRefute(s)) {
       DoRestartAndAddNoGood(s);
       RestartCurrentSearch();
       s->Fail();
+    }
+    d->Accept(&find_var_);
+    if (find_var_.valid()) {
+      choices_.Push(solver(),
+                    ChoiceInfo(find_var_.var(), find_var_.value(), false));
     }
   }
 
@@ -797,7 +797,7 @@ class RestartMonitor : public SearchMonitor {
         // restart and force to check at least at the parent of the
         // current search node.
         if (branches_between_restarts_ < min_restart_period_) {
-          maximum_restart_depth_ = search_depth - 1;
+          //          maximum_restart_depth_ = search_depth;
           if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
             LOG(INFO) << "Postpone restarting until depth <= "
                       << maximum_restart_depth_ << ", visited nodes = "
