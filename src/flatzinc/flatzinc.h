@@ -146,6 +146,7 @@ class FlatZincModel {
              bool use_impact,
              double restart_log_size,
              int luby_restart,
+             int heuristic_period,
              bool verbose_impact);
 
   // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
@@ -168,6 +169,7 @@ class FlatZincModel {
                               bool use_impact,
                               double restart_log_size,
                               int luby_restart,
+                              int heuristic_period,
                               bool log,
                               bool verbose_impact);
   string DebugString(AstNode* const ai) const;
