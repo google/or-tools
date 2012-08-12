@@ -3922,8 +3922,8 @@ class OptimizeVar : public SearchMonitor {
   IntVar* Var() const { return var_; }
   // Internal methods
   virtual void EnterSearch();
-  virtual void RestartSearch();
-  virtual void RefuteDecision(Decision* d);
+  virtual void BeginNextDecision(DecisionBuilder* const db);
+  virtual void RefuteDecision(Decision* const d);
   virtual bool AtSolution();
   virtual bool AcceptSolution();
   virtual string Print() const;

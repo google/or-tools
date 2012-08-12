@@ -2676,8 +2676,10 @@ void OptimizeVar::EnterSearch() {
   }
 }
 
-void OptimizeVar::RestartSearch() {
-  ApplyBound();
+void OptimizeVar::BeginNextDecision(DecisionBuilder* const db) {
+  if (solver()->SearchDepth() == 0) {  // after a restart.
+    ApplyBound();
+  }
 }
 
 void OptimizeVar::ApplyBound() {
@@ -4572,12 +4574,14 @@ class LubyRestart : public SearchMonitor {
         next_step_(scale_factor) {
     CHECK_GE(scale_factor, 1);
   }
+
   virtual ~LubyRestart() {}
 
   virtual void BeginFail() {
     if (++current_fails_ >= next_step_) {
       current_fails_ = 0;
       next_step_ = NextLuby(++iteration_) * scale_factor_;
+      VLOG(1) << "Restart Luby, next step = " << next_step_;
       RestartCurrentSearch();
     }
   }
@@ -4609,6 +4613,7 @@ class ConstantRestart : public SearchMonitor {
         current_fails_(0) {
     CHECK_GE(frequency, 1);
   }
+
   virtual ~ConstantRestart() {}
 
   virtual void BeginFail() {
@@ -4621,6 +4626,7 @@ class ConstantRestart : public SearchMonitor {
   virtual string DebugString() const {
     return StringPrintf("ConstantRestart(%i)", frequency_);
   }
+
  private:
   const int frequency_;
   int64 current_fails_;
