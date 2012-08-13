@@ -40,7 +40,7 @@ DEFINE_int32(ccmin_mode, 2,
 DEFINE_int32(phase_saving, 2,
              "Controls the level of phase saving (0=none, 1=limited, 2=full)");
 DEFINE_bool(rnd_init_act, false, "Randomize the initial activity");
-DEFINE_bool(luby_restart, true, "Use the Luby restart sequence");
+DEFINE_bool(minisat_luby_restart, true, "Use the Luby restart sequence");
 DEFINE_int32(restart_first, 100, "The base restart interval");
 DEFINE_double(restart_inc, 2, "Restart interval increase factor");
 DEFINE_double(garbage_frac, 0.20, "The fraction of wasted memory allowed "
@@ -60,7 +60,7 @@ Solver::Solver() :
     , clause_decay     (FLAGS_clause_decay)
     , random_var_freq  (FLAGS_random_var_freq)
     , random_seed      (FLAGS_random_seed)
-    , luby_restart     (FLAGS_luby_restart)
+    , luby_restart     (FLAGS_minisat_luby_restart)
     , ccmin_mode       (FLAGS_ccmin_mode)
     , phase_saving     (FLAGS_phase_saving)
     , rnd_pol          (false)

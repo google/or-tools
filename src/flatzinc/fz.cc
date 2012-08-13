@@ -55,7 +55,7 @@ DEFINE_int32(threads, 0, "threads");
 DEFINE_int32(simplex_frequency, 0, "Simplex frequency, 0 = no simplex");
 DEFINE_bool(use_impact, false, "Use impact based search");
 DEFINE_double(restart_log_size, -1, "Restart log size for impact search");
-DEFINE_int32(luby_factor, -1, "Luby restart factor, <= 0 = no luby");
+DEFINE_int32(luby_restart, -1, "Luby restart factor, <= 0 = no luby");
 DEFINE_int32(heuristic_period, 30, "Period to call heuristics in free search");
 DEFINE_bool(verbose_impact, false, "Verbose impact");
 DECLARE_bool(log_prefix);
@@ -79,7 +79,7 @@ void Run(const std::string& file) {
                  FLAGS_simplex_frequency,
                  FLAGS_use_impact,
                  FLAGS_restart_log_size,
-                 FLAGS_luby_factor,
+                 FLAGS_luby_restart,
                  FLAGS_heuristic_period,
                  FLAGS_verbose_impact);
 }
