@@ -725,11 +725,11 @@ class RestartMonitor : public SearchMonitor {
         LOG(INFO) << "adding no good = " << choices_.Last()->DebugString()
                   << " at depth " << s->SearchDepth();
       }
-    }
-    if (CheckRestartOnRefute(s)) {
-      DoRestartAndAddNoGood(s);
-      RestartCurrentSearch();
-      s->Fail();
+      if (CheckRestartOnRefute(s)) {
+        DoRestartAndAddNoGood(s);
+        RestartCurrentSearch();
+        s->Fail();
+      }
     }
   }
 
@@ -850,6 +850,7 @@ class RestartMonitor : public SearchMonitor {
       //
       // It can also happens that we are failing in the apply
       // branch. In that case, we do not need to revert it.
+      DCHECK(!choices_.Last()->left());
       choices_.MutableLast()->set_left(true);
       NoGood* const nogood = no_good_manager_->MakeNoGood();
 
