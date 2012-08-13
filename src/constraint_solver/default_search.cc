@@ -671,6 +671,8 @@ class ChoiceInfo {
 
   int64 value() const { return value_; }
 
+  bool set_left(bool left) { left_ = left; }
+
  private:
   int64 value_;
   IntVar* var_;
@@ -698,11 +700,16 @@ class RestartMonitor : public SearchMonitor {
   virtual ~RestartMonitor() {}
 
   virtual void ApplyDecision(Decision* const d) {
+    Solver* const s = solver();
     branches_between_restarts_++;
     d->Accept(&find_var_);
     if (find_var_.valid()) {
       choices_.Push(solver(),
                     ChoiceInfo(find_var_.var(), find_var_.value(), true));
+      if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+        LOG(INFO) << "adding no good = " << choices_.Last()->DebugString()
+                  << " at depth " << s->SearchDepth();
+      }
     }
   }
 
@@ -710,15 +717,19 @@ class RestartMonitor : public SearchMonitor {
     CHECK_NOTNULL(d);
     Solver* const s = solver();
     branches_between_restarts_++;
-    if (CheckRestartOnRefute(s)) {
-      DoRestartAndAddNoGood(s);
-      RestartCurrentSearch();
-      s->Fail();
-    }
     d->Accept(&find_var_);
     if (find_var_.valid()) {
       choices_.Push(solver(),
                     ChoiceInfo(find_var_.var(), find_var_.value(), false));
+      if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+        LOG(INFO) << "adding no good = " << choices_.Last()->DebugString()
+                  << " at depth " << s->SearchDepth();
+      }
+    }
+    if (CheckRestartOnRefute(s)) {
+      DoRestartAndAddNoGood(s);
+      RestartCurrentSearch();
+      s->Fail();
     }
   }
 
@@ -738,6 +749,12 @@ class RestartMonitor : public SearchMonitor {
       }
     }
     return false;
+  }
+
+  virtual void BeginFail() {
+    if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+      LOG(INFO) << "-- Failure";
+    }
   }
 
   void Install() {
@@ -782,7 +799,7 @@ class RestartMonitor : public SearchMonitor {
                   << ", log_search_space_size = " << log_search_space_size
                   << ", min_log_search_space = " << min_log_search_space_;
       }
-      if (search_depth > maximum_restart_depth_) {
+      if (search_depth > maximum_restart_depth_ || search_depth == 0) {
         // We are deeper than maximum_restart_depth_, we should not restart
         // because we have not finished a sub-tree of sufficient size.
         return false;
@@ -790,14 +807,14 @@ class RestartMonitor : public SearchMonitor {
       // We may restart either because of the search space criteria,
       // or the search depth is less than maximum_restart_depth_.
       if (min_log_search_space_ + parameters_.restart_log_size <
-          log_search_space_size ||
+          log_search_space_size  ||
           (search_depth <= maximum_restart_depth_ &&
            maximum_restart_depth_ != kint64max)) {
         // If we have not visited enough branches, we postpone the
         // restart and force to check at least at the parent of the
         // current search node.
         if (branches_between_restarts_ < min_restart_period_) {
-          //          maximum_restart_depth_ = search_depth;
+          maximum_restart_depth_ = search_depth - 1;
           if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
             LOG(INFO) << "Postpone restarting until depth <= "
                       << maximum_restart_depth_ << ", visited nodes = "
@@ -825,16 +842,26 @@ class RestartMonitor : public SearchMonitor {
     // Creates nogood.
     if (parameters_.use_no_goods) {
       DCHECK(no_good_manager_ != NULL);
+
+      // Reverse the last no good if need be. If we have finished the
+      // apply branch, then the subtree below the left branch is
+      // completely explored. The choice list contains the refute
+      // branch. This one should be reverted.
+      //
+      // It can also happens that we are failing in the apply
+      // branch. In that case, we do not need to revert it.
+      choices_.MutableLast()->set_left(true);
       NoGood* const nogood = no_good_manager_->MakeNoGood();
+
       // if the nogood contains both x == 3 and x != 4, we can simplify
       // to keep only x == 3.
-      hash_set<IntVar*> positive_variable_indices;
+      hash_set<IntVar*> positive_variable;
       for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_);
            it.ok();
            ++it) {
         const ChoiceInfo& choice = *it;
         if (choice.left()) {
-          positive_variable_indices.insert(choice.var());
+          positive_variable.insert(choice.var());
         }
       }
       // We fill the nogood structure.
@@ -846,7 +873,7 @@ class RestartMonitor : public SearchMonitor {
         const int64 value = choice.value();
         if (choice.left()) {
           nogood->AddIntegerVariableEqualValueTerm(var, value);
-        } else if (!ContainsKey(positive_variable_indices, choice.var())) {
+        } else if (!ContainsKey(positive_variable, choice.var())) {
           nogood->AddIntegerVariableNotEqualValueTerm(var, value);
         }
       }

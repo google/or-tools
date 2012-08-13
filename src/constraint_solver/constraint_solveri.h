@@ -199,6 +199,10 @@ template <class T> class SimpleRevFIFO {
     return chunks_ ? &chunks_->data_[pos_.Value()] : NULL;
   }
 
+  T* MutableLast() {
+    return chunks_ ? &chunks_->data_[pos_.Value()] : NULL;
+  }
+
   // Returns the last value in the FIFO.
   const T& LastValue() const {
     DCHECK(chunks_);
