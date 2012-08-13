@@ -282,7 +282,9 @@ struct DefaultPhaseParameters {
   // one.
   bool run_all_heuristics;
 
-  // The distance in nodes between each run of the heuristics.
+  // The distance in nodes between each run of the heuristics. A
+  // negative or null value will means that we will not run heuristics
+  // at all.
   int heuristic_period;
 
   // The failure limit for each heuristic that we run.

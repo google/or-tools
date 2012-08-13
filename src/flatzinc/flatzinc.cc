@@ -325,8 +325,9 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
   if (use_impact && free_search_) {
     DefaultPhaseParameters parameters;
     parameters.use_impacts = true;
-    parameters.run_all_heuristics = method_ != SAT || !all_solutions;
-    parameters.heuristic_period = heuristic_period;
+    parameters.run_all_heuristics = true;
+    parameters.heuristic_period =
+        method_ != SAT || !all_solutions ? heuristic_period : -1;
     parameters.restart_log_size = restart_log_size;
     parameters.display_level = log ?
         (verbose_impact ?

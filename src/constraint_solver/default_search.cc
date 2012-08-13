@@ -930,6 +930,9 @@ class RunHeuristicsAsDives : public Decision {
   virtual void Refute(Solver* const solver) {}
 
   bool ShouldRun() {
+    if (heuristic_period_ <= 0) {
+      return false;
+    }
     ++heuristic_branch_count_;
     return heuristic_branch_count_ % heuristic_period_ == 0;
   }
