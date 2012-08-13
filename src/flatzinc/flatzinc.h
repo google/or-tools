@@ -171,7 +171,8 @@ class FlatZincModel {
                               int luby_restart,
                               int heuristic_period,
                               bool log,
-                              bool verbose_impact);
+                              bool verbose_impact,
+                              bool all_solutions);
   string DebugString(AstNode* const ai) const;
 
   /// Number of integer variables

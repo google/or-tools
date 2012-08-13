@@ -213,7 +213,8 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
                                            int luby_restart,
                                            int heuristic_period,
                                            bool log,
-                                           bool verbose_impact) {
+                                           bool verbose_impact,
+                                           bool all_solutions) {
   AstNode* annotations = solve_annotations_;
   if (annotations && !ignore_annotations) {
     std::vector<AstNode*> flat_annotations;
@@ -323,7 +324,8 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
   }
   if (use_impact && free_search_) {
     DefaultPhaseParameters parameters;
-    parameters.run_all_heuristics = true;
+    parameters.use_impacts = true;
+    parameters.run_all_heuristics = method_ != SAT || !all_solutions;
     parameters.heuristic_period = heuristic_period;
     parameters.restart_log_size = restart_log_size;
     parameters.display_level = log ?
@@ -445,7 +447,8 @@ void FlatZincModel::Solve(int solve_frequency,
                          luby_restart,
                          heuristic_period,
                          use_log,
-                         verbose_impact);
+                         verbose_impact,
+                         all_solutions);
   bool print_last = false;
   if (all_solutions && num_solutions == 0) {
     num_solutions = kint32max;
