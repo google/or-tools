@@ -106,10 +106,10 @@ ifeq ($(PLATFORM),LINUX)
   endif
   ifeq ($(UNIX_MONO_DIR),)
     CSC = mono-csc
-    MONO = LD_LIBRARY_PATH=$(LIB_DIR) mono
+    MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) mono
   else
     CSC = $(UNIX_MONO_DIR)/bin/gmcs
-    MONO = LD_LIBRARY_PATH=$(LIB_DIR) $(UNIX_MONO_DIR)/bin/mono
+    MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) $(UNIX_MONO_DIR)/bin/mono
   endif
 
   # This is needed to find libgflags.a
@@ -164,10 +164,10 @@ ifeq ($(PLATFORM),MACOSX)
   JNILIBEXT = jnilib
   ifeq ($(UNIX_MONO_DIR),)
     CSC = gmcs
-    MONO =  DYLD_LIBRARY_PATH=$(LIB_DIR) mono
+    MONO =  DYLD_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) mono
   else
     CSC = $(UNIX_MONO_DIR)/bin/mcs
-    MONO = DYLD_LIBRARY_PATH=$(LIB_DIR) $(UNIX_MONO_DIR)/bin/mono
+    MONO = DYLD_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) $(UNIX_MONO_DIR)/bin/mono
   endif
 
   GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
