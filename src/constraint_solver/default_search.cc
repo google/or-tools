@@ -674,7 +674,7 @@ class ChoiceInfo {
 
   int64 value() const { return value_; }
 
-  bool set_left(bool left) { left_ = left; }
+  void set_left(bool left) { left_ = left; }
 
  private:
   int64 value_;
