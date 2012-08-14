@@ -47,7 +47,7 @@ ifeq ("$(SYSTEM)","unix")
         /usr/lib/jvm/java-7-openjdk-i386
 
     endif
-    SELECTED_JDK_DEF = LINUX_JDK_ROOT = $(wildcard $(CANDIDATE_JDK_ROOTS))
+    SELECTED_JDK_DEF = LINUX_JDK_ROOT = $(firstword $(wildcard $(CANDIDATE_JDK_ROOTS)))
   endif
   ifeq ($(OS),Darwin) # Assume Mac Os X
     PLATFORM = MACOSX
