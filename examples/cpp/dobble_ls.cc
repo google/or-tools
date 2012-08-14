@@ -40,6 +40,7 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "util/bitset.h"
 #include "base/random.h"
+#include "util/string_array.h"
 
 DEFINE_int32(symbols_per_card, 8, "Number of symbols per card.");
 DEFINE_int32(ls_seed, 1, "Seed for the random number generator (used by "
@@ -175,6 +176,32 @@ class SymbolsSharedByTwoCardsConstraint : public Constraint {
         }
       }
     }
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf(
+        "SymbolsSharedByTwoCardsConstraint([%s], [%s], %d, %s)",
+        DebugStringVector(card1_symbol_vars_, ", ").c_str(),
+        DebugStringVector(card2_symbol_vars_, ", ").c_str(),
+        num_symbols_,
+        num_symbols_in_common_var_->DebugString().c_str());
+  }
+
+  void Accept(ModelVisitor* const visitor) const {
+    const string id = "SymbolsSharedByTwoCardsConstraint";
+    visitor->BeginVisitConstraint(id, this);
+    visitor->VisitIntegerVariableArrayArgument(
+        ModelVisitor::kLeftArgument,
+        card1_symbol_vars_.data(),
+        card1_symbol_vars_.size());
+    visitor->VisitIntegerVariableArrayArgument(
+        ModelVisitor::kRightArgument,
+        card2_symbol_vars_.data(),
+        card2_symbol_vars_.size());
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, num_symbols_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            num_symbols_in_common_var_);
+    visitor->EndVisitConstraint(id, this);
   }
 
  private:

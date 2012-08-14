@@ -3176,6 +3176,7 @@ class ModelVisitor : public BaseObject {
   static const char kEndExpr[];
   static const char kEquality[];
   static const char kFalseConstraint[];
+  static const char kGlobalCardinality[];
   static const char kGreater[];
   static const char kGreaterOrEqual[];
   static const char kIntegerVariable[];
@@ -3200,6 +3201,7 @@ class ModelVisitor : public BaseObject {
   static const char kMember[];
   static const char kMin[];
   static const char kMinEqual[];
+  static const char kModuloConstraint[];
   static const char kNoCycle[];
   static const char kNonEqual[];
   static const char kOpposite[];
@@ -3271,6 +3273,7 @@ class ModelVisitor : public BaseObject {
   static const char kMaxArgument[];
   static const char kMaximizeArgument[];
   static const char kMinArgument[];
+  static const char kModuloArgument[];
   static const char kNextsArgument[];
   static const char kOptionalArgument[];
   static const char kRangeArgument[];

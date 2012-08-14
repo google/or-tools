@@ -915,6 +915,14 @@ class IntModulo : public Constraint {
                         y_->DebugString().c_str());
   }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kModuloConstraint, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, x_);
+    visitor->VisitIntegerArgument(ModelVisitor::kModuloArgument, mod_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument, y_);
+    visitor->EndVisitConstraint(ModelVisitor::kModuloConstraint, this);
+  }
+
  private:
   IntVar* const x_;
   const int64 mod_;
@@ -969,6 +977,15 @@ class VariableModulo : public Constraint {
                         y_->DebugString().c_str());
   }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kModuloConstraint, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, x_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kModuloArgument,
+                                            mod_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument, y_);
+    visitor->EndVisitConstraint(ModelVisitor::kModuloConstraint, this);
+  }
+
  private:
   IntVar* const x_;
   IntVar* const mod_;
@@ -1001,6 +1018,15 @@ class BoundModulo : public Constraint {
     return StringPrintf("BoundModulo(%s, %s)",
                         x_->DebugString().c_str(),
                         mod_->DebugString().c_str());
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kModuloConstraint, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                            x_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kModuloArgument,
+                                            mod_);
+    visitor->EndVisitConstraint(ModelVisitor::kModuloConstraint, this);
   }
 
  private:
@@ -1045,6 +1071,15 @@ class PositiveModulo : public Constraint {
                         x_->DebugString().c_str(),
                         mod_->DebugString().c_str(),
                         y_->DebugString().c_str());
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kModuloConstraint, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, x_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kModuloArgument,
+                                            mod_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument, y_);
+    visitor->EndVisitConstraint(ModelVisitor::kModuloConstraint, this);
   }
 
  private:

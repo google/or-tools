@@ -934,6 +934,23 @@ class SoftGCC : public Constraint{
     return "SoftGCC";
   }
 
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kGlobalCardinality, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_.data(),
+                                               vars_.size());
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, min_value_);
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kMinArgument,
+                                       card_mins_.get(),
+                                       num_values_);
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kMaxArgument,
+                                       card_max_.get(),
+                                       num_values_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                            violation_var_);
+    visitor->EndVisitConstraint(ModelVisitor::kGlobalCardinality, this);
+  }
+
  private:
   int64* NewIntArray(int size) {
     int64* const result = new int64[size];

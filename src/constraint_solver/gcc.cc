@@ -368,6 +368,11 @@ class GccConstraint : public Constraint {
     return "GccConstraint";
   }
 
+  void Accept(ModelVisitor* const visitor) const {
+    LOG(FATAL) << "Not yet implemented";
+    // TODO(user): IMPLEMENT ME.
+  }
+
  private:
   void PathSet(std::vector<int64>* const tree,
                int64 start,

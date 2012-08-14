@@ -144,6 +144,7 @@ class LightFunctionElementConstraint : public Constraint {
     values_->CheckIsRepeatable();
   }
   virtual ~LightFunctionElementConstraint() {}
+
   virtual void Post() {
     Demon* demon =
         MakeConstraintDemon0(solver(),
@@ -152,10 +153,20 @@ class LightFunctionElementConstraint : public Constraint {
                              "IndexBound");
     index_->WhenBound(demon);
   }
+
   virtual void InitialPropagate() {
     if (index_->Bound()) {
       IndexBound();
     }
+  }
+
+  virtual string DebugString() const {
+    return "LightFunctionElementConstraint";
+  }
+
+  void Accept(ModelVisitor* const visitor) const {
+    LOG(FATAL) << "Not yet implemented";
+    // TODO(user): IMPLEMENT ME.
   }
 
  private:
@@ -206,6 +217,15 @@ class LightFunctionElement2Constraint : public Constraint {
   }
   virtual void InitialPropagate() {
     IndexBound();
+  }
+
+  virtual string DebugString() const {
+    return "LightFunctionElement2Constraint";
+  }
+
+  void Accept(ModelVisitor* const visitor) const {
+    LOG(FATAL) << "Not yet implemented";
+    // TODO(user): IMPLEMENT ME.
   }
 
  private:

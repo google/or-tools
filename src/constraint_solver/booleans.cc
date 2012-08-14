@@ -182,6 +182,10 @@ class SatPropagator : public Constraint {
     return "MinisatConstraint";
   }
 
+  void Accept(ModelVisitor* const visitor) const {
+    LOG(FATAL) << "Should Not Be Visited";
+  }
+
  private:
   Minisat::Solver minisat_;
   std::vector<IntVar*> vars_;

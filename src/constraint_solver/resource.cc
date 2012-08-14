@@ -934,6 +934,11 @@ class RankedPropagator : public Constraint {
                         partial_sequence_.DebugString().c_str());
   }
 
+  void Accept(ModelVisitor* const visitor) const {
+    LOG(FATAL) << "Not yet implemented";
+    // TODO(user): IMPLEMENT ME.
+  }
+
  private:
   scoped_array<IntVar*> nexts_;
   scoped_array<IntervalVar*> intervals_;
