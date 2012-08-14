@@ -322,9 +322,11 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
   } else {
     free_search_ = true;
   }
-  if (use_impact && free_search_) {
+  if (free_search_) {
     DefaultPhaseParameters parameters;
-    parameters.use_impacts = true;
+    parameters.search_strategy = use_impact ?
+        DefaultPhaseParameters::IMPACT_BASE_SEARCH :
+        DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN;
     parameters.run_all_heuristics = true;
     parameters.heuristic_period =
         method_ != SAT || !all_solutions ? heuristic_period : -1;
@@ -349,8 +351,8 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
   VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
   if (!introduced_variables_.empty()) {
     builders_.push_back(solver_->MakePhase(introduced_variables_,
-                                          Solver::CHOOSE_FIRST_UNBOUND,
-                                          Solver::ASSIGN_MIN_VALUE));
+                                           Solver::CHOOSE_FIRST_UNBOUND,
+                                           Solver::ASSIGN_MIN_VALUE));
     VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
   }
 }

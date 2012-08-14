@@ -43,6 +43,9 @@ const int DefaultPhaseParameters::kDefaultHeuristicNumFailuresLimit = 30;
 const int DefaultPhaseParameters::kDefaultSeed = 0;
 const double DefaultPhaseParameters::kDefaultRestartLogSize = -1.0;
 const bool DefaultPhaseParameters::kDefaultUseNoGoods = true;
+const DefaultPhaseParameters::SearchStrategy
+DefaultPhaseParameters::kDefaultSearchStrategy =
+    DefaultPhaseParameters::IMPACT_BASE_SEARCH;
 
 class NoGoodManager;
 
@@ -1115,7 +1118,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
                               std::vector<SearchMonitor*>* const extras) {
     CHECK_NOTNULL(solver);
     CHECK_NOTNULL(extras);
-    if (parameters_.use_impacts) {
+    if (parameters_.search_strategy ==
+        DefaultPhaseParameters::IMPACT_BASE_SEARCH) {
       extras->push_back(&impact_recorder_);
     }
     if (parameters_.restart_log_size >= 0) {
@@ -1143,7 +1147,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
     if (init_done_) {
       return;
     }
-    if (parameters_.use_impacts) {
+    if (parameters_.search_strategy ==
+        DefaultPhaseParameters::IMPACT_BASE_SEARCH) {
       // Decide if we are doing impacts, no if one variable is too big.
       for (int i = 0; i < vars_.size(); ++i) {
         if (vars_[i]->Max() - vars_[i]->Min() > 0xFFFFFF) {
@@ -1151,7 +1156,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
             LOG(INFO) << "Domains are too large, switching to simple "
                       << "heuristics";
           }
-          parameters_.use_impacts = false;
+          parameters_.search_strategy =
+              DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN;
           init_done_ = true;
           return;
         }
@@ -1162,7 +1168,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
           LOG(INFO) << "Search space is too small, switching to simple "
                     << "heuristics";
         }
-        parameters_.use_impacts = false;
+          parameters_.search_strategy =
+              DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN;
         init_done_ = true;
         return;
       }
@@ -1188,7 +1195,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
   }
 
   bool FindVarValue(IntVar** const var, int64* const value) {
-    return parameters_.use_impacts ?
+    return parameters_.search_strategy ==
+        DefaultPhaseParameters::IMPACT_BASE_SEARCH ?
         FindVarValueWithImpact(var, value) :
         FindVarValueNoImpact(var, value);
   }

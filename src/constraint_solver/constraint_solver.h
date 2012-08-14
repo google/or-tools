@@ -228,13 +228,6 @@ struct SolverParameters {
 // Note this is for advanced users only.
 struct DefaultPhaseParameters {
  public:
-  static const int kDefaultNumberOfSplits;
-  static const int kDefaultHeuristicPeriod;
-  static const int kDefaultHeuristicNumFailuresLimit;
-  static const int kDefaultSeed;
-  static const double kDefaultRestartLogSize;
-  static const bool kDefaultUseNoGoods;
-
   enum VariableSelection {
     CHOOSE_MAX_SUM_IMPACT = 0,
     CHOOSE_MAX_AVERAGE_IMPACT = 1,
@@ -252,6 +245,19 @@ struct DefaultPhaseParameters {
     VERBOSE = 2
   };
 
+  enum SearchStrategy {
+    CHOOSE_FIRST_UNBOUND_ASSIGN_MIN,
+    IMPACT_BASE_SEARCH
+  };
+
+  static const int kDefaultNumberOfSplits;
+  static const int kDefaultHeuristicPeriod;
+  static const int kDefaultHeuristicNumFailuresLimit;
+  static const int kDefaultSeed;
+  static const double kDefaultRestartLogSize;
+  static const bool kDefaultUseNoGoods;
+  static const DefaultPhaseParameters::SearchStrategy kDefaultSearchStrategy;
+
   DefaultPhaseParameters()
       : var_selection_schema(CHOOSE_MAX_SUM_IMPACT),
         value_selection_schema(SELECT_MIN_IMPACT),
@@ -264,7 +270,7 @@ struct DefaultPhaseParameters {
         restart_log_size(kDefaultRestartLogSize),
         display_level(NORMAL),
         use_no_goods(kDefaultUseNoGoods),
-        use_impacts(true) {}
+        search_strategy(IMPACT_BASE_SEARCH) {}
 
   // This parameter describes how the next variable to instantiate
   // will be chosen.
@@ -316,7 +322,7 @@ struct DefaultPhaseParameters {
   bool use_no_goods;
 
   // Used in tests. Disable impacts and run choose first unbound, assign min.
-  bool use_impacts;
+  SearchStrategy search_strategy;
 };
 
 
