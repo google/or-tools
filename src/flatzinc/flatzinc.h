@@ -157,6 +157,8 @@ class FlatZincModel {
 
   SatPropagator* Sat() const { return sat_; }
 
+  OptimizeVar* ObjectiveMonitor() const { return objective_; }
+
  private:
   enum Meth {
     SAT, //< Solve as satisfaction problem
