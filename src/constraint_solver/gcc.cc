@@ -363,6 +363,11 @@ class GccConstraint : public Constraint {
     }
   }
 
+  virtual string DebugString() const {
+    // TODO(user): Improve me.
+    return "GccConstraint";
+  }
+
  private:
   void PathSet(std::vector<int64>* const tree,
                int64 start,

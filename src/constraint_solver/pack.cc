@@ -199,6 +199,10 @@ class InitialPropagateData : public BaseObject {
   const std::vector<int64>& assigned() const { return assigned_; }
   const std::vector<int64>& unassigned() const { return unassigned_; }
 
+  virtual string DebugString() const {
+    return "InitialPropagateData";
+  }
+
  private:
   std::vector<std::vector<int64> > undecided_;
   std::vector<int64> unassigned_;

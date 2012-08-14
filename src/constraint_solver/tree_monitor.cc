@@ -162,6 +162,10 @@ class TreeDecisionVisitor : public DecisionVisitor {
     return value_;
   }
 
+  virtual string DebugString() const {
+    return "TreeDecisionVisitor";
+  }
+
  private:
   string name_;
   int64 value_;

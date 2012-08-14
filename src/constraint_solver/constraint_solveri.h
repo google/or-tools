@@ -1371,6 +1371,7 @@ class SearchLog : public SearchMonitor {
   void Maintain();
   virtual void BeginInitialPropagation();
   virtual void EndInitialPropagation();
+  virtual string DebugString() const;
 
  protected:
   /* Bottleneck function used for all UI related output. */

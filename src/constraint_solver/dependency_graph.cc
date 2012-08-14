@@ -172,6 +172,10 @@ class NonReversibleDependencyGraph : public DependencyGraph {
     ProcessQueue();
   }
 
+  virtual string DebugString() const {
+    return "NonReversibleDependencyGraph";
+  }
+
  private:
   bool Dequeue(DependencyGraphNode** const node, bool* const changed_min) {
     DCHECK(node != NULL);

@@ -140,6 +140,10 @@ class FirstPassVisitor : public ModelVisitor {
   FirstPassVisitor() {}  // Needed for Visual Studio.
   virtual ~FirstPassVisitor() {}
 
+  virtual string DebugString() const {
+    return "FirstPassVisitor";
+  }
+
   // Begin/End visit element.
   virtual void BeginVisitModel(const string& solver_name) {
     // Reset statistics.
@@ -543,6 +547,10 @@ class SecondPassVisitor : public ModelVisitor {
         model_proto_(model_proto) {}
 
   virtual ~SecondPassVisitor() {}
+
+  virtual string DebugString() const {
+    return "SecondPassVisitor";
+  }
 
   virtual void BeginVisitModel(const string& model_name) {
     model_proto_->set_model(model_name);
@@ -1002,6 +1010,10 @@ template <class T> class ArrayWithOffset : public BaseObject {
     DCHECK_GE(index, index_min_);
     DCHECK_LE(index, index_max_);
     values_[index - index_min_] = value;
+  }
+
+  virtual string DebugString() const {
+    return "ArrayWithOffset";
   }
 
  private:

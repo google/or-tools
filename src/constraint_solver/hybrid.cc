@@ -106,6 +106,10 @@ class SimplexConnection : public SearchMonitor {
     }
   }
 
+  virtual string DebugString() const {
+    return "SimplexConnection";
+  }
+
  private:
   scoped_ptr<Callback1<MPSolver*> > builder_;
   scoped_ptr<Callback1<MPSolver*> > modifier_;
@@ -298,6 +302,10 @@ class Linearizer : public ModelParser {
   virtual void VisitIntervalArrayArgument(const string& arg_name,
                                           const IntervalVar* const * argument,
                                           int size) {}
+
+  virtual string DebugString() const {
+    return "Linearizer";
+  }
 
  private:
   void BeginVisit(bool active) {
@@ -625,6 +633,10 @@ class AutomaticLinearization : public SearchMonitor {
           break;
       }
     }
+  }
+
+  virtual string DebugString() const {
+    return "AutomaticLinearization";
   }
 
  private:

@@ -2888,6 +2888,10 @@ class ExprLinearizer : public ModelParser {
 
   int64 Constant() const { return constant_; }
 
+  virtual string DebugString() const {
+    return "ExprLinearizer";
+  }
+
  private:
   void BeginVisit(bool active) {
     PushArgumentHolder();

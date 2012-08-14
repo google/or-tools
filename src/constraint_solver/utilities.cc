@@ -431,6 +431,10 @@ class PrintModelVisitor : public ModelVisitor {
     LOG(INFO) << Spaces() << "]";
   }
 
+  virtual string DebugString() const {
+    return "PrintModelVisitor";
+  }
+
  private:
   void Increase() {
     indent_ += 2;
@@ -625,6 +629,10 @@ class ModelStatisticsVisitor : public ModelVisitor {
     }
   }
 
+  virtual string DebugString() const {
+    return "ModelStatisticsVisitor";
+  }
+
  private:
   void Register(const BaseObject* const object) {
     already_visited_.insert(object);
@@ -765,6 +773,10 @@ class VariableDegreeVisitor : public ModelVisitor {
     for (int i = 0; i < size; ++i) {
       VisitSubArgument(arguments[i]);
     }
+  }
+
+  virtual string DebugString() const {
+    return "VariableDegreeVisitor";
   }
 
  private:

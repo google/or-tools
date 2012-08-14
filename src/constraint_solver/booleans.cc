@@ -178,6 +178,10 @@ class SatPropagator : public Constraint {
     return minisat_.addClause(p, q, r);
   }
 
+  virtual string DebugString() const {
+    return "MinisatConstraint";
+  }
+
  private:
   Minisat::Solver minisat_;
   std::vector<IntVar*> vars_;

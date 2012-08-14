@@ -3237,6 +3237,10 @@ class Trace : public PropagationMonitor {
     SearchMonitor::Install();
   }
 
+  virtual string DebugString() const {
+    return "Trace";
+  }
+
  private:
   std::vector<PropagationMonitor*> monitors_;
 };
@@ -3269,6 +3273,7 @@ void Constraint::PostAndPropagate() {
 
 void Constraint::Accept(ModelVisitor* const visitor) const {
   visitor->BeginVisitConstraint("unknown", this);
+  VLOG(1) << "Unknown constraint " << DebugString();
   visitor->EndVisitConstraint("unknown", this);
 }
 
@@ -3284,6 +3289,7 @@ IntVar* Constraint::Var() {
 
 void IntExpr::Accept(ModelVisitor* const visitor) const {
   visitor->BeginVisitIntegerExpression("unknown", this);
+  VLOG(1) << "Unknown expression " << DebugString();
   visitor->EndVisitIntegerExpression("unknown", this);
 }
 

@@ -168,7 +168,7 @@ class DomainIntVar : public IntVar {
             max_(kint64min),
             current_(kint64max) {}
 
-      ~BitSetIterator() {}
+      virtual ~BitSetIterator() {}
 
       void Init(int64 min, int64 max) {
         max_ = max;
@@ -185,6 +185,10 @@ class DomainIntVar : public IntVar {
                                                          current_ - omin_,
                                                          max_ - omin_) + omin_;
         }
+      }
+
+      virtual string DebugString() const {
+        return "BitSetIterator";
       }
 
      private:

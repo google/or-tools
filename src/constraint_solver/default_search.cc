@@ -131,6 +131,10 @@ class FindVar : public DecisionVisitor {
     return value_;
   }
 
+  virtual string DebugString() const {
+    return "FindVar decision visitor";
+  }
+
  private:
   IntVar* var_;
   int64 value_;
@@ -588,6 +592,10 @@ class ImpactRecorder : public SearchMonitor {
     }
   }
 
+  virtual string DebugString() const {
+    return "ImpactRecorder";
+  }
+
  private:
   // A container for the variables needed in FirstRun that is reversibly
   // allocable.
@@ -610,6 +618,10 @@ class ImpactRecorder : public SearchMonitor {
     const std::vector<int64>& removed_values() const { return removed_values_; }
     InitVarImpacts* without_split() { return &without_splits_; }
     InitVarImpactsWithSplits* with_splits() { return &with_splits_; }
+
+    virtual string DebugString() const {
+      return "FirstRunVariableContainers";
+    }
 
    private:
     scoped_ptr<Callback2<int, int64> > update_impact_callback_;
@@ -765,6 +777,10 @@ class RestartMonitor : public SearchMonitor {
     if (no_good_manager_ != NULL) {
       no_good_manager_->Install();
     }
+  }
+
+  virtual string DebugString() const {
+    return "RestartMonitor";
   }
 
  private:

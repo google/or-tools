@@ -74,6 +74,10 @@ SearchLog::SearchLog(Solver* const s,
 
 SearchLog::~SearchLog() {}
 
+string SearchLog::DebugString() const {
+  return "SearchLog";
+}
+
 void SearchLog::EnterSearch() {
   const string buffer = StringPrintf("Start search, %s", MemoryUsage().c_str());
   OutputLine(buffer);
@@ -355,6 +359,10 @@ class SearchTrace : public SearchMonitor {
   }
   virtual void NoMoreSolutions() {
     LG << prefix_ << " NoMoreSolutions()";
+  }
+
+  virtual string DebugString() const {
+    return "SearchTrace";
   }
 
  private:
@@ -4736,6 +4744,10 @@ class SymmetryManager : public SearchMonitor {
 
   void AddTermToClause(SymmetryBreaker* const visitor, IntVar* const term) {
     clauses_[visitor->index_in_symmetry_manager()].Push(solver(), term);
+  }
+
+  string DebugString() const {
+    return "SymmetryManager";
   }
 
  private:

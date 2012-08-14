@@ -84,6 +84,10 @@ class MirrorIntervalVar : public IntervalVar {
     visitor->VisitIntervalVariable(this, ModelVisitor::kMirrorOperation, t_);
   }
 
+  virtual string DebugString() const {
+    return StringPrintf("MirrorInterval(%s)", t_->DebugString().c_str());
+  }
+
  private:
   IntervalVar* const t_;
   DISALLOW_COPY_AND_ASSIGN(MirrorIntervalVar);
@@ -219,6 +223,11 @@ class IntervalVarRelaxedMax : public AlwaysPerformedIntervalVarWrapper {
                                    ModelVisitor::kRelaxedMaxOperation,
                                    underlying());
   }
+
+  virtual string DebugString() const {
+    return StringPrintf("IntervalVarRelaxedMax(%s)",
+                        underlying()->DebugString().c_str());
+  }
 };
 
 // An interval variable that wraps around an underlying one, relaxing the min
@@ -264,6 +273,11 @@ class IntervalVarRelaxedMin : public AlwaysPerformedIntervalVarWrapper {
     visitor->VisitIntervalVariable(this,
                                    ModelVisitor::kRelaxedMinOperation,
                                    underlying());
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("IntervalVarRelaxedMin(%s)",
+                        underlying()->DebugString().c_str());
   }
 };
 }  // namespace

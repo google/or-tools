@@ -783,6 +783,11 @@ class OppositeCallback : public BaseObject {
   int64 Run(int64 index) {
     return -values_->Run(index);
   }
+
+  virtual string DebugString() const {
+    return "OppositeCallback";
+  }
+
  public:
   scoped_ptr<ResultCallback1<int64, int64> > values_;
 };

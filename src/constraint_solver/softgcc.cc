@@ -930,6 +930,10 @@ class SoftGCC : public Constraint{
     }
   }
 
+  virtual string DebugString() const {
+    return "SoftGCC";
+  }
+
  private:
   int64* NewIntArray(int size) {
     int64* const result = new int64[size];

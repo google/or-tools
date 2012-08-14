@@ -382,6 +382,12 @@ class Ac4TableConstraint : public Constraint {
     }
   }
 
+  virtual string DebugString() const {
+    return StringPrintf("AllowedAssignments(arity = %d, tuple_count = %d)",
+                        table_->NumVars(),
+                        table_->NumTuples());
+  }
+
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kAllowedAssignments, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,

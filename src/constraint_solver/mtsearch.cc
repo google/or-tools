@@ -223,6 +223,11 @@ class MtSolutionReceiver : public SearchMonitor {
   virtual void ExitSearch() {
     support_->MasterExitSearch();
   }
+
+  virtual string DebugString() const {
+    return "MtSolutionReceiver";
+  }
+
  private:
   MtSolveSupport* const support_;
 };
@@ -255,6 +260,10 @@ class MtSolutionDispatcher : public SearchMonitor {
     assignment_->Store();
     support_->SlaveNotifySolution(worker_, assignment_);
     return false;
+  }
+
+  virtual string DebugString() const {
+    return "MtSolutionDispatcher";
   }
 
  private:
@@ -587,6 +596,10 @@ class MTSharingSolutionPool : public SolutionPool {
     } else {
       return false;
     }
+  }
+
+  virtual string DebugString() const {
+    return "MTSharingSolutionPool";
   }
 
  private:

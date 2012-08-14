@@ -417,6 +417,10 @@ return WallTimer::GetTimeInMicroSeconds() - start_time_;
     SearchMonitor::Install();
   }
 
+  virtual string DebugString() const {
+    return "DemonProfiler";
+  }
+
  private:
   const Constraint* active_constraint_;
   const Demon* active_demon_;

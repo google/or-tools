@@ -205,6 +205,11 @@ class CollectVariablesVisitor : public ModelParser {
     }
   }
 
+  virtual string DebugString() const {
+    return "CollectVariablesVisitor";
+  }
+
+
  private:
   void IgnoreIntegerVariable(IntVar* const var) {
     primary_set_.erase(var);

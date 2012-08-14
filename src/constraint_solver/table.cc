@@ -928,6 +928,9 @@ class TransitionConstraint : public Constraint {
     visitor->EndVisitConstraint(ModelVisitor::kTransition, this);
   }
 
+  virtual string DebugString() const {
+    return "TransitionConstraint";
+  }
 
  private:
   // Variable representing transitions between states. See header file.

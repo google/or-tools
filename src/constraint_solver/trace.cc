@@ -397,6 +397,10 @@ class TraceIntervalVar : public IntervalVar {
     inner_->Accept(visitor);
   }
 
+  virtual string DebugString() const {
+    return inner_->DebugString();
+  }
+
  private:
   IntervalVar* const inner_;
 };
@@ -799,6 +803,10 @@ class PrintTrace : public PropagationMonitor {
     if (solver()->SolveDepth() <= 1) {
       solver()->AddPropagationMonitor(this);
     }
+  }
+
+  virtual string DebugString() const {
+    return "PrintTrace";
   }
 
  private:

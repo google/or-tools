@@ -1010,6 +1010,10 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     return sequence_var_;
   }
 
+  virtual string DebugString() const {
+    return "FullDisjunctiveConstraint";
+  }
+
  private:
   void BuildNextModel() {
     Solver* const s = solver();
@@ -1354,6 +1358,7 @@ class EdgeFinder : public Constraint {
       }
     }
   }
+
   virtual ~EdgeFinder() {
     STLDeleteElements(&by_start_min_);
     STLDeleteValues(&update_map_);
@@ -1384,6 +1389,10 @@ class EdgeFinder : public Constraint {
 
   void Accept(ModelVisitor* const visitor) const {
     LOG(FATAL) << "Should Not Be Visited";
+  }
+
+  virtual string DebugString() const {
+    return "EdgeFinder";
   }
 
  private:
@@ -1631,10 +1640,12 @@ class CumulativeTimeTable : public Constraint {
     profile_non_unique_time_.reserve(profile_max_size);
     profile_unique_time_.reserve(profile_max_size);
   }
+
   virtual void InitialPropagate() {
     BuildProfile();
     PushTasks();
   }
+
   virtual void Post() {
     Demon* d = MakeDelayedConstraintDemon0(
         solver(),
@@ -1645,10 +1656,15 @@ class CumulativeTimeTable : public Constraint {
       by_start_min_[i]->mutable_interval()->WhenAnything(d);
     }
   }
+
   int NumTasks() const { return by_start_min_.size(); }
 
   void Accept(ModelVisitor* const visitor) const {
     LOG(FATAL) << "Should not be visited";
+  }
+
+  virtual string DebugString() const {
+    return "CumulativeTimeTable";
   }
 
  private:
@@ -1859,6 +1875,10 @@ class CumulativeConstraint : public Constraint {
                                        size_);
     visitor->VisitIntegerArgument(ModelVisitor::kCapacityArgument, capacity_);
     visitor->EndVisitConstraint(ModelVisitor::kCumulative, this);
+  }
+
+  virtual string DebugString() const {
+    return "CumulativeConstraint";
   }
 
  private:
