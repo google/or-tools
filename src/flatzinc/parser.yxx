@@ -416,25 +416,23 @@ var_par_id annotations vardecl_int_var_array_init
         delete vsv;
       } else {
         if ($5 > 0) {
-          const string arrayname = StringPrintf("[%s", $11);
           for (int i = 0; i < $5 - 1; i++) {
             vars[i] = pp->int_variables_.size();
+            const string var_name = StringPrintf("%s[%d]", $11, i + 1);
             if ($9.defined()) {
               Option<AstSetLit*> copy =
                   Option<AstSetLit*>::some($9.value()->Copy());
               pp->int_variables_.push_back(
-                  new IntVarSpec(arrayname, copy, false, true));
-              // new IntVarSpec(arrayname, copy, !print, true));
+                  new IntVarSpec(var_name, copy, false, true));
             } else {
               pp->int_variables_.push_back(
-                  new IntVarSpec(arrayname, $9, false, true));
-              // new IntVarSpec(arrayname, $9, !print, true));
+                  new IntVarSpec(var_name, $9, false, true));
             }
           }
           vars[$5 - 1] = pp->int_variables_.size();
+          const string var_name = StringPrintf("%s[%d]", $11, $5);
           pp->int_variables_.push_back(
-              new IntVarSpec($11, $9, false, true));
-          // new IntVarSpec($11, $9, !print, true));
+              new IntVarSpec(var_name, $9, false, true));
         }
       }
     }

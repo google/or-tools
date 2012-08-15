@@ -6014,7 +6014,7 @@ IntExpr* Solver::MakeSum(IntExpr* const e, int64 v) {
         case CST_SUB_VAR: {
           SubCstIntVar* const add_var = reinterpret_cast<SubCstIntVar*>(var);
           IntVar* const sub_var = add_var->SubVar();
-          const int64 new_constant = v - add_var->Constant();
+          const int64 new_constant = v + add_var->Constant();
           result =
               RegisterIntExpr(new SubCstIntVar(this, sub_var, new_constant));
           break;

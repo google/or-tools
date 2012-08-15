@@ -241,7 +241,6 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
         AstCall *call = flat_annotations[i]->getCall("int_search");
         AstArray *args = call->getArgs(4);
         AstArray *vars = args->a[0]->getArray();
-        Solver::IntVarStrategy str = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
         std::vector<IntVar*> int_vars;
         for (int i = 0; i < vars->a.size(); ++i) {
           if (vars->a[i]->isIntVar()) {
@@ -249,6 +248,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
                 integer_variables_[vars->a[i]->getIntVar()]->Var());
           }
         }
+        Solver::IntVarStrategy str = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
         if (args->hasAtom("input_order")) {
           str = Solver::CHOOSE_FIRST_UNBOUND;
         }
@@ -302,9 +302,22 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
                   boolean_variables_[vars->a[i]->getBoolVar()]->Var());
             }
           }
-          builders_.push_back(solver_->MakePhase(int_vars,
-                                                Solver::CHOOSE_FIRST_UNBOUND,
-                                                Solver::ASSIGN_MAX_VALUE));
+          Solver::IntVarStrategy str = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
+          if (args->hasAtom("input_order")) {
+            str = Solver::CHOOSE_FIRST_UNBOUND;
+          }
+          if (args->hasAtom("occurrence")) {
+            SortVariableByDegree(solver_.get(), &int_vars);
+            str = Solver::CHOOSE_FIRST_UNBOUND;
+          }
+          Solver::IntValueStrategy vstr = Solver::ASSIGN_MAX_VALUE;
+          if (args->hasAtom("indomain_min")) {
+            vstr = Solver::ASSIGN_MIN_VALUE;
+          }
+          if (args->hasAtom("indomain_random")) {
+            vstr = Solver::ASSIGN_RANDOM_VALUE;
+          }
+          builders_.push_back(solver_->MakePhase(int_vars, str, vstr));
         } catch (AstTypeError& e) {
           (void) e;
           try {

@@ -576,7 +576,7 @@ class VarSpec {
   /// Destructor
   virtual ~VarSpec(void) {}
   /// Variable index
-  int i;
+  int64 i;
   /// Whether the variable aliases another variable
   const bool alias;
   /// Whether the variable is assigned
@@ -614,7 +614,7 @@ class IntVarSpec : public VarSpec {
     domain_ = d;
   }
 
-  IntVarSpec(const string& name, int i0, bool introduced)
+  IntVarSpec(const string& name, int64 i0, bool introduced)
       : VarSpec(name, introduced, false, true),
         own_domain_(false),
         domain_(Option<AstSetLit*>::none()) {
@@ -1174,7 +1174,7 @@ class ParserState {
   void FillOutput(operations_research::FlatZincModel& m);
   void Presolve();
   bool IsBound(AstNode* const node) const;
-  int GetBound(AstNode* const node) const;
+  int64 GetBound(AstNode* const node) const;
   bool IsAllDifferent(AstNode* const node) const;
   bool MergeIntDomain(IntVarSpec* const source, IntVarSpec* const dest);
 

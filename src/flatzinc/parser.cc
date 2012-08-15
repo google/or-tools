@@ -237,6 +237,9 @@ void ParserState::MarkComputedVariables(CtSpec* const spec,
   if (id == "int_lin_eq" && spec->DefinedArg() == NULL) {
     AstArray* const array_coefficients = spec->Arg(0)->getArray();
     const int size = array_coefficients->a.size();
+    if (size == 0) {
+      return;
+    }
     if (array_coefficients->a[0]->getInt() == -1) {
       for (int i = 1; i < size; ++i) {
         if (array_coefficients->a[i]->getInt() < 0) {
@@ -587,18 +590,7 @@ void ParserState::BuildModel(const NodeSet& candidates,
   for (unsigned int i = 0; i < int_variables_.size(); i++) {
     VLOG(1) << "xi(" << i << ") -> " << int_variables_[i]->DebugString();
     if (!hadError) {
-      const std::string& raw_name = int_variables_[i]->Name();
-      std::string name;
-      if (raw_name[0] == '[') {
-        name = StringPrintf("%s[%d]", raw_name.c_str() + 1, ++array_index);
-      } else {
-        if (array_index == 0) {
-          name = raw_name;
-        } else {
-          name = StringPrintf("%s[%d]", raw_name.c_str(), array_index + 1);
-          array_index = 0;
-        }
-      }
+      const std::string& name = int_variables_[i]->Name();
       AstNode* const var = IntCopy(i);
       if (!ContainsKey(candidates, var) && !ContainsKey(int_aliases_, i)) {
         const bool active =
@@ -809,7 +801,7 @@ bool ParserState::IsAlias(AstNode* const node) const {
   return false;
 }
 
-int ParserState::GetBound(AstNode* const node) const {
+int64 ParserState::GetBound(AstNode* const node) const {
   if (node->isInt()) {
     return node->getInt();
   }
@@ -943,7 +935,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
   if (id == "int_le") {
     if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
       IntVarSpec* const var_spec = IntSpec(spec->Arg(0));
-      const int bound = GetBound(spec->Arg(1));
+      const int64 bound = GetBound(spec->Arg(1));
       VLOG(1) << "  - presolve:  merge " << var_spec->DebugString()
               << " with kint32min.." << bound;
       const bool ok = var_spec->MergeBounds(kint32min, bound);
@@ -953,7 +945,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       return ok;
     } else if (IsBound(spec->Arg(0)) && spec->Arg(1)->isIntVar()) {
       IntVarSpec* const var_spec = IntSpec(spec->Arg(1));
-      const int bound = GetBound(spec->Arg(0));
+      const int64 bound = GetBound(spec->Arg(0));
       VLOG(1) << "  - presolve:  merge " << var_spec->DebugString() << " with "
               << bound << "..kint32max";
       const bool ok = var_spec->MergeBounds(bound, kint32max);
@@ -966,7 +958,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
   if (id == "int_eq") {
     if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
       IntVarSpec* const var_spec = IntSpec(spec->Arg(0));
-      const int bound = GetBound(spec->Arg(1));
+      const int64 bound = GetBound(spec->Arg(1));
       VLOG(1) << "  - presolve:  assign " << var_spec->DebugString()
               << " to " << bound;
       const bool ok = var_spec->MergeBounds(bound, bound);
@@ -976,7 +968,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       return ok;
     } else if (IsBound(spec->Arg(0)) && spec->Arg(1)->isIntVar()) {
       IntVarSpec* const var_spec = IntSpec(spec->Arg(1));
-      const int bound = GetBound(spec->Arg(0));
+      const int64 bound = GetBound(spec->Arg(0));
       VLOG(1) << "  - presolve:  assign " <<  var_spec->DebugString()
               << " to " << bound;
       const bool ok = var_spec->MergeBounds(bound, bound);
@@ -989,7 +981,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
   if (id == "int_ne") {
     if (spec->Arg(0)->isIntVar() && IsBound(spec->Arg(1))) {
       IntVarSpec* const var_spec = IntSpec(spec->Arg(0));
-      const int bound = GetBound(spec->Arg(1));
+      const int64 bound = GetBound(spec->Arg(1));
       VLOG(1) << "  - presolve:  remove value " << bound << " from "
               << var_spec->DebugString();
       const bool ok = var_spec->RemoveValue(bound);
@@ -999,7 +991,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       return ok;
     } else if (IsBound(spec->Arg(0)) && spec->Arg(1)->isIntVar()) {
       IntVarSpec* const var_spec = IntSpec(spec->Arg(1));
-      const int bound = GetBound(spec->Arg(0));
+      const int64 bound = GetBound(spec->Arg(0));
       VLOG(1) << "  - presolve:  remove value " << bound << " from "
               << var_spec->DebugString();
       const bool ok = var_spec->RemoveValue(bound);
@@ -1134,7 +1126,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
     VLOG(1) << "  - presolve:  reinforce " << spec->DebugString()
             << " to array_var_int_position";
     spec->SetId("array_var_int_position");
-    const int bound = GetBound(spec->Arg(2));
+    const int64 bound = GetBound(spec->Arg(2));
     spec->ReplaceArg(2, new AstIntLit(bound));
     return true;
   }
@@ -1188,7 +1180,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         break;
       }
     }
-    if (!one_positive) {
+    if (!one_positive && size > 0) {
       VLOG(1) << "  - presolve:  transform all negative int_lin_le into "
               << "int_lin_ge in " << spec->DebugString();
 
@@ -1212,7 +1204,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         break;
       }
     }
-    if (!one_positive) {
+    if (!one_positive && size > 0) {
       VLOG(1) << "  - presolve:  transform all negative int_lin_le_reif into "
               << "int_lin_ge_reif in " << spec->DebugString();
       for (int i = 0; i < size; ++i) {
@@ -1235,7 +1227,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         break;
       }
     }
-    if (!one_positive) {
+    if (!one_positive && size > 0) {
       VLOG(1) << "  - presolve:  transform all negative int_lin_lt into "
               << "int_lin_gt in " << spec->DebugString();
 
@@ -1259,7 +1251,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         break;
       }
     }
-    if (!one_positive) {
+    if (!one_positive && size > 0) {
       VLOG(1) << "  - presolve:  transform all negative int_lin_lt_reif into "
               << "int_lin_gt_reif in " << spec->DebugString();
       for (int i = 0; i < size; ++i) {
@@ -1282,7 +1274,9 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         break;
       }
     }
-    if (!one_positive && !HasDefineAnnotation(spec->annotations())) {
+    if (!one_positive &&
+        !HasDefineAnnotation(spec->annotations()) &&
+        size > 0) {
       VLOG(1) << "  - presolve:  transform all negative int_lin_eq into "
               << "int_lin_eq in " << spec->DebugString();
 
@@ -1305,7 +1299,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         break;
       }
     }
-    if (!one_positive) {
+    if (!one_positive && size > 0) {
       VLOG(1) << "  - presolve:  transform all negative int_lin_eq_reif into "
               << "int_lin_eq_reif in " << spec->DebugString();
       for (int i = 0; i < size; ++i) {
@@ -1397,7 +1391,7 @@ void ParserState::FillOutput(operations_research::FlatZincModel& m) {
   m.InitOutput(Output());
 }
 
-void FlatZincModel::Parse(const std::string& filename) {
+bool FlatZincModel::Parse(const std::string& filename) {
   filename_ = filename;
   filename_.resize(filename_.size() - 4);
   size_t found = filename_.find_last_of("/\\");
@@ -1428,7 +1422,8 @@ void FlatZincModel::Parse(const std::string& filename) {
   std::ifstream file;
   file.open(filename.c_str());
   if (!file.is_open()) {
-    LOG(FATAL) << "Cannot open file " << filename;
+    LOG(ERROR) << "Cannot open file " << filename;
+    return false;
   }
   std::string s = string(istreambuf_iterator<char>(file),
                          istreambuf_iterator<char>());
@@ -1443,9 +1438,10 @@ void FlatZincModel::Parse(const std::string& filename) {
   if (pp.yyscanner)
     yylex_destroy(pp.yyscanner);
   parsed_ok_ = !pp.hadError;
+  return parsed_ok_;
 }
 
-void FlatZincModel::Parse(std::istream& is) {
+bool FlatZincModel::Parse(std::istream& is) {
   filename_ = "stdin";
   std::string s = string(istreambuf_iterator<char>(is),
                          istreambuf_iterator<char>());
@@ -1460,6 +1456,7 @@ void FlatZincModel::Parse(std::istream& is) {
   if (pp.yyscanner)
     yylex_destroy(pp.yyscanner);
   parsed_ok_ = !pp.hadError;
+  return parsed_ok_;
 }
 
 AstNode* ArrayOutput(AstCall* ann) {

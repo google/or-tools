@@ -61,13 +61,17 @@ DEFINE_bool(verbose_impact, false, "Verbose impact");
 DECLARE_bool(log_prefix);
 
 namespace operations_research {
-void Run(const std::string& file) {
+int Run(const std::string& file) {
   FlatZincModel fz_model;
   if (file == "-") {
-    fz_model.Parse(std::cin);
+    if (!fz_model.Parse(std::cin)) {
+      return -1;
+    }
   } else {
     std::cout << "%%  model:                " << file << std::endl;
-    fz_model.Parse(file);
+    if (!fz_model.Parse(file)) {
+      return -1;
+    }
   }
 
   fz_model.Solve(FLAGS_log_frequency,
@@ -82,6 +86,7 @@ void Run(const std::string& file) {
                  FLAGS_luby_restart,
                  FLAGS_heuristic_period,
                  FLAGS_verbose_impact);
+  return 0;
 }
 }  // namespace operations_research
 
@@ -106,6 +111,5 @@ int main(int argc, char** argv) {
     LOG(ERROR) << "Usage: " << argv[0] << " <file>";
     exit(EXIT_FAILURE);
   }
-  operations_research::Run(argv[1]);
-  return 0;
+  return operations_research::Run(argv[1]);
 }

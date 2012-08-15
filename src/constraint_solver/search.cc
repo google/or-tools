@@ -1739,7 +1739,7 @@ void SplitOneVariable::Apply(Solver* const s) {
   if (start_with_lower_half_) {
     var_->SetMax(value_);
   } else {
-    var_->SetMin(value_);
+    var_->SetMin(value_ + 1);
   }
 }
 
@@ -1747,7 +1747,7 @@ void SplitOneVariable::Refute(Solver* const s) {
   if (start_with_lower_half_) {
     var_->SetMin(value_ + 1);
   } else {
-    var_->SetMax(value_ - 1);
+    var_->SetMax(value_);
   }
 }
 }  // namespace

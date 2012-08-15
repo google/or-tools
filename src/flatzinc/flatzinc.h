@@ -150,10 +150,10 @@ class FlatZincModel {
              bool verbose_impact);
 
   // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
-  void Parse(const std::string& fileName);
+  bool Parse(const std::string& fileName);
 
   // \brief Parse FlatZinc from \a is into \a fzs and return it.
-  void Parse(std::istream& is);
+  bool Parse(std::istream& is);
 
   SatPropagator* Sat() const { return sat_; }
 

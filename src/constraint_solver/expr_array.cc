@@ -2486,6 +2486,9 @@ Constraint* Solver::MakeSumGreaterOrEqual(const std::vector<IntVar*>& vars,
 
 Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst) {
   const int size = vars.size();
+  if (size == 0) {
+    return cst == 0 ? MakeTrueConstraint() : MakeFalseConstraint();
+  }
   if (AreAllBooleans(vars.data(), size) && size > 2) {
     if (cst == 1) {
       return RevAlloc(new SumBooleanEqualToOne(this, vars.data(), size));
@@ -2514,6 +2517,9 @@ Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst)
 Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
                                     IntVar* const var) {
   const int size = vars.size();
+  if (size == 0) {
+    return MakeEquality(var, Zero());
+  }
   if (AreAllBooleans(vars.data(), size) && size > 2) {
     return RevAlloc(new SumBooleanEqualToVar(this, vars.data(), size, var));
   } else if (size == 0) {
@@ -2540,6 +2546,15 @@ template<class T> Constraint* MakeScalProdEqualityFct(Solver* const solver,
   if (size == 0 || AreAllNull<T>(coefficients, size)) {
     return cst == 0 ? solver->MakeTrueConstraint()
         : solver->MakeFalseConstraint();
+  }
+  if (AreAllBoundOrNull(vars, coefficients, size)) {
+    int64 sum = 0;
+    for (int i = 0; i < size; ++i) {
+      sum += coefficients[i] * vars[i]->Min();
+    }
+    return sum == cst ?
+        solver->MakeTrueConstraint() :
+        solver->MakeFalseConstraint();
   }
   if (AreAllBooleans(vars, size) &&
       AreAllPositive<T>(coefficients, size) &&
