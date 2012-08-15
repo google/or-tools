@@ -670,8 +670,8 @@ class IsLessOrEqualCt : public CastConstraint {
   virtual void InitialPropagate() {
     if (target_var_->Bound()) {
       if (target_var_->Min() == 0) {
-        right_->SetMin(left_->Min() + 1);
-        left_->SetMax(right_->Max() - 1);
+        right_->SetMax(left_->Max() - 1);
+        left_->SetMin(right_->Min() + 1);
       } else {  // Var is true.
         right_->SetMin(left_->Min());
         left_->SetMax(right_->Max());
