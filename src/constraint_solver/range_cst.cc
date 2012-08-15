@@ -731,8 +731,8 @@ class IsLessCt : public CastConstraint {
   virtual void InitialPropagate() {
     if (target_var_->Bound()) {
       if (target_var_->Min() == 0) {
-        right_->SetMin(left_->Min());
-        left_->SetMax(right_->Max());
+        right_->SetMax(left_->Max());
+        left_->SetMin(right_->Min());
       } else {  // Var is true.
         right_->SetMin(left_->Min() + 1);
         left_->SetMax(right_->Max() - 1);
