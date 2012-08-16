@@ -35,7 +35,31 @@ using std::string;
 
 namespace operations_research {
 // Special API
+#if defined(USE_SLM)
 
+    extern "C" {
+      #include "sulumc.h"
+    }
+
+    // Helper functions specific to using Google OR Tools with Sulum Optimizer
+    // The advantage is these functions does directly to the outer API
+
+    // Set an integer parameter in sulum as underlaying solver
+    // Return : 'true' if set 'false' if out of range
+    bool SulumSetIntParam(MPSolver &solver,
+                          int      ival)
+    {
+      return ( SlmRetOk == SlmSetIntParam(solver.underlying_solver(), ival );
+    }
+
+    // Get an integer parameter from sulum as underlaying solver
+    // Return : 'true' if get 'false' if out of range
+    bool SulumGetIntParam(int      iprm,
+                          int      &ival)
+    {
+      return ( SlmRetOk == SlmGetIntParam(solver.underlying_solver(), iprm, &ival );
+    }
+#endif
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_EXT_H_
