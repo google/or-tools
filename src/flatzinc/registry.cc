@@ -1989,57 +1989,17 @@ void p_array_bool_and(FlatZincModel* const model, CtSpec* const spec) {
 void p_array_bool_xor(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   AstArray* const array_variables = spec->Arg(0)->getArray();
-  AstNode* const node_boolvar = spec->Arg(1);
   const int size = array_variables->a.size();
   std::vector<IntVar*> variables;
-  hash_set<IntExpr*> added;
   for (int i = 0; i < size; ++i) {
-    AstNode* const a = array_variables->a[i];
-    IntVar* const to_add = model->GetIntExpr(a)->Var();
-    if (!ContainsKey(added, to_add) && to_add->Max() != 0) {
-      variables.push_back(to_add);
-      added.insert(to_add);
-    }
+    variables.push_back(model->GetIntExpr(array_variables->a[i])->Var());
   }
-  if (spec->IsDefined(node_boolvar)) {
-    IntVar* const boolvar = solver->MakeMax(variables)->Var();
-    VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
-            << boolvar->DebugString();
-    model->CheckIntegerVariableIsNull(node_boolvar);
-    model->SetIntegerExpression(node_boolvar, boolvar);
-  } else if (node_boolvar->isBool() && node_boolvar->getBool() == 0) {
-    VLOG(1) << "  - forcing array_bool_or to 0";
-    for (int i = 0; i < variables.size(); ++i) {
-      variables[i]->SetValue(0);
-    }
-  } else {
-    if (node_boolvar->isBool()) {
-      if (node_boolvar->getBool() == 1) {
-        if (FLAGS_use_minisat &&
-            AddBoolOrArrayEqualTrue(model->Sat(), variables)) {
-          VLOG(1) << "  - posted to minisat";
-        } else {
-          Constraint* const ct = solver->MakeSumGreaterOrEqual(variables, 1);
-          VLOG(1) << "  - posted " << ct->DebugString();
-          solver->AddConstraint(ct);
-        }
-      } else {
-        Constraint* const ct = solver->MakeSumEquality(variables, Zero());
-        VLOG(1) << "  - posted " << ct->DebugString();
-        solver->AddConstraint(ct);
-      }
-    } else {
-      IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
-      if (FLAGS_use_minisat &&
-          AddBoolOrArrayEqVar(model->Sat(), variables, boolvar)) {
-        VLOG(1) << "  - posted to minisat";
-      } else {
-        Constraint* const ct = solver->MakeMaxEquality(variables, boolvar);
-        VLOG(1) << "  - posted " << ct->DebugString();
-        solver->AddConstraint(ct);
-      }
-    }
-  }
+  Constraint* const ct =
+      solver->MakeModuloConstraint(solver->MakeSum(variables)->Var(),
+                                   2,
+                                   solver->MakeIntConst(1));
+  VLOG(1) << "  - posted " << ct->DebugString();
+  solver->AddConstraint(ct);
 }
 
 void p_array_bool_clause(FlatZincModel* const model, CtSpec* const spec) {
