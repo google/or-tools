@@ -33,32 +33,57 @@
 
 using std::string;
 
-namespace operations_research {
-// Special API
 #if defined(USE_SLM)
 
     extern "C" {
       #include "sulumc.h"
     }
+    
+#endif
+
+namespace operations_research {
+// Special API
+#if defined(USE_SLM)
 
     // Helper functions specific to using Google OR Tools with Sulum Optimizer
     // The advantage is these functions does directly to the outer API
 
-    // Set an integer parameter in sulum as underlaying solver
+    // Set a integer parameter in sulum as underlaying solver
     // Return : 'true' if set 'false' if out of range
     bool SulumSetIntParam(MPSolver &solver,
+                          int      iprm,
                           int      ival)
     {
-      return ( SlmRetOk == SlmSetIntParam(solver.underlying_solver(), ival );
+      return ( SlmRetOk == SlmSetIntParam(solver.underlying_solver(), static_cast<SlmParamInt>(iprm), ival ) );
     }
 
-    // Get an integer parameter from sulum as underlaying solver
+    // Get a integer parameter from sulum as underlaying solver
     // Return : 'true' if get 'false' if out of range
-    bool SulumGetIntParam(int      iprm,
+    bool SulumGetIntParam(MPSolver &solver,
+                          int      iprm,
                           int      &ival)
     {
-      return ( SlmRetOk == SlmGetIntParam(solver.underlying_solver(), iprm, &ival );
+      return ( SlmRetOk == SlmGetIntParam(solver.underlying_solver(), static_cast<SlmParamInt>(iprm), &ival ) );
     }
+
+    // Set a integer parameter in sulum as underlaying solver
+    // Return : 'true' if set 'false' if out of range
+    bool SulumSetDbParam(MPSolver &solver,
+                          int     dprm,
+                          double  dval)
+    {
+      return ( SlmRetOk == SlmSetDbParam(solver.underlying_solver(), static_cast<SlmParamDb>(dprm), dval ) );
+    }
+
+    // Get a integer parameter from sulum as underlaying solver
+    // Return : 'true' if get 'false' if out of range
+    bool SulumGetDbParam(MPSolver &solver,
+                         int      dprm,
+                         double   &dval)
+    {
+      return ( SlmRetOk == SlmGetDbParam(solver.underlying_solver(), static_cast<SlmParamDb>(dprm), &dval ) );
+    }
+
 #endif
 }  // namespace operations_research
 
