@@ -2410,21 +2410,106 @@ void p_count(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   AstArray* const array_variables = spec->Arg(0)->getArray();
   const int size = array_variables->a.size();
-  std::vector<IntVar*> variables(size);
-  for (int i = 0; i < size; ++i) {
-    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
-  }
-  IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
   if (spec->Arg(1)->isInt()) {
+    std::vector<IntVar*> variables(size);
+    for (int i = 0; i < size; ++i) {
+      variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+    }
+    IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
     Constraint* const ct = solver->MakeCount(variables,
                                              spec->Arg(1)->getInt(),
                                              count);
     VLOG(1) << "  - posted " << ct->DebugString();
     solver->AddConstraint(ct);
   } else {
-    throw Error("ModelBuilder",
-                std::string("Constraint ") + spec->Id() +
-                " does not support variable values");
+    IntVar* const value = model->GetIntExpr(spec->Arg(1))->Var();
+    std::vector<IntVar*> tmp_sum;
+    for (int i = 0; i < size; ++i) {
+      tmp_sum.push_back(
+          solver->MakeIsEqualVar(model->GetIntExpr(array_variables->a[i]),
+                                 value));
+    }
+    if (spec->Arg(2)->isInt()) {
+      Constraint* const ct =
+          solver->MakeSumEquality(tmp_sum, spec->Arg(2)->getInt());
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    } else {
+      IntVar* const count = model->GetIntExpr(spec->Arg(2))->Var();
+      Constraint* const ct = solver->MakeSumEquality(tmp_sum, count);
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
+  }
+}
+
+void p_count_reif(FlatZincModel* const model, CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  AstNode* const node_boolvar = spec->Arg(3);
+  if (spec->Arg(1)->isInt()) {
+    std::vector<IntVar*> variables(size);
+    for (int i = 0; i < size; ++i) {
+      variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+    }
+    IntVar* const expected_count = model->GetIntExpr(spec->Arg(2))->Var();
+    IntVar* const real_count = solver->MakeIntVar(0, size);
+    Constraint* const ct = solver->MakeCount(variables,
+                                             spec->Arg(1)->getInt(),
+                                             real_count);
+    if (spec->IsDefined(node_boolvar)) {
+      IntVar* const boolvar =
+          solver->MakeIsEqualVar(expected_count, real_count);
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+      VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
+              << boolvar->DebugString();
+      model->CheckIntegerVariableIsNull(node_boolvar);
+      model->SetIntegerExpression(node_boolvar, boolvar);
+      CHECK_NOTNULL(boolvar);
+    } else {
+      IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
+      Constraint* const ct2 =
+          solver->MakeIsEqualCt(expected_count, real_count, boolvar);
+      VLOG(1) << "  - posted " << ct->DebugString() << ", and "
+              << ct2->DebugString();
+      solver->AddConstraint(ct);
+      solver->AddConstraint(ct2);
+    }
+  } else {
+    IntVar* const value = model->GetIntExpr(spec->Arg(1))->Var();
+    std::vector<IntVar*> tmp_sum;
+    for (int i = 0; i < size; ++i) {
+      tmp_sum.push_back(
+          solver->MakeIsEqualVar(model->GetIntExpr(array_variables->a[i]),
+                                 value));
+    }
+    if (spec->IsDefined(node_boolvar)) {
+      IntVar* const boolvar =
+          spec->Arg(2)->isInt() ?
+          solver->MakeIsEqualCstVar(solver->MakeSum(tmp_sum),
+                                    spec->Arg(2)->getInt()) :
+          solver->MakeIsEqualVar(solver->MakeSum(tmp_sum),
+                                 model->GetIntExpr(spec->Arg(2)));
+      VLOG(1) << "  - creating " << node_boolvar->DebugString() << " := "
+              << boolvar->DebugString();
+      model->CheckIntegerVariableIsNull(node_boolvar);
+      model->SetIntegerExpression(node_boolvar, boolvar);
+      CHECK_NOTNULL(boolvar);
+    } else {
+      IntVar* const boolvar = model->GetIntExpr(node_boolvar)->Var();
+      Constraint* const ct =
+          spec->Arg(2)->isInt() ?
+          solver->MakeIsEqualCstCt(solver->MakeSum(tmp_sum),
+                                   spec->Arg(2)->getInt(),
+                                   boolvar) :
+          solver->MakeIsEqualCt(solver->MakeSum(tmp_sum),
+                                model->GetIntExpr(spec->Arg(2)),
+                                boolvar);
+      VLOG(1) << "  - posted " << ct->DebugString();
+      solver->AddConstraint(ct);
+    }
   }
 }
 
@@ -2734,6 +2819,7 @@ class IntBuilder {
     global_model_builder.Register("int_in", &p_int_in);
     global_model_builder.Register("all_different_int", &p_all_different_int);
     global_model_builder.Register("count", &p_count);
+    global_model_builder.Register("count_reif", &p_count_reif);
     global_model_builder.Register("global_cardinality", &p_global_cardinality);
     global_model_builder.Register("global_cardinality_old",
                                   &p_global_cardinality_old);
