@@ -48,7 +48,7 @@ namespace operations_research {
     // Helper functions specific to using Google OR Tools with Sulum Optimizer
     // The advantage is these functions does directly to the outer API
 
-    // Set a integer parameter in sulum as underlaying solver
+    // Set a integer parameter in sulum as underlying solver
     // Return : 'true' if set 'false' if out of range
     bool SulumSetIntParam(MPSolver &solver,
                           int      iprm,
@@ -57,7 +57,7 @@ namespace operations_research {
       return ( SlmRetOk == SlmSetIntParam(solver.underlying_solver(), static_cast<SlmParamInt>(iprm), ival ) );
     }
 
-    // Get a integer parameter from sulum as underlaying solver
+    // Get a integer parameter from sulum as underlying solver
     // Return : 'true' if get 'false' if out of range
     bool SulumGetIntParam(MPSolver &solver,
                           int      iprm,
@@ -66,7 +66,7 @@ namespace operations_research {
       return ( SlmRetOk == SlmGetIntParam(solver.underlying_solver(), static_cast<SlmParamInt>(iprm), &ival ) );
     }
 
-    // Set a integer parameter in sulum as underlaying solver
+    // Set a double parameter in sulum as underlying solver
     // Return : 'true' if set 'false' if out of range
     bool SulumSetDbParam(MPSolver &solver,
                           int     dprm,
@@ -75,7 +75,7 @@ namespace operations_research {
       return ( SlmRetOk == SlmSetDbParam(solver.underlying_solver(), static_cast<SlmParamDb>(dprm), dval ) );
     }
 
-    // Get a integer parameter from sulum as underlaying solver
+    // Get a double parameter from sulum as underlying solver
     // Return : 'true' if get 'false' if out of range
     bool SulumGetDbParam(MPSolver &solver,
                          int      dprm,
