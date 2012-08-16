@@ -1,11 +1,11 @@
 %-----------------------------------------------------------------------------%
-% Constrains 'c' to be the number of occurrences of 'y' in 'x'. 
+% Reified Constraint 'c' to be the number of occurrences of 'y' in 'x'.
 %-----------------------------------------------------------------------------%
 
-include "count_eq.mzn";
-
-predicate count(array[int] of var int: x, var int: y, var int: c) =
-    count_eq(x, y, c);
+predicate count_reif(array[int] of var int: x,
+                     var int: y,
+                     var int: c,
+                     var bool: b);
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

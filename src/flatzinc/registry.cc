@@ -2779,6 +2779,7 @@ class IntBuilder {
     global_model_builder.Register("int_in", &p_int_in);
     global_model_builder.Register("all_different_int", &p_all_different_int);
     global_model_builder.Register("count", &p_count);
+    global_model_builder.Register("count_eq", &p_count);
     global_model_builder.Register("count_reif", &p_count_reif);
     global_model_builder.Register("global_cardinality", &p_global_cardinality);
     global_model_builder.Register("global_cardinality_old",
