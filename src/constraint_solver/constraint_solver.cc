@@ -2616,6 +2616,7 @@ const char ModelVisitor::kFalseConstraint[] = "FalseConstraint";
 const char ModelVisitor::kGreater[] = "Greater";
 const char ModelVisitor::kGreaterOrEqual[] = "GreaterOrEqual";
 const char ModelVisitor::kGlobalCardinality[] = "GlobalCardinality";
+const char ModelVisitor::kIndexOf[] = "IndexOf";
 const char ModelVisitor::kIntegerVariable[] = "IntegerVariable";
 const char ModelVisitor::kIntervalBinaryRelation[] = "IntervalBinaryRelation";
 const char ModelVisitor::kIntervalDisjunction[] = "IntervalDisjunction";
