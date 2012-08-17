@@ -1092,13 +1092,17 @@ class PositiveModulo : public Constraint {
 Constraint* Solver::MakeModuloConstraint(IntVar* const x,
                                          int64 mod,
                                          IntVar* const y) {
-  return RevAlloc(new IntModulo(this, x, mod, y));
+  if (mod > 0) {
+    return RevAlloc(new IntModulo(this, x, mod, y));
+  } else {
+    return MakeModuloConstraint(x, MakeIntConst(mod), y);
+  }
 }
 
 Constraint* Solver::MakeModuloConstraint(IntVar* const x,
                                          IntVar* const mod,
                                          IntVar* const y) {
-  if (mod->Bound()) {
+  if (mod->Bound() && mod->Min() > 0) {
     return MakeModuloConstraint(x, mod->Min(), y);
   } else if (x->Min() >= 0 && y->Min() >= 0 && mod->Min() >= 0) {
     return RevAlloc(new PositiveModulo(this, x, mod, y));

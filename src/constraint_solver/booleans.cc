@@ -183,7 +183,7 @@ class SatPropagator : public Constraint {
   }
 
   void Accept(ModelVisitor* const visitor) const {
-    LOG(FATAL) << "Should Not Be Visited";
+    VLOG(1) << "Should Not Be Visited";
   }
 
  private:
