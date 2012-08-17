@@ -127,6 +127,14 @@ class CPModelLoader {
   VectorMap<string> tags_;
 };
 
+Constraint* SetIsEqual(IntVar* const var,
+                       const std::vector<int64>& values,
+                       const std::vector<IntVar*>& vars);
+
+Constraint* SetIsGreaterOrEqual(IntVar* const var,
+                                const std::vector<int64>& values,
+                                const std::vector<IntVar*>& vars);
+
 namespace {
 // ---------- Model Protobuf Writers -----------
 
@@ -2249,10 +2257,6 @@ Constraint* BuildTrueConstraint(CPModelLoader* const builder,
 
 // ----- kVarValueWatcher -----
 
-Constraint* SetIsEqual(IntVar* const var,
-                       const std::vector<int64>& values,
-                       const std::vector<IntVar*>& vars);
-
 Constraint* BuildVarValueWatcher(CPModelLoader* const builder,
                                  const CPConstraintProto& proto) {
   IntExpr* expr = NULL;
@@ -2267,10 +2271,6 @@ Constraint* BuildVarValueWatcher(CPModelLoader* const builder,
 }
 
 // ----- kVarBoundWatcher -----
-
-Constraint* SetIsGreaterOrEqual(IntVar* const var,
-                                const std::vector<int64>& values,
-                                const std::vector<IntVar*>& vars);
 
 Constraint* BuildVarBoundWatcher(CPModelLoader* const builder,
                                  const CPConstraintProto& proto) {
