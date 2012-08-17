@@ -1308,12 +1308,12 @@ class IntExprArrayElementCstCt : public Constraint {
 
 // This constraint implements index == position(constant in vars).
 
-class IntExprArrayPositionCt : public Constraint {
+class IntExprIndexOfCt : public Constraint {
  public:
-  IntExprArrayPositionCt(Solver* const s,
-                         const std::vector<IntVar*>& vars,
-                         IntVar* const index,
-                         int64 target)
+  IntExprIndexOfCt(Solver* const s,
+                   const std::vector<IntVar*>& vars,
+                   IntVar* const index,
+                   int64 target)
       : Constraint(s),
         vars_(vars),
         size_(vars.size()),
@@ -1322,13 +1322,13 @@ class IntExprArrayPositionCt : public Constraint {
         demons_(size_),
         index_iterator_(index->MakeHoleIterator(true)) {}
 
-  virtual ~IntExprArrayPositionCt() {}
+  virtual ~IntExprIndexOfCt() {}
 
   virtual void Post() {
     for (int i = 0; i < size_; ++i) {
       demons_[i] = MakeConstraintDemon1(solver(),
                                         this,
-                                        &IntExprArrayPositionCt::Propagate,
+                                        &IntExprIndexOfCt::Propagate,
                                         "Propagate",
                                         i);
       vars_[i]->WhenDomain(demons_[i]);
@@ -1336,7 +1336,7 @@ class IntExprArrayPositionCt : public Constraint {
     Demon* const index_demon =
         MakeConstraintDemon0(solver(),
                              this,
-                             &IntExprArrayPositionCt::PropagateIndex,
+                             &IntExprIndexOfCt::PropagateIndex,
                              "PropagateIndex");
     index_->WhenDomain(index_demon);
   }
@@ -1389,14 +1389,14 @@ class IntExprArrayPositionCt : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("IntExprArrayPosition([%s], %s) == %" GG_LL_FORMAT "d",
+    return StringPrintf("IntExprIndexOf([%s], %s) == %" GG_LL_FORMAT "d",
                         DebugStringVector(vars_, ", ").c_str(),
                         index_->DebugString().c_str(),
                         target_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitConstraint(ModelVisitor::kElementEqual, this);
+    visitor->BeginVisitConstraint(ModelVisitor::kIndexOf, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_.data(),
                                                size_);
@@ -1404,7 +1404,7 @@ class IntExprArrayPositionCt : public Constraint {
                                             index_);
     visitor->VisitIntegerArgument(ModelVisitor::kTargetArgument,
                                   target_);
-    visitor->EndVisitConstraint(ModelVisitor::kElementEqual, this);
+    visitor->EndVisitConstraint(ModelVisitor::kIndexOf, this);
   }
 
  private:
@@ -1497,11 +1497,24 @@ Constraint* Solver::MakeElementEquality(const std::vector<IntVar*>& vars,
   }
 }
 
-Constraint* Solver::MakeArrayPositionConstraint(
+Constraint* Solver::MakeElementEquality(const std::vector<IntVar*>& vars,
+                                        IntVar* const index,
+                                        int64 target) {
+  // if (AreAllBound(vars)) {
+  //   std::vector<int64> values(vars.size());
+  //   for (int i = 0; i < vars.size(); ++i) {
+  //     values[i] = vars[i]->Value();
+  //   }
+  //   return MakeElementEquality(values, index, target);
+  // }
+  return RevAlloc(new IntExprArrayElementCstCt(this, vars, index, target));
+}
+
+Constraint* Solver::MakeIndexOfConstraint(
     const std::vector<IntVar*>& vars,
     IntVar* const index,
     int64 target) {
-  return RevAlloc(new IntExprArrayPositionCt(this, vars, index, target));
+  return RevAlloc(new IntExprIndexOfCt(this, vars, index, target));
 }
 
 IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars,
@@ -1516,7 +1529,7 @@ IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars,
                                      NameVector(vars, ", ").c_str(),
                                      value);
     IntVar* const index = MakeIntVar(0, vars.size() - 1, name);
-    AddConstraint(MakeArrayPositionConstraint(vars, index, value));
+    AddConstraint(MakeIndexOfConstraint(vars, index, value));
     model_cache_->InsertVarArrayConstantExpression(
         index, vars, value, ModelCache::VAR_ARRAY_CONSTANT_INDEX);
     return index;

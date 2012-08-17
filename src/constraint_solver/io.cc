@@ -1303,37 +1303,49 @@ IntExpr* BuildElement(CPModelLoader* const builder,
 }
 
 // ----- kElementEqual -----
-// TODO(user): Add API on solver and uncomment this method.
-/*
-  Constraint* BuildElementEqual(CPModelLoader* const builder,
-  const CPConstraintProto& proto) {
-  IntExpr* target = NULL;
-  VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument,
-  proto,
-  &target));
+
+Constraint* BuildElementEqual(CPModelLoader* const builder,
+                              const CPConstraintProto& proto) {
+  IntExpr* index = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kIndexArgument,
+                                proto,
+                                &index));
   std::vector<int64> values;
   if (builder->ScanArguments(ModelVisitor::kValuesArgument,
-  proto,
-  &values)) {
-  IntExpr* index = NULL;
-  VERIFY(builder->ScanArguments(ModelVisitor::kIndexArgument,
-  proto,
-  &index));
-  return builder->solver()->MakeElement(values, index->Var());
-  }
-  std::vector<IntVar*> vars;
-  if (builder->ScanArguments(ModelVisitor::kVarsArgument,
-  proto,
-  &vars)) {
-  IntExpr* index = NULL;
-  VERIFY(builder->ScanArguments(ModelVisitor::kIndexArgument,
-  proto,
-  &index));
-  return builder->solver()->MakeElement(vars, index->Var());
+                             proto,
+                             &values)) {
+    IntExpr* target = NULL;
+    VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument,
+                                  proto,
+                                  &target));
+    return builder->solver()->MakeElementEquality(values,
+                                                  index->Var(),
+                                                  target->Var());
+  } else {
+    std::vector<IntVar*> vars;
+    if (builder->ScanArguments(ModelVisitor::kVarsArgument,
+                               proto,
+                               &vars)) {
+      IntExpr* target = NULL;
+      if (builder->ScanArguments(ModelVisitor::kTargetArgument,
+                                 proto,
+                                 &target)) {
+        return builder->solver()->MakeElementEquality(vars,
+                                                      index->Var(),
+                                                      target->Var());
+      } else {
+        int64 target_value = 0;
+        VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument,
+                                      proto,
+                                      &target_value));
+        return builder->solver()->MakeElementEquality(vars,
+                                                      index->Var(),
+                                                      target_value);
+      }
+    }
   }
   return NULL;
-  }
-*/
+}
 
 // ----- kEndExpr -----
 
@@ -1398,6 +1410,27 @@ Constraint* BuildGreaterOrEqual(CPModelLoader* const builder,
     return builder->solver()->MakeGreaterOrEqual(expr->Var(), value);
   }
   return NULL;
+}
+
+// ----- kIndexOf -----
+
+Constraint* BuildIndexOf(CPModelLoader* const builder,
+                         const CPConstraintProto& proto) {
+  IntExpr* index = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kIndexArgument,
+                                proto,
+                                &index));
+  std::vector<IntVar*> vars;
+  VERIFY(builder->ScanArguments(ModelVisitor::kVarsArgument,
+                                proto,
+                                &vars));
+  int64 target_value = 0;
+  VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument,
+                                proto,
+                                &target_value));
+  return builder->solver()->MakeIndexOfConstraint(vars,
+                                                  index->Var(),
+                                                  target_value);
 }
 
 // ----- kIntegerVariable -----
@@ -2214,6 +2247,44 @@ Constraint* BuildTrueConstraint(CPModelLoader* const builder,
   return builder->solver()->MakeTrueConstraint();
 }
 
+// ----- kVarValueWatcher -----
+
+Constraint* SetIsEqual(IntVar* const var,
+                       const std::vector<int64>& values,
+                       const std::vector<IntVar*>& vars);
+
+Constraint* BuildVarValueWatcher(CPModelLoader* const builder,
+                                 const CPConstraintProto& proto) {
+  IntExpr* expr = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kVariableArgument, proto, &expr));
+  std::vector<IntVar*> vars;
+  VERIFY(builder->ScanArguments(ModelVisitor::kVarsArgument, proto, &vars));
+  std::vector<int64> values;
+  VERIFY(builder->ScanArguments(ModelVisitor::kValuesArgument,
+                                proto,
+                                &values));
+  return SetIsEqual(expr->Var(), values, vars);
+}
+
+// ----- kVarBoundWatcher -----
+
+Constraint* SetIsGreaterOrEqual(IntVar* const var,
+                                const std::vector<int64>& values,
+                                const std::vector<IntVar*>& vars);
+
+Constraint* BuildVarBoundWatcher(CPModelLoader* const builder,
+                                 const CPConstraintProto& proto) {
+  IntExpr* expr = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kVariableArgument, proto, &expr));
+  std::vector<IntVar*> vars;
+  VERIFY(builder->ScanArguments(ModelVisitor::kVarsArgument, proto, &vars));
+  std::vector<int64> values;
+  VERIFY(builder->ScanArguments(ModelVisitor::kValuesArgument,
+                                proto,
+                                &values));
+  return SetIsGreaterOrEqual(expr->Var(), values, vars);
+}
+
 #undef VERIFY
 #undef VERIFY_EQ
 }  // namespace
@@ -2226,6 +2297,7 @@ bool CPModelLoader::BuildFromProto(const CPIntegerExpressionProto& proto) {
   Solver::IntegerExpressionBuilder* const builder =
       solver_->GetIntegerExpressionBuilder(tags_.Element(tag_index));
   if (!builder) {
+    LOG(WARNING) << "Tag " << tags_.Element(tag_index) << " was not found";
     return false;
   }
   IntExpr* const built = builder->Run(this, proto);
@@ -2243,6 +2315,7 @@ Constraint* CPModelLoader::BuildFromProto(const CPConstraintProto& proto) {
   Solver::ConstraintBuilder* const builder =
       solver_->GetConstraintBuilder(tags_.Element(tag_index));
   if (!builder) {
+    LOG(WARNING) << "Tag " << tags_.Element(tag_index) << " was not found";
     return NULL;
   }
   Constraint* const built = builder->Run(this, proto);
@@ -2255,6 +2328,7 @@ bool CPModelLoader::BuildFromProto(const CPIntervalVariableProto& proto) {
   Solver::IntervalVariableBuilder* const builder =
       solver_->GetIntervalVariableBuilder(tags_.Element(tag_index));
   if (!builder) {
+    LOG(WARNING) << "Tag " << tags_.Element(tag_index) << " was not found";
     return NULL;
   }
   IntervalVar* const built = builder->Run(this, proto);
@@ -2272,6 +2346,7 @@ bool CPModelLoader::BuildFromProto(const CPSequenceVariableProto& proto) {
   Solver::SequenceVariableBuilder* const builder =
       solver_->GetSequenceVariableBuilder(tags_.Element(tag_index));
   if (!builder) {
+    LOG(WARNING) << "Tag " << tags_.Element(tag_index) << " was not found";
     return NULL;
   }
   SequenceVar* const built = builder->Run(this, proto);
@@ -2588,12 +2663,13 @@ void Solver::InitBuilders() {
   REGISTER(kDivide, BuildDivide);
   REGISTER(kDurationExpr, BuildDurationExpr);
   REGISTER(kElement, BuildElement);
-  //  REGISTER(kElementEqual, BuildElementEqual);
+  REGISTER(kElementEqual, BuildElementEqual);
   REGISTER(kEndExpr, BuildEndExpr);
   REGISTER(kEquality, BuildEquality);
   REGISTER(kFalseConstraint, BuildFalseConstraint);
   REGISTER(kGreater, BuildGreater);
   REGISTER(kGreaterOrEqual, BuildGreaterOrEqual);
+  REGISTER(kIndexOf, BuildIndexOf);
   REGISTER(kIntegerVariable, BuildIntegerVariable);
   REGISTER(kIntervalBinaryRelation, BuildIntervalBinaryRelation);
   REGISTER(kIntervalDisjunction, BuildIntervalDisjunction);
@@ -2635,6 +2711,8 @@ void Solver::InitBuilders() {
   REGISTER(kSumLessOrEqual, BuildSumLessOrEqual);
   REGISTER(kTransition, BuildTransition);
   REGISTER(kTrueConstraint, BuildTrueConstraint);
+  REGISTER(kVarBoundWatcher, BuildVarBoundWatcher);
+  REGISTER(kVarValueWatcher, BuildVarValueWatcher);
 }
 #undef REGISTER
 

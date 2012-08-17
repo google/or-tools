@@ -302,6 +302,24 @@ class DomainIntVar : public IntVar {
           var_demon_(NULL),
           active_watchers_(0) {}
 
+    ValueWatcher(Solver* const solver,
+                 DomainIntVar* const variable,
+                 const std::vector<int64>& values,
+                 const std::vector<IntVar*>& vars)
+        : Constraint(solver),
+          variable_(variable),
+          iterator_(variable_->MakeHoleIterator(true)),
+          watchers_(16),
+          min_range_(kint64max),
+          max_range_(kint64min),
+          var_demon_(NULL),
+          active_watchers_(0) {
+      CHECK_EQ(vars.size(), values.size());
+      for (int i = 0; i < values.size(); ++i) {
+        SetValueWatcher(vars[i], values[i]);
+      }
+    }
+
     ~ValueWatcher() {}
 
     IntVar* GetOrMakeValueWatcher(int64 value) {
@@ -329,11 +347,22 @@ class DomainIntVar : public IntVar {
       }
       min_range_.SetValue(solver(), std::min(min_range_.Value(), value));
       max_range_.SetValue(solver(), std::max(max_range_.Value(), value));
-      watchers_.RevInsert(variable_->solver(), value, boolvar);
+      watchers_.RevInsert(solver(), value, boolvar);
       if (posted_.Switched() && !boolvar->Bound()) {
         boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
       }
       return boolvar;
+    }
+
+    void SetValueWatcher(IntVar* const boolvar, int64 value) {
+      CHECK(watchers_.At(value) == NULL);
+      active_watchers_.Incr(solver());
+      min_range_.SetValue(solver(), std::min(min_range_.Value(), value));
+      max_range_.SetValue(solver(), std::max(max_range_.Value(), value));
+      watchers_.RevInsert(solver(), value, boolvar);
+      if (posted_.Switched() && !boolvar->Bound()) {
+        boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
+      }
     }
 
     virtual void Post() {
@@ -428,17 +457,21 @@ class DomainIntVar : public IntVar {
       visitor->BeginVisitConstraint(ModelVisitor::kVarValueWatcher, this);
       visitor->VisitIntegerExpressionArgument(
           ModelVisitor::kVariableArgument, variable_);
+      std::vector<int64> all_coefficients;
       std::vector<IntVar*> all_bool_vars;
       const int64 max_r = max_range_.Value();
       const int64 min_r = min_range_.Value();
       for (int64 i = min_r; i <= max_r; ++i) {
         IntVar* const boolvar = watchers_.At(i);
         if (boolvar != NULL) {
+          all_coefficients.push_back(i);
           all_bool_vars.push_back(boolvar);
         }
       }
-      visitor->VisitIntegerVariableArrayArgument(
-          ModelVisitor::kVarsArgument, all_bool_vars);
+      visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                                 all_bool_vars);
+      visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
+                                         all_coefficients);
       visitor->EndVisitConstraint(ModelVisitor::kVarValueWatcher, this);
     }
 
@@ -517,6 +550,24 @@ class DomainIntVar : public IntVar {
           var_demon_(NULL),
           active_watchers_(0) {}
 
+    BoundWatcher(Solver* const solver,
+                 DomainIntVar* const variable,
+                 const std::vector<int64>& values,
+                 const std::vector<IntVar*>& vars)
+        : Constraint(solver),
+          variable_(variable),
+          iterator_(variable_->MakeHoleIterator(true)),
+          watchers_(16),
+          min_range_(kint64max),
+          max_range_(kint64min),
+          var_demon_(NULL),
+          active_watchers_(0) {
+      CHECK_EQ(vars.size(), values.size());
+      for (int i = 0; i < values.size(); ++i) {
+        SetBoundWatcher(vars[i], values[i]);
+      }
+    }
+
     ~BoundWatcher() {}
 
     IntVar* GetOrMakeBoundWatcher(int64 value) {
@@ -549,6 +600,17 @@ class DomainIntVar : public IntVar {
         boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
       }
       return boolvar;
+    }
+
+    void SetBoundWatcher(IntVar* const boolvar, int64 value) {
+      CHECK(watchers_.At(value) == NULL);
+      active_watchers_.Incr(solver());
+      min_range_.SetValue(solver(), std::min(min_range_.Value(), value));
+      max_range_.SetValue(solver(), std::max(max_range_.Value(), value));
+      watchers_.RevInsert(solver(), value, boolvar);
+      if (posted_.Switched() && !boolvar->Bound()) {
+        boolvar->WhenBound(solver()->RevAlloc(new WatchDemon(this, value)));
+      }
     }
 
     virtual void Post() {
@@ -762,6 +824,20 @@ class DomainIntVar : public IntVar {
     }
   }
 
+  Constraint*  SetIsEqual(const std::vector<int64>& values,
+                          const std::vector<IntVar*>& vars) {
+    if (value_watcher_ == NULL) {
+      solver()->SaveAndSetValue(
+          reinterpret_cast<void**>(&value_watcher_),
+          reinterpret_cast<void*>(
+              solver()->RevAlloc(new ValueWatcher(solver(),
+                                                  this,
+                                                  values,
+                                                  vars))));
+      return value_watcher_;
+    }
+  }
+
   virtual IntVar* IsDifferent(int64 constant) {
     Solver* const s = solver();
     if (constant == min_.Value() && value_watcher_ == NULL) {
@@ -819,6 +895,20 @@ class DomainIntVar : public IntVar {
            constant,
            ModelCache::EXPR_CONSTANT_IS_GREATER_OR_EQUAL);
        return boolvar;
+    }
+  }
+
+  Constraint*  SetIsGreaterOrEqual(const std::vector<int64>& values,
+                                   const std::vector<IntVar*>& vars) {
+    if (bound_watcher_ == NULL) {
+      solver()->SaveAndSetValue(
+          reinterpret_cast<void**>(&bound_watcher_),
+          reinterpret_cast<void*>(
+              solver()->RevAlloc(new BoundWatcher(solver(),
+                                                  this,
+                                                  values,
+                                                  vars))));
+      return bound_watcher_;
     }
   }
 
@@ -5763,6 +5853,22 @@ class VariableQueueCleaner : public Action {
 
 Action* NewDomainIntVarCleaner() {
   return new VariableQueueCleaner;
+}
+
+Constraint* SetIsEqual(IntVar* const var,
+                       const std::vector<int64>& values,
+                       const std::vector<IntVar*>& vars) {
+  DomainIntVar* const dvar = dynamic_cast<DomainIntVar*>(var);
+  CHECK_NOTNULL(dvar);
+  return dvar->SetIsEqual(values, vars);
+}
+
+Constraint* SetIsGreaterOrEqual(IntVar* const var,
+                                const std::vector<int64>& values,
+                                const std::vector<IntVar*>& vars) {
+  DomainIntVar* const dvar = dynamic_cast<DomainIntVar*>(var);
+  CHECK_NOTNULL(dvar);
+  return dvar->SetIsGreaterOrEqual(values, vars);
 }
 
 void Solver::set_queue_cleaner_on_fail(IntVar* const var) {

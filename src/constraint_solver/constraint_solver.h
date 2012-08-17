@@ -1474,14 +1474,17 @@ class Solver {
   Constraint* MakeElementEquality(const std::vector<IntVar*>& vars,
                                   IntVar* const index,
                                   IntVar* const target);
+  Constraint* MakeElementEquality(const std::vector<IntVar*>& vars,
+                                  IntVar* const index,
+                                  int64 target);
   // This constraints is a special case of the element constraint with
   // an array of integer variables where all the variables are all
   // differents.  In that case, and with a constant value, the index
   // of the element constraint is bound to be the unique index of the
   // variable in 'vars' equal to the value target.
-  Constraint* MakeArrayPositionConstraint(const std::vector<IntVar*>& vars,
-                                          IntVar* const position,
-                                          int64 target);
+  Constraint* MakeIndexOfConstraint(const std::vector<IntVar*>& vars,
+                                    IntVar* const position,
+                                    int64 target);
 
   // This method is a specialized case of the MakeConstraintDemon
   // method to call the InitiatePropagate of the constraint 'ct'.
@@ -3161,6 +3164,7 @@ class ModelVisitor : public BaseObject {
   static const char kAbsEqual[];
   static const char kAllDifferent[];
   static const char kAllowedAssignments[];
+  static const char kIndexOf[];
   static const char kBetween[];
   static const char kConvexPiecewise[];
   static const char kCountEqual[];
@@ -3374,6 +3378,8 @@ class ModelVisitor : public BaseObject {
 #if !defined(SWIG)
   // Using SWIG on calbacks is troublesome, let's hide these methods during
   // the wrapping.
+  virtual void VisitIntegerArrayArgument(const string& arg_name,
+                                         const std::vector<int64>& values);
   void VisitConstIntArrayArgument(const string& arg_name,
                                   const ConstIntArray& argument);
   void VisitInt64ToBoolExtension(ResultCallback1<bool, int64>* const callback,

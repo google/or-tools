@@ -2871,6 +2871,11 @@ void ModelVisitor::VisitConstIntArrayArgument(const string& arg_name,
   VisitIntegerArrayArgument(arg_name, values.RawData(), values.size());
 }
 
+void ModelVisitor::VisitIntegerArrayArgument(const string& arg_name,
+                                             const std::vector<int64>& values) {
+  VisitIntegerArrayArgument(arg_name, values.data(), values.size());
+}
+
 void ModelVisitor::VisitInt64ToBoolExtension(
     ResultCallback1<bool, int64>* const callback,
     int64 index_min,

@@ -41,6 +41,7 @@ DEFINE_string(insert_license, "",
               "Insert content of the given file into the license file.");
 DEFINE_bool(collect_variables, false,
             "Shows effect of the variable collector.");
+DECLARE_bool(log_prefix);
 
 namespace operations_research {
 
@@ -416,6 +417,7 @@ int Run() {
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
+  FLAGS_log_prefix=false;
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_input.empty()) {
     LOG(FATAL) << "Filename not specified";
