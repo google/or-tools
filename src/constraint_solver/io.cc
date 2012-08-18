@@ -1127,7 +1127,7 @@ IntExpr* BuildConvexPiecewise(CPModelLoader* const builder,
   VERIFY(builder->ScanArguments(ModelVisitor::kLateDateArgument,
                                 proto,
                                 &late_date));
-  return builder->solver()->MakeConvexPiecewiseExpr(expr->Var(),
+  return builder->solver()->MakeConvexPiecewiseExpr(expr,
                                                     early_cost,
                                                     early_date,
                                                     late_date,
@@ -1372,13 +1372,13 @@ Constraint* BuildEquality(CPModelLoader* const builder,
   if (builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left)) {
     IntExpr* right = NULL;
     VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
-    return builder->solver()->MakeEquality(left->Var(), right->Var());
+    return builder->solver()->MakeEquality(left, right);
   }
   IntExpr* expr = NULL;
   if (builder->ScanArguments(ModelVisitor::kExpressionArgument, proto, &expr)) {
     int64 value = 0;
     VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
-    return builder->solver()->MakeEquality(expr->Var(), value);
+    return builder->solver()->MakeEquality(expr, value);
   }
   return NULL;
 }
@@ -1398,7 +1398,7 @@ Constraint* BuildGreater(CPModelLoader* const builder,
   VERIFY(builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left));
   IntExpr* right = NULL;
   VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
-  return builder->solver()->MakeGreater(left->Var(), right->Var());
+  return builder->solver()->MakeGreater(left, right);
 }
 
 // ----- kGreaterOrEqual -----
@@ -1409,13 +1409,13 @@ Constraint* BuildGreaterOrEqual(CPModelLoader* const builder,
   if (builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left)) {
     IntExpr* right = NULL;
     VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
-    return builder->solver()->MakeGreaterOrEqual(left->Var(), right->Var());
+    return builder->solver()->MakeGreaterOrEqual(left, right);
   }
   IntExpr* expr = NULL;
   if (builder->ScanArguments(ModelVisitor::kExpressionArgument, proto, &expr)) {
     int64 value = 0;
     VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
-    return builder->solver()->MakeGreaterOrEqual(expr->Var(), value);
+    return builder->solver()->MakeGreaterOrEqual(expr, value);
   }
   return NULL;
 }
@@ -1460,19 +1460,19 @@ IntExpr* BuildIntegerVariable(CPModelLoader* const builder,
                              proto,
                              &sub_var)) {
     int64 value;
-    IntVar* result = NULL;
+    IntExpr* result = NULL;
     if (builder->ScanArguments(ModelVisitor::kSumOperation,
                                proto,
                                &value)) {
-      result = builder->solver()->MakeSum(sub_var->Var(), value)->Var();
+      result = builder->solver()->MakeSum(sub_var, value);
     } else if (builder->ScanArguments(ModelVisitor::kDifferenceOperation,
                                       proto,
                                       &value)) {
-      result = builder->solver()->MakeDifference(value, sub_var->Var())->Var();
+      result = builder->solver()->MakeDifference(value, sub_var);
     } else if (builder->ScanArguments(ModelVisitor::kProductOperation,
                                       proto,
                                       &value)) {
-      result = builder->solver()->MakeProd(sub_var->Var(), value)->Var();
+      result = builder->solver()->MakeProd(sub_var, value);
     }
     if (proto.has_name()) {
       result->set_name(proto.name());
@@ -1638,66 +1638,114 @@ Constraint* BuildIsBetween(CPModelLoader* const builder,
 
 Constraint* BuildIsDifferent(CPModelLoader* const builder,
                              const CPConstraintProto& proto) {
-  int64 value = 0;
-  VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
-  IntExpr* expr = NULL;
-  VERIFY(builder->ScanArguments(ModelVisitor::kExpressionArgument,
-                                proto,
-                                &expr));
   IntExpr* target = NULL;
   VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument, proto, &target));
-  return builder->solver()->MakeIsDifferentCstCt(expr->Var(),
-                                                 value,
-                                                 target->Var());
+  IntExpr* left = NULL;
+  if (builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left)) {
+    IntExpr* right = NULL;
+    VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
+    return builder->solver()->MakeIsDifferentCt(left, right, target->Var());
+  }
+  IntExpr* expr = NULL;
+  if (builder->ScanArguments(ModelVisitor::kExpressionArgument, proto, &expr)) {
+    int64 value = 0;
+    VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
+    return builder->solver()->MakeIsDifferentCstCt(expr, value, target->Var());
+  }
+  return NULL;
 }
 
 // ----- kIsEqual -----
 
 Constraint* BuildIsEqual(CPModelLoader* const builder,
                          const CPConstraintProto& proto) {
-  int64 value = 0;
-  VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
-  IntExpr* expr = NULL;
-  VERIFY(builder->ScanArguments(
-      ModelVisitor::kExpressionArgument, proto, &expr));
   IntExpr* target = NULL;
   VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument, proto, &target));
-  return builder->solver()->MakeIsEqualCstCt(expr->Var(),
-                                             value,
-                                             target->Var());
+  IntExpr* left = NULL;
+  if (builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left)) {
+    IntExpr* right = NULL;
+    VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
+    return builder->solver()->MakeIsEqualCt(left, right, target->Var());
+  }
+  IntExpr* expr = NULL;
+  if (builder->ScanArguments(ModelVisitor::kExpressionArgument, proto, &expr)) {
+    int64 value = 0;
+    VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
+    return builder->solver()->MakeIsEqualCstCt(expr, value, target->Var());
+  }
+  return NULL;
+}
+
+// ----- kIsGreater -----
+
+Constraint* BuildIsGreater(CPModelLoader* const builder,
+                           const CPConstraintProto& proto) {
+  IntExpr* target = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument, proto, &target));
+  IntExpr* left = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left));
+  IntExpr* right = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
+  return builder->solver()->MakeIsGreaterCt(left, right, target->Var());
 }
 
 // ----- kIsGreaterOrEqual -----
 
 Constraint* BuildIsGreaterOrEqual(CPModelLoader* const builder,
                                   const CPConstraintProto& proto) {
-  int64 value = 0;
-  VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
-  IntExpr* expr = NULL;
-  VERIFY(builder->ScanArguments(
-      ModelVisitor::kExpressionArgument, proto, &expr));
   IntExpr* target = NULL;
   VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument, proto, &target));
-  return builder->solver()->MakeIsGreaterOrEqualCstCt(expr->Var(),
-                                                      value,
-                                                      target->Var());
+  IntExpr* left = NULL;
+  if (builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left)) {
+    IntExpr* right = NULL;
+    VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
+    return builder->solver()->MakeIsGreaterOrEqualCt(
+        left, right, target->Var());
+  }
+  IntExpr* expr = NULL;
+  if (builder->ScanArguments(ModelVisitor::kExpressionArgument, proto, &expr)) {
+    int64 value = 0;
+    VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
+    return builder->solver()->MakeIsGreaterOrEqualCstCt(
+        expr, value, target->Var());
+  }
+  return NULL;
+}
+
+// ----- kIsLess -----
+
+Constraint* BuildIsLess(CPModelLoader* const builder,
+                        const CPConstraintProto& proto) {
+  IntExpr* target = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument, proto, &target));
+  IntExpr* left = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left));
+  IntExpr* right = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
+  return builder->solver()->MakeIsLessCt(left, right, target->Var());
 }
 
 // ----- kIsLessOrEqual -----
 
 Constraint* BuildIsLessOrEqual(CPModelLoader* const builder,
                                const CPConstraintProto& proto) {
-  int64 value = 0;
-  VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
-  IntExpr* expr = NULL;
-  VERIFY(builder->ScanArguments(ModelVisitor::kExpressionArgument,
-                                proto,
-                                &expr));
   IntExpr* target = NULL;
   VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument, proto, &target));
-  return builder->solver()->MakeIsLessOrEqualCstCt(expr->Var(),
-                                                   value,
-                                                   target->Var());
+  IntExpr* left = NULL;
+  if (builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left)) {
+    IntExpr* right = NULL;
+    VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
+    return builder->solver()->MakeIsLessOrEqualCt(
+        left, right, target->Var());
+  }
+  IntExpr* expr = NULL;
+  if (builder->ScanArguments(ModelVisitor::kExpressionArgument, proto, &expr)) {
+    int64 value = 0;
+    VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
+    return builder->solver()->MakeIsLessOrEqualCstCt(
+        expr, value, target->Var());
+  }
+  return NULL;
 }
 
 // ----- kIsMember -----
@@ -1722,7 +1770,7 @@ Constraint* BuildLess(CPModelLoader* const builder,
   VERIFY(builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left));
   IntExpr* right = NULL;
   VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
-  return builder->solver()->MakeLess(left->Var(), right->Var());
+  return builder->solver()->MakeLess(left, right);
 }
 
 // ----- kLessOrEqual -----
@@ -1733,13 +1781,13 @@ Constraint* BuildLessOrEqual(CPModelLoader* const builder,
   if (builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left)) {
     IntExpr* right = NULL;
     VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
-    return builder->solver()->MakeLessOrEqual(left->Var(), right->Var());
+    return builder->solver()->MakeLessOrEqual(left, right);
   }
   IntExpr* expr = NULL;
   if (builder->ScanArguments(ModelVisitor::kExpressionArgument, proto, &expr)) {
     int64 value = 0;
     VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
-    return builder->solver()->MakeLessOrEqual(expr->Var(), value);
+    return builder->solver()->MakeLessOrEqual(expr, value);
   }
   return NULL;
 }
@@ -1866,13 +1914,13 @@ Constraint* BuildNonEqual(CPModelLoader* const builder,
   if (builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left)) {
     IntExpr* right = NULL;
     VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
-    return builder->solver()->MakeNonEquality(left->Var(), right->Var());
+    return builder->solver()->MakeNonEquality(left, right);
   }
   IntExpr* expr = NULL;
   if (builder->ScanArguments(ModelVisitor::kExpressionArgument, proto, &expr)) {
     int64 value = 0;
     VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
-    return builder->solver()->MakeNonEquality(expr->Var(), value);
+    return builder->solver()->MakeNonEquality(expr, value);
   }
   return NULL;
 }
@@ -2678,7 +2726,9 @@ void Solver::InitBuilders() {
   REGISTER(kIsBetween, BuildIsBetween);
   REGISTER(kIsDifferent, BuildIsDifferent);
   REGISTER(kIsEqual, BuildIsEqual);
+  REGISTER(kIsGreater, BuildIsGreater);
   REGISTER(kIsGreaterOrEqual, BuildIsGreaterOrEqual);
+  REGISTER(kIsLess, BuildIsLess);
   REGISTER(kIsLessOrEqual, BuildIsLessOrEqual);
   REGISTER(kIsMember, BuildIsMember);
   REGISTER(kLess, BuildLess);
