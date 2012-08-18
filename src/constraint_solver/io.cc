@@ -1881,6 +1881,30 @@ Constraint* BuildMinEqual(CPModelLoader* const builder,
   return builder->solver()->MakeMinEquality(vars, target->Var());
 }
 
+// ----- kModuloConstraint -----
+
+Constraint* BuildModuloConstraint(CPModelLoader* const builder,
+                                  const CPConstraintProto& proto) {
+  IntExpr* x = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &x));
+  IntExpr* mod = NULL;
+  if (builder->ScanArguments(ModelVisitor::kModuloArgument, proto, &mod)) {
+    IntExpr* y = NULL;
+    if (!builder->ScanArguments(ModelVisitor::kRightArgument, proto, &y)) {
+      y = builder->solver()->MakeIntConst(0);
+    }
+    return builder->solver()->MakeModuloConstraint(x->Var(),
+                                                   mod->Var(),
+                                                   y->Var());
+  } else {
+    int64 mod = 0;
+    VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &mod));
+    IntExpr* y = NULL;
+    VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &y));
+    return builder->solver()->MakeModuloConstraint(y->Var(), mod, y->Var());
+  }
+}
+
 // ----- kNoCycle -----
 
 Constraint* BuildNoCycle(CPModelLoader* const builder,
@@ -2739,6 +2763,7 @@ void Solver::InitBuilders() {
   REGISTER(kMember, BuildMember);
   REGISTER(kMin, BuildMin);
   REGISTER(kMinEqual, BuildMinEqual);
+  REGISTER(kModuloConstraint, BuildModuloConstraint);
   REGISTER(kNoCycle, BuildNoCycle);
   REGISTER(kNonEqual, BuildNonEqual);
   REGISTER(kOpposite, BuildOpposite);
