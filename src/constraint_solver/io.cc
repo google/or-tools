@@ -1898,10 +1898,10 @@ Constraint* BuildModuloConstraint(CPModelLoader* const builder,
                                                    y->Var());
   } else {
     int64 mod = 0;
-    VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &mod));
+    VERIFY(builder->ScanArguments(ModelVisitor::kModuloArgument, proto, &mod));
     IntExpr* y = NULL;
     VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &y));
-    return builder->solver()->MakeModuloConstraint(y->Var(), mod, y->Var());
+    return builder->solver()->MakeModuloConstraint(x->Var(), mod, y->Var());
   }
 }
 
