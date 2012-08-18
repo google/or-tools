@@ -694,17 +694,21 @@ class DomainIntVar : public IntVar {
       visitor->BeginVisitConstraint(ModelVisitor::kVarBoundWatcher, this);
       visitor->VisitIntegerExpressionArgument(
           ModelVisitor::kVariableArgument, variable_);
+      std::vector<int64> all_coefficients;
       std::vector<IntVar*> all_bool_vars;
       const int64 max_r = max_range_.Value();
       const int64 min_r = min_range_.Value();
       for (int64 i = min_r; i <= max_r; ++i) {
         IntVar* const boolvar = watchers_.At(i);
         if (boolvar != NULL) {
+          all_coefficients.push_back(i);
           all_bool_vars.push_back(boolvar);
         }
       }
-      visitor->VisitIntegerVariableArrayArgument(
-          ModelVisitor::kVarsArgument, all_bool_vars);
+      visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                                 all_bool_vars);
+      visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
+                                         all_coefficients);
       visitor->EndVisitConstraint(ModelVisitor::kVarBoundWatcher, this);
     }
 
