@@ -627,6 +627,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
                                        best_interval_index);
       default:
         LOG(FATAL) << "Unknown strategy " << strategy_;
+        return false;
     }
   }
 
