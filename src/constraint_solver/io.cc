@@ -1065,6 +1065,21 @@ IntExpr* BuildAbs(CPModelLoader* const builder,
   return builder->solver()->MakeAbs(expr);
 }
 
+// ----- kAbsEqual -----
+
+Constraint* BuildAbsEqual(CPModelLoader* const builder,
+                          const CPConstraintProto& proto) {
+  IntExpr* expr = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kExpressionArgument,
+                                proto,
+                                &expr));
+  IntExpr* target = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kTargetArgument,
+                                proto,
+                                &target));
+  return builder->solver()->MakeAbsEquality(expr->Var(), target->Var());
+}
+
 // ----- kAllDifferent -----
 
 Constraint* BuildAllDifferent(CPModelLoader* const builder,
@@ -2097,10 +2112,10 @@ IntExpr* BuildPerformedExpr(CPModelLoader* const builder,
   return var->PerformedExpr();
 }
 
-// ----- kProduct -----
+// ----- kPower -----
 
-IntExpr* BuildProduct(CPModelLoader* const builder,
-                      const CPIntegerExpressionProto& proto) {
+IntExpr* BuildPower(CPModelLoader* const builder,
+                    const CPIntegerExpressionProto& proto) {
   IntExpr* left = NULL;
   if (builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left)) {
     IntExpr* right = NULL;
@@ -2113,7 +2128,20 @@ IntExpr* BuildProduct(CPModelLoader* const builder,
                                 &expr));
   int64 value = 0;
   VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
-  return builder->solver()->MakeProd(expr, value);
+  return builder->solver()->MakePower(expr, value);
+}
+
+// ----- kProduct -----
+
+IntExpr* BuildProduct(CPModelLoader* const builder,
+                      const CPIntegerExpressionProto& proto) {
+  IntExpr* expr = NULL;
+  VERIFY(builder->ScanArguments(ModelVisitor::kExpressionArgument,
+                                proto,
+                                &expr));
+  int64 value = 0;
+  VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
+  return builder->solver()->MakePower(expr, value);
 }
 
 // ----- kScalProd -----
@@ -2722,6 +2750,7 @@ Solver::GetSequenceVariableBuilder(const string& tag) const {
 
 void Solver::InitBuilders() {
   REGISTER(kAbs, BuildAbs);
+  REGISTER(kAbsEqual, BuildAbsEqual);
   REGISTER(kAllDifferent, BuildAllDifferent);
   REGISTER(kAllowedAssignments, BuildAllowedAssignments);
   REGISTER(kBetween, BuildBetween);
@@ -2770,6 +2799,7 @@ void Solver::InitBuilders() {
   REGISTER(kPack, BuildPack);
   REGISTER(kPathCumul, BuildPathCumul);
   REGISTER(kPerformedExpr, BuildPerformedExpr);
+  REGISTER(kPower, BuildPower);
   REGISTER(kProduct, BuildProduct);
   REGISTER(kScalProd, BuildScalProd);
   REGISTER(kScalProdEqual, BuildScalProdEqual);

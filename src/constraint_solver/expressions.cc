@@ -4687,7 +4687,7 @@ class IntAbsConstraint : public CastConstraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("tAbsConstraint(%s, %s)",
+    return StringPrintf("IntAbsConstraint(%s, %s)",
                         sub_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
   }
@@ -6465,6 +6465,13 @@ IntExpr* Solver::MakeDiv(IntExpr* const e, int64 v) {
   }
 }
 
+Constraint* Solver::MakeAbsEquality(IntVar* const sub, IntVar* const abs_var) {
+  if (Cache()->FindExprExpression(sub, ModelCache::EXPR_ABS) == NULL) {
+    Cache()->InsertExprExpression(abs_var, sub, ModelCache::EXPR_ABS);
+  }
+  return RevAlloc(new IntAbsConstraint(this, sub, abs_var));
+}
+
 IntExpr* Solver::MakeAbs(IntExpr* const e) {
   CHECK_EQ(this, e->solver());
   if (e->Min() >= 0) {
@@ -6479,7 +6486,7 @@ IntExpr* Solver::MakeAbs(IntExpr* const e) {
       const string name = StringPrintf("AbsVar(%s)", e->name().c_str());
       IntVar* const target = MakeIntVar(0, max_value, name);
       AddConstraint(RevAlloc(new IntAbsConstraint(this, e->Var(), target)));
-      return target;
+      result = target;
     } else {
       result = RegisterIntExpr(RevAlloc(new IntAbs(this, e)));
     }

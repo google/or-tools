@@ -1477,6 +1477,7 @@ class Solver {
   Constraint* MakeElementEquality(const std::vector<IntVar*>& vars,
                                   IntVar* const index,
                                   int64 target);
+  Constraint* MakeAbsEquality(IntVar* const var, IntVar* const abs_var);
   // This constraints is a special case of the element constraint with
   // an array of integer variables where all the variables are all
   // differents.  In that case, and with a constant value, the index
