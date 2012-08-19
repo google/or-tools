@@ -167,6 +167,7 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
   } else if ((id == "array_bool_and" && !FLAGS_use_minisat) ||
              (id == "array_bool_or" && !FLAGS_use_minisat) ||
              id == "array_bool_element" ||
+             id == "count_reif" ||
              id == "int_lin_eq_reif" ||
              id == "int_lin_ne_reif" ||
              id == "int_lin_ge_reif" ||
@@ -189,7 +190,7 @@ void ParserState::ComputeViableTarget(CtSpec* const spec,
       candidates->insert(bool_define);
       VLOG(2) << id << " -> insert " << bool_define->DebugString();
     }
-  } else if (id == "int2int" || id == "bool2bool") {
+  } else if (id == "bool2bool") {
     candidates->insert(Copy(spec->Arg(1)));
     VLOG(2) << id << " -> insert " << spec->Arg(1)->DebugString();
   }
@@ -351,21 +352,6 @@ void ParserState::Presolve() {
   }
 
   // Add aliasing constraints.
-  // for (int i = 0; i < int_variables_.size(); ++i) {
-  //   IntVarSpec* const spec = int_variables_[i];
-  //   if (spec->alias) {
-  //     AstArray* args = new AstArray(2);
-  //     args->a[0] = new AstIntVar(spec->i);
-  //     args->a[1] = new AstIntVar(i);
-  //     CtSpec* const alias_ct = new CtSpec(constraints_.size(),
-  //                                         "int2int",
-  //                                         args,
-  //                                         NULL);
-  //     alias_ct->SetDefinedArg(IntCopy(i));
-  //     constraints_.push_back(alias_ct);
-  //   }
-  // }
-
   for (int i = 0; i < bool_variables_.size(); ++i) {
     BoolVarSpec* const spec = bool_variables_[i];
     if (spec->alias) {
