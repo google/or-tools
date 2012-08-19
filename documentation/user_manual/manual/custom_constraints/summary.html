@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6.1. What is local search? &mdash; or-tools User&#39;s Manual</title>
+    <title>8.3. Summary &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -27,9 +27,9 @@
     <script type="text/javascript" src="../../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
-    <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
-    <link rel="next" title="6.2. Basic working of the solver: part II" href="basic_working2.html" />
-    <link rel="prev" title="6. Local search: the job-shop problem" href="../LS.html" /> 
+    <link rel="up" title="8. Custom constraints: the alldifferent_except_0 constraint" href="../custom_constraints.html" />
+    <link rel="next" title="9. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
+    <link rel="prev" title="8.2. Changing dynamically the improvement step with a SearchMonitor" href="dynamic_improvements.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,13 +39,13 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="basic_working2.html" title="6.2. Basic working of the solver: part II"
+          <a href="../TSP.html" title="9. Travelling Salesman Problems with constraints: the TSP with time windows"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="../LS.html" title="6. Local search: the job-shop problem"
+          <a href="dynamic_improvements.html" title="8.2. Changing dynamically the improvement step with a SearchMonitor"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../custom_constraints.html" accesskey="U">8. Custom constraints: the <em>alldifferent_except_0</em> constraint</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -54,24 +54,10 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="what-is-local-search">
-<span id="local-search-def"></span><h1>6.1. What is local search?</h1>
-<div class="section" id="the-basic-ingredients">
-<h2>6.1.1. The basic ingredients</h2>
-</div>
-<div class="section" id="is-local-search-efficient">
-<span id="local-search-efficiency"></span><h2>6.1.2. Is Local Search efficient?</h2>
-<div class="section" id="a-certain-blindness">
-<h3>6.1.2.1. A certain blindness</h3>
-</div>
-</div>
-<div class="section" id="what-about-the-quality-of-the-solutions-found-by-local-search">
-<h2>6.1.3. What about the quality of the solutions found by local search?</h2>
-</div>
-<div class="section" id="global-optimization-methods">
-<h2>6.1.4. Global optimization methods</h2>
-</div>
-</div>
+  <div class="section" id="summary">
+<span id="custom-constraints-summary"></span><h1>8.3. Summary</h1>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 
 
           </div>
@@ -145,28 +131,14 @@ Search:
 	
 
   <h3>Current chapter</h3>
-  <p class="topless"><a href="../LS.html"
-                        title="previous chapter">6. Local search: the job-shop problem</a></p>
+  <p class="topless"><a href="../custom_constraints.html"
+                        title="previous chapter">8. Custom constraints: the alldifferent_except_0 constraint</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="../LS.html"
-                        title="previous chapter">6. Local search: the job-shop problem</a></p>
+  <p class="topless"><a href="dynamic_improvements.html"
+                        title="previous chapter">8.2. Changing dynamically the improvement step with a <tt class="docutils literal docutils literal docutils literal"><span class="pre">SearchMonitor</span></tt></a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="basic_working2.html"
-                        title="next chapter">6.2. Basic working of the solver: part II</a></p>
-  <h3>Current section</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">6.1. What is local search?</a><ul>
-<li><a class="reference internal" href="#the-basic-ingredients">6.1.1. The basic ingredients</a></li>
-<li><a class="reference internal" href="#is-local-search-efficient">6.1.2. Is Local Search efficient?</a><ul>
-<li><a class="reference internal" href="#a-certain-blindness">6.1.2.1. A certain blindness</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#what-about-the-quality-of-the-solutions-found-by-local-search">6.1.3. What about the quality of the solutions found by local search?</a></li>
-<li><a class="reference internal" href="#global-optimization-methods">6.1.4. Global optimization methods</a></li>
-</ul>
-</li>
-</ul>
-
+  <p class="topless"><a href="../TSP.html"
+                        title="next chapter">9. Travelling Salesman Problems with constraints: the TSP with time windows</a></p>
         </div>
       </div>
       <div class="clearer"></div>
@@ -178,13 +150,13 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="basic_working2.html" title="6.2. Basic working of the solver: part II"
+          <a href="../TSP.html" title="9. Travelling Salesman Problems with constraints: the TSP with time windows"
              >next</a> |</li>
         <li class="right" >
-          <a href="../LS.html" title="6. Local search: the job-shop problem"
+          <a href="dynamic_improvements.html" title="8.2. Changing dynamically the improvement step with a SearchMonitor"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
-          <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 
+          <li><a href="../custom_constraints.html" >8. Custom constraints: the <em>alldifferent_except_0</em> constraint</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

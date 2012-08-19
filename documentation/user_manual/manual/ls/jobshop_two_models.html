@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>6.1. What is local search? &mdash; or-tools User&#39;s Manual</title>
+    <title>6.4. The job-shop problem and two models &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="6. Local search: the job-shop problem" href="../LS.html" />
-    <link rel="next" title="6.2. Basic working of the solver: part II" href="basic_working2.html" />
-    <link rel="prev" title="6. Local search: the job-shop problem" href="../LS.html" /> 
+    <link rel="next" title="6.5. The jobshop problem: and now with local search!" href="jobshop_ls.html" />
+    <link rel="prev" title="6.3. Local Search Neighborhood (LSN) Operators" href="ls_operators.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="basic_working2.html" title="6.2. Basic working of the solver: part II"
+          <a href="jobshop_ls.html" title="6.5. The jobshop problem: and now with local search!"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="../LS.html" title="6. Local search: the job-shop problem"
+          <a href="ls_operators.html" title="6.3. Local Search Neighborhood (LSN) Operators"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../LS.html" accesskey="U">6. Local search: the job-shop problem</a> &raquo;</li> 
@@ -54,23 +54,33 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="what-is-local-search">
-<span id="local-search-def"></span><h1>6.1. What is local search?</h1>
-<div class="section" id="the-basic-ingredients">
-<h2>6.1.1. The basic ingredients</h2>
+  <div class="section" id="the-job-shop-problem-and-two-models">
+<span id="jobshop-def"></span><h1>6.4. The job-shop problem and two models</h1>
+<div class="section" id="description-of-the-problem">
+<h2>6.4.1. Description of the problem</h2>
 </div>
-<div class="section" id="is-local-search-efficient">
-<span id="local-search-efficiency"></span><h2>6.1.2. Is Local Search efficient?</h2>
-<div class="section" id="a-certain-blindness">
-<h3>6.1.2.1. A certain blindness</h3>
+<div class="section" id="the-disjunctive-graph-model">
+<h2>6.4.2. The disjunctive graph model</h2>
+</div>
+<div class="section" id="the-data-and-file-formats">
+<h2>6.4.3. The data and file formats</h2>
+<div class="section" id="jssp-format">
+<h3>6.4.3.1. JSSP format</h3>
+</div>
+<div class="section" id="taillard-s-instances-format">
+<h3>6.4.3.2. Taillard&#8217;s instances format</h3>
+</div>
+<div class="section" id="jobshopdata">
+<h3>6.4.3.3. <tt class="docutils literal"><span class="pre">JobshopData</span></tt></h3>
 </div>
 </div>
-<div class="section" id="what-about-the-quality-of-the-solutions-found-by-local-search">
-<h2>6.1.3. What about the quality of the solutions found by local search?</h2>
+<div class="section" id="the-first-model">
+<h2>6.4.4. The first model</h2>
 </div>
-<div class="section" id="global-optimization-methods">
-<h2>6.1.4. Global optimization methods</h2>
-</div>
+<div class="section" id="a-second-model-with-dedicated-variables">
+<h2>6.4.5. A second model with dedicated variables</h2>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
 
 
@@ -148,21 +158,24 @@ Search:
   <p class="topless"><a href="../LS.html"
                         title="previous chapter">6. Local search: the job-shop problem</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="../LS.html"
-                        title="previous chapter">6. Local search: the job-shop problem</a></p>
+  <p class="topless"><a href="ls_operators.html"
+                        title="previous chapter">6.3. Local Search Neighborhood (LSN) Operators</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="basic_working2.html"
-                        title="next chapter">6.2. Basic working of the solver: part II</a></p>
+  <p class="topless"><a href="jobshop_ls.html"
+                        title="next chapter">6.5. The jobshop problem: and now with local search!</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">6.1. What is local search?</a><ul>
-<li><a class="reference internal" href="#the-basic-ingredients">6.1.1. The basic ingredients</a></li>
-<li><a class="reference internal" href="#is-local-search-efficient">6.1.2. Is Local Search efficient?</a><ul>
-<li><a class="reference internal" href="#a-certain-blindness">6.1.2.1. A certain blindness</a></li>
+<li><a class="reference internal" href="#">6.4. The job-shop problem and two models</a><ul>
+<li><a class="reference internal" href="#description-of-the-problem">6.4.1. Description of the problem</a></li>
+<li><a class="reference internal" href="#the-disjunctive-graph-model">6.4.2. The disjunctive graph model</a></li>
+<li><a class="reference internal" href="#the-data-and-file-formats">6.4.3. The data and file formats</a><ul>
+<li><a class="reference internal" href="#jssp-format">6.4.3.1. JSSP format</a></li>
+<li><a class="reference internal" href="#taillard-s-instances-format">6.4.3.2. Taillard&#8217;s instances format</a></li>
+<li><a class="reference internal" href="#jobshopdata">6.4.3.3. <tt class="docutils literal"><span class="pre">JobshopData</span></tt></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#what-about-the-quality-of-the-solutions-found-by-local-search">6.1.3. What about the quality of the solutions found by local search?</a></li>
-<li><a class="reference internal" href="#global-optimization-methods">6.1.4. Global optimization methods</a></li>
+<li><a class="reference internal" href="#the-first-model">6.4.4. The first model</a></li>
+<li><a class="reference internal" href="#a-second-model-with-dedicated-variables">6.4.5. A second model with dedicated variables</a></li>
 </ul>
 </li>
 </ul>
@@ -178,10 +191,10 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="basic_working2.html" title="6.2. Basic working of the solver: part II"
+          <a href="jobshop_ls.html" title="6.5. The jobshop problem: and now with local search!"
              >next</a> |</li>
         <li class="right" >
-          <a href="../LS.html" title="6. Local search: the job-shop problem"
+          <a href="ls_operators.html" title="6.3. Local Search Neighborhood (LSN) Operators"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../LS.html" >6. Local search: the job-shop problem</a> &raquo;</li> 
