@@ -1429,9 +1429,10 @@ bool AreAllBound(const std::vector<IntVar*>& vars) {
 }  // namespace
 
 IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const index) {
+  const int size = vars.size();
   if (AreAllBound(vars)) {
-    std::vector<int64> values(vars.size());
-    for (int i = 0; i < vars.size(); ++i) {
+    std::vector<int64> values(size);
+    for (int i = 0; i < size; ++i) {
       values[i] = vars[i]->Value();
     }
     return MakeElement(values, index);
@@ -1441,12 +1442,11 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const ind
   scoped_ptr<IntVarIterator> iterator(index->MakeDomainIterator(false));
   for (iterator->Init(); iterator->Ok(); iterator->Next()) {
     const int64 index_value = iterator->Value();
-    if (index_value >= 0 && index_value < vars.size()) {
+    if (index_value >= 0 && index_value < size) {
       emin = std::min(emin, vars[index_value]->Min());
       emax = std::max(emax, vars[index_value]->Max());
     }
   }
-  const int size = vars.size();
   const string vname =
       size > 10 ?
       StringPrintf("ElementVar(var array of size %d, %s)",
