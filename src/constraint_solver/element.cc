@@ -1446,16 +1446,18 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const ind
       emax = std::max(emax, vars[index_value]->Max());
     }
   }
+  const int size = vars.size();
   const string vname =
-      vars.size() > 10 ?
-      StringPrintf("ElementVar(var array of size %" GG_LL_FORMAT "d, %s)",
-                   vars.size(), index->DebugString().c_str()) :
+      size > 10 ?
+      StringPrintf("ElementVar(var array of size %d, %s)",
+                   size,
+                   index->DebugString().c_str()) :
       StringPrintf("ElementVar([%s], %s)",
                    NameVector(vars, ", ").c_str(), index->name().c_str());
   IntVar* const element_var = MakeIntVar(emin, emax, vname);
   AddConstraint(RevAlloc(new IntExprArrayElementCt(this,
                                                    vars.data(),
-                                                   vars.size(),
+                                                   size,
                                                    index,
                                                    element_var)));
   return element_var;
