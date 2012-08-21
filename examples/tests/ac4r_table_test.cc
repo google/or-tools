@@ -24,12 +24,12 @@ DEFINE_int32(upper, 10, "Upper bound of variables, lower is always 0");
 DEFINE_int32(tuples, 1000, "Number of tuples");
 DEFINE_int32(bucket, 64, "Size of buckets");
 DEFINE_bool(ac4, false, "Use AC4 Table only");
+DECLARE_bool(cp_use_ac4r_table);
 
 namespace operations_research {
 extern Constraint* BuildAc4TableConstraint(Solver* const solver,
                                            const IntTupleSet& tuples,
-                                           const std::vector<IntVar*>& vars,
-                                           int size_bucket);
+                                           const std::vector<IntVar*>& vars);
 
 void RandomFillTable(int num_tuples,
                      int64 lower,
@@ -47,10 +47,10 @@ void RandomFillTable(int num_tuples,
   }
 }
 
-void TestTable(int arity, int num_tuples, int upper, int size_bucket) {
-  if (size_bucket > 0) {
-    LOG(INFO) <<  "Creation of a Bucketed tuple Table ("
-              << size_bucket << ") with :";
+void TestTable(int arity, int num_tuples, int upper, bool use_ac4r_table) {
+  FLAGS_cp_use_ac4r_table = use_ac4r_table;
+  if (use_ac4r_table) {
+    LOG(INFO) <<  "Creation of a AC4-Regin tuple Table with :";
   } else {
     LOG(INFO) << "Creation of a Allowed Assignment Table with :";
   }
@@ -66,8 +66,8 @@ void TestTable(int arity, int num_tuples, int upper, int size_bucket) {
   RandomFillTable(num_tuples, 0, upper, &table);
   LOG(INFO) << "Table is created";
 
-  Constraint* const ct = size_bucket > 0 ?
-      BuildAc4TableConstraint(&solver, table, vars, size_bucket) :
+  Constraint* const ct = use_ac4r_table ?
+      BuildAc4TableConstraint(&solver, table, vars) :
       solver.MakeAllowedAssignments(vars, table);
   solver.AddConstraint(ct);
 
@@ -95,12 +95,15 @@ void TestTable(int arity, int num_tuples, int upper, int size_bucket) {
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (!FLAGS_ac4) {
-    operations_research::TestTable(FLAGS_arity, FLAGS_tuples, FLAGS_upper, 0);
+    operations_research::TestTable(FLAGS_arity,
+                                   FLAGS_tuples,
+                                   FLAGS_upper,
+                                   false);
   }
   operations_research::TestTable(FLAGS_arity,
                                  FLAGS_tuples,
                                  FLAGS_upper,
-                                 FLAGS_bucket);
+                                 true);
   return 0;
 }
 

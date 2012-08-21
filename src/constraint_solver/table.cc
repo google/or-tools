@@ -35,6 +35,7 @@ DEFINE_bool(cp_use_compact_table, true,
             "Use compact table constraint when possible.");
 DEFINE_bool(cp_use_small_table, true,
             "Use small compact table constraint when possible.");
+DEFINE_bool(cp_use_ac4r_table, true, "Use ac4r table");
 
 namespace operations_research {
 namespace {
@@ -819,24 +820,7 @@ bool HasCompactDomains(const IntVar* const * vars, int arity) {
   }
   return sum_of_spans < 4 * sum_of_sizes;
 }
-}  // namespace
 
-Constraint* Solver::MakeAllowedAssignments(
-    const std::vector<IntVar*>& vars,
-    const IntTupleSet& tuples) {
-  if (FLAGS_cp_use_compact_table
-      && HasCompactDomains(vars.data(), vars.size())) {
-    if (tuples.NumTuples() < kBitsInUint64 && FLAGS_cp_use_small_table) {
-      return RevAlloc(
-          new SmallCompactPositiveTableConstraint(this, vars, tuples));
-    } else {
-      return RevAlloc(new CompactPositiveTableConstraint(this, vars, tuples));
-    }
-  }
-  return RevAlloc(new PositiveTableConstraint(this, vars, tuples));
-}
-
-namespace {
 // ---------- Deterministic Finite Automaton ----------
 
 // This constraint implements a finite automaton when transitions are
@@ -947,6 +931,30 @@ const int TransitionConstraint::kStatePosition = 0;
 const int TransitionConstraint::kNextStatePosition = 2;
 const int TransitionConstraint::kTransitionTupleSize = 3;
 }  // namespace
+
+// --------- API ----------
+
+Constraint* BuildAc4TableConstraint(Solver* const solver,
+                                    const IntTupleSet& tuples,
+                                    const std::vector<IntVar*>& vars);
+
+Constraint* Solver::MakeAllowedAssignments(
+    const std::vector<IntVar*>& vars,
+    const IntTupleSet& tuples) {
+  if (tuples.NumTuples() > 512 && FLAGS_cp_use_ac4r_table) {
+    return BuildAc4TableConstraint(this, tuples, vars);
+  }
+  if (FLAGS_cp_use_compact_table
+      && HasCompactDomains(vars.data(), vars.size())) {
+    if (tuples.NumTuples() < kBitsInUint64 && FLAGS_cp_use_small_table) {
+      return RevAlloc(
+          new SmallCompactPositiveTableConstraint(this, vars, tuples));
+    } else {
+      return RevAlloc(new CompactPositiveTableConstraint(this, vars, tuples));
+    }
+  }
+  return RevAlloc(new PositiveTableConstraint(this, vars, tuples));
+}
 
 Constraint* Solver::MakeTransitionConstraint(
     const std::vector<IntVar*>& vars,
