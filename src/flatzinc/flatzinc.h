@@ -82,12 +82,43 @@ struct FlatZincSearchParameters {
   SearchType search_type;
 };
 
+class FzParallelSupport {
+ public:
+  enum Type {
+    UNDEF,
+    SATISFY,
+    MINIMIZE,
+    MAXIMIZE,
+  };
+
+  virtual ~FzParallelSupport() {}
+  virtual void Init(int worker_id, const string& init_string) = 0;
+  virtual void StartSearch(int worker_id, Type type) = 0;
+  virtual void SatSolution(int worker_id, const string& solution_string) = 0;
+  virtual void OptimizeSolution(int worker_id,
+                                int64 value,
+                                const string& solution_string) = 0;
+  virtual void FinalOutput(int worker_id, const string& final_output) = 0;
+  virtual bool ShouldFinish() const = 0;
+  virtual void EndSearch(int worker_id) = 0;
+  virtual int64 BestSolution() const = 0;
+};
+
+FzParallelSupport* MakeSequentialParallelSupport(bool print_all);
+
 /**
  * \brief A space that can be initialized with a %FlatZinc model
  *
  */
 class FlatZincModel {
  public:
+  enum Meth {
+    SAT, //< Solve as satisfaction problem
+    MIN, //< Solve as minimization problem
+    MAX  //< Solve as maximization problem
+  };
+
+
   /// Construct empty space
   FlatZincModel(void);
 
@@ -162,7 +193,8 @@ class FlatZincModel {
   void Maximize(int var, AstArray* const annotation);
 
   /// Run the search
-  void Solve(FlatZincSearchParameters parameters);
+  void Solve(FlatZincSearchParameters parameters,
+             FzParallelSupport* const parallel_support);
 
   // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
   bool Parse(const std::string& fileName);
@@ -177,12 +209,6 @@ class FlatZincModel {
   bool HasSolveAnnotations() const;
 
  private:
-  enum Meth {
-    SAT, //< Solve as satisfaction problem
-    MIN, //< Solve as minimization problem
-    MAX  //< Solve as maximization problem
-  };
-
   void CreateDecisionBuilders(const FlatZincSearchParameters& parameters);
   string DebugString(AstNode* const ai) const;
 
