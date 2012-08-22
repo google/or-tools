@@ -585,7 +585,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p) {
   final_output.append(
       StringPrintf("%%%%  failures:             %" GG_LL_FORMAT "d\n",
                    solver_->failures()));
-  final_output.append(StringPrintf("%%  memory:               %s\n",
+  final_output.append(StringPrintf("%%%%  memory:               %s\n",
                                    FlatZincMemoryUsage().c_str()));
   const int64 best = objective_ != NULL ? objective_->best() : 0;
   if (objective_ != NULL) {
