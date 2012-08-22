@@ -47,7 +47,6 @@ typedef int16_t flex_int16_t;
 typedef uint16_t flex_uint16_t;
 typedef int32_t flex_int32_t;
 typedef uint32_t flex_uint32_t;
-typedef uint64_t flex_uint64_t;
 #else
 typedef signed char flex_int8_t;
 typedef short int flex_int16_t;
@@ -358,7 +357,7 @@ static void yy_fatal_error (yyconst char msg[] ,yyscan_t yyscanner );
  */
 #define YY_DO_BEFORE_ACTION \
 	yyg->yytext_ptr = yy_bp; \
-	yyleng = (yy_size_t) (yy_cp - yy_bp); \
+	yyleng = (size_t) (yy_cp - yy_bp); \
 	yyg->yy_hold_char = *yy_cp; \
 	*yy_cp = '\0'; \
 	yyg->yy_c_buf_p = yy_cp;
@@ -645,7 +644,7 @@ int stringbufpos;
 int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 #define YY_INPUT(buf, result, max_size) \
   result = yy_input_proc(buf, max_size, yyscanner);
-#line 649 "src/flatzinc/lexer.win.cc"
+#line 648 "src/flatzinc/lexer.win.cc"
 
 #define INITIAL 0
 
@@ -881,7 +880,7 @@ YY_DECL
 #line 63 "src/flatzinc/lexer.lxx"
 
 
-#line 885 "src/flatzinc/lexer.win.cc"
+#line 884 "src/flatzinc/lexer.win.cc"
 
     yylval = yylval_param;
 
@@ -1273,7 +1272,7 @@ YY_RULE_SETUP
 #line 135 "src/flatzinc/lexer.lxx"
 ECHO;
 	YY_BREAK
-#line 1277 "src/flatzinc/lexer.win.cc"
+#line 1276 "src/flatzinc/lexer.win.cc"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 

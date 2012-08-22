@@ -45,8 +45,8 @@
 #include "base/stringprintf.h"
 #include "flatzinc/flatzinc.h"
 
-DEFINE_int32(log_frequency, 10000000, "Search log frequency");
-DEFINE_bool(log, false, "Show search log");
+DEFINE_int32(log_period, 10000000, "Search log period");
+DEFINE_bool(use_log, false, "Show search log");
 DEFINE_bool(all, false, "Search for all solutions");
 DEFINE_bool(free, false, "Ignore search annotations");
 DEFINE_int32(num_solutions, 0, "Number of solution to search for");
@@ -61,7 +61,7 @@ DEFINE_bool(verbose_impact, false, "Verbose impact");
 DECLARE_bool(log_prefix);
 
 namespace operations_research {
-int Run(const std::string& file) {
+int Run(const std::string& file, int worker_id) {
   FlatZincModel fz_model;
   if (file == "-") {
     if (!fz_model.Parse(std::cin)) {
@@ -74,18 +74,24 @@ int Run(const std::string& file) {
     }
   }
 
-  fz_model.Solve(FLAGS_log_frequency,
-                 FLAGS_log,
-                 FLAGS_all,
-                 FLAGS_free,
-                 FLAGS_num_solutions,
-                 FLAGS_time_limit,
-                 FLAGS_simplex_frequency,
-                 FLAGS_use_impact,
-                 FLAGS_restart_log_size,
-                 FLAGS_luby_restart,
-                 FLAGS_heuristic_period,
-                 FLAGS_verbose_impact);
+  FlatZincSearchParameters parameters;
+  parameters.all_solutions = FLAGS_all;
+  parameters.heuristic_period = FLAGS_heuristic_period;
+  parameters.ignore_annotations = FLAGS_free;
+  parameters.ignore_unknown = false;
+  parameters.log_period = FLAGS_log_period;
+  parameters.luby_restart = FLAGS_luby_restart;
+  parameters.num_solutions = FLAGS_num_solutions;
+  parameters.restart_log_size = FLAGS_restart_log_size;
+  parameters.simplex_frequency = FLAGS_simplex_frequency;
+  parameters.threads = FLAGS_threads;
+  parameters.time_limit_in_ms = FLAGS_time_limit;
+  parameters.use_impact = FLAGS_use_impact;
+  parameters.use_log = FLAGS_use_log;
+  parameters.verbose_impact = FLAGS_verbose_impact;
+  parameters.worker_id = worker_id;
+
+  fz_model.Solve(parameters);
   return 0;
 }
 }  // namespace operations_research
@@ -111,5 +117,5 @@ int main(int argc, char** argv) {
     LOG(ERROR) << "Usage: " << argv[0] << " <file>";
     exit(EXIT_FAILURE);
   }
-  return operations_research::Run(argv[1]);
+  return operations_research::Run(argv[1], -1);
 }

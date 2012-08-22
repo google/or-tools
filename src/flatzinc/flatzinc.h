@@ -56,6 +56,25 @@
 
 namespace operations_research {
 class SatPropagator;
+
+struct FlatZincSearchParameters {
+  bool all_solutions;
+  bool ignore_annotations;
+  bool ignore_unknown;
+  bool use_log;
+  bool use_impact;
+  bool verbose_impact;
+  double restart_log_size;
+  int heuristic_period;
+  int log_period;
+  int luby_restart;
+  int num_solutions;
+  int simplex_frequency;
+  int threads;
+  int worker_id;
+  int64 time_limit_in_ms;
+};
+
 /**
  * \brief A space that can be initialized with a %FlatZinc model
  *
@@ -136,18 +155,7 @@ class FlatZincModel {
   void Maximize(int var, AstArray* const annotation);
 
   /// Run the search
-  void Solve(int log_frequency,
-             bool log,
-             bool all_solutions,
-             bool ignore_annotations,
-             int num_solutions,
-             int time_limit_in_ms,
-             int simplex_frequency,
-             bool use_impact,
-             double restart_log_size,
-             int luby_restart,
-             int heuristic_period,
-             bool verbose_impact);
+  void Solve(FlatZincSearchParameters parameters);
 
   // \brief Parse FlatZinc file \a fileName into \a fzs and return it.
   bool Parse(const std::string& fileName);
@@ -166,15 +174,7 @@ class FlatZincModel {
     MAX  //< Solve as maximization problem
   };
 
-  void CreateDecisionBuilders(bool ignore_unknown,
-                              bool ignore_annotations,
-                              bool use_impact,
-                              double restart_log_size,
-                              int luby_restart,
-                              int heuristic_period,
-                              bool log,
-                              bool verbose_impact,
-                              bool all_solutions);
+  void CreateDecisionBuilders(const FlatZincSearchParameters& parameters);
   string DebugString(AstNode* const ai) const;
 
   /// Number of integer variables

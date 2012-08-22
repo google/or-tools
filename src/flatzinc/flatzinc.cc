@@ -211,17 +211,9 @@ void SortVariableByDegree(Solver* const solver,
   }
 }
 
-void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
-                                           bool ignore_annotations,
-                                           bool use_impact,
-                                           double restart_log_size,
-                                           int luby_restart,
-                                           int heuristic_period,
-                                           bool log,
-                                           bool verbose_impact,
-                                           bool all_solutions) {
+void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
   AstNode* annotations = solve_annotations_;
-  if (annotations && !ignore_annotations) {
+  if (annotations && !p.ignore_annotations) {
     std::vector<AstNode*> flat_annotations;
     if (annotations->isArray()) {
       FlattenAnnotations(annotations->getArray(), flat_annotations);
@@ -230,9 +222,10 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
     }
 
     if (method_ != SAT && flat_annotations.size() == 1) {
-      builders_.push_back(solver_->MakePhase(active_variables_,
-                                            Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
-                                            Solver::ASSIGN_MIN_VALUE));
+      builders_.push_back(
+          solver_->MakePhase(active_variables_,
+                             Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
+                             Solver::ASSIGN_MIN_VALUE));
       VLOG(1) << "Decision builder = " << builders_.back()->DebugString();
     }
 
@@ -327,7 +320,7 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
             LOG(FATAL) << "Search on set variables not supported";
           } catch (AstTypeError& e) {
             (void) e;
-            if (!ignore_unknown) {
+            if (!p.ignore_unknown) {
               LOG(WARNING) << "Warning, ignored search annotation: "
                            << flat_annotations[i]->DebugString();
             }
@@ -342,15 +335,15 @@ void FlatZincModel::CreateDecisionBuilders(bool ignore_unknown,
   }
   if (free_search_) {
     DefaultPhaseParameters parameters;
-    parameters.search_strategy = use_impact ?
+    parameters.search_strategy = p.use_impact ?
         DefaultPhaseParameters::IMPACT_BASE_SEARCH :
         DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN;
     parameters.run_all_heuristics = true;
     parameters.heuristic_period =
-        method_ != SAT || !all_solutions ? heuristic_period : -1;
-    parameters.restart_log_size = restart_log_size;
-    parameters.display_level = log ?
-        (verbose_impact ?
+        method_ != SAT || !p.all_solutions ? p.heuristic_period : -1;
+    parameters.restart_log_size = p.restart_log_size;
+    parameters.display_level = p.use_log ?
+        (p.verbose_impact ?
          DefaultPhaseParameters::VERBOSE :
          DefaultPhaseParameters::NORMAL) :
         DefaultPhaseParameters::NONE;
@@ -445,38 +438,19 @@ string FlatZincMemoryUsage() {
   }
 }
 
-void FlatZincModel::Solve(int solve_frequency,
-                          bool use_log,
-                          bool all_solutions,
-                          bool ignore_annotations,
-                          int num_solutions,
-                          int time_limit_in_ms,
-                          int simplex_frequency,
-                          bool use_impact,
-                          double restart_log_size,
-                          int luby_restart,
-                          int heuristic_period,
-                          bool verbose_impact) {
+void FlatZincModel::Solve(FlatZincSearchParameters p) {
   if (!parsed_ok_) {
     return;
   }
 
-  CreateDecisionBuilders(false,
-                         ignore_annotations,
-                         use_impact,
-                         restart_log_size,
-                         luby_restart,
-                         heuristic_period,
-                         use_log,
-                         verbose_impact,
-                         all_solutions);
+  CreateDecisionBuilders(p);
   bool print_last = false;
-  if (all_solutions && num_solutions == 0) {
-    num_solutions = kint32max;
-  } else if (objective_ == NULL && num_solutions == 0) {
-    num_solutions = 1;
-  } else if (objective_ != NULL && !all_solutions && num_solutions > 0) {
-    num_solutions = kint32max;
+  if (p.all_solutions && p.num_solutions == 0) {
+    p.num_solutions = kint32max;
+  } else if (objective_ == NULL && p.num_solutions == 0) {
+    p.num_solutions = 1;
+  } else if (objective_ != NULL && !p.all_solutions && p.num_solutions > 0) {
+    p.num_solutions = kint32max;
     print_last = true;
   }
 
@@ -484,36 +458,36 @@ void FlatZincModel::Solve(int solve_frequency,
   switch (method_) {
     case MIN:
     case MAX: {
-      SearchMonitor* const log = use_log ?
-          solver_->MakeSearchLog(solve_frequency, objective_) :
+      SearchMonitor* const log = p.use_log ?
+          solver_->MakeSearchLog(p.log_period, objective_) :
           NULL;
       monitors.push_back(log);
       monitors.push_back(objective_);
       break;
     }
     case SAT: {
-      SearchMonitor* const log = use_log ?
-          solver_->MakeSearchLog(solve_frequency) :
+      SearchMonitor* const log = p.use_log ?
+          solver_->MakeSearchLog(p.log_period) :
           NULL;
       monitors.push_back(log);
       break;
     }
   }
 
-  SearchLimit* const limit = (time_limit_in_ms > 0 ?
-                              solver_->MakeLimit(time_limit_in_ms,
-                                                kint64max,
-                                                kint64max,
-                                                kint64max) :
+  SearchLimit* const limit = (p.time_limit_in_ms > 0 ?
+                              solver_->MakeLimit(p.time_limit_in_ms,
+                                                 kint64max,
+                                                 kint64max,
+                                                 kint64max) :
                               NULL);
   monitors.push_back(limit);
 
-  if (simplex_frequency > 0) {
-    monitors.push_back(solver_->MakeSimplexConstraint(simplex_frequency));
+  if (p.simplex_frequency > 0) {
+    monitors.push_back(solver_->MakeSimplexConstraint(p.simplex_frequency));
   }
 
-  if (luby_restart > 0) {
-    monitors.push_back(solver_->MakeLubyRestart(luby_restart));
+  if (p.luby_restart > 0) {
+    monitors.push_back(solver_->MakeLubyRestart(p.luby_restart));
   }
 
   int count = 0;
@@ -523,21 +497,17 @@ void FlatZincModel::Solve(int solve_frequency,
   solver_->NewSearch(solver_->Compose(builders_), monitors);
   while (solver_->NextSolution()) {
     if (output_ != NULL) {
-      if (print_last) {
-        last_solution.clear();
-        for (unsigned int i = 0; i < output_->a.size(); i++) {
-          last_solution.append(DebugString(output_->a[i]));
-        }
-        last_solution.append("----------\n");
-      } else {
-        for (unsigned int i = 0; i < output_->a.size(); i++) {
-          std::cout << DebugString(output_->a[i]);
-        }
-        std::cout << "----------" << std::endl;
+      last_solution.clear();
+      for (unsigned int i = 0; i < output_->a.size(); i++) {
+        last_solution.append(DebugString(output_->a[i]));
+      }
+      last_solution.append("----------\n");
+      if (!print_last) {
+        std::cout << last_solution;
       }
     }
     count++;
-    if (num_solutions > 0 && count >= num_solutions) {
+    if (p.num_solutions > 0 && count >= p.num_solutions) {
       breaked = true;
       break;
     }

@@ -3950,7 +3950,7 @@ class OptimizeVar : public SearchMonitor {
 
   void ApplyBound();
 
- private:
+ protected:
   IntVar* const var_;
   int64 step_;
   int64 best_;
