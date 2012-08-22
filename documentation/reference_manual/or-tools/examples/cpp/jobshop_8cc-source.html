@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #359621
+      background-color: #287003
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#359621 height=3></td>
+      <td colspan=3 bgcolor=#287003 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
-            for Revision:2055
+          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
+            for <b>custom file set</b>
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#359621>
+            <td bgcolor=#287003>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/examples/index.html">examples</a>/
             <a href="../../../or-tools/examples/cpp/index.html">cpp</a>/
@@ -126,162 +126,151 @@
 <a name="l00042"></a>00042 <span class="preprocessor">#include "base/stringprintf.h"</span>
 <a name="l00043"></a>00043 <span class="preprocessor">#include "constraint_solver/constraint_solver.h"</span>
 <a name="l00044"></a>00044 <span class="preprocessor">#include "<a class="code" href="jobshop_8h.html">cpp/jobshop.h</a>"</span>
-<a name="l00045"></a>00045 <span class="preprocessor">#include "util/string_array.h"</span>
-<a name="l00046"></a>00046 
-<a name="l00047"></a>00047 <a class="code" href="costas__array_8cc.html#5236ef9cc4490cd59f344852dc768c45">DEFINE_string</a>(
-<a name="l00048"></a>00048     data_file,
-<a name="l00049"></a>00049     <span class="stringliteral">""</span>,
-<a name="l00050"></a>00050     <span class="stringliteral">"Required: input file description the scheduling problem to solve, "</span>
-<a name="l00051"></a>00051     <span class="stringliteral">"in our jssp format:\n"</span>
-<a name="l00052"></a>00052     <span class="stringliteral">"  - the first line is \"instance &lt;instance name&gt;\"\n"</span>
-<a name="l00053"></a>00053     <span class="stringliteral">"  - the second line is \"&lt;number of jobs&gt; &lt;number of machines&gt;\"\n"</span>
-<a name="l00054"></a>00054     <span class="stringliteral">"  - then one line per job, with a single space-separated "</span>
-<a name="l00055"></a>00055     <span class="stringliteral">"list of \"&lt;machine index&gt; &lt;duration&gt;\"\n"</span>
-<a name="l00056"></a>00056     <span class="stringliteral">"note: jobs with one task are not supported"</span>);
-<a name="l00057"></a>00057 <a class="code" href="costas__array_8cc.html#af677423bc95ff6ddd8928486064c9c1" title="Licensed under the Apache License, Version 2.0 (the &amp;quot;License&amp;quot;); you may...">DEFINE_int32</a>(time_limit_in_ms, 0, <span class="stringliteral">"Time limit in ms, 0 means no limit."</span>);
-<a name="l00058"></a>00058 
-<a name="l00059"></a>00059 <span class="keyword">namespace </span>operations_research {
-<a name="l00060"></a><a class="code" href="namespaceoperations__research.html#bf5bd337f5a8be6a3ad002a413e38dcb">00060</a> <span class="keywordtype">void</span> <a class="code" href="namespaceoperations__research.html#bf5bd337f5a8be6a3ad002a413e38dcb">Jobshop</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1JobShopData.html" title="JobShopData.">JobShopData</a>&amp; data) {
-<a name="l00061"></a>00061   Solver solver(<span class="stringliteral">"jobshop"</span>);
-<a name="l00062"></a>00062   <span class="keyword">const</span> <span class="keywordtype">int</span> machine_count = data.<a class="code" href="classoperations__research_1_1JobShopData.html#40961d2695ccbe48690bb5f2d000b309" title="The number of machines in the jobshop.">machine_count</a>();
-<a name="l00063"></a>00063   <span class="keyword">const</span> <span class="keywordtype">int</span> job_count = data.<a class="code" href="classoperations__research_1_1JobShopData.html#a2dff3c771f1672cbd4038e5846d512b" title="The number of jobs in the jobshop.">job_count</a>();
-<a name="l00064"></a>00064   <span class="keyword">const</span> <span class="keywordtype">int</span> horizon = data.<a class="code" href="classoperations__research_1_1JobShopData.html#0bc23fdf3ba52c8cc8b0c4988b9d8966" title="The horizon of the workshop (the sum of all durations), which is a trivial upper...">horizon</a>();
-<a name="l00065"></a>00065 
-<a name="l00066"></a>00066   <span class="comment">// ----- Creates all Intervals and vars -----</span>
-<a name="l00067"></a>00067 
-<a name="l00068"></a>00068   <span class="comment">// Stores all tasks attached interval variables per job.</span>
-<a name="l00069"></a>00069   std::vector&lt;std::vector&lt;IntervalVar*&gt; &gt; jobs_to_tasks(job_count);
-<a name="l00070"></a>00070   <span class="comment">// machines_to_tasks stores the same interval variables as above, but</span>
-<a name="l00071"></a>00071   <span class="comment">// grouped my machines instead of grouped by jobs.</span>
-<a name="l00072"></a>00072   std::vector&lt;std::vector&lt;IntervalVar*&gt; &gt; machines_to_tasks(machine_count);
-<a name="l00073"></a>00073 
-<a name="l00074"></a>00074   <span class="comment">// Creates all individual interval variables.</span>
-<a name="l00075"></a>00075   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> job_id = 0; job_id &lt; job_count; ++job_id) {
-<a name="l00076"></a>00076     <span class="keyword">const</span> std::vector&lt;JobShopData::Task&gt;&amp; tasks = data.<a class="code" href="classoperations__research_1_1JobShopData.html#2bd7f05413662b91fc682121ff7efd6a" title="Returns the tasks of a job, ordered by precedence.">TasksOfJob</a>(job_id);
-<a name="l00077"></a>00077     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> task_index = 0; task_index &lt; tasks.size(); ++task_index) {
-<a name="l00078"></a>00078       <span class="keyword">const</span> <a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html" title="A task is the basic block of a jobshop.">JobShopData::Task</a>&amp; task = tasks[task_index];
-<a name="l00079"></a>00079       CHECK_EQ(job_id, task.<a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html#8c46b14d951718489021a78a9fc6b202">job_id</a>);
-<a name="l00080"></a>00080       <span class="keyword">const</span> <span class="keywordtype">string</span> name = StringPrintf(<span class="stringliteral">"J%dM%dI%dD%d"</span>,
-<a name="l00081"></a>00081                                        task.<a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html#8c46b14d951718489021a78a9fc6b202">job_id</a>,
-<a name="l00082"></a>00082                                        task.<a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html#8edc00607fc399b136f3829e7904b08f">machine_id</a>,
-<a name="l00083"></a>00083                                        task_index,
-<a name="l00084"></a>00084                                        task.<a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html#da32c67b10176582d8925c33ddde5a21">duration</a>);
-<a name="l00085"></a>00085       IntervalVar* <span class="keyword">const</span> one_task =
-<a name="l00086"></a>00086           solver.MakeFixedDurationIntervalVar(0,
-<a name="l00087"></a>00087                                               horizon,
-<a name="l00088"></a>00088                                               task.<a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html#da32c67b10176582d8925c33ddde5a21">duration</a>,
-<a name="l00089"></a>00089                                               <span class="keyword">false</span>,
-<a name="l00090"></a>00090                                               name);
-<a name="l00091"></a>00091       jobs_to_tasks[task.<a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html#8c46b14d951718489021a78a9fc6b202">job_id</a>].push_back(one_task);
-<a name="l00092"></a>00092       machines_to_tasks[task.<a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html#8edc00607fc399b136f3829e7904b08f">machine_id</a>].push_back(one_task);
-<a name="l00093"></a>00093     }
-<a name="l00094"></a>00094   }
-<a name="l00095"></a>00095 
-<a name="l00096"></a>00096   <span class="comment">// ----- Creates model -----</span>
-<a name="l00097"></a>00097 
-<a name="l00098"></a>00098   <span class="comment">// Creates precedences inside jobs.</span>
-<a name="l00099"></a>00099   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> job_id = 0; job_id &lt; job_count; ++job_id) {
-<a name="l00100"></a>00100     <span class="keyword">const</span> <span class="keywordtype">int</span> task_count = jobs_to_tasks[job_id].size();
-<a name="l00101"></a>00101     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> task_index = 0; task_index &lt; task_count - 1; ++task_index) {
-<a name="l00102"></a>00102       IntervalVar* <span class="keyword">const</span> t1 = jobs_to_tasks[job_id][task_index];
-<a name="l00103"></a>00103       IntervalVar* <span class="keyword">const</span> t2 = jobs_to_tasks[job_id][task_index + 1];
-<a name="l00104"></a>00104       <a class="code" href="classConstraint.html">Constraint</a>* <span class="keyword">const</span> prec =
-<a name="l00105"></a>00105           solver.MakeIntervalVarRelation(t2, Solver::STARTS_AFTER_END, t1);
-<a name="l00106"></a>00106       solver.AddConstraint(prec);
-<a name="l00107"></a>00107     }
-<a name="l00108"></a>00108   }
-<a name="l00109"></a>00109 
-<a name="l00110"></a>00110   <span class="comment">// Adds disjunctive constraints on unary resources, and creates</span>
-<a name="l00111"></a>00111   <span class="comment">// sequence variables. A sequence variable is a dedicated variable</span>
-<a name="l00112"></a>00112   <span class="comment">// whose job is to sequence interval variables.</span>
-<a name="l00113"></a>00113   std::vector&lt;SequenceVar*&gt; all_sequences;
-<a name="l00114"></a>00114   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> machine_id = 0; machine_id &lt; machine_count; ++machine_id) {
-<a name="l00115"></a>00115     <span class="keyword">const</span> <span class="keywordtype">string</span> name = StringPrintf(<span class="stringliteral">"Machine_%d"</span>, machine_id);
-<a name="l00116"></a>00116     DisjunctiveConstraint* <span class="keyword">const</span> ct =
-<a name="l00117"></a>00117         solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id], name);
-<a name="l00118"></a>00118     solver.AddConstraint(ct);
-<a name="l00119"></a>00119     all_sequences.push_back(ct-&gt;MakeSequenceVar());
-<a name="l00120"></a>00120   }
-<a name="l00121"></a>00121 
-<a name="l00122"></a>00122   <span class="comment">// Creates array of end_times of jobs.</span>
-<a name="l00123"></a>00123   std::vector&lt;IntVar*&gt; all_ends;
-<a name="l00124"></a>00124   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> job_id = 0; job_id &lt; job_count; ++job_id) {
-<a name="l00125"></a>00125     <span class="keyword">const</span> <span class="keywordtype">int</span> task_count = jobs_to_tasks[job_id].size();
-<a name="l00126"></a>00126     IntervalVar* <span class="keyword">const</span> task = jobs_to_tasks[job_id][task_count - 1];
-<a name="l00127"></a>00127     all_ends.push_back(task-&gt;EndExpr()-&gt;Var());
-<a name="l00128"></a>00128   }
-<a name="l00129"></a>00129 
-<a name="l00130"></a>00130   <span class="comment">// Objective: minimize the makespan (maximum end times of all tasks)</span>
-<a name="l00131"></a>00131   <span class="comment">// of the problem.</span>
-<a name="l00132"></a>00132   IntVar* <span class="keyword">const</span> objective_var = solver.MakeMax(all_ends)-&gt;Var();
-<a name="l00133"></a>00133   OptimizeVar* <span class="keyword">const</span> objective_monitor = solver.MakeMinimize(objective_var, 1);
-<a name="l00134"></a>00134 
-<a name="l00135"></a>00135   <span class="comment">// ----- Search monitors and decision builder -----</span>
-<a name="l00136"></a>00136 
-<a name="l00137"></a>00137   <span class="comment">// This decision builder will rank all tasks on all machines.</span>
-<a name="l00138"></a>00138   <a class="code" href="classDecisionBuilder.html">DecisionBuilder</a>* <span class="keyword">const</span> sequence_phase =
-<a name="l00139"></a>00139       solver.MakePhase(all_sequences, Solver::SEQUENCE_DEFAULT);
-<a name="l00140"></a>00140 
-<a name="l00141"></a>00141   <span class="comment">// After the ranking of tasks, the schedule is still loose and any</span>
-<a name="l00142"></a>00142   <span class="comment">// task can be postponed at will. But, because the problem is now a PERT</span>
-<a name="l00143"></a>00143   <span class="comment">// (http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique),</span>
-<a name="l00144"></a>00144   <span class="comment">// we can schedule each task at its earliest start time. This is</span>
-<a name="l00145"></a>00145   <span class="comment">// conveniently done by fixing the objective variable to its</span>
-<a name="l00146"></a>00146   <span class="comment">// minimum value.</span>
-<a name="l00147"></a>00147   <a class="code" href="classDecisionBuilder.html">DecisionBuilder</a>* <span class="keyword">const</span> obj_phase =
-<a name="l00148"></a>00148       solver.MakePhase(objective_var,
-<a name="l00149"></a>00149                        Solver::CHOOSE_FIRST_UNBOUND,
-<a name="l00150"></a>00150                        Solver::ASSIGN_MIN_VALUE);
-<a name="l00151"></a>00151 
-<a name="l00152"></a>00152   <span class="comment">// The main decision builder (ranks all tasks, then fixes the</span>
-<a name="l00153"></a>00153   <span class="comment">// objective_variable).</span>
-<a name="l00154"></a>00154   <a class="code" href="classDecisionBuilder.html">DecisionBuilder</a>* <span class="keyword">const</span> main_phase =
-<a name="l00155"></a>00155       solver.Compose(sequence_phase, obj_phase);
-<a name="l00156"></a>00156 
-<a name="l00157"></a>00157   <span class="comment">// Search log.</span>
-<a name="l00158"></a>00158   <span class="keyword">const</span> <span class="keywordtype">int</span> kLogFrequency = 1000000;
-<a name="l00159"></a>00159   SearchMonitor* <span class="keyword">const</span> search_log =
-<a name="l00160"></a>00160       solver.MakeSearchLog(kLogFrequency, objective_monitor);
-<a name="l00161"></a>00161 
-<a name="l00162"></a>00162   SearchLimit* limit = NULL;
-<a name="l00163"></a>00163   <span class="keywordflow">if</span> (FLAGS_time_limit_in_ms &gt; 0) {
-<a name="l00164"></a>00164     limit = solver.MakeTimeLimit(FLAGS_time_limit_in_ms);
-<a name="l00165"></a>00165   }
-<a name="l00166"></a>00166 
-<a name="l00167"></a>00167   SolutionCollector* <span class="keyword">const</span> collector =
-<a name="l00168"></a>00168       solver.MakeLastSolutionCollector();
-<a name="l00169"></a>00169   collector-&gt;Add(all_sequences);
-<a name="l00170"></a>00170 
-<a name="l00171"></a>00171   <span class="comment">// Search.</span>
-<a name="l00172"></a>00172   <span class="keywordflow">if</span> (solver.Solve(main_phase,
-<a name="l00173"></a>00173                    search_log,
-<a name="l00174"></a>00174                    objective_monitor,
-<a name="l00175"></a>00175                    limit,
-<a name="l00176"></a>00176                    collector)) {
-<a name="l00177"></a>00177     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> m = 0; m &lt; machine_count; ++m) {
-<a name="l00178"></a>00178       SequenceVar* <span class="keyword">const</span> seq = all_sequences[m];
-<a name="l00179"></a>00179       LOG(INFO) &lt;&lt; seq-&gt;name() &lt;&lt; <span class="stringliteral">": "</span>
-<a name="l00180"></a>00180                 &lt;&lt; IntVectorToString(collector-&gt;ForwardSequence(0, seq), <span class="stringliteral">", "</span>);
-<a name="l00181"></a>00181     }
-<a name="l00182"></a>00182   }
-<a name="l00183"></a>00183 }
-<a name="l00184"></a>00184 }  <span class="comment">// namespace operations_research</span>
-<a name="l00185"></a>00185 
-<a name="l00186"></a><a class="code" href="jobshop_8cc.html#a3c805fa8891e8c9c9566151a3465cc8">00186</a> <span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">char</span> <a class="code" href="jobshop_8cc.html#a3c805fa8891e8c9c9566151a3465cc8" title="namespace operations_research">kUsage</a>[] =
-<a name="l00187"></a>00187     <span class="stringliteral">"Usage: see flags.\nThis program runs a simple job shop optimization "</span>
-<a name="l00188"></a>00188     <span class="stringliteral">"output besides the debug LOGs of the solver."</span>;
-<a name="l00189"></a>00189 
-<a name="l00190"></a><a class="code" href="jobshop_8cc.html#3c04138a5bfe5d72780bb7e82a18e627">00190</a> <span class="keywordtype">int</span> <a class="code" href="costas__array_8cc.html#3c04138a5bfe5d72780bb7e82a18e627" title="namespace operations_research">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span> **argv) {
-<a name="l00191"></a>00191   google::SetUsageMessage(<a class="code" href="jobshop_8cc.html#a3c805fa8891e8c9c9566151a3465cc8" title="namespace operations_research">kUsage</a>);
-<a name="l00192"></a>00192   google::ParseCommandLineFlags(&amp;argc, &amp;argv, <span class="keyword">true</span>);
-<a name="l00193"></a>00193   <span class="keywordflow">if</span> (FLAGS_data_file.empty()) {
-<a name="l00194"></a>00194     LOG(FATAL) &lt;&lt; <span class="stringliteral">"Please supply a data file with --data_file="</span>;
-<a name="l00195"></a>00195   }
-<a name="l00196"></a>00196   <a class="code" href="classoperations__research_1_1JobShopData.html" title="JobShopData.">operations_research::JobShopData</a> data;
-<a name="l00197"></a>00197   data.<a class="code" href="classoperations__research_1_1JobShopData.html#80ae566dc94869d63550843943c1a09e" title="Parses a file in jssp or taillard format and loads the model.">Load</a>(FLAGS_data_file);
-<a name="l00198"></a>00198   <a class="code" href="namespaceoperations__research.html#bf5bd337f5a8be6a3ad002a413e38dcb">operations_research::Jobshop</a>(data);
-<a name="l00199"></a>00199   <span class="keywordflow">return</span> 0;
-<a name="l00200"></a>00200 }
+<a name="l00045"></a>00045 
+<a name="l00046"></a>00046 <a class="code" href="costas__array_8cc.html#5236ef9cc4490cd59f344852dc768c45">DEFINE_string</a>(
+<a name="l00047"></a>00047     data_file,
+<a name="l00048"></a>00048     <span class="stringliteral">""</span>,
+<a name="l00049"></a>00049     <span class="stringliteral">"Required: input file description the scheduling problem to solve, "</span>
+<a name="l00050"></a>00050     <span class="stringliteral">"in our jssp format:\n"</span>
+<a name="l00051"></a>00051     <span class="stringliteral">"  - the first line is \"instance &lt;instance name&gt;\"\n"</span>
+<a name="l00052"></a>00052     <span class="stringliteral">"  - the second line is \"&lt;number of jobs&gt; &lt;number of machines&gt;\"\n"</span>
+<a name="l00053"></a>00053     <span class="stringliteral">"  - then one line per job, with a single space-separated "</span>
+<a name="l00054"></a>00054     <span class="stringliteral">"list of \"&lt;machine index&gt; &lt;duration&gt;\"\n"</span>
+<a name="l00055"></a>00055     <span class="stringliteral">"note: jobs with one task are not supported"</span>);
+<a name="l00056"></a>00056 <a class="code" href="costas__array_8cc.html#af677423bc95ff6ddd8928486064c9c1" title="Licensed under the Apache License, Version 2.0 (the &amp;quot;License&amp;quot;); you may...">DEFINE_int32</a>(time_limit_in_ms, 0, <span class="stringliteral">"Time limit in ms, 0 means no limit."</span>);
+<a name="l00057"></a>00057 
+<a name="l00058"></a>00058 <span class="keyword">namespace </span>operations_research {
+<a name="l00059"></a><a class="code" href="namespaceoperations__research.html#bf5bd337f5a8be6a3ad002a413e38dcb">00059</a> <span class="keywordtype">void</span> <a class="code" href="namespaceoperations__research.html#bf5bd337f5a8be6a3ad002a413e38dcb">Jobshop</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1JobShopData.html" title="JobShopData.">JobShopData</a>&amp; data) {
+<a name="l00060"></a>00060   Solver solver(<span class="stringliteral">"jobshop"</span>);
+<a name="l00061"></a>00061   <span class="keyword">const</span> <span class="keywordtype">int</span> machine_count = data.<a class="code" href="classoperations__research_1_1JobShopData.html#40961d2695ccbe48690bb5f2d000b309" title="The number of machines in the jobshop.">machine_count</a>();
+<a name="l00062"></a>00062   <span class="keyword">const</span> <span class="keywordtype">int</span> job_count = data.<a class="code" href="classoperations__research_1_1JobShopData.html#a2dff3c771f1672cbd4038e5846d512b" title="The number of jobs in the jobshop.">job_count</a>();
+<a name="l00063"></a>00063   <span class="keyword">const</span> <span class="keywordtype">int</span> horizon = data.<a class="code" href="classoperations__research_1_1JobShopData.html#0bc23fdf3ba52c8cc8b0c4988b9d8966" title="The horizon of the workshop (the sum of all durations), which is a trivial upper...">horizon</a>();
+<a name="l00064"></a>00064 
+<a name="l00065"></a>00065   <span class="comment">// ----- Creates all Intervals and vars -----</span>
+<a name="l00066"></a>00066 
+<a name="l00067"></a>00067   <span class="comment">// Stores all tasks attached interval variables per job.</span>
+<a name="l00068"></a>00068   std::vector&lt;std::vector&lt;IntervalVar*&gt; &gt; jobs_to_tasks(job_count);
+<a name="l00069"></a>00069   <span class="comment">// machines_to_tasks stores the same interval variables as above, but</span>
+<a name="l00070"></a>00070   <span class="comment">// grouped my machines instead of grouped by jobs.</span>
+<a name="l00071"></a>00071   std::vector&lt;std::vector&lt;IntervalVar*&gt; &gt; machines_to_tasks(machine_count);
+<a name="l00072"></a>00072 
+<a name="l00073"></a>00073   <span class="comment">// Creates all individual interval variables.</span>
+<a name="l00074"></a>00074   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> job_id = 0; job_id &lt; job_count; ++job_id) {
+<a name="l00075"></a>00075     <span class="keyword">const</span> std::vector&lt;JobShopData::Task&gt;&amp; tasks = data.<a class="code" href="classoperations__research_1_1JobShopData.html#2bd7f05413662b91fc682121ff7efd6a" title="Returns the tasks of a job, ordered by precedence.">TasksOfJob</a>(job_id);
+<a name="l00076"></a>00076     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> task_index = 0; task_index &lt; tasks.size(); ++task_index) {
+<a name="l00077"></a>00077       <span class="keyword">const</span> <a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html" title="A task is the basic block of a jobshop.">JobShopData::Task</a>&amp; task = tasks[task_index];
+<a name="l00078"></a>00078       CHECK_EQ(job_id, task.<a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html#8c46b14d951718489021a78a9fc6b202">job_id</a>);
+<a name="l00079"></a>00079       <span class="keyword">const</span> <span class="keywordtype">string</span> name = StringPrintf(<span class="stringliteral">"J%dM%dI%dD%d"</span>,
+<a name="l00080"></a>00080                                        task.<a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html#8c46b14d951718489021a78a9fc6b202">job_id</a>,
+<a name="l00081"></a>00081                                        task.<a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html#8edc00607fc399b136f3829e7904b08f">machine_id</a>,
+<a name="l00082"></a>00082                                        task_index,
+<a name="l00083"></a>00083                                        task.<a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html#da32c67b10176582d8925c33ddde5a21">duration</a>);
+<a name="l00084"></a>00084       IntervalVar* <span class="keyword">const</span> one_task =
+<a name="l00085"></a>00085           solver.MakeFixedDurationIntervalVar(0,
+<a name="l00086"></a>00086                                               horizon,
+<a name="l00087"></a>00087                                               task.<a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html#da32c67b10176582d8925c33ddde5a21">duration</a>,
+<a name="l00088"></a>00088                                               <span class="keyword">false</span>,
+<a name="l00089"></a>00089                                               name);
+<a name="l00090"></a>00090       jobs_to_tasks[task.<a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html#8c46b14d951718489021a78a9fc6b202">job_id</a>].push_back(one_task);
+<a name="l00091"></a>00091       machines_to_tasks[task.<a class="code" href="structoperations__research_1_1JobShopData_1_1Task.html#8edc00607fc399b136f3829e7904b08f">machine_id</a>].push_back(one_task);
+<a name="l00092"></a>00092     }
+<a name="l00093"></a>00093   }
+<a name="l00094"></a>00094 
+<a name="l00095"></a>00095   <span class="comment">// ----- Creates model -----</span>
+<a name="l00096"></a>00096 
+<a name="l00097"></a>00097   <span class="comment">// Creates precedences inside jobs.</span>
+<a name="l00098"></a>00098   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> job_id = 0; job_id &lt; job_count; ++job_id) {
+<a name="l00099"></a>00099     <span class="keyword">const</span> <span class="keywordtype">int</span> task_count = jobs_to_tasks[job_id].size();
+<a name="l00100"></a>00100     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> task_index = 0; task_index &lt; task_count - 1; ++task_index) {
+<a name="l00101"></a>00101       IntervalVar* <span class="keyword">const</span> t1 = jobs_to_tasks[job_id][task_index];
+<a name="l00102"></a>00102       IntervalVar* <span class="keyword">const</span> t2 = jobs_to_tasks[job_id][task_index + 1];
+<a name="l00103"></a>00103       <a class="code" href="classConstraint.html">Constraint</a>* <span class="keyword">const</span> prec =
+<a name="l00104"></a>00104           solver.MakeIntervalVarRelation(t2, Solver::STARTS_AFTER_END, t1);
+<a name="l00105"></a>00105       solver.AddConstraint(prec);
+<a name="l00106"></a>00106     }
+<a name="l00107"></a>00107   }
+<a name="l00108"></a>00108 
+<a name="l00109"></a>00109   <span class="comment">// Adds disjunctive constraints on unary resources.</span>
+<a name="l00110"></a>00110   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> machine_id = 0; machine_id &lt; machine_count; ++machine_id) {
+<a name="l00111"></a>00111     solver.AddConstraint(
+<a name="l00112"></a>00112         solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id]));
+<a name="l00113"></a>00113   }
+<a name="l00114"></a>00114 
+<a name="l00115"></a>00115   <span class="comment">// Creates sequences variables on machines. A sequence variable is a</span>
+<a name="l00116"></a>00116   <span class="comment">// dedicated variable whose job is to sequence interval variables.</span>
+<a name="l00117"></a>00117   std::vector&lt;SequenceVar*&gt; all_sequences;
+<a name="l00118"></a>00118   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> machine_id = 0; machine_id &lt; machine_count; ++machine_id) {
+<a name="l00119"></a>00119     <span class="keyword">const</span> <span class="keywordtype">string</span> name = StringPrintf(<span class="stringliteral">"Machine_%d"</span>, machine_id);
+<a name="l00120"></a>00120     SequenceVar* <span class="keyword">const</span> sequence =
+<a name="l00121"></a>00121         solver.MakeSequenceVar(machines_to_tasks[machine_id], name);
+<a name="l00122"></a>00122     all_sequences.push_back(sequence);
+<a name="l00123"></a>00123   }
+<a name="l00124"></a>00124 
+<a name="l00125"></a>00125   <span class="comment">// Creates array of end_times of jobs.</span>
+<a name="l00126"></a>00126   std::vector&lt;IntVar*&gt; all_ends;
+<a name="l00127"></a>00127   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> job_id = 0; job_id &lt; job_count; ++job_id) {
+<a name="l00128"></a>00128     <span class="keyword">const</span> <span class="keywordtype">int</span> task_count = jobs_to_tasks[job_id].size();
+<a name="l00129"></a>00129     IntervalVar* <span class="keyword">const</span> task = jobs_to_tasks[job_id][task_count - 1];
+<a name="l00130"></a>00130     all_ends.push_back(task-&gt;EndExpr()-&gt;Var());
+<a name="l00131"></a>00131   }
+<a name="l00132"></a>00132 
+<a name="l00133"></a>00133   <span class="comment">// Objective: minimize the makespan (maximum end times of all tasks)</span>
+<a name="l00134"></a>00134   <span class="comment">// of the problem.</span>
+<a name="l00135"></a>00135   IntVar* <span class="keyword">const</span> objective_var = solver.MakeMax(all_ends)-&gt;Var();
+<a name="l00136"></a>00136   OptimizeVar* <span class="keyword">const</span> objective_monitor = solver.MakeMinimize(objective_var, 1);
+<a name="l00137"></a>00137 
+<a name="l00138"></a>00138   <span class="comment">// ----- Search monitors and decision builder -----</span>
+<a name="l00139"></a>00139 
+<a name="l00140"></a>00140   <span class="comment">// This decision builder will rank all tasks on all machines.</span>
+<a name="l00141"></a>00141   <a class="code" href="classDecisionBuilder.html">DecisionBuilder</a>* <span class="keyword">const</span> sequence_phase =
+<a name="l00142"></a>00142       solver.MakePhase(all_sequences, Solver::SEQUENCE_DEFAULT);
+<a name="l00143"></a>00143 
+<a name="l00144"></a>00144   <span class="comment">// After the ranking of tasks, the schedule is still loose and any</span>
+<a name="l00145"></a>00145   <span class="comment">// task can be postponed at will. But, because the problem is now a PERT</span>
+<a name="l00146"></a>00146   <span class="comment">// (http://en.wikipedia.org/wiki/Program_Evaluation_and_Review_Technique),</span>
+<a name="l00147"></a>00147   <span class="comment">// we can schedule each task at its earliest start time. This is</span>
+<a name="l00148"></a>00148   <span class="comment">// conveniently done by fixing the objective variable to its</span>
+<a name="l00149"></a>00149   <span class="comment">// minimum value.</span>
+<a name="l00150"></a>00150   <a class="code" href="classDecisionBuilder.html">DecisionBuilder</a>* <span class="keyword">const</span> obj_phase =
+<a name="l00151"></a>00151       solver.MakePhase(objective_var,
+<a name="l00152"></a>00152                        Solver::CHOOSE_FIRST_UNBOUND,
+<a name="l00153"></a>00153                        Solver::ASSIGN_MIN_VALUE);
+<a name="l00154"></a>00154 
+<a name="l00155"></a>00155   <span class="comment">// The main decision builder (ranks all tasks, then fixes the</span>
+<a name="l00156"></a>00156   <span class="comment">// objective_variable).</span>
+<a name="l00157"></a>00157   <a class="code" href="classDecisionBuilder.html">DecisionBuilder</a>* <span class="keyword">const</span> main_phase =
+<a name="l00158"></a>00158       solver.Compose(sequence_phase, obj_phase);
+<a name="l00159"></a>00159 
+<a name="l00160"></a>00160   <span class="comment">// Search log.</span>
+<a name="l00161"></a>00161   <span class="keyword">const</span> <span class="keywordtype">int</span> kLogFrequency = 1000000;
+<a name="l00162"></a>00162   SearchMonitor* <span class="keyword">const</span> search_log =
+<a name="l00163"></a>00163       solver.MakeSearchLog(kLogFrequency, objective_monitor);
+<a name="l00164"></a>00164 
+<a name="l00165"></a>00165   SearchLimit* limit = NULL;
+<a name="l00166"></a>00166   <span class="keywordflow">if</span> (FLAGS_time_limit_in_ms &gt; 0) {
+<a name="l00167"></a>00167     limit = solver.MakeTimeLimit(FLAGS_time_limit_in_ms);
+<a name="l00168"></a>00168   }
+<a name="l00169"></a>00169 
+<a name="l00170"></a>00170   <span class="comment">// Search.</span>
+<a name="l00171"></a>00171   solver.Solve(main_phase, search_log, objective_monitor, limit);
+<a name="l00172"></a>00172 }
+<a name="l00173"></a>00173 }  <span class="comment">// namespace operations_research</span>
+<a name="l00174"></a>00174 
+<a name="l00175"></a><a class="code" href="jobshop_8cc.html#a3c805fa8891e8c9c9566151a3465cc8">00175</a> <span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">char</span> <a class="code" href="jobshop_8cc.html#a3c805fa8891e8c9c9566151a3465cc8" title="namespace operations_research">kUsage</a>[] =
+<a name="l00176"></a>00176     <span class="stringliteral">"Usage: see flags.\nThis program runs a simple job shop optimization "</span>
+<a name="l00177"></a>00177     <span class="stringliteral">"output besides the debug LOGs of the solver."</span>;
+<a name="l00178"></a>00178 
+<a name="l00179"></a><a class="code" href="jobshop_8cc.html#3c04138a5bfe5d72780bb7e82a18e627">00179</a> <span class="keywordtype">int</span> <a class="code" href="costas__array_8cc.html#3c04138a5bfe5d72780bb7e82a18e627" title="namespace operations_research">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span> **argv) {
+<a name="l00180"></a>00180   google::SetUsageMessage(<a class="code" href="jobshop_8cc.html#a3c805fa8891e8c9c9566151a3465cc8" title="namespace operations_research">kUsage</a>);
+<a name="l00181"></a>00181   google::ParseCommandLineFlags(&amp;argc, &amp;argv, <span class="keyword">true</span>);
+<a name="l00182"></a>00182   <span class="keywordflow">if</span> (FLAGS_data_file.empty()) {
+<a name="l00183"></a>00183     LOG(FATAL) &lt;&lt; <span class="stringliteral">"Please supply a data file with --data_file="</span>;
+<a name="l00184"></a>00184   }
+<a name="l00185"></a>00185   <a class="code" href="classoperations__research_1_1JobShopData.html" title="JobShopData.">operations_research::JobShopData</a> data;
+<a name="l00186"></a>00186   data.<a class="code" href="classoperations__research_1_1JobShopData.html#80ae566dc94869d63550843943c1a09e" title="Parses a file in jssp or taillard format and loads the model.">Load</a>(FLAGS_data_file);
+<a name="l00187"></a>00187   <a class="code" href="namespaceoperations__research.html#bf5bd337f5a8be6a3ad002a413e38dcb">operations_research::Jobshop</a>(data);
+<a name="l00188"></a>00188   <span class="keywordflow">return</span> 0;
+<a name="l00189"></a>00189 }
 </pre></div></div>
 
   <!-- Start of footer. -->
@@ -290,7 +279,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#359621 height=3></td>
+      <td colspan=2 bgcolor=#287003 height=3></td>
     </tr>
   </table>
 

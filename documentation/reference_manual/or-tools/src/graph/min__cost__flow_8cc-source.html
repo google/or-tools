@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #359621
+      background-color: #287003
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#359621 height=3></td>
+      <td colspan=3 bgcolor=#287003 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
-            for Revision:2055
+          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
+            for <b>custom file set</b>
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#359621>
+            <td bgcolor=#287003>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/graph/index.html">graph</a>/
@@ -142,20 +142,20 @@
 <a name="l00058"></a>00058       initial_node_excess_(),
 <a name="l00059"></a>00059       feasible_node_excess_(),
 <a name="l00060"></a>00060       feasibility_checked_(false) {
-<a name="l00061"></a>00061   <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb" title="Standard instantiation of ForwardEbertGraph (named &amp;#39;ForwardStarGraph&amp;#39;) of...">NodeIndex</a> max_num_nodes = graph_-&gt;<a class="code" href="classoperations__research_1_1StarGraphBase.html#b0f331b619b24614ab860adb2de90bfa" title="Returns the maximum possible number of nodes in the graph.">max_num_nodes</a>();
+<a name="l00061"></a>00061   <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb" title="Standard instantiation of ForwardEbertGraph (named &amp;#39;ForwardStarGraph&amp;#39;) of...">NodeIndex</a> max_num_nodes = graph_-&gt;<a class="code" href="classoperations__research_1_1EbertGraphCore.html#43f8b8c050d259cfa6a6cfea52b2b3c6" title="Returns the maximum possible number of nodes in the graph.">max_num_nodes</a>();
 <a name="l00062"></a>00062   <span class="keywordflow">if</span> (max_num_nodes &gt; 0) {
-<a name="l00063"></a>00063     node_excess_.Reserve(<a class="code" href="classoperations__research_1_1StarGraphBase.html#2c2ac42ee1d86e253e0a85f3f1321824" title="The index of the first node in the graph.">StarGraph::kFirstNode</a>, max_num_nodes - 1);
+<a name="l00063"></a>00063     node_excess_.Reserve(<a class="code" href="classoperations__research_1_1EbertGraphCore.html#e569860e31e4403305359664f46eef6b" title="The index of the first node in the graph.">StarGraph::kFirstNode</a>, max_num_nodes - 1);
 <a name="l00064"></a>00064     node_excess_.SetAll(0);
-<a name="l00065"></a>00065     node_potential_.Reserve(<a class="code" href="classoperations__research_1_1StarGraphBase.html#2c2ac42ee1d86e253e0a85f3f1321824" title="The index of the first node in the graph.">StarGraph::kFirstNode</a>, max_num_nodes - 1);
+<a name="l00065"></a>00065     node_potential_.Reserve(<a class="code" href="classoperations__research_1_1EbertGraphCore.html#e569860e31e4403305359664f46eef6b" title="The index of the first node in the graph.">StarGraph::kFirstNode</a>, max_num_nodes - 1);
 <a name="l00066"></a>00066     node_potential_.SetAll(0);
-<a name="l00067"></a>00067     first_admissible_arc_.Reserve(<a class="code" href="classoperations__research_1_1StarGraphBase.html#2c2ac42ee1d86e253e0a85f3f1321824" title="The index of the first node in the graph.">StarGraph::kFirstNode</a>, max_num_nodes - 1);
-<a name="l00068"></a>00068     first_admissible_arc_.SetAll(<a class="code" href="classoperations__research_1_1StarGraphBase.html#7174acc6507b365096d7122ef430b1dc" title="The index of the &amp;#39;nil&amp;#39; arc in the graph.">StarGraph::kNilArc</a>);
-<a name="l00069"></a>00069     initial_node_excess_.Reserve(<a class="code" href="classoperations__research_1_1StarGraphBase.html#2c2ac42ee1d86e253e0a85f3f1321824" title="The index of the first node in the graph.">StarGraph::kFirstNode</a>, max_num_nodes - 1);
+<a name="l00067"></a>00067     first_admissible_arc_.Reserve(<a class="code" href="classoperations__research_1_1EbertGraphCore.html#e569860e31e4403305359664f46eef6b" title="The index of the first node in the graph.">StarGraph::kFirstNode</a>, max_num_nodes - 1);
+<a name="l00068"></a>00068     first_admissible_arc_.SetAll(<a class="code" href="classoperations__research_1_1EbertGraphCore.html#d7e5fd42ee34e1a3fb14923bbb284159" title="The index of the &amp;#39;nil&amp;#39; arc in the graph.">StarGraph::kNilArc</a>);
+<a name="l00069"></a>00069     initial_node_excess_.Reserve(<a class="code" href="classoperations__research_1_1EbertGraphCore.html#e569860e31e4403305359664f46eef6b" title="The index of the first node in the graph.">StarGraph::kFirstNode</a>, max_num_nodes - 1);
 <a name="l00070"></a>00070     initial_node_excess_.SetAll(0);
-<a name="l00071"></a>00071     feasible_node_excess_.Reserve(<a class="code" href="classoperations__research_1_1StarGraphBase.html#2c2ac42ee1d86e253e0a85f3f1321824" title="The index of the first node in the graph.">StarGraph::kFirstNode</a>, max_num_nodes - 1);
+<a name="l00071"></a>00071     feasible_node_excess_.Reserve(<a class="code" href="classoperations__research_1_1EbertGraphCore.html#e569860e31e4403305359664f46eef6b" title="The index of the first node in the graph.">StarGraph::kFirstNode</a>, max_num_nodes - 1);
 <a name="l00072"></a>00072     feasible_node_excess_.SetAll(0);
 <a name="l00073"></a>00073   }
-<a name="l00074"></a>00074   <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> max_num_arcs = graph_-&gt;<a class="code" href="classoperations__research_1_1StarGraphBase.html#d59cffc45d70d0e4b1bfce30982c726c" title="Returns the maximum possible number of original arcs in the graph.">max_num_arcs</a>();
+<a name="l00074"></a>00074   <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> max_num_arcs = graph_-&gt;<a class="code" href="classoperations__research_1_1EbertGraphCore.html#f36a452f733b668a1937d93fcbdf7c15" title="Returns the maximum possible number of original arcs in the graph.">max_num_arcs</a>();
 <a name="l00075"></a>00075   <span class="keywordflow">if</span> (max_num_arcs &gt; 0) {
 <a name="l00076"></a>00076     residual_arc_capacity_.Reserve(-max_num_arcs, max_num_arcs - 1);
 <a name="l00077"></a>00077     residual_arc_capacity_.SetAll(0);
@@ -212,7 +212,7 @@
 <a name="l00128"></a>00128   <a class="code" href="namespaceoperations__research.html#5841ff601ab08548afb15c45b2245de7">FlowQuantity</a> total_supply = 0;
 <a name="l00129"></a>00129   uint64 max_capacity = 0;  <span class="comment">// uint64 because it is positive and will be used</span>
 <a name="l00130"></a>00130                             <span class="comment">// to check against FlowQuantity overflows.</span>
-<a name="l00131"></a>00131   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1StarGraphBase_1_1ArcIterator.html" title="Iterator class for traversing the arcs in the graph.">StarGraph::ArcIterator</a> arc_it(*graph_); arc_it.Ok(); arc_it.Next()) {
+<a name="l00131"></a>00131   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1EbertGraphCore_1_1ArcIterator.html" title="Iterator class for traversing the arcs in the graph.">StarGraph::ArcIterator</a> arc_it(*graph_); arc_it.Ok(); arc_it.Next()) {
 <a name="l00132"></a>00132     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> arc = arc_it.Index();
 <a name="l00133"></a>00133     <span class="keyword">const</span> uint64 capacity = <span class="keyword">static_cast&lt;</span>uint64<span class="keyword">&gt;</span>(residual_arc_capacity_[arc]);
 <a name="l00134"></a>00134     max_capacity = std::max(capacity, max_capacity);
@@ -340,38 +340,38 @@
 <a name="l00256"></a>00256   <span class="comment">// For this it is necessary to make StarGraph resizable.</span>
 <a name="l00257"></a>00257   feasibility_checked_ = <span class="keyword">false</span>;
 <a name="l00258"></a>00258   <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> num_extra_arcs = 0;
-<a name="l00259"></a>00259   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1StarGraphBase_1_1NodeIterator.html" title="Iterator class for traversing all the nodes in the graph.">StarGraph::NodeIterator</a> it(*graph_); it.Ok(); it.Next()) {
+<a name="l00259"></a>00259   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1EbertGraphCore_1_1NodeIterator.html" title="Iterator class for traversing all the nodes in the graph.">StarGraph::NodeIterator</a> it(*graph_); it.Ok(); it.Next()) {
 <a name="l00260"></a>00260     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb" title="Standard instantiation of ForwardEbertGraph (named &amp;#39;ForwardStarGraph&amp;#39;) of...">NodeIndex</a> node = it.Index();
 <a name="l00261"></a>00261     <span class="keywordflow">if</span> (initial_node_excess_[node] != 0) {
 <a name="l00262"></a>00262       ++num_extra_arcs;
 <a name="l00263"></a>00263     }
 <a name="l00264"></a>00264   }
-<a name="l00265"></a>00265   <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb" title="Standard instantiation of ForwardEbertGraph (named &amp;#39;ForwardStarGraph&amp;#39;) of...">NodeIndex</a> num_nodes_in_max_flow = graph_-&gt;<a class="code" href="classoperations__research_1_1StarGraphBase.html#9e17bcde8564b07b4606de1dffde13df" title="Returns the number of nodes in the graph.">num_nodes</a>() + 2;
-<a name="l00266"></a>00266   <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> num_arcs_in_max_flow = graph_-&gt;<a class="code" href="classoperations__research_1_1StarGraphBase.html#6046def4481e8ed182fff63c2093d3bf" title="Returns the number of original arcs in the graph (The ones with positive indices...">num_arcs</a>() + num_extra_arcs;
+<a name="l00265"></a>00265   <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb" title="Standard instantiation of ForwardEbertGraph (named &amp;#39;ForwardStarGraph&amp;#39;) of...">NodeIndex</a> num_nodes_in_max_flow = graph_-&gt;<a class="code" href="classoperations__research_1_1EbertGraphCore.html#020fc2b3644f38795072143795779eac" title="Returns the number of nodes in the graph.">num_nodes</a>() + 2;
+<a name="l00266"></a>00266   <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> num_arcs_in_max_flow = graph_-&gt;<a class="code" href="classoperations__research_1_1EbertGraphCore.html#bea6c0b3f13c4ea901e3d0b82d6bbf92" title="Returns the number of original arcs in the graph (The ones with positive indices...">num_arcs</a>() + num_extra_arcs;
 <a name="l00267"></a>00267   <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb" title="Standard instantiation of ForwardEbertGraph (named &amp;#39;ForwardStarGraph&amp;#39;) of...">NodeIndex</a> source = num_nodes_in_max_flow - 2;
 <a name="l00268"></a>00268   <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb" title="Standard instantiation of ForwardEbertGraph (named &amp;#39;ForwardStarGraph&amp;#39;) of...">NodeIndex</a> sink = num_nodes_in_max_flow - 1;
 <a name="l00269"></a>00269   <a class="code" href="classoperations__research_1_1EbertGraph.html" title="Most users should only use StarGraph, which is EbertGraph&amp;lt;int32, int32&amp;gt;, and...">StarGraph</a> checker_graph(num_nodes_in_max_flow, num_arcs_in_max_flow);
 <a name="l00270"></a>00270   <a class="code" href="classoperations__research_1_1MaxFlow.html">MaxFlow</a> checker(&amp;checker_graph, source, sink);
 <a name="l00271"></a>00271   <span class="comment">// Copy graph_ to checker_graph.</span>
-<a name="l00272"></a>00272   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1StarGraphBase_1_1ArcIterator.html" title="Iterator class for traversing the arcs in the graph.">StarGraph::ArcIterator</a> it(*graph_); it.Ok(); it.Next()) {
+<a name="l00272"></a>00272   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1EbertGraphCore_1_1ArcIterator.html" title="Iterator class for traversing the arcs in the graph.">StarGraph::ArcIterator</a> it(*graph_); it.Ok(); it.Next()) {
 <a name="l00273"></a>00273     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> arc = it.Index();
-<a name="l00274"></a>00274     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> new_arc = checker_graph.<a class="code" href="classoperations__research_1_1EbertGraphBase.html#96bf1fdcbfa88edabb7843b6142cb3bd" title="Adds an arc to the graph and returns its index.">AddArc</a>(graph_-&gt;<a class="code" href="classoperations__research_1_1EbertGraph.html#00969b18461f3a96f48a61997b5ca645" title="Returns the tail or start-node of arc.">Tail</a>(arc),
-<a name="l00275"></a>00275                                                   graph_-&gt;<a class="code" href="classoperations__research_1_1StarGraphBase.html#41f6852c5fd312a7049cb8484ca58b77" title="Returns the head or end-node of arc.">Head</a>(arc));
+<a name="l00274"></a>00274     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> new_arc = checker_graph.<a class="code" href="classoperations__research_1_1EbertGraphCore.html#dd0adb80f6cf1d97a07663ddd21f56af" title="Adds an arc to the graph and returns its index.">AddArc</a>(graph_-&gt;<a class="code" href="classoperations__research_1_1EbertGraph.html#00969b18461f3a96f48a61997b5ca645" title="Returns the tail or start-node of arc.">Tail</a>(arc),
+<a name="l00275"></a>00275                                                   graph_-&gt;<a class="code" href="classoperations__research_1_1EbertGraphCore.html#e6c20ddb852804bf4240a8ca05cce9c9" title="Returns the head or end-node of arc.">Head</a>(arc));
 <a name="l00276"></a>00276     DCHECK_EQ(arc, new_arc);
 <a name="l00277"></a>00277     checker.<a class="code" href="classoperations__research_1_1MaxFlow.html#857d5c99a5aed728dafea95bd834d95d" title="Sets the capacity for arc to new_capacity.">SetArcCapacity</a>(new_arc, <a class="code" href="classoperations__research_1_1MinCostFlow.html#b1f45c1e61ac147362e22f0511720905" title="Returns the capacity of arc using the equations given in the comment on residual_arc_capacity_...">Capacity</a>(arc));
 <a name="l00278"></a>00278   }
 <a name="l00279"></a>00279   <a class="code" href="namespaceoperations__research.html#5841ff601ab08548afb15c45b2245de7">FlowQuantity</a> total_demand = 0;
 <a name="l00280"></a>00280   <a class="code" href="namespaceoperations__research.html#5841ff601ab08548afb15c45b2245de7">FlowQuantity</a> total_supply = 0;
 <a name="l00281"></a>00281   <span class="comment">// Create the source-to-supply node arcs and the demand-node-to-sink arcs.</span>
-<a name="l00282"></a>00282   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1StarGraphBase_1_1NodeIterator.html" title="Iterator class for traversing all the nodes in the graph.">StarGraph::NodeIterator</a> it(*graph_); it.Ok(); it.Next()) {
+<a name="l00282"></a>00282   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1EbertGraphCore_1_1NodeIterator.html" title="Iterator class for traversing all the nodes in the graph.">StarGraph::NodeIterator</a> it(*graph_); it.Ok(); it.Next()) {
 <a name="l00283"></a>00283     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb" title="Standard instantiation of ForwardEbertGraph (named &amp;#39;ForwardStarGraph&amp;#39;) of...">NodeIndex</a> node = it.Index();
 <a name="l00284"></a>00284     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#5841ff601ab08548afb15c45b2245de7">FlowQuantity</a> supply = initial_node_excess_[node];
 <a name="l00285"></a>00285     <span class="keywordflow">if</span> (supply &gt; 0) {
-<a name="l00286"></a>00286       <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> new_arc = checker_graph.<a class="code" href="classoperations__research_1_1EbertGraphBase.html#96bf1fdcbfa88edabb7843b6142cb3bd" title="Adds an arc to the graph and returns its index.">AddArc</a>(source, node);
+<a name="l00286"></a>00286       <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> new_arc = checker_graph.<a class="code" href="classoperations__research_1_1EbertGraphCore.html#dd0adb80f6cf1d97a07663ddd21f56af" title="Adds an arc to the graph and returns its index.">AddArc</a>(source, node);
 <a name="l00287"></a>00287       checker.<a class="code" href="classoperations__research_1_1MaxFlow.html#857d5c99a5aed728dafea95bd834d95d" title="Sets the capacity for arc to new_capacity.">SetArcCapacity</a>(new_arc, supply);
 <a name="l00288"></a>00288       total_supply += supply;
 <a name="l00289"></a>00289     } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (supply &lt; 0) {
-<a name="l00290"></a>00290       <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> new_arc = checker_graph.<a class="code" href="classoperations__research_1_1EbertGraphBase.html#96bf1fdcbfa88edabb7843b6142cb3bd" title="Adds an arc to the graph and returns its index.">AddArc</a>(node, sink);
+<a name="l00290"></a>00290       <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> new_arc = checker_graph.<a class="code" href="classoperations__research_1_1EbertGraphCore.html#dd0adb80f6cf1d97a07663ddd21f56af" title="Adds an arc to the graph and returns its index.">AddArc</a>(node, sink);
 <a name="l00291"></a>00291       checker.<a class="code" href="classoperations__research_1_1MaxFlow.html#857d5c99a5aed728dafea95bd834d95d" title="Sets the capacity for arc to new_capacity.">SetArcCapacity</a>(new_arc, -supply);
 <a name="l00292"></a>00292       total_demand -= supply;
 <a name="l00293"></a>00293     }
@@ -387,10 +387,10 @@
 <a name="l00303"></a>00303   }
 <a name="l00304"></a>00304   <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#5841ff601ab08548afb15c45b2245de7">FlowQuantity</a> optimal_max_flow = checker.<a class="code" href="classoperations__research_1_1MaxFlow.html#389e046415ec2804ec0e2cedde2ae07a" title="Returns the total flow found by the algorithm.">GetOptimalFlow</a>();
 <a name="l00305"></a>00305   feasible_node_excess_.SetAll(0);
-<a name="l00306"></a>00306   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1StarGraphBase_1_1OutgoingArcIterator.html" title="Iterator class for traversing the outgoing arcs associated to a given node.">StarGraph::OutgoingArcIterator</a> it(checker_graph, source);
+<a name="l00306"></a>00306   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1EbertGraph_1_1OutgoingArcIterator.html" title="Iterator class for traversing the outgoing arcs associated to a given node.">StarGraph::OutgoingArcIterator</a> it(checker_graph, source);
 <a name="l00307"></a>00307        it.Ok(); it.Next()) {
 <a name="l00308"></a>00308     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> arc = it.Index();
-<a name="l00309"></a>00309     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb" title="Standard instantiation of ForwardEbertGraph (named &amp;#39;ForwardStarGraph&amp;#39;) of...">NodeIndex</a> node = checker_graph.<a class="code" href="classoperations__research_1_1StarGraphBase.html#41f6852c5fd312a7049cb8484ca58b77" title="Returns the head or end-node of arc.">Head</a>(arc);
+<a name="l00309"></a>00309     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb" title="Standard instantiation of ForwardEbertGraph (named &amp;#39;ForwardStarGraph&amp;#39;) of...">NodeIndex</a> node = checker_graph.<a class="code" href="classoperations__research_1_1EbertGraphCore.html#e6c20ddb852804bf4240a8ca05cce9c9" title="Returns the head or end-node of arc.">Head</a>(arc);
 <a name="l00310"></a>00310     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#5841ff601ab08548afb15c45b2245de7">FlowQuantity</a> flow = checker.<a class="code" href="classoperations__research_1_1MaxFlow.html#aa69f5dc647dcde9c974950bc95f2658" title="Returns the flow on arc using the equations given in the comment on residual_arc_capacity_...">Flow</a>(arc);
 <a name="l00311"></a>00311     feasible_node_excess_.Set(node, flow);
 <a name="l00312"></a>00312     <span class="keywordflow">if</span> (infeasible_supply_node != NULL) {
@@ -415,7 +415,7 @@
 <a name="l00331"></a>00331   <span class="keywordflow">if</span> (!feasibility_checked_) {
 <a name="l00332"></a>00332     <span class="keywordflow">return</span> <span class="keyword">false</span>;
 <a name="l00333"></a>00333   }
-<a name="l00334"></a>00334   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1StarGraphBase_1_1NodeIterator.html" title="Iterator class for traversing all the nodes in the graph.">StarGraph::NodeIterator</a> it(*graph_); it.Ok(); it.Next()) {
+<a name="l00334"></a>00334   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1EbertGraphCore_1_1NodeIterator.html" title="Iterator class for traversing all the nodes in the graph.">StarGraph::NodeIterator</a> it(*graph_); it.Ok(); it.Next()) {
 <a name="l00335"></a>00335     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb" title="Standard instantiation of ForwardEbertGraph (named &amp;#39;ForwardStarGraph&amp;#39;) of...">NodeIndex</a> node = it.Index();
 <a name="l00336"></a>00336     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#5841ff601ab08548afb15c45b2245de7">FlowQuantity</a> excess = feasible_node_excess_[node];
 <a name="l00337"></a>00337     node_excess_.Set(node, excess);
@@ -454,7 +454,7 @@
 <a name="l00370"></a>00370     <span class="keywordflow">return</span> <span class="keyword">false</span>;
 <a name="l00371"></a>00371   }
 <a name="l00372"></a>00372   total_flow_cost_ = 0;
-<a name="l00373"></a>00373   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1StarGraphBase_1_1ArcIterator.html" title="Iterator class for traversing the arcs in the graph.">StarGraph::ArcIterator</a> it(*graph_); it.Ok(); it.Next()) {
+<a name="l00373"></a>00373   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1EbertGraphCore_1_1ArcIterator.html" title="Iterator class for traversing the arcs in the graph.">StarGraph::ArcIterator</a> it(*graph_); it.Ok(); it.Next()) {
 <a name="l00374"></a>00374     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> arc = it.Index();
 <a name="l00375"></a>00375     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#5841ff601ab08548afb15c45b2245de7">FlowQuantity</a> flow_on_arc = residual_arc_capacity_[Opposite(arc)];
 <a name="l00376"></a>00376     VLOG(3) &lt;&lt; <span class="stringliteral">"Flow for arc "</span> &lt;&lt; arc &lt;&lt; <span class="stringliteral">" = "</span> &lt;&lt; flow_on_arc
@@ -466,7 +466,7 @@
 <a name="l00382"></a>00382 }
 <a name="l00383"></a>00383 
 <a name="l00384"></a>00384 <span class="keywordtype">void</span> MinCostFlow::ResetFirstAdmissibleArcs() {
-<a name="l00385"></a>00385   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1StarGraphBase_1_1NodeIterator.html" title="Iterator class for traversing all the nodes in the graph.">StarGraph::NodeIterator</a> node_it(*graph_); node_it.Ok(); node_it.Next()) {
+<a name="l00385"></a>00385   <span class="keywordflow">for</span> (<a class="code" href="classoperations__research_1_1EbertGraphCore_1_1NodeIterator.html" title="Iterator class for traversing all the nodes in the graph.">StarGraph::NodeIterator</a> node_it(*graph_); node_it.Ok(); node_it.Next()) {
 <a name="l00386"></a>00386     <span class="keyword">const</span> <a class="code" href="namespaceoperations__research.html#0e629e35bfa311b31dd7f5065eb834bb" title="Standard instantiation of ForwardEbertGraph (named &amp;#39;ForwardStarGraph&amp;#39;) of...">NodeIndex</a> node = node_it.Index();
 <a name="l00387"></a>00387     first_admissible_arc_.Set(node, GetFirstIncidentArc(node));
 <a name="l00388"></a>00388   }
@@ -646,7 +646,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#359621 height=3></td>
+      <td colspan=2 bgcolor=#287003 height=3></td>
     </tr>
   </table>
 

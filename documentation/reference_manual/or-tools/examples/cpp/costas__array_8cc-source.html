@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #359621
+      background-color: #287003
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#359621 height=3></td>
+      <td colspan=3 bgcolor=#287003 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
-            for Revision:2055
+          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
+            for <b>custom file set</b>
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#359621>
+            <td bgcolor=#287003>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/examples/index.html">examples</a>/
             <a href="../../../or-tools/examples/cpp/index.html">cpp</a>/
@@ -432,119 +432,122 @@
 <a name="l00348"></a>00348           subdecision_builder);
 <a name="l00349"></a>00349 
 <a name="l00350"></a>00350   <a class="code" href="classDecisionBuilder.html">DecisionBuilder</a>* <span class="keyword">const</span> second_phase =
-<a name="l00351"></a>00351       solver.MakeLocalSearchPhase(matrix, first_solution, ls_params);
-<a name="l00352"></a>00352 
-<a name="l00353"></a>00353   <span class="comment">// Try to find a solution</span>
-<a name="l00354"></a>00354   solver.Solve(second_phase,
-<a name="l00355"></a>00355                collector,
-<a name="l00356"></a>00356                log,
-<a name="l00357"></a>00357                total_duplicates,
-<a name="l00358"></a>00358                search_time_limit);
-<a name="l00359"></a>00359 
-<a name="l00360"></a>00360   <span class="keywordflow">if</span> (collector-&gt;solution_count() &gt; 0) {
-<a name="l00361"></a>00361     std::vector&lt;int64&gt; costas_matrix;
-<a name="l00362"></a>00362     <span class="keywordtype">string</span> output;
-<a name="l00363"></a>00363 
-<a name="l00364"></a>00364     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> n = 0; n &lt; dim; ++n) {
-<a name="l00365"></a>00365       <span class="keyword">const</span> int64 v = collector-&gt;Value(0, vars[n]);
-<a name="l00366"></a>00366       costas_matrix.push_back(v);
-<a name="l00367"></a>00367       StringAppendF(&amp;output, <span class="stringliteral">"%3lld"</span>, v);
-<a name="l00368"></a>00368     }
-<a name="l00369"></a>00369 
-<a name="l00370"></a>00370     <span class="keywordflow">if</span> (!<a class="code" href="namespaceoperations__research.html#21f788e35c350dd7b8afa808b4a796aa" title="Check that all pairwise differences are unique.">CheckCostas</a>(costas_matrix)) {
-<a name="l00371"></a>00371       LOG(INFO) &lt;&lt; <span class="stringliteral">"No Costas Matrix found, closest solution displayed."</span>;
-<a name="l00372"></a>00372     }
-<a name="l00373"></a>00373 
-<a name="l00374"></a>00374     LOG(INFO) &lt;&lt; output;
-<a name="l00375"></a>00375   } <span class="keywordflow">else</span> {
-<a name="l00376"></a>00376     LOG(INFO) &lt;&lt; <span class="stringliteral">"No solution found"</span>;
-<a name="l00377"></a>00377   }
-<a name="l00378"></a>00378 }
-<a name="l00379"></a>00379 
-<a name="l00380"></a>00380 <span class="comment">// Computes a Costas Array.</span>
-<a name="l00381"></a><a class="code" href="namespaceoperations__research.html#27a2d14101fefbff28dcf7e2cfcea375">00381</a> <span class="keywordtype">void</span> <a class="code" href="namespaceoperations__research.html#27a2d14101fefbff28dcf7e2cfcea375" title="Computes a Costas Array.">CostasHard</a>(<span class="keyword">const</span> <span class="keywordtype">int</span> dim) {
-<a name="l00382"></a>00382   SolverParameters parameters;
-<a name="l00383"></a>00383   <span class="keywordflow">if</span> (!FLAGS_export_profile.empty()) {
-<a name="l00384"></a>00384     parameters.profile_level = SolverParameters::NORMAL_PROFILING;
-<a name="l00385"></a>00385   }
-<a name="l00386"></a>00386   Solver solver(<span class="stringliteral">"costas"</span>, parameters);
-<a name="l00387"></a>00387 
-<a name="l00388"></a>00388   <span class="comment">// create the variables</span>
-<a name="l00389"></a>00389   std::vector&lt;IntVar*&gt; vars;
-<a name="l00390"></a>00390   solver.MakeIntVarArray(dim, -dim, dim, <span class="stringliteral">"var"</span>, &amp;vars);
-<a name="l00391"></a>00391 
-<a name="l00392"></a>00392   <span class="comment">// Initialize the matrix that contains the coordinates of all '1' per row</span>
-<a name="l00393"></a>00393   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> m = 0; m &lt; dim; ++m) {
-<a name="l00394"></a>00394     vars[m]-&gt;SetMin(1);
-<a name="l00395"></a>00395   }
-<a name="l00396"></a>00396 
-<a name="l00397"></a>00397   solver.AddConstraint(solver.MakeAllDifferent(vars));
-<a name="l00398"></a>00398 
-<a name="l00399"></a>00399   <span class="comment">// Check that the pairwise difference is unique</span>
-<a name="l00400"></a>00400   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 1; i &lt; dim; ++i) {
-<a name="l00401"></a>00401     std::vector&lt;IntVar*&gt; subset(dim - i);
-<a name="l00402"></a>00402 
-<a name="l00403"></a>00403     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; dim - i; ++j) {
-<a name="l00404"></a>00404       subset[j] = solver.MakeDifference(vars[j + i], vars[j])-&gt;Var();
-<a name="l00405"></a>00405     }
-<a name="l00406"></a>00406 
-<a name="l00407"></a>00407     solver.AddConstraint(solver.MakeAllDifferent(subset));
-<a name="l00408"></a>00408   }
+<a name="l00351"></a>00351       solver.MakeLocalSearchPhase(matrix.data(),
+<a name="l00352"></a>00352                                   matrix.size(),
+<a name="l00353"></a>00353                                   first_solution,
+<a name="l00354"></a>00354                                   ls_params);
+<a name="l00355"></a>00355 
+<a name="l00356"></a>00356   <span class="comment">// Try to find a solution</span>
+<a name="l00357"></a>00357   solver.Solve(second_phase,
+<a name="l00358"></a>00358                collector,
+<a name="l00359"></a>00359                log,
+<a name="l00360"></a>00360                total_duplicates,
+<a name="l00361"></a>00361                search_time_limit);
+<a name="l00362"></a>00362 
+<a name="l00363"></a>00363   <span class="keywordflow">if</span> (collector-&gt;solution_count() &gt; 0) {
+<a name="l00364"></a>00364     std::vector&lt;int64&gt; costas_matrix;
+<a name="l00365"></a>00365     <span class="keywordtype">string</span> output;
+<a name="l00366"></a>00366 
+<a name="l00367"></a>00367     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> n = 0; n &lt; dim; ++n) {
+<a name="l00368"></a>00368       <span class="keyword">const</span> int64 v = collector-&gt;Value(0, vars[n]);
+<a name="l00369"></a>00369       costas_matrix.push_back(v);
+<a name="l00370"></a>00370       StringAppendF(&amp;output, <span class="stringliteral">"%3lld"</span>, v);
+<a name="l00371"></a>00371     }
+<a name="l00372"></a>00372 
+<a name="l00373"></a>00373     <span class="keywordflow">if</span> (!<a class="code" href="namespaceoperations__research.html#21f788e35c350dd7b8afa808b4a796aa" title="Check that all pairwise differences are unique.">CheckCostas</a>(costas_matrix)) {
+<a name="l00374"></a>00374       LOG(INFO) &lt;&lt; <span class="stringliteral">"No Costas Matrix found, closest solution displayed."</span>;
+<a name="l00375"></a>00375     }
+<a name="l00376"></a>00376 
+<a name="l00377"></a>00377     LOG(INFO) &lt;&lt; output;
+<a name="l00378"></a>00378   } <span class="keywordflow">else</span> {
+<a name="l00379"></a>00379     LOG(INFO) &lt;&lt; <span class="stringliteral">"No solution found"</span>;
+<a name="l00380"></a>00380   }
+<a name="l00381"></a>00381 }
+<a name="l00382"></a>00382 
+<a name="l00383"></a>00383 <span class="comment">// Computes a Costas Array.</span>
+<a name="l00384"></a><a class="code" href="namespaceoperations__research.html#27a2d14101fefbff28dcf7e2cfcea375">00384</a> <span class="keywordtype">void</span> <a class="code" href="namespaceoperations__research.html#27a2d14101fefbff28dcf7e2cfcea375" title="Computes a Costas Array.">CostasHard</a>(<span class="keyword">const</span> <span class="keywordtype">int</span> dim) {
+<a name="l00385"></a>00385   SolverParameters parameters;
+<a name="l00386"></a>00386   <span class="keywordflow">if</span> (!FLAGS_export_profile.empty()) {
+<a name="l00387"></a>00387     parameters.profile_level = SolverParameters::NORMAL_PROFILING;
+<a name="l00388"></a>00388   }
+<a name="l00389"></a>00389   Solver solver(<span class="stringliteral">"costas"</span>, parameters);
+<a name="l00390"></a>00390 
+<a name="l00391"></a>00391   <span class="comment">// create the variables</span>
+<a name="l00392"></a>00392   std::vector&lt;IntVar*&gt; vars;
+<a name="l00393"></a>00393   solver.MakeIntVarArray(dim, -dim, dim, <span class="stringliteral">"var"</span>, &amp;vars);
+<a name="l00394"></a>00394 
+<a name="l00395"></a>00395   <span class="comment">// Initialize the matrix that contains the coordinates of all '1' per row</span>
+<a name="l00396"></a>00396   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> m = 0; m &lt; dim; ++m) {
+<a name="l00397"></a>00397     vars[m]-&gt;SetMin(1);
+<a name="l00398"></a>00398   }
+<a name="l00399"></a>00399 
+<a name="l00400"></a>00400   solver.AddConstraint(solver.MakeAllDifferent(vars));
+<a name="l00401"></a>00401 
+<a name="l00402"></a>00402   <span class="comment">// Check that the pairwise difference is unique</span>
+<a name="l00403"></a>00403   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 1; i &lt; dim; ++i) {
+<a name="l00404"></a>00404     std::vector&lt;IntVar*&gt; subset(dim - i);
+<a name="l00405"></a>00405 
+<a name="l00406"></a>00406     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; dim - i; ++j) {
+<a name="l00407"></a>00407       subset[j] = solver.MakeDifference(vars[j + i], vars[j])-&gt;Var();
+<a name="l00408"></a>00408     }
 <a name="l00409"></a>00409 
-<a name="l00410"></a>00410   <a class="code" href="classDecisionBuilder.html">DecisionBuilder</a>* <span class="keyword">const</span> db = solver.MakePhase(vars,
-<a name="l00411"></a>00411                                                Solver::CHOOSE_FIRST_UNBOUND,
-<a name="l00412"></a>00412                                                Solver::ASSIGN_MIN_VALUE);
-<a name="l00413"></a>00413   solver.NewSearch(db);
-<a name="l00414"></a>00414 
-<a name="l00415"></a>00415   <span class="keywordflow">if</span> (solver.NextSolution()) {
-<a name="l00416"></a>00416     std::vector&lt;int64&gt; costas_matrix;
-<a name="l00417"></a>00417     <span class="keywordtype">string</span> output;
-<a name="l00418"></a>00418 
-<a name="l00419"></a>00419     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> n = 0; n &lt; dim; ++n) {
-<a name="l00420"></a>00420       <span class="keyword">const</span> int64 v = vars[n]-&gt;Value();
-<a name="l00421"></a>00421       costas_matrix.push_back(v);
-<a name="l00422"></a>00422       StringAppendF(&amp;output, <span class="stringliteral">"%3lld"</span>, v);
-<a name="l00423"></a>00423     }
-<a name="l00424"></a>00424 
-<a name="l00425"></a>00425     LOG(INFO) &lt;&lt; output &lt;&lt; <span class="stringliteral">" ("</span> &lt;&lt; solver.wall_time() &lt;&lt; <span class="stringliteral">"ms)"</span>;
-<a name="l00426"></a>00426 
-<a name="l00427"></a>00427     CHECK(<a class="code" href="namespaceoperations__research.html#21f788e35c350dd7b8afa808b4a796aa" title="Check that all pairwise differences are unique.">CheckCostas</a>(costas_matrix)) &lt;&lt;
-<a name="l00428"></a>00428         <span class="stringliteral">": Solution is not a valid Costas Matrix."</span>;
-<a name="l00429"></a>00429   } <span class="keywordflow">else</span> {
-<a name="l00430"></a>00430     LOG(INFO) &lt;&lt; <span class="stringliteral">"No solution found."</span>;
-<a name="l00431"></a>00431   }
-<a name="l00432"></a>00432   <span class="keywordflow">if</span> (!FLAGS_export_profile.empty()) {
-<a name="l00433"></a>00433     solver.ExportProfilingOverview(FLAGS_export_profile);
+<a name="l00410"></a>00410     solver.AddConstraint(solver.MakeAllDifferent(subset));
+<a name="l00411"></a>00411   }
+<a name="l00412"></a>00412 
+<a name="l00413"></a>00413   <a class="code" href="classDecisionBuilder.html">DecisionBuilder</a>* <span class="keyword">const</span> db = solver.MakePhase(vars,
+<a name="l00414"></a>00414                                                Solver::CHOOSE_FIRST_UNBOUND,
+<a name="l00415"></a>00415                                                Solver::ASSIGN_MIN_VALUE);
+<a name="l00416"></a>00416   solver.NewSearch(db);
+<a name="l00417"></a>00417 
+<a name="l00418"></a>00418   <span class="keywordflow">if</span> (solver.NextSolution()) {
+<a name="l00419"></a>00419     std::vector&lt;int64&gt; costas_matrix;
+<a name="l00420"></a>00420     <span class="keywordtype">string</span> output;
+<a name="l00421"></a>00421 
+<a name="l00422"></a>00422     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> n = 0; n &lt; dim; ++n) {
+<a name="l00423"></a>00423       <span class="keyword">const</span> int64 v = vars[n]-&gt;Value();
+<a name="l00424"></a>00424       costas_matrix.push_back(v);
+<a name="l00425"></a>00425       StringAppendF(&amp;output, <span class="stringliteral">"%3lld"</span>, v);
+<a name="l00426"></a>00426     }
+<a name="l00427"></a>00427 
+<a name="l00428"></a>00428     LOG(INFO) &lt;&lt; output &lt;&lt; <span class="stringliteral">" ("</span> &lt;&lt; solver.wall_time() &lt;&lt; <span class="stringliteral">"ms)"</span>;
+<a name="l00429"></a>00429 
+<a name="l00430"></a>00430     CHECK(<a class="code" href="namespaceoperations__research.html#21f788e35c350dd7b8afa808b4a796aa" title="Check that all pairwise differences are unique.">CheckCostas</a>(costas_matrix)) &lt;&lt;
+<a name="l00431"></a>00431         <span class="stringliteral">": Solution is not a valid Costas Matrix."</span>;
+<a name="l00432"></a>00432   } <span class="keywordflow">else</span> {
+<a name="l00433"></a>00433     LOG(INFO) &lt;&lt; <span class="stringliteral">"No solution found."</span>;
 <a name="l00434"></a>00434   }
-<a name="l00435"></a>00435 }
-<a name="l00436"></a>00436 }  <span class="comment">// namespace operations_research</span>
-<a name="l00437"></a>00437 
-<a name="l00438"></a><a class="code" href="costas__array_8cc.html#3c04138a5bfe5d72780bb7e82a18e627">00438</a> <span class="keywordtype">int</span> <a class="code" href="costas__array_8cc.html#3c04138a5bfe5d72780bb7e82a18e627" title="namespace operations_research">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span> **argv) {
-<a name="l00439"></a>00439   google::ParseCommandLineFlags(&amp;argc, &amp;argv, <span class="keyword">true</span>);
-<a name="l00440"></a>00440   <span class="keywordtype">int</span> min = 1;
-<a name="l00441"></a>00441   <span class="keywordtype">int</span> max = 10;
-<a name="l00442"></a>00442 
-<a name="l00443"></a>00443   <span class="keywordflow">if</span> (FLAGS_minsize != 0) {
-<a name="l00444"></a>00444     min = FLAGS_minsize;
+<a name="l00435"></a>00435   <span class="keywordflow">if</span> (!FLAGS_export_profile.empty()) {
+<a name="l00436"></a>00436     solver.ExportProfilingOverview(FLAGS_export_profile);
+<a name="l00437"></a>00437   }
+<a name="l00438"></a>00438 }
+<a name="l00439"></a>00439 }  <span class="comment">// namespace operations_research</span>
+<a name="l00440"></a>00440 
+<a name="l00441"></a><a class="code" href="costas__array_8cc.html#3c04138a5bfe5d72780bb7e82a18e627">00441</a> <span class="keywordtype">int</span> <a class="code" href="costas__array_8cc.html#3c04138a5bfe5d72780bb7e82a18e627" title="namespace operations_research">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span> **argv) {
+<a name="l00442"></a>00442   google::ParseCommandLineFlags(&amp;argc, &amp;argv, <span class="keyword">true</span>);
+<a name="l00443"></a>00443   <span class="keywordtype">int</span> min = 1;
+<a name="l00444"></a>00444   <span class="keywordtype">int</span> max = 10;
 <a name="l00445"></a>00445 
-<a name="l00446"></a>00446     <span class="keywordflow">if</span> (FLAGS_maxsize != 0) {
-<a name="l00447"></a>00447       max = FLAGS_maxsize;
-<a name="l00448"></a>00448     } <span class="keywordflow">else</span> {
-<a name="l00449"></a>00449       max = min;
-<a name="l00450"></a>00450     }
-<a name="l00451"></a>00451   }
-<a name="l00452"></a>00452 
-<a name="l00453"></a>00453   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = min; i &lt;= max; ++i) {
-<a name="l00454"></a>00454     LOG(INFO) &lt;&lt; <span class="stringliteral">"Computing Costas Array for dim = "</span> &lt;&lt; i;
-<a name="l00455"></a>00455     <span class="keywordflow">if</span> (FLAGS_soft_constraints) {
-<a name="l00456"></a>00456       <a class="code" href="namespaceoperations__research.html#6b1eb81075883b055d2725a1c94dafcc" title="Computes a Costas Array using soft constraints.">operations_research::CostasSoft</a>(i);
-<a name="l00457"></a>00457     } <span class="keywordflow">else</span> {
-<a name="l00458"></a>00458       <a class="code" href="namespaceoperations__research.html#27a2d14101fefbff28dcf7e2cfcea375" title="Computes a Costas Array.">operations_research::CostasHard</a>(i);
-<a name="l00459"></a>00459     }
-<a name="l00460"></a>00460   }
-<a name="l00461"></a>00461 
-<a name="l00462"></a>00462   <span class="keywordflow">return</span> 0;
-<a name="l00463"></a>00463 }
+<a name="l00446"></a>00446   <span class="keywordflow">if</span> (FLAGS_minsize != 0) {
+<a name="l00447"></a>00447     min = FLAGS_minsize;
+<a name="l00448"></a>00448 
+<a name="l00449"></a>00449     <span class="keywordflow">if</span> (FLAGS_maxsize != 0) {
+<a name="l00450"></a>00450       max = FLAGS_maxsize;
+<a name="l00451"></a>00451     } <span class="keywordflow">else</span> {
+<a name="l00452"></a>00452       max = min;
+<a name="l00453"></a>00453     }
+<a name="l00454"></a>00454   }
+<a name="l00455"></a>00455 
+<a name="l00456"></a>00456   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = min; i &lt;= max; ++i) {
+<a name="l00457"></a>00457     LOG(INFO) &lt;&lt; <span class="stringliteral">"Computing Costas Array for dim = "</span> &lt;&lt; i;
+<a name="l00458"></a>00458     <span class="keywordflow">if</span> (FLAGS_soft_constraints) {
+<a name="l00459"></a>00459       <a class="code" href="namespaceoperations__research.html#6b1eb81075883b055d2725a1c94dafcc" title="Computes a Costas Array using soft constraints.">operations_research::CostasSoft</a>(i);
+<a name="l00460"></a>00460     } <span class="keywordflow">else</span> {
+<a name="l00461"></a>00461       <a class="code" href="namespaceoperations__research.html#27a2d14101fefbff28dcf7e2cfcea375" title="Computes a Costas Array.">operations_research::CostasHard</a>(i);
+<a name="l00462"></a>00462     }
+<a name="l00463"></a>00463   }
+<a name="l00464"></a>00464 
+<a name="l00465"></a>00465   <span class="keywordflow">return</span> 0;
+<a name="l00466"></a>00466 }
 </pre></div></div>
 
   <!-- Start of footer. -->
@@ -553,7 +556,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#359621 height=3></td>
+      <td colspan=2 bgcolor=#287003 height=3></td>
     </tr>
   </table>
 

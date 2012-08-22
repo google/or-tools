@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #359621
+      background-color: #287003
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#359621 height=3></td>
+      <td colspan=3 bgcolor=#287003 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
-            for Revision:2055
+          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
+            for <b>custom file set</b>
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#359621>
+            <td bgcolor=#287003>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -147,24 +147,24 @@
 <a name="l00063"></a>00063                               <span class="keyword">const</span> IntTupleSet&amp; tuples)
 <a name="l00064"></a>00064       : <a class="code" href="classoperations__research_1_1Constraint.html" title="A constraint is the main modeling object.">Constraint</a>(s),
 <a name="l00065"></a>00065         <a class="code" href="table_8cc.html#b2444961c97f3001b2af69be5100a69c">tuple_count_</a>(tuples.NumTuples()),
-<a name="l00066"></a>00066         <a class="code" href="ac4r__table_8cc.html#5889398aa7aa6ccf7b24b80bdd95e9c3">arity_</a>(vars.size()),
-<a name="l00067"></a>00067         <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>(<span class="keyword">new</span> <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>*[<a class="code" href="ac4r__table_8cc.html#5889398aa7aa6ccf7b24b80bdd95e9c3">arity_</a>]),
+<a name="l00066"></a>00066         <a class="code" href="table_8cc.html#5889398aa7aa6ccf7b24b80bdd95e9c3">arity_</a>(vars.size()),
+<a name="l00067"></a>00067         <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>(<span class="keyword">new</span> <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>*[<a class="code" href="table_8cc.html#5889398aa7aa6ccf7b24b80bdd95e9c3">arity_</a>]),
 <a name="l00068"></a>00068         <a class="code" href="table_8cc.html#395e6b78199ba31e76e3d81a83a54565" title="All allowed tuples.">tuples_</a>(tuples),
 <a name="l00069"></a>00069         <a class="code" href="constraints_8cc.html#7ae143e486b92a413da4904068b6162e">holes_</a>(<span class="keyword">new</span> <a class="code" href="classoperations__research_1_1IntVarIterator.html" title="The class Iterator has two direct subclasses.">IntVarIterator</a>*[arity_]),
-<a name="l00070"></a>00070         <a class="code" href="search_8cc.html#f6a9149207c05695bc2e26a658461abd">iterators_</a>(<span class="keyword">new</span> <a class="code" href="classoperations__research_1_1IntVarIterator.html" title="The class Iterator has two direct subclasses.">IntVarIterator</a>*[arity_]) {
+<a name="l00070"></a>00070         <a class="code" href="table_8cc.html#8ae16d10a1bfde7bd96577ce12da8268">iterators_</a>(<span class="keyword">new</span> <a class="code" href="classoperations__research_1_1IntVarIterator.html" title="The class Iterator has two direct subclasses.">IntVarIterator</a>*[arity_]) {
 <a name="l00071"></a>00071     <span class="comment">// Copy vars.</span>
-<a name="l00072"></a>00072     memcpy(<a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>.get(), vars.data(), arity_ * <span class="keyword">sizeof</span>(*vars.data()));
+<a name="l00072"></a>00072     memcpy(<a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>.get(), vars.data(), arity_ * <span class="keyword">sizeof</span>(*vars.data()));
 <a name="l00073"></a>00073     <span class="comment">// Create hole iterators</span>
 <a name="l00074"></a>00074     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; arity_; ++i) {
-<a name="l00075"></a>00075       <a class="code" href="constraints_8cc.html#7ae143e486b92a413da4904068b6162e">holes_</a>[i] = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[i]-&gt;MakeHoleIterator(<span class="keyword">true</span>);
-<a name="l00076"></a>00076       <a class="code" href="search_8cc.html#f6a9149207c05695bc2e26a658461abd">iterators_</a>[i] = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[i]-&gt;MakeDomainIterator(<span class="keyword">true</span>);
+<a name="l00075"></a>00075       <a class="code" href="constraints_8cc.html#7ae143e486b92a413da4904068b6162e">holes_</a>[i] = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[i]-&gt;MakeHoleIterator(<span class="keyword">true</span>);
+<a name="l00076"></a>00076       <a class="code" href="table_8cc.html#8ae16d10a1bfde7bd96577ce12da8268">iterators_</a>[i] = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[i]-&gt;MakeDomainIterator(<span class="keyword">true</span>);
 <a name="l00077"></a>00077     }
 <a name="l00078"></a>00078   }
 <a name="l00079"></a>00079 
 <a name="l00080"></a>00080   <span class="keyword">virtual</span> ~BasePositiveTableConstraint() {}
 <a name="l00081"></a>00081 
 <a name="l00082"></a>00082   <span class="keyword">virtual</span> <span class="keywordtype">string</span> DebugString()<span class="keyword"> const </span>{
-<a name="l00083"></a>00083     <span class="keywordflow">return</span> StringPrintf(<span class="stringliteral">"AllowedAssignments(arity = %d, tuple_count = %d)"</span>,
+<a name="l00083"></a>00083     <span class="keywordflow">return</span> StringPrintf(<span class="stringliteral">"AllowedAssignments(arity = %d, tuple_count = %d"</span>,
 <a name="l00084"></a>00084                         arity_,
 <a name="l00085"></a>00085                         <a class="code" href="table_8cc.html#b2444961c97f3001b2af69be5100a69c">tuple_count_</a>);
 <a name="l00086"></a>00086   }
@@ -172,7 +172,7 @@
 <a name="l00088"></a>00088   <span class="keyword">virtual</span> <span class="keywordtype">void</span> Accept(<a class="code" href="classoperations__research_1_1ModelVisitor.html" title="Model visitor.">ModelVisitor</a>* <span class="keyword">const</span> visitor)<span class="keyword"> const </span>{
 <a name="l00089"></a>00089     visitor-&gt;<a class="code" href="classoperations__research_1_1ModelVisitor.html#2ee7b13da9c480a6dc87b12e1915b84c">BeginVisitConstraint</a>(<a class="code" href="classoperations__research_1_1ModelVisitor.html#f6e81e895ddd806684b6481e17830e57">ModelVisitor::kAllowedAssignments</a>, <span class="keyword">this</span>);
 <a name="l00090"></a>00090     visitor-&gt;<a class="code" href="classoperations__research_1_1ModelVisitor.html#85a2a6a7d07b014f8f249ead5ff14e55">VisitIntegerVariableArrayArgument</a>(<a class="code" href="classoperations__research_1_1ModelVisitor.html#b2d79708656faa6ca3381c630a5eeff7">ModelVisitor::kVarsArgument</a>,
-<a name="l00091"></a>00091                                                <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>.get(),
+<a name="l00091"></a>00091                                                <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>.get(),
 <a name="l00092"></a>00092                                                arity_);
 <a name="l00093"></a>00093     visitor-&gt;<a class="code" href="classoperations__research_1_1ModelVisitor.html#0cbf0870ffc301ef65a94d68bfb206ab">VisitIntegerMatrixArgument</a>(<a class="code" href="classoperations__research_1_1ModelVisitor.html#419f3b98090d93d516a8b91014e92e84">ModelVisitor::kTuplesArgument</a>,
 <a name="l00094"></a>00094                                         <a class="code" href="table_8cc.html#395e6b78199ba31e76e3d81a83a54565" title="All allowed tuples.">tuples_</a>);
@@ -182,12 +182,12 @@
 <a name="l00098"></a>00098  <span class="keyword">protected</span>:
 <a name="l00099"></a><a class="code" href="table_8cc.html#b2444961c97f3001b2af69be5100a69c">00099</a>   <span class="keyword">const</span> <span class="keywordtype">int</span> <a class="code" href="table_8cc.html#b2444961c97f3001b2af69be5100a69c">tuple_count_</a>;
 <a name="l00100"></a><a class="code" href="table_8cc.html#5889398aa7aa6ccf7b24b80bdd95e9c3">00100</a>   <span class="keyword">const</span> <span class="keywordtype">int</span> arity_;
-<a name="l00101"></a><a class="code" href="table_8cc.html#9b229f7e8aa2b819b08a9eef9b39df61">00101</a>   <span class="keyword">const</span> scoped_array&lt;IntVar*&gt; <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>;
+<a name="l00101"></a><a class="code" href="table_8cc.html#9b229f7e8aa2b819b08a9eef9b39df61">00101</a>   <span class="keyword">const</span> scoped_array&lt;IntVar*&gt; <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>;
 <a name="l00102"></a>00102   <span class="comment">// All allowed tuples.</span>
 <a name="l00103"></a><a class="code" href="table_8cc.html#395e6b78199ba31e76e3d81a83a54565">00103</a>   <span class="keyword">const</span> IntTupleSet <a class="code" href="table_8cc.html#395e6b78199ba31e76e3d81a83a54565" title="All allowed tuples.">tuples_</a>;
 <a name="l00104"></a><a class="code" href="table_8cc.html#bc8ebda95e0b8ffbde2863b0191c1e7c">00104</a>   scoped_array&lt;IntVarIterator*&gt; <a class="code" href="constraints_8cc.html#7ae143e486b92a413da4904068b6162e">holes_</a>;
-<a name="l00105"></a><a class="code" href="table_8cc.html#8ae16d10a1bfde7bd96577ce12da8268">00105</a>   scoped_array&lt;IntVarIterator*&gt; <a class="code" href="search_8cc.html#f6a9149207c05695bc2e26a658461abd">iterators_</a>;
-<a name="l00106"></a><a class="code" href="table_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">00106</a>   std::vector&lt;int64&gt; <a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>;
+<a name="l00105"></a><a class="code" href="table_8cc.html#8ae16d10a1bfde7bd96577ce12da8268">00105</a>   scoped_array&lt;IntVarIterator*&gt; <a class="code" href="table_8cc.html#8ae16d10a1bfde7bd96577ce12da8268">iterators_</a>;
+<a name="l00106"></a><a class="code" href="table_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">00106</a>   std::vector&lt;int64&gt; <a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>;
 <a name="l00107"></a>00107 };
 <a name="l00108"></a>00108 
 <a name="l00109"></a>00109 <span class="keyword">class </span>PositiveTableConstraint : <span class="keyword">public</span> BasePositiveTableConstraint {
@@ -202,14 +202,14 @@
 <a name="l00118"></a>00118         <a class="code" href="table_8cc.html#0dbcbf1445ed223101798290b8db702e" title="Bitset of active tuples.">active_tuples_</a>(<span class="keyword">new</span> uint64[<a class="code" href="table_8cc.html#7d5350e32a84386f3508693ad02992b1" title="Length of bitsets in double words.">length_</a>]),
 <a name="l00119"></a>00119         <a class="code" href="expressions_8cc.html#b73b7f1fe6fa9cd55b481b628c237000">stamps_</a>(<span class="keyword">new</span> uint64[length_]) {
 <a name="l00120"></a>00120     <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>.clear();
-<a name="l00121"></a>00121     <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>.resize(<a class="code" href="ac4r__table_8cc.html#5889398aa7aa6ccf7b24b80bdd95e9c3">arity_</a>);
+<a name="l00121"></a>00121     <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>.resize(<a class="code" href="table_8cc.html#5889398aa7aa6ccf7b24b80bdd95e9c3">arity_</a>);
 <a name="l00122"></a>00122     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; <a class="code" href="table_8cc.html#b2444961c97f3001b2af69be5100a69c">tuple_count_</a>; ++i) {
 <a name="l00123"></a>00123       InitializeMask(i);
 <a name="l00124"></a>00124     }
 <a name="l00125"></a>00125   }
 <a name="l00126"></a>00126 
 <a name="l00127"></a>00127   <span class="keyword">virtual</span> ~PositiveTableConstraint() {
-<a name="l00128"></a>00128     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> var_index = 0; var_index &lt; <a class="code" href="ac4r__table_8cc.html#5889398aa7aa6ccf7b24b80bdd95e9c3">arity_</a>; ++var_index) {
+<a name="l00128"></a>00128     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> var_index = 0; var_index &lt; <a class="code" href="table_8cc.html#5889398aa7aa6ccf7b24b80bdd95e9c3">arity_</a>; ++var_index) {
 <a name="l00129"></a>00129       <span class="keywordflow">for</span> (ConstIter&lt;ValueBitset&gt; it(<a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>[var_index]); !it.at_end(); ++it) {
 <a name="l00130"></a>00130         <span class="keyword">delete</span> [] it-&gt;second;
 <a name="l00131"></a>00131       }
@@ -222,13 +222,13 @@
 <a name="l00138"></a>00138                                            &amp;PositiveTableConstraint::Propagate,
 <a name="l00139"></a>00139                                            <span class="stringliteral">"Propagate"</span>);
 <a name="l00140"></a>00140     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; arity_; ++i) {
-<a name="l00141"></a>00141       <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[i]-&gt;WhenDomain(d);
+<a name="l00141"></a>00141       <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[i]-&gt;WhenDomain(d);
 <a name="l00142"></a>00142       Demon* u = <a class="code" href="namespaceoperations__research.html#bc7cb18be5d9d418d32782253cd4bf5a">MakeConstraintDemon1</a>(solver(),
 <a name="l00143"></a>00143                                       <span class="keyword">this</span>,
 <a name="l00144"></a>00144                                       &amp;PositiveTableConstraint::Update,
 <a name="l00145"></a>00145                                       <span class="stringliteral">"Update"</span>,
 <a name="l00146"></a>00146                                       i);
-<a name="l00147"></a>00147       <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[i]-&gt;WhenDomain(u);
+<a name="l00147"></a>00147       <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[i]-&gt;WhenDomain(u);
 <a name="l00148"></a>00148     }
 <a name="l00149"></a>00149     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; length_; ++i) {
 <a name="l00150"></a>00150       <a class="code" href="expressions_8cc.html#b73b7f1fe6fa9cd55b481b628c237000">stamps_</a>[i] = 0;
@@ -240,7 +240,7 @@
 <a name="l00156"></a>00156     <span class="comment">// Build active_ structure.</span>
 <a name="l00157"></a>00157     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> var_index = 0; var_index &lt; arity_; ++var_index) {
 <a name="l00158"></a>00158       <span class="keywordflow">for</span> (ConstIter&lt;ValueBitset&gt; it(<a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>[var_index]); !it.at_end(); ++it) {
-<a name="l00159"></a>00159         <span class="keywordflow">if</span> (!<a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[var_index]-&gt;Contains(it-&gt;first)) {
+<a name="l00159"></a>00159         <span class="keywordflow">if</span> (!<a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[var_index]-&gt;Contains(it-&gt;first)) {
 <a name="l00160"></a>00160           <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; length_; ++i) {
 <a name="l00161"></a>00161             <a class="code" href="table_8cc.html#0dbcbf1445ed223101798290b8db702e" title="Bitset of active tuples.">active_tuples_</a>[i] &amp;= ~it-&gt;second[i];
 <a name="l00162"></a>00162           }
@@ -260,41 +260,41 @@
 <a name="l00176"></a>00176     <span class="comment">// Remove unreached values.</span>
 <a name="l00177"></a>00177     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> var_index = 0; var_index &lt; arity_; ++var_index) {
 <a name="l00178"></a>00178       <span class="keyword">const</span> ValueBitset&amp; mask = <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>[var_index];
-<a name="l00179"></a>00179       IntVar* <span class="keyword">const</span> <a class="code" href="expr__array_8cc.html#472a99923cbe11ae7b5a5d157d9ad465">var</a> = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[var_index];
-<a name="l00180"></a>00180       <a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.clear();
-<a name="l00181"></a>00181       IntVarIterator* <span class="keyword">const</span> it = <a class="code" href="search_8cc.html#f6a9149207c05695bc2e26a658461abd">iterators_</a>[var_index];
+<a name="l00179"></a>00179       IntVar* <span class="keyword">const</span> <a class="code" href="expr__array_8cc.html#472a99923cbe11ae7b5a5d157d9ad465">var</a> = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[var_index];
+<a name="l00180"></a>00180       <a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.clear();
+<a name="l00181"></a>00181       IntVarIterator* <span class="keyword">const</span> it = <a class="code" href="table_8cc.html#8ae16d10a1bfde7bd96577ce12da8268">iterators_</a>[var_index];
 <a name="l00182"></a>00182       <span class="keywordflow">for</span> (it-&gt;Init(); it-&gt;Ok(); it-&gt;Next()) {
 <a name="l00183"></a>00183         <span class="keyword">const</span> int64 <a class="code" href="search_8cc.html#21edc7ca4cc5802c8779d68556bc09cf">value</a> = it-&gt;Value();
 <a name="l00184"></a>00184         <span class="keywordflow">if</span> (!ContainsKey(mask, value)) {
-<a name="l00185"></a>00185           <a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.push_back(value);
+<a name="l00185"></a>00185           <a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.push_back(value);
 <a name="l00186"></a>00186         }
 <a name="l00187"></a>00187       }
-<a name="l00188"></a>00188       <span class="keywordflow">if</span> (<a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.size() &gt; 0) {
-<a name="l00189"></a>00189         var-&gt;RemoveValues(<a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>);
+<a name="l00188"></a>00188       <span class="keywordflow">if</span> (<a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.size() &gt; 0) {
+<a name="l00189"></a>00189         var-&gt;RemoveValues(<a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>);
 <a name="l00190"></a>00190       }
 <a name="l00191"></a>00191     }
 <a name="l00192"></a>00192   }
 <a name="l00193"></a>00193 
 <a name="l00194"></a>00194   <span class="keywordtype">void</span> Propagate() {
 <a name="l00195"></a>00195     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> var_index = 0; var_index &lt; arity_; ++var_index) {
-<a name="l00196"></a>00196       IntVar* <span class="keyword">const</span> var = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[var_index];
-<a name="l00197"></a>00197       <a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.clear();
-<a name="l00198"></a>00198       IntVarIterator* <span class="keyword">const</span> it = <a class="code" href="search_8cc.html#f6a9149207c05695bc2e26a658461abd">iterators_</a>[var_index];
+<a name="l00196"></a>00196       IntVar* <span class="keyword">const</span> var = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[var_index];
+<a name="l00197"></a>00197       <a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.clear();
+<a name="l00198"></a>00198       IntVarIterator* <span class="keyword">const</span> it = <a class="code" href="table_8cc.html#8ae16d10a1bfde7bd96577ce12da8268">iterators_</a>[var_index];
 <a name="l00199"></a>00199       <span class="keywordflow">for</span> (it-&gt;Init(); it-&gt;Ok(); it-&gt;Next()) {
 <a name="l00200"></a>00200         <span class="keyword">const</span> int64 value = it-&gt;Value();
 <a name="l00201"></a>00201         <span class="keywordflow">if</span> (!Supported(var_index, value)) {
-<a name="l00202"></a>00202           <a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.push_back(value);
+<a name="l00202"></a>00202           <a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.push_back(value);
 <a name="l00203"></a>00203         }
 <a name="l00204"></a>00204       }
-<a name="l00205"></a>00205       <span class="keywordflow">if</span> (<a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.size() &gt; 0) {
-<a name="l00206"></a>00206         var-&gt;RemoveValues(<a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>);
+<a name="l00205"></a>00205       <span class="keywordflow">if</span> (<a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.size() &gt; 0) {
+<a name="l00206"></a>00206         var-&gt;RemoveValues(<a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>);
 <a name="l00207"></a>00207       }
 <a name="l00208"></a>00208     }
 <a name="l00209"></a>00209   }
 <a name="l00210"></a>00210 
 <a name="l00211"></a>00211   <span class="keywordtype">void</span> Update(<span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>) {
 <a name="l00212"></a>00212     <span class="keyword">const</span> ValueBitset&amp; mask = <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>[index];
-<a name="l00213"></a>00213     IntVar* <span class="keyword">const</span> var = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[index];
+<a name="l00213"></a>00213     IntVar* <span class="keyword">const</span> var = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[index];
 <a name="l00214"></a>00214     <span class="keyword">const</span> int64 oldmax = var-&gt;OldMax();
 <a name="l00215"></a>00215     <span class="keyword">const</span> int64 vmin = var-&gt;Min();
 <a name="l00216"></a>00216     <span class="keyword">const</span> int64 vmax = var-&gt;Max();
@@ -384,13 +384,13 @@
 <a name="l00300"></a>00300         <a class="code" href="expressions_8cc.html#b73b7f1fe6fa9cd55b481b628c237000">stamps_</a>(<span class="keyword">new</span> uint64[length_]),
 <a name="l00301"></a>00301         <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>(<span class="keyword">new</span> int64[arity_]),
 <a name="l00302"></a>00302         <a class="code" href="table_8cc.html#5e37e0e9d2e0b8854631c011385e70c1" title="A temporary mask use for computation.">temp_mask_</a>(<span class="keyword">new</span> uint64[length_]),
-<a name="l00303"></a>00303         <a class="code" href="constraints_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>(NULL) {
+<a name="l00303"></a>00303         <a class="code" href="expr__cst_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>(NULL) {
 <a name="l00304"></a>00304   }
 <a name="l00305"></a>00305 
 <a name="l00306"></a>00306   <span class="keyword">virtual</span> ~CompactPositiveTableConstraint() {}
 <a name="l00307"></a>00307 
 <a name="l00308"></a>00308   <span class="keyword">virtual</span> <span class="keywordtype">void</span> Post() {
-<a name="l00309"></a>00309     <a class="code" href="constraints_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a> = solver()-&gt;RegisterDemon(<a class="code" href="namespaceoperations__research.html#16f35a1c0ce076f2587fffbab80200b6">MakeDelayedConstraintDemon0</a>(
+<a name="l00309"></a>00309     <a class="code" href="expr__cst_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a> = solver()-&gt;RegisterDemon(<a class="code" href="namespaceoperations__research.html#16f35a1c0ce076f2587fffbab80200b6">MakeDelayedConstraintDemon0</a>(
 <a name="l00310"></a>00310         solver(),
 <a name="l00311"></a>00311         <span class="keyword">this</span>,
 <a name="l00312"></a>00312         &amp;CompactPositiveTableConstraint::Propagate,
@@ -402,7 +402,7 @@
 <a name="l00318"></a>00318                                       &amp;CompactPositiveTableConstraint::Update,
 <a name="l00319"></a>00319                                       <span class="stringliteral">"Update"</span>,
 <a name="l00320"></a>00320                                       i);
-<a name="l00321"></a>00321       <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[i]-&gt;WhenDomain(u);
+<a name="l00321"></a>00321       <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[i]-&gt;WhenDomain(u);
 <a name="l00322"></a>00322     }
 <a name="l00323"></a>00323     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; length_; ++i) {
 <a name="l00324"></a>00324       <a class="code" href="expressions_8cc.html#b73b7f1fe6fa9cd55b481b628c237000">stamps_</a>[i] = 0;
@@ -413,7 +413,7 @@
 <a name="l00329"></a>00329   <span class="keywordtype">bool</span> IsTupleSupported(<span class="keywordtype">int</span> tuple_index) {
 <a name="l00330"></a>00330     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> var_index = 0; var_index &lt; arity_; ++var_index) {
 <a name="l00331"></a>00331       <span class="keyword">const</span> int64 value = <a class="code" href="table_8cc.html#395e6b78199ba31e76e3d81a83a54565" title="All allowed tuples.">tuples_</a>.Value(tuple_index, var_index);
-<a name="l00332"></a>00332       <span class="keywordflow">if</span> (!<a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[var_index]-&gt;Contains(value)) {
+<a name="l00332"></a>00332       <span class="keywordflow">if</span> (!<a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[var_index]-&gt;Contains(value)) {
 <a name="l00333"></a>00333         <span class="keywordflow">return</span> <span class="keyword">false</span>;
 <a name="l00334"></a>00334       }
 <a name="l00335"></a>00335     }
@@ -439,8 +439,8 @@
 <a name="l00355"></a>00355     <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>.clear();
 <a name="l00356"></a>00356     <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>.resize(arity_);
 <a name="l00357"></a>00357     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; arity_; ++i) {
-<a name="l00358"></a>00358       <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[i] = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[i]-&gt;Min();
-<a name="l00359"></a>00359       <span class="keyword">const</span> int64 span = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[i]-&gt;Max() - <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[i] + 1;
+<a name="l00358"></a>00358       <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[i] = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[i]-&gt;Min();
+<a name="l00359"></a>00359       <span class="keyword">const</span> int64 span = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[i]-&gt;Max() - <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[i] + 1;
 <a name="l00360"></a>00360       <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>[i].resize(span);
 <a name="l00361"></a>00361       <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; span; ++j) {
 <a name="l00362"></a>00362         <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>[i][j] = NULL;
@@ -477,7 +477,7 @@
 <a name="l00393"></a>00393     <a class="code" href="constraints_8cc.html#60ebade6d9ae55029bf7baad4cba3f55">supports_</a>.clear();
 <a name="l00394"></a>00394     <a class="code" href="constraints_8cc.html#60ebade6d9ae55029bf7baad4cba3f55">supports_</a>.resize(arity_);
 <a name="l00395"></a>00395     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> var_index = 0; var_index &lt; arity_; ++var_index) {
-<a name="l00396"></a>00396       <span class="keyword">const</span> int64 span = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[var_index]-&gt;Max() - <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[var_index] + 1;
+<a name="l00396"></a>00396       <span class="keyword">const</span> int64 span = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[var_index]-&gt;Max() - <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[var_index] + 1;
 <a name="l00397"></a>00397       <a class="code" href="constraints_8cc.html#ffb76e7eb4651cf660fd6203a118493f">starts_</a>[var_index].resize(span);
 <a name="l00398"></a>00398       <a class="code" href="constraints_8cc.html#8db1d94ce19043bd1d8fa571328872ba">ends_</a>[var_index].resize(span);
 <a name="l00399"></a>00399       <a class="code" href="constraints_8cc.html#60ebade6d9ae55029bf7baad4cba3f55">supports_</a>[var_index].resize(span);
@@ -501,17 +501,17 @@
 <a name="l00417"></a>00417   <span class="keywordtype">void</span> RemoveUnsupportedValues() {
 <a name="l00418"></a>00418     <span class="comment">// remove unreached values.</span>
 <a name="l00419"></a>00419     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> var_index = 0; var_index &lt; arity_; ++var_index) {
-<a name="l00420"></a>00420       IntVar* <span class="keyword">const</span> var = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[var_index];
-<a name="l00421"></a>00421       <a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.clear();
-<a name="l00422"></a>00422       IntVarIterator* <span class="keyword">const</span> it = <a class="code" href="search_8cc.html#f6a9149207c05695bc2e26a658461abd">iterators_</a>[var_index];
+<a name="l00420"></a>00420       IntVar* <span class="keyword">const</span> var = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[var_index];
+<a name="l00421"></a>00421       <a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.clear();
+<a name="l00422"></a>00422       IntVarIterator* <span class="keyword">const</span> it = <a class="code" href="table_8cc.html#8ae16d10a1bfde7bd96577ce12da8268">iterators_</a>[var_index];
 <a name="l00423"></a>00423       <span class="keywordflow">for</span> (it-&gt;Init(); it-&gt;Ok(); it-&gt;Next()) {
 <a name="l00424"></a>00424         <span class="keyword">const</span> int64 value = it-&gt;Value();
 <a name="l00425"></a>00425         <span class="keywordflow">if</span> (!<a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>[var_index][value - <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[var_index]]) {
-<a name="l00426"></a>00426           <a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.push_back(value);
+<a name="l00426"></a>00426           <a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.push_back(value);
 <a name="l00427"></a>00427         }
 <a name="l00428"></a>00428       }
-<a name="l00429"></a>00429       <span class="keywordflow">if</span> (<a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.size() &gt; 0) {
-<a name="l00430"></a>00430         var-&gt;RemoveValues(<a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>);
+<a name="l00429"></a>00429       <span class="keywordflow">if</span> (<a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.size() &gt; 0) {
+<a name="l00430"></a>00430         var-&gt;RemoveValues(<a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>);
 <a name="l00431"></a>00431       }
 <a name="l00432"></a>00432     }
 <a name="l00433"></a>00433   }
@@ -553,21 +553,21 @@
 <a name="l00469"></a>00469     <span class="comment">// at a delayed priority when Update(var_index) deems it necessary.</span>
 <a name="l00470"></a>00470     memset(<a class="code" href="table_8cc.html#5e37e0e9d2e0b8854631c011385e70c1" title="A temporary mask use for computation.">temp_mask_</a>.get(), 0, length_ * <span class="keyword">sizeof</span>(*<a class="code" href="table_8cc.html#5e37e0e9d2e0b8854631c011385e70c1" title="A temporary mask use for computation.">temp_mask_</a>.get()));
 <a name="l00471"></a>00471     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> var_index = 0; var_index &lt; arity_; ++var_index) {
-<a name="l00472"></a>00472       <a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.clear();
-<a name="l00473"></a>00473       IntVarIterator* <span class="keyword">const</span> it = <a class="code" href="search_8cc.html#f6a9149207c05695bc2e26a658461abd">iterators_</a>[var_index];
+<a name="l00472"></a>00472       <a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.clear();
+<a name="l00473"></a>00473       IntVarIterator* <span class="keyword">const</span> it = <a class="code" href="table_8cc.html#8ae16d10a1bfde7bd96577ce12da8268">iterators_</a>[var_index];
 <a name="l00474"></a>00474       <span class="keywordflow">for</span> (it-&gt;Init(); it-&gt;Ok(); it-&gt;Next()) {
 <a name="l00475"></a>00475         <span class="keyword">const</span> int64 value_index = it-&gt;Value() - <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[var_index];
 <a name="l00476"></a>00476         <span class="keywordflow">if</span> (!Supported(var_index, value_index)) {
-<a name="l00477"></a>00477           <a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.push_back(it-&gt;Value());
+<a name="l00477"></a>00477           <a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.push_back(it-&gt;Value());
 <a name="l00478"></a>00478         }
 <a name="l00479"></a>00479       }
-<a name="l00480"></a>00480       <span class="keywordflow">if</span> (<a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.size() &gt; 0) {
-<a name="l00481"></a>00481         <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[var_index]-&gt;RemoveValues(<a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>);
+<a name="l00480"></a>00480       <span class="keywordflow">if</span> (<a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.size() &gt; 0) {
+<a name="l00481"></a>00481         <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[var_index]-&gt;RemoveValues(<a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>);
 <a name="l00482"></a>00482         <span class="comment">// Actively remove unsupported bitsets from active_tuples_.</span>
 <a name="l00483"></a>00483         <span class="keywordflow">for</span> (<span class="keywordtype">int</span> offset = 0; offset &lt; length_; ++offset) {
 <a name="l00484"></a>00484           <a class="code" href="table_8cc.html#5e37e0e9d2e0b8854631c011385e70c1" title="A temporary mask use for computation.">temp_mask_</a>[offset] = 0;
 <a name="l00485"></a>00485         }
-<a name="l00486"></a>00486         <span class="keywordflow">for</span> (ConstIter&lt;std::vector&lt;int64&gt; &gt; it(<a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>); !it.at_end(); ++it) {
+<a name="l00486"></a>00486         <span class="keywordflow">for</span> (ConstIter&lt;std::vector&lt;int64&gt; &gt; it(<a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>); !it.at_end(); ++it) {
 <a name="l00487"></a>00487           <span class="keyword">const</span> int64 value_index = (*it) - <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[var_index];
 <a name="l00488"></a>00488           <span class="keyword">const</span> uint64* <span class="keyword">const</span> mask = <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>[var_index][value_index];
 <a name="l00489"></a>00489           DCHECK(mask);
@@ -601,7 +601,7 @@
 <a name="l00517"></a>00517     <span class="comment">// tuples attached to values of the variables that have been removed.</span>
 <a name="l00518"></a>00518 
 <a name="l00519"></a>00519     <span class="comment">// We first collect the complete set of tuples to blank out in temp_mask_.</span>
-<a name="l00520"></a>00520     IntVar* <span class="keyword">const</span> var = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[var_index];
+<a name="l00520"></a>00520     IntVar* <span class="keyword">const</span> var = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[var_index];
 <a name="l00521"></a>00521     <span class="keyword">const</span> int64 omin = <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[var_index];
 <a name="l00522"></a>00522     <span class="keywordtype">bool</span> changed = <span class="keyword">false</span>;
 <a name="l00523"></a>00523     memset(<a class="code" href="table_8cc.html#5e37e0e9d2e0b8854631c011385e70c1" title="A temporary mask use for computation.">temp_mask_</a>.get(), 0, length_ * <span class="keyword">sizeof</span>(*<a class="code" href="table_8cc.html#5e37e0e9d2e0b8854631c011385e70c1" title="A temporary mask use for computation.">temp_mask_</a>.get()));
@@ -648,7 +648,7 @@
 <a name="l00564"></a>00564       <span class="keywordflow">if</span> (<a class="code" href="table_8cc.html#0dbcbf1445ed223101798290b8db702e" title="Bitset of active tuples.">active_tuples_</a>[offset]) {
 <a name="l00565"></a>00565         <span class="comment">// We push the propagate method only if something has changed.</span>
 <a name="l00566"></a>00566         <span class="keywordflow">if</span> (changed) {
-<a name="l00567"></a>00567           Enqueue(<a class="code" href="constraints_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>);
+<a name="l00567"></a>00567           Enqueue(<a class="code" href="expr__cst_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>);
 <a name="l00568"></a>00568         }
 <a name="l00569"></a>00569         <span class="keywordflow">return</span>;
 <a name="l00570"></a>00570       }
@@ -684,7 +684,7 @@
 <a name="l00600"></a><a class="code" href="table_8cc.html#5e37e0e9d2e0b8854631c011385e70c1">00600</a>   scoped_array&lt;uint64&gt; <a class="code" href="table_8cc.html#5e37e0e9d2e0b8854631c011385e70c1" title="A temporary mask use for computation.">temp_mask_</a>;
 <a name="l00601"></a>00601   <span class="comment">// The portion of the active tuples supporting each value per variable.</span>
 <a name="l00602"></a><a class="code" href="table_8cc.html#d6ee43f7dc59014ea19bc8227ca928ce">00602</a>   std::vector&lt;std::vector&lt;int&gt; &gt; <a class="code" href="constraints_8cc.html#60ebade6d9ae55029bf7baad4cba3f55">supports_</a>;
-<a name="l00603"></a><a class="code" href="table_8cc.html#97c85b30cffe5d1eb526594ab1072651">00603</a>   Demon* <a class="code" href="constraints_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>;
+<a name="l00603"></a><a class="code" href="table_8cc.html#97c85b30cffe5d1eb526594ab1072651">00603</a>   Demon* <a class="code" href="expr__cst_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>;
 <a name="l00604"></a>00604 };
 <a name="l00605"></a>00605 
 <a name="l00606"></a>00606 <span class="comment">// ----- Small Compact Table. -----</span>
@@ -698,10 +698,10 @@
 <a name="l00614"></a>00614                                       <span class="keyword">const</span> IntTupleSet&amp; tuples)
 <a name="l00615"></a>00615       : BasePositiveTableConstraint(s, vars, tuples),
 <a name="l00616"></a>00616         <a class="code" href="table_8cc.html#0dbcbf1445ed223101798290b8db702e" title="Bitset of active tuples.">active_tuples_</a>(0),
-<a name="l00617"></a>00617         <a class="code" href="expressions_8cc.html#978ce78f3214dcdb733a12a350c1611a">stamp_</a>(0),
+<a name="l00617"></a>00617         <a class="code" href="alldiff__cst_8cc.html#1ab3854946bf086fbb0971cc82516104">stamp_</a>(0),
 <a name="l00618"></a>00618         <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>(<span class="keyword">new</span> uint64*[arity_]),
 <a name="l00619"></a>00619         <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>(<span class="keyword">new</span> int64[arity_]),
-<a name="l00620"></a>00620         <a class="code" href="constraints_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>(NULL) {
+<a name="l00620"></a>00620         <a class="code" href="expr__cst_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>(NULL) {
 <a name="l00621"></a>00621     CHECK_GE(tuple_count_, 0);
 <a name="l00622"></a>00622     CHECK_GE(arity_, 0);
 <a name="l00623"></a>00623     CHECK_LE(tuples.NumTuples(), kBitsInUint64);
@@ -717,30 +717,30 @@
 <a name="l00633"></a>00633   }
 <a name="l00634"></a>00634 
 <a name="l00635"></a>00635   <span class="keyword">virtual</span> <span class="keywordtype">void</span> Post() {
-<a name="l00636"></a>00636     <a class="code" href="constraints_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a> = solver()-&gt;RegisterDemon(<a class="code" href="namespaceoperations__research.html#16f35a1c0ce076f2587fffbab80200b6">MakeDelayedConstraintDemon0</a>(
+<a name="l00636"></a>00636     <a class="code" href="expr__cst_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a> = solver()-&gt;RegisterDemon(<a class="code" href="namespaceoperations__research.html#16f35a1c0ce076f2587fffbab80200b6">MakeDelayedConstraintDemon0</a>(
 <a name="l00637"></a>00637         solver(),
 <a name="l00638"></a>00638         <span class="keyword">this</span>,
 <a name="l00639"></a>00639         &amp;SmallCompactPositiveTableConstraint::Propagate,
 <a name="l00640"></a>00640         <span class="stringliteral">"Propagate"</span>));
 <a name="l00641"></a>00641     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; arity_; ++i) {
-<a name="l00642"></a>00642       <span class="keywordflow">if</span> (!<a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[i]-&gt;Bound()) {
+<a name="l00642"></a>00642       <span class="keywordflow">if</span> (!<a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[i]-&gt;Bound()) {
 <a name="l00643"></a>00643         Demon* <span class="keyword">const</span> update_demon = <a class="code" href="namespaceoperations__research.html#bc7cb18be5d9d418d32782253cd4bf5a">MakeConstraintDemon1</a>(
 <a name="l00644"></a>00644             solver(),
 <a name="l00645"></a>00645             <span class="keyword">this</span>,
 <a name="l00646"></a>00646             &amp;SmallCompactPositiveTableConstraint::Update,
 <a name="l00647"></a>00647             <span class="stringliteral">"Update"</span>,
 <a name="l00648"></a>00648             i);
-<a name="l00649"></a>00649         <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[i]-&gt;WhenDomain(update_demon);
+<a name="l00649"></a>00649         <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[i]-&gt;WhenDomain(update_demon);
 <a name="l00650"></a>00650       }
 <a name="l00651"></a>00651     }
-<a name="l00652"></a>00652     <a class="code" href="expressions_8cc.html#978ce78f3214dcdb733a12a350c1611a">stamp_</a> = 0;
+<a name="l00652"></a>00652     <a class="code" href="alldiff__cst_8cc.html#1ab3854946bf086fbb0971cc82516104">stamp_</a> = 0;
 <a name="l00653"></a>00653   }
 <a name="l00654"></a>00654 
 <a name="l00655"></a>00655   <span class="keywordtype">void</span> InitMasks() {
 <a name="l00656"></a>00656     <span class="comment">// Build masks.</span>
 <a name="l00657"></a>00657     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; arity_; ++i) {
-<a name="l00658"></a>00658       <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[i] = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[i]-&gt;Min();
-<a name="l00659"></a>00659       <span class="keyword">const</span> int64 span = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[i]-&gt;Max() - <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[i] + 1;
+<a name="l00658"></a>00658       <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[i] = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[i]-&gt;Min();
+<a name="l00659"></a>00659       <span class="keyword">const</span> int64 span = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[i]-&gt;Max() - <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[i] + 1;
 <a name="l00660"></a>00660       <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>[i] = <span class="keyword">new</span> uint64[span];
 <a name="l00661"></a>00661       memset(<a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>[i], 0, span * <span class="keyword">sizeof</span>(*<a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>[i]));
 <a name="l00662"></a>00662     }
@@ -749,7 +749,7 @@
 <a name="l00665"></a>00665   <span class="keywordtype">bool</span> IsTupleSupported(<span class="keywordtype">int</span> tuple_index) {
 <a name="l00666"></a>00666     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> var_index = 0; var_index &lt; arity_; ++var_index) {
 <a name="l00667"></a>00667       <span class="keyword">const</span> int64 value = <a class="code" href="table_8cc.html#395e6b78199ba31e76e3d81a83a54565" title="All allowed tuples.">tuples_</a>.Value(tuple_index, var_index);
-<a name="l00668"></a>00668       <span class="keywordflow">if</span> (!<a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[var_index]-&gt;Contains(value)) {
+<a name="l00668"></a>00668       <span class="keywordflow">if</span> (!<a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[var_index]-&gt;Contains(value)) {
 <a name="l00669"></a>00669         <span class="keywordflow">return</span> <span class="keyword">false</span>;
 <a name="l00670"></a>00670       }
 <a name="l00671"></a>00671     }
@@ -778,18 +778,18 @@
 <a name="l00694"></a>00694   <span class="keywordtype">void</span> RemoveUnsupportedValues() {
 <a name="l00695"></a>00695     <span class="comment">// remove unreached values.</span>
 <a name="l00696"></a>00696     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> var_index = 0; var_index &lt; arity_; ++var_index) {
-<a name="l00697"></a>00697       IntVar* <span class="keyword">const</span> var = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[var_index];
+<a name="l00697"></a>00697       IntVar* <span class="keyword">const</span> var = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[var_index];
 <a name="l00698"></a>00698       <span class="keyword">const</span> int64 original_min = <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[var_index];
-<a name="l00699"></a>00699       <a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.clear();
-<a name="l00700"></a>00700       IntVarIterator* <span class="keyword">const</span> it = <a class="code" href="search_8cc.html#f6a9149207c05695bc2e26a658461abd">iterators_</a>[var_index];
+<a name="l00699"></a>00699       <a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.clear();
+<a name="l00700"></a>00700       IntVarIterator* <span class="keyword">const</span> it = <a class="code" href="table_8cc.html#8ae16d10a1bfde7bd96577ce12da8268">iterators_</a>[var_index];
 <a name="l00701"></a>00701       <span class="keywordflow">for</span> (it-&gt;Init(); it-&gt;Ok(); it-&gt;Next()) {
 <a name="l00702"></a>00702         <span class="keyword">const</span> int64 value = it-&gt;Value();
 <a name="l00703"></a>00703         <span class="keywordflow">if</span> (<a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>[var_index][value - original_min] == 0) {
-<a name="l00704"></a>00704           <a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.push_back(value);
+<a name="l00704"></a>00704           <a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.push_back(value);
 <a name="l00705"></a>00705         }
 <a name="l00706"></a>00706       }
-<a name="l00707"></a>00707       <span class="keywordflow">if</span> (<a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.size() &gt; 0) {
-<a name="l00708"></a>00708         var-&gt;RemoveValues(<a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>);
+<a name="l00707"></a>00707       <span class="keywordflow">if</span> (<a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.size() &gt; 0) {
+<a name="l00708"></a>00708         var-&gt;RemoveValues(<a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>);
 <a name="l00709"></a>00709       }
 <a name="l00710"></a>00710     }
 <a name="l00711"></a>00711   }
@@ -813,24 +813,24 @@
 <a name="l00729"></a>00729     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> var_index = 0; var_index &lt; arity_; ++var_index) {
 <a name="l00730"></a>00730       <span class="keyword">const</span> uint64* <span class="keyword">const</span> var_mask = <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>[var_index];
 <a name="l00731"></a>00731       <span class="keyword">const</span> int64 original_min = <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[var_index];
-<a name="l00732"></a>00732       IntVar* <span class="keyword">const</span> var = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[var_index];
+<a name="l00732"></a>00732       IntVar* <span class="keyword">const</span> var = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[var_index];
 <a name="l00733"></a>00733       <span class="keywordflow">if</span> (var-&gt;Bound()) {
 <a name="l00734"></a>00734         <span class="keywordflow">if</span> ((var_mask[var-&gt;Min() - original_min] &amp; actives) == 0) {
 <a name="l00735"></a>00735           solver()-&gt;Fail();
 <a name="l00736"></a>00736         }
 <a name="l00737"></a>00737       } <span class="keywordflow">else</span> {
-<a name="l00738"></a>00738         <a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.clear();
-<a name="l00739"></a>00739         IntVarIterator* <span class="keyword">const</span> it = <a class="code" href="search_8cc.html#f6a9149207c05695bc2e26a658461abd">iterators_</a>[var_index];
+<a name="l00738"></a>00738         <a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.clear();
+<a name="l00739"></a>00739         IntVarIterator* <span class="keyword">const</span> it = <a class="code" href="table_8cc.html#8ae16d10a1bfde7bd96577ce12da8268">iterators_</a>[var_index];
 <a name="l00740"></a>00740         <span class="keywordflow">for</span> (it-&gt;Init(); it-&gt;Ok(); it-&gt;Next()) {
 <a name="l00741"></a>00741           <span class="keyword">const</span> int64 value = it-&gt;Value();
 <a name="l00742"></a>00742           <span class="keywordflow">if</span> ((var_mask[value - original_min] &amp; actives) == 0) {
-<a name="l00743"></a>00743             <a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.push_back(value);
+<a name="l00743"></a>00743             <a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.push_back(value);
 <a name="l00744"></a>00744           }
 <a name="l00745"></a>00745         }
-<a name="l00746"></a>00746         <span class="keywordflow">if</span> (<a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.size() == var-&gt;Size()) {
+<a name="l00746"></a>00746         <span class="keywordflow">if</span> (<a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.size() == var-&gt;Size()) {
 <a name="l00747"></a>00747           solver()-&gt;Fail();
-<a name="l00748"></a>00748         } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (<a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.size() &gt; 0) {
-<a name="l00749"></a>00749           <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[var_index]-&gt;RemoveValues(<a class="code" href="constraints_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>);
+<a name="l00748"></a>00748         } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (<a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>.size() &gt; 0) {
+<a name="l00749"></a>00749           <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[var_index]-&gt;RemoveValues(<a class="code" href="element_8cc.html#010b67cfea6a37fa27e1c0700f2dbdd7">to_remove_</a>);
 <a name="l00750"></a>00750         }
 <a name="l00751"></a>00751       }
 <a name="l00752"></a>00752     }
@@ -841,7 +841,7 @@
 <a name="l00757"></a>00757     <span class="comment">// tuples attached to values of the variables that have been removed.</span>
 <a name="l00758"></a>00758 
 <a name="l00759"></a>00759     <span class="comment">// We first collect the complete set of tuples to blank out in temp_mask.</span>
-<a name="l00760"></a>00760     IntVar* <span class="keyword">const</span> var = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[var_index];
+<a name="l00760"></a>00760     IntVar* <span class="keyword">const</span> var = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[var_index];
 <a name="l00761"></a>00761     <span class="keyword">const</span> int64 original_min = <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>[var_index];
 <a name="l00762"></a>00762     uint64 temp_mask = 0;
 <a name="l00763"></a>00763     <span class="keyword">const</span> uint64* <span class="keyword">const</span> var_mask = <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>[var_index];
@@ -863,7 +863,7 @@
 <a name="l00779"></a>00779     <span class="keywordflow">if</span> (temp_mask &amp; <a class="code" href="table_8cc.html#0dbcbf1445ed223101798290b8db702e" title="Bitset of active tuples.">active_tuples_</a>) {
 <a name="l00780"></a>00780       AndActiveTuples(~temp_mask);
 <a name="l00781"></a>00781       <span class="keywordflow">if</span> (active_tuples_) {
-<a name="l00782"></a>00782         Enqueue(<a class="code" href="constraints_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>);
+<a name="l00782"></a>00782         Enqueue(<a class="code" href="expr__cst_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>);
 <a name="l00783"></a>00783       } <span class="keywordflow">else</span> {
 <a name="l00784"></a>00784         solver()-&gt;Fail();
 <a name="l00785"></a>00785       }
@@ -873,8 +873,8 @@
 <a name="l00789"></a>00789  <span class="keyword">private</span>:
 <a name="l00790"></a>00790   <span class="keywordtype">void</span> AndActiveTuples(uint64 mask) {
 <a name="l00791"></a>00791     <span class="keyword">const</span> uint64 current_stamp = solver()-&gt;stamp();
-<a name="l00792"></a>00792     <span class="keywordflow">if</span> (<a class="code" href="expressions_8cc.html#978ce78f3214dcdb733a12a350c1611a">stamp_</a> &lt; current_stamp) {
-<a name="l00793"></a>00793       <a class="code" href="expressions_8cc.html#978ce78f3214dcdb733a12a350c1611a">stamp_</a> = current_stamp;
+<a name="l00792"></a>00792     <span class="keywordflow">if</span> (<a class="code" href="alldiff__cst_8cc.html#1ab3854946bf086fbb0971cc82516104">stamp_</a> &lt; current_stamp) {
+<a name="l00793"></a>00793       <a class="code" href="alldiff__cst_8cc.html#1ab3854946bf086fbb0971cc82516104">stamp_</a> = current_stamp;
 <a name="l00794"></a>00794       solver()-&gt;SaveValue(&amp;active_tuples_);
 <a name="l00795"></a>00795     }
 <a name="l00796"></a>00796     active_tuples_ &amp;= mask;
@@ -883,16 +883,16 @@
 <a name="l00799"></a>00799   <span class="comment">// Bitset of active tuples.</span>
 <a name="l00800"></a>00800   uint64 active_tuples_;
 <a name="l00801"></a>00801   <span class="comment">// Stamp of the active_tuple bitset.</span>
-<a name="l00802"></a><a class="code" href="table_8cc.html#978ce78f3214dcdb733a12a350c1611a">00802</a>   uint64 <a class="code" href="expressions_8cc.html#978ce78f3214dcdb733a12a350c1611a">stamp_</a>;
+<a name="l00802"></a><a class="code" href="table_8cc.html#978ce78f3214dcdb733a12a350c1611a">00802</a>   uint64 <a class="code" href="alldiff__cst_8cc.html#1ab3854946bf086fbb0971cc82516104">stamp_</a>;
 <a name="l00803"></a>00803   <span class="comment">// The masks per value per variable.</span>
 <a name="l00804"></a>00804   scoped_array&lt;uint64*&gt; <a class="code" href="table_8cc.html#3122e85f346ede8c875fd526c4d7ed32" title="The masks per value per variable.">masks_</a>;
 <a name="l00805"></a>00805   <span class="comment">// The min on the vars at creation time.</span>
 <a name="l00806"></a>00806   scoped_array&lt;int64&gt; <a class="code" href="default__search_8cc.html#d9a8ff7e7ac855231c26423ec9d98e00">original_min_</a>;
-<a name="l00807"></a>00807   Demon* <a class="code" href="constraints_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>;
+<a name="l00807"></a>00807   Demon* <a class="code" href="expr__cst_8cc.html#97c85b30cffe5d1eb526594ab1072651">demon_</a>;
 <a name="l00808"></a>00808 };
 <a name="l00809"></a>00809 
 <a name="l00810"></a>00810 
-<a name="l00811"></a><a class="code" href="namespaceoperations__research.html#fbd02621bf9bf742302abbc3e9958fb2">00811</a> <span class="keywordtype">bool</span> <a class="code" href="namespaceoperations__research.html#fbd02621bf9bf742302abbc3e9958fb2">HasCompactDomains</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <span class="keyword">const</span> * vars, <span class="keywordtype">int</span> arity) {
+<a name="l00811"></a><a class="code" href="namespaceoperations__research.html#636cb43894ba7621e8e85e804fb1285f">00811</a> <span class="keywordtype">bool</span> <a class="code" href="namespaceoperations__research.html#636cb43894ba7621e8e85e804fb1285f">HasCompactDomains</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <span class="keyword">const</span> * vars, <span class="keywordtype">int</span> arity) {
 <a name="l00812"></a>00812   int64 sum_of_spans = 0LL;
 <a name="l00813"></a>00813   int64 sum_of_sizes = 0LL;
 <a name="l00814"></a>00814   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; arity; ++i) {
@@ -909,7 +909,7 @@
 <a name="l00825"></a>00825     <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; vars,
 <a name="l00826"></a>00826     <span class="keyword">const</span> IntTupleSet&amp; tuples) {
 <a name="l00827"></a>00827   <span class="keywordflow">if</span> (FLAGS_cp_use_compact_table
-<a name="l00828"></a>00828       &amp;&amp; <a class="code" href="namespaceoperations__research.html#fbd02621bf9bf742302abbc3e9958fb2">HasCompactDomains</a>(vars.data(), vars.size())) {
+<a name="l00828"></a>00828       &amp;&amp; <a class="code" href="namespaceoperations__research.html#636cb43894ba7621e8e85e804fb1285f">HasCompactDomains</a>(vars.data(), vars.size())) {
 <a name="l00829"></a>00829     <span class="keywordflow">if</span> (tuples.NumTuples() &lt; kBitsInUint64 &amp;&amp; FLAGS_cp_use_small_table) {
 <a name="l00830"></a>00830       <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1Solver.html#c668195dafc8397ada82227f605b0ed4" title="Registers the given object as being reversible.">RevAlloc</a>(
 <a name="l00831"></a>00831           <span class="keyword">new</span> SmallCompactPositiveTableConstraint(<span class="keyword">this</span>, vars, tuples));
@@ -939,7 +939,7 @@
 <a name="l00855"></a>00855                        int64 initial_state,
 <a name="l00856"></a>00856                        <span class="keyword">const</span> std::vector&lt;int64&gt;&amp; final_states)
 <a name="l00857"></a>00857       : Constraint(s),
-<a name="l00858"></a>00858         <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>(vars),
+<a name="l00858"></a>00858         <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>(vars),
 <a name="l00859"></a>00859         <a class="code" href="table_8cc.html#12a5c2a68d3f44903518b9cb81cf50d0" title="The transition as tuples (state, value, next_state).">transition_table_</a>(transition_table),
 <a name="l00860"></a>00860         <a class="code" href="table_8cc.html#9d2da81fd1676241774a40bc63acbe0f" title="The initial state before the first transition.">initial_state_</a>(initial_state),
 <a name="l00861"></a>00861         <a class="code" href="table_8cc.html#59f31be1a6f622da3858f3bedf98e012" title="Vector of final state after the last transision.">final_states_</a>(final_states) {}
@@ -950,7 +950,7 @@
 <a name="l00866"></a>00866                        int64 initial_state,
 <a name="l00867"></a>00867                        <span class="keyword">const</span> std::vector&lt;int&gt;&amp; final_states)
 <a name="l00868"></a>00868       : Constraint(s),
-<a name="l00869"></a>00869         <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>(vars),
+<a name="l00869"></a>00869         <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>(vars),
 <a name="l00870"></a>00870         <a class="code" href="table_8cc.html#12a5c2a68d3f44903518b9cb81cf50d0" title="The transition as tuples (state, value, next_state).">transition_table_</a>(transition_table),
 <a name="l00871"></a>00871         <a class="code" href="table_8cc.html#9d2da81fd1676241774a40bc63acbe0f" title="The initial state before the first transition.">initial_state_</a>(initial_state),
 <a name="l00872"></a>00872         <a class="code" href="table_8cc.html#59f31be1a6f622da3858f3bedf98e012" title="Vector of final state after the last transision.">final_states_</a>(final_states.size()) {
@@ -965,7 +965,7 @@
 <a name="l00881"></a>00881     Solver* <span class="keyword">const</span> s = <a class="code" href="classoperations__research_1_1PropagationBaseObject.html#2851ada2b74b1f107fb50d84043471dc">solver</a>();
 <a name="l00882"></a>00882     int64 state_min = kint64max;
 <a name="l00883"></a>00883     int64 state_max = kint64min;
-<a name="l00884"></a>00884     <span class="keyword">const</span> <span class="keywordtype">int</span> nb_vars = <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>.size();
+<a name="l00884"></a>00884     <span class="keyword">const</span> <span class="keywordtype">int</span> nb_vars = <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>.size();
 <a name="l00885"></a>00885     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; <a class="code" href="table_8cc.html#12a5c2a68d3f44903518b9cb81cf50d0" title="The transition as tuples (state, value, next_state).">transition_table_</a>.NumTuples(); ++i) {
 <a name="l00886"></a>00886       state_max = <a class="code" href="alldiff__cst_8cc.html#9d0c202d5fdd62f4fa2c613339ff168a">std::max</a>(state_max,
 <a name="l00887"></a>00887                            <a class="code" href="table_8cc.html#12a5c2a68d3f44903518b9cb81cf50d0" title="The transition as tuples (state, value, next_state).">transition_table_</a>.Value(i, <a class="code" href="table_8cc.html#4bec3c5af89f109dcb01e906c4f77d1d">kStatePosition</a>));
@@ -988,7 +988,7 @@
 <a name="l00904"></a>00904     <span class="keywordflow">for</span> (<span class="keywordtype">int</span> var_index = 0; var_index &lt; nb_vars; ++var_index) {
 <a name="l00905"></a>00905       std::vector&lt;IntVar*&gt; tmp_vars;
 <a name="l00906"></a>00906       tmp_vars.push_back(states[var_index]);
-<a name="l00907"></a>00907       tmp_vars.push_back(<a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>[var_index]);
+<a name="l00907"></a>00907       tmp_vars.push_back(<a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>[var_index]);
 <a name="l00908"></a>00908       tmp_vars.push_back(states[var_index + 1]);
 <a name="l00909"></a>00909       s-&gt;AddConstraint(
 <a name="l00910"></a>00910           s-&gt;MakeAllowedAssignments(tmp_vars, <a class="code" href="table_8cc.html#12a5c2a68d3f44903518b9cb81cf50d0" title="The transition as tuples (state, value, next_state).">transition_table_</a>));
@@ -1000,8 +1000,8 @@
 <a name="l00916"></a>00916   <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1Constraint.html#816c36feb4ec4ffce6a8d3490029301c" title="Accepts the given visitor.">Accept</a>(ModelVisitor* <span class="keyword">const</span> visitor)<span class="keyword"> const </span>{
 <a name="l00917"></a>00917     visitor-&gt;BeginVisitConstraint(ModelVisitor::kTransition, <span class="keyword">this</span>);
 <a name="l00918"></a>00918     visitor-&gt;VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-<a name="l00919"></a>00919                                                <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>.data(),
-<a name="l00920"></a>00920                                                <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>.size());
+<a name="l00919"></a>00919                                                <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>.data(),
+<a name="l00920"></a>00920                                                <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>.size());
 <a name="l00921"></a>00921     visitor-&gt;VisitIntegerArgument(ModelVisitor::kInitialState,
 <a name="l00922"></a>00922                                   <a class="code" href="table_8cc.html#9d2da81fd1676241774a40bc63acbe0f" title="The initial state before the first transition.">initial_state_</a>);
 <a name="l00923"></a>00923     visitor-&gt;VisitIntegerArrayArgument(ModelVisitor::kFinalStatesArgument,
@@ -1015,7 +1015,7 @@
 <a name="l00931"></a>00931 
 <a name="l00932"></a>00932  <span class="keyword">private</span>:
 <a name="l00933"></a>00933   <span class="comment">// Variable representing transitions between states. See header file.</span>
-<a name="l00934"></a>00934   <span class="keyword">const</span> std::vector&lt;IntVar*&gt; <a class="code" href="ac4r__table_8cc.html#d03d9c3694c01c64c1916261ce7c1d5c" title="Variables of the constraint.">vars_</a>;
+<a name="l00934"></a>00934   <span class="keyword">const</span> std::vector&lt;IntVar*&gt; <a class="code" href="alldiff__cst_8cc.html#9547583a9de0b0177b68c0f73e1eb563">vars_</a>;
 <a name="l00935"></a>00935   <span class="comment">// The transition as tuples (state, value, next_state).</span>
 <a name="l00936"></a><a class="code" href="table_8cc.html#12a5c2a68d3f44903518b9cb81cf50d0">00936</a>   <span class="keyword">const</span> IntTupleSet <a class="code" href="table_8cc.html#12a5c2a68d3f44903518b9cb81cf50d0" title="The transition as tuples (state, value, next_state).">transition_table_</a>;
 <a name="l00937"></a>00937   <span class="comment">// The initial state before the first transition.</span>
@@ -1062,7 +1062,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#359621 height=3></td>
+      <td colspan=2 bgcolor=#287003 height=3></td>
     </tr>
   </table>
 

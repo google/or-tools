@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #359621
+      background-color: #287003
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#359621 height=3></td>
+      <td colspan=3 bgcolor=#287003 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
-            for Revision:2055
+          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
+            for <b>custom file set</b>
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#359621>
+            <td bgcolor=#287003>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/examples/index.html">examples</a>/
             <a href="../../../or-tools/examples/cpp/index.html">cpp</a>/
@@ -238,7 +238,7 @@
 <a name="l00154"></a>00154 <span class="keyword">namespace </span>{
 <a name="l00155"></a>00155 <span class="comment">// An inefficient but convenient method to parse a whitespace-separated list</span>
 <a name="l00156"></a>00156 <span class="comment">// of integers. Returns true iff the input string was entirely valid and parsed.</span>
-<a name="l00157"></a><a class="code" href="namespaceoperations__research.html#788579ef9bd87b8e6961c4b9fe374d67">00157</a> <span class="keywordtype">bool</span> <a class="code" href="namespaceoperations__research.html#788579ef9bd87b8e6961c4b9fe374d67" title="An inefficient but convenient method to parse a whitespace-separated list of integers...">SafeParseInt64Array</a>(<span class="keyword">const</span> <span class="keywordtype">string</span>&amp; str, std::vector&lt;int64&gt;* parsed_int) {
+<a name="l00157"></a><a class="code" href="namespaceoperations__research.html#ced86e1ff9781b10235319d45615602f">00157</a> <span class="keywordtype">bool</span> <a class="code" href="namespaceoperations__research.html#ced86e1ff9781b10235319d45615602f" title="An inefficient but convenient method to parse a whitespace-separated list of integers...">SafeParseInt64Array</a>(<span class="keyword">const</span> <span class="keywordtype">string</span>&amp; str, std::vector&lt;int64&gt;* parsed_int) {
 <a name="l00158"></a>00158   std::vector&lt;string&gt; items;
 <a name="l00159"></a>00159   <span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">char</span> kWhiteSpaces[] = <span class="stringliteral">" \t\n\v\f\r"</span>;
 <a name="l00160"></a>00160   SplitStringUsing(str, kWhiteSpaces, &amp;items);
@@ -252,11 +252,11 @@
 <a name="l00168"></a>00168   }
 <a name="l00169"></a>00169   <span class="keywordflow">return</span> <span class="keyword">true</span>;
 <a name="l00170"></a>00170 }
-<a name="l00171"></a>00171 }  <span class="comment">// namespace</span>
+<a name="l00171"></a>00171 }
 <a name="l00172"></a>00172 
 <a name="l00173"></a>00173 <span class="comment">// Builds and solves a model from a file in the format defined by Li &amp; Lim</span>
 <a name="l00174"></a>00174 <span class="comment">// (http://www.sintef.no/static/am/opti/projects/top/vrp/format_pdp.htm).</span>
-<a name="l00175"></a><a class="code" href="namespaceoperations__research.html#a6e773eda1c0257625a1d8b9b304b971">00175</a> <span class="keywordtype">bool</span> <a class="code" href="namespaceoperations__research.html#a6e773eda1c0257625a1d8b9b304b971" title="namespace">LoadAndSolve</a>(<span class="keyword">const</span> <span class="keywordtype">string</span>&amp; pdp_file) {
+<a name="l00175"></a><a class="code" href="namespaceoperations__research.html#a6e773eda1c0257625a1d8b9b304b971">00175</a> <span class="keywordtype">bool</span> <a class="code" href="namespaceoperations__research.html#a6e773eda1c0257625a1d8b9b304b971" title="Builds and solves a model from a file in the format defined by Li &amp;amp; Lim (http://www...">LoadAndSolve</a>(<span class="keyword">const</span> <span class="keywordtype">string</span>&amp; pdp_file) {
 <a name="l00176"></a>00176   <span class="comment">// Load all the lines of the file in RAM (it shouldn't be too large anyway).</span>
 <a name="l00177"></a>00177   std::vector&lt;string&gt; lines;
 <a name="l00178"></a>00178   {
@@ -280,7 +280,7 @@
 <a name="l00196"></a>00196   }
 <a name="l00197"></a>00197   <span class="comment">// Parse file header.</span>
 <a name="l00198"></a>00198   std::vector&lt;int64&gt; parsed_int;
-<a name="l00199"></a>00199   <span class="keywordflow">if</span> (!<a class="code" href="namespaceoperations__research.html#788579ef9bd87b8e6961c4b9fe374d67" title="An inefficient but convenient method to parse a whitespace-separated list of integers...">SafeParseInt64Array</a>(lines[0], &amp;parsed_int)
+<a name="l00199"></a>00199   <span class="keywordflow">if</span> (!<a class="code" href="namespaceoperations__research.html#ced86e1ff9781b10235319d45615602f" title="An inefficient but convenient method to parse a whitespace-separated list of integers...">SafeParseInt64Array</a>(lines[0], &amp;parsed_int)
 <a name="l00200"></a>00200       || parsed_int.size() != 3
 <a name="l00201"></a>00201       || parsed_int[0] &lt; 0
 <a name="l00202"></a>00202       || parsed_int[1] &lt; 0
@@ -304,7 +304,7 @@
 <a name="l00220"></a>00220   std::vector&lt;RoutingModel::NodeIndex&gt; deliveries;
 <a name="l00221"></a>00221   int64 horizon = 0;
 <a name="l00222"></a>00222   <span class="keywordflow">for</span> (<span class="keywordtype">int</span> line_index = 1; line_index &lt; lines.size(); ++line_index) {
-<a name="l00223"></a>00223     <span class="keywordflow">if</span> (!<a class="code" href="namespaceoperations__research.html#788579ef9bd87b8e6961c4b9fe374d67" title="An inefficient but convenient method to parse a whitespace-separated list of integers...">SafeParseInt64Array</a>(lines[line_index], &amp;parsed_int)
+<a name="l00223"></a>00223     <span class="keywordflow">if</span> (!<a class="code" href="namespaceoperations__research.html#ced86e1ff9781b10235319d45615602f" title="An inefficient but convenient method to parse a whitespace-separated list of integers...">SafeParseInt64Array</a>(lines[line_index], &amp;parsed_int)
 <a name="l00224"></a>00224         || parsed_int.size() != 9
 <a name="l00225"></a>00225         || parsed_int[0] &lt; 0
 <a name="l00226"></a>00226         || parsed_int[4] &lt; 0
@@ -398,7 +398,7 @@
 <a name="l00314"></a>00314 
 <a name="l00315"></a><a class="code" href="pdptw_8cc.html#3c04138a5bfe5d72780bb7e82a18e627">00315</a> <span class="keywordtype">int</span> <a class="code" href="costas__array_8cc.html#3c04138a5bfe5d72780bb7e82a18e627" title="namespace operations_research">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span> **argv) {
 <a name="l00316"></a>00316   google::ParseCommandLineFlags(&amp;argc, &amp;argv, <span class="keyword">true</span>);
-<a name="l00317"></a>00317   <span class="keywordflow">if</span> (!<a class="code" href="namespaceoperations__research.html#a6e773eda1c0257625a1d8b9b304b971" title="namespace">operations_research::LoadAndSolve</a>(FLAGS_pdp_file)) {
+<a name="l00317"></a>00317   <span class="keywordflow">if</span> (!<a class="code" href="namespaceoperations__research.html#a6e773eda1c0257625a1d8b9b304b971" title="Builds and solves a model from a file in the format defined by Li &amp;amp; Lim (http://www...">operations_research::LoadAndSolve</a>(FLAGS_pdp_file)) {
 <a name="l00318"></a>00318     LG &lt;&lt; <span class="stringliteral">"Error solving "</span> &lt;&lt; FLAGS_pdp_file;
 <a name="l00319"></a>00319   }
 <a name="l00320"></a>00320   <span class="keywordflow">return</span> 0;
@@ -411,7 +411,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#359621 height=3></td>
+      <td colspan=2 bgcolor=#287003 height=3></td>
     </tr>
   </table>
 

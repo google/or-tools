@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #359621
+      background-color: #287003
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#359621 height=3></td>
+      <td colspan=3 bgcolor=#287003 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
-            for Revision:2055
+          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
+            for <b>custom file set</b>
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#359621>
+            <td bgcolor=#287003>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/base/index.html">base</a>/
@@ -104,33 +104,25 @@
 <a name="l00021"></a>00021 <span class="comment">// ACM minimal standard random number generator.  (re-entrant.)</span>
 <a name="l00022"></a><a class="code" href="classoperations__research_1_1ACMRandom.html">00022</a> <span class="keyword">class </span><a class="code" href="classoperations__research_1_1ACMRandom.html" title="ACM minimal standard random number generator. (re-entrant.).">ACMRandom</a> {
 <a name="l00023"></a>00023  <span class="keyword">public</span>:
-<a name="l00024"></a>00024 <span class="preprocessor">#if defined(_MSC_VER)</span>
-<a name="l00025"></a>00025 <span class="preprocessor"></span>  <span class="keyword">typedef</span> __int64 <a class="code" href="classoperations__research_1_1ACMRandom.html#4c2112905377505f98c46e34cec9cf6c">difference_type</a>;
-<a name="l00026"></a>00026 <span class="preprocessor">#else</span>
-<a name="l00027"></a><a class="code" href="classoperations__research_1_1ACMRandom.html#4c2112905377505f98c46e34cec9cf6c">00027</a> <span class="preprocessor"></span>  <span class="keyword">typedef</span> <span class="keywordtype">long</span> <span class="keywordtype">long</span> <a class="code" href="classoperations__research_1_1ACMRandom.html#4c2112905377505f98c46e34cec9cf6c">difference_type</a>;
-<a name="l00028"></a>00028 <span class="preprocessor">#endif</span>
-<a name="l00029"></a><a class="code" href="classoperations__research_1_1ACMRandom.html#148e62e5b49d16d6ef47d53f2b8a5532">00029</a> <span class="preprocessor"></span>  <span class="keyword">explicit</span> <a class="code" href="classoperations__research_1_1ACMRandom.html#148e62e5b49d16d6ef47d53f2b8a5532">ACMRandom</a>(<a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> seed) : seed_(seed) {}
-<a name="l00030"></a>00030   <a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> <a class="code" href="classoperations__research_1_1ACMRandom.html#fbe9bb5627d955c96c38680dab25bb11">Next</a>();
-<a name="l00031"></a>00031   <a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> <a class="code" href="classoperations__research_1_1ACMRandom.html#9cdb7046f78c2ae3be5f0fd0bee79f06">Uniform</a>(<a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> max_value);
-<a name="l00032"></a>00032   <a class="code" href="integral__types_8h.html#ecfc3c54bd29ad5964e1c1c3ccbf89df" title="NOLINT.">int64</a> <a class="code" href="classoperations__research_1_1ACMRandom.html#8dac8b2ebd16caf05f937f8afb900141">Next64</a>();
-<a name="l00033"></a><a class="code" href="classoperations__research_1_1ACMRandom.html#ef3e2fda5f40b09e8de0b9544aec8a59">00033</a>   <span class="keywordtype">float</span> <a class="code" href="classoperations__research_1_1ACMRandom.html#ef3e2fda5f40b09e8de0b9544aec8a59">RndFloat</a>() {
-<a name="l00034"></a>00034     <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1ACMRandom.html#fbe9bb5627d955c96c38680dab25bb11">Next</a>() * 0.000000000465661273646;  <span class="comment">// x: x * (M-1) = 1 - eps</span>
-<a name="l00035"></a>00035   }
-<a name="l00036"></a>00036 
-<a name="l00037"></a><a class="code" href="classoperations__research_1_1ACMRandom.html#0ada5c6f71e714d47d077b19d6a3873a">00037</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1ACMRandom.html#0ada5c6f71e714d47d077b19d6a3873a">Reset</a>(<a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> seed) { seed_ = seed; }
-<a name="l00038"></a>00038   <span class="keyword">static</span> <a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> <a class="code" href="classoperations__research_1_1ACMRandom.html#96b0436784f97f6434e14f8d5a88a22b" title="namespace">HostnamePidTimeSeed</a>();
-<a name="l00039"></a>00039   <span class="keyword">static</span> <a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> <a class="code" href="classoperations__research_1_1ACMRandom.html#814ac98db46e1d3c48df0381fb196737">DeterministicSeed</a>();
-<a name="l00040"></a><a class="code" href="classoperations__research_1_1ACMRandom.html#2e32d855aca2f37d1a8397a6211224e3">00040</a>   <a class="code" href="integral__types_8h.html#ecfc3c54bd29ad5964e1c1c3ccbf89df" title="NOLINT.">int64</a> <a class="code" href="classoperations__research_1_1ACMRandom.html#2e32d855aca2f37d1a8397a6211224e3">operator() </a>(<a class="code" href="integral__types_8h.html#ecfc3c54bd29ad5964e1c1c3ccbf89df" title="NOLINT.">int64</a> val_max) {
-<a name="l00041"></a>00041     <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1ACMRandom.html#8dac8b2ebd16caf05f937f8afb900141">Next64</a>() % val_max;
-<a name="l00042"></a>00042   }
-<a name="l00043"></a>00043 
-<a name="l00044"></a>00044  <span class="keyword">private</span>:
-<a name="l00045"></a>00045   <a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> seed_;
-<a name="l00046"></a>00046 };
-<a name="l00047"></a>00047 
-<a name="l00048"></a>00048 }  <span class="comment">// namespace operations_research</span>
-<a name="l00049"></a>00049 
-<a name="l00050"></a>00050 <span class="preprocessor">#endif  // OR_TOOLS_BASE_RANDOM_H_</span>
+<a name="l00024"></a><a class="code" href="classoperations__research_1_1ACMRandom.html#148e62e5b49d16d6ef47d53f2b8a5532">00024</a>   <span class="keyword">explicit</span> <a class="code" href="classoperations__research_1_1ACMRandom.html#148e62e5b49d16d6ef47d53f2b8a5532">ACMRandom</a>(<a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> seed) : seed_(seed) {}
+<a name="l00025"></a>00025   <a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> <a class="code" href="classoperations__research_1_1ACMRandom.html#fbe9bb5627d955c96c38680dab25bb11">Next</a>();
+<a name="l00026"></a>00026   <a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> <a class="code" href="classoperations__research_1_1ACMRandom.html#9cdb7046f78c2ae3be5f0fd0bee79f06">Uniform</a>(<a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> max_value);
+<a name="l00027"></a>00027   <a class="code" href="integral__types_8h.html#ecfc3c54bd29ad5964e1c1c3ccbf89df" title="NOLINT.">int64</a> <a class="code" href="classoperations__research_1_1ACMRandom.html#8dac8b2ebd16caf05f937f8afb900141">Next64</a>();
+<a name="l00028"></a><a class="code" href="classoperations__research_1_1ACMRandom.html#ef3e2fda5f40b09e8de0b9544aec8a59">00028</a>   <span class="keywordtype">float</span> <a class="code" href="classoperations__research_1_1ACMRandom.html#ef3e2fda5f40b09e8de0b9544aec8a59">RndFloat</a>() {
+<a name="l00029"></a>00029     <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1ACMRandom.html#fbe9bb5627d955c96c38680dab25bb11">Next</a>() * 0.000000000465661273646;  <span class="comment">// x: x * (M-1) = 1 - eps</span>
+<a name="l00030"></a>00030   }
+<a name="l00031"></a>00031 
+<a name="l00032"></a><a class="code" href="classoperations__research_1_1ACMRandom.html#0ada5c6f71e714d47d077b19d6a3873a">00032</a>   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1ACMRandom.html#0ada5c6f71e714d47d077b19d6a3873a">Reset</a>(<a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> seed) { seed_ = seed; }
+<a name="l00033"></a>00033   <span class="keyword">static</span> <a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> <a class="code" href="classoperations__research_1_1ACMRandom.html#96b0436784f97f6434e14f8d5a88a22b" title="namespace">HostnamePidTimeSeed</a>();
+<a name="l00034"></a>00034   <span class="keyword">static</span> <a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> <a class="code" href="classoperations__research_1_1ACMRandom.html#814ac98db46e1d3c48df0381fb196737">DeterministicSeed</a>();
+<a name="l00035"></a>00035 
+<a name="l00036"></a>00036  <span class="keyword">private</span>:
+<a name="l00037"></a>00037   <a class="code" href="integral__types_8h.html#56f1a81c92849566ae864511088eb7e8">int32</a> seed_;
+<a name="l00038"></a>00038 };
+<a name="l00039"></a>00039 
+<a name="l00040"></a>00040 }  <span class="comment">// namespace operations_research</span>
+<a name="l00041"></a>00041 
+<a name="l00042"></a>00042 <span class="preprocessor">#endif  // OR_TOOLS_BASE_RANDOM_H_</span>
 </pre></div></div>
 
   <!-- Start of footer. -->
@@ -139,7 +131,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#359621 height=3></td>
+      <td colspan=2 bgcolor=#287003 height=3></td>
     </tr>
   </table>
 

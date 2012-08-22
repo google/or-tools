@@ -13,22 +13,22 @@
   <!-- Second part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
   <style>
     a.doxy_logo:hover {
-      background-color: #359621
+      background-color: #287003
     }
   </style>
 
   <table width=100% cellpadding=0 cellspacing=0 border=0>
     <!-- Top horizontal line with the color of the day. -->
     <tr valign=top>
-      <td colspan=3 bgcolor=#359621 height=3></td>
+      <td colspan=3 bgcolor=#287003 height=3></td>
     </tr>
 
     <!-- Header row with the links at the right. -->
     <tr valign=top>
       <td colspan=3 align=right>
         <font size=-1>
-          Generated on: <font color=#359621><b>Fri Aug 10 00:46:07 CEST 2012</b></font>
-            for Revision:2055
+          Generated on: <font color=#287003><b>Thu Mar 29 07:46:58 PDT 2012</b></font>
+            for <b>custom file set</b>
         </font>
       </td>
     </tr>
@@ -40,7 +40,7 @@
         <table width=150 height=54 cellpadding=0 cellspacing=0 border=0>
           <tr valign=top>
             <!-- First part of the secret behind Doxy logo always having the word "Doxy" with the color of the day. -->
-            <td bgcolor=#359621>
+            <td bgcolor=#287003>
               <a class="doxy_logo" href="../../../index.html"><img src="../../../doxy_logo.png" alt="Doxy" border=0></a>
             </td>
           </tr>
@@ -59,7 +59,7 @@
     <table width=100% cellpadding=0 cellspacing=0 border=0>
       <tr>
         <td align=left style="padding-left: 20px"><font size=+1><b><tt><font color=#333333>//
-            <a href="../../../index.html"><font color=#359621>doxy</font></a>/</font>
+            <a href="../../../index.html"><font color=#287003>doxy</font></a>/</font>
             <a href="../../../or-tools/index.html">or-tools</a>/
             <a href="../../../or-tools/src/index.html">src</a>/
             <a href="../../../or-tools/src/constraint_solver/index.html">constraint_solver</a>/
@@ -257,7 +257,7 @@
 <a name="l00173"></a>00173 
 <a name="l00174"></a>00174 <span class="comment">// The type must be defined outside the class RoutingModel, SWIG does not parse</span>
 <a name="l00175"></a>00175 <span class="comment">// it correctly if it's inside.</span>
-<a name="l00176"></a>00176 <a class="code" href="namespaceoperations__research.html#db0165001d1dfdcbfbd8fea9c0533f33">DEFINE_INT_TYPE</a>(_RoutingModel_NodeIndex, <span class="keywordtype">int</span>);
+<a name="l00176"></a>00176 <a class="code" href="namespaceoperations__research.html#30cd29caf636315c7dff36737342b4f8" title="The type must be defined outside the class RoutingModel, SWIG does not parse it correctly...">DEFINE_INT_TYPE</a>(_RoutingModel_NodeIndex, <span class="keywordtype">int</span>);
 <a name="l00177"></a>00177 
 <a name="l00178"></a><a class="code" href="classoperations__research_1_1RoutingModel.html">00178</a> <span class="keyword">class </span><a class="code" href="classoperations__research_1_1RoutingModel.html">RoutingModel</a> {
 <a name="l00179"></a>00179  <span class="keyword">public</span>:
@@ -286,7 +286,7 @@
 <a name="l00202"></a>00202     <span class="comment">// Iteratively build a solution by inserting nodes at their cheapest (best)</span>
 <a name="l00203"></a>00203     <span class="comment">// position. As of 2/2012, only works on models with optional nodes</span>
 <a name="l00204"></a>00204     <span class="comment">// (with finite penalty costs).</span>
-<a name="l00205"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#6f38b3ff9a2e455677856d97e339da6d9d13a87ad6a77f4fc63f28af90451c6e">00205</a>     <a class="code" href="classoperations__research_1_1RoutingModel.html#6f38b3ff9a2e455677856d97e339da6d9d13a87ad6a77f4fc63f28af90451c6e" title="Iteratively build a solution by inserting nodes at their cheapest (best) position...">ROUTING_BEST_INSERTION</a>,
+<a name="l00205"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#6f38b3ff9a2e455677856d97e339da6d9d13a87ad6a77f4fc63f28af90451c6e">00205</a>     <a class="code" href="classoperations__research_1_1RoutingModel.html#6f38b3ff9a2e455677856d97e339da6d9d13a87ad6a77f4fc63f28af90451c6e" title="Iteratively build a solution by inserting nodes at their cheapest (best) position...">ROUTING_BEST_INSERTION</a>
 <a name="l00206"></a>00206   };
 <a name="l00207"></a>00207 
 <a name="l00208"></a>00208   <span class="comment">// Metaheuristics used to guide the search. Apart greedy descent, they will</span>
@@ -304,7 +304,7 @@
 <a name="l00220"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#0f0bd97e25af059ab2e8e7f263afc8e1a166bff87b6170318a34b1af38fc98fe">00220</a>     <a class="code" href="classoperations__research_1_1RoutingModel.html#0f0bd97e25af059ab2e8e7f263afc8e1a166bff87b6170318a34b1af38fc98fe" title="Uses simulated annealing to escape local minima (cf.">ROUTING_SIMULATED_ANNEALING</a>,
 <a name="l00221"></a>00221     <span class="comment">// Uses tabu search to escape local minima</span>
 <a name="l00222"></a>00222     <span class="comment">// (cf. http://en.wikipedia.org/wiki/Tabu_search).</span>
-<a name="l00223"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#0f0bd97e25af059ab2e8e7f263afc8e10dd042e16dd28cfdd370382de2f51a35">00223</a>     <a class="code" href="classoperations__research_1_1RoutingModel.html#0f0bd97e25af059ab2e8e7f263afc8e10dd042e16dd28cfdd370382de2f51a35" title="Uses tabu search to escape local minima (cf.">ROUTING_TABU_SEARCH</a>,
+<a name="l00223"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#0f0bd97e25af059ab2e8e7f263afc8e10dd042e16dd28cfdd370382de2f51a35">00223</a>     <a class="code" href="classoperations__research_1_1RoutingModel.html#0f0bd97e25af059ab2e8e7f263afc8e10dd042e16dd28cfdd370382de2f51a35" title="Uses tabu search to escape local minima (cf.">ROUTING_TABU_SEARCH</a>
 <a name="l00224"></a>00224   };
 <a name="l00225"></a>00225 
 <a name="l00226"></a>00226   <span class="comment">// Status of the search.</span>
@@ -599,266 +599,232 @@
 <a name="l00515"></a>00515 
 <a name="l00516"></a>00516   <span class="comment">// Model inspection.</span>
 <a name="l00517"></a>00517   <span class="comment">// Returns the variable index of the starting node of a vehicle route.</span>
-<a name="l00518"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#e6c177c3dd7409f9dd60c10220e043e1">00518</a>   int64 <a class="code" href="classoperations__research_1_1RoutingModel.html#e6c177c3dd7409f9dd60c10220e043e1" title="Model inspection.">Start</a>(<span class="keywordtype">int</span> vehicle)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> starts_[vehicle]; }
+<a name="l00518"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#fcb255b430c9c51561a344966f32940d">00518</a>   <span class="keywordtype">int</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#fcb255b430c9c51561a344966f32940d" title="Model inspection.">Start</a>(<span class="keywordtype">int</span> vehicle)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> starts_[vehicle]; }
 <a name="l00519"></a>00519   <span class="comment">// Returns the variable index of the ending node of a vehicle route.</span>
-<a name="l00520"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#15fbc75264cec5b173e7f1dc6cc92703">00520</a>   int64 <a class="code" href="classoperations__research_1_1RoutingModel.html#15fbc75264cec5b173e7f1dc6cc92703" title="Returns the variable index of the ending node of a vehicle route.">End</a>(<span class="keywordtype">int</span> vehicle)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> ends_[vehicle]; }
+<a name="l00520"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#9d2055447d769bd064f61c150d099b53">00520</a>   <span class="keywordtype">int</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#9d2055447d769bd064f61c150d099b53" title="Returns the variable index of the ending node of a vehicle route.">End</a>(<span class="keywordtype">int</span> vehicle)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> ends_[vehicle]; }
 <a name="l00521"></a>00521   <span class="comment">// Returns true if 'index' represents the first node of a route.</span>
 <a name="l00522"></a>00522   <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#7f1ed907da5e1918e60d7a206e7dc0d7" title="Returns true if &amp;#39;index&amp;#39; represents the first node of a route.">IsStart</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>) <span class="keyword">const</span>;
 <a name="l00523"></a>00523   <span class="comment">// Returns true if 'index' represents the last node of a route.</span>
-<a name="l00524"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#d542c0716ca8948f8e6240b2ff24d878">00524</a>   <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#d542c0716ca8948f8e6240b2ff24d878" title="Returns true if &amp;#39;index&amp;#39; represents the last node of a route.">IsEnd</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> index &gt;= <a class="code" href="classoperations__research_1_1RoutingModel.html#fcb19f39e0670d42a070dc34246416c9" title="Returns the number of next variables in the model.">Size</a>(); }
+<a name="l00524"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#d542c0716ca8948f8e6240b2ff24d878">00524</a>   <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#d542c0716ca8948f8e6240b2ff24d878" title="Returns true if &amp;#39;index&amp;#39; represents the last node of a route.">IsEnd</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> index &gt;= <a class="code" href="classoperations__research_1_1RoutingModel.html#5a560929b26804990f1e7d6972218f87" title="Returns the number of next variables in the model.">Size</a>(); }
 <a name="l00525"></a>00525   int64 <a class="code" href="classoperations__research_1_1RoutingModel.html#1d7c2d652d782ca3930583b98ee3f15d" title="Return high cost if connecting to end node; used in cost-based first solution.">GetFirstSolutionCost</a>(int64 i, int64 j);
 <a name="l00526"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#5a4f31c561411ae89bf266e41ceb509c">00526</a>   <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#5a4f31c561411ae89bf266e41ceb509c">homogeneous_costs</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> homogeneous_costs_; }
 <a name="l00527"></a>00527   <span class="comment">// Assignment inspection</span>
 <a name="l00528"></a>00528   <span class="comment">// Returns the variable index of the node directly after the node</span>
 <a name="l00529"></a>00529   <span class="comment">// corresponding to 'index' in 'assignment'.</span>
-<a name="l00530"></a>00530   int64 <a class="code" href="classoperations__research_1_1RoutingModel.html#c3b6c0ed8ce1a0f2efe650c6eb7e4c1f" title="Assignment inspection Returns the variable index of the node directly after the node...">Next</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1Assignment.html" title="Assignment.">Assignment</a>&amp; assignment, int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>) <span class="keyword">const</span>;
+<a name="l00530"></a>00530   <span class="keywordtype">int</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#831900fa1fa062dca5ba3d220b7f3387" title="Assignment inspection Returns the variable index of the node directly after the node...">Next</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1Assignment.html" title="Assignment.">Assignment</a>&amp; assignment, <span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>) <span class="keyword">const</span>;
 <a name="l00531"></a>00531   <span class="comment">// Returns true if the route of 'vehicle' is non empty in 'assignment'.</span>
 <a name="l00532"></a>00532   <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#47b43075c4e09efcdc59b3368b0242fb" title="Returns true if the route of &amp;#39;vehicle&amp;#39; is non empty in &amp;#39;assignment&amp;#39;...">IsVehicleUsed</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1Assignment.html" title="Assignment.">Assignment</a>&amp; assignment, <span class="keywordtype">int</span> vehicle) <span class="keyword">const</span>;
 <a name="l00533"></a>00533   <span class="comment">// Variables</span>
-<a name="l00534"></a>00534 <span class="preprocessor">#if !defined(SWIG)</span>
-<a name="l00535"></a>00535 <span class="preprocessor"></span>  <span class="comment">// Returns all next variables of the model, such that Nexts(i) is the next</span>
-<a name="l00536"></a>00536   <span class="comment">// variable of the node corresponding to i.</span>
-<a name="l00537"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#d0bcbeb12364a5869fd36d11a8b65471">00537</a>   <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; <a class="code" href="classoperations__research_1_1RoutingModel.html#d0bcbeb12364a5869fd36d11a8b65471" title="Variables.">Nexts</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> nexts_; }
-<a name="l00538"></a>00538   <span class="comment">// Returns all vehicle variables of the model,  such that VehicleVars(i) is</span>
-<a name="l00539"></a>00539   <span class="comment">// the vehicle variable of the node corresponding to i.</span>
-<a name="l00540"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#4ab2be7183b79406003541170c54881a">00540</a>   <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; <a class="code" href="classoperations__research_1_1RoutingModel.html#4ab2be7183b79406003541170c54881a" title="Returns all vehicle variables of the model, such that VehicleVars(i) is the vehicle...">VehicleVars</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> vehicle_vars_; }
-<a name="l00541"></a>00541 <span class="preprocessor">#endif</span>
-<a name="l00542"></a>00542 <span class="preprocessor"></span>  <span class="comment">// Returns the next variable of the node corresponding to index.</span>
-<a name="l00543"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#131f2181343be56fd836b64747fe9f49">00543</a>   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#131f2181343be56fd836b64747fe9f49" title="Returns the next variable of the node corresponding to index.">NextVar</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> nexts_[index]; }
-<a name="l00544"></a>00544   <span class="comment">// Returns the active variable of the node corresponding to index.</span>
-<a name="l00545"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#5254602b653dda44c6f6a6611e8cd6f2">00545</a>   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#5254602b653dda44c6f6a6611e8cd6f2" title="Returns the active variable of the node corresponding to index.">ActiveVar</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> active_[index]; }
-<a name="l00546"></a>00546   <span class="comment">// Returns the vehicle variable of the node corresponding to index.</span>
-<a name="l00547"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#618a961dcb65e02d6d310a83d1f60722">00547</a>   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#618a961dcb65e02d6d310a83d1f60722" title="Returns the vehicle variable of the node corresponding to index.">VehicleVar</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> vehicle_vars_[index]; }
-<a name="l00548"></a>00548   <span class="comment">// Returns the cumul variable for the dimension named 'name'.</span>
-<a name="l00549"></a>00549   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#a1e366cd50bfdfac06e032d9eb22612f" title="Returns the cumul variable for the dimension named &amp;#39;name&amp;#39;.">CumulVar</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>, <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>) <span class="keyword">const</span>;
-<a name="l00550"></a>00550   <span class="comment">// Returns the transit variable for the dimension named 'name'.</span>
-<a name="l00551"></a>00551   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#8d0a9a90e331b113628418013cfa813e" title="Returns the transit variable for the dimension named &amp;#39;name&amp;#39;.">TransitVar</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>, <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>) <span class="keyword">const</span>;
-<a name="l00552"></a>00552   <span class="comment">// Return the slack variable for the dimension named 'name'.</span>
-<a name="l00553"></a>00553   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#d2d8e442bcf7cb1ba759edc13a3a9389" title="Return the slack variable for the dimension named &amp;#39;name&amp;#39;.">SlackVar</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>, <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>) <span class="keyword">const</span>;
-<a name="l00554"></a>00554   <span class="comment">// Returns the global cost variable which is being minimized.</span>
-<a name="l00555"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#c76b2c7544a4fc56d06945cbde4480a6">00555</a>   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#c76b2c7544a4fc56d06945cbde4480a6" title="Returns the global cost variable which is being minimized.">CostVar</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> cost_; }
-<a name="l00556"></a>00556   <span class="comment">// Returns the cost of the segment between two nodes for a given vehicle</span>
-<a name="l00557"></a>00557   <span class="comment">// route. Input are variable indices of node.</span>
-<a name="l00558"></a>00558   int64 <a class="code" href="classoperations__research_1_1RoutingModel.html#2fc423d06fca461e5220ee4c42672f37" title="Returns the cost of the segment between two nodes for a given vehicle route.">GetCost</a>(int64 from_index, int64 to_index, int64 vehicle);
-<a name="l00559"></a>00559   <span class="comment">// Returns the cost of the segment between two nodes supposing all vehicle</span>
-<a name="l00560"></a>00560   <span class="comment">// costs are the same (returns the cost for the first vehicle otherwise).</span>
-<a name="l00561"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#6f274d2ace4d354140b9c086ef4dceee">00561</a>   int64 <a class="code" href="classoperations__research_1_1RoutingModel.html#6f274d2ace4d354140b9c086ef4dceee" title="Returns the cost of the segment between two nodes supposing all vehicle costs are...">GetHomogeneousCost</a>(int64 i, int64 j) {
-<a name="l00562"></a>00562     <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#2fc423d06fca461e5220ee4c42672f37" title="Returns the cost of the segment between two nodes for a given vehicle route.">GetCost</a>(i, j, 0);
-<a name="l00563"></a>00563   }
-<a name="l00564"></a>00564   <span class="comment">// Returns the number of different vehicle cost callbacks in the model.</span>
-<a name="l00565"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#9a73f66587912a44e43be4c8c840256c">00565</a>   <span class="keywordtype">int</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#9a73f66587912a44e43be4c8c840256c" title="Returns the number of different vehicle cost callbacks in the model.">GetVehicleCostCount</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> cost_callback_vehicles_.size(); }
-<a name="l00566"></a>00566 
-<a name="l00567"></a>00567   <span class="comment">// Returns the underlying constraint solver. Can be used to add extra</span>
-<a name="l00568"></a>00568   <span class="comment">// constraints and/or modify search algoithms.</span>
-<a name="l00569"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#35a094db917c3c996826285424bb2f54">00569</a>   <a class="code" href="classoperations__research_1_1Solver.html" title="Solver Class.">Solver</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#35a094db917c3c996826285424bb2f54" title="Returns the underlying constraint solver.">solver</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> solver_.get(); }
-<a name="l00570"></a>00570 
-<a name="l00571"></a>00571   <span class="comment">// Sizes and indices</span>
-<a name="l00572"></a>00572   <span class="comment">// Returns the number of nodes in the model.</span>
-<a name="l00573"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#20c1bf5b1ac1353c9e132774f3f7e1df">00573</a>   <span class="keywordtype">int</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#20c1bf5b1ac1353c9e132774f3f7e1df" title="Sizes and indices Returns the number of nodes in the model.">nodes</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> nodes_; }
-<a name="l00574"></a>00574   <span class="comment">// Returns the number of vehicle routes in the model.</span>
-<a name="l00575"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#9236103b3dca8a4112bd2a8be05b0b71">00575</a>   <span class="keywordtype">int</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#9236103b3dca8a4112bd2a8be05b0b71" title="Returns the number of vehicle routes in the model.">vehicles</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> vehicles_; }
-<a name="l00576"></a>00576   <span class="comment">// Returns the number of next variables in the model.</span>
-<a name="l00577"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#fcb19f39e0670d42a070dc34246416c9">00577</a>   int64 <a class="code" href="classoperations__research_1_1RoutingModel.html#fcb19f39e0670d42a070dc34246416c9" title="Returns the number of next variables in the model.">Size</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> nodes_ + vehicles_ - start_end_count_; }
-<a name="l00578"></a>00578   <span class="comment">// Returns the node index from an index value resulting fron a next variable.</span>
-<a name="l00579"></a>00579   <a class="code" href="classoperations__research_1_1RoutingModel.html#2e9f7da1126111a69ee0b7bcf7edeffe">NodeIndex</a> <a class="code" href="classoperations__research_1_1RoutingModel.html#ca1b6ad06bed2a28e3debeed4512db0d" title="Returns the node index from an index value resulting fron a next variable.">IndexToNode</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>) <span class="keyword">const</span>;
-<a name="l00580"></a>00580   <span class="comment">// Returns the variable index from a node value.</span>
-<a name="l00581"></a>00581   <span class="comment">// Should not be used for nodes at the start / end of a route,</span>
-<a name="l00582"></a>00582   <span class="comment">// because of node multiplicity.  These cases return -1, which is</span>
-<a name="l00583"></a>00583   <span class="comment">// considered a failure case.  Clients who need start and end</span>
-<a name="l00584"></a>00584   <span class="comment">// variable indices should use RoutingModel::Start and RoutingModel::End.</span>
-<a name="l00585"></a>00585   int64 <a class="code" href="classoperations__research_1_1RoutingModel.html#6c88d9d5da962886bfe0924bc5ea6457" title="Returns the variable index from a node value.">NodeToIndex</a>(<a class="code" href="classoperations__research_1_1RoutingModel.html#2e9f7da1126111a69ee0b7bcf7edeffe">NodeIndex</a> <a class="code" href="dependency__graph_8cc.html#4eefd1c2b90c940bb972d6d038744cc3">node</a>) <span class="keyword">const</span>;
-<a name="l00586"></a>00586   <span class="comment">// Returns the variable indices of the nodes in the same disjunction as the</span>
-<a name="l00587"></a>00587   <span class="comment">// node corresponding to the variable of index 'index'.</span>
-<a name="l00588"></a>00588   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#23961d60010f2c38f156f2e705c6e781" title="Returns the variable indices of the nodes in the same disjunction as the node corresponding...">GetDisjunctionIndicesFromIndex</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>, std::vector&lt;int&gt;* indices) <span class="keyword">const</span>;
-<a name="l00589"></a>00589 
-<a name="l00590"></a>00590   <span class="comment">// Time limits</span>
-<a name="l00591"></a>00591   <span class="comment">// Returns the current time limit used in the search.</span>
-<a name="l00592"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#814299b5554ee840394457c61fec466f">00592</a>   int64 <a class="code" href="classoperations__research_1_1RoutingModel.html#814299b5554ee840394457c61fec466f" title="Time limits Returns the current time limit used in the search.">TimeLimit</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> time_limit_ms_; }
-<a name="l00593"></a>00593   <span class="comment">// Updates the time limit used in the search.</span>
-<a name="l00594"></a>00594   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#daff11f77b3ff5eec418ca0fe74d5890" title="Updates the time limit used in the search.">UpdateTimeLimit</a>(int64 limit_ms);
-<a name="l00595"></a>00595   <span class="comment">// Updates the time limit used in the Large Neighborhood search tree.</span>
-<a name="l00596"></a>00596   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#e5d2063233d64b4c746080d0e3bb429c" title="Updates the time limit used in the Large Neighborhood search tree.">UpdateLNSTimeLimit</a>(int64 limit_ms);
-<a name="l00597"></a>00597 
-<a name="l00598"></a>00598   <span class="comment">// Utilities for swig to set flags in python or java.</span>
-<a name="l00599"></a>00599   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#6d58b03c066bfedc30d6555244bee0f8" title="Utilities for swig to set flags in python or java.">SetCommandLineOption</a>(<span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>, <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="search_8cc.html#21edc7ca4cc5802c8779d68556bc09cf">value</a>);
-<a name="l00600"></a>00600 
-<a name="l00601"></a>00601   <span class="comment">// Conversion between enums and strings; the Parse*() conversions return true</span>
-<a name="l00602"></a>00602   <span class="comment">// on success and the *Name() conversions return NULL when given unknown</span>
-<a name="l00603"></a>00603   <span class="comment">// values. See the .cc for the name conversions. The rule of thumb is:</span>
-<a name="l00604"></a>00604   <span class="comment">// RoutingModel::ROUTING_PATH_CHEAPEST_ARC &lt;-&gt; "PathCheapestArc".</span>
-<a name="l00605"></a>00605   <span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code" href="classoperations__research_1_1RoutingModel.html#350049a8735106a149d65252b0bbcff2" title="Conversion between enums and strings; the Parse*() conversions return true on success...">RoutingStrategyName</a>(<a class="code" href="classoperations__research_1_1RoutingModel.html#6f38b3ff9a2e455677856d97e339da6d" title="First solution strategies, used as starting point of local search.">RoutingStrategy</a> strategy);
-<a name="l00606"></a>00606   <span class="keyword">static</span> <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#f65ba5a7c153ed25d49b0ab25b7abc47" title="static">ParseRoutingStrategy</a>(<span class="keyword">const</span> <span class="keywordtype">string</span>&amp; strategy_str,
-<a name="l00607"></a>00607                                    <a class="code" href="classoperations__research_1_1RoutingModel.html#6f38b3ff9a2e455677856d97e339da6d" title="First solution strategies, used as starting point of local search.">RoutingStrategy</a>* strategy);
-<a name="l00608"></a>00608   <span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code" href="classoperations__research_1_1RoutingModel.html#ed129260b60ad9a5ff39ba13db6fad12" title="static">RoutingMetaheuristicName</a>(
-<a name="l00609"></a>00609       <a class="code" href="classoperations__research_1_1RoutingModel.html#0f0bd97e25af059ab2e8e7f263afc8e1" title="Metaheuristics used to guide the search.">RoutingMetaheuristic</a> <a class="code" href="classoperations__research_1_1RoutingModel.html#ac8ac681a6a334db9b808208d616235a" title="Returns the metaheuristic used.">metaheuristic</a>);
-<a name="l00610"></a>00610   <span class="keyword">static</span> <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#05391d82512d6775b7aae4e3b200756c" title="static">ParseRoutingMetaheuristic</a>(<span class="keyword">const</span> <span class="keywordtype">string</span>&amp; metaheuristic_str,
-<a name="l00611"></a>00611                                         <a class="code" href="classoperations__research_1_1RoutingModel.html#0f0bd97e25af059ab2e8e7f263afc8e1" title="Metaheuristics used to guide the search.">RoutingMetaheuristic</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#ac8ac681a6a334db9b808208d616235a" title="Returns the metaheuristic used.">metaheuristic</a>);
-<a name="l00612"></a>00612 
-<a name="l00613"></a>00613  <span class="keyword">private</span>:
-<a name="l00614"></a>00614   <span class="keyword">typedef</span> hash_map&lt;string, std::vector&lt;IntVar*&gt; &gt; VarMap;
-<a name="l00615"></a>00615   <span class="keyword">struct </span>Disjunction {
-<a name="l00616"></a>00616     std::vector&lt;int&gt; <a class="code" href="classoperations__research_1_1RoutingModel.html#20c1bf5b1ac1353c9e132774f3f7e1df" title="Sizes and indices Returns the number of nodes in the model.">nodes</a>;
-<a name="l00617"></a>00617     int64 penalty;
-<a name="l00618"></a>00618   };
-<a name="l00619"></a>00619 
-<a name="l00620"></a>00620   <span class="keyword">struct </span>CostCacheElement {
-<a name="l00621"></a>00621     <a class="code" href="classoperations__research_1_1RoutingModel.html#2e9f7da1126111a69ee0b7bcf7edeffe">NodeIndex</a> <a class="code" href="dependency__graph_8cc.html#4eefd1c2b90c940bb972d6d038744cc3">node</a>;
-<a name="l00622"></a>00622     <span class="keywordtype">int</span> cost_class;
-<a name="l00623"></a>00623     int64 cost;
-<a name="l00624"></a>00624   };
+<a name="l00534"></a>00534   <span class="comment">// Returns all next variables of the model, such that Nexts(i) is the next</span>
+<a name="l00535"></a>00535   <span class="comment">// variable of the node corresponding to i.</span>
+<a name="l00536"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#100397cb143b48549277c70f4afb32e2">00536</a>   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>** <a class="code" href="classoperations__research_1_1RoutingModel.html#100397cb143b48549277c70f4afb32e2" title="Variables Returns all next variables of the model, such that Nexts(i) is the next...">Nexts</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> nexts_.get(); }
+<a name="l00537"></a>00537   <span class="comment">// Returns all vehicle variables of the model,  such that VehicleVars(i) is</span>
+<a name="l00538"></a>00538   <span class="comment">// the vehicle variable of the node corresponding to i.</span>
+<a name="l00539"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#6bf6aeb259ab509d97a5e6c3e5189f61">00539</a>   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>** <a class="code" href="classoperations__research_1_1RoutingModel.html#6bf6aeb259ab509d97a5e6c3e5189f61" title="Returns all vehicle variables of the model, such that VehicleVars(i) is the vehicle...">VehicleVars</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> vehicle_vars_.get(); }
+<a name="l00540"></a>00540   <span class="comment">// Returns the next variable of the node corresponding to index.</span>
+<a name="l00541"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#131f2181343be56fd836b64747fe9f49">00541</a>   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#131f2181343be56fd836b64747fe9f49" title="Returns the next variable of the node corresponding to index.">NextVar</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> nexts_[index]; }
+<a name="l00542"></a>00542   <span class="comment">// Returns the active variable of the node corresponding to index.</span>
+<a name="l00543"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#5254602b653dda44c6f6a6611e8cd6f2">00543</a>   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#5254602b653dda44c6f6a6611e8cd6f2" title="Returns the active variable of the node corresponding to index.">ActiveVar</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> active_[index]; }
+<a name="l00544"></a>00544   <span class="comment">// Returns the vehicle variable of the node corresponding to index.</span>
+<a name="l00545"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#618a961dcb65e02d6d310a83d1f60722">00545</a>   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#618a961dcb65e02d6d310a83d1f60722" title="Returns the vehicle variable of the node corresponding to index.">VehicleVar</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> vehicle_vars_[index]; }
+<a name="l00546"></a>00546   <span class="comment">// Returns the cumul variable for the dimension named 'name'.</span>
+<a name="l00547"></a>00547   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#a1e366cd50bfdfac06e032d9eb22612f" title="Returns the cumul variable for the dimension named &amp;#39;name&amp;#39;.">CumulVar</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>, <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>) <span class="keyword">const</span>;
+<a name="l00548"></a>00548   <span class="comment">// Returns the transit variable for the dimension named 'name'.</span>
+<a name="l00549"></a>00549   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#8d0a9a90e331b113628418013cfa813e" title="Returns the transit variable for the dimension named &amp;#39;name&amp;#39;.">TransitVar</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>, <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>) <span class="keyword">const</span>;
+<a name="l00550"></a>00550   <span class="comment">// Returns the global cost variable which is being minimized.</span>
+<a name="l00551"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#c76b2c7544a4fc56d06945cbde4480a6">00551</a>   <a class="code" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#c76b2c7544a4fc56d06945cbde4480a6" title="Returns the global cost variable which is being minimized.">CostVar</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> cost_; }
+<a name="l00552"></a>00552   <span class="comment">// Returns the cost of the segment between two nodes for a given vehicle</span>
+<a name="l00553"></a>00553   <span class="comment">// route. Input are variable indices of node.</span>
+<a name="l00554"></a>00554   int64 <a class="code" href="classoperations__research_1_1RoutingModel.html#2fc423d06fca461e5220ee4c42672f37" title="Returns the cost of the segment between two nodes for a given vehicle route.">GetCost</a>(int64 from_index, int64 to_index, int64 vehicle);
+<a name="l00555"></a>00555   <span class="comment">// Returns the cost of the segment between two nodes supposing all vehicle</span>
+<a name="l00556"></a>00556   <span class="comment">// costs are the same (returns the cost for the first vehicle otherwise).</span>
+<a name="l00557"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#6f274d2ace4d354140b9c086ef4dceee">00557</a>   int64 <a class="code" href="classoperations__research_1_1RoutingModel.html#6f274d2ace4d354140b9c086ef4dceee" title="Returns the cost of the segment between two nodes supposing all vehicle costs are...">GetHomogeneousCost</a>(int64 i, int64 j) {
+<a name="l00558"></a>00558     <span class="keywordflow">return</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#2fc423d06fca461e5220ee4c42672f37" title="Returns the cost of the segment between two nodes for a given vehicle route.">GetCost</a>(i, j, 0);
+<a name="l00559"></a>00559   }
+<a name="l00560"></a>00560 
+<a name="l00561"></a>00561   <span class="comment">// Returns the underlying constraint solver. Can be used to add extra</span>
+<a name="l00562"></a>00562   <span class="comment">// constraints and/or modify search algoithms.</span>
+<a name="l00563"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#35a094db917c3c996826285424bb2f54">00563</a>   <a class="code" href="classoperations__research_1_1Solver.html" title="Solver Class.">Solver</a>* <a class="code" href="classoperations__research_1_1RoutingModel.html#35a094db917c3c996826285424bb2f54" title="Returns the underlying constraint solver.">solver</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> solver_.get(); }
+<a name="l00564"></a>00564 
+<a name="l00565"></a>00565   <span class="comment">// Sizes and indices</span>
+<a name="l00566"></a>00566   <span class="comment">// Returns the number of nodes in the model.</span>
+<a name="l00567"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#20c1bf5b1ac1353c9e132774f3f7e1df">00567</a>   <span class="keywordtype">int</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#20c1bf5b1ac1353c9e132774f3f7e1df" title="Sizes and indices Returns the number of nodes in the model.">nodes</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> nodes_; }
+<a name="l00568"></a>00568   <span class="comment">// Returns the number of vehicle routes in the model.</span>
+<a name="l00569"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#9236103b3dca8a4112bd2a8be05b0b71">00569</a>   <span class="keywordtype">int</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#9236103b3dca8a4112bd2a8be05b0b71" title="Returns the number of vehicle routes in the model.">vehicles</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> vehicles_; }
+<a name="l00570"></a>00570   <span class="comment">// Returns the number of next variables in the model.</span>
+<a name="l00571"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#5a560929b26804990f1e7d6972218f87">00571</a>   <span class="keywordtype">int</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#5a560929b26804990f1e7d6972218f87" title="Returns the number of next variables in the model.">Size</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> nodes_ + vehicles_ - start_end_count_; }
+<a name="l00572"></a>00572   <span class="comment">// Returns the node index from an index value resulting fron a next variable.</span>
+<a name="l00573"></a>00573   <a class="code" href="classoperations__research_1_1RoutingModel.html#2e9f7da1126111a69ee0b7bcf7edeffe">NodeIndex</a> <a class="code" href="classoperations__research_1_1RoutingModel.html#ca1b6ad06bed2a28e3debeed4512db0d" title="Returns the node index from an index value resulting fron a next variable.">IndexToNode</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>) <span class="keyword">const</span>;
+<a name="l00574"></a>00574   <span class="comment">// Returns the variable index from a node value.</span>
+<a name="l00575"></a>00575   <span class="comment">// Should not be used for nodes at the start / end of a route,</span>
+<a name="l00576"></a>00576   <span class="comment">// because of node multiplicity.  These cases return -1, which is</span>
+<a name="l00577"></a>00577   <span class="comment">// considered a failure case.  Clients who need start and end</span>
+<a name="l00578"></a>00578   <span class="comment">// variable indices should use RoutingModel::Start and RoutingModel::End.</span>
+<a name="l00579"></a>00579   int64 <a class="code" href="classoperations__research_1_1RoutingModel.html#6c88d9d5da962886bfe0924bc5ea6457" title="Returns the variable index from a node value.">NodeToIndex</a>(<a class="code" href="classoperations__research_1_1RoutingModel.html#2e9f7da1126111a69ee0b7bcf7edeffe">NodeIndex</a> <a class="code" href="dependency__graph_8cc.html#4eefd1c2b90c940bb972d6d038744cc3">node</a>) <span class="keyword">const</span>;
+<a name="l00580"></a>00580   <span class="comment">// Returns the variable indices of the nodes in the same disjunction as the</span>
+<a name="l00581"></a>00581   <span class="comment">// node corresponding to the variable of index 'index'.</span>
+<a name="l00582"></a>00582   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#23961d60010f2c38f156f2e705c6e781" title="Returns the variable indices of the nodes in the same disjunction as the node corresponding...">GetDisjunctionIndicesFromIndex</a>(int64 <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>, std::vector&lt;int&gt;* indices) <span class="keyword">const</span>;
+<a name="l00583"></a>00583 
+<a name="l00584"></a>00584   <span class="comment">// Time limits</span>
+<a name="l00585"></a>00585   <span class="comment">// Returns the current time limit used in the search.</span>
+<a name="l00586"></a><a class="code" href="classoperations__research_1_1RoutingModel.html#814299b5554ee840394457c61fec466f">00586</a>   int64 <a class="code" href="classoperations__research_1_1RoutingModel.html#814299b5554ee840394457c61fec466f" title="Time limits Returns the current time limit used in the search.">TimeLimit</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> time_limit_ms_; }
+<a name="l00587"></a>00587   <span class="comment">// Updates the time limit used in the search.</span>
+<a name="l00588"></a>00588   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#daff11f77b3ff5eec418ca0fe74d5890" title="Updates the time limit used in the search.">UpdateTimeLimit</a>(int64 limit_ms);
+<a name="l00589"></a>00589   <span class="comment">// Updates the time limit used in the Large Neighborhood search tree.</span>
+<a name="l00590"></a>00590   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#e5d2063233d64b4c746080d0e3bb429c" title="Updates the time limit used in the Large Neighborhood search tree.">UpdateLNSTimeLimit</a>(int64 limit_ms);
+<a name="l00591"></a>00591 
+<a name="l00592"></a>00592   <span class="comment">// Utilities for swig to set flags in python or java.</span>
+<a name="l00593"></a>00593   <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1RoutingModel.html#6d58b03c066bfedc30d6555244bee0f8" title="Utilities for swig to set flags in python or java.">SetCommandLineOption</a>(<span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>, <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="search_8cc.html#21edc7ca4cc5802c8779d68556bc09cf">value</a>);
+<a name="l00594"></a>00594 
+<a name="l00595"></a>00595  <span class="keyword">private</span>:
+<a name="l00596"></a>00596   <span class="keyword">typedef</span> hash_map&lt;string, IntVar**&gt; VarMap;
+<a name="l00597"></a>00597   <span class="keyword">struct </span>Disjunction {
+<a name="l00598"></a>00598     std::vector&lt;int&gt; <a class="code" href="classoperations__research_1_1RoutingModel.html#20c1bf5b1ac1353c9e132774f3f7e1df" title="Sizes and indices Returns the number of nodes in the model.">nodes</a>;
+<a name="l00599"></a>00599     int64 penalty;
+<a name="l00600"></a>00600   };
+<a name="l00601"></a>00601 
+<a name="l00602"></a>00602   <span class="keyword">struct </span>CostCacheElement {
+<a name="l00603"></a>00603     <a class="code" href="classoperations__research_1_1RoutingModel.html#2e9f7da1126111a69ee0b7bcf7edeffe">NodeIndex</a> <a class="code" href="dependency__graph_8cc.html#4eefd1c2b90c940bb972d6d038744cc3">node</a>;
+<a name="l00604"></a>00604     <span class="keywordtype">int</span> vehicle;
+<a name="l00605"></a>00605     int64 cost;
+<a name="l00606"></a>00606   };
+<a name="l00607"></a>00607 
+<a name="l00608"></a>00608   <span class="comment">// Internal methods.</span>
+<a name="l00609"></a>00609   <span class="keywordtype">void</span> Initialize();
+<a name="l00610"></a>00610   <span class="keywordtype">void</span> SetStartEnd(<span class="keyword">const</span> std::vector&lt;std::pair&lt;NodeIndex, NodeIndex&gt; &gt;&amp; start_end);
+<a name="l00611"></a>00611   <span class="keywordtype">void</span> AddDisjunctionInternal(<span class="keyword">const</span> std::vector&lt;NodeIndex&gt;&amp; <a class="code" href="classoperations__research_1_1RoutingModel.html#20c1bf5b1ac1353c9e132774f3f7e1df" title="Sizes and indices Returns the number of nodes in the model.">nodes</a>, int64 penalty);
+<a name="l00612"></a>00612   <span class="keywordtype">void</span> AddNoCycleConstraintInternal();
+<a name="l00613"></a>00613   <span class="keywordtype">void</span> SetVehicleCostInternal(<span class="keywordtype">int</span> vehicle, <a class="code" href="classoperations__research_1_1RoutingModel.html#5ad22b1565f2e5b1735601a824629289">NodeEvaluator2</a>* evaluator);
+<a name="l00614"></a>00614   Assignment* DoRestoreAssignment();
+<a name="l00615"></a>00615   <span class="comment">// Variants of GetCost and GetHomogeneousCost returning costs used in local</span>
+<a name="l00616"></a>00616   <span class="comment">// search filters.</span>
+<a name="l00617"></a>00617   int64 GetFilterCost(int64 i, int64 j, int64 vehicle);
+<a name="l00618"></a>00618   int64 GetHomogeneousFilterCost(int64 i, int64 j) {
+<a name="l00619"></a>00619     <span class="keywordflow">return</span> GetFilterCost(i, j, 0);
+<a name="l00620"></a>00620   }
+<a name="l00621"></a>00621   <span class="comment">// Returns NULL if no penalty cost, otherwise returns penalty variable.</span>
+<a name="l00622"></a>00622   IntVar* CreateDisjunction(<span class="keywordtype">int</span> disjunction);
+<a name="l00623"></a>00623   <span class="comment">// Returns the first active node in nodes starting from index + 1.</span>
+<a name="l00624"></a>00624   <span class="keywordtype">int</span> FindNextActive(<span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>, <span class="keyword">const</span> std::vector&lt;int&gt;&amp; <a class="code" href="classoperations__research_1_1RoutingModel.html#20c1bf5b1ac1353c9e132774f3f7e1df" title="Sizes and indices Returns the number of nodes in the model.">nodes</a>) <span class="keyword">const</span>;
 <a name="l00625"></a>00625 
-<a name="l00626"></a>00626   <span class="comment">// Internal methods.</span>
-<a name="l00627"></a>00627   <span class="keywordtype">void</span> Initialize();
-<a name="l00628"></a>00628   <span class="keywordtype">void</span> SetStartEnd(<span class="keyword">const</span> std::vector&lt;std::pair&lt;NodeIndex, NodeIndex&gt; &gt;&amp; start_end);
-<a name="l00629"></a>00629   <span class="keywordtype">void</span> AddDisjunctionInternal(<span class="keyword">const</span> std::vector&lt;NodeIndex&gt;&amp; <a class="code" href="classoperations__research_1_1RoutingModel.html#20c1bf5b1ac1353c9e132774f3f7e1df" title="Sizes and indices Returns the number of nodes in the model.">nodes</a>, int64 penalty);
-<a name="l00630"></a>00630   <span class="keywordtype">void</span> AddNoCycleConstraintInternal();
-<a name="l00631"></a>00631   <span class="keywordtype">void</span> SetVehicleCostInternal(<span class="keywordtype">int</span> vehicle, <a class="code" href="classoperations__research_1_1RoutingModel.html#5ad22b1565f2e5b1735601a824629289">NodeEvaluator2</a>* evaluator);
-<a name="l00632"></a>00632   Assignment* DoRestoreAssignment();
-<a name="l00633"></a>00633   <span class="comment">// Variants of GetCost and GetHomogeneousCost returning costs used in local</span>
-<a name="l00634"></a>00634   <span class="comment">// search filters.</span>
-<a name="l00635"></a>00635   int64 GetFilterCost(int64 i, int64 j, int64 vehicle);
-<a name="l00636"></a>00636   int64 GetHomogeneousFilterCost(int64 i, int64 j) {
-<a name="l00637"></a>00637     <span class="keywordflow">return</span> GetFilterCost(i, j, 0);
-<a name="l00638"></a>00638   }
-<a name="l00639"></a>00639   <span class="comment">// Returns the cost of the segment between two nodes for a given vehicle</span>
-<a name="l00640"></a>00640   <span class="comment">// class. Input are variable indices of nodes and the vehicle class.</span>
-<a name="l00641"></a>00641   int64 GetVehicleClassCost(int64 from_index, int64 to_index, int64 cost_class);
-<a name="l00642"></a>00642   int64 GetSafeVehicleCostClass(int64 vehicle)<span class="keyword"> const </span>{
-<a name="l00643"></a>00643     DCHECK_LT(0, vehicles_);
-<a name="l00644"></a>00644     <span class="keywordflow">return</span> vehicle &gt;= 0 ? GetVehicleCostClass(vehicle) : 0;
-<a name="l00645"></a>00645   }
-<a name="l00646"></a>00646   int64 GetVehicleCostClass(int64 vehicle)<span class="keyword"> const </span>{
-<a name="l00647"></a>00647     <span class="keywordflow">return</span> vehicle_cost_classes_[vehicle];
-<a name="l00648"></a>00648   }
-<a name="l00649"></a>00649   <span class="keywordtype">void</span> SetVehicleCostClass(int64 vehicle, int64 cost_class) {
-<a name="l00650"></a>00650     vehicle_cost_classes_[vehicle] = cost_class;
-<a name="l00651"></a>00651   }
-<a name="l00652"></a>00652   <span class="comment">// Returns NULL if no penalty cost, otherwise returns penalty variable.</span>
-<a name="l00653"></a>00653   IntVar* CreateDisjunction(<span class="keywordtype">int</span> disjunction);
-<a name="l00654"></a>00654   <span class="comment">// Returns the first active node in nodes starting from index + 1.</span>
-<a name="l00655"></a>00655   <span class="keywordtype">int</span> FindNextActive(<span class="keywordtype">int</span> <a class="code" href="pack_8cc.html#750b5d744c39a06bfb13e6eb010e35d0">index</a>, <span class="keyword">const</span> std::vector&lt;int&gt;&amp; <a class="code" href="classoperations__research_1_1RoutingModel.html#20c1bf5b1ac1353c9e132774f3f7e1df" title="Sizes and indices Returns the number of nodes in the model.">nodes</a>) <span class="keyword">const</span>;
-<a name="l00656"></a>00656 
-<a name="l00657"></a>00657   <span class="comment">// Checks that all nodes on the route starting at start_index (using the</span>
-<a name="l00658"></a>00658   <span class="comment">// solution stored in assignment) can be visited by the given vehicle.</span>
-<a name="l00659"></a>00659   <span class="keywordtype">bool</span> RouteCanBeUsedByVehicle(<span class="keyword">const</span> Assignment&amp; assignment,
-<a name="l00660"></a>00660                                <span class="keywordtype">int</span> start_index,
-<a name="l00661"></a>00661                                <span class="keywordtype">int</span> vehicle) <span class="keyword">const</span>;
-<a name="l00662"></a>00662   <span class="comment">// Replaces the route of unused_vehicle with the route of active_vehicle in</span>
-<a name="l00663"></a>00663   <span class="comment">// compact_assignment. Expects that unused_vehicle is a vehicle with an empty</span>
-<a name="l00664"></a>00664   <span class="comment">// route and that the route of active_vehicle is non-empty. Also expects that</span>
-<a name="l00665"></a>00665   <span class="comment">// 'assignment' contains the original assignment, from which</span>
-<a name="l00666"></a>00666   <span class="comment">// compact_assignment was created.</span>
-<a name="l00667"></a>00667   <span class="comment">// Returns true if the vehicles were successfully swapped; otherwise, returns</span>
-<a name="l00668"></a>00668   <span class="comment">// false.</span>
-<a name="l00669"></a>00669   <span class="keywordtype">bool</span> ReplaceUnusedVehicle(<span class="keywordtype">int</span> unused_vehicle,
-<a name="l00670"></a>00670                             <span class="keywordtype">int</span> active_vehicle,
-<a name="l00671"></a>00671                             Assignment* compact_assignment) <span class="keyword">const</span>;
-<a name="l00672"></a>00672 
-<a name="l00673"></a>00673   <a class="code" href="classoperations__research_1_1RoutingModel.html#5ad22b1565f2e5b1735601a824629289">NodeEvaluator2</a>* NewCachedCallback(<a class="code" href="classoperations__research_1_1RoutingModel.html#5ad22b1565f2e5b1735601a824629289">NodeEvaluator2</a>* callback);
-<a name="l00674"></a>00674   <a class="code" href="classoperations__research_1_1Solver.html#fd80e55c6251fec492c4887f11b5b0e0">Solver::IndexEvaluator3</a>* BuildCostCallback();
-<a name="l00675"></a>00675   <span class="keywordtype">void</span> CheckDepot();
-<a name="l00676"></a>00676   <span class="keywordtype">void</span> QuietCloseModel() {
-<a name="l00677"></a>00677     <span class="keywordflow">if</span> (!closed_) {
-<a name="l00678"></a>00678       <a class="code" href="classoperations__research_1_1RoutingModel.html#e84602b98050ad382d725e35326aab3d" title="Closes the current routing model; after this method is called, no modification to...">CloseModel</a>();
-<a name="l00679"></a>00679     }
-<a name="l00680"></a>00680   }
-<a name="l00681"></a>00681   <span class="comment">// Sets up search objects, such as decision builders and monitors.</span>
-<a name="l00682"></a>00682   <span class="keywordtype">void</span> SetupSearch();
-<a name="l00683"></a>00683   <span class="comment">// Set of auxiliary methods used to setup the search.</span>
-<a name="l00684"></a>00684   <span class="comment">// TODO(user): Document each auxiliary method.</span>
-<a name="l00685"></a>00685   Assignment* GetOrCreateAssignment();
-<a name="l00686"></a>00686   SearchLimit* GetOrCreateLimit();
-<a name="l00687"></a>00687   SearchLimit* GetOrCreateLocalSearchLimit();
-<a name="l00688"></a>00688   SearchLimit* GetOrCreateLargeNeighborhoodSearchLimit();
-<a name="l00689"></a>00689   LocalSearchOperator* CreateInsertionOperator();
-<a name="l00690"></a>00690   LocalSearchOperator* CreateNeighborhoodOperators();
-<a name="l00691"></a>00691   <span class="keyword">const</span> std::vector&lt;LocalSearchFilter*&gt;&amp; GetOrCreateLocalSearchFilters();
-<a name="l00692"></a>00692   DecisionBuilder* CreateSolutionFinalizer();
-<a name="l00693"></a>00693   DecisionBuilder* CreateFirstSolutionDecisionBuilder();
-<a name="l00694"></a>00694   LocalSearchPhaseParameters* CreateLocalSearchParameters();
-<a name="l00695"></a>00695   DecisionBuilder* CreateLocalSearchDecisionBuilder();
-<a name="l00696"></a>00696   <span class="keywordtype">void</span> SetupDecisionBuilders();
-<a name="l00697"></a>00697   <span class="keywordtype">void</span> SetupMetaheuristics();
-<a name="l00698"></a>00698   <span class="keywordtype">void</span> SetupAssignmentCollector();
-<a name="l00699"></a>00699   <span class="keywordtype">void</span> SetupTrace();
-<a name="l00700"></a>00700   <span class="keywordtype">void</span> SetupSearchMonitors();
-<a name="l00701"></a>00701 
-<a name="l00702"></a>00702   <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; GetOrMakeCumuls(int64 capacity, <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>);
-<a name="l00703"></a>00703   <span class="keyword">const</span> std::vector&lt;IntVar*&gt;&amp; GetOrMakeTransits(<a class="code" href="classoperations__research_1_1RoutingModel.html#5ad22b1565f2e5b1735601a824629289">NodeEvaluator2</a>* evaluator,
-<a name="l00704"></a>00704                                                int64 slack_max,
-<a name="l00705"></a>00705                                                int64 capacity,
-<a name="l00706"></a>00706                                                <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>);
-<a name="l00707"></a>00707 
-<a name="l00708"></a>00708   int64 GetArcCost(int64 i, int64 j, int64 cost_class);
-<a name="l00709"></a>00709   int64 GetPenaltyCost(int64 i) <span class="keyword">const</span>;
-<a name="l00710"></a>00710   int64 WrappedEvaluator(<a class="code" href="classoperations__research_1_1RoutingModel.html#5ad22b1565f2e5b1735601a824629289">NodeEvaluator2</a>* evaluator,
-<a name="l00711"></a>00711                          int64 from,
-<a name="l00712"></a>00712                          int64 to);
-<a name="l00713"></a>00713 
-<a name="l00714"></a>00714   <span class="comment">// Model</span>
-<a name="l00715"></a>00715   scoped_ptr&lt;Solver&gt; solver_;
-<a name="l00716"></a>00716   Constraint* no_cycle_constraint_;
-<a name="l00717"></a>00717   std::vector&lt;IntVar*&gt; nexts_;
-<a name="l00718"></a>00718   std::vector&lt;IntVar*&gt; vehicle_vars_;
-<a name="l00719"></a>00719   std::vector&lt;IntVar*&gt; active_;
-<a name="l00720"></a>00720   std::vector&lt;NodeEvaluator2*&gt; costs_;
-<a name="l00721"></a>00721   <span class="keywordtype">bool</span> homogeneous_costs_;
-<a name="l00722"></a>00722   std::vector&lt;CostCacheElement&gt; cost_cache_;
-<a name="l00723"></a>00723   std::vector&lt;RoutingCache*&gt; routing_caches_;
-<a name="l00724"></a>00724   hash_map&lt;NodeEvaluator2*, std::vector&lt;int&gt; &gt; cost_callback_vehicles_;
-<a name="l00725"></a>00725   std::vector&lt;int64&gt; vehicle_cost_classes_;
-<a name="l00726"></a>00726   std::vector&lt;Disjunction&gt; disjunctions_;
-<a name="l00727"></a>00727   hash_map&lt;int64, int&gt; node_to_disjunction_;
-<a name="l00728"></a>00728   <a class="code" href="classoperations__research_1_1RoutingModel.html#4251c2ca5b1558dc69e696991c853ae3">NodePairs</a> pickup_delivery_pairs_;
-<a name="l00729"></a>00729   IntVar* cost_;
-<a name="l00730"></a>00730   std::vector&lt;int64&gt; fixed_costs_;
-<a name="l00731"></a>00731   <span class="keywordtype">int</span> nodes_;
-<a name="l00732"></a>00732   <span class="keywordtype">int</span> vehicles_;
-<a name="l00733"></a>00733   std::vector&lt;NodeIndex&gt; index_to_node_;
-<a name="l00734"></a>00734   ITIVector&lt;NodeIndex, int&gt; node_to_index_;
-<a name="l00735"></a>00735   std::vector&lt;int&gt; index_to_vehicle_;
-<a name="l00736"></a>00736   std::vector&lt;int64&gt; starts_;
-<a name="l00737"></a>00737   std::vector&lt;int64&gt; ends_;
-<a name="l00738"></a>00738   <span class="keywordtype">int</span> start_end_count_;
-<a name="l00739"></a>00739   <span class="keywordtype">bool</span> is_depot_set_;
-<a name="l00740"></a>00740   VarMap cumuls_;
-<a name="l00741"></a>00741   VarMap transits_;
-<a name="l00742"></a>00742   VarMap slacks_;
-<a name="l00743"></a>00743   hash_map&lt;string, Solver::IndexEvaluator2*&gt; transit_evaluators_;
-<a name="l00744"></a>00744   <span class="keywordtype">bool</span> closed_;
-<a name="l00745"></a>00745   <a class="code" href="classoperations__research_1_1RoutingModel.html#328a19213729eec49288128061bc2044" title="Status of the search.">Status</a> status_;
-<a name="l00746"></a>00746 
-<a name="l00747"></a>00747   <span class="comment">// Search data</span>
-<a name="l00748"></a>00748   <a class="code" href="classoperations__research_1_1RoutingModel.html#6f38b3ff9a2e455677856d97e339da6d" title="First solution strategies, used as starting point of local search.">RoutingStrategy</a> first_solution_strategy_;
-<a name="l00749"></a>00749   scoped_ptr&lt;Solver::IndexEvaluator2&gt; first_solution_evaluator_;
-<a name="l00750"></a>00750   <a class="code" href="classoperations__research_1_1RoutingModel.html#0f0bd97e25af059ab2e8e7f263afc8e1" title="Metaheuristics used to guide the search.">RoutingMetaheuristic</a> metaheuristic_;
-<a name="l00751"></a>00751   std::vector&lt;SearchMonitor*&gt; monitors_;
-<a name="l00752"></a>00752   SolutionCollector* collect_assignments_;
-<a name="l00753"></a>00753   DecisionBuilder* solve_db_;
-<a name="l00754"></a>00754   DecisionBuilder* improve_db_;
-<a name="l00755"></a>00755   DecisionBuilder* restore_assignment_;
-<a name="l00756"></a>00756   Assignment* assignment_;
-<a name="l00757"></a>00757   Assignment* preassignment_;
-<a name="l00758"></a>00758   std::vector&lt;IntVar*&gt; extra_vars_;
-<a name="l00759"></a>00759   std::vector&lt;LocalSearchOperator*&gt; extra_operators_;
-<a name="l00760"></a>00760   std::vector&lt;LocalSearchFilter*&gt; filters_;
-<a name="l00761"></a>00761 
-<a name="l00762"></a>00762   int64 time_limit_ms_;
-<a name="l00763"></a>00763   int64 lns_time_limit_ms_;
-<a name="l00764"></a>00764   SearchLimit* limit_;
-<a name="l00765"></a>00765   SearchLimit* ls_limit_;
-<a name="l00766"></a>00766   SearchLimit* lns_limit_;
-<a name="l00767"></a>00767 
-<a name="l00768"></a>00768   <span class="comment">// Callbacks to be deleted</span>
-<a name="l00769"></a>00769   hash_set&lt;NodeEvaluator2*&gt; owned_node_callbacks_;
-<a name="l00770"></a>00770   hash_set&lt;Solver::IndexEvaluator2*&gt; owned_index_callbacks_;
-<a name="l00771"></a>00771 
-<a name="l00772"></a>00772   DISALLOW_COPY_AND_ASSIGN(<a class="code" href="classoperations__research_1_1RoutingModel.html#67e90b8e5fba64a285e2eed07a39b2ca" title="Supposes a single depot.">RoutingModel</a>);
-<a name="l00773"></a>00773 };
-<a name="l00774"></a>00774 
-<a name="l00775"></a>00775 }  <span class="comment">// namespace operations_research</span>
-<a name="l00776"></a>00776 
-<a name="l00777"></a>00777 <span class="preprocessor">#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_</span>
+<a name="l00626"></a>00626   <span class="comment">// Checks that all nodes on the route starting at start_index (using the</span>
+<a name="l00627"></a>00627   <span class="comment">// solution stored in assignment) can be visited by the given vehicle.</span>
+<a name="l00628"></a>00628   <span class="keywordtype">bool</span> RouteCanBeUsedByVehicle(<span class="keyword">const</span> Assignment&amp; assignment,
+<a name="l00629"></a>00629                                <span class="keywordtype">int</span> start_index,
+<a name="l00630"></a>00630                                <span class="keywordtype">int</span> vehicle) <span class="keyword">const</span>;
+<a name="l00631"></a>00631   <span class="comment">// Replaces the route of unused_vehicle with the route of active_vehicle in</span>
+<a name="l00632"></a>00632   <span class="comment">// compact_assignment. Expects that unused_vehicle is a vehicle with an empty</span>
+<a name="l00633"></a>00633   <span class="comment">// route and that the route of active_vehicle is non-empty. Also expects that</span>
+<a name="l00634"></a>00634   <span class="comment">// 'assignment' contains the original assignment, from which</span>
+<a name="l00635"></a>00635   <span class="comment">// compact_assignment was created.</span>
+<a name="l00636"></a>00636   <span class="comment">// Returns true if the vehicles were successfully swapped; otherwise, returns</span>
+<a name="l00637"></a>00637   <span class="comment">// false.</span>
+<a name="l00638"></a>00638   <span class="keywordtype">bool</span> ReplaceUnusedVehicle(<span class="keywordtype">int</span> unused_vehicle,
+<a name="l00639"></a>00639                             <span class="keywordtype">int</span> active_vehicle,
+<a name="l00640"></a>00640                             Assignment* compact_assignment) <span class="keyword">const</span>;
+<a name="l00641"></a>00641 
+<a name="l00642"></a>00642   <a class="code" href="classoperations__research_1_1RoutingModel.html#5ad22b1565f2e5b1735601a824629289">NodeEvaluator2</a>* NewCachedCallback(<a class="code" href="classoperations__research_1_1RoutingModel.html#5ad22b1565f2e5b1735601a824629289">NodeEvaluator2</a>* callback);
+<a name="l00643"></a>00643   <a class="code" href="classoperations__research_1_1Solver.html#fd80e55c6251fec492c4887f11b5b0e0">Solver::IndexEvaluator3</a>* BuildCostCallback();
+<a name="l00644"></a>00644   <span class="keywordtype">void</span> CheckDepot();
+<a name="l00645"></a>00645   <span class="keywordtype">void</span> QuietCloseModel() {
+<a name="l00646"></a>00646     <span class="keywordflow">if</span> (!closed_) {
+<a name="l00647"></a>00647       <a class="code" href="classoperations__research_1_1RoutingModel.html#e84602b98050ad382d725e35326aab3d" title="Closes the current routing model; after this method is called, no modification to...">CloseModel</a>();
+<a name="l00648"></a>00648     }
+<a name="l00649"></a>00649   }
+<a name="l00650"></a>00650   <span class="comment">// Sets up search objects, such as decision builders and monitors.</span>
+<a name="l00651"></a>00651   <span class="keywordtype">void</span> SetupSearch();
+<a name="l00652"></a>00652   <span class="comment">// Set of auxiliary methods used to setup the search.</span>
+<a name="l00653"></a>00653   <span class="comment">// TODO(user): Document each auxiliary method.</span>
+<a name="l00654"></a>00654   Assignment* GetOrCreateAssignment();
+<a name="l00655"></a>00655   SearchLimit* GetOrCreateLimit();
+<a name="l00656"></a>00656   SearchLimit* GetOrCreateLocalSearchLimit();
+<a name="l00657"></a>00657   SearchLimit* GetOrCreateLargeNeighborhoodSearchLimit();
+<a name="l00658"></a>00658   LocalSearchOperator* CreateInsertionOperator();
+<a name="l00659"></a>00659   LocalSearchOperator* CreateNeighborhoodOperators();
+<a name="l00660"></a>00660   <span class="keyword">const</span> std::vector&lt;LocalSearchFilter*&gt;&amp; GetOrCreateLocalSearchFilters();
+<a name="l00661"></a>00661   DecisionBuilder* CreateSolutionFinalizer();
+<a name="l00662"></a>00662   DecisionBuilder* CreateFirstSolutionDecisionBuilder();
+<a name="l00663"></a>00663   LocalSearchPhaseParameters* CreateLocalSearchParameters();
+<a name="l00664"></a>00664   DecisionBuilder* CreateLocalSearchDecisionBuilder();
+<a name="l00665"></a>00665   <span class="keywordtype">void</span> SetupDecisionBuilders();
+<a name="l00666"></a>00666   <span class="keywordtype">void</span> SetupMetaheuristics();
+<a name="l00667"></a>00667   <span class="keywordtype">void</span> SetupAssignmentCollector();
+<a name="l00668"></a>00668   <span class="keywordtype">void</span> SetupTrace();
+<a name="l00669"></a>00669   <span class="keywordtype">void</span> SetupSearchMonitors();
+<a name="l00670"></a>00670 
+<a name="l00671"></a>00671   IntVar** GetOrMakeCumuls(int64 capacity, <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>);
+<a name="l00672"></a>00672   IntVar** GetOrMakeTransits(<a class="code" href="classoperations__research_1_1RoutingModel.html#5ad22b1565f2e5b1735601a824629289">NodeEvaluator2</a>* evaluator,
+<a name="l00673"></a>00673                              int64 slack_max,
+<a name="l00674"></a>00674                              int64 capacity,
+<a name="l00675"></a>00675                              <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; <a class="code" href="default__search_8cc.html#1848ae81740c68c2502b2f176cfadcef" title="A name for logging purposes.">name</a>);
+<a name="l00676"></a>00676 
+<a name="l00677"></a>00677   int64 GetArcCost(int64 i, int64 j, int64 vehicle);
+<a name="l00678"></a>00678   int64 GetPenaltyCost(int64 i) <span class="keyword">const</span>;
+<a name="l00679"></a>00679   int64 WrappedEvaluator(<a class="code" href="classoperations__research_1_1RoutingModel.html#5ad22b1565f2e5b1735601a824629289">NodeEvaluator2</a>* evaluator,
+<a name="l00680"></a>00680                          int64 from,
+<a name="l00681"></a>00681                          int64 to);
+<a name="l00682"></a>00682 
+<a name="l00683"></a>00683   <span class="comment">// Model</span>
+<a name="l00684"></a>00684   scoped_ptr&lt;Solver&gt; solver_;
+<a name="l00685"></a>00685   Constraint* no_cycle_constraint_;
+<a name="l00686"></a>00686   scoped_array&lt;IntVar*&gt; nexts_;
+<a name="l00687"></a>00687   scoped_array&lt;IntVar*&gt; vehicle_vars_;
+<a name="l00688"></a>00688   scoped_array&lt;IntVar*&gt; active_;
+<a name="l00689"></a>00689   std::vector&lt;NodeEvaluator2*&gt; costs_;
+<a name="l00690"></a>00690   <span class="keywordtype">bool</span> homogeneous_costs_;
+<a name="l00691"></a>00691   std::vector&lt;CostCacheElement&gt; cost_cache_;
+<a name="l00692"></a>00692   std::vector&lt;RoutingCache*&gt; routing_caches_;
+<a name="l00693"></a>00693   std::vector&lt;Disjunction&gt; disjunctions_;
+<a name="l00694"></a>00694   hash_map&lt;int64, int&gt; node_to_disjunction_;
+<a name="l00695"></a>00695   <a class="code" href="classoperations__research_1_1RoutingModel.html#4251c2ca5b1558dc69e696991c853ae3">NodePairs</a> pickup_delivery_pairs_;
+<a name="l00696"></a>00696   IntVar* cost_;
+<a name="l00697"></a>00697   std::vector&lt;int64&gt; fixed_costs_;
+<a name="l00698"></a>00698   <span class="keywordtype">int</span> nodes_;
+<a name="l00699"></a>00699   <span class="keywordtype">int</span> vehicles_;
+<a name="l00700"></a>00700   std::vector&lt;NodeIndex&gt; index_to_node_;
+<a name="l00701"></a>00701   ITIVector&lt;NodeIndex, int&gt; node_to_index_;
+<a name="l00702"></a>00702   std::vector&lt;int&gt; index_to_vehicle_;
+<a name="l00703"></a>00703   std::vector&lt;int&gt; starts_;
+<a name="l00704"></a>00704   std::vector&lt;int&gt; ends_;
+<a name="l00705"></a>00705   <span class="keywordtype">int</span> start_end_count_;
+<a name="l00706"></a>00706   <span class="keywordtype">bool</span> is_depot_set_;
+<a name="l00707"></a>00707   VarMap cumuls_;
+<a name="l00708"></a>00708   VarMap transits_;
+<a name="l00709"></a>00709   hash_map&lt;string, Solver::IndexEvaluator2*&gt; transit_evaluators_;
+<a name="l00710"></a>00710   <span class="keywordtype">bool</span> closed_;
+<a name="l00711"></a>00711   <a class="code" href="classoperations__research_1_1RoutingModel.html#328a19213729eec49288128061bc2044" title="Status of the search.">Status</a> status_;
+<a name="l00712"></a>00712 
+<a name="l00713"></a>00713   <span class="comment">// Search data</span>
+<a name="l00714"></a>00714   <a class="code" href="classoperations__research_1_1RoutingModel.html#6f38b3ff9a2e455677856d97e339da6d" title="First solution strategies, used as starting point of local search.">RoutingStrategy</a> first_solution_strategy_;
+<a name="l00715"></a>00715   scoped_ptr&lt;Solver::IndexEvaluator2&gt; first_solution_evaluator_;
+<a name="l00716"></a>00716   <a class="code" href="classoperations__research_1_1RoutingModel.html#0f0bd97e25af059ab2e8e7f263afc8e1" title="Metaheuristics used to guide the search.">RoutingMetaheuristic</a> metaheuristic_;
+<a name="l00717"></a>00717   std::vector&lt;SearchMonitor*&gt; monitors_;
+<a name="l00718"></a>00718   SolutionCollector* collect_assignments_;
+<a name="l00719"></a>00719   DecisionBuilder* solve_db_;
+<a name="l00720"></a>00720   DecisionBuilder* improve_db_;
+<a name="l00721"></a>00721   DecisionBuilder* restore_assignment_;
+<a name="l00722"></a>00722   Assignment* assignment_;
+<a name="l00723"></a>00723   Assignment* preassignment_;
+<a name="l00724"></a>00724   std::vector&lt;IntVar*&gt; extra_vars_;
+<a name="l00725"></a>00725   std::vector&lt;LocalSearchOperator*&gt; extra_operators_;
+<a name="l00726"></a>00726   std::vector&lt;LocalSearchFilter*&gt; filters_;
+<a name="l00727"></a>00727 
+<a name="l00728"></a>00728   int64 time_limit_ms_;
+<a name="l00729"></a>00729   int64 lns_time_limit_ms_;
+<a name="l00730"></a>00730   SearchLimit* limit_;
+<a name="l00731"></a>00731   SearchLimit* ls_limit_;
+<a name="l00732"></a>00732   SearchLimit* lns_limit_;
+<a name="l00733"></a>00733 
+<a name="l00734"></a>00734   <span class="comment">// Callbacks to be deleted</span>
+<a name="l00735"></a>00735   hash_set&lt;NodeEvaluator2*&gt; owned_node_callbacks_;
+<a name="l00736"></a>00736   hash_set&lt;Solver::IndexEvaluator2*&gt; owned_index_callbacks_;
+<a name="l00737"></a>00737 
+<a name="l00738"></a>00738   DISALLOW_COPY_AND_ASSIGN(<a class="code" href="classoperations__research_1_1RoutingModel.html#67e90b8e5fba64a285e2eed07a39b2ca" title="Supposes a single depot.">RoutingModel</a>);
+<a name="l00739"></a>00739 };
+<a name="l00740"></a>00740 
+<a name="l00741"></a>00741 }  <span class="comment">// namespace operations_research</span>
+<a name="l00742"></a>00742 
+<a name="l00743"></a>00743 <span class="preprocessor">#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_</span>
 </pre></div></div>
 
   <!-- Start of footer. -->
@@ -867,7 +833,7 @@
       <td colspan=2 height=10></td>
     </tr>
     <tr valign=top>
-      <td colspan=2 bgcolor=#359621 height=3></td>
+      <td colspan=2 bgcolor=#287003 height=3></td>
     </tr>
   </table>
 
