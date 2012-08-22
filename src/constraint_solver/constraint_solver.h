@@ -247,7 +247,8 @@ struct DefaultPhaseParameters {
 
   enum SearchStrategy {
     CHOOSE_FIRST_UNBOUND_ASSIGN_MIN,
-    IMPACT_BASE_SEARCH
+    CHOOSE_MIN_SIZE_ASSIGN_MIN,
+    IMPACT_BASED_SEARCH
   };
 
   static const int kDefaultNumberOfSplits;
@@ -270,7 +271,7 @@ struct DefaultPhaseParameters {
         restart_log_size(kDefaultRestartLogSize),
         display_level(NORMAL),
         use_no_goods(kDefaultUseNoGoods),
-        search_strategy(IMPACT_BASE_SEARCH) {}
+        search_strategy(kDefaultSearchStrategy) {}
 
   // This parameter describes how the next variable to instantiate
   // will be chosen.

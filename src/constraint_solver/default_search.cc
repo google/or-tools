@@ -45,7 +45,7 @@ const double DefaultPhaseParameters::kDefaultRestartLogSize = -1.0;
 const bool DefaultPhaseParameters::kDefaultUseNoGoods = true;
 const DefaultPhaseParameters::SearchStrategy
 DefaultPhaseParameters::kDefaultSearchStrategy =
-    DefaultPhaseParameters::IMPACT_BASE_SEARCH;
+    DefaultPhaseParameters::IMPACT_BASED_SEARCH;
 
 class NoGoodManager;
 
@@ -1135,7 +1135,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
     CHECK_NOTNULL(solver);
     CHECK_NOTNULL(extras);
     if (parameters_.search_strategy ==
-        DefaultPhaseParameters::IMPACT_BASE_SEARCH) {
+        DefaultPhaseParameters::IMPACT_BASED_SEARCH) {
       extras->push_back(&impact_recorder_);
     }
     if (parameters_.restart_log_size >= 0) {
@@ -1153,6 +1153,13 @@ class DefaultIntegerSearch : public DecisionBuilder {
 
   virtual string DebugString() const {
     string out = "DefaultIntegerSearch(";
+
+    if (parameters_.search_strategy ==
+        DefaultPhaseParameters::IMPACT_BASED_SEARCH) {
+      out.append("Impact Based Search, ");
+    } else {
+      out.append("Choose First Unbound Assing Min, ");
+    }
     out.append(DebugStringVector(vars_, ", "));
     out.append(")");
     return out;
@@ -1164,7 +1171,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
       return;
     }
     if (parameters_.search_strategy ==
-        DefaultPhaseParameters::IMPACT_BASE_SEARCH) {
+        DefaultPhaseParameters::IMPACT_BASED_SEARCH) {
       // Decide if we are doing impacts, no if one variable is too big.
       for (int i = 0; i < vars_.size(); ++i) {
         if (vars_[i]->Max() - vars_[i]->Min() > 0xFFFFFF) {
@@ -1211,10 +1218,14 @@ class DefaultIntegerSearch : public DecisionBuilder {
   }
 
   bool FindVarValue(IntVar** const var, int64* const value) {
-    return parameters_.search_strategy ==
-        DefaultPhaseParameters::IMPACT_BASE_SEARCH ?
-        FindVarValueWithImpact(var, value) :
-        FindVarValueNoImpact(var, value);
+    switch (parameters_.search_strategy) {
+      case DefaultPhaseParameters::IMPACT_BASED_SEARCH:
+        return FindVarValueWithImpact(var, value);
+      case DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN:
+        return FindVarValueNoImpact(var, value);
+      case DefaultPhaseParameters::CHOOSE_MIN_SIZE_ASSIGN_MIN:
+        return FindVarValueMinSize(var, value);
+    }
   }
 
   // This method will do an exhaustive scan of all domains of all
@@ -1259,6 +1270,27 @@ class DefaultIntegerSearch : public DecisionBuilder {
       }
     }
     return false;
+  }
+
+  bool FindVarValueMinSize(IntVar** const found_var, int64* const value) {
+    CHECK_NOTNULL(found_var);
+    CHECK_NOTNULL(value);
+    *found_var = NULL;
+    *value = 0;
+    uint64 best_size = kint64max;
+    int64 best_min = kint64max;
+    for (int i = 0; i < vars_.size(); ++i) {
+      IntVar* const var = vars_[i];
+      if (!var->Bound()) {
+        if (var->Size() < best_size ||
+            (var->Size() == best_size && var->Min() < best_min)) {
+          best_size = var->Size();
+          *value = var->Min();
+          *found_var = var;
+        }
+      }
+    }
+    return *found_var != NULL;
   }
 
   // ----- data members -----
