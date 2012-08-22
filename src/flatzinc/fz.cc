@@ -61,7 +61,7 @@ DEFINE_bool(verbose_impact, false, "Verbose impact");
 DECLARE_bool(log_prefix);
 
 namespace operations_research {
-int Run(const std::string& file, int worker_id) {
+int Run(const std::string& file, const FlatZincSearchParameters& parameters) {
   FlatZincModel fz_model;
   if (file == "-") {
     if (!fz_model.Parse(std::cin)) {
@@ -74,22 +74,6 @@ int Run(const std::string& file, int worker_id) {
     }
   }
 
-  FlatZincSearchParameters parameters;
-  parameters.all_solutions = FLAGS_all;
-  parameters.heuristic_period = FLAGS_heuristic_period;
-  parameters.ignore_annotations = FLAGS_free;
-  parameters.ignore_unknown = false;
-  parameters.log_period = FLAGS_log_period;
-  parameters.luby_restart = FLAGS_luby_restart;
-  parameters.num_solutions = FLAGS_num_solutions;
-  parameters.restart_log_size = FLAGS_restart_log_size;
-  parameters.simplex_frequency = FLAGS_simplex_frequency;
-  parameters.threads = FLAGS_threads;
-  parameters.time_limit_in_ms = FLAGS_time_limit;
-  parameters.use_impact = FLAGS_use_impact;
-  parameters.use_log = FLAGS_use_log;
-  parameters.verbose_impact = FLAGS_verbose_impact;
-  parameters.worker_id = worker_id;
 
   fz_model.Solve(parameters);
   return 0;
@@ -117,5 +101,28 @@ int main(int argc, char** argv) {
     LOG(ERROR) << "Usage: " << argv[0] << " <file>";
     exit(EXIT_FAILURE);
   }
-  return operations_research::Run(argv[1], -1);
+
+  // if (FLAGS_threads == 0) {
+    operations_research::FlatZincSearchParameters parameters;
+    parameters.all_solutions = FLAGS_all;
+    parameters.free_search = FLAGS_free;
+    parameters.heuristic_period = FLAGS_heuristic_period;
+    parameters.ignore_unknown = false;
+    parameters.log_period = FLAGS_log_period;
+    parameters.luby_restart = FLAGS_luby_restart;
+    parameters.num_solutions = FLAGS_num_solutions;
+    parameters.restart_log_size = FLAGS_restart_log_size;
+    parameters.simplex_frequency = FLAGS_simplex_frequency;
+    parameters.threads = FLAGS_threads;
+    parameters.time_limit_in_ms = FLAGS_time_limit;
+    parameters.use_log = FLAGS_use_log;
+    parameters.verbose_impact = FLAGS_verbose_impact;
+    parameters.worker_id = -1;
+    parameters.search_type = FLAGS_use_impact ?
+        operations_research::FlatZincSearchParameters::IBS :
+        operations_research::FlatZincSearchParameters::FIRST_UNBOUND;
+    return operations_research::Run(argv[1], parameters);
+  // } else {
+  //   return 0;
+  // }
 }

@@ -58,11 +58,17 @@ namespace operations_research {
 class SatPropagator;
 
 struct FlatZincSearchParameters {
+  enum SearchType {
+    IBS,
+    FIRST_UNBOUND,
+    MIN_SIZE,
+  };
+
   bool all_solutions;
+  bool free_search;
   bool ignore_annotations;
   bool ignore_unknown;
   bool use_log;
-  bool use_impact;
   bool verbose_impact;
   double restart_log_size;
   int heuristic_period;
@@ -73,6 +79,7 @@ struct FlatZincSearchParameters {
   int threads;
   int worker_id;
   int64 time_limit_in_ms;
+  SearchType search_type;
 };
 
 /**
@@ -167,6 +174,8 @@ class FlatZincModel {
 
   OptimizeVar* ObjectiveMonitor() const { return objective_; }
 
+  bool HasSolveAnnotations() const;
+
  private:
   enum Meth {
     SAT, //< Solve as satisfaction problem
@@ -208,7 +217,7 @@ class FlatZincModel {
   std::vector<IntVar*> active_variables_;
   std::vector<IntVar*> introduced_variables_;
   bool parsed_ok_;
-  bool free_search_;
+  string search_name_;
   string filename_;
   SatPropagator* sat_;
 };
