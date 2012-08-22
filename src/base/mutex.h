@@ -39,7 +39,7 @@ class Mutex {
 
 class MutexLock {
  public:
-  explicit MutexLock(Mutex *mutex) : mutex_(mutex) {
+  explicit MutexLock(Mutex* const mutex) : mutex_(mutex) {
     this->mutex_->Lock();
   }
 

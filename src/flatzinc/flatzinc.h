@@ -104,7 +104,8 @@ class FzParallelSupport {
   virtual int64 BestSolution() const = 0;
 };
 
-FzParallelSupport* MakeSequentialParallelSupport(bool print_all);
+FzParallelSupport* MakeSequentialSupport(bool print_all);
+FzParallelSupport* MakeMtSupport(bool print_all);
 
 /**
  * \brief A space that can be initialized with a %FlatZinc model

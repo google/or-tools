@@ -127,8 +127,7 @@ int main(int argc, char** argv) {
         operations_research::FlatZincSearchParameters::FIRST_UNBOUND;
 
     operations_research::FzParallelSupport* const parallel_support =
-        operations_research::MakeSequentialParallelSupport(
-            parameters.all_solutions);
+        operations_research::MakeSequentialSupport(parameters.all_solutions);
     return operations_research::Run(argv[1], parameters, parallel_support);
   } else {
     operations_research::FlatZincSearchParameters parameters;
@@ -150,8 +149,7 @@ int main(int argc, char** argv) {
         operations_research::FlatZincSearchParameters::IBS :
         operations_research::FlatZincSearchParameters::FIRST_UNBOUND;
     operations_research::FzParallelSupport* const parallel_support =
-        operations_research::MakeSequentialParallelSupport(
-            parameters.all_solutions);
+        operations_research::MakeMtSupport(parameters.all_solutions);
     return operations_research::Run(argv[1], parameters, parallel_support);
   }
 }

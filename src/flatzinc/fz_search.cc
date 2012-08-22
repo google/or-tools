@@ -17,9 +17,11 @@
 #include <vector>
 #include <string>
 
-#include "base/hash.h"
 #include "base/concise_iterator.h"
+#include "base/hash.h"
+#include "base/mutex.h"
 #include "base/stringprintf.h"
+#include "base/synchronization.h"
 #include "flatzinc/flatzinc.h"
 
 using namespace std;
@@ -83,6 +85,110 @@ class SequentialSupport : public FzParallelSupport {
   Type type_;
   const bool print_all_;
   string last_solution_;
+  int64 best_solution_;
+};
+
+class MtSupport : public FzParallelSupport {
+ public:
+  MtSupport(bool print_all)
+  : print_all_(print_all),
+    type_(UNDEF),
+    best_solution_(0),
+    last_worker_(-1) {}
+  virtual ~MtSupport() {}
+
+  virtual void Init(int worker_id, const string& init_string) {
+    if (worker_id == 0) {
+      MutexLock lock(&mutex_);
+      std::cout << init_string;
+    }
+  }
+
+  virtual void StartSearch(int worker_id, Type type) {
+    MutexLock lock(&mutex_);
+    if (type_ == UNDEF) {
+      type_ = type;
+      if (type == MAXIMIZE) {
+        best_solution_ = kint64min;
+      } else if (type_ == MINIMIZE) {
+        best_solution_ = kint64max;
+      }
+    }
+  }
+
+  virtual void SatSolution(int worker_id, const string& solution_string) {
+    MutexLock lock(&mutex_);
+    std::cout << "%% solution found by worker " << worker_id << std::endl;
+    std::cout << solution_string;
+  }
+
+  virtual void OptimizeSolution(int worker_id,
+                                int64 value,
+                                const string& solution_string) {
+    MutexLock lock(&mutex_);
+    switch (type_) {
+      case MINIMIZE: {
+        if (value < best_solution_) {
+          best_solution_ = value;
+          if (print_all_) {
+            std::cout << "%% solution with value " << value
+                      << " found by worker " << worker_id << std::endl;
+            std::cout << solution_string;
+          } else {
+            last_solution_ = solution_string;
+            last_worker_ = worker_id;
+          }
+        }
+        break;
+      }
+      case MAXIMIZE: {
+        if (value > best_solution_) {
+          best_solution_ = value;
+          if (print_all_) {
+            std::cout << "%% solution with value " << value
+                      << " found by worker " << worker_id << std::endl;
+            std::cout << solution_string;
+          } else {
+            last_solution_ = solution_string;
+            last_worker_ = worker_id;
+          }
+        }
+        break;
+      }
+      default:
+        LOG(ERROR) << "Should not be here";
+    }
+  }
+
+  virtual void FinalOutput(int worker_id, const string& final_output) {
+    MutexLock lock(&mutex_);
+    std::cout << final_output;
+  }
+
+  virtual bool ShouldFinish() const {
+    return false;
+  }
+
+  virtual void EndSearch(int worker_id) {
+    MutexLock lock(&mutex_);
+    if (!last_solution_.empty()) {
+            std::cout << "%% solution with value " << best_solution_
+                      << " found by worker " << last_worker_ << std::endl;
+      std::cout << last_solution_;
+      last_solution_.clear();
+    }
+  }
+
+  virtual int64 BestSolution() const {
+    return best_solution_;
+  }
+
+ private:
+  Mutex mutex_;
+  Type type_;
+  const bool print_all_;
+  string last_solution_;
+  int last_worker_;
   int64 best_solution_;
 };
 
@@ -219,6 +325,14 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
     }
 
     search_name_ = p.free_search ? "free" : "defined";
+    if (method_ != SAT && flat_annotations.size() == 1) {
+      search_name_ = "automatic";
+      builders_.push_back(
+          solver_->MakeDefaultPhase(active_variables_, parameters));
+      VLOG(1) << "  - adding decision builder = "
+              << builders_.back()->DebugString();
+    }
+
     for (unsigned int i = 0; i < flat_annotations.size(); i++) {
       try {
         AstCall *call = flat_annotations[i]->getCall("int_search");
@@ -444,92 +558,99 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   bool proven = false;
   bool timeout = false;
   string final_output;
-  if (limit != NULL && limit->crossed()) {
-    final_output.append("%% TIMEOUT\n");
-    timeout = true;
-  } else if (!breaked && count == 0 && (limit == NULL || !limit->crossed())) {
-    final_output.append("=====UNSATISFIABLE=====\n");
-  } else if (!breaked && (limit == NULL || !limit->crossed())) {
-    final_output.append("==========\n");
-    proven = true;
-  }
-  final_output.append(StringPrintf(
-      "%%%%  total runtime:        %" GG_LL_FORMAT "d ms\n",
-      solve_time + build_time));
-  final_output.append(
-      StringPrintf("%%%%  build time:           %" GG_LL_FORMAT "d ms\n",
-                   build_time));
-  final_output.append(
-      StringPrintf("%%%%  solve time:           %" GG_LL_FORMAT "d ms\n",
-                   solve_time));
-  final_output.append(
-      StringPrintf("%%%%  solutions:            %" GG_LL_FORMAT "d\n",
-                   solver_->solutions()));
-  final_output.append(
-      StringPrintf("%%%%  constraints:          %d\n", solver_->constraints()));
-  final_output.append(
-      StringPrintf("%%%%  normal propagations:  %" GG_LL_FORMAT "d\n",
-                   solver_->demon_runs(Solver::NORMAL_PRIORITY)));
-  final_output.append(
-      StringPrintf("%%%%  delayed propagations: %" GG_LL_FORMAT "d\n",
-                   solver_->demon_runs(Solver::DELAYED_PRIORITY)));
-  final_output.append(
-      StringPrintf("%%%%  branches:             %" GG_LL_FORMAT "d\n",
-                   solver_->branches()));
-  final_output.append(
-      StringPrintf("%%%%  failures:             %" GG_LL_FORMAT "d\n",
-                   solver_->failures()));
-  final_output.append(StringPrintf("%%%%  memory:               %s\n",
-                                   FlatZincMemoryUsage().c_str()));
-  const int64 best = objective_ != NULL ? objective_->best() : 0;
-  if (objective_ != NULL) {
-    if (method_ == MIN && solver_->solutions() > 0) {
-      final_output.append(
-          StringPrintf("%%%%  min objective:        %" GG_LL_FORMAT "d%s\n",
-                       best,
-                       (proven ? " (proven)" : "")));
-    } else if (solver_->solutions() > 0) {
-      final_output.append(
-          StringPrintf("%%%%  max objective:        %" GG_LL_FORMAT "d%s\n",
-                       best,
-                       (proven ? " (proven)" : "")));
+  if (p.worker_id <= 0) {
+    if (limit != NULL && limit->crossed()) {
+      final_output.append("%% TIMEOUT\n");
+      timeout = true;
+    } else if (!breaked && count == 0 && (limit == NULL || !limit->crossed())) {
+      final_output.append("=====UNSATISFIABLE=====\n");
+    } else if (!breaked && (limit == NULL || !limit->crossed())) {
+      final_output.append("==========\n");
+      proven = true;
     }
+    final_output.append(StringPrintf(
+        "%%%%  total runtime:        %" GG_LL_FORMAT "d ms\n",
+        solve_time + build_time));
+    final_output.append(
+        StringPrintf("%%%%  build time:           %" GG_LL_FORMAT "d ms\n",
+                     build_time));
+    final_output.append(
+        StringPrintf("%%%%  solve time:           %" GG_LL_FORMAT "d ms\n",
+                     solve_time));
+    final_output.append(
+        StringPrintf("%%%%  solutions:            %" GG_LL_FORMAT "d\n",
+                     solver_->solutions()));
+    final_output.append(
+        StringPrintf("%%%%  constraints:          %d\n",
+                     solver_->constraints()));
+    final_output.append(
+        StringPrintf("%%%%  normal propagations:  %" GG_LL_FORMAT "d\n",
+                     solver_->demon_runs(Solver::NORMAL_PRIORITY)));
+    final_output.append(
+        StringPrintf("%%%%  delayed propagations: %" GG_LL_FORMAT "d\n",
+                     solver_->demon_runs(Solver::DELAYED_PRIORITY)));
+    final_output.append(
+        StringPrintf("%%%%  branches:             %" GG_LL_FORMAT "d\n",
+                     solver_->branches()));
+    final_output.append(
+        StringPrintf("%%%%  failures:             %" GG_LL_FORMAT "d\n",
+                     solver_->failures()));
+    final_output.append(StringPrintf("%%%%  memory:               %s\n",
+                                     FlatZincMemoryUsage().c_str()));
+    const int64 best = objective_ != NULL ? objective_->best() : 0;
+    if (objective_ != NULL) {
+      if (method_ == MIN && solver_->solutions() > 0) {
+        final_output.append(
+            StringPrintf("%%%%  min objective:        %" GG_LL_FORMAT "d%s\n",
+                         best,
+                         (proven ? " (proven)" : "")));
+      } else if (solver_->solutions() > 0) {
+        final_output.append(
+            StringPrintf("%%%%  max objective:        %" GG_LL_FORMAT "d%s\n",
+                         best,
+                         (proven ? " (proven)" : "")));
+      }
+    }
+    const int num_solutions_found = solver_->solutions();
+    const bool no_solutions = num_solutions_found == 0;
+    const string status_string =
+        (no_solutions ?
+         (timeout ? "**timeout**" : "**unsat**") :
+         (objective_ == NULL ?
+          "**sat**" :
+          (timeout ? "**feasible**" :"**proven**")));
+    const string obj_string = (objective_ != NULL && !no_solutions ?
+                               StringPrintf("%" GG_LL_FORMAT "d", best) :
+                               "");
+    final_output.append("%%  name, status, obj, solns, s_time, b_time, br, "
+                        "fails, cts, demon, delayed, mem, search\n");
+    final_output.append(
+        StringPrintf("%%%%  csv: %s, %s, %s, %d, %" GG_LL_FORMAT
+                     "d ms, %" GG_LL_FORMAT "d ms, %" GG_LL_FORMAT "d, %"
+                     GG_LL_FORMAT "d, %d, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT
+                     "d, %s, %s\n",
+                     filename_.c_str(),
+                     status_string.c_str(),
+                     obj_string.c_str(),
+                     num_solutions_found,
+                     solve_time,
+                     build_time,
+                     solver_->branches(),
+                     solver_->failures(),
+                     solver_->constraints(),
+                     solver_->demon_runs(Solver::NORMAL_PRIORITY),
+                     solver_->demon_runs(Solver::DELAYED_PRIORITY),
+                     FlatZincMemoryUsage().c_str(),
+                     search_name_.c_str()));
+    parallel_support->FinalOutput(p.worker_id, final_output);
   }
-  const int num_solutions_found = solver_->solutions();
-  const bool no_solutions = num_solutions_found == 0;
-  const string status_string =
-      (no_solutions ?
-       (timeout ? "**timeout**" : "**unsat**") :
-       (objective_ == NULL ?
-        "**sat**" :
-        (timeout ? "**feasible**" :"**proven**")));
-  const string obj_string = (objective_ != NULL && !no_solutions ?
-                             StringPrintf("%" GG_LL_FORMAT "d", best) :
-                             "");
-  final_output.append("%%  name, status, obj, solns, s_time, b_time, br, "
-                      "fails, cts, demon, delayed, mem, search\n");
-  final_output.append(
-      StringPrintf("%%%%  csv: %s, %s, %s, %d, %" GG_LL_FORMAT
-                   "d ms, %" GG_LL_FORMAT "d ms, %" GG_LL_FORMAT "d, %"
-                   GG_LL_FORMAT "d, %d, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT
-                   "d, %s, %s\n",
-                   filename_.c_str(),
-                   status_string.c_str(),
-                   obj_string.c_str(),
-                   num_solutions_found,
-                   solve_time,
-                   build_time,
-                   solver_->branches(),
-                   solver_->failures(),
-                   solver_->constraints(),
-                   solver_->demon_runs(Solver::NORMAL_PRIORITY),
-                   solver_->demon_runs(Solver::DELAYED_PRIORITY),
-                   FlatZincMemoryUsage().c_str(),
-                   search_name_.c_str()));
-  parallel_support->FinalOutput(p.worker_id, final_output);
 }
 
-FzParallelSupport* MakeSequentialParallelSupport(bool print_all) {
+FzParallelSupport* MakeSequentialSupport(bool print_all) {
   return new SequentialSupport(print_all);
+}
+
+FzParallelSupport* MakeMtSupport(bool print_all) {
+  return new MtSupport(print_all);
 }
 }  // namespace operations_research
