@@ -29,6 +29,7 @@ DEFINE_int32(cp_parallel_update_frequency, 16,
              "one stored on the master.");
 
 namespace operations_research {
+namespace {
 
 // ----- Headers -----
 
@@ -274,21 +275,6 @@ class MtSolutionDispatcher : public SearchMonitor {
 
 // ---------- Implementation ----------
 
-// ----- ParallelSolveSupport -----
-
-ParallelSolveSupport::ParallelSolveSupport(
-    bool maximize,
-    ModelBuilder* const run_model)
-  : local_solution_(new AssignmentProto()),
-    maximize_(maximize),
-    run_model_(run_model) {
-  run_model->CheckIsRepeatable();
-  local_solution_->mutable_worker_info()->set_worker_id(-1);
-}
-
-ParallelSolveSupport::~ParallelSolveSupport() {}
-
-
 // ----- MtSolveSupport -----
 
 MtSolveSupport::MtSolveSupport(
@@ -306,13 +292,6 @@ MtSolveSupport::MtSolveSupport(
       started_slaves_(0),
       ended_slaves_(0) {
   Reset();
-}
-
-ParallelSolveSupport* MakeMtSolveSupport(
-    int workers,
-    bool maximize,
-    ParallelSolveSupport::ModelBuilder* const model_builder) {
-  return new MtSolveSupport(workers, maximize, model_builder);
 }
 
 MtSolveSupport::~MtSolveSupport() {}
@@ -611,6 +590,30 @@ class MTSharingSolutionPool : public SolutionPool {
 
 SolutionPool* MtSolveSupport::MakeSolutionPool(Solver* const s, int worker) {
   return s->RevAlloc(new MTSharingSolutionPool(this, worker));
+}
+}  // namespace
+
+// ----- ParallelSolveSupport -----
+
+ParallelSolveSupport::ParallelSolveSupport(
+    bool maximize,
+    ModelBuilder* const run_model)
+  : local_solution_(new AssignmentProto()),
+    maximize_(maximize),
+    run_model_(run_model) {
+  run_model->CheckIsRepeatable();
+  local_solution_->mutable_worker_info()->set_worker_id(-1);
+}
+
+ParallelSolveSupport::~ParallelSolveSupport() {}
+
+// ----- API -----
+
+ParallelSolveSupport* MakeMtSolveSupport(
+    int workers,
+    bool maximize,
+    ParallelSolveSupport::ModelBuilder* const model_builder) {
+  return new MtSolveSupport(workers, maximize, model_builder);
 }
 
 }  // namespace operations_research
