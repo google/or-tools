@@ -2116,12 +2116,6 @@ IntExpr* BuildPerformedExpr(CPModelLoader* const builder,
 
 IntExpr* BuildPower(CPModelLoader* const builder,
                     const CPIntegerExpressionProto& proto) {
-  IntExpr* left = NULL;
-  if (builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left)) {
-    IntExpr* right = NULL;
-    VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
-    return builder->solver()->MakeProd(left, right);
-  }
   IntExpr* expr = NULL;
   VERIFY(builder->ScanArguments(ModelVisitor::kExpressionArgument,
                                 proto,
@@ -2135,13 +2129,19 @@ IntExpr* BuildPower(CPModelLoader* const builder,
 
 IntExpr* BuildProduct(CPModelLoader* const builder,
                       const CPIntegerExpressionProto& proto) {
+  IntExpr* left = NULL;
+  if (builder->ScanArguments(ModelVisitor::kLeftArgument, proto, &left)) {
+    IntExpr* right = NULL;
+    VERIFY(builder->ScanArguments(ModelVisitor::kRightArgument, proto, &right));
+    return builder->solver()->MakeProd(left, right);
+  }
   IntExpr* expr = NULL;
   VERIFY(builder->ScanArguments(ModelVisitor::kExpressionArgument,
                                 proto,
                                 &expr));
   int64 value = 0;
   VERIFY(builder->ScanArguments(ModelVisitor::kValueArgument, proto, &value));
-  return builder->solver()->MakePower(expr, value);
+  return builder->solver()->MakeProd(expr, value);
 }
 
 // ----- kScalProd -----
