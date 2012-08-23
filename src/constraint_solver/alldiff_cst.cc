@@ -117,7 +117,11 @@ void ValueAllDifferent::OneMove(int index) {
     const int64 val = vars_[index]->Value();
     for (int j = 0; j < size_; ++j) {
       if (index != j) {
-        vars_[j]->RemoveValue(val);
+        if (vars_[j]->Size() < 0xFFFFFF) {
+          vars_[j]->RemoveValue(val);
+        } else {
+          solver()->AddConstraint(solver()->MakeNonEquality(vars_[j], val));
+        }
       }
     }
   }
