@@ -94,6 +94,7 @@ class FzParallelSupport {
     MAXIMIZE,
   };
 
+  FzParallelSupport() : num_solutions_(0) {}
   virtual ~FzParallelSupport() {}
   virtual void Init(int worker_id, const string& init_string) = 0;
   virtual void StartSearch(int worker_id, Type type) = 0;
@@ -113,6 +114,17 @@ class FzParallelSupport {
   virtual SearchLimit* Limit(Solver* const s, int worker_id) = 0;
   virtual void Log(int worker_id, const string& message) = 0;
   virtual bool Interrupted() const = 0;
+
+  void IncrementSolutions() {
+    num_solutions_++;
+  }
+
+  int NumSolutions() const {
+    return num_solutions_;
+  }
+
+ private:
+  int num_solutions_;
 };
 
 FzParallelSupport* MakeSequentialSupport(bool print_all, bool verbose);

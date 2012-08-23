@@ -114,7 +114,10 @@ class SequentialSupport : public FzParallelSupport {
   }
 
   virtual void SatSolution(int worker_id, const string& solution_string) {
-    std::cout << solution_string;
+    IncrementSolutions();
+    if (NumSolutions() == 1) {
+      std::cout << solution_string;
+    }
   }
 
   virtual void OptimizeSolution(int worker_id,
@@ -126,6 +129,7 @@ class SequentialSupport : public FzParallelSupport {
     } else {
       last_solution_ = solution_string;
     }
+    IncrementSolutions();
   }
 
   virtual void FinalOutput(int worker_id, const string& final_output) {
@@ -211,51 +215,58 @@ class MtSupport : public FzParallelSupport {
 
   virtual void SatSolution(int worker_id, const string& solution_string) {
     MutexLock lock(&mutex_);
-    LogNoLock(worker_id, "solution found");
-    std::cout << solution_string;
+    if (NumSolutions() == 0) {
+      IncrementSolutions();
+      LogNoLock(worker_id, "solution found");
+      std::cout << solution_string;
+    }
   }
 
   virtual void OptimizeSolution(int worker_id,
                                 int64 value,
                                 const string& solution_string) {
     MutexLock lock(&mutex_);
-    switch (type_) {
-      case MINIMIZE: {
-        if (value < best_solution_) {
-          best_solution_ = value;
-          if (print_all_) {
-            LogNoLock(
-                worker_id,
-                StringPrintf(
-                    "solution found with value %" GG_LL_FORMAT "d",
-                    value));
-            std::cout << solution_string;
-          } else {
-            last_solution_ = solution_string;
-            last_worker_ = worker_id;
+    if (!should_finish_) {
+      switch (type_) {
+        case MINIMIZE: {
+          if (value < best_solution_) {
+            best_solution_ = value;
+            IncrementSolutions();
+            if (print_all_) {
+              LogNoLock(
+                  worker_id,
+                  StringPrintf(
+                      "solution found with value %" GG_LL_FORMAT "d",
+                      value));
+              std::cout << solution_string;
+            } else {
+              last_solution_ = solution_string;
+              last_worker_ = worker_id;
+            }
           }
+          break;
         }
-        break;
-      }
-      case MAXIMIZE: {
-        if (value > best_solution_) {
-          best_solution_ = value;
-          if (print_all_) {
-            LogNoLock(
-                worker_id,
-                StringPrintf(
-                    "solution found with value %" GG_LL_FORMAT "d",
-                    value));
-            std::cout << solution_string;
-          } else {
-            last_solution_ = solution_string;
-            last_worker_ = worker_id;
+        case MAXIMIZE: {
+          if (value > best_solution_) {
+            best_solution_ = value;
+            IncrementSolutions();
+            if (print_all_) {
+              LogNoLock(
+                  worker_id,
+                  StringPrintf(
+                      "solution found with value %" GG_LL_FORMAT "d",
+                      value));
+              std::cout << solution_string;
+            } else {
+              last_solution_ = solution_string;
+              last_worker_ = worker_id;
+            }
           }
+          break;
         }
-        break;
+        default:
+          LOG(ERROR) << "Should not be here";
       }
-      default:
-        LOG(ERROR) << "Should not be here";
     }
   }
 
@@ -682,7 +693,6 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
     monitors.push_back(solver_->MakeLubyRestart(p.luby_restart));
   }
 
-  int count = 0;
   bool breaked = false;
   string solution_string;
   const int64 build_time = solver_->wall_time();
@@ -708,8 +718,8 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
         }
       }
     }
-    count++;
-    if (p.num_solutions > 0 && count >= p.num_solutions) {
+    if (p.num_solutions > 0 &&
+        parallel_support->NumSolutions() >= p.num_solutions) {
       breaked = true;
       break;
     }
@@ -718,6 +728,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   parallel_support->EndSearch(p.worker_id,
                               limit != NULL ? limit->crossed() : false);
   const int64 solve_time = solver_->wall_time() - build_time;
+  const int num_solutions = parallel_support->NumSolutions();
   bool proven = false;
   bool timeout = false;
   string final_output;
@@ -725,7 +736,9 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
     if (parallel_support->Interrupted()) {
       final_output.append("%% TIMEOUT\n");
       timeout = true;
-    } else if (!breaked && count == 0 && !parallel_support->Interrupted()) {
+    } else if (!breaked &&
+               num_solutions == 0 &&
+               !parallel_support->Interrupted()) {
       final_output.append("=====UNSATISFIABLE=====\n");
     } else if (!breaked && !parallel_support->Interrupted()) {
       final_output.append("==========\n");
@@ -741,8 +754,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
         StringPrintf("%%%%  solve time:           %" GG_LL_FORMAT "d ms\n",
                      solve_time));
     final_output.append(
-        StringPrintf("%%%%  solutions:            %" GG_LL_FORMAT "d\n",
-                     solver_->solutions()));
+        StringPrintf("%%%%  solutions:            %d\n", num_solutions));
     final_output.append(
         StringPrintf("%%%%  constraints:          %d\n",
                      solver_->constraints()));
