@@ -103,7 +103,7 @@ class FzParallelSupport {
                                 const string& solution_string) = 0;
   virtual void FinalOutput(int worker_id, const string& final_output) = 0;
   virtual bool ShouldFinish() const = 0;
-  virtual void EndSearch(int worker_id) = 0;
+  virtual void EndSearch(int worker_id, bool interrupted) = 0;
   virtual int64 BestSolution() const = 0;
   virtual OptimizeVar* Objective(Solver* const s,
                                  bool maximize,
@@ -112,6 +112,7 @@ class FzParallelSupport {
                                  int worker_id) = 0;
   virtual SearchLimit* Limit(Solver* const s, int worker_id) = 0;
   virtual void Log(int worker_id, const string& message) = 0;
+  virtual bool Interrupted() const = 0;
 };
 
 FzParallelSupport* MakeSequentialSupport(bool print_all, bool verbose);

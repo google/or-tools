@@ -24,7 +24,7 @@
 #include "base/synchronization.h"
 #include "flatzinc/flatzinc.h"
 
-using namespace std;
+using std::string;
 namespace operations_research {
 namespace {
 class MtOptimizeVar : public OptimizeVar {
@@ -96,7 +96,8 @@ class SequentialSupport : public FzParallelSupport {
   : print_all_(print_all),
     verbose_(verbose),
     type_(UNDEF),
-    best_solution_(0) {}
+    best_solution_(0),
+    interrupted_(false) {}
   virtual ~SequentialSupport() {}
 
   virtual void Init(int worker_id, const string& init_string) {
@@ -135,10 +136,11 @@ class SequentialSupport : public FzParallelSupport {
     return false;
   }
 
-  virtual void EndSearch(int worker_id) {
+  virtual void EndSearch(int worker_id, bool interrupted) {
     if (!last_solution_.empty()) {
       std::cout << last_solution_;
     }
+    interrupted_ = interrupted;
   }
 
   virtual int64 BestSolution() const {
@@ -161,12 +163,17 @@ class SequentialSupport : public FzParallelSupport {
     std::cout << "%%  worker " << worker_id << ": " << message << std::endl;
   }
 
+  virtual bool Interrupted() const {
+    return interrupted_;
+  }
+
  private:
   const bool print_all_;
   const bool verbose_;
   Type type_;
   string last_solution_;
   int64 best_solution_;
+  bool interrupted_;
 };
 
 class MtSupport : public FzParallelSupport {
@@ -177,7 +184,8 @@ class MtSupport : public FzParallelSupport {
     type_(UNDEF),
     best_solution_(0),
     last_worker_(-1),
-    should_finish_(false) {}
+    should_finish_(false),
+    interrupted_(false) {}
 
   virtual ~MtSupport() {}
 
@@ -260,7 +268,7 @@ class MtSupport : public FzParallelSupport {
     return should_finish_;
   }
 
-  virtual void EndSearch(int worker_id) {
+  virtual void EndSearch(int worker_id, bool interrupted) {
     MutexLock lock(&mutex_);
     LogNoLock(worker_id, "exiting");
     if (!last_solution_.empty()) {
@@ -271,6 +279,9 @@ class MtSupport : public FzParallelSupport {
       last_solution_.clear();
     }
     should_finish_ = true;
+    if (interrupted) {
+      interrupted_ = true;
+    }
   }
 
   virtual int64 BestSolution() const {
@@ -296,6 +307,10 @@ class MtSupport : public FzParallelSupport {
     }
   }
 
+  virtual bool Interrupted() const {
+    return interrupted_;
+  }
+
   void LogNoLock(int worker_id, const string& message) {
     if (verbose_) {
       std::cout << "%%  worker " << worker_id << ": " << message << std::endl;
@@ -311,6 +326,7 @@ class MtSupport : public FzParallelSupport {
   int last_worker_;
   int64 best_solution_;
   bool should_finish_;
+  bool interrupted_;
 };
 
 // Flatten Search annotations.
@@ -699,18 +715,19 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
     }
   }
   solver_->EndSearch();
-  parallel_support->EndSearch(p.worker_id);
+  parallel_support->EndSearch(p.worker_id,
+                              limit != NULL ? limit->crossed() : false);
   const int64 solve_time = solver_->wall_time() - build_time;
   bool proven = false;
   bool timeout = false;
   string final_output;
   if (p.worker_id <= 0) {
-    if (limit != NULL && limit->crossed()) {
+    if (parallel_support->Interrupted()) {
       final_output.append("%% TIMEOUT\n");
       timeout = true;
-    } else if (!breaked && count == 0 && (limit == NULL || !limit->crossed())) {
+    } else if (!breaked && count == 0 && !parallel_support->Interrupted()) {
       final_output.append("=====UNSATISFIABLE=====\n");
-    } else if (!breaked && (limit == NULL || !limit->crossed())) {
+    } else if (!breaked && !parallel_support->Interrupted()) {
       final_output.append("==========\n");
       proven = true;
     }
