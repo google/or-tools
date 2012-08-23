@@ -127,6 +127,7 @@ void ParallelRun(char* const file,
       parameters.search_type =
           operations_research::FlatZincSearchParameters::FIRST_UNBOUND;
       parameters.restart_log_size = -1.0;
+      parameters.heuristic_period = 10000000;
       break;
     }
     default: {
