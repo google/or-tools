@@ -7,6 +7,7 @@ CLP_TAG = 1.14.4
 CBC_TAG = 2.7.7
 ZLIB_TAG = 1.2.7
 ZLIB_ARCHIVE_TAG = 127
+SWIG_TAG = 2.0.8
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.47.tar.gz
@@ -59,7 +60,7 @@ download_third_party: \
 	dependencies/sources/gflags/autogen.sh \
 	dependencies/sources/protobuf/autogen.sh \
 	dependencies/sources/sparsehash/autogen.sh \
-	dependencies/archives/swigwin-2.0.7.zip \
+	dependencies/archives/swigwin-$(SWIG_TAG).zip \
 	dependencies/sources/google-apputils/README \
 	dependencies/sources/coin-cbc/configure
 
@@ -204,14 +205,14 @@ dependencies\sources\coin-cbc\configure:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/coin-cbc
 
 # Install SWIG.
-install_swig: dependencies\install\swigwin-2.0.7\swig.exe
+install_swig: dependencies\install\swigwin-$(SWIG_TAG)\swig.exe
 
-dependencies\install\swigwin-2.0.7\swig.exe: dependencies\archives\swigwin-2.0.7.zip
-	tools\unzip -d dependencies/install dependencies\archives\swigwin-2.0.7.zip
-	tools\touch.exe dependencies\install\swigwin-2.0.7\swig.exe
+dependencies\install\swigwin-$(SWIG_TAG)\swig.exe: dependencies\archives\swigwin-$(SWIG_TAG).zip
+	tools\unzip -d dependencies/install dependencies\archives\swigwin-$(SWIG_TAG).zip
+	tools\touch.exe dependencies\install\swigwin-$(SWIG_TAG)\swig.exe
 
-dependencies\archives\swigwin-2.0.7.zip:
-	tools\wget -P dependencies\archives http://prdownloads.sourceforge.net/swig/swigwin-2.0.7.zip
+dependencies\archives\swigwin-$(SWIG_TAG).zip:
+	tools\wget -P dependencies\archives http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip
 
 # Install glpk if needed.
 install_glpk: $(GLPK_TARGET)
@@ -263,7 +264,7 @@ Makefile.local:
 	@echo WINDOWS_GFLAGS_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
 	@echo WINDOWS_PROTOBUF_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
 	@echo WINDOWS_SPARSEHASH_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
-	@echo WINDOWS_SWIG_BINARY = $(OR_ROOT_FULL)\\dependencies\\install\\swigwin-2.0.7\\swig.exe>> Makefile.local
+	@echo WINDOWS_SWIG_BINARY = $(OR_ROOT_FULL)\\dependencies\\install\\swigwin-$(SWIG_TAG)\\swig.exe>> Makefile.local
 	@echo WINDOWS_CLP_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
 	@echo WINDOWS_CBC_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
 	@echo $(GLPK_MAKEFILE)>> Makefile.local
