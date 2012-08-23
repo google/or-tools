@@ -1,4 +1,14 @@
 
+v.0.1.10: (2012-08-23 16:31:16)
+-------------------------------
+* Minor enhancements to the manual:
+  - section 6.4 modified
+  - section 6.5 added
+* Scripts:
+  - test of automatic upload: works again
+  - indirection before commit
+
+
 v.0.1.9: (2012-08-22 13:17:31)
 ------------------------------
 * Minor enhancements to the manual:
