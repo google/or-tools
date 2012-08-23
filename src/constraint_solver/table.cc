@@ -941,7 +941,7 @@ Constraint* BuildAc4TableConstraint(Solver* const solver,
 Constraint* Solver::MakeAllowedAssignments(
     const std::vector<IntVar*>& vars,
     const IntTupleSet& tuples) {
-  if (tuples.NumTuples() > 512 && FLAGS_cp_use_ac4r_table) {
+  if (tuples.NumTuples() > 1024 && FLAGS_cp_use_ac4r_table) {
     return BuildAc4TableConstraint(this, tuples, vars);
   }
   if (FLAGS_cp_use_compact_table
