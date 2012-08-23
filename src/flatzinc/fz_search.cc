@@ -219,6 +219,7 @@ class MtSupport : public FzParallelSupport {
       IncrementSolutions();
       LogNoLock(worker_id, "solution found");
       std::cout << solution_string;
+      should_finish_ = true;
     }
   }
 
@@ -698,7 +699,7 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   const int64 build_time = solver_->wall_time();
   solver_->NewSearch(solver_->Compose(builders_), monitors);
   while (solver_->NextSolution()) {
-    if (output_ != NULL) {
+    if (output_ != NULL && !parallel_support->ShouldFinish()) {
       solution_string.clear();
       for (unsigned int i = 0; i < output_->a.size(); i++) {
         solution_string.append(DebugString(output_->a[i]));
