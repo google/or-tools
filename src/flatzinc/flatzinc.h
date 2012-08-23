@@ -62,6 +62,8 @@ struct FlatZincSearchParameters {
     IBS,
     FIRST_UNBOUND,
     MIN_SIZE,
+    RANDOM_MIN,
+    RANDOM_MAX,
   };
 
   bool all_solutions;
@@ -75,6 +77,7 @@ struct FlatZincSearchParameters {
   int log_period;
   int luby_restart;
   int num_solutions;
+  int random_seed;
   int simplex_frequency;
   int threads;
   int worker_id;
@@ -102,10 +105,17 @@ class FzParallelSupport {
   virtual bool ShouldFinish() const = 0;
   virtual void EndSearch(int worker_id) = 0;
   virtual int64 BestSolution() const = 0;
+  virtual OptimizeVar* Objective(Solver* const s,
+                                 bool maximize,
+                                 IntVar* const var,
+                                 int64 step,
+                                 int worker_id) = 0;
+  virtual SearchLimit* Limit(Solver* const s, int worker_id) = 0;
+  virtual void Log(int worker_id, const string& message) = 0;
 };
 
-FzParallelSupport* MakeSequentialSupport(bool print_all);
-FzParallelSupport* MakeMtSupport(bool print_all);
+FzParallelSupport* MakeSequentialSupport(bool print_all, bool verbose);
+FzParallelSupport* MakeMtSupport(bool print_all, bool verbose);
 
 /**
  * \brief A space that can be initialized with a %FlatZinc model

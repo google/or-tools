@@ -161,6 +161,7 @@ void FlatZincModel::NewSetVar(const std::string& name, SetVarSpec* vs) {
 }
 
 void FlatZincModel::Satisfy(AstArray* const annotations) {
+  objective_variable_ = -1;
   method_ = SAT;
   solve_annotations_ = annotations;
 }

@@ -43,6 +43,7 @@
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stringprintf.h"
+#include "base/threadpool.h"
 #include "flatzinc/flatzinc.h"
 
 DEFINE_int32(log_period, 10000000, "Search log period");
@@ -51,13 +52,15 @@ DEFINE_bool(all, false, "Search for all solutions");
 DEFINE_bool(free, false, "Ignore search annotations");
 DEFINE_int32(num_solutions, 0, "Number of solution to search for");
 DEFINE_int32(time_limit, 0, "time limit in ms");
-DEFINE_int32(threads, 0, "threads");
+DEFINE_int32(workers, 0, "Number of workers");
 DEFINE_int32(simplex_frequency, 0, "Simplex frequency, 0 = no simplex");
 DEFINE_bool(use_impact, false, "Use impact based search");
 DEFINE_double(restart_log_size, -1, "Restart log size for impact search");
 DEFINE_int32(luby_restart, -1, "Luby restart factor, <= 0 = no luby");
 DEFINE_int32(heuristic_period, 30, "Period to call heuristics in free search");
 DEFINE_bool(verbose_impact, false, "Verbose impact");
+DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread");
+
 DECLARE_bool(log_prefix);
 
 namespace operations_research {
@@ -82,6 +85,62 @@ int Run(const std::string& file,
   fz_model.Solve(parameters, parallel_support);
   return 0;
 }
+
+void ParallelRun(char* const file,
+                 int worker_id,
+                 FzParallelSupport* const parallel_support) {
+  operations_research::FlatZincSearchParameters parameters;
+  parameters.all_solutions = FLAGS_all;
+  parameters.heuristic_period = FLAGS_heuristic_period;
+  parameters.ignore_unknown = false;
+  parameters.log_period = 0;
+  parameters.luby_restart = -1;
+  parameters.num_solutions = FLAGS_num_solutions;
+  parameters.random_seed = worker_id * 10;
+  parameters.simplex_frequency = FLAGS_simplex_frequency;
+  parameters.threads = FLAGS_workers;
+  parameters.time_limit_in_ms = FLAGS_time_limit;
+  parameters.use_log = false;
+  parameters.verbose_impact = false;
+  parameters.worker_id = worker_id;
+  switch (worker_id) {
+    case 0: {
+      parameters.free_search = false;
+      parameters.restart_log_size = -1.0;
+    }
+    case 1: {
+      parameters.free_search = false;
+      parameters.search_type =
+          operations_research::FlatZincSearchParameters::MIN_SIZE;
+      parameters.restart_log_size = -1.0;
+      break;
+    }
+    case 2: {
+      parameters.free_search = false;
+      parameters.search_type =
+          operations_research::FlatZincSearchParameters::IBS;
+      parameters.restart_log_size = FLAGS_restart_log_size;
+      break;
+    }
+    case 3: {
+      parameters.free_search = false;
+      parameters.search_type =
+          operations_research::FlatZincSearchParameters::FIRST_UNBOUND;
+      parameters.restart_log_size = -1.0;
+      break;
+    }
+    default: {
+      parameters.free_search = false;
+      parameters.search_type = worker_id % 2 == 0 ?
+          operations_research::FlatZincSearchParameters::RANDOM_MIN:
+          operations_research::FlatZincSearchParameters::RANDOM_MAX;
+      parameters.restart_log_size = -1.0;
+      parameters.luby_restart = 250;
+    }
+  }
+  Run(file, parameters, parallel_support);
+}
+
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
@@ -94,7 +153,7 @@ int main(int argc, char** argv) {
       argv[i] = "--free";
     }
     if (strcmp(argv[i], "-p") == 0) {
-      argv[i] = "--threads";
+      argv[i] = "--workers";
     }
     if (strcmp(argv[i], "-n") == 0) {
       argv[i] = "--num_solutions";
@@ -106,7 +165,7 @@ int main(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
 
-  if (FLAGS_threads == 0) {
+  if (FLAGS_workers == 0) {
     operations_research::FlatZincSearchParameters parameters;
     parameters.all_solutions = FLAGS_all;
     parameters.free_search = FLAGS_free;
@@ -117,7 +176,7 @@ int main(int argc, char** argv) {
     parameters.num_solutions = FLAGS_num_solutions;
     parameters.restart_log_size = FLAGS_restart_log_size;
     parameters.simplex_frequency = FLAGS_simplex_frequency;
-    parameters.threads = FLAGS_threads;
+    parameters.threads = FLAGS_workers;
     parameters.time_limit_in_ms = FLAGS_time_limit;
     parameters.use_log = FLAGS_use_log;
     parameters.verbose_impact = FLAGS_verbose_impact;
@@ -127,29 +186,20 @@ int main(int argc, char** argv) {
         operations_research::FlatZincSearchParameters::FIRST_UNBOUND;
 
     operations_research::FzParallelSupport* const parallel_support =
-        operations_research::MakeSequentialSupport(parameters.all_solutions);
+        operations_research::MakeSequentialSupport(parameters.all_solutions,
+                                                   FLAGS_verbose_mt);
     return operations_research::Run(argv[1], parameters, parallel_support);
   } else {
-    operations_research::FlatZincSearchParameters parameters;
-    parameters.all_solutions = FLAGS_all;
-    parameters.free_search = FLAGS_free;
-    parameters.heuristic_period = FLAGS_heuristic_period;
-    parameters.ignore_unknown = false;
-    parameters.log_period = FLAGS_log_period;
-    parameters.luby_restart = FLAGS_luby_restart;
-    parameters.num_solutions = FLAGS_num_solutions;
-    parameters.restart_log_size = FLAGS_restart_log_size;
-    parameters.simplex_frequency = FLAGS_simplex_frequency;
-    parameters.threads = FLAGS_threads;
-    parameters.time_limit_in_ms = FLAGS_time_limit;
-    parameters.use_log = FLAGS_use_log;
-    parameters.verbose_impact = FLAGS_verbose_impact;
-    parameters.worker_id = 0;
-    parameters.search_type = FLAGS_use_impact ?
-        operations_research::FlatZincSearchParameters::IBS :
-        operations_research::FlatZincSearchParameters::FIRST_UNBOUND;
+    operations_research::ThreadPool pool("Parallel FlatZinc", FLAGS_workers);
+    pool.StartWorkers();
     operations_research::FzParallelSupport* const parallel_support =
-        operations_research::MakeMtSupport(parameters.all_solutions);
-    return operations_research::Run(argv[1], parameters, parallel_support);
+        operations_research::MakeMtSupport(FLAGS_all, FLAGS_verbose_mt);
+    for (int w = 0; w < FLAGS_workers; ++w) {
+      pool.Add(NewCallback(&operations_research::ParallelRun,
+                           argv[1],
+                           w,
+                           parallel_support));
+    }
+    return 0;
   }
 }

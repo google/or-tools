@@ -248,7 +248,9 @@ struct DefaultPhaseParameters {
   enum SearchStrategy {
     CHOOSE_FIRST_UNBOUND_ASSIGN_MIN,
     CHOOSE_MIN_SIZE_ASSIGN_MIN,
-    IMPACT_BASED_SEARCH
+    IMPACT_BASED_SEARCH,
+    CHOOSE_RANDOM_ASSIGN_MIN,
+    CHOOSE_RANDOM_ASSIGN_MAX,
   };
 
   static const int kDefaultNumberOfSplits;

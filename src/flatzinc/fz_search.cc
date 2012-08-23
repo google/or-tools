@@ -27,10 +27,74 @@
 using namespace std;
 namespace operations_research {
 namespace {
+class MtOptimizeVar : public OptimizeVar {
+ public:
+  MtOptimizeVar(Solver* const s,
+                bool maximize,
+                IntVar* const v,
+                int64 step,
+                FzParallelSupport* const support,
+                int worker_id)
+      : OptimizeVar(s, maximize, v, step),
+        support_(support),
+        worker_id_(worker_id) {}
+
+  virtual ~MtOptimizeVar() {}
+
+  virtual void RefuteDecision(Decision* const d) {
+    const int64 polled_best = support_->BestSolution();
+    if ((maximize_ && polled_best > best_) ||
+        (!maximize_ && polled_best < best_)) {
+      support_->Log(
+          worker_id_,
+          StringPrintf(
+              "Polling improved objective %" GG_LL_FORMAT "d",
+              polled_best));
+      best_ = polled_best;
+    }
+    OptimizeVar::RefuteDecision(d);
+  }
+
+ private:
+  FzParallelSupport* const support_;
+  const int worker_id_;
+};
+
+class MtCustomLimit : public SearchLimit {
+ public:
+  MtCustomLimit(Solver* const s,
+                FzParallelSupport* const support,
+                int worker_id)
+      : SearchLimit(s),
+        support_(support),
+        worker_id_(worker_id) {}
+
+  virtual ~MtCustomLimit() {}
+
+  virtual void Init() {}
+
+  virtual bool Check() {
+    const bool result = support_->ShouldFinish();
+    if (result) {
+      support_->Log(worker_id_, "terminating");
+    }
+    return result;
+  }
+
+  virtual void Copy(const SearchLimit* const limit) {}
+
+  virtual SearchLimit* MakeClone() const { return NULL; }
+
+ private:
+  FzParallelSupport* const support_;
+  const int worker_id_;
+};
+
 class SequentialSupport : public FzParallelSupport {
  public:
-  SequentialSupport(bool print_all)
+  SequentialSupport(bool print_all, bool verbose)
   : print_all_(print_all),
+    verbose_(verbose),
     type_(UNDEF),
     best_solution_(0) {}
   virtual ~SequentialSupport() {}
@@ -81,27 +145,48 @@ class SequentialSupport : public FzParallelSupport {
     return best_solution_;
   }
 
+  virtual OptimizeVar* Objective(Solver* const s,
+                                 bool maximize,
+                                 IntVar* const var,
+                                 int64 step,
+                                 int worker_id) {
+    return s->MakeOptimize(maximize, var, step);
+  }
+
+  virtual SearchLimit* Limit(Solver* const s, int worker_id) {
+    return NULL;
+  }
+
+  virtual void Log(int worker_id, const string& message) {
+    std::cout << "%%  worker " << worker_id << ": " << message << std::endl;
+  }
+
  private:
-  Type type_;
   const bool print_all_;
+  const bool verbose_;
+  Type type_;
   string last_solution_;
   int64 best_solution_;
 };
 
 class MtSupport : public FzParallelSupport {
  public:
-  MtSupport(bool print_all)
+  MtSupport(bool print_all, bool verbose)
   : print_all_(print_all),
+    verbose_(verbose),
     type_(UNDEF),
     best_solution_(0),
-    last_worker_(-1) {}
+    last_worker_(-1),
+    should_finish_(false) {}
+
   virtual ~MtSupport() {}
 
   virtual void Init(int worker_id, const string& init_string) {
+    MutexLock lock(&mutex_);
     if (worker_id == 0) {
-      MutexLock lock(&mutex_);
       std::cout << init_string;
     }
+    LogNoLock(worker_id, "starting");
   }
 
   virtual void StartSearch(int worker_id, Type type) {
@@ -118,7 +203,7 @@ class MtSupport : public FzParallelSupport {
 
   virtual void SatSolution(int worker_id, const string& solution_string) {
     MutexLock lock(&mutex_);
-    std::cout << "%% solution found by worker " << worker_id << std::endl;
+    LogNoLock(worker_id, "solution found");
     std::cout << solution_string;
   }
 
@@ -131,8 +216,11 @@ class MtSupport : public FzParallelSupport {
         if (value < best_solution_) {
           best_solution_ = value;
           if (print_all_) {
-            std::cout << "%% solution with value " << value
-                      << " found by worker " << worker_id << std::endl;
+            LogNoLock(
+                worker_id,
+                StringPrintf(
+                    "solution found with value %" GG_LL_FORMAT "d",
+                    value));
             std::cout << solution_string;
           } else {
             last_solution_ = solution_string;
@@ -145,8 +233,11 @@ class MtSupport : public FzParallelSupport {
         if (value > best_solution_) {
           best_solution_ = value;
           if (print_all_) {
-            std::cout << "%% solution with value " << value
-                      << " found by worker " << worker_id << std::endl;
+            LogNoLock(
+                worker_id,
+                StringPrintf(
+                    "solution found with value %" GG_LL_FORMAT "d",
+                    value));
             std::cout << solution_string;
           } else {
             last_solution_ = solution_string;
@@ -166,30 +257,60 @@ class MtSupport : public FzParallelSupport {
   }
 
   virtual bool ShouldFinish() const {
-    return false;
+    return should_finish_;
   }
 
   virtual void EndSearch(int worker_id) {
     MutexLock lock(&mutex_);
+    LogNoLock(worker_id, "exiting");
     if (!last_solution_.empty()) {
-            std::cout << "%% solution with value " << best_solution_
-                      << " found by worker " << last_worker_ << std::endl;
+      LogNoLock(last_worker_,
+                StringPrintf("solution found with value %" GG_LL_FORMAT "d",
+                             best_solution_));
       std::cout << last_solution_;
       last_solution_.clear();
     }
+    should_finish_ = true;
   }
 
   virtual int64 BestSolution() const {
     return best_solution_;
   }
 
+  virtual OptimizeVar* Objective(Solver* const s,
+                                 bool maximize,
+                                 IntVar* const var,
+                                 int64 step,
+                                 int w) {
+    return s->RevAlloc(new MtOptimizeVar(s, maximize, var, step, this, w));
+  }
+
+  virtual SearchLimit* Limit(Solver* const s, int worker_id) {
+    return s->RevAlloc(new MtCustomLimit(s, this, worker_id));
+  }
+
+  virtual void Log(int worker_id, const string& message) {
+    if (verbose_) {
+      MutexLock lock(&mutex_);
+      std::cout << "%%  worker " << worker_id << ": " << message << std::endl;
+    }
+  }
+
+  void LogNoLock(int worker_id, const string& message) {
+    if (verbose_) {
+      std::cout << "%%  worker " << worker_id << ": " << message << std::endl;
+    }
+  }
+
  private:
+  const bool print_all_;
+  const bool verbose_;
   Mutex mutex_;
   Type type_;
-  const bool print_all_;
   string last_solution_;
   int last_worker_;
   int64 best_solution_;
+  bool should_finish_;
 };
 
 // Flatten Search annotations.
@@ -295,10 +416,27 @@ bool FlatZincModel::HasSolveAnnotations() const {
 void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
   const bool has_solve_annotations = HasSolveAnnotations();
   DefaultPhaseParameters parameters;
-  parameters.search_strategy =
-      p.search_type == FlatZincSearchParameters::IBS ?
-      DefaultPhaseParameters::IMPACT_BASED_SEARCH :
-      DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN;
+  switch (p.search_type) {
+    case FlatZincSearchParameters::IBS:
+      parameters.search_strategy = DefaultPhaseParameters::IMPACT_BASED_SEARCH;
+      break;
+    case FlatZincSearchParameters::FIRST_UNBOUND:
+      parameters.search_strategy =
+          DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN;
+      break;
+    case FlatZincSearchParameters::MIN_SIZE:
+      parameters.search_strategy =
+          DefaultPhaseParameters::CHOOSE_MIN_SIZE_ASSIGN_MIN;
+      break;
+    case FlatZincSearchParameters::RANDOM_MIN:
+      parameters.search_strategy =
+          DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MIN;
+      break;
+    case FlatZincSearchParameters::RANDOM_MAX:
+      parameters.search_strategy =
+          DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MAX;
+      break;
+  }
   parameters.run_all_heuristics = true;
   parameters.heuristic_period =
       method_ != SAT || !p.all_solutions ? p.heuristic_period : -1;
@@ -313,6 +451,7 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
       DefaultPhaseParameters::CHOOSE_MAX_SUM_IMPACT;
   parameters.value_selection_schema =
       DefaultPhaseParameters::SELECT_MIN_IMPACT;
+  parameters.random_seed = p.random_seed;
 
   VLOG(1) << "Create decision builders";
   if (has_solve_annotations) {
@@ -471,9 +610,9 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   bool print_last = false;
   if (p.all_solutions && p.num_solutions == 0) {
     p.num_solutions = kint32max;
-  } else if (objective_ == NULL && p.num_solutions == 0) {
+  } else if (method_ == SAT && p.num_solutions == 0) {
     p.num_solutions = 1;
-  } else if (objective_ != NULL && !p.all_solutions && p.num_solutions > 0) {
+  } else if (method_ != SAT && !p.all_solutions && p.num_solutions > 0) {
     p.num_solutions = kint32max;
     print_last = true;
   }
@@ -482,6 +621,11 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   switch (method_) {
     case MIN:
     case MAX: {
+      objective_ = parallel_support->Objective(solver_.get(),
+                                               method_ == MAX,
+                                               integer_variables_[objective_variable_]->Var(),
+                                               1,
+                                               p.worker_id);
       SearchMonitor* const log = p.use_log ?
           solver_->MakeSearchLog(p.log_period, objective_) :
           NULL;
@@ -503,6 +647,8 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
       break;
     }
   }
+  // Custom limit in case of parallelism.
+  monitors.push_back(parallel_support->Limit(solver_.get(), p.worker_id));
 
   SearchLimit* const limit = (p.time_limit_in_ms > 0 ?
                               solver_->MakeLimit(p.time_limit_in_ms,
@@ -646,11 +792,11 @@ void FlatZincModel::Solve(FlatZincSearchParameters p,
   }
 }
 
-FzParallelSupport* MakeSequentialSupport(bool print_all) {
-  return new SequentialSupport(print_all);
+FzParallelSupport* MakeSequentialSupport(bool print_all, bool verbose) {
+  return new SequentialSupport(print_all, verbose);
 }
 
-FzParallelSupport* MakeMtSupport(bool print_all) {
-  return new MtSupport(print_all);
+FzParallelSupport* MakeMtSupport(bool print_all, bool verbose) {
+  return new MtSupport(print_all, verbose);
 }
 }  // namespace operations_research

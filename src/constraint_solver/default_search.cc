@@ -984,6 +984,10 @@ class RunHeuristicsAsDives : public Decision {
     }
   }
 
+  int Rand32(int size) {
+    return random_.Next() % size;
+  }
+
   void Init(Solver* const solver,
             const std::vector<IntVar*>& vars,
             int heuristic_num_failures_limit) {
@@ -1225,6 +1229,11 @@ class DefaultIntegerSearch : public DecisionBuilder {
         return FindVarValueNoImpact(var, value);
       case DefaultPhaseParameters::CHOOSE_MIN_SIZE_ASSIGN_MIN:
         return FindVarValueMinSize(var, value);
+      case DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MIN:
+        return FindVarValueRandom(var, value, true);
+      case DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MAX:
+        return FindVarValueRandom(var, value, false);
+
     }
   }
 
@@ -1291,6 +1300,27 @@ class DefaultIntegerSearch : public DecisionBuilder {
       }
     }
     return *found_var != NULL;
+  }
+
+  bool FindVarValueRandom(IntVar** const found_var,
+                          int64* const value,
+                          bool assign_min) {
+    CHECK_NOTNULL(found_var);
+    CHECK_NOTNULL(value);
+    *found_var = NULL;
+    *value = 0;
+    const int size = vars_.size();
+    const int shift = heuristics_.Rand32(size);
+    for (int i = 0; i < size; ++i) {
+      const int index = (i + shift) % size;
+      IntVar* const var = vars_[index];
+      if (!var->Bound()) {
+        *found_var = var;
+        *value = assign_min ? var->Min() : var->Max();
+        return true;
+      }
+    }
+    return false;
   }
 
   // ----- data members -----
