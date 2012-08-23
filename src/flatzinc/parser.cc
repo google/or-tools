@@ -22,6 +22,18 @@
 #include "flatzinc/parser.h"
 #include "flatzinc/parser.tab.h"
 
+#if defined(__APPLE__) && defined(__GNUC__)
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#define HAVE_MMAP
+#elif defined(__GNUC__) && defined(__linux__)
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#define HAVE_MMAP
+#endif
+
 using namespace std;
 extern int yyparse(void*);
 extern int yylex(YYSTYPE*, void* scanner);
