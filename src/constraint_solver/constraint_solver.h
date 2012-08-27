@@ -1065,6 +1065,11 @@ class Solver {
   // the objective and limits to the protobuf.
   void ExportModel(const std::vector<SearchMonitor*>& monitors,
                    CPModelProto* const proto) const;
+  // Exports the model to protobuf. Search monitors are useful to pass
+  // the objective and limits to the protobuf.
+  void ExportModel(const std::vector<SearchMonitor*>& monitors,
+                   CPModelProto* const proto,
+                   DecisionBuilder* const db) const;
   // Loads the model into the solver, and returns true upon success.
   bool LoadModel(const CPModelProto& proto);
   // Loads the model into the solver, appends search monitors to monitors,

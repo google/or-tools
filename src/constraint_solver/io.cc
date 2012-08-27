@@ -2607,6 +2607,16 @@ bool CPModelLoader::ScanOneArgument(int type_index,
 // ----- Solver API -----
 
 void Solver::ExportModel(const std::vector<SearchMonitor*>& monitors,
+                         CPModelProto* const model_proto,
+                         DecisionBuilder* const db) const {
+  CHECK_NOTNULL(model_proto);
+  FirstPassVisitor first_pass;
+  Accept(&first_pass, monitors, db);
+  SecondPassVisitor second_pass(first_pass, model_proto);
+  Accept(&second_pass, monitors, db);
+}
+
+void Solver::ExportModel(const std::vector<SearchMonitor*>& monitors,
                          CPModelProto* const model_proto) const {
   CHECK_NOTNULL(model_proto);
   FirstPassVisitor first_pass;
