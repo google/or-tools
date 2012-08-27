@@ -232,12 +232,13 @@ class FlatZincModel {
 
   bool HasSolveAnnotations() const;
 
+  void CreateDecisionBuilders(const FlatZincSearchParameters& parameters);
+
   const std::vector<DecisionBuilder*>& DecisionBuilders() const;
   const std::vector<IntVar*>& PrimaryVariables() const;
   const std::vector<IntVar*>& SecondaryVariables() const;
 
  private:
-  void CreateDecisionBuilders(const FlatZincSearchParameters& parameters);
   string DebugString(AstNode* const ai) const;
 
   /// Number of integer variables
