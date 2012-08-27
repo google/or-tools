@@ -233,6 +233,8 @@ class FlatZincModel {
   bool HasSolveAnnotations() const;
 
   const std::vector<DecisionBuilder*>& DecisionBuilders() const;
+  const std::vector<IntVar*>& PrimaryVariables() const;
+  const std::vector<IntVar*>& SecondaryVariables() const;
 
  private:
   void CreateDecisionBuilders(const FlatZincSearchParameters& parameters);

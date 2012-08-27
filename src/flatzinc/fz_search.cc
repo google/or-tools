@@ -632,6 +632,14 @@ const std::vector<DecisionBuilder*>& FlatZincModel::DecisionBuilders() const {
   return builders_;
 }
 
+const std::vector<IntVar*>& FlatZincModel::PrimaryVariables() const {
+  return active_variables_;
+}
+
+const std::vector<IntVar*>& FlatZincModel::SecondaryVariables() const {
+  return introduced_variables_;
+}
+
 void FlatZincModel::Solve(FlatZincSearchParameters p,
                           FzParallelSupport* const parallel_support) {
   if (!parsed_ok_) {
