@@ -398,6 +398,42 @@ public class CsTestCpOperator
     Console.WriteLine(y.ToString());
   }
 
+  static void TestScheduling()
+  {
+    Solver solver = new Solver("Scheduling");
+    IntervalVar[] tasks = new IntervalVar[taskCount];
+    List<IntVar> all_ends = new List<IntVar>();
+    int i = 0;
+    foreach(Task t in myTaskList)
+    {
+      tasks[i] = solver.MakeFixedInterval(0, (long)t.Duration, t.Name);
+      if (t.Successors.Count <= 0)
+        all_ends.Add(tasks[i].EndExpr().Var());
+      //solver.Add(solver.MakeGreaterOrEqual(tasks[i].StartExpr(), 1)); // { 1 }
+      i++;
+    }
+
+    IntVar objective_var = solver.MakeMax(all_ends.ToArray()).Var();
+    OptimizeVar objective_monitor = solver.MakeMinimize(objective_var, 1);
+    DecisionBuilder obj_phase = solver.MakePhase(objective_var, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
+
+    const int kLogFrequency = 999999999;
+    SearchMonitor search_log = solver.MakeSearchLog(kLogFrequency, objective_monitor);
+
+    SolutionCollector collector = solver.MakeLastSolutionCollector();
+    collector.AddObjective(objective_var);
+
+    if (solver.Solve(obj_phase, objective_monitor))
+    {
+      Console.Out.WriteLine("Solution: ");
+      foreach(IntervalVar t in tasks)
+        Console.Out.WriteLine(t.ToString());
+    }else
+     {
+       Console.Out.WriteLine("Can not find a solution");
+     }
+  }
+
   static void Main()
   {
     TestConstructors();

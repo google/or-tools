@@ -1702,11 +1702,17 @@ void Solver::AddCastConstraint(CastConstraint* const constraint,
 
 void Solver::Accept(ModelVisitor* const visitor) const {
   std::vector<SearchMonitor*> monitors;
-  Accept(visitor, monitors);
+  Accept(visitor, monitors, NULL);
 }
 
 void Solver::Accept(ModelVisitor* const visitor,
                     const std::vector<SearchMonitor*>& monitors) const {
+  Accept(visitor, monitors, NULL);
+}
+
+void Solver::Accept(ModelVisitor* const visitor,
+                    const std::vector<SearchMonitor*>& monitors,
+                    DecisionBuilder* const db) const {
   visitor->BeginVisitModel(name_);
   for (int index = 0; index < constraints_list_.size(); ++index) {
     Constraint* const constraint = constraints_list_[index];
@@ -1718,6 +1724,9 @@ void Solver::Accept(ModelVisitor* const visitor,
     for (int i = 0; i < monitors.size(); ++i) {
       monitors[i]->Accept(visitor);
     }
+  }
+  if (db != NULL) {
+    db->Accept(visitor);
   }
   visitor->EndVisitModel(name_);
 }

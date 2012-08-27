@@ -2743,6 +2743,9 @@ class Solver {
   // Accepts the given model visitor.
   void Accept(ModelVisitor* const visitor,
               const std::vector<SearchMonitor*>& monitors) const;
+  void Accept(ModelVisitor* const visitor,
+              const std::vector<SearchMonitor*>& monitors,
+              DecisionBuilder* const db) const;
 
 
   Decision* balancing_decision() const { return balancing_decision_.get(); }
