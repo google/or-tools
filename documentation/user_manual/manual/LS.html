@@ -56,7 +56,29 @@
 <span id="chapter-local-search"></span><h1>6. Local search: the job-shop problem</h1>
 <p class="rubric">Overview:</p>
 <p class="rubric">Prerequisites:</p>
+<ul class="simple">
+<li>Basic knowledge of C++.</li>
+<li>Basic knowledge of Constraint Programming (see chapter <a class="reference internal" href="introduction.html#chapter-introduction"><em>Introduction to constraint programming</em></a>).</li>
+<li>Basic knowledge of the Constraint Programming Solver (see chapter <a class="reference internal" href="first_steps.html#chapter-first-steps"><em>First steps with or-tools: cryptarithmetic puzzles</em></a>).</li>
+<li>Basic knowledge about how to define an objective function (see section <a class="reference internal" href="objectives/first_implementation.html#golomb-ruler-first-implementation"><em>An implementation of the first model</em></a>).</li>
+<li>Section <a class="reference internal" href="search_primitives/basic_working1.html#basic-workingi"><em>Basic working of the solver: part I</em></a> helps but is not mandatory.</li>
+</ul>
 <p class="rubric">Files:</p>
+<p>You can find the code in the directory <tt class="docutils literal"><span class="pre">documentation/tutorials/C++/chap6</span></tt>.</p>
+<p>The files inside this directory are:</p>
+<ul class="simple">
+<li><tt class="file docutils literal"><span class="pre">basic_ls.cc</span></tt>: A very basic example to understand the API of Local Search in or-tools.</li>
+<li><tt class="file docutils literal"><span class="pre">jobshop.h</span></tt>: This file contents the <tt class="docutils literal"><span class="pre">JobShopData</span></tt> class that records the data for job-shop problems. This file is used
+throughout all the examples.</li>
+<li><tt class="file docutils literal"><span class="pre">jobshop.cc</span></tt>: A basic implementation of the disjunctive model with <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> and <tt class="docutils literal"><span class="pre">SequenceVar</span></tt> variables.</li>
+<li><tt class="file docutils literal"><span class="pre">jobshop_ls.cc</span></tt>: A basic implementation of Local Search with an 2-opt operator.</li>
+<li><tt class="file docutils literal"><span class="pre">basic_ls_filtering.cc</span></tt>: The example <tt class="file docutils literal"><span class="pre">basic_ls.cc</span></tt> extended with filtering.</li>
+<li><tt class="file docutils literal"><span class="pre">jobshop_ls_filtering.cc</span></tt>: The example <tt class="file docutils literal"><span class="pre">jobshop_ls.cc</span></tt> extended with filtering.</li>
+<li><tt class="file docutils literal"><span class="pre">jobshop_tabu.cc</span></tt>: The job-shop problem solved by Tabu Search.</li>
+<li><tt class="file docutils literal"><span class="pre">jobshop_SA.cc</span></tt>: The job-shop problem solved by Simulated Annealing.</li>
+<li><tt class="file docutils literal"><span class="pre">jobshop_GLS.cc</span></tt>: The job-shop problem solved by Guided Local Search.</li>
+</ul>
+<p>The files of this chapter are NOT the same as the ones in the <tt class="file docutils literal"><span class="pre">example</span></tt> directory even if there were inspired by them.</p>
 <p class="rubric">Content:</p>
 <div class="toctree-wrapper compound">
 <ul>
