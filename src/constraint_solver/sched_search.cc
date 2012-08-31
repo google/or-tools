@@ -221,7 +221,10 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
   int ssm_support = -1;
   for (int64 i = forward_var->Min(); i <= forward_var->Max(); ++i) {
     // TODO(lperron): use domain iterator.
-    if (i != 0 && i < size_ + 1 && forward_var->Contains(i)) {
+    if (i != 0 &&
+        i < size_ + 1 &&
+        intervals_[i - 1]->MayBePerformed() &&
+        forward_var->Contains(i)) {
       const int candidate = i - 1;
       candidates.push_back(candidate);
       if (intervals_[candidate]->MustBePerformed()) {
