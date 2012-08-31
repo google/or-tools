@@ -2744,6 +2744,7 @@ const char ModelVisitor::kValuesArgument[] = "values";
 const char ModelVisitor::kVarsArgument[] = "variables";
 const char ModelVisitor::kVariableArgument[] = "variable";
 
+const char ModelVisitor::kCoverOperation[] = "cover";
 const char ModelVisitor::kMirrorOperation[] = "mirror";
 const char ModelVisitor::kRelaxedMaxOperation[] = "relaxed_max";
 const char ModelVisitor::kRelaxedMinOperation[] = "relaxed_min";

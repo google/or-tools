@@ -3313,6 +3313,7 @@ class ModelVisitor : public BaseObject {
   static const char kVarsArgument[];
 
   // Operations.
+  static const char kCoverOperation[];
   static const char kMirrorOperation[];
   static const char kRelaxedMaxOperation[];
   static const char kRelaxedMinOperation[];
