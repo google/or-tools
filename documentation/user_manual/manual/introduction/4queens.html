@@ -55,9 +55,9 @@
           <div class="body">
             
   <div class="section" id="the-4-queens-problem">
-<h1>1.1. The 4-queens problem</h1>
+<span id="four-queens-problem"></span><h1>1.1. The 4-queens problem</h1>
 <p>We present here a well-known problem among Constraint Programming practitioners: the 4-queens problem.
-We shall encounter this problem again and generalize it in the Chapter <a class="reference internal" href="../search_primitives.html#search-primitives"><em>Defining search primitives: the n-queens problem</em></a>.</p>
+We shall encounter this problem again and generalize it in the Chapter <a class="reference internal" href="../search_primitives.html#chapter-search-primitives"><em>Defining search primitives: the n-queens problem</em></a>.</p>
 <div class="section" id="the-problem">
 <h2>1.1.1. The problem</h2>
 <p>The <em>4-queens problem</em><a class="footnote-reference" href="#see-what-n-queens-problem-really-is" id="id1">[2]</a> consists in
@@ -73,7 +73,8 @@ That is, no two queens are allowed to be placed on the same row, the same column
 <p>In Constraint Programming we translate a real problem to a <em>mathematical model</em> with <em>variables</em> and <em>constraints</em>. Variables
 represent decisions and constraints restraint the variables of taking arbitrary values altogether. For instance, to model the
 4-queens problem, we could use a binary variable <img class="math" src="../../_images/math/9ff77ee087b4287c6e82e414efbe4d79aba8c012.png" alt="x_{ij}" style="vertical-align: -6px"/> that indicates if a queen is present on the given
-<img class="math" src="../../_images/math/887919dfbc86eebc29e0373f98f97dbf23a0ae23.png" alt="(i,j)" style="vertical-align: -4px"/> square (<img class="math" src="../../_images/math/2178703bbe8371a2db45b9e8dc3307139204b993.png" alt="x_{ij} = 1" style="vertical-align: -6px"/>) or not (<img class="math" src="../../_images/math/0d6a81bd6eb475ba4856e44909188b9313619485.png" alt="x_{ij} = 0" style="vertical-align: -6px"/>). We need several constraints to model that no two queens
+<img class="math" src="../../_images/math/887919dfbc86eebc29e0373f98f97dbf23a0ae23.png" alt="(i,j)" style="vertical-align: -4px"/> square (<img class="math" src="../../_images/math/2178703bbe8371a2db45b9e8dc3307139204b993.png" alt="x_{ij} = 1" style="vertical-align: -6px"/>) or not (<img class="math" src="../../_images/math/0d6a81bd6eb475ba4856e44909188b9313619485.png" alt="x_{ij} = 0" style="vertical-align: -6px"/>). The first index <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/> denotes the <img class="math" src="../../_images/math/a05d572e6788d51f43954dbe53d49dece87c13ad.png" alt="i^\text{th}" style="vertical-align: 0px"/> row
+and the second index <img class="math" src="../../_images/math/8122aa89ea6e80784c6513d22787ad86e36ad0cc.png" alt="j" style="vertical-align: -4px"/> the <img class="math" src="../../_images/math/233a06a133046e97fbd014afb05b38f237d1e39d.png" alt="j^\text{th}" style="vertical-align: -4px"/> column. We need several constraints to model that no two queens
 can capture each other. We also need to constraint the need for 4 queens. We could add the constraint:</p>
 <div class="math">
 <p><img src="../../_images/math/05dee08de9db5789c7308033f57702c49e1f204f.png" alt="\sum_{(i,j) \in \, \textrm{squares}} x_{ij} = 4."/></p>
@@ -251,7 +252,7 @@ Search:
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="../../index.html">Foreword and content</a></li>
+  	<li><a href="../../index.html">Content and foreword</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
 	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>

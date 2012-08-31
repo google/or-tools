@@ -27,7 +27,7 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../index.html" />
-    <link rel="next" title="9.1. The Vehicle Routing Library in a nutshell" href="tsp/routing_library.html" />
+    <link rel="next" title="9.1. A whole zoo of routing problems" href="tsp/zoo_routing_problems.html" />
     <link rel="prev" title="8.5. Summary" href="custom_constraints/summary.html" /> 
   </head>
   <body>
@@ -38,7 +38,7 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="tsp/routing_library.html" title="9.1. The Vehicle Routing Library in a nutshell"
+          <a href="tsp/zoo_routing_problems.html" title="9.1. A whole zoo of routing problems"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="custom_constraints/summary.html" title="8.5. Summary"
@@ -53,14 +53,35 @@
           <div class="body">
             
   <div class="section" id="travelling-salesman-problems-with-constraints-the-tsp-with-time-windows">
-<h1>9. Travelling Salesman Problems with constraints: the TSP with time windows</h1>
+<span id="chapter-tsp-with-constraints"></span><h1>9. Travelling Salesman Problems with constraints: the TSP with time windows</h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="tsp/routing_library.html">9.1. The Vehicle Routing Library in a nutshell</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tsp/tsp.html">9.2. The travelling Salesman Problem</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#what-is-the-travelling-salesman-problem">9.2.1. What is the Travelling Salesman Problem?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/zoo_routing_problems.html">9.1. A whole zoo of routing problems</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#node-routing-problems">9.1.1. Node Routing Problems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#vehicle-routing-problems">9.1.2. Vehicle Routing Problems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/zoo_routing_problems.html#arc-routing-problems">9.1.3. Arc Routing Problems</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/routing_library.html">9.2. The Vehicle Routing Library (VRL) in a nutshell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/tsp.html">9.3. The travelling Salesman Problem</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/tsp.html#what-is-the-travelling-salesman-problem">9.3.1. What is the Travelling Salesman Problem?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/automatic_variables.html">9.4. Automatic variables</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/automatic_variables.html#nodeindex-or-int64">9.4.1. <tt class="docutils literal"><span class="pre">NodeIndex</span></tt> or <tt class="docutils literal"><span class="pre">int64</span></tt>?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/automatic_variables.html#path-variables">9.4.2. Path variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tsp/automatic_variables.html#dimension-variables">9.4.3. Dimension variables</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/first_implementation.html">9.5. An exact implementation of the TSP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/two_phases_approaches.html">9.6. The two phases approach</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tsp/two_phases_approaches.html#local-path-operator">9.6.1. Local Path Operator</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/tspwtw.html">9.7. The Travelling Salesman Problem with Time Windows (TSPTW)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/second_implementation.html">9.8. An exact implementation of the TSPTW</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/third_implementation.html">9.9. The TSPTW and Local Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tsp/tsptw_summary.html">9.10. Summary</a></li>
 </ul>
 </div>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
@@ -116,7 +137,7 @@ Search:
   <h3>Welcome</h3>
   
   <ul>
-  	<li><a href="../index.html">Foreword and content</a></li>
+  	<li><a href="../index.html">Content and foreword</a></li>
   	<li><a href="http://or-tools.googlecode.com/svn/trunk/documentation/documentation_hub.html">Documentation's hub</a></li>
 	<li><a href="http://code.google.com/p/or-tools/">The or-tools open source library</a></li></li>	
   </ul>
@@ -184,7 +205,7 @@ Search:
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="tsp/routing_library.html" title="9.1. The Vehicle Routing Library in a nutshell"
+          <a href="tsp/zoo_routing_problems.html" title="9.1. A whole zoo of routing problems"
              >next</a> |</li>
         <li class="right" >
           <a href="custom_constraints/summary.html" title="8.5. Summary"

@@ -1,4 +1,12 @@
 
+v.0.1.12: (2012-08-31 14:01:23)
+-------------------------------
+* Minor enhancements to the manual:
+  - epub: cover and authors added, some corrections.
+  - minor corrections.
+  - 5.1, 5.2 and (partially) 5.3 added.
+
+
 v.0.1.11: (2012-08-29 12:25:54)
 -------------------------------
 * Minor enhancements to the manual:
