@@ -187,6 +187,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/pack.$O\
 	$(OBJ_DIR)/range_cst.$O\
 	$(OBJ_DIR)/resource.$O\
+	$(OBJ_DIR)/sched_expr.$O\
 	$(OBJ_DIR)/sched_search.$O\
 	$(OBJ_DIR)/search.$O\
 	$(OBJ_DIR)/search_limit.pb.$O\
@@ -303,6 +304,9 @@ $(OBJ_DIR)/range_cst.$O:$(SRC_DIR)/constraint_solver/range_cst.cc
 
 $(OBJ_DIR)/resource.$O:$(SRC_DIR)/constraint_solver/resource.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/resource.cc $(OBJ_OUT)resource.$O
+
+$(OBJ_DIR)/sched_expr.$O:$(SRC_DIR)/constraint_solver/sched_expr.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sched_expr.cc $(OBJ_OUT)sched_expr.$O
 
 $(OBJ_DIR)/sched_search.$O:$(SRC_DIR)/constraint_solver/sched_search.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sched_search.cc $(OBJ_OUT)sched_search.$O

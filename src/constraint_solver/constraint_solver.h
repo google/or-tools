@@ -4159,6 +4159,12 @@ class IntervalVar : public PropagationBaseObject {
   IntExpr* DurationExpr();
   IntExpr* EndExpr();
   IntExpr* PerformedExpr();
+  // These methods create expressions encapsulating the start, end
+  // and duration of the interval var. If the interval var is
+  // unperformed, they will return the unperformed_value.
+  IntExpr* SafeStartExpr(int64 unperformed_value);
+  IntExpr* SafeDurationExpr(int64 unperformed_value);
+  IntExpr* SafeEndExpr(int64 unperformed_value);
 
   // Accepts the given visitor.
   virtual void Accept(ModelVisitor* const visitor) const = 0;
