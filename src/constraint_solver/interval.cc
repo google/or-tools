@@ -92,11 +92,6 @@ class MirrorIntervalVar : public IntervalVar {
   IntervalVar* const t_;
   DISALLOW_COPY_AND_ASSIGN(MirrorIntervalVar);
 };
-}  // namespace
-
-IntervalVar* Solver::MakeMirrorInterval(IntervalVar* const t) {
-  return RegisterIntervalVar(RevAlloc(new MirrorIntervalVar(this, t)));
-}
 
 // An IntervalVar that passes all function calls to an underlying interval
 // variable as long as it is not prohibited, and that interprets prohibited
@@ -111,7 +106,7 @@ IntervalVar* Solver::MakeMirrorInterval(IntervalVar* const t) {
 // propagation, three successive calls to StartMin could return,
 // in this order, 1, 2, and kMinValidValue.
 //
-namespace {
+
 // This class exists so that we can easily implement the
 // IntervalVarRelaxedMax and IntervalVarRelaxedMin classes below.
 class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
@@ -279,253 +274,6 @@ class IntervalVarRelaxedMin : public AlwaysPerformedIntervalVarWrapper {
     return StringPrintf("IntervalVarRelaxedMin(%s)",
                         underlying()->DebugString().c_str());
   }
-};
-}  // namespace
-
-IntervalVar* Solver::MakeIntervalRelaxedMax(IntervalVar* const interval_var) {
-  if (interval_var->MustBePerformed()) {
-    return interval_var;
-  } else {
-    return RegisterIntervalVar(
-        RevAlloc(new IntervalVarRelaxedMax(interval_var)));
-  }
-}
-
-IntervalVar* Solver::MakeIntervalRelaxedMin(IntervalVar* const interval_var) {
-  if (interval_var->MustBePerformed()) {
-    return interval_var;
-  } else {
-    return RegisterIntervalVar(
-        RevAlloc(new IntervalVarRelaxedMin(interval_var)));
-  }
-}
-
-namespace {
-class IntervalVarStartExpr : public BaseIntExpr {
- public:
-  explicit IntervalVarStartExpr(IntervalVar* const i)
-      : BaseIntExpr(i->solver()), interval_(i) {}
-  virtual ~IntervalVarStartExpr() {}
-
-  virtual int64 Min() const {
-    return interval_->StartMin();
-  }
-
-  virtual void SetMin(int64 m) {
-    interval_->SetStartMin(m);
-  }
-
-  virtual int64 Max() const {
-    return interval_->StartMax();
-  }
-
-  virtual void SetMax(int64 m) {
-    interval_->SetStartMax(m);
-  }
-
-  virtual void SetRange(int64 l, int64 u) {
-    interval_->SetStartRange(l, u);
-  }
-
-  virtual void SetValue(int64 v) {
-    interval_->SetStartRange(v, v);
-  }
-
-  virtual bool Bound() const {
-    return interval_->StartMin() == interval_->StartMax();
-  }
-
-  virtual void WhenRange(Demon* d) {
-    interval_->WhenStartRange(d);
-  }
-
-  virtual string DebugString() const {
-    return StringPrintf("start(%s)", interval_->DebugString().c_str());
-  }
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitIntegerExpression(ModelVisitor::kStartExpr, this);
-    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
-                                   interval_);
-    visitor->EndVisitIntegerExpression(ModelVisitor::kStartExpr, this);
-  }
-
- private:
-  IntervalVar* interval_;
-  DISALLOW_COPY_AND_ASSIGN(IntervalVarStartExpr);
-};
-
-class IntervalVarEndExpr : public BaseIntExpr {
- public:
-  explicit IntervalVarEndExpr(IntervalVar* const i)
-      : BaseIntExpr(i->solver()), interval_(i) {}
-  virtual ~IntervalVarEndExpr() {}
-
-  virtual int64 Min() const {
-    return interval_->EndMin();
-  }
-
-  virtual void SetMin(int64 m) {
-    interval_->SetEndMin(m);
-  }
-
-  virtual int64 Max() const {
-    return interval_->EndMax();
-  }
-
-  virtual void SetMax(int64 m) {
-    interval_->SetEndMax(m);
-  }
-
-  virtual void SetRange(int64 l, int64 u) {
-    interval_->SetEndRange(l, u);
-  }
-
-  virtual void SetValue(int64 v) {
-    interval_->SetEndRange(v, v);
-  }
-
-  virtual bool Bound() const {
-    return interval_->EndMin() == interval_->EndMax();
-  }
-
-  virtual void WhenRange(Demon* d) {
-    interval_->WhenEndRange(d);
-  }
-
-  virtual string DebugString() const {
-    return StringPrintf("end(%s)", interval_->DebugString().c_str());
-  }
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitIntegerExpression(ModelVisitor::kEndExpr, this);
-    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
-                                   interval_);
-    visitor->EndVisitIntegerExpression(ModelVisitor::kEndExpr, this);
-  }
-
- private:
-  IntervalVar* interval_;
-  DISALLOW_COPY_AND_ASSIGN(IntervalVarEndExpr);
-};
-
-class IntervalVarDurationExpr : public BaseIntExpr {
- public:
-  explicit IntervalVarDurationExpr(IntervalVar* const i)
-      : BaseIntExpr(i->solver()), interval_(i) {}
-  virtual ~IntervalVarDurationExpr() {}
-
-  virtual int64 Min() const {
-    return interval_->DurationMin();
-  }
-
-  virtual void SetMin(int64 m) {
-    interval_->SetDurationMin(m);
-  }
-
-  virtual int64 Max() const {
-    return interval_->DurationMax();
-  }
-
-  virtual void SetMax(int64 m) {
-    interval_->SetDurationMax(m);
-  }
-
-  virtual void SetRange(int64 l, int64 u) {
-    interval_->SetDurationRange(l, u);
-  }
-
-  virtual void SetValue(int64 v) {
-    interval_->SetDurationRange(v, v);
-  }
-
-  virtual bool Bound() const {
-    return interval_->DurationMin() == interval_->DurationMax();
-  }
-
-  virtual void WhenRange(Demon* d) {
-    interval_->WhenDurationRange(d);
-  }
-
-  virtual string DebugString() const {
-    return StringPrintf("duration(%s)", interval_->DebugString().c_str());
-  }
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitIntegerExpression(ModelVisitor::kDurationExpr, this);
-    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
-                                   interval_);
-    visitor->EndVisitIntegerExpression(ModelVisitor::kDurationExpr, this);
-  }
-
- private:
-  IntervalVar* interval_;
-  DISALLOW_COPY_AND_ASSIGN(IntervalVarDurationExpr);
-};
-
-class IntervalVarPerformedExpr : public BaseIntExpr {
- public:
-  explicit IntervalVarPerformedExpr(IntervalVar* const i)
-      : BaseIntExpr(i->solver()), interval_(i) {}
-  virtual ~IntervalVarPerformedExpr() {}
-
-  virtual int64 Min() const {
-    // Returns 0ll or 1ll
-    return static_cast<int64>(interval_->MustBePerformed());
-  }
-
-  virtual void SetMin(int64 m) {
-    if (m == 1) {
-      interval_->SetPerformed(true);
-    } else if (m > 1) {
-      solver()->Fail();
-    }
-  }
-
-  virtual int64 Max() const {
-    // Returns 0ll or 1ll
-    return static_cast<int64>(interval_->MayBePerformed());
-  }
-
-  virtual void SetMax(int64 m) {
-    if (m == 0) {
-      interval_->SetPerformed(false);
-    } else if (m < 0) {
-      solver()->Fail();
-    }
-  }
-
-  virtual void SetRange(int64 l, int64 u) {
-    SetMin(l);
-    SetMax(u);
-  }
-
-  virtual void SetValue(int64 v) {
-    SetRange(v, v);
-  }
-
-  virtual bool Bound() const {
-    return interval_->IsPerformedBound();
-  }
-
-  virtual void WhenRange(Demon* d) {
-    interval_->WhenPerformedBound(d);
-  }
-
-  virtual string DebugString() const {
-    return StringPrintf("performed(%s)", interval_->DebugString().c_str());
-  }
-
-  virtual void Accept(ModelVisitor* const visitor) const {
-    visitor->BeginVisitIntegerExpression(ModelVisitor::kPerformedExpr, this);
-    visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument,
-                                   interval_);
-    visitor->EndVisitIntegerExpression(ModelVisitor::kPerformedExpr, this);
-  }
-
- private:
-  IntervalVar* interval_;
-  DISALLOW_COPY_AND_ASSIGN(IntervalVarPerformedExpr);
 };
 
 // ----- FixedDurationIntervalVar -----
@@ -1583,59 +1331,33 @@ string FixedInterval::DebugString() const {
 
 // ----- API -----
 
+IntervalVar* Solver::MakeMirrorInterval(IntervalVar* const t) {
+  return RegisterIntervalVar(RevAlloc(new MirrorIntervalVar(this, t)));
+}
+
+IntervalVar* Solver::MakeIntervalRelaxedMax(IntervalVar* const interval_var) {
+  if (interval_var->MustBePerformed()) {
+    return interval_var;
+  } else {
+    return RegisterIntervalVar(
+        RevAlloc(new IntervalVarRelaxedMax(interval_var)));
+  }
+}
+
+IntervalVar* Solver::MakeIntervalRelaxedMin(IntervalVar* const interval_var) {
+  if (interval_var->MustBePerformed()) {
+    return interval_var;
+  } else {
+    return RegisterIntervalVar(
+        RevAlloc(new IntervalVarRelaxedMin(interval_var)));
+  }
+}
+
 void IntervalVar::WhenAnything(Demon* const d) {
   WhenStartRange(d);
   WhenDurationRange(d);
   WhenEndRange(d);
   WhenPerformedBound(d);
-}
-
-IntExpr* IntervalVar::StartExpr() {
-  if (start_expr_ == NULL) {
-    solver()->SaveValue(reinterpret_cast<void**>(&start_expr_));
-    start_expr_ = solver()->RegisterIntExpr(
-        solver()->RevAlloc(new IntervalVarStartExpr(this)));
-    if (HasName()) {
-      start_expr_->set_name(StringPrintf("start(%s)", name().c_str()));
-    }
-  }
-  return start_expr_;
-}
-
-IntExpr* IntervalVar::DurationExpr() {
-  if (duration_expr_ == NULL) {
-    solver()->SaveValue(reinterpret_cast<void**>(&duration_expr_));
-    duration_expr_ = solver()->RegisterIntExpr(
-        solver()->RevAlloc(new IntervalVarDurationExpr(this)));
-    if (HasName()) {
-      duration_expr_->set_name(StringPrintf("duration(%s)", name().c_str()));
-    }
-  }
-  return duration_expr_;
-}
-
-IntExpr* IntervalVar::EndExpr() {
-  if (end_expr_ == NULL) {
-    solver()->SaveValue(reinterpret_cast<void**>(&end_expr_));
-    end_expr_ = solver()->RegisterIntExpr(
-        solver()->RevAlloc(new IntervalVarEndExpr(this)));
-    if (HasName()) {
-      end_expr_->set_name(StringPrintf("end(%s)", name().c_str()));
-    }
-  }
-  return end_expr_;
-}
-
-IntExpr* IntervalVar::PerformedExpr() {
-  if (performed_expr_ == NULL) {
-    solver()->SaveValue(reinterpret_cast<void**>(&performed_expr_));
-    performed_expr_ = solver()->RegisterIntExpr(
-        solver()->RevAlloc(new IntervalVarPerformedExpr(this)));
-    if (HasName()) {
-      performed_expr_->set_name(StringPrintf("performed(%s)", name().c_str()));
-    }
-  }
-  return performed_expr_;
 }
 
 IntervalVar* Solver::MakeFixedInterval(int64 start,
@@ -1725,8 +1447,6 @@ void Solver::MakeFixedDurationIntervalVarArray(
                                                   var_name));
   }
 }
-
-
 
 void Solver::MakeFixedDurationIntervalVarArray(
     const std::vector<IntVar*>& start_variables,
