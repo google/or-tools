@@ -1791,6 +1791,12 @@ namespace operations_research {
                                                    operations_research::Solver::AVOID_DATE,
                                                    date);
   }
+  IntervalVar* RelaxedMax() {
+    return self->solver()->MakeIntervalRelaxedMax(self);
+  }
+  IntervalVar* RelaxedMin() {
+    return self->solver()->MakeIntervalRelaxedMin(self);
+  }
 }
 
 %extend IntExpr {
