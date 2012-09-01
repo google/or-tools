@@ -177,10 +177,10 @@ ifeq ($(PLATFORM),MACOSX)
   JNI_LIB_EXT = jnilib
   ifeq ($(UNIX_MONO_DIR),)
     CSC = gmcs
-    MONO =  DYLD_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) mono
+    MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) mono
   else
     CSC = $(UNIX_MONO_DIR)/bin/mcs
-    MONO = DYLD_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) $(UNIX_MONO_DIR)/bin/mono
+    MONO = DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) $(UNIX_MONO_DIR)/bin/mono
   endif
 
   DYNAMIC_GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
@@ -201,7 +201,7 @@ ifeq ($(PLATFORM),MACOSX)
   STATIC_PRE_LIB = $(OR_ROOT)lib/lib
   STATIC_POST_LIB = .a
   DYNAMIC_LIB_SUFFIX = dylib
-  DYNAMIC_SWIG_LIB_SUFFIX = so # To overcome a bug in Mac OS X loader.
+  DYNAMIC_SWIG_LIB_SUFFIX = so# To overcome a bug in Mac OS X loader.
   DYNAMIC_LINK_CMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
   DYNAMIC_LINK_PREFIX = -o # Space needed.
   STATIC_LIB_SUFFIX = a
