@@ -217,7 +217,7 @@ ifeq ($(PLATFORM),MACOSX)
     STATIC_CLP_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCoinUtils.a
   endif
   ifdef UNIX_CBC_DIR
-    DYNAMIC_CBC_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCbcSolver.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCbc.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCgl.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsi.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiCbc.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a
+    DYNAMIC_CBC_LNK = -L$(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
     STATIC_CBC_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCbcSolver.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCbc.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCgl.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsi.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiCbc.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a
   endif
   ifdef UNIX_SCIP_DIR
