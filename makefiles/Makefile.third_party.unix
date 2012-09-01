@@ -127,13 +127,13 @@ dependencies/sources/googlecode-support/scripts/googlecode_upload.py:
 install_coin_cbc: dependencies/install/bin/cbc
 
 upgrade_cbc:
-	cd dependencies/sources/coin-cbc && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared && make install
+	cd dependencies/sources/coin-cbc && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic && make install
 
 dependencies/install/bin/cbc: dependencies/sources/coin-cbc/Makefile
 	cd dependencies/sources/coin-cbc && make install
 
 dependencies/sources/coin-cbc/Makefile: dependencies/sources/coin-cbc/Makefile.in
-	cd dependencies/sources/coin-cbc && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared
+	cd dependencies/sources/coin-cbc && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic
 
 dependencies/sources/coin-cbc/Makefile.in:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/coin-cbc
@@ -172,13 +172,13 @@ dependencies/sources/swig/autogen.sh:
 install_glpk: $(GLPK_TARGET)
 
 upgrade_glpk:
-	cd dependencies/sources/glpk-$(GLPK_TAG) && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --enable-dl && make install
+	cd dependencies/sources/glpk-$(GLPK_TAG) && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic && make install
 
 dependencies/install/bin/glpsol: dependencies/sources/glpk-$(GLPK_TAG)/Makefile
 	cd dependencies/sources/glpk-$(GLPK_TAG) && make install
 
 dependencies/sources/glpk-$(GLPK_TAG)/Makefile: dependencies/sources/glpk-$(GLPK_TAG)/configure
-	cd dependencies/sources/glpk-$(GLPK_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --enable-dl
+	cd dependencies/sources/glpk-$(GLPK_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
 dependencies/sources/glpk-$(GLPK_TAG)/configure: dependencies/archives/glpk-$(GLPK_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/glpk-$(GLPK_TAG).tar.gz
