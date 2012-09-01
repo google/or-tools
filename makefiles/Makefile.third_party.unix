@@ -53,6 +53,14 @@ endif
 .PHONY: third_party build_third_party makefile_third_party
 third_party: build_third_party makefile_third_party
 
+upgrade_libs:
+	cd dependencies/sources/gflags && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic && make install
+	cd dependencies/sources/protobuf && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic && make install
+	cd dependencies/sources/coin-cbc && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic && make install
+ifneq ($(GLPK_TARGET),)
+	cd dependencies/sources/glpk-$(GLPK_TAG) && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic && make install
+endif
+
 build_third_party: \
 	install_gflags \
 	install_protobuf \
@@ -72,7 +80,7 @@ dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags/Make
 	cd dependencies/sources/gflags && make install
 
 dependencies/sources/gflags/Makefile: dependencies/sources/gflags/configure
-	cd dependencies/sources/gflags && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+	cd dependencies/sources/gflags && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
 dependencies/sources/gflags/configure: dependencies/sources/gflags/autogen.sh
 	cd dependencies/sources/gflags && ./autogen.sh
@@ -87,7 +95,7 @@ dependencies/install/bin/protoc: dependencies/sources/protobuf/Makefile
 	cd dependencies/sources/protobuf && make install
 
 dependencies/sources/protobuf/Makefile: dependencies/sources/protobuf/configure
-	cd dependencies/sources/protobuf && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+	cd dependencies/sources/protobuf && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
 dependencies/sources/protobuf/configure: dependencies/sources/protobuf/autogen.sh
 	cd dependencies/sources/protobuf && ./autogen.sh
@@ -108,7 +116,7 @@ dependencies/install/include/google/dense_hash_map: dependencies/sources/sparseh
 	cd dependencies/sources/sparsehash && make install
 
 dependencies/sources/sparsehash/Makefile: dependencies/sources/sparsehash/configure
-	cd dependencies/sources/sparsehash && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+	cd dependencies/sources/sparsehash && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
 dependencies/sources/sparsehash/configure: dependencies/sources/sparsehash/autogen.sh
 	cd dependencies/sources/sparsehash && ./autogen.sh
@@ -125,9 +133,6 @@ dependencies/sources/googlecode-support/scripts/googlecode_upload.py:
 
 # Install Coin CBC.
 install_coin_cbc: dependencies/install/bin/cbc
-
-upgrade_cbc:
-	cd dependencies/sources/coin-cbc && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic && make install
 
 dependencies/install/bin/cbc: dependencies/sources/coin-cbc/Makefile
 	cd dependencies/sources/coin-cbc && make install
@@ -170,9 +175,6 @@ dependencies/sources/swig/autogen.sh:
 
 # Install glpk if needed.
 install_glpk: $(GLPK_TARGET)
-
-upgrade_glpk:
-	cd dependencies/sources/glpk-$(GLPK_TAG) && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic && make install
 
 dependencies/install/bin/glpsol: dependencies/sources/glpk-$(GLPK_TAG)/Makefile
 	cd dependencies/sources/glpk-$(GLPK_TAG) && make install
