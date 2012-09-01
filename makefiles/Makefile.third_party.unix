@@ -127,7 +127,7 @@ dependencies/sources/googlecode-support/scripts/googlecode_upload.py:
 install_coin_cbc: dependencies/install/bin/cbc
 
 upgrade_cbc:
-        cd dependencies/sources/coin-cbc && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared && make install
+	cd dependencies/sources/coin-cbc && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared && make install
 
 dependencies/install/bin/cbc: dependencies/sources/coin-cbc/Makefile
 	cd dependencies/sources/coin-cbc && make install
