@@ -5,9 +5,9 @@
 # Unix specific definitions
 PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
 SWIG_BINARY = $(UNIX_SWIG_BINARY)
-MKDIR=mkdir
-COPY=cp
-TOUCH=touch
+MKDIR = mkdir
+COPY = cp
+TOUCH = touch
 LIBPREFIX = lib
 ifeq ($(PLATFORM),MACOSX)
 # Keep the path in the lib as it is stored upon construction.
@@ -23,7 +23,6 @@ EX_DIR  = $(OR_ROOT)examples
 INC_DIR = $(OR_ROOT)src
 O = o
 E =
-SHAREDLIBEXT = so
 LDOUT = -o # need the space.
 OBJ_OUT = -o $(OBJ_DIR)/
 EXEOUT = -o $(BIN_DIR)/
@@ -98,7 +97,8 @@ ifdef UNIX_CLP_DIR
 endif
 
 ifeq ($(PLATFORM),LINUX)
-  LD = gcc -shared
+  DYNAMIC_LD = g++ -shared
+  STATIC_LD = ar rv
   ifeq ($(PTRLENGTH),64)
     ARCH = -DARCH_K8
   else
@@ -113,19 +113,24 @@ ifeq ($(PLATFORM),LINUX)
   endif
 
   # This is needed to find libgflags.a
-  GFLAGS_LNK = -Wl,-rpath $(UNIX_GFLAGS_DIR)/lib -L$(UNIX_GFLAGS_DIR)/lib -lgflags
+  DYNAMIC_GFLAGS_LNK = -Wl,-rpath $(UNIX_GFLAGS_DIR)/lib -L$(UNIX_GFLAGS_DIR)/lib -lgflags
+  STATIC_GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
   # This is needed to find libz.a
   ZLIB_LNK = -lz
   # This is needed to find libprotobuf.a
-  PROTOBUF_LNK = -Wl,-rpath $(UNIX_PROTOBUF_DIR)/lib -L$(UNIX_PROTOBUF_DIR)/lib -lprotobuf -lpthread
+  DYNAMIC_PROTOBUF_LNK = -Wl,-rpath $(UNIX_PROTOBUF_DIR)/lib -L$(UNIX_PROTOBUF_DIR)/lib -lprotobuf -lpthread
+  STATIC_PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
   ifdef UNIX_GLPK_DIR
-    GLPK_LNK = -Wl,-rpath $(UNIX_GLPK_DIR)/lib -L$(UNIX_GLPK_DIR)/lib -lglpk
+    DYNAMIC_GLPK_LNK = -Wl,-rpath $(UNIX_GLPK_DIR)/lib -L$(UNIX_GLPK_DIR)/lib -lglpk
+    STATIC_GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
   ifdef UNIX_CLP_DIR
-    CLP_LNK = -Wl,-rpath $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -L$(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -lClp -lCoinUtils
+    DYNAMIC_CLP_LNK = -Wl,-rpath $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -L$(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -lClp -lCoinUtils
+    STATIC_CLP_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCoinUtils.a
   endif
   ifdef UNIX_CBC_DIR
-    CBC_LNK = -Wl,-rpath $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -L$(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
+    DYNAMIC_CBC_LNK = -Wl,-rpath $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -L$(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
+    STATIC_CBC_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbcSolver.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbc.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCgl.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsi.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiCbc.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiClp.a
   endif
   ifdef UNIX_SCIP_DIR
     ifeq ($(PTRLENGTH),64)
@@ -133,35 +138,42 @@ ifeq ($(PLATFORM),LINUX)
     else
       SCIP_ARCH = linux.x86.gnu.opt
     endif
-    SCIP_LNK =
     ifeq ($(UNIX_SCIP_TAG),3.0.0)
-      SCIP_STATIC_LNK = -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.cppad.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH)
+      STATIC_SCIP_LNK = $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
     else
-      SCIP_STATIC_LNK = -L$(UNIX_SCIP_DIR)/lib -lscip.$(SCIP_ARCH) -lnlpi.$(SCIP_ARCH) -llpispx.$(SCIP_ARCH) -lsoplex.$(SCIP_ARCH)
+      STATIC_SCIP_LNK = $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
     endif
   endif
   ifdef UNIX_SLM_DIR
     ifeq ($(PTRLENGTH),64)
-      SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux64/bin/ -L$(UNIX_SLM_DIR)/linux64/bin/ -m64 -lc -ldl -lm -lpthread -lsulum10
+      DYNAMIC_SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux64/bin/ -L$(UNIX_SLM_DIR)/linux64/bin/ -m64 -lc -ldl -lm -lpthread -lsulum10
+      STATIC_SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux64/bin/ -L$(UNIX_SLM_DIR)/linux64/bin/ -m64 -lc -ldl -lm -lpthread -lsulum10
     else
-      SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux32/bin/ -L$(UNIX_SLM_DIR)/linux32/bin/ -m32 -lc -ldl -lm -lpthread -lsulum10
+      DYNAMIC_SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux32/bin/ -L$(UNIX_SLM_DIR)/linux32/bin/ -m32 -lc -ldl -lm -lpthread -lsulum10
+      STATIC_SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux32/bin/ -L$(UNIX_SLM_DIR)/linux32/bin/ -m32 -lc -ldl -lm -lpthread -lsulum10
     endif
   endif
-  SYS_LNK = -lrt
+  SYS_LNK = -lrt -lpthread
   JAVA_INC = -I$(LINUX_JDK_ROOT)/include -I$(LINUX_JDK_ROOT)/include/linux
   JAVAC_BIN = $(LINUX_JDK_ROOT)/bin/javac
   JAVA_BIN = $(LINUX_JDK_ROOT)/bin/java
   JAR_BIN = $(LINUX_JDK_ROOT)/bin/jar
-  JNILIBEXT = so
-  LIBSUFFIX = so
-  LINKCMD = g++ -shared
+  JNI_LIB_EXT = so
+  DYNAMIC_LIB_SUFFIX = so
+  DYNAMIC_SWIG_LIB_SUFFIX = so
+  DYNAMIC_LINK_CMD = g++ -shared
   LINKPREFIX = -o # Need the space.
-  PRE_LIB = -Wl,-rpath $(OR_ROOT_FULL)/lib -L$(OR_ROOT_FULL)/lib -l
-  POST_LIB =
+  STATIC_LIB_SUFFIX = a
+  STATIC_LINK_CMD = ar rv
+  LINKPREFIX = -o # Need the space.
+  DYNAMIC_PRE_LIB = -Wl,-rpath $(OR_ROOT_FULL)/lib -L$(OR_ROOT_FULL)/lib -l
+  DYNAMIC_POST_LIB =
+  STATIC_PRE_LIB = $(OR_ROOT_FULL)/lib/lib
+  STATIC_POST_LIB = .a
 endif  # LINUX
 ifeq ($(PLATFORM),MACOSX)
-  LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
-  JNILIBEXT = jnilib
+  DYNAMIC_LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
+  JNI_LIB_EXT = jnilib
   ifeq ($(UNIX_MONO_DIR),)
     CSC = gmcs
     MONO =  DYLD_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) mono
@@ -181,27 +193,35 @@ ifeq ($(PLATFORM),MACOSX)
   JAVA_BIN = java
   JAR_BIN = jar
 
-  PRE_LIB = -L$(OR_ROOT)lib -l
-  POST_LIB =
-  LIBSUFFIX = dylib
-  LINKCMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
+  DYNAMIC_PRE_LIB = -L$(OR_ROOT)lib -l
+  DYNAMIC_POST_LIB =
+  STATIC_PRE_LIB = $(OR_ROOT)lib/lib
+  STATIC_POST_LIB = .a
+  DYNAMIC_LIB_SUFFIX = dylib
+  DYNAMIC_SWIG_LIB_SUFFIX = so # To overcome a bug in Mac OS X loader.
+  DYNAMIC_LINK_CMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
+  STATIC_LIB_SUFFIX = a
+  STATIC_LINK_CMD = ar rv
   LINKPREFIX = -o # Need the space.
 
   ifdef UNIX_GLPK_DIR
-    GLPK_LNK = -L$(UNIX_GLPK_DIR)/lib -lglpk
+    DYNAMIC_GLPK_LNK = -L$(UNIX_GLPK_DIR)/lib -lglpk
+    STATIC_GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
   ifdef UNIX_CLP_DIR
-    CLP_LNK = -L$(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -lClp -lCoinUtils
+    DYNAMIC_CLP_LNK = -L$(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -lClp -lCoinUtils
+    STATIC_CLP_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCoinUtils.a
   endif
   ifdef UNIX_CBC_DIR
-    CBC_LNK = -L$(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
+    DYNAMIC_CBC_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCbcSolver.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCbc.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCgl.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsi.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiCbc.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a
+    STATIC_CBC_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCbcSolver.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCbc.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCgl.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsi.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiCbc.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a
   endif
   ifdef UNIX_SCIP_DIR
     SCIP_ARCH = darwin.x86_64.gnu.opt
     ifeq ($(UNIX_SCIP_TAG),3.0.0)
-      SCIP_STATIC_LNK = -force_load $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
+      STATIC_SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
     else
-      SCIP_STATIC_LNK = -force_load $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
+      STATIC_SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
     endif
     SCIP_LNK = -lreadline
   endif
@@ -212,5 +232,7 @@ CFLAGS = $(SYSCFLAGS) $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_IN
 
 JNIFLAGS = $(SYSCFLAGS) $(JNIDEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(SLM_INC)
-LDFLAGS = $(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) $(SYS_LNK)
-LDLPDEPS = $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK) $(SLM_LNK)
+DYNAMIC_LD_FLAGS = $(DYNAMIC_GFLAGS_LNK) $(ZLIB_LNK) $(DYNAMIC_PROTOBUF_LNK) $(SYS_LNK)
+DYNAMIC_LD_LP_DEPS = $(DYNAMIC_GLPK_LNK) $(DYNAMIC_CBC_LNK) $(DYNAMIC_CLP_LNK) $(DYNAMIC_SLM_LNK)
+STATIC_LD_FLAGS = $(STATIC_GFLAGS_LNK) $(ZLIB_LNK) $(STATIC_PROTOBUF_LNK) $(SYS_LNK)
+STATIC_LD_LP_DEPS = $(STATIC_GLPK_LNK) $(STATIC_CBC_LNK) $(STATIC_CLP_LNK) $(STATIC_SCIP_LNK) $(STATIC_SLM_LNK)

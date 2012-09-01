@@ -3,7 +3,7 @@ java: javacp javaalgorithms javagraph javalp
 
 # Clean target
 clean_java:
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)jni*.$(JNILIBEXT)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)jni*.$(JNI_LIB_EXT)
 	-$(DEL) $(LIB_DIR)$S*.jar
 	-$(DEL) $(GEN_DIR)$Salgorithms$S*java_wrap*
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java
@@ -27,7 +27,7 @@ clean_java:
 
 # javacp
 
-javacp: $(LIB_DIR)/com.google.ortools.constraintsolver.jar $(LIB_DIR)/$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT)
+javacp: $(LIB_DIR)/com.google.ortools.constraintsolver.jar $(LIB_DIR)/$(LIBPREFIX)jniconstraintsolver.$(JNI_LIB_EXT)
 
 $(GEN_DIR)/constraint_solver/constraint_solver_java_wrap.cc: $(SRC_DIR)/constraint_solver/constraint_solver.swig $(SRC_DIR)/constraint_solver/routing.swig $(SRC_DIR)/base/base.swig $(SRC_DIR)/util/data.swig $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(SWIG_BINARY) -I$(INC_DIR) -c++ -java -o $(GEN_DIR)$Sconstraint_solver$Sconstraint_solver_java_wrap.cc -package com.google.ortools.constraintsolver -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver $(SRC_DIR)$Sconstraint_solver$Srouting.swig
@@ -39,8 +39,8 @@ $(LIB_DIR)/com.google.ortools.constraintsolver.jar: $(GEN_DIR)/constraint_solver
 	$(JAVAC_BIN) -d $(OBJ_DIR) $(SRC_DIR)/com$Sgoogle$Sortools$Sconstraintsolver$S*.java $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java
 	$(JAR_BIN) cf $(LIB_DIR)$Scom.google.ortools.constraintsolver.jar -C $(OBJ_DIR) $Scom$Sgoogle$Sortools$Sconstraintsolver
 
-$(LIB_DIR)/$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT): $(OBJ_DIR)/constraint_solver_java_wrap.$O $(ROUTING_DEPS)
-	$(LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT) $(OBJ_DIR)$Sconstraint_solver_java_wrap.$O $(ROUTING_LNK) $(LDFLAGS)
+$(LIB_DIR)/$(LIBPREFIX)jniconstraintsolver.$(JNI_LIB_EXT): $(OBJ_DIR)/constraint_solver_java_wrap.$O $(STATIC_ROUTING_DEPS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)jniconstraintsolver.$(JNI_LIB_EXT) $(OBJ_DIR)$Sconstraint_solver_java_wrap.$O $(STATIC_ROUTING_LNK) $(STATIC_LD_FLAGS)
 
 # Java CP Examples
 
@@ -250,7 +250,7 @@ run_CoinsGrid: compile_CoinsGrid
 
 # javaalgorithms
 
-javaalgorithms: $(LIB_DIR)/com.google.ortools.knapsacksolver.jar $(LIB_DIR)/$(LIBPREFIX)jniknapsacksolver.$(JNILIBEXT)
+javaalgorithms: $(LIB_DIR)/com.google.ortools.knapsacksolver.jar $(LIB_DIR)/$(LIBPREFIX)jniknapsacksolver.$(JNI_LIB_EXT)
 
 $(GEN_DIR)/algorithms/knapsack_solver_java_wrap.cc: $(SRC_DIR)/algorithms/knapsack_solver.swig $(SRC_DIR)/base/base.swig $(SRC_DIR)/util/data.swig $(SRC_DIR)/algorithms/knapsack_solver.h
 	$(SWIG_BINARY) -I$(INC_DIR) -c++ -java -o $(GEN_DIR)$Salgorithms$Sknapsack_solver_java_wrap.cc -package com.google.ortools.knapsacksolver -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sknapsacksolver $(SRC_DIR)/algorithms$Sknapsack_solver.swig
@@ -262,8 +262,8 @@ $(LIB_DIR)/com.google.ortools.knapsacksolver.jar: $(GEN_DIR)/algorithms/knapsack
 	$(JAVAC_BIN) -d $(OBJ_DIR) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.java
 	$(JAR_BIN) cf $(LIB_DIR)$Scom.google.ortools.knapsacksolver.jar -C $(OBJ_DIR) com$Sgoogle$Sortools$Sknapsacksolver
 
-$(LIB_DIR)/$(LIBPREFIX)jniknapsacksolver.$(JNILIBEXT): $(OBJ_DIR)/knapsack_solver_java_wrap.$O $(ALGORITHMS_DEPS)
-	$(LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)jniknapsacksolver.$(JNILIBEXT) $(OBJ_DIR)$Sknapsack_solver_java_wrap.$O $(ALGORITHMS_LNK) $(LDFLAGS)
+$(LIB_DIR)/$(LIBPREFIX)jniknapsacksolver.$(JNI_LIB_EXT): $(OBJ_DIR)/knapsack_solver_java_wrap.$O $(STATIC_ALGORITHMS_DEPS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)jniknapsacksolver.$(JNI_LIB_EXT) $(OBJ_DIR)$Sknapsack_solver_java_wrap.$O $(STATIC_ALGORITHMS_LNK) $(STATIC_LD_FLAGS)
 
 # Java Algorithms Examples
 
@@ -277,7 +277,7 @@ run_Knapsack: compile_Knapsack
 
 # javagraph
 
-javagraph: $(LIB_DIR)/com.google.ortools.graph.jar $(LIB_DIR)/$(LIBPREFIX)jnigraph.$(JNILIBEXT)
+javagraph: $(LIB_DIR)/com.google.ortools.graph.jar $(LIB_DIR)/$(LIBPREFIX)jnigraph.$(JNI_LIB_EXT)
 
 $(GEN_DIR)/graph/graph_java_wrap.cc: $(SRC_DIR)/graph/graph.swig $(SRC_DIR)/base/base.swig $(SRC_DIR)/util/data.swig $(SRC_DIR)/graph/max_flow.h $(SRC_DIR)/graph/min_cost_flow.h $(SRC_DIR)/graph/linear_assignment.h
 	$(SWIG_BINARY) -I$(INC_DIR) -c++ -java -o $(GEN_DIR)$Sgraph$Sgraph_java_wrap.cc -package com.google.ortools.graph -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph graph$Sgraph.swig
@@ -289,8 +289,8 @@ $(LIB_DIR)/com.google.ortools.graph.jar: $(GEN_DIR)/graph/graph_java_wrap.cc
 	$(JAVAC_BIN) -d $(OBJ_DIR) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.java
 	$(JAR_BIN) cf $(LIB_DIR)$Scom.google.ortools.graph.jar -C $(OBJ_DIR) com$Sgoogle$Sortools$Sgraph
 
-$(LIB_DIR)/$(LIBPREFIX)jnigraph.$(JNILIBEXT): $(OBJ_DIR)/graph_java_wrap.$O $(GRAPH_DEPS)
-	$(LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)jnigraph.$(JNILIBEXT) $(OBJ_DIR)$Sgraph_java_wrap.$O $(GRAPH_LNK) $(LDFLAGS)
+$(LIB_DIR)/$(LIBPREFIX)jnigraph.$(JNI_LIB_EXT): $(OBJ_DIR)/graph_java_wrap.$O $(STATIC_GRAPH_DEPS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)jnigraph.$(JNI_LIB_EXT) $(OBJ_DIR)$Sgraph_java_wrap.$O $(STATIC_GRAPH_LNK) $(STATIC_LD_FLAGS)
 
 # Java Algorithms Examples
 
@@ -312,7 +312,7 @@ run_LinearAssignmentAPI: compile_LinearAssignmentAPI javagraph
 
 # javalp
 
-javalp: $(LIB_DIR)/com.google.ortools.linearsolver.jar $(LIB_DIR)/$(LIBPREFIX)jnilinearsolver.$(JNILIBEXT)
+javalp: $(LIB_DIR)/com.google.ortools.linearsolver.jar $(LIB_DIR)/$(LIBPREFIX)jnilinearsolver.$(JNI_LIB_EXT)
 
 $(GEN_DIR)/linear_solver/linear_solver_java_wrap.cc: $(SRC_DIR)/linear_solver/linear_solver.swig $(SRC_DIR)/base/base.swig $(SRC_DIR)/util/data.swig $(SRC_DIR)/linear_solver/linear_solver.h $(GEN_DIR)/linear_solver/linear_solver.pb.h
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -java -o $(GEN_DIR)$Slinear_solver$Slinear_solver_java_wrap.cc -package com.google.ortools.linearsolver -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver $(SRC_DIR)/linear_solver$Slinear_solver.swig
@@ -324,8 +324,8 @@ $(LIB_DIR)/com.google.ortools.linearsolver.jar: $(GEN_DIR)/linear_solver/linear_
 	$(JAVAC_BIN) -d $(OBJ_DIR) $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
 	$(JAR_BIN) cf $(LIB_DIR)$Scom.google.ortools.linearsolver.jar -C $(OBJ_DIR) com$Sgoogle$Sortools$Slinearsolver
 
-$(LIB_DIR)/$(LIBPREFIX)jnilinearsolver.$(JNILIBEXT): $(OBJ_DIR)/linear_solver_java_wrap.$O $(LP_DEPS)
-	$(LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)jnilinearsolver.$(JNILIBEXT) $(OBJ_DIR)$Slinear_solver_java_wrap.$O $(LP_LNK) $(LDFLAGS)
+$(LIB_DIR)/$(LIBPREFIX)jnilinearsolver.$(JNI_LIB_EXT): $(OBJ_DIR)/linear_solver_java_wrap.$O $(STATIC_LP_DEPS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)jnilinearsolver.$(JNI_LIB_EXT) $(OBJ_DIR)$Slinear_solver_java_wrap.$O $(STATIC_LP_LNK) $(STATIC_LD_FLAGS)
 
 # Java Linear Programming Examples
 
@@ -352,7 +352,7 @@ $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class: javacp $(EX_
 
 cjava: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class com.google.ortools.constraintsolver.jar
 
-rjava: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class $(LIB_DIR)/$(LIBPREFIX)jniconstraintsolver.$(JNILIBEXT) com.google.ortools.constraintsolver.jar
+rjava: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class $(LIB_DIR)/$(LIBPREFIX)jniconstraintsolver.$(JNI_LIB_EXT) com.google.ortools.constraintsolver.jar
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.constraintsolver.jar com.google.ortools.constraintsolver.samples.$(EX)
 
 # Build stand-alone archive file for redistribution.
@@ -363,7 +363,7 @@ java_archive: java
 	$(MKDIR) temp$Sor-tools.$(PLATFORM)
 	$(MKDIR) temp$Sor-tools.$(PLATFORM)\lib
 	$(COPY) lib\*.jar temp$Sor-tools.$(PLATFORM)\lib
-	$(COPY) $(LIB_DIR)$S$(LIBPREFIX)jni*.$(JNILIBEXT) temp$Sor-tools.$(PLATFORM)\lib
+	$(COPY) $(LIB_DIR)$S$(LIBPREFIX)jni*.$(JNI_LIB_EXT) temp$Sor-tools.$(PLATFORM)\lib
 ifeq ("$(SYSTEM)","win")
 	tools\mkdir temp\or-tools.$(PLATFORM)\examples
 	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com

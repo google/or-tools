@@ -126,12 +126,17 @@ dependencies/sources/googlecode-support/scripts/googlecode_upload.py:
 # Install Coin CBC.
 install_coin_cbc: dependencies/install/bin/cbc
 
+upgrade_cbc:
+        cd dependencies/sources/coin-cbc && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared && make install
+
 dependencies/install/bin/cbc: dependencies/sources/coin-cbc/Makefile
 	cd dependencies/sources/coin-cbc && make install
 
-dependencies/sources/coin-cbc/Makefile:
+dependencies/sources/coin-cbc/Makefile: dependencies/sources/coin-cbc/Makefile.in
+	cd dependencies/sources/coin-cbc && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared
+
+dependencies/sources/coin-cbc/Makefile.in:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/coin-cbc
-	cd dependencies/sources/coin-cbc && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack
 
 # Install pcre (dependency of SWIG).
 install_pcre: dependencies/install/bin/pcretest

@@ -3,25 +3,28 @@ PROTOBUF_DIR = $(WINDOWS_PROTOBUF_DIR)
 SWIG_BINARY = $(WINDOWS_SWIG_BINARY)
 LIB_DIR = $(OR_ROOT)lib
 LIBPREFIX =
-LIBSUFFIX = lib
+DYNAMIC_LIB_SUFFIX = lib
 BIN_DIR = $(OR_ROOT)bin
 GEN_DIR = $(OR_ROOT)src\\gen
 OBJ_DIR = $(OR_ROOT)objs
 SRC_DIR = $(OR_ROOT)src
 EX_DIR  = $(OR_ROOT)examples
 INC_DIR = $(OR_ROOT)src
-LINKCMD = lib
+DYNAMIC_LINK_CMD = lib
+STATIC_LINK_CMD = lib
 LINKPREFIX = /OUT:
-PRE_LIB = $(OR_ROOT)lib\\
-POST_LIB = .lib
+DYNAMIC_PRE_LIB = $(OR_ROOT)lib\\
+DYNAMIC_POST_LIB = .lib
+STATIC_PRE_LIB = $(OR_ROOT)lib\\
+STATIC_POST_LIB = .lib
 O=obj
 E=.exe
 OBJ_OUT = /Fo$(OR_ROOT)objs\\
 EXEOUT = /Fe$(OR_ROOT)bin\\
-SHAREDLIBEXT = dll
-JNILIBEXT = dll
+DYNAMIC_SWIG_LIB_SUFFIX = dll
+JNI_LIB_EXT = dll
 LDOUT = /OUT:
-LD = link /DLL /LTCG
+DYNAMIC_LD = link /DLL /LTCG
 S = \\
 CPSEP =;
 DEL = del
@@ -58,25 +61,29 @@ endif
 ifdef WINDOWS_CLP_DIR
 CLP_INC = /I$(WINDOWS_CLP_DIR)\\include /DUSE_CLP
 CLP_SWIG = -DUSE_CLP
-CLP_LNK = $(WINDOWS_CLP_DIR)\\lib\\coin\\libClp.lib  $(WINDOWS_CLP_DIR)\\lib\\coin\\libCoinUtils.lib
+DYNAMIC_CLP_LNK = $(WINDOWS_CLP_DIR)\\lib\\coin\\libClp.lib  $(WINDOWS_CLP_DIR)\\lib\\coin\\libCoinUtils.lib
+STATIC_CLP_LNK = $(WINDOWS_CLP_DIR)\\lib\\coin\\libClp.lib  $(WINDOWS_CLP_DIR)\\lib\\coin\\libCoinUtils.lib
 endif
 # This is needed to find Coin Branch and Cut include files and libraries.
 ifdef WINDOWS_CBC_DIR
 CBC_INC = /I$(WINDOWS_CBC_DIR)\\include /DUSE_CBC
 CBC_SWIG = -DUSE_CBC
-CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
+DYNAMIC_CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
+STATIC_CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
 endif
 # This is needed to find GLPK include files and libraries.
 ifdef WINDOWS_GLPK_DIR
 GLPK_INC = /I$(WINDOWS_GLPK_DIR)\\include /DUSE_GLPK
 GLPK_SWIG = -DUSE_GLPK
-GLPK_LNK = $(WINDOWS_GLPK_DIR)\\lib\\glpk.lib
+DYNAMIC_GLPK_LNK = $(WINDOWS_GLPK_DIR)\\lib\\glpk.lib
+STATIC_GLPK_LNK = $(WINDOWS_GLPK_DIR)\\lib\\glpk.lib
 endif
 # This is needed to find SULUM include files and libraries.
 ifdef WINDOWS_SLM_DIR
 SLM_INC = /I$(WINDOWS_SLM_DIR)\\header /DUSE_SLM
 SLM_SWIG = -DUSE_SLM
-SLM_LNK = $(WINDOWS_SLM_DIR)\\win$(PTRLENGTH)\\bin\\sulum10.lib
+DYNAMIC_SLM_LNK = $(WINDOWS_SLM_DIR)\\win$(PTRLENGTH)\\bin\\sulum10.lib
+STATIC_SLM_LNK = $(WINDOWS_SLM_DIR)\\win$(PTRLENGTH)\\bin\\sulum10.lib
 endif
 
 SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG) $(SLM_SWIG)
@@ -90,9 +97,13 @@ CFLAGS= -nologo $(SYSCFLAGS) $(DEBUG) /I$(INC_DIR) /I$(EX_DIR) /I$(GEN_DIR) $(GF
 	$(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SLM_INC) /D__WIN32__ \
 	$(SPARSEHASH_INC)
 JNIFLAGS=$(CFLAGS) $(JAVA_INC)
-GFLAGS_LNK = $(WINDOWS_GFLAGS_DIR)\\lib\\libgflags.lib
+DYNAMIC_GFLAGS_LNK = $(WINDOWS_GFLAGS_DIR)\\lib\\libgflags.lib
+STATIC_GFLAGS_LNK = $(WINDOWS_GFLAGS_DIR)\\lib\\libgflags.lib
 ZLIB_LNK = $(WINDOWS_ZLIB_DIR)\\lib\\$(WINDOWS_ZLIB_NAME)
-PROTOBUF_LNK = $(PROTOBUF_DIR)\\lib\\libprotobuf.lib
-LDFLAGS=$(GFLAGS_LNK) $(ZLIB_LNK) $(PROTOBUF_LNK) psapi.lib ws2_32.lib
-LDLPDEPS=$(CBC_LNK) $(CLP_LNK) $(GLPK_LNK) $(SLM_LNK)
+DYNAMIC_PROTOBUF_LNK = $(PROTOBUF_DIR)\\lib\\libprotobuf.lib
+STATIC_PROTOBUF_LNK = $(PROTOBUF_DIR)\\lib\\libprotobuf.lib
+DYNAMIC_LD_FLAGS=$(DYNAMIC_GFLAGS_LNK) $(ZLIB_LNK) $(DYNAMIC_PROTOBUF_LNK) psapi.lib ws2_32.lib
+STATIC_LD_FLAGS=$(STATIC_GFLAGS_LNK) $(ZLIB_LNK) $(STATIC_PROTOBUF_LNK) psapi.lib ws2_32.lib
+DYNAMIC_LD_LP_DEPS=$(DYNAMIC_CBC_LNK) $(DYNAMIC_CLP_LNK) $(DYNAMIC_GLPK_LNK) $(DYNAMIC_SLM_LNK)
+STATIC_LD_LP_DEPS=$(STATIC_CBC_LNK) $(STATIC_CLP_LNK) $(STATIC_GLPK_LNK) $(STATIC_SLM_LNK)
 
