@@ -162,10 +162,11 @@ ifeq ($(PLATFORM),LINUX)
   DYNAMIC_LIB_SUFFIX = so
   DYNAMIC_SWIG_LIB_SUFFIX = so
   DYNAMIC_LINK_CMD = g++ -shared
+  DYNAMIC_LINK_PREFIX = -o # Need the space.
   LINKPREFIX = -o # Need the space.
   STATIC_LIB_SUFFIX = a
   STATIC_LINK_CMD = ar rv
-  LINKPREFIX = -o # Need the space.
+  STATIC_LINK_PREFIX =
   DYNAMIC_PRE_LIB = -Wl,-rpath $(OR_ROOT_FULL)/lib -L$(OR_ROOT_FULL)/lib -l
   DYNAMIC_POST_LIB =
   STATIC_PRE_LIB = $(OR_ROOT_FULL)/lib/lib
@@ -182,9 +183,11 @@ ifeq ($(PLATFORM),MACOSX)
     MONO = DYLD_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) $(UNIX_MONO_DIR)/bin/mono
   endif
 
-  GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
+  DYNAMIC_GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
+  STATIC_GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
   ZLIB_LNK = -lz
-  PROTOBUF_LNK = -L$(UNIX_PROTOBUF_DIR)/lib -lprotobuf
+  DYNAMIC_PROTOBUF_LNK = -L$(UNIX_PROTOBUF_DIR)/lib -lprotobuf
+  STATIC_PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
   ARCH = -DARCH_K8
   SYS_LNK =
 
@@ -200,9 +203,10 @@ ifeq ($(PLATFORM),MACOSX)
   DYNAMIC_LIB_SUFFIX = dylib
   DYNAMIC_SWIG_LIB_SUFFIX = so # To overcome a bug in Mac OS X loader.
   DYNAMIC_LINK_CMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
+  DYNAMIC_LINK_PREFIX = -o # Space needed.
   STATIC_LIB_SUFFIX = a
-  STATIC_LINK_CMD = ar rv
-  LINKPREFIX = -o # Need the space.
+  STATIC_LINK_CMD = ar -r -v
+  STATIC_LINK_PREFIX =
 
   ifdef UNIX_GLPK_DIR
     DYNAMIC_GLPK_LNK = -L$(UNIX_GLPK_DIR)/lib -lglpk
