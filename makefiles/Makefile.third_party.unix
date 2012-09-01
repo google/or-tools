@@ -171,11 +171,14 @@ dependencies/sources/swig/autogen.sh:
 # Install glpk if needed.
 install_glpk: $(GLPK_TARGET)
 
+upgrade_glpk:
+	cp dependencies/sources/glpk-$(GLPK_TAG) && make distclean && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --enable-dl && make install
+
 dependencies/install/bin/glpsol: dependencies/sources/glpk-$(GLPK_TAG)/Makefile
 	cd dependencies/sources/glpk-$(GLPK_TAG) && make install
 
 dependencies/sources/glpk-$(GLPK_TAG)/Makefile: dependencies/sources/glpk-$(GLPK_TAG)/configure
-	cd dependencies/sources/glpk-$(GLPK_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+	cd dependencies/sources/glpk-$(GLPK_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --enable-dl
 
 dependencies/sources/glpk-$(GLPK_TAG)/configure: dependencies/archives/glpk-$(GLPK_TAG).tar.gz
 	cd dependencies/sources && tar xvzmf ../archives/glpk-$(GLPK_TAG).tar.gz
