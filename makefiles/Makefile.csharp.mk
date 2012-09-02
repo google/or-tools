@@ -189,7 +189,6 @@ ifeq ("$(SYSTEM)","win")
 	tools\mkdir temp\or-tools.$(PORT)
 	tools\mkdir temp\or-tools.$(PORT)\bin
 	tools\mkdir temp\or-tools.$(PORT)\examples
-	tools\mkdir temp\or-tools.$(PORT)\examples\
 	tools\mkdir temp\or-tools.$(PORT)\examples\solution
 	tools\mkdir temp\or-tools.$(PORT)\examples\solution\Properties
 	tools\mkdir temp\or-tools.$(PORT)\data
