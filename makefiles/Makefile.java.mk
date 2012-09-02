@@ -362,6 +362,7 @@ java_archive: java
 	$(MKDIR) temp
 	$(MKDIR) temp$Sor-tools.$(PORT)
 	$(MKDIR) temp$Sor-tools.$(PORT)$Slib
+	$(COPY) LICENSE-2.0.txt temp$Sor-tools.$(PORT)
 	$(COPY) lib$S*.jar temp$Sor-tools.$(PORT)$Slib
 	$(COPY) $(LIB_DIR)$S$(LIBPREFIX)jni*.$(JNI_LIB_EXT) temp$Sor-tools.$(PORT)$Slib
 ifeq ("$(SYSTEM)","win")

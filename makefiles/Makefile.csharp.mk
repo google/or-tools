@@ -184,31 +184,65 @@ rcs: csc
 
 dotnet_archive: csharp
 	-$(DELREC) temp
+ifeq ("$(SYSTEM)","win")
 	tools\mkdir temp
-	tools\mkdir temp\or-tools.$(PLATFORM)
-	tools\mkdir temp\or-tools.$(PLATFORM)\bin
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples\csharp
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples\csharp\solution
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples\csharp\solution\Properties
-	tools\mkdir temp\or-tools.$(PLATFORM)\data
-	tools\mkdir temp\or-tools.$(PLATFORM)\data\discrete_tomography
-	tools\mkdir temp\or-tools.$(PLATFORM)\data\fill_a_pix
-	tools\mkdir temp\or-tools.$(PLATFORM)\data\minesweeper
-	tools\mkdir temp\or-tools.$(PLATFORM)\data\rogo
-	tools\mkdir temp\or-tools.$(PLATFORM)\data\survo_puzzle
-	tools\mkdir temp\or-tools.$(PLATFORM)\data\quasigroup_completion
-	copy bin\Google.OrTools.*.dll temp\or-tools.$(PLATFORM)\bin
-	copy examples\csharp\*.cs temp\or-tools.$(PLATFORM)\examples\csharp
-	copy examples\csharp\*.sln temp\or-tools.$(PLATFORM)\examples\csharp
-	copy examples\csharp\solution\*.csproj temp\or-tools.$(PLATFORM)\examples\csharp\solution
-	copy examples\csharp\solution\Properties\*.cs temp\or-tools.$(PLATFORM)\examples\csharp\solution\Properties
-	copy data\discrete_tomography\* temp\or-tools.$(PLATFORM)\data\discrete_tomography
-	copy data\fill_a_pix\* temp\or-tools.$(PLATFORM)\data\fill_a_pix
-	copy data\minesweeper\* temp\or-tools.$(PLATFORM)\data\minesweeper
-	copy data\rogo\* temp\or-tools.$(PLATFORM)\data\rogo
-	copy data\survo_puzzle\* temp\or-tools.$(PLATFORM)\data\survo_puzzle
-	copy data\quasigroup_completion\* temp\or-tools.$(PLATFORM)\data\quasigroup_completion
-	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.NET.$(PLATFORM).$(SVNVERSION).zip or-tools.$(PLATFORM)
-	$(WINDOWS_PYTHON_PATH)$Spython dependencies\sources\googlecode-support\scripts\googlecode_upload.py -s "Google OR-Tools, .NET archive, Windows $(PLATFORM) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,OpSys-Windows,Featured Google.OrTools.NET.$(PLATFORM).$(SVNVERSION).zip -u $(USER) -w $(PASSWORD)
+	tools\mkdir temp\or-tools.$(PORT)
+	tools\mkdir temp\or-tools.$(PORT)\bin
+	tools\mkdir temp\or-tools.$(PORT)\examples
+	tools\mkdir temp\or-tools.$(PORT)\examples\csharp
+	tools\mkdir temp\or-tools.$(PORT)\examples\csharp\solution
+	tools\mkdir temp\or-tools.$(PORT)\examples\csharp\solution\Properties
+	tools\mkdir temp\or-tools.$(PORT)\data
+	tools\mkdir temp\or-tools.$(PORT)\data\discrete_tomography
+	tools\mkdir temp\or-tools.$(PORT)\data\fill_a_pix
+	tools\mkdir temp\or-tools.$(PORT)\data\minesweeper
+	tools\mkdir temp\or-tools.$(PORT)\data\rogo
+	tools\mkdir temp\or-tools.$(PORT)\data\survo_puzzle
+	tools\mkdir temp\or-tools.$(PORT)\data\quasigroup_completion
+	copy LICENSE-2.0.txt temp$Sor-tools.$(PORT)
+	copy bin\Google.OrTools.*.dll temp\or-tools.$(PORT)\bin
+	copy examples\csharp\*.cs temp\or-tools.$(PORT)\examples\csharp
+	copy examples\csharp\*.sln temp\or-tools.$(PORT)\examples\csharp
+	copy examples\csharp\solution\*.csproj temp\or-tools.$(PORT)\examples\csharp\solution
+	copy examples\csharp\solution\Properties\*.cs temp\or-tools.$(PORT)\examples\csharp\solution\Properties
+	copy data\discrete_tomography\* temp\or-tools.$(PORT)\data\discrete_tomography
+	copy data\fill_a_pix\* temp\or-tools.$(PORT)\data\fill_a_pix
+	copy data\minesweeper\* temp\or-tools.$(PORT)\data\minesweeper
+	copy data\rogo\* temp\or-tools.$(PORT)\data\rogo
+	copy data\survo_puzzle\* temp\or-tools.$(PORT)\data\survo_puzzle
+	copy data\quasigroup_completion\* temp\or-tools.$(PORT)\data\quasigroup_completion
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.NET.$(PORT).$(SVNVERSION).zip or-tools.$(PORT)
+else
+	mkdir temp
+	mkdir temp/or-tools.$(PORT)
+	mkdir temp/or-tools.$(PORT)/bin
+	mkdir temp/or-tools.$(PORT)/lib
+	mkdir temp/or-tools.$(PORT)/examples
+	mkdir temp/or-tools.$(PORT)/examples/csharp
+	mkdir temp/or-tools.$(PORT)/data
+	mkdir temp/or-tools.$(PORT)/data/discrete_tomography
+	mkdir temp/or-tools.$(PORT)/data/fill_a_pix
+	mkdir temp/or-tools.$(PORT)/data/minesweeper
+	mkdir temp/or-tools.$(PORT)/data/rogo
+	mkdir temp/or-tools.$(PORT)/data/survo_puzzle
+	mkdir temp/or-tools.$(PORT)/data/quasigroup_completion
+	cp LICENSE-2.0.txt temp/or-tools.$(PORT)
+	cp bin/Google.OrTools.*.dll temp/or-tools.$(PORT)/bin
+	cp lib/libGoogle.OrTools.*.so temp/or-tools.$(PORT)/lib
+	cp examples/csharp/*.cs temp/or-tools.$(PORT)/examples/csharp
+	cp data/discrete_tomography/* temp/or-tools.$(PORT)/data/discrete_tomography
+	cp data/fill_a_pix/* temp/or-tools.$(PORT)/data/fill_a_pix
+	cp data/minesweeper/* temp/or-tools.$(PORT)/data/minesweeper
+	cp data/rogo/* temp/or-tools.$(PORT)/data/rogo
+	cp data/survo_puzzle/* temp/or-tools.$(PORT)/data/survo_puzzle
+	cp data/quasigroup_completion/* temp/or-tools.$(PORT)/data/quasigroup_completion
+	cd temp && tar cvzf ../Google.OrTools.NET.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
+endif
 	-$(DELREC) temp
+
+dotnet_upload: dotnet_archive
+ifeq ("$(SYSTEM)","win")
+	$(WINDOWS_PYTHON_PATH)$Spython dependencies\sources\googlecode-support\scripts\googlecode_upload.py -s "Google OR-Tools, .NET archive, $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,$(CODEPORT),Featured Google.OrTools.NET.$(PORT).$(SVNVERSION).zip -u $(USER) -w $(PASSWORD)
+else
+	python$(UNIX_PYTHON_VERSION) dependencies/sources/googlecode-support/scripts/googlecode_upload.py -s "Google OR-Tools, .NET archive, $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,$(CODEPORT),Featured Google.OrTools.NET.$(PORT).$(SVNVERSION).tar.gz -u $(USER) -w $(PASSWORD)
+endif
