@@ -360,44 +360,73 @@ rjava: $(OBJ_DIR)/com/google/ortools/constraintsolver/samples/$(EX).class $(LIB_
 java_archive: java
 	-$(DELREC) temp
 	$(MKDIR) temp
-	$(MKDIR) temp$Sor-tools.$(PLATFORM)
-	$(MKDIR) temp$Sor-tools.$(PLATFORM)\lib
-	$(COPY) lib\*.jar temp$Sor-tools.$(PLATFORM)\lib
-	$(COPY) $(LIB_DIR)$S$(LIBPREFIX)jni*.$(JNI_LIB_EXT) temp$Sor-tools.$(PLATFORM)\lib
+	$(MKDIR) temp$Sor-tools.$(PORT)
+	$(MKDIR) temp$Sor-tools.$(PORT)$Slib
+	$(COPY) lib$S*.jar temp$Sor-tools.$(PORT)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIBPREFIX)jni*.$(JNI_LIB_EXT) temp$Sor-tools.$(PORT)$Slib
 ifeq ("$(SYSTEM)","win")
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com\google
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com\google\ortools
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com\google\ortools\constraintsolver
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com\google\ortools\constraintsolver\samples
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com\google\ortools\linearsolver
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com\google\ortools\linearsolver\samples
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com\google\ortools\graph
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com\google\ortools\graph\samples
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com\google\ortools\knapsacksolver
-	tools\mkdir temp\or-tools.$(PLATFORM)\examples\com\google\ortools\knapsacksolver\samples
-	tools\mkdir temp\or-tools.$(PLATFORM)\data
-	tools\mkdir temp\or-tools.$(PLATFORM)\data\discrete_tomography
-	tools\mkdir temp\or-tools.$(PLATFORM)\data\fill_a_pix
-	tools\mkdir temp\or-tools.$(PLATFORM)\data\minesweeper
-	tools\mkdir temp\or-tools.$(PLATFORM)\data\rogo
-	tools\mkdir temp\or-tools.$(PLATFORM)\data\survo_puzzle
-	tools\mkdir temp\or-tools.$(PLATFORM)\data\quasigroup_completion
-	copy data\discrete_tomography\* temp\or-tools.$(PLATFORM)\data\discrete_tomography
-	copy data\fill_a_pix\* temp\or-tools.$(PLATFORM)\data\fill_a_pix
-	copy data\minesweeper\* temp\or-tools.$(PLATFORM)\data\minesweeper
-	copy data\rogo\* temp\or-tools.$(PLATFORM)\data\rogo
-	copy data\survo_puzzle\* temp\or-tools.$(PLATFORM)\data\survo_puzzle
-	copy data\quasigroup_completion\* temp\or-tools.$(PLATFORM)\data\quasigroup_completion
-	copy examples\com\google\ortools\constraintsolver\samples\*.java temp\or-tools.$(PLATFORM)\examples\com\google\ortools\constraintsolver\samples
-	copy examples\com\google\ortools\linearsolver\samples\*.java temp\or-tools.$(PLATFORM)\examples\com\google\ortools\linearsolver\samples
-	copy examples\com\google\ortools\graph\samples\*.java temp\or-tools.$(PLATFORM)\examples\com\google\ortools\graph\samples
-	copy examples\com\google\ortools\knapsacksolver\samples\*.java temp\or-tools.$(PLATFORM)\examples\com\google\ortools\knapsacksolver\samples
-	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.java.$(PLATFORM).$(SVNVERSION).zip or-tools.$(PLATFORM)
-	$(WINDOWS_PYTHON_PATH)$Spython dependencies\sources\googlecode-support\scripts\googlecode_upload.py -s "Google OR-Tools, Java 1.7 archive, Windows $(PLATFORM) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,OpSys-Windows,Featured Google.OrTools.java.$(PLATFORM).$(SVNVERSION).zip -u $(USER) -w $(PASSWORD)
+	tools\mkdir temp\or-tools.$(PORT)\examples
+	tools\mkdir temp\or-tools.$(PORT)\examples\com
+	tools\mkdir temp\or-tools.$(PORT)\examples\com\google
+	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools
+	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\constraintsolver
+	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\constraintsolver\samples
+	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\linearsolver
+	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\linearsolver\samples
+	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\graph
+	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\graph\samples
+	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\knapsacksolver
+	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\knapsacksolver\samples
+	tools\mkdir temp\or-tools.$(PORT)\data
+	tools\mkdir temp\or-tools.$(PORT)\data\discrete_tomography
+	tools\mkdir temp\or-tools.$(PORT)\data\fill_a_pix
+	tools\mkdir temp\or-tools.$(PORT)\data\minesweeper
+	tools\mkdir temp\or-tools.$(PORT)\data\rogo
+	tools\mkdir temp\or-tools.$(PORT)\data\survo_puzzle
+	tools\mkdir temp\or-tools.$(PORT)\data\quasigroup_completion
+	copy data\discrete_tomography\* temp\or-tools.$(PORT)\data\discrete_tomography
+	copy data\fill_a_pix\* temp\or-tools.$(PORT)\data\fill_a_pix
+	copy data\minesweeper\* temp\or-tools.$(PORT)\data\minesweeper
+	copy data\rogo\* temp\or-tools.$(PORT)\data\rogo
+	copy data\survo_puzzle\* temp\or-tools.$(PORT)\data\survo_puzzle
+	copy data\quasigroup_completion\* temp\or-tools.$(PORT)\data\quasigroup_completion
+	copy examples\com\google\ortools\constraintsolver\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\constraintsolver\samples
+	copy examples\com\google\ortools\linearsolver\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\linearsolver\samples
+	copy examples\com\google\ortools\graph\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\graph\samples
+	copy examples\com\google\ortools\knapsacksolver\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\knapsacksolver\samples
+	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.java.$(PORT).$(SVNVERSION).zip or-tools.$(PORT)
+	$(WINDOWS_PYTHON_PATH)$Spython dependencies\sources\googlecode-support\scripts\googlecode_upload.py -s "Google OR-Tools, Java 1.7 archive, Windows $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,OpSys-Windows,Featured Google.OrTools.java.$(PORT).$(SVNVERSION).zip -u $(USER) -w $(PASSWORD)
 else
-	cd temp$Sor-tools.$(PLATFORM) && tar -C ..$S.. -c -v examples | tar -x -v -m --exclude=\*.cs --exclude=\*svn\*
-	cd temp && tools\\tar.exe cvzf ..$SGoogle.OrTools.java.$(PLATFORM).$(SVNVERSION).tar.gz or-tools.$(PLATFORM)
+	mkdir temp/or-tools.$(PORT)/examples
+	mkdir temp/or-tools.$(PORT)/examples/com
+	mkdir temp/or-tools.$(PORT)/examples/com/google
+	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools
+	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/constraintsolver
+	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/constraintsolver/samples
+	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/linearsolver
+	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/linearsolver/samples
+	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/graph
+	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/graph/samples
+	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/knapsacksolver
+	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/knapsacksolver/samples
+	mkdir temp/or-tools.$(PORT)/data
+	mkdir temp/or-tools.$(PORT)/data/discrete_tomography
+	mkdir temp/or-tools.$(PORT)/data/fill_a_pix
+	mkdir temp/or-tools.$(PORT)/data/minesweeper
+	mkdir temp/or-tools.$(PORT)/data/rogo
+	mkdir temp/or-tools.$(PORT)/data/survo_puzzle
+	mkdir temp/or-tools.$(PORT)/data/quasigroup_completion
+	cp data/discrete_tomography/* temp/or-tools.$(PORT)/data/discrete_tomography
+	cp data/fill_a_pix/* temp/or-tools.$(PORT)/data/fill_a_pix
+	cp data/minesweeper/* temp/or-tools.$(PORT)/data/minesweeper
+	cp data/rogo/* temp/or-tools.$(PORT)/data/rogo
+	cp data/survo_puzzle/* temp/or-tools.$(PORT)/data/survo_puzzle
+	cp data/quasigroup_completion/* temp/or-tools.$(PORT)/data/quasigroup_completion
+	cp examples/com/google/ortools/constraintsolver/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/constraintsolver/samples
+	cp examples/com/google/ortools/linearsolver/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/linearsolver/samples
+	cp examples/com/google/ortools/graph/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/graph/samples
+	cp examples/com/google/ortools/knapsacksolver/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/knapsacksolver/samples
+	cd temp && tar cvzf ../Google.OrTools.java.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
+#	python$(UNIX_PYTHON_VERSION) dependencies/sources/googlecode-support/scripts/googlecode_upload.py -s "Google OR-Tools, Java 1.7 archive, $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,$(CODEPORT),Featured Google.OrTools.java.$(PORT).$(SVNVERSION).zip -u $(USER) -w $(PASSWORD)
 endif
 	-$(DELREC) temp

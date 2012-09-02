@@ -22,9 +22,11 @@ ifeq ("$(SYSTEM)","unix")
   endif
   ifeq ($(OS),Linux)
     PLATFORM = LINUX
+    CODEPORT = OpSys-Linux
     LBITS = $(shell getconf LONG_BIT)
     ifeq ($(LBITS),64)
       NETPLATFORM = anycpu
+      PORT = Linux64
       PTRLENGTH = 64
       CANDIDATE_JDK_ROOTS = \
         /usr/local/buildtools/java/jdk-64 \
@@ -36,6 +38,7 @@ ifeq ("$(SYSTEM)","unix")
         /usr/lib/jvm/java-7-openjdk-amd64
     else
       NETPLATFORM = x86
+      PORT = Linux32
       PTRLENGTH = 32
       CANDIDATE_JDK_ROOTS = \
         /usr/local/buildtools/java/jdk-32 \
@@ -51,6 +54,8 @@ ifeq ("$(SYSTEM)","unix")
   endif
   ifeq ($(OS),Darwin) # Assume Mac Os X
     PLATFORM = MACOSX
+    PORT = MacOsX64
+    CODEPORT = OpSys-OSX
     NETPLATFORM = anycpu
     PTRLENGTH = 64
     CANDIDATE_JDK_HEADERS = \
@@ -64,14 +69,17 @@ endif
 ifeq ("$(SYSTEM)","win")
   SCIP_MAKEFILE = \# SCIP not compiled
   SELECTED_JDK_DEF = WINDOWS_JDK_DIR = \# Please define JDK root.
+  CODEPORT = OpSys-Windows
   ifeq ("$(Platform)", "X64")
     PLATFORM = x64
+    PORT = Windows64
     CBC_PLATFORM = x64
     PTRLENGTH = 64
     NETPLATFORM = x64
   else
     PTRLENGTH = 32
     PLATFORM = Win32
+    PORT = Windows32
     CBC_PLATFORM = Win32
     NETPLATFORM = x86
   endif
