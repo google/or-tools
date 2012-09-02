@@ -362,9 +362,11 @@ java_archive: java
 	$(MKDIR) temp
 	$(MKDIR) temp$Sor-tools.$(PORT)
 	$(MKDIR) temp$Sor-tools.$(PORT)$Slib
+	$(MKDIR) temp$Sor-tools.$(PORT)$Sobjs
 	$(COPY) LICENSE-2.0.txt temp$Sor-tools.$(PORT)
+	$(COPY) tools$SREADME.java temp$Sor-tools.$(PORT)$SREADME
 	$(COPY) lib$S*.jar temp$Sor-tools.$(PORT)$Slib
-	$(COPY) $(LIB_DIR)$S$(LIBPREFIX)jni*.$(JNI_LIB_EXT) temp$Sor-tools.$(PORT)$Slib
+	$(COPY) lib$S$(LIBPREFIX)jni*.$(JNI_LIB_EXT) temp$Sor-tools.$(PORT)$Slib
 ifeq ("$(SYSTEM)","win")
 	tools\mkdir temp\or-tools.$(PORT)\examples
 	tools\mkdir temp\or-tools.$(PORT)\examples\com

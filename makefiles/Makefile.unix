@@ -30,6 +30,7 @@ DEL = rm -f
 DELREC = rm -rf
 S = /
 CPSEP = :
+SED = sed
 
 # This is needed to find python.h
 PYTHON_INC = -I/usr/include/python$(UNIX_PYTHON_VER) -I/usr/lib/python$(UNIX_PYTHON_VER)

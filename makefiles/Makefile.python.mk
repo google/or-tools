@@ -125,39 +125,44 @@ python_archive: python
 	$(MKDIR) temp
 	$(MKDIR) temp$Sor-tools.$(PORT)
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sexamples
-	$(MKDIR) temp$Sor-tools.$(PORT)$Sexamples$Spython
-	$(MKDIR) temp$Sor-tools.$(PORT)$Ssrc
-	$(MKDIR) temp$Sor-tools.$(PORT)$Ssrc$Sconstraint_solver
-	$(MKDIR) temp$Sor-tools.$(PORT)$Ssrc$Slinear_solver
-	$(MKDIR) temp$Sor-tools.$(PORT)$Ssrc$Sgraph
-	$(MKDIR) temp$Sor-tools.$(PORT)$Ssrc$Salgorithms
-	$(MKDIR) temp$Sor-tools.$(PORT)$Ssrc$Sgen
-	$(MKDIR) temp$Sor-tools.$(PORT)$Ssrc$Sgen$Sconstraint_solver
-	$(MKDIR) temp$Sor-tools.$(PORT)$Ssrc$Sgen$Slinear_solver
-	$(MKDIR) temp$Sor-tools.$(PORT)$Ssrc$Sgen$Sgraph
-	$(MKDIR) temp$Sor-tools.$(PORT)$Ssrc$Sgen$Salgorithms
-	$(COPY) LICENSE-2.0.txt temp$Sor-tools.$(PORT)
-	$(COPY) examples$Spython$S*.py temp$Sor-tools.$(PORT)$Sexamples$Spython
-	$(COPY) src$Sgen$Sconstraint_solver$S*.py temp$Sor-tools.$(PORT)$Ssrc$Sgen$Sconstraint_solver
-	$(COPY) src$Sgen$Slinear_solver$S*.py temp$Sor-tools.$(PORT)$Ssrc$Sgen$Slinear_solver
-	$(COPY) src$Sgen$Sgraph$S*.py temp$Sor-tools.$(PORT)$Ssrc$Sgen$Sgraph
-	$(COPY) src$Sgen$Salgorithms$S*.py temp$Sor-tools.$(PORT)$Ssrc$Sgen$Salgorithms
-	$(COPY) src$Sconstraint_solver$S*.py temp$Sor-tools.$(PORT)$Ssrc$Sconstraint_solver
-	$(COPY) src$Slinear_solver$S*.py temp$Sor-tools.$(PORT)$Ssrc$Slinear_solver
-	$(COPY) src$Sgraph$S*.py temp$Sor-tools.$(PORT)$Ssrc$Sgraph
-	$(COPY) src$Salgorithms$S*.py temp$Sor-tools.$(PORT)$Ssrc$Salgorithms
-ifeq ("$(SYSTEM)","win")
-	cd temp$Sor-tools.$(PORT) && ..\..\tools\tar.exe -C ..$S.. -c -v --exclude *svn* data | ..\..\tools\tar.exe xvm
-	$(COPY) src$Sgen$Sconstraint_solver$S_pywrapcp.pyd temp$Sor-tools.$(PORT)$Ssrc$Sgen$Sconstraint_solver
-	$(COPY) src$Sgen$Sconstraint_solver$S_pywraprouting.pyd temp$Sor-tools.$(PORT)$Ssrc$Sgen$Sconstraint_solver
-	$(COPY) src$Sgen$Slinear_solver$S_pywraplp.pyd temp$Sor-tools.$(PORT)$Ssrc$Sgen$Slinear_solver
-	$(COPY) src$Sgen$Sgraph$S_pywrapgraph.pyd temp$Sor-tools.$(PORT)$Ssrc$Sgen$Sgraph
-	$(COPY) src$Sgen$Salgorithms$S_pywrapknapsack_solver.pyd temp$Sor-tools.$(PORT)$Ssrc$Sgen$Salgorithms
-	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.python.$(PORT).$(SVNVERSION).zip or-tools.$(PORT)
-	$(WINDOWS_PYTHON_PATH)$Spython dependencies\sources\googlecode-support\scripts\googlecode_upload.py -s "Google OR-Tools, Python archive, $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,$(CODEPORT),Featured Google.OrTools.python.$(PORT).$(SVNVERSION).zip -u $(USER) -w $(PASSWORD)
+	$(MKDIR) temp$Sor-tools.$(PORT)$Sdata
+	$(MKDIR) temp$Sor-tools.$(PORT)$Sconstraint_solver
+	$(MKDIR) temp$Sor-tools.$(PORT)$Slinear_solver
+	$(MKDIR) temp$Sor-tools.$(PORT)$Sgraph
+	$(MKDIR) temp$Sor-tools.$(PORT)$Salgorithms
+	$(COPY) src$Sgen$Sconstraint_solver$Spywrapcp.py temp$Sor-tools.$(PORT)$Sconstraint_solver
+	$(COPY) src$Sgen$Sconstraint_solver$Spywraprouting.py temp$Sor-tools.$(PORT)$Sconstraint_solver
+	$(COPY) src$Sgen$Slinear_solver$Spywraplp.py temp$Sor-tools.$(PORT)$Slinear_solver
+	$(COPY) src$Sgen$Sgraph$Spywrapgraph.py temp$Sor-tools.$(PORT)$Sgraph
+	$(COPY) src$Sgen$Salgorithms$Spywrapknapsack_solver.py temp$Sor-tools.$(PORT)$Salgorithms
+	$(COPY) lib$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sconstraint_solver
+	$(COPY) lib$S_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sconstraint_solver
+	$(COPY) lib$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Slinear_solver
+	$(COPY) lib$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sgraph
+	$(COPY) lib$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Salgorithms
+	$(COPY) examples$Spython$S*.py temp$Sor-tools.$(PORT)$Sexamples
+	$(TOUCH) temp$Sor-tools.$(PORT)$Sconstraint_solver$S__init__.py
+	$(TOUCH) temp$Sor-tools.$(PORT)$Slinear_solver$S__init__.py
+	$(TOUCH) temp$Sor-tools.$(PORT)$Sgraph$S__init__.py
+	$(TOUCH) temp$Sor-tools.$(PORT)$Salgorithms$S__init__.py
+	$(COPY) tools$SREADME.python temp$Sor-tools.$(PORT)$SREADME
+	$(COPY) tools$Ssetup.py temp$Sor-tools.$(PORT)
+	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sor-tools.$(PORT)$Ssetup.py
+ifeq ($(SYSTEM),win)
+	-del temp\or-tools.$(PORT)\setup.py-e
+	cd temp\or-tools.$(PORT) && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* data | ..\..\tools\tar.exe xvm
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.$(PORT).$(SVNVERSION).zip or-tools.$(PORT)
 else
-	cd temp$Sor-tools.$(PORT) && tar -C ..$S.. -c -v --exclude \*svn\* data | tar xvm -
-	$(COPY) _pywrap*.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)
-	cd temp && tar cvzf ..$SGoogle.OrTools.python.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
+	$(SED) -i -e 's/\.dll/\.so/' temp/or-tools.$(PORT)/setup.py
+	-rm temp/or-tools.$(PORT)/setup.py-e
+	cd temp/or-tools.$(PORT) && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* data | tar xvm
+	cd temp && tar cvzf ../Google.OrTools.python.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
 endif
-	-$(DELREC) temp
+
+python_upload: python_archive
+ifeq ($(SYSTEM),win)
+	$(WINDOWS_PYTHON_PATH)\python.exe dependencies\sources\googlecode-support\scripts\googlecode_upload.py -s "Google OR-Tools, Python archive, $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,$(CODEPORT),Featured Google.OrTools.python.$(PORT).$(SVNVERSION).zip -u $(USER) -w $(PASSWORD)
+else
+	python$(UNIX_PYTHON_VERSION) dependencies/sources/googlecode-support/scripts/googlecode_upload.py -s "Google OR-Tools, Python archive, $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,$(CODEPORT),Featured Google.OrTools.python.$(PORT).$(SVNVERSION).tar.gz -u $(USER) -w $(PASSWORD)
+endif
+

@@ -34,6 +34,7 @@ DELREC = tools\rm.exe -rf
 MKDIR = md
 COPY = copy
 TOUCH = tools\touch.exe
+SED = tools\sed.exe
 
 # Compilation macros.
 DEBUG=/O2 -DNDEBUG
