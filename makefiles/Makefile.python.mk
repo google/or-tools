@@ -135,11 +135,6 @@ python_archive: python
 	$(COPY) src$Sgen$Slinear_solver$Spywraplp.py temp$Sor-tools.$(PORT)$Slinear_solver
 	$(COPY) src$Sgen$Sgraph$Spywrapgraph.py temp$Sor-tools.$(PORT)$Sgraph
 	$(COPY) src$Sgen$Salgorithms$Spywrapknapsack_solver.py temp$Sor-tools.$(PORT)$Salgorithms
-	$(COPY) lib$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sconstraint_solver
-	$(COPY) lib$S_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sconstraint_solver
-	$(COPY) lib$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Slinear_solver
-	$(COPY) lib$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sgraph
-	$(COPY) lib$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Salgorithms
 	$(COPY) examples$Spython$S*.py temp$Sor-tools.$(PORT)$Sexamples
 	$(TOUCH) temp$Sor-tools.$(PORT)$Sconstraint_solver$S__init__.py
 	$(TOUCH) temp$Sor-tools.$(PORT)$Slinear_solver$S__init__.py
@@ -149,10 +144,20 @@ python_archive: python
 	$(COPY) tools$Ssetup.py temp$Sor-tools.$(PORT)
 	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sor-tools.$(PORT)$Ssetup.py
 ifeq ($(SYSTEM),win)
+	copy src\gen\constraint_solver\_pywrapcp.pyd temp$Sor-tools.$(PORT)$Sconstraint_solver
+	copy src\gen\constraint_solver\_pywraprouting.pyd temp$Sor-tools.$(PORT)$Sconstraint_solver
+	copy src\gen\linear_solver\_pywraplp.pyd temp$Sor-tools.$(PORT)$Slinear_solver
+	copy src\gen\graph\_pywrapgraph.pyd temp$Sor-tools.$(PORT)$Sgraph
+	copy src\gen\algorithms\_pywrapknapsack_solver.pyd temp$Sor-tools.$(PORT)$Salgorithms
 	-del temp\or-tools.$(PORT)\setup.py-e
 	cd temp\or-tools.$(PORT) && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* data | ..\..\tools\tar.exe xvm
 	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.$(PORT).$(SVNVERSION).zip or-tools.$(PORT)
 else
+	cp lib$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sconstraint_solver
+	cp lib$S_pywraprouting.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sconstraint_solver
+	cp lib$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Slinear_solver
+	cp lib$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sgraph
+	cp lib$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Salgorithms
 	$(SED) -i -e 's/\.dll/\.so/' temp/or-tools.$(PORT)/setup.py
 	-rm temp/or-tools.$(PORT)/setup.py-e
 	cd temp/or-tools.$(PORT) && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* data | tar xvm
