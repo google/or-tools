@@ -395,7 +395,6 @@ ifeq ("$(SYSTEM)","win")
 	copy examples\com\google\ortools\graph\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\graph\samples
 	copy examples\com\google\ortools\knapsacksolver\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\knapsacksolver\samples
 	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.java.$(PORT).$(SVNVERSION).zip or-tools.$(PORT)
-	$(WINDOWS_PYTHON_PATH)$Spython dependencies\sources\googlecode-support\scripts\googlecode_upload.py -s "Google OR-Tools, Java 1.7 archive, Windows $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,OpSys-Windows,Featured Google.OrTools.java.$(PORT).$(SVNVERSION).zip -u $(USER) -w $(PASSWORD)
 else
 	mkdir temp/or-tools.$(PORT)/examples
 	mkdir temp/or-tools.$(PORT)/examples/com
@@ -427,6 +426,13 @@ else
 	cp examples/com/google/ortools/graph/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/graph/samples
 	cp examples/com/google/ortools/knapsacksolver/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/knapsacksolver/samples
 	cd temp && tar cvzf ../Google.OrTools.java.$(PORT).$(SVNVERSION).tar.gz or-tools.$(PORT)
-#	python$(UNIX_PYTHON_VERSION) dependencies/sources/googlecode-support/scripts/googlecode_upload.py -s "Google OR-Tools, Java 1.7 archive, $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,$(CODEPORT),Featured Google.OrTools.java.$(PORT).$(SVNVERSION).zip -u $(USER) -w $(PASSWORD)
 endif
 	-$(DELREC) temp
+
+java_upload: java_archive
+ifeq ("$(SYSTEM)","win")
+	$(WINDOWS_PYTHON_PATH)$Spython dependencies\sources\googlecode-support\scripts\googlecode_upload.py -s "Google OR-Tools, Java 1.7 archive, $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,$(CODEPORT),Featured Google.OrTools.java.$(PORT).$(SVNVERSION).zip -u $(USER) -w $(PASSWORD)
+else
+	python$(UNIX_PYTHON_VERSION) dependencies/sources/googlecode-support/scripts/googlecode_upload.py -s "Google OR-Tools, Java 1.7 archive, $(PORT) platform, svn release $(SVNVERSION)" -p or-tools -l Type-Achive,$(CODEPORT),Featured Google.OrTools.java.$(PORT).$(SVNVERSION).tar.gz -u $(USER) -w $(PASSWORD)
+endif
+
