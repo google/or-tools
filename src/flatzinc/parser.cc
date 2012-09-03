@@ -1246,7 +1246,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         }
       }
     }
-    if (all_positive && rhs > 0) {
+    if (all_positive && rhs >= 0) {
       for (int i = 0; i < size; ++i) {
         IntVarSpec* const spec =
             int_variables_[array_variables->a[i]->getIntVar()];
@@ -1374,7 +1374,7 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
         }
       }
     }
-    if (all_positive && rhs > 0) {
+    if (all_positive && rhs >= 0) {
       for (int i = 0; i < size; ++i) {
         IntVarSpec* const spec =
             int_variables_[array_variables->a[i]->getIntVar()];
