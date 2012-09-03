@@ -244,38 +244,65 @@ void ParserState::MarkComputedVariables(CtSpec* const spec,
                                         NodeSet* const computed) {
   const string& id = spec->Id();
   if (id == "global_cardinality") {
-    VLOG(1) << "Marking " << spec->DebugString();
+    VLOG(1) << "  - marking " << spec->DebugString();
     MarkAllVariables(spec->Arg(2), computed);
   }
   if (id == "int_lin_eq" && spec->DefinedArg() == NULL) {
     AstArray* const array_coefficients = spec->Arg(0)->getArray();
     const int size = array_coefficients->a.size();
+    bool todo = true;
     if (size == 0) {
       return;
     }
     if (array_coefficients->a[0]->getInt() == -1) {
       for (int i = 1; i < size; ++i) {
         if (array_coefficients->a[i]->getInt() < 0) {
-          return;
+          todo = false;
+          break;
         }
       }
       // Can mark the first one, this is a hidden sum.
-      VLOG(1) << "Marking " << spec->DebugString();
-      AstArray* const array_variables = spec->Arg(1)->getArray();
-      computed->insert(Copy(array_variables->a[0]));
-      VLOG(1) << "  - " << array_variables->a[0]->DebugString();
+      if (todo) {
+        AstArray* const array_variables = spec->Arg(1)->getArray();
+        computed->insert(Copy(array_variables->a[0]));
+        VLOG(1) << "  - marking " << spec->DebugString()
+                << ": " << array_variables->a[0]->DebugString();
+        return;
+      }
     }
+    todo = true;
     if (array_coefficients->a[0]->getInt() == 1) {
       for (int i = 1; i < size; ++i) {
         if (array_coefficients->a[i]->getInt() > 0) {
-          return;
+          todo = false;
+          break;
         }
       }
-      // Can mark the first one, this is a hidden sum.
-      VLOG(1) << "Marking " << spec->DebugString();
-      AstArray* const array_variables = spec->Arg(1)->getArray();
-      computed->insert(Copy(array_variables->a[0]));
-      VLOG(1) << "  - " << array_variables->a[0]->DebugString();
+      if (todo) {
+        // Can mark the first one, this is a hidden sum.
+        AstArray* const array_variables = spec->Arg(1)->getArray();
+        computed->insert(Copy(array_variables->a[0]));
+        VLOG(1) << "  - marking " << spec->DebugString()
+                << ": " << array_variables->a[0]->DebugString();
+        return;
+      }
+    }
+    todo = true;
+    if (array_coefficients->a[size - 1]->getInt() == 1) {
+      for (int i = 0; i < size - 1; ++i) {
+        if (array_coefficients->a[i]->getInt() > 0) {
+          todo = false;
+          break;
+        }
+      }
+      if (todo) {
+        // Can mark the last one, this is a hidden sum.
+        AstArray* const array_variables = spec->Arg(1)->getArray();
+        computed->insert(Copy(array_variables->a[size - 1]));
+        VLOG(1) << "  - marking " << spec->DebugString()
+                << ": " << array_variables->a[size - 1]->DebugString();
+        return;
+      }
     }
   }
 }
@@ -585,6 +612,7 @@ void ParserState::SortConstraints(NodeSet* const candidates,
 
   CHECK_EQ(index, size - nullified);
 
+  VLOG(1) << "Detecting computing variables";
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
     VLOG(2) << i << " -> " << spec->DebugString();
