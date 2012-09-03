@@ -797,7 +797,11 @@ class BetweenCt : public Constraint {
 
 Constraint* Solver::MakeBetweenCt(IntVar* const v, int64 l, int64 u) {
   CHECK_EQ(this, v->solver());
-  return RevAlloc(new BetweenCt(this, v, l, u));
+  if (v->Min() < l || v->Max() > u) {
+    return RevAlloc(new BetweenCt(this, v, l, u));
+  } else {
+    return MakeTrueConstraint();
+  }
 }
 
 // ----- is_between_cst Constraint -----
@@ -914,9 +918,15 @@ class MemberCt : public Constraint {
 
 Constraint* Solver::MakeMemberCt(IntVar* const var,
                                  const std::vector<int64>& values) {
-  ConstIntArray local_values(values);
-  return RevAlloc(
-      new MemberCt(this, var, local_values.SortedCopyWithoutDuplicates(true)));
+  if (IsIncreasingContiguous(values)) {
+    return MakeBetweenCt(var, values.front(), values.back());
+  } else {
+    ConstIntArray local_values(values);
+    return RevAlloc(
+        new MemberCt(this,
+                     var,
+                     local_values.SortedCopyWithoutDuplicates(true)));
+  }
 }
 
 Constraint* Solver::MakeMemberCt(IntVar* const var,

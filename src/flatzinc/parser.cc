@@ -247,6 +247,17 @@ void ParserState::MarkComputedVariables(CtSpec* const spec,
     VLOG(1) << "  - marking " << spec->DebugString();
     MarkAllVariables(spec->Arg(2), computed);
   }
+  if (id == "maximum_int" &&
+      spec->Arg(0)->isIntVar() &&
+      spec->DefinedArg() == NULL) {
+    computed->insert(Copy(spec->Arg(0)));
+  }
+  if (id == "minimum_int" &&
+      spec->Arg(0)->isIntVar() &&
+      spec->DefinedArg() == NULL) {
+    computed->insert(Copy(spec->Arg(0)));
+  }
+
   if (id == "int_lin_eq" && spec->DefinedArg() == NULL) {
     AstArray* const array_coefficients = spec->Arg(0)->getArray();
     const int size = array_coefficients->a.size();

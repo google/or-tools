@@ -2524,7 +2524,10 @@ void p_global_cardinality_closed(FlatZincModel* const model,
   solver->AddConstraint(ct);
   for (int i = 0; i < size; ++i) {
     Constraint* const ct2 = solver->MakeMemberCt(variables[i], values);
-    VLOG(1) << "    + " << ct2->DebugString();
+    if (ct2 != solver->MakeTrueConstraint()) {
+      VLOG(1) << "    + " << ct2->DebugString();
+      solver->AddConstraint(ct2);
+    }
   }
 }
 
@@ -2592,7 +2595,10 @@ void p_global_cardinality_low_up_closed(FlatZincModel* const model,
   solver->AddConstraint(ct);
   for (int i = 0; i < size; ++i) {
     Constraint* const ct2 = solver->MakeMemberCt(variables[i], values);
-    VLOG(1) << "    + " << ct2->DebugString();
+    if (ct2 != solver->MakeTrueConstraint()) {
+      VLOG(1) << "    + " << ct2->DebugString();
+      solver->AddConstraint(ct2);
+    }
   }
 }
 
