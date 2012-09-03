@@ -1450,6 +1450,34 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       }
     }
   }
+  if (id == "int_div") {
+    if (IsBound(spec->Arg(0)) && IsBound(spec->Arg(1))) {
+      const int64 div = GetBound(spec->Arg(0)) / GetBound(spec->Arg(1));
+      if (spec->Arg(2)->isIntVar()) {
+        IntVarSpec* const var_spec = int_variables_[spec->Arg(2)->getIntVar()];
+        VLOG(1) << "  - presolve:  assign " << var_spec->DebugString()
+                << " to " << div;
+        if (var_spec->MergeBounds(div, div)) {
+          spec->Nullify();
+          return true;
+        }
+      }
+    }
+  }
+  if (id == "int_times") {
+    if (IsBound(spec->Arg(0)) && IsBound(spec->Arg(1))) {
+      const int64 div = GetBound(spec->Arg(0)) * GetBound(spec->Arg(1));
+      if (spec->Arg(2)->isIntVar()) {
+        IntVarSpec* const var_spec = int_variables_[spec->Arg(2)->getIntVar()];
+        VLOG(1) << "  - presolve:  assign " << var_spec->DebugString()
+                << " to " << div;
+        if (var_spec->MergeBounds(div, div)) {
+          spec->Nullify();
+          return true;
+        }
+      }
+    }
+  }
   return false;
 }
 
