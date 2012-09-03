@@ -891,14 +891,259 @@ class BoundedDistribute : public Constraint {
   BoundedDistribute(Solver* const s,
                     const IntVar* const * vars,
                     int vsize,
+                    const std::vector<int64>& values,
                     const std::vector<int64>& card_min,
                     const std::vector<int64>& card_max);
   BoundedDistribute(Solver* const s,
                     const IntVar* const * vars,
                     int vsize,
+                    const std::vector<int>& values,
                     const std::vector<int>& card_min,
                     const std::vector<int>& card_max);
   virtual ~BoundedDistribute() {}
+
+  virtual void Post();
+  virtual void InitialPropagate();
+  void OneBound(int vindex);
+  void OneDomain(int vindex);
+  void CountVar(int card_index);
+  void CardMin(int card_index);
+  void CardMax(int card_index);
+  virtual string DebugString() const;
+  void SetRevCannotContribute(int64 var_index, int64 card_index) {
+    Solver* const s = solver();
+    undecided_.SetToZero(s, var_index, card_index);
+    max_.Decr(s, card_index);
+    if (max_[card_index] < card_min_[card_index]) {
+      solver()->Fail();
+    }
+    if (max_[card_index] == card_min_[card_index]) {
+      CardMax(card_index);
+    }
+  }
+  void SetRevDoContribute(int64 var_index, int64 card_index) {
+    Solver* const s = solver();
+    undecided_.SetToZero(s, var_index, card_index);
+    min_.Incr(s, card_index);
+    if (min_[card_index] > card_max_[card_index]) {
+      solver()->Fail();
+    }
+    if (min_[card_index] == card_max_[card_index]) {
+      CardMin(card_index);
+    }
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_.get(),
+                                               var_size_);
+    visitor->VisitConstIntArrayArgument(ModelVisitor::kMinArgument, card_min_);
+    visitor->VisitConstIntArrayArgument(ModelVisitor::kMaxArgument, card_max_);
+    visitor->EndVisitConstraint(ModelVisitor::kDistribute, this);
+  }
+
+ private:
+  const scoped_array<IntVar*> vars_;
+  const int var_size_;
+  ConstIntArray values_;
+  ConstIntArray card_min_;
+  ConstIntArray card_max_;
+  const int64 card_size_;
+  RevBitMatrix undecided_;
+  NumericalRevArray<int> min_;
+  NumericalRevArray<int> max_;
+  scoped_array<IntVarIterator*> holes_;
+};
+
+BoundedDistribute::BoundedDistribute(Solver* const s,
+                                     const IntVar* const * vars,
+                                     int vsize,
+                                     const std::vector<int64>& values,
+                                     const std::vector<int64>& card_min,
+                                     const std::vector<int64>& card_max)
+    : Constraint(s),
+      vars_(new IntVar*[vsize]),
+      var_size_(vsize),
+      values_(values),
+      card_min_(card_min),
+      card_max_(card_max),
+      card_size_(card_min.size()),
+      undecided_(var_size_, card_size_),
+      min_(card_size_, 0),
+      max_(card_size_, 0),
+      holes_(new IntVarIterator*[var_size_]) {
+  memcpy(vars_.get(), vars, var_size_ * sizeof(*vars));
+  for (int var_index = 0; var_index < var_size_; ++var_index) {
+    holes_[var_index] = vars_[var_index]->MakeHoleIterator(true);
+  }
+}
+
+BoundedDistribute::BoundedDistribute(Solver* const s,
+                                     const IntVar* const * vars,
+                                     int vsize,
+                                     const std::vector<int>& values,
+                                     const std::vector<int>& card_min,
+                                     const std::vector<int>& card_max)
+    : Constraint(s),
+      vars_(new IntVar*[vsize]),
+      var_size_(vsize),
+      values_(values),
+      card_min_(card_min),
+      card_max_(card_max),
+      card_size_(card_min.size()),
+      undecided_(var_size_, card_size_),
+      min_(card_size_, 0),
+      max_(card_size_, 0),
+      holes_(new IntVarIterator*[var_size_]) {
+  memcpy(vars_.get(), vars, var_size_ * sizeof(*vars));
+  for (int var_index = 0; var_index < var_size_; ++var_index) {
+    holes_[var_index] = vars_[var_index]->MakeHoleIterator(true);
+  }
+}
+
+string BoundedDistribute::DebugString() const {
+  return StringPrintf(
+      "BoundedDistribute([%s], values = [%s], card_min = [%s], card_max = [%s]",
+      DebugStringArray(vars_.get(), var_size_, ", ").c_str(),
+      values_.DebugString().c_str(),
+      card_min_.DebugString().c_str(),
+      card_max_.DebugString().c_str());
+}
+
+void BoundedDistribute::Post() {
+  for (int var_index = 0; var_index < var_size_; ++var_index) {
+    IntVar* const var = vars_[var_index];
+    if (!var->Bound()) {
+      Demon* d = MakeConstraintDemon1(solver(),
+                                      this,
+                                      &BoundedDistribute::OneBound,
+                                      "OneBound",
+                                      var_index);
+      var->WhenBound(d);
+      d = MakeConstraintDemon1(solver(),
+                               this,
+                               &BoundedDistribute::OneDomain,
+                               "OneDomain",
+                               var_index);
+      var->WhenDomain(d);
+    }
+  }
+}
+
+void BoundedDistribute::InitialPropagate() {
+  Solver* const s = solver();
+
+  int64 sum_card_min = 0;
+  for (int i = 0; i < card_size_; ++i) {
+    if (card_max_[i] < card_min_[i]) {
+      solver()->Fail();
+    }
+    sum_card_min += card_min_[i];
+  }
+  if (sum_card_min > var_size_) {
+    s->Fail();
+  }
+  if (sum_card_min == var_size_) {
+    for (int i = 0; i < var_size_; ++i) {
+      vars_[i]->SetValues(values_.RawVector());
+    }
+  }
+
+  for (int card_index = 0; card_index < card_size_; ++card_index) {
+    const int64 value = values_[card_index];
+    int min = 0;
+    int max = 0;
+    for (int i = 0; i < var_size_; ++i) {
+      IntVar* const var = vars_[i];
+      if (var->Bound()) {
+        if (var->Min() == value) {
+          min++;
+          max++;
+        }
+      } else if (var->Contains(value)) {
+        max++;
+        undecided_.SetToOne(s, i, card_index);
+      }
+    }
+    min_.SetValue(s, card_index, min);
+    max_.SetValue(s, card_index, max);
+    CountVar(card_index);
+  }
+}
+
+void BoundedDistribute::OneBound(int index) {
+  IntVar* const var = vars_[index];
+  const int64 var_min = var->Min();
+  for (int card_index = 0; card_index < card_size_; ++card_index) {
+    if (undecided_.IsSet(index, card_index)) {
+      if (var_min == values_[card_index]) {
+        SetRevDoContribute(index, card_index);
+      } else {
+        SetRevCannotContribute(index, card_index);
+      }
+    }
+  }
+}
+
+void BoundedDistribute::OneDomain(int index) {
+  IntVar* const var = vars_[index];
+  Solver* const s = solver();
+  for (int card_index = 0; card_index < card_size_; ++card_index) {
+    if (undecided_.IsSet(index, card_index)) {
+      if (!var->Contains(values_[card_index])) {
+        SetRevCannotContribute(index, card_index);
+      }
+    }
+  }
+}
+
+void BoundedDistribute::CountVar(int card_index) {
+  const int64 stored_min = min_[card_index];
+  const int64 stored_max = max_[card_index];
+  if (card_min_[card_index] > stored_max ||
+      card_max_[card_index] < stored_min) {
+    solver()->Fail();
+  }
+  if (card_min_[card_index] == stored_max) {
+    CardMax(card_index);
+  }
+  if (card_max_[card_index] == stored_min) {
+    CardMin(card_index);
+  }
+}
+
+void BoundedDistribute::CardMin(int card_index) {
+  for (int var_index = 0; var_index < var_size_; ++var_index) {
+    if (undecided_.IsSet(var_index, card_index)) {
+      vars_[var_index]->RemoveValue(values_[card_index]);
+    }
+  }
+}
+
+void BoundedDistribute::CardMax(int card_index) {
+  for (int var_index = 0; var_index < var_size_; ++var_index) {
+    if (undecided_.IsSet(var_index, card_index)) {
+      vars_[var_index]->SetValue(values_[card_index]);
+    }
+  }
+}
+
+// ----- BoundedFastDistribute -----
+
+class BoundedFastDistribute : public Constraint {
+ public:
+  BoundedFastDistribute(Solver* const s,
+                    const IntVar* const * vars,
+                    int vsize,
+                    const std::vector<int64>& card_min,
+                    const std::vector<int64>& card_max);
+  BoundedFastDistribute(Solver* const s,
+                    const IntVar* const * vars,
+                    int vsize,
+                    const std::vector<int>& card_min,
+                    const std::vector<int>& card_max);
+  virtual ~BoundedFastDistribute() {}
 
   virtual void Post();
   virtual void InitialPropagate();
@@ -953,7 +1198,7 @@ class BoundedDistribute : public Constraint {
   scoped_array<IntVarIterator*> holes_;
 };
 
-BoundedDistribute::BoundedDistribute(Solver* const s,
+BoundedFastDistribute::BoundedFastDistribute(Solver* const s,
                                      const IntVar* const * vars,
                                      int vsize,
                                      const std::vector<int64>& card_min,
@@ -974,7 +1219,7 @@ BoundedDistribute::BoundedDistribute(Solver* const s,
   }
 }
 
-BoundedDistribute::BoundedDistribute(Solver* const s,
+BoundedFastDistribute::BoundedFastDistribute(Solver* const s,
                                      const IntVar* const * vars,
                                      int vsize,
                                      const std::vector<int>& card_min,
@@ -995,27 +1240,27 @@ BoundedDistribute::BoundedDistribute(Solver* const s,
   }
 }
 
-string BoundedDistribute::DebugString() const {
+string BoundedFastDistribute::DebugString() const {
   return StringPrintf(
-      "BoundedDistribute([%s], card_min = [%s], card_max = [%s]",
+      "BoundedFastDistribute([%s], card_min = [%s], card_max = [%s]",
       DebugStringArray(vars_.get(), var_size_, ", ").c_str(),
       card_min_.DebugString().c_str(),
       card_max_.DebugString().c_str());
 }
 
-void BoundedDistribute::Post() {
+void BoundedFastDistribute::Post() {
   for (int var_index = 0; var_index < var_size_; ++var_index) {
     IntVar* const var = vars_[var_index];
     if (!var->Bound()) {
       Demon* d = MakeConstraintDemon1(solver(),
                                       this,
-                                      &BoundedDistribute::OneBound,
+                                      &BoundedFastDistribute::OneBound,
                                       "OneBound",
                                       var_index);
       var->WhenBound(d);
       d = MakeConstraintDemon1(solver(),
                                this,
-                               &BoundedDistribute::OneDomain,
+                               &BoundedFastDistribute::OneDomain,
                                "OneDomain",
                                var_index);
       var->WhenDomain(d);
@@ -1023,7 +1268,7 @@ void BoundedDistribute::Post() {
   }
 }
 
-void BoundedDistribute::InitialPropagate() {
+void BoundedFastDistribute::InitialPropagate() {
   Solver* const s = solver();
 
   int64 sum_card_min = 0;
@@ -1063,7 +1308,7 @@ void BoundedDistribute::InitialPropagate() {
   }
 }
 
-void BoundedDistribute::OneBound(int index) {
+void BoundedFastDistribute::OneBound(int index) {
   IntVar* const var = vars_[index];
   const int64 var_min = var->Min();
   for (int card_index = 0; card_index < card_size_; ++card_index) {
@@ -1077,7 +1322,7 @@ void BoundedDistribute::OneBound(int index) {
   }
 }
 
-void BoundedDistribute::OneDomain(int index) {
+void BoundedFastDistribute::OneDomain(int index) {
   IntVar* const var = vars_[index];
   const int64 oldmin = var->OldMin();
   const int64 oldmax = var->OldMax();
@@ -1108,7 +1353,7 @@ void BoundedDistribute::OneDomain(int index) {
   }
 }
 
-void BoundedDistribute::CountVar(int card_index) {
+void BoundedFastDistribute::CountVar(int card_index) {
   const int64 stored_min = min_[card_index];
   const int64 stored_max = max_[card_index];
   if (card_min_[card_index] > stored_max ||
@@ -1123,7 +1368,7 @@ void BoundedDistribute::CountVar(int card_index) {
   }
 }
 
-void BoundedDistribute::CardMin(int card_index) {
+void BoundedFastDistribute::CardMin(int card_index) {
   for (int var_index = 0; var_index < var_size_; ++var_index) {
     if (undecided_.IsSet(var_index, card_index)) {
       vars_[var_index]->RemoveValue(card_index);
@@ -1131,7 +1376,7 @@ void BoundedDistribute::CardMin(int card_index) {
   }
 }
 
-void BoundedDistribute::CardMax(int card_index) {
+void BoundedFastDistribute::CardMax(int card_index) {
   for (int var_index = 0; var_index < var_size_; ++var_index) {
     if (undecided_.IsSet(var_index, card_index)) {
       vars_[var_index]->SetValue(card_index);
@@ -1267,27 +1512,53 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
     CHECK_EQ(this, (*it)->solver());
   }
   return RevAlloc(
-      new BoundedDistribute(this, vars.data(), vars.size(), mins, maxes));
+      new BoundedFastDistribute(this, vars.data(), vars.size(), mins, maxes));
 }
 
 Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    const std::vector<int64>& card_min,
                                    const std::vector<int64>& card_max) {
   CHECK_NE(vars.size(), 0);
-  return RevAlloc(new BoundedDistribute(this,
-                                        vars.data(),
-                                        vars.size(),
-                                        card_min,
-                                        card_max));
+  return RevAlloc(new BoundedFastDistribute(this,
+                                            vars.data(),
+                                            vars.size(),
+                                            card_min,
+                                            card_max));
 }
 
 Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    const std::vector<int>& card_min,
                                    const std::vector<int>& card_max) {
   CHECK_NE(vars.size(), 0);
+  return RevAlloc(new BoundedFastDistribute(this,
+                                            vars.data(),
+                                            vars.size(),
+                                            card_min,
+                                            card_max));
+}
+
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   const std::vector<int64>& values,
+                                   const std::vector<int64>& card_min,
+                                   const std::vector<int64>& card_max) {
+  CHECK_NE(vars.size(), 0);
   return RevAlloc(new BoundedDistribute(this,
                                         vars.data(),
                                         vars.size(),
+                                        values,
+                                        card_min,
+                                        card_max));
+}
+
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   const std::vector<int>& values,
+                                   const std::vector<int>& card_min,
+                                   const std::vector<int>& card_max) {
+  CHECK_NE(vars.size(), 0);
+  return RevAlloc(new BoundedDistribute(this,
+                                        vars.data(),
+                                        vars.size(),
+                                        values,
                                         card_min,
                                         card_max));
 }

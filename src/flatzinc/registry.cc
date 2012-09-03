@@ -2498,6 +2498,104 @@ void p_global_cardinality(FlatZincModel* const model, CtSpec* const spec) {
   solver->AddConstraint(ct);
 }
 
+void p_global_cardinality_closed(FlatZincModel* const model,
+                                 CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+  }
+  AstArray* const array_coefficients = spec->Arg(1)->getArray();
+  const int vsize = array_coefficients->a.size();
+  std::vector<int64> values(vsize);
+  for (int i = 0; i < vsize; ++i) {
+    values[i] = array_coefficients->a[i]->getInt();
+  }
+  AstArray* const array_cards = spec->Arg(2)->getArray();
+  const int csize = array_cards->a.size();
+  std::vector<IntVar*> cards(csize);
+  for (int i = 0; i < csize; ++i) {
+    cards[i] = model->GetIntExpr(array_cards->a[i])->Var();
+  }
+  Constraint* const ct = solver->MakeDistribute(variables, values, cards);
+  VLOG(1) << "  - posted " << ct->DebugString();
+  solver->AddConstraint(ct);
+  for (int i = 0; i < size; ++i) {
+    Constraint* const ct2 = solver->MakeMemberCt(variables[i], values);
+    VLOG(1) << "    + " << ct2->DebugString();
+  }
+}
+
+void p_global_cardinality_low_up(FlatZincModel* const model,
+                                 CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+  }
+  AstArray* const array_coefficients = spec->Arg(1)->getArray();
+  const int vsize = array_coefficients->a.size();
+  std::vector<int64> values(vsize);
+  for (int i = 0; i < vsize; ++i) {
+    values[i] = array_coefficients->a[i]->getInt();
+  }
+  AstArray* const array_low = spec->Arg(2)->getArray();
+  const int lsize = array_low->a.size();
+  std::vector<int64> low(lsize);
+  for (int i = 0; i < lsize; ++i) {
+    low[i] = array_low->a[i]->getInt();
+  }
+  AstArray* const array_up = spec->Arg(2)->getArray();
+  const int usize = array_up->a.size();
+  std::vector<int64> up(usize);
+  for (int i = 0; i < usize; ++i) {
+    up[i] = array_up->a[i]->getInt();
+  }
+  Constraint* const ct = solver->MakeDistribute(variables, values, low, up);
+  VLOG(1) << "  - posted " << ct->DebugString();
+  solver->AddConstraint(ct);
+}
+
+void p_global_cardinality_low_up_closed(FlatZincModel* const model,
+                                        CtSpec* const spec) {
+  Solver* const solver = model->solver();
+  AstArray* const array_variables = spec->Arg(0)->getArray();
+  const int size = array_variables->a.size();
+  std::vector<IntVar*> variables(size);
+  for (int i = 0; i < size; ++i) {
+    variables[i] = model->GetIntExpr(array_variables->a[i])->Var();
+  }
+  AstArray* const array_coefficients = spec->Arg(1)->getArray();
+  const int vsize = array_coefficients->a.size();
+  std::vector<int64> values(vsize);
+  for (int i = 0; i < vsize; ++i) {
+    values[i] = array_coefficients->a[i]->getInt();
+  }
+  AstArray* const array_low = spec->Arg(2)->getArray();
+  const int lsize = array_low->a.size();
+  std::vector<int64> low(lsize);
+  for (int i = 0; i < lsize; ++i) {
+    low[i] = array_low->a[i]->getInt();
+  }
+  AstArray* const array_up = spec->Arg(2)->getArray();
+  const int usize = array_up->a.size();
+  std::vector<int64> up(usize);
+  for (int i = 0; i < usize; ++i) {
+    up[i] = array_up->a[i]->getInt();
+  }
+  Constraint* const ct = solver->MakeDistribute(variables, values, low, up);
+  VLOG(1) << "  - posted " << ct->DebugString();
+  solver->AddConstraint(ct);
+  for (int i = 0; i < size; ++i) {
+    Constraint* const ct2 = solver->MakeMemberCt(variables[i], values);
+    VLOG(1) << "    + " << ct2->DebugString();
+  }
+}
+
 void p_global_cardinality_old(FlatZincModel* const model, CtSpec* const spec) {
   Solver* const solver = model->solver();
   AstArray* const array_variables = spec->Arg(0)->getArray();
@@ -2782,6 +2880,12 @@ class IntBuilder {
     global_model_builder.Register("count_eq", &p_count);
     global_model_builder.Register("count_reif", &p_count_reif);
     global_model_builder.Register("global_cardinality", &p_global_cardinality);
+    global_model_builder.Register("global_cardinality_closed",
+                                  &p_global_cardinality_closed);
+    global_model_builder.Register("global_cardinality_low_up",
+                                  &p_global_cardinality_low_up);
+    global_model_builder.Register("global_cardinality_low_up_closed",
+                                  &p_global_cardinality_low_up_closed);
     global_model_builder.Register("global_cardinality_old",
                                   &p_global_cardinality_old);
     global_model_builder.Register("table_int", &p_table_int);

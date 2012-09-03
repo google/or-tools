@@ -133,6 +133,10 @@ class ConstIntArray {
     return data_->data();
   }
 
+  const std::vector<int64>& RawVector() const {
+    return *data_.get();
+  }
+
   // Check the status of a given info bit. It will scan the array on demand.
   // This is not valid after Release() has been called.
   bool HasProperty(Property info);

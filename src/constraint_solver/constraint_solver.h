@@ -1572,6 +1572,20 @@ class Solver {
   Constraint* MakeDistribute(const std::vector<IntVar*>& vars,
                              const std::vector<int>& card_min,
                              const std::vector<int>& card_max);
+  // Aggregated version of count with bounded cardinalities:
+  // forall j in 0 .. card_size - 1:
+  //    card_min[j] <= |{i | v[i] == values[j]}| <= card_max[j]
+  Constraint* MakeDistribute(const std::vector<IntVar*>& vars,
+                             const std::vector<int64>& values,
+                             const std::vector<int64>& card_min,
+                             const std::vector<int64>& card_max);
+  // Aggregated version of count with bounded cardinalities:
+  // forall j in 0 .. card_size - 1:
+  //    card_min[j] <= |{i | v[i] == values[j]}| <= card_max[j]
+  Constraint* MakeDistribute(const std::vector<IntVar*>& vars,
+                             const std::vector<int>& values,
+                             const std::vector<int>& card_min,
+                             const std::vector<int>& card_max);
 
   // Deviation constraint:
   // sum_i |n * vars[i] - total_sum| <= deviation_var and
