@@ -2334,7 +2334,7 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
           new_max = CapAdd(vars[i]->Max(), new_max);
         }
       }
-      const bool all_booleans = AreAllBooleans(vars.data(), vars.size());
+      const bool all_booleans = AreAllBooleans(vars);
 
       const string name = all_booleans ?
           StringPrintf("BooleanSum([%s])", NameVector(vars, ", ").c_str()) :
@@ -2369,7 +2369,7 @@ IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
     if (cache != NULL) {
       return cache->Var();
     } else {
-      if (AreAllBooleans(vars.data(), vars.size())) {
+      if (AreAllBooleans(vars)) {
         IntVar* const new_var = MakeBoolVar();
         AddConstraint(RevAlloc(new ArrayBoolAndEq(this, vars, new_var)));
         model_cache_->InsertVarArrayExpression(
@@ -2406,7 +2406,7 @@ IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
     if (cache != NULL) {
       return cache->Var();
     } else {
-      if (AreAllBooleans(vars.data(), vars.size())) {
+      if (AreAllBooleans(vars)) {
         IntVar* const new_var = MakeBoolVar();
         AddConstraint(RevAlloc(new ArrayBoolOrEq(this, vars, new_var)));
         model_cache_->InsertVarArrayExpression(
@@ -2433,7 +2433,7 @@ Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
                                     IntVar* const min_var) {
   const int size = vars.size();
   if (size > 2) {
-    if (AreAllBooleans(vars.data(), vars.size())) {
+    if (AreAllBooleans(vars)) {
       return RevAlloc(new ArrayBoolAndEq(this, vars, min_var));
     } else {
       return RevAlloc(new MinConstraint(this, vars, min_var));
@@ -2451,7 +2451,7 @@ Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
                                     IntVar* const max_var) {
   const int size = vars.size();
   if (size > 2) {
-    if (AreAllBooleans(vars.data(), vars.size())) {
+    if (AreAllBooleans(vars)) {
       return RevAlloc(new ArrayBoolOrEq(this, vars, max_var));
     } else {
       return RevAlloc(new MaxConstraint(this, vars, max_var));
@@ -2467,7 +2467,7 @@ Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
 
 Constraint* Solver::MakeSumLessOrEqual(const std::vector<IntVar*>& vars, int64 cst) {
   const int size = vars.size();
-  if (cst == 1LL && AreAllBooleans(vars.data(), size) && size > 2) {
+  if (cst == 1LL && AreAllBooleans(vars) && size > 2) {
     return RevAlloc(new SumBooleanLessOrEqualToOne(this, vars.data(), size));
   } else {
     return MakeLessOrEqual(MakeSum(vars), cst);
@@ -2477,7 +2477,7 @@ Constraint* Solver::MakeSumLessOrEqual(const std::vector<IntVar*>& vars, int64 c
 Constraint* Solver::MakeSumGreaterOrEqual(const std::vector<IntVar*>& vars,
                                           int64 cst) {
   const int size = vars.size();
-  if (cst == 1LL && AreAllBooleans(vars.data(), size) && size > 2) {
+  if (cst == 1LL && AreAllBooleans(vars) && size > 2) {
     return RevAlloc(new SumBooleanGreaterOrEqualToOne(this, vars.data(), size));
   } else {
     return MakeGreaterOrEqual(MakeSum(vars), cst);
@@ -2489,7 +2489,7 @@ Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst)
   if (size == 0) {
     return cst == 0 ? MakeTrueConstraint() : MakeFalseConstraint();
   }
-  if (AreAllBooleans(vars.data(), size) && size > 2) {
+  if (AreAllBooleans(vars) && size > 2) {
     if (cst == 1) {
       return RevAlloc(new SumBooleanEqualToOne(this, vars.data(), size));
     } else if (cst < 0 || cst > size) {
@@ -2520,7 +2520,7 @@ Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
   if (size == 0) {
     return MakeEquality(var, Zero());
   }
-  if (AreAllBooleans(vars.data(), size) && size > 2) {
+  if (AreAllBooleans(vars) && size > 2) {
     return RevAlloc(new SumBooleanEqualToVar(this, vars.data(), size, var));
   } else if (size == 0) {
     return MakeEquality(var, Zero());
@@ -3259,7 +3259,7 @@ template<class T> IntExpr* MakeScalProdFct(Solver* solver,
   if (size == 1) {
     return solver->MakeProd(vars[0], coefs[0]);
   }
-  if (AreAllBooleans(vars.data(), size) && size > 2) {
+  if (AreAllBooleans(vars) && size > 2) {
     if (AreAllPositive<T>(coefs.data(), size)) {
       return solver->RegisterIntExpr(solver->RevAlloc(
           new PositiveBooleanScalProd(

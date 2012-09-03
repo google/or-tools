@@ -1419,7 +1419,6 @@ class SetAllToZero : public Constraint {
   scoped_array<IntVar*> vars_;
   const int size_;
 };
-
 }  // namespace
 
 // ----- Factory -----
@@ -1519,6 +1518,7 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    const std::vector<int64>& card_min,
                                    const std::vector<int64>& card_max) {
   CHECK_NE(vars.size(), 0);
+  CHECK_EQ(card_min.size(), card_max.size());
   return RevAlloc(new BoundedFastDistribute(this,
                                             vars.data(),
                                             vars.size(),
@@ -1530,6 +1530,7 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    const std::vector<int>& card_min,
                                    const std::vector<int>& card_max) {
   CHECK_NE(vars.size(), 0);
+  CHECK_EQ(card_min.size(), card_max.size());
   return RevAlloc(new BoundedFastDistribute(this,
                                             vars.data(),
                                             vars.size(),
@@ -1542,12 +1543,22 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    const std::vector<int64>& card_min,
                                    const std::vector<int64>& card_max) {
   CHECK_NE(vars.size(), 0);
-  return RevAlloc(new BoundedDistribute(this,
-                                        vars.data(),
-                                        vars.size(),
-                                        values,
-                                        card_min,
-                                        card_max));
+  CHECK_EQ(card_min.size(), values.size());
+  CHECK_EQ(card_min.size(), card_max.size());
+  if (AreAllOnes(card_min) &&
+      AreAllOnes(card_max) &&
+      values.size() == vars.size() &&
+      IsIncreasingContiguous(values) &&
+      IsArrayInRange(vars, values.front(), values.back())) {
+    return MakeAllDifferent(vars);
+  } else {
+    return RevAlloc(new BoundedDistribute(this,
+                                          vars.data(),
+                                          vars.size(),
+                                          values,
+                                          card_min,
+                                          card_max));
+  }
 }
 
 Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
@@ -1555,11 +1566,21 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    const std::vector<int>& card_min,
                                    const std::vector<int>& card_max) {
   CHECK_NE(vars.size(), 0);
-  return RevAlloc(new BoundedDistribute(this,
-                                        vars.data(),
-                                        vars.size(),
-                                        values,
-                                        card_min,
-                                        card_max));
+  CHECK_EQ(card_min.size(), values.size());
+  CHECK_EQ(card_min.size(), card_max.size());
+  if (AreAllOnes(card_min) &&
+      AreAllOnes(card_max) &&
+      values.size() == vars.size() &&
+      IsIncreasingContiguous(values) &&
+      IsArrayInRange(vars, values.front(), values.back())) {
+    return MakeAllDifferent(vars);
+  } else {
+    return RevAlloc(new BoundedDistribute(this,
+                                          vars.data(),
+                                          vars.size(),
+                                          values,
+                                          card_min,
+                                          card_max));
+  }
 }
 }  // namespace operations_research

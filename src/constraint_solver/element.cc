@@ -1415,17 +1415,6 @@ class IntExprIndexOfCt : public Constraint {
   std::vector<Demon*> demons_;
   IntVarIterator* const index_iterator_;
 };
-
-// ----- Misc -----
-
-bool AreAllBound(const std::vector<IntVar*>& vars) {
-  for (int i = 0; i < vars.size(); ++i) {
-    if (!vars[i]->Bound()) {
-      return false;
-    }
-  }
-  return true;
-}
 }  // namespace
 
 IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const index) {
@@ -1502,13 +1491,15 @@ Constraint* Solver::MakeElementEquality(const std::vector<IntVar*>& vars,
 Constraint* Solver::MakeElementEquality(const std::vector<IntVar*>& vars,
                                         IntVar* const index,
                                         int64 target) {
-  // if (AreAllBound(vars)) {
-  //   std::vector<int64> values(vars.size());
-  //   for (int i = 0; i < vars.size(); ++i) {
-  //     values[i] = vars[i]->Value();
-  //   }
-  //   return MakeElementEquality(values, index, target);
-  // }
+  if (AreAllBound(vars)) {
+    std::vector<int> valid_indices;
+    for (int i = 0; i < vars.size(); ++i) {
+      if (vars[i]->Value() == target) {;
+        valid_indices.push_back(i);
+      }
+    }
+    return MakeMemberCt(index, valid_indices);
+  }
   return RevAlloc(new IntExprArrayElementCstCt(this, vars, index, target));
 }
 

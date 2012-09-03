@@ -88,7 +88,8 @@ IntVar::IntVar(Solver* const s, const string& name) : IntExpr(s) {
 }
 
 namespace {
-int64* NewUniqueSortedArray(const int* const values, int* size) {
+template <class T> int64* NewUniqueSortedArray(const T* const values,
+                                               int* size) {
   int64* new_array = new int64[*size];
   for (int i = 0; i < *size; ++i) {
     new_array[i] = values[i];
@@ -117,34 +118,7 @@ int64* NewUniqueSortedArray(const int* const values, int* size) {
   return new_array;
 }
 
-int64* NewUniqueSortedArray(const int64* const values, int* size) {
-  int64* new_array = new int64[*size];
-  memcpy(new_array, values, (*size) * sizeof(*values));
-  std::sort(new_array, new_array + (*size));
-  int non_unique = 0;
-  for (int i = 0; i < (*size) - 1; ++i) {
-    if (new_array[i] == new_array[i + 1]) {
-      non_unique++;
-    }
-  }
-  if (non_unique > 0) {
-    scoped_array<int64> sorted(new_array);
-    DCHECK_GT(*size, 0);
-    new_array = new int64[(*size) - non_unique];
-    new_array[0] = sorted[0];
-    int pos = 1;
-    for (int i = 1; i < (*size); ++i) {
-      if (sorted[i] != sorted[i - 1]) {
-        new_array[pos++] = sorted[i];
-      }
-    }
-    DCHECK_EQ((*size) - non_unique, pos);
-    *size = pos;
-  }
-  return new_array;
-}
-
-bool IsArrayActuallySorted(const int64* const values, int size) {
+template <class T> bool IsArrayActuallySorted(const T* const values, int size) {
   for (int i = 0; i < size - 1; ++i) {
     if (values[i + 1] < values[i]) {
       return false;

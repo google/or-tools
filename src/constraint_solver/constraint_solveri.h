@@ -2106,6 +2106,58 @@ class RevPartialSequence {
   const int size_;
   scoped_array<int> position_;  // Reverse mapping.
 };
+
+// ---------- Helpers ----------
+
+template<class T> bool AreAllOnes(const std::vector<T> values) {
+  for (int i = 0; i < values.size(); ++i) {
+    if (values[i] != 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <class T> bool IsIncreasingContiguous(const std::vector<T>& values) {
+  for (int i = 0; i < values.size() - 1; ++i) {
+    if (values[i + 1] != values[i] + 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <class T> bool IsArrayInRange(const std::vector<IntVar*>& vars,
+                                       T range_min, T range_max) {
+  for (int i = 0; i < vars.size(); ++i) {
+    if (vars[i]->Min() < range_min || vars[i]->Max() > range_max) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline bool AreAllBound(const std::vector<IntVar*>& vars) {
+  for (int i = 0; i < vars.size(); ++i) {
+    if (!vars[i]->Bound()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline bool AreAllBooleans(const std::vector<IntVar*>& vars) {
+  for (int i = 0; i < vars.size(); ++i) {
+    const IntVar* var = vars[i];
+    if (var->Min() < 0 || var->Max() > 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
