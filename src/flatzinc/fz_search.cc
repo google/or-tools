@@ -481,6 +481,8 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
       DefaultPhaseParameters::SELECT_MIN_IMPACT;
   parameters.random_seed = p.random_seed;
 
+  hash_set<IntVar*> added;
+
   VLOG(1) << "Create decision builders";
   if (has_solve_annotations) {
     CHECK_NOTNULL(solve_annotations_);
@@ -508,8 +510,12 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
         std::vector<IntVar*> int_vars;
         for (int i = 0; i < vars->a.size(); ++i) {
           if (vars->a[i]->isIntVar()) {
-            int_vars.push_back(
-                integer_variables_[vars->a[i]->getIntVar()]->Var());
+            IntVar* const to_add =
+                integer_variables_[vars->a[i]->getIntVar()]->Var();
+            if (!ContainsKey(added, to_add)) {
+              int_vars.push_back(to_add);
+              added.insert(to_add);
+            }
           }
         }
         if (p.free_search) {
@@ -567,8 +573,12 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
           std::vector<IntVar*> bool_vars;
           for (int i = 0; i < vars->a.size(); ++i) {
             if (vars->a[i]->isBoolVar()) {
-              bool_vars.push_back(
-                  boolean_variables_[vars->a[i]->getBoolVar()]->Var());
+              IntVar* const to_add =
+                  boolean_variables_[vars->a[i]->getBoolVar()]->Var();
+              if (!ContainsKey(added, to_add)) {
+                bool_vars.push_back(to_add);
+                added.insert(to_add);
+              }
             }
           }
           if (p.free_search) {
