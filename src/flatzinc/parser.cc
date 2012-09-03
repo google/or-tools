@@ -1236,14 +1236,14 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       if (array_coefficients->a[i]->getInt() < 0) {
         all_positive = false;
         break;
-        IntVarSpec* const spec =
-            int_variables_[array_variables->a[i]->getIntVar()];
-        if (!spec->HasDomain() ||
-            !spec->Domain()->interval ||
-            spec->Domain()->imin < 0) {
-          all_positive = false;
-          break;
-        }
+      }
+      IntVarSpec* const spec =
+          int_variables_[array_variables->a[i]->getIntVar()];
+      if (!spec->HasDomain() ||
+          !spec->Domain()->interval ||
+          spec->Domain()->imin < 0) {
+        all_positive = false;
+        break;
       }
     }
     if (all_positive && rhs >= 0) {
@@ -1364,14 +1364,14 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       if (array_coefficients->a[i]->getInt() < 0) {
         all_positive = false;
         break;
-        IntVarSpec* const spec =
-            int_variables_[array_variables->a[i]->getIntVar()];
-        if (!spec->HasDomain() ||
-            !spec->Domain()->interval ||
-            spec->Domain()->imin < 0) {
-          all_positive = false;
-          break;
-        }
+      }
+      IntVarSpec* const spec =
+          int_variables_[array_variables->a[i]->getIntVar()];
+      if (!spec->HasDomain() ||
+          !spec->Domain()->interval ||
+          spec->Domain()->imin < 0) {
+        all_positive = false;
+        break;
       }
     }
     if (all_positive && rhs >= 0) {
