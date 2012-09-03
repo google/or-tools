@@ -265,6 +265,18 @@ void ParserState::MarkComputedVariables(CtSpec* const spec,
       computed->insert(Copy(array_variables->a[0]));
       VLOG(1) << "  - " << array_variables->a[0]->DebugString();
     }
+    if (array_coefficients->a[0]->getInt() == 1) {
+      for (int i = 1; i < size; ++i) {
+        if (array_coefficients->a[i]->getInt() > 0) {
+          return;
+        }
+      }
+      // Can mark the first one, this is a hidden sum.
+      VLOG(1) << "Marking " << spec->DebugString();
+      AstArray* const array_variables = spec->Arg(1)->getArray();
+      computed->insert(Copy(array_variables->a[0]));
+      VLOG(1) << "  - " << array_variables->a[0]->DebugString();
+    }
   }
 }
 
@@ -1189,6 +1201,39 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       spec->SetId("int_lin_ge");
       return true;
     }
+    // Check for all positive to do bound propagation.
+    bool all_positive = true;
+    AstArray* const array_variables = spec->Arg(1)->getArray();
+    for (int i = 0; i < size; ++i) {
+      if (array_coefficients->a[i]->getInt() < 0) {
+        all_positive = false;
+        break;
+        IntVarSpec* const spec =
+            int_variables_[array_variables->a[i]->getIntVar()];
+        if (!spec->HasDomain() ||
+            !spec->Domain()->interval ||
+            spec->Domain()->imin < 0) {
+          all_positive = false;
+          break;
+        }
+      }
+    }
+    if (all_positive && rhs > 0) {
+      for (int i = 0; i < size; ++i) {
+        IntVarSpec* const spec =
+            int_variables_[array_variables->a[i]->getIntVar()];
+        const int64 vmax = spec->Domain()->imax;
+        const int64 vcoeff = array_coefficients->a[i]->getInt();
+        if (vcoeff > 0) {
+          const int64 bound = rhs / vcoeff;
+          if (vmax > bound) {
+            VLOG(1) << "  - presolve:  merge " << spec->DebugString()
+                    << " with 0.." << bound;
+            spec->MergeBounds(0, bound);
+          }
+        }
+      }
+    }
   }
   if (id == "int_lin_le_reif") {
     AstArray* const array_coefficients = spec->Arg(0)->getArray();
@@ -1283,6 +1328,39 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
       }
       spec->Arg(2)->setInt(-spec->Arg(2)->getInt());
       return true;
+    }
+    // Check for all positive to do bound propagation.
+    bool all_positive = true;
+    AstArray* const array_variables = spec->Arg(1)->getArray();
+    for (int i = 0; i < size; ++i) {
+      if (array_coefficients->a[i]->getInt() < 0) {
+        all_positive = false;
+        break;
+        IntVarSpec* const spec =
+            int_variables_[array_variables->a[i]->getIntVar()];
+        if (!spec->HasDomain() ||
+            !spec->Domain()->interval ||
+            spec->Domain()->imin < 0) {
+          all_positive = false;
+          break;
+        }
+      }
+    }
+    if (all_positive && rhs > 0) {
+      for (int i = 0; i < size; ++i) {
+        IntVarSpec* const spec =
+            int_variables_[array_variables->a[i]->getIntVar()];
+        const int64 vmax = spec->Domain()->imax;
+        const int64 vcoeff = array_coefficients->a[i]->getInt();
+        if (vcoeff > 0) {
+          const int64 bound = rhs / vcoeff;
+          if (vmax > bound) {
+            VLOG(1) << "  - presolve:  merge " << spec->DebugString()
+                    << " with 0.." << bound;
+            spec->MergeBounds(0, bound);
+          }
+        }
+      }
     }
   }
   if (id == "int_lin_eq_reif") {
