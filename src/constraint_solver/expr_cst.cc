@@ -422,9 +422,15 @@ Constraint* Solver::MakeIsEqualCstCt(IntExpr* const var,
   CHECK_EQ(this, var->solver());
   CHECK_EQ(this, boolvar->solver());
   if (value == var->Min()) {
+    if (var->Max() - var->Min() == 1) {
+      return MakeEquality(MakeDifference(value + 1, var), boolvar);
+    }
     return MakeIsLessOrEqualCstCt(var, value, boolvar);
   }
   if (value == var->Max()) {
+    if (var->Max() - var->Min() == 1) {
+      return MakeEquality(MakeSum(var, -value + 1), boolvar);
+    }
     return MakeIsGreaterOrEqualCstCt(var, value, boolvar);
   }
   if (boolvar->Bound()) {
