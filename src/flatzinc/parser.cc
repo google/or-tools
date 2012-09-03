@@ -612,7 +612,7 @@ void ParserState::SortConstraints(NodeSet* const candidates,
 
   CHECK_EQ(index, size - nullified);
 
-  VLOG(1) << "Detecting computing variables";
+  VLOG(1) << "Detecting computed variables";
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
     VLOG(2) << i << " -> " << spec->DebugString();
