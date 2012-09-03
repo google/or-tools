@@ -1,0 +1,11 @@
+var 1..3025: INT____00001 :: is_defined_var :: var_is_introduced;
+var 1..54: INT____00003 :: is_defined_var :: var_is_introduced;
+var 1..166375: INT____00004 :: is_defined_var :: var_is_introduced;
+var 1..166375: nb :: output_var = INT____00004;
+var 1..54: s :: output_var = INT____00003;
+array [1..6] of var 0..9: x :: output_array([1..6]);
+constraint int_lin_eq([-1, 1, 1, 1, 1, 1, 1], [INT____00003, x[1], x[2], x[3], x[4], x[5], x[6]], 0) :: defines_var(INT____00003);
+constraint int_lin_eq([-1, 100000, 10000, 1000, 100, 10, 1], [INT____00004, x[1], x[2], x[3], x[4], x[5], x[6]], 0) :: defines_var(INT____00004);
+constraint int_times(INT____00001, s, INT____00004);
+constraint int_times(s, s, INT____00001) :: defines_var(INT____00001);
+solve satisfy;

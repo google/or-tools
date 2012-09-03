@@ -1,0 +1,12 @@
+array [1..5] of var 1..5: x :: output_array([1..5]);
+constraint int_eq(1, x[2]);
+constraint int_eq(2, x[1]);
+constraint int_eq(3, x[4]);
+constraint int_eq(4, x[5]);
+constraint int_eq(5, x[3]);
+constraint int_ne(x[1], 1);
+constraint int_ne(x[2], 2);
+constraint int_ne(x[3], 3);
+constraint int_ne(x[4], 4);
+constraint int_ne(x[5], 5);
+solve satisfy;

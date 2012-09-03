@@ -1,0 +1,11 @@
+var 0..10: Ta :: output_var;
+var 2..10: Tb :: output_var;
+var 2..10: Tc :: output_var;
+var 5..10: Td :: output_var;
+var 9..10: Tf :: output_var;
+constraint int_lin_le([1, -1], [Ta, Tb], -2);
+constraint int_lin_le([1, -1], [Ta, Tc], -2);
+constraint int_lin_le([1, -1], [Tb, Td], -3);
+constraint int_lin_le([1, -1], [Tc, Tf], -5);
+constraint int_lin_le([1, -1], [Td, Tf], -4);
+solve minimize Tf;

@@ -1,0 +1,12 @@
+array [1..6] of int: price = [215, 275, 335, 355, 420, 580];
+array [1..6] of var int: x :: output_array([1..6]);
+var int: z;
+constraint int_le(0, x[1]);
+constraint int_le(0, x[2]);
+constraint int_le(0, x[3]);
+constraint int_le(0, x[4]);
+constraint int_le(0, x[5]);
+constraint int_le(0, x[6]);
+constraint int_lin_eq([-215, -275, -335, -355, -420, -580], [x[1], x[2], x[3], x[4], x[5], x[6]], -1505);
+constraint int_lin_eq([-1, 1, 1, 1, 1, 1, 1], [z, x[1], x[2], x[3], x[4], x[5], x[6]], 0);
+solve satisfy;

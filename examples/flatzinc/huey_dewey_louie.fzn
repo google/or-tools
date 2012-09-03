@@ -1,0 +1,6 @@
+var bool: huey :: output_var;
+var bool: louie :: output_var;
+var bool: dewey :: output_var = louie;
+constraint array_bool_and([louie, louie], false);
+constraint bool_le(huey, louie);
+solve satisfy;

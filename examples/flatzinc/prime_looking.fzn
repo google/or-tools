@@ -1,0 +1,13 @@
+var 4..999: INT____00001 :: is_defined_var :: var_is_introduced;
+var 1..1: INT____00002 :: is_defined_var :: var_is_introduced;
+var 1..2: INT____00003 :: is_defined_var :: var_is_introduced;
+var 1..4: INT____00004 :: is_defined_var :: var_is_introduced;
+var 2..999: d1 :: output_var;
+var 2..999: d2 :: output_var;
+var 4..999: x :: output_var = INT____00001;
+constraint int_le(d1, d2);
+constraint int_mod(INT____00001, 2, INT____00002) :: defines_var(INT____00002);
+constraint int_mod(INT____00001, 3, INT____00003) :: defines_var(INT____00003);
+constraint int_mod(INT____00001, 5, INT____00004) :: defines_var(INT____00004);
+constraint int_times(d1, d2, INT____00001) :: defines_var(INT____00001);
+solve  :: int_search([INT____00001, d1, d2], first_fail, indomain_min, complete) satisfy;

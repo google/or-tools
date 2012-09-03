@@ -1,0 +1,5 @@
+array [1..2] of int: birds = [1, 2];
+array [1..2] of var 0..1: flies :: output_array([1..2]);
+constraint int_eq_reif(flies[1], 1, false);
+constraint int_eq_reif(flies[2], 1, true);
+solve satisfy;

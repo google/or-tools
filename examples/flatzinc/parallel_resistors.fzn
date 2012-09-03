@@ -1,0 +1,12 @@
+var -10..10: I1____00001;
+var -10..10: I2____00002;
+var -10..10: INT____00003 :: is_defined_var :: var_is_introduced;
+var -10..10: INT____00005 :: is_defined_var :: var_is_introduced;
+var -10..10: I :: output_var = INT____00005;
+var 10..10: R1 :: output_var = 10;
+var 5..5: R2 :: output_var = 5;
+var -10..10: V :: output_var = INT____00003;
+constraint int_plus(I1____00001, I2____00002, INT____00005) :: defines_var(INT____00005);
+constraint int_times(I1____00001, R1, INT____00003) :: defines_var(INT____00003);
+constraint int_times(I2____00002, R2, V);
+solve satisfy;

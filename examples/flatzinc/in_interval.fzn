@@ -1,0 +1,4 @@
+var 2..2: low :: output_var = 2;
+var 5..5: up :: output_var = 5;
+var 3..3: v :: output_var = 3;
+solve satisfy;

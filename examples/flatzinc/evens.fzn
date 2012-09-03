@@ -1,0 +1,13 @@
+array [1..4] of var int: m;
+array [1..4] of var int: n;
+array [1..16] of var 0..1: x :: output_array([1..4, 1..4]);
+constraint int_lin_eq([-2, 1, 1, 1, 1], [m[1], x[1], x[5], x[9], x[13]], 0);
+constraint int_lin_eq([-2, 1, 1, 1, 1], [m[2], x[2], x[6], x[10], x[14]], 0);
+constraint int_lin_eq([-2, 1, 1, 1, 1], [m[3], x[3], x[7], x[11], x[15]], 0);
+constraint int_lin_eq([-2, 1, 1, 1, 1], [m[4], x[4], x[8], x[12], x[16]], 0);
+constraint int_lin_eq([-2, 1, 1, 1, 1], [n[1], x[1], x[2], x[3], x[4]], 0);
+constraint int_lin_eq([-2, 1, 1, 1, 1], [n[2], x[5], x[6], x[7], x[8]], 0);
+constraint int_lin_eq([-2, 1, 1, 1, 1], [n[3], x[9], x[10], x[11], x[12]], 0);
+constraint int_lin_eq([-2, 1, 1, 1, 1], [n[4], x[13], x[14], x[15], x[16]], 0);
+constraint int_lin_eq([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], x[10], x[11], x[12], x[13], x[14], x[15], x[16]], 10);
+solve satisfy;

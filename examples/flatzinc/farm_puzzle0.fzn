@@ -1,0 +1,16 @@
+var 2..4: animal1 :: output_var;
+var 2..4: animal2 :: output_var;
+var 2..4: animal3 :: output_var;
+var 2..4: animal4 :: output_var;
+var 2..4: animal5 :: output_var;
+var 2..4: animal6;
+var 2..4: animal7 :: output_var;
+constraint int_lin_eq([1, 1, 1, 1, 1, 1, 1], [animal1, animal2, animal3, animal4, animal5, animal6, animal7], 22);
+constraint set_in(animal1, {2, 4});
+constraint set_in(animal2, {2, 4});
+constraint set_in(animal3, {2, 4});
+constraint set_in(animal4, {2, 4});
+constraint set_in(animal5, {2, 4});
+constraint set_in(animal6, {2, 4});
+constraint set_in(animal7, {2, 4});
+solve satisfy;

@@ -1,0 +1,9 @@
+var 0..36: INT____00001 :: is_defined_var :: var_is_introduced;
+var 0..36: INT____00002 :: is_defined_var :: var_is_introduced;
+var 0..36: jerry :: output_var = INT____00002;
+var 0..36: jim :: output_var;
+var 0..36: john :: output_var = INT____00001;
+constraint int_lin_eq([-1, 2], [INT____00001, jim], 0) :: defines_var(INT____00001);
+constraint int_lin_eq([1, 1, 1], [INT____00001, INT____00002, jim], 36);
+constraint int_plus(INT____00001, jim, INT____00002) :: defines_var(INT____00002);
+solve satisfy;

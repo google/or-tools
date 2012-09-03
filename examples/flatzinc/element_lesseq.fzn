@@ -1,0 +1,7 @@
+array [1..4] of var 1..9: element_table :: output_array([1..4]);
+var 1..1: item :: output_var = 1;
+constraint int_eq(element_table[1], 6);
+constraint int_eq(element_table[2], 9);
+constraint int_eq(element_table[3], 2);
+constraint int_eq(element_table[4], 9);
+solve satisfy;

@@ -1,0 +1,10 @@
+array [1..6] of var 1..4: orthotope :: output_array([1..2, 1..3]);
+constraint int_eq(1, orthotope[4]);
+constraint int_eq(2, orthotope[1]);
+constraint int_eq(2, orthotope[2]);
+constraint int_eq(3, orthotope[5]);
+constraint int_eq(4, orthotope[3]);
+constraint int_eq(4, orthotope[6]);
+constraint int_lin_eq([-1, -1, 1], [orthotope[1], orthotope[2], orthotope[3]], 0);
+constraint int_lin_eq([-1, -1, 1], [orthotope[4], orthotope[5], orthotope[6]], 0);
+solve satisfy;

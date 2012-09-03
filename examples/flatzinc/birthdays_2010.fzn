@@ -1,0 +1,10 @@
+var 1..99: anders_born :: output_var;
+var 1..100: hakank_age :: output_var = anders_born;
+var 2..100: hakank_born :: output_var;
+var 1..100: anders_age :: output_var = hakank_born;
+var 110..110: this_year :: output_var = 110;
+constraint int_lin_eq([-1, 1], [anders_born, hakank_born], 4);
+constraint int_lin_eq([-1, -1, 1], [anders_born, hakank_born, this_year], 0);
+constraint int_lin_eq([-1, -1, 1], [hakank_born, anders_born, this_year], 0);
+constraint int_lt(anders_born, hakank_born);
+solve satisfy;

@@ -1,0 +1,9 @@
+var 8..160: A;
+var 8..160: B;
+var 8..160: C;
+var 8..100: D2;
+var 8..66: E3;
+array [1..5] of var 8..160: LD :: output_array([1..5]) = [A, B, C, D2, E3];
+constraint int_lin_eq([1, 1, 1, 2, 3], [A, B, C, D2, E3], 200);
+constraint int_lin_eq([12, 3, 1, 1, 1], [A, B, C, D2, E3], 200);
+solve  :: int_search(LD, first_fail, indomain_min, complete) satisfy;

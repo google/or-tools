@@ -1,0 +1,10 @@
+var int: INT____00001 :: is_defined_var :: var_is_introduced;
+var int: p :: output_var;
+var int: q :: output_var;
+var int: z :: output_var = INT____00001;
+constraint int_le(0, p);
+constraint int_le(0, q);
+constraint int_le(p, q);
+constraint int_lin_eq([4, 4], [p, q], 28);
+constraint int_lin_eq([-1, 2, 1], [INT____00001, p, q], 0) :: defines_var(INT____00001);
+solve maximize INT____00001;

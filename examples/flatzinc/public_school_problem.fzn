@@ -1,0 +1,17 @@
+var 21..29: m;
+array [1..5] of var int: x :: output_array([1..5]);
+constraint int_le(m, x[1]);
+constraint int_le(m, x[2]);
+constraint int_le(m, x[3]);
+constraint int_le(m, x[4]);
+constraint int_le(m, x[5]);
+constraint int_le(x[1], 1000);
+constraint int_le(x[2], 1000);
+constraint int_le(x[3], 1000);
+constraint int_le(x[4], 1000);
+constraint int_le(x[5], 1000);
+constraint int_lin_eq([2, -1], [x[1], x[5]], -4);
+constraint int_lin_eq([-1, -1, 1, 1], [x[2], x[3], x[4], x[5]], 14);
+constraint int_lin_eq([-13, -13, 19, 19, -13], [x[1], x[2], x[3], x[4], x[5]], 0);
+constraint int_lin_eq([-1, 1, -1, -1, 1], [x[1], x[2], x[3], x[4], x[5]], -4);
+solve minimize x[1];

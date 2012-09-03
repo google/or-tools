@@ -1,0 +1,18 @@
+array [1..5] of var 0..5: num_list :: output_array([1..5]);
+array [1..25] of var 0..1: x :: output_array([1..5, 1..5]);
+constraint int_eq(num_list[1], 4);
+constraint int_eq(num_list[2], 5);
+constraint int_eq(num_list[3], 2);
+constraint int_eq(num_list[4], 3);
+constraint int_eq(num_list[5], 1);
+constraint int_lin_eq([1, 1, 1, 1, 1], [x[1], x[2], x[3], x[4], x[5]], 1);
+constraint int_lin_eq([1, 1, 1, 1, 1], [x[6], x[7], x[8], x[9], x[10]], 1);
+constraint int_lin_eq([1, 1, 1, 1, 1], [x[11], x[12], x[13], x[14], x[15]], 1);
+constraint int_lin_eq([1, 1, 1, 1, 1], [x[16], x[17], x[18], x[19], x[20]], 1);
+constraint int_lin_eq([1, 1, 1, 1, 1], [x[21], x[22], x[23], x[24], x[25]], 1);
+constraint int_lin_eq([1, -1, -2, -3, -4, -5], [num_list[1], x[1], x[2], x[3], x[4], x[5]], 0);
+constraint int_lin_eq([1, -1, -2, -3, -4, -5], [num_list[2], x[6], x[7], x[8], x[9], x[10]], 0);
+constraint int_lin_eq([1, -1, -2, -3, -4, -5], [num_list[3], x[11], x[12], x[13], x[14], x[15]], 0);
+constraint int_lin_eq([1, -1, -2, -3, -4, -5], [num_list[4], x[16], x[17], x[18], x[19], x[20]], 0);
+constraint int_lin_eq([1, -1, -2, -3, -4, -5], [num_list[5], x[21], x[22], x[23], x[24], x[25]], 0);
+solve satisfy;

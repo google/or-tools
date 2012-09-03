@@ -1,0 +1,15 @@
+var 0..5300: Ca :: output_var;
+var 0..5300: El :: output_var;
+var 0..37100: INT____00001 :: is_defined_var :: var_is_introduced;
+var 0..5300: Ma :: output_var;
+var 0..5300: Pa :: output_var;
+var 0..5300: Ph :: output_var;
+var 0..5300: Pl :: output_var;
+constraint int_lin_eq([-1, -1], [Ca, El], -3300);
+constraint int_lin_eq([-1, -1], [Ca, Ma], -5300);
+constraint int_lin_eq([-1, -1], [El, Pl], -1100);
+constraint int_lin_eq([-1, -1], [Ma, Pa], -3200);
+constraint int_lin_eq([-1, -1], [Pa, Ph], -1100);
+constraint int_lin_eq([-1, -1], [Pa, Pl], -1700);
+constraint int_lin_eq([-1, 1, 1, 1, 2, 1, 1], [INT____00001, Ca, El, Ma, Pa, Ph, Pl], 0) :: defines_var(INT____00001);
+solve minimize INT____00001;

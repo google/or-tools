@@ -1,0 +1,5 @@
+array [1..2] of var int: x :: output_array([1..2]);
+constraint int_le(0, x[1]);
+constraint int_le(0, x[2]);
+constraint int_lin_eq([25, 49], [x[1], x[2]], 2000);
+solve satisfy;

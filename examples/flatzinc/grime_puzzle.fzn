@@ -1,0 +1,13 @@
+var 1..54: INT____00001 :: is_defined_var :: var_is_introduced;
+var 1..9: a;
+var 0..9: b;
+var 0..9: c;
+var 0..9: d;
+var 0..9: e;
+var 0..9: f;
+array [1..6] of var 0..9: x :: output_array([1..6]) = [a, b, c, d, e, f];
+var 1..54: y :: output_var = INT____00001;
+constraint int_lin_eq([-100, 100, 10, 1, 100, 10, 1], [INT____00001, a, b, c, d, e, f], 0);
+constraint int_lin_eq([-10, 10, 1, 10, 1, 10, 1], [INT____00001, a, b, c, d, e, f], 0);
+constraint int_lin_eq([-1, 1, 1, 1, 1, 1, 1], [INT____00001, a, b, c, d, e, f], 0) :: defines_var(INT____00001);
+solve satisfy;

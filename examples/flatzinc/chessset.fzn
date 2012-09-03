@@ -1,0 +1,10 @@
+var int: INT____00001 :: is_defined_var :: var_is_introduced;
+var int: largeset :: output_var;
+var int: smallset :: output_var;
+constraint int_le(0, INT____00001);
+constraint int_le(0, largeset);
+constraint int_le(0, smallset);
+constraint int_lin_eq([-1, 20, 5], [INT____00001, largeset, smallset], 0) :: defines_var(INT____00001);
+constraint int_lin_le([2, 3], [largeset, smallset], 160);
+constraint int_lin_le([3, 1], [largeset, smallset], 200);
+solve maximize INT____00001;

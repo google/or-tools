@@ -1,0 +1,10 @@
+array [1..2] of var 0..1: t :: output_array([1..2]);
+array [1..4] of var 0..1: x :: output_array([1..2, 1..2]);
+constraint int_eq(t[1], t[2]);
+constraint int_eq(x[1], t[1]);
+constraint int_eq(x[4], t[2]);
+constraint int_lin_eq([1, 1], [x[1], x[2]], 1);
+constraint int_lin_eq([1, 1], [x[3], x[4]], 1);
+constraint int_lin_le([-1, 1, 1], [t[1], x[1], x[3]], 1);
+constraint int_lin_le([2, -1, -1], [t[1], x[1], x[3]], 0);
+solve satisfy;

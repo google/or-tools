@@ -1,0 +1,6 @@
+var 2..100: INT____00001 :: is_defined_var :: var_is_introduced;
+var 2..100: T :: output_var = INT____00001;
+var 1..100: W :: output_var;
+constraint int_lin_eq([-1, 2], [INT____00001, W], 0) :: defines_var(INT____00001);
+constraint int_lin_eq([1, -3], [T, W], -36);
+solve satisfy;

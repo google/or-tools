@@ -4,6 +4,7 @@ predicate fixed_cumulative(array [int] of var int: s, array [int] of int: d, arr
 predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
 predicate maximum_int(var int: m, array [int] of var int: x);
 predicate minimum_int(var int: m, array [int] of var int: x);
+predicate sliding_sum(int: low, int: up, int: seq, array [int] of var int: vs);
 predicate sort(array [int] of var int: x, array [int] of var int: y);
 predicate table_bool(array [int] of var bool: x, array [int, int] of bool: t);
 predicate table_int(array [int] of var int: x, array [int, int] of int: t);
@@ -383,4 +384,4 @@ constraint int_plus(INT____00007, bins[4], bins[1]) :: defines_var(INT____00007)
 constraint int_plus(INT____00011, bins[3], bins[2]) :: defines_var(INT____00011);
 constraint int_plus(INT____00013, bins[4], bins[2]) :: defines_var(INT____00013);
 constraint int_plus(INT____00019, bins[4], bins[3]) :: defines_var(INT____00019);
-solve  :: int_search(x, first_fail, indomain_min, complete) minimize INT____00001;
+solve  :: int_search([bins[1], bins[2], bins[3], bins[4], diffs[1], diffs[2], diffs[3], diffs[4], diffs[5], diffs[6], diffs[7], diffs[8], diffs[9], diffs[10], diffs[11], diffs[12], diffs[13], diffs[14], diffs[15], diffs[16], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], x[10], x[11], x[12], x[13], x[14], x[15], x[16], x[17], x[18], x[19], x[20]], largest, indomain_min, complete) minimize INT____00001;

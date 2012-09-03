@@ -1,0 +1,7 @@
+var 0..1000: mary :: output_var;
+var 0..1000: nellie :: output_var;
+var 0..1000: susie :: output_var;
+constraint int_lin_eq([3, -4], [mary, nellie], 0);
+constraint int_lin_eq([7, -6], [mary, susie], 0);
+constraint int_lin_eq([1, 1, 1], [mary, nellie, susie], 770);
+solve satisfy;

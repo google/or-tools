@@ -1,0 +1,12 @@
+array [1..4] of var 1..9: elements :: output_array([1..4]);
+array [1..2] of var 1..9: entries :: output_array([1..2]);
+var 3..3: t_index :: output_var = 3;
+constraint int_eq(elements[1], 6);
+constraint int_eq(elements[2], 9);
+constraint int_eq(elements[3], 2);
+constraint int_eq(elements[4], 9);
+constraint int_eq(entries[1], 2);
+constraint int_eq(entries[1], elements[3]);
+constraint int_eq(entries[2], 9);
+constraint int_eq(entries[2], elements[4]);
+solve satisfy;

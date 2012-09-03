@@ -4,6 +4,7 @@ predicate fixed_cumulative(array [int] of var int: s, array [int] of int: d, arr
 predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
 predicate maximum_int(var int: m, array [int] of var int: x);
 predicate minimum_int(var int: m, array [int] of var int: x);
+predicate sliding_sum(int: low, int: up, int: seq, array [int] of var int: vs);
 predicate sort(array [int] of var int: x, array [int] of var int: y);
 predicate table_bool(array [int] of var bool: x, array [int, int] of bool: t);
 predicate table_int(array [int] of var int: x, array [int, int] of int: t);
@@ -50,4 +51,4 @@ constraint int_times(x2, x2, INT____00004) :: defines_var(INT____00004);
 constraint int_times(x3, x3, INT____00007) :: defines_var(INT____00007);
 constraint int_times(x4, x4, INT____00010) :: defines_var(INT____00010);
 constraint int_times(x5, x5, INT____00013) :: defines_var(INT____00013);
-solve satisfy;
+solve  :: int_search(a, first_fail, indomain_min, complete) satisfy;

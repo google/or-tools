@@ -1,0 +1,13 @@
+var 0..12: INT____00001 :: is_defined_var :: var_is_introduced;
+array [1..3] of var 0..1: x :: output_array([1..3]);
+array [1..3] of var 0..1: y :: output_array([1..3]);
+var 0..12: z :: output_var = INT____00001;
+constraint int_eq(x[3], x[2]);
+constraint int_le(y[1], x[1]);
+constraint int_le(y[2], x[2]);
+constraint int_le(y[3], x[3]);
+constraint int_lin_eq([1, 1, 1], [y[1], y[2], y[3]], 1);
+constraint int_lin_eq([-1, 10, 1, 1], [INT____00001, x[1], x[2], x[3]], 0) :: defines_var(INT____00001);
+constraint int_lin_le([-10, -1, -1], [x[1], x[2], x[3]], -3);
+constraint int_lin_le([10, 1, 1], [x[1], x[2], x[3]], 10);
+solve satisfy;

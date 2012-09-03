@@ -1,0 +1,18 @@
+var 0..999: INT____00001 :: is_defined_var :: var_is_introduced;
+var 0..998001: INT____00003 :: is_defined_var :: var_is_introduced;
+var 1..999: INT____00004 :: is_defined_var :: var_is_introduced;
+var 0..999: x :: output_var = INT____00001;
+array [1..3] of var 0..9: x_a;
+var 0..999: y :: output_var = INT____00004;
+array [1..3] of var 0..9: y_a;
+var 0..999999: z :: output_var = INT____00003;
+array [1..6] of var 0..9: z_a;
+constraint int_eq(z_a[1], z_a[4]);
+constraint int_eq(z_a[2], z_a[5]);
+constraint int_eq(z_a[3], z_a[6]);
+constraint int_lin_eq([-1, 1], [INT____00004, INT____00001], -1) :: defines_var(INT____00004);
+constraint int_lin_eq([-1, 100, 10, 1], [INT____00001, x_a[1], x_a[2], x_a[3]], 0) :: defines_var(INT____00001);
+constraint int_lin_eq([-1, 100, 10, 1], [INT____00004, y_a[1], y_a[2], y_a[3]], 0);
+constraint int_lin_eq([-1, 100000, 10000, 1000, 100, 10, 1], [INT____00003, z_a[1], z_a[2], z_a[3], z_a[4], z_a[5], z_a[6]], 0) :: defines_var(INT____00003);
+constraint int_times(INT____00001, INT____00004, INT____00003);
+solve  :: int_search(x_a, most_constrained, indomain_min, complete) satisfy;

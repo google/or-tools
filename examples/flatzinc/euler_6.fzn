@@ -1,0 +1,9 @@
+var int: INT____00001 :: is_defined_var :: var_is_introduced;
+var int: INT____00002 :: is_defined_var :: var_is_introduced;
+var int: d :: output_var = INT____00002;
+var 5050..5050: s = 5050;
+var int: s2 :: output_var = INT____00001;
+var 338350..338350: ss :: output_var = 338350;
+constraint int_plus(INT____00002, ss, INT____00001) :: defines_var(INT____00002);
+constraint int_times(5050, 5050, INT____00001) :: defines_var(INT____00001);
+solve satisfy;

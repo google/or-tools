@@ -1,0 +1,9 @@
+var 0..9999: INT____00001 :: is_defined_var :: var_is_introduced;
+var 1..10000: INT____00002 :: is_defined_var :: var_is_introduced;
+var 1..10000: a :: output_var = INT____00002;
+var 1..10000: b :: output_var;
+var 1..10000: c :: output_var;
+constraint int_lin_eq([-1, 1], [INT____00001, b], 1) :: defines_var(INT____00001);
+constraint int_lin_eq([1, -33], [a, b], 1);
+constraint int_times(c, INT____00001, INT____00002) :: defines_var(INT____00002);
+solve satisfy;

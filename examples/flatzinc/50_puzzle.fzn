@@ -1,0 +1,6 @@
+array [1..10] of int: v = [3, 6, 9, 12, 15, 19, 21, 25, 27, 30];
+var 0..10: sumx;
+array [1..10] of var 0..1: x :: output_array([1..10]);
+constraint int_lin_eq([3, 6, 9, 12, 15, 19, 21, 25, 27, 30], [x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], x[10]], 50);
+constraint int_lin_eq([-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [sumx, x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], x[10]], 0);
+solve  :: int_search(x, first_fail, indomain, complete) minimize sumx;

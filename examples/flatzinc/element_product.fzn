@@ -1,0 +1,10 @@
+array [1..4] of var 1..9: element_table :: output_array([1..4]);
+var 5..5: x :: output_var = 5;
+var 3..3: y :: output_var = 3;
+var 5..45: z;
+constraint int_eq(element_table[1], 6);
+constraint int_eq(element_table[2], 9);
+constraint int_eq(element_table[3], 2);
+constraint int_eq(element_table[4], 9);
+constraint int_lin_eq([-1, 5], [z, element_table[3]], 0);
+solve satisfy;

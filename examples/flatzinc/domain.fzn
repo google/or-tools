@@ -1,0 +1,7 @@
+var 1..1: low :: output_var = 1;
+var 9..9: up :: output_var = 9;
+array [1..3] of var 1..8: x :: output_array([1..3]);
+constraint int_eq(x[1], 2);
+constraint int_eq(x[2], 8);
+constraint int_eq(x[3], 2);
+solve satisfy;

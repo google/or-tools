@@ -1,0 +1,14 @@
+var 1..711: A :: output_var;
+var 1..711: B :: output_var;
+var 1..711: C :: output_var;
+var 1..711: D :: output_var;
+var 1..505521: T1;
+var 1..505521: T2;
+constraint int_le(A, B);
+constraint int_le(B, C);
+constraint int_le(C, D);
+constraint int_lin_eq([1, 1, 1, 1], [A, B, C, D], 711);
+constraint int_times(A, B, T1);
+constraint int_times(C, D, T2);
+constraint int_times(T1, T2, 711000000);
+solve  :: int_search([A, B, C, D, T1, T2], first_fail, indomain, complete) satisfy;

@@ -1,0 +1,5 @@
+array [1..4] of var 0..6: x :: output_array([1..4]);
+constraint int_eq(x[2], x[1]);
+constraint int_eq(x[3], x[2]);
+constraint int_eq(x[4], x[3]);
+solve satisfy;

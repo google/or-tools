@@ -1,0 +1,8 @@
+array [1..4] of int: cash_flow = [5, 7, 4, 3];
+array [1..4] of int: npv = [16, 22, 12, 8];
+var 0..58: INT____00001 :: is_defined_var :: var_is_introduced;
+array [1..4] of var 0..1: x :: output_array([1..4]);
+var 0..58: z :: output_var = INT____00001;
+constraint int_lin_eq([-1, 16, 22, 12, 8], [INT____00001, x[1], x[2], x[3], x[4]], 0) :: defines_var(INT____00001);
+constraint int_lin_le([5, 7, 4, 3], [x[1], x[2], x[3], x[4]], 14);
+solve maximize INT____00001;

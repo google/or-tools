@@ -1,0 +1,13 @@
+array [1..5] of var 1..7: x :: output_array([1..5]);
+var 9..9: y :: output_var = 9;
+constraint int_eq(4, x[1]);
+constraint int_eq(4, x[4]);
+constraint int_eq(5, x[2]);
+constraint int_eq(5, x[5]);
+constraint int_eq(7, x[3]);
+constraint int_lt(x[1], y);
+constraint int_lt(x[2], y);
+constraint int_lt(x[3], y);
+constraint int_lt(x[4], y);
+constraint int_lt(x[5], y);
+solve satisfy;

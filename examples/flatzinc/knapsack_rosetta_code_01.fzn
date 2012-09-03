@@ -1,0 +1,9 @@
+array [1..44] of int: items = [9, 150, 13, 35, 153, 200, 50, 160, 15, 60, 68, 45, 27, 60, 39, 40, 23, 30, 52, 10, 11, 70, 32, 30, 24, 15, 48, 10, 73, 40, 42, 70, 43, 75, 22, 80, 7, 20, 18, 12, 4, 50, 30, 10];
+var 0..1272: INT____00001 :: is_defined_var :: var_is_introduced;
+var 0..400: INT____00002 :: is_defined_var :: var_is_introduced;
+var 0..1272: total_value :: output_var = INT____00001;
+var 0..803: total_weight :: output_var = INT____00002;
+array [1..22] of var 0..1: x :: output_array([1..22]);
+constraint int_lin_eq([-1, 9, 13, 153, 50, 15, 68, 27, 39, 23, 52, 11, 32, 24, 48, 73, 42, 43, 22, 7, 18, 4, 30], [INT____00002, x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], x[10], x[11], x[12], x[13], x[14], x[15], x[16], x[17], x[18], x[19], x[20], x[21], x[22]], 0) :: defines_var(INT____00002);
+constraint int_lin_eq([-1, 150, 35, 200, 160, 60, 45, 60, 40, 30, 10, 70, 30, 15, 10, 40, 70, 75, 80, 20, 12, 50, 10], [INT____00001, x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], x[10], x[11], x[12], x[13], x[14], x[15], x[16], x[17], x[18], x[19], x[20], x[21], x[22]], 0) :: defines_var(INT____00001);
+solve  :: int_search(x, input_order, indomain_max, complete) maximize INT____00001;

@@ -1,0 +1,12 @@
+var bool: I1 :: output_var;
+var bool: I2 :: output_var;
+var bool: I3 :: output_var = false;
+var bool: O2 :: output_var = true;
+var bool: X1____00001;
+var bool: O1 :: output_var = X1____00001;
+var bool: Y1____00002;
+var bool: Y2____00003 = false;
+constraint array_bool_and([I1, I2], Y1____00002);
+constraint array_bool_or([Y1____00002, false], true);
+constraint bool_xor(I1, I2, X1____00001);
+solve satisfy;

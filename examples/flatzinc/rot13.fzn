@@ -1,0 +1,13 @@
+array [1..10] of int: text = [1, 2, 3, 13, 14, 15, 16, 24, 25, 26];
+array [1..10] of var 1..26: rotated :: output_array([1..10]);
+constraint int_eq(rotated[1], 14);
+constraint int_eq(rotated[2], 15);
+constraint int_eq(rotated[3], 16);
+constraint int_eq(rotated[4], 26);
+constraint int_eq(rotated[5], 1);
+constraint int_eq(rotated[6], 2);
+constraint int_eq(rotated[7], 3);
+constraint int_eq(rotated[8], 11);
+constraint int_eq(rotated[9], 12);
+constraint int_eq(rotated[10], 13);
+solve satisfy;

@@ -1,0 +1,9 @@
+var 3..3: n :: output_var = 3;
+array [1..5] of var int: x____00001;
+var int: num :: output_var = x____00001[5];
+constraint int_eq(x____00001[1], 1);
+constraint int_lin_eq([-3, 1], [x____00001[1], x____00001[2]], 0);
+constraint int_lin_eq([-3, 1], [x____00001[2], x____00001[3]], 0);
+constraint int_lin_eq([-3, 1], [x____00001[3], x____00001[4]], 0);
+constraint int_lin_eq([-3, 1], [x____00001[4], x____00001[5]], 0);
+solve satisfy;

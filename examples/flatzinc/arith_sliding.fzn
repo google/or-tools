@@ -1,0 +1,17 @@
+array [1..7] of var -3..3: x :: output_array([1..7]);
+var 4..4: z :: output_var = 4;
+constraint int_eq(-3, x[7]);
+constraint int_eq(0, x[1]);
+constraint int_eq(0, x[2]);
+constraint int_eq(0, x[5]);
+constraint int_eq(0, x[6]);
+constraint int_eq(1, x[3]);
+constraint int_eq(2, x[4]);
+constraint int_lin_le([-1, 1], [z, x[1]], -1);
+constraint int_lin_le([-1, 1, 1], [z, x[1], x[2]], -1);
+constraint int_lin_le([-1, 1, 1, 1], [z, x[1], x[2], x[3]], -1);
+constraint int_lin_le([-1, 1, 1, 1, 1], [z, x[1], x[2], x[3], x[4]], -1);
+constraint int_lin_le([-1, 1, 1, 1, 1, 1], [z, x[1], x[2], x[3], x[4], x[5]], -1);
+constraint int_lin_le([-1, 1, 1, 1, 1, 1, 1], [z, x[1], x[2], x[3], x[4], x[5], x[6]], -1);
+constraint int_lin_le([-1, 1, 1, 1, 1, 1, 1, 1], [z, x[1], x[2], x[3], x[4], x[5], x[6], x[7]], -1);
+solve satisfy;

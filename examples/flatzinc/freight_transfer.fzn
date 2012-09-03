@@ -1,0 +1,15 @@
+array [1..4] of int: available = [3, 3, 3, 3];
+array [1..4] of int: capacity = [7, 5, 4, 3];
+array [1..4] of int: cost = [90, 60, 50, 40];
+var 0..960: INT____00001 :: is_defined_var :: var_is_introduced;
+var 42..76: INT____00002 :: is_defined_var :: var_is_introduced;
+var 0..76: transported :: output_var = INT____00002;
+array [1..4] of var 0..4: x :: output_array([1..4]);
+var 0..960: z :: output_var = INT____00001;
+constraint int_le(x[1], 3);
+constraint int_le(x[2], 3);
+constraint int_le(x[3], 3);
+constraint int_le(x[4], 3);
+constraint int_lin_eq([-1, 7, 5, 4, 3], [INT____00002, x[1], x[2], x[3], x[4]], 0) :: defines_var(INT____00002);
+constraint int_lin_eq([-1, 90, 60, 50, 40], [INT____00001, x[1], x[2], x[3], x[4]], 0) :: defines_var(INT____00001);
+solve minimize INT____00001;

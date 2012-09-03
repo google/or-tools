@@ -1,0 +1,13 @@
+array [1..10] of var int: x____00001;
+var int: z :: output_var = x____00001[10];
+constraint int_eq(x____00001[1], 1);
+constraint int_lin_eq([-10, 1], [x____00001[9], x____00001[10]], 0);
+constraint int_lin_eq([-9, 1], [x____00001[8], x____00001[9]], 0);
+constraint int_lin_eq([-8, 1], [x____00001[7], x____00001[8]], 0);
+constraint int_lin_eq([-7, 1], [x____00001[6], x____00001[7]], 0);
+constraint int_lin_eq([-6, 1], [x____00001[5], x____00001[6]], 0);
+constraint int_lin_eq([-5, 1], [x____00001[4], x____00001[5]], 0);
+constraint int_lin_eq([-4, 1], [x____00001[3], x____00001[4]], 0);
+constraint int_lin_eq([-3, 1], [x____00001[2], x____00001[3]], 0);
+constraint int_lin_eq([-2, 1], [x____00001[1], x____00001[2]], 0);
+solve satisfy;

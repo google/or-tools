@@ -1,0 +1,10 @@
+array [1..3] of int: values = [15, 12, 7];
+array [1..3] of int: weights = [4, 3, 2];
+var int: profit;
+array [1..3] of var int: take :: output_array([1..3]);
+constraint int_le(0, take[1]);
+constraint int_le(0, take[2]);
+constraint int_le(0, take[3]);
+constraint int_lin_eq([-1, 15, 12, 7], [profit, take[1], take[2], take[3]], 0);
+constraint int_lin_le([4, 3, 2], [take[1], take[2], take[3]], 10);
+solve maximize profit;

@@ -1,0 +1,14 @@
+var 1000..9999: INT____00001 :: is_defined_var :: var_is_introduced;
+var 1000000..99980001: INT____00002 :: is_defined_var :: var_is_introduced;
+var 1000..9999: n :: output_var = INT____00001;
+array [1..4] of var 0..9: n_a :: output_array([1..4]);
+var 1000000..99980001: n_squared :: output_var = INT____00002;
+array [1..8] of var 0..9: n_squared_a :: output_array([1..8]);
+constraint int_eq(n_a[1], n_squared_a[5]);
+constraint int_eq(n_a[2], n_squared_a[6]);
+constraint int_eq(n_a[3], n_squared_a[7]);
+constraint int_eq(n_a[4], n_squared_a[8]);
+constraint int_lin_eq([-1, 1000, 100, 10, 1], [INT____00001, n_a[1], n_a[2], n_a[3], n_a[4]], 0) :: defines_var(INT____00001);
+constraint int_lin_eq([-1, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1], [INT____00002, n_squared_a[1], n_squared_a[2], n_squared_a[3], n_squared_a[4], n_squared_a[5], n_squared_a[6], n_squared_a[7], n_squared_a[8]], 0) :: defines_var(INT____00002);
+constraint int_times(INT____00001, INT____00001, INT____00002);
+solve satisfy;

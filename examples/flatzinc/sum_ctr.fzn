@@ -1,0 +1,4 @@
+var 6..6: s :: output_var = 6;
+array [1..3] of var 1..5: x :: output_array([1..3]);
+constraint int_lin_ne([-1, 1, 1, 1], [s, x[1], x[2], x[3]], 0);
+solve satisfy;

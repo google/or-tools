@@ -1,0 +1,18 @@
+var 1..1: index_i :: output_var = 1;
+var 3..3: index_j :: output_var = 3;
+array [1..12] of var 0..9: matrix;
+var 7..7: value :: output_var = 7;
+constraint int_eq(0, matrix[5]);
+constraint int_eq(0, matrix[10]);
+constraint int_eq(0, matrix[11]);
+constraint int_eq(1, matrix[2]);
+constraint int_eq(1, matrix[4]);
+constraint int_eq(1, matrix[9]);
+constraint int_eq(2, matrix[8]);
+constraint int_eq(3, matrix[7]);
+constraint int_eq(4, matrix[1]);
+constraint int_eq(6, matrix[12]);
+constraint int_eq(7, matrix[3]);
+constraint int_eq(8, matrix[6]);
+constraint int_eq(matrix[3], 7);
+solve satisfy;

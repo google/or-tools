@@ -1,0 +1,8 @@
+var 110000000..199999999: INT____00003 :: is_defined_var :: var_is_introduced;
+var 10000000..99999999: n;
+var 0..20000: x :: output_var;
+var 0..20000: y :: output_var;
+constraint int_lin_eq([-1, 1], [INT____00003, n], -100000000) :: defines_var(INT____00003);
+constraint int_times(x, x, n);
+constraint int_times(y, y, INT____00003);
+solve satisfy;

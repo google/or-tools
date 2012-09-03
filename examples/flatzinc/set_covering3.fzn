@@ -1,0 +1,12 @@
+array [1..60] of int: belongs = [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1];
+var 0..10: numNeeded;
+array [1..10] of var 0..1: x :: output_array([1..10]);
+constraint int_lin_eq([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], x[10]], 2);
+constraint int_lin_eq([-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [numNeeded, x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], x[10]], 0);
+constraint int_lin_le([-1, -1, -1, -1], [x[1], x[2], x[8], x[10]], -1);
+constraint int_lin_le([-1, -1, -1, -1], [x[1], x[5], x[6], x[7]], -1);
+constraint int_lin_le([-1, -1, -1, -1, -1], [x[1], x[2], x[3], x[4], x[5]], -1);
+constraint int_lin_le([-1, -1, -1, -1, -1], [x[2], x[3], x[8], x[9], x[10]], -1);
+constraint int_lin_le([-1, -1, -1, -1, -1], [x[6], x[7], x[8], x[9], x[10]], -1);
+constraint int_lin_le([-1, -1, -1, -1, -1, -1], [x[3], x[4], x[5], x[6], x[7], x[9]], -1);
+solve satisfy;

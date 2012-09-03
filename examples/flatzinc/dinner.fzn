@@ -1,0 +1,6 @@
+var 1..100: Children :: output_var;
+var 1..100: Grandparents :: output_var;
+var 1..100: Parents :: output_var;
+constraint int_lin_eq([1, 1, 1], [Children, Grandparents, Parents], 20);
+constraint int_lin_eq([1, 6, 4], [Children, Grandparents, Parents], 40);
+solve satisfy;

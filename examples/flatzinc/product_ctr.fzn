@@ -1,0 +1,11 @@
+var 1..16: INT____00002 :: is_defined_var :: var_is_introduced;
+var 1..64: res____00001;
+var 8..8: t_var :: output_var = 8;
+array [1..3] of var 1..4: variables :: output_array([1..3]);
+constraint int_eq(res____00001, 8);
+constraint int_eq(variables[1], 2);
+constraint int_eq(variables[2], 1);
+constraint int_eq(variables[3], 4);
+constraint int_times(variables[2], variables[1], INT____00002) :: defines_var(INT____00002);
+constraint int_times(variables[3], INT____00002, res____00001);
+solve satisfy;

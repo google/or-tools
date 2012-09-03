@@ -1,0 +1,15 @@
+array [1..20] of int: cost = [14, 5, 8, 7, 15, 2, 12, 6, 5, 3, 7, 8, 3, 9, 7, 2, 4, 6, 10, 1];
+var 0..134: INT____00001 :: is_defined_var :: var_is_introduced;
+var 0..134: total_cost :: output_var = INT____00001;
+array [1..20] of var 0..1: x :: output_array([1..4, 1..5]);
+constraint int_lin_eq([1, 1, 1, 1, 1], [x[1], x[2], x[3], x[4], x[5]], 1);
+constraint int_lin_eq([1, 1, 1, 1, 1], [x[6], x[7], x[8], x[9], x[10]], 1);
+constraint int_lin_eq([1, 1, 1, 1, 1], [x[11], x[12], x[13], x[14], x[15]], 1);
+constraint int_lin_eq([1, 1, 1, 1, 1], [x[16], x[17], x[18], x[19], x[20]], 1);
+constraint int_lin_eq([-1, 14, 5, 8, 7, 15, 2, 12, 6, 5, 3, 7, 8, 3, 9, 7, 2, 4, 6, 10, 1], [INT____00001, x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], x[10], x[11], x[12], x[13], x[14], x[15], x[16], x[17], x[18], x[19], x[20]], 0) :: defines_var(INT____00001);
+constraint int_lin_le([1, 1, 1, 1], [x[1], x[6], x[11], x[16]], 1);
+constraint int_lin_le([1, 1, 1, 1], [x[2], x[7], x[12], x[17]], 1);
+constraint int_lin_le([1, 1, 1, 1], [x[3], x[8], x[13], x[18]], 1);
+constraint int_lin_le([1, 1, 1, 1], [x[4], x[9], x[14], x[19]], 1);
+constraint int_lin_le([1, 1, 1, 1], [x[5], x[10], x[15], x[20]], 1);
+solve minimize INT____00001;

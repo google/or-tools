@@ -1,0 +1,11 @@
+array [1..36] of int: distance = [0, 10, 20, 30, 30, 20, 10, 0, 25, 35, 20, 10, 20, 25, 0, 15, 30, 20, 30, 35, 15, 0, 15, 25, 30, 20, 30, 15, 0, 14, 20, 10, 20, 25, 14, 0];
+array [1..6] of var 0..1: x :: output_array([1..6]);
+var 0..6: z;
+constraint int_lin_eq([-1, 1, 1, 1, 1, 1, 1], [z, x[1], x[2], x[3], x[4], x[5], x[6]], 0);
+constraint int_lin_le([-1, -1], [x[1], x[2]], -1);
+constraint int_lin_le([-1, -1], [x[3], x[4]], -1);
+constraint int_lin_le([-1, -1, -1], [x[1], x[2], x[6]], -1);
+constraint int_lin_le([-1, -1, -1], [x[2], x[5], x[6]], -1);
+constraint int_lin_le([-1, -1, -1], [x[3], x[4], x[5]], -1);
+constraint int_lin_le([-1, -1, -1], [x[4], x[5], x[6]], -1);
+solve minimize z;

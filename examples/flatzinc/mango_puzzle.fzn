@@ -1,0 +1,11 @@
+array [1..5] of var int: x :: output_array([1..5]);
+constraint int_le(0, x[1]);
+constraint int_le(0, x[2]);
+constraint int_le(0, x[3]);
+constraint int_le(0, x[4]);
+constraint int_le(0, x[5]);
+constraint int_lin_eq([-3, 1], [x[1], x[2]], 1);
+constraint int_lin_eq([-3, 2], [x[2], x[3]], 2);
+constraint int_lin_eq([-3, 2], [x[3], x[4]], 2);
+constraint int_lin_eq([-3, 2], [x[4], x[5]], 2);
+solve minimize x[5];

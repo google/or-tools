@@ -1,0 +1,13 @@
+array [1..6] of int: coins = [16, 17, 23, 24, 39, 40];
+var int: INT____00001 :: is_defined_var :: var_is_introduced;
+var int: ss :: output_var = INT____00001;
+array [1..6] of var int: x :: output_array([1..6]);
+constraint int_le(0, x[1]);
+constraint int_le(0, x[2]);
+constraint int_le(0, x[3]);
+constraint int_le(0, x[4]);
+constraint int_le(0, x[5]);
+constraint int_le(0, x[6]);
+constraint int_lin_eq([16, 17, 23, 24, 39, 40], [x[1], x[2], x[3], x[4], x[5], x[6]], 100);
+constraint int_lin_eq([-1, 1, 1, 1, 1, 1, 1], [INT____00001, x[1], x[2], x[3], x[4], x[5], x[6]], 0) :: defines_var(INT____00001);
+solve satisfy;

@@ -1,0 +1,5 @@
+var 0..40: him :: output_var;
+var 0..40: me :: output_var;
+constraint int_lin_eq([-1, -1], [him, me], -30);
+constraint int_lin_eq([-1, 2], [him, me], 6);
+solve satisfy;

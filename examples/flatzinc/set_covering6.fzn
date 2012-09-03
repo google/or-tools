@@ -1,0 +1,10 @@
+array [1..24] of int: mat = [1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1];
+array [1..4] of int: t_costs = [50, 20, 15, 15];
+var 0..100: INT____00001 :: is_defined_var :: var_is_introduced;
+var 0..100: total_cost :: output_var = INT____00001;
+array [1..4] of var 0..1: x :: output_array([1..4]);
+constraint int_lin_eq([-1, 50, 20, 15, 15], [INT____00001, x[1], x[2], x[3], x[4]], 0) :: defines_var(INT____00001);
+constraint int_lin_le([-1, -1], [x[1], x[3]], -1);
+constraint int_lin_le([-1, -1, -1], [x[1], x[2], x[3]], -1);
+constraint int_lin_le([-1, -1, -1], [x[1], x[2], x[4]], -1);
+solve  :: int_search(x, largest, indomain_min, complete) minimize INT____00001;

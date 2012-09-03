@@ -4,9 +4,11 @@ predicate fixed_cumulative(array [int] of var int: s, array [int] of int: d, arr
 predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
 predicate maximum_int(var int: m, array [int] of var int: x);
 predicate minimum_int(var int: m, array [int] of var int: x);
+predicate sliding_sum(int: low, int: up, int: seq, array [int] of var int: vs);
 predicate sort(array [int] of var int: x, array [int] of var int: y);
 predicate table_bool(array [int] of var bool: x, array [int, int] of bool: t);
 predicate table_int(array [int] of var int: x, array [int, int] of int: t);
+predicate var_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, var int: b);
 var bool: BOOL____00002 :: is_defined_var :: var_is_introduced;
 var bool: BOOL____00003 :: is_defined_var :: var_is_introduced;
 var bool: BOOL____00004 :: is_defined_var :: var_is_introduced;
@@ -9594,4 +9596,4 @@ constraint int_ne(chain[7], 3);
 constraint int_ne(chain[7], 6);
 constraint int_ne(chain[8], 3);
 constraint int_ne(chain[8], 6);
-solve satisfy;
+solve  :: int_search(chain, smallest, indomain_split, complete) satisfy;

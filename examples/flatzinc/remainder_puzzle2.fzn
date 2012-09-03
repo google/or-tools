@@ -1,0 +1,6 @@
+array [1..5] of var 1..10000: x :: output_array([1..5]);
+constraint int_lin_eq([1, -6], [x[1], x[5]], 4);
+constraint int_lin_eq([1, -5], [x[1], x[4]], 3);
+constraint int_lin_eq([1, -4], [x[1], x[3]], 2);
+constraint int_lin_eq([1, -3], [x[1], x[2]], 1);
+solve satisfy;

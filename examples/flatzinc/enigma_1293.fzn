@@ -1,0 +1,17 @@
+var 2..100: Base :: output_var;
+var 0..99: D1 :: output_var;
+var 0..99: D2 :: output_var;
+var 0..9900: INT____00001 :: is_defined_var :: var_is_introduced;
+var 0..100: INT____00002 :: is_defined_var :: var_is_introduced;
+var 0..100: C :: output_var = INT____00002;
+var 0..9900: INT____00003 :: is_defined_var :: var_is_introduced;
+var 0..9999: INT____00004 :: is_defined_var :: var_is_introduced;
+var 0..9999: F :: output_var = INT____00004;
+constraint int_lin_eq([-9, 5], [C, F], 160);
+constraint int_lt(D1, Base);
+constraint int_lt(D2, Base);
+constraint int_plus(D1, INT____00003, INT____00004) :: defines_var(INT____00004);
+constraint int_plus(D2, INT____00001, INT____00002) :: defines_var(INT____00002);
+constraint int_times(Base, D1, INT____00001) :: defines_var(INT____00001);
+constraint int_times(Base, D2, INT____00003) :: defines_var(INT____00003);
+solve satisfy;

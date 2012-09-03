@@ -1,0 +1,12 @@
+array [1..6] of int: demands = [8, 10, 7, 12, 4, 4];
+var 0..72: INT____00001 :: is_defined_var :: var_is_introduced;
+array [1..6] of var 0..12: x :: output_array([1..6]);
+var 0..72: z :: output_var = INT____00001;
+constraint int_lin_eq([-1, 1, 1, 1, 1, 1, 1], [INT____00001, x[1], x[2], x[3], x[4], x[5], x[6]], 0) :: defines_var(INT____00001);
+constraint int_lin_le([-1, -1], [x[1], x[2]], -8);
+constraint int_lin_le([-1, -1], [x[1], x[6]], -4);
+constraint int_lin_le([-1, -1], [x[2], x[3]], -10);
+constraint int_lin_le([-1, -1], [x[3], x[4]], -7);
+constraint int_lin_le([-1, -1], [x[4], x[5]], -12);
+constraint int_lin_le([-1, -1], [x[5], x[6]], -4);
+solve  :: int_search(x, first_fail, indomain, complete) minimize INT____00001;

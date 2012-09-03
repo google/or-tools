@@ -1,0 +1,18 @@
+array [1..36] of int: cost = [0, 1000, 8, 13, 25, 28, 1000, 0, 15, 12, 26, 25, 1000, 1000, 0, 6, 16, 17, 1000, 1000, 1000, 0, 14, 16, 1000, 1000, 1000, 1000, 0, 1000, 1000, 1000, 1000, 1000, 1000, 0];
+array [1..6] of int: demand = [0, 0, 9999, 9999, 130, 130];
+array [1..6] of int: supply = [150, 200, 9999, 9999, 0, 0];
+var 0..10000: INT____00001 :: is_defined_var :: var_is_introduced;
+array [1..36] of var 0..10000: delivery :: output_array([1..6, 1..6]);
+var 0..10000: z :: output_var = INT____00001;
+constraint int_lin_eq([-1, 1000, 8, 13, 25, 28, 1000, 15, 12, 26, 25, 1000, 1000, 6, 16, 17, 1000, 1000, 1000, 14, 16, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000], [INT____00001, delivery[2], delivery[3], delivery[4], delivery[5], delivery[6], delivery[7], delivery[9], delivery[10], delivery[11], delivery[12], delivery[13], delivery[14], delivery[16], delivery[17], delivery[18], delivery[19], delivery[20], delivery[21], delivery[23], delivery[24], delivery[25], delivery[26], delivery[27], delivery[28], delivery[30], delivery[31], delivery[32], delivery[33], delivery[34], delivery[35]], 0) :: defines_var(INT____00001);
+constraint int_lin_le([-1, -1, -1, -1, -1, -1], [delivery[3], delivery[9], delivery[15], delivery[21], delivery[27], delivery[33]], -9999);
+constraint int_lin_le([-1, -1, -1, -1, -1, -1], [delivery[4], delivery[10], delivery[16], delivery[22], delivery[28], delivery[34]], -9999);
+constraint int_lin_le([-1, -1, -1, -1, -1, -1], [delivery[5], delivery[11], delivery[17], delivery[23], delivery[29], delivery[35]], -130);
+constraint int_lin_le([-1, -1, -1, -1, -1, -1], [delivery[6], delivery[12], delivery[18], delivery[24], delivery[30], delivery[36]], -130);
+constraint int_lin_le([1, 1, 1, 1, 1, 1], [delivery[1], delivery[2], delivery[3], delivery[4], delivery[5], delivery[6]], 150);
+constraint int_lin_le([1, 1, 1, 1, 1, 1], [delivery[7], delivery[8], delivery[9], delivery[10], delivery[11], delivery[12]], 200);
+constraint int_lin_le([1, 1, 1, 1, 1, 1], [delivery[13], delivery[14], delivery[15], delivery[16], delivery[17], delivery[18]], 9999);
+constraint int_lin_le([1, 1, 1, 1, 1, 1], [delivery[19], delivery[20], delivery[21], delivery[22], delivery[23], delivery[24]], 9999);
+constraint int_lin_le([1, 1, 1, 1, 1, 1], [delivery[25], delivery[26], delivery[27], delivery[28], delivery[29], delivery[30]], 0);
+constraint int_lin_le([1, 1, 1, 1, 1, 1], [delivery[31], delivery[32], delivery[33], delivery[34], delivery[35], delivery[36]], 0);
+solve  :: int_search([delivery[1], delivery[2], delivery[3], delivery[4], delivery[5], delivery[6], delivery[7], delivery[8], delivery[9], delivery[10], delivery[11], delivery[12], delivery[13], delivery[14], delivery[15], delivery[16], delivery[17], delivery[18], delivery[19], delivery[20], delivery[21], delivery[22], delivery[23], delivery[24], delivery[25], delivery[26], delivery[27], delivery[28], delivery[29], delivery[30], delivery[31], delivery[32], delivery[33], delivery[34], delivery[35], delivery[36]], largest, indomain_max, complete) minimize INT____00001;

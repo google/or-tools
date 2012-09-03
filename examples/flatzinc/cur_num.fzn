@@ -1,0 +1,15 @@
+var 1..4000000: B;
+var 1..4000000: C;
+var 1..4000000: E;
+var 2..4000000: INT____00002 :: is_defined_var :: var_is_introduced;
+var 2..4000000: A = INT____00002;
+var 2..4000000: INT____00005 :: is_defined_var :: var_is_introduced;
+var 2..4000000: D = INT____00005;
+var 2..4000000: X;
+array [1..6] of var 1..4000000: arr :: output_array([1..6]) = [X, A, B, C, D, E];
+constraint int_lin_eq([-1, 1], [INT____00002, X], -1);
+constraint int_lin_eq([-1, 1], [INT____00005, C], -1);
+constraint int_lin_eq([-1, 2], [X, C], 0);
+constraint int_times(B, B, INT____00002) :: defines_var(INT____00002);
+constraint int_times(E, E, INT____00005) :: defines_var(INT____00005);
+solve satisfy;

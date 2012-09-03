@@ -1,0 +1,5 @@
+var bool: BOOL____00001 :: is_defined_var :: var_is_introduced;
+var bool: v :: output_var = BOOL____00001;
+array [1..2] of var bool: vars :: output_array([1..2]);
+constraint bool_le_reif(vars[1], vars[2], BOOL____00001) :: defines_var(BOOL____00001);
+solve satisfy;

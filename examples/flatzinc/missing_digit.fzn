@@ -1,0 +1,13 @@
+var 0..9: missing :: output_var;
+array [1..9] of var 0..9: x :: output_array([1..9]);
+constraint int_lin_eq([-100000000, -10000000, -1000000, -100000, -10000, -1000, -100, -10, -1], [x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9]], -536870912);
+constraint int_ne(missing, x[1]);
+constraint int_ne(missing, x[2]);
+constraint int_ne(missing, x[3]);
+constraint int_ne(missing, x[4]);
+constraint int_ne(missing, x[5]);
+constraint int_ne(missing, x[6]);
+constraint int_ne(missing, x[7]);
+constraint int_ne(missing, x[8]);
+constraint int_ne(missing, x[9]);
+solve satisfy;

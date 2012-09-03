@@ -1,0 +1,15 @@
+array [1..8] of int: appetisers = [1, 6, 0, 0, 0, 0, 0, 0];
+array [1..8] of int: calories = [1, 6, 5, 7, 2, 4, 2, 6];
+array [1..8] of int: dessert = [0, 0, 0, 0, 0, 0, 2, 6];
+array [1..8] of int: fish = [0, 0, 0, 0, 2, 4, 0, 0];
+array [1..8] of int: meat = [0, 0, 5, 7, 0, 0, 0, 0];
+var 0..10: INT____00001 :: is_defined_var :: var_is_introduced;
+var 0..33: sum_calories :: output_var = INT____00001;
+array [1..8] of var 0..1: x :: output_array([1..8]);
+constraint int_lin_eq([1, 1], [x[1], x[2]], 1);
+constraint int_lin_eq([1, 1], [x[7], x[8]], 1);
+constraint int_lin_eq([1, 1, 1, 1, 1, 1, 1, 1], [x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8]], 3);
+constraint int_lin_eq([-1, 1, 6, 5, 7, 2, 4, 2, 6], [INT____00001, x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8]], 0) :: defines_var(INT____00001);
+constraint int_lin_le([1, 1], [x[3], x[4]], 1);
+constraint int_lin_le([1, 1], [x[5], x[6]], 1);
+solve  :: int_search([x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], INT____00001], first_fail, indomain, complete) satisfy;

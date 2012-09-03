@@ -1,0 +1,11 @@
+var 0..10000000: x :: output_var;
+constraint int_mod(x, 2, 1);
+constraint int_mod(x, 3, 2);
+constraint int_mod(x, 4, 3);
+constraint int_mod(x, 5, 4);
+constraint int_mod(x, 6, 5);
+constraint int_mod(x, 7, 6);
+constraint int_mod(x, 8, 7);
+constraint int_mod(x, 9, 8);
+constraint int_mod(x, 10, 9);
+solve satisfy;

@@ -1,0 +1,18 @@
+var int: INT____00002 :: is_defined_var :: var_is_introduced;
+var int: n :: output_var = INT____00002;
+array [1..6] of var int: x :: output_array([1..6]);
+constraint int_le(0, x[1]);
+constraint int_le(0, x[2]);
+constraint int_le(0, x[3]);
+constraint int_le(0, x[4]);
+constraint int_le(0, x[5]);
+constraint int_le(0, x[6]);
+constraint int_le(1, INT____00002);
+constraint int_le(1, n);
+constraint int_lin_eq([-1, 2], [INT____00002, x[1]], -1);
+constraint int_lin_eq([-1, 3], [INT____00002, x[2]], -1) :: defines_var(INT____00002);
+constraint int_lin_eq([1, -7], [INT____00002, x[6]], 0);
+constraint int_lin_eq([1, -6], [INT____00002, x[5]], 1);
+constraint int_lin_eq([1, -5], [INT____00002, x[4]], 1);
+constraint int_lin_eq([1, -4], [INT____00002, x[3]], 1);
+solve minimize INT____00002;

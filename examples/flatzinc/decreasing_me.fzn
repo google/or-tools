@@ -1,0 +1,9 @@
+array [1..4] of var 1..8: x :: output_array([1..4]);
+constraint int_eq(1, x[3]);
+constraint int_eq(1, x[4]);
+constraint int_eq(4, x[2]);
+constraint int_eq(8, x[1]);
+constraint int_le(x[2], x[1]);
+constraint int_le(x[3], x[2]);
+constraint int_le(x[4], x[3]);
+solve satisfy;

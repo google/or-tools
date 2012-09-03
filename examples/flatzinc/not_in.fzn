@@ -1,0 +1,7 @@
+var 2..2: v :: output_var = 2;
+array [1..2] of var 1..3: values :: output_array([1..2]);
+constraint int_eq(values[1], 1);
+constraint int_eq(values[2], 3);
+constraint int_ne(values[1], 2);
+constraint int_ne(values[2], 2);
+solve satisfy;

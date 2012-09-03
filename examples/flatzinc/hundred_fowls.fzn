@@ -1,0 +1,7 @@
+var 0..100: chicks :: output_var;
+var 0..100: cock :: output_var;
+var 0..100: hen :: output_var;
+constraint int_lin_eq([1, 15, 9], [chicks, cock, hen], 300);
+constraint int_lin_eq([3, 3, 3], [chicks, cock, hen], 300);
+constraint int_mod(chicks, 3, 0);
+solve satisfy;

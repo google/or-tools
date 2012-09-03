@@ -1,0 +1,15 @@
+var -15..10: INT____00001 :: is_defined_var :: var_is_introduced;
+var -15..10: INT____00002 :: is_defined_var :: var_is_introduced;
+var -15..10: INT____00003 :: is_defined_var :: var_is_introduced;
+var -45..30: INT____00004 :: is_defined_var :: var_is_introduced;
+array [1..3] of var -3..2: coeffs :: output_array([1..3]);
+var -45..30: s :: output_var = INT____00004;
+array [1..3] of var 0..5: x;
+constraint int_eq(coeffs[1], 1);
+constraint int_eq(coeffs[2], 2);
+constraint int_eq(coeffs[3], -3);
+constraint int_lin_eq([-1, 1, 1, 1], [INT____00004, INT____00001, INT____00002, INT____00003], 0) :: defines_var(INT____00004);
+constraint int_times(coeffs[1], x[1], INT____00001) :: defines_var(INT____00001);
+constraint int_times(coeffs[2], x[2], INT____00002) :: defines_var(INT____00002);
+constraint int_times(coeffs[3], x[3], INT____00003) :: defines_var(INT____00003);
+solve  :: int_search([x[1], x[2], x[3], coeffs[1], coeffs[2], coeffs[3]], first_fail, indomain, complete) satisfy;

@@ -1,0 +1,13 @@
+array [1..11] of var int: fib :: output_array([1..11]);
+constraint int_eq(fib[1], 1);
+constraint int_eq(fib[2], 1);
+constraint int_lin_eq([-1, -1, 1], [fib[1], fib[2], fib[3]], 0);
+constraint int_lin_eq([-1, -1, 1], [fib[2], fib[3], fib[4]], 0);
+constraint int_lin_eq([-1, -1, 1], [fib[3], fib[4], fib[5]], 0);
+constraint int_lin_eq([-1, -1, 1], [fib[4], fib[5], fib[6]], 0);
+constraint int_lin_eq([-1, -1, 1], [fib[5], fib[6], fib[7]], 0);
+constraint int_lin_eq([-1, -1, 1], [fib[6], fib[7], fib[8]], 0);
+constraint int_lin_eq([-1, -1, 1], [fib[7], fib[8], fib[9]], 0);
+constraint int_lin_eq([-1, -1, 1], [fib[8], fib[9], fib[10]], 0);
+constraint int_lin_eq([-1, -1, 1], [fib[9], fib[10], fib[11]], 0);
+solve satisfy;

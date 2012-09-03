@@ -1,0 +1,6 @@
+var 0..999999: INT____00001 :: is_defined_var :: var_is_introduced;
+var 0..999999: a :: output_var = INT____00001;
+array [1..6] of var 0..9: x :: output_array([1..6]);
+constraint int_lin_eq([1, 1, 1, -1, -1, -1], [x[1], x[2], x[3], x[4], x[5], x[6]], 0);
+constraint int_lin_eq([-1, 100000, 10000, 1000, 100, 10, 1], [INT____00001, x[1], x[2], x[3], x[4], x[5], x[6]], 0) :: defines_var(INT____00001);
+solve  :: int_search(x, first_fail, indomain_min, complete) satisfy;
