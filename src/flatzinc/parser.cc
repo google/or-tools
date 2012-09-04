@@ -1518,9 +1518,17 @@ void ParserState::RegroupAux(const std::string& ct_id,
     spec->RemoveArg(1);
     spec->SetId("int_eq");
   } else {
+    // Check the variables are not used elsewhere.
     VLOG(1) << "  - regroup " << ct_id << "(" << start_index << ".."
             << end_index << "), output = " << output_var_index
             << ", contains = [" << IntVectorToString(indices, ", ") << "]";
+    for (int i = start_index; i < end_index; ++i) {
+      const int intermediate = constraints_[i]->Arg(2)->getIntVar();
+      if (constraints_per_int_variables_[intermediate].size() > 2) {
+        VLOG(1) << "    * aborted because of xi(" << intermediate << ")";
+        return;
+      }
+    }
     for (int i = start_index + 1; i <= end_index; ++i) {
       constraints_[i]->Nullify();
     }
