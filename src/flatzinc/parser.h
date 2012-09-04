@@ -1218,6 +1218,13 @@ class ParserState {
   void ComputeDependencies(const NodeSet& candidates, CtSpec* const spec) const;
   void ComputeViableTarget(CtSpec* const spec, NodeSet* const candidates) const;
   void Sanitize(CtSpec* const spec);
+  void BuildStatistics();
+  void Regroup(const std::string& ct_id, const std::vector<int>& ct_list);
+  void RegroupAux(const std::string& ct_id,
+                  int start_index,
+                  int end_index,
+                  int output_var_index,
+                  const std::vector<int>& indices);
   void Strongify(int constraint_index);
   bool IsAlias(AstNode* const node) const;
   bool IsIntroduced(AstNode* const node) const;

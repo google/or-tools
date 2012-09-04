@@ -21,6 +21,7 @@
 #include "flatzinc/flatzinc.h"
 #include "flatzinc/parser.h"
 #include "flatzinc/parser.tab.h"
+#include "util/string_array.h"
 
 #if defined(__APPLE__) && defined(__GNUC__)
 #include <sys/mman.h>
@@ -333,10 +334,23 @@ void ParserState::Sanitize(CtSpec* const spec) {
 
 void ParserState::Presolve() {
   // Sanity.
+  VLOG(1) << "Sanitize";
   for (int i = 0; i < constraints_.size(); ++i) {
     Sanitize(constraints_[i]);
   }
+
+  // Hack, loop optimization on int_max and int_min.
+  VLOG(1) << "Loop optimization";
+  BuildStatistics();
+  if (ContainsKey(constraints_per_id_, "int_max")) {
+    Regroup("maximum_int", constraints_per_id_["int_max"]);
+  }
+  if (ContainsKey(constraints_per_id_, "int_min")) {
+    Regroup("minimum_int", constraints_per_id_["int_min"]);
+  }
+
   // Find orphans (is_defined && not a viable target).
+  VLOG(1) << "Search for orphans";
   for (int i = 0; i < constraints_.size(); ++i) {
     AstNode* const target = FindTarget(constraints_[i]->annotations());
     if (target != NULL) {
@@ -355,6 +369,7 @@ void ParserState::Presolve() {
   }
 
   // Collect aliases.
+  VLOG(1) << "Collect aliases";
   for (int i = 0; i < int_variables_.size(); ++i) {
     IntVarSpec* const spec = int_variables_[i];
     if (spec->alias) {
@@ -365,6 +380,7 @@ void ParserState::Presolve() {
   }
 
   // Discover new aliases
+  VLOG(1) << "Discover new aliases";
   for (int i = 0; i < constraints_.size(); ++i) {
     CtSpec* const spec = constraints_[i];
     if (spec->Nullified()) {
@@ -374,6 +390,7 @@ void ParserState::Presolve() {
   }
 
   // Merge domains of aliases, update alias map to point to root.
+  VLOG(1) << "Merge domain, update aliases";
   for (int i = 0; i < int_variables_.size(); ++i) {
     IntVarSpec* const spec = int_variables_[i];
     AstNode* const var = IntCopy(i);
@@ -391,6 +408,7 @@ void ParserState::Presolve() {
   }
 
   // Remove all aliases from constraints.
+  VLOG(1) << "Remove duplicate aliases";
   for (int i = 0; i < constraints_.size(); ++i) {
     CtSpec* const spec = constraints_[i];
     if (!spec->Nullified()) {
@@ -399,6 +417,7 @@ void ParserState::Presolve() {
   }
 
   // Presolve (propagate bounds, simplify constraints...).
+  VLOG(1) << "Main presolve loop.";
   bool repeat = true;
   while (repeat) {
     repeat = false;
@@ -429,8 +448,29 @@ void ParserState::Presolve() {
     }
   }
 
+  VLOG(1) << "Model statistics";
+  BuildStatistics();
+  for (ConstIter<hash_map<string, std::vector<int> > > it(constraints_per_id_);
+       !it.at_end();
+       ++it) {
+    VLOG(1) << "  - " << it->first << ": " << it->second.size();
+  }
+
+  if (ContainsKey(constraints_per_id_, "array_bool_or")) {
+    const std::vector<int>& ors = constraints_per_id_["array_bool_or"];
+    for (int i = 0; i < ors.size(); ++i) {
+      Strongify(ors[i]);
+    }
+  }
+}
+
+void ParserState::BuildStatistics() {
   // Setup mapping structures (constraints per id, and constraints per
   // variable).
+  constraints_per_id_.clear();
+  constraints_per_int_variables_.clear();
+  constraints_per_bool_variables_.clear();
+
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
     const int index = spec->Index();
@@ -456,20 +496,6 @@ void ParserState::Presolve() {
           }
         }
       }
-    }
-  }
-
-  VLOG(1) << "Model statistics";
-  for (ConstIter<hash_map<string, std::vector<int> > > it(constraints_per_id_);
-       !it.at_end();
-       ++it) {
-    VLOG(1) << "  - " << it->first << ": " << it->second.size();
-  }
-
-  if (ContainsKey(constraints_per_id_, "array_bool_or")) {
-    const std::vector<int>& ors = constraints_per_id_["array_bool_or"];
-    for (int i = 0; i < ors.size(); ++i) {
-      Strongify(ors[i]);
     }
   }
 }
@@ -902,7 +928,7 @@ bool ParserState::IsAllDifferent(AstNode* const node) const {
 
 bool ParserState::MergeIntDomain(IntVarSpec* const source,
                                  IntVarSpec* const dest) {
-  VLOG(1) << "    - merge " << dest->DebugString() << " with "
+  VLOG(1) << "  - merge " << dest->DebugString() << " with "
           << source->DebugString();
   if (source->assigned) {
     return dest->MergeBounds(source->i, source->i);
@@ -1479,6 +1505,81 @@ bool ParserState::PresolveOneConstraint(CtSpec* const spec) {
     }
   }
   return false;
+}
+
+void ParserState::RegroupAux(const std::string& ct_id,
+                             int start_index,
+                             int end_index,
+                             int output_var_index,
+                             const std::vector<int>& indices) {
+  if (indices.size() == 1) {
+    CtSpec* const spec = constraints_[start_index];
+    VLOG(1) << "  - presolve:  simplify " << spec->DebugString();
+    spec->RemoveArg(1);
+    spec->SetId("int_eq");
+  } else {
+    VLOG(1) << "  - regroup " << ct_id << "(" << start_index << ".."
+            << end_index << "), output = " << output_var_index
+            << ", contains = [" << IntVectorToString(indices, ", ") << "]";
+    for (int i = start_index + 1; i <= end_index; ++i) {
+      constraints_[i]->Nullify();
+    }
+    delete constraints_[start_index];
+    std::vector<AstNode*> max_args;
+    max_args.push_back(new AstIntVar(output_var_index));
+    std::vector<AstNode*> max_array;
+    for (int i = 0; i < indices.size(); ++i) {
+      max_array.push_back(new AstIntVar(indices[i]));
+    }
+    max_args.push_back(new AstArray(max_array));
+    AstArray* const args = new AstArray(max_args);
+    constraints_[start_index] = new CtSpec(start_index, ct_id, args, NULL);
+    VLOG(1) << "    + created " << constraints_[start_index]->DebugString();
+  }
+}
+
+void ParserState::Regroup(const std::string& ct_id,
+                          const std::vector<int>& ct_indices) {
+  int start_index = -1;
+  int end_index = -1;
+  std::vector<int> variables;
+  int carry_over = -1;
+  for (int i = 0; i < ct_indices.size(); ++i) {
+    const int constraint_index = ct_indices[i];
+    CtSpec* const spec = constraints_[constraint_index];
+    if (spec->Nullified()) {
+      continue;
+    }
+    if (spec->Arg(0)->isIntVar() &&
+        spec->Arg(1)->isIntVar() &&
+        spec->Arg(0)->getIntVar() == spec->Arg(1)->getIntVar() &&
+        FindTarget(spec->annotations()) != NULL &&
+        IsIntroduced(FindTarget(spec->annotations()))) {
+      if (start_index != -1) {
+        RegroupAux(ct_id, start_index, end_index, carry_over, variables);
+      }
+      start_index = constraint_index;
+      variables.clear();
+      variables.push_back(spec->Arg(0)->getIntVar());
+      carry_over = spec->Arg(2)->getIntVar();
+      end_index = constraint_index;
+    } else if (spec->Arg(1)->isIntVar() &&
+               spec->Arg(1)->getIntVar() == carry_over &&
+               FindTarget(spec->annotations()) != NULL &&
+               IsIntroduced(FindTarget(spec->annotations()))) {
+      variables.push_back(spec->Arg(0)->getIntVar());
+      carry_over = spec->Arg(2)->getIntVar();
+      end_index = constraint_index;
+    } else if (carry_over != -1) {
+      RegroupAux(ct_id, start_index, end_index, carry_over, variables);
+      carry_over = -1;
+      start_index = -1;
+      end_index = -1;
+    }
+  }
+  if (carry_over != -1) {
+    RegroupAux(ct_id, start_index, end_index, carry_over, variables);
+  }
 }
 
 void ParserState::ReplaceAliases(CtSpec* const spec) {
