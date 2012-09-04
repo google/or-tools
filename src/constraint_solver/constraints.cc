@@ -1004,10 +1004,10 @@ Constraint* Solver::MakeModuloConstraint(IntVar* const x,
 Constraint* Solver::MakeModuloConstraint(IntVar* const x,
                                          IntVar* const mod,
                                          IntVar* const y) {
-  if (x->Min() >= 0 && y->Min() >= 0 && mod->Min() >= 0) {
-    return RevAlloc(new PositiveModulo(this, x, mod, y));
-  } else if (y->Bound() && y->Min() == 0) {
+  if (y->Bound() && y->Min() == 0) {
     return RevAlloc(new BoundModulo(this, x, mod));
+  } else if (x->Min() >= 0 && y->Min() >= 0 && mod->Min() >= 0) {
+    return RevAlloc(new PositiveModulo(this, x, mod, y));
   } else {
     return RevAlloc(new VariableModulo(this, x, mod, y));
   }

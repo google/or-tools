@@ -2552,7 +2552,7 @@ void p_global_cardinality_low_up(FlatZincModel* const model,
   for (int i = 0; i < lsize; ++i) {
     low[i] = array_low->a[i]->getInt();
   }
-  AstArray* const array_up = spec->Arg(2)->getArray();
+  AstArray* const array_up = spec->Arg(3)->getArray();
   const int usize = array_up->a.size();
   std::vector<int64> up(usize);
   for (int i = 0; i < usize; ++i) {
@@ -2584,7 +2584,7 @@ void p_global_cardinality_low_up_closed(FlatZincModel* const model,
   for (int i = 0; i < lsize; ++i) {
     low[i] = array_low->a[i]->getInt();
   }
-  AstArray* const array_up = spec->Arg(2)->getArray();
+  AstArray* const array_up = spec->Arg(3)->getArray();
   const int usize = array_up->a.size();
   std::vector<int64> up(usize);
   for (int i = 0; i < usize; ++i) {
