@@ -2156,8 +2156,43 @@ inline bool AreAllBooleans(const std::vector<IntVar*>& vars) {
   return true;
 }
 
+template<class T> bool AreAllNull(const std::vector<T>& values) {
+  for (int i = 0; i < values.size(); ++i) {
+    if (values[i] != 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template<class T> bool AreAllPositive(const std::vector<T>& values) {
+  for (int i = 0; i < values.size(); ++i) {
+    if (values[i] < 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template<class T> bool AreAllStrictlyPositive(const std::vector<T>& values) {
+  for (int i = 0; i < values.size(); ++i) {
+    if (values[i] <= 0) {
+      return false;
+    }
+  }
+  return true;
+}
 
 
+template <class T> bool AreAllBoundOrNull(const std::vector<IntVar*>& vars,
+                                          const std::vector<T>& values) {
+  for (int i = 0; i < vars.size(); ++i) {
+    if (values[i] != 0 && !vars[i]->Bound()) {
+      return false;
+    }
+  }
+  return true;
+}
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_

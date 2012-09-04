@@ -1118,64 +1118,6 @@ class ArrayBoolOrEq : public CastConstraint {
 
 // ---------- Specialized cases ----------
 
-bool AreAllBooleans(const IntVar* const* vars, int size) {
-  for (int i = 0; i < size; ++i) {
-    const IntVar* var = vars[i];
-    if (var->Min() < 0 || var->Max() > 1) {
-      return false;
-    }
-  }
-  return true;
-}
-
-template<class T> bool AreAllPositive(const T* const values, int size) {
-  for (int i = 0; i < size; ++i) {
-    if (values[i] < 0) {
-      return false;
-    }
-  }
-  return true;
-}
-
-template<class T> bool AreAllStrictlyPositive(const T* const values, int size) {
-  for (int i = 0; i < size; ++i) {
-    if (values[i] <= 0) {
-      return false;
-    }
-  }
-  return true;
-}
-
-
-template<class T> bool AreAllNull(const T* const values, int size) {
-  for (int i = 0; i < size; ++i) {
-    if (values[i] != 0) {
-      return false;
-    }
-  }
-  return true;
-}
-
-template<class T> bool AreAllOnes(const T* const values, int size) {
-  for (int i = 0; i < size; ++i) {
-    if (values[i] != 1) {
-      return false;
-    }
-  }
-  return true;
-}
-
-template <class T> bool AreAllBoundOrNull(const IntVar* const * vars,
-                                          const T* const values,
-                                          int size) {
-  for (int i = 0; i < size; ++i) {
-    if (values[i] != 0 && !vars[i]->Bound()) {
-      return false;
-    }
-  }
-  return true;
-}
-
 class BaseSumBooleanConstraint : public Constraint {
  public:
   BaseSumBooleanConstraint(Solver* const s,
@@ -2306,248 +2248,17 @@ class PositiveBooleanScalProdEqCst : public Constraint {
   Rev<int64> max_coefficient_;
 };
 
-}  // namespace
-
-// ----- API -----
-
-IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
+template<class T> Constraint* MakeScalProdEqualityFct(
+    Solver* const solver,
+    const std::vector<IntVar*>& vars,
+    const std::vector<T>& coefficients,
+    int64 cst) {
   const int size = vars.size();
-  if (size == 0) {
-    return MakeIntConst(0LL);
-  } else if (size == 1) {
-    return vars[0];
-  } else if (size == 2) {
-    return MakeSum(vars[0], vars[1]);
-  } else {
-    IntExpr* const cache =
-        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_SUM);
-    if (cache != NULL) {
-      return cache->Var();
-    } else {
-      int64 new_min = 0;
-      int64 new_max = 0;
-      for (int i = 0; i < size; ++i) {
-        if (new_min != kint64min) {
-          new_min = CapAdd(vars[i]->Min(), new_min);
-        }
-        if (new_max != kint64max) {
-          new_max = CapAdd(vars[i]->Max(), new_max);
-        }
-      }
-      const bool all_booleans = AreAllBooleans(vars);
-
-      const string name = all_booleans ?
-          StringPrintf("BooleanSum([%s])", NameVector(vars, ", ").c_str()) :
-          StringPrintf("Sum([%s])", NameVector(vars, ", ").c_str());
-      IntVar* const sum_var = MakeIntVar(new_min, new_max, name);
-      if (all_booleans) {
-        AddConstraint(RevAlloc(
-            new SumBooleanEqualToVar(this, vars.data(), vars.size(), sum_var)));
-      } else  if (new_min != kint64min && new_max != kint64max) {
-        AddConstraint(RevAlloc(new SumConstraint(this, vars, sum_var)));
-      } else {
-        AddConstraint(RevAlloc(new SafeSumConstraint(this, vars, sum_var)));
-      }
-      model_cache_->InsertVarArrayExpression(
-          sum_var, vars, ModelCache::VAR_ARRAY_SUM);
-      return sum_var;
-    }
-  }
-}
-
-IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
-  const int size = vars.size();
-  if (size == 0) {
-    return MakeIntConst(0LL);
-  } else if (size == 1) {
-    return vars[0];
-  } else if (size == 2) {
-    return MakeMin(vars[0], vars[1]);
-  } else {
-    IntExpr* const cache =
-        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_MIN);
-    if (cache != NULL) {
-      return cache->Var();
-    } else {
-      if (AreAllBooleans(vars)) {
-        IntVar* const new_var = MakeBoolVar();
-        AddConstraint(RevAlloc(new ArrayBoolAndEq(this, vars, new_var)));
-        model_cache_->InsertVarArrayExpression(
-            new_var, vars, ModelCache::VAR_ARRAY_MIN);
-        return new_var;
-      } else {
-        int64 new_min = kint64max;
-        int64 new_max = kint64max;
-        for (int i = 0; i < size; ++i) {
-          new_min = std::min(new_min, vars[i]->Min());
-          new_max = std::min(new_max, vars[i]->Max());
-        }
-        IntVar* const new_var = MakeIntVar(new_min, new_max);
-        AddConstraint(RevAlloc(new MinConstraint(this, vars, new_var)));
-        model_cache_->InsertVarArrayExpression(
-            new_var, vars, ModelCache::VAR_ARRAY_MIN);
-        return new_var;
-      }
-    }
-  }
-}
-
-IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
-  const int size = vars.size();
-  if (size == 0) {
-    return MakeIntConst(0LL);
-  } else if (size == 1) {
-    return vars[0];
-  } else if (size == 2) {
-    return MakeMax(vars[0], vars[1]);
-  } else {
-    IntExpr* const cache =
-        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_MAX);
-    if (cache != NULL) {
-      return cache->Var();
-    } else {
-      if (AreAllBooleans(vars)) {
-        IntVar* const new_var = MakeBoolVar();
-        AddConstraint(RevAlloc(new ArrayBoolOrEq(this, vars, new_var)));
-        model_cache_->InsertVarArrayExpression(
-            new_var, vars, ModelCache::VAR_ARRAY_MIN);
-        return new_var;
-      } else {
-        int64 new_min = kint64min;
-        int64 new_max = kint64min;
-        for (int i = 0; i < size; ++i) {
-          new_min = std::max(new_min, vars[i]->Min());
-          new_max = std::max(new_max, vars[i]->Max());
-        }
-        IntVar* const new_var = MakeIntVar(new_min, new_max);
-        AddConstraint(RevAlloc(new MaxConstraint(this, vars, new_var)));
-        model_cache_->InsertVarArrayExpression(
-            new_var, vars, ModelCache::VAR_ARRAY_MAX);
-        return new_var;
-      }
-    }
-  }
-}
-
-Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
-                                    IntVar* const min_var) {
-  const int size = vars.size();
-  if (size > 2) {
-    if (AreAllBooleans(vars)) {
-      return RevAlloc(new ArrayBoolAndEq(this, vars, min_var));
-    } else {
-      return RevAlloc(new MinConstraint(this, vars, min_var));
-    }
-  } else if (size == 2) {
-    return MakeEquality(MakeMin(vars[0], vars[1])->Var(), min_var);
-  } else if (size == 1) {
-    return MakeEquality(vars[0], min_var);
-  } else {
-    return MakeEquality(min_var, Zero());
-  }
-}
-
-Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
-                                    IntVar* const max_var) {
-  const int size = vars.size();
-  if (size > 2) {
-    if (AreAllBooleans(vars)) {
-      return RevAlloc(new ArrayBoolOrEq(this, vars, max_var));
-    } else {
-      return RevAlloc(new MaxConstraint(this, vars, max_var));
-    }
-  } else if (size == 2) {
-    return MakeEquality(MakeMax(vars[0], vars[1])->Var(), max_var);
-  } else if (size == 1) {
-    return MakeEquality(vars[0], max_var);
-  } else {
-    return MakeEquality(max_var, Zero());
-  }
-}
-
-Constraint* Solver::MakeSumLessOrEqual(const std::vector<IntVar*>& vars, int64 cst) {
-  const int size = vars.size();
-  if (cst == 1LL && AreAllBooleans(vars) && size > 2) {
-    return RevAlloc(new SumBooleanLessOrEqualToOne(this, vars.data(), size));
-  } else {
-    return MakeLessOrEqual(MakeSum(vars), cst);
-  }
-}
-
-Constraint* Solver::MakeSumGreaterOrEqual(const std::vector<IntVar*>& vars,
-                                          int64 cst) {
-  const int size = vars.size();
-  if (cst == 1LL && AreAllBooleans(vars) && size > 2) {
-    return RevAlloc(new SumBooleanGreaterOrEqualToOne(this, vars.data(), size));
-  } else {
-    return MakeGreaterOrEqual(MakeSum(vars), cst);
-  }
-}
-
-Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst) {
-  const int size = vars.size();
-  if (size == 0) {
-    return cst == 0 ? MakeTrueConstraint() : MakeFalseConstraint();
-  }
-  if (AreAllBooleans(vars) && size > 2) {
-    if (cst == 1) {
-      return RevAlloc(new SumBooleanEqualToOne(this, vars.data(), size));
-    } else if (cst < 0 || cst > size) {
-      return MakeFalseConstraint();
-    } else {
-      return RevAlloc(new SumBooleanEqualToVar(this,
-                                               vars.data(),
-                                               size,
-                                               MakeIntConst(cst)));
-    }
-  } else {
-    if (vars.size() == 1) {
-      return MakeEquality(vars[0], cst);
-    } else if (vars.size() == 2) {
-      return MakeEquality(vars[0], MakeDifference(cst, vars[1])->Var());
-    }
-    if (DetectSumOverflow(vars)) {
-      return RevAlloc(new SafeSumConstraint(this, vars, MakeIntConst(cst)));
-    } else {
-      return RevAlloc(new SumConstraint(this, vars, MakeIntConst(cst)));
-    }
-  }
-}
-
-Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
-                                    IntVar* const var) {
-  const int size = vars.size();
-  if (size == 0) {
-    return MakeEquality(var, Zero());
-  }
-  if (AreAllBooleans(vars) && size > 2) {
-    return RevAlloc(new SumBooleanEqualToVar(this, vars.data(), size, var));
-  } else if (size == 0) {
-    return MakeEquality(var, Zero());
-  } else if (size == 1) {
-    return MakeEquality(vars[0], var);
-  } else if (size == 2) {
-    return MakeEquality(MakeSum(vars[0], vars[1])->Var(), var);
-  } else {
-    if (DetectSumOverflow(vars)) {
-      return RevAlloc(new SafeSumConstraint(this, vars, var));
-    } else {
-      return RevAlloc(new SumConstraint(this, vars, var));
-    }
-  }
-}
-
-namespace {
-template<class T> Constraint* MakeScalProdEqualityFct(Solver* const solver,
-                                                      IntVar* const * vars,
-                                                      int size,
-                                                      T const * coefficients,
-                                                      int64 cst) {
-  if (size == 0 || AreAllNull<T>(coefficients, size)) {
+  if (size == 0 || AreAllNull<T>(coefficients)) {
     return cst == 0 ? solver->MakeTrueConstraint()
         : solver->MakeFalseConstraint();
   }
-  if (AreAllBoundOrNull(vars, coefficients, size)) {
+  if (AreAllBoundOrNull(vars, coefficients)) {
     int64 sum = 0;
     for (int i = 0; i < size; ++i) {
       sum += coefficients[i] * vars[i]->Min();
@@ -2556,15 +2267,17 @@ template<class T> Constraint* MakeScalProdEqualityFct(Solver* const solver,
         solver->MakeTrueConstraint() :
         solver->MakeFalseConstraint();
   }
-  if (AreAllBooleans(vars, size) &&
-      AreAllPositive<T>(coefficients, size) &&
-      size > 2) {
+  if (AreAllOnes(coefficients)) {
+    return solver->MakeSumEquality(vars, cst);
+  }
+  if (AreAllBooleans(vars) && AreAllPositive<T>(coefficients) && size > 2) {
     // TODO(user) : bench BooleanScalProdEqVar with IntConst.
-    return solver->RevAlloc(new PositiveBooleanScalProdEqCst(solver,
-                                                             vars,
-                                                             size,
-                                                             coefficients,
-                                                             cst));
+    return solver->RevAlloc(
+        new PositiveBooleanScalProdEqCst(solver,
+                                         vars.data(),
+                                         size,
+                                         coefficients.data(),
+                                         cst));
   }
   // Some simplications
   int constants = 0;
@@ -2670,21 +2383,26 @@ template<class T> Constraint* MakeScalProdEqualityFct(Solver* const solver,
   return solver->MakeSumEquality(terms, solver->MakeIntConst(cst));
 }
 
-template<class T> Constraint* MakeScalProdEqualityVarFct(Solver* const solver,
-                                                         IntVar* const * vars,
-                                                         int size,
-                                                         T const * coefficients,
-                                                         IntVar* const target) {
-  if (size == 0 || AreAllNull<T>(coefficients, size)) {
+template<class T> Constraint* MakeScalProdEqualityVarFct(
+    Solver* const solver,
+    const std::vector<IntVar*>& vars,
+    const std::vector<T>& coefficients,
+    IntVar* const target) {
+  const int size = vars.size();
+  if (size == 0 || AreAllNull<T>(coefficients)) {
     return solver->MakeEquality(target, Zero());
   }
-  if (AreAllBooleans(vars, size) && AreAllPositive<T>(coefficients, size)) {
+  if (AreAllOnes(coefficients)) {
+    return solver->MakeSumEquality(vars, target);
+  }
+  if (AreAllBooleans(vars) && AreAllPositive<T>(coefficients)) {
     // TODO(user) : bench BooleanScalProdEqVar with IntConst.
-    return solver->RevAlloc(new PositiveBooleanScalProdEqVar(solver,
-                                                             vars,
-                                                             size,
-                                                             coefficients,
-                                                             target));
+    return solver->RevAlloc(
+        new PositiveBooleanScalProdEqVar(solver,
+                                         vars.data(),
+                                         size,
+                                         coefficients.data(),
+                                         target));
   }
   std::vector<IntVar*> terms;
   for (int i = 0; i < size; ++i) {
@@ -2692,66 +2410,22 @@ template<class T> Constraint* MakeScalProdEqualityVarFct(Solver* const solver,
   }
   return solver->MakeSumEquality(terms, target);
 }
-}  // namespace
 
-Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
-                                         const std::vector<int64>& coefficients,
-                                         int64 cst) {
-  DCHECK_EQ(vars.size(), coefficients.size());
-  return MakeScalProdEqualityFct<int64>(this,
-                                        vars.data(),
-                                        vars.size(),
-                                        coefficients.data(),
-                                        cst);
-}
-
-Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
-                                         const std::vector<int>& coefficients,
-                                         int64 cst) {
-  DCHECK_EQ(vars.size(), coefficients.size());
-  return MakeScalProdEqualityFct<int>(this,
-                                      vars.data(),
-                                      vars.size(),
-                                      coefficients.data(),
-                                      cst);
-}
-
-Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
-                                         const std::vector<int64>& coefficients,
-                                         IntVar* const target) {
-  DCHECK_EQ(vars.size(), coefficients.size());
-  return MakeScalProdEqualityVarFct<int64>(this,
-                                           vars.data(),
-                                           vars.size(),
-                                           coefficients.data(),
-                                           target);
-}
-
-Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
-                                         const std::vector<int>& coefficients,
-                                         IntVar* const target) {
-  DCHECK_EQ(vars.size(), coefficients.size());
-  return MakeScalProdEqualityVarFct<int>(this,
-                                         vars.data(),
-                                         vars.size(),
-                                         coefficients.data(),
-                                         target);
-}
-
-namespace {
 template<class T>
 Constraint* MakeScalProdGreaterOrEqualFct(Solver* solver,
-                                          IntVar* const * vars,
-                                          int size,
-                                          T const * coefficients,
+                                          const std::vector<IntVar*>& vars,
+                                          const std::vector<T>& coefficients,
                                           int64 cst) {
-  if (size == 0 || AreAllNull<T>(coefficients, size)) {
+  const int size = vars.size();
+  if (size == 0 || AreAllNull<T>(coefficients)) {
     return cst <= 0 ? solver->MakeTrueConstraint()
         : solver->MakeFalseConstraint();
   }
-  if (cst == 1 &&
-      AreAllBooleans(vars, size) &&
-      AreAllPositive(coefficients, size)) {  // can move all coefficients to 1.
+  if (AreAllOnes(coefficients)) {
+    return solver->MakeSumGreaterOrEqual(vars, cst);
+  }
+  if (cst == 1 && AreAllBooleans(vars) && AreAllPositive(coefficients)) {
+    // can move all coefficients to 1.
     std::vector<IntVar*> terms;
     for (int i = 0; i < size; ++i) {
       if (coefficients[i] > 0) {
@@ -3043,42 +2717,19 @@ class ExprLinearizer : public ModelParser {
   std::vector<int64> multipliers_;
   int64 constant_;
 };
-}  // namespace
 
-Constraint* Solver::MakeScalProdGreaterOrEqual(const std::vector<IntVar*>& vars,
-                                               const std::vector<int64>& coeffs,
-                                               int64 cst) {
-  DCHECK_EQ(vars.size(), coeffs.size());
-  return MakeScalProdGreaterOrEqualFct<int64>(this,
-                                              vars.data(),
-                                              vars.size(),
-                                              coeffs.data(),
-                                              cst);
-}
-
-Constraint* Solver::MakeScalProdGreaterOrEqual(const std::vector<IntVar*>& vars,
-                                               const std::vector<int>& coeffs,
-                                               int64 cst) {
-  DCHECK_EQ(vars.size(), coeffs.size());
-  return MakeScalProdGreaterOrEqualFct<int>(this,
-                                            vars.data(),
-                                            vars.size(),
-                                            coeffs.data(),
-                                            cst);
-}
-
-namespace {
-template<class T> Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
-                                                         IntVar* const * vars,
-                                                         int size,
-                                                         T const * coefficients,
-                                                         int64 upper_bound) {
-  if (size == 0 || AreAllNull<T>(coefficients, size)) {
+template<class T> Constraint* MakeScalProdLessOrEqualFct(
+    Solver* solver,
+    const std::vector<IntVar*>& vars,
+    const std::vector<T>& coefficients,
+    int64 upper_bound) {
+  const int size = vars.size();
+  if (size == 0 || AreAllNull<T>(coefficients)) {
     return upper_bound >= 0 ? solver->MakeTrueConstraint()
         : solver->MakeFalseConstraint();
   }
   // TODO(user) : compute constant on the fly.
-  if (AreAllBoundOrNull(vars, coefficients, size)) {
+  if (AreAllBoundOrNull(vars, coefficients)) {
     int64 cst = 0;
     for (int i = 0; i < size; ++i) {
       cst += vars[i]->Min() * coefficients[i];
@@ -3087,11 +2738,14 @@ template<class T> Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
         solver->MakeTrueConstraint() :
         solver->MakeFalseConstraint();
   }
-  if (AreAllBooleans(vars, size) && AreAllPositive<T>(coefficients, size)) {
+  if (AreAllOnes(coefficients)) {
+    return solver->MakeSumLessOrEqual(vars, upper_bound);
+  }
+  if (AreAllBooleans(vars) && AreAllPositive<T>(coefficients)) {
     return solver->RevAlloc(new BooleanScalProdLessConstant(solver,
-                                                            vars,
+                                                            vars.data(),
                                                             size,
-                                                            coefficients,
+                                                            coefficients.data(),
                                                             upper_bound));
   }
   // Some simplications
@@ -3195,31 +2849,7 @@ template<class T> Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
   }
   return solver->MakeLessOrEqual(solver->MakeSum(terms), upper_bound);
 }
-}  // namespace
 
-Constraint* Solver::MakeScalProdLessOrEqual(const std::vector<IntVar*>& vars,
-                                            const std::vector<int64>& coefficients,
-                                            int64 cst) {
-  DCHECK_EQ(vars.size(), coefficients.size());
-  return MakeScalProdLessOrEqualFct<int64>(this,
-                                           vars.data(),
-                                           vars.size(),
-                                           coefficients.data(),
-                                           cst);
-}
-
-Constraint* Solver::MakeScalProdLessOrEqual(const std::vector<IntVar*>& vars,
-                                            const std::vector<int>& coefficients,
-                                            int64 cst) {
-  DCHECK_EQ(vars.size(), coefficients.size());
-  return MakeScalProdLessOrEqualFct<int>(this,
-                                         vars.data(),
-                                         vars.size(),
-                                         coefficients.data(),
-                                         cst);
-}
-
-namespace {
 template<class T> IntExpr* MakeScalProdFct(Solver* solver,
                                            const std::vector<IntVar*>& pre_vars,
                                            const std::vector<T>& pre_coefs) {
@@ -3243,24 +2873,24 @@ template<class T> IntExpr* MakeScalProdFct(Solver* solver,
   }
 
   const int size = vars.size();
-  if (vars.empty() || AreAllNull<T>(coefs.data(), size)) {
+  if (vars.empty() || AreAllNull<T>(coefs)) {
     return solver->MakeIntConst(0LL);
   }
-  if (AreAllBoundOrNull(vars.data(), coefs.data(), size)) {
+  if (AreAllBoundOrNull(vars, coefs)) {
     int64 cst = 0;
     for (int i = 0; i < size; ++i) {
       cst += vars[i]->Min() * coefs[i];
     }
     return solver->MakeIntConst(cst);
   }
-  if (AreAllOnes(coefs.data(), size)) {
+  if (AreAllOnes(coefs)) {
     return solver->MakeSum(vars);
   }
   if (size == 1) {
     return solver->MakeProd(vars[0], coefs[0]);
   }
   if (AreAllBooleans(vars) && size > 2) {
-    if (AreAllPositive<T>(coefs.data(), size)) {
+    if (AreAllPositive<T>(coefs)) {
       return solver->RegisterIntExpr(solver->RevAlloc(
           new PositiveBooleanScalProd(
               solver, vars.data(), size, coefs.data())));
@@ -3315,6 +2945,291 @@ template<class T> IntExpr* MakeScalProdFct(Solver* solver,
   return solver->MakeSum(terms);
 }
 }  // namespace
+
+// ----- API -----
+
+IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
+  const int size = vars.size();
+  if (size == 0) {
+    return MakeIntConst(0LL);
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeSum(vars[0], vars[1]);
+  } else {
+    IntExpr* const cache =
+        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_SUM);
+    if (cache != NULL) {
+      return cache->Var();
+    } else {
+      int64 new_min = 0;
+      int64 new_max = 0;
+      for (int i = 0; i < size; ++i) {
+        if (new_min != kint64min) {
+          new_min = CapAdd(vars[i]->Min(), new_min);
+        }
+        if (new_max != kint64max) {
+          new_max = CapAdd(vars[i]->Max(), new_max);
+        }
+      }
+      const bool all_booleans = AreAllBooleans(vars);
+
+      const string name = all_booleans ?
+          StringPrintf("BooleanSum([%s])", NameVector(vars, ", ").c_str()) :
+          StringPrintf("Sum([%s])", NameVector(vars, ", ").c_str());
+      IntVar* const sum_var = MakeIntVar(new_min, new_max, name);
+      if (all_booleans) {
+        AddConstraint(RevAlloc(
+            new SumBooleanEqualToVar(this, vars.data(), vars.size(), sum_var)));
+      } else  if (new_min != kint64min && new_max != kint64max) {
+        AddConstraint(RevAlloc(new SumConstraint(this, vars, sum_var)));
+      } else {
+        AddConstraint(RevAlloc(new SafeSumConstraint(this, vars, sum_var)));
+      }
+      model_cache_->InsertVarArrayExpression(
+          sum_var, vars, ModelCache::VAR_ARRAY_SUM);
+      return sum_var;
+    }
+  }
+}
+
+IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
+  const int size = vars.size();
+  if (size == 0) {
+    return MakeIntConst(0LL);
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeMin(vars[0], vars[1]);
+  } else {
+    IntExpr* const cache =
+        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_MIN);
+    if (cache != NULL) {
+      return cache->Var();
+    } else {
+      if (AreAllBooleans(vars)) {
+        IntVar* const new_var = MakeBoolVar();
+        AddConstraint(RevAlloc(new ArrayBoolAndEq(this, vars, new_var)));
+        model_cache_->InsertVarArrayExpression(
+            new_var, vars, ModelCache::VAR_ARRAY_MIN);
+        return new_var;
+      } else {
+        int64 new_min = kint64max;
+        int64 new_max = kint64max;
+        for (int i = 0; i < size; ++i) {
+          new_min = std::min(new_min, vars[i]->Min());
+          new_max = std::min(new_max, vars[i]->Max());
+        }
+        IntVar* const new_var = MakeIntVar(new_min, new_max);
+        AddConstraint(RevAlloc(new MinConstraint(this, vars, new_var)));
+        model_cache_->InsertVarArrayExpression(
+            new_var, vars, ModelCache::VAR_ARRAY_MIN);
+        return new_var;
+      }
+    }
+  }
+}
+
+IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
+  const int size = vars.size();
+  if (size == 0) {
+    return MakeIntConst(0LL);
+  } else if (size == 1) {
+    return vars[0];
+  } else if (size == 2) {
+    return MakeMax(vars[0], vars[1]);
+  } else {
+    IntExpr* const cache =
+        model_cache_->FindVarArrayExpression(vars, ModelCache::VAR_ARRAY_MAX);
+    if (cache != NULL) {
+      return cache->Var();
+    } else {
+      if (AreAllBooleans(vars)) {
+        IntVar* const new_var = MakeBoolVar();
+        AddConstraint(RevAlloc(new ArrayBoolOrEq(this, vars, new_var)));
+        model_cache_->InsertVarArrayExpression(
+            new_var, vars, ModelCache::VAR_ARRAY_MIN);
+        return new_var;
+      } else {
+        int64 new_min = kint64min;
+        int64 new_max = kint64min;
+        for (int i = 0; i < size; ++i) {
+          new_min = std::max(new_min, vars[i]->Min());
+          new_max = std::max(new_max, vars[i]->Max());
+        }
+        IntVar* const new_var = MakeIntVar(new_min, new_max);
+        AddConstraint(RevAlloc(new MaxConstraint(this, vars, new_var)));
+        model_cache_->InsertVarArrayExpression(
+            new_var, vars, ModelCache::VAR_ARRAY_MAX);
+        return new_var;
+      }
+    }
+  }
+}
+
+Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
+                                    IntVar* const min_var) {
+  const int size = vars.size();
+  if (size > 2) {
+    if (AreAllBooleans(vars)) {
+      return RevAlloc(new ArrayBoolAndEq(this, vars, min_var));
+    } else {
+      return RevAlloc(new MinConstraint(this, vars, min_var));
+    }
+  } else if (size == 2) {
+    return MakeEquality(MakeMin(vars[0], vars[1])->Var(), min_var);
+  } else if (size == 1) {
+    return MakeEquality(vars[0], min_var);
+  } else {
+    return MakeEquality(min_var, Zero());
+  }
+}
+
+Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
+                                    IntVar* const max_var) {
+  const int size = vars.size();
+  if (size > 2) {
+    if (AreAllBooleans(vars)) {
+      return RevAlloc(new ArrayBoolOrEq(this, vars, max_var));
+    } else {
+      return RevAlloc(new MaxConstraint(this, vars, max_var));
+    }
+  } else if (size == 2) {
+    return MakeEquality(MakeMax(vars[0], vars[1])->Var(), max_var);
+  } else if (size == 1) {
+    return MakeEquality(vars[0], max_var);
+  } else {
+    return MakeEquality(max_var, Zero());
+  }
+}
+
+Constraint* Solver::MakeSumLessOrEqual(const std::vector<IntVar*>& vars, int64 cst) {
+  const int size = vars.size();
+  if (cst == 1LL && AreAllBooleans(vars) && size > 2) {
+    return RevAlloc(new SumBooleanLessOrEqualToOne(this, vars.data(), size));
+  } else {
+    return MakeLessOrEqual(MakeSum(vars), cst);
+  }
+}
+
+Constraint* Solver::MakeSumGreaterOrEqual(const std::vector<IntVar*>& vars,
+                                          int64 cst) {
+  const int size = vars.size();
+  if (cst == 1LL && AreAllBooleans(vars) && size > 2) {
+    return RevAlloc(new SumBooleanGreaterOrEqualToOne(this, vars.data(), size));
+  } else {
+    return MakeGreaterOrEqual(MakeSum(vars), cst);
+  }
+}
+
+Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst) {
+  const int size = vars.size();
+  if (size == 0) {
+    return cst == 0 ? MakeTrueConstraint() : MakeFalseConstraint();
+  }
+  if (AreAllBooleans(vars) && size > 2) {
+    if (cst == 1) {
+      return RevAlloc(new SumBooleanEqualToOne(this, vars.data(), size));
+    } else if (cst < 0 || cst > size) {
+      return MakeFalseConstraint();
+    } else {
+      return RevAlloc(new SumBooleanEqualToVar(this,
+                                               vars.data(),
+                                               size,
+                                               MakeIntConst(cst)));
+    }
+  } else {
+    if (vars.size() == 1) {
+      return MakeEquality(vars[0], cst);
+    } else if (vars.size() == 2) {
+      return MakeEquality(vars[0], MakeDifference(cst, vars[1])->Var());
+    }
+    if (DetectSumOverflow(vars)) {
+      return RevAlloc(new SafeSumConstraint(this, vars, MakeIntConst(cst)));
+    } else {
+      return RevAlloc(new SumConstraint(this, vars, MakeIntConst(cst)));
+    }
+  }
+}
+
+Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
+                                    IntVar* const var) {
+  const int size = vars.size();
+  if (size == 0) {
+    return MakeEquality(var, Zero());
+  }
+  if (AreAllBooleans(vars) && size > 2) {
+    return RevAlloc(new SumBooleanEqualToVar(this, vars.data(), size, var));
+  } else if (size == 0) {
+    return MakeEquality(var, Zero());
+  } else if (size == 1) {
+    return MakeEquality(vars[0], var);
+  } else if (size == 2) {
+    return MakeEquality(MakeSum(vars[0], vars[1])->Var(), var);
+  } else {
+    if (DetectSumOverflow(vars)) {
+      return RevAlloc(new SafeSumConstraint(this, vars, var));
+    } else {
+      return RevAlloc(new SumConstraint(this, vars, var));
+    }
+  }
+}
+
+Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                         const std::vector<int64>& coefficients,
+                                         int64 cst) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdEqualityFct<int64>(this, vars, coefficients, cst);
+}
+
+Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                         const std::vector<int>& coefficients,
+                                         int64 cst) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdEqualityFct<int>(this, vars, coefficients, cst);
+}
+
+Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                         const std::vector<int64>& coefficients,
+                                         IntVar* const target) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdEqualityVarFct<int64>(this, vars, coefficients, target);
+}
+
+Constraint* Solver::MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                         const std::vector<int>& coefficients,
+                                         IntVar* const target) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdEqualityVarFct<int>(this, vars, coefficients, target);
+}
+
+Constraint* Solver::MakeScalProdGreaterOrEqual(const std::vector<IntVar*>& vars,
+                                               const std::vector<int64>& coeffs,
+                                               int64 cst) {
+  DCHECK_EQ(vars.size(), coeffs.size());
+  return MakeScalProdGreaterOrEqualFct<int64>(this, vars, coeffs, cst);
+}
+
+Constraint* Solver::MakeScalProdGreaterOrEqual(const std::vector<IntVar*>& vars,
+                                               const std::vector<int>& coeffs,
+                                               int64 cst) {
+  DCHECK_EQ(vars.size(), coeffs.size());
+  return MakeScalProdGreaterOrEqualFct<int>(this, vars, coeffs, cst);
+}
+
+Constraint* Solver::MakeScalProdLessOrEqual(const std::vector<IntVar*>& vars,
+                                            const std::vector<int64>& coefficients,
+                                            int64 cst) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdLessOrEqualFct<int64>(this, vars, coefficients, cst);
+}
+
+Constraint* Solver::MakeScalProdLessOrEqual(const std::vector<IntVar*>& vars,
+                                            const std::vector<int>& coefficients,
+                                            int64 cst) {
+  DCHECK_EQ(vars.size(), coefficients.size());
+  return MakeScalProdLessOrEqualFct<int>(this, vars, coefficients, cst);
+}
 
 IntExpr* Solver::MakeScalProd(const std::vector<IntVar*>& vars,
                               const std::vector<int64>& coefs) {
