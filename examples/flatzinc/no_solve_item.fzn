@@ -1,0 +1,6 @@
+var 280..10000: summa;
+var 0..100: x1 :: output_var;
+var 0..100: x2 :: output_var;
+var 0..100: x3 :: output_var;
+constraint int_lin_eq([-1, 60, 30, 20], [summa, x1, x2, x3], 0);
+solve maximize summa;
