@@ -9,7 +9,7 @@ setup(
                'graph',
                'algorithms'
              ],
-    install_requires = ['google-apputils >= 0.3', 'or-tools-module'],
+    install_requires = ['google-apputils >= 0.3'],
     dependency_links = ['http://google-apputils-python.googlecode.com/files/'],
     data_files=[('constraint_solver',
                  [pjoin('constraint_solver', '_pywrapcp.dll'),
@@ -24,7 +24,7 @@ setup(
     license='Apache 2.0',
     author = "Google Inc",
     author_email = "lperron@google.com",
-    description = "Google OR-Tools Python Module",
+    description = "Google OR-Tools python libraries and modules",
     keywords = ("operations research, constraint programming, " +
                 "linear programming" + "flow algorithms" +
                 "python"),

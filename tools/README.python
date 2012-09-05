@@ -3,7 +3,7 @@ This file describes how to install the or-tools python binary archive.
 OR-Tools is located at http://code.google.com/p/or-tools
 
 These modules have been tested under:
-  - ubuntu 10.04 and up (32 and 64 bit).
+  - ubuntu 12.04 and up (32 and 64 bit).
   - Mac OS X Snow Leopard with xcode 3.2.x and 4.x (64 bit)
   - Mac OS X Lion with xcode 4.x (64 bit).
   - Microsoft Windows with Visual Studio 2010 express C++ and
