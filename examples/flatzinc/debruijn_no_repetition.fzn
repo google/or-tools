@@ -1,7 +1,11 @@
 predicate all_different_int(array [int] of var int: x);
-predicate count(array [int] of var int: x, var int: y, var int: c);
+predicate count_eq(array [int] of var int: x, var int: y, var int: c);
+predicate count_reif(array [int] of var int: x, var int: y, var int: c, var bool: b);
 predicate fixed_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, int: b);
 predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
+predicate global_cardinality_closed(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
+predicate global_cardinality_low_up(array [int] of var int: x, array [int] of int: cover, array [int] of int: lbound, array [int] of int: ubound);
+predicate global_cardinality_low_up_closed(array [int] of var int: x, array [int] of int: cover, array [int] of int: lbound, array [int] of int: ubound);
 predicate maximum_int(var int: m, array [int] of var int: x);
 predicate minimum_int(var int: m, array [int] of var int: x);
 predicate sliding_sum(int: low, int: up, int: seq, array [int] of var int: vs);
@@ -229,4 +233,4 @@ constraint int_ne(bin_code[23], bin_code[24]);
 constraint int_ne(bin_code[24], bin_code[25]);
 constraint int_ne(bin_code[25], bin_code[26]);
 constraint int_ne(bin_code[26], bin_code[27]);
-solve  :: int_search(x, first_fail, indomain_split, credit(5, bbs(1))) satisfy;
+solve  :: int_search([x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], x[10], x[11], x[12], x[13], x[14], x[15], x[16], x[17], x[18], x[19], x[20], x[21], x[22], x[23], x[24], x[25], x[26], x[27], bin_code[1], bin_code[2], bin_code[3], bin_code[4], bin_code[5], bin_code[6], bin_code[7], bin_code[8], bin_code[9], bin_code[10], bin_code[11], bin_code[12], bin_code[13], bin_code[14], bin_code[15], bin_code[16], bin_code[17], bin_code[18], bin_code[19], bin_code[20], bin_code[21], bin_code[22], bin_code[23], bin_code[24], bin_code[25], bin_code[26], bin_code[27]], first_fail, indomain_split, credit(5, bbs(1))) satisfy;
