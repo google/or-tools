@@ -2944,6 +2944,129 @@ template<class T> IntExpr* MakeScalProdFct(Solver* solver,
   }
   return solver->MakeSum(terms);
 }
+
+IntExpr* MakeSumFct(Solver* solver, const std::vector<IntVar*>& pre_vars) {
+  hash_map<const IntExpr*, int64> map;
+  ExprLinearizer lin(&map);
+  for (int i = 0; i < pre_vars.size(); ++i) {
+    lin.Visit(pre_vars[i], 1);
+  }
+  const int64 constant = lin.Constant();
+  std::vector<IntVar*> vars;
+  std::vector<int64> coefs;
+  for (ConstIter<hash_map<const IntExpr*, int64> > iter(map);
+       !iter.at_end();
+       ++iter) {
+     vars.push_back(const_cast<IntExpr*>(iter->first)->Var());
+     coefs.push_back(iter->second);
+  }
+  if (constant != 0) {
+    vars.push_back(solver->MakeIntConst(1));
+    coefs.push_back(constant);
+  }
+
+  const int size = vars.size();
+  if (vars.empty() || AreAllNull<int64>(coefs)) {
+    return solver->MakeIntConst(0LL);
+  }
+  if (AreAllBoundOrNull(vars, coefs)) {
+    int64 cst = 0;
+    for (int i = 0; i < size; ++i) {
+      cst += vars[i]->Min() * coefs[i];
+    }
+    return solver->MakeIntConst(cst);
+  }
+  if (AreAllOnes(coefs)) {
+    int64 new_min = 0;
+    int64 new_max = 0;
+    for (int i = 0; i < size; ++i) {
+      if (new_min != kint64min) {
+        new_min = CapAdd(vars[i]->Min(), new_min);
+      }
+      if (new_max != kint64max) {
+        new_max = CapAdd(vars[i]->Max(), new_max);
+      }
+    }
+    const string name =
+        StringPrintf("Sum([%s])", NameVector(vars, ", ").c_str());
+    IntVar* const sum_var = solver->MakeIntVar(new_min, new_max, name);
+    solver->AddConstraint(solver->RevAlloc(
+        new SumConstraint(solver, vars, sum_var)));
+    return sum_var;
+  }
+  if (size == 1) {
+    return solver->MakeProd(vars[0], coefs[0]);
+  }
+  if (AreAllBooleans(vars) && size > 2) {
+    if (AreAllPositive<int64>(coefs)) {
+      return solver->RegisterIntExpr(solver->RevAlloc(
+          new PositiveBooleanScalProd(
+              solver, vars.data(), size, coefs.data())));
+    } else {
+      // If some coefficients are non-positive, partition coefficients in two
+      // sets, one for the positive coefficients P and one for the negative
+      // ones N.
+      // Create two PositiveBooleanScalProd expressions, one on P (s1), the
+      // other on Opposite(N) (s2).
+      // The final expression is then s1 - s2.
+      // If P is empty, the expression is Opposite(s2).
+      std::vector<int64> positive_coefs;
+      std::vector<int64> negative_coefs;
+      std::vector<IntVar*> positive_coef_vars;
+      std::vector<IntVar*> negative_coef_vars;
+      for (int i = 0; i < size; ++i) {
+        const int64 coef = coefs[i];
+        if (coef > 0) {
+          positive_coefs.push_back(coef);
+          positive_coef_vars.push_back(vars[i]);
+        } else if (coef < 0) {
+          negative_coefs.push_back(-coef);
+          negative_coef_vars.push_back(vars[i]);
+        }
+      }
+      CHECK_GT(negative_coef_vars.size(), 0);
+      IntExpr* const negatives =
+          solver->RegisterIntExpr(solver->RevAlloc(
+              new PositiveBooleanScalProd(solver,
+                                          negative_coef_vars.data(),
+                                          negative_coef_vars.size(),
+                                          negative_coefs.data())));
+      if (!positive_coefs.empty()) {
+        IntExpr* const positives =
+            solver->RegisterIntExpr(solver->RevAlloc(
+                new PositiveBooleanScalProd(solver,
+                                            positive_coef_vars.data(),
+                                            positive_coef_vars.size(),
+                                            positive_coefs.data())));
+        // Cast to var to avoid slow propagation; all operations on the expr are
+        // O(n)!
+        return solver->MakeDifference(positives->Var(), negatives->Var());
+      } else {
+        return solver->MakeOpposite(negatives);
+      }
+    }
+  }
+  std::vector<IntVar*> terms;
+  for (int i = 0; i < size; ++i) {
+    terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
+  }
+  int64 new_min = 0;
+  int64 new_max = 0;
+  for (int i = 0; i < size; ++i) {
+    if (new_min != kint64min) {
+      new_min = CapAdd(terms[i]->Min(), new_min);
+    }
+    if (new_max != kint64max) {
+      new_max = CapAdd(terms[i]->Max(), new_max);
+    }
+  }
+  const string name =
+      StringPrintf("Sum([%s])", NameVector(pre_vars, ", ").c_str());
+  IntVar* const sum_var = solver->MakeIntVar(new_min, new_max, name);
+  solver->AddConstraint(solver->RevAlloc(
+      new SumConstraint(solver, terms, sum_var)));
+  return sum_var;
+}
 }  // namespace
 
 // ----- API -----
@@ -2972,18 +3095,20 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
           new_max = CapAdd(vars[i]->Max(), new_max);
         }
       }
+      IntVar* sum_var = NULL;
       const bool all_booleans = AreAllBooleans(vars);
-
-      const string name = all_booleans ?
-          StringPrintf("BooleanSum([%s])", NameVector(vars, ", ").c_str()) :
-          StringPrintf("Sum([%s])", NameVector(vars, ", ").c_str());
-      IntVar* const sum_var = MakeIntVar(new_min, new_max, name);
       if (all_booleans) {
+        const string name =
+            StringPrintf("BooleanSum([%s])", NameVector(vars, ", ").c_str());
+        sum_var = MakeIntVar(new_min, new_max, name);
         AddConstraint(RevAlloc(
             new SumBooleanEqualToVar(this, vars.data(), vars.size(), sum_var)));
       } else  if (new_min != kint64min && new_max != kint64max) {
-        AddConstraint(RevAlloc(new SumConstraint(this, vars, sum_var)));
+        sum_var = MakeSumFct(this, vars)->Var();
       } else {
+        const string name =
+            StringPrintf("Sum([%s])", NameVector(vars, ", ").c_str());
+        sum_var = MakeIntVar(new_min, new_max, name);
         AddConstraint(RevAlloc(new SafeSumConstraint(this, vars, sum_var)));
       }
       model_cache_->InsertVarArrayExpression(
