@@ -300,9 +300,10 @@ class IntExprElement : public BaseIntExprElement {
   virtual ~IntExprElement();
 
   virtual string name() const {
-    if (values_.size() > 10) {
+    const int size = values_.size();
+    if (size > 10) {
       return StringPrintf("IntElement(array of size %d, %s)",
-                          values_.size(),
+                          size,
                           expr_->name().c_str());
     } else {
       return StringPrintf("IntElement(%s, %s)",
@@ -312,9 +313,10 @@ class IntExprElement : public BaseIntExprElement {
   }
 
   virtual string DebugString() const {
-    if (values_.size() > 10) {
+    const int size = values_.size();
+    if (size > 10) {
       return StringPrintf("IntElement(array of size %d, %s)",
-                          values_.size(),
+                          size,
                           expr_->DebugString().c_str());
     } else {
       return StringPrintf("IntElement(%s, %s)",
@@ -1089,7 +1091,7 @@ class IntExprArrayElementCt : public CastConstraint {
 
  private:
   scoped_array<IntVar*> vars_;
-  int size_;
+  const int size_;
   IntVar* const index_;
   int min_support_;
   int max_support_;
@@ -1206,7 +1208,7 @@ void IntExprArrayElementCt::UpdateExpr() {
 
 string IntExprArrayElementCt::DebugString() const {
   if (size_ > 10) {
-    return StringPrintf("IntExprArrayElement(var array of size $d, %s) == %s",
+    return StringPrintf("IntExprArrayElement(var array of size %d, %s) == %s",
                         size_,
                         index_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
@@ -1418,6 +1420,9 @@ class IntExprIndexOfCt : public Constraint {
 }  // namespace
 
 IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const index) {
+  if (index->Bound()) {
+    return vars[index->Min()];
+  }
   const int size = vars.size();
   if (AreAllBound(vars)) {
     std::vector<int64> values(size);
@@ -1455,13 +1460,31 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const ind
 Constraint* Solver::MakeElementEquality(const std::vector<int64>& vals,
                                         IntVar* const index,
                                         IntVar* const target) {
-  return RevAlloc(new IntElementConstraint(this, vals, index, target));
+  if (index->Bound()) {
+    const int64 val = index->Min();
+    if (val < 0 || val >= vals.size()) {
+      return MakeFalseConstraint();
+    } else {
+      return MakeEquality(target, vals[val]);
+    }
+  } else {
+    return RevAlloc(new IntElementConstraint(this, vals, index, target));
+  }
 }
 
 Constraint* Solver::MakeElementEquality(const std::vector<int>& vals,
                                         IntVar* const index,
                                         IntVar* const target) {
-  return RevAlloc(new IntElementConstraint(this, vals, index, target));
+  if (index->Bound()) {
+    const int64 val = index->Min();
+    if (val < 0 || val >= vals.size()) {
+      return MakeFalseConstraint();
+    } else {
+      return MakeEquality(target, vals[val]);
+    }
+  } else {
+    return RevAlloc(new IntElementConstraint(this, vals, index, target));
+  }
 }
 
 Constraint* Solver::MakeElementEquality(const std::vector<IntVar*>& vars,
@@ -1474,17 +1497,26 @@ Constraint* Solver::MakeElementEquality(const std::vector<IntVar*>& vars,
     }
     return MakeElementEquality(values, index, target);
   }
-  if (target->Bound()) {
-    return RevAlloc(new IntExprArrayElementCstCt(this,
-                                                 vars,
-                                                 index,
-                                                 target->Min()));
+  if (index->Bound()) {
+    const int64 val = index->Min();
+    if (val < 0 || val >= vars.size()) {
+      return MakeFalseConstraint();
+    } else {
+      return MakeEquality(target, vars[val]);
+    }
   } else {
-    return RevAlloc(new IntExprArrayElementCt(this,
-                                              vars.data(),
-                                              vars.size(),
-                                              index,
-                                              target));
+    if (target->Bound()) {
+      return RevAlloc(new IntExprArrayElementCstCt(this,
+                                                   vars,
+                                                 index,
+                                                   target->Min()));
+    } else {
+      return RevAlloc(new IntExprArrayElementCt(this,
+                                                vars.data(),
+                                                vars.size(),
+                                                index,
+                                                target));
+    }
   }
 }
 
