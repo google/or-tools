@@ -754,8 +754,8 @@ $(OBJ_DIR)/fz.$O:$(SRC_DIR)/flatzinc/fz.cc $(SRC_DIR)/flatzinc/flatzinc.h $(SRC_
 
 fz: $(BIN_DIR)/fz$E
 
-$(BIN_DIR)/fz$E: $(OBJ_DIR)/fz.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/fz.$O $(STATIC_FLATZINC_LNK) $(FZ_STATIC) $(STATIC_LD_FLAGS) $(EXEOUT)fz$E
+$(BIN_DIR)/fz$E: $(OBJ_DIR)/fz.$O $(STATIC_FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/fz.$O $(STATIC_FZ) $(STATIC_FLATZINC_LNK) $(FZ_STATIC) $(STATIC_LD_FLAGS) $(EXEOUT)fz$E
 
 # Flow and linear assignment cpp
 
