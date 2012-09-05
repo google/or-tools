@@ -432,6 +432,21 @@ void ParserState::Presolve() {
     }
   }
 
+  // Detect free variables.
+  VLOG(1) << "Detect variables appearing in only one constraint";
+  BuildStatistics();
+  std::vector<int> free_variables;
+  for (int var_index = 0; var_index < int_variables_.size(); ++var_index) {
+    const std::vector<int> ct_indices =
+        constraints_per_int_variables_[var_index];
+    if (ct_indices.size() == 1) {
+      free_variables.push_back(var_index);
+      VLOG(1) << "  - variable xi(" << var_index << ") appears only in "
+              << constraints_[ct_indices[0]]->DebugString();
+      one_constraint_variables_.insert(var_index);
+    }
+  }
+
   // Add aliasing constraints.
   for (int i = 0; i < bool_variables_.size(); ++i) {
     BoolVarSpec* const spec = bool_variables_[i];
@@ -468,8 +483,12 @@ void ParserState::BuildStatistics() {
   // Setup mapping structures (constraints per id, and constraints per
   // variable).
   constraints_per_id_.clear();
-  constraints_per_int_variables_.clear();
-  constraints_per_bool_variables_.clear();
+  for (int i = 0; i < int_variables_.size(); ++i) {
+    constraints_per_int_variables_[i].clear();
+  }
+  for (int i = 0; i < bool_variables_.size(); ++i) {
+    constraints_per_bool_variables_[i].clear();
+  }
 
   for (unsigned int i = 0; i < constraints_.size(); i++) {
     CtSpec* const spec = constraints_[i];
@@ -670,7 +689,10 @@ void ParserState::BuildModel(const NodeSet& candidates,
       if (!ContainsKey(candidates, var) && !ContainsKey(int_aliases_, i)) {
         const bool active =
             !IsIntroduced(var) && !ContainsKey(computed_variables, var);
-        model_->NewIntVar(name, int_variables_[i], active);
+        model_->NewIntVar(name,
+                          int_variables_[i],
+                          active,
+                          ContainsKey(one_constraint_variables_, i));
       } else {
         model_->SkipIntVar();
         VLOG(1) << "  - skipped";

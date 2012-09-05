@@ -443,65 +443,20 @@ bool FlatZincModel::HasSolveAnnotations() const {
 
 void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
   const bool has_solve_annotations = HasSolveAnnotations();
-  DefaultPhaseParameters parameters;
-  switch (p.search_type) {
-    case FlatZincSearchParameters::IBS:
-      parameters.search_strategy = DefaultPhaseParameters::IMPACT_BASED_SEARCH;
-      break;
-    case FlatZincSearchParameters::FIRST_UNBOUND:
-      parameters.search_strategy =
-          DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN;
-      break;
-    case FlatZincSearchParameters::MIN_SIZE:
-      parameters.search_strategy =
-          DefaultPhaseParameters::CHOOSE_MIN_SIZE_ASSIGN_MIN;
-      break;
-    case FlatZincSearchParameters::RANDOM_MIN:
-      parameters.search_strategy =
-          DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MIN;
-      break;
-    case FlatZincSearchParameters::RANDOM_MAX:
-      parameters.search_strategy =
-          DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MAX;
-      break;
-  }
-  parameters.run_all_heuristics = true;
-  parameters.heuristic_period =
-      method_ != SAT || !p.all_solutions ? p.heuristic_period : -1;
-  parameters.restart_log_size = p.restart_log_size;
-  parameters.display_level = p.use_log ?
-      (p.verbose_impact ?
-       DefaultPhaseParameters::VERBOSE :
-       DefaultPhaseParameters::NORMAL) :
-      DefaultPhaseParameters::NONE;
-  parameters.use_no_goods = true;
-  parameters.var_selection_schema =
-      DefaultPhaseParameters::CHOOSE_MAX_SUM_IMPACT;
-  parameters.value_selection_schema =
-      DefaultPhaseParameters::SELECT_MIN_IMPACT;
-  parameters.random_seed = p.random_seed;
-
   hash_set<IntVar*> added;
 
   VLOG(1) << "Create decision builders";
+  std::vector<AstNode*> flat_annotations;
   if (has_solve_annotations) {
     CHECK_NOTNULL(solve_annotations_);
-    std::vector<AstNode*> flat_annotations;
     if (solve_annotations_->isArray()) {
       FlattenAnnotations(solve_annotations_->getArray(), flat_annotations);
     } else {
       flat_annotations.push_back(solve_annotations_);
     }
+  }
 
-    search_name_ = p.free_search ? "free" : "defined";
-    if (method_ != SAT && flat_annotations.size() == 1) {
-      search_name_ = "automatic";
-      builders_.push_back(
-          solver_->MakeDefaultPhase(active_variables_, parameters));
-      VLOG(1) << "  - adding decision builder = "
-              << builders_.back()->DebugString();
-    }
-
+  if (!p.free_search) {
     for (unsigned int i = 0; i < flat_annotations.size(); i++) {
       try {
         AstCall *call = flat_annotations[i]->getCall("int_search");
@@ -518,52 +473,47 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
             }
           }
         }
-        if (p.free_search) {
-          builders_.push_back(
-              solver_->MakeDefaultPhase(int_vars, parameters));
-        } else {
-          Solver::IntVarStrategy str = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
-          if (args->hasAtom("input_order")) {
-            str = Solver::CHOOSE_FIRST_UNBOUND;
-          }
-          if (args->hasAtom("first_fail")) {
-            str = Solver::CHOOSE_MIN_SIZE;
-          }
-          if (args->hasAtom("anti_first_fail")) {
-            str = Solver::CHOOSE_MAX_SIZE;
-          }
-          if (args->hasAtom("smallest")) {
-            str = Solver::CHOOSE_LOWEST_MIN;
-          }
-          if (args->hasAtom("largest")) {
-            str = Solver::CHOOSE_HIGHEST_MAX;
-          }
-          if (args->hasAtom("max_regret")) {
-            str = Solver::CHOOSE_MAX_REGRET;
-          }
-          if (args->hasAtom("occurrence")) {
-            SortVariableByDegree(solver_.get(), &int_vars);
-            str = Solver::CHOOSE_FIRST_UNBOUND;
-          }
-          Solver::IntValueStrategy vstr = Solver::ASSIGN_MIN_VALUE;
-          if (args->hasAtom("indomain_max")) {
-            vstr = Solver::ASSIGN_MAX_VALUE;
-          }
-          if (args->hasAtom("indomain_median") ||
-              args->hasAtom("indomain_middle")) {
-            vstr = Solver::ASSIGN_CENTER_VALUE;
-          }
-          if (args->hasAtom("indomain_random")) {
-            vstr = Solver::ASSIGN_RANDOM_VALUE;
-          }
-          if (args->hasAtom("indomain_split")) {
-            vstr = Solver::SPLIT_LOWER_HALF;
-          }
-          if (args->hasAtom("indomain_reverse_split")) {
-            vstr = Solver::SPLIT_UPPER_HALF;
-          }
-          builders_.push_back(solver_->MakePhase(int_vars, str, vstr));
+        Solver::IntVarStrategy str = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
+        if (args->hasAtom("input_order")) {
+          str = Solver::CHOOSE_FIRST_UNBOUND;
         }
+        if (args->hasAtom("first_fail")) {
+          str = Solver::CHOOSE_MIN_SIZE;
+        }
+        if (args->hasAtom("anti_first_fail")) {
+          str = Solver::CHOOSE_MAX_SIZE;
+        }
+        if (args->hasAtom("smallest")) {
+          str = Solver::CHOOSE_LOWEST_MIN;
+        }
+        if (args->hasAtom("largest")) {
+          str = Solver::CHOOSE_HIGHEST_MAX;
+        }
+        if (args->hasAtom("max_regret")) {
+          str = Solver::CHOOSE_MAX_REGRET;
+        }
+        if (args->hasAtom("occurrence")) {
+          SortVariableByDegree(solver_.get(), &int_vars);
+          str = Solver::CHOOSE_FIRST_UNBOUND;
+        }
+        Solver::IntValueStrategy vstr = Solver::ASSIGN_MIN_VALUE;
+        if (args->hasAtom("indomain_max")) {
+          vstr = Solver::ASSIGN_MAX_VALUE;
+        }
+        if (args->hasAtom("indomain_median") ||
+            args->hasAtom("indomain_middle")) {
+          vstr = Solver::ASSIGN_CENTER_VALUE;
+        }
+        if (args->hasAtom("indomain_random")) {
+          vstr = Solver::ASSIGN_RANDOM_VALUE;
+        }
+        if (args->hasAtom("indomain_split")) {
+          vstr = Solver::SPLIT_LOWER_HALF;
+        }
+        if (args->hasAtom("indomain_reverse_split")) {
+          vstr = Solver::SPLIT_UPPER_HALF;
+        }
+        builders_.push_back(solver_->MakePhase(int_vars, str, vstr));
       } catch (AstTypeError& e) {
         (void) e;
         try {
@@ -581,27 +531,22 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
               }
             }
           }
-          if (p.free_search) {
-            builders_.push_back(
-                solver_->MakeDefaultPhase(bool_vars, parameters));
-          } else {
-            Solver::IntVarStrategy str = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
-            if (args->hasAtom("input_order")) {
-              str = Solver::CHOOSE_FIRST_UNBOUND;
-            }
-            if (args->hasAtom("occurrence")) {
-              SortVariableByDegree(solver_.get(), &bool_vars);
-              str = Solver::CHOOSE_FIRST_UNBOUND;
-            }
-            Solver::IntValueStrategy vstr = Solver::ASSIGN_MAX_VALUE;
-            if (args->hasAtom("indomain_min")) {
-              vstr = Solver::ASSIGN_MIN_VALUE;
-            }
-            if (args->hasAtom("indomain_random")) {
-              vstr = Solver::ASSIGN_RANDOM_VALUE;
-            }
-            builders_.push_back(solver_->MakePhase(bool_vars, str, vstr));
+          Solver::IntVarStrategy str = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
+          if (args->hasAtom("input_order")) {
+            str = Solver::CHOOSE_FIRST_UNBOUND;
           }
+          if (args->hasAtom("occurrence")) {
+            SortVariableByDegree(solver_.get(), &bool_vars);
+            str = Solver::CHOOSE_FIRST_UNBOUND;
+          }
+          Solver::IntValueStrategy vstr = Solver::ASSIGN_MAX_VALUE;
+          if (args->hasAtom("indomain_min")) {
+            vstr = Solver::ASSIGN_MIN_VALUE;
+          }
+          if (args->hasAtom("indomain_random")) {
+            vstr = Solver::ASSIGN_RANDOM_VALUE;
+          }
+          builders_.push_back(solver_->MakePhase(bool_vars, str, vstr));
         } catch (AstTypeError& e) {
           (void) e;
           try {
@@ -618,23 +563,77 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
           }
         }
       }
-      VLOG(1) << "  - adding decision builder = "
-              << builders_.back()->DebugString();
     }
-  } else {
+  }
+
+  if (p.free_search ||
+      builders_.size() == 0 ||
+      (builders_.size() == 1 && method_ != SAT)) {
     search_name_ = "automatic";
+    // We collect the objective linked decision builder.
+    DecisionBuilder* const obj_db =
+        builders_.size() == 1 ? builders_.back() : NULL;
+    builders_.clear();
+
+    DefaultPhaseParameters parameters;
+    switch (p.search_type) {
+      case FlatZincSearchParameters::IBS:
+        parameters.search_strategy =
+            DefaultPhaseParameters::IMPACT_BASED_SEARCH;
+        break;
+      case FlatZincSearchParameters::FIRST_UNBOUND:
+        parameters.search_strategy =
+            DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN;
+        break;
+      case FlatZincSearchParameters::MIN_SIZE:
+        parameters.search_strategy =
+            DefaultPhaseParameters::CHOOSE_MIN_SIZE_ASSIGN_MIN;
+        break;
+      case FlatZincSearchParameters::RANDOM_MIN:
+        parameters.search_strategy =
+            DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MIN;
+        break;
+      case FlatZincSearchParameters::RANDOM_MAX:
+        parameters.search_strategy =
+            DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MAX;
+        break;
+    }
+    parameters.run_all_heuristics = true;
+    parameters.heuristic_period =
+        method_ != SAT || !p.all_solutions ? p.heuristic_period : -1;
+    parameters.restart_log_size = p.restart_log_size;
+    parameters.display_level = p.use_log ?
+                               (p.verbose_impact ?
+                                DefaultPhaseParameters::VERBOSE :
+                                DefaultPhaseParameters::NORMAL) :
+                               DefaultPhaseParameters::NONE;
+    parameters.use_no_goods = true;
+    parameters.var_selection_schema =
+        DefaultPhaseParameters::CHOOSE_MAX_SUM_IMPACT;
+    parameters.value_selection_schema =
+        DefaultPhaseParameters::SELECT_MIN_IMPACT;
+    parameters.random_seed = p.random_seed;
     builders_.push_back(
         solver_->MakeDefaultPhase(active_variables_, parameters));
-    VLOG(1) << "  - adding decision builder = "
-            << builders_.back()->DebugString();
     if (!introduced_variables_.empty() && !has_solve_annotations) {
       // Better safe than sorry.
       builders_.push_back(solver_->MakePhase(introduced_variables_,
                                              Solver::CHOOSE_FIRST_UNBOUND,
                                              Solver::ASSIGN_MIN_VALUE));
-      VLOG(1) << "  - adding decision builder = "
-              << builders_.back()->DebugString();
     }
+    if (obj_db != NULL) {
+      builders_.push_back(obj_db);
+    }
+    if (!one_constraint_variables_.empty()) {
+      // Better safe than sorry.
+      builders_.push_back(solver_->MakePhase(one_constraint_variables_,
+                                             Solver::CHOOSE_FIRST_UNBOUND,
+                                             Solver::ASSIGN_MIN_VALUE));
+    }
+  }
+  // Reporting
+  for (int i = 0; i < builders_.size(); ++i) {
+    VLOG(1) << "  - adding decision builder = " << builders_[i]->DebugString();
   }
 }
 

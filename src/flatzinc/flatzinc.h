@@ -162,7 +162,10 @@ class FlatZincModel {
   void InitOutput(AstArray* const output);
 
   /// Creates a new integer variable from specification.
-  void NewIntVar(const std::string& name, IntVarSpec* const vs, bool active);
+  void NewIntVar(const std::string& name,
+                 IntVarSpec* const vs,
+                 bool active,
+                 bool appears_in_one_constraint);
   // Skips the creation of the variable.
   void SkipIntVar();
   /// Creates a new boolean variable from specification.
@@ -270,6 +273,7 @@ class FlatZincModel {
   std::vector<SetVar*> set_variables_;
   // Useful for search.
   std::vector<IntVar*> active_variables_;
+  std::vector<IntVar*> one_constraint_variables_;
   std::vector<IntVar*> introduced_variables_;
   bool parsed_ok_;
   string search_name_;

@@ -85,7 +85,8 @@ void FlatZincModel::InitSolver() {
 
 void FlatZincModel::NewIntVar(const std::string& name,
                               IntVarSpec* const vs,
-                              bool active) {
+                              bool active,
+                              bool appears_in_one_constraint) {
   IntVar* var = NULL;
   if (vs->alias) {
     var = integer_variables_[vs->i]->Var();
@@ -104,9 +105,12 @@ void FlatZincModel::NewIntVar(const std::string& name,
     }
     VLOG(1) << "  - creates " << var->DebugString();
     if (!var->Bound()) {
-      if (active) {
+      if (active && !appears_in_one_constraint) {
         active_variables_.push_back(var);
         VLOG(1) << "  - add as active";
+      } else if (active && appears_in_one_constraint) {
+        one_constraint_variables_.push_back(var);
+        VLOG(1) << "  - add as one_constraint_variables_";
       } else {
         introduced_variables_.push_back(var);
         VLOG(1) << "  - add as secondary";

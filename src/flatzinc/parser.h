@@ -1245,6 +1245,7 @@ class ParserState {
   std::vector<AstNode*> bool_args_;
   hash_map<int, int> int_aliases_;
   hash_map<int, hash_set<int> > reverse_int_aliases_;
+  hash_set<int> one_constraint_variables_;
 };
 
 AstNode* ArrayOutput(AstCall* ann);
