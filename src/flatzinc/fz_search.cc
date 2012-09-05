@@ -412,6 +412,58 @@ string FlatZincMemoryUsage() {
     return StringPrintf("%" GG_LL_FORMAT "d", memory_usage);
   }
 }
+
+// Assign to bound decision builder
+class AssignToBounds : public DecisionBuilder {
+ public:
+  AssignToBounds(const std::vector<IntVar*>& vars)
+      : vars_(vars), mins_(vars.size()), max_(vars.size()), init_(false) {}
+  virtual ~AssignToBounds() {}
+
+  virtual Decision* Next(Solver* const solver) {
+    if (!init_) {
+      solver->SaveAndSetValue(&init_, true);
+      for (int i = 0; i < vars_.size(); ++i) {
+        mins_[i] = vars_[i]->Min();
+        max_[i] = vars_[i]->Max();
+      }
+    }
+    for (int i = 0; i < vars_.size(); ++i) {
+      if (vars_[i]->Bound()) {
+        continue;
+      }
+      if (vars_[i]->Min() == mins_[i]) {
+        return solver->MakeAssignVariableValue(vars_[i], mins_[i]);
+      } else if (vars_[i]->Max() == max_[i]) {
+        return solver->MakeAssignVariableValue(vars_[i], max_[i]);
+      }
+    }
+    for (int i = 0; i < vars_.size(); ++i) {
+      if (!vars_[i]->Bound()) {
+        return solver->MakeAssignVariableValue(vars_[i], vars_[i]->Min());
+      }
+    }
+    return NULL;
+  }
+
+  virtual string DebugString() const {
+    return "AssignToBounds";
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_.data(),
+                                               vars_.size());
+    visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
+  }
+
+ private:
+  std::vector<IntVar*> vars_;
+  std::vector<int64> mins_;
+  std::vector<int64> max_;
+  bool init_;
+};
 }  // namespace
 
 bool FlatZincModel::HasSolveAnnotations() const {
@@ -621,14 +673,13 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
                                              Solver::CHOOSE_FIRST_UNBOUND,
                                              Solver::ASSIGN_MIN_VALUE));
     }
-    if (obj_db != NULL) {
-      builders_.push_back(obj_db);
-    }
     if (!one_constraint_variables_.empty()) {
       // Better safe than sorry.
-      builders_.push_back(solver_->MakePhase(one_constraint_variables_,
-                                             Solver::CHOOSE_FIRST_UNBOUND,
-                                             Solver::ASSIGN_MIN_VALUE));
+      builders_.push_back(
+          solver_->RevAlloc(new AssignToBounds(one_constraint_variables_)));
+    }
+    if (obj_db != NULL) {
+      builders_.push_back(obj_db);
     }
   }
   // Reporting
