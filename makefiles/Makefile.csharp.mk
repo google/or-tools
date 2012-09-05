@@ -1,4 +1,27 @@
 # ---------- CSharp support using SWIG ----------
+
+# Assembly Signing
+# ----------------
+# All C# assemblies can optionally be signed. This includes the
+# DLLs and the test case EXEs. Signing is presently supported only
+# on Windows with the .NET framework.
+#
+# To get signed assemblies, use for example:
+# make CLR_KEYFILE="c:\full\path\to\keyfile.snk" csharp
+#
+# For delay signing, use for example:
+# make CLR_KEYFILE="c:\full\path\to\keyfile_pub.snk" CLR_DELAYSIGN=1
+
+ifeq ($(SYSTEM),win)
+ifdef CLR_KEYFILE
+ifdef CLR_DELAYSIGN
+SIGNING_FLAGS = /keyfile:"$(CLR_KEYFILE)" /delaysign
+else
+SIGNING_FLAGS = /keyfile:"$(CLR_KEYFILE)"
+endif
+endif
+endif
+
 CSHARPEXE = \
 	$(BIN_DIR)/cslinearprogramming.exe \
 	$(BIN_DIR)/csintegerprogramming.exe \
@@ -48,7 +71,7 @@ $(OBJ_DIR)/linear_solver_csharp_wrap.$O: $(GEN_DIR)/linear_solver/linear_solver_
 $(BIN_DIR)/Google.OrTools.LinearSolver.dll: $(OBJ_DIR)/linear_solver_csharp_wrap.$O $(STATIC_LP_DEPS) $(SRC_DIR)/com/google/ortools/linearsolver/LinearExpr.cs $(SRC_DIR)/com/google/ortools/linearsolver/LinearConstraint.cs
 ifeq ($(SYSTEM),win)
 	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.LinearSolver.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\linearsolver\\*.cs
-	$(DYNAMIC_LD) $(LDOUT)$(BIN_DIR)\\Google.OrTools.LinearSolver.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.LinearSolver.netmodule $(OBJ_DIR)\\linear_solver_csharp_wrap.$O $(STATIC_LP_LNK) $(STATIC_LD_FLAGS)
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)\\Google.OrTools.LinearSolver.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.LinearSolver.netmodule $(OBJ_DIR)\\linear_solver_csharp_wrap.$O $(STATIC_LP_LNK) $(STATIC_LD_FLAGS)
 else
 	$(CSC) /target:library /out:$(BIN_DIR)/Google.OrTools.LinearSolver.dll /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/linearsolver/*.cs $(SRC_DIR)/com/google/ortools/linearsolver/*.cs
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.LinearSolver.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)/linear_solver_csharp_wrap.$O $(STATIC_LP_LNK) $(STATIC_LD_FLAGS)
@@ -57,15 +80,15 @@ endif
 # csharp linearsolver examples
 
 $(BIN_DIR)/cslinearprogramming.exe: $(BIN_DIR)/Google.OrTools.LinearSolver.dll $(EX_DIR)/csharp/cslinearprogramming.cs
-	$(CSC) /target:exe /out:$(BIN_DIR)$Scslinearprogramming.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.LinearSolver.dll $(EX_DIR)$Scsharp$Scslinearprogramming.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scslinearprogramming.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.LinearSolver.dll $(EX_DIR)$Scsharp$Scslinearprogramming.cs
 
 $(BIN_DIR)/csintegerprogramming.exe: $(BIN_DIR)/Google.OrTools.LinearSolver.dll $(EX_DIR)/csharp/csintegerprogramming.cs
-	$(CSC) /target:exe /out:$(BIN_DIR)$Scsintegerprogramming.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.LinearSolver.dll $(EX_DIR)$Scsharp$Scsintegerprogramming.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsintegerprogramming.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.LinearSolver.dll $(EX_DIR)$Scsharp$Scsintegerprogramming.cs
 
 # csharp linearsolver tests
 
 $(BIN_DIR)/testlp.exe: $(BIN_DIR)/Google.OrTools.LinearSolver.dll $(EX_DIR)/tests/testlp.cs
-	$(CSC) /target:exe /out:$(BIN_DIR)$Stestlp.exe /platform:$(NETPLATFORM) /r:$(BIN_DIR)$SGoogle.OrTools.LinearSolver.dll $(EX_DIR)$Stests$Stestlp.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Stestlp.exe /platform:$(NETPLATFORM) /r:$(BIN_DIR)$SGoogle.OrTools.LinearSolver.dll $(EX_DIR)$Stests$Stestlp.cs
 
 testlp: $(BIN_DIR)/testlp.exe
 	$(MONO) $(BIN_DIR)$Stestlp.exe
@@ -83,7 +106,7 @@ $(OBJ_DIR)/constraint_solver_csharp_wrap.$O: $(GEN_DIR)/constraint_solver/constr
 $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll: $(OBJ_DIR)/constraint_solver_csharp_wrap.$O $(STATIC_ROUTING_DEPS) $(SRC_DIR)/com/google/ortools/constraintsolver/IntVarArrayHelper.cs $(SRC_DIR)/com/google/ortools/constraintsolver/IntervalVarArrayHelper.cs $(SRC_DIR)/com/google/ortools/constraintsolver/IntArrayHelper.cs $(SRC_DIR)/com/google/ortools/constraintsolver/ValCstPair.cs $(SRC_DIR)/com/google/ortools/constraintsolver/NetDecisionBuilder.cs
 ifeq ($(SYSTEM),win)
 	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.ConstraintSolver.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs
-	$(DYNAMIC_LD) $(LDOUT)$(BIN_DIR)\\Google.OrTools.ConstraintSolver.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.ConstraintSolver.netmodule $(OBJ_DIR)$Sconstraint_solver_csharp_wrap.$O $(STATIC_ROUTING_LNK) $(STATIC_LD_FLAGS)
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)\\Google.OrTools.ConstraintSolver.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.ConstraintSolver.netmodule $(OBJ_DIR)$Sconstraint_solver_csharp_wrap.$O $(STATIC_ROUTING_LNK) $(STATIC_LD_FLAGS)
 else
 	$(CSC) /target:library /out:$(BIN_DIR)/Google.OrTools.ConstraintSolver.dll /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/constraintsolver/*.cs
 	$(DYNAMIC_LD)  $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.ConstraintSolver.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)/constraint_solver_csharp_wrap.$O $(STATIC_ROUTING_LNK) $(STATIC_LD_FLAGS)
@@ -92,33 +115,33 @@ endif
 # csharp cp examples
 
 $(BIN_DIR)/csrabbitspheasants.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/csharp/csrabbitspheasants.cs
-	$(CSC) /target:exe /out:$(BIN_DIR)$Scsrabbitspheasants.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Scsrabbitspheasants.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsrabbitspheasants.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Scsrabbitspheasants.cs
 
 $(BIN_DIR)/send_more_money.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/csharp/send_more_money.cs
-	$(CSC) /target:exe /out:$(BIN_DIR)$Ssend_more_money.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Ssend_more_money.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Ssend_more_money.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Ssend_more_money.cs
 
 $(BIN_DIR)/furniture_moving_intervals.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/csharp/furniture_moving_intervals.cs
-	$(CSC) /target:exe /out:$(BIN_DIR)$Sfurniture_moving_intervals.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Sfurniture_moving_intervals.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sfurniture_moving_intervals.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Sfurniture_moving_intervals.cs
 
 $(BIN_DIR)/organize_day_intervals.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/csharp/organize_day_intervals.cs
-	$(CSC) /target:exe /out:$(BIN_DIR)$Sorganize_day_intervals.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Sorganize_day_intervals.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sorganize_day_intervals.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Sorganize_day_intervals.cs
 
 $(BIN_DIR)/cstsp.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/csharp/cstsp.cs
-	$(CSC) /target:exe /out:$(BIN_DIR)$Scstsp.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Scstsp.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scstsp.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Scstsp.cs
 
 $(BIN_DIR)/csls_api.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/csharp/csls_api.cs
-	$(CSC) /target:exe /out:$(BIN_DIR)$Scsls_api.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Scsls_api.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsls_api.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$Scsls_api.cs
 
 # csharp constraint solver tests
 
 $(BIN_DIR)/testcp.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/tests/testcp.cs
-	$(CSC) /target:exe /out:$(BIN_DIR)$Stestcp.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Stests$Stestcp.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Stestcp.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Stests$Stestcp.cs
 
 testcp: $(BIN_DIR)/testcp.exe
 	$(MONO) $(BIN_DIR)$Stestcp.exe
 
 $(BIN_DIR)/jobshop_bug.exe: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/tests/jobshop_bug.cs
-	$(CSC) /target:exe /out:$(BIN_DIR)$Sjobshop_bug.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Stests$Sjobshop_bug.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sjobshop_bug.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Stests$Sjobshop_bug.cs
 
 jobshop_bug: $(BIN_DIR)/jobshop_bug.exe
 	$(MONO) $(BIN_DIR)$Sjobshop_bug.exe
@@ -136,7 +159,7 @@ $(OBJ_DIR)/knapsack_solver_csharp_wrap.$O: $(GEN_DIR)/algorithms/knapsack_solver
 $(BIN_DIR)/Google.OrTools.Algorithms.dll: $(OBJ_DIR)/knapsack_solver_csharp_wrap.$O $(STATIC_ALGORITHMS_DEPS)
 ifeq ($(SYSTEM),win)
 	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Algorithms.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\knapsacksolver\\*.cs
-	$(DYNAMIC_LD) $(LDOUT)$(BIN_DIR)\\Google.OrTools.Algorithms.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Algorithms.netmodule $(OBJ_DIR)\\knapsack_solver_csharp_wrap.$O $(STATIC_ALGORITHMS_LNK) $(STATIC_LD_FLAGS)
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)\\Google.OrTools.Algorithms.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Algorithms.netmodule $(OBJ_DIR)\\knapsack_solver_csharp_wrap.$O $(STATIC_ALGORITHMS_LNK) $(STATIC_LD_FLAGS)
 else
 	$(CSC) /target:library /out:$(BIN_DIR)/Google.OrTools.Algorithms.dll /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/knapsacksolver/*.cs
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Algorithms.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)/knapsack_solver_csharp_wrap.$O $(STATIC_ALGORITHMS_LNK) $(STATIC_LD_FLAGS)
@@ -145,7 +168,7 @@ endif
 # csharp algorithm examples
 
 $(BIN_DIR)/csknapsack.exe: $(BIN_DIR)/Google.OrTools.Algorithms.dll $(EX_DIR)/csharp/csknapsack.cs
-	$(CSC) /target:exe /out:$(BIN_DIR)$Scsknapsack.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.Algorithms.dll $(EX_DIR)$Scsharp$Scsknapsack.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsknapsack.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.Algorithms.dll $(EX_DIR)$Scsharp$Scsknapsack.cs
 
 # csharpgraph
 
@@ -160,7 +183,7 @@ $(OBJ_DIR)/graph_csharp_wrap.$O: $(GEN_DIR)/graph/graph_csharp_wrap.cc
 $(BIN_DIR)/Google.OrTools.Graph.dll: $(OBJ_DIR)/graph_csharp_wrap.$O $(STATIC_GRAPH_DEPS)
 ifeq ($(SYSTEM),win)
 	$(CSC) /target:module /unsafe /out:$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Graph.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\graph\\*.cs
-	$(DYNAMIC_LD) $(LDOUT)$(BIN_DIR)\\Google.OrTools.Graph.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Graph.netmodule $(OBJ_DIR)\\graph_csharp_wrap.$O $(STATIC_GRAPH_LNK) $(STATIC_LD_FLAGS)
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)\\Google.OrTools.Graph.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Graph.netmodule $(OBJ_DIR)\\graph_csharp_wrap.$O $(STATIC_GRAPH_LNK) $(STATIC_LD_FLAGS)
 else
 	$(CSC) /target:library /unsafe /out:$(BIN_DIR)/Google.OrTools.Graph.dll /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/graph/*.cs
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Graph.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)/graph_csharp_wrap.$O $(STATIC_GRAPH_LNK) $(STATIC_LD_FLAGS)
@@ -169,12 +192,12 @@ endif
 # csharp graph examples
 
 $(BIN_DIR)/csflow.exe: $(BIN_DIR)/Google.OrTools.Graph.dll $(EX_DIR)/csharp/csflow.cs
-	$(CSC) /target:exe /out:$(BIN_DIR)$Scsflow.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.Graph.dll $(EX_DIR)$Scsharp$Scsflow.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsflow.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.Graph.dll $(EX_DIR)$Scsharp$Scsflow.cs
 
 # Build and compile custome CP examples
 
 csc: $(BIN_DIR)/Google.OrTools.ConstraintSolver.dll $(EX_DIR)/csharp/$(EX).cs
-	$(CSC) /target:exe /out:$(BIN_DIR)$S$(EX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$S$(EX).cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$S$(EX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.ConstraintSolver.dll $(EX_DIR)$Scsharp$S$(EX).cs
 
 rcs: csc
 	$(MONO) $(BIN_DIR)$S$(EX).exe $(ARGS)

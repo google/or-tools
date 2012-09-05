@@ -165,7 +165,7 @@ dependencies/install/bin/swig: dependencies/sources/swig/Makefile
 	cd dependencies/sources/swig && make && make install
 
 dependencies/sources/swig/Makefile: dependencies/sources/swig/configure dependencies/install/bin/pcretest
-	cd dependencies/sources/swig && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pcre-prefix=$(OR_ROOT_FULL)/dependencies/install --disable-ccache
+	cd dependencies/sources/swig && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pcre-prefix=$(OR_ROOT_FULL)/dependencies/install --disable-ccache --without-octave
 
 dependencies/sources/swig/configure: dependencies/sources/swig/autogen.sh
 	cd dependencies/sources/swig && ./autogen.sh
