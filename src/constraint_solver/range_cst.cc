@@ -414,17 +414,13 @@ class IsEqualCt : public CastConstraint {
 class IsDifferentCt : public CastConstraint {
  public:
   IsDifferentCt(Solver* const s,
-                IntVar* const l,
-                IntVar* const r,
+                IntExpr* const l,
+                IntExpr* const r,
                 IntVar* const b)
       : CastConstraint(s, b),
         left_(l),
         right_(r),
-        left_iterator_(l->MakeDomainIterator(true)),
-        right_iterator_(r->MakeDomainIterator(true)),
-        range_demon_(NULL),
-        domain_demon_(NULL),
-        support_(l->Min() - 1) {}
+        range_demon_(NULL) {}
 
   virtual ~IsDifferentCt() {}
 
@@ -434,18 +430,6 @@ class IsDifferentCt : public CastConstraint {
                              this,
                              &IsDifferentCt::PropagateRange,
                              "PropagateRange");
-    domain_demon_ =
-        MakeConstraintDemon0(solver(),
-                             this,
-                             &IsDifferentCt::PropagateDomain,
-                             "PropagateDomain");
-    if (left_->Size() > 32 && right_->Size() > 32) {
-      domain_demon_->inhibit(solver());
-    } else {
-      range_demon_->inhibit(solver());
-    }
-    left_->WhenDomain(domain_demon_);
-    right_->WhenDomain(domain_demon_);
     left_->WhenRange(range_demon_);
     right_->WhenRange(range_demon_);
     Demon* const target_demon =
@@ -457,29 +441,7 @@ class IsDifferentCt : public CastConstraint {
   }
 
   virtual void InitialPropagate() {
-    if (left_->Size() > 32 && right_->Size() > 32) {
-      PropagateRange();
-    } else {
-      PropagateDomain();
-    }
-  }
-
-  void PropagateDomain() {
-    if (target_var_->Bound()) {
-      PropagateTarget();
-      return;
-    }
-    const int64 support = support_.Value();
-    if (!left_->Contains(support) || !right_->Contains(support)) {
-      if (!FindSupport()) {
-        domain_demon_->inhibit(solver());
-        target_var_->SetValue(1);
-      } else if (left_->Bound() && right_->Bound()) {
-        target_var_->SetValue(0);
-      }
-    } else if (left_->Bound() && right_->Bound()) {
-      target_var_->SetValue(0);
-    }
+    PropagateRange();
   }
 
   void PropagateRange() {
@@ -487,13 +449,13 @@ class IsDifferentCt : public CastConstraint {
       PropagateTarget();
       return;
     }
-    if (left_->Size() <= 32 || right_->Size() <= 32) {
-      range_demon_->inhibit(solver());
-      domain_demon_->desinhibit(solver());
-      PropagateDomain();
-    } else  if (left_->Min() > right_->Max() || left_->Max() < right_->Min()) {
+    if (left_->Min() > right_->Max() || left_->Max() < right_->Min()) {
       target_var_->SetValue(1);
       range_demon_->inhibit(solver());
+    } else if (left_->Bound() &&
+               right_->Bound() &&
+               left_->Min() == right_->Min()) {
+      target_var_->SetValue(0);
     }
   }
 
@@ -504,12 +466,12 @@ class IsDifferentCt : public CastConstraint {
     } else {  // Var is true.
       if (left_->Bound()) {
         range_demon_->inhibit(solver());
-        domain_demon_->inhibit(solver());
-        right_->RemoveValue(left_->Min());
+        solver()->AddConstraint(
+            solver()->MakeNonEquality(right_, left_->Min()));
       } else if (right_->Bound()) {
         range_demon_->inhibit(solver());
-        domain_demon_->inhibit(solver());
-        left_->RemoveValue(right_->Min());
+        solver()->AddConstraint(
+            solver()->MakeNonEquality(left_, right_->Min()));
       }
     }
   }
@@ -532,45 +494,9 @@ class IsDifferentCt : public CastConstraint {
   }
 
  private:
-  bool FindSupport() {
-    bool found = false;
-    if (left_->Max() < right_->Min() || left_->Min() > right_->Max()) {
-      return false;
-    }
-    // Find new support.
-    if (left_->Size() <= right_->Size()) {
-      for (left_iterator_->Init();
-           left_iterator_->Ok();
-           left_iterator_->Next()) {
-        const int64 value = left_iterator_->Value();
-        if (right_->Contains(value)) {
-          found = true;
-          support_.SetValue(solver(), value);
-          break;
-        }
-      }
-    } else {
-      for (right_iterator_->Init();
-           right_iterator_->Ok();
-           right_iterator_->Next()) {
-        const int64 value = right_iterator_->Value();
-        if (left_->Contains(value)) {
-          found = true;
-          support_.SetValue(solver(), value);
-          break;
-        }
-      }
-    }
-    return found;
-  }
-
-  IntVar* const left_;
-  IntVar* const right_;
-  IntVarIterator* const left_iterator_;
-  IntVarIterator* const right_iterator_;
-  Demon* domain_demon_;
+  IntExpr* const left_;
+  IntExpr* const right_;
   Demon* range_demon_;
-  Rev<int64> support_;
 };
 
 class IsLessOrEqualCt : public CastConstraint {
@@ -783,9 +709,9 @@ IntVar* Solver::MakeIsEqualVar(IntExpr* const v1, IntExpr* const v2) {
   CHECK_EQ(this, v1->solver());
   CHECK_EQ(this, v2->solver());
   if (v1->Bound()) {
-    return MakeIsEqualCstVar(v2->Var(), v1->Min());
+    return MakeIsEqualCstVar(v2, v1->Min());
   } else if (v2->Bound()) {
-    return MakeIsEqualCstVar(v1->Var(), v2->Min());
+    return MakeIsEqualCstVar(v1, v2->Min());
   }
   IntExpr* const cache = model_cache_->FindExprExprExpression(
       v1,
@@ -838,34 +764,32 @@ IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
   CHECK_EQ(this, v1->solver());
   CHECK_EQ(this, v2->solver());
   if (v1->Bound()) {
-    return MakeIsDifferentCstVar(v2->Var(), v1->Min());
+    return MakeIsDifferentCstVar(v2, v1->Min());
   } else if (v2->Bound()) {
-    return MakeIsDifferentCstVar(v1->Var(), v2->Min());
+    return MakeIsDifferentCstVar(v1, v2->Min());
   }
-  IntVar* const var1 = v1->Var();
-  IntVar* const var2 = v2->Var();
   IntExpr* const cache = model_cache_->FindExprExprExpression(
-      var1,
-      var2,
+      v1,
+      v2,
       ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
   if (cache != NULL) {
     return cache->Var();
   } else {
-    string name1 = var1->name();
+    string name1 = v1->name();
     if (name1.empty()) {
-      name1 = var1->DebugString();
+      name1 = v1->DebugString();
     }
-    string name2 = var2->name();
+    string name2 = v2->name();
     if (name2.empty()) {
-      name2 = var2->DebugString();
+      name2 = v2->DebugString();
     }
     IntVar* const boolvar = MakeBoolVar(
         StringPrintf("IsDifferentVar(%s, %s)", name1.c_str(), name2.c_str()));
     AddConstraint(MakeIsDifferentCt(v1, v2, boolvar));
     model_cache_->InsertExprExprExpression(
         boolvar,
-        var1,
-        var2,
+        v1,
+        v2,
         ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
     return boolvar;
   }
@@ -877,11 +801,11 @@ Constraint* Solver::MakeIsDifferentCt(IntExpr* const v1,
   CHECK_EQ(this, v1->solver());
   CHECK_EQ(this, v2->solver());
   if (v1->Bound()) {
-    return MakeIsDifferentCstCt(v2->Var(), v1->Min(), b);
+    return MakeIsDifferentCstCt(v2, v1->Min(), b);
   } else if (v2->Bound()) {
-    return MakeIsDifferentCstCt(v1->Var(), v2->Min(), b);
+    return MakeIsDifferentCstCt(v1, v2->Min(), b);
   }
-  return RevAlloc(new IsDifferentCt(this, v1->Var(), v2->Var(), b));
+  return RevAlloc(new IsDifferentCt(this, v1, v2, b));
 }
 
 IntVar* Solver::MakeIsLessOrEqualVar(IntExpr* const left,
@@ -889,9 +813,9 @@ IntVar* Solver::MakeIsLessOrEqualVar(IntExpr* const left,
   CHECK_EQ(this, left->solver());
   CHECK_EQ(this, right->solver());
   if (left->Bound()) {
-    return MakeIsGreaterOrEqualCstVar(right->Var(), left->Min());
+    return MakeIsGreaterOrEqualCstVar(right, left->Min());
   } else if (right->Bound()) {
-    return MakeIsLessOrEqualCstVar(left->Var(), right->Min());
+    return MakeIsLessOrEqualCstVar(left, right->Min());
   }
   IntExpr* const cache = model_cache_->FindExprExprExpression(
       left,
@@ -912,7 +836,7 @@ IntVar* Solver::MakeIsLessOrEqualVar(IntExpr* const left,
         StringPrintf("IsLessOrEqual(%s, %s)", name1.c_str(), name2.c_str()));
 
     AddConstraint(RevAlloc(
-        new IsLessOrEqualCt(this, left->Var(), right->Var(), boolvar)));
+        new IsLessOrEqualCt(this, left, right, boolvar)));
     model_cache_->InsertExprExprExpression(
         boolvar,
         left,
@@ -927,11 +851,11 @@ Constraint* Solver::MakeIsLessOrEqualCt(
   CHECK_EQ(this, left->solver());
   CHECK_EQ(this, right->solver());
   if (left->Bound()) {
-    return MakeIsGreaterOrEqualCstCt(right->Var(), left->Min(), b);
+    return MakeIsGreaterOrEqualCstCt(right, left->Min(), b);
   } else if (right->Bound()) {
-    return MakeIsLessOrEqualCstCt(left->Var(), right->Min(), b);
+    return MakeIsLessOrEqualCstCt(left, right->Min(), b);
   }
-  return RevAlloc(new IsLessOrEqualCt(this, left->Var(), right->Var(), b));
+  return RevAlloc(new IsLessOrEqualCt(this, left, right, b));
 }
 
 IntVar* Solver::MakeIsLessVar(
@@ -939,9 +863,9 @@ IntVar* Solver::MakeIsLessVar(
   CHECK_EQ(this, left->solver());
   CHECK_EQ(this, right->solver());
   if (left->Bound()) {
-    return MakeIsGreaterCstVar(right->Var(), left->Min());
+    return MakeIsGreaterCstVar(right, left->Min());
   } else if (right->Bound()) {
-    return MakeIsLessCstVar(left->Var(), right->Min());
+    return MakeIsLessCstVar(left, right->Min());
   }
   IntExpr* const cache = model_cache_->FindExprExprExpression(
       left,
@@ -962,7 +886,7 @@ IntVar* Solver::MakeIsLessVar(
         StringPrintf("IsLessOrEqual(%s, %s)", name1.c_str(), name2.c_str()));
 
     AddConstraint(RevAlloc(
-        new IsLessCt(this, left->Var(), right->Var(), boolvar)));
+        new IsLessCt(this, left, right, boolvar)));
     model_cache_->InsertExprExprExpression(
         boolvar,
         left,
@@ -977,11 +901,11 @@ Constraint* Solver::MakeIsLessCt(
   CHECK_EQ(this, left->solver());
   CHECK_EQ(this, right->solver());
   if (left->Bound()) {
-    return MakeIsGreaterCstCt(right->Var(), left->Min(), b);
+    return MakeIsGreaterCstCt(right, left->Min(), b);
   } else if (right->Bound()) {
-    return MakeIsLessCstCt(left->Var(), right->Min(), b);
+    return MakeIsLessCstCt(left, right->Min(), b);
   }
-  return RevAlloc(new IsLessCt(this, left->Var(), right->Var(), b));
+  return RevAlloc(new IsLessCt(this, left, right, b));
 }
 
 IntVar* Solver::MakeIsGreaterOrEqualVar(
