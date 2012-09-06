@@ -4538,8 +4538,6 @@ class IntAbsConstraint : public CastConstraint {
   IntAbsConstraint(Solver* const s, IntVar* const sub, IntVar* const target)
       : CastConstraint(s, target),
         sub_(sub),
-        sub_hole_iterator_(sub->MakeHoleIterator(true)),
-        target_hole_iterator_(target->MakeHoleIterator(true)),
         sub_domain_iterator_(sub->MakeDomainIterator(true)),
         target_domain_iterator_(target->MakeDomainIterator(true)) {}
 
@@ -4551,13 +4549,13 @@ class IntAbsConstraint : public CastConstraint {
                              this,
                              &IntAbsConstraint::PropagateSub,
                              "PropagateSub");
-    sub_->WhenDomain(sub_demon);
+    sub_->WhenRange(sub_demon);
     Demon* const target_demon =
         MakeConstraintDemon0(solver(),
                              this,
                              &IntAbsConstraint::PropagateTarget,
                              "PropagateTarget");
-    target_var_->WhenDomain(target_demon);
+    target_var_->WhenRange(target_demon);
   }
 
   virtual void InitialPropagate() {
@@ -4610,53 +4608,18 @@ class IntAbsConstraint : public CastConstraint {
       } else {
         target_var_->SetRange(0, std::max(-sub_->Min(), sub_->Max()));
       }
-      const int64 oldmax = sub_->OldMax();
-      const int64 vmin = sub_->Min();
-      const int64 vmax = sub_->Max();
-      for (int64 value = sub_->OldMin(); value < vmin; ++value) {
-        const int64 abs_value = value >= 0 ? value : -value;
-        if (!sub_->Contains(-value)) {
-          target_var_->RemoveValue(abs_value);
-        }
-      }
-      for (sub_hole_iterator_->Init();
-           sub_hole_iterator_->Ok();
-           sub_hole_iterator_->Next()) {
-        const int64 value = sub_hole_iterator_->Value();
-        const int64 abs_value = value >= 0 ? value : -value;
-        if (!sub_->Contains(-value)) {
-          target_var_->RemoveValue(abs_value);
-        }
-      }
-      for (int64 value = vmax + 1; value <= oldmax; ++value) {
-        const int64 abs_value = value >= 0 ? value : -value;
-        if (!sub_->Contains(-value)) {
-          target_var_->RemoveValue(abs_value);
-        }
-      }
     }
   }
 
   void PropagateTarget() {
-    const int64 oldmax = target_var_->OldMax();
-    const int64 vmin = target_var_->Min();
-    const int64 vmax = target_var_->Max();
-    for (int64 value = std::max(0LL, target_var_->OldMin());
-         value < vmin;
-         ++value) {
-      sub_->RemoveValue(value);
-      sub_->RemoveValue(-value);
-    }
-    for (target_hole_iterator_->Init();
-         target_hole_iterator_->Ok();
-         target_hole_iterator_->Next()) {
-      const int64 value = target_hole_iterator_->Value();
-      sub_->RemoveValue(value);
-      sub_->RemoveValue(-value);
-    }
-    for (int64 value = vmax + 1; value <= oldmax; ++value) {
-      sub_->RemoveValue(value);
-      sub_->RemoveValue(-value);
+    const int64 target_min = target_var_->Min();
+    const int64 target_max = target_var_->Max();
+    if (sub_->Max() <= 0) {
+      sub_->SetRange(-target_max, -target_min);
+    } else if (sub_->Min() >= 0) {
+      sub_->SetRange(target_min, target_max);
+    } else {
+      sub_->SetRange(-target_max, target_max);
     }
   }
 
@@ -4677,8 +4640,6 @@ class IntAbsConstraint : public CastConstraint {
 
  private:
   IntVar* const sub_;
-  IntVarIterator* const target_hole_iterator_;
-  IntVarIterator* const sub_hole_iterator_;
   IntVarIterator* const target_domain_iterator_;
   IntVarIterator* const sub_domain_iterator_;
 };
