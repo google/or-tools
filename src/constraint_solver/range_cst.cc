@@ -352,6 +352,30 @@ class IsEqualCt : public CastConstraint {
 
   virtual void InitialPropagate() {
     PropagateRange();
+    if (!target_var_->Bound() && left_->IsVar() && right_->IsVar()) {
+      IntVar* const lv = left_->Var();
+      IntVar* const rv = right_->Var();
+      // Search for a support.
+      if (lv->Size() < rv->Size()) {
+        IntVarIterator* const it = lv->MakeDomainIterator(true);
+        for (it->Init(); it->Ok(); it->Next()) {
+          if (rv->Contains(it->Value())) {
+            return;
+          }
+        }
+        range_demon_->inhibit(solver());
+        target_var_->SetValue(0);
+      } else {
+        IntVarIterator* const it = rv->MakeDomainIterator(true);
+        for (it->Init(); it->Ok(); it->Next()) {
+          if (lv->Contains(it->Value())) {
+            return;
+          }
+        }
+        range_demon_->inhibit(solver());
+        target_var_->SetValue(0);
+      }
+    }
   }
 
   void PropagateRange() {
@@ -450,6 +474,30 @@ class IsDifferentCt : public CastConstraint {
 
   virtual void InitialPropagate() {
     PropagateRange();
+    if (!target_var_->Bound() && left_->IsVar() && right_->IsVar()) {
+      IntVar* const lv = left_->Var();
+      IntVar* const rv = right_->Var();
+      // Search for a support.
+      if (lv->Size() < rv->Size()) {
+        IntVarIterator* const it = lv->MakeDomainIterator(true);
+        for (it->Init(); it->Ok(); it->Next()) {
+          if (rv->Contains(it->Value())) {
+            return;
+          }
+        }
+        range_demon_->inhibit(solver());
+        target_var_->SetValue(1);
+      } else {
+        IntVarIterator* const it = rv->MakeDomainIterator(true);
+        for (it->Init(); it->Ok(); it->Next()) {
+          if (lv->Contains(it->Value())) {
+            return;
+          }
+        }
+        range_demon_->inhibit(solver());
+        target_var_->SetValue(1);
+      }
+    }
   }
 
   void PropagateRange() {
