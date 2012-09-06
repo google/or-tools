@@ -362,10 +362,18 @@ class IsEqualCt : public CastConstraint {
     if (left_->Min() > right_->Max() || left_->Max() < right_->Min()) {
       target_var_->SetValue(0);
       range_demon_->inhibit(solver());
-    } else if (left_->Bound() &&
-               right_->Bound() &&
-               left_->Min() == right_->Min()) {
-      target_var_->SetValue(1);
+    } else if (left_->Bound()) {
+      if (right_->Bound()) {
+        target_var_->SetValue(left_->Min() == right_->Min());
+      } else if (right_->IsVar() && !right_->Var()->Contains(left_->Min())) {
+        range_demon_->inhibit(solver());
+        target_var_->SetValue(0);
+      }
+    } else if (right_->Bound() &&
+               left_->IsVar() &&
+               !left_->Var()->Contains(right_->Min())) {
+        range_demon_->inhibit(solver());
+        target_var_->SetValue(0);
     }
   }
 
@@ -452,10 +460,18 @@ class IsDifferentCt : public CastConstraint {
     if (left_->Min() > right_->Max() || left_->Max() < right_->Min()) {
       target_var_->SetValue(1);
       range_demon_->inhibit(solver());
-    } else if (left_->Bound() &&
-               right_->Bound() &&
-               left_->Min() == right_->Min()) {
-      target_var_->SetValue(0);
+    } else if (left_->Bound()) {
+      if (right_->Bound()) {
+        target_var_->SetValue(left_->Min() != right_->Min());
+      } else if (right_->IsVar() && !right_->Var()->Contains(left_->Min())) {
+        range_demon_->inhibit(solver());
+        target_var_->SetValue(1);
+      }
+    } else if (right_->Bound() &&
+               left_->IsVar() &&
+               !left_->Var()->Contains(right_->Min())) {
+        range_demon_->inhibit(solver());
+        target_var_->SetValue(1);
     }
   }
 
