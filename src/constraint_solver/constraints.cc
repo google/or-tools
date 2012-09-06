@@ -953,7 +953,7 @@ class PositiveBoundModulo : public Constraint {
 
   virtual void Post() {
     Solver* const s = solver();
-    IntVar* const d = s->MakeIntVar(x_->Min(), x_->Max());
+    IntVar* const d = s->MakeIntVar(0, x_->Max());
     s->AddConstraint(s->MakeEquality(x_, s->MakeProd(mod_, d)->Var()));
   }
 

@@ -3661,16 +3661,16 @@ class TimesIntCstExpr :  public BaseIntExpr {
   const int64 value_;
 };
 
-// ----- TimesIntPosCstExpr -----
+// ----- TimesPosIntCstExpr -----
 
-class TimesIntPosCstExpr : public TimesIntCstExpr {
+class TimesPosIntCstExpr : public TimesIntCstExpr {
  public:
-  TimesIntPosCstExpr(Solver* const s, IntExpr* const e, int64 v)
+  TimesPosIntCstExpr(Solver* const s, IntExpr* const e, int64 v)
       : TimesIntCstExpr(s, e, v) {
     CHECK_GT(v, 0);
   }
 
-  virtual ~TimesIntPosCstExpr(){}
+  virtual ~TimesPosIntCstExpr(){}
 
   virtual int64 Min() const {
     return expr_->Min() * value_;
@@ -3705,14 +3705,14 @@ class TimesIntPosCstExpr : public TimesIntCstExpr {
   }
 };
 
-class SafeTimesIntPosCstExpr : public TimesIntCstExpr {
+class SafeTimesPosIntCstExpr : public TimesIntCstExpr {
  public:
-  SafeTimesIntPosCstExpr(Solver* const s, IntExpr* const e, int64 v)
+  SafeTimesPosIntCstExpr(Solver* const s, IntExpr* const e, int64 v)
       : TimesIntCstExpr(s, e, v) {
     CHECK_GT(v, 0);
   }
 
-  virtual ~SafeTimesIntPosCstExpr(){}
+  virtual ~SafeTimesPosIntCstExpr(){}
 
   virtual int64 Min() const {
     return CapProd(expr_->Min(), value_);
@@ -4001,13 +4001,13 @@ bool TimesIntExpr::Bound() const {
           (left_bound && right_bound));
 }
 
-// ----- TimesIntPosExpr -----
+// ----- TimesPosIntExpr -----
 
-class TimesIntPosExpr : public BaseIntExpr {
+class TimesPosIntExpr : public BaseIntExpr {
  public:
-  TimesIntPosExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
+  TimesPosIntExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
       : BaseIntExpr(s), left_(l), right_(r) {}
-  virtual ~TimesIntPosExpr() {}
+  virtual ~TimesPosIntExpr() {}
   virtual int64 Min() const {
     return (left_->Min() * right_->Min());
   }
@@ -4045,27 +4045,27 @@ class TimesIntPosExpr : public BaseIntExpr {
   IntExpr* const right_;
 };
 
-void TimesIntPosExpr::SetMin(int64 m) {
+void TimesPosIntExpr::SetMin(int64 m) {
   SetPosPosMinExpr(left_, right_, m);
 }
 
-void TimesIntPosExpr::SetMax(int64 m) {
+void TimesPosIntExpr::SetMax(int64 m) {
   SetPosPosMaxExpr(left_, right_, m);
 }
 
-bool TimesIntPosExpr::Bound() const {
+bool TimesPosIntExpr::Bound() const {
   return (left_->Max() == 0 ||
           right_->Max() == 0 ||
           (left_->Bound() && right_->Bound()));
 }
 
-// ----- SafeTimesIntPosExpr -----
+// ----- SafeTimesPosIntExpr -----
 
-class SafeTimesIntPosExpr : public BaseIntExpr {
+class SafeTimesPosIntExpr : public BaseIntExpr {
  public:
-  SafeTimesIntPosExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
+  SafeTimesPosIntExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
       : BaseIntExpr(s), left_(l), right_(r) {}
-  virtual ~SafeTimesIntPosExpr() {}
+  virtual ~SafeTimesPosIntExpr() {}
   virtual int64 Min() const {
     return CapProd(left_->Min(), right_->Min());
   }
@@ -4395,15 +4395,15 @@ bool TimesBooleanIntExpr::Bound() const {
               expr_->Max() == 0)));
 }
 
-// ----- DivIntPosCstExpr -----
+// ----- DivPosIntCstExpr -----
 
-class DivIntPosCstExpr : public BaseIntExpr {
+class DivPosIntCstExpr : public BaseIntExpr {
  public:
-  DivIntPosCstExpr(Solver* const s, IntExpr* const e, int64 v)
+  DivPosIntCstExpr(Solver* const s, IntExpr* const e, int64 v)
       : BaseIntExpr(s), expr_(e), value_(v) {
     CHECK_GE(v, 0);
   }
-  virtual ~DivIntPosCstExpr() {}
+  virtual ~DivPosIntCstExpr() {}
   virtual int64 Min() const {
     return expr_->Min() / value_;
   }
@@ -4449,11 +4449,11 @@ class DivIntPosCstExpr : public BaseIntExpr {
   const int64 value_;
 };
 
-// DivIntPosExpr
+// DivPosIntExpr
 
-class DivIntPosExpr : public BaseIntExpr {
+class DivPosIntExpr : public BaseIntExpr {
  public:
-  DivIntPosExpr(Solver* const s, IntExpr* const num, IntExpr* const denom) :
+  DivPosIntExpr(Solver* const s, IntExpr* const num, IntExpr* const denom) :
       BaseIntExpr(s),
       num_(num),
       denom_(denom),
@@ -4461,7 +4461,7 @@ class DivIntPosExpr : public BaseIntExpr {
     CHECK_GT(denom->Min(), 0);
   }
 
-  virtual ~DivIntPosExpr() {}
+  virtual ~DivPosIntExpr() {}
 
   virtual int64 Min() const {
     return num_->Min() >= 0 ?
@@ -6189,9 +6189,9 @@ IntExpr* Solver::MakeProd(IntExpr* const e, int64 v) {
     } else if (v > 0) {
       if (e->Max() > kint64max / v || e->Min() < kint64min / v) {
         result =
-            RegisterIntExpr(RevAlloc(new SafeTimesIntPosCstExpr(this, e, v)));
+            RegisterIntExpr(RevAlloc(new SafeTimesPosIntCstExpr(this, e, v)));
       } else {
-        result = RegisterIntExpr(RevAlloc(new TimesIntPosCstExpr(this, e, v)));
+        result = RegisterIntExpr(RevAlloc(new TimesPosIntCstExpr(this, e, v)));
       }
     } else if (v == 0) {
       result = MakeIntConst(0);
@@ -6343,9 +6343,9 @@ IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
     }
   } else if (l->Min() >= 0 && r->Min() >= 0) {
     if (CapProd(l->Max(), r->Max()) == kint64max) {  // Potential overflow.
-      result = RegisterIntExpr(RevAlloc(new SafeTimesIntPosExpr(this, l, r)));
+      result = RegisterIntExpr(RevAlloc(new SafeTimesPosIntExpr(this, l, r)));
     } else {
-      result = RegisterIntExpr(RevAlloc(new TimesIntPosExpr(this, l, r)));
+      result = RegisterIntExpr(RevAlloc(new TimesPosIntExpr(this, l, r)));
     }
   } else {
     result = RegisterIntExpr(RevAlloc(new TimesIntExpr(this, l, r)));
@@ -6360,7 +6360,7 @@ IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
 
 IntExpr* Solver::MakeDiv(IntExpr* const numerator, IntExpr* const denominator) {
   if (denominator->Min() > 0) {
-    return RevAlloc(new DivIntPosExpr(this, numerator, denominator));
+    return RevAlloc(new DivPosIntExpr(this, numerator, denominator));
   }
 
   // Both numerator and denominator are positive.
@@ -6389,13 +6389,13 @@ IntExpr* Solver::MakeDiv(IntExpr* const e, int64 v) {
   } else if (v == -1) {
     return MakeOpposite(e);
   } else if (v > 0) {
-    return RegisterIntExpr(RevAlloc(new DivIntPosCstExpr(this, e, v)));
+    return RegisterIntExpr(RevAlloc(new DivPosIntCstExpr(this, e, v)));
   } else if (v == 0) {
     LOG(FATAL) << "Cannot divide by 0";
     return NULL;
   } else {
     return RegisterIntExpr(
-        MakeOpposite(RevAlloc(new DivIntPosCstExpr(this, e, -v))));
+        MakeOpposite(RevAlloc(new DivPosIntCstExpr(this, e, -v))));
     // TODO(user) : implement special case.
   }
 }
