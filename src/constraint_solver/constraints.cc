@@ -969,25 +969,18 @@ class PositiveBoundModulo : public Constraint {
   void PropagateRange() {
     if (mod_->Bound()) {
       const int64 mod = mod_->Min();
-      x_->SetRange(PosIntDivUp(x_->Min(), mod) * mod, (x_->Max() / mod) * mod);
+      x_->SetRange(PosIntDivUp(x_->Min(), mod) * mod,
+                   PosIntDivDown(x_->Max(), mod) * mod);
     } else {
-      int64 x_min = x_->Min();
-      int64 x_max = x_->Max();
+      const int64 x_min = x_->Min();
+      const int64 x_max = x_->Max();
       const int64 mod_min = mod_->Min();
       const int64 mod_max = mod_->Max();
-      // Propagate from product to x_;
-      x_->SetRange((x_min / mod_max) * mod_min, (x_max / mod_min) * mod_max);
-      // Propagate from x_ to product.
-      x_min = x_->Min();
-      x_max = x_->Max();
-      const int64 div_max = x_max / mod_min;
-      const int64 div_min = x_min / mod_max;
-      mod_->SetRange(div_max != 0 ? PosIntDivUp(x_min, div_max) : 1,
-                     div_min != 0 ? PosIntDivDown(x_max, div_min) : mod_max);
-      const int64 new_div_min = PosIntDivUp(x_min, mod_max);
-      const int64 new_div_max = PosIntDivDown(x_max, mod_min);
-      x_->SetRange(new_div_min * mod_min, (new_div_max + 1) * mod_max - 1);
-      mod_->SetRange(x_min / (new_div_max + 1) + 1, x_max / new_div_min);
+      const int64 div_max = PosIntDivDown(x_max, mod_min);
+      const int64 div_min = PosIntDivUp(x_min, mod_max);
+      x_->SetRange(div_min * mod_min, div_max * mod_max);
+      mod_->SetRange(div_max != 0 ? PosIntDivUp(x_min, div_max) : mod_min,
+                     PosIntDivDown(x_max, div_min));
     }
   }
 
