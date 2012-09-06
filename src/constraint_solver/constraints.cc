@@ -972,7 +972,7 @@ class PositiveBoundModulo : public Constraint {
     const int64 mod_min = mod_->Min();
     const int64 mod_max = mod_->Max();
     // Propagate from product to x_;
-    x_->SetRange(x_min / mod_max * mod_min, x_max / mod_min * mod_max);
+    x_->SetRange((x_min / mod_max) * mod_min, (x_max / mod_min) * mod_max);
     // Propagate from x_ to product.
     x_min = x_->Min();
     x_max = x_->Max();
