@@ -966,7 +966,7 @@ class PositiveBoundModulo : public Constraint {
     PropagateRange();
   }
 
-  virtual void PropagateRange() {
+  void PropagateRange() {
     int64 x_min = x_->Min();
     int64 x_max = x_->Max();
     const int64 mod_min = mod_->Min();
@@ -987,7 +987,7 @@ class PositiveBoundModulo : public Constraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("BoundModulo(%s, %s)",
+    return StringPrintf("%s %% %s == 0",
                         x_->DebugString().c_str(),
                         mod_->DebugString().c_str());
   }
@@ -1004,6 +1004,53 @@ class PositiveBoundModulo : public Constraint {
  private:
   IntVar* const x_;
   IntVar* const mod_;
+};
+
+class PositiveBoundBoundModulo : public Constraint {
+ public:
+  PositiveBoundBoundModulo(Solver* const solver, IntVar* const x, int64 mod)
+      : Constraint(solver), x_(x), mod_(mod) {
+    CHECK_NOTNULL(solver);
+    CHECK_NOTNULL(x);
+  }
+
+  virtual ~PositiveBoundBoundModulo() {}
+
+  virtual void Post() {
+    Demon* const demon =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &PositiveBoundBoundModulo::PropagateRange,
+                             "PropagateRange");
+    x_->WhenRange(demon);
+  }
+
+  virtual void InitialPropagate() {
+    PropagateRange();
+  }
+
+  void PropagateRange() {
+    x_->SetRange(PosIntDivUp(x_->Min(), mod_) * mod_,
+                 (x_->Max() / mod_) * mod_);
+  }
+
+  string DebugString() const {
+    return StringPrintf("%s %% %" GG_LL_FORMAT "d == 0",
+                        x_->DebugString().c_str(),
+                        mod_);
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kModuloConstraint, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                            x_);
+    visitor->VisitIntegerArgument(ModelVisitor::kModuloArgument, mod_);
+    visitor->EndVisitConstraint(ModelVisitor::kModuloConstraint, this);
+  }
+
+ private:
+  IntVar* const x_;
+  const int64 mod_;
 };
 
 class PositiveModulo : public Constraint {
@@ -1064,7 +1111,7 @@ class PositiveModulo : public Constraint {
 Constraint* Solver::MakeModuloConstraint(IntVar* const x,
                                          int64 mod,
                                          IntVar* const y) {
-  return RevAlloc(new VariableModulo(this, x, MakeIntConst(mod), y));
+  return MakeModuloConstraint(x, MakeIntConst(mod), y);
 }
 
 Constraint* Solver::MakeModuloConstraint(IntVar* const x,
@@ -1072,7 +1119,11 @@ Constraint* Solver::MakeModuloConstraint(IntVar* const x,
                                          IntVar* const y) {
   if (y->Bound() && y->Min() == 0) {
     if (x->Min() >= 0 && mod->Min() >= 0) {
-      return RevAlloc(new PositiveBoundModulo(this, x, mod));
+      if (mod->Bound()) {
+        return RevAlloc(new PositiveBoundBoundModulo(this, x, mod->Min()));
+      } else {
+        return RevAlloc(new PositiveBoundModulo(this, x, mod));
+      }
     } else {
       return RevAlloc(new BoundModulo(this, x, mod));
     }
