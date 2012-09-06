@@ -2789,21 +2789,6 @@ string OppIntVar::DebugString() const {
 
 // ----- Utility functions -----
 
-int64 PosIntDivUp(int64 e, int64 v) {
-  if (e >= 0) {
-    return (e + v - 1) / v;
-  } else {
-    return -(-e / v);
-  }
-}
-int64 PosIntDivDown(int64 e, int64 v) {
-  if (e >= 0) {
-    return e / v;
-  } else {
-    return (e - v + 1) / v;
-  }
-}
-
 // x * c variable, optimized case
 
 class TimesCstIntVar : public IntVar {

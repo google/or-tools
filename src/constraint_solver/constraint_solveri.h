@@ -2193,6 +2193,21 @@ template <class T> bool AreAllBoundOrNull(const std::vector<IntVar*>& vars,
   }
   return true;
 }
+
+inline int64 PosIntDivUp(int64 e, int64 v) {
+  if (e >= 0) {
+    return (e + v - 1) / v;
+  } else {
+    return -(-e / v);
+  }
+}
+inline int64 PosIntDivDown(int64 e, int64 v) {
+  if (e >= 0) {
+    return e / v;
+  } else {
+    return (e - v + 1) / v;
+  }
+}
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_

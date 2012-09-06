@@ -952,13 +952,38 @@ class PositiveBoundModulo : public Constraint {
   virtual ~PositiveBoundModulo() {}
 
   virtual void Post() {
-    Solver* const s = solver();
-    IntVar* const d = s->MakeIntVar(0, x_->Max());
-    s->AddConstraint(s->MakeEquality(x_, s->MakeProd(mod_, d)->Var()));
+    Demon* const demon =
+        MakeConstraintDemon0(solver(),
+                             this,
+                             &PositiveBoundModulo::PropagateRange,
+                             "PropagateRange");
+    x_->WhenRange(demon);
+    mod_->WhenRange(demon);
   }
 
   virtual void InitialPropagate() {
     mod_->RemoveValue(0);
+    PropagateRange();
+  }
+
+  virtual void PropagateRange() {
+    int64 x_min = x_->Min();
+    int64 x_max = x_->Max();
+    const int64 mod_min = mod_->Min();
+    const int64 mod_max = mod_->Max();
+    // Propagate from product to x_;
+    x_->SetRange(x_min / mod_max * mod_min, x_max / mod_min * mod_max);
+    // Propagate from x_ to product.
+    x_min = x_->Min();
+    x_max = x_->Max();
+    const int64 div_max = x_max / mod_min;
+    const int64 div_min = x_min / mod_max;
+    mod_->SetRange(div_max != 0 ? PosIntDivUp(x_min, div_max) : 1,
+                   div_min != 0 ? PosIntDivDown(x_max, div_min) : mod_max);
+    const int64 new_div_min = PosIntDivUp(x_min, mod_max);
+    const int64 new_div_max = PosIntDivDown(x_max, mod_min);
+    x_->SetRange(new_div_min * mod_min, (new_div_max + 1) * mod_max - 1);
+    mod_->SetRange(x_min / (new_div_max + 1) + 1, x_max / new_div_min);
   }
 
   virtual string DebugString() const {
