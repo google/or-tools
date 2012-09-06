@@ -940,6 +940,47 @@ class BoundModulo : public Constraint {
   IntVar* const mod_;
 };
 
+class PositiveBoundModulo : public Constraint {
+ public:
+  PositiveBoundModulo(Solver* const solver, IntVar* const x, IntVar* const mod)
+      : Constraint(solver), x_(x), mod_(mod) {
+    CHECK_NOTNULL(solver);
+    CHECK_NOTNULL(x);
+    CHECK_NOTNULL(mod);
+  }
+
+  virtual ~PositiveBoundModulo() {}
+
+  virtual void Post() {
+    Solver* const s = solver();
+    IntVar* const d = s->MakeIntVar(x_->Min(), x_->Max());
+    s->AddConstraint(s->MakeEquality(x_, s->MakeProd(mod_, d)->Var()));
+  }
+
+  virtual void InitialPropagate() {
+    mod_->RemoveValue(0);
+  }
+
+  virtual string DebugString() const {
+    return StringPrintf("BoundModulo(%s, %s)",
+                        x_->DebugString().c_str(),
+                        mod_->DebugString().c_str());
+  }
+
+  virtual void Accept(ModelVisitor* const visitor) const {
+    visitor->BeginVisitConstraint(ModelVisitor::kModuloConstraint, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                            x_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kModuloArgument,
+                                            mod_);
+    visitor->EndVisitConstraint(ModelVisitor::kModuloConstraint, this);
+  }
+
+ private:
+  IntVar* const x_;
+  IntVar* const mod_;
+};
+
 class PositiveModulo : public Constraint {
  public:
   PositiveModulo(Solver* const solver,
@@ -1005,7 +1046,11 @@ Constraint* Solver::MakeModuloConstraint(IntVar* const x,
                                          IntVar* const mod,
                                          IntVar* const y) {
   if (y->Bound() && y->Min() == 0) {
-    return RevAlloc(new BoundModulo(this, x, mod));
+    if (x->Min() >= 0 && mod->Min() >= 0) {
+      return RevAlloc(new PositiveBoundModulo(this, x, mod));
+    } else {
+      return RevAlloc(new BoundModulo(this, x, mod));
+    }
   } else if (x->Min() >= 0 && y->Min() >= 0 && mod->Min() >= 0) {
     return RevAlloc(new PositiveModulo(this, x, mod, y));
   } else {
