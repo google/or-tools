@@ -507,6 +507,7 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
       flat_annotations.push_back(solve_annotations_);
     }
   }
+  search_name_ = p.free_search ? "free" : "defined";
 
   if (!p.free_search) {
     for (unsigned int i = 0; i < flat_annotations.size(); i++) {
@@ -665,8 +666,21 @@ void FlatZincModel::CreateDecisionBuilders(const FlatZincSearchParameters& p) {
     parameters.value_selection_schema =
         DefaultPhaseParameters::SELECT_MIN_IMPACT;
     parameters.random_seed = p.random_seed;
-    builders_.push_back(
-        solver_->MakeDefaultPhase(active_variables_, parameters));
+    // Create the variable array, push smaller variable first.
+    std::vector<IntVar*> vars;
+    for (int i = 0; i < active_variables_.size(); ++i) {
+      IntVar* const var = active_variables_[i];
+      if (var->Size() < 0xFFFF) {
+        vars.push_back(var);
+      }
+    }
+    for (int i = 0; i < active_variables_.size(); ++i) {
+      IntVar* const var = active_variables_[i];
+      if (var->Size() >= 0xFFFF) {
+        vars.push_back(var);
+      }
+    }
+    builders_.push_back(solver_->MakeDefaultPhase(vars, parameters));
     if (!introduced_variables_.empty() && !has_solve_annotations) {
       // Better safe than sorry.
       builders_.push_back(solver_->MakePhase(introduced_variables_,
