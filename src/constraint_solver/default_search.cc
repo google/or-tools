@@ -404,15 +404,16 @@ class ImpactRecorder : public SearchMonitor {
 
   virtual void AfterDecision(Decision* const d, bool apply) {
     if (init_done_ && current_var_ != kUninitializedVarIndex) {
-      CHECK_GT(current_log_space_, 0.0);
+      if (current_log_space_ > 0.0) {
       const double log_space = domain_watcher_->LogSearchSpaceSize();
-      if (apply) {
-        const double impact = kPerfectImpact - log_space / current_log_space_;
-        UpdateImpact(current_var_, current_value_, impact);
-        current_var_ = kUninitializedVarIndex;
-        current_value_ = 0;
+        if (apply) {
+          const double impact = kPerfectImpact - log_space / current_log_space_;
+          UpdateImpact(current_var_, current_value_, impact);
+          current_var_ = kUninitializedVarIndex;
+          current_value_ = 0;
+        }
+        current_log_space_ = log_space;
       }
-      current_log_space_ = log_space;
     }
   }
 

@@ -147,11 +147,11 @@ bool NoGood::Apply(Solver* const solver) {
     }
   }
   if (first_undecided == NULL && terms_.size() > 0) {
-    VLOG(1) << "No Good " << DebugString() << " -> Fail";
+    VLOG(2) << "No Good " << DebugString() << " -> Fail";
     solver->Fail();
   }
   if (first_undecided != NULL) {
-    VLOG(1) << "No Good " << DebugString() << " -> Refute "
+    VLOG(2) << "No Good " << DebugString() << " -> Refute "
             << first_undecided->DebugString();;
     first_undecided->Refute();
     return false;
