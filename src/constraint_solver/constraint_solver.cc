@@ -284,14 +284,22 @@ class Queue {
     }
   }
 
-  void Enqueue(Demon* const demon) {
-    DCHECK(demon->priority() != Solver::NORMAL_PRIORITY);
+  void EnqueueVar(Demon* const demon) {
+    DCHECK(demon->priority() == Solver::VAR_PRIORITY);
     if (demon->stamp() < stamp_) {
       demon->set_stamp(stamp_);
-      containers_[demon->priority()]->Enqueue(demon);
+      containers_[Solver::VAR_PRIORITY]->Enqueue(demon);
       if (freeze_level_ == 0) {
         Process();
       }
+    }
+  }
+
+  void EnqueueDelayedDemon(Demon* const demon) {
+    DCHECK(demon->priority() == Solver::DELAYED_PRIORITY);
+    if (demon->stamp() < stamp_) {
+      demon->set_stamp(stamp_);
+      containers_[Solver::DELAYED_PRIORITY]->Enqueue(demon);
     }
   }
 
@@ -1614,11 +1622,11 @@ void Solver::UnfreezeQueue() {
 }
 
 void Solver::EnqueueVar(Demon* const d) {
-  queue_->Enqueue(d);
+  queue_->EnqueueVar(d);
 }
 
 void Solver::EnqueueDelayedDemon(Demon* const d) {
-  queue_->Enqueue(d);
+  queue_->EnqueueDelayedDemon(d);
 }
 
 void Solver::Execute(Demon* const d) {
