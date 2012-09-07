@@ -140,7 +140,7 @@ namespace {
 class SinglePriorityQueue {
  public:
   virtual ~SinglePriorityQueue() {}
-  virtual Demon* NextDemon() = 0;
+  virtual Demon* Next() = 0;
   virtual void Enqueue(Demon* const d) = 0;
   virtual void AfterFailure() = 0;
   virtual void Init() = 0;
@@ -174,7 +174,7 @@ class FifoPriorityQueue : public SinglePriorityQueue {
     return first_ == NULL;
   }
 
-  virtual Demon* NextDemon() {
+  virtual Demon* Next() {
     if (first_ != NULL) {
       DCHECK(last_ != NULL);
       Cell* const tmp_cell = first_;
@@ -278,7 +278,7 @@ class Queue {
 
   void ProcessNormalDemons() {
     Demon* demon = NULL;
-    while ((demon = containers_[Solver::NORMAL_PRIORITY]->NextDemon()) !=
+    while ((demon = containers_[Solver::NORMAL_PRIORITY]->Next()) !=
            NULL)  {
       ProcessOneDemon(demon);
     }
@@ -287,14 +287,11 @@ class Queue {
   void Process() {
     if (!in_process_) {
       in_process_ = true;
-      Demon* demon = NULL;
-      while ((demon = containers_[Solver::NORMAL_PRIORITY]->NextDemon()) !=
-             NULL ||
-             (demon = containers_[Solver::VAR_PRIORITY]->NextDemon()) !=
-             NULL ||
-             (demon = containers_[Solver::DELAYED_PRIORITY]->NextDemon()) !=
-             NULL) {
-        ProcessOneDemon(demon);
+      Demon* d = NULL;
+      while ((d = containers_[Solver::NORMAL_PRIORITY]->Next()) != NULL ||
+             (d = containers_[Solver::VAR_PRIORITY]->Next()) != NULL ||
+             (d = containers_[Solver::DELAYED_PRIORITY]->Next()) != NULL) {
+        ProcessOneDemon(d);
       }
       in_process_ = false;
     }
