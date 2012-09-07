@@ -259,46 +259,49 @@ class Queue {
     ProcessIfUnfrozen();
   }
 
-  void ProcessOneDemon(Solver::DemonPriority prio) {
-    Demon* const demon = containers_[prio]->NextDemon();
-    // A NULL demon will just be ignored
-    if (demon != NULL) {
-      demon->set_stamp(stamp_ - 1);
-      DCHECK_EQ(prio, demon->priority());
-      if (instruments_demons_) {
-        solver_->GetPropagationMonitor()->BeginDemonRun(demon);
-      }
-      solver_->demon_runs_[prio]++;
-      if (solver_->demon_runs_[prio] % 10000 == 0) {
-        solver_->TopPeriodicCheck();
-      }
-      demon->Run(solver_);
-      if (instruments_demons_) {
-        solver_->GetPropagationMonitor()->EndDemonRun(demon);
-      }
+  void ProcessOneDemon(Demon* const demon) {
+    demon->set_stamp(stamp_ - 1);
+    const int prio = demon->priority();
+    DCHECK_EQ(prio, demon->priority());
+    if (instruments_demons_) {
+      solver_->GetPropagationMonitor()->BeginDemonRun(demon);
+    }
+    solver_->demon_runs_[prio]++;
+    if (solver_->demon_runs_[prio] % 10000 == 0) {
+      solver_->TopPeriodicCheck();
+    }
+    demon->Run(solver_);
+    if (instruments_demons_) {
+      solver_->GetPropagationMonitor()->EndDemonRun(demon);
     }
   }
 
   void ProcessNormalDemons() {
-    while (!containers_[Solver::NORMAL_PRIORITY]->Empty()) {
-      ProcessOneDemon(Solver::NORMAL_PRIORITY);
+    Demon* demon = NULL;
+    while ((demon = containers_[Solver::NORMAL_PRIORITY]->NextDemon()) !=
+           NULL)  {
+      ProcessOneDemon(demon);
     }
+  }
+
+  Demon* NextDemon() {
+    Demon* demon = containers_[Solver::NORMAL_PRIORITY]->NextDemon();
+    if (demon != NULL) {
+      return demon;
+    }
+    demon = containers_[Solver::VAR_PRIORITY]->NextDemon();
+    if (demon != NULL) {
+      return demon;
+    }
+    return containers_[Solver::DELAYED_PRIORITY]->NextDemon();
   }
 
   void Process() {
     if (!in_process_) {
       in_process_ = true;
-      while (!containers_[Solver::VAR_PRIORITY]->Empty() ||
-             !containers_[Solver::NORMAL_PRIORITY]->Empty() ||
-             !containers_[Solver::DELAYED_PRIORITY]->Empty()) {
-        while (!containers_[Solver::VAR_PRIORITY]->Empty() ||
-               !containers_[Solver::NORMAL_PRIORITY]->Empty()) {
-          while (!containers_[Solver::NORMAL_PRIORITY]->Empty()) {
-            ProcessOneDemon(Solver::NORMAL_PRIORITY);
-          }
-          ProcessOneDemon(Solver::VAR_PRIORITY);
-        }
-        ProcessOneDemon(Solver::DELAYED_PRIORITY);
+      Demon* demon = NULL;
+      while ((demon = NextDemon()) != NULL) {
+        ProcessOneDemon(demon);
       }
       in_process_ = false;
     }
