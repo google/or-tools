@@ -3441,6 +3441,20 @@ class SubIntExpr : public BaseIntExpr {
     right_->SetMax(left_->Max() - m);
   }
 
+  virtual int64 Max() const {
+    return left_->Max() - right_->Min();
+  }
+
+  virtual void SetMax(int64 m) {
+    left_->SetMax(m + right_->Max());
+    right_->SetMin(left_->Min() - m);
+  }
+
+  virtual void Range(int64* mi, int64* ma) {
+    *mi = left_->Min() - right_->Max();
+    *ma = left_->Max() - right_->Min();
+  }
+
   virtual void SetRange(int64 l, int64 u) {
     const int64 left_min = left_->Min();
     const int64 right_min = right_->Min();
@@ -3454,15 +3468,6 @@ class SubIntExpr : public BaseIntExpr {
       left_->SetMax(u + right_max);
       right_->SetMin(left_min - u);
     }
-  }
-
-  virtual int64 Max() const {
-    return left_->Max() - right_->Min();
-  }
-
-  virtual void SetMax(int64 m) {
-    left_->SetMax(m + right_->Max());
-    right_->SetMin(left_->Min() - m);
   }
 
   virtual bool Bound() const {
@@ -3530,6 +3535,11 @@ class SafeSubIntExpr : public SubIntExpr {
       left_->SetMax(CapAdd(u, right_max));
       right_->SetMin(CapSub(left_min, u));
     }
+  }
+
+  virtual void Range(int64* mi, int64* ma) {
+    *mi = CapSub(left_->Min(), right_->Max());
+    *ma = CapSub(left_->Max(), right_->Min());
   }
 
   virtual int64 Max() const {
@@ -4687,8 +4697,9 @@ class IntAbs : public BaseIntExpr {
   virtual ~IntAbs() {}
 
   virtual int64 Min() const {
-    const int64 emin = expr_->Min();
-    const int64 emax = expr_->Max();
+    int64 emin = 0;
+    int64 emax = 0;
+    expr_->Range(&emin, &emax);
     if (emin >= 0) {
       return emin;
     }
@@ -4699,8 +4710,9 @@ class IntAbs : public BaseIntExpr {
   }
 
   virtual void SetMin(int64 m) {
-    const int64 emin = expr_->Min();
-    const int64 emax = expr_->Max();
+    int64 emin = 0;
+    int64 emax = 0;
+    expr_->Range(&emin, &emax);
     if (emin >= 0) {
       expr_->SetMin(m);
     } else if (emax <= 0) {
@@ -4709,8 +4721,9 @@ class IntAbs : public BaseIntExpr {
   }
 
   virtual int64 Max() const {
-    const int64 emin = expr_->Min();
-    const int64 emax = expr_->Max();
+    int64 emin = 0;
+    int64 emax = 0;
+    expr_->Range(&emin, &emax);
     if (emin >= 0) {
       return emax;
     }
@@ -4726,12 +4739,29 @@ class IntAbs : public BaseIntExpr {
 
   virtual void SetRange(int64 mi, int64 ma) {
     expr_->SetRange(-ma, ma);
-    const int64 emin = expr_->Min();
-    const int64 emax = expr_->Max();
+    int64 emin = 0;
+    int64 emax = 0;
+    expr_->Range(&emin, &emax);
     if (emin >= 0) {
       expr_->SetMin(mi);
     } else if (emax <= 0) {
       expr_->SetMax(-mi);
+    }
+  }
+
+  virtual void Range(int64* mi, int64 *ma) {
+    int64 emin = 0;
+    int64 emax = 0;
+    expr_->Range(&emin, &emax);
+    if (emin >= 0) {
+      *mi = emin;
+      *ma = emax;
+    } else if (emax <= 0) {
+      *mi = -emax;
+      *ma = -emin;
+    } else {
+      *mi = 0;
+      *ma = std::max(-emin, emax);
     }
   }
 
