@@ -4683,14 +4683,58 @@ class IntAbsConstraint : public CastConstraint {
 class IntAbs : public BaseIntExpr {
  public:
   IntAbs(Solver* const s, IntExpr* const e) : BaseIntExpr(s), expr_(e) {}
+
   virtual ~IntAbs() {}
 
-  virtual int64 Min() const;
-  virtual void SetMin(int64 m);
-  virtual int64 Max() const;
+  virtual int64 Min() const {
+    const int64 emin = expr_->Min();
+    const int64 emax = expr_->Max();
+    if (emin >= 0) {
+      return emin;
+    }
+    if (emax <= 0) {
+      return -emax;
+    }
+    return 0;
+  }
+
+  virtual void SetMin(int64 m) {
+    const int64 emin = expr_->Min();
+    const int64 emax = expr_->Max();
+    if (emin >= 0) {
+      expr_->SetMin(m);
+    } else if (emax <= 0) {
+      expr_->SetMax(-m);
+    }
+  }
+
+  virtual int64 Max() const {
+    const int64 emin = expr_->Min();
+    const int64 emax = expr_->Max();
+    if (emin >= 0) {
+      return emax;
+    }
+    if (emax <= 0) {
+      return -emin;
+    }
+    return std::max(-emin, emax);
+  }
+
   virtual void SetMax(int64 m) {
     expr_->SetRange(-m, m);
   }
+
+  virtual void SetRange(int64 mi, int64 ma) {
+    expr_->SetRange(-ma, ma);
+    const int64 emin = expr_->Min();
+    const int64 emax = expr_->Max();
+    if (emin >= 0) {
+      expr_->SetMin(mi);
+    } else if (emax <= 0) {
+      expr_->SetMax(-mi);
+    }
+  }
+
   virtual bool Bound() const {
     return expr_->Bound();
   }
@@ -4729,42 +4773,6 @@ class IntAbs : public BaseIntExpr {
  private:
   IntExpr* const expr_;
 };
-
-void IntAbs::SetMin(int64 m) {
-  const int64 emin = expr_->Min();
-  const int64 emax = expr_->Max();
-  if (emin >= 0) {
-    expr_->SetMin(m);
-  } else if (emax <= 0) {
-    expr_->SetMax(-m);
-  } else if (expr_->IsVar() && m > 0) {
-    reinterpret_cast<IntVar*>(expr_)->RemoveInterval(-m + 1, m - 1);
-  }
-}
-
-int64 IntAbs::Min() const {
-  const int64 emin = expr_->Min();
-  const int64 emax = expr_->Max();
-  if (emin >= 0) {
-    return emin;
-  }
-  if (emax <= 0) {
-    return -emax;
-  }
-  return 0;
-}
-
-int64 IntAbs::Max() const {
-  const int64 emin = expr_->Min();
-  const int64 emax = expr_->Max();
-  if (emin >= 0) {
-    return emax;
-  }
-  if (emax <= 0) {
-    return -emin;
-  }
-  return std::max(-emin, emax);
-}
 
 // ----- Square -----
 
