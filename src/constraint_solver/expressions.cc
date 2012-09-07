@@ -4768,12 +4768,15 @@ class IntAbs : public BaseIntExpr {
   virtual bool Bound() const {
     return expr_->Bound();
   }
+
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
+
   virtual string name() const {
     return StringPrintf("IntAbs(%s)", expr_->name().c_str());
   }
+
   virtual string DebugString() const {
     return StringPrintf("IntAbs(%s)", expr_->DebugString().c_str());
   }
@@ -5211,37 +5214,44 @@ class MinCstIntExpr : public BaseIntExpr {
  public:
   MinCstIntExpr(Solver* const s, IntExpr* const e, int64 v)
       : BaseIntExpr(s), expr_(e), value_(v) {}
+
   virtual ~MinCstIntExpr() {}
+
   virtual int64 Min() const {
-    const int64 emin = expr_->Min();
-    return std::min(emin, value_);
+    return std::min(expr_->Min(), value_);
   }
+
   virtual void SetMin(int64 m) {
     if (m > value_) {
       solver()->Fail();
     }
     expr_->SetMin(m);
   }
+
   virtual int64 Max() const {
-    const int64 emax = expr_->Max();
-    return std::min(emax, value_);
+    return std::min(expr_->Max(), value_);
   }
+
   virtual void SetMax(int64 m) {
     if (value_ > m) {
       expr_->SetMax(m);
     }
   }
+
   virtual bool Bound() const {
     return (expr_->Bound() || expr_->Min() >= value_);
   }
+
   virtual string name() const {
     return StringPrintf("MinCstIntExpr(%s, %" GG_LL_FORMAT "d)",
                         expr_->name().c_str(), value_);
   }
+
   virtual string DebugString() const {
     return StringPrintf("MinCstIntExpr(%s, %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), value_);
   }
+
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }

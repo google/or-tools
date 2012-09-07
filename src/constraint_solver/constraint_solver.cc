@@ -137,17 +137,7 @@ string Action::DebugString() const {
 // ------------------ Queue class ------------------
 
 namespace {
-class SinglePriorityQueue {
- public:
-  virtual ~SinglePriorityQueue() {}
-  virtual Demon* Next() = 0;
-  virtual void Enqueue(Demon* const d) = 0;
-  virtual void AfterFailure() = 0;
-  virtual void Init() = 0;
-  virtual bool Empty() const = 0;
-};
-
-class FifoPriorityQueue : public SinglePriorityQueue {
+class FifoPriorityQueue {
  public:
   struct Cell {
     explicit Cell(Demon* const d) : demon(d), next(NULL) {}
@@ -157,7 +147,7 @@ class FifoPriorityQueue : public SinglePriorityQueue {
 
   FifoPriorityQueue() : first_(NULL), last_(NULL), free_cells_(NULL) {}
 
-  virtual ~FifoPriorityQueue() {
+  ~FifoPriorityQueue() {
     while (first_ != NULL) {
       Cell* const tmp = first_;
       first_ = tmp->next;
@@ -170,11 +160,7 @@ class FifoPriorityQueue : public SinglePriorityQueue {
     }
   }
 
-  virtual bool Empty() const {
-    return first_ == NULL;
-  }
-
-  virtual Demon* Next() {
+  Demon* Next() {
     if (first_ != NULL) {
       DCHECK(last_ != NULL);
       Cell* const tmp_cell = first_;
@@ -190,7 +176,7 @@ class FifoPriorityQueue : public SinglePriorityQueue {
     return NULL;
   }
 
-  virtual void Enqueue(Demon* const d) {
+  void Enqueue(Demon* const d) {
     Cell* cell = free_cells_;
     if (cell != NULL) {
       cell->demon = d;
@@ -208,7 +194,7 @@ class FifoPriorityQueue : public SinglePriorityQueue {
     }
   }
 
-  virtual void AfterFailure() {
+  void AfterFailure() {
     if (first_ != NULL) {
       last_->next = free_cells_;
       free_cells_ = first_;
@@ -216,8 +202,6 @@ class FifoPriorityQueue : public SinglePriorityQueue {
       last_ = NULL;
     }
   }
-
-  virtual void Init() {}
 
  private:
   Cell* first_;
@@ -238,7 +222,6 @@ class Queue {
         instruments_demons_(s->InstrumentsDemons()) {
     for (int i = 0; i < Solver::kNumPriorities; ++i) {
       containers_[i] = new FifoPriorityQueue();
-      containers_[i]->Init();
     }
   }
 
@@ -363,7 +346,7 @@ class Queue {
   }
 
   Solver* const solver_;
-  SinglePriorityQueue* containers_[Solver::kNumPriorities];
+  FifoPriorityQueue* containers_[Solver::kNumPriorities];
   uint64 stamp_;
   // The number of nested freeze levels. The queue is frozen if and only if
   // freeze_level_ > 0.
