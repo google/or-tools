@@ -238,8 +238,9 @@ class Queue {
   }
 
   void Unfreeze() {
-    freeze_level_--;
-    ProcessIfUnfrozen();
+    if (--freeze_level_ == 0) {
+      Process();
+    }
   }
 
   void ProcessOneDemon(Demon* const demon) {
@@ -259,20 +260,11 @@ class Queue {
     }
   }
 
-  void ProcessNormalDemons() {
-    Demon* demon = NULL;
-    while ((demon = containers_[Solver::NORMAL_PRIORITY]->Next()) !=
-           NULL)  {
-      ProcessOneDemon(demon);
-    }
-  }
-
   void Process() {
     if (!in_process_) {
       in_process_ = true;
       Demon* d = NULL;
-      while ((d = containers_[Solver::NORMAL_PRIORITY]->Next()) != NULL ||
-             (d = containers_[Solver::VAR_PRIORITY]->Next()) != NULL ||
+      while ((d = containers_[Solver::VAR_PRIORITY]->Next()) != NULL ||
              (d = containers_[Solver::DELAYED_PRIORITY]->Next()) != NULL) {
         ProcessOneDemon(d);
       }
@@ -282,21 +274,24 @@ class Queue {
 
   void Execute(Demon* const demon) {
     if (demon->stamp() < stamp_) {
-      const int prio = demon->priority();
-      if (prio == Solver::NORMAL_PRIORITY) {
+      if (demon->priority() == Solver::NORMAL_PRIORITY) {
         ProcessOneDemon(demon);
       } else {
+        DCHECK_EQ(demon->priority(), Solver::DELAYED_PRIORITY);
         demon->set_stamp(stamp_);
-        containers_[prio]->Enqueue(demon);
+        containers_[Solver::DELAYED_PRIORITY]->Enqueue(demon);
       }
     }
   }
 
   void Enqueue(Demon* const demon) {
+    DCHECK(demon->priority() != Solver::NORMAL_PRIORITY);
     if (demon->stamp() < stamp_) {
       demon->set_stamp(stamp_);
       containers_[demon->priority()]->Enqueue(demon);
-      ProcessIfUnfrozen();
+      if (freeze_level_ == 0) {
+        Process();
+      }
     }
   }
 
@@ -351,12 +346,6 @@ class Queue {
   }
 
  private:
-  void ProcessIfUnfrozen() {
-    if (freeze_level_ == 0) {
-      Process();
-    }
-  }
-
   Solver* const solver_;
   FifoPriorityQueue* containers_[Solver::kNumPriorities];
   uint64 stamp_;
@@ -1624,7 +1613,11 @@ void Solver::UnfreezeQueue() {
   queue_->Unfreeze();
 }
 
-void Solver::Enqueue(Demon* const d) {
+void Solver::EnqueueVar(Demon* const d) {
+  queue_->Enqueue(d);
+}
+
+void Solver::EnqueueDelayedDemon(Demon* const d) {
   queue_->Enqueue(d);
 }
 

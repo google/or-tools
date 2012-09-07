@@ -410,7 +410,7 @@ void Pack::OneDomain(int var_index) {
     unprocessed_->SetToZero(s, var->Min(), var_index);
     forced_[var->Min()].push_back(var_index);
   }
-  Enqueue(demon_);
+  EnqueueDelayedDemon(demon_);
 }
 
 string Pack::DebugString() const {

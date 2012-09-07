@@ -289,7 +289,7 @@ class SumConstraint : public TreeArrayConstraint {
   void LeafChanged(int term_index) {
     IntVar* const var = vars_[term_index];
     PushUp(term_index, var->Min() - var->OldMin(), var->OldMax() - var->Max());
-    Enqueue(sum_demon_);  // TODO(user): Is this needed?
+    EnqueueDelayedDemon(sum_demon_);  // TODO(user): Is this needed?
   }
 
   void PushUp(int position, int64 delta_min, int64 delta_max) {
@@ -473,7 +473,7 @@ class SafeSumConstraint : public TreeArrayConstraint {
     PushUp(term_index,
            CapSub(var->Min(), var->OldMin()),
            CapSub(var->OldMax(), var->Max()));
-    Enqueue(sum_demon_);  // TODO(user): Is this needed?
+    EnqueueDelayedDemon(sum_demon_);  // TODO(user): Is this needed?
   }
 
   void PushUp(int position, int64 delta_min, int64 delta_max) {

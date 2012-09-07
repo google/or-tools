@@ -1787,7 +1787,7 @@ void DomainIntVar::ClearInProcess() {
 
 void DomainIntVar::Push() {
   const bool in_process = in_process_;
-  Enqueue(&handler_);
+  EnqueueVar(&handler_);
   CHECK_EQ(in_process, in_process_);
 }
 
@@ -1930,7 +1930,7 @@ class BooleanVar : public IntVar {
   }
   void Process();
   void Push() {
-    Enqueue(&handler_);
+    EnqueueVar(&handler_);
   }
   virtual uint64 Size() const {
     return (1 + (value_ == kUnboundBooleanVarValue));

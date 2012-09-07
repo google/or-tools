@@ -659,7 +659,7 @@ void FixedDurationIntervalVar::SetPerformed(bool val) {
 
 void FixedDurationIntervalVar::Push() {
   const bool in_process = in_process_;
-  Enqueue(&handler_);
+  EnqueueVar(&handler_);
   CHECK_EQ(in_process, in_process_);
 }
 
@@ -1010,7 +1010,7 @@ void FixedDurationPerformedIntervalVar::SetPerformed(bool val) {
 
 void FixedDurationPerformedIntervalVar::Push() {
   const bool in_process = in_process_;
-  Enqueue(&handler_);
+  EnqueueVar(&handler_);
   CHECK_EQ(in_process, in_process_);
 }
 

@@ -566,7 +566,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
       if (active_tuples_[offset]) {
         // We push the propagate method only if something has changed.
         if (changed) {
-          Enqueue(demon_);
+          EnqueueDelayedDemon(demon_);
         }
         return;
       }
@@ -781,7 +781,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     if (temp_mask & active_tuples_) {
       AndActiveTuples(~temp_mask);
       if (active_tuples_) {
-        Enqueue(demon_);
+        EnqueueDelayedDemon(demon_);
       } else {
         solver()->Fail();
       }
