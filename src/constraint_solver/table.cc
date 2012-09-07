@@ -314,11 +314,12 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         "Propagate"));
     for (int i = 0; i < arity_; ++i) {
       //      vars_[i]->WhenDomain(d);
-      Demon* u = MakeConstraintDemon1(solver(),
-                                      this,
-                                      &CompactPositiveTableConstraint::Update,
-                                      "Update",
-                                      i);
+      Demon* const u = MakeConstraintDemon1(
+          solver(),
+          this,
+          &CompactPositiveTableConstraint::Update,
+          "Update",
+          i);
       vars_[i]->WhenDomain(u);
     }
     for (int i = 0; i < length_; ++i) {

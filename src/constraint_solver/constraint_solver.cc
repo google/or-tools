@@ -244,17 +244,17 @@ class Queue {
 
   void ProcessOneDemon(Demon* const demon) {
     demon->set_stamp(stamp_ - 1);
-    const int prio = demon->priority();
-    DCHECK_EQ(prio, demon->priority());
-    if (instruments_demons_) {
+    if (!instruments_demons_) {
+      if (++solver_->demon_runs_[demon->priority()] % 10000 == 0) {
+        solver_->TopPeriodicCheck();
+      }
+      demon->Run(solver_);
+    } else {
       solver_->GetPropagationMonitor()->BeginDemonRun(demon);
-    }
-    solver_->demon_runs_[prio]++;
-    if (solver_->demon_runs_[prio] % 10000 == 0) {
-      solver_->TopPeriodicCheck();
-    }
-    demon->Run(solver_);
-    if (instruments_demons_) {
+      if (++solver_->demon_runs_[demon->priority()] % 10000 == 0) {
+        solver_->TopPeriodicCheck();
+      }
+      demon->Run(solver_);
       solver_->GetPropagationMonitor()->EndDemonRun(demon);
     }
   }
