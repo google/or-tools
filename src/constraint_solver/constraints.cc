@@ -911,9 +911,15 @@ class BoundModulo : public Constraint {
 
   virtual void Post() {
     Solver* const s = solver();
-    IntVar* const d = s->MakeIntVar(std::min(x_->Min(), -x_->Max()),
-                                    std::max(x_->Max(), -x_->Min()));
-    s->AddConstraint(s->MakeEquality(x_, s->MakeProd(mod_, d)->Var()));
+    if (x_->Min() >= 0 && mod_->Min() >= 0) {
+      s->AddConstraint(s->MakeEquality(
+          x_,
+          s->MakeProd(s->MakeDiv(x_, mod_), mod_)));
+    } else {
+      IntVar* const d = s->MakeIntVar(std::min(x_->Min(), -x_->Max()),
+                                      std::max(x_->Max(), -x_->Min()));
+      s->AddConstraint(s->MakeEquality(x_, s->MakeProd(mod_, d)->Var()));
+    }
   }
 
   virtual void InitialPropagate() {
@@ -976,8 +982,8 @@ class PositiveBoundModulo : public Constraint {
       const int64 x_max = x_->Max();
       const int64 mod_min = mod_->Min();
       const int64 mod_max = mod_->Max();
-      const int64 div_max = PosIntDivDown(x_max, mod_min);
       const int64 div_min = PosIntDivUp(x_min, mod_max);
+      const int64 div_max = PosIntDivDown(x_max, mod_min);
       x_->SetRange(div_min * mod_min, div_max * mod_max);
       mod_->SetRange(div_max != 0 ? PosIntDivUp(x_min, div_max) : mod_min,
                      PosIntDivDown(x_max, div_min));

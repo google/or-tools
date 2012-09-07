@@ -3429,33 +3429,58 @@ class SubIntExpr : public BaseIntExpr {
  public:
   SubIntExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
       : BaseIntExpr(s), left_(l), right_(r) {}
+
   virtual ~SubIntExpr() {}
+
   virtual int64 Min() const {
-    return CapSub(left_->Min(), right_->Max());
+    return left_->Min() - right_->Max();
   }
+
   virtual void SetMin(int64 m) {
-    left_->SetMin(CapAdd(m, right_->Min()));
-    right_->SetMax(CapSub(left_->Max(), m));
+    left_->SetMin(m + right_->Min());
+    right_->SetMax(left_->Max() - m);
   }
-  virtual void SetRange(int64 l, int64 u);
+
+  virtual void SetRange(int64 l, int64 u) {
+    const int64 left_min = left_->Min();
+    const int64 right_min = right_->Min();
+    const int64 left_max = left_->Max();
+    const int64 right_max = right_->Max();
+    if (l > left_min - right_max) {
+      left_->SetMin(l + right_min);
+      right_->SetMax(left_max - l);
+    }
+    if (u < left_max - right_min) {
+      left_->SetMax(u + right_max);
+      right_->SetMin(left_min - u);
+    }
+  }
+
   virtual int64 Max() const {
-    return CapSub(left_->Max(), right_->Min());
+    return left_->Max() - right_->Min();
   }
+
   virtual void SetMax(int64 m) {
-    left_->SetMax(CapAdd(m, right_->Max()));
-    right_->SetMin(CapSub(left_->Min(), m));
+    left_->SetMax(m + right_->Max());
+    right_->SetMin(left_->Min() - m);
   }
-  virtual bool Bound() const { return (left_->Bound() && right_->Bound()); }
+
+  virtual bool Bound() const {
+    return (left_->Bound() && right_->Bound());
+  }
+
   virtual string name() const {
     return StringPrintf("(%s - %s)",
                         left_->name().c_str(),
                         right_->name().c_str());
   }
+
   virtual string DebugString() const {
     return StringPrintf("(%s - %s)",
                         left_->DebugString().c_str(),
                         right_->DebugString().c_str());
   }
+
   virtual void WhenRange(Demon* d) {
     left_->WhenRange(d);
     right_->WhenRange(d);
@@ -3471,25 +3496,51 @@ class SubIntExpr : public BaseIntExpr {
 
   IntExpr* left() const { return left_; }
   IntExpr* right() const { return right_; }
- private:
+ protected:
   IntExpr* const left_;
   IntExpr* const right_;
 };
 
-void SubIntExpr::SetRange(int64 l, int64 u) {
-  const int64 left_min = left_->Min();
-  const int64 right_min = right_->Min();
-  const int64 left_max = left_->Max();
-  const int64 right_max = right_->Max();
-  if (l > CapSub(left_min, right_max)) {
-    left_->SetMin(CapAdd(l, right_min));
-    right_->SetMax(CapSub(left_max, l));
+class SafeSubIntExpr : public SubIntExpr {
+ public:
+  SafeSubIntExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
+      : SubIntExpr(s, l, r) {}
+
+  virtual ~SafeSubIntExpr() {}
+
+  virtual int64 Min() const {
+    return CapSub(left_->Min(), right_->Max());
   }
-  if (u < CapSub(left_max, right_min)) {
-    left_->SetMax(CapAdd(u, right_max));
-    right_->SetMin(CapSub(left_min, u));
+
+  virtual void SetMin(int64 m) {
+    left_->SetMin(CapAdd(m, right_->Min()));
+    right_->SetMax(CapSub(left_->Max(), m));
   }
-}
+
+  virtual void SetRange(int64 l, int64 u) {
+    const int64 left_min = left_->Min();
+    const int64 right_min = right_->Min();
+    const int64 left_max = left_->Max();
+    const int64 right_max = right_->Max();
+    if (l > CapSub(left_min, right_max)) {
+      left_->SetMin(CapAdd(l, right_min));
+      right_->SetMax(CapSub(left_max, l));
+    }
+    if (u < CapSub(left_max, right_min)) {
+      left_->SetMax(CapAdd(u, right_max));
+      right_->SetMin(CapSub(left_min, u));
+    }
+  }
+
+  virtual int64 Max() const {
+    return CapSub(left_->Max(), right_->Min());
+  }
+
+  virtual void SetMax(int64 m) {
+    left_->SetMax(CapAdd(m, right_->Max()));
+    right_->SetMin(CapSub(left_->Min(), m));
+  }
+};
 
 // l - r
 
@@ -6079,7 +6130,14 @@ IntExpr* Solver::MakeDifference(IntExpr* const l, IntExpr* const r) {
   IntExpr* result = Cache()->FindExprExprExpression(
       l, r, ModelCache::EXPR_EXPR_DIFFERENCE);
   if (result == NULL) {
-    result = RegisterIntExpr(RevAlloc(new SubIntExpr(this, l, r)));
+    if (!SubOverflows(l->Min(), r->Max()) &&
+        !SubUnderflows(l->Min(), r->Max()) &&
+        !SubOverflows(l->Max(), r->Min()) &&
+        !SubUnderflows(l->Max(), r->Min())) {
+      result = RegisterIntExpr(RevAlloc(new SubIntExpr(this, l, r)));
+    } else {
+      result = RegisterIntExpr(RevAlloc(new SafeSubIntExpr(this, l, r)));
+    }
     Cache()->InsertExprExprExpression(
         result, l, r, ModelCache::EXPR_EXPR_DIFFERENCE);
   }
