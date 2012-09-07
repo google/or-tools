@@ -284,23 +284,16 @@ class Queue {
     }
   }
 
-  Demon* NextDemon() {
-    Demon* demon = containers_[Solver::NORMAL_PRIORITY]->NextDemon();
-    if (demon != NULL) {
-      return demon;
-    }
-    demon = containers_[Solver::VAR_PRIORITY]->NextDemon();
-    if (demon != NULL) {
-      return demon;
-    }
-    return containers_[Solver::DELAYED_PRIORITY]->NextDemon();
-  }
-
   void Process() {
     if (!in_process_) {
       in_process_ = true;
       Demon* demon = NULL;
-      while ((demon = NextDemon()) != NULL) {
+      while ((demon = containers_[Solver::NORMAL_PRIORITY]->NextDemon()) !=
+             NULL ||
+             (demon = containers_[Solver::VAR_PRIORITY]->NextDemon()) !=
+             NULL ||
+             (demon = containers_[Solver::DELAYED_PRIORITY]->NextDemon()) !=
+             NULL) {
         ProcessOneDemon(demon);
       }
       in_process_ = false;
