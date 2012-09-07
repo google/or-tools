@@ -5265,40 +5265,44 @@ class MaxIntExpr : public BaseIntExpr {
  public:
   MaxIntExpr(Solver* const s, IntExpr* const l, IntExpr* const r)
       : BaseIntExpr(s), left_(l), right_(r) {}
+
   virtual ~MaxIntExpr() {}
+
   virtual int64 Min() const {
-    const int64 lmin = left_->Min();
-    const int64 rmin = right_->Min();
-    return std::max(lmin, rmin);
+    return std::max(left_->Min(), right_->Min());
   }
-  virtual void SetMin(int64 m) {
-    const int64 lmax = left_->Max();
-    if (lmax < m) {
+
+ virtual void SetMin(int64 m) {
+    if (left_->Max() < m) {
       right_->SetMin(m);
-    }
-    const int64 rmax = right_->Max();
-    if (rmax < m) {
-      left_->SetMin(m);
+    } else {
+      if (right_->Max() < m) {
+        left_->SetMin(m);
+      }
     }
   }
+
   virtual int64 Max() const {
-    const int64 lmax = left_->Max();
-    const int64 rmax = right_->Max();
-    return std::max(lmax, rmax);
+    return std::max(left_->Max(), right_->Max());
   }
+
   virtual void SetMax(int64 m) {
     left_->SetMax(m);
     right_->SetMax(m);
   }
+
   virtual string name() const {
-    return StringPrintf("MaxIntExpr(%s, %s)", left_->name().c_str(),
+    return StringPrintf("MaxIntExpr(%s, %s)",
+                        left_->name().c_str(),
                         right_->name().c_str());
   }
+
   virtual string DebugString() const {
     return StringPrintf("MaxIntExpr(%s, %s)",
                         left_->DebugString().c_str(),
                         right_->DebugString().c_str());
   }
+
   virtual void WhenRange(Demon* d) {
     left_->WhenRange(d);
     right_->WhenRange(d);
@@ -5323,37 +5327,44 @@ class MaxCstIntExpr : public BaseIntExpr {
  public:
   MaxCstIntExpr(Solver* const s, IntExpr* const e, int64 v)
       : BaseIntExpr(s), expr_(e), value_(v) {}
+
   virtual ~MaxCstIntExpr() {}
+
   virtual int64 Min() const {
-    const int64 emin = expr_->Min();
-    return std::max(emin, value_);
+    return std::max( expr_->Min(), value_);
   }
+
   virtual void SetMin(int64 m) {
     if (value_ < m) {
       expr_->SetMin(m);
     }
   }
+
   virtual int64 Max() const {
-    const int64 emax = expr_->Max();
-    return std::max(emax, value_);
+    return std::max(expr_->Max(), value_);
   }
+
   virtual void SetMax(int64 m) {
     if (m < value_) {
       solver()->Fail();
     }
     expr_->SetMax(m);
   }
+
   virtual bool Bound() const {
     return (expr_->Bound() || expr_->Max() <= value_);
   }
+
   virtual string name() const {
     return StringPrintf("MaxCstIntExpr(%s, %" GG_LL_FORMAT "d)",
                         expr_->name().c_str(), value_);
   }
+
   virtual string DebugString() const {
     return StringPrintf("MaxCstIntExpr(%s, %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), value_);
   }
+
   virtual void WhenRange(Demon* d) {
     expr_->WhenRange(d);
   }
