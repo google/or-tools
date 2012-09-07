@@ -468,14 +468,14 @@ void FixedDurationIntervalVar::Process() {
       for (SimpleRevFIFO<Demon*>::Iterator it(&start_bound_demons_);
            it.ok();
            ++it) {
-        Enqueue(*it);
+        Execute(*it);
       }
     }
     if (start_min_ != old_start_min_ || start_max_ != old_start_max_) {
       for (SimpleRevFIFO<Demon*>::Iterator it(&start_range_demons_);
            it.ok();
            ++it) {
-        Enqueue(*it);
+        Execute(*it);
       }
     }
   }
@@ -483,10 +483,9 @@ void FixedDurationIntervalVar::Process() {
     for (SimpleRevFIFO<Demon*>::Iterator it(&performed_bound_demons_);
          it.ok();
          ++it) {
-      Enqueue(*it);
+      Execute(*it);
     }
   }
-  ProcessDemonsOnQueue();
   clear_queue_action_on_fail();
   ClearInProcess();
   old_start_min_ = start_min_;
@@ -858,17 +857,16 @@ void FixedDurationPerformedIntervalVar::Process() {
     for (SimpleRevFIFO<Demon*>::Iterator it(&start_bound_demons_);
          it.ok();
          ++it) {
-      Enqueue(*it);
+      Execute(*it);
     }
   }
   if (start_min_ != old_start_min_ || start_max_ != old_start_max_) {
     for (SimpleRevFIFO<Demon*>::Iterator it(&start_range_demons_);
          it.ok();
          ++it) {
-      Enqueue(*it);
+      Execute(*it);
     }
   }
-  ProcessDemonsOnQueue();
   clear_queue_action_on_fail();
   ClearInProcess();
   old_start_min_ = start_min_;

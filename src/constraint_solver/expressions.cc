@@ -1802,18 +1802,17 @@ void DomainIntVar::Process() {
   new_max_ = max_.Value();
   if (min_.Value() == max_.Value()) {
     for (SimpleRevFIFO<Demon*>::Iterator it(&bound_demons_); it.ok(); ++it) {
-      Enqueue(*it);
+      Execute(*it);
     }
   }
   if (min_.Value() != OldMin() || max_.Value() != OldMax()) {
     for (SimpleRevFIFO<Demon*>::Iterator it(&range_demons_); it.ok(); ++it) {
-      Enqueue(*it);
+      Execute(*it);
     }
   }
   for (SimpleRevFIFO<Demon*>::Iterator it(&domain_demons_); it.ok(); ++it) {
-    Enqueue(*it);
+    Execute(*it);
   }
-  ProcessDemonsOnQueue();
   clear_queue_action_on_fail();
   ClearInProcess();
   old_min_ = min_.Value();
@@ -2079,7 +2078,7 @@ void BooleanVar::RemoveInterval(int64 l, int64 u) {
 void BooleanVar::Process() {
   DCHECK_NE(value_, kUnboundBooleanVarValue);
   for (SimpleRevFIFO<Demon*>::Iterator it(&bound_demons_); it.ok(); ++it) {
-    Enqueue(*it);
+    Execute(*it);
   }
 }
 

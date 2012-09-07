@@ -2841,8 +2841,8 @@ class Solver {
   void JumpToSentinel();
   void check_alloc_state();
   void FreezeQueue();
-  void Enqueue(Demon* d);
-  void ProcessDemonsOnQueue();
+  void Enqueue(Demon* const d);
+  void Execute(Demon* const d);
   void UnfreezeQueue();
   void set_queue_action_on_fail(Action* a);
   void set_queue_cleaner_on_fail(IntVar* const var);
@@ -3027,11 +3027,8 @@ class PropagationBaseObject : public BaseObject {
   // This method pushes the demon onto the propagation queue. It will
   // be processed directly if the queue is empty. It will be enqueued
   // according to its priority otherwise.
-  void Enqueue(Demon* d) { solver_->Enqueue(d); }
-
-  // This methods process all demons with priority non IMMEDIATE on
-  // the queue.
-  void ProcessDemonsOnQueue() { solver_->ProcessDemonsOnQueue(); }
+  void Enqueue(Demon* const d) { solver_->Enqueue(d); }
+  void Execute(Demon* const d) { solver_->Execute(d); }
 
   // This method sets a callback that will be called if a failure
   // happens during the propagation of the queue.

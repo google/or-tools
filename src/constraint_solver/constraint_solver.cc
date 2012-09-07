@@ -280,6 +280,18 @@ class Queue {
     }
   }
 
+  void Execute(Demon* const demon) {
+    if (demon->stamp() < stamp_) {
+      const int prio = demon->priority();
+      if (prio == Solver::NORMAL_PRIORITY) {
+        ProcessOneDemon(demon);
+      } else {
+        demon->set_stamp(stamp_);
+        containers_[prio]->Enqueue(demon);
+      }
+    }
+  }
+
   void Enqueue(Demon* const demon) {
     if (demon->stamp() < stamp_) {
       demon->set_stamp(stamp_);
@@ -1612,12 +1624,12 @@ void Solver::UnfreezeQueue() {
   queue_->Unfreeze();
 }
 
-void Solver::Enqueue(Demon* d) {
+void Solver::Enqueue(Demon* const d) {
   queue_->Enqueue(d);
 }
 
-void Solver::ProcessDemonsOnQueue() {
-  queue_->ProcessNormalDemons();
+void Solver::Execute(Demon* const d) {
+  queue_->Execute(d);
 }
 
 uint64 Solver::stamp() const {
