@@ -1,4 +1,22 @@
 
+v.0.1.13: (2012-09-08 12:51:55)
+-------------------------------
+The manual has now more than 200 pages.
+* Scripts:
+  generate_manual.py improved.
+* Minor enhancements to the manual:
+  - Intro of chapter 9 to give you an idea of its content.
+    The links to the tutorial material don't work: this is normal.
+
+
+v.0.1.13: (2012-09-07 14:23:59)
+-------------------------------
+The manual has now more than 200 pages.
+* Scripts:
+  generate_manual.py improved.
+* Minor enhancements to the manual:
+
+
 v.0.1.12: (2012-08-31 14:01:23)
 -------------------------------
 * Minor enhancements to the manual:

@@ -74,7 +74,7 @@ that prints the first solution of a given <tt class="docutils literal"><span cla
 the boolean gflag <tt class="docutils literal"><span class="pre">FLAGS_print</span></tt> is set to <tt class="docutils literal"><span class="pre">true</span></tt>.</p>
 <p>To be able to collect only
 unique solutions (up to a symmetry), we will use <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s
-in the section <a class="reference internal" href="breaking_symmetry.html#search-primitives-breaking-symmetry"><em>Breaking symmetries with SymmetryBreakers</em></a>.</p>
+in the section <a class="reference internal" href="breaking_symmetry.html#search-primitives-breaking-symmetry"><em>Breaking symmetries (part II): SymmetryBreakers</em></a>.</p>
 <p>A boolean gflag <tt class="docutils literal"><span class="pre">FLAGS_use_symmetry</span></tt> allows or disallows the use of <tt class="docutils literal"><span class="pre">SymmetryBreaker</span></tt>s. This flag is defined
 in the header <tt class="docutils literal"><span class="pre">./nqueens_utilities.h</span></tt> and to be able to use it in our main file, we need to <em>declare</em> it:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">DECLARE_bool</span><span class="p">(</span><span class="n">use_symmetry</span><span class="p">);</span>

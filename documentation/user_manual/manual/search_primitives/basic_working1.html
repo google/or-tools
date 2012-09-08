@@ -82,7 +82,7 @@ when some of the callbacks of the <tt class="docutils literal"><span class="pre"
 traverse or explore. Each node of the tree corresponds to a state of the search. Take an array of variables <img class="math" src="../../_images/math/3721871babf1d0ae999f03599154b5bc5f56adff.png" alt="x[]" style="vertical-align: -5px"/>
 and a valid index <img class="math" src="../../_images/math/34857b3ba74ce5cd8607f3ebd23e9015908ada71.png" alt="i" style="vertical-align: 0px"/>.</p>
 <p>At one node in the search tree, we divide the search space in two exclusive search subspaces by imposing
-<img class="math" src="../../_images/math/1fb5e597525d6008ac2d935abb8d146f3ddc02f2.png" alt="x[i] = 2" style="vertical-align: -5px"/> at one branch and <img class="math" src="../../_images/math/4937591eda0b24f172fddd70dec6839a7f7e2761.png" alt="x[i] \neq 2" style="vertical-align: -5px"/> at another branch like in Figure
+<img class="math" src="../../_images/math/1fb5e597525d6008ac2d935abb8d146f3ddc02f2.png" alt="x[i] = 2" style="vertical-align: -5px"/> at one branch and <img class="math" src="../../_images/math/4937591eda0b24f172fddd70dec6839a7f7e2761.png" alt="x[i] \neq 2" style="vertical-align: -5px"/> at another branch like in the Figure
 <a class="reference internal" href="#search-space-divided-in-two"><em>The search space is divided in two search sub-trees</em></a>.</p>
 <div class="figure align-center" id="search-space-divided-in-two">
 <img alt="The search space is divided in two search sub-trees." src="../../_images/search_tree0.png" />
@@ -117,7 +117,7 @@ that is passed as an argument to another code. This is a very common and handy w
 example, the search algorithm is low level code. You don&#8217;t want to change this code but you would like to change the behaviour of the
 search algorithm to your liking. How do you do this? Callbacks are to the rescue! At some places in the low level code,
 some functions are called and you can redefine those functions. There are several techniques available. In this section, we redefine
-some virtual functions of an abstract class. In section XXX, we will see yet another similar mechanism.</p>
+some virtual functions of an abstract class. In section XXX, we will see another similar mechanism.</p>
 <p>An example will clarify this mechanism. Take a <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> class. If you want to implement your own search monitor, you
 inherit from <tt class="docutils literal"><span class="pre">SearchMonitor</span></tt> and you redefine the methods you need:</p>
 <div class="highlight-c++"><div class="highlight"><pre><span class="k">class</span> <span class="nc">MySearchMonitor</span><span class="o">:</span> <span class="k">public</span> <span class="n">SearchMonitor</span> <span class="p">{</span>
@@ -158,7 +158,7 @@ A <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> is 
 tree at this node by applying this decision (left branch) and by refuting this decision (right branch).</p>
 <p>At the current node, the <tt class="docutils literal"><span class="pre">DecisionBuilder</span></tt> of the current search returns
 a <tt class="docutils literal"><span class="pre">Decision</span></tt>. The <tt class="docutils literal"><span class="pre">Decision</span></tt> class basically tells the solver what to do
-going left (<tt class="docutils literal"><span class="pre">Apply()</span></tt>) or right (<tt class="docutils literal"><span class="pre">Refute</span></tt>) as illustrated on the next figure.</p>
+going left (<tt class="docutils literal"><span class="pre">Apply()</span></tt>) or right (<tt class="docutils literal"><span class="pre">Refute()</span></tt>) as illustrated on the next figure.</p>
 <div class="figure align-center">
 <a class="reference internal image-reference" href="../../_images/decision1.png"><img alt="A Decision class Apply() or Refute()" src="../../_images/decision1.png" style="width: 150pt;" /></a>
 <p class="caption"><tt class="docutils literal"><span class="pre">Apply()</span></tt>: go left, <tt class="docutils literal"><span class="pre">Refute()</span></tt>: go right.</p>
@@ -177,7 +177,7 @@ to implement different variants of the search algorithm.</td></tr>
 </table>
 <div class="topic">
 <p class="topic-title first">What is a pre-order traversal of a binary tree?</p>
-<p>The search tree depicted on Figure <a class="reference internal" href="cpviz.html#search-tree-of-nqueens-with-n-equal-to-4"><em>The actual search tree of our search</em></a> has
+<p>The search tree depicted on the Figure <a class="reference internal" href="cpviz.html#search-tree-of-nqueens-with-n-equal-to-4"><em>The actual search tree of our search</em></a> has
 its node numbered in the order given by a pre-order traversal. There are two other traversals:
 <em>in-order</em> and <em>post-order</em>. We invite the curious reader to google <em>pre-order traversal of a tree</em>
 to find more. There are a number of applets showing the different traversals.</p>
@@ -578,12 +578,12 @@ algorithm:</p>
     <span class="k">case</span> <span class="nl">OUTSIDE_SEARCH:</span> <span class="p">{</span>
       <span class="n">state_</span> <span class="o">=</span> <span class="n">IN_ROOT_NODE</span><span class="p">;</span>
       <span class="n">search</span><span class="o">-&gt;</span><span class="n">BeginInitialPropagation</span><span class="p">();</span><span class="c1">// SEARCHMONITOR CALLBACKS</span>
-      <span class="n">CP_TRY</span><span class="p">(</span><span class="n">search</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">try</span> <span class="p">{</span>
         <span class="n">ProcessConstraints</span><span class="p">();</span>
         <span class="n">search</span><span class="o">-&gt;</span><span class="n">EndInitialPropagation</span><span class="p">();</span><span class="c1">// SEARCHMONITOR CALLBACKS</span>
         <span class="p">...</span>
         <span class="n">state_</span> <span class="o">=</span> <span class="n">IN_SEARCH</span><span class="p">;</span>
-      <span class="p">}</span> <span class="n">CP_ON_FAIL</span> <span class="p">{</span>
+      <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="k">const</span> <span class="n">FailException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
         <span class="p">...</span>
         <span class="n">state_</span> <span class="o">=</span> <span class="n">PROBLEM_INFEASIBLE</span><span class="p">;</span>
         <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
@@ -714,7 +714,8 @@ but these possibilities are not shown here.</td></tr>
 <table class="docutils footnote" frame="void" id="try-catch-not-used" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id7">[6]</a></td><td>Did we already mention that the <tt class="docutils literal"><span class="pre">try</span> <span class="pre">-</span> <span class="pre">catch</span></tt> mechanism is <em>not</em> used in the production code?</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id7">[6]</a></td><td>Did we already mention that the <tt class="docutils literal"><span class="pre">try</span> <span class="pre">-</span> <span class="pre">catch</span></tt> mechanism is <em>not</em> used in the production
+code? ;-)</td></tr>
 </tbody>
 </table>
 <p>If the <tt class="docutils literal"><span class="pre">Decision</span></tt> pointer <tt class="docutils literal"><span class="pre">fd</span></tt> is not <tt class="docutils literal"><span class="pre">NULL</span></tt>, this means that we have backtracked to the first available (non visited)

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>9.6. The two phases approach &mdash; or-tools User&#39;s Manual</title>
+    <title>9.5. The two phases approach &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="9. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
-    <link rel="next" title="9.7. The Travelling Salesman Problem with Time Windows (TSPTW)" href="tspwtw.html" />
-    <link rel="prev" title="9.5. An exact implementation of the TSP" href="first_implementation.html" /> 
+    <link rel="next" title="9.6. The TSP in or-tools" href="first_tsp_implementation.html" />
+    <link rel="prev" title="9.4. The model behind the scene" href="model_behind_scene.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="tspwtw.html" title="9.7. The Travelling Salesman Problem with Time Windows (TSPTW)"
+          <a href="first_tsp_implementation.html" title="9.6. The TSP in or-tools"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="first_implementation.html" title="9.5. An exact implementation of the TSP"
+          <a href="model_behind_scene.html" title="9.4. The model behind the scene"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../TSP.html" accesskey="U">9. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
@@ -55,9 +55,12 @@
           <div class="body">
             
   <div class="section" id="the-two-phases-approach">
-<span id="tsp-two-phases-approaches"></span><h1>9.6. The two phases approach</h1>
-<div class="section" id="local-path-operator">
-<h2>9.6.1. Local Path Operator</h2>
+<span id="tsp-two-phases-approaches"></span><h1>9.5. The two phases approach</h1>
+<div class="section" id="the-initial-solution">
+<h2>9.5.1. The initial solution</h2>
+</div>
+<div class="section" id="local-search-pathoperators">
+<h2>9.5.2. Local Search <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s</h2>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
@@ -137,15 +140,16 @@ Search:
   <p class="topless"><a href="../TSP.html"
                         title="previous chapter">9. Travelling Salesman Problems with constraints: the TSP with time windows</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="first_implementation.html"
-                        title="previous chapter">9.5. An exact implementation of the TSP</a></p>
+  <p class="topless"><a href="model_behind_scene.html"
+                        title="previous chapter">9.4. The model behind the scene</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="tspwtw.html"
-                        title="next chapter">9.7. The Travelling Salesman Problem with Time Windows (TSPTW)</a></p>
+  <p class="topless"><a href="first_tsp_implementation.html"
+                        title="next chapter">9.6. The TSP in or-tools</a></p>
   <h3>Current section</a></h3>
   <ul>
-<li><a class="reference internal" href="#">9.6. The two phases approach</a><ul>
-<li><a class="reference internal" href="#local-path-operator">9.6.1. Local Path Operator</a></li>
+<li><a class="reference internal" href="#">9.5. The two phases approach</a><ul>
+<li><a class="reference internal" href="#the-initial-solution">9.5.1. The initial solution</a></li>
+<li><a class="reference internal" href="#local-search-pathoperators">9.5.2. Local Search <tt class="docutils literal"><span class="pre">PathOperator</span></tt>s</a></li>
 </ul>
 </li>
 </ul>
@@ -161,10 +165,10 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="tspwtw.html" title="9.7. The Travelling Salesman Problem with Time Windows (TSPTW)"
+          <a href="first_tsp_implementation.html" title="9.6. The TSP in or-tools"
              >next</a> |</li>
         <li class="right" >
-          <a href="first_implementation.html" title="9.5. An exact implementation of the TSP"
+          <a href="model_behind_scene.html" title="9.4. The model behind the scene"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../TSP.html" >9. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 

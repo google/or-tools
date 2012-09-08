@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>9.9. The TSPTW and Local Search &mdash; or-tools User&#39;s Manual</title>
+    <title>9.8. The Travelling Salesman Problem with Time Windows (TSPTW) &mdash; or-tools User&#39;s Manual</title>
     
     <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="9. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
-    <link rel="next" title="9.10. Summary" href="tsptw_summary.html" />
-    <link rel="prev" title="9.8. An exact implementation of the TSPTW" href="second_implementation.html" /> 
+    <link rel="next" title="9.9. The TSPTW in or-tools" href="first_tsptw_implementation.html" />
+    <link rel="prev" title="9.7. An exact implementation of the TSP" href="exact_tsp_implementation.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="tsptw_summary.html" title="9.10. Summary"
+          <a href="first_tsptw_implementation.html" title="9.9. The TSPTW in or-tools"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="second_implementation.html" title="9.8. An exact implementation of the TSPTW"
+          <a href="exact_tsp_implementation.html" title="9.7. An exact implementation of the TSP"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../TSP.html" accesskey="U">9. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
@@ -54,10 +54,28 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="the-tsptw-and-local-search">
-<span id="tsptw-local-search"></span><h1>9.9. The TSPTW and Local Search</h1>
+  <div class="section" id="the-travelling-salesman-problem-with-time-windows-tsptw">
+<span id="tspwtw"></span><h1>9.8. The Travelling Salesman Problem with Time Windows (TSPTW)</h1>
+<div class="section" id="the-travelling-salesman-problem-with-time-windows">
+<h2>9.8.1. The Travelling Salesman Problem with Time Windows</h2>
+</div>
+<div class="section" id="benchmark-data">
+<h2>9.8.2. Benchmark data</h2>
+<div class="section" id="the-lopez-ibanez-blum-format">
+<h3>9.8.2.1. The López-Ibáñez-Blum format</h3>
+</div>
+<div class="section" id="the-da-silva-urrutia-format">
+<h3>9.8.2.2. The da Silva-Urrutia format</h3>
+</div>
+</div>
+<div class="section" id="the-tsptwdata-class">
+<h2>9.8.3. The <tt class="docutils literal"><span class="pre">TSPTWData</span></tt> class</h2>
+</div>
+<div class="section" id="visualization-with-epix">
+<h2>9.8.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></h2>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
+</div>
 
 
           </div>
@@ -134,11 +152,26 @@ Search:
   <p class="topless"><a href="../TSP.html"
                         title="previous chapter">9. Travelling Salesman Problems with constraints: the TSP with time windows</a></p>
   <h3>Previous section</h3>
-  <p class="topless"><a href="second_implementation.html"
-                        title="previous chapter">9.8. An exact implementation of the TSPTW</a></p>
+  <p class="topless"><a href="exact_tsp_implementation.html"
+                        title="previous chapter">9.7. An exact implementation of the TSP</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="tsptw_summary.html"
-                        title="next chapter">9.10. Summary</a></p>
+  <p class="topless"><a href="first_tsptw_implementation.html"
+                        title="next chapter">9.9. The TSPTW in or-tools</a></p>
+  <h3>Current section</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">9.8. The Travelling Salesman Problem with Time Windows (TSPTW)</a><ul>
+<li><a class="reference internal" href="#the-travelling-salesman-problem-with-time-windows">9.8.1. The Travelling Salesman Problem with Time Windows</a></li>
+<li><a class="reference internal" href="#benchmark-data">9.8.2. Benchmark data</a><ul>
+<li><a class="reference internal" href="#the-lopez-ibanez-blum-format">9.8.2.1. The López-Ibáñez-Blum format</a></li>
+<li><a class="reference internal" href="#the-da-silva-urrutia-format">9.8.2.2. The da Silva-Urrutia format</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-tsptwdata-class">9.8.3. The <tt class="docutils literal"><span class="pre">TSPTWData</span></tt> class</a></li>
+<li><a class="reference internal" href="#visualization-with-epix">9.8.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
+</ul>
+</li>
+</ul>
+
         </div>
       </div>
       <div class="clearer"></div>
@@ -150,10 +183,10 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="tsptw_summary.html" title="9.10. Summary"
+          <a href="first_tsptw_implementation.html" title="9.9. The TSPTW in or-tools"
              >next</a> |</li>
         <li class="right" >
-          <a href="second_implementation.html" title="9.8. An exact implementation of the TSPTW"
+          <a href="exact_tsp_implementation.html" title="9.7. An exact implementation of the TSP"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../TSP.html" >9. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 

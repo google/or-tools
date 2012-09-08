@@ -28,8 +28,8 @@
     <link rel="shortcut icon" href="../../_static/logo.ico"/>
     <link rel="top" title="or-tools User&#39;s Manual" href="../../index.html" />
     <link rel="up" title="9. Travelling Salesman Problems with constraints: the TSP with time windows" href="../TSP.html" />
-    <link rel="next" title="9.4. Automatic variables" href="automatic_variables.html" />
-    <link rel="prev" title="9.2. The Vehicle Routing Library (VRL) in a nutshell" href="routing_library.html" /> 
+    <link rel="next" title="9.4. The model behind the scene" href="model_behind_scene.html" />
+    <link rel="prev" title="9.2. The Routing Library (RL) in a nutshell" href="routing_library.html" /> 
   </head>
   <body>
     <div class="related">
@@ -39,10 +39,10 @@
           <a href="../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="automatic_variables.html" title="9.4. Automatic variables"
+          <a href="model_behind_scene.html" title="9.4. The model behind the scene"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="routing_library.html" title="9.2. The Vehicle Routing Library (VRL) in a nutshell"
+          <a href="routing_library.html" title="9.2. The Routing Library (RL) in a nutshell"
              accesskey="P">previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../TSP.html" accesskey="U">9. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 
@@ -56,8 +56,26 @@
             
   <div class="section" id="the-travelling-salesman-problem">
 <span id="tsp-tsp"></span><h1>9.3. The travelling Salesman Problem</h1>
-<div class="section" id="what-is-the-travelling-salesman-problem">
-<h2>9.3.1. What is the Travelling Salesman Problem?</h2>
+<div class="section" id="id1">
+<h2>9.3.1. The Travelling Salesman Problem</h2>
+</div>
+<div class="section" id="benchmark-data">
+<h2>9.3.2. Benchmark data</h2>
+<div class="section" id="the-tsplib-format">
+<h3>9.3.2.1. The TSPLIB format</h3>
+<div class="section" id="the-instance-file">
+<h4>9.3.2.1.1. The instance file</h4>
+</div>
+<div class="section" id="the-solution-file">
+<h4>9.3.2.1.2. The solution file</h4>
+</div>
+</div>
+</div>
+<div class="section" id="the-tspdata-class">
+<h2>9.3.3. The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class</h2>
+</div>
+<div class="section" id="visualization-with-epix">
+<h2>9.3.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></h2>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br></div>
 </div>
@@ -138,14 +156,24 @@ Search:
                         title="previous chapter">9. Travelling Salesman Problems with constraints: the TSP with time windows</a></p>
   <h3>Previous section</h3>
   <p class="topless"><a href="routing_library.html"
-                        title="previous chapter">9.2. The Vehicle Routing Library (VRL) in a nutshell</a></p>
+                        title="previous chapter">9.2. The Routing Library (RL) in a nutshell</a></p>
   <h3>Next section</h3>
-  <p class="topless"><a href="automatic_variables.html"
-                        title="next chapter">9.4. Automatic variables</a></p>
+  <p class="topless"><a href="model_behind_scene.html"
+                        title="next chapter">9.4. The model behind the scene</a></p>
   <h3>Current section</a></h3>
   <ul>
 <li><a class="reference internal" href="#">9.3. The travelling Salesman Problem</a><ul>
-<li><a class="reference internal" href="#what-is-the-travelling-salesman-problem">9.3.1. What is the Travelling Salesman Problem?</a></li>
+<li><a class="reference internal" href="#id1">9.3.1. The Travelling Salesman Problem</a></li>
+<li><a class="reference internal" href="#benchmark-data">9.3.2. Benchmark data</a><ul>
+<li><a class="reference internal" href="#the-tsplib-format">9.3.2.1. The TSPLIB format</a><ul>
+<li><a class="reference internal" href="#the-instance-file">9.3.2.1.1. The instance file</a></li>
+<li><a class="reference internal" href="#the-solution-file">9.3.2.1.2. The solution file</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#the-tspdata-class">9.3.3. The <tt class="docutils literal"><span class="pre">TSPData</span></tt> class</a></li>
+<li><a class="reference internal" href="#visualization-with-epix">9.3.4. Visualization with <tt class="docutils literal"><span class="pre">ePix</span></tt></a></li>
 </ul>
 </li>
 </ul>
@@ -161,10 +189,10 @@ Search:
           <a href="../../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="automatic_variables.html" title="9.4. Automatic variables"
+          <a href="model_behind_scene.html" title="9.4. The model behind the scene"
              >next</a> |</li>
         <li class="right" >
-          <a href="routing_library.html" title="9.2. The Vehicle Routing Library (VRL) in a nutshell"
+          <a href="routing_library.html" title="9.2. The Routing Library (RL) in a nutshell"
              >previous</a> |</li>
         <li><a href="../../index.html">or-tools User&#39;s Manual</a> &raquo;</li>
           <li><a href="../TSP.html" >9. Travelling Salesman Problems with constraints: the TSP with time windows</a> &raquo;</li> 

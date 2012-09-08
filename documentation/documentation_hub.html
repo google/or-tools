@@ -73,12 +73,14 @@ Thank you very much.
 <h2>What's new?</h2>
 <hr>
 <p id="new">Here is a little summary:</p>
-<pre id="verbatim">v.0.1.12: (2012-08-31 14:01:23)
+<pre id="verbatim">v.0.1.13: (2012-09-08 12:51:55)
 -------------------------------
+The manual has now more than 200 pages.
+* Scripts:
+  generate_manual.py improved.
 * Minor enhancements to the manual:
-  - epub: cover and authors added, some corrections.
-  - minor corrections.
-  - 5.1, 5.2 and (partially) 5.3 added.
+  - Intro of chapter 9 to give you an idea of its content.
+    The links to the tutorial material don't work: this is normal.
 
 </pre>
 
@@ -101,9 +103,9 @@ We also recommend to use the epub version as it is currently the best available 
 <ul>
 <li>Progress at a glance: <a href="#manual_progress">Manual</a> - <a href="#documentation_progress">Documentation generation</a></li>
 <li><a href="user_manual/index.html">Online version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_A4.v.0.1.12.pdf.zip">A4 pdf version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_USletter.v.0.1.12.pdf.zip">Letter pdf version</a></li>
-<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual.v.0.1.12.epub.zip">epub version</a> (experimental)</li>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_A4.v.0.1.13.pdf.zip">A4 pdf version</a></li>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual_USletter.v.0.1.13.pdf.zip">Letter pdf version</a></li>
+<li class="manual_download"><a href="http://or-tools.googlecode.com/files/user_manual.v.0.1.13.epub.zip">epub version</a> (experimental)</li>
 </ul>
 
 <h4 id="progress">Progress at a glance:</h4>
@@ -210,8 +212,8 @@ The following percentages show you the completion status of the manual. Note tha
 <td>Chap9: TSP with constraints</td>
 <td>
 <div class="progress_background">
-  <div class="progress_foreground_red" style="width:7%;">
-    <span>7%</span>
+  <div class="progress_foreground_red" style="width:34%;">
+    <span>34%</span>
   </div>
 </div>
 </td>
@@ -230,8 +232,8 @@ The following percentages show you the completion status of the manual. Note tha
 <td>Chap11: ARP with constraints</td>
 <td>
 <div class="progress_background">
-  <div class="progress_foreground_red" style="width:0%;">
-    <span>0%</span>
+  <div class="progress_foreground_red" style="width:2%;">
+    <span>2%</span>
   </div>
 </div>
 </td>
@@ -360,8 +362,8 @@ The following percentages show you the completion status of the manual. Note tha
 <td width="25%">Manual</td>
 <td>
 <div class="progress_background">
-  <div class="progress_foreground_green" style="width:85%;">
-    <span>85%</span>
+  <div class="progress_foreground_green" style="width:87%;">
+    <span>87%</span>
   </div>
 </div>
 </td>
@@ -517,6 +519,20 @@ files in some languages as the features implemented just don't have an equivalen
 	<dt>chap3:</dt><dd><a href="tutorials/c++/chap3/golomb1.cc">golomb1.cc</a> &nbsp; | &nbsp; <a href="tutorials/c++/chap3/golomb2.cc">golomb2.cc</a> &nbsp; | &nbsp;
 	 <a href="tutorials/c++/chap3/golomb3.cc">golomb3.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap3/golomb4.cc">golomb4.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap3/golomb5.cc">golomb5.cc</a>
 	 &nbsp; | &nbsp;	<a href="tutorials/c++/chap3/golomb6.cc">golomb6.cc</a></dd>
+	 <dt>chap4:</dt><dd>-</dd>
+	 <dt>chap5:</dt><dd>-</dd>
+	 <dt>chap6:</dt><dd>-</dd>
+	 <dt>chap7:</dt><dd>-</dd>
+	 <dt>chap8:</dt><dd>-</dd>
+	 <dt>chap9:</dt><dd><a href="tutorials/c++/chap9/tsp.h">tsp.h</a> &nbsp; | &nbsp; <a href="tutorials/c++/chap9/tsp_epix.h">tsp_epix.h</a> &nbsp; | &nbsp;
+	 <a href="tutorials/c++/chap9/tsplib_solution_to_epix.cc">tsplib_solution_to_epix.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsp.cc">tsp.cc</a> &nbsp; 
+	  | &nbsp;	<a href="tutorials/c++/chap9/tsp_forbidden_arcs.cc">tsp_forbidden_arcs.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsp_exact.cc">tsp_exact.cc</a>
+	  &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsptw.h">tsptw.h</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsptw_epix.h">tsptw_epix.h</a> 
+	  &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsptw.cc">tsptw.cc</a> &nbsp; | &nbsp;	<a href="tutorials/c++/chap9/tsptw_ls.cc">tsptw_ls.cc</a></dd>
+	 <dt>chap10:</dt><dd>-</dd>
+	 <dt>chap11:</dt><dd>-</dd>
+	 <dt>chap12:</dt><dd>-</dd>
+	 <dt>chap13:</dt><dd>-</dd>
 </dl>
 
 <li class="language" id="Python">Python</li>
@@ -524,7 +540,17 @@ files in some languages as the features implemented just don't have an equivalen
 	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_python_examples.zip">tutorial_python_examples.zip</a></dd>
 	<dt>chap2:</dt><dd><a href="tutorials/python/chap2/cp_is_fun1.py">cp_is_fun1.py</a> &nbsp; | &nbsp; <a href="tutorials/python/chap2/cp_is_fun2.py">cp_is_fun2.py</a> &nbsp; | &nbsp;
 	 <a href="tutorials/python/chap2/cp_is_fun3.py">cp_is_fun3.py</a> &nbsp; | &nbsp;	<a href="tutorials/python/chap2/cp_is_fun4.py">cp_is_fun4.py</a> </dd>
-	<dt>chap3:</dt><dd></dd>
+	<dt>chap3:</dt><dd>-</dd>
+	<dt>chap4:</dt><dd>-</dd>
+	 <dt>chap5:</dt><dd>-</dd>
+	 <dt>chap6:</dt><dd>-</dd>
+	 <dt>chap7:</dt><dd>-</dd>
+	 <dt>chap8:</dt><dd>-</dd>
+	 <dt>chap9:</dt><dd>-</dd>	 
+	 <dt>chap10:</dt><dd>-</dd>
+	 <dt>chap11:</dt><dd>-</dd>
+	 <dt>chap12:</dt><dd>-</dd>
+	 <dt>chap13:</dt><dd>-</dd>	 
 </dl>
 
 <li class="language" id="Java">Java</li>
@@ -532,7 +558,17 @@ files in some languages as the features implemented just don't have an equivalen
 	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_java_examples.zip">tutorial_java_examples.zip</a></dd>
 	<dt>chap2:</dt><dd><a href="tutorials/java/com/google/ortools/tutorial/chap2/CpIsFun1.java">CpIsFun1.java</a> &nbsp; | &nbsp; <a href="tutorials/java/com/google/ortools/tutorial/chap2/CpIsFun2.java">CpIsFun2.java</a> &nbsp; | &nbsp;
 	 <span class="empty">CpIsFun3.java</span> &nbsp; | &nbsp;	<a href="tutorials/java/com/google/ortools/tutorial/chap2/CpIsFun4.java">CpIsFun4.java</a> </dd>
-	<dt>chap3:</dt><dd></dd>
+	<dt>chap3:</dt><dd>-</dd>
+	<dt>chap4:</dt><dd>-</dd>
+	 <dt>chap5:</dt><dd>-</dd>
+	 <dt>chap6:</dt><dd>-</dd>
+	 <dt>chap7:</dt><dd>-</dd>
+	 <dt>chap8:</dt><dd>-</dd>
+	 <dt>chap9:</dt><dd>-</dd>	 
+	 <dt>chap10:</dt><dd>-</dd>
+	 <dt>chap11:</dt><dd>-</dd>
+	 <dt>chap12:</dt><dd>-</dd>
+	 <dt>chap13:</dt><dd>-</dd>	 
 </dl>
 
 <li class="language" id="Csharp">C#</li>
@@ -540,7 +576,17 @@ files in some languages as the features implemented just don't have an equivalen
 	<dt>all:</dt><dd><a href="http://or-tools.googlecode.com/files/tutorials_csharp_examples.zip">tutorial_csharp_examples.zip</a></dd>
 	<dt>chap2:</dt><dd><a href="tutorials/csharp/chap2/cp_is_fun1.cs">cp_is_fun1.cs</a> &nbsp; | &nbsp; <a href="tutorials/csharp/chap2/cp_is_fun2.cs">cp_is_fun2.cs</a> &nbsp; | &nbsp;
 	 <span class="empty">cp_is_fun3.cs</span> &nbsp; | &nbsp;	<a href="tutorials/csharp/chap2/cp_is_fun4.cs">cp_is_fun4.cs</a> </dd>
-	<dt>chap3:</dt><dd></dd>
+	<dt>chap3:</dt><dd>-</dd>
+	<dt>chap4:</dt><dd>-</dd>
+	 <dt>chap5:</dt><dd>-</dd>
+	 <dt>chap6:</dt><dd>-</dd>
+	 <dt>chap7:</dt><dd>-</dd>
+	 <dt>chap8:</dt><dd>-</dd>
+	 <dt>chap9:</dt><dd>-</dd>	 
+	 <dt>chap10:</dt><dd>-</dd>
+	 <dt>chap11:</dt><dd>-</dd>
+	 <dt>chap12:</dt><dd>-</dd>
+	 <dt>chap13:</dt><dd>-</dd>	 
 </dl>
 </ul>
 </div>
