@@ -741,10 +741,14 @@ class RestartMonitor : public SearchMonitor {
         VLOG(2) << "adding no good = " << choices_.Last()->DebugString()
                 << " at depth " << s->SearchDepth();
       }
-      if (CheckRestartOnRefute(s)) {
-        DoRestartAndAddNoGood(s);
-        RestartCurrentSearch();
-        s->Fail();
+      if (ChecksRestartOnRefute(s)) {
+        if (AddsNoGood(s)) {
+          if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+            VLOG(2) << "restarting";
+          }
+          RestartCurrentSearch();
+          s->Fail();
+        }
       }
     }
   }
@@ -801,7 +805,7 @@ class RestartMonitor : public SearchMonitor {
   // when we postpone a restart, we store the current search depth -1
   // in maximum_restart_depth_ and will restart as soon as we reach a
   // node above the current one, with enough visited branches.
-  bool CheckRestartOnRefute(Solver* const solver) {
+  bool ChecksRestartOnRefute(Solver* const solver) {
     // We do nothing if restart_log_size is < 0.
     if (parameters_.restart_log_size >= 0) {
       const int search_depth = solver->SearchDepth();
@@ -863,8 +867,9 @@ class RestartMonitor : public SearchMonitor {
   }
 
   // Performs the restart. It resets various counters and adds a
-  // non-reversible nogood if need be.
-  void DoRestartAndAddNoGood(Solver* const solver) {
+  // non-reversible nogood if need be. It returns true if we should
+  // restart after having added the nogood.
+  bool AddsNoGood(Solver* const solver) {
     const int search_depth = solver->SearchDepth();
     if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
       VLOG(2) << "Restarting at depth " << search_depth;
@@ -874,6 +879,7 @@ class RestartMonitor : public SearchMonitor {
     maximum_restart_depth_ = kint64max;
     // Creates nogood.
     if (parameters_.use_no_goods) {
+      bool all_rights = true;
       DCHECK(no_good_manager_ != NULL);
 
       // Reverse the last no good if need be. If we have finished the
@@ -907,6 +913,7 @@ class RestartMonitor : public SearchMonitor {
         const int64 value = choice.value();
         if (choice.left()) {
           nogood->AddIntegerVariableEqualValueTerm(var, value);
+          all_rights = false;
         } else if (!ContainsKey(positive_variable, choice.var())) {
           nogood->AddIntegerVariableNotEqualValueTerm(var, value);
         }
@@ -917,7 +924,11 @@ class RestartMonitor : public SearchMonitor {
       }
       // Adds the nogood to the nogood manager.
       no_good_manager_->AddNoGood(nogood);
+      // If the nogood is only right branches, there is no need to
+      // restart as we would end up in the same place.
+      return !all_rights;
     }
+    return true;
   }
 
   const DefaultPhaseParameters parameters_;
