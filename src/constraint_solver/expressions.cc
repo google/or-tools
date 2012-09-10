@@ -1951,10 +1951,10 @@ class BooleanVar : public IntVar {
     }
   }
   virtual void WhenRange(Demon* d) {
-    WhenRange(d);
+    WhenBound(d);
   }
   virtual void WhenDomain(Demon* d) {
-    WhenRange(d);
+    WhenBound(d);
   }
   void Process();
   void Push() {
