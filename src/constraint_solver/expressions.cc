@@ -2828,7 +2828,7 @@ class TimesCstIntVar : public IntVar {
       : IntVar(s), var_(v), cst_(c) {}
   virtual ~TimesCstIntVar() {}
 
-  IntVar* Var() const { return var_; }
+  IntVar* SubVar() const { return var_; }
   int64 Constant() const { return cst_; }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -4689,11 +4689,11 @@ class IntAbsConstraint : public CastConstraint {
   }
 
   void PropagateTarget() {
-    const int64 target_min = target_var_->Min();
+    const int64 target_min = std::max(target_var_->Min(), 0LL);
     const int64 target_max = target_var_->Max();
-    if (sub_->Max() <= 0) {
+    if (sub_->Max() < target_min || sub_->Max() == 0) {
       sub_->SetRange(-target_max, -target_min);
-    } else if (sub_->Min() >= 0) {
+    } else if (sub_->Min() >= -target_min || sub_->Min() == 0) {
       sub_->SetRange(target_min, target_max);
     } else {
       sub_->SetRange(-target_max, target_max);
@@ -4741,13 +4741,15 @@ class IntAbs : public BaseIntExpr {
   }
 
   virtual void SetMin(int64 m) {
-    int64 emin = 0;
-    int64 emax = 0;
-    expr_->Range(&emin, &emax);
-    if (emin >= 0) {
-      expr_->SetMin(m);
-    } else if (emax <= 0) {
-      expr_->SetMax(-m);
+    if (m > 0) {
+      int64 emin = 0;
+      int64 emax = 0;
+      expr_->Range(&emin, &emax);
+      if (emin > -m) {
+        expr_->SetMin(m);
+      } else if (emax < m) {
+        expr_->SetMax(-m);
+      }
     }
   }
 
@@ -6417,7 +6419,7 @@ IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
   if (dynamic_cast<TimesCstIntVar*>(left) != NULL) {
     TimesCstIntVar* const left_prod = dynamic_cast<TimesCstIntVar*>(left);
     coefficient *= left_prod->Constant();
-    left = left_prod->Var();
+    left = left_prod->SubVar();
     modified = true;
   }
   if (dynamic_cast<TimesIntCstExpr*>(left) != NULL) {
@@ -6429,7 +6431,7 @@ IntExpr* Solver::MakeProd(IntExpr* const l, IntExpr* const r) {
   if (dynamic_cast<TimesCstIntVar*>(right) != NULL) {
     TimesCstIntVar* const right_prod = dynamic_cast<TimesCstIntVar*>(right);
     coefficient *= right_prod->Constant();
-    right = right_prod->Var();
+    right = right_prod->SubVar();
     modified = true;
   }
   if (dynamic_cast<TimesIntCstExpr*>(right) != NULL) {
