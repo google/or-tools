@@ -753,17 +753,32 @@ class DomainIntVar : public IntVar {
   void CreateBits();
   virtual void WhenBound(Demon* d) {
     if (min_.Value() != max_.Value()) {
-      bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+      if (d->priority() == Solver::DELAYED_PRIORITY) {
+        delayed_bound_demons_.PushIfNotTop(solver(),
+                                           solver()->RegisterDemon(d));
+      } else {
+        bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+      }
     }
   }
   virtual void WhenRange(Demon* d) {
     if (min_.Value() != max_.Value()) {
-      range_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+      if (d->priority() == Solver::DELAYED_PRIORITY) {
+        delayed_range_demons_.PushIfNotTop(solver(),
+                                           solver()->RegisterDemon(d));
+      } else {
+        range_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+      }
     }
   }
   virtual void WhenDomain(Demon* d) {
     if (min_.Value() != max_.Value()) {
-      domain_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+      if (d->priority() == Solver::DELAYED_PRIORITY) {
+        delayed_domain_demons_.PushIfNotTop(solver(),
+                                            solver()->RegisterDemon(d));
+      } else {
+        domain_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+      }
     }
   }
 
@@ -952,6 +967,9 @@ class DomainIntVar : public IntVar {
   SimpleRevFIFO<Demon*> bound_demons_;
   SimpleRevFIFO<Demon*> range_demons_;
   SimpleRevFIFO<Demon*> domain_demons_;
+  SimpleRevFIFO<Demon*> delayed_bound_demons_;
+  SimpleRevFIFO<Demon*> delayed_range_demons_;
+  SimpleRevFIFO<Demon*> delayed_domain_demons_;
   QueueHandler handler_;
   bool in_process_;
   BitSet* bits_;
@@ -1801,17 +1819,26 @@ void DomainIntVar::Process() {
   new_min_ = min_.Value();
   new_max_ = max_.Value();
   if (min_.Value() == max_.Value()) {
-    for (SimpleRevFIFO<Demon*>::Iterator it(&bound_demons_); it.ok(); ++it) {
-      Execute(*it);
+    ExecuteAll(bound_demons_);
+    for (SimpleRevFIFO<Demon*>::Iterator it(&delayed_bound_demons_);
+         it.ok();
+         ++it) {
+      EnqueueDelayedDemon(*it);
     }
   }
   if (min_.Value() != OldMin() || max_.Value() != OldMax()) {
-    for (SimpleRevFIFO<Demon*>::Iterator it(&range_demons_); it.ok(); ++it) {
-      Execute(*it);
+    ExecuteAll(range_demons_);
+    for (SimpleRevFIFO<Demon*>::Iterator it(&delayed_range_demons_);
+         it.ok();
+         ++it) {
+      EnqueueDelayedDemon(*it);
     }
   }
-  for (SimpleRevFIFO<Demon*>::Iterator it(&domain_demons_); it.ok(); ++it) {
-    Execute(*it);
+  ExecuteAll(domain_demons_);
+  for (SimpleRevFIFO<Demon*>::Iterator it(&delayed_domain_demons_);
+       it.ok();
+       ++it) {
+    EnqueueDelayedDemon(*it);
   }
   clear_queue_action_on_fail();
   ClearInProcess();
@@ -1915,18 +1942,19 @@ class BooleanVar : public IntVar {
   virtual void RemoveInterval(int64 l, int64 u);
   virtual void WhenBound(Demon* d) {
     if (value_ == kUnboundBooleanVarValue) {
-      bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+      if (d->priority() == Solver::DELAYED_PRIORITY) {
+        delayed_bound_demons_.PushIfNotTop(solver(),
+                                           solver()->RegisterDemon(d));
+      } else {
+        bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
+      }
     }
   }
   virtual void WhenRange(Demon* d) {
-    if (value_ == kUnboundBooleanVarValue) {
-      bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
-    }
+    WhenRange(d);
   }
   virtual void WhenDomain(Demon* d) {
-    if (value_ == kUnboundBooleanVarValue) {
-      bound_demons_.PushIfNotTop(solver(), solver()->RegisterDemon(d));
-    }
+    WhenRange(d);
   }
   void Process();
   void Push() {
@@ -2006,6 +2034,7 @@ class BooleanVar : public IntVar {
  private:
   int value_;
   SimpleRevFIFO<Demon*> bound_demons_;
+  SimpleRevFIFO<Demon*> delayed_bound_demons_;
   Handler handler_;
 };
 
@@ -2077,8 +2106,11 @@ void BooleanVar::RemoveInterval(int64 l, int64 u) {
 
 void BooleanVar::Process() {
   DCHECK_NE(value_, kUnboundBooleanVarValue);
-  for (SimpleRevFIFO<Demon*>::Iterator it(&bound_demons_); it.ok(); ++it) {
-    Execute(*it);
+  ExecuteAll(bound_demons_);
+  for (SimpleRevFIFO<Demon*>::Iterator it(&delayed_bound_demons_);
+       it.ok();
+       ++it) {
+    EnqueueDelayedDemon(*it);
   }
 }
 

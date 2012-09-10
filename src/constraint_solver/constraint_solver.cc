@@ -260,6 +260,22 @@ class Queue {
     }
   }
 
+  void ProcessNormalDemon(Demon* const demon) {
+    if (++solver_->demon_runs_[Solver::NORMAL_PRIORITY] % 10000 == 0) {
+      solver_->TopPeriodicCheck();
+    }
+    demon->Run(solver_);
+  }
+
+  void ProcessInstrumentedNormalDemon(Demon* const demon) {
+    solver_->GetPropagationMonitor()->BeginDemonRun(demon);
+    if (++solver_->demon_runs_[Solver::NORMAL_PRIORITY] % 10000 == 0) {
+      solver_->TopPeriodicCheck();
+    }
+    demon->Run(solver_);
+    solver_->GetPropagationMonitor()->EndDemonRun(demon);
+  }
+
   void Process() {
     if (!in_process_) {
       in_process_ = true;
@@ -275,11 +291,38 @@ class Queue {
   void Execute(Demon* const demon) {
     if (demon->stamp() < stamp_) {
       if (demon->priority() == Solver::NORMAL_PRIORITY) {
-        ProcessOneDemon(demon);
+        if (!instruments_demons_) {
+          ProcessNormalDemon(demon);
+        } else {
+          ProcessInstrumentedNormalDemon(demon);
+        }
       } else {
         DCHECK_EQ(demon->priority(), Solver::DELAYED_PRIORITY);
         demon->set_stamp(stamp_);
         containers_[Solver::DELAYED_PRIORITY]->Enqueue(demon);
+      }
+    }
+  }
+
+  void ExecuteAll(const SimpleRevFIFO<Demon*>& demons) {
+    if (!instruments_demons_) {
+      for (SimpleRevFIFO<Demon*>::Iterator it(&demons); it.ok(); ++it) {
+        Demon* const demon = *it;
+        if (demon->stamp() < stamp_) {
+          DCHECK_EQ(demon->priority(), Solver::NORMAL_PRIORITY);
+          if (++solver_->demon_runs_[Solver::NORMAL_PRIORITY] % 10000 == 0) {
+            solver_->TopPeriodicCheck();
+          }
+          demon->Run(solver_);
+        }
+      }
+    } else {
+      for (SimpleRevFIFO<Demon*>::Iterator it(&demons); it.ok(); ++it) {
+        Demon* const demon = *it;
+        if (demon->stamp() < stamp_) {
+          DCHECK_EQ(demon->priority(), Solver::NORMAL_PRIORITY);
+          ProcessInstrumentedNormalDemon(demon);
+        }
       }
     }
   }
@@ -1633,6 +1676,10 @@ void Solver::Execute(Demon* const d) {
   queue_->Execute(d);
 }
 
+void Solver::ExecuteAll(const SimpleRevFIFO<Demon*>& demons) {
+  queue_->ExecuteAll(demons);
+}
+
 uint64 Solver::stamp() const {
   return queue_->stamp();
 }
@@ -2556,6 +2603,10 @@ bool PropagationBaseObject::HasName() const {
 
 string PropagationBaseObject::BaseName() const {
   return "";
+}
+
+void PropagationBaseObject::ExecuteAll(const SimpleRevFIFO<Demon*>& demons) {
+  solver_->ExecuteAll(demons);
 }
 
 // ---------- Decision Builder ----------

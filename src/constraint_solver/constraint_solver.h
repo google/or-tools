@@ -2844,6 +2844,7 @@ class Solver {
   void EnqueueVar(Demon* const d);
   void EnqueueDelayedDemon(Demon* const d);
   void Execute(Demon* const d);
+  void ExecuteAll(const SimpleRevFIFO<Demon*>& demons);
   void UnfreezeQueue();
   void set_queue_action_on_fail(Action* a);
   void set_queue_cleaner_on_fail(IntVar* const var);
@@ -3031,6 +3032,7 @@ class PropagationBaseObject : public BaseObject {
   void EnqueueDelayedDemon(Demon* const d) { solver_->EnqueueDelayedDemon(d); }
   void EnqueueVar(Demon* const d) { solver_->EnqueueVar(d); }
   void Execute(Demon* const d) { solver_->Execute(d); }
+  void ExecuteAll(const SimpleRevFIFO<Demon*>& demons);
 
   // This method sets a callback that will be called if a failure
   // happens during the propagation of the queue.
