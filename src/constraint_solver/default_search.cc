@@ -205,9 +205,9 @@ class InitVarImpacts : public DecisionBuilder {
   class AssignCallFail : public Decision {
    public:
     explicit AssignCallFail(Closure* const update_impact_closure)
-    : var_(NULL),
-      value_(0),
-      update_impact_closure_(update_impact_closure) {
+        : var_(NULL),
+          value_(0),
+          update_impact_closure_(update_impact_closure) {
       CHECK_NOTNULL(update_impact_closure_);
     }
     virtual ~AssignCallFail() {}
@@ -248,10 +248,10 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
   class AssignIntervalCallFail : public Decision {
    public:
     explicit AssignIntervalCallFail(Closure* const update_impact_closure)
-    : var_(NULL),
-      value_min_(0),
-      value_max_(0),
-      update_impact_closure_(update_impact_closure) {
+        : var_(NULL),
+          value_min_(0),
+          value_max_(0),
+          update_impact_closure_(update_impact_closure) {
       CHECK_NOTNULL(update_impact_closure_);
     }
     virtual ~AssignIntervalCallFail() {}
@@ -277,17 +277,17 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
   // ----- main -----
 
   explicit InitVarImpactsWithSplits(int split_size)
-  : var_(NULL),
-    update_impact_callback_(NULL),
-    new_start_(false),
-    var_index_(0),
-    min_value_(0),
-    max_value_(0),
-    split_size_(split_size),
-    split_index_(-1),
-    update_impact_closure_(NewPermanentCallback(
-        this, &InitVarImpactsWithSplits::UpdateImpacts)),
-    updater_(update_impact_closure_.get()) {
+      : var_(NULL),
+        update_impact_callback_(NULL),
+        new_start_(false),
+        var_index_(0),
+        min_value_(0),
+        max_value_(0),
+        split_size_(split_size),
+        split_index_(-1),
+        update_impact_closure_(NewPermanentCallback(
+            this, &InitVarImpactsWithSplits::UpdateImpacts)),
+        updater_(update_impact_closure_.get()) {
     CHECK_NOTNULL(update_impact_closure_);
   }
 
@@ -405,7 +405,7 @@ class ImpactRecorder : public SearchMonitor {
   virtual void AfterDecision(Decision* const d, bool apply) {
     if (init_done_ && current_var_ != kUninitializedVarIndex) {
       if (current_log_space_ > 0.0) {
-      const double log_space = domain_watcher_->LogSearchSpaceSize();
+        const double log_space = domain_watcher_->LogSearchSpaceSize();
         if (apply) {
           const double impact = kPerfectImpact - log_space / current_log_space_;
           UpdateImpact(current_var_, current_value_, impact);
@@ -604,8 +604,8 @@ class ImpactRecorder : public SearchMonitor {
    public:
     FirstRunVariableContainers(ImpactRecorder* impact_recorder, int64 splits)
         : update_impact_callback_(
-            NewPermanentCallback(impact_recorder,
-                                 &ImpactRecorder::InitImpact)),
+              NewPermanentCallback(impact_recorder,
+                                   &ImpactRecorder::InitImpact)),
           removed_values_(),
           without_splits_(),
           with_splits_(splits) {}
@@ -723,8 +723,8 @@ class RestartMonitor : public SearchMonitor {
       choices_.Push(solver(),
                     ChoiceInfo(find_var_.var(), find_var_.value(), true));
       if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-        LOG(INFO) << "adding no good = " << choices_.Last()->DebugString()
-                  << " at depth " << s->SearchDepth();
+        VLOG(1) << "adding no good = " << choices_.Last()->DebugString()
+                << " at depth " << s->SearchDepth();
       }
     }
   }
@@ -738,8 +738,8 @@ class RestartMonitor : public SearchMonitor {
       choices_.Push(solver(),
                     ChoiceInfo(find_var_.var(), find_var_.value(), false));
       if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-        LOG(INFO) << "adding no good = " << choices_.Last()->DebugString()
-                  << " at depth " << s->SearchDepth();
+        VLOG(1) << "adding no good = " << choices_.Last()->DebugString()
+                << " at depth " << s->SearchDepth();
       }
       if (CheckRestartOnRefute(s)) {
         DoRestartAndAddNoGood(s);
@@ -759,9 +759,9 @@ class RestartMonitor : public SearchMonitor {
 
   virtual bool AtSolution() {
     if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-      LOG(INFO) << "Found a solution after the following decisions:";
+      VLOG(1) << "Found a solution after the following decisions:";
       for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_); it.ok(); ++it) {
-        LOG(INFO) << "  " << (*it).DebugString();
+        VLOG(1) << "  " << (*it).DebugString();
       }
     }
     return false;
@@ -769,7 +769,7 @@ class RestartMonitor : public SearchMonitor {
 
   virtual void BeginFail() {
     if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-      LOG(INFO) << "-- Failure";
+      VLOG(1) << "-- Failure";
     }
   }
 
@@ -813,11 +813,24 @@ class RestartMonitor : public SearchMonitor {
 
       // Some verbose display.
       if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-        LOG(INFO) << "search_depth = " << search_depth
-                  << ", branches between restarts = "
-                  << branches_between_restarts_
-                  << ", log_search_space_size = " << log_search_space_size
-                  << ", min_log_search_space = " << min_log_search_space_;
+        VLOG(1) << "search_depth = " << search_depth
+                << ", branches between restarts = "
+                << branches_between_restarts_
+                << ", log_search_space_size = " << log_search_space_size
+                << ", min_log_search_space = " << min_log_search_space_;
+      }
+      bool all_rights = true;
+      for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_); it.ok(); ++it) {
+        if ((*it).left()) {
+          all_rights = false;
+          break;
+        }
+      }
+      if (all_rights) {
+        if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
+          VLOG(1) << "  - finished a left subtree, adding a nogood";
+        }
+        return true;
       }
       if (search_depth > maximum_restart_depth_ || search_depth == 0) {
         // We are deeper than maximum_restart_depth_, we should not restart
@@ -836,10 +849,10 @@ class RestartMonitor : public SearchMonitor {
         if (branches_between_restarts_ < min_restart_period_) {
           maximum_restart_depth_ = search_depth - 1;
           if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-            LOG(INFO) << "Postpone restarting until depth <= "
-                      << maximum_restart_depth_ << ", visited nodes = "
-                      << branches_between_restarts_
-                      << " / " << min_restart_period_;
+            VLOG(1) << "Postpone restarting until depth <= "
+                    << maximum_restart_depth_ << ", visited nodes = "
+                    << branches_between_restarts_
+                    << " / " << min_restart_period_;
           }
           return false;
         }
@@ -854,7 +867,7 @@ class RestartMonitor : public SearchMonitor {
   void DoRestartAndAddNoGood(Solver* const solver) {
     const int search_depth = solver->SearchDepth();
     if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-      LOG(INFO) << "Restarting at depth " << search_depth;
+      VLOG(1) << "Restarting at depth " << search_depth;
     }
     min_log_search_space_ = std::numeric_limits<double>::infinity();
     branches_between_restarts_ = 0;
@@ -899,8 +912,8 @@ class RestartMonitor : public SearchMonitor {
         }
       }
       if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-        LOG(INFO) << "Adding no good no " << no_good_manager_->NoGoodCount()
-                  << ": " << nogood->DebugString();
+        VLOG(1) << "Adding no good no " << no_good_manager_->NoGoodCount()
+                << ": " << nogood->DebugString();
       }
       // Adds the nogood to the nogood manager.
       no_good_manager_->AddNoGood(nogood);
@@ -1196,8 +1209,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
           LOG(INFO) << "Search space is too small, switching to simple "
                     << "heuristics";
         }
-          parameters_.search_strategy =
-              DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN;
+        parameters_.search_strategy =
+            DefaultPhaseParameters::CHOOSE_FIRST_UNBOUND_ASSIGN_MIN;
         init_done_ = true;
         return;
       }
