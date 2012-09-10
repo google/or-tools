@@ -723,7 +723,7 @@ class RestartMonitor : public SearchMonitor {
       choices_.Push(solver(),
                     ChoiceInfo(find_var_.var(), find_var_.value(), true));
       if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-        VLOG(1) << "adding no good = " << choices_.Last()->DebugString()
+        VLOG(2) << "adding no good = " << choices_.Last()->DebugString()
                 << " at depth " << s->SearchDepth();
       }
     }
@@ -738,7 +738,7 @@ class RestartMonitor : public SearchMonitor {
       choices_.Push(solver(),
                     ChoiceInfo(find_var_.var(), find_var_.value(), false));
       if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-        VLOG(1) << "adding no good = " << choices_.Last()->DebugString()
+        VLOG(2) << "adding no good = " << choices_.Last()->DebugString()
                 << " at depth " << s->SearchDepth();
       }
       if (CheckRestartOnRefute(s)) {
@@ -759,9 +759,9 @@ class RestartMonitor : public SearchMonitor {
 
   virtual bool AtSolution() {
     if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-      VLOG(1) << "Found a solution after the following decisions:";
+      VLOG(2) << "Found a solution after the following decisions:";
       for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_); it.ok(); ++it) {
-        VLOG(1) << "  " << (*it).DebugString();
+        VLOG(2) << "  " << (*it).DebugString();
       }
     }
     return false;
@@ -769,7 +769,7 @@ class RestartMonitor : public SearchMonitor {
 
   virtual void BeginFail() {
     if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-      VLOG(1) << "-- Failure";
+      VLOG(2) << "-- Failure";
     }
   }
 
@@ -813,7 +813,7 @@ class RestartMonitor : public SearchMonitor {
 
       // Some verbose display.
       if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-        VLOG(1) << "search_depth = " << search_depth
+        VLOG(2) << "search_depth = " << search_depth
                 << ", branches between restarts = "
                 << branches_between_restarts_
                 << ", log_search_space_size = " << log_search_space_size
@@ -828,7 +828,7 @@ class RestartMonitor : public SearchMonitor {
       }
       if (all_rights) {
         if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-          VLOG(1) << "  - finished a left subtree, adding a nogood";
+          VLOG(2) << "  - finished a left subtree, adding a nogood";
         }
         return true;
       }
@@ -849,7 +849,7 @@ class RestartMonitor : public SearchMonitor {
         if (branches_between_restarts_ < min_restart_period_) {
           maximum_restart_depth_ = search_depth - 1;
           if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-            VLOG(1) << "Postpone restarting until depth <= "
+            VLOG(2) << "Postpone restarting until depth <= "
                     << maximum_restart_depth_ << ", visited nodes = "
                     << branches_between_restarts_
                     << " / " << min_restart_period_;
@@ -867,7 +867,7 @@ class RestartMonitor : public SearchMonitor {
   void DoRestartAndAddNoGood(Solver* const solver) {
     const int search_depth = solver->SearchDepth();
     if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-      VLOG(1) << "Restarting at depth " << search_depth;
+      VLOG(2) << "Restarting at depth " << search_depth;
     }
     min_log_search_space_ = std::numeric_limits<double>::infinity();
     branches_between_restarts_ = 0;
@@ -912,7 +912,7 @@ class RestartMonitor : public SearchMonitor {
         }
       }
       if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-        VLOG(1) << "Adding no good no " << no_good_manager_->NoGoodCount()
+        VLOG(2) << "Adding no good no " << no_good_manager_->NoGoodCount()
                 << ": " << nogood->DebugString();
       }
       // Adds the nogood to the nogood manager.
