@@ -890,6 +890,7 @@ class RestartMonitor : public SearchMonitor {
       // It can also happens that we are failing in the apply
       // branch. In that case, we do not need to revert it.
       DCHECK(!choices_.Last()->left());
+      const bool last_left = choices_.Last()->left();
       choices_.MutableLast()->set_left(true);
       NoGood* const nogood = no_good_manager_->MakeNoGood();
 
@@ -924,6 +925,8 @@ class RestartMonitor : public SearchMonitor {
       }
       // Adds the nogood to the nogood manager.
       no_good_manager_->AddNoGood(nogood);
+      // Revert the modification on the last.
+      choices_.MutableLast()->set_left(last_left);
       // If the nogood is only right branches, there is no need to
       // restart as we would end up in the same place.
       return !all_rights;
