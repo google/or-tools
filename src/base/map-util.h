@@ -160,6 +160,18 @@ FindOrDie(const Collection& collection,
   CHECK(it != collection.end()) << "Map key not found: " << key;
   return it->second;
 }
+
+// Lookup a key in a map or hash_map, insert it if it is not present.
+// Returns a reference to the value associated with the key.
+template <class Collection>
+typename Collection::value_type::second_type&
+LookupOrInsert(Collection * const collection,
+               const typename Collection::value_type::first_type& key,
+               const typename Collection::value_type::second_type& value) {
+  std::pair<typename Collection::iterator, bool> ret =
+    collection->insert(typename Collection::value_type(key, value));
+  return ret.first->second;
+}
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_BASE_MAP_UTIL_H_
