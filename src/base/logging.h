@@ -51,16 +51,26 @@ DECLARE_bool(log_prefix);
 
 #define VLOG(x) if ((x) <= FLAGS_log_level) LOG_INFO.stream()
 
+#define LOG(severity) LOG_ ## severity.stream()
+#define LG LOG_INFO.stream()
+#define LOG_IF(severity, condition) \
+  !(condition) ? (void) 0 : LogMessageVoidify() & LOG(severity)
+
 #ifdef NDEBUG
 #define DEBUG_MODE 0
 #define LOG_DFATAL LOG_ERROR
+#define DFATAL ERROR
+#define DLOG(severity) \
+  true ? (void) 0 : LogMessageVoidify() & LOG(severity)
+#define DLOG_IF(severity, condition) \
+  (true || !(condition)) ? (void) 0 : LogMessageVoidify() & LOG(severity)
 #else
 #define DEBUG_MODE 1
 #define LOG_DFATAL LOG_FATAL
+#define DFATAL FATAL
+#define DLOG(severity) LOG(severity)
+#define DLOG_IF(severity, condition) LOG_IF(severity, condition)
 #endif
-
-#define LOG(severity) LOG_ ## severity.stream()
-#define LG LOG_INFO.stream()
 
 namespace operations_research {
 class DateLogger {
@@ -98,6 +108,17 @@ class LogMessageFatal : public LogMessage {
   }
  private:
   DISALLOW_COPY_AND_ASSIGN(LogMessageFatal);
+};
+
+// This class is used to explicitly ignore values in the conditional
+// logging macros.  This avoids compiler warnings like "value computed
+// is not used" and "statement has no effect".
+class LogMessageVoidify {
+ public:
+  LogMessageVoidify() { }
+  // This has to be an operator with a precedence lower than << but
+  // higher than "?:". See its usage.
+  void operator&(std::ostream&) { }
 };
 
 #endif  // OR_TOOLS_BASE_LOGGING_H_
