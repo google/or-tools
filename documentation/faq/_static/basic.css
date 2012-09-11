@@ -251,6 +251,10 @@ img.align-center, .figure.align-center, object.align-center {
     text-align: right;
 }
 
+.strike {
+  text-decoration: line-through;
+}
+
 /* -- sidebars -------------------------------------------------------------- */
 
 div.sidebar {
