@@ -186,20 +186,24 @@ int main(int argc, char** argv) {
         operations_research::FlatZincSearchParameters::IBS :
         operations_research::FlatZincSearchParameters::FIRST_UNBOUND;
 
-    operations_research::FzParallelSupport* const parallel_support =
-        operations_research::MakeSequentialSupport(parameters.all_solutions,
-                                                   FLAGS_verbose_mt);
-    return operations_research::Run(argv[1], parameters, parallel_support);
+    operations_research::scoped_ptr<operations_research::FzParallelSupport>
+        parallel_support(
+            operations_research::MakeSequentialSupport(parameters.all_solutions,
+                                                       FLAGS_verbose_mt));
+    operations_research::Run(argv[1], parameters, parallel_support.get());
   } else {
-    operations_research::ThreadPool pool("Parallel FlatZinc", FLAGS_workers);
-    pool.StartWorkers();
-    operations_research::FzParallelSupport* const parallel_support =
-        operations_research::MakeMtSupport(FLAGS_all, FLAGS_verbose_mt);
-    for (int w = 0; w < FLAGS_workers; ++w) {
-      pool.Add(NewCallback(&operations_research::ParallelRun,
-                           argv[1],
-                           w,
-                           parallel_support));
+    operations_research::scoped_ptr<operations_research::FzParallelSupport>
+        parallel_support(
+            operations_research::MakeMtSupport(FLAGS_all, FLAGS_verbose_mt));
+    {
+      operations_research::ThreadPool pool("Parallel FlatZinc", FLAGS_workers);
+      pool.StartWorkers();
+      for (int w = 0; w < FLAGS_workers; ++w) {
+        pool.Add(NewCallback(&operations_research::ParallelRun,
+                             argv[1],
+                             w,
+                             parallel_support.get()));
+      }
     }
     return 0;
   }
