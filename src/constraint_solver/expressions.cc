@@ -444,8 +444,8 @@ class DomainIntVar : public IntVar {
       }
       visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                  all_bool_vars);
-      visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
-                                         all_coefficients);
+      visitor->VisitIntegerVectorArgument(ModelVisitor::kValuesArgument,
+                                          all_coefficients);
       visitor->EndVisitConstraint(ModelVisitor::kVarValueWatcher, this);
     }
 
@@ -681,8 +681,8 @@ class DomainIntVar : public IntVar {
       }
       visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                  all_bool_vars);
-      visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
-                                         all_coefficients);
+      visitor->VisitIntegerVectorArgument(ModelVisitor::kValuesArgument,
+                                          all_coefficients);
       visitor->EndVisitConstraint(ModelVisitor::kVarBoundWatcher, this);
     }
 
@@ -817,8 +817,8 @@ class DomainIntVar : public IntVar {
     }
   }
 
-  Constraint*  SetIsEqual(const std::vector<int64>& values,
-                          const std::vector<IntVar*>& vars) {
+  Constraint* SetIsEqual(const std::vector<int64>& values,
+                         const std::vector<IntVar*>& vars) {
     if (value_watcher_ == NULL) {
       solver()->SaveAndSetValue(
           reinterpret_cast<void**>(&value_watcher_),
@@ -827,8 +827,8 @@ class DomainIntVar : public IntVar {
                                                   this,
                                                   values,
                                                   vars))));
-      return value_watcher_;
     }
+    return value_watcher_;
   }
 
   virtual IntVar* IsDifferent(int64 constant) {
@@ -901,8 +901,8 @@ class DomainIntVar : public IntVar {
                                                   this,
                                                   values,
                                                   vars))));
-      return bound_watcher_;
     }
+    return bound_watcher_;
   }
 
   virtual IntVar* IsLessOrEqual(int64 constant) {
@@ -2355,7 +2355,7 @@ class PlusCstIntVar : public PlusCstVar {
   }
 
   virtual void SetMin(int64 m) {
-    var_->SetMin(m - cst_);
+    var_->SetMin(CapSub(m, cst_));
   }
 
   virtual int64 Max() const {
@@ -2363,11 +2363,11 @@ class PlusCstIntVar : public PlusCstVar {
   }
 
   virtual void SetMax(int64 m) {
-    var_->SetMax(m - cst_);
+    var_->SetMax(CapSub(m, cst_));
   }
 
   virtual void SetRange(int64 l, int64 u) {
-    var_->SetRange(l - cst_, u - cst_);
+    var_->SetRange(CapSub(l, cst_), CapSub(u, cst_));
   }
 
   virtual void SetValue(int64 v)  {
@@ -2609,7 +2609,7 @@ int64 SubCstIntVar::Min() const {
 }
 
 void SubCstIntVar::SetMin(int64 m) {
-  var_->SetMax(cst_ - m);
+  var_->SetMax(CapSub(cst_, m));
 }
 
 int64 SubCstIntVar::Max() const {
@@ -2617,11 +2617,11 @@ int64 SubCstIntVar::Max() const {
 }
 
 void SubCstIntVar::SetMax(int64 m) {
-  var_->SetMin(cst_ - m);
+  var_->SetMin(CapSub(cst_, m));
 }
 
 void SubCstIntVar::SetRange(int64 l, int64 u) {
-  var_->SetRange(cst_ - u, cst_ - l);
+  var_->SetRange(CapSub(cst_, u), CapSub(cst_, l));
 }
 
 void SubCstIntVar::SetValue(int64 v) {
@@ -2760,7 +2760,7 @@ int64 OppIntVar::Min() const {
 }
 
 void OppIntVar::SetMin(int64 m) {
-  var_->SetMax(-m);
+  var_->SetMax(CapOpp(m));
 }
 
 int64 OppIntVar::Max() const {
@@ -2768,15 +2768,15 @@ int64 OppIntVar::Max() const {
 }
 
 void OppIntVar::SetMax(int64 m) {
-  var_->SetMin(-m);
+  var_->SetMin(CapOpp(m));
 }
 
 void OppIntVar::SetRange(int64 l, int64 u) {
-  var_->SetRange(-u, -l);
+  var_->SetRange(CapOpp(u), CapOpp(l));
 }
 
 void OppIntVar::SetValue(int64 v) {
-  var_->SetValue(-v);
+  var_->SetValue(CapOpp(v));
   }
 bool OppIntVar::Bound() const {
   return var_->Bound();
@@ -4615,8 +4615,8 @@ class IntAbsConstraint : public CastConstraint {
   IntAbsConstraint(Solver* const s, IntVar* const sub, IntVar* const target)
       : CastConstraint(s, target),
         sub_(sub),
-        sub_domain_iterator_(sub->MakeDomainIterator(true)),
-        target_domain_iterator_(target->MakeDomainIterator(true)) {}
+        target_domain_iterator_(target->MakeDomainIterator(true)),
+        sub_domain_iterator_(sub->MakeDomainIterator(true)) {}
 
   virtual ~IntAbsConstraint() {}
 
@@ -4691,9 +4691,12 @@ class IntAbsConstraint : public CastConstraint {
   void PropagateTarget() {
     const int64 target_min = std::max(target_var_->Min(), 0LL);
     const int64 target_max = target_var_->Max();
-    if (sub_->Max() < target_min || sub_->Max() == 0) {
+    int64 smin = 0;
+    int64 smax = 0;
+    sub_->Range(&smin, &smax);
+    if (smax < target_min || smax == 0) {
       sub_->SetRange(-target_max, -target_min);
-    } else if (sub_->Min() >= -target_min || sub_->Min() == 0) {
+    } else if (smin > -target_min || smin == 0) {
       sub_->SetRange(target_min, target_max);
     } else {
       sub_->SetRange(-target_max, target_max);

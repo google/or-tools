@@ -94,6 +94,8 @@ DEFINE_bool(routing_use_path_cumul_filter, true,
             "Use PathCumul constraint filter to speed up local search.");
 DEFINE_bool(routing_use_pickup_and_delivery_filter, true,
             "Use filter which filters precedence and same route constraints.");
+DEFINE_bool(routing_use_disjunction_filter, true,
+            "Use filter which filters node disjunction constraints.");
 
 // Propagation control
 DEFINE_bool(routing_use_light_propagation, false,
@@ -500,6 +502,118 @@ class RoutingCache {
 
 namespace {
 
+// Node disjunction filter class.
+
+class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
+ public:
+  explicit NodeDisjunctionFilter(const RoutingModel& routing_model)
+      : IntVarLocalSearchFilter(routing_model.Nexts().data(),
+                                routing_model.Nexts().size()),
+        routing_model_(routing_model),
+        active_per_disjunction_(routing_model.GetNumberOfDisjunctions(), 0),
+        penalty_value_(0),
+        current_objective_value_(0) {
+  }
+  virtual bool Accept(const Assignment* delta,
+                      const Assignment* deltadelta) {
+    const int64 kUnassigned = -1;
+    const Assignment::IntContainer& container = delta->IntVarContainer();
+    const int delta_size = container.Size();
+    hash_map<int, int> disjunction_active_deltas;
+    bool lns_detected = false;
+    for (int i = 0; i < delta_size; ++i) {
+      const IntVarElement& new_element = container.Element(i);
+      const IntVar* const var = new_element.Var();
+      int64 index = kUnassigned;
+      if (FindIndex(var, &index)) {
+        int disjunction_index = kUnassigned;
+        if (routing_model_.GetDisjunctionIndexFromVariableIndex(
+                index,
+                &disjunction_index)) {
+          const bool was_inactive = (Value(index) == index);
+          const bool is_inactive =
+              (new_element.Min() <= index && new_element.Max() >= index);
+          if (new_element.Min() != new_element.Max()) {
+            lns_detected = true;
+          }
+          if (was_inactive && !is_inactive) {
+            ++LookupOrInsert(&disjunction_active_deltas, disjunction_index, 0);
+          } else if (!was_inactive && is_inactive) {
+            --LookupOrInsert(&disjunction_active_deltas, disjunction_index, 0);
+          }
+        }
+      }
+    }
+    int64 new_objective_value = current_objective_value_ + penalty_value_;
+    for (ConstIter<hash_map<int, int> > it(disjunction_active_deltas);
+         !it.at_end();
+         ++it) {
+      const int active_nodes = active_per_disjunction_[it->first] + it->second;
+      if (active_nodes > 1) {
+        return false;
+      }
+      if (!lns_detected) {
+        const int64 penalty = routing_model_.GetDisjunctionPenalty(it->first);
+        if (it->second < 0) {
+          if (penalty < 0) {
+            return false;
+          } else {
+            new_objective_value += penalty;
+          }
+        } else if (it->second > 0) {
+          new_objective_value -= penalty;
+        }
+      }
+    }
+    if (lns_detected) {
+      return true;
+    } else {
+      IntVar* const cost_var = routing_model_.CostVar();
+      return new_objective_value <= cost_var->Max()
+          && new_objective_value >= cost_var->Min();
+    }
+  }
+  void InjectObjectiveValue(int64 objective_value) {
+    current_objective_value_ = objective_value;
+  }
+
+ private:
+  virtual void OnSynchronize() {
+    for (int i = 0; i < active_per_disjunction_.size(); ++i) {
+      active_per_disjunction_[i] = 0;
+      std::vector<int> disjunction_nodes;
+      routing_model_.GetDisjunctionIndices(i, &disjunction_nodes);
+      for (int j = 0; j < disjunction_nodes.size(); ++j) {
+        const int node = disjunction_nodes[j];
+        if (Value(node) != node) {
+          ++active_per_disjunction_[i];
+        }
+      }
+    }
+    penalty_value_ = 0;
+    for (int i = 0; i < active_per_disjunction_.size(); ++i) {
+      const int64 penalty = routing_model_.GetDisjunctionPenalty(i);
+      if (active_per_disjunction_[i] == 0 && penalty > 0) {
+        penalty_value_ += penalty;
+      }
+    }
+  }
+
+  const RoutingModel& routing_model_;
+  std::vector<int> active_per_disjunction_;
+  int64 penalty_value_;
+  int64 current_objective_value_;
+};
+}  // namespace
+
+LocalSearchFilter* MakeNodeDisjunctionFilter(
+    const RoutingModel& routing_model) {
+  return routing_model.solver()->RevAlloc(
+      new NodeDisjunctionFilter(routing_model));
+}
+
+namespace {
+
 // Generic path-based filter class.
 // TODO(user): Move all filters to local_search.cc.
 
@@ -731,10 +845,6 @@ bool NodePrecedenceFilter::AcceptPath(const Assignment::IntContainer& container,
 }
 
 // Evaluators
-
-int64 CostFunction(int64** eval, int64 i, int64 j) {
-  return eval[i][j];
-}
 
 class MatrixEvaluator : public BaseObject {
  public:
@@ -968,6 +1078,7 @@ RoutingModel::~RoutingModel() {
   STLDeleteElements(&routing_caches_);
   STLDeleteElements(&owned_node_callbacks_);
   STLDeleteElements(&owned_index_callbacks_);
+  STLDeleteValues(&capacity_evaluators_);
 }
 
 void RoutingModel::AddNoCycleConstraintInternal() {
@@ -982,12 +1093,31 @@ void RoutingModel::AddDimension(NodeEvaluator2* evaluator,
                                 int64 slack_max,
                                 int64 capacity,
                                 const string& name) {
+  AddDimensionWithCapacityInternal(evaluator, slack_max, capacity, NULL, name);
+}
+
+void RoutingModel::AddDimensionWithVehicleCapacity(
+    NodeEvaluator2* evaluator,
+    int64 slack_max,
+    VehicleEvaluator* vehicle_capacity,
+    const string& name) {
+  AddDimensionWithCapacityInternal(
+      evaluator, slack_max, kint64max, vehicle_capacity, name);
+}
+
+void RoutingModel::AddDimensionWithCapacityInternal(
+    NodeEvaluator2* evaluator,
+    int64 slack_max,
+    int64 capacity,
+    VehicleEvaluator* vehicle_capacity,
+    const string& name) {
   CheckDepot();
-  const std::vector<IntVar*>& cumuls = GetOrMakeCumuls(capacity, name);
+  const std::vector<IntVar*>& cumuls = GetOrMakeCumuls(vehicle_capacity,
+                                                  capacity,
+                                                  name);
   const std::vector<IntVar*>& transits =
       GetOrMakeTransits(NewCachedCallback(evaluator),
                         slack_max,
-                        capacity,
                         name);
   solver_->AddConstraint(solver_->MakePathCumul(nexts_,
                                                 active_,
@@ -2120,42 +2250,30 @@ void RoutingModel::GetDisjunctionIndicesFromIndex(int64 index,
 }
 
 int64 RoutingModel::GetArcCost(int64 i, int64 j, int64 cost_class) {
-  DCHECK_LE(0, cost_class);
-  CostCacheElement& cache = cost_cache_[i];
-  if (cache.node == j && cache.cost_class == cost_class) {
-    return cache.cost;
-  }
-  const NodeIndex node_i = IndexToNode(i);
-  const NodeIndex node_j = IndexToNode(j);
-  int64 cost = 0;
-  if (!IsStart(i)) {
-    cost = costs_[cost_class]->Run(node_i, node_j);
-  } else if (!IsEnd(j)) {
-    // Apply route fixed cost on first non-first/last node, in other words on
-    // the arc from the first node to its next node if it's not the last node.
-    cost = costs_[cost_class]->Run(node_i, node_j)
-        + fixed_costs_[index_to_vehicle_[i]];
-  } else {
-    // If there's only the first and last nodes on the route, it is considered
-    // as an empty route thus the cost of 0.
-    cost = 0;
-  }
-  cache.node = j;
-  cache.cost_class = cost_class;
-  cache.cost = cost;
-  return cost;
-}
-
-int64 RoutingModel::GetPenaltyCost(int64 i) const {
-  int index = kUnassigned;
-  if (FindCopy(node_to_disjunction_, i, &index)) {
-    const Disjunction& disjunction = disjunctions_[index];
-    int64 penalty = disjunction.penalty;
-    if (penalty > 0 && disjunction.nodes.size() == 1) {
-      return penalty;
-    } else {
-      return 0;
+  if (cost_class >= 0) {
+    CostCacheElement& cache = cost_cache_[i];
+    if (cache.node == j && cache.cost_class == cost_class) {
+      return cache.cost;
     }
+    const NodeIndex node_i = IndexToNode(i);
+    const NodeIndex node_j = IndexToNode(j);
+    int64 cost = 0;
+    if (!IsStart(i)) {
+      cost = costs_[cost_class]->Run(node_i, node_j);
+    } else if (!IsEnd(j)) {
+      // Apply route fixed cost on first non-first/last node, in other words on
+      // the arc from the first node to its next node if it's not the last node.
+      cost = costs_[cost_class]->Run(node_i, node_j)
+          + fixed_costs_[index_to_vehicle_[i]];
+    } else {
+      // If there's only the first and last nodes on the route, it is considered
+      // as an empty route thus the cost of 0.
+      cost = 0;
+    }
+    cache.node = j;
+    cache.cost_class = cost_class;
+    cache.cost = cost;
+    return cost;
   } else {
     return 0;
   }
@@ -2197,14 +2315,6 @@ int64 RoutingModel::GetVehicleClassCost(int64 i, int64 j, int64 cost_class) {
     return GetArcCost(i, j, cost_class);
   } else {
     return 0;
-  }
-}
-
-int64 RoutingModel::GetFilterCost(int64 i, int64 j, int64 vehicle) {
-  if (i != j && vehicle >= 0) {
-    return GetArcCost(i, j, GetVehicleCostClass(vehicle));
-  } else {
-    return GetPenaltyCost(i);
   }
 }
 
@@ -2382,13 +2492,25 @@ LocalSearchOperator* RoutingModel::CreateNeighborhoodOperators() {
 const std::vector<LocalSearchFilter*>&
 RoutingModel::GetOrCreateLocalSearchFilters() {
   if (filters_.empty()) {
+    NodeDisjunctionFilter* node_disjunction_filter = NULL;
+    if (FLAGS_routing_use_disjunction_filter && !disjunctions_.empty()) {
+      node_disjunction_filter =
+          solver_->RevAlloc(new NodeDisjunctionFilter(*this));
+    }
     if (FLAGS_routing_use_objective_filter) {
+      Callback1<int64>* objective_callback = NULL;
+      if (node_disjunction_filter != NULL) {
+        objective_callback =
+            NewPermanentCallback(node_disjunction_filter,
+                                 &NodeDisjunctionFilter::InjectObjectiveValue);
+      }
       if (homogeneous_costs_) {
         LocalSearchFilter* filter =
             solver_->MakeLocalSearchObjectiveFilter(
                 nexts_,
                 NewPermanentCallback(this,
-                                     &RoutingModel::GetHomogeneousFilterCost),
+                                     &RoutingModel::GetHomogeneousCost),
+                objective_callback,
                 cost_,
                 Solver::EQ,
                 Solver::SUM);
@@ -2398,12 +2520,18 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
             solver_->MakeLocalSearchObjectiveFilter(
                 nexts_,
                 vehicle_vars_,
-                NewPermanentCallback(this, &RoutingModel::GetFilterCost),
+                NewPermanentCallback(this, &RoutingModel::GetCost),
+                objective_callback,
                 cost_,
                 Solver::EQ,
                 Solver::SUM);
         filters_.push_back(filter);
       }
+    }
+    filters_.push_back(solver_->MakeVariableDomainFilter());
+    if (node_disjunction_filter != NULL) {
+      // Must be added after ObjectiveFilter.
+      filters_.push_back(node_disjunction_filter);
     }
     if (FLAGS_routing_use_pickup_and_delivery_filter
         && pickup_delivery_pairs_.size() > 0) {
@@ -2722,14 +2850,63 @@ Solver::IndexEvaluator3* RoutingModel::BuildCostCallback() {
   return NewPermanentCallback(this, &RoutingModel::GetCost);
 }
 
-const std::vector<IntVar*>& RoutingModel::GetOrMakeCumuls(int64 capacity,
-                                                          const string& name) {
+int64 RoutingModel::WrappedVehicleEvaluator(
+    VehicleEvaluator* evaluator,
+    int64 vehicle) {
+  if (vehicle >= 0) {
+    return evaluator->Run(vehicle);
+  } else {
+    return kint64max;
+  }
+}
+
+const std::vector<IntVar*>& RoutingModel::GetOrMakeCumuls(
+    VehicleEvaluator* vehicle_capacity,
+    int64 capacity,
+    const string& name) {
   const std::vector<IntVar*>& named_cumuls =
       FindWithDefault(cumuls_, name, std::vector<IntVar*>());
   if (named_cumuls.empty()) {
     std::vector<IntVar*> cumuls;
     const int size = Size() + vehicles_;
     solver_->MakeIntVarArray(size, 0LL, capacity, name, &cumuls);
+    if (vehicle_capacity != NULL) {
+      for (int i = 0; i < size; ++i) {
+        IntVar* capacity_var = NULL;
+        if (FLAGS_routing_use_light_propagation) {
+          capacity_var = solver_->MakeIntVar(0, kint64max);
+          solver_->AddConstraint(MakeLightElement(
+              solver_.get(),
+              capacity_var,
+              vehicle_vars_[i],
+              NewPermanentCallback(
+                  this,
+                  &RoutingModel::WrappedVehicleEvaluator,
+                  vehicle_capacity)));
+        } else {
+          capacity_var = solver_->MakeElement(
+              NewPermanentCallback(
+                  this,
+                  &RoutingModel::WrappedVehicleEvaluator,
+                  vehicle_capacity),
+              vehicle_vars_[i])->Var();
+        }
+        if (i < Size()) {
+          IntVar* const capacity_active = solver_->MakeBoolVar();
+          solver_->AddConstraint(
+              solver_->MakeLessOrEqual(ActiveVar(i),
+                                       capacity_active));
+          solver_->AddConstraint(
+              solver_->MakeIsLessOrEqualCt(cumuls[i],
+                                           capacity_var,
+                                           capacity_active));
+        } else {
+          solver_->AddConstraint(
+              solver_->MakeLessOrEqual(cumuls[i], capacity_var));
+        }
+      }
+    }
+    capacity_evaluators_[name] = vehicle_capacity;
     cumuls_[name] = cumuls;
     return cumuls_[name];
   }
@@ -2745,7 +2922,6 @@ int64 RoutingModel::WrappedEvaluator(NodeEvaluator2* evaluator,
 const std::vector<IntVar*>& RoutingModel::GetOrMakeTransits(
     NodeEvaluator2* evaluator,
     int64 slack_max,
-    int64 capacity,
     const string& name) {
   evaluator->CheckIsRepeatable();
   const std::vector<IntVar*>& named_transits =
@@ -2785,8 +2961,6 @@ const std::vector<IntVar*>& RoutingModel::GetOrMakeTransits(
         transits[i] = solver_->MakeSum(slack_var, fixed_transit)->Var();
         slacks[i] = slack_var;
       }
-      transits[i]->SetMin(-capacity);
-      transits[i]->SetMax(capacity);
     }
     transits_[name] = transits;
     slacks_[name] = slacks;

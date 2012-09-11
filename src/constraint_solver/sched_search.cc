@@ -220,7 +220,7 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
   int64 smallest_start_max = kint64max;
   int ssm_support = -1;
   for (int64 i = forward_var->Min(); i <= forward_var->Max(); ++i) {
-    // TODO(lperron): use domain iterator.
+    // TODO(user): use domain iterator.
     if (i != 0 &&
         i < size_ + 1 &&
         intervals_[i - 1]->MayBePerformed() &&

@@ -1088,7 +1088,6 @@ void BoundedDistribute::OneBound(int index) {
 
 void BoundedDistribute::OneDomain(int index) {
   IntVar* const var = vars_[index];
-  Solver* const s = solver();
   for (int card_index = 0; card_index < card_size_; ++card_index) {
     if (undecided_.IsSet(index, card_index)) {
       if (!var->Contains(values_[card_index])) {

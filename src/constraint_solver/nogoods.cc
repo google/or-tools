@@ -92,7 +92,7 @@ class IntegerVariableNoGoodTerm : public NoGoodTerm {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("(var_%s %s %lld)",
+    return StringPrintf("(%s %s %lld)",
                         integer_variable_->name().c_str(),
                         assign_ ? "==" : "!=",
                         value_);

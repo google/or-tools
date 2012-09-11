@@ -3608,6 +3608,10 @@ int64 GuidedLocalSearch::Evaluate(const Assignment* delta,
 bool GuidedLocalSearch::LocalOptimum() {
   std::vector<std::pair<Arc, double> > utility(size_);
   for (int i = 0; i < size_; ++i) {
+    if (!assignment_.Bound(vars_[i])) {
+      // Never synced with a solution, problem infeasible.
+      return false;
+    }
     const int64 var_value = assignment_.Value(vars_[i]);
     const int64 value =
         (var_value != i) ? AssignmentPenalty(assignment_, i, var_value) : 0;

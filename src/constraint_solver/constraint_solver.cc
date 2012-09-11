@@ -2922,8 +2922,8 @@ void ModelVisitor::VisitConstIntArrayArgument(const string& arg_name,
   VisitIntegerArrayArgument(arg_name, values.RawData(), values.size());
 }
 
-void ModelVisitor::VisitIntegerArrayArgument(const string& arg_name,
-                                             const std::vector<int64>& values) {
+void ModelVisitor::VisitIntegerVectorArgument(const string& arg_name,
+                                              const std::vector<int64>& values) {
   VisitIntegerArrayArgument(arg_name, values.data(), values.size());
 }
 

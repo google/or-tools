@@ -1558,6 +1558,7 @@ class NearestNeighbors {
   NearestNeighbors(Solver::IndexEvaluator3* evaluator,
                    const PathOperator& path_operator,
                    int size);
+  virtual ~NearestNeighbors() {}
   void Initialize();
   const std::vector<int>& Neighbors(int index) const;
 
@@ -2325,10 +2326,10 @@ class SumOperation : public LSOperation {
  public:
   virtual void Init() { value_ = 0; }
   virtual void Update(int64 update) {
-    value_ += update;
+    value_ = CapAdd(value_, update);
   }
   virtual void Remove(int64 remove) {
-    value_ -= remove;
+    value_ = CapSub(value_, remove);
   }
   virtual int64 value() { return value_; }
   virtual void set_value(int64 new_value) { value_ = new_value; }
@@ -2486,6 +2487,7 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
  public:
   ObjectiveFilter(const IntVar* const* vars,
                   int size,
+                  Callback1<int64>* delta_objective_callback,
                   const IntVar* const objective,
                   Solver::LocalSearchFilterBound filter_enum,
                   LSOperation* op);
@@ -2506,6 +2508,7 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
   const int primary_vars_size_;
   int64* const cache_;
   int64* const delta_cache_;
+  scoped_ptr<Callback1<int64> > delta_objective_callback_;
   const IntVar* const objective_;
   Solver::LocalSearchFilterBound filter_enum_;
   scoped_ptr<LSOperation> op_;
@@ -2523,6 +2526,7 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
 
 ObjectiveFilter::ObjectiveFilter(const IntVar* const* vars,
                                  int var_size,
+                                 Callback1<int64>* delta_objective_callback,
                                  const IntVar* const objective,
                                  Solver::LocalSearchFilterBound filter_enum,
                                  LSOperation* op)
@@ -2530,6 +2534,7 @@ ObjectiveFilter::ObjectiveFilter(const IntVar* const* vars,
       primary_vars_size_(var_size),
       cache_(new int64[var_size]),
       delta_cache_(new int64[var_size]),
+      delta_objective_callback_(delta_objective_callback),
       objective_(objective),
       filter_enum_(filter_enum),
       op_(op),
@@ -2579,6 +2584,9 @@ bool ObjectiveFilter::Accept(const Assignment* delta,
   if (delta->Objective() == objective_) {
     var_min = std::max(var_min, delta->ObjectiveMin());
     var_max = std::min(var_max, delta->ObjectiveMax());
+  }
+  if (delta_objective_callback_ != NULL) {
+    delta_objective_callback_->Run(value);
   }
   switch (filter_enum_) {
     case Solver::LE: {
@@ -2641,6 +2649,7 @@ class BinaryObjectiveFilter : public ObjectiveFilter {
   BinaryObjectiveFilter(const IntVar* const* vars,
                         int size,
                         Solver::IndexEvaluator2* values,
+                        Callback1<int64>* delta_objective_callback,
                         const IntVar* const objective,
                         Solver::LocalSearchFilterBound filter_enum,
                         LSOperation* op);
@@ -2658,10 +2667,13 @@ BinaryObjectiveFilter::BinaryObjectiveFilter(
     const IntVar* const* vars,
     int size,
     Solver::IndexEvaluator2* value_evaluator,
+    Callback1<int64>* delta_objective_callback,
     const IntVar* const objective,
     Solver::LocalSearchFilterBound filter_enum,
     LSOperation* op)
-    : ObjectiveFilter(vars, size, objective, filter_enum, op),
+    : ObjectiveFilter(vars, size,
+                      delta_objective_callback,
+                      objective, filter_enum, op),
       value_evaluator_(value_evaluator) {
   value_evaluator_->CheckIsRepeatable();
 }
@@ -2695,6 +2707,7 @@ class TernaryObjectiveFilter : public ObjectiveFilter {
                          const IntVar* const* secondary_vars,
                          int size,
                          Solver::IndexEvaluator3* value_evaluator,
+                         Callback1<int64>* delta_objective_callback,
                          const IntVar* const objective,
                          Solver::LocalSearchFilterBound filter_enum,
                          LSOperation* op);
@@ -2714,10 +2727,13 @@ TernaryObjectiveFilter::TernaryObjectiveFilter(
     const IntVar* const* secondary_vars,
     int var_size,
     Solver::IndexEvaluator3* value_evaluator,
+    Callback1<int64>* delta_objective_callback,
     const IntVar* const objective,
     Solver::LocalSearchFilterBound filter_enum,
     LSOperation* op)
-    : ObjectiveFilter(vars, var_size, objective, filter_enum, op),
+    : ObjectiveFilter(vars, var_size,
+                      delta_objective_callback,
+                      objective, filter_enum, op),
       secondary_vars_offset_(var_size),
       value_evaluator_(value_evaluator) {
   value_evaluator_->CheckIsRepeatable();
@@ -2808,6 +2824,23 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
   return RevAlloc(new BinaryObjectiveFilter(vars.data(),
                                             vars.size(),
                                             values,
+                                            NULL,
+                                            objective,
+                                            filter_enum,
+                                            OperationFromEnum(op_enum)));
+}
+
+LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
+    const std::vector<IntVar*>& vars,
+    Solver::IndexEvaluator2* const values,
+    Callback1<int64>* delta_objective_callback,
+    const IntVar* const objective,
+    Solver::LocalSearchFilterBound filter_enum,
+    Solver::LocalSearchOperation op_enum) {
+  return RevAlloc(new BinaryObjectiveFilter(vars.data(),
+                                            vars.size(),
+                                            values,
+                                            delta_objective_callback,
                                             objective,
                                             filter_enum,
                                             OperationFromEnum(op_enum)));
@@ -2824,6 +2857,25 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
                                               secondary_vars.data(),
                                               vars.size(),
                                               values,
+                                              NULL,
+                                              objective,
+                                              filter_enum,
+                                              OperationFromEnum(op_enum)));
+}
+
+LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    Solver::IndexEvaluator3* const values,
+    Callback1<int64>* delta_objective_callback,
+    const IntVar* const objective,
+    Solver::LocalSearchFilterBound filter_enum,
+    Solver::LocalSearchOperation op_enum) {
+  return  RevAlloc(new TernaryObjectiveFilter(vars.data(),
+                                              secondary_vars.data(),
+                                              vars.size(),
+                                              values,
+                                              delta_objective_callback,
                                               objective,
                                               filter_enum,
                                               OperationFromEnum(op_enum)));

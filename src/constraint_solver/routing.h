@@ -236,6 +236,7 @@ class RoutingModel {
   };
 
   typedef _RoutingModel_NodeIndex NodeIndex;
+  typedef ResultCallback1<int64, int64> VehicleEvaluator;
   typedef ResultCallback2<int64, NodeIndex, NodeIndex> NodeEvaluator2;
   typedef std::vector<std::pair<int, int> > NodePairs;
 
@@ -283,6 +284,10 @@ class RoutingModel {
                     int64 slack_max,
                     int64 capacity,
                     const string& name);
+  void AddDimensionWithVehicleCapacity(NodeEvaluator2* evaluator,
+                                       int64 slack_max,
+                                       VehicleEvaluator* vehicle_capacity,
+                                       const string& name);
   // Creates a dimension where the transit variable is constrained to be
   // equal to 'value'; 'capacity' is the upper bound of the cumul variables.
   // 'name' is the name used to reference the dimension; this name is used to
@@ -316,7 +321,9 @@ class RoutingModel {
   // p + Sum(i)active[i] == 1, where p is a boolean variable
   // and the following cost to the cost function:
   // p * penalty.
-  // "penalty" must be positive.
+  // "penalty" must be positive to make the disjunctionn optional; a negative
+  // penalty will force one node of the disjunction to be performed, and
+  // therefore p == 0.
   // Note: passing a vector with a single node will model an optional node
   // with a penalty cost if it is not visited.
   void AddDisjunction(const std::vector<NodeIndex>& nodes, int64 penalty);
@@ -326,6 +333,31 @@ class RoutingModel {
     AddDisjunction(nodes, penalty);
   }
 #endif  // SWIGPYTHON
+  // Returns the index of the disjunction to which a node belongs; if it doesn't
+  // belong to a disjunction, the function returns false, true otherwise.
+  bool GetDisjunctionIndexFromNode(NodeIndex node,
+                                   int* disjunction_index) const {
+    return GetDisjunctionIndexFromVariableIndex(NodeToIndex(node),
+                                                disjunction_index);
+  }
+  int GetDisjunctionIndexFromVariableIndex(int64 index,
+                                           int* disjunction_index) const {
+    return FindCopy(node_to_disjunction_, index, disjunction_index);
+  }
+  // Returns the variable indices of the nodes in the same disjunction as the
+  // node corresponding to the variable of index 'index'.
+  void GetDisjunctionIndicesFromIndex(int64 index, std::vector<int>* indices) const;
+  // Returns the variable indices of the nodes in the disjunction of index
+  // 'index'.
+  void GetDisjunctionIndices(int index, std::vector<int>* indices) const {
+    *indices = disjunctions_[index].nodes;
+  }
+  // Returns the penalty of the node disjunction of index 'index'.
+  int64 GetDisjunctionPenalty(int index) const {
+    return disjunctions_[index].penalty;
+  }
+  // Returns the number of node disjunctions in the model.
+  int GetNumberOfDisjunctions() const { return disjunctions_.size(); }
   // Notifies that node1 and node2 form a pair of nodes which should belong
   // to the same route. This methods helps the search find better solutions,
   // especially in the local search phase.
@@ -583,9 +615,6 @@ class RoutingModel {
   // considered a failure case.  Clients who need start and end
   // variable indices should use RoutingModel::Start and RoutingModel::End.
   int64 NodeToIndex(NodeIndex node) const;
-  // Returns the variable indices of the nodes in the same disjunction as the
-  // node corresponding to the variable of index 'index'.
-  void GetDisjunctionIndicesFromIndex(int64 index, std::vector<int>* indices) const;
 
   // Time limits
   // Returns the current time limit used in the search.
@@ -612,11 +641,16 @@ class RoutingModel {
 
  private:
   typedef hash_map<string, std::vector<IntVar*> > VarMap;
+
+  // Structure storing node disjunction information (nodes and penalty when
+  // unperformed).
   struct Disjunction {
     std::vector<int> nodes;
     int64 penalty;
   };
 
+  // Storage of a cost cache element corresponding to a cost arc ending at
+  // 'node' and using a vehicle of the class 'cost_class'.
   struct CostCacheElement {
     NodeIndex node;
     int cost_class;
@@ -628,14 +662,13 @@ class RoutingModel {
   void SetStartEnd(const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
   void AddDisjunctionInternal(const std::vector<NodeIndex>& nodes, int64 penalty);
   void AddNoCycleConstraintInternal();
+  void AddDimensionWithCapacityInternal(NodeEvaluator2* evaluator,
+                                        int64 slack_max,
+                                        int64 capacity,
+                                        VehicleEvaluator* vehicle_capacity,
+                                        const string& name);
   void SetVehicleCostInternal(int vehicle, NodeEvaluator2* evaluator);
   Assignment* DoRestoreAssignment();
-  // Variants of GetCost and GetHomogeneousCost returning costs used in local
-  // search filters.
-  int64 GetFilterCost(int64 i, int64 j, int64 vehicle);
-  int64 GetHomogeneousFilterCost(int64 i, int64 j) {
-    return GetFilterCost(i, j, 0);
-  }
   // Returns the cost of the segment between two nodes for a given vehicle
   // class. Input are variable indices of nodes and the vehicle class.
   int64 GetVehicleClassCost(int64 from_index, int64 to_index, int64 cost_class);
@@ -699,17 +732,20 @@ class RoutingModel {
   void SetupTrace();
   void SetupSearchMonitors();
 
-  const std::vector<IntVar*>& GetOrMakeCumuls(int64 capacity, const string& name);
+  const std::vector<IntVar*>& GetOrMakeCumuls(
+      VehicleEvaluator* vehicle_capacity,
+      int64 capacity,
+      const string& name);
   const std::vector<IntVar*>& GetOrMakeTransits(NodeEvaluator2* evaluator,
-                                               int64 slack_max,
-                                               int64 capacity,
-                                               const string& name);
+                                           int64 slack_max,
+                                           const string& name);
 
   int64 GetArcCost(int64 i, int64 j, int64 cost_class);
-  int64 GetPenaltyCost(int64 i) const;
   int64 WrappedEvaluator(NodeEvaluator2* evaluator,
                          int64 from,
                          int64 to);
+  int64 WrappedVehicleEvaluator(VehicleEvaluator* evaluator,
+                                int64 vehicle);
 
   // Model
   scoped_ptr<Solver> solver_;
@@ -738,6 +774,7 @@ class RoutingModel {
   int start_end_count_;
   bool is_depot_set_;
   VarMap cumuls_;
+  hash_map<string, VehicleEvaluator*> capacity_evaluators_;
   VarMap transits_;
   VarMap slacks_;
   hash_map<string, Solver::IndexEvaluator2*> transit_evaluators_;
@@ -771,6 +808,10 @@ class RoutingModel {
 
   DISALLOW_COPY_AND_ASSIGN(RoutingModel);
 };
+
+// Routing filters, exposed for testing.
+LocalSearchFilter* MakeNodeDisjunctionFilter(
+    const RoutingModel& routing_model);
 
 }  // namespace operations_research
 

@@ -2669,8 +2669,23 @@ class Solver {
       Solver::LocalSearchOperation op_enum);
   LocalSearchFilter* MakeLocalSearchObjectiveFilter(
       const std::vector<IntVar*>& vars,
+      IndexEvaluator2* const values,
+      Callback1<int64>* delta_objective_callback,
+      const IntVar* const objective,
+      Solver::LocalSearchFilterBound filter_enum,
+      Solver::LocalSearchOperation op_enum);
+  LocalSearchFilter* MakeLocalSearchObjectiveFilter(
+      const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       Solver::IndexEvaluator3* const values,
+      const IntVar* const objective,
+      Solver::LocalSearchFilterBound filter_enum,
+      Solver::LocalSearchOperation op_enum);
+  LocalSearchFilter* MakeLocalSearchObjectiveFilter(
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars,
+      Solver::IndexEvaluator3* const values,
+      Callback1<int64>* delta_objective_callback,
       const IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum,
       Solver::LocalSearchOperation op_enum);
@@ -3406,8 +3421,8 @@ class ModelVisitor : public BaseObject {
 #if !defined(SWIG)
   // Using SWIG on calbacks is troublesome, let's hide these methods during
   // the wrapping.
-  virtual void VisitIntegerArrayArgument(const string& arg_name,
-                                         const std::vector<int64>& values);
+  virtual void VisitIntegerVectorArgument(const string& arg_name,
+                                          const std::vector<int64>& values);
   void VisitConstIntArrayArgument(const string& arg_name,
                                   const ConstIntArray& argument);
   void VisitInt64ToBoolExtension(ResultCallback1<bool, int64>* const callback,

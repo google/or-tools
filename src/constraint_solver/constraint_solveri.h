@@ -1313,6 +1313,10 @@ inline int64 CapSub(int64 left, int64 right) {
       (SubUnderflows(left, right) ? kint64min : left - right);
 }
 
+inline int64 CapOpp(int64 v) {
+  return v == kint64min ? kint64max : -v;
+}
+
 int64 CapProd(int64 left, int64 right);
 
 // ---------- SymmetryBreaker ----------
@@ -2036,11 +2040,13 @@ class RevPartialSequence {
 
   int Size() const { return size_; }
 
+#if !defined(SWIG)
   const int& operator[](int index) const {
     DCHECK_GE(index, 0);
     DCHECK_LT(index, size_);
     return elements_[index];
   }
+#endif
 
   void RankFirst(Solver* const solver, int elt) {
     DCHECK_LE(first_ranked_.Value() + last_ranked_.Value(), size_);

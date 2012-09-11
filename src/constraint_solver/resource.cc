@@ -862,10 +862,6 @@ class RankedPropagator : public Constraint {
         last_sentinel < last_position ?
         RankedInterval(last_sentinel + 1) :
         NULL;
-    IntVar* const last_transit =
-        last_sentinel < last_position ?
-        RankedTransit(last_sentinel + 1) :
-        NULL;
 
     // Nothing to do afterwards, exiting.
     if (first_interval == NULL && last_interval == NULL) {
@@ -916,7 +912,7 @@ class RankedPropagator : public Constraint {
       next_interval->SetStartRange(interval->StartMin() + transit->Min(),
                                    interval->StartMax() + transit->Max());
     }
-    // TODO(lperron) : Propagate on transits.
+    // TODO(user) : Propagate on transits.
   }
 
   IntervalVar* RankedInterval(int i) const {
@@ -1037,7 +1033,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     for (int i = 0; i < size_; ++i) {
       actives_[i + 1] = intervals_[i]->PerformedExpr()->Var();
     }
-    // TODO(lperron): Only if at least one activity is always performed.
+    // TODO(user): Only if at least one activity is always performed.
     actives_[0] = s->MakeIntConst(1);
 
     // No Cycle.
@@ -1056,7 +1052,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
       time_transits_[i + 1] =
           s->MakeIntVar(fixed_transit,
                         horizon,
-                        StringPrintf("time_transit(%d)", i + 1));
+                        StringPrintf("time_transit(%" GG_LL_FORMAT "d)", i + 1));
       //      max_transit = std::max(max_transit, fixed_transit);
       max_transit = std::max(max_transit, time_transits_[i + 1]->Max());
       time_cumuls_[i + 1] = intervals_[i]->StartExpr()->Var();

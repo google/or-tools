@@ -157,7 +157,7 @@ class InitVarImpacts : public DecisionBuilder {
         update_impact_closure_(
             NewPermanentCallback(this, &InitVarImpacts::UpdateImpacts)),
         updater_(update_impact_closure_.get()) {
-    CHECK_NOTNULL(update_impact_closure_);
+    CHECK_NOTNULL(update_impact_closure_.get());
   }
 
   virtual ~InitVarImpacts() {}
@@ -288,7 +288,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
         update_impact_closure_(NewPermanentCallback(
             this, &InitVarImpactsWithSplits::UpdateImpacts)),
         updater_(update_impact_closure_.get()) {
-    CHECK_NOTNULL(update_impact_closure_);
+    CHECK_NOTNULL(update_impact_closure_.get());
   }
 
   virtual ~InitVarImpactsWithSplits() {}
@@ -711,7 +711,8 @@ class RestartMonitor : public SearchMonitor {
                          NULL),
         branches_between_restarts_(0),
         min_restart_period_(ComputeBranchRestart(parameters_.restart_log_size)),
-        maximum_restart_depth_(kint64max) {}
+        maximum_restart_depth_(kint64max),
+        num_restarts_(0) {}
 
   virtual ~RestartMonitor() {}
 
@@ -746,6 +747,7 @@ class RestartMonitor : public SearchMonitor {
           if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
             VLOG(2) << "restarting";
           }
+          num_restarts_++;
           RestartCurrentSearch();
           s->Fail();
         }
@@ -757,7 +759,8 @@ class RestartMonitor : public SearchMonitor {
     if (parameters_.display_level != DefaultPhaseParameters::NONE &&
         no_good_manager_ != NULL) {
       LOG(INFO) << "Default search has generated "
-                << no_good_manager_->NoGoodCount() << " no goods";
+                << no_good_manager_->NoGoodCount() << " no goods, and "
+                << num_restarts_ << " restarts";
     }
   }
 
@@ -832,7 +835,7 @@ class RestartMonitor : public SearchMonitor {
       }
       if (all_rights) {
         if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-          VLOG(2) << "  - finished a left subtree, adding a nogood";
+          VLOG(2) << "  - finished a left subtree, forcing a nogood";
         }
         return true;
       }
@@ -870,16 +873,20 @@ class RestartMonitor : public SearchMonitor {
   // non-reversible nogood if need be. It returns true if we should
   // restart after having added the nogood.
   bool AddsNoGood(Solver* const solver) {
-    const int search_depth = solver->SearchDepth();
-    if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
-      VLOG(2) << "Restarting at depth " << search_depth;
-    }
     min_log_search_space_ = std::numeric_limits<double>::infinity();
     branches_between_restarts_ = 0;
     maximum_restart_depth_ = kint64max;
     // Creates nogood.
     if (parameters_.use_no_goods) {
       bool all_rights = true;
+      for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_);
+           it.ok();
+           ++it) {
+        const ChoiceInfo& choice = *it;
+        if (choice.left()) {
+          all_rights = false;
+        }
+      }
       DCHECK(no_good_manager_ != NULL);
 
       // Reverse the last no good if need be. If we have finished the
@@ -914,7 +921,6 @@ class RestartMonitor : public SearchMonitor {
         const int64 value = choice.value();
         if (choice.left()) {
           nogood->AddIntegerVariableEqualValueTerm(var, value);
-          all_rights = false;
         } else if (!ContainsKey(positive_variable, choice.var())) {
           nogood->AddIntegerVariableNotEqualValueTerm(var, value);
         }
@@ -943,6 +949,7 @@ class RestartMonitor : public SearchMonitor {
   int64 maximum_restart_depth_;
   SimpleRevFIFO<ChoiceInfo> choices_;
   FindVar find_var_;
+  int num_restarts_;
 };
 
 // ---------- Heuristics ----------
@@ -1261,8 +1268,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
         return FindVarValueRandom(var, value, true);
       case DefaultPhaseParameters::CHOOSE_RANDOM_ASSIGN_MAX:
         return FindVarValueRandom(var, value, false);
-
     }
+    return false;
   }
 
   // This method will do an exhaustive scan of all domains of all
